@@ -4351,6 +4351,126 @@ static std::string runCombatGenSeed(std::uint64_t seed, int sims, int asc, doubl
     return out.str();
 }
 
+// forward decl
+static std::string policyHeaderStr();
+// ---------------------------------------------------------------------------
+// FAIR-PLAY datagen: Searcher3 ISMCTS → value + policy CSVs with visit
+// distributions. Policy rows: state+action features + visit count + total.
+// ---------------------------------------------------------------------------
+static std::pair<std::string,std::string>
+runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
+    search::g_richCombatFeatures = true;
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    search::ScumSearchAgent2 agent;
+    agent.simulationCountBase = sims;
+    agent.rng = std::default_random_engine(seed);
+    std::default_random_engine ex(seed * 6364136223846793005ULL + 1);
+    std::uniform_real_distribution<double> ur(0.0, 1.0);
+    PathHistory path; t_curPath = &path;
+
+    std::ostringstream val, pol;
+    int fightIdx = 0, decIdx = 0;
+    std::vector<std::string> fightRows;
+    const int nf = search::combatPolicyFeatureCount();
+    std::vector<float> feat(nf);
+
+    search::g_onCombatDecision = [&](const BattleContext &bc) {
+        fightRows.push_back(combatFeatureRow(bc));
+    };
+    search::g_onSearchComplete3 = [&](const BattleContext &bc, const search::BattleScumSearcher3 &s3) {
+        const int thisDecIdx = decIdx++;
+        const auto &edges = s3.root.edges;
+        if ((int)edges.size() < 2) return;
+        std::int64_t total = 0;
+        for (const auto &e : edges) total += e.child.simulationCount;
+        if (total <= 0) return;
+        for (const auto &e : edges) {
+            search::combatExtractPolicyFeatures(bc, e.action, feat.data());
+            pol << seed << ',' << fightIdx << ',' << thisDecIdx;
+            for (int i = 0; i < nf; ++i) {
+                pol << ','; const float v = feat[i];
+                if (v == (float)(long)v) pol << (long)v; else pol << v;
+            }
+            pol << ',' << e.child.simulationCount << ',' << total << '\n';
+        }
+    };
+
+    using RT = search::GameAction::RewardsActionType;
+    while (gc.outcome == GameOutcome::UNDECIDED) {
+        path.update(gc);
+        if (gc.screenState == ScreenState::BATTLE) {
+            fightRows.clear(); decIdx = 0;
+            BattleContext bc; bc.init(gc);
+            agent.playoutBattle(bc);
+            const int won   = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
+            const int endHp = bc.player.curHp;
+            for (const auto &fr : fightRows)
+                val << seed << ',' << fightIdx << ',' << fr << ',' << won << ',' << endHp << '\n';
+            ++fightIdx;
+            bc.exitBattle(gc);
+        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+            search::GameAction(chooseMapAction(gc)).execute(gc);
+        } else if (gc.screenState == ScreenState::REWARDS) {
+            auto &r = gc.info.rewardsContainer;
+            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
+            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
+            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
+            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
+            else if (ur(ex) < epsilon) {
+                while (r.cardRewardCount > 0) {
+                    const int ridx = r.cardRewardCount - 1;
+                    const int nc = r.cardRewards[ridx].size();
+                    const int pick = std::uniform_int_distribution<int>(0, nc)(ex);
+                    search::GameAction(RT::CARD, ridx, pick < nc ? pick : 5).execute(gc);
+                }
+            } else {
+                evalCardRewardPolicy(gc);
+            }
+        } else {
+            agent.stepOutOfCombatPolicy(gc);
+        }
+    }
+    search::g_onCombatDecision = nullptr;
+    search::g_onSearchComplete3 = nullptr;
+    t_curPath = nullptr;
+    return { val.str(), pol.str() };
+}
+
+static void fairGen(int nSeeds, int sims, int asc, double epsilon,
+                    const std::string &valFile, const std::string &polFile, long long seedOffset = 0) {
+    search::g_richCombatFeatures = true;
+    const bool append = seedOffset > 0;
+    std::cout << "fairgen    seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
+              << "  sims " << sims << "  asc " << asc << "  eps " << epsilon
+              << (append ? "  [append]" : "") << "  threads " << numThreads()
+              << "  -> " << valFile << " + " << polFile << "\n";
+    std::ofstream vf(valFile, append ? std::ios::app : std::ios::out);
+    std::ofstream pf(polFile, append ? std::ios::app : std::ios::out);
+    if (vf.tellp() == 0) { vf << "seed,fightIdx," << combatHeaderStr() << ",won,endHp\n"; vf.flush(); }
+    if (pf.tellp() == 0) { pf << policyHeaderStr() << "\n"; pf.flush(); }
+
+    auto t0 = std::chrono::steady_clock::now();
+    long long vRows = 0, pRows = 0; int done = 0;
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        auto pr = runFairGenSeed((std::uint64_t)(seedOffset + s), sims, asc, epsilon);
+        #pragma omp critical
+        {
+            vf << pr.first;  pf << pr.second;  vf.flush(); pf.flush();
+            vRows += std::count(pr.first.begin(),  pr.first.end(),  '\n');
+            pRows += std::count(pr.second.begin(), pr.second.end(), '\n');
+            if (++done % 100 == 0) {
+                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+                std::printf("  %d/%d runs, %lld val + %lld pol rows, %.0fs (%.3fs/run)\n",
+                            done, nSeeds, vRows, pRows, el, el/done);
+                std::fflush(stdout);
+            }
+        }
+    }
+    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("wrote %lld value + %lld policy rows from %d runs in %.1fs\n", vRows, pRows, nSeeds, wall);
+}
+
 // ---------------------------------------------------------------------------
 // COMBINED value+policy datagen: one full-run play emits BOTH the V_combat value
 // rows (g_onCombatDecision snapshot, labeled with fight endHp) AND the policy-target
@@ -5536,6 +5656,16 @@ int main(int argc, char **argv) {
         std::string out = argc > 6 ? argv[6] : "build/vdist.csv";
         long long seedOff = argc > 7 ? std::stoll(argv[7]) : 0;
         distCombatGen(nSeeds, sims, asc, eps, out, seedOff);
+
+    } else if (mode == "fairgen") {       // Searcher3 ISMCTS: value + policy rows with visit distributions
+        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 500;
+        int sims      = argc > 3 ? std::stoi(argv[3]) : 1000;
+        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
+        double eps    = argc > 5 ? std::stod(argv[5]) : 0.3;
+        std::string vout = argc > 6 ? argv[6] : "build/fair_val.csv";
+        std::string pout = argc > 7 ? argv[7] : "build/fair_pol.csv";
+        long long seedOff = argc > 8 ? std::stoll(argv[8]) : 0;
+        fairGen(nSeeds, sims, asc, eps, vout, pout, seedOff);
 
     } else if (mode == "policygen") {     // CSV of (state, action, visit/total) MCTS policy targets (AZ-lite)
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;

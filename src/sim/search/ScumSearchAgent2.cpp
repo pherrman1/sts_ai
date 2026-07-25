@@ -15,6 +15,7 @@ using namespace sts;
 namespace sts::search {
     thread_local std::function<void(const BattleContext&)> g_onCombatDecision = nullptr;
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher2&)> g_onSearchComplete = nullptr;
+    thread_local std::function<void(const BattleContext&, const BattleScumSearcher3&)> g_onSearchComplete3 = nullptr;
 }
 
 void search::ScumSearchAgent2::takeAction(GameContext &gc, search::GameAction a) {
@@ -81,6 +82,7 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             s3.agentSeed = bc.seed;
             s3.search(sims);
             simulationCountTotal += s3.root.simulationCount;
+            if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             std::int64_t bestVisits = -1;
             search::Action bestAction;
             bool have = false;
@@ -137,6 +139,7 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             const std::int64_t before = s3.root.simulationCount;
             s3.searchToTotal(sims);
             simulationCountTotal += s3.root.simulationCount - before;
+            if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             std::int64_t bestVisits = -1;
             search::Action bestAction;
             bool have = false;

@@ -33,6 +33,9 @@ namespace sts::search {
     // Used only by the policy-net datagen; null in normal play.
     extern thread_local std::function<void(const BattleContext&, const BattleScumSearcher2&)> g_onSearchComplete;
 
+    struct BattleScumSearcher3;
+    extern thread_local std::function<void(const BattleContext&, const BattleScumSearcher3&)> g_onSearchComplete3;
+
     struct ScumSearchAgent2 {
         std::int64_t simulationCountTotal;
         std::vector<int> gameActionHistory;
