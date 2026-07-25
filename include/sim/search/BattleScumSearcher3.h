@@ -56,7 +56,7 @@ namespace sts::search {
         Node root;
         std::mt19937_64 rng;
         int maxParticles = 128;
-        // RNG seeding
+        // RNG seeding: composite hash(agentSeed, visibleHash, decisionIdx)
         std::uint64_t agentSeed = 0;
         int decisionIndex = 0;
         int maxSearchDepth = 100;

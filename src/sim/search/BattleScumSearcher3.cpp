@@ -63,8 +63,13 @@ BattleScumSearcher3::BattleScumSearcher3(const BattleContext &bc, int particleCo
     root.obsHash = rootObs.visibleHash();
     root.obsCached = true;
 
-    // Seed RNG from visible state hash — same observation = same search behavior
-    rng.seed(root.obsHash);
+    // Seed RNG from composite: agentSeed ^ visibleHash ^ decisionIdx.
+    // Same agent seed + same observation = same search (leakage test).
+    // Different agent seeds = different particle samples (data diversity).
+    uint64_t h = root.obsHash;
+    h ^= agentSeed + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+    h ^= (uint64_t)decisionIndex + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+    rng.seed(h ? h : 1);
 
     belief = Belief::initial(bc, maxParticles, rng);
     prepareCRNParticles();
@@ -160,6 +165,22 @@ bool BattleScumSearcher3::isGuaranteedDead(const BattleContext &bc) const {
     return incDmg > 0 && (bc.player.curHp + bc.player.block) < incDmg;
 }
 
+// Safe pruning variant: only prune when player cannot act (enemy turn).
+// Guards against pruning states where the player might still defend.
+static bool canPruneAsDead(const BattleContext &bc) {
+    if (bc.inputState == InputState::PLAYER_NORMAL) return false;
+    if (bc.inputState == InputState::CARD_SELECT) return false;
+    if (bc.isCardPlayAllowed()) return false;
+    int incDmg = 0;
+    for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+        if (bc.monsters.arr[i].curHp > 0 && bc.monsters.arr[i].isAttacking()) {
+            auto di = bc.monsters.arr[i].getMoveBaseDamage(bc);
+            incDmg += bc.monsters.arr[i].calculateDamageToPlayer(bc, di.damage) * di.attackCount;
+        }
+    }
+    return incDmg > 0 && (bc.player.curHp + bc.player.block) < incDmg;
+}
+
 bool BattleScumSearcher3::isGuaranteedLethal(const BattleContext &bc) const {
     if (!bc.isCardPlayAllowed()) return false;
     int totalDmg = 0, totalHp = 0;
@@ -223,7 +244,7 @@ void BattleScumSearcher3::step() {
             path.push_back(&edge.child);
             belief.update(CombatObservation::fromBattleContext(state));
 
-            if (isGuaranteedDead(state)) {
+        if (isGuaranteedDead(state)) {
                 backpropagate(path, 0.0, actionStack);
                 return;
             }
