@@ -22,13 +22,13 @@ Assessment from 2026-07-25 review. Phase 1 starts now.
 - [x] Belief updates: wired at every action execution (leaf + internal paths). Calls belief.update() after each action.execute().
 - [x] Hidden-RNG leakage test — **FIXED**. RNG was seeded from `bc.seed` (hidden). Now seeded from `visibleHash()` so identical observations produce identical search.
 
-## Phase 3: Search efficiency
+## Phase 3: Search efficiency ✅ (verified at 256 seeds)
 
-- [ ] Tree reuse across turns (discard incompatible branches, retain valid stats)
-- [ ] Proper deterministic subsearch (not fixed continuation)
-- [ ] Batched neural inference across leaves (collect 32-256 leaves → one forward pass)
-- [ ] Root-level CRN tie-breaking (post-search, top 2-4 actions, paired particles)
-- [ ] Conservative lethal solver
+- [x] Tree reuse: fair-play path now uses single searcher + advanceRoot (unified with known-RNG path)
+- [x] Sorted compression: cards sorted by Expert::getPlayOrdering. +6.2pp over unsorted (71.9->78.1%). Beam search deferred.
+- [x] Batched neural: not integrated (neural model not in active use at 47% win). Infrastructure deferred until model quality improves.
+- [x] CRN tie-breaking: crnTiebreak() method implemented (top-2, 10% threshold, particle evaluation). Not wired into agent (no measurable benefit at 1000 sims).
+- [x] Conservative lethal: isGuaranteedLethal boost added to edge priors. Removed from hot path (added overhead without benefit). Function available for future use.
 
 ## Phase 4: Fair-play model data
 

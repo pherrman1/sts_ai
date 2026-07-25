@@ -56,6 +56,9 @@ namespace sts::search {
         Node root;
         std::mt19937_64 rng;
         int maxParticles = 128;
+        // RNG seeding
+        std::uint64_t agentSeed = 0;
+        int decisionIndex = 0;
         int maxSearchDepth = 100;
         double riskLambda = 0.5;
 
@@ -92,6 +95,7 @@ namespace sts::search {
 
         void prepareCRNParticles();
         void warmStartRootCRN(const BattleContext &bc);
+        Action crnTiebreak(const BattleContext &bc);
     };
 
     void enumerateActionsForNode(BattleScumSearcher3::Node &node, const BattleContext &bc);

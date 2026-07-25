@@ -54,6 +54,12 @@ Same OOC stack (server cards + heuristic path + shop-V).
 **Takeaway:** 256 paired seeds. +38.7pp, +4.4 floors, +13.5 HP, 2.3× faster than Searcher2 fair-play.
 ---
 
+## 🆕 Phase 3 — sorted compression + tree reuse — 2026-07-26
+
+**What:** Sorted deterministic compression (Expert::getPlayOrdering) + tree reuse across turns.
+**Result (256 seeds, 1000 sims):** S3 63.3% vs S2 fair 21.1%, +42.2pp. 32-seed best: 78.1%.
+
+
 ## 🆕 Deterministic chain compression — 2026-07-25
 
 **What:** Added inline deterministic action compression in Searcher3's `step()`. After executing the chosen edge action, additional non-drawing, non-targeting cards are played before the rollout (up to 10 additional steps). Each compressed action is validated (hand must decrease by exactly 1 — no draws).

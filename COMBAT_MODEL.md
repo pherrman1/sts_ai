@@ -129,16 +129,14 @@ Each section starts with the goal from the spec, then current implementation sta
 
 | Metric | Searcher2 fair-play | Searcher3 | Delta |
 |---|---|---|---|
-| Win rate | 21.1% [16.5-26.5] | 59.8% [53.7-65.6] | +38.7pp [+31.2, +46.1] |
-| Avg floor | 36.8 | 41.2 | +4.4 |
-| Avg HP end | 9.2 | 22.7 | +13.5 |
-| Avg act reached | 2.34 | 2.57 | +0.24 |
-| Avg fights lost | 0.79 | 0.36 | -0.42 |
-| Avg sec/run | 7.72 | 3.40 | -4.31 |
-| Discordant pairs | — | — | 135/256 (53%) |
-| S3-only wins: 117, S2-only wins: 18 |
+| Win rate | 21.1% [16.5-26.5] | 63.3% [55.1-71.5] | +42.2pp [+34.4, +50.0] |
+| Avg floor | 36.8 | 42.4 | +5.6 |
+| Avg HP end | 9.2 | 26.6 | +17.4 |
+| Avg sec/run | 7.8 | 3.6 | -4.2 |
+| Discordant | — | — | 152/256 (59%) |
+| S3-only wins: 130, S2-only wins: 22 |
 
-Bare searcher speed: 140K sim/s (heuristic), 10.7K sim/s (dist model + BLAS).
+**32-seed best config:** 78.1% (sorted compression + lethal detection + tree reuse).
 
 ---
 

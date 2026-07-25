@@ -72,11 +72,13 @@ static void printHelper(const BattleContext &bc, const search::Action &a) {
 // commit the ONE most-visited root move, then re-search as the real draw reveals.
 void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
     if (search::g_useSearcher3) {
+        // ISMCTS: new searcher per turn (different observations = different trees)
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
             const std::int64_t sims = isBossEncounter(bc.encounter)
                 ? (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
             BattleScumSearcher3 s3(bc, 64);
+            s3.agentSeed = bc.seed;
             s3.search(sims);
             simulationCountTotal += s3.root.simulationCount;
             std::int64_t bestVisits = -1;
@@ -127,6 +129,7 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
     }
     if (search::g_useSearcher3) {
         BattleScumSearcher3 s3(bc, 64);
+        s3.agentSeed = bc.seed;
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
             const std::int64_t sims = isBossEncounter(bc.encounter)
