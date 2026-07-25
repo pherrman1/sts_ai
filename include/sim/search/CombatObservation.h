@@ -1,0 +1,148 @@
+//
+// CombatObservation: agent-facing observation that NEVER exposes RNG state.
+// Particle/Belief: hidden-state tracking for POMCP/ISMCTS.
+//
+#ifndef STS_LIGHTSPEED_COMBATOBSERVATION_H
+#define STS_LIGHTSPEED_COMBATOBSERVATION_H
+
+#include "sts_common.h"
+#include "constants/Cards.h"
+#include "constants/Potions.h"
+#include "constants/Relics.h"
+#include "constants/MonsterEncounters.h"
+#include "constants/PlayerStatusEffects.h"
+#include "constants/MonsterStatusEffects.h"
+#include "combat/Player.h"
+#include "combat/Monster.h"
+#include "combat/CardInstance.h"
+
+#include <vector>
+#include <array>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <random>
+#include <string>
+#include <unordered_map>
+
+namespace sts {
+
+// -- Visible Monster State -------------------------------------------------
+struct MonsterVisibleState {
+    MonsterId id = MonsterId::INVALID;
+    int curHp = 0;
+    int maxHp = 0;
+    int block = 0;
+    int strength = 0;
+    int vulnerable = 0;
+    int weak = 0;
+    int poison = 0;
+    int artifact = 0;
+    int incomingDamage = 0;
+    int incomingHits = 0;
+    MMID lastMove = MMID::INVALID;
+    bool isAttacking = false;
+    bool isTargetable = false;
+
+    void fromMonster(const Monster &m, const BattleContext &bc);
+};
+
+// -- Player Visible State --------------------------------------------------
+struct PlayerVisibleState {
+    int curHp = 80;
+    int maxHp = 80;
+    int block = 0;
+    int energy = 0;
+    int strength = 0;
+    int dexterity = 0;
+    int focus = 0;
+    int artifact = 0;
+    Stance stance = Stance::NEUTRAL;
+    int gold = 0;
+    int cardsPlayedThisTurn = 0;
+    int attacksPlayedThisTurn = 0;
+    int skillsPlayedThisTurn = 0;
+
+    std::array<int8_t, 8> relicCounters{};
+    std::vector<std::pair<PlayerStatus, int16_t>> powers;
+
+    void fromPlayer(const Player &p);
+};
+
+// -- CombatObservation: what the player CAN know ---------------------------
+struct CombatObservation {
+    PlayerVisibleState player;
+    std::vector<MonsterVisibleState> monsters;
+    std::vector<CardInstance> hand;
+    std::vector<CardInstance> drawPileContents;    // multiset (known, but order unknown)
+    std::vector<CardInstance> discardPile;
+    std::vector<CardInstance> exhaustPile;
+    std::vector<Potion> potions;
+    int potionCapacity = 3;
+    int turn = 0;
+    int ascension = 0;
+    MonsterEncounter encounter = MonsterEncounter::INVALID;
+    bool isCardPlayAllowed = true;
+    std::bitset<128> relics;   // only bit 0-127
+
+    static CombatObservation fromBattleContext(const BattleContext &bc);
+    std::uint64_t visibleHash() const;
+    bool operator==(const CombatObservation &o) const;
+    bool operator!=(const CombatObservation &o) const { return !(*this == o); }
+};
+
+// -- Particle: a full hidden state consistent with observations ------------
+struct HiddenBattleState {
+    std::vector<CardInstance> drawPileOrder;   // actual order (hidden)
+    std::uint64_t shuffleRngSeed0 = 0;
+    std::uint64_t shuffleRngSeed1 = 0;
+    std::uint64_t cardRandomRngSeed0 = 0;
+    std::uint64_t cardRandomRngSeed1 = 0;
+    std::uint64_t aiRngSeed0 = 0;
+    std::uint64_t aiRngSeed1 = 0;
+    std::uint64_t miscRngSeed0 = 0;
+    std::uint64_t miscRngSeed1 = 0;
+    std::uint64_t monsterHpRngSeed0 = 0;
+    std::uint64_t monsterHpRngSeed1 = 0;
+    std::uint64_t potionRngSeed0 = 0;
+    std::uint64_t potionRngSeed1 = 0;
+
+    double weight = 1.0;
+    std::uint64_t id = 0;
+
+    HiddenBattleState() = default;
+    void randomize(std::mt19937_64 &rng);
+
+    static std::vector<HiddenBattleState> sampleParticles(
+        const CombatObservation &obs,
+        const BattleContext &templateBc,
+        std::mt19937_64 &rng,
+        int count);
+};
+
+// -- Belief: weighted set of particles -------------------------------------
+struct Belief {
+    std::vector<HiddenBattleState> particles;
+
+    void resample(std::mt19937_64 &rng);
+    void update(const CombatObservation &obs);
+    const HiddenBattleState &sample(std::mt19937_64 &rng) const;
+    [[nodiscard]] bool empty() const { return particles.empty(); }
+    [[nodiscard]] size_t size() const { return particles.size(); }
+
+    static Belief initial(const BattleContext &bc, int particleCount,
+                          std::mt19937_64 &rng);
+};
+
+} // namespace sts
+
+// Hash specialization for CombatObservation
+namespace std {
+template <> struct hash<sts::CombatObservation> {
+    std::uint64_t operator()(const sts::CombatObservation &o) const noexcept {
+        return o.visibleHash();
+    }
+};
+}
+
+#endif // STS_LIGHTSPEED_COMBATOBSERVATION_H

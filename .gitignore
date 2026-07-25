@@ -1,0 +1,28 @@
+/cmake-build-*/
+/files/
+/.idea/
+
+# Local build products and Python caches.
+/build/
+/one_combat*.elf
+/__pycache__/
+*.py[cod]
+
+# Self-play is source-controlled only at the orchestration/documentation level.
+# Its buffers, trained models, validation gates and snapshots are regenerated
+# local artifacts (tens of GB) and must not be committed to GitHub.
+/selfplay/buffer/
+/selfplay/cbuffer/
+/selfplay/pbuffer/
+/selfplay/card_buffer/
+/selfplay/path_buffer/
+/selfplay/card_models/
+/selfplay/models/
+/selfplay/current/
+/selfplay/cand/
+/selfplay/gate/
+/selfplay/logs/
+/selfplay/*backup*/
+/selfplay/status.txt
+/selfplay/history.tsv
+/selfplay/logs_run.out

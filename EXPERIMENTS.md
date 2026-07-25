@@ -1,0 +1,1744 @@
+# StS AI — Experiment Log
+
+Tracks each modification we try, its configuration, and the measured result, so we
+can see which ideas actually moved win rate / run depth and which didn't.
+
+**Fixed setup unless noted:** Ironclad, ascension 0, seeds `0..N-1`, 8 threads (OpenMP).
+Combat is MCTS via the built-in `BattleScumSearcher2` (a *known-RNG* solver — rollouts
+see the real upcoming draws, so numbers are an optimistic upper bound, not fair-play).
+Out-of-combat decisions use `ScumSearchAgent2`'s heuristic policies unless the experiment
+replaces one. All harness code is in `apps/one_combat.cpp`.
+
+Metrics: **win%** (reached & beat the Act 3 boss), **avg_floor** (how deep it got),
+**avg_hp_end**, and compute (**cpu_sec/run** = summed thread time; **wall**).
+
+---
+
+## ⭐ Current best config (baseline for NEW experiments)  — 2026-07-14
+
+New out-of-combat experiments should A/B against **this stack**, not the old default agent, so we
+measure marginal gains instead of re-deriving from scratch. Requires `python3 v_server.py` (plain).
+
+**Best = server card picks (skip@0) + heuristic path + shop-V knapsack.** Rest-V is *excluded*
+(it trades win% for depth — see below). Absolute performance @512 seeds, asc0, 1000 sims:
+**win% 25.0 · avg_floor 41.3 · hp_end 10.9** (vs the pre-OOC default agent ~20.9%).
+
+Stack decomposition (each vs the 22.1% skip@0 baseline, 512 seeds):
+| layer | win% | floor | note |
+|---|---|---|---|
+| never-skip cards + path (old default) | 20.9 | 38.9 | pre-§16 |
+| skip@0 cards + path (§16) | 22.1 | 38.4 | +1.2pp, principled skip |
+| **+ shop-V (§15)** | **25.0** | **41.3** | **+2.9pp — the win** |
+
+---
+
+## 🆕 BattleScumSearcher3 — ISMCTS with lethal detection — 2026-07-25
+
+**What:** New `BattleScumSearcher3` ISMCTS searcher vs `BattleScumSearcher2` (fair-play).  
+Searcher3 features:
+- All 6 RNG streams randomized per simulation (vs Searcher2's 2)
+- Observation caching per node (`ensureObservation`)
+- Damage-biased rollout (attacks 8x, same as Searcher2)
+- PUCT with policy priors (same formula as Searcher2)
+- `isGuaranteedDead()` early backprop — prunes branches where incoming damage exceeds HP+block, skipping wasted rollout steps
+
+**Setup:** Fair-play (both searchers). 32 seeds, asc 0, 1000 sims/decision. No VNet.  
+Same OOC stack (server cards + heuristic path + shop-V).
+
+**Results (1000 sims, 32 seeds):**
+
+| Searcher | Win% | Floor | HP end | sec/run |
+|---|---|---|---|---|
+| Searcher2 (fair-play) | 21.1% | 36.8 |  9.2 | 7.7 |
+| **Searcher3 (ISMCTS)** | **59.8%** | **41.2** | **22.7** | **3.3** |
+**Takeaway:** 256 paired seeds. +38.7pp, +4.4 floors, +13.5 HP, 2.3× faster than Searcher2 fair-play.
+---
+
+## 🆕 Deterministic chain compression — 2026-07-25
+
+**What:** Added inline deterministic action compression in Searcher3's `step()`. After executing the chosen edge action, additional non-drawing, non-targeting cards are played before the rollout (up to 10 additional steps). Each compressed action is validated (hand must decrease by exactly 1 — no draws).
+
+**Results (1000 sims, 32 seeds, fair-play):**
+
+| Config | Win% | Floor | HP end | sec/run |
+|---|---|---|---|---|
+| Searcher3 (no compression) | 68.8 | 42.3 | 30.2 | 3.0 |
+| **Searcher3 + compression** | **71.9** | **46.1** | **27.4** | **3.4** |
+
+**Takeaway:** +3.1pp from compression. Effectively increases search depth per simulation.
+Even beats Searcher2 known-RNG (60.9%). The `isGuaranteedDead` check is the main driver — it prevents wasting simulations on lines where the player will certainly die.
+| + rest-V (§15) | 20.7 | 40.0 | −1.4pp win / +1.6 floor — **excluded** |
+| + both | 22.1 | 42.1 | rest-V erases shop-V's win gain |
+
+Invoke: shop-V alone = `runFullRunOOC(seed,sims,asc, restV=false, shopV=true)` with `g_cardSkipThresh=0`
+(default). rest-V is behind its flag for depth-focused (act-4/heart) runs only.
+
+## Summary table
+
+| # | Change | Mode | Config | Baseline | Result | Verdict |
+|---|--------|------|--------|----------|--------|---------|
+| 1 | MCTS combat vs random | `bench` | JawWorm, 100 seeds, 2000 sims | random 91% win / 34 HP | MCTS **100% win / 74 HP** | ✅ huge (single combat) |
+| 2 | Combat sims → whole run | `runbench` | 20 seeds | — | 1k:0%/f27 · 8k:0%/f32 · 30k:**17%**/f43 | ↗ depth scales; win needs a good deck |
+| 3 | Devalue high HP in eval | `evalrun` | 20 seeds, 8k sims | base 0% / f33.1 | devalue 5% / f32.0 | ➖ noise (myopic combat) |
+| 4a | Lookahead drafting N=2 | `draftbench` | 16 seeds, outer 4k, inner 2k | table 6.2% / f30.9 / 7.7cpu-s | look 0% / f29.2 / 36cpu-s | ❌ worse & 5× cost |
+| 4b | Lookahead drafting N=3 | `draftbench` | 16 seeds, outer 4k, inner 4k | table 6.2% / f30.9 / ~12cpu-s | look 6.2% / **f32.8** / 138cpu-s | ➖ +2 floors at ~11× cost |
+| 5 | Fix uninitialized `player.cc` | (correctness) | — | nondeterministic crashes | stable | ✅ real sim bug fixed |
+| 6 | Heuristic pathing (step gate) | `pathbench` | 32 seeds, 4000 sims | random 6.2% / f31.6 | heuristic 9.4% / f31.0 | ➖ wash (2 vs 3 wins = noise) |
+| 6b | + tighter elite HP gate | `pathbench` | 64 seeds, 4000 sims | random 4.7% / f28.6 | heuristic 4.7% / **f30.0** | ↗ +1.4 floors, win% flat (deck-gated) |
+| 7 | Tree reuse across decisions | `runbench` | 32 seeds, 4000 sims | orig ~4.74 s/run | reuse 5.62 s/run | ❌ no speedup (known-RNG solver) |
+| 8 | Greedy never-skip drafting | `cardbench` | 128 seeds, 4000 sims | table 4.7% / f28.2 | greedy 7.0% / f29.4 | ✅ beats table (skipping hurts @ asc0) |
+| 9 | **Greedy draft + heuristic path** | `combobench` | 128 seeds, 4000 sims | baseline 4.7% / f28.2 / 1.3hp | **combo 14.8% / f29.9 / 7.1hp** | ✅✅ **3× win rate — policies compound** |
+| 10 | State-aware card value function | `cardbench` | 128 seeds, 4000 sims | table 4.7% · greedy 7.0% | **eval 10.2% / f30.9** | ✅ beats table & greedy |
+| 11 | **Fair-play (determinized) MCTS** | `*bench …1` | 128 seeds, 4000 sims | known-RNG inflated ~5× | see below | ⚠️ honest numbers; eval edge survives |
+| 12 | **Causal per-card value (ML)** | `causalgen`+`cardbench` | 3000 runs K=6 CRN; A/B 400 seeds 2500 sims fair | eval 1.5% / f22.2 | **eval+causal 2.2% / f24.9**; causal-table f29.4 | 🔬✅ fused beats eval; tempo real, per-card synergy not learnable |
+| 13 | **Deck-aware V captures synergy** | `datagen`+`train_value_deckaware.py`; `v_server.py`+`cardbench` p6 | 6000 runs V→finalFloor; A/B 400 seeds 2500 sims fair | eval+causal 2.2% / f24.9 | offline: V-marginal **monotone in #synergy partners**; online gbm-server **2.0% / f26.3** | ✅ synergy learnable offline; ➖ online ties best (combat is the ceiling) |
+| — | **Build bug fixed** | — | — | stale archive objects | clean rebuild | ⚠️ prior BattleContext/searcher edits weren't linked |
+
+Legend: ✅ clear win · ↗ helps · ➖ neutral/noise · ❌ hurts · ⏳ in progress.
+
+---
+
+## 1. MCTS combat vs. random baseline
+- **What:** wrap `BattleScumSearcher2` for in-combat decisions vs. a uniformly-random legal-action policy.
+- **Config:** JawWorm, 100 seeds, 2000 sims/decision.
+- **Result:** random **91% win / 33.9 avg HP**; MCTS **100% win / 74.1 avg HP**, ~314 ms/combat.
+- **Verdict:** ✅ The combat searcher is strong. Combat is *not* the bottleneck.
+
+## 2. Combat sims scaling over a whole run
+- **What:** how far a full Neow→Act3 run gets as we raise sims/decision.
+- **Config:** 20 seeds. 1k / 8k / 30k sims.
+- **Result:** 1k → 0% win, floor 27, 0.6 s/run · 8k → 0%, floor 32, 5.7 s · 30k → **17%**, floor 43, 28 s.
+- **Verdict:** ↗ More sims get you deeper, but wins are gated by **deckbuilding / out-of-combat play**, not combat search. Deaths cluster at act bosses with weak decks. → the research lever is the out-of-combat policy.
+
+## 3. Devalue high HP in `evaluateEndState`
+- **What:** make HP above 50% of max worth only 0.4× (stop the searcher over-valuing HP it already has). Toggle `search::g_devalueHighHp`.
+- **Config:** combat GremlinNob 150 seeds; whole run 20 seeds @ 8k sims.
+- **Result:** combat 98.7% win both, 45.5 vs 45.7 HP. Run: base 0% / floor 33.1 vs devalue 5% / floor 32.0 — within noise.
+- **Verdict:** ➖ Negative result. The combat searcher is **myopic** (optimizes each fight alone), so "save HP for later" has no "later." Payoff would need cross-fight/run-aware value.
+
+## 4. Lookahead card-reward drafting
+- **What:** at each card reward, copy the run, apply each choice (3 cards + skip), play the next *N* fights with a cheap inner agent, keep the best. Common Random Numbers are free (the copied `GameContext` carries all RNG streams).
+- **Config:** 16 seeds, outer 4000 sims.
+  - **4a — N=2, inner 2000:** weighted-table 6.2% / floor 30.9 / 7.7 cpu-s vs lookahead **0% / floor 29.2 / 36 cpu-s**.
+  - **4b — N=3, inner 4000:** weighted-table 6.2% / floor 30.9 / ~12 cpu-s vs lookahead 6.2% / **floor 32.8** / **138 cpu-s**.
+- **Verdict:** ❌→➖ N=2 loses outright (weak inner pilot). N=3 edges the table on depth (+~2 floors) but at ~11× compute, and the win-rate diff is noise (1/16). Confirms the payoff shape is a **learned value function** that amortizes this lookahead offline, not online rollout.
+
+## 5. Fix: `BattleContext::init` never set `player.cc`
+- **What (correctness, not win%):** `Player.cc` had no default initializer and `init()` never assigned it, so in combat it was **uninitialized stack garbage**. When its value happened to be `3` (Watcher), an Ironclad's **Entropic Brew** (`returnRandomPotion(potionRng, player.cc)`) and "add a random card" effects (`getTrulyRandomCardInCombat`) drew from the **wrong class pool** → e.g. a Watcher **Stance Potion** in an Ironclad run → the searcher tried to drink it → `CHOOSE_STANCE_ACTION` assert (and a `drinkPotion` default assert for unimplemented potions). Nondeterministic, because it depended on stack contents.
+- **Fix:** one line — `player.cc = gc.cc;` in `BattleContext::init` (`src/combat/BattleContext.cpp`).
+- **Verdict:** ✅ Real latent sim bug, surfaced by heuristic pathing perturbing which fights we reach. Unblocks all whole-run experiments.
+
+## 6. Heuristic map pathing  ⏳
+- **What:** replace the random `MAP_SCREEN` choice with a bottom-up DP over the 15×7 map. Each room gets a value; pick the child leading to the best-scoring remaining path to the boss. Spec: elites & rests great; elites more valuable the **later** you fight them; shops gated on gold; monsters scaled up in **act 1** and by current HP; events balance fight-heavy paths; re-plans every floor with live HP so a healthy hero takes the **hardest survivable path** (act-transition heals anyway). Code: `roomValue` / `chooseMapAction` in `apps/one_combat.cpp`, mode `pathbench`.
+- **Note:** at **200 sims** the pilot is too weak to win the elites it routes into, so the heuristic *hurt* (floor 20.2 vs random 24.2). Pathing only pays off if you can win what you route into → must evaluate at a real sim count.
+- **Config:** 32 seeds, 4000 sims/decision.
+- **Result (v1, step-function elite gate):** random-path 6.2% win (2/32) / floor 31.6 / 1.3 HP · heuristic-path 9.4% win (3/32) / floor 31.0 / 3.0 HP → wash (2 vs 3 wins = noise).
+- **Result (v2, tighter continuous elite gate, 64 seeds):** random-path 4.7% win (3/64) / floor 28.6 / 1.1 HP · heuristic-path 4.7% win (3/64) / **floor 30.0** / 1.7 HP.
+  - Change: elite value gate went from a 3-step function to a continuous ramp `clamp((hpFrac-0.40)/0.50, 0, 1)` — an elite is worth ~0 below 40% HP and only full value near 90% HP (a bigger HP cushion than normal fights, which keep a `0.4 + 0.9*hpFrac` floor).
+- **Verdict:** ↗ Small but consistent **+1.4 floor** depth gain (direction stable across 32- and 64-seed runs), slightly higher end-HP, **no win-rate change** and no compute regression. Confirms the recurring theme: pathing/HP-management shows up as *depth, not wins* — wins are gated by **deck quality** (you die at act bosses regardless of route). Marginal keeper; the real lever is the card/deck policy.
+- **Note on speed:** deep runs are expensive because rollouts play to true battle-end and act-3 enemies have huge HP (per-run cost ~4s shallow → ~8s at floor 50). A *better* agent that survives longer costs *more* per run. The fix is depth-capped rollouts with a leaf value estimate (queued).
+
+---
+
+## 7. Tree reuse across combat decisions  ❌ (negative result)
+- **What:** keep one `BattleScumSearcher2` per battle; after each played action re-root onto that child (`advanceRoot`) keeping its subtree, and `searchToTotal(target)` only tops up the shortfall instead of searching a fresh tree. Header + `BattleScumSearcher2.cpp` + `ScumSearchAgent2::playoutBattle`.
+- **Config:** runbench 4000 sims, seeds 0..31.
+- **Result:** with reuse actually linked (after the build fix below): 9.4% / floor 32.9 / **5.62 sec/run** vs original playoutBattle ~4.74 sec/run — **no speedup** (slower, partly because the changed RNG stream sends runs deeper, and `advanceRoot` adds a per-move BattleContext copy). *(First measurement claimed 4.69 vs 4.74 "identical" — both were the STALE original code; see build bug.)*
+- **Verdict:** ❌ Design mismatch. This is a *known-RNG solver*: once a search finds a complete winning line it **executes 15 moves without re-searching** (`stepsWithSolution=15`), so there's no per-move search to amortize — the first search of each battle dominates. And the winning line runs through **rollout territory never added to the tree** (MCTS expands one node/sim), so re-rooting hits unexpanded children and rebuilds anyway. Reuse would only help a *fair-play* (unknown-RNG) searcher that must re-search every move. **Real speed lever is depth-capped rollouts (cost per sim), not reuse (number of searches).**
+
+## 8. Greedy card-reward drafting  ✅ (first real win-rate gain)
+- **What:** replace the built-in `weightedCardRewardPolicy` (roulette-wheel over `getObtainWeight`^1.2 + probabilistic deck-quality-gated skip) with a deterministic **argmax**: take the highest-weight card (same shaping + act-1 attack ×1.4), and skip only if `bestRaw < skipRatio * avgDeckObtain`. Code: `greedyCardRewardPolicy` / mode `cardbench` in `apps/one_combat.cpp`. Runs on the **clean build** (0 crashes).
+- **skipRatio sweep (64 seeds, 4000 sims), vs fixed weighted-table 7.8% / f29.9:**
+  - 0.0 (never skip): **9.4% / f29.5 / 3.4 HP**
+  - 0.5: 7.8% / f29.3 / 2.3 HP
+  - 0.7: 6.2% / f28.6 / 2.6 HP
+  - 1.0: 4.7% / f27.9 / 1.9 HP
+  - → perfectly monotonic: **more skipping = worse.**
+- **Confirmation (128 seeds, skipRatio 0.0):** weighted-table 4.7% (6/128) / f28.2 / 1.3 HP vs **greedy 7.0% (9/128) / f29.4 / 2.2 HP** — greedy wins on win%, depth, and HP.
+- **Verdict:** ✅ First policy change to move win rate the right way. The built-in policy's probabilistic *skipping* is the culprit — at ascension 0 the deck-dilution cost is small and bigger decks (more payoffs/options) win. Deterministic argmax + never-skip is also simpler. Gain is modest (~+2 pp win, +1 floor) and samples are small, but the monotonic trend + two sample sizes make the direction credible. **Next: try this at higher ascension (dilution matters more → optimal skipRatio likely > 0), and prioritize scaling/power cards.**
+
+## 9. Combined: greedy draft + heuristic pathing  ✅✅ (best result so far)
+- **What:** run exp 8 (greedy never-skip drafting, skipRatio 0) and exp 6b (heuristic pathing) together in one whole-run driver, vs the stock baseline (built-in weighted table + random pathing). Mode `combobench` / `runFullRunCombo` in `apps/one_combat.cpp`.
+- **Config:** 128 seeds, 4000 sims, ascension 0, clean build (0 crashes), 12 cores.
+- **Result:** baseline 4.7% win (6/128) / floor 28.2 / 1.3 HP  vs  **combo 14.8% win (19/128) / floor 29.9 / 7.1 HP**.
+- **Verdict:** ✅✅ Best result to date. Win rate **~3×** (19 vs 6 wins — significant, not noise), and the hero finishes far healthier (7.1 vs 1.3 HP). The gain is **super-additive**: greedy alone +2.3pp, pathing alone ~flat on wins, together +10pp. Mechanism = mutual unlock: greedy builds a deck strong enough to *win* the elites that pathing routes into, and winning elites (relics/rewards) snowballs the deck. Neither works well without the other. Compute ~unchanged (1.69 cpu-sec/run).
+- **Next:** higher ascension (does the synergy hold when HP/dilution bite?); sweep skipRatio for the *combo* (optimal may differ from the card-only 0.0 now that pathing changes HP trajectory); prioritize scaling/power cards in the draft weights.
+
+## 10. State-aware card value function  ✅
+- **What:** `evalCardValue(gc, card)` — transparent weighted sum over the full state: base `getObtainWeight` prior + curve/role need (boost under-represented attack/skill) + scaling bonus for Powers that grows with act (diminishing past ~2) + base-damage impact + defensive lean at low HP / high asc + upcoming-elite pressure (map scan via `rowsToNextElite`). Skip = value below a state-dependent bar (rises with deck size & ascension, halved in act 1). Mode `cardbench` policy 2 / `evalCardRewardPolicy`.
+- **Result (128 seeds, 4000 sims, known-RNG):** table 4.7% / f28.2 · greedy 7.0% / f29.4 · **eval 10.2% / f30.9 / 4.6 HP**. Monotonic: eval > greedy > table.
+- **Combo note:** eval+heuristic-path = 10.9%; greedy(never-skip)+path = 14.8%. Eval is the better card policy *alone*, but greedy+path had the bigger known-RNG synergy (see fair-play caveat — that synergy was largely a draw-peeking artifact).
+- **Verdict:** ✅ Context (curve, scaling, dilution, upcoming fights) beats a flat table.
+
+## 11. Fair-play (determinized / information-set) MCTS  ⚠️ (methodology fix)
+- **Why:** the built-in searcher is a *known-RNG solver* — rollouts follow the true future draw order, so it plays with information a real player lacks. All win rates above are optimistic.
+- **What:** added `search::g_fairPlay`. Per simulation, `determinize()` re-shuffles the draw pile (hand/discard/exhaust kept — the player knows those) and re-seeds `shuffleRng`/`cardRandomRng`, so the search averages over possible draws instead of exploiting one. Tree descent / leaf / rollout filter actions by `isValidAction` (legal set differs per world). Move selection commits only the **most-visited root child**, then re-searches (`playoutBattleFair`) — the full best line is world-specific. Toggle: trailing `1` arg to `cardbench`/`combobench`. Enemy intents are *not* re-randomized (still known) → this is "draw-fair", a partial fair-play.
+- **Result (128 seeds, 4000 sims, fair):** card-only table **0.8%** (was 4.7) · greedy **0.0%** (was 7.0) · eval **2.3%** (was 10.2). Combo: baseline **0.8%** vs eval+path **2.3%**.
+- **Verdict:** ⚠️ Known-RNG inflated win rates **~5×** — the numbers *were* distorted. Under fair play: (a) **eval's advantage over the table survives** (2.3 vs 0.8) — it's a real deckbuilding gain, not draw-peeking; (b) **greedy's edge and the big greedy+path synergy did NOT survive** (0.0%) — those were largely known-RNG artifacts; (c) pathing still adds depth not wins. Caveats: fair combat at 4000 sims is weak (dies ~act 2 — ISMCTS has higher variance, needs more sims) and ~6× slower per run (re-search every move); win counts are tiny (0-3/128) so treat as directional.
+- **Next:** more sims for fair combat (it's under-powered at 4000); optionally re-randomize enemy intents beyond the visible next one for full fair-play.
+
+## 12. Causal per-card value function (offline ML)  🔬
+- **Goal:** learn `value(state, card)` so 3-card picks are easy, *without hand-crafting synergy features* (raw representation, let the model find interactions).
+- **Label (causal, CRN):** at each card reward, clone the run and play the next **N=6 fights** twice under **Common Random Numbers** (identical draws/monsters) — once taking the card, once skipping. `advantage = labelScore(take) − labelScore(skip)` (≈ HP survived, big penalty for death). Averaged over **K=6** CRN seeds. Mode `causalgen`; `rolloutChoice` does the paired forks; shared skip baseline across candidates.
+- **Representation:** cheap scalars (act/floor/HP/gold/deckSize…) + candidate's own baseDamage/obtainWeight + **372 per-card-id deck counts** (`d0..d371`) + one-hot candidate id → **`HistGradientBoostingRegressor`** (`train_gbm.py`). The trees can split "candidate==X AND deck[Y]>0" to discover synergy with no hand features.
+- **Data-gen efficiency (key enabler):** the downstream `innerSims` was the cost sink *and* a noise source. Benchmark: dropping `innerSims` 800→**150** gave **5.5× speedup with label std ~unchanged** (23.0→25.4) — 800 sims to *measure survival* was pure waste; below ~150 the AI gets too weak and std climbs. Config `causalgen 3000 300 6 150 6 0.3` → 102k rows in 23 min (was ~3.3s/run → 0.47s/run).
+- **Result — the model:** with 3000 runs (100k rows), split by run:
+  - val R² = **0.034** (up 3.6× from 300 runs), top-1 pick accuracy **0.475** vs baseDamage 0.433 vs rarity 0.336 vs random 0.333.
+  - **Deck/synergy features *hurt*** (val R² 0.024 with them vs 0.034 without; higher train R² = overfit). Firm at 100k rows: **deck synergy is not learnable at this label SNR.**
+  - Label std scales ~1/√K (60.8→23 at K=6) ⇒ still **pure-noise regime**; true signal floor <17. More data helps modestly; the real lever is a less-noisy label (win-prob bootstrap), not more rollouts.
+- **Result — the artifact:** a trivial **per-card mean-advantage lookup table** (106 entries, shrunk λ=50) matches the full GBM (top-1 **0.477** vs 0.475). So *all* learnable signal is per-card average value — no state/synergy interaction. Exported to `build/card_adv_table.txt`; wireable into C++ with no ML runtime.
+- **StS-sanity (validates the pipeline):** top cards = immediate damage/AoE (Immolate +24, Anger/Bludgeon/Combust +16, Reaper/Shockwave/Uppercut +15); bottom = engine/synergy cards (Entrench −11, Dual Wield −9, Rupture/Dark Embrace/Brutality −8). It's a **raw-tempo evaluator** and *systematically undervalues build-around cards* — the same fact as "synergy not learnable". Notably it **disagrees with `getObtainWeight`** (which rates Barricade 85, Brutality/Flex 65) exactly on those synergy cards.
+- **Wired policies:** `cardbench` policy **4 = eval+causal** (`evalCardValue + α·centered_adv`, α CLI arg) and **5 = causal-table** (pure table, causally-correct skip: take iff adv>0). `fusedCardRewardPolicy` / `tableCardRewardPolicy`, table via `loadCardAdvTable`.
+- **A/B (400 seeds, 2500 sims, fair-play):** eval-function 1.5% / **f22.2** · **eval+causal 2.2% / f24.9** · causal-table 1.2% / **f29.4** (refs: table 0.2/f20.6, greedy 2.2/f21.5, learned-logistic 0.5/f16.2). Win counts tiny (~6–9/400 — fair combat is HP-starved at 2500 sims) so win% is directional; **avg floor is the high-resolution signal**.
+- **The money finding:** **fusing the causal table into the expert eval beats plain eval on both metrics** (win 1.5→2.2%, floor 22.2→**24.9**). And the standalone causal-table reaches by far the **deepest floors (29.4, +7 over eval)** but converts *fewer* to wins (1.2%) — it survives deep on tempo/damage but lacks the scaling/win-con cards it undervalues to close act-3 bosses. **Empirical confirmation of the thesis:** tempo gets you *to* the boss; synergy/scaling *wins* the boss. eval+causal is the sweet spot (expert eval supplies scaling valuation, causal table sharpens survival picks).
+- **Verdict:** 🔬✅ The causal signal is **real, StS-sane, and additive** — eval+causal is the new best card policy. But it's a pure *tempo* prior; the "learn synergy from card-ids" premise does not fire at this label SNR. Best path to synergy is a bootstrapped win-probability label, not brute-force rollout data.
+
+## 13. Deck-aware value function captures SYNERGY  ✅ (blind-spot cracked, offline)
+- **Goal:** fix §12's blind spot — the causal table is a flat per-card tempo prior that can't see "card X is good *because of my other cards.*"
+- **Approach:** learn a **deck-aware** value `V(state, deck-card-ids) → final floor` and use `V(deck+card) − V(deck)` as card value. Key vs the old failed logistic V (§ offline pipeline): that used only **aggregate** features (nCommon/nPower…) so it could only learn "commons bad"; this adds **per-card-id deck counts d0..d371**, letting `V` express card-card interactions. Final floor (mean 32.8, std 12.5) is a *dense* target — far better signal than 2% win/loss.
+- **Build:** `datagen` now appends `deckCountsCsv` to each row (deck-aware); new `carddump` mode emits id→type/rarity/obtainWeight/baseDamage (`build/card_meta.csv`). `train_value_deckaware.py`: GBM V + an "add-a-card" transform in feature space (bump deckSize/type/rarity/obtainSum/d[id]) to compute marginals offline. Data: `datagen 6000 1500` → 85k rows.
+- **V quality:** val R² **0.357** predicting final floor (vs causal-advantage R² 0.034) — a genuinely useful value function.
+- **Synergy proof (the result):** the per-card marginal **rises monotonically with the number of synergy partners in the deck**:
+  - Barricade (w/ Metallicize/FeelNoPain/Entrench/BodySlam): 0→−0.95, 1→−0.40, 2→−0.39, **3+→−0.07**
+  - Dark Embrace (w/ FeelNoPain/FireBreathing/SecondWind): 0→−2.33, 1→−1.34, 2→−0.71, **3+→−0.38**
+  - Rupture (w/ Brutality/Combust/Hemokinesis/Offering): 0→−1.42, 1→−0.54, 2→−0.19, **3+→+0.10** (flips positive!)
+  - Body Slam: 0→−1.56 → 1→−0.69 → 2→−0.52. Every probed engine card shows the correct gradient.
+- **corr(V-marginal, causal-tempo table) = +0.70** — they agree on damage but V's deck-awareness diverges exactly on the build-arounds (Corruption/Offering/Feed/ShrugItOff "rescued" vs the causal ranking).
+- **Caveats:** (1) magnitudes stay *modest* (rarely strongly positive) because the ε-greedy data has **few fully-committed archetype decks** (Barricade 3+ partners n=195 vs 0 partners n=12173) — V extrapolates cautiously into the sparse synergy region; archetype-richer data would sharpen it. (2) V is **correlational** (not causal); ε-exploration de-confounds partially. (3) **Not yet in the agent** — GBM inference in C++ is the open porting problem (candidate fixes: export trees, or switch V to a factorization machine that ports as embedding dot-products with no hand features).
+- **Online test (GBM bridged into the agent):** rather than port the GBM, `v_server.py` holds it and the C++ card policy (`serverCardRewardPolicy`, cardbench policy 6 `gbm-server`) queries it over a TCP socket at each pick (~13/run, so speed is fine; persistent per-thread sockets, thread-safe). Card value = `V(deck+card) − V(deck)` from the exact GBM. A/B (400 seeds, 2500 sims, fair-play):
+  - gbm-server skip@0 (take iff marginal>0): **0.8% / f25.2** — over-skips (muted marginals → many all-negative rewards → skip, which hurts at asc0).
+  - gbm-server **never-skip: 2.0% / f26.3**.
+  - vs eval 1.5%/f22.2 · eval+causal 2.2%/f24.9 · causal-table 1.2%/f29.4.
+- **Verdict:** ✅ offline / ➖ online. Synergy **is learnable** offline (unambiguous monotone gradient) — the blind spot is real and fixable. But bridged into the agent the deck-aware GBM only **matches** the best prior policy (never-skip 2.0% ≈ eval+causal 2.2%, deeper floors 26.3 vs 24.9) — no *win-rate* gain. Win counts are tiny (~6–9/400) so eval / eval+causal / gbm-server are **statistically indistinguishable on win%**; on the higher-resolution floor metric the ML policies (causal-table 29.4, gbm 26.3) reach deepest. Why no win jump: (1) synergy magnitudes are muted (ε-greedy data lacks committed-archetype decks); (2) V is correlational (not causal); (3) **fair-play combat at 2500 sims is the binding constraint** — a ~2% win ceiling compresses all card policies. Next levers, in priority: more combat sims to lift the ceiling (let deck quality matter), archetype-rich training data, causal-TD de-biasing, and fuse GBM into eval (à la eval+causal) rather than pure V-difference.
+- **Separation test (raise combat to 8000 sims, 150 seeds, fair):** eval 2.0% (3 wins)/f23.6 · eval+causal 2.7% (4)/f25.9 · **gbm-server 2.7% (4)/f27.0**. Higher sims lifted win% only marginally (eval 1.5→2.0, eval+causal 2.2→2.7) — the ceiling is still ~3%. gbm-server and eval+causal **tie on win% (4 vs 4 wins = noise)**; gbm reaches the deepest floor (27.0). **Conclusion: at asc0 the card-policy differences show up as ~1 floor of depth, not win-rate — and even 8000-sim fair combat can't finish enough runs to resolve win% (win counts stay 3–4/150).** The binding constraint is now **combat strength**, not card selection. To make deckbuilding pay off in win%, lift the combat ceiling first (depth-capped rollouts + leaf value — the queued speedup), *then* re-run these card A/Bs.
+
+## 14. Depth-capped combat rollouts + leaf value  ⏳ (WIP — turtle-equilibrium blocker)
+- **Goal:** lift the combat win ceiling (§13) by making each MCTS simulation cheaper — cap the random rollout length and, if it hits the cap on a non-terminal state, estimate the leaf value instead of playing act-3 fights to the end.
+- **Built:** `g_maxRolloutDepth` (env `STS_ROLLOUT_DEPTH`, 0=off/unlimited=original behavior), rollout break in `playoutRandom`, `evaluateLeafState` (terminal→`evaluateEndState`; non-terminal→estimate on the same scale), `updateFromPlayout` routed through it. **Default-off so uncapped paths are byte-identical to before.**
+- **Blocker (turtle equilibrium):** any leaf heuristic that values player HP creates an infinite-loop hazard. In a long high-HP fight (act 2/3 elite/boss) no rollout reaches victory within the cap, so the agent optimizes the leaf directly — and when the player can't meaningfully dent the enemy, **turtling (block, don't attack → keep HP, enemy HP stays high) scores higher than attacking (spend HP for tiny progress)**, so the agent blocks forever and the battle never terminates → hang. Removing the `turn` reward (which *also* rewarded stalling) was necessary but not sufficient.
+- **Status:** needs a leaf value where reducing enemy HP *always* raises the score (no turtle fixed point) while still crediting survival — a real bias/quality trade-off. Parked; not overnight-safe. Uncapped combat unaffected.
+
+## 15. Out-of-combat value policies: rest sites & shops (via the deck-aware V)  ✅ (shop) / ➖ (rest)
+Reuse the served card V (`v_xgb.json`, deck-aware, already includes `curHp`/`floor`/`gold`/`nRelics`)
+to make out-of-combat decisions as V-deltas. New server endpoints (`v_server.py`): `H` heal-gain,
+`U` upgrade-target, `X` removal-target, `S` shop knapsack. New app modes `restbench`/`shopbench`/`allbench`
+(server card picks + heuristic path fixed; A/B one policy vs the default agent). **Run needs
+`VNEVERSKIP=1 python3 v_server.py`.** All behind flags; default binary unchanged.
+- **Rest sites** (`restbench`): heal iff `V(deck,hp+restHeal)-V(deck,hp) >= thresh`, else upgrade the
+  deck's most-*valued* card (crude — model can't see per-card upgrade, so it targets Strike, a poor
+  upgrade). 512 seeds asc0 1000 sims: default 20.9% / f38.9 / hp8.2. Threshold sweep best at **~0.1–0.25**
+  (non-monotonic): thr0.1 **21.3% / f40.2 / hp8.5**; thr1.0 18.4% (under-heals → dies at bosses); thr0.0
+  15.6% (never upgrades). Default set to 0.15. **Verdict ➖ WASH on win% (+0.4pp = noise) but consistent
+  +1.1 floor.** Depth doesn't convert to wins — bottleneck is the crude upgrade target.
+- **Shops** (`shopbench`): server-side knapsack over {card buys, card removal, relic buys} maximizing
+  `V(final deck, final gold, final nRelics)` (gold is a feature, so V weighs spend vs keep). Card buys &
+  removal well-modeled; relics get a generic `nRelics` delta (can't rank identity); potions unmodeled
+  (never bought). Execute one purchase/call + re-optimize (robust to buy-triggered screens like bottling
+  relics — a multi-buy-in-one-call version aborted on those). 512 seeds: default 20.9% / f38.9 / hp8.2 →
+  **shop-V 23.0% / f40.8 / hp8.9 (+2.1pp win, +1.9 floor, +0.7 hp)**. **Verdict ✅ genuine win** (default
+  shop policy was bad: one relic then random). Removal + synergy-aware buying is the equity.
+- **Combined** (`allbench`, rest-V + shop-V): 512 seeds **23.4% / f41.8 / hp8.7 vs 20.9% / f38.9 / hp8.2
+  = +2.5pp win, +2.9 floor.** Floor gains stack; shop-V carries win rate, rest-V adds depth.
+- **Ops gotchas (cost real debugging):** (a) the shop/rest harness REWARDS branch must claim
+  gold/relic/potion before cards or the screen never clears → infinite CPU spin (looked like "slow
+  combat"); (b) if `v_server.py` is down, `vQuery` silently returns skip → 10-card deck → floor ~15 / 0
+  wins with no error — always confirm the server is listening before trusting a low-floor result.
+
+## 16. Card-reward skip policy = threshold on marginal V  ✅ (skip@0 best)
+Card picks (`serverCardRewardPolicy` → `vQuery`) now: the server returns `<best_idx> <best_marginal>`
+(marginal = `V(deck+card)-V(deck)` in final-floor units), and the C++ side skips iff `marginal <
+g_cardSkipThresh` (env `STS_SKIP_THR`). Puts the skip rule in one place, sweepable without a server
+restart. Sweep 512 seeds asc0 1000 sims (server-cards + heuristic-path, `skipbench`):
+
+| skip thr | never(-1e9) | **0** | 0.5 | 1 | 2 | 3 |
+|---|---|---|---|---|---|---|
+| win% | 20.9 | **22.1** | 11.3 | 8.2 | 4.3 | 1.8 |
+| floor | 38.9 | 38.4 | 36.1 | 34.0 | 28.7 | 22.1 |
+
+**Peak exactly at 0 (take iff the card raises expected final floor; skip only diluting/negative-marginal
+cards), a sharp cliff after.** Beats never-skip +1.2pp (modest/noise-level but the principled point).
+Any positive threshold starves the deck at asc0. **Default set to `g_cardSkipThresh=0`** (replaces the
+`VNEVERSKIP=1` hack — the server no longer decides skip). Also clarified: the earlier floor-15 collapses
+were purely *server-down* (silent skip), NOT the skip threshold — marginals are mostly positive, so
+skip@0 rarely fires. NOTE: at higher ascension, dilution is costlier, so the optimum likely shifts >0;
+re-sweep per ascension.
+
+## ⚠️ Build bug (2026-07-12) — invalidated some earlier measurements
+The full build names objects `src_combat_BattleContext.cpp.o`. Incremental rebuilds `ar r`'d members under a different basename (`BattleContext.o`), so the archive held **two** copies and the linker silently used the **stale original**. Consequences:
+- The `player.cc` fix (exp 5) and the tree-reuse code (exp 7) **were never in the binary** until a clean rebuild. The "cc fix works" and "reuse = no speedup, identical" claims were coincidence (nondeterministic crashes) / old code.
+- After a clean rebuild (`rm build/*.o build/libsts.a`; recompile all; `ar rcs`), verified: **`player.cc = gc.cc` is the single fix for ALL potion crashes** (garbage id 69/153 and the Watcher Stance Potion are the same root cause — uninitialized `cc` indexes `potionPool[cc][idx]` out of bounds). 0 crashes over 48 seeds.
+- **Pathing results (exp 6/6b) were measured on the pre-cc-fix substrate** (pathing logic itself lives in the always-recompiled app, but combat had the latent cc bug). Likely ~valid (the bug triggers rarely) but worth re-confirming on the clean build.
+- Lesson: incremental rebuild must reuse the archive's object name, or do a full clean rebuild; verify `ar t libsts.a | grep -c BattleContext` == 1.
+
+## Ideas queued (not yet tried)
+- **Depth-capped rollouts + leaf value estimate** — rollouts currently play to true battle-end; act-3 huge-HP fights make them long. Cap depth and score the leaf heuristically. Cuts cost *per simulation* (the dominant cost). ← highest-value speedup.
+- **Transposition / commutation canonicalization** — the searcher is a plain tree with no state hashing, so commuting card orders (Strike→Defend vs Defend→Strike) are explored redundantly (`k!` vs `k`). Merging them cuts effective branching.
+- **Improved static card-reward policy** — greedy/argmax over `Expert::getObtainWeight` vs the current roulette-wheel `weightedCardRewardPolicy`.
+- ~~**Shop spending policy**~~ — DONE (§15): V-knapsack shop buys/removal, +2.1pp win.
+- **Per-card-upgrade V** (`u0..u371` upgraded-counts + retrain) — would let the rest-site upgrade target and any upgrade decision pick *scaling* cards instead of Strike; likely turns §15's rest-site depth gain into wins.
+- **Learned value function** V(deck, relics, hp, act) — amortize the lookahead offline; also enables depth-capped combat rollouts.
+
+## §17 Rich value model V2 (relic/upgrade/potion-aware) — NEW CURRENT BEST
+Trained train_value_rich.py on vrich.csv (1.44M rows, 10k-sim on-policy). Features:
+all 448 with variance — core + d* + u*(upgrades) + r*(relics) + pot*(potions) +
+future/path. Val R^2 0.261 vs core-only-refit 0.206 (+0.056). Deployed via
+vFeatCsv()==richRow() (train/serve parity); v_server RAW=1005 richRow cols, model
+v_rich_xgb.json. Sane top relics: Brimstone +5.0, Dead Branch, Snecko Eye, Necro.
+bestBench 1000 sims / 512 seeds / asc0 (PAIRED vs old deck-only V):
+  old deck-only V : win 25.0%  floor 41.3
+  RICH V2         : win 31.6%  floor 40.7   (+6.6pp win, ~3sigma, 0 server errors)
+=> new baseline for future experiments.
+
+## §18 V2 follow-up fixes: true upgrade marginal + relic-identity shopping
+Both enabled by V2's u*/r* features. (1) upgrade_pick now flips u{cid}+1 for the
+real upgrade value (was V(deck)-V(deck-card) proxy). (2) shop_plan flips bought
+relic's r{id} (V2 has no nRelics -> old relic branch was a dead no-op; shop had
+stopped buying relics); C++ now sends shop relic ids.
+bestBench 1000 sims / 512 seeds / asc0 (paired):
+  rich V2 only              : win 31.6%  floor 40.7  endHp 14.2
+  V2 + upgrade + shop-relic  : win 38.7%  floor 42.0  endHp 18.4   (+7.1pp, all metrics up, 0 errs)
+=> new CURRENT BEST. Cumulative this session: 25.0% -> 38.7% (+13.7pp).
+
+## §19 Re-sweep skip + rest-V thresholds on V2 (512 seeds / 1000 sims, rest off unless noted)
+SKIP threshold (V2 shifted the optimum negative vs old model's 0.0):
+  never-skip 40.2 | -1.0 41.4 | -0.5 42.4 | -0.25 41.6 | 0.0 38.7 | 0.25 27.9 | 0.5 21.1 | 1.0 12.3   (win%)
+  => band -1.0..-0.25 all good; peak -0.5. V2 marginals read pessimistic -> fuller deck wins. New default = -0.5.
+REST-V (at skip=-0.5): OFF 42.4 | on0.0 34.6 | on0.1 40.2 | on0.15 40.2 | on0.25 40.6 | on0.5 38.7 | on1.0 40.6
+  => rest-V still HURTS win% (trades win for depth: floor 44+ but endHp/win down). Stays EXCLUDED.
+CONFIRM skip=-0.5 @1024 seeds: win 40.7% floor 42.7 endHp 19.2 (512-set 0..511 was 42.4; 2nd half harder).
+=> NEW BEST default: skip@-0.5 + heuristic path + shop-V + rich V2, rest-V off.
+
+## §20 Win-rate model + win-based rest policy (P(win) > floor-V for survival decisions)
+train_winrate.py -> build/v_win_xgb.json (target=won, binary:logistic, same rich feats).
+Val AUC 0.748 logloss 0.535. HP-sensitivity probe (heal 30% maxHp, P(win) gain by HP band):
+  0-20%:+.053 | 20-40%:+.078 | 40-60%:+.073 | 60-80%:+.054 | 80-100%:+.007  (~10x sharper low HP)
+=> survival-shaped signal the floor target lacks. Served as 2nd booster (VWIN) w/ HW/UW endpoints;
+C++ restWinPolicy = threshold-free (rest iff healGain_win >= best upgradeGain_win). g_restWin default ON.
+bestBench @512 (skip@-0.5, same seeds):  default rest 42.4% f43.2 hp19.8  ->  WIN-REST 47.3% f45.0 hp21.0  (+4.9pp, all up)
+bestBench @1024:                          default rest 40.7%             ->  WIN-REST 44.4% f44.5 hp20.5  (+3.7pp)
+=> NEW BEST. Principle: P(win)=true objective (sharp for survival/threshold), V_floor=denser proxy
+   (better for fine card ranking; P(win) saturates/near-0 gradient there). Route per decision.
+
+## §21 High-sim best-stack + difficulty-tiered combat sims (128 seeds asc0)
+Flat 50k best stack (skip@-0.5 + rich V2 + relic-shop + win-rest): win 81.2% floor49.5 hp46.8 34.6cpu-s/run
+  -> new 50k BEATS old policy's 100k (66.4%) by +15pp; OOC gains x search depth compound. (128 seeds SE~3.5pp)
+Tiered (STS_SIMS_NORMAL/ELITE/BOSS, pin elite/boss=50k, cut normal):
+  normal10k: 78.1% 24.1cpu | normal5k: 76.6% 25.2 | normal2k: 73.4% 24.6 | n5k/e25k/b50k: 75.0% 21.9
+FINDINGS (refutes naive tiering): (1) normal fights are NOT the compute sink — cpu plateaus ~24s once
+normal<=10k; elites+bosses dominate (longer fights = costlier sims). (2) "normal" too coarse — act3 monsters
+~ act1 elites, so cutting normal-sims costs win% monotonically. No free lunch: compute & importance are ALIGNED.
+=> real lever = CONVERGENCE-BASED early stopping inside the searcher (stop any fight once best line decided),
+   not static type tiers. Env knobs kept for manual compute/win trades (normal=10k = -3pp for -30% cpu).
+
+## §22 Convergence-based early stopping (searcher change) — ON the flat frontier, NO free lunch
+Added BattleScumSearcher2::searchToTotalAdaptive: cap at target sims but stop once bestActionValue
+(monotone) plateaus for `patience` sims past a `minSims` floor. Env STS_CONVERGE=1 / STS_CONV_PATIENCE / STS_CONV_MIN.
+128 seeds asc0, max 50k:  pat1000: 44.5%/2.07cpu | pat2000: 50.0%/2.91 | pat5000: 64.8%/4.90
+Matched-compute FLAT baseline:  flat2000: 50.0%/2.87 | flat4000: 60.9%/4.32
+=> convergence ~= flat at equal cpu (2.9cpu: 50.0 vs 50.0 identical; 4.9cpu: +1-2pp within 128-seed noise).
+FINDING (2nd combat-efficiency dead end after §21 tiering): combat compute & importance are ALIGNED because
+HP MARGIN COMPOUNDS -- deep search finds the least-HP-lost winning line, and that HP feeds every later fight +
+the win-rest policy. So no cheap subset of fights to skip; adaptive stopping rides the same cost/win frontier as
+a lower flat sim count. Real lever = cheaper/smarter PER-SIM (policy-guided MCTS / faster rollouts), not fewer sims.
+Knobs kept (STS_CONVERGE etc.) but OFF by default; no win at fixed compute.
+
+## §23 Profile + optimize combat inner loop ("faster rollouts") — no cheap safe win
+Profiled single-thread gprof. EASY fight (mcts, 3-turn): tree-selection heavy -> evaluateEdge looked 10%.
+Applied SAFE bit-identical micro-opt: hoist std::log(parentVisits)+evalRange out of the per-edge loop in
+selectBestEdgeToSearch (was recomputed ~13M times). Result BIT-IDENTICAL (mcts WIN 79/80 t3) but timing
+5.86->5.74s = within noise. LESSON: gprof-on-`-pg` over-attributes high-call-count fns (mcount per-call
+overhead that vanishes at -O2 inlining); evaluateEdge wasn't really 10%.
+HARD fight (evalcombat 8k/6): real cost = the std::function ACTION-QUEUE effect system --
+executeActions 11% + addToBot 9% (59M calls) + Action::execute/addToTop/popFront ~ together ~25%. Spread,
+no single hotspot. ActionFunction = std::function<void(BattleContext&)>; cards enqueue lambda effects drained
+each step. Meaningful speedup would need replacing std::function Actions with POD/tagged-union dispatch = big
+RISKY core-engine rewrite. Kept the evaluateEdge hoist (correct, harmless). CONCLUSION: safe micro-opt yields
+~0; combat throughput lever is really policy-guided MCTS (fewer sims) not a cheaper per-sim. Parked.
+
+## §24 V_win vs V_floor for CARD PICKS (A/B) — WASH (unlike rest, which win clearly wins)
+Added win-model card endpoint CW (P(win) marginal) + C++ g_cardWin/g_cardWinSkip (STS_CARD_WIN/_SKIP).
+Metric isolation @256 (never-skip, only metric differs): floor 41.4% vs WIN 48.0% (+6.6pp, looked real).
+Win-skip sweep @256: never 48.0 | -0.03 52.0 | -0.02 52.3 | -0.01 52.0 | -0.005 43.0(cliff). Peak 52.3 vs floor-champ 47.7.
+BUT 512-seed confirmation: floor-champ 47.3% vs win skip-0.02 46.5% -> TIED (floor marginally ahead). The 256
+lead was a lucky seed-0..255 draw (regression to mean). => card picks are a WASH; keep V_floor (tuned champ).
+Consistent w/ principle: P(win) wins for SURVIVAL/threshold decisions (rest +4.9pp robust) but ~ties V_floor for
+fine card RANKING (dense-proxy vs true-objective cancel). Win-metric plays safer (lower floor, higher endHp).
+CW infra kept env-gated OFF (g_cardWin default false); may matter at higher ascension. Defaults unchanged.
+
+## §25 V_win vs V_floor for SHOPS (A/B) — WASH (like cards; win helps only rest/survival)
+Added SW endpoint: shop_plan parameterized on model (V_floor or V_win) via _model_ctx; C++ g_shopWin (STS_SHOP_WIN).
+512 seeds / 1000 sims:  floor shop (champion) 47.3% f45.0 hp21.0  vs  WIN shop 47.3% f44.5 hp20.6  -> EXACT TIE.
+0 server errors. => shops are a wash; keep V_floor. SW infra kept env-gated OFF (g_shopWin default false).
+CONCLUSION of the V_win-vs-V_floor sweep (§24-25): P(win) beats V_floor ONLY for the survival/HP decision
+(rest, +4.9pp robust); for deck-VALUE ranking (card picks §24, shops §25) it's a WASH -- fine-grained ranking
+favors the denser floor signal, which cancels P(win)'s right-objective edge. So: win-rate for rest, floor for
+card/shop/deck value. Both models stay served (v_rich_xgb.json + v_win_xgb.json); CW/SW/UW win-endpoints kept for future (higher asc / events).
+
+================================================================================
+§26  ALPHAZERO-LITE: policy-guided combat MCTS (PUCT)  [2026-07-15]
+================================================================================
+GOAL: combat is search-limited (44%@1k -> 81%@50k). Every cheap-sims shortcut
+failed (§21-23). The remaining lever = a learned POLICY PRIOR so MCTS reaches the
+same strength at FEWER sims (AlphaZero-lite).
+
+PIPELINE (all in-process native C++ inference -- no per-sim sockets):
+ 1. Datagen: new `policygen` mode + g_onSearchComplete hook logs, at every root
+    decision, each edge's (state feats ++ action feats) with its VISIT COUNT and
+    the decision total. Shared extractor combatExtractPolicyFeatures (state block
+    = combat value feats; action block = card id/cost/upg/type/target + Expert
+    play-order & obtain-weight). 3000 runs @10k sims -> build/vpolicy.csv, 595,338
+    edge-rows / 90,571 decisions (6.6 edges/dec).
+ 2. Train: comparator net(state,action)->logit, target = log(visit+1) (sim budget
+    ~constant so it's a consistent logit; C++ softmaxes over a node's edges ->
+    prior). train_policy.py, GPU XGBoost, depth6. Val top-1 agreement 0.465 vs
+    0.189 uniform (2.5x). Exports compact tree text -> CombatValueNet(isPolicy=1).
+ 3. PUCT: Edge gains a cached `prior`; computeEdgePriors fills it at node
+    expansion (once/sim). selectBestEdgeToSearch swaps UCB's log term for
+    c_puct*P(a)*sqrt(Nparent)/(1+Nedge) when a policy net is loaded. Env
+    STS_POLICY=<trees> STS_CPUCT=<c>.
+
+RESULTS (evalcombat GremlinNob, starting deck, 512 seeds, in-distribution):
+  sims   UCB win%   PUCT-100/c2.5 win%     UCB hp   PUCT hp
+   25     74.0        90.8                  21.9     31.9
+   50     85.5        95.5                  28.3     36.6
+  100     91.8        97.7                  33.1     39.3
+  200     94.7        98.4                  36.1     42.1
+  500     98.6        99.4                  41.1     44.0
+ => PUCT@50 (95.5%) ~= UCB@200-500. **4-8x sim reduction for equal combat strength.**
+
+TREE-COUNT / SPEED (sims=50, 512 seeds; per-sim inference cost matters):
+  UCB 85.5% @0.53s | PUCT-50 93.9% @0.65s | PUCT-100 93.9%(c1.5)/95.5%(c2.5) @0.75s
+  | PUCT-200 96.3% @1.04s | PUCT-447 97.3% @1.65s. First ~50-100 trees capture
+  most of the gain; PUCT-100 dominates UCB on BOTH win% and wall-time. Deploy
+  artifact = build/policy_trees_c.txt (100 trees).
+C_PUCT sweep (PUCT-100, sims=50): 0.5->78.3 (under-explores, WORSE than UCB!),
+  1.0->90.4, 1.5->93.9, 2.5->95.5 (best), 4.0->95.7. Ultra-low sims need MORE
+  exploration atop the prior; c_puct=2.5 default. (Optimal c_puct likely falls as
+  sims rise -- revisit per operating point.)
+
+STATUS: combat-isolated thesis CONFIRMED. NEXT = validate on FULL runs with the
+good OOC stack (does PUCT@~150 combat sims match UCB@~1000 at ~5x speedup, or lift
+win% at equal sims?). Artifacts: build/policy.json (full), policy_trees.txt (447),
+policy_trees_c.txt (100, deploy), train_policy.py, truncate_trees.py, vpolicy.csv.
+
+--- §26 FULL-RUN validation + DEPLOY (good OOC stack, v_server, bestbench) ---
+Combat-isolated gains DO lift full-run win rate at EQUAL sims (but the low-sim
+speedup does NOT transfer -- hardest late fights still need the sims):
+  256 seeds:  UCB@1000 47.7% f45.4 hp21.4 | PUCT@1000 51.6% f46.1 hp23.1 (+3.9pp)
+              PUCT@250 34.0% (too few sims for act3/boss/act4 even with prior)
+  512 seeds (CONFIRM, same seeds): UCB@1000 47.3% f45.0 hp21.0 cpu2.90
+              -> PUCT@1000 c2.5 **51.6% f45.8 hp23.2** cpu3.20  = +4.3pp / +0.8f /
+              +2.2hp for +10% cpu. All three metrics up.
+DEFAULT ON (per "if it wins make it default"): one_combat auto-loads
+build/policy_trees_c.txt (100 trees, c_puct 2.5) for all PLAY modes; STS_POLICY=0
+disables, =1 uses full 447-tree net, =<path> overrides; auto-load skipped for
+policygen so base datasets stay UCB-generated. NEW CURRENT BEST = 51.6% @512.
+Takeaway: the payoff is STRENGTH-at-equal-sims, not fewer-sims -- full runs are
+bottlenecked by the hardest fights where the prior helps but can't replace search.
+NEXT ideas: (1) AlphaZero self-play iteration (regen vpolicy.csv WITH PUCT on ->
+retrain -> stronger prior); (2) per-budget c_puct (lower at high sims); (3) add a
+value head / leaf blend now that the prior concentrates search; (4) test PUCT@1500-
+2000 (combat is search-limited, prior makes each sim more valuable).
+
+--- §26 SIM-BUDGET curve: more time/combat + the PUCT<->UCB CROSSOVER ---
+Full-run win% (best OOC stack, asc0, v_server). PUCT = policy_trees_c.txt c2.5:
+  sims    PUCT      UCB      seeds
+  1000    51.6      47.3     512    <- prior default
+  2000    59.6      51.2     512    (+8.4pp PUCT edge)
+  3000    62.3       --      512
+  4000    64.1      62.9     256
+  6000    61.7       --      128 (noisy)
+ 10000    70.3       --      128
+ 14000    70.3       --      128
+ 20000    73.4      80.5     128    <- UCB OVERTAKES (+7pp)
+=> Spending MORE time/combat pays off strongly under PUCT up to ~3-4k sims
+   (51.6->62.3 @3k, +11pp). BEST PRACTICAL operating point = PUCT@2000-3000.
+=> CROSSOVER ~6-10k sims: beyond it plain UCB wins and reaches the ~80% ceiling
+   (UCB@20k 80.5%, matching the known 81%@50k), while fixed-c PUCT plateaus ~73%.
+c_puct @20k (128 seeds): 0.5->50.8, 1.0->66.4, 2.5->73.4 (MONOTONE UP: high sims
+   want MORE exploration, opposite of the low-sim regime where 0.5 under-explored).
+WHY PUCT caps below UCB at high sims: PUCT exploration ~ c*P*sqrt(Nparent)/(1+Nedge)
+   decays as 1/Nedge; UCB's ~sqrt(logN/(Nedge+1)) decays as 1/sqrt(Nedge) -- slower,
+   so UCB keeps probing alt moves at high visit counts while PUCT commits early. The
+   prior is a scarce-search ACCELERATOR, not a raise of the asymptote. To lift the
+   PUCT asymptote: value-net leaf (AlphaZero's other half; failed w/o a prior
+   [[combat-value-function]], retry now) or an exploration schedule, not c_puct.
+DEPLOY: default stays PUCT c2.5. Recommended run budget bumped guidance = 2000-3000
+   combat sims (was 1000): PUCT@3000 = 62.3% @512 vs old 47.3% (+15pp) for ~2x cpu.
+
+================================================================================
+§27  VALUE-NET LEAF (AlphaZero's other half): FAILS known-RNG, WORKS fair-play [2026-07-15]
+================================================================================
+Q: with the PUCT prior now in place, does a learned V_combat leaf (replacing/
+blending the random rollout) finally help? Infra already existed (g_useVNet,
+g_vnetAlpha, STS_VNET; blend value = a*Vnet + (1-a)*rollout, a>=1 skips rollout).
+Regenerated combat value data with STRONG PUCT play -> build/vcombat2.csv (92,878
+rows, 3000 runs); retrained -> v_combat2.json (val R^2 0.881) -> v_combat2_trees.txt.
+
+KNOWN-RNG (default, searcher peeks at true future): value net HURTS, monotone in a.
+  bestbench sims2000/256: PUCT-only 60.5% | +Vnet a0.3 52.7 | a0.5 49.6 | a0.7 40.2.
+  WHY: known-RNG rollout is random only in ACTION choice -- it plays vs the TRUE
+  fixed future, so it's near-ORACLE. A learned average can only blur it. Nothing to
+  denoise. (Explains the earlier "value net failed" result too -- it was never the
+  selection OR the leaf; the PRIOR was the only lever in known-RNG.)
+
+FAIR-PLAY (STS_FAIR=1, determinized/ISMCTS: each sim re-randomizes hidden draws ->
+genuinely NOISY rollout, the honest no-peek setting): value net HELPS, and the a
+ordering INVERTS (scarcer search -> lean MORE on the net).
+  evalcombat GremlinNob 256 seeds (win% saturates ~98%, read hp_end):
+   sims 50 : rollout 96.1%/35.9hp | +Vnet a0.5 96.9/39.3 | a0.7 **98.8/39.6** (+2.7pp/+3.7hp)
+   sims100 : rollout 98.0%/39.5   | a0.5 98.0/40.5        | a0.7 98.8/41.8 (+0.8pp/+2.3hp)
+   sims300 : rollout 98.4/40.9    | a0.5 98.8/42.2        | a1.0 97.7/41.1
+   sims1000: rollout 98.8/42.2    | a0.5 100.0/42.8       | a1.0 97.7/41.6
+  a0.5-0.7 blend > a1.0 (pure net): keep the noisy rollout as an anchor; the net
+  (known-RNG-trained, so optimistically BIASED for fair play) denoises but isn't
+  trusted alone. A fair-play-TRAINED net should do better.
+
+CONCLUSION: AlphaZero's value-net half does NOT transfer to our known-RNG solver
+(the rollout is already oracle) but DOES help in the honest FAIR-PLAY regime where
+rollouts are real Monte-Carlo. So the value net is a FAIR-PLAY tool. New env toggle
+STS_FAIR=1. NEXT (if pursuing honest play): regen combat value data UNDER fair play
+(unbiased labels), retrain, and likely regen the PRIOR under fair play too; then
+establish the fair-play win-rate baseline (expect well below known-RNG's 81% ceiling
+since the agent can no longer peek). Artifacts: vcombat2.csv, v_combat2*.
+
+--- §27 RICH combat features (relics + card identity/location) [2026-07-15] ---
+The combat state features were AGGREGATES only (counts/sums) -- no card identity,
+no card LOCATION, and ZERO relic info. So [Bash,Strike,Strike] looked identical to
+[Offering,LimitBreak,Feed], and a Corruption in-hand vs in-draw vs exhausted looked
+the same. Same blind spot the rich OOC model fixed. Enriched combatExtractFeatures
+(single source of truth -> both value & policy nets, train/serve parity preserved):
+  + 128 relic-presence (r0..r127; hasRelicRuntime only valid <128)
+  + per-card-id counts x 4 piles: hd*/dr*/ds*/ex* (hand/draw/discard/exhaust),
+    371 card ids each.
+  = 50 aggregates + 128 relics + 1484 card-location = 1662 combat feats (was 50);
+  policy = +14 action = 1676.
+COST GUARD: filling 1662 feats/leaf tripled the hot path (2.86->9.05 cpu/run). Added
+g_richCombatFeatures gate: combatExtractFeatures fills the wide block ONLY when a
+loaded model reads it (load() auto-detects a rich feature in sel[]) or during datagen
+(forced). Legacy narrow nets => narrow fast path (verified back to 2.73 cpu/run).
+computeEdgePriors also now extracts the shared wide STATE once/node and refills only
+the 14 action feats per edge (was re-extracting per edge). Old policy_trees_c.txt
+still loads (its names are a subset) so deployed PUCT is unaffected.
+(Debug note: a stray orphaned bench process pinning all cores at 1082% masqueraded
+as a code slowdown -- always check `ps --sort=-pcpu` before trusting cpu_sec/run.)
+NEXT: fair-play rich datagen -> retrain rich fair V_combat + prior -> re-run the
+fair-play value-net A/B (does richness beat the crude net's +3.7hp?).
+
+--- §27 COMPLETE combat features + rich FAIR value net (2026-07-15) ---
+User pushed to record the FULL combat state, not just relics/cards. Added to
+combatExtractFeatures (now 1770 feats, was 50; gated by g_richCombatFeatures so the
+deployed narrow path stays 2.1 cpu/run):
+  enemy INTENT (per-monster predicted dmg + attacking) + aggregate incomingDmg;
+  per-monster id/hp/block/str/vuln/weak/poison (5 slots); potions by id (44);
+  gold; potionCapacity; cards/attacks/skillsPlayedThisTurn; 8 persistent relic
+  counters (Nunchaku/PenNib/InkBottle/HappyFlower/IncenseBurner/Inserter/Sundial/
+  Panache). Per-turn counter relics (Kunai/Shuriken/Fan/LetterOpener) covered by the
+  play-counts. Gold IS a live combat feature (Hand of Greed etc.); only truly-inert
+  state (other-class stances/orbs) omitted.
+FAIR datagen: combatgen STS_FAIR=1, 2000 runs @1500 sims (killed the last ~200 hung
+seeds -- robustness todo #1 -- but 379,891 rows was plenty). Retrain -> v_combat_fair
+val R^2 **0.912** (best ever; crude 0.886, rich-knownRNG 0.881). 740 non-const feats.
+FAIR-PLAY A/B (evalcombat GremlinNob, 256 seeds), rollout vs +richV leaf:
+   sims 25: rollout 92.2%/32.7hp | +richV a0.7 99.2/42.1 | a1.0 99.2/42.1 (+7pp/+9.4hp)
+   sims 50: rollout 96.1%/35.9   | a0.7 99.6/43.1                        (+3.5pp/+7.2hp)
+   sims100: rollout 98.0%/39.5   | a0.7 100/43.3                         (+2pp/+3.8hp)
+ => RICH fair value net ~DOUBLES the crude net's gain (+7.2hp vs +3.7hp @50). And
+    PURE-net a1.0 now works (crude a1.0 always HURT): the complete net is accurate
+    enough to REPLACE the rollout -> ~1000-sim-rollout quality (42hp) at 25 sims.
+    Textbook AlphaZero value head, unlocked by (a) fair play (noisy rollouts to beat)
+    + (b) complete features. Artifacts: v_combat_fair.json/_trees.txt, vcombat_fair.csv.
+NEXT: fair prior (policygen STS_FAIR) + fair-play FULL-RUN baseline, then value net on
+full runs (does the isolated +9hp translate to fair-play win%?).
+
+## §28 Fair-play FULL-RUN validation — the value net TRANSLATES (2026-07-15)
+Built fair prior (policygen STS_FAIR=1, 800 runs -> vpolicy_fair.csv 692k rows;
+train_policy -> v_policy_fair.json top-1 0.474; truncated -> policy_fair_trees_c.txt 100t).
+Then fair-play full-run A/B (128 seeds, 1000 sims, OOC held constant, v_server up):
+  A fair rollout baseline           win 18.8  floor 37.3  hp 8.3   (5 cpu/run)
+  B +fair prior only                win 16.4  floor 38.4  hp 8.9   (wash/neg)
+  C +prior +vnet a0.3               win 24.2  floor 39.5  hp 11.4
+  D +prior +vnet a0.5               win 25.0  floor 39.0  hp 12.2
+  E +prior +vnet a0.7               win 21.1  floor 38.3  hp 9.3
+  F vnet-only a0.3 (NO prior)       win 25.0  floor 40.8  hp 12.4  (BEST, 26 cpu/run)
+  G vnet-only a0.5 (NO prior)       win 19.5  floor 38.3  hp 7.6
+VERDICT: the isolated +9hp fair value net TRANSLATES to full runs: +6.2pp win /
++3.5 floor / +4 hp over fair baseline. **The PRIOR is dead weight in fair play**
+(B wash; F==D at half cost). a0.3 is the sweet spot without the prior (a0.5 overshoots
+-> leans too hard on net). Caveat: 128-seed SE ~3.8pp (18.8 vs 25.0 = 1.6sigma);
+floor/hp gains consistent across all vnet arms corroborate. Cost: vnet leaf = 26 vs 5
+cpu/run (1780-feat XGBoost walk every leaf) -> truncate trees next. Best fair config =
+STS_FAIR=1 STS_POLICY=0 STS_VNET=build/v_combat_fair_trees.txt STS_VNET_ALPHA=0.3.
+NEXT: 512-seed confirm (baseline vs F); truncate value trees for speed; low-sim arm.
+
+## §28b Value-net truncation — 100 trees, 3.5x faster, gain intact (2026-07-15)
+Full fair value net = 1500 trees @ 21.7 cpu/run (fair full-run). Truncated (truncate_trees.py):
+  trees   full-run cpu/run    isolated GremlinNob 256s@50sims (fair, a0.3)
+  1500    21.7                win 100.0  hp 40.9   (vs rollout-only 96.1 / 35.9)
+   400     8.2                --
+   200     6.7                win 98.4   hp 39.8
+   100     6.2  (3.5x)        win 99.2   hp 40.0   <- PICK
+100 trees keeps +3.1pp/+4.1hp of the full net's +3.9pp/+5.0hp at leaf cost 6.2 vs 5.0
+rollout (~free). DEPLOY fair vnet = build/v_combat_fair_100.txt. 512-seed confirm now cheap
+(~4.5min/arm). Accuracy plateau mirrors the crude-net/policy-net ~100-tree plateau.
+
+## §29 Boss-aware drafting from EXISTING data (no datagen) (2026-07-15)
+Autopsy: default-OOC agent 0.6% win vs server-V 25% (40x) => deckbuilding dominates.
+Deaths cluster at ACT BOSSES (median death floor 16; 62/159 at A1 boss).
+DIAGNOSIS: v_rich HAS bossId + nextFight* features but NEAR-IGNORES them -- boss-family
+= 1.38% of gain (bossId 0.51%); it learned generic deck->finalFloor, not deck-vs-THIS-boss.
+=> a TARGET problem, not a data problem. No new datagen needed (vrich.csv has bossId + finalFloor).
+FIX: train_boss_survival.py -> P(pass next act boss | state), label = finalFloor > bossFloor[act]
+(act1=17,act2=34,act3=50) on the SAME rows. val AUC 0.9106. boss-family importance ~2x (2.54%).
+Card marginals are boss-appropriate: TOP Panache/DemonForm/Apotheosis/Mayhem/Reaper (scaling),
+BOTTOM curses+dead cards. vs v_rich near-boss (Spearman 0.855 = agrees but re-ranks): drafts UP
+DemonForm/LimitBreak/FeelNoPain/FireBreathing (sustained scaling), DOWN Immolate/Feed/Bludgeon
+(burst-AoE, good vs hordes not a lone boss). = the right scaling-over-burst shift before a boss.
+build/v_boss_xgb.json. Rollout-draft prototype (§ prior) HURT (-4.7pp, noisy 2-future/150-sim
+estimator < trained V); boss-V marginal is the cheaper inference-free replacement.
+NEXT: serve v_boss, use its marginal for near-boss card picks, 512-seed A/B (128 too noisy;
+also truncated-100 vnet may cost vs full-1500 on full runs -- confirm on 512).
+
+## §30 Boss-V blend draft A/B + progress tracker (2026-07-15)
+Wired v_boss into near-boss drafting: v_server CB op computes v_rich & v_boss card
+marginals, z-normalizes each across candidates (floors vs prob scale), blends
+(1-w)*zr+w*zb, returns chosen card's v_rich marginal (skip logic unchanged). C++ sends
+CB only within STS_BOSS_DRAFT_ROWS(=3) of a boss (STS_BOSS_V=1, STS_BOSS_V_W=w). ~free.
+512-seed fair A/B (vnet100 a0.3):
+  control (v_rich)   win 17.4  floor 36.8  hp 6.6
+  boss-V w=0.3       win 18.4  floor 36.9  hp 7.2   <- best
+  boss-V w=0.5       win 18.0  floor 37.0  hp 6.8
+  boss-V w=0.7       win 18.0  floor 36.8  hp 7.4
+READ: small CONSISTENT positive (all 3 weights > control, +0.6..1.0pp, hp +0.6..0.8) but
+within 512-seed noise (SE_diff ~2.4pp; +1.0pp = 0.4sigma). Matches the 0.855 model overlap:
+only a few near-boss picks change. w=0.3 best (light touch). Reasonable KEEP at ~free cost,
+NOT the big lever. To amplify: widen gate rows, or sharpen boss model (per-boss / condition
+on reaching boss). NOTE control 17.4% @512 vs old arm-F 25% @128 = mostly 128-seed NOISE
+(truncation confound still unconfirmed; full-1500 @512 arm would isolate it).
+Also: BenchProgress live \r status line (n/total, running win%/floor/hp, elapsed+eta, TTY-only
+so logs stay clean) now default in bestBench.
+
+## §31 CORRECTION: more combat-net trees = higher full-run win% (2026-07-16)
+Direct test (128 seeds, fair, vnet-only a0.3), same seeds, only tree count varies:
+  100 trees   win 16.4  floor 35.6  hp 6.6   (6.9 cpu/run)
+  200 trees   win 14.8  floor 36.0  hp 6.8   (7.7)     [win% dip = noise]
+  400 trees   win 19.5  floor 38.4  hp 9.4   (10.0)
+  1500 trees  win 25.0  floor 40.8  hp 12.4  (27.1)
+FLOOR + HP are MONOTONIC in tree count (low-variance corroboration): full net is
+genuinely better, +8.6pp/+5.2floor/+5.8hp over 100. CORRECTS §28b + the earlier
+claim that "25%@128 vs 17%@512 was mostly seed noise" -- it was MOSTLY TRUNCATION.
+The isolated GremlinNob test (100~=1500) was MISLEADING: per-fight ~equal, but small
+degradation COMPOUNDS over ~30 fights/run. DEPLOY = full 1500-tree v_combat_fair_trees.txt
+(accept 4.5x combat cpu for the win%); 400 = fallback middle (+3pp @1.6x). Overnight
+datagen should use >=400-tree net for better finalFloor labels (was 100).
+
+## §32 Overnight fresh-data OOC models: NEGATIVE (volume-starved) (2026-07-16)
+Ran datagen2 with the FULL 1500-tree fair combat net (best labels) ~10h -> vrich2.csv
+393,635 rows / 26,403 runs (vs old vrich 2.9GB ~6x more). Retrained v_rich2 (finalFloor
+R^2 0.352) + v_boss2 (AUC 0.827 on ITS OWN noisier val split -- not comparable to old 0.911).
+Head-to-head 128-seed fair A/B (full net + boss-V w0.3), only OOC models swapped:
+  OLD v_rich/v_boss   win 27.3  floor 40.6  hp 12.0
+  NEW v_rich2/v_boss2 win 18.8  floor 38.7  hp 6.7
+=> NEW is -8.5pp/-1.9floor/-5.3hp, consistent across metrics = REAL degradation, not noise.
+CAUSE: data VOLUME. 394k rows too few vs old 2.9GB -> value model data-starved (rare
+cards/decks). Better strong-agent labels did NOT compensate for ~6x less coverage. KEEP the
+OLD models deployed. To make fresh-data retrain win: need multiple nights to reach comparable
+volume (./datagen2_loop.sh 26000 300000 continues, disjoint seeds), THEN retrain. Uncertain
+payoff. Side result: arm A 27.3% reconfirms FULL-net deploy (~25-27% @128). Assets kept:
+v_rich2_xgb.json, v_boss2_xgb.json, vrich2.csv (append more nights before using).
+
+## 33. V-informed pathing (deck-strength modulation)  ➖ (small, ~free, default off)
+- **What:** the map heuristic (`roomValue`/`chooseMapAction`) is deck-BLIND. The next-fight
+  features are a shared encounter QUEUE (route-independent at a decision) so V(state) is ~flat
+  across immediate children -> per-child V scoring gives no signal. Instead use V(state) as a
+  deck-STRENGTH scalar: server op `VS` returns raw V(state)=predFloor; C++ `vStateRaw` (1 query/
+  floor) -> `aggr = clamp((predFloor - bossFloor[act]) / 8, -1, +1)`. aggr>0 (comfortably clearing
+  the act) scales elites/fights UP + rest/shop/event DOWN; aggr<0 the reverse. Env STS_VPATH=1,
+  gain STS_VPATH_K (default 0.4). Off = byte-identical to the old heuristic.
+- **256-seed (1000 sims):** off 51.6% / f46.1 / 23.1hp -> k=0.4 **56.6%** / 26.8hp (+5.0pp) ; k=0.7 50.0% (overshoot).
+- **512-seed confirm:** off 51.6 / f45.8 / 23.3 -> k=0.3 **53.7** / 24.5 ; k=0.4 **53.7** / f46.0 / 24.8 ; k=0.5 52.7.
+- **Verdict:** ➖ the 256-seed +5pp was mostly NOISE (regressed to +2.1pp @512 = ~1sigma). SMALL
+  consistent positive though: all V-arms > baseline, end-HP +1.2..1.5 (most stable), coherent
+  dose-response (peak k=0.3-0.4, down by 0.5/0.7). Same class as boss-V blend: marginal ~free
+  keeper behind STS_VPATH (DEFAULT OFF), k~0.35. NOT the big lever; needs 1024-seed confirm before
+  default-on. Confirms the standing "pathing = small lever" finding (exp 6/6b) — NOT overturned.
+
+## 34. Deck-set NN win-value model (DeepSets card embeddings)  ➖ (ties GBM; data-ceiling)
+- **What:** test the thesis that GBM is synergy-blind and a SET NN over card embeddings should
+  model card interactions better. train_deckset.py: deck vector = (d-u)@E_base + u@E_up (sum-pool
+  == counts@E, no token expansion), + relic/potion/boss embeddings + z-normed scalars -> MLP ->
+  sigmoid P(win). Target=won, GroupShuffleSplit(0.15,rs=0) by seed (SAME split as v_win GBM).
+  torch 2.5.1+cu121, RTX 3060 Ti, ~2s/epoch, 126k params.
+- **Result:** v1 (dropout 0.1, lr 2e-3) overfit hard (peak 0.737@ep4 then collapse). v2 (dropout
+  0.3 everywhere incl pooled deck vec, lr 1e-3, wd 2e-4, best-ckpt) converged clean ->
+  **val AUC 0.7497 @ep13 == GBM 0.7482 (TIE).** Two independent model classes hit the same ~0.75
+  => 0.75 is a DATA/LABEL CEILING, not a model limit (run-level `won` label, ~57k effective indep
+  runs). Synergy hypothesis did NOT beat GBM on absolute P(win) AUC.
+- **Ensemble (eval_ensemble.py, streamed val-only, same rows):** GBM 0.7482 / NN 0.7476 / pred-corr
+  0.912. Blend w=0.5 **AUC 0.7536 (+0.0054)**, logloss 0.5348->0.5308. Small but REAL orthogonal
+  signal (different errors). Deployable via v_server blend (both models Python-side) if wanted.
+- **Caveat / real open question:** absolute-P(win) AUC does NOT measure DRAFT MARGINAL quality.
+  The NN's synergy payoff (if any) is in V(deck+card)-V(deck) depending on deck composition, which
+  a tied absolute AUC can hide. The meaningful test is a full-run A/B serving NN (or blend) card
+  MARGINALS vs GBM -- not yet run.
+- **OPS NOTE:** loading vrich.csv float32 = ~5.8GB; running >1 loader concurrently thrashed swap and
+  OOM-killed the user's IDE. eval_ensemble.py rewritten to stream val-only chunks (<1GB peak);
+  train_deckset.py guarded under __main__ so importing DeckSet does NOT re-load the CSV. Keep to ONE
+  CSV loader at a time.
+
+### 34b. Deck-set NN card-MARGINAL full-run A/B  ➖ (does NOT beat v_rich drafting)
+- **What:** the deciding test the absolute-AUC tie couldn't settle — does the NN's synergy-aware
+  card marginal V(deck+card)-V(deck) improve DRAFTING? Served CN op in v_server (pure NN or
+  w*NN+(1-w)*v_win), C++ STS_CARD_NN=1 / _W / _SKIP. A/B vs deployed v_rich floor drafting.
+- **Skip-sensitive:** NN P(win) marginals are dilution-shifted (adding a card often lowers P(win)),
+  so skip@0 skips too much (thin deck, floor 41). Swept skip on 32 seeds: -0.005 gave 62.5% (!!).
+- **BUT 128-seed = the 32-seed spike was NOISE.** baseline 47.7%/f46.6/22.8hp ; NN skip=-0.005
+  44.5/f39.1 ; NN skip=-0.02 **49.2**/f43.1 ; blend0.5 46.1/f40.3. Best NN arm TIES on win (49.2 vs
+  47.7, within 4.4pp SE) but is -3..-7 FLOOR on every arm: same win%, decks lose EARLIER when they
+  lose = worse mid-run decks. Also the skip=-0.005 "win" at 32 seeds was itself noise-overfit
+  (-0.02 better at 128). +2hp on survivors doesn't compensate.
+- **Verdict:** ➖ NN drafting does NOT beat v_rich. Triangulates with the AUC tie (§34) + ensemble
+  +0.005 -> the deck-set NN is a consistent NEGATIVE for deckbuilding; synergy hypothesis doesn't
+  pay off => 0.75 is a DATA/LABEL ceiling, not model capacity. DEPLOY UNCHANGED (default path still
+  v_rich; NN only via STS_CARD_NN env). To beat the ceiling: more runs or a better LABEL (bootstrapped
+  /TD win value), not a fancier model. v_server now also loads v_deckset.pt (harmless; +~torch mem).
+
+## 35. Dynamic potion-saving policy  ➖ (hurts both regimes; shelved)
+- **Motivation:** data probe showed potions ARE used (~5.5/run, ~1% of runs never use one, mean
+  potionCount 0.64 of ~3 cap, 46% at zero -> NO hoarding). The combat MCTS is per-fight MYOPIC
+  (never sees future fights), so it spends potions on easy fights with no incentive to bank them
+  for elites/bosses where we die. Hypothesis: saving potions for hard fights helps.
+- **Design:** evaluateEndState already values a KEPT potion at 4 HP-equiv (drinking costs ~4 HP);
+  made that DYNAMIC via search::g_potionKeepValue set per-fight by potionKeepValue(gc):
+  ELITE/BOSS room -> keep=1 (spend); else if a hard fight (nearest elite/boss) within WINDOW rows ->
+  keep = 4 + BONUS*proximity*scarcity where scarcity = 1 - (hardDist * pDrop)/DESIRED and
+  pDrop = WhiteBeastStatue?1:potionChance/100 (refill-aware, per user's potion-chance point).
+  Env STS_POTION_SAVE=1 (+WINDOW/BONUS/SPEND/DESIRED). Verified correct via trace (hoards keep 7->21
+  as hardDist 5->1 in monster fights, keep=1.0 in elites/bosses).
+- **Result (128 seeds known-RNG, 1000 sims):** baseline 47.7%/f46.6/22.8hp ; save-default 41.4
+  /45.7/20.3 ; bonus25 42.2/44.8/22.9 ; window3 39.1/45.7/19.7 = **-5..-9pp, ALL configs worse.**
+- **Result (64 seeds FAIR-PLAY):** baseline 21.9%/f36.8/8.4 ; save-default 18.8/36.9/6.0 ;
+  bonus25 18.8/f36.5/**11.2hp** = -3.1pp (~0.6sigma). Strong arm = MORE end-HP, FEWER wins (the same
+  healthier-survivors-fewer-wins signature as the NN draft §34b) = shifts HP<->win tradeoff the WRONG way.
+- **Verdict:** ➖ hurts win% in BOTH regimes; gradient points toward baseline (no saving) => optimum
+  is ~no saving. 4th combat-search bias to fail for the SAME reason (after depth-cap, TT, known-RNG
+  learned-leaf): the per-fight search already makes locally-good potion decisions; forcing hoarding
+  costs approach-fight HP/wins that banked potions don't repay. Deaths at bosses = a DECK problem,
+  not potion-timing. SHELVED (STS_POTION_SAVE default off; g_potionKeepValue defaults 4 = unchanged).
+
+## 36. Fairy in a Bottle bug (found via runtrace)  ✅ (real sim bug, fixed)
+- **Tool:** new `runtrace <seed> <sims> <asc>` mode (STS_FAIR for fair-play) prints a per-map-node
+  human trace (room, encounter/event, HP/gold, deck delta + full deck, relics, potions), draft
+  OPTIONS + v_rich marginals, and can refight a floor N times (STS_REFIGHT_FLOOR/_N) to separate
+  luck from a bad fight model. Built to audit decisions vs human game knowledge.
+- **Bug:** BattleScumSearcher2::enumeratePotionActions emitted a "use" action for FAIRY_POTION
+  (target -1). Fairy is NOT usable/discardable in StS -- it auto-procs on lethal in
+  Player::wouldDie (heal 30% maxHp). drinkPotion's Fairy case is assert(false), but libsts.a is
+  built NDEBUG so it silently discarded the Fairy and did nothing -> the search could THROW AWAY
+  the auto-revive for zero benefit. (SimpleAgent.canDrink and isValidPotionAction already excluded
+  Fairy; the MCTS enumerator was the outlier.) Confirmed via refight: Looter fight used the Fairy
+  30/30 times.
+- **Fix:** `continue` (enumerate no action) for FAIRY_POTION. Verified: same refight now uses it
+  0/30. Strictly removes a dominated move (can only help/neutral); deployed (libsts rebuilt).
+- **Audit findings (seed 0, fair-play, DEATH F16 Slime Boss):** (1) low-marginal DRAFT takes:
+  Rupture taken at v_rich marginal +0.05 (skip bar -0.5) -- the floor-value model doesn't penalize
+  deck BLOAT so near-zero filler gets slurped (human skips). (2) Lagavulin -44hp was NOT unlucky:
+  refight 30x = 0 deaths, endHP med 32 (our 36 typical) -- deck just pays HP. (3) Slime Boss from
+  52/74 = 29/30 DEATHS (~unwinnable): a DECK problem, not just the pre-boss smith-over-heal rest.
+  Everything traces to a weak/bloated deck = the known deckbuilding+label ceiling.
+
+## 37. Self-play training loop — Phase 0 (harness)  ✅ (validated end-to-end)
+- **Goal (user-directed):** AlphaZero-style self-play to break the deckbuilding data/label ceiling
+  WITHOUT hand knowledge (user explicitly refused expert tiers / bloat penalties — model must learn
+  it from outcomes). ONE unified fair-play meta model V_win(state)->P(win) drives card/shop/rest
+  (all = "which resulting state has higher V"; no separate shop/rest models). Fair-play throughout
+  so the fight model is realistic.
+- **Built:** `selfplay/loop.sh` (resumable loop) + `selfplay/status.sh` (console dashboard).
+  Per iter: fair-play datagen N runs -> retrain V_win on last WINDOW iters -> GATE candidate vs
+  current on held-out seeds -> promote iff cand win% >= current -> checkpoint. Resumable via
+  selfplay/state.env (Ctrl-C anytime; re-run continues). Atomic promotion; win-count guard (skip
+  retrain if <20 wins/one class); gate seeds 0..GATE held-out (self-play seeds >=1e6).
+- **Validated (2 iters @1000 sims):** datagen 150 fair runs->2026 rows; train val AUC 0.76; GATE
+  correctly REJECTED the under-trained candidate (0.0% vs current 16.7%) -> current kept, no
+  regression. Full pipeline + resume + dashboard confirmed working.
+- **Bugs fixed:** datagen2 writes no header on a fresh file (seed vrich header first); bestbench
+  prints TWO 'BEST' lines (parse 'win%='); single-class train crash (loop-level win guard).
+- **NEXT (Phase 1):** wire COMBAT model retraining (v_combat_fair value net + policy prior) into the
+  loop; scale to thousands of runs/iter (overnight-scale, fair-play ~6x slower); tune replay WINDOW
+  (volume-vs-freshness risk, cf §32). Note: unified-V_win OOC start is ~slightly weaker than deployed
+  v_rich floor drafting, so iter-0 under-performs 51.6%; the loop must climb from there.
+
+## 38. Self-play loop — Phase 1 (combat retraining wired)  ✅ (validated end-to-end)
+- **What:** extended the Phase-0 loop to retrain the FULL agent, not just meta V_win. Now each iter
+  retrains 3 heads and gates the whole stack all-or-nothing: meta V_win + combat VALUE NET
+  (combatgen->train_value_combat->export_combat_model) + POLICY PRIOR (policygen->train_policy).
+  Self-play datagen + gate use the current stack (STS_VNET=current value trees + STS_POLICY=current
+  prior, cenv() helper). COMBAT=1 default (0 = meta-only Phase-0), POLICY_RETRAIN, VNET_TREES, POLICY_SIMS.
+- **Fixes:** datagen2/combatgen/policygen wrote a header only `if(!append)` and self-play seeds>=1e6
+  -> always "append" -> no header -> train KeyError. Now write header when file empty (f.tellp()==0),
+  backward-compatible. train_winrate now saves the model BEFORE computing AUC so a single-class val
+  split (common in early self-play) can't crash away the trained model.
+- **Validated (1 iter @300 sims, 60 runs):** 3 datagen passes (meta 882 / combat 14868 / policy 59888
+  rows, all headered); value net retrained R^2 0.827 -> exported & LOADS (200t, "[V_combat leaf value
+  ON ...]"); policy retrained -> LOADS (576t, "[policy PUCT ON ...]"); gate measured full candidate
+  stack (cand 0% vs curr 6.2% -> correctly NOT promoted at tiny scale). Atomic all-or-nothing promote.
+- **Cost note:** datagen now = 3 full-run passes AND uses the value-net leaf (~5x combat cost) -> much
+  slower/iter; overnight-scale with thousands of runs. Loop is resumable + trackable as before.
+- **NEXT:** kick a real run at scale (RUNS_PER_ITER in the thousands); consider per-head gating if
+  all-or-nothing stalls; tune replay WINDOW (volume-vs-freshness, cf §32).
+
+## 39. Self-play loop — combined datagen + per-side gating  ✅
+- **Combined datagen (fightgen):** new C++ mode `fightgen nSeeds sims asc eps valOut polOut seedOff`
+  installs BOTH hooks (g_onCombatDecision value snapshots + g_onSearchComplete visit-π) in ONE play
+  pass -> emits the value (endHp) AND policy CSVs perfectly aligned. Self-play datagen is now 2
+  full-run passes (meta + fightgen) instead of 3 -> ~2x combat cost, not 3x.
+- **Per-side gating (user's "bail-out"):** meta and combat sides A/B'd INDEPENDENTLY against the same
+  baseline, each holding the OTHER side at current: promote meta iff (cand_vwin + cur_combat) >=
+  current; promote combat iff (cur_vwin + cand_combat) >= current. A stuck side never blocks the
+  other. History now: base / meta / combat win% + per-side promote flags.
+- **Validated (1 iter @300 sims):** fightgen -> combat 14868 + policy 63723 rows; value net R^2 0.829,
+  policy trained, both load; gate: base 6.2%, meta cand 0.0% (rejected), combat cand 6.2% (PROMOTED
+  independently) — the meta side stuck while combat advanced, exactly the intended decoupling.
+
+## 40. Boss-relic + Neow picks via V_win  ➖ (wired; not a standalone win at current model)
+- **What:** the default heuristic used to own boss-relic + Neow picks (never model-driven -> a gap for
+  self-play, since the model can't learn nodes the heuristic controls). Wired both through V_win:
+  server "VW" op = raw V_win(state); bossRelicVPolicy/neowVPolicy COPY the gc, apply each option
+  (real transition, RNG untouched on the real gc), evaluate V_win, argmax. Env STS_BOSS_RELIC / STS_NEOW_V.
+- **A/B (128 fair seeds, 1000 sims, SE ~3.5pp):** baseline 18.8% ; +boss-relic 18.0 ; +Neow 17.2 ;
+  +both 21.1/+1.6hp. ALL within noise -> NOT measurably important at current model quality: the default
+  boss-relic priority table + default Neow are already competitive, and v_win isn't strong enough to beat
+  them. KEEP wired (model must own these for self-play; they improve as v_win improves) but not a standalone win.
+- **FEATURE GAP flagged for the datarun:** model sees PARTIAL path info only -- past = pv* room-type
+  counts; future = bossId + nextEliteId + nextFight0/1/2 + remElites/remFights. MISSING the full remaining
+  MAP TREE (layout ahead, branch options, rows-to-next-elite/rest/shop/boss, remaining reachable room
+  counts). The map is deterministic/KNOWN = free info. Add forward-map features (distances + remaining
+  reachable counts, maybe flattened 15x7 grid). The map is the ONE spatial/graph structure in StS -> the
+  only place a conv/graph encoding fits.
+
+## 41. Forward-map features + model-driven pathing/events  ✅ (features) / ➖ (path needs retrain)
+- **Forward-map features (the datarun enabler):** appended 10 cols to richRow/richHeader + server RAW
+  (fmDElite/Rest/Shop/Boss = rows-to-next; fmCElite/Rest/Shop/Event/Monster/Treasure = reachable-ahead
+  counts). ONE map-reachability sweep (forwardMapFeatures). Appended LAST so existing models are
+  unaffected: backward-compat VERIFIED (64-seed fair 23.4% == pre-fm baseline; server loads old models
+  fine on the wider 1015-col vector). Map is deterministic/known -> free info the value model lacked
+  (previously only pv* history + next-few-fights). Flows into datagen automatically; value model learns
+  it on retrain.
+- **Model-driven decisions wired (STS_PATH_V / STS_EVENT_V; boss-relic/Neow §40):** so the model owns
+  every node (needed for self-play). A/B 64 fair seeds vs current fm-BLIND v_win:
+  - model EVENTS = exact wash (23.4 vs 23.4) -> safe, upside once model improves.
+  - model PATHING = CATASTROPHIC 6.2% (-17pp) -> pathVPolicy leans on fm features the current model
+    ignores -> degenerates to leftmost-child. MUST stay OFF until v_win is retrained on fm data.
+- **CONFIG for self-play:** fm features ON (automatic), pathing HEURISTIC + events default (clean iter-0
+  data), flip on STS_PATH_V/STS_EVENT_V LATER once retrained v_win uses fm (gate to confirm). Never ship
+  STS_PATH_V with an fm-blind model.
+
+## 42. Full map graph capture (seed-determinism, zero bloat)  ✅
+- **Insight:** the StS map is DETERMINISTIC from seed+act (both already stored per row), so the full
+  node+edge graph need NOT be flattened into every decision-row (that'd repeat the same ~100-400 map
+  cols ~30x/run = huge redundant bloat). Instead record POSITION and regenerate the graph on demand.
+- **Added:** curMapX,curMapY to richRow/richHeader/server RAW (now 1017 state cols); `dumpmap <seed>
+  <asc>` mode dumps the map graph (per node: y x room edges...). Future GNN pipeline: read
+  (seed,act,curMapX,curMapY) from a row -> dumpmap -> build node+edge graph. Zero per-row bloat.
+- **No trainer changes needed:** no bloaty grid added; the 10 fm aggregates + 2 position cols are all
+  tree-friendly (position ~ progress). Full graph lives only in dumpmap, out of the training CSV.
+- **Backward-compat VERIFIED again** on the wider 1017-col vector: 64-seed fair 23.4% (== baseline),
+  old models load + serve, 0 server errors.
+
+## 43. Native C++ V_win (kill the v_server socket for OOC)  ✅ (core done, validated)
+- **What:** ported V_win to a native XGBoost tree-walk so OOC decisions skip the Python socket.
+  export_win_model.py -> build/v_win_trees.txt (feats + logistic + base_score + trees). C++ WinNet
+  (app-level, in one_combat.cpp): load maps model feats -> rich raw indices via richIdxMap() (from
+  richHeader), predict = tree-walk + baseMargin=logit(base_score) + sigmoid. Feature vector =
+  richFeatureVec(gc) (parse of vFeatCsv). Env STS_WIN_NET=1 (or path).
+- **VALIDATED exact:** winnettest mode -> native vs server VW over 434 samples/5 seeds:
+  max|native-server| = 1e-6. Full-run A/B (STS_CARD_WIN+BOSS_RELIC+NEOW): server 18.8%/f33.5/10.4 ==
+  native (STS_WIN_NET) 18.8%/f33.5/10.4 -> BYTE-IDENTICAL decisions.
+- **Native now:** card pick (nativeWinCardPick, mirrors decide_win: base + per-card d{cid}/deckSize
+  delta), boss-relic, Neow, path (all via vStateWin). STILL socket: rest (HW/UW), shop (SW), v_rich
+  card path, CB/CN blends -> full elimination needs porting those (mechanical, same predict+delta).
+- **ROI (as flagged):** small datagen speedup (6.40 vs 6.56 cpu/run) -- combat DOMINATES (~6s/run),
+  OOC socket is <1% -- so this is mainly an architecture cleanup + makes model-driven pathing cheap
+  (100s of native per-candidate calls/run vs unbatched socket round-trips). Bigger datagen levers stay:
+  modest self-play sims + truncated value net.
+
+## 44. Adaptive paired self-play gate + live telemetry  ✅ (mechanics validated)
+- **Why:** a fixed 500-seed gate is statistically defensible at ~5-8% win, but it always pays for
+  baseline + meta + combat (up to 1,500 full runs), even when a candidate is clearly better/worse.
+- **Gate:** evaluate common held-out seeds in 100-seed batches up to 500. For each candidate, compute
+  the per-seed paired delta of `avg_floor + 0.1*win%`; promote only when the conservative lower
+  confidence bound (default Z=2.58) exceeds the 0.5-floor margin, reject when the upper bound cannot
+  clear it, and extend only inconclusive candidates. An inconclusive result at 500 is rejected.
+- **Telemetry:** `bestbench` optionally appends flushed `seed,won,floor,hpEnd,sec` rows. The watcher
+  now shows live step-3 arm/progress, win%, avg floor, paired delta/CI, datagen avg floor, and floor
+  metrics in history. Mechanics validated by compiling, a nonzero-offset two-seed CSV smoke run,
+  synthetic promote/reject cases, and a mocked live dashboard. Full selection behavior remains to be
+  observed over subsequent real iterations.
+
+## 45. CPU scaling: OpenMP run-per-thread vs. process-per-run  ✅
+- **Setup:** Ryzen 5 7500F (6 physical cores / 12 SMT threads), 12 identical full `datagen2` seeds,
+  600 simulations, current self-play stack and shared V_win server. The live iteration-4 datagen
+  worker was SIGSTOP'd for the controlled test and resumed afterward without losing CSV progress.
+- **Wall time / speedup:** 1 thread 91.89s / 1.00x; 2 threads 49.38s / 1.86x; 4 threads 27.20s /
+  3.38x; 6 threads 21.28s / 4.32x; 8 threads 17.89s / 5.14x; 12 threads 17.06s / 5.39x.
+  All variants completed all 12 distinct seeds without errors.
+- **Multiple processes lose:** twelve concurrent one-thread processes took 19.31s / 4.76x, 13.2%
+  slower than one 12-thread OpenMP process. The executable already assigns one independent STS run
+  per OpenMP thread with dynamic scheduling, so process-per-run adds model/process overhead without
+  exposing more parallelism.
+- **Operational conclusion:** keep one `one_combat.elf` process and set `OMP_NUM_THREADS` to the
+  available vCPUs. On this SMT desktop, 8 workers are the efficiency knee; 8 -> 12 adds only 4.9%
+  throughput. Cloud scaling must be measured separately past one socket / NUMA domain, but sharding
+  into multiple processes is not warranted by this benchmark.
+
+## 46. Replay-window repair + deterministic baseline cache  ✅ (live gate validated)
+- **Diagnosis:** after 2,000-run iterations were reduced to 500, the shared 5-iteration replay
+  window eventually fell from 4,997/3,497 V_win trajectories (val AUC 0.722/0.765) to 2,002
+  trajectories (AUC 0.631). Policy was not starved: each 500-run iteration still produced about
+  0.5M edge rows / 100k decisions with stable 0.52-0.54 top-1 agreement. Combat candidates gained
+  roughly 1-2 average floors but repeatedly exhausted the strict 500-seed gate inconclusively.
+- **Changed:** separate `META_WINDOW=10`; retain combat `WINDOW=5` and memory-safe
+  `POLICY_WINDOW=1`; adaptive `GATE_SEEDS=1000` (100-seed looks). Iteration 7 V_win then trained on
+  6,497 trajectories and recovered to val AUC 0.7554.
+- **Baseline cache:** deterministic held-out baseline rows are cached by SHA-256 over the executable,
+  deployed V_win/value/policy models, policy mode, sims, ascension, value blend, and behavior-affecting
+  `STS_*` environment. A promotion/model/binary/config change therefore invalidates automatically.
+  Seeded from the verified iteration-6 0..499 baseline; iteration 7 live gate confirmed cache hits at
+  100, 200, and 300 seeds instead of replaying them.
+- **Failure safety:** gaming consumed GPU VRAM and all iteration-7 CUDA trainers failed. The old loop
+  incorrectly checkpointed a no-model/no-gate `NA` row. That row/state advance was reverted; trainers
+  now mark errors and retry without checkpointing. Local continuation uses `STS_XGB_DEVICE=cpu` while
+  gaming. CPU rerun successfully trained V_win, combat value, and the 800-tree policy candidate.
+- **Dashboard load:** three simultaneous watchers were each rescanning a completed ~400MB combat CSV
+  every two seconds. `status.sh` now trusts the authoritative `.done` marker for completed combat
+  progress, removing that repeated CPU/disk load.
+
+## 47. One-run CPU profile: combat value inference dominates  ✅
+- **Setup:** representative cached seed 2 (floor 40), fair-play current stack, 600 sims, one OpenMP
+  worker pinned to CPU 0. The active datagen worker was paused and automatically resumed. A temporary
+  optimized `-pg` binary used the same simulator library/models; `strace -f -c` and `/usr/bin/time -v`
+  captured OS behavior. Profiled wall/user time was 14.26/13.95s, CPU utilization 97%, RSS 11.5MB.
+- **Flat profile:** `CombatValueNet::predictVec` consumed **75.33% / 10.41 CPU-seconds**.
+  Next largest self-time was simulator action execution 2.24%, card usability 1.30%, action
+  enumeration 1.23%, action-queue insertion 1.09%, search step 0.87%, and combat feature extraction
+  0.80%. Random rollout itself was only 0.51%. Total traced syscall time was 0.021s; 45 socket
+  request/response pairs and file I/O were negligible, so this is compute-bound native inference.
+- **Same-seed production timing split:** both value+policy 15.23s; value-only 13.44s; policy-only
+  4.56s; neither 3.31s. Disabling models changes search decisions, so attribution is directional, but
+  it consistently puts the 1,500-tree combat value ensemble at roughly 10-11s (~70% of wall), the
+  100-tree policy at roughly 1.3-1.8s (~10%), and base simulator/MCTS at ~3.3s (~22%).
+- **Why:** current value model = 1,500 trees / 311,006 nodes / 4.35MB; policy = 100 trees / 11,078
+  nodes / 160KB. Each MCTS leaf walks all value trees through branch-heavy, dependent node loads.
+- **Optimization priority:** first gate a 300-400-tree or shallower/distilled value model; a roughly
+  linear inference reduction has far more upside than simulator micro-optimization. Then flatten the
+  tree-of-vectors representation and resolve model feature indices to canonical indices at load time
+  (removes one dependent lookup per split). Policy and feature extraction are secondary. Preserve
+  held-out strength: this profile justifies what to optimize, not promoting a faster weaker model.
+
+## 48. Combat-value tree-count latency sweep  ✅ (speed only; not promoted)
+- **Setup:** truncated the deployed 1,500-tree value ensemble after its first 800, 400, and 200
+  trees, preserving feature metadata and base score. Kept the deployed 100-tree policy fixed. Timed
+  the same representative seed 2, fair-play stack, 600 sims, one worker pinned to CPU 0. The live
+  iteration-9 gate worker was paused for isolation and automatically resumed afterward.
+- **Results:** 1,500 trees / 311,006 nodes = **11.21s** (floor 40); 800 / 180,344 = **7.50s**
+  (floor 40); 400 / 105,196 = **5.08s** (floor 40); 200 / 63,722 = **4.98s** (floor 44).
+  Thus 400 trees was **2.21x faster** than the deployed model on this run and retained its observed
+  floor, while 200 trees provided essentially no additional wall-time reduction because its changed
+  decisions produced a longer run.
+- **Conclusion:** 400 trees is the practical latency candidate: it removes 55% versus 800 trees and
+  55% versus the 1,500-tree wall time without chasing the route-dependent 200-tree floor. This is a
+  one-seed timing result, not sufficient quality evidence. Do not replace the deployed baseline
+  mid-gate; evaluate a 400-tree value candidate with the same 100-tree policy on held-out paired
+  seeds before promotion.
+- **Actual iteration-9 candidate check:** its independently trained 400-tree value (117,888 nodes)
+  took **6.05s** with the current 100-tree policy (floor 45), still **1.85x faster** than the 1,500-tree
+  baseline. But the gate couples it to a new 800-tree policy (69,392 nodes), making that complete
+  candidate take **12.47s** (floor 44), slightly slower than the deployed stack on this seed. Any
+  speed-oriented promotion therefore needs to keep/cap the policy near 100 trees or gate value and
+  policy changes separately.
+
+## 49. Self-play meta-gate collapse was a serialization/fallback bug  ✅ fixed
+- **Symptom:** iterations 7-9 produced identical held-out meta outcomes on every seed: 0% wins and
+  average floor 12.9, despite different V_win models and improving validation AUC (up to 0.7908).
+- **Root cause:** `loop.sh` trained to a filename ending in `.json.tmp`. XGBoost therefore selected
+  binary UBJSON serialization, after which the file was renamed to `.json`. `v_server.py` failed to
+  parse it as JSON but treated V_win as optional and continued. Unified card drafting then received
+  its no-model fallback (`skip`, marginal -999) for every reward. The repeated meta results measure
+  that deterministic fallback, not candidate quality or model variance.
+- **Fix:** training temporaries now end in `.tmp.json`; self-play starts the server with
+  `VWIN_REQUIRED=1`, making missing, malformed, or feature-incompatible requested models fatal. The
+  existing iteration-9 candidate was losslessly loaded as UBJSON and re-saved as real JSON; its 197
+  trees and 458 feature names were verified after conversion. Shell/Python syntax checks pass.
+- **Evidence impact:** all prior unified-meta gates using these mislabeled candidates are invalid.
+  Keep the deployed meta model unchanged and rerun the iteration-9 100-seed meta gate before making
+  any claim about V_win variance or unified card/shop policy quality.
+- **Corrected 100-seed gate:** with the converted model genuinely loaded, candidate performance rose
+  from the invalid 0% / floor 12.9 to **5.0% / floor 29.13**. The paired deployed baseline was
+  **29.0% / floor 38.78**; blended-score delta **-12.05**, SE 1.785, 99% CI
+  **[-16.656, -7.444]**, therefore reject. The serialization bug explained most of the catastrophic
+  result, but the unified V_win card+shop policy remains a clear systematic regression at this
+  iteration. Do not restart full self-play with unified meta enabled; isolate card, shop, and rest
+  arms before changing the objective/data or attributing the gap to estimator variance.
+
+## 50. Corrected V_win decision-family ablation + independent self-play gates  ✅
+- **Setup:** corrected iteration-9 V_win candidate, deployed combat stack, 600 sims, 100 common
+  held-out seeds, eight workers. A no-win-decision control disabled win-based card/shop/rest. Each
+  candidate arm enabled exactly one decision family; paired score was `floor + 10*won`, with the
+  standard 99% interval and +0.5 promotion margin. All four arms ran serially.
+- **Rest only:** 25% / floor 38.19. Versus deployed current-rest baseline (29% / 38.78), delta
+  **-0.99**, CI **[-4.959, 2.979]**; versus no-rest control (20% / 38.77), delta **-0.08**, CI
+  **[-4.264, 4.104]**. Inconclusive/wash: candidate rest is neither promotable nor clearly harmful.
+- **Card only:** 17% / floor 31.26 versus control 20% / 38.77; delta **-7.81**, CI
+  **[-12.629, -2.991]**: clear reject.
+- **Shop only:** 10% / floor 35.19 versus control 20% / 38.77; delta **-4.58**, CI
+  **[-7.569, -1.591]**: clear reject.
+- **Conclusion:** unified V_win fails independently at both counterfactual card and shop scoring;
+  this is not merely interaction between the two or estimator noise. Keep V_floor for card/shop and
+  gate retrained V_win only on rest decisions. Learning card/shop later needs action-value/ranking
+  targets or randomized counterfactual coverage, not more iterations of the same state classifier.
+- **Loop refactor:** meta gates now retain the deployed hybrid and never auto-graduate to unified
+  card/shop control. Combat value (candidate value + deployed policy) and combat policy (deployed
+  value + candidate policy) have separate CSVs, confidence decisions, and atomic promotions; if both
+  pass simultaneously, policy is deferred one iteration to avoid an untested combined stack. Policy
+  training is capped by `POLICY_TREES=100` (default 100), while combat value remains capped at 400.
+  Dashboard and history schema now report value and policy arms separately.
+
+## 51. Larger training iterations, smaller held-out cap  ✅
+- **Changed:** `RUNS_PER_ITER` from 500 to **1,000** and adaptive `GATE_SEEDS` from 1,000 to
+  **500** (100-seed looks unchanged). This puts twice as many fresh self-play trajectories behind
+  each retrain while bounding verification to half the previous worst case.
+- **Resume safety:** `.done` markers now record the run target that created them. A marker is trusted
+  only when it equals the current `RUNS_PER_ITER`; empty legacy markers or later target changes fall
+  back to distinct-seed CSV counting. Iteration 9 therefore recognized its existing 500 meta and
+  500 combat runs and launched exactly the missing 500 of each, beginning meta at seed 1,007,502.
+- **Operation:** stopped the old in-memory 500/1,000 controller and resumed a single loop on eight
+  logical CPUs with CPU-only XGBoost, 400 value trees, and 100 policy trees. This changes the
+  training/evaluation allocation only; promotion still requires the same paired +0.5 margin and
+  conservative 99% interval, with clear candidates allowed to stop before 500 seeds.
+
+## 52. Speed-oriented self-play profile + value non-inferiority  ✅ deployed
+- **Value promotion rule:** combat value is a latency optimization, so it now promotes when the 99%
+  lower confidence bound beats `VALUE_MARGIN=-0.5`; meta and policy retain the stricter
+  `PROMOTE_MARGIN=+0.5` superiority rule. Iteration 9's independently gated 400-tree value scored
+  delta **+1.562**, CI **[-0.117, +3.241]**, and therefore passes non-inferiority. It was atomically
+  deployed (122,080 nodes); the previous 1,500-tree / 311,006-node model is preserved as
+  `selfplay/current/v_combat_trees.pre_iter9_1500.txt`. Earlier timing measured the actual candidate
+  at 6.05s versus 11.21s for the deployed old stack with the same 100-tree policy (~1.85x faster).
+- **Separate budgets:** combat/policy datagen uses **400 sims**, meta-label datagen **300 sims**, and
+  held-out gates remain at **600 sims** through a new `GATE_SIMS` setting. Baseline-cache keys use
+  the gate budget, so changing cheap datagen budgets cannot reuse or contaminate verification.
+- **Cadence:** V_win and policy retrain/gate every **2** iterations (even iteration numbers by
+  default); their data is still collected each iteration. Combat value continues every iteration.
+  This removes repeated expensive gates for the historically wash/inconclusive rest and policy
+  heads while preserving fresh replay data for their next scheduled update.
+- **Validation:** shell syntax passes; cadence smoke gives due at iterations 10/12 and skipped at 11;
+  the iteration-9 CSVs reproduce the non-inferiority promotion; deployed candidate/current hashes
+  match; dashboard reports separate 400/300 datagen and 600 gate budgets and the value-specific bar.
+
+## 53. Iteration 10 resumed on the quota-compatible Google VM  🔄 running
+- **Machine:** `sts-test` in `europe-west3-c`, resized to Spot `c4d-highcpu-16`. The project exposes
+  64 all-region CPUs, but the enforced C4D-family quota is 24 vCPUs; 16 is therefore the largest
+  predefined C4D shape that can start without another quota approval. The loop uses all 16 OpenMP
+  threads and CPU-only XGBoost.
+- **Resume state:** the local loop was interrupted safely at iteration 10 and its **278/1,000**
+  distinct completed meta trajectories were copied to `/mnt/sts-data/sts_lightspeed` together with
+  the current models and required replay windows. The remote meta worker resumed exactly the
+  remaining 722 runs at seed **1,008,280**; combat datagen remains 0/1,000.
+- **Runtime safety:** the new 400 GB data disk holds the active workspace (2.8 GB at launch). A
+  16 GB swap file on that already-provisioned disk supplements the VM's 29 GiB RAM to avoid an OOM
+  kill during replay-window loading; it was unused at launch. The detached worker reported 16
+  threads and roughly 1,400% CPU during its initial sample.
+- **Resume audit/fix:** OpenMP completion order meant the interrupted 278-run meta file already held
+  two seeds beyond its contiguous prefix. Resuming at `SEED_OFF + distinct_count` therefore reused
+  two IDs and left seeds 1,008,023 and 1,008,275 absent. Both missing runs were appended with the
+  same deployed stack, restoring exactly **1,000 unique meta seeds** while combat generation kept
+  running. Future resumes now append beyond the maximum observed seed, persist that collision-free
+  next seed in two-field `.done` markers, and advance `state.env` past the maximum used by either
+  datagen pass; the dashboard accepts both legacy and new marker formats.
+
+## 54. Strong-teacher and decision-focused training redesign  🔄 deployed for iteration 12
+- **Teacher/student separation:** combat self-play targets now use `POLICY_SIMS=1000` while the
+  deployed/gated agent remains at 400/600 simulations. The combined fight pass still emits value
+  snapshots and policy visit targets once, but its policy target is now produced by a materially
+  stronger search instead of redistilling the student's own 400-sim behavior.
+- **Critical-state combat value:** `train_value_combat.py` weights low-HP, failed-fight,
+  empirically high-failure-encounter, and high teacher-disagreement roots. Weights are clipped and
+  mean-normalized; encounter difficulty is inferred from replay outcomes, not a hand-written tier
+  list. Decision indices now advance even through forced roots and reset per fight, giving exact
+  value/policy alignment. A four-run smoke matched all 274 sampled policy decisions and trained
+  with disagreement on 274/362 value rows.
+- **Paired campfire action values:** meta datagen optionally forks genuine rest-vs-smith states from
+  the same pre-action context, uses a detached map and common future agent seed, and records both
+  continuations. `train_rest_cf.py` predicts the direct paired gate-score difference; `v_server.py`
+  serves it as `RC`, and deployment falls back to the existing V_win marginal comparison until a
+  paired model passes the held-out gate. A 50-run smoke emitted 104 decisions from 37 runs, trained
+  and served a compatible model, and replayed the previously crashing seed successfully.
+- **Cadence and safety:** V_win, paired rest, combat value, and policy retrain/gate every two
+  iterations by default; fresh data is still collected each iteration. Promotions retain the
+  adaptive paired common-seed gate, 99% confidence bounds, +0.5 superiority for meta/policy, and
+  -0.5 non-inferiority only for the latency-oriented combat value. At the 500-seed cap,
+  inconclusive candidates remain rejected.
+- **Operational telemetry:** the dashboard distinguishes deployed, teacher, meta, counterfactual,
+  and gate budgets; reports paired-rest source runs/decisions; and avoids displaying a fake 0% win
+  rate when a completed combat CSV is represented only by its authoritative marker.
+
+## 55. Iteration-24 review and full-capacity value candidates  🔄 deployed for iteration 25
+- **Progress audit:** iteration 20 produced the only promotion in iterations 12--24, raising the
+  held-out deployed stack from **26.8% / 40.346 floors** to **31.4% / 41.218 floors**. Iterations
+  22 and 24 regressed against that new baseline, while no meta or policy candidate promoted. The
+  run is making real progress, but not yet consistently.
+- **Capacity evidence:** iteration 24's validation RMSE was still improving at boosting round 1,499
+  (10.154 at 400, 9.919 at 800, 9.785 at 1,499), but the exporter retained only 400 trees. A new
+  held-out test of that exact model found the 1,500-tree export at **31.2% / 41.649 floors** versus
+  **31.9% / 41.207 floors** for the deployed stack over 285 paired rows: blended delta **+0.372**,
+  99% CI **[-1.935, +2.679]**. It is promising but not promotion-grade. The 800-tree export scored
+  delta **-0.197**, CI **[-2.234, +1.841]**; on 281 exact common seeds, 1,500 beat 800 by **+0.605**
+  blended score, also inconclusive.
+- **Change:** future combat candidates now export all **1,500 trees**. Because this is a strength
+  candidate rather than the old 400-tree latency optimization, its gate uses the standard
+  **+0.5 superiority margin**, not the -0.5 non-inferiority allowance. The inconclusive iteration-24
+  export was not promoted; iteration 26 will be the first newly trained full-capacity candidate.
+- **Exporter fixes:** the validation output now has its own path instead of overwriting the replay
+  training CSV, and validation reads only the 200 rows needed for the Python/C++ parity check rather
+  than loading the multi-gigabyte replay window a second time.
+
+## 56. Distilled native combat MLP  ❌ rejected at 500 paired seeds
+- **Implementation:** `train_value_combat_nn.py` streams the replay CSV, samples by whole fight,
+  predicts the full XGBoost teacher, trains a weighted MLP, and exports a standalone native format.
+  `CombatValueNet` now loads either trees or `combat_mlp_sparse_v1`. Normalization is folded into
+  the first-layer weights/bias so native inference skips zero card/relic features. Python/C++ parity
+  for the final model had maximum error **0.000028 HP**.
+- **Training:** the first dense 751->64->32->1 student used 458,638 sampled rows and generalized
+  poorly across held-out fights (truth RMSE **11.521** versus teacher **7.159**). The final sparse
+  751->128->64->1 student trained on all **1,830,668** iteration-24--28 replay rows (1,644,998 train,
+  185,670 fight-group validation). It improved to truth RMSE **9.708**, teacher-imitation RMSE
+  **5.749**, and critical-state truth RMSE **12.715**, but still trailed the teacher's **6.963**.
+  Random row validation was misleadingly high (0.986 R2) because adjacent states from the same
+  fights leak across a row split; the separate fight-group validation is the meaningful measure.
+- **Speed:** on matched seed 2 at 600 sims and one core, sparse MLP took **5.043s** versus **11.775s**
+  for 1,500 trees (**2.34x faster**). Across the first 100 seeds on 16 cores it took **50.45s**
+  versus **66.55s** for the deployed 400-tree stack, about **24% faster** end-to-end.
+- **Gameplay gate:** at 500 common seeds, deployed trees scored **31.4% / 41.218 floors** and the NN
+  **24.6% / 39.644 floors**. Paired blended delta was **-2.254**, 99% CI
+  **[-3.969, -0.539]**: a formal rejection even under the faster-model `-0.5` non-inferiority bar.
+  The NN was not deployed. Its trainer, native evaluator support, model, parity data, and gate CSVs
+  are preserved for a future categorical/embedding architecture; normal self-play remains on trees.
+
+## 57. Entity-aware multi-head combat model  ❌ rejected at 500 paired seeds
+- **Representation/output:** `train_value_combat_entity.py` replaces raw categorical integers with
+  learned embeddings and pooling: four 371-card zone pools, relic and potion pools, encounter
+  embedding, and a shared per-monster encoder with sum/max pooling. A 212->128->64 trunk predicts
+  separate **P(fight win)** and **remaining-HP fraction conditional on winning** heads. Search backs
+  up `P(win) * (win_bonus + E[HP|win])`; terminal rollout wins use the same `win_bonus + HP` scale.
+- **Training:** CPU PyTorch 2.13 was installed on the VM. The model used 928,231 rows sampled by
+  whole fight from the 1,851,423-row iteration-30--34 replay window, with 91,793 rows held out by
+  complete fight. Best validation metrics were win Brier **0.0393**, win accuracy **94.9%**,
+  conditional-HP-fraction MAE **0.0840**, and expected-end-HP RMSE **10.079** versus **8.049** for
+  the iteration-32 tree teacher on the exact rows. Native/Python utility parity max error was
+  **0.000022**.
+- **Latency:** matched seed 2 at 600 sims took **6.465s** for the entity model versus **5.592s** for
+  the deployed 400-tree model, so this candidate is ~16% slower and must prove superiority rather
+  than use the faster-model non-inferiority allowance.
+- **Tuning:** on seeds 0--99 at alpha 0.3, bonuses 0/25/50/100 produced blended deltas
+  **-1.90/-1.51/-1.56/-3.97**. Bonus 25 was least bad. Its alpha sweep 0/0.1/0.2/0.3/0.5 gave
+  **-7.04/-1.89/-2.18/-1.51/-2.45**; the catastrophic alpha-0 result shows that changing terminal
+  reward to a survival bonus without the learned head does not help. Bonus 25, alpha 0.3 was selected
+  and evaluated on untouched seeds 100--499.
+- **Final gate:** over all 500 paired seeds, deployed trees scored **31.4% / 41.218 floors** and the
+  entity model **27.6% / 40.004 floors**. Paired blended delta was **-1.594**, 99% CI
+  **[-3.319, +0.131]**. The untouched 400-seed confirmation independently gave **-1.615**, CI
+  **[-3.550, +0.320]**. Its upper bound is below the required **+0.5** superiority margin, so the
+  model is formally rejected and was not deployed. Trainer, native format/evaluator, checkpoint,
+  parity sample, and sweep/gate CSVs are preserved for research.
+
+## 58. Shared-state entity policy prior  ➖ promising, not promoted at 500 paired seeds
+- **Representation/training:** `train_policy_entity.py` encodes the combat state once per decision:
+  learned embeddings pool cards separately across hand/draw/discard/exhaust, plus relics, potions,
+  encounter identity, and shared monster/intent encoders with sum/max pooling. A 64-dimensional
+  state vector and a card-aware action encoder produce a compatibility logit for each legal edge.
+  Grouped cross-entropy directly fits the normalized MCTS visit distribution instead of regressing
+  `log(visit+1)` independently per edge. The streaming loader retains one state per decision and
+  splits by complete fight, permitting a large replay window without duplicating the 1,766-wide
+  state for every action.
+- **Data:** GPU training on the local RTX 3060 Ti used **every policy edge from iterations 26--35**:
+  **16,861,363 edges / 3,127,654 decisions**, with no sampling. These iterations are post-redesign
+  and share the post-iteration-20 deployed combat stack; earlier stale-teacher iterations were not
+  mixed in. The fight-group split contained 2,815,541 training and 312,113 validation decisions.
+  CPU preprocessing was capped at exactly eight threads.
+- **Offline result:** the entity NN reached top-action agreement **57.01%**, captured visit share
+  **37.87%**, softmax mass on the teacher-best action **34.76%**, and cross-entropy **1.4103**. The
+  deployed 100-tree prior on the same held-out fights scored **46.93% / 34.88% / 30.51% / 1.4499**.
+  The earlier single-iteration model reached only 53.0% top-action agreement, so the ten-iteration
+  replay window materially improved generalization. Python/native maximum logit error was
+  **0.0000030** across the 200-row parity sample.
+- **Native inference:** `combat_policy_entity_v1` runs the state encoder once when an MCTS node is
+  expanded, then only the small action encoder per legal edge. It is wired into the existing PUCT
+  softmax without changing search semantics. The existing tree prior remains the default.
+- **Current-stack gate:** on 500 common held-out seeds 51000--51499 at 600 sims, fair play, and
+  eight threads, the deployed tree prior scored **33.2% wins / 42.280 floors / 12.644 end HP /
+  7.225 CPU-s per run**. The entity prior scored **34.6% / 42.062 / 13.864 / 8.210**: +1.4pp wins,
+  -0.218 floor, +1.220 end HP, and **13.6% more CPU**. The canonical floor + 10*win paired score
+  delta was **-0.078**, SE **0.673**, 99% CI **[-1.815, +1.659]**. This does not clear the required
+  +0.5 lower-bound margin, so it is preserved but **not promoted**.
+- **Next policy-model test:** enrich future replay rows with target monster identity/status and
+  potion identity (the current schema records only target HP and an is-potion flag), then retune
+  policy temperature and `c_puct`. The large offline gain did not transfer decisively under the
+  tree prior's existing PUCT calibration.
+
+## 59. Entity-aware joint meta value model  ❌ floor head rejected; win head inconclusive
+- **Representation/output:** `train_meta_entity.py` replaces the meta trees' thousands of sparse
+  scalar columns with learned set encoders. Cards share an ID embedding augmented by count and
+  upgraded fraction and use sum/max pooling; relics and potions have their own pooled embeddings;
+  bosses, upcoming elites/fights, and bottled cards use categorical embeddings. Thirty-six
+  normalized continuous features join a 192->96 trunk with separate **P(run win)** and
+  **expected final floor** heads. The floor head predicts bounded remaining progress rather than an
+  unconstrained absolute floor.
+- **Data/training:** the CPU-only, eight-thread run used every one of the **182,958 state rows from
+  10,000 runs in iterations 29--38**, split by complete seed. On the exact held-out rows, the NN
+  improved win ranking (AUC **0.7215** vs tree **0.7144**) and floor accuracy (RMSE **9.769** vs
+  **10.943**, R2 **0.247** vs **0.055**). Its win probabilities were slightly less calibrated
+  (log loss **0.4337** vs **0.4301**, Brier **0.1346** vs **0.1340**).
+- **Serving/parity:** `v_server.py` can opt into the joint TorchScript model with `VMETA_NN` and
+  independently enable `VMETA_FLOOR` and `VMETA_WIN`; the existing XGBoost models remain the
+  fallback/default. Fifty held-out rows matched offline inference within **5.4e-7** win probability
+  and **7e-6 floors**. Serving now hides CUDA before importing PyTorch/XGBoost unless
+  `VSERVER_ALLOW_CUDA=1`, preventing a CPU inference server from opening a GPU context.
+- **Gameplay gate:** on seeds 53000--53099, the deployed tree stack scored **41.0% wins / 42.47
+  floors**. Replacing only its floor decisions with the NN scored **27.0% / 35.90**; paired canonical
+  score (`floor + 10*win`) delta **-7.970**, 99% CI **[-12.466, -3.474]**. It is decisively rejected:
+  lower held-out regression error did not translate into useful action counterfactuals. The win
+  head completed 81 paired seeds before interruption and scored **35.8% / 42.32**, delta **-0.506**,
+  99% CI **[-4.406, +3.394]**; this is inconclusive and not promising enough to expose the user's
+  machine to another large local gate while gaming. Neither head was deployed.
+- **GPU incident:** during the partial win-head gate the NVIDIA driver exhausted VRAM, logged an
+  MMU fault against a Python channel, then timed out the game context. No benchmark process survived
+  the interruption. All inference tensors had been mapped to CPU, but explicit CUDA hiding is now
+  enforced as an additional process-level safety boundary.
+
+## 60. Paired card-reward action values with pretrained entity embeddings  ➕ offline-positive, not deployed
+- **Target/data path:** `datagen3` can now fork every offered card plus skip from the identical
+  pre-choice `GameContext`, detach the shared map, and finish branches with common agent/game RNG.
+  Rows are grouped by `(seed, decisionIdx)`, contain the rich 1,017-feature state plus candidate
+  identity/upgrade status, and store fractional mean outcomes over multiple matched futures. Output
+  is flushed once per complete source run and is safe to interrupt/resume from collision-free seeds.
+- **Label calibration:** three-fight bootstrapping through the old floor/win models was rejected: on
+  24 exact decisions it chose the full-run-best action only **25%** of the time and had essentially
+  zero rank correlation. Full-run 30-sim labels were also unstable versus 100 sims (best-action
+  agreement **58.3%**, advantage correlation **0.234**). At 100 sims, averaging two futures gave
+  one-vs-two-future advantage correlation **0.846** and sign agreement **91.7%**. Production data
+  therefore uses **100 sims, two futures, full-run outcomes**, one sampled decision per source run.
+- **Model:** `train_card_cf.py` trains a 180,349-parameter shared state/action model with separate
+  base/upgraded card embeddings, pooled relic/potion/encounter state, candidate-to-deck attention,
+  paired advantage regression, and a listwise best-action loss. Serving/deployment is intentionally
+  deferred until offline ranking and a full gameplay gate pass.
+- **Pilots:** with 500 decisions, scratch embeddings scored **36.205** versus **35.815** for the
+  deployed floor-tree selector on 100 held-out paired decisions, but CI was wide. At 1,016 decisions,
+  scratch training merely tied the tree. Initializing card/relic/potion and shifted candidate
+  embeddings from the large-data `v_deckset.pt` checkpoint improved the same 204-decision validation
+  to **36.875 / 46.6% best-or-tied**, versus tree **36.365 / 43.1%**. Paired delta was **+0.510**,
+  SE **0.709**, 99% CI **[-1.317, +2.337]**: promising but not yet resolved.
+- **Unattended scale-up:** the eight-thread, CUDA-hidden user service completed **20,000** additional
+  decisions and automatic training. The final dataset has **21,863 decisions / 87,452 action rows**
+  with zero partial groups or duplicate actions; 17,490 decisions train and 4,373 seed-held-out
+  decisions validate the model. Artifacts are `selfplay/card_models/card_cf_full21k*`.
+- **Full offline result:** the NN chose a best/tied action on **42.58%** of validation decisions and
+  scored **37.161**, versus the deployed floor tree's **40.52% / 36.714**. Their paired score delta
+  is **+0.446**, SE **0.119**, 99% CI **[+0.139, +0.754]**; NN/tree chose the same action 62.6% of
+  the time (749 NN wins / 2,978 ties / 646 losses). The direct-action target has produced a
+  statistically real offline improvement, but its 99% lower bound does not clear the normal +0.5
+  promotion margin and offline labels are not a gameplay gate. Keep it undeployed until native/server
+  parity, latency, and an adaptive paired full-run gate pass.
+
+## 61. Full-map graph encoder for paired card values  ➖ implemented, no measured gain
+- **Lossless reconstruction:** `one_combat_cardcf.elf mapbatch CARD_CF.csv MAPS.csv` now exports one
+  deterministic map per `(seed, ascension, act)`. Each fixed 15x7 graph stores all 105 room ids,
+  every outgoing edge as a seven-bit destination mask, and the burning-elite location. The 87,452-row
+  full dataset reduces to **21,863 maps / 9.7 MB**. Recomputing the old forward-map distances and
+  reachable-room counts from the exported graphs matched **all 21,863 decisions exactly**, so no new
+  rollouts were needed.
+- **Encoder:** optional fourth-argument map input in `train_card_cf.py` adds learned room, row, column,
+  and burning-elite embeddings. A reverse sweep over the layered DAG recursively aggregates mean and
+  max child messages, thereby carrying every downstream room and route into each ancestor. A
+  state-specific readout pools only the roots/children reachable from the current map position. Its
+  96-dimensional result enters the existing pretrained card network through a zero-initialized
+  residual adapter. The graph model has **229,373 parameters** versus 180,349/180,950 reported for
+  earlier variants and exports successfully to TorchScript.
+- **Controlled offline result:** with the proven 21k card model frozen, six graph-only epochs selected
+  a best/tied action on **42.9%** of the identical 4,373-decision validation split and scored
+  **37.1626**, versus **42.6% / 37.1608** for the exact zero-map checkpoint. Paired delta is only
+  **+0.0018**, SE **0.0683**, 99% CI **[-0.1740, +0.1777]**; choices agreed 86.1% of the time
+  (267 graph wins / 3,858 ties / 248 losses). This is no evidence of useful map lift: the existing
+  summary features likely capture most map information relevant to card selection, and the full-run
+  labels remain noisy. Artifacts are `selfplay/card_buffer/card_cf_maps.csv` and
+  `selfplay/card_models/card_cf_graph_full21k*`; keep this variant undeployed.
+- **Runtime gate:** `VCARD_ACTION` in `v_server.py` and `STS_CARD_ACTION=1` in the C++ agent now
+  provide an opt-in direct-action endpoint. It sends candidate upgrade flags, all 105 room ids and
+  edge masks, the active burning-elite marker, and the rich state; the NN chooses cards and skip
+  directly. A held-out serving row matched offline inference to **3.5e-8**, and TorchScript/runtime
+  smoke tests passed. On **500 paired fair-play seeds 65000--65499 at 600 combat sims**, the floor
+  tree scored **15.8% wins / 34.862 floors / 36.442 canonical score**; the graph NN scored **17.6% /
+  35.770 / 37.530**. Paired score delta was **+1.088**, SE **0.726**, 99% CI **[-0.781, +2.957]**
+  (195 NN wins / 159 ties / 146 losses by score). Runtime was only **1.5%** higher. The point estimate
+  is encouraging but the 99% lower bound is below both zero and the +0.5 promotion margin, so keep
+  the tree deployed. Per-seed results are `card_tree_gate_65000_500.csv` and
+  `card_graph_gate_65000_500.csv`.
+
+## 62. Full-map graph NN for path decisions  ➖ predictive gain, policy rejected
+- **Data/model:** `mapbatch` now accepts any rich/meta CSV containing `seed`, `ascension`, and `act`.
+  The 317,573-state / 21,863-run `pilot_meta.csv` reconstructs to **42,713 unique act maps / 19 MB**.
+  `train_meta_entity.py` optionally adds the same reverse-DAG room/edge encoder through a
+  zero-initialized residual on the frozen 96,727-parameter entity meta model. For training it pools
+  all legal next children; at inference a third position coordinate selects one legal child so its
+  complete downstream subtree is scored. The resulting model has **145,150 parameters** and is
+  `selfplay/models/meta_graph_full21k*`.
+- **Held-out prediction:** on 47,528 run-held-out states, the exact pretrained baseline had win AUC
+  **0.7527**, log loss **0.2550**, and floor RMSE **10.328**. The graph residual improved these to
+  **0.7752 / 0.2396 / 9.667** (floor R2 **0.330** vs **0.236**). Thus the historical maps are
+  reconstructed correctly and contain useful predictive signal.
+- **Serving/policy:** `VPATH_GRAPH` plus `STS_PATH_GRAPH=1` provides an opt-in `PG` endpoint. The C++
+  agent leaves the actual run state at the parent and asks the NN to score each legal singleton child
+  subtree; the heuristic remains the default and fallback. Runtime/TorchScript smoke tests passed,
+  and a reconstructed source row matched direct TorchScript inference exactly (zero observed error).
+- **Gameplay pilot:** on **128 paired fair-play seeds 66000--66127 at 600 sims**, heuristic pathing
+  scored **15.6% wins / 35.953 floors / 37.516 canonical score**. Pure graph-NN pathing scored
+  **10.2% / 35.633 / 36.648**. Paired delta was **-0.867**, SE **1.749**, 99% CI
+  **[-5.373, +3.639]** (45 NN wins / 26 ties / 57 losses by score), with 7.8% runtime overhead.
+  Do not extend or deploy this observational-value policy. Better absolute prediction does not identify
+  the causal best route: training pooled the routes chosen by the heuristic, while inference asks for
+  unseen singleton alternatives. The next justified version needs paired counterfactual outcomes for
+  every legal child (or a conservative heuristic-residual trained on those direct advantages), not
+  more epochs on terminal observational labels. Per-seed files are `path_heuristic_gate_66000_128.csv`
+  and `path_graph_gate_66000_128.csv`.
+
+## 63. Paired counterfactual path-action NN  ➖ offline-positive, gameplay inconclusive
+- **Direct labels:** `pathcfgen` reservoir-samples one genuine branching map decision per source run,
+  forks every legal child from an identical detached state, and completes each branch with common
+  future agent seeds. Labels use the gate-aligned `floor + 10*win` score. Output is flushed after
+  each complete source run. A two-salt 128-decision calibration found advantage correlation
+  **0.836**, sign agreement **84.4%**, and best-action overlap **89.8%**, so production uses two
+  futures and spends additional compute on more independent decisions rather than more futures.
+- **Data/model:** 5,000 unique decisions (11,784 action branches) were collected with no duplicate
+  actions or malformed groups; every source map was exported losslessly to
+  `selfplay/path_buffer/path_maps_5k.csv`. `train_path_cf.py` initializes the entity/full-map
+  encoders from `meta_graph_full21k.pt`, scores each candidate child subtree directly, and trains
+  paired centered-regression plus listwise losses. Artifacts are `selfplay/models/path_cf_5k*`.
+- **Held-out result:** on 1,000 seed-held-out decisions, the NN selected a best/tied route **64.9%**
+  of the time and scored **32.220** versus **30.691** for the deployed heuristic (oracle 36.089).
+  Paired delta was **+1.528**, SE **0.266**, 99% CI **[+0.843, +2.214]**. This establishes a real
+  one-decision offline gain but is not sufficient for deployment.
+- **Runtime integration:** `VPATH_ACTION`/`STS_PATH_ACTION=1` serves the direct `PA` endpoint;
+  `STS_PATH_ACTION_MAX` limits non-heuristic interventions and `STS_PATH_ACTION_MARGIN` supplies a
+  conservative predicted-advantage threshold. An opt-in `STS_PATH_ACTION_TRACE=1` prints the raw
+  choice/margin/capacity response. Server and simulator must share the host network namespace;
+  sandboxed simulator runs cannot reach port 5555 and silently exercise fallback policies.
+- **Fresh gameplay look:** with at most one zero-margin intervention, 128 paired fair-play seeds
+  71000--71127 at 600 sims gave heuristic **12.5% wins / 34.117 floors / 35.367 score** and NN
+  **14.1% / 34.188 / 35.594**. Delta was **+0.227**, SE **1.786**, 99% CI
+  **[-4.374, +4.827]**, with 7.4% runtime overhead (49 NN wins / 19 ties / 60 losses by dense
+  score). This is inconclusive; do not deploy. The proper continuation is the existing adaptive
+  gate's remaining 372 fresh paired seeds to the 500-seed cap, not additional training changes.
+
+## 64. Future-fight auxiliary card supervision  ❌ initial model rejected (2026-07-22)
+- **What:** paired card/skip continuations now record pass outcomes for the next combat, next routed
+  elite, and current-act boss. These are produced by the normal copied `GameContext` continuation and
+  combat search—so encounter queues, event pools, map routing, relics, potions, and ascension rules
+  are simulated rather than represented by a hand-authored fight tier. The card-action NN receives
+  three auxiliary survival logits (loss weight 0.3) while retaining its full-run value/ranking target.
+- **Data:** 2,000 fresh full-run paired decisions / 7,853 action branches, adaptive two-to-eight
+  futures, `selfplay/card_buffer/card_cf_future_fight_124k_2k.csv`. Near-term normal survival was
+  nearly saturated (99.96% pass); elite pass was 97.1%; boss pass was 85.7% overall (89.9% conditional
+  on reaching it). Thus boss survival is the meaningful extra supervision, not the next hallway fight.
+- **Offline:** on 400 held-out decisions, future-fight NN selected score **37.676** versus **37.231**
+  for the floor-tree selector. Its aggregate auxiliary survival accuracy was 95.4%, but is dominated
+  by the trivial normal-combat target and is not policy evidence.
+- **Fresh fair-play gate:** 128 common seeds 126000--126127 at 600 combat sims. Baseline floor-tree:
+  **15.6% win / 39.352 floor / 7.031 HP**. Pure future-fight action NN: **6.2% / 31.578 / 2.633**.
+  Paired canonical-score delta **-8.711**, SE 1.390; candidate/baseline/tie counts **20/78/30**.
+  This is a decisive regression, not a noisy pilot: do not extend the gate or deploy either the action
+  model or `VCARD_ACTION_SURVIVAL_W`. The immediate cause is likely data scale: the policy head was
+  retrained on only 2k decisions, replacing the proven 21.9k full-run action-value dataset; the
+  survival task did not compensate for that lost ranking coverage. Next version must initialize from
+  or jointly train with the 21k card model, treating old rows as value-only and new rows as
+  value-plus-survival, before another gameplay gate. Artifacts/results:
+  `selfplay/card_models/card_cf_future_fight_124k_2k*` and
+  `selfplay/gate/future_fight_124k_2k/`.
+- **Additive retrain attempted:** `train_card_cf.py` now accepts value-only historic rows plus
+  survival-labeled rows, masks the auxiliary loss on old rows, preserves the proven graph-card model's
+  scalar normalization, and initializes all shared weights from `card_cf_graph_full21k.pt`. The joint
+  23,863-decision / 95,305-action model froze the ranker for three epochs while calibrating only the
+  new survival head, then fine-tuned. Its best held-out score was **37.285** versus **37.064** for the
+  tree reference (the combined split is not directly comparable to the older 21k split).
+- **Fresh fair-play gate:** 128 common seeds 126128--126255 at 600 combat sims: baseline **31.2% /
+  40.984 floor / 9.977 HP**; initialized joint candidate **23.4% / 40.109 / 6.953**. Paired
+  canonical-score delta **-1.656**, SE 1.259 (candidate/baseline/tie **35/49/44**). It is not a
+  decisive 128-seed rejection, but its negative point estimate and failure to meet the required
+  +0.5 lower-bound promotion condition mean **do not extend or deploy**. The extra labels alone have
+  not yet produced a safe card policy improvement. Results:
+  `selfplay/gate/future_fight_joint23k/summary_126128_128.json`.
+
+## 65. Live all-act encounter-distribution card rollout  ➕ promising oracle; collect targets, do not deploy (2026-07-22)
+- **Policy/evaluation:** `STS_ACT_FIGHT_PROBE_DRAFT=1` replaces only the *immediate* card/Skip
+  selection with simulation. For each offer it samples four possible hidden remaining normal/elite
+  encounter queues using the game's weighted pools and their no-repeat constraints, samples the
+  current-act boss, then plays every reached combat on the chosen route through that boss. All
+  candidate cards share each sampled queue (common random numbers). Map layout and non-combat RNG
+  stay fixed; later simulated card choices use the ordinary server policy, so the current pick is
+  selected **solely** by simulated combat outcomes, not a learned card scorer.
+- **Objective:** each reached fight contributes a floor-distance-weighted, nonlinear post-fight HP
+  safety value `sigmoid((HP/maxHP - 0.35)/0.10)`; a reached loss contributes -1. Averaging this over
+  sampled queues naturally includes both an encounter's probability of occurring (the branch reaches
+  it) and its conditional survival probability. This deliberately avoids hand-authored enemy/card
+  tiers and avoids treating HP as linear. `STS_ACT_FIGHT_PROBE_FLOOR_DECAY` defaults to 0.985.
+- **Fresh fair-play pilot + confirmation:** at 600 outer combat sims, 40 inner combat sims per
+  fight, and four encounter-queue futures per offered action, the first 16 paired seeds
+  126400--126415 gave baseline **18.75% win / 34.062 floor** versus rollout **25.00% / 40.812**,
+  paired canonical (`floor + 10*win`) delta **+7.375**, SE 4.264. An independent 16 seeds
+  126416--126431 gave **0.00% / 28.625** versus **18.75% / 38.625**, delta **+11.875**, SE 4.191.
+  Combined 32-seed result: baseline **9.375% / 31.344 floor**, rollout **21.875% / 39.719**;
+  paired delta **+9.625**, SE **2.969**, 99% CI **[+1.978, +17.272]**, with rollout/baseline/tie
+  counts **19/8/5**. This is a real positive directional result, but not a promotion gate.
+- **Cost/decision:** rollout consumed **80--126 CPU-seconds/run** versus **4.5--6.1** for baseline,
+  so it is far too expensive to deploy as a default live policy. It is nevertheless the first
+  future-fight formulation with a positive held-out signal. The justified next step is to collect
+  its per-offer simulated all-act utilities as direct action labels, then train an NN to approximate
+  this combat-strength-against-encounter-distribution target; retain the rollout as an offline
+  oracle and require a normal large paired gameplay gate before any deployment. Results:
+  `selfplay/gate/act_fight_probe_allact_16/` and
+  `selfplay/gate/act_fight_probe_allact_confirm16/`.
+
+## 66. Checkpointed combat-strength policy for every out-of-combat decision  ➕ strong pilot; confirm and distil (2026-07-23)
+- **What changed:** `STS_ACT_FIGHT_PROBE_ALL_OOC=1` extends the encounter-distribution idea from
+  card rewards to every strategic action. The original pilot exercised Act 1 map branches, card rewards, events, shops, rest
+  sites, and selection targets. For a candidate action, the evaluator follows one ordinary
+  out-of-combat trunk, but at each reached combat checkpoint scores every possible next
+  normal/elite/boss encounter independently from the identical pre-combat state. It weights those
+  scores by the game's encounter distribution and by distance, and uses the same nonlinear HP
+  safety utility as the card-only probe. This is deliberately a *combat-strength profile*, not a
+  recursive assertion that a floor-1 choice must already beat the Act boss.
+- **Pilot:** 16 paired fair-play Ascension-0 seeds 126700--126715, 600 outer combat simulations,
+  600 inner simulations per checkpoint fight, and four sampled remaining-encounter futures. Both
+  arms used the deployed stack (card skip -0.5, heuristic pathing, shop-V, win-rate rest, PUCT);
+  the candidate additionally enabled the all-OOC checkpoint probe and stopped after the Act-1
+  boss. Thus `won` here means **cleared Act 1**, not a full-run win.
+- **Result:** baseline cleared **9/16 (56.25%)**, reached mean floor **15.000**, and ended with
+  mean HP **22.000**. The checkpoint candidate cleared **16/16 (100.0%)**, reached floor
+  **16.000**, and ended with **61.875** HP. The paired Act-1 score `floor + 10*cleared` improved
+  by **+5.375**, SE **1.690**, 99% normal CI **[+1.021, +9.729]**; 7 seeds improved, 0 regressed,
+  and 9 tied on that intentionally coarse score. The result is driven by rescuing both floor-8
+  deaths and five floor-16 deaths, while also producing much safer clears.
+- **Cost and interpretation:** this is a strong directional result, not a promotion gate. The
+  candidate consumed **6,951.89 CPU-seconds/run** versus **2.13** for baseline (roughly 3,265x),
+  and only 16 paired Act-1 seeds were evaluated. It establishes that the proposed question—"how
+  will this state perform against the possible upcoming fights?"—can select better live strategic
+  actions under a very expensive teacher. It does not establish a full-run win-rate gain or justify
+  deploying the literal rollout. Raw results are
+  `selfplay/gate/act1_checkpoint_all_ooc_16/{baseline,candidate}.{csv,log}`.
+- **Continuation plan:** (1) freeze this exact configuration and run one independent 16-seed
+  paired Act-1 confirmation before changing any budget, utility, or policy; inspect per-decision
+  traces to verify that every intervention is legal and that map/event/shop/rest actions are all
+  actually exercised. (2) Add durable per-action teacher logging: state, legal actions, shared
+  future samples, mean/uncertainty of the checkpoint utility, and its encounter/HP components.
+  First calibrate a cheaper label setting against the 600-simulation teacher by action-ranking
+  agreement, rather than assuming a reduced budget is adequate. (3) Collect action-conditioned
+  counterfactual groups for all OOC decision types and train a distilled fight-strength/ranking
+  model; action representations must cover cards/skip, map children, discrete event/rest choices,
+  selection targets, and shop bundles. (4) Serve that model as an opt-in policy, verify
+  Python/native parity and latency, then run the ordinary adaptive paired **full-run** fair-play
+  gate. Only that final gate can decide promotion. Keep the direct checkpoint evaluator as the
+  offline oracle and calibration target throughout.
+
+### 66a. Known-boss correction and teacher traces (2026-07-23)
+- The original pilot incorrectly treated the Act-1 boss as hidden: its counterfactual sampler
+  replaced `gc.boss`, and its boss checkpoint averaged Guardian, Hexaghost, and Slime Boss. The
+  boss is fixed at act generation and visible to the player, so the oracle now preserves the known
+  boss and evaluates only that encounter with probability 1. The original 16-seed result remains a
+  useful directional pilot, but is not a confirmation of the information-correct oracle.
+- `STS_ACT_FIGHT_PROBE_LOG=/path/teacher.csv` now emits durable, append-only per-action rows:
+  rich state features, all legal actions, known boss, the common future seeds, per-future utility,
+  mean/sample-SD/SE, and each probability-weighted encounter/HP safety contribution. This should
+  be enabled for the corrected calibration and confirmation runs.
+- `STS_ACT_FIGHT_PROBE_MAX_CHECKPOINTS=N` supplies a local combat-strength horizon by scoring the
+  next `N` reached combat checkpoints (rather than a variable number of map nodes); after the
+  final scored checkpoint it does not pay for an unnecessary trunk fight. The 4-vs-2 future runtime
+  calibration uses `N=3` before changing the combat-search budget.
+- `STS_ACT_FIGHT_PROBE_PARALLEL=1` parallelizes the independent candidate-action × sampled-future
+  branches within one OOC decision. With `bestbench ... 1 ...` it bypasses the otherwise empty outer
+  OpenMP seed team, so `OMP_NUM_THREADS=8` genuinely supplies up to eight branch workers for one
+  seed. It is intentionally disabled when dynamic potion saving or ordered tracing is enabled.
+- `STS_ACT_FIGHT_PROBE_CHECKPOINT_SIMS=400,200,100` optionally gives the first, second, and third
+  reached checkpoint separate inner-combat base budgets. It applies to both each possible-encounter
+  evaluation and the corresponding trunk fight; the live run remains at its ordinary outer budget.
+
+### 66b. Three-checkpoint runtime calibration: four versus two futures (2026-07-23)
+- **Setup:** corrected known-boss oracle; one fair-play A0 seed (126700); 600 live and inner combat
+  simulations; three reached combat checkpoints; deployed skip/shop/rest/PUCT/V-combat stack; and
+  `STS_ACT_FIGHT_PROBE_PARALLEL=1`, `OMP_NUM_THREADS=8`. The only changed setting was sampled
+  encounter futures: 4 versus 2. Raw logs and durable teacher rows are in
+  `selfplay/gate/act1_checkpoint_knownboss_runtime/`.
+- **Runtime:** 4 futures took **418.77 wall-seconds**, **2,689.51 CPU-seconds** (mean active use
+  ~6.4 cores); 2 futures took **274.10 wall-seconds**, **1,241.73 CPU-seconds** (mean ~4.5 cores).
+  Thus 2 futures cut CPU by **53.8%** and wall time by **34.5%** (**1.53×** wall-time speedup). The
+  weaker wall-time gain is expected: with only two futures, many two-action decisions expose fewer
+  than eight independent branches and cannot fill all eight workers.
+- **Scope:** both cleared Act 1, but ended at 65 HP (4 futures) and 90 HP (2 futures). One seed and
+  different selected trajectories do **not** establish that two futures preserve teacher quality.
+  Next use the teacher rows to measure chosen-action agreement and ranking regret against the
+  4-future oracle before selecting the cheaper setting for a paired confirmation.
+
+### 66c. Decreasing inner combat budgets across three checkpoints (2026-07-23)
+- **Setup:** same corrected one-seed runtime setup as 66b, retaining **four** encounter futures,
+  three checkpoints, 600-sim live combats, and eight-worker branch parallelism. Only the inner
+  checkpoint schedule changed from uniform 600 to `STS_ACT_FIGHT_PROBE_CHECKPOINT_SIMS=400,200,100`.
+- **Runtime:** the decreasing schedule took **171.01 wall-seconds** and **1,083.21 CPU-seconds**,
+  versus 418.77 wall-seconds / 2,689.51 CPU-seconds for uniform-600 four-future evaluation. That is
+  a **59.2% wall-time reduction** (**2.45×** speedup) and **59.7% CPU reduction**. It cleared Act 1
+  with 43 HP (uniform-600 cleared with 65 HP).
+- **Scope:** retain four futures as chosen, but do not treat this single-seed trajectory as evidence
+  that the decreasing schedule is an adequate teacher. Use the durable rows to compare action
+  agreement/ranking regret to uniform 600 before adopting it for the paired confirmation.
+
+### 66d. Direct learned combat transitions (2026-07-23)
+- **Implementation:** `STS_ACT_FIGHT_PROBE_PREDICT=1` loads the existing entity combat model
+  (`selfplay/models/v_combat_entity_iter34.txt`), which was trained from the combat buffer and has
+  separate heads for `P(win)` and `E[end HP / max HP | win]`. At each checkpoint it now scores every
+  possible enemy as `P(win) * HP-safety + (1-P(win)) * -1`, rather than playing a 400/200/100-sim
+  MCTS fight. To reach checkpoints two and three, the sampled trunk applies the model's predicted
+  win/loss (default threshold 0.5); on a predicted win it installs the predicted HP and calls the
+  normal victory exit path, so Burning Blood and ordinary reward setup still occur. `sims=0` in the
+  durable component trace explicitly denotes a model prediction, not a zero-budget combat search.
+- **Runtime smoke:** on the same corrected fair-play A0 seed **126700**, four futures, three reached
+  checkpoints, 600-sim live combat, eight-worker branch mode, and the 400/200/100 setting, the
+  direct-transition run cleared Act 1 with 26 HP in **3.16 wall-seconds** (**2.81 CPU-seconds**).
+  This is a **54.1x wall-time speedup** over 171.01 seconds for searched 400/200/100 checkpoints
+  (and 132.5x over the 600/600/600 four-future runtime). Native inference was separately checked
+  against 200 Python validation rows: max scalar difference 0.000023. Raw artifacts:
+  `selfplay/gate/act1_checkpoint_knownboss_runtime/predict_entity_400_200_100.{log,time,teacher.csv}`.
+- **Boundary:** this is a fast *approximate* transition, not yet a replacement teacher. It does not
+  simulate card plays, potion use, combat RNG, transient relic/card counters, or exact rewards; the
+  virtual victory preserves potions and uses the battle-start RNG state. The single successful
+  trajectory proves integration and latency only. Before any policy-quality claim, compare action
+  rankings/regret from these rows against the searched oracle on identical decision states, then run
+  a held-out paired Act-1 gate if that agreement is acceptable.
+
+### 66e. Full-run 16-seed smoke: **invalid pending reproducibility repair** (2026-07-23)
+- The full-run smoke did execute real 600-simulation combats and did not accidentally stop after Act
+  1: its candidate rows reach floors 20--50. Both arms nevertheless recorded **0/16** full clears.
+  That outcome is plausible at this budget: the closest fair-play 600-simulation controls are
+  12.5% (16 seeds 126500--126515), 15.6% (128 seeds 126000--126127), and 17.6% (500 seeds
+  65000--65499) full-run win rate, for which an all-loss 16-seed block has roughly 12%, 6.6%, and
+  4.5% probability respectively. It is not evidence of a hidden Act-1 stop.
+- **Do not use the reported paired effect.** Repeating the candidate under the nominally same
+  fair-play settings changes outcomes: parallel runs disagreed on seeds 126700 and 126704, and two
+  serial one-seed replays of 126700 ended on floors 50 and 42. The serial 16-seed pass likewise gave
+  baseline/candidate mean floors 17.0/29.4, not the parallel 16.75/31.0. Thus the prior apparent
+  `+14.25`-floor result cannot yet be treated as a valid paired estimate.
+- **Next requirement:** find and remove the remaining run-level nondeterminism (then require exact
+  repeated per-seed CSV equality) before evaluating teacher agreement or running another gate. Raw
+  forensic artifacts remain in `selfplay/gate/act1_predict_transition_fullrun16/`.
+
+### 66f. All-act OOC scope and baseline boss-relic policy (implementation; pending reproducible gate) (2026-07-23)
+- `STS_ACT_FIGHT_PROBE_ALL_OOC=1` now applies during **Acts 1--3**, rather than only Act 1. A
+  boss-relic screen is an ordinary legal OOC action set: each relic is applied on a copied state,
+  transition into the next act is performed normally, and that resulting state is scored at its
+  next capped combat checkpoints. The current act's boss remains fixed/known throughout.
+- The ordinary baseline already makes boss-relic decisions, but with the built-in
+  `Expert::getBossRelicOrdering` table. It only switches those picks to V_win when
+  `STS_BOSS_RELIC=1`; this was **not** enabled in the standard fair 600-simulation baseline. Thus
+  the all-OOC candidate and baseline both choose a relic, but optimize it by different rules.
+- Reproducibility audit: fully resetting `BattleContext`'s nested state at `init()` removed the
+  baseline's repeated-seed divergence (seed 126700: three identical one-core replays all died on
+  floor 8). The predictor/all-OOC path still has a separate first-run discrepancy, so no new
+  all-act/full-run gate has been started; this entry records implementation scope, not a quality
+  result.
+
+### 66g. Serverless out-of-combat GBM evaluator (2026-07-23)
+- **Implementation:** exported the deployed floor model `build/v_rich_xgb.json` to the native tree
+  format `build/v_rich_trees.txt`. With `STS_NATIVE_OOC=1` (now the default), card rewards, shop
+  bundles/removal, raw floor values, and win-rate rest/upgrade choices are evaluated in-process.
+  The existing native `v_win_trees.txt` evaluator supplies the P(win) path. Set
+  `STS_NATIVE_OOC=0` only for an explicit legacy `v_server.py` comparison.
+- **Server scope:** the server was only an inference bridge. It served the floor GBM, win GBM, and
+  optional neural/paired experimental endpoints; it was not needed for combat search or the entity
+  checkpoint predictor. The native baseline replaces the GBM endpoints. Optional `STS_CARD_NN`,
+  `STS_CARD_ACTION`, graph/path-action, and paired-rest experiments still require their respective
+  server models.
+- **Verification:** two independent no-server runs of seed 126700 under the four-future,
+  three-checkpoint, direct-transition setup produced identical results: **1/1 win, floor 51,
+  90 HP**, at about 15.3 CPU-seconds each. This also removes the previous cold-start race in which
+  the first run began before the Python server had loaded its models and silently skipped cards or
+  left shops empty.
+
+### 66h. Native versus legacy server-backed evaluator, 64 paired seeds (2026-07-23)
+- **Setup:** identical fair-play A0 configuration, 600 live combat simulations, four encounter
+  futures, three checkpoint cap, direct entity combat transitions, PUCT/V-combat, seeds
+  **126700--126763**, and eight outer workers. The only arm difference was OOC inference:
+  `STS_NATIVE_OOC=0` with `v_server.py` versus the default native floor/win GBMs.
+- **Results:** legacy server arm won **3/64 (4.7%)**, mean floor **32.03**, mean end HP **1.89**;
+  native arm won **5/64 (7.8%)**, mean floor **32.55**, mean end HP **2.55**. Paired native-minus-
+  server deltas were **+0.52 floors**, **+0.66 HP**, and **+2 wins**. The paired gate score
+  (floor + 10×win) was **+0.83**, SE **1.13**, 95% CI **[-1.39,+3.04]**: no statistically reliable
+  quality difference at 64 seeds.
+- **Runtime:** server arm consumed **983.6 wall-seconds** (**380.6 process CPU-seconds**; the CSV's
+  per-seed elapsed-time sum is 6471 seconds); native arm took **98.8 wall-seconds** (**722.6 process
+  CPU-seconds**; CSV sum 738 seconds). Thus native was approximately **10.0× faster wall time**;
+  the server arm's wall time includes Python socket/model overhead and did not scale efficiently
+  across the eight workers. Per-seed elapsed times are not additive CPU measurements.
+- **Conclusion:** native inference is the recommended baseline: it matches the legacy policy within
+  this noisy 64-seed gate while eliminating the server dependency and cold-start failure mode. The
+  comparison artifacts are in `selfplay/gate/native_vs_server_64/`.
+- **Correction:** this 66h quality/runtime comparison is **invalid**. The first native implementation
+  omitted the server's zero-signal upgrade-target fallback, so it was not policy-equivalent. A
+  corrected one-seed check now matches the server exactly (seed 126700: floor 33). Do not use the
+  earlier 64-seed deltas or 10x runtime claim as evidence.
+
+### 66i. Current native baseline, 1,000 sims × 128 seeds (2026-07-23)
+- **Setup:** standard full-run stack with fair play, native in-process floor/win GBMs, PUCT/V-combat,
+  no all-OOC checkpoint oracle, 1,000 live combat simulations, A0, seeds **126700--126827**, and
+  eight outer workers.
+- **Result (primary fair-play benchmark):** **39/128 wins (30.5%)**, mean floor **40.32**, mean end HP **11.91**. Runtime was
+  **176.0 wall-seconds / 1,325.3 process CPU-seconds**. Raw output is in
+  `selfplay/gate/baseline_1000_128/`.
+- This is the current best-model fair-play score on the fixed 128-seed benchmark. It must not be
+  compared directly with the historical 51.6%/1,000-sim known-RNG score: fair play re-randomizes
+  hidden information during search, while known-RNG simulations can peek at future draws. The
+  known-RNG number remains a diagnostic only; fair-play is the primary quality benchmark.
+
+### 66j. Future-count / checkpoint-horizon sweep at 1,000 fair-play sims (2026-07-23)
+- **Question:** does the all-OOC combat-strength evaluator improve full-run performance, and how
+  many sampled futures and next combat checkpoints are useful? The candidate used the native floor/
+  win GBMs, `STS_ACT_FIGHT_PROBE_ALL_OOC=1`, the entity combat predictor
+  (`STS_ACT_FIGHT_PROBE_PREDICT=1`), and every legal Act 1--3 OOC action was scored. This is the
+  fast predicted-transition evaluator, not the expensive searched checkpoint teacher.
+- **Setup:** Ascension 0, fair-play, 1,000 live combat sims, common seed block 126700--126731,
+  and futures × next-combats in `{1,2,4} × {1,2,3}`. A fresh baseline on the same block was
+  **7/32 wins (21.9%)**, mean floor **37.31**, mean end HP **8.03**.
+
+  | futures | next combats | wins | avg floor | avg end HP | paired score delta* |
+  |---:|---:|---:|---:|---:|---:|
+  | 1 | 1 | 1/32 (3.1%) | 29.41 | 1.34 | −9.78 |
+  | 1 | 2 | 2/32 (6.2%) | 32.03 | 2.97 | −6.84 |
+  | 1 | 3 | 2/32 (6.2%) | 31.25 | 2.75 | −7.62 |
+  | 2 | 1 | 1/32 (3.1%) | 30.38 | 0.28 | −8.81 |
+  | 2 | 2 | 2/32 (6.2%) | 30.91 | 1.81 | −7.97 |
+  | 2 | 3 | 1/32 (3.1%) | **32.84** | 0.25 | **−6.34** |
+  | 4 | 1 | 1/32 (3.1%) | 30.47 | 1.25 | −8.72 |
+  | 4 | 2 | 2/32 (6.2%) | 30.41 | **3.25** | −8.47 |
+  | 4 | 3 | 1/32 (3.1%) | 32.75 | 1.06 | −6.44 |
+
+  *Paired score is `floor + 10×win`; deltas are candidate minus the fresh baseline per seed.
+- **Verdict:** no performance gain appeared. The best depth point, 2 futures × 3 combats, was
+  **−4.47 floors** and **−6.34 score units** paired against baseline, with 1 versus 7 wins.
+  More futures did not improve the result, and longer horizons only partially recovered the damage.
+  The current predicted-transition evaluator is therefore not deployable as an OOC policy. The
+  likely issue is model/transition error compounding across counterfactual OOC trunks; the entity
+  predictor does not model combat card/potion use or exact post-combat state transitions.
+- **Reproducibility note:** the earlier stored 32-seed subset of the 128-seed baseline was 6/32,
+  floor 39.59, while the fresh replay was 7/32, floor 37.31. This fair-play multi-thread run is
+  not bit-identical across separate 8-thread invocations, so the table is directional; future
+  gates should use repeated fixed-thread runs or single-thread paired evaluation.
+
+### 66k. Direct next-combat OOC action labels and first NN (2026-07-24)
+- **Collector:** added `oocnextgen`. It samples one genuine OOC decision from each baseline run,
+  enumerates **all legal actions**, continues each branch only to its next battle, and records both
+  the concrete baseline-combat result and the weighted result of searching every possible encounter
+  at that checkpoint. This removes the multi-checkpoint predicted-transition approximation.
+- **Dataset:** 2,000 seed-held-out decision groups and **10,564 action rows** across map, rewards,
+  shop, rest, event, and selection screens. Mean group size was 5.31 actions. The concrete and
+  all-encounter labels selected the same best action on **65.1%** of groups, giving an empirical
+  upper-bound/noise reference for the target.
+- **First model:** a raw rich-state/action MLP (`train_ooc_next_action.py`), 80/20 split by whole
+  decision group. Held-out results on 400 groups: win Brier **0.0716**, win accuracy **90.9%**,
+  HP-fraction MAE **0.211**, exact teacher-best action **29.5%**, and best-or-tied **42.8%**.
+- **Verdict:** ✅ collector and labels are working; ❌ this first NN is not useful yet. Its action
+  ranking is far below the 65.1% concrete-vs-encounter agreement ceiling. The next model should
+  reuse/pretrain the large OOC state encoder and use structured action encodings (screen/action
+  type, card identity, map child, shop bundle, event/selection target), rather than treating the
+  raw 32-bit `GameAction` encoding as a universal action representation. Artifacts:
+  `selfplay/ooc_buffer/next_combat_2000.csv` and `selfplay/models/ooc_next_action_2000*`.
+
+### 66l. One-step NN evaluated against multi-checkpoint teacher (2026-07-24)
+- **Question:** does a one-next-combat action model transfer to the desired multi-combat utility,
+  or is a separate three-checkpoint target required? Reused the existing corrected **four-future,
+  three-checkpoint** teacher trace (`futures4_teacher.csv`); no new rollout data was collected.
+- **Result:** on 60 teacher decision groups / 201 legal-action rows, the NN score had Spearman
+  correlation **0.636** and Pearson correlation **0.513** with the teacher's three-checkpoint
+  utility. It selected the exact teacher-best action **56.7%** of the time and a best-or-tied action
+  **70.0%** of the time; mean teacher regret was **0.093** utility units.
+- **Interpretation:** one-step supervision does transfer to multi-checkpoint action ranking
+  reasonably well. This supports directly wiring the NN into the three-checkpoint OOC benchmark;
+  a new three-step training dataset is not required merely to test the idea. The result is an
+  offline trace check only—the trace has one seed and is not a 64-seed gameplay gate.
+
+### 66m. Repeated next-combat action NN benchmark (2026-07-24)
+- **Setup:** paired fair-play A0 runs, 1,000 combat sims, 64 common seeds **126900--126963**.
+  The action NN was queried in one batch for every legal OOC action and reapplied at every later
+  OOC decision. The run was launched with the requested `futures=4` and `max-checkpoints=3`
+  settings; those rollout knobs are metadata here because this deployed NN directly predicts the
+  next combat rather than running the old checkpoint oracle.
+- **Result:** baseline **14/64 wins (21.9%)**, mean floor **37.05**, mean end HP **7.53**;
+  repeated-NN candidate **0/64 wins (0.0%)**, mean floor **19.53**, mean end HP **0.00**.
+  Paired candidate-minus-baseline deltas were **−17.52 floors** and **−19.70** on `floor+10×win`;
+  the candidate was better on 5 seeds, tied on 1, and worse on 58.
+- **Verdict:** ❌ the first action NN does not transfer as a whole-run repeated OOC policy, despite
+  its useful offline correlation with the three-checkpoint teacher. This is a deployment-level
+  failure, not evidence that four futures or three checkpoints help: greedy next-combat action
+  selection compounds errors across drafting, shop, rest, event, and map decisions. Keep the model
+  as an offline ranker/diagnostic and do not promote it to the live OOC policy without structured
+  action features, calibration, and a conservative gate against the existing policy.
+- **Artifacts:** `selfplay/gate/ooc_action_nn_64_f4_c3/{baseline,candidate}.csv`.
+
+### 66n. Server-path sanity check for 66m (2026-07-24)
+- The OOC server was live and loaded `selfplay/models/ooc_next_action_2000`; a direct `OA` request
+  returned one prediction per submitted action. With the server intentionally unavailable, the NN
+  policy fell back to the ordinary baseline path: seed 126900 at 300 sims reached floor **50**.
+  With the live OA endpoint, the same seed/budget reached floor **16**. Therefore the 0/64 result in
+  66m is caused by the NN's selected actions, not a dead server or silent fallback.
+- The earlier **32.75-floor** 4-future/3-checkpoint point in 66j is not the same policy: it used the
+  native entity combat predictor inside the old checkpointed all-OOC rollout evaluator over the
+  32-seed sweep. It did not use the new action NN or the OA server, and its score was already below
+  the 37.31-floor baseline on that block.
+
+## 67. Checkpoint-oracle distilled OOC action NN  ➕ promising, needs more data (2026-07-24)
+- **Goal:** distill the expensive 3-checkpoint MCTS oracle (§66) into a fast forward-pass NN that
+  scores every legal OOC action directly, replacing the entire OOC policy stack (cards, path, shop,
+  rest, events) with a single model.
+- **Teacher data:** 16 seeds, fair-play, 600 live combat sims, 2 futures, 3 checkpoints,
+  decreasing inner sims (400/200/100). 6,307 action rows / 1,974 decisions across acts 1–3.
+  Collected via `STS_ACT_FIGHT_PROBE_ALL_OOC=1 STS_ACT_FIGHT_PROBE_LOG=teacher.csv`.
+- **Model:** MLP (1017→256→128 state, 32→16 action, screen/act embeddings, 156→96→1 head),
+  GELU activations, dropout 0.2. Trained to predict meanUtility with MSE loss. Held-out
+  best-action accuracy 44.6% (vs ~31% random with 3.2 actions/decision).
+- **Native C++ inference:** exported weights to binary (1.25MB), implemented GELU/Linear/LayerNorm
+  from scratch. `STS_OOC_CHECKPOINT_NN=<path>` env flag. Server-free, parity-verified vs PyTorch
+  (max error 0.001). CPU overhead ~0.5s/run over baseline.
+- **Full-run gate (128 seeds, 1000 sims):** baseline 14.1%/36.2 floor/5.8 HP. Native NN **0.0%/
+  19.4 floor**. The 16-seed model cannot reliably differentiate actions (all scores cluster
+  at 2.6–2.8, narrow variance). Server-based OA endpoint previously reported 17.2% but was
+  unreliable (silent fallback to baseline policies when server dropped).
+- **Act-1 trace tooling:** enhanced `runtrace` mode now shows NN scores for every OOC screen
+  (card drafts with skip evaluation, Neow upgrades, rest heal/smith, map choices, event options,
+  shop actions). Format: `[NN <screen>] <action> = <score>`. See `AGENTS.md` for usage.
+- **Verdict:** ➕ the architecture and pipeline work end-to-end (teacher collection → training →
+  native deployment → trace evaluation). The model has correct directional instincts (prefers
+  heal over smith at low HP, prefers skip over weak cards) but lacks sufficient data to make
+  confident decisions. Next: collect more teacher data (100+ seeds) and retrain.
+
+## 67b. Combat value net makes the checkpoint oracle tractable  ➕ strong Act-1 (2026-07-24)
+- **Goal:** the §66 all-OOC checkpoint oracle was proven effective (100% Act-1 clear vs 56%
+  baseline on 16 seeds) but cost 6,951 CPU-s/run. Make it practical by replacing inner-checkpoint
+  pure MCTS rollouts with low-sim MCTS + combat value net leaf.
+- **Setup:** `STS_ACT_FIGHT_PROBE_ALL_OOC=1 STS_ACT_FIGHT_PROBE_FUTURES=2
+  STS_ACT_FIGHT_PROBE_MAX_CHECKPOINTS=3 STS_ACT_FIGHT_PROBE_CHECKPOINT_SIMS=50,25,10
+  STS_VNET=build/v_combat_fair_trees.txt STS_VNET_ALPHA=0.3`
+- **8-seed Act-1 (127000–127007):** baseline 50.0% clear / 26.4 HP / 1.32 CPU-s. Oracle+V-net
+  **87.5% clear / 48.4 HP / 150.26 CPU-s**. +37.5pp clear rate, +22 HP.
+- **Speed:** 150 vs original 6,951 CPU-s/run = **46× speedup** from the combat value net.
+  Still 114× baseline, but now practical for small-scale teacher data collection.
+- **Interpretation:** 50/25/10 sims with the value net leaf provides near-full combat strength
+  for checkpoint evaluation. The value net (trained on fair-play combat data at full sims) gives
+  reliable P(win) and E[HP|win] estimates, so MCTS only needs enough sims to resolve action
+  choices, not to play out full fights.
+- **Verdict:** ➕ the checkpoint oracle is now a viable tool for teacher data collection and
+  offline policy evaluation. Next: collect checkpoint-oracle decisions at scale to retrain
+  the distilled OOC action NN; A/B the oracle directly as a live policy only if the CPU cost
+  can be brought below ~30s/run (more aggressive sim caps or NN acceleration).
