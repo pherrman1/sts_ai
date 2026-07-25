@@ -26,3 +26,5 @@
 /selfplay/status.txt
 /selfplay/history.tsv
 /selfplay/logs_run.out
+build/pilot_val.csv
+build/pilot_pol.csv

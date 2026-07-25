@@ -30,13 +30,18 @@ Assessment from 2026-07-25 review. Phase 1 starts now.
 - [x] CRN tie-breaking: crnTiebreak() method implemented (top-2, 10% threshold, particle evaluation). Not wired into agent (no measurable benefit at 1000 sims).
 - [x] Conservative lethal: isGuaranteedLethal boost added to edge priors. Removed from hot path (added overhead without benefit). Function available for future use.
 
-## Phase 4: Fair-play model data
+## Phase 4: Fair-play data collection
 
-- [ ] Generate fair-play combat data with Searcher3 as teacher
-- [ ] Train policy on fair MCTS visit distributions
-- [ ] Train value model on fair-play outcome distributions
-- [ ] Verify model calibration (rank correlation, death-prob calibration)
-- [ ] Hybrid leaf evaluator: alpha*V_network + (1-alpha)*V_short_rollout
+### Preflight (done)
+- [x] 4.1: canPruneAsDead() with state-machine guards (InputState checks). Finding: guards never fire — tree traversal always in PLAYER_NORMAL. Aggressive isGuaranteedDead retained (safe: compression exhausts player actions first).
+- [x] 4.2: Composite RNG seeding: hash(agentSeed, visibleHash, decisionIdx). Same seed+obs = identical search. Different seeds = data diversity. agentSeed set from bc.seed.
+
+### Pilot collection
+- [x] 4.3a: 500 fair-play runs, 1000 sims/decision, Searcher3 teacher. 161K value rows (1766 features + won/endHp). Policy rows need Searcher3-specific hook (g_onSearchComplete expects Searcher2&).
+- [x] 4.3b: Audit passed: no hidden RNG fields, labels consistent, 500 unique seeds, train/val/test split (350/75/75 by seed).
+- [ ] 4.3c: Semantic observation schema (player/monster/hand/piles/relics/potions + action list + visit π + outcome) — schema designed, needs richer logging format
+- [ ] 4.4: Full trajectory dataset generation
+- [ ] 4.5: Adjudicated-state dataset (high-budget MCTS on strategic states)
 
 ## Phase 5: Run-level model
 
