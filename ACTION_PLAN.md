@@ -102,7 +102,13 @@ L = λ_π·L_policy + λ_w·L_win + λ_q·L_quantile + λ_p·L_potion + λ_t·L_
 Starting weights: policy=1.0, win=1.0, quantile=0.5, potion=0.2, turns=0.1
 
 ### Implementation steps
-- [ ] 4b.1: Python `CombatPolicyValueNet` (shared encoder + dual heads), train on fair data
+- [x] 4b.1: Python `CombatPolicyValueNet` (shared encoder + dual heads), train on fair data
+  - First training: 10 epochs, 447K params, on 832K value + 3.6M policy rows
+  - Final loss 0.99 (v=0.33, p=0.66), exported to `build/v_combat_pvnet.txt` (4.5MB)
+  - Streaming training: no full dataset preload, O(1) RAM, GPU-accelerated
+  - Architecture: 2-layer transformer, 128-dim, 4 heads, type embeddings + GLOBAL token
+  - Policy head: dynamic action scoring (action_encoder + scorer MLP on z + e_a + z*e_a)
+  - Value heads: P(win), P(death), 11 HP quantiles, 44 potion-use logits, turns
 - [ ] 4b.2: C++ inference (`CombatPVNet`) with BLAS acceleration, wired into Searcher3
 - [ ] 4b.3: Policy-guided PUCT using learned priors (replace GBM policy)
 - [ ] 4b.4: Leaf value blending (learned V_combat + rollout) in step()

@@ -221,7 +221,7 @@ static void benchmark(int sims, int nSeeds) {
 // WHOLE RUN: ScumSearchAgent2 plays Neow -> Act 3 boss (battles via MCTS,
 // map/rewards/events/campfires/shops via its out-of-combat policy).
 // ---------------------------------------------------------------------------
-struct RunResult { bool won; int floor; int act; int hpEnd, maxHp; int fightsLost; double sec; };
+struct RunResult { bool won; int floor; int act; int hpEnd, maxHp; int fightsLost; double sec; int deathCombat = -1; int deathEncounter = -1; };
 
 static RunResult runFullRun(std::uint64_t seed, int sims, int ascension, bool verbose) {
     GameContext gc(CharacterClass::IRONCLAD, seed, ascension);
@@ -2102,7 +2102,7 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
     t_actFightProbeDecisionIdx = 0;
     t_curPath = &path;
     bool clearedStopActBoss = false;
-    int fightsLost = 0, fightsTotal = 0;
+    int fightsLost = 0, fightsTotal = 0, deathCombat = -1, deathEncounter = -1;
     auto t0 = std::chrono::steady_clock::now();
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
@@ -2116,7 +2116,7 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             BattleContext bc{}; bc.init(gc);
             agent.playoutBattle(bc);
             ++fightsTotal;
-            if (bc.outcome == Outcome::PLAYER_LOSS) ++fightsLost;
+            if (bc.outcome == Outcome::PLAYER_LOSS) { ++fightsLost; if (deathCombat < 0) { deathCombat = fightsTotal; deathEncounter = (int)bc.encounter; } }
             bc.exitBattle(gc);
             if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
                 clearedStopActBoss = bc.outcome == Outcome::PLAYER_VICTORY;
@@ -2171,7 +2171,8 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
     const RunResult result { clearedStopActBoss || gc.outcome == GameOutcome::PLAYER_VICTORY,
                               gc.floorNum, gc.act, gc.curHp, gc.maxHp,
                               fightsLost,
-                              std::chrono::duration<double>(t1 - t0).count() };
+                              std::chrono::duration<double>(t1 - t0).count(),
+                              deathCombat, deathEncounter };
     vDisconnect();
     return result;
 }
@@ -2560,7 +2561,7 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
     if (!resultsFile.empty()) {
         results.open(resultsFile, std::ios::app);
         if (results.tellp() == 0) {
-            results << "seed,won,floor,act,hpEnd,maxHp,fightsLost,sec\n";
+            results << "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,sec\n";
             results.flush();
         }
     }
@@ -2577,7 +2578,7 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         if (results.is_open()) {
             results << seed << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
                     << r.act << ',' << r.hpEnd << ',' << r.maxHp << ','
-                    << r.fightsLost << ',' << r.sec << '\n';
+                    << r.fightsLost << ',' << r.deathCombat << ',' << r.deathEncounter << ',' << r.sec << '\n';
             results.flush();
         }
         prog.tick(r.won, r.floor, r.hpEnd);
@@ -2591,7 +2592,7 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             if (results.is_open()) {
                 results << seed << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
                         << r.act << ',' << r.hpEnd << ',' << r.maxHp << ','
-                        << r.fightsLost << ',' << r.sec << '\n';
+                        << r.fightsLost << ',' << r.deathCombat << ',' << r.deathEncounter << ',' << r.sec << '\n';
                 results.flush();
             }
             prog.tick(r.won, r.floor, r.hpEnd);
