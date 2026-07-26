@@ -4357,7 +4357,7 @@ static std::string policyHeaderStr();
 // FAIR-PLAY datagen: Searcher3 ISMCTS → value + policy CSVs with visit
 // distributions. Policy rows: state+action features + visit count + total.
 // ---------------------------------------------------------------------------
-static std::pair<std::string,std::string>
+static std::tuple<std::string,std::string,std::string>
 runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
     search::g_richCombatFeatures = true;
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
@@ -4368,11 +4368,17 @@ runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
     std::uniform_real_distribution<double> ur(0.0, 1.0);
     PathHistory path; t_curPath = &path;
 
-    std::ostringstream val, pol;
-    int fightIdx = 0, decIdx = 0;
+    std::ostringstream val, pol, ooc;
+    int fightIdx = 0, decIdx = 0, oocDecIdx = 0;
     std::vector<std::string> fightRows;
     const int nf = search::combatPolicyFeatureCount();
     std::vector<float> feat(nf);
+
+    auto logOoc = [&](const char *screen, int actionId) {
+        ooc << seed << ',' << oocDecIdx++ << ',' << screen << ','
+            << gc.act << ',' << gc.floorNum << ',' << gc.curHp << ',' << gc.maxHp << ','
+            << (int)gc.deck.cards.size() << ',' << (int)gc.gold << ',' << actionId << '\n';
+    };
 
     search::g_onCombatDecision = [&](const BattleContext &bc) {
         fightRows.push_back(combatFeatureRow(bc));
@@ -4409,7 +4415,7 @@ runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
             ++fightIdx;
             bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            int action = chooseMapAction(gc); logOoc("MAP", action); search::GameAction(action).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -4433,42 +4439,48 @@ runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
     search::g_onCombatDecision = nullptr;
     search::g_onSearchComplete3 = nullptr;
     t_curPath = nullptr;
-    return { val.str(), pol.str() };
+    return { val.str(), pol.str(), ooc.str() };
 }
 
 static void fairGen(int nSeeds, int sims, int asc, double epsilon,
-                    const std::string &valFile, const std::string &polFile, long long seedOffset = 0) {
+                    const std::string &valFile, const std::string &polFile,
+                    const std::string &oocFile, long long seedOffset = 0) {
     search::g_richCombatFeatures = true;
     const bool append = seedOffset > 0;
     std::cout << "fairgen    seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
               << "  sims " << sims << "  asc " << asc << "  eps " << epsilon
               << (append ? "  [append]" : "") << "  threads " << numThreads()
-              << "  -> " << valFile << " + " << polFile << "\n";
+              << "  -> " << valFile << " + " << polFile << " + " << oocFile << "\n";
     std::ofstream vf(valFile, append ? std::ios::app : std::ios::out);
     std::ofstream pf(polFile, append ? std::ios::app : std::ios::out);
+    std::ofstream of(oocFile, append ? std::ios::app : std::ios::out);
     if (vf.tellp() == 0) { vf << "seed,fightIdx," << combatHeaderStr() << ",won,endHp\n"; vf.flush(); }
     if (pf.tellp() == 0) { pf << policyHeaderStr() << "\n"; pf.flush(); }
+    if (of.tellp() == 0) { of << "seed,decIdx,screen,act,floor,curHp,maxHp,deckSize,gold,action\n"; of.flush(); }
 
     auto t0 = std::chrono::steady_clock::now();
-    long long vRows = 0, pRows = 0; int done = 0;
+    long long vRows = 0, pRows = 0, oRows = 0; int done = 0;
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
-        auto pr = runFairGenSeed((std::uint64_t)(seedOffset + s), sims, asc, epsilon);
+        auto [vr, pr, or_] = runFairGenSeed((std::uint64_t)(seedOffset + s), sims, asc, epsilon);
         #pragma omp critical
         {
-            vf << pr.first;  pf << pr.second;  vf.flush(); pf.flush();
-            vRows += std::count(pr.first.begin(),  pr.first.end(),  '\n');
-            pRows += std::count(pr.second.begin(), pr.second.end(), '\n');
+            vf << vr;  pf << pr;  of << or_;
+            vf.flush(); pf.flush(); of.flush();
+            vRows += std::count(vr.begin(), vr.end(), '\n');
+            pRows += std::count(pr.begin(), pr.end(), '\n');
+            oRows += std::count(or_.begin(), or_.end(), '\n');
             if (++done % 100 == 0) {
                 double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-                std::printf("  %d/%d runs, %lld val + %lld pol rows, %.0fs (%.3fs/run)\n",
-                            done, nSeeds, vRows, pRows, el, el/done);
+                std::printf("  %d/%d runs, %lld val + %lld pol + %lld ooc rows, %.0fs (%.3fs/run)\n",
+                            done, nSeeds, vRows, pRows, oRows, el, el/done);
                 std::fflush(stdout);
             }
         }
     }
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld value + %lld policy rows from %d runs in %.1fs\n", vRows, pRows, nSeeds, wall);
+    std::printf("wrote %lld value + %lld policy + %lld ooc rows from %d runs in %.1fs\n",
+                vRows, pRows, oRows, nSeeds, wall);
 }
 
 // ---------------------------------------------------------------------------
@@ -5664,8 +5676,9 @@ int main(int argc, char **argv) {
         double eps    = argc > 5 ? std::stod(argv[5]) : 0.3;
         std::string vout = argc > 6 ? argv[6] : "build/fair_val.csv";
         std::string pout = argc > 7 ? argv[7] : "build/fair_pol.csv";
-        long long seedOff = argc > 8 ? std::stoll(argv[8]) : 0;
-        fairGen(nSeeds, sims, asc, eps, vout, pout, seedOff);
+        std::string oout = argc > 8 ? argv[8] : "build/fair_ooc.csv";
+        long long seedOff = argc > 9 ? std::stoll(argv[9]) : 0;
+        fairGen(nSeeds, sims, asc, eps, vout, pout, oout, seedOff);
 
     } else if (mode == "policygen") {     // CSV of (state, action, visit/total) MCTS policy targets (AZ-lite)
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;

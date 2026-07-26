@@ -39,7 +39,8 @@ Assessment from 2026-07-25 review. Phase 1 starts now.
 ### Pilot collection
 - [x] 4.3a: 500 fair-play runs, 1000 sims/decision, Searcher3 teacher. 161K value rows (1766 features + won/endHp). Policy rows need Searcher3-specific hook (g_onSearchComplete expects Searcher2&).
 - [x] 4.3b: Audit passed: no hidden RNG fields, labels consistent, 500 unique seeds, train/val/test split (350/75/75 by seed).
-- [ ] 4.3c: Semantic observation schema (player/monster/hand/piles/relics/potions + action list + visit π + outcome) — schema designed, needs richer logging format
+- [x] 4.3c: Semantic schema: DATA_SCHEMA.md (v1). fairgen mode outputs value + policy CSVs with visit distributions. Policy rows: state+action features + visit + total. Split by game seed.
+- [x] Step 5: Audit: no hidden RNG fields, labels consistent, visit sums verified, reproducibility confirmed (same seed = same output), train/test seed split defined.
 - [ ] 4.4: Full trajectory dataset generation
 - [ ] 4.5: Adjudicated-state dataset (high-budget MCTS on strategic states)
 
