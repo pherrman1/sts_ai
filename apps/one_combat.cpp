@@ -40,6 +40,7 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/CombatDistValueNet.h"
+#include "sim/search/CombatPVNet.h"
 #include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/ExpertKnowledge.h"
@@ -5444,6 +5445,16 @@ int main(int argc, char **argv) {
                       << search::g_combatDistVNet.description() << "]\n";
         } else {
             std::cout << "[Dist V_combat load FAILED: " << path << "]\n";
+        }
+    }
+    if (const char *d = std::getenv("STS_PVNET")) {        // shared policy-value network (AlphaZero-style)
+        std::string path = d;
+        if (search::g_combatPVNet.load(path)) {
+            search::g_usePVNet = true;
+            std::cout << "[PVNet ON: " << path << ", "
+                      << search::g_combatPVNet.description() << "]\n";
+        } else {
+            std::cout << "[PVNet load FAILED: " << path << "]\n";
         }
     }
     // AZ-lite policy-guided PUCT selection. DEFAULT ON (+4.3pp full-run win @512

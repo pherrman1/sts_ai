@@ -5,6 +5,7 @@
 #include "sim/search/ExpertKnowledge.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/CombatDistValueNet.h"
+#include "sim/search/CombatPVNet.h"
 #include "combat/BattleContext.h"
 
 #include <algorithm>
@@ -421,6 +422,8 @@ double BattleScumSearcher3::evaluateTerminal(const BattleContext &bc) {
 
 double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc) {
     if (isTerminal(bc)) return evaluateTerminal(bc);
+    if (g_usePVNet && g_combatPVNet.loaded())
+        return g_combatPVNet.leafValue(bc, riskLambda);
     if (g_useDistVNet && g_combatDistVNet.loaded())
         return g_combatDistVNet.predictFromBC(bc).riskAdjustedValue(
             riskLambda, bc.player.maxHp, g_combatDistVNet.winBonus);
@@ -521,12 +524,44 @@ void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc)
     const int n = (int)node.edges.size();
     if (n <= 1) { if (n == 1) node.edges[0].prior = 1.f; return; }
 
-    thread_local std::vector<float> feat;
+    thread_local std::vector<float> feat, global, actionFeats;
     const int stateN = combatFeatureCount();
+    const int actionN = combatPolicyFeatureCount() - stateN;
     if ((int)feat.size() < combatPolicyFeatureCount())
         feat.assign(combatPolicyFeatureCount(), 0.f);
     combatExtractFeatures(bc, feat.data());
 
+    // ── PVNet policy ──
+    if (g_usePVNet && g_combatPVNet.loaded()) {
+        std::array<float,1766> stateArr{};
+        for (int i=0;i<1766;++i) stateArr[i]=feat[i];
+        global.resize(128);
+        g_combatPVNet.encode(stateArr, global.data());
+
+        actionFeats.resize(n * 14);
+        for (int i = 0; i < n; ++i)
+            combatFillActionFeatures(bc, node.edges[i].action, actionFeats.data() + i*14);
+
+        // Score all actions at once
+        float bestLogit = -1e30f;
+        for (int i = 0; i < n; ++i) {
+            float logit = g_combatPVNet.policyScore(global.data(), actionFeats.data() + i*14);
+            if (logit > bestLogit) bestLogit = logit;
+            feat[stateN + i] = logit;  // store logit temporarily
+        }
+        // Softmax
+        float sum = 0.f;
+        for (int i = 0; i < n; ++i) {
+            feat[stateN + i] = std::exp(feat[stateN + i] - bestLogit);
+            sum += feat[stateN + i];
+        }
+        float inv = sum > 0.f ? 1.f / sum : 1.f / n;
+        for (int i = 0; i < n; ++i)
+            node.edges[i].prior = feat[stateN + i] * inv;
+        return;
+    }
+
+    // ── GBM policy (fallback) ──
     float entityState[64];
     if (g_policyNet.isEntityPolicy)
         g_policyNet.encodePolicyStateVec(feat.data(), entityState);
