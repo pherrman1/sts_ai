@@ -30,7 +30,7 @@ Assessment from 2026-07-25 review. Phase 1 starts now.
 - [x] CRN tie-breaking: crnTiebreak() method implemented (top-2, 10% threshold, particle evaluation). Not wired into agent (no measurable benefit at 1000 sims).
 - [x] Conservative lethal: isGuaranteedLethal boost added to edge priors. Removed from hot path (added overhead without benefit). Function available for future use.
 
-## Phase 4: Fair-play data collection
+## Phase 4: Fair-play data collection ✅
 
 ### Preflight (done)
 - [x] 4.1: canPruneAsDead() with state-machine guards (InputState checks). Finding: guards never fire — tree traversal always in PLAYER_NORMAL. Aggressive isGuaranteedDead retained (safe: compression exhausts player actions first).
@@ -42,6 +42,81 @@ Assessment from 2026-07-25 review. Phase 1 starts now.
 - [x] 4.3c: Semantic schema: DATA_SCHEMA.md (v1). fairgen mode outputs value + policy CSVs with visit distributions. Policy rows: state+action features + visit + total. Split by game seed.
 - [x] Step 5: Audit: no hidden RNG fields, labels consistent, visit sums verified, reproducibility confirmed (same seed = same output), train/test seed split defined.
 - [x] **BUG (FIXED):** fairgen mode crashed at ~100/80000 runs. Root cause: `GameContext::setupEvent()` FALLING handler had `int counts[3]` but indexed with `static_cast<int>(c.getType())`, which overflowed when deck contained Status/CURSE cards (enum values 3,4). Fixed by bumping array to `int counts[8]` with bounds guard. Verified with ASAN (1000 runs clean) + 500-seed regular build.
+
+### Full collection (done)
+- [x] 3000-seed Searcher3 fairgen run: 832K value rows (2.8G) + 3.6M policy rows (13G) + 108K OOC rows (3.2M) at 500 sims/decision. Ascension 0, Ironclad.
+
+---
+
+## Phase 4b: Shared CombatPolicyValueNet (AlphaZero-style)
+
+**Architecture:** One shared combat-state encoder with separate policy and value heads:
+
+```
+Visible combat observation
+          │
+          ▼
+ Shared object/set encoder (2-layer transformer)
+          │
+          ▼
+ Global state embedding z
+       ┌──┴─────────────┐
+       ▼                ▼
+ Dynamic policy head   Value heads
+ P(a | observation)    Outcome distribution
+```
+
+### Input tokens
+- Object tokens with embeddings: identity + type + zone + upgrade/state + numeric projection
+- Object types: player, monster, card, relic, potion, global
+- Zones: hand, draw pile, discard pile, exhaust pile
+- Hand cards individually; identical unmodified cards in piles as grouped tokens with count
+- Monster tokens with HP, block, intent, intent damage, powers
+- Player token with HP, block, energy, powers
+- Context: turn, encounter, act, ascension
+- No arbitrary positional encodings (most combat objects are sets/multisets)
+
+### Encoder
+- Embedding dim: 128
+- Transformer blocks: 2, attention heads: 4, FF dim: 256
+- Pre-layer norm, learned GLOBAL token for pooling
+
+### Policy head
+- Dynamic: encode each legal action as action type + source token + target token + action features
+- Score against global embedding: `logit = MLP(z, e_action, h_source, h_target)`
+- Training target: MCTS root visit counts (temperature τ): π_a = N(a)^{1/τ} / Σ N(b)^{1/τ}
+- Loss: cross-entropy; downweight forced single-action states, upweight high-entropy/close decisions
+
+### Value heads
+1. P(combat win) — BCE, all examples
+2. Ending-HP quantiles (11 bins: q05..q95) — quantile loss, win-only examples
+3. Potion-use probability per potion type — BCE
+4. Expected turns remaining — Huber loss
+
+Scalar leaf value: V(o) = p_win · E[U(ending HP, potions) | win] + (1 − p_win) · U_death
+
+### Training loss
+```
+L = λ_π·L_policy + λ_w·L_win + λ_q·L_quantile + λ_p·L_potion + λ_t·L_turns + λ_r·||θ||²
+```
+Starting weights: policy=1.0, win=1.0, quantile=0.5, potion=0.2, turns=0.1
+
+### Implementation steps
+- [ ] 4b.1: Python `CombatPolicyValueNet` (shared encoder + dual heads), train on fair data
+- [ ] 4b.2: C++ inference (`CombatPVNet`) with BLAS acceleration, wired into Searcher3
+- [ ] 4b.3: Policy-guided PUCT using learned priors (replace GBM policy)
+- [ ] 4b.4: Leaf value blending (learned V_combat + rollout) in step()
+- [ ] 4b.5: Benchmark: policy-only eval, value-only eval, combined vs baseline Searcher3
+- [ ] 4b.6: Ablation: MLP/DeepSets baseline → shared transformer → separate encoders
+
+### Evaluation metrics
+- **Policy:** cross-entropy, top-1 agreement, visit-distribution KL, top-k recall
+- **Value:** win calibration, Brier score, HP quantile calibration, potion-use accuracy
+- **Agent:** win rate at fixed sim count/wall time, simulations per second
+
+**The final metric that matters:** a slightly less accurate but substantially faster network may produce the stronger bot.
+
+
 
 ## Phase 5: Run-level model
 
