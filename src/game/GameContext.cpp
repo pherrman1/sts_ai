@@ -884,9 +884,10 @@ void GameContext::setupEvent() { // todo necronomicon event
             break;
 
         case Event::FALLING: { // todo test and CANNOT BE BOTTLED
-            int counts[3] {0,0,0};
+            int counts[8] {0};
             for (const auto &c : deck.cards) {
-                ++counts[static_cast<int>(c.getType())];
+                int t = static_cast<int>(c.getType());
+                if (t >= 0 && t < 8) ++counts[t];
             }
 
             int attacksIdx = counts[0] > 0 ? miscRng.random(counts[0] - 1) : -1;

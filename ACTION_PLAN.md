@@ -41,7 +41,7 @@ Assessment from 2026-07-25 review. Phase 1 starts now.
 - [x] 4.3b: Audit passed: no hidden RNG fields, labels consistent, 500 unique seeds, train/val/test split (350/75/75 by seed).
 - [x] 4.3c: Semantic schema: DATA_SCHEMA.md (v1). fairgen mode outputs value + policy CSVs with visit distributions. Policy rows: state+action features + visit + total. Split by game seed.
 - [x] Step 5: Audit: no hidden RNG fields, labels consistent, visit sums verified, reproducibility confirmed (same seed = same output), train/test seed split defined.
-- [ ] **BUG:** fairgen mode crashes at ~100/80000 runs (OOC logging or policy callback issue). Value rows written (26K val + 117K pol before crash). fightgen stable at 500+ runs without Searcher3 callbacks. Debug needed — suspect `g_onSearchComplete3` lambda capture or OOC `logOoc` in OMP parallel section.
+- [x] **BUG (FIXED):** fairgen mode crashed at ~100/80000 runs. Root cause: `GameContext::setupEvent()` FALLING handler had `int counts[3]` but indexed with `static_cast<int>(c.getType())`, which overflowed when deck contained Status/CURSE cards (enum values 3,4). Fixed by bumping array to `int counts[8]` with bounds guard. Verified with ASAN (1000 runs clean) + 500-seed regular build.
 
 ## Phase 5: Run-level model
 
