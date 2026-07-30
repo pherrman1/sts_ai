@@ -150,6 +150,8 @@ namespace sts::search {
 
     extern CombatPVNet g_combatPVNet;
     extern bool g_usePVNet;
+    extern double g_pvnetAlpha;              // blend: 1.0=pure neural, 0.0=pure rollout
+    extern bool g_pvnetValueOnly;            // suppress PVNet policy head, use GBM priors instead
 
 } // namespace sts::search
 

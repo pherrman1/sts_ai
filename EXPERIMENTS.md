@@ -1748,3 +1748,30 @@ v_rich2_xgb.json, v_boss2_xgb.json, vrich2.csv (append more nights before using)
   offline policy evaluation. Next: collect checkpoint-oracle decisions at scale to retrain
   the distilled OOC action NN; A/B the oracle directly as a live policy only if the CPU cost
   can be brought below ~30s/run (more aggressive sim caps or NN acceleration).
+
+## Phase 4b PVNet alpha sweep — 2026-07-30
+
+**Setup:** 128 seeds, asc 0, Searcher3 fair-play, combined PVNet (policy priors + leaf value blend).
+VM: c4-highcpu-24 (24 threads). Baseline heuristic OOC + PUCT (GBM policy).
+
+### Sweep: α-blend × sim budget
+
+| sims | α=0.0 | 0.25 | 0.5 | 0.75 | 1.0 |
+|---|---|---|---|---|---|
+| **50** | 57.8% | 46.1% | 56.2% | 51.6% | 50.0% |
+| **100** | **66.4%** | 59.4% | 63.3% | 62.5% | 50.0% |
+| **250** | **65.6%** | 62.5% | 60.9% | 47.7% | 49.2% |
+| **500** | 59.4% | **60.2%** | 54.7% | 53.1% | 40.6% |
+
+### Interpretation
+
+- **α=0.0 (policy-only:** PVNet priors guide PUCT, leaf value = rollout terminal) wins or ties
+  at every sim budget. The PVNet policy head is the strong component.
+- **α=1.0 (pure neural leaf)** is worst at all 4 sim budgets. The gap grows with sims: from
+  ~7pp at 50 sims to ~19pp at 500 sims. The value head has systematic blind spots that
+  more search exposes rather than corrects.
+- **α=0.25 (25% neural / 75% rollout)** edges α=0.0 at 500 sims (60.2% vs 59.4%, within noise)
+  — a small neural injection may help stabilize high-sim search, but the effect is marginal.
+- **Verdict:** PVNet policy priors alone (+78.1% at 100 sims, 32 seeds) are the best use of
+  the shared network today. The value head needs rework (different architecture, better
+  training signal, or separate encoder) before combined beats policy-only.

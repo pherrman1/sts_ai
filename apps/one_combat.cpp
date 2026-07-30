@@ -4486,6 +4486,85 @@ static void fairGen(int nSeeds, int sims, int asc, double epsilon,
 }
 
 // ---------------------------------------------------------------------------
+// STRATEGIC data generation: one CSV row per OOC decision, with full rich state,
+// action, and terminal outcome. Feeds Phase 5 run-level model training.
+static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    search::ScumSearchAgent2 agent;
+    agent.simulationCountBase = sims;
+    agent.rng = std::default_random_engine(seed);
+    PathHistory path; t_curPath = &path;
+    using RT = search::GameAction::RewardsActionType;
+
+    std::vector<std::string> rows;
+    auto logDec = [&](const char *screen, int action) {
+        std::ostringstream r;
+        r << seed << ',' << (int)rows.size() << ',' << screen << ',' << action << ','
+          << richRow(gc, path);
+        rows.push_back(r.str());
+    };
+
+    while (gc.outcome == GameOutcome::UNDECIDED) {
+        path.update(gc);
+        if (gc.screenState == ScreenState::BATTLE) {
+            BattleContext bc; bc.init(gc);
+            agent.playoutBattle(bc);
+            bc.exitBattle(gc);
+        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+            int a = chooseMapAction(gc); logDec("MAP", a); search::GameAction(a).execute(gc);
+        } else if (gc.screenState == ScreenState::REWARDS) {
+            auto &r = gc.info.rewardsContainer;
+            if      (r.goldRewardCount > 0) { logDec("GOLD", 0); search::GameAction(RT::GOLD, 0).execute(gc); }
+            else if (r.relicCount > 0)      { logDec("RELIC", 0); search::GameAction(RT::RELIC, 0).execute(gc); }
+            else if (r.potionCount > 0)     { logDec("POTION", 0); search::GameAction(RT::POTION, 0).execute(gc); }
+            else if (r.cardRewardCount == 0) { logDec("SKIP", 0); search::GameAction(RT::SKIP).execute(gc); }
+            else {
+                logDec("CARD_REWARD", (int)r.cardRewardCount);
+                evalCardRewardPolicy(gc);
+            }
+        } else {
+            logDec("OOC", (int)gc.screenState);
+            agent.stepOutOfCombatPolicy(gc);
+        }
+    }
+    t_curPath = nullptr;
+
+    const int won = gc.outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0;
+    std::ostringstream out;
+    for (const auto &row : rows)
+        out << row << ',' << won << ',' << gc.floorNum << ',' << gc.curHp << '\n';
+    return out.str();
+}
+
+static void strategicGen(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0) {
+    const bool append = seedOffset > 0;
+    std::cout << "strategicgen  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
+              << "  sims " << sims << "  asc " << asc << "  threads " << numThreads()
+              << "  -> " << outFile << "\n";
+    std::ofstream f(outFile, append ? std::ios::app : std::ios::out);
+    if (f.tellp() == 0) {
+        std::string h = richHeader();
+        auto comma = h.find(',');  // skip "seed," prefix — we prepend our own
+        f << "seed,decIdx,screen,action," << h.substr(comma + 1) << ",won,endFloor,endHp\n";
+        f.flush();
+    }
+    auto t0 = std::chrono::steady_clock::now();
+    long long rows = 0; int done = 0;
+    #pragma omp parallel for schedule(dynamic) reduction(+:rows)
+    for (int s = 0; s < nSeeds; ++s) {
+        std::string r = runStrategicGenSeed((std::uint64_t)(seedOffset + s), sims, asc);
+        #pragma omp critical
+        { f << r; f.flush(); rows += std::count(r.begin(), r.end(), '\n'); }
+        if (++done % 50 == 0) {
+            double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+            std::printf("  %d/%d runs, %lld rows, %.0fs\n", done, nSeeds, rows, el);
+        }
+    }
+    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("wrote %lld rows from %d runs in %.1fs\n", rows, nSeeds, wall);
+}
+
+// ---------------------------------------------------------------------------
 // COMBINED value+policy datagen: one full-run play emits BOTH the V_combat value
 // rows (g_onCombatDecision snapshot, labeled with fight endHp) AND the policy-target
 // rows (g_onSearchComplete root visit-π). Halves self-play combat datagen cost vs
@@ -5457,6 +5536,13 @@ int main(int argc, char **argv) {
             std::cout << "[PVNet load FAILED: " << path << "]\n";
         }
     }
+    if (search::g_usePVNet) {
+        if (const char *a = std::getenv("STS_PVNET_ALPHA")) search::g_pvnetAlpha = std::atof(a);
+        if (const char *v = std::getenv("STS_PVNET_VALUE_ONLY")) search::g_pvnetValueOnly = std::atoi(v) != 0;
+        std::cout << "[PVNet alpha = " << search::g_pvnetAlpha;
+        if (search::g_pvnetValueOnly) std::cout << ", value-only";
+        std::cout << "]\n";
+    }
     // AZ-lite policy-guided PUCT selection. DEFAULT ON (+4.3pp full-run win @512
     // vs plain UCB, §26): auto-loads the compact net if present. STS_POLICY=0
     // disables; STS_POLICY=<path> overrides the file; STS_POLICY=1 uses the full
@@ -5472,14 +5558,16 @@ int main(int argc, char **argv) {
             search::g_policyNet.isPolicy = true;
             if (search::g_policyNet.load(path)) {
                 search::g_usePolicyNet = true;
-                if (const char *c = std::getenv("STS_CPUCT")) search::g_cPuct = std::atof(c);
                 std::cout << "[policy PUCT ON: " << path << ", "
-                          << search::g_policyNet.description() << ", c_puct "
-                          << search::g_cPuct << "]\n";
+                          << search::g_policyNet.description() << "]\n";
             } else if (d) {                       // warn only if explicitly requested
                 std::cout << "[policy net load FAILED: " << path << "]\n";
             }
         }
+    }
+    if (search::g_usePolicyNet || search::g_usePVNet) {
+        if (const char *c = std::getenv("STS_CPUCT")) search::g_cPuct = std::atof(c);
+        std::cout << "[c_puct = " << search::g_cPuct << "]\n";
     }
 
     if (mode == "bench") {
@@ -5691,6 +5779,14 @@ int main(int argc, char **argv) {
         std::string oout = argc > 8 ? argv[8] : "build/fair_ooc.csv";
         long long seedOff = argc > 9 ? std::stoll(argv[9]) : 0;
         fairGen(nSeeds, sims, asc, eps, vout, pout, oout, seedOff);
+
+    } else if (mode == "strategicgen") {  // Phase 5: one row per OOC decision, full rich state
+        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 500;
+        int sims      = argc > 3 ? std::stoi(argv[3]) : 1000;
+        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
+        std::string out = argc > 5 ? argv[5] : "build/strategic.csv";
+        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
+        strategicGen(nSeeds, sims, asc, out, seedOff);
 
     } else if (mode == "policygen") {     // CSV of (state, action, visit/total) MCTS policy targets (AZ-lite)
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;

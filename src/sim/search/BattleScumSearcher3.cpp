@@ -272,15 +272,20 @@ void BattleScumSearcher3::step() {
                 if (!played) break;
             }
 
-            // Blend: capture V_combat at leaf state, then rollout, then blend
+            // Blend: capture leaf value, then rollout, then blend
             double vLeaf = std::numeric_limits<double>::quiet_NaN();
             if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha < 1.0
                 && state.outcome == Outcome::UNDECIDED)
                 vLeaf = g_combatVNet.predict(state);
+            else if (g_usePVNet && g_combatPVNet.loaded()
+                     && state.outcome == Outcome::UNDECIDED)
+                vLeaf = g_combatPVNet.leafValue(state, riskLambda);
 
             playoutRandom(state, actionStack);
             double eval = evaluateLeaf(state);
-            if (!std::isnan(vLeaf))
+            if (g_usePVNet && g_combatPVNet.loaded() && !std::isnan(vLeaf))
+                eval = g_pvnetAlpha * vLeaf + (1.0 - g_pvnetAlpha) * eval;
+            else if (!std::isnan(vLeaf))
                 eval = g_vnetAlpha * vLeaf + (1.0 - g_vnetAlpha) * eval;
             backpropagate(path, eval, actionStack);
             return;
@@ -336,7 +341,8 @@ int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
     const int n = (int)node.edges.size();
     if (n == 1) return 0;
 
-    const bool usePuct = g_usePolicyNet && g_policyNet.loaded();
+    const bool usePuct = (g_usePolicyNet && g_policyNet.loaded())
+                       || (g_usePVNet && g_combatPVNet.loaded());
     const double logParent  = usePuct ? 0.0 : std::log((double)(node.simulationCount + 1));
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
     const bool exploit = !bestActionSequence.empty();  // Searcher2 pattern: exploit only after finding a winning line
@@ -531,8 +537,8 @@ void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc)
         feat.assign(combatPolicyFeatureCount(), 0.f);
     combatExtractFeatures(bc, feat.data());
 
-    // ── PVNet policy ──
-    if (g_usePVNet && g_combatPVNet.loaded()) {
+    // ── PVNet policy (skipped when value-only so GBM provides priors) ──
+    if (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly) {
         std::array<float,1766> stateArr{};
         for (int i=0;i<1766;++i) stateArr[i]=feat[i];
         global.resize(128);
@@ -543,21 +549,23 @@ void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc)
             combatFillActionFeatures(bc, node.edges[i].action, actionFeats.data() + i*14);
 
         // Score all actions at once
+        thread_local std::vector<float> logitsCache;
+        logitsCache.resize(n);
         float bestLogit = -1e30f;
         for (int i = 0; i < n; ++i) {
             float logit = g_combatPVNet.policyScore(global.data(), actionFeats.data() + i*14);
             if (logit > bestLogit) bestLogit = logit;
-            feat[stateN + i] = logit;  // store logit temporarily
+            logitsCache[i] = logit;
         }
         // Softmax
         float sum = 0.f;
         for (int i = 0; i < n; ++i) {
-            feat[stateN + i] = std::exp(feat[stateN + i] - bestLogit);
-            sum += feat[stateN + i];
+            logitsCache[i] = std::exp(logitsCache[i] - bestLogit);
+            sum += logitsCache[i];
         }
         float inv = sum > 0.f ? 1.f / sum : 1.f / n;
         for (int i = 0; i < n; ++i)
-            node.edges[i].prior = feat[stateN + i] * inv;
+            node.edges[i].prior = logitsCache[i] * inv;
         return;
     }
 
