@@ -13,6 +13,8 @@ namespace sts::search {
 
 CombatPVNet g_combatPVNet;
 bool g_usePVNet = false;
+double g_pvnetAlpha = 1.0;
+bool g_pvnetValueOnly = false;
 
 // ---- BLAS integration ------------------------------------------------------
 static void *blas_handle = nullptr;

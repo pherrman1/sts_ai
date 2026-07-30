@@ -112,8 +112,13 @@ Starting weights: policy=1.0, win=1.0, quantile=0.5, potion=0.2, turns=0.1
 - [ ] 4b.2: C++ inference (`CombatPVNet`) with BLAS acceleration, wired into Searcher3
 - [ ] 4b.3: Policy-guided PUCT using learned priors (replace GBM policy)
 - [ ] 4b.4: Leaf value blending (learned V_combat + rollout) in step()
-- [ ] 4b.5: Benchmark: policy-only eval, value-only eval, combined vs baseline Searcher3
-- [ ] 4b.6: Ablation: MLP/DeepSets baseline → shared transformer → separate encoders
+- [x] 4b.5: Benchmark: policy-only eval, value-only eval, combined vs baseline Searcher3
+  - **128-seed α × sims sweep** at 50/100/250/500 sims, 5 α values.
+  - Policy-only (α=0) wins or ties at every budget: 66.4% at 100 sims.
+  - Pure neural leaf (α=1) is worst at all budgets, gap grows with sims (40.6% at 500).
+  - Blending (α=0.25) edges α=0 at 500 sims (60.2% vs 59.4%) — marginal.
+  - **Verdict:** PVNet policy priors are the strong component. Value head needs rework.
+- [ ] 4b.6 (*deferred*): Ablation: MLP/DeepSets baseline → shared transformer → separate encoders
 
 ### Evaluation metrics
 - **Policy:** cross-entropy, top-1 agreement, visit-distribution KL, top-k recall
@@ -124,14 +129,95 @@ Starting weights: policy=1.0, win=1.0, quantile=0.5, potion=0.2, turns=0.1
 
 
 
-## Phase 5: Run-level model
+## Phase 5: Semi-Markov run-level strategic agent
 
-- [ ] RunObservation schema (deck, relics, potions, HP, gold, map, act, boss)
-- [ ] Full-run logging + heuristic OOC policy
-- [ ] Train V_run from full trajectories
-- [ ] Auxiliary targets: P(beat Act N), expected floor, HP at next boss
-- [ ] Use V_run as combat terminal utility
-- [ ] Card-reward, pathing, shop policies trained with V_run
+**Architecture:** A unified candidate-scoring model over run state, treating combat as a temporally extended transition. The strategic model acts only at meaningful decision points (card rewards, map nodes, shop, rest, events), while combat remains handled by Searcher3 + PVNet.
+
+```
+Run state s_t
+   │
+   ├─ choose card
+   ├─ choose map node
+   ├─ buy/remove/leave shop
+   ├─ rest/upgrade/lift/toke/recall
+   ├─ choose event option
+   └─ choose relic/potion
+          │
+          ▼
+    potentially many game steps (including entire combat)
+          │
+          ▼
+Next strategic state s_{t+1}
+```
+
+### 5.1 Data pipeline and run state schema
+
+- [ ] **5.1.1:** `StrategicTransition` struct: `RunObservation`, `StrategicAction`, reward, `next_state`, terminal, floors_elapsed
+- [ ] **5.1.2:** Run state encoder inputs:
+  - Global token: character, asc, act, floor, HP/maxHp, gold, potion slots, keys, map row, known boss, normalized scalars + explicit threshold features
+  - Deck encoder: counted tokens `(cardId, upgraded, count)` through 2-4 transformer/set-attention layers
+  - Relic/potion tokens: entity IDs + dynamic state (Girya lifts, Omamori charges, etc.)
+  - Map graph encoder: DAG message-passing from boss row backward; each legal node embeddings carry downstream route info
+  - Decision context: current screen state, offer contents, legal actions
+- [ ] **5.1.3:** Full-run logging to CSV (one row per strategic decision, one label per run)
+- [ ] **5.1.4:** Heuristic OOC baseline: log + evaluate current heuristic policy for comparison
+
+### 5.2 Unified candidate-scoring model (Phase A)
+
+- [ ] **5.2.1:** Shared state encoder (256-dim) fusing deck, relic, map, global embeddings
+- [ ] **5.2.2:** Type-specific candidate encoders per decision type (card, map node, rest action, shop item, event option, relic)
+- [ ] **5.2.3:** Dynamic policy head: `logit = MLP(z_state, z_action, z_state * z_action)` across all legal actions
+- [ ] **5.2.4:** Distributional value heads: P(win run), P(reach next act), P(reach Act 3), death-floor distribution, boss-HP quantiles
+- [ ] **5.2.5:** Train with PPO at strategic decision points (GAE, γ≈0.995 per floor, entropy coef decay)
+- [ ] **5.2.6:** Value curriculum: floor-based reward early → weighted → pure win late
+- [ ] **5.2.7:** Separate policy heads vs. one unified scorer: use shared encoder + shared scorer + optional type-specific residual heads
+
+### 5.3 Better encoders (Phase B)
+
+- [ ] **5.3.1:** Replace fixed deck vector with counted-card set transformer (permutation invariant)
+- [ ] **5.3.2:** Full map graph encoder (DAG message-passing) instead of shallow multi-row features
+- [ ] **5.3.3:** Candidate–deck cross-attention: candidate card token attends to deck tokens
+- [ ] **5.3.4:** Evaluate each encoder change with paired seeds
+
+### 5.4 Combat outcome model (Phase C)
+
+- [ ] **5.4.1:** Collect combat examples: `(pre-combat state, encounter, died, HP delta, potions used, turns)` from PVNet-guided Searcher3 runs
+- [ ] **5.4.2:** Train `C_ψ(deck, relics, potions, HP, encounter, asc) → P(death, HP-loss quantiles, potion-use, turns)`
+- [ ] **5.4.3:** Encounter probes: evaluate C_ψ against representative encounter set, feed probe results into strategic state
+- [ ] **5.4.4:** Use combat outcome model as fast surrogate for tactical MCTS during strategic search
+
+### 5.5 One-ply post-action search (Phase D)
+
+- [ ] **5.5.1:** For card rewards: clone state, apply action, recompute run value V_run(s')
+- [ ] **5.5.2:** For campfires: enumerate all legal options + all upgrade candidates, evaluate each via V_run
+- [ ] **5.5.3:** For events: enumerate deterministic outcomes, sample stochastic outcomes via RNG clones
+- [ ] **5.5.4:** Compare direct policy vs. policy + one-ply value evaluation (paired seeds)
+
+### 5.6 Specialized search (Phase E)
+
+- [ ] **5.6.1:** Shop beam search (beam width 16-64, depth = affordable purchases, dedup states)
+- [ ] **5.6.2:** Short-horizon map route search (2-5 floors, sample room outcomes, V_run at leaf)
+- [ ] **5.6.3:** Stochastic event evaluation via sampled RNG continuations
+- [ ] **5.6.4:** **Hidden-information boundary**: never expose future card rewards/unknown shop/hidden RNG/RNG seed to the model
+
+### 5.7 Search distillation (Phase F)
+
+- [ ] **5.7.1:** At each strategic state, enumerate actions, run shallow search, produce improved policy targets π_target(a|s) ∝ exp(Q_search(s,a)/τ)
+- [ ] **5.7.2:** Train policy toward search-improved distribution (CE loss)
+- [ ] **5.7.3:** Iterative loop: play runs → search improves decisions → train policy/value → repeat
+
+### Evaluation
+
+- **Policy:** top-1 agreement with search-improved targets, entropy, calibration
+- **Value:** win calibration, Brier score, floor-distribution accuracy
+- **Agent:** full-run win rate at fixed compute budget, floors, HP, deaths by act
+
+**Key hypotheses:**
+1. Matchup-aware encounter probes substantially outperform generic "deck strength"
+2. Candidate–deck cross-attention is the biggest single accuracy gain for card rewards
+3. Shop beam search outperforms greedy item-by-item selection  
+4. Search distillation stabilizes training vs. pure REINFORCE/PPO
+5. The unified scorer architecture beats separate networks per decision type
 
 ---
 
