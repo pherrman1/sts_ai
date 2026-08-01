@@ -1,4 +1,17 @@
-# Action Plan — Combat Model
+# Archived combat action plan — July 2026
+
+> Historical status: this plan records the state and intended work as it was
+> written. It is not the current architecture or operating baseline. In
+> particular, several checked completion claims about Searcher3 belief updates,
+> RNG seeding, and fair-path tree reuse do not match the current implementation,
+> and the recorded `fairgen` provenance does not establish that `STS_FAIR=1`
+> was set. PVNet steps 4b.2–4b.4 were later implemented without all checkboxes
+> being updated. See
+> [`docs/knowledge-base/architecture/combat-search.md`](../knowledge-base/architecture/combat-search.md),
+> [`docs/knowledge-base/behavior/determinism-and-rng.md`](../knowledge-base/behavior/determinism-and-rng.md),
+> and [`EXPERIMENTS.md`](../../EXPERIMENTS.md) for current facts and evidence.
+
+Original title: **Action Plan — Combat Model**
 
 Assessment from 2026-07-25 review. Phase 1 starts now.
 
@@ -39,7 +52,7 @@ Assessment from 2026-07-25 review. Phase 1 starts now.
 ### Pilot collection
 - [x] 4.3a: 500 fair-play runs, 1000 sims/decision, Searcher3 teacher. 161K value rows (1766 features + won/endHp). Policy rows need Searcher3-specific hook (g_onSearchComplete expects Searcher2&).
 - [x] 4.3b: Audit passed: no hidden RNG fields, labels consistent, 500 unique seeds, train/val/test split (350/75/75 by seed).
-- [x] 4.3c: Semantic schema: DATA_SCHEMA.md (v1). fairgen mode outputs value + policy CSVs with visit distributions. Policy rows: state+action features + visit + total. Split by game seed.
+- [x] 4.3c: Semantic schema: `docs/archive/fair-play-dataset-schema-v1.md`. `fairgen` mode outputs value + policy CSVs with visit distributions. Policy rows: state+action features + visit + total. Split by game seed.
 - [x] Step 5: Audit: no hidden RNG fields, labels consistent, visit sums verified, reproducibility confirmed (same seed = same output), train/test seed split defined.
 - [x] **BUG (FIXED):** fairgen mode crashed at ~100/80000 runs. Root cause: `GameContext::setupEvent()` FALLING handler had `int counts[3]` but indexed with `static_cast<int>(c.getType())`, which overflowed when deck contained Status/CURSE cards (enum values 3,4). Fixed by bumping array to `int counts[8]` with bounds guard. Verified with ASAN (1000 runs clean) + 500-seed regular build.
 
@@ -215,7 +228,7 @@ Next strategic state s_{t+1}
 **Key hypotheses:**
 1. Matchup-aware encounter probes substantially outperform generic "deck strength"
 2. Candidate–deck cross-attention is the biggest single accuracy gain for card rewards
-3. Shop beam search outperforms greedy item-by-item selection  
+3. Shop beam search outperforms greedy item-by-item selection
 4. Search distillation stabilizes training vs. pure REINFORCE/PPO
 5. The unified scorer architecture beats separate networks per decision type
 

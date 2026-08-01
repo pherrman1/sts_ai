@@ -1,4 +1,15 @@
-# Future-fight supervision
+# Archived future-fight supervision note — July 2026
+
+> Historical status: this note records the design of a tested supervision
+> direction. `EXPERIMENTS.md` entries 64–67b contain the measured outcomes.
+> Its collection command depends on `./one_combat.elf`, which is absent from
+> this checkout and is not a CMake output. Current strategic evaluator and
+> training boundaries are documented in
+> [`docs/knowledge-base/architecture/out-of-combat.md`](../knowledge-base/architecture/out-of-combat.md)
+> and
+> [`docs/knowledge-base/architecture/training-and-inference.md`](../knowledge-base/architecture/training-and-inference.md).
+
+Original title: **Future-fight supervision**
 
 The meta policy should not use a hand-maintained card tier for upcoming fights.
 Instead it should ask, for every counterfactual choice, whether the resulting

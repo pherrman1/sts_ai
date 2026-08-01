@@ -9,12 +9,25 @@ see the real upcoming draws, so numbers are an optimistic upper bound, not fair-
 Out-of-combat decisions use `ScumSearchAgent2`'s heuristic policies unless the experiment
 replaces one. All harness code is in `apps/one_combat.cpp`.
 
-Metrics: **win%** (reached & beat the Act 3 boss), **avg_floor** (how deep it got),
-**avg_hp_end**, and compute (**cpu_sec/run** = summed thread time; **wall**).
+Metrics: **win%** (normally reached and beat the Act 3 boss; all-key runs can
+continue to Act 4), **avg_floor** (how deep it got), **avg_hp_end**, and compute.
+Despite its label, current `bestBench` **cpu_sec/run** is mean per-run
+steady-clock elapsed time; **wall** is the outer benchmark wall time.
+
+**Ledger reading rule (2026-07-31):** every “best,” “current,” “deployed,” or
+“running” statement below is a dated historical statement unless a later entry
+explicitly confirms it. The maintained current configuration and benchmark
+qualification live in
+`docs/knowledge-base/evaluation/current-baselines.md`. Known-RNG and project-fair
+results are different regimes and must never be compared as one progression.
+Missing flags, hashes, or artifacts remain unknown; do not reconstruct them.
+In particular, the `fairgen` mode does not set `STS_FAIR` or
+`STS_SEARCHER3`; a historical entry or schema that omits either flag does not
+establish the intended project-fair Searcher3 generation path.
 
 ---
 
-## ⭐ Current best config (baseline for NEW experiments)  — 2026-07-14
+## Historical baseline for experiments as of 2026-07-14
 
 New out-of-combat experiments should A/B against **this stack**, not the old default agent, so we
 measure marginal gains instead of re-deriving from scratch. Requires `python3 v_server.py` (plain).
@@ -284,7 +297,7 @@ The full build names objects `src_combat_BattleContext.cpp.o`. Incremental rebui
 - **Per-card-upgrade V** (`u0..u371` upgraded-counts + retrain) — would let the rest-site upgrade target and any upgrade decision pick *scaling* cards instead of Strike; likely turns §15's rest-site depth gain into wins.
 - **Learned value function** V(deck, relics, hp, act) — amortize the lookahead offline; also enables depth-capped combat rollouts.
 
-## §17 Rich value model V2 (relic/upgrade/potion-aware) — NEW CURRENT BEST
+## §17 Rich value model V2 (relic/upgrade/potion-aware) — historical best on 2026-07-14
 Trained train_value_rich.py on vrich.csv (1.44M rows, 10k-sim on-policy). Features:
 all 448 with variance — core + d* + u*(upgrades) + r*(relics) + pot*(potions) +
 future/path. Val R^2 0.261 vs core-only-refit 0.206 (+0.056). Deployed via
@@ -303,7 +316,7 @@ stopped buying relics); C++ now sends shop relic ids.
 bestBench 1000 sims / 512 seeds / asc0 (paired):
   rich V2 only              : win 31.6%  floor 40.7  endHp 14.2
   V2 + upgrade + shop-relic  : win 38.7%  floor 42.0  endHp 18.4   (+7.1pp, all metrics up, 0 errs)
-=> new CURRENT BEST. Cumulative this session: 25.0% -> 38.7% (+13.7pp).
+=> historical best at this point in the ledger. Cumulative this session: 25.0% -> 38.7% (+13.7pp).
 
 ## §19 Re-sweep skip + rest-V thresholds on V2 (512 seeds / 1000 sims, rest off unless noted)
 SKIP threshold (V2 shifted the optimum negative vs old model's 0.0):
@@ -438,7 +451,7 @@ speedup does NOT transfer -- hardest late fights still need the sims):
 DEFAULT ON (per "if it wins make it default"): one_combat auto-loads
 build/policy_trees_c.txt (100 trees, c_puct 2.5) for all PLAY modes; STS_POLICY=0
 disables, =1 uses full 447-tree net, =<path> overrides; auto-load skipped for
-policygen so base datasets stay UCB-generated. NEW CURRENT BEST = 51.6% @512.
+policygen so base datasets stay UCB-generated. Historical known-RNG best at this point = 51.6% @512.
 Takeaway: the payoff is STRENGTH-at-equal-sims, not fewer-sims -- full runs are
 bottlenecked by the hardest fights where the prior helps but can't replace search.
 NEXT ideas: (1) AlphaZero self-play iteration (regen vpolicy.csv WITH PUCT on ->
@@ -459,7 +472,9 @@ Full-run win% (best OOC stack, asc0, v_server). PUCT = policy_trees_c.txt c2.5:
  20000    73.4      80.5     128    <- UCB OVERTAKES (+7pp)
 => Spending MORE time/combat pays off strongly under PUCT up to ~3-4k sims
    (51.6->62.3 @3k, +11pp). BEST PRACTICAL operating point = PUCT@2000-3000.
-=> CROSSOVER ~6-10k sims: beyond it plain UCB wins and reaches the ~80% ceiling
+=> **Historical interpretation:** crossover around 6-10k sims. Only the 20k
+   point directly pairs UCB and PUCT beyond 4k, so the interval itself was not measured.
+   At 20k plain UCB wins and reaches the ~80% ceiling
    (UCB@20k 80.5%, matching the known 81%@50k), while fixed-c PUCT plateaus ~73%.
 c_puct @20k (128 seeds): 0.5->50.8, 1.0->66.4, 2.5->73.4 (MONOTONE UP: high sims
    want MORE exploration, opposite of the low-sim regime where 0.5 under-explored).
@@ -678,8 +693,9 @@ v_rich2_xgb.json, v_boss2_xgb.json, vrich2.csv (append more nights before using)
 - **Result:** v1 (dropout 0.1, lr 2e-3) overfit hard (peak 0.737@ep4 then collapse). v2 (dropout
   0.3 everywhere incl pooled deck vec, lr 1e-3, wd 2e-4, best-ckpt) converged clean ->
   **val AUC 0.7497 @ep13 == GBM 0.7482 (TIE).** Two independent model classes hit the same ~0.75
-  => 0.75 is a DATA/LABEL CEILING, not a model limit (run-level `won` label, ~57k effective indep
-  runs). Synergy hypothesis did NOT beat GBM on absolute P(win) AUC.
+  => **Inference:** the tested capacity increase did not beat the GBM on this
+  data/label (~57k effective independent runs). This is consistent with a data/label
+  bottleneck but does not prove a ceiling. Synergy did not improve absolute P(win) AUC.
 - **Ensemble (eval_ensemble.py, streamed val-only, same rows):** GBM 0.7482 / NN 0.7476 / pred-corr
   0.912. Blend w=0.5 **AUC 0.7536 (+0.0054)**, logloss 0.5348->0.5308. Small but REAL orthogonal
   signal (different errors). Deployable via v_server blend (both models Python-side) if wanted.
@@ -703,9 +719,10 @@ v_rich2_xgb.json, v_boss2_xgb.json, vrich2.csv (append more nights before using)
   47.7, within 4.4pp SE) but is -3..-7 FLOOR on every arm: same win%, decks lose EARLIER when they
   lose = worse mid-run decks. Also the skip=-0.005 "win" at 32 seeds was itself noise-overfit
   (-0.02 better at 128). +2hp on survivors doesn't compensate.
-- **Verdict:** ➖ NN drafting does NOT beat v_rich. Triangulates with the AUC tie (§34) + ensemble
-  +0.005 -> the deck-set NN is a consistent NEGATIVE for deckbuilding; synergy hypothesis doesn't
-  pay off => 0.75 is a DATA/LABEL ceiling, not model capacity. DEPLOY UNCHANGED (default path still
+- **Verdict:** ➖ NN drafting does NOT beat v_rich. Together with the AUC tie (§34) and ensemble
+  +0.005, this tested deck-set NN is negative for deckbuilding; the synergy hypothesis did not
+  pay off here. **Inference:** data/labels are the more promising next lever, but these runs do not
+  prove a fixed 0.75 ceiling. DEPLOY UNCHANGED (default path still
   v_rich; NN only via STS_CARD_NN env). To beat the ceiling: more runs or a better LABEL (bootstrapped
   /TD win value), not a fancier model. v_server now also loads v_deckset.pt (harmless; +~torch mem).
 
@@ -1041,7 +1058,7 @@ v_rich2_xgb.json, v_boss2_xgb.json, vrich2.csv (append more nights before using)
   the iteration-9 CSVs reproduce the non-inferiority promotion; deployed candidate/current hashes
   match; dashboard reports separate 400/300 datagen and 600 gate budgets and the value-specific bar.
 
-## 53. Iteration 10 resumed on the quota-compatible Google VM  🔄 running
+## 53. Historical execution snapshot: iteration 10 on a Google VM
 - **Machine:** `sts-test` in `europe-west3-c`, resized to Spot `c4d-highcpu-16`. The project exposes
   64 all-region CPUs, but the enforced C4D-family quota is 24 vCPUs; 16 is therefore the largest
   predefined C4D shape that can start without another quota approval. The loop uses all 16 OpenMP
@@ -1062,7 +1079,7 @@ v_rich2_xgb.json, v_boss2_xgb.json, vrich2.csv (append more nights before using)
   next seed in two-field `.done` markers, and advance `state.env` past the maximum used by either
   datagen pass; the dashboard accepts both legacy and new marker formats.
 
-## 54. Strong-teacher and decision-focused training redesign  🔄 deployed for iteration 12
+## 54. Strong-teacher redesign — historical iteration-12 plan/deployment snapshot
 - **Teacher/student separation:** combat self-play targets now use `POLICY_SIMS=1000` while the
   deployed/gated agent remains at 400/600 simulations. The combined fight pass still emits value
   snapshots and policy visit targets once, but its policy target is now produced by a materially
@@ -1088,7 +1105,7 @@ v_rich2_xgb.json, v_boss2_xgb.json, vrich2.csv (append more nights before using)
   and gate budgets; reports paired-rest source runs/decisions; and avoids displaying a fake 0% win
   rate when a completed combat CSV is represented only by its authoritative marker.
 
-## 55. Iteration-24 review and full-capacity value candidates  🔄 deployed for iteration 25
+## 55. Iteration-24 review — historical iteration-25 deployment snapshot
 - **Progress audit:** iteration 20 produced the only promotion in iterations 12--24, raising the
   held-out deployed stack from **26.8% / 40.346 floors** to **31.4% / 41.218 floors**. Iterations
   22 and 24 regressed against that new baseline, while no meta or policy candidate promoted. The
@@ -1584,7 +1601,7 @@ v_rich2_xgb.json, v_boss2_xgb.json, vrich2.csv (append more nights before using)
   server deltas were **+0.52 floors**, **+0.66 HP**, and **+2 wins**. The paired gate score
   (floor + 10×win) was **+0.83**, SE **1.13**, 95% CI **[-1.39,+3.04]**: no statistically reliable
   quality difference at 64 seeds.
-- **Runtime:** server arm consumed **983.6 wall-seconds** (**380.6 process CPU-seconds**; the CSV's
+- **Runtime (historical report):** server arm consumed **983.6 wall-seconds** (**380.6 reported process CPU-seconds**; the CSV's
   per-seed elapsed-time sum is 6471 seconds); native arm took **98.8 wall-seconds** (**722.6 process
   CPU-seconds**; CSV sum 738 seconds). Thus native was approximately **10.0× faster wall time**;
   the server arm's wall time includes Python socket/model overhead and did not scale efficiently
@@ -1597,14 +1614,16 @@ v_rich2_xgb.json, v_boss2_xgb.json, vrich2.csv (append more nights before using)
   corrected one-seed check now matches the server exactly (seed 126700: floor 33). Do not use the
   earlier 64-seed deltas or 10x runtime claim as evidence.
 
-### 66i. Current native baseline, 1,000 sims × 128 seeds (2026-07-23)
+### 66i. Primary recorded fair reference, 1,000 sims × 128 seeds (2026-07-23; historical)
 - **Setup:** standard full-run stack with fair play, native in-process floor/win GBMs, PUCT/V-combat,
   no all-OOC checkpoint oracle, 1,000 live combat simulations, A0, seeds **126700--126827**, and
   eight outer workers.
 - **Result (primary fair-play benchmark):** **39/128 wins (30.5%)**, mean floor **40.32**, mean end HP **11.91**. Runtime was
-  **176.0 wall-seconds / 1,325.3 process CPU-seconds**. Raw output is in
+  **176.0 wall-seconds / 1,325.3 summed per-run elapsed-seconds**. Raw output is in
   `selfplay/gate/baseline_1000_128/`.
-- This is the current best-model fair-play score on the fixed 128-seed benchmark. It must not be
+- This is the primary recorded fair-play score on the fixed 128-seed benchmark. Its cited raw
+  directory is absent and the exact artifact/flag set is incomplete, so it is not exactly
+  reproducible from the current checkout. It must not be
   compared directly with the historical 51.6%/1,000-sim known-RNG score: fair play re-randomizes
   hidden information during search, while known-RNG simulations can peek at future draws. The
   known-RNG number remains a diagnostic only; fair-play is the primary quality benchmark.
@@ -1751,8 +1770,14 @@ v_rich2_xgb.json, v_boss2_xgb.json, vrich2.csv (append more nights before using)
 
 ## Phase 4b PVNet alpha sweep — 2026-07-30
 
-**Setup:** 128 seeds, asc 0, Searcher3 fair-play, combined PVNet (policy priors + leaf value blend).
-VM: c4-highcpu-24 (24 threads). Baseline heuristic OOC + PUCT (GBM policy).
+**Recorded setup (incomplete):** 128 seeds, asc 0, Searcher3 fair-play,
+combined PVNet (policy priors + leaf value blend), on a c4-highcpu-24 VM (24
+threads). The original note says “baseline heuristic OOC + PUCT (GBM policy)”
+but records neither the seed range nor the exact command/model flags, and
+“heuristic OOC” does not identify a reproducible `runFullRunOOC` stack.
+Current source also invokes Searcher3 `computeEdgePriors` only when the
+separate policy net is loaded; the recorded GBM policy may have supplied that
+enabling condition, but the omitted command prevents verification.
 
 ### Sweep: α-blend × sim budget
 
@@ -1765,13 +1790,15 @@ VM: c4-highcpu-24 (24 threads). Baseline heuristic OOC + PUCT (GBM policy).
 
 ### Interpretation
 
-- **α=0.0 (policy-only:** PVNet priors guide PUCT, leaf value = rollout terminal) wins or ties
-  at every sim budget. The PVNet policy head is the strong component.
+- **α=0.0 (policy-only):** PVNet priors guide PUCT and the leaf value comes
+  from rollout. It wins or ties within the recorded table at every simulation
+  budget; no uncertainty intervals were recorded.
 - **α=1.0 (pure neural leaf)** is worst at all 4 sim budgets. The gap grows with sims: from
-  ~7pp at 50 sims to ~19pp at 500 sims. The value head has systematic blind spots that
-  more search exposes rather than corrects.
+  ~7pp at 50 sims to ~19pp at 500 sims. The table shows worse performance for
+  the pure neural leaf, but does not establish the failure mechanism.
 - **α=0.25 (25% neural / 75% rollout)** edges α=0.0 at 500 sims (60.2% vs 59.4%, within noise)
-  — a small neural injection may help stabilize high-sim search, but the effect is marginal.
-- **Verdict:** PVNet policy priors alone (+78.1% at 100 sims, 32 seeds) are the best use of
-  the shared network today. The value head needs rework (different architecture, better
-  training signal, or separate encoder) before combined beats policy-only.
+  — no benefit is established by that difference.
+- **Recorded conclusion:** the sweep supports evaluating the policy head
+  separately from the value head. A separate 32-seed point reported 78.1% at
+  100 simulations, but its command and seed range are also absent. This is not
+  a current deployment recommendation.

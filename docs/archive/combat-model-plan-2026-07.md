@@ -1,4 +1,17 @@
-# Combat Model Plan
+# Archived combat model plan — July 2026
+
+> Historical status: this design/result summary is preserved for provenance,
+> not as a current technical reference. Claims that belief updates were working
+> and measured are contradicted by the current no-op `Belief::update`.
+> `HiddenBattleState::drawPileOrder` is also populated but not applied by the
+> current `BattleScumSearcher3::applyParticle`.
+> Performance tables describe dated Searcher3 experiments, not the deployed
+> whole-run baseline. Use
+> [`docs/knowledge-base/architecture/combat-search.md`](../knowledge-base/architecture/combat-search.md)
+> and [`docs/knowledge-base/evaluation/current-baselines.md`](../knowledge-base/evaluation/current-baselines.md)
+> for current documentation.
+
+Original title: **Combat Model Plan**
 
 Each section starts with the goal from the spec, then current implementation status.
 

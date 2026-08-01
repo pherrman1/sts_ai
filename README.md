@@ -1,136 +1,96 @@
 # StS AI
 
-This is an experimental AI project for *Slay the Spire*, built on top of
-[gamerpuppy's `sts_lightspeed`](https://github.com/gamerpuppy/sts_lightspeed)
-simulator. The aim is to build a strong, inspectable Ironclad agent: it plays
-combat through search and learns the choices between combats from self-play and
-counterfactual experiments.
+StS AI is an experimental, inspectable Ironclad agent for *Slay the Spire*,
+built on gamerpuppy's `sts_lightspeed` C++ simulator. Combat decisions are made
+by native tree search; choices between combats combine C++ policy code, learned
+models, and experimental counterfactual evaluators.
 
-The project is intentionally outcome-driven. We do not maintain a hand-written
-card tier list or deck-bloat rules; a choice should be valuable because it
-improves the chance of surviving and winning runs in simulation.
+The project is outcome-driven: a hand-authored card tier or arbitrary
+deck-bloat rule is not the learning objective, and policy ideas are kept or
+rejected by reproducible simulator evidence. Some current combat-policy
+features still use hand-authored `Expert` play/obtain weights.
 
-## What is here
+## Architecture at a glance
 
-The C++ simulator implements the full Ironclad game loop, including combat,
-cards, relics, enemies, events, shops, rest sites, maps, and all acts. It is
-designed to reproduce game RNG accurately and can also be run interactively in
-the console.
+`GameContext` owns the run and its out-of-combat screens. Entering combat creates
+a `BattleContext`; `ScumSearchAgent2` then uses Searcher2 by default or the
+opt-in Searcher3 particle search. The active integration executable is
+`one_combat`, whose `bestbench`, data-generation, tracing, and evaluator modes
+are dispatched by `apps/one_combat.cpp::main`.
 
-On top of that simulator, the project currently has:
+The default out-of-combat stack loads native floor and win tree models, uses
+rich floor value for card/shop choices, win-shaped rest choices, and heuristic
+pathing. A compact policy tree guides combat through PUCT when it loads.
+Experimental PVNet and checkpoint/OOC networks are opt-in; they are not part
+of the default policy merely because their artifacts exist.
 
-- Combat tree search (UCB and policy-guided PUCT), with fair-play
-  determinization so hidden future RNG is not treated as known.
-- Learned combat values and policy priors to make a limited search budget go
-  further.
-- Gradient-boosted strategic values for drafting and shops, plus survival- and
-  win-oriented values for rest-site decisions.
-- A resumable self-play, training, and paired-gating loop, so candidate models
-  are compared against the deployed policy on exactly the same seeds.
-- Experimental counterfactual tools that ask a more direct question at each
-  out-of-combat decision: *how does this deck/state perform against the fights
-  it may face next?*
+See the [architecture overview](docs/knowledge-base/architecture/overview.md)
+for the complete runtime boundary.
 
-## Current state
+## Headline benchmark
 
-The practical baseline is an Ascension 0 Ironclad policy using rich-state
-drafting, heuristic map routing, a value-based shop knapsack, a win-rate rest
-policy, and policy-guided PUCT combat search. The primary benchmark is now
-honest fair play (`STS_FAIR=1`): the current deployed model wins **39/128
-runs (30.5%)** at 1,000 combat simulations on the fixed seeds 126700--126827.
-The older 51.6%/1,000-simulation figure is a known-RNG result, where simulations
-can see future hidden draws, and is retained only as a separate diagnostic.
-These are repository-specific benchmarks, not claims about the original game
-client.
+The primary recorded project-fair reference is historical, not an exact
+reproduction of the current checkout: its raw artifact directory is absent and
+the experiment entry does not pin every model path and flag. Older, higher
+default-Searcher2 **known-RNG** results must not be compared as honest play.
+The result, seed block, current tracked artifact identities, and experimental
+comparators live only in the
+[current-baselines table](docs/knowledge-base/evaluation/current-baselines.md).
+Chronological evidence, including rejected ideas, remains in
+[`EXPERIMENTS.md`](EXPERIMENTS.md).
 
-The newest research direction is evaluating all plausible remaining Act fights
-when making a strategic choice. Its score weights likely near-term encounters
-more heavily than distant ones and values a safe remaining HP buffer
-non-linearly. A card that only helps against a distant boss should therefore not
-beat a card that improves common upcoming fights. The direct simulator is
-promising but expensive, so its main purpose is to generate better training
-targets rather than become the permanent policy by itself.
+## Quick start
 
-The detailed evidence, including experiments that did **not** work, lives in
-[`EXPERIMENTS.md`](EXPERIMENTS.md). It is the source of truth for decisions
-about what is deployed.
+The configured build requires CMake, C++17, OpenMP, and populated `json/` and
+`pybind11/` source directories:
+
+```bash
+cmake -S . -B build
+cmake --build build -j
+```
+
+Run a small serverless fair-play smoke benchmark after `one_combat` is built:
+
+```bash
+STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
+```
+
+Check the startup messages for native OOC and policy-model loads. File presence
+alone does not prove a model was used.
+
+**Current checkout limitation:** `.gitmodules` names `json/` and `pybind11/`,
+but neither path is represented by a tracked gitlink and both root directories
+are absent. A fresh configure from this checkout is therefore unverified and
+currently lacks its declared dependency sources. The existing cache is a
+Linux/WSL Unix Makefiles build using `/usr/bin/c++`; native PowerShell/MSVC has
+not been verified. See [build and debugging](docs/knowledge-base/operations/build-and-debugging.md).
 
 ## Repository tour
 
 | Location | Purpose |
 | --- | --- |
-| `apps/one_combat.cpp` | Main experiment driver: combat search, run policy, and strategic counterfactual probes. |
-| `src/`, `include/`, `extern/` | The C++ game simulator and dependencies. |
-| `train_*.py` | Training scripts for value, policy, and paired-action models. |
-| `v_server.py` | Serves Python-trained models to the C++ runner. |
-| `selfplay/loop.sh` | Resumable data-generation, training, and gating loop. |
-| `selfplay/` | Scripts and local experiment state. Large generated buffers are intentionally git-ignored. |
-| `EXPERIMENTS.md` | Canonical experiment log and recommendations. |
-| `AGENTS.md` | Project-specific operating notes, evaluation conventions, and safety gotchas. |
+| `include/`, `src/` | Simulator, combat engine, agents, search, and native inference. |
+| `apps/one_combat.cpp` | Active research driver and benchmark/data-generation dispatcher. |
+| `bindings/` | Run-level `slaythespire` pybind11 API; it does not expose card-by-card combat actions. |
+| `train_*.py`, `export_*.py`, `v_server.py` | Training, export, and optional Python inference. |
+| `selfplay/` | Resumable generation/training/gating scripts and local snapshots. |
+| `docs/knowledge-base/` | Stable current architecture, operations, evaluation, and invariants. |
+| `EXPERIMENTS.md` | Chronological experimental evidence and decisions. |
+| `AGENTS.md` | Mandatory coding-agent operating contract. |
+| `docs/archive/` | Dated plans and schemas retained for provenance, not current truth. |
 
-## Quick start
+## Documentation map
 
-You will need a C++17 compiler with OpenMP, Python 3, and the Python packages
-used by the training scripts (notably pandas and XGBoost; some experiments use
-PyTorch). Clone with submodules, then build the simulator using the project
-configuration or your preferred CMake/IDE setup.
+Start at the [knowledge-base index](docs/knowledge-base/README.md). The most
+useful deeper pages are:
 
-```bash
-git clone --recurse-submodules git@github.com:pherrman1/sts_ai.git
-cd sts_ai
-cmake -S . -B build
-cmake --build build -j
-```
+- [combat search](docs/knowledge-base/architecture/combat-search.md);
+- [out-of-combat policy](docs/knowledge-base/architecture/out-of-combat.md);
+- [training and inference](docs/knowledge-base/architecture/training-and-inference.md);
+- [benchmark protocol](docs/knowledge-base/evaluation/benchmark-protocol.md);
+- [self-play loop](docs/knowledge-base/operations/selfplay-loop.md);
+- [determinism and RNG](docs/knowledge-base/behavior/determinism-and-rng.md).
 
-On the current Linux setup, the active experiment executable can be compiled
-after the simulator library has been built with:
-
-```bash
-g++ -std=c++17 -O2 -w -fopenmp -Iinclude -Iextern \
-  apps/one_combat.cpp build/libsts.a -o one_combat.elf
-```
-
-Run the model server in one terminal, then launch a small fair-play benchmark in
-another:
-
-```bash
-python3 v_server.py
-```
-
-```bash
-STS_FAIR=1 ./one_combat.elf bestbench 1000 32 0
-```
-
-The runner prints which models it loaded. Check that output rather than assuming
-a benchmark used the intended configuration. The larger reference benchmark is
-`bestbench 1000 512 0`; start smaller while developing.
-
-## How we work
-
-The most useful contribution is usually an experiment with a clear causal
-question, a small reproducible gate, and a written result. A few conventions
-matter:
-
-- Use `STS_FAIR=1` for claims about honest play; known-RNG results are useful
-  diagnostics but optimistic.
-- Compare policies on paired common seeds. Win rate alone is noisy, so the
-  gates also track a dense floor/progress signal and confidence bounds.
-- Keep combat control in C++ unless changing the bindings deliberately; Python
-  currently owns run-level models, not card-by-card combat actions.
-- Do not delete generated self-play buffers casually. They are large,
-  append/resume-safe, and expensive to recreate.
-- Add meaningful benchmark outcomes to `EXPERIMENTS.md`, including negative
-  results. That prevents us from repeating attractive failures.
-
-## Good places to help
-
-The immediate opportunity is making the fight-strength idea cheap enough to
-learn from: collect reliable labels from simulated future encounters, train an
-amortized model that predicts them, and verify that it improves live
-out-of-combat choices. Evaluation infrastructure, simulator correctness,
-counterfactual data quality, and reducing search cost are all high-leverage
-areas.
-
-If you are new to the codebase, read `AGENTS.md` and the relevant sections of
-`EXPERIMENTS.md` before changing a policy. They explain the current baseline,
-the conventions behind the numbers, and several traps we have already tested.
+Use `STS_FAIR=1` for project-fair claims, compare policies on paired common
+seeds, and record meaningful benchmark outcomes—including negative and invalid
+results—in `EXPERIMENTS.md`.

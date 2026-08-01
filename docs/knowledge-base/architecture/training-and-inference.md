@@ -1,161 +1,154 @@
 # Training and inference
 
-Last verified: 2026-07-30 against the current working tree, including
-uncommitted implementation changes.
+Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
 
-## Pipeline
+## Purpose
 
-The implemented learning loop is:
+Document dataset producers, feature/group contracts, trainer/export paths, and
+runtime model-loading interfaces without treating experimental artifacts as
+active defaults merely because they are present.
 
-1. `one_combat` modes generate run, combat-value, policy-edge, paired-action,
-   or oracle CSV rows (`apps/one_combat.cpp`, `main`, including `datagen3`,
-   `fightgen`, `fairgen`, `oocnextgen`, and `strategicgen`).
-2. Root Python trainers load CSVs, split by a run/fight/decision grouping, and
-   fit XGBoost, scikit-learn, or PyTorch models (for example
-   `train_winrate.py`, top-level program; `train_value_combat.py`, top-level
-   program; `train_policy.py`, top-level program;
-   `train_combat_pvnet.py`, `PolicyValueNet`).
-3. Exporters or trainer export sections write XGBoost JSON, PyTorch checkpoint/
-   TorchScript, binary MLP, or compact native tree/text artifacts
-   (`export_combat_model.py`, top-level exporter;
-   `export_win_model.py`, top-level exporter;
-   `export_ooc_checkpoint.py`, top-level exporter;
-   `train_combat_pvnet.py`, native export section).
-4. `one_combat` loads compact artifacts in-process, or sends rich features to
-   `v_server.py` for optional experimental inference (`apps/one_combat.cpp`,
-   `main`, `WinNet::load`, `vSendRecv`; `v_server.py`, `H.handle`).
-5. Combat inference influences leaf values and/or search priors; OOC inference
-   scores run states or legal actions (`src/sim/search/BattleScumSearcher3.cpp`,
-   `evaluateLeaf`, `computeEdgePriors`; `apps/one_combat.cpp`,
-   `runFullRunOOC`).
+## Current implementation
 
-## Data generation hooks
+The learning pipeline is executable scripts rather than an installed Python
+package:
 
-`ScumSearchAgent2` exposes thread-local callbacks at combat decision snapshots
-and after Searcher2/Searcher3 root search
-(`include/sim/search/ScumSearchAgent2.h`, `g_onCombatDecision`,
-`g_onSearchComplete`, `g_onSearchComplete3`). `fightgen` uses these hooks to
-emit both value snapshots labelled by fight outcome and policy rows labelled by
-root visits in one combat pass when Searcher2 is active. `fightgen` does not
-install `g_onSearchComplete3`, so enabling Searcher3 would omit its policy rows
-(`apps/one_combat.cpp`, `fightgen` generation section and callback assignments).
-`runDataGen2Seed` produces rich run outcomes
-and paired strategic counterfactual rows (`apps/one_combat.cpp`,
-`runDataGen2Seed`).
+1. `one_combat` modes emit run, combat, policy-edge, strategic-action, paired,
+   or oracle CSV rows (`apps/one_combat.cpp::main`).
+2. Root `train_*.py` programs fit XGBoost, scikit-learn, or PyTorch models.
+3. `export_*.py` programs and trainer export blocks write JSON, compact tree
+   text, native neural text/binary, TorchScript, or checkpoints.
+4. `one_combat` loads compact artifacts in-process; optional experiments query
+   `v_server.py` over localhost.
+5. Model predictions supply combat priors/leaves or score run states/actions.
 
-The combat schema is 1,766 state features plus 14 action features, with
-metadata/labels around them (`DATA_SCHEMA.md`, “File 1” and “File 2”;
-`src/sim/search/CombatValueNet.cpp`, `combatFeatureNames`,
-`combatExtractFeatures`, and `combatFillActionFeatures`).
-The rich OOC schema is serialized by `vFeatCsv` and mirrored by the 1,017-field
-layout in `v_server.py` (`apps/one_combat.cpp`, `vFeatCsv`; `v_server.py`, raw
-feature layout).
+Representative producers are `datagen3`, `fightgen`, `fairgen`, `oocnextgen`,
+and the July 31 `strategicgen` mode. `strategicgen` records one rich-state row
+per OOC decision with screen/action metadata and terminal run labels
+(`apps/one_combat.cpp::runStrategicGenSeed`, `strategicGen`).
 
-Two policy action features, `aPlayOrder` and `aObtainWeight`, come from the
-hand-authored `Expert` tables. The deployed learned prior therefore is not an
-expert-feature-free policy even though its target is learned from visits
-(`src/sim/search/CombatValueNet.cpp`, `combatFillActionFeatures`;
-`src/sim/search/ExpertKnowledge.cpp`).
+Representative model families:
 
-## Split and leakage rules
+- run values: `train_value_rich.py`, `train_winrate.py`;
+- paired/action OOC: `train_rest_cf.py`, `train_card_cf.py`,
+  `train_path_cf.py`, `train_ooc_next_action.py`, `train_ooc_checkpoint.py`;
+- combat value: `train_value_combat.py`, entity/MLP/distribution variants;
+- combat policy/joint: `train_policy.py`, `train_policy_entity.py`,
+  `train_combat_pvnet.py::PolicyValueNet`.
 
-Training keeps correlated rows together. Win-rate data splits by seed
-(`train_winrate.py`, `GroupShuffleSplit` using `run`); combat value splits by
-fight (`train_value_combat.py`, `group` and `GroupShuffleSplit`); policy splits
-by complete decision group (`train_policy.py`, `group` and
-`GroupShuffleSplit`); OOC checkpoint training splits whole
-`(seed, decisionIdx)` groups (`train_ooc_checkpoint.py`, `groups`, `tr_groups`).
-Changing these keys risks train/validation leakage.
+Runtime interfaces and their default/experimental status are summarized in
+[evaluation/current-baselines.md](../evaluation/current-baselines.md).
 
-## Trainer families
+## Important data flow
 
-- Run values: `train_value_rich.py`, `train_winrate.py`,
-  `train_boss_survival.py`, `train_deckset.py`, and
-  `train_meta_entity.py` top-level programs.
-- Strategic action/counterfactual models: `train_rest_cf.py`,
-  `train_card_cf.py`, `train_path_cf.py`, `train_ooc_next_action.py`,
-  `train_ooc_encounter.py`, and `train_ooc_checkpoint.py` top-level programs.
-- Combat values: `train_value_combat.py`,
-  `train_value_combat_entity.py`, `train_value_combat_mlp.py`,
-  `train_value_combat_nn.py`, `train_combat_transition_entry.py`, and
-  `train_combat_dist.py` top-level programs.
-- Combat policies and joint models: `train_policy.py`,
-  `train_policy_entity.py`, and `train_combat_pvnet.py`
-  (`PolicyValueNet`). `preprocess_pvnet_data.py` prepares memory-mapped PVNet
-  input.
+### Combat schema
 
-These are executable scripts rather than an installed Python package. There is
-no repository dependency lock or unified trainer CLI.
+`src/sim/search/CombatValueNet.cpp` is the canonical producer:
 
-## Self-play orchestration
+- `combatFeatureCount()` returns 1,766 state features;
+- `combatPolicyFeatureCount()` returns 1,780 total features;
+- the final 14 are produced by `combatPolicyFeatureNames` and
+  `combatFillActionFeatures`.
 
-`selfplay/loop.sh` resumes from `selfplay/state.env`, performs `datagen3` plus
-`fightgen`, retrains the meta/rest, combat-value, and policy arms, and gates
-them in nominally independent common-seed arms (`selfplay/loop.sh`, generation
-section, training section, and “ADAPTIVE PAIRED GATES”). Candidate promotion requires a
-lower confidence bound above the configured margin; a hard-cap inconclusive
-candidate is rejected (`selfplay/loop.sh`, `gate_stats` and hard-cap branch).
+State blocks are 26 base scalars, 24 powers, 128 relic flags, four 371-card zone
+multisets, 2 enemy aggregates, 45 monster-slot values, 44 potion values, 5
+context fields, and 8 relic counters. Policy rows add card/potion/end/select
+flags, card properties, target HP, and `Expert` play/obtain values. The archived
+v1 schema is retained at `docs/archive/fair-play-dataset-schema-v1.md`, but its
+composite-RNG provenance statement is not current truth.
 
-**Blocking discrepancy:** every meta arm starts a server with its candidate
-V_win/rest files, but the invoked `one_combat` defaults native OOC on. Native
-card/shop/rest code uses fixed `build/v_win_trees.txt`, and
-`vQueryRestCounterfactual` immediately returns false. Because `POLICY_ENV` does
-not set `STS_NATIVE_OOC=0` or an arm-specific native win artifact, the current
-meta gate does not establish that it evaluated the candidate
-(`selfplay/loop.sh`, `FLOOR_POLICY_ENV`, `WIN_POLICY_ENV`, `start_server`;
-`apps/one_combat.cpp`, native startup, `vQueryHealWin`,
-`vQueryUpgradeWin`, `vQueryRestCounterfactual`).
+`ScumSearchAgent2` exposes thread-local `g_onCombatDecision`,
+`g_onSearchComplete`, and `g_onSearchComplete3` hooks
+(`include/sim/search/ScumSearchAgent2.h`). `fairgen` installs the Searcher3 hook
+but does not set `g_fairPlay` or `g_useSearcher3`; callers need
+`STS_FAIR=1 STS_SEARCHER3=1` for the intended project-fair Searcher3 producer.
+Without Searcher3, its policy output has no callback rows. `fightgen` installs
+Searcher2 hooks and omits Searcher3 policy rows if Searcher3 is forced
+(`apps/one_combat.cpp::runFairGenSeed`, fight-generation callbacks).
 
-`selfplay/config.env` currently records 400 deployment simulations, 600 gate
-simulations, 500 maximum gate seeds, a 2.58 bound multiplier, `POLICY_WINDOW=1`,
-`PROMOTE_MARGIN=0.5`, and `VALUE_MARGIN=-0.5`. These are a checked-in snapshot;
-the shell defaults and environment overrides remain the actual execution
-mechanism (`selfplay/loop.sh`, variable initialization and config snapshot
-write).
+### Run/OOC schema
 
-`gate_stats` uses a normal-theory mean +/- `Z*SE` interval at every adaptive
-look without a repeated-look correction. Thus `Z=2.58` is nominally about 99%
-for one fixed look, not a demonstrated 99% sequential guarantee. The snapshot's
-`VALUE_MARGIN=-0.5` applies to every value candidate; the script does not test
-whether a candidate is actually latency-oriented (`selfplay/loop.sh`,
-`gate_stats`, value gate call).
+`apps/one_combat.cpp::vFeatCsv` is the rich-state producer and
+`v_server.py::RAW` is the implemented 1,017-value consumer layout. Native floor
+and win trees select named subsets and map them with `richIdxMap`.
+Action-conditioned datasets append screen/action/candidate fields defined by
+their specific producer; consumers must use headers, not old comments.
 
-**Discrepancy:** the header comments in `selfplay/loop.sh` describe whole-agent,
-all-or-nothing promotion, but the implemented gate section promotes meta,
-value, and policy independently and can defer policy after a simultaneous
-value promotion (`selfplay/loop.sh`, header and independent promotion block).
+### Grouping and leakage
 
-The loop is not bootstrapped by CMake: it invokes `./one_combat.elf`, requires
-server/training dependencies, and skips first-run model copying whenever
-`selfplay/state.env` exists. In this checkout the state file exists, the
-`current/` and other core loop directories are absent, and the first-run copy
-sources `build/v_combat_fair_trees.txt` and
-`build/policy_fair_trees_c.txt` are also absent (`selfplay/loop.sh`, startup and
-initialization; current filesystem inspection). The checked-in snapshot cannot
-be treated as runnable without repair.
+Correlated samples remain together:
 
-## Artifacts and inference
+- run values split by seed (`train_winrate.py::GroupShuffleSplit`);
+- combat value splits by fight (`train_value_combat.py::group`);
+- policy splits by complete decision group (`train_policy.py::group`);
+- OOC checkpoint training splits `(seed, decisionIdx)` groups
+  (`train_ooc_checkpoint.py::groups`).
 
-Tracked deployed artifacts include native floor/win trees, their XGBoost JSON
-sources, the compact policy trees, and a PVNet text artifact under `build/`.
-The `build/` directory also contains ignored CMake output, so “under build” does
-not imply generated or untracked (`.gitignore`, `/build/`; tracked files
-`build/v_rich_trees.txt`, `build/v_win_trees.txt`,
-`build/policy_trees_c.txt`, `build/v_combat_pvnet.txt`).
+Changing a grouping key is a schema/evaluation change and requires documented
+leakage analysis.
 
-`v_server.py` binds only `127.0.0.1` on port 5555 by default and dispatches a
-line protocol in `H.handle` (`v_server.py`, `PORT`, `Server`, `H.handle`). Native
-OOC is enabled by default in `one_combat`; server endpoints remain necessary
-for some optional neural and paired-action experiments
-(`apps/one_combat.cpp`, `main`; `v_server.py`, optional model loaders).
+### Runtime loading
+
+`apps/one_combat.cpp::main` owns environment parsing and load messages. Native
+OOC floor/win models are default. Separate combat value, distributional value,
+PVNet, and policy models are selected with `STS_VNET`, `STS_DIST_VNET`,
+`STS_PVNET`, and `STS_POLICY`. Optional server models are selected through
+`v_server.py` environment variables. Current tracked artifact hashes are listed
+only in [current baselines](../evaluation/current-baselines.md).
+The distributional and PV models are consumed only by Searcher3; a successful
+startup load is not evidence of use under default Searcher2.
+
+## Invariants and assumptions
+
+- Feature name, order, normalization, and categorical interpretation are part of
+  the model interface, even when column counts do not change.
+- Metadata such as seed must not become a learned hidden-RNG feature.
+- Training/export/native inference changes require parity on the same trained
+  artifact and inputs.
+- A successful benchmark requires observable load messages and evidence the
+  selected branch used the model.
+- File suffix can select serializer behavior; self-play training temporaries
+  must preserve the intended XGBoost format (`EXPERIMENTS.md` entry 49).
+- Combat policy inputs currently include hand-authored Expert features.
+
+## Known limitations
+
+- No dependency lock or environment definition exists. Scripts import NumPy,
+  pandas, XGBoost, scikit-learn, and sometimes PyTorch.
+- `parity_test.py` does not load the trained PyTorch checkpoint and expects
+  `build/parity_test.elf`, which CMake does not build. It cannot establish
+  trained distribution-model parity as written.
+- Searcher3 data provenance is weaker than the archived schema states:
+  constructor seeding uses default-zero `agentSeed`/`decisionIndex` values.
+- The `fairgen` mode name does not enforce either required runtime flag, and its
+  archived invocation records only `STS_SEARCHER3=1`. Historical dataset
+  provenance therefore does not by itself establish the fair agent path.
+- `v_server.py` comments retain older 392/372-style layout descriptions.
+- `OocCheckpointNet::load` does not check every payload read.
+- `strategicgen` exists as a data path but no maintained trainer/runtime model
+  contract is established for its output. It is experimental.
+- Tracked artifacts under `build/` coexist with ignored build output; path
+  location does not indicate whether an artifact was generated, deployed, or
+  benchmarked.
+
+## Open questions
+
+- Which generated schemas should receive machine-readable version metadata and
+  automated producer/consumer checks?
+- What parity harness should replace the incomplete distribution-model script?
+- How should current artifact versions be named and pinned beyond path names?
+- Should strategic generation use explicit structured action fields instead of
+  the current screen/action integer pair?
 
 ## Relevant code
 
-- `apps/one_combat.cpp` — generation modes, callbacks, model loading, and live inference.
-- `include/sim/search/ScumSearchAgent2.h` — data-generation hooks.
-- `src/sim/search/CombatValueNet.cpp` — canonical combat schema/native inference.
-- `train_winrate.py`, `train_value_combat.py`, `train_policy.py` — representative grouped trainers.
-- `train_combat_pvnet.py` — `PolicyValueNet` and native export.
-- `train_ooc_checkpoint.py` and `export_ooc_checkpoint.py` — unified OOC action model pipeline.
-- `selfplay/loop.sh` — resumable train/gate orchestration.
-- `v_server.py` — optional inference service.
+- `apps/one_combat.cpp::main`, `fairGen`, `fightGen`, `strategicGen`, `vFeatCsv`
+- `include/sim/search/ScumSearchAgent2.h` data-generation hooks
+- `src/sim/search/CombatValueNet.cpp::combatFeatureNames`,
+  `combatExtractFeatures`, `combatFillActionFeatures`
+- `train_winrate.py`, `train_value_combat.py`, `train_policy.py`
+- `train_combat_pvnet.py::PolicyValueNet`
+- `train_ooc_checkpoint.py`; `export_ooc_checkpoint.py`
+- `v_server.py::H.handle`, `RAW`
+- `selfplay/loop.sh`
+- `parity_test.py`; `apps/parity_test.cpp`

@@ -1,111 +1,96 @@
 # Architecture overview
 
-Last verified: 2026-07-30 against the current working tree, including
-uncommitted implementation changes.
+Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
 
-## Runtime shape
+## Purpose
 
-The simulator has two state domains. `sts::GameContext` owns run-level state
-and screens (`include/game/GameContext.h`, `GameContext` and `ScreenState`).
-When the screen becomes `BATTLE`, `ScumSearchAgent2::playout` constructs a
-`BattleContext`, calls `BattleContext::init`, runs combat, then calls
-`BattleContext::exitBattle` to copy surviving state back
-(`src/sim/search/ScumSearchAgent2.cpp`, `ScumSearchAgent2::playout`;
-`src/combat/BattleContext.cpp`, `BattleContext::init` and
-`BattleContext::exitBattle`).
+Orient contributors to the runtime state boundaries, integration entry points,
+and repository ownership without duplicating subsystem detail.
 
-Out-of-combat decisions are represented by the packed
-`sts::search::GameAction`; combat decisions use the separate packed
-`sts::search::Action` (`include/sim/search/GameAction.h`, `GameAction`;
-`include/sim/search/Action.h`, `Action`). Both types expose separate validation
-and execution operations against their own state domain
-(`src/sim/search/GameAction.cpp`,
-`GameAction::isValidAction`, `GameAction::execute`;
-`src/sim/search/Action.cpp`, `Action::isValidAction`, `Action::execute`).
-Execution asserts validity only when `sts_asserts` is compiled; release callers
-must validate or enumerate legal actions before execution.
+## Current implementation
 
-`apps/one_combat.cpp` is a monolithic research integration layer: `main`
-loads environment-selected models and dispatches benchmarks, data generators,
-validation utilities, and tracing modes. Core simulator behavior remains in
-`src/game`, `src/combat`, and `src/sim` (`apps/one_combat.cpp`, `main`;
-`CMakeLists.txt`, `sts_lightspeed_SOURCES`).
+The simulator has two state domains. `sts::GameContext` owns the complete run
+and active `ScreenState` (`include/game/GameContext.h::GameContext`). When a
+battle screen is reached, `ScumSearchAgent2::playout` or the integration driver
+creates a `BattleContext`, calls `BattleContext::init`, runs combat, and calls
+`BattleContext::exitBattle` to transfer persistent results back
+(`src/sim/search/ScumSearchAgent2.cpp::playout`;
+`src/combat/BattleContext.cpp::init`, `exitBattle`).
 
-**Inference:** `one_combat` is intentionally serving as the experiment
-workbench rather than a stable library API. This follows from the number of
-mode branches in `apps/one_combat.cpp` `main`; no explicit rationale is stated.
+Run-level choices use packed `search::GameAction`; combat choices use the
+separate packed `search::Action` (`include/sim/search/GameAction.h::GameAction`;
+`include/sim/search/Action.h::Action`). The Python module exposes run-level
+`GameContext` and agents but not `BattleContext` or combat `Action`
+(`bindings/slaythespire.cpp::PYBIND11_MODULE`).
 
-Searcher2 is the default combat engine (`g_useSearcher3=false`), including
-when `STS_FAIR=1`; Searcher3 is enabled only with `STS_SEARCHER3=1`
-(`src/sim/search/BattleScumSearcher3.cpp`, `g_useSearcher3`;
-`src/sim/search/ScumSearchAgent2.cpp`, `playoutBattleFair`, `playoutBattle`).
+`apps/one_combat.cpp::main` is the active integration workbench. It parses
+environment flags, loads models, and dispatches benchmarks, data generators,
+tracing, and counterfactual evaluators. Core simulator behavior remains under
+`src/game`, `src/combat`, and `src/sim` (`CMakeLists.txt::sts_lightspeed_SOURCES`).
 
-## Top-level map
+| Location | Current ownership |
+| --- | --- |
+| `include/`, `src/` | Simulator, search, agents, and native model readers. |
+| `apps/` | Executable entry points and OOC checkpoint inference. |
+| `bindings/` | Run-level pybind11 API. |
+| root `train_*.py`, `export_*.py` | Executable trainers and serializers. |
+| `v_server.py` | Optional localhost inference bridge. |
+| `selfplay/` | Generation, retraining, paired gates, and snapshots. |
+| tracked `build/*` models | Default and experimental model artifacts mixed with ignored build output. |
 
-| Location | Current implementation role | Provenance |
-| --- | --- | --- |
-| `include/`, `src/` | C++17 simulator, combat engine, search, agents, native model readers | `CMakeLists.txt`, `sts_lightspeed_SOURCES` |
-| `apps/` | Native executable entry points and OOC checkpoint inference header | `CMakeLists.txt`, `add_executable`; `apps/ooc_checkpoint_net.h`, `OocCheckpointNet` |
-| `bindings/` | `slaythespire` pybind11 module, focused on run-level APIs | `bindings/slaythespire.cpp`, `PYBIND11_MODULE(slaythespire, m)` |
-| root `train_*.py` | XGBoost, scikit-learn, and PyTorch trainers | for example `train_winrate.py`, top-level training program; `train_combat_pvnet.py`, `PolicyValueNet` |
-| root `export_*.py` | Native model serialization and parity helpers | `export_combat_model.py`, top-level exporter; `export_ooc_checkpoint.py`, top-level exporter |
-| `selfplay/` | Resumable generation, training, and independent paired gates | `selfplay/loop.sh`, main loop and `gate_stats` |
-| `build/` | Mixed generated build output and tracked deployed model files | `CMakeLists.txt`, CMake targets; tracked `build/v_rich_trees.txt`, `build/v_win_trees.txt`, `build/policy_trees_c.txt` |
-| `EXPERIMENTS.md` | Chronological experiment results and corrections | `EXPERIMENTS.md`, numbered sections |
+## Important data flow
 
-## Executables and interfaces
+1. `GameContext` advances a run until `ScreenState::BATTLE`.
+2. `BattleContext::init` copies combat inputs and initializes transient state.
+3. `ScumSearchAgent2::playoutBattle` selects the project-fair or tree-reuse
+   path and Searcher2/Searcher3, then commits combat `Action` values. Searcher3's
+   non-fair path is a particle/reuse hybrid, not known-RNG Searcher2.
+4. `BattleContext::exitBattle` transfers outcome, HP, rewards, RNG streams, and
+   persistent effects back to the run.
+5. Out-of-combat policy applies `GameAction` values until the next combat or
+   terminal `GameOutcome`.
+6. `one_combat` modes optionally log state/action/outcome rows for training or
+   aggregate whole-run results.
 
-- `main` starts interactive console play (`apps/main.cpp`, `main` and
-  `ConsoleSimulator::play`).
-- `one_combat` is the active experiment and data-generation driver
-  (`apps/one_combat.cpp`, `main`).
-- `test` is a manual command harness for replay, save conversion, agents, and
-  MCTS-from-save (`apps/test.cpp`, `main`).
-- `small-test` is a scratch map/path utility (`apps/small-test.cpp`, `main`).
-- `slaythespire` is a Python extension exposing `GameContext`, `Agent`, seed
-  helpers, maps, cards, and enums (`bindings/slaythespire.cpp`,
-  `PYBIND11_MODULE`). It does not bind `BattleContext` or `search::Action`.
-- `apps/parity_test.cpp` has a `main` for combat distribution inference parity,
-  but `CMakeLists.txt` does not declare a target for it.
+Detailed flows are in [combat search](combat-search.md),
+[out-of-combat policy](out-of-combat.md), and
+[training and inference](training-and-inference.md).
 
-## Build and dependency discrepancies
+## Invariants and assumptions
 
-The current CMake graph recursively gathers C++ sources under `src/` and
-compiles them into each declared target;
-it does not define a reusable `sts` library or `build/libsts.a`
-(`CMakeLists.txt`, `sts_lightspeed_SOURCES`, `pybind11_add_module`, and all
-`add_executable` calls). `README.md` contains historical manual link
-instructions involving `build/libsts.a`; those instructions do not match the
-current CMake target graph. `AGENTS.md` now explicitly warns that the target
-does not exist.
+- Combat and run actions are different types operating on different states.
+- Release execution does not universally reject invalid packed actions;
+  callers must enumerate or validate legal actions first
+  (`src/sim/search/Action.cpp::isValidAction`;
+  `src/sim/search/GameAction.cpp::isValidAction`).
+- Combat loops use `BattleContext::outcome`, not `isBattleOver`.
+- Combat control remains C++-only unless bindings are deliberately extended.
+- The contents of `build/` are mixed: tracked model artifacts coexist with
+  ignored CMake outputs (`.gitignore`; `git ls-files build`).
 
-`.gitmodules` names `json` and `pybind11`, and CMake calls
-`add_subdirectory(json)` and `add_subdirectory(pybind11)`. In this checkout the
-git index contains no gitlinks for those paths; the present directories are
-untracked local content. A tracked standalone JSON header exists at
-`extern/nlohmann/json.hpp`.
+## Known limitations
 
-**Unverified:** a fresh clone can configure successfully with the README's
-submodule instructions. The current checkout does not contain a tracked
-pybind11 header tree, and no clean-clone build was performed for this page.
+- `one_combat.cpp` centralizes many policy and experiment layers. **Inference:**
+  it functions as a research workbench rather than a stable library boundary;
+  the repository contains no explicit decision record for that intent.
+- `runFullRunOOC` does not have one standalone policy object; its ordered branch
+  chain determines inference precedence (`apps/one_combat.cpp::runFullRunOOC`).
+- There is no automatic test suite registered in CMake.
 
-The existing `build/CMakeCache.txt` records a Linux/WSL Unix Makefiles build
-with `/usr/bin/c++`. `CMakeLists.txt` assigns GNU-style `-fopenmp` through
-`CMAKE_CXX_FLAGS`; native MSVC configuration has not been verified. The
-self-play loop separately invokes `./one_combat.elf`, so CMake's
-`build/one_combat` is not automatically the executable it gates
-(`selfplay/loop.sh`, generation and `run_gate_batch`).
+## Open questions
 
-Python imports establish dependencies on NumPy, pandas, XGBoost, scikit-learn,
-and, for neural experiments, PyTorch (for example `train_winrate.py`, imports;
-`train_combat_pvnet.py`, imports). No Python requirements, project metadata, or
-environment lock file exists in the repository.
+- What long-term boundary should separate simulator, deployed policy, and
+  experimental evaluator code currently co-located in `one_combat.cpp`?
+- Should the Python API ever expose combat state/actions, or remain run-level?
 
 ## Relevant code
 
-- `include/game/GameContext.h` — `ScreenState`, `GameContext`.
-- `include/combat/BattleContext.h` — `Outcome`, `BattleContext`.
-- `src/sim/search/ScumSearchAgent2.cpp` — `ScumSearchAgent2::playout`.
-- `apps/one_combat.cpp` — `main`.
-- `bindings/slaythespire.cpp` — `PYBIND11_MODULE(slaythespire, m)`.
-- `CMakeLists.txt` — complete configured target graph.
+- `include/game/GameContext.h::GameContext`, `ScreenState`
+- `include/combat/BattleContext.h::BattleContext`, `Outcome`
+- `src/combat/BattleContext.cpp::init`, `exitBattle`
+- `src/sim/search/ScumSearchAgent2.cpp::playout`, `playoutBattle`
+- `include/sim/search/GameAction.h::GameAction`
+- `include/sim/search/Action.h::Action`
+- `apps/one_combat.cpp::main`, `runFullRunOOC`
+- `bindings/slaythespire.cpp::PYBIND11_MODULE`
+- `CMakeLists.txt`

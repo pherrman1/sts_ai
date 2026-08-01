@@ -1,7 +1,14 @@
 # Glossary
 
-Last verified: 2026-07-30 against the current working tree, including
-uncommitted implementation changes.
+Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+
+## Purpose
+
+Define repository-specific terms used across architecture, evaluation, and
+experiment records. Definitions describe current implementation unless marked
+historical or experimental.
+
+## Current implementation
 
 **BattleContext** — Mutable state for one combat, including combat RNGs,
 queues, player, monsters, cards, potions, and `Outcome`
@@ -33,10 +40,13 @@ combat `Action` (`include/sim/search/GameAction.h`, `GameAction`).
 **GameContext** — Mutable state for a complete run and its active screen
 (`include/game/GameContext.h`, `GameContext`, `ScreenState`).
 
-**Known-RNG** — Non-fair combat path in which search operates from the concrete
-battle state and may reuse the tree across committed actions
-(`src/sim/search/ScumSearchAgent2.cpp`, `playoutBattle`). Recorded results from
-this regime are optimistic relative to hidden-information play.
+**Known-RNG** — Default Searcher2's non-fair path, in which search operates from
+the concrete battle RNG and may reuse the tree across committed actions
+(`src/sim/search/ScumSearchAgent2.cpp`, `playoutBattle`;
+`src/sim/search/BattleScumSearcher2.cpp`, `step`). Recorded results from this
+regime are optimistic relative to hidden-information play. Searcher3 samples
+particles even when `STS_FAIR` is off, so its non-fair reuse path is a distinct
+hybrid and must not be labelled known-RNG without qualification.
 
 **Meta arm** — Self-play gate arm intended to contain the run-level value/rest
 candidate (`selfplay/loop.sh`, adaptive gate and `meta_trained` promotion
@@ -91,6 +101,35 @@ Its combined policy logging is wired for Searcher2, not Searcher3.
 probability, and combat outcome/value respectively (`train_value_rich.py`,
 top-level trainer; `train_winrate.py`, top-level trainer;
 `train_value_combat.py`, top-level trainer).
+
+## Important data flow
+
+`GameContext` advances through OOC `GameAction` choices, creates a
+`BattleContext` for combat `Action` search, then receives persistent battle
+results. Value and policy models consume canonical state/action features at
+those boundaries. Benchmark regime terms describe how search treats hidden
+combat RNG, not a different simulator.
+
+## Invariants and assumptions
+
+- `Action` and `GameAction` are not interchangeable.
+- “Fair play” and “known-RNG” results are separate benchmark regimes.
+- “Native” means in-process inference, not necessarily default or benchmarked.
+- “Teacher” names a label-producing process, not guaranteed expert quality.
+- “Current baseline” is defined only by `evaluation/current-baselines.md`.
+
+## Known limitations
+
+Several names are historical research shorthand rather than stable public
+interfaces. In particular, project-fair Searcher2 is only partially
+determinized, Searcher3 belief updates are incomplete, and model path names do
+not encode artifact versions.
+
+## Open questions
+
+- Should dataset/model interfaces receive formal version names beyond research
+  terms such as RICH and PVNet?
+- Should fair-play terminology be renamed to emphasize partial determinization?
 
 ## Relevant code
 

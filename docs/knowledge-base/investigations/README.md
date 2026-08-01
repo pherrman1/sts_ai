@@ -1,7 +1,6 @@
 # Investigations
 
-Last verified: 2026-07-30 against the current working tree, including
-uncommitted implementation changes.
+Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
 
 This directory is for reproducible, unresolved technical investigations. An
 investigation is evidence collection, not a decision or a speculative design.
@@ -36,7 +35,8 @@ investigation is evidence collection, not a decision or a speculative design.
   consumes `./one_combat.elf`, and its first-run model sources are absent.
 - Clean-clone build reproducibility: `.gitmodules` and `CMakeLists.txt`
   reference json/pybind11 directories not represented as gitlinks in this
-  checkout, and current docs reference an undefined `libsts.a` target.
+  checkout. Historical instructions in `EXPERIMENTS.md` use an undefined
+  `build/libsts.a`; current instructions explicitly reject that workflow.
 
 These are candidates, not completed diagnoses. Create a dedicated page only
 when there is a minimal reproduction, captured observations, and an explicit

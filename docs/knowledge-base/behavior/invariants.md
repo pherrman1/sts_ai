@@ -1,113 +1,118 @@
-# Important invariants and assumptions
+# Important invariants
 
-Last verified: 2026-07-30 against the current working tree, including
-uncommitted implementation changes.
+Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
 
-## Simulator and search invariants
+## Purpose
+
+Collect cross-cutting correctness, schema, evaluation, and operational rules
+whose violation can silently invalidate runs or corrupt state.
+
+## Current implementation
+
+The repository relies on runtime checks, conventional calling discipline, and
+manual benchmark validation rather than an automated invariant test suite. The
+following rules are grounded in current code and are mandatory change-review
+points.
+
+### Simulator and action invariants
 
 - Combat control loops continue while
-  `BattleContext::outcome == Outcome::UNDECIDED`; they must not rely on
-  `isBattleOver` (`include/combat/BattleContext.h`, `BattleContext` fields;
-  `src/sim/search/ScumSearchAgent2.cpp`, `playoutBattleFair`, `playoutBattle`).
-  In current code `isBattleOver` is never assigned `true`
-  (`src/combat/BattleContext.cpp`, `init`, `afterMonsterTurns`).
-- An action must be legal for the current domain before it is committed.
-  `Action::isValidAction` validates combat actions; `GameAction::isValidAction`
-  validates run actions (`src/sim/search/Action.cpp`, `isValidAction`;
-  `src/sim/search/GameAction.cpp`, `isValidAction`). `execute` checks validity
-  only inside `#ifdef sts_asserts`; release callers cannot rely on execution to
-  reject an invalid packed action.
-- `BattleContext::init` must fully reset transient queues, cards, monsters,
-  player state, counters, and outcome before loading a new encounter
-  (`src/combat/BattleContext.cpp`, `BattleContext::init`). Reusing stale nested
-  state breaks repeated-seed behavior.
-- Fair-play combat commits one searched root action at a time, then searches
-  again after the real observation (`src/sim/search/ScumSearchAgent2.cpp`,
-  `playoutBattleFair`). A multi-action determinized line must not be committed
-  as though hidden draws were known.
-- `BattleScumSearcher3::Node` and `Edge` are embedded recursively by value
-  (`include/sim/search/BattleScumSearcher3.h`, `Node`, `Edge`). Header layout
-  changes require recompiling every including translation unit; mixing old and
-  new objects is ABI-unsafe.
+  `BattleContext::outcome == Outcome::UNDECIDED`. Current code resets and reads
+  `isBattleOver` but never assigns it true
+  (`src/combat/BattleContext.cpp::init`, `afterMonsterTurns`).
+- Enumerate or validate actions before committing them. `Action::execute` and
+  `GameAction::execute` assert validity only when `sts_asserts` is compiled
+  (`src/sim/search/Action.cpp`; `GameAction.cpp`).
+- `BattleContext::init` must reset transient queues, cards, monsters, player
+  state, counters, and outcome before loading an encounter.
+- A project-fair combat policy commits only one searched root action before
+  observing and searching again.
+- Counterfactual `GameContext` map mutation requires detaching the shared map.
 
-## Data and model invariants
+### Layout and model invariants
 
-- Canonical combat state order is 1,766 features and edge action order is 14
-  features (`DATA_SCHEMA.md`, schema tables;
-  `src/sim/search/CombatValueNet.cpp`, `combatFeatureNames`,
-  `combatExtractFeatures`, `combatPolicyFeatureNames`, and
-  `combatFillActionFeatures`).
-  The last two action fields are hand-authored `Expert` play/obtain weights;
-  changing those tables changes policy inputs without changing the column count
-  (`src/sim/search/CombatValueNet.cpp`, `combatFillActionFeatures`).
-- Rich OOC state order is the `vFeatCsv` producer order and the 1,017-field
-  `v_server.py` layout (`apps/one_combat.cpp`, `vFeatCsv`;
-  `v_server.py`, raw feature layout). Reordering either side requires updating
-  trainers, server, native index mapping, and exporters together.
-- Correlated rows stay in the same split: seed for run labels, fight for combat
-  value, and full decision group for policy/action ranking
-  (`train_winrate.py`, `GroupShuffleSplit`; `train_value_combat.py`, `group`;
-  `train_policy.py`, `group`; `train_ooc_checkpoint.py`, `groups`).
-- Native model loading is an observable precondition. `WinNet::load`,
-  `CombatValueNet::load`, and `CombatPVNet::load` return load status, and
-  `apps/one_combat.cpp` `main` prints or fails on critical loads. File presence
-  alone does not prove a benchmark used the model.
-  **Exception:** `OocCheckpointNet::load` does not check payload read counts
-  after its header/dimension check, so its success message is not sufficient to
-  rule out a truncated payload (`apps/ooc_checkpoint_net.h`, `load`).
+- Changing `Node`, `Edge`, searcher, or other shared header layouts requires
+  recompiling every including translation unit.
+- Canonical combat order is 1,766 state features plus 14 policy action features
+  (`src/sim/search/CombatValueNet.cpp::combatFeatureCount`,
+  `combatPolicyFeatureCount`).
+- Rich OOC order is owned by `apps/one_combat.cpp::vFeatCsv`; the current
+  server layout is 1,017 raw values (`v_server.py::RAW`).
+- Feature meaning can change without changing width. For example, Expert
+  play/obtain weights are policy inputs.
+- Correlated rows stay grouped by run seed, fight, or decision according to the
+  trainer contract.
+- Model loading and branch use are observable preconditions for a benchmark.
 
-## Evaluation and self-play invariants
+### Evaluation and self-play invariants
 
-- Fair-play and known-RNG metrics are separate regimes
-  (`apps/one_combat.cpp`, `main` `STS_FAIR` handling;
-  `src/sim/search/ScumSearchAgent2.cpp`, `playoutBattle`).
-- Candidate gate CSVs use common seed ranges and do not promote ties. Promotion
-  requires the nominal normal-theory lower bound to exceed the arm margin; an
-  inconclusive result at the cap is rejected (`selfplay/loop.sh`, `gate_stats`
-  and adaptive gate). Repeated looks are not multiplicity-adjusted.
-- Meta, value, and policy gate independently. If value and policy qualify
-  together, policy promotion is deferred so it can be compared against the new
-  value baseline (`selfplay/loop.sh`, independent promotion block).
-- Resume markers store the iteration target and the next collision-free seed,
-  while interrupted CSVs are scanned for distinct count and maximum seed
-  (`selfplay/loop.sh`, `done_for_target`, `marker_next_seed`, `seed_stats`).
-- `POLICY_WINDOW=1` is the checked-in local operating constraint
-  (`selfplay/config.env`, `POLICY_WINDOW`; `AGENTS.md`, “Self-play operating
-  context”). **Unverified:** the stated 31 GB failure threshold was not measured
-  during this verification.
+- Project-fair and known-RNG metrics are never merged into one baseline series.
+- Candidate comparisons use common seeds and align rows by seed.
+- Self-play promotion requires the lower nominal bound to strictly clear the
+  arm margin; equality at the margin does not promote, and hard-cap
+  inconclusive candidates reject. Because the checked-in value margin is
+  `-0.5`, a sufficiently precise zero-delta value candidate can qualify.
+- Meta, value, and policy are independent arms; policy can be deferred after a
+  simultaneous value qualification.
+- Snapshot files do not establish a running or resumable loop.
 
-**Broken gate precondition:** the meta arm supplies candidate V_win/rest files
-to `v_server.py`, but native OOC is left enabled and bypasses them. A valid meta
-gate must demonstrate arm-specific model loading and use before its paired
-statistics are meaningful (`selfplay/loop.sh`, policy environments and
-`start_server`; `apps/one_combat.cpp`, native OOC startup and rest queries).
+## Important data flow
 
-## Operational safety assumptions
+These invariants follow the state lifecycle:
 
-- `selfplay/loop.sh` requires `./one_combat.elf` and populated
-  `selfplay/current/`; CMake produces `build/one_combat` instead. The checked-in
-  state file is not sufficient bootstrap state (`selfplay/loop.sh`, startup,
-  initialization, and command invocations).
-- Most loop buffers, models, gates, and logs are ignored but expensive and
-  resumable; their absence from git is not authorization to delete them
-  (`.gitignore`, self-play patterns; `selfplay/loop.sh`, `.done`/resume logic).
-  `selfplay/rbuffer/` is not listed in `.gitignore`, and the current
-  `selfplay/ooc_buffer/` files are tracked, so “all self-play buffers are
-  ignored” is false.
-- Resolve an exact server PID rather than using a broad `pkill -f` pattern
-  (`AGENTS.md`, “Build and safety gotchas”). This is an operational rule; no
-  repository function enforces it.
-- **Unverified:** historical instructions discuss incrementally updating
-  `build/libsts.a`, but current CMake defines no such target
-  (`CMakeLists.txt`, target declarations). Prefer a clean CMake rebuild until
-  the library workflow is made reproducible.
+1. Valid `GameAction` advances `GameContext` to battle.
+2. Fully reset `BattleContext` receives run state.
+3. Search copies/determinizes state, commits one valid action, and terminates on
+   `Outcome`.
+4. Combat results return to the run.
+5. Data producers emit canonical ordered features and grouping metadata.
+6. Trainers/exporters preserve schema and artifact format.
+7. Runtime loaders print activation and the intended policy branch uses the
+   model.
+8. Benchmarks produce per-seed rows; paired analysis compares identical seeds
+   under a declared regime.
+
+## Invariants and assumptions
+
+Operational assumptions that are not enforced by types or tests:
+
+- Ignored self-play buffers are expensive and must be preserved unless deletion
+  is explicitly intended.
+- CMake is the build authority; old `libsts.a` workflows are unsupported.
+- Exact server PID discovery precedes termination.
+- Current tracked model hashes identify files, not historical benchmark use.
+- **Unverified:** whole-run fair results are deterministic under a fixed
+  multi-thread configuration.
+
+## Known limitations
+
+- No test automatically asserts combat terminal-field usage, observation
+  identity, schema order, native/server parity, or self-play arm ownership.
+- `OocCheckpointNet::load` can report success after a truncated payload because
+  individual reads are not checked.
+- Searcher3 violates its intended seed contract and has a no-op belief update.
+- `paired_analysis.py` violates the current result-column contract for HP/time.
+- The current self-play meta arm violates candidate-use preconditions because
+  native OOC bypasses its server artifacts.
+- `VALUE_MARGIN=-0.5` is not programmatically restricted to latency candidates.
+
+## Open questions
+
+- Which invariants should become compile-time, unit, parity, or integration
+  tests first?
+- Should model artifacts embed schema version and feature hashes?
+- Should self-play refuse startup when state/current/binary/model preconditions
+  are inconsistent?
 
 ## Relevant code
 
-- `include/combat/BattleContext.h` — terminal fields and combat layout.
-- `src/combat/BattleContext.cpp` — `BattleContext::init`.
-- `src/sim/search/ScumSearchAgent2.cpp` — combat loop and fair commit rule.
-- `src/sim/search/Action.cpp` and `src/sim/search/GameAction.cpp` — validation.
-- `src/sim/search/CombatValueNet.cpp` — canonical schemas and native loads.
-- `selfplay/loop.sh` — resume and gate invariants.
-- `selfplay/config.env` — current operating snapshot.
+- `include/combat/BattleContext.h::BattleContext`, `Outcome`
+- `src/combat/BattleContext.cpp::init`, `afterMonsterTurns`
+- `src/sim/search/Action.cpp::isValidAction`, `execute`
+- `src/sim/search/GameAction.cpp::isValidAction`, `execute`
+- `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`
+- `include/sim/search/BattleScumSearcher3.h::Node`, `Edge`
+- `src/sim/search/CombatValueNet.cpp::combatFeatureNames`
+- `apps/one_combat.cpp::vFeatCsv`, `main`
+- `selfplay/loop.sh::gate_stats`, promotion block
+- `paired_analysis.py::load`

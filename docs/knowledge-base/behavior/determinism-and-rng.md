@@ -1,122 +1,105 @@
 # Determinism and RNG
 
-Last verified: 2026-07-30 against the current working tree, including
-uncommitted implementation changes.
+Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
 
-## Run RNG ownership
+## Purpose
 
-`GameContext` stores separate RNG streams for AI choices, cards, events,
-merchants, monsters, potions, relics, shuffling, treasure, and other simulator
-domains (`include/game/GameContext.h`, `GameContext` hidden-from-player
-section). `GameContext::GameContext` seeds and consumes those streams while
-initializing the run (`src/game/GameContext.cpp`,
-`GameContext::GameContext`, `initRelics`, `initPlayer`, `generateMonsters`).
+Document RNG ownership, project-fair determinization, copy boundaries, and the
+known gaps that prevent claims of complete hidden-information modeling or
+bit-reproducible whole-run evaluation.
 
-`BattleContext` carries the combat-relevant subset: `aiRng`, `cardRandomRng`,
-`miscRng`, `monsterHpRng`, `potionRng`, and `shuffleRng`
-(`include/combat/BattleContext.h`, `BattleContext`). `BattleContext::init`
-initializes AI, monster-HP, shuffle, and card-random RNGs from the same
-`Random(gc.seed + gc.floorNum)` value, while copying `miscRng` and `potionRng`
-from the run. `BattleContext::exitBattle` copies all six resulting states back
-(`src/combat/BattleContext.cpp`, `init`, `exitBattle`). Search
-determinizations mutate battle copies, not the committed live battle.
+## Current implementation
 
-## Visible versus hidden combat state
+`GameContext` owns separate RNG streams for AI choices, cards, events,
+merchants, monsters, potions, relics, shuffling, treasure, and other domains
+(`include/game/GameContext.h::GameContext`). `BattleContext` carries six
+combat-relevant streams: AI, card-random, misc, monster-HP, potion, and shuffle
+(`include/combat/BattleContext.h::BattleContext`).
 
-Searcher3 separates `CombatObservation` from `HiddenBattleState`.
-`CombatObservation::fromBattleContext` captures the state it treats as visible;
-`visibleHash` is only a partial hash. `HiddenBattleState::sampleParticles`
-generates sampled determinizations used by `Belief`
-(`include/sim/search/CombatObservation.h`, `CombatObservation`,
-`HiddenBattleState`, `Belief`; `src/sim/search/CombatObservation.cpp`, named
-methods).
+`BattleContext::init` initializes/copies combat RNG state from `GameContext`;
+`BattleContext::exitBattle` copies resulting stream states back
+(`src/combat/BattleContext.cpp::init`, `exitBattle`). Search operates on battle
+copies, while the selected action is committed to the live battle.
 
-`BattleScumSearcher3::step` samples a particle, applies it to a copied root
-state, then searches that world. `ScumSearchAgent2::playoutBattleFair` commits
-only the most-visited root move before observing and searching again
-(`src/sim/search/BattleScumSearcher3.cpp`, `step`, `applyParticle`;
-`src/sim/search/ScumSearchAgent2.cpp`, `playoutBattleFair`). This is the
-implementation basis for Searcher3 fair mode. `Belief::update` is a no-op and
-`Belief::sample` ignores weights, so particles are not conditioned on observed
-draws (`src/sim/search/CombatObservation.cpp`, named methods).
+`STS_FAIR=1` calls `ScumSearchAgent2::playoutBattleFair`. With default
+Searcher2, each simulation shuffles the draw pile and replaces only shuffle and
+card-random RNG. With `STS_SEARCHER3=1`, each sampled `HiddenBattleState`
+contains all six seed pairs and a draw order
+(`src/sim/search/BattleScumSearcher2.cpp::determinize`;
+`src/sim/search/BattleScumSearcher3.cpp::applyParticle`). Searcher3 samples and
+applies particle RNG seeds even when `STS_FAIR` is off; its non-fair agent path
+reuses the tree. Both fair paths commit one root action and create a new
+searcher for the next observed decision.
 
-By default `STS_FAIR=1` still uses Searcher2. Its `determinize` shuffles the
-draw pile and replaces only shuffle/card-random RNG; AI, misc, monster-HP, and
-potion RNG remain concrete. Fair play is a repository regime label, not a
-verified complete hidden-information boundary
-(`src/sim/search/BattleScumSearcher2.cpp`, `determinize`;
-`src/sim/search/BattleScumSearcher3.cpp`, `g_useSearcher3`).
+## Important data flow
 
-Known-RNG `ScumSearchAgent2::playoutBattle` may reuse a search tree across
-actions via `advanceRoot`, while the fair path rebuilds per observed decision
-(`src/sim/search/ScumSearchAgent2.cpp`, `playoutBattle` and
-`playoutBattleFair`; `src/sim/search/BattleScumSearcher2.cpp`,
-`BattleScumSearcher2::advanceRoot`; `src/sim/search/BattleScumSearcher3.cpp`,
-`BattleScumSearcher3::advanceRoot`).
+1. Run RNG state enters `BattleContext::init`.
+2. A fair search copies the root battle for each simulation.
+3. Searcher2 partially determinizes the copy; Searcher3 applies a sampled
+   particle.
+4. Search explores copied worlds and chooses a root move.
+5. The agent validates that move against the live battle and applies it if
+   valid; Searcher3 filters for live-valid root edges during selection.
+6. At combat end, six stream states return to `GameContext`.
 
-## Copy safety
+Searcher3 intends to seed its `std::mt19937_64` from visible observation,
+`agentSeed`, and `decisionIndex`. The constructor performs that calculation
+before callers assign `agentSeed`, while `decisionIndex` is never assigned.
+Current effective construction therefore uses the visible hash plus default-zero
+members (`BattleScumSearcher3::BattleScumSearcher3`;
+`ScumSearchAgent2::playoutBattleFair`).
 
-`GameContext::map` is shared ownership (`include/game/GameContext.h`,
-`GameContext::map`). A counterfactual copy therefore shares its `Map` until the
-experiment code explicitly detaches it; branches that will mutate map state
-must clone the map first (`apps/one_combat.cpp`, counterfactual map-detachment
-code). `ScreenStateInfo` gives inactive-screen fields deterministic sentinel
-values specifically to avoid stack-reuse-dependent copies
-(`include/game/GameContext.h`, `ScreenStateInfo`).
+## Invariants and assumptions
 
-`BattleContext::init` explicitly resets nested transient structures before
-copying run data (`src/combat/BattleContext.cpp`, `BattleContext::init`).
-`EXPERIMENTS.md` entry 66f attributes a repaired repeated-seed divergence to
-this reset. The implementation is verified; the historical causal claim is
-experiment-log provenance.
+- Project-fair and known-RNG results are different regimes.
+- “Fair” is a repository mode label, not proof that all player-hidden state is
+  modeled.
+- Search determinizations mutate copies, not the committed live battle.
+- A copied `GameContext` shares `map`; detach before counterfactual mutation.
+- Per-seed benchmark CSVs must be aligned by seed because parallel completion
+  order is nondeterministic.
+- Reproducibility records include revision, seed block, simulation count,
+  ascension, searcher, all `STS_*` behavior flags, thread count, model paths and
+  hashes, and observed load messages.
 
-## Current determinism uncertainties
+## Known limitations
 
-- **Discrepancy:** Searcher3's comment promises composite seeding from
-  `agentSeed`, `visibleHash`, and `decisionIndex`, but construction consumes
-  both configurable members at their default zero values. The agent assigns
-  `s3.agentSeed = bc.seed` only after construction, and no code assigns
-  `decisionIndex`
-  (`src/sim/search/BattleScumSearcher3.cpp`, constructor;
-  `src/sim/search/ScumSearchAgent2.cpp`, `playoutBattleFair` and
-  `playoutBattle`; `include/sim/search/BattleScumSearcher3.h`, member defaults).
-- **Discrepancy:** `CombatObservation::operator==` omits draw-pile contents and
-  several fields included by `visibleHash`; the hash itself omits other stored
-  fields. Equal observations can therefore hash differently, and distinct
-  observations can share the intended identity (`src/sim/search/CombatObservation.cpp`,
-  `operator==`, `visibleHash`).
-- **Unverified:** `EXPERIMENTS.md` entries 66e and 66j report repeated
-  multi-thread fair-play runs that were not bit-identical. No current automated
-  reproducibility test covers whole-run CSV equality (`CMakeLists.txt`, absence
-  of `add_test`; `apps/one_combat.cpp`, `bestBench`).
-- **Open question:** whether remaining divergence comes only from search RNG
-  initialization, OpenMP scheduling, shared mutable globals, or multiple
-  causes. The repository contains no closed investigation proving one cause.
+- Searcher2 leaves four combat RNG streams concrete under `STS_FAIR=1`.
+- Searcher3's stored `HiddenBattleState::drawPileOrder` is never applied;
+  `applyParticle` shuffles the copied pile independently with the searcher RNG.
+- `Belief::update` is a no-op and `Belief::sample` samples uniformly, so
+  Searcher3 particles are not conditioned on observed draws
+  (`src/sim/search/CombatObservation.cpp`).
+- `CombatObservation::operator==` and `visibleHash` cover different field sets.
+  Equal observations can hash differently and stored distinctions can be
+  omitted from the intended identity.
+- Historical repeated fair multi-thread runs were not bit-identical
+  (`EXPERIMENTS.md` entries 66e, 66j). No automated equality test exists.
+- The self-play baseline cache omits fixed native floor/win artifacts from its
+  key and assumes deterministic outcomes without a current proof.
+- `ScreenStateInfo` sentinel initialization and `BattleContext::init` resets
+  reduce stale-copy behavior but do not establish whole-run determinism.
 
-## Reproducibility checklist
+## Open questions
 
-Record the game seed block, `STS_FAIR`, `STS_SEARCHER3`, simulation count,
-ascension, model paths and load messages, thread counts, executable/model
-hashes, and all policy flags. The self-play gate hashes its binary, models, and
-evaluation configuration for baseline-cache identity (`selfplay/loop.sh`,
-baseline-cache key construction).
-
-That cache key is incomplete for current native OOC: it hashes the loop's
-`current/v_win.json` but not the fixed `build/v_rich_trees.txt` or
-`build/v_win_trees.txt` that `one_combat` actually loads. If server-backed OOC
-is restored, it also does not hash `v_server.py` or Python dependencies.
-Combined with unresolved repeated-seed divergence, the comment that baseline
-outcomes are deterministic is an assumption, not a verified invariant
-(`selfplay/loop.sh`, `baseline_cache_key`; `apps/one_combat.cpp`, native OOC
-startup).
+- Which hidden variables belong in the project-fair model for each searcher?
+- What equality/hash contract should define a combat observation?
+- Should Searcher3 constructor parameters make agent seed and decision index
+  explicit and immutable?
+- Is remaining replay divergence caused by OpenMP scheduling, shared globals,
+  search RNG construction, or multiple factors?
 
 ## Relevant code
 
-- `include/game/GameContext.h` — run RNG streams, `ScreenStateInfo`, shared map.
-- `src/game/GameContext.cpp` — run construction and RNG-consuming transitions.
-- `include/combat/BattleContext.h` and `src/combat/BattleContext.cpp` — combat RNG boundary.
-- `include/sim/search/CombatObservation.h` and
-  `src/sim/search/CombatObservation.cpp` — visible/hidden split.
-- `src/sim/search/BattleScumSearcher3.cpp` — particle application and RNG seed.
-- `src/sim/search/ScumSearchAgent2.cpp` — fair versus known-RNG execution.
-- `selfplay/loop.sh` — evaluation cache provenance.
+- `include/game/GameContext.h::GameContext`, `ScreenStateInfo`
+- `src/game/GameContext.cpp::GameContext`
+- `include/combat/BattleContext.h::BattleContext`
+- `src/combat/BattleContext.cpp::init`, `exitBattle`
+- `src/sim/search/BattleScumSearcher2.cpp::determinize`
+- `include/sim/search/CombatObservation.h::CombatObservation`,
+  `HiddenBattleState`, `Belief`
+- `src/sim/search/CombatObservation.cpp::visibleHash`, `operator==`,
+  `Belief::update`, `sample`
+- `src/sim/search/BattleScumSearcher3.cpp::BattleScumSearcher3`, `applyParticle`
+- `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`
+- `selfplay/loop.sh::baseline_cache_key`

@@ -1,7 +1,6 @@
 # Decision records
 
-Last verified: 2026-07-30 against the current working tree, including
-uncommitted implementation changes.
+Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
 
 This directory is for durable architectural or operating decisions whose
 rationale is directly supported by repository evidence. `EXPERIMENTS.md`
@@ -41,4 +40,4 @@ record superseded rather than rewriting its history.
 
 - `AGENTS.md` — documentation and experiment-recording rules.
 - `EXPERIMENTS.md` — existing evidence and corrections.
-- `docs/knowledge-base/experiments/current-state.md` — current recommendation summary.
+- `docs/knowledge-base/evaluation/current-baselines.md` — current configuration and benchmark qualification.
