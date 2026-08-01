@@ -1836,3 +1836,34 @@ enabling condition, but the omitted command prevents verification.
 - **Reproducibility:** 12 threads, per-seed CSV retained; fair multi-thread
   replay is not bit-identical across invocations (§66e/66j), so small
   differences in aggregates are expected.
+
+## 69. Fair replay determinism verification (2026-08-02)
+
+- **Question:** is fair multi-thread whole-run replay bit-identical across
+  separate process invocations, given the recorded §66e/66j divergence
+  (2026-07-23)? KB issue 10.
+- **Method:** `STS_FAIR=1 ./build/one_combat bestbench <sims> <nseeds> <asc>
+  <offset>` run twice per configuration on commit `63d8b89`; per-seed rows
+  compared on all columns except `sec` (wall timing), aligned by seed.
+  Configurations: fair Searcher2 at 12 threads (32 seeds), 8 threads (32
+  seeds, the historical worker count), 1 thread (16 seeds), 128 seeds at 12
+  threads; fair Searcher3 at 12 threads (16 seeds); known-RNG Searcher2 at 12
+  threads (32 seeds). Plus `STS_FAIR=1 python3 check_replay.py 1000 16 0
+  126700` as an end-to-end probe.
+- **Result:** **bit-identical in every configuration** — 0 non-`sec`
+  differences across all compared rows. The recorded
+  `build/bench_2026-08-02_default_fair.csv` (128 seeds) reproduces exactly on
+  a fresh rerun (`build/det_fair128_b.csv`).
+- **Interpretation:** the §66e/66j divergence does not reproduce on the
+  current code. Timeline: divergence recorded 2026-07-23; `da8c902`
+  (2026-07-26) added the `BattleContext::init` full reset whose comment says
+  leaving stale nested state behind "made a nominally fresh fair-play combat
+  depend on stack/object reuse from a previous run" — **Inference:** that
+  stale-state dependency (interleaved by `schedule(dynamic)` outer
+  parallelism) was the historical divergence cause. No `random_device` or
+  time-based seeding exists; observation hashing is integer-only; OpenMP is
+  used only in the outer per-seed loops.
+- **Caveats:** verified for this binary/config only (Linux/WSL gcc 13, `-O3`,
+  gcc OpenMP). It is not a proof for other compilers, sanitizer builds, or
+  configurations, and `sec` legitimately differs. The self-play cache should
+  still key on binary/model hashes.

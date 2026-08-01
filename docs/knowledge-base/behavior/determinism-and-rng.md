@@ -78,8 +78,14 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
   set; card piles compare as `CardKey` multisets, so order-insensitive equality
   is deliberate and equal observations hash equally.
 - Historical repeated fair multi-thread runs were not bit-identical
-  (`EXPERIMENTS.md` entries 66e, 66j). `check_replay.py` provides a
-  repeated-seed CSV equality probe; no automated guarantee exists.
+  (`EXPERIMENTS.md` entries 66e, 66j). Since commit `63d8b89` the recorded
+  divergence does not reproduce: fair Searcher2/Searcher3 and known-RNG runs
+  replay bit-identically across separate invocations and thread counts
+  (1/8/12) on this machine (`EXPERIMENTS.md` §69). **Inference:** the
+  historical cause was stale `BattleContext` state under `schedule(dynamic)`
+  reuse, fixed in `da8c902`'s `BattleContext::init` reset block.
+  `check_replay.py` probes repeated-seed CSV equality; `sec` legitimately
+  differs between runs.
 - The self-play baseline cache includes the fixed native floor/win artifacts in
   its key and treats deterministic outcomes as an assumption, not a proof
   (`selfplay/loop.sh::baseline_cache_key`).
@@ -89,8 +95,8 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
 ## Open questions
 
 - Which hidden variables belong in the project-fair model for each searcher?
-- Is remaining replay divergence caused by OpenMP scheduling, shared globals,
-  search RNG construction, or multiple factors?
+- Does bit-identity hold across compilers, sanitizer builds, and other
+  machines (verified only for gcc 13 / `-O3` / Linux/WSL so far)?
 
 ## Relevant code
 

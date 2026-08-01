@@ -102,9 +102,10 @@ env plus server port liveness, not a per-decision query log. See
   provenance. The 2026-08-02 re-measurement of the current default stack on the
   recorded block (`EXPERIMENTS.md` §68) is a new, correctly labelled result,
   not an exact reproduction of §66i.
-- Multi-thread fair-play results have historically failed bit-identical replay;
-  `check_replay.py` provides a repeated-seed CSV equality probe, but no
-  automated guarantee exists.
+- Multi-thread fair-play replay is bit-identical on the current code for
+  tested configurations (gcc 13, `-O3`, Linux/WSL; `EXPERIMENTS.md` §69), and
+  `check_replay.py` probes repeated-seed CSV equality; other compilers,
+  sanitizer builds, and machines are unverified.
 - `paired_analysis.py` parses by header and asserts the 10-column `bestbench`
   schema, so producer/consumer drift fails loudly; the assertion covers header
   mismatch, not semantic feature drift.

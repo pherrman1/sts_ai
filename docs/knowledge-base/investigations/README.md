@@ -49,8 +49,9 @@ the [issues index](../issues/README.md) and the
 [decision log](../decision-log/2026-08-02-issue-fixes.md)): Searcher3 seeding,
 belief conditioning, draw-order application, PVNet-only priors, observation
 identity, paired-analysis column drift, self-play meta-arm bypass, bootstrap,
-and clean-clone build are fixed. Remaining candidates: whole-run fair-play
-reproducibility root cause (issues 10) and a full parity harness (issue 19).
+clean-clone build, and fair-replay determinism (the recorded divergence does
+not reproduce on current code; `EXPERIMENTS.md` §69) are fixed. Remaining
+candidate: a full trained-model parity harness (issue 19).
 
 ## Required record format
 
