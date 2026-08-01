@@ -47,11 +47,10 @@ must not be grouped with known-RNG Searcher2.
    `WIN_WEIGHT=0.1` makes a win worth 10 floor units
    (`selfplay/loop.sh::gate_stats`; `selfplay/config.env`).
 
-The `bestBench` source comment and its `BEST stack` banner are stale and
-incomplete: they still describe a server-backed stack, an old skip default, and
-optional `restV`, while startup currently defaults to native OOC, skip `-0.5`,
-and separate win-rest via `g_restWin=true`. Use parsed flags, load messages, and
-the executed branch conditions rather than that banner alone.
+The `bestBench` banner and adjacent source comment are now emitted from the
+parsed configuration (skip threshold, rest/win layer, shop-V, path mode, native
+OOC, searcher, threads, model paths); use parsed flags and load messages as the
+authoritative provenance, not the banner alone.
 
 ## Invariants and assumptions
 
@@ -83,40 +82,50 @@ link to it.
 ## Gate protocol
 
 `selfplay/loop.sh::gate_stats` computes a normal-theory paired mean interval
-`mean ± GATE_Z*SE` at adaptive looks. Promotion requires the lower bound to
-strictly exceed the arm margin; equality at the margin does not promote; a
-hard-cap inconclusive result is rejected. Meta and policy normally use `+0.5`;
-the checked-in value snapshot uses `-0.5`, so a sufficiently precise zero-delta
-value candidate can qualify.
+`mean ± GATE_Z*SE` at adaptive looks. Promotion is allowed only on the final
+hard-cap look; earlier "promote" signals are advisory and downgraded to
+`continue` (the multiplicity guard against repeated looks). Equality at the
+margin does not promote; a hard-cap inconclusive result is rejected. Meta and
+policy normally use `+0.5`; a negative value margin is a latency allowance
+honored only when `VALUE_MARGIN_LATENCY=1`, otherwise clamped with a warning.
 
-The repeated looks are not multiplicity-adjusted, so `GATE_Z=2.58` is not a
-proven 99% sequential guarantee. In addition, the current meta arm is invalid
-because native OOC bypasses its candidate server models. See
+`GATE_Z=2.58` remains nominal per look, not a proven 99% sequential guarantee,
+and hard-cap-only promotion costs power (a promotable candidate always pays the
+full seed budget). The meta arm runs server-backed with `STS_NATIVE_OOC=0` so
+candidate V_win/rest models own meta decisions; candidate use is evidenced by
+env plus server port liveness, not a per-decision query log. See
 [`operations/selfplay-loop.md`](../operations/selfplay-loop.md).
 
 ## Known limitations
 
 - The primary fair headline lacks its raw directory and exact complete model/flag
-  provenance. Re-running the seed block with current defaults is a new result,
-  not an exact reproduction.
+  provenance. The 2026-08-02 re-measurement of the current default stack on the
+  recorded block (`EXPERIMENTS.md` §68) is a new, correctly labelled result,
+  not an exact reproduction of §66i.
 - Multi-thread fair-play results have historically failed bit-identical replay;
-  no automated whole-run reproducibility test exists.
-- `paired_analysis.py::load` reads zero-based column 3 as HP and column 4 as
-  seconds, but the current producer stores `act` and `hpEnd` there; seconds is
-  column 9. Win and floor still align, HP/timing do not.
-- CMake registers no CTest tests; `apps/test.cpp::main` is a manual dispatcher.
-- `parity_test.py` is not a valid trained-model parity test as written.
+  `check_replay.py` provides a repeated-seed CSV equality probe, but no
+  automated guarantee exists.
+- `paired_analysis.py` parses by header and asserts the 10-column `bestbench`
+  schema, so producer/consumer drift fails loudly; the assertion covers header
+  mismatch, not semantic feature drift.
+- CTest registers parse/syntax checks (`ctest --test-dir build`); the `test`
+  dispatcher holds targeted Searcher3 and terminal-flag checks, and
+  `small-test isbattleover` covers the terminal-field derivation. Deeper
+  integration invariants remain review-enforced.
+- `parity_test.py` fails loudly when its binary or checkpoint is missing, but
+  real trainer/native parity still requires a produced checkpoint.
 - Experiment ledger entries before the current metadata standard do not all pin
   model hashes or artifacts. Preserve them as historical evidence; do not fill
   missing facts by inference.
-- `bestBench`'s own descriptive comment/banner does not fully identify the
-  policy that `runFullRunOOC` executes.
+- `bestBench`'s banner omits some experimental layers; startup load messages
+  and the executed branch conditions remain the authoritative configuration
+  record.
 
 ## Open questions
 
 - What thread/scheduling configuration is required for bit-reproducible fair
   whole-run evaluation?
-- Should gate intervals use a sequentially valid method?
+- Should alpha-spending style boundaries replace hard-cap-only gate promotion?
 - Should `bestbench` embed revision, flags, and artifact hashes in a sidecar?
 
 ## Relevant code

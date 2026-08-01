@@ -6,6 +6,7 @@
 #include "combat/BattleContext.h"
 #include <dlfcn.h>
 #include <fstream>
+#include <iostream>
 #include <algorithm>
 #include <cmath>
 
@@ -21,14 +22,18 @@ typedef void (*sgemv_t)(const int,const int,const int,const int,const float,
                         const float*,const int,const float*,const int,
                         const float,float*,const int);
 static sgemv_t sgemv_fn = nullptr;
+static bool blas_probed = false;
 static void init_blas(){
-    if(blas_handle)return;
+    if(blas_handle||blas_probed)return;
+    blas_probed=true;
     const char*ps[]={
         "/home/philippherrmann/Documents/sts/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
     };
     for(const char*p:ps){blas_handle=dlopen(p,RTLD_NOW|RTLD_GLOBAL);if(!blas_handle)continue;
         sgemv_fn=(sgemv_t)dlsym(blas_handle,"scipy_cblas_sgemv");
-        if(sgemv_fn){blas_ok=true;return;}dlclose(blas_handle);blas_handle=nullptr;}
+        if(sgemv_fn){blas_ok=true;break;}dlclose(blas_handle);blas_handle=nullptr;}
+    if(blas_ok){std::cout<<"BLAS: OpenBLAS "<<ps[0]<<'\n';}
+    else{std::cout<<"BLAS: scalar fallback\n";}
 }
 
 static inline float sigmoid(float x){return 1.0f/(1.0f+std::exp(-x));}
@@ -120,7 +125,7 @@ bool CombatDistValueNet::load(const std::string&path){
     if(!R("potion_head_weight",potionW,44*entityDim))return false;if(!R("potion_head_bias",potionB,44))return false;
     if(!R("turns_head_weight",turnsW,entityDim))return false;if(!RF("turns_head_bias",turnsB))return false;
     if(!f)return false;
-    g_richCombatFeatures=true;isLoaded=true;return true;
+    g_richCombatFeatures=true;isLoaded=true;init_blas();return true;
 }
 
 static constexpr int ZO=50+128,MO=ZO+4*371+2;

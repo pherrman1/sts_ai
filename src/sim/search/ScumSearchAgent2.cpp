@@ -74,12 +74,12 @@ static void printHelper(const BattleContext &bc, const search::Action &a) {
 void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
     if (search::g_useSearcher3) {
         // ISMCTS: new searcher per turn (different observations = different trees)
+        int decisionIdx = 0;
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
             const std::int64_t sims = isBossEncounter(bc.encounter)
                 ? (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
-            BattleScumSearcher3 s3(bc, 64);
-            s3.agentSeed = bc.seed;
+            BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, 64);
             s3.search(sims);
             simulationCountTotal += s3.root.simulationCount;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
@@ -91,8 +91,9 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                     bestVisits = e.child.simulationCount; bestAction = e.action; have = true;
                 }
             }
-            if (have) takeAction(bc, bestAction);
-            else break;
+            if (!have) break;
+            takeAction(bc, bestAction);
+            ++decisionIdx;
         }
         return;
     }
@@ -130,8 +131,8 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
         return;
     }
     if (search::g_useSearcher3) {
-        BattleScumSearcher3 s3(bc, 64);
-        s3.agentSeed = bc.seed;
+        int decisionIdx = 0;
+        BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, 64);
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
             const std::int64_t sims = isBossEncounter(bc.encounter)
@@ -151,6 +152,9 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             if (!have) break;
             takeAction(bc, bestAction);
             s3.advanceRoot(bestAction, bc);
+            ++decisionIdx;
+            s3.decisionIndex = decisionIdx;
+            s3.reseed();
         }
         return;
     }

@@ -10,6 +10,8 @@
 #include "slaythespire.h"
 #include "sim/SimHelpers.h"
 #include "sim/search/SimpleAgent.h"
+#include "sim/search/ScumSearchAgent2.h"
+#include "combat/BattleContext.h"
 
 #include <vector>
 #include <algorithm>
@@ -167,6 +169,23 @@ void printVec(const std::string &name, std::ostream &os, ForwardIt begin, Forwar
 
 
 int main(int argc, const char *argv[]) {
+    if (argc >= 2 && std::string(argv[1]) == "isbattleover") {
+        const std::uint64_t seed = argc >= 3 ? std::stoull(argv[2]) : 12345;
+        const int ascension = argc >= 4 ? std::stoi(argv[3]) : 0;
+
+        GameContext gc(sts::CharacterClass::IRONCLAD, seed, ascension);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::ScumSearchAgent2 agent;
+        agent.simulationCountBase = 1000;
+        agent.playoutBattle(bc);
+        const bool passes = bc.isBattleOver() == (bc.outcome != Outcome::UNDECIDED);
+        std::cout << "isbattleover: outcome="
+                  << battleOutcomeStrings[static_cast<int>(bc.outcome)]
+                  << " isBattleOver=" << bc.isBattleOver()
+                  << (passes ? " PASS" : " FAIL") << '\n';
+        return passes ? 0 : 1;
+    }
 //    printAllRelicForBinding();
 
     Map map(sts::Map::fromSeed(1));

@@ -1,6 +1,6 @@
 # Investigations
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-02 against the current working tree.
 
 This directory is for reproducible, unresolved technical investigations. An
 investigation is evidence collection, not a decision or a speculative design.
@@ -40,7 +40,17 @@ investigation is evidence collection, not a decision or a speculative design.
 
 These are candidates, not completed diagnoses. Create a dedicated page only
 when there is a minimal reproduction, captured observations, and an explicit
-next discriminating check.
+next discriminating check. All candidates are also tracked in the
+[issues index](../issues/README.md); promote a candidate to a dedicated page
+here when its diagnosis is reproducible, and link it from the issue entry.
+
+Most candidates from the initial assessment were resolved on 2026-08-02 (see
+the [issues index](../issues/README.md) and the
+[decision log](../decision-log/2026-08-02-issue-fixes.md)): Searcher3 seeding,
+belief conditioning, draw-order application, PVNet-only priors, observation
+identity, paired-analysis column drift, self-play meta-arm bypass, bootstrap,
+and clean-clone build are fixed. Remaining candidates: whole-run fair-play
+reproducibility root cause (issues 10) and a full parity harness (issue 19).
 
 ## Required record format
 

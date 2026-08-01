@@ -13,6 +13,12 @@ repository contains conclusions, but their rationale is often distributed
 across dated experiment entries; copying only the outcome would invent or lose
 context.
 
+The chronological, session-level record — including process and tooling
+choices, rejected alternatives, and new facts — lives in the
+[decision log](../decision-log/README.md). A record here is distilled from
+repository evidence; a logged decision stays in the decision log until its
+rationale is directly supported by that evidence.
+
 ## Required record format
 
 Each record should contain:

@@ -8,6 +8,12 @@ import sys, os, subprocess, tempfile
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/vdist.csv"
 MODEL_PATH = sys.argv[2] if len(sys.argv) > 2 else "build/v_combat_dist.txt"
 NSAMPLES = int(sys.argv[3]) if len(sys.argv) > 3 else 100
+BIN = os.environ.get("STS_PARITY_BIN") or (sys.argv[4] if len(sys.argv) > 4 else "build/parity_test")
+
+for label, path in (("C++ parity binary", BIN), ("model checkpoint", MODEL_PATH)):
+    if not os.path.exists(path):
+        print(f"[parity] ERROR: {label} not found: {path}")
+        sys.exit(1)
 
 # --- Load PyTorch model ---
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -80,7 +86,7 @@ print(f"[parity] wrote {feat_path}")
 # Run C++ inference via a test binary
 cpp_path = "/tmp/parity_cpp_out.txt"
 print(f"[parity] running C++ inference...")
-ret = subprocess.run(["./build/parity_test.elf", MODEL_PATH, feat_path, str(NSAMPLES), cpp_path],
+ret = subprocess.run([BIN, MODEL_PATH, feat_path, str(NSAMPLES), cpp_path],
                      capture_output=True, text=True, timeout=30)
 print(ret.stderr)
 if ret.returncode != 0:

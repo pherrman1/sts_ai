@@ -43,11 +43,12 @@ searcher for the next observed decision.
 6. At combat end, six stream states return to `GameContext`.
 
 Searcher3 intends to seed its `std::mt19937_64` from visible observation,
-`agentSeed`, and `decisionIndex`. The constructor performs that calculation
-before callers assign `agentSeed`, while `decisionIndex` is never assigned.
-Current effective construction therefore uses the visible hash plus default-zero
-members (`BattleScumSearcher3::BattleScumSearcher3`;
-`ScumSearchAgent2::playoutBattleFair`).
+`agentSeed`, and `decisionIndex`. The constructor now takes both values as
+explicit parameters and computes the composite seed at construction;
+`ScumSearchAgent2::playoutBattleFair` passes `bc.seed` plus an incrementing
+decision index per decision, and the tree-reuse path re-keys via `reseed()`
+after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
+`ScumSearchAgent2::playoutBattleFair`, `playoutBattle`).
 
 ## Invariants and assumptions
 
@@ -65,27 +66,29 @@ members (`BattleScumSearcher3::BattleScumSearcher3`;
 ## Known limitations
 
 - Searcher2 leaves four combat RNG streams concrete under `STS_FAIR=1`.
-- Searcher3's stored `HiddenBattleState::drawPileOrder` is never applied;
-  `applyParticle` shuffles the copied pile independently with the searcher RNG.
-- `Belief::update` is a no-op and `Belief::sample` samples uniformly, so
-  Searcher3 particles are not conditioned on observed draws
-  (`src/sim/search/CombatObservation.cpp`).
-- `CombatObservation::operator==` and `visibleHash` cover different field sets.
-  Equal observations can hash differently and stored distinctions can be
-  omitted from the intended identity.
+- Searcher3's stored `HiddenBattleState::drawPileOrder` is installed by
+  `applyParticle` only when the copied pile's size and card multiset match the
+  particle; after tree reuse, stale particles fall back to a searcher-RNG
+  shuffle (`src/sim/search/BattleScumSearcher3.cpp::applyParticle`).
+- `Belief::update` zero-weights particles that contradict the observed pile,
+  and `Belief::sample` falls back to uniform when all weights are equal or
+  total zero, so an observation that contradicts every particle resets the
+  belief (`src/sim/search/CombatObservation.cpp`).
+- `CombatObservation::operator==` and `visibleHash` share one canonical field
+  set; card piles compare as `CardKey` multisets, so order-insensitive equality
+  is deliberate and equal observations hash equally.
 - Historical repeated fair multi-thread runs were not bit-identical
-  (`EXPERIMENTS.md` entries 66e, 66j). No automated equality test exists.
-- The self-play baseline cache omits fixed native floor/win artifacts from its
-  key and assumes deterministic outcomes without a current proof.
+  (`EXPERIMENTS.md` entries 66e, 66j). `check_replay.py` provides a
+  repeated-seed CSV equality probe; no automated guarantee exists.
+- The self-play baseline cache includes the fixed native floor/win artifacts in
+  its key and treats deterministic outcomes as an assumption, not a proof
+  (`selfplay/loop.sh::baseline_cache_key`).
 - `ScreenStateInfo` sentinel initialization and `BattleContext::init` resets
   reduce stale-copy behavior but do not establish whole-run determinism.
 
 ## Open questions
 
 - Which hidden variables belong in the project-fair model for each searcher?
-- What equality/hash contract should define a combat observation?
-- Should Searcher3 constructor parameters make agent seed and decision index
-  explicit and immutable?
 - Is remaining replay divergence caused by OpenMP scheduling, shared globals,
   search RNG construction, or multiple factors?
 

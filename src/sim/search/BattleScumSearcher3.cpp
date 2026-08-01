@@ -19,7 +19,19 @@ bool g_useSearcher3 = false;
 double g_riskLambda = 0.5;
 extern double g_vnetAlpha;
 
-// ---- Particle application: 6 RNG streams + draw pile shuffle ---------------
+// ---- Particle application: 6 RNG streams + draw pile order -----------------
+static bool sameCardMultiset(const std::vector<CardInstance> &a,
+                             const std::vector<CardInstance> &b) {
+    if (a.size() != b.size()) return false;
+    std::vector<CardId> as, bs;
+    as.reserve(a.size()); bs.reserve(b.size());
+    for (const auto &c : a) as.push_back(c.getId());
+    for (const auto &c : b) bs.push_back(c.getId());
+    std::sort(as.begin(), as.end());
+    std::sort(bs.begin(), bs.end());
+    return as == bs;
+}
+
 void BattleScumSearcher3::applyParticle(BattleContext &state,
                                         const HiddenBattleState &particle) {
     state.shuffleRng.seed0    = particle.shuffleRngSeed0;
@@ -40,7 +52,15 @@ void BattleScumSearcher3::applyParticle(BattleContext &state,
     state.potionRng.seed0   = particle.potionRngSeed0;
     state.potionRng.seed1   = particle.potionRngSeed1;
     state.potionRng.counter = 0;
-    std::shuffle(state.cards.drawPile.begin(), state.cards.drawPile.end(), rng);
+    // Install the sampled draw order when it still matches the copied pile;
+    // stale particles (tree reuse across decisions) fall back to a shuffle.
+    if (particle.drawPileOrder.size() == (size_t)state.cards.drawPile.size()
+        && sameCardMultiset(particle.drawPileOrder, state.cards.drawPile)) {
+        std::copy(particle.drawPileOrder.begin(), particle.drawPileOrder.end(),
+                  state.cards.drawPile.begin());
+    } else {
+        std::shuffle(state.cards.drawPile.begin(), state.cards.drawPile.end(), rng);
+    }
 }
 
 // ---- Observation caching: compute once per node, reuse on subsequent visits
@@ -54,26 +74,38 @@ void BattleScumSearcher3::ensureObservation(Node &node, const BattleContext &sta
 
 // ---- Constructor -----------------------------------------------------------
 BattleScumSearcher3::BattleScumSearcher3(const BattleContext &bc, int particleCount)
+    : BattleScumSearcher3(bc, 0, 0, particleCount) {}
+
+BattleScumSearcher3::BattleScumSearcher3(const BattleContext &bc,
+                                         std::uint64_t agentSeed,
+                                         int decisionIndex,
+                                         int particleCount)
     : rootBc(std::make_unique<const BattleContext>(bc))
     , maxParticles(particleCount)
-    , crnParticleCount(std::min(particleCount, 128))
+    , agentSeed(agentSeed)
+    , decisionIndex(decisionIndex)
     , riskLambda(g_riskLambda)
+    , crnParticleCount(std::min(particleCount, 128))
 {
     rootObs = CombatObservation::fromBattleContext(bc);
     root.obs = rootObs;
     root.obsHash = rootObs.visibleHash();
     root.obsCached = true;
 
+    reseed();
+
+    belief = Belief::initial(bc, maxParticles, rng);
+    prepareCRNParticles();
+}
+
+void BattleScumSearcher3::reseed() {
     // Seed RNG from composite: agentSeed ^ visibleHash ^ decisionIdx.
-    // Same agent seed + same observation = same search (leakage test).
-    // Different agent seeds = different particle samples (data diversity).
+    // Same agent seed + same observation + same decision index = same search.
+    // Different agent seeds / decision indices = different particle samples.
     uint64_t h = root.obsHash;
     h ^= agentSeed + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
     h ^= (uint64_t)decisionIndex + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
     rng.seed(h ? h : 1);
-
-    belief = Belief::initial(bc, maxParticles, rng);
-    prepareCRNParticles();
 }
 
 void BattleScumSearcher3::prepareCRNParticles() {
@@ -155,20 +187,10 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
 }
 
 // ---- Lethal / death detection ----------------------------------------------
-bool BattleScumSearcher3::isGuaranteedDead(const BattleContext &bc) const {
-    int incDmg = 0;
-    for (int i = 0; i < bc.monsters.monsterCount; ++i) {
-        if (bc.monsters.arr[i].curHp > 0 && bc.monsters.arr[i].isAttacking()) {
-            auto di = bc.monsters.arr[i].getMoveBaseDamage(bc);
-            incDmg += bc.monsters.arr[i].calculateDamageToPlayer(bc, di.damage) * di.attackCount;
-        }
-    }
-    return incDmg > 0 && (bc.player.curHp + bc.player.block) < incDmg;
-}
-
-// Safe pruning variant: only prune when player cannot act (enemy turn).
-// Guards against pruning states where the player might still defend.
-static bool canPruneAsDead(const BattleContext &bc) {
+// Conservative pruning variant: only prune when the player cannot act.
+// Guards against pruning states (PLAYER_NORMAL, CARD_SELECT) where the player
+// might still defend; the unguarded equivalent was removed as unsound.
+bool BattleScumSearcher3::canPruneAsDead(const BattleContext &bc) {
     if (bc.inputState == InputState::PLAYER_NORMAL) return false;
     if (bc.inputState == InputState::CARD_SELECT) return false;
     if (bc.isCardPlayAllowed()) return false;
@@ -216,14 +238,17 @@ void BattleScumSearcher3::step() {
             return;
         }
 
-        if (isGuaranteedDead(state)) {
+        if (canPruneAsDead(state)) {
             backpropagate(path, 0.0, actionStack);
             return;
         }
 
         if (!cur->isExpanded()) {
             enumerateActionsForNode(*cur, state);
-            if (g_usePolicyNet && g_policyNet.loaded())
+            // Priors with either the GBM policy net or the PVNet policy head;
+            // computeEdgePriors prefers the PVNet policy head when both exist.
+            if ((g_usePolicyNet && g_policyNet.loaded())
+                || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly))
                 computeEdgePriors(*cur, state);
 
             if (cur->edges.empty()) {
@@ -245,7 +270,7 @@ void BattleScumSearcher3::step() {
             path.push_back(&edge.child);
             belief.update(CombatObservation::fromBattleContext(state));
 
-        if (isGuaranteedDead(state)) {
+        if (canPruneAsDead(state)) {
                 backpropagate(path, 0.0, actionStack);
                 return;
             }
@@ -306,7 +331,7 @@ void BattleScumSearcher3::step() {
         cur = &edge.child;
         belief.update(CombatObservation::fromBattleContext(state));
 
-        if (isGuaranteedDead(state)) {
+        if (canPruneAsDead(state)) {
             backpropagate(path, 0.0, actionStack);
             return;
         }

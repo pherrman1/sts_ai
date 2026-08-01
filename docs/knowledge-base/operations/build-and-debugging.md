@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-02 against the current working tree.
 
 ## Purpose
 
@@ -13,13 +13,26 @@ manual checks, model-load diagnostics, and tracing boundaries.
 `-Wno-shift-count-overflow -O3 -fopenmp` globally. It recursively gathers
 `src/*.cpp` and compiles those sources directly into:
 
-- pybind11 module `slaythespire`;
+- pybind11 module `slaythespire` (only when CPython development headers are
+  found; otherwise skipped with a warning);
 - executables `main`, `one_combat`, `test`, and `small-test`.
 
-There is no reusable `sts`/`libsts.a` target and no CTest registration.
-`apps/test.cpp::main` is a manual command dispatcher; with no arguments it
-prints `incorrect arguments` and exits successfully. `apps/parity_test.cpp` has
-a `main` but no CMake target.
+`json` and `pybind11` are real gitlinks after the 2026-08-02 restoration
+(`json` at `2222d386`, `pybind11` at `63d627c5`); a fresh clone requires
+`git submodule update --init`. The pybind11 module guard in `CMakeLists.txt`
+means a machine without `python3-dev` still builds the core executables;
+check `find_package(Python)` results to know whether `slaythespire` exists.
+
+There is no reusable `sts`/`libsts.a` target. CTest is registered:
+`ctest --test-dir build` runs parse/syntax checks (`bash -n`, `py_compile`) and
+`check_replay.py --self-test`; run `ctest -N` to list them. The `test` target
+is named `unit-test` in CMake with `OUTPUT_NAME test` (CTest reserves the name
+`test`); `apps/test.cpp::main` is a manual command dispatcher that with no
+arguments prints `incorrect arguments` and exits successfully, and with a
+subcommand runs the targeted Searcher3/terminal checks (see
+[`architecture/combat-search.md`](../architecture/combat-search.md)).
+`apps/parity_test.cpp` has a CMake target `parity_test`; `parity_test.py`
+locates the binary via `STS_PARITY_BIN` or `build/parity_test`.
 
 Normal configured commands are:
 
@@ -30,8 +43,8 @@ cmake --build build -j
 
 The current `build/CMakeCache.txt` is a Release Unix Makefiles cache using
 `/usr/bin/c++` under Linux/WSL. The ignored `build/one_combat` is the cached
-CMake executable. `selfplay/loop.sh` instead invokes `./one_combat.elf`; CMake
-does not create that path.
+CMake executable. `selfplay/loop.sh` defaults `BIN` to `build/one_combat`
+(overridable via `ONE_COMBAT_BIN`/`STS_BIN`).
 
 ## Important data flow
 
@@ -47,7 +60,10 @@ Useful focused checks after the relevant target exists:
 
 ```bash
 ./build/test
+./build/test seed_contract 0
+./build/small-test isbattleover
 STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
+ctest --test-dir build --output-on-failure
 bash -n selfplay/loop.sh
 bash -n selfplay/status.sh
 python3 -m py_compile paired_analysis.py
@@ -95,29 +111,20 @@ rows. It is the closest current manual determinism probe
 
 ## Known limitations
 
-- `.gitmodules` declares `json/` and `pybind11/`, but the git index contains no
-  gitlinks for either and both root directories are absent. A fresh configure
-  from this checkout lacks required sources. A tracked standalone JSON header
-  exists at `extern/nlohmann/json.hpp`, but CMake does not use it as a complete
-  replacement for both subdirectories.
 - Native PowerShell/MSVC configuration is unverified; current flags are
   GNU-specific.
-- `build/test` is absent from the current cache even though the target exists in
-  CMake.
+- `build/test` exists in the current cache (target `unit-test`).
 - No repository dependency lock describes Python packages.
-- `parity_test.py` expects an unbuilt binary and an unavailable trained PyTorch
-  checkpoint path; it is not a valid parity check as written.
+- `parity_test.py` needs a produced checkpoint to be a real parity check; its
+  missing-binary/checkpoint failures are loud, but trained-model parity is not
+  yet exercised.
 - Native PV/distribution code attempts a developer-specific SciPy OpenBLAS path
-  before scalar fallback.
+  before scalar fallback; the active backend is printed at load time.
 
 ## Open questions
 
-- Should dependencies become real gitlinks, vendored sources, or fetched CMake
-  dependencies?
 - Should OpenMP use `find_package(OpenMP)` for cross-platform configuration?
 - Should parity/reproducibility utilities become registered tests?
-- Should the self-play loop consume `build/one_combat` or define a supported
-  copy/build step for `one_combat.elf`?
 
 ## Relevant code
 
@@ -127,6 +134,7 @@ rows. It is the closest current manual determinism probe
 - `apps/one_combat.cpp::main`, `runTraceRun`, `bestBench`
 - `apps/test.cpp::main`
 - `apps/parity_test.cpp::main`; `parity_test.py`
+- `check_replay.py`
 - `selfplay/loop.sh::run_gate_batch`
 - `src/sim/search/CombatPVNet.cpp` BLAS initialization
 - `src/sim/search/CombatDistValueNet.cpp` BLAS initialization

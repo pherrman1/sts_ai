@@ -72,7 +72,7 @@ namespace sts {
 
         int monsterTurnIdx = 6;
 
-        bool isBattleOver = false;
+        bool isBattleOver() const { return outcome != Outcome::UNDECIDED; }
         bool endTurnQueued = false;
         bool turnHasEnded = false;
         bool skipMonsterTurn = false;

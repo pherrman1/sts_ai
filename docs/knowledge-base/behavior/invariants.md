@@ -17,9 +17,10 @@ points.
 ### Simulator and action invariants
 
 - Combat control loops continue while
-  `BattleContext::outcome == Outcome::UNDECIDED`. Current code resets and reads
-  `isBattleOver` but never assigns it true
-  (`src/combat/BattleContext.cpp::init`, `afterMonsterTurns`).
+  `BattleContext::outcome == Outcome::UNDECIDED`. `isBattleOver()` is a derived
+  helper equal to `outcome != UNDECIDED`, not an independent flag
+  (`include/combat/BattleContext.h`; `src/combat/BattleContext.cpp::init`,
+  `afterMonsterTurns`).
 - Enumerate or validate actions before committing them. `Action::execute` and
   `GameAction::execute` assert validity only when `sts_asserts` is compiled
   (`src/sim/search/Action.cpp`; `GameAction.cpp`).
@@ -86,23 +87,30 @@ Operational assumptions that are not enforced by types or tests:
 
 ## Known limitations
 
-- No test automatically asserts combat terminal-field usage, observation
-  identity, schema order, native/server parity, or self-play arm ownership.
+- No test automatically asserts schema order, native/server parity, or
+  self-play arm ownership end to end. CTest runs parse/syntax checks, and the
+  `test` dispatcher gains targeted checks (observation identity, Searcher3 seed
+  contract, belief conditioning, draw-order application, conservative pruning;
+  `small-test isbattleover`); the remaining invariants are review-enforced.
 - `OocCheckpointNet::load` can report success after a truncated payload because
   individual reads are not checked.
-- Searcher3 violates its intended seed contract and has a no-op belief update.
-- `paired_analysis.py` violates the current result-column contract for HP/time.
-- The current self-play meta arm violates candidate-use preconditions because
-  native OOC bypasses its server artifacts.
-- `VALUE_MARGIN=-0.5` is not programmatically restricted to latency candidates.
+- `check_replay.py` probes repeated-seed CSV equality, but fair multi-thread
+  replay is not bit-identical across invocations and no automated guarantee
+  exists.
+- The self-play meta arm now disables native OOC for meta gates
+  (`STS_NATIVE_OOC=0`), but candidate use is evidenced by env plus server port
+  liveness, not a per-decision query log.
+- `VALUE_MARGIN` is clamped unless `VALUE_MARGIN_LATENCY=1`; the checked-in
+  `config.env` snapshot predates the latency gate.
 
 ## Open questions
 
-- Which invariants should become compile-time, unit, parity, or integration
-  tests first?
+- Which remaining invariants should become unit, parity, or integration tests
+  next?
 - Should model artifacts embed schema version and feature hashes?
 - Should self-play refuse startup when state/current/binary/model preconditions
-  are inconsistent?
+  are inconsistent? (Bootstrap repair exists; a required precondition audit is
+  not complete.)
 
 ## Relevant code
 

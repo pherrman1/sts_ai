@@ -1,6 +1,6 @@
 # StS AI knowledge base
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-02 against the current working tree.
 
 This knowledge base is the maintained technical reference for the repository.
 Code and executable behavior remain authoritative; `EXPERIMENTS.md` retains
@@ -29,10 +29,21 @@ For correctness:
 2. [Invariants](behavior/invariants.md)
 3. [Glossary](glossary.md)
 
+For decisions and open questions:
+
+1. [Decision log](decision-log/README.md)
+2. [Decision records](decisions/README.md)
+3. [Investigations](investigations/README.md)
+
+For known issues:
+
+1. [Issues](issues/README.md) — collected knowledge-base problems sorted by importance
+
 The `decisions/` and `investigations/` indexes define when durable rationale or
-a reproducible unresolved diagnosis belongs in a dedicated record. Dated plans
-and superseded schemas are retained under `docs/archive/` and must not be used
-as current instructions.
+a reproducible unresolved diagnosis belongs in a dedicated record. The
+`decision-log/` index defines the chronological, session-level record of
+decisions made during agent work. Dated plans and superseded schemas are
+retained under `docs/archive/` and must not be used as current instructions.
 
 ## Evidence labels
 
@@ -66,6 +77,10 @@ Experimental outcomes—including negative and invalid results—belong in
 headline benchmark or its validity also requires updating
 [evaluation/current-baselines.md](evaluation/current-baselines.md); other pages
 must link there rather than copy changing numbers.
+
+Decisions made during agent sessions are recorded chronologically in the
+[decision log](decision-log/README.md); stable, evidence-backed decisions
+belong in `decisions/`.
 
 Every technical page retains Purpose, Current implementation, Important data
 flow, Invariants and assumptions, Relevant code, Known limitations, Open

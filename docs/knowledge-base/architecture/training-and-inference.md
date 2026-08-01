@@ -59,12 +59,13 @@ composite-RNG provenance statement is not current truth.
 
 `ScumSearchAgent2` exposes thread-local `g_onCombatDecision`,
 `g_onSearchComplete`, and `g_onSearchComplete3` hooks
-(`include/sim/search/ScumSearchAgent2.h`). `fairgen` installs the Searcher3 hook
-but does not set `g_fairPlay` or `g_useSearcher3`; callers need
-`STS_FAIR=1 STS_SEARCHER3=1` for the intended project-fair Searcher3 producer.
-Without Searcher3, its policy output has no callback rows. `fightgen` installs
-Searcher2 hooks and omits Searcher3 policy rows if Searcher3 is forced
-(`apps/one_combat.cpp::runFairGenSeed`, fight-generation callbacks).
+(`include/sim/search/ScumSearchAgent2.h`). `fairgen` forces the project-fair
+Searcher3 regime itself (`search::g_fairPlay` and `search::g_useSearcher3` are
+set in its dispatch branch and a message is printed), so its Searcher3 policy
+rows are produced even without `STS_FAIR=1 STS_SEARCHER3=1`; the env vars still
+gate other modes. `fightgen` installs Searcher2 hooks and omits Searcher3 policy
+rows if Searcher3 is forced (`apps/one_combat.cpp::fairGen`,
+`runFairGenSeed`, fight-generation callbacks).
 
 ### Run/OOC schema
 
@@ -115,15 +116,19 @@ startup load is not evidence of use under default Searcher2.
 
 - No dependency lock or environment definition exists. Scripts import NumPy,
   pandas, XGBoost, scikit-learn, and sometimes PyTorch.
-- `parity_test.py` does not load the trained PyTorch checkpoint and expects
-  `build/parity_test.elf`, which CMake does not build. It cannot establish
-  trained distribution-model parity as written.
-- Searcher3 data provenance is weaker than the archived schema states:
-  constructor seeding uses default-zero `agentSeed`/`decisionIndex` values.
-- The `fairgen` mode name does not enforce either required runtime flag, and its
-  archived invocation records only `STS_SEARCHER3=1`. Historical dataset
-  provenance therefore does not by itself establish the fair agent path.
-- `v_server.py` comments retain older 392/372-style layout descriptions.
+- `parity_test.py` fails loudly when its binary or checkpoint is missing and
+  resolves the binary via `STS_PARITY_BIN` or `build/parity_test`, but it does
+  not yet load weights into the trained model; real trained-model parity is
+  unexercised.
+- Searcher3 composite seeding is implemented with explicit per-decision
+  `agentSeed`/`decisionIndex` constructor parameters
+  (`BattleScumSearcher3::BattleScumSearcher3`); datasets produced before the
+  2026-08-02 fix used default-zero values.
+- The `fairgen` mode forces the fair Searcher3 regime itself now; datasets
+  recorded before that fix may have been produced without it, so historical
+  provenance must be read from the archived invocation records.
+- `v_server.py` documents the implemented 1,017-value `RAW` layout with
+  `apps/one_combat.cpp::vFeatCsv` as the schema owner.
 - `OocCheckpointNet::load` does not check every payload read.
 - `strategicgen` exists as a data path but no maintained trainer/runtime model
   contract is established for its output. It is experimental.

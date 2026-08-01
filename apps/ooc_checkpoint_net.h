@@ -37,34 +37,42 @@ struct OocCheckpointNet {
     bool load(const std::string &path) {
         FILE *f = std::fopen(path.c_str(), "rb");
         if (!f) { std::fprintf(stderr, "[ooc-cp-net] cannot open %s\n", path.c_str()); return false; }
+        auto readBlock = [f](void *dst, size_t count) -> bool {
+            return std::fread(dst, 1, count, f) == count;
+        };
         char hdr[13] = {};
-        if (std::fread(hdr, 1, 12, f) != 12 || std::memcmp(hdr, "OOC_CHKPT_V1", 12) != 0) {
+        if (!readBlock(hdr, 12) || std::memcmp(hdr, "OOC_CHKPT_V1", 12) != 0) {
             std::fclose(f); return false;
         }
         int dims[4];
-        if (std::fread(dims, sizeof(int), 4, f) != 4
+        if (!readBlock(dims, sizeof(dims))
             || dims[0] != NSTATE || dims[1] != NHIDDEN || dims[2] != NHIDDEN2 || dims[3] != NACTION) {
             std::fclose(f); return false;
         }
-        std::fread(stateMean, sizeof(float), NSTATE, f);
-        std::fread(stateInv, sizeof(float), NSTATE, f);
-        std::fread(s0w, sizeof(float), NHIDDEN * NSTATE, f);
-        std::fread(s0b, sizeof(float), NHIDDEN, f);
-        std::fread(s1w, sizeof(float), NHIDDEN, f);
-        std::fread(s1b, sizeof(float), NHIDDEN, f);
-        std::fread(s4w, sizeof(float), NHIDDEN2 * NHIDDEN, f);
-        std::fread(s4b, sizeof(float), NHIDDEN2, f);
-        std::fread(a0w, sizeof(float), AHIDDEN * NACTION, f);
-        std::fread(a0b, sizeof(float), AHIDDEN, f);
-        std::fread(a3w, sizeof(float), AHIDDEN2 * AHIDDEN, f);
-        std::fread(a3b, sizeof(float), AHIDDEN2, f);
-        std::fread(screenW, sizeof(float), NSCR * SCRDIM, f);
-        std::fread(actW, sizeof(float), NACT * ACTDIM, f);
-        std::fread(h0w, sizeof(float), HHIDDEN * HEADIN, f);
-        std::fread(h0b, sizeof(float), HHIDDEN, f);
-        std::fread(h2w, sizeof(float), HHIDDEN, f);
-        std::fread(&h2b, sizeof(float), 1, f);
+        const bool complete =
+               readBlock(stateMean, sizeof(stateMean))
+            && readBlock(stateInv, sizeof(stateInv))
+            && readBlock(s0w, sizeof(s0w))
+            && readBlock(s0b, sizeof(s0b))
+            && readBlock(s1w, sizeof(s1w))
+            && readBlock(s1b, sizeof(s1b))
+            && readBlock(s4w, sizeof(s4w))
+            && readBlock(s4b, sizeof(s4b))
+            && readBlock(a0w, sizeof(a0w))
+            && readBlock(a0b, sizeof(a0b))
+            && readBlock(a3w, sizeof(a3w))
+            && readBlock(a3b, sizeof(a3b))
+            && readBlock(screenW, sizeof(screenW))
+            && readBlock(actW, sizeof(actW))
+            && readBlock(h0w, sizeof(h0w))
+            && readBlock(h0b, sizeof(h0b))
+            && readBlock(h2w, sizeof(h2w))
+            && readBlock(&h2b, sizeof(h2b));
         std::fclose(f);
+        if (!complete) {
+            std::fprintf(stderr, "[ooc-cp-net] truncated payload in %s\n", path.c_str());
+            return false;
+        }
         ok = true;
         std::cout << "[ooc-cp-net] loaded " << path << "\n";
         return true;

@@ -2,12 +2,15 @@
 # ---------------------------------------------------------------------------
 # SELF-PLAY ITERATION LOOP — AlphaZero-style, fair-play, no hand knowledge.
 #
-# Retrains the WHOLE agent from its own play and only promotes if it gets better:
-#   META  V_win(state)->P(win)          drives every OOC pick (card/shop/rest)
+# Retrains the agent per arm and promotes each arm independently when it wins:
+#   META  V_win(state)->P(win) + paired rest   OOC picks via v_server
 #   FIGHT combat value net (leaf)  +  policy prior (PUCT)     [COMBAT=1, default]
 #
-# Each iteration:  self-play datagen -> retrain all heads -> GATE new stack vs
-# current on held-out seeds -> promote ALL (all-or-nothing) iff win% >= current.
+# Each iteration:  self-play datagen -> retrain due arms -> GATE each candidate vs
+# current on held-out seeds -> promote qualifying arms independently (all-or-nothing
+# only within one arm's own promotion; a policy promotion is deferred if value also
+# promoted in the same iteration). Promotion is allowed ONLY on the final hard-cap
+# gate look (multiplicity guard); intermediate looks are advisory.
 # Everything is versioned on disk: Ctrl-C ANYTIME and re-run to CONTINUE from the
 # last completed iteration (a killed iteration is just redone; promotion is atomic).
 #
@@ -24,7 +27,7 @@
 #   GATE_SEEDS     maximum held-out seeds for adaptive promotion gate (500)
 #   GATE_INITIAL   first paired-seed look                       (100)
 #   GATE_STEP      extra paired seeds per inconclusive look     (100)
-#   GATE_Z         confidence bound Z (2.58 ~= 99%, safe over repeated looks)
+#   GATE_Z         confidence bound Z (2.58 ~= 99% nominal per look)
 #   COMBAT         retrain fight models (0/1)          (1)
 #   POLICY_RETRAIN retrain the PUCT prior (0/1)        (1)
 #   META_RETRAIN_EVERY   retrain/gate V_win every N iterations (2)
@@ -33,7 +36,9 @@
 #   POLICY_TREES   maximum trees in the policy prior   (100)
 #   VNET_ALPHA     value-net leaf blend               (0.3)
 #   VNET_TREES     truncate value net to N trees (0=all) (0)
-#   VALUE_MARGIN   value-gate margin              (=PROMOTE_MARGIN)
+#   VALUE_MARGIN   value-gate margin              (=PROMOTE_MARGIN; a negative
+#                  value requires VALUE_MARGIN_LATENCY=1 latency evidence)
+#   VALUE_MARGIN_LATENCY  measured latency evidence for negative VALUE_MARGIN (0)
 #   MAX_ITERS      stop after N iters (0=forever)      (0)
 #   ASC            ascension                           (0)
 # ---------------------------------------------------------------------------
@@ -41,6 +46,14 @@ set -u
 cd "$(dirname "$0")/.."
 SP=selfplay
 mkdir -p $SP/buffer $SP/rbuffer $SP/cbuffer $SP/pbuffer $SP/models $SP/current $SP/cand $SP/logs
+
+# CMake produces build/one_combat; a stale root ./one_combat.elf is NOT the built
+# binary. Override with ONE_COMBAT_BIN or STS_BIN.
+BIN=${ONE_COMBAT_BIN:-${STS_BIN:-./build/one_combat}}
+if [ ! -x "$BIN" ]; then
+    echo "ERROR: $BIN missing or not executable; build with 'cmake --build build -j' or set ONE_COMBAT_BIN/STS_BIN" >&2
+    exit 1
+fi
 
 RUNS_PER_ITER=${RUNS_PER_ITER:-1000}
 SIMS=${SIMS:-400}
@@ -65,12 +78,22 @@ REST_WINDOW=${REST_WINDOW:-5}
 # current searcher's visit-π) goes stale fast, so it uses a SEPARATE small window:
 # fresher targets + bounded load RAM (5-window would be ~37GB CSV / ~18GB int16 frame).
 POLICY_WINDOW=${POLICY_WINDOW:-2}
-GATE_SEEDS=${GATE_SEEDS:-500}           # held-out cap; adaptive gate still stops clear results early
+GATE_SEEDS=${GATE_SEEDS:-500}           # held-out cap; adaptive gate stops clear regressions early,
+                                        # but promotion is allowed only at the cap (multiplicity guard)
 GATE_INITIAL=${GATE_INITIAL:-100}       # cheap first look; clear regressions stop here
 GATE_STEP=${GATE_STEP:-100}             # extend ambiguous comparisons up to GATE_SEEDS
-GATE_Z=${GATE_Z:-2.58}                  # conservative repeated-look confidence bound
+GATE_Z=${GATE_Z:-2.58}                  # nominal per-look bound; see multiplicity guard in the gate loop
 PROMOTE_MARGIN=${PROMOTE_MARGIN:-0.5}   # min blended-score gain to promote (kills '>=' tie-promote)
-VALUE_MARGIN=${VALUE_MARGIN:-$PROMOTE_MARGIN} # use -0.5 explicitly only for a latency candidate
+# A negative VALUE_MARGIN is a latency allowance, not a quality standard: it is
+# honored only with measured latency evidence (VALUE_MARGIN_LATENCY=1). Without
+# the flag, a negative value is clamped to PROMOTE_MARGIN so a zero-delta value
+# candidate can never qualify (Issue 14).
+VALUE_MARGIN_LATENCY=${VALUE_MARGIN_LATENCY:-0}
+VALUE_MARGIN=${VALUE_MARGIN:-$PROMOTE_MARGIN}
+if [ "$VALUE_MARGIN_LATENCY" != 1 ] && [ "${VALUE_MARGIN:0:1}" = "-" ]; then
+    echo "WARNING: VALUE_MARGIN=$VALUE_MARGIN is negative but VALUE_MARGIN_LATENCY!=1; forcing $PROMOTE_MARGIN (latency evidence required)" | tee -a $SP/logs/loop.log >&2
+    VALUE_MARGIN=$PROMOTE_MARGIN
+fi
 WIN_WEIGHT=${WIN_WEIGHT:-0.1}           # win% weight in the blended gate score (floor-dominant)
 COMBAT=${COMBAT:-1}
 POLICY_RETRAIN=${POLICY_RETRAIN:-1}
@@ -93,6 +116,15 @@ export OMP_NUM_THREADS=${OMP_NUM_THREADS:-12}
 # OOC choices after the held-out gate proves that the unified policy beats this anchor.
 FLOOR_POLICY_ENV="STS_FAIR=1 STS_CARD_WIN=0 STS_SHOP_WIN=0 STS_REST_WIN=1"
 WIN_POLICY_ENV="STS_FAIR=1 STS_CARD_WIN=1 STS_SHOP_WIN=1 STS_REST_WIN=1"
+# The META arm must exercise the CANDIDATE models through v_server (Issue 01):
+# with native OOC left on, one_combat's fixed build/v_rich_trees.txt +
+# build/v_win_trees.txt own every OOC decision and the candidate V_win/rest are
+# never consulted.  STS_NATIVE_OOC=0 forces server-backed inference for meta
+# generation and meta gates.  Combat datagen and value/policy gates keep the
+# deployed native stack.
+META_OOC_DISABLE="STS_NATIVE_OOC=0"
+FLOOR_META_POLICY_ENV="$FLOOR_POLICY_ENV $META_OOC_DISABLE"
+WIN_META_POLICY_ENV="$WIN_POLICY_ENV $META_OOC_DISABLE"
 
 STATE=$SP/state.env; HIST=$SP/history.tsv; STATUS=$SP/status.txt
 GATE_DIR=$SP/gate; GATE_STATE=$GATE_DIR/progress.env
@@ -101,24 +133,59 @@ mkdir -p "$GATE_DIR" "$BASE_CACHE_DIR"
 META_MODE_FILE=$SP/meta_mode.env
 [ -f "$META_MODE_FILE" ] || echo floor > "$META_MODE_FILE"
 META_MODE=$(cat "$META_MODE_FILE")
-case "$META_MODE" in floor) POLICY_ENV=$FLOOR_POLICY_ENV;; win) POLICY_ENV=$WIN_POLICY_ENV;;
-    *) echo "floor" > "$META_MODE_FILE"; META_MODE=floor; POLICY_ENV=$FLOOR_POLICY_ENV;; esac
+case "$META_MODE" in
+    floor) POLICY_ENV=$FLOOR_POLICY_ENV; META_POLICY_ENV=$FLOOR_META_POLICY_ENV;;
+    win)   POLICY_ENV=$WIN_POLICY_ENV;   META_POLICY_ENV=$WIN_META_POLICY_ENV;;
+    *)     echo "floor" > "$META_MODE_FILE"; META_MODE=floor; POLICY_ENV=$FLOOR_POLICY_ENV; META_POLICY_ENV=$FLOOR_META_POLICY_ENV;;
+esac
 MEAS_COMBAT=""                          # combat env for the current gate batch
 MEAS_POLICY_ENV="$POLICY_ENV"           # OOC policy env for the current gate batch
 
-# ---- init on first run: seed current/ with the existing (fair) models ----
-if [ ! -f "$STATE" ]; then
-    cp build/v_win_xgb.json          $SP/current/v_win.json
-    cp build/v_combat_fair_trees.txt $SP/current/v_combat_trees.txt
-    cp build/policy_fair_trees_c.txt $SP/current/policy_trees_c.txt
-    echo "ITER=0"            > $STATE
-    echo "SEED_OFF=1000000" >> $STATE
-    echo "RUNS_TOTAL=0"     >> $STATE
-    printf "iter\truns_total\tbase_win\tmeta_win\tvalue_win\tmeta_promo\tvalue_promo\tts\tbase_floor\tmeta_floor\tvalue_floor\tpolicy_win\tpolicy_promo\tpolicy_floor\n" > $HIST
-    echo "=== self-play loop initialized $(date) ===" > $SP/logs/loop.log
+# ---- bootstrap state machine (Issues 11/30) ---------------------------------
+#   fresh:  no state.env                    -> seed current/ + state/history
+#   resume: state.env AND current/ models   -> continue from the checkpoint
+#   repair: state.env but current/ missing  -> refuse with a diagnostic (a
+#           checked-in snapshot is not silently resumable).  The directories
+#           were created above, so the branches key on the current/ FILES.
+BOOT_SOURCES="build/v_win_xgb.json build/v_combat_fair_trees.txt build/policy_fair_trees_c.txt"
+BOOT_BRANCH=resume
+if [ ! -f "$STATE" ]; then BOOT_BRANCH=fresh
+elif [ ! -f "$SP/current/v_win.json" ] || [ ! -f "$SP/current/v_combat_trees.txt" ] || [ ! -f "$SP/current/policy_trees_c.txt" ]; then
+    BOOT_BRANCH=repair
 fi
+case "$BOOT_BRANCH" in
+    fresh)
+        for f in $BOOT_SOURCES; do
+            [ -f "$f" ] || { echo "ERROR: first-run model source missing: $f" >&2; exit 1; }
+        done
+        cp build/v_win_xgb.json          $SP/current/v_win.json
+        cp build/v_combat_fair_trees.txt $SP/current/v_combat_trees.txt
+        cp build/policy_fair_trees_c.txt $SP/current/policy_trees_c.txt
+        echo "ITER=0"            > $STATE
+        echo "SEED_OFF=1000000" >> $STATE
+        echo "RUNS_TOTAL=0"     >> $STATE
+        printf "iter\truns_total\tbase_win\tmeta_win\tvalue_win\tmeta_promo\tvalue_promo\tts\tbase_floor\tmeta_floor\tvalue_floor\tpolicy_win\tpolicy_promo\tpolicy_floor\n" > $HIST
+        echo "=== self-play loop initialized $(date) ===" > $SP/logs/loop.log
+        ;;
+    resume)
+        # state.env exists and current/ looks complete; continue from the checkpoint.
+        ;;
+    repair)
+        # state.env exists but the current/ models it refers to are gone.  The
+        # first-run copy branch must NOT be skipped silently (Issue 11): refuse
+        # to run and explain the repair options instead.
+        echo "ERROR: $STATE exists but $SP/current/ is incomplete; the snapshot cannot resume." >&2
+        echo "  Repair options:" >&2
+        echo "  1) restore $SP/current/ (v_win.json, v_combat_trees.txt, policy_trees_c.txt) from a backup, or" >&2
+        echo "  2) fresh bootstrap: move $STATE and $SP/history.tsv aside, then re-run this script" >&2
+        echo "     (a fresh bootstrap copies build/v_win_xgb.json, build/v_combat_fair_trees.txt and" >&2
+        echo "      build/policy_fair_trees_c.txt into $SP/current/ and resets ITER/SEED_OFF/RUNS_TOTAL)." >&2
+        exit 1
+        ;;
+esac
+echo "bootstrap: $BOOT_BRANCH ($(tr '\n' ' ' < "$STATE"))" >> $SP/logs/loop.log
 # record the run config so the dashboard knows the per-iter targets
-{ echo "RUNS_PER_ITER=$RUNS_PER_ITER"; echo "SIMS=$SIMS"; echo "META_SIMS=$META_SIMS"; echo "REST_CF_SIMS=$REST_CF_SIMS"; echo "REST_CF_FUTURES=$REST_CF_FUTURES"; echo "REST_CF_STRIDE=$REST_CF_STRIDE"; echo "POLICY_SIMS=$POLICY_SIMS"; echo "GATE_SIMS=$GATE_SIMS"; echo "VNET_TREES=$VNET_TREES"; echo "POLICY_TREES=$POLICY_TREES"; echo "META_RETRAIN_EVERY=$META_RETRAIN_EVERY"; echo "VALUE_RETRAIN_EVERY=$VALUE_RETRAIN_EVERY"; echo "POLICY_RETRAIN_EVERY=$POLICY_RETRAIN_EVERY"; echo "GATE_SEEDS=$GATE_SEEDS"; echo "GATE_INITIAL=$GATE_INITIAL"; echo "GATE_STEP=$GATE_STEP"; echo "GATE_Z=$GATE_Z"; echo "WINDOW=$WINDOW"; echo "META_WINDOW=$META_WINDOW"; echo "REST_WINDOW=$REST_WINDOW"; echo "POLICY_WINDOW=$POLICY_WINDOW"; echo "COMBAT=$COMBAT"; echo "PROMOTE_MARGIN=$PROMOTE_MARGIN"; echo "VALUE_MARGIN=$VALUE_MARGIN"; echo "WIN_WEIGHT=$WIN_WEIGHT"; echo "META_MODE=$META_MODE"; } > $SP/config.env
+{ echo "RUNS_PER_ITER=$RUNS_PER_ITER"; echo "SIMS=$SIMS"; echo "META_SIMS=$META_SIMS"; echo "REST_CF_SIMS=$REST_CF_SIMS"; echo "REST_CF_FUTURES=$REST_CF_FUTURES"; echo "REST_CF_STRIDE=$REST_CF_STRIDE"; echo "POLICY_SIMS=$POLICY_SIMS"; echo "GATE_SIMS=$GATE_SIMS"; echo "VNET_TREES=$VNET_TREES"; echo "POLICY_TREES=$POLICY_TREES"; echo "META_RETRAIN_EVERY=$META_RETRAIN_EVERY"; echo "VALUE_RETRAIN_EVERY=$VALUE_RETRAIN_EVERY"; echo "POLICY_RETRAIN_EVERY=$POLICY_RETRAIN_EVERY"; echo "GATE_SEEDS=$GATE_SEEDS"; echo "GATE_INITIAL=$GATE_INITIAL"; echo "GATE_STEP=$GATE_STEP"; echo "GATE_Z=$GATE_Z"; echo "WINDOW=$WINDOW"; echo "META_WINDOW=$META_WINDOW"; echo "REST_WINDOW=$REST_WINDOW"; echo "POLICY_WINDOW=$POLICY_WINDOW"; echo "COMBAT=$COMBAT"; echo "PROMOTE_MARGIN=$PROMOTE_MARGIN"; echo "VALUE_MARGIN=$VALUE_MARGIN"; echo "VALUE_MARGIN_LATENCY=$VALUE_MARGIN_LATENCY"; echo "WIN_WEIGHT=$WIN_WEIGHT"; echo "META_MODE=$META_MODE"; echo "BIN=$BIN"; } > $SP/config.env
 
 set_status() { echo "$1" > "$STATUS"; }
 
@@ -128,6 +195,9 @@ cenv_files() { [ "$COMBAT" = 1 ] || { echo ""; return; }
 cenv() { cenv_files "$1/v_combat_trees.txt" "$1/policy_trees_c.txt"; }
 
 start_server() {   # $1 = v_win json; optional $2 = paired rest model
+    # Liveness check: poll the port; log and return non-zero if the server does
+    # not respond within 30s.  Every caller treats a non-zero return as a failed
+    # phase, so a silent server cannot produce a valid batch (Issue 01).
     for p in $(pgrep -x python3); do grep -qa v_server.py /proc/$p/cmdline 2>/dev/null && kill $p 2>/dev/null; done
     sleep 1
     # Every self-play arm requires the requested V_win model.  Do not silently
@@ -177,7 +247,7 @@ gate_write_state() {
     local arm=$1 target=$2 tmp=${GATE_STATE}.tmp
     {
         echo "GATE_ITER=$N"; echo "GATE_STATUS=${gate_status:-running}"; echo "GATE_ARM=$arm"
-        echo "GATE_TARGET=$target"; echo "GATE_MAX=$GATE_SEEDS"
+        echo "GATE_TARGET=$target"; echo "GATE_MAX=$GATE_SEEDS"; echo "GATE_LOOKS=${looks:-0}"
         echo "GATE_BASE_CACHE=${gate_base_cache:-unknown}"
         echo "META_DECISION=$meta_decision"; echo "VALUE_DECISION=$value_decision"; echo "POLICY_DECISION=$policy_decision"
         echo "META_N=$meta_n"; echo "META_DELTA=$meta_delta"; echo "META_LOW=$meta_low"; echo "META_HIGH=$meta_high"
@@ -192,22 +262,30 @@ run_gate_batch() { # arm offset count cumulative_target results_csv
     local arm=$1 offset=$2 count=$3 target=$4 out=$5
     gate_write_state "$arm" "$target"
     echo "gate $arm: seeds $offset..$((offset+count-1)) (look $target/$GATE_SEEDS)" >> "$SP/logs/gate_${N}.log"
-    env $MEAS_POLICY_ENV $MEAS_COMBAT ./one_combat.elf bestbench "$GATE_SIMS" "$count" "$ASC" "$offset" "$out" \
+    env $MEAS_POLICY_ENV $MEAS_COMBAT "$BIN" bestbench "$GATE_SIMS" "$count" "$ASC" "$offset" "$out" \
         >> "$SP/logs/gate_${N}.log" 2>&1
 }
 
-# Baseline outcomes are deterministic for a fixed executable, deployed model stack,
-# policy mode, and evaluation config. Cache them across iterations; a promotion (or
-# binary/config/model change) changes the content key and automatically starts a new
-# cache. Candidate rows remain iteration-specific.
+# Baseline outcomes are ASSUMED deterministic for a fixed executable, deployed model
+# stack, policy mode, and evaluation config. The assumption is not re-verified on
+# every cache hit (Issue 13). Cache them across iterations; a promotion (or binary/
+# config/model change) changes the content key and automatically starts a new cache.
+# Candidate rows remain iteration-specific.
 baseline_cache_key() {
     {
-        printf 'sims=%s\nasc=%s\nmeta_mode=%s\nvnet_alpha=%s\npolicy_env=%s\n' \
-               "$GATE_SIMS" "$ASC" "$META_MODE" "$VNET_ALPHA" "$POLICY_ENV"
-        sha256sum ./one_combat.elf "$SP/current/v_win.json" \
+        printf 'sims=%s\nasc=%s\nmeta_mode=%s\nvnet_alpha=%s\npolicy_env=%s\nmeta_policy_env=%s\n' \
+               "$GATE_SIMS" "$ASC" "$META_MODE" "$VNET_ALPHA" "$POLICY_ENV" "$META_POLICY_ENV"
+        sha256sum "$BIN" "$SP/current/v_win.json" \
                   "$SP/current/v_combat_trees.txt" "$SP/current/policy_trees_c.txt"
+        # Native-OOC gates (baseline/value/policy) also depend on the fixed tracked
+        # trees, so hash them too: a tree change must invalidate the cache.
+        sha256sum build/v_rich_trees.txt build/v_win_trees.txt
         if [ -f "$SP/current/rest_cf.json" ]; then sha256sum "$SP/current/rest_cf.json"
         else printf 'rest_cf=V_win_fallback\n'; fi
+        # Server-backed rows (meta arm) depend on the server implementation.
+        # Python dependency versions (pip freeze) are deliberately omitted: the
+        # freeze is too expensive to run on every cache-key evaluation.
+        sha256sum v_server.py
         # Training-only knobs do not affect held-out play and must not invalidate it.
         env | LC_ALL=C sort | awk -F= '$1 ~ /^STS_/ && $1 != "STS_XGB_DEVICE" && $1 != "STS_POLICY_MAXROWS" {print}'
     } | sha256sum | cut -d' ' -f1
@@ -338,8 +416,10 @@ while :; do
     fi
     if [ "$md" -lt "$RUNS_PER_ITER" ]; then
         meta_generate=$((RUNS_PER_ITER-md))
-        env $POLICY_ENV $CUR_COMBAT STS_DG_TEMP=${STS_DG_TEMP:-1.0} \
-            ./one_combat.elf datagen3 "$meta_generate" $META_SIMS $ASC $EPS "$dbuf" "$rbuf" \
+        # Server-backed meta datagen: META_POLICY_ENV carries STS_NATIVE_OOC=0 so
+        # the current V_win/rest models in v_server own meta OOC decisions (Issue 01).
+        env $META_POLICY_ENV $CUR_COMBAT STS_DG_TEMP=${STS_DG_TEMP:-1.0} \
+            "$BIN" datagen3 "$meta_generate" $META_SIMS $ASC $EPS "$dbuf" "$rbuf" \
                 "$meta_seed_next" $REST_CF_SIMS $REST_CF_FUTURES $REST_CF_STRIDE \
             >> $SP/logs/datagen_${N}.log 2>&1
         meta_seed_next=$((meta_seed_next+meta_generate))
@@ -349,7 +429,7 @@ while :; do
         if [ "$cd_" -lt "$RUNS_PER_ITER" ]; then
             combat_generate=$((RUNS_PER_ITER-cd_))
             # ONE pass emits BOTH value (endHp) + policy (visit-pi) CSVs -> 2x total datagen, not 3x
-            env $POLICY_ENV $CUR_COMBAT ./one_combat.elf fightgen "$combat_generate" $POLICY_SIMS $ASC $CEPS \
+            env $POLICY_ENV $CUR_COMBAT "$BIN" fightgen "$combat_generate" $POLICY_SIMS $ASC $CEPS \
                 $SP/cbuffer/iter_${N}.csv $SP/pbuffer/iter_${N}.csv "$combat_seed_next" >> $SP/logs/fightgen_${N}.log 2>&1
             combat_seed_next=$((combat_seed_next+combat_generate))
         fi
@@ -455,10 +535,11 @@ while :; do
     fi
 
     # ---------- 3. ADAPTIVE PAIRED GATES: META, VALUE, POLICY independently ----------
-    # Evaluate common held-out seeds in batches. Clear wins/regressions stop after the
+    # Evaluate common held-out seeds in batches. Clear regressions stop after the
     # first look; ambiguous candidates extend to GATE_SEEDS. Promotion requires the
     # conservative lower confidence bound of paired per-seed score deltas to beat
-    # PROMOTE_MARGIN. Faster value nets use VALUE_MARGIN as a non-inferiority bar.
+    # PROMOTE_MARGIN, but ONLY on the final hard-cap look (multiplicity guard, see
+    # the gate loop below). Faster value nets use VALUE_MARGIN as a non-inferiority bar.
     set_status "iter $N | [3/3] adaptive paired gate (first $GATE_INITIAL, max $GATE_SEEDS seeds) ..."
     base_csv=$GATE_DIR/iter_${N}_base.csv
     meta_csv=$GATE_DIR/iter_${N}_meta.csv
@@ -479,7 +560,7 @@ while :; do
     meta_bw=NA; meta_bf=NA; mw=NA; mf=NA
     value_bw=NA; value_bf=NA; vw=NA; vf=NA
     policy_bw=NA; policy_bf=NA; pw=NA; pf=NA
-    gate_status=running; gate_done=0; stage=$GATE_INITIAL; gate_step=$GATE_STEP
+    gate_status=running; gate_done=0; stage=$GATE_INITIAL; gate_step=$GATE_STEP; looks=0
     gate_base_cache=unknown
     BASE_CACHE_KEY=$(baseline_cache_key)
     BASE_CACHE=$BASE_CACHE_DIR/${BASE_CACHE_KEY}.csv
@@ -488,6 +569,7 @@ while :; do
     [ "$stage" -gt "$GATE_SEEDS" ] && stage=$GATE_SEEDS
 
     while [ "$meta_decision" = continue ] || [ "$value_decision" = continue ] || [ "$policy_decision" = continue ]; do
+        looks=$((looks+1))
         batch=$((stage-gate_done))
 
         # Shared baseline: deterministic and cached while the deployed stack stays fixed.
@@ -504,7 +586,13 @@ while :; do
         # only for rest decisions. Unified card/shop control is a separate ablation,
         # never an automatic graduation side effect of a rest-model promotion.
         if [ "$meta_decision" = continue ]; then
-            MEAS_POLICY_ENV=$POLICY_ENV; MEAS_COMBAT=$CUR_COMBAT
+            MEAS_POLICY_ENV=$META_POLICY_ENV; MEAS_COMBAT=$CUR_COMBAT
+            # Intended flow: META_POLICY_ENV carries STS_NATIVE_OOC=0, so every
+            # V_win/rest decision in this batch is served by v_server from the
+            # CANDIDATE models ($SP/cand/*); the fixed native trees are bypassed.
+            # start_server polls the port and this batch errors out (above) if
+            # the server never responds (Issue 01).
+            echo "gate meta: server-backed candidate V_win/rest owns OOC decisions (STS_NATIVE_OOC=0); native trees bypassed" >> "$SP/logs/gate_${N}.log"
             if ! start_server $SP/cand/v_win.json $SP/cand/rest_cf.json \
                || ! run_gate_batch meta "$gate_done" "$batch" "$stage" "$meta_csv"; then
                 meta_decision=error
@@ -546,6 +634,26 @@ while :; do
                     <<<"$(gate_stats "$base_csv" "$policy_csv")"
                 echo "gate policy look $stage: n=$policy_n delta=$policy_delta se=$policy_se CI=[$policy_low,$policy_high] decision=$policy_decision" \
                     >> "$SP/logs/gate_${N}.log"
+            fi
+        fi
+
+        # Sequential multiplicity guard (Issue 15): each adaptive look re-tests
+        # the same accumulating data, so a "promote" signal before the final
+        # hard-cap look is only advisory and is downgraded to continue. Promotion
+        # is allowed ONLY on the hard-cap look (stage >= GATE_SEEDS); early
+        # rejection stays decisive (conservative direction, no type-I inflation).
+        if [ "$stage" -lt "$GATE_SEEDS" ]; then
+            if [ "$meta_decision" = promote ]; then
+                meta_decision=continue
+                echo "gate meta look $stage: promote signal advisory (multiplicity guard); deferred to hard cap" >> "$SP/logs/gate_${N}.log"
+            fi
+            if [ "$value_decision" = promote ]; then
+                value_decision=continue
+                echo "gate value look $stage: promote signal advisory (multiplicity guard); deferred to hard cap" >> "$SP/logs/gate_${N}.log"
+            fi
+            if [ "$policy_decision" = promote ]; then
+                policy_decision=continue
+                echo "gate policy look $stage: promote signal advisory (multiplicity guard); deferred to hard cap" >> "$SP/logs/gate_${N}.log"
             fi
         fi
 

@@ -1802,3 +1802,37 @@ enabling condition, but the omitted command prevents verification.
   separately from the value head. A separate 32-seed point reported 78.1% at
   100 simulations, but its command and seed range are also absent. This is not
   a current deployment recommendation.
+
+## 68. Current default fair stack re-measured on the recorded block (2026-08-02)
+
+- **Question:** what is the current default stack's result on the recorded
+  128-seed block, given the primary §66i reference is not exactly reproducible
+  from tracked artifacts (KB issue 02)?
+- **Setup:** `STS_FAIR=1 ./build/one_combat bestbench 1000 128 0 126700
+  build/bench_2026-08-02_default_fair.csv`. Default Searcher2, A0, 1,000 sims
+  per decision, 12 outer workers. Native OOC floor/win trees
+  `build/v_rich_trees.txt` sha256
+  `3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3`,
+  `build/v_win_trees.txt` sha256
+  `fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70`;
+  tracked policy prior `build/policy_trees_c.txt` sha256
+  `24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321` loaded
+  (c_puct 2.5); skip `-0.5`; heuristic path; shop-V; win-rate rest
+  (`g_restWin=true`); no combat value/PVNet/dist nets. Working tree: commit
+  `2ae3ea3` plus the uncommitted 2026-08-02 issue-fix set (Searcher3 seeding,
+  belief conditioning, draw-order application, PVNet-only priors, observation
+  identity, conservative pruning, isBattleOver derived flag, banner, trace
+  guards, fairgen forcing).
+- **Result:** **27/128 wins (21.1%)**, mean floor **37.5**, mean end HP **8.6**,
+  cpu_sec/run 6.96, wall 80.1 s. Per-seed rows in
+  `build/bench_2026-08-02_default_fair.csv` (10-column bestbench schema).
+- **Interpretation:** a new measurement, not a paired comparison with §66i
+  (39/128, 30.5%): that entry's exact flags/artifacts are unverified and may
+  have included a combat value net, which this run does not load. The result
+  is consistent with the fresh §66j 32-seed baseline under the same stack
+  (7/32 = 21.9%, floor 37.31), and the fair multi-thread non-bit-identical
+  caveat of §66j applies. Directionally, the §66i headline likely came from a
+  different configuration; treat it as historical, not current.
+- **Reproducibility:** 12 threads, per-seed CSV retained; fair multi-thread
+  replay is not bit-identical across invocations (§66e/66j), so small
+  differences in aggregates are expected.

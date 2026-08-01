@@ -7,6 +7,7 @@
 
 #include <cstring>
 #include <algorithm>
+#include <set>
 
 namespace sts {
 
@@ -64,26 +65,89 @@ static inline void hashMix(std::uint64_t &h, std::uint64_t x) {
     h ^= x + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
 }
 
+// Canonical card identity shared by operator== and visibleHash: the fields
+// that decide how a card plays this turn (mirrors enumerateActionsForNode's
+// hand dedup key: id, upgrades, costForTurn, freeToPlayOnce, specialData).
+struct CardKey {
+    CardId id;
+    std::int16_t specialData;
+    std::int8_t costForTurn;
+    bool upgraded;
+    bool freeToPlayOnce;
+
+    bool operator==(const CardKey &o) const {
+        return id == o.id && specialData == o.specialData
+            && costForTurn == o.costForTurn && upgraded == o.upgraded
+            && freeToPlayOnce == o.freeToPlayOnce;
+    }
+    bool operator<(const CardKey &o) const {
+        if (id != o.id) return id < o.id;
+        if (specialData != o.specialData) return specialData < o.specialData;
+        if (costForTurn != o.costForTurn) return costForTurn < o.costForTurn;
+        if (upgraded != o.upgraded) return upgraded < o.upgraded;
+        return freeToPlayOnce < o.freeToPlayOnce;
+    }
+};
+
+static CardKey cardKeyOf(const CardInstance &c) {
+    return {c.getId(), c.specialData, c.costForTurn, c.isUpgraded(), c.freeToPlayOnce};
+}
+
+static std::uint64_t cardIdentityHash(const CardInstance &c) {
+    const CardKey k = cardKeyOf(c);
+    std::uint64_t h = static_cast<std::uint64_t>(k.id) * 6364136223846793005ULL;
+    h += static_cast<std::uint64_t>(k.specialData) * 2654435761ULL;
+    h += static_cast<std::uint64_t>(k.costForTurn) * 40503ULL;
+    h += (k.upgraded ? 1ULL : 0ULL) * 0x9e3779b97f4a7c15ULL;
+    h += (k.freeToPlayOnce ? 1ULL : 0ULL) * 15461ULL;
+    return h;
+}
+
+// Piles compare as multisets: the player knows hand/pile contents, not order.
+static bool sameCardMultiset(const std::vector<CardInstance> &a,
+                             const std::vector<CardInstance> &b) {
+    if (a.size() != b.size()) return false;
+    std::vector<CardKey> ka, kb;
+    ka.reserve(a.size()); kb.reserve(b.size());
+    for (const auto &c : a) ka.push_back(cardKeyOf(c));
+    for (const auto &c : b) kb.push_back(cardKeyOf(c));
+    std::sort(ka.begin(), ka.end());
+    std::sort(kb.begin(), kb.end());
+    return ka == kb;
+}
+
 std::uint64_t CombatObservation::visibleHash() const {
     std::uint64_t h = 0x9e3779b97f4a7c15ULL;
     hashMix(h, static_cast<std::uint64_t>(turn));
     hashMix(h, static_cast<std::uint64_t>(ascension));
     hashMix(h, static_cast<std::uint64_t>(encounter));
+    hashMix(h, static_cast<std::uint64_t>(potionCapacity));
+    hashMix(h, isCardPlayAllowed ? 1ULL : 0ULL);
+
     hashMix(h, static_cast<std::uint64_t>(player.curHp));
+    hashMix(h, static_cast<std::uint64_t>(player.maxHp));
     hashMix(h, static_cast<std::uint64_t>(player.block));
     hashMix(h, static_cast<std::uint64_t>(player.energy));
     hashMix(h, static_cast<std::uint64_t>(player.strength));
     hashMix(h, static_cast<std::uint64_t>(player.dexterity));
     hashMix(h, static_cast<std::uint64_t>(player.focus));
     hashMix(h, static_cast<std::uint64_t>(player.artifact));
+    hashMix(h, static_cast<std::uint64_t>(player.stance));
     hashMix(h, static_cast<std::uint64_t>(player.gold));
     hashMix(h, static_cast<std::uint64_t>(player.cardsPlayedThisTurn));
     hashMix(h, static_cast<std::uint64_t>(player.attacksPlayedThisTurn));
     hashMix(h, static_cast<std::uint64_t>(player.skillsPlayedThisTurn));
+    for (auto v : player.relicCounters)
+        hashMix(h, static_cast<std::uint64_t>(v));
+    for (const auto &pw : player.powers) {
+        hashMix(h, static_cast<std::uint64_t>(pw.first));
+        hashMix(h, static_cast<std::uint64_t>(pw.second));
+    }
 
     for (const auto &m : monsters) {
         hashMix(h, static_cast<std::uint64_t>(m.id));
         hashMix(h, static_cast<std::uint64_t>(m.curHp));
+        hashMix(h, static_cast<std::uint64_t>(m.maxHp));
         hashMix(h, static_cast<std::uint64_t>(m.block));
         hashMix(h, static_cast<std::uint64_t>(m.strength));
         hashMix(h, static_cast<std::uint64_t>(m.vulnerable));
@@ -91,31 +155,25 @@ std::uint64_t CombatObservation::visibleHash() const {
         hashMix(h, static_cast<std::uint64_t>(m.poison));
         hashMix(h, static_cast<std::uint64_t>(m.artifact));
         hashMix(h, static_cast<std::uint64_t>(m.incomingDamage));
-        hashMix(h, static_cast<std::uint64_t>(m.isAttacking ? 1 : 0));
+        hashMix(h, static_cast<std::uint64_t>(m.incomingHits));
+        hashMix(h, static_cast<std::uint64_t>(m.lastMove));
+        hashMix(h, m.isAttacking ? 1ULL : 0ULL);
+        hashMix(h, m.isTargetable ? 1ULL : 0ULL);
     }
 
-    // Draw pile: commutative multiset (player knows contents, not order)
-    std::uint64_t drawAcc = 0;
-    for (const auto &c : drawPileContents)
-        drawAcc += static_cast<std::uint64_t>(c.getId()) * 6364136223846793005ULL;
-    hashMix(h, drawAcc);
-
-    // Hand: commutative (multiset via sum)
-    std::uint64_t handAcc = 0;
-    for (const auto &c : hand)
-        handAcc += static_cast<std::uint64_t>(c.getId()) * 6364136223846793005ULL;
-    hashMix(h, handAcc);
-
-    // Discard/exhaust: commutative
-    std::uint64_t disAcc = 0;
-    for (const auto &c : discardPile)
-        disAcc += static_cast<std::uint64_t>(c.getId()) * 6364136223846793005ULL;
-    hashMix(h, disAcc);
-
-    std::uint64_t exhAcc = 0;
-    for (const auto &c : exhaustPile)
-        exhAcc += static_cast<std::uint64_t>(c.getId()) * 6364136223846793005ULL;
-    hashMix(h, exhAcc);
+    // Hand and piles: commutative multiset of card identity
+    std::uint64_t acc = 0;
+    for (const auto &c : hand) acc += cardIdentityHash(c);
+    hashMix(h, acc);
+    acc = 0;
+    for (const auto &c : drawPileContents) acc += cardIdentityHash(c);
+    hashMix(h, acc);
+    acc = 0;
+    for (const auto &c : discardPile) acc += cardIdentityHash(c);
+    hashMix(h, acc);
+    acc = 0;
+    for (const auto &c : exhaustPile) acc += cardIdentityHash(c);
+    hashMix(h, acc);
 
     for (const auto &p : potions)
         hashMix(h, static_cast<std::uint64_t>(static_cast<int>(p)));
@@ -128,28 +186,39 @@ std::uint64_t CombatObservation::visibleHash() const {
 }
 
 bool CombatObservation::operator==(const CombatObservation &o) const {
-    if (turn != o.turn || ascension != o.ascension || encounter != o.encounter)
+    if (turn != o.turn || ascension != o.ascension || encounter != o.encounter
+        || potionCapacity != o.potionCapacity
+        || isCardPlayAllowed != o.isCardPlayAllowed)
         return false;
-    if (player.curHp != o.player.curHp || player.block != o.player.block
-        || player.energy != o.player.energy || player.strength != o.player.strength
-        || player.dexterity != o.player.dexterity || player.focus != o.player.focus
-        || player.artifact != o.player.artifact || player.gold != o.player.gold)
+    if (player.curHp != o.player.curHp || player.maxHp != o.player.maxHp
+        || player.block != o.player.block || player.energy != o.player.energy
+        || player.strength != o.player.strength || player.dexterity != o.player.dexterity
+        || player.focus != o.player.focus || player.artifact != o.player.artifact
+        || player.stance != o.player.stance || player.gold != o.player.gold)
         return false;
     if (player.cardsPlayedThisTurn != o.player.cardsPlayedThisTurn
         || player.attacksPlayedThisTurn != o.player.attacksPlayedThisTurn
         || player.skillsPlayedThisTurn != o.player.skillsPlayedThisTurn)
         return false;
+    if (player.relicCounters != o.player.relicCounters
+        || player.powers != o.player.powers)
+        return false;
     if (monsters.size() != o.monsters.size()) return false;
     for (size_t i = 0; i < monsters.size(); ++i) {
         const auto &a = monsters[i], &b = o.monsters[i];
-        if (a.id != b.id || a.curHp != b.curHp || a.block != b.block
-            || a.strength != b.strength || a.vulnerable != b.vulnerable
-            || a.weak != b.weak || a.poison != b.poison || a.artifact != b.artifact)
+        if (a.id != b.id || a.curHp != b.curHp || a.maxHp != b.maxHp
+            || a.block != b.block || a.strength != b.strength
+            || a.vulnerable != b.vulnerable || a.weak != b.weak
+            || a.poison != b.poison || a.artifact != b.artifact
+            || a.incomingDamage != b.incomingDamage || a.incomingHits != b.incomingHits
+            || a.lastMove != b.lastMove || a.isAttacking != b.isAttacking
+            || a.isTargetable != b.isTargetable)
             return false;
     }
-    if (hand.size() != o.hand.size() || discardPile.size() != o.discardPile.size()
-        || exhaustPile.size() != o.exhaustPile.size())
-        return false;
+    if (!sameCardMultiset(hand, o.hand)) return false;
+    if (!sameCardMultiset(drawPileContents, o.drawPileContents)) return false;
+    if (!sameCardMultiset(discardPile, o.discardPile)) return false;
+    if (!sameCardMultiset(exhaustPile, o.exhaustPile)) return false;
     if (potions.size() != o.potions.size()) return false;
     for (size_t i = 0; i < potions.size(); ++i)
         if (potions[i] != o.potions[i]) return false;
@@ -265,18 +334,50 @@ void Belief::resample(std::mt19937_64 &rng) {
     particles = std::move(resampled);
 }
 
+// A particle contradicts an observation when the observed draw pile is not the
+// front remainder of the particle's sampled order. Cards pop from the pile's
+// back (CardManager::popFromDrawPile), so after any draws the observed pile
+// must equal the particle's order prefix positionally; unobserved reshuffles
+// or inserts leave the particle contradictory. Unprovable cases are
+// zero-weighted; the uniform fallback in sample() keeps search alive when all
+// particles contradict.
+static bool drawOrderConsistent(const HiddenBattleState &p,
+                                const CombatObservation &obs) {
+    const auto &pile = p.drawPileOrder;
+    const auto &rem = obs.drawPileContents;
+    if (rem.size() > pile.size()) return false;   // observed more cards than the particle ever had
+    for (size_t i = 0; i < rem.size(); ++i)
+        if (pile[i].getId() != rem[i].getId()) return false;
+    return true;
+}
+
 void Belief::update(const CombatObservation &obs) {
-    // Reweight particles based on consistency with observation
-    for (auto &p : particles) {
-        // If the draw pile order doesn't match observed draws, zero weight
-        // Simplified: keep all particles, weight them by consistency
-        (void)obs;
-    }
+    // Reweight particles based on consistency with the observed draw pile
+    for (auto &p : particles)
+        p.weight *= drawOrderConsistent(p, obs) ? 1.0 : 0.0;
 }
 
 const HiddenBattleState &Belief::sample(std::mt19937_64 &rng) const {
-    std::uniform_int_distribution<size_t> dist(0, particles.size() - 1);
-    return particles[dist(rng)];
+    const size_t n = particles.size();
+    double total = 0.0;
+    bool uniform = true;
+    const double firstWeight = particles[0].weight;
+    for (const auto &p : particles) {
+        if (p.weight != firstWeight) uniform = false;
+        total += p.weight;
+    }
+    if (uniform || total <= 0.0) {
+        std::uniform_int_distribution<size_t> dist(0, n - 1);
+        return particles[dist(rng)];
+    }
+    std::uniform_real_distribution<double> dist(0.0, total);
+    double r = dist(rng);
+    double acc = 0.0;
+    for (const auto &p : particles) {
+        acc += p.weight;
+        if (acc >= r) return p;
+    }
+    return particles.back();
 }
 
 } // namespace sts

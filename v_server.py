@@ -3,22 +3,24 @@
 card-pick queries from the C++ agent over a TCP socket.
 
 Wire protocol (one line each way, newline-terminated):
-  request : "cand0,cand1,...;v0,v1,...\n"
-            candidates = candidate card ids; v* = the rich raw features in
-            featureRow()+deckCountsCsv() order (ascension..nRelics, d0..d371).
+  request : "cand0,cand1,...;raw\n"
+            candidates = candidate card ids; raw = the 1,017-value rich
+            features in vFeatCsv() order (schema owner:
+            apps/one_combat.cpp::vFeatCsv; 32 scalars, d0..d371, u0..u371,
+            r0..r180, pot0..pot47, 10 forward-map feats, curMapX, curMapY).
   response: "<idx>\n"   idx in 0..n-1 = take that candidate; 5 = skip.
 
 Card value = V(deck+card) - V(deck), evaluated with the exact trained GBM.
 Take the best; skip if best marginal <= SKIP_THRESHOLD (default 0).
 
 Rest-site endpoints (same rich-feature suffix, tagged first field):
-  "H;<healAmt>;<v0..v391>\n"  -> "<healGain>\n"  where
+  "H;<healAmt>;<raw>\n"  -> "<healGain>\n"  where
        healGain = V(deck, curHp+healAmt capped at maxHp) - V(deck, curHp).
        Value (in expected-final-floor units) of resting vs. not.
-  "U;<cid0,cid1,...>;<v0,...>\n" -> "<idx>\n"  index into the candidate
+  "U;<cid0,cid1,...>;<raw>\n" -> "<idx>\n"  index into the candidate
        list of the card the deck values most: argmax V(deck) - V(deck-card).
        (Crude upgrade-target proxy; the model can't see per-card upgrade.)
-  "RC;<v0,...>\n" -> "<delta>\n" where positive means the paired
+  "RC;<raw>\n" -> "<delta>\n" where positive means the paired
        counterfactual model prefers rest over smith; "NA" means use HW/UW.
   "CA;<cid:up,...>;<rooms>;<edges>;<special>;<raw>\n" -> "<idx> <score>\n"
        Direct paired card/skip action model with the full 15x7 map graph.
@@ -47,7 +49,10 @@ SKIP_THR   = float(os.environ.get("VSKIP", "0.0"))    # take iff best marginal >
 NEVER_SKIP = os.environ.get("VNEVERSKIP", "0") == "1"
 
 # ---- raw feature layout emitted by C++ vFeatCsv() == richRow() schema/order ----
-# Must exactly match apps/one_combat.cpp richHeader() (minus seed prefix & labels).
+# Schema owner: apps/one_combat.cpp::vFeatCsv (richHeader minus the seed prefix
+# & labels). The implemented RAW layout below has 1,017 values: 32 scalars,
+# d0..d371 per-card counts, u0..u371 per-card upgrade counts, r0..r180 relic
+# counts, pot0..pot47 potion counts, 10 forward-map feats, curMapX, curMapY.
 SCALARS = ["ascension","act","floor","curHp","maxHp","gold","deckSize","potionChance",
            "cardRarityFactor","blueKey","greenKey","redKey","potionCount","potionCapacity",
            "bossId","nextEliteId","nextFight0","nextFight1","nextFight2","remElites",
@@ -72,7 +77,7 @@ missing = [c for c in FEATS if c not in rawpos]
 if missing:
     sys.stderr.write(f"[v_server] FATAL: model features not in raw layout: {missing[:8]}\n")
     sys.exit(1)
-fsel = [rawpos[c] for c in FEATS]           # pick model features out of the 392 raw
+fsel = [rawpos[c] for c in FEATS]           # pick model features out of the 1,017-value RAW
 fmpos = {c: k for k, c in enumerate(FEATS)} # position within the model vector
 
 # ---- optional WIN-RATE model V_win(state)->P(win), for survival/heal decisions ----
@@ -639,7 +644,7 @@ def marginals(cands, raw):
     return " ".join(f"{float(m):.5f}" for m in marg)
 
 def remove_card(raw, cid):
-    """raw: (392,) -> model-ordered features with one card cid removed.
+    """raw: (1017,) -> model-ordered features with one card cid removed.
     Mirror of add_card: drop the per-id count (+ deckSize if kept)."""
     base = raw[fsel].astype(np.float32)
     out = base.copy()

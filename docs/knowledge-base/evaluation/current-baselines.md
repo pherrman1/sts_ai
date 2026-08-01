@@ -22,7 +22,8 @@ consumed only by Searcher3.
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |
 | --- | --- | ---: | ---: | --- | --- | --- |
 | **Current executable configuration**, verified 2026-07-31 | Caller-selected | Caller-selected | Caller-selected | Default Searcher2 is known-RNG unless `STS_FAIR=1`; opt-in Searcher3 samples particles in either path and `STS_FAIR` controls rebuild/reuse | Native tracked floor/win trees; heuristic path; shop-V; win-rest; tracked policy prior auto-load; no combat value/PVNet by default | Configuration only; **no current-checkout full-run measurement is claimed**. |
-| **Primary recorded project-fair reference**, 2026-07-23 (`EXPERIMENTS.md` §66i) | 126700–126827 (128) | 0 | 1,000 sims/decision | `STS_FAIR=1`; **Unverified** exact searcher in the historical binary, consistent with default Searcher2 | Native floor/win OOC; heuristic path/shop/win-rest; entry says PUCT/V-combat but names no combat-value path/hash and does not pin every flag | Full Act-3 run win: **39/128 (30.5%)**; mean floor 40.32; mean end HP 11.91. Raw cited directory is absent, so not exactly reproducible. |
+| **Current default stack on the recorded block**, 2026-08-02 (`EXPERIMENTS.md` §68) | 126700–126827 (128) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12 threads | Native tracked floor/win trees (hashes in §68); heuristic path/shop/win-rest; tracked policy prior auto-load; no combat value/PVNet | Full Act-3 run win: **27/128 (21.1%)**; mean floor 37.5; mean end HP 8.6; per-seed CSV retained at `build/bench_2026-08-02_default_fair.csv`. New measurement, not a paired comparison with §66i. |
+| **Primary recorded project-fair reference**, 2026-07-23 (`EXPERIMENTS.md` §66i) | 126700–126827 (128) | 0 | 1,000 sims/decision | `STS_FAIR=1`; **Unverified** exact searcher in the historical binary, consistent with default Searcher2 | Native floor/win OOC; heuristic path/shop/win-rest; entry says PUCT/V-combat but names no combat-value path/hash and does not pin every flag | Full Act-3 run win: **39/128 (30.5%)**; mean floor 40.32; mean end HP 11.91. Raw cited directory is absent, so not exactly reproducible; the §68 re-measurement suggests a different historical configuration. |
 | **Historical known-RNG comparator**, 2026-07-15 (`EXPERIMENTS.md` §26) | 512 seeds; range not recorded | 0 | 1,000 sims/decision | Known-RNG Searcher2 with PUCT | Server-backed rich V2 floor drafting/shop, win-rest, heuristic path, compact policy prior | Full-run win: **51.6%**. Optimistic diagnostic; never compare directly with the fair reference. |
 | **Recorded Searcher3/PVNet experiment**, 2026-07-30 (final ledger section) | 128 seeds; range not recorded | 0 | 50/100/250/500 | Recorded as Searcher3 project-fair PUCT | Ledger says “heuristic OOC baseline + PUCT (GBM policy)” but does not define that OOC stack; opt-in `build/v_combat_pvnet.txt`; policy-only means `STS_PVNET_ALPHA=0` | Full-run win-rate sweep. Best reported 100-sim policy-only point: **66.4%**. Not in the current default; seed range and exact complete command are unresolved. |
 
@@ -80,7 +81,6 @@ artifact set behind §66i.
 ## Open questions
 
 - Which exact artifact hashes and flags produced the 39/128 result?
-- What is the current default stack’s paired result on the recorded seed block?
 - Should a reproducible baseline bundle include executable/model hashes and
   captured startup output?
 

@@ -1091,8 +1091,10 @@ struct WinNet {
     std::vector<std::vector<Node>> trees;
     std::vector<int> sel;                                  // model feat i -> rich raw index
     double baseMargin = 0.0; bool logistic = true, ok = false;
+    std::string path;                                      // loaded-tree source path
 
     bool load(const std::string &path, const std::unordered_map<std::string,int> &richIdx) {
+        this->path = path;
         std::ifstream f(path); if (!f) return false;
         std::string tok; int nfeat = 0, ntrees = 0; double baseScore = 0.5;
         f >> tok >> nfeat;                                 // "nfeat N"
@@ -2179,11 +2181,12 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
 }
 
 // ---------------------------------------------------------------------------
-// RUN TRACE: replay ONE seed with the full deployed OOC policy and print a
+// RUN TRACE: replay ONE seed with the deployed OOC policy and print a
 // human-readable line per MAP NODE (what it was, what we fought / which event,
 // and the resulting state: HP, gold, deck delta, deck, relics, potions). For
-// eyeballing the agent's decisions against human game knowledge. Mirrors
-// runFullRunOOC exactly so the trace reflects real play (fair-play via STS_FAIR).
+// eyeballing the agent's decisions against human game knowledge. This is a
+// DIAGNOSTIC trace, not a mirror of runFullRunOOC: it logs but does not use
+// some event/treasure scores and omits some fallthrough policy layers.
 // ---------------------------------------------------------------------------
 static std::string tr_deck(const GameContext &gc) {
     std::map<std::string,int> m;
@@ -2245,6 +2248,10 @@ static std::string tr_deckDelta(const std::multiset<std::string> &prev, const st
 // When the OOC action NN is active (STS_OOC_ACTION_NN=1), also query its OA endpoint and
 // show the NN's utility score for each card.
 static void tr_logDraft(GameContext &gc) {
+    // The "M" marginals op is server-only. Skip the draft log cleanly when no
+    // server is reachable (same vConnect()<0 fail-fast pattern as vTransact),
+    // instead of letting vRequestLine retry ~50x per card reward.
+    if (vConnect() < 0) return;
     auto &r = gc.info.rewardsContainer;
     for (int rIdx = 0; rIdx < r.cardRewardCount; ++rIdx) {
         auto &cr = r.cardRewards[rIdx];
@@ -2366,6 +2373,7 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
 
     std::printf("=== RUN TRACE seed %llu  asc %d  sims %d%s ===\n",
                 (unsigned long long)seed, asc, sims, search::g_fairPlay ? "  [fair-play]" : "");
+    std::printf("!!! DIAGNOSTIC TRACE: does NOT exactly reproduce runFullRunOOC policy !!!\n");
 
     const int refightFloor = std::getenv("STS_REFIGHT_FLOOR") ? std::atoi(std::getenv("STS_REFIGHT_FLOOR")) : -1;
     const int refightN     = std::getenv("STS_REFIGHT_N")     ? std::atoi(std::getenv("STS_REFIGHT_N"))     : 20;
@@ -2544,17 +2552,29 @@ static void skipBench(int sims, int nSeeds, int asc) {
                 (double)hp / nSeeds, sec / nSeeds, wall);
 }
 
-// Single-arm readout of the CURRENT BEST out-of-combat stack: server card picks
-// (skip@g_cardSkipThresh, default 0) + heuristic path + shop-V. Rest-V is off by
-// default (trades win% for depth); set restV via env STS_REST_V=1 to include it.
-// Use this as the baseline arm for new experiments. Needs v_server.py.
+// Single-arm readout of the CURRENT BEST out-of-combat stack: native floor-V
+// card picks (skip@g_cardSkipThresh, default -0.5) + heuristic path + shop-V,
+// with the default win-rate rest layer (g_restWin, heal-vs-upgrade in P(win)
+// units) and optional legacy rest-V via STS_REST_V=1. Use this as the baseline
+// arm for new experiments. Serverless under default native OOC.
 static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 0,
                       const std::string &resultsFile = "") {
     const bool restV = std::getenv("STS_REST_V") && std::atoi(std::getenv("STS_REST_V")) != 0;
-    std::cout << "BEST stack (skip@" << g_cardSkipThresh << " cards + heuristic-path + shop-V"
-              << (restV ? " + rest-V" : "") << ")   seeds " << seedOffset << ".."
-              << seedOffset + nSeeds - 1
-              << "   asc: " << asc << "   sims: " << sims << "   threads: " << numThreads() << "\n";
+    std::cout << "BEST stack config: skip@" << g_cardSkipThresh
+              << "  rest=" << (g_restWin ? "win-rate" : "default")
+              << (restV ? "+legacy-rest-V" : "")
+              << "  shop-V=ON  path=" << (g_pathV ? "model-driven" : "heuristic")
+              << "  native-OOC=" << (g_nativeOoc ? "ON" : "OFF")
+              << "  searcher=" << (search::g_useSearcher3 ? "Searcher3" : "Searcher2")
+              << (search::g_fairPlay ? "  fair-play" : "")
+              << "  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
+              << "  asc " << asc << "  sims " << sims << "  threads " << numThreads() << "\n";
+    std::cout << "BEST models: floor=" << (g_floorNet.ok ? g_floorNet.path : "MISSING")
+              << "  win=" << (g_winNet.ok ? g_winNet.path : "not loaded")
+              << "  combatVNet=" << (search::g_useVNet ? "ON" : "off")
+              << "  policyNet=" << (search::g_usePolicyNet ? "ON" : "off")
+              << "  PVNet=" << (search::g_usePVNet ? "ON" : "off")
+              << "  distVNet=" << (search::g_useDistVNet ? "ON" : "off") << "\n";
     // Optional per-seed output powers the adaptive self-play gate. Rows are
     // flushed as runs finish, so the dashboard gets live progress and a killed
     // benchmark leaves valid results. The caller owns truncation; batches append.
@@ -5778,6 +5798,13 @@ int main(int argc, char **argv) {
         std::string pout = argc > 7 ? argv[7] : "build/fair_pol.csv";
         std::string oout = argc > 8 ? argv[8] : "build/fair_ooc.csv";
         long long seedOff = argc > 9 ? std::stoll(argv[9]) : 0;
+        // fairgen emits Searcher3 policy rows via g_onSearchComplete3; force the
+        // project-fair Searcher3 regime here so callers cannot silently produce
+        // data under the wrong producer (STS_FAIR=1 STS_SEARCHER3=1 no longer
+        // required; the env vars still mean the same thing for other modes).
+        search::g_fairPlay = true;
+        search::g_useSearcher3 = true;
+        std::cout << "[fairgen forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
         fairGen(nSeeds, sims, asc, eps, vout, pout, oout, seedOff);
 
     } else if (mode == "strategicgen") {  // Phase 5: one row per OOC decision, full rich state

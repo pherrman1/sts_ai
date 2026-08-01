@@ -4,14 +4,21 @@ import sys, math, random
 import numpy as np
 
 def load(path):
+    expected = "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,sec".split(",")
     rows = []
     with open(path) as f:
         h = f.readline().strip().split(",")
+        if sorted(h) != sorted(expected):
+            raise ValueError(
+                f"{path}: header {h} does not match the bestbench schema "
+                f"({expected}); producer and consumer have drifted")
+        cols = dict(zip(h, range(len(h))))
         for line in f:
             s = line.strip().split(",")
             rows.append({
-                "seed": int(s[0]), "won": int(s[1]),
-                "floor": int(s[2]), "hp": int(s[3]), "sec": float(s[4]),
+                "seed": int(s[cols["seed"]]), "won": int(s[cols["won"]]),
+                "floor": int(s[cols["floor"]]), "hp": int(s[cols["hpEnd"]]),
+                "sec": float(s[cols["sec"]]),
             })
     return rows, h
 

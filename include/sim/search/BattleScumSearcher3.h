@@ -57,6 +57,8 @@ namespace sts::search {
         std::mt19937_64 rng;
         int maxParticles = 128;
         // RNG seeding: composite hash(agentSeed, visibleHash, decisionIdx)
+        // set at construction; reseed() re-applies the composite after the
+        // agent advances the root (non-fair path) with a new decision index.
         std::uint64_t agentSeed = 0;
         int decisionIndex = 0;
         int maxSearchDepth = 100;
@@ -72,11 +74,14 @@ namespace sts::search {
         int outcomePlayerHp = 0;
 
         explicit BattleScumSearcher3(const BattleContext &bc, int particleCount = 128);
+        BattleScumSearcher3(const BattleContext &bc, std::uint64_t agentSeed,
+                            int decisionIndex, int particleCount = 128);
 
         void search(int64_t simulations);
         void searchToTotal(int64_t targetSimulations);
         bool advanceRoot(const Action &action, const BattleContext &newRootState);
         void step();
+        void reseed();
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
         void ensureObservation(Node &node, const BattleContext &state);
@@ -91,7 +96,7 @@ namespace sts::search {
 
         // -- Lethal / death detection ----------------------------------------
         [[nodiscard]] bool isGuaranteedLethal(const BattleContext &bc) const;
-        [[nodiscard]] bool isGuaranteedDead(const BattleContext &bc) const;
+        [[nodiscard]] static bool canPruneAsDead(const BattleContext &bc);
 
         void prepareCRNParticles();
         void warmStartRootCRN(const BattleContext &bc);

@@ -58,7 +58,6 @@ void BattleContext::init(const GameContext &gc, MonsterEncounter encounterToInit
     monsterTurnIdx = 6;
     skipMonsterTurn = false;
     turnHasEnded = false;
-    isBattleOver = false;
 
     potionCount = gc.potionCount;
     potionCapacity = gc.potionCapacity;
@@ -2204,7 +2203,7 @@ void BattleContext::afterMonsterTurns() {
         player.block = 0;
     }
 
-    if (isBattleOver) {
+    if (isBattleOver()) {
         return;
     }
 

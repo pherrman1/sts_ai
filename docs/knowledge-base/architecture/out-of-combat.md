@@ -78,18 +78,20 @@ path, event, boss-relic/Neow, and all-OOC checkpoint evaluator flags parsed in
 
 - The strategic policy is an ordered integration function, not one composable
   policy object. Adding an earlier branch can silently bypass later behavior.
-- `bestBench`'s adjacent source comment and `BEST stack` banner still describe
-  older server/skip/rest behavior and omit the default `g_restWin` layer.
+- `bestBench`'s `BEST stack` banner is emitted from parsed flags and load
+  messages (skip threshold, rest/win layer, shop-V, path mode, native OOC,
+  searcher, threads, model paths) but still omits some experimental layers; it
+  is not a complete provenance record.
 - The generic native-OOC startup message does not prove `g_winNet` loaded; a
   missing win tree can silently reintroduce server calls on win-rest screens.
-- `v_server.py` contains comments describing older 392-value layouts even
-  though its implemented `RAW` layout is 1,017 values.
+- `v_server.py` documents the implemented 1,017-value `RAW` layout and links
+  `apps/one_combat.cpp::vFeatCsv` as the schema owner.
 - `OocCheckpointNet::load` validates header/dimensions but not every payload
   read; a truncated file can still set `ok=true`.
-- `runtrace` is not a wrapper around `runFullRunOOC`: it logs but does not use
-  some event/treasure scores, omits some fallthrough policy layers, and its
-  draft logger calls the server-only `M` endpoint
-  (`apps/one_combat.cpp::runTraceRun`, `tr_logDraft`).
+- `runtrace` is not a wrapper around `runFullRunOOC`: it prints a diagnostic
+  header, skips server-only draft logging when no server is reachable, but still
+  omits some fallthrough policy layers and its event/treasure scores are
+  diagnostic (`apps/one_combat.cpp::runTraceRun`, `tr_logDraft`).
 - Model-driven pathing with the old forward-map-blind win model was a recorded
   regression; heuristic pathing remains the operating baseline.
 - Python cannot issue card-by-card combat actions.

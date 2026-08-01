@@ -38,6 +38,13 @@ Searcher3 particle sampling on. Searcher3 caches a `CombatObservation` per
 node, expands legal edges, uses PUCT or UCB-like selection, performs
 deterministic chain continuation and a rollout/leaf evaluation, then backpropagates
 (`src/sim/search/BattleScumSearcher3.cpp::step`, `selectBestEdgePUCT`).
+Seeding, belief conditioning, and observation identity follow the canonical
+field contract described under "Known limitations"; the composite seed is
+`visibleHash ^ agentSeed ^ decisionIndex` with `agentSeed` and `decisionIndex`
+assigned per decision by the caller, and `Belief::update` zero-weights
+particles whose draw order contradicts the observed pile
+(`BattleScumSearcher3::BattleScumSearcher3`; `ScumSearchAgent2::playoutBattleFair`;
+`CombatObservation::Belief::update`).
 
 ## Important data flow
 
@@ -92,37 +99,45 @@ prints a load message but does not make default Searcher2 use it.
 - Searcher2 project-fair determinization changes draw order plus only
   `shuffleRng` and `cardRandomRng`; it is not a complete hidden-state model
   (`src/sim/search/BattleScumSearcher2.cpp::determinize`).
-- Searcher3 `Belief::update` does not condition particles and `sample` ignores
-  weights (`src/sim/search/CombatObservation.cpp::Belief::update`, `sample`).
-- `HiddenBattleState::drawPileOrder` is populated, but
-  `BattleScumSearcher3::applyParticle` ignores it and independently shuffles
-  the copied draw pile with the searcher RNG.
-- Searcher3 constructor seeding reads `agentSeed` and `decisionIndex` before the
-  caller assigns `agentSeed`; no caller assigns `decisionIndex`. Advertised
-  composite seeding is therefore not implemented as stated
-  (`src/sim/search/BattleScumSearcher3.cpp::BattleScumSearcher3`;
-  `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`).
-- PVNet-only PUCT is incomplete: node expansion invokes `computeEdgePriors`
-  only when the separate policy net is loaded, while selection recognizes a
-  loaded PVNet. With `STS_POLICY=0`, multi-edge PVNet priors remain zero
-  (`src/sim/search/BattleScumSearcher3.cpp::step`, `selectBestEdgePUCT`).
-- `CombatObservation::operator==` and `visibleHash` cover different field sets;
-  neither establishes a complete observation identity.
-- The aggressive `isGuaranteedDead` path remains active even though the guarded
-  `canPruneAsDead` helper is unused. Historical performance claims do not prove
-  the predicate safe for every input state.
+- Searcher3 belief conditioning is conservative: `Belief::update` zero-weights
+  particles whose draw order contradicts the observed pile, and `Belief::sample`
+  falls back to uniform when all weights are equal or total zero, so a reshuffle
+  or insert that contradicts every particle resets the belief
+  (`src/sim/search/CombatObservation.cpp::Belief::update`, `sample`).
+- `HiddenBattleState::drawPileOrder` is installed by `applyParticle` only when
+  the copied pile's size and card multiset match the particle; after tree reuse
+  stale particles fall back to a searcher-RNG shuffle
+  (`src/sim/search/BattleScumSearcher3.cpp::applyParticle`).
+- Composite seeding is implemented with explicit constructor parameters
+  (`agentSeed`, `decisionIndex`); both are per-decision assigned by
+  `ScumSearchAgent2::playoutBattleFair` and `playoutBattle`, so the advertised
+  `visibleHash ^ agentSeed ^ decisionIndex` contract now holds. Members stay
+  mutable because the tree-reuse path re-keys via `reseed()`.
+- PVNet-only priors: `computeEdgePriors` runs when the separate policy net or a
+  PVNet with its policy head enabled (`!STS_PVNET_VALUE_ONLY`) is loaded; the
+  PVNet policy head takes precedence when both exist. With
+  `STS_PVNET_VALUE_ONLY=1` and no policy net, priors remain zero while
+  `selectBestEdgePUCT` still recognizes the PVNet.
+- `CombatObservation::operator==` and `visibleHash` share one canonical field
+  set (see `CombatObservation.cpp::operator==`); card piles are compared as
+  multisets of `CardKey`, so order-insensitive equality is deliberate.
+- Guaranteed-death pruning is conservative: `canPruneAsDead` fires only in
+  states where the player cannot act; the aggressive `isGuaranteedDead`
+  predicate was removed because its soundness for card-selection states was not
+  proven (`src/sim/search/BattleScumSearcher3.cpp::canPruneAsDead`).
 - Native PV/distribution inference probes a hard-coded SciPy OpenBLAS path and
-  otherwise falls back to scalar math (`src/sim/search/CombatPVNet.cpp`;
-  `CombatDistValueNet.cpp`).
+  otherwise falls back to scalar math; the active backend is printed at load
+  time (`src/sim/search/CombatPVNet.cpp`; `CombatDistValueNet.cpp`).
 
 ## Open questions
 
-- What exact visible-state equality/hash contract should Searcher3 use?
-- How should particle conditioning and per-decision RNG seeding be implemented
-  and regression-tested?
-- Should PVNet-only operation compute priors without requiring the separate
-  policy flag?
-- Is aggressive guaranteed-death pruning sound for all card-selection states?
+- Should `CombatObservation` identity include card `uniqueId`/`retain` fields,
+  or does the current `CardKey` multiset contract suffice?
+- Should conservative player-cannot-act-only pruning be replaced by an
+  aggressive predicate once its soundness is proven for all card-selection
+  states?
+- Should PVNet-only operation with `STS_PVNET_VALUE_ONLY=1` disable PUCT
+  recognition instead of leaving zero priors?
 
 ## Relevant code
 
