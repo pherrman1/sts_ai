@@ -728,9 +728,14 @@ static bool g_nativeOoc = false;
 static bool g_oocActionNN = false;          // env STS_OOC_ACTION_NN=1
 static double g_oocStrategicMargin = 1.0;   // env STS_OOC_STRATEGIC_MARGIN: one-ply gate in V units
 static bool   g_oocStrategicQ = true;       // env STS_OOC_STRATEGIC_Q=0: score via V2 successor predictValue
+static bool   g_oocStrategicRest = false;   // env STS_OOC_STRATEGIC_REST=1: one-ply Q gate on campfires (5.5.2)
+static bool   g_oocStrategicEvent = false;  // env STS_OOC_STRATEGIC_EVENT=1: one-ply Q gate on events (5.5.3)
 static int nativeFloorCardPick(GameContext &, int);
 static double nativeFloorValue(GameContext &);
 static bool oocOnePlyCardRewardPolicy(GameContext &);
+static bool oocOnePlyRestPolicy(GameContext &);        // 5.5.2 campfire options + upgrade targets
+static bool oocOnePlyUpgradeSelectPolicy(GameContext &); // 5.5.2 smith upgrade-target pick
+static bool oocOnePlyEventPolicy(GameContext &);       // 5.5.3 event options
 static std::string nativeShopPlan(GameContext &);
 // A/B: route card picks through the deck-set NN (P(win) marginal), optionally blended with
 // the v_win GBM: marg = w*NN + (1-w)*GBM. Own skip scale (P(win) units).
@@ -2154,6 +2159,8 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             if (g_pathV) pathVPolicy(gc);                              // model-driven pathing
             else search::GameAction(chooseMapAction(gc)).execute(gc);  // heuristic pathing
+        } else if (oocOnePlyEventPolicy(gc)) {
+            // one-ply Q event pick (Phase 5, 5.5.3; incl. Neow)
         } else if (g_eventV && gc.screenState == ScreenState::EVENT_SCREEN
                    && gc.curEvent != Event::NEOW && eventVPolicy(gc)) {
             // model-driven event choice
@@ -2172,8 +2179,12 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             shopVPolicy(gc);                                            // V-knapsack shop buys
         } else if (shopV && inRemoveSelect) {
             removeSelectVPolicy(gc);                                    // shop removal target
+        } else if (oocOnePlyRestPolicy(gc)) {
+            // one-ply Q campfire pick (Phase 5, 5.5.2)
         } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && restWinPolicy(gc)) {
             // win-rate rest policy (heal vs upgrade in P(win) units)
+        } else if (oocOnePlyUpgradeSelectPolicy(gc)) {
+            // one-ply Q smith-target pick (Phase 5, 5.5.2)
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
             upgradeSelectWinPolicy(gc);                                 // smith target by P(win)
@@ -2514,13 +2525,16 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
         } else if (gc.screenState == ScreenState::EVENT_SCREEN) {
             if (!nodeActive) { flush(); nodeActive = true; label = "EVENT"; desc = tr_event(gc.curEvent); }
             tr_logOocActions("event", gc);
-            agent.stepOutOfCombatPolicy(gc);
+            if (!oocActionNNPolicy(gc))
+                if (!oocOnePlyEventPolicy(gc)) agent.stepOutOfCombatPolicy(gc);
         } else if (gc.screenState == ScreenState::REST_ROOM) {
             if (!nodeActive) { flush(); nodeActive = true; label = "REST"; }
             tr_logOocActions("rest", gc);
             if (!oocActionNNPolicy(gc)) {
-                if (g_restWin && restWinPolicy(gc)) {}
-                else agent.stepOutOfCombatPolicy(gc);
+                if (!oocOnePlyRestPolicy(gc)) {
+                    if (g_restWin && restWinPolicy(gc)) {}
+                    else agent.stepOutOfCombatPolicy(gc);
+                }
             }
         } else if (gc.screenState == ScreenState::TREASURE_ROOM) {
             if (!nodeActive) { flush(); nodeActive = true; label = "TREASURE"; }
@@ -2546,7 +2560,7 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
             tr_logOocActions("upgrade", gc);
             if (!oocActionNNPolicy(gc))
-                upgradeSelectWinPolicy(gc);
+                if (!oocOnePlyUpgradeSelectPolicy(gc)) upgradeSelectWinPolicy(gc);
         } else {
             agent.stepOutOfCombatPolicy(gc);
         }
@@ -2956,6 +2970,90 @@ static bool oocOnePlyCardRewardPolicy(GameContext &gc) {
             v = g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
                                                (int)probe.screenState);
         }
+        if (v > best) { second = best; best = v; bestIdx = i; }
+        else if (v > second) second = v;
+    }
+    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
+    actions[bestIdx].execute(gc);
+    return true;
+}
+
+// One-ply post-action search for CAMPFIRE decisions (Phase 5, 5.5.2): every
+// legal rest option (REST/SMITH/LIFT/GIRYA/PEACE_PIPE/SHOVEL/SKIP) is scored
+// with the Q(s,a) head on the pre-decision state and the best option is
+// executed only when its margin over the runner-up meets the gate; otherwise
+// the default rest layer (win-rate rest) runs.  The smith's upgrade-target
+// pick (CARD_SELECT/UPGRADE) is gated separately by
+// oocOnePlyUpgradeSelectPolicy under the same flag.
+static bool oocOnePlyRestPolicy(GameContext &gc) {
+    if (!g_oocStrategicNet.ok || !g_oocStrategicRest) return false;
+    if (gc.screenState != ScreenState::REST_ROOM) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    const std::vector<float> state = richFeatureVec(gc);
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    for (int i = 0; i < (int)actions.size(); ++i) {
+        int actionType, c1, c2, c3, cand1, cand2, cand3;
+        strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+        const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+        const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
+                                                             cats, actionType, (int)gc.screenState);
+        if (v > best) { second = best; best = v; bestIdx = i; }
+        else if (v > second) second = v;
+    }
+    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
+    actions[bestIdx].execute(gc);
+    return true;
+}
+
+// One-ply Q gate for the smith's upgrade-target pick (the CARD_SELECT screen
+// that follows a campfire SMITH).  Scores every legal target; executes the
+// argmax only when its margin over the runner-up meets the gate, else the
+// win-rate upgrade-target layer runs.
+static bool oocOnePlyUpgradeSelectPolicy(GameContext &gc) {
+    if (!g_oocStrategicNet.ok || !g_oocStrategicRest) return false;
+    if (gc.screenState != ScreenState::CARD_SELECT
+        || gc.info.selectScreenType != CardSelectScreenType::UPGRADE) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    const std::vector<float> state = richFeatureVec(gc);
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    for (int i = 0; i < (int)actions.size(); ++i) {
+        int actionType, c1, c2, c3, cand1, cand2, cand3;
+        strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+        const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+        const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
+                                                             cats, actionType, (int)gc.screenState);
+        if (v > best) { second = best; best = v; bestIdx = i; }
+        else if (v > second) second = v;
+    }
+    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
+    actions[bestIdx].execute(gc);
+    return true;
+}
+
+// One-ply post-action search for EVENT decisions (Phase 5, 5.5.3): every legal
+// event option (including Neow) is scored with the Q(s,a) head on the
+// pre-decision state and the best option is executed only when its margin over
+// the runner-up meets the gate; otherwise the default event layer runs.  The
+// Tier-B labels already average the stochastic continuations of each option,
+// so no RNG-clone sampling is needed at deployment.
+static bool oocOnePlyEventPolicy(GameContext &gc) {
+    if (!g_oocStrategicNet.ok || !g_oocStrategicEvent) return false;
+    if (gc.screenState != ScreenState::EVENT_SCREEN) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;   // e.g. MATCH_AND_KEEP
+    const std::vector<float> state = richFeatureVec(gc);
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    for (int i = 0; i < (int)actions.size(); ++i) {
+        int actionType, c1, c2, c3, cand1, cand2, cand3;
+        strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+        const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+        const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
+                                                             cats, actionType, (int)gc.screenState);
         if (v > best) { second = best; best = v; bestIdx = i; }
         else if (v > second) second = v;
     }
@@ -5881,6 +5979,16 @@ int main(int argc, char **argv) {
         g_oocStrategicQ = std::atoi(d) != 0;
         if (!g_oocStrategicQ)
             std::cout << "[OOC one-ply: Q head disabled, V2 successor-value scoring]\n";
+    }
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_REST")) {
+        g_oocStrategicRest = std::atoi(d) != 0;
+        if (g_oocStrategicRest)
+            std::cout << "[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]\n";
+    }
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_EVENT")) {
+        g_oocStrategicEvent = std::atoi(d) != 0;
+        if (g_oocStrategicEvent)
+            std::cout << "[OOC one-ply: event Q gate ON (incl. Neow)]\n";
     }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN")) {
         g_oocStrategicMargin = std::atof(d);

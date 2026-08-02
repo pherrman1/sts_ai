@@ -2073,3 +2073,52 @@ enabling condition, but the omitted command prevents verification.
 - **Artifacts:** `build/strategic_tierb.csv`, `build/psh_gate_m05.csv`,
   `build/psh_gate_m025.csv`, `build/tierb_gate_{base,m0,m025,m05,m1,m5}.csv`,
   `selfplay/models/ooc_strategic.{pt,native,_metrics.json}` (V3).
+
+## 74. Phase 5 round 4: one-ply Q gate for campfires and events (2026-08-02)
+
+- **Goal:** plan items 5.5.2/5.5.3 — extend the one-ply post-action Q gate from
+  card rewards to campfires (every legal rest option + the smith's
+  upgrade-target pick) and events (every legal option, incl. Neow). No new
+  datagen and no retrain: the §73 sample-all Tier-B labels already cover every
+  screen's decisions, so this round is purely the C++ gate extension +
+  evaluation of the deployed `OOC_STRAT_V3` net.
+- **Implementation (`apps/one_combat.cpp`):** three new gate functions mirroring
+  `oocOnePlyCardRewardPolicy` — `oocOnePlyRestPolicy` (REST_ROOM:
+  REST/SMITH/LIFT/GIRYA/PEACE_PIPE/SHOVEL/SKIP), `oocOnePlyUpgradeSelectPolicy`
+  (CARD_SELECT/UPGRADE targets), `oocOnePlyEventPolicy` (EVENT_SCREEN options,
+  incl. Neow). Each scores every legal action directly with
+  `OocStrategicNet::predictActionValue` on the pre-decision state (input
+  resolution identical to the training rows via `strategicCands`) and executes
+  the argmax only when its margin over the runner-up reaches
+  `STS_OOC_STRATEGIC_MARGIN`, else the default layer runs (win-rate rest,
+  win-rate upgrade target, heuristic events). Wired into `runFullRunOOC` and
+  `runTraceRun`. Knobs `STS_OOC_STRATEGIC_REST=1` / `STS_OOC_STRATEGIC_EVENT=1`
+  (default **off**, so the §73 card-only configuration stays reproducible and
+  layer-wise ablations are possible). The plan's "evaluate via V_run(s') with
+  RNG-clone sampling" is superseded by the Tier-B Q labels, which already
+  average the stochastic continuation per action (CRN, K=3 battles + bootstrap).
+- **Paired gate** (fair, A0, 1,000 sims, seeds 126700–126827, 12 workers;
+  baseline `build/tierb_gate_base.csv` bit-identical re-measure, 21.1% /
+  37.5 / 8.6):
+
+  | config | wins | floor Δ | win Δ | score Δ | discordant |
+  |---|---|---:|---:|---:|---:|
+  | cards+rest+event, margin 1.0 | **36 (28.1%, +7.0pp)** | +1.38 CI [−0.82,+3.58] | +0.070 CI [−0.012,+0.152] | +2.09 CI [−0.61,+4.78] | 10 A / 19 B |
+  | cards+rest+event, margin 0.5 | 31 (24.2%, +3.1pp) | +0.23 CI [−2.21,+2.68] | +0.031 | +0.55 | 13 A / 17 B |
+  | cards+rest+event, margin 5.0 | 30 (23.4%, +2.3pp) | −0.09 CI [−1.47,+1.30] | +0.023 | +0.15 | 10 A / 13 B |
+  | **ablation m1:** rest-only | 29 (22.7%, +1.6pp) | −1.22 | +0.016 | −1.06 | 11 A / 13 B |
+  | **ablation m1:** event-only | 34 (26.6%, +5.5pp) | +0.45 | +0.055 | +1.00 | 10 A / 17 B |
+  | **ablation m1:** cards-only (recall §73) | 29 (22.7%, +2.2pp) | −1.27 | +0.016 | −1.11 | 9 A / 11 B |
+
+- **Verdict:** ➕ the strongest Phase-5 result so far. The **event gate is the
+  main contributor** (+5.5pp wins alone; events were the default heuristic's
+  weakest screen, §71 EVENT value MAE 5.21) and the layers are roughly
+  additive (full stack +7.0pp). All 95% CIs still span zero (win CI at m1
+  [−1.2, +15.2]pp) so the effect is not statistically established on this
+  block, but the direction is consistently positive across margins, and floor
+  and HP improve too (38.9 / 12.1 vs 37.5 / 8.6 at m1) — unlike §70's damage
+  and §73's mixed card-only result. Margin 1.0 is the best point for the
+  combined stack (0.5 and 5.0 are weaker), suggesting the extra layers benefit
+  from the larger margins.
+- **Artifacts:** `build/tierb_re_gate_{m1,m05,m5}.csv`,
+  `build/tierb_rest_only_m1.csv`, `build/tierb_ev_only_m1.csv`.

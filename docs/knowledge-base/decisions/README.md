@@ -1,6 +1,6 @@
 # Decision records
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-02 against the current working tree.
 
 This directory is for durable architectural or operating decisions whose
 rationale is directly supported by repository evidence. `EXPERIMENTS.md`
@@ -8,10 +8,11 @@ remains the place for chronological policy/model benchmark decisions
 (`EXPERIMENTS.md`, numbered experiment entries; `AGENTS.md`,
 “Experiment-recording rules”).
 
-No standalone decision record has been extracted in this first version. The
-repository contains conclusions, but their rationale is often distributed
-across dated experiment entries; copying only the outcome would invent or lose
-context.
+## Index
+
+| Record | Topic |
+| --- | --- |
+| [`2026-08-02-semi-markov-strategic-model.md`](2026-08-02-semi-markov-strategic-model.md) | Semi-Markov run-level strategic model: combat as a temporally extended transition, unified candidate scoring, run-value as the shared pricing language, margin-gated overrides, hidden-information boundary. |
 
 The chronological, session-level record — including process and tooling
 choices, rejected alternatives, and new facts — lives in the

@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-02 | [`2026-08-02-ooc-guideline-spec-of-record.md`](2026-08-02-ooc-guideline-spec-of-record.md) | OOC guideline adopted as spec of record; new action plan supersedes archived Phase 5; design distilled into KB + decisions record. |
 | 2026-08-02 | [`2026-08-02-phase5-round3-tierb-q-labels.md`](2026-08-02-phase5-round3-tierb-q-labels.md) | Phase-5 round 3: Tier-B one-ply labels, Q-head gate, V3 format; V2 value-head misalignment correction. |
 | 2026-08-02 | [`2026-08-02-determinism-verification.md`](2026-08-02-determinism-verification.md) | Verified fair replay is bit-identical; closed issue 10. |
 | 2026-08-02 | [`2026-08-02-issue-fixes.md`](2026-08-02-issue-fixes.md) | Fixed 24 of 30 tracked issues via parallel subagents; benchmarked the default fair stack (§68). |

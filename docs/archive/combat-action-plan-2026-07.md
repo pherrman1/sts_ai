@@ -10,6 +10,10 @@
 > [`docs/knowledge-base/architecture/combat-search.md`](../knowledge-base/architecture/combat-search.md),
 > [`docs/knowledge-base/behavior/determinism-and-rng.md`](../knowledge-base/behavior/determinism-and-rng.md),
 > and [`EXPERIMENTS.md`](../../EXPERIMENTS.md) for current facts and evidence.
+> **Phase 5 (semi-Markov run-level agent) is superseded** by
+> [`ooc-action-plan-2026-08.md`](ooc-action-plan-2026-08.md), which records
+> rounds 1–3 as delivered and tracks remaining work against the full source
+> specification. Phases 1–4b.5 above are unchanged history.
 
 Original title: **Action Plan — Combat Model**
 

@@ -177,9 +177,12 @@ startup load is not evidence of use under default Searcher2.
   §73 gate diagnostics on the V2 artifact measure that (partly garbage)
   deployment; the trainer-side per-screen MAE table (§71) is unaffected.
   `OocStrategicNet::predictActionValue(state, bits, cats, actionType, screen)`
-  evaluates the Q head for one action; the one-ply card gate
-  (`oocOnePlyCardRewardPolicy`) scores legal reward actions with Q directly
-  (no successor clones) behind `STS_OOC_STRATEGIC_MARGIN`; `STS_OOC_STRATEGIC_Q=0`
+  evaluates the Q head for one action; the one-ply gates
+  (`oocOnePlyCardRewardPolicy`, and since round 4 `oocOnePlyRestPolicy` +
+  `oocOnePlyUpgradeSelectPolicy` under `STS_OOC_STRATEGIC_REST=1`,
+  `oocOnePlyEventPolicy` under `STS_OOC_STRATEGIC_EVENT=1` — both default off)
+  score legal actions with Q directly (no successor clones) behind
+  `STS_OOC_STRATEGIC_MARGIN`; `STS_OOC_STRATEGIC_Q=0`
   restores the V2 successor-`predictValue` scoring path.
 - Tracked artifacts under `build/` coexist with ignored build output; path
   location does not indicate whether an artifact was generated, deployed, or
