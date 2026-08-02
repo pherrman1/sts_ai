@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-02 against the current working tree (Phase-5 round 3).
 
 ## Purpose
 
@@ -42,19 +42,24 @@ A successfully loaded `STS_OOC_CHECKPOINT_NN=<path>` enables the compact native
 checkpoint-distilled action network in acts 1–3 before ordinary policy layers
 (`apps/ooc_checkpoint_net.h::OocCheckpointNet`;
 `apps/one_combat.cpp::oocActionNNPolicy`). A successfully loaded
-`STS_OOC_STRATEGIC_NN=<path>` enables the Phase-5 one-ply card-reward gate:
-each legal reward action is applied to a copied `GameContext`, the successor
-state is scored with the native strategic value head of the successor screen,
-and the best action is
-taken only when its margin over the runner-up reaches
+`STS_OOC_STRATEGIC_NN=<path>` enables the Phase-5 one-ply card-reward gate.
+Since round 3 (`OOC_STRAT_V3`), each legal reward action is scored **directly
+with the Q(s,a) head** on the pre-decision state
+(`OocStrategicNet::predictActionValue` — no clones or successor states), and
+the best action is executed only when its margin over the runner-up reaches
 `STS_OOC_STRATEGIC_MARGIN` (default 1.0); otherwise the heuristic card policy
-runs (`apps/ooc_strategic_net.h::OocStrategicNet`;
-`apps/one_combat.cpp::oocOnePlyCardRewardPolicy`). The first two trained
-strategic nets were a gate regression (§70) and a per-seed-identical neutral
-(§71), so the one-ply branch is
-opt-in only. Other opt-in owners include card,
-path, event, boss-relic/Neow, and all-OOC checkpoint evaluator flags parsed in
-`apps/one_combat.cpp::main`.
+runs. `STS_OOC_STRATEGIC_Q=0` restores the round-1/2 behaviour of scoring
+copied successor states with the value head of the successor screen
+(`predictValue(state, screen)`), the path used by the §70–§73 V2 gates. The Q
+head is trained on Tier-B one-ply counterfactual labels (`strategicgen2`;
+`apps/one_combat.cpp::runStrategicGenSeed2`). No model is deployed by default:
+the one-ply branch is opt-in only
+(`apps/ooc_strategic_net.h::OocStrategicNet`;
+`apps/one_combat.cpp::oocOnePlyCardRewardPolicy`). Historical gates: §70
+pooled-head regression (−10.9pp at margin 1.0), §71 per-seed-neutral per-screen
+heads, §73 Q-head result (see EXPERIMENTS.md). Other opt-in owners include
+card, path, event, boss-relic/Neow, and all-OOC checkpoint evaluator flags
+parsed in `apps/one_combat.cpp::main`.
 
 ## Important data flow
 
@@ -126,7 +131,7 @@ path, event, boss-relic/Neow, and all-OOC checkpoint evaluator flags parsed in
 - `src/sim/search/GameAction.cpp::getAllActionsInState`, `execute`
 - `src/sim/search/ScumSearchAgent2.cpp::stepOutOfCombatPolicy`
 - `apps/one_combat.cpp::runFullRunOOC`, `vFeatCsv`, `richIdxMap`, `main`,
-  `oocOnePlyCardRewardPolicy`
+  `oocOnePlyCardRewardPolicy`, `runStrategicGenSeed2`, `strategicGen2`
 - `apps/ooc_checkpoint_net.h::OocCheckpointNet`
 - `apps/ooc_strategic_net.h::OocStrategicNet`
 - `v_server.py::H.handle`, `RAW`

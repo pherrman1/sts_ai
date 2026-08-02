@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-02 against the current working tree (Phase-5 round 3).
 
 ## Purpose
 
@@ -148,6 +148,39 @@ startup load is not evidence of use under default Searcher2.
   first two rounds were gate regressions/neutral (EXPERIMENTS.md §70–71).
   Training runs on CUDA by default (`train_strategic.py` prints `device:` at
   startup; CPU is opt-in via `STRAT_DEVICE=cpu`).
+- Since 2026-08-02 (Phase-5 round 3), `strategicgen2` appends Tier-B one-ply
+  counterfactual labels: `labelWon,labelHp,labelFloor,labelBootstrap` after the
+  terminal columns. Per sampled decision (`STRATEGIC_SAMPLE_ALL=1` labels every
+  decision; otherwise a uniform reservoir of `STRATEGIC_SAMPLES_PER_RUN`
+  decisions), every legal action is applied to a detached pre-decision copy and
+  the branch continues with the deployed-default OOC policy through
+  `STRATEGIC_BRANCH_FIGHTS` battles at `STRATEGIC_BRANCH_SIMS` sims each
+  (comma list, §67b cheap-sims + `STS_VNET` combat value net pattern), then
+  expected floor/P(win) are bootstrapped from the native trees. Branches of one
+  decision share a branch seed (common random numbers); `STRATEGIC_BRANCH_FUTURES`
+  averages over extra seeds per action.
+- `train_strategic.py` (round 3) adds a Q(s,a) head
+  `Linear(168,96)→GELU→Linear(96,1)` on the same concat as the policy head,
+  trained on `10·labelWon+labelHp` of every labeled row (loss
+  `CE + 0.5·value_MSE + STRAT_QLAMBDA·Q_MSE`, default λ=1.0). For multi-GB
+  CSVs the state block is read in pandas chunks, standardized on train rows
+  only, and written once to a group-ordered float16 file
+  (`OUT + "_state.bin"`, reused when its byte size matches
+  `nrows·1017·2`); training reads contiguous mmap slices, so datasets of many
+  millions of rows train on a modest-RAM machine.
+- `export_strategic.py` round-3 format is `OOC_STRAT_V3`: value heads are
+  written block-major (`0.weight`×8, `0.bias`×8, `2.weight`×8, `2.bias`×8)
+  matching the C++ loader order, followed by the Q head
+  (`q.0.weight/bias`, `q.2.weight/bias`). The V2 exporter wrote value heads
+  per-head-interleaved, so in the deployed `OOC_STRAT_V2` artifact only head 0
+  (TREASURE) was aligned in C++ while heads 1–7 were misaligned — the §71 and
+  §73 gate diagnostics on the V2 artifact measure that (partly garbage)
+  deployment; the trainer-side per-screen MAE table (§71) is unaffected.
+  `OocStrategicNet::predictActionValue(state, bits, cats, actionType, screen)`
+  evaluates the Q head for one action; the one-ply card gate
+  (`oocOnePlyCardRewardPolicy`) scores legal reward actions with Q directly
+  (no successor clones) behind `STS_OOC_STRATEGIC_MARGIN`; `STS_OOC_STRATEGIC_Q=0`
+  restores the V2 successor-`predictValue` scoring path.
 - Tracked artifacts under `build/` coexist with ignored build output; path
   location does not indicate whether an artifact was generated, deployed, or
   benchmarked.
@@ -164,11 +197,14 @@ startup load is not evidence of use under default Searcher2.
   regression with a pooled value head; §71 per-screen heads made the card gate
   per-seed neutral and showed value MAE is strong on REST/SHOP/TREASURE
   (0.6–1.0) and weak on REWARDS/EVENT (2.1–5.2), pointing the Tier-B need at
-  card rewards and events specifically.
+  card rewards and events specifically. Round 3 collected Tier-B labels
+  (§73); the Q-head gate result decides whether the one-ply Q ranking is
+  usable.
 
 ## Relevant code
 
-- `apps/one_combat.cpp::main`, `fairGen`, `fightGen`, `strategicGen`, `vFeatCsv`
+- `apps/one_combat.cpp::main`, `fairGen`, `fightGen`, `strategicGen`,
+  `strategicGen2`, `vFeatCsv`
 - `include/sim/search/ScumSearchAgent2.h` data-generation hooks
 - `src/sim/search/CombatValueNet.cpp::combatFeatureNames`,
   `combatExtractFeatures`, `combatFillActionFeatures`

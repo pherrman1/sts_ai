@@ -46,6 +46,10 @@ struct OocStrategicNet {
     float val0w[8][VALHID][NHIDDEN2], val0b[8][VALHID];
     float val2w[8][VALHID], val2b[8];
 
+    // Q head: Linear(168,96) -> GELU -> Linear(96,1) on the same z concat as the policy head
+    float q0w[POLHID][POLIN], q0b[POLHID];
+    float q2w[POLHID], q2b;
+
     bool ok = false;
 
     bool load(const std::string &path) {
@@ -55,7 +59,7 @@ struct OocStrategicNet {
             return std::fread(dst, 1, count, f) == count;
         };
         char hdr[13] = {};
-        if (!readBlock(hdr, 12) || std::memcmp(hdr, "OOC_STRAT_V2", 12) != 0) {
+        if (!readBlock(hdr, 12) || std::memcmp(hdr, "OOC_STRAT_V3", 12) != 0) {
             std::fprintf(stderr, "[ooc-strat-net] truncated payload in %s\n", path.c_str());
             std::fclose(f); return false;
         }
@@ -92,7 +96,11 @@ struct OocStrategicNet {
             && readBlock(val0w, sizeof(val0w))
             && readBlock(val0b, sizeof(val0b))
             && readBlock(val2w, sizeof(val2w))
-            && readBlock(val2b, sizeof(val2b));
+            && readBlock(val2b, sizeof(val2b))
+            && readBlock(q0w, sizeof(q0w))
+            && readBlock(q0b, sizeof(q0b))
+            && readBlock(q2w, sizeof(q2w))
+            && readBlock(&q2b, sizeof(q2b));
         std::fclose(f);
         if (!complete) {
             std::fprintf(stderr, "[ooc-strat-net] truncated payload in %s\n", path.c_str());
@@ -223,6 +231,83 @@ struct OocStrategicNet {
         }
         float out = pol2b;
         for (int i = 0; i < POLHID; ++i) out += pol2w[i] * hh[i];
+        return out;
+    }
+
+    float predictActionValue(const float *state, std::uint32_t actionBits,
+                             const int cats[6], int actionType, int screen) const {
+        // Normalize state
+        float x[NSTATE];
+        for (int i = 0; i < NSTATE; ++i)
+            x[i] = clampf((state[i] - stateMean[i]) * stateInv[i], -8.0f, 8.0f);
+
+        float sOut[NHIDDEN2];
+        encodeState(x, sOut);
+
+        // Action bit encoder: Linear(32,32) -> GELU -> Linear(32,16)  (no final GELU)
+        float bits[NBITS];
+        for (int i = 0; i < NBITS; ++i) bits[i] = (float)((actionBits >> i) & 1u);
+        float bOut[AHIDDEN2];
+        {
+            float h[AHIDDEN];
+            for (int j = 0; j < AHIDDEN; ++j) {
+                float s = a0b[j];
+                for (int i = 0; i < NBITS; ++i) s += a0w[j][i] * bits[i];
+                h[j] = gelu(s);
+            }
+            for (int j = 0; j < AHIDDEN2; ++j) {
+                float s = a3b[j];
+                for (int i = 0; i < AHIDDEN; ++i) s += a3w[j][i] * h[i];
+                bOut[j] = s;
+            }
+        }
+
+        // Action category encoder: cat embeddings + atype embedding, then Linear(32,32) -> GELU -> Linear(32,16)
+        float catIn[CATIN];
+        int p = 0;
+        for (int c = 0; c < NCAT; ++c) {
+            int idx = clampi(cats[c] + 1, 0, CATVOCAB - 1);
+            for (int i = 0; i < CATDIM; ++i) catIn[p++] = cw[c][idx][i];
+        }
+        {
+            int idx = clampi(actionType + 1, 0, ATYPEVOCAB - 1);
+            for (int i = 0; i < ATYPEDIM; ++i) catIn[p++] = atypeW[idx][i];
+        }
+        float aOut[AHIDDEN2];
+        {
+            float h[AHIDDEN];
+            for (int j = 0; j < AHIDDEN; ++j) {
+                float s = cat0b[j];
+                for (int i = 0; i < CATIN; ++i) s += cat0w[j][i] * catIn[i];
+                h[j] = gelu(s);
+            }
+            for (int j = 0; j < AHIDDEN2; ++j) {
+                float s = cat3b[j];
+                for (int i = 0; i < AHIDDEN; ++i) s += cat3w[j][i] * h[i];
+                aOut[j] = s;
+            }
+        }
+
+        // Combined
+        float z[POLIN];
+        p = 0;
+        for (int i = 0; i < NHIDDEN2; ++i) z[p++] = sOut[i];
+        for (int i = 0; i < AHIDDEN2; ++i) z[p++] = bOut[i];
+        for (int i = 0; i < AHIDDEN2; ++i) z[p++] = aOut[i];
+        if (screen >= 0 && screen < NSCR)
+            for (int i = 0; i < SCRDIM; ++i) z[p++] = screenW[screen][i];
+        else
+            for (int i = 0; i < SCRDIM; ++i) z[p++] = 0.0f;
+
+        // Q head: Linear(168,96) -> GELU -> Linear(96,1)
+        float hh[POLHID];
+        for (int j = 0; j < POLHID; ++j) {
+            float s = q0b[j];
+            for (int i = 0; i < POLIN; ++i) s += q0w[j][i] * z[i];
+            hh[j] = gelu(s);
+        }
+        float out = q2b;
+        for (int i = 0; i < POLHID; ++i) out += q2w[i] * hh[i];
         return out;
     }
 

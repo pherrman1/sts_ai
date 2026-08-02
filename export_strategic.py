@@ -22,9 +22,16 @@ assert mean.shape[0] == NSTATE and inv.shape[0] == NSTATE
 def w(name):
     return sd[name].numpy().astype(np.float32)
 
+# V3 contract requires the Q head
+missing_q = [n for n in ["q.0.weight", "q.0.bias", "q.2.weight", "q.2.bias"] if n not in sd]
+if missing_q:
+    print(f"[export-strategic] V3 requires the Q head; "
+          f"checkpoint is missing keys: {missing_q}")
+    sys.exit(1)
+
 # Export weights binary
 with open(OUT, "wb") as f:
-    f.write(b"OOC_STRAT_V2")
+    f.write(b"OOC_STRAT_V3")
     f.write(struct.pack("iiii", NSTATE, 256, 128, 32))
     f.write(mean.tobytes())
     f.write(inv.tobytes())
@@ -37,10 +44,11 @@ with open(OUT, "wb") as f:
         "pol.0.weight","pol.0.bias","pol.2.weight","pol.2.bias",
     ]:
         f.write(w(name).tobytes())
-    for h in range(8):
-        for name in [f"vals.{h}.0.weight", f"vals.{h}.0.bias",
-                     f"vals.{h}.2.weight", f"vals.{h}.2.bias"]:
-            f.write(w(name).tobytes())
+    for suffix in ["0.weight", "0.bias", "2.weight", "2.bias"]:
+        for h in range(8):
+            f.write(w(f"vals.{h}.{suffix}").tobytes())
+    for name in ["q.0.weight", "q.0.bias", "q.2.weight", "q.2.bias"]:
+        f.write(w(name).tobytes())
 
 # Verify
 def gelu_np(x):
@@ -83,12 +91,16 @@ def native_fwd(state_vec, action_bits, cats, action_type, screen_id):
     p = gelu_np(lin(z, w("pol.0.weight"), w("pol.0.bias"), 96))
     logit = float(lin(p, w("pol.2.weight"), w("pol.2.bias"), 1)[0])
 
+    # q: Linear(168,96) -> GELU -> Linear(96,1) on the same z concat
+    qh = gelu_np(lin(z, w("q.0.weight"), w("q.0.bias"), 96))
+    q = float(lin(qh, w("q.2.weight"), w("q.2.bias"), 1)[0])
+
     # per-screen value heads: Linear(128,64) -> GELU -> Linear(64,1)
     vs = []
     for h in range(8):
         v = gelu_np(lin(s, w(f"vals.{h}.0.weight"), w(f"vals.{h}.0.bias"), 64))
         vs.append(float(lin(v, w(f"vals.{h}.2.weight"), w(f"vals.{h}.2.bias"), 1)[0]))
-    return logit, vs
+    return logit, vs, q
 
 # Parity test vs PyTorch
 import torch.nn as nn
@@ -102,6 +114,7 @@ class Tmp(nn.Module):
         self.cats = nn.ModuleList([nn.Embedding(512,4) for _ in range(6)])
         self.atype = nn.Embedding(16,8); self.screen = nn.Embedding(16,8)
         self.pol = nn.Sequential(nn.Linear(168,96),nn.GELU(approximate="tanh"),nn.Linear(96,1))
+        self.q = nn.Sequential(nn.Linear(168,96),nn.GELU(approximate="tanh"),nn.Linear(96,1))
         self.vals = nn.ModuleList([nn.Sequential(nn.Linear(128,64),nn.GELU(approximate="tanh"),nn.Linear(64,1))
                                    for _ in range(8)])
     def forward(self, x, bits, cat_idx, at, scr):
@@ -109,12 +122,14 @@ class Tmp(nn.Module):
         b = self.a_bits(bits)
         cat_emb = torch.cat([self.cats[i](cat_idx[:, i]) for i in range(6)], 1)
         a = self.a_cat(torch.cat((cat_emb, self.atype(at)), 1))
-        p = self.pol(torch.cat((s, b, a, self.screen(scr)), 1))
+        z = torch.cat((s, b, a, self.screen(scr)), 1)
+        p = self.pol(z)
+        q = self.q(z)
         vs = torch.stack([self.vals[h](s) for h in range(8)], 1)
-        return p, vs
+        return p, vs, q
 tmp = Tmp(); tmp.load_state_dict(sd); tmp.eval()
 
-max_err_logit = 0.0; max_err_val = 0.0
+max_err_logit = 0.0; max_err_val = 0.0; max_err_q = 0.0
 for i in range(32):
     np.random.seed(i); torch.manual_seed(i)
     sv = np.random.randn(NSTATE).astype(np.float32) * 2
@@ -124,19 +139,21 @@ for i in range(32):
     normed = np.clip((sv - mean) * inv, -8, 8).astype(np.float32)
     bits = np.array([(int(ab) >> j) & 1 for j in range(32)], np.float32)
     with torch.no_grad():
-        py_logit, py_vals = tmp(torch.from_numpy(normed[None,:]),
-                                torch.from_numpy(bits[None,:]),
-                                torch.from_numpy((cv + 1).astype(np.int64)[None,:]),
-                                torch.tensor([at + 1]), torch.tensor([si]))
-    na_logit, na_vals = native_fwd(sv, ab, cv.tolist(), at, si)
+        py_logit, py_vals, py_q = tmp(torch.from_numpy(normed[None,:]),
+                                      torch.from_numpy(bits[None,:]),
+                                      torch.from_numpy((cv + 1).astype(np.int64)[None,:]),
+                                      torch.tensor([at + 1]), torch.tensor([si]))
+    na_logit, na_vals, na_q = native_fwd(sv, ab, cv.tolist(), at, si)
     err_logit = abs(py_logit.item() - na_logit)
     err_val = max(abs(py_vals[0, h].item() - na_vals[h]) for h in range(8))
+    err_q = abs(py_q.item() - na_q)
     max_err_logit = max(max_err_logit, err_logit); max_err_val = max(max_err_val, err_val)
+    max_err_q = max(max_err_q, err_q)
     # float32 accumulation tolerance: 1e-4 for the logit, 2e-4 for the value
-    # heads (max over 8 heads of numpy-vs-torch op-order differences).
-    assert err_logit < 1e-4 and err_val < 2e-4, \
-        f"mismatch sample {i}: py_logit={py_logit.item():.6f} native_logit={na_logit:.6f} err_val={err_val:.6f}"
+    # heads (max over 8 heads) and the Q head (numpy-vs-torch op-order differences).
+    assert err_logit < 1e-4 and err_val < 2e-4 and err_q < 2e-4, \
+        f"mismatch sample {i}: py_logit={py_logit.item():.6f} native_logit={na_logit:.6f} err_val={err_val:.6f} err_q={err_q:.6f}"
 print(f"exported {OUT}: 32 parity checks passed "
-      f"(max err logit {max_err_logit:.2e}, value {max_err_val:.2e})")
+      f"(max err logit {max_err_logit:.2e}, value {max_err_val:.2e}, Q {max_err_q:.2e})")
 
 print(f"file size: {os.path.getsize(OUT):,} bytes")

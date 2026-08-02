@@ -1927,3 +1927,149 @@ enabling condition, but the omitted command prevents verification.
   startup (AGENTS.md training convention).
 - **Artifacts:** `build/psh_gate_m1.csv`, `build/psh_gate_m5.csv`,
   `selfplay/models/ooc_strategic.{pt,native,_metrics.json}` (V2).
+
+## 72. PVNet "60-70%" claim re-check on the recorded block (2026-08-02)
+
+- **Question:** the Phase 4b PVNet alpha sweep (2026-07-30, final ledger
+  section) recorded a best 100-sim policy-only point of **66.4%** (and a
+  78.1% 32-seed point with no command). Is a 60-70% combination still valid
+  on the current checkout? The KB has always marked the sweep's seed range
+  and exact command as unresolved; this check measures the closest
+  reconstructable configuration on the recorded 126700–126827 block.
+- **Setup:** `STS_FAIR=1 STS_SEARCHER3=1 STS_PVNET=build/v_combat_pvnet.txt
+  STS_PVNET_ALPHA=0 ./build/one_combat bestbench 100 128 0 126700
+  build/pvnet_check_s3p0.csv`. Tracked PVNet sha256
+  `05d809298921623af7c87c06e7dd31f5129abfd77cc702f75b9867949a59533f`; tracked
+  policy prior auto-loaded (banner `policyNet=ON`), satisfying the
+  `computeEdgePriors` enabling condition the KB flags. 12 workers, A0, native
+  OOC default stack. Reference: default Searcher2 fair at the same budget,
+  `build/pvnet_check_base100.csv`; plus α=1.0 (pure neural leaf),
+  `build/pvnet_check_s3p1.csv`.
+- **Result (128 seeds, 100 sims):**
+  - default Searcher2 fair: **4.7% / 29.5 floor / 2.0 HP**
+  - Searcher3 + PVNet α=0: **8.6% / 26.4 / 4.2** — paired +3.9pp win
+    (95% CI [−0.0, +8.6]), floor −3.1 (CI [−5.6, −0.6]), 9/128 discordant
+  - Searcher3 + PVNet α=1.0: **5.5% / 24.4 / 2.8** — worse than α=0,
+    consistent with the sweep's "pure neural leaf worst" ordering
+- **Verdict:** ❌ the recorded 66.4% headline does **not** reproduce on the
+  current checkout and the recorded seed block; the closest reconstructable
+  configuration scores 8.6% there. The PVNet combo still beats the
+  same-budget default on wins (+3.9pp, CI touching zero) at a floor cost, and
+  the α-ordering matches the sweep, but no 60-70% combination exists on the
+  current binary. Treat the sweep numbers as historical/unreproducible (as the
+  KB already warned), not as a current baseline. Note the sweep may have used
+  a different seed block and/or OOC stack; those cannot be recovered from the
+  ledger.
+- **Artifacts:** `build/pvnet_check_base100.csv`, `build/pvnet_check_s3p0.csv`,
+  `build/pvnet_check_s3p1.csv`.
+- **Post-§73 confirmation:** re-run on the 2026-08-02 04:12 binary (after the
+  Tier-B/`strategicgen2` changes landed) is per-seed identical to the above
+  for all three configs (base 4.7%, α=0 8.6%, α=1.0 5.5%). The finding is
+  unchanged: no 60–70% PVNet combination exists on the current checkout.
+  Artifacts `build/pvnet_check2_{base100,s3p0,s3p1}.csv`.
+
+## 73. Phase 5 round 3: Tier-B one-ply Q labels + Q-head card gate (2026-08-02)
+
+- **Goal:** round-3 of Phase 5: collect Tier-B one-ply counterfactual labels
+  per legal OOC action (`strategicgen2`), train a Q(s,a) head on them, export
+  `OOC_STRAT_V3`, and gate card rewards on direct Q scoring
+  (`oocOnePlyCardRewardPolicy`), keeping the V2 successor-`predictValue` path
+  reachable via `STS_OOC_STRATEGIC_Q=0`.
+- **Datagen (`strategicgen2`, `apps/one_combat.cpp::runStrategicGenSeed2`):**
+  `strategicgen2 5600 1000 0 build/strategic_tierb.csv 128000` with
+  `STRATEGIC_SAMPLE_ALL=1` (every decision labeled), `STRATEGIC_BRANCH_FIGHTS=3`
+  battles per branch, `STRATEGIC_BRANCH_SIMS=150,100,50`,
+  `STRATEGIC_BRANCH_FUTURES=1`, `STS_VNET=build/v_combat_fair_trees.txt`,
+  `STS_VNET_ALPHA=0.3` (the §67b cheap-sims + combat value net pattern).
+  Each branch applies the action to a detached pre-decision copy, continues
+  with the deployed-default OOC policy through the next 3 battles, then
+  bootstraps expected floor/P(win) from the native trees
+  (`finishOocCounterfactual(..., maxFights=3, bootstrap=true)`); all branches
+  of a decision share the branch seed (common random numbers). Schema: the
+  `strategicgen` columns unchanged, then
+  `won,endFloor,endHp,labelWon,labelHp,labelFloor,labelBootstrap`.
+- **Dataset:** 3,057,708 rows / 4,650 seeds (128000–132630; seed 128087
+  excluded — it hits a pre-existing `BattleContext::executeActions`
+  loop-guard assertion, crash dump shows a `(Dazed,-32767,…)` monster) /
+  723,851 decisions, 6.5GB CSV
+  (≈6h wall, 12 threads; per-run ≈46–50 s). Smoke (5 seeds): 2,669 rows, all
+  labeled, bootstrap rate 74%, chosen-row `labelWon~won` Pearson 0.818 and
+  `labelHp~endHp` 0.567 (label sanity: the chosen action's branch predicts the
+  run outcome well). Determinism verified: identical 1-seed output on rerun.
+- **Correction — V2 native value heads 1–7 were misaligned:** the round-2
+  exporter wrote the 8 value heads per-head-interleaved
+  (`vals.h.0.weight/bias/2.weight/2.bias` per h), while
+  `OocStrategicNet::load` reads them block-major (`val0w`, `val0b`, `val2w`,
+  `val2b`). In the deployed `OOC_STRAT_V2` artifact only head 0 (TREASURE) was
+  aligned; heads 1–7 read misaligned weights in C++, so §71's per-seed-neutral
+  gate and the margin diagnostics below measured that (partly garbage)
+  deployment. The trainer-side per-screen MAE table (§71) is unaffected. The
+  V3 exporter writes block-major; a C++ harness cross-checked against the
+  numpy reference (value 1.6e-08, Q 3.8e-07).
+- **V2-path gate diagnostics** (patched V2 artifact loaded as V3,
+  `STS_OOC_STRATEGIC_Q=0`, same §71 deployment path; fair, A0, 1,000 sims,
+  seeds 126700–126827):
+  - margin 0.5: **21.1% / 37.4 / 8.6** — per-seed identical to baseline
+    (gate never fires at ≥0.5).
+  - margin 0.25: **24.2% / 38.0 / 9.3** — fires on 8/128 seeds (2 A-only,
+    6 B-only); paired +3.1pp wins (CI [−1.2, +7.4]), floor +0.55 (CI
+    [−0.43, +1.52]), score +0.86 (CI [−0.39, +2.10]): directionally positive,
+    not significant, and — unlike §70's margin-1.0 damage — not damaging.
+  - The V2 card gate therefore only ever overrides below margin 0.5, and low
+    margins are safe on this block.
+- **Trainer (`train_strategic.py`):** new Q head
+  `Linear(168,96)→GELU→Linear(96,1)` on the same (state, action-bits,
+  action-cat, screen) concat as the policy head; loss
+  `CE + 0.5·value_MSE + STRAT_QLAMBDA·Q_MSE` (default λ=1.0) with Q target
+  `10·labelWon + labelHp` on every labeled row. Memory restructure for
+  multi-GB CSVs: state block read in pandas chunks, standardized on train rows
+  only, written once to a group-ordered float16 file
+  (`OUT + "_state.bin"`, reused on size match), training reads contiguous
+  mmap slices; epoch-permuted train batches gather ~4096 rows each. New
+  metrics: `q_top1` (argmax Q vs argmax label per ≥2-row val group), `q_mae`,
+  `q_rmse`, `q_n`, `q_mae_screen`. CUDA default, `device:` startup print.
+- **Held-out metrics (best checkpoint, `selfplay/models/ooc_strategic_metrics.json`):**
+  policy top-1 **0.784** (V2: 0.778), logit margin 9.35, value MAE 5.45 /
+  RMSE 10.95 (10·won+endHp, chosen rows; not comparable to §71's 2.01 on
+  the 200-seed Tier-A set), **Q top-1 0.284** vs oracle label per group
+  (random ≈ 0.24 at mean group size 4.2), Q MAE 14.32 / RMSE 20.07 (n
+  610,884 val rows). Per-screen value MAE: EVENT 6.76, REWARDS 6.02,
+  BOSS_RELIC 3.60, CARD_SELECT 5.19, MAP 4.97, TREASURE 3.16, REST 3.05,
+  SHOP 4.11. Per-screen Q MAE: 13.3–16.9 across screens.
+- **Export (`export_strategic.py` → `apps/ooc_strategic_net.h`):** binary
+  `OOC_STRAT_V3` (value heads block-major + Q head appended), parity logit
+  <1e-4, value/Q <2e-4; new `predictActionValue(state, bits, cats,
+  actionType, screen)`; truncation-safe loader (issue-08 pattern).
+- **Q-head gate** (fair, A0, 1,000 sims, seeds 126700–126827, 12 workers;
+  `STS_OOC_STRATEGIC_NN=selfplay/models/ooc_strategic.native`, direct Q
+  scoring; baseline re-measured on the new binary — bit-identical to
+  `build/oneply_gate_base.csv`, 21.1%/37.5/8.6):
+
+  | margin | wins | floor Δ | win Δ | score Δ | discordant |
+  |---|---:|---:|---:|---:|---:|
+  | 0 (greedy) | 22 (−3.9pp) | −0.11 CI [−2.13,+1.91] | −0.039 | −0.50 | 23 |
+  | 0.25 | 26 (−0.8pp) | −0.33 CI [−2.35,+1.69] | −0.008 | −0.41 | 25 |
+  | 0.5 | 33 (+4.7pp) | +0.06 CI [−2.08,+2.21] | +0.047 | +0.53 | 30 |
+  | 1.0 | 29 (+2.2pp) | −1.27 CI [−3.29,+0.76] | +0.016 | −1.11 | 20 |
+  | 5.0 | 26 (−0.8pp) | −0.20 CI [−0.80,+0.41] | −0.008 | −0.27 | 3 |
+
+  All deltas are candidate-minus-baseline paired; 95% CIs all span zero.
+  The Q gate fires far more than the V2 gate ever did (30 discordant seeds
+  at 0.5 vs 8 for V2). The margin curve is **non-monotone with a peak at
+  0.5**: greedy margin 0 regresses (−3.9pp wins, 14 A-only / 9 B-only —
+  the §66m un-gated lesson holds for the Q model too, so the gate does
+  essential work), while 0.25 already turns negative again. Only the 0.5
+  point is win-positive.
+- **Verdict:** ➖ mixed. The Tier-B Q gate is the first strategic gate that
+  actually fires at margin 1.0 (20/128 discordant) and its effect is
+  directionally win-positive (+4.7pp at margin 0.5) with wide CIs — not
+  §70's damage, not §71's neutrality, but not a statistically established
+  improvement either. The pipeline (collect → train → export V3 → native
+  Q gate) works end-to-end and Q margins carry signal (Q top-1 0.284,
+  chosen-row labelWon~won 0.424 on 725k rows), but the Q head's ranking is
+  not yet good enough to move the win rate reliably. A neutral-with-Q-labels
+  result was pre-registered as acceptable evidence; this is a small
+  directional step beyond it.
+- **Artifacts:** `build/strategic_tierb.csv`, `build/psh_gate_m05.csv`,
+  `build/psh_gate_m025.csv`, `build/tierb_gate_{base,m0,m025,m05,m1,m5}.csv`,
+  `selfplay/models/ooc_strategic.{pt,native,_metrics.json}` (V3).

@@ -687,6 +687,9 @@ struct PathHistory {
 // Current run's path history, so vFeatCsv() can emit pv* features (nullptr = none).
 static thread_local const PathHistory *t_curPath = nullptr;
 static std::string richRow(const GameContext &gc, const PathHistory &path);  // defined below
+static void strategicCands(const GameContext &gc, const search::GameAction &a,
+                           int &actionType, int &c1, int &c2, int &c3,
+                           int &cand1, int &cand2, int &cand3);  // defined below
 static std::string vFeatCsv(const GameContext &gc);                          // defined below
 static std::string richHeader();                                             // defined below
 
@@ -724,6 +727,7 @@ static bool g_shopWin = false;          // env STS_SHOP_WIN=1: score shop bundle
 static bool g_nativeOoc = false;
 static bool g_oocActionNN = false;          // env STS_OOC_ACTION_NN=1
 static double g_oocStrategicMargin = 1.0;   // env STS_OOC_STRATEGIC_MARGIN: one-ply gate in V units
+static bool   g_oocStrategicQ = true;       // env STS_OOC_STRATEGIC_Q=0: score via V2 successor predictValue
 static int nativeFloorCardPick(GameContext &, int);
 static double nativeFloorValue(GameContext &);
 static bool oocOnePlyCardRewardPolicy(GameContext &);
@@ -814,6 +818,18 @@ static int actFightProbeCheckpointSims(int defaultSims, int checkpointIdx) {
         return g_actFightProbeCheckpointSims[checkpointIdx];
     return defaultSims;
 }
+
+// --- strategicgen2 (Tier-B one-ply labels) knobs ---
+// Per sampled decision, every legal action is branched from a pre-decision copy
+// and continued with the deployed-default OOC policy through K=BRANCH_FIGHTS
+// battles at STRATEGIC_BRANCH_SIMS sims each, then bootstrapped with the native
+// floor/win trees. The same branch seed per decision gives common random
+// numbers across actions; STRATEGIC_BRANCH_FUTURES averages over extra seeds.
+static int g_strategicSamplesPerRun = 1;    // STRATEGIC_SAMPLES_PER_RUN: reservoir size
+static bool g_strategicSampleAll = false;   // STRATEGIC_SAMPLE_ALL=1: label every decision
+static int g_strategicBranchFights = 3;     // STRATEGIC_BRANCH_FIGHTS: battles per branch
+static std::vector<int> g_strategicBranchSims = {150, 100, 50}; // STRATEGIC_BRANCH_SIMS per fight
+static int g_strategicBranchFutures = 1;    // STRATEGIC_BRANCH_FUTURES: branch seeds per action
 
 static std::string actFightProbeCheckpointSimsCsv() {
     std::ostringstream out;
@@ -2281,20 +2297,29 @@ static void tr_logDraft(GameContext &gc) {
             nnScores.push_back(g_oocCheckpointNet.predict(state.data(), sbits, (int)gc.screenState, gc.act));
         }
 
-        // One-ply strategic V(s') for each card option + the CARD(rIdx,5) skip
+        // One-ply strategic scores for each card option + the CARD(rIdx,5) skip:
+        // Q(s,a) directly (Tier-B, §72), or V(s') of the successor when
+        // STS_OOC_STRATEGIC_Q=0 (V2 behaviour).
         std::vector<double> oneplyScores;
         if (g_oocStrategicNet.ok) {
             using RT = search::GameAction::RewardsActionType;
-            for (int i = 0; i < cr.size(); ++i) {
+            const std::vector<float> state = richFeatureVec(gc);
+            auto score = [&](const search::GameAction &a) {
+                if (g_oocStrategicQ) {
+                    int actionType, c1, c2, c3, cand1, cand2, cand3;
+                    strategicCands(gc, a, actionType, c1, c2, c3, cand1, cand2, cand3);
+                    const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+                    return g_oocStrategicNet.predictActionValue(state.data(), a.bits,
+                                                                cats, actionType, (int)gc.screenState);
+                }
                 GameContext probe = gc;
-                search::GameAction(RT::CARD, rIdx, i).execute(probe);
-                oneplyScores.push_back(g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
-                                                                      (int)probe.screenState));
-            }
-            GameContext probe = gc;
-            search::GameAction(RT::CARD, rIdx, 5).execute(probe);
-            oneplyScores.push_back(g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
-                                                                  (int)probe.screenState));
+                a.execute(probe);
+                return g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
+                                                      (int)probe.screenState);
+            };
+            for (int i = 0; i < cr.size(); ++i)
+                oneplyScores.push_back(score(search::GameAction(RT::CARD, rIdx, i)));
+            oneplyScores.push_back(score(search::GameAction(RT::CARD, rIdx, 5)));
         }
 
         std::string line = "         draft options [skip if <" + std::to_string(g_cardSkipThresh) + "]: ";
@@ -2888,13 +2913,16 @@ static bool oocActionNNPolicy(GameContext &gc) {
     return true;
 }
 
-// One-ply post-action value search for CARD REWARD decisions (Phase 5, 5.5.1).
-// Every legal reward action is applied to a copied GameContext and the
-// successor state is scored with the native strategic value head V(s'); the
-// best action is executed only when its margin over the runner-up meets the
-// gate (STS_OOC_STRATEGIC_MARGIN), otherwise the heuristic card policy stays
-// in charge. Greedy un-gated deployment is a recorded failure mode (EXPERIMENTS
-// §66m), so the gate is mandatory.
+// One-ply post-action search for CARD REWARD decisions (Phase 5, 5.5.1).
+// Every legal reward action is scored and the best action is executed only
+// when its margin over the runner-up meets the gate
+// (STS_OOC_STRATEGIC_MARGIN), otherwise the heuristic card policy stays in
+// charge.  Scoring (Tier-B round, §72): the Q(s,a) head
+// (OocStrategicNet::predictActionValue) evaluates each action directly on the
+// pre-decision state — no clones or successor states.  STS_OOC_STRATEGIC_Q=0
+// restores the V2 behaviour: successors of copied GameContexts are scored with
+// the value head of the successor screen.  Greedy un-gated deployment is a
+// recorded failure mode (EXPERIMENTS §66m), so the gate is mandatory.
 static bool oocOnePlyCardRewardPolicy(GameContext &gc) {
     if (!g_oocStrategicNet.ok) return false;
     if (gc.screenState != ScreenState::REWARDS) return false;
@@ -2910,13 +2938,24 @@ static bool oocOnePlyCardRewardPolicy(GameContext &gc) {
     for (const auto &a : actions) if (a.bits == skipCard.bits) { have = true; break; }
     if (!have) actions.push_back(skipCard);
 
+    const bool useQ = g_oocStrategicQ;
+    const std::vector<float> state = richFeatureVec(gc);
     double best = -1e100, second = -1e100;
     int bestIdx = -1;
     for (int i = 0; i < (int)actions.size(); ++i) {
-        GameContext probe = gc;
-        actions[i].execute(probe);
-        const double v = g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
-                                                        (int)probe.screenState);
+        double v;
+        if (useQ) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
+                                                     cats, actionType, (int)gc.screenState);
+        } else {
+            GameContext probe = gc;
+            actions[i].execute(probe);
+            v = g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
+                                               (int)probe.screenState);
+        }
         if (v > best) { second = best; best = v; bestIdx = i; }
         else if (v > second) second = v;
     }
@@ -2929,6 +2968,7 @@ struct OocCounterfactualResult {
     double won;
     double floor;
     double hp;
+    int bootstrapped = 0;   // 1 when floor/won came from the native models, 0 on terminal
 };
 
 // Direct near-term survival supervision for out-of-combat action values.  These
@@ -2963,7 +3003,8 @@ struct FutureFightProbe {
 static OocCounterfactualResult
 finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         PathHistory path, int maxFights = -1, bool bootstrap = false,
-                        FutureFightProbe *probe = nullptr, int stopAfterAct = 0) {
+                        FutureFightProbe *probe = nullptr, int stopAfterAct = 0,
+                        const std::vector<int> *fightSimsSeq = nullptr) {
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(agentSeed);
@@ -2978,7 +3019,9 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
             if (maxFights >= 0 && fights >= maxFights) break;
             const Room room = gc.curRoom;
             const int battleAct = gc.act;
-            agent.simulationCountBase = fightSims(gc, sims);
+            agent.simulationCountBase = fightSimsSeq && !fightSimsSeq->empty()
+                ? (*fightSimsSeq)[std::min(fights, (int)fightSimsSeq->size() - 1)]
+                : fightSims(gc, sims);
             BattleContext bc; bc.init(gc); agent.playoutBattle(bc); bc.exitBattle(gc);
             if (probe) {
                 const bool passed = bc.outcome == Outcome::PLAYER_VICTORY;
@@ -3031,15 +3074,17 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
     }
     double won = gc.outcome == GameOutcome::PLAYER_VICTORY ? 1.0 : 0.0;
     double floor = gc.floorNum;
+    int bootstrapped = 0;
     if (bootstrap && gc.outcome == GameOutcome::UNDECIDED) {
         const double vf = vStateRaw(gc);
         const double vw = vStateWin(gc);
         if (std::isfinite(vf) && vf >= gc.floorNum && vf <= 60) floor = vf;
         if (std::isfinite(vw) && vw >= 0 && vw <= 1) won = vw;
+        bootstrapped = 1;
     }
     if (probe) probe->completed = gc.outcome != GameOutcome::UNDECIDED;
     t_curPath = nullptr;
-    return {won, floor, (double)gc.curHp};
+    return {won, floor, (double)gc.curHp, bootstrapped};
 }
 
 // GameContext normally shares its Map through a shared_ptr. A counterfactual may
@@ -4869,6 +4914,233 @@ static void strategicGen(int nSeeds, int sims, int asc, const std::string &outFi
 }
 
 // ---------------------------------------------------------------------------
+// STRATEGICGEN2 (Tier-B): the strategicgen row schema plus one-ply
+// counterfactual labels per action.  At each sampled decision, every legal
+// action is applied to a detached pre-decision copy and the branch is continued
+// with the deployed-default OOC policy through STRATEGIC_BRANCH_FIGHTS battles
+// (cheap sims + STS_VNET combat value net leaf), then the expected floor /
+// P(win) are bootstrapped from the native trees.  Common random numbers across
+// the actions of one decision (same branch seed); STRATEGIC_BRANCH_FUTURES
+// averages over additional branch seeds per action.
+// Row schema: strategicHeader() columns, then
+//   labelWon,labelHp,labelFloor,labelBootstrap
+// (unsampled decisions leave these empty).
+static std::string strategicHeader2() {
+    std::string h = strategicHeader();
+    if (!h.empty() && h.back() == '\n') h.pop_back();
+    return h + ",labelWon,labelHp,labelFloor,labelBootstrap\n";
+}
+
+static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    vDisconnect();
+    search::ScumSearchAgent2 agent;
+    agent.simulationCountBase = sims;
+    agent.rng = std::default_random_engine(seed);
+    PathHistory path; t_curPath = &path;
+    using RT = search::GameAction::RewardsActionType;
+    std::default_random_engine reservoir(seed * 2862933555777941757ULL + 97);
+
+    std::vector<std::string> rows;
+    std::vector<std::string> rowLabel;  // per-row Tier-B label suffix ("" when unsampled)
+    // Tier-B label sets for sampled decisions: [rowStart,rowEnd) indexes into
+    // `rows` (pushed without the label suffix), `labels` holds one label string
+    // per action.  In knob mode this is the reservoir: later sampled decisions
+    // replace earlier slots so the N kept decisions are uniform over the run.
+    std::vector<std::pair<int, int>> labelRanges;
+    std::vector<std::vector<std::string>> labelSets;
+    int eligible = 0;
+    while (gc.outcome == GameOutcome::UNDECIDED) {
+        path.update(gc);
+        if (gc.screenState == ScreenState::BATTLE) {
+            BattleContext bc; bc.init(gc);
+            agent.playoutBattle(bc);
+            bc.exitBattle(gc);
+            continue;
+        }
+
+        // Legal actions for this decision, deduped by bits (e.g. GOLD piles).
+        std::vector<search::GameAction> actions;
+        for (const auto &a : search::GameAction::getAllActionsInState(gc)) {
+            bool dup = false;
+            for (const auto &b : actions) if (b.bits == a.bits) { dup = true; break; }
+            if (!dup) actions.push_back(a);
+        }
+        // The default card policy skips a group via CARD(rIdx,5), which the
+        // enumerator omits (it only lists actual cards); add it as a candidate.
+        if (gc.screenState == ScreenState::REWARDS
+            && gc.info.rewardsContainer.cardRewardCount > 0) {
+            const search::GameAction skipCard(RT::CARD, gc.info.rewardsContainer.cardRewardCount - 1, 5);
+            bool dup = false;
+            for (const auto &b : actions) if (b.bits == skipCard.bits) { dup = true; break; }
+            if (!dup) actions.push_back(skipCard);
+        }
+
+        // Pre-decision copy: per-action successor simulations must start here.
+        const GameContext pre = gc;
+        const PathHistory prePath = path;
+        const int decIdx = (int)rows.size();
+
+        // Sample this decision for Tier-B branching?  Sample-all labels every
+        // decision; otherwise uniform reservoir of STRATEGIC_SAMPLES_PER_RUN
+        // decisions (replacing an earlier slot means its branch work is lost).
+        int labelSlot = -1;
+        bool isNewSlot = false;
+        if (g_strategicSampleAll) {
+            if (!actions.empty()) {
+                labelSlot = (int)labelSets.size();
+                labelSets.push_back({});
+                isNewSlot = true;
+            }
+        } else if (!actions.empty()) {
+            ++eligible;
+            if (eligible <= g_strategicSamplesPerRun) {
+                labelSlot = (int)labelSets.size();
+                labelSets.push_back({});
+                isNewSlot = true;
+            } else if (std::uniform_int_distribution<int>(1, eligible)(reservoir)
+                       <= g_strategicSamplesPerRun) {
+                labelSlot = std::uniform_int_distribution<int>(0, g_strategicSamplesPerRun - 1)(reservoir);
+            }
+        }
+        if (labelSlot >= 0) {
+            auto &labels = labelSets[labelSlot];
+            labels.resize(actions.size());
+            for (int a = 0; a < (int)actions.size(); ++a) {
+                double won = 0, hp = 0, floor = 0, boot = 0;
+                for (int f = 0; f < g_strategicBranchFutures; ++f) {
+                    GameContext branch = detachedCounterfactualCopy(pre);
+                    actions[a].execute(branch);
+                    const std::uint64_t branchSeed =
+                        seed ^ (0x9e3779b97f4a7c15ULL * (std::uint64_t)(f + 1))
+                             ^ (0xbf58476d1ce4e5b9ULL * (std::uint64_t)(decIdx + 31));
+                    const OocCounterfactualResult r = finishOocCounterfactual(
+                        std::move(branch), sims, branchSeed, prePath,
+                        g_strategicBranchFights, /*bootstrap=*/true,
+                        /*probe=*/nullptr, /*stopAfterAct=*/0, &g_strategicBranchSims);
+                    won += r.won; hp += r.hp; floor += r.floor; boot += r.bootstrapped;
+                }
+                const int F = std::max(1, g_strategicBranchFutures);
+                char buf[128];
+                std::snprintf(buf, sizeof(buf), "%.6f,%.6f,%.6f,%.6f",
+                              won / F, hp / F, floor / F, boot / F);
+                labels[a] = buf;
+            }
+            if (isNewSlot)
+                labelRanges.emplace_back((int)rows.size(), (int)rows.size() + (int)actions.size());
+            else
+                labelRanges[labelSlot] = {(int)rows.size(), (int)rows.size() + (int)actions.size()};
+        }
+
+        // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
+        // heuristic map pathing, forced non-card rewards one at a time, native
+        // floor card pick with skip, win-rate rest/upgrade, else Searcher2.
+        if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+            search::GameAction(chooseMapAction(gc)).execute(gc);
+        } else if (gc.screenState == ScreenState::REWARDS) {
+            auto &r = gc.info.rewardsContainer;
+            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
+            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
+            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
+            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
+            else {
+                // Same single-group logic as serverCardRewardPolicy.
+                const int rIdx = r.cardRewardCount - 1;
+                const double bossW = (g_bossV && rowsToHardFight(gc) <= g_bossDraftRows) ? g_bossVW : -1.0;
+                const int idx = (winNetOk() && g_cardWin && bossW < 0.0) ? nativeWinCardPick(gc, rIdx)
+                                                                         : vQuery(gc, rIdx, bossW);
+                search::GameAction(RT::CARD, rIdx, idx).execute(gc);
+            }
+        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && restWinPolicy(gc)) {
+            // win-rate rest decision (heal vs smith)
+        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
+                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
+            upgradeSelectWinPolicy(gc);
+        } else {
+            agent.stepOutOfCombatPolicy(gc);
+        }
+
+        // Which legal action did the policy take? Simulate each on a pre-state
+        // copy and match the successor fingerprint of the real run.
+        const StratFingerprint realFp = stratFingerprint(gc);
+        for (int a = 0; a < (int)actions.size(); ++a) {
+            GameContext probe = pre;
+            actions[a].execute(probe);
+            const StratFingerprint probeFp = stratFingerprint(probe);
+            const bool chosen = probeFp == realFp;
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(pre, actions[a], actionType, c1, c2, c3, cand1, cand2, cand3);
+            std::ostringstream r;
+            r << seed << ',' << decIdx << ',' << (int)pre.screenState << ',' << actions[a].bits << ','
+              << actionType << ',' << c1 << ',' << c2 << ',' << c3 << ','
+              << cand1 << ',' << cand2 << ',' << cand3 << ',' << (chosen ? 1 : 0) << ','
+              << richRow(pre, prePath);
+            rows.push_back(r.str());
+            rowLabel.push_back("");
+        }
+        if (actions.empty()) {
+            // e.g. MATCH_AND_KEEP: the policy still acts, but no legal action is
+            // enumerable; keep a value-only row so the state is still labeled.
+            std::ostringstream r;
+            r << seed << ',' << decIdx << ',' << (int)pre.screenState << ",-1,-1,-1,-1,-1,-1,-1,-1,1,"
+              << richRow(pre, prePath);
+            rows.push_back(r.str());
+            rowLabel.push_back("");
+        }
+    }
+    t_curPath = nullptr;
+
+    // Append the surviving Tier-B labels to their decision's rows.  The labels
+    // belong AFTER the terminal won/endFloor/endHp columns, so store them in
+    // rowLabel and emit them after the terminal fields below.
+    for (int s = 0; s < (int)labelRanges.size(); ++s) {
+        const auto &[lo, hi] = labelRanges[s];
+        const auto &labels = labelSets[s];
+        for (int i = lo; i < hi; ++i)
+            if (i - lo < (int)labels.size()) rowLabel[i] = labels[i - lo];
+    }
+
+    const int won = gc.outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0;
+    std::ostringstream out;
+    for (int i = 0; i < (int)rows.size(); ++i)
+        out << rows[i] << ',' << won << ',' << gc.floorNum << ',' << gc.curHp
+            << (rowLabel[i].empty() ? "" : "," + rowLabel[i]) << '\n';
+    return out.str();
+}
+
+static void strategicGen2(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0) {
+    const bool append = seedOffset > 0;
+    std::cout << "strategicgen2  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
+              << "  sims " << sims << "  asc " << asc << "  threads " << numThreads()
+              << "  sampleAll " << g_strategicSampleAll << "  samplesPerRun "
+              << g_strategicSamplesPerRun << "  branchFights " << g_strategicBranchFights
+              << "  branchSims";
+    for (const int s : g_strategicBranchSims) std::cout << ':' << s;
+    std::cout << "  futures " << g_strategicBranchFutures << "  -> " << outFile << "\n";
+    if (!search::g_useVNet)
+        std::cout << "[strategicgen2 WARNING: STS_VNET not loaded; branch battles have no combat value net leaf]\n";
+    std::ofstream f(outFile, append ? std::ios::app : std::ios::out);
+    if (f.tellp() == 0) {
+        f << strategicHeader2();
+        f.flush();
+    }
+    auto t0 = std::chrono::steady_clock::now();
+    long long rows = 0; int done = 0;
+    #pragma omp parallel for schedule(dynamic) reduction(+:rows)
+    for (int s = 0; s < nSeeds; ++s) {
+        std::string r = runStrategicGenSeed2((std::uint64_t)(seedOffset + s), sims, asc);
+        #pragma omp critical
+        { f << r; f.flush(); rows += std::count(r.begin(), r.end(), '\n'); }
+        if (++done % 50 == 0) {
+            double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+            std::printf("  %d/%d runs, %lld rows, %.0fs\n", done, nSeeds, rows, el);
+        }
+    }
+    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("wrote %lld rows from %d runs in %.1fs\n", rows, nSeeds, wall);
+}
+
+// ---------------------------------------------------------------------------
 // COMBINED value+policy datagen: one full-run play emits BOTH the V_combat value
 // rows (g_onCombatDecision snapshot, labeled with fight endHp) AND the policy-target
 // rows (g_onSearchComplete root visit-π). Halves self-play combat datagen cost vs
@@ -5605,9 +5877,32 @@ int main(int argc, char **argv) {
                       << g_oocStrategicMargin << "]\n";
         }
     }
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_Q")) {
+        g_oocStrategicQ = std::atoi(d) != 0;
+        if (!g_oocStrategicQ)
+            std::cout << "[OOC one-ply: Q head disabled, V2 successor-value scoring]\n";
+    }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN")) {
         g_oocStrategicMargin = std::atof(d);
     }
+    if (const char *v = std::getenv("STRATEGIC_SAMPLES_PER_RUN"))
+        g_strategicSamplesPerRun = std::max(1, std::atoi(v));
+    if (const char *v = std::getenv("STRATEGIC_SAMPLE_ALL"))
+        g_strategicSampleAll = std::atoi(v) != 0;
+    if (const char *v = std::getenv("STRATEGIC_BRANCH_FIGHTS"))
+        g_strategicBranchFights = std::max(1, std::atoi(v));
+    if (const char *v = std::getenv("STRATEGIC_BRANCH_SIMS")) {
+        std::istringstream in(v);
+        std::vector<int> parsed;
+        std::string token;
+        while (std::getline(in, token, ',')) {
+            const int p = std::atoi(token.c_str());
+            if (p > 0) parsed.push_back(p);
+        }
+        if (!parsed.empty()) g_strategicBranchSims = parsed;
+    }
+    if (const char *v = std::getenv("STRATEGIC_BRANCH_FUTURES"))
+        g_strategicBranchFutures = std::max(1, std::atoi(v));
     if (const char *d = std::getenv("STS_BOSS_RELIC")) {    // boss relic pick via V_win (needs v_win in v_server)
         g_bossRelicV = std::atoi(d) != 0;
         if (g_bossRelicV) std::cout << "[boss-relic pick via V_win ON]\n";
@@ -6107,6 +6402,14 @@ int main(int argc, char **argv) {
         std::string out = argc > 5 ? argv[5] : "build/strategic.csv";
         long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
         strategicGen(nSeeds, sims, asc, out, seedOff);
+
+    } else if (mode == "strategicgen2") {   // Tier-B: strategicgen rows + per-action one-ply labels
+        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 200;
+        int sims      = argc > 3 ? std::stoi(argv[3]) : 1000;
+        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
+        std::string out = argc > 5 ? argv[5] : "build/strategic_tierb.csv";
+        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
+        strategicGen2(nSeeds, sims, asc, out, seedOff);
 
     } else if (mode == "policygen") {     // CSV of (state, action, visit/total) MCTS policy targets (AZ-lite)
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;
