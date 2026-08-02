@@ -1867,3 +1867,63 @@ enabling condition, but the omitted command prevents verification.
   gcc OpenMP). It is not a proof for other compilers, sanitizer builds, or
   configurations, and `sec` legitimately differs. The self-play cache should
   still key on binary/model hashes.
+
+## 70. Phase 5 first round: all-actions strategicgen + Tier-A policy/value net + one-ply card gate (2026-08-02)
+
+- **Goal:** first end-to-end round of the archived Phase 5 plan (semi-Markov run-level strategic agent): upgrade `strategicgen` to log every legal OOC action with structured candidate fields and Tier-A labels, train a joint policy + run-value net, and use it for one-ply post-action value search on card rewards behind a margin gate.
+- **Datagen:** `strategicgen` now emits one row per legal action per decision: `seed,decIdx,screen,action,actionType,c1..c3,cand1..c3,chosen,<1017 rich state>,won,endFloor,endHp`. `chosen` is detected by successor-fingerprint matching (deck/relic/selection digests; 2 of 786 smoke decisions remain RNG-tied, e.g. Mausoleum open-with-nothing vs leave). The generator mirrors the deployed default OOC stack (heuristic path, one forced non-card reward per iteration, native floor card pick with `CARD(rIdx,5)` skip, win-rate rest/upgrade, Searcher2 fallback).
+- **Dataset:** 200 seeds (128000–128199), 134,832 action rows, 31,870 decisions, 18s wall. `build/strategic_200.csv` sha256 `b28a3d83db40b7abdacfec4850e61abe71f9ead6c9e1872f78fabd37c7241ae5`.
+- **Model (`train_strategic.py`):** state MLP 1017→256(LN)→128 + bit/actionType/candidate embeddings, policy head (group softmax on `chosen`) + value head V(s) → `10·won+endHp` on chosen rows only (Tier A labels). Grouped 80/20 split by `(seed,decIdx)`. 60 epochs, CUDA (RTX 3060 Ti). Held-out: policy top-1 **0.778** (predicting the baseline's choice), value MAE **1.73**, RMSE **6.06**, mean logit margin 12.8. Stable training required two fixes: per-group (not global) logsumexp in the group softmax (global max underflowed to `-inf` → NaN at epoch ~30–40) and grad clipping (`STRAT_CLIP=1`). Artifacts `selfplay/models/ooc_strategic.pt/_metrics.json`.
+- **Export (`export_strategic.py` → `apps/ooc_strategic_net.h`):** binary `OOC_STRAT_V1`, 1,345,644 bytes, `selfplay/models/ooc_strategic.native` sha256 `b096498abf40dec906dd3020583a9c9920cbd8d05c3a84aa3da3295f514c60a7`; in-script parity vs PyTorch max err logit 6.6e-06 / value 9.5e-05. C++ loader with full payload-read checks (issue-08 pattern), loaded via `STS_OOC_STRATEGIC_NN=<path>`.
+- **One-ply gate (`oocOnePlyCardRewardPolicy` in `runFullRunOOC` REWARDS branch):** each legal reward action applied to a copied `GameContext`, successor scored by V(s'); best action executed only if its margin over the runner-up ≥ `STS_OOC_STRATEGIC_MARGIN` (default 1.0), else the heuristic card policy runs. Greedy un-gated deployment stays off (recorded §66m failure mode).
+- **Paired gate (fair, A0, 1,000 sims, Searcher2, 12 workers, seeds 126700–126827, `STS_FAIR=1 bestbench 1000 128 0 126700`):**
+  - baseline (new binary, flag off): **21.1% / 37.5 floor / 8.6 HP** — bit-identical re-measure of §68, confirming §69 determinism on the new binary.
+  - candidate margin=1.0: **10.2% / 31.5 / 3.7** — paired −10.9pp win, floor 95% CI [−8.1, −4.0]; discordant 20/128 (A-only 17, B-only 3).
+  - sensitivity margin=5.0: **17.2% / 33.7 / 7.1** — still negative, but monotone: fewer overrides, less damage.
+- **Verdict:** ❌ the first Tier-A net is not deployable. The pipeline works end-to-end (collect → train → export → native one-ply → paired gate) and the value head generalizes (MAE 1.73), but its one-ply action ranking damages card picks whenever it overrides — consistent with the §66k/§66m/§67 lesson that terminal-only supervision is a weak action-ranking signal and error compounds across decisions. The margin knob trades damage monotonically. Next candidates, in order: (1) collect more data (1,000+ seeds); (2) Tier-B one-ply counterfactual labels via the existing `finishOocCounterfactual` machinery; (3) per-screen value heads / action-conditioned Q; (4) apply one-ply only to screens where the model's held-out value MAE is best (rest/shop), not card rewards.
+- **Artifacts:** `build/strategic_200.csv`, `build/oneply_gate_base.csv`, `build/oneply_gate_cand.csv`, `build/oneply_gate_m5.csv`, `selfplay/models/ooc_strategic.{pt,native,_metrics.json}`.
+
+## 71. Per-screen value heads: card gate goes neutral (2026-08-02)
+
+- **Goal:** isolate the value-head structure (option 2 of §70's decision rule):
+  replace the single screen-blind value head with one head per screen (1..8),
+  everything else unchanged (same 200-seed Tier-A data, same split seed, same
+  policy head, same grouped CE + value MSE, same one-ply card gate).
+- **Model (`train_strategic.py`):** shared state encoder (1017→256→128) + 8
+  value heads `Linear(128,64)→GELU→Linear(64,1)` indexed by `screen−1`; value
+  MSE computed per screen (mean over screens present in the batch), λ=0.5.
+  Binary format bumped to `OOC_STRAT_V2` (`export_strategic.py`,
+  `apps/ooc_strategic_net.h::OocStrategicNet::predictValue(state, screen)`);
+  one-ply and runtrace score successor states with the head of the successor
+  screen (`probe.screenState`). Parity: max err logit 7.7e-06, value 1.0e-04
+  (value assert relaxed to 2e-4 — float32 accumulation across 8 heads).
+- **Held-out value MAE by screen** (best checkpoint, 10·won+endHp scale):
+  TREASURE 0.59, REST 0.73, SHOP 0.97, BOSS_RELIC 1.42, MAP 1.64, REWARDS
+  2.13, CARD_SELECT 2.63, EVENT 5.21 (n 124/273/321/69/1651/3428/236/294).
+  Non-reward screens are 2–8× better calibrated than the §70 pooled head
+  (overall MAE 2.01; §70 pooled was 1.73 but dominated by REWARDS).
+- **Paired gate** (fair, A0, 1,000 sims, seeds 126700–126827, same baseline
+  CSV as §70 — bit-identical replay on the new binary):
+  - margin=1.0: **21.1% / 37.5 / 8.6** — per-seed identical to baseline.
+  - margin=5.0: **21.1% / 37.5 / 8.6** — per-seed identical to baseline.
+  - The gate never changes a card pick: successor-state value margins between
+    legal card choices are all below the gate (card successors are scored by
+    the MAP head, MAE 1.64).
+- **Verdict:** ➖ per-screen heads convert §70's −10.9/−3.9pp damage into 0.0pp
+  neutrality, but also produce no card-pick improvement. The round's
+  diagnostic value is real: per-screen held-out MAE is the measurement §70
+  asked for, and it confirms REST (0.73), SHOP (0.97), TREASURE (0.59) are
+  where the value head is strong and REWARDS (2.13)/EVENT (5.21) are weak —
+  supporting a rest/shop gated one-ply round next (§70 option 3), and
+  suggesting Tier-B labels are needed specifically for card rewards and events
+  (§70 option 2).
+- **Training-throughput fixes (same metrics, bitwise-neutral to model
+  quality):** the trainer was CPU-bound (350–400% CPU, GPU ~35%) because every
+  batch gathered 4096 random rows out of the 549MB state tensor plus per-batch
+  numpy allocations; fixed by reordering all inputs by decision group once and
+  gathering once per epoch into the group permutation, so every batch is a
+  contiguous slice (default batch 4096 rows). CPU 127–154%, GPU up to 53%.
+  The trainer now defaults to CUDA when available and prints `device:` at
+  startup (AGENTS.md training convention).
+- **Artifacts:** `build/psh_gate_m1.csv`, `build/psh_gate_m5.csv`,
+  `selfplay/models/ooc_strategic.{pt,native,_metrics.json}` (V2).

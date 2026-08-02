@@ -23,15 +23,20 @@ package:
 5. Model predictions supply combat priors/leaves or score run states/actions.
 
 Representative producers are `datagen3`, `fightgen`, `fairgen`, `oocnextgen`,
-and the July 31 `strategicgen` mode. `strategicgen` records one rich-state row
-per OOC decision with screen/action metadata and terminal run labels
-(`apps/one_combat.cpp::runStrategicGenSeed`, `strategicGen`).
+and the August 1 `strategicgen` mode. `strategicgen` records one rich-state row
+per LEGAL action at each OOC decision with screen/action metadata, structured
+candidate fields, a `chosen` flag, and terminal run labels
+(`apps/one_combat.cpp::runStrategicGenSeed`, `strategicGen`); the `chosen`
+flag is detected by successor-fingerprint matching against the executed policy
+action.
 
 Representative model families:
 
 - run values: `train_value_rich.py`, `train_winrate.py`;
 - paired/action OOC: `train_rest_cf.py`, `train_card_cf.py`,
   `train_path_cf.py`, `train_ooc_next_action.py`, `train_ooc_checkpoint.py`;
+- strategic run-level: `train_strategic.py` (joint policy + value heads,
+  Tier-A `chosen` labels; exported by `export_strategic.py`);
 - combat value: `train_value_combat.py`, entity/MLP/distribution variants;
 - combat policy/joint: `train_policy.py`, `train_policy_entity.py`,
   `train_combat_pvnet.py::PolicyValueNet`.
@@ -129,9 +134,20 @@ startup load is not evidence of use under default Searcher2.
   provenance must be read from the archived invocation records.
 - `v_server.py` documents the implemented 1,017-value `RAW` layout with
   `apps/one_combat.cpp::vFeatCsv` as the schema owner.
-- `OocCheckpointNet::load` does not check every payload read.
-- `strategicgen` exists as a data path but no maintained trainer/runtime model
-  contract is established for its output. It is experimental.
+- `OocCheckpointNet::load` and `OocStrategicNet::load` check every payload read
+  (issue 08, closed).
+- `strategicgen` has a maintained contract since 2026-08-02: every legal action
+  is logged with structured candidate fields (`actionType`, `c1..c3`,
+  `cand1..c3` resolved per screen) and a `chosen` flag; only chosen rows carry
+  the terminal labels (Tier A). Its trainer is `train_strategic.py`, exported
+  by `export_strategic.py` to `OOC_STRAT_V2` for
+  `apps/ooc_strategic_net.h::OocStrategicNet`. The net has a shared state
+  encoder, one policy head, and one value head per screen (screens 1..8),
+  so `predictValue(state, screen)` selects the head. No model is deployed by
+  default; the one-ply consumer (`STS_OOC_STRATEGIC_NN`) is opt-in and the
+  first two rounds were gate regressions/neutral (EXPERIMENTS.md §70–71).
+  Training runs on CUDA by default (`train_strategic.py` prints `device:` at
+  startup; CPU is opt-in via `STRAT_DEVICE=cpu`).
 - Tracked artifacts under `build/` coexist with ignored build output; path
   location does not indicate whether an artifact was generated, deployed, or
   benchmarked.
@@ -142,8 +158,13 @@ startup load is not evidence of use under default Searcher2.
   automated producer/consumer checks?
 - What parity harness should replace the incomplete distribution-model script?
 - How should current artifact versions be named and pinned beyond path names?
-- Should strategic generation use explicit structured action fields instead of
-  the current screen/action integer pair?
+- Does the Tier-A terminal-only label give the strategic policy head a usable
+  ranking signal, or is a Tier-B one-ply counterfactual label required
+  (`finishOocCounterfactual` machinery exists)? Evidence so far: §70 gate
+  regression with a pooled value head; §71 per-screen heads made the card gate
+  per-seed neutral and showed value MAE is strong on REST/SHOP/TREASURE
+  (0.6–1.0) and weak on REWARDS/EVENT (2.1–5.2), pointing the Tier-B need at
+  card rewards and events specifically.
 
 ## Relevant code
 
@@ -154,6 +175,7 @@ startup load is not evidence of use under default Searcher2.
 - `train_winrate.py`, `train_value_combat.py`, `train_policy.py`
 - `train_combat_pvnet.py::PolicyValueNet`
 - `train_ooc_checkpoint.py`; `export_ooc_checkpoint.py`
+- `train_strategic.py`; `export_strategic.py`; `apps/ooc_strategic_net.h`
 - `v_server.py::H.handle`, `RAW`
 - `selfplay/loop.sh`
 - `parity_test.py`; `apps/parity_test.cpp`

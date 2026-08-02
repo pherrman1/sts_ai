@@ -53,6 +53,14 @@ base in the same change. Do not invent rationale; use **Inference**,
 
 ## Build and focused checks
 
+Training convention: root trainers default to CUDA when available
+(`train_strategic.py` prints `device: cuda` at startup; `STRAT_DEVICE=cpu`
+forces CPU, `STRAT_DEVICE=cuda` forces GPU). Never start a trainer on CPU by
+default — a CPU run on the 134k-row strategic dataset takes many minutes and is
+not the intended path on this machine (RTX 3060 Ti). Check the startup
+`device:` line before assuming a run is progressing; trainers print epoch
+progress only every 10 epochs.
+
 The configured project uses C++17 and global GNU-style OpenMP flags:
 
 ```bash

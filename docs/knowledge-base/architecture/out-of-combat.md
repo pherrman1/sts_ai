@@ -41,7 +41,18 @@ localhost bridge for legacy and experimental endpoints.
 A successfully loaded `STS_OOC_CHECKPOINT_NN=<path>` enables the compact native
 checkpoint-distilled action network in acts 1–3 before ordinary policy layers
 (`apps/ooc_checkpoint_net.h::OocCheckpointNet`;
-`apps/one_combat.cpp::oocActionNNPolicy`). Other opt-in owners include card,
+`apps/one_combat.cpp::oocActionNNPolicy`). A successfully loaded
+`STS_OOC_STRATEGIC_NN=<path>` enables the Phase-5 one-ply card-reward gate:
+each legal reward action is applied to a copied `GameContext`, the successor
+state is scored with the native strategic value head of the successor screen,
+and the best action is
+taken only when its margin over the runner-up reaches
+`STS_OOC_STRATEGIC_MARGIN` (default 1.0); otherwise the heuristic card policy
+runs (`apps/ooc_strategic_net.h::OocStrategicNet`;
+`apps/one_combat.cpp::oocOnePlyCardRewardPolicy`). The first two trained
+strategic nets were a gate regression (§70) and a per-seed-identical neutral
+(§71), so the one-ply branch is
+opt-in only. Other opt-in owners include card,
 path, event, boss-relic/Neow, and all-OOC checkpoint evaluator flags parsed in
 `apps/one_combat.cpp::main`.
 
@@ -86,8 +97,8 @@ path, event, boss-relic/Neow, and all-OOC checkpoint evaluator flags parsed in
   missing win tree can silently reintroduce server calls on win-rest screens.
 - `v_server.py` documents the implemented 1,017-value `RAW` layout and links
   `apps/one_combat.cpp::vFeatCsv` as the schema owner.
-- `OocCheckpointNet::load` validates header/dimensions but not every payload
-  read; a truncated file can still set `ok=true`.
+- `OocCheckpointNet::load` and `OocStrategicNet::load` validate header/dims and
+  every payload read; truncated files fail load (issue 08, closed).
 - `runtrace` is not a wrapper around `runFullRunOOC`: it prints a diagnostic
   header, skips server-only draft logging when no server is reachable, but still
   omits some fallthrough policy layers and its event/treasure scores are
@@ -114,7 +125,9 @@ path, event, boss-relic/Neow, and all-OOC checkpoint evaluator flags parsed in
 - `include/sim/search/GameAction.h::GameAction`
 - `src/sim/search/GameAction.cpp::getAllActionsInState`, `execute`
 - `src/sim/search/ScumSearchAgent2.cpp::stepOutOfCombatPolicy`
-- `apps/one_combat.cpp::runFullRunOOC`, `vFeatCsv`, `richIdxMap`, `main`
+- `apps/one_combat.cpp::runFullRunOOC`, `vFeatCsv`, `richIdxMap`, `main`,
+  `oocOnePlyCardRewardPolicy`
 - `apps/ooc_checkpoint_net.h::OocCheckpointNet`
+- `apps/ooc_strategic_net.h::OocStrategicNet`
 - `v_server.py::H.handle`, `RAW`
 - `bindings/slaythespire.cpp::PYBIND11_MODULE`

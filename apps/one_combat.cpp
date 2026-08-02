@@ -46,6 +46,7 @@
 #include "sim/search/ExpertKnowledge.h"
 #include "game/Map.h"
 #include "ooc_checkpoint_net.h"
+#include "ooc_strategic_net.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -722,8 +723,10 @@ static double g_cardWinSkip = 0.0;      // env STS_CARD_WIN_SKIP: skip iff best 
 static bool g_shopWin = false;          // env STS_SHOP_WIN=1: score shop bundles by P(win) not V_floor
 static bool g_nativeOoc = false;
 static bool g_oocActionNN = false;          // env STS_OOC_ACTION_NN=1
+static double g_oocStrategicMargin = 1.0;   // env STS_OOC_STRATEGIC_MARGIN: one-ply gate in V units
 static int nativeFloorCardPick(GameContext &, int);
 static double nativeFloorValue(GameContext &);
+static bool oocOnePlyCardRewardPolicy(GameContext &);
 static std::string nativeShopPlan(GameContext &);
 // A/B: route card picks through the deck-set NN (P(win) marginal), optionally blended with
 // the v_win GBM: marg = w*NN + (1-w)*GBM. Own skip scale (P(win) units).
@@ -2147,6 +2150,7 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else if (actFightProbeDraftPolicy(gc)) { /* all-act, encounter-weighted rollout draft */ }
             else if (bossGatedDraftPolicy(gc)) { /* rollout draft near a hard fight */ }
+            else if (oocOnePlyCardRewardPolicy(gc)) { /* one-ply NN card pick (Phase 5) */ }
             else                            serverCardRewardPolicy(gc);  // best card policy (server V)
         } else if (shopV && gc.screenState == ScreenState::SHOP_ROOM) {
             shopVPolicy(gc);                                            // V-knapsack shop buys
@@ -2277,6 +2281,22 @@ static void tr_logDraft(GameContext &gc) {
             nnScores.push_back(g_oocCheckpointNet.predict(state.data(), sbits, (int)gc.screenState, gc.act));
         }
 
+        // One-ply strategic V(s') for each card option + the CARD(rIdx,5) skip
+        std::vector<double> oneplyScores;
+        if (g_oocStrategicNet.ok) {
+            using RT = search::GameAction::RewardsActionType;
+            for (int i = 0; i < cr.size(); ++i) {
+                GameContext probe = gc;
+                search::GameAction(RT::CARD, rIdx, i).execute(probe);
+                oneplyScores.push_back(g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
+                                                                      (int)probe.screenState));
+            }
+            GameContext probe = gc;
+            search::GameAction(RT::CARD, rIdx, 5).execute(probe);
+            oneplyScores.push_back(g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
+                                                                  (int)probe.screenState));
+        }
+
         std::string line = "         draft options [skip if <" + std::to_string(g_cardSkipThresh) + "]: ";
         int best = -1; double bestv = -1e18;
         for (int i = 0; i < cr.size(); ++i) {
@@ -2285,11 +2305,15 @@ static void tr_logDraft(GameContext &gc) {
             std::string nm = cr[i].getName(); if (cr[i].isUpgraded()) nm += "+";
             char buf[64];
             if (i < (int)nnScores.size()) {
-                std::snprintf(buf, sizeof(buf), "%s(V:%+.2f NN:%.3f)  ", nm.c_str(), m, nnScores[i]);
+                std::snprintf(buf, sizeof(buf), "%s(V:%+.2f NN:%.3f)", nm.c_str(), m, nnScores[i]);
+                line += buf;
+                if (i < (int)oneplyScores.size())
+                    line += " 1ply:" + std::to_string(oneplyScores[i]);
+                line += "  ";
             } else {
                 std::snprintf(buf, sizeof(buf), "%s(%+.2f)  ", nm.c_str(), m);
+                line += buf;
             }
-            line += buf;
         }
         line += "-> V_rich picks ";
         line += (bestv < g_cardSkipThresh) ? "SKIP" : (std::string)(cr[best].getName());
@@ -2492,7 +2516,7 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else { tr_logDraft(gc); if (!oocActionNNPolicy(gc)) serverCardRewardPolicy(gc); }
+            else { tr_logDraft(gc); if (!oocActionNNPolicy(gc)) { if (!oocOnePlyCardRewardPolicy(gc)) serverCardRewardPolicy(gc); } }
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
             tr_logOocActions("upgrade", gc);
@@ -2860,6 +2884,43 @@ static bool oocActionNNPolicy(GameContext &gc) {
         if (score > best) { best = score; bestIdx = i; }
     }
     if (bestIdx < 0) return false;
+    actions[bestIdx].execute(gc);
+    return true;
+}
+
+// One-ply post-action value search for CARD REWARD decisions (Phase 5, 5.5.1).
+// Every legal reward action is applied to a copied GameContext and the
+// successor state is scored with the native strategic value head V(s'); the
+// best action is executed only when its margin over the runner-up meets the
+// gate (STS_OOC_STRATEGIC_MARGIN), otherwise the heuristic card policy stays
+// in charge. Greedy un-gated deployment is a recorded failure mode (EXPERIMENTS
+// §66m), so the gate is mandatory.
+static bool oocOnePlyCardRewardPolicy(GameContext &gc) {
+    if (!g_oocStrategicNet.ok) return false;
+    if (gc.screenState != ScreenState::REWARDS) return false;
+    auto &r = gc.info.rewardsContainer;
+    if (r.cardRewardCount == 0) return false;
+    using RT = search::GameAction::RewardsActionType;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    // The baseline skips a group via CARD(rIdx,5), which the enumerator omits.
+    const int rIdx = r.cardRewardCount - 1;
+    const search::GameAction skipCard(RT::CARD, rIdx, 5);
+    bool have = false;
+    for (const auto &a : actions) if (a.bits == skipCard.bits) { have = true; break; }
+    if (!have) actions.push_back(skipCard);
+
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    for (int i = 0; i < (int)actions.size(); ++i) {
+        GameContext probe = gc;
+        actions[i].execute(probe);
+        const double v = g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
+                                                        (int)probe.screenState);
+        if (v > best) { second = best; best = v; bestIdx = i; }
+        else if (v > second) second = v;
+    }
+    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
     actions[bestIdx].execute(gc);
     return true;
 }
@@ -4506,10 +4567,181 @@ static void fairGen(int nSeeds, int sims, int asc, double epsilon,
 }
 
 // ---------------------------------------------------------------------------
-// STRATEGIC data generation: one CSV row per OOC decision, with full rich state,
-// action, and terminal outcome. Feeds Phase 5 run-level model training.
+// STRATEGIC data generation: one CSV row per LEGAL action at each OOC decision,
+// with full rich state, structured candidate fields, a chosen flag, and the
+// terminal outcome. Feeds Phase 5 run-level model training.
+// Row schema (strategicHeader()):
+//   seed,decIdx,screen,action,actionType,c1,c2,c3,cand1,cand2,cand3,chosen,
+//   <1017 rich state>,won,endFloor,endHp
+// - action: raw packed GameAction bits (uint32).
+// - actionType: rewardsActionType (0..6) on REWARDS/SHOP, CardSelectScreenType
+//   on CARD_SELECT, else -1.
+// - c1..c3: raw GameAction indices (idx1..idx3), 0 when unused.
+// - cand1..c3: screen-specific resolved candidate identities (-1 when N/A):
+//   REWARDS: GOLD=gold amt; CARD=cardId,upgraded; RELIC=relicId; POTION=potionId;
+//            KEY=2 (emerald) / 3 (sapphire).
+//   SHOP:    CARD=cardId,price,upgraded; RELIC=relicId,price; POTION=potionId,price;
+//            CARD_REMOVE=removeCost.
+//   EVENT:   eventId, option index.  MAP: childX, childY, childRoom.
+//   BOSS_RELIC_REWARDS: relicId.  CARD_SELECT: cardId, selectScreenType.
+//   REST/TREASURE: -1 (option semantics live in c1 / screen state).
+static std::string strategicStateCols() {
+    std::string h = richHeader();                       // "seed,<state...>,curMapY,won,finalFloor,endHp"
+    const auto comma = h.find(',');
+    std::string rest = h.substr(comma + 1);             // drop the "seed," prefix
+    const auto wonPos = rest.rfind(",won,finalFloor,endHp");
+    return rest.substr(0, wonPos);                      // state columns only, in richRow() order
+}
+
+static std::string strategicHeader() {
+    return "seed,decIdx,screen,action,actionType,c1,c2,c3,cand1,cand2,cand3,chosen,"
+         + strategicStateCols() + ",won,endFloor,endHp\n";
+}
+
+// Successor-state fingerprint used to detect which legal action the policy
+// actually executed. All fields are ints; two actions with identical
+// fingerprints are indistinguishable at this decision.
+struct StratFingerprint {
+    int screen, act, floor, hp, maxHp, gold;
+    int keys[3], potionCount, potions[5];
+    int deckSize, relicCount;
+    long long deckSum, deckUpSum, deckHash;   // deck-content digest (non-last cards)
+    long long relicSum, relicHash;            // relic-identity digest
+    long long selSum, selHash;                // info.haveSelectedCards digest (multi-select picks)
+    int bottledLast;                          // last bottled card id (-1)
+    int goldRew, cardRew, relicRew, potionRew;
+    int emeraldKey, sapphireKey, mapX, mapY, selectSize;
+
+    bool operator==(const StratFingerprint &o) const {
+        if (screen != o.screen || act != o.act || floor != o.floor || hp != o.hp
+            || maxHp != o.maxHp || gold != o.gold || potionCount != o.potionCount
+            || deckSize != o.deckSize || relicCount != o.relicCount
+            || deckSum != o.deckSum || deckUpSum != o.deckUpSum || deckHash != o.deckHash
+            || relicSum != o.relicSum || relicHash != o.relicHash
+            || selSum != o.selSum || selHash != o.selHash
+            || bottledLast != o.bottledLast || goldRew != o.goldRew || cardRew != o.cardRew
+            || relicRew != o.relicRew || potionRew != o.potionRew
+            || emeraldKey != o.emeraldKey || sapphireKey != o.sapphireKey
+            || mapX != o.mapX || mapY != o.mapY || selectSize != o.selectSize)
+            return false;
+        for (int i = 0; i < 3; ++i) if (keys[i] != o.keys[i]) return false;
+        for (int i = 0; i < 5; ++i) if (potions[i] != o.potions[i]) return false;
+        return true;
+    }
+};
+static StratFingerprint stratFingerprint(const GameContext &gc) {
+    StratFingerprint f{};
+    f.screen = (int)gc.screenState; f.act = gc.act; f.floor = gc.floorNum;
+    f.hp = gc.curHp; f.maxHp = gc.maxHp; f.gold = gc.gold;
+    f.keys[0] = gc.blueKey ? 1 : 0; f.keys[1] = gc.greenKey ? 1 : 0; f.keys[2] = gc.redKey ? 1 : 0;
+    f.potionCount = gc.potionCount;
+    for (int i = 0; i < 5; ++i)
+        f.potions[i] = (i < (int)gc.potions.size()) ? (int)gc.potions[i] : -1;
+    f.deckSize = (int)gc.deck.size();
+    f.bottledLast = -1;
+    for (int i = 0; i < f.deckSize; ++i) {
+        const Card &c = gc.deck.cards[i];
+        const int id = (int)c.getId();
+        f.deckSum += id; f.deckUpSum += c.isUpgraded() ? id : 0;
+        f.deckHash = f.deckHash * 31 + id * 2 + (c.isUpgraded() ? 1 : 0);
+        if (gc.deck.isCardBottled(i)) f.bottledLast = id;
+    }
+    f.relicCount = (int)gc.relics.relics.size();
+    for (const auto &ri : gc.relics.relics) {
+        const int rid = (int)ri.id;
+        f.relicSum += rid; f.relicHash = f.relicHash * 31 + rid + 1;
+    }
+    for (const auto &sc : gc.info.haveSelectedCards) {
+        const int sid = (int)sc.card.getId();
+        f.selSum += sid * 2 + (sc.card.isUpgraded() ? 1 : 0);
+        f.selHash = f.selHash * 31 + sc.deckIdx + 1;
+    }
+    const auto &r = gc.info.rewardsContainer;
+    f.goldRew = r.goldRewardCount; f.cardRew = r.cardRewardCount;
+    f.relicRew = r.relicCount; f.potionRew = r.potionCount;
+    f.emeraldKey = r.emeraldKey ? 1 : 0; f.sapphireKey = r.sapphireKey ? 1 : 0;
+    f.mapX = gc.curMapNodeX; f.mapY = gc.curMapNodeY;
+    f.selectSize = (int)gc.info.toSelectCards.size();
+    return f;
+}
+
+// Resolved candidate identities for one legal action in the current screen.
+static void strategicCands(const GameContext &gc, const search::GameAction &a,
+                           int &actionType, int &c1, int &c2, int &c3,
+                           int &cand1, int &cand2, int &cand3) {
+    using RT = search::GameAction::RewardsActionType;
+    actionType = -1; c1 = a.getIdx1(); c2 = a.getIdx2(); c3 = a.getIdx3();
+    cand1 = cand2 = cand3 = -1;
+    switch (gc.screenState) {
+        case ScreenState::REWARDS: {
+            const auto t = a.getRewardsActionType();
+            actionType = (int)t;
+            const auto &r = gc.info.rewardsContainer;
+            switch (t) {
+                case RT::GOLD:
+                    if (c1 >= 0 && c1 < r.goldRewardCount) cand1 = r.gold[c1];
+                    break;
+                case RT::CARD:
+                    if (c1 >= 0 && c1 < r.cardRewardCount
+                        && c2 >= 0 && c2 < (int)r.cardRewards[c1].size()) {
+                        const Card &card = r.cardRewards[c1][c2];
+                        cand1 = (int)card.getId(); cand2 = card.isUpgraded() ? 1 : 0;
+                    }
+                    break;
+                case RT::RELIC: if (c1 >= 0 && c1 < r.relicCount) cand1 = (int)r.relics[c1]; break;
+                case RT::POTION: if (c1 >= 0 && c1 < r.potionCount) cand1 = (int)r.potions[c1]; break;
+                case RT::KEY: cand1 = r.emeraldKey ? 2 : 3; break;
+                default: break;
+            }
+            break;
+        }
+        case ScreenState::SHOP_ROOM: {
+            const auto t = a.getRewardsActionType();
+            actionType = (int)t;
+            const auto &s = gc.info.shop;
+            switch (t) {
+                case RT::CARD:
+                    if (c1 >= 0 && c1 < 7) {
+                        cand1 = (int)s.cards[c1].getId(); cand2 = s.cardPrice(c1);
+                        cand3 = s.cards[c1].isUpgraded() ? 1 : 0;
+                    }
+                    break;
+                case RT::RELIC: if (c1 >= 0 && c1 < 3) { cand1 = (int)s.relics[c1]; cand2 = s.relicPrice(c1); } break;
+                case RT::POTION: if (c1 >= 0 && c1 < 3) { cand1 = (int)s.potions[c1]; cand2 = s.potionPrice(c1); } break;
+                case RT::CARD_REMOVE: cand1 = s.removeCost; break;
+                default: break;
+            }
+            break;
+        }
+        case ScreenState::EVENT_SCREEN:
+            cand1 = (int)gc.curEvent; cand2 = c1;
+            break;
+        case ScreenState::MAP_SCREEN: {
+            cand1 = c1;
+            const int ty = (gc.curMapNodeY == -1) ? 0 : gc.curMapNodeY + 1;
+            cand2 = ty;
+            if (c1 >= 0 && ty >= 0 && ty < 15 && c1 < 7)
+                cand3 = (int)gc.map->nodes[ty][c1].room;
+            break;
+        }
+        case ScreenState::BOSS_RELIC_REWARDS:
+            if (c1 >= 0 && c1 < 3) cand1 = (int)gc.info.bossRelics[c1];
+            break;
+        case ScreenState::CARD_SELECT: {
+            actionType = (int)gc.info.selectScreenType;
+            if (c1 >= 0 && c1 < (int)gc.info.toSelectCards.size()) {
+                cand1 = (int)gc.info.toSelectCards[c1].card.getId();
+                cand2 = (int)gc.info.selectScreenType;
+            }
+            break;
+        }
+        default: break;
+    }
+}
+
 static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    vDisconnect();
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(seed);
@@ -4517,34 +4749,88 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
     using RT = search::GameAction::RewardsActionType;
 
     std::vector<std::string> rows;
-    auto logDec = [&](const char *screen, int action) {
-        std::ostringstream r;
-        r << seed << ',' << (int)rows.size() << ',' << screen << ',' << action << ','
-          << richRow(gc, path);
-        rows.push_back(r.str());
-    };
-
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
             BattleContext bc; bc.init(gc);
             agent.playoutBattle(bc);
             bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            int a = chooseMapAction(gc); logDec("MAP", a); search::GameAction(a).execute(gc);
+            continue;
+        }
+
+        // Legal actions for this decision, deduped by bits (e.g. GOLD piles).
+        std::vector<search::GameAction> actions;
+        for (const auto &a : search::GameAction::getAllActionsInState(gc)) {
+            bool dup = false;
+            for (const auto &b : actions) if (b.bits == a.bits) { dup = true; break; }
+            if (!dup) actions.push_back(a);
+        }
+        // The default card policy skips a group via CARD(rIdx,5), which the
+        // enumerator omits (it only lists actual cards); add it as a candidate.
+        if (gc.screenState == ScreenState::REWARDS
+            && gc.info.rewardsContainer.cardRewardCount > 0) {
+            const search::GameAction skipCard(RT::CARD, gc.info.rewardsContainer.cardRewardCount - 1, 5);
+            bool dup = false;
+            for (const auto &b : actions) if (b.bits == skipCard.bits) { dup = true; break; }
+            if (!dup) actions.push_back(skipCard);
+        }
+
+        // Pre-decision copy: per-action successor simulations must start here.
+        const GameContext pre = gc;
+
+        // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
+        // heuristic map pathing, forced non-card rewards one at a time, native
+        // floor card pick with skip, win-rate rest/upgrade, else Searcher2.
+        if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+            search::GameAction(chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) { logDec("GOLD", 0); search::GameAction(RT::GOLD, 0).execute(gc); }
-            else if (r.relicCount > 0)      { logDec("RELIC", 0); search::GameAction(RT::RELIC, 0).execute(gc); }
-            else if (r.potionCount > 0)     { logDec("POTION", 0); search::GameAction(RT::POTION, 0).execute(gc); }
-            else if (r.cardRewardCount == 0) { logDec("SKIP", 0); search::GameAction(RT::SKIP).execute(gc); }
+            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
+            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
+            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
+            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else {
-                logDec("CARD_REWARD", (int)r.cardRewardCount);
-                evalCardRewardPolicy(gc);
+                // Same single-group logic as serverCardRewardPolicy.
+                const int rIdx = r.cardRewardCount - 1;
+                const double bossW = (g_bossV && rowsToHardFight(gc) <= g_bossDraftRows) ? g_bossVW : -1.0;
+                const int idx = (winNetOk() && g_cardWin && bossW < 0.0) ? nativeWinCardPick(gc, rIdx)
+                                                                         : vQuery(gc, rIdx, bossW);
+                search::GameAction(RT::CARD, rIdx, idx).execute(gc);
             }
+        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && restWinPolicy(gc)) {
+            // win-rate rest decision (heal vs smith)
+        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
+                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
+            upgradeSelectWinPolicy(gc);
         } else {
-            logDec("OOC", (int)gc.screenState);
             agent.stepOutOfCombatPolicy(gc);
+        }
+
+        // Which legal action did the policy take? Simulate each on a pre-state
+        // copy and match the successor fingerprint of the real run.
+        const StratFingerprint realFp = stratFingerprint(gc);
+        const int decIdx = (int)rows.size();
+        for (const auto &a : actions) {
+            GameContext probe = pre;
+            a.execute(probe);
+            const StratFingerprint probeFp = stratFingerprint(probe);
+            const bool chosen = probeFp == realFp;
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(pre, a, actionType, c1, c2, c3, cand1, cand2, cand3);
+            std::ostringstream r;
+            r << seed << ',' << decIdx << ',' << (int)pre.screenState << ',' << a.bits << ','
+              << actionType << ',' << c1 << ',' << c2 << ',' << c3 << ','
+              << cand1 << ',' << cand2 << ',' << cand3 << ',' << (chosen ? 1 : 0) << ','
+              << richRow(pre, path);
+            rows.push_back(r.str());
+        }
+        if (actions.empty()) {
+            // e.g. MATCH_AND_KEEP: the policy still acts, but no legal action is
+            // enumerable; keep a value-only row so the state is still labeled.
+            std::ostringstream r;
+            r << seed << ',' << decIdx << ',' << (int)pre.screenState << ",-1,-1,-1,-1,-1,-1,-1,-1,1,"
+              << richRow(pre, path);
+            rows.push_back(r.str());
         }
     }
     t_curPath = nullptr;
@@ -4563,9 +4849,7 @@ static void strategicGen(int nSeeds, int sims, int asc, const std::string &outFi
               << "  -> " << outFile << "\n";
     std::ofstream f(outFile, append ? std::ios::app : std::ios::out);
     if (f.tellp() == 0) {
-        std::string h = richHeader();
-        auto comma = h.find(',');  // skip "seed," prefix — we prepend our own
-        f << "seed,decIdx,screen,action," << h.substr(comma + 1) << ",won,endFloor,endHp\n";
+        f << strategicHeader();
         f.flush();
     }
     auto t0 = std::chrono::steady_clock::now();
@@ -5314,6 +5598,15 @@ int main(int argc, char **argv) {
             g_oocActionNN = true;
             std::cout << "[OOC decisions via native checkpoint-distilled NN]\n";
         }
+    }
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_NN")) {
+        if (g_oocStrategicNet.load(d)) {
+            std::cout << "[OOC one-ply strategic NN ON: card rewards gated at margin "
+                      << g_oocStrategicMargin << "]\n";
+        }
+    }
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN")) {
+        g_oocStrategicMargin = std::atof(d);
     }
     if (const char *d = std::getenv("STS_BOSS_RELIC")) {    // boss relic pick via V_win (needs v_win in v_server)
         g_bossRelicV = std::atoi(d) != 0;

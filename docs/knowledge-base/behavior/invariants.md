@@ -92,8 +92,8 @@ Operational assumptions that are not enforced by types or tests:
   `test` dispatcher gains targeted checks (observation identity, Searcher3 seed
   contract, belief conditioning, draw-order application, conservative pruning;
   `small-test isbattleover`); the remaining invariants are review-enforced.
-- `OocCheckpointNet::load` can report success after a truncated payload because
-  individual reads are not checked.
+- `OocCheckpointNet::load` and `OocStrategicNet::load` check every payload read;
+  truncated files fail load and the net is not used (issue 08, closed).
 - `check_replay.py` probes repeated-seed CSV equality, but fair multi-thread
   replay is not bit-identical across invocations and no automated guarantee
   exists.
