@@ -22,6 +22,7 @@
 #include <chrono>
 #include <functional>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -31,6 +32,7 @@
 #include <string>
 #include <thread>
 #include <tuple>
+#include <unordered_set>
 #include <vector>
 
 #include "game/GameContext.h"
@@ -741,6 +743,12 @@ static bool   g_oocStrategicBossRelic = false; // env STS_OOC_STRATEGIC_BOSS_REL
 static int    g_oocStrategicTok = 0;        // env STS_OOC_STRATEGIC_TOK_NN: V4 token net loaded
 static bool   g_oocStrategicTokCheck = false; // env STS_OOC_STRATEGIC_TOK_CHECK=1: first-decision glob parity hook
 static thread_local bool t_tokCheckPending = false;  // armed per run; consumed by the first gated decision
+// B1 shop beam search (ooc-next-wave-contracts.md §2): multi-step lookahead over
+// deterministic shop purchases, replacing the one-ply shop gate when enabled.
+static bool   g_oocShopBeam = false;        // env STS_OOC_SHOP_BEAM=1
+static int    g_oocShopBeamWidth = 32;      // env STS_OOC_SHOP_BEAM_WIDTH (clamped 4..256)
+static int    g_oocShopBeamDepth = 0;       // env STS_OOC_SHOP_BEAM_DEPTH (0 = until leave / no affordable actions)
+static int    g_oocShopBeamBudget = 4096;   // env STS_OOC_SHOP_BEAM_BUDGET: max expanded nodes per shop decision
 static int nativeFloorCardPick(GameContext &, int);
 static double nativeFloorValue(GameContext &);
 static bool oocOnePlyCardRewardPolicy(GameContext &);
@@ -748,6 +756,7 @@ static bool oocOnePlyRestPolicy(GameContext &);        // 5.5.2 campfire options
 static bool oocOnePlyUpgradeSelectPolicy(GameContext &); // 5.5.2 smith upgrade-target pick
 static bool oocOnePlyEventPolicy(GameContext &);       // 5.5.3 event options
 static bool oocOnePlyShopPolicy(GameContext &);        // R6 shop buys (incl. remove/leave)
+static bool oocShopBeamPolicy(GameContext &);          // B1 multi-step shop beam search (§2)
 static bool oocOnePlyTreasurePolicy(GameContext &);    // R6 treasure chests
 static bool oocOnePlyBossRelicPolicy(GameContext &);   // R6 boss relic picks
 static std::string nativeShopPlan(GameContext &);
@@ -2190,6 +2199,9 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             else if (bossGatedDraftPolicy(gc)) { /* rollout draft near a hard fight */ }
             else if (oocOnePlyCardRewardPolicy(gc)) { /* one-ply NN card pick (Phase 5) */ }
             else                            serverCardRewardPolicy(gc);  // best card policy (server V)
+        } else if (oocShopBeamPolicy(gc)) {
+            // B1 multi-step shop beam (ooc-next-wave-contracts.md §2): replaces
+            // the one-ply shop gate while STS_OOC_SHOP_BEAM=1 and a net is loaded
         } else if (oocOnePlyShopPolicy(gc)) {
             // one-ply Q shop pick (R6, §76)
         } else if (shopV && gc.screenState == ScreenState::SHOP_ROOM) {
@@ -2567,10 +2579,11 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
             if (!nodeActive) { flush(); nodeActive = true; label = "SHOP"; }
             tr_logOocActions("shop", gc);
             if (!oocActionNNPolicy(gc))
-                if (!oocOnePlyShopPolicy(gc)) shopVPolicy(gc);
+                if (!oocShopBeamPolicy(gc))
+                    if (!oocOnePlyShopPolicy(gc)) shopVPolicy(gc);
         } else if (inRemoveSelect) {
             if (!oocActionNNPolicy(gc))
-                removeSelectVPolicy(gc);
+                if (!oocShopBeamPolicy(gc)) removeSelectVPolicy(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             using RT = search::GameAction::RewardsActionType;
             auto &r = gc.info.rewardsContainer;
@@ -2653,6 +2666,7 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
               << "  rest=" << (g_restWin ? "win-rate" : "default")
               << (restV ? "+legacy-rest-V" : "")
               << "  shop-V=ON  path=" << (g_pathV ? "model-driven" : "heuristic")
+              << "  shop-beam=" << (g_oocShopBeam ? "ON" : "off")
               << "  native-OOC=" << (g_nativeOoc ? "ON" : "OFF")
               << "  searcher=" << (search::g_useSearcher3 ? "Searcher3" : "Searcher2")
               << (search::g_fairPlay ? "  fair-play" : "")
@@ -5172,6 +5186,183 @@ static StratFingerprint stratFingerprint(const GameContext &gc) {
     return f;
 }
 
+// ---------------------------------------------------------------------------
+// B1 SHOP BEAM SEARCH (ooc-next-wave-contracts.md §2): multi-step lookahead over
+// the deterministic shop-purchase sequence, replacing the one-ply shop gate
+// while STS_OOC_SHOP_BEAM=1 and a strategic net is loaded.
+//
+// Node state = (remaining shop offers, gold, deck, relics, potions). Each node
+// is a detached counterfactual copy (map detached before any mutation).  Shop
+// purchases are deterministic (only the leaf value head reads visible state), so
+// the search uses no hidden-RNG information: with THE_COURIER restocks the
+// clones advance the SAME copied RNG stream the live run will, producing exactly
+// the visible restock a real player would see after the purchase.
+//
+// Expansion: SHOP_ROOM nodes expand every legal GameAction (affordable card/
+// relic/potion buys, CARD_REMOVE, SKIP = leave); leave terminates the node as a
+// leaf.  A CARD_REMOVE successor is a CARD_SELECT(REMOVE) screen; those nodes
+// expand their removal-target picks (each returns to SHOP_ROOM with removeCost
+// spent).  Any other successor screen (e.g. a bottled-relic pick) is rare and
+// not part of the purchase contract: it terminates the branch as a leaf.
+// Dedup: per-ply fingerprint (gold + offer set + StratFingerprint digests:
+// deckSum/deckHash, relicSum/relicHash, potions, screen/select type).  The best
+// `width` children by leaf value continue; the rest become buy-then-leave leaf
+// candidates.  Every SHOP beam node's own state is a leaf candidate (leave).
+//
+// Termination: every shop-buy ply strictly spends gold, so depth is bounded by
+// gold; the expanded-node budget (STS_OOC_SHOP_BEAM_BUDGET, default 4096) is a
+// hard global guard for pathological shops.
+// ---------------------------------------------------------------------------
+static std::uint64_t shopBeamNodeFingerprint(const GameContext &gc) {
+    const StratFingerprint f = stratFingerprint(gc);
+    const Shop &s = gc.info.shop;
+    std::uint64_t h = 1469598103934665603ULL;   // FNV-1a
+    auto mix = [&h](std::uint64_t v) {
+        for (int k = 0; k < 4; ++k) { h ^= v & 0xffff; h *= 1099511628211ULL; v >>= 16; }
+    };
+    mix((std::uint64_t)((std::uint32_t)(int)gc.screenState) << 8
+        | (std::uint64_t)((std::uint32_t)(int)gc.info.selectScreenType));
+    mix((std::uint64_t)(std::uint32_t)f.gold);
+    mix((std::uint64_t)f.deckSum ^ ((std::uint64_t)f.deckUpSum << 1) ^ ((std::uint64_t)f.deckHash << 3));
+    mix((std::uint64_t)f.relicSum ^ ((std::uint64_t)f.relicHash << 5));
+    mix((std::uint64_t)(std::uint32_t)f.potionCount);
+    for (int i = 0; i < 5; ++i) mix((std::uint64_t)(std::uint32_t)(f.potions[i] + 1));
+    mix((std::uint64_t)(std::uint32_t)(s.removeCost + 1));
+    for (int i = 0; i < 13; ++i) mix((std::uint64_t)(std::uint32_t)(s.prices[i] + 1));
+    for (int i = 0; i < 7; ++i)
+        mix((std::uint64_t)(std::uint32_t)(((int)s.cards[i].getId() + 1) * 2 + (s.cards[i].isUpgraded() ? 1 : 0)));
+    for (int i = 0; i < 3; ++i) mix((std::uint64_t)(std::uint32_t)((int)s.relics[i] + 1));
+    for (int i = 0; i < 3; ++i) mix((std::uint64_t)(std::uint32_t)((int)s.potions[i] + 1));
+    return h;
+}
+
+// Terminal value of a candidate shop state: the per-screen value head on the
+// SHOP screen (V3 rich state; V4 token-net glob when the token net is loaded).
+static double shopBeamLeafValue(GameContext &gc) {
+    // Score the leaf with the head of its ACTUAL successor screen (the V2
+    // successor-scoring convention): the per-screen value heads are trained on
+    // their own screens, and a post-shop state is not a SHOP screen. Screens
+    // outside 1..8 (e.g. BATTLE) clamp to the last head, as predictValue does.
+    const int scr = (int)gc.screenState;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        return g_oocStrategicTokNet.predictValue(ts.glob, scr);
+    }
+    return g_oocStrategicNet.predictValue(richFeatureVec(gc).data(), scr);
+}
+
+static bool oocShopBeamPolicy(GameContext &gc) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocShopBeam) return false;
+    const bool inShop = gc.screenState == ScreenState::SHOP_ROOM;
+    const bool inRemove = gc.screenState == ScreenState::CARD_SELECT
+                          && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
+    if (!inShop && !inRemove) return false;
+
+    using RT = search::GameAction::RewardsActionType;
+    struct BeamNode {
+        GameContext state;
+        std::vector<search::GameAction> actions;
+        double value;
+    };
+
+    const int width = std::max(4, std::min(256, g_oocShopBeamWidth));
+    const int maxDepth = g_oocShopBeamDepth > 0 ? g_oocShopBeamDepth
+                                                : std::numeric_limits<int>::max();
+    const int maxExpanded = std::max(64, std::min(65536, g_oocShopBeamBudget));
+
+    std::vector<BeamNode> beam;
+    beam.push_back({detachedCounterfactualCopy(gc), {}, shopBeamLeafValue(gc)});
+
+    double bestValue = -1e100;
+    std::vector<search::GameAction> bestActions;
+    int expanded = 0;
+
+    for (int depth = 0; depth < maxDepth && !beam.empty(); ++depth) {
+        std::vector<BeamNode> children;
+        std::unordered_set<std::uint64_t> seen;
+        children.reserve(beam.size() * 16);
+        bool budgetHit = false;
+
+        for (std::size_t bi = 0; bi < beam.size(); ++bi) {
+            const BeamNode &node = beam[bi];
+            const bool nodeShop = node.state.screenState == ScreenState::SHOP_ROOM;
+            const std::vector<search::GameAction> legal =
+                search::GameAction::getAllActionsInState(node.state);
+            if (legal.empty()) continue;
+
+            if (nodeShop) {
+                // Leave (SKIP) terminates the node as a leaf on its own state;
+                // a node that can only leave is scored the same way.
+                if (node.value > bestValue) { bestValue = node.value; bestActions = node.actions; }
+                if (legal.size() <= 1) continue;      // only leave left: no purchase possible
+                for (const search::GameAction &a : legal) {
+                    if (a.getRewardsActionType() == RT::SKIP) continue;
+                    if (++expanded > maxExpanded) { budgetHit = true; break; }
+                    BeamNode child;
+                    child.state = detachedCounterfactualCopy(node.state);
+                    a.execute(child.state);
+                    child.actions = node.actions;
+                    child.actions.push_back(a);
+                    children.push_back(std::move(child));
+                }
+            } else {
+                // CARD_SELECT(REMOVE) successor: expand the removal-target picks.
+                for (const search::GameAction &a : legal) {
+                    if (++expanded > maxExpanded) { budgetHit = true; break; }
+                    BeamNode child;
+                    child.state = detachedCounterfactualCopy(node.state);
+                    a.execute(child.state);            // back to SHOP_ROOM
+                    child.actions = node.actions;
+                    child.actions.push_back(a);
+                    children.push_back(std::move(child));
+                }
+            }
+            if (budgetHit) {
+                // The rest of the beam is not expanded: record their leave
+                // leaves so no purchase sequence is lost from the candidates.
+                for (std::size_t j = bi + 1; j < beam.size(); ++j)
+                    if (beam[j].state.screenState == ScreenState::SHOP_ROOM
+                        && beam[j].value > bestValue) {
+                        bestValue = beam[j].value; bestActions = beam[j].actions;
+                    }
+                break;
+            }
+        }
+        if (budgetHit) {
+            // Remaining beam nodes were already recorded as leave-leaf candidates.
+            for (BeamNode &child : children) child.value = shopBeamLeafValue(child.state);
+            for (BeamNode &child : children)
+                if (child.value > bestValue) { bestValue = child.value; bestActions = child.actions; }
+            break;
+        }
+
+        // Dedup this ply's children by fingerprint, then keep the top `width`
+        // by leaf value; dropped children are buy-then-leave leaf candidates.
+        std::vector<BeamNode> kept;
+        kept.reserve(children.size());
+        for (BeamNode &child : children) {
+            child.value = shopBeamLeafValue(child.state);
+            if (!seen.insert(shopBeamNodeFingerprint(child.state)).second) continue;
+            kept.push_back(std::move(child));
+        }
+        std::sort(kept.begin(), kept.end(),
+                  [](const BeamNode &a, const BeamNode &b) { return a.value > b.value; });
+        for (int i = (int)kept.size() - 1; i >= width; --i)
+            if (kept[i].value > bestValue) { bestValue = kept[i].value; bestActions = kept[i].actions; }
+        if (kept.size() > (size_t)width) kept.resize(width);
+        if (kept.empty()) break;
+        beam = std::move(kept);
+    }
+
+    if (bestActions.empty()) {
+        // The beam's best-scoring decision is to leave (buy nothing).
+        search::GameAction(RT::SKIP).execute(gc);
+        return true;
+    }
+    bestActions[0].execute(gc);
+    return true;
+}
+
 // Resolved candidate identities for one legal action in the current screen.
 static void strategicCands(const GameContext &gc, const search::GameAction &a,
                            int &actionType, int &c1, int &c2, int &c3,
@@ -6449,6 +6640,19 @@ int main(int argc, char **argv) {
         g_oocStrategicBossRelic = std::atoi(d) != 0;
         if (g_oocStrategicBossRelic)
             std::cout << "[OOC one-ply: boss relic Q gate ON]\n";
+    }
+    if (const char *d = std::getenv("STS_OOC_SHOP_BEAM")) {     // B1 multi-step shop beam (§2)
+        g_oocShopBeam = std::atoi(d) != 0;
+        if (const char *w = std::getenv("STS_OOC_SHOP_BEAM_WIDTH"))
+            g_oocShopBeamWidth = std::atoi(w);
+        if (const char *w = std::getenv("STS_OOC_SHOP_BEAM_DEPTH"))
+            g_oocShopBeamDepth = std::atoi(w);
+        if (const char *w = std::getenv("STS_OOC_SHOP_BEAM_BUDGET"))
+            g_oocShopBeamBudget = std::atoi(w);
+        if (g_oocShopBeam)
+            std::cout << "[OOC shop beam ON: width " << g_oocShopBeamWidth
+                      << " depth " << (g_oocShopBeamDepth > 0 ? std::to_string(g_oocShopBeamDepth) : "until-leave")
+                      << " budget " << g_oocShopBeamBudget << "]\n";
     }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN")) {
         g_oocStrategicMargin = std::atof(d);

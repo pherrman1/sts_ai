@@ -1,6 +1,6 @@
 # Determinism and RNG
 
-Last verified: 2026-08-02 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-02 against commit `6f7159f` and the current working tree (hidden-information boundary audit, plan 5.6.4 / spec §A.14).
 
 ## Purpose
 
@@ -16,8 +16,10 @@ merchants, monsters, potions, relics, shuffling, treasure, and other domains
 combat-relevant streams: AI, card-random, misc, monster-HP, potion, and shuffle
 (`include/combat/BattleContext.h::BattleContext`).
 
-`BattleContext::init` initializes/copies combat RNG state from `GameContext`;
-`BattleContext::exitBattle` copies resulting stream states back
+`BattleContext::init` copies `gc.miscRng` and `gc.potionRng` and re-derives the
+AI, card-random, monster-HP and shuffle streams from the public
+`Random(gc.seed + gc.floorNum)`; `BattleContext::exitBattle` copies the six
+resulting stream states back to `GameContext`
 (`src/combat/BattleContext.cpp::init`, `exitBattle`). Search operates on battle
 copies, while the selected action is committed to the live battle.
 
@@ -75,12 +77,47 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
 - A copied `GameContext` shares `map`; detach before counterfactual mutation.
 - Per-seed benchmark CSVs must be aligned by seed because parallel completion
   order is nondeterministic.
+- Strategic datagen modes reproduce bit-identically across separate
+  invocations (verified 2026-08-02 for `strategicgen2`, `fairgen`, and
+  `oocnextgen` on 2-3 seeds with the build2 `one_combat` binary): branch RNG
+  derives only from public values (run seed, decision index, future index)
+  plus the copied stream states, and branches never feed back into the live
+  run.
+- Event option effects are sampled after the player's choice
+  (`GameContext::chooseEventOption`); `setupEvent` pre-rolls only the offer
+  draws the real game also rolls at event generation. The one-ply Q gates
+  therefore see no event outcome before selection.
 - Reproducibility records include revision, seed block, simulation count,
   ascension, searcher, all `STS_*` behavior flags, thread count, model paths and
   hashes, and observed load messages.
 
 ## Known limitations
 
+- Strategic counterfactual branches built in `apps/one_combat.cpp`
+  (`detachedCounterfactualCopy` + `finishOocCounterfactual`,
+  `runStrategicGenSeed2`, `runDataGen2Seed`, `runPathCounterfactualSeed`,
+  `runOocNextCombatSeed`) continue from a full copy of the live
+  `GameContext`, i.e. from the true future stream state: the branch
+  experiences the exact future encounters, event outcomes, shop contents and
+  treasure the live run will. Only the `actFightProbe*` paths resample the
+  hidden encounter queues (`resampleRemainingActEncounters`, conditional pool
+  with the game's no-repeat rule; the act boss is deliberately not resampled
+  because this repo treats it as public). This is a known §A.14 leak
+  ("do not copy the true future seed and then optimize against it"), flagged
+  in the decision log, not fixed.
+- The strategic model features (`apps/one_combat.cpp::richRow`,
+  `buildTokState`) include the exact next-encounter identities
+  (`nextFight0..2`, `nextEliteId`) at every decision; the player only knows
+  the pool. Same §A.14 leak class; flagged, not fixed.
+- The one-ply Q gates (`oocOnePly*Policy`) score `predictActionValue` on the
+  pre-decision state only, so they do not determinize hidden outcomes. The
+  `STS_OOC_STRATEGIC_Q=0` V2 fallback instead executes the action on a probe
+  copy and scores the successor, which contains the true post-choice draw
+  (event outcomes, chest contents).
+- `ScumSearchAgent2::stepOutOfCombatPolicy` reads the hidden pre-rolled
+  `gc.info.chestSize` for the CURSED_KEY treasure open/skip choice; a player
+  cannot see chest size before opening. Flagged; not fixed (policy change
+  with benchmark impact).
 - Searcher2 leaves four combat RNG streams concrete under `STS_FAIR=1`.
 - Searcher3's stored `HiddenBattleState::drawPileOrder` is installed by
   `applyParticle` only when the copied pile's size and card multiset match the
@@ -113,6 +150,11 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
 - Which hidden variables belong in the project-fair model for each searcher?
 - Does bit-identity hold across compilers, sanitizer builds, and other
   machines (verified only for gcc 13 / `-O3` / Linux/WSL so far)?
+- Should the act boss identity be hidden (spec §A.14 lists exact encounter
+  identity) or stay public as this repo currently treats it?
+- Should the strategic features/counterfactual branches sample event, shop
+  and treasure outcomes from conditional distributions instead of the true
+  stream continuation?
 
 ## Relevant code
 
@@ -127,4 +169,9 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
   `Belief::update`, `sample`
 - `src/sim/search/BattleScumSearcher3.cpp::BattleScumSearcher3`, `applyParticle`
 - `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`
+- `src/sim/search/ScumSearchAgent2.cpp::stepOutOfCombatPolicy` (TREASURE_ROOM chest-size read)
+- `src/sim/search/GameAction.cpp::getAllActionsInState`, `getValidEventSelectBits`
+- `src/game/GameContext.cpp::setupEvent`, `chooseEventOption`
+- `apps/one_combat.cpp::detachedCounterfactualCopy`, `finishOocCounterfactual`,
+  `runStrategicGenSeed2`, `resampleRemainingActEncounters`, `richRow`, `buildTokState`
 - `selfplay/loop.sh::baseline_cache_key`

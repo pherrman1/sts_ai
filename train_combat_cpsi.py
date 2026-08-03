@@ -382,6 +382,15 @@ with open(OUT + ".txt", "w") as f:
     write_vec(f, "relic_embed", sd["relic_embed"])
     write_vec(f, "potion_embed", sd["potion_embed"])
     write_vec(f, "encounter_embed", sd["enc_embed.weight"])
+    # projection weights (were omitted before 2026-08-03 — the official artifact
+    # could not reproduce the torch forward; the loader defaults to identity
+    # only when these blocks are absent)
+    write_vec(f, "relic_proj_weight", sd["relic_proj.weight"])
+    write_vec(f, "relic_proj_bias", sd["relic_proj.bias"])
+    write_vec(f, "potion_proj_weight", sd["potion_proj.weight"])
+    write_vec(f, "potion_proj_bias", sd["potion_proj.bias"])
+    write_vec(f, "enc_proj_weight", sd["enc_proj.weight"])
+    write_vec(f, "enc_proj_bias", sd["enc_proj.bias"])
     for l, layer in enumerate(model.layers):
         pre = f"layers.{l}."
         write_vec(f, f"layer_{l}_qkv_weight", sd[pre + "attn.in_proj_weight"])

@@ -2371,7 +2371,16 @@ enabling condition, but the omitted command prevents verification.
   outcomes are almost fully determined by the pre-combat state in this sim.
   Ready for the encounter-probe integration (plan §5.4.3, spec §A.8).
 - **Artifacts:** `selfplay/models/v_combat_cpsi.{pt,txt,_val.csv}` (pt =
-  torch checkpoint; txt = 4.5 MB `combat_cpsi_v1` export); `train_combat_cpsi.py`.
+  torch checkpoint; txt = 4.7 MB `combat_cpsi_v1` export); `train_combat_cpsi.py`.
+- **Correction (2026-08-03):** the original `combat_cpsi_v1` writer omitted the
+  relic/potion/encounter projection weights, so the artifact could not
+  reproduce the torch model (|ΔP(death)| up to 0.99, |Δturns| up to 3.4,
+  measured by the C++ loader cross-check). Writer fixed
+  (`train_combat_cpsi.py`, proj blocks after `encounter_embed`; loader
+  defaults to identity when absent, PVNet convention) and the artifact
+  re-exported from the checkpoint — C++ vs torch cross-check now
+  **max abs err 2.4e-06** (`src/sim/search/CombatCpsiNet.*`, B2a).
+  The §79 held-out metrics were computed from the .pt, unaffected.
 
 ## 80. Phase C step 2: encounter probes into the V4 state — held-out A/B (2026-08-02)
 
@@ -2408,3 +2417,221 @@ enabling condition, but the omitted command prevents verification.
   follow-up but is not expected to change this conclusion.
 - **Artifacts:** `probe_cpsi.py`, `build/strategic_tierb_probes.npy`,
   `selfplay/models/ooc_strategic_tok_probes.{pt,_metrics.json}`.
+
+## 81. Round 7b: V4 token net × full 7-gate stack (2026-08-03)
+
+- **Goal** (Wave A0): the R6 gates (shop/TREASURE/boss-relic) were never
+  benchmarked with the V4 token net — §75 only ran V4 with cards+rest+event
+  (+3.1pp @ m5). Test the combination on the recorded block.
+- **Config:** `STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`
+  (sha256 `05178ec8…9e1ea`) + `REST=1 EVENT=1 SHOP=1 TREASURE=1 BOSS_RELIC=1`,
+  fair, 1,000 sims, seeds 126700–126827, baseline `build/tierb_gate_base.csv`
+  (21.1% / 37.5 / 8.6).
+
+  | margin | wins | floor Δ | win Δ | discordant |
+  |---|---:|---:|---:|---:|
+  | **1.0** | **53 (41.4%, +20.3pp)** | +5.7 CI [+2.8,+8.6] | +0.203 CI [+0.102,+0.305] | 12 A / 36 B |
+  | 0.5 | 49 (38.3%, +17.2pp) | +3.0 CI [+0.2,+5.9] | +0.172 CI [+0.078,+0.266] | 11 A / 33 B |
+  | 5.0 | 30 (23.4%, +2.3pp) | +0.6 CI [−1.0,+2.2] | +0.023 | 11 A / 14 B |
+
+- **Verdict:** ➕ **the V4 token net with the full gate stack beats the V3 full
+  stack (39.8% §76 vs 41.4%) at margin 1.0** (+20.3pp vs +18.8pp; both CIs
+  exclude zero; overlap makes the net-vs-net delta not itself significant).
+  The V4's previously weak deployed result (§75, cards+rest+event only) was a
+  gate-coverage artifact — the token net's better policy ranking (0.793 vs
+  0.784) and per-screen Q heads carry more value on the treasure/boss screens
+  where the heuristic was weakest. Runtime cost: the tok net is ~3.5× slower
+  per run (cpu_sec/run 27.2 vs 7.9 for V3) — deployment-relevant at 1,000 sims
+  (wall 308 s vs 92 s on 12 threads).
+- **Follow-ups:** (1) the §75 verdict is partially superseded — V4 has a
+  deployed path; re-run the §77 Q-iso conclusion in this light (the state
+  encoder still drives Q calibration, but gate ranking is what matters);
+  (2) C1 (deck transformer) and the Phase-B ladder now have a live V4 baseline
+  to beat (41.4% @ m1); (3) 256-seed secondary block should include the V4
+  config too.
+- **Artifacts:** `build/v4full_gate_{m0.5,m1.0,m5.0}.csv`.
+
+## 82. Wave A1: margin refinement + 256-seed secondary block (2026-08-03)
+
+- **Goal:** find the operating margin of the §76 V3 full gate stack (the
+  0.5/1.0 plateau with 5.0 dead) and confirm the headline on a larger paired
+  block.
+- **Margin sweep** (V3 full stack, recorded 128-seed block, 1,000 sims):
+  m1.5 37.5% (+16.4pp), m2.0 32.8% (+11.7pp), m3.0 27.3% (+6.2pp). Combined
+  with §76 (m0.5/1.0 39.8%, m5.0 21.1%): **margin 1.0 is the operating point**
+  (monotone decline beyond it). No better margin exists.
+- **Secondary block** (seeds 126700–126955, 256 seeds, fair, 1,000 sims, 12
+  threads; new fair baseline `build/sec256_base.csv` 23.0% / 37.2 / 9.1 —
+  the extended range is slightly easier than the recorded block):
+
+  | config | wins | floor Δ | win Δ | discordant |
+  |---|---:|---:|---:|---:|
+  | full stack @ m1.0 | **95 (37.1%, +14.1pp)** | +3.6 CI [+2.0,+5.3] | +0.141 CI [+0.078,+0.207] | 27 A / 49 B |
+
+- **Verdict:** ➕ the §76 result holds at 2× the block size with a tight CI
+  excluding zero. Combined with §81 (V4 full stack +20.3pp @ m1 on the 128
+  block), the one-ply gate stack is the established deployment lever; margin
+  1.0 is the recommended setting.
+- **Note (config audit):** an A1 draft ran the 256-block baseline without
+  `STS_FAIR=1` (known-RNG Searcher2 diverges from the recorded fair baseline —
+  AGENTS.md trap) and was discarded; the fair rerun above is the recorded
+  baseline. Determinism of the current binary on the recorded block
+  re-verified (8/8 seeds bit-identical, excl. `sec`).
+- **Artifacts:** `build/r6_gate_{m1.5,m2.0,m3.0}.csv`, `build/sec256_base.csv`,
+  `build/sec256_gate_m1.csv`.
+
+## 85. Phase E step 1: shop beam search — negative (2026-08-03)
+
+- **Goal** (plan 5.6.1, hypothesis #6): beam search over shop purchase
+  sequences (width 32, dedup by gold+offers+deck digest, leaf = run value)
+  replacing the one-ply shop gate when `STS_OOC_SHOP_BEAM=1` (B1).
+- **Implementation:** `oocShopBeamPolicy` (apps/one_combat.cpp) — beam 4..256
+  (default 32), depth 0 = until leave/no affordable actions, node budget 4096,
+  clones via `detachedCounterfactualCopy`, CARD_REMOVE's successor select
+  expanded in-beam, leaf scored with the per-screen value head. First run
+  scored leaves with the SHOP head regardless of the successor screen; fixed
+  to use the node's actual `screenState` (the V2 successor convention) — both
+  versions benchmarked.
+- **Paired block** (fair, 1,000 sims, seeds 126700–126827, baseline 21.1%):
+
+  | config | wins | floor Δ | win Δ | discordant |
+  |---|---:|---:|---:|---:|
+  | beam-only (leaf bug) | 12 (9.4%, −11.7pp) | −4.0 CI [−6.5,−1.6] | −0.117 CI [−0.188,−0.047] | 14 A / 5 B |
+  | beam-only (leaf fix) | 15 (11.7%, −9.4pp) | −3.0 CI [−5.6,−0.5] | −0.094 CI [−0.169,−0.020] | 15 A / 6 B |
+  | beam+full stack (leaf fix) | 34 (26.6%, +5.5pp) | +0.9 CI [−1.3,+3.2] | +0.055 CI [−0.047,+0.156] | 14 A / 29 B |
+  | recall §76: full stack + one-ply shop gate @ m1 | **51 (39.8%, +18.8pp)** | +3.6 | +0.188 | 10 A / 34 B |
+
+- **Verdict:** ❌ the shop beam does not compete with the one-ply shop gate.
+  Beam-only is **significantly negative** (−9.4pp with the leaf fix) and
+  beam+full-stack (+5.5pp) is far below the gate stack (+18.8pp): the
+  per-screen VALUE head's successor-state scoring is a weak leaf signal
+  (consistent with §71's successor-scoring weakness vs the direct Q head).
+  Runtime is ~4× the gate config (cpu_sec/run 33 vs 8). The beam stays
+  opt-in behind `STS_OOC_SHOP_BEAM=1`; **the one-ply shop gate remains the
+  shop lever**. Follow-ups: a beam whose leaves use Q(s,leave) instead of the
+  value head is the plausible salvage (multi-step lookahead with the Q
+  contract), but the gate's +18.8pp already prices the shop well below this
+  round's priority.
+- **Artifacts:** `build/beam_{only,full}_m1.csv` (leaf-bug),
+  `build/beam_{only,full}_fix.csv` (fixed); `apps/one_combat.cpp` (B1).
+
+## 83. Wave A2: K=1+K=3 joint-label Q head (2026-08-03)
+
+- **Goal:** test whether K=1's superior Q calibration (§78: Q MAE 7.5 vs 14.3)
+  survives joint training with the K=3 labels and helps the deployed gate.
+- **Implementation:** concatenated `build/strategic_tierb.csv` (K=3,
+  4,650 seeds) + `build/strategic_k1.csv` (K=1, 1,000 seeds, disjoint ranges)
+  → `build/strategic_mix.csv` (3,707,677 rows); V3 CE+Q trainer, 40 epochs.
+- **Held-out:** policy top-1 0.783, margin 8.01, value MAE 6.14, Q top-1
+  0.283, Q MAE 14.08, val CE 0.508 — Q MAE between K1 (7.5) and K3 (14.3),
+  as expected with K=1 rows at ~17% of the mix.
+- **Paired gate** (full §76 stack, margin 1.0, fair, 1,000 sims, seeds
+  126700–126827, baseline 21.1%): **36.7% (+15.6pp, CI [+5.5,+25.8])** —
+  significant, but below the K=3-only full stack (39.8%, +18.8pp §76).
+- **Verdict:** ➖ the mixture does not beat K=3-only on the deployed gate;
+  K=1's calibration advantage dilutes the K=3 margin signal without a
+  compensating deployment gain (consistent with §78's inversion). **K=3
+  labels remain the label contract**; the multi-truncation idea is closed for
+  this trainer. Follow-up: the §78-proposed K=1 full-pool retrain (volume
+  confound) is now moot for deployment — not pursued.
+- **Artifacts:** `build/strategic_mix.csv`, `build/mix_gate_m1.csv`,
+  `selfplay/models/ooc_strategic_v3_mix.{pt,native}`.
+
+## 86. Phase B step 1 (C1): deck set transformer — held-out neutral (2026-08-03)
+
+- **Goal** (plan 5.3.1): replace the V4 deck single-head attention with a
+  2-layer transformer (dim 32, 2 heads, FFN 64, masked over valid tokens,
+  mean-pool) — `STRAT_TOK_TRANSFORMER=1` lever on `train_strategic_tok.py`
+  (export parity untouched; transformer off by default).
+- **Held-out** (`build/strategic_tierb.csv`, grouped 80/20, 40 epochs, CUDA):
+
+  | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
+  |---|---|---:|---:|---:|---:|---:|
+  | V4 single-head (40ep) | 0.790 | 10.01 | 0.492 | 11.37 | 0.282 | 17.00 |
+  | **V4 2-layer transformer (40ep)** | 0.793 | 10.39 | 0.487 | 10.59 | 0.289 | 16.62 |
+  | V4 single-head (60ep, §75) | 0.793 | 10.32 | 0.486 | 10.18 | 0.290 | 16.22 |
+
+- **Verdict:** ➖ neutral — the extra transformer capacity does not move the
+  held-out metrics (Q MAE 16.62 vs 17.00 at equal epochs; within the
+  60-epoch-noise band). The counted-token single-head attention was already
+  sufficient; **the token-state Q calibration gap is not an attention-capacity
+  issue** (consistent with §77/§80). The transformer config stays available
+  via the lever; not pursued further for deployment.
+- **Artifacts:** `selfplay/models/ooc_strategic_tok_transformer.{pt,_metrics.json}`;
+  `strategic_tok_net.py`/`train_strategic_tok.py` levers.
+
+## 87. Phase B step 2 (C4): distributional value heads — marginal (2026-08-03)
+
+- **Goal** (plan §5 / spec §A.6): per-screen 11-quantile value heads on
+  `10·won+endHp` (pinball loss, τ=0.05..0.95) as auxiliary targets alongside
+  the per-screen mean heads — `STRAT_TOK_QUANTILES=1` lever.
+- **Held-out** (`build/strategic_tierb.csv`, grouped 80/20, 40 epochs, CUDA):
+
+  | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
+  |---|---|---:|---:|---:|---:|---:|
+  | V4 baseline (40ep) | 0.790 | 10.01 | 0.492 | 11.37 | 0.282 | 17.00 |
+  | **V4 + quantile heads (40ep)** | 0.792 | 9.44 | 0.488 | 11.28 | **0.296** | 16.76 |
+
+- **Verdict:** ➖/➔ marginal — Q top-1 0.296 is the best Q ranking observed
+  across all configs (V3 0.284, V4 0.282–0.290, C1 0.289), but Q MAE (16.76)
+  and the policy metrics are within noise. The distributional auxiliaries
+  give a small ranking nudge, not a calibration fix. Kept as a lever; not
+  material enough alone to justify a deployment round.
+- **Artifacts:** `selfplay/models/ooc_strategic_tok_quants.{pt,_metrics.json}`;
+  `strategic_tok_net.py`/`train_strategic_tok.py` levers.
+
+## 88. Phase B step 3 (C2): candidate–deck cross-attention — neutral; Phase-B conclusion (2026-08-03)
+
+- **Goal** (plan 5.3.3): card candidates attend over the counted deck tokens
+  (single-head cross-attention, valid tokens only) before the entity MLP —
+  `STRAT_TOK_CROSS=1` lever (ent input 37→69 when on; export parity
+  untouched).
+- **Held-out** (`build/strategic_tierb.csv`, grouped 80/20, 40 epochs, CUDA):
+
+  | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
+  |---|---|---:|---:|---:|---:|---:|
+  | V4 baseline (40ep) | 0.790 | 10.01 | 0.492 | 11.37 | 0.282 | 17.00 |
+  | **V4 + cross-attn (40ep)** | 0.782 | 9.00 | 0.511 | 11.53 | 0.289 | 16.69 |
+  | C1 transformer | 0.793 | 10.39 | 0.487 | 10.59 | 0.289 | 16.62 |
+  | C4 quantiles | 0.792 | 9.44 | 0.488 | 11.28 | **0.296** | 16.76 |
+
+- **Phase-B conclusion:** all three encoder upgrades (transformer C1,
+  distributional heads C4, cross-attention C2) are **held-out neutral** on the
+  V4 token state (Q MAE 16.6–16.8 at equal epochs vs 17.0 baseline; policy
+  metrics within noise, C2 slightly negative on policy). Together with §77
+  (Q-head shape not the gap) and §80 (matchup probes not the gap), **the
+  token-state Q calibration gap is not explainable by encoder capacity,
+  action conditioning, or information content — it is the counted-token state
+  contract itself** (vs the rich vector's per-card absolute counts). The
+  token net's deployed strength (§81: 41.4% full stack) comes from gate
+  ranking on the strong screens, not from held-out Q calibration. **Phase B
+  encoder work on this base is concluded; further token-state investment
+  should target the label contract or deployment, not encoders.**
+- **Artifacts:** `selfplay/models/ooc_strategic_tok_cross.{pt,_metrics.json}`.
+
+## 84. Wave A3: STRATEGIC_BRANCH_FUTURES A/B — more futures worse (2026-08-03)
+
+- **Goal** (§73 follow-up 3): A/B the Tier-B label averaging across branch
+  futures — futures=3 (3 independent branch seeds per action, averaged) vs
+  the default futures=1 — on the deployed gate.
+- **Implementation:** strategicgen2 datagen with `STRATEGIC_BRANCH_FUTURES=3`
+  (else the §73 config) on seeds 134000–134999
+  (`build/strategic_fut3.csv`, 659,612 rows / 1,000 seeds; the run was
+  interrupted at 905 seeds and resumed at 134907; a duplicate resume process
+  was killed and the file deduplicated — row-identical duplicates removed).
+  V3 CE+Q retrain (40 epochs) + export + full-stack gate @ m1.0.
+- **Held-out:** policy top-1 0.763, margin 5.73, value MAE 3.29, Q top-1
+  0.284, Q MAE 11.14, val CE 0.566 (vs futures=1 §73: 0.784 / 9.35 / 5.45 /
+  0.284 / 14.32 / —). More futures improve Q calibration (Q MAE 11.1 vs
+  14.3) but hurt policy metrics — same calibration-vs-signal trade seen in
+  the K=1 A/B.
+- **Paired gate** (full stack @ m1.0, fair, 1,000 sims, seeds 126700–126827,
+  baseline 21.1%): **34.4% (+13.3pp, CI [+3.9,+22.7])** — significant, but
+  below futures=1's 39.8% (+18.8pp, §76). Discordant 43 (14 A / 29 B).
+- **Verdict:** ➖ more branch futures are worse for the deployed gate —
+  extra averaging dilutes the Q margin signal (the §78 K=1 inversion again:
+  better label calibration does not transfer to gate win rate). **futures=1
+  stays the label contract.** The label-contract space (K, futures) is now
+  closed: K=3 × futures=1 is optimal among {K1,K3}×{futures1,futures3}.
+- **Artifacts:** `build/strategic_fut3.csv`, `build/fut3_gate_m1.csv`,
+  `selfplay/models/ooc_strategic_v3_fut3.{pt,native}`.

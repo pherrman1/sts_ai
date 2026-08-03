@@ -230,7 +230,7 @@ def main():
         bits = np.array([(int(ab) >> j) & 1 for j in range(32)], np.float32)[None]
         cv = np.array([np.clip(cv + 1, 0, 511)], np.int64)   # trainer/C++ lookup convention: +1
         with torch.no_grad():
-            l, v, q = model(torch.from_numpy(normed[None]),
+            l, v, q, _ = model(torch.from_numpy(normed[None]),
                             torch.from_numpy(dk_ids), torch.from_numpy(dk_ups),
                             torch.from_numpy(dk_cf),
                             torch.from_numpy(rl_ids), torch.from_numpy(rl_df),

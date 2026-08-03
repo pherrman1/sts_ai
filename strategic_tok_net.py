@@ -17,14 +17,21 @@ NGLOB = 50
 
 
 class Net(nn.Module):
-    """V4 token-state net: 50 globals + counted deck/relic/potion tokens with a
-    1-layer single-head deck attention, fusion MLP, and the V3 head contract
-    (policy, per-screen value, Q). Rung 1..4 zeroes inactive groups (see contract)."""
+    """V4 token-state net: 50 globals + counted deck/relic/potion tokens, fusion
+    MLP, and the V3 head contract (policy, per-screen value, Q). Deck tokens go
+    through a 1-layer single-head attention by default; with `transformer=True`
+    through a 2-layer transformer at dim 32 (2 heads, FFN 64, LayerNorm eps
+    1e-5, GELU tanh, residuals) over the valid tokens only, same masking /
+    row-normalization / mean-pooling convention. Rung 1..4 zeroes inactive
+    groups (see contract)."""
 
-    def __init__(self, rung=4, nprobes=0):
+    def __init__(self, rung=4, nprobes=0, transformer=False, nquants=0, ncross=0):
         super().__init__()
         self.rung = rung
         self.nprobes = nprobes
+        self.nquants = nquants
+        self.ncross = ncross
+        self.transformer = transformer
         self.f = nn.Sequential(nn.Linear(106 + nprobes * 6, 256), nn.LayerNorm(256, eps=1e-5),
                                nn.GELU(approximate="tanh"), nn.Dropout(0.2),
                                nn.Linear(256, 128), nn.GELU(approximate="tanh"))
@@ -34,6 +41,17 @@ class Net(nn.Module):
         self.deckQkv = nn.Linear(32, 96)
         self.deckProj = nn.Linear(32, 32)
         self.deckLn = nn.LayerNorm(32, eps=1e-5)
+        if transformer:
+            self.deckTr = nn.ModuleList([
+                nn.ModuleDict({
+                    "qkv": nn.Linear(32, 96),
+                    "proj": nn.Linear(32, 32),
+                    "ln": nn.LayerNorm(32, eps=1e-5),
+                    "ffn": nn.Sequential(nn.Linear(32, 64), nn.GELU(approximate="tanh"),
+                                         nn.Linear(64, 32)),
+                    "ffnln": nn.LayerNorm(32, eps=1e-5),
+                }) for _ in range(2)
+            ])
         self.E_rel = nn.Embedding(NREL, 16)
         self.relTok = nn.Sequential(nn.Linear(17, 16), nn.GELU(approximate="tanh"))
         self.E_pot = nn.Embedding(NPOT, 8)
@@ -45,7 +63,7 @@ class Net(nn.Module):
         self.cats = nn.ModuleList([nn.Embedding(512, 4) for _ in range(6)])
         self.atype = nn.Embedding(16, 8)
         self.screen = nn.Embedding(16, 8)
-        self.ent = nn.Sequential(nn.Linear(37, 32), nn.GELU(approximate="tanh"),
+        self.ent = nn.Sequential(nn.Linear(37 + 32 * ncross, 32), nn.GELU(approximate="tanh"),
                                  nn.Linear(32, 16))
         self.pol = nn.Sequential(nn.Linear(184, 96), nn.GELU(approximate="tanh"),
                                  nn.Linear(96, 1))
@@ -54,31 +72,67 @@ class Net(nn.Module):
         self.vals = nn.ModuleList(
             [nn.Sequential(nn.Linear(128, 64), nn.GELU(approximate="tanh"),
                            nn.Linear(64, 1)) for _ in range(8)])
+        self.quants = nn.ModuleList(
+            [nn.Sequential(nn.Linear(128, 64), nn.GELU(approximate="tanh"),
+                           nn.Linear(64, 11)) for _ in range(8)])
+        self.qtau = nn.Parameter(torch.linspace(0.05, 0.95, 11), requires_grad=False)
+
+
+    def _deck_attn(self, qkv, proj, ln, tok, qmask, device):
+        # Masked self-attention (valid tokens only), same row-normalization
+        # convention for 1 head (default) and 2 heads (transformer): scores
+        # scaled by 1/sqrt(32), row max subtraction, exp, row-normalize.
+        B, T, D = tok.shape
+        x = qkv(tok)
+        q, k, v = x[..., :32], x[..., 32:64], x[..., 64:]
+        sc = 1.0 / math.sqrt(32.0)
+        if self.transformer:
+            q = q.view(B, T, 2, 16).transpose(1, 2)
+            k = k.view(B, T, 2, 16).transpose(1, 2)
+            v = v.view(B, T, 2, 16).transpose(1, 2)
+            scores = torch.matmul(q, k.transpose(-1, -2)) * sc              # (B,2,T,T)
+            masked = scores.masked_fill(~qmask.unsqueeze(1).unsqueeze(1), float("-inf"))
+            smax = masked.amax(-1, keepdim=True)
+            smax = torch.where(qmask.unsqueeze(1).unsqueeze(-1), smax,
+                               torch.zeros((), device=device))
+            w = torch.exp(masked - smax)
+            w = w / w.sum(-1, keepdim=True).clamp_min(1e-30)
+            attn = torch.matmul(w, v).transpose(1, 2).reshape(B, T, D)
+        else:
+            scores = torch.bmm(q, k.transpose(1, 2)) * sc                   # C++ op order: dot*invSqrt
+            masked = scores.masked_fill(~qmask.unsqueeze(1), float("-inf"))  # invalid keys
+            smax = masked.amax(-1, keepdim=True)
+            smax = torch.where(qmask.unsqueeze(-1), smax,
+                               torch.zeros((), device=device))              # invalid q rows -> 0
+            w = torch.exp(masked - smax)                                     # invalid rows -> 0
+            w = w / w.sum(-1, keepdim=True).clamp_min(1e-30)                 # row-normalize like C++
+            attn = torch.bmm(w, v)                                           # (B,T,32)
+        return ln(tok + proj(attn))                                          # residual + LayerNorm
+
+    def deck_tokens(self, ids, ups, cfs):
+        # ids (B,T) long, -1 = padding; counted-token embeddings (B,T,32).
+        emb = torch.cat([self.E_card(ids.clamp(0, NCARD - 1)),
+                         self.E_up(ups.clamp(0, 1)), cfs.unsqueeze(-1)], -1)  # (B,T,41)
+        return self.deckTok(emb)
 
     def deck_encode(self, ids, ups, cfs):
         # ids (B,T) long, -1 = padding; attention over valid tokens only.
         B, T = ids.shape
         qmask = ids >= 0
-        emb = torch.cat([self.E_card(ids.clamp(0, NCARD - 1)),
-                         self.E_up(ups.clamp(0, 1)), cfs.unsqueeze(-1)], -1)  # (B,T,41)
-        tok = self.deckTok(emb)                                              # (B,T,32)
-        qkv = self.deckQkv(tok)
-        q, k, v = qkv[..., :32], qkv[..., 32:64], qkv[..., 64:]
-        sc = 1.0 / math.sqrt(32.0)
-        scores = torch.bmm(q, k.transpose(1, 2)) * sc                          # C++ op order: dot*invSqrt
-        masked = scores.masked_fill(~qmask.unsqueeze(1), float("-inf"))      # invalid keys
-        smax = masked.amax(-1, keepdim=True)
-        smax = torch.where(qmask.unsqueeze(-1), smax,
-                           torch.zeros((), device=ids.device))               # invalid q rows -> -inf/0
-        w = torch.exp(masked - smax)                                         # invalid rows -> 0
-        w = w / w.sum(-1, keepdim=True).clamp_min(1e-30)                     # row-normalize like C++
-        attn = torch.bmm(w, v)                                               # (B,T,32)
-        out = self.deckLn(tok + self.deckProj(attn))
+        tok = self.deck_tokens(ids, ups, cfs)                                # (B,T,32)
+        if self.transformer:
+            for l in self.deckTr:
+                tok = self._deck_attn(l["qkv"], l["proj"], l["ln"], tok, qmask, ids.device)
+                tok = l["ffnln"](tok + l["ffn"](tok))                        # FFN + residual + LayerNorm
+        else:
+            tok = self._deck_attn(self.deckQkv, self.deckProj, self.deckLn,
+                                  tok, qmask, ids.device)
         n = qmask.sum(1).clamp_min(1).unsqueeze(1)
-        return (out * qmask.unsqueeze(-1)).sum(1) / n                        # mean over valid
+        return (tok * qmask.unsqueeze(-1)).sum(1) / n                        # mean over valid
 
     def forward(self, x, dk_id, dk_up, dk_cf, rl_id, rl_df, pt_id, pt_cf,
                 bits, cat, atype, screen, ent_type, ent_id, gold_ge, probes=None):
+        dk_tok = self.deck_tokens(dk_id, dk_up, dk_cf) if (self.rung >= 2 and self.ncross > 0) else None
         z_deck = self.deck_encode(dk_id, dk_up, dk_cf) if self.rung >= 2 else None
         z_rel = z_pot = None
         if self.rung >= 3:
@@ -114,7 +168,26 @@ class Net(nn.Module):
             ev[m] = torch.cat([self.E_pot(ent_id[m].clamp(0, NPOT - 1)),
                                torch.zeros(m.sum(), 24, device=x.device)], 1)
         eo = torch.eye(4, device=x.device)[ent_type]                         # [none,card,relic,potion]
-        e = self.ent(torch.cat([ev, eo, gold_ge.unsqueeze(1)], 1))           # (B,16)
+        if self.ncross > 0 and dk_tok is not None:
+            # candidate-deck cross-attention: card candidates attend over the
+            # counted deck tokens (single head, valid tokens only).
+            m = (ent_type == 1)
+            cv = torch.zeros(x.shape[0], 32, device=x.device)
+            if m.any():
+                q = ev[m].unsqueeze(1)                                       # (M,1,32)
+                k = dk_tok[m]                                                # (M,T,32)
+                kmask = (dk_id[m] >= 0)
+                sc = torch.bmm(q, k.transpose(1, 2)) * (1.0 / math.sqrt(32.0))
+                sc = sc.masked_fill(~kmask.unsqueeze(1), float("-inf"))
+                smax = torch.where(kmask.unsqueeze(1), sc.amax(-1, keepdim=True),
+                                   torch.zeros((), device=x.device))
+                w = torch.exp(sc - smax)
+                w = w / w.sum(-1, keepdim=True).clamp_min(1e-30)
+                cv[m] = torch.bmm(w, k).squeeze(1)
+            ent_in = torch.cat([ev, eo, gold_ge.unsqueeze(1), cv], 1)        # (B,69)
+        else:
+            ent_in = torch.cat([ev, eo, gold_ge.unsqueeze(1)], 1)            # (B,37)
+        e = self.ent(ent_in)                                                 # (B,16)
         if self.rung < 4:
             e = e * 0.0
 
@@ -122,8 +195,13 @@ class Net(nn.Module):
         logit = self.pol(z).squeeze(1)
         q = self.q(z).squeeze(1)
         v = torch.zeros(x.shape[0], device=x.device)
+        qq = None
         for h in range(8):
             mm = (screen == h + 1)
             if mm.any():
                 v[mm] = self.vals[h](s[mm]).squeeze(1)
-        return logit, v, q
+                if self.nquants > 0:
+                    if qq is None:
+                        qq = torch.zeros(x.shape[0], 11, device=x.device)
+                    qq[mm] = self.quants[h](s[mm])
+        return logit, v, q, qq

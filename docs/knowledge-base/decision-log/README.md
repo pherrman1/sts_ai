@@ -58,7 +58,10 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-03 | [`2026-08-03-b1-shop-beam.md`](2026-08-03-b1-shop-beam.md) | B1 shop beam search (§2): `oocShopBeamPolicy` behind `STS_OOC_SHOP_BEAM=1` (width 32/depth until-leave/budget 4096), V3/token leaf heads, StratFingerprint+offer-set dedup, replaces the one-ply shop gate when enabled. |
+| 2026-08-02 | [`2026-08-02-hidden-info-audit.md`](2026-08-02-hidden-info-audit.md) | Hidden-information boundary audit (plan 5.6.4, §A.14): Searcher3 fair machinery clean and deterministic; strategic layer leaks (future-encounter features, CF branches copying true run streams) flagged in apps/one_combat.cpp, outside fix scope; TREASURE chest-size heuristic risk flagged; no fixes applied. |
 | 2026-08-02 | [`2026-08-02-mermaid-diagrams.md`](2026-08-02-mermaid-diagrams.md) | Added mermaid diagrams to docs: replaced 5 ASCII diagrams (kept ASCII only in ooc-strategic-v4) and illustrated 6 prose-only data-flow sections. |
+| 2026-08-03 | [`2026-08-03-ooc-next-wave.md`](2026-08-03-ooc-next-wave.md) | Next wave: V4 full-gate stack top arm (41.4%, +20.3pp), margin 1.0 + 256-block confirmation, mixture below K=3, shop beam negative, Phase-B encoder neutrals, C_psi export fix, hidden-info audit. |
 | 2026-08-02 | [`2026-08-02-ooc-wave-r6-r8.md`](2026-08-02-ooc-wave-r6-r8.md) | OOC wave: R6 one-ply gates for shop/treasure/boss relic (+18.8pp, first statistically established result), R7 Q-iso verdict (token state encoder, not the Q head, caused V4 calibration gap), K=1 label horizon better Q calibration, seed-128087 isolation. |
 | 2026-08-02 | [`2026-08-02-phase5-round5-token-state-v4.md`](2026-08-02-phase5-round5-token-state-v4.md) | Phase-5 round 5: token-based run state (V4) delivered (A1–A4); held-out ranking beats V3 but the deployed gate (+3.1pp @ m5) does not — V3 stays default, V4 opt-in. |
 | 2026-08-02 | [`2026-08-02-ooc-guideline-spec-of-record.md`](2026-08-02-ooc-guideline-spec-of-record.md) | OOC guideline adopted as spec of record; new action plan supersedes archived Phase 5; design distilled into KB + decisions record. |

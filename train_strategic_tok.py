@@ -39,15 +39,20 @@ QLAMBDA = float(os.environ.get("STRAT_QLAMBDA", "1.0"))
 CLIP = float(os.environ.get("STRAT_CLIP", "1.0"))
 CHUNK = int(os.environ.get("STRAT_CHUNK", "250000"))
 RUNG = int(os.environ.get("STRAT_TOK_RUNG", "4"))
+TRANSFORMER = os.environ.get("STRAT_TOK_TRANSFORMER", "0") == "1"
 PROBES_FILE = os.environ.get("TOK_PROBES_FILE", "")   # npy (nrows, 54); unset = no probes
 NPROBES = 9 if PROBES_FILE else 0
+QUANTS = int(os.environ.get("STRAT_TOK_QUANTILES", "0"))  # C4: per-screen 11-quantile value heads
+NQUANTS = 11 if QUANTS else 0
+CROSS = int(os.environ.get("STRAT_TOK_CROSS", "0"))  # C2: candidate-deck cross-attention
 THREADS = int(os.environ.get("OMP_NUM_THREADS", "8"))
 DEVICE = os.environ.get("STRAT_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu")
 if not DEVICE.startswith("cuda"):
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 torch.set_num_threads(THREADS)
 torch.manual_seed(0)
-print(f"device: {DEVICE}  rung: {RUNG}  epochs: {EPOCHS}", flush=True)
+print(f"device: {DEVICE}  rung: {RUNG}  epochs: {EPOCHS}"
+      f"  transformer: {int(TRANSFORMER)}", flush=True)
 
 hdr = pd.read_csv(CSV, nrows=0).columns
 need = {"seed", "decIdx", "screen", "action", "actionType", "c1", "c2", "c3",
@@ -338,7 +343,7 @@ state_mmap = np.memmap(STATE_FILE, dtype=np.float16, mode="r", shape=(nrows, NFI
 
 
 
-model = Net(RUNG, nprobes=NPROBES).to(DEVICE)
+model = Net(RUNG, nprobes=NPROBES, transformer=TRANSFORMER, nquants=NQUANTS, ncross=CROSS).to(DEVICE)
 opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=2e-4)
 
 AR = np.arange(32, dtype=np.int64)
@@ -374,7 +379,7 @@ def train_batch_loss(gs):
     sizes_b = sizes[gs]
     rows = np.concatenate([np.arange(block_start[g], block_start[g] + sizes[g])
                            for g in gs])
-    logit, val, q = fwd_rows(rows)
+    logit, val, q, qq = fwd_rows(rows)
     gstart = np.concatenate(([0], np.cumsum(sizes_b[:-1])))
     ok = valid_pol[gs]
     if ok.any():
@@ -408,6 +413,13 @@ def train_batch_loss(gs):
     else:
         q_loss = torch.zeros((), device=DEVICE)
     loss = pol_loss + VLAMBDA * val_loss + QLAMBDA * q_loss
+    if NQUANTS > 0 and qq is not None and m.any():
+        tau = model.qtau.view(1, -1)
+        y = tl.unsqueeze(1)
+        qp = qq[m]
+        diff = y - qp
+        pin = torch.maximum(tau * diff, (tau - 1.0) * diff).mean()
+        loss = loss + 0.5 * pin
     if not torch.isfinite(loss):
         loss = torch.zeros((), device=DEVICE)
     return loss, float(pol_loss.detach()), float(val_loss.detach()), float(q_loss.detach())
@@ -434,7 +446,7 @@ def evaluate():
     full_q = np.empty(len(va_perm), np.float32)
     for lo in range(0, len(va_perm), BATCH):
         hi = min(lo + BATCH, len(va_perm))
-        l, v, q = fwd_rows(va_perm[lo:hi])
+        l, v, q, _ = fwd_rows(va_perm[lo:hi])
         full_logit[lo:hi] = l.cpu().numpy()
         full_val[lo:hi] = v.cpu().numpy()
         full_q[lo:hi] = q.cpu().numpy()
