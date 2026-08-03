@@ -18,21 +18,22 @@ strategic model acts only at run-level decision points (card reward, map
 node, shop purchase, rest/upgrade/lift/toke/recall, event option, relic/
 potion pick) and observes the run state *between* them:
 
-```
-Run state s_t
-   │
-   ├─ choose card
-   ├─ choose map node
-   ├─ buy/remove/leave shop
-   ├─ rest/upgrade/lift/etc.
-   ├─ choose event option
-   └─ choose relic/potion
-          │
-          ▼
-    potentially many game steps (including an entire combat)
-          │
-          ▼
-Next strategic state s_{t+1}
+```mermaid
+flowchart LR
+    S["Run state s_t"]
+    S --> C1["choose card"]
+    S --> C2["choose map node"]
+    S --> C3["buy/remove/leave shop"]
+    S --> C4["rest/upgrade/lift/etc."]
+    S --> C5["choose event option"]
+    S --> C6["choose relic/potion"]
+    C1 --> G["potentially many game steps (including an entire combat)"]
+    C2 --> G
+    C3 --> G
+    C4 --> G
+    C5 --> G
+    C6 --> G
+    G --> S2["Next strategic state s_{t+1}"]
 ```
 
 This is a substantially easier learning problem than mixing combat and
@@ -565,18 +566,20 @@ Value heads:           MLP(state) → outcome distributions
 
 Conceptually:
 
-```
-Deck tokens ────────┐
-Relic tokens ───────┤
-Potion tokens ──────┤
-Global token ───────┼─→ fusion encoder → z_state
-Map graph summary ──┤
-Encounter probes ───┘
-
-candidate action → candidate encoder → z_action
-[z_state, z_action, z_state ⊙ z_action]
-              ↓
-          policy logit
+```mermaid
+flowchart LR
+    D["Deck tokens"] --> FE["fusion encoder"]
+    R["Relic tokens"] --> FE
+    P["Potion tokens"] --> FE
+    GT["Global token"] --> FE
+    M["Map graph summary"] --> FE
+    E["Encounter probes"] --> FE
+    FE --> ZS["z_state"]
+    C["candidate action"] --> CE["candidate encoder"]
+    CE --> ZA["z_action"]
+    ZS --> J["[z_state, z_action, z_state ⊙ z_action]"]
+    ZA --> J
+    J --> PL["policy logit"]
 ```
 
 The elementwise product helps model direct compatibility.
@@ -719,27 +722,19 @@ encoding (path choices are central); candidate-conditioned action scoring
 (individual-purchase greediness leaves performance on the table); search
 distillation rather than only terminal REINFORCE.
 
-```
-                    RUN STATE
-       ┌──────────────┼────────────────┐
-       ▼              ▼                ▼
- deck/set encoder  map graph encoder  global/resources
-       └──────────────┼────────────────┘
-                      ▼
-                 state embedding
-                      │
-       combat matchup/outcome probes
-                      │
-                      ▼
-              distributional run value
-
-legal candidate ─→ type-specific action encoder
-                      │
-                      ▼
-             action-conditioned scorer
-                      │
-                      ▼
-      direct policy or shallow strategic search
+```mermaid
+flowchart LR
+    RS["RUN STATE"] --> DE["deck/set encoder"]
+    RS --> MG["map graph encoder"]
+    RS --> GR["global/resources"]
+    DE --> SE["state embedding"]
+    MG --> SE
+    GR --> SE
+    SE --> CP["combat matchup/outcome probes"]
+    CP --> RV["distributional run value"]
+    LC["legal candidate"] --> AE["type-specific action encoder"]
+    AE --> SC["action-conditioned scorer"]
+    SC --> DP["direct policy or shallow strategic search"]
 ```
 
 The main conceptual distinction: the policy selects among visible legal

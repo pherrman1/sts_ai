@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-08-02 against the current working tree (Phase-5 round 3;
+Last verified: 2026-08-02 against the current working tree (Phase-5 round 5;
 semi-Markov design record added).
 
 ## Purpose
@@ -57,18 +57,44 @@ round 4 (`§74`) the same Q gate also covers campfires and events via
 `oocOnePlyUpgradeSelectPolicy` on the smith's CARD_SELECT/UPGRADE targets) and
 `STS_OOC_STRATEGIC_EVENT=1` (`oocOnePlyEventPolicy` on EVENT_SCREEN options,
 incl. Neow) — both default **off**, so the card-only configuration stays
-reproducible. The Q
+reproducible. Round 6 (`§76`) added the remaining screens:
+`STS_OOC_STRATEGIC_SHOP=1` (`oocOnePlyShopPolicy`), `STS_OOC_STRATEGIC_TREASURE=1`
+(`oocOnePlyTreasurePolicy`), `STS_OOC_STRATEGIC_BOSS_RELIC=1`
+(`oocOnePlyBossRelicPolicy`) — all default **off**. The Q
 head is trained on Tier-B one-ply counterfactual labels (`strategicgen2`;
 `apps/one_combat.cpp::runStrategicGenSeed2`). No model is deployed by default:
 the one-ply branches are opt-in only
 (`apps/ooc_strategic_net.h::OocStrategicNet`;
 `apps/one_combat.cpp::oocOnePlyCardRewardPolicy`,
-`oocOnePlyRestPolicy`, `oocOnePlyEventPolicy`). Historical gates: §70
+`oocOnePlyRestPolicy`, `oocOnePlyEventPolicy`, `oocOnePlyShopPolicy`,
+`oocOnePlyTreasurePolicy`, `oocOnePlyBossRelicPolicy`). Historical gates: §70
 pooled-head regression (−10.9pp at margin 1.0), §71 per-seed-neutral per-screen
 heads, §73 Q-head result, §74 cards+rest+event +7.0pp (event gate the main
-contributor; CIs span zero). Other opt-in owners include
+contributor; CIs span zero), §76 full coverage +18.8pp at margins 0.5/1.0
+(statistically established; boss relic + treasure gates carry the bulk). Other
+opt-in owners include
 card, path, event, boss-relic/Neow, and all-OOC checkpoint evaluator flags
 parsed in `apps/one_combat.cpp::main`.
+
+Since round 5 (§75), a token-based state net (`OOC_STRAT_V4`) exists alongside
+V3: `STS_OOC_STRATEGIC_TOK_NN=<path>` loads `apps/ooc_strategic_tok_net.h::OocStrategicTokNet`,
+and the four one-ply gates score with it when loaded (V3 stays the fallback).
+Its input is built by `apps/one_combat.cpp::buildTokState` (50 globals — 44
+richRow scalars + 6 derived thresholds hpFrac/missingHp/freePotionSlot/
+goldGeRemoval/canTakeEliteKey/bossNear — plus canonical counted deck tokens
+`(id, upgraded, count)`, relic tokens `(id, counter)`, potion tokens
+`(id, count)`; exact contract in
+`docs/knowledge-base/architecture/ooc-strategic-v4.md`) and per-action
+candidate entity embeddings via `tokEntity`. Training/export:
+`train_strategic_tok.py` (rung-masked ablation trainer on the existing §73
+CSV, no new datagen), `export_strategic_tok.py`, `strategic_tok_net.py`.
+Deployment parity hooks: exporter numpy-vs-PyTorch asserts and
+`STS_OOC_STRATEGIC_TOK_CHECK=1` (first gated decision per run compares the 44
+globals against `richFeatureVec`; zero mismatches across §75 benchmark runs).
+§75 verdict: held-out ranking beats V3 (policy top-1 0.793 vs 0.784) and the
+gate is directionally win-positive at margin 5.0 (+3.1pp, CIs span zero), but
+V3's +7.0pp @ m1 is not beaten — **V3 remains the deployed default; the V4
+net is opt-in**.
 
 ## Strategic model design (semi-Markov decomposition)
 
@@ -105,10 +131,17 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
   (`STS_OOC_STRATEGIC_MARGIN`), else the heuristic policy runs.
 - **Representation roadmap.** The spec targets token-based run state
   (counted deck tokens, relic/potion entity tokens, map DAG graph
-  encoding, decision-context encoding) and distributional value heads;
-  the current implementation still trains on the 1,017-value rich vector
-  with per-screen scalar heads. The full spec and remaining phases are the
-  active plan in `docs/archive/ooc-action-plan-2026-08.md`.
+  encoding, decision-context encoding) and distributional value heads.
+  The token-based state (V4, round 5) is delivered and recorded (§75):
+  counted deck/relic/potion tokens through a single-head deck attention,
+  thresholds, and candidate entity embeddings — trained on the existing
+  Tier-B CSV with no new datagen. It improves held-out ranking (policy
+  top-1 0.793 vs 0.784) but its deployed one-ply gate (+3.1pp @ m5) does
+  not beat the V3 flat-vector net (+7.0pp @ m1), so V3 stays deployed and
+  the V4 net is opt-in behind `STS_OOC_STRATEGIC_TOK_NN`. The current
+  deployment still uses per-screen scalar value heads; distributional
+  heads and the map DAG remain future work. The full spec and remaining
+  phases are the active plan in `docs/archive/ooc-action-plan-2026-08.md`.
 
 ## Important data flow
 
@@ -125,6 +158,18 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
 5. Counterfactual evaluators copy `GameContext`, apply a legal action, detach
    shared map state when mutation is possible, and simulate or predict future
    checkpoints.
+
+```mermaid
+flowchart LR
+    START["runFullRunOOC evaluates layers in order"] --> OPT["Opt-in action networks / evaluators<br/>(OocCheckpointNet acts 1-3, one-ply Q gates)"]
+    OPT -->|"no override qualifies"| MAP["Map"]
+    MAP -->|"no override qualifies"| REW["Rewards"]
+    REW -->|"no override qualifies"| SHOP["Shop"]
+    SHOP -->|"no override qualifies"| REST["Rest"]
+    REST -->|"no override qualifies"| BOSS["Boss-relic / Neow"]
+    BOSS -->|"no override qualifies"| BASE["Base policy (fallback)<br/>ScumSearchAgent2::stepOutOfCombatPolicy"]
+    GATE["Margin gate: learned override fires only if margin >= STS_OOC_STRATEGIC_MARGIN (default 1.0), else fall through to the next layer / base policy"] -.-> OPT
+```
 
 ## Invariants and assumptions
 
@@ -181,10 +226,13 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
 - `src/sim/search/ScumSearchAgent2.cpp::stepOutOfCombatPolicy`
 - `apps/one_combat.cpp::runFullRunOOC`, `vFeatCsv`, `richIdxMap`, `main`,
   `oocOnePlyCardRewardPolicy`, `runStrategicGenSeed`, `runStrategicGenSeed2`,
-  `strategicGen2`
+  `strategicGen2`, `buildTokState`, `tokEntity`
 - `apps/ooc_checkpoint_net.h::OocCheckpointNet`
 - `apps/ooc_strategic_net.h::OocStrategicNet`
+- `apps/ooc_strategic_tok_net.h::OocStrategicTokNet` (V4 token net, opt-in)
 - `train_strategic.py`, `export_strategic.py`, `v_server.py::H.handle`, `RAW`
+- `train_strategic_tok.py`, `export_strategic_tok.py`, `strategic_tok_net.py`
+- `docs/knowledge-base/architecture/ooc-strategic-v4.md` — V4 token-state contract
 - `docs/archive/ooc-action-plan-2026-08.md` — active strategic-model plan
 - `docs/knowledge-base/decisions/2026-08-02-semi-markov-strategic-model.md`
 - `bindings/slaythespire.cpp::PYBIND11_MODULE`

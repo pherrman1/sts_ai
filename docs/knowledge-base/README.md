@@ -87,6 +87,12 @@ flow, Invariants and assumptions, Relevant code, Known limitations, Open
 questions when applicable, and Last verified date. Do not infer historical
 rationale from the final code shape.
 
+Data-flow sections may use ` ```mermaid ` fenced diagrams (rendered on GitHub)
+in addition to the required prose steps. Prefer mermaid for structural flow;
+keep an ASCII version when it is a spec contract whose precise alignment
+matters (e.g. `ooc-strategic-v4.md`). Mermaid source must keep every
+relationship as an explicit edge so the diagram remains LLM-readable.
+
 ## Relevant sources
 
 - `AGENTS.md` — operating and maintenance contract.

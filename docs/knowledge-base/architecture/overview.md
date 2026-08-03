@@ -1,6 +1,6 @@
 # Architecture overview
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-02 against commit `67320b3` and the current working tree.
 
 ## Purpose
 
@@ -51,6 +51,20 @@ tracing, and counterfactual evaluators. Core simulator behavior remains under
    terminal `GameOutcome`.
 6. `one_combat` modes optionally log state/action/outcome rows for training or
    aggregate whole-run results.
+
+```mermaid
+flowchart LR
+    GC["GameContext advances a run"] -->|until| BATTLE["ScreenState::BATTLE"]
+    BATTLE --> INIT["BattleContext::init (copies combat inputs)"]
+    INIT --> CHOICE["ScumSearchAgent2::playoutBattle (project-fair or tree-reuse)"]
+    CHOICE --> S2["Searcher2 (known-RNG determinize)"]
+    CHOICE --> S3["Searcher3 (particle sampling; non-fair: particle/reuse hybrid, not known-RNG Searcher2)"]
+    S2 --> COMMIT["commit combat Action values"]
+    S3 --> COMMIT
+    COMMIT --> EXIT["BattleContext::exitBattle (outcome, HP, rewards, RNG streams, persistent effects back)"]
+    EXIT --> OOC["Out-of-combat policy applies GameAction values"]
+    OOC --> NEXT["next combat or terminal GameOutcome"]
+```
 
 Detailed flows are in [combat search](combat-search.md),
 [out-of-combat policy](out-of-combat.md), and

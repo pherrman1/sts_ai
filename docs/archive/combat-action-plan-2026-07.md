@@ -69,18 +69,12 @@ Assessment from 2026-07-25 review. Phase 1 starts now.
 
 **Architecture:** One shared combat-state encoder with separate policy and value heads:
 
-```
-Visible combat observation
-          │
-          ▼
- Shared object/set encoder (2-layer transformer)
-          │
-          ▼
- Global state embedding z
-       ┌──┴─────────────┐
-       ▼                ▼
- Dynamic policy head   Value heads
- P(a | observation)    Outcome distribution
+```mermaid
+flowchart TD
+    Obs["Visible combat observation"] --> Enc["Shared object/set encoder (2-layer transformer)"]
+    Enc --> Z["Global state embedding z"]
+    Z --> Policy["Dynamic policy head P(a | observation)"]
+    Z --> Value["Value heads (Outcome distribution)"]
 ```
 
 ### Input tokens
@@ -150,21 +144,21 @@ Starting weights: policy=1.0, win=1.0, quantile=0.5, potion=0.2, turns=0.1
 
 **Architecture:** A unified candidate-scoring model over run state, treating combat as a temporally extended transition. The strategic model acts only at meaningful decision points (card rewards, map nodes, shop, rest, events), while combat remains handled by Searcher3 + PVNet.
 
-```
-Run state s_t
-   │
-   ├─ choose card
-   ├─ choose map node
-   ├─ buy/remove/leave shop
-   ├─ rest/upgrade/lift/toke/recall
-   ├─ choose event option
-   └─ choose relic/potion
-          │
-          ▼
-    potentially many game steps (including entire combat)
-          │
-          ▼
-Next strategic state s_{t+1}
+```mermaid
+flowchart TD
+    S["Run state s_t"] --> D1["choose card"]
+    S --> D2["choose map node"]
+    S --> D3["buy/remove/leave shop"]
+    S --> D4["rest/upgrade/lift/toke/recall"]
+    S --> D5["choose event option"]
+    S --> D6["choose relic/potion"]
+    D1 --> M["potentially many game steps (including entire combat)"]
+    D2 --> M
+    D3 --> M
+    D4 --> M
+    D5 --> M
+    D6 --> M
+    M --> N["Next strategic state s_{t+1}"]
 ```
 
 ### 5.1 Data pipeline and run state schema

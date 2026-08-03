@@ -58,6 +58,9 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-02 | [`2026-08-02-mermaid-diagrams.md`](2026-08-02-mermaid-diagrams.md) | Added mermaid diagrams to docs: replaced 5 ASCII diagrams (kept ASCII only in ooc-strategic-v4) and illustrated 6 prose-only data-flow sections. |
+| 2026-08-02 | [`2026-08-02-ooc-wave-r6-r8.md`](2026-08-02-ooc-wave-r6-r8.md) | OOC wave: R6 one-ply gates for shop/treasure/boss relic (+18.8pp, first statistically established result), R7 Q-iso verdict (token state encoder, not the Q head, caused V4 calibration gap), K=1 label horizon better Q calibration, seed-128087 isolation. |
+| 2026-08-02 | [`2026-08-02-phase5-round5-token-state-v4.md`](2026-08-02-phase5-round5-token-state-v4.md) | Phase-5 round 5: token-based run state (V4) delivered (A1–A4); held-out ranking beats V3 but the deployed gate (+3.1pp @ m5) does not — V3 stays default, V4 opt-in. |
 | 2026-08-02 | [`2026-08-02-ooc-guideline-spec-of-record.md`](2026-08-02-ooc-guideline-spec-of-record.md) | OOC guideline adopted as spec of record; new action plan supersedes archived Phase 5; design distilled into KB + decisions record. |
 | 2026-08-02 | [`2026-08-02-phase5-round3-tierb-q-labels.md`](2026-08-02-phase5-round3-tierb-q-labels.md) | Phase-5 round 3: Tier-B one-ply labels, Q-head gate, V3 format; V2 value-head misalignment correction. |
 | 2026-08-02 | [`2026-08-02-determinism-verification.md`](2026-08-02-determinism-verification.md) | Verified fair replay is bit-identical; closed issue 10. |

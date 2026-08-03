@@ -748,9 +748,19 @@ void BattleContext::executeActions() {
                 break;
             }
 
-            std::cerr << seed << std::endl;
-            std::cout << *this << '\n';
-            assert(false);
+            // Loop-guard trip (seed 128087 hit this): a pathological fight that never
+            // terminates must not crash the whole datagen run. Log it and treat the
+            // fight as lost, matching the turn > 500 behavior already below.
+            std::cerr << "[loop-guard] seed " << seed
+                      << " loopCount " << loopCount
+                      << " monstersAlive " << monsters.monstersAlive
+                      << " turn " << turn
+                      << " actionQueue " << actionQueue.size
+                      << " cardQueue " << cardQueue.size
+                      << " hand " << cards.cardsInHand
+                      << "; treating fight as lost" << std::endl;
+            outcome = Outcome::PLAYER_LOSS;
+            break;
         }
 
         if (inputState != InputState::EXECUTING_ACTIONS) {

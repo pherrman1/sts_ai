@@ -42,6 +42,23 @@ Bootstrap is an explicit three-branch state machine (Issues 11/30):
   refuses to run with a diagnostic (restore `current/` from backup, or move
   `state.env`/`history.tsv` aside for a fresh bootstrap).
 
+```mermaid
+stateDiagram-v2
+    [*] --> HasStateEnv: "loop.sh start"
+    HasStateEnv: "state.env present?"
+    HasStateEnv --> Fresh: "no state.env"
+    HasStateEnv --> CurrentComplete: "state.env present"
+    CurrentComplete: "selfplay/current/ models complete?"
+    CurrentComplete --> Resume: "complete current/"
+    CurrentComplete --> Repair: "current/ models missing"
+    Fresh: "copy build/v_win_xgb.json, build/v_combat_fair_trees.txt, build/policy_fair_trees_c.txt into selfplay/current/ and write state.env"
+    Resume: "continue from checkpoint"
+    Repair: "refuse with diagnostic: restore current/ from backup, or move state.env/history.tsv aside for a fresh bootstrap"
+    Fresh --> [*]
+    Resume --> [*]
+    Repair --> [*]
+```
+
 The executable is `$BIN`, default `./build/one_combat`, overridable via
 `ONE_COMBAT_BIN` or `STS_BIN`; a stale root `./one_combat.elf` is not the built
 binary and is never invoked. The loop exits early if `$BIN` is missing or not
@@ -73,6 +90,25 @@ values but omits several current script variables such as `POLICY_SIMS` and
    `selfplay/current/`; state/history advance only after successful phases.
 8. `selfplay/status.sh` reads snapshots, markers, and gate progress for a
    dashboard.
+
+```mermaid
+flowchart LR
+    S1["1. Bootstrap: fresh / resume / repair"]
+    S2["2. Datagen: meta via server V_win/rest; combat via POLICY_SIMS teacher"]
+    S3["3. Replay windows per arm"]
+    S4["4. Trainers write selfplay/cand/ + selfplay/models/"]
+    S5["5. run_gate_batch: $BIN bestbench on held-out seeds"]
+    S6["6. gate_stats: floor + 100*WIN_WEIGHT*won; mean +/- GATE_Z*SE"]
+    S7["7. Copy qualifying artifacts into selfplay/current/"]
+    S8["8. status.sh dashboard"]
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    S6 --> S7
+    S7 --> S8
+```
 
 Resume markers store a target and collision-free next seed; interrupted CSVs
 are counted by distinct seed and resumed beyond the observed maximum

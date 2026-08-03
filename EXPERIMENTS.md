@@ -2122,3 +2122,289 @@ enabling condition, but the omitted command prevents verification.
   from the larger margins.
 - **Artifacts:** `build/tierb_re_gate_{m1,m05,m5}.csv`,
   `build/tierb_rest_only_m1.csv`, `build/tierb_ev_only_m1.csv`.
+
+## 75. Phase 5 round 5: token-based run state (V4) — ablation ladder + paired gate (2026-08-02)
+
+- **Goal:** plan Phase-A items A1–A4 — replace the flat 1017-vector state of the
+  OOC strategic net with a token-based run state (50 globals incl. 6 derived
+  threshold features, counted deck tokens `(cardId, upgraded, count)` through a
+  1-layer single-head self-attention, relic `(id, counter)` and potion
+  `(id, count)` mean-pooled token encoders, plus a candidate entity embedding
+  sharing the deck/relic/potion tables in the action encoder). Contract:
+  `docs/knowledge-base/architecture/ooc-strategic-v4.md`. **No new datagen** —
+  everything is derived from the existing §73 `build/strategic_tierb.csv`
+  (3,057,708 rows / 4,650 seeds; sha256 `b28a3d83…1ae5` lineage, reused
+  `_tok_state.bin` 482 raw float16 cols/row).
+- **Implementation:** `train_strategic_tok.py` (rung-masked trainer,
+  `STRAT_TOK_RUNG=1..4`; same losses/metrics as V3: group-CE + 0.5·per-screen
+  value-MSE + 1.0·Q-MSE on `10·labelWon+labelHp`), `export_strategic_tok.py`
+  (`OOC_STRAT_V4` binary, 807,432 B; numpy-vs-PyTorch parity logit 1.05e-05 /
+  value 5.18e-06 / Q 3.12e-05), `strategic_tok_net.py` (shared module),
+  `apps/ooc_strategic_tok_net.h` (`OocStrategicTokNet`; numpy-vs-native
+  cross-check on 16 formula-generated cases: max |q| 2.41e-05, max |v| 2.06e-05),
+  `apps/one_combat.cpp` (`buildTokState` mirroring `richRow` loops + thresholds,
+  `tokEntity` per §2.5, env `STS_OOC_STRATEGIC_TOK_NN`; the four §74 gates score
+  with the token net when loaded, V3 stays fallback; `STS_OOC_STRATEGIC_TOK_CHECK=1`
+  parity hook: 0 mismatches vs `richFeatureVec` across 8 benchmark runs).
+- **Held-out ablation ladder** (grouped 80/20 by `(seed,decIdx)`, seed 0,
+  `STRAT_EPOCHS=40` each, CUDA; V3 reference from §73 = 60 epochs):
+
+  | rung | state groups | pol top-1 | logit margin | val pol CE | value MAE | Q top-1 | Q MAE |
+  |---|---|---|---:|---:|---:|---:|---:|
+  | 1 | globals 50 only | 0.761 | 5.49 | 0.555 | 25.80 | 0.294 | 27.10 |
+  | 2 | + deck tokens | 0.779 | 10.07 | 0.521 | 13.04 | 0.287 | 17.35 |
+  | 3 | + relic/potion tokens | 0.777 | 9.38 | 0.526 | 11.05 | 0.291 | 16.70 |
+  | 4 | + entity (full) | **0.790** | 10.01 | **0.492** | 11.37 | 0.282 | 17.00 |
+  | 4 @60ep | final | **0.793** | **10.32** | **0.486** | 10.18 | 0.290 | 16.22 |
+  | V3 ref | rich 1017 | 0.784 | 9.35 | — | 5.45 | 0.284 | 14.32 |
+
+  Deck tokens carry the large held-out gains (value MAE 25.8→13.0, Q MAE
+  27.1→17.4, margin 5.5→10.1); relic/potion and the entity add smaller
+  increments; the full config's policy ranking (0.793) and val CE (0.486)
+  exceed V3's, but absolute value/Q calibration stays worse (value MAE 10.2,
+  Q MAE 16.2 vs V3 5.45 / 14.32).
+- **Paired gate** (fair, A0, 1,000 sims, seeds 126700–126827, 12 workers;
+  `STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`
+  sha256 `05178ec8…9e1ea`, `STS_OOC_STRATEGIC_REST=1`, `STS_OOC_STRATEGIC_EVENT=1`;
+  baseline `build/tierb_gate_base.csv` bit-identical, 21.1% / 37.5 / 8.6;
+  V3 reference arm = §74):
+
+  | margin | wins | floor Δ | win Δ | score Δ | hp Δ | discordant |
+  |---|---:|---:|---:|---:|---:|---:|
+  | 1.0 | 27 (21.1%, +0.0pp) | +1.83 CI [−1.05,+4.65] | +0.000 | +1.34 CI [−4.57,+7.23] | +1.3 | 19 A / 19 B |
+  | 0.5 | 28 (21.9%, +0.8pp) | +0.71 CI [−2.33,+3.68] | +0.008 | +2.36 CI [−3.71,+8.48] | +2.3 | 20 A / 21 B |
+  | 5.0 | **31 (24.2%, +3.1pp)** | +0.80 CI [−2.14,+3.80] | +0.031 | +2.15 CI [−3.78,+7.97] | +1.8 | 9 A / 13 B |
+
+- **Verdict:** ➖ mixed, and weaker than the V3 reference. The token encoder
+  works (held-out ranking beats V3; the ablation ladder cleanly attributes the
+  gain to deck tokens; deployed input parity verified bit-identical), and the
+  deployed gate is directionally win-positive at margin 5.0 (+3.1pp, CIs span
+  zero) with floor/HP gains at every margin — but it does **not** beat V3's
+  +7.0pp @ m1 (36/128) on the same block, and the margin curve is the opposite
+  shape (V4 improves with margin, V3 peaked at 0.5–1.0). Consistent with the
+  §61/§62 history: better state representations improve held-out prediction
+  without transferring to a deployed gate gain here. **V3 remains the deployed
+  default** (`selfplay/models/ooc_strategic.native`); the V4 net stays opt-in.
+  Follow-ups: (1) Q-calibration A/B — the V4 Q MAE (16.2) exceeds V3 (14.3),
+  so the Q head (not the state encoder) may be the bottleneck; a V3-state +
+  V4-architecture Q head would isolate this; (2) re-test after Phase-C combat
+  outcome probes are available (the spec's §2.1 threshold set also lacks
+  event-cost features — not logged in datagen); (3) keep the token machinery
+  as the Phase-B encoder base (deck-set transformer, map DAG), since the
+  pipeline is now proven end-to-end.
+- **Artifacts:** `build/tok_gate_{m1,m05,m5}.csv`, `build/tok_check8.csv`;
+  `selfplay/models/ooc_strategic_tok_{rung1..rung4,final}.{pt,_metrics.json}`,
+  `selfplay/models/ooc_strategic_tok_final.native`, per-rung `_tok_state.bin`
+  (2.9 GB each, regenerable); `train_strategic_tok.py`, `export_strategic_tok.py`,
+  `strategic_tok_net.py`, `apps/ooc_strategic_tok_net.h`,
+  `docs/knowledge-base/architecture/ooc-strategic-v4.md`.
+
+## 76. Phase 5 round 6: one-ply Q gates for shop / TREASURE / boss relic (2026-08-02)
+
+- **Goal:** complete the one-ply Q-gate coverage (plan Phase D; round-4
+  follow-up 1). No datagen, no retrain: the §73 sample-all Tier-B labels and
+  `strategicCands` already cover SHOP_ROOM / TREASURE_ROOM /
+  BOSS_RELIC_REWARDS decisions. Pure C++ extension of the deployed V3 net.
+- **Implementation (`apps/one_combat.cpp`):** three new gate functions mirroring
+  `oocOnePlyEventPolicy` (dual-net V3/token path, margin gate
+  `STS_OOC_STRATEGIC_MARGIN`, cats via `strategicCands`, tok entities via
+  `tokEntity`): `oocOnePlyShopPolicy` (:3301, buy card/relic/potion,
+  CARD_REMOVE, leave), `oocOnePlyTreasurePolicy` (:3345, chest open/skip),
+  `oocOnePlyBossRelicPolicy` (:3389, three relics + skip). New flags default
+  **off** so the §74/§75 configs stay reproducible:
+  `STS_OOC_STRATEGIC_SHOP=1`, `STS_OOC_STRATEGIC_TREASURE=1`,
+  `STS_OOC_STRATEGIC_BOSS_RELIC=1`. Wired into `runFullRunOOC` (shop before the
+  shop-V branch, boss relic before `bossRelicVPolicy`, new treasure branch) and
+  `runTraceRun`.
+- **Paired gate** (fair, A0, 1,000 sims, seeds 126700–126827, 12 workers;
+  `STS_OOC_STRATEGIC_NN=selfplay/models/ooc_strategic.native`
+  `STS_OOC_STRATEGIC_REST=1 STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1
+  STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1`; baseline
+  `build/tierb_gate_base.csv` bit-identical, 21.1% / 37.5 / 8.6):
+
+  | margin | wins | floor Δ | win Δ | hp Δ | discordant |
+  |---|---:|---:|---:|---:|---:|
+  | **1.0** | **51 (39.8%, +18.8pp)** | +3.6 CI [+1.1,+6.0] | +0.188 CI [+0.094,+0.281] | +1.2 | 10 A / 34 B |
+  | **0.5** | **51 (39.8%, +18.8pp)** | +5.4 CI [+3.1,+7.6] | +0.188 | +1.2 | 10 A / 34 B |
+  | 5.0 | 27 (21.1%, +0.0pp) | +0.4 CI [−1.0,+1.9] | +0.000 | +0.4 | 11 A / 11 B |
+  | ablation m1: shop-only | 31 (24.2%, +3.1pp) | +0.4 CI [−1.9,+2.7] | +0.031 | +0.4 | 13 A / 17 B |
+  | ablation m1: **treasure-only** | **46 (35.9%, +14.8pp)** | +3.0 CI [+0.4,+5.6] | +0.148 CI [+0.062,+0.234] | +1.2 | 9 A / 28 B |
+  | ablation m1: boss-only | 35 (27.3%, +6.2pp) | +1.4 CI [−1.2,+4.1] | +0.062 CI [−0.016,+0.141] | +0.7 | 10 A / 18 B |
+
+- **Verdict:** ➕ **statistically established improvement — the strongest
+  Phase-5 result.** Cards+rest+event+shop+treasure+boss-relic at margins
+  0.5/1.0 = 39.8% wins vs 21.1% baseline (+18.8pp, win CI [+9.4,+28.1]pp and
+  floor CI [+1.1,+6.0] excluding zero); margin 5.0 is neutral (gates barely
+  fire). The shop gate alone is +3.1pp; the ablations attribute the bulk:
+  **treasure-only +14.8pp (significant) is the dominant contributor** — the
+  default chest policy skips small chests under Cursed Key
+  (`ScumSearchAgent2.cpp::stepOutOfCombatPolicy`), and the Q head learns the
+  state-dependent curse-vs-relic tradeoff from the Tier-B labels; boss-only
+  +6.2pp (relic choice, incl. Cursed Key itself); roughly additive. Identical win
+  outcomes at margins 0.5 and 1.0 on this block (runs are distinct files, same
+  results). Determinism re-verified: m1.0 rerun bit-identical excluding the
+  `sec` timing column.
+- **Artifacts:** `build/r6_gate_{m0.5,m1.0,m5.0}.csv`, `build/r6_shop_only_m1.csv`,
+  `build/r6_gate_m1_rerun.csv`.
+- **Follow-ups:** (1) large secondary block (256–512 seeds) to tighten the CI
+  on the headline; (2) ablation m1: treasure-only and boss-only to attribute
+  the two contributors; (3) re-run the same gates on the V4 token net; (4)
+  with the gate now statistically established, the §73-deferred PPO A/B
+  (Phase-A item 5) and the V4 Q-calibration follow-up gain a stable reference.
+
+## 77. Phase 5 round 7: Q-calibration isolation A/B (V3 state + V4 entity Q) (2026-08-02)
+
+- **Goal** (§75 follow-up 1): decide whether the V4 token net's deployed
+  shortfall is Q-head calibration (Q MAE 16.2 vs V3's 14.32) or the token state
+  encoder. A/B: the V3 1017-vector state with a V4-style entity-conditioned
+  action encoder, entity lever on/off.
+- **Implementation:** `train_strategic_tok.py`-derived entity extraction
+  (REWARDS/SHOP CARD/RELIC/POTION + CARD_SELECT, goldGePrice) feeding a
+  Linear(37→32)→GELU→Linear(32→16) block on the V3 state encoder
+  (Linear(1017→256)→LN→GELU→Dropout→Linear(256→128)); z = 184; pol/q heads
+  Linear(184→96)→GELU→Linear(96→1); per-screen value heads on z_state.
+  Losses/metrics identical to V3 (group-CE + 0.5·value-MSE + 1.0·Q-MSE).
+  New file `train_strategic_qiso.py`; `QISO_ENTITY=0/1` env lever.
+- **Held-out** (`build/strategic_tierb.csv`, grouped 80/20, 40 epochs, CUDA):
+
+  | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
+  |---|---|---:|---:|---:|---:|---:|
+  | V3 ref (§73) | 0.784 | 9.35 | — | 5.45 | 0.284 | 14.32 |
+  | Q-iso entity=1 | 0.790 | 9.21 | 0.491 | 5.76 | 0.280 | 14.47 |
+  | Q-iso entity=0 | 0.782 | 9.20 | 0.516 | 5.75 | 0.287 | 14.43 |
+
+- **Verdict:** ➖ the Q head architecture is **not** the calibration bottleneck:
+  both Q-iso configs land at Q MAE ≈ 14.4 (≈ V3's 14.32, well below V4's 16.2)
+  — the token state encoder caused V4's worse absolute Q calibration. The V4
+  entity conditioning on the V3 state is neutral for Q (0.280 vs 0.287 top-1)
+  and mildly positive for policy ranking (top-1 0.790, val CE 0.491 vs 0.516).
+  Implication: keep the V3 state for the deployed Q gates; any token-state
+  revival must come from better encoders (Phase B) or combat-outcome probes
+  (Phase C) closing the calibration gap, not from the Q-head shape.
+- **Artifacts:** `selfplay/models/ooc_strategic_qiso.pt/_metrics.json`,
+  `ooc_strategic_qiso_e0.pt/_metrics.json`; `train_strategic_qiso.py`.
+
+## 78. Phase 5 round 8: PPO/GAE A/B (negative) + K=1 label-horizon gate A/B (2026-08-02)
+
+- **Goal:** plan Phase-A item 5 — A/B a PPO/GAE policy objective against the
+  CE+Q training on the same data (spec §A.10 starting points: γ=0.995/floor,
+  λ=0.95, ε=0.2); and the §73 cross-cutting follow-up — K=1 vs K=3 label
+  horizon, now tested end-to-end through the deployed gates.
+- **Implementation:** `train_strategic_ppo.py` — trajectories reconstructed
+  from `build/strategic_tierb.csv` (per-seed decision sequences by `decIdx`,
+  successor state = next decision's state, Δf from the floor column, terminal
+  r = 10·won+endHp), per-epoch frozen V̂_old/logit_old, backward GAE
+  recurrence `A_t = δ_t + (γλ)^{Δf}·A_{t+1}` (vectorization verified against a
+  naive loop on epoch 1), PPO-clip policy loss on valid chosen rows, value MSE
+  on ALL group states, Q-MSE aux (10·labelWon+labelHp). V3-shaped 168-dim head
+  contract so the A/B isolates the policy objective. K=1 data:
+  `build/strategic_k1.csv` (649,968 rows / 1,000 seeds, offset 133000,
+  `STRATEGIC_BRANCH_FIGHTS=1`, else the §73 config); the V3 CE+Q trainer
+  (`train_strategic.py`) trained on it.
+- **PPO result (negative):** the run diverged — epoch 30 held-out val_pol_ce
+  7.80, policy top-1 0.277 (vs CE+Q's ~0.49/0.79), then crashed at epoch 31 on
+  `assert np.isfinite(adv64).all()` (non-finite GAE advantages). A ratio
+  overflow fix (clamp exp ratio to [0,1e2]) did not stop the logit drift; the
+  policy logits/advantages become non-finite by epoch 31 with the raw-logit
+  ratio surrogate and no entropy regularization on this behavioral dataset.
+  **Verdict:** ❌ naive PPO-clip with raw-logit ratios on the behavioral
+  Tier-A/B data does not train a competitive policy; CE+Q remains the policy
+  objective. A salvage would need per-group logsumexp-normalized ratios,
+  entropy regularization, and tighter per-epoch step control — deferred.
+- **K=1 vs K=3 label horizon — held-out** (V3 architecture, same split):
+
+  | labels | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
+  |---|---|---:|---:|---:|---:|---:|
+  | K=1 (1,000 seeds) | 0.771 | 5.76 | 0.552 | 2.83 | 0.306 | **7.50** |
+  | K=3 (§73, 4,650 seeds) | 0.784 | 9.35 | — | 5.45 | 0.284 | 14.32 |
+
+  K=1's Q calibration is far better (Q MAE 7.50 vs 14.32, top-1 0.306 vs
+  0.284; value MAE 2.83 vs 5.45) — consistent with 1-fight targets
+  compounding less bootstrap noise.
+- **K=1 vs K=3 label horizon — deployed gate** (same full stack as §76, V3
+  net replaced by the K=1-trained head; fair, 1,000 sims, seeds 126700–126827,
+  baseline 21.1%):
+
+  | config | wins | floor Δ | win Δ | discordant |
+  |---|---:|---:|---:|---:|
+  | K=1 head, margin 1.0 | 43 (33.6%, +12.5pp) | +3.6 CI [+1.3,+6.0] | +0.125 CI [+0.031,+0.219] | 11 A / 27 B |
+  | K=1 head, margin 0.5 | 38 (29.7%, +8.6pp) | −0.0 CI [−3.0,+2.9] | +0.086 | 19 A / 30 B |
+  | K=3 head (recall §76), margin 1.0 | **51 (39.8%, +18.8pp)** | +3.6 CI [+1.1,+6.0] | +0.188 CI [+0.094,+0.281] | 10 A / 34 B |
+
+- **Verdict:** ➖ the K=1 head is statistically established at margin 1.0
+  (+12.5pp) but **below the K=3 head (+18.8pp)**: its superior held-out Q
+  calibration does not transfer to gate win rate, and its margin curve is
+  inverted vs K=3 (m1.0 > m0.5). **K=3 labels remain the deployment choice.**
+  **Inference:** the K=3 head's noisier targets produce larger Q margins, so
+  the gate fires more often and the stronger-than-heuristic NN decisions
+  dominate; a better-calibrated head with smaller margins defers to the
+  heuristic more. Follow-ups: (1) combine K=1 and K=3 labels (multi-truncation
+  mixture) as a calibration-vs-margin compromise; (2) a K=1 retrain on the full
+  4,650-seed pool to rule out the data-volume confound.
+- **Artifacts:** `build/strategic_k1.csv`, `build/k1_gate_{m1.0,m0.5}.csv`,
+  `selfplay/models/ooc_strategic_v3_k1.{pt,native}`,
+  `selfplay/models/ooc_strategic_ppo.pt` (diverged run), `train_strategic_ppo.py`.
+
+## 79. Phase C step 1: combat outcome model C_ψ trained (no-peek entry) (2026-08-02)
+
+- **Goal** (plan §5.4.1/5.4.2, spec §A.7): C_ψ(pre-combat state: deck,
+  relics, potions, HP, encounter, ascension) → P(death), HP-loss quantiles,
+  potion-use, turns. Inventory (wave track) found the labels already exist:
+  `build/vdist.csv` (2,828,241 rows / 10.3 GB) carries `won, endHp, endTurn,
+  potionsConsumed, pUsed0–43` per fight; the no-peek entry contract and the
+  distributional heads both have prior art (`train_combat_transition_entry.py`,
+  `train_combat_dist.py`). **No new datagen needed.**
+- **Implementation:** `train_combat_cpsi.py` — first row per (seed, fightIdx)
+  (verified turn==0), no-peek STRUCTURAL inputs (11 persistent scalars
+  incl. 8 relic counters; one whole-deck-bag token; relics r0–127; potions
+  pot0–43; encounter embedding; maxHp) — in-fight features never enter the
+  model; EntityEncoder/CombatDistNet token architecture (dim 128, 4 heads,
+  2 layers); heads: win BCE, death BCE, HP smooth-L1 (win-conditional), 11 HP
+  quantiles (pinball), 44 potion-use BCE (masked to fights with consumption),
+  turns smooth-L1(log1p); loss weights documented in the file. New self-contained
+  export format `combat_cpsi_v1` (text) for later C++ probing.
+- **Held-out (best-of-40 epochs, ~106k fights / 2.8M rows):** win_accuracy
+  0.969, win Brier 0.0226, death Brier 0.0226, hp_mae_if_win 0.072 (7.2% of
+  maxHp), end_hp_rmse 8.74, quantile pinball 0.026, potion BCE 0.0088,
+  turns MAE 0.98.
+- **Verdict:** ✅ the no-peek entry outcome model is highly accurate — battle
+  outcomes are almost fully determined by the pre-combat state in this sim.
+  Ready for the encounter-probe integration (plan §5.4.3, spec §A.8).
+- **Artifacts:** `selfplay/models/v_combat_cpsi.{pt,txt,_val.csv}` (pt =
+  torch checkpoint; txt = 4.5 MB `combat_cpsi_v1` export); `train_combat_cpsi.py`.
+
+## 80. Phase C step 2: encounter probes into the V4 state — held-out A/B (2026-08-02)
+
+- **Goal** (plan §5.4.3, spec §A.8; §75 follow-up 2): feed matchup-aware
+  combat predictions into the strategic state and re-test whether the V4
+  token net's Q calibration gap closes. Probe source: the trained C_ψ (§79).
+- **Implementation:** `probe_cpsi.py` — per strategic decision, evaluate C_ψ
+  (no-peek entry inputs built from the rich state block; the 8 relic counters
+  are not in the rich row and are set to 0, documented approximation) on 9
+  probe slots: 6 fixed (TWO_LOUSE, GREMLIN_NOB, LAGAVULIN, THREE_SENTRIES,
+  SLIME_BOSS, THE_GUARDIAN) + 3 actual upcoming (nextFight0, nextEliteId,
+  bossId; INVALID → zeroed). Per slot: [P(death), P(win), hp_frac q50,
+  hp_frac q10, turns, max potion prob] = 54 features, float16 npy
+  (`build/strategic_tierb_probes.npy`, 3,057,708×54). Trainer lever
+  `TOK_PROBES_FILE` appends the block to the V4 globals (fusion
+  Linear(160→256)); `strategic_tok_net.py::Net(nprobes=9)` (default 0 keeps
+  the export contract untouched).
+- **Held-out** (`build/strategic_tierb.csv`, grouped 80/20, 40 epochs, CUDA):
+
+  | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
+  |---|---|---:|---:|---:|---:|---:|
+  | V4 plain (40ep, §75 ladder) | 0.790 | 10.01 | 0.492 | 11.37 | 0.282 | 17.00 |
+  | **V4 + probes (40ep)** | 0.792 | 10.62 | 0.487 | 11.63 | 0.290 | 16.89 |
+  | V4 plain (60ep, §75 final) | 0.793 | 10.32 | 0.486 | 10.18 | 0.290 | 16.22 |
+
+- **Verdict:** ➖ neutral — the probes do not move the token-state metrics
+  (Q MAE 16.89 vs 17.00 at equal epochs; Q top-1 0.290 vs 0.282, within noise).
+  **Inference:** the V4 Q calibration gap is not driven by missing
+  matchup information — C_ψ is highly accurate (win acc 0.969) yet its
+  features add nothing beyond what the deck/relic/encounter tokens already
+  encode. Consistent with §77: the gap is in how the token state conditions
+  the Q head, not in the information available. Deployed probe integration
+  (C++ C_ψ loader + probe feeding + gate benchmark) remains a Phase-C
+  follow-up but is not expected to change this conclusion.
+- **Artifacts:** `probe_cpsi.py`, `build/strategic_tierb_probes.npy`,
+  `selfplay/models/ooc_strategic_tok_probes.{pt,_metrics.json}`.

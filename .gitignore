@@ -4,6 +4,7 @@
 
 # Local build products and Python caches.
 /build/
+/build2/
 /build_asan/
 /one_combat*.elf
 /__pycache__/

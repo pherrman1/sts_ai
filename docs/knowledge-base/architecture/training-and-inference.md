@@ -22,6 +22,18 @@ package:
    `v_server.py` over localhost.
 5. Model predictions supply combat priors/leaves or score run states/actions.
 
+```mermaid
+flowchart LR
+    A["one_combat modes"] -->|"emit run, combat, policy-edge, strategic-action, paired, or oracle CSV rows"| B["CSV datasets"]
+    B -->|"fit XGBoost, scikit-learn, or PyTorch models"| C["root train_*.py programs"]
+    C -->|"export"| D["export_*.py programs and trainer export blocks"]
+    D -->|"write"| E["JSON / compact tree text / native neural text-binary / TorchScript / checkpoints"]
+    E -->|"load compact artifacts in-process"| F["one_combat"]
+    E -.->|"optional localhost inference"| G["v_server.py"]
+    G -.->|"serve predictions over localhost"| F
+    F -->|"predictions supply"| H["combat priors / leaves or score run states / actions"]
+```
+
 Representative producers are `datagen3`, `fightgen`, `fairgen`, `oocnextgen`,
 and the August 1 `strategicgen` mode. `strategicgen` records one rich-state row
 per LEGAL action at each OOC decision with screen/action metadata, structured

@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-02 against commit `67320b3` and the current working tree.
 
 ## Purpose
 
@@ -58,6 +58,21 @@ particles whose draw order contradicts the observed pile
 5. Search repeats until `outcome != Outcome::UNDECIDED`.
 6. `BattleContext::exitBattle` transfers persistent results back to
    `GameContext`.
+
+```mermaid
+flowchart TD
+    A["BattleContext::init: copies run state, initializes combat transients"]
+    B["Agent: snapshots optional training hooks, constructs the selected searcher, assigns simulation budget"]
+    C["Search on copied/determinized battles; must not mutate live committed state"]
+    D["Validate and execute root action on live BattleContext; Searcher3 filters live-valid edges"]
+    E["BattleContext::exitBattle: transfers persistent results to GameContext"]
+
+    A --> B
+    B --> C
+    C --> D
+    D -->|"repeat until outcome != Outcome::UNDECIDED"| C
+    D -->|"outcome != Outcome::UNDECIDED"| E
+```
 
 Learned guidance is loaded by `apps/one_combat.cpp::main`:
 

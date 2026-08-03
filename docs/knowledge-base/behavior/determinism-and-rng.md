@@ -1,6 +1,6 @@
 # Determinism and RNG
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-02 against commit `67320b3` and the current working tree.
 
 ## Purpose
 
@@ -41,6 +41,22 @@ searcher for the next observed decision.
 5. The agent validates that move against the live battle and applies it if
    valid; Searcher3 filters for live-valid root edges during selection.
 6. At combat end, six stream states return to `GameContext`.
+
+```mermaid
+flowchart TD
+    A["Run RNG state enters BattleContext::init"] --> B["Fair search copies the root battle per simulation"]
+    B --> C{"Searcher branch"}
+    C -->|"Searcher2"| D["Partially determinize the copy"]
+    C -->|"Searcher3"| E["Apply a sampled particle"]
+    D --> F["Search explores copied worlds"]
+    E --> F
+    F --> G["Search chooses a root move"]
+    G -.->|"Searcher3"| S3F["Filters for live-valid root edges during selection"]
+    S3F -.-> H
+    G --> H{"Move valid against the live battle?"}
+    H -->|"valid"| I["Apply the move to the live battle"]
+    I --> J["At combat end, six stream states return to GameContext"]
+```
 
 Searcher3 intends to seed its `std::mt19937_64` from visible observation,
 `agentSeed`, and `decisionIndex`. The constructor now takes both values as

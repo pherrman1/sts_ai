@@ -13,6 +13,7 @@ remains the place for chronological policy/model benchmark decisions
 | Record | Topic |
 | --- | --- |
 | [`2026-08-02-semi-markov-strategic-model.md`](2026-08-02-semi-markov-strategic-model.md) | Semi-Markov run-level strategic model: combat as a temporally extended transition, unified candidate scoring, run-value as the shared pricing language, margin-gated overrides, hidden-information boundary. |
+| [`2026-08-02-one-ply-q-gate.md`](2026-08-02-one-ply-q-gate.md) | Margin-gated one-ply Q gate: run-level overrides scored with the Q(s,a) head on Tier-B one-ply counterfactual labels, argmax executed only at/above `STS_OOC_STRATEGIC_MARGIN` (default 1.0); successor-value and un-gated paths rejected; V3 deployed, V4 opt-in. |
 
 The chronological, session-level record — including process and tooling
 choices, rejected alternatives, and new facts — lives in the
