@@ -19,6 +19,11 @@ byte size matches nrows*NSTATE*2.
 """
 import json, os, sys
 
+# Defragment the CUDA caching allocator before torch initializes; the
+# GPU-resident state (6.2 GB) leaves little contiguous VRAM otherwise.
+# Respects a user setting.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 import numpy as np
 import pandas as pd
 import torch
@@ -178,6 +183,18 @@ else:
 
 state_mmap = np.memmap(STATE_FILE, dtype=np.float16, mode="r", shape=(nrows, NSTATE))
 
+# GPU-resident state: upload once, gather rows on-device (~0.15 ms vs ~12 ms
+# per-batch CPU mmap gather). Falls back to the CPU mmap path on OOM.
+state_gpu = None
+if DEVICE.startswith("cuda"):
+    try:
+        state_gpu = torch.from_numpy(np.array(state_mmap)).to(DEVICE, torch.float16)
+        print(f"[train-strategic] state resident on GPU: {state_gpu.shape} "
+              f"({state_gpu.numel() * 2:,} bytes)", flush=True)
+    except torch.cuda.OutOfMemoryError:
+        torch.cuda.empty_cache()
+        print("[train-strategic] GPU state upload OOM; using CPU mmap gather", flush=True)
+
 
 class Net(nn.Module):
     def __init__(self):
@@ -226,7 +243,11 @@ def fwd_rows(rows):
     """Forward over an arbitrary row set (epoch-permuted train batch).  The
     rows are gathered once per batch from the group-ordered mmap + small
     arrays; ~BATCH*NSTATE*2 bytes per gather."""
-    x = torch.from_numpy(state_mmap[rows].copy()).to(DEVICE, torch.float32)
+    if state_gpu is not None:
+        rg = torch.from_numpy(rows).to(DEVICE)
+        x = state_gpu[rg].float()
+    else:
+        x = torch.from_numpy(state_mmap[rows].copy()).to(DEVICE, torch.float32)
     bits = torch.from_numpy(((action_ints[rows, None] >> AR[None, :]) & 1)
                             .astype(np.float32)).to(DEVICE)
     c = torch.from_numpy(cat[rows]).to(DEVICE, torch.long)

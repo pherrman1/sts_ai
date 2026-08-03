@@ -194,14 +194,14 @@ class Net(nn.Module):
         z = torch.cat([s, b, a, self.screen(screen), e], 1)                  # (B,184)
         logit = self.pol(z).squeeze(1)
         q = self.q(z).squeeze(1)
-        v = torch.zeros(x.shape[0], device=x.device)
+        # All 8 per-screen heads on the full batch, then select by screen
+        # (identical math to the old masked per-head writes; no index_put /
+        # tiny masked GEMMs / host syncs).
+        si = (screen - 1).clamp(0, 7)
+        vv = torch.stack([self.vals[h](s) for h in range(8)], 1)             # (B,8,1)
+        v = vv[torch.arange(x.shape[0], device=x.device), si].squeeze(1)
         qq = None
-        for h in range(8):
-            mm = (screen == h + 1)
-            if mm.any():
-                v[mm] = self.vals[h](s[mm]).squeeze(1)
-                if self.nquants > 0:
-                    if qq is None:
-                        qq = torch.zeros(x.shape[0], 11, device=x.device)
-                    qq[mm] = self.quants[h](s[mm])
+        if self.nquants > 0:
+            qqv = torch.stack([self.quants[h](s) for h in range(8)], 1)      # (B,8,11)
+            qq = qqv[torch.arange(x.shape[0], device=x.device), si]
         return logit, v, q, qq

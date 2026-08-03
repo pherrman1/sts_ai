@@ -87,7 +87,16 @@ goldGeRemoval/canTakeEliteKey/bossNear — plus canonical counted deck tokens
 `docs/knowledge-base/architecture/ooc-strategic-v4.md`) and per-action
 candidate entity embeddings via `tokEntity`. Training/export:
 `train_strategic_tok.py` (rung-masked ablation trainer on the existing §73
-CSV, no new datagen), `export_strategic_tok.py`, `strategic_tok_net.py`.
+CSV, no new datagen; the 482-col group-ordered fp16 state file is uploaded to
+GPU VRAM once and rows are gathered on-device with a CPU-mmap fallback on OOM;
+the 8 per-screen value/quantile heads run as full-batch GEMMs + gather instead
+of masked per-head writes — math-identical, see the 2026-08-03 decision-log
+entries; `STRAT_TOK_COMPILE=1` (default ON) wraps the net in `torch.compile`
+(mode="default", Triton fusion, ~2x step; needs CPython dev headers;
+`torch._dynamo.config.suppress_errors` falls back to eager if compilation
+fails; `reduce-overhead` CUDA graphs are NOT usable — capture rejects the
+masked entity `index_put_`)),
+`export_strategic_tok.py`, `strategic_tok_net.py`.
 Deployment parity hooks: exporter numpy-vs-PyTorch asserts and
 `STS_OOC_STRATEGIC_TOK_CHECK=1` (first gated decision per run compares the 44
 globals against `richFeatureVec`; zero mismatches across §75 benchmark runs).

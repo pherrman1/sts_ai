@@ -17,10 +17,17 @@ All rungs share the same topology and training contract.
 Memory: like V3, the state block is read in pandas chunks and written ONCE to a
 group-ordered float16 binary (OUT + "_tok_state.bin") with 482 raw columns per
 row [glob 44, thr 6, deck 96x3, rel 64x2, pot 8x2]; training gathers contiguous
-slices from an mmap of that file. Global mean/inv (50 values) are computed from
-train rows; normalization happens per batch (the file stores RAW values).
+slices from an mmap of that file (uploaded to GPU VRAM once and gathered
+on-device when CUDA is available; CPU mmap fallback on OOM). Global mean/inv
+(50 values) are computed from train rows; normalization happens per batch (the
+file stores RAW values).
 """
-import json, math, os, re, sys
+import json, math, os, re, sys, time
+
+# Defragment the CUDA caching allocator before torch initializes; the
+# GPU-resident state (2.9 GB) + attention intermediates fragment 8 GB VRAM
+# otherwise (e.g. when another process holds memory). Respects a user setting.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import numpy as np
 import pandas as pd
@@ -33,6 +40,7 @@ CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_tierb.csv"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "selfplay/models/ooc_strategic_tok"
 EPOCHS = int(os.environ.get("STRAT_EPOCHS", "40"))
 BATCH = int(os.environ.get("STRAT_BATCH", "4096"))   # target ROWS per batch (whole groups)
+EVAL_CHUNK = int(os.environ.get("STRAT_EVAL_CHUNK", "8192"))  # eval forward chunk (no group constraint; keep small: VRAM holds the 2.9 GB resident state)
 LR = float(os.environ.get("STRAT_LR", "2e-3"))
 VLAMBDA = float(os.environ.get("STRAT_VLAMBDA", "0.5"))
 QLAMBDA = float(os.environ.get("STRAT_QLAMBDA", "1.0"))
@@ -45,6 +53,7 @@ NPROBES = 9 if PROBES_FILE else 0
 QUANTS = int(os.environ.get("STRAT_TOK_QUANTILES", "0"))  # C4: per-screen 11-quantile value heads
 NQUANTS = 11 if QUANTS else 0
 CROSS = int(os.environ.get("STRAT_TOK_CROSS", "0"))  # C2: candidate-deck cross-attention
+COMPILE = os.environ.get("STRAT_TOK_COMPILE", "1") == "1"  # torch.compile (Triton fusion) the net; needs CPython dev headers
 THREADS = int(os.environ.get("OMP_NUM_THREADS", "8"))
 DEVICE = os.environ.get("STRAT_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu")
 if not DEVICE.startswith("cuda"):
@@ -341,9 +350,50 @@ if not reused:
 
 state_mmap = np.memmap(STATE_FILE, dtype=np.float16, mode="r", shape=(nrows, NFILE))
 
+# GPU-resident state: upload once, gather rows on-device (~0.15 ms vs ~6 ms
+# per-batch CPU mmap gather). Falls back to the CPU mmap path on OOM.
+state_gpu = None
+if DEVICE.startswith("cuda"):
+    try:
+        state_gpu = torch.from_numpy(np.array(state_mmap)).to(DEVICE, torch.float16)
+        print(f"[train-strategic-tok] state resident on GPU: {state_gpu.shape} "
+              f"({state_gpu.numel() * 2:,} bytes)", flush=True)
+    except torch.cuda.OutOfMemoryError:
+        torch.cuda.empty_cache()
+        print("[train-strategic-tok] GPU state upload OOM; using CPU mmap gather", flush=True)
+AR_G = None
+act_gpu = cat_gpu = atype_gpu = screen_gpu = ent_type_gpu = ent_id_gpu = gold_ge_gpu = None
+probes_gpu = None
+if state_gpu is not None:
+    AR_G = torch.arange(32, dtype=torch.int64, device=DEVICE)
+    act_gpu = torch.from_numpy(action_ints).to(DEVICE, torch.int64)
+    cat_gpu = torch.from_numpy(cat).to(DEVICE, torch.long)
+    atype_gpu = torch.from_numpy(atype).to(DEVICE, torch.long)
+    screen_gpu = torch.from_numpy(screen).to(DEVICE, torch.long)
+    ent_type_gpu = torch.from_numpy(ent_type).to(DEVICE, torch.long)
+    ent_id_gpu = torch.from_numpy(ent_id).to(DEVICE, torch.long)
+    gold_ge_gpu = torch.from_numpy(gold_ge).to(DEVICE)
+    if probes is not None:
+        probes_gpu = torch.from_numpy(probes).to(DEVICE)
 
 
-model = Net(RUNG, nprobes=NPROBES, transformer=TRANSFORMER, nquants=NQUANTS, ncross=CROSS).to(DEVICE)
+
+net = Net(RUNG, nprobes=NPROBES, transformer=TRANSFORMER, nquants=NQUANTS, ncross=CROSS).to(DEVICE)
+model = net
+if COMPILE and DEVICE.startswith("cuda"):
+    try:
+        # mode="default" (Triton fusion, ~2x on this net). Not
+        # "reduce-overhead": CUDA-graph capture rejects the masked index_put_
+        # in the entity block. State dicts are handled via `net` (the compiled
+        # wrapper would prefix keys with `_orig_mod.` and break the exporter).
+        # suppress_errors: any compile failure (e.g. missing CPython dev
+        # headers) falls back to eager for that graph instead of aborting.
+        torch._dynamo.config.suppress_errors = True
+        model = torch.compile(net, mode="default")
+        print("[train-strategic-tok] torch.compile enabled (default mode)", flush=True)
+    except Exception as e:
+        model = net
+        print(f"[train-strategic-tok] torch.compile failed ({e!r}); running eager", flush=True)
 opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=2e-4)
 
 AR = np.arange(32, dtype=np.int64)
@@ -353,7 +403,28 @@ INV = torch.from_numpy(inv).to(DEVICE)
 
 def fwd_rows(rows):
     """Forward over an arbitrary row set: gather the 482-col slices once."""
-    x = torch.from_numpy(state_mmap[rows].copy()).to(DEVICE, torch.float32)
+    if state_gpu is not None:
+        rg = torch.from_numpy(rows).to(DEVICE)
+        x = state_gpu[rg].float()
+        bits = ((act_gpu[rg, None] >> AR_G) & 1).float()
+        c = cat_gpu[rg]
+        a = atype_gpu[rg]
+        s = screen_gpu[rg]
+        et = ent_type_gpu[rg]
+        ei = ent_id_gpu[rg]
+        gg = gold_ge_gpu[rg]
+        pr = probes_gpu[rg] if probes_gpu is not None else None
+    else:
+        x = torch.from_numpy(state_mmap[rows].copy()).to(DEVICE, torch.float32)
+        bits = torch.from_numpy(((action_ints[rows, None] >> AR[None, :]) & 1)
+                                .astype(np.float32)).to(DEVICE)
+        c = torch.from_numpy(cat[rows]).to(DEVICE, torch.long)
+        a = torch.from_numpy(atype[rows]).to(DEVICE, torch.long)
+        s = torch.from_numpy(screen[rows]).to(DEVICE, torch.long)
+        et = torch.from_numpy(ent_type[rows]).to(DEVICE, torch.long)
+        ei = torch.from_numpy(ent_id[rows]).to(DEVICE, torch.long)
+        gg = torch.from_numpy(gold_ge[rows]).to(DEVICE)
+        pr = torch.from_numpy(probes[rows]).to(DEVICE) if probes is not None else None
     g = torch.clamp((x[:, glob_cols] - MEAN) * INV, -8, 8)
     dk_id = x[:, dk_id_cols].to(torch.int64)
     dk_up = x[:, dk_up_cols].to(torch.int64)
@@ -444,8 +515,8 @@ def evaluate():
     full_logit = np.empty(len(va_perm), np.float32)
     full_val = np.empty(len(va_perm), np.float32)
     full_q = np.empty(len(va_perm), np.float32)
-    for lo in range(0, len(va_perm), BATCH):
-        hi = min(lo + BATCH, len(va_perm))
+    for lo in range(0, len(va_perm), EVAL_CHUNK):
+        hi = min(lo + EVAL_CHUNK, len(va_perm))
         l, v, q, _ = fwd_rows(va_perm[lo:hi])
         full_logit[lo:hi] = l.cpu().numpy()
         full_val[lo:hi] = v.cpu().numpy()
@@ -532,6 +603,7 @@ if __name__ == "__main__":
     best_state = None
     tr_gs = np.flatnonzero(tr_mask)
     for epoch in range(1, EPOCHS + 1):
+        t_ep = time.time()
         model.train()
         order = rng.permutation(tr_gs)
         batches = []
@@ -558,20 +630,20 @@ if __name__ == "__main__":
         em = evaluate()
         if em["val_pol_ce"] < best_ce:
             best_ce = em["val_pol_ce"]
-            best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+            best_state = {k: v.detach().clone() for k, v in net.state_dict().items()}
         if epoch == 1 or epoch % 10 == 0 or epoch == EPOCHS:
-            print(f"epoch={epoch:03d} train_pol={np.mean(p_losses):.4f} "
+            print(f"epoch={epoch:03d} ({time.time() - t_ep:5.1f}s) train_pol={np.mean(p_losses):.4f} "
                   f"train_val={np.mean(v_losses):.4f} train_q={np.mean(q_losses):.4f} "
                   f"val_pol_ce={em['val_pol_ce']:.4f} "
                   f"metrics={to_py(em)}", flush=True)
 
-    model.load_state_dict(best_state)
+    net.load_state_dict(best_state)
     model.eval()
     eval_metrics = to_py(evaluate())
     print(f"\nbest held-out (val_pol_ce={best_ce:.4f}): {eval_metrics}", flush=True)
 
     os.makedirs(os.path.dirname(OUT) or ".", exist_ok=True)
-    torch.save({"state_dict": model.cpu().state_dict(), "mean": mean, "inv": inv,
+    torch.save({"state_dict": net.cpu().state_dict(), "mean": mean, "inv": inv,
                 "metrics": eval_metrics, "rung": RUNG, "nrows": int(nrows),
                 "features": NFILE},
                OUT + ".pt")
