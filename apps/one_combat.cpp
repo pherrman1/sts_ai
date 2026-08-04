@@ -815,8 +815,28 @@ static double g_dgTemp = 2.0;   // env STS_DG_TEMP (swept: 1-2 good spread+quali
 // unset = use the run's base sims). Deaths cluster at elites/bosses, so we can search
 // those deep and skimp on trivial hallway fights for the same win% at far less compute.
 static int g_simsNormal = -1, g_simsElite = -1, g_simsBoss = -1;
+// Dynamic per-fight budget via the C_psi no-peek combat outcome surrogate
+// (STS_SIM_ADAPT=1 + STS_CPSI_NN, EXPERIMENTS.md §100): one forward pass at fight
+// start predicts P(death) and E[hp/maxHp|win]; the budget multiplier rises with
+// predicted danger. Learned tiering — unlike the static STS_SIMS_* room tiers it
+// cannot misjudge difficulty (act-3 monsters ~ act-1 elites, §21). buildCpsiEntry
+// uses only pre-combat state, so this is fair-play clean. Takes precedence over
+// the static tiers when enabled.
+static bool   g_simAdapt = false;       // env STS_SIM_ADAPT=1
+static double g_simAdaptMinFrac = 0.4;  // env STS_SIM_ADAPT_MIN_FRAC: budget floor as a fraction of base
+static double g_simAdaptMaxFrac = 2.0;  // env STS_SIM_ADAPT_MAX_FRAC: budget ceiling as a fraction of base
 // Pick the sim budget for the fight in the current room (falls back to base).
 static int fightSims(const GameContext &gc, int base) {
+    if (g_simAdapt && g_cpsiNet.loaded() && gc.info.encounter != MonsterEncounter::INVALID) {
+        float scalar[search::kCpsiScalars], deck[search::kCpsiCards],
+              relics[search::kCpsiRelics], potions[search::kCpsiPotions];
+        search::buildCpsiEntry(gc, scalar, deck, relics, potions);
+        search::CpsiOut r;
+        g_cpsiNet.predict(scalar, deck, relics, potions, (int)gc.info.encounter, r);
+        const double m = 0.5 + 1.0 * r.death + 1.0 * (1.0 - r.hp);  // danger = P(death) + expected HP loss
+        const double frac = std::min(g_simAdaptMaxFrac, std::max(g_simAdaptMinFrac, m));
+        return std::max(1, (int)std::llround(base * frac));
+    }
     if (gc.curRoom == Room::BOSS || gc.curRoom == Room::BOSS_TREASURE) return g_simsBoss  > 0 ? g_simsBoss  : base;
     if (gc.curRoom == Room::ELITE)                                     return g_simsElite > 0 ? g_simsElite : base;
     return g_simsNormal > 0 ? g_simsNormal : base;   // MONSTER / event fights
@@ -3586,12 +3606,38 @@ static bool oocOnePlyMapPolicy(GameContext &gc, const search::ScumSearchAgent2 &
         }
     } else {
         const std::vector<float> state = richFeatureVec(gc);
+        // V6 map-DAG encoder (5.3.2): when the artifact carries it, score each
+        // child with the route embedding (rooms/edges/special from the visible
+        // map, position + chosen child from gc / cand1), matching the trainer's
+        // MAP-screen rows exactly (mapbatch export format).
+        int mapRooms[105], mapEdges[105], mapSpecial[105];
+        const bool useMapEnc = g_oocStrategicNet.mapEnc;
+        if (useMapEnc) {
+            const Map &mp = *gc.map;
+            for (int y = 0; y < 15; ++y)
+                for (int x = 0; x < 7; ++x) {
+                    const int i = y * 7 + x;
+                    const MapNode &n = mp.getNode(x, y);
+                    mapRooms[i] = (int)n.room;
+                    int em = 0;
+                    for (int e = 0; e < n.edgeCount; ++e) em |= 1 << n.edges[e];
+                    mapEdges[i] = em;
+                    mapSpecial[i] = 0;
+                }
+            if (mp.burningEliteX >= 0 && mp.burningEliteY >= 0 && !gc.greenKey)
+                mapSpecial[mp.burningEliteY * 7 + mp.burningEliteX] = 1;
+        }
         for (int i = 0; i < (int)actions.size(); ++i) {
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
             const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-            const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
-                                                                 cats, actionType, (int)gc.screenState);
+            const double v = useMapEnc
+                ? g_oocStrategicNet.predictMapActionValue(state.data(), actions[i].bits, cats,
+                                                          actionType, (int)gc.screenState,
+                                                          mapRooms, mapEdges, mapSpecial,
+                                                          gc.curMapNodeX, gc.curMapNodeY, cand1)
+                : g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
+                                                      cats, actionType, (int)gc.screenState);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -7207,6 +7253,14 @@ int main(int argc, char **argv) {
     if (g_simsNormal > 0 || g_simsElite > 0 || g_simsBoss > 0)
         std::cout << "[tiered sims: normal=" << g_simsNormal << " elite=" << g_simsElite
                   << " boss=" << g_simsBoss << " (-1=base)]\n";
+    if (const char *d = std::getenv("STS_SIM_ADAPT")) {       // C_psi adaptive per-fight sim budget
+        g_simAdapt = std::atoi(d) != 0;
+        if (const char *f = std::getenv("STS_SIM_ADAPT_MIN_FRAC")) g_simAdaptMinFrac = std::atof(f);
+        if (const char *f = std::getenv("STS_SIM_ADAPT_MAX_FRAC")) g_simAdaptMaxFrac = std::atof(f);
+        if (g_simAdapt)
+            std::cout << "[C_psi adaptive sim budget ON: frac " << g_simAdaptMinFrac
+                      << ".." << g_simAdaptMaxFrac << " (needs STS_CPSI_NN)]\n";
+    }
     if (const char *d = std::getenv("STS_CONVERGE")) {       // convergence-based early stopping
         search::g_convergeStop = std::atoi(d) != 0;
         if (const char *p = std::getenv("STS_CONV_PATIENCE")) search::g_convPatience = std::atoll(p);
@@ -7725,6 +7779,33 @@ int main(int argc, char **argv) {
             else agent.stepOutOfCombatPolicy(gc);
         }
         std::printf("winnettest: %d samples  max|native-server| = %.6f  mean = %.6f\n", n, maxDiff, sumDiff / std::max(1, n));
+
+    } else if (mode == "mapnntest") {    // deterministic C++-vs-Python parity for the V6 map-DAG path
+        // Fixed synthetic inputs; the Python side (export_strategic.py) computes
+        // the same Q from the same checkpoint — the printed numbers must match.
+        if (!g_oocStrategicNet.ok || !g_oocStrategicNet.mapEnc) { std::cerr << "mapnntest: need a loaded V6 net (STS_OOC_STRATEGIC_NN)\n"; return 1; }
+        std::vector<float> state(OocStrategicNet::NSTATE);
+        for (int i = 0; i < OocStrategicNet::NSTATE; ++i) state[i] = (float)((i % 7) * 0.5);
+        int rooms[105], edges[105], special[105];
+        for (int i = 0; i < 105; ++i) {
+            const int y = i / 7, x = i % 7;
+            rooms[i] = i % 10;
+            int em = 0;
+            if (y < 14) for (int cx = 0; cx < 7; ++cx) if (((x * 3 + y) % 7) == cx) em |= 1 << cx;
+            edges[i] = em;
+            special[i] = (i == 5) ? 1 : 0;
+        }
+        const int cats[6] = {1, 2, 3, 4, 5, 6};
+        const int px = 2, py = 3;
+        for (int cx = 0; cx < 7; ++cx)
+            std::printf("mapnntest q[child=%d] = %.10f\n", cx,
+                        (double)g_oocStrategicNet.predictMapActionValue(
+                            state.data(), 0x1234u, cats, 2, (int)ScreenState::MAP_SCREEN,
+                            rooms, edges, special, px, py, cx));
+        std::printf("mapnntest q[roots pool, no singleton] = %.10f\n",
+                    (double)g_oocStrategicNet.predictMapActionValue(
+                        state.data(), 0x1234u, cats, 2, (int)ScreenState::MAP_SCREEN,
+                        rooms, edges, special, px, -1, -1));
 
     } else if (mode == "fightgen") {      // ONE pass -> BOTH value (endHp) + policy (visit-pi) CSVs
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;

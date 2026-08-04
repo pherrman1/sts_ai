@@ -3042,3 +3042,196 @@ enabling condition, but the omitted command prevents verification.
   `check_vwin_calibration.py` (`--ckpt` mode), per-seed CSVs
   `build/qwin{,_cal}_m*.csv`, `build/regret_cal_e*.csv` (server
   `/tmp/qwin_sweep/`).
+
+## 97. Combat value net under the gate stack — negative at every α (2026-08-04)
+
+- **Goal:** §28/§31's fair-play 1,500-tree combat value net
+  (`build/v_combat_fair_trees.txt` sha256
+  `e0b645a52b21832ed95fef3b84a50836ca55a61e0a142a9cd13eb85d6d93c8f1`,
+  +6.2pp over the pre-gate fair baseline in §28) was never tested under the
+  established one-ply gate stack — every gate round (§76/§81/§82/§89/§91–§96)
+  ran without `STS_VNET`. A/B on the recorded block: V3 full gate stack @m1.0
+  (reference `build/gates_ref_m1.csv`, 39.8%, re-measured bit-identical
+  first — 0 non-`sec` diffs) vs the same stack + vnet.
+- **Setup:** fair, A0, 1,000 sims, seeds 126700–126827, 12 threads (local;
+  binary at commit `db78f4d`). Env: `STS_FAIR=1`,
+  `STS_OOC_STRATEGIC_NN=selfplay/models/ooc_strategic.native`, REST/EVENT/
+  SHOP/TREASURE/BOSS_RELIC=1, margin 1.0, `STS_VNET=build/v_combat_fair_trees.txt`.
+
+  | arm | win% | win Δ | floor Δ | HP Δ | cpu_sec/run |
+  |---|---|---:|---:|---:|---:|
+  | ref (gates only) | 39.8% | — | — | 19.3 | 9.16 |
+  | + vnet α0.3 | 36.7% | −3.1 [−11.7,+5.5] | +0.5 | −1.3 | 28.35 |
+  | + vnet α0.5 | 39.8% | +0.0 [−10.2,+10.2] | +0.4 | +0.2 | 29.19 |
+  | + vnet α0.3, `STS_POLICY=0` | 36.7% | −3.1 [−10.9,+4.7] | −0.2 | −2.1 | 27.92 |
+
+- **Verdict:** ❌ the fair 1,500-tree vnet is strictly dominated under the
+  gate stack at 1,000 sims: α0.3 loses ~3pp at 3.1× compute, α0.5 ties at
+  3.2× compute. §28's old +6.2pp was measured against a much weaker pre-gate
+  fair baseline; the PUCT prior + gate stack already capture what the vnet
+  leaf offered, and at low α the net's (older-era) guidance actively hurts.
+  The vnet-α curve's mild optimum (~0.5) offers nothing over the free
+  reference. No V4+vnet arm was run (no positive point to extend). `STS_VNET`
+  stays off for the gate stack. Per-seed CSVs `build/vnet_{a03,a05,a03_nopol}_128.csv`.
+
+## 98. Fair sim-budget sweep of the gate stack — 4,000 sims statistically established (2026-08-04)
+
+- **Goal:** §26's known-RNG sim frontier (PUCT@2000–3000 = +8–11pp over 1000,
+  ceiling ~73% with fixed c_puct) was never re-measured in fair play under
+  the top OOC stack — every gate benchmark ran at 1,000 sims, and combat has
+  repeatedly been identified as the binding constraint (§13, §36). With the
+  vnet rejected (§97), the clean frontier test is the gates-only stack at
+  higher budgets.
+- **Setup:** V3 full gate stack @m1.0 (no vnet), fair, A0, 24 threads on the
+  GCP server `sts-test` (binary + artifacts verified hash-identical to local
+  HEAD `db78f4d`); 128-seed block 126700–126827 and 256-seed block
+  126700–126955; paired per-seed vs the 1,000-sim references
+  (`build/gates_ref_m1.csv` 39.8% / `build/sec256_gate_m1.csv` 37.1%).
+- **Results — 256-seed block (paired vs sec256_gate_m1):**
+
+  | sims | win% | win Δ (95% CI) | floor Δ (95% CI) | HP Δ | cpu_sec/run |
+  |---:|---:|---:|---:|---:|---:|
+  | 1000 | 37.1% | — | — | 17.8 | ~9–20* |
+  | 2000 | 39.1% | +2.0 [−3.5,+7.8] | +1.2 [−0.1,+2.4] | +1.2 | 20.21 |
+  | 3000 | 43.0% | +5.9 [+0.0,+11.7] | +1.4 [−0.0,+2.8] | +4.6 | 30.36 |
+  | 4000 | 44.5% | **+7.4 [+1.2,+13.7]** | **+2.7 [+1.2,+4.1]** | +4.2 | 42.66 |
+
+  \* the 1,000-sim `sec256_gate_m1.csv` was measured at 12 threads (§82);
+  per-seed CSV retained, cpu column not comparable.
+  Also: 128-block confirmation 3k = 43.0% (+3.1 [−5.5,+11.7] vs
+  `gates_ref_m1.csv`); 2k@128 = 39.8% (+0.0).
+- **Verdict:** ✅ **4,000 sims is the new recommended combat budget for the
+  gate stack: +7.4pp win / +2.7 floor / +4.2 HP on 256 paired seeds with
+  both win and floor CIs excluding zero, at 4.7× cpu** (42.7 vs 9.2
+  cpu-s/run). The curve is monotone and matches the §26 known-RNG direction
+  (combat is search-limited); the fair curve is flatter (2k = wash, gains
+  appear from 3k up) — no free lunch, but the payoff is established at the
+  top OOC stack, unlike the cheap-sims dead ends (§21/§22). Runtime is
+  deployment-relevant: 256 seeds @4k = ~8 min wall on 24 threads, but
+  cpu_sec/run 42.7 (vs ~6.96 for the flags-off default @1k).
+- **Open:** does the curve extend past 4k (known-RNG fixed-c_puct plateaus
+  ~6–10k, §26)? V4-net arm at 3k pending (§99). Per-seed CSVs
+  `build/simsweep_{2k,3k,4k}_256.csv`, `build/simsweep_{2k,3k}_128.csv`.
+
+## 99. V4 token net at higher sim budgets — new top arm: V4 @3,000 sims (2026-08-04)
+
+- **Goal:** the §98 frontier used the V3 gates; the V4 token net (§81/§92 top
+  arm at 1k) was never tested above 1,000 sims. A/B on the same 256-seed
+  block, same server, same protocol as §98.
+- **Setup:** fair, A0, seeds 126700–126955, 24 threads, V4 full gate stack
+  (`STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`
+  sha256 `05178ec8…9e1ea` + REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1, margin 1.0),
+  3,000 and 4,000 sims. Banner verified `[ooc-strat-tok-net] loaded`.
+- **Complete §98+§99 frontier (256-seed block, paired vs `sec256_gate_m1.csv`):**
+
+  | config | win% | win Δ (95% CI) | floor Δ (95% CI) | HP Δ | cpu_sec/run |
+  |---|---|---:|---:|---:|---:|
+  | V3 @1000 (ref) | 37.1% | — | — | 17.8 | ~9–20* |
+  | V3 @2000 | 39.1% | +2.0 [−3.5,+7.8] | +1.2 [−0.1,+2.4] | +1.2 | 20.2 |
+  | V3 @3000 | 43.0% | +5.9 [+0.0,+11.7] | +1.4 [−0.0,+2.8] | +4.6 | 30.4 |
+  | V3 @4000 | 44.5% | +7.4 [+1.2,+13.7] | +2.7 [+1.2,+4.1] | +4.2 | 42.7 |
+  | **V4 @3000** | **45.3%** | **+8.2 [+0.8,+15.6]** | +2.0 [+0.3,+3.7] | **+7.5** | 31.3 |
+  | V4 @4000 | 46.5% | +9.4 [+2.0,+17.2] | +1.8 [+0.0,+3.6] | +5.8 | 41.7 |
+
+  \* 1,000-sim reference measured at 12 threads (§82); cpu column not comparable.
+  V4@3k vs V4@4k: +1.2pp win (CI [−4.3,+6.6]), floor −0.1, HP −1.7 — the V4
+  curve flattens past 3k.
+- **Verdict:** ✅ **V4 @3,000 sims is the new top arm: 45.3% win / 42.9 floor /
+  25.3 HP on 256 paired seeds — +8.2pp win and +2.0 floor vs the previous
+  recommended config (V3@1k gate stack), both CIs excluding zero, at 3.4×
+  cpu.** V4's net-vs-net edge persists at higher sims (V4@3k +2.3pp over
+  V3@3k at equal cost, §92's +3.9pp direction), and V4@3k beats V3@4k
+  (45.3 vs 44.5%) at 27% less cost. V4@4k's +1.2pp over V4@3k is noise with
+  no floor/HP gain — **3k is the operating point, not 4k**. Combined with
+  §97 (vnet rejected) and §98 (fair sim frontier, monotone then flat), the
+  combat-side wave concludes: spend more sims on the V4 gate stack; the
+  prior/gate stack needs no combat value net.
+- **Artifacts:** `build/simsweep_v4_3k_256.csv`, `build/simsweep_v4_4k_256.csv`
+  (pulled from server `/tmp/`); decision log
+  `2026-08-04-combat-side-wave.md`.
+
+## 100. Map-DAG encoder wave (5.3.2): V6 artifact on the tierb pipeline — offline gain, gameplay neutral-to-negative (2026-08-04)
+
+- **Goal** (§91/§93 open lever): give the strategic net's MAP-screen scoring the
+  downstream route information the §91 verdict said it lacked ("the Q head
+  conditions on (child x, row, room) via the 6-cat embeddings only") by porting
+  the full-map reverse-DAG encoder (train_meta_entity.py::FullMapGraphEncoder:
+  room/row/col/burning 32-dim node embeddings, bottom-up sweep rows 14→0 with
+  mean+max child messages + log1p degree, mean+max readout over the chosen
+  child's subtree, roots when py<0) plus a zero-init residual adapter (96→168)
+  into the tierb trainer and the native loader.
+- **Data:** no new datagen — `one_combat mapbatch build/strategic_qwin_cal.csv`
+  exported 3,287 lossless per-(seed, act) graphs (1.7 s); the corrected CSV's
+  77,789 MAP-screen rows (screen 5) carry the per-child counterfactual labels
+  (§73 sample-all), joined by (seed, act) with position from curMapX/curMapY and
+  the child from cand1; burning cell marked while greenKey absent.
+- **Implementation:** `train_strategic.py` — optional MAPS.csv arg (3rd CLI or
+  STRAT_MAPS_CSV), FullMapGraphEncoder + zero-init adapter added to the
+  (z,b,a,screen) concat for MAP rows only, STRAT_FREEZE_BASE=1 (only map_*
+  params train), STRAT_INIT_PT (seed the frozen base from an existing
+  checkpoint), new q_top1_map/q_mae_screen-brier metrics. `export_strategic.py`
+  — new magic **OOC_STRAT_V6** (V5 layout + encoder block); numpy map path +
+  torch/numpy parity incl. 8 direct map-embedding checks (max err 1.8e-5);
+  logit tolerance loosened to 2e-4 for V6 (adapter op-order noise; the logit is
+  not the deployed gate output). `apps/ooc_strategic_net.h` —
+  `OocStrategicNet` gains the encoder arrays + `encodeMapGraph` +
+  `predictMapActionValue` (rooms/edges/special/position/chosen from `gc.map`
+  and cand1); loader accepts V3/V5/V6. `apps/one_combat.cpp` —
+  `oocOnePlyMapPolicy` routes MAP candidates through the graph path when the
+  artifact is V6; new `mapnntest` mode for deterministic C++-vs-Python parity
+  (max |diff| ~2e-5 on fixed synthetic inputs). V3/V5 loading and margin
+  behavior unchanged (verified on the recorded block).
+- **E1 (isolation run, frozen base):** `STRAT_FREEZE_BASE=1
+  STRAT_INIT_PT=ooc_strategic_qwin_cal.pt`, 40 epochs on the corrected CSV →
+  `ooc_strategic_map_enc.native` (V6, md5 de2d1868…). Held-out: val_pol_ce
+  0.4259 (base 0.4671), policy top-1 0.821, q_brier 0.0409, **q_top1_map
+  0.5060 (4,324 MAP groups; the base's MAP q_top1 was not tracked — added this
+  wave — but E1's epoch-1 value was already 0.5009)**, value_mae 1.7388 =
+  the loaded base exactly (frozen-base integrity check).
+- **Process bug caught:** the first E1 launch was killed mid state.bin write;
+  the relaunch silently REUSED the corrupt file (byte size matched) → the
+  frozen base's value_mae read 7.57 instead of 1.74, and rows ≥400k differed
+  from the clean `ooc_strategic_qwin_cal_state.bin` (contiguous corrupted
+  block). Fix: kill, delete, rerun (clean run: value_mae 1.7388 ✓). Lesson:
+  a killed trainer's `_state.bin` can be size-valid but corrupt — verify
+  frozen-model metrics against the source run before trusting a reused file.
+- **Paired A/B** (fair, A0, 1,000 sims, seeds 126700–126827, 12 threads;
+  reference = §76 full stack m1.0 `gates_ref_m1.csv`, 39.8%; six gates ON in
+  both arms + `STS_OOC_STRATEGIC_MAP=1`, MAP gate at probability-point
+  margins; per-seed CSVs `build/mapgate_{qwin_cal,map_enc}_m*.csv`):
+
+  | config | wins | win Δ (vs ref) | floor Δ | discordant |
+  |---|---:|---:|---:|---:|
+  | base m0.01 | 20 (15.6%) | −24.2pp CI [−33.6,−15.6] | −7.4 CI [−10.0,−4.9] | 45 |
+  | base m0.03 | 32 (25.0%) | −14.8pp CI [−24.2,−4.7] | −3.1 CI [−5.5,−0.8] | 43 |
+  | base m0.05 | 29 (22.7%) | −17.2pp CI [−26.6,−7.0] | −3.5 CI [−5.9,−1.1] | 44 |
+  | base m0.10 | 28 (21.9%) | −18.0pp CI [−28.1,−7.8] | −3.5 CI [−5.9,−1.1] | 45 |
+  | enc m0.01 | 18 (14.1%) | −25.8pp CI [−35.2,−16.4] | −7.6 CI [−10.3,−4.9] | 45 |
+  | enc m0.03 | 26 (20.3%) | −19.5pp CI [−29.7,−9.4] | −4.1 CI [−6.3,−1.8] | 44 |
+  | enc m0.05 | 30 (23.4%) | −16.4pp CI [−25.8,−7.0] | −3.3 CI [−5.7,−0.9] | 44 |
+  | enc m0.10 | 28 (21.9%) | −18.0pp CI [−28.1,−7.8] | −3.5 CI [−5.9,−1.1] | 45 |
+
+  (Context: without the MAP gate, the §96 calibrated arms at m0.01/m0.03 were
+  27.3%/25.0% — turning the MAP gate ON costs ~12pp at m0.01 even on the base,
+  replicating §91's negative; the no-map-gate reference arms are
+  `build/qwin_cal_m*.csv`.)
+
+- **Encoder vs base at equal margins (paired):** m0.03 −4.7pp CI [−11.7,+2.3]
+  (n.s., negative); m0.05 +0.8pp CI [−2.3,+4.7] (n.s., positive).
+- **Verdict:** ❌ the map-DAG encoder does not rescue the map gate on the
+  tierb pipeline. Offline MAP ranking improved (q_top1_map ~0.50 vs ~0.49-0.50
+  base estimate; val_pol_ce 0.426 vs 0.467) but the A/B is neutral-to-negative
+  at every margin, exactly the §62 pattern ("better absolute prediction does
+  not identify the causal best route": predictive gain, policy rejected).
+  Combined with §96 (the MAP label signal itself is weak), the pre-registered
+  success criterion (encoder ≥ base on wins) is not met → **the encoder lever
+  (5.3.2) is falsified on the current labels; the heuristic pathing and the
+  map-gate-off stack stay; the V6 artifact stays opt-in and undeployed.**
+  Remaining levers per §93: Tier-B-style route labels are what the labels
+  already are here (per-child counterfactual at MAP), so the falsification
+  points at the label horizon/quality (K=3 one-ply) or the policy objective,
+  not the encoder — Phase F (search distillation) is the coherent next step.
+- **Artifacts:** `selfplay/models/ooc_strategic_map_enc.{pt,native,
+  metrics.json}` (+`_state.bin`), `build/strategic_qwin_cal_maps.csv`,
+  per-seed `build/mapgate_*.csv`, `run_mapgate_ab.sh`,
+  `ooc_strategic_map_enc_train.log`.

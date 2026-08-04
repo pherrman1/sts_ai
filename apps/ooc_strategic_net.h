@@ -58,6 +58,23 @@ struct OocStrategicNet {
     float qfl0w[POLHID][POLIN], qfl0b[POLHID];
     float qfl2w[POLHID], qfl2b;
 
+    // Map-DAG encoder (OOC_STRAT_V6, 5.3.2): bottom-up reverse-DAG route
+    // encoder over the visible 15x7 map + zero-init residual adapter into the
+    // POLIN concat, applied to MAP-screen candidates. Mirrors the trainer's
+    // FullMapGraphEncoder / map_adapter (train_strategic.py).
+    static constexpr int MAPDN = 32, MAPDU = 64, MAPDR = 128, MAPDOUT = 96;
+    float mapRoomW[10][MAPDN], mapRowW[15][MAPDN], mapColW[7][MAPDN], mapBurnW[2][MAPDN];
+    float mapUp0w[MAPDU][3 * MAPDN + 1], mapUp0b[MAPDU];
+    float mapUp1w[MAPDU], mapUp1b[MAPDU];
+    float mapUp3w[MAPDN][MAPDU], mapUp3b[MAPDN];
+    float mapNormW[MAPDN], mapNormB[MAPDN];
+    float mapRo0w[MAPDR][2 * MAPDN], mapRo0b[MAPDR];
+    float mapRo1w[MAPDR], mapRo1b[MAPDR];
+    float mapRo3w[MAPDOUT][MAPDR], mapRo3b[MAPDOUT];
+    float mapAd0w[POLIN][MAPDOUT], mapAd0b[POLIN];
+    float mapAd2w[POLIN][POLIN], mapAd2b[POLIN];
+    bool mapEnc = false;
+
     bool ok = false;
 
     bool load(const std::string &path) {
@@ -69,11 +86,14 @@ struct OocStrategicNet {
         char hdr[13] = {};
         if (!readBlock(hdr, 12)
             || (std::memcmp(hdr, "OOC_STRAT_V3", 12) != 0
-                && std::memcmp(hdr, "OOC_STRAT_V5", 12) != 0)) {
+                && std::memcmp(hdr, "OOC_STRAT_V5", 12) != 0
+                && std::memcmp(hdr, "OOC_STRAT_V6", 12) != 0)) {
             std::fprintf(stderr, "[ooc-strat-net] truncated payload in %s\n", path.c_str());
             std::fclose(f); return false;
         }
-        probQ = std::memcmp(hdr, "OOC_STRAT_V5", 12) == 0;
+        const bool v6 = std::memcmp(hdr, "OOC_STRAT_V6", 12) == 0;
+        probQ = std::memcmp(hdr, "OOC_STRAT_V5", 12) == 0 || v6;
+        mapEnc = v6;
         int dims[4];
         if (!readBlock(dims, sizeof(dims))
             || dims[0] != NSTATE || dims[1] != NHIDDEN || dims[2] != NHIDDEN2 || dims[3] != NBITS) {
@@ -122,6 +142,30 @@ struct OocStrategicNet {
                     && readBlock(qfl2w, sizeof(qfl2w))
                     && readBlock(&qfl2b, sizeof(qfl2b));
         }
+        if (complete && v6) {
+            complete = readBlock(mapRoomW, sizeof(mapRoomW))
+                    && readBlock(mapRowW, sizeof(mapRowW))
+                    && readBlock(mapColW, sizeof(mapColW))
+                    && readBlock(mapBurnW, sizeof(mapBurnW))
+                    && readBlock(mapUp0w, sizeof(mapUp0w))
+                    && readBlock(mapUp0b, sizeof(mapUp0b))
+                    && readBlock(mapUp1w, sizeof(mapUp1w))
+                    && readBlock(mapUp1b, sizeof(mapUp1b))
+                    && readBlock(mapUp3w, sizeof(mapUp3w))
+                    && readBlock(mapUp3b, sizeof(mapUp3b))
+                    && readBlock(mapNormW, sizeof(mapNormW))
+                    && readBlock(mapNormB, sizeof(mapNormB))
+                    && readBlock(mapRo0w, sizeof(mapRo0w))
+                    && readBlock(mapRo0b, sizeof(mapRo0b))
+                    && readBlock(mapRo1w, sizeof(mapRo1w))
+                    && readBlock(mapRo1b, sizeof(mapRo1b))
+                    && readBlock(mapRo3w, sizeof(mapRo3w))
+                    && readBlock(mapRo3b, sizeof(mapRo3b))
+                    && readBlock(mapAd0w, sizeof(mapAd0w))
+                    && readBlock(mapAd0b, sizeof(mapAd0b))
+                    && readBlock(mapAd2w, sizeof(mapAd2w))
+                    && readBlock(mapAd2b, sizeof(mapAd2b));
+        }
         std::fclose(f);
         if (!complete) {
             std::fprintf(stderr, "[ooc-strat-net] truncated payload in %s\n", path.c_str());
@@ -129,7 +173,8 @@ struct OocStrategicNet {
         }
         ok = true;
         std::printf("[ooc-strat-net] loaded %s (%s)\n", path.c_str(),
-                    probQ ? "OOC_STRAT_V5 Q_win" : "OOC_STRAT_V3");
+                    mapEnc ? "OOC_STRAT_V6 Q_win + map-DAG encoder"
+                           : (probQ ? "OOC_STRAT_V5 Q_win" : "OOC_STRAT_V3"));
         return true;
     }
 
@@ -334,6 +379,189 @@ struct OocStrategicNet {
         return out;
     }
 
+    // Route embedding for one legal child (V6 map-DAG encoder, 5.3.2): node =
+    // room+row+col+burning embeddings; bottom-up reverse sweep rows 14 -> 0
+    // with mean+max child messages and log1p degree; readout pools the chosen
+    // child's subtree (row-0 roots when py < 0 = the act's first pick). Exact
+    // mirror of train_strategic.py::FullMapGraphEncoder.
+    void encodeMapGraph(const int rooms[105], const int edges[105],
+                        const int special[105], int px, int py, int chosenX,
+                        float out[MAPDOUT]) const {
+        float base[15][7][MAPDN];
+        for (int y = 0; y < 15; ++y)
+            for (int x = 0; x < 7; ++x) {
+                const int i = y * 7 + x;
+                const int rid = clampi(rooms[i], 0, 9);
+                for (int j = 0; j < MAPDN; ++j)
+                    base[y][x][j] = mapRoomW[rid][j] + mapRowW[y][j]
+                                  + mapColW[x][j] + mapBurnW[special[i] ? 1 : 0][j];
+            }
+        float graph[15][7][MAPDN];
+        for (int x = 0; x < 7; ++x)
+            for (int j = 0; j < MAPDN; ++j) graph[14][x][j] = base[14][x][j];
+        for (int y = 13; y >= 0; --y) {
+            for (int x = 0; x < 7; ++x) {
+                const int em = edges[y * 7 + x];
+                float mean[MAPDN] = {}, maxv[MAPDN] = {};
+                int deg = 0;
+                for (int cx = 0; cx < 7; ++cx)
+                    if (em & (1 << cx)) {
+                        ++deg;
+                        for (int j = 0; j < MAPDN; ++j) {
+                            const float v = graph[y + 1][cx][j];
+                            mean[j] += v;
+                            if (deg == 1 || v > maxv[j]) maxv[j] = v;
+                        }
+                    }
+                if (deg) for (int j = 0; j < MAPDN; ++j) mean[j] /= (float)deg;
+                float upIn[3 * MAPDN + 1];
+                for (int j = 0; j < MAPDN; ++j) upIn[j] = base[y][x][j];
+                for (int j = 0; j < MAPDN; ++j) upIn[MAPDN + j] = mean[j];
+                for (int j = 0; j < MAPDN; ++j) upIn[2 * MAPDN + j] = maxv[j];
+                upIn[3 * MAPDN] = std::log1p((float)deg);
+                float h[MAPDU];
+                for (int j = 0; j < MAPDU; ++j) {
+                    float s = mapUp0b[j];
+                    for (int i = 0; i < 3 * MAPDN + 1; ++i) s += mapUp0w[j][i] * upIn[i];
+                    h[j] = s;
+                }
+                layerNormSiluInPlace(h, MAPDU, mapUp1w, mapUp1b);
+                float upd[MAPDN];
+                for (int j = 0; j < MAPDN; ++j) {
+                    float s = mapUp3b[j];
+                    for (int i = 0; i < MAPDU; ++i) s += mapUp3w[j][i] * h[i];
+                    upd[j] = base[y][x][j] + s;
+                }
+                layerNormInPlace(upd, MAPDN, mapNormW, mapNormB);
+                for (int j = 0; j < MAPDN; ++j) graph[y][x][j] = upd[j];
+            }
+        }
+        // Readout: mean+max over the chosen child (roots when py < 0).
+        float mean[MAPDN] = {}, maxv[MAPDN] = {};
+        int deg = 0;
+        const bool root = py < 0;
+        const int row = root ? 0 : clampi(py + 1, 0, 14);
+        for (int x = 0; x < 7; ++x) {
+            if (chosenX >= 0 && x != chosenX) continue;
+            const bool sel = root ? (edges[x] > 0)
+                                  : (py < 14 && ((edges[clampi(py, 0, 14) * 7 + clampi(px, 0, 6)] >> x) & 1));
+            if (!sel) continue;
+            ++deg;
+            for (int j = 0; j < MAPDN; ++j) {
+                const float v = graph[row][x][j];
+                mean[j] += v;
+                if (deg == 1 || v > maxv[j]) maxv[j] = v;
+            }
+        }
+        if (deg) for (int j = 0; j < MAPDN; ++j) mean[j] /= (float)deg;
+        float roIn[2 * MAPDN];
+        for (int j = 0; j < MAPDN; ++j) roIn[j] = mean[j];
+        for (int j = 0; j < MAPDN; ++j) roIn[MAPDN + j] = maxv[j];
+        float h[MAPDR];
+        for (int j = 0; j < MAPDR; ++j) {
+            float s = mapRo0b[j];
+            for (int i = 0; i < 2 * MAPDN; ++i) s += mapRo0w[j][i] * roIn[i];
+            h[j] = s;
+        }
+        layerNormSiluInPlace(h, MAPDR, mapRo1w, mapRo1b);
+        for (int j = 0; j < MAPDOUT; ++j) {
+            float s = mapRo3b[j];
+            for (int i = 0; i < MAPDR; ++i) s += mapRo3w[j][i] * h[i];
+            out[j] = silu(s);
+        }
+    }
+
+    // Q(s,a) for a MAP-screen candidate with the V6 map-DAG route encoder: the
+    // adapter output is added to the (z,b,a,screen) concat (zero at init, so
+    // the base heads are untouched until the encoder is trained).
+    float predictMapActionValue(const float *state, std::uint32_t actionBits,
+                                const int cats[6], int actionType, int screen,
+                                const int rooms[105], const int edges[105],
+                                const int special[105], int px, int py, int chosenX) const {
+        float x[NSTATE];
+        for (int i = 0; i < NSTATE; ++i)
+            x[i] = clampf((state[i] - stateMean[i]) * stateInv[i], -8.0f, 8.0f);
+
+        float sOut[NHIDDEN2];
+        encodeState(x, sOut);
+
+        float bits[NBITS];
+        for (int i = 0; i < NBITS; ++i) bits[i] = (float)((actionBits >> i) & 1u);
+        float bOut[AHIDDEN2];
+        {
+            float h[AHIDDEN];
+            for (int j = 0; j < AHIDDEN; ++j) {
+                float s = a0b[j];
+                for (int i = 0; i < NBITS; ++i) s += a0w[j][i] * bits[i];
+                h[j] = gelu(s);
+            }
+            for (int j = 0; j < AHIDDEN2; ++j) {
+                float s = a3b[j];
+                for (int i = 0; i < AHIDDEN; ++i) s += a3w[j][i] * h[i];
+                bOut[j] = s;
+            }
+        }
+
+        float catIn[CATIN];
+        int p = 0;
+        for (int c = 0; c < NCAT; ++c) {
+            int idx = clampi(cats[c] + 1, 0, CATVOCAB - 1);
+            for (int i = 0; i < CATDIM; ++i) catIn[p++] = cw[c][idx][i];
+        }
+        {
+            int idx = clampi(actionType + 1, 0, ATYPEVOCAB - 1);
+            for (int i = 0; i < ATYPEDIM; ++i) catIn[p++] = atypeW[idx][i];
+        }
+        float aOut[AHIDDEN2];
+        {
+            float h[AHIDDEN];
+            for (int j = 0; j < AHIDDEN; ++j) {
+                float s = cat0b[j];
+                for (int i = 0; i < CATIN; ++i) s += cat0w[j][i] * catIn[i];
+                h[j] = gelu(s);
+            }
+            for (int j = 0; j < AHIDDEN2; ++j) {
+                float s = cat3b[j];
+                for (int i = 0; i < AHIDDEN; ++i) s += cat3w[j][i] * h[i];
+                aOut[j] = s;
+            }
+        }
+
+        float z[POLIN];
+        p = 0;
+        for (int i = 0; i < NHIDDEN2; ++i) z[p++] = sOut[i];
+        for (int i = 0; i < AHIDDEN2; ++i) z[p++] = bOut[i];
+        for (int i = 0; i < AHIDDEN2; ++i) z[p++] = aOut[i];
+        if (screen >= 0 && screen < NSCR)
+            for (int i = 0; i < SCRDIM; ++i) z[p++] = screenW[screen][i];
+        else
+            for (int i = 0; i < SCRDIM; ++i) z[p++] = 0.0f;
+
+        float mapOut[MAPDOUT];
+        encodeMapGraph(rooms, edges, special, px, py, chosenX, mapOut);
+        float ad0[POLIN];
+        for (int j = 0; j < POLIN; ++j) {
+            float s = mapAd0b[j];
+            for (int i = 0; i < MAPDOUT; ++i) s += mapAd0w[j][i] * mapOut[i];
+            ad0[j] = gelu(s);
+        }
+        for (int j = 0; j < POLIN; ++j) {
+            float s = mapAd2b[j];
+            for (int i = 0; i < POLIN; ++i) s += mapAd2w[j][i] * ad0[i];
+            z[j] += s;
+        }
+
+        float hh[POLHID];
+        for (int j = 0; j < POLHID; ++j) {
+            float s = q0b[j];
+            for (int i = 0; i < POLIN; ++i) s += q0w[j][i] * z[i];
+            hh[j] = gelu(s);
+        }
+        float out = q2b;
+        for (int i = 0; i < POLHID; ++i) out += q2w[i] * hh[i];
+        return probQ ? 1.0f / (1.0f + std::exp(-out)) : out;
+    }
+
     // Q_HP / Q_floor auxiliary probability heads (V5 only; 0 for V3).
     float predictAuxValue(const float *state, std::uint32_t actionBits,
                           const int cats[6], int actionType, int screen,
@@ -437,6 +665,19 @@ struct OocStrategicNet {
     static float gelu(float x) {
         const float a = x * x * x * 0.044715f;
         return 0.5f * x * (1.0f + std::tanh(0.7978845608028654f * (x + a)));
+    }
+    static float silu(float x) {
+        return x / (1.0f + std::exp(-x));
+    }
+    static void layerNormInPlace(float *h, int n, const float *w, const float *b) {
+        float mu = 0; for (int j = 0; j < n; ++j) mu += h[j]; mu /= n;
+        float var = 0; for (int j = 0; j < n; ++j) { float d = h[j] - mu; var += d * d; }
+        var = var / n + 1e-5f; float invStd = 1.0f / std::sqrt(var);
+        for (int j = 0; j < n; ++j) h[j] = (h[j] - mu) * invStd * w[j] + b[j];
+    }
+    static void layerNormSiluInPlace(float *h, int n, const float *w, const float *b) {
+        layerNormInPlace(h, n, w, b);
+        for (int j = 0; j < n; ++j) h[j] = silu(h[j]);
     }
 };
 

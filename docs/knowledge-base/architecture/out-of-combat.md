@@ -1,7 +1,7 @@
 # Out-of-combat policy
 
 Last verified: 2026-08-04 against the current working tree (Wave B regret
-gate + Q_win truth-check mode added).
+gate + Q_win truth-check mode + map-DAG encoder (V6) added).
 
 ## Purpose
 
@@ -139,6 +139,30 @@ checkpoint, export parity-checked to ~1e-5 logit) on terminal
 (`labelBootstrap==0`, chosen) rows instead of the win trees — run with the
 pre- and post-recalibration checkpoints to test bootstrap-bias propagation
 into the head.
+
+## Map-DAG encoder (V6, 5.3.2 — falsified 2026-08-04, opt-in)
+
+`OOC_STRAT_V6` artifacts (V5 layout + a reverse-DAG map encoder + a
+zero-init 96→168 residual adapter) let `oocOnePlyMapPolicy` score MAP
+candidates with downstream route information: node = room/row/col/burning
+embeddings, bottom-up sweep rows 14→0 with mean+max child messages, readout
+pools the chosen child's subtree (roots when `curMapNodeY < 0`). Training
+inputs come from `one_combat mapbatch` tables joined per (seed, act) —
+**no new datagen**: the tierb MAP-screen rows already carry per-child
+counterfactual labels. Trainer knobs: 3rd CLI arg / `STRAT_MAPS_CSV`,
+`STRAT_FREEZE_BASE=1` (train only `map_*`), `STRAT_INIT_PT` (seed the frozen
+base from a prior checkpoint); exporter writes the V6 magic and numpy-parity
+checks the graph path; C++ gains `OocStrategicNet::predictMapActionValue`
+(+`mapnntest` parity mode). E1 (frozen `ooc_strategic_qwin_cal.pt` base,
+40 epochs): val_pol_ce 0.426, q_top1_map 0.506 — offline gain, but the
+recorded-block A/B is neutral-to-negative at every probability-point margin
+(§100): the MAP gate itself costs ~12pp on the base at m0.01, and the encoder
+does not close it. **Verdict: the encoder lever is falsified on the current
+K=3 labels (§62 lesson repeats); V6 stays opt-in and undeployed; the
+heuristic pathing and the map-gate-off stack remain the deployed config.**
+Caution: a killed trainer can leave a byte-size-valid but corrupt
+`_state.bin` — verify frozen-model metrics against the source run before
+reusing it.
 
 ## Strategic model design (semi-Markov decomposition)
 

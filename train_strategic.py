@@ -35,6 +35,15 @@ from torch import nn
 
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_200.csv"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "selfplay/models/ooc_strategic"
+# Map-DAG encoder (5.3.2): optional third CLI arg (or STRAT_MAPS_CSV) is the
+# `one_combat mapbatch` table (one lossless 15x7 graph per (seed, act)); the
+# MAP-screen rows then feed the reverse-DAG encoder with a zero-init residual
+# adapter into the (z,b,a,screen) concat. STRAT_FREEZE_BASE=1 freezes every
+# non-map parameter (the §62-style isolation run).
+MAPS = sys.argv[3] if len(sys.argv) > 3 else os.environ.get("STRAT_MAPS_CSV")
+FREEZE_BASE = os.environ.get("STRAT_FREEZE_BASE", "0") != "0"
+INIT_PT = os.environ.get("STRAT_INIT_PT")   # seed the base weights (map_* stay fresh)
+MAP_SCREEN_ID = 5   # ScreenState::MAP_SCREEN (GameContext.h)
 EPOCHS = int(os.environ.get("STRAT_EPOCHS", "60"))
 BATCH = int(os.environ.get("STRAT_BATCH", "4096"))   # target ROWS per batch (whole groups)
 LR = float(os.environ.get("STRAT_LR", "2e-3"))
@@ -78,7 +87,8 @@ if NSTATE < 1000:
     raise ValueError(f"expected a rich state block between chosen and won, got {NSTATE} columns")
 state_cols = list(hdr[ci + 1:wi])
 
-use_cols = sorted(need | set(opt_cols))
+use_cols = sorted(need | set(opt_cols)
+                  | ({"act", "greenKey", "curMapX", "curMapY"} if MAPS else set()))
 chunks = pd.read_csv(CSV, usecols=use_cols, chunksize=CHUNK)
 small = []
 for ch in chunks:
@@ -153,6 +163,52 @@ q_hp_valid = np.isfinite(q_hp_target)
 q_floor_target = np.clip(df.labelFloor.to_numpy(np.float32) / 60.0, 0.0, 1.0).astype(np.float32)
 q_floor_valid = np.isfinite(q_floor_target)
 
+# --- Map-DAG encoder inputs (5.3.2): per-row graph tensors for MAP_SCREEN
+# rows (screen == MAP_SCREEN_ID), zero elsewhere. The table is one lossless
+# 15x7 graph per (seed, act) from `one_combat mapbatch` (burningEliteX/Y +
+# room0..104 + edges0..104); the burning cell is marked only while the green
+# key is absent (mirrors train_meta_entity.py). Position = (curMapX, curMapY,
+# child x) — curMapY is -1 before the act's first pick (roots pooled).
+USE_MAP = MAPS is not None
+map_rooms = map_edges = map_special = None
+map_px = map_py = map_chosen = None
+if USE_MAP:
+    mdf = pd.read_csv(MAPS)
+    mkeys = mdf.seed.to_numpy(np.int64) * 16 + mdf.act.to_numpy(np.int64)
+    mrooms = mdf[[f"room{i}" for i in range(105)]].to_numpy(np.int16)
+    medges = mdf[[f"edges{i}" for i in range(105)]].to_numpy(np.int16)
+    mbx = mdf.burningEliteX.to_numpy(np.int16)
+    mby = mdf.burningEliteY.to_numpy(np.int16)
+    lookup = {int(mkeys[i]): (mrooms[i], medges[i], int(mbx[i]), int(mby[i]))
+              for i in range(len(mdf))}
+    map_rooms = np.zeros((nrows, 105), np.int16)
+    map_edges = np.zeros((nrows, 105), np.int16)
+    map_special = np.zeros((nrows, 105), np.int8)
+    map_px = np.full(nrows, -1, np.int16)
+    map_py = np.full(nrows, -1, np.int16)
+    map_chosen = np.full(nrows, -1, np.int16)
+    seeds_n = df.seed.to_numpy(np.int64)
+    acts_n = df.act.to_numpy(np.int64)
+    greens = df.greenKey.to_numpy(np.float32)
+    pxs = df.curMapX.to_numpy(np.int64)
+    pys = df.curMapY.to_numpy(np.int64)
+    c1s = df.c1.to_numpy(np.int64)
+    is_map = df.screen.to_numpy(np.int64) == MAP_SCREEN_ID
+    keys_n = seeds_n * 16 + acts_n
+    for k, (r, e, bxv, byv) in lookup.items():
+        sel = is_map & (keys_n == k)
+        if not sel.any():
+            continue
+        map_rooms[sel] = r
+        map_edges[sel] = e
+        if bxv >= 0 and byv >= 0:
+            map_special[sel, byv * 7 + bxv] = np.where(greens[sel] < 0.5, 1, 0).astype(np.int8)
+        map_px[sel] = pxs[sel]
+        map_py[sel] = pys[sel]
+        map_chosen[sel] = c1s[sel]
+    print(f"[train-strategic] map-DAG encoder ON: {len(lookup)} maps, "
+          f"{int(is_map.sum()):,} MAP-screen rows", flush=True)
+
 # Reorder every small array by group id once: batches are contiguous slices.
 action_ints, cat = action_ints[order], cat[order]
 atype, screen, value = atype[order], screen[order], value[order]
@@ -160,6 +216,9 @@ q_win_target, q_win_valid = q_win_target[order], q_win_valid[order]
 q_hp_target, q_hp_valid = q_hp_target[order], q_hp_valid[order]
 q_floor_target, q_floor_valid = q_floor_target[order], q_floor_valid[order]
 chosen = chosen[order]
+if USE_MAP:
+    map_rooms, map_edges, map_special = map_rooms[order], map_edges[order], map_special[order]
+    map_px, map_py, map_chosen = map_px[order], map_py[order], map_chosen[order]
 
 # --- State block: chunked two-pass stats over TRAIN rows, then scatter to a
 # group-ordered float16 file; training reads contiguous mmap slices. ---
@@ -215,9 +274,80 @@ if DEVICE.startswith("cuda"):
         print("[train-strategic] GPU state upload OOM; using CPU mmap gather", flush=True)
 
 
-class Net(nn.Module):
-    def __init__(self):
+class FullMapGraphEncoder(nn.Module):
+    """Bottom-up map-DAG encoder (5.3.2), ported from train_meta_entity.py:
+    node = room+row+col+burning embeddings; reverse sweep rows 14->0 with
+    mean+max child messages and log1p degree; readout pools the chosen legal
+    child's subtree (roots when py<0 = pre-map first pick)."""
+
+    def __init__(self, dnode=32, dout=96):
         super().__init__()
+        self.room = nn.Embedding(10, dnode)
+        self.row = nn.Embedding(15, dnode)
+        self.col = nn.Embedding(7, dnode)
+        self.burning = nn.Embedding(2, dnode)
+        self.update = nn.Sequential(
+            nn.Linear(3 * dnode + 1, 64), nn.LayerNorm(64), nn.SiLU(),
+            nn.Linear(64, dnode))
+        self.norm = nn.LayerNorm(dnode)
+        self.readout = nn.Sequential(
+            nn.Linear(2 * dnode, 128), nn.LayerNorm(128), nn.SiLU(),
+            nn.Linear(128, dout), nn.SiLU())
+        self.register_buffer("row_ids", torch.arange(15))
+        self.register_buffer("col_ids", torch.arange(7))
+        self.register_buffer("edge_bits", torch.arange(7))
+
+    @staticmethod
+    def masked_pool(nodes, mask):
+        weight = mask.float()
+        mean = (nodes * weight.unsqueeze(-1)).sum(1) / weight.sum(1, keepdim=True).clamp_min(1.0)
+        maximum = nodes.masked_fill(~mask.unsqueeze(-1), -1e9).max(1).values
+        maximum = torch.where(mask.any(1, keepdim=True), maximum, torch.zeros_like(maximum))
+        return mean, maximum
+
+    def forward(self, rooms, edges, special, position):
+        batch = rooms.shape[0]
+        rooms = rooms.long().view(batch, 15, 7)
+        edges = edges.long().view(batch, 15, 7)
+        special = special.long().view(batch, 15, 7)
+        base = (self.room(rooms) + self.row(self.row_ids)[None, :, None, :]
+                + self.col(self.col_ids)[None, None, :, :] + self.burning(special))
+        adjacency = ((edges.unsqueeze(-1) >> self.edge_bits) & 1).bool()
+        encoded_rows = [base[:, 14]]
+        for y in range(13, -1, -1):
+            child = encoded_rows[-1]
+            edge = adjacency[:, y]
+            mean = torch.bmm(edge.float(), child) / edge.sum(2, keepdim=True).clamp_min(1.0)
+            expanded = child[:, None, :, :].expand(-1, 7, -1, -1)
+            maximum = expanded.masked_fill(~edge.unsqueeze(-1), -1e9).max(2).values
+            maximum = torch.where(edge.any(2, keepdim=True), maximum, torch.zeros_like(maximum))
+            degree = torch.log1p(edge.sum(2, keepdim=True).float())
+            encoded_rows.append(self.norm(base[:, y] + self.update(
+                torch.cat((base[:, y], mean, maximum, degree), 2))))
+        graph = torch.stack(list(reversed(encoded_rows)), 1)
+
+        px = position[:, 0].long().clamp(0, 6)
+        py = position[:, 1].long()
+        chosen_x = position[:, 2].long()
+        safe_y = py.clamp(0, 14)
+        batch_ids = torch.arange(batch, device=rooms.device)
+        current_edges = edges[batch_ids, safe_y, px]
+        child_mask = ((current_edges.unsqueeze(-1) >> self.edge_bits) & 1).bool()
+        root_mask = edges[:, 0] > 0
+        future_mask = torch.where((py < 0).unsqueeze(1), root_mask, child_mask)
+        singleton = self.col_ids[None, :] == chosen_x.unsqueeze(1)
+        future_mask = torch.where((chosen_x >= 0).unsqueeze(1), future_mask & singleton, future_mask)
+        future_mask = future_mask & (py < 14).unsqueeze(1)
+        future_y = (py + 1).clamp(0, 14)
+        future_nodes = graph[batch_ids, future_y]
+        mean, maximum = self.masked_pool(future_nodes, future_mask)
+        return self.readout(torch.cat((mean, maximum), 1))
+
+
+class Net(nn.Module):
+    def __init__(self, use_map=False):
+        super().__init__()
+        self.use_map = use_map
         self.s = nn.Sequential(nn.Linear(NSTATE, 256), nn.LayerNorm(256), nn.GELU(),
                                nn.Dropout(0.2), nn.Linear(256, 128), nn.GELU())
         self.a_bits = nn.Sequential(nn.Linear(32, 32), nn.GELU(), nn.Dropout(0.2),
@@ -238,14 +368,28 @@ class Net(nn.Module):
         # that screen's chosen rows only; the shared encoder is unchanged.
         self.vals = nn.ModuleList([nn.Sequential(nn.Linear(128, 64), nn.GELU(), nn.Linear(64, 1))
                                    for _ in range(8)])
+        # Map-DAG route encoder + zero-init residual adapter (5.3.2): the
+        # adapter output is added to the (z,b,a,screen) concat for MAP-screen
+        # rows only, so at init the MAP path is a no-op on the base heads.
+        if use_map:
+            self.map_enc = FullMapGraphEncoder()
+            self.map_adapter = nn.Sequential(nn.Linear(96, 168), nn.GELU(),
+                                             nn.Linear(168, 168))
+            with torch.no_grad():
+                self.map_adapter[2].weight.zero_()
+                self.map_adapter[2].bias.zero_()
 
-    def forward(self, x, bits, cat, atype, screen):
+    def forward(self, x, bits, cat, atype, screen, map_in=None):
         z = self.s(x)
         b = self.a_bits(bits)
         cat_in = torch.cat([self.cats[i](cat[:, i]) for i in range(6)]
                            + [self.atype(atype)], 1)
         a = self.a_cat(cat_in)
         ha = torch.cat((z, b, a, self.screen(screen)), 1)
+        if map_in is not None:
+            rooms, edges, special, position = map_in
+            ha = ha + self.map_adapter(self.map_enc(rooms, edges, special, position)) \
+                     * (screen == MAP_SCREEN_ID).float().unsqueeze(1)
         logit = self.pol(ha).squeeze(1)
         q = self.q(ha).squeeze(1)
         q_hp = self.q_hp(ha).squeeze(1)
@@ -258,8 +402,21 @@ class Net(nn.Module):
         return logit, v, q, q_hp, q_floor
 
 
-model = Net().to(DEVICE)
-opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=2e-4)
+model = Net(USE_MAP).to(DEVICE)
+if INIT_PT:
+    init_sd = torch.load(INIT_PT, map_location="cpu", weights_only=False)["state_dict"]
+    missing, unexpected = model.load_state_dict(init_sd, strict=False)
+    if missing and not all(m.startswith("map_") for m in missing):
+        raise ValueError(f"STRAT_INIT_PT missing non-map keys: {missing[:8]}")
+    print(f"[train-strategic] initialized base from {INIT_PT} "
+          f"({len(missing)} map_* keys kept fresh)", flush=True)
+if FREEZE_BASE:
+    trainable = [p for name, p in model.named_parameters() if name.startswith("map_")]
+    opt = torch.optim.AdamW(trainable, lr=LR, weight_decay=2e-4)
+    print(f"[train-strategic] STRAT_FREEZE_BASE=1: training only "
+          f"{sum(p.numel() for p in trainable):,} map-encoder params", flush=True)
+else:
+    opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=2e-4)
 
 AR = np.arange(32, dtype=np.int64)
 
@@ -278,7 +435,14 @@ def fwd_rows(rows):
     c = torch.from_numpy(cat[rows]).to(DEVICE, torch.long)
     a = torch.from_numpy(atype[rows]).to(DEVICE, torch.long)
     s = torch.from_numpy(screen[rows]).to(DEVICE, torch.long)
-    return model(x, bits, c, a, s)
+    map_in = None
+    if map_rooms is not None:
+        map_in = (torch.from_numpy(map_rooms[rows]).to(DEVICE, torch.long),
+                  torch.from_numpy(map_edges[rows]).to(DEVICE, torch.long),
+                  torch.from_numpy(map_special[rows]).to(DEVICE, torch.long),
+                  torch.from_numpy(np.stack([map_px[rows], map_py[rows], map_chosen[rows]], 1))
+                  .to(DEVICE, torch.long))
+    return model(x, bits, c, a, s, map_in)
 
 
 def train_batch_loss(gs):
@@ -430,10 +594,13 @@ def evaluate():
         if sm.sum() >= 10:
             q_screen[h + 1] = {
                 "mae": float(np.mean(np.abs(qp[sm] - va_qwin[sm]))),
+                "brier": float(np.mean((qp[sm] - va_qwin[sm]) ** 2)),
                 "n": int(sm.sum()),
             }
     top1 = 0
     qtop1 = 0
+    qtop1_map = 0
+    nqtop_map = 0
     margin = 0.0
     ce = 0.0
     ntop = 0
@@ -458,6 +625,9 @@ def evaluate():
             qpred = np.argmax(qp[lo:lo + sz])
             qtop1 += int(qoracle == qpred)
             nqtop += 1
+            if scr_all[lo] == MAP_SCREEN_ID:
+                qtop1_map += int(qoracle == qpred)
+                nqtop_map += 1
     return {"groups": ntop,
             "policy_top1": top1 / max(1, ntop),
             "margin": margin / max(1, ntop),
@@ -473,6 +643,8 @@ def evaluate():
             "q_cal_max": cal_max,
             "q_n": int(qv.sum()),
             "q_mae_screen": q_screen,
+            "q_top1_map": qtop1_map / max(1, nqtop_map),
+            "q_top1_map_n": nqtop_map,
             "q_hp_mae": qhp_mae,
             "q_floor_mae": qfloor_mae,
             "val_pol_ce": ce / max(1, ntop)}
@@ -541,7 +713,8 @@ print(f"\nbest held-out (val_pol_ce={best_ce:.4f}): {eval_metrics}", flush=True)
 
 os.makedirs(os.path.dirname(OUT) or ".", exist_ok=True)
 torch.save({"state_dict": model.cpu().state_dict(), "mean": mean, "inv": inv,
-            "metrics": eval_metrics, "features": NSTATE, "nrows": int(nrows)},
+            "metrics": eval_metrics, "features": NSTATE, "nrows": int(nrows),
+            "maps": bool(USE_MAP)},
            OUT + ".pt")
 with open(OUT + "_metrics.json", "w") as f:
     json.dump(eval_metrics, f, indent=2)
