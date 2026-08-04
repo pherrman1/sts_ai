@@ -1,6 +1,6 @@
 # Current baselines
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-03 against commit `6f5a157` and the current working tree.
 
 ## Purpose
 
@@ -13,7 +13,9 @@ elsewhere should link here rather than be copied as changing baselines.
 The present executable defaults to native floor/win OOC inference, card skip
 `-0.5`, heuristic pathing, shop value, win-shaped rest, Searcher2, and the
 tracked compact policy prior when it loads (`apps/one_combat.cpp::main`,
-`runFullRunOOC`). `STS_FAIR=1` must be set explicitly for a project-fair run.
+`runFullRunOOC`). The one-ply Q gate stack (cards/rest/events/shop/treasure/
+boss relic) is **opt-in** via `STS_OOC_STRATEGIC_*` env flags + a model
+artifact; the binary default plays without it. `STS_FAIR=1` must be set explicitly for a project-fair run.
 `STS_SEARCHER3=1` and `STS_PVNET=<path>` are experimental opt-ins; PVNet is
 consumed only by Searcher3.
 
@@ -22,7 +24,9 @@ consumed only by Searcher3.
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |
 | --- | --- | ---: | ---: | --- | --- | --- |
 | **Current executable configuration**, verified 2026-07-31 | Caller-selected | Caller-selected | Caller-selected | Default Searcher2 is known-RNG unless `STS_FAIR=1`; opt-in Searcher3 samples particles in either path and `STS_FAIR` controls rebuild/reuse | Native tracked floor/win trees; heuristic path; shop-V; win-rest; tracked policy prior auto-load; no combat value/PVNet by default | Configuration only; **no current-checkout full-run measurement is claimed**. |
-| **Current default stack on the recorded block**, 2026-08-02 (`EXPERIMENTS.md` §68) | 126700–126827 (128) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12 threads | Native tracked floor/win trees (hashes in §68); heuristic path/shop/win-rest; tracked policy prior auto-load; no combat value/PVNet | Full Act-3 run win: **27/128 (21.1%)**; mean floor 37.5; mean end HP 8.6; per-seed CSV retained at `build/bench_2026-08-02_default_fair.csv`. New measurement, not a paired comparison with §66i. |
+| **Recommended configuration — one-ply gate stack**, 2026-08-03 (`EXPERIMENTS.md` §82) | 126700–126827 (128); also 126700–126955 (256) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12 threads | Native tracked floor/win trees; heuristic path/shop/win-rest; **plus the opt-in one-ply Q gate stack** (`STS_OOC_STRATEGIC_NN=selfplay/models/ooc_strategic.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`) | Full Act-3 run win: **51/128 (39.8%)** on the 128 block (reference CSV `build/gates_ref_m1.csv`, bit-identical to §76 m1.0); **95/256 (37.1%, +14.1pp vs the 23.0% flags-off baseline)** on the 256 block (`build/sec256_gate_m1.csv`). Margin 1.0 is the operating point (§82 sweep). **Future gate rounds pair against this reference.** |
+| **Experimental top arm — V4 token net + gate stack**, 2026-08-03 (`EXPERIMENTS.md` §81) | 126700–126827 (128) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12 threads | V4 token net (`STS_OOC_STRATEGIC_TOK_NN=…ooc_strategic_tok_final.native`, opt-in) + full gate stack @ m1.0 | Full Act-3 run win: **53/128 (41.4%)**; ~3.5× slower per run (27 vs 8 cpu-sec/run). |
+| **Current default stack on the recorded block** (default binary, no opt-ins), 2026-08-02 (`EXPERIMENTS.md` §68) | 126700–126827 (128) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12 threads | Native tracked floor/win trees (hashes in §68); heuristic path/shop/win-rest; tracked policy prior auto-load; no combat value/PVNet | Full Act-3 run win: **27/128 (21.1%)**; mean floor 37.5; mean end HP 8.6; per-seed CSV retained at `build/bench_2026-08-02_default_fair.csv`. New measurement, not a paired comparison with §66i. |
 | **Primary recorded project-fair reference**, 2026-07-23 (`EXPERIMENTS.md` §66i) | 126700–126827 (128) | 0 | 1,000 sims/decision | `STS_FAIR=1`; **Unverified** exact searcher in the historical binary, consistent with default Searcher2 | Native floor/win OOC; heuristic path/shop/win-rest; entry says PUCT/V-combat but names no combat-value path/hash and does not pin every flag | Full Act-3 run win: **39/128 (30.5%)**; mean floor 40.32; mean end HP 11.91. Raw cited directory is absent, so not exactly reproducible; the §68 re-measurement suggests a different historical configuration. |
 | **Historical known-RNG comparator**, 2026-07-15 (`EXPERIMENTS.md` §26) | 512 seeds; range not recorded | 0 | 1,000 sims/decision | Known-RNG Searcher2 with PUCT | Server-backed rich V2 floor drafting/shop, win-rest, heuristic path, compact policy prior | Full-run win: **51.6%**. Optimistic diagnostic; never compare directly with the fair reference. |
 | **Recorded Searcher3/PVNet experiment**, 2026-07-30 (final ledger section) | 128 seeds; range not recorded | 0 | 50/100/250/500 | Recorded as Searcher3 project-fair PUCT | Ledger says “heuristic OOC baseline + PUCT (GBM policy)” but does not define that OOC stack; opt-in `build/v_combat_pvnet.txt`; policy-only means `STS_PVNET_ALPHA=0` | Full-run win-rate sweep. Best reported 100-sim policy-only point: **66.4%**. **Re-checked 2026-08-02 on the recorded 126700–126827 block: 8.6% at 100 sims (α=0), 5.5% (α=1.0) vs 4.7% same-budget default — the 66.4% headline does not reproduce (EXPERIMENTS.md §72)**; treat the sweep numbers as historical. |

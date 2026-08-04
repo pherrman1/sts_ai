@@ -108,39 +108,39 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 - [x] Dynamic policy head across legal actions (group softmax) — §70
 - [x] Native export + loader parity — §70–§73
 - [x] Margin-gated one-ply card-reward gate — §70–§73
-- [ ] Token-based run state: global token with explicit threshold features (§2.1)
-- [ ] Counted deck tokens `(cardId, upgraded, count)` (§2.2) — replace rich-vector deck counts
-- [ ] Relic/potion entity tokens with dynamic state (Girya lifts, Omamori charges, …) (§2.3)
-- [ ] Decision-context encoding: current screen + offer contents + legal actions (§2.5)
-- [ ] PPO/GAE alternative (§9) — A/B against Tier-B Q labels once Q signal stabilizes
+- [x] Token-based run state: global token with explicit threshold features (§2.1) — §75 (V4; opt-in)
+- [x] Counted deck tokens `(cardId, upgraded, count)` (§2.2) — §75
+- [x] Relic/potion entity tokens with dynamic state (Girya lifts, Omamori charges, …) (§2.3) — §75
+- [x] Decision-context encoding: current screen + offer contents + legal actions (§2.5) — §75 (candidate entity embeddings)
+- [x] PPO/GAE alternative (§9) — §78; **negative** (PPO-clip diverges on the behavioral data); CE+Q stays the policy objective
 
 ### Phase B: better encoders
 
-- [ ] Deck set transformer (permutation invariant, counted → instance tokens comparison) — 5.3.1
+- [x] Deck set transformer (permutation invariant, counted → instance tokens comparison) — 5.3.1; §86 held-out **neutral** (transformer lever kept)
 - [ ] Map DAG message-passing encoder (boss-row-backward), legal-node embeddings carry downstream route info — 5.3.2; re-test against §61/§62 history
-- [ ] Candidate–deck cross-attention for card rewards — 5.3.3
-- [ ] Distributional/multi-head value targets (§5): P(reach next act), death-floor distribution, boss-HP quantiles as auxiliary losses
-- [ ] Evaluate each change with paired seeds on the recorded block
+- [x] Candidate–deck cross-attention for card rewards — 5.3.3; §88 held-out **neutral**
+- [x] Distributional/multi-head value targets (§5) — §87; implemented as per-screen quantile heads on `10·won+endHp` (not the spec's act/death-floor/boss-HP targets — divergence); held-out **marginal** (best Q top-1 0.296)
+- [x] Evaluate each change with paired seeds on the recorded block — held-out evals per §86–§88; the neutral rounds did not warrant paired-seed gate evals (§6 protocol applies to deployed changes)
 
 ### Phase C: combat outcome model
 
-- [ ] Collect combat outcome examples `(pre-combat state, encounter, died, hp_before, hp_after, potions, turns)` from PVNet-guided Searcher3 runs — 5.4.1
-- [ ] Train `C_ψ(deck, relics, potions, HP, encounter, asc) → P(death), HP-loss quantiles, potion-use, turns` — 5.4.2
-- [ ] Encounter probes: evaluate C_ψ on a representative probe set (Act-1 hallway/elites/boss, next-act hallway) and feed probe results into the strategic state — 5.4.3, spec §7
+- [x] Collect combat outcome examples — 5.4.1; §79 inventory: the labels already existed in `distgen` rows (`won,endHp,endTurn,potionsConsumed,pUsed0–43`); **no new datagen needed**
+- [x] Train `C_ψ(deck, relics, potions, HP, encounter, asc) → P(death), HP-loss quantiles, potion-use, turns` — 5.4.2; §79 (win acc 0.969; `combat_cpsi_v1` export fixed 2026-08-03)
+- [x] Encounter probes — 5.4.3, spec §7; §80 (9 probe slots incl. actual upcoming fights; fed into the V4 state; held-out **neutral**)
 - [ ] Use C_ψ as a fast surrogate during strategic search — 5.4.4
 
 ### Phase D: one-ply post-action evaluation beyond card rewards
 
 - [x] Card rewards: direct-Q gate (V3) — §73
-- [ ] Rest/shop/treasure screens where per-screen value MAE is strongest (0.59–0.97) — §71 follow-up; user decision to extend screen-by-screen as separate rounds
-- [ ] Events last (MAE 5.21 — needs Tier-B event labels or outcome enumeration first)
+- [x] Rest/shop/treasure screens — §74 (rest), §76 (shop/TREASURE/boss relic; full-stack +18.8pp @ m1, statistically established)
+- [x] Events last — §74 (Tier-B labels covered events; the event gate was the round-4 main contributor, +5.5pp alone)
 
 ### Phase E: specialized search
 
-- [ ] Shop beam search (width 16–64, depth = affordable purchases, dedup states) — 5.6.1, spec §4.4
+- [x] Shop beam search (width 16–64, depth = affordable purchases, dedup states) — 5.6.1; §85 **negative** (beam-only −9.4pp; value-head leaves too weak); the one-ply shop gate stays
 - [ ] Short-horizon map route search (2–5 floors, sampled outcomes, V at leaf) — 5.6.2
-- [ ] Stochastic event evaluation via sampled RNG continuations — 5.6.3
-- [ ] Hidden-information boundary audit: strategicgen/strategicgen2 branches and all rollouts must not copy hidden RNG/future seed; sample unknown outcomes from conditional distributions — 5.6.4, spec §13
+- [x] Stochastic event evaluation via sampled RNG continuations — 5.6.3; **superseded** by the Tier-B label design (§74 decision: labels average the stochastic continuation)
+- [x] Hidden-information boundary audit — 5.6.4, spec §13; delivered (decision log `2026-08-02-hidden-info-audit.md`): gates/searcher clean; rich-row future-encounter features flagged as an open design question
 
 ### Phase F: search distillation
 
@@ -150,9 +150,9 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 
 ### Cross-cutting
 
-- [ ] Label-horizon A/B: K=1 vs K=3 multi-truncation labels (§73 follow-up 2)
-- [ ] A/B `STRATEGIC_BRANCH_FUTURES` for encounter averaging (§73 follow-up 3)
-- [ ] Fix or isolate the `BattleContext::executeActions` loop-guard assertion (seed 128087) that dropped a seed from the §73 dataset (§73 follow-up 5)
+- [x] Label-horizon A/B: K=1 vs K=3 — §78/§83/§84; closed: **K=3 × futures=1 is the optimal label contract** (better K=1/futures-3 calibration did not transfer to the gate)
+- [x] A/B `STRATEGIC_BRANCH_FUTURES` for encounter averaging — §84; futures=3 gate +13.3pp < futures=1 +18.8pp; **futures=1 stays**
+- [x] Fix or isolate the `BattleContext::executeActions` loop-guard assertion (seed 128087) — isolated (`src/combat/BattleContext.cpp`: Release-mode `assert` no-op → logged loss termination); seed completes; committed
 - [ ] More Tier-A data (round 1 used 200 seeds; Tier-B used ~4,650) for policy-head training
 
 ## 6. Evaluation protocol

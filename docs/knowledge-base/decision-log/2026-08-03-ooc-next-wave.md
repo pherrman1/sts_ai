@@ -30,7 +30,10 @@ quantiles, C2 cross-attention).
 5. **Phase B encoders are neutral on the token state**: deck 2-layer
    transformer (C1: Q MAE 16.62 vs 17.00), quantile value heads (C4: Q top-1
    0.296 best-ever ranking, Q MAE 16.76), candidate–deck cross-attention (C2:
-   in progress). Combined with §77/§80, **the token-state Q calibration gap
+   Q MAE 16.69). The **combined C1+C4+C2 config (§90) is the worst of the
+   ladder** (Q MAE 18.38 vs 17.00 baseline; the upgrades interfere) —
+   deployment trigger not met; Phase B closed. Combined with §77/§80,
+   **the token-state Q calibration gap
    is not attention capacity, matchup info, or Q-head shape — it is the
    counted-token state contract itself**. The V4 net's deployed win comes
    from gate ranking, not held-out Q calibration.

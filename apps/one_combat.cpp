@@ -734,6 +734,14 @@ static bool g_shopWin = false;          // env STS_SHOP_WIN=1: score shop bundle
 static bool g_nativeOoc = false;
 static bool g_oocActionNN = false;          // env STS_OOC_ACTION_NN=1
 static double g_oocStrategicMargin = 1.0;   // env STS_OOC_STRATEGIC_MARGIN: one-ply gate in V units
+// Per-screen one-ply gate overrides (env STS_OOC_STRATEGIC_MARGIN_*): default
+// -1.0 = unset, i.e. fall back to g_oocStrategicMargin so behavior is unchanged.
+static double g_oocStrategicMarginCard = -1.0;      // STS_OOC_STRATEGIC_MARGIN_CARD
+static double g_oocStrategicMarginRest = -1.0;      // STS_OOC_STRATEGIC_MARGIN_REST (rest + upgrade target)
+static double g_oocStrategicMarginEvent = -1.0;     // STS_OOC_STRATEGIC_MARGIN_EVENT
+static double g_oocStrategicMarginShop = -1.0;      // STS_OOC_STRATEGIC_MARGIN_SHOP
+static double g_oocStrategicMarginTreasure = -1.0;  // STS_OOC_STRATEGIC_MARGIN_TREASURE
+static double g_oocStrategicMarginBossRelic = -1.0; // STS_OOC_STRATEGIC_MARGIN_BOSS_RELIC
 static bool   g_oocStrategicQ = true;       // env STS_OOC_STRATEGIC_Q=0: score via V2 successor predictValue
 static bool   g_oocStrategicRest = false;   // env STS_OOC_STRATEGIC_REST=1: one-ply Q gate on campfires (5.5.2)
 static bool   g_oocStrategicEvent = false;  // env STS_OOC_STRATEGIC_EVENT=1: one-ply Q gate on events (5.5.3)
@@ -3123,6 +3131,7 @@ static bool oocOnePlyCardRewardPolicy(GameContext &gc) {
     for (const auto &a : actions) if (a.bits == skipCard.bits) { have = true; break; }
     if (!have) actions.push_back(skipCard);
 
+    const double margin = g_oocStrategicMarginCard >= 0.0 ? g_oocStrategicMarginCard : g_oocStrategicMargin;
     double best = -1e100, second = -1e100;
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
@@ -3164,7 +3173,7 @@ static bool oocOnePlyCardRewardPolicy(GameContext &gc) {
             else if (v > second) second = v;
         }
     }
-    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
+    if (bestIdx < 0 || best - second < margin) return false;
     actions[bestIdx].execute(gc);
     return true;
 }
@@ -3181,6 +3190,7 @@ static bool oocOnePlyRestPolicy(GameContext &gc) {
     if (gc.screenState != ScreenState::REST_ROOM) return false;
     std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
     if (actions.empty()) return false;
+    const double margin = g_oocStrategicMarginRest >= 0.0 ? g_oocStrategicMarginRest : g_oocStrategicMargin;
     double best = -1e100, second = -1e100;
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
@@ -3211,7 +3221,7 @@ static bool oocOnePlyRestPolicy(GameContext &gc) {
             else if (v > second) second = v;
         }
     }
-    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
+    if (bestIdx < 0 || best - second < margin) return false;
     actions[bestIdx].execute(gc);
     return true;
 }
@@ -3226,6 +3236,7 @@ static bool oocOnePlyUpgradeSelectPolicy(GameContext &gc) {
         || gc.info.selectScreenType != CardSelectScreenType::UPGRADE) return false;
     std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
     if (actions.empty()) return false;
+    const double margin = g_oocStrategicMarginRest >= 0.0 ? g_oocStrategicMarginRest : g_oocStrategicMargin;
     double best = -1e100, second = -1e100;
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
@@ -3256,7 +3267,7 @@ static bool oocOnePlyUpgradeSelectPolicy(GameContext &gc) {
             else if (v > second) second = v;
         }
     }
-    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
+    if (bestIdx < 0 || best - second < margin) return false;
     actions[bestIdx].execute(gc);
     return true;
 }
@@ -3272,6 +3283,7 @@ static bool oocOnePlyEventPolicy(GameContext &gc) {
     if (gc.screenState != ScreenState::EVENT_SCREEN) return false;
     std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
     if (actions.empty()) return false;   // e.g. MATCH_AND_KEEP
+    const double margin = g_oocStrategicMarginEvent >= 0.0 ? g_oocStrategicMarginEvent : g_oocStrategicMargin;
     double best = -1e100, second = -1e100;
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
@@ -3302,7 +3314,7 @@ static bool oocOnePlyEventPolicy(GameContext &gc) {
             else if (v > second) second = v;
         }
     }
-    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
+    if (bestIdx < 0 || best - second < margin) return false;
     actions[bestIdx].execute(gc);
     return true;
 }
@@ -3317,6 +3329,7 @@ static bool oocOnePlyShopPolicy(GameContext &gc) {
     if (gc.screenState != ScreenState::SHOP_ROOM) return false;
     std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
     if (actions.empty()) return false;
+    const double margin = g_oocStrategicMarginShop >= 0.0 ? g_oocStrategicMarginShop : g_oocStrategicMargin;
     double best = -1e100, second = -1e100;
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
@@ -3347,7 +3360,7 @@ static bool oocOnePlyShopPolicy(GameContext &gc) {
             else if (v > second) second = v;
         }
     }
-    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
+    if (bestIdx < 0 || best - second < margin) return false;
     actions[bestIdx].execute(gc);
     return true;
 }
@@ -3361,6 +3374,7 @@ static bool oocOnePlyTreasurePolicy(GameContext &gc) {
     if (gc.screenState != ScreenState::TREASURE_ROOM) return false;
     std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
     if (actions.empty()) return false;
+    const double margin = g_oocStrategicMarginTreasure >= 0.0 ? g_oocStrategicMarginTreasure : g_oocStrategicMargin;
     double best = -1e100, second = -1e100;
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
@@ -3391,7 +3405,7 @@ static bool oocOnePlyTreasurePolicy(GameContext &gc) {
             else if (v > second) second = v;
         }
     }
-    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
+    if (bestIdx < 0 || best - second < margin) return false;
     actions[bestIdx].execute(gc);
     return true;
 }
@@ -3405,6 +3419,7 @@ static bool oocOnePlyBossRelicPolicy(GameContext &gc) {
     if (gc.screenState != ScreenState::BOSS_RELIC_REWARDS) return false;
     std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
     if (actions.empty()) return false;
+    const double margin = g_oocStrategicMarginBossRelic >= 0.0 ? g_oocStrategicMarginBossRelic : g_oocStrategicMargin;
     double best = -1e100, second = -1e100;
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
@@ -3435,7 +3450,7 @@ static bool oocOnePlyBossRelicPolicy(GameContext &gc) {
             else if (v > second) second = v;
         }
     }
-    if (bestIdx < 0 || best - second < g_oocStrategicMargin) return false;
+    if (bestIdx < 0 || best - second < margin) return false;
     actions[bestIdx].execute(gc);
     return true;
 }
@@ -6656,6 +6671,28 @@ int main(int argc, char **argv) {
     }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN")) {
         g_oocStrategicMargin = std::atof(d);
+    }
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN_CARD"))
+        g_oocStrategicMarginCard = std::atof(d);
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN_REST"))
+        g_oocStrategicMarginRest = std::atof(d);
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN_EVENT"))
+        g_oocStrategicMarginEvent = std::atof(d);
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN_SHOP"))
+        g_oocStrategicMarginShop = std::atof(d);
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN_TREASURE"))
+        g_oocStrategicMarginTreasure = std::atof(d);
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN_BOSS_RELIC"))
+        g_oocStrategicMarginBossRelic = std::atof(d);
+    if (g_oocStrategicMarginCard >= 0.0 || g_oocStrategicMarginRest >= 0.0
+        || g_oocStrategicMarginEvent >= 0.0 || g_oocStrategicMarginShop >= 0.0
+        || g_oocStrategicMarginTreasure >= 0.0 || g_oocStrategicMarginBossRelic >= 0.0) {
+        std::cout << "[OOC per-screen margins: card=" << g_oocStrategicMarginCard
+                  << " rest=" << g_oocStrategicMarginRest
+                  << " event=" << g_oocStrategicMarginEvent
+                  << " shop=" << g_oocStrategicMarginShop
+                  << " treasure=" << g_oocStrategicMarginTreasure
+                  << " boss_relic=" << g_oocStrategicMarginBossRelic << "]\n";
     }
     if (const char *v = std::getenv("STRATEGIC_SAMPLES_PER_RUN"))
         g_strategicSamplesPerRun = std::max(1, std::atoi(v));

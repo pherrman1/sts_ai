@@ -2635,3 +2635,72 @@ enabling condition, but the omitted command prevents verification.
   closed: K=3 × futures=1 is optimal among {K1,K3}×{futures1,futures3}.
 - **Artifacts:** `build/strategic_fut3.csv`, `build/fut3_gate_m1.csv`,
   `selfplay/models/ooc_strategic_v3_fut3.{pt,native}`.
+
+## 89. Per-screen margin sweep — global margin 1.0 confirmed (2026-08-03)
+
+- **Goal:** test whether the one-ply gate margin should differ per screen
+  (e.g. a lower card margin vs a higher shop margin). Per-screen knobs
+  `STS_OOC_STRATEGIC_MARGIN_{CARD,REST,EVENT,SHOP,TREASURE,BOSS_RELIC}`
+  (default: the global margin; bit-reproducible when unset) added to
+  `apps/one_combat.cpp`.
+- **Method:** coordinate sweep on the **GCP server** (`sts-test`,
+  europe-west3-c, c4-highcpu-24, preemptible; binary parity verified
+  bit-identical to the local binary on the anchor config, 8/8 seeds). Each
+  screen swept at {0.1, 0.25, 0.5, 2.0} with all others at the 1.0 anchor
+  (24 runs × 128 seeds, 1,000 sims, fair, 12 threads-equivalent); the 1.0
+  point per screen = the `gates_ref_m1.csv` anchor itself.
+- **Win rates by screen (anchor 39.8% = 51/128):**
+
+  | screen | m0.1 | m0.25 | m0.5 | m2.0 | m1.0 (anchor) |
+  |---|---|---:|---:|---:|---:|
+  | CARD | 31.2 | 35.2 | 36.7 | 35.2 | **39.8** |
+  | REST | 38.3 | 36.7 | 38.3 | 38.3 | **39.8** |
+  | EVENT | 39.8 | 39.8 | 36.7 | 37.5 | **39.8** |
+  | SHOP | 38.3 | 37.5 | 37.5 | 38.3 | **39.8** |
+  | TREASURE | 39.1 | 39.1 | 39.8 | 35.2 | **39.8** |
+  | BOSS_RELIC | 37.5 | 38.3 | 38.3 | **41.4** | 39.8 |
+
+- **Verdict:** ➖ per-screen margins are not supported. **Cards are clearly
+  worse below 1.0** (m0.1 −8.6pp, CI [−20.3,+3.1], discordant 20 A-only/9
+  B-only — the §73 card-only peak at 0.5 does not survive inside the full
+  stack; the other gates change the picture). All other screens are flat or
+  worse at every non-1.0 point. The only point above the anchor is
+  **BOSS_RELIC at m2.0 (+1.6pp, 2/4 discordant) — validated on the 256-seed
+  block: +0.8pp vs the gates-on reference (CI [−1.2,+3.1], 8/256 discordant,
+  3%)**. Per the pre-registered adoption rule (must clearly beat the
+  reference on 256 seeds), **the single global margin 1.0 stays**; the
+  per-screen knobs remain available and documented.
+- **Artifacts:** `build/sweep_{SCREEN}_m{M}.csv` (24), `build/boss2_256.csv`;
+  per-screen knobs in `apps/one_combat.cpp`; decision log
+  `2026-08-03-ooc-per-screen-margins.md`.
+
+## 90. Phase B step 4: combined encoder upgrades — negative; Phase B closed (2026-08-03)
+
+- **Goal:** the only untested Phase-B hypothesis — do the individually-neutral
+  encoder upgrades (C1 transformer, C4 quantile heads, C2 cross-attention)
+  interact positively when combined (`STRAT_TOK_TRANSFORMER=1
+  STRAT_TOK_QUANTILES=1 STRAT_TOK_CROSS=1`)?
+- **Setup:** 40 epochs, `build/strategic_tierb.csv`, grouped 80/20; batch 2048
+  + eval chunk 4096 (the other agent's GPU-resident state (2.95 GB) OOMs the
+  transformer attention at batch 4096); `STRAT_TOK_COMPILE=0` (torch.compile
+  also OOMs with the resident state; eager numerics).
+- **Held-out:**
+
+  | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
+  |---|---|---:|---:|---:|---:|---:|
+  | V4 baseline (40ep) | 0.790 | 10.01 | 0.492 | 11.37 | 0.282 | 17.00 |
+  | C1 / C4 / C2 individual best | 0.793 | 10.39 | 0.487 | 10.59 | 0.296 | 16.62 |
+  | **Combined C1+C4+C2** | 0.783 | 9.60 | **0.515** | **13.41** | 0.290 | **18.38** |
+
+- **Verdict:** ❌ the combination is the **worst** config of the whole ladder —
+  worse than the baseline and every individual upgrade (Q MAE 18.38 vs 17.00,
+  value MAE 13.41 vs 11.37, val CE 0.515 vs 0.492): the upgrades **interfere**
+  when combined (added capacity/targets without added signal). Pre-registered
+  deployment trigger not met (Q MAE > 15.5, Q top-1 < 0.30) → **no V5 export /
+  C++ deployment round**. **Phase B is closed**: encoder capacity (C1),
+  training signal (C4), and action conditioning (C2) do not fix the token-state
+  Q calibration gap individually or jointly — the gap is the counted-token
+  state contract itself (§88 conclusion confirmed). The V4 net's deployed
+  strength (§81: 41.4% full stack) stands on its base encoder.
+- **Artifacts:** `selfplay/models/ooc_strategic_tok_combined.{pt,_metrics.json}`;
+  levers in `strategic_tok_net.py`/`train_strategic_tok.py`.
