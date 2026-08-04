@@ -149,10 +149,17 @@ the soft-target objective (λ∈{0.25,0.5,1.0}, τ=1.0) does not transfer: every
 distilled-policy gate arm loses to the Q-gate (~+3..+27pp, significant at
 m≤0.05) and to the V3 reference (best −21.1pp [−30.5,−12.5]). The
 tie-dominated `labelWon` caps the ranking signal (dist_top1 ≈ behavior's
-38%). `STS_OOC_STRATEGIC_SCORE` stays opt-in; `q` stays default. K=6 deep
-targets (5.7.1b) remain the open follow-up to reduce label noise/tie density.
+38%). `STS_OOC_STRATEGIC_SCORE` stays opt-in; `q` stays default.
+**The label-noise follow-up wave (2026-08-05, §105) is also null**: futures=2
+variance reduction (matched control, 55→126k value grid), trainer-side
+denoising (MARGIN_EPS/SPREAD_W/TERM_W), and the L0 noise decomposition all
+show the one-ply label **ranking** itself — not its noise — is the ceiling.
+K=6 deep targets (5.7.1b) are **not run** (L0: truncation is the weak lever,
+~6pp terminal-vs-censored gap). The learned one-ply label line
+(§96/§100/§104/§105) is closed; 5.7.3 vs. abandoning the labels is the open
+question.
 
-- [x] Produce improved policy targets `π_target(a|s) ∝ exp(Q_search(s,a)/τ)` — 5.7.1 (done; diagnostic §104 Step 1: 38% argmax-vs-chosen agreement, ties dominate; K=6 deeper targets NOT run — deferred follow-up)
+- [x] Produce improved policy targets `π_target(a|s) ∝ exp(Q_search(s,a)/τ)` — 5.7.1 (done; diagnostic §104 Step 1: 38% argmax-vs-chosen agreement, ties dominate; K=6 deeper targets NOT run — §105: truncation is the weak lever, label precision does not transfer)
 - [x] Train policy toward search-improved targets (CE) — 5.7.2 (done; gate A/B §104: falsified, stays opt-in)
 - [ ] Iterative loop: play → search → train → repeat — 5.7.3
 

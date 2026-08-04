@@ -58,6 +58,14 @@ FLOORLAMBDA = float(os.environ.get("STRAT_FLOORLAMBDA", "0.5"))
 # (1-LAMBDA)*CE(one-hot chosen) + LAMBDA*CE(softmax(labelWon/TAU)).
 DIST_LAMBDA = float(os.environ.get("STRAT_DIST_LAMBDA", "0.5"))
 DIST_TAU = float(os.environ.get("STRAT_DIST_TAU", "1.0"))
+# Label-noise knobs (all default-off): STRAT_DIST_MARGIN_EPS>0 -> uniform
+# target over rows within eps of the group max (denoises the coarse bootstrap
+# grid); STRAT_DIST_SPREAD_W>0 -> group weight clip((max-min)/0.15,0,1) on the
+# dist term; STRAT_DIST_TERM_W!=1 -> row weight on terminal
+# (labelBootstrap==0) rows. Defaults reproduce the §104 numbers exactly.
+DIST_MARGIN_EPS = float(os.environ.get("STRAT_DIST_MARGIN_EPS", "0.0"))
+DIST_SPREAD_W = float(os.environ.get("STRAT_DIST_SPREAD_W", "0.0"))
+DIST_TERM_W = float(os.environ.get("STRAT_DIST_TERM_W", "1.0"))
 CLIP = float(os.environ.get("STRAT_CLIP", "1.0"))
 CHUNK = int(os.environ.get("STRAT_CHUNK", "250000"))
 THREADS = int(os.environ.get("OMP_NUM_THREADS", "8"))
@@ -169,6 +177,12 @@ q_hp_target = np.clip(df.labelHp.to_numpy(np.float32) / maxHp, 0.0, 1.0).astype(
 q_hp_valid = np.isfinite(q_hp_target)
 q_floor_target = np.clip(df.labelFloor.to_numpy(np.float32) / 60.0, 0.0, 1.0).astype(np.float32)
 q_floor_valid = np.isfinite(q_floor_target)
+# Terminal/censored row mask (labelBootstrap==0 = exact 0/1 outcome; used by
+# the STRAT_DIST_TERM_W row weighting; None when the column is absent).
+bt_term = None
+if "labelBootstrap" in df:
+    bt = df.labelBootstrap.to_numpy(np.float32)
+    bt_term = np.isfinite(bt) & (bt == 0)
 
 # --- Map-DAG encoder inputs (5.3.2): per-row graph tensors for MAP_SCREEN
 # rows (screen == MAP_SCREEN_ID), zero elsewhere. The table is one lossless
@@ -223,6 +237,8 @@ q_win_target, q_win_valid = q_win_target[order], q_win_valid[order]
 q_hp_target, q_hp_valid = q_hp_target[order], q_hp_valid[order]
 q_floor_target, q_floor_valid = q_floor_target[order], q_floor_valid[order]
 chosen = chosen[order]
+if bt_term is not None:
+    bt_term = bt_term[order]
 if USE_MAP:
     map_rooms, map_edges, map_special = map_rooms[order], map_edges[order], map_special[order]
     map_px, map_py, map_chosen = map_px[order], map_py[order], map_chosen[order]
@@ -490,16 +506,47 @@ def train_batch_loss(gs):
             dm = torch.full((len(gs),), float("-inf"), device=DEVICE)
             dm.scatter_reduce_(0, loc, lwr, reduce="amax", include_self=True)
             dm = torch.where(has_fin, dm, torch.zeros((), device=DEVICE))
-            w = torch.where(dvalid, torch.exp((lwr - dm[loc]) / DIST_TAU),
-                            torch.zeros((), device=DEVICE))
+            # Target weights: exp(lw/tau) by default; with MARGIN_EPS>0 a
+            # uniform target over rows within eps of the group max (denoises
+            # the coarse bootstrap grid).
+            if DIST_MARGIN_EPS > 0.0:
+                w = torch.where(dvalid & (lwr >= dm[loc] - DIST_MARGIN_EPS),
+                                torch.ones((), device=DEVICE),
+                                torch.zeros((), device=DEVICE))
+            else:
+                w = torch.where(dvalid, torch.exp((lwr - dm[loc]) / DIST_TAU),
+                                torch.zeros((), device=DEVICE))
             wsum = torch.zeros(len(gs), device=DEVICE).scatter_add_(0, loc, w)
             p = torch.where(wsum[loc] > 0, w / wsum[loc].clamp_min(1e-12),
                             torch.zeros((), device=DEVICE))
-            dce = torch.zeros(len(gs), device=DEVICE).scatter_add_(
-                0, loc, p * (logit - lse[loc]))
             dmask = torch.from_numpy(ok).to(DEVICE) & has_fin
-            if bool(dmask.any()):
-                dist_ce = -dce[dmask].mean()
+            # Row weighting for the per-group CE (TERM_W on terminal rows).
+            if DIST_TERM_W != 1.0 and bt_term is not None:
+                rw = torch.from_numpy(bt_term[rows]).to(DEVICE).float()
+                rw = torch.where(rw > 0, torch.tensor(DIST_TERM_W, device=DEVICE),
+                                 torch.ones((), device=DEVICE))
+                dn = torch.zeros(len(gs), device=DEVICE).scatter_add_(0, loc, rw * p)
+                dce = torch.zeros(len(gs), device=DEVICE).scatter_add_(
+                    0, loc, rw * p * (logit - lse[loc]))
+                dce = torch.where(dn > 0, dce / dn.clamp_min(1e-12),
+                                  torch.zeros((), device=DEVICE))
+            else:
+                dce = torch.zeros(len(gs), device=DEVICE).scatter_add_(
+                    0, loc, p * (logit - lse[loc]))
+            # Group weighting (SPREAD_W): near-tied groups contribute less.
+            if DIST_SPREAD_W > 0.0:
+                lwr_mn = torch.where(dvalid, lwr,
+                                     torch.tensor(float("inf"), device=DEVICE))
+                mn = torch.full((len(gs),), float("inf"), device=DEVICE)
+                mn.scatter_reduce_(0, loc, lwr_mn, reduce="amin", include_self=True)
+                spread = torch.where(has_fin, dm - mn, torch.zeros((), device=DEVICE))
+                gw = torch.clamp(spread / 0.15, 0.0, 1.0)
+                if bool((dmask & (gw > 0)).any()):
+                    dist_ce = -(dce * gw)[dmask].sum() / gw[dmask].sum()
+                else:
+                    dist_ce = torch.zeros((), device=DEVICE)
+            else:
+                dist_ce = -dce[dmask].mean() if bool(dmask.any()) else torch.zeros((), device=DEVICE)
         pol_loss = (1.0 - DIST_LAMBDA) * pol_ce + DIST_LAMBDA * dist_ce
     else:
         pol_loss = torch.zeros((), device=DEVICE)

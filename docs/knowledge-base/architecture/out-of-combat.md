@@ -1,8 +1,9 @@
 # Out-of-combat policy
 
-Last verified: 2026-08-04 against the current working tree (Wave B regret
+Last verified: 2026-08-05 against the current working tree (Wave B regret
 gate + Q_win truth-check mode + map-DAG encoder (V6) + Phase F soft-target
-policy objective and policy-score gate env added; Phase F falsified §104).
+policy objective and policy-score gate env added; Phase F falsified §104,
+label-noise wave §105 null — learned one-ply label line closed).
 
 ## Purpose
 
@@ -185,9 +186,15 @@ argmax vs label argmax). λ=0 reproduces the pre-change numbers exactly.
 `labelWon` caps the ranking signal (dist_top1 ≈ behavior's 38% agreement),
 the distilled policy flattens the logits (margin 18.6 → ~1.2), and every
 policy-score gate arm loses to the Q-gate and to the V3 reference on the
-recorded block. Both knobs stay opt-in; `q` remains the default. K=6 deep
-targets (5.7.1b) are the open follow-up to reduce label noise and tie
-density.
+recorded block. Both knobs stay opt-in; `q` remains the default. The
+label-noise follow-up (§105, 2026-08-05) is also null: futures=2 variance
+reduction (matched 500-seed control; the labelWon value grid collapses from
+55 to 126k distinct values) and the trainer-side denoising knobs
+(`STRAT_DIST_MARGIN_EPS`, `STRAT_DIST_SPREAD_W`, `STRAT_DIST_TERM_W` —
+defaults byte-parity with the §104 numbers) move neither `dist_top1` nor
+`q_top1`; the one-ply label **ranking** itself is the transfer ceiling.
+K=6 deep targets (5.7.1b) are not run for that reason (truncation is the
+weak lever per the §105 L0 probe).
 
 ## Strategic model design (semi-Markov decomposition)
 

@@ -3419,3 +3419,124 @@ enabling condition, but the omitted command prevents verification.
   32/32, V5 magic), `build/qwin_cal_dist_l{025,050}_m*.csv` (+`.log`),
   `run_distgate_ab.sh`, `ooc_strategic_qwin_cal_dist_l*_train.log`;
   diagnostic script `/tmp/opencode/ooc_phasef_diag.py` (one-off).
+
+## 105. Label-noise wave (post-§104): futures=2 variance reduction, value-grid quantization, trainer-side denoising — ALL NULL; the label ranking itself is the ceiling (2026-08-05)
+
+- **Goal:** §104's falsification left "label noise" as the explanation for the
+  missing transfer. This wave tests the noise readings directly: (L0)
+  decompose the noise sources, (L1a) futures=2 variance reduction, (L2)
+  trainer-side target denoising. Pre-registered offline gate before any gate
+  A/B: dist_top1 > 0.385 OR q_top1 > 0.362 (the §104 l050 numbers); A/B only
+  qualifying arms.
+- **L0 — noise decomposition (no code, on `build/strategic_qwin_cal.csv`):**
+  - Only **55 distinct labelWon values** across 809k rows (terminal 0/1 +
+    coarse bootstrap grid) → the tie density IS value quantization.
+  - 19.3% of groups have zero spread (max==min), 40.2% have spread <0.05.
+  - All-terminal groups agree with behavior 43.3% vs 37.1% for any-censored —
+    truncation (K=3) explains only ~6pp of the disagreement.
+  - Reading: single-path variance (futures=1) + quantization, not truncation,
+    are the structural noise candidates.
+- **L1a — futures=2 datagen (matched control):**
+  `STRATEGIC_SAMPLE_ALL=1 STRATEGIC_BRANCH_FUTURES=2 ./build/one_combat
+  strategicgen2 500 1000 0 build/strategic_qwin_f2.csv 200000` (26 min; §94
+  seeds are 200000–201309, so seeds 200000–200499 overlap by design and form
+  a matched pair with the fresh futures=1 control
+  `build/strategic_qwin_f1.csv`, 13 min). Results: 315k rows both, 100%
+  labeled; **unique labelWon 126,097 vs 55** — the quantization is gone.
+  Trained the §104 recipe (λ=0.5, τ=1.0, 60 epochs) on both + a λ=0 control
+  on f2 (md5s: f1_l050 7122bccb, f2_l000 7ff5a0e1, f2_l050 b538201d):
+
+  | model | dist_top1 | q_top1 | q_brier |
+  |---|---|---:|---:|
+  | futures=1 λ=0.5 (f1_l050) | 0.3640 | 0.3023 | 0.0458 |
+  | futures=2 λ=0.5 (f2_l050) | 0.3610 | 0.3036 | 0.0423 |
+  | futures=2 λ=0 (f2_l000) | 0.3619 | 0.3370 | 0.0438 |
+
+  Rank metrics are flat (dist_top1 −0.003, q_top1 +0.001) — the continuous
+  value grid and halved per-action variance do not help the model extract
+  ranking signal; only q_brier improves (calibration of the Q probabilities,
+  not their ranking). (Note: q_top1 ≈ 0.30 on these 500-seed sets vs 0.36 on
+  the 1,295-seed §104 set — training-data volume dominates label precision.)
+- **L2 — trainer-side denoising on the existing CSV** (new default-off envs
+  in `train_strategic.py`, λ=0.5 recipe; all three **fail the offline gate**):
+
+  | arm | knob | dist_top1 | q_top1 | verdict |
+  |---|---|---:|---:|---|
+  | eps | STRAT_DIST_MARGIN_EPS=0.05 (uniform target within ε of max) | 0.3848 | 0.3199 | fail (q_top1 ↓) |
+  | spread | STRAT_DIST_SPREAD_W=1 (group weight ∝ max−min) | 0.3746 | 0.3250 | fail |
+  | term | STRAT_DIST_TERM_W=2 (2× weight on labelBootstrap==0 rows) | 0.3834 | 0.3348 | fail |
+
+  Every variant degrades the Q head's label-ranking agreement (q_top1 0.362 →
+  ≤0.335). Defaults verified byte-parity with §104 (all knobs off = same
+  numbers).
+- **Verdict:** ❌ the label-noise reading is falsified on three independent
+  angles: (1) quantization removal + variance halving (L1a matched control)
+  changes nothing on the ranking metrics; (2) trainer-side target
+  engineering (L2) does not help; (3) the L0 probe shows even exact terminal
+  labels disagree with behavior 43% of the time. The **one-ply label ranking
+  itself is the ceiling** — this closes the "noise" reading of §104 and with
+  it the learned-label line (Q-gate §96, map encoder §100, policy objective
+  §104, label noise §105). Pre-registered: no gate A/B (no arm qualified).
+  L1b (K=6 deep targets, 5.7.1b) is **not run**: L0 shows truncation is the
+  weak lever (~6pp terminal-vs-censored gap) and L1a shows label precision
+  does not transfer — deferred/closed with this reasoning. Remaining options
+  per §93: 5.7.3 (iterative play→search→train loop, which reframes the
+  labels via self-play) or abandoning the one-ply label approach.
+- **Artifacts:** `build/strategic_qwin_f{1,2}.csv` (+`.log`),
+  `selfplay/models/ooc_strategic_qwin_f{1,2}_*.{pt,metrics.json}` (+`_state.bin`),
+  `selfplay/models/ooc_strategic_qwin_cal_dist_{eps,spread,term}.{pt,
+  metrics.json}` (+`_state.bin`), `ooc_strategic_qwin_{f1,f2}_*_train.log`,
+  `ooc_strategic_qwin_cal_dist_{eps,spread,term}_train.log`;
+  `train_strategic.py` STRAT_DIST_{MARGIN_EPS,SPREAD_W,TERM_W} (defaults
+  reproduce §104 exactly).
+
+## 102. Phase 1 payoff gate: S3+PVNet at 3k sims — no deployable channel; A–H sweep stopped (2026-08-04/05)
+
+- **Question:** does Searcher3+PVNet have a payoff channel at the 3k-sim
+  operating point of the recommended config, using the tracked (parity-fixed)
+  model? Decides whether the A–H architecture sweep is worth running at all.
+- **Setup:** GCP `sts-test` (c4-highcpu-24, 24 threads), fair, A0, 3,000
+  sims/decision, 128 seeds 126700–126827, default OOC stack (no gate
+  opt-ins), tracked artifacts (PVNet sha256
+  `05d809298921623af7c87c06e7dd31f5129abfd77cc702f75b9867949a59533f`, policy
+  prior `24793bd3...`, floor `3a342046...`, win `fc52c14c...`), binary built
+  from local HEAD + parity fixes, BLAS via
+  `STS_OPENBLAS=/usr/lib/x86_64-linux-gnu/libopenblas.so.0` with
+  `OPENBLAS_NUM_THREADS=1` (without this, OpenBLAS+OpenMP oversubscribes the
+  box ~2x and runs slower than scalar). Arms: true S2 (no `STS_SEARCHER3`),
+  S3 control, S3+PVNet α=0, S3+PVNet α=1.0. Note: the script's first arm
+  (`pvnetgate_s2_ref_3k_128.csv`) accidentally set `STS_SEARCHER3=1` too and
+  is per-seed identical to the S3 control; the true S2 arm is
+  `pvnetgate_s2_true_3k_128.csv`.
+- **Results (128 seeds, paired):**
+  - S2 true: **27/128 = 21.1%**, floor 37.3, HP 8.1, 24.3 cpu-sec/run
+    (matches the §68 default @1k of 21.1% — the default fair S2 is flat
+    1k→3k sims on this block).
+  - S3 ctl: **34/128 = 26.6%**, floor 36.4, HP 13.1, 29.0 cpu-sec/run —
+    +5.5pp vs S2, CI [−3.8, +14.8]; floor −0.9 CI [−3.6, +1.8].
+  - S3+PVNet α=0 (policy priors only): **25/128 = 19.5%**, floor 34.8,
+    HP 9.1, 409.8 cpu-sec/run — −7.0pp vs S3 ctl CI [−15.2, +1.2];
+    −1.6pp vs S2 CI [−10.3, +7.1]. **Priors actively hurt at 3k sims.**
+  - S3+PVNet α=1.0 (pure neural leaf): **38/128 = 29.7%**, floor 37.8,
+    HP 13.1, 436.2 cpu-sec/run — +8.6pp vs S2 CI [−0.9, +18.1],
+    +3.1pp vs S3 ctl CI [−5.0, +11.2], at **~15–18x the per-run compute**.
+- **Interpretation:** the tracked PVNet's payoff channel closes at 3k sims:
+  its policy head degrades search when search is deep (the §72 100-sim
+  prior benefit inverts), and its neural leaf buys a within-noise win gain
+  at 14–18x compute — dominated by S2/S3 on any fixed wall-clock budget.
+  The §97 vnet rejection and this gate agree: learned combat leaves/priors
+  do not beat rollout+search at equal compute in the current stack.
+  Searcher3 itself (without any net) is the only arm with a same-cost
+  positive signal (+5.5pp, CI touching 0).
+- **Decision:** per the agreed gate rule, the **A–H architecture sweep is
+  stopped**. No Phase 3/4 spend on width/layers/heads/FFN variants: the
+  model-architecture levers cannot fix a missing same-cost channel, and the
+  14x per-sim leaf cost is structural (per-node priors + neural leaf), not
+  data-dependent. Phase 2 fairgen regeneration is deprioritized for this
+  purpose; representation experiments (per-card tokens) would face the same
+  cost wall unless combined with a fully neural (rollout-free) regime at low
+  sims, which §72 and this gate both show loses.
+- **Artifacts:** per-seed CSVs `build/pvnetgate_{s2_true,s3_ctl,s3_pv0,
+  s3_pv1}_3k_128.csv` (+ `s2_ref`, the mislabeled S3 duplicate); server log
+  `/tmp/pvnet_gate.log` on `sts-test`; `run_pvnet_gate.sh` (arm 0
+  `STS_SEARCHER3` bug fixed in the script after the run).
