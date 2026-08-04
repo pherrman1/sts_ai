@@ -47,19 +47,23 @@ fi
 run_arm() {
   local name=$1; shift
   local csv="$OUTDIR/$name"
-  echo "== arm $name -> $csv =="
+  local s3flag=$1; shift
+  echo "== arm $name -> $csv (searcher3=$s3flag) =="
   # OPENBLAS_NUM_THREADS=1: the 24 outer OpenMP workers each call BLAS; letting
   # OpenBLAS spawn its own pool oversubscribes the box ~2x (load ~47 on 24
   # cores) and runs SLOWER than scalar. One thread per call is the fast path.
-  env OPENBLAS_NUM_THREADS=1 STS_FAIR=1 STS_SEARCHER3=1 "$@" \
+  # s3flag controls STS_SEARCHER3 per arm: arm 0 (true S2 reference) must NOT
+  # set it (the first gate run set it for every arm, silently turning the
+  # "S2 reference" into an S3 duplicate).
+  env OPENBLAS_NUM_THREADS=1 STS_FAIR=1 $s3flag "$@" \
     "$BIN" bestbench "$SIMS" "$NSEEDS" 0 "$SEED_OFF" "$csv"
 }
 
-run_arm pvnetgate_s2_ref_3k_128.csv
-run_arm pvnetgate_s3_ctl_3k_128.csv
-run_arm pvnetgate_s3_pv0_3k_128.csv \
+run_arm pvnetgate_s2_ref_3k_128.csv ""
+run_arm pvnetgate_s3_ctl_3k_128.csv "STS_SEARCHER3=1"
+run_arm pvnetgate_s3_pv0_3k_128.csv "STS_SEARCHER3=1" \
   STS_PVNET=build/v_combat_pvnet.txt STS_PVNET_ALPHA=0
-run_arm pvnetgate_s3_pv1_3k_128.csv \
+run_arm pvnetgate_s3_pv1_3k_128.csv "STS_SEARCHER3=1" \
   STS_PVNET=build/v_combat_pvnet.txt STS_PVNET_ALPHA=1.0
 
 echo "== done; aggregate: =="

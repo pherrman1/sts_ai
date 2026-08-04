@@ -105,3 +105,25 @@ metrics, verify timing.
   18.5 cpu-sec/run and wall-time figures are upper bounds, not clean
   measurements. Not re-tested (per session note); Phase 1 should re-measure
   cost on an uncontended server before sizing the α-sweep.
+
+## Update 2 (same session, EXPERIMENTS.md §102): Phase 1 payoff gate — NEGATIVE, A–H stopped
+
+- Ran the gate on GCP `sts-test` (fair, A0, 3k sims, 128 seeds 126700–126827,
+  default OOC stack, tracked parity-fixed PVNet, same binary for all arms).
+  Per-seed CSVs `build/pvnetgate_{s2_true,s3_ctl,s3_pv0,s3_pv1}_3k_128.csv`.
+- Results: S2 true 21.1%; S3 ctl 26.6% (+5.5pp vs S2, CI touches 0); S3+PVNet
+  α=0 19.5% (**−7.0pp vs S3 ctl** — priors hurt at deep search); S3+PVNet
+  α=1.0 29.7% (+8.6pp vs S2, CI [−0.9, +18.1]) at **14–18x per-run compute**.
+- **Decision: the A–H architecture sweep is stopped** (gate rule). The PVNet
+  channel closes at the 3k operating point; the neural leaf's within-noise
+  gain cannot survive a fixed wall-clock comparison; the 14x per-sim cost is
+  structural. Phase 2 fairgen regeneration deprioritized for this purpose.
+- Process findings recorded: OpenBLAS+OpenMP oversubscription
+  (`OPENBLAS_NUM_THREADS=1` required; without it 47 threads on 24 cores ran
+  slower than scalar — the cost numbers in §101/§102's earlier notes were
+  measured under that contention), and the arm-0 `STS_SEARCHER3` labeling
+  bug in `run_pvnet_gate.sh` (fixed: arm 0 now runs without it).
+- Open: S3-without-net is the only same-cost positive signal; a searcher
+  question, not a model question. If combat-model work resumes, the channel
+  to chase is low-sim fully-neural play, which both §72 and this gate
+  currently contradict.

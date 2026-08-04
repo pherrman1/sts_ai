@@ -93,7 +93,11 @@ final section of `EXPERIMENTS.md`. All recorded PVNet bot results predate the
 2026-08-04 parity fixes (GELU FFN, fixed 14-token layout, full policy-head dot
 product; decision log `2026-08-04-combat-pvnet-parity-fixes.md`); the
 `pvnetparity` mode (`apps/one_combat.cpp::main`) now verifies C++ inference
-against `combat_pvnet_parity.py` to ~1e-6.
+against `combat_pvnet_parity.py` to ~1e-6. The 2026-08-05 3k-sim payoff gate
+(EXPERIMENTS.md §102) closed the PVNet channel at the recommended operating
+point: policy priors hurt at deep search (−7.0pp vs S3 control) and the neural
+leaf's within-noise win gain costs 14–18x compute; the A–H architecture sweep
+was stopped.
 
 `STS_DIST_VNET` and `STS_PVNET` are referenced only from
 `BattleScumSearcher3.cpp`. Loading either model without `STS_SEARCHER3=1`
@@ -144,9 +148,13 @@ prints a load message but does not make default Searcher2 use it.
   states where the player cannot act; the aggressive `isGuaranteedDead`
   predicate was removed because its soundness for card-selection states was not
   proven (`src/sim/search/BattleScumSearcher3.cpp::canPruneAsDead`).
-- Native PV/distribution inference probes a hard-coded SciPy OpenBLAS path and
-  otherwise falls back to scalar math; the active backend is printed at load
-  time (`src/sim/search/CombatPVNet.cpp`; `CombatDistValueNet.cpp`).
+- Native PV/distribution inference probes a SciPy OpenBLAS path and
+  otherwise falls back to scalar math; `STS_OPENBLAS` overrides the probe
+  path and the loader accepts either `scipy_cblas_sgemv` or `cblas_sgemv`.
+  Set `OPENBLAS_NUM_THREADS=1` when OpenMP-outer-parallel workloads call
+  BLAS: OpenBLAS's own pool plus the 24 outer workers oversubscribes the box
+  ~2x and runs slower than scalar (EXPERIMENTS.md §102). The active backend
+  is printed at load time (`src/sim/search/CombatPVNet.cpp`; `CombatDistValueNet.cpp`).
 
 ## Open questions
 

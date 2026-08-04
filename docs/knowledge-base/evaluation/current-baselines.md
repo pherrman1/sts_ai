@@ -88,7 +88,9 @@ artifact set behind §66i.
   the 2026-08-04 C++ parity fixes (GELU FFN, fixed 14-token layout, policy-head
   dot product; see the decision log `2026-08-04-combat-pvnet-parity-fixes.md`);
   the fixes are not expected to move 100-sim results, which are dominated by
-  heuristic OOC choices, but the 3k-sim payoff gate uses only the fixed binary.
+  heuristic OOC choices. The 2026-08-05 3k-sim payoff gate on the fixed binary
+  (§102) is negative: no S3+PVNet arm beats same-compute S2/S3, and the A–H
+  architecture sweep was stopped accordingly.
 
 ## Open questions
 
