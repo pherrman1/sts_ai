@@ -2943,3 +2943,102 @@ enabling condition, but the omitted command prevents verification.
   `fit_vwin_calibration.py` (new); `apps/one_combat.cpp` `winnettest` mode;
   `build/strategic_qwin_cal.csv` + `_calmap.json`; interrupted partial
   `selfplay/models/ooc_strategic_qwin_cal_train.log`.
+
+## 96. Wave A1/B sweep: Q_win probability-point margins + regret gate — both negative (2026-08-04)
+
+- **Goal** (ooc-qwin-continuation.md Steps 4–5): with the corrected-label V3
+  Q_win retrain and V5 export done, sweep the one-ply gate margin in
+  probability-point units m ∈ {0.01, 0.03, 0.05, 0.10} for the calibrated
+  (`ooc_strategic_qwin_cal.native`, md5 3ac8343d…) and biased
+  (`ooc_strategic_qwin.native`, md5 a8a323c0…) V5 artifacts, then evaluate the
+  Wave B regret gate `Qmax(s) − Q(a_heur) > ε` at the same thresholds.
+- **Training note:** the desktop `build/strategic_qwin_cal.csv` (7.57 GB,
+  809,146 rows, 1,295 seeds) was truncated at the last line by the transfer
+  (a malformed trailing row with NaN labels poisoned a valid policy group →
+  NaN group-CE → `loss.backward()` crash with "element 0 of tensors does not
+  require grad"). The file was truncated at the last complete line; retrain:
+  `STRAT_EPOCHS=40 STRAT_PATIENCE=6 train_strategic.py` → best epoch 40
+  (no early stop), val_pol_ce 0.4671, policy_top1 0.7967, q_brier 0.0409,
+  **q_cal_max 0.0647 (doc target <0.03 missed)**; epoch-10 had q_cal_max
+  0.0199 but q_brier 0.0525. Export parity 32/32 (max logit err 9.9e-06).
+- **A/B (own held-out splits; different datasets — indicative only):**
+  calibrated vs biased: q_brier 0.0409 vs 0.0532 (better), q_cal_max 0.0647
+  vs 0.0160 (worse), q_mae 0.146 vs 0.173, policy_top1 0.797 vs 0.792.
+- **Truth-check (`check_vwin_calibration.py --ckpt`, new mode; 44,865
+  terminal chosen rows of the corrected CSV, both checkpoints on the same
+  rows):** V_win trees Brier 0.155 / max decile 0.184 (over-confident top,
+  known bias); biased Q_win head Brier 0.097 / decile 0.306; calibrated head
+  Brier 0.113 / decile 0.376 — **both heads are UNDER-confident at the top
+  deciles, not over-confident: the bootstrap bias did not propagate into the
+  head as inflation, and recalibration (which lowered censored labels)
+  shifted the head further down on terminal rows** (expectation in §94/§95
+  not met; the K=6 transfer validation stays the definitive test).
+- **Paired margin sweep** (fair, A0, 1,000 sims, seeds 126700–126827, 24
+  threads; reference = §76 full stack at m1.0, bit-identical
+  `gates_ref_m1.csv`, 39.8%; full one-ply gate stack
+  `STS_OOC_STRATEGIC_NN=<artifact> STS_OOC_STRATEGIC_{REST,EVENT,SHOP,
+  TREASURE,BOSS_RELIC}=1`; MAP/M2 off; per-seed CSVs on the GCP server
+  `/tmp/qwin_sweep/`, pulled to `build/`):
+
+  | config | wins | win Δ | floor Δ | discordant |
+  |---|---:|---:|---:|---:|
+  | ref m1 (V3 legacy) | **51 (39.8%)** | — | — | — |
+  | biased m0.01 | 43 (33.6%) | −6.2pp CI [−15.6,+3.1] | −2.8 CI [−4.9,−0.7] | 38 |
+  | biased m0.03 | 33 (25.8%) | −14.1pp CI [−24.2,−4.7] | −2.9 CI [−5.4,−0.4] | 44 |
+  | biased m0.05 | 29 (22.7%) | −17.2pp CI [−26.6,−7.0] | −3.4 CI [−5.9,−1.0] | 46 |
+  | biased m0.10 | 28 (21.9%) | −18.0pp CI [−28.1,−8.6] | −3.5 CI [−5.9,−1.1] | 45 |
+  | calibrated m0.01 | 35 (27.3%) | −12.5pp CI [−21.1,−3.9] | −3.8 CI [−6.1,−1.6] | 34 |
+  | calibrated m0.03 | 32 (25.0%) | −14.8pp CI [−24.2,−5.5] | −3.0 CI [−5.4,−0.6] | 43 |
+  | calibrated m0.05 | 29 (22.7%) | −17.2pp CI [−27.3,−7.8] | −3.5 CI [−5.9,−1.1] | 44 |
+  | calibrated m0.10 | 28 (21.9%) | −18.0pp CI [−28.1,−7.8] | −3.5 CI [−5.9,−1.1] | 45 |
+
+  (Baseline flags-off 21.1% / 37.5 / 8.6 = `build/tierb_gate_base.csv`.)
+
+- **Paired regret-gate sweep** (same block; calibrated V5 artifact, gate
+  flags on, `STS_OOC_STRATEGIC_GATE=regret`, margin fallback 1.0,
+  ε ∈ {0.01, 0.03, 0.05, 0.10}):
+
+  | config | wins | win Δ | floor Δ | discordant |
+  |---|---:|---:|---:|---:|
+  | regret ε0.01 | 25 (19.5%) | −20.3pp CI [−29.7,−10.9] | −7.5 CI [−10.3,−4.7] | 42 |
+  | regret ε0.03 | 29 (22.7%) | −17.2pp CI [−26.6,−7.8] | −3.7 CI [−5.9,−1.5] | 42 |
+  | regret ε0.05 | 27 (21.1%) | −18.8pp CI [−28.1,−9.4] | −4.4 CI [−6.7,−2.1] | 44 |
+  | regret ε0.10 | 29 (22.7%) | −17.2pp CI [−26.6,−7.8] | −4.0 CI [−6.3,−1.7] | 42 |
+
+- **Verdict:** both waves negative. (1) The Q_win gate stack loses to the V3
+  legacy reference at every tested margin; the only CI-spanning-zero point is
+  biased m0.01 (−6.2pp). (2) Recalibration did NOT improve policy quality:
+  at m0.01 the biased artifact is best (33.6% vs 27.3%); at m≥0.03 the two
+  artifacts are indistinguishable and ≈ baseline, so the Q_win head only
+  contributes at the loosest margin. (3) The regret gate is ≈ baseline at
+  every ε (it takes the heuristic action when regret ≤ ε, so it degrades
+  toward the heuristic) and its Q-max overrides hurt — strictly worse than
+  the margin gate at the same thresholds. **Pre-registered adoption rule
+  (beat margin-gate reference on 128 AND hold on 256) fails at 128 — no 256
+  run; the regret gate stays opt-in (default off), as do the Q_win
+  artifacts.** Consistent with §91/§93: replacing the proven V3 stack with a
+  new objective/head damages performance on this block. The V3 legacy stack
+  at m1.0 (39.8%) remains the deployed reference.
+- **Implementation:** `apps/one_combat.cpp` — Wave B regret gate
+  `regretGateChoose`/`regretGateTail` + per-screen live-fallback heuristic
+  runners (`regretHeur*`), env `STS_OOC_STRATEGIC_GATE=regret`,
+  `STS_OOC_STRATEGIC_GATE_EPS` (default 0.03), wired into all one-ply gates +
+  M2; margin path byte-identical with the flag off (verified on the recorded
+  block). First regret attempt mis-specified SHOP's a_heur as the datagen
+  default (relic-buy-or-random) instead of the live `shopVPolicy` fallback
+  and measured 13.3–18.8%; after the fix (t_shopV + live-fallback runners)
+  the rerun gives the numbers above — the SHOP a_heur mismatch was the
+  damage, but the corrected gate still does not help.
+- **Process findings:** (a) the server tree is an rsync copy — after syncing
+  only `one_combat.cpp` the build silently linked against the stale
+  pre-V5 `apps/ooc_strategic_net.h` and the V5 model failed to load
+  ("truncated payload" → silent gate fallback → all runs measured the
+  flags-off baseline); sync the net headers with the driver. (b) The
+  transferred CSV truncation (above) crashed the trainer with a
+  misleading autograd message. (c) GCP VM had been terminated; `gcloud
+  compute instances start` before sweeping.
+- **Artifacts:** `selfplay/models/ooc_strategic_qwin_cal.{pt,native,
+  metrics.json}` (+`_state.bin`), `ooc_strategic_qwin_cal_train.log`,
+  `check_vwin_calibration.py` (`--ckpt` mode), per-seed CSVs
+  `build/qwin{,_cal}_m*.csv`, `build/regret_cal_e*.csv` (server
+  `/tmp/qwin_sweep/`).

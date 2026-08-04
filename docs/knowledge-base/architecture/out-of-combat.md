@@ -1,7 +1,7 @@
 # Out-of-combat policy
 
-Last verified: 2026-08-02 against the current working tree (Phase-5 round 5;
-semi-Markov design record added).
+Last verified: 2026-08-04 against the current working tree (Wave B regret
+gate + Q_win truth-check mode added).
 
 ## Purpose
 
@@ -104,6 +104,41 @@ globals against `richFeatureVec`; zero mismatches across §75 benchmark runs).
 gate is directionally win-positive at margin 5.0 (+3.1pp, CIs span zero), but
 V3's +7.0pp @ m1 is not beaten — **V3 remains the deployed default; the V4
 net is opt-in**.
+
+## Wave B regret gate (2026-08-04, opt-in)
+
+`STS_OOC_STRATEGIC_GATE=regret` (default **off**) replaces the margin rule
+`best − second ≥ m` with the regret rule **Qmax(s) − Q(a_heur) > ε** for every
+one-ply gate (`oocOnePlyCardRewardPolicy` … `oocOnePlyBossRelicPolicy`,
+`oocOnePlyMapPolicy`) and the M2 route search (`oocMapRouteSearchPolicy`);
+`STS_OOC_STRATEGIC_GATE_EPS` (default 0.03) sets ε. `a_heur` is the action the
+**live fallback chain of the screen** would take (the code path that would run
+if the gate returned false — for SHOP that is `shopVPolicy` under bestbench,
+for cards `serverCardRewardPolicy`, for rest/upgrade the win-rate layers, else
+`ScumSearchAgent2::stepOutOfCombatPolicy`, with the `eventV`/`bossRelicV`/
+`pathV` opt-in layers mirrored when their flags are set), identified by the
+datagen-proven successor-fingerprint match
+(`regretGateChoose` + `stratFingerprint`, one_combat.cpp:5844): the per-screen
+heuristic runner (`regretHeurCardReward` / `regretHeurRest` /
+`regretHeurUpgrade` / `regretHeurEvent` / `regretHeurShop` /
+`regretHeurBossRelic` / `regretHeurMap`, SHOP gated on the run's `shopV` flag
+via `t_shopV`) runs on a pre-state
+copy (map detached, agent RNG stream copied so RNG-consuming heuristics
+match), and the legal action whose successor fingerprint equals the
+heuristic's is `a_heur`. When `Qmax − Q(a_heur) > ε` the Q-max action runs;
+otherwise `a_heur` itself runs (the gate acts, so the heuristic layer is not
+re-entered). When `a_heur` is unidentifiable — RNG-tied divergence, multi-step
+heuristics, indistinguishable successors — the decision **falls back to the
+margin rule** (`regretGateTail`). Implementation is shared via
+`regretGateChoose`/`regretGateTail` (defined after `stratFingerprint`);
+policies keep the margin path byte-identical when the flag is off (verified:
+margin-mode runs reproduce the pre-change binary's results on the recorded
+block). Q-consistency: `check_vwin_calibration.py --ckpt <trainer.pt> <csv>`
+adds a Wave-B truth-check mode that predicts the V5 Q_win head (torch
+checkpoint, export parity-checked to ~1e-5 logit) on terminal
+(`labelBootstrap==0`, chosen) rows instead of the win trees — run with the
+pre- and post-recalibration checkpoints to test bootstrap-bias propagation
+into the head.
 
 ## Strategic model design (semi-Markov decomposition)
 
