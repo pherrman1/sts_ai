@@ -144,6 +144,11 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 
 ### Phase F: search distillation
 
+Status: planned (2026-08-04) but not executed — §100's falsification of the
+map-DAG encoder names Phase F as the coherent next step (the counterfactual
+labels already exist per action, so 5.7.1/5.7.2 need no datagen); 5.7.3 (the
+selfplay loop) is explicitly deferred.
+
 - [ ] Produce improved policy targets `π_target(a|s) ∝ exp(Q_search(s,a)/τ)` — 5.7.1
 - [ ] Train policy toward search-improved targets (CE) — 5.7.2
 - [ ] Iterative loop: play → search → train → repeat — 5.7.3
@@ -155,7 +160,7 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 - [x] Fix or isolate the `BattleContext::executeActions` loop-guard assertion (seed 128087) — isolated (`src/combat/BattleContext.cpp`: Release-mode `assert` no-op → logged loss termination); seed completes; committed
 - [x] V4 full gate stack on the 256-seed block (§81 follow-up 3) — §92: **105/256 = 41.0%** (+3.9pp vs the V3 256-stack; +18.0pp vs the 256 flags-off baseline); V4 stays the top arm, gates stay opt-in, no default flip
 - [x] Q_win action-value refactor (§4 divergence 1 follow-up) — §94/§95/§96: pure win-probability Q head (BCE on `labelWon`), Q_HP/Q_floor aux heads, `OOC_STRAT_V5` artifact (both V3 and V5 loadable, legacy bit-identical); V_win bootstrap recalibration §95 (the initial "grossly miscalibrated" claim was a checker bug; true max decile 0.24 raw → 0.08 after the isotonic map on the censored labels); corrected-label desktop retrain (best epoch 40: q_brier 0.041, q_cal_max 0.065, policy top-1 0.797) + V5 export; **probability-point margin sweep and the Wave B regret gate are both negative** (§96: every Q_win margin point loses to the V3 legacy reference — only biased m0.01 at 33.6% spans zero; the regret gate `STS_OOC_STRATEGIC_GATE=regret` is ≈ baseline at every ε and stays opt-in, no default flip); Q_boss aux head deferred (needs a datagen label column)
-- [ ] More Tier-A data (round 1 used 200 seeds; Tier-B used ~4,650) for policy-head training
+- [x] More Tier-A data (round 1 used 200 seeds; Tier-B used ~4,650) for policy-head training — satisfied indirectly: the §94 fresh `strategicgen2` datagen (new seeds 200000–201439, 1,440 seeds / 900,916 rows) grew the shared Tier-A+Tier-B corpus (Tier-A labels ride the same rows), and the §95/§96 corrected-label retrains train the policy head on it; no dedicated Tier-A-only datagen was run
 
 ## 6. Evaluation protocol
 
