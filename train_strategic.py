@@ -7,9 +7,13 @@ the packed GameAction bits, structured candidate fields (c1..c3, cand1..c3), a
 counterfactual labels (labelWon, labelHp, labelFloor, labelBootstrap; NaN for
 unsampled decisions).  The network learns a policy (softmax over each decision
 group's legal actions, supervised by the chosen row), one run-value head per
-screen (10*won + endHp, trained on that screen's chosen rows), and a Q(s,a)
-head (10*labelWon + labelHp, trained on every labeled row) jointly with
-group-CE + per-screen value-MSE + STRAT_QLAMBDA*Q-MSE.
+screen (10*won + endHp, trained on that screen's chosen rows), a Q_win(s,a)
+head — sigmoid output on the soft win-probability label `labelWon` (BCE; no HP
+term in the action score) — and two auxiliary probability heads Q_HP
+(labelHp/maxHp) and Q_floor (labelFloor/60), trained jointly with group-CE +
+per-screen value-MSE + STRAT_QLAMBDA*Q-BCE + STRAT_HPLAMBDA*HP-BCE +
+STRAT_FLOORLAMBDA*floor-BCE.  Action selection uses Q_win only; the auxiliary
+heads enrich the shared representation without corrupting the objective.
 
 Memory: the state block is read in pandas chunks and written ONCE to a
 group-ordered float16 binary (OUT + "_state.bin"); training then reads
@@ -36,9 +40,14 @@ BATCH = int(os.environ.get("STRAT_BATCH", "4096"))   # target ROWS per batch (wh
 LR = float(os.environ.get("STRAT_LR", "2e-3"))
 VLAMBDA = float(os.environ.get("STRAT_VLAMBDA", "0.5"))
 QLAMBDA = float(os.environ.get("STRAT_QLAMBDA", "1.0"))
+HPLAMBDA = float(os.environ.get("STRAT_HPLAMBDA", "0.5"))
+FLOORLAMBDA = float(os.environ.get("STRAT_FLOORLAMBDA", "0.5"))
 CLIP = float(os.environ.get("STRAT_CLIP", "1.0"))
 CHUNK = int(os.environ.get("STRAT_CHUNK", "250000"))
 THREADS = int(os.environ.get("OMP_NUM_THREADS", "8"))
+# Stop after STRAT_PATIENCE epochs without an improvement in held-out
+# val_pol_ce (0 = never stop early).  Useful on slow CPU-only machines.
+PATIENCE = int(os.environ.get("STRAT_PATIENCE", "0"))
 # Default to CUDA when available; STRAT_DEVICE only overrides (e.g. "cpu").
 DEVICE = os.environ.get("STRAT_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu")
 if not DEVICE.startswith("cuda"):
@@ -49,14 +58,14 @@ print(f"device: {DEVICE}", flush=True)
 
 hdr = pd.read_csv(CSV, nrows=0).columns
 need = {"seed", "decIdx", "screen", "action", "actionType", "c1", "c2", "c3",
-        "cand1", "cand2", "cand3", "chosen", "won", "endHp",
-        "labelWon", "labelHp"}
+        "cand1", "cand2", "cand3", "chosen", "won", "endHp", "maxHp",
+        "labelWon", "labelHp", "labelFloor"}
 missing = need - set(hdr)
 if missing:
     raise ValueError(f"missing columns: {sorted(missing)}")
 if "labelWon" not in hdr or "labelHp" not in hdr:
     raise ValueError("Tier-B training requires labelWon,labelHp (strategicgen2 schema)")
-opt_cols = ["labelFloor", "labelBootstrap"]
+opt_cols = ["labelBootstrap"]
 for c in opt_cols:
     if c not in hdr:
         print(f"[train-strategic] optional column {c} absent; using NaN", flush=True)
@@ -133,13 +142,23 @@ cat = np.stack([np.clip(df[c].to_numpy(np.int64) + 1, 0, 511).astype(np.int16)
 atype = np.clip(df.actionType.to_numpy(np.int64) + 1, 0, 15).astype(np.int16)
 screen = np.clip(df.screen.to_numpy(np.int64), 0, 15).astype(np.int16)
 value = (10 * df.won.to_numpy(np.float32) + df.endHp.to_numpy(np.float32)).astype(np.float32)
-q_target = (10 * df.labelWon.to_numpy(np.float32) + df.labelHp.to_numpy(np.float32)).astype(np.float32)
-q_valid = np.isfinite(q_target)
+# Q_win target: the soft win probability (0/1 on terminal branches, the native
+# V_win bootstrap on censored ones, futures-averaged). No HP or floor term.
+q_win_target = df.labelWon.to_numpy(np.float32)
+q_win_valid = np.isfinite(q_win_target)
+# Auxiliary probability targets (normalized; not part of action scoring).
+maxHp = np.maximum(df.maxHp.to_numpy(np.float32), 1.0)
+q_hp_target = np.clip(df.labelHp.to_numpy(np.float32) / maxHp, 0.0, 1.0).astype(np.float32)
+q_hp_valid = np.isfinite(q_hp_target)
+q_floor_target = np.clip(df.labelFloor.to_numpy(np.float32) / 60.0, 0.0, 1.0).astype(np.float32)
+q_floor_valid = np.isfinite(q_floor_target)
 
 # Reorder every small array by group id once: batches are contiguous slices.
 action_ints, cat = action_ints[order], cat[order]
 atype, screen, value = atype[order], screen[order], value[order]
-q_target, q_valid = q_target[order], q_valid[order]
+q_win_target, q_win_valid = q_win_target[order], q_win_valid[order]
+q_hp_target, q_hp_valid = q_hp_target[order], q_hp_valid[order]
+q_floor_target, q_floor_valid = q_floor_target[order], q_floor_valid[order]
 chosen = chosen[order]
 
 # --- State block: chunked two-pass stats over TRAIN rows, then scatter to a
@@ -208,9 +227,13 @@ class Net(nn.Module):
         self.atype = nn.Embedding(16, 8)
         self.screen = nn.Embedding(16, 8)
         self.pol = nn.Sequential(nn.Linear(168, 96), nn.GELU(), nn.Linear(96, 1))
-        # Q(s,a) head on the same (z,b,a,screen) concat as the policy head,
-        # trained on Tier-B one-ply labels (10*labelWon + labelHp).
+        # Q_win(s,a) head on the same (z,b,a,screen) concat as the policy head,
+        # trained on the soft win-probability label labelWon (sigmoid + BCE).
         self.q = nn.Sequential(nn.Linear(168, 96), nn.GELU(), nn.Linear(96, 1))
+        # Auxiliary probability heads (shared encoders; never summed into the
+        # action score): Q_HP = E[labelHp/maxHp], Q_floor = E[labelFloor/60].
+        self.q_hp = nn.Sequential(nn.Linear(168, 96), nn.GELU(), nn.Linear(96, 1))
+        self.q_floor = nn.Sequential(nn.Linear(168, 96), nn.GELU(), nn.Linear(96, 1))
         # One value head per screen (screens 1..8 -> index 0..7), trained on
         # that screen's chosen rows only; the shared encoder is unchanged.
         self.vals = nn.ModuleList([nn.Sequential(nn.Linear(128, 64), nn.GELU(), nn.Linear(64, 1))
@@ -225,12 +248,14 @@ class Net(nn.Module):
         ha = torch.cat((z, b, a, self.screen(screen)), 1)
         logit = self.pol(ha).squeeze(1)
         q = self.q(ha).squeeze(1)
+        q_hp = self.q_hp(ha).squeeze(1)
+        q_floor = self.q_floor(ha).squeeze(1)
         v = torch.empty(z.shape[0], device=z.device)
         for h in range(8):
             m = (screen == h + 1)
             if m.any():
                 v[m] = self.vals[h](z[m]).squeeze(1)
-        return logit, v, q
+        return logit, v, q, q_hp, q_floor
 
 
 model = Net().to(DEVICE)
@@ -257,12 +282,13 @@ def fwd_rows(rows):
 
 
 def train_batch_loss(gs):
-    """Group-CE + per-screen value-MSE + Q-MSE over the (epoch-permuted)
-    consecutive groups gs; their rows are gathered into one batch."""
+    """Group-CE + per-screen value-MSE + Q_win-BCE + auxiliary HP/floor-BCE
+    over the (epoch-permuted) consecutive groups gs; their rows are gathered
+    into one batch."""
     sizes_b = sizes[gs]
     rows = np.concatenate([np.arange(block_start[g], block_start[g] + sizes[g])
                            for g in gs])
-    logit, val, q = fwd_rows(rows)
+    logit, val, q, q_hp, q_floor = fwd_rows(rows)
     # Row offset of each group within the gathered batch.
     gstart = np.concatenate(([0], np.cumsum(sizes_b[:-1])))
     # Policy CE: softmax over each group, target = its chosen row.
@@ -296,17 +322,32 @@ def train_batch_loss(gs):
         val_loss = torch.stack(vlosses).mean() if vlosses else torch.zeros((), device=DEVICE)
     else:
         val_loss = torch.zeros((), device=DEVICE)
-    # Q MSE on all labeled rows in the batch.
-    qm = q_valid[rows]
+    # Q_win BCE on all labeled rows in the batch (soft labels, sigmoid output).
+    qm = q_win_valid[rows]
     if qm.any():
-        ql = torch.from_numpy(q_target[rows]).to(DEVICE)[qm]
-        q_loss = nn.functional.mse_loss(q[qm], ql)
+        ql = torch.from_numpy(q_win_target[rows]).to(DEVICE)[qm]
+        q_loss = nn.functional.binary_cross_entropy_with_logits(q[qm], ql)
     else:
         q_loss = torch.zeros((), device=DEVICE)
-    loss = pol_loss + VLAMBDA * val_loss + QLAMBDA * q_loss
+    # Auxiliary HP / floor BCE (probability heads on the same labeled rows).
+    hm = q_hp_valid[rows]
+    if hm.any():
+        hl = torch.from_numpy(q_hp_target[rows]).to(DEVICE)[hm]
+        hp_loss = nn.functional.binary_cross_entropy_with_logits(q_hp[hm], hl)
+    else:
+        hp_loss = torch.zeros((), device=DEVICE)
+    fm = q_floor_valid[rows]
+    if fm.any():
+        fl = torch.from_numpy(q_floor_target[rows]).to(DEVICE)[fm]
+        floor_loss = nn.functional.binary_cross_entropy_with_logits(q_floor[fm], fl)
+    else:
+        floor_loss = torch.zeros((), device=DEVICE)
+    loss = (pol_loss + VLAMBDA * val_loss + QLAMBDA * q_loss
+            + HPLAMBDA * hp_loss + FLOORLAMBDA * floor_loss)
     if not torch.isfinite(loss):
         loss = torch.zeros((), device=DEVICE)
-    return loss, float(pol_loss.detach()), float(val_loss.detach()), float(q_loss.detach())
+    return (loss, float(pol_loss.detach()), float(val_loss.detach()),
+            float(q_loss.detach()), float(hp_loss.detach()), float(floor_loss.detach()))
 
 
 # Fixed evaluation permutation: val-group blocks packed in va_groups order.
@@ -320,8 +361,12 @@ for g in va_groups:
 va_chosen = chosen[va_perm]
 va_target = value[va_perm]
 va_screen = screen[va_perm]
-va_qtarget = q_target[va_perm]
-va_qvalid = q_valid[va_perm]
+va_qwin = q_win_target[va_perm]
+va_qwin_valid = q_win_valid[va_perm]
+va_qhp = q_hp_target[va_perm]
+va_qhp_valid = q_hp_valid[va_perm]
+va_qfloor = q_floor_target[va_perm]
+va_qfloor_valid = q_floor_valid[va_perm]
 
 
 @torch.no_grad()
@@ -331,12 +376,16 @@ def evaluate():
     full_logit = np.empty(len(va_perm), np.float32)
     full_val = np.empty(len(va_perm), np.float32)
     full_q = np.empty(len(va_perm), np.float32)
+    full_qhp = np.empty(len(va_perm), np.float32)
+    full_qfloor = np.empty(len(va_perm), np.float32)
     for lo in range(0, len(va_perm), BATCH):
         hi = min(lo + BATCH, len(va_perm))
-        l, v, q = fwd_rows(va_perm[lo:hi])
+        l, v, q, qh, qf = fwd_rows(va_perm[lo:hi])
         full_logit[lo:hi] = l.cpu().numpy()
         full_val[lo:hi] = v.cpu().numpy()
         full_q[lo:hi] = q.cpu().numpy()
+        full_qhp[lo:hi] = qh.cpu().numpy()
+        full_qfloor[lo:hi] = qf.cpu().numpy()
     vtarget = va_target
     ch = va_chosen
     vmse = float(np.mean((full_val[ch] - vtarget[ch]) ** 2))
@@ -351,15 +400,36 @@ def evaluate():
                 "rmse": float(np.sqrt(np.mean((full_val[sm] - vtarget[sm]) ** 2))),
                 "n": int(sm.sum()),
             }
-    qv = va_qvalid
-    qmae = float(np.mean(np.abs(full_q[qv] - va_qtarget[qv]))) if qv.any() else 0.0
-    qrmse = float(np.sqrt(np.mean((full_q[qv] - va_qtarget[qv]) ** 2))) if qv.any() else 0.0
+    # Q_win is a probability: report sigmoided predictions vs the soft label.
+    qv = va_qwin_valid
+    qp = 1.0 / (1.0 + np.exp(-full_q))          # sigmoid of the raw logit
+    qbrier = float(np.mean((qp[qv] - va_qwin[qv]) ** 2)) if qv.any() else 0.0
+    qmae = float(np.mean(np.abs(qp[qv] - va_qwin[qv]))) if qv.any() else 0.0
+    qrmse = float(np.sqrt(np.mean((qp[qv] - va_qwin[qv]) ** 2))) if qv.any() else 0.0
+    # Calibration: decile-binned |mean pred - mean label| (Q_win only).
+    cal_max = 0.0
+    if qv.sum() >= 20:
+        order = np.argsort(qp[qv])
+        y = va_qwin[qv][order]
+        p = qp[qv][order]
+        n = len(p)
+        for b in range(10):
+            lo, hi = (b * n) // 10, ((b + 1) * n) // 10
+            if hi - lo >= 5:
+                cal_max = max(cal_max, abs(float(p[lo:hi].mean() - y[lo:hi].mean())))
+    # Auxiliary heads: sigmoided vs their normalized targets.
+    hv = va_qhp_valid
+    qhp_p = 1.0 / (1.0 + np.exp(-full_qhp))
+    qhp_mae = float(np.mean(np.abs(qhp_p[hv] - va_qhp[hv]))) if hv.any() else 0.0
+    fv = va_qfloor_valid
+    qf_p = 1.0 / (1.0 + np.exp(-full_qfloor))
+    qfloor_mae = float(np.mean(np.abs(qf_p[fv] - va_qfloor[fv]))) if fv.any() else 0.0
     q_screen = {}
     for h in range(8):
         sm = (scr_all == h + 1) & qv
         if sm.sum() >= 10:
             q_screen[h + 1] = {
-                "mae": float(np.mean(np.abs(full_q[sm] - va_qtarget[sm]))),
+                "mae": float(np.mean(np.abs(qp[sm] - va_qwin[sm]))),
                 "n": int(sm.sum()),
             }
     top1 = 0
@@ -384,8 +454,8 @@ def evaluate():
             ntop += 1
         qg = qv[lo:lo + sz]
         if qg.sum() >= 2:
-            qoracle = np.argmax(va_qtarget[lo:lo + sz])
-            qpred = np.argmax(full_q[lo:lo + sz])
+            qoracle = np.argmax(va_qwin[lo:lo + sz])
+            qpred = np.argmax(qp[lo:lo + sz])
             qtop1 += int(qoracle == qpred)
             nqtop += 1
     return {"groups": ntop,
@@ -397,10 +467,14 @@ def evaluate():
             "value_mae_screen": per_screen,
             "q_top1": qtop1 / max(1, nqtop),
             "q_top1_n": nqtop,
+            "q_brier": qbrier,
             "q_mae": qmae,
             "q_rmse": qrmse,
+            "q_cal_max": cal_max,
             "q_n": int(qv.sum()),
             "q_mae_screen": q_screen,
+            "q_hp_mae": qhp_mae,
+            "q_floor_mae": qfloor_mae,
             "val_pol_ce": ce / max(1, ntop)}
 
 
@@ -416,6 +490,7 @@ def to_py(obj):
 
 best_ce = float("inf")
 best_state = None
+best_epoch = 0
 tr_gs = np.flatnonzero(tr_mask)
 for epoch in range(1, EPOCHS + 1):
     model.train()
@@ -430,9 +505,9 @@ for epoch in range(1, EPOCHS + 1):
             cur, nrows_b = [], 0
     if cur:
         batches.append(np.asarray(cur))
-    p_losses, v_losses, q_losses = [], [], []
+    p_losses, v_losses, q_losses, hp_losses, fl_losses = [], [], [], [], []
     for gs in batches:
-        loss, pl, vl, ql = train_batch_loss(gs)
+        loss, pl, vl, ql, hl, fl = train_batch_loss(gs)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), CLIP)
@@ -440,16 +515,24 @@ for epoch in range(1, EPOCHS + 1):
         p_losses.append(pl)
         v_losses.append(vl)
         q_losses.append(ql)
+        hp_losses.append(hl)
+        fl_losses.append(fl)
     model.eval()
     em = evaluate()
     if em["val_pol_ce"] < best_ce:
         best_ce = em["val_pol_ce"]
+        best_epoch = epoch
         best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
     if epoch == 1 or epoch % 10 == 0 or epoch == EPOCHS:
         print(f"epoch={epoch:03d} train_pol={np.mean(p_losses):.4f} "
               f"train_val={np.mean(v_losses):.4f} train_q={np.mean(q_losses):.4f} "
+              f"train_hp={np.mean(hp_losses):.4f} train_floor={np.mean(fl_losses):.4f} "
               f"val_pol_ce={em['val_pol_ce']:.4f} "
               f"metrics={to_py(em)}", flush=True)
+    if PATIENCE > 0 and epoch - best_epoch >= PATIENCE and best_state is not None:
+        print(f"[train-strategic] early stop: no val_pol_ce improvement for "
+              f"{PATIENCE} epochs (best epoch {best_epoch})", flush=True)
+        break
 
 model.load_state_dict(best_state)
 model.eval()

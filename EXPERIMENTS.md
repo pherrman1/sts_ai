@@ -2704,3 +2704,242 @@ enabling condition, but the omitted command prevents verification.
   strength (§81: 41.4% full stack) stands on its base encoder.
 - **Artifacts:** `selfplay/models/ooc_strategic_tok_combined.{pt,_metrics.json}`;
   levers in `strategic_tok_net.py`/`train_strategic_tok.py`.
+
+## 91. M1 wave: one-ply map route Q gate — negative at every margin (2026-08-04)
+
+- **Goal** (plan 5.6.2, direct-Q-per-route scheme): extend the one-ply Q-gate
+  coverage to MAP_SCREEN — score every legal child node of the visible map DAG
+  with the strategic net's Q(s,a) head and execute the argmax only when its
+  margin over the runner-up meets the gate; else `chooseMapAction` runs. The
+  Tier-B CSV already contains MAP_SCREEN rows with counterfactual successor
+  labels (all-decision sampling, §73), so **no datagen and no retrain**: this
+  is purely the C++ gate extension.
+- **Implementation (`apps/one_combat.cpp`):** `oocOnePlyMapPolicy` mirroring
+  `oocOnePlyEventPolicy` (dual-net V3/token path, margin gate, cats via
+  `strategicCands` MAP case: cand1=child x, cand2=row, cand3=room; tok entity
+  path no-op for MAP). New flag `STS_OOC_STRATEGIC_MAP=1` (default **off**,
+  so the §76/§81 configs stay reproducible), per-screen knob
+  `STS_OOC_STRATEGIC_MARGIN_MAP` (sentinel -1.0 = global). Wired into
+  `runFullRunOOC` (before the heuristic pathing branch) and `runTraceRun`.
+- **Paired gate** (fair, A0, 1,000 sims, seeds 126700–126827, 24 threads,
+  reference = the §76 full stack at m1.0, bit-identical to
+  `gates_ref_m1.csv`):
+
+  | config | wins | win Δ | floor Δ | discordant |
+  |---|---:|---:|---:|---:|
+  | full stack ref m1 (no map gate) | **51 (39.8%)** | — | — | — |
+  | + map gate m0.5 | 30 (23.4%) | −16.4pp CI [−26.6,−6.2] | −4.5 CI [−7.0,−2.0] | 47 (34 A / 13 B) |
+  | + map gate m1.0 | 31 (24.2%) | −15.6pp CI [−24.2,−7.0] | −4.6 CI [−6.7,−2.5] | 34 (27 A / 7 B) |
+  | + map gate m5.0 | 26 (20.3%) | −19.5pp CI [−28.9,−10.2] | −4.5 CI [−7.0,−2.2] | 43 (34 A / 9 B) |
+
+- **Verdict:** ? the map Q gate is a clear negative at every margin — even m5.0
+  (where the other gates are neutral) is the *worst* point, so the Q head's MAP
+  rankings are anti-predictive *wherever it fires*. Consistent with the §62
+  history (graph-NN pathing rejected: "better absolute prediction does not
+  identify the causal best route") and §66m/§70/§73 (un-gated or weakly
+  calibrated NN overrides damage the heuristic): the trained Q head conditions
+  on `(child x, row, room)` via the 6-cat embeddings only, with no downstream
+  route information, so it cannot beat the tuned bottom-up DP
+  (`chooseMapAction`), which carries full-map downstream value. **The
+  direct-Q-per-route scheme for map decisions is falsified on the current V3
+  net**; the one-ply map gate stays **off by default** (opt-in only). M2 (route
+  search) must not rely on this Q head for route scoring without the map DAG
+  encoder (5.3.2) or a C_ψ-conditioned leaf.
+- **Artifacts:** `apps/one_combat.cpp::oocOnePlyMapPolicy`; per-seed CSVs
+  `ref_m1.csv`, `map_m{0.5,1.0,5.0}.csv` (retained on the GCP server
+  `/tmp/m1_bench/`); rerun determinism verified bit-identical excluding the
+  `sec` column.
+
+## 92. C1 wave: V4 token net full gate stack on the 256-seed block (2026-08-04)
+
+- **Goal** (§81 follow-up 3, decision-log follow-up 1): the 256-seed secondary
+  block (§82) only tested the V3 stack; the V4 config needed the same larger
+  block before any default-flip consideration. Same config as §81:
+  `STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`
+  + REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1, margin 1.0, fair, 1,000 sims,
+  seeds 126700–126955.
+- **Result:** **105/256 (41.0%)** wins, avg floor 42.0, avg HP end 20.9
+  (`/tmp/c1_v4_256.csv` on the GCP server). Reference points on the same
+  block: flags-off baseline 23.0% (`sec256_base.csv`, §82) and V3 full stack
+  95/256 = 37.1% (`sec256_gate_m1.csv`, §82) → **V4 +18.0pp over baseline,
+  +3.9pp over V3 on the identical block** (both nets on the same seeds and
+  config, differing only in the artifact; the V3-256 per-seed CSV is not
+  present here, so the +3.9pp is a same-block aggregate comparison, not a
+  paired-match test).
+- **Verdict:** the V4 top-arm result holds at 2× the block size; the
+  V3-vs-V4 delta on the 256 block matches the 128-block direction (§81:
+  V4 41.4% vs V3 39.8%). Runtime: ~10.3 cpu-sec/run vs V3's ~8 (§82) — the
+  tok net's ~25% overhead persists. **No default flip is made here**: the
+  gates stay opt-in; V4 remains the top measured arm and the V3 reference
+  stays the pairing baseline.
+- **Artifacts:** `c1_v4_256.csv` (GCP server `/tmp/c1/`).
+
+## 93. M2 wave: C_psi short-horizon map route search — negative at every margin (2026-08-04)
+
+- **Goal** (plan 5.6.2, spec A.11 "map routes"; re-scoped by §91): replace the
+  falsified direct-Q map gate with a route search that prices each legal child
+  of the visible map DAG down HORIZON=3 rows using the C_ψ combat surrogate
+  (`CombatCpsiNet`, §79/§80): fights return pool-averaged P(death) and
+  E[hp/maxHp | win] (act strong pool for hallways, elite pool for elites),
+  rests heal a fixed 30% of max HP, shops/treasures/events pass through
+  (documented v1 limitation); a route's value = survival-probability × the
+  strategic V-head (MAP screen) at the leaf state with map position advanced
+  and expected HP applied; child = max over downstream paths; margin-gated.
+- **Implementation (`apps/one_combat.cpp`):** `oocMapRouteSearchPolicy` +
+  `mapRouteSearch`/`mapRouteLeafValue`/`routeCpsiExpect` (C_ψ expectation
+  memoized per node across children); C_ψ wired via new `STS_CPSI_NN=<path>`
+  (loader existed since B2a); `STS_OOC_MAP_ROUTE=1`,
+  `STS_OOC_MAP_ROUTE_HORIZON` (2..5). Route search takes precedence over the
+  M1 gate when enabled; both stay off by default. Hidden info: encounters are
+  pool expectations from the act's visible pools — never the run's true
+  future encounter list (spec A.14 clean); the boss row (y==14) is not
+  expanded (leaf V prices the remaining run).
+- **Paired gate** (fair, 1,000 sims, seeds 126700–126827, 24 threads;
+  reference = the §76 full stack at m1.0, bit-identical to `gates_ref_m1.csv`
+  / §91 `ref_m1.csv`; the other six gates stayed ON in both arms — the A/B
+  isolates only the map pathing layer):
+
+  | config | wins | win Δ | floor Δ | discordant |
+  |---|---:|---:|---:|---:|
+  | full stack ref m1 (heuristic pathing) | **51 (39.8%)** | — | — | — |
+  | + route search m0.5 | 49 (38.3%) | −1.6pp CI [−10.9,+7.8] | **+2.0 CI [+0.1,+4.0]** | 36 (19 A / 17 B) |
+  | + route search m1.0 | 38 (29.7%) | **−10.2pp CI [−18.0,−3.1]** | −1.4 CI [−3.3,+0.6] | 25 (19 A / 6 B) |
+  | + route search m5.0 | 25 (19.5%) | **−20.3pp CI [−29.7,−10.9]** | −3.0 CI [−5.5,−0.6] | 40 (33 A / 7 B) |
+
+  (Weighted pool expectation — `strongWeights` for hallways, uniform elites —
+  the recorded config; an earlier uniform-pool run gave the same verdict:
+  −3.1/−9.4/−21.1pp.)
+
+- **Verdict:** ? the C_ψ route search is a clear negative: significant damage
+  at m1.0/m5.0, neutral at m0.5 (win −1.6pp but floor **+2.0pp significant** —
+  the search routes deeper without converting to wins). The margin signature
+  mirrors §91/M1 — the more the search overrides the tuned bottom-up DP
+  (`chooseMapAction`), the worse — so **the C_ψ+pool surrogate continuation
+  and the MAP-screen V-head leaf do not provide a usable route signal
+  either**. Consistent with §62's standing lesson: "training pooled the
+  routes chosen by the heuristic, while inference asks for unseen singleton
+  alternatives" — the next justified version needs paired counterfactual
+  outcomes per legal child (Tier-B-style route labels) or a route-conditioned
+  leaf (map DAG encoder, 5.3.2), not more epochs of the same state contract.
+  **Both direct map overrides (M1 Q gate, M2 C_ψ route search) are falsified
+  on the current nets; the heuristic pathing stays the map layer.** M3 (map
+  DAG encoder) remains the open lever, held out on the tierb pipeline first.
+- **Artifacts:** `apps/one_combat.cpp::oocMapRouteSearchPolicy`; per-seed
+  CSVs `ref_m1.csv`, `m2w_m{0.5,1.0,5.0}.csv` (GCP server `/tmp/m2w_bench/`);
+  C_ψ artifact `selfplay/models/v_combat_cpsi.txt` (also mirrored to
+  `build/` for local smoke).
+
+## 94. Wave A1: Q_win objective — probability action-value head + aux heads, V_win calibration finding (2026-08-04)
+
+- **Goal** (Q-refine wave A1): replace the composite Q target `10·labelWon +
+  labelHp` with a pure win-probability action value `Q_win(s,a) =
+  P(eventual run victory | s,a,π)`: sigmoid output trained with soft-label BCE
+  on the already-existing `labelWon` (0/1 terminal + `vStateWin` bootstrap,
+  futures-averaged — one_combat.cpp:3811/:6003). HP/floor become separate
+  auxiliary probability heads (never summed into the action score). Win =
+  `PLAYER_VICTORY` consistently across datagen, bootstrap, benchmark.
+- **Trainer (`train_strategic.py`):** `q_win_target = labelWon`; Q head BCE
+  (`STRAT_QLAMBDA`); new `q_hp` (`labelHp/maxHp`) and `q_floor`
+  (`labelFloor/60`) aux heads with their own BCE weights (`STRAT_HPLAMBDA`,
+  `STRAT_FLOORLAMBDA`); metrics now on the probability scale (q_brier,
+  q_cal_max decile calibration, q_hp_mae, q_floor_mae); `STRAT_PATIENCE`
+  early stop (stop after N epochs without held-out val_pol_ce improvement).
+- **Export/native:** new artifact magic `OOC_STRAT_V5` (sigmoid on Q/aux, aux
+  weight blocks appended); the loader accepts BOTH `OOC_STRAT_V3` (legacy,
+  bit-identical behavior) and `OOC_STRAT_V5`; parity asserted 32 samples
+  (V5 Q 9.8e-07, aux ≤ 6.7e-07). Old V3 artifacts remain loadable — the
+  §76/§81/§91/§93 references reproduce seed-for-seed on the new binary.
+- **V_win bootstrap calibration (the conversation's bootstrap-problem check,
+  `check_vwin_calibration.py`):** the native win trees (`build/v_win_trees.txt`,
+  1060 trees) are **mildly over-predicting but not grossly miscalibrated**. An
+  initial checker bug (base_score treated as a probability added directly to
+  leaf margins instead of converted to logit space, as the C++ `WinNet::predict`
+  does) produced a false "Brier 0.232, max decile 0.42" headline; after the
+  logit fix and a C++/Python **parity check** (`parity_vwin.py`, max |diff|
+  0.000000 over 200 rows via the new `winnettest` mode), the true numbers on
+  49,976 terminal chosen rows are: Brier 0.153 (vs the always-0.30 baseline
+  0.209), log loss 0.471, max decile error 0.18 (over-predicts 0.62 vs 0.47
+  and 0.79 vs 0.62 at mid-high values — the classic few-wins XGBoost shape).
+  **Inference:** V_win error still propagates into every censored `labelWon`
+  and biases Q_win labels upward, but the bias is modest and roughly monotone —
+  a small Platt/isotonic recalibration (fit on terminal rows) is the fix
+  (§95). Follow-up decision recorded: recalibrate before trusting
+  probability-point margins.
+- **Fresh training data:** `strategicgen2` on new seeds 200000–201439
+  (1,440 seeds → 900,916 rows / 215,234 decisions, 1.92 GB
+  `build/strategic_qwin.csv`, GCP server; §73 config — sample-all, branch
+  fights 3, branch sims 150/100/50, futures 1 — **minus the absent
+  `v_combat_fair_trees.txt` VNet leaf**: recorded deviation). ~20 min on 24
+  threads.
+- **V3 Q_win retrain (laptop CPU, Intel iGPU/no CUDA, `STRAT_DEVICE=cpu`):**
+  40-epoch budget with `STRAT_PATIENCE=6` → **early stop at epoch 30, best
+  epoch 24** (no val_pol_ce improvement for 6 epochs, as the user
+  requested). Held-out (43,047 groups): **policy top-1 0.792, val_pol_ce
+  0.474** (comparable to the V3 reference's 0.784); **q_brier 0.053,
+  q_mae 0.173, q_cal_max 0.016** (well calibrated against the biased
+  labels); q_hp_mae 0.257, q_floor_mae 0.080. Artifacts
+  `selfplay/models/ooc_strategic_qwin.{pt,_metrics.json,_state.bin,native}`
+  (V5).
+- **Smoke:** trainer 2-epoch synthetic run; exporter parity (V3 and V5);
+  loader accepts both magics; legacy V3 full-stack run on the new binary
+  **bit-identical seed-for-seed to `ref_m1.csv` (39.8%)**; V5 gate smoke at
+  probability-point margins (0.01/0.03/0.05) fires without crash.
+- **Status:** Wave A1 delivered (code + trained V5 artifact, opt-in); the
+  probability-point margin sweep and the regret gate (Wave B) are the next
+  steps, gated on the V_win calibration decision; Q_boss aux head deferred to
+  a follow-up round (needs a `strategicgen2` branch-level boss-flag label
+  column).
+
+## 95. Wave A2: V_win bootstrap recalibration — parity check, isotonic fit, corrected labels (2026-08-04)
+
+- **Goal** (Wave A2, the bootstrap-problem fix): remove the modest but
+  systematic V_win over-prediction from the Q_win labels so probability-point
+  margins are trustworthy. Fit a monotone map `C(p)` on terminal rows
+  (`labelBootstrap==0`, where `won` is the true outcome) with a seed-held-out
+  split, then apply `C` to every censored `labelWon` (which with
+  `STRATEGIC_BRANCH_FUTURES=1` IS `V_win(s_cutoff)`) and write a corrected CSV.
+- **Parity check first (new `winnettest` mode + `parity_vwin.py`):** the
+  Python tree-walk must match the deployed C++ `WinNet::predict` before any
+  fit is trusted. `one_combat winnettest <trees> <csv> [rows]` parses a
+  tierb-schema CSV, runs the native WinNet on each rich state block, and
+  prints `rowidx,vwin`; `parity_vwin.py` re-predicts the same rows in Python.
+  **Result: max |diff| 0.000000 over 200 rows — bit-identical.** This also
+  caught and corrected the §94 checker bug (base_score must be converted to
+  logit space, `log(p/(1-p))`, before adding leaf margins).
+- **Fit (`fit_vwin_calibration.py`):** all 216,625 terminal rows (chosen +
+  counterfactual branches), 80/20 seed split (1,152 fit / 288 val seeds;
+  173,084 / 43,541 rows). Candidates fit on the fit split, selected by
+  held-out Brier/log-loss/max-decile:
+
+  | map | val Brier | val logloss | max decile |
+  |---|---|---:|---:|
+  | raw V_win | 0.1512 | 0.4643 | 0.2373 |
+  | Platt (a=0.971, b=−0.652) | 0.1321 | 0.4150 | 0.0762 |
+  | **isotonic (PAVA, selected)** | **0.1310** | **0.4105** | **0.0789** |
+
+  Isotonic selected; the decile table after the map is flat (0.02→0.01 …
+  0.91→0.93). Map artifacts: `build/strategic_qwin_cal_calmap.json`
+  (chosen map, Platt params, metrics).
+- **Corrected dataset:** `build/strategic_qwin_cal.csv` — same schema, only
+  `labelWon` changed on the 684,291 censored rows (76%); censored mean
+  0.4547 → **0.3369** (terminal rate 0.31). State block byte-identical →
+  the 1.8 GB `_state.bin` transfers by copy under the new OUT name
+  (`ooc_strategic_qwin_cal_state.bin`, trainer byte-size reuse verified).
+- **Retrain:** V3 Q_win on the corrected CSV (laptop CPU, 40 epochs, patience
+  6). **Interrupted by the session move to the desktop at epoch 20** — not a
+  complete checkpoint; the desktop GPU run supersedes it. Partial log showed
+  the corrected-labels run trending better than the biased one at the same
+  epoch (epoch 20: q_brier 0.0439 / q_cal_max 0.0216 vs the biased run's
+  epoch 20: 0.0563 / 0.0562), as expected.
+- **Verdict:** the bootstrap bias is real but modest (max decile 0.24 raw),
+  and the isotonic map cuts it to 0.08 on held-out seeds. The corrected
+  dataset + retrain is the trustable basis for the probability-point margin
+  sweep and the regret gate (Wave B). Limitation recorded: the map is fit on
+  terminal (decision-state) rows and applied to censored (cutoff-state)
+  values under the standard calibration assumption P(y|p) stable in p; the
+  definitive transfer check is a short longer-horizon datagen (K=6, ~50–100
+  seeds), deferred.
+- **Artifacts:** `check_vwin_calibration.py`, `parity_vwin.py`,
+  `fit_vwin_calibration.py` (new); `apps/one_combat.cpp` `winnettest` mode;
+  `build/strategic_qwin_cal.csv` + `_calmap.json`; interrupted partial
+  `selfplay/models/ooc_strategic_qwin_cal_train.log`.

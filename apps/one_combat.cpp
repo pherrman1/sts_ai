@@ -43,6 +43,7 @@
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/CombatDistValueNet.h"
 #include "sim/search/CombatPVNet.h"
+#include "sim/search/CombatCpsiNet.h"
 #include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/ExpertKnowledge.h"
@@ -748,6 +749,14 @@ static bool   g_oocStrategicEvent = false;  // env STS_OOC_STRATEGIC_EVENT=1: on
 static bool   g_oocStrategicShop = false;    // env STS_OOC_STRATEGIC_SHOP=1: one-ply Q gate on shop buys (R6)
 static bool   g_oocStrategicTreasure = false; // env STS_OOC_STRATEGIC_TREASURE=1: one-ply Q gate on treasure (R6)
 static bool   g_oocStrategicBossRelic = false; // env STS_OOC_STRATEGIC_BOSS_RELIC=1: one-ply Q gate on boss relics (R6)
+static bool   g_oocStrategicMap = false;     // env STS_OOC_STRATEGIC_MAP=1: one-ply Q gate on map routes (M1)
+static double g_oocStrategicMarginMap = -1.0; // env STS_OOC_STRATEGIC_MARGIN_MAP (default -1.0 = fall back to global)
+// M2 short-horizon map route search (plan 5.6.2): C_psi combat surrogate +
+// strategic V head at the leaf. Hidden-info clean: encounters/bosses are
+// sampled from the act's visible pool, never the true future.
+static bool   g_oocMapRoute = false;         // env STS_OOC_MAP_ROUTE=1
+static int    g_oocMapRouteHorizon = 3;      // env STS_OOC_MAP_ROUTE_HORIZON (clamped 2..5)
+static search::CombatCpsiNet g_cpsiNet;      // env STS_CPSI_NN=<path>: combat outcome surrogate
 static int    g_oocStrategicTok = 0;        // env STS_OOC_STRATEGIC_TOK_NN: V4 token net loaded
 static bool   g_oocStrategicTokCheck = false; // env STS_OOC_STRATEGIC_TOK_CHECK=1: first-decision glob parity hook
 static thread_local bool t_tokCheckPending = false;  // armed per run; consumed by the first gated decision
@@ -2141,6 +2150,8 @@ static bool bossGatedDraftPolicy(GameContext &gc) {
 static bool actFightProbeDraftPolicy(GameContext &gc);
 static bool actFightProbeAllOocPolicy(GameContext &gc);
 static bool oocActionNNPolicy(GameContext &gc);
+static bool oocOnePlyMapPolicy(GameContext &gc);   // M1 one-ply map route Q gate (defined below)
+static bool oocMapRouteSearchPolicy(GameContext &gc);  // M2 C_psi route search (defined below)
 
 // ---------------------------------------------------------------------------
 // REST-SITE A/B: best card policy (server V) + heuristic path, with the rest
@@ -2188,6 +2199,10 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             // Every legal out-of-combat action is ranked by the all-act fight
             // rollout.  The copied continuations themselves use the normal OOC
             // policy, preventing recursive exponential search.
+        } else if (oocMapRouteSearchPolicy(gc)) {
+            // M2 C_psi short-horizon map route search (plan 5.6.2)
+        } else if (oocOnePlyMapPolicy(gc)) {
+            // one-ply Q map pick (M1 wave)
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             if (g_pathV) pathVPolicy(gc);                              // model-driven pathing
             else search::GameAction(chooseMapAction(gc)).execute(gc);  // heuristic pathing
@@ -2563,7 +2578,9 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
             flush();
             tr_logOocActions("map", gc);
             if (!oocActionNNPolicy(gc))
-                search::GameAction(chooseMapAction(gc)).execute(gc);
+                if (!oocMapRouteSearchPolicy(gc))
+                    if (!oocOnePlyMapPolicy(gc))
+                        search::GameAction(chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::EVENT_SCREEN) {
             if (!nodeActive) { flush(); nodeActive = true; label = "EVENT"; desc = tr_event(gc.curEvent); }
             tr_logOocActions("event", gc);
@@ -3449,6 +3466,234 @@ static bool oocOnePlyBossRelicPolicy(GameContext &gc) {
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
         }
+    }
+    if (bestIdx < 0 || best - second < margin) return false;
+    actions[bestIdx].execute(gc);
+    return true;
+}
+
+// One-ply post-action search for MAP decisions (M1 wave): every legal child
+// node of the visible map DAG is scored with the Q(s,a) head on the
+// pre-decision state and the best child is executed only when its margin over
+// the runner-up meets the gate; otherwise the heuristic pathing layer runs.
+// Candidate resolution follows strategicCands' MAP_SCREEN case (cand1=x,
+// cand2=row, cand3=room), identical to the Tier-B training rows, so no new
+// datagen is needed. The map is fully visible at decision time (no hidden RNG
+// or future-seed use), satisfying spec A.14 for this gate.
+static bool oocOnePlyMapPolicy(GameContext &gc) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicMap) return false;
+    if (gc.screenState != ScreenState::MAP_SCREEN || gc.curMapNodeY == 14) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    const double margin = g_oocStrategicMarginMap >= 0.0 ? g_oocStrategicMarginMap : g_oocStrategicMargin;
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entType, entId; float goldGePrice;
+            tokEntity(gc, actions[i], entType, entId, goldGePrice);
+            const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
+                                   entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+            const double v = g_oocStrategicTokNet.predictActionValue(
+                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    } else {
+        const std::vector<float> state = richFeatureVec(gc);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
+                                                                 cats, actionType, (int)gc.screenState);
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    }
+    if (bestIdx < 0 || best - second < margin) return false;
+    actions[bestIdx].execute(gc);
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// M2: short-horizon map route search (plan 5.6.2, spec A.11 "map routes").
+//
+// For each legal child node of the visible map DAG, expand the downstream
+// graph HORIZON rows deep (2..5). Each room on a route is priced with the
+// C_psi combat outcome surrogate (CombatCpsiNet): fights return P(death) and
+// E[hp/maxHp | win]; rests heal a fixed 30% of max HP; shops/treasures/events
+// pass through unchanged (v1 limitation). Encounters for hypothetical fights
+// are sampled from the act's visible pool (strong monsters / elites) with a
+// LOCAL RNG-free expectation — never the run's true future encounter list
+// (spec A.14). A route's value = survival-probability × strategic V-head at
+// the leaf state (map position advanced to the leaf node, HP updated). The
+// best route per child is the max over its downstream paths; the child is
+// executed only when its margin over the runner-up meets the gate, else
+// chooseMapAction runs. This replaces the M1 one-ply Q gate for map decisions
+// when enabled.
+// ---------------------------------------------------------------------------
+struct RouteCpsiCache {
+    bool loaded = false;
+    float pDeath = 1.f;   // P(death) from the sampled encounter pool
+    float hpFrac = 1.f;   // E[hp/maxHp | win]
+};
+
+// Pool-average C_psi expectation for one room type. Row-14 nodes hold the
+// last real rooms of the act (elites/hallways); the forced boss fight at
+// y==14 is not expanded by this search (the leaf V prices the remaining run).
+static bool routeCpsiExpect(const GameContext &gc, Room room,
+                            RouteCpsiCache &out) {
+    if (!g_cpsiNet.loaded()) return false;
+    const int act = gc.act;
+    if (room == Room::MONSTER) {
+        // Weighted pool expectation: the act's strong pool with its visible
+        // weights (MonsterEncounterPool::strongWeights) — the conditional
+        // distribution a player knows, never the run's true encounter list.
+        const int poolSize = (int)MonsterEncounterPool::strongCount[act - 1];
+        double pd = 0, hp = 0, wsum = 0;
+        for (int i = 0; i < poolSize; ++i) {
+            const double w = MonsterEncounterPool::strongWeights[act - 1][i];
+            float scalar[search::kCpsiScalars];
+            float deck[search::kCpsiCards];
+            float relics[search::kCpsiRelics];
+            float potions[search::kCpsiPotions];
+            search::buildCpsiEntry(gc, scalar, deck, relics, potions);
+            search::CpsiOut r;
+            g_cpsiNet.predict(scalar, deck, relics, potions,
+                              (int)MonsterEncounterPool::strongEnemies[act - 1][i], r);
+            pd += w * r.death; hp += w * r.hp; wsum += w;
+        }
+        out.pDeath = (float)(pd / wsum);
+        out.hpFrac = (float)(hp / wsum);
+        return true;
+    }
+    if (room == Room::ELITE) {
+        // Elites are drawn uniformly (rollElite: 1/3 each).
+        double pd = 0, hp = 0;
+        for (int i = 0; i < 3; ++i) {
+            float scalar[search::kCpsiScalars];
+            float deck[search::kCpsiCards];
+            float relics[search::kCpsiRelics];
+            float potions[search::kCpsiPotions];
+            search::buildCpsiEntry(gc, scalar, deck, relics, potions);
+            search::CpsiOut r;
+            g_cpsiNet.predict(scalar, deck, relics, potions,
+                              (int)MonsterEncounterPool::elites[act - 1][i], r);
+            pd += r.death; hp += r.hp;
+        }
+        out.pDeath = (float)(pd / 3);
+        out.hpFrac = (float)(hp / 3);
+        return true;
+    }
+    return false;
+}
+
+// Leaf value of a route: the per-screen value head on the state advanced to
+// the leaf node with the route's expected HP (V3 rich state; token-net glob
+// when the token net is loaded). The leaf is a MAP_SCREEN successor state
+// (the next decision is another map choice), so the MAP head prices it.
+// Mutates only curMapNodeX/Y/curHp and restores them (no deep copy per leaf).
+static double mapRouteLeafValue(GameContext &gc, int leafX, int leafY,
+                                double hpFrac) {
+    const int saveX = gc.curMapNodeX, saveY = gc.curMapNodeY, saveHp = gc.curHp;
+    gc.curMapNodeX = leafX;
+    gc.curMapNodeY = leafY;
+    gc.curHp = (int)std::llround(hpFrac * gc.maxHp);
+    double v;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        v = g_oocStrategicTokNet.predictValue(ts.glob, (int)ScreenState::MAP_SCREEN);
+    } else {
+        v = g_oocStrategicNet.predictValue(richFeatureVec(gc).data(),
+                                           (int)ScreenState::MAP_SCREEN);
+    }
+    gc.curMapNodeX = saveX; gc.curMapNodeY = saveY; gc.curHp = saveHp;
+    return v;
+}
+
+// Best route value from node (x,y) looking down `depth` more rows, given the
+// survival prob and HP fraction carried so far. Max over downstream paths
+// (mirrors chooseMapAction's bottom-up DP over the visible DAG). The C_psi
+// expectation per node is memoized in cache[7*15] (state-independent within
+// the decision: the entry state used is the CURRENT pre-decision state, an
+// explicit v1 approximation documented in the wave contract).
+static double mapRouteSearch(GameContext &gc, int x, int y, int depth,
+                             double survival, double hpFrac,
+                             RouteCpsiCache cache[7 * 15]) {
+    const Map &map = *gc.map;
+    const MapNode &n = map.getNode(x, y);
+    if (depth <= 0 || y >= 14) {
+        return survival * std::max(0.0, mapRouteLeafValue(gc, x, y, hpFrac));
+    }
+    double nextSurvival = survival, nextHp = hpFrac;
+    switch (n.room) {
+        case Room::MONSTER:
+        case Room::ELITE: {
+            RouteCpsiCache &cpsi = cache[y * 7 + x];
+            if (!cpsi.loaded) {
+                cpsi.loaded = routeCpsiExpect(gc, n.room, cpsi);
+                if (!cpsi.loaded) {
+                    cpsi.pDeath = 0.f;      // C_psi missing: price the fight as free
+                    cpsi.hpFrac = 1.f;
+                }
+            }
+            nextSurvival = survival * (1.0 - cpsi.pDeath);
+            nextHp = hpFrac * cpsi.hpFrac;
+            break;
+        }
+        case Room::REST:
+            nextHp = std::min(1.0, hpFrac + 0.30);   // base campfire heal
+            break;
+        default:
+            break;                                    // SHOP/TREASURE/EVENT pass through
+    }
+    if (nextSurvival <= 1e-9 || nextHp <= 0.0) return 0.0;
+
+    double bestChild = -1e100;
+    for (int i = 0; i < n.edgeCount; ++i) {
+        const double v = mapRouteSearch(gc, n.edges[i], y + 1, depth - 1,
+                                        nextSurvival, nextHp, cache);
+        if (v > bestChild) bestChild = v;
+    }
+    if (n.edgeCount == 0) {
+        // Dead-end node: the route stops here (leaf).
+        return nextSurvival * std::max(0.0, mapRouteLeafValue(gc, x, y, nextHp));
+    }
+    return bestChild;
+}
+
+// M2: short-horizon map route search (plan 5.6.2). Requires a loaded C_psi
+// surrogate AND a strategic net (V3 or V4) for the leaf. Encounters come from
+// the act's visible pool via expectation, so no hidden future information is
+// used. Margin-gated like every other gate.
+static bool oocMapRouteSearchPolicy(GameContext &gc) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_cpsiNet.loaded()) return false;
+    if (!g_oocMapRoute) return false;
+    if (gc.screenState != ScreenState::MAP_SCREEN || gc.curMapNodeY == 14) return false;
+    if (gc.act < 1 || gc.act > 3) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    const int depth = std::max(2, std::min(5, g_oocMapRouteHorizon));
+    const double margin = g_oocStrategicMarginMap >= 0.0 ? g_oocStrategicMarginMap : g_oocStrategicMargin;
+
+    const double baseHpFrac = gc.maxHp > 0 ? (double)gc.curHp / gc.maxHp : 1.0;
+    RouteCpsiCache cache[7 * 15];   // shared across children: the C_psi entry
+                                    // state is always the current pre-decision
+                                    // state (documented v1 approximation)
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    for (int i = 0; i < (int)actions.size(); ++i) {
+        const int childX = actions[i].getIdx1();
+        const int childY = gc.curMapNodeY + 1;
+        const double v = mapRouteSearch(gc, childX, childY, depth, 1.0, baseHpFrac, cache);
+        if (v > best) { second = best; best = v; bestIdx = i; }
+        else if (v > second) second = v;
     }
     if (bestIdx < 0 || best - second < margin) return false;
     actions[bestIdx].execute(gc);
@@ -6656,6 +6901,26 @@ int main(int argc, char **argv) {
         if (g_oocStrategicBossRelic)
             std::cout << "[OOC one-ply: boss relic Q gate ON]\n";
     }
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_MAP")) {  // M1 map route Q gate
+        g_oocStrategicMap = std::atoi(d) != 0;
+        if (g_oocStrategicMap)
+            std::cout << "[OOC one-ply: map route Q gate ON]\n";
+    }
+    if (const char *d = std::getenv("STS_OOC_MAP_ROUTE")) {      // M2 C_psi route search
+        g_oocMapRoute = std::atoi(d) != 0;
+        if (const char *h = std::getenv("STS_OOC_MAP_ROUTE_HORIZON"))
+            g_oocMapRouteHorizon = std::atoi(h);
+        if (g_oocMapRoute)
+            std::cout << "[OOC map route search ON: horizon " << g_oocMapRouteHorizon
+                      << " (needs STS_CPSI_NN + strategic net)]\n";
+    }
+    if (const char *d = std::getenv("STS_CPSI_NN")) {            // C_psi combat outcome surrogate
+        const std::string path = std::string(d) == "1" ? "build/v_combat_cpsi.txt" : d;
+        if (g_cpsiNet.load(path))
+            std::cout << "[C_psi combat surrogate loaded: " << g_cpsiNet.description() << "]\n";
+        else
+            std::cerr << "[C_psi load failed: " << path << "]\n";
+    }
     if (const char *d = std::getenv("STS_OOC_SHOP_BEAM")) {     // B1 multi-step shop beam (§2)
         g_oocShopBeam = std::atoi(d) != 0;
         if (const char *w = std::getenv("STS_OOC_SHOP_BEAM_WIDTH"))
@@ -6684,15 +6949,19 @@ int main(int argc, char **argv) {
         g_oocStrategicMarginTreasure = std::atof(d);
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN_BOSS_RELIC"))
         g_oocStrategicMarginBossRelic = std::atof(d);
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN_MAP"))
+        g_oocStrategicMarginMap = std::atof(d);
     if (g_oocStrategicMarginCard >= 0.0 || g_oocStrategicMarginRest >= 0.0
         || g_oocStrategicMarginEvent >= 0.0 || g_oocStrategicMarginShop >= 0.0
-        || g_oocStrategicMarginTreasure >= 0.0 || g_oocStrategicMarginBossRelic >= 0.0) {
+        || g_oocStrategicMarginTreasure >= 0.0 || g_oocStrategicMarginBossRelic >= 0.0
+        || g_oocStrategicMarginMap >= 0.0) {
         std::cout << "[OOC per-screen margins: card=" << g_oocStrategicMarginCard
                   << " rest=" << g_oocStrategicMarginRest
                   << " event=" << g_oocStrategicMarginEvent
                   << " shop=" << g_oocStrategicMarginShop
                   << " treasure=" << g_oocStrategicMarginTreasure
-                  << " boss_relic=" << g_oocStrategicMarginBossRelic << "]\n";
+                  << " boss_relic=" << g_oocStrategicMarginBossRelic
+                  << " map=" << g_oocStrategicMarginMap << "]\n";
     }
     if (const char *v = std::getenv("STRATEGIC_SAMPLES_PER_RUN"))
         g_strategicSamplesPerRun = std::max(1, std::atoi(v));
@@ -7102,6 +7371,42 @@ int main(int argc, char **argv) {
         int branchSims    = argc > 7 ? std::stoi(argv[7]) : 100;
         int futures       = argc > 8 ? std::stoi(argv[8]) : 1;
         oocNextCombatGen(nSeeds, outerSims, asc, out, off, branchSims, futures);
+
+    } else if (mode == "winnettest") {    // validate C++ WinNet (OOC win trees) vs Python predictions
+        // Reads a tierb-schema CSV (state block between `chosen` and `won`),
+        // runs the native WinNet on the rich state of each row, and prints
+        // "rowidx,vwin" so the Python checker can compare tree-walks exactly.
+        std::string trees = argc > 2 ? argv[2] : "build/v_win_trees.txt";
+        std::string csv   = argc > 3 ? argv[3] : "build/strategic_qwin.csv";
+        long long maxRows = argc > 4 ? std::stoll(argv[4]) : 200;
+        if (!g_winNet.load(trees, richIdxMap())) { std::cerr << "load failed: " << trees << "\n"; return 1; }
+        std::ifstream f(csv);
+        std::string line;
+        if (!std::getline(f, line)) { std::cerr << "empty csv\n"; return 1; }
+        // header: find the state block between `chosen` and `won`
+        std::vector<std::string> hdr; std::stringstream hs(line); std::string cell;
+        while (std::getline(hs, cell, ',')) hdr.push_back(cell);
+        int ci = -1, wi = -1;
+        for (int i = 0; i < (int)hdr.size(); ++i) {
+            if (hdr[i] == "chosen") ci = i;
+            if (hdr[i] == "won") { wi = i; break; }
+        }
+        if (ci < 0 || wi < 0 || wi - ci <= 1) { std::cerr << "no state block between chosen and won\n"; return 1; }
+        const int nState = wi - ci - 1;
+        std::vector<float> raw(nState);
+        long long n = 0;
+        while (std::getline(f, line) && n < maxRows) {
+            std::stringstream ss(line); std::string cell;
+            int idx = 0;
+            for (int i = 0; i < wi; ++i) {
+                std::getline(ss, cell, ',');
+                if (i > ci) raw[idx++] = std::stof(cell);
+            }
+            if (idx != nState) { std::cerr << "short row " << n << "\n"; return 1; }
+            std::printf("%lld,%.9f\n", n, g_winNet.predict(raw));
+            ++n;
+        }
+        std::printf("WINNET TEST: %lld rows\n", n);
 
     } else if (mode == "vnettest") {      // validate C++ CombatValueNet vs Python predictions
         std::string trees = argc > 2 ? argv[2] : "build/v_combat_trees.txt";

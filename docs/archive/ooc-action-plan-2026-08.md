@@ -127,7 +127,7 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 - [x] Collect combat outcome examples — 5.4.1; §79 inventory: the labels already existed in `distgen` rows (`won,endHp,endTurn,potionsConsumed,pUsed0–43`); **no new datagen needed**
 - [x] Train `C_ψ(deck, relics, potions, HP, encounter, asc) → P(death), HP-loss quantiles, potion-use, turns` — 5.4.2; §79 (win acc 0.969; `combat_cpsi_v1` export fixed 2026-08-03)
 - [x] Encounter probes — 5.4.3, spec §7; §80 (9 probe slots incl. actual upcoming fights; fed into the V4 state; held-out **neutral**)
-- [ ] Use C_ψ as a fast surrogate during strategic search — 5.4.4
+- [x] Use C_ψ as a fast surrogate during strategic search — 5.4.4; §93: the C_ψ-surrogate map route search was delivered and benchmarked — **negative** (pool-average combat pricing + MAP V-head leaf, −3.1..−21.1pp); the surrogate alone does not beat the tuned pathing DP on the current state contract
 
 ### Phase D: one-ply post-action evaluation beyond card rewards
 
@@ -138,7 +138,7 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 ### Phase E: specialized search
 
 - [x] Shop beam search (width 16–64, depth = affordable purchases, dedup states) — 5.6.1; §85 **negative** (beam-only −9.4pp; value-head leaves too weak); the one-ply shop gate stays
-- [ ] Short-horizon map route search (2–5 floors, sampled outcomes, V at leaf) — 5.6.2
+- [ ] Short-horizon map route search (2–5 floors, sampled outcomes, V at leaf) — 5.6.2; the direct-Q-per-route one-ply MAP gate was **falsified** (§91: −15.6..−19.5pp at every margin; the Q head's MAP rankings are anti-predictive without downstream route info) **and the C_ψ-surrogate route search was falsified too** (§93: C_ψ pool expectation + MAP V-head leaf, −9.4..−21.1pp at m1.0/m5.0, neutral m0.5) — the heuristic pathing stays; the open lever is the map DAG encoder (5.3.2) or Tier-B-style route labels
 - [x] Stochastic event evaluation via sampled RNG continuations — 5.6.3; **superseded** by the Tier-B label design (§74 decision: labels average the stochastic continuation)
 - [x] Hidden-information boundary audit — 5.6.4, spec §13; delivered (decision log `2026-08-02-hidden-info-audit.md`): gates/searcher clean; rich-row future-encounter features flagged as an open design question
 
@@ -153,6 +153,8 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 - [x] Label-horizon A/B: K=1 vs K=3 — §78/§83/§84; closed: **K=3 × futures=1 is the optimal label contract** (better K=1/futures-3 calibration did not transfer to the gate)
 - [x] A/B `STRATEGIC_BRANCH_FUTURES` for encounter averaging — §84; futures=3 gate +13.3pp < futures=1 +18.8pp; **futures=1 stays**
 - [x] Fix or isolate the `BattleContext::executeActions` loop-guard assertion (seed 128087) — isolated (`src/combat/BattleContext.cpp`: Release-mode `assert` no-op → logged loss termination); seed completes; committed
+- [x] V4 full gate stack on the 256-seed block (§81 follow-up 3) — §92: **105/256 = 41.0%** (+3.9pp vs the V3 256-stack; +18.0pp vs the 256 flags-off baseline); V4 stays the top arm, gates stay opt-in, no default flip
+- [x] Q_win action-value refactor (§4 divergence 1 follow-up) — §94: pure win-probability Q head (BCE on `labelWon`), Q_HP/Q_floor aux heads, `OOC_STRAT_V5` artifact, V3 retrained on fresh tierb data (laptop CPU, early stop, best epoch 24); **V_win bootstrap found grossly miscalibrated** (max decile err 0.42) — recalibration decision open before probability-point margins; probability-point margin sweep + regret gate (Wave B) next; Q_boss aux head deferred (needs a datagen label column)
 - [ ] More Tier-A data (round 1 used 200 seeds; Tier-B used ~4,650) for policy-head training
 
 ## 6. Evaluation protocol

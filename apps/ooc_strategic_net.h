@@ -50,6 +50,14 @@ struct OocStrategicNet {
     float q0w[POLHID][POLIN], q0b[POLHID];
     float q2w[POLHID], q2b;
 
+    // Q_win format (OOC_STRAT_V5): sigmoided probability outputs, plus two
+    // auxiliary probability heads Q_HP / Q_floor on the same concat.
+    bool probQ = false;
+    float qhp0w[POLHID][POLIN], qhp0b[POLHID];
+    float qhp2w[POLHID], qhp2b;
+    float qfl0w[POLHID][POLIN], qfl0b[POLHID];
+    float qfl2w[POLHID], qfl2b;
+
     bool ok = false;
 
     bool load(const std::string &path) {
@@ -59,17 +67,20 @@ struct OocStrategicNet {
             return std::fread(dst, 1, count, f) == count;
         };
         char hdr[13] = {};
-        if (!readBlock(hdr, 12) || std::memcmp(hdr, "OOC_STRAT_V3", 12) != 0) {
+        if (!readBlock(hdr, 12)
+            || (std::memcmp(hdr, "OOC_STRAT_V3", 12) != 0
+                && std::memcmp(hdr, "OOC_STRAT_V5", 12) != 0)) {
             std::fprintf(stderr, "[ooc-strat-net] truncated payload in %s\n", path.c_str());
             std::fclose(f); return false;
         }
+        probQ = std::memcmp(hdr, "OOC_STRAT_V5", 12) == 0;
         int dims[4];
         if (!readBlock(dims, sizeof(dims))
             || dims[0] != NSTATE || dims[1] != NHIDDEN || dims[2] != NHIDDEN2 || dims[3] != NBITS) {
             std::fprintf(stderr, "[ooc-strat-net] truncated payload in %s\n", path.c_str());
             std::fclose(f); return false;
         }
-        const bool complete =
+        bool complete =
                readBlock(stateMean, sizeof(stateMean))
             && readBlock(stateInv, sizeof(stateInv))
             && readBlock(s0w, sizeof(s0w))
@@ -101,13 +112,24 @@ struct OocStrategicNet {
             && readBlock(q0b, sizeof(q0b))
             && readBlock(q2w, sizeof(q2w))
             && readBlock(&q2b, sizeof(q2b));
+        if (complete && probQ) {
+            complete = readBlock(qhp0w, sizeof(qhp0w))
+                    && readBlock(qhp0b, sizeof(qhp0b))
+                    && readBlock(qhp2w, sizeof(qhp2w))
+                    && readBlock(&qhp2b, sizeof(qhp2b))
+                    && readBlock(qfl0w, sizeof(qfl0w))
+                    && readBlock(qfl0b, sizeof(qfl0b))
+                    && readBlock(qfl2w, sizeof(qfl2w))
+                    && readBlock(&qfl2b, sizeof(qfl2b));
+        }
         std::fclose(f);
         if (!complete) {
             std::fprintf(stderr, "[ooc-strat-net] truncated payload in %s\n", path.c_str());
             return false;
         }
         ok = true;
-        std::printf("[ooc-strat-net] loaded %s\n", path.c_str());
+        std::printf("[ooc-strat-net] loaded %s (%s)\n", path.c_str(),
+                    probQ ? "OOC_STRAT_V5 Q_win" : "OOC_STRAT_V3");
         return true;
     }
 
@@ -308,6 +330,101 @@ struct OocStrategicNet {
         }
         float out = q2b;
         for (int i = 0; i < POLHID; ++i) out += q2w[i] * hh[i];
+        if (probQ) out = 1.0f / (1.0f + std::exp(-out));   // Q_win: P(victory)
+        return out;
+    }
+
+    // Q_HP / Q_floor auxiliary probability heads (V5 only; 0 for V3).
+    float predictAuxValue(const float *state, std::uint32_t actionBits,
+                          const int cats[6], int actionType, int screen,
+                          float &qhp, float &qfloor) const {
+        qhp = qfloor = 0.0f;
+        if (!probQ) return predictActionValue(state, actionBits, cats, actionType, screen);
+        // Normalize state
+        float x[NSTATE];
+        for (int i = 0; i < NSTATE; ++i)
+            x[i] = clampf((state[i] - stateMean[i]) * stateInv[i], -8.0f, 8.0f);
+
+        float sOut[NHIDDEN2];
+        encodeState(x, sOut);
+
+        float bits[NBITS];
+        for (int i = 0; i < NBITS; ++i) bits[i] = (float)((actionBits >> i) & 1u);
+        float bOut[AHIDDEN2];
+        {
+            float h[AHIDDEN];
+            for (int j = 0; j < AHIDDEN; ++j) {
+                float s = a0b[j];
+                for (int i = 0; i < NBITS; ++i) s += a0w[j][i] * bits[i];
+                h[j] = gelu(s);
+            }
+            for (int j = 0; j < AHIDDEN2; ++j) {
+                float s = a3b[j];
+                for (int i = 0; i < AHIDDEN; ++i) s += a3w[j][i] * h[i];
+                bOut[j] = s;
+            }
+        }
+
+        float catIn[CATIN];
+        int p = 0;
+        for (int c = 0; c < NCAT; ++c) {
+            int idx = clampi(cats[c] + 1, 0, CATVOCAB - 1);
+            for (int i = 0; i < CATDIM; ++i) catIn[p++] = cw[c][idx][i];
+        }
+        {
+            int idx = clampi(actionType + 1, 0, ATYPEVOCAB - 1);
+            for (int i = 0; i < ATYPEDIM; ++i) catIn[p++] = atypeW[idx][i];
+        }
+        float aOut[AHIDDEN2];
+        {
+            float h[AHIDDEN];
+            for (int j = 0; j < AHIDDEN; ++j) {
+                float s = cat0b[j];
+                for (int i = 0; i < CATIN; ++i) s += cat0w[j][i] * catIn[i];
+                h[j] = gelu(s);
+            }
+            for (int j = 0; j < AHIDDEN2; ++j) {
+                float s = cat3b[j];
+                for (int i = 0; i < AHIDDEN; ++i) s += cat3w[j][i] * h[i];
+                aOut[j] = s;
+            }
+        }
+
+        float z[POLIN];
+        p = 0;
+        for (int i = 0; i < NHIDDEN2; ++i) z[p++] = sOut[i];
+        for (int i = 0; i < AHIDDEN2; ++i) z[p++] = bOut[i];
+        for (int i = 0; i < AHIDDEN2; ++i) z[p++] = aOut[i];
+        if (screen >= 0 && screen < NSCR)
+            for (int i = 0; i < SCRDIM; ++i) z[p++] = screenW[screen][i];
+        else
+            for (int i = 0; i < SCRDIM; ++i) z[p++] = 0.0f;
+
+        float hh[POLHID];
+        for (int j = 0; j < POLHID; ++j) {
+            float s = q0b[j];
+            for (int i = 0; i < POLIN; ++i) s += q0w[j][i] * z[i];
+            hh[j] = gelu(s);
+        }
+        float out = q2b;
+        for (int i = 0; i < POLHID; ++i) out += q2w[i] * hh[i];
+        out = 1.0f / (1.0f + std::exp(-out));
+        for (int j = 0; j < POLHID; ++j) {
+            float s = qhp0b[j];
+            for (int i = 0; i < POLIN; ++i) s += qhp0w[j][i] * z[i];
+            hh[j] = gelu(s);
+        }
+        float hp = qhp2b;
+        for (int i = 0; i < POLHID; ++i) hp += qhp2w[i] * hh[i];
+        qhp = 1.0f / (1.0f + std::exp(-hp));
+        for (int j = 0; j < POLHID; ++j) {
+            float s = qfl0b[j];
+            for (int i = 0; i < POLIN; ++i) s += qfl0w[j][i] * z[i];
+            hh[j] = gelu(s);
+        }
+        float fl = qfl2b;
+        for (int i = 0; i < POLHID; ++i) fl += qfl2w[i] * hh[i];
+        qfloor = 1.0f / (1.0f + std::exp(-fl));
         return out;
     }
 

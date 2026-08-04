@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Export OOC strategic model weights for native C++ inference."""
+"""Export OOC strategic model weights for native C++ inference.
+
+Writes the Q_win format (magic OOC_STRAT_V5) when the checkpoint carries the
+probability-Q heads (q, q_hp, q_floor): the Q/aux outputs are sigmoided, so
+gates read win-probability in [0,1].  Legacy checkpoints (no aux heads) still
+export as OOC_STRAT_V3 (raw Q on the 10*labelWon+labelHp scale) so old
+deployed artifacts and reference configs remain loadable.
+"""
 import os, struct, sys
 import numpy as np
 import torch
@@ -29,9 +36,13 @@ if missing_q:
           f"checkpoint is missing keys: {missing_q}")
     sys.exit(1)
 
+# Q_win format (V5) iff the auxiliary probability heads are present.
+has_aux = all(n in sd for n in ["q_hp.0.weight", "q_floor.0.weight"])
+v5 = has_aux
+
 # Export weights binary
 with open(OUT, "wb") as f:
-    f.write(b"OOC_STRAT_V3")
+    f.write(b"OOC_STRAT_V5" if v5 else b"OOC_STRAT_V3")
     f.write(struct.pack("iiii", NSTATE, 256, 128, 32))
     f.write(mean.tobytes())
     f.write(inv.tobytes())
@@ -49,6 +60,10 @@ with open(OUT, "wb") as f:
             f.write(w(f"vals.{h}.{suffix}").tobytes())
     for name in ["q.0.weight", "q.0.bias", "q.2.weight", "q.2.bias"]:
         f.write(w(name).tobytes())
+    if v5:
+        for name in ["q_hp.0.weight", "q_hp.0.bias", "q_hp.2.weight", "q_hp.2.bias",
+                     "q_floor.0.weight", "q_floor.0.bias", "q_floor.2.weight", "q_floor.2.bias"]:
+            f.write(w(name).tobytes())
 
 # Verify
 def gelu_np(x):
@@ -91,16 +106,27 @@ def native_fwd(state_vec, action_bits, cats, action_type, screen_id):
     p = gelu_np(lin(z, w("pol.0.weight"), w("pol.0.bias"), 96))
     logit = float(lin(p, w("pol.2.weight"), w("pol.2.bias"), 1)[0])
 
-    # q: Linear(168,96) -> GELU -> Linear(96,1) on the same z concat
+    # q: Linear(168,96) -> GELU -> Linear(96,1) on the same z concat.
+    # V5 applies the sigmoid: the gate reads P(win) in [0,1].
     qh = gelu_np(lin(z, w("q.0.weight"), w("q.0.bias"), 96))
     q = float(lin(qh, w("q.2.weight"), w("q.2.bias"), 1)[0])
+    if v5:
+        q = float(1.0 / (1.0 + np.exp(-q)))
+
+    # aux heads (V5 only): sigmoid probability outputs.
+    q_hp = q_floor = None
+    if v5:
+        hh = gelu_np(lin(z, w("q_hp.0.weight"), w("q_hp.0.bias"), 96))
+        q_hp = float(1.0 / (1.0 + np.exp(-float(lin(hh, w("q_hp.2.weight"), w("q_hp.2.bias"), 1)[0]))))
+        hh = gelu_np(lin(z, w("q_floor.0.weight"), w("q_floor.0.bias"), 96))
+        q_floor = float(1.0 / (1.0 + np.exp(-float(lin(hh, w("q_floor.2.weight"), w("q_floor.2.bias"), 1)[0]))))
 
     # per-screen value heads: Linear(128,64) -> GELU -> Linear(64,1)
     vs = []
     for h in range(8):
         v = gelu_np(lin(s, w(f"vals.{h}.0.weight"), w(f"vals.{h}.0.bias"), 64))
         vs.append(float(lin(v, w(f"vals.{h}.2.weight"), w(f"vals.{h}.2.bias"), 1)[0]))
-    return logit, vs, q
+    return logit, vs, q, q_hp, q_floor
 
 # Parity test vs PyTorch
 import torch.nn as nn
@@ -115,6 +141,9 @@ class Tmp(nn.Module):
         self.atype = nn.Embedding(16,8); self.screen = nn.Embedding(16,8)
         self.pol = nn.Sequential(nn.Linear(168,96),nn.GELU(approximate="tanh"),nn.Linear(96,1))
         self.q = nn.Sequential(nn.Linear(168,96),nn.GELU(approximate="tanh"),nn.Linear(96,1))
+        if v5:
+            self.q_hp = nn.Sequential(nn.Linear(168,96),nn.GELU(approximate="tanh"),nn.Linear(96,1))
+            self.q_floor = nn.Sequential(nn.Linear(168,96),nn.GELU(approximate="tanh"),nn.Linear(96,1))
         self.vals = nn.ModuleList([nn.Sequential(nn.Linear(128,64),nn.GELU(approximate="tanh"),nn.Linear(64,1))
                                    for _ in range(8)])
     def forward(self, x, bits, cat_idx, at, scr):
@@ -124,12 +153,17 @@ class Tmp(nn.Module):
         a = self.a_cat(torch.cat((cat_emb, self.atype(at)), 1))
         z = torch.cat((s, b, a, self.screen(scr)), 1)
         p = self.pol(z)
-        q = self.q(z)
+        q = torch.sigmoid(self.q(z)) if v5 else self.q(z)
+        q_hp = q_floor = None
+        if v5:
+            q_hp = torch.sigmoid(self.q_hp(z))
+            q_floor = torch.sigmoid(self.q_floor(z))
         vs = torch.stack([self.vals[h](s) for h in range(8)], 1)
-        return p, vs, q
+        return p, vs, q, q_hp, q_floor
 tmp = Tmp(); tmp.load_state_dict(sd); tmp.eval()
 
 max_err_logit = 0.0; max_err_val = 0.0; max_err_q = 0.0
+max_err_qhp = 0.0; max_err_qfloor = 0.0
 for i in range(32):
     np.random.seed(i); torch.manual_seed(i)
     sv = np.random.randn(NSTATE).astype(np.float32) * 2
@@ -139,21 +173,28 @@ for i in range(32):
     normed = np.clip((sv - mean) * inv, -8, 8).astype(np.float32)
     bits = np.array([(int(ab) >> j) & 1 for j in range(32)], np.float32)
     with torch.no_grad():
-        py_logit, py_vals, py_q = tmp(torch.from_numpy(normed[None,:]),
+        py_logit, py_vals, py_q, py_qhp, py_qfloor = tmp(torch.from_numpy(normed[None,:]),
                                       torch.from_numpy(bits[None,:]),
                                       torch.from_numpy((cv + 1).astype(np.int64)[None,:]),
                                       torch.tensor([at + 1]), torch.tensor([si]))
-    na_logit, na_vals, na_q = native_fwd(sv, ab, cv.tolist(), at, si)
+    na_logit, na_vals, na_q, na_qhp, na_qfloor = native_fwd(sv, ab, cv.tolist(), at, si)
     err_logit = abs(py_logit.item() - na_logit)
     err_val = max(abs(py_vals[0, h].item() - na_vals[h]) for h in range(8))
     err_q = abs(py_q.item() - na_q)
     max_err_logit = max(max_err_logit, err_logit); max_err_val = max(max_err_val, err_val)
     max_err_q = max(max_err_q, err_q)
+    if v5:
+        max_err_qhp = max(max_err_qhp, abs(py_qhp.item() - na_qhp))
+        max_err_qfloor = max(max_err_qfloor, abs(py_qfloor.item() - na_qfloor))
     # float32 accumulation tolerance: 1e-4 for the logit, 2e-4 for the value
     # heads (max over 8 heads) and the Q head (numpy-vs-torch op-order differences).
     assert err_logit < 1e-4 and err_val < 2e-4 and err_q < 2e-4, \
         f"mismatch sample {i}: py_logit={py_logit.item():.6f} native_logit={na_logit:.6f} err_val={err_val:.6f} err_q={err_q:.6f}"
-print(f"exported {OUT}: 32 parity checks passed "
-      f"(max err logit {max_err_logit:.2e}, value {max_err_val:.2e}, Q {max_err_q:.2e})")
+    if v5:
+        assert max_err_qhp < 2e-4 and max_err_qfloor < 2e-4, \
+            f"aux mismatch sample {i}: qhp={max_err_qhp:.6f} qfloor={max_err_qfloor:.6f}"
+print(f"exported {OUT} ({'OOC_STRAT_V5 Q_win' if v5 else 'OOC_STRAT_V3'}): 32 parity checks passed "
+      f"(max err logit {max_err_logit:.2e}, value {max_err_val:.2e}, Q {max_err_q:.2e}"
+      + (f", Q_HP {max_err_qhp:.2e}, Q_floor {max_err_qfloor:.2e}" if v5 else "") + ")")
 
 print(f"file size: {os.path.getsize(OUT):,} bytes")
