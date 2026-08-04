@@ -144,13 +144,16 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 
 ### Phase F: search distillation
 
-Status: planned (2026-08-04) but not executed — §100's falsification of the
-map-DAG encoder names Phase F as the coherent next step (the counterfactual
-labels already exist per action, so 5.7.1/5.7.2 need no datagen); 5.7.3 (the
-selfplay loop) is explicitly deferred.
+Status: **executed and falsified on the current labels (2026-08-04, §104)** —
+the soft-target objective (λ∈{0.25,0.5,1.0}, τ=1.0) does not transfer: every
+distilled-policy gate arm loses to the Q-gate (~+3..+27pp, significant at
+m≤0.05) and to the V3 reference (best −21.1pp [−30.5,−12.5]). The
+tie-dominated `labelWon` caps the ranking signal (dist_top1 ≈ behavior's
+38%). `STS_OOC_STRATEGIC_SCORE` stays opt-in; `q` stays default. K=6 deep
+targets (5.7.1b) remain the open follow-up to reduce label noise/tie density.
 
-- [ ] Produce improved policy targets `π_target(a|s) ∝ exp(Q_search(s,a)/τ)` — 5.7.1
-- [ ] Train policy toward search-improved targets (CE) — 5.7.2
+- [x] Produce improved policy targets `π_target(a|s) ∝ exp(Q_search(s,a)/τ)` — 5.7.1 (done; diagnostic §104 Step 1: 38% argmax-vs-chosen agreement, ties dominate; K=6 deeper targets NOT run — deferred follow-up)
+- [x] Train policy toward search-improved targets (CE) — 5.7.2 (done; gate A/B §104: falsified, stays opt-in)
 - [ ] Iterative loop: play → search → train → repeat — 5.7.3
 
 ### Cross-cutting

@@ -28,19 +28,24 @@ static bool blas_probed = false;
 static void init_blas(){
     if(blas_handle||blas_probed)return;
     blas_probed=true;
-    const char*ps[]={
-        "/home/philippherrmann/Documents/sts/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
-    };
-    for(const char*p:ps){blas_handle=dlopen(p,RTLD_NOW|RTLD_GLOBAL);if(!blas_handle)continue;
+    std::string paths[2];
+    int np=0;
+    if(const char*e=std::getenv("STS_OPENBLAS"))paths[np++]=e;
+    paths[np++]="/home/philippherrmann/Documents/sts/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so";
+    for(int pi=0;pi<np;++pi){
+        const char*p=paths[pi].c_str();
+        blas_handle=dlopen(p,RTLD_NOW|RTLD_GLOBAL);if(!blas_handle)continue;
         sgemv_fn=(sgemv_t)dlsym(blas_handle,"scipy_cblas_sgemv");
-        if(sgemv_fn){blas_ok=true;break;}dlclose(blas_handle);blas_handle=nullptr;}
-    if(blas_ok){std::cout<<"BLAS: OpenBLAS "<<ps[0]<<'\n';}
-    else{std::cout<<"BLAS: scalar fallback\n";}
+        if(!sgemv_fn)sgemv_fn=(sgemv_t)dlsym(blas_handle,"cblas_sgemv");
+        if(sgemv_fn){blas_ok=true;std::cout<<"BLAS: OpenBLAS "<<p<<'\n';break;}
+        dlclose(blas_handle);blas_handle=nullptr;}
+    if(!blas_ok){std::cout<<"BLAS: scalar fallback\n";}
 }
 
 // ---- Math helpers ----------------------------------------------------------
 static inline float sigmoid(float x){return 1.0f/(1.0f+std::exp(-x));}
 static inline float relu(float x){return x>0.f?x:0.f;}
+static inline float gelu(float x){return 0.5f*x*(1.0f+std::erf(x/1.4142135623730951f));}
 
 static void layernorm(const float*x,int d,const float*g,const float*b,float*o){
     float m=0,v=0;for(int i=0;i<d;++i)m+=x[i];m/=d;
@@ -76,7 +81,7 @@ static void multiHeadAttn(const float*tok,int nT,int D,int nH,
 static void ffn(const float*tok,int nT,int D,int H,
     const CombatPVNet::TransformerLayer&L,float*out){
     thread_local std::vector<float> h,r;h.resize(nT*H);r.resize(nT*D);
-    for(int t=0;t<nT;++t){linear(tok+t*D,D,L.ffnW1.data(),L.ffnB1.data(),H,h.data()+t*H);for(int i=0;i<H;++i)h[t*H+i]=relu(h[t*H+i]);}
+    for(int t=0;t<nT;++t){linear(tok+t*D,D,L.ffnW1.data(),L.ffnB1.data(),H,h.data()+t*H);for(int i=0;i<H;++i)h[t*H+i]=gelu(h[t*H+i]);}
     for(int t=0;t<nT;++t){linear(h.data()+t*H,H,L.ffnW2.data(),L.ffnB2.data(),D,r.data()+t*D);
         float mid[256];for(int i=0;i<D;++i)mid[i]=tok[t*D+i]+r[t*D+i];layernorm(mid,D,L.ln2W.data(),L.ln2B.data(),out+t*D);}
 }
@@ -94,6 +99,8 @@ bool CombatPVNet::load(const std::string&path){
         f>>tok;if(tok!=w)return false;v.resize(n);for(float&x:v)f>>x;return bool(f);};
     auto RF=[&](const char*w,float&d)->bool{f>>tok;if(tok!=w)return false;return bool(f>>d);};
     f>>tok>>entityDim;f>>tok>>hiddenDim;f>>tok>>numHeads;f>>tok>>numLayers;f>>tok>>nQuantile;f>>tok>>winBonus;
+    if(entityDim<=0||entityDim>256){std::cout<<"[PVNet load FAILED: entity_dim "<<entityDim<<" unsupported (max 256)]\n";return false;}
+    if(numHeads<=0||entityDim%numHeads!=0){std::cout<<"[PVNet load FAILED: heads "<<numHeads<<" must divide entity_dim "<<entityDim<<"]\n";return false;}
     int ns=0;f>>tok>>ns;scalarSel.resize(ns);
     for(int i=0;i<ns;++i)f>>scalarSel[i];
     if(!f)return false;
@@ -213,27 +220,27 @@ void CombatPVNet::buildTokens(const std::array<float,1766>&feat,
      float t[D];linear(sn,64,scalarW.data(),scalarB.data(),D,t);
      for(int i=0;i<D;++i)tokensOut[off++]=relu(t[i])+typeEmbed[0*D+i];}
 
-    for(int z=0;z<4;++z){float t[D]={};bool a=false;
-        for(int c=0;c<371;++c){float cnt=feat[ZO+z*371+c];if(cnt<=0.f)continue;a=true;
+    for(int z=0;z<4;++z){float t[D]={};
+        for(int c=0;c<371;++c){float cnt=feat[ZO+z*371+c];if(cnt<=0.f)continue;
             const float*e=cardEmbed.data()+c*D;for(int j=0;j<D;++j)t[j]+=cnt*e[j];}
-        if(!a)continue;for(int j=0;j<D;++j)t[j]+=zonePosEmbed[z*D+j]+typeEmbed[1*D+j];
+        for(int j=0;j<D;++j)t[j]+=zonePosEmbed[z*D+j]+typeEmbed[1*D+j];
         for(int i=0;i<D;++i)tokensOut[off++]=t[i];}
 
-    {float raw[64]={};bool a=false;
-        for(int id=0;id<128;++id){if(feat[50+id]<=0.f)continue;a=true;
+    {float raw[64]={};
+        for(int id=0;id<128;++id){if(feat[50+id]<=0.f)continue;
             const float*e=relicEmbed.data()+id*64;for(int j=0;j<64;++j)raw[j]+=e[j];}
-        if(a){float t[D]={};
-            if(hasRelicProj){linear(raw,64,relicProjW.data(),relicProjB.data(),D,t);}
-            else{for(int j=0;j<64;++j)t[j]=raw[j];}
-            for(int i=0;i<D;++i)tokensOut[off++]=t[i]+typeEmbed[2*D+i];}}
+        float t[D]={};
+        if(hasRelicProj){linear(raw,64,relicProjW.data(),relicProjB.data(),D,t);}
+        else{for(int j=0;j<64;++j)t[j]=raw[j];}
+        for(int i=0;i<D;++i)tokensOut[off++]=t[i]+typeEmbed[2*D+i];}
 
-    {float raw[32]={};bool a=false;int po=ZO+4*371+2+5*9;
-        for(int id=0;id<44;++id){if(feat[po+id]<=0.f)continue;a=true;
+    {float raw[32]={};int po=ZO+4*371+2+5*9;
+        for(int id=0;id<44;++id){if(feat[po+id]<=0.f)continue;
             const float*e=potionEmbed.data()+id*32;for(int j=0;j<32;++j)raw[j]+=e[j];}
-        if(a){float t[D]={};
-            if(hasPotionProj){linear(raw,32,potionProjW.data(),potionProjB.data(),D,t);}
-            else{for(int j=0;j<32;++j)t[j]=raw[j];}
-            for(int i=0;i<D;++i)tokensOut[off++]=t[i]+typeEmbed[3*D+i];}}
+        float t[D]={};
+        if(hasPotionProj){linear(raw,32,potionProjW.data(),potionProjB.data(),D,t);}
+        else{for(int j=0;j<32;++j)t[j]=raw[j];}
+        for(int i=0;i<D;++i)tokensOut[off++]=t[i]+typeEmbed[3*D+i];}
 
     {int enc=std::max(0,std::min(127,(int)feat[1]));
         float raw[32];for(int j=0;j<32;++j)raw[j]=encEmbed[enc*32+j];
@@ -242,7 +249,8 @@ void CombatPVNet::buildTokens(const std::array<float,1766>&feat,
         else{for(int j=0;j<32;++j)t[j]=raw[j];}
         for(int i=0;i<D;++i)tokensOut[off++]=t[i]+typeEmbed[4*D+i];}
 
-    for(int s=0;s<5;++s){const float*m=&feat[MO+s*9];if(m[1]<=0.f)continue;
+    for(int s=0;s<5;++s){const float*m=&feat[MO+s*9];
+        if(m[1]<=0.f){for(int i=0;i<D;++i)tokensOut[off++]=0.f;continue;}
         int mid=std::max(0,std::min(255,(int)m[0])),in=std::max(0,std::min(31,(int)m[4]));
         float mi[87];std::copy_n(monIdEmbed.data()+mid*64,64,mi);std::copy_n(monIntentEmbed.data()+in*16,16,mi+64);
         int ci[7]={1,2,3,5,6,7,8};for(int j=0;j<7;++j)mi[80+j]=(m[ci[j]]-monContMean[j])*monContInv[j];
@@ -284,7 +292,8 @@ float CombatPVNet::policyScore(const float*globalEmb,const float*actionFeat)cons
     float h[D];
     linear(concat,3*D,policyScorerW0.data(),policyScorerB0.data(),D,h);
     for(int i=0;i<D;++i)h[i]=relu(h[i]);
-    return policyScorerB2[0]+h[0]*policyScorerW2[0];
+    float s=policyScorerB2[0];for(int i=0;i<D;++i)s+=h[i]*policyScorerW2[i];
+    return s;
 }
 
 void CombatPVNet::policyScores(const float*globalEmb,const float*actionFeats,int nActions,float*logitsOut)const{

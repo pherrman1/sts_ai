@@ -123,6 +123,13 @@ startup load is not evidence of use under default Searcher2.
 - Metadata such as seed must not become a learned hidden-RNG feature.
 - Training/export/native inference changes require parity on the same trained
   artifact and inputs.
+- CombatPVNet native inference must match the trainer's fixed 14-token layout
+  (GLOBAL, scalar, 4 zone bags, relic, potion, encounter, 5 monster slots;
+  empty zones, absent relics/potions, and dead monsters are zero tokens) and
+  GELU transformer FFN; verified by the `pvnetparity` mode
+  (`apps/one_combat.cpp`) against `combat_pvnet_parity.py` (~1e-6 across
+  encoder, policy head, and value heads). `CombatPVNet::load` rejects
+  `entityDim > 256` and `numHeads` that do not divide `entityDim`.
 - A successful benchmark requires observable load messages and evidence the
   selected branch used the model.
 - File suffix can select serializer behavior; self-play training temporaries

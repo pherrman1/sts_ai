@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-02 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-04 against the current working tree.
 
 ## Purpose
 
@@ -89,7 +89,11 @@ Learned guidance is loaded by `apps/one_combat.cpp::main`:
 The tracked joint PVNet is experimental. The recorded July 30 sweep found its policy
 head useful and its value head weak; see
 [evaluation/current-baselines.md](../evaluation/current-baselines.md) and the
-final section of `EXPERIMENTS.md`.
+final section of `EXPERIMENTS.md`. All recorded PVNet bot results predate the
+2026-08-04 parity fixes (GELU FFN, fixed 14-token layout, full policy-head dot
+product; decision log `2026-08-04-combat-pvnet-parity-fixes.md`); the
+`pvnetparity` mode (`apps/one_combat.cpp::main`) now verifies C++ inference
+against `combat_pvnet_parity.py` to ~1e-6.
 
 `STS_DIST_VNET` and `STS_PVNET` are referenced only from
 `BattleScumSearcher3.cpp`. Loading either model without `STS_SEARCHER3=1`

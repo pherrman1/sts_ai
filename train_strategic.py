@@ -6,7 +6,9 @@ the packed GameAction bits, structured candidate fields (c1..c3, cand1..c3), a
 `chosen` flag, terminal labels (won, endHp, chosen rows), and Tier-B one-ply
 counterfactual labels (labelWon, labelHp, labelFloor, labelBootstrap; NaN for
 unsampled decisions).  The network learns a policy (softmax over each decision
-group's legal actions, supervised by the chosen row), one run-value head per
+group's legal actions, supervised by a (1-STRAT_DIST_LAMBDA) blend of the
+chosen row and the softmax(labelWon/STRAT_DIST_TAU) search-distillation
+target), one run-value head per
 screen (10*won + endHp, trained on that screen's chosen rows), a Q_win(s,a)
 head — sigmoid output on the soft win-probability label `labelWon` (BCE; no HP
 term in the action score) — and two auxiliary probability heads Q_HP
@@ -51,6 +53,11 @@ VLAMBDA = float(os.environ.get("STRAT_VLAMBDA", "0.5"))
 QLAMBDA = float(os.environ.get("STRAT_QLAMBDA", "1.0"))
 HPLAMBDA = float(os.environ.get("STRAT_HPLAMBDA", "0.5"))
 FLOORLAMBDA = float(os.environ.get("STRAT_FLOORLAMBDA", "0.5"))
+# Search distillation (Phase F, 5.7.2): the policy CE blends the one-hot
+# chosen target with softmax(labelWon/TAU) search targets:
+# (1-LAMBDA)*CE(one-hot chosen) + LAMBDA*CE(softmax(labelWon/TAU)).
+DIST_LAMBDA = float(os.environ.get("STRAT_DIST_LAMBDA", "0.5"))
+DIST_TAU = float(os.environ.get("STRAT_DIST_TAU", "1.0"))
 CLIP = float(os.environ.get("STRAT_CLIP", "1.0"))
 CHUNK = int(os.environ.get("STRAT_CHUNK", "250000"))
 THREADS = int(os.environ.get("OMP_NUM_THREADS", "8"))
@@ -468,8 +475,32 @@ def train_batch_loss(gs):
         # Gather only groups with a valid chosen row: groups without one have
         # chosen_off = -1, which CUDA indexing rejects outright.
         cpos = torch.from_numpy(gstart[ok] + chosen_off[gs][ok]).to(DEVICE)
-        pc = logit[cpos] - lse[loc[cpos]]
-        pol_loss = -pc.mean()
+        pol_ce = -(logit[cpos] - lse[loc[cpos]]).mean()
+        # Distillation CE (5.7.2): target = softmax(labelWon/TAU) over each
+        # group's finite-label rows (sample-all -> every row is labeled; NaN
+        # rows carry zero weight). Uses the same group machinery as the
+        # one-hot CE. The soft argmax equals the hard label argmax at any TAU.
+        dist_ce = torch.zeros((), device=DEVICE)
+        if DIST_LAMBDA > 0.0:
+            lwr = torch.from_numpy(q_win_target[rows]).to(DEVICE)
+            dvalid = torch.isfinite(lwr)
+            lwr = torch.where(dvalid, lwr, torch.tensor(float("-inf"), device=DEVICE))
+            has_fin = torch.zeros(len(gs), device=DEVICE).scatter_add_(
+                0, loc, dvalid.float()) > 0
+            dm = torch.full((len(gs),), float("-inf"), device=DEVICE)
+            dm.scatter_reduce_(0, loc, lwr, reduce="amax", include_self=True)
+            dm = torch.where(has_fin, dm, torch.zeros((), device=DEVICE))
+            w = torch.where(dvalid, torch.exp((lwr - dm[loc]) / DIST_TAU),
+                            torch.zeros((), device=DEVICE))
+            wsum = torch.zeros(len(gs), device=DEVICE).scatter_add_(0, loc, w)
+            p = torch.where(wsum[loc] > 0, w / wsum[loc].clamp_min(1e-12),
+                            torch.zeros((), device=DEVICE))
+            dce = torch.zeros(len(gs), device=DEVICE).scatter_add_(
+                0, loc, p * (logit - lse[loc]))
+            dmask = torch.from_numpy(ok).to(DEVICE) & has_fin
+            if bool(dmask.any()):
+                dist_ce = -dce[dmask].mean()
+        pol_loss = (1.0 - DIST_LAMBDA) * pol_ce + DIST_LAMBDA * dist_ce
     else:
         pol_loss = torch.zeros((), device=DEVICE)
     # Value MSE on chosen rows only (any group), one mean per screen.
@@ -605,6 +636,8 @@ def evaluate():
     ce = 0.0
     ntop = 0
     nqtop = 0
+    disttop1 = 0
+    ndisttop = 0
     for g in va_groups:
         sz = sizes[g]
         if sz < 2:
@@ -612,6 +645,7 @@ def evaluate():
         lo = va_start[g]
         p = full_logit[lo:lo + sz]
         c = int(chosen_off[g])
+        parg = -1
         if valid_pol[g]:
             srt = np.sort(p)[::-1]
             top1 += int(np.argmax(p) == c)
@@ -619,12 +653,17 @@ def evaluate():
             lse = p.max() + np.log(np.exp(p - p.max()).sum())
             ce += lse - p[c]
             ntop += 1
+            parg = int(np.argmax(p))
         qg = qv[lo:lo + sz]
         if qg.sum() >= 2:
             qoracle = np.argmax(va_qwin[lo:lo + sz])
             qpred = np.argmax(qp[lo:lo + sz])
             qtop1 += int(qoracle == qpred)
             nqtop += 1
+            if parg >= 0:
+                lwoff = int(np.flatnonzero(qg)[np.argmax(va_qwin[lo:lo + sz][qg])])
+                disttop1 += int(parg == lwoff)
+                ndisttop += 1
             if scr_all[lo] == MAP_SCREEN_ID:
                 qtop1_map += int(qoracle == qpred)
                 nqtop_map += 1
@@ -637,6 +676,8 @@ def evaluate():
             "value_mae_screen": per_screen,
             "q_top1": qtop1 / max(1, nqtop),
             "q_top1_n": nqtop,
+            "dist_top1": disttop1 / max(1, ndisttop),
+            "dist_top1_n": ndisttop,
             "q_brier": qbrier,
             "q_mae": qmae,
             "q_rmse": qrmse,

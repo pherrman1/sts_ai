@@ -1,7 +1,8 @@
 # Out-of-combat policy
 
 Last verified: 2026-08-04 against the current working tree (Wave B regret
-gate + Q_win truth-check mode + map-DAG encoder (V6) added).
+gate + Q_win truth-check mode + map-DAG encoder (V6) + Phase F soft-target
+policy objective and policy-score gate env added; Phase F falsified §104).
 
 ## Purpose
 
@@ -163,6 +164,30 @@ heuristic pathing and the map-gate-off stack remain the deployed config.**
 Caution: a killed trainer can leave a byte-size-valid but corrupt
 `_state.bin` — verify frozen-model metrics against the source run before
 reusing it.
+
+## Phase F search distillation (5.7.1 + 5.7.2 — falsified 2026-08-04, opt-in)
+
+`STS_OOC_STRATEGIC_SCORE=policy` (default `q`) switches the one-ply gates'
+score source from the Q_win head to the **policy head** for V5/V6 artifacts:
+`oocStrategicScore` returns `sigmoid(predictPolicyLogit(state, bits, cats,
+actionType, screen))` (the raw logit is sigmoided to the probability scale,
+so the probability-point `STS_OOC_STRATEGIC_MARGIN` semantics apply
+unchanged) instead of `predictActionValue`. The token-net path and the V6
+map-encoder path are untouched; the margin/regret tail (`regretGateTail`) is
+shared, and with the env unset the gates stay byte-identical (verified on the
+recorded block). The trained policy head itself is produced with the
+soft-target distillation loss in `train_strategic.py`: `STRAT_DIST_LAMBDA`
+(0.5) + `STRAT_DIST_TAU` (1.0) blend the one-hot `chosen` CE with
+`CE(softmax(labelWon/τ))` per decision group — `(1−λ)·CE(one-hot) +
+λ·CE(softmax(labelWon/τ))` — plus a held-out `dist_top1` metric (policy
+argmax vs label argmax). λ=0 reproduces the pre-change numbers exactly.
+**Verdict (§104): falsified on the current K=3 labels** — the tie-dominated
+`labelWon` caps the ranking signal (dist_top1 ≈ behavior's 38% agreement),
+the distilled policy flattens the logits (margin 18.6 → ~1.2), and every
+policy-score gate arm loses to the Q-gate and to the V3 reference on the
+recorded block. Both knobs stay opt-in; `q` remains the default. K=6 deep
+targets (5.7.1b) are the open follow-up to reduce label noise and tie
+density.
 
 ## Strategic model design (semi-Markov decomposition)
 

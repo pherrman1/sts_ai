@@ -36,6 +36,15 @@ WIN_BONUS = float(os.environ.get("PVNET_WIN_BONUS", "50"))
 LAMBDA = {"policy": L_POL, "win": L_WIN, "quantile": L_QUANT,
           "potion": 0.2, "turns": 0.1, "death": 1.0}
 
+# Seed-grouped validation split: deterministic rule, no overlap with train rows.
+# A group (seed, fightIdx, decIdx) is entirely train or val because the seed is
+# constant within a group.
+VAL_FRAC = float(os.environ.get("PVNET_VAL_FRAC", "0.2"))
+TRAIN_ONLY = os.environ.get("PVNET_TRAIN_ONLY", "0") == "1"
+
+def is_val_seed(seed):
+    return int(seed) % 100 < int(VAL_FRAC * 100)
+
 if DEVICE == "cuda" and torch.cuda.is_available():
     print(f"[GPU] {torch.cuda.get_device_name(0)} "
           f"VRAM={torch.cuda.get_device_properties(0).total_memory/1e9:.1f}GB", flush=True)
@@ -250,6 +259,85 @@ def value_losses(preds, y_won, y_hp, max_hp):
     return {"death": ld, "win": lw, "quantile": lq, "potion": lp, "turns": lt}
 
 
+# ── Validation pass (held-out seeds) ────────────────────────────────────────
+def validation_pass(model):
+    """Stream both CSVs, keep only val-seed rows/groups, return weighted loss."""
+    model.eval()
+    total_v = 0.0; total_p = 0.0; total_n = 0
+    with torch.no_grad():
+        v_reader = pd.read_csv(VAL_CSV, chunksize=CHUNK)
+        for df in v_reader:
+            m = df["seed"].map(is_val_seed).to_numpy(np.bool_)
+            if not m.any(): continue
+            sdf = df[m]
+            scalar, cards, relics, potions, enc, mids, intents, mcont, mmask = extract_state(sdf)
+            y_won = sdf["won"].to_numpy(np.float32)
+            y_hp = sdf["endHp"].to_numpy(np.float32)
+            max_hp = sdf["maxHp"].to_numpy(np.float32)
+            for b in range(0, len(sdf), BATCH):
+                e = min(b + BATCH, len(sdf))
+                s, ca, r, po, en, mi, it, mc, mm = to_tensors(
+                    scalar[b:e], cards[b:e], relics[b:e], potions[b:e],
+                    enc[b:e], mids[b:e], intents[b:e], mcont[b:e], mmask[b:e])
+                yw, yh, mh = to_tensors(y_won[b:e], y_hp[b:e], max_hp[b:e])
+                z = model.encoder(s, ca, r, po, en, mi, it, mc, mm)
+                out = {
+                    "death": model.death(z).squeeze(-1),
+                    "win": model.win(z).squeeze(-1),
+                    "quantile": model.quantile(z),
+                    "potion": model.potion(z),
+                    "turns": model.turns(z).squeeze(-1),
+                }
+                vlosses = value_losses(out, yw, yh, mh)
+                loss = sum(LAMBDA[k] * vlosses[k] for k in vlosses)
+                total_v += loss.item() * (e - b)
+                total_n += e - b
+
+        p_reader = pd.read_csv(POL_CSV, chunksize=CHUNK)
+        for df in p_reader:
+            if len(df) < 2: continue
+            seeds = df["seed"].to_numpy(np.int64)
+            fights = df["fightIdx"].to_numpy(np.int32)
+            decs = df["decIdx"].to_numpy(np.int32)
+            changes = (seeds[1:] != seeds[:-1]) | (fights[1:] != fights[:-1]) | (decs[1:] != decs[:-1])
+            boundaries = np.where(changes)[0] + 1
+            g_starts = np.concatenate([[0], boundaries])
+            g_ends = np.concatenate([boundaries, [len(df)]])
+            valid = (g_ends - g_starts) >= 2
+            g_starts = g_starts[valid]
+            g_ends = g_ends[valid]
+            valmask = np.array([is_val_seed(s) for s in seeds])
+            keep = valmask[g_starts]
+            g_starts = g_starts[keep]
+            g_ends = g_ends[keep]
+            if len(g_starts) == 0: continue
+            state_arr = df[canonical].to_numpy(np.float32)
+            action_arr = df[action_names].to_numpy(np.float32)
+            visit_arr = df["visit"].to_numpy(np.int32)
+            total_arr = df["total"].to_numpy(np.int32)
+            batch_states = state_arr[g_starts]
+            df_batch = pd.DataFrame(batch_states, columns=canonical)
+            scalar, cards, relics, potions, enc, mids, intents, mcont, mmask = extract_state(df_batch)
+            s_t, ca_t, r_t, po_t, en_t, mi_t, it_t, mc_t, mm_t = to_tensors(
+                scalar, cards, relics, potions, enc, mids, intents, mcont, mmask)
+            z_all = model.encoder(s_t, ca_t, r_t, po_t, en_t, mi_t, it_t, mc_t, mm_t)
+            for gi in range(len(g_starts)):
+                gs, ge = g_starts[gi], g_ends[gi]
+                n_act = ge - gs
+                if n_act < 2: continue
+                tot = int(total_arr[gs])
+                if tot <= 0: continue
+                z_i = z_all[gi:gi+1].expand(n_act, -1)
+                act_t = torch.from_numpy(np.ascontiguousarray(action_arr[gs:ge])).to(DEVICE)
+                vis_t = torch.from_numpy(visit_arr[gs:ge].astype(np.float32).copy()).to(DEVICE)
+                logits = model.policy(z_i, act_t)
+                ce = policy_ce(logits, vis_t, torch.tensor(float(tot), device=DEVICE))
+                total_p += ce.item() * n_act
+                total_n += n_act
+    model.train()
+    return (total_v + total_p) / max(total_n, 1)
+
+
 # ── Training ─────────────────────────────────────────────────────────────────
 def main():
     model = PolicyValueNet().to(DEVICE)
@@ -276,6 +364,10 @@ def main():
         # ── Value pass ──
         v_reader = pd.read_csv(VAL_CSV, chunksize=CHUNK)
         for df in v_reader:
+            if TRAIN_ONLY:
+                m = ~df["seed"].map(is_val_seed).to_numpy(np.bool_)
+                df = df[m]
+                if len(df) == 0: continue
             scalar, cards, relics, potions, enc, mids, intents, mcont, mmask = extract_state(df)
             y_won = df["won"].to_numpy(np.float32)
             y_hp = df["endHp"].to_numpy(np.float32)
@@ -327,6 +419,11 @@ def main():
             valid = (g_ends - g_starts) >= 2
             g_starts = g_starts[valid]
             g_ends = g_ends[valid]
+            if TRAIN_ONLY:
+                valmask = np.array([is_val_seed(s) for s in df["seed"].to_numpy(np.int64)])
+                keep = ~valmask[g_starts]
+                g_starts = g_starts[keep]
+                g_ends = g_ends[keep]
             if len(g_starts) == 0:
                 continue
 
@@ -376,15 +473,16 @@ def main():
                 total_n += p_n
 
         avg_loss = (total_v + total_p) / max(total_n, 1)
+        val_loss = validation_pass(model)
         elapsed = time.time() - t_start
         print(f"  loss={avg_loss:.4f}  v={total_v/max(total_n,1):.4f}  "
-              f"p={total_p/max(total_n,1):.4f}  {elapsed:.0f}s", flush=True)
+              f"p={total_p/max(total_n,1):.4f}  val={val_loss:.4f}  {elapsed:.0f}s", flush=True)
 
-        if avg_loss < best_loss or epoch == 0:
-            best_loss = avg_loss
+        if val_loss < best_loss or epoch == 0:
+            best_loss = val_loss
             export_model(model, OUT)
 
-    print(f"\n[done] best_loss={best_loss:.4f} → {OUT}  ({time.time()-t_start:.0f}s)", flush=True)
+    print(f"\n[done] best_val={best_loss:.4f} → {OUT}  ({time.time()-t_start:.0f}s)", flush=True)
 
 
 # ── Export ───────────────────────────────────────────────────────────────────

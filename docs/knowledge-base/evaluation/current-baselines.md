@@ -84,6 +84,11 @@ artifact set behind §66i.
   producer invocation records `STS_SEARCHER3=1` without `STS_FAIR=1`, and the
   raw dataset is not tracked. The project-fair integration provenance is
   therefore unverified.
+- All recorded PVNet bot results (§72 re-check and the Phase 4b sweep) predate
+  the 2026-08-04 C++ parity fixes (GELU FFN, fixed 14-token layout, policy-head
+  dot product; see the decision log `2026-08-04-combat-pvnet-parity-fixes.md`);
+  the fixes are not expected to move 100-sim results, which are dominated by
+  heuristic OOC choices, but the 3k-sim payoff gate uses only the fixed binary.
 
 ## Open questions
 

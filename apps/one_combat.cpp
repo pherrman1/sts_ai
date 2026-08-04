@@ -744,6 +744,7 @@ static double g_oocStrategicMarginShop = -1.0;      // STS_OOC_STRATEGIC_MARGIN_
 static double g_oocStrategicMarginTreasure = -1.0;  // STS_OOC_STRATEGIC_MARGIN_TREASURE
 static double g_oocStrategicMarginBossRelic = -1.0; // STS_OOC_STRATEGIC_MARGIN_BOSS_RELIC
 static bool   g_oocStrategicQ = true;       // env STS_OOC_STRATEGIC_Q=0: score via V2 successor predictValue
+static bool   g_oocStrategicScorePolicy = false; // env STS_OOC_STRATEGIC_SCORE=policy: one-ply gates score with sigmoid(policy logit) (5.7.2)
 static bool   g_oocStrategicRest = false;   // env STS_OOC_STRATEGIC_REST=1: one-ply Q gate on campfires (5.5.2)
 static bool   g_oocStrategicEvent = false;  // env STS_OOC_STRATEGIC_EVENT=1: one-ply Q gate on events (5.5.3)
 static bool   g_oocStrategicShop = false;    // env STS_OOC_STRATEGIC_SHOP=1: one-ply Q gate on shop buys (R6)
@@ -816,7 +817,7 @@ static double g_dgTemp = 2.0;   // env STS_DG_TEMP (swept: 1-2 good spread+quali
 // those deep and skimp on trivial hallway fights for the same win% at far less compute.
 static int g_simsNormal = -1, g_simsElite = -1, g_simsBoss = -1;
 // Dynamic per-fight budget via the C_psi no-peek combat outcome surrogate
-// (STS_SIM_ADAPT=1 + STS_CPSI_NN, EXPERIMENTS.md §100): one forward pass at fight
+// (STS_SIM_ADAPT=1 + STS_CPSI_NN, EXPERIMENTS.md §103): one forward pass at fight
 // start predicts P(death) and E[hp/maxHp|win]; the budget multiplier rises with
 // predicted danger. Learned tiering — unlike the static STS_SIMS_* room tiers it
 // cannot misjudge difficulty (act-3 monsters ~ act-1 elites, §21). buildCpsiEntry
@@ -3217,6 +3218,17 @@ static void regretHeurMap(GameContext &pre, search::ScumSearchAgent2 &agent) {
 // restores the V2 behaviour: successors of copied GameContexts are scored with
 // the value head of the successor screen.  Greedy un-gated deployment is a
 // recorded failure mode (EXPERIMENTS §66m), so the gate is mandatory.
+// Score one V5/V6 action with the loaded strategic net: the Q_win head by
+// default, or the policy head when STS_OOC_STRATEGIC_SCORE=policy (Phase F
+// 5.7.2 gate arm).  predictPolicyLogit returns the raw logit — sigmoid to the
+// probability scale so the probability-point STS_OOC_STRATEGIC_MARGIN
+// semantics apply unchanged.
+static double oocStrategicScore(const float *state, std::uint32_t bits,
+                                const int cats[6], int actionType, int screen) {
+    if (g_oocStrategicScorePolicy)
+        return sigmoid(g_oocStrategicNet.predictPolicyLogit(state, bits, cats, actionType, screen));
+    return g_oocStrategicNet.predictActionValue(state, bits, cats, actionType, screen);
+}
 static bool oocOnePlyCardRewardPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
     if (!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) return false;
     if (gc.screenState != ScreenState::REWARDS) return false;
@@ -3264,8 +3276,8 @@ static bool oocOnePlyCardRewardPolicy(GameContext &gc, const search::ScumSearchA
                 int actionType, c1, c2, c3, cand1, cand2, cand3;
                 strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
                 const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-                v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
-                                                         cats, actionType, (int)gc.screenState);
+                v = oocStrategicScore(state.data(), actions[i].bits,
+                                      cats, actionType, (int)gc.screenState);
             } else {
                 GameContext probe = gc;
                 actions[i].execute(probe);
@@ -3320,8 +3332,8 @@ static bool oocOnePlyRestPolicy(GameContext &gc, const search::ScumSearchAgent2 
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
             const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-            const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
-                                                                 cats, actionType, (int)gc.screenState);
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -3368,8 +3380,8 @@ static bool oocOnePlyUpgradeSelectPolicy(GameContext &gc, const search::ScumSear
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
             const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-            const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
-                                                                 cats, actionType, (int)gc.screenState);
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -3417,8 +3429,8 @@ static bool oocOnePlyEventPolicy(GameContext &gc, const search::ScumSearchAgent2
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
             const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-            const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
-                                                                 cats, actionType, (int)gc.screenState);
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -3465,8 +3477,8 @@ static bool oocOnePlyShopPolicy(GameContext &gc, const search::ScumSearchAgent2 
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
             const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-            const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
-                                                                 cats, actionType, (int)gc.screenState);
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -3512,8 +3524,8 @@ static bool oocOnePlyTreasurePolicy(GameContext &gc, const search::ScumSearchAge
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
             const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-            const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
-                                                                 cats, actionType, (int)gc.screenState);
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -3559,8 +3571,8 @@ static bool oocOnePlyBossRelicPolicy(GameContext &gc, const search::ScumSearchAg
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
             const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-            const double v = g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
-                                                                 cats, actionType, (int)gc.screenState);
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -3636,8 +3648,8 @@ static bool oocOnePlyMapPolicy(GameContext &gc, const search::ScumSearchAgent2 &
                                                           actionType, (int)gc.screenState,
                                                           mapRooms, mapEdges, mapSpecial,
                                                           gc.curMapNodeX, gc.curMapNodeY, cand1)
-                : g_oocStrategicNet.predictActionValue(state.data(), actions[i].bits,
-                                                      cats, actionType, (int)gc.screenState);
+                : oocStrategicScore(state.data(), actions[i].bits,
+                                    cats, actionType, (int)gc.screenState);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -7119,6 +7131,11 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN")) {
         g_oocStrategicMargin = std::atof(d);
     }
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_SCORE")) {
+        g_oocStrategicScorePolicy = (strcmp(d, "policy") == 0);
+        std::cout << "[OOC strategic score source: "
+                  << (g_oocStrategicScorePolicy ? "policy (sigmoid)" : "q") << "]\n";
+    }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN_CARD"))
         g_oocStrategicMarginCard = std::atof(d);
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_MARGIN_REST"))
@@ -7655,6 +7672,57 @@ int main(int argc, char **argv) {
         std::printf("POLICY NET VALIDATION: %d rows, max|diff|=%.7f  mean|diff|=%.7f\n",
                     n, maxAbs, sumAbs/std::max(1, n));
         std::printf("%s\n", maxAbs < 1e-3 ? "PASS (C++ matches Python)" : "FAIL");
+
+    } else if (mode == "pvnetparity") {   // validate C++ CombatPVNet vs Python predictions
+        // Parity CSV layout per row: 1766 state feats, 14 action feats,
+        // then Python outputs: global(ED), pol(1), win(1), death(1),
+        // quantile(NQ), potion(44), turns(1).
+        std::string model = argc > 2 ? argv[2] : "build/v_combat_pvnet.txt";
+        std::string val   = argc > 3 ? argv[3] : "build/pvnet_parity.csv";
+        if (!search::g_combatPVNet.load(model)) { std::cerr << "load failed: " << model << "\n"; return 1; }
+        const auto &pv = search::g_combatPVNet;
+        std::ifstream vf(val);
+        std::string line; std::getline(vf, line);                 // header
+        const int D = pv.entityDim, NQ = pv.nQuantile;
+        double maxG=0,sumG=0, maxPol=0,sumPol=0, maxVal=0,sumVal=0; int n=0;
+        std::array<float,1766> feat{};
+        std::array<float,14> act{};
+        thread_local std::vector<float> g; g.resize(D);
+        std::array<float,11> qs{}; std::array<float,44> pots{}; float turns=0;
+        while (std::getline(vf, line)) {
+            std::stringstream ss(line); std::string cell;
+            for (int i = 0; i < 1766; ++i) { std::getline(ss, cell, ','); feat[i] = std::stof(cell); }
+            for (int i = 0; i < 14; ++i)   { std::getline(ss, cell, ','); act[i]  = std::stof(cell); }
+            std::vector<float> pyG(D);
+            for (int i = 0; i < D; ++i) { std::getline(ss, cell, ','); pyG[i] = std::stof(cell); }
+            double pyPol=0,pyWin=0,pyDeath=0; std::array<double,11> pyQ{}; std::array<double,44> pyPot{}; double pyTurns=0;
+            std::getline(ss, cell, ','); pyPol = std::stod(cell);
+            std::getline(ss, cell, ','); pyWin = std::stod(cell);
+            std::getline(ss, cell, ','); pyDeath = std::stod(cell);
+            for (int i = 0; i < NQ; ++i) { std::getline(ss, cell, ','); pyQ[i] = std::stod(cell); }
+            for (int i = 0; i < 44; ++i) { std::getline(ss, cell, ','); pyPot[i] = std::stod(cell); }
+            std::getline(ss, cell, ','); pyTurns = std::stod(cell);
+            if (!ss) break;
+            pv.encode(feat, g.data());
+            double pol = pv.policyScore(g.data(), act.data());
+            float wp=0,dp=0; qs.fill(0); pots.fill(0); turns=0;
+            pv.predictValue(g.data(), wp, dp, &qs, &pots, &turns);
+            for (int i = 0; i < D; ++i) { double d = std::fabs((double)g[i] - pyG[i]); maxG = std::max(maxG, d); sumG += d; }
+            double dv = std::fabs(pol - pyPol); maxPol = std::max(maxPol, dv); sumPol += dv;
+            double dmaxVal=0;
+            { double d = std::fabs((double)wp - pyWin); dmaxVal = std::max(dmaxVal, d); }
+            { double d = std::fabs((double)dp - pyDeath); dmaxVal = std::max(dmaxVal, d); }
+            for (int i = 0; i < NQ; ++i) { double d = std::fabs((double)qs[i] - pyQ[i]); dmaxVal = std::max(dmaxVal, d); }
+            for (int i = 0; i < 44; ++i) { double d = std::fabs((double)pots[i] - pyPot[i]); dmaxVal = std::max(dmaxVal, d); }
+            { double d = std::fabs((double)turns - pyTurns); dmaxVal = std::max(dmaxVal, d); }
+            maxVal = std::max(maxVal, dmaxVal); sumVal += dmaxVal;
+            if (n <= 5) std::printf("  row %d: global_max=%.6f pol=%.6f val=%.6f\n", n+1,
+                                    maxG, dv, dmaxVal);
+            ++n;
+        }
+        std::printf("PVNET VALIDATION: %d rows, global max=%.6f mean=%.6f | pol max=%.6f mean=%.6f | value max=%.6f mean=%.6f\n",
+                    n, maxG, sumG/std::max(1,n*D), maxPol, sumPol/std::max(1,n), maxVal, sumVal/std::max(1,n));
+        std::printf("%s\n", maxG < 0.05 && maxPol < 0.05 && maxVal < 0.05 ? "PASS (C++ matches Python)" : "FAIL");
 
     } else if (mode == "speedtest") {     // single-fight Searcher3 speed measurement
         int sims = argc > 2 ? std::stoi(argv[2]) : 1000;

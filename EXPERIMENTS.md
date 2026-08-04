@@ -3235,3 +3235,187 @@ enabling condition, but the omitted command prevents verification.
   metrics.json}` (+`_state.bin`), `build/strategic_qwin_cal_maps.csv`,
   per-seed `build/mapgate_*.csv`, `run_mapgate_ab.sh`,
   `ooc_strategic_map_enc_train.log`.
+
+## 101. PVNet parity fixes + 100-sim §72 replication on the fixed binary (2026-08-04)
+
+- **Context:** the C++ CombatPVNet inference had three trainer mismatches
+  (FFN GELU vs ReLU, sparse vs always-14 token layout, one-unit policy-head
+  dot product) plus no parity check (`apps/one_combat.cpp` `pvnetparity`,
+  `combat_pvnet_parity.py`; decision log
+  `2026-08-04-combat-pvnet-parity-fixes.md`). After the fixes,
+  encoder/policy/value match the exported model to ~1e-6 (d128 and d64).
+- **Replication setup:** `STS_FAIR=1 STS_SEARCHER3=1
+  STS_PVNET=build/v_combat_pvnet.txt STS_PVNET_ALPHA=0 ./build/one_combat
+  bestbench 100 128 0 126700 build/pvnet_fixcheck_s3p0_128.csv`; tracked
+  PVNet sha256 `05d809298921623af7c87c06e7dd31f5129abfd77cc702f75b9867949a59533f`;
+  tracked policy prior auto-loaded; 12 threads; native OOC defaults (no gate
+  opt-ins).
+- **Result (128 seeds 126700–126827, 100 sims, S3 + PVNet α=0):**
+  **16/128 = 12.5% win, mean floor 28.8, mean end HP 6.4**,
+  cpu_sec/run 18.5, wall 212 s. Versus the §72 historical same-block result
+  (8.6% / 26.4 / 4.2) this is +3.9pp win, +2.4 floor, +2.2 HP — directionally
+  positive but within ~1 SE (4.0pp); attribution is not clean because the
+  current binary's OOC stack is newer than the §72 binary's even though the
+  default opt-in gates are off. Versus the same-budget S2 default (4.7%,
+  §72) the S3+PVNet combo remains clearly positive.
+- **Cost note for Phase 1:** S3+PVNet is ~18x more expensive per sim than S2
+  fair (18.5 vs ~1.0 cpu-sec/run at 100 sims) because `computeEdgePriors`
+  runs a PVNet forward per expanded node; a 3k-sim arm ≈ 49 min/128 seeds on
+  24 threads. **Caveat:** during part of this replication another agent
+  occupied 6 of the 12 local cores, so the run was contended; the 18.5
+  cpu-sec/run and wall time are upper bounds, not clean measurements. Not
+  re-tested; re-measure on an uncontended server before sizing Phase 1.
+- **Artifacts:** `build/pvnet_fixcheck_s3p0_128.csv`,
+  `build/pvnet_fixcheck_s3p0_32.csv`, `build/pvnet_parity{,_smoke,_d64}.csv`.
+
+## 102. Dynamic sim budgets I: convergence stop is INERT under fair play (2026-08-04)
+
+- **Goal:** re-test §22's `searchToTotalAdaptive` early stopping
+  (`STS_CONVERGE`/`STS_CONV_PATIENCE`/`STS_CONV_MIN`) in the fair regime at
+  the new 3k operating point. §22 measured it only in known-RNG @50k; the
+  recorded result "convergence ~= flat at equal cpu" does not say whether the
+  stop even fires under per-sim determinization.
+- **Setup:** fair, A0, V4 full gate stack @3,000 base sims, 64 seeds
+  126700–126763, 24 threads (server `sts-test`, binary at `b7af3fa`).
+  `(patience, minSims)` ∈ {(200,200), (400,300), (800,400)}.
+- **Result:** all three settings are **bit-identical to flat V4@3k on all 64
+  seeds** (0 non-`sec` diffs: 23/64 wins, floor 41.6, HP 20.2), cpu_sec/run
+  30.4–30.5 vs 31.3 flat (~2.5%, effectively no stopping).
+- **Verdict:** ❌ the plateau condition never triggers in fair play. Each
+  `step()` re-determinizes the hidden draw order, so `bestActionValue` keeps
+  improving; "no improvement for `patience` consecutive sims" essentially
+  never occurs within 3k sims. §22's mechanism only stopped in known-RNG,
+  where rollouts are near-deterministic. Per-decision stopping in the fair
+  regime needs a different convergence signal (e.g., best-action visit-share
+  stability or a windowed root-value mean), not `bestActionValue`.
+- **Artifacts:** `build/conv_{p200_m200,p400_m300,p800_m400}_64.csv` (pulled
+  from server `/tmp/`); `apps/one_combat.cpp::searchToTotalAdaptive` unchanged.
+
+## 103. Dynamic sim budgets II: C_psi difficulty-adaptive per-fight budget — compute-efficient, win edge not established (2026-08-04)
+
+- **What:** new `fightSims` path (`STS_SIM_ADAPT=1` + `STS_CPSI_NN`, code in
+  `apps/one_combat.cpp`): at fight start one no-peek C_ψ forward pass
+  (`buildCpsiEntry` + `CombatCpsiNet::predict`,
+  `selfplay/models/v_combat_cpsi.txt`) sets
+  `budget = clamp(base × (0.5 + P(death) + (1 − E[hp/maxHp|win])), minFrac,
+  maxFrac) × base` with `STS_SIM_ADAPT_MIN_FRAC=0.4` / `_MAX_FRAC=2.0`
+  defaults. Learned tiering — unlike the static `STS_SIMS_*` room tiers it
+  cannot misjudge difficulty (act-3 monsters ≈ act-1 elites, §21); pre-combat
+  features only, so fair-play clean. Precedence over the static tiers.
+- **Setup:** fair, A0, V4 full gate stack, 24 threads, binary `b7af3fa`;
+  three 256-seed blocks (126700, 126955, 127211). Arms: flat V4@2k (new
+  `build/simsweep_v4_2k_256.csv` + `_b2`,`_b3`), adaptive@2200 (mean budget
+  ≈ 1,900; `build/simadapt_2200_256.csv` + `_b2`,`_b3`), flat V4@3k on
+  blocks 1/3 (existing `simsweep_v4_3k_256.csv`, new `_b3`).
+- **Results — adaptive@2200 vs flat V4@2k (paired):**
+
+  | block | win Δ (95% CI) | floor Δ | HP Δ | cpu Δ |
+  |---|---:|---:|---:|---:|
+  | 1 (126700) | +2.7 [−3.1,+8.6] | −0.0 | +2.8 | −2.94 (18.98 vs 21.92) |
+  | 2 (126955) | +3.9 [−2.0,+9.4] | +0.5 | +1.7 | −2.01 (20.19 vs 22.20) |
+  | 3 (127211) | −1.2 | −0.6 | −0.3 | −2.85 (19.26 vs 22.11) |
+  | **combined 767** | **+1.8 [−1.7,+5.3]** | −0.0 | **+1.4** | **−2.60 (−12%)** |
+
+  vs flat V4@3k (the recommended reference, 45.3%): block 1 **45.7% (tie) at
+  −39% cpu**; block 3 42.6% (−2.7pp) at −40% cpu. Anomaly: adaptive@3000
+  (42.6%, block 1) was *worse* than adaptive@2200 (45.7%, block 1) — the
+  formula's benefit does not scale with base; noise-level.
+- **Verdict:** ➕/➖ mixed. Mechanically it works and is the first dynamic
+  budget with a favorable compute/win slope — §21 static tiers and §22
+  convergence both found *no* savings, while adaptive@2200 saves ~12% compute
+  at no measurable win-rate loss vs flat@2k and on block 1 matched the 3k
+  reference at −39% compute. But the win edge is **not established** (767-seed
+  CI [−1.7,+5.3], block 3 flipped negative) and vs the 3k reference it is
+  block-dependent. Not promotion-grade; **stays opt-in behind
+  `STS_SIM_ADAPT=1`**. For compute-constrained runs it is the efficiency
+  option; flat V4@3k remains the win-rate operating point.
+- **Artifacts:** `build/simsweep_v4_2k_256{,_b2,_b3}.csv`,
+  `build/simadapt_2200_256{,_b2,_b3}.csv`, `build/simsweep_v4_3k_256_b3.csv`,
+  `build/simadapt_256.csv` (adaptive@3000); `apps/one_combat.cpp::fightSims`,
+  `STS_SIM_ADAPT*` env parse.
+
+## 104. Phase F search distillation (5.7.1 + 5.7.2): soft-target policy objective — falsified on the gate A/B (2026-08-04)
+
+- **Goal:** the §100 verdict (better prediction ≠ better play) points at the
+  policy objective, not the encoder. Phase F asks the narrow question: does a
+  policy head trained on `softmax(labelWon/τ)` search-distillation targets
+  beat one trained on one-hot `chosen`, measured as a policy-score gate arm?
+  Scope: 5.7.1 (produce the targets) + 5.7.2 (train the head); 5.7.3 (the
+  iterative loop) explicitly out of scope.
+- **Step 1 — π_target diagnostic (5.7.1a, no code):** on
+  `build/strategic_qwin_cal.csv` (809,146 rows, 1,295 seeds; groups =
+  seed×1e6+decIdx; 133,144 groups with ≥2 finite labels AND exactly one
+  chosen row):
+  - `argmax(labelWon)` vs `chosen` agreement **38.0% strict / 58.1% in-set**
+    (chosen inside the tied argmax set) — far below the 0.90 stop gate, so the
+    distillation has a target population. Per screen: REST 57.5/78.2, MAP
+    55.8/66.0, EVENT 43.4/57.8, BOSS_RELIC 41.7/47.3, REWARDS 35.0/57.5,
+    TREASURE 23.1/56.8, CARD_SELECT 16.2/44.6, SHOP 15.7/32.8.
+  - Soft-target determinacy: median softmax margin (p1−p2) = **0.000 at every
+    τ** (τ=1.0: 90.7% of groups <0.05; entropy mean 1.54 bits) — `labelWon`
+    is heavily tied (discrete 0/1 + bootstrap fractions), so only the argmax
+    carries ranking signal.
+  - `argmax(softmax(labelWon/τ))` ≡ `argmax(labelWon)` at all τ (100%) —
+    τ reshapes gradient sharpness only, never the ranking.
+- **Step 3 — implementation:** `train_strategic.py` gains
+  `STRAT_DIST_LAMBDA` (0.5) + `STRAT_DIST_TAU` (1.0): policy loss =
+  `(1−λ)·CE(one-hot chosen) + λ·CE(softmax(labelWon/τ))` over each group's
+  finite-label rows (same stable-logsumexp group machinery), new held-out
+  `dist_top1` (policy argmax vs label argmax); Q/aux heads, early-stop
+  criterion (`val_pol_ce`) untouched. `apps/one_combat.cpp` gains
+  `STS_OOC_STRATEGIC_SCORE=policy` (default `q`): the one-ply gates score
+  candidates with `sigmoid(predictPolicyLogit)` (V5/V6,
+  `oocStrategicScore` helper) instead of `predictActionValue`; token path and
+  MAP encoder path untouched; env unset verified **bit-identical** to the
+  recorded §96 block (`build/qwin_cal_m0.01.csv` per-seed match on all 128
+  seeds, only the `sec` column differs).
+- **Training** (corrected CSV, 60 epochs, GPU, τ=1.0; state.bin reused from
+  the §100-verified base — λ=0 parity run reproduced the baseline epoch-1
+  metrics exactly, value_mae 9.0578 ✓):
+
+  | model (md5 .pt) | λ | val_pol_ce (best) | pol_top1 | dist_top1 | q_top1 | q_brier | margin |
+  |---|---|---|---|---|---|---|---|
+  | V5 base (3ac8343d) | 0 | 0.4671 | 0.7967 | — | 0.3228 | 0.0409 | 18.58 |
+  | dist_l025 (e2894dcc) | 0.25 | 0.6635 | 0.7917 | 0.3847 | 0.3418 | 0.0389 | 1.18 |
+  | dist_l050 (3f042f2b) | 0.50 | 0.8608 | 0.7890 | 0.3822 | 0.3618 | 0.0393 | 0.75 |
+  | dist_l100 | 1.00 | 1.5311 | 0.4434 | 0.3500 | 0.3287 | 0.0521 | 0.01 |
+
+  (val_pol_ce rises with λ by construction — it measures mismatch with
+  behavior, which the blend intentionally trades away. λ=1.0 collapses
+  behavioral top-1 and flattens the logits; rejected. λ=0.25/0.50 keep
+  pol_top1 ≈ 0.79, lift q_top1, and are within noise of each other on
+  dist_top1 → both A/B'd. dist_top1 ≈ 0.38 for both — the distilled policy
+  agrees with the label argmax no better than behavior did (38%),
+  i.e. the tie-dominated labels cap the ranking signal.)
+- **Paired A/B** (fair, A0, 1,000 sims, seeds 126700–126827, 12 threads;
+  six gates ON, MAP off, `STS_OOC_STRATEGIC_SCORE=policy`; reference =
+  `build/gates_ref_m1.csv`, 39.8%; per-seed CSVs `build/qwin_cal_dist_l{025,
+  050}_m*.csv`; `run_distgate_ab.sh`):
+
+  | config | wins | vs Q-gate (paired, B−A) | vs ref |
+  |---|---:|---|---|
+  | Q-gate m0.01/m0.03/m0.05/m0.10 (reused §96) | 27.3/25.0/22.7/21.9% | — | −12.5/−14.8/−17.1/−17.9pp |
+  | dist_l025 m0.01/m0.03/m0.05/m0.10 | 9.4/14.1/10.9/14.8% | Q better: +9.4..+26.6 / +3.1..+18.8 / +3.1..+20.3 / −0.8..+14.8pp | m0.10: −25.0 [−34.4,−15.6] |
+  | dist_l050 m0.01/m0.03/m0.05/m0.10 | 10.9/8.6/12.5/18.8% | Q better: +7.8..+25.8 / +7.8..+25.0 / +2.3..+18.0 / −4.7..+10.9pp | m0.05: −27.3 [−35.9,−18.8]; m0.10: −21.1 [−30.5,−12.5] |
+
+  The distilled policy logits are near-uniform (raw margin ~1.2 vs 18.6
+  baseline ≈ 0.2–0.3 probability-point gaps), so the margin gate fires on
+  almost every decision — the arm is an aggressive override. Every policy arm
+  loses to both the Q-gate arm and the reference; only at m0.10 does the
+  paired CI cross zero (still negative, leaning Q).
+- **Verdict:** ❌ pre-registered criterion (1) — distilled-policy gate ≥
+  Q-gate on wins per margin — fails at every margin (the Q-gate wins by
+  ~+3..+27pp, significant at m≤0.05). No flip candidate → criterion (2)
+  moot. The **objective lever is falsified on the current Tier-B labels**:
+  soft-target distillation neither improves label-argmax agreement beyond
+  behavior's 38% (the tie-dominated `labelWon` caps it) nor transfers to
+  gameplay. This completes the §100 falsification chain (encoder → objective):
+  both levers are rejected on these labels; the remaining lever per §93 is
+  label horizon/quality (K=6 deep targets, 5.7.1b — not run this wave).
+  5.7.3 stays unchecked. The score-source env stays opt-in; `q` remains the
+  default.
+- **Artifacts:** `selfplay/models/ooc_strategic_qwin_cal_dist_l{000,025,050,
+  100}.{pt,metrics.json}` (+`_state.bin`; `.native` for l025/l050, parity
+  32/32, V5 magic), `build/qwin_cal_dist_l{025,050}_m*.csv` (+`.log`),
+  `run_distgate_ab.sh`, `ooc_strategic_qwin_cal_dist_l*_train.log`;
+  diagnostic script `/tmp/opencode/ooc_phasef_diag.py` (one-off).
