@@ -7724,6 +7724,134 @@ int main(int argc, char **argv) {
                     n, maxG, sumG/std::max(1,n*D), maxPol, sumPol/std::max(1,n), maxVal, sumVal/std::max(1,n));
         std::printf("%s\n", maxG < 0.05 && maxPol < 0.05 && maxVal < 0.05 ? "PASS (C++ matches Python)" : "FAIL");
 
+    } else if (mode == "policystats") {  // offline prior quality of the GBM policy net on fairgen policy CSVs
+        // Mirrors eval_combat_pvnet.py's policy section for the GBM prior:
+        // per decision group, softmax over edge logits vs teacher visit/total.
+        // Optional 4th arg "val" restricts to seeds with seed%100<20.
+        std::string model = argc > 2 ? argv[2] : "build/policy_trees_c.txt";
+        std::string val   = argc > 3 ? argv[3] : "build/fair_p.csv";
+        const bool valOnly = argc > 4 && std::string(argv[4]) == "val";
+        search::g_policyNet.isPolicy = true;
+        if (!search::g_policyNet.load(model)) { std::cerr << "load failed: " << model << "\n"; return 1; }
+        std::ifstream vf(val);
+        std::string line; std::getline(vf, line);                 // header
+        // Locate meta columns by name; the 1780 model features are all others
+        // in file order (meta lives at the START of fairgen policy CSVs).
+        std::vector<std::string> hdr;
+        { std::stringstream hs(line); std::string c; while (std::getline(hs, c, ',')) hdr.push_back(c); }
+        const int ncol = (int)hdr.size();
+        auto idxOf=[&](const std::string&n){ for(int i=0;i<ncol;++i) if(hdr[i]==n) return i; return -1; };
+        const int iSeed=idxOf("seed"), iFid=idxOf("fightIdx"), iDid=idxOf("decIdx"),
+                  iVis=idxOf("visit"), iTot=idxOf("total");
+        if (iSeed<0||iFid<0||iDid<0||iVis<0||iTot<0){ std::cerr << "missing meta column\n"; return 1; }
+        const int stateN = search::combatFeatureCount();
+        const int actionN = search::combatPolicyFeatureCount() - stateN;
+        // Optional PVNet comparison: load the shared PVNet and report per-group
+        // prior entropy for both models plus argmax agreement (4th arg "val",
+        // 5th arg PVNet model path).
+        const bool havePV = argc > 5;
+        search::CombatPVNet pv;
+        if (havePV && !pv.load(argv[5])) { std::cerr << "pv load failed: " << argv[5] << "\n"; return 1; }
+        double sumCE=0, sumKL=0, sumRegret=0, sumEntropy=0; long long top1=0, top3=0, nGroups=0, nActions=0;
+        double sumModelEnt=0, sumPvEnt=0, agree=0;
+        std::vector<float> feat(search::combatPolicyFeatureCount());
+        std::vector<double> logits, target;
+        std::vector<std::array<float,14>> grpActs;
+        std::array<float,1766> grpState{};
+        std::vector<std::string> cells(ncol);
+        int stateRow=0; bool inGroup=false; long long curSeed=0; int curFid=0,curDid=0;
+        auto flushGroup=[&](){
+            if(!inGroup)return;
+            const int m=(int)logits.size();
+            double mx=*std::max_element(logits.begin(),logits.end());
+            double sum=0; for(double&l:logits){l=std::exp(l-mx);sum+=l;}
+            double inv=sum>0?1.0/sum:1.0/m;
+            double ce=0,kl=0,ent=0,ment=0;
+            std::vector<double> gbmP(m);
+            for(int i=0;i<m;++i){
+                const double p=logits[i]*inv, t=target[i]+1e-9;
+                gbmP[i]=p;
+                ce+= -t*std::log(p);
+                kl+= t*std::log(t/p);
+                ent+= -t*std::log(t);
+                ment+= -p*std::log(p);
+            }
+            int best=0; for(int i=1;i<m;++i) if(logits[i]>logits[best]) best=i;
+            int tbest=0; for(int i=1;i<m;++i) if(target[i]>target[tbest]) tbest=i;
+            top1 += best==tbest;
+            if (m>=3) {
+                int b1=0,b2=1,b3=2;
+                if (logits[b2]>logits[b1]) std::swap(b1,b2);
+                if (logits[b3]>logits[b1]) std::swap(b1,b3);
+                if (logits[b3]>logits[b2]) std::swap(b2,b3);
+                top3 += (tbest==b1||tbest==b2||tbest==b3);
+            } else if (m==2) {
+                top3 += (tbest==best);
+            } else { top3 += 1; }
+            sumCE+=ce; sumKL+=kl; sumRegret+=1.0-target[best]; sumEntropy+=ent;
+            sumModelEnt += ment;
+            if (havePV) {
+                thread_local std::vector<float> pvg(pv.entityDim);
+                pv.encode(grpState, pvg.data());
+                double pvSum=0; int pvBest=0;
+                std::vector<double> pvP(m);
+                for (int i=0;i<m;++i) {
+                    const double l = pv.policyScore(pvg.data(), grpActs[i].data());
+                    pvP[i] = l;
+                    if (l>pvP[pvBest]) pvBest=i;
+                }
+                double pmx=pvP[pvBest];
+                for (int i=0;i<m;++i) pvP[i]=std::exp(pvP[i]-pmx);
+                double psum=0; for (int i=0;i<m;++i) psum+=pvP[i];
+                double pinv=psum>0?1.0/psum:1.0/m;
+                double pvent=0;
+                for (int i=0;i<m;++i){ pvP[i]*=pinv; pvent+= -pvP[i]*std::log(pvP[i]); }
+                sumPvEnt += pvent;
+                agree += pvBest==best;
+            }
+            ++nGroups; nActions+=m;
+            logits.clear(); target.clear(); grpActs.clear(); inGroup=false;
+        };
+        while (std::getline(vf, line)) {
+            if (line.empty()) continue;
+            std::stringstream ss(line); std::string cell;
+            for (int i = 0; i < ncol; ++i) { std::getline(ss, cell, ','); cells[i] = cell; }
+            const long long seed = std::stoll(cells[iSeed]);
+            const int fid = std::stoi(cells[iFid]);
+            const int did = std::stoi(cells[iDid]);
+            const int vis = std::stoi(cells[iVis]);
+            const int tot = std::stoi(cells[iTot]);
+            if (tot<=0) continue;
+            // contiguity: fairgen writes one decision's edges together
+            if (inGroup && (seed!=curSeed || fid!=curFid || did!=curDid)) flushGroup();
+            if (valOnly && seed%100>=20) { inGroup=false; continue; }
+            curSeed=seed; curFid=fid; curDid=did;
+            int fi=0; std::array<float,14> act{};
+            for (int i = 0; i < ncol; ++i) {
+                if (i==iSeed||i==iFid||i==iDid||i==iVis||i==iTot) continue;
+                const float v = std::stof(cells[i]);
+                if (fi < stateN) feat[fi] = v;
+                else if (fi - stateN < actionN) act[fi - stateN] = v;
+                ++fi;
+            }
+            if (fi != stateN + actionN) { std::cerr << "feature count mismatch: " << fi << "\n"; return 1; }
+            if (!inGroup) for (int i=0;i<stateN;++i) grpState[i]=feat[i];
+            grpActs.push_back(act);
+            logits.push_back(search::g_policyNet.predictVec(feat.data()));
+            target.push_back((double)vis/(double)tot);
+            inGroup=true;
+            if (++stateRow % 100000 == 0) std::printf("  %d rows\n", stateRow);
+        }
+        flushGroup();
+        std::printf("POLICY STATS: %lld groups, %lld actions | top1 %.4f | CE %.4f | KL %.4f | regret %.4f | teacherEntropy %.4f | gbmEntropy %.4f",
+                    nGroups, nActions, (double)top1/std::max(1LL,nGroups), sumCE/std::max(1.0,(double)nGroups),
+                    sumKL/std::max(1.0,(double)nGroups), sumRegret/std::max(1.0,(double)nGroups),
+                    sumEntropy/std::max(1.0,(double)nGroups), sumModelEnt/std::max(1.0,(double)nGroups));
+        if (havePV)
+            std::printf(" | pvEntropy %.4f | argmaxAgreement %.4f\n",
+                        sumPvEnt/std::max(1.0,(double)nGroups), agree/std::max(1.0,(double)nGroups));
+        else std::printf("\n");
+
     } else if (mode == "speedtest") {     // single-fight Searcher3 speed measurement
         int sims = argc > 2 ? std::stoi(argv[2]) : 1000;
         std::uint64_t seed = argc > 3 ? std::stoull(argv[3]) : 42;

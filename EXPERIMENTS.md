@@ -3540,3 +3540,40 @@ enabling condition, but the omitted command prevents verification.
   s3_pv1}_3k_128.csv` (+ `s2_ref`, the mislabeled S3 duplicate); server log
   `/tmp/pvnet_gate.log` on `sts-test`; `run_pvnet_gate.sh` (arm 0
   `STS_SEARCHER3` bug fixed in the script after the run).
+## 103. Searcher2 + PVNet policy head as PUCT prior @3k sims — exact tie with GBM prior at 8x cost (2026-08-05)
+
+- **Question:** the §102 gate only tested PVNet priors under Searcher3; does
+  the PVNet policy head work as the PUCT prior under the *recommended*
+  Searcher2? (Searcher2 previously ignored `STS_PVNET` entirely.)
+- **Change:** `BattleScumSearcher2` now uses the PVNet policy head for edge
+  priors when `STS_PVNET` is loaded (mirroring Searcher3's preference order;
+  GBM fallback otherwise; `STS_PVNET_VALUE_ONLY=1` keeps GBM). PUCT gate
+  extended accordingly (`src/sim/search/BattleScumSearcher2.cpp`:
+  expansion condition, `usePuct`, `computeEdgePriors` PVNet branch).
+- **Setup:** local WSL (12 threads), fair, A0, 3,000 sims, 128 seeds
+  126700–126827, default OOC stack, tracked parity-fixed PVNet
+  (`05d80929...`) vs tracked GBM prior (`policy_trees_c.txt`,
+  `24793bd3...`), `OPENBLAS_NUM_THREADS=1`.
+- **Result (paired, same binary):**
+  - S2+GBM: **27/128 = 21.1%**, floor 37.3, HP 8.1, 24.3 cpu-sec/run
+    (`build/pvnetgate_s2_true_3k_128.csv`)
+  - S2+PVNet: **27/128 = 21.1%**, floor 38.2, HP 8.7, 199.2 cpu-sec/run
+    (`build/pvnetgate_s2_pv0_3k_128.csv`)
+  - dWin **+0.0pp** CI [−6.9, +6.9]; discordant 20 (10 wins each way);
+    dFloor −0.9 CI [−2.6, +0.7]. An exact statistical tie at **8.2x compute**.
+- **Offline prior diagnostics** (new `policystats` mode in
+  `apps/one_combat.cpp`, cross-validated against Python/GPU: model-entropy
+  matches to 4 decimals; 10,744 val groups, identical grouping):
+  - teacher agreement: PVNet top-1 0.409 / CE 1.444 vs GBM top-1 0.388 /
+    CE 1.565 — the PVNet head is *marginally better*, not worse;
+  - prior entropy: PVNet 1.431 vs GBM 1.565 (PVNet slightly sharper);
+  - **the two priors agree on the best action only 41.6% of the time**, yet
+    the bot results are identical — at 3k sims the PUCT prior barely matters.
+- **Interpretation:** the PVNet policy head is a *correctly working, equal-
+  quality* prior; the §102 gate verdict stands — no same-cost channel. The
+  mid-run 11–16% readings were small-sample noise (a 200-sim × 16-seed smoke
+  also looked bad; consistent with priors mattering more at low sims, but
+  untested). The 8x per-sim cost is structural (per-node transformer
+  forward), so S2+PVNet stays experimental-off.
+- **Artifacts:** `build/pvnetgate_s2_pv0_3k_128.csv`; `policystats` mode:
+  `./build/one_combat policystats <gbm.txt> <fair_p.csv> [val] [pvnet.txt]`.

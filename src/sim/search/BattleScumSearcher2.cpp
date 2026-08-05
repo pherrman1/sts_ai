@@ -5,6 +5,7 @@
 #include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/ExpertKnowledge.h"
 #include "sim/search/CombatValueNet.h"
+#include "sim/search/CombatPVNet.h"
 
 #include <utility>
 #include <string>
@@ -241,7 +242,8 @@ void search::BattleScumSearcher2::step() {
 
             ++simulationIdx;
             enumerateActionsForNode(curNode, curState);
-            if (g_usePolicyNet && g_policyNet.loaded())
+            if ((g_usePolicyNet && g_policyNet.loaded())
+                || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly))
                 computeEdgePriors(curNode, curState);
             if (g_fairPlay) {
                 auto &es = curNode.edges;
@@ -380,7 +382,8 @@ int search::BattleScumSearcher2::selectBestEdgeToSearch(const search::BattleScum
     // PUCT (AlphaZero-lite) when a policy prior is loaded: exploration is steered by
     // the learned prior P(a) instead of the flat UCB log term. Priors are cached on
     // the edges at node expansion (computeEdgePriors), so this stays a hot-path scalar.
-    const bool usePuct = g_usePolicyNet && g_policyNet.loaded();
+    const bool usePuct = (g_usePolicyNet && g_policyNet.loaded())
+        || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly);
     const double logParent = usePuct ? 0.0 : std::log(static_cast<double>(cur.simulationCount + 1));
     const double sqrtParent = usePuct ? std::sqrt(static_cast<double>(cur.simulationCount + 1)) : 0.0;
     const bool exploit = !bestActionSequence.empty();
@@ -427,6 +430,33 @@ void search::BattleScumSearcher2::computeEdgePriors(search::BattleScumSearcher2:
     const int stateN = combatFeatureCount();
     if ((int)feat.size() < combatPolicyFeatureCount()) feat.assign(combatPolicyFeatureCount(), 0.f);
     combatExtractFeatures(bc, feat.data());
+
+    // ── PVNet policy head (preferred when loaded; mirrors Searcher3) ──
+    if (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly) {
+        const int D = g_combatPVNet.entityDim;
+        std::array<float, 1766> stateArr{};
+        for (int i = 0; i < 1766; ++i) stateArr[i] = feat[i];
+        thread_local std::vector<float> global; global.resize(D);
+        g_combatPVNet.encode(stateArr, global.data());
+        thread_local std::vector<float> actionFeats;
+        actionFeats.resize(n * 14);
+        for (int i = 0; i < n; ++i)
+            combatFillActionFeatures(bc, node.edges[i].action, actionFeats.data() + i * 14);
+        thread_local std::vector<float> logitsCache;
+        logitsCache.resize(n);
+        float bestLogit = -1e30f;
+        for (int i = 0; i < n; ++i) {
+            const float logit = g_combatPVNet.policyScore(global.data(), actionFeats.data() + i * 14);
+            if (logit > bestLogit) bestLogit = logit;
+            logitsCache[i] = logit;
+        }
+        float sum = 0.f;
+        for (int i = 0; i < n; ++i) { logitsCache[i] = std::exp(logitsCache[i] - bestLogit); sum += logitsCache[i]; }
+        const float inv = sum > 0.f ? 1.f / sum : 1.f / n;
+        for (int i = 0; i < n; ++i) node.edges[i].prior = logitsCache[i] * inv;
+        return;
+    }
+
     float entityState[64];
     if (g_policyNet.isEntityPolicy)
         g_policyNet.encodePolicyStateVec(feat.data(), entityState);

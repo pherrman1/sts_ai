@@ -127,3 +127,15 @@ metrics, verify timing.
   question, not a model question. If combat-model work resumes, the channel
   to chase is low-sim fully-neural play, which both §72 and this gate
   currently contradict.
+
+## Update 3 (same session, EXPERIMENTS.md §103): S2+PVNet PUCT priors — exact tie with GBM, 8x cost
+
+- Added PVNet-prior support to Searcher2 (`BattleScumSearcher2.cpp`,
+  mirrors Searcher3 preference order). Tested at 3k sims, 128 seeds:
+  **27/128 both** (21.1%), dWin +0.0pp CI [−6.9,+6.9]; 199 vs 24 cpu-sec/run.
+- New `policystats` C++ mode for offline prior metrics (verified against a
+  Python/GPU recomputation: entropy matches to 4 decimals).
+- Findings: PVNet and GBM priors are equal-quality (PVNet teacher top-1
+  0.409 vs GBM 0.388) yet agree on the best action only 42% of the time —
+  at 3k sims the prior barely matters. No same-cost channel; PVNet stays
+  experimental-off. Mid-run 11–16% readings were noise.
