@@ -23,8 +23,7 @@ contiguous slices from an mmap of that file, so multi-GB CSVs (tens of
 millions of rows) train on a modest-RAM machine.  The file is reused when its
 byte size matches nrows*NSTATE*2.
 """
-import json, os, sys
-
+import hashlib, json, os, sys
 # Defragment the CUDA caching allocator before torch initializes; the
 # GPU-resident state (6.2 GB) leaves little contiguous VRAM otherwise.
 # Respects a user setting.
@@ -268,7 +267,23 @@ inv = inv.astype(np.float32)
 STATE_FILE = OUT + "_state.bin"
 expected = nrows * NSTATE * 2
 reused = False
-if os.path.exists(STATE_FILE) and os.path.getsize(STATE_FILE) == expected:
+fp_file = STATE_FILE + ".fp"
+fp = hashlib.sha256()
+for f in (CSV, os.path.abspath(__file__)):
+    try:
+        st = os.stat(f)
+        fp.update(f.encode()); fp.update(str(st.st_size).encode()); fp.update(str(st.st_mtime_ns).encode())
+    except OSError:
+        pass
+fp.update(str(nrows).encode()); fp.update(str(NSTATE).encode())
+fp.update(mean.tobytes()); fp.update(inv.tobytes())
+fp_hex = fp.hexdigest()
+old_fp = None
+if os.path.exists(fp_file):
+    with open(fp_file) as f:
+        old_fp = f.read().strip()
+if (os.path.exists(STATE_FILE) and os.path.getsize(STATE_FILE) == expected
+        and old_fp == fp_hex):
     reused = True
     print(f"[train-strategic] reusing {STATE_FILE} ({expected:,} bytes)", flush=True)
 else:
@@ -280,6 +295,8 @@ else:
         state_mem[inv_perm[lo:hi]] = x
         lo = hi
     state_mem.flush()
+    with open(fp_file, "w") as f:
+        f.write(fp_hex)
     print(f"[train-strategic] wrote {STATE_FILE} ({expected:,} bytes)", flush=True)
 
 state_mmap = np.memmap(STATE_FILE, dtype=np.float16, mode="r", shape=(nrows, NSTATE))

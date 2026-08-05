@@ -47,6 +47,13 @@ def net_predictor(ckpt_path):
     nstate = ckpt["features"]
     mean = ckpt["mean"].astype(np.float32)
     inv = ckpt["inv"].astype(np.float32)
+    if ckpt.get("maps", False):
+        raise SystemExit(
+            "[check_vwin_calibration] checkpoint was trained with the map-DAG "
+            "encoder (maps=True); this checker only supports the plain V5 "
+            "layout. Re-run with a non-map checkpoint (e.g. "
+            "ooc_strategic_qwin_cal.pt); MAP-screen Q_win predictions here "
+            "would be silently wrong without the map features.")
 
     class Net(nn.Module):
         def __init__(self):

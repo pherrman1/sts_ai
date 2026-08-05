@@ -1,6 +1,6 @@
 # StS AI project guidance
 
-Last verified: 2026-08-02 against the current working tree.
+Last verified: 2026-08-05 against the current working tree.
 
 ## Purpose and required reading
 
@@ -129,10 +129,13 @@ archive-link instructions. More detail:
   the belief and sample falls back to uniform. See
   [`combat-search.md`](docs/knowledge-base/architecture/combat-search.md)
   and [`determinism-and-rng.md`](docs/knowledge-base/behavior/determinism-and-rng.md).
-- `STS_DIST_VNET` and `STS_PVNET` are consumed only by Searcher3. They can print
-  successful load messages while default Searcher2 ignores them. `fairgen`
-  forces the project-fair Searcher3 regime itself; `STS_FAIR`/`STS_SEARCHER3`
-  still gate other modes.
+- `STS_DIST_VNET` is consumed only by Searcher3. `STS_PVNET` is consumed by
+  Searcher3 (policy priors + value leaf) AND by default Searcher2 since
+  2026-08-05 (policy priors + PUCT only; `STS_PVNET_VALUE_ONLY` makes it fully
+  inert under Searcher2). Both can print successful load messages while an
+  arm that does not read them ignores them. `fairgen` forces the
+  project-fair Searcher3 regime itself; `STS_FAIR`/`STS_SEARCHER3` still gate
+  other modes.
 - A model file existing is not evidence it loaded. Verify startup output and
   arm-specific use. The default native floor model is required; a missing
   default policy artifact is silently ignored. The generic native-OOC message

@@ -3540,6 +3540,99 @@ enabling condition, but the omitted command prevents verification.
   s3_pv1}_3k_128.csv` (+ `s2_ref`, the mislabeled S3 duplicate); server log
   `/tmp/pvnet_gate.log` on `sts-test`; `run_pvnet_gate.sh` (arm 0
   `STS_SEARCHER3` bug fixed in the script after the run).
+
+## 106. S3 feature ablation at the 3k operating point — belief, chain, and CRN are net-negative; prune/live are inert (2026-08-05)
+
+- **Goal:** attribute S3's same-cost +5.5pp signal (payoff gate §102, CI
+  touching 0, measured on the default OOC stack) to its individual
+  mechanisms, at the actual operating point: V4 full gate stack, fair, A0,
+  3,000 sims/decision.
+- **New code:** five env toggles parsed next to `STS_SEARCHER3`
+  (`apps/one_combat.cpp::main`): `STS_S3_BELIEF`, `STS_S3_PRUNE`,
+  `STS_S3_CHAIN`, `STS_S3_LIVE` (default 1 = full behavior, opt-out) and
+  `STS_S3_CRN` (default 0 = opt-in). Wraps: the two `belief.update` calls and
+  three `canPruneAsDead` sites in `step()`; the chain-compression loop
+  (`src/sim/search/BattleScumSearcher3.cpp`); the agent-level live-valid
+  root-edge filter (`s3PickRootAction`, `src/sim/search/ScumSearchAgent2.cpp`,
+  Searcher2-style most-visited-then-fallback when off). **Finding en route:**
+  `warmStartRootCRN`/`prepareCRNParticles` were dead code — declared and
+  defined but never called, so "CRN" was never active in any recorded result;
+  `STS_S3_CRN=1` calls `warmStartRootCRN` at the top of `search`/
+  `searchToTotal`. (`crnTiebreak` is declared in the header and never
+  defined — also dead.) Particle count is hardcoded at 64
+  (`ScumSearchAgent2::playoutBattleFair`).
+- **Setup:** GCP `sts-test` (24 threads), fair, A0, 3k sims, 128 seeds
+  126700–126827, V4 full gate stack (`STS_OOC_STRATEGIC_TOK_NN=
+  selfplay/models/ooc_strategic_tok_final.native` sha256 `05178ec8…9e1ea` +
+  REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1, margin 1.0, MAP off), tracked policy
+  prior auto-load (`24793bd3…`), no vnet/PVNet/dist. Binary = local HEAD
+  `8681a75` + the new flags; `OPENBLAS_NUM_THREADS=1` convention. **A0
+  bit-identity gate passed:** `s3ablate_s2_ref` matches the recorded §99
+  128-slice of `build/simsweep_v4_3k_256.csv` per-seed on all 8 data columns
+  (wins 56 = 56, 0 non-`sec` diffs). `run_s3_ablate.sh` reproduces the stack.
+- **Results (128 seeds, paired):**
+
+  | arm | wins | win% | floor | HP | cpu-sec/run | win Δ vs S3 ctl (CI) | win Δ vs S2 (CI) |
+  |---|---:|---:|---:|---:|---:|---|---|
+  | A0 S2 ref | 56 | 43.8 | 43.1 | 24.9 | 32.9 | — | — |
+  | A1 S3 ctl | 63 | 49.2 | 41.7 | 30.5 | 35.4 | — | +5.5 [−4.1,+15.0] |
+  | A2 S3 − belief | 74 | **57.8** | 43.6 | 37.4 | 31.1 | **+8.6 [−1.1,+18.3]** | **+14.1 [+3.5,+24.7]** |
+  | A3 S3 − prune | 63 | 49.2 | 41.7 | 30.5 | 35.2 | +0.0 (bit-identical) | — |
+  | A4 S3 − chain | 69 | 53.9 | 43.2 | 32.8 | 35.2 | +4.7 [−4.0,+13.3] | +10.2 [−0.5,+20.8] |
+  | A5 S3 − live | 63 | 49.2 | 41.7 | 30.5 | 35.6 | +0.0 (bit-identical) | — |
+  | A6 S3 + CRN | 45 | 35.2 | 37.1 | 21.5 | 33.8 | **−14.1 [−24.7,−3.5]** | −8.6 [−18.1,+0.9] |
+
+- **Verdicts (pre-registered criteria):**
+  - **Belief reweighting is harmful:** removing it wins +8.6pp vs ctl
+    (CI touches 0 at n=128) and **+14.1pp vs S2 (CI excludes 0)**, with
+    floor +1.9, HP +6.8, at 12% less compute (31.1 vs 35.4). With only 64
+    particles the reweighted belief concentrates on early-draw-matching
+    hypotheses and over-commits; uniform resampling explores better
+    (**Inference**).
+  - **Chain compression is harmful:** +4.7pp vs ctl (CI [−4.0,+13.3]),
+    +10.2pp vs S2 (CI [−0.5,+20.8]). Forcing non-drawing cards before the
+    rollout commits the rollout to a card-spam line before search can weigh
+    the alternatives (**Inference**).
+  - **Pruning is inert:** A3 is per-seed bit-identical to ctl on all 128
+    seeds — conservative `canPruneAsDead` never changes an outcome in this
+    regime (dead weight only).
+  - **Live-valid filter is inert:** A5 bit-identical to ctl — in fair play
+    the fresh-per-decision tree enumerates edges from the live battle, so
+    the filter never changes the selected root action.
+  - **CRN warm start is harmful:** −14.1pp vs ctl (CI excludes 0). The 64
+    CRN rollouts per root edge inject a noisy Q prior that PUCT then
+    trusts (**Inference**).
+- **Interpretation:** the S3 package's +5.5pp comes from its
+  **particle-determinization core** (six-stream randomization + uniform
+  particle sampling + observation caching + PUCT), *despite* its own
+  belief/chain machinery — and CRN is confirmed bad enough to have been
+  shipped dead. The payoff-gate's "searcher question, not a model question"
+  sharpens to: the searcher's value is the determinization/observation
+  layer, and the currently-defaulted S3 extras (belief, chain) should be
+  off. The `STS_S3_*` flags are defaults-preserving opt-outs; no default
+  change yet.
+- **Follow-up (proposed, not yet run):** combined arm S3 −belief −chain on
+  the 256-seed block paired vs `build/simsweep_v4_3k_256.csv` (A2's CI
+  versus ctl touches 0 at n=128; the 256 run decides whether S3−belief−chain
+  replaces S2@3k as the recommended combat search); particle-count knob
+  (64 → 128) under the same stack.
+- **Artifacts:** per-seed CSVs `build/s3ablate_{s2_ref,s3_ctl,s3_nobel,
+  s3_noprune,s3_nochain,s3_nolive,s3_crn}_3k_128.csv`; server log
+  `/tmp/s3ablate.log` on `sts-test`; `run_s3_ablate.sh`; decision log
+  `2026-08-05-s3-ablation.md`.
+- **2026-08-05 re-verification (code review):** `bestbench` appends without
+  deduplicating, and the first aggregation of this section used
+  `s3ablate_s2_ref`/`s3ablate_s3_ctl` files polluted by an earlier partial
+  run (append-duplicated rows; issue 46). Both arms were re-run clean on the
+  post-fix binary with `run_s3_ablate.sh`'s new per-arm truncation:
+  A0 43.8% (56 wins) and A1 49.2% (63 wins) reproduce exactly; the A3/A5
+  "bit-identical" claims were re-verified per-seed against the clean A1
+  (128/128 seeds, all columns except `sec`). All §106 numbers stand. Also
+  re-verified with the corrected `STS_S3_LIVE=0` semantics (issue 41: the
+  ablation now truly drops the live-valid filter, invalid edge ends the
+  battle like Searcher2) and the CRN once-per-searcher guard (issue 42);
+  results unchanged at these seeds.
+
 ## 103. Searcher2 + PVNet policy head as PUCT prior @3k sims — exact tie with GBM prior at 8x cost (2026-08-05)
 
 - **Question:** the §102 gate only tested PVNet priors under Searcher3; does
@@ -3577,3 +3670,88 @@ enabling condition, but the omitted command prevents verification.
   forward), so S2+PVNet stays experimental-off.
 - **Artifacts:** `build/pvnetgate_s2_pv0_3k_128.csv`; `policystats` mode:
   `./build/one_combat policystats <gbm.txt> <fair_p.csv> [val] [pvnet.txt]`.
+
+## 107. S3 particle × sims sweep — belief-off variants promoted: S3−belief−chain = 60.2% @3k / 57.4% @1k (2026-08-05)
+
+- **Goal:** the §106 ablation left two open knobs: the particle count was
+  hardcoded at 64 in every recorded S3 result, and the combined
+  S3−belief−chain variant was untested. Sweep particles × sims for the two
+  winning variants and confirm on the 256-seed block.
+- **New code:** `STS_S3_PARTICLES` env (default 64; was hardcoded at the two
+  `BattleScumSearcher3` construction sites in
+  `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`/`playoutBattle`);
+  parsed in `apps/one_combat.cpp::main`, banner gains `S3-particles=NNN`.
+  Bit-identity gate passed: env-unset vs `STS_S3_PARTICLES=64` identical,
+  and the grid's re-run anchor `p64_s3k_belf` is per-seed identical to the
+  recorded §106 A2 arm (0 won diffs on 128 seeds).
+- **Setup:** GCP `sts-test` (24 threads), fair, A0, V4 full gate stack
+  (tok net sha256 `05178ec8…9e1ea` + REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1,
+  margin 1.0, MAP off), policy prior auto-load, no vnet/PVNet/dist;
+  `OPENBLAS_NUM_THREADS=1`; seeds 126700–126827 (grid) and 126700–126955
+  (confirmation); `run_s3_particles_sweep.sh` / `run_s3_particles_sweep2.sh`.
+- **Batch 1 grid (128 seeds, paired vs recorded A2@64/3k = 57.8%):**
+
+  | arm | particles | sims | wins | win% | floor | HP | cpu-sec/run |
+  |---|---:|---:|---:|---:|---:|---:|---:|
+  | S3−belief | 16 | 1k | 70 | 54.7 | 43.3 | 32.7 | 10.6 |
+  | S3−belief | 64 | 1k | 74 | 57.8 | 43.8 | 34.7 | 10.3 |
+  | S3−belief | 256 | 1k | 71 | 55.5 | 42.9 | 35.2 | 10.3 |
+  | S3−belief | 16 | 3k | 77 | 60.2 | 44.3 | 39.2 | 30.7 |
+  | S3−belief | 64 | 3k | 74 | 57.8 | 43.6 | 37.4 | 30.8 |
+  | S3−belief | 256 | 3k | 73 | 57.0 | 44.2 | 36.5 | 31.7 |
+  | S3−belief−chain | 16 | 1k | 70 | 54.7 | 42.6 | 34.1 | 9.3 |
+  | S3−belief−chain | 64 | 1k | 75 | 58.6 | 44.0 | 37.1 | 10.5 |
+  | S3−belief−chain | 256 | 1k | 73 | 57.0 | 42.8 | 35.4 | 9.9 |
+  | S3−belief−chain | 16 | 3k | 76 | 59.4 | 44.1 | 34.0 | 31.1 |
+  | S3−belief−chain | 64 | 3k | 77 | 60.2 | 44.9 | 37.5 | 30.7 |
+  | S3−belief−chain | 256 | 3k | 78 | **60.9** | 44.1 | 36.7 | 30.0 |
+  | E1 S3 ctl (belief ON) | 256 | 3k | 65 | 50.8 | 41.8 | 29.5 | 41.2 |
+
+  The grid is **flat in particles** (16/64/256 within noise at every
+  sims×variant cell) and **flat-ish in sims** (1k→3k worth ~+2-3pp for the
+  belief-off arms). **E1: belief ON at 256 particles = 50.8%, still −6.2pp
+  vs belief-off at the same count — the §106 belief harm is a design
+  property, not a 64-particle capacity limit.** Belief-ON arms are also the
+  slowest (41.2 cpu-sec/run; reweighting cost).
+- **Batch 2 (E2 + 256-seed confirmation, paired vs the recorded §99
+  reference `build/simsweep_v4_3k_256.csv`, 116/256 = 45.3%):**
+
+  | arm | seeds | sims | wins | win% | floor | HP | cpu-sec/run | win Δ vs ref (CI) |
+  |---|---:|---:|---:|---:|---:|---:|---:|---|
+  | E2 S3−b−c, 256 p | 128 | 4k | 80 | 62.5 | 45.3 | 37.9 | 41.6 | +18.8 [+8.6,+28.9] vs S2@3k slice |
+  | S3−b−c, 64 p | 256 | 1k | 147 | 57.4 | 43.4 | 36.9 | 9.8 | **+12.1 [+4.9,+19.3]** |
+  | S3−b−c, 256 p | 256 | 3k | 154 | **60.2** | 44.2 | 39.3 | 29.0 | **+14.8 [+7.9,+21.8]** |
+
+- **Verdict:** ✅ **promotion gate passed — S3−belief−chain replaces S2@3k
+  as the recommended combat search.** On the same 256 paired seeds as §99:
+  **60.2% (+14.8pp, CI excluding zero; floor +1.3, HP +14.0) at 3k sims/256
+  particles** (29.0 cpu-sec/run) is the win-rate point, and **57.4%
+  (+12.1pp, CI excluding zero) at 1k sims/64 particles** (9.8 cpu-sec/run,
+  3.1× cheaper) is the compute-efficient point. The 4k extension (E2:
+  +1.6pp vs 3k) is within noise — 3k stays the operating point; the 1k
+  point delivers most of the gain at a third of the cost. Particle count
+  64↔256 is free either way. E1 closes the belief-capacity hypothesis.
+  S2+PVNet (§103, parallel session) and S3+PVNet (§102) both remain
+  rejected at the operating point; the win comes from the searcher
+  configuration, not a combat model.
+- **Artifacts:** per-seed CSVs `build/pt_sweep_{p16,p64,p256}_s{1k,3k}_
+  {belf,both}_128.csv`, `build/pt_sweep_p256_s3k_ctl_128.csv`,
+  `build/pt2_{p256_s4k_both_128,p64_s1k_both_256,p256_s3k_both_256}.csv`;
+  server logs `/tmp/s3sweep.log`, `/tmp/s3sweep2.log` on `sts-test`;
+  `run_s3_particles_sweep.sh`, `run_s3_particles_sweep2.sh`; decision log
+  `2026-08-05-s3-particles-sweep.md`. Future gate rounds pair against
+  `build/pt2_p256_s3k_both_256.csv` (win point) or
+  `build/pt2_p64_s1k_both_256.csv` (efficient point).
+
+- **Caveats and cross-references:** (1) the promoted configuration uses the
+  tracked V4 token net, which the 2026-08-05 code review flags for a training
+  bug (tok glob stats columns 44–49, issue 36 — retrain pending, GPU-gated;
+  see `docs/knowledge-base/evaluation/rerun-ledger.md`). Every gate-stack
+  number since §76 — including the §99 reference this section pairs against —
+  carries that caveat; the paired deltas above are bug-identical on both
+  sides. (2) §106's A0/A1 arms and the A3/A5 bit-identity claims were
+  re-verified by the code review with clean re-runs and corrected
+  `STS_S3_LIVE=0` semantics (issues 41/42/46); results unchanged. (3) the
+  `bestbench` append-without-dedup trap (issue 46) is now guarded by
+  per-arm truncation in `run_s3_*.sh`; the §107 CSVs were verified
+  seed-unique.

@@ -67,6 +67,11 @@ namespace sts::search {
         // CRN
         std::vector<HiddenBattleState> crnParticles;
         int crnParticleCount = 128;
+        // CRN warm start fires at most once per searcher and never after the
+        // root tree was carried over by advanceRoot: particles are prepared
+        // from the initial draw pile and Q priors would be stale/overwritten.
+        bool rootCarried = false;
+        bool crnWarmStarted = false;
 
         std::vector<Action> bestActionSequence;
         double bestActionValue = std::numeric_limits<double>::min();
@@ -107,6 +112,16 @@ namespace sts::search {
     void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc);
 
     extern bool g_useSearcher3;
+    // Searcher3 feature-ablation toggles (defaults preserve full behavior;
+    // STS_S3_CRN is opt-in: root CRN warm start fires once per fresh searcher
+    // and is skipped after advanceRoot carries the tree over).
+    extern bool g_s3Belief;
+    extern bool g_s3Prune;
+    extern bool g_s3Chain;
+    extern bool g_s3Live;
+    extern bool g_s3Crn;
+    // Particle count for the S3 belief (env STS_S3_PARTICLES; default 64).
+    extern int g_s3Particles;
     extern double g_riskLambda;
 
 

@@ -191,6 +191,20 @@ def main():
     rung = int(ckpt.get("rung", 4))
     if rung != 4:
         print(f"[export-strategic-tok] WARNING: checkpoint rung={rung}; exporting anyway", flush=True)
+    # The binary layout below supports only the default topology. Non-default
+    # configs (STRAT_TOK_TRANSFORMER/QUANTILES/CROSS, TOK_PROBES_FILE) change
+    # the ent/fusion input widths and head set; exporting them silently would
+    # write a misaligned artifact, so fail loudly instead.
+    nquants = int(ckpt.get("nquants", 0))
+    ncross = int(ckpt.get("ncross", 0))
+    nprobes = int(ckpt.get("nprobes", 0))
+    if bool(ckpt.get("transformer", False)) or nquants or ncross or nprobes:
+        raise SystemExit(
+            f"[export-strategic-tok] unsupported checkpoint config: "
+            f"transformer={ckpt.get('transformer', False)} nquants={nquants} "
+            f"ncross={ncross} nprobes={nprobes}; the OOC_STRAT_V4 export "
+            f"contract only covers the default topology (no quantiles/cross/"
+            f"probes/transformer). Train with the default config to export.")
 
     with open(OUT, "wb") as f:
         f.write(b"OOC_STRAT_V4")

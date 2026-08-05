@@ -56,7 +56,21 @@ torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "8")))
 
 # ── CSV schema ───────────────────────────────────────────────────────────────
 val_header = list(pd.read_csv(VAL_CSV, nrows=0).columns)
-canonical = [c for c in val_header if c not in ("seed", "fightIdx", "won", "endHp")]
+# Optional rich labels (fairgen emits them since 2026-08-05; distgen already
+# did): endTurn + potionsConsumed + per-potion pUsed0..43. They train the
+# potion/turns heads; without them those heads stay fallback-trained.
+RICH_LABELS = "endTurn" in val_header and "potionsConsumed" in val_header
+pused_cols = [c for c in val_header if c.startswith("pUsed")]
+if RICH_LABELS:
+    extra_excl = ["endTurn", "potionsConsumed"] + pused_cols
+else:
+    extra_excl = []
+    print("[pvnet] WARNING: value CSV has no endTurn/potionsConsumed/pUsed* "
+          "rich labels; potion/turns heads will stay fallback-trained. "
+          "Re-generate with fairgen on the current binary for full labels.",
+          flush=True)
+canonical = [c for c in val_header
+             if c not in ("seed", "fightIdx", "won", "endHp", *extra_excl)]
 assert len(canonical) == 1766
 
 pol_header = list(pd.read_csv(POL_CSV, nrows=0).columns)
@@ -189,10 +203,14 @@ class SharedEncoder(nn.Module):
         t = self.enc_embed(encounter.long())
         if 32 != self.dim: t = self.enc_proj(t)
         tokens.append((t + self.type_embed[4]).unsqueeze(1))
-        # 5: monsters
+        # 5: monsters — always emit all 5 slots (fixed 14-token layout
+        # matching combat_pvnet_parity.py / the C++ forward); an all-dead slot
+        # contributes a zero token, never a skipped token.
         for s in range(5):
             alive = mmask[:, s]
-            if not alive.any(): continue
+            if not alive.any():
+                tokens.append(torch.zeros(B, 1, self.dim, device=scalar.device))
+                continue
             me = self.mon_id(mids[:, s].long().clamp(0, 255))
             ie = self.mon_intent(intents[:, s].long().clamp(0, 31))
             mc = (mcont[:, s, :] - self.mon_mean) * self.mon_inv
@@ -242,7 +260,7 @@ def policy_ce(logits, visit_counts, total):
     return -(target * lp).sum()
 
 
-def value_losses(preds, y_won, y_hp, max_hp):
+def value_losses(preds, y_won, y_hp, max_hp, y_pot=None, y_turns=None):
     ld = nn.functional.binary_cross_entropy_with_logits(preds["death"], (y_won <= 0).float())
     lw = nn.functional.binary_cross_entropy_with_logits(preds["win"], y_won)
     won = y_won > 0.5
@@ -254,8 +272,19 @@ def value_losses(preds, y_won, y_hp, max_hp):
         lq = (tau * d.clamp(min=0) + (1 - tau) * (-d).clamp(min=0)).mean()
     else:
         lq = torch.tensor(0.0, device=DEVICE)
-    lp = 0.01 * preds["potion"].abs().mean()
-    lt = torch.tensor(0.0, device=DEVICE)
+    if y_pot is not None:
+        mask = y_pot.sum(-1) > 0
+        if mask.any():
+            lp = nn.functional.binary_cross_entropy_with_logits(
+                preds["potion"][mask], y_pot[mask])
+        else:
+            lp = 0.01 * preds["potion"].abs().mean()
+    else:
+        lp = 0.01 * preds["potion"].abs().mean()
+    if y_turns is not None:
+        lt = nn.functional.smooth_l1_loss(preds["turns"], torch.log1p(y_turns))
+    else:
+        lt = torch.tensor(0.0, device=DEVICE)
     return {"death": ld, "win": lw, "quantile": lq, "potion": lp, "turns": lt}
 
 
@@ -274,12 +303,22 @@ def validation_pass(model):
             y_won = sdf["won"].to_numpy(np.float32)
             y_hp = sdf["endHp"].to_numpy(np.float32)
             max_hp = sdf["maxHp"].to_numpy(np.float32)
+            y_pot = None
+            y_turns = None
+            if RICH_LABELS:
+                y_pot = sdf[pused_cols].to_numpy(np.float32)
+                y_turns = np.maximum(0.0, sdf["endTurn"].to_numpy(np.float32)
+                                     - sdf["turn"].to_numpy(np.float32)).astype(np.float32)
             for b in range(0, len(sdf), BATCH):
                 e = min(b + BATCH, len(sdf))
                 s, ca, r, po, en, mi, it, mc, mm = to_tensors(
                     scalar[b:e], cards[b:e], relics[b:e], potions[b:e],
                     enc[b:e], mids[b:e], intents[b:e], mcont[b:e], mmask[b:e])
                 yw, yh, mh = to_tensors(y_won[b:e], y_hp[b:e], max_hp[b:e])
+                yp = yt = None
+                if y_pot is not None:
+                    yp = torch.from_numpy(np.ascontiguousarray(y_pot[b:e])).to(DEVICE)
+                    yt = torch.from_numpy(np.ascontiguousarray(y_turns[b:e])).to(DEVICE)
                 z = model.encoder(s, ca, r, po, en, mi, it, mc, mm)
                 out = {
                     "death": model.death(z).squeeze(-1),
@@ -288,7 +327,7 @@ def validation_pass(model):
                     "potion": model.potion(z),
                     "turns": model.turns(z).squeeze(-1),
                 }
-                vlosses = value_losses(out, yw, yh, mh)
+                vlosses = value_losses(out, yw, yh, mh, yp, yt)
                 loss = sum(LAMBDA[k] * vlosses[k] for k in vlosses)
                 total_v += loss.item() * (e - b)
                 total_n += e - b
@@ -372,6 +411,12 @@ def main():
             y_won = df["won"].to_numpy(np.float32)
             y_hp = df["endHp"].to_numpy(np.float32)
             max_hp = df["maxHp"].to_numpy(np.float32)
+            y_pot = None
+            y_turns = None
+            if RICH_LABELS:
+                y_pot = df[pused_cols].to_numpy(np.float32)
+                y_turns = np.maximum(0.0, df["endTurn"].to_numpy(np.float32)
+                                     - df["turn"].to_numpy(np.float32)).astype(np.float32)
 
             for b in range(0, len(df), BATCH):
                 e = min(b + BATCH, len(df))
@@ -380,6 +425,10 @@ def main():
                     scalar[b:e], cards[b:e], relics[b:e], potions[b:e],
                     enc[b:e], mids[b:e], intents[b:e], mcont[b:e], mmask[b:e])
                 yw, yh, mh = to_tensors(y_won[b:e], y_hp[b:e], max_hp[b:e])
+                yp = yt = None
+                if y_pot is not None:
+                    yp = torch.from_numpy(np.ascontiguousarray(y_pot[b:e])).to(DEVICE)
+                    yt = torch.from_numpy(np.ascontiguousarray(y_turns[b:e])).to(DEVICE)
 
                 z = model.encoder(s, ca, r, po, en, mi, it, mc, mm)
                 out = {
@@ -389,7 +438,7 @@ def main():
                     "potion": model.potion(z),
                     "turns": model.turns(z).squeeze(-1),
                 }
-                vlosses = value_losses(out, yw, yh, mh)
+                vlosses = value_losses(out, yw, yh, mh, yp, yt)
                 loss = sum(LAMBDA[k] * vlosses[k] for k in vlosses)
 
                 optimizer.zero_grad()

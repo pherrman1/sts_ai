@@ -22,7 +22,7 @@ on-device when CUDA is available; CPU mmap fallback on OOM). Global mean/inv
 (50 values) are computed from train rows; normalization happens per batch (the
 file stores RAW values).
 """
-import json, math, os, re, sys, time
+import hashlib, json, math, os, re, sys, time
 
 # Defragment the CUDA caching allocator before torch initializes; the
 # GPU-resident state (2.9 GB) + attention intermediates fragment 8 GB VRAM
@@ -279,7 +279,22 @@ NFILE = NGLOB + MAXD * 3 + MAXR * 2 + MAXP * 2   # 50 + 288 + 128 + 16 = 482
 STATE_FILE = OUT + "_tok_state.bin"
 expected = nrows * NFILE * 2
 reused = False
-if os.path.exists(STATE_FILE) and os.path.getsize(STATE_FILE) == expected:
+fp_file = STATE_FILE + ".fp"
+fp = hashlib.sha256()
+for f in (CSV, os.path.abspath(__file__)):
+    try:
+        st = os.stat(f)
+        fp.update(f.encode()); fp.update(str(st.st_size).encode()); fp.update(str(st.st_mtime_ns).encode())
+    except OSError:
+        pass
+fp.update(str(nrows).encode()); fp.update(str(NFILE).encode())
+fp_hex = fp.hexdigest()
+old_fp = None
+if os.path.exists(fp_file):
+    with open(fp_file) as f:
+        old_fp = f.read().strip()
+if (os.path.exists(STATE_FILE) and os.path.getsize(STATE_FILE) == expected
+        and old_fp == fp_hex):
     reused = True
     print(f"[train-strategic-tok] reusing {STATE_FILE} ({expected:,} bytes)", flush=True)
 
@@ -301,9 +316,19 @@ for chunk in pd.read_csv(CSV, usecols=state_cols, chunksize=CHUNK, dtype=np.floa
     hi = lo + len(chunk)
     c = chunk.to_numpy(np.float64)
     m = tr_rows[lo:hi]
-    sub = c[m]
-    mean += sub[:, :NGLOB].sum(0)
-    sumsq += (sub[:, :NGLOB] * sub[:, :NGLOB]).sum(0)
+    g = c[m, :NGLOB].copy()
+    # Slots 44..49 are DERIVED features (the CSV's columns 44..49 are deck
+    # counts d0..d5 and must not supply their scale). Mirror the write pass.
+    hp = g[:, 3]
+    mx = np.maximum(g[:, 4], 1.0)
+    g[:, 44] = hp / mx                            # hpFrac
+    g[:, 45] = g[:, 4] - hp                       # missingHp
+    g[:, 46] = (g[:, 12] < g[:, 13]).astype(np.float64)   # freePotionSlot
+    g[:, 47] = (g[:, 5] >= 75.0).astype(np.float64)       # goldGeRemoval
+    g[:, 48] = ((g[:, 19] > 0) & ~((g[:, 9] > 0) & (g[:, 10] > 0) & (g[:, 11] > 0))).astype(np.float64)  # canTakeEliteKey
+    g[:, 49] = (g[:, 35] <= 3.0).astype(np.float64)       # bossNear (fmDBoss)
+    mean += g.sum(0)
+    sumsq += (g * g).sum(0)
     cnt += int(m.sum())
     lo = hi
 mean /= max(1, cnt)
@@ -346,6 +371,8 @@ if not reused:
         state_mem[inv_perm[lo:hi]] = out
         lo = hi
     state_mem.flush()
+    with open(fp_file, "w") as f:
+        f.write(fp_hex)
     print(f"[train-strategic-tok] wrote {STATE_FILE} ({expected:,} bytes)", flush=True)
 
 state_mmap = np.memmap(STATE_FILE, dtype=np.float16, mode="r", shape=(nrows, NFILE))
@@ -433,15 +460,6 @@ def fwd_rows(rows):
     rl_df = x[:, rl_df_cols]
     pt_id = x[:, pt_id_cols].to(torch.int64)
     pt_cf = x[:, pt_cf_cols]
-    bits = torch.from_numpy(((action_ints[rows, None] >> AR[None, :]) & 1)
-                            .astype(np.float32)).to(DEVICE)
-    c = torch.from_numpy(cat[rows]).to(DEVICE, torch.long)
-    a = torch.from_numpy(atype[rows]).to(DEVICE, torch.long)
-    s = torch.from_numpy(screen[rows]).to(DEVICE, torch.long)
-    et = torch.from_numpy(ent_type[rows]).to(DEVICE, torch.long)
-    ei = torch.from_numpy(ent_id[rows]).to(DEVICE, torch.long)
-    gg = torch.from_numpy(gold_ge[rows]).to(DEVICE)
-    pr = torch.from_numpy(probes[rows]).to(DEVICE) if probes is not None else None
     return model(g, dk_id, dk_up, dk_cf, rl_id, rl_df, pt_id, pt_cf,
                  bits, c, a, s, et, ei, gg, pr)
 
@@ -645,7 +663,8 @@ if __name__ == "__main__":
     os.makedirs(os.path.dirname(OUT) or ".", exist_ok=True)
     torch.save({"state_dict": net.cpu().state_dict(), "mean": mean, "inv": inv,
                 "metrics": eval_metrics, "rung": RUNG, "nrows": int(nrows),
-                "features": NFILE},
+                "features": NFILE, "transformer": TRANSFORMER,
+                "nquants": NQUANTS, "ncross": CROSS, "nprobes": NPROBES},
                OUT + ".pt")
     with open(OUT + "_metrics.json", "w") as f:
         json.dump(eval_metrics, f, indent=2)

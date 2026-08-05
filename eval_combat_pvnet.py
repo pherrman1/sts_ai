@@ -45,7 +45,8 @@ while i < len(sys.argv):
 torch.set_num_threads(4)
 
 val_header = list(pd.read_csv(VAL_CSV, nrows=0).columns)
-canonical = [c for c in val_header if c not in ("seed", "fightIdx", "won", "endHp")]
+extra_excl = ["endTurn", "potionsConsumed"] + [c for c in val_header if c.startswith("pUsed")]
+canonical = [c for c in val_header if c not in ("seed", "fightIdx", "won", "endHp", *extra_excl)]
 groups = column_groups(canonical)
 
 pol_header = list(pd.read_csv(POL_CSV, nrows=0).columns)

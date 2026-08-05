@@ -2739,6 +2739,12 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
               << "  shop-beam=" << (g_oocShopBeam ? "ON" : "off")
               << "  native-OOC=" << (g_nativeOoc ? "ON" : "OFF")
               << "  searcher=" << (search::g_useSearcher3 ? "Searcher3" : "Searcher2")
+              << (search::g_useSearcher3
+                  ? "  S3-abl[b,p,c,l,crn]=" + std::to_string(search::g_s3Belief)
+                    + std::to_string(search::g_s3Prune) + std::to_string(search::g_s3Chain)
+                    + std::to_string(search::g_s3Live) + std::to_string(search::g_s3Crn)
+                    + "  S3-particles=" + std::to_string(search::g_s3Particles)
+                  : std::string())
               << (search::g_fairPlay ? "  fair-play" : "")
               << "  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
               << "  asc " << asc << "  sims " << sims << "  threads " << numThreads() << "\n";
@@ -5373,7 +5379,7 @@ runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
 
     std::ostringstream val, pol, ooc;
     int fightIdx = 0, decIdx = 0, oocDecIdx = 0;
-    std::vector<std::string> fightRows;
+    std::vector<CombatDecisionSnapshot> fightSnaps;
     const int nf = search::combatPolicyFeatureCount();
     std::vector<float> feat(nf);
 
@@ -5384,7 +5390,10 @@ runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
     };
 
     search::g_onCombatDecision = [&](const BattleContext &bc) {
-        fightRows.push_back(combatFeatureRow(bc));
+        CombatDecisionSnapshot s;
+        s.featureRow = combatFeatureRow(bc);
+        s.potionsHeld = getPotionBits(bc);
+        fightSnaps.push_back(std::move(s));
     };
     search::g_onSearchComplete3 = [&](const BattleContext &bc, const search::BattleScumSearcher3 &s3) {
         const int thisDecIdx = decIdx++;
@@ -5408,13 +5417,17 @@ runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
-            fightRows.clear(); decIdx = 0;
+            fightSnaps.clear(); decIdx = 0;
             BattleContext bc; bc.init(gc);
             agent.playoutBattle(bc);
             const int won   = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
             const int endHp = bc.player.curHp;
-            for (const auto &fr : fightRows)
-                val << seed << ',' << fightIdx << ',' << fr << ',' << won << ',' << endHp << '\n';
+            const int endTurn = bc.turn;
+            auto finalPotions = getPotionBits(bc);
+            for (const auto &snap : fightSnaps)
+                val << seed << ',' << fightIdx << ',' << snap.featureRow << ','
+                    << won << ',' << endHp
+                    << distLabelSuffix(snap, endTurn, finalPotions) << '\n';
             ++fightIdx;
             bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
@@ -5457,7 +5470,8 @@ static void fairGen(int nSeeds, int sims, int asc, double epsilon,
     std::ofstream vf(valFile, append ? std::ios::app : std::ios::out);
     std::ofstream pf(polFile, append ? std::ios::app : std::ios::out);
     std::ofstream of(oocFile, append ? std::ios::app : std::ios::out);
-    if (vf.tellp() == 0) { vf << "seed,fightIdx," << combatHeaderStr() << ",won,endHp\n"; vf.flush(); }
+    if (vf.tellp() == 0) { vf << "seed,fightIdx," << combatHeaderStr() << ",won,endHp"
+                             << distLabelHeaderStr() << "\n"; vf.flush(); }
     if (pf.tellp() == 0) { pf << policyHeaderStr() << "\n"; pf.flush(); }
     if (of.tellp() == 0) { of << "seed,decIdx,screen,act,floor,curHp,maxHp,deckSize,gold,action\n"; of.flush(); }
 
@@ -7403,7 +7417,34 @@ int main(int argc, char **argv) {
     }
     if (const char *d = std::getenv("STS_SEARCHER3")) {      // use enhanced BattleScumSearcher3 engine
         search::g_useSearcher3 = std::atoi(d) != 0;
-        if (search::g_useSearcher3) std::cout << "[Searcher3 engine ON: particles + compression + dominance + CRN]\n";
+        if (search::g_useSearcher3) std::cout << "[Searcher3 engine ON: belief/prune/chain/live (CRN opt-in)]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_BELIEF")) {      // S3 ablation: particle belief reweighting
+        search::g_s3Belief = std::atoi(d) != 0;
+        std::cout << "[S3 ablation: belief=" << (search::g_s3Belief ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_PRUNE")) {       // S3 ablation: canPruneAsDead pruning
+        search::g_s3Prune = std::atoi(d) != 0;
+        std::cout << "[S3 ablation: prune=" << (search::g_s3Prune ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_CHAIN")) {       // S3 ablation: deterministic chain compression
+        search::g_s3Chain = std::atoi(d) != 0;
+        std::cout << "[S3 ablation: chain=" << (search::g_s3Chain ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_LIVE")) {        // S3 ablation: live-valid root-edge filter
+        search::g_s3Live = std::atoi(d) != 0;
+        std::cout << "[S3 ablation: live=" << (search::g_s3Live ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_CRN")) {         // S3 opt-in: root CRN warm start (once per fresh searcher)
+        search::g_s3Crn = std::atoi(d) != 0;
+        std::cout << "[S3 ablation: crn=" << (search::g_s3Crn ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_PARTICLES")) {   // S3 belief particle count (default 64)
+        const int n = std::atoi(d);
+        if (n >= 1) {
+            search::g_s3Particles = n;
+            std::cout << "[S3 particles = " << search::g_s3Particles << "]\n";
+        }
     }
     if (const char *d = std::getenv("STS_RISK_LAMBDA")) {    // risk sensitivity for Searcher3 PUCT
         search::g_riskLambda = std::atof(d);

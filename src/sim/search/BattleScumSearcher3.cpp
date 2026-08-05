@@ -16,6 +16,12 @@ using namespace sts;
 namespace sts::search {
 
 bool g_useSearcher3 = false;
+bool g_s3Belief = true;
+bool g_s3Prune = true;
+bool g_s3Chain = true;
+bool g_s3Live = true;
+bool g_s3Crn = false;
+int g_s3Particles = 64;
 double g_riskLambda = 0.5;
 extern double g_vnetAlpha;
 
@@ -152,12 +158,14 @@ void BattleScumSearcher3::warmStartRootCRN(const BattleContext &bc) {
 
 // ---- Search -----------------------------------------------------------------
 void BattleScumSearcher3::search(int64_t simulations) {
+    if (g_s3Crn && !rootCarried && !crnWarmStarted) { warmStartRootCRN(*rootBc); crnWarmStarted = true; }
     for (int64_t i = 0; i < simulations; ++i)
         step();
 }
 
 void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
     if (isTerminal(*rootBc)) { outcomePlayerHp = rootBc->player.curHp; return; }
+    if (g_s3Crn && !rootCarried && !crnWarmStarted) { warmStartRootCRN(*rootBc); crnWarmStarted = true; }
     while (root.simulationCount < targetSimulations)
         step();
 }
@@ -173,6 +181,7 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
         }
     }
     if (!reused) root = Node{};
+    rootCarried = true;
 
     rootBc = std::make_unique<const BattleContext>(newRootState);
     rootObs = CombatObservation::fromBattleContext(newRootState);
@@ -238,7 +247,7 @@ void BattleScumSearcher3::step() {
             return;
         }
 
-        if (canPruneAsDead(state)) {
+        if (g_s3Prune && canPruneAsDead(state)) {
             backpropagate(path, 0.0, actionStack);
             return;
         }
@@ -268,9 +277,9 @@ void BattleScumSearcher3::step() {
             edge.action.execute(state);
             actionStack.push_back(edge.action);
             path.push_back(&edge.child);
-            belief.update(CombatObservation::fromBattleContext(state));
+            if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
 
-        if (canPruneAsDead(state)) {
+        if (g_s3Prune && canPruneAsDead(state)) {
                 backpropagate(path, 0.0, actionStack);
                 return;
             }
@@ -278,8 +287,9 @@ void BattleScumSearcher3::step() {
             // Deterministic chain compression (2.2): play additional non-drawing
             // cards before rollout, as long as state stays in PLAYER_NORMAL.
             int compSteps = 0;
-            while (compSteps < 10 && state.inputState == InputState::PLAYER_NORMAL
-                   && state.outcome == Outcome::UNDECIDED && state.isCardPlayAllowed()) {
+            if (g_s3Chain) {
+                while (compSteps < 10 && state.inputState == InputState::PLAYER_NORMAL
+                       && state.outcome == Outcome::UNDECIDED && state.isCardPlayAllowed()) {
                 int handBefore = state.cards.cardsInHand;
                 bool played = false;
                 for (int hi = 0; hi < state.cards.cardsInHand && !played; ++hi) {
@@ -295,6 +305,7 @@ void BattleScumSearcher3::step() {
                     ++compSteps;
                 }
                 if (!played) break;
+                }
             }
 
             // Blend: capture leaf value, then rollout, then blend
@@ -329,9 +340,9 @@ void BattleScumSearcher3::step() {
         edge.action.execute(state);
         actionStack.push_back(edge.action);
         cur = &edge.child;
-        belief.update(CombatObservation::fromBattleContext(state));
+        if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
 
-        if (canPruneAsDead(state)) {
+        if (g_s3Prune && canPruneAsDead(state)) {
             backpropagate(path, 0.0, actionStack);
             return;
         }
@@ -564,9 +575,10 @@ void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc)
 
     // ── PVNet policy (skipped when value-only so GBM provides priors) ──
     if (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly) {
+        const int D = g_combatPVNet.entityDim;
         std::array<float,1766> stateArr{};
         for (int i=0;i<1766;++i) stateArr[i]=feat[i];
-        global.resize(128);
+        global.resize(D);
         g_combatPVNet.encode(stateArr, global.data());
 
         actionFeats.resize(n * 14);

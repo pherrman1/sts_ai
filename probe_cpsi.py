@@ -8,7 +8,7 @@ Probe vector per slot (9 slots x 6 values = 54):
   slots 0..5   fixed probes: TWO_LOUSE(3), GREMLIN_NOB(15), LAGAVULIN(16),
                THREE_SENTRIES(17), SLIME_BOSS(18), THE_GUARDIAN(19)
   slots 6..8   actual: nextFight0, nextEliteId, bossId (0/INVALID -> zeros)
-  values: [P(death), P(win), hp_frac q50, hp_frac q10, turns, max potion prob]
+  values: [P(death), P(win), hp_frac q50, hp_frac q05, turns, max potion prob]
 
 Inputs per decision come from the strategicgen2 rich state block (same raw
 columns as richRow): ascension, curHp, maxHp, d0..d370 (deck counts -> deck
@@ -105,6 +105,8 @@ ckpt = torch.load(PT, map_location="cpu", weights_only=False)
 model = CPSINet().to(DEVICE)
 model.load_state_dict(ckpt["state_dict"])
 model.eval()
+scalar_mean = torch.from_numpy(ckpt["scalar_mean"].astype(np.float32)).to(DEVICE)
+scalar_inv = torch.from_numpy(ckpt["scalar_inv"].astype(np.float32)).to(DEVICE)
 print(f"loaded {PT}", flush=True)
 
 need = {"seed", "decIdx", "ascension", "curHp", "maxHp",
@@ -119,10 +121,13 @@ probe_rows = []
 
 def run_inference(sc, deck, rel, pot, enc):
     """sc (B,11) raw scalars, deck (B,371), rel (B,128), pot (B,44), enc (B,)
-    -> probe matrix (B, NV)"""
+    -> probe matrix (B, NV). Scalars are z-scored with the trainer's saved
+    stats (train_combat_cpsi.py), matching its training-time forward."""
+    sc = (sc - scalar_mean) * scalar_inv
     out = model(sc, deck, rel, pot, enc)
-    q = torch.sigmoid(out["quantiles"])             # pinball targets are hp_frac in [0,1]
-    turns = torch.expm1(out["turns"])               # log1p scale
+    q = out["quantiles"]                        # raw quantile head (trainer's
+                                                # pinball loss uses raw outputs)
+    turns = torch.expm1(out["turns"])           # log1p scale
     potion = torch.sigmoid(out["potion_prob"])
     return torch.stack([torch.sigmoid(out["death"]), torch.sigmoid(out["win"]),
                         q[:, NQUANTILE // 2], q[:, 0], turns,
@@ -135,7 +140,7 @@ for chunk in pd.read_csv(CSV, usecols=sorted(need), chunksize=100000):
     enc_slots = np.zeros((n, NSLOT), np.int64)
     enc_slots[:, :6] = FIXED_PROBES
     for i, c in enumerate(ACTUAL_SLOTS):
-        enc_slots[:, 6 + i] = np.maximum(chunk[c].to_numpy(np.int64), 0)
+        enc_slots[:, 6 + i] = np.clip(chunk[c].to_numpy(np.int64), 0, NENCOUNTER - 1)
     sc = np.zeros((n, 11), np.float32)
     sc[:, 0] = chunk["ascension"].to_numpy(np.float32)
     sc[:, 1] = chunk["curHp"].to_numpy(np.float32)
