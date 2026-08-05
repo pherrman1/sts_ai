@@ -191,13 +191,16 @@ in_cols = list(hdr)
 chunks = pd.read_csv(CSV, chunksize=500000, dtype=np.float32)
 first = True
 remapped = 0
+# Compact float formatting (like the C++ datagen writer): %g avoids padding
+# every one of the 1017 state columns to 6 decimals, which would inflate the
+# file ~4x. Values are identical up to formatting.
 for ch in chunks:
     m = ch.labelBootstrap.to_numpy(np.float32) == 1
     if m.any():
         ch.loc[m, "labelWon"] = C(ch.loc[m, "labelWon"].to_numpy(np.float64))
         remapped += int(m.sum())
     ch.to_csv(OUT, index=False, header=first, mode="w" if first else "a",
-              float_format="%.6f")
+              float_format=lambda v: f"{v:g}")
     first = False
 print(f"remapped {remapped} censored rows")
 
