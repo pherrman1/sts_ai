@@ -10,6 +10,7 @@
 #include <mutex>
 #include <set>
 #include <algorithm>
+#include <cstdlib>
 
 #include "data_structure/fixed_list.h"
 #include "constants/Cards.h"
@@ -588,6 +589,11 @@ static int compareEnumerator(const char *label, const std::vector<std::uint32_t>
 
 int testCardSelectParity() {
     int failures = 0;
+
+    // The parity test pins the full validity contract (`all`): restricted
+    // deployment modes intentionally prune the action space, so they must
+    // not leak into this check via STS_MULTISELECT_MODE.
+    setenv("STS_MULTISELECT_MODE", "all", 1);
 
     std::cout << "cardselect_parity: CARD_SELECT tasks\n";
     for (int t = 0; t <= (int)CardSelectTask::WARCRY; ++t) {

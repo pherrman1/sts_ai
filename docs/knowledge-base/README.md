@@ -19,9 +19,9 @@ For architecture:
    policy-head search distillation (5.7.1 + 5.7.2), to be executed by the
    next session; not yet started.
 6. [Phase 1 continuation plan](plan-phase1-cardselect-continuation.md) —
-   **active plan**: finish the CARD_SELECT parity work (multi-select mode
-   A/B, S2 bisect, promotion, re-gate); see decision log
-   `2026-08-05-cardselect-parity-fix.md` and EXPERIMENTS.md §112.
+   **executed 2026-08-05**: T1–T5 done, issue 48 closed; the §112 "regression"
+   was a control S3 battle-skip exploit — the parity fix is correct and is the
+   new recommended baseline (EXPERIMENTS.md §113, `current-baselines.md`).
 
 For evaluation and operation:
 

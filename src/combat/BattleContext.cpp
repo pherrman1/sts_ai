@@ -525,9 +525,15 @@ void BattleContext::exitBattle(GameContext &g) const {
 
     if (outcome == Outcome::PLAYER_LOSS) {
         g.outcome = GameOutcome::PLAYER_LOSS;
-    } else {
+    } else if (outcome == Outcome::PLAYER_VICTORY) {
         // player victory
         g.regainControl();
+    } else {
+        // UNDECIDED: the battle loop exited without a resolution (e.g. the
+        // search returned no legal action). Granting rewards here would let
+        // an enumerator gap skip-win the battle (recorded exploit, §112/§113);
+        // an unresolved battle is a loss, not a victory.
+        g.outcome = GameOutcome::PLAYER_LOSS;
     }
 
     BattleContext::sum += g.curHp + g.maxHp + g.gold + g.act

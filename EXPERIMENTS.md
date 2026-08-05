@@ -4009,3 +4009,67 @@ extFight*/emElites/emFights parity-excluded) and
 - **Cost:** ~2 min wall per 256-seed @1k arm; the GCP tree currently has the
   control files installed — re-sync `src/sim/search/{Action.cpp,
   BattleScumSearcher3.cpp}` before the next GCP run.
+
+## §113 CARD_SELECT parity follow-up: the §112 'regression' was a control battle-skip exploit; parity fix is correct and deployed (2026-08-05, GCP + local)
+- **What:** continuation of §112 (plan T1-T5). T2 mode A/B and T3 S2-only
+  bisect were run as planned; both exposed a contradiction with §112's
+  mechanism hypothesis (multi-select subset expansion), and the follow-up
+  bisect found the true cause: **the §112 control enumerator skip-wins
+  battles at CARD_SELECT states, inflating every control/S3 measurement**.
+- **Mechanism (verified by code trace + instrumented runs):** control S3's
+  `enumerateActionsForNode` default branch emitted
+  `SINGLE_CARD_SELECT 0..pickCount-1`; `WarcryAction` and `GambleAction`
+  (Actions.cpp:872-888, 981-986) never set `pickCount`, so at WARCRY and
+  GAMBLE CARD_SELECT states the enumerator emitted **zero edges**. The
+  agent's root pick (`ScumSearchAgent2::s3PickRootAction`) then found no
+  valid action -> `have=false` -> `break` -> battle loop exited with
+  **UNDECIDED** outcome -> `BattleContext::exitBattle` treated non-loss as
+  victory (`g.regainControl()` -> rewards + floor advance). At the act-3
+  boss this chain produced `PLAYER_VICTORY` without killing the boss.
+  Predicate tasks (DUAL_WIELD, SECRET_TECHNIQUE/WEAPON) and EXHAUST_MANY
+  (Elixir/Purity) also emitted invalid/zero edges at times -> same skip.
+  Instrumented counter (`STS_DEBUG_BATTLE_BREAKS`): **41 breaks / 8 seeds
+  (27 GAMBLE, 13 WARCRY) on control S3; 164 breaks / 256 seeds**.
+- **Decisive A/B (same control-S3 binary, 8 seeds @1k, only break handling
+  changed):** silent skip = **62.5%** win; break->PLAYER_LOSS = **0.0%**
+  win / floor 30.0. The entire 'control' win rate was the exploit.
+- **S2 control has NO skip** (its GAMBLE case emitted a valid empty
+  `MULTI_CARD_SELECT 0`; other cases complete for Ironclad tasks): 0 breaks
+  on 16 seeds. The exploit is **S3-specific**; **§107 (60.2%), §111
+  (56.6%), §112 (56.3%), and the §99/§102-§105 S3 arms are
+  invalidated** as honest baselines. §99's headline 45.3% used default
+  Searcher2 and survives (S2 control verified break-free).
+- **Fix (deployed):** (1) canonical enumerator `search::Action::
+  enumerateCardSelectActions` (issue 47, already committed b48cb40) - the
+  fixed enumerator produces **0 breaks** (verified on 256 seeds @1k and
+  @3k); (2) new run-level guard: `BattleContext::exitBattle` now treats an
+  UNDECIDED outcome as PLAYER_LOSS instead of granting rewards. Both S2/S3,
+  fair/non-fair paths are covered by the single exitBattle choke point.
+- **Honest re-baselines (256 seeds 126700-126955, fair, A0, S3-belief-chain
+  off, 256 particles, V4 gate stack, 24 threads, canonical enumerator +
+  fix):**
+  - honest control S3 (fix only, control enumerator): **9.0% / 26.6 floor /
+    47.6 hp @1k** (`build/honest_ctl_1k_256.csv`)
+  - **honest fixed agent: 36.3% / 40.5 / 20.3 @1k**
+    (`build/honest_fix_1k_256.csv`), **42.6% / 42.2 / 23.1 @3k**
+    (`build/honest_fix_3k_256.csv`) - the parity fix is worth **+27.3pp
+    over honest control @1k**; the §112 'regression' was the removal of
+    the skip exploit, not a search-quality loss.
+  - `STS_MULTISELECT_MODE=single/none` with a pickCount-capped single-select
+    pool (experimental extension, not committed): 31.6% / 30.5% @1k -
+    **negative vs canonical `all` (36.3%)**, so the cap extension is
+    rejected and the committed canonical enumerator (full validity
+    contract) stays the deployment default.
+- **Verdict:** issue 48 closed - there is no multi-select regression; the
+  full-subset expansion is correct and necessary, and the §112 delta was
+  the removed exploit. `STS_MULTISELECT_MODE` remains an opt-in
+  search-scale knob. The exitBattle guard is a general correctness fix:
+  any future enumerator gap now costs a loss, never a free win.
+- **Artifacts:** `build/{honest_ctl_1k_256,honest_fix_1k_256,
+  honest_fix_3k_256,capped_single_1k_256,capped_none_1k_256}.csv` (GCP
+  `~/sts_sweep/build/`, local copies); decision log
+  `2026-08-05-cardselect-parity-fix.md` (updated); issues 47 (closed) / 48
+  (closed); code diff: `BattleContext.cpp` exitBattle guard,
+  `ScumSearchAgent2.cpp` env-gated break telemetry, `apps/test.cpp`
+  parity-mode pin.
+- **Cost:** ~2 min wall per 256-seed @1k arm; ~10 min @3k on GCP sts-test.

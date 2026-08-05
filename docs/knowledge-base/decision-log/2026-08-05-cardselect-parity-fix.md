@@ -89,3 +89,37 @@ legal card-selection actions match the simulator's validity contract
   has the control files installed (S2 control + S3 control + canonical with
   the mode gate is NOT yet synced — re-sync `src/sim/search/Action.cpp` +
   `BattleScumSearcher3.cpp` before the next GCP run).
+
+## Addendum (same day) — the "regression" was a control battle-skip exploit; the parity fix is correct
+
+- **The §112 −17.2pp 'regression' was not a search-quality loss.** Control
+  S3's enumerator emitted **zero valid edges** at WARCRY/GAMBLE CARD_SELECT
+  states (WarcryAction/GambleAction never set `pickCount`), the root pick
+  found no action (`have=false`), the battle loop `break`ed with UNDECIDED
+  outcome, and `BattleContext::exitBattle` treated non-loss as victory —
+  rewards + floor advance, and a skipped act-3 boss fight recorded
+  `PLAYER_VICTORY`. Control was **skip-winning battles**.
+- **Evidence:** `STS_DEBUG_BATTLE_BREAKS` counter: 41 breaks / 8 seeds on
+  control S3 (27 GAMBLE, 13 WARCRY); 164 / 256 seeds. Decisive A/B on the
+  same control binary (8 seeds @1k): silent skip = 62.5% win; break→LOSS =
+  0.0% / floor 30.0. EXPERIMENTS.md §113.
+- **S2 control has no skip** (its GAMBLE case emitted a valid empty
+  `MULTI_CARD_SELECT 0`; 0 breaks on 16 seeds) — the exploit is S3-specific,
+  so §107/§111/§112 and all S3 arms in §99–§105 are invalidated as honest
+  baselines; §99's Searcher2 headline 45.3% survives.
+- **Deployed fixes:** (1) the committed canonical enumerator (issue 47) —
+  0 breaks on 256 seeds @1k and @3k; (2) `exitBattle` now treats UNDECIDED
+  as PLAYER_LOSS (a future enumerator gap costs a loss, never a free win).
+- **Honest re-baseline (256 seeds, V4 gate stack):** control S3 honest =
+  9.0% @1k; **canonical+fix = 36.3% @1k and 42.6% @3k** — the parity fix is
+  +27.3pp over honest control. The pickCount-capped single-select
+  experimental knob was **negative** (31.6%/30.5% vs 36.3% `all`) and
+  rejected; canonical `all` stays default.
+- **Issue 48 closed:** there is no multi-select regression; full-subset
+  enumeration is correct and necessary.
+- **Code:** `BattleContext.cpp::exitBattle` UNDECIDED guard,
+  `ScumSearchAgent2.cpp` env-gated break telemetry (3 break sites),
+  `apps/test.cpp` parity-mode pin (`setenv` to `all` so restricted modes
+  can't leak into the contract test).
+- **Status:** deployed as the new recommended stack baseline; GCP tree
+  re-synced to the final files; §113 recorded; baselines doc updated.

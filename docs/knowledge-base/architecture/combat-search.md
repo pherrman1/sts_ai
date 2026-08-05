@@ -48,10 +48,14 @@ EXHAUST_MANY/GAMBLE). An exhaustive parity test
 pins all three enumerators to the validity contract across every
 `CardSelectTask` (issues 47/48). `STS_MULTISELECT_MODE=all|single|none`
 (default `all`) prunes the multi-select action space to empty+singles+full
-(`single`) or empty only (`none`); only `all` matches the parity contract, and
-full-subset enumeration is known to regress win rate at fixed budgets (§112 —
-GAMBLE/EXHAUST_MANY states expand up to 1023 children with uniform policy
-priors), so the deployment default is under A/B.
+(`single`) or empty only (`none`); only `all` matches the parity contract.
+The §112 report of a full-subset win-rate regression was **falsified
+(§113)**: the "control" enumerator skip-won battles at WARCRY/GAMBLE states
+(zero valid edges → UNDECIDED battle break → rewards/advance), so the §112
+delta was the removed exploit, not search degradation; `all` is the
+deployment default and `single`/`none` are opt-in search-scale knobs. Since
+§113, `BattleContext::exitBattle` treats an UNDECIDED outcome as
+`PLAYER_LOSS`, so any future enumerator gap costs a loss, never a free win.
 Seeding, belief conditioning, and observation identity follow the canonical
 field contract described under "Known limitations"; the composite seed is
 `visibleHash ^ agentSeed ^ decisionIndex` with `agentSeed` and `decisionIndex`
@@ -77,11 +81,20 @@ the S2 reference with CI excluding zero), enabling CRN *loses* −14.1pp
 The belief particle count is configurable via `STS_S3_PARTICLES` (default 64;
 was hardcoded in `ScumSearchAgent2::playoutBattleFair`/`playoutBattle`).
 §107 (256 paired seeds vs the §99 S2@3k reference, 45.3%) promoted the
-combined variant: **S3−belief−chain is the recommended combat search** —
+combined variant: **S3−belief−chain was the recommended combat search** —
 60.2% (+14.8pp, CI excluding zero) at 3k sims/256 particles, or 57.4%
 (+12.1pp) at 1k sims/64 particles (3.1× less compute). Particle count is
 flat across 16–256 (§107), and the belief reweighting stays harmful even at
 256 particles (E1: −6.2pp vs belief-off at equal count).
+**§107/§111/§112 and all S3 arms of §99–§105 are invalidated (§113): the
+pre-fix (619c12c) S3 enumerator skip-won battles at WARCRY/GAMBLE
+CARD_SELECT states** (zero valid edges → UNDECIDED battle break → rewards +
+floor advance; the act-3 boss skip recorded `PLAYER_VICTORY`). The honest
+re-baseline on the same 256-seed block with the canonical enumerator (issue
+47) + the §113 `exitBattle` guard: **42.6% @3k / 36.3% @1k** vs honest
+control S3 9.0% @1k (EXPERIMENTS.md §113, `build/honest_fix_{1k,3k}_256.csv`).
+The §107 deltas versus the §99 reference were measured against a skip-inflated
+S3 arm; only the Searcher2 numbers (§99, 45.3%) remain honest comparators.
 
 ### Terminal-leaf run-value bonus (cross-combat setup, opt-in)
 
@@ -225,10 +238,15 @@ PUCT-with-zero-priors quirk.
   Elixir/Purity) expand to every hand subset (up to 1023 edges) under the
   default `all` mode; policy priors are uniform across subsets because
   `combatFillActionFeatures` encodes multi-select actions identically. §112
-  measured this as a −17.2pp win-rate regression vs control at 1k sims/256p;
-  `STS_MULTISELECT_MODE=single|none` is the scale fix under A/B (issue 48).
+  reported this as a −17.2pp win-rate regression vs control at 1k sims/256p;
+  **§113 falsified that reading** — the control enumerator skip-won battles
+  at WARCRY/GAMBLE states (zero valid edges → UNDECIDED break → rewards), so
+  the §112 delta was the removed exploit and `all` stays the deployment
+  default; `STS_MULTISELECT_MODE=single|none` remains an opt-in scale knob
+  (measured 31.6%/30.5% @1k on the honest block, negative vs `all` 36.3%).
   The old S3 emitted no valid edges at those states, so pre-fix agents
-  effectively never used those potions/cards.
+  effectively never used those potions/cards — and the UNDECIDED break let
+  them skip the battle (see the `exitBattle` guard, §113).
 - The deployed win tree has zero sensitivity to persistent counter relics:
   `r26` (Happy Flower), `r30` (Incense Burner), `r31` (Ink Bottle), `r35`
   (Lizard Tail), `r44` (Nunchaku), `r52` (Pen Nib), `r68` (Sundial), `r131`
@@ -265,7 +283,9 @@ PUCT-with-zero-priors quirk.
   regime. `STS_S3_BELIEF/PRUNE/CHAIN/LIVE` defaults preserve full behavior.
   §107 promoted **S3−belief−chain** as the recommended (opt-in) combat search
   on the V4 gate stack: 60.2% @3k/256p, 57.4% @1k/64p, both CIs excluding
-  zero vs the §99 S2@3k 45.3% reference on 256 paired seeds; see
+  zero vs the §99 S2@3k 45.3% reference on 256 paired seeds; **invalidated by
+  §113 (battle-skip exploit) — the honest §113 re-baseline is 42.6% @3k /
+  36.3% @1k with the canonical enumerator + `exitBattle` guard**; see
   `docs/knowledge-base/evaluation/current-baselines.md`.
 
 ## Open questions

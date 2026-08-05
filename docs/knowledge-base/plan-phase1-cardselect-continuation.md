@@ -1,10 +1,43 @@
 # Session continuation plan — Phase 1 (CARD_SELECT parity) completion
 
-Date: 2026-08-05. Status: **ACTIVE** — this is the handoff plan for the next
-session; it supersedes nothing and is current instruction until its exit
-criteria are met. Start by reading
-[`docs/knowledge-base/decision-log/2026-08-05-cardselect-parity-fix.md`](decision-log/2026-08-05-cardselect-parity-fix.md)
-and `EXPERIMENTS.md` §112 (same findings, shorter form).
+Date: 2026-08-05. Status: **COMPLETE (T1–T5 executed 2026-08-05; §113)** —
+the plan's tasks ran as written, the issue-48 hypothesis was **falsified**,
+and the follow-up bisect found the true cause: **the control S3 enumerator
+skip-won battles at WARCRY/GAMBLE CARD_SELECT states**. The parity fix is
+correct and is the new recommended baseline. Historical record of the
+execution and the finding below; current instruction now lives in
+`EXPERIMENTS.md` §113 and `evaluation/current-baselines.md`.
+
+## 0. Execution summary (2026-08-05, §113)
+
+- **T1** sync + parity PASS (local + GCP); model hashes verified; smoke OK.
+- **T2** mode A/B (64 seeds @1k): `all` 43.8%, `single` 42.2%, `none` 42.2%
+  vs control 56.3% — **no mode within ±2pp of control; the plan's promote
+  rule had no winner**.
+- **T3** S2-only bisect: **56.2% ≈ control — S2 change neutral** (control S2
+  already enumerated the common Ironclad pools; its GAMBLE case emitted a
+  valid empty subset, so it has no skip path).
+- **Falsification:** a pickCount-capped single-select extension (experimental)
+  recovered only to 46.9% (`single`)/43.8% (`none`) — the pool-widening story
+  did not explain the gap.
+- **Root cause (§113):** control S3's `enumerateActionsForNode` default branch
+  emitted `SINGLE_CARD_SELECT 0..pickCount-1`; WarcryAction/GambleAction never
+  set `pickCount`, so WARCRY/GAMBLE states produced **zero valid edges** →
+  `have=false` → battle `break` with UNDECIDED outcome →
+  `BattleContext::exitBattle` treated non-loss as victory (rewards + advance;
+  a skipped act-3 boss recorded `PLAYER_VICTORY`). Instrumented
+  (`STS_DEBUG_BATTLE_BREAKS`): 41 breaks/8 seeds; 164/256 seeds. Decisive A/B
+  on the same control binary (8 seeds @1k): silent skip = **62.5%** win vs
+  break→LOSS = **0.0%**.
+- **Deployed:** canonical enumerator (issue 47, 0 breaks on 256 seeds @1k and
+  @3k) + `BattleContext::exitBattle` UNDECIDED→PLAYER_LOSS guard.
+- **Honest re-baseline (256 seeds, V4 gate stack):** honest control S3 =
+  9.0% @1k; **canonical+fix = 36.3% @1k, 42.6% @3k** — the parity fix is
+  +27.3pp over honest control; the §107/§111/§112 S3 numbers (60.2%/56.6%/
+  56.3%) and all S3 arms of §99–§105 are **invalidated** (S2-based §99
+  45.3% survives).
+- Issues 47 + 48 closed; docs updated (decision log, EXPERIMENTS.md §113,
+  combat-search.md, current-baselines.md); GCP tree re-synced.
 
 ## 1. Handoff state (verified at commit b48cb40)
 
@@ -16,15 +49,9 @@ and `EXPERIMENTS.md` §112 (same findings, shorter form).
   Searcher2 and Searcher3 delegate to it. `STS_MULTISELECT_MODE=all|single|none`
   (default `all`) prunes the multi-select action space; pruned modes emit only
   valid actions (verified: zero "extra" mismatches).
-- **Known regression (issue 48, open):** full-subset enumeration
-  (GAMBLE/EXHAUST_MANY up to 1023 children, uniform policy priors) costs
-  −17.2pp win rate @1k sims (paired, SE 3.1) vs control on 256 seeds.
-  Control (original code) reproduces the §111 reference bit-identically
-  (56.6% / 43.0 / 35.2). S3-only bisect: 43.8% vs 56.3% on 64 seeds. The S2
-  change is also live in the default binary and is **not yet bisected**.
-- Docs already updated: decision log entry, issues 47 (closed) / 48 (open),
-  EXPERIMENTS.md §112, `architecture/combat-search.md` (enumeration section +
-  limitations).
+- **Resolved (issue 48, closed):** the §112 "−17.2pp regression" was the
+  control S3 battle-skip exploit (see §0); the canonical `all` enumerator is
+  the deployment default and `single`/`none` are opt-in scale knobs.
 
 ## 2. Environment quickstart
 
@@ -56,6 +83,14 @@ and `EXPERIMENTS.md` §112 (same findings, shorter form).
   PUCT ON`, `fair-play`, `Searcher3 engine ON`, `S3 particles = 256`.
 
 ## 3. Task list (in order; each step → verify)
+
+**Status: ALL COMPLETE (2026-08-05).** T1–T3 ran as written; T2's promote
+rule had no winner because the "control" was skip-inflated; T4/T5 were
+re-scoped by the §113 finding (see §0): the canonical `all` enumerator is
+the deployment default (no mode change needed), the exitBattle guard is the
+run-level fix, and the honest re-baseline replaced the §111/§107 pairing
+references. Command blocks below are retained as historical execution
+instructions.
 
 ### T1 — Sync and verify on GCP
 1. Sync the four files above to `sts_sweep/tmp_sync/`, `cp` into the tree,

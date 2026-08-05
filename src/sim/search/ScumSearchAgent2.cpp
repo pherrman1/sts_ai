@@ -5,6 +5,8 @@
 #include "sim/search/ScumSearchAgent2.h"
 
 #include <algorithm>
+#include <cstdlib>
+#include <iostream>
 #include <sim/search/ExpertKnowledge.h>
 #include <game/Game.h>
 #include "sim/PrintHelpers.h"
@@ -116,7 +118,15 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             bool have = false;
             search::Action bestAction = s3PickRootAction(s3, bc, have);
-            if (!have) break;
+            if (!have) {
+                if (std::getenv("STS_DEBUG_BATTLE_BREAKS"))
+                    std::cerr << "[battle-break] state=" << (int)bc.inputState
+                              << " task=" << (int)bc.cardSelectInfo.cardSelectTask
+                              << " pickCount=" << bc.cardSelectInfo.pickCount
+                              << " hand=" << bc.cards.cardsInHand
+                              << " outcome=" << (int)bc.outcome << "\n";
+                break;
+            }
             takeAction(bc, bestAction);
             ++decisionIdx;
         }
@@ -140,7 +150,13 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
         for (const auto &e : searcher.root.edges) {
             if (e.node.simulationCount > maxSim) { maxSim = e.node.simulationCount; best = e.action; have = true; }
         }
-        if (!have || !best.isValidAction(bc)) break;   // no legal move (shouldn't happen pre-terminal)
+        if (!have || !best.isValidAction(bc)) {
+            if (std::getenv("STS_DEBUG_BATTLE_BREAKS"))
+                std::cerr << "[battle-break:s2] state=" << (int)bc.inputState
+                          << " task=" << (int)bc.cardSelectInfo.cardSelectTask
+                          << " pickCount=" << bc.cardSelectInfo.pickCount << "\n";
+            break;   // no legal move (shouldn't happen pre-terminal)
+        }
 
         if (printLogs) printHelper(bc, best);
         takeAction(bc, best);
@@ -168,7 +184,13 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             bool have = false;
             search::Action bestAction = s3PickRootAction(s3, bc, have);
-            if (!have) break;
+            if (!have) {
+                if (std::getenv("STS_DEBUG_BATTLE_BREAKS"))
+                    std::cerr << "[battle-break:s3] state=" << (int)bc.inputState
+                              << " task=" << (int)bc.cardSelectInfo.cardSelectTask
+                              << " pickCount=" << bc.cardSelectInfo.pickCount << "\n";
+                break;
+            }
             takeAction(bc, bestAction);
             s3.advanceRoot(bestAction, bc);
             ++decisionIdx;
