@@ -1,6 +1,10 @@
 # Current baselines
 
-Last verified: 2026-08-03 against commit `6f5a157` and the current working tree.
+Last verified: 2026-08-05 against the current working tree.
+Experiments invalidated by fixes are tracked in the
+[rerun ledger](rerun-ledger.md) (2026-08-05 code review, issues 31–46); the
+V4@3k recommendation below was trained with the fixed-stats defect (issue 36)
+and is queued for re-derivation there.
 
 ## Purpose
 
@@ -16,16 +20,18 @@ tracked compact policy prior when it loads (`apps/one_combat.cpp::main`,
 `runFullRunOOC`). The one-ply Q gate stack (cards/rest/events/shop/treasure/
 boss relic) is **opt-in** via `STS_OOC_STRATEGIC_*` env flags + a model
 artifact; the binary default plays without it. `STS_FAIR=1` must be set explicitly for a project-fair run.
-`STS_SEARCHER3=1` and `STS_PVNET=<path>` are experimental opt-ins; PVNet is
-consumed only by Searcher3.
-
+`STS_SEARCHER3=1` and `STS_PVNET=<path>` are experimental opt-ins; `STS_PVNET`
+adds policy-head priors to default Searcher2 since 2026-08-05 (value leaf is
+Searcher3-only), and `STS_DIST_VNET` is consumed only by Searcher3.
 ## Baseline table
 
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |
 | --- | --- | ---: | ---: | --- | --- | --- |
 | **Current executable configuration**, verified 2026-07-31 | Caller-selected | Caller-selected | Caller-selected | Default Searcher2 is known-RNG unless `STS_FAIR=1`; opt-in Searcher3 samples particles in either path and `STS_FAIR` controls rebuild/reuse | Native tracked floor/win trees; heuristic path; shop-V; win-rest; tracked policy prior auto-load; no combat value/PVNet by default | Configuration only; **no current-checkout full-run measurement is claimed**. |
-| **Recommended configuration — one-ply gate stack**, 2026-08-03 (`EXPERIMENTS.md` §82) | 126700–126827 (128); also 126700–126955 (256) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12 threads | Native tracked floor/win trees; heuristic path/shop/win-rest; **plus the opt-in one-ply Q gate stack** (`STS_OOC_STRATEGIC_NN=selfplay/models/ooc_strategic.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`) | Full Act-3 run win: **51/128 (39.8%)** on the 128 block (reference CSV `build/gates_ref_m1.csv`, bit-identical to §76 m1.0); **95/256 (37.1%, +14.1pp vs the 23.0% flags-off baseline)** on the 256 block (`build/sec256_gate_m1.csv`). Margin 1.0 is the operating point (§82 sweep). **Future gate rounds pair against this reference.** |
-| **Experimental top arm — V4 token net + gate stack**, 2026-08-03 (`EXPERIMENTS.md` §81) | 126700–126827 (128) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12 threads | V4 token net (`STS_OOC_STRATEGIC_TOK_NN=…ooc_strategic_tok_final.native`, opt-in) + full gate stack @ m1.0 | Full Act-3 run win: **53/128 (41.4%)**; ~3.5× slower per run (27 vs 8 cpu-sec/run). |
+| **Recommended configuration — S3−belief−chain + V4 one-ply gate stack**, 2026-08-05 (`EXPERIMENTS.md` §106, §107) | 126700–126955 (256, paired vs the §99 reference) | 0 | 3,000 sims/decision (win point, 256 particles); 1,000 sims/decision (efficient point, 64 particles) | `STS_FAIR=1`, **Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`** (`STS_S3_PARTICLES=256` or 64), 24 threads | Same V4 token-net gate stack as §99 (`STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`); no combat value/PVNet (both rejected: §97, §102, §103) | Full Act-3 run win: **154/256 (60.2%)** at 3k/256p — **+14.8pp win (CI [+7.9,+21.8]), +1.3 floor, +14.0 HP vs the §99 reference on the same paired block** (29.0 cpu-sec/run); **147/256 (57.4%) at 1k/64p — +12.1pp (CI [+4.9,+19.3]) at 3.1× less compute** (9.8 cpu-sec/run). 4k adds only +1.6pp (noise) — 3k is the win operating point, 1k the deployment point. §106 ablation: belief/chain/CRN net-negative, prune/live inert. **Future gate rounds pair against `build/pt2_p256_s3k_both_256.csv` (win) or `build/pt2_p64_s1k_both_256.csv` (efficient). Caveat: V4 token net flagged for retrain (issue 36) — deltas are bug-identical both sides; re-pair after the retrain.** |
+| **Previous recommended configuration — V4 one-ply gate stack @3,000 sims**, 2026-08-04 (`EXPERIMENTS.md` §99) | 126700–126955 (256) | 0 | 3,000 sims/decision | `STS_FAIR=1`, default Searcher2, 24 threads | Native tracked floor/win trees; heuristic path/shop/win-rest; **opt-in V4 token net + full one-ply Q gate stack** (`STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`); no combat value net (vnet A/B'd and rejected under the gates, §97) | Full Act-3 run win: **116/256 (45.3%)**, mean floor 42.9, mean end HP 25.3 — **+8.2pp win (CI [+0.8,+15.6]) and +2.0 floor (CI [+0.3,+3.7]) vs the previous recommended V3@1k reference on the same block**, at 3.4× cpu (31.3 vs 9.2 cpu-sec/run). V4@4k adds only +1.2pp (noise; floor/HP flat), so 3,000 sims is the operating point. Per-seed CSVs `build/simsweep_{2k,3k,4k}_256.csv`, `build/simsweep_v4_{3k,4k}_256.csv`. Superseded by §107 (S3−belief−chain) but still the paired 256-block reference. |
+| **Previous recommended configuration — V3 one-ply gate stack @1,000 sims**, 2026-08-03 (`EXPERIMENTS.md` §82) | 126700–126827 (128); also 126700–126955 (256) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12 threads | Native tracked floor/win trees; heuristic path/shop/win-rest; **plus the opt-in one-ply Q gate stack** (`STS_OOC_STRATEGIC_NN=selfplay/models/ooc_strategic.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`) | Full Act-3 run win: **51/128 (39.8%)** on the 128 block (reference CSV `build/gates_ref_m1.csv`, bit-identical to §76 m1.0); **95/256 (37.1%, +14.1pp vs the 23.0% flags-off baseline)** on the 256 block (`build/sec256_gate_m1.csv`). Superseded as the recommendation by §99 but still the paired 128-block reference. |
+| **Historical top arm — V4 token net + gate stack @1,000 sims**, 2026-08-03 (`EXPERIMENTS.md` §81, §92) | 126700–126827 (128); 126700–126955 (256) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12–24 threads | V4 token net (`STS_OOC_STRATEGIC_TOK_NN=…ooc_strategic_tok_final.native`, opt-in) + full gate stack @ m1.0 | Full Act-3 run win: **53/128 (41.4%)** (§81); **105/256 (41.0%)** (§92). Superseded by the §99 3,000-sim measurement. |
 | **Current default stack on the recorded block** (default binary, no opt-ins), 2026-08-02 (`EXPERIMENTS.md` §68) | 126700–126827 (128) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12 threads | Native tracked floor/win trees (hashes in §68); heuristic path/shop/win-rest; tracked policy prior auto-load; no combat value/PVNet | Full Act-3 run win: **27/128 (21.1%)**; mean floor 37.5; mean end HP 8.6; per-seed CSV retained at `build/bench_2026-08-02_default_fair.csv`. New measurement, not a paired comparison with §66i. |
 | **Primary recorded project-fair reference**, 2026-07-23 (`EXPERIMENTS.md` §66i) | 126700–126827 (128) | 0 | 1,000 sims/decision | `STS_FAIR=1`; **Unverified** exact searcher in the historical binary, consistent with default Searcher2 | Native floor/win OOC; heuristic path/shop/win-rest; entry says PUCT/V-combat but names no combat-value path/hash and does not pin every flag | Full Act-3 run win: **39/128 (30.5%)**; mean floor 40.32; mean end HP 11.91. Raw cited directory is absent, so not exactly reproducible; the §68 re-measurement suggests a different historical configuration. |
 | **Historical known-RNG comparator**, 2026-07-15 (`EXPERIMENTS.md` §26) | 512 seeds; range not recorded | 0 | 1,000 sims/decision | Known-RNG Searcher2 with PUCT | Server-backed rich V2 floor drafting/shop, win-rest, heuristic path, compact policy prior | Full-run win: **51.6%**. Optimistic diagnostic; never compare directly with the fair reference. |
@@ -83,6 +89,13 @@ artifact set behind §66i.
   producer invocation records `STS_SEARCHER3=1` without `STS_FAIR=1`, and the
   raw dataset is not tracked. The project-fair integration provenance is
   therefore unverified.
+- All recorded PVNet bot results (§72 re-check and the Phase 4b sweep) predate
+  the 2026-08-04 C++ parity fixes (GELU FFN, fixed 14-token layout, policy-head
+  dot product; see the decision log `2026-08-04-combat-pvnet-parity-fixes.md`);
+  the fixes are not expected to move 100-sim results, which are dominated by
+  heuristic OOC choices. The 2026-08-05 3k-sim payoff gate on the fixed binary
+  (§102) is negative: no S3+PVNet arm beats same-compute S2/S3, and the A–H
+  architecture sweep was stopped accordingly.
 
 ## Open questions
 

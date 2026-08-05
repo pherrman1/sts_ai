@@ -1,12 +1,13 @@
 # Issues
 
-Last verified: 2026-08-02 against the current working tree.
+Last verified: 2026-08-05 against the current working tree.
 
 This directory collects known issues extracted from the knowledge-base pages,
 sorted by importance. Each entry records the symptom, evidence, why it matters,
 and a candidate fix direction; nothing here is a decision or a completed
 diagnosis. Entries are closed by a fixing commit or test, not by editing
-history.
+history. Experiments invalidated by a fix are tracked in the
+[rerun ledger](../evaluation/rerun-ledger.md).
 
 ## Importance tiers
 
@@ -31,6 +32,10 @@ Sorted by importance; entry files are reverse-chronological in their own list.
 | [08](2026-08-02-issue-08-ooc-checkpoint-truncated-load.md) | Critical | `OocCheckpointNet::load` reports success on truncated payloads | closed | [out-of-combat](../architecture/out-of-combat.md), [invariants](../behavior/invariants.md) |
 | [09](2026-08-02-issue-09-paired-analysis-column-drift.md) | Critical | `paired_analysis.py` reads the wrong HP/time columns | closed | [benchmark-protocol](../evaluation/benchmark-protocol.md), [invariants](../behavior/invariants.md) |
 | [10](2026-08-02-issue-10-fair-replay-nondeterminism.md) | Critical | Fair multi-thread replay is not bit-identical; no test | closed | [determinism-and-rng](../behavior/determinism-and-rng.md), [benchmark-protocol](../evaluation/benchmark-protocol.md) |
+| [31](2026-08-05-issue-31-probe-cpsi-normalization.md) | Critical | `probe_cpsi.py` feeds C_psi raw scalars + sigmoided quantiles | closed | [ooc-strategic-v4](../architecture/ooc-strategic-v4.md), [ooc-continuation-contracts](../architecture/ooc-continuation-contracts.md) |
+| [32](2026-08-05-issue-32-pvnet-untrained-heads.md) | Critical | PVNet `turns`/`potion` heads untrained but exported | closed | [combat-search](../architecture/combat-search.md), [training-and-inference](../architecture/training-and-inference.md) |
+| [33](2026-08-05-issue-33-vwin-calibration-split-leak.md) | Critical | `fit_vwin_calibration.py` isotonic fit leaks the validation split | closed | [ooc-qwin-continuation](../architecture/ooc-qwin-continuation.md) |
+| [34](2026-08-05-issue-34-searcher3-encode-buffer-overflow.md) | Critical | Searcher3 `computeEdgePriors` heap overflow for `entityDim` != 128 | closed | [combat-search](../architecture/combat-search.md) |
 | [11](2026-08-02-issue-11-selfplay-snapshot-nonrunnable.md) | High | Checked-in self-play snapshot cannot run | closed | [selfplay-loop](../operations/selfplay-loop.md) |
 | [12](2026-08-02-issue-12-clean-clone-configure-fails.md) | High | Clean clone cannot configure (json/pybind11 absent) | closed | [build-and-debugging](../operations/build-and-debugging.md) |
 | [13](2026-08-02-issue-13-baseline-cache-provenance.md) | High | Baseline cache key omits fixed native trees | closed | [selfplay-loop](../operations/selfplay-loop.md), [determinism-and-rng](../behavior/determinism-and-rng.md) |
@@ -38,6 +43,14 @@ Sorted by importance; entry files are reverse-chronological in their own list.
 | [15](2026-08-02-issue-15-gate-multiplicity.md) | High | Repeated gate looks are not multiplicity-adjusted | closed | [selfplay-loop](../operations/selfplay-loop.md), [benchmark-protocol](../evaluation/benchmark-protocol.md) |
 | [16](2026-08-02-issue-16-pvnet-sweep-provenance.md) | High | PVNet sweep provenance is unverified | open | [current-baselines](../evaluation/current-baselines.md) |
 | [17](2026-08-02-issue-17-guaranteed-death-pruning-unproven.md) | High | Aggressive guaranteed-death pruning is unproven | closed | [combat-search](../architecture/combat-search.md) |
+| [35](2026-08-05-issue-35-state-bin-byte-size-reuse.md) | High | `_state.bin` reuse keyed on byte size only | closed | [ooc-strategic-v4](../architecture/ooc-strategic-v4.md), [training-and-inference](../architecture/training-and-inference.md) |
+| [36](2026-08-05-issue-36-tok-glob-stats-columns.md) | High | Token-state glob 44–49 stats from wrong CSV columns | closed | [ooc-strategic-v4](../architecture/ooc-strategic-v4.md) |
+| [37](2026-08-05-issue-37-pvnet-token-layout-mismatch.md) | High | PVNet dead-monster token layout differs train vs inference | closed | [combat-search](../architecture/combat-search.md), [training-and-inference](../architecture/training-and-inference.md) |
+| [38](2026-08-05-issue-38-tok-exporter-config-flags.md) | High | `export_strategic_tok` ignores non-default config flags | closed | [ooc-strategic-v4](../architecture/ooc-strategic-v4.md) |
+| [39](2026-08-05-issue-39-dist-val-split-unused.md) | High | `train_combat_dist` validation split never used | closed | [training-and-inference](../architecture/training-and-inference.md) |
+| [40](2026-08-05-issue-40-checker-map-encoder.md) | High | `check_vwin_calibration` has no map-encoder support | closed | [ooc-map-route-contracts](../architecture/ooc-map-route-contracts.md) |
+| [41](2026-08-05-issue-41-s3live-ablation-noop.md) | High | `g_s3Live=0` ablation arm measured nothing | closed | [combat-search](../architecture/combat-search.md) |
+| [42](2026-08-05-issue-42-crn-rewarm-tree-reuse.md) | High | CRN warm start destructively re-warms the tree-reuse path | closed | [combat-search](../architecture/combat-search.md) |
 | [18](2026-08-02-issue-18-bestbench-banner-stale.md) | Medium | `bestBench` banner/comment describe an older stack | closed | [out-of-combat](../architecture/out-of-combat.md), [benchmark-protocol](../evaluation/benchmark-protocol.md) |
 | [19](2026-08-02-issue-19-parity-test-invalid.md) | Medium | `parity_test.py` cannot run as written | closed | [build-and-debugging](../operations/build-and-debugging.md), [training-and-inference](../architecture/training-and-inference.md) |
 | [20](2026-08-02-issue-20-runtrace-divergence.md) | Medium | `runtrace` is not a mirror of `runFullRunOOC` | closed | [out-of-combat](../architecture/out-of-combat.md), [build-and-debugging](../operations/build-and-debugging.md) |
@@ -46,6 +59,10 @@ Sorted by importance; entry files are reverse-chronological in their own list.
 | [23](2026-08-02-issue-23-fairgen-name-misleading.md) | Medium | `fairgen` does not enable the fair path itself | closed | [training-and-inference](../architecture/training-and-inference.md) |
 | [24](2026-08-02-issue-24-isbattleover-trap.md) | Medium | `isBattleOver` is never set true | closed | [invariants](../behavior/invariants.md) |
 | [25](2026-08-02-issue-25-blas-hardcoded-path.md) | Medium | Native inference probes a hard-coded OpenBLAS path | closed | [combat-search](../architecture/combat-search.md), [build-and-debugging](../operations/build-and-debugging.md) |
+| [43](2026-08-05-issue-43-pvnet-s3-doc-staleness.md) | Medium | `STS_PVNET`/`STS_S3_*` documentation stale or absent | closed | [combat-search](../architecture/combat-search.md), [AGENTS.md](../../../AGENTS.md) |
+| [44](2026-08-05-issue-44-tok-pipeline-hygiene.md) | Medium | Token-pipeline hygiene: dead gather, GELU mismatch, NaN-loss zeroing | open | [ooc-strategic-v4](../architecture/ooc-strategic-v4.md) |
+| [45](2026-08-05-issue-45-eval-train-hygiene-batch.md) | Low | Eval/train hygiene batch: stale defaults, import safety, misc | open | [training-and-inference](../architecture/training-and-inference.md) |
+| [46](2026-08-05-issue-46-bestbench-append-dedup.md) | Medium | `bestbench` appends without dedup — scripts must truncate | open | [benchmark-protocol](../evaluation/benchmark-protocol.md) |
 | [26](2026-08-02-issue-26-one-combat-centralization.md) | Low | `one_combat.cpp` centralizes policy and experiments | open | [overview](../architecture/overview.md), [out-of-combat](../architecture/out-of-combat.md) |
 | [27](2026-08-02-issue-27-python-deps-unpinned.md) | Low | No dependency lock for Python packages | open | [training-and-inference](../architecture/training-and-inference.md), [build-and-debugging](../operations/build-and-debugging.md) |
 | [28](2026-08-02-issue-28-expert-hand-authored-features.md) | Low | Policy input includes hand-authored Expert features | closed | [combat-search](../architecture/combat-search.md) |

@@ -5,8 +5,10 @@ Bootstrap-problem fix (EXPERIMENTS.md §94/§95): on censored branches
 (labelBootstrap==1) `labelWon` IS V_win(s_cutoff) (futures=1), and V_win
 over-predicts at mid-high values (max decile err ~0.18 after the logit fix).
 Fit a monotone map C(p) on TERMINAL rows (labelBootstrap==0, where `won` is
-the true outcome) with a seed-held-out split, then apply C to censored
-labelWon and write a corrected CSV (same schema).
+the true outcome) with a seed-held-out split (all three candidates — raw,
+Platt, isotonic — are fit on the fit-seed rows only, then compared on the
+held-out seeds), then apply C to censored labelWon and write a corrected
+CSV (same schema).
 
 Usage: fit_vwin_calibration.py <tierb.csv> <trees.txt> <out.csv> [seed_split]
 """
@@ -133,9 +135,10 @@ p_platt = 1.0 / (1.0 + np.exp(-(a_p * lp + b_p)))
 print("=== Platt on validation ===")
 platt_brier, platt_ll_v, platt_cal = decile_report(p_platt[~fit], y_all[~fit], "platt ")
 
-# --- isotonic (PAVA, increasing) ---
-order = np.argsort(p_all)
-ps, ys = p_all[order], y_all[order]
+# --- isotonic (PAVA, increasing) — fit on FIT rows only, so the validation
+# split stays out of the map (Platt and raw are already fit/held-out honest).
+order = np.argsort(p_all[fit])
+ps, ys = p_all[fit][order], y_all[fit][order]
 n_iso = len(ps)
 val = ys.copy()
 w = np.ones(n_iso)
@@ -170,7 +173,6 @@ def iso_map(p):
 p_iso = iso_map(p_all)
 print("=== isotonic on validation ===")
 iso_brier, iso_ll_v, iso_cal = decile_report(p_iso[~fit], y_all[~fit], "iso   ")
-
 # --- select the better map by validation Brier ---
 best_brier = raw_brier
 chosen = "identity"
@@ -207,6 +209,7 @@ print(f"remapped {remapped} censored rows")
 # save map summary
 meta = {"chosen_map": chosen, "platt_a": a_p, "platt_b": b_p,
         "raw_val_brier": raw_brier, "platt_val_brier": platt_brier,
+        "iso_val_brier": iso_brier, "iso_val_cal": iso_cal,
         "raw_val_cal": raw_cal, "platt_val_cal": platt_cal,
         "terminal_rows": n, "fit_seeds": cut}
 with open(OUT.replace(".csv", "_calmap.json"), "w") as f:

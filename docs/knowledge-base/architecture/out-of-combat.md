@@ -1,7 +1,9 @@
 # Out-of-combat policy
 
-Last verified: 2026-08-02 against the current working tree (Phase-5 round 5;
-semi-Markov design record added).
+Last verified: 2026-08-05 against the current working tree (Wave B regret
+gate + Q_win truth-check mode + map-DAG encoder (V6) + Phase F soft-target
+policy objective and policy-score gate env added; Phase F falsified §104,
+label-noise wave §105 null — learned one-ply label line closed).
 
 ## Purpose
 
@@ -104,6 +106,95 @@ globals against `richFeatureVec`; zero mismatches across §75 benchmark runs).
 gate is directionally win-positive at margin 5.0 (+3.1pp, CIs span zero), but
 V3's +7.0pp @ m1 is not beaten — **V3 remains the deployed default; the V4
 net is opt-in**.
+
+## Wave B regret gate (2026-08-04, opt-in)
+
+`STS_OOC_STRATEGIC_GATE=regret` (default **off**) replaces the margin rule
+`best − second ≥ m` with the regret rule **Qmax(s) − Q(a_heur) > ε** for every
+one-ply gate (`oocOnePlyCardRewardPolicy` … `oocOnePlyBossRelicPolicy`,
+`oocOnePlyMapPolicy`) and the M2 route search (`oocMapRouteSearchPolicy`);
+`STS_OOC_STRATEGIC_GATE_EPS` (default 0.03) sets ε. `a_heur` is the action the
+**live fallback chain of the screen** would take (the code path that would run
+if the gate returned false — for SHOP that is `shopVPolicy` under bestbench,
+for cards `serverCardRewardPolicy`, for rest/upgrade the win-rate layers, else
+`ScumSearchAgent2::stepOutOfCombatPolicy`, with the `eventV`/`bossRelicV`/
+`pathV` opt-in layers mirrored when their flags are set), identified by the
+datagen-proven successor-fingerprint match
+(`regretGateChoose` + `stratFingerprint`, one_combat.cpp:5844): the per-screen
+heuristic runner (`regretHeurCardReward` / `regretHeurRest` /
+`regretHeurUpgrade` / `regretHeurEvent` / `regretHeurShop` /
+`regretHeurBossRelic` / `regretHeurMap`, SHOP gated on the run's `shopV` flag
+via `t_shopV`) runs on a pre-state
+copy (map detached, agent RNG stream copied so RNG-consuming heuristics
+match), and the legal action whose successor fingerprint equals the
+heuristic's is `a_heur`. When `Qmax − Q(a_heur) > ε` the Q-max action runs;
+otherwise `a_heur` itself runs (the gate acts, so the heuristic layer is not
+re-entered). When `a_heur` is unidentifiable — RNG-tied divergence, multi-step
+heuristics, indistinguishable successors — the decision **falls back to the
+margin rule** (`regretGateTail`). Implementation is shared via
+`regretGateChoose`/`regretGateTail` (defined after `stratFingerprint`);
+policies keep the margin path byte-identical when the flag is off (verified:
+margin-mode runs reproduce the pre-change binary's results on the recorded
+block). Q-consistency: `check_vwin_calibration.py --ckpt <trainer.pt> <csv>`
+adds a Wave-B truth-check mode that predicts the V5 Q_win head (torch
+checkpoint, export parity-checked to ~1e-5 logit) on terminal
+(`labelBootstrap==0`, chosen) rows instead of the win trees — run with the
+pre- and post-recalibration checkpoints to test bootstrap-bias propagation
+into the head.
+
+## Map-DAG encoder (V6, 5.3.2 — falsified 2026-08-04, opt-in)
+
+`OOC_STRAT_V6` artifacts (V5 layout + a reverse-DAG map encoder + a
+zero-init 96→168 residual adapter) let `oocOnePlyMapPolicy` score MAP
+candidates with downstream route information: node = room/row/col/burning
+embeddings, bottom-up sweep rows 14→0 with mean+max child messages, readout
+pools the chosen child's subtree (roots when `curMapNodeY < 0`). Training
+inputs come from `one_combat mapbatch` tables joined per (seed, act) —
+**no new datagen**: the tierb MAP-screen rows already carry per-child
+counterfactual labels. Trainer knobs: 3rd CLI arg / `STRAT_MAPS_CSV`,
+`STRAT_FREEZE_BASE=1` (train only `map_*`), `STRAT_INIT_PT` (seed the frozen
+base from a prior checkpoint); exporter writes the V6 magic and numpy-parity
+checks the graph path; C++ gains `OocStrategicNet::predictMapActionValue`
+(+`mapnntest` parity mode). E1 (frozen `ooc_strategic_qwin_cal.pt` base,
+40 epochs): val_pol_ce 0.426, q_top1_map 0.506 — offline gain, but the
+recorded-block A/B is neutral-to-negative at every probability-point margin
+(§100): the MAP gate itself costs ~12pp on the base at m0.01, and the encoder
+does not close it. **Verdict: the encoder lever is falsified on the current
+K=3 labels (§62 lesson repeats); V6 stays opt-in and undeployed; the
+heuristic pathing and the map-gate-off stack remain the deployed config.**
+Caution: a killed trainer can leave a byte-size-valid but corrupt
+`_state.bin` — verify frozen-model metrics against the source run before
+reusing it.
+
+## Phase F search distillation (5.7.1 + 5.7.2 — falsified 2026-08-04, opt-in)
+
+`STS_OOC_STRATEGIC_SCORE=policy` (default `q`) switches the one-ply gates'
+score source from the Q_win head to the **policy head** for V5/V6 artifacts:
+`oocStrategicScore` returns `sigmoid(predictPolicyLogit(state, bits, cats,
+actionType, screen))` (the raw logit is sigmoided to the probability scale,
+so the probability-point `STS_OOC_STRATEGIC_MARGIN` semantics apply
+unchanged) instead of `predictActionValue`. The token-net path and the V6
+map-encoder path are untouched; the margin/regret tail (`regretGateTail`) is
+shared, and with the env unset the gates stay byte-identical (verified on the
+recorded block). The trained policy head itself is produced with the
+soft-target distillation loss in `train_strategic.py`: `STRAT_DIST_LAMBDA`
+(0.5) + `STRAT_DIST_TAU` (1.0) blend the one-hot `chosen` CE with
+`CE(softmax(labelWon/τ))` per decision group — `(1−λ)·CE(one-hot) +
+λ·CE(softmax(labelWon/τ))` — plus a held-out `dist_top1` metric (policy
+argmax vs label argmax). λ=0 reproduces the pre-change numbers exactly.
+**Verdict (§104): falsified on the current K=3 labels** — the tie-dominated
+`labelWon` caps the ranking signal (dist_top1 ≈ behavior's 38% agreement),
+the distilled policy flattens the logits (margin 18.6 → ~1.2), and every
+policy-score gate arm loses to the Q-gate and to the V3 reference on the
+recorded block. Both knobs stay opt-in; `q` remains the default. The
+label-noise follow-up (§105, 2026-08-05) is also null: futures=2 variance
+reduction (matched 500-seed control; the labelWon value grid collapses from
+55 to 126k distinct values) and the trainer-side denoising knobs
+(`STRAT_DIST_MARGIN_EPS`, `STRAT_DIST_SPREAD_W`, `STRAT_DIST_TERM_W` —
+defaults byte-parity with the §104 numbers) move neither `dist_top1` nor
+`q_top1`; the one-ply label **ranking** itself is the transfer ceiling.
+K=6 deep targets (5.7.1b) are not run for that reason (truncation is the
+weak lever per the §105 L0 probe).
 
 ## Strategic model design (semi-Markov decomposition)
 

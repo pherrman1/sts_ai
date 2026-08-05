@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-02 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-05 against the current working tree.
 
 ## Purpose
 
@@ -46,6 +46,29 @@ particles whose draw order contradicts the observed pile
 (`BattleScumSearcher3::BattleScumSearcher3`; `ScumSearchAgent2::playoutBattleFair`;
 `CombatObservation::Belief::update`).
 
+Searcher3 feature-ablation toggles (all parsed by `apps/one_combat.cpp::main`
+next to `STS_SEARCHER3`; defaults preserve full behavior): `STS_S3_BELIEF=0`
+skips the two `belief.update` calls in `step()` (particles stay uniform),
+`STS_S3_PRUNE=0` skips the three `canPruneAsDead` checks, `STS_S3_CHAIN=0`
+skips the deterministic chain-compression loop, `STS_S3_LIVE=0` switches the
+root-action pick to the most-visited edge with **no live-valid filter** — an
+invalid most-visited edge ends the battle exactly like the Searcher2 loop
+(`s3PickRootAction`, `ScumSearchAgent2.cpp`; semantics corrected 2026-08-05),
+and `STS_S3_CRN=1` calls `warmStartRootCRN` once per fresh searcher (skipped
+after `advanceRoot` carries the tree; guarded 2026-08-05). Benchmark §106
+(128 seeds, V4 gate stack, fair, 3k sims) measured: removing belief or chain
+*improves* win rate (+8.6 / +4.7pp vs the S3 control; S3−belief also beats
+the S2 reference with CI excluding zero), enabling CRN *loses* −14.1pp
+(CI excludes zero), and the prune toggle is a per-seed no-op in this regime.
+The belief particle count is configurable via `STS_S3_PARTICLES` (default 64;
+was hardcoded in `ScumSearchAgent2::playoutBattleFair`/`playoutBattle`).
+§107 (256 paired seeds vs the §99 S2@3k reference, 45.3%) promoted the
+combined variant: **S3−belief−chain is the recommended combat search** —
+60.2% (+14.8pp, CI excluding zero) at 3k sims/256 particles, or 57.4%
+(+12.1pp) at 1k sims/64 particles (3.1× less compute). Particle count is
+flat across 16–256 (§107), and the belief reweighting stays harmful even at
+256 particles (E1: −6.2pp vs belief-off at equal count).
+
 ## Important data flow
 
 1. `BattleContext::init` copies run state and initializes combat transients.
@@ -89,11 +112,25 @@ Learned guidance is loaded by `apps/one_combat.cpp::main`:
 The tracked joint PVNet is experimental. The recorded July 30 sweep found its policy
 head useful and its value head weak; see
 [evaluation/current-baselines.md](../evaluation/current-baselines.md) and the
-final section of `EXPERIMENTS.md`.
+final section of `EXPERIMENTS.md`. All recorded PVNet bot results predate the
+2026-08-04 parity fixes (GELU FFN, fixed 14-token layout, full policy-head dot
+product; decision log `2026-08-04-combat-pvnet-parity-fixes.md`); the
+`pvnetparity` mode (`apps/one_combat.cpp::main`) now verifies C++ inference
+against `combat_pvnet_parity.py` to ~1e-6. The 2026-08-05 3k-sim payoff gate
+(EXPERIMENTS.md §102) closed the PVNet channel at the recommended operating
+point: policy priors hurt at deep search (−7.0pp vs S3 control) and the neural
+leaf's within-noise win gain costs 14–18x compute; the A–H architecture sweep
+was stopped.
 
-`STS_DIST_VNET` and `STS_PVNET` are referenced only from
-`BattleScumSearcher3.cpp`. Loading either model without `STS_SEARCHER3=1`
-prints a load message but does not make default Searcher2 use it.
+`STS_DIST_VNET` is referenced only from `BattleScumSearcher3.cpp`; loading it
+without `STS_SEARCHER3=1` prints a load message but does not make default
+Searcher2 use it. `STS_PVNET` is different since 2026-08-05: default
+Searcher2 consumes the PVNet **policy head** (priors + PUCT) whenever it is
+loaded and not value-only (`BattleScumSearcher2.cpp::computeEdgePriors`,
+mirroring S3). Per-searcher semantics therefore differ: in S2 only the policy
+head is used (the value/leaf blend `STS_PVNET_ALPHA` is S3-only), and with
+`STS_PVNET_VALUE_ONLY=1` the PVNet is fully inert in S2 while S3 keeps the
+PUCT-with-zero-priors quirk.
 
 ## Invariants and assumptions
 
@@ -140,9 +177,28 @@ prints a load message but does not make default Searcher2 use it.
   states where the player cannot act; the aggressive `isGuaranteedDead`
   predicate was removed because its soundness for card-selection states was not
   proven (`src/sim/search/BattleScumSearcher3.cpp::canPruneAsDead`).
-- Native PV/distribution inference probes a hard-coded SciPy OpenBLAS path and
-  otherwise falls back to scalar math; the active backend is printed at load
-  time (`src/sim/search/CombatPVNet.cpp`; `CombatDistValueNet.cpp`).
+- Native PV/distribution inference probes a SciPy OpenBLAS path and
+  otherwise falls back to scalar math; `STS_OPENBLAS` overrides the probe
+  path and the loader accepts either `scipy_cblas_sgemv` or `cblas_sgemv`.
+  Set `OPENBLAS_NUM_THREADS=1` when OpenMP-outer-parallel workloads call
+  BLAS: OpenBLAS's own pool plus the 24 outer workers oversubscribes the box
+  ~2x and runs slower than scalar (EXPERIMENTS.md §102). The active backend
+  is printed at load time (`src/sim/search/CombatPVNet.cpp`; `CombatDistValueNet.cpp`).
+- The root CRN warm start (`warmStartRootCRN`, `prepareCRNParticles`) was dead
+  code in every recorded result — declared/defined but never called; the
+  `crnTiebreak` helper is declared and never defined. `STS_S3_CRN=1` now makes
+  `search`/`searchToTotal` call it once per fresh searcher (skipped when the
+  tree is carried by `advanceRoot`), and the §106 ablation measured it harmful
+  (−14.1pp vs the S3 control, CI excluding zero), so it stays off.
+- Ablation evidence (§106, 128 seeds, V4 gate stack, fair, 3k sims): belief
+  reweighting and chain compression are net-negative on the deployed package
+  (removing them wins +8.6 / +4.7pp vs the control), while `canPruneAsDead`
+  and the live-valid root filter are per-seed bit-identical no-ops in this
+  regime. `STS_S3_BELIEF/PRUNE/CHAIN/LIVE` defaults preserve full behavior.
+  §107 promoted **S3−belief−chain** as the recommended (opt-in) combat search
+  on the V4 gate stack: 60.2% @3k/256p, 57.4% @1k/64p, both CIs excluding
+  zero vs the §99 S2@3k 45.3% reference on 256 paired seeds; see
+  `docs/knowledge-base/evaluation/current-baselines.md`.
 
 ## Open questions
 

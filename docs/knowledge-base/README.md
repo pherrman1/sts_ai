@@ -15,6 +15,9 @@ For architecture:
 2. [Combat search](architecture/combat-search.md)
 3. [Out-of-combat policy](architecture/out-of-combat.md)
 4. [Training and inference](architecture/training-and-inference.md)
+5. [Phase F handoff plan](architecture/ooc-phase-f-plan.md) — **active plan**:
+   policy-head search distillation (5.7.1 + 5.7.2), to be executed by the
+   next session; not yet started.
 
 For evaluation and operation:
 

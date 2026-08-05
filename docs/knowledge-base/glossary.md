@@ -87,9 +87,15 @@ prior-weighted exploration; the repository default constant is `g_cPuct=2.5`
 
 **Searcher3 / ISMCTS** — Opt-in particle combat search with observations cached
 in nodes (`include/sim/search/BattleScumSearcher3.h`, `BattleScumSearcher3`;
-`src/sim/search/BattleScumSearcher3.cpp`, `step`). Its current
-`Belief::update` is a no-op, so “belief” does not imply observation-conditioned
-filtering.
+`src/sim/search/BattleScumSearcher3.cpp`, `step`). Its `Belief::update`
+zero-weights particles contradicting the observed draw pile
+(`src/sim/search/CombatObservation.cpp`); the §106 ablation found this
+reweighting net-negative under the V4 gate stack at 3k sims
+(`STS_S3_BELIEF=0` opt-out). The root CRN warm start
+(`warmStartRootCRN`/`prepareCRNParticles`) is dead code reachable only via
+`STS_S3_CRN=1` and measured harmful; `crnTiebreak` is declared but never
+defined. The particle count is hardcoded at 64
+(`src/sim/search/ScumSearchAgent2.cpp`, `playoutBattleFair`).
 
 **Teacher** — Search or counterfactual process whose outcomes or visits become
 training targets. `fightgen`, for example, logs fight outcomes and root visit

@@ -16,7 +16,7 @@ Architecture:
   - Multi-head output for all prediction targets
 
 Usage:
-  train_combat_dist.py CSV [TEACHER] [OUT] [VAL]
+  train_combat_dist.py CSV [OUT]
 """
 
 import os, sys, gc, math
@@ -406,6 +406,37 @@ def export_model(model, path, scalar_cols_in, mon_cont_cols):
     print(f"[export] wrote {path}", flush=True)
 
 
+def validation_loss(model, val_fights, dtypes):
+    """Mean loss over held-out fight rows (same chunk/sample gates as
+    training). Used for best-model selection; training loss alone is not."""
+    model.eval()
+    vloss = 0.0
+    vn = 0
+    reader = pd.read_csv(CSV, chunksize=CHUNK, dtype=dtypes)
+    for df in reader:
+        fight_mask = np.array([(int(s), int(f)) in val_fights
+                               for s, f in zip(df["seed"], df["fightIdx"])])
+        df_val = df[fight_mask]
+        if len(df_val) == 0:
+            continue
+        if mix64(df_val["seed"].values[0]) % SAMPLE_MOD != 0:
+            continue
+        (scalar, cards, relics, potions, enc, mids, intents, mcont, mmask,
+         y_won, y_hp, max_hp, turns_rem, pot_used) = extract_entities(df_val)
+        with torch.no_grad():
+            for start in range(0, len(df_val), BATCH):
+                end = min(start + BATCH, len(df_val))
+                bs = lambda x: torch.from_numpy(x[start:end]).to(DEVICE)
+                preds = model(bs(scalar), bs(cards), bs(relics), bs(potions),
+                              bs(enc), bs(mids), bs(intents), bs(mcont), bs(mmask))
+                loss, _ = compute_losses(preds, bs(y_won), bs(y_hp), bs(max_hp),
+                                         bs(turns_rem), bs(pot_used))
+                vloss += loss.item() * (end - start)
+                vn += (end - start)
+    model.train()
+    return vloss / max(vn, 1)
+
+
 def main():
     print(f"[data] loading {CSV}", flush=True)
     reader = pd.read_csv(CSV, chunksize=CHUNK, dtype=dtypes)
@@ -490,13 +521,15 @@ def main():
                 epoch_n += (end - start)
 
         avg_loss = epoch_loss / max(epoch_n, 1)
-        print(f"[epoch {epoch+1}/{EPOCHS}] loss={avg_loss:.4f}", flush=True)
+        val_avg = validation_loss(model, val_fights, dtypes)
+        print(f"[epoch {epoch+1}/{EPOCHS}] loss={avg_loss:.4f} "
+              f"val_loss={val_avg:.4f}", flush=True)
 
-        if avg_loss < best_loss:
-            best_loss = avg_loss
+        if val_avg < best_loss:
+            best_loss = val_avg
             export_model(model, OUT, scalar_cols, mon_cont_mean)
 
-    print(f"[done] best_loss={best_loss:.4f} -> {OUT}", flush=True)
+    print(f"[done] best_val_loss={best_loss:.4f} -> {OUT}", flush=True)
 
 
 if __name__ == "__main__":

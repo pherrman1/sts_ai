@@ -4,6 +4,7 @@
 
 #include "sim/search/ScumSearchAgent2.h"
 
+#include <algorithm>
 #include <sim/search/ExpertKnowledge.h>
 #include <game/Game.h>
 #include "sim/PrintHelpers.h"
@@ -17,6 +18,36 @@ namespace sts::search {
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher2&)> g_onSearchComplete = nullptr;
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher3&)> g_onSearchComplete3 = nullptr;
 }
+
+namespace {
+// Root-action pick for Searcher3. Default (g_s3Live): most-visited live-valid
+// edge. Ablation (g_s3Live=0): Searcher2-style most-visited edge with no
+// live-valid filter; an invalid most-visited edge yields no action, ending the
+// battle exactly like the Searcher2 loop breaks out.
+search::Action s3PickRootAction(const search::BattleScumSearcher3 &s3,
+                                const BattleContext &bc, bool &have) {
+    have = false;
+    if (search::g_s3Live) {
+        std::int64_t bestVisits = -1;
+        search::Action bestAction;
+        for (const auto &e : s3.root.edges) {
+            if (e.child.simulationCount > bestVisits && e.action.isValidAction(bc)) {
+                bestVisits = e.child.simulationCount; bestAction = e.action; have = true;
+            }
+        }
+        return bestAction;
+    }
+    std::int64_t maxVisits = -1;
+    search::Action bestAction;
+    for (const auto &e : s3.root.edges) {
+        if (e.child.simulationCount > maxVisits) {
+            maxVisits = e.child.simulationCount; bestAction = e.action; have = true;
+        }
+    }
+    if (!have || !bestAction.isValidAction(bc)) { have = false; return {}; }
+    return bestAction;
+}
+} // namespace
 
 void search::ScumSearchAgent2::takeAction(GameContext &gc, search::GameAction a) {
     if (printActions) {
@@ -79,18 +110,12 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
             const std::int64_t sims = isBossEncounter(bc.encounter)
                 ? (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
-            BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, 64);
+            BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
             s3.search(sims);
             simulationCountTotal += s3.root.simulationCount;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
-            std::int64_t bestVisits = -1;
-            search::Action bestAction;
             bool have = false;
-            for (const auto &e : s3.root.edges) {
-                if (e.child.simulationCount > bestVisits && e.action.isValidAction(bc)) {
-                    bestVisits = e.child.simulationCount; bestAction = e.action; have = true;
-                }
-            }
+            search::Action bestAction = s3PickRootAction(s3, bc, have);
             if (!have) break;
             takeAction(bc, bestAction);
             ++decisionIdx;
@@ -132,7 +157,7 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
     }
     if (search::g_useSearcher3) {
         int decisionIdx = 0;
-        BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, 64);
+        BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
             const std::int64_t sims = isBossEncounter(bc.encounter)
@@ -141,14 +166,8 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             s3.searchToTotal(sims);
             simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
-            std::int64_t bestVisits = -1;
-            search::Action bestAction;
             bool have = false;
-            for (const auto &e : s3.root.edges) {
-                if (e.child.simulationCount > bestVisits && e.action.isValidAction(bc)) {
-                    bestVisits = e.child.simulationCount; bestAction = e.action; have = true;
-                }
-            }
+            search::Action bestAction = s3PickRootAction(s3, bc, have);
             if (!have) break;
             takeAction(bc, bestAction);
             s3.advanceRoot(bestAction, bc);

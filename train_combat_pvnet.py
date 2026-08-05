@@ -36,6 +36,15 @@ WIN_BONUS = float(os.environ.get("PVNET_WIN_BONUS", "50"))
 LAMBDA = {"policy": L_POL, "win": L_WIN, "quantile": L_QUANT,
           "potion": 0.2, "turns": 0.1, "death": 1.0}
 
+# Seed-grouped validation split: deterministic rule, no overlap with train rows.
+# A group (seed, fightIdx, decIdx) is entirely train or val because the seed is
+# constant within a group.
+VAL_FRAC = float(os.environ.get("PVNET_VAL_FRAC", "0.2"))
+TRAIN_ONLY = os.environ.get("PVNET_TRAIN_ONLY", "0") == "1"
+
+def is_val_seed(seed):
+    return int(seed) % 100 < int(VAL_FRAC * 100)
+
 if DEVICE == "cuda" and torch.cuda.is_available():
     print(f"[GPU] {torch.cuda.get_device_name(0)} "
           f"VRAM={torch.cuda.get_device_properties(0).total_memory/1e9:.1f}GB", flush=True)
@@ -47,7 +56,21 @@ torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "8")))
 
 # ── CSV schema ───────────────────────────────────────────────────────────────
 val_header = list(pd.read_csv(VAL_CSV, nrows=0).columns)
-canonical = [c for c in val_header if c not in ("seed", "fightIdx", "won", "endHp")]
+# Optional rich labels (fairgen emits them since 2026-08-05; distgen already
+# did): endTurn + potionsConsumed + per-potion pUsed0..43. They train the
+# potion/turns heads; without them those heads stay fallback-trained.
+RICH_LABELS = "endTurn" in val_header and "potionsConsumed" in val_header
+pused_cols = [c for c in val_header if c.startswith("pUsed")]
+if RICH_LABELS:
+    extra_excl = ["endTurn", "potionsConsumed"] + pused_cols
+else:
+    extra_excl = []
+    print("[pvnet] WARNING: value CSV has no endTurn/potionsConsumed/pUsed* "
+          "rich labels; potion/turns heads will stay fallback-trained. "
+          "Re-generate with fairgen on the current binary for full labels.",
+          flush=True)
+canonical = [c for c in val_header
+             if c not in ("seed", "fightIdx", "won", "endHp", *extra_excl)]
 assert len(canonical) == 1766
 
 pol_header = list(pd.read_csv(POL_CSV, nrows=0).columns)
@@ -180,10 +203,14 @@ class SharedEncoder(nn.Module):
         t = self.enc_embed(encounter.long())
         if 32 != self.dim: t = self.enc_proj(t)
         tokens.append((t + self.type_embed[4]).unsqueeze(1))
-        # 5: monsters
+        # 5: monsters — always emit all 5 slots (fixed 14-token layout
+        # matching combat_pvnet_parity.py / the C++ forward); an all-dead slot
+        # contributes a zero token, never a skipped token.
         for s in range(5):
             alive = mmask[:, s]
-            if not alive.any(): continue
+            if not alive.any():
+                tokens.append(torch.zeros(B, 1, self.dim, device=scalar.device))
+                continue
             me = self.mon_id(mids[:, s].long().clamp(0, 255))
             ie = self.mon_intent(intents[:, s].long().clamp(0, 31))
             mc = (mcont[:, s, :] - self.mon_mean) * self.mon_inv
@@ -233,7 +260,7 @@ def policy_ce(logits, visit_counts, total):
     return -(target * lp).sum()
 
 
-def value_losses(preds, y_won, y_hp, max_hp):
+def value_losses(preds, y_won, y_hp, max_hp, y_pot=None, y_turns=None):
     ld = nn.functional.binary_cross_entropy_with_logits(preds["death"], (y_won <= 0).float())
     lw = nn.functional.binary_cross_entropy_with_logits(preds["win"], y_won)
     won = y_won > 0.5
@@ -245,9 +272,109 @@ def value_losses(preds, y_won, y_hp, max_hp):
         lq = (tau * d.clamp(min=0) + (1 - tau) * (-d).clamp(min=0)).mean()
     else:
         lq = torch.tensor(0.0, device=DEVICE)
-    lp = 0.01 * preds["potion"].abs().mean()
-    lt = torch.tensor(0.0, device=DEVICE)
+    if y_pot is not None:
+        mask = y_pot.sum(-1) > 0
+        if mask.any():
+            lp = nn.functional.binary_cross_entropy_with_logits(
+                preds["potion"][mask], y_pot[mask])
+        else:
+            lp = 0.01 * preds["potion"].abs().mean()
+    else:
+        lp = 0.01 * preds["potion"].abs().mean()
+    if y_turns is not None:
+        lt = nn.functional.smooth_l1_loss(preds["turns"], torch.log1p(y_turns))
+    else:
+        lt = torch.tensor(0.0, device=DEVICE)
     return {"death": ld, "win": lw, "quantile": lq, "potion": lp, "turns": lt}
+
+
+# ── Validation pass (held-out seeds) ────────────────────────────────────────
+def validation_pass(model):
+    """Stream both CSVs, keep only val-seed rows/groups, return weighted loss."""
+    model.eval()
+    total_v = 0.0; total_p = 0.0; total_n = 0
+    with torch.no_grad():
+        v_reader = pd.read_csv(VAL_CSV, chunksize=CHUNK)
+        for df in v_reader:
+            m = df["seed"].map(is_val_seed).to_numpy(np.bool_)
+            if not m.any(): continue
+            sdf = df[m]
+            scalar, cards, relics, potions, enc, mids, intents, mcont, mmask = extract_state(sdf)
+            y_won = sdf["won"].to_numpy(np.float32)
+            y_hp = sdf["endHp"].to_numpy(np.float32)
+            max_hp = sdf["maxHp"].to_numpy(np.float32)
+            y_pot = None
+            y_turns = None
+            if RICH_LABELS:
+                y_pot = sdf[pused_cols].to_numpy(np.float32)
+                y_turns = np.maximum(0.0, sdf["endTurn"].to_numpy(np.float32)
+                                     - sdf["turn"].to_numpy(np.float32)).astype(np.float32)
+            for b in range(0, len(sdf), BATCH):
+                e = min(b + BATCH, len(sdf))
+                s, ca, r, po, en, mi, it, mc, mm = to_tensors(
+                    scalar[b:e], cards[b:e], relics[b:e], potions[b:e],
+                    enc[b:e], mids[b:e], intents[b:e], mcont[b:e], mmask[b:e])
+                yw, yh, mh = to_tensors(y_won[b:e], y_hp[b:e], max_hp[b:e])
+                yp = yt = None
+                if y_pot is not None:
+                    yp = torch.from_numpy(np.ascontiguousarray(y_pot[b:e])).to(DEVICE)
+                    yt = torch.from_numpy(np.ascontiguousarray(y_turns[b:e])).to(DEVICE)
+                z = model.encoder(s, ca, r, po, en, mi, it, mc, mm)
+                out = {
+                    "death": model.death(z).squeeze(-1),
+                    "win": model.win(z).squeeze(-1),
+                    "quantile": model.quantile(z),
+                    "potion": model.potion(z),
+                    "turns": model.turns(z).squeeze(-1),
+                }
+                vlosses = value_losses(out, yw, yh, mh, yp, yt)
+                loss = sum(LAMBDA[k] * vlosses[k] for k in vlosses)
+                total_v += loss.item() * (e - b)
+                total_n += e - b
+
+        p_reader = pd.read_csv(POL_CSV, chunksize=CHUNK)
+        for df in p_reader:
+            if len(df) < 2: continue
+            seeds = df["seed"].to_numpy(np.int64)
+            fights = df["fightIdx"].to_numpy(np.int32)
+            decs = df["decIdx"].to_numpy(np.int32)
+            changes = (seeds[1:] != seeds[:-1]) | (fights[1:] != fights[:-1]) | (decs[1:] != decs[:-1])
+            boundaries = np.where(changes)[0] + 1
+            g_starts = np.concatenate([[0], boundaries])
+            g_ends = np.concatenate([boundaries, [len(df)]])
+            valid = (g_ends - g_starts) >= 2
+            g_starts = g_starts[valid]
+            g_ends = g_ends[valid]
+            valmask = np.array([is_val_seed(s) for s in seeds])
+            keep = valmask[g_starts]
+            g_starts = g_starts[keep]
+            g_ends = g_ends[keep]
+            if len(g_starts) == 0: continue
+            state_arr = df[canonical].to_numpy(np.float32)
+            action_arr = df[action_names].to_numpy(np.float32)
+            visit_arr = df["visit"].to_numpy(np.int32)
+            total_arr = df["total"].to_numpy(np.int32)
+            batch_states = state_arr[g_starts]
+            df_batch = pd.DataFrame(batch_states, columns=canonical)
+            scalar, cards, relics, potions, enc, mids, intents, mcont, mmask = extract_state(df_batch)
+            s_t, ca_t, r_t, po_t, en_t, mi_t, it_t, mc_t, mm_t = to_tensors(
+                scalar, cards, relics, potions, enc, mids, intents, mcont, mmask)
+            z_all = model.encoder(s_t, ca_t, r_t, po_t, en_t, mi_t, it_t, mc_t, mm_t)
+            for gi in range(len(g_starts)):
+                gs, ge = g_starts[gi], g_ends[gi]
+                n_act = ge - gs
+                if n_act < 2: continue
+                tot = int(total_arr[gs])
+                if tot <= 0: continue
+                z_i = z_all[gi:gi+1].expand(n_act, -1)
+                act_t = torch.from_numpy(np.ascontiguousarray(action_arr[gs:ge])).to(DEVICE)
+                vis_t = torch.from_numpy(visit_arr[gs:ge].astype(np.float32).copy()).to(DEVICE)
+                logits = model.policy(z_i, act_t)
+                ce = policy_ce(logits, vis_t, torch.tensor(float(tot), device=DEVICE))
+                total_p += ce.item() * n_act
+                total_n += n_act
+    model.train()
+    return (total_v + total_p) / max(total_n, 1)
 
 
 # ── Training ─────────────────────────────────────────────────────────────────
@@ -276,10 +403,20 @@ def main():
         # ── Value pass ──
         v_reader = pd.read_csv(VAL_CSV, chunksize=CHUNK)
         for df in v_reader:
+            if TRAIN_ONLY:
+                m = ~df["seed"].map(is_val_seed).to_numpy(np.bool_)
+                df = df[m]
+                if len(df) == 0: continue
             scalar, cards, relics, potions, enc, mids, intents, mcont, mmask = extract_state(df)
             y_won = df["won"].to_numpy(np.float32)
             y_hp = df["endHp"].to_numpy(np.float32)
             max_hp = df["maxHp"].to_numpy(np.float32)
+            y_pot = None
+            y_turns = None
+            if RICH_LABELS:
+                y_pot = df[pused_cols].to_numpy(np.float32)
+                y_turns = np.maximum(0.0, df["endTurn"].to_numpy(np.float32)
+                                     - df["turn"].to_numpy(np.float32)).astype(np.float32)
 
             for b in range(0, len(df), BATCH):
                 e = min(b + BATCH, len(df))
@@ -288,6 +425,10 @@ def main():
                     scalar[b:e], cards[b:e], relics[b:e], potions[b:e],
                     enc[b:e], mids[b:e], intents[b:e], mcont[b:e], mmask[b:e])
                 yw, yh, mh = to_tensors(y_won[b:e], y_hp[b:e], max_hp[b:e])
+                yp = yt = None
+                if y_pot is not None:
+                    yp = torch.from_numpy(np.ascontiguousarray(y_pot[b:e])).to(DEVICE)
+                    yt = torch.from_numpy(np.ascontiguousarray(y_turns[b:e])).to(DEVICE)
 
                 z = model.encoder(s, ca, r, po, en, mi, it, mc, mm)
                 out = {
@@ -297,7 +438,7 @@ def main():
                     "potion": model.potion(z),
                     "turns": model.turns(z).squeeze(-1),
                 }
-                vlosses = value_losses(out, yw, yh, mh)
+                vlosses = value_losses(out, yw, yh, mh, yp, yt)
                 loss = sum(LAMBDA[k] * vlosses[k] for k in vlosses)
 
                 optimizer.zero_grad()
@@ -327,6 +468,11 @@ def main():
             valid = (g_ends - g_starts) >= 2
             g_starts = g_starts[valid]
             g_ends = g_ends[valid]
+            if TRAIN_ONLY:
+                valmask = np.array([is_val_seed(s) for s in df["seed"].to_numpy(np.int64)])
+                keep = ~valmask[g_starts]
+                g_starts = g_starts[keep]
+                g_ends = g_ends[keep]
             if len(g_starts) == 0:
                 continue
 
@@ -376,15 +522,16 @@ def main():
                 total_n += p_n
 
         avg_loss = (total_v + total_p) / max(total_n, 1)
+        val_loss = validation_pass(model)
         elapsed = time.time() - t_start
         print(f"  loss={avg_loss:.4f}  v={total_v/max(total_n,1):.4f}  "
-              f"p={total_p/max(total_n,1):.4f}  {elapsed:.0f}s", flush=True)
+              f"p={total_p/max(total_n,1):.4f}  val={val_loss:.4f}  {elapsed:.0f}s", flush=True)
 
-        if avg_loss < best_loss or epoch == 0:
-            best_loss = avg_loss
+        if val_loss < best_loss or epoch == 0:
+            best_loss = val_loss
             export_model(model, OUT)
 
-    print(f"\n[done] best_loss={best_loss:.4f} → {OUT}  ({time.time()-t_start:.0f}s)", flush=True)
+    print(f"\n[done] best_val={best_loss:.4f} → {OUT}  ({time.time()-t_start:.0f}s)", flush=True)
 
 
 # ── Export ───────────────────────────────────────────────────────────────────

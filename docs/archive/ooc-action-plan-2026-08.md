@@ -117,7 +117,7 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 ### Phase B: better encoders
 
 - [x] Deck set transformer (permutation invariant, counted → instance tokens comparison) — 5.3.1; §86 held-out **neutral** (transformer lever kept)
-- [ ] Map DAG message-passing encoder (boss-row-backward), legal-node embeddings carry downstream route info — 5.3.2; re-test against §61/§62 history
+- [x] Map DAG message-passing encoder (boss-row-backward), legal-node embeddings carry downstream route info — 5.3.2; delivered on the tierb pipeline (§100, `OOC_STRAT_V6`): reverse-DAG encoder + zero-init adapter, frozen-base isolation run, mapbatch tables (no new datagen — the tierb MAP rows already carry per-child counterfactual labels); **falsified** — offline gain (q_top1_map 0.506, val_pol_ce 0.426) with no gameplay transfer (neutral-to-negative at every probability-point margin, §62 lesson repeats); the heuristic pathing stays, V6 stays opt-in
 - [x] Candidate–deck cross-attention for card rewards — 5.3.3; §88 held-out **neutral**
 - [x] Distributional/multi-head value targets (§5) — §87; implemented as per-screen quantile heads on `10·won+endHp` (not the spec's act/death-floor/boss-HP targets — divergence); held-out **marginal** (best Q top-1 0.296)
 - [x] Evaluate each change with paired seeds on the recorded block — held-out evals per §86–§88; the neutral rounds did not warrant paired-seed gate evals (§6 protocol applies to deployed changes)
@@ -138,14 +138,29 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 ### Phase E: specialized search
 
 - [x] Shop beam search (width 16–64, depth = affordable purchases, dedup states) — 5.6.1; §85 **negative** (beam-only −9.4pp; value-head leaves too weak); the one-ply shop gate stays
-- [ ] Short-horizon map route search (2–5 floors, sampled outcomes, V at leaf) — 5.6.2; the direct-Q-per-route one-ply MAP gate was **falsified** (§91: −15.6..−19.5pp at every margin; the Q head's MAP rankings are anti-predictive without downstream route info) **and the C_ψ-surrogate route search was falsified too** (§93: C_ψ pool expectation + MAP V-head leaf, −9.4..−21.1pp at m1.0/m5.0, neutral m0.5) — the heuristic pathing stays; the open lever is the map DAG encoder (5.3.2) or Tier-B-style route labels
+- [x] Short-horizon map route search (2–5 floors, sampled outcomes, V at leaf) — 5.6.2; delivered and benchmarked: the direct-Q-per-route one-ply MAP gate was **falsified** (§91: −15.6..−19.5pp at every margin; the Q head's MAP rankings are anti-predictive without downstream route info) **and the C_ψ-surrogate route search was falsified too** (§93: C_ψ pool expectation + MAP V-head leaf, −9.4..−21.1pp at m1.0/m5.0, neutral m0.5) — the heuristic pathing stays; the open lever is the map DAG encoder (5.3.2) or Tier-B-style route labels
 - [x] Stochastic event evaluation via sampled RNG continuations — 5.6.3; **superseded** by the Tier-B label design (§74 decision: labels average the stochastic continuation)
 - [x] Hidden-information boundary audit — 5.6.4, spec §13; delivered (decision log `2026-08-02-hidden-info-audit.md`): gates/searcher clean; rich-row future-encounter features flagged as an open design question
 
 ### Phase F: search distillation
 
-- [ ] Produce improved policy targets `π_target(a|s) ∝ exp(Q_search(s,a)/τ)` — 5.7.1
-- [ ] Train policy toward search-improved targets (CE) — 5.7.2
+Status: **executed and falsified on the current labels (2026-08-04, §104)** —
+the soft-target objective (λ∈{0.25,0.5,1.0}, τ=1.0) does not transfer: every
+distilled-policy gate arm loses to the Q-gate (~+3..+27pp, significant at
+m≤0.05) and to the V3 reference (best −21.1pp [−30.5,−12.5]). The
+tie-dominated `labelWon` caps the ranking signal (dist_top1 ≈ behavior's
+38%). `STS_OOC_STRATEGIC_SCORE` stays opt-in; `q` stays default.
+**The label-noise follow-up wave (2026-08-05, §105) is also null**: futures=2
+variance reduction (matched control, 55→126k value grid), trainer-side
+denoising (MARGIN_EPS/SPREAD_W/TERM_W), and the L0 noise decomposition all
+show the one-ply label **ranking** itself — not its noise — is the ceiling.
+K=6 deep targets (5.7.1b) are **not run** (L0: truncation is the weak lever,
+~6pp terminal-vs-censored gap). The learned one-ply label line
+(§96/§100/§104/§105) is closed; 5.7.3 vs. abandoning the labels is the open
+question.
+
+- [x] Produce improved policy targets `π_target(a|s) ∝ exp(Q_search(s,a)/τ)` — 5.7.1 (done; diagnostic §104 Step 1: 38% argmax-vs-chosen agreement, ties dominate; K=6 deeper targets NOT run — §105: truncation is the weak lever, label precision does not transfer)
+- [x] Train policy toward search-improved targets (CE) — 5.7.2 (done; gate A/B §104: falsified, stays opt-in)
 - [ ] Iterative loop: play → search → train → repeat — 5.7.3
 
 ### Cross-cutting
@@ -154,8 +169,8 @@ Checkboxes are new; delivered items are marked `[x]` with evidence refs.
 - [x] A/B `STRATEGIC_BRANCH_FUTURES` for encounter averaging — §84; futures=3 gate +13.3pp < futures=1 +18.8pp; **futures=1 stays**
 - [x] Fix or isolate the `BattleContext::executeActions` loop-guard assertion (seed 128087) — isolated (`src/combat/BattleContext.cpp`: Release-mode `assert` no-op → logged loss termination); seed completes; committed
 - [x] V4 full gate stack on the 256-seed block (§81 follow-up 3) — §92: **105/256 = 41.0%** (+3.9pp vs the V3 256-stack; +18.0pp vs the 256 flags-off baseline); V4 stays the top arm, gates stay opt-in, no default flip
-- [x] Q_win action-value refactor (§4 divergence 1 follow-up) — §94: pure win-probability Q head (BCE on `labelWon`), Q_HP/Q_floor aux heads, `OOC_STRAT_V5` artifact, V3 retrained on fresh tierb data (laptop CPU, early stop, best epoch 24); **V_win bootstrap found grossly miscalibrated** (max decile err 0.42) — recalibration decision open before probability-point margins; probability-point margin sweep + regret gate (Wave B) next; Q_boss aux head deferred (needs a datagen label column)
-- [ ] More Tier-A data (round 1 used 200 seeds; Tier-B used ~4,650) for policy-head training
+- [x] Q_win action-value refactor (§4 divergence 1 follow-up) — §94/§95/§96: pure win-probability Q head (BCE on `labelWon`), Q_HP/Q_floor aux heads, `OOC_STRAT_V5` artifact (both V3 and V5 loadable, legacy bit-identical); V_win bootstrap recalibration §95 (the initial "grossly miscalibrated" claim was a checker bug; true max decile 0.24 raw → 0.08 after the isotonic map on the censored labels); corrected-label desktop retrain (best epoch 40: q_brier 0.041, q_cal_max 0.065, policy top-1 0.797) + V5 export; **probability-point margin sweep and the Wave B regret gate are both negative** (§96: every Q_win margin point loses to the V3 legacy reference — only biased m0.01 at 33.6% spans zero; the regret gate `STS_OOC_STRATEGIC_GATE=regret` is ≈ baseline at every ε and stays opt-in, no default flip); Q_boss aux head deferred (needs a datagen label column)
+- [x] More Tier-A data (round 1 used 200 seeds; Tier-B used ~4,650) for policy-head training — satisfied indirectly: the §94 fresh `strategicgen2` datagen (new seeds 200000–201439, 1,440 seeds / 900,916 rows) grew the shared Tier-A+Tier-B corpus (Tier-A labels ride the same rows), and the §95/§96 corrected-label retrains train the policy head on it; no dedicated Tier-A-only datagen was run
 
 ## 6. Evaluation protocol
 
