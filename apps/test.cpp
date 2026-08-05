@@ -8,11 +8,14 @@
 #include <thread>
 #include <memory>
 #include <mutex>
+#include <set>
+#include <algorithm>
 
 #include "data_structure/fixed_list.h"
 #include "constants/Cards.h"
 #include "constants/Events.h"
 #include "constants/CardPools.h"
+#include "constants/Potions.h"
 #include "game/Game.h"
 #include "game/Map.h"
 #include "game/Neow.h"
@@ -444,6 +447,260 @@ int testPrune(std::uint64_t seed) {
     return 0;
 }
 
+// ---- CARD_SELECT action-parity contract -------------------------------------
+// Ground truth for a CARD_SELECT state is exactly the action set the simulator
+// validates (search::Action::isValidAction): in this input mode only
+// SINGLE_CARD_SELECT and MULTI_CARD_SELECT actions can validate. Every
+// enumerator -- the canonical search::Action::enumerateCardSelectActions and
+// both searchers' CARD_SELECT branches -- must match it exactly, or the search
+// can be blind to legal selections (see knowledge-base issues tracker).
+
+static std::vector<std::uint32_t> cardSelectGroundTruth(const BattleContext &bc) {
+    std::set<std::uint32_t> s;
+    for (int idx = 0; idx < 64; ++idx) {
+        search::Action a(search::ActionType::SINGLE_CARD_SELECT, idx);
+        if (a.isValidAction(bc)) s.insert(a.bits);
+    }
+    const int n = bc.cards.cardsInHand;
+    if (n > 0 && n <= 10) {
+        for (std::uint32_t mask = 0; mask < (1u << n); ++mask) {
+            search::Action a(search::ActionType::MULTI_CARD_SELECT, (int)mask);
+            if (a.isValidAction(bc)) s.insert(a.bits);
+        }
+    }
+    return std::vector<std::uint32_t>(s.begin(), s.end());
+}
+
+// Canonical PLAYER_NORMAL action spec: playable hand cards (adjacent duplicates
+// collapsed, one action per targetable monster for targeted cards), usable
+// potions (fairy excluded), and END_TURN. Must equal both searchers' output.
+static std::vector<std::uint32_t> playerNormalGroundTruth(const BattleContext &bc) {
+    std::set<std::uint32_t> s;
+    for (int h = 0; h < bc.cards.cardsInHand; ++h) {
+        const auto &c = bc.cards.hand[h];
+        if (!c.canUseOnAnyTarget(bc)) continue;
+        if (h > 0) {
+            const auto &p = bc.cards.hand[h - 1];
+            if (c.getId() == p.getId() && c.getUpgradeCount() == p.getUpgradeCount()
+                && c.costForTurn == p.costForTurn && c.freeToPlayOnce == p.freeToPlayOnce
+                && c.specialData == p.specialData) continue;
+        }
+        if (c.requiresTarget()) {
+            for (int t = 0; t < bc.monsters.monsterCount; ++t) {
+                search::Action a(search::ActionType::CARD, h, t);
+                if (a.isValidAction(bc)) s.insert(a.bits);
+            }
+        } else {
+            search::Action a(search::ActionType::CARD, h);
+            if (a.isValidAction(bc)) s.insert(a.bits);
+        }
+    }
+    for (int p = 0; p < bc.potionCapacity; ++p) {
+        const auto pot = bc.potions[p];
+        if (pot == Potion::INVALID || pot == Potion::EMPTY_POTION_SLOT || pot == Potion::FAIRY_POTION) continue;
+        if (potionRequiresTarget(pot)) {
+            for (int t = 0; t < bc.monsters.monsterCount; ++t) {
+                search::Action a(search::ActionType::POTION, p, t);
+                if (a.isValidAction(bc)) s.insert(a.bits);
+            }
+        } else {
+            search::Action a(search::ActionType::POTION, p);
+            if (a.isValidAction(bc)) s.insert(a.bits);
+        }
+    }
+    search::Action end(search::ActionType::END_TURN);
+    if (end.isValidAction(bc)) s.insert(end.bits);
+    return std::vector<std::uint32_t>(s.begin(), s.end());
+}
+
+static BattleContext cardSelectFixture(CardSelectTask task, int pickCount, bool largeHand) {
+    GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    const CardInstance handCards[] = {
+        CardInstance(CardId::STRIKE_RED),
+        CardInstance(CardId::STRIKE_RED),        // duplicate of [0]
+        CardInstance(CardId::DEFEND_RED),
+        CardInstance(CardId::BASH),              // requires target
+        CardInstance(CardId::ARMAMENTS),         // upgradable skill
+        CardInstance(CardId::ARMAMENTS, true),   // already upgraded
+        CardInstance(CardId::INFLAME),           // power
+        CardInstance(CardId::EXHUME),            // skill
+        CardInstance(CardId::DEFEND_RED),
+        CardInstance(CardId::STRIKE_RED, true),
+    };
+    bc.cards.cardsInHand = largeHand ? 10 : 5;
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) bc.cards.hand[i] = handCards[i];
+    bc.cards.drawPile.clear();
+    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+    bc.cards.drawPile.push_back(CardInstance(CardId::BASH));
+    bc.cards.drawPile.push_back(CardInstance(CardId::STRIKE_RED));
+    bc.cards.discardPile.clear();
+    bc.cards.discardPile.push_back(CardInstance(CardId::BASH));
+    bc.cards.discardPile.push_back(CardInstance(CardId::STRIKE_RED));
+    bc.cards.discardPile.push_back(CardInstance(CardId::DEFEND_RED));
+    bc.cards.exhaustPile.clear();
+    bc.cards.exhaustPile.push_back(CardInstance(CardId::EXHUME));   // excluded by EXHUME legality
+    bc.cards.exhaustPile.push_back(CardInstance(CardId::STRIKE_RED));
+    bc.inputState = InputState::CARD_SELECT;
+    bc.cardSelectInfo.cardSelectTask = task;
+    bc.cardSelectInfo.pickCount = pickCount;
+    return bc;
+}
+
+static BattleContext playerNormalFixture(std::uint64_t seed, int energy) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    const CardInstance handCards[] = {
+        CardInstance(CardId::STRIKE_RED),
+        CardInstance(CardId::STRIKE_RED),        // duplicate of [0]
+        CardInstance(CardId::DEFEND_RED),
+        CardInstance(CardId::BASH),              // requires target
+        CardInstance(CardId::ARMAMENTS),
+        CardInstance(CardId::STRIKE_RED, true),
+    };
+    bc.cards.cardsInHand = 6;
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) bc.cards.hand[i] = handCards[i];
+    bc.player.energy = energy;
+    bc.potionCapacity = 3;
+    bc.potions[0] = Potion::FIRE_POTION;      // requires target
+    bc.potions[1] = Potion::STRENGTH_POTION;  // no target
+    bc.potions[2] = Potion::FAIRY_POTION;     // never offer
+    bc.inputState = InputState::PLAYER_NORMAL;
+    return bc;
+}
+
+static int compareEnumerator(const char *label, const std::vector<std::uint32_t> &truth,
+                             std::vector<std::uint32_t> got) {
+    std::sort(got.begin(), got.end());
+    got.erase(std::unique(got.begin(), got.end()), got.end());
+    std::vector<std::uint32_t> missing, extra;
+    std::set_difference(truth.begin(), truth.end(), got.begin(), got.end(),
+                        std::back_inserter(missing));
+    std::set_difference(got.begin(), got.end(), truth.begin(), truth.end(),
+                        std::back_inserter(extra));
+    if (missing.empty() && extra.empty()) return 0;
+    std::cout << "    " << label << ": MISMATCH (truth " << truth.size() << ", got "
+              << got.size() << "): missing " << missing.size() << ", extra " << extra.size() << '\n';
+    return 1;
+}
+
+int testCardSelectParity() {
+    int failures = 0;
+
+    std::cout << "cardselect_parity: CARD_SELECT tasks\n";
+    for (int t = 0; t <= (int)CardSelectTask::WARCRY; ++t) {
+        const auto task = (CardSelectTask)t;
+        const std::string name = cardSelectTaskStrings[t];
+        const int pickCounts[] = {0, 2};
+        for (int pickCount : pickCounts) {
+            const BattleContext bc = cardSelectFixture(task, pickCount, false);
+            const auto truth = cardSelectGroundTruth(bc);
+            for (auto b : truth) {
+                const auto at = search::Action(b).getActionType();
+                if (at != search::ActionType::SINGLE_CARD_SELECT
+                    && at != search::ActionType::MULTI_CARD_SELECT) {
+                    std::cout << "    " << name << ": ground truth contains non-select action type "
+                              << (int)at << '\n';
+                    ++failures;
+                    break;
+                }
+            }
+            std::vector<std::uint32_t> canonical;
+            for (const auto &a : search::Action::enumerateCardSelectActions(bc)) canonical.push_back(a.bits);
+            search::BattleScumSearcher2 s2(bc);
+            search::BattleScumSearcher2::Node n2;
+            s2.enumerateCardSelectActions(n2, bc);
+            std::vector<std::uint32_t> s2Actions;
+            for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
+            search::BattleScumSearcher3::Node n3;
+            search::enumerateActionsForNode(n3, bc);
+            std::vector<std::uint32_t> s3Actions;
+            for (const auto &e : n3.edges) s3Actions.push_back(e.action.bits);
+
+            const bool cOk = compareEnumerator("canonical", truth, canonical) == 0;
+            const bool s2Ok = compareEnumerator("s2", truth, s2Actions) == 0;
+            const bool s3Ok = compareEnumerator("s3", truth, s3Actions) == 0;
+            if (!cOk || !s2Ok || !s3Ok) {
+                ++failures;
+                std::cout << "  " << name << " (pickCount=" << pickCount << "): "
+                          << (cOk ? "canonical OK" : "canonical FAIL")
+                          << " " << (s2Ok ? "s2 OK" : "s2 FAIL")
+                          << " " << (s3Ok ? "s3 OK" : "s3 FAIL") << '\n';
+            }
+        }
+        {
+            const BattleContext bc = cardSelectFixture(task, 10, true);
+            const auto truth = cardSelectGroundTruth(bc);
+            std::vector<std::uint32_t> canonical;
+            for (const auto &a : search::Action::enumerateCardSelectActions(bc)) canonical.push_back(a.bits);
+            search::BattleScumSearcher2 s2(bc);
+            search::BattleScumSearcher2::Node n2;
+            s2.enumerateCardSelectActions(n2, bc);
+            std::vector<std::uint32_t> s2Actions;
+            for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
+            search::BattleScumSearcher3::Node n3;
+            search::enumerateActionsForNode(n3, bc);
+            std::vector<std::uint32_t> s3Actions;
+            for (const auto &e : n3.edges) s3Actions.push_back(e.action.bits);
+            const bool cOk = compareEnumerator("canonical", truth, canonical) == 0;
+            const bool s2Ok = compareEnumerator("s2", truth, s2Actions) == 0;
+            const bool s3Ok = compareEnumerator("s3", truth, s3Actions) == 0;
+            if (!cOk || !s2Ok || !s3Ok) {
+                ++failures;
+                std::cout << "  " << name << " (large hand): "
+                          << (cOk ? "canonical OK" : "canonical FAIL")
+                          << " " << (s2Ok ? "s2 OK" : "s2 FAIL")
+                          << " " << (s3Ok ? "s3 OK" : "s3 FAIL") << '\n';
+            }
+        }
+    }
+
+    std::cout << "cardselect_parity: PLAYER_NORMAL\n";
+    for (std::uint64_t seed : {0x1111u, 0x2222u}) {
+        const BattleContext bc = playerNormalFixture(seed, 3);
+        const auto truth = playerNormalGroundTruth(bc);
+        search::BattleScumSearcher2 s2(bc);
+        search::BattleScumSearcher2::Node n2;
+        s2.enumerateActionsForNode(n2, bc);
+        std::vector<std::uint32_t> s2Actions;
+        for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
+        search::BattleScumSearcher3::Node n3;
+        search::enumerateActionsForNode(n3, bc);
+        std::vector<std::uint32_t> s3Actions;
+        for (const auto &e : n3.edges) s3Actions.push_back(e.action.bits);
+        if (compareEnumerator("s2", truth, s2Actions) != 0 || compareEnumerator("s3", truth, s3Actions) != 0) {
+            ++failures;
+            std::cout << "  player_normal energy=3 seed=" << seed << ": FAIL\n";
+        }
+    }
+    {
+        const BattleContext bc = playerNormalFixture(0x3333u, 0);
+        const auto truth = playerNormalGroundTruth(bc);
+        search::BattleScumSearcher2 s2(bc);
+        search::BattleScumSearcher2::Node n2;
+        s2.enumerateActionsForNode(n2, bc);
+        std::vector<std::uint32_t> s2Actions;
+        for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
+        search::BattleScumSearcher3::Node n3;
+        search::enumerateActionsForNode(n3, bc);
+        std::vector<std::uint32_t> s3Actions;
+        for (const auto &e : n3.edges) s3Actions.push_back(e.action.bits);
+        if (compareEnumerator("s2", truth, s2Actions) != 0 || compareEnumerator("s3", truth, s3Actions) != 0) {
+            ++failures;
+            std::cout << "  player_normal energy=0: FAIL\n";
+        }
+    }
+
+    if (failures == 0) {
+        std::cout << "cardselect_parity PASS\n";
+        return 0;
+    }
+    std::cout << "cardselect_parity FAIL (" << failures << " states)\n";
+    return 1;
+}
+
 int mcts(int argc, const char *argv[]) {
     const auto saveFilePath = argv[2];
     const auto simulationCount = std::stoll(argv[3]);
@@ -568,6 +825,8 @@ int main(int argc, const char* argv[]) {
         return testPrune(std::stoull(argv[2]));
     } else if (command == "happy_flower") {
         return testHappyFlowerCounter(std::stoull(argv[2]));
+    } else if (command == "cardselect_parity") {
+        return testCardSelectParity();
     }
 
     //    printSizes();

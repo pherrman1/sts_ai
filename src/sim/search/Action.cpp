@@ -4,6 +4,8 @@
 
 #include "sim/search/Action.h"
 
+#include <cstdlib>
+#include <cstring>
 #include <functional>
 
 using namespace sts;
@@ -474,10 +476,68 @@ void setupCardOptionsHelper(std::vector<search::Action> &actions, const ForwardI
     }
 }
 
+static int popcountInt(std::uint32_t x) {
+    int n = 0;
+    while (x) {
+        n += static_cast<int>(x & 1u);
+        x >>= 1;
+    }
+    return n;
+}
+
+// Multi-select enumeration mode (env STS_MULTISELECT_MODE):
+//   all    - every subset of the hand (the full validity contract; can be
+//            1023 actions at a 10-card Gambler's Brew state, which thins the
+//            search dangerously at fixed simulation budgets);
+//   single - empty + each single card + the whole hand (<= n+2 actions) --
+//            the deployment mode: searchable, and still always valid;
+//   none   - empty selection only (conservative no-op).
+// The cardselect_parity test checks the `all` contract.
+enum class MultiSelectMode { ALL, SINGLE, NONE };
+static MultiSelectMode multiSelectMode() {
+    static const MultiSelectMode m = [] {
+        const char *e = std::getenv("STS_MULTISELECT_MODE");
+        if (e && std::strcmp(e, "none") == 0) return MultiSelectMode::NONE;
+        if (e && std::strcmp(e, "single") == 0) return MultiSelectMode::SINGLE;
+        return MultiSelectMode::ALL;
+    }();
+    return m;
+}
+
+static void pushMultiSelectActions(std::vector<search::Action> &actions,
+                                   const BattleContext &bc, bool cappedByPickCount) {
+    const int n = bc.cards.cardsInHand;
+    if (n <= 0 || n > 10) return;
+    const int limit = bc.cardSelectInfo.pickCount;
+    const MultiSelectMode m = multiSelectMode();
+    const std::uint32_t full = (1u << n) - 1;
+    if (m == MultiSelectMode::NONE) {
+        if (!cappedByPickCount || 0 <= limit)
+            actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, 0)});
+        return;
+    }
+    if (m == MultiSelectMode::SINGLE) {
+        if (!cappedByPickCount || 0 <= limit)
+            actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, 0)});
+        for (int i = 0; i < n; ++i)
+            if (!cappedByPickCount || 1 <= limit)
+                actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, 1u << i)});
+        if (n > 1 && (!cappedByPickCount || n <= limit))
+            actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, (int)full)});
+        return;
+    }
+    for (std::uint32_t mask = 0; mask < (1u << n); ++mask) {
+        if (!cappedByPickCount || popcountInt(mask) <= limit) {
+            actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, (int)mask)});
+        }
+    }
+}
+
 std::vector<search::Action> search::Action::enumerateCardSelectActions(const BattleContext &bc) {
     std::vector<search::Action> actions;
+    const auto &csi = bc.cardSelectInfo;
 
-    switch (bc.cardSelectInfo.cardSelectTask) {
+    switch (csi.cardSelectTask) {
         case CardSelectTask::ARMAMENTS:
             setupCardOptionsHelper( actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand,
                                     [] (const CardInstance &c) { return c.canUpgrade(); });
@@ -508,16 +568,18 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
             break;
 
         case CardSelectTask::EXHAUST_ONE:
-            setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
-            break;
-
         case CardSelectTask::FORETHOUGHT:
+        case CardSelectTask::NIGHTMARE:
+        case CardSelectTask::RECYCLE:
+        case CardSelectTask::SETUP:
         case CardSelectTask::WARCRY:
             setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
             break;
 
         case CardSelectTask::HEADBUTT:
+        case CardSelectTask::HOLOGRAM:
         case CardSelectTask::LIQUID_MEMORIES_POTION:
+        case CardSelectTask::MEDITATE:
             setupCardOptionsHelper(actions, bc.cards.discardPile.begin(), bc.cards.discardPile.end());
             break;
 
@@ -535,16 +597,19 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
                                    });
             break;
 
+        case CardSelectTask::SEEK:
+            setupCardOptionsHelper(actions, bc.cards.drawPile.begin(), bc.cards.drawPile.end());
+            break;
+
         case CardSelectTask::EXHAUST_MANY:
+            pushMultiSelectActions(actions, bc, /*cappedByPickCount=*/true);
+            break;
+
         case CardSelectTask::GAMBLE:
-            // just dont deal with this right now
-            actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, 0)});
+            pushMultiSelectActions(actions, bc, /*cappedByPickCount=*/false);
             break;
 
         default:
-#ifdef sts_asserts
-            assert(false);
-#endif
             break;
     }
     return actions;

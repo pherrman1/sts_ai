@@ -695,75 +695,10 @@ void setupCardOptionsHelper(search::BattleScumSearcher2::Node &node, const Forwa
 void search::BattleScumSearcher2::enumerateCardSelectActions(search::BattleScumSearcher2::Node &node,
                                                                   const BattleContext &bc) {
 
-    switch (bc.cardSelectInfo.cardSelectTask) {
-        case CardSelectTask::ARMAMENTS:
-            setupCardOptionsHelper( node, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand,
-                                    [] (const CardInstance &c) { return c.canUpgrade(); });
-            break;
-
-        case CardSelectTask::CODEX:
-            for (int i = 0; i < 4; ++i) { // i -> 3 action means skip
-                node.edges.push_back({Action(search::ActionType::SINGLE_CARD_SELECT, i)});
-            }
-            break;
-
-        case CardSelectTask::DISCOVERY:
-            for (int i = 0; i < 3; ++i) {
-                node.edges.push_back({Action(search::ActionType::SINGLE_CARD_SELECT, i)});
-            }
-            break;
-
-        case CardSelectTask::DUAL_WIELD:
-            setupCardOptionsHelper( node, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand,
-                                    [] (const CardInstance &c) {
-                                        return c.getType() == CardType::POWER || c.getType() == CardType::ATTACK;
-                                    });
-            break;
-
-        case CardSelectTask::EXHUME:
-            setupCardOptionsHelper(node, bc.cards.exhaustPile.begin(), bc.cards.exhaustPile.end(),
-                                   [](const auto &c) { return c.getId() != CardId::EXHUME; });
-            break;
-
-        case CardSelectTask::EXHAUST_ONE:
-            setupCardOptionsHelper(node, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
-            break;
-
-        case CardSelectTask::FORETHOUGHT:
-        case CardSelectTask::WARCRY:
-            setupCardOptionsHelper(node, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
-            break;
-
-        case CardSelectTask::HEADBUTT:
-        case CardSelectTask::LIQUID_MEMORIES_POTION:
-            setupCardOptionsHelper(node, bc.cards.discardPile.begin(), bc.cards.discardPile.end());
-            break;
-
-        case CardSelectTask::SECRET_TECHNIQUE:
-            setupCardOptionsHelper(node, bc.cards.drawPile.begin(), bc.cards.drawPile.end(),
-                                    [] (const CardInstance &c) {
-                                        return c.getType() == CardType::SKILL;
-                                    });
-            break;
-
-        case CardSelectTask::SECRET_WEAPON:
-            setupCardOptionsHelper(node, bc.cards.drawPile.begin(), bc.cards.drawPile.end(),
-                                    [] (const CardInstance &c) {
-                                        return c.getType() == CardType::ATTACK;
-                                    });
-            break;
-
-        case CardSelectTask::EXHAUST_MANY:
-        case CardSelectTask::GAMBLE:
-            // just dont deal with this right now
-            node.edges.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, 0)});
-            break;
-
-        default:
-#ifdef sts_asserts
-            assert(false);
-#endif
-            break;
+    // Single source of truth: search::Action::enumerateCardSelectActions (the
+    // same contract the cardselect_parity test checks against isValidAction).
+    for (const auto &a : search::Action::enumerateCardSelectActions(bc)) {
+        node.edges.push_back({a});
     }
 }
 

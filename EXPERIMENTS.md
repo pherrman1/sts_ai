@@ -3959,3 +3959,53 @@ extFight*/emElites/emFights parity-excluded) and
 - **Cost:** baseline 60.2%@3k = 30.8 cpu-s/run (344 s wall); ungated oracle
   â‰ˆ 350â€“1430 cpu-s/run (13 seeds in 26 min); margin-gated â‰ˆ 62 seeds in 99 min
   â†’ ~5.1 h projected for 256; stopped to save compute.
+
+## §112 CARD_SELECT action-parity fix and the multi-select search regression (2026-08-05, GCP)
+
+- **What:** Phase-1 workstream — make Searcher2/Searcher3/the canonical
+  `search::Action::enumerateCardSelectActions` enumerate exactly what the
+  simulator validates, pinned by a new exhaustive parity test
+  (`./build/test cardselect_parity`, `apps/test.cpp::testCardSelectParity`:
+  21 tasks × 3 variants + 3 PLAYER_NORMAL states; 48/63 states failed before,
+  all pass after; deterministic). Pre-fix S3 default branch was
+  `for (i < pickCount)` (wrong pool for WARCRY/FORETHOUGHT/HEADBUTT/
+  SECRET_*/DUAL_WIELD/etc., no EXHUME filter); S2+canonical missed HOLOGRAM/
+  MEDITATE/NIGHTMARE/RECYCLE/SETUP/SEEK and emitted one bogus empty subset for
+  EXHAUST_MANY/GAMBLE. Fix: canonical enumerator extended to the full validity
+  contract; S2/S3 delegate to it. New `STS_MULTISELECT_MODE=all|single|none`
+  (default all) prunes the multi-select space without emitting invalid actions.
+- **Setup (all arms):** GCP `sts-test` (24 threads), fair, A0, 1,000 sims,
+  `STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_S3_PARTICLES=256`, V4
+  tok gates REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1, margin 1.0, seeds
+  126700–126955 (recorded block), §111 base config; trees hash-verified against
+  the tracked identities before the runs.
+- **Control:** original 619c12c sources rebuilt on GCP = **56.6% / 43.0 / 35.2**
+  — **bit-identical pairing with the §111 `gate_2026-08-05_margin_base1k.csv`
+  reference (0/256 mismatches)**, confirming the GCP tree/config reproduces the
+  baseline exactly (`build/control_1k_256.csv`).
+- **Candidate (full fix):** **39.5% / 41.0 / 18.9** — paired **-17.2pp
+  (SE 3.1)**, 14 cand-better / 58 base-better (`build/cand_1k_256.csv`).
+- **Bisect:** S3-only change (new canonical+S3, control S2), seeds
+  126700–126763 @1k: **28/64 = 43.8% vs control 36/64 = 56.3%** on the same
+  subset (`build/s3_only_1k_64.csv`) — the S3 enumeration change alone is the
+  regression driver; S2-only bisect not yet run.
+- **Mechanism (Inference):** GAMBLE (Gambler's Brew) / EXHAUST_MANY (Elixir,
+  Purity) now expand up to 1023 children with uniform policy priors
+  (`combatFillActionFeatures` gives identical features to every subset) at a
+  fixed 1000-sim budget ? near-random subset choice; pre-fix S3 emitted no
+  valid edges there so the old agent effectively never used those
+  potions/cards. `combatFillActionFeatures` does not read out of bounds for
+  MULTI_CARD_SELECT (verified).
+- **Verdict:** enumeration correctness fix is sound and stays (issue 47
+  closed); full-subset search scale is not deployable at 1k sims (issue 48
+  open). `STS_MULTISELECT_MODE=single`/`none` A/B pending; promote the winner
+  and re-gate at 256 seeds @1k and @3k vs the §107 references before any
+  default change. Note: the S2 default binary is affected too (its GAMBLE/
+  EXHAUST_MANY enumeration changed from 1 bogus action to full subsets).
+- **Artifacts:** `build/{control_1k_256,cand_1k_256,s3_only_1k_64,
+  base_1k,base_3k}.csv` (local copies; GCP `/home/philippherrmann/sts_sweep/
+  build/`); decision log `2026-08-05-cardselect-parity-fix.md`; issues
+  47 (closed) / 48 (open).
+- **Cost:** ~2 min wall per 256-seed @1k arm; the GCP tree currently has the
+  control files installed — re-sync `src/sim/search/{Action.cpp,
+  BattleScumSearcher3.cpp}` before the next GCP run.

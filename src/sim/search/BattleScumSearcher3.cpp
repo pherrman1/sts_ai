@@ -531,37 +531,11 @@ void enumerateActionsForNode(BattleScumSearcher3::Node &node,
             break;
         }
         case InputState::CARD_SELECT: {
-            const auto &csi = bc.cardSelectInfo;
-            switch (csi.cardSelectTask) {
-                case CardSelectTask::ARMAMENTS:
-                    for (int i = 0; i < bc.cards.cardsInHand; ++i)
-                        if (bc.cards.hand[i].canUpgrade())
-                            node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::SINGLE_CARD_SELECT, i)});
-                    break;
-                    break;
-                    break;
-                    break;
-                    break;
-                case CardSelectTask::CODEX:
-                    for (int i = 0; i < 4; ++i)
-                        node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::SINGLE_CARD_SELECT, i)});
-                    break;
-                case CardSelectTask::DISCOVERY:
-                    for (int i = 0; i < 3; ++i)
-                        node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::SINGLE_CARD_SELECT, i)});
-                    break;
-                case CardSelectTask::EXHAUST_ONE:
-                    for (int i = 0; i < bc.cards.cardsInHand; ++i)
-                        node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::SINGLE_CARD_SELECT, i)});
-                    break;
-                case CardSelectTask::EXHUME:
-                    for (int i = 0; i < (int)bc.cards.exhaustPile.size(); ++i)
-                        node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::SINGLE_CARD_SELECT, i)});
-                    break;
-                default:
-                    for (int i = 0; i < csi.pickCount; ++i)
-                        node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::SINGLE_CARD_SELECT, i)});
-                    break;
+            // Single source of truth: search::Action::enumerateCardSelectActions
+            // (the same contract the cardselect_parity test checks against
+            // isValidAction).
+            for (const auto &a : Action::enumerateCardSelectActions(bc)) {
+                node.edges.push_back(BattleScumSearcher3::Edge{a});
             }
             break;
         }

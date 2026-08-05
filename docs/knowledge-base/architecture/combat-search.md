@@ -38,6 +38,20 @@ Searcher3 particle sampling on. Searcher3 caches a `CombatObservation` per
 node, expands legal edges, uses PUCT or UCB-like selection, performs
 deterministic chain continuation and a rollout/leaf evaluation, then backpropagates
 (`src/sim/search/BattleScumSearcher3.cpp::step`, `selectBestEdgePUCT`).
+
+CARD_SELECT action enumeration (both searchers) delegates to the canonical
+`search::Action::enumerateCardSelectActions`, which implements the full
+`isValidAction` contract (hand/discard/draw/exhaust pools per task, EXHUME
+excluded from its own selection, CODEX skip=3, and multi-select subsets for
+EXHAUST_MANY/GAMBLE). An exhaustive parity test
+(`./build/test cardselect_parity`, `apps/test.cpp::testCardSelectParity`)
+pins all three enumerators to the validity contract across every
+`CardSelectTask` (issues 47/48). `STS_MULTISELECT_MODE=all|single|none`
+(default `all`) prunes the multi-select action space to empty+singles+full
+(`single`) or empty only (`none`); only `all` matches the parity contract, and
+full-subset enumeration is known to regress win rate at fixed budgets (§112 —
+GAMBLE/EXHAUST_MANY states expand up to 1023 children with uniform policy
+priors), so the deployment default is under A/B.
 Seeding, belief conditioning, and observation identity follow the canonical
 field contract described under "Known limitations"; the composite seed is
 `visibleHash ^ agentSeed ^ decisionIndex` with `agentSeed` and `decisionIndex`
@@ -207,6 +221,14 @@ PUCT-with-zero-priors quirk.
 - `CombatObservation::operator==` and `visibleHash` share one canonical field
   set (see `CombatObservation.cpp::operator==`); card piles are compared as
   multisets of `CardKey`, so order-insensitive equality is deliberate.
+- CARD_SELECT multi-select tasks (GAMBLE via Gambler's Brew, EXHAUST_MANY via
+  Elixir/Purity) expand to every hand subset (up to 1023 edges) under the
+  default `all` mode; policy priors are uniform across subsets because
+  `combatFillActionFeatures` encodes multi-select actions identically. §112
+  measured this as a −17.2pp win-rate regression vs control at 1k sims/256p;
+  `STS_MULTISELECT_MODE=single|none` is the scale fix under A/B (issue 48).
+  The old S3 emitted no valid edges at those states, so pre-fix agents
+  effectively never used those potions/cards.
 - The deployed win tree has zero sensitivity to persistent counter relics:
   `r26` (Happy Flower), `r30` (Incense Burner), `r31` (Ink Bottle), `r35`
   (Lizard Tail), `r44` (Nunchaku), `r52` (Pen Nib), `r68` (Sundial), `r131`
@@ -265,6 +287,9 @@ PUCT-with-zero-priors quirk.
 - `include/sim/search/BattleScumSearcher3.h::BattleScumSearcher3`
 - `src/sim/search/BattleScumSearcher3.cpp::step`, `computeEdgePriors`,
   `evaluateTerminal`, `g_terminalBonus`
+- `src/sim/search/Action.cpp::enumerateCardSelectActions` (canonical legal
+  CARD_SELECT action set; S2/S3 delegate to it), `Action.cpp::isValidAction`
+- `apps/test.cpp::testCardSelectParity` (command `cardselect_parity`)
 - `apps/one_combat.cpp::termLeafBonus`, `termWinArmForBattle`,
   `termWinDisarm`, `termWinIndices`, `cpsiEntryFromRich`, `cpsiCounterProbeAtState`,
   `cpsiCtrProbeReport`, `cpsictr` mode (STS_TERM_WIN*, STS_CPSI_CTR_PROBE, opt-in)
