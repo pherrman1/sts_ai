@@ -300,6 +300,25 @@ int testSeedContract(std::uint64_t seed) {
         std::cout << "seed_contract FAIL: agent seed ignored\n";
         return 1;
     }
+
+    // Full-search determinism: two identical searchers must produce identical
+    // root edges (action + obsHash key) and visit counts after a fixed budget.
+    search::BattleScumSearcher3 s1(bc, seed, 0, 8);
+    search::BattleScumSearcher3 s2(bc, seed, 0, 8);
+    s1.search(200);
+    s2.search(200);
+    if (s1.root.edges.size() != s2.root.edges.size()) {
+        std::cout << "seed_contract FAIL: search edge count diverged\n";
+        return 1;
+    }
+    for (size_t i = 0; i < s1.root.edges.size(); ++i) {
+        const auto &e1 = s1.root.edges[i], &e2 = s2.root.edges[i];
+        if (e1.action != e2.action || e1.child.obsHash != e2.child.obsHash
+            || e1.child.simulationCount != e2.child.simulationCount) {
+            std::cout << "seed_contract FAIL: search tree diverged at edge " << i << "\n";
+            return 1;
+        }
+    }
     std::cout << "seed_contract PASS\n";
     return 0;
 }
@@ -408,6 +427,37 @@ int testObsIdentity(std::uint64_t seed) {
             std::cout << "obs_identity FAIL: different hand contents compare equal\n";
             return 1;
         }
+    }
+
+    // Decision context must be part of identity: a PLAYER_NORMAL state and a
+    // CARD_SELECT state with otherwise identical fields are different decisions.
+    CombatObservation e = a;
+    e.inputState = InputState::CARD_SELECT;
+    e.cardSelectTask = CardSelectTask::WARCRY;
+    e.pickCount = 1;
+    e.canPickZero = false;
+    e.canPickAnyNumber = false;
+    if (a == e || a.visibleHash() == e.visibleHash()) {
+        std::cout << "obs_identity FAIL: decision context (inputState/task) ignored\n";
+        return 1;
+    }
+    CombatObservation f = e;
+    f.cardSelectTask = CardSelectTask::SEEK;
+    if (e == f || e.visibleHash() == f.visibleHash()) {
+        std::cout << "obs_identity FAIL: different card-select tasks conflated\n";
+        return 1;
+    }
+    CombatObservation g = e;
+    g.cardSelectOffers = {CardId::STRIKE_RED, CardId::DEFEND_RED, CardId::STRIKE_RED};
+    if (e == g || e.visibleHash() == g.visibleHash()) {
+        std::cout << "obs_identity FAIL: different card-select offers conflated\n";
+        return 1;
+    }
+    CombatObservation h = e;
+    h.pickCount = 2;
+    if (e == h || e.visibleHash() == h.visibleHash()) {
+        std::cout << "obs_identity FAIL: different pickCount conflated\n";
+        return 1;
     }
     std::cout << "obs_identity PASS\n";
     return 0;

@@ -148,12 +148,15 @@ deployed default.
 
 ## 4. Wider roadmap (later phases; benchmarks on GCP, GPU training deferred)
 
-1. **Phase 2 — observation-keyed search + belief fix** (P0, next after T5):
-   expand `CombatObservation` to fully determine the visible decision;
-   `Edge{action → child[obsHash]}`; remove the `belief.update` calls in
-   `step()` (BattleScumSearcher3.cpp:281,344); live belief updates only at the
-   agent boundary. Determinism + unit tests, then 64-seed @1k gate, then
-   256-seed @3k vs the §107 win reference.
+1. **Phase 2 — observation-keyed search + belief fix — EXECUTED 2026-08-05
+   (§114, decision log `2026-08-05-phase2-observation-search.md`):**
+   `CombatObservation` identity expanded (inputState + card-select context)
+   — **neutral** on 256 seeds @1k (+1.2pp, noise), kept as a correctness
+   fix; `Edge{action → child[obsHash]}` obs-keyed descent — **falsified**
+   (tree grows linearly under particle determinization; floor 11 vs 33 at
+   fixed budget; reverted); `belief.update` removed from `step()`, live
+   updates only at the agent boundary (non-fair path, `g_s3Belief`-gated).
+   Recommended stack unchanged. Next phase: Phase 3 below.
 2. **Phase 3 — post-combat run utility:** Stage 2 of the terminal-value work
    (needs `STS_FORCE_RELIC`-style flag, stall telemetry, `STS_TERM_WIN_W`
    sweep, terminal-eval caching); Stage 3 counterfactual terminal model =

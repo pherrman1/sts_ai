@@ -123,6 +123,13 @@ std::uint64_t CombatObservation::visibleHash() const {
     hashMix(h, static_cast<std::uint64_t>(encounter));
     hashMix(h, static_cast<std::uint64_t>(potionCapacity));
     hashMix(h, isCardPlayAllowed ? 1ULL : 0ULL);
+    hashMix(h, static_cast<std::uint64_t>(inputState));
+    hashMix(h, static_cast<std::uint64_t>(cardSelectTask));
+    hashMix(h, static_cast<std::uint64_t>(pickCount));
+    hashMix(h, canPickZero ? 1ULL : 0ULL);
+    hashMix(h, canPickAnyNumber ? 1ULL : 0ULL);
+    for (auto c : cardSelectOffers)
+        hashMix(h, static_cast<std::uint64_t>(c));
 
     hashMix(h, static_cast<std::uint64_t>(player.curHp));
     hashMix(h, static_cast<std::uint64_t>(player.maxHp));
@@ -190,6 +197,11 @@ bool CombatObservation::operator==(const CombatObservation &o) const {
         || potionCapacity != o.potionCapacity
         || isCardPlayAllowed != o.isCardPlayAllowed)
         return false;
+    if (inputState != o.inputState || cardSelectTask != o.cardSelectTask
+        || pickCount != o.pickCount || canPickZero != o.canPickZero
+        || canPickAnyNumber != o.canPickAnyNumber
+        || cardSelectOffers != o.cardSelectOffers)
+        return false;
     if (player.curHp != o.player.curHp || player.maxHp != o.player.maxHp
         || player.block != o.player.block || player.energy != o.player.energy
         || player.strength != o.player.strength || player.dexterity != o.player.dexterity
@@ -233,6 +245,12 @@ CombatObservation CombatObservation::fromBattleContext(const BattleContext &bc) 
     obs.encounter = bc.encounter;
     obs.potionCapacity = bc.potionCapacity;
     obs.isCardPlayAllowed = bc.isCardPlayAllowed();
+    obs.inputState = bc.inputState;
+    obs.cardSelectTask = bc.cardSelectInfo.cardSelectTask;
+    obs.pickCount = bc.cardSelectInfo.pickCount;
+    obs.canPickZero = bc.cardSelectInfo.canPickZero;
+    obs.canPickAnyNumber = bc.cardSelectInfo.canPickAnyNumber;
+    obs.cardSelectOffers = bc.cardSelectInfo.cards;
 
     obs.player.fromPlayer(bc.player);
 

@@ -15,6 +15,8 @@
 #include "combat/Player.h"
 #include "combat/Monster.h"
 #include "combat/CardInstance.h"
+#include "combat/InputState.h"
+#include "combat/CardSelectInfo.h"
 
 #include <vector>
 #include <array>
@@ -83,6 +85,16 @@ struct CombatObservation {
     int ascension = 0;
     MonsterEncounter encounter = MonsterEncounter::INVALID;
     bool isCardPlayAllowed = true;
+    // Decision context: the player must know which decision they are facing.
+    // Two states that differ only in inputState (PLAYER_NORMAL vs CARD_SELECT)
+    // or card-select context (task/pickCount/offer contents) are different
+    // decisions and must not share an observation identity.
+    InputState inputState = InputState::PLAYER_NORMAL;
+    CardSelectTask cardSelectTask = CardSelectTask::INVALID;
+    int pickCount = 0;
+    bool canPickZero = false;
+    bool canPickAnyNumber = false;
+    std::array<CardId, 3> cardSelectOffers{CardId::INVALID, CardId::INVALID, CardId::INVALID};
     std::bitset<128> relics;   // only bit 0-127
 
     static CombatObservation fromBattleContext(const BattleContext &bc);

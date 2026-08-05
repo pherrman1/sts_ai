@@ -234,6 +234,14 @@ PUCT-with-zero-priors quirk.
 - `CombatObservation::operator==` and `visibleHash` share one canonical field
   set (see `CombatObservation.cpp::operator==`); card piles are compared as
   multisets of `CardKey`, so order-insensitive equality is deliberate.
+  Since §114 the identity includes the decision context (`inputState` +
+  card-select task/pickCount/flags/offer cards), so a PLAYER_NORMAL state and
+  a CARD_SELECT state can never share an identity. §114 measured the
+  expansion neutral on 256 seeds @1k (+1.2pp, noise). An observation-keyed
+  descent (`Edge{action → child[obsHash]}`) was attempted and **falsified**
+  (§114): under particle determinization the post-action observations diverge
+  at almost every level, the tree grows linearly with simulations, and the
+  fixed budget collapses; the action-keyed tree stays.
 - CARD_SELECT multi-select tasks (GAMBLE via Gambler's Brew, EXHAUST_MANY via
   Elixir/Purity) expand to every hand subset (up to 1023 edges) under the
   default `all` mode; policy priors are uniform across subsets because
@@ -291,7 +299,8 @@ PUCT-with-zero-priors quirk.
 ## Open questions
 
 - Should `CombatObservation` identity include card `uniqueId`/`retain` fields,
-  or does the current `CardKey` multiset contract suffice?
+  or does the current `CardKey` multiset contract suffice? (Decision-context
+  fields were added 2026-08-05, §114; `uniqueId`/`retain` remain open.)
 - Should conservative player-cannot-act-only pruning be replaced by an
   aggressive predicate once its soundness is proven for all card-selection
   states?

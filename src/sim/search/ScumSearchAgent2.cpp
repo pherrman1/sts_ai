@@ -193,6 +193,12 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             }
             takeAction(bc, bestAction);
             s3.advanceRoot(bestAction, bc);
+            // Live belief update at the agent boundary: the real observation
+            // after the committed action reweights the particles. In the fair
+            // path a fresh searcher/belief is built from the real state each
+            // decision, so no update is needed there.
+            if (search::g_s3Belief)
+                s3.belief.update(CombatObservation::fromBattleContext(bc));
             ++decisionIdx;
             s3.decisionIndex = decisionIdx;
             s3.reseed();

@@ -4073,3 +4073,57 @@ extFight*/emElites/emFights parity-excluded) and
   `ScumSearchAgent2.cpp` env-gated break telemetry, `apps/test.cpp`
   parity-mode pin.
 - **Cost:** ~2 min wall per 256-seed @1k arm; ~10 min @3k on GCP sts-test.
+
+## §114 Phase 2 (observation-keyed search + belief fix): observation expansion neutral, obs-keyed descent falsified (2026-08-05, GCP + local)
+- **What:** the plan's Phase 2 (P0 after T5) in three parts: (1) expand
+  `CombatObservation` so the identity fully determines the visible decision
+  (add `inputState` + card-select context: task/pickCount/canPickZero/
+  canPickAnyNumber/offer cards); (2) key search children by
+  `Edge{action -> child[obsHash]}` so distinct visible outcomes keep
+  separate statistics; (3) remove the `belief.update` calls inside
+  `step()` and update the belief only at the agent boundary.
+- **Part 1 (observation expansion): NEUTRAL, kept as a correctness fix.**
+  Previously a PLAYER_NORMAL state and a CARD_SELECT state (or two card-
+  select screens with different tasks/offers) could share an observation
+  identity. Now `inputState` + `cardSelectInfo` are hashed and compared.
+  `obs_identity` extended to pin the decision context; `seed_contract`
+  extended to compare two full 200-sim searches (action + obsHash + visit
+  counts must match). 256 seeds @1k vs the §113 honest reference
+  (`honest_fix_1k_256.csv`): **37.5% / 39.8 floor / 20.0 hp vs 36.3% /
+  40.5 / 20.3 - +1.2pp, 36 p2-only vs 33 ref-only flips on 69 flipped
+  seeds; within noise**. 64-seed subset: 36.5% vs 40.6% (-4.1pp, 5v7
+  flips). Kept because the identity contract is now correct at zero
+  measured cost.
+- **Part 2 (obs-keyed descent): FALSIFIED and reverted.**
+  `descendKeyed` appended a new edge whenever a simulation's post-action
+  observation differed from the claimed one. With particle determinization
+  the observations diverge at almost every level, so the tree grows
+  linearly with simulations instead of logarithmically (100 sims ->
+  300-600 nodes), starving the budget and collapsing search depth.
+  Isolated A/B at identical budget (100 sims/8 particles/2 seeds, local):
+  baseline floor 33.0, observation-expansion-only floor 31.5, full
+  obs-keyed descent floor 11.0 (catastrophic). 64-seed @1k on GCP with
+  the keyed descent: 0% win / floor 7.1 (also 0% / 9.8 at 1000 sims).
+  Reverted the edge-keying; the observation identity expansion alone is
+  neutral (Part 1).
+- **Part 3 (belief fix): kept, gated.** In-step `belief.update` calls
+  removed from `step()` (both the expansion and internal-branch sites);
+  the belief is now updated only at the agent boundary after a committed
+  action in the non-fair S3 path (`g_s3Belief`-gated). The fair path
+  builds a fresh searcher/belief from the real state each decision, so it
+  is inherently live. Inert in the recommended config (`STS_S3_BELIEF=0`
+  default, fair path).
+- **Verdict:** Phase 2 delivered the identity correctness fix (neutral,
+  kept) and the belief fix (gated); the observation-keyed search tree is
+  falsified at fixed budgets for this particle determinization - the
+  recommended configuration and headline (42.6% @3k / 36.3% @1k, §113)
+  are unchanged. The plan's Phase 2 item is closed with this verdict; the
+  plan doc is updated accordingly.
+- **Artifacts:** `build/p2_obs_expand_1k_256.csv` (GCP + local),
+  `build/p2_obs_expand_clean.csv`; decision log
+  `2026-08-05-phase2-observation-search.md`; code diff:
+  `CombatObservation.{h,cpp}` (identity fields), `apps/test.cpp`
+  (`obs_identity` decision-context cases, `seed_contract` full-search
+  determinism), `ScumSearchAgent2.cpp` (agent-boundary belief update,
+  `g_s3Belief`-gated).
+- **Cost:** ~2 min wall per 256-seed @1k arm on GCP sts-test.
