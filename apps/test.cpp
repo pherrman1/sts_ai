@@ -224,6 +224,57 @@ static bool sameDrawOrder(const sts::HiddenBattleState &a, const sts::HiddenBatt
     return true;
 }
 
+// Happy Flower counter arithmetic across battles: the run-level relic counter
+// (relic data) ticks once at battle start (initRelics) plus once per turn
+// start; ending a fight on a chosen turn leaves the counter at
+// (entry counter + 1 + bc.turn) mod 3, exitBattle writes it back, and a
+// counter of 2 at battle start charges +1 energy immediately in the next
+// combat. This is the mechanical basis of cross-combat "setup".
+int testHappyFlowerCounter(std::uint64_t seed) {
+    auto fail = [&](const char *msg) {
+        std::cout << "happy_flower FAIL: " << msg << '\n';
+        return 1;
+    };
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    gc.relics.add({RelicId::HAPPY_FLOWER, 1});
+    {
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        if (bc.player.happyFlowerCounter != 2) return fail("battle-start tick from run counter 1");
+        if (bc.player.energy != 3) return fail("no trigger on battle-start tick 2");
+        search::Action a1(search::ActionType::END_TURN);
+        a1.execute(bc);
+        // turn 1 start: counter 2 -> 3 -> trigger (+1 energy), counter resets to 0
+        if (bc.player.happyFlowerCounter != 0) return fail("turn-1 tick trigger did not reset counter");
+        if (bc.player.energy != 4) return fail("turn-1 tick trigger energy missing");
+        search::Action a2(search::ActionType::END_TURN);
+        a2.execute(bc);
+        if (bc.player.happyFlowerCounter != 1) return fail("turn-2 tick");
+        search::Action a3(search::ActionType::END_TURN);
+        a3.execute(bc);
+        // 4 player turns total (bc.turn == 3): end counter = (1 + 1 + 3) mod 3 == 2
+        if (bc.player.happyFlowerCounter != 2) return fail("end counter (1+1+3) mod 3 != 2");
+        bc.updateRelicsOnExit(gc);   // the exitBattle transfer the terminal bonus mirrors
+        if (gc.relics.getRelicValue(RelicId::HAPPY_FLOWER) != 2) return fail("updateRelicsOnExit write-back");
+    }
+    {
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        if (bc.player.happyFlowerCounter != 0) return fail("charged battle start resets counter");
+        if (bc.player.energy != 4) return fail("charged battle start grants energy");
+    }
+    {
+        GameContext gc2(CharacterClass::IRONCLAD, seed + 1, 0);
+        gc2.relics.add({RelicId::HAPPY_FLOWER, 0});
+        BattleContext bc;
+        bc.init(gc2, MonsterEncounter::CULTIST);
+        if (bc.player.happyFlowerCounter != 1) return fail("battle-start tick from run counter 0");
+        if (bc.player.energy != 3) return fail("no trigger from run counter 0");
+    }
+    std::cout << "happy_flower PASS\n";
+    return 0;
+}
+
 int testSeedContract(std::uint64_t seed) {
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
     BattleContext bc;
@@ -515,6 +566,8 @@ int main(int argc, const char* argv[]) {
 
     } else if (command == "prune") {
         return testPrune(std::stoull(argv[2]));
+    } else if (command == "happy_flower") {
+        return testHappyFlowerCounter(std::stoull(argv[2]));
     }
 
     //    printSizes();

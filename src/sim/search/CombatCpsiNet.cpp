@@ -34,8 +34,36 @@ static void layernorm(const float*x,int d,const float*g,const float*b,float*o){
 }
 
 static void linear(const float*in,int C,const float*W,const float*B,int R,float*out){
-    for(int r=0;r<R;++r){const float*wr=W+r*C;float s=0.f;for(int c=0;c<C;++c)s+=wr[c]*in[c];out[r]=s;}
+    for(int r=0;r<R;++r){
+        const float*wr=W+r*C;
+        float s=0.f;
+#pragma omp simd reduction(+:s)
+        for(int c=0;c<C;++c)s+=wr[c]*in[c];
+        out[r]=s;
+    }
     if(B)for(int r=0;r<R;++r)out[r]+=B[r];
+}
+
+// Batch variant for the transformer layers: computes the same per-token
+// linear map (bit-identical per-output reductions) but hoists the weight-row
+// loop outside the token loop, so each weight row is read once per layer
+// instead of once per token, keeping the ~1MB of layer weights hot across
+// tokens. Together with the omp-simd reductions on the inner loop this cut
+// the forward from ~0.58 ms to ~0.20 ms (2.9x; the pragma alone is ~1.9x,
+// the hoisting another ~1.5x on top — EXPERIMENTS.md §110). out is
+// token-major: out[t*R+r].
+static void linearBatch(const float*in,int nT,int C,const float*W,const float*B,int R,float*out){
+    for(int r=0;r<R;++r){
+        const float*wr=W+r*C;
+        for(int t=0;t<nT;++t){
+            const float*it=in+t*C;
+            float s=0.f;
+#pragma omp simd reduction(+:s)
+            for(int c=0;c<C;++c)s+=wr[c]*it[c];
+            out[t*R+r]=s;
+        }
+    }
+    if(B)for(int t=0;t<nT;++t)for(int r=0;r<R;++r)out[t*R+r]+=B[r];
 }
 
 // ---- Transformer helpers ---------------------------------------------------
@@ -43,7 +71,7 @@ static void multiHeadAttn(const float*tok,int nT,int D,int nH,
     const CombatCpsiNet::TransformerLayer&L,float*out){
     int hd=D/nH,qd=3*D;
     thread_local std::vector<float> QKV,attn,tmp;QKV.resize(nT*qd);attn.assign(nT*D,0.f);tmp.resize(std::max(nT*nT,nT*D));
-    for(int t=0;t<nT;++t)linear(tok+t*D,D,L.qkvFcW.data(),L.qkvFcB.data(),qd,QKV.data()+t*qd);
+    linearBatch(tok,nT,D,L.qkvFcW.data(),L.qkvFcB.data(),qd,QKV.data());
     for(int h=0;h<nH;++h){int ho=h*hd,vo=2*D+ho;float*s=tmp.data();
         for(int i=0;i<nT;++i){const float*qi=QKV.data()+i*qd+ho;float sm=-1e30f;
             for(int j=0;j<nT;++j){const float*kj=QKV.data()+j*qd+D+ho;float x=0;for(int d=0;d<hd;++d)x+=qi[d]*kj[d];s[i*nT+j]=x;if(x>sm)sm=x;}
@@ -59,8 +87,10 @@ static void multiHeadAttn(const float*tok,int nT,int D,int nH,
 static void ffn(const float*tok,int nT,int D,int H,
     const CombatCpsiNet::TransformerLayer&L,float*out){
     thread_local std::vector<float> h,r;h.resize(nT*H);r.resize(nT*D);
-    for(int t=0;t<nT;++t){linear(tok+t*D,D,L.ffnW1.data(),L.ffnB1.data(),H,h.data()+t*H);for(int i=0;i<H;++i)h[t*H+i]=gelu(h[t*H+i]);}
-    for(int t=0;t<nT;++t){linear(h.data()+t*H,H,L.ffnW2.data(),L.ffnB2.data(),D,r.data()+t*D);
+    linearBatch(tok,nT,D,L.ffnW1.data(),L.ffnB1.data(),H,h.data());
+    for(int t=0;t<nT;++t)for(int i=0;i<H;++i)h[t*H+i]=gelu(h[t*H+i]);
+    linearBatch(h.data(),nT,H,L.ffnW2.data(),L.ffnB2.data(),D,r.data());
+    for(int t=0;t<nT;++t){
         float mid[256];for(int i=0;i<D;++i)mid[i]=tok[t*D+i]+r[t*D+i];layernorm(mid,D,L.ln2W.data(),L.ln2B.data(),out+t*D);}
 }
 

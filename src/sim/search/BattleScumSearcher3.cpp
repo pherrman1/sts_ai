@@ -23,6 +23,7 @@ bool g_s3Live = true;
 bool g_s3Crn = false;
 int g_s3Particles = 64;
 double g_riskLambda = 0.5;
+thread_local std::function<double(const BattleContext &)> g_terminalBonus;
 extern double g_vnetAlpha;
 
 // ---- Particle application: 6 RNG streams + draw pile order -----------------
@@ -456,10 +457,18 @@ bool BattleScumSearcher3::isTerminal(const BattleContext &bc) const {
 }
 
 double BattleScumSearcher3::evaluateTerminal(const BattleContext &bc) {
+    double v;
     if (g_useDistVNet && g_combatDistVNet.loaded())
-        return g_combatDistVNet.predictFromBC(bc).riskAdjustedValue(
+        v = g_combatDistVNet.predictFromBC(bc).riskAdjustedValue(
             riskLambda, bc.player.maxHp, g_combatDistVNet.winBonus);
-    return bc.outcome == Outcome::PLAYER_VICTORY ? bc.player.curHp + 50.0 : 0.0;
+    else
+        v = bc.outcome == Outcome::PLAYER_VICTORY ? bc.player.curHp + 50.0 : 0.0;
+    // Cross-combat pricing: the integration driver may add a run-level bonus
+    // on victory leaves (post-combat HP/gold/potions/relic counters), so the
+    // search can weigh e.g. stalling to align the Happy Flower counter.
+    if (bc.outcome == Outcome::PLAYER_VICTORY && g_terminalBonus)
+        v += g_terminalBonus(bc);
+    return v;
 }
 
 double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc) {

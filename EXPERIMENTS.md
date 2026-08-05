@@ -3795,3 +3795,167 @@ enabling condition, but the omitted command prevents verification.
   (tracked native; .pt stays local per convention), `build/v4fix_128.csv`,
   `build/v4fix_256.csv`, `build/v4fix_s3_256.csv`,
   `/tmp/opencode/v4_retrain.log`.
+
+## 109. Terminal-leaf run-value bonus (cross-combat setup) — infrastructure in, smoke only; no policy claim yet (2026-08-05)
+
+- **Goal:** let combat search price the post-combat run state at terminal
+  victory leaves, so cross-combat setup decisions (stall one turn so the
+  Happy Flower counter ends charged for the next fight) become selectable.
+  Mechanism: search::g_terminalBonus hook in
+  BattleScumSearcher3::evaluateTerminal; one_combat arms it per battle
+  (	ermWinArmForBattle/	ermLeafBonus) building one base rich row per
+  fight (hidden future fights resampled from the act pool, ossId/
+
+extEliteId/
+extFight*/emElites/emFights parity-excluded) and
+  patching the exitBattle-transferred fields by index; bonus =
+  w * v_win_trees.txt P(win). Flags STS_TERM_WIN=1, STS_TERM_WIN_W
+  (100), STS_TERM_WIN_HIDDEN=resample|zero. Decision log
+  2026-08-05-terminal-leaf-run-value-bonus.md.
+- **Stage 0 mechanics test:** ./build/test happy_flower <seed> PASS — relic
+  counter ticks once at battle start plus once per turn start, end counter =
+  (entry + 1 + bc.turn) mod 3, updateRelicsOnExit write-back, counter 2 at
+  battle start charges +1 energy.
+- **Research finding:** the deployed win tree has ZERO counter sensitivity —
+  none of the counter-relic features split anywhere: `r26` (Happy Flower),
+  `r30` (Incense Burner), `r31` (Ink Bottle), `r35` (Lizard Tail), `r44`
+  (Nunchaku), `r52` (Pen Nib), `r68` (Sundial), `r131` (Neow's Lament) are
+  each selected among its 448 features with 0/1060 tree splits (`r32`
+  Inserter unselected). The bonus currently prices HP/gold/potions; counter
+  pricing needs a counter-aware terminal model — generic across all counter
+  relics, not Happy Flower only (follow-up).
+- **Parity:** patched rich row == full ichFeatureVec on a real post-combat
+  copy (hidden features zeroed in both), 0 mismatches on 4-seed runs.
+- **Determinism:** two identical STS_TERM_WIN=1 runs (4 seeds, 100 sims)
+  agree on every per-seed game column; only wall-clock sec differs.
+- **Smoke A/B** (16 seeds 126700–126715, asc 0, 300 sims, STS_FAIR=1,
+  S3−belief−chain, 8 threads, native floor/win trees, policy prior auto-load;
+  per-seed CSVs uild/termwin_off.csv / uild/termwin_on.csv):
+
+  | arm | win | floor | end hp | cpu-sec/run |
+  |---|---|---:|---:|---:|
+  | bonus off | 4/16 (25.0%) | 31.4 | 13.7 | 14.37 |
+  | bonus on (w=100) | 3/16 (18.8%) | 29.0 | 10.8 | 25.21 |
+
+  **Verdict: smoke only — 16 seeds is noise, no win-rate claim.** The bonus
+  demonstrably changes play (fires on victory leaves; result columns differ)
+  and costs ~+75% cpu at 300 sims (one 1060-tree walk per terminal leaf) —
+  both are Stage-2 tuning targets (paired benchmark, `STS_FORCE_RELIC` for a
+  guaranteed Happy Flower, `STS_TERM_WIN_W` sweep, stall telemetry, cost
+  reduction). Stage 3: counterfactual terminal model branching EVERY owned
+  counter relic 0/1/2 (one at a time, `finishOocCounterfactual` labels).
+
+## 110. C_psi counter-sensitivity probe — the neural surrogate DOES price the counters (correct sign, monotone); wired as STS_TERM_WIN_EVAL=cpsi (2026-08-05)
+
+- **Question:** the deployed GBMs split on none of the counter-relic features
+  (V_win/V_rich: 0/1060 and 0/1256 splits on r26/r30/r31/r35/r44/r52/r68/
+  r131). Do any OTHER trained models price the counters? Candidates: C_psi
+  (no-peek next-fight survival transformer — the only model whose labels are
+  the NEXT combat's outcome, with all 8 counters as explicit scalars 3..10 in
+  uildCpsiEntry), V3/V4 strategic nets, PVNet (no counter slots), V_combat
+  (artifact not on this machine).
+- **New code:** cpsictr mode + STS_CPSI_CTR_PROBE=1
+  (pps/one_combat.cpp::cpsiCounterProbeAtState/cpsiCtrProbeReport): at
+  every post-combat state of unFullRunOOC runs, for each counter relic the
+  run owns, re-predict C_psi with that relic's counter scalar set to each
+  value 0..k-1 and accumulate the mean ΔP(death)/ΔP(win) vs the state's own
+  counter, averaged over the six fixed probe encounters (TWO_LOUSE/GREMLIN_NOB/
+  LAGAVULIN/THREE_SENTRIES/SLIME_BOSS/THE_GUARDIAN — same slots as
+  probe_cpsi.py). Deterministic (5-seed double-run identical).
+- **Results (400 seeds 126700–127099, asc 0, 100 sims, 1,433 post-combat
+  states; mean ΔP(death) at the charged counter value vs state's own base):**
+
+  | relic | states | charged ctr | ΔP(death) | ΔP(win) |
+  |---|---|---:|---:|---:|
+  | HAPPY_FLOWER | 194 | c2 | **−0.0023** | +0.0020 |
+  | INCENSE_BURNER | 67 | c5 | **−0.0072** | +0.0086 |
+  | INK_BOTTLE | 276 | c9 | **−0.0066** | +0.0065 |
+  | NUNCHAKU | 297 | c9 | **−0.0078** | +0.0077 |
+  | PEN_NIB | 428 | c9 | **−0.0118** | +0.0114 |
+  | SUNDIAL | 171 | c2 | **−0.0052** | +0.0046 |
+  | INSERTER | 0 | — | (Defect-only, expected 0 for Ironclad) |
+
+  Every relic is **correctly signed and monotone** (fully charged → lowest
+  next-fight death; the 200-seed 626-state run showed the same pattern).
+  The observational confound (counter correlates with previous fight length)
+  would push the model the WRONG way; the learned mechanism effects dominate.
+  Caveat: this is learned association, not proof of causality — the Stage-3
+  counterfactual datagen remains the ground-truth validation.
+- **Decision:** wire C_psi in as a terminal-leaf evaluator
+  (STS_TERM_WIN_EVAL=cpsi, default win): 	ermLeafBonus builds the
+  no-peek entry from the patched rich row (cpsiEntryFromRich mirrors
+  uildCpsiEntry — no GameContext copies, no hidden-info features by
+  construction) and returns w * P(win of next fight) with the current
+  fight's encounter as the fixed probe encounter (a per-combat constant, so
+  only the state-dependent part — HP/potions/counters — orders the leaves).
+- **Cost (before runtime fix):** the scalar transformer forward was ~0.58 ms;
+  cpsi-eval measured 34.5 vs 1.9 cpu-sec/run at 100 sims (16 seeds, fair,
+  S3−belief−chain, w=100) — ~18x the win-tree leaf. **Runtime fix
+  (2026-08-05):** `#pragma omp simd reduction` on the `linear`/`linearBatch`
+  inner loops + weight-row hoisting across the token loop
+  (`src/sim/search/CombatCpsiNet.cpp`; per-output math bit-identical, probe
+  deltas unchanged to 4 decimals) cut the forward to ~0.20 ms (2.9x) and the
+  end-to-end cpsi-eval overhead from +33.7 to +17.4 cpu-sec/run on the same
+  16-seed   block (19.2 vs 35.5 cpu-sec/run) — ~9x the win-tree leaf. The
+  erf-GELU hypothesis was measured and rejected (a fast-erf LUT build changed
+  nothing); the win is the omp-simd reduction (~1.9x alone: 577→300 us) plus
+  the weight-row hoisting across the token loop (another ~1.5x: 300→201 us),
+  both bit-identical per-output. Benchmark at the 1k-sim operating point
+  (est. ~50 min for 128 seeds on 8 threads). 16-seed behavioral smoke: same
+  win% 18.8, floor 27.7 vs 30.8, end HP 13.4 vs 6.2 (bonus-on prices
+  next-fight survival; noise-level sample, direction as expected).
+- **Artifacts:** probe output (400 seeds) in the run transcript; per-seed
+  smoke CSVs uild/cpsictr_{off,on}.csv; cpsictr mode + STS_CPSI_CTR_PROBE
+  env; decision log addendum 2026-08-05-terminal-leaf-run-value-bonus.md.
+
+
+## 111. OOC fight-rollout lookahead re-gated on the current stack: greedy and margin-gated searched-checkpoint oracle, win-GBM terminal term — falsified (2026-08-05)
+
+- **What:** re-test the §66 "copy the run, actually simulate the next combat
+  checkpoints, evaluate the state, come back" oracle as a **live** policy on
+  the §107 recommended stack (S3−belief−chain + V4 one-ply gate stack), with a
+  new terminal state evaluator: `STS_ACT_FIGHT_PROBE_TERM_WIN=w` prices each
+  option's post-final-checkpoint state with the native win GBM
+  (`g_winNet.predict(richFeatureVec(local))`, P(win) units, blended into the
+  HP-safety utility), and `STS_ACT_FIGHT_PROBE_MARGIN=m` (best−second ≥ m else
+  fallback stack) is the deployment gate. Both flags default off; unset
+  behavior byte-identical (verified structurally: term/margin blocks are
+  unreachable at defaults).
+- **Setup:** `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
+  STS_S3_PARTICLES=256`, V4 tok gates REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1,
+  margin 1.0, asc 0, 24 threads, oracle = ALL_OOC=1 MAX_CHECKPOINTS=3
+  CHECKPOINT_SIMS=400,200,100 FUTURES=2. Seeds 126700–126955, recorded block.
+- **Baseline reproductions:** §107 stack @3k = **60.2% win / 44.2 floor /
+  39.2 HP** (154/256, matches §107 exactly; `gate_2026-08-05_termlookahead_base.csv`);
+  @1k = **56.6% / 43.0 / 35.2** (fresh same-binary pairing reference,
+  `gate_2026-08-05_margin_base1k.csv`; §107's 1k point was 57.4% @64p).
+- **Arm 1 — greedy (ungated) oracle + TERM_WIN=1.0 @3k:** **0/13 paired wins
+  vs baseline 8/13**; all 8 baseline full clears lost; candidate died at
+  act-2 floors 22–33 (`gate_2026-08-05_termlookahead_cand.csv`). Run stopped
+  at 13 seeds (7+ h projected); the pattern matches §66j/§66m/§67.
+- **Attribution (seed 126706):** oracle+TERM_WIN and oracle−TERM_WIN both die
+  at floor 22 / fight 14; baseline wins — the failure is the **oracle's
+  decision selection, not the terminal term**; TERM_WIN is a ~10–15%
+  perturbation of an HP-safety-dominated utility (`diag_126706_ora.nohp.csv`).
+- **Arm 2 — margin-gated oracle m=0.15 + TERM_WIN=1.0 @1k:** at n=62 paired
+  seeds (run stopped to save compute): candidate **19/62 (30.6%) vs baseline
+  33/62 (53.2%)**, paired floor −2.24, paired score −4.50 (SE 2.33),
+  reversals 8 cand-better / 22 base-better (`gate_2026-08-05_margin_cand15.csv`,
+  62 rows). Estimate stable at ≈ −4.5 since n≈28 with no trend toward zero;
+  extrapolated 256-seed CI ≈ [−6.8, −2.2]. A positive flip would need the
+  remaining 194 seeds to outrun baseline by ~5σ — stopped at 62.
+- **Verdict:** ❌ falsified as a live full-run policy, with and without the
+  margin gate. The oracle's HP-safety/win argmax replaces the margin-gated
+  one-ply Q stack on every (gated) decision and is net-negative; the marginal
+  damage scales with firing rate (ungated 0/13, m=0.15 ~−22pp at n=62). The
+  win-GBM terminal term cannot rescue it (failure is selection, not pricing).
+  The oracle machinery stays opt-in (probe flags default off); its validated
+  role remains offline teacher/ranker (§66k/§66l/§67), not live policy.
+- **Artifacts:** CSVs above (local copies in the session temp dir; GCP
+  `/home/philippherrmann/sts_sweep/build/`); logs
+  `gate_2026-08-05_{termlookahead_base,termlookahead_cand,margin_base1k,margin_cand15}.log`.
+  Code: `apps/one_combat.cpp` `g_actFightProbeTermWin`, `g_actFightProbeMargin`,
+  `checkpointedActFightUtility` terminal term, `actFightProbeAllOocPolicy` gate.
+- **Cost:** baseline 60.2%@3k = 30.8 cpu-s/run (344 s wall); ungated oracle
+  ≈ 350–1430 cpu-s/run (13 seeds in 26 min); margin-gated ≈ 62 seeds in 99 min
+  → ~5.1 h projected for 256; stopped to save compute.

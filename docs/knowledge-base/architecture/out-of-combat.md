@@ -1,6 +1,7 @@
 # Out-of-combat policy
 
-Last verified: 2026-08-05 against the current working tree (Wave B regret
+Last verified: 2026-08-05 against the current working tree (checkpoint-oracle
+terminal win-GBM + margin-gate levers added and falsified §111; Wave B regret
 gate + Q_win truth-check mode + map-DAG encoder (V6) + Phase F soft-target
 policy objective and policy-score gate env added; Phase F falsified §104,
 label-noise wave §105 null — learned one-ply label line closed).
@@ -195,6 +196,23 @@ defaults byte-parity with the §104 numbers) move neither `dist_top1` nor
 `q_top1`; the one-ply label **ranking** itself is the transfer ceiling.
 K=6 deep targets (5.7.1b) are not run for that reason (truncation is the
 weak lever per the §105 L0 probe).
+
+## Checkpoint-oracle live-policy levers (2026-08-05, opt-in, falsified)
+
+`STS_ACT_FIGHT_PROBE_TERM_WIN=w` adds a terminal pricing term to the capped
+all-OOC checkpoint objective (`apps/one_combat.cpp::checkpointedActFightUtility`):
+on the final scored checkpoint, each option's post-fight branch state is
+priced by the native win GBM (`g_winNet.predict(richFeatureVec(local))`,
+P(win) units, scale-compatible with the HP-safety sigmoid) and blended by `w`.
+`STS_ACT_FIGHT_PROBE_MARGIN=m` gates the oracle
+(`apps/one_combat.cpp::actFightProbeAllOocPolicy`): it overrides a decision
+only when `best − second ≥ m`, else control falls through to the ordinary
+policy stack. Both default off; unset behavior is byte-identical. §111
+falsifies both as a live full-run policy on the §107 stack: the ungated oracle
+lost 0/13 paired seeds and the m=0.15 arm −4.50 (SE 2.33) at n=62; the
+HP-safety/win argmax replaces the margin-gated one-ply Q stack on every gated
+decision and is net-negative, and the terminal term cannot rescue it. The
+oracle machinery remains an offline teacher/ranker tool (§66k/§66l/§67).
 
 ## Strategic model design (semi-Markov decomposition)
 

@@ -123,6 +123,12 @@ namespace sts::search {
     // Particle count for the S3 belief (env STS_S3_PARTICLES; default 64).
     extern int g_s3Particles;
     extern double g_riskLambda;
+    // Optional additive terminal-victory bonus, supplied by the integration
+    // driver (one_combat): prices the post-combat run state (HP, gold,
+    // potions, relic counters) with a run-level evaluator so the combat
+    // search can reason about cross-combat setup (e.g. Happy Flower counter
+    // alignment). Empty = off. Consumed only in evaluateTerminal.
+    extern thread_local std::function<double(const BattleContext &)> g_terminalBonus;
 
 
 } // namespace sts::search

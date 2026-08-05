@@ -769,6 +769,34 @@ static int    g_oocStrategicTok = 0;        // env STS_OOC_STRATEGIC_TOK_NN: V4 
 static bool   g_oocStrategicTokCheck = false; // env STS_OOC_STRATEGIC_TOK_CHECK=1: first-decision glob parity hook
 static thread_local bool t_tokCheckPending = false;  // armed per run; consumed by the first gated decision
 static thread_local bool t_shopV = false;            // runFullRunOOC's shopV param, for the regret SHOP probe
+// Terminal-leaf run-value bonus (cross-combat setup, e.g. Happy Flower):
+// STS_TERM_WIN=1 prices Searcher3 terminal VICTORY leaves with the native win
+// model on the post-combat run state (weight STS_TERM_WIN_W, default 100;
+// STS_TERM_WIN_HIDDEN=resample|zero for the future-fight features;
+// STS_TERM_WIN_EVAL=win|cpsi picks the evaluator: the win tree, or the C_psi
+// next-fight survival model, which the cpsictr probe shows prices the
+// counters correctly).
+static bool   g_termWin = false;
+static double g_termWinW = 100.0;
+static int    g_termWinHidden = 1;      // 1 = resample the act pool, 0 = zero hidden feats
+static int    g_termWinEval = 0;        // 0 = win tree, 1 = C_psi next-fight survival
+// Forced relic at run start (benchmark): STS_FORCE_RELIC=<NAME> grants the
+// relic (counter data 0) and removes it from the draw pools so the run cannot
+// naturally roll a duplicate. Enables paired A/B with the relic guaranteed.
+static RelicId g_forceRelic = RelicId::INVALID;
+// Per-combat stall telemetry: STS_TERM_STALL_LOG=<path> appends one CSV row
+// per battle (turns, end HP/gold/potions, counter positions) so the terminal
+// bonus's stall behavior can be checked directly.
+static std::string g_stallLogPath;
+static thread_local const GameContext *t_termGc = nullptr;
+static thread_local std::vector<float> t_termBaseRow;
+static thread_local bool t_termParityChecked = false;
+// C_psi counter-sensitivity probe (diagnostic): STS_CPSI_CTR_PROBE=1
+// accumulates, at every post-combat state of runFullRunOOC runs, the
+// predicted next-fight P(death)/P(win) deltas when each owned counter relic's
+// cpsi scalar is set to each of its possible counter values (vs the state's
+// own counter). Needs STS_CPSI_NN. Reported by the cpsictr mode.
+static bool g_cpsiCtrProbe = false;
 // B1 shop beam search (ooc-next-wave-contracts.md §2): multi-step lookahead over
 // deterministic shop purchases, replacing the one-ply shop gate when enabled.
 static bool   g_oocShopBeam = false;        // env STS_OOC_SHOP_BEAM=1
@@ -800,7 +828,125 @@ static bool regretGateTail(GameContext &, const std::vector<search::GameAction> 
                            const std::vector<double> &, int, double, double, double, double,
                            void (*)(GameContext &, search::ScumSearchAgent2 &),
                            const search::ScumSearchAgent2 &);
+// ---------------------------------------------------------------------------
+// C_psi counter-sensitivity probe (diagnostic): at every post-combat state,
+// for each counter relic the run owns, re-predict the next-fight outcome with
+// that relic's counter scalar set to each possible value (0..k-1) and
+// accumulate the mean ΔP(death)/ΔP(win) vs the state's own counter, averaged
+// over the six fixed probe encounters (TWO_LOUSE/GREMLIN_NOB/LAGAVULIN/
+// THREE_SENTRIES/SLIME_BOSS/THE_GUARDIAN — same probes as probe_cpsi.py).
+// Answers "does ANY trained model price the counters": the deployed GBMs do
+// not (0 tree splits on every counter feature in v_win/v_rich). Sensitivity
+// != correctness — these labels are observational (counter confounded with
+// fight length), so the SIGN of the deltas is the finding; only counterfactual
+// datagen gives ground truth.
+// ---------------------------------------------------------------------------
+struct CpsiCtrAccum {
+    struct Relic {
+        RelicId id = RelicId::INVALID;
+        int scalarIdx = -1;
+        int k = 0;
+        int states = 0;
+        int baseHist[10] = {};
+        double sumBaseDeath = 0;
+        double sumDeath[10] = {};
+        double sumWin[10] = {};
+    };
+    std::vector<Relic> relics;
+    int states = 0;
+    long long forwards = 0;
+    double wallSec = 0;
+    bool ready = false;
+};
+static CpsiCtrAccum g_cpsiCtrAccum;
+
+static void cpsiCounterProbeAtState(const GameContext &gc) {
+    if (!g_cpsiNet.loaded()) return;
+    CpsiCtrAccum &acc = g_cpsiCtrAccum;
+    if (!acc.ready) {
+        // (relic, cpsi scalar slot, counter value range) — mirrors
+        // buildCpsiEntry's scalar[3..9] order and each relic's trigger range.
+        const CpsiCtrAccum::Relic slots[] = {
+            {RelicId::HAPPY_FLOWER, 3, 3},  {RelicId::INCENSE_BURNER, 4, 6},
+            {RelicId::INK_BOTTLE, 5, 10},   {RelicId::INSERTER, 6, 2},
+            {RelicId::NUNCHAKU, 7, 10},     {RelicId::PEN_NIB, 8, 10},
+            {RelicId::SUNDIAL, 9, 3},
+        };
+        for (const auto &s : slots) acc.relics.push_back(s);
+        acc.ready = true;
+    }
+    const auto t0 = std::chrono::steady_clock::now();
+    static constexpr int probeEncounters[6] = {3, 15, 16, 17, 18, 19};
+    float scalar[search::kCpsiScalars];
+    float deck[search::kCpsiCards], relics[search::kCpsiRelics], potions[search::kCpsiPotions];
+    search::buildCpsiEntry(gc, scalar, deck, relics, potions);
+    for (CpsiCtrAccum::Relic &r : acc.relics) {
+        if (!gc.hasRelic(r.id)) continue;
+        ++acc.states;
+        ++r.states;
+        const int base = (int)scalar[r.scalarIdx];
+        if (base >= 0 && base < r.k) ++r.baseHist[base];
+        double baseDeath = 0, baseWin = 0;
+        for (int e : probeEncounters) {
+            search::CpsiOut o;
+            g_cpsiNet.predict(scalar, deck, relics, potions, e, o);
+            ++acc.forwards;
+            baseDeath += o.death;
+            baseWin += o.win;
+        }
+        r.sumBaseDeath += baseDeath / 6;
+        const float save = scalar[r.scalarIdx];
+        for (int c = 0; c < r.k; ++c) {
+            if (c == base) continue;
+            scalar[r.scalarIdx] = (float)c;
+            double dSum = 0, wSum = 0;
+            for (int e : probeEncounters) {
+                search::CpsiOut o;
+                g_cpsiNet.predict(scalar, deck, relics, potions, e, o);
+                ++acc.forwards;
+                dSum += o.death;
+                wSum += o.win;
+            }
+            r.sumDeath[c] += (dSum - baseDeath) / 6;
+            r.sumWin[c] += (wSum - baseWin) / 6;
+        }
+        scalar[r.scalarIdx] = save;
+    }
+    acc.wallSec += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+}
+
+static void cpsiCtrProbeReport() {
+    const CpsiCtrAccum &acc = g_cpsiCtrAccum;
+    static const char *const names[] = {"HAPPY_FLOWER", "INCENSE_BURNER",
+                                        "INK_BOTTLE", "INSERTER", "NUNCHAKU",
+                                        "PEN_NIB", "SUNDIAL"};
+    std::printf("cpsi counter probe: %d post-combat states probed, %lld forwards, %.1f us/forward (mean over 6 fixed encounters, delta vs state's own counter)\n",
+                acc.states, acc.forwards, acc.forwards > 0 ? acc.wallSec / acc.forwards * 1e6 : 0.0);
+    std::printf("%-14s %6s %8s  %s\n", "relic", "states", "base death", "mean delta per counter value");
+    for (int i = 0; i < (int)acc.relics.size() && i < 7; ++i) {
+        const CpsiCtrAccum::Relic &r = acc.relics[i];
+        const double n = r.states > 0 ? (double)r.states : 1.0;
+        std::printf("%-14s %6d %8.4f  death", names[i], r.states, r.sumBaseDeath / n);
+        for (int c = 0; c < r.k; ++c) std::printf("  c%d %+.4f", c, r.sumDeath[c] / n);
+        std::printf("\n");
+        std::printf("%-14s %6s %8s  win  ", "", "", "");
+        for (int c = 0; c < r.k; ++c) std::printf("  c%d %+.4f", c, r.sumWin[c] / n);
+        std::printf("\n");
+        if (r.states > 0) {
+            std::printf("%-14s %6s %8s  base [", "", "", "");
+            for (int c = 0; c < r.k; ++c) std::printf("%d:%d ", c, r.baseHist[c]);
+            std::printf("]\n");
+        }
+    }
+}
 static std::string nativeShopPlan(GameContext &);
+// Terminal-leaf run-value bonus (implementation after the rich feature block).
+static double termLeafBonus(const BattleContext &);
+static void termWinArmForBattle(GameContext &);
+static void termWinDisarm();
+static void resampleRemainingActEncounters(GameContext &, std::uint64_t);
+// Per-combat stall telemetry (defined with the terminal-leaf bonus block).
+static void stallLogRow(const GameContext &, const BattleContext &, std::uint64_t);
 // A/B: route card picks through the deck-set NN (P(win) marginal), optionally blended with
 // the v_win GBM: marg = w*NN + (1-w)*GBM. Own skip scale (P(win) units).
 static bool   g_cardNN     = false;     // env STS_CARD_NN=1
@@ -892,6 +1038,18 @@ static bool   g_actFightProbeEncounterNN = false; // STS_ACT_FIGHT_PROBE_ENCOUNT
 static double g_actFightProbePredictWinThreshold = 0.5;
 static std::string g_actFightProbePredictNetPath = "selfplay/models/v_combat_entity_iter34.txt";
 static search::CombatValueNet g_actFightProbePredictNet;
+// Optional terminal pricing for the capped checkpoint objective: after the
+// final scored checkpoint, price each option's resulting branch state with the
+// native win model (P(run victory)) and add it to the utility, blended by this
+// weight.  HP-only checkpoint safety misses resource compounding (gold, relics,
+// deck) that the trunk simulation carries forward but never prices.
+static double g_actFightProbeTermWin = 0.0; // STS_ACT_FIGHT_PROBE_TERM_WIN=alpha (0 = off)
+// Margin gate: when > 0, the all-OOC oracle overrides a decision only if its
+// best action's utility beats the runner-up by at least this margin; otherwise
+// control falls through to the ordinary policy stack.  Greedy full-run oracle
+// replacement is a recorded regression (EXPERIMENTS.md 66j/66m/67); the margin
+// is the design-doc deployment contract for learned override layers.
+static double g_actFightProbeMargin = 0.0; // STS_ACT_FIGHT_PROBE_MARGIN=m (0 = always fire)
 static int    g_stopAfterAct = 0;            // STS_STOP_AFTER_ACT=N, benchmark horizon
 // Optional durable per-action teacher data for the all-OOC oracle.  The file
 // is append-only because benchmark runs may be stopped and resumed.
@@ -2210,6 +2368,12 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(seed);
+    if (g_forceRelic != RelicId::INVALID && !gc.relics.has(g_forceRelic)) {
+        gc.relics.add({g_forceRelic, 0});
+        for (std::vector<RelicId> *pool : {&gc.commonRelicPool, &gc.uncommonRelicPool,
+                                           &gc.rareRelicPool, &gc.shopRelicPool, &gc.bossRelicPool})
+            pool->erase(std::remove(pool->begin(), pool->end(), g_forceRelic), pool->end());
+    }
 
     PathHistory path;                // pv* features for V queries (train/serve parity)
     t_pathActionUses = 0;
@@ -2228,11 +2392,16 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             const int battleAct = gc.act;
             agent.simulationCountBase = fightSims(gc, sims);            // difficulty-tiered budget
             search::g_potionKeepValue = potionKeepValue(gc);           // dynamic potion-saving
+            if (search::g_useSearcher3 && g_termWin && g_winNet.ok)
+                termWinArmForBattle(gc);   // terminal-leaf run-value bonus (cross-combat setup)
             BattleContext bc{}; bc.init(gc);
             agent.playoutBattle(bc);
+            if (search::g_useSearcher3 && g_termWin) termWinDisarm();
             ++fightsTotal;
             if (bc.outcome == Outcome::PLAYER_LOSS) { ++fightsLost; if (deathCombat < 0) { deathCombat = fightsTotal; deathEncounter = (int)bc.encounter; } }
             bc.exitBattle(gc);
+            if (g_cpsiCtrProbe) cpsiCounterProbeAtState(gc);   // C_psi counter-sensitivity probe
+            stallLogRow(gc, bc, seed);                          // stall telemetry (opt-in)
             if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
                 clearedStopActBoss = bc.outcome == Outcome::PLAYER_VICTORY;
                 break;
@@ -3121,6 +3290,244 @@ static TokState buildTokState(const GameContext &gc, const PathHistory &path) {
         tokCheckGlobParity(gc, ts);
     }
     return ts;
+}
+
+// ---------------------------------------------------------------------------
+// TERMINAL-LEAF RUN-VALUE BONUS (cross-combat setup, e.g. Happy Flower):
+// Searcher3 terminal VICTORY leaves are priced with the native win model on
+// the post-combat run state (HP, gold, potions, relic counters transferred
+// exactly like BattleContext::exitBattle). The bonus is w * P(run win); within
+// one combat the post-combat state differs across leaves only in those
+// transferred fields, so the bonus changes relative leaf ordering by the
+// run-level value of the battle's end state. The base rich row is built once
+// per fight (future fights resampled from the act pool or zeroed, so the
+// combat search stays hidden-info clean) and patched per leaf by index.
+// ---------------------------------------------------------------------------
+struct TermWinIndices {
+    int curHp = -1, maxHp = -1, gold = -1, potionCount = -1;
+    int ascension = -1, dBase = -1, rBase = -1;
+    int potBase = -1;
+    std::vector<int> potIdx;
+    int happyFlower = -1, incenseBurner = -1, inkBottle = -1, inserter = -1;
+    int nunchaku = -1, penNib = -1, sundial = -1, lizardTail = -1, neowsLament = -1;
+    int boss = -1, nf0 = -1, nf1 = -1, nf2 = -1, nextElite = -1;
+    int remElites = -1, remFights = -1;
+    bool ok = false;
+};
+static const TermWinIndices &termWinIndices() {
+    static TermWinIndices m;
+    if (!m.ok) {
+        const auto &idx = richIdxMap();
+        auto f = [&](const std::string &n) -> int { return idx.count(n) ? (int)idx.at(n) : -1; };
+        m.curHp = f("curHp"); m.maxHp = f("maxHp"); m.gold = f("gold");
+        m.potionCount = f("potionCount");
+        m.ascension = f("ascension"); m.dBase = f("d0"); m.rBase = f("r0");
+        m.potBase = f("pot0");
+        for (int i = 0; m.potBase >= 0 && i < 64; ++i) {
+            const int ix = f("pot" + std::to_string(i));
+            if (ix < 0) break;
+            m.potIdx.push_back(ix);
+        }
+        m.happyFlower   = f("r" + std::to_string((int)RelicId::HAPPY_FLOWER));
+        m.incenseBurner = f("r" + std::to_string((int)RelicId::INCENSE_BURNER));
+        m.inkBottle     = f("r" + std::to_string((int)RelicId::INK_BOTTLE));
+        m.inserter      = f("r" + std::to_string((int)RelicId::INSERTER));
+        m.nunchaku      = f("r" + std::to_string((int)RelicId::NUNCHAKU));
+        m.penNib        = f("r" + std::to_string((int)RelicId::PEN_NIB));
+        m.sundial       = f("r" + std::to_string((int)RelicId::SUNDIAL));
+        m.lizardTail    = f("r" + std::to_string((int)RelicId::LIZARD_TAIL));
+        m.neowsLament   = f("r" + std::to_string((int)RelicId::NEOWS_LAMENT));
+        m.boss = f("bossId"); m.nf0 = f("nextFight0"); m.nf1 = f("nextFight1");
+        m.nf2 = f("nextFight2"); m.nextElite = f("nextEliteId");
+        m.remElites = f("remElites"); m.remFights = f("remFights");
+        m.ok = m.curHp >= 0 && m.potBase >= 0;
+    }
+    return m;
+}
+
+// Encode a run-level relic counter exactly like richRow: 1 + data (data 0 -> 1).
+static int encRelicCounter(int data) { return 1 + (data > 0 ? data : 0); }
+
+// Build the C_psi no-peek entry from the patched rich row, mirroring
+// search::buildCpsiEntry's semantics (deck counts, relic presence [0..127],
+// potion counts, scalars = ascension/curHp/maxHp + the 7 counter scalars
+// recovered from the rich r<i> slots: slot = 1 + data when owned, else 0).
+static void cpsiEntryFromRich(const std::vector<float> &row,
+                              const TermWinIndices &ix,
+                              float scalar[search::kCpsiScalars],
+                              float deck[search::kCpsiCards],
+                              float relics[search::kCpsiRelics],
+                              float potions[search::kCpsiPotions]) {
+    std::fill(scalar, scalar + search::kCpsiScalars, 0.f);
+    std::fill(deck, deck + search::kCpsiCards, 0.f);
+    std::fill(relics, relics + search::kCpsiRelics, 0.f);
+    std::fill(potions, potions + search::kCpsiPotions, 0.f);
+    if (ix.ascension >= 0 && ix.ascension < (int)row.size()) scalar[0] = row[ix.ascension];
+    if (ix.curHp >= 0 && ix.curHp < (int)row.size()) scalar[1] = row[ix.curHp];
+    if (ix.maxHp >= 0 && ix.maxHp < (int)row.size()) scalar[2] = row[ix.maxHp];
+    const int counterSlots[7] = {ix.happyFlower, ix.incenseBurner, ix.inkBottle,
+                                 ix.inserter, ix.nunchaku, ix.penNib, ix.sundial};
+    for (int i = 0; i < 7; ++i) {
+        const int s = counterSlots[i];
+        if (s >= 0 && s < (int)row.size() && row[s] > 0.f) scalar[3 + i] = row[s] - 1.f;
+    }
+    if (ix.dBase >= 0)
+        for (int id = 0; id < search::kCpsiCards; ++id) {
+            const int s = ix.dBase + id;
+            if (s < (int)row.size()) deck[id] = row[s];
+        }
+    if (ix.rBase >= 0)
+        for (int id = 0; id < search::kCpsiRelics; ++id) {
+            const int s = ix.rBase + id;
+            if (s < (int)row.size()) relics[id] = row[s] > 0.f ? 1.f : 0.f;
+        }
+    for (int pid = 2; pid < search::kCpsiPotions; ++pid)   // skip INVALID/EMPTY like buildCpsiEntry
+        if (pid < (int)ix.potIdx.size()) potions[pid] = row[ix.potIdx[pid]];
+}
+
+static double termLeafBonus(const BattleContext &bc) {
+    // S3 terminal victory leaves only; returns w * P(run win | post-combat
+    // state) on the same rich layout as v_win_trees.txt.
+    if (!g_termWin || !g_winNet.ok || t_termBaseRow.empty()) return 0.0;
+    const TermWinIndices &ix = termWinIndices();
+    if (!ix.ok) return 0.0;
+
+    std::vector<float> row = t_termBaseRow;
+    // HP: same transfer as BattleContext::exitBattle (BURNING_BLOOD heals 6 on
+    // victory; Feed can raise maxHp mid-fight).
+    int hp = bc.player.curHp;
+    if (t_termGc && t_termGc->hasRelic(RelicId::BURNING_BLOOD))
+        hp = std::min(hp + 6, (int)bc.player.maxHp);
+    row[ix.curHp] = (float)hp;
+    row[ix.maxHp] = (float)bc.player.maxHp;
+    row[ix.gold]  = (float)bc.player.gold;
+    row[ix.potionCount] = (float)bc.potionCount;
+    for (int i = 0; i < (int)ix.potIdx.size(); ++i) row[ix.potIdx[i]] = 0.0f;
+    for (int i = 0; i < bc.potionCapacity && i < (int)bc.potions.size(); ++i) {
+        const int pid = (int)bc.potions[i];
+        if (pid == (int)Potion::EMPTY_POTION_SLOT) continue;
+        if (pid >= 0 && pid < (int)ix.potIdx.size()) row[ix.potIdx[pid]] = 1.0f;
+    }
+    // Relic counters: mirror BattleContext::updateRelicsOnExit writes. Each
+    // patch is guarded on the run actually owning the relic (base value > 0),
+    // so absent relics keep their 0.
+    auto present = [&](int ix) { return ix >= 0 && row[ix] > 0.0f; };
+    if (present(ix.happyFlower))   row[ix.happyFlower]   = (float)encRelicCounter(bc.player.happyFlowerCounter);
+    if (present(ix.incenseBurner)) row[ix.incenseBurner] = (float)encRelicCounter(bc.player.incenseBurnerCounter);
+    if (present(ix.inkBottle))     row[ix.inkBottle]     = (float)encRelicCounter(bc.player.inkBottleCounter);
+    if (present(ix.inserter))      row[ix.inserter]      = (float)encRelicCounter(bc.player.inserterCounter);
+    if (present(ix.nunchaku))      row[ix.nunchaku]      = (float)encRelicCounter(bc.player.nunchakuCounter);
+    if (present(ix.penNib))
+        row[ix.penNib] = (float)(bc.player.penNibCounter == -1 ? encRelicCounter(9)
+                                                               : encRelicCounter(bc.player.penNibCounter));
+    if (present(ix.sundial))       row[ix.sundial]       = (float)encRelicCounter(bc.player.sundialCounter);
+    if (present(ix.lizardTail) && !bc.player.hasRelic<RelicId::LIZARD_TAIL>()) row[ix.lizardTail] = 1.0f;
+    if (ix.neowsLament >= 0 && row[ix.neowsLament] > 1.0f) row[ix.neowsLament] -= 1.0f;
+
+    // Parity check once per run: the patched vector must equal the full
+    // vFeatCsv path on a real post-combat copy (mirrors tokCheckGlobParity).
+    // The hidden future-fight features (resampled/zeroed in the base) are
+    // zeroed in both before comparing.
+    if (!t_termParityChecked && t_termGc) {
+        GameContext post = *t_termGc;
+        post.curHp = bc.player.curHp;   // updateRelicsOnExit applies the burn-blood heal itself
+        post.maxHp = bc.player.maxHp;
+        post.gold = bc.player.gold;
+        post.potionCount = bc.potionCount;
+        post.potions = bc.potions;
+        bc.updateRelicsOnExit(post);
+        std::vector<float> full = richFeatureVec(post);
+        std::vector<float> patched = row;
+        for (int i : {ix.boss, ix.nextElite, ix.nf0, ix.nf1, ix.nf2, ix.remElites, ix.remFights}) {
+            if (i >= 0 && i < (int)full.size()) { full[i] = 0.0f; patched[i] = 0.0f; }
+        }
+        static thread_local std::vector<std::string> t_richNames;
+        if (t_richNames.empty()) {
+            std::string h = richHeader(); std::string cur;
+            for (char c : h) { if (c == ',') { t_richNames.push_back(cur); cur.clear(); } else cur += c; }
+            t_richNames.push_back(cur);
+        }
+        int mismatches = 0;
+        for (int i = 0; i < (int)std::min(full.size(), patched.size()); ++i)
+            if (full[i] != patched[i]) {
+                const std::string &name = i < (int)t_richNames.size() ? t_richNames[i] : "?";
+                if (mismatches < 8)
+                    std::printf("[term-win parity] idx %d (%s): patched=%g full=%g\n", i, name.c_str(), patched[i], full[i]);
+                ++mismatches;
+            }
+        if (mismatches)
+            std::printf("[term-win parity] %d mismatched features (this run)\n", mismatches);
+        t_termParityChecked = true;
+    }
+    // C_psi evaluator: bonus = w * P(win of the next fight) from the no-peek
+    // survival model, priced on the same patched post-combat state. The
+    // current fight's encounter is used as the fixed probe encounter — its
+    // absolute contribution is a constant across a combat's leaves, so only
+    // the state-dependent part (HP/potions/gold/counters) orders the leaves.
+    // The cpsictr probe shows this model prices all counter relics with the
+    // correct sign (charged counter -> lower next-fight death).
+    if (g_termWinEval == 1 && g_cpsiNet.loaded()) {
+        float scalar[search::kCpsiScalars];
+        float deck[search::kCpsiCards], relics[search::kCpsiRelics], potions[search::kCpsiPotions];
+        cpsiEntryFromRich(row, ix, scalar, deck, relics, potions);
+        search::CpsiOut o;
+        g_cpsiNet.predict(scalar, deck, relics, potions, (int)bc.encounter, o);
+        return g_termWinW * o.win;
+    }
+    return g_termWinW * g_winNet.predict(row);
+}
+
+// Arm the bonus for one battle (runFullRunOOC, Searcher3 only): builds the
+// base rich row once per fight with hidden future fights resampled/zeroed,
+// then termLeafBonus patches the transferred fields per terminal leaf.
+static void termWinArmForBattle(GameContext &gc) {
+    const TermWinIndices &ix = termWinIndices();
+    t_termGc = &gc;
+    t_termParityChecked = false;
+    if (g_termWinHidden == 1) {
+        GameContext hidden = gc;
+        resampleRemainingActEncounters(hidden, gc.seed + gc.floorNum);
+        t_termBaseRow = richFeatureVec(hidden);
+    } else {
+        t_termBaseRow = richFeatureVec(gc);
+        for (int i : {ix.nf0, ix.nf1, ix.nf2, ix.nextElite, ix.remElites, ix.remFights, ix.boss})
+            if (i >= 0 && i < (int)t_termBaseRow.size()) t_termBaseRow[i] = 0.0f;
+    }
+    search::g_terminalBonus = &termLeafBonus;
+}
+
+static void termWinDisarm() {
+    search::g_terminalBonus = nullptr;
+    t_termGc = nullptr;
+    t_termBaseRow.clear();
+}
+
+// Per-combat stall telemetry (STS_TERM_STALL_LOG=<path>): one CSV row per
+// battle, written after exitBattle so the counters are the run-level values
+// the next combat starts from. Absent relics are -1 (getRelicValue).
+static void stallLogRow(const GameContext &gc, const BattleContext &bc, std::uint64_t seed) {
+    if (g_stallLogPath.empty()) return;
+    static std::mutex m;
+    static bool headerWritten = false;
+    std::lock_guard<std::mutex> lock(m);
+    std::ofstream f(g_stallLogPath, std::ios::app);
+    if (!f) return;
+    if (!headerWritten) {
+        f << "seed,floor,act,room,encounter,outcome,turns,hpEnd,maxHp,gold,potionCount,"
+             "happyFlower,incenseBurner,inkBottle,nunchaku,penNib,sundial\n";
+        headerWritten = true;
+    }
+    f << seed << ',' << gc.floorNum << ',' << gc.act << ',' << (int)gc.curRoom << ','
+      << (int)bc.encounter << ',' << (bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0) << ','
+      << (bc.turn + 1) << ',' << gc.curHp << ',' << gc.maxHp << ',' << gc.gold << ','
+      << gc.potionCount << ','
+      << gc.relics.getRelicValue(RelicId::HAPPY_FLOWER) << ','
+      << gc.relics.getRelicValue(RelicId::INCENSE_BURNER) << ','
+      << gc.relics.getRelicValue(RelicId::INK_BOTTLE) << ','
+      << gc.relics.getRelicValue(RelicId::NUNCHAKU) << ','
+      << gc.relics.getRelicValue(RelicId::PEN_NIB) << ','
+      << gc.relics.getRelicValue(RelicId::SUNDIAL) << '\n';
+    f.flush();
 }
 
 // Rank every legal OOC action in one server request.  The model predicts the
@@ -4285,6 +4692,10 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
                 ? queryOocEncounterPredictions(rootState, rootActionBits, rootScreen, rootAct,
                                                optionEncounters)
                 : std::vector<OocEncounterPrediction>{};
+            const bool lastCheckpoint = g_actFightProbeTermWin > 0.0
+                && g_actFightProbeMaxCheckpoints > 0
+                && checkpointCount + 1 >= g_actFightProbeMaxCheckpoints;
+            double expectedWin = 0.0;
             for (int i = 0; i < (int)options.size(); ++i) {
                 GameContext local = detachedCounterfactualCopy(gc);
                 bool passed = false;
@@ -4320,6 +4731,14 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
                     hp = local.curHp;
                     maxHp = local.maxHp;
                     safety = passed ? nonlinearHpSafety(hp, maxHp) : -1.0;
+                    // Terminal pricing: the post-fight branch state (HP already
+                    // updated) is priced by the native win model in P(win)
+                    // units, scale-compatible with the HP-safety sigmoid.
+                    if (lastCheckpoint && passed && g_winNet.ok) {
+                        const double pw = winNetPredict(richFeatureVec(local));
+                        expectedWin += options[i].probability
+                            * (local.outcome == GameOutcome::PLAYER_VICTORY ? 1.0 : pw);
+                    }
                 }
                 expected += options[i].probability * safety;
                 if (components) components->push_back({
@@ -4330,7 +4749,11 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
                     (g_actFightProbePredict || useEncounterNN) ? 0 : fightSims(local, checkpointSims),
                 });
             }
-            utility += std::pow(g_actFightProbeFloorDecay, std::max(0, floor - decisionFloor)) * expected;
+            const double decay = std::pow(g_actFightProbeFloorDecay,
+                                          std::max(0, floor - decisionFloor));
+            utility += decay * expected;
+            if (lastCheckpoint)
+                utility += decay * g_actFightProbeTermWin * expectedWin;
             ++checkpointCount;
 
             // The final scored checkpoint needs no actual trunk battle: no
@@ -4788,6 +5211,20 @@ static bool actFightProbeAllOocPolicy(GameContext &gc) {
         if (scores[a] > bestScore) { bestScore = scores[a]; best = a; }
     }
     if (best < 0) { t_curPath = savedPath; return false; }
+    if (g_actFightProbeMargin > 0.0) {
+        double second = -1e100;
+        for (int a = 0; a < (int)actions.size(); ++a) {
+            if (!valid[a] || a == best) continue;
+            if (scores[a] > second) second = scores[a];
+        }
+        if (bestScore - second < g_actFightProbeMargin) {
+            if (g_actFightProbeTrace)
+                std::cerr << "[all-ooc act-fight margin " << bestScore - second
+                          << " < " << g_actFightProbeMargin << " -> fallback]\n";
+            t_curPath = savedPath;
+            return false;
+        }
+    }
     if (g_actFightProbeTrace) {
         std::cerr << "[all-ooc act-fight floor=" << gc.floorNum << " screen="
                   << (int)gc.screenState << ']';
@@ -7129,6 +7566,10 @@ int main(int argc, char **argv) {
         else
             std::cerr << "[C_psi load failed: " << path << "]\n";
     }
+    if (const char *d = std::getenv("STS_CPSI_CTR_PROBE")) {    // C_psi counter-sensitivity probe
+        g_cpsiCtrProbe = std::atoi(d) != 0;
+        if (g_cpsiCtrProbe) std::cout << "[C_psi counter-sensitivity probe ON (post-combat states)]\n";
+    }
     if (const char *d = std::getenv("STS_OOC_SHOP_BEAM")) {     // B1 multi-step shop beam (§2)
         g_oocShopBeam = std::atoi(d) != 0;
         if (const char *w = std::getenv("STS_OOC_SHOP_BEAM_WIDTH"))
@@ -7349,6 +7790,19 @@ int main(int argc, char **argv) {
         g_actFightProbePredictNetPath = v;
     if (const char *v = std::getenv("STS_ACT_FIGHT_PROBE_PREDICT_WIN_THRESHOLD"))
         g_actFightProbePredictWinThreshold = std::max(0.0, std::min(1.0, std::atof(v)));
+    if (const char *v = std::getenv("STS_ACT_FIGHT_PROBE_TERM_WIN")) {
+        g_actFightProbeTermWin = std::max(0.0, std::atof(v));
+        if (g_actFightProbeTermWin > 0.0)
+            std::cout << "[all-acts checkpoint terminal win-GBM ON: weight="
+                      << g_actFightProbeTermWin
+                      << " (searched checkpoints; requires the native win model)]\n";
+    }
+    if (const char *v = std::getenv("STS_ACT_FIGHT_PROBE_MARGIN")) {
+        g_actFightProbeMargin = std::max(0.0, std::atof(v));
+        if (g_actFightProbeMargin > 0.0)
+            std::cout << "[all-acts checkpoint oracle margin gate ON: best-second >= "
+                      << g_actFightProbeMargin << " required, else fallback stack]\n";
+    }
     if (g_actFightProbePredict) {
         if (!g_actFightProbePredictNet.load(g_actFightProbePredictNetPath)
             || !g_actFightProbePredictNet.hasOutcomeHeads()) {
@@ -7418,6 +7872,38 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_SEARCHER3")) {      // use enhanced BattleScumSearcher3 engine
         search::g_useSearcher3 = std::atoi(d) != 0;
         if (search::g_useSearcher3) std::cout << "[Searcher3 engine ON: belief/prune/chain/live (CRN opt-in)]\n";
+    }
+    if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
+        const std::string name(d);
+        int id = -1;
+        for (int i = 0; i < kNumRelics; ++i)
+            if (name == relicEnumNames[i]) { id = i; break; }
+        if (id < 0) {
+            std::cerr << "[STS_FORCE_RELIC] unknown relic name: " << name << "\n";
+        } else {
+            g_forceRelic = (RelicId)id;
+            std::cout << "[forced relic at run start: " << relicEnumNames[id] << "]\n";
+        }
+    }
+    if (const char *d = std::getenv("STS_TERM_STALL_LOG")) {   // per-combat stall telemetry
+        g_stallLogPath = d;
+        std::cout << "[stall telemetry log: " << g_stallLogPath << "]\n";
+    }
+    if (const char *d = std::getenv("STS_TERM_WIN")) {       // terminal-leaf run-value bonus (S3)
+        g_termWin = std::atoi(d) != 0;
+        if (const char *w = std::getenv("STS_TERM_WIN_W")) g_termWinW = std::max(0.0, std::atof(w));
+        if (const char *h = std::getenv("STS_TERM_WIN_HIDDEN")) g_termWinHidden = std::string(h) == "zero" ? 0 : 1;
+        if (const char *e = std::getenv("STS_TERM_WIN_EVAL"))
+            g_termWinEval = std::string(e) == "cpsi" ? 1 : 0;
+        if (g_termWin) {
+            if (g_termWinEval == 1 && !g_cpsiNet.loaded())
+                std::cerr << "[terminal-leaf cpsi evaluator: STS_CPSI_NN not loaded; falling back to win tree]\n";
+            if (!g_winNet.ok) g_winNet.load("build/v_win_trees.txt", richIdxMap());
+            std::cout << "[terminal-leaf run-value bonus ON: w=" << g_termWinW
+                      << " eval=" << (g_termWinEval == 1 ? "cpsi" : "win")
+                      << " hidden=" << (g_termWinHidden ? "resample" : "zero")
+                      << " (S3 victory leaves; requires the native win model)]\n";
+        }
     }
     if (const char *d = std::getenv("STS_S3_BELIEF")) {      // S3 ablation: particle belief reweighting
         search::g_s3Belief = std::atoi(d) != 0;
@@ -8137,6 +8623,21 @@ int main(int argc, char **argv) {
         std::uint64_t seedOffset = argc > 5 ? std::stoull(argv[5]) : 0;
         std::string resultsFile = argc > 6 ? argv[6] : "";
         bestBench(sims, nSeeds, asc, seedOffset, resultsFile);
+
+    } else if (mode == "cpsictr") {       // C_psi counter-sensitivity probe (needs STS_CPSI_NN)
+        if (!g_cpsiNet.loaded()) {
+            std::cerr << "cpsictr requires STS_CPSI_NN=<path> (e.g. build/v_combat_cpsi.txt)\n";
+            return 1;
+        }
+        int sims = argc > 2 ? std::stoi(argv[2]) : 100;
+        int nSeeds = argc > 3 ? std::stoi(argv[3]) : 100;
+        int asc = argc > 4 ? std::stoi(argv[4]) : 0;
+        std::uint64_t seedOffset = argc > 5 ? std::stoull(argv[5]) : 0;
+        std::cout << "[cpsictr: seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
+                  << ", sims " << sims << ", asc " << asc << "]\n";
+        for (std::uint64_t s = 0; s < (std::uint64_t)nSeeds; ++s)
+            runFullRunOOC(seedOffset + s, sims, asc, false, true);
+        cpsiCtrProbeReport();
 
     } else if (mode == "reprobench") {    // repeat one full run in one process; audit determinism
         int sims = argc > 2 ? std::stoi(argv[2]) : 1000;

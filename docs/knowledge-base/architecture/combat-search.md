@@ -69,6 +69,40 @@ combined variant: **S3−belief−chain is the recommended combat search** —
 flat across 16–256 (§107), and the belief reweighting stays harmful even at
 256 particles (E1: −6.2pp vs belief-off at equal count).
 
+### Terminal-leaf run-value bonus (cross-combat setup, opt-in)
+
+Searcher3 terminal `PLAYER_VICTORY` leaves are priced with the native win
+model on the post-combat run state via the thread_local
+`search::g_terminalBonus` hook (empty = off), consumed only in
+`BattleScumSearcher3::evaluateTerminal` (`v += bonus(bc)`). `runFullRunOOC`
+arms it per battle when `search::g_useSearcher3` is set (`STS_TERM_WIN=1`):
+`termWinArmForBattle` builds one base rich row per fight (future fights
+resampled from the act pool via the existing `resampleRemainingActEncounters`,
+or zeroed with `STS_TERM_WIN_HIDDEN=zero`), and `termLeafBonus` patches only
+the fields `BattleContext::exitBattle` transfers — curHp (+6 Burning Blood
+heal), maxHp, gold, potionCount, potion slots, the eight counter relics
+(Happy Flower/Incense Burner/Ink Bottle/Inserter/Nunchaku/Pen Nib/Sundial),
+Lizard Tail, Neow's Lament — by rich index and returns
+`w * g_winNet.predict(row)` (`STS_TERM_WIN_W`, default 100; V_win is P(win)
+in [0,1] vs the leaf's hp+50 scale). Per-run parity check prints mismatches
+against the full `richFeatureVec` path on a real post-combat copy (hidden
+queue features zeroed in both). This is the mechanism for cross-combat setup
+decisions — e.g. stalling one turn so the Happy Flower counter ends charged
+(2) for the next fight — which the combat-local leaf never priced before.
+`STS_TERM_WIN_EVAL=cpsi` swaps the evaluator from the win tree to the C_psi
+no-peek next-fight survival model (`bonus = w * P(win of next fight)`, entry
+built from the patched rich row via `cpsiEntryFromRich`, current fight's
+encounter as the fixed probe encounter — constant within a combat, so only
+the state-dependent part orders the leaves): the `cpsictr` mode
+(`STS_CPSI_CTR_PROBE=1`) shows C_psi prices every counter relic with the
+correct sign (charged counter → lower next-fight death), unlike the win tree
+(0 splits on all counter features). Cost: the scalar transformer forward is
+~0.2 ms (vectorized 2026-08-05: `#pragma omp simd` on the linear reductions +
+weight-row hoisting; per-output math bit-identical) — cpsi-eval measures
+~9x the win-tree leaf end-to-end (19.2 vs 1.8 cpu-sec/run at 100 sims, 16
+seeds); benchmark at the 1k-sim operating point.
+Decision log: `2026-08-05-terminal-leaf-run-value-bonus.md`.
+
 ## Important data flow
 
 1. `BattleContext::init` copies run state and initializes combat transients.
@@ -173,6 +207,18 @@ PUCT-with-zero-priors quirk.
 - `CombatObservation::operator==` and `visibleHash` share one canonical field
   set (see `CombatObservation.cpp::operator==`); card piles are compared as
   multisets of `CardKey`, so order-insensitive equality is deliberate.
+- The deployed win tree has zero sensitivity to persistent counter relics:
+  `r26` (Happy Flower), `r30` (Incense Burner), `r31` (Ink Bottle), `r35`
+  (Lizard Tail), `r44` (Nunchaku), `r52` (Pen Nib), `r68` (Sundial), `r131`
+  (Neow's Lament) are each among `v_win_trees.txt`'s 448 selected features but
+  0 of its 1060 trees split on any of them (verified by scanning the tree
+  lines for each relic's index in the sel table; `r32` Inserter is not even
+  selected). The terminal-leaf bonus therefore prices HP/gold/potions today;
+  counter pricing requires a counter-aware terminal model (Stage 3 — generic
+  across all counter relics, see the decision log).
+- The terminal-leaf bonus runs only under `STS_TERM_WIN=1` with Searcher3 and
+  adds ~1 win-tree walk per terminal victory leaf (smoke: +75% cpu at 300
+  sims on 16 seeds — tuning target, not a shipped default).
 - Guaranteed-death pruning is conservative: `canPruneAsDead` fires only in
   states where the player cannot act; the aggressive `isGuaranteedDead`
   predicate was removed because its soundness for card-selection states was not
@@ -217,7 +263,11 @@ PUCT-with-zero-priors quirk.
 - `src/sim/search/ScumSearchAgent2.cpp::playoutBattle`, `playoutBattleFair`
 - `include/sim/search/BattleScumSearcher2.h::BattleScumSearcher2`
 - `include/sim/search/BattleScumSearcher3.h::BattleScumSearcher3`
-- `src/sim/search/BattleScumSearcher3.cpp::step`, `computeEdgePriors`
+- `src/sim/search/BattleScumSearcher3.cpp::step`, `computeEdgePriors`,
+  `evaluateTerminal`, `g_terminalBonus`
+- `apps/one_combat.cpp::termLeafBonus`, `termWinArmForBattle`,
+  `termWinDisarm`, `termWinIndices`, `cpsiEntryFromRich`, `cpsiCounterProbeAtState`,
+  `cpsiCtrProbeReport`, `cpsictr` mode (STS_TERM_WIN*, STS_CPSI_CTR_PROBE, opt-in)
 - `src/sim/search/CombatObservation.cpp::Belief`, `visibleHash`
 - `src/sim/search/CombatValueNet.cpp::combatExtractFeatures`
 - `src/sim/search/CombatPVNet.cpp::CombatPVNet`
