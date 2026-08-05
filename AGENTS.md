@@ -47,6 +47,14 @@ base in the same change. Do not invent rationale; use **Inference**,
 | `bindings/` | Run-level pybind11 API, not card-by-card combat control. |
 | root `train_*.py`, `export_*.py`, `v_server.py` | Training, export, optional Python inference. |
 | `selfplay/` | Generation, retraining, paired gates, snapshots, local state. |
+
+Deployable native exports under `selfplay/models/*.native` are git-tracked
+(since 2026-08-05) so model handoff between machines happens via `git pull`;
+trainer checkpoints (`*_state.bin`, `.pt`, `.npz`, `.torchscript`), buffers,
+and CSVs stay ignored and are handed off explicitly (scp/shared drive). A
+retrained artifact therefore ships in the same commit as its sha256 + docs
+update, and a pull alone does not update deployable models whose `.native`
+file is missing from the tree.
 | `build/` | Mixed ignored build output and tracked model artifacts; some are default, others experimental. |
 | `docs/knowledge-base/` | Maintained technical knowledge. |
 | `EXPERIMENTS.md` | Chronological experiment ledger. |
