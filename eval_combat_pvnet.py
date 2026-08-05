@@ -11,12 +11,13 @@ Value metrics (per state, teacher = won/endHp/maxHp):
   death BCE, quantile coverage per tau (wins only, endHp/maxHp).
 
 By default all rows of the CSVs are evaluated; --val-only restricts to the
-trainer's deterministic validation seeds (seed % 100 < 20, PVNET_VAL_FRAC).
+trainer's deterministic validation seeds (seed % 100 < 100*PVNET_VAL_FRAC).
 
 Usage: python3 eval_combat_pvnet.py <model.txt> <fair_v.csv> <fair_p.csv>
        [--max-rows N] [--val-only] [--json out.json]
 """
 import json
+import os
 import sys
 
 import numpy as np
@@ -65,7 +66,9 @@ PCOLS = canonical + action_names + ["seed", "fightIdx", "decIdx", "visit", "tota
 def seed_filter(df):
     if not VAL_ONLY:
         return df
-    m = df["seed"].map(lambda s: int(s) % 100 < 20).to_numpy(np.bool_)
+    m = df["seed"].map(lambda s: int(s) % 100
+                       < int(float(os.environ.get("PVNET_VAL_FRAC", "0.2")) * 100)
+                       ).to_numpy(np.bool_)
     return df[m]
 
 

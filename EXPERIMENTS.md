@@ -3755,3 +3755,43 @@ enabling condition, but the omitted command prevents verification.
   `bestbench` append-without-dedup trap (issue 46) is now guarded by
   per-arm truncation in `run_s3_*.sh`; the §107 CSVs were verified
   seed-unique.
+
+## 108. V4 fixed-stats retrain (issue 36) — S2-paired negative, S3−belief−chain paired SIGNIFICANT negative; deployed model stays (2026-08-05)
+
+- **Goal** (rerun-ledger row 36): re-derive the V4 token net after the
+  issue-36 fix (glob slots 44–49 are derived features but were standardized
+  with deck-count statistics) and test whether the corrected model replaces
+  the deployed `ooc_strategic_tok_final.native` (sha256 `05178ec8…9e1ea`).
+- **Training:** `train_strategic_tok.py`, rung 4, `STRAT_EPOCHS=60`, grouped
+  80/20 seed 0, CUDA, on the same `build/strategic_tierb.csv` (3,057,708 rows
+  / 4,650 seeds) the deployed model used; fixed stats (issue 36). New
+  artifact `selfplay/models/ooc_strategic_tok_fixed.{pt,native}`
+  (native sha256 `9a54c28a…`; export parity max err logit 9.16e-06 / value
+  1.03e-05 / Q 2.47e-05).
+- **Held-out (best epoch, vs recorded V4@60ep §75):** val_pol_ce 0.4854 (vs
+  0.486), policy_top1 0.796 (vs 0.793), margin 11.14 (vs 10.32), value_mae
+  10.18 (vs 10.18), q_top1 0.296 (vs 0.290), q_mae 16.41 (vs 16.22) — slightly
+  better ranking, marginally worse Q calibration.
+- **Paired gates (fair, A0, 3k sims, full V4 gate stack, margin 1.0):**
+
+  | pairing | new | old ref | Δ win (McNemar p) | floor Δ | HP Δ |
+  |---|---|---|---:|---:|---:|
+  | S2 @128 (vs `s3ablate_s2_ref_3k_128.csv`, 43.8%) | 53/128 (41.4%) | 56/128 | −2.34pp (p=0.77) | −1.39 | −6.61 |
+  | S2 @256 (vs `simsweep_v4_3k_256.csv`, 45.3%) | 106/256 (41.4%) | 116/256 | −3.91pp (p=0.36) | −2.07 | −7.53 |
+  | **S3−belief−chain @256/256p (vs §107 `pt2_p256_s3k_both_256.csv`, 60.2%)** | **131/256 (51.2%)** | 154/256 | **−8.98pp (p=0.028)** | −3.29 | −7.86 |
+
+- **Verdict:** ❌ the corrected-stats retrain is a paired negative under every
+  search; the negative is **statistically significant under the now-recommended
+  S3−belief−chain** (p<0.05, 23-seed swing). The issue-36 normalization was
+  wrong but *accidentally beneficial*: standardizing the six derived globs
+  with their own scale moved the Q-head ranking off the deployed optimum.
+  Held-out CE gains again do not transfer (consistent with §75/§80/§100).
+  **Decision: the deployed artifact (05178ec8) stays; `ooc_strategic_tok_fixed`
+  is archived as a falsified retrain.** The issue-36 fix stays in the trainer
+  (correctness); any future V4 retrain should treat the derived-glob scale as
+  an active hyperparameter and gate it (paired S3−belief−chain) before
+  deployment.
+- **Artifacts:** `selfplay/models/ooc_strategic_tok_fixed.{pt,native}`
+  (tracked native; .pt stays local per convention), `build/v4fix_128.csv`,
+  `build/v4fix_256.csv`, `build/v4fix_s3_256.csv`,
+  `/tmp/opencode/v4_retrain.log`.

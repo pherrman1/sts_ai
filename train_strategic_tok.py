@@ -63,6 +63,8 @@ torch.manual_seed(0)
 print(f"device: {DEVICE}  rung: {RUNG}  epochs: {EPOCHS}"
       f"  transformer: {int(TRANSFORMER)}", flush=True)
 
+nonfinite_batches = [0]   # non-finite loss counter (NaN-bug visibility, issue 44)
+
 hdr = pd.read_csv(CSV, nrows=0).columns
 need = {"seed", "decIdx", "screen", "action", "actionType", "c1", "c2", "c3",
         "cand1", "cand2", "cand3", "chosen", "won", "endHp",
@@ -510,6 +512,11 @@ def train_batch_loss(gs):
         pin = torch.maximum(tau * diff, (tau - 1.0) * diff).mean()
         loss = loss + 0.5 * pin
     if not torch.isfinite(loss):
+        nonfinite_batches[0] += 1
+        if nonfinite_batches[0] <= 10:
+            print(f"[train-strategic-tok] WARNING: non-finite loss zeroed "
+                  f"({nonfinite_batches[0]}x so far) — masks a NaN bug in the "
+                  f"distillation machinery", flush=True)
         loss = torch.zeros((), device=DEVICE)
     return loss, float(pol_loss.detach()), float(val_loss.detach()), float(q_loss.detach())
 
