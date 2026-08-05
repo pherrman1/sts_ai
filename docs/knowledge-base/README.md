@@ -18,6 +18,10 @@ For architecture:
 5. [Phase F handoff plan](architecture/ooc-phase-f-plan.md) — **active plan**:
    policy-head search distillation (5.7.1 + 5.7.2), to be executed by the
    next session; not yet started.
+6. [Phase 1 continuation plan](plan-phase1-cardselect-continuation.md) —
+   **active plan**: finish the CARD_SELECT parity work (multi-select mode
+   A/B, S2 bisect, promotion, re-gate); see decision log
+   `2026-08-05-cardselect-parity-fix.md` and EXPERIMENTS.md §112.
 
 For evaluation and operation:
 
