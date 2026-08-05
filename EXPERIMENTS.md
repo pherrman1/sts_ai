@@ -4127,3 +4127,32 @@ extFight*/emElites/emFights parity-excluded) and
   determinism), `ScumSearchAgent2.cpp` (agent-boundary belief update,
   `g_s3Belief`-gated).
 - **Cost:** ~2 min wall per 256-seed @1k arm on GCP sts-test.
+
+## §115 Honest-grid completion on the Phase-2 binary: efficient point (64p @1k) and @3k win point re-measured; §107-grid rerun status (2026-08-05, GCP)
+- **What:** closes the rerun gaps left by the §113 invalidation on the
+  current (Phase-2, e4fbb4a) binary: the efficient point (1k sims @ 64
+  particles, the §107 '57.4% @1k/64p' claim) and the 3k win point
+  (previously measured pre-Phase-2; Phase 2 changed the composite seed).
+- **256 seeds 126700-126955, fair, A0, S3-belief-chain off, V4 gate stack,
+  24 threads, current Phase-2 binary (canonical enumerator + exitBattle
+  guard + expanded observation identity):**
+  - efficient point: **37.5% / 39.4 floor / 20.8 hp @1k/64p**
+    (`build/honest_p64_1k_256.csv`) - identical to the 256p @1k point
+    (37.5%, 35v32 flips on 67 flipped seeds), confirming §107's 'flat in
+    particles' finding holds on the honest stack; 64p is the efficient
+    deployment point.
+  - win point: **44.5% / 42.5 / 24.4 @3k/256p**
+    (`build/honest_fix2_3k_256.csv`) vs the pre-Phase-2 honest 42.6%
+    (75 flipped seeds: 40 new-only, 35 old-only) - Phase 2 is
+    neutral-to-slightly-positive, consistent with the +1.2pp @1k shift.
+- **Rerun status of the §113-invalidated set:** headline and control are
+  re-baselined (honest_fix @1k/@3k, honest_ctl); efficient point now
+  re-measured (this entry); the remaining invalidated measurements are the
+  §106 feature-ablation deltas (belief/chain/CRN), which were never
+  deployed (the recommended stack runs belief/chain off) and whose
+  direction matched the §107 stack - flagged for re-derivation only if
+  that research line reopens (rerun-ledger). §108's S3-paired verdict was
+  already negative and its S2-paired (honest) verdict stands.
+- **Artifacts:** `build/{honest_p64_1k_256,honest_fix2_3k_256}.csv` (GCP +
+  local copies); baselines doc updated to the current-binary numbers.
+- **Cost:** ~2 min @1k, ~10 min @3k on GCP sts-test.
