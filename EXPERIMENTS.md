@@ -4156,3 +4156,50 @@ extFight*/emElites/emFights parity-excluded) and
 - **Artifacts:** `build/{honest_p64_1k_256,honest_fix2_3k_256}.csv` (GCP +
   local copies); baselines doc updated to the current-binary numbers.
 - **Cost:** ~2 min @1k, ~10 min @3k on GCP sts-test.
+
+## §116 Phase 3 Stage 2 (post-combat run utility): TERM_WIN terminal-leaf bonus paired benchmark - null on win rate and stall behavior, 3.1x cost; intermittent multithread crash in the opt-in path (2026-08-05, GCP + local)
+- **What:** the plan's Phase 3 Stage 2: controlled paired benchmark of the
+  Searcher3 terminal-leaf run-value bonus (`STS_TERM_WIN=1`, win-tree
+  evaluator, W=100) vs control, both with `STS_FORCE_RELIC=HAPPY_FLOWER`
+  so the cross-combat setup signal (stall to align the counter) is
+  present in both arms; stall telemetry (`STS_TERM_STALL_LOG`) records the
+  run-level counter each battle ends on.
+- **256-seed paired benchmark (GCP, 1k sims/64 particles, fair, A0,
+  S3-belief-chain off, V4 gate stack, forced Happy Flower):** control
+  **37.5% / 39.4 / 20.8** (`p3_ctl_hf_1k_256.csv`) vs TERM_WIN **37.9% /
+  40.8 / 20.1** (`p3_term_hf_1k_256.csv`) - **+0.4pp, 39 term-only vs 38
+  ctl-only flips on 77 flipped seeds: null**. Control reproduces the
+  §115 honest 64p @1k baseline (37.5%) exactly, so the forced relic
+  itself does not move the win rate.
+- **Stall telemetry (32 seeds, 733/731 battles, both arms):** battles
+  ending with a charged Happy Flower counter (c2) 30.2% ctl vs 31.7% term
+  (+1.5pp); mean turns/battle 4.60 vs 4.71 (+0.11); per-seed mean-counter
+  diff +0.052 (sd 0.203) - the bonus does not measurably change stall
+  behavior. This is consistent with §110: the deployed win tree has zero
+  sensitivity to counter relics, so the bonus cannot price the
+  counter-alignment the design targets.
+- **Cost:** TERM_WIN ran at 32.4 cpu-sec/run vs 10.5 control = **3.1x
+  overhead** at 1k sims (worse than the §109 estimate of +75% at 300
+  sims); the per-leaf win-tree walk dominates.
+- **Verdict:** Stage 2 **falsified** - no win-rate or stall-behavior
+  benefit, 3.1x cost. The terminal-leaf bonus stays opt-in (default off)
+  and is not promoted. Stage 3 (counterfactual terminal-value model)
+  requires a counter-aware evaluator to have any signal; with the win tree
+  insensitive and no measured benefit, Stage 3 stays deferred until a
+  counter-sensitive terminal model exists (the §110 C_psi probe shows the
+  right machinery exists but was also null at the leaf level in §109's
+  smoke).
+- **New issue - intermittent multithread crash in the TERM_WIN path
+  (pre-existing, 6f0420d):** `STS_TERM_WIN=1` at 12 threads crashes ~2/6
+  runs (segfault, 0 output lines; stall-log config 2/5; single-thread 0/5;
+  ASAN 0/8). Reproduced on the Phase-1 binary (6f0420d) identically, so it
+  is NOT from the Phase-2 changes. The crash occurs before the first
+  banner flush, suggesting a startup/parallel-region race in the opt-in
+  TERM_WIN arm (thread_local state + shared model access). Recorded as
+  issue 49; needs a debugger session. Does not affect the recommended
+  stack (TERM_WIN defaults off).
+- **Artifacts:** `build/{p3_ctl_hf_1k_256,p3_term_hf_1k_256}.csv` (GCP +
+  local); stall logs `build/p3_stall_{ctl,term}.csv`; decision log
+  `2026-08-05-phase3-terminal-value-stage2.md`; issue 49.
+- **Cost:** ~2 min wall per 256-seed @1k arm on GCP sts-test (GCP shut
+  down after this batch per instruction).

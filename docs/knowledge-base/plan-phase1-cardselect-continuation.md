@@ -157,10 +157,15 @@ deployed default.
    fixed budget; reverted); `belief.update` removed from `step()`, live
    updates only at the agent boundary (non-fair path, `g_s3Belief`-gated).
    Recommended stack unchanged. Next phase: Phase 3 below.
-2. **Phase 3 — post-combat run utility:** Stage 2 of the terminal-value work
-   (needs `STS_FORCE_RELIC`-style flag, stall telemetry, `STS_TERM_WIN_W`
-   sweep, terminal-eval caching); Stage 3 counterfactual terminal model =
-   **deferred (GPU training)**.
+2. **Phase 3 — post-combat run utility — Stage 2 EXECUTED 2026-08-05
+   (§116):** controlled paired benchmark of the TERM_WIN terminal-leaf
+   bonus (forced Happy Flower both arms, stall telemetry, win-tree
+   evaluator) — **null** on win rate (37.9% vs 37.5%) and stall behavior,
+   **3.1x cost**; the bonus stays opt-in/off and is not promoted. Stage 3
+   (counterfactual terminal-value model) **deferred**: the deployed win
+   tree is counter-insensitive (§110), so no counter-aware leaf model
+   exists to justify training. New issue 49 (TERM_WIN multithread crash,
+   pre-existing). Next: Phase 4 below.
 3. **Phase 4 — exact current-turn solver** (replace dead rough
    `isGuaranteedLethal`; `STS_EXACT_TURN=1`).
 4. **Phase 5 — observation-fair strategic retrain** = **deferred (GPU

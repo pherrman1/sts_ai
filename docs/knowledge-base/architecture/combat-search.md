@@ -116,6 +116,13 @@ against the full `richFeatureVec` path on a real post-combat copy (hidden
 queue features zeroed in both). This is the mechanism for cross-combat setup
 decisions — e.g. stalling one turn so the Happy Flower counter ends charged
 (2) for the next fight — which the combat-local leaf never priced before.
+**Benchmarked (§116, 256 paired seeds, forced Happy Flower both arms, 1k
+sims): null on win rate (37.9% vs 37.5%) and stall behavior (+1.5pp charged
+counter, +0.11 turns/battle) at 3.1x cpu cost — the bonus is NOT promoted
+and stays opt-in/off**; the deployed win tree is counter-insensitive (§110:
+0/1060 splits on any counter feature), so the cross-combat setup signal is
+invisible to it. Known defect: `STS_TERM_WIN=1` segfaults intermittently at
+12 threads (issue 49, pre-existing, opt-in only).
 `STS_TERM_WIN_EVAL=cpsi` swaps the evaluator from the win tree to the C_psi
 no-peek next-fight survival model (`bonus = w * P(win of next fight)`, entry
 built from the patched rich row via `cpsiEntryFromRich`, current fight's
