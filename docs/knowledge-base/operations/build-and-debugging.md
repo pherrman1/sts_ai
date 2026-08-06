@@ -109,6 +109,36 @@ as a debugger, not baseline reproduction.
 rows. It is the closest current manual determinism probe
 (`apps/one_combat.cpp::main` `reprobench` branch).
 
+## GCP benchmark server (sts-test)
+
+Long benchmark sweeps (128/256-seed gates, datagen) run on the GCP server
+`sts-test` (preemptible, c4-highcpu-24, 24 threads, zone `europe-west3-c`,
+project `sts-ai-502709`, user `philippherrmann`). Recorded facts about
+reaching it (verified 2026-08-05):
+
+- **Only working client:** the gcloud SDK bundled with the Windows Google
+  Cloud SDK install. It is **not on PATH** in PowerShell or WSL — use the
+  full path:
+  `C:\Users\pherrman\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd`
+  (a second copy exists under `C:\Program Files (x86)\Google\Cloud SDK\...`).
+- Plain `ssh philippherrmann@sts-test` does **not** resolve; WSL has no route
+  to the server IP. `gcloud compute ssh` (bundled plink + IAP tunnel) is the
+  only working route:
+  `gcloud.cmd compute ssh philippherrmann@sts-test --zone=europe-west3-c --command "<cmd>"`
+  (use `--project=sts-ai-502709` if the default project is not set).
+- **Working tree:** `/home/philippherrmann/sts_sweep` is a non-git rsync
+  copy, not a clone. Sync changed sources and model artifacts with
+  `gcloud.cmd compute scp` (same full path), then build with
+  `cmake --build build -j 24`. Tracked `.native` models also come from a
+  `git pull`-style handoff per `AGENTS.md`.
+- **Workflow:** run sweeps on the server with `nohup` (long runs survive the
+  SSH session), pull per-seed CSVs back to `build/` with scp, then analyze
+  with `paired_analysis.py` locally.
+- **Failure modes:** the instance is preemptible — a plink exit code 1 /
+  IAP tunnel error often just means it is down; probe with a trivial
+  `hostname; uptime` command first. Before a long run, check the box is free
+  (`ps aux | wc -l` / leftover `one_combat` processes from another agent).
+
 ## Known limitations
 
 - Native PowerShell/MSVC configuration is unverified; current flags are

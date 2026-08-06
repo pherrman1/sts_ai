@@ -61,6 +61,12 @@ file is missing from the tree.
 
 ## Build and focused checks
 
+Long sweeps go on the GCP server `sts-test`; reach it only via the full-path
+gcloud.cmd (`gcloud compute ssh` with plink/IAP; plain ssh/WSL do not resolve
+it). Exact commands and the sync/build workflow:
+`docs/knowledge-base/operations/build-and-debugging.md` ("GCP benchmark
+server").
+
 Training convention: root trainers default to CUDA when available
 (`train_strategic.py` prints `device: cuda` at startup; `STRAT_DEVICE=cpu`
 forces CPU, `STRAT_DEVICE=cuda` forces GPU). Never start a trainer on CPU by
