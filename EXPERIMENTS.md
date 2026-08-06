@@ -3960,13 +3960,13 @@ extFight*/emElites/emFights parity-excluded) and
   â‰ˆ 350â€“1430 cpu-s/run (13 seeds in 26 min); margin-gated â‰ˆ 62 seeds in 99 min
   â†’ ~5.1 h projected for 256; stopped to save compute.
 
-## §112 CARD_SELECT action-parity fix and the multi-select search regression (2026-08-05, GCP)
+## ï¿½112 CARD_SELECT action-parity fix and the multi-select search regression (2026-08-05, GCP)
 
-- **What:** Phase-1 workstream — make Searcher2/Searcher3/the canonical
+- **What:** Phase-1 workstream ï¿½ make Searcher2/Searcher3/the canonical
   `search::Action::enumerateCardSelectActions` enumerate exactly what the
   simulator validates, pinned by a new exhaustive parity test
   (`./build/test cardselect_parity`, `apps/test.cpp::testCardSelectParity`:
-  21 tasks × 3 variants + 3 PLAYER_NORMAL states; 48/63 states failed before,
+  21 tasks ï¿½ 3 variants + 3 PLAYER_NORMAL states; 48/63 states failed before,
   all pass after; deterministic). Pre-fix S3 default branch was
   `for (i < pickCount)` (wrong pool for WARCRY/FORETHOUGHT/HEADBUTT/
   SECRET_*/DUAL_WIELD/etc., no EXHUME filter); S2+canonical missed HOLOGRAM/
@@ -3977,17 +3977,17 @@ extFight*/emElites/emFights parity-excluded) and
 - **Setup (all arms):** GCP `sts-test` (24 threads), fair, A0, 1,000 sims,
   `STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_S3_PARTICLES=256`, V4
   tok gates REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1, margin 1.0, seeds
-  126700–126955 (recorded block), §111 base config; trees hash-verified against
+  126700ï¿½126955 (recorded block), ï¿½111 base config; trees hash-verified against
   the tracked identities before the runs.
 - **Control:** original 619c12c sources rebuilt on GCP = **56.6% / 43.0 / 35.2**
-  — **bit-identical pairing with the §111 `gate_2026-08-05_margin_base1k.csv`
+  ï¿½ **bit-identical pairing with the ï¿½111 `gate_2026-08-05_margin_base1k.csv`
   reference (0/256 mismatches)**, confirming the GCP tree/config reproduces the
   baseline exactly (`build/control_1k_256.csv`).
-- **Candidate (full fix):** **39.5% / 41.0 / 18.9** — paired **-17.2pp
+- **Candidate (full fix):** **39.5% / 41.0 / 18.9** ï¿½ paired **-17.2pp
   (SE 3.1)**, 14 cand-better / 58 base-better (`build/cand_1k_256.csv`).
 - **Bisect:** S3-only change (new canonical+S3, control S2), seeds
-  126700–126763 @1k: **28/64 = 43.8% vs control 36/64 = 56.3%** on the same
-  subset (`build/s3_only_1k_64.csv`) — the S3 enumeration change alone is the
+  126700ï¿½126763 @1k: **28/64 = 43.8% vs control 36/64 = 56.3%** on the same
+  subset (`build/s3_only_1k_64.csv`) ï¿½ the S3 enumeration change alone is the
   regression driver; S2-only bisect not yet run.
 - **Mechanism (Inference):** GAMBLE (Gambler's Brew) / EXHAUST_MANY (Elixir,
   Purity) now expand up to 1023 children with uniform policy priors
@@ -3999,7 +3999,7 @@ extFight*/emElites/emFights parity-excluded) and
 - **Verdict:** enumeration correctness fix is sound and stays (issue 47
   closed); full-subset search scale is not deployable at 1k sims (issue 48
   open). `STS_MULTISELECT_MODE=single`/`none` A/B pending; promote the winner
-  and re-gate at 256 seeds @1k and @3k vs the §107 references before any
+  and re-gate at 256 seeds @1k and @3k vs the ï¿½107 references before any
   default change. Note: the S2 default binary is affected too (its GAMBLE/
   EXHAUST_MANY enumeration changed from 1 bogus action to full subsets).
 - **Artifacts:** `build/{control_1k_256,cand_1k_256,s3_only_1k_64,
@@ -4007,14 +4007,14 @@ extFight*/emElites/emFights parity-excluded) and
   build/`); decision log `2026-08-05-cardselect-parity-fix.md`; issues
   47 (closed) / 48 (open).
 - **Cost:** ~2 min wall per 256-seed @1k arm; the GCP tree currently has the
-  control files installed — re-sync `src/sim/search/{Action.cpp,
+  control files installed ï¿½ re-sync `src/sim/search/{Action.cpp,
   BattleScumSearcher3.cpp}` before the next GCP run.
 
-## §113 CARD_SELECT parity follow-up: the §112 'regression' was a control battle-skip exploit; parity fix is correct and deployed (2026-08-05, GCP + local)
-- **What:** continuation of §112 (plan T1-T5). T2 mode A/B and T3 S2-only
-  bisect were run as planned; both exposed a contradiction with §112's
+## ï¿½113 CARD_SELECT parity follow-up: the ï¿½112 'regression' was a control battle-skip exploit; parity fix is correct and deployed (2026-08-05, GCP + local)
+- **What:** continuation of ï¿½112 (plan T1-T5). T2 mode A/B and T3 S2-only
+  bisect were run as planned; both exposed a contradiction with ï¿½112's
   mechanism hypothesis (multi-select subset expansion), and the follow-up
-  bisect found the true cause: **the §112 control enumerator skip-wins
+  bisect found the true cause: **the ï¿½112 control enumerator skip-wins
   battles at CARD_SELECT states, inflating every control/S3 measurement**.
 - **Mechanism (verified by code trace + instrumented runs):** control S3's
   `enumerateActionsForNode` default branch emitted
@@ -4035,9 +4035,9 @@ extFight*/emElites/emFights parity-excluded) and
   win / floor 30.0. The entire 'control' win rate was the exploit.
 - **S2 control has NO skip** (its GAMBLE case emitted a valid empty
   `MULTI_CARD_SELECT 0`; other cases complete for Ironclad tasks): 0 breaks
-  on 16 seeds. The exploit is **S3-specific**; **§107 (60.2%), §111
-  (56.6%), §112 (56.3%), and the §99/§102-§105 S3 arms are
-  invalidated** as honest baselines. §99's headline 45.3% used default
+  on 16 seeds. The exploit is **S3-specific**; **ï¿½107 (60.2%), ï¿½111
+  (56.6%), ï¿½112 (56.3%), and the ï¿½99/ï¿½102-ï¿½105 S3 arms are
+  invalidated** as honest baselines. ï¿½99's headline 45.3% used default
   Searcher2 and survives (S2 control verified break-free).
 - **Fix (deployed):** (1) canonical enumerator `search::Action::
   enumerateCardSelectActions` (issue 47, already committed b48cb40) - the
@@ -4053,7 +4053,7 @@ extFight*/emElites/emFights parity-excluded) and
   - **honest fixed agent: 36.3% / 40.5 / 20.3 @1k**
     (`build/honest_fix_1k_256.csv`), **42.6% / 42.2 / 23.1 @3k**
     (`build/honest_fix_3k_256.csv`) - the parity fix is worth **+27.3pp
-    over honest control @1k**; the §112 'regression' was the removal of
+    over honest control @1k**; the ï¿½112 'regression' was the removal of
     the skip exploit, not a search-quality loss.
   - `STS_MULTISELECT_MODE=single/none` with a pickCount-capped single-select
     pool (experimental extension, not committed): 31.6% / 30.5% @1k -
@@ -4061,7 +4061,7 @@ extFight*/emElites/emFights parity-excluded) and
     rejected and the committed canonical enumerator (full validity
     contract) stays the deployment default.
 - **Verdict:** issue 48 closed - there is no multi-select regression; the
-  full-subset expansion is correct and necessary, and the §112 delta was
+  full-subset expansion is correct and necessary, and the ï¿½112 delta was
   the removed exploit. `STS_MULTISELECT_MODE` remains an opt-in
   search-scale knob. The exitBattle guard is a general correctness fix:
   any future enumerator gap now costs a loss, never a free win.
@@ -4074,7 +4074,7 @@ extFight*/emElites/emFights parity-excluded) and
   parity-mode pin.
 - **Cost:** ~2 min wall per 256-seed @1k arm; ~10 min @3k on GCP sts-test.
 
-## §114 Phase 2 (observation-keyed search + belief fix): observation expansion neutral, obs-keyed descent falsified (2026-08-05, GCP + local)
+## ï¿½114 Phase 2 (observation-keyed search + belief fix): observation expansion neutral, obs-keyed descent falsified (2026-08-05, GCP + local)
 - **What:** the plan's Phase 2 (P0 after T5) in three parts: (1) expand
   `CombatObservation` so the identity fully determines the visible decision
   (add `inputState` + card-select context: task/pickCount/canPickZero/
@@ -4088,7 +4088,7 @@ extFight*/emElites/emFights parity-excluded) and
   identity. Now `inputState` + `cardSelectInfo` are hashed and compared.
   `obs_identity` extended to pin the decision context; `seed_contract`
   extended to compare two full 200-sim searches (action + obsHash + visit
-  counts must match). 256 seeds @1k vs the §113 honest reference
+  counts must match). 256 seeds @1k vs the ï¿½113 honest reference
   (`honest_fix_1k_256.csv`): **37.5% / 39.8 floor / 20.0 hp vs 36.3% /
   40.5 / 20.3 - +1.2pp, 36 p2-only vs 33 ref-only flips on 69 flipped
   seeds; within noise**. 64-seed subset: 36.5% vs 40.6% (-4.1pp, 5v7
@@ -4116,7 +4116,7 @@ extFight*/emElites/emFights parity-excluded) and
 - **Verdict:** Phase 2 delivered the identity correctness fix (neutral,
   kept) and the belief fix (gated); the observation-keyed search tree is
   falsified at fixed budgets for this particle determinization - the
-  recommended configuration and headline (42.6% @3k / 36.3% @1k, §113)
+  recommended configuration and headline (42.6% @3k / 36.3% @1k, ï¿½113)
   are unchanged. The plan's Phase 2 item is closed with this verdict; the
   plan doc is updated accordingly.
 - **Artifacts:** `build/p2_obs_expand_1k_256.csv` (GCP + local),
@@ -4128,36 +4128,36 @@ extFight*/emElites/emFights parity-excluded) and
   `g_s3Belief`-gated).
 - **Cost:** ~2 min wall per 256-seed @1k arm on GCP sts-test.
 
-## §115 Honest-grid completion on the Phase-2 binary: efficient point (64p @1k) and @3k win point re-measured; §107-grid rerun status (2026-08-05, GCP)
-- **What:** closes the rerun gaps left by the §113 invalidation on the
+## ï¿½115 Honest-grid completion on the Phase-2 binary: efficient point (64p @1k) and @3k win point re-measured; ï¿½107-grid rerun status (2026-08-05, GCP)
+- **What:** closes the rerun gaps left by the ï¿½113 invalidation on the
   current (Phase-2, e4fbb4a) binary: the efficient point (1k sims @ 64
-  particles, the §107 '57.4% @1k/64p' claim) and the 3k win point
+  particles, the ï¿½107 '57.4% @1k/64p' claim) and the 3k win point
   (previously measured pre-Phase-2; Phase 2 changed the composite seed).
 - **256 seeds 126700-126955, fair, A0, S3-belief-chain off, V4 gate stack,
   24 threads, current Phase-2 binary (canonical enumerator + exitBattle
   guard + expanded observation identity):**
   - efficient point: **37.5% / 39.4 floor / 20.8 hp @1k/64p**
     (`build/honest_p64_1k_256.csv`) - identical to the 256p @1k point
-    (37.5%, 35v32 flips on 67 flipped seeds), confirming §107's 'flat in
+    (37.5%, 35v32 flips on 67 flipped seeds), confirming ï¿½107's 'flat in
     particles' finding holds on the honest stack; 64p is the efficient
     deployment point.
   - win point: **44.5% / 42.5 / 24.4 @3k/256p**
     (`build/honest_fix2_3k_256.csv`) vs the pre-Phase-2 honest 42.6%
     (75 flipped seeds: 40 new-only, 35 old-only) - Phase 2 is
     neutral-to-slightly-positive, consistent with the +1.2pp @1k shift.
-- **Rerun status of the §113-invalidated set:** headline and control are
+- **Rerun status of the ï¿½113-invalidated set:** headline and control are
   re-baselined (honest_fix @1k/@3k, honest_ctl); efficient point now
   re-measured (this entry); the remaining invalidated measurements are the
-  §106 feature-ablation deltas (belief/chain/CRN), which were never
+  ï¿½106 feature-ablation deltas (belief/chain/CRN), which were never
   deployed (the recommended stack runs belief/chain off) and whose
-  direction matched the §107 stack - flagged for re-derivation only if
-  that research line reopens (rerun-ledger). §108's S3-paired verdict was
+  direction matched the ï¿½107 stack - flagged for re-derivation only if
+  that research line reopens (rerun-ledger). ï¿½108's S3-paired verdict was
   already negative and its S2-paired (honest) verdict stands.
 - **Artifacts:** `build/{honest_p64_1k_256,honest_fix2_3k_256}.csv` (GCP +
   local copies); baselines doc updated to the current-binary numbers.
 - **Cost:** ~2 min @1k, ~10 min @3k on GCP sts-test.
 
-## §116 Phase 3 Stage 2 (post-combat run utility): TERM_WIN terminal-leaf bonus paired benchmark - null on win rate and stall behavior, 3.1x cost; intermittent multithread crash in the opt-in path (2026-08-05, GCP + local)
+## ï¿½116 Phase 3 Stage 2 (post-combat run utility): TERM_WIN terminal-leaf bonus paired benchmark - null on win rate and stall behavior, 3.1x cost; intermittent multithread crash in the opt-in path (2026-08-05, GCP + local)
 - **What:** the plan's Phase 3 Stage 2: controlled paired benchmark of the
   Searcher3 terminal-leaf run-value bonus (`STS_TERM_WIN=1`, win-tree
   evaluator, W=100) vs control, both with `STS_FORCE_RELIC=HAPPY_FLOWER`
@@ -4169,25 +4169,25 @@ extFight*/emElites/emFights parity-excluded) and
   **37.5% / 39.4 / 20.8** (`p3_ctl_hf_1k_256.csv`) vs TERM_WIN **37.9% /
   40.8 / 20.1** (`p3_term_hf_1k_256.csv`) - **+0.4pp, 39 term-only vs 38
   ctl-only flips on 77 flipped seeds: null**. Control reproduces the
-  §115 honest 64p @1k baseline (37.5%) exactly, so the forced relic
+  ï¿½115 honest 64p @1k baseline (37.5%) exactly, so the forced relic
   itself does not move the win rate.
 - **Stall telemetry (32 seeds, 733/731 battles, both arms):** battles
   ending with a charged Happy Flower counter (c2) 30.2% ctl vs 31.7% term
   (+1.5pp); mean turns/battle 4.60 vs 4.71 (+0.11); per-seed mean-counter
   diff +0.052 (sd 0.203) - the bonus does not measurably change stall
-  behavior. This is consistent with §110: the deployed win tree has zero
+  behavior. This is consistent with ï¿½110: the deployed win tree has zero
   sensitivity to counter relics, so the bonus cannot price the
   counter-alignment the design targets.
 - **Cost:** TERM_WIN ran at 32.4 cpu-sec/run vs 10.5 control = **3.1x
-  overhead** at 1k sims (worse than the §109 estimate of +75% at 300
+  overhead** at 1k sims (worse than the ï¿½109 estimate of +75% at 300
   sims); the per-leaf win-tree walk dominates.
 - **Verdict:** Stage 2 **falsified** - no win-rate or stall-behavior
   benefit, 3.1x cost. The terminal-leaf bonus stays opt-in (default off)
   and is not promoted. Stage 3 (counterfactual terminal-value model)
   requires a counter-aware evaluator to have any signal; with the win tree
   insensitive and no measured benefit, Stage 3 stays deferred until a
-  counter-sensitive terminal model exists (the §110 C_psi probe shows the
-  right machinery exists but was also null at the leaf level in §109's
+  counter-sensitive terminal model exists (the ï¿½110 C_psi probe shows the
+  right machinery exists but was also null at the leaf level in ï¿½109's
   smoke).
 - **New issue - intermittent multithread crash in the TERM_WIN path
   (pre-existing, 6f0420d):** `STS_TERM_WIN=1` at 12 threads crashes ~2/6
@@ -4203,3 +4203,70 @@ extFight*/emElites/emFights parity-excluded) and
   `2026-08-05-phase3-terminal-value-stage2.md`; issue 49.
 - **Cost:** ~2 min wall per 256-seed @1k arm on GCP sts-test (GCP shut
   down after this batch per instruction).
+
+## Â§117 Searcher2 rollout-usage diagnostic (searchdiag): first full measurement - known-RNG hallway fights become near-explicit at 30k sims; boss fights stay rollout-dominant in both regimes (2026-08-06, local WSL)
+
+- **What:** diagnostic-only measurement (no policy change, no win-rate claims) of
+  how much of each combat the default Searcher2 arm handles via explicit tree
+  descent vs random rollout, plus frontier terminality and root-decision
+  stability vs budget. New `searchdiag` mode + write-only searcher counters
+  (decision log `2026-08-06-searchdiag-rollout-usage.md`; `combat-search.md`
+  "rollout-usage diagnostics").
+- **Config:** commit `4325c03` + uncommitted searchdiag diff; WSL build;
+  `one_combat searchdiag <nSeeds> 1000 0 <out> 2 <seedOff>`; Searcher2; asc 0;
+  8 threads; native OOC; policy PUCT on (`build/policy_trees_c.txt`); no
+  combat value/PVNet; `STS_ROLLOUT_DEPTH` unset (rollouts play to battle end).
+  Fair arm: `STS_FAIR=1`, seeds 0-5. Known-RNG arm: seeds 10,11,13,14,16,17,18,19
+  (seed 12 excluded: pre-existing empty-hand EXHAUST_MANY assert, see below).
+  Budget-sweep probes {100..30k} on fresh searchers every 2nd decision;
+  agent decisions at 1000 sims. **Fair arm is Searcher2 fair, not the
+  recommended S3 particle stack** - results are regime-scoped, not comparable
+  to gate numbers.
+- **Rollout-call fraction by room x budget** (probe rows; n per cell in
+  parentheses): fair MONSTER 0.71/0.70/0.69/0.68/0.66/0.64/0.62; fair ELITE
+  0.83/0.81/0.80/0.79/0.77/0.74/0.72; fair BOSS 0.92/0.91/0.90/0.90/0.89/0.87/0.86.
+  known-RNG MONSTER 0.48/0.45/0.43/0.40/0.33/0.27/0.19; ELITE
+  0.71/0.68/0.64/0.58/0.46/0.31/0.18; BOSS 0.91/0.89/0.87/0.84/0.78/0.68/0.55.
+  Known-RNG hallway fights become ~80% explicit at 30k sims; bosses stay
+  rollout-heavy in both regimes (fair 86%, known-RNG 55% at 30k).
+- **Visit-weighted terminal coverage by act x budget:** fair act1
+  0.45/0.47/0.50/0.53/0.59/0.64/0.69, act2 0.29/0.32/0.34/0.37/0.43/0.49/0.57,
+  act3 0.26/0.28/0.30/0.33/0.38/0.44/0.50; known-RNG act1
+  0.51/0.53/0.55/0.57/0.64/0.74/0.85, act2 0.46/0.50/0.55/0.60/0.68/0.76/0.84,
+  act3 0.25/0.25/0.27/0.32/0.41/0.53/0.66. Even at 30k sims the MCTS-preferred
+  portion of the tree is not fully terminal (fair act3 0.50) - rollouts still
+  value most search mass.
+- **Agent decisions at 1000 sims (A rows, per room):** fair MONSTER/ELITE/BOSS
+  rollFrac 0.69/0.80/0.89, avgRolloutLen 7.4/8.7/12.6, maxTreeDepth
+  8.9/8.6/9.6, vtc 0.53/0.32/0.22; known-RNG MONSTER/ELITE/BOSS rollFrac
+  0.74/0.76/0.78, avgRolloutLen 12.6/11.6/12.7, maxTreeDepth 11.8/10.3/12.4,
+  vtc 0.30/0.27/0.24.
+- **Structural finding (regime cost):** fair mode commits one action per
+  search, so ~123 decisions/fight vs ~2/fight known-RNG (line replay), i.e.
+  ~40x more searches per fight and ~40x more probe cost per seed.
+- **NN-leaf relevance:** the data supports the hypothesis that a leaf
+  evaluator pays off mostly on boss/long fights (rollout fraction 0.78-0.89,
+  avg rollout 12-13 actions, vtc <= 0.24), not on known-RNG hallway fights at
+  deep budgets (19% rollout, vtc 0.85). Conditioning NN blending on measured
+  rollout length/coverage rather than raw depth is feasible with this schema.
+- **By-act view** (`build/sdiag_by_act.csv`, script `build/sdiag_by_act.py`;
+  means per regime x act x budget, n per cell): for known-RNG, **act 3 is the
+  rollout-heavy zone regardless of room** - rollout fraction at 30k sims: act1
+  0.20, act2 0.19, act3 0.39; by room @30k: act1 MONSTER 0.09 / act2 MONSTER
+  0.07 / act3 MONSTER 0.37, bosses 0.39-0.67. For fair, room dominates act:
+  MONSTER 0.47-0.74, ELITE 0.67-0.79, BOSS 0.83-0.89 at 30k across all acts.
+  maxTreeDepth @30k: KR act3 15.7 vs act1 13.6; fair ~12 flat. valueGap (KR)
+  grows to 970-1716 HP at 30k vs fair 268-353 - known-RNG root decisions
+  become far more conclusive; fair stays tight. stableVsPrev @30k: fair
+  0.87-0.95, KR 0.88-1.00.
+- **Pre-existing crash re-confirmed:** known-RNG Searcher2 aborts at
+  CARD_SELECT EXHAUST_MANY with empty hand (act-1 floor 13 Gremlin Nob, and
+  floor 21 Shelled Parasite for seed 12 at 1k sims); fair path unaffected.
+  Coverage of the known-RNG arm is therefore seed-restricted.
+- **Artifacts:** `build/sdiag_fair.csv(.fights.csv)`, `build/sdiag_kr_arm/s*.csv(.fights.csv)`,
+  `build/sdiag_grouped.csv` (grouped means by regime x room x act x deck x
+  legal-action bucket x turn x budget), `build/sdiag_by_act.csv`,
+  `build/sdiag_by_encounter.csv`,
+  `build/sdiag_group.py`, `build/sdiag_by_act.py`, `build/sdiag_by_encounter.py`
+  (grouping scripts).
+  Cost: fair arm 283s wall (6 seeds); known-RNG ~1 min/seed.

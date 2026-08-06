@@ -105,8 +105,7 @@ static void printHelper(const BattleContext &bc, const search::Action &a) {
 // order per simulation, so the recommended line is world-specific -- we can only
 // commit the ONE most-visited root move, then re-search as the real draw reveals.
 void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
-    if (search::g_useSearcher3) {
-        // ISMCTS: new searcher per turn (different observations = different trees)
+    if (search::g_useSearcher3) {        // ISMCTS: new searcher per turn (different observations = different trees)
         int decisionIdx = 0;
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
@@ -132,12 +131,28 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
         }
         return;
     }
+    std::int64_t fightPool = 0;   // STS_CONV_ROOT: per-fight sim credit pool (budget-neutral reinvestment)
     while (bc.outcome == Outcome::UNDECIDED) {
         if (g_onCombatDecision) g_onCombatDecision(bc);   // snapshot state (fair-play value datagen)
         const std::int64_t simulationCount = isBossEncounter(bc.encounter) ?
                                              (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
         search::BattleScumSearcher2 searcher(bc);
-        searcher.search(simulationCount);
+        if (search::g_convRootStop) {
+            // Root-stability adaptive budget (STS_CONV_ROOT): each decision credits
+            // its flat budget to a per-fight pool; forced moves skip the search and
+            // obvious decisions stop early, so ambiguous ones can escalate up to
+            // g_convRootMaxFrac x the flat target without exceeding flat total cpu
+            // (see BattleScumSearcher2::searchToTotalRootStable).
+            fightPool += simulationCount;
+            search::Action forced;
+            if (searcher.onlyLegalAction(forced)) { takeAction(bc, forced); continue; }
+            const std::int64_t cap = std::min(fightPool,
+                static_cast<std::int64_t>(std::llround(simulationCount * search::g_convRootMaxFrac)));
+            searcher.searchToTotalRootStable(cap, search::g_convRootMinSims, search::g_convRootPatience);
+            fightPool -= searcher.root.simulationCount;
+        } else {
+            searcher.search(simulationCount);
+        }
         simulationCountTotal += searcher.root.simulationCount;
 
         // policy-target datagen: log this root's edge visit distribution (fair-play prior)
@@ -213,6 +228,7 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
     // played child (advanceRoot) instead of rebuilding, so the next decision reuses
     // the subtree we already searched. searchToTotal then only runs the shortfall.
     search::BattleScumSearcher2 searcher(bc);
+    std::int64_t fightPool = 0;   // STS_CONV_ROOT: per-fight sim credit pool (budget-neutral reinvestment)
 
     while (bc.outcome == Outcome::UNDECIDED) {
         if (g_onCombatDecision) g_onCombatDecision(bc);   // snapshot state for value-fn training
@@ -222,7 +238,24 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
         const std::int64_t before = searcher.root.simulationCount;
         if (search::g_convergeStop)
             searcher.searchToTotalAdaptive(simulationCount, search::g_convMinSims, search::g_convPatience);
-        else
+        else if (search::g_convRootStop) {
+            // Forced move shortcut: exactly one legal action -> commit directly, no
+            // search. Otherwise credit the flat budget to the fight pool and let the
+            // root-stability search escalate ambiguous decisions up to the pool
+            // (bounded by g_convRootMaxFrac x flat target); pool accounting keeps
+            // total sims at or below the flat total.
+            search::Action forced;
+            if (searcher.onlyLegalAction(forced)) {
+                takeAction(bc, forced);
+                searcher.advanceRoot(forced, bc);
+                continue;
+            }
+            fightPool += simulationCount;
+            const std::int64_t cap = std::min(fightPool,
+                static_cast<std::int64_t>(std::llround(simulationCount * search::g_convRootMaxFrac)));
+            searcher.searchToTotalRootStable(cap, search::g_convRootMinSims, search::g_convRootPatience);
+            fightPool -= searcher.root.simulationCount - before;
+        } else
             searcher.searchToTotal(simulationCount);
         simulationCountTotal += searcher.root.simulationCount - before;   // only newly-run sims
 

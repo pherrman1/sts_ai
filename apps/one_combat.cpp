@@ -2361,6 +2361,38 @@ static bool oocMapRouteSearchPolicy(GameContext &gc, const search::ScumSearchAge
 // (restVPolicy / upgradeSelectVPolicy). Isolates exactly the heal/upgrade change.
 // Requires v_server.py running (server card picks + rest queries).
 // ---------------------------------------------------------------------------
+// --- searchdiag shared state (full definition in the SEARCHDIAG section) ------
+// runFullRunOOC touches only this guarded state at battle entry/exit, so the
+// default benchmark paths stay unchanged when the mode is inactive.
+static bool g_sdiagActive = false;
+static std::ofstream g_sdiagFile;
+static std::mutex g_sdiagMutex;
+
+struct SdiagMetrics {
+    std::int64_t budget = 0;
+    std::int64_t sims = 0, terminalInTree = 0, rolloutCalls = 0, leafDirectEval = 0;
+    std::int64_t rolloutLeafCalls = 0, fairIllegalStoredEdge = 0;
+    std::int64_t rolloutTerminated = 0, rolloutDepthCapped = 0, rolloutSkippedVNet = 0, rolloutNoLegal = 0;
+    std::int64_t rolloutActions = 0, treeActions = 0, maxTreeDepth = 0;
+    double simSeconds = 0;
+    search::FrontierStats frontier;
+    std::uint32_t bestAction = 0xFFFFFFFFu;   // most-visited root edge (0xFFFFFFFF = none)
+    double visitShare = 0, bestValue = 0, runnerUpValue = 0, valueGap = 0;
+};
+
+// Per-fight state: run context + accumulated totals + previous cumulative
+// snapshot of the persisting agent searcher (per-decision windowing).
+struct SdiagRunCtx {
+    std::uint64_t seed = 0;
+    int floor = 0, act = 0, room = 0, encounter = 0;
+    int fightIdx = 0, decisionIdx = 0;
+    SdiagMetrics cum;          // last hook's cumulative counters (non-fair mode)
+    SdiagMetrics fTot;         // fight totals (sum of per-decision windows)
+};
+static thread_local SdiagRunCtx g_sdiagCtx;
+
+static void sdiagFightRow(const BattleContext &bc);   // defined in the SEARCHDIAG section
+
 static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV) {
     vDisconnect();
     t_shopV = shopV;
@@ -2395,7 +2427,17 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             if (search::g_useSearcher3 && g_termWin && g_winNet.ok)
                 termWinArmForBattle(gc);   // terminal-leaf run-value bonus (cross-combat setup)
             BattleContext bc{}; bc.init(gc);
+            if (g_sdiagActive) {   // searchdiag: per-fight run context
+                g_sdiagCtx = SdiagRunCtx{};
+                g_sdiagCtx.seed = seed;
+                g_sdiagCtx.floor = gc.floorNum;
+                g_sdiagCtx.act = gc.act;
+                g_sdiagCtx.room = (int)gc.curRoom;
+                g_sdiagCtx.encounter = (int)bc.encounter;
+                g_sdiagCtx.fightIdx = fightsTotal;
+            }
             agent.playoutBattle(bc);
+            if (g_sdiagActive) sdiagFightRow(bc);   // searchdiag: fight summary
             if (search::g_useSearcher3 && g_termWin) termWinDisarm();
             ++fightsTotal;
             if (bc.outcome == Outcome::PLAYER_LOSS) { ++fightsLost; if (deathCombat < 0) { deathCombat = fightsTotal; deathEncounter = (int)bc.encounter; } }
@@ -6890,6 +6932,264 @@ runFightGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
 }
 
 // ---------------------------------------------------------------------------
+// SEARCHDIAG: rollout-usage diagnostics for Searcher2 (default search arm).
+// Runs full runs via runFullRunOOC with a per-decision hook
+// (search::g_onSearchComplete, fires off the hot path) that emits:
+//   rowtype A (every decision):  agent-search counters (per-decision window)
+//                                + cumulative frontier stats of the stored tree
+//   rowtype B (every probeEvery-th decision): fresh probe searcher per stage at
+//             ascending budgets, snapshotting the same metrics per stage --
+//             independent trees, so per-stage metrics are not correlated by
+//             tree reuse. Records root-decision stability vs the previous stage
+//             and vs the agent's implied best action.
+// Rowtypes A and B share ONE header (same column semantics). Per-fight
+// summaries (outcome, totals) go to a SEPARATE file (`<out>.fights.csv`) so no
+// rowtype reinterprets columns. Honors STS_FAIR (probes determinize per
+// simulation) and STS_ROLLOUT_DEPTH (records depth-capped rollouts). Searcher3
+// is not instrumented; the mode refuses to run under STS_SEARCHER3. See
+// docs/knowledge-base/architecture/combat-search.md ("rollout-usage
+// diagnostics").
+// ---------------------------------------------------------------------------
+
+static int  g_sdiagProbeEvery = 1;
+static std::ofstream g_sdiagFightFile;   // per-fight summary CSV (separate schema)
+
+// Budget stages for the root-stability sweep (rowtype B), per the searchdiag
+// design: 100..30k simulations per stage on fresh probe trees.
+static const std::vector<std::int64_t> kSdiagStages = {100, 250, 500, 1000, 3000, 10000, 30000};
+
+// Whole-searcher metrics: counters + frontier walk + root visit distribution.
+static SdiagMetrics sdiagMetricsOf(const search::BattleScumSearcher2 &s) {
+    assert(s.diag.consistent());   // simulations == terminalInsideTree + rolloutCalls + leafDirectEval
+    SdiagMetrics m;
+    const auto &d = s.diag;
+    m.sims = d.simulations;
+    m.terminalInTree = d.terminalInsideTree;
+    m.rolloutCalls = d.rolloutCalls;
+    m.rolloutLeafCalls = d.rolloutLeafCalls;
+    m.fairIllegalStoredEdge = d.fairIllegalStoredEdge;
+    m.leafDirectEval = d.leafDirectEval;
+    m.rolloutTerminated = d.rolloutTerminated;
+    m.rolloutDepthCapped = d.rolloutDepthCapped;
+    m.rolloutSkippedVNet = d.rolloutSkippedVNet;
+    m.rolloutNoLegal = d.rolloutNoLegalAction;
+    m.rolloutActions = d.rolloutActions;
+    m.treeActions = d.treeActions;
+    m.maxTreeDepth = d.maxTreeDepth;
+    m.simSeconds = d.simSeconds;
+    s.collectFrontierStats(m.frontier);
+
+    std::int64_t bestN = -1, secondN = -1, total = 0;
+    std::uint32_t bestBits = 0xFFFFFFFFu, secondBits = 0xFFFFFFFFu;
+    for (const auto &e : s.root.edges) {
+        const std::int64_t n = e.node.simulationCount;
+        total += n;
+        if (n > bestN) { secondN = bestN; secondBits = bestBits; bestN = n; bestBits = e.action.bits; }
+        else if (n > secondN) { secondN = n; secondBits = e.action.bits; }
+    }
+    if (bestN > 0) {
+        m.bestAction = bestBits;
+        m.visitShare = double(bestN) / total;
+        const auto meanOf = [&](std::uint32_t bits, std::int64_t visits) {
+            for (const auto &e : s.root.edges)
+                if (e.action.bits == bits) return e.node.evaluationSum / double(visits);
+            return 0.0;
+        };
+        m.bestValue = meanOf(bestBits, bestN);
+        if (secondN > 0) {
+            m.runnerUpValue = meanOf(secondBits, secondN);
+            m.valueGap = m.bestValue - m.runnerUpValue;
+        }
+    }
+    return m;
+}
+
+// Per-decision window: current cumulative minus the previous snapshot.
+static SdiagMetrics sdiagWindow(const SdiagMetrics &cur, const SdiagMetrics &prev) {
+    SdiagMetrics w = cur;
+    w.sims = cur.sims - prev.sims;
+    w.terminalInTree = cur.terminalInTree - prev.terminalInTree;
+    w.rolloutCalls = cur.rolloutCalls - prev.rolloutCalls;
+    w.rolloutLeafCalls = cur.rolloutLeafCalls - prev.rolloutLeafCalls;
+    w.fairIllegalStoredEdge = cur.fairIllegalStoredEdge - prev.fairIllegalStoredEdge;
+    w.leafDirectEval = cur.leafDirectEval - prev.leafDirectEval;
+    w.rolloutTerminated = cur.rolloutTerminated - prev.rolloutTerminated;
+    w.rolloutDepthCapped = cur.rolloutDepthCapped - prev.rolloutDepthCapped;
+    w.rolloutSkippedVNet = cur.rolloutSkippedVNet - prev.rolloutSkippedVNet;
+    w.rolloutNoLegal = cur.rolloutNoLegal - prev.rolloutNoLegal;
+    w.rolloutActions = cur.rolloutActions - prev.rolloutActions;
+    w.treeActions = cur.treeActions - prev.treeActions;
+    w.simSeconds = cur.simSeconds - prev.simSeconds;
+    w.maxTreeDepth = cur.maxTreeDepth;   // cumulative: deepest path in the tree to date
+    return w;
+}
+static void sdiagWriteRow(const char *rowtype, const BattleContext &bc, const SdiagMetrics &m, int stableVsPrev, int stableVsAgent) {
+    std::lock_guard<std::mutex> lk(g_sdiagMutex);
+    if (!g_sdiagFile) return;
+    const SdiagRunCtx &c = g_sdiagCtx;
+    const double rFrac = m.sims ? double(m.rolloutCalls) / m.sims : 0;
+    const double avgRoll = m.rolloutCalls ? double(m.rolloutActions) / m.rolloutCalls : 0;
+    const double avgTD = m.sims ? double(m.treeActions) / m.sims : 0;
+    const double tTot = m.treeActions + m.rolloutActions;
+    const double tCov = tTot ? double(m.treeActions) / tTot : 0;
+    const auto &fr = m.frontier;
+    const double tff = (fr.terminalLeaves() + fr.unexpandedLeaves)
+                           ? double(fr.terminalLeaves()) / double(fr.terminalLeaves() + fr.unexpandedLeaves) : 0;
+    const double vtc = fr.frontierLeafVisits ? double(fr.terminalLeafVisits) / double(fr.frontierLeafVisits) : 0;
+    const int deck = (int)(bc.cards.drawPile.size() + bc.cards.cardsInHand
+                           + bc.cards.discardPile.size() + bc.cards.exhaustPile.size());
+    const int nLegal = (int)legalActions(bc).size();
+    g_sdiagFile << rowtype << ',' << (search::g_fairPlay ? 1 : 0) << ',' << c.seed << ',' << c.fightIdx << ',' << c.decisionIdx << ','
+                << c.floor << ',' << c.act << ',' << c.room << ',' << c.encounter << ',' << bc.turn << ','
+                << deck << ',' << bc.cards.cardsInHand << ',' << nLegal << ','
+                << m.budget << ',' << m.sims << ',' << m.terminalInTree << ',' << m.rolloutCalls
+                << ',' << m.rolloutLeafCalls << ',' << m.fairIllegalStoredEdge
+                << ',' << m.leafDirectEval << ',' << m.rolloutTerminated << ',' << m.rolloutDepthCapped
+                << ',' << m.rolloutSkippedVNet << ',' << m.rolloutNoLegal << ','
+                << m.rolloutActions << ',' << m.treeActions << ','
+                << rFrac << ',' << avgRoll << ',' << avgTD << ',' << m.maxTreeDepth << ',' << tCov << ','
+                << m.simSeconds << ',' << (m.simSeconds > 0 ? m.sims / m.simSeconds : 0.0) << ','
+                << fr.nodesWalked << ',' << fr.victoryLeaves << ',' << fr.defeatLeaves
+                << ',' << fr.unexpandedLeaves << ',' << tff << ',' << vtc << ','
+                << m.bestAction << ',' << m.visitShare << ',' << m.bestValue << ','
+                << m.runnerUpValue << ',' << m.valueGap << ',' << stableVsPrev << ',' << stableVsAgent << '\n';
+    g_sdiagFile.flush();
+}
+
+// Rowtype B: fresh probe searcher per stage -- independent trees per budget.
+static void sdiagProbe(const BattleContext &bc, std::uint32_t agentBest) {
+    int stageIdx = 0;
+    std::uint32_t prevBest = 0xFFFFFFFFu;
+    for (const std::int64_t stage : kSdiagStages) {
+        search::BattleScumSearcher2 probe(bc);
+        probe.searchToTotal(stage);
+        SdiagMetrics m = sdiagMetricsOf(probe);
+        m.budget = stage;
+        const int vsPrev = stageIdx == 0 ? -1 : (m.bestAction == prevBest ? 1 : 0);
+        const int vsAgent = agentBest == 0xFFFFFFFFu || m.bestAction == 0xFFFFFFFFu
+                                ? -1 : (m.bestAction == agentBest ? 1 : 0);
+        sdiagWriteRow("B", bc, m, vsPrev, vsAgent);
+        prevBest = m.bestAction;
+        ++stageIdx;
+    }
+}
+
+// Hook fired by ScumSearchAgent2 once per agent decision (off the hot path).
+static void sdiagOnSearchComplete(const BattleContext &bc, const search::BattleScumSearcher2 &searcher) {
+    ++g_sdiagCtx.decisionIdx;
+    SdiagMetrics cur = sdiagMetricsOf(searcher);
+    // Window semantics: non-fair mode reuses ONE searcher per fight, so its
+    // counters are cumulative and the per-decision window is the delta. Fair
+    // mode rebuilds a fresh searcher every decision (determinizations are
+    // world-specific), so the whole search is the window. (Searcher identity
+    // cannot be used to tell the two apart: both modes reuse the same stack
+    // address.)
+    SdiagMetrics win;
+    if (search::g_fairPlay) {
+        win = cur;
+    } else {
+        win = sdiagWindow(cur, g_sdiagCtx.cum);
+        g_sdiagCtx.cum = cur;
+    }
+    g_sdiagCtx.cum = cur;
+    g_sdiagCtx.fTot.sims += win.sims;
+    g_sdiagCtx.fTot.terminalInTree += win.terminalInTree;
+    g_sdiagCtx.fTot.rolloutCalls += win.rolloutCalls;
+    g_sdiagCtx.fTot.leafDirectEval += win.leafDirectEval;
+    g_sdiagCtx.fTot.rolloutTerminated += win.rolloutTerminated;
+    g_sdiagCtx.fTot.rolloutDepthCapped += win.rolloutDepthCapped;
+    g_sdiagCtx.fTot.rolloutSkippedVNet += win.rolloutSkippedVNet;
+    g_sdiagCtx.fTot.rolloutNoLegal += win.rolloutNoLegal;
+    g_sdiagCtx.fTot.rolloutActions += win.rolloutActions;
+    g_sdiagCtx.fTot.treeActions += win.treeActions;
+    win.budget = win.sims;
+    sdiagWriteRow("A", bc, win, -1, -1);
+    if (g_sdiagProbeEvery > 0 && (g_sdiagCtx.decisionIdx % g_sdiagProbeEvery) == 0)
+        sdiagProbe(bc, cur.bestAction);
+}
+
+// Per-fight summary (separate CSV, own header -- never shares the A/B schema).
+static void sdiagFightRow(const BattleContext &bc) {
+    std::lock_guard<std::mutex> lk(g_sdiagMutex);
+    if (!g_sdiagFightFile) return;
+    const SdiagRunCtx &c = g_sdiagCtx;
+    const auto &t = c.fTot;
+    const double rFrac = t.sims ? double(t.rolloutCalls) / t.sims : 0;
+    const double avgRoll = t.rolloutCalls ? double(t.rolloutActions) / t.rolloutCalls : 0;
+    const double avgTD = t.sims ? double(t.treeActions) / t.sims : 0;
+    const double tTot = t.treeActions + t.rolloutActions;
+    const double tCov = tTot ? double(t.treeActions) / tTot : 0;
+    g_sdiagFightFile << c.seed << ',' << c.fightIdx << ',' << c.floor << ',' << c.act << ','
+                << c.room << ',' << c.encounter << ','
+                << (bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0) << ',' << (bc.turn + 1) << ','
+                << bc.player.curHp << ',' << t.sims << ',' << t.terminalInTree << ','
+                << t.rolloutCalls << ',' << t.leafDirectEval << ',' << t.rolloutActions << ','
+                << t.treeActions << ',' << rFrac << ',' << avgRoll << ',' << avgTD << ',' << tCov << '\n';
+    g_sdiagFightFile.flush();
+}
+
+static void searchDiag(int nSeeds, int sims, int asc, const std::string &out, int probeEvery,
+                       std::uint64_t seedOffset = 0) {
+    if (search::g_useSearcher3) {
+        std::cerr << "searchdiag: Searcher3 is not instrumented (unset STS_SEARCHER3)\n";
+        return;
+    }
+    g_sdiagProbeEvery = probeEvery;
+    g_sdiagActive = true;
+    g_sdiagFile.open(out, std::ios::trunc);
+    if (!g_sdiagFile) {
+        std::cerr << "searchdiag: cannot open " << out << "\n";
+        g_sdiagActive = false;
+        return;
+    }
+    const std::string fightOut = out + ".fights.csv";
+    g_sdiagFightFile.open(fightOut, std::ios::trunc);
+    if (!g_sdiagFightFile) {
+        std::cerr << "searchdiag: cannot open " << fightOut << "\n";
+        g_sdiagFile.close();
+        g_sdiagActive = false;
+        return;
+    }
+    g_sdiagFile << "rowtype,fair,seed,fightIdx,decIdx,floor,act,room,encounter,turn,deckSize,handSize,"
+                   "nLegalActions,budget,sims,terminalInTree,rolloutCalls,rolloutLeafCalls,"
+                   "fairIllegalStoredEdge,leafDirectEval,"
+                   "rolloutTerminated,rolloutDepthCapped,rolloutSkippedVNet,rolloutNoLegal,"
+                   "rolloutActions,treeActions,rolloutFraction,avgRolloutLen,avgTreeDepth,maxTreeDepth,"
+                   "treeCoverage,simSeconds,simsPerSec,"
+                   "nodesWalked,victoryLeaves,defeatLeaves,unexpandedLeaves,terminalFrontierFraction,"
+                   "visitedTerminalCoverage,bestAction,visitShare,bestValue,runnerUpValue,valueGap,"
+                   "stableVsPrev,stableVsAgent\n";
+    g_sdiagFile.flush();
+    g_sdiagFightFile << "seed,fightIdx,floor,act,room,encounter,won,turns,hpEnd,"
+                        "sims,terminalInTree,rolloutCalls,leafDirectEval,rolloutActions,treeActions,"
+                        "rolloutFraction,avgRolloutLen,avgTreeDepth,treeCoverage\n";
+    g_sdiagFightFile.flush();
+    std::cout << "SEARCHDIAG: seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
+              << "  sims/decision " << sims
+              << "  asc " << asc << "  probeEvery " << probeEvery
+              << "  fair=" << (search::g_fairPlay ? 1 : 0)
+              << "  rolloutDepth=" << search::g_maxRolloutDepth
+              << "  threads " << numThreads() << "  out " << out
+              << "  fights " << fightOut << "\n";
+    const bool restV = std::getenv("STS_REST_V") && std::atoi(std::getenv("STS_REST_V")) != 0;
+    int wins = 0;
+    auto wall0 = std::chrono::steady_clock::now();
+    #pragma omp parallel for reduction(+:wins) schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        const std::uint64_t seed = seedOffset + (std::uint64_t)s;
+        search::g_onSearchComplete = sdiagOnSearchComplete;   // thread_local: set per worker
+        RunResult r = runFullRunOOC(seed, sims, asc, restV, true);
+        search::g_onSearchComplete = nullptr;
+        wins += r.won ? 1 : 0;
+    }
+    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
+    g_sdiagFile.close();
+    g_sdiagFightFile.close();
+    g_sdiagActive = false;
+    std::printf("SEARCHDIAG DONE  win%%=%5.1f  wall=%.1fs\n", 100.0 * wins / nSeeds, wall);
+}
+
+// ---------------------------------------------------------------------------
 // POLICY-TARGET datagen (AlphaZero-lite phase 1): at every in-combat decision,
 // after the searcher has run its full budget, log each root edge as a row
 // (state features ++ that action's features) with the edge's VISIT COUNT and the
@@ -7766,6 +8066,26 @@ int main(int argc, char **argv) {
             std::cout << "[convergence stop ON: patience=" << search::g_convPatience
                       << " minSims=" << search::g_convMinSims << "]\n";
     }
+    if (const char *d = std::getenv("STS_CONV_ROOT")) {      // root-stability early stopping
+        search::g_convRootStop = std::atoi(d) != 0;
+        if (const char *v = std::getenv("STS_CONV_ROOT_START"))   search::g_convRootStart = std::atoll(v);
+        if (const char *v = std::getenv("STS_CONV_ROOT_GROW"))    search::g_convRootGrow  = std::atof(v);
+        if (const char *v = std::getenv("STS_CONV_ROOT_CHECK"))   search::g_convRootCheck = std::atoll(v);
+        if (const char *v = std::getenv("STS_CONV_ROOT_SHARE"))   search::g_convRootShare = std::atof(v);
+        if (const char *v = std::getenv("STS_CONV_ROOT_VALUE"))   search::g_convRootValue = std::atof(v);
+        if (const char *v = std::getenv("STS_CONV_ROOT_MIN"))     search::g_convRootMinSims = std::atoll(v);
+        if (const char *v = std::getenv("STS_CONV_ROOT_PATIENCE")) search::g_convRootPatience = std::atoll(v);
+        if (const char *v = std::getenv("STS_CONV_ROOT_MAX_FRAC")) search::g_convRootMaxFrac = std::atof(v);
+        if (search::g_convRootStop)
+            std::cout << "[root-stability stop ON: start=" << search::g_convRootStart
+                      << " grow=" << search::g_convRootGrow
+                      << " check=" << search::g_convRootCheck
+                      << " share=" << search::g_convRootShare
+                      << " value=" << search::g_convRootValue
+                      << " minSims=" << search::g_convRootMinSims
+                      << " patience=" << search::g_convRootPatience
+                      << " maxFrac=" << search::g_convRootMaxFrac << "]\n";
+    }
     if (const char *d = std::getenv("STS_BOSS_DRAFT")) {      // boss-gated rollout drafting
         g_bossDraft = std::atoi(d) != 0;
         if (const char *v = std::getenv("STS_BOSS_DRAFT_ROWS"))    g_bossDraftRows    = std::atoi(v);
@@ -8420,10 +8740,19 @@ int main(int argc, char **argv) {
             s3.search(s);
             auto t1 = std::chrono::steady_clock::now();
             double sec = std::chrono::duration<double>(t1 - t0).count();
-            std::printf("  S3 %5d sims: %6.3fs  %6d sim/s  rootVisits=%lld\n",
-                        s, sec, int(s/sec),
-                        (long long)s3.root.simulationCount);
+        std::printf("  S3 %5d sims: %6.3fs  %6d sim/s  rootVisits=%lld\n",
+                    s, sec, int(s/sec),
+                    (long long)s3.root.simulationCount);
         }
+
+    } else if (mode == "searchdiag") {    // Searcher2 rollout-usage diagnostics
+        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 8;
+        int sims      = argc > 3 ? std::stoi(argv[3]) : 2000;
+        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
+        std::string out = argc > 5 ? argv[5] : "build/searchdiag.csv";
+        int probeEvery = argc > 6 ? std::stoi(argv[6]) : 1;
+        std::uint64_t seedOff = argc > 7 ? std::stoull(argv[7]) : 0;
+        searchDiag(nSeeds, sims, asc, out, probeEvery, seedOff);
 
     } else if (mode == "combatgen") {     // CSV of (combat state, fight outcome) for V_combat
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;

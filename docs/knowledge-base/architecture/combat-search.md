@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-05 against the current working tree.
+Last verified: 2026-08-06 against the current working tree.
 
 ## Purpose
 
@@ -63,6 +63,84 @@ assigned per decision by the caller, and `Belief::update` zero-weights
 particles whose draw order contradicts the observed pile
 (`BattleScumSearcher3::BattleScumSearcher3`; `ScumSearchAgent2::playoutBattleFair`;
 `CombatObservation::Belief::update`).
+
+### Rollout-usage diagnostics (searchdiag)
+
+Searcher2 keeps per-search rollout-usage counters (`SearchDiagnostics`, member
+`BattleScumSearcher2::diag`; `include/sim/search/BattleScumSearcher2.h`) that
+count, per simulation: whether the sim ended at a terminal state inside the
+tree (`terminalInsideTree`), entered a random rollout (`rolloutCalls`, split
+by how it was entered: `rolloutLeafCalls` = newly expanded leaf,
+`fairIllegalStoredEdge` = stored edge invalid in this determinization — the
+fair fallback path; and by why the rollout stopped: `rolloutTerminated` /
+`rolloutDepthCapped` / `rolloutSkippedVNet` / `rolloutNoLegalAction`), or
+evaluated a fair-play leaf with no legal action (`leafDirectEval`); plus
+`treeActions` (actions executed by explicit tree descent), `maxTreeDepth`,
+and `simSeconds` (wall time in the search loops). Invariants per searcher:
+`simulations == terminalInsideTree + rolloutCalls + leafDirectEval` and
+`rolloutCalls == rolloutLeafCalls + fairIllegalStoredEdge`.
+`playoutRandom` returns its action count and sets a `RolloutStop` cause
+(`src/sim/search/BattleScumSearcher2.cpp::step`, `playoutRandom`). The
+counters are write-only in the search path — they cannot alter search
+behavior. `Node::outcome` (0 non-terminal, 1 victory, 2 defeat) is recorded at
+the in-tree terminal check; terminal nodes are never expanded, so an
+`outcome != 0` node has no edges. Fair @3k measurement (EXPERIMENTS.md §117,
+2026-08-06): the illegal-stored-edge path is ~half of fair rollouts and
+grows to 68% of rollout calls at 30k sims (act 1) — a real
+tree/determinization mismatch, not noise; obs-keyed descent is falsified
+(§114), so structural fixes are constrained.
+
+`collectFrontierStats` walks the stored tree and classifies frontier leaves:
+terminal (victory/defeat) versus unexpanded non-terminal nodes, with a
+visit-weighted terminal coverage (sum of `simulationCount` over terminal
+leaves over all frontier leaves) and a node cap (default 500k) so pathological
+trees cannot stall the pass.
+
+The `searchdiag` mode (`one_combat searchdiag nSeeds sims asc out probeEvery
+[seedOffset]`) runs full runs and emits, per combat decision:
+- rowtype A (every decision, `search::g_onSearchComplete`): the agent search's
+  per-decision window (non-fair mode subtracts the previous cumulative since
+  one searcher persists per fight; fair mode uses the whole fresh search
+  because each decision rebuilds the searcher), cumulative frontier stats, and
+  the root's most-visited action, visit share, and value gap to the
+  visit runner-up; `maxTreeDepth` is cumulative (deepest explicit path in the
+  tree to date);
+- rowtype B (every `probeEvery`-th decision): fresh probe searchers at
+  budgets {100, 250, 500, 1000, 3000, 10000, 30000} — independent trees per
+  stage — with root-decision stability versus the previous stage and versus
+  the agent's implied best action (`stableVsPrev`, `stableVsAgent`; -1 = no
+  comparison).
+Rows A and B share one header (identical column semantics). Per-fight
+summaries (outcome, totals) go to a **separate** file `<out>.fights.csv` with
+its own header so no rowtype reinterprets columns. The `fair` column records
+the regime; `STS_ROLLOUT_DEPTH` is honored and depth-capped rollouts are
+counted. Searcher3 is not instrumented; the mode refuses to run under
+`STS_SEARCHER3`. (`apps/one_combat.cpp::sdiagMetricsOf`, `sdiagOnSearchComplete`,
+`sdiagProbe`, `searchDiag`.) Decision log:
+`2026-08-06-searchdiag-rollout-usage.md`.
+
+### Root-stability adaptive search (STS_CONV_ROOT, opt-in)
+
+`BattleScumSearcher2::searchToTotalRootStable` (2026-08-06) searches in
+chunks that grow from `g_convRootStart` (250) by `g_convRootGrow` (2.0) up
+to a caller-supplied ceiling, checking every `g_convRootCheck` (100) sims
+whether the root's most-visited action, visit share (drift >
+`g_convRootShare` = 0.05), and windowed mean value (drift > `g_convRootValue`
+= 1.0) are stable; it stops once stable for `g_convRootPatience` sims past
+`g_convRootMinSims`. Unlike the §22/§102 `g_convergeStop` plateau signal
+(inert under fair determinization), this decision-oriented signal fires in
+fair play. The agent (`ScumSearchAgent2::playoutBattle`,
+`playoutBattleFair`) credits each decision's flat budget to a per-fight
+`fightPool` and lets ambiguous decisions escalate to
+`min(pool, g_convRootMaxFrac x flat)` (default 3.0), making the arm
+budget-neutral; the forced-move shortcut `onlyLegalAction` commits directly
+when exactly one legal action exists. Env: `STS_CONV_ROOT=1`,
+`STS_CONV_ROOT_{START,GROW,CHECK,SHARE,VALUE,MIN,PATIENCE,MAX_FRAC}`.
+Provisional 64-seed fair @1k measurement (decision log
+`2026-08-06-conv-root-stable-search.md`): MIN=500/PATIENCE=500 gives +3.1pp
+win at −9% cpu vs flat (within noise); stop-only loses ~3pp — the
+pool-funded escalation is what pays. Pending 128/256-seed confirmation
+(plan `plan-searchdiag-adaptive-continuation.md`).
 
 Searcher3 feature-ablation toggles (all parsed by `apps/one_combat.cpp::main`
 next to `STS_SEARCHER3`; defaults preserve full behavior): `STS_S3_BELIEF=0`
@@ -218,7 +296,19 @@ PUCT-with-zero-priors quirk.
 
 - Searcher2 project-fair determinization changes draw order plus only
   `shuffleRng` and `cardRandomRng`; it is not a complete hidden-state model
-  (`src/sim/search/BattleScumSearcher2.cpp::determinize`).
+  (`src/sim/search/BattleScumSearcher2.cpp::determinize`). Whether it should
+  sample all six combat streams like Searcher3's particles (notably `aiRng`
+  for future enemy intents and `monsterHpRng` for mid-fight spawn rolls) is an
+  open question — see "Open questions" — and the `searchdiag` CSV records the
+  regime (`fair` column) so fair rows are never mixed with known-RNG rows.
+- Known-RNG Searcher2 whole-run benchmarking currently aborts (pre-existing,
+  observed 2026-08-06 at HEAD) at a CARD_SELECT state with
+  `cardSelectTask == EXHAUST_MANY`, `pickCount > 0`, and an empty hand: the
+  canonical enumerator emits zero valid edges there and the pre-existing
+  `assert(false)` in `playoutRandom` fires (`src/sim/search/BattleScumSearcher2.cpp`).
+  It reproduces on a pristine build for seeds 0–7 at act-1 floor 13; the
+  `STS_FAIR=1` path (the recorded baseline regime) is unaffected. Not yet
+  root-caused; see decision log `2026-08-06-searchdiag-rollout-usage.md`.
 - Searcher3 belief conditioning is conservative: `Belief::update` zero-weights
   particles whose draw order contradicts the observed pile, and `Belief::sample`
   falls back to uniform when all weights are equal or total zero, so a reshuffle
@@ -313,22 +403,37 @@ PUCT-with-zero-priors quirk.
   states?
 - Should PVNet-only operation with `STS_PVNET_VALUE_ONLY=1` disable PUCT
   recognition instead of leaving zero priors?
+- Should Searcher2 fair determinization sample all six combat RNG streams
+  (like Searcher3 particles) instead of only `shuffleRng`/`cardRandomRng`?
+  Mid-fight hidden rolls that stay concrete today: `aiRng` (future enemy
+  intents, `Monster.cpp::getMoveForRoll`; random targets, `Actions.cpp`);
+  `monsterHpRng` (mid-fight spawns, e.g. Torch Head; Curl Up, `MonsterSpecific.cpp`).
+  `miscRng` (fight-setup group composition) and `potionRng` (rewards path) are
+  observed-out-of-combat and moot mid-fight. A change is policy-affecting for
+  the fair Searcher2 regime and would need its own paired gate; `searchdiag`
+  measures whatever regime is configured.
 
 ## Relevant code
 
 - `include/combat/BattleContext.h::BattleContext`, `Outcome`
 - `src/combat/BattleContext.cpp::init`, `executeActions`, `exitBattle`
 - `src/sim/search/ScumSearchAgent2.cpp::playoutBattle`, `playoutBattleFair`
-- `include/sim/search/BattleScumSearcher2.h::BattleScumSearcher2`
+  (incl. STS_CONV_ROOT pool wiring)
+- `include/sim/search/BattleScumSearcher2.h::BattleScumSearcher2`,
+  `SearchDiagnostics`, `FrontierStats`
 - `include/sim/search/BattleScumSearcher3.h::BattleScumSearcher3`
+- `src/sim/search/BattleScumSearcher2.cpp::step`, `playoutRandom`,
+  `collectFrontierStats`, `searchToTotalRootStable`, `onlyLegalAction`
 - `src/sim/search/BattleScumSearcher3.cpp::step`, `computeEdgePriors`,
   `evaluateTerminal`, `g_terminalBonus`
 - `src/sim/search/Action.cpp::enumerateCardSelectActions` (canonical legal
   CARD_SELECT action set; S2/S3 delegate to it), `Action.cpp::isValidAction`
 - `apps/test.cpp::testCardSelectParity` (command `cardselect_parity`)
-- `apps/one_combat.cpp::termLeafBonus`, `termWinArmForBattle`,
-  `termWinDisarm`, `termWinIndices`, `cpsiEntryFromRich`, `cpsiCounterProbeAtState`,
-  `cpsiCtrProbeReport`, `cpsictr` mode (STS_TERM_WIN*, STS_CPSI_CTR_PROBE, opt-in)
+- `apps/one_combat.cpp::sdiagMetricsOf`, `sdiagOnSearchComplete`, `sdiagProbe`,
+  `sdiagFightRow`, `searchDiag` (`searchdiag` mode), `termLeafBonus`,
+  `termWinArmForBattle`, `termWinDisarm`, `termWinIndices`,
+  `cpsiEntryFromRich`, `cpsiCounterProbeAtState`, `cpsiCtrProbeReport`,
+  `cpsictr` mode (STS_TERM_WIN*, STS_CPSI_CTR_PROBE, opt-in)
 - `src/sim/search/CombatObservation.cpp::Belief`, `visibleHash`
 - `src/sim/search/CombatValueNet.cpp::combatExtractFeatures`
 - `src/sim/search/CombatPVNet.cpp::CombatPVNet`

@@ -14,6 +14,7 @@
 #include <random>
 #include <cmath>
 #include <limits>
+#include <chrono>
 
 using namespace sts;
 
@@ -32,6 +33,16 @@ namespace sts::search {
     bool g_convergeStop = false;         // convergence-based early stopping (see searchToTotalAdaptive)
     std::int64_t g_convPatience = 2000;  // sims of no best-value improvement before stopping
     std::int64_t g_convMinSims  = 1000;  // min sims before an early stop is allowed
+    // Root-stability early stopping (see searchToTotalRootStable)
+    bool g_convRootStop = false;         // STS_CONV_ROOT
+    std::int64_t g_convRootStart = 250;  // initial chunk budget
+    double g_convRootGrow = 2.0;         // chunk growth factor per round
+    std::int64_t g_convRootCheck = 100;  // stability check granularity (sims)
+    double g_convRootShare = 0.05;       // visit-share drift threshold
+    double g_convRootValue = 1.0;        // windowed value drift threshold (HP scale)
+    std::int64_t g_convRootMinSims = 250;    // never stop before this many sims
+    std::int64_t g_convRootPatience = 250;   // stop once stable for this many sims
+    double g_convRootMaxFrac = 3.0;  // escalation ceiling: max(target, target*frac) sims
     double g_vnetAlpha = 0.5;    // V_combat blend weight (see header)
 }
 
@@ -132,9 +143,11 @@ void search::BattleScumSearcher2::search(int64_t simulations) {
         root.simulationCount = 1;
     }
 
+    auto t0 = std::chrono::steady_clock::now();
     for (std::int64_t simCount = 0; simCount < simulations; ++simCount) {
         step();
     }
+    diag.simSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 }
 
 void search::BattleScumSearcher2::searchToTotal(std::int64_t targetSimulations) {
@@ -152,9 +165,11 @@ void search::BattleScumSearcher2::searchToTotal(std::int64_t targetSimulations) 
 
     // Each step() adds exactly one simulation to the root, so this runs
     // (target - current) steps -- the shortfall not already covered by reuse.
+    auto t0 = std::chrono::steady_clock::now();
     while (root.simulationCount < targetSimulations) {
         step();
     }
+    diag.simSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 }
 
 void search::BattleScumSearcher2::searchToTotalAdaptive(std::int64_t targetSimulations,
@@ -178,6 +193,7 @@ void search::BattleScumSearcher2::searchToTotalAdaptive(std::int64_t targetSimul
     // in the first steps here (that counts as improvement and resets the window).
     double bestVal = bestActionValue;
     std::int64_t lastImprove = root.simulationCount;
+    auto t0 = std::chrono::steady_clock::now();
     while (root.simulationCount < targetSimulations) {
         step();
         if (bestActionValue > bestVal) {
@@ -185,9 +201,78 @@ void search::BattleScumSearcher2::searchToTotalAdaptive(std::int64_t targetSimul
             lastImprove = root.simulationCount;
         } else if (root.simulationCount >= minSimulations
                    && (root.simulationCount - lastImprove) >= patience) {
+            diag.simSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
             return;                              // converged -> stop early
         }
     }
+    diag.simSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+}
+
+void search::BattleScumSearcher2::searchToTotalRootStable(std::int64_t targetSimulations,
+                                                          std::int64_t minSimulations,
+                                                          std::int64_t patience) {
+    g_debug_scum_search = this;
+
+    if (isTerminalState(*rootState)) {
+        outcomePlayerHp = rootState->player.curHp;
+        bestActionSequence.clear();
+        if (root.simulationCount < 1) {
+            root.evaluationSum = evaluateEndState(*rootState);
+            root.simulationCount = 1;
+        }
+        return;
+    }
+
+    // Root-decision snapshot for the stability window.
+    std::uint32_t snapBestAction = 0xFFFFFFFFu;
+    double snapShare = -1.0;
+    double snapWindowValue = 0.0;
+    std::int64_t lastChangeSims = root.simulationCount;
+    std::int64_t lastCheckSims = root.simulationCount;
+    double lastEvalSum = root.evaluationSum;
+    // The caller passes the desired ceiling (flat target, or a pool-bounded /
+    // frac-scaled escalation cap); escalation grows from g_convRootStart up to
+    // targetSimulations.
+    std::int64_t budget = g_convRootStart;
+
+    auto t0 = std::chrono::steady_clock::now();
+    while (root.simulationCount < targetSimulations) {
+        const std::int64_t chunkEnd = std::min(budget, targetSimulations);
+        while (root.simulationCount < chunkEnd) {
+            step();
+            if (root.simulationCount >= lastCheckSims + g_convRootCheck) {
+                // Stability check: most-visited root action, visit share, windowed mean value.
+                std::int64_t bestN = -1, total = 0;
+                std::uint32_t bestBits = 0xFFFFFFFFu;
+                for (const auto &e : root.edges) {
+                    total += e.node.simulationCount;
+                    if (e.node.simulationCount > bestN) { bestN = e.node.simulationCount; bestBits = e.action.bits; }
+                }
+                const double share = total > 0 ? double(bestN) / total : 0.0;
+                const std::int64_t winSims = root.simulationCount - lastCheckSims;
+                const double winVal = winSims > 0 ? (root.evaluationSum - lastEvalSum) / winSims : 0.0;
+
+                if (bestBits != snapBestAction || std::fabs(share - snapShare) > g_convRootShare
+                        || std::fabs(winVal - snapWindowValue) > g_convRootValue) {
+                    snapBestAction = bestBits;
+                    snapShare = share;
+                    snapWindowValue = winVal;
+                    lastChangeSims = root.simulationCount;
+                }
+                lastCheckSims = root.simulationCount;
+                lastEvalSum = root.evaluationSum;
+
+                if (root.simulationCount >= minSimulations
+                        && (root.simulationCount - lastChangeSims) >= patience) {
+                    diag.simSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+                    return;                              // root decision stable -> stop early
+                }
+            }
+        }
+        budget = std::min(targetSimulations,
+                          static_cast<std::int64_t>(std::llround(budget * g_convRootGrow)));
+    }
+    diag.simSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 }
 
 bool search::BattleScumSearcher2::advanceRoot(const Action &action, const BattleContext &newRootState) {
@@ -219,9 +304,20 @@ bool search::BattleScumSearcher2::advanceRoot(const Action &action, const Battle
     return reused;
 }
 
+// Rollout-usage diagnostics: record why a playoutRandom invocation ended.
+static inline void countRolloutStop(search::SearchDiagnostics &diag, search::RolloutStop stop) {
+    switch (stop) {
+        case search::RolloutStop::TERMINAL:       ++diag.rolloutTerminated; break;
+        case search::RolloutStop::DEPTH_CAP:      ++diag.rolloutDepthCapped; break;
+        case search::RolloutStop::VNET_SKIP:      ++diag.rolloutSkippedVNet; break;
+        case search::RolloutStop::NO_LEGAL_ACTION: ++diag.rolloutNoLegalAction; break;
+    }
+}
+
 void search::BattleScumSearcher2::step() {
     searchStack = {&root};
     actionStack.clear();
+    ++diag.simulations;
     BattleContext curState;
     curState = *rootState;
     if (g_fairPlay) {
@@ -233,6 +329,10 @@ void search::BattleScumSearcher2::step() {
         auto &curNode = *searchStack.back();
 
         if (isTerminalState(curState)) {
+            curNode.outcome = (curState.outcome == Outcome::PLAYER_VICTORY) ? 1 : 2;
+            diag.treeActions += static_cast<std::int64_t>(searchStack.size()) - 1;
+            diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(searchStack.size()) - 1);
+            ++diag.terminalInsideTree;
             updateFromPlayout(searchStack, actionStack, curState);
             return;
         }
@@ -250,6 +350,9 @@ void search::BattleScumSearcher2::step() {
                 es.erase(std::remove_if(es.begin(), es.end(),
                         [&](const Edge &e){ return !e.action.isValidAction(curState); }), es.end());
                 if (es.empty()) {   // no legal action in this world -> just evaluate here
+                    diag.treeActions += static_cast<std::int64_t>(searchStack.size()) - 1;
+                    diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(searchStack.size()) - 1);
+                    ++diag.leafDirectEval;
                     updateFromPlayout(searchStack, actionStack, curState);
                     return;
                 }
@@ -270,7 +373,13 @@ void search::BattleScumSearcher2::step() {
             actionStack.push_back(edgeTaken.action);
             searchStack.push_back(&edgeTaken.node);
 
-            playoutRandom(curState, actionStack);
+            ++diag.rolloutCalls;
+            ++diag.rolloutLeafCalls;
+            diag.treeActions += static_cast<std::int64_t>(searchStack.size()) - 1;
+            diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(searchStack.size()) - 1);
+            RolloutStop stop = RolloutStop::TERMINAL;
+            diag.rolloutActions += playoutRandom(curState, actionStack, stop);
+            countRolloutStop(diag, stop);
             updateFromPlayout(searchStack, actionStack, curState, vLeaf);
             return;
 
@@ -283,7 +392,13 @@ void search::BattleScumSearcher2::step() {
             // (e.g. after an end-turn the drawn hand differs). If so, roll out
             // from here instead of executing an invalid action.
             if (g_fairPlay && !edgeTaken.action.isValidAction(curState)) {
-                playoutRandom(curState, actionStack);
+                ++diag.rolloutCalls;
+                ++diag.fairIllegalStoredEdge;
+                diag.treeActions += static_cast<std::int64_t>(searchStack.size()) - 1;
+                diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(searchStack.size()) - 1);
+                RolloutStop stop = RolloutStop::TERMINAL;
+                diag.rolloutActions += playoutRandom(curState, actionStack, stop);
+                countRolloutStop(diag, stop);
                 updateFromPlayout(searchStack, actionStack, curState);
                 return;
             }
@@ -503,15 +618,19 @@ static int rolloutActionWeight(const search::Action &a, const BattleContext &bc)
     }
 }
 
-void search::BattleScumSearcher2::playoutRandom(BattleContext &state, std::vector<Action> &actionStack) {
+// Returns the number of actions executed (diagnostics); sets `stop` to the
+// reason the rollout ended. TERMINAL includes the case where the state is
+// already terminal at entry (zero actions).
+int search::BattleScumSearcher2::playoutRandom(BattleContext &state, std::vector<Action> &actionStack, RolloutStop &stop) {
     // Pure-VNet mode (alpha>=1) skips the rollout and evaluates the leaf directly.
     // For a blend (alpha<1) we KEEP the rollout: its terminal outcome grounds the
     // value so the search can't stall by exploiting the off-policy net.
-    if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha >= 1.0) return;
+    if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha >= 1.0) { stop = RolloutStop::VNET_SKIP; return 0; }
+    stop = RolloutStop::TERMINAL;
     Node tempNode; // temp
     int rolloutSteps = 0;
     while (!isTerminalState(state)) {
-        if (g_maxRolloutDepth > 0 && rolloutSteps >= g_maxRolloutDepth) break; // depth cap -> leaf estimate
+        if (g_maxRolloutDepth > 0 && rolloutSteps >= g_maxRolloutDepth) { stop = RolloutStop::DEPTH_CAP; break; } // depth cap -> leaf estimate
         ++rolloutSteps;
         ++simulationIdx;
         enumerateActionsForNode(tempNode, state);
@@ -519,7 +638,7 @@ void search::BattleScumSearcher2::playoutRandom(BattleContext &state, std::vecto
             auto &es = tempNode.edges;
             es.erase(std::remove_if(es.begin(), es.end(),
                     [&](const Edge &e){ return !e.action.isValidAction(state); }), es.end());
-            if (es.empty()) break;   // no legal action in this world -> stop the rollout
+            if (es.empty()) { stop = RolloutStop::NO_LEGAL_ACTION; break; }   // no legal action in this world -> stop the rollout
         }
         if (tempNode.edges.empty()) {
             std::cerr << state.seed << " " << simulationIdx << std::endl;
@@ -549,6 +668,35 @@ void search::BattleScumSearcher2::playoutRandom(BattleContext &state, std::vecto
 
         tempNode.edges.clear();
     }
+    return rolloutSteps;
+}
+
+void search::BattleScumSearcher2::collectFrontierStats(FrontierStats &out, std::int64_t nodeCap) const {
+    out = FrontierStats{};
+    std::vector<const Node *> stack{&root};
+    while (!stack.empty() && out.nodesWalked < nodeCap) {
+        const Node *n = stack.back();
+        stack.pop_back();
+        ++out.nodesWalked;
+        if (n->outcome != 0) {                       // terminal leaf (never expanded)
+            if (n->outcome == 1) ++out.victoryLeaves; else ++out.defeatLeaves;
+            out.terminalLeafVisits += n->simulationCount;
+            out.frontierLeafVisits += n->simulationCount;
+        } else if (n->edges.empty()) {               // unexpanded non-terminal leaf
+            ++out.unexpandedLeaves;
+            out.frontierLeafVisits += n->simulationCount;
+        } else {                                     // expanded interior node
+            for (const auto &e : n->edges) stack.push_back(&e.node);
+        }
+    }
+}
+
+bool search::BattleScumSearcher2::onlyLegalAction(Action &out) {
+    Node tmp;
+    enumerateActionsForNode(tmp, *rootState);   // canonical enumeration on the live root state
+    if (tmp.edges.size() != 1) return false;
+    out = tmp.edges[0].action;
+    return true;
 }
 
 void search::BattleScumSearcher2::enumerateActionsForNode(search::BattleScumSearcher2::Node &node,
