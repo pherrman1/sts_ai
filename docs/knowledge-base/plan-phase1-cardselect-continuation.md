@@ -164,8 +164,8 @@ deployed default.
    **3.1x cost**; the bonus stays opt-in/off and is not promoted. Stage 3
    (counterfactual terminal-value model) **deferred**: the deployed win
    tree is counter-insensitive (§110), so no counter-aware leaf model
-   exists to justify training. New issue 49 (TERM_WIN multithread crash,
-   pre-existing). Next: Phase 4 below.
+    exists to justify training. Issue 49 (TERM_WIN multithread crash,
+    pre-existing) **fixed 2026-08-06** (lazy-init race; opt-in arm only). Next: Phase 4 below.
 3. **Phase 4 — exact current-turn solver** (replace dead rough
    `isGuaranteedLethal`; `STS_EXACT_TURN=1`).
 4. **Phase 5 — observation-fair strategic retrain** = **deferred (GPU

@@ -3315,8 +3315,14 @@ struct TermWinIndices {
     bool ok = false;
 };
 static const TermWinIndices &termWinIndices() {
-    static TermWinIndices m;
-    if (!m.ok) {
+    // Magic-static lambda: the C++11 init lock guards construction AND the
+    // published fields. The previous lazy `static TermWinIndices m; if
+    // (!m.ok)` pattern raced: first parallel battle on several threads could
+    // read the half-built struct (garbage potIdx vector) and write through a
+    // garbage index, corrupting the heap (segfault on the 24-thread server,
+    // cpsi-eval arm, 2026-08-06).
+    static const TermWinIndices m = [] {
+        TermWinIndices m;
         const auto &idx = richIdxMap();
         auto f = [&](const std::string &n) -> int { return idx.count(n) ? (int)idx.at(n) : -1; };
         m.curHp = f("curHp"); m.maxHp = f("maxHp"); m.gold = f("gold");
@@ -3341,7 +3347,8 @@ static const TermWinIndices &termWinIndices() {
         m.nf2 = f("nextFight2"); m.nextElite = f("nextEliteId");
         m.remElites = f("remElites"); m.remFights = f("remFights");
         m.ok = m.curHp >= 0 && m.potBase >= 0;
-    }
+        return m;
+    }();
     return m;
 }
 
@@ -3393,11 +3400,29 @@ static double termLeafBonus(const BattleContext &bc) {
     if (!ix.ok) return 0.0;
 
     std::vector<float> row = t_termBaseRow;
-    // HP: same transfer as BattleContext::exitBattle (BURNING_BLOOD heals 6 on
-    // victory; Feed can raise maxHp mid-fight).
+    // HP: same transfer as BattleContext::exitBattle (victory heals, applied
+    // in relic-container order like updateRelicsOnExit: BURNING_BLOOD +6,
+    // BLACK_BLOOD +12, MEAT_ON_THE_BONE +12 below half HP; Feed can raise
+    // maxHp mid-fight). termLeafBonus runs only on victory leaves, so the
+    // outcome gate is implied.
     int hp = bc.player.curHp;
-    if (t_termGc && t_termGc->hasRelic(RelicId::BURNING_BLOOD))
-        hp = std::min(hp + 6, (int)bc.player.maxHp);
+    if (t_termGc)
+        for (const auto &r : t_termGc->relics.relics) {
+            switch (r.id) {
+                case RelicId::BURNING_BLOOD:
+                    hp = std::min(hp + 6, (int)bc.player.maxHp);
+                    break;
+                case RelicId::BLACK_BLOOD:
+                    hp = std::min(hp + 12, (int)bc.player.maxHp);
+                    break;
+                case RelicId::MEAT_ON_THE_BONE:
+                    if (hp <= bc.player.maxHp / 2)
+                        hp = std::min(hp + 12, (int)bc.player.maxHp);
+                    break;
+                default:
+                    break;
+            }
+        }
     row[ix.curHp] = (float)hp;
     row[ix.maxHp] = (float)bc.player.maxHp;
     row[ix.gold]  = (float)bc.player.gold;
@@ -3406,7 +3431,7 @@ static double termLeafBonus(const BattleContext &bc) {
     for (int i = 0; i < bc.potionCapacity && i < (int)bc.potions.size(); ++i) {
         const int pid = (int)bc.potions[i];
         if (pid == (int)Potion::EMPTY_POTION_SLOT) continue;
-        if (pid >= 0 && pid < (int)ix.potIdx.size()) row[ix.potIdx[pid]] = 1.0f;
+        if (pid >= 0 && pid < (int)ix.potIdx.size()) ++row[ix.potIdx[pid]];
     }
     // Relic counters: mirror BattleContext::updateRelicsOnExit writes. Each
     // patch is guarded on the run actually owning the relic (base value > 0),
@@ -3450,7 +3475,7 @@ static double termLeafBonus(const BattleContext &bc) {
         int mismatches = 0;
         for (int i = 0; i < (int)std::min(full.size(), patched.size()); ++i)
             if (full[i] != patched[i]) {
-                const std::string &name = i < (int)t_richNames.size() ? t_richNames[i] : "?";
+                const std::string &name = (i + 1) < (int)t_richNames.size() ? t_richNames[i + 1] : "?";
                 if (mismatches < 8)
                     std::printf("[term-win parity] idx %d (%s): patched=%g full=%g\n", i, name.c_str(), patched[i], full[i]);
                 ++mismatches;

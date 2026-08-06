@@ -144,3 +144,21 @@ cross-combat setup (e.g. Happy Flower counter alignment).
   +17.4 cpu-sec/run on the same 16-seed block (~9x the win-tree leaf) —
   benchmark at the 1k-sim operating point (est. ~50 min for 128 seeds
   locally).
+
+## Addendum 2 (2026-08-06) — lazy-init data race in termWinIndices
+
+- **Bug:** `termWinIndices()` used the pattern `static TermWinIndices m; if
+  (!m.ok) { ...build... }` — the C++11 magic-static guard protects only the
+  construction, not the published `m.ok` flag. On the first parallel battle
+  (GCP server, 24 threads, cpsi-eval arm), several threads entered the
+  function simultaneously; a thread could read the half-built struct and
+  write through a garbage `potIdx` index (`row[ix.potIdx[pid]] = 1.0f`),
+  corrupting the heap — `malloc(): unaligned tcache chunk detected` +
+  segfault. The win-tree arms ran the same racy code (shared patch path) and
+  completed, but their data was not trustworthy.
+- **Fix:** rewrote `termWinIndices()` as a magic-static lambda (single init
+  lock guards construction and publication). Verified locally: two 32-seed
+  cpsi-eval runs deterministic post-fix; full 256-seed × 5-arm sweep
+  restarted on `sts-test` with the fixed binary.
+- **Lesson:** any lazily-built lookup shared across the parallel benchmark
+  loop must be a magic-static lambda or warmed single-threaded in `main`;
