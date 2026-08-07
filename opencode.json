@@ -21,7 +21,8 @@
           "git log": "allow",
           "git log *": "allow",
           "git show *": "allow",
-          "git grep *": "allow"
+          "git grep *": "allow",
+          "git blame *": "allow"
         }
       }
     },
@@ -42,7 +43,10 @@
           "git push *": "deny",
           "git reset --hard *": "deny",
           "git clean *": "deny",
-          "rm -rf *": "deny"
+          "rm -rf *": "deny",
+          "git restore *": "deny",
+          "git checkout *": "deny",
+          "git reset *": "deny"
         }
       }
     },

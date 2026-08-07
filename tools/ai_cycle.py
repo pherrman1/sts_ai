@@ -6,6 +6,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -32,6 +33,28 @@ ALLOWED_GIT_VERIFICATION_SUBCOMMANDS = {
     "show",
     "status",
 }
+
+
+ANSI_ESCAPE_RE = re.compile(
+    r"\x1B(?:"
+    r"\[[0-?]*[ -/]*[@-~]"
+    r"|\][^\x07]*(?:\x07|\x1b\\)"
+    r")"
+)
+
+FINAL_RESPONSE_BEGIN = "FINAL_RESPONSE_BEGIN"
+FINAL_RESPONSE_END = "FINAL_RESPONSE_END"
+
+# The implementation model must never rewrite the workflow that controls it.
+# These files are restored byte-for-byte after every implementer invocation
+# if the model changes them.
+PROTECTED_WORKFLOW_PATHS = (
+    Path("opencode.json"),
+    Path(".opencode/prompts/architect.md"),
+    Path(".opencode/prompts/implementer.md"),
+    Path(".opencode/prompts/reviewer.md"),
+    Path("tools/ai_cycle.py"),
+)
 
 
 def run(
@@ -85,11 +108,109 @@ def ensure_safe_start() -> None:
         )
 
 
+
+def strip_ansi(text: str) -> str:
+    return ANSI_ESCAPE_RE.sub("", text).replace("\r", "")
+
+
+def extract_final_markdown(transcript: str) -> str:
+    """Return only the implementation model's final human-readable answer."""
+    clean = strip_ansi(transcript).strip()
+
+    begin = clean.rfind(FINAL_RESPONSE_BEGIN)
+    if begin != -1:
+        start = begin + len(FINAL_RESPONSE_BEGIN)
+        end = clean.find(FINAL_RESPONSE_END, start)
+        if end != -1:
+            return clean[start:end].strip() + "\n"
+
+    # Backward-compatible fallback for an implementer that ignored the
+    # explicit sentinel request but followed its normal response template.
+    headings = (
+        "IMPLEMENTATION SUMMARY",
+        "# Implementation summary",
+        "## Implementation summary",
+    )
+    positions = [clean.rfind(heading) for heading in headings]
+    start = max(positions)
+
+    if start != -1:
+        return clean[start:].strip() + "\n"
+
+    # Last resort: keep the cleaned transcript rather than ANSI garbage.
+    return clean + "\n"
+
+
+def snapshot_protected_workflow_files() -> dict[Path, bytes | None]:
+    snapshot: dict[Path, bytes | None] = {}
+
+    for relative_path in PROTECTED_WORKFLOW_PATHS:
+        path = ROOT / relative_path
+        snapshot[relative_path] = (
+            path.read_bytes()
+            if path.exists()
+            else None
+        )
+
+    return snapshot
+
+
+def restore_protected_workflow_files(
+    snapshot: dict[Path, bytes | None],
+) -> list[str]:
+    restored: list[str] = []
+
+    for relative_path, before in snapshot.items():
+        path = ROOT / relative_path
+        after = path.read_bytes() if path.exists() else None
+
+        if after == before:
+            continue
+
+        if before is None:
+            if path.exists():
+                path.unlink()
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(before)
+
+        restored.append(str(relative_path))
+
+    if restored:
+        print()
+        print("===== WORKFLOW FILES RESTORED =====")
+        for path in restored:
+            print(f"Protected from implementer changes: {path}")
+        print()
+
+    return restored
+
+
+def run_implementer_agent(
+    prompt: str,
+    *,
+    files: list[Path] | None = None,
+    log_file: Path | None = None,
+) -> str:
+    snapshot = snapshot_protected_workflow_files()
+
+    try:
+        return run_agent(
+            "implementer",
+            prompt,
+            files=files,
+            log_file=log_file,
+        )
+    finally:
+        restore_protected_workflow_files(snapshot)
+
+
 def run_agent(
     agent: str,
     prompt: str,
     *,
     files: list[Path] | None = None,
+    log_file: Path | None = None,
 ) -> str:
     cmd = [
         "opencode",
@@ -122,14 +243,33 @@ def run_agent(
     )
 
     output_lines: list[str] = []
+    log_handle = None
 
-    assert process.stdout is not None
+    if log_file is not None:
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        log_handle = log_file.open(
+            "w",
+            encoding="utf-8",
+        )
 
-    for line in process.stdout:
-        print(line, end="", flush=True)
-        output_lines.append(line)
+    try:
+        assert process.stdout is not None
 
-    returncode = process.wait()
+        for line in process.stdout:
+            # Keep OpenCode's live terminal rendering, including colors.
+            print(line, end="", flush=True)
+            output_lines.append(line)
+
+            # Session logs are deliberately plain text without ANSI escapes.
+            if log_handle is not None:
+                log_handle.write(strip_ansi(line))
+                log_handle.flush()
+
+        returncode = process.wait()
+    finally:
+        if log_handle is not None:
+            log_handle.close()
+
     output = "".join(output_lines)
 
     if returncode != 0:
@@ -139,10 +279,9 @@ def run_agent(
 
     return output
 
-
 def parse_json_response(text: str, *, source: str) -> dict:
     """Extract the agent's final JSON object from OpenCode's streamed transcript."""
-    text = text.strip()
+    text = strip_ansi(text).strip()
 
     # Fast path for quiet/plain output.
     try:
@@ -586,9 +725,10 @@ def run_verification(
 def implement(
     plan_file: Path,
     task_file: Path,
+    *,
+    log_file: Path,
 ) -> str:
-    return run_agent(
-        "implementer",
+    return run_implementer_agent(
         """
 Implement the attached architecture plan for the attached user task.
 
@@ -603,8 +743,19 @@ Do not commit or push.
 
 If repository evidence contradicts the plan, stop the conflicting part and
 report the contradiction rather than inventing a redesign.
+
+Never run git restore, git checkout, git reset, git clean, or otherwise revert
+a file merely because it was already changed or looks unrelated. Leave such a
+file untouched and report it.
+
+Wrap only your final user-facing summary between these exact marker lines:
+
+FINAL_RESPONSE_BEGIN
+<final summary>
+FINAL_RESPONSE_END
 """.strip(),
         files=[task_file, plan_file],
+        log_file=log_file,
     )
 
 
@@ -612,9 +763,10 @@ def fix_verification(
     plan_file: Path,
     task_file: Path,
     verification_file: Path,
+    *,
+    log_file: Path,
 ) -> str:
-    return run_agent(
-        "implementer",
+    return run_implementer_agent(
         """
 Independent verification of your implementation failed.
 
@@ -631,8 +783,19 @@ Do not perform unrelated improvements.
 Do not commit or push.
 
 The orchestrator will independently execute verification again after you finish.
+
+Never run git restore, git checkout, git reset, git clean, or otherwise revert
+a file merely because it was already changed or looks unrelated. Leave such a
+file untouched and report it.
+
+Wrap only your final user-facing summary between these exact marker lines:
+
+FINAL_RESPONSE_BEGIN
+<final summary>
+FINAL_RESPONSE_END
 """.strip(),
         files=[task_file, plan_file, verification_file],
+        log_file=log_file,
     )
 
 
@@ -640,9 +803,10 @@ def fix_review(
     plan_file: Path,
     task_file: Path,
     review_file: Path,
+    *,
+    log_file: Path,
 ) -> str:
-    return run_agent(
-        "implementer",
+    return run_implementer_agent(
         """
 The senior reviewer found concrete problems in the implementation.
 
@@ -658,8 +822,19 @@ Do not commit or push.
 
 The orchestrator will independently run the required verification after you
 finish.
+
+Never run git restore, git checkout, git reset, git clean, or otherwise revert
+a file merely because it was already changed or looks unrelated. Leave such a
+file untouched and report it.
+
+Wrap only your final user-facing summary between these exact marker lines:
+
+FINAL_RESPONSE_BEGIN
+<final summary>
+FINAL_RESPONSE_END
 """.strip(),
         files=[task_file, plan_file, review_file],
+        log_file=log_file,
     )
 
 
@@ -667,6 +842,8 @@ def review(
     plan_file: Path,
     task_file: Path,
     verification_file: Path,
+    *,
+    log_file: Path,
 ) -> dict:
     review_text = run_agent(
         "reviewer",
@@ -679,12 +856,19 @@ Review the current working-tree implementation against:
 Inspect the actual repository state, git diff, affected code, callers,
 consumers, tests, and maintained documentation yourself.
 
+The independent verification report is authoritative for mechanical checks.
+Do not try to reproduce it with Python or arbitrary shell commands.
+
+When using bash, issue permitted read-only git commands one at a time.
+Do not use shell chaining (`&&`, `||`, `;`), pipes, or redirections.
+
 Do not modify files.
 
 Return ONLY the valid JSON review object required by your reviewer
 instructions.
 """.strip(),
         files=[task_file, plan_file, verification_file],
+        log_file=log_file,
     )
 
     review_data = parse_json_response(
@@ -734,15 +918,19 @@ def run_verification_cycle(
         )
         print()
 
+        fix_log_file = (
+            session_dir / f"{phase}-verification-fix-{attempt}.log"
+        )
         fix_result = fix_verification(
             plan_file,
             task_file,
             verification_file,
+            log_file=fix_log_file,
         )
 
         save(
             session_dir / f"{phase}-verification-fix-{attempt}.md",
-            fix_result,
+            extract_final_markdown(fix_result),
         )
 
         snapshot_git_state(
@@ -808,6 +996,7 @@ instructions.
 Do not modify repository files.
 """.strip(),
         files=[task_file],
+        log_file=session_dir / "architect.log",
     )
 
     plan = parse_json_response(
@@ -837,10 +1026,11 @@ Do not modify repository files.
     implementation = implement(
         plan_file,
         task_file,
+        log_file=session_dir / "implementation-1.log",
     )
     save(
         session_dir / "implementation-1.md",
-        implementation,
+        extract_final_markdown(implementation),
     )
 
     snapshot_git_state(
@@ -877,6 +1067,7 @@ Do not modify repository files.
             plan_file,
             task_file,
             verification_file,
+            log_file=session_dir / f"review-{review_round}.log",
         )
 
         review_file = (
@@ -923,11 +1114,12 @@ Do not modify repository files.
             plan_file,
             task_file,
             review_file,
+            log_file=session_dir / f"review-fix-{review_round}.log",
         )
 
         save(
             session_dir / f"review-fix-{review_round}.md",
-            fix_result,
+            extract_final_markdown(fix_result),
         )
 
         snapshot_git_state(
