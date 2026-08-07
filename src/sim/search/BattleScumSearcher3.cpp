@@ -26,6 +26,7 @@ int g_s3Particles = 64;
 double g_riskLambda = 0.5;
 bool g_s3Expand = false;
 int g_s3ExpandMaxNew = 32;
+bool g_s3RolloutPolicy = false;
 bool g_vnetCondBossOnly = false;
 bool g_vnetCondAct3 = false;
 thread_local std::function<double(const BattleContext &)> g_terminalBonus;
@@ -581,18 +582,36 @@ int BattleScumSearcher3::playoutRandom(BattleContext &state,
 
     Node tmp;
     int steps = 0;
+    // STS_S3_ROLLOUT_POLICY (opt-in): sample rollout actions from the GBM
+    // policy prior (the same distribution PUCT priors come from) instead of
+    // the static rolloutWeight heuristic. Restricted to the GBM policy net —
+    // a PVNet policy-head forward per rollout step would cost ~14-18x a sim.
+    const bool usePrior = g_s3RolloutPolicy
+        && g_usePolicyNet && g_policyNet.loaded()
+        && !(g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly);
     while (!isTerminal(state) && steps < 200) {
         ++steps;
         enumerateActionsForNode(tmp, state);
         if (tmp.edges.empty()) break;
 
-        int total = 0;
-        for (const auto &e : tmp.edges) total += rolloutWeight(e.action, state);
-        int pick = std::uniform_int_distribution<int>(0, total - 1)(rng);
         int sel = 0;
-        for (int i = 0; i < (int)tmp.edges.size(); ++i) {
-            pick -= rolloutWeight(tmp.edges[i].action, state);
-            if (pick < 0) { sel = i; break; }
+        if (usePrior) {
+            computeEdgePriors(tmp, state);
+            double total = 0;
+            for (const auto &e : tmp.edges) total += e.prior;
+            double pick = std::uniform_real_distribution<double>(0.0, std::max(total, 1e-12))(rng);
+            for (int i = 0; i < (int)tmp.edges.size(); ++i) {
+                pick -= tmp.edges[i].prior;
+                if (pick < 0) { sel = i; break; }
+            }
+        } else {
+            int total = 0;
+            for (const auto &e : tmp.edges) total += rolloutWeight(e.action, state);
+            int pick = std::uniform_int_distribution<int>(0, total - 1)(rng);
+            for (int i = 0; i < (int)tmp.edges.size(); ++i) {
+                pick -= rolloutWeight(tmp.edges[i].action, state);
+                if (pick < 0) { sel = i; break; }
+            }
         }
         const auto &a = tmp.edges[sel].action;
         if (a.isValidAction(state)) {

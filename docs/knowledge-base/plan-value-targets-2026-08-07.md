@@ -148,9 +148,23 @@ skipped/its changes reverted):
 - Local smoke (8 seeds @300 sims, PVNet α=1.0, fair S3−belief−chain/64p):
   cache-on == cache-off per-seed outcomes; all three cond knobs change
   behavior and print in the banner; `ctest` 5/5.
-- **Gate pending:** paired 256-seed @1k/64p vs the §124 reference (winrate
-  wave baseline not yet recorded); then @3k if positive. Pre-registered rule
-  per §4.3: null at both budgets closes the leaf line.
+- **Gate — RE-EVALUATED 2026-08-07 after §124-§126 landed (commit 3f04e82):
+  NOT run; deferred to a phase-5-model revisit.** Reasons, verified against
+  HEAD: (1) the §126 vnet promotion makes the VNet the fair-S3 default leaf
+  (α=0.3, +12.5/+12.1/+12.5pp, three significant gates) and the S3 blend site
+  is `if VNet … else if PVNet …` — the PVNet leaf (and therefore these knobs)
+  is shadowed in the default stack, so a gate now would measure an off-default
+  config; (2) §126's own conditioning test (vnet cond-boss at both α: flat,
+  ~13-15% discordance — "the value is spread across all rollout-heavy
+  contexts, not just bosses") directly weakens the conditioning premise of
+  the COND_* knobs; (3) the pre-registered §4.3 rule (null at both budgets
+  closes the leaf line) is effectively consumed by §126's answer to the leaf
+  question: the GBM leaf wins, the NN leaf line stays closed (§102). The
+  coherent next gate is phase-5's value-only utility model (when it lands) +
+  these speed knobs, paired vs the §126 vnet default
+  (`build/vnet_all_a03_1k.csv`, 50.4% @1k/64p). The knobs remain committed;
+  `STS_PVNET_CACHE` is behavior-preserving and defaults ON. Decision log:
+  `2026-08-07-pvnet-gate-recheck.md`.
 
 ### Phase 7 — larger model
 Only if phase 6 shows per-card token value and cpu budget permits:

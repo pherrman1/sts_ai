@@ -158,12 +158,31 @@ state's legal actions into the tree instead of a random rollout:
 stored edges, priors computed on the new edges only via a temp node,
 cap `STS_S3_EXPAND_MAX` default 32, PUCT pick via `selectBestValidEdgePUCT`;
 requires live-valid semantics — without `g_liveValid` the branch is
-unreachable). Effect: illegal-stored share 0.054→0.00, treeActions +10%
-(searchdiag 6 seeds @3k/64p). **Falsified at the paired gates
-(EXPERIMENTS.md §125, 2026-08-07):** @1k/64p 35.5% vs 37.9% (−2.3pp, CI
-[−2.7,+7.4], 16% discordant) and @3k/64p 44.1% vs 42.6% (+1.5pp, CI
-[−6.6,+3.5], 16% discordant) — mixed null, no consistent signal; the env
-stays default-off.
+ unreachable). Effect: illegal-stored share 0.054→0.00, treeActions +10%
+ (searchdiag 6 seeds @3k/64p). **Falsified at the paired gates
+ (EXPERIMENTS.md §125, 2026-08-07):** @1k/64p 35.5% vs 37.9% (−2.3pp, CI
+ [−2.7,+7.4], 16% discordant) and @3k/64p 44.1% vs 42.6% (+1.5pp, CI
+ [−6.6,+3.5], 16% discordant) — mixed null, no consistent signal; the env
+ stays default-off.
+
+### Prior-guided rollouts (STS_S3_ROLLOUT_POLICY, opt-in — gate pending)
+
+`BattleScumSearcher3::playoutRandom` samples rollout actions from the **GBM
+policy prior** (the same distribution PUCT priors come from, via
+`computeEdgePriors`) when `STS_S3_ROLLOUT_POLICY=1`, instead of the static
+`rolloutWeight` heuristic (ATTACK=8, POWER=3, others=2, END_TURN/POTION=1).
+The rollout is therefore never truly uniform — this replaces the
+hand-authored bias with the learned prior. Restricted to the GBM policy net
+(`g_usePolicyNet && loaded()`, and not shadowed by a PVNet policy head): a
+PVNet-head forward per rollout step would cost ~14-18× a sim. Revives the
+parked §119 "Phase 3 (policy-guided rollouts)". With the §126 vnet leaf
+(α=0.3) the rollout outcome carries 70% of the leaf blend, so rollout quality
+matters more than before. Default off (behavior byte-identical when unset —
+the heuristic branch is untouched). Smoke (8 seeds @300 sims, §126 default
+stack): behavior changes on most seeds, +2.4× cpu (per-step GBM evals);
+**paired 256-seed gate pending** vs the §126 vnet default
+(`build/vnet_all_a03_1k.csv`, 50.4% @1k/64p) — pre-registered: a null or
+negative closes the line (rollout diversity collapse is the known risk).
 
 ### Context-adaptive rollout caps (STS_ROLLOUT_CAPS, opt-in — falsified)
 

@@ -8399,6 +8399,10 @@ int main(int argc, char **argv) {
         const int n = std::atoi(d);
         if (n >= 1) search::g_s3ExpandMaxNew = n;
     }
+    if (const char *d = std::getenv("STS_S3_ROLLOUT_POLICY")) {  // sample rollout actions from the GBM policy prior (opt-in)
+        search::g_s3RolloutPolicy = std::atoi(d) != 0;
+        std::cout << "[S3 rollout-policy = " << (search::g_s3RolloutPolicy ? "ON" : "off") << "]\n";
+    }
     if (const char *d = std::getenv("STS_RISK_LAMBDA")) {    // risk sensitivity for Searcher3 PUCT
         search::g_riskLambda = std::atof(d);
         std::cout << "[risk lambda = " << search::g_riskLambda << "]\n";

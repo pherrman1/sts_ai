@@ -4799,3 +4799,39 @@ extFight*/emElites/emFights parity-excluded) and
   `docs/knowledge-base/evaluation/current-baselines.md`.
 - **Cost:** datagen ~3.5 min + training ~10 min + export on the desktop;
   each 256-seed arm ~7-30 min wall on GCP.
+## §124b Prior-guided S3 rollouts (STS_S3_ROLLOUT_POLICY): implemented opt-in; smoke fires, ~2.4× cpu; paired 256-seed gate pending vs the §126 vnet default (2026-08-07, local WSL)
+
+- **What:** revives the parked §119 "Phase 3 (policy-guided rollouts)": with
+  `STS_S3_ROLLOUT_POLICY=1`, `BattleScumSearcher3::playoutRandom` samples
+  rollout actions from the **GBM policy prior** (`computeEdgePriors` — the
+  same distribution PUCT priors use, `build/policy_trees_c.txt` auto-loaded)
+  instead of the static `rolloutWeight` heuristic (ATTACK=8/POWER=3/other=2/
+  END_TURN+POTION=1 — the rollout was never truly uniform; this replaces the
+  hand-authored bias with the learned prior). Restricted to the GBM policy
+  net (`g_usePolicyNet && loaded()`, not shadowed by a PVNet policy head) —
+  a PVNet-head forward per rollout step would cost ~14-18× a sim. Default
+  off; the heuristic branch is untouched, so unset = byte-identical.
+  Rationale: with the §126 vnet leaf (α=0.3) the rollout outcome carries 70%
+  of the leaf blend — rollout quality matters more than pre-vnet.
+- **Config (smoke):** `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+  STS_S3_CHAIN=0 STS_S3_PARTICLES=64` (vnet α=0.3 default ON; no PVNet),
+  `./build/one_combat bestbench 300 8 0 0 <out.csv>`, seeds 0-7.
+- **Results (8 seeds @300 sims — smoke only):**
+  | arm | win% | avg_floor | cpu_sec/run |
+  |---|---|---|---|
+  | control (heuristic rollout) | 12.5 | 38.2 | 7.5 |
+  | `STS_S3_ROLLOUT_POLICY=1` | 25.0 | 44.0 | 18.2 |
+  Outcomes differ on most seeds (won differs on seed 6); banner prints
+  `[S3 rollout-policy = ON]`. 2.4× cpu = per-step GBM prior evals; win-rate
+  deltas are 8-seed noise, not evidence. `ctest` 5/5.
+- **Pre-registered gate (pending, GCP):** paired 256-seed @1k/64p on the
+  §126 config vs `build/vnet_all_a03_1k.csv` (50.4%); then @3k if positive.
+  Known risk: prior-guided rollouts may collapse rollout diversity and make
+  Q estimates self-consistent but overconfident — a null or negative closes
+  the line. A temperature/mixture knob with the heuristic is the obvious
+  follow-up if the pure-prior version collapses.
+- **Artifacts:** `build/pri0_{ctl,pol}.csv` + logs. Code:
+  `BattleScumSearcher3::playoutRandom` (`src/sim/search/BattleScumSearcher3.cpp`),
+  `apps/one_combat.cpp` env parse, header extern. Decision log:
+  `2026-08-07-prior-guided-rollouts.md`. KB: `combat-search.md` (rollout
+  section).

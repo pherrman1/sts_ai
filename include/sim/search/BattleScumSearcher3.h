@@ -155,6 +155,10 @@ namespace sts::search {
     // tree (action-keyed) instead of falling back to a random rollout.
     extern bool g_s3Expand;
     extern int g_s3ExpandMaxNew;
+    // STS_S3_ROLLOUT_POLICY (opt-in): sample rollout actions from the GBM
+    // policy prior instead of the static rolloutWeight heuristic. Resticted
+    // to the GBM policy net (PVNet-head rollouts would cost ~14-18x a sim).
+    extern bool g_s3RolloutPolicy;
     // V_combat leaf conditioning (STS_VNET_COND_BOSS/ACT3, opt-in): restrict
     // the learned leaf to rollout-dominant contexts (§117: boss fights, act 3).
     // Both unset = always on (byte-identical pre-conditioning behavior).
