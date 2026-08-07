@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 """V_win bootstrap calibration check (Wave A2, bootstrap-problem step).
 
-The Tier-B label `labelWon` is V_win(s_cutoff) for censored branches and the
-true outcome {0,1} for terminal ones (labelBootstrap=0).  This script
-re-evaluates the native win trees on the rich state block of every row whose
-branch TERMINATED (labelBootstrap==0) and compares against the recorded
-outcome `won`: Brier, log loss, calibration deciles.  Systematic error here
-would corrupt the Q_win labels that bootstrap from V_win.
+The Tier-B row labels are per-action averages over STRATEGIC_BRANCH_FUTURES
+sampled continuations: `labelWon` is V_win(s_cutoff) when a continuation is
+censored and bootstrapped, the terminal outcome {0,1} when it terminates, and
+a fractional average when futures mix (e.g. several futures all terminating at
+different outcomes).  `labelBootstrap` averages the per-future censored flag
+over the same futures, so labelBootstrap==0 means none of the sampled
+continuations bootstrapped (all terminated).  This script keeps only each
+decision's CHOSEN action row (chosen==1) whose sampled counterfactual
+continuation(s) terminated without bootstrapping (labelBootstrap==0),
+re-evaluates the native win trees on the shared pre-decision state block,
+and compares the prediction against the live run's terminal outcome `won`
+(not the action-specific counterfactual `labelWon`): Brier, log loss,
+calibration deciles.  Systematic error here would corrupt the Q_win labels
+that bootstrap from V_win.
 
 Usage: check_vwin_calibration.py <tierb.csv> [trees.txt]
        check_vwin_calibration.py --ckpt <trainer.pt> <tierb.csv>
