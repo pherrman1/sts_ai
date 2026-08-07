@@ -83,7 +83,9 @@ def run_agent(
     for file in files or []:
         cmd.extend(["--file", str(file)])
 
-    cmd.append(prompt)
+    # Explicitly terminate option parsing. --file is an array option in
+    # OpenCode and would otherwise consume the prompt as another filename.
+    cmd.extend(["--", prompt])
 
     print()
     print(f"===== {agent.upper()} =====")
