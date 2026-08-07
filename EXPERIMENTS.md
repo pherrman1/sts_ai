@@ -5186,6 +5186,44 @@ extFight*/emElites/emFights parity-excluded) and
   @1k (and an equal-CPU reinvestment arm if positive/neutral). Gate ordering
   after the §131/§132 leaf-net verdict: a promoted net re-bases the pairing.
   Decision log: `2026-08-07-rollout-leaf-estimators.md`.
+- **Gate verdicts (appended, 2026-08-07, GCP sts-test):** the §131/§132
+  quantile-R leaf was **SIGNIFICANTLY NEGATIVE at every α — deployed vnet
+  STAYS** (see the second §133 entry), so the pairing baseline is unchanged
+  (`build/vnet_all_a03_1k.csv`, 50.4% @1k/64p). Three paired 256-seed gates
+  ran (block 126700–126955, full V4 stack, S3−belief−chain/64p, fair, asc 0,
+  24 threads, vnet α0.3 default ON):
+  | arm | config | win% | Δ vs ctl (95% CI) | floor Δ | HP Δ | cpu-s/run |
+  |---|---|---|---:|---:|---:|---:|
+  | A1 gate 1 | K=2 @500 sims (equal rollout budget) | 49.2% | −1.2 [−7.4,+5.1] | −0.5 | −4.0 | 16.8 (−59%) |
+  | A1 gate 2 | K=2 @1000 sims (equal tree size) | 48.4% | −2.0 [−8.2,+4.7] | −0.1 | −2.3 | 32.4 (−21%) |
+  | A4 gate | turn-stop N=1 @1k | 34.0% | **−16.4 [−23.0,−9.4]** | −2.4 [−3.9,−1.0] | −10.9 | 33.6 (−18%) |
+  | A1 gate 3 | K=10 @100 sims (equal rollout budget, extreme) | 35.5% | **−14.8 [−21.1,−8.2]** | −3.5 [−5.0,−2.1] | −10.3 | 7.7 (−81%) |
+  Discordance 69/256 (27%), 71/256 (28%), 90/256 (35%), 80/256 (31%) respectively.
+- **A1 verdict: ❌ NULL — line closed.** Averaged K-rollouts are neutral at
+  both operating points (slightly negative direction, CIs span zero): at
+  equal rollout-action budget the variance reduction roughly offsets the
+  halved tree (−1.2pp), and at equal tree size there is no measurable gain
+  (−2.0pp; K=2 also died in 8 more combat fights, 111→119, at −21% wall
+  time — fewer decisions per run, consistent with slightly worse play, not
+  a speedup from variance reduction). The user-requested extreme point
+  K=10 @100 sims (equal rollout budget, 10× smaller tree) is
+  **SIGNIFICANTLY NEGATIVE: −14.8pp (CI [−21.1,−8.2])** — tree size
+  dominates: reducing the search tree 10× while holding rollout work
+  constant collapses win rate, so the α0.3 blend's 70% rollout share is not
+  variance-bound at this operating point and variance reduction does not
+  pay for lost tree traversals at any tested ratio. Pre-registered K=4 not
+  run (only if K=2 positive). Env stays opt-in.
+- **A4 verdict: ❌ FALSIFIED — line closed.** One turn + VNet bootstrap is
+  significantly worse than the full terminal rollout: −16.4pp (CI excludes
+  zero), floor −2.4 (CI excludes zero), HP −10.9, and cpu barely drops
+  (−18% — the endpoint vnet evals dominate, not the skipped rollout
+  actions). This is the second falsification of the short-rollout family
+  (§119 caps −5.9pp with the pre-vnet heuristic endpoint; this is worse
+  because the rollout here is ~1 turn long, avgRolloutLen 2.50 in the
+  local smoke, vs §119's 8-action caps). Long-horizon terminal grounding
+  through the full rollout is load-bearing for the leaf blend; per the
+  pre-registered decision tree, B1 (turn-beam) must continue across turns.
+  Env stays opt-in.
 
 ## §133 Quantile-R GBM leaf (target experiment, §132 deployment gate): SIGNIFICANTLY NEGATIVE at every α — deployed vnet stays; offline EV calibration does not transfer (2026-08-07, GCP)
 

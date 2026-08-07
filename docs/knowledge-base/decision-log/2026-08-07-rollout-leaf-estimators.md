@@ -75,6 +75,25 @@ the same α-blend leaf the new net would redeploy.
 ## Status and follow-up
 
 - Implemented, opt-in, default-off, byte-identical unset (smoke-proven).
-- Paired gates pending on GCP after the §131/§132 leaf-net verdict; pairing
-  re-bases if the net is promoted. Then B1 (turn-beam) and A2 (dynamic α by
-  rollout length) as the plan's next steps.
+- **Gate verdicts (2026-08-07, GCP):**
+  - **A1 K-rollouts: NULL, line closed.** Paired 256-seed gates on the §126
+    config: K=2 @500 sims (equal rollout budget) 49.2% vs 50.4% control
+    (−1.2pp, CI [−7.4,+5.1], cpu −59%); K=2 @1000 sims (equal tree size)
+    48.4% (−2.0pp, CI [−8.2,+4.7], cpu −21% with 8 more combat deaths);
+    user-requested extreme K=10 @100 sims (equal rollout budget, 10× smaller
+    tree) 35.5% (**−14.8pp, CI [−21.1,−8.2]**, cpu −81%). Tree size
+    dominates: variance reduction does not pay for lost tree traversals at
+    any tested ratio, and extra rollout work at equal tree size does not
+    pay either; the α0.3 blend's 70% rollout share is not variance-bound
+    here. K=4 not run (pre-registered: only if K=2 positive). EXPERIMENTS.md
+    §133 (first entry).
+  - **A4 one-turn bootstrap: FALSIFIED, line closed.** turn-stop N=1 @1k:
+    34.0% vs 50.4% = **−16.4pp (CI [−23.0,−9.4])**, floor −2.4, HP −10.9,
+    cpu only −18%. Long-horizon terminal rollout grounding is load-bearing;
+    per the user's decision tree, B1 (turn-beam) must play across turns.
+    This is the second falsification of the short-rollout family (§119).
+  - The §131/§132 leaf-net verdict (quantile-R leaf significantly negative
+    at every α; deployed vnet stays) left the pairing baseline unchanged.
+- **Next steps (per the plan):** B1 tactical turn-beam rollout (scorer (b),
+  complete-turn scoring after END_TURN resolves), then A2 dynamic α by
+  rollout length, then A3 policy-filtered rollout (last).

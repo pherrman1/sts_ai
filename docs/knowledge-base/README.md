@@ -28,6 +28,12 @@ For architecture:
    **executed 2026-08-05**: T1–T5 done, issue 48 closed; the §112 "regression"
    was a control S3 battle-skip exploit — the parity fix is correct and is the
    new recommended baseline (EXPERIMENTS.md §113, `current-baselines.md`).
+7. [Rollout-experiment continuation plan](plan-rollout-experiments-2026-08-07.md) —
+   **active plan (2026-08-07)**: B1 tactical turn-beam rollout (scorer (b),
+   complete-turn scoring after END_TURN), then A2 dynamic α by rollout
+   length, then A3 policy-filtered rollout; A1 (K-rollouts) NULL and A4
+   (one-turn bootstrap) FALSIFIED at the gates (§133); protocol + closed
+   lines inside.
 
 For evaluation and operation:
 

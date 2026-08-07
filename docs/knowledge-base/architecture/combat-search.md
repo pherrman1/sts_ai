@@ -210,10 +210,22 @@ byte-identical when unset (smoke-proven on 8 seeds):
   Searcher2; a trained endpoint is the difference. Early termination is
   terminal-safe (`evaluateTerminal` still wins when the battle ends).
 
-Paired 256-seed gates (@1k/64p on the §126 config vs `build/vnet_all_a03_1k.csv`,
-50.4%) are pre-registered (EXPERIMENTS.md §133) and held for the concurrent
-leaf-net verdict (§131/§132): both arms modify the same α-blend leaf the new
-net would redeploy, and a promoted net re-bases the pairing.
+**Gate verdicts (2026-08-07, GCP sts-test, paired 256-seed @1k/64p vs the
+§126 control `build/vnet_all_a03_1k.csv` 50.4%, both lines closed):** A1
+K-rollouts is NULL at both operating points — K=2 @500 sims (equal rollout
+budget) 49.2% (−1.2pp CI [−7.4,+5.1], cpu −59%) and K=2 @1000 sims (equal
+tree size) 48.4% (−2.0pp CI [−8.2,+4.7], cpu −21%, +8 combat deaths) — and
+the user-requested extreme K=10 @100 sims (equal rollout budget, 10× smaller
+tree) is significantly negative (35.5%, **−14.8pp CI [−21.1,−8.2]**, cpu
+−81%): tree size dominates, variance reduction does not pay for lost tree
+traversals at any tested ratio, and the α0.3 blend's rollout share is not
+variance-bound; K=4 not run. A4 one-turn bootstrap is FALSIFIED — turn-stop
+N=1 @1k 34.0% (−16.4pp CI [−23.0,−9.4], floor −2.4, HP −10.9, cpu only
+−18%): long-horizon terminal grounding through the full rollout is
+load-bearing, the second short-rollout falsification (§119), and the
+turn-beam follow-up must play across turns. Both env gates stay opt-in
+default-off. EXPERIMENTS.md §133 (first entry); decision log
+`2026-08-07-rollout-leaf-estimators.md`.
 
 ### Context-adaptive rollout caps (STS_ROLLOUT_CAPS, opt-in — falsified)
 
