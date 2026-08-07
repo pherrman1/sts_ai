@@ -61,3 +61,15 @@ DEVIATIONS FROM PLAN
 
 OPEN CONCERNS
 - "None" or precise unresolved concerns
+The orchestration program, not you, is authoritative for final verification.
+
+The architecture plan contains machine-readable verification commands.
+Do not modify those commands.
+
+You may run focused commands yourself when needed to understand or debug the
+implementation, but you do not need to perform the final verification suite.
+The orchestrator will execute it independently after you finish.
+
+If you receive a verification report containing failed checks, diagnose the
+actual stdout/stderr in that report and fix the underlying implementation.
+Do not change tests merely to hide a legitimate failure.

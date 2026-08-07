@@ -90,3 +90,38 @@ Add further numbered issues as necessary.
 
 A PASS means you would be comfortable using the resulting implementation for
 the intended research conclusion, not merely that it compiles.
+
+Your response MUST be valid JSON and contain no Markdown fences or additional
+text.
+
+If the implementation is correct:
+
+{
+  "verdict": "PASS",
+  "summary": "Why the implementation satisfies the task and plan.",
+  "issues": []
+}
+
+If problems exist:
+
+{
+  "verdict": "FIX",
+  "summary": "Short overall assessment.",
+  "issues": [
+    {
+      "severity": "CRITICAL",
+      "location": "src/foo.cpp:Foo::bar",
+      "problem": "What is wrong.",
+      "failure_mechanism": "How this can produce incorrect behavior.",
+      "required_fix": "Concrete change required."
+    }
+  ]
+}
+
+severity must be exactly CRITICAL, MAJOR, or MINOR.
+
+Return FIX for any CRITICAL or MAJOR issue.
+Return PASS only when the implementation satisfies the original user task,
+architecture plan, and required verification.
+
+Do not modify repository files.

@@ -36,53 +36,79 @@ Pay special attention in this repository to:
 The implementation plan must be sufficiently concrete that the implementation
 agent should not need to make important architecture decisions.
 
-Return Markdown with EXACTLY these sections:
+Your response MUST be valid JSON and contain no Markdown fences, commentary,
+or text before or after the JSON object.
 
-# Task interpretation
+Use exactly this schema:
 
-Describe the intended behavior and the underlying problem.
+{
+  "task_interpretation": "string",
+  "current_behavior": "string",
+  "design": "string",
 
-# Current behavior
+  "implementation_steps": [
+    {
+      "description": "string",
+      "files": ["repository/relative/path"],
+      "symbols": ["Class::function or function"],
+      "invariants": ["string"]
+    }
+  ],
 
-Explain how the relevant implementation currently works.
-Reference exact repository paths, functions/classes, and relevant tests.
+  "verification": [
+    {
+      "name": "human readable check name",
+      "argv": ["executable", "arg1", "arg2"],
+      "cwd": ".",
+      "env": {},
+      "required": true,
+      "cost": "cheap",
+      "timeout_seconds": 300
+    }
+  ],
 
-# Proposed design
+  "documentation": ["repository/relative/path"],
+  "acceptance_criteria": ["string"],
+  "risks": ["string"]
+}
 
-Explain the smallest sound solution and why it is preferable.
+Rules for verification:
 
-# Implementation steps
+- argv MUST be an argument array, never a shell command string.
+- Never use shell operators such as &&, ||, |, >, <, ;.
+- Environment variables belong in env, not argv.
+- cwd must be repository-relative.
+- Prefer the cheapest focused check that proves the behavior.
+- cost must be either "cheap" or "expensive".
+- Long benchmarks and training jobs must be "expensive".
+- Do not make an expensive benchmark required unless the requested task
+  genuinely cannot be validated otherwise.
+- Verification commands must only inspect/test/build the repository.
+- Never include git commit, git push, git reset, git clean, rm, sudo,
+  package installation, network administration, or destructive commands.
 
-Give ordered, concrete steps.
+For example, represent
 
-Every step should state:
-- file(s)
-- function/class/section
-- exact behavioral change
-- important invariants
+STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
 
-# Verification
+as:
 
-Specify the cheapest meaningful verification for each important behavior.
+{
+  "name": "Project-fair benchmark",
+  "argv": [
+    "./build/one_combat",
+    "bestbench",
+    "1000",
+    "8",
+    "0"
+  ],
+  "cwd": ".",
+  "env": {
+    "STS_FAIR": "1"
+  },
+  "required": false,
+  "cost": "expensive",
+  "timeout_seconds": 1800
+}
 
-Prefer:
-- targeted unit/regression tests
-- focused builds
-- deterministic reproductions
-
-Only request long benchmarks when they are actually needed.
-
-# Documentation impact
-
-State exactly which maintained documentation must change, or explicitly say none.
-
-# Risks and traps
-
-List realistic ways the implementation could look correct while being wrong.
-
-# Acceptance criteria
-
-Give a concise checklist that the reviewer can later evaluate.
-
-Do not include speculative improvements outside the requested scope.
-Do not implement the change.
+Do not modify repository files.
