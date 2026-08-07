@@ -8320,6 +8320,18 @@ int main(int argc, char **argv) {
         search::g_useSearcher3 = std::atoi(d) != 0;
         if (search::g_useSearcher3) std::cout << "[Searcher3 engine ON: belief/prune/chain/live (CRN opt-in)]\n";
     }
+    // STS_LIVE_VALID (Phase 4, fair-tree structural fix): env opt-in as
+    // recorded in §122, or default ON for the Searcher3 fair-play regime
+    // since 2026-08-07 (§123: two independent 256-seed paired gates give
+    // +5.5pp and +5.9pp win at +7.9% and +14.6% cpu — the recorded cpu-trade
+    // call accepts that cost for the win; hp +4.1/+3.1, floor +0.6/+1.1).
+    // STS_LIVE_VALID=0 explicitly disables. The fairgen datagen mode is NOT
+    // covered (it forces the regime after this parse); datagen keeps the
+    // recorded §117 behavior unless the flag is set explicitly.
+    if (!std::getenv("STS_LIVE_VALID") && search::g_fairPlay && search::g_useSearcher3) {
+        search::g_liveValid = true;
+        std::cout << "[live-valid edge re-selection ON (fair S3 default, §123)]\n";
+    }
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
         const std::string name(d);
         int id = -1;

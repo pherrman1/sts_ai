@@ -124,25 +124,30 @@ lives in the shared `include/sim/search/SearchDiagnostics.h`,
 `BattleScumSearcher3::diag` counts the same rollout-cause split, and
 `sdiagMetricsOf3`/`sdiagOnSearchComplete3` emit S3 A-rows (§122).
 
-### Fair-tree structural fix (STS_LIVE_VALID, opt-in — promotion candidate)
+### Fair-tree structural fix (STS_LIVE_VALID — default ON in the fair-S3 path)
 
 Phase 4: in fair mode, the PUCT-chosen stored edge is often illegal in the
 current determinization (measured illegal-stored share of rollouts: S2 ~48%
-§117; **S3 58-60%** at fair @3k, §122). `STS_LIVE_VALID=1` re-selects among
+§117; **S3 58-60%** at fair @3k, §122). `STS_LIVE_VALID` re-selects among
 the stored edges valid in THIS world using the same UCB/PUCT scoring
 (`BattleScumSearcher2::selectBestValidEdgeToSearch`,
 `BattleScumSearcher3::selectBestValidEdgePUCT`) and continues tree descent;
 only when no stored edge is valid does the sim fall back to the §117 random
 rollout. Narrower than obs-keyed descent (falsified §114): tree structure
 and observation identity are untouched. Effect: S2 illegal-share 0.26→0.00,
-S3 0.38→0.10 (smoke). Paired gates (256 seeds, block 126700+, §122): S2 @1k
-+0.4pp (SE 2.2, cpu +5.6%); S3−bc @1k +3.5pp (SE 2.4, CI includes 0, cpu
-+15.1%); **S3−bc @3k +5.5pp (SE 2.6, 95% CI +5.5 ± 5.1, flips 35/21, hp
-7.4→11.5, cpu +7.9%)**. **Promotion candidate, not promoted:** S3's
-direction is positive at both budgets but every arm costs cpu, so the
-promotion rule's AND clause (win ≥ flat, CI excluding a meaningful loss, cpu
-≤ flat) fails. Default off. Decision log:
-`2026-08-06-live-valid-phase4.md`.
+S3 0.38→0.10 (smoke). Paired gates: S2 @1k +0.4pp (SE 2.2, cpu +5.6%,
+§122); **S3−bc @3k +5.5pp (95% CI +5.5 ± 5.1, hp +4.1, cpu +7.9%, §122)
+and +5.9pp (95% CI +5.9 ± 1.8, hp +3.1, floor +1.1, cpu +14.6%, §123,
+independent block)**. **Default ON in the fair-S3 path since 2026-08-07
+(§123; recorded cpu-trade call accepts ~+8-15% cpu for the reproducible
+~+5-6pp win); `STS_LIVE_VALID=0` disables.** Scoping: computed in
+`apps/one_combat.cpp::main` after the STS_FAIR/STS_SEARCHER3 parse, so only
+the explicit `STS_FAIR=1 STS_SEARCHER3=1` regime; S2 fair stays opt-in (S2
+@1k neutral, +cpu; S2 @3k pair needed before any S2 flip); non-fair paths
+and the `fairgen` datagen mode are unchanged unless the env flag is set
+explicitly (datagen keeps the recorded §117 behavior — open question: align
+datagen with the deployed fix). Decision log:
+`2026-08-06-live-valid-phase4.md`, `2026-08-07-live-valid-promotion.md`.
 
 ### Context-adaptive rollout caps (STS_ROLLOUT_CAPS, opt-in — falsified)
 
@@ -180,7 +185,10 @@ fair path since 2026-08-06 (§120/§121); `STS_FORCED_MOVE=0` disables.**
 Since 2026-08-07 the same shortcut applies to the Searcher3 fair path
 (`BattleScumSearcher3::onlyLegalAction`, same live-root canonical
 enumeration; the S3 fair path builds a fresh searcher per decision, so the
-skip is decision-neutral pending the §123 gate).
+skip is decision-neutral — confirmed at the §123 paired 256-seed gate:
+0/256 per-seed outcome diffs at −8.5% cpu; smaller than S2's −16-18%
+because the S3 searcher (incl. particle belief) is constructed before the
+check).
 Fair-path note: forced decisions skip the search, so `g_onSearchComplete` /
 `g_onSearchComplete3` (searchdiag A rows) does not fire for them. **Non-fair
 path: the standalone flag is a no-op by design** — the persistent searcher

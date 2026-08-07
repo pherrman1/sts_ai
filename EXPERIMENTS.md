@@ -4518,3 +4518,74 @@ extFight*/emElites/emFights parity-excluded) and
   `BattleScumSearcher{2,3}.{h,cpp}`, `apps/one_combat.cpp::main`,
   `sdiagMetricsOf3`/`sdiagOnSearchComplete3` in `apps/one_combat.cpp`.
 - **Cost:** ~5-25 min/arm wall on GCP (S3 @3k ~13 min/arm).
+
+## §123 STS_LIVE_VALID second independent S3 gate + first S3 forced-move gate: LIVE_VALID PROMOTED to default ON in the fair-S3 path (recorded cpu-trade call); S3 forced-move contraction confirmed decision-neutral 0/256 at −8.5% cpu (2026-08-07, local + GCP)
+
+- **What:** the §122 follow-up (second independent S3 @3k gate for the
+  STS_LIVE_VALID promotion candidate) plus the first S3-port gate of the
+  promoted forced-move contraction (`BattleScumSearcher3::onlyLegalAction`,
+  same §120/§121 design as S2). Three paired arms on a fresh seed block
+  (250000–250255), 256 seeds each, fair, @3k, 24 threads on sts-test:
+  **ctl** = fair S3 default (forced-move ON, live-valid OFF);
+  **fix** = ctl + `STS_LIVE_VALID=1`; **flat** = ctl +
+  `STS_FORCED_MOVE=0`. Gates A (live-valid) = ctl vs fix; gate B
+  (forced-move) = flat vs ctl.
+- **Config (all arms):** commit `588fd6e` + the §123 promotion diff (parse
+  block only); `one_combat bestbench 3000 256 0 250000 <out.csv>`;
+  `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
+  STS_S3_PARTICLES=256`; asc 0; native OOC; policy PUCT on
+  (`build/policy_trees_c.txt`); no combat value/PVNet
+  (floor=`build/v_rich_trees.txt`, win=`build/v_win_trees.txt`). Metric
+  formula = producer `bestbench` summary (win% = wins/seeds, avg_floor,
+  avg_hp_end, cpu_sec/run); paired flips from per-seed outcome columns
+  (won/floor/act/hpEnd/fightsLost/deathCombat/deathEncounter, sec excluded).
+- **Gate A results (block 250000+):** ctl **16.0% / 41 wins** / floor 35.7 /
+  hp 7.1 / cpu 61.85 s·run vs fix **21.9% / 56 wins** / floor 36.8 / hp 10.2
+  / cpu 70.88 s·run. Paired: 215/256 outcome-column diffs, won flips 34 up /
+  19 down → delta **+5.9pp (SE 0.92pp, 95% CI +5.9 ± 1.8pp, excludes zero)**,
+  floor +1.1, hp +3.1, cpu **+14.6%**. This is the second independent gate
+  agreeing with §122's S3−bc @3k (+5.5pp, hp +4.1, cpu +7.9%, block 126700+).
+  Direction, magnitude, and hp effect are consistent across both gates;
+  both CIs exclude a meaningful loss.
+- **Gate B results (block 250000+):** flat (STS_FORCED_MOVE=0) **16.0% / 41
+  wins** / floor 35.7 / hp 7.1 / cpu 67.60 s·run vs ctl (default forced ON)
+  16.0% / 41 wins / floor 35.7 / hp 7.1 / cpu 61.85 s·run. **0/256 per-seed
+  outcome diffs on all 8 outcome columns — exact outcome equality**, cpu
+  **−8.5%** (smaller than S2's −16-18%, §120/§121, because the S3 searcher
+  is constructed before the check: the per-decision particle-belief
+  constructor cost is not skipped on forced moves).
+- **Verdict — LIVE_VALID: ✅ promoted, default ON in the fair-S3 path.**
+  The §122 promotion rule (win ≥ flat with CI excluding a meaningful loss)
+  is now satisfied twice independently (+5.5pp and +5.9pp); the cpu clause
+  fails both times (+7.9%, +14.6%), so **the recorded cpu-trade call is:**
+  accept ~+8 to +15% cpu for a reproducible ~+5 to +6pp win with +3 to +4
+  end-HP — the strongest win-rate result of the adaptive-budget program and
+  well within the plan's stated envelope ("~+8-10% cpu for a ~+3pp+ win").
+  Scoping: default applies only when `STS_FAIR=1` and `STS_SEARCHER3=1`
+  (computed after the STS_FAIR/STS_SEARCHER3 env parse in
+  `apps/one_combat.cpp::main`); `STS_LIVE_VALID=0` explicitly disables;
+  `fairgen` datagen is NOT covered (it forces the regime after the parse) —
+  datagen keeps the recorded §117 behavior unless the flag is set
+  explicitly (open question: re-run fairgen datagen with the fix to align
+  the policy-target distribution). S2 fair stays opt-in (S2 @1k neutral
+  +0.4pp at +5.6% cpu, §122; S2 needs an @3k pair if S2 deployment is ever
+  considered, §113). Non-fair paths unchanged unless the env flag is set
+  explicitly. The §113 headline (44.5% @3k with the full V4 gate stack) was
+  measured pre-flip and remains valid as recorded; a re-measurement with
+  the full stack + live-valid default is an open follow-up.
+- **Verdict — S3 forced-move: ✅ confirmed default ON (fair S3).** 0/256
+  exact per-seed outcome equality at −8.5% cpu on the same standard as
+  §120/§121; the port is decision-neutral in the particle regime as
+  predicted. Local 8-seed pre-gate smoke: 0/8 diffs at −16%.
+- **Artifacts:** `build/lv2_s3_{ctl,fix}_256.csv`, `build/fm3_s3_flat_256.csv`
+  (GCP → local; logs `build/lv2_s3_{ctl,fix}_256.log`,
+  `build/fm3_s3_flat_256.log` on sts-test), local smoke
+  `build/fm3_s3_{flat,forced}_8.csv`, `build/smoke_lv_{default,explicit,lv0}.csv`.
+  Code: `BattleScumSearcher3::onlyLegalAction`
+  (`include/sim/search/BattleScumSearcher3.h`,
+  `src/sim/search/BattleScumSearcher3.cpp`), agent wiring
+  (`src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`), default
+  (`apps/one_combat.cpp::main`). Decision logs:
+  `2026-08-07-s3-forced-move.md`, `2026-08-07-live-valid-promotion.md`.
+- **Cost:** 3 arms × ~12 min wall parallel on GCP (24 threads each,
+  oversubscribed 3×); ~2 min/arm local at 8 seeds.

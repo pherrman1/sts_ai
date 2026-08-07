@@ -1,6 +1,6 @@
 # Current baselines
 
-Last verified: 2026-08-05 against the current working tree.
+Last verified: 2026-08-07 against the current working tree.
 Experiments invalidated by fixes are tracked in the
 [rerun ledger](rerun-ledger.md) (2026-08-05 code review, issues 31–46); the
 **2026-08-05 §113 battle-skip exploit invalidates every Searcher3 measurement
@@ -30,8 +30,16 @@ contraction by default** (exactly-one-legal-action commits without searching;
 `STS_FORCED_MOVE=0` disables). It is decision-neutral — two independent
 256-seed gates show exact per-seed outcome equality at −16-18% cpu
 (EXPERIMENTS.md §120/§121) — so all headline numbers above remain valid.
-`STS_CONV_ROOT`, `STS_ROLLOUT_CAPS`, and the non-fair forced-move variant
-remain opt-in (falsified at the gates, §118/§119).
+Since 2026-08-07 the **Searcher3 fair path includes both the forced-move
+contraction (confirmed decision-neutral at the §123 S3 gate, 0/256 diffs,
+−8.5% cpu) and the STS_LIVE_VALID fair-tree fix by default** (live-valid
+edge re-selection; §122 + §123 gates: +5.5pp and +5.9pp win at +7.9% and
++14.6% cpu — the recorded cpu-trade call accepts that cost; `STS_LIVE_VALID=0`
+disables). The §113 headline (44.5% @3k) was measured before the live-valid
+default flip and remains valid as recorded; a full-stack re-measurement with
+the new default is an open follow-up. `STS_CONV_ROOT`, `STS_ROLLOUT_CAPS`,
+and the non-fair forced-move variant remain opt-in (falsified at the gates,
+§118/§119).
 ## Baseline table
 
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |

@@ -1,8 +1,6 @@
 # Session continuation plan — adaptive-combat-search (searchdiag Phase 0 + STS_CONV_ROOT Phase 1)
 
-Date: 2026-08-06. Status: **COMPLETE (T1–T6 executed 2026-08-06; §118–§120)** —
-Phase 0 (rollout-cause split + timing) and Phase 1 (root-stability adaptive
-search) were implemented, built, and locally measured on 64 fair seeds @1k
+Date: 2026-08-06. Status: **COMPLETE (T1–T6 executed 2026-08-06; §118–§120)** —Phase 0 (rollout-cause split + timing) and Phase 1 (root-stability adaptivesearch) were implemented, built, and locally measured on 64 fair seeds @1k
 (encouraging but provisional). The continuation session ran T1 (smoke), T2
 (128-seed local paired run), T3 (256-seed GCP gate on sts-test), T4
 (EXPERIMENTS.md §118), T5 (defaults decision), and T6 (Phase 2
@@ -27,6 +25,15 @@ their env gates stay default-off; the remaining parked phase (3) is not
 started. Historical record below; current instruction lives in
 `EXPERIMENTS.md` §118–§120 and
 `docs/knowledge-base/architecture/combat-search.md`.
+
+**Addendum (2026-08-07, §123):** Phase 4 (STS_LIVE_VALID) was **PROMOTED —
+default ON in the fair-S3 path** after the second independent S3 @3k gate
+(+5.9pp, 95% CI +5.9 ± 1.8pp, hp +3.1, cpu +14.6%, block 250000+) confirmed
+§122 (+5.5pp, hp +4.1, cpu +7.9%); the recorded cpu-trade call accepts
+~+8-15% cpu for the reproducible ~+5-6pp win. The Phase 5 forced-move
+shortcut was **ported to Searcher3** (`BattleScumSearcher3::onlyLegalAction`,
+fair path) and confirmed decision-neutral at the same 256-seed standard
+(0/256 diffs, −8.5% cpu). Phase 3 (policy-guided rollout) remains parked.
 
 ## 0. Session summary (what is already done)
 
