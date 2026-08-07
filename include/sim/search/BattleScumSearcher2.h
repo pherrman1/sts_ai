@@ -6,6 +6,7 @@
 #define STS_LIGHTSPEED_BATTLESCUMSEARCHER2_H
 
 #include "sim/search/Action.h"
+#include "sim/search/SearchDiagnostics.h"
 
 #include <functional>
 #include <memory>
@@ -20,53 +21,6 @@ namespace sts::search {
 
     typedef std::function<double (const BattleContext&)> EvalFnc;
 
-    // Per-search rollout-usage counters (searchdiag instrumentation). Counters
-    // accumulate over the searcher's lifetime: a whole fight in non-fair mode
-    // (tree reused across decisions), one decision in fair mode (fresh searcher).
-    // Per-decision windows are computed by the app via before/after snapshots.
-    struct SearchDiagnostics {
-        std::int64_t simulations = 0;          // step() calls executed
-        std::int64_t terminalInsideTree = 0;   // sim ended at a terminal state already in the tree
-        std::int64_t rolloutCalls = 0;         // sim entered playoutRandom (leaf or fair fallback)
-        std::int64_t rolloutLeafCalls = 0;     //   ... via newly expanded leaf
-        std::int64_t fairIllegalStoredEdge = 0;//   ... via stored edge illegal in this determinization
-        std::int64_t rolloutTerminated = 0;    // rollout ran to a terminal state
-        std::int64_t rolloutDepthCapped = 0;   // rollout stopped at g_maxRolloutDepth
-        std::int64_t rolloutSkippedVNet = 0;   // pure-VNet mode: rollout skipped entirely
-        std::int64_t rolloutNoLegalAction = 0; // fair-play world with no legal action
-        std::int64_t leafDirectEval = 0;       // fair-play leaf with no legal action (no rollout)
-        std::int64_t rolloutActions = 0;       // actions executed inside random rollouts
-        std::int64_t treeActions = 0;          // actions executed by explicit tree descent
-        std::int64_t maxTreeDepth = 0;         // deepest explicit-tree path seen (actions)
-        double simSeconds = 0;                 // wall time spent in search loops (diagnostics)
-
-        // Invariant: simulations == terminalInsideTree + rolloutCalls + leafDirectEval,
-        // and rolloutCalls == rolloutLeafCalls + fairIllegalStoredEdge.
-        [[nodiscard]] bool consistent() const {
-            return simulations == terminalInsideTree + rolloutCalls + leafDirectEval
-                && rolloutCalls == rolloutLeafCalls + fairIllegalStoredEdge;
-        }
-    };
-
-    // Why a playoutRandom invocation ended (diagnostics).
-    enum class RolloutStop : std::uint8_t { TERMINAL, DEPTH_CAP, VNET_SKIP, NO_LEGAL_ACTION };
-
-    // Frontier classification of the stored tree (searchdiag). A leaf is either
-    // terminal (Node::outcome set; terminal nodes are never expanded) or an
-    // unexpanded non-terminal node. Visit-weighted coverage compares the
-    // important (MCTS-preferred) portion against the whole frontier.
-    struct FrontierStats {
-        std::int64_t victoryLeaves = 0;
-        std::int64_t defeatLeaves = 0;
-        std::int64_t unexpandedLeaves = 0;
-        std::int64_t terminalLeafVisits = 0;   // sum of simulationCount over terminal leaves
-        std::int64_t frontierLeafVisits = 0;   // sum of simulationCount over all frontier leaves
-        std::int64_t nodesWalked = 0;
-
-        [[nodiscard]] std::int64_t terminalLeaves() const { return victoryLeaves + defeatLeaves; }
-    };
-
-    // to find a solution to a battle with tree pruning
     struct BattleScumSearcher2 {
         class Edge;
         struct Node {
@@ -147,6 +101,9 @@ namespace sts::search {
 
         double evaluateEdge(const Node &parent, int edgeIdx);
         int selectBestEdgeToSearch(const Node &cur);
+        // STS_LIVE_VALID (Phase 4): UCB/PUCT over edges valid in this
+        // determinization; -1 when none are valid.
+        int selectBestValidEdgeToSearch(const Node &cur, const BattleContext &bc);
         // Fill each edge's `prior` from the policy net (softmax over the node's legal
         // actions). Called once when a node is expanded; no-op if no policy net.
         void computeEdgePriors(Node &node, const BattleContext &bc);
@@ -188,6 +145,20 @@ namespace sts::search {
                                  // (information-set / determinized MCTS: no peeking at draws)
     extern int g_maxRolloutDepth; // >0: cap random-rollout length; leaf estimated (speedup)
     extern double g_leafTurnPenalty; // -turn*k on capped leaf (loop-breaker); 0 = off
+    // Context-adaptive rollout caps (STS_ROLLOUT_CAPS=1, opt-in): instead of the
+    // single flat g_maxRolloutDepth, cap rollout length per context — boss
+    // fights, turn 0 (whole-fight rollouts), and act 2-3 — while leaving short
+    // late-fight states (monsters alive <= g_rolloutCapLateAlive) uncapped so
+    // decisive rollouts play to terminal. Leaf evaluation stays the heuristic
+    // (evaluateLeafState; combat VNet rejected at the gates, EXPERIMENTS.md
+    // §97). Phase 2 of the adaptive-budget program; measured before/after with
+    // the searchdiag avgRolloutLen / rolloutDepthCapped columns (§118,
+    // plan-searchdiag-adaptive-continuation.md T6).
+    extern bool g_rolloutCaps;          // STS_ROLLOUT_CAPS: enable context caps
+    extern int  g_rolloutCapBoss;       // cap for boss encounters (default 8)
+    extern int  g_rolloutCapTurn0;      // cap when bc.turn == 0 (default 8)
+    extern int  g_rolloutCapAct23;      // cap for act 2-3 floors 17..50 (default 8)
+    extern int  g_rolloutCapLateAlive;  // monsters alive <= this -> uncapped (default 1)
     extern bool g_useTT;             // enable the transposition table (value sharing across paths)
     extern double g_vnetAlpha;       // V_combat leaf blend weight: value = a*VNet + (1-a)*rollout; >=1 skips rollout
     extern bool g_convergeStop;      // early-stop a fight's search once the best line's value plateaus
@@ -213,6 +184,23 @@ namespace sts::search {
     extern std::int64_t g_convRootMinSims;    // never stop before this many sims
     extern std::int64_t g_convRootPatience;   // stop once stable for this many sims
     extern double g_convRootMaxFrac;   // agent-side escalation ceiling: frac x flat target
+    // Forced-action contraction (default ON since 2026-08-06, §121): when the
+    // live root state has exactly ONE legal action (canonical enumeration),
+    // commit it directly without searching — a strictly-forced-only
+    // contraction, narrower than Searcher3's deterministic chain compression
+    // (net-negative, EXPERIMENTS.md §106). Applied in the FAIR path only:
+    // decision-neutral there (fresh searcher per decision; two independent
+    // 256-seed gates show exact outcome equality at −16-18% cpu, §120/§121).
+    // The non-fair path keeps the persistent searcher, where skipping a
+    // forced-node search changes later trees and the shared RNG stream
+    // (measured divergent, 3/8 diagnostic seeds) — so the flag is a no-op
+    // there by design. `STS_FORCED_MOVE=0` disables (default 1).
+    extern bool g_forcedMoveSkip;
+    // Fair-tree structural fix (STS_LIVE_VALID=1, opt-in, Phase 4): re-select
+    // among stored edges valid in the current determinization when the
+    // PUCT-chosen one is illegal, instead of falling back to a rollout
+    // immediately (see src/sim/search/BattleScumSearcher2.cpp).
+    extern bool g_liveValid;
 
 }
 

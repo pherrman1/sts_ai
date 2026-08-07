@@ -25,6 +25,13 @@ artifact; the binary default plays without it. `STS_FAIR=1` must be set explicit
 `STS_SEARCHER3=1` and `STS_PVNET=<path>` are experimental opt-ins; `STS_PVNET`
 adds policy-head priors to default Searcher2 since 2026-08-05 (value leaf is
 Searcher3-only), and `STS_DIST_VNET` is consumed only by Searcher3.
+Since 2026-08-06 the project-fair Searcher2 path includes the **forced-move
+contraction by default** (exactly-one-legal-action commits without searching;
+`STS_FORCED_MOVE=0` disables). It is decision-neutral — two independent
+256-seed gates show exact per-seed outcome equality at −16-18% cpu
+(EXPERIMENTS.md §120/§121) — so all headline numbers above remain valid.
+`STS_CONV_ROOT`, `STS_ROLLOUT_CAPS`, and the non-fair forced-move variant
+remain opt-in (falsified at the gates, §118/§119).
 ## Baseline table
 
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |

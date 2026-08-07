@@ -69,6 +69,15 @@ diagnosed fair-mode rollout composition.
 
 ## Status
 
-Implemented, built, locally measured. 128-seed local confirmation + GCP
-256-seed gate + EXPERIMENTS.md §118 + default decision are the follow-up
-(plan `docs/knowledge-base/plan-searchdiag-adaptive-continuation.md`, T2–T5).
+Implemented, built, locally measured. **Superseded 2026-08-06 by the paired
+gate (EXPERIMENTS.md §118): the candidate point MIN=500/PATIENCE=500 was
+FALSIFIED.** 128-seed local: flat 21.9% vs candidate 21.1% (−0.8pp, flips
+8 up / 9 down). 256-seed GCP gate: flat 22.3% (57 wins) vs candidate 19.9%
+(51 wins) — paired delta −2.3pp (SE 2.07pp, 95% CI −2.3 ± 4.1pp), flips
+13 up / 19 down; cpu −11% (real, directionally consistent across 64/128/256
+seeds at −9/−8/−11%). The win signal from the 64-seed run (+3.1pp) did not
+survive; per the plan's T3 rule (promote only if win ≥ flat with CI
+excluding a meaningful loss AND cpu ≤ flat) the adaptive line is **stopped**,
+built-in defaults stay env-gated opt-in (START 250 / PATIENCE 250), no
+baseline-table update, Phase 2 remains parked. Follow-up per plan T2–T5:
+completed in this entry and §118.

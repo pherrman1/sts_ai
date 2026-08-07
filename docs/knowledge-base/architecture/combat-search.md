@@ -117,7 +117,78 @@ the regime; `STS_ROLLOUT_DEPTH` is honored and depth-capped rollouts are
 counted. Searcher3 is not instrumented; the mode refuses to run under
 `STS_SEARCHER3`. (`apps/one_combat.cpp::sdiagMetricsOf`, `sdiagOnSearchComplete`,
 `sdiagProbe`, `searchDiag`.) Decision log:
-`2026-08-06-searchdiag-rollout-usage.md`.
+`2026-08-06-searchdiag-rollout-usage.md`. Since 2026-08-06 the mode also
+instruments Searcher3 (rowtype A only; probeEvery forced 0 under
+`STS_SEARCHER3` — the B-stage probes are S2 machinery): `SearchDiagnostics`
+lives in the shared `include/sim/search/SearchDiagnostics.h`,
+`BattleScumSearcher3::diag` counts the same rollout-cause split, and
+`sdiagMetricsOf3`/`sdiagOnSearchComplete3` emit S3 A-rows (§122).
+
+### Fair-tree structural fix (STS_LIVE_VALID, opt-in — promotion candidate)
+
+Phase 4: in fair mode, the PUCT-chosen stored edge is often illegal in the
+current determinization (measured illegal-stored share of rollouts: S2 ~48%
+§117; **S3 58-60%** at fair @3k, §122). `STS_LIVE_VALID=1` re-selects among
+the stored edges valid in THIS world using the same UCB/PUCT scoring
+(`BattleScumSearcher2::selectBestValidEdgeToSearch`,
+`BattleScumSearcher3::selectBestValidEdgePUCT`) and continues tree descent;
+only when no stored edge is valid does the sim fall back to the §117 random
+rollout. Narrower than obs-keyed descent (falsified §114): tree structure
+and observation identity are untouched. Effect: S2 illegal-share 0.26→0.00,
+S3 0.38→0.10 (smoke). Paired gates (256 seeds, block 126700+, §122): S2 @1k
++0.4pp (SE 2.2, cpu +5.6%); S3−bc @1k +3.5pp (SE 2.4, CI includes 0, cpu
++15.1%); **S3−bc @3k +5.5pp (SE 2.6, 95% CI +5.5 ± 5.1, flips 35/21, hp
+7.4→11.5, cpu +7.9%)**. **Promotion candidate, not promoted:** S3's
+direction is positive at both budgets but every arm costs cpu, so the
+promotion rule's AND clause (win ≥ flat, CI excluding a meaningful loss, cpu
+≤ flat) fails. Default off. Decision log:
+`2026-08-06-live-valid-phase4.md`.
+
+### Context-adaptive rollout caps (STS_ROLLOUT_CAPS, opt-in — falsified)
+
+`rolloutCapForContext` (`src/sim/search/BattleScumSearcher2.cpp`, Phase 2,
+2026-08-06) replaces the single flat rollout cap with per-context caps when
+`STS_ROLLOUT_CAPS=1`: boss encounters (`isBossEncounter`), turn 0
+(`bc.turn == 0`), and act 2-3 (floors 17..50) cap the random rollout at
+`g_rolloutCapBoss`/`g_rolloutCapTurn0`/`g_rolloutCapAct23` (defaults 8 each);
+short late-fight states (monsters alive <= `g_rolloutCapLateAlive` = 1) stay
+uncapped so decisive rollouts play to terminal. The damage-biased weighted
+rollout pick (formerly gated on the flat `g_maxRolloutDepth`) is applied
+whenever the context cap is active; leaf evaluation stays the heuristic
+`evaluateLeafState` (combat VNet rejected at the gates, §97). Env:
+`STS_ROLLOUT_CAPS=1` + `STS_ROLLOUT_CAPS_{BOSS,TURN0,ACT23,LATE_ALIVE}`,
+parsed in `apps/one_combat.cpp::main` next to `STS_ROLLOUT_DEPTH`. Unset
+behavior is byte-identical (the helper returns the flat `g_maxRolloutDepth`
+path). **Falsified at the paired gate (EXPERIMENTS.md §119, 2026-08-06):**
+fair @3k searchdiag measured avgRolloutLen 8.76 → 7.15 (−18%) with 27% of
+rollout calls capped (BOSS 38%, act2/act3 33/38%), but the 256-seed paired
+gate @1k gave flat 22.3% vs caps 16.4% (−5.9pp, 95% CI −5.9 ± 4.5pp,
+excludes zero; flips 13 up / 28 down; cpu −7.8%). The heuristic capped-leaf
+estimate at depth 8 loses more decision quality than the saved sims gain;
+the line is stopped and the env gate stays default-off. Decision log:
+`2026-08-06-rollout-caps-phase2.md`.
+
+### Forced-action contraction (default ON in the fair path)
+
+Phase 5: when the live root state has exactly one legal action
+(`BattleScumSearcher2::onlyLegalAction`, canonical enumeration on
+`*rootState`), the agent commits it directly without searching
+(`ScumSearchAgent2::playoutBattleFair`, `playoutBattle`). It is
+strictly-forced-only — no multi-step contraction (Searcher3 chain
+compression was net-negative, EXPERIMENTS.md §106). **Default ON in the
+fair path since 2026-08-06 (§120/§121); `STS_FORCED_MOVE=0` disables.**
+Fair-path note: forced decisions skip the search, so `g_onSearchComplete`
+(searchdiag A rows) does not fire for them. **Non-fair path: the standalone
+flag is a no-op by design** — the persistent searcher reuses the tree
+across decisions, so skipping a forced-node search changes later trees and
+the shared RNG stream (measured divergent on 3/8 diagnostic seeds, §121);
+the non-fair forced shortcut fires only inside the `g_convRootStop` arm
+(falsified §118, hang fixed §121 — it clears the cached winning line after
+a forced skip, which otherwise left `stepThroughSolution` looping on an
+empty action list). Two independent 256-seed fair gates show exact per-seed
+outcome equality (0/256 diffs each) at −16 to −18% cpu; decision-neutral by
+construction, so all historical fair results remain valid. Decision log:
+`2026-08-06-forced-move-phase5.md`.
 
 ### Root-stability adaptive search (STS_CONV_ROOT, opt-in)
 
@@ -139,8 +210,12 @@ when exactly one legal action exists. Env: `STS_CONV_ROOT=1`,
 Provisional 64-seed fair @1k measurement (decision log
 `2026-08-06-conv-root-stable-search.md`): MIN=500/PATIENCE=500 gives +3.1pp
 win at −9% cpu vs flat (within noise); stop-only loses ~3pp — the
-pool-funded escalation is what pays. Pending 128/256-seed confirmation
-(plan `plan-searchdiag-adaptive-continuation.md`).
+pool-funded escalation is what pays. **Falsified at the paired gate
+(EXPERIMENTS.md §118, 2026-08-06):** 256 paired fair seeds @1k give flat
+22.3% vs candidate 19.9% (−2.3pp, 95% CI −2.3 ± 4.1pp, 13 up / 19 down;
+cpu −11%); the 64-seed win signal did not survive 128 or 256 seeds. The
+adaptive line is stopped; the env gate stays opt-in and the built-in
+`g_convRootMinSims`/`g_convRootPatience` defaults (250) are unchanged.
 
 Searcher3 feature-ablation toggles (all parsed by `apps/one_combat.cpp::main`
 next to `STS_SEARCHER3`; defaults preserve full behavior): `STS_S3_BELIEF=0`

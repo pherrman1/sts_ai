@@ -7109,6 +7109,84 @@ static void sdiagOnSearchComplete(const BattleContext &bc, const search::BattleS
 }
 
 // Per-fight summary (separate CSV, own header -- never shares the A/B schema).
+// Searcher3 variant of sdiagMetricsOf: same SdiagMetrics schema, read from
+// BattleScumSearcher3::diag + root visit distribution. S3 keeps no frontier
+// classification (no terminal markers on nodes), so frontier fields stay 0.
+static SdiagMetrics sdiagMetricsOf3(const search::BattleScumSearcher3 &s) {
+    SdiagMetrics m;
+    const auto &d = s.diag;
+    m.sims = d.simulations;
+    m.terminalInTree = d.terminalInsideTree;
+    m.rolloutCalls = d.rolloutCalls;
+    m.rolloutLeafCalls = d.rolloutLeafCalls;
+    m.fairIllegalStoredEdge = d.fairIllegalStoredEdge;
+    m.leafDirectEval = d.leafDirectEval;
+    m.rolloutTerminated = d.rolloutTerminated;
+    m.rolloutDepthCapped = d.rolloutDepthCapped;
+    m.rolloutSkippedVNet = d.rolloutSkippedVNet;
+    m.rolloutNoLegal = d.rolloutNoLegalAction;
+    m.rolloutActions = d.rolloutActions;
+    m.treeActions = d.treeActions;
+    m.maxTreeDepth = d.maxTreeDepth;
+    m.simSeconds = d.simSeconds;
+
+    std::int64_t bestN = -1, secondN = -1, total = 0;
+    std::uint32_t bestBits = 0xFFFFFFFFu, secondBits = 0xFFFFFFFFu;
+    for (const auto &e : s.root.edges) {
+        const std::int64_t n = e.child.simulationCount;
+        total += n;
+        if (n > bestN) { secondN = bestN; secondBits = bestBits; bestN = n; bestBits = e.action.bits; }
+        else if (n > secondN) { secondN = n; secondBits = e.action.bits; }
+    }
+    if (bestN > 0) {
+        m.bestAction = bestBits;
+        m.visitShare = double(bestN) / total;
+        const auto meanOf = [&](std::uint32_t bits, std::int64_t visits) {
+            for (const auto &e : s.root.edges)
+                if (e.action.bits == bits) return e.child.evaluationSum / double(visits);
+            return 0.0;
+        };
+        m.bestValue = meanOf(bestBits, bestN);
+        if (secondN > 0) {
+            m.runnerUpValue = meanOf(secondBits, secondN);
+            m.valueGap = m.bestValue - m.runnerUpValue;
+        }
+    }
+    return m;
+}
+
+// Rowtype A hook for Searcher3 (searchdiag now instruments both searchers).
+// Same windowing semantics as the S2 hook: fair mode rebuilds a fresh searcher
+// per decision (whole search = window); non-fair reuses one searcher per fight
+// (cumulative counters -> per-decision window = delta).
+static void sdiagOnSearchComplete3(const BattleContext &bc, const search::BattleScumSearcher3 &s3) {
+    ++g_sdiagCtx.decisionIdx;
+    SdiagMetrics cur = sdiagMetricsOf3(s3);
+    SdiagMetrics win;
+    if (search::g_fairPlay) {
+        win = cur;
+    } else {
+        win = sdiagWindow(cur, g_sdiagCtx.cum);
+        g_sdiagCtx.cum = cur;
+    }
+    g_sdiagCtx.cum = cur;
+    g_sdiagCtx.fTot.sims += win.sims;
+    g_sdiagCtx.fTot.terminalInTree += win.terminalInTree;
+    g_sdiagCtx.fTot.rolloutCalls += win.rolloutCalls;
+    g_sdiagCtx.fTot.leafDirectEval += win.leafDirectEval;
+    g_sdiagCtx.fTot.rolloutTerminated += win.rolloutTerminated;
+    g_sdiagCtx.fTot.rolloutDepthCapped += win.rolloutDepthCapped;
+    g_sdiagCtx.fTot.rolloutSkippedVNet += win.rolloutSkippedVNet;
+    g_sdiagCtx.fTot.rolloutNoLegal += win.rolloutNoLegal;
+    g_sdiagCtx.fTot.rolloutActions += win.rolloutActions;
+    g_sdiagCtx.fTot.treeActions += win.treeActions;
+    win.budget = win.sims;
+    sdiagWriteRow("A", bc, win, -1, -1);
+    // No rowtype-B probes under Searcher3: the probe stages are Searcher2
+    // machinery (sdiagProbe) and S3's fresh-searcher-per-decision fair path
+    // would not be comparable to S2 probe trees.
+}
+
 static void sdiagFightRow(const BattleContext &bc) {
     std::lock_guard<std::mutex> lk(g_sdiagMutex);
     if (!g_sdiagFightFile) return;
@@ -7130,9 +7208,9 @@ static void sdiagFightRow(const BattleContext &bc) {
 
 static void searchDiag(int nSeeds, int sims, int asc, const std::string &out, int probeEvery,
                        std::uint64_t seedOffset = 0) {
-    if (search::g_useSearcher3) {
-        std::cerr << "searchdiag: Searcher3 is not instrumented (unset STS_SEARCHER3)\n";
-        return;
+    if (search::g_useSearcher3 && probeEvery > 0) {
+        std::cerr << "searchdiag: Searcher3 supports rowtype A only (no S2 probe stages); forcing probeEvery=0\n";
+        probeEvery = 0;
     }
     g_sdiagProbeEvery = probeEvery;
     g_sdiagActive = true;
@@ -7177,9 +7255,13 @@ static void searchDiag(int nSeeds, int sims, int asc, const std::string &out, in
     #pragma omp parallel for reduction(+:wins) schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
         const std::uint64_t seed = seedOffset + (std::uint64_t)s;
-        search::g_onSearchComplete = sdiagOnSearchComplete;   // thread_local: set per worker
+        if (search::g_useSearcher3)
+            search::g_onSearchComplete3 = sdiagOnSearchComplete3;   // thread_local: set per worker
+        else
+            search::g_onSearchComplete = sdiagOnSearchComplete;   // thread_local: set per worker
         RunResult r = runFullRunOOC(seed, sims, asc, restV, true);
         search::g_onSearchComplete = nullptr;
+        search::g_onSearchComplete3 = nullptr;
         wins += r.won ? 1 : 0;
     }
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
@@ -7778,6 +7860,26 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_ROLLOUT_DEPTH")) {   // cap combat rollout length
         search::g_maxRolloutDepth = std::atoi(d);
         std::cout << "[rollout depth cap = " << search::g_maxRolloutDepth << "]\n";
+    }
+    if (const char *d = std::getenv("STS_ROLLOUT_CAPS")) {    // context-adaptive rollout caps (Phase 2)        search::g_rolloutCaps = std::atoi(d) != 0;
+        if (search::g_rolloutCaps) {
+            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_BOSS"))      search::g_rolloutCapBoss = std::atoi(v);
+            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_TURN0"))     search::g_rolloutCapTurn0 = std::atoi(v);
+            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_ACT23"))     search::g_rolloutCapAct23 = std::atoi(v);
+            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_LATE_ALIVE")) search::g_rolloutCapLateAlive = std::atoi(v);
+            std::cout << "[context rollout caps ON: boss=" << search::g_rolloutCapBoss
+                      << " turn0=" << search::g_rolloutCapTurn0
+                      << " act23=" << search::g_rolloutCapAct23
+                      << " lateAlive<=" << search::g_rolloutCapLateAlive << "]\n";
+        }
+    }
+    if (const char *d = std::getenv("STS_FORCED_MOVE")) {    // forced-action contraction (Phase 5; default ON, 0 disables)
+        search::g_forcedMoveSkip = std::atoi(d) != 0;
+        std::cout << "[forced-move contraction " << (search::g_forcedMoveSkip ? "ON" : "OFF") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_LIVE_VALID")) {     // fair-tree structural fix (Phase 4)
+        search::g_liveValid = std::atoi(d) != 0;
+        if (search::g_liveValid) std::cout << "[live-valid edge re-selection ON]\n";
     }
     if (const char *d = std::getenv("STS_TURN_PENALTY")) {    // -turn*k on capped leaf: loop-breaker
         search::g_leafTurnPenalty = std::atof(d);

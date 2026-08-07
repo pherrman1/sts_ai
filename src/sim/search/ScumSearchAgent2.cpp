@@ -137,6 +137,18 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
         const std::int64_t simulationCount = isBossEncounter(bc.encounter) ?
                                              (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
         search::BattleScumSearcher2 searcher(bc);
+        // Forced-action contraction (default ON in the fair path; inside the
+        // STS_CONV_ROOT arm it also fires on g_convRootStop): exactly one legal
+        // action -> commit directly, no search. Enumerated on the live root
+        // state, so it fires only when the move is truly forced in every
+        // determinization. Decision-neutral (fresh searcher per decision);
+        // two independent 256-seed gates confirm exact outcome equality at
+        // −16-18% cpu (§120/§121). Note: forced decisions skip the search, so
+        // g_onSearchComplete (searchdiag A rows) does not fire for them.
+        search::Action forced;
+        if (search::g_forcedMoveSkip || search::g_convRootStop) {
+            if (searcher.onlyLegalAction(forced)) { takeAction(bc, forced); continue; }
+        }
         if (search::g_convRootStop) {
             // Root-stability adaptive budget (STS_CONV_ROOT): each decision credits
             // its flat budget to a per-fight pool; forced moves skip the search and
@@ -144,8 +156,6 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             // g_convRootMaxFrac x the flat target without exceeding flat total cpu
             // (see BattleScumSearcher2::searchToTotalRootStable).
             fightPool += simulationCount;
-            search::Action forced;
-            if (searcher.onlyLegalAction(forced)) { takeAction(bc, forced); continue; }
             const std::int64_t cap = std::min(fightPool,
                 static_cast<std::int64_t>(std::llround(simulationCount * search::g_convRootMaxFrac)));
             searcher.searchToTotalRootStable(cap, search::g_convRootMinSims, search::g_convRootPatience);
@@ -236,9 +246,15 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
                                               (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
 
         const std::int64_t before = searcher.root.simulationCount;
-        if (search::g_convergeStop)
-            searcher.searchToTotalAdaptive(simulationCount, search::g_convMinSims, search::g_convPatience);
-        else if (search::g_convRootStop) {
+        // Forced-action contraction in the NON-FAIR path is scoped to the
+        // STS_CONV_ROOT arm only. Standalone STS_FORCED_MOVE is not applied
+        // here: the persistent searcher reuses the tree across decisions, so
+        // skipping a forced-node search changes later trees and the shared RNG
+        // stream (measured: 3/8 known-RNG diagnostic seeds diverge, §120
+        // follow-up) — not decision-neutral, and the cpu saving is negligible
+        // (non-fair makes ~2 decisions/fight). The fair path builds a fresh
+        // searcher per decision, which is why the flag is neutral there.
+        if (search::g_convRootStop) {
             // Forced move shortcut: exactly one legal action -> commit directly, no
             // search. Otherwise credit the flat budget to the fight pool and let the
             // root-stability search escalate ambiguous decisions up to the pool
@@ -248,6 +264,13 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             if (searcher.onlyLegalAction(forced)) {
                 takeAction(bc, forced);
                 searcher.advanceRoot(forced, bc);
+                // The search was skipped, so the cached winning line (bestActions /
+                // bestOutcomePlayerHp) no longer starts at this root; reset it so the
+                // next search re-derives a line from the new root. Without this, a
+                // stale bestOutcomePlayerHp keeps stepThroughSolution running on an
+                // empty action list forever (observed hang, seed 10 floor 11).
+                bestActions.clear();
+                bestOutcomePlayerHp = -1;
                 continue;
             }
             fightPool += simulationCount;

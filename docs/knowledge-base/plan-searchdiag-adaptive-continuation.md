@@ -1,13 +1,32 @@
 # Session continuation plan — adaptive-combat-search (searchdiag Phase 0 + STS_CONV_ROOT Phase 1)
 
-Date: 2026-08-06. Status: **IN PROGRESS** — Phase 0 (rollout-cause split +
-timing) and Phase 1 (root-stability adaptive search) are implemented,
-built, and locally measured on 64 fair seeds @1k (encouraging but
-provisional). The confirming paired run (128/256 seeds) and the GCP gate
-were NOT yet run when this session ended. This document is the handoff for
-the next agent on another PC; current instruction after the confirmation
-run lives in `EXPERIMENTS.md` (new §118 entry to be written by the
-continuing agent).
+Date: 2026-08-06. Status: **COMPLETE (T1–T6 executed 2026-08-06; §118–§120)** —
+Phase 0 (rollout-cause split + timing) and Phase 1 (root-stability adaptive
+search) were implemented, built, and locally measured on 64 fair seeds @1k
+(encouraging but provisional). The continuation session ran T1 (smoke), T2
+(128-seed local paired run), T3 (256-seed GCP gate on sts-test), T4
+(EXPERIMENTS.md §118), T5 (defaults decision), and T6 (Phase 2
+context-adaptive rollout caps: flat @3k baseline measured for the first
+time, caps implemented as `STS_ROLLOUT_CAPS`, measured before/after, and
+gated at 256 paired seeds — falsified, §119). **Phase 5 (forced-action
+contraction, `STS_FORCED_MOVE`) was then executed, gated twice, and
+PROMOTED to built-in default ON (fair path only) — the one positive result
+of the program (§120/§121):** exact per-seed outcome equality on two
+independent 256-seed fair gates (0/256 diffs each) at −16 to −18% cpu.
+The known-RNG confirmation run found a real non-fair hang (stale winning
+line after a forced skip → infinite `stepThroughSolution` loop) and non-fair
+divergence (persistent tree reuse + shared RNG), so the standalone flag is
+fair-only by design; the non-fair path stays byte-identical and the hang is
+fixed. Both adaptive-budget arms were FALSIFIED at their paired
+gates: STS_CONV_ROOT (Phase 1) flat 22.3% vs 19.9% (−2.3pp, 95% CI −2.3 ±
+4.1pp) at −11% cpu; STS_ROLLOUT_CAPS (Phase 2) flat 22.3% vs 16.4% (−5.9pp,
+95% CI −5.9 ± 4.5pp, excludes zero) at −7.8% cpu. The 64-seed Phase-1 win
+signal did not survive 128 or 256 seeds; Phase 2's rollout cut loses more
+decision quality than the saved sims gain. The falsified lines are stopped,
+their env gates stay default-off; the remaining parked phase (3) is not
+started. Historical record below; current instruction lives in
+`EXPERIMENTS.md` §118–§120 and
+`docs/knowledge-base/architecture/combat-search.md`.
 
 ## 0. Session summary (what is already done)
 
@@ -147,26 +166,48 @@ promoted.
 independent gates agree. If the known-RNG regime matters later, note the
 non-fair pool wiring exists and is untested at scale.
 
-**T6 — Phase 2 (parked, entry condition: T3 done).** Context-adaptive
-rollout caps: first measure the existing flat `STS_ROLLOUT_DEPTH` +
-`evaluateLeafState` + `g_leafTurnPenalty` at fair 3k (currently
-**unmeasured**); then per-context caps (boss/turn-0/act 2–3 ≈ 6–10 actions;
-short late-fight states uncapped). Leaf evaluation stays the heuristic —
-the combat VNet was rejected at the gates (§97). Use `avgRolloutLen`/
-`rolloutDepthCapped` searchdiag columns before/after.
+**T6 — Phase 2 (context-adaptive rollout caps) — EXECUTED 2026-08-06, FALSIFIED (§119).**
+The flat fair-@3k baseline was measured for the first time (`build/sdiag_fair3k_flat.csv`:
+avgRolloutLen 8.76, MONSTER 7.1 / ELITE 9.0 / BOSS 12.4, act 7.6/9.5/9.3,
+rollFrac 0.75, capped 0). Per-context caps implemented (`STS_ROLLOUT_CAPS=1`
++ `STS_ROLLOUT_CAPS_{BOSS,TURN0,ACT23,LATE_ALIVE}`; boss/turn-0/act-2-3 →
+8, monsters alive ≤ 1 uncapped; leaf evaluation stays the heuristic —
+combat VNet rejected §97; `rolloutCapForContext` in
+`src/sim/search/BattleScumSearcher2.cpp`, env in `apps/one_combat.cpp::main`).
+After-measurement (`build/sdiag_fair3k_caps.csv`): avgRolloutLen 7.15 (−18%),
+27% of rollout calls capped (BOSS 38%, act2 33%, act3 38%). Paired 256-seed
+gate @1k (24 threads): flat **22.3%** vs caps **16.4%** — delta **−5.9pp
+(95% CI −5.9 ± 4.5pp, excludes zero)**, flips 13 up / 28 down, cpu −7.8%.
+**Verdict: falsified — the heuristic capped-leaf estimate at depth 8 loses
+more decision quality than the saved sims gain. Line stopped, env gate stays
+default-off.** No resweep of the ±2-action range is warranted (verdict far
+outside noise). Phase 2 is not revisited without a different leaf-estimation
+strategy.
 
-## 5. Parked phases (do not start before T3)
+## 5. Parked phases (Phase 2 executed and falsified 2026-08-06, §119; Phase 5 executed 2026-08-06, §120 — promotion candidate; Phase 3 remains parked)
 
 - **Phase 3 — policy-guided rollout** (`STS_ROLLOUT_POLICY=uniform|attack|
   eps|prior`): attack-bias already exists when capped; extend to uncapped;
   prior mode only with node-cached priors (§23 per-step cost warning).
-- **Phase 4 — fair-tree structural fix:** Phase 0's illegal-stored share
-  (~48% of fair rollouts @3k, 68%@30k) confirms the mismatch is real, but
-  obs-keyed descent is **falsified** (§114) — do not attempt. Candidate:
-  live-valid-biased edge selection or S3-style root filtering; measure
-  paired before touching the tree.
-- **Phase 5 — forced-action contraction/dominance:** strictly-forced-only
-  (S3 chain compression was net-negative, §106); TT re-measure optional.
+  Note: the capped-rollout line just failed (§119) — Phase 3's premise
+  (rollout composition matters for quality) is now weaker; re-justify before
+  starting.
+- **Phase 4 — fair-tree structural fix — EXECUTED 2026-08-06 (§122, decision
+  log `2026-08-06-live-valid-phase4.md`).** Searcher3 was instrumented for
+  the first time (illegal-stored share 58-60% at fair @3k — worse than S2's
+  48%) and `STS_LIVE_VALID` (live-valid-biased edge re-selection, both
+  searchers) was implemented and gated. S3 direction positive at both
+  budgets (+3.5pp @1k, +5.5pp @3k with hp +4.1, CI barely excludes zero)
+  but every arm costs cpu (+5.6 to +15.1%) — **promotion candidate, not
+  promoted**; default stays off. Next: a second independent S3 @3k gate to
+  firm the CI plus an explicit cpu-trade policy call.
+- **Phase 5 — forced-action contraction/dominance — EXECUTED and PROMOTED
+  2026-08-06 (§120/§121, decision log `2026-08-06-forced-move-phase5.md`).**
+  Strictly-forced-only `STS_FORCED_MOVE` is **default ON in the fair path**:
+  two independent 256-seed fair gates show exact outcome equality (0/256
+  diffs each) at −16 to −18% cpu; `STS_FORCED_MOVE=0` disables. Non-fair
+  path is a no-op by design (persistent tree reuse diverges; §121), and the
+  forced-skip hang found there is fixed (stale winning-line bookkeeping).
 
 ## 6. Exit criteria for this program
 

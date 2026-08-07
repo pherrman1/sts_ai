@@ -4270,3 +4270,251 @@ extFight*/emElites/emFights parity-excluded) and
   `build/sdiag_group.py`, `build/sdiag_by_act.py`, `build/sdiag_by_encounter.py`
   (grouping scripts).
   Cost: fair arm 283s wall (6 seeds); known-RNG ~1 min/seed.
+
+## §118 Root-stability adaptive search (STS_CONV_ROOT) paired gate: candidate point (MIN=500/PATIENCE=500) FALSIFIED — win below flat at 256 paired seeds; adaptive line stopped, defaults stay env-only (2026-08-06, local + GCP)
+
+- **What:** paired benchmark of the §117-era adaptive-budget arm:
+  `BattleScumSearcher2::searchToTotalRootStable` (chunked search, root-action
+  stability stop) with the budget-neutral per-fight `fightPool` reinvestment
+  and the `onlyLegalAction` forced-move shortcut, vs the flat fixed-budget
+  arm. Provisional 64-seed local signal was +3.1pp at −9% cpu for
+  MIN=500/PATIENCE=500 (plan `plan-searchdiag-adaptive-continuation.md`,
+  decision log `2026-08-06-conv-root-stable-search.md`); this entry is the
+  required confirmation run and the arbiter verdict.
+- **Config (both arms):** commit `99d55dd`; `one_combat bestbench 1000 256 0 0
+  <out.csv>`; Searcher2 fair (`STS_FAIR=1`), asc 0, native OOC, policy PUCT on
+  (`build/policy_trees_c.txt`), no combat value/PVNet
+  (floor=`build/v_rich_trees.txt`, win=`build/v_win_trees.txt`). Candidate
+  arm adds `STS_CONV_ROOT=1 STS_CONV_ROOT_MIN=500 STS_CONV_ROOT_PATIENCE=500`
+  (other knobs default: START=250, GROW=2.0, CHECK=100, SHARE=0.05, VALUE=1.0,
+  MAX_FRAC=3.0). Metric formula = producer `bestbench` summary line
+  (win% = wins/seeds, avg_floor, avg_hp_end, cpu_sec/run); paired flip counts
+  from per-seed `won` columns.
+- **128-seed local confirmation (T2, this machine, 12 threads):** flat
+  **21.9% / 28 wins** / floor 36.0 / hp 13.1 / cpu 6.66 s·run vs candidate
+  **21.1% / 27 wins** / floor 36.3 / hp 10.9 / cpu 6.15 (−7.7%); flips 8 up /
+  9 down / 111 same. Delta −0.8pp, within noise → proceeded to the gate per
+  plan decision rule (only a >5pp loss would stop at T2).
+- **256-seed GCP gate (T3, sts-test, 24 threads):** flat **22.3% / 57 wins** /
+  floor 36.0 / hp 12.6 / cpu 8.98 s·run (wall 102 s) vs candidate **19.9% /
+  51 wins** / floor 36.1 / hp 10.7 / cpu 7.96 (−11%, wall 90 s). Paired:
+  **224 same, 13 candidate-better, 19 flat-better** → delta −6 wins
+  (−2.3pp), McNemar-style SE 2.07pp, 95% CI −2.3 ± 4.1pp.
+- **Verdict:** ❌ **falsified.** Win < flat with a CI that does not exclude a
+  meaningful loss (plan T3 rule: promote only if win ≥ flat with CI excluding
+  a meaningful loss AND cpu ≤ flat). The cpu saving (−11%) is real and
+  directionally reproducible (T2 −7.7%, T3 −11%, 64-seed −9%), but the 64-seed
+  +3.1pp win signal did not survive: 128-seed −0.8pp, gate −2.3pp with 13/19
+  flip split. The adaptive line is **stopped**: no default change
+  (`g_convRootMinSims`/`g_convRootPatience` stay env-gated opt-in with
+  conservative 250 defaults), no promotion to a recorded operating point,
+  no baseline-table update. Phase 2 (context-adaptive rollout caps) remains
+  parked per plan T6.
+- **Artifacts:** per-seed CSVs
+  `build/conv_flat_128.csv`, `build/conv_root_128.csv` (local),
+  `build/conv_flat_256.csv`, `build/conv_root_256.csv` (copied back from GCP
+  `/home/philippherrmann/sts_sweep/build/`); logs `build/conv_{flat,root}_{128,256}.log`.
+  Server-side sources synced from local (rsync-copy tree, no commit).
+- **Cost:** T2 ~2.5 min/arm wall local; T3 ~100 s/arm wall on GCP.
+
+## §119 Phase 2 (context-adaptive rollout caps, STS_ROLLOUT_CAPS) paired gate: FALSIFIED — caps cut rollout length 18% but lose 5.9pp win; heuristic capped-leaf estimates are net-negative (2026-08-06, local + GCP)
+
+- **What:** paired benchmark of Phase 2 of the adaptive-budget program: replace
+  the flat rollout budget (unlimited, `g_maxRolloutDepth=0`) with per-context
+  caps — boss encounters, turn 0, and act 2-3 (floors 17..50) capped at 8
+  rollout actions each; short late-fight states (monsters alive <= 1) stay
+  uncapped so decisive rollouts play to terminal. Leaf evaluation stays the
+  heuristic `evaluateLeafState` (combat VNet rejected at the gates, §97).
+  Env-gated opt-in: `STS_ROLLOUT_CAPS=1` + `STS_ROLLOUT_CAPS_{BOSS,TURN0,
+  ACT23,LATE_ALIVE}` (defaults 8/8/8/1), parsed in `apps/one_combat.cpp::main`
+  next to `STS_ROLLOUT_DEPTH`; `rolloutCapForContext` +
+  `BattleScumSearcher2::playoutRandom` in
+  `src/sim/search/BattleScumSearcher2.cpp`.
+- **Before/after searchdiag measurement (fair @3k, 6 seeds 0-5, 24 threads,
+  GCP sts-test, per plan T6):** flat baseline `build/sdiag_fair3k_flat.csv`:
+  avgRolloutLen 8.76, rolloutDepthCapped 0, rollFrac 0.75, per-room len
+  MONSTER 7.1 / ELITE 9.0 / BOSS 12.4, per-act len 7.6/9.5/9.3. Caps arm
+  `build/sdiag_fair3k_caps.csv`: avgRolloutLen **7.15 (−18%)**, capped share
+  of rollout calls **0.27** (BOSS 0.38, act2 0.33, act3 0.38, act1 0.12),
+  rollFrac unchanged 0.75. Late-fight uncapping works: short monster fights
+  keep short rollouts.
+- **256-seed paired gate (T6 gate, GCP sts-test, 24 threads, same protocol as
+  §118):** flat **22.3% / 57 wins** / floor 36.0 / hp 12.6 / cpu 8.64 s·run
+  (wall 98 s) vs caps **16.4% / 42 wins** / floor 35.5 / hp 9.6 / cpu 7.97
+  (−7.8%, wall 89 s). Paired: **215 same, 13 caps-better, 28 flat-better** →
+  delta **−5.9pp (SE 2.3pp, 95% CI −5.9 ± 4.5pp, excludes zero)**.
+- **Verdict:** ❌ **falsified.** The caps arm is net-negative with CI
+  excluding zero on win rate (−5.9pp) and materially worse on hp (−3.0) and
+  floor (−0.5). The ~18% rollout-length cut (and −7.8% cpu) does not pay: the
+  heuristic capped-leaf estimate at depth 8 loses more decision quality than
+  the saved sims gain, in both long (boss/act 2-3) and short contexts. The
+  Phase 2 line is **stopped**: `STS_ROLLOUT_CAPS` stays env-gated opt-in with
+  defaults off (no behavior change when unset — verified structurally: the
+  context helper returns the flat `g_maxRolloutDepth` path), no promotion, no
+  baseline-table update. Phase 3 (policy-guided rollouts) remains parked with
+  the other phases (plan §5); the adaptive-budget program's remaining parked
+  phases are unaffected by this gate.
+- **Artifacts:** per-seed CSVs `build/rlc_flat_256.csv`, `build/rlc_caps_256.csv`
+  (copied back from GCP `/home/philippherrmann/sts_sweep/build/`), searchdiag
+  CSVs `build/sdiag_fair3k_flat.csv`, `build/sdiag_fair3k_caps.csv` (+
+  `.fights.csv`), logs `build/rlc_{flat,caps}_256.log`,
+  `build/sdiag_fair3k_{flat,caps}.log`. Code: `rolloutCapForContext` in
+  `src/sim/search/BattleScumSearcher2.cpp`, env block in
+  `apps/one_combat.cpp::main`.
+- **Cost:** ~100 s/arm wall on GCP for the gate; 134-150 s per searchdiag arm.
+
+## §120 Phase 5 (forced-action contraction, STS_FORCED_MOVE) paired gate: decision-neutral, −16% cpu — exact outcome equality on 256 paired seeds; promotion candidate (2026-08-06, GCP)
+
+- **What:** paired benchmark of Phase 5 of the adaptive-budget program: the
+  strictly-forced-only contraction — when the live root state has exactly ONE
+  legal action (canonical enumeration, `BattleScumSearcher2::onlyLegalAction`),
+  commit it directly without searching, instead of spending the flat sim
+  budget on a single-edge tree. Narrower than Searcher3's deterministic chain
+  compression, which was net-negative (§106). The shortcut previously existed
+  only inside the falsified `STS_CONV_ROOT` arm (§118), confounded with the
+  root-stability stop; Phase 5 isolates it behind its own env gate
+  `STS_FORCED_MOVE=1` (default off), wired in both
+  `ScumSearchAgent2::playoutBattleFair` and `playoutBattle` (fair path: fresh
+  searcher, skip + takeAction; non-fair path: skip + takeAction + advanceRoot
+  to keep the reused subtree).
+- **Config (both arms):** commit `99d55dd` + this diff; `one_combat bestbench
+  1000 256 0 0 <out.csv>`; Searcher2 fair (`STS_FAIR=1`), asc 0, 24 threads,
+  GCP sts-test, native OOC, policy PUCT on (`build/policy_trees_c.txt`), no
+  combat value/PVNet (floor=`build/v_rich_trees.txt`, win=`build/v_win_trees.txt`).
+  Arm 2 adds `STS_FORCED_MOVE=1`.
+- **Result (256 paired seeds @1k fair):** flat **22.3% / 57 wins** / floor
+  36.0 / hp 12.6 / cpu 8.96 s·run (wall 102.6 s) vs forced **22.3% / 57 wins**
+  / floor 36.0 / hp 12.6 / cpu 7.54 (−15.9%, wall 86.6 s). **Per-seed outcome
+  equality: 0/256 seeds differ** on won, floor, act, hpEnd, fightsLost,
+  deathCombat, or deathEncounter (`build/fm_flat_256.csv` vs
+  `build/fm_forced_256.csv`; total sec 2295.0 → 1929.7).
+- **Interpretation:** decision-neutral by construction (a single legal action
+  is forced in every determinization), verified at 256 seeds with exact
+  outcome equality; the cpu saving is real and large (forced moves skip the
+  whole search). This also **reinterprets §118**: the STS_CONV_ROOT arm's
+  −2.3pp is attributable to the root-stability stop / pool escalation, not to
+  the forced-move shortcut, which this gate shows is neutral-or-better.
+- **Verdict:** ✅ **promotion candidate — decision-neutral at −16% cpu.**
+  Not a win-rate change (none is expected or observed); it is a free cost
+  reduction with provably identical outcomes. Promotion rule per plan T5:
+  env-only until two independent gates agree; the second gate should re-run
+  this pair (any seed count) and also exercise the non-fair path
+  (known-RNG bestbench seeds 10,11,13,14,16,17,18,19 — the fair gate covers
+  only the fair path; the non-fair `advanceRoot` variant is wired but
+  untested at scale).
+- **Artifacts:** per-seed CSVs `build/fm_flat_256.csv`, `build/fm_forced_256.csv`
+  (copied back from GCP `/home/philippherrmann/sts_sweep/build/`); logs
+  `build/fm_{flat,forced}_256.log`. Code: `onlyLegalAction` +
+  `g_forcedMoveSkip` (`include/sim/search/BattleScumSearcher2.h`,
+  `src/sim/search/BattleScumSearcher2.cpp`), agent wiring
+  (`src/sim/search/ScumSearchAgent2.cpp`), env
+  (`apps/one_combat.cpp::main`).
+- **Cost:** ~90-100 s/arm wall on GCP.
+
+## §121 Phase 5 forced-action contraction: confirmation gate + non-fair scoping + hang fix — default flipped to ON (2026-08-06, local + GCP)
+
+- **What:** second independent gate for the §120 promotion candidate
+  (STS_FORCED_MOVE, strictly-forced-only contraction), a known-RNG non-fair
+  diagnostic run, and the resulting deployment decision. **Found during the
+  known-RNG run: a hang** in the non-fair path (infinite loop at seed 10
+  floor 11) and **non-decision-neutrality in the non-fair regime** (3/8
+  diagnostic seeds diverged, seed 13 flipped the win) — the persistent
+  searcher reuses the tree across decisions, so skipping a forced-node
+  search changes later trees and the shared RNG stream. The fair path builds
+  a fresh searcher per decision, which is why it stays neutral there.
+- **Hang root cause and fix:** the forced skip advanced the root but left the
+  cached winning line (`bestActions`/`bestOutcomePlayerHp`) stale; a stale
+  `bestOutcomePlayerHp > 0` then sent `stepThroughSolution` on an empty
+  action list forever. Fix: clear `bestActions` and reset
+  `bestOutcomePlayerHp = -1` on the non-fair forced path
+  (`ScumSearchAgent2::playoutBattle`). This also fixed the latent hang in the
+  §118 STS_CONV_ROOT non-fair wiring (which the plan noted was untested at
+  scale).
+- **Scoping decision:** `STS_FORCED_MOVE` is now **fair-path-only**. In
+  `playoutBattle` (non-fair) the standalone flag is a no-op — the forced
+  shortcut there fires only inside `g_convRootStop` (the falsified §118
+  arm). Rationale: non-fair divergence is real (measured) and its cpu saving
+  is negligible (non-fair makes ~2 decisions/fight vs ~123 fair), so the
+  shortcut's value exists only in the fair regime.
+- **Confirmation gate 2 (fair, independent seed block, fixed binary):**
+  seeds 126700–126955, `STS_FAIR=1`, @1k, 24 threads, GCP: flat **19.9% /
+  floor 36.1 / hp 13.4 / cpu 8.30 s·run** vs forced **19.9% / 36.1 / 13.4 /
+  cpu 6.80 (−18.0%)**; **0/256 per-seed outcome diffs** on won/floor/act/
+  hpEnd/fightsLost/deathCombat/deathEncounter (`build/fm2b_{flat,forced}_256.csv`,
+  total sec 2125.1 → 1741.8).
+- **Known-RNG non-fair run (fixed binary):** seeds 10,11,13,14,16,17,18,19
+  @1k: flat vs `STS_FORCED_MOVE=1` **0/8 diffs** (flag is a no-op in the
+  non-fair path by design; no hang, completes in seconds
+  `build/fm2_kr_{flat,forced}.csv`).
+- **Verdict:** ✅ **promoted to built-in default ON** (fair path only;
+  `g_forcedMoveSkip = true`; `STS_FORCED_MOVE=0` disables). Two independent
+  256-seed fair gates agree on exact outcome equality (§120 seeds 0–255,
+  §121 seeds 126700–126955) at −16 to −18% cpu, and the non-fair path is
+  unchanged byte-for-byte (0/8 diffs) with the hang fixed. All historical
+  fair results remain valid (decision-neutral); current-baselines.md notes
+  the deployed-config change without touching headline numbers.
+- **Artifacts:** `build/fm2b_{flat,forced}_256.csv`, `build/fm2_kr_{flat,forced}.csv`
+  (GCP → local), local debug logs `build/fm_dbg*.log` (instrumentation
+  removed). Code: `ScumSearchAgent2::playoutBattle` (non-fair scoping +
+  bestActions reset), `playoutBattleFair` (unchanged logic, comment updated),
+  `g_forcedMoveSkip` default in `BattleScumSearcher2.cpp`, env parse in
+  `apps/one_combat.cpp::main`.
+- **Cost:** ~90-100 s/arm wall for the fair gate; seconds for the known-RNG
+  runs.
+
+## §122 Phase 4 (fair-tree structural fix, STS_LIVE_VALID): S3 instrumented (first measurement), live-valid re-selection implemented in both searchers — S3 direction positive at both budgets but cpu-positive; promotion candidate only (2026-08-06, local + GCP)
+
+- **What:** Phase 4 of the adaptive-budget program. Two parts: (1) Searcher3
+  rollout-usage instrumentation (first-ever S3 measurement — searchdiag
+  previously refused S3), and (2) the live-valid-biased edge selection fix in
+  both searchers: when the PUCT-chosen stored edge is illegal in the current
+  determinization, re-select among stored edges valid in THIS world (same
+  UCB/PUCT scoring) and continue tree descent; only when no stored edge is
+  valid does the sim fall back to a random rollout (the recorded §117
+  behavior). Env `STS_LIVE_VALID=1` (default off) in
+  `apps/one_combat.cpp::main`; `selectBestValidEdgeToSearch` /
+  `selectBestValidEdgePUCT` in
+  `src/sim/search/BattleScumSearcher2.cpp` /
+  `src/sim/search/BattleScumSearcher3.cpp`.
+- **T0 — S3 instrumentation:** `SearchDiagnostics` moved to a shared header
+  (`include/sim/search/SearchDiagnostics.h`); `BattleScumSearcher3` gains a
+  `diag` member + step() counters (rollout cause split, treeActions,
+  maxTreeDepth, simSeconds in search/searchToTotal); `searchdiag` accepts
+  S3 with rowtype A only (probeEvery forced 0 — the B-stage probes are S2
+  machinery); invariants verified on S2 and S3 rows.
+- **T1 — first S3 illegal-stored measurement (fair @3k, 6 seeds, GCP):**
+  **S3 default 59.5% of rollout calls are the illegal-stored fallback**
+  (MONSTER 70%, ELITE 54%, BOSS 54%); **S3−belief−chain 58.4%** (MONSTER
+  71%, ELITE 55%, BOSS 50%) — vs S2's 48% (§117). The fair-tree/
+  determinization mismatch is real and WORSE in S3 (particle worlds diverge
+  more than single-determinization S2 trees).
+- **Fix effect (searchdiag before/after, fair @500):** S2 illegal-share
+  0.26 → **0.00**; S3 0.38 → **0.10**; rollout fractions unchanged; both
+  searchers keep the diag invariants (0 violations).
+- **Paired gates (256 seeds, block 126700+, fair, GCP):**
+  - **S2 @1k:** flat 19.9% (51) vs fix 20.3% (52) — **+0.4pp** (SE 2.2pp,
+    19 up / 18 down), floor 36.1→36.6, hp 13.4→12.4, cpu **+5.6%**.
+  - **S3−bc @1k:** flat 16.8% (43) vs fix 20.3% (52) — **+3.5pp** (SE 2.4pp,
+    27 up / 18 down), floor 34.5→35.0, hp 7.0→8.0, cpu **+15.1%**.
+  - **S3−bc @3k (recommended operating point):** flat 19.1% (49) vs fix
+    **24.6% (63) — +5.5pp (SE 2.6pp, 95% CI +5.5 ± 5.1pp, barely excludes
+    zero), flips 35 up / 21 down / 200 same**, floor 37.6→37.0, hp
+    7.4→**11.5**, cpu **+7.9%**.
+- **Verdict:** ⚠️ **promotion candidate, not promoted.** S3's win direction
+  is positive and consistent at both budgets (+3.5pp @1k, +5.5pp @3k with
+  hp +4.1), and the structural diagnosis is confirmed (share 0.58→0.10),
+  but the plan's T3-style promotion rule requires win ≥ flat with CI
+  excluding a meaningful loss **AND cpu ≤ flat** — all three S3/S2 arms
+  cost cpu (+5.6 to +15.1%; re-selected descents go deeper, more tree work
+  per sim), so the AND clause fails. S2 is neutral at @1k. `STS_LIVE_VALID`
+  stays env-gated default off. Recommended next: a second S3 @3k gate
+  (any seed block) to firm the CI before any default flip; S2 needs an @3k
+  pair if S2 deployment is ever considered (S2's operating point is not the
+  current recommendation, §113).
+- **Artifacts:** `build/lv_s2_{flat,fix}_256.csv`, `build/lv_s3_{flat,fix}_256.csv`,
+  `build/lv_s3_3k_{flat,fix}.csv` (GCP → local), S3 diag CSVs
+  `build/sdiag_fair3k_s3.csv`, `build/sdiag_fair3k_s3nobc.csv`, smoke
+  `build/sdiag_lv{,_3}_{off,on}.csv`. Code: `SearchDiagnostics.h`,
+  `BattleScumSearcher{2,3}.{h,cpp}`, `apps/one_combat.cpp::main`,
+  `sdiagMetricsOf3`/`sdiagOnSearchComplete3` in `apps/one_combat.cpp`.
+- **Cost:** ~5-25 min/arm wall on GCP (S3 @3k ~13 min/arm).

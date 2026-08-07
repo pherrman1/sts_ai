@@ -28,6 +28,11 @@ namespace sts::search {
     bool g_fairPlay = false;
     int g_maxRolloutDepth = 0;   // 0 = unlimited (play rollouts to battle end)
     double g_leafTurnPenalty = 0.0;  // -turn*k on capped non-terminal leaf; breaks stall loops
+    bool g_rolloutCaps = false;      // STS_ROLLOUT_CAPS: context-adaptive rollout caps
+    int g_rolloutCapBoss = 8;        // cap for boss encounters
+    int g_rolloutCapTurn0 = 8;       // cap at turn 0 (whole-fight rollouts)
+    int g_rolloutCapAct23 = 8;       // cap for act 2-3 (floors 17..50)
+    int g_rolloutCapLateAlive = 1;   // monsters alive <= this -> uncapped
     bool g_useTT = false;        // transposition table (value sharing across action orders)
     double g_potionKeepValue = 4.0;      // HP-equiv per potion kept at fight end (dynamic potion-saving)
     bool g_convergeStop = false;         // convergence-based early stopping (see searchToTotalAdaptive)
@@ -43,6 +48,15 @@ namespace sts::search {
     std::int64_t g_convRootMinSims = 250;    // never stop before this many sims
     std::int64_t g_convRootPatience = 250;   // stop once stable for this many sims
     double g_convRootMaxFrac = 3.0;  // escalation ceiling: max(target, target*frac) sims
+    bool g_forcedMoveSkip = true;    // forced-move contraction default ON (fair path; §120/§121)
+    // Fair-tree structural fix (STS_LIVE_VALID=1, opt-in, Phase 4): when the
+    // PUCT-selected stored edge is illegal in the current determinization,
+    // re-select among the STORED edges that are valid in this world (same
+    // UCB/PUCT scoring) and continue tree descent, instead of falling back to
+    // a random rollout immediately. Falls back to the rollout only when no
+    // stored edge is valid. Default off (the fallback rollout is the recorded
+    // behavior, EXPERIMENTS.md §117/§122).
+    bool g_liveValid = false;
     double g_vnetAlpha = 0.5;    // V_combat blend weight (see header)
 }
 
@@ -389,9 +403,25 @@ void search::BattleScumSearcher2::step() {
 
             // In fair-play mode the tree's stored edges were enumerated in other
             // determinizations; the chosen action may be illegal in this world
-            // (e.g. after an end-turn the drawn hand differs). If so, roll out
-            // from here instead of executing an invalid action.
+            // (e.g. after an end-turn the drawn hand differs). STS_LIVE_VALID
+            // (Phase 4): re-select among the stored edges that ARE valid in this
+            // determinization (same UCB/PUCT scoring) and continue tree descent,
+            // so the sim stays in the tree; only when no stored edge is valid do
+            // we fall back to a random rollout (the recorded §117 behavior).
             if (g_fairPlay && !edgeTaken.action.isValidAction(curState)) {
+                if (g_liveValid) {
+                    const int validIdx = selectBestValidEdgeToSearch(curNode, curState);
+                    if (validIdx >= 0) {
+                        auto &validEdge = curNode.edges[validIdx];
+                        // Re-selected descent counts as tree descent (treeActions /
+                        // maxTreeDepth are accumulated at sim exit as stack depth).
+                        validEdge.action.execute(curState);
+                        if (g_useTT) { validEdge.stateHash = battleStateHash(curState); hashStack.push_back(validEdge.stateHash); }
+                        actionStack.push_back(validEdge.action);
+                        searchStack.push_back(&validEdge.node);
+                        continue;
+                    }
+                }
                 ++diag.rolloutCalls;
                 ++diag.fairIllegalStoredEdge;
                 diag.treeActions += static_cast<std::int64_t>(searchStack.size()) - 1;
@@ -530,6 +560,46 @@ int search::BattleScumSearcher2::selectBestEdgeToSearch(const search::BattleScum
     return bestEdge;
 }
 
+// STS_LIVE_VALID (Phase 4): same UCB/PUCT scoring as selectBestEdgeToSearch,
+// but restricted to edges whose action is valid in THIS determinization.
+// Returns the best valid edge index, or -1 when no stored edge is valid.
+int search::BattleScumSearcher2::selectBestValidEdgeToSearch(const search::BattleScumSearcher2::Node &cur,
+                                                             const BattleContext &bc) {
+    const int n = static_cast<int>(cur.edges.size());
+    const bool usePuct = (g_usePolicyNet && g_policyNet.loaded())
+        || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly);
+    const double logParent = usePuct ? 0.0 : std::log(static_cast<double>(cur.simulationCount + 1));
+    const double sqrtParent = usePuct ? std::sqrt(static_cast<double>(cur.simulationCount + 1)) : 0.0;
+    const bool exploit = !bestActionSequence.empty();
+    const double evalRange = bestActionValue - minActionValue;
+
+    int bestEdge = -1;
+    double bestEdgeValue = 0.0;
+    for (int i = 0; i < n; ++i) {
+        const auto &edge = cur.edges[i];
+        if (!edge.action.isValidAction(bc)) continue;
+        double qualityValue = 0.0;
+        if (exploit) {
+            std::int64_t cnt = edge.node.simulationCount;
+            double sum = edge.node.evaluationSum;
+            if (g_useTT && edge.stateHash != 0) {
+                auto it = transTable.find(edge.stateHash);
+                if (it != transTable.end()) { cnt = it->second.first; sum = it->second.second; }
+            }
+            qualityValue = (sum / (cnt + 1)) / evalRange;
+        }
+        const double explorationValue = usePuct
+                ? g_cPuct * edge.prior * sqrtParent / (edge.node.simulationCount + 1)
+                : explorationParameter * std::sqrt(logParent / (edge.node.simulationCount + 1));
+        const double value = qualityValue + explorationValue;
+        if (bestEdge == -1 || value > bestEdgeValue) {
+            bestEdge = i;
+            bestEdgeValue = value;
+        }
+    }
+    return bestEdge;
+}
+
 // Softmax the policy net's per-action comparator scores over this node's legal edges
 // -> a prior distribution cached on the edges for PUCT. One net eval per edge, done
 // once per node expansion (~once per simulation), so the cost is bounded.
@@ -618,6 +688,20 @@ static int rolloutActionWeight(const search::Action &a, const BattleContext &bc)
     }
 }
 
+// Context-adaptive rollout cap (STS_ROLLOUT_CAPS=1): boss fights, turn 0, and
+// act 2-3 (floors 17..50) get per-context caps in the 6-10 action range; short
+// late-fight states (monsters alive <= g_rolloutCapLateAlive) stay uncapped so
+// decisive rollouts play to terminal. Off by default: returns the flat
+// g_maxRolloutDepth so the pre-existing STS_ROLLOUT_DEPTH behavior is unchanged.
+static int rolloutCapForContext(const BattleContext &bc) {
+    if (!search::g_rolloutCaps) return search::g_maxRolloutDepth;
+    if (bc.monsters.getAliveCount() <= search::g_rolloutCapLateAlive) return 0;
+    if (isBossEncounter(bc.encounter)) return search::g_rolloutCapBoss;
+    if (bc.turn == 0) return search::g_rolloutCapTurn0;
+    if (bc.floorNum >= 17 && bc.floorNum <= 50) return search::g_rolloutCapAct23;
+    return 0;
+}
+
 // Returns the number of actions executed (diagnostics); sets `stop` to the
 // reason the rollout ended. TERMINAL includes the case where the state is
 // already terminal at entry (zero actions).
@@ -627,10 +711,11 @@ int search::BattleScumSearcher2::playoutRandom(BattleContext &state, std::vector
     // value so the search can't stall by exploiting the off-policy net.
     if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha >= 1.0) { stop = RolloutStop::VNET_SKIP; return 0; }
     stop = RolloutStop::TERMINAL;
+    const int rolloutCap = rolloutCapForContext(state);
     Node tempNode; // temp
     int rolloutSteps = 0;
     while (!isTerminalState(state)) {
-        if (g_maxRolloutDepth > 0 && rolloutSteps >= g_maxRolloutDepth) { stop = RolloutStop::DEPTH_CAP; break; } // depth cap -> leaf estimate
+        if (rolloutCap > 0 && rolloutSteps >= rolloutCap) { stop = RolloutStop::DEPTH_CAP; break; } // depth cap -> leaf estimate
         ++rolloutSteps;
         ++simulationIdx;
         enumerateActionsForNode(tempNode, state);
@@ -647,7 +732,7 @@ int search::BattleScumSearcher2::playoutRandom(BattleContext &state, std::vector
         }
 
         int selectedIdx;
-        if (g_maxRolloutDepth > 0) {
+        if (rolloutCap > 0) {
             // damage-biased weighted pick (see rolloutActionWeight)
             int total = 0;
             for (const auto &e : tempNode.edges) total += rolloutActionWeight(e.action, state);

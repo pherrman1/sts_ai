@@ -8,6 +8,7 @@
 
 #include "sim/search/Action.h"
 #include "sim/search/CombatObservation.h"
+#include "sim/search/SearchDiagnostics.h"
 
 #include <functional>
 #include <memory>
@@ -90,10 +91,17 @@ namespace sts::search {
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
         void ensureObservation(Node &node, const BattleContext &state);
-        void playoutRandom(BattleContext &state, std::vector<Action> &actionStack);
+        int  playoutRandom(BattleContext &state, std::vector<Action> &actionStack);
         void backpropagate(const std::vector<Node *> &path, double evaluation,
                           const std::vector<Action> &actionStack);
         int  selectBestEdgePUCT(const Node &node);
+        // STS_LIVE_VALID (Phase 4): PUCT over edges valid in this
+        // determinization (particle world); -1 when none are valid.
+        int  selectBestValidEdgePUCT(const Node &node, const BattleContext &bc);
+
+        // Per-search rollout-usage counters (searchdiag instrumentation, same
+        // schema as Searcher2; Phase 4 fair-tree measurement).
+        SearchDiagnostics diag;
 
         [[nodiscard]] bool isTerminal(const BattleContext &bc) const;
         double evaluateTerminal(const BattleContext &bc);
@@ -120,6 +128,10 @@ namespace sts::search {
     extern bool g_s3Chain;
     extern bool g_s3Live;
     extern bool g_s3Crn;
+    // Fair-tree structural fix (STS_LIVE_VALID=1, opt-in, Phase 4): shared with
+    // Searcher2; re-select among stored edges valid in the current
+    // determinization instead of falling back to a rollout.
+    extern bool g_liveValid;
     // Particle count for the S3 belief (env STS_S3_PARTICLES; default 64).
     extern int g_s3Particles;
     extern double g_riskLambda;

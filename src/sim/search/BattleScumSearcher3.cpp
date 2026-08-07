@@ -9,6 +9,7 @@
 #include "combat/BattleContext.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 
 using namespace sts;
@@ -160,15 +161,19 @@ void BattleScumSearcher3::warmStartRootCRN(const BattleContext &bc) {
 // ---- Search -----------------------------------------------------------------
 void BattleScumSearcher3::search(int64_t simulations) {
     if (g_s3Crn && !rootCarried && !crnWarmStarted) { warmStartRootCRN(*rootBc); crnWarmStarted = true; }
+    auto t0 = std::chrono::steady_clock::now();
     for (int64_t i = 0; i < simulations; ++i)
         step();
+    diag.simSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 }
 
 void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
     if (isTerminal(*rootBc)) { outcomePlayerHp = rootBc->player.curHp; return; }
     if (g_s3Crn && !rootCarried && !crnWarmStarted) { warmStartRootCRN(*rootBc); crnWarmStarted = true; }
+    auto t0 = std::chrono::steady_clock::now();
     while (root.simulationCount < targetSimulations)
         step();
+    diag.simSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 }
 
 bool BattleScumSearcher3::advanceRoot(const Action &action,
@@ -229,6 +234,7 @@ bool BattleScumSearcher3::isGuaranteedLethal(const BattleContext &bc) const {
 
 // ---- ISMCTS step ------------------------------------------------------------
 void BattleScumSearcher3::step() {
+    ++diag.simulations;
     const auto &particle = belief.sample(rng);
 
     BattleContext state = *rootBc;
@@ -242,13 +248,16 @@ void BattleScumSearcher3::step() {
     while (++depth < maxSearchDepth) {
         path.push_back(cur);
         ensureObservation(*cur, state);
+        diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(depth));
 
         if (isTerminal(state)) {
+            ++diag.terminalInsideTree;
             backpropagate(path, evaluateTerminal(state), actionStack);
             return;
         }
 
         if (g_s3Prune && canPruneAsDead(state)) {
+            ++diag.leafDirectEval;
             backpropagate(path, 0.0, actionStack);
             return;
         }
@@ -262,6 +271,7 @@ void BattleScumSearcher3::step() {
                 computeEdgePriors(*cur, state);
 
             if (cur->edges.empty()) {
+                ++diag.leafDirectEval;
                 backpropagate(path, evaluateLeaf(state), actionStack);
                 return;
             }
@@ -271,11 +281,13 @@ void BattleScumSearcher3::step() {
             auto &edge = cur->edges[selIdx];
 
             if (!edge.action.isValidAction(state)) {
+                ++diag.leafDirectEval;
                 backpropagate(path, evaluateLeaf(state), actionStack);
                 return;
             }
 
             edge.action.execute(state);
+            ++diag.treeActions;
             actionStack.push_back(edge.action);
             path.push_back(&edge.child);
             if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
@@ -318,7 +330,10 @@ void BattleScumSearcher3::step() {
                      && state.outcome == Outcome::UNDECIDED)
                 vLeaf = g_combatPVNet.leafValue(state, riskLambda);
 
-            playoutRandom(state, actionStack);
+            const int rollSteps = playoutRandom(state, actionStack);
+            ++diag.rolloutCalls;
+            ++diag.rolloutLeafCalls;
+            diag.rolloutActions += rollSteps;
             double eval = evaluateLeaf(state);
             if (g_usePVNet && g_combatPVNet.loaded() && !std::isnan(vLeaf))
                 eval = g_pvnetAlpha * vLeaf + (1.0 - g_pvnetAlpha) * eval;
@@ -333,22 +348,44 @@ void BattleScumSearcher3::step() {
         auto &edge = cur->edges[selIdx];
 
         if (!edge.action.isValidAction(state)) {
-            playoutRandom(state, actionStack);
+            // Stored edges were enumerated in other determinizations; the chosen
+            // action may be illegal in this world. STS_LIVE_VALID (Phase 4):
+            // re-select among stored edges valid in THIS particle world (same
+            // PUCT scoring) and continue descent; only when none are valid do we
+            // fall back to a random rollout (the recorded §117 behavior).
+            if (g_liveValid) {
+                const int validIdx = selectBestValidEdgePUCT(*cur, state);
+                if (validIdx >= 0) {
+                    auto &validEdge = cur->edges[validIdx];
+                    validEdge.action.execute(state);
+                    ++diag.treeActions;
+                    actionStack.push_back(validEdge.action);
+                    cur = &validEdge.child;
+                    if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
+                    continue;
+                }
+            }
+            ++diag.rolloutCalls;
+            ++diag.fairIllegalStoredEdge;
+            diag.rolloutActions += playoutRandom(state, actionStack);
             backpropagate(path, evaluateLeaf(state), actionStack);
             return;
         }
 
         edge.action.execute(state);
+        ++diag.treeActions;
         actionStack.push_back(edge.action);
         cur = &edge.child;
         if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
 
         if (g_s3Prune && canPruneAsDead(state)) {
+            ++diag.leafDirectEval;
             backpropagate(path, 0.0, actionStack);
             return;
         }
     }
 
+    ++diag.leafDirectEval;
     backpropagate(path, evaluateLeaf(state), actionStack);
 }
 
@@ -407,6 +444,41 @@ int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
     return best;
 }
 
+// STS_LIVE_VALID (Phase 4): same PUCT scoring as selectBestEdgePUCT, but
+// restricted to edges whose action is valid in THIS determinization (particle
+// world). Returns the best valid edge index, or -1 when none is valid.
+int BattleScumSearcher3::selectBestValidEdgePUCT(const Node &node, const BattleContext &bc) {
+    const int n = (int)node.edges.size();
+    const bool usePuct = (g_usePolicyNet && g_policyNet.loaded())
+                       || (g_usePVNet && g_combatPVNet.loaded());
+    const double logParent  = usePuct ? 0.0 : std::log((double)(node.simulationCount + 1));
+    const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
+    const bool exploit = !bestActionSequence.empty();
+    const double evalRange = std::max(1.0, bestActionValue - minActionValue);
+
+    int best = -1;
+    double bestVal = -1e30;
+    for (int i = 0; i < n; ++i) {
+        const auto &e = node.edges[i];
+        if (!e.action.isValidAction(bc)) continue;
+        double q = 0.0;
+        if (exploit) {
+            double avg = e.child.evaluationSum / (e.child.simulationCount + 1);
+            if (e.child.dist.n > 3) {
+                double dn = e.child.dist.loQ05;
+                avg = avg - riskLambda * (avg - dn);
+            }
+            q = avg / evalRange;
+        }
+        double explore = usePuct
+            ? g_cPuct * e.prior * sqrtParent / (e.child.simulationCount + 1)
+            : 3.0 * std::sqrt(2.0) * std::sqrt(logParent / (e.child.simulationCount + 1));
+        double val = q + explore;
+        if (best == -1 || val > bestVal) { best = i; bestVal = val; }
+    }
+    return best;
+}
+
 // ---- Random rollout (attack-biased) -----------------------------------------
 static int rolloutWeight(const Action &a, const BattleContext &bc) {
     switch (a.getActionType()) {
@@ -422,10 +494,10 @@ static int rolloutWeight(const Action &a, const BattleContext &bc) {
     }
 }
 
-void BattleScumSearcher3::playoutRandom(BattleContext &state,
+int BattleScumSearcher3::playoutRandom(BattleContext &state,
                                         std::vector<Action> &actionStack) {
     if ((g_useVNet && g_combatVNet.loaded() && g_vnetAlpha >= 1.0)
-        || (g_useDistVNet && g_combatDistVNet.loaded())) return;
+        || (g_useDistVNet && g_combatDistVNet.loaded())) return 0;
 
     Node tmp;
     int steps = 0;
@@ -449,6 +521,7 @@ void BattleScumSearcher3::playoutRandom(BattleContext &state,
         }
         tmp.edges.clear();
     }
+    return steps;
 }
 
 // ---- Terminal / leaf evaluation ---------------------------------------------
