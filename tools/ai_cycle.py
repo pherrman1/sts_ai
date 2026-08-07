@@ -15,6 +15,9 @@ from pathlib import Path
 MAX_IMPLEMENTATION_RETRIES = 2
 MAX_REVIEW_ROUNDS = 2
 
+MAX_CHEAP_TIMEOUT_SECONDS = 3600
+MAX_EXPENSIVE_TIMEOUT_SECONDS = 6 * 3600
+
 ALLOWED_VERIFICATION_EXECUTABLES = {
     "cmake",
     "ctest",
@@ -366,6 +369,135 @@ def snapshot_git_state(session_dir: Path, name: str) -> None:
     save(session_dir / f"{name}.txt", content)
 
 
+
+def load_json(path: Path) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"Required session file is missing: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"Invalid JSON in session file {path}: {exc}"
+        ) from exc
+
+    if not isinstance(data, dict):
+        raise RuntimeError(
+            f"Session JSON file must contain an object: {path}"
+        )
+
+    return data
+
+
+def resolve_resume_session(raw: str) -> Path:
+    candidate = Path(raw).expanduser()
+
+    if not candidate.is_absolute():
+        candidate = (ROOT / candidate).resolve()
+    else:
+        candidate = candidate.resolve()
+
+    try:
+        candidate.relative_to(AI_ROOT.resolve())
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Resume session must be inside {AI_ROOT}: {candidate}"
+        ) from exc
+
+    if not candidate.exists() or not candidate.is_dir():
+        raise RuntimeError(
+            f"Resume session does not exist: {candidate}"
+        )
+
+    task_file = candidate / "task.md"
+    if not task_file.exists():
+        raise RuntimeError(
+            f"Resume session has no task.md: {candidate}"
+        )
+
+    return candidate
+
+
+def recover_or_load_plan(
+    session_dir: Path,
+) -> tuple[dict, Path]:
+    plan_file = session_dir / "plan.json"
+
+    if plan_file.exists():
+        plan = load_json(plan_file)
+        validate_plan(plan)
+        print(f"Reusing architecture plan: {plan_file}")
+        return plan, plan_file
+
+    architect_log = session_dir / "architect.log"
+
+    if not architect_log.exists():
+        raise RuntimeError(
+            "Cannot resume before architecture planning: neither "
+            f"{plan_file.name} nor {architect_log.name} exists in "
+            f"{session_dir}."
+        )
+
+    print(
+        "plan.json is missing; recovering the already-paid architect "
+        "answer from architect.log."
+    )
+
+    transcript = architect_log.read_text(
+        encoding="utf-8",
+        errors="replace",
+    )
+
+    plan = parse_json_response(
+        transcript,
+        source="Architect resume log",
+    )
+    validate_plan(plan)
+    save_json(plan_file, plan)
+
+    print(f"Recovered architecture plan: {plan_file}")
+    return plan, plan_file
+
+
+def existing_review_rounds(session_dir: Path) -> list[tuple[int, Path, dict]]:
+    found: list[tuple[int, Path, dict]] = []
+
+    pattern = re.compile(r"^review-(\d+)\.json$")
+
+    for path in session_dir.glob("review-*.json"):
+        match = pattern.match(path.name)
+        if not match:
+            continue
+
+        round_number = int(match.group(1))
+        data = load_json(path)
+        validate_review(data)
+        found.append((round_number, path, data))
+
+    found.sort(key=lambda item: item[0])
+    return found
+
+
+def latest_successful_verification(
+    session_dir: Path,
+) -> Path | None:
+    candidates: list[Path] = []
+
+    for path in session_dir.glob("*verification-*.json"):
+        try:
+            data = load_json(path)
+        except RuntimeError:
+            continue
+
+        if data.get("required_checks_passed") is True:
+            candidates.append(path)
+
+    if not candidates:
+        return None
+
+    return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
+
 def create_session_dir() -> Path:
     timestamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     session_dir = AI_ROOT / timestamp
@@ -541,10 +673,17 @@ def validate_plan(plan: dict) -> None:
                 f"Invalid timeout for verification[{index}]."
             )
 
-        if timeout > 3600:
+        max_timeout = (
+            MAX_EXPENSIVE_TIMEOUT_SECONDS
+            if check["cost"] == "expensive"
+            else MAX_CHEAP_TIMEOUT_SECONDS
+        )
+
+        if timeout > max_timeout:
             raise RuntimeError(
-                f"verification[{index}] asks for a timeout "
-                "longer than one hour."
+                f"verification[{index}] asks for timeout_seconds={timeout}, "
+                f"but the maximum for cost={check['cost']!r} is "
+                f"{max_timeout} seconds."
             )
 
 
@@ -945,7 +1084,7 @@ def run_verification_cycle(
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Run the GPT architect -> DeepSeek implementer -> "
+            "Run or resume the GPT architect -> DeepSeek implementer -> "
             "independent verification -> GPT reviewer workflow."
         )
     )
@@ -960,18 +1099,262 @@ def main() -> int:
     )
 
     parser.add_argument(
+        "--resume",
+        metavar="SESSION",
+        help=(
+            "Resume an existing .ai session instead of creating a new one. "
+            "Example: --resume .ai/20260807-211234"
+        ),
+    )
+
+    parser.add_argument(
         "task",
-        nargs="+",
+        nargs="*",
         help="Description of the requested repository change",
     )
 
     args = parser.parse_args()
+
+    # -----------------------------------------------------------------
+    # Session creation / recovery
+    # -----------------------------------------------------------------
+    if args.resume:
+        if args.task:
+            parser.error(
+                "Do not provide a new task together with --resume; "
+                "the existing session's task.md is reused."
+            )
+
+        session_dir = resolve_resume_session(args.resume)
+        task_file = session_dir / "task.md"
+
+        print(f"Repository: {ROOT}")
+        print(f"Resuming:   {session_dir}")
+
+        plan, plan_file = recover_or_load_plan(session_dir)
+
+        # A resumed cycle is expected to have tracked task changes already,
+        # so ensure_safe_start() must deliberately NOT run here.
+        implementation_log = session_dir / "implementation-1.log"
+
+        if not implementation_log.exists():
+            print(
+                "No implementation transcript found; continuing from "
+                "the implementation stage."
+            )
+
+            implementation = implement(
+                plan_file,
+                task_file,
+                log_file=implementation_log,
+            )
+            save(
+                session_dir / "implementation-1.md",
+                extract_final_markdown(implementation),
+            )
+
+            snapshot_git_state(
+                session_dir,
+                "01-after-implementation",
+            )
+        else:
+            print(
+                "Existing implementation transcript found; preserving the "
+                "current working tree and continuing without rerunning "
+                "DeepSeek's initial implementation."
+            )
+
+        # If a previous semantic review already passed, the session is done.
+        reviews = existing_review_rounds(session_dir)
+        for review_round, review_file, review_data in reviews:
+            if review_data["verdict"] == "PASS":
+                print()
+                print("===== ALREADY ACCEPTED =====")
+                print(f"Review round: {review_round}")
+                print(f"Review file:  {review_file}")
+                print(f"Session data: {session_dir}")
+                return 0
+
+        # Determine where a prior FIX review left us.
+        next_review_round = 1
+
+        if reviews:
+            last_round, last_review_file, last_review_data = reviews
+            next_review_round = last_round + 1
+
+            if last_review_data["verdict"] == "FIX":
+                fix_log = session_dir / f"review-fix-{last_round}.log"
+
+                if not fix_log.exists():
+                    print(
+                        f"Review {last_round} requested fixes but no fixer "
+                        "transcript exists; applying those fixes now."
+                    )
+
+                    fix_result = fix_review(
+                        plan_file,
+                        task_file,
+                        last_review_file,
+                        log_file=fix_log,
+                    )
+
+                    save(
+                        session_dir / f"review-fix-{last_round}.md",
+                        extract_final_markdown(fix_result),
+                    )
+
+                    snapshot_git_state(
+                        session_dir,
+                        f"review-{last_round}-after-fix",
+                    )
+                else:
+                    print(
+                        f"Review {last_round} fixer transcript already exists; "
+                        "not rerunning that DeepSeek call."
+                    )
+
+        # Re-run verification on resume rather than trusting that the current
+        # working tree still exactly matches an old verification artifact.
+        # This costs local compute, not another architect/reviewer call.
+        verification_ok, verification_file = run_verification_cycle(
+            plan=plan,
+            plan_file=plan_file,
+            task_file=task_file,
+            session_dir=session_dir,
+            phase=f"resume-{dt.datetime.now().strftime('%H%M%S')}",
+            allow_expensive=args.allow_expensive,
+        )
+
+        if not verification_ok:
+            snapshot_git_state(
+                session_dir,
+                "99-resume-verification-failed",
+            )
+
+            print()
+            print("===== NOT ACCEPTED =====")
+            print(
+                "Required verification still fails after resume repair "
+                f"attempts. See: {verification_file}"
+            )
+            return 2
+
+        if next_review_round > MAX_REVIEW_ROUNDS:
+            print()
+            print("===== NOT ACCEPTED =====")
+            print(
+                f"The session already used all {MAX_REVIEW_ROUNDS} semantic "
+                "review rounds."
+            )
+            return 2
+
+        for review_round in range(
+            next_review_round,
+            MAX_REVIEW_ROUNDS + 1,
+        ):
+            review_data = review(
+                plan_file,
+                task_file,
+                verification_file,
+                log_file=session_dir / f"review-{review_round}.log",
+            )
+
+            review_file = (
+                session_dir / f"review-{review_round}.json"
+            )
+            save_json(
+                review_file,
+                review_data,
+            )
+
+            if review_data["verdict"] == "PASS":
+                snapshot_git_state(
+                    session_dir,
+                    f"{review_round + 1:02d}-accepted",
+                )
+
+                print()
+                print("===== ACCEPTED =====")
+                print(f"Review round: {review_round}")
+                print(f"Session data: {session_dir}")
+                print()
+                print("No commit was created.")
+                print("Inspect the final diff manually before committing:")
+                print("  git status --short")
+                print("  git diff")
+                return 0
+
+            if review_round == MAX_REVIEW_ROUNDS:
+                snapshot_git_state(
+                    session_dir,
+                    "99-review-failed",
+                )
+
+                print()
+                print("===== NOT ACCEPTED =====")
+                print(
+                    "Implementation still failed semantic review after "
+                    f"{MAX_REVIEW_ROUNDS} rounds."
+                )
+                print(f"See: {review_file}")
+                return 2
+
+            fix_result = fix_review(
+                plan_file,
+                task_file,
+                review_file,
+                log_file=session_dir / f"review-fix-{review_round}.log",
+            )
+
+            save(
+                session_dir / f"review-fix-{review_round}.md",
+                extract_final_markdown(fix_result),
+            )
+
+            snapshot_git_state(
+                session_dir,
+                f"review-{review_round}-after-fix",
+            )
+
+            verification_ok, verification_file = run_verification_cycle(
+                plan=plan,
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+                phase=f"review-{review_round}-fix",
+                allow_expensive=args.allow_expensive,
+            )
+
+            if not verification_ok:
+                snapshot_git_state(
+                    session_dir,
+                    "99-post-review-verification-failed",
+                )
+
+                print()
+                print("===== NOT ACCEPTED =====")
+                print(
+                    "Required verification failed after applying reviewer "
+                    "fixes."
+                )
+                print(f"See: {verification_file}")
+                return 2
+
+        return 2
+
+    # -----------------------------------------------------------------
+    # Fresh session
+    # -----------------------------------------------------------------
+    if not args.task:
+        parser.error(
+            "Provide a task for a new cycle, or use --resume SESSION."
+        )
+
     task = " ".join(args.task).strip()
 
     ensure_safe_start()
 
     session_dir = create_session_dir()
-
     task_file = session_dir / "task.md"
 
     save(
