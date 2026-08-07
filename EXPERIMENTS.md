@@ -5266,3 +5266,168 @@ extFight*/emElites/emFights parity-excluded) and
   (`src/sim/search/CombatValueNet.{h,cpp}`), `combat_quantile_v1` exporter
   `train_export_vcombat_quantile.py`. Decision log:
   `2026-08-07-vnet-target-experiment.md` (verdict appended).
+
+## §134 Audit of §132/§133 + faithful target-only ablation on the direct utility-R GBM: §132 was NOT a target-only test; a same-recipe direct-R model is ALSO SIGNIFICANTLY NEGATIVE at α0.1 — deployed vnet stays; tooling hardened (2026-08-07, local)
+
+- **What:** a methodological audit of the §132/§133 records (user-requested),
+  tooling hardening, and one narrowly scoped follow-up that tests the §132
+  target hypothesis without its confounds. The §133 deployment verdict is
+  preserved; §132's offline narrative is corrected by this addendum (historical
+  rows above are NOT silently rewritten).
+- **§132 audit (confounds found):** §132 claimed "same rows, same model class —
+  differing only in label". That is not what was implemented:
+  `train_vcombat_quantile.py` / `train_export_vcombat_quantile.py` replaced the
+  deployed recipe (`train_value_combat.py`, depth 8, eta 0.05,
+  early-stopping up to 1500 rounds, weighted squared error, 804 exported
+  trees) with nine unweighted `reg:quantileerror` models (depth 6, eta 0.1,
+  fixed 150 rounds, 1350 trees). So the §132 comparison confounded target
+  with recipe/capacity/objective-class. The headline "EV on-scale (10.1 vs
+  45.9)" is also partly a scale artifact: an end-HP predictor is ~50·P(win) ≈
+  46 off the R = 0 | 50+endHp scale by construction, so its MAE vs R is a
+  scale mismatch, not evidence it ranks search states worse. The
+  mean-of-9-quantiles is a coarse numerical approximation of the expectation,
+  especially for the bimodal R distribution. None of this invalidates the
+  §133 online gate — the quantile leaf was rejected on paired gameplay, which
+  is independent of the offline EV-MAE framing.
+- **§133 audit (verdict preserved, wording scoped):** the quantile deployment
+  gate itself is decisive for the implemented candidate: native/Python parity
+  was checked, the fair Searcher3 config matched the §126 control, and the
+  recorded α values were all significantly negative. The claim "every α" is
+  scoped to **the three tested α (0.3, 0.5, 0.7)** — not a statement about all
+  possible α. The A1 rollout verdict is also narrower than the §133 text
+  implied: `BattleScumSearcher3::multiRollout` copies one `BattleContext`
+  (including all simulator RNG streams) for every replicate, so the K rollouts
+  are independent action-policy samples conditional on **copied simulator
+  RNG**, NOT fully independent environment samples; the null verdict applies
+  to this correlated same-leaf estimator, not to variance-reduction schemes in
+  general.
+- **Tooling hardening (same change):**
+  - `paired_analysis.py` is now strict and deterministic: pairing is by seed
+    only, duplicate seeds or unequal seed sets are hard errors, bootstrap CIs
+    use one fixed-seed NumPy generator per report (repeated analysis of the
+    same inputs → identical intervals), and `--allow-partial` is an explicit
+    diagnostic-only escape with a loud warning (never a promotion gate).
+    Self-test `python3 paired_analysis.py --self-test`; registered as CTest
+    `paired_analysis_selftest` (`CMakeLists.txt`).
+  - `one_combat vnettest` is now an asserting parity check: it validates that
+    the model and CSV open, that the header is exactly the canonical combat
+    features followed by `pyPred`, rejects empty/malformed/short/extra-column
+    rows, requires every feature and `pyPred` cell to be a complete finite
+    numeric token (no trailing junk, no NaN/Inf — previously `std::stof`/
+    `std::stod` accepted trailing junk and a NaN `pyPred` silently compared as
+    in-tolerance), rejects a feature whose value overflows the native float
+    feature vector (finite doubles beyond float range become Inf on
+    conversion), rejects a non-finite native prediction or prediction
+    difference (a malformed model can predict Inf/NaN; `std::max` ignores NaN
+    so the row previously compared as in-tolerance and printed PASS), rejects
+    a non-finite or negative tolerance argument, takes
+    an absolute tolerance (default 0.001), and returns nonzero when
+    max|diff| exceeds it. Regression coverage:
+    `vnettest_selftest.py --self-test` (CTest `vnettest_selftest`,
+    `CMakeLists.txt`) asserts a non-finite native prediction (MLP whose finite
+    tokens overflow float in the hidden layer), a float-overflow feature, and
+    out-of-tolerance evidence all exit nonzero while clean finite parity
+    evidence exits 0.
+  - `bestbench` mode staleness guard (issue 46 producer side): the first
+    verification round's strict analysis rejected the gate CSV because
+    `bestbench` had appended the same 256-row block twice (append-without-dedup
+    trap). The `bestbench` mode handler in `apps/one_combat.cpp::main` now
+    exits nonzero with a clear message when the results file already contains
+    any requested seed, instead of silently doubling rows; disjoint batch
+    appends (self-play gates) are unaffected, and the stale CSV was deleted so
+    the verification gate regenerates it cleanly.
+  - `train_value_combat.py` gained an opt-in target selector:
+    `VCOMBAT_TARGET=endhp|utility_r` (default `endhp` — unset behavior trains
+    the identical end-HP objective as before) and `VCOMBAT_WIN_BONUS`
+    (default 50); `utility_r` labels R = 0 on a loss (even an abandoned fight
+    with positive current HP) and win_bonus+endHp on a win. Rows, fight-group
+    split, critical-state weights, feature filtering, XGBoost parameters,
+    early stopping, and device selection are identical between targets; the
+    trainer now reports val RMSE/MAE against BOTH endHp and utility R and
+    writes a sidecar `<model>_metrics.json` (target semantics, win bonus,
+    row/fight counts, split seed, features, params, best iteration, metrics).
+- **Faithful target-only ablation (the corrected §132 test):** two fresh
+  models trained on the same 287,517-row / 16,337-fight
+  `build/vcombat_honest.csv` artifact with the identical canonical recipe,
+  differing ONLY in the label, same device (CUDA) and package environment:
+  | model | target | trees exported | val RMSE vs endHp | val MAE vs endHp | val RMSE vs R | val MAE vs R | best_iter |
+  |---|---|---|---:|---:|---:|---:|---:|
+  | `build/v_combat_control_endhp.txt` | endHp | 1500 | 7.88 | 5.58 | 48.59 | 45.82 | 1479 |
+  | `build/v_combat_utility_direct.txt` | utility R | 611 | 45.87 | 43.58 | 15.35 | 9.73 | 570 |
+  The control is the same-recipe end-HP arm (val RMSE 7.88 vs the recorded
+  7.99 for the deployed §126 model — the small delta is consistent with
+  CUDA-vs-GCP-device tree differences; sha256 of the deployed
+  `v_combat_honest.txt` is `e69d64cf…`). The utility-R model fits R (MAE 9.73
+  vs the quantile-R's 10.10 on the same rows — the two are comparable now,
+  same recipe family, no 50·P(win) scale gap). Offline metrics are
+  diagnostics only — the dataset is on-policy trajectory states, so
+  regression error does not establish MCTS action-ranking quality.
+- **Native parity:** `export_combat_model.py` (standard `nfeat` single-ensemble
+  format; quantile aggregation is NOT part of this ablation) →
+  `build/v_combat_utility_direct.txt` (sha256 `a81404b5…`),
+  `build/v_combat_control_endhp.txt` (sha256 `9c1b6061…`); asserting
+  `one_combat vnettest` PASSES for both (max|diff| 1.2e-4 / 1.6e-4 vs tol
+  0.001, 200 val rows each). Both arms were trained/exported/parity-checked in
+  the same local CUDA environment and package set; the fresh end-HP control
+  retrain is deterministic (same `best_iter` 1479, same val RMSE 7.88, same
+  exported-tree sha256 `9c1b6061…` as the first run), and the sidecars
+  (`v_combat_control_endhp_metrics.json` vs
+  `v_combat_utility_direct_metrics.json`) confirm identical rows (287,517),
+  fights (16,337), split (GroupShuffleSplit test_size 0.15 random_state 0),
+  feature list, XGBoost params (depth 8, eta 0.05, subsample 0.8,
+  colsample 0.7, min_child_weight 20, max_bin 256), 1500 boost rounds, early
+  stopping 40, and device (cuda) — the label is the only recipe difference.
+- **Gate (pre-registered α0.1 first, because R is on the larger terminal
+  scale):** 256 paired seeds, block 126700–126955 (exactly the §126 control's
+  seeds), full V4 gate stack, `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+  STS_S3_CHAIN=0 STS_S3_PARTICLES=64`, vnet =
+  `STS_VNET=build/v_combat_utility_direct.txt STS_VNET_ALPHA=0.1`, asc 0,
+  1000 sims, native OOC ON. Startup banner printed `[V_combat leaf value ON:
+  build/v_combat_utility_direct.txt, 611 trees, alpha 0.1]` (candidate
+  observed loaded and used). Strict paired analysis
+  (`python3 paired_analysis.py build/vnet_all_a03_1k.csv
+  build/v_combat_utility_direct_a01_256.csv deployed utility-direct-a01`):
+  | metric | deployed (§126 control) | utility-direct α0.1 | Δ (95% CI) |
+  |---|---|---:|---:|
+  | win% | 50.4% | **38.3%** | **−12.1pp [−18.8, −5.1]** |
+  | avg floor | 44.1 | 41.1 | −3.0 [−4.5, −1.4] |
+  | avg HP end | 29.4 | 24.3 | −5.0 |
+  Discordant 83/256 (32%), deployed-only 57 vs candidate-only 26. Local
+  cpu_sec/run 17.5 (12 threads, 379 s wall); cpu figures are machine-dependent
+  and the independent verification re-run provides the authoritative cpu
+  comparison.
+- **Verdict: ❌ line closed — the direct utility-R GBM is SIGNIFICANTLY
+  NEGATIVE at its pre-registered first operating point α0.1 (95% CI excludes
+  zero below).** Per the pre-registered rule, α0.3 is NOT tested and the
+  deployed `build/v_combat_honest.txt` STAYS. The §132 hypothesis
+  (same-model-class target change transfers online) is therefore falsified
+  even when the recipe is held fixed and the label is fit directly — the
+  fourth consecutive offline≠online falsification (§124c, §127, §133
+  quantile, now §134). Combined with §133's α curve (heavier blending worse),
+  the evidence says the deployed endHp leaf's ranking behavior is not
+  reproduced by a correctly scaled R-expectation leaf at any tested blend.
+  No promotion; no alpha-0.3 test; no disjoint-block confirmation run (only
+  required if the first gate had been non-negative).
+- **Recording notes:** the §133 revalidation under the strict analyzer
+  reproduces the recorded point estimates exactly on all three recorded α
+  values, each on the exact 256-seed block 126700–126955 (identical seed sets
+  on both sides, no duplicates): quantile α0.3 50.4% vs 37.5% (−12.9pp),
+  α0.5 50.4% vs 40.2% (−10.2pp), α0.7 50.4% vs 32.0% (−18.4pp). CI bounds
+  differ slightly from the originally recorded unseeded bootstrap (e.g. α0.3
+  upper bound −6.2 → −5.9, α0.7 upper bound −11.3 → −10.9) because the
+  bootstrap is now deterministic. The B1 'beam' idea in
+  `docs/knowledge-base/plan-rollout-experiments-2026-08-07.md` was NOT
+  implemented: as written it simultaneously requires beam pruning and forbids
+  scoring partial beam states, which is not a complete algorithm; it needs a
+  revised spec before any implementation.
+- **Artifacts (ignored build outputs, not promoted):**
+  `build/v_combat_utility_direct.{json,txt,val.csv,_metrics.json}`,
+  `build/v_combat_control_endhp.{json,txt,val.csv,_metrics.json}`,
+  train logs `/tmp/opencode/train_utility_direct.log`,
+  `/tmp/opencode/train_control_endhp.log`, local gate CSV
+  `/tmp/opencode/utility_direct_a01_256_local.csv`; the verification-run gate
+  CSV `build/v_combat_utility_direct_a01_256.csv` is produced by the
+  orchestrator's independent run. Code: `train_value_combat.py`
+  (VCOMBAT_TARGET/VCOMBAT_WIN_BONUS), `export_combat_model.py`,
+  `apps/one_combat.cpp::main` (vnettest), `paired_analysis.py`. Decision log:
+  `2026-08-07-experiment-132-133-audit.md`.

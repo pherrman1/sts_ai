@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-07 against the current working tree (winrate wave §124-§126: baseline re-measurement, S3_EXPAND, vnet default; §133 rollout-leaf estimators STS_S3_ROLLOUT_K / STS_S3_ROLLOUT_TURN_STOP opt-in).
+Last verified: 2026-08-07 against the current working tree (winrate wave §124-§126: baseline re-measurement, S3_EXPAND, vnet default; §133 rollout-leaf estimators STS_S3_ROLLOUT_K / STS_S3_ROLLOUT_TURN_STOP opt-in; §134 same-recipe direct utility-R leaf falsified at α0.1, paired-analysis/vnettest hardened).
 
 ## Purpose
 
@@ -191,16 +191,22 @@ Two opt-in Searcher3 rollout-leaf estimators (EXPERIMENTS.md §133, 2026-08-07;
 decision log `2026-08-07-rollout-leaf-estimators.md`); both default off and
 byte-identical when unset (smoke-proven on 8 seeds):
 
-- **A1 — `STS_S3_ROLLOUT_K=N` (default 1):** run K independent rollouts from
-  the same pre-rollout leaf state and average their outcomes, then backprop
-  the mean once as a single visit. Rollout-outcome variance reduction without
-  changing PUCT visit counts or tree exploration. Implemented as
+- **A1 — `STS_S3_ROLLOUT_K=N` (default 1):** run K rollouts from the same
+  pre-rollout leaf state and average their outcomes, then backprop the mean
+  once as a single visit. Rollout-outcome variance reduction without changing
+  PUCT visit counts or tree exploration. Implemented as
   `BattleScumSearcher3::multiRollout` (`src/sim/search/BattleScumSearcher3.cpp`),
   used at both rollout sites in `step()` (the leaf-expansion blend site and
   the fair-illegal-stored-edge fallback). Each rollout runs on its own
   `BattleContext` copy of the pre-rollout state (the caller's `state` is left
   unmutated); the first rollout's actions fill `actionStack` so
   `bestActionSequence` remains replayable.
+  **Scoping (audit §134, 2026-08-07):** `multiRollout` copies ONE
+  `BattleContext` — including all six simulator RNG streams — for every
+  replicate, so the K rollouts are independent *action-policy* samples
+  conditional on the *copied* simulator RNG, NOT fully independent environment
+  samples. The §133 null verdict therefore applies to this correlated
+  same-leaf estimator only, not to variance-reduction schemes in general.
 - **A4 — `STS_S3_ROLLOUT_TURN_STOP=N` (default 0):** stop the rollout after
   N completed player turns and let the learned leaf evaluate the non-terminal
   endpoint → `α·VNet(s0) + (1−α)·VNet(s1)` (n-step bootstrap). Turn boundary
@@ -226,6 +232,30 @@ load-bearing, the second short-rollout falsification (§119), and the
 turn-beam follow-up must play across turns. Both env gates stay opt-in
 default-off. EXPERIMENTS.md §133 (first entry); decision log
 `2026-08-07-rollout-leaf-estimators.md`.
+
+### Direct utility-R leaf (same-recipe target ablation, §134 — falsified)
+
+The §132 "target-only" claim (EXPERIMENTS.md §134 audit) was confounded:
+`train_vcombat_quantile.py` changed depth/eta/rounds/objective/capacity (9×
+150 trees) along with the label. The corrected ablation trains a direct
+utility-R GBM through the canonical `train_value_combat.py` recipe
+(`VCOMBAT_TARGET=utility_r`, win bonus 50, single `nfeat` ensemble — no
+quantile aggregation) on the same `build/vcombat_honest.csv` rows, same
+fight split/weights/features/params/early stopping/device, exported via
+`export_combat_model.py` to the ordinary tree format and parity-checked with
+the asserting `one_combat vnettest`. **Falsified at the pre-registered first
+operating point (EXPERIMENTS.md §134, 2026-08-07):** paired 256-seed @1k/64p,
+block 126700–126955, full V4 stack, S3−belief−chain/64p, α0.1 (pre-registered
+because R sits on the larger 0..~150 terminal scale):
+**38.3% vs 50.4% = −12.1pp (95% CI [−18.8,−5.1]), floor −3.0, HP −5.0**;
+discordant 83/256. Significantly negative → α0.3 not tested, deployed
+`v_combat_honest.txt` @α0.3 stays; this is the fourth offline≠online
+falsification (§124c/§127/§133/§134) and it removes the "only the target
+differs" reading of §132. Offline val MAE vs R was 9.73 (the quantile-R got
+10.10 on the same rows), so the R-scale regression fits R yet still ranks
+tree states worse than the deployed endHp leaf at α0.1. Env stays opt-in;
+`VCOMBAT_TARGET` is a trainer-side option only (no runtime switch). Decision
+log `2026-08-07-experiment-132-133-audit.md`.
 
 ### Context-adaptive rollout caps (STS_ROLLOUT_CAPS, opt-in — falsified)
 

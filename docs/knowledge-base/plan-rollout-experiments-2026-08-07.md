@@ -21,7 +21,8 @@ program tested leaf-estimator variants; all gates below are paired 256-seed
 | rollout caps (heuristic endpoint) | `STS_ROLLOUT_CAPS` | −5.9pp (sig) | §119 |
 | K-rollouts, averaged, backprop once | `STS_S3_ROLLOUT_K` | K=2@500 −1.2pp, K=2@1000 −2.0pp (null), K=10@100 −14.8pp (sig) | §133 |
 | one-turn bootstrap | `STS_S3_ROLLOUT_TURN_STOP=1` | −16.4pp (sig) | §133 |
-| quantile-R GBM leaf | `STS_VNET=v_combat_quantile.txt` | −12.9…−18.4pp (sig, all α) | §133 (2nd) |
+| quantile-R GBM leaf | `STS_VNET=v_combat_quantile.txt` | −12.9…−18.4pp (sig, all tested α: 0.3/0.5/0.7) | §133 (2nd) |
+| direct utility-R GBM leaf (same-recipe §134 ablation) | `STS_VNET=v_combat_utility_direct.txt`, α0.1 | −12.1pp (sig) | §134 |
 
 **Learned constraints (the premise of the remaining lines):** the rollout
 does not need to be stronger or smarter — a mediocre stochastic rollout
@@ -35,6 +36,15 @@ arm must keep (a) full multi-turn continuation and (b) the terminal
 outcome as the endpoint.
 
 ## 2. B1 — tactical turn-beam rollout (NEXT, `STS_S3_TURN_ROLLOUT`)
+
+> **Status note (2026-08-07, §134 audit):** NOT implemented in that session.
+> As written, B1 simultaneously requires beam pruning and forbids scoring
+> partial beam states ("Do NOT score intermediate card states"), which is not
+> a complete algorithm — pruning needs intermediate scores. It needs a
+> revised spec (e.g. score complete turns only, prune between turns) before
+> any implementation; see decision log
+> `2026-08-07-experiment-132-133-audit.md`. A1/A4/quantile-R/direct-R lines
+> are all closed (§133/§134).
 
 User-approved design (scorer (b), complete-turn scoring):
 

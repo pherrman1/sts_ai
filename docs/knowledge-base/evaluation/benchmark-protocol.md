@@ -1,6 +1,7 @@
 # Benchmark protocol
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-07 against commit `67320b3` and the current working
+tree (strict deterministic paired analysis + asserting vnettest, §134 audit).
 
 ## Purpose
 
@@ -108,11 +109,25 @@ env plus server port liveness, not a per-decision query log. See
   sanitizer builds, and machines are unverified.
 - `paired_analysis.py` parses by header and asserts the 10-column `bestbench`
   schema, so producer/consumer drift fails loudly; the assertion covers header
-  mismatch, not semantic feature drift.
+  mismatch, not semantic feature drift. Since 2026-08-07 (§134 audit) it is
+  also **strict and deterministic**: pairing is by seed only (never row
+  order), duplicate seeds in either CSV and unequal seed sets are hard errors
+  by default, bootstrap CIs use one fixed-seed NumPy generator per report
+  (identical intervals on repeated analysis of the same inputs), and
+  `--allow-partial` is an explicit diagnostic-only escape with a loud warning
+  that must never be used for a promotion gate. Self-test:
+  `python3 paired_analysis.py --self-test` (CTest `paired_analysis_selftest`).
+  Producer side (issue 46): `bestbench` appends without dedup, so a stale
+  results file silently doubles rows; since 2026-08-07 the `bestbench` mode
+  handler fails loudly when the file already contains any requested seed
+  (disjoint batch appends, e.g. self-play gates, are unaffected).
 - CTest registers parse/syntax checks (`ctest --test-dir build`); the `test`
   dispatcher holds targeted Searcher3 and terminal-flag checks, and
   `small-test isbattleover` covers the terminal-field derivation. Deeper
-  integration invariants remain review-enforced.
+  integration invariants remain review-enforced. `vnettest_selftest.py
+  --self-test` (CTest `vnettest_selftest`) regression-checks the asserting
+  parity path: non-finite native predictions, float-overflow features, and
+  out-of-tolerance evidence must exit nonzero, clean parity evidence exit 0.
 - `parity_test.py` fails loudly when its binary or checkpoint is missing, but
   real trainer/native parity still requires a produced checkpoint.
 - Experiment ledger entries before the current metadata standard do not all pin

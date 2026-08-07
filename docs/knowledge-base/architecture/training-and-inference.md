@@ -1,6 +1,8 @@
 # Training and inference
 
-Last verified: 2026-08-02 against the current working tree (Phase-5 round 3).
+Last verified: 2026-08-07 against the current working tree (VCOMBAT_TARGET
+trainer option + metrics sidecar; asserting `vnettest` parity; §134 direct-R
+ablation).
 
 ## Purpose
 
@@ -50,6 +52,31 @@ Representative model families:
 - strategic run-level: `train_strategic.py` (joint policy + value heads,
   Tier-A `chosen` labels; exported by `export_strategic.py`);
 - combat value: `train_value_combat.py`, entity/MLP/distribution variants;
+
+The canonical combat-value trainer (`train_value_combat.py`) selects its
+label with `VCOMBAT_TARGET`:
+- `endhp` (default, unset behaves identically to the pre-option recipe):
+  regress the fight's end HP — the deployed §126 objective;
+- `utility_r`: regress the terminal utility R = 0 on a loss (abandoned
+  fights with positive current HP still get 0) and
+  `VCOMBAT_WIN_BONUS` + endHp on a win (`VCOMBAT_WIN_BONUS`, default 50).
+
+Rows, fight-group split (`GroupShuffleSplit` test_size 0.15 / random_state 0
+on `seed*1000+fightIdx`), critical-state weights, feature filtering
+(`std > 1e-9`), XGBoost parameters (depth 8, eta 0.05, 1500 rounds, 40 early
+stop), and device selection (`STS_XGB_DEVICE`, else nvidia-smi probe) are
+identical between targets — the selected label is the ONLY recipe difference.
+The trainer reports validation RMSE/MAE against BOTH endHp and utility R and
+writes a sidecar `<model>_metrics.json` (target, win bonus, row/fight counts,
+split seed, feature names, params, best iteration, validation metrics).
+Offline regression error is a diagnostic only: the dataset holds on-policy
+trajectory states, not counterfactual siblings, so it cannot establish MCTS
+action-ranking quality (EXPERIMENTS.md §134: a same-recipe direct-R model
+fits R well offline yet was significantly negative at the α0.1 gate).
+`train_vcombat_quantile.py` / `train_export_vcombat_quantile.py` (the §132
+quantile-R scripts) are NOT target-only variants of the canonical recipe —
+they change depth/eta/rounds/objective/capacity (9×150 trees) as well as the
+label; see EXPERIMENTS.md §134 audit.
 - combat policy/joint: `train_policy.py`, `train_policy_entity.py`,
   `train_combat_pvnet.py::PolicyValueNet`.
 
@@ -122,7 +149,23 @@ startup load is not evidence of use under default Searcher2.
   the model interface, even when column counts do not change.
 - Metadata such as seed must not become a learned hidden-RNG feature.
 - Training/export/native inference changes require parity on the same trained
-  artifact and inputs.
+  artifact and inputs. `one_combat vnettest` (since 2026-08-07) is an
+  asserting parity check: it requires the model and CSV to open, the header to
+  be exactly the canonical combat features followed by `pyPred`, rejects
+  empty/malformed/short/extra-column rows, requires every feature and `pyPred`
+  cell to be a complete finite numeric token (trailing junk and NaN/Inf are
+  rejected — a NaN `pyPred` previously compared as in-tolerance because every
+  |diff| was NaN), rejects a feature whose value overflows the native float
+  feature vector (finite doubles beyond float range become Inf on conversion),
+  rejects a non-finite native prediction or prediction difference (a malformed
+  model can predict Inf/NaN, which `std::max` would silently ignore and
+  compare as in-tolerance), rejects non-finite or negative tolerance arguments,
+  and returns nonzero when max|diff| exceeds the absolute tolerance argument
+  (default 0.001) (`apps/one_combat.cpp::main`). Regression coverage:
+  `vnettest_selftest.py --self-test` (CTest `vnettest_selftest`) asserts that a
+  non-finite native prediction (MLP whose finite tokens overflow float in the
+  hidden layer), a float-overflow feature, and out-of-tolerance evidence all
+  exit nonzero while clean parity evidence exits 0.
 - CombatPVNet native inference must match the trainer's fixed 14-token layout
   (GLOBAL, scalar, 4 zone bags, relic, potion, encounter, 5 monster slots;
   empty zones, absent relics/potions, and dead monsters are zero tokens) and

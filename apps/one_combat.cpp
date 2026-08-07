@@ -20,6 +20,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <cstdlib>
 #include <functional>
 #include <fstream>
 #include <limits>
@@ -8708,26 +8710,117 @@ int main(int argc, char **argv) {
         }
         std::printf("WINNET TEST: %lld rows\n", n);
 
-    } else if (mode == "vnettest") {      // validate C++ CombatValueNet vs Python predictions
+    } else if (mode == "vnettest") {      // ASSERTING C++ CombatValueNet vs Python parity
+        // Fails (nonzero exit) on missing/empty/malformed/out-of-tolerance
+        // evidence: a successful model load is NOT proof of inference parity.
+        // Numeric cells must be complete finite tokens: std::stof/std::stod
+        // alone accept trailing junk and NaN/Inf, which would let invalid
+        // evidence pass (e.g. a NaN pyPred makes every |diff| NaN and maxAbs
+        // stay at 0, so a garbage row would compare as "in tolerance").
+        auto parseFiniteDouble = [](const std::string &s, double &out) -> bool {
+            if (s.empty()) return false;
+            char *end = nullptr;
+            out = std::strtod(s.c_str(), &end);
+            if (end != s.c_str() + s.size()) return false;   // trailing junk
+            return std::isfinite(out);                        // NaN/Inf rejected
+        };
         std::string trees = argc > 2 ? argv[2] : "build/v_combat_trees.txt";
         std::string val   = argc > 3 ? argv[3] : "build/v_combat_val.csv";
+        double tol = 0.001;
+        if (argc > 4) {
+            if (!parseFiniteDouble(argv[4], tol) || tol < 0) {
+                std::cerr << "bad tolerance '" << argv[4] << "' (must be a finite "
+                          << "non-negative number)\n";
+                return 1;
+            }
+        }
         if (!search::g_combatVNet.load(trees)) { std::cerr << "load failed: " << trees << "\n"; return 1; }
         std::ifstream vf(val);
-        std::string line; std::getline(vf, line);                 // header
+        if (!vf) { std::cerr << "cannot open validation csv: " << val << "\n"; return 1; }
+        std::string line;
+        if (!std::getline(vf, line)) { std::cerr << "empty validation csv: " << val << "\n"; return 1; }
+        const auto &names = search::combatFeatureNames();
         const int nf = search::combatFeatureCount();
+        {   // header must be exactly the canonical combat features followed by pyPred
+            std::stringstream hs(line); std::string cell;
+            std::vector<std::string> hdr;
+            while (std::getline(hs, cell, ',')) hdr.push_back(cell);
+            if ((int)hdr.size() != nf + 1 || hdr[nf] != "pyPred") {
+                std::cerr << "bad header: expected " << nf << " canonical combat "
+                          << "features followed by pyPred, got " << hdr.size()
+                          << " columns\n";
+                return 1;
+            }
+            for (int i = 0; i < nf; ++i) {
+                if (hdr[i] != names[i]) {
+                    std::cerr << "bad header: column " << i << " is '" << hdr[i]
+                              << "', expected '" << names[i] << "'\n";
+                    return 1;
+                }
+            }
+        }
         double maxAbs = 0, sumAbs = 0; int n = 0;
         std::vector<float> canon(nf);
         while (std::getline(vf, line)) {
+            if (line.empty()) { std::cerr << "empty row at line " << (n + 2) << "\n"; return 1; }
             std::stringstream ss(line); std::string cell;
-            for (int i = 0; i < nf; ++i) { std::getline(ss, cell, ','); canon[i] = std::stof(cell); }
+            for (int i = 0; i < nf; ++i) {
+                if (!std::getline(ss, cell, ',')) {
+                    std::cerr << "row " << (n + 2) << " too short (missing feature "
+                              << i << ")\n";
+                    return 1;
+                }
+                double featVal = 0;
+                if (!parseFiniteDouble(cell, featVal)) {
+                    std::cerr << "row " << (n + 2) << " malformed feature '" << cell
+                              << "' (must be a complete finite number)\n";
+                    return 1;
+                }
+                canon[i] = (float)featVal;
+                if (!std::isfinite(canon[i])) {   // finite double can overflow float
+                    std::cerr << "row " << (n + 2) << " feature '" << cell
+                              << "' overflows the native float feature vector\n";
+                    return 1;
+                }
+            }
             double pyPred = 0;
-            while (std::getline(ss, cell, ',')) pyPred = std::stod(cell); // final column
+            if (!std::getline(ss, cell, ',')) {
+                std::cerr << "row " << (n + 2) << " missing pyPred\n";
+                return 1;
+            }
+            if (!parseFiniteDouble(cell, pyPred)) {
+                std::cerr << "row " << (n + 2) << " malformed pyPred '" << cell
+                          << "' (must be a complete finite number)\n";
+                return 1;
+            }
+            std::string extra;
+            if (std::getline(ss, extra, ',')) {
+                std::cerr << "row " << (n + 2) << " has extra columns after pyPred\n";
+                return 1;
+            }
             double cpp = search::g_combatVNet.predictVec(canon.data());
-            double d = std::fabs(cpp - pyPred); maxAbs = std::max(maxAbs, d); sumAbs += d; ++n;
+            if (!std::isfinite(cpp)) {   // malformed native model can yield NaN/Inf
+                std::cerr << "row " << (n + 2) << " native prediction is non-finite ("
+                          << cpp << ") — malformed model or inference\n";
+                return 1;
+            }
+            double d = std::fabs(cpp - pyPred);
+            if (!std::isfinite(d)) {     // e.g. finite cpp minus Inf pyPred (unreachable, defensive)
+                std::cerr << "row " << (n + 2) << " non-finite prediction difference "
+                          << "(cpp=" << cpp << " pyPred=" << pyPred << ")\n";
+                return 1;
+            }
+            maxAbs = std::max(maxAbs, d); sumAbs += d; ++n;
             if (n <= 5) std::printf("  row %d: cpp=%.4f py=%.4f diff=%.6f\n", n, cpp, pyPred, d);
         }
-        std::printf("VNET VALIDATION: %d rows, max|diff|=%.6f  mean|diff|=%.6f\n", n, maxAbs, sumAbs/n);
-        std::printf("%s\n", maxAbs < 1e-2 ? "PASS (C++ matches Python)" : "FAIL");
+        if (n == 0) { std::cerr << "no validation rows in " << val << "\n"; return 1; }
+        std::printf("VNET VALIDATION: %d rows, max|diff|=%.6f  mean|diff|=%.6f  tolerance=%.4g\n",
+                    n, maxAbs, sumAbs/n, tol);
+        if (maxAbs > tol) {
+            std::printf("FAIL: max|diff| %.6f exceeds tolerance %.4g\n", maxAbs, tol);
+            return 1;
+        }
+        std::printf("PASS (C++ matches Python within %.4g)\n", tol);
 
     } else if (mode == "policynettest") { // validate entity policy logits vs Python
         std::string model = argc > 2 ? argv[2] : "build/policy_entity.txt";
@@ -9193,6 +9286,35 @@ int main(int argc, char **argv) {
         int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
         std::uint64_t seedOffset = argc > 5 ? std::stoull(argv[5]) : 0;
         std::string resultsFile = argc > 6 ? argv[6] : "";
+        // issue 46 hardening: bestBench APPENDS to the results file and never
+        // deduplicates ("caller owns truncation"). A stale file that already
+        // contains rows for the requested seed block silently doubles every
+        // seed, which the strict paired analyzer then rejects. Fail loudly
+        // here instead of corrupting the CSV. Self-play batches use disjoint
+        // offsets on fresh per-iteration files, so this never fires there.
+        if (!resultsFile.empty()) {
+            const std::uint64_t lo = seedOffset, hi = seedOffset + (std::uint64_t)nSeeds - 1;
+            std::ifstream stale(resultsFile);
+            if (stale) {
+                std::string line;
+                std::getline(stale, line);                     // header
+                while (std::getline(stale, line)) {
+                    const std::size_t comma = line.find(',');
+                    if (comma == std::string::npos) continue;
+                    std::uint64_t s = 0;
+                    try { s = std::stoull(line.substr(0, comma)); }
+                    catch (...) { continue; }
+                    if (s >= lo && s <= hi) {
+                        std::cerr << "bestbench: results file " << resultsFile
+                                  << " already contains a row for seed " << s
+                                  << " (requested block " << lo << ".." << hi << "). "
+                                  << "bestbench appends without deduplication; remove "
+                                  << "the stale file or use a fresh path (issue 46).\n";
+                        return 1;
+                    }
+                }
+            }
+        }
         bestBench(sims, nSeeds, asc, seedOffset, resultsFile);
 
     } else if (mode == "cpsictr") {       // C_psi counter-sensitivity probe (needs STS_CPSI_NN)

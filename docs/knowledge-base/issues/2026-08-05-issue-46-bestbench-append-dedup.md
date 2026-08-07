@@ -1,8 +1,8 @@
 # Issue 46: bestbench appends without dedup — scripts must truncate
 
-- **Status:** open
+- **Status:** closed (producer guarded + strict analyzer, 2026-08-07)
 - **Tier:** Medium
-- **Last verified:** 2026-08-05
+- **Last verified:** 2026-08-07
 - **Source:** 2026-08-05 S3-ablation re-run; `apps/one_combat.cpp`
 
 ## Symptom
@@ -35,9 +35,24 @@ duplicated rows double-count seeds and shrink effective sample sizes.
 ## Relevant code
 
 - `apps/one_combat.cpp::bestBench`
+- `apps/one_combat.cpp::main` (`mode == "bestbench"` staleness guard)
 - `run_s3_ablate.sh`
 - `paired_analysis.py`
 
 ## Resolution
 
-Open — script fixed; checker hardening optional follow-up.
+**Closed 2026-08-07** by the §134 audit hardening, in two layers:
+
+1. Producer guard (`one_combat.cpp::main`, `bestbench` mode): before
+   appending, the mode handler refuses (nonzero exit, clear message) when the
+   results file already contains a row for any seed in the requested block.
+   Self-play batch appends use disjoint offsets on fresh per-iteration files,
+   so they are unaffected; `reprobench` uses `bestBench` directly and still
+   appends repeats intentionally.
+2. Consumer strictness (`paired_analysis.py`, same session): duplicate seeds
+   in either CSV are hard errors by default, so any polluted file fails
+   loudly at analysis time even if a producer guard is bypassed.
+
+Scripts that re-run the same seed block against the same results file must
+still truncate first (`rm -f`) or the command now errors; they can no longer
+silently double rows.
