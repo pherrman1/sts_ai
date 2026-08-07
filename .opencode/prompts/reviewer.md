@@ -125,3 +125,9 @@ Return PASS only when the implementation satisfies the original user task,
 architecture plan, and required verification.
 
 Do not modify repository files.
+
+For read-only inspection of CSV/JSON experiment artifacts, use:
+
+python3 -I tools/ai_inspect.py ...
+
+Do not use arbitrary python3 -c commands for repository inspection.

@@ -22,7 +22,8 @@
           "git log *": "allow",
           "git show *": "allow",
           "git grep *": "allow",
-          "git blame *": "allow"
+          "git blame *": "allow",
+          "python3 -I tools/ai_inspect.py *": "allow"
         }
       }
     },
@@ -70,7 +71,8 @@
           "git log": "allow",
           "git log *": "allow",
           "git show *": "allow",
-          "git grep *": "allow"
+          "git grep *": "allow",
+          "python3 -I tools/ai_inspect.py *": "allow"
         }
       }
     }
