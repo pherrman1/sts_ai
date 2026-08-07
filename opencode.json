@@ -5,7 +5,7 @@
     "architect": {
       "description": "Senior architect. Understands the task and writes a precise implementation plan without modifying the repository.",
       "mode": "primary",
-      "model": "opencode/gpt-5.6-luna",
+      "model": "deepseek/deepseek-v4-pro",
       "reasoningEffort": "high",
       "prompt": "{file:./.opencode/prompts/architect.md}",
       "permission": {
@@ -33,6 +33,7 @@
       "description": "Implementation agent. Executes an approved plan, edits code and runs focused verification.",
       "mode": "primary",
       "model": "deepseek/deepseek-v4-flash",
+      "reasoningEffort": "high",
       "prompt": "{file:./.opencode/prompts/implementer.md}",
       "permission": {
         "edit": "allow",
@@ -56,7 +57,7 @@
     "reviewer": {
       "description": "Senior adversarial reviewer. Reviews implementation correctness without modifying files.",
       "mode": "primary",
-      "model": "opencode/gpt-5.6-luna",
+      "model": "deepseek/deepseek-v4-flash",
       "reasoningEffort": "high",
       "prompt": "{file:./.opencode/prompts/reviewer.md}",
       "permission": {
@@ -82,8 +83,8 @@
     "reviewer_sol": {
       "description": "Escalation auditor. Reviews high-risk Luna passes and adjudicates bounded rejected-session recovery without modifying files.",
       "mode": "primary",
-      "model": "opencode/gpt-5.6-sol",
-      "reasoningEffort": "medium",
+      "model": "deepseek/deepseek-v4-pro",
+      "reasoningEffort": "max",
       "prompt": "{file:./.opencode/prompts/reviewer.md}\n\n{file:./.opencode/prompts/reviewer-sol.md}",
       "permission": {
         "edit": "deny",

@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-07 | [`2026-08-07-deepseek-agent-models.md`](2026-08-07-deepseek-agent-models.md) | Workflow review agents moved to DeepSeek: architect `deepseek-v4-pro` (high), implementer and cheap reviewer `deepseek-v4-flash` (high), escalation reviewer (Sol) `deepseek-v4-pro` (max). Supersedes the earlier deepseek-reasoner choice for Sol. |
 | 2026-08-07 | [`2026-08-07-rejected-ai-cycle-recovery.md`](2026-08-07-rejected-ai-cycle-recovery.md) | Semantic-review exhaustion is now a two-round manual checkpoint; `--continue-rejected` performs one durable Sol-adjudicated recovery cycle without regenerating the Architect plan. |
 | 2026-08-07 | [`2026-08-07-multi-model-ai-cycle.md`](2026-08-07-multi-model-ai-cycle.md) | AI cycle now defaults to Luna-high architecture/review, escalates deterministic high-risk candidates to Sol-medium, isolates expensive checks as a final gate, caps automated seed sweeps at 128, and stores ELI5 review summaries. |
 | 2026-08-07 | [`2026-08-07-counter-aware-ooc-closed.md`](2026-08-07-counter-aware-ooc-closed.md) | Plan 5.2 (counter-aware OOC pricing) **closed without a retrain gate**: the fresh vnet's training data had real counter variance yet the model assigns counters ~0.01% split gain — two independent GBMs read "no signal"; corroborated by §116 (forced-Happy-Flower null) and §125 (C_psi leaf −8.6pp). OOC does not need a counter-aware model (user decision). |
