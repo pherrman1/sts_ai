@@ -36,3 +36,14 @@ setup (`Model not found`, `opencode models` lists them only as
 - reviewer changed from `deepseek/deepseek-v4-pro` to `deepseek/deepseek-v4-flash` with `reasoningEffort: high`.
 - implementer now sets `reasoningEffort: high` on the unchanged `deepseek/deepseek-v4-flash`.
 - Final mapping: architect `deepseek-v4-pro` high; implementer `deepseek-v4-flash` high; cheap reviewer `deepseek-v4-flash` high; escalation reviewer (Sol) `deepseek-v4-pro` max. "Flash 0731" refers to the `deepseek-v4-flash` model itself, not a separate dated id.
+
+## Addendum (same day)
+
+- Agent renamed from `reviewer_sol` to `reviewer_escalation` (config key, prompt file `reviewer-escalation.md`, spawn name, and user-facing labels/help); the "Luna"/"Sol" terminology is dropped from prompts and prints. Legacy artifact stems (`sol-review-*.json`, `recovery-sol-review`) and internal identifiers remain for resume compatibility.
+- `ai_cycle.py` now records per-agent-call cost by reading opencode's session database (`~/.local/share/opencode/opencode.db`, `session` rows for this repository directory created during each call). It prints per-call cost, accumulates a `costs.json` in the session directory, and prints an end-of-run cost summary even on failure (e.g. token-outage aborts).
+
+## Addendum 2 (same day)
+
+- Diagnosed the 23:49 "recovery-sol-review call failed" exhaustion: it was NOT a DeepSeek token/money outage. The call billed `$0.0464` on `deepseek-v4-pro` (69k input tokens) and the model completed a full PASS verdict; `opencode run` still exited nonzero (permission denials were repeatedly hit) and the single-attempt guard discarded the paid answer. The 23:33 incident with 0 tokens and `gpt-5.6-luna` was a separate ChatGPT-side failure before the DeepSeek-only switch.
+- Fixes: `parse_json_response` now accepts ` ```json `-fenced answers; `obtain_review` recovers a valid review from the transcript of a failed run before writing `recovery-exhausted.json` (a nonzero exit no longer throws away a completed paid review).
+- Added denied-tool-call collection: each agent run scans its transcript for permission-blocked attempts and appends them to the session's `denied-tool-calls.md` (aggregated per agent), with counts printed per call and in the end-of-run summary, so rules in `opencode.json` can be reviewed and adjusted after a few cycles.

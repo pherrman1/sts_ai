@@ -35,3 +35,7 @@ the one-fix or paid-review budget.
 ## Status and follow-up
 
 - Implemented. A final Sol FIX or failed post-fix gate returns control to manual intervention or a deliberate architecture revision.
+
+## Addendum (same day)
+
+- A token outage interrupted a paid recovery review and consumed the durable single-attempt budget (`recovery-exhausted.json`). Added explicit manual escape hatch `--retry-recovery` (`--resume SESSION --continue-rejected --retry-recovery`): clears only incomplete attempt markers (`recovery-*-candidate.json`, incomplete logs, interrupted fix marker) and preserves completed adjudications, fixes, and verification reports. The durable bound remains for unattended runs; retrying is a deliberate user decision.

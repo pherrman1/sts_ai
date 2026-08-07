@@ -8,8 +8,10 @@ import hashlib
 import json
 import os
 import re
+import sqlite3
 import subprocess
 import sys
+import time
 from collections.abc import Callable
 from pathlib import Path
 
@@ -144,7 +146,7 @@ PROTECTED_WORKFLOW_PATHS = (
     Path(".opencode/prompts/architect.md"),
     Path(".opencode/prompts/implementer.md"),
     Path(".opencode/prompts/reviewer.md"),
-    Path(".opencode/prompts/reviewer-sol.md"),
+    Path(".opencode/prompts/reviewer-escalation.md"),
     Path("tools/ai_cycle.py"),
     Path("tools/ai_inspect.py"),
     Path("tools/test_ai_cycle.py"),
@@ -371,6 +373,172 @@ def run_implementer_agent(
         restore_protected_workflow_files(snapshot)
 
 
+CYCLE_COST_ENTRIES: list[dict] = []
+CYCLE_DENIED_CALLS: list[tuple[str, str]] = []
+
+DENIED_TOOL_MARKER = (
+    "The user has specified a rule which prevents you from using this "
+    "specific tool call."
+)
+
+
+def extract_denied_tool_calls(lines: list[str]) -> list[str]:
+    """Find attempted calls that a permission rule blocked.
+
+    OpenCode prints the denied command as a line starting with a cross mark
+    and ending in " failed", immediately followed by the rule-denial error.
+    """
+    stripped = [strip_ansi(line) for line in lines]
+    calls: list[str] = []
+    for index, line in enumerate(stripped):
+        if DENIED_TOOL_MARKER not in line:
+            continue
+        for previous in range(index - 1, max(-1, index - 5), -1):
+            prev = stripped[previous].strip()
+            if prev.startswith("\u2717 ") and prev.endswith(" failed"):
+                calls.append(prev[2 : -len(" failed")].strip())
+                break
+    return calls
+
+
+def append_denied_tool_calls(
+    session_dir: Path,
+    agent: str,
+    calls: list[str],
+    timestamp: str,
+) -> None:
+    if not calls:
+        return
+    path = session_dir / "denied-tool-calls.md"
+    if not path.exists():
+        save(
+            path,
+            "# Denied tool calls\n\n"
+            "Attempted calls that a workflow permission rule blocked, per agent "
+            "and run. Review these to decide whether a rule should be widened.\n",
+        )
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(f"\n## {agent} \u2014 {timestamp}\n")
+        for call in calls:
+            handle.write(f"- `{call}`\n")
+        handle.write("\n")
+
+
+
+def opencode_db_path() -> Path | None:
+    """Locate the opencode session database (Linux default or XDG override)."""
+    data_home = Path(
+        os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+    )
+    candidates = (
+        data_home / "opencode" / "opencode.db",
+        Path.home() / ".local" / "share" / "opencode" / "opencode.db",
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def fetch_costs_since(since_ms: int) -> list[dict]:
+    """Read session cost/token rows created for this repository since since_ms."""
+    db_path = opencode_db_path()
+    if db_path is None:
+        return []
+
+    try:
+        connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        rows = connection.execute(
+            """
+            SELECT agent, model, cost,
+                   tokens_input, tokens_output, tokens_reasoning,
+                   tokens_cache_read, tokens_cache_write
+            FROM session
+            WHERE directory = ? AND time_created >= ?
+            ORDER BY time_created
+            """,
+            (str(ROOT), int(since_ms)),
+        ).fetchall()
+        connection.close()
+    except (sqlite3.Error, OSError):
+        return []
+
+    entries: list[dict] = []
+    for agent, model_json, cost, ti, to, tr, tcr, tcw in rows:
+        model = ""
+        if isinstance(model_json, str):
+            try:
+                model = json.loads(model_json).get("id", "")
+            except json.JSONDecodeError:
+                model = model_json
+        entries.append(
+            {
+                "agent": agent or "unknown",
+                "model": model,
+                "cost": float(cost or 0.0),
+                "tokens_input": int(ti or 0),
+                "tokens_output": int(to or 0),
+                "tokens_reasoning": int(tr or 0),
+                "tokens_cache_read": int(tcr or 0),
+                "tokens_cache_write": int(tcw or 0),
+            }
+        )
+    return entries
+
+
+def summarize_cost_entries(entries: list[dict]) -> dict:
+    by_agent: dict[str, float] = {}
+    for entry in entries:
+        agent = entry.get("agent") or "unknown"
+        by_agent[agent] = by_agent.get(agent, 0.0) + float(entry.get("cost") or 0.0)
+    return {"per_agent": by_agent, "total": sum(by_agent.values())}
+
+
+def append_cost_entries(session_dir: Path, entries: list[dict]) -> None:
+    if not entries:
+        return
+    path = session_dir / "costs.json"
+    existing: list[dict] = []
+    if path.exists():
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            loaded = None
+        if isinstance(loaded, dict) and isinstance(loaded.get("entries"), list):
+            existing = loaded["entries"]
+    save_json(path, {"entries": [*existing, *entries]})
+
+
+def print_cycle_cost_summary() -> None:
+    if not CYCLE_COST_ENTRIES:
+        print()
+        print("===== AI CYCLE COST =====")
+        print("No cost data recorded (opencode session database not found or")
+        print("no agent calls were made in this run).")
+        return
+
+    summary = summarize_cost_entries(CYCLE_COST_ENTRIES)
+    print()
+    print("===== AI CYCLE COST =====")
+    for agent, cost in sorted(summary["per_agent"].items()):
+        print(f"{agent:<22} ${cost:.4f}")
+    print(f"{'TOTAL':<22} ${summary['total']:.4f}")
+    print("Per-call breakdown saved in the session's costs.json.")
+
+    if CYCLE_DENIED_CALLS:
+        print()
+        print(
+            f"===== DENIED TOOL CALLS: {len(CYCLE_DENIED_CALLS)} ====="
+        )
+        by_agent: dict[str, int] = {}
+        for agent, _ in CYCLE_DENIED_CALLS:
+            by_agent[agent] = by_agent.get(agent, 0) + 1
+        for agent, count in sorted(by_agent.items()):
+            print(f"{agent:<22} {count}")
+        print("Review them in the session's denied-tool-calls.md and adjust")
+        print("permission rules in opencode.json if needed.")
+
+
 def run_agent(
     agent: str,
     prompt: str,
@@ -398,6 +566,8 @@ def run_agent(
     print()
     print(f"===== {agent.upper()} =====")
     print()
+
+    call_start_ms = time.time() * 1000
 
     process = subprocess.Popen(
         cmd,
@@ -436,6 +606,38 @@ def run_agent(
         if log_handle is not None:
             log_handle.close()
 
+        cost_entries = fetch_costs_since(call_start_ms)
+        if cost_entries:
+            CYCLE_COST_ENTRIES.extend(cost_entries)
+            if log_file is not None:
+                append_cost_entries(log_file.parent, cost_entries)
+            call_total = sum(entry["cost"] for entry in cost_entries)
+            models = ", ".join(
+                sorted({entry["model"] for entry in cost_entries if entry["model"]})
+            )
+            print()
+            print(
+                f"===== AGENT COST: {agent} ${call_total:.4f}"
+                + (f" ({models})" if models else "")
+                + " ====="
+            )
+
+        denied_calls = extract_denied_tool_calls(output_lines)
+        if denied_calls:
+            CYCLE_DENIED_CALLS.extend((agent, call) for call in denied_calls)
+            if log_file is not None:
+                append_denied_tool_calls(
+                    log_file.parent,
+                    agent,
+                    denied_calls,
+                    dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                )
+            print()
+            print(
+                f"===== DENIED TOOL CALLS: {len(denied_calls)} ====="
+            )
+            print("Recorded in denied-tool-calls.md for permission-rule review.")
+
     output = "".join(output_lines)
 
     if returncode != 0:
@@ -457,6 +659,16 @@ def parse_json_response(text: str, *, source: str) -> dict:
 
     if isinstance(data, dict):
         return data
+
+    # Some models wrap the answer in a fenced code block (```json ... ```).
+    fenced = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.DOTALL)
+    if fenced is not None:
+        try:
+            data = json.loads(fenced.group(1))
+        except json.JSONDecodeError:
+            data = None
+        if isinstance(data, dict):
+            return data
 
     # `opencode run` prints tool activity and status lines before the model's
     # final answer. The requested JSON answer is therefore the trailing
@@ -1366,7 +1578,7 @@ def save_and_print_review(
     save(eli5_file, review_data["eli5_summary"].strip() + "\n")
 
     label = display_label or (
-        f"SOL REVIEW {round_number}" if sol else f"REVIEW {round_number}"
+        f"ESCALATION REVIEW {round_number}" if sol else f"REVIEW {round_number}"
     )
     print()
     print(f"===== {label}: {review_data['verdict']} =====")
@@ -1464,7 +1676,7 @@ def obtain_review(
             plan_file,
             task_file,
             verification_file,
-            agent="reviewer_sol" if sol else "reviewer",
+            agent="reviewer_escalation" if sol else "reviewer",
             extra_files=extra_files,
             prompt=prompt,
             log_file=log_file,
@@ -1472,6 +1684,36 @@ def obtain_review(
     except Exception as exc:
         if not single_attempt:
             raise
+        # A nonzero opencode exit does not mean the model never answered:
+        # permission denials or an aborted run can leave a complete paid
+        # review in the transcript. Recover it before exhausting the budget.
+        try:
+            transcript = log_file.read_text(encoding="utf-8", errors="replace")
+            data = parse_json_response(
+                transcript,
+                source=f"{stem} failed-run log",
+            )
+            validate_review(data)
+            if review_transform is not None:
+                review_transform(data)
+        except RuntimeError:
+            data = None
+        if data is not None:
+            data["candidate_fingerprint"] = fingerprint
+            print(
+                f"Recovered completed paid review from failed run: {log_file}"
+            )
+            return (
+                save_and_print_review(
+                    session_dir,
+                    data,
+                    round_number=round_number,
+                    sol=sol,
+                    artifact_stem=artifact_stem,
+                    display_label=display_label,
+                ),
+                data,
+            )
         exhausted_file = session_dir / "recovery-exhausted.json"
         save_json(
             exhausted_file,
@@ -1549,14 +1791,14 @@ def should_escalate_to_sol(
         any(issue.get("severity") == "CRITICAL" for issue in review.get("issues", []))
         for review in luna_reviews
     ):
-        reasons.append("a Luna review reported a CRITICAL issue")
+        reasons.append("a cheap review reported a CRITICAL issue")
     if any(
         sum(issue.get("severity") == "MAJOR" for issue in review.get("issues", [])) >= 2
         for review in luna_reviews
     ):
-        reasons.append("a Luna review reported at least two MAJOR issues")
+        reasons.append("a cheap review reported at least two MAJOR issues")
     if latest_luna_review.get("uncertainty") == "HIGH":
-        reasons.append("Luna reviewer uncertainty is HIGH")
+        reasons.append("reviewer uncertainty is HIGH")
 
     # Preserve deterministic order while removing overlapping-rule duplicates.
     reasons = list(dict.fromkeys(reasons))
@@ -1579,7 +1821,7 @@ def write_escalation_decision(
         },
     )
     print()
-    print(f"===== SOL ESCALATION: {'YES' if escalated else 'NO'} =====")
+    print(f"===== ESCALATION REQUIRED: {'YES' if escalated else 'NO'} =====")
     if reasons:
         for reason in reasons:
             print(f"- {reason}")
@@ -1659,7 +1901,7 @@ def finish_accepted(session_dir: Path, review_round: int) -> int:
     snapshot_git_state(session_dir, f"{review_round + 1:02d}-accepted")
     print()
     print("===== ACCEPTED =====")
-    print(f"Latest Luna review: {review_round}")
+    print(f"Latest review round: {review_round}")
     print(f"Session data:       {session_dir}")
     print()
     print("No commit was created.")
@@ -1732,7 +1974,7 @@ def reject_after_semantic_limit(
         f"--continue-rejected{expensive_flag}"
     )
     print()
-    print("This uses Sol to adjudicate the remaining disagreement.")
+    print("This uses the escalation reviewer to adjudicate the remaining disagreement.")
     print("The existing Architect plan will NOT be regenerated.")
     return 2
 
@@ -1797,7 +2039,7 @@ def normalize_recovery_final_eli5(review_data: dict) -> None:
     if review_data.get("verdict") != "FIX":
         return
     review_data["eli5_summary"] = (
-        "Sol found a blocking issue. The one automated recovery cycle is "
+        "The escalation reviewer found a blocking issue. The one automated recovery cycle is "
         "exhausted, so manual intervention or architecture revision comes next."
     )
 
@@ -1838,6 +2080,42 @@ def run_recovery_final_gate(
     return report["required_checks_passed"], path
 
 
+def reset_incomplete_recovery(session_dir: Path) -> list[str]:
+    """Manually clear only interrupted recovery attempts.
+
+    Explicit escape hatch for the durable single-attempt markers: a token
+    outage or transient failure can consume the bounded recovery budget even
+    though the attempt never produced a verdict. Completed artifacts are
+    preserved so paid calls are not repeated.
+    """
+    cleared: list[str] = []
+
+    exhausted_file = session_dir / "recovery-exhausted.json"
+    if exhausted_file.exists():
+        exhausted_file.unlink()
+        cleared.append(exhausted_file.name)
+
+    for stem in ("recovery-adjudication", "recovery-review", "recovery-sol-review"):
+        if (session_dir / f"{stem}.json").exists():
+            continue
+        for suffix in ("-candidate.json", ".log"):
+            path = session_dir / f"{stem}{suffix}"
+            if path.exists():
+                path.unlink()
+                cleared.append(path.name)
+
+    fix_source = session_dir / "recovery-fix-1-source.json"
+    fix_summary = session_dir / "recovery-fix-1.md"
+    if fix_source.exists() and not fix_summary.exists():
+        for name in ("recovery-fix-1-source.json", "recovery-fix-1.log"):
+            path = session_dir / name
+            if path.exists():
+                path.unlink()
+                cleared.append(name)
+
+    return cleared
+
+
 def continue_rejected_workflow(
     *,
     plan: dict,
@@ -1849,7 +2127,7 @@ def continue_rejected_workflow(
     rejected = latest_rejected_luna_review(session_dir)
     if rejected is None:
         raise RuntimeError(
-            "--continue-rejected requires a session whose latest Luna review "
+            "--continue-rejected requires a session whose latest review "
             f"is FIX at or beyond the {MAX_REVIEW_ROUNDS}-round limit."
         )
 
@@ -1891,22 +2169,22 @@ def continue_rejected_workflow(
         if not ok:
             return exhaust_rejected_recovery(
                 session_dir=session_dir,
-                reason="required cheap verification failed before Sol adjudication",
+                reason="required cheap verification failed before escalation adjudication",
                 candidate_fingerprint_value=fingerprint,
                 artifact_file=verification_file,
             )
 
         adjudication_prompt = """
-This is a manual-intervention adjudication after the ordinary Luna reviewer
+This is a manual-intervention adjudication after the ordinary cheap reviewer
 returned FIX through its bounded review limit. The cheaper reviewer did NOT
 return PASS.
 
 Read the task, unchanged architecture plan, latest cheap verification report,
-all prior Luna reviews, and the current repository diff/code. Decide whether
+all prior reviews, and the current repository diff/code. Decide whether
 the remaining objections are legitimate.
 
-Return PASS if the current code is actually acceptable despite Luna's
-objections. Return FIX only for legitimate remaining problems, with the
+Return PASS if the current code is actually acceptable despite the cheap
+reviewer's objections. Return FIX only for legitimate remaining problems, with the
 minimal precise fix required. Be especially alert for a confused, repetitive,
 or contradictory prior review. Do not repeat style observations and do not
 modify files. Return only the required JSON review object.
@@ -1921,7 +2199,7 @@ modify files. Return only the required JSON review object.
             sol=True,
             extra_files=original_reviews,
             artifact_stem="recovery-adjudication",
-            display_label="SOL ADJUDICATION",
+            display_label="ESCALATION ADJUDICATION",
             prompt=adjudication_prompt,
             single_attempt=True,
         )
@@ -1938,7 +2216,7 @@ modify files. Return only the required JSON review object.
                     complete_file,
                     {
                         "candidate_fingerprint": fingerprint,
-                        "accepted_by": "Sol adjudication",
+                        "accepted_by": "escalation adjudication",
                     },
                 )
                 return finish_accepted(session_dir, rejected_round)
@@ -2004,12 +2282,13 @@ modify files. Return only the required JSON review object.
     )
 
     final_sol_prompt = """
-This is the final Sol audit in a one-cycle recovery after the ordinary Luna
+This is the final escalation audit in a one-cycle recovery after the ordinary
 review limit was reached. Independently inspect the current repository
-diff/code and adjudicate the attached recovery Luna review as well as all prior
-evidence. A Luna FIX is not automatically authoritative, but return FIX if any
-legitimate blocking issue remains. Return PASS only if this candidate can
-proceed to final verification. Do not modify files or repeat style observations.
+diff/code and adjudicate the attached recovery review as well as all prior
+evidence. A cheap-review FIX is not automatically authoritative, but return
+FIX if any legitimate blocking issue remains. Return PASS only if this
+candidate can proceed to final verification. Do not modify files or repeat
+style observations.
 If returning FIX, the ELI5 must say that the one automated recovery cycle is
 exhausted and manual intervention or architecture revision comes next; do not
 claim that another automatic implementer fix will run.
@@ -2024,7 +2303,7 @@ Return only the required JSON review object.
         round_number=1,
         sol=True,
         artifact_stem="recovery-sol-review",
-        display_label="RECOVERY SOL FINAL AUDIT",
+        display_label="RECOVERY ESCALATION AUDIT",
         prompt=final_sol_prompt,
         review_transform=normalize_recovery_final_eli5,
         single_attempt=True,
@@ -2038,7 +2317,7 @@ Return only the required JSON review object.
         save_json(
             exhausted_file,
             {
-                "reason": "Sol final audit returned FIX",
+                "reason": "escalation final audit returned FIX",
                 "review_file": str(recovery_sol_file.relative_to(session_dir)),
                 "candidate_fingerprint": fingerprint,
             },
@@ -2075,7 +2354,7 @@ Return only the required JSON review object.
         complete_file,
         {
             "candidate_fingerprint": fingerprint,
-            "accepted_by": "recovery Luna review plus Sol final audit",
+            "accepted_by": "recovery review plus escalation final audit",
         },
     )
     return finish_accepted(session_dir, rejected_round)
@@ -2158,7 +2437,7 @@ def complete_candidate_workflow(
                 rejected = latest_rejected_luna_review(session_dir)
                 if rejected is None:
                     raise RuntimeError(
-                        "Luna review limit reached without a reusable FIX review."
+                        "review limit reached without a reusable FIX review."
                     )
                 return reject_after_semantic_limit(
                     session_dir=session_dir,
@@ -2179,7 +2458,7 @@ def complete_candidate_workflow(
             luna_match = (luna_round, review_file, review_data)
         else:
             print(
-                "Reusing Luna review for unchanged candidate: "
+                "Reusing review for unchanged candidate: "
                 f"{luna_match[1]}"
             )
 
@@ -2260,7 +2539,7 @@ def complete_candidate_workflow(
                     print()
                     print("===== NOT ACCEPTED =====")
                     print(
-                        f"The session used all {MAX_SOL_REVIEW_ROUNDS} Sol "
+                        f"The session used all {MAX_SOL_REVIEW_ROUNDS} escalation "
                         "review rounds."
                     )
                     return 2
@@ -2277,7 +2556,7 @@ def complete_candidate_workflow(
                 sol_match = (sol_round, sol_file, sol_data)
             else:
                 print(
-                    "Reusing Sol review for unchanged candidate: "
+                    "Reusing escalation review for unchanged candidate: "
                     f"{sol_match[1]}"
                 )
 
@@ -2353,7 +2632,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Run or resume the GPT architect -> DeepSeek implementer -> "
-            "cheap verification -> Luna review -> optional Sol audit -> "
+            "cheap verification -> review -> optional escalation audit -> "
             "final expensive verification workflow."
         )
     )
@@ -2380,8 +2659,19 @@ def main() -> int:
         "--continue-rejected",
         action="store_true",
         help=(
-            "Use one bounded Sol-adjudicated recovery cycle for a resumed "
-            "session that exhausted ordinary Luna review rounds."
+            "Use one bounded escalation-adjudicated recovery cycle for a resumed "
+            "session that exhausted ordinary review rounds."
+        ),
+    )
+
+    parser.add_argument(
+        "--retry-recovery",
+        action="store_true",
+        help=(
+            "With --resume and --continue-rejected: clear only interrupted "
+            "recovery attempts so a token outage or transient failure does "
+            "not consume the bounded recovery budget. Completed reviews, "
+            "fixes, and verification reports are preserved."
         ),
     )
 
@@ -2395,6 +2685,8 @@ def main() -> int:
 
     if args.continue_rejected and not args.resume:
         parser.error("--continue-rejected requires --resume SESSION.")
+    if args.retry_recovery and not (args.resume and args.continue_rejected):
+        parser.error("--retry-recovery requires --resume SESSION --continue-rejected.")
 
     # -----------------------------------------------------------------
     # Session creation / recovery
@@ -2415,6 +2707,18 @@ def main() -> int:
         plan, plan_file = recover_or_load_plan(session_dir)
 
         if args.continue_rejected:
+            if args.retry_recovery:
+                cleared = reset_incomplete_recovery(session_dir)
+                if cleared:
+                    print()
+                    print("===== RECOVERY RETRY RESET =====")
+                    print("Cleared interrupted recovery attempt artifacts:")
+                    for name in cleared:
+                        print(f"- {name}")
+                    print()
+                else:
+                    print("No interrupted recovery artifacts found to clear.")
+
             effective_allow_expensive = args.allow_expensive
             rejection_file = session_dir / "semantic-rejection.json"
             if rejection_file.exists():
@@ -2562,14 +2866,17 @@ Do not modify repository files.
 
 if __name__ == "__main__":
     try:
-        raise SystemExit(main())
+        return_code = main()
     except KeyboardInterrupt:
         print("\nInterrupted.", file=sys.stderr)
-        raise SystemExit(130)
+        return_code = 130
     except RejectedRecoveryExhausted as exc:
         print("\n===== NOT ACCEPTED =====", file=sys.stderr)
         print(str(exc), file=sys.stderr)
-        raise SystemExit(2)
+        return_code = 2
     except Exception as exc:
         print(f"\nERROR: {exc}", file=sys.stderr)
-        raise SystemExit(1)
+        return_code = 1
+
+    print_cycle_cost_summary()
+    raise SystemExit(return_code)

@@ -186,7 +186,7 @@ class EscalationTests(unittest.TestCase):
         }
         escalated, reasons = self.escalate(latest_luna_review=review)
         self.assertTrue(escalated)
-        self.assertIn("Luna reviewer uncertainty is HIGH", reasons)
+        self.assertIn("reviewer uncertainty is HIGH", reasons)
 
 
 class ReviewAndResumeTests(unittest.TestCase):
@@ -542,6 +542,175 @@ class RejectedRecoveryTests(unittest.TestCase):
 
             review_mock.assert_not_called()
             self.assertTrue((session_dir / "recovery-exhausted.json").exists())
+
+    def test_retry_recovery_clears_only_incomplete_attempts(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            (session_dir / "recovery-exhausted.json").write_text("{}", encoding="utf-8")
+            (session_dir / "recovery-review-candidate.json").write_text(
+                "{}", encoding="utf-8"
+            )
+            (session_dir / "recovery-review.log").write_text("", encoding="utf-8")
+            (session_dir / "recovery-sol-review-candidate.json").write_text(
+                "{}", encoding="utf-8"
+            )
+            (session_dir / "recovery-sol-review.log").write_text("", encoding="utf-8")
+            completed = session_dir / "recovery-adjudication.json"
+            completed.write_text("{}", encoding="utf-8")
+            (session_dir / "recovery-adjudication-candidate.json").write_text(
+                "{}", encoding="utf-8"
+            )
+            (session_dir / "recovery-adjudication.log").write_text(
+                "complete", encoding="utf-8"
+            )
+            (session_dir / "recovery-fix-1.md").write_text("done", encoding="utf-8")
+            (session_dir / "recovery-fix-1-source.json").write_text(
+                "{}", encoding="utf-8"
+            )
+
+            cleared = ai_cycle.reset_incomplete_recovery(session_dir)
+
+            self.assertIn("recovery-exhausted.json", cleared)
+            self.assertIn("recovery-review-candidate.json", cleared)
+            self.assertIn("recovery-review.log", cleared)
+            self.assertIn("recovery-sol-review-candidate.json", cleared)
+            self.assertIn("recovery-sol-review.log", cleared)
+            self.assertFalse((session_dir / "recovery-exhausted.json").exists())
+            self.assertFalse((session_dir / "recovery-review-candidate.json").exists())
+            self.assertFalse((session_dir / "recovery-sol-review.log").exists())
+            self.assertTrue(completed.exists())
+            self.assertTrue((session_dir / "recovery-adjudication-candidate.json").exists())
+            self.assertTrue((session_dir / "recovery-fix-1.md").exists())
+            self.assertTrue((session_dir / "recovery-fix-1-source.json").exists())
+
+    def test_retry_recovery_clears_interrupted_fix_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            (session_dir / "recovery-fix-1-source.json").write_text(
+                "{}", encoding="utf-8"
+            )
+            (session_dir / "recovery-fix-1.log").write_text("", encoding="utf-8")
+
+            cleared = ai_cycle.reset_incomplete_recovery(session_dir)
+
+            self.assertFalse((session_dir / "recovery-fix-1-source.json").exists())
+            self.assertFalse((session_dir / "recovery-fix-1.log").exists())
+            self.assertIn("recovery-fix-1-source.json", cleared)
+
+
+class CostTrackingTests(unittest.TestCase):
+    def test_summarize_cost_entries_aggregates_per_agent(self) -> None:
+        entries = [
+            {"agent": "reviewer", "cost": 0.01},
+            {"agent": "reviewer", "cost": 0.02},
+            {"agent": "implementer", "cost": 0.05},
+            {"agent": "reviewer_escalation", "cost": 0.03},
+        ]
+        summary = ai_cycle.summarize_cost_entries(entries)
+        self.assertAlmostEqual(0.03, summary["per_agent"]["reviewer"])
+        self.assertAlmostEqual(0.05, summary["per_agent"]["implementer"])
+        self.assertAlmostEqual(0.03, summary["per_agent"]["reviewer_escalation"])
+        self.assertAlmostEqual(0.11, summary["total"])
+
+    def test_summarize_cost_entries_handles_missing_cost(self) -> None:
+        summary = ai_cycle.summarize_cost_entries(
+            [{"agent": "reviewer", "cost": None}, {"agent": "architect"}]
+        )
+        self.assertAlmostEqual(0.0, summary["total"])
+
+    def test_append_cost_entries_accumulates(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            ai_cycle.append_cost_entries(
+                session_dir, [{"agent": "reviewer", "cost": 0.01}]
+            )
+            ai_cycle.append_cost_entries(
+                session_dir, [{"agent": "reviewer_escalation", "cost": 0.03}]
+            )
+            loaded = json.loads(
+                (session_dir / "costs.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(2, len(loaded["entries"]))
+            self.assertEqual(0.01, loaded["entries"][0]["cost"])
+            self.assertEqual(0.03, loaded["entries"][1]["cost"])
+
+
+class DeniedCallAndRecoveryTests(unittest.TestCase):
+    def test_extract_denied_tool_calls(self) -> None:
+        lines = [
+            "→ Read src/foo.cpp",
+            "\u2717 python3 -c \"import os\" failed",
+            "Error: The user has specified a rule which prevents you from using "
+            "this specific tool call. Here are some of the relevant rules [...]",
+            "\u2717 git diff HEAD -- apps/one_combat.cpp | grep -n isfinite  failed",
+            "Error: The user has specified a rule which prevents you from using "
+            "this specific tool call. Here are some of the relevant rules [...]",
+            "→ Read src/bar.cpp",
+        ]
+        calls = ai_cycle.extract_denied_tool_calls(lines)
+        self.assertEqual(2, len(calls))
+        self.assertIn("python3 -c", calls[0])
+        self.assertIn("| grep", calls[1])
+
+    def test_denied_calls_ignored_without_failed_marker(self) -> None:
+        lines = [
+            "Error: The user has specified a rule which prevents you from using "
+            "this specific tool call.",
+        ]
+        self.assertEqual([], ai_cycle.extract_denied_tool_calls(lines))
+
+    def test_append_denied_tool_calls_accumulates_per_agent(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            ai_cycle.append_denied_tool_calls(
+                session_dir, "reviewer", ["python3 -c x"], "2026-08-07 10:00:00"
+            )
+            ai_cycle.append_denied_tool_calls(
+                session_dir, "reviewer_escalation", ["git diff | grep"], "2026-08-07 11:00:00"
+            )
+            text = (session_dir / "denied-tool-calls.md").read_text(encoding="utf-8")
+            self.assertIn("## reviewer", text)
+            self.assertIn("## reviewer_escalation", text)
+            self.assertIn("python3 -c x", text)
+            self.assertIn("git diff | grep", text)
+
+    def test_parse_json_response_accepts_fenced_json(self) -> None:
+        text = (
+            "Some tool output\n"
+            "```json\n"
+            '{"verdict": "PASS", "summary": "ok", '
+            '"eli5_summary": "fine", "uncertainty": "LOW", "issues": []}\n'
+            "```\n"
+        )
+        data = ai_cycle.parse_json_response(text, source="test")
+        self.assertEqual("PASS", data["verdict"])
+
+    def test_failed_run_review_recovered_from_log(self) -> None:
+        review = review_data("PASS")
+        review_text = "```json\n" + json.dumps(review) + "\n```\n"
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            log_file = session_dir / "recovery-sol-review.log"
+            log_file.write_text(review_text, encoding="utf-8")
+            with mock.patch(
+                "tools.ai_cycle.review",
+                side_effect=RuntimeError("opencode run exited 1"),
+            ):
+                path, data = ai_cycle.obtain_review(
+                    session_dir=session_dir,
+                    plan_file=session_dir / "plan.json",
+                    task_file=session_dir / "task.md",
+                    verification_file=session_dir / "cheap.json",
+                    fingerprint="candidate",
+                    round_number=1,
+                    sol=True,
+                    artifact_stem="recovery-sol-review",
+                    single_attempt=True,
+                )
+
+            self.assertEqual("PASS", data["verdict"])
+            self.assertTrue((session_dir / "recovery-sol-review.json").exists())
+            self.assertFalse((session_dir / "recovery-exhausted.json").exists())
 
 
 if __name__ == "__main__":

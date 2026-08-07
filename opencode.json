@@ -1,6 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-
   "agent": {
     "architect": {
       "description": "Senior architect. Understands the task and writes a precise implementation plan without modifying the repository.",
@@ -28,7 +27,6 @@
         }
       }
     },
-
     "implementer": {
       "description": "Implementation agent. Executes an approved plan, edits code and runs focused verification.",
       "mode": "primary",
@@ -53,7 +51,6 @@
         }
       }
     },
-
     "reviewer": {
       "description": "Senior adversarial reviewer. Reviews implementation correctness without modifying files.",
       "mode": "primary",
@@ -79,13 +76,12 @@
         }
       }
     },
-
-    "reviewer_sol": {
-      "description": "Escalation auditor. Reviews high-risk Luna passes and adjudicates bounded rejected-session recovery without modifying files.",
+    "reviewer_escalation": {
+      "description": "Escalation auditor. Reviews high-risk cheap-reviewer passes and adjudicates bounded rejected-session recovery without modifying files.",
       "mode": "primary",
       "model": "deepseek/deepseek-v4-pro",
       "reasoningEffort": "max",
-      "prompt": "{file:./.opencode/prompts/reviewer.md}\n\n{file:./.opencode/prompts/reviewer-sol.md}",
+      "prompt": "{file:./.opencode/prompts/reviewer.md}\n\n{file:./.opencode/prompts/reviewer-escalation.md}",
       "permission": {
         "edit": "deny",
         "task": "deny",
