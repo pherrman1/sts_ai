@@ -102,28 +102,23 @@ Pre-registered decision: if the current PVNet already ranks frontier siblings
 well (top-1 ≥ 80%, Spearman ≥ 0.7), the value-quality hypothesis is weakened —
 deprioritize 5/6, keep the conditional-application work. If poor, proceed.
 
-### Phase 5 — value-only model, terminal-utility distribution target (IN EXECUTION)
-- New trainer `train_combat_utility.py` (policy trainer untouched — do not
-  regress priors). Target: **51-bin categorical over the MCTS terminal utility
-  R = 0 on loss, 50 + endHp on win** (bin 0 = loss / mass around zero; bins
-  1-50 = endHp/maxHp fraction on wins, mapped by maxHp at inference —
-  consistent with the deployed terminal eval `BattleScumSearcher3.cpp:588`).
-  Cross-entropy loss. Death prob = mass in bin 0; expected value = mean of the
-  distribution; CVaR for risk-sensitive use. Win/death/potion/turns heads
-  dropped.
-- **Value-only** (same encoder as PVNet, no policy head) — answers "does
-  policy sharing hurt value quality?" via comparison with a shared-encoder
-  variant later.
-- **Bootstrap data:** existing fairgen value rows (single realized outcomes).
-  The phase-3 particle-multisample labels replace this data source when ready
-  (same target schema).
-- Checkpoint selection: held-out value distribution loss now; switch to
-  held-out sibling ranking/regret when phase-4 data exists.
-- Export `combat_pvnet_v2` native format; extend `CombatPVNet::load` +
-  `pvnetparity` + `eval_combat_pvnet.py` for the new head.
-
-Verify: parity test; offline metrics (expected-value calibration, death
-calibration, bin coverage) on held-out rows vs the tracked PVNet numbers.
+### Phase 5 — value-only model, terminal-utility distribution target (EXECUTED 2026-08-07, §128)
+- **Done (this session):** `train_combat_utility.py` (value-only 14-token
+  encoder + single 51-bin head over R = 0 | 50+endHp, CE loss) trained on the
+  §127 datagen rows (`build/fair34_v.csv`, 225k, vnet-era controller) →
+  `build/v_combat_utility.txt` (native `combat_utility_v1`; encoder section
+  identical to v1, one `util` head). Eval `eval_combat_utility.py` + utility
+  parsing in `combat_pvnet_parity.py`. **Offline result (30k identical
+  held-out rows): win Brier 0.0647 / ECE 0.0688 / death BCE 0.2287 vs the
+  tracked PVNet's 0.2505 / 0.3298 / 2.2076** — and the tracked PVNet itself
+  miscalibrates on the new distribution (0.107 Brier recorded on its own
+  data), confirming the phases-2-4 distribution-gap premise.
+- Nothing deployed: no C++ integration (vnet owns the leaf, §126).
+- **Deferred:** clean target-only ablation (same rows, win/quantile heads vs
+  51-bin), shared-encoder variant (dual-CSV policy pass), folding the
+  fresh-data + direct-target recipe into the vnet GBM retrain line, C++
+  loader for `combat_utility_v1` (only with a deployment gate).
+- Next: sibling-ranking eval (phase 4) once phase-2/3 leaf data exists.
 
 ### Phase 6 — conditional deployment + inference speed (IMPLEMENTED 2026-08-07, gate pending)
 Implemented in this session (user request; phase 5 value-only model was

@@ -76,7 +76,10 @@ assert len(canonical) == 1766
 pol_header = list(pd.read_csv(POL_CSV, nrows=0).columns)
 POL_META = ("seed", "fightIdx", "decIdx", "visit", "total")
 action_names = [c for c in pol_header if c not in canonical and c not in POL_META]
-assert len(action_names) == 14
+# §3.5: fairgen policy rows carry extra subset-content action features; the
+# PVNet action encoder reads the first 14.
+assert len(action_names) >= 14
+action_names = action_names[:14]
 
 # Entity decomposition
 zones = [[f"{p}{i}" for i in range(371)] for p in ("hd", "dr", "ds", "ex")]

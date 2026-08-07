@@ -624,14 +624,15 @@ void search::BattleScumSearcher2::computeEdgePriors(search::BattleScumSearcher2:
         thread_local std::vector<float> global; global.resize(D);
         g_combatPVNet.encode(stateArr, global.data());
         thread_local std::vector<float> actionFeats;
-        actionFeats.resize(n * 14);
+        const int actionN = combatPolicyFeatureCount() - combatFeatureCount();
+        actionFeats.resize(n * actionN);
         for (int i = 0; i < n; ++i)
-            combatFillActionFeatures(bc, node.edges[i].action, actionFeats.data() + i * 14);
+            combatFillActionFeatures(bc, node.edges[i].action, actionFeats.data() + i * actionN);
         thread_local std::vector<float> logitsCache;
         logitsCache.resize(n);
         float bestLogit = -1e30f;
         for (int i = 0; i < n; ++i) {
-            const float logit = g_combatPVNet.policyScore(global.data(), actionFeats.data() + i * 14);
+            const float logit = g_combatPVNet.policyScore(global.data(), actionFeats.data() + i * actionN);
             if (logit > bestLogit) bestLogit = logit;
             logitsCache[i] = logit;
         }

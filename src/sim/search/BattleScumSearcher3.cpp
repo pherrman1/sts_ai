@@ -765,16 +765,17 @@ void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc)
         global.resize(D);
         g_combatPVNet.encode(stateArr, global.data());
 
-        actionFeats.resize(n * 14);
+        const int actionN = combatPolicyFeatureCount() - combatFeatureCount();
+        actionFeats.resize(n * actionN);
         for (int i = 0; i < n; ++i)
-            combatFillActionFeatures(bc, node.edges[i].action, actionFeats.data() + i*14);
+            combatFillActionFeatures(bc, node.edges[i].action, actionFeats.data() + i*actionN);
 
         // Score all actions at once
         thread_local std::vector<float> logitsCache;
         logitsCache.resize(n);
         float bestLogit = -1e30f;
         for (int i = 0; i < n; ++i) {
-            float logit = g_combatPVNet.policyScore(global.data(), actionFeats.data() + i*14);
+            float logit = g_combatPVNet.policyScore(global.data(), actionFeats.data() + i*actionN);
             if (logit > bestLogit) bestLogit = logit;
             logitsCache[i] = logit;
         }

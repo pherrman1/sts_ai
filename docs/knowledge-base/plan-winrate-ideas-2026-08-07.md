@@ -1,8 +1,12 @@
 # Winrate improvement plan — S3-centered wave (2026-08-07)
 
 Status: **EXECUTED through Wave 2 (2026-08-07), stop-after-Wave-2 per user
-instruction.** Results are in EXPERIMENTS.md §124–§126 and the decision logs
-`2026-08-07-winrate-wave.md` / `2026-08-07-vnet-promotion.md`:
+instruction; the §126 follow-up (gate-stack-distribution vnet retrain, §129)
+is COMPLETE — NULL for replacement, the deployed honest-data model stays.**
+Results are in EXPERIMENTS.md §124–§129 and the decision logs
+`2026-08-07-winrate-wave.md` / `2026-08-07-vnet-promotion.md`
+(§124b/§124c/§127/§128 are the parallel session's prior-guided-rollouts,
+policy-prior-v2, and utility-net entries):
 
 - §124 baseline wave: recorded references reproduce on the live-valid binary
   (flat @1k, +2.3pp n.s. @3k/256p); S3−belief−chain re-confirmed
@@ -13,10 +17,17 @@ instruction.** Results are in EXPERIMENTS.md §124–§126 and the decision logs
   the fair-S3 path** — three significant gates +12.5/+12.1/+12.5pp at
   ~2-2.4× cpu; 55.1% @3k/64p and 50.4% @1k/64p, the highest honest numbers
   recorded.
-- Not executed (deferred): §3.4 policy prior v2, §3.5 multi-select prior
-  encoding, Wave 3 (5.7.3 self-play relabeling, counter-aware OOC pricing),
-  and the §4.4 belief-v2 reopening (the §125 ablation re-derivation
-  re-confirmed belief/chain off, so the reopening condition did not fire).
+- §129 (this session's follow-up): gate-stack-distribution vnet retrain
+  (`STS_DATAGEN_GATES`) NULL — the gated model's α optimum shifts 0.3→0.5
+  but no significant winrate difference at either operating point; the
+  deployed model stays.
+- Executed by the parallel session against the §126 references: §3.4 policy
+  prior v2 + §3.5 multi-select prior encoding (§127: NULL) and §3.3-adjacent
+  prior-guided S3 rollouts (§124c: −7.0pp, closed).
+- Not executed (deferred): Wave 3 (5.7.3 self-play relabeling, counter-aware
+  OOC pricing) and the §4.4 belief-v2 reopening (the §125 ablation
+  re-derivation re-confirmed belief/chain off, so the reopening condition
+  did not fire).
 
 Focus per session decision 2026-08-07:
 **Searcher3 is the thing to improve**; S2 fair determinization work is out of
@@ -120,7 +131,7 @@ showed UCB > PUCT at 20k sims; no cPUCT sweep exists on the post-§113 honest
 S3 binary. Sweep {1.0, 1.5, 2.5, 4.0, 6.0} at B2 config, 128 seeds local as a
 probe; gate the best point vs B2 at 256 seeds.
 
-### 3.4 Policy prior v2 + fairgen datagen alignment (§123 open question)
+### 3.4 Policy prior v2 + fairgen datagen alignment (§123 open question) — IN EXECUTION (2026-08-07)
 
 The tracked GBM prior `build/policy_trees_c.txt` (sha256 24793bd3…) feeds
 `computeEdgePriors` in the deployed S3 (PUCT). §103 showed the GBM prior ties
@@ -130,20 +141,43 @@ better priors. Steps:
 1. `fairgen` datagen with the fix: `STS_LIVE_VALID=1` (and forced-move ON)
    with `STS_FAIR=1 STS_SEARCHER3=1` — §123 notes datagen is not covered by
    the default, so the flag must be explicit. Fresh seeds (e.g. 400000+),
-   N=500-1000 seeds.
+   N=500-1000 seeds. **RUNNING on GCP (2026-08-07, ~50 min):** 1000 seeds @
+   1000 sims, seedOffset 400000, S3−belief−chain/64p, **with explicit
+   `STS_VNET=build/v_combat_honest.txt STS_VNET_ALPHA=0.3`** — recorded
+   deviation: the plan predates the §126 vnet promotion; the explicit env
+   aligns the policy-target distribution with the deployed controller (§126's
+   own datagen-alignment stance; without it, explicit STS_VNET defaults to
+   α=0.5). Merged with §3.5 (see below) — the rows carry 22 action features.
 2. `train_policy.py` on the new rows → export → new `policy_trees_c` v2.
+   **DONE (2026-08-07, §127):** `build/policy_trees_c_v2.txt` (100 trees, 751
+   feats), offline CE/KL −0.09 vs tracked on the new rows (policystats
+   action-feature bug fixed to make that comparison honest).
 3. Paired gate: v2 prior vs tracked prior at B2 config, 256 seeds. Also
-   re-verify load-message evidence (`STS_POLICY`).
+   re-verify load-message evidence (`STS_POLICY`). **DONE (2026-08-07,
+   §127): ❌ NULL — 48.4% vs 50.4% (−2.0pp, CI [−8.2,+4.3]), floor −1.5, HP
+   −4.2, cpu equal; line closed per the pre-registered rule.** The better
+   offline CE/KL does not transfer online (same pattern as §124c). §3.4
+   closes as executed; the tracked prior stays deployed.
 
-### 3.5 Multi-select prior encoding
+### 3.5 Multi-select prior encoding — IMPLEMENTED (merged into 3.4's datagen)
 
-Priors are **uniform across GAMBLE/EXHAUST_MANY subsets** because
-`combatFillActionFeatures` encodes multi-select actions identically
+Priors were **uniform across GAMBLE/EXHAUST_MANY subsets** because
+`combatFillActionFeatures` encoded multi-select actions identically
 (`src/sim/search/CombatValueNet.cpp`; §113/§114 limitations). `STS_MULTISELECT_MODE=single|none`
 was measured negative (31.6%/30.5% vs 36.3% — pruning the action space is not
-the fix). The fix is in the prior features: add subset-content features (size,
-aggregate card properties) to the 14 policy features, retrain the prior
-(rides 3.4's pipeline), gate the same way. Low cost, no search-code change.
+the fix). **Implemented 2026-08-07:** 8 subset-content features appended to
+the action block (`aSelectSize`, `aSelTotalCost`, `aSelAtk/Skl/Pow`,
+`aSelUpgraded`, `aSelPlayOrder`, `aSelObtainWeight`; `kNumAction` 14→22,
+derived from `kActionNames`); multi-select indices resolve against the hand,
+single selects against hand/discard/exhaust pools per `CardSelectTask`,
+discovery/codex contribute size only. Appended AFTER the original 14 so the
+PVNet action encoder (first 14) and old GBM models (model-nfeat) are
+unaffected; PVNet stride hardcodes in S2/S3 `computeEdgePriors` (were `n*14`,
+would have mis-filled with the new width) and the `policystats` act buffer
+fixed; `eval_combat_pvnet.py`/`combat_pvnet_parity.py` slice to 14. Retrain +
+gate ride §3.4's pipeline (the running datagen already emits the 22 features
+— verified locally: distinct subset combos now appear in GAMBLE/EXHAUST_MANY
+rows).
 
 ## 4. Wave 2 — S3 structural (the main bets)
 

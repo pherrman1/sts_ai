@@ -53,7 +53,11 @@ groups = column_groups(canonical)
 pol_header = list(pd.read_csv(POL_CSV, nrows=0).columns)
 POL_META = ("seed", "fightIdx", "decIdx", "visit", "total")
 action_names = [c for c in pol_header if c not in canonical and c not in POL_META]
-assert len(action_names) == 14
+# §3.5: fairgen policy rows carry extra subset-content action features; the
+# PVNet action encoder reads the first 14.
+if len(action_names) < 14:
+    raise SystemExit(f"expected >=14 action features, got {len(action_names)}")
+action_names = action_names[:14]
 
 model, D, H, HDS, L, NQ, scalar_sel = load_native_model(MODEL)
 print(f"[model] d={D} h={H} heads={HDS} layers={L} nq={NQ}")

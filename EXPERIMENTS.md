@@ -4835,3 +4835,201 @@ extFight*/emElites/emFights parity-excluded) and
   `apps/one_combat.cpp` env parse, header extern. Decision log:
   `2026-08-07-prior-guided-rollouts.md`. KB: `combat-search.md` (rollout
   section).
+## §124c Prior-guided S3 rollouts — paired 256-seed gate: SIGNIFICANTLY NEGATIVE (−7.0pp) — line closed (2026-08-07, GCP sts-test)
+
+- **What:** the §124b pre-registered gate for `STS_S3_ROLLOUT_POLICY=1`
+  (rollout actions sampled from the GBM policy prior instead of the static
+  `rolloutWeight` heuristic). Pre-registered rule: null or negative closes
+  the line (diversity-collapse risk was the known failure mode).
+- **Config (both arms):** full V4 gate stack (`STS_OOC_STRATEGIC_TOK_NN=
+  selfplay/models/ooc_strategic_tok_final.native`, REST/EVENT/SHOP/TREASURE/
+  BOSS_RELIC=1, `STS_OOC_STRATEGIC_MARGIN=1.0`), `STS_FAIR=1 STS_SEARCHER3=1
+  STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_S3_PARTICLES=64`, vnet α=0.3 default ON,
+  block 126700–126955 (256), asc 0, 24 threads; policy arm adds
+  `STS_S3_ROLLOUT_POLICY=1`. Commit 3f04e82 + the §124b source sync
+  (BattleScumSearcher3.{h,cpp}, one_combat.cpp).
+- **Results (paired, `paired_analysis.py`):**
+  | metric | control (heuristic rollout) | policy-prior rollout | delta |
+  |---|---|---:|---:|
+  | win | **50.4%** (129/256) | **43.4%** (111/256) | **−7.0pp, 95% CI [−13.7, −0.4]** |
+  | avg floor | 44.1 | 42.8 | −1.3 (CI [−2.6, 0.0]) |
+  | avg HP end | 29.4 | 22.7 | −6.7 |
+  | cpu-s/run | 30.5 | 83.8 | +2.7× (mostly uncontended reads) |
+  Discordant 76/256 (30%): control-only 47, policy-only 29.
+- **Sanity:** the control arm reproduces the §126 reference exactly (50.4%,
+  129/256 — same block/config), so the pairing is clean. Banner confirms
+  `[S3 rollout-policy = ON]` on the policy arm.
+- **Verdict: ❌ falsified, line closed per the pre-registered rule.** The GBM
+  prior — trained on older-policy visit distributions — actively HURTS
+  rollouts: −7.0pp significant at 2.7× cpu. No @3k re-gate (pre-registered:
+  only if positive). The env stays opt-in (no behavior change unset);
+  follow-ups (temperature/mixture with the heuristic) are NOT pursued unless
+  the prior is retrained on current-stack data (the §126-vnet-era policy
+  prior v2 line in winrate-plan §3.4 is the natural prerequisite).
+- **Artifacts:** `build/pri1_ctl_256.csv` (control; md5
+  4106e1deb6a76e094a87b70ba9c9ea64), `build/pri1_pol_256.csv` (policy arm;
+  md5 4ef1416c17a1790d0dfb16c3942dd760), logs on sts-test
+  `build/pri1_{ctl,pol}_256.log`; local smoke `build/pri0_{ctl,pol}.csv`
+  (§124b). KB: `combat-search.md` (prior-guided rollouts section updated to
+  the verdict). Decision log: `2026-08-07-prior-guided-rollouts.md` (verdict
+  appended).
+## §127 Policy prior v2 pipeline (winrate-plan §3.4+§3.5): fairgen datagen (1000 seeds, vnet-α0.3-aligned, 22-action-feature producer) + v2 prior trained + policystats bug fix; paired gate pending (2026-08-07, GCP + local)
+
+- **What:** the merged §3.4/§3.5 pipeline. Datagen: `fairgen 1000 1000 0 0.3
+  build/fair34_{v,p,o}.csv 400000` on GCP with `STS_LIVE_VALID=1
+  STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_S3_PARTICLES=64` **plus explicit
+  `STS_VNET=build/v_combat_honest.txt STS_VNET_ALPHA=0.3`** (recorded
+  deviation: §3.4 predates the §126 promotion; aligns the policy rows with the
+  deployed controller; without the alpha the explicit env defaults to the
+  legacy 0.5). Producer is the §3.5 22-action-feature build (1766 state + 22
+  action): `aSelectSize, aSelTotalCost, aSelAtk/Skl/Pow, aSelUpgraded,
+  aSelPlayOrder, aSelObtainWeight` appended after the original 14 (PVNet
+  first-14 and old model-nfeat paths unaffected). Output: 225,057 value +
+  933,458 policy (1793 cols) + 21,319 ooc rows in 431s; CSVs pulled to
+  `build/fair34_{v,p,o}.csv`.
+- **Training:** `train_policy.py build/fair34_p.csv build/policy_v2.json
+  build/policy_trees_c_v2.txt` (100 trees, 751 non-constant features, GPU) —
+  in-sample top1 0.544, visit-share 0.477.
+- **Policystats bug found + fixed (pre-existing, not introduced here):** the
+  mode stored the action block only in `act` (the optional PVNet comparison)
+  and never into `feat`, so the GBM `predictVec` path always saw zeroed action
+  features → uniform per-group softmax (CE == gbmEntropy) for every policy
+  model. Fixed: action block now also fills `feat`; `actionN` is derived from
+  the actual CSV header (14 pre-§3.5, 22 since) instead of the current
+  producer count, so old and new CSVs both analyze. This is the first honest
+  offline prior comparison the tool has produced.
+- **Offline comparison (both models, all 933,458 rows of the new data):**
+  | metric | tracked `policy_trees_c.txt` | v2 `policy_trees_c_v2.txt` |
+  |---|---|---:|
+  | top1 agreement | 0.5522 | 0.5454 |
+  | CE | 1.3327 | **1.2397** |
+  | KL | 0.6209 | **0.5279** |
+  | regret (1 − p\*) | 0.5192 | 0.5225 |
+  | gbmEntropy | 1.4359 | 1.3072 |
+  v2 clearly better on CE/KL (≈0.09), tied on top1/regret. Note: tracked was
+  trained on old-distribution rows, so this overstates v2's edge; the paired
+  gate decides.
+- **Gate (running on GCP):** two arms @1k/64p, block 126700, full V4 stack +
+  vnet default: control (default tracked prior) vs `STS_POLICY=
+  build/policy_trees_c_v2.txt`; provenance verified via `/proc/PID/environ`.
+  Pre-registered (§3.4): a null closes the prior-v2 line.
+- **Artifacts:** `build/fair34_{v,p,o}.csv` (3.4 GB p CSV, 822 MB v, local +
+  sts-test), `build/policy_trees_c_v2.txt` (179 KB; sha256 recorded at gate
+  close), `build/policy_v2.json`, `build/ptrain_v2.log`, GCP logs
+  `build/fair34.log`, `build/pri2_{ctl,v2}_256.log`. Code:
+  `combatFillActionFeatures` (§3.5 features), policystats fix
+  (`apps/one_combat.cpp`). Decision log:
+  `2026-08-07-policy-prior-v2-pipeline.md`.
+- **Gate verdict (appended, 2026-08-07): ❌ NULL — line closed per the
+  pre-registered rule.** Paired 256-seed @1k/64p, block 126700, full V4 stack
+  + vnet default: v2 prior **48.4% vs tracked 50.4% = −2.0pp (95% CI
+  [−8.2,+4.3])**, floor −1.5 (CI [−2.9,−0.1]), HP −4.2, cpu equal (73.8 vs
+  75.7 s/run). Discordant 71/256 (tracked-only 38, v2-only 33). Control
+  reproduced the §126 reference exactly (129/256 = 50.4%) — clean pairing.
+  The better offline CE/KL (−0.09) does not transfer to the deployed PUCT
+  stack — the same pattern as §124c (prior-guided rollouts): prior-quality
+  improvements measured offline do not translate online at this configuration.
+  v2 artifact kept for reference (`build/policy_trees_c_v2.txt`, 100 trees,
+  751 feats, sha256 30ea8598…). No @3k re-gate (pre-registered: only if
+  positive).
+## §128 Value-only utility-distribution model (plan-value-targets phase 5): trained on the §3.4 fairgen rows; ~4× better win calibration than the tracked PVNet on the same held-out rows (2026-08-07, local)
+
+- **What:** phase 5 of `docs/knowledge-base/plan-value-targets-2026-08-07.md`:
+  a value-only transformer (same 14-token encoder as CombatPVNet, NO policy
+  head) predicting a 51-bin categorical over the MCTS terminal utility
+  R = 0 on loss, 50 + endHp on win (bin 0 = loss; bins 1-50 = endHp/maxHp
+  fraction on wins, mapped by maxHp at inference). Loss = CE; win prob =
+  1 − p(bin 0); EV = Σ p_b·(50 + maxHp·mid_b). New trainer
+  `train_combat_utility.py` + eval `eval_combat_utility.py`; native export
+  format `combat_utility_v1` (encoder section identical to `combat_pvnet_v1`,
+  single `util` head) with Python-side loader support added to
+  `combat_pvnet_parity.py`. No C++ integration (deployment is not part of
+  this phase; the vnet owns the leaf, §126).
+- **Data:** `build/fair34_v.csv` (225,057 rows, §127 datagen: vnet-era,
+  live-valid, current controller, rich labels). 12 epochs, D=128, 2 layers,
+  4 heads, AdamW 1e-4, batch 1024, GPU (RTX 3060 Ti); held-out val CE 2.69
+  (ln(51)=3.93 random). Checkpoint selection = val-seed CE (sibling
+  ranking/regret later). Artifacts: `build/v_combat_utility.txt`
+  (combat_utility_v1), `build/train_utility5.log`,
+  `build/eval_utility_fair34.json`.
+- **Results (same 30,000 held-out val rows of fair34_v.csv, seed%100<20):**
+  | metric | tracked PVNet `v_combat_pvnet.txt` (old fair_v data) | utility model (fresh data, 51-bin) |
+  |---|---|---:|
+  | win Brier | 0.2505 | **0.0647** |
+  | win ECE | 0.3298 | **0.0688** |
+  | death BCE | 2.2076 | **0.2287** |
+  | bin CE | — | 2.6917 |
+  | EV MAE (terminal scale) | — | 13.3 |
+  - **Finding 1 (distribution gap):** the tracked PVNet is badly
+    miscalibrated on the new distribution — 0.2505 Brier / 0.33 ECE vs its
+    0.107/0.002 recorded on its own (old, weaker-controller) training data.
+    Direct evidence for the phase-2-4 premise of the value-targets plan.
+  - **Finding 2 (target+data):** fresh data + direct terminal-utility
+    distribution beats the old-data win/quantile reconstruction ~4× Brier,
+    ~5× ECE, ~10× death BCE on identical rows. Caveat: data and target
+    changed together — a clean target-only ablation (same data) and the
+    shared-encoder variant (does policy sharing hurt value?) are follow-ups.
+- **Scope note:** nothing deployed changes; the PVNet and VNet artifacts are
+  untouched. The phase's purpose is offline research that informs the next
+  vnet retrain (the §126 gate-stack-distribution follow-up, in progress by
+  another agent): the fresh-data + direct-target recipe is transferable to
+  GBM training (`train_value_combat.py`).
+- **Deferred:** shared-encoder variant (needs the dual-CSV policy pass),
+  C++ `CombatPVNet::load`/`leafValue` support for `combat_utility_v1`
+  (only useful when a deployment gate exists), sibling-ranking eval (needs
+  phase-2/3 data).
+- **Artifacts:** `build/v_combat_utility.txt`, `build/v_combat_utility_smoke.txt`,
+  `build/eval_utility_fair34.json`, `build/eval_pvnet_fair34.json` (PVNet
+  reference on the same rows), logs. Code: `train_combat_utility.py`,
+  `eval_combat_utility.py`, `combat_pvnet_parity.py` (utility-format
+  parsing). Decision log: `2026-08-07-value-only-utility-net.md`.
+
+## §129 Gate-stack-distribution vnet retrain (STS_DATAGEN_GATES): NULL vs the deployed model at both operating points; the α optimum shifts 0.3→0.5, confirming better calibration but no replacement (2026-08-07, local + GCP)
+
+- **What:** the §126 follow-up — retrain the combat value leaf on labels from
+  the DEPLOYED run-level distribution (V4 one-ply gate stack) instead of
+  `combatgen`'s heuristic-OOC loop, and gate whether the gate-stack model
+  replaces the deployed honest-data model. New code: `STS_DATAGEN_GATES=1`
+  routes `runCombatGenSeed`'s OOC decisions through the same opt-in one-ply
+  gate chain as `bestbench` (`datagenGateStack` dispatch + the card-reward
+  gate in the REWARDS branch; each gate self-guards on its env flag + model
+  load; unset behavior verified byte-identical on 10 seeds).
+- **New labels:** `combatgen` 1,500 seeds @1k sims (fresh offset 1500-2999)
+  with the gates ON (plus the §126 vnet default, which combatgen covers) →
+  `build/vcombat_gated.csv`: **499,089 rows, ~1.74× the heuristic-OOC set
+  (gated runs survive longer → more fights)**. Trained (val-rmse 10.83
+  endHp — higher than the heuristic set's 7.99, reflecting the harder
+  long-run label distribution; scaling probe positive on all tested
+  powers) → exported `build/v_combat_gated.txt`: **738 features, 733 trees,
+  base_score 36.41, sha256 `5322c9f1…`**.
+- **Gates (256 seeds, block 126700, full V4 gate stack, S3−belief−chain,
+  64p, fair; paired vs the no-vnet §124 references and vs the deployed
+  honest model's best points):**
+  | arm | win% | vs no-vnet | vs deployed (honest α0.3) |
+  |---|---|---|---|
+  | @1k/64p α0.3 | 46.1% | +8.2pp (CI [+0.8,+15.6]) | **−4.3pp (CI [−10.9,+2.3])** |
+  | @1k/64p α0.5 | **53.1%** | +15.2pp (CI [+8.2,+22.3]) | **+2.7pp (CI [−9.4,+3.5])** |
+  | @1k/64p α0.7 | 47.3% | +9.4pp | −3.1pp |
+  | @3k/64p α0.3 | 52.7% | +10.1pp | −2.4pp |
+  | @3k/64p α0.5 | **52.0%** | +9.4pp (CI [+2.0,+16.4]) | **−3.1pp (CI [−3.5,+9.4])** |
+  The gated model's α optimum shifts UP (0.5 vs the honest model's 0.3) —
+  consistent with better calibration on the deployment distribution — but at
+  its own optimum it does not beat the deployed model: **−4.3pp @1k/α0.3,
+  +2.7pp @1k/α0.5, −3.1pp @3k/α0.5 — all n.s., direction mixed.**
+- **Verdict: NULL for replacement — the deployed honest-data model
+  (`build/v_combat_honest.txt` @α0.3) STAYS.** Both models strongly beat
+  no-vnet at both operating points (the §126 result is robust to the label
+  distribution); the gate-stack retrain adds nothing significant and is
+  not promoted. `STS_DATAGEN_GATES` stays opt-in (useful if datagen
+  distribution alignment is wanted for other labels).
+- **Artifacts:** `build/vcombat_gated.csv` (ignored),
+  `build/v_combat_gated.{json,txt,val.csv}`, per-seed gate CSVs
+  `build/gv_{a03_1k,a05_1k,a07_1k,a03_3k,a05_3k_final}.csv` (the α0.5 @3k
+  arm was resumed mid-run at 24 threads: 171+81+4 gap seeds merged by seed —
+  a kill/restart resume pattern that works because `bestbench` rows are
+  per-seed and seed-order-independent; issue 46's append-without-dedup
+  applies). Code: `datagenGateStack`, `g_datagenGates`
+  (`apps/one_combat.cpp`, `runCombatGenSeed`).
+- **Cost:** datagen ~40 min local (12 threads); training + export ~15 min
+  local; gates ~3×22 min + 2×45 min (8 threads) + 1×4 min resume (24
+  threads) on GCP.

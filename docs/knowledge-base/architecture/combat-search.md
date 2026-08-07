@@ -165,7 +165,7 @@ requires live-valid semantics — without `g_liveValid` the branch is
  [−6.6,+3.5], 16% discordant) — mixed null, no consistent signal; the env
  stays default-off.
 
-### Prior-guided rollouts (STS_S3_ROLLOUT_POLICY, opt-in — gate pending)
+### Prior-guided rollouts (STS_S3_ROLLOUT_POLICY, opt-in — falsified)
 
 `BattleScumSearcher3::playoutRandom` samples rollout actions from the **GBM
 policy prior** (the same distribution PUCT priors come from, via
@@ -175,14 +175,15 @@ The rollout is therefore never truly uniform — this replaces the
 hand-authored bias with the learned prior. Restricted to the GBM policy net
 (`g_usePolicyNet && loaded()`, and not shadowed by a PVNet policy head): a
 PVNet-head forward per rollout step would cost ~14-18× a sim. Revives the
-parked §119 "Phase 3 (policy-guided rollouts)". With the §126 vnet leaf
-(α=0.3) the rollout outcome carries 70% of the leaf blend, so rollout quality
-matters more than before. Default off (behavior byte-identical when unset —
-the heuristic branch is untouched). Smoke (8 seeds @300 sims, §126 default
-stack): behavior changes on most seeds, +2.4× cpu (per-step GBM evals);
-**paired 256-seed gate pending** vs the §126 vnet default
-(`build/vnet_all_a03_1k.csv`, 50.4% @1k/64p) — pre-registered: a null or
-negative closes the line (rollout diversity collapse is the known risk).
+parked §119 "Phase 3 (policy-guided rollouts)". Default off (behavior
+byte-identical when unset). **Falsified at the paired 256-seed gate
+(EXPERIMENTS.md §124c, 2026-08-07):** 43.4% vs 50.4% control = **−7.0pp (CI
+[−13.7, −0.4]), floor −1.3, HP −6.7 at 2.7× cpu**, 30% discordance
+(control-only 47 vs policy-only 29); control reproduced the §126 reference
+exactly (50.4%). The prior — trained on older-policy visit distributions —
+actively hurts rollouts; line closed per the pre-registered rule, env stays
+opt-in. Follow-ups (temperature/mixture) only after a current-stack prior
+retrain (winrate-plan §3.4).
 
 ### Context-adaptive rollout caps (STS_ROLLOUT_CAPS, opt-in — falsified)
 
@@ -370,6 +371,14 @@ Learned guidance is loaded by `apps/one_combat.cpp::main`:
 
 - `STS_POLICY` loads the compact tree prior; with no explicit setting,
   `build/policy_trees_c.txt` is attempted except in `policygen` mode.
+- `STS_DATAGEN_GATES=1` (opt-in, §127): `combatgen`/`distgen` run-loop OOC
+  decisions route through the same one-ply gate chain as `bestbench`
+  (`runCombatGenSeed` → `datagenGateStack` + the card-reward gate), so
+  generated combat labels come from the deployed run-level distribution.
+  Each gate self-guards on its env flag + model load; unset behavior is
+  byte-identical. §127: the gate-stack-distribution vnet retrain was NULL
+  vs the deployed model (α optimum shifted 0.3→0.5, no significant winrate
+  difference) — the deployed `v_combat_honest.txt` stays.
 - `STS_VNET` loads a separate combat value model and `STS_VNET_ALPHA` controls
   its rollout blend.
   **Default since 2026-08-07 (EXPERIMENTS.md §126):** in the fair-S3 path
@@ -443,6 +452,18 @@ PUCT-with-zero-priors quirk.
 - The canonical learned state has 1,766 features; policy edges add 14 action
   features (`src/sim/search/CombatValueNet.cpp::combatFeatureCount`,
   `combatPolicyFeatureCount`). Ordering is a model-interface invariant.
+- Since 2026-08-07 (§3.5, winrate plan) the action block appends **8
+  multi-select subset-content features** (`aSelectSize`, `aSelTotalCost`,
+  `aSelAtk/Skl/Pow`, `aSelUpgraded`, `aSelPlayOrder`, `aSelObtainWeight`) —
+  `kNumAction` is now 22, derived from `kActionNames`. They are appended
+  AFTER the original 14, so the PVNet action encoder (reads the first 14) and
+  old GBM models (model-`nfeat` based) are unaffected; the PVNet branches of
+  `computeEdgePriors` (S2/S3) stride by `combatPolicyFeatureCount() -
+  combatFeatureCount()` accordingly. GAMBLE/EXHAUST_MANY priors were
+  previously uniform across subsets (all select actions encoded identically);
+  this fixes the encoding (subset = hand indices; single selects resolve
+  hand/discard/exhaust pools by `CardSelectTask`; discovery/codex contribute
+  size only).
 - Two action features come from `Expert` play/obtain weights; the learned policy
   input is therefore not free of hand-authored features
   (`src/sim/search/CombatValueNet.cpp::combatFillActionFeatures`).

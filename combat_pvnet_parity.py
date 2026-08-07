@@ -27,7 +27,9 @@ from torch import nn
 def parse_model(path):
     with open(path) as f:
         toks = f.read().split()
-    assert toks[0] == "combat_pvnet_v1", "not a combat_pvnet_v1 file"
+    assert toks[0] in ("combat_pvnet_v1", "combat_utility_v1"), \
+        f"not a combat_pvnet_v1 / combat_utility_v1 file: {toks[0]}"
+    is_util = toks[0] == "combat_utility_v1"
     i = 1
     def value():
         nonlocal i
@@ -41,14 +43,15 @@ def parse_model(path):
         i += n
         return a
     hdr = {}
-    for name in ("entity_dim", "hidden_dim", "num_heads", "num_layers",
-                 "nquantile", "win_bonus"):
+    names = ("entity_dim", "hidden_dim", "num_heads", "num_layers",
+             "nbins" if is_util else "nquantile", "win_bonus")
+    for name in names:
         assert toks[i] == name, f"expected header {name} at token {i}, got {toks[i]}"
         i += 1
         hdr[name] = float(value())
     D, H, HDS, L, NQ = (int(hdr[n]) for n in
                         ("entity_dim", "hidden_dim", "num_heads",
-                         "num_layers", "nquantile"))
+                         "num_layers", "nbins" if is_util else "nquantile"))
     assert value() == "nscalar"
     ns = int(value())
     scalar_sel = np.array([int(value()) for _ in range(ns)], np.int32)
@@ -80,21 +83,25 @@ def parse_model(path):
                         (p + "ffn0_weight", H * D), (p + "ffn0_bias", H),
                         (p + "ffn2_weight", D * H), (p + "ffn2_bias", D)]:
             tensors[name] = tensor(name, n)
-    for name, n in [("policy_act_enc_0_weight", 64 * 14),
-                    ("policy_act_enc_0_bias", 64),
-                    ("policy_act_enc_2_weight", D * 64),
-                    ("policy_act_enc_2_bias", D),
-                    ("policy_scorer_0_weight", D * 3 * D),
-                    ("policy_scorer_0_bias", D),
-                    ("policy_scorer_2_weight", D), ("policy_scorer_2_bias", 1),
-                    ("win_weight", D), ("win_bias", 1),
-                    ("death_weight", D), ("death_bias", 1),
-                    ("quantile_weight", NQ * D), ("quantile_bias", NQ),
-                    ("potion_weight", 44 * D), ("potion_bias", 44),
-                    ("turns_weight", D), ("turns_bias", 1)]:
-        tensors[name] = tensor(name, n)
+    if is_util:
+        tensors["util_weight"] = tensor("util_weight", NQ * D)
+        tensors["util_bias"] = tensor("util_bias", NQ)
+    else:
+        for name, n in [("policy_act_enc_0_weight", 64 * 14),
+                        ("policy_act_enc_0_bias", 64),
+                        ("policy_act_enc_2_weight", D * 64),
+                        ("policy_act_enc_2_bias", D),
+                        ("policy_scorer_0_weight", D * 3 * D),
+                        ("policy_scorer_0_bias", D),
+                        ("policy_scorer_2_weight", D), ("policy_scorer_2_bias", 1),
+                        ("win_weight", D), ("win_bias", 1),
+                        ("death_weight", D), ("death_bias", 1),
+                        ("quantile_weight", NQ * D), ("quantile_bias", NQ),
+                        ("potion_weight", 44 * D), ("potion_bias", 44),
+                        ("turns_weight", D), ("turns_bias", 1)]:
+            tensors[name] = tensor(name, n)
     assert i == len(toks), f"unparsed tokens remain: {i}/{len(toks)}"
-    return D, H, HDS, L, NQ, scalar_sel, tensors
+    return D, H, HDS, L, NQ, scalar_sel, tensors, is_util
 
 
 # ── CSV column layout (mirrors train_combat_pvnet.py) ───────────────────────
@@ -220,6 +227,15 @@ class PolicyValueNet(nn.Module):
         self.turns = nn.Linear(dim, 1)
 
 
+class UtilityNet(nn.Module):
+    """Value-only: shared encoder + single utility-distribution head (nbins)."""
+
+    def __init__(self, dim=128, hidden=256, heads=4, layers=2, nbins=51):
+        super().__init__()
+        self.encoder = SharedEncoder(dim, hidden, heads, layers)
+        self.util = nn.Linear(dim, nbins)
+
+
 RENAME = {
     "scalar_weight": "encoder.scalar_enc.0.weight",
     "scalar_bias": "encoder.scalar_enc.0.bias",
@@ -253,15 +269,18 @@ RENAME = {
     "quantile_weight": "quantile.weight", "quantile_bias": "quantile.bias",
     "potion_weight": "potion.weight", "potion_bias": "potion.bias",
     "turns_weight": "turns.weight", "turns_bias": "turns.bias",
+    "util_weight": "util.weight", "util_bias": "util.bias",
 }
 
 
 def load_native_model(path):
     """Rebuild the PyTorch model exactly as the C++ loader sees the .txt.
 
-    Returns (model, D, H, HDS, L, NQ, scalar_sel)."""
-    D, H, HDS, L, NQ, scalar_sel, T = parse_model(path)
-    model = PolicyValueNet(D, H, HDS, L, NQ)
+    Returns (model, D, H, HDS, L, NQ, scalar_sel); for a combat_utility_v1
+    file the model has a single `util` head and NQ = nbins."""
+    D, H, HDS, L, NQ, scalar_sel, T, is_util = parse_model(path)
+    model = (UtilityNet(D, H, HDS, L, NQ) if is_util
+             else PolicyValueNet(D, H, HDS, L, NQ))
     model.eval()
     sd = model.state_dict()
     sd["encoder.scalar_mean"] = torch.from_numpy(T["scalar_mean"])
@@ -359,7 +378,10 @@ def main():
     pol_header = list(pd.read_csv(POL_CSV, nrows=0).columns)
     POL_META = ("seed", "fightIdx", "decIdx", "visit", "total")
     action_names = [c for c in pol_header if c not in canonical and c not in POL_META]
-    assert len(action_names) == 14, f"Expected 14 action feats, got {len(action_names)}"
+    # §3.5: fairgen policy rows carry extra subset-content action features; the
+    # PVNet action encoder reads the first 14.
+    assert len(action_names) >= 14, f"Expected >=14 action feats, got {len(action_names)}"
+    action_names = action_names[:14]
 
     model, D, H, HDS, L, NQ, scalar_sel = load_native_model(MODEL)
     print(f"[model] d={D} h={H} heads={HDS} layers={L} nq={NQ} params:",

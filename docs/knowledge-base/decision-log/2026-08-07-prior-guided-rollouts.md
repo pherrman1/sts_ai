@@ -60,3 +60,21 @@ Searcher3 behind an env flag (default off).
 - Gate pending on GCP (§124b in EXPERIMENTS.md). If positive: consider the
   α-mix knob, an S2 port, and updating `current-baselines.md` only on a
   headline change.
+
+## Verdict (2026-08-07, gate §124c — appended, supersedes "gate pending")
+
+- **Falsified, line closed.** Paired 256-seed gate @1k/64p (full V4 stack,
+  block 126700, vnet α=0.3 default): policy-prior rollouts **43.4% vs 50.4%
+  control = −7.0pp (95% CI [−13.7, −0.4])**, floor −1.3 (CI [−2.6, 0.0]),
+  HP −6.7, at 2.7× cpu (83.8 vs 30.5 cpu-s/run). Discordance 30%
+  (control-only 47, policy-only 29). The control arm reproduced the §126
+  reference exactly (129/256 = 50.4%), so the pairing is clean.
+- The GBM policy prior (trained on older-policy visit distributions) actively
+  hurts rollout play — the known diversity-collapse risk materialized (or
+  worse: the prior is simply stale). No @3k re-gate (pre-registered: only if
+  positive). Env stays opt-in, no default change.
+- Follow-up only through the winrate-plan §3.4 prerequisite: retrain the
+  policy prior on current-stack (vnet-era) data first, then optionally retest
+  with a prior+heuristic mixture. Not pursued as a standalone line.
+- Artifacts: `build/pri1_ctl_256.csv` (md5 4106e1de…), `build/pri1_pol_256.csv`
+  (md5 4ef1416c…), logs on sts-test. EXPERIMENTS.md §124c.

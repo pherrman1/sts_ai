@@ -137,6 +137,13 @@ namespace {
         "aIsCard", "aIsPotion", "aIsEndTurn", "aIsSelect",
         "aCardId", "aCardCost", "aCardUpg", "aCardAtk", "aCardSkl", "aCardPow",
         "aTargetsEnemy", "aTargetHp", "aPlayOrder", "aObtainWeight",
+        // §3.5 multi-select subset content (GAMBLE/EXHAUST_MANY and single
+        // card selects): without these every select action of the same task
+        // encoded identically, so priors were uniform across subsets. All
+        // features appended AFTER the original 14 so the PVNet action encoder
+        // (which reads the first 14) and old policy models keep working.
+        "aSelectSize", "aSelTotalCost", "aSelAtk", "aSelSkl", "aSelPow",
+        "aSelUpgraded", "aSelPlayOrder", "aSelObtainWeight",
     };
     constexpr int kNumAction = sizeof(kActionNames) / sizeof(kActionNames[0]);
 }
@@ -186,6 +193,63 @@ void combatFillActionFeatures(const BattleContext &bc, const Action &action, flo
             }
             a[12] = (float)Expert::getPlayOrdering(id);
             a[13] = (float)Expert::getObtainWeight(id, c.isUpgraded());
+        }
+    }
+
+    // §3.5: subset-content features for card select actions (hand/discard/
+    // exhaust pools by task; discovery/codex have no CardInstance, size only).
+    // a[14..21] default 0 for non-select actions.
+    if (at == ActionType::SINGLE_CARD_SELECT || at == ActionType::MULTI_CARD_SELECT) {
+        auto poolCard = [&](int idx) -> const CardInstance * {
+            if (idx < 0) return nullptr;
+            switch (bc.cardSelectInfo.cardSelectTask) {
+                case CardSelectTask::EXHAUST_ONE:
+                case CardSelectTask::FORETHOUGHT:
+                case CardSelectTask::NIGHTMARE:
+                case CardSelectTask::RECYCLE:
+                case CardSelectTask::SETUP:
+                case CardSelectTask::WARCRY:
+                case CardSelectTask::ARMAMENTS:
+                case CardSelectTask::GAMBLE:
+                case CardSelectTask::EXHAUST_MANY:
+                    return idx < bc.cards.cardsInHand ? &bc.cards.hand[idx] : nullptr;
+                case CardSelectTask::HOLOGRAM:
+                case CardSelectTask::LIQUID_MEMORIES_POTION:
+                case CardSelectTask::HEADBUTT:
+                case CardSelectTask::MEDITATE:
+                    return idx < (int)bc.cards.discardPile.size()
+                        ? &bc.cards.discardPile[idx] : nullptr;
+                case CardSelectTask::EXHUME:
+                    return idx < (int)bc.cards.exhaustPile.size()
+                        ? &bc.cards.exhaustPile[idx] : nullptr;
+                default:
+                    return nullptr;
+            }
+        };
+
+        std::array<int, 10> idxs{};
+        int nSel = 0;
+        if (at == ActionType::MULTI_CARD_SELECT) {
+            const auto sel = action.getSelectedIdxs();
+            nSel = sel.size();
+            for (int i = 0; i < nSel && i < 10; ++i) idxs[i] = sel[i];
+        } else {
+            idxs[0] = action.getSelectIdx();
+            nSel = 1;
+        }
+        a[14] = (float)nSel;
+        for (int i = 0; i < nSel; ++i) {
+            const CardInstance *c = poolCard(idxs[i]);
+            if (!c) continue;
+            const auto id = c->getId();
+            const auto t = c->getType();
+            a[15] += (float)c->costForTurn;
+            if (t == CardType::ATTACK) a[16] += 1.f;
+            if (t == CardType::SKILL)  a[17] += 1.f;
+            if (t == CardType::POWER)  a[18] += 1.f;
+            if (c->isUpgraded())       a[19] += 1.f;
+            a[20] += (float)Expert::getPlayOrdering(id);
+            a[21] += (float)Expert::getObtainWeight(id, c->isUpgraded());
         }
     }
 }

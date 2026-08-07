@@ -746,6 +746,7 @@ static double g_oocStrategicMarginBossRelic = -1.0; // STS_OOC_STRATEGIC_MARGIN_
 static bool   g_oocStrategicQ = true;       // env STS_OOC_STRATEGIC_Q=0: score via V2 successor predictValue
 static bool   g_oocStrategicScorePolicy = false; // env STS_OOC_STRATEGIC_SCORE=policy: one-ply gates score with sigmoid(policy logit) (5.7.2)
 static bool   g_oocStrategicRest = false;   // env STS_OOC_STRATEGIC_REST=1: one-ply Q gate on campfires (5.5.2)
+static bool   g_datagenGates = false;       // env STS_DATAGEN_GATES=1: combatgen/distgen OOC decisions route through the one-ply gate chain (§127)
 static bool   g_oocStrategicEvent = false;  // env STS_OOC_STRATEGIC_EVENT=1: one-ply Q gate on events (5.5.3)
 static bool   g_oocStrategicShop = false;    // env STS_OOC_STRATEGIC_SHOP=1: one-ply Q gate on shop buys (R6)
 static bool   g_oocStrategicTreasure = false; // env STS_OOC_STRATEGIC_TREASURE=1: one-ply Q gate on treasure (R6)
@@ -5798,6 +5799,22 @@ static std::string combatFeatureRow(const BattleContext &bc) {
 }
 
 // Play one full run; emit combat-state rows labeled with each fight's outcome.
+// STS_DATAGEN_GATES=1 (winrate wave §127): the OOC decisions of this run loop
+// route through the same opt-in one-ply Q gate chain as bestbench, so the
+// generated combat labels come from the deployed run-level distribution
+// (V4 token-net gates) instead of the heuristic fallback. Each gate
+// self-guards on its env flag + model load and returns true when it acted.
+static bool datagenGateStack(GameContext &gc, const search::ScumSearchAgent2 &agent) {
+    switch (gc.screenState) {
+        case ScreenState::EVENT_SCREEN:       return oocOnePlyEventPolicy(gc, agent);
+        case ScreenState::REST_ROOM:          return oocOnePlyRestPolicy(gc, agent);
+        case ScreenState::TREASURE_ROOM:      return oocOnePlyTreasurePolicy(gc, agent);
+        case ScreenState::SHOP_ROOM:          return oocOnePlyShopPolicy(gc, agent);
+        case ScreenState::BOSS_RELIC_REWARDS: return oocOnePlyBossRelicPolicy(gc, agent);
+        default:                              return false;
+    }
+}
+
 static std::string runCombatGenSeed(std::uint64_t seed, int sims, int asc, double epsilon,
                                       bool richLabels = false) {
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
@@ -5846,6 +5863,7 @@ static std::string runCombatGenSeed(std::uint64_t seed, int sims, int asc, doubl
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
+            else if (g_datagenGates && oocOnePlyCardRewardPolicy(gc, agent)) { /* gate-stack card pick (§127) */ }
             else if (ur(ex) < epsilon) {                     // explore drafting for state diversity
                 while (r.cardRewardCount > 0) {
                     const int rIdx = r.cardRewardCount - 1;
@@ -5857,7 +5875,8 @@ static std::string runCombatGenSeed(std::uint64_t seed, int sims, int asc, doubl
                 evalCardRewardPolicy(gc);
             }
         } else {
-            agent.stepOutOfCombatPolicy(gc);
+            if (!g_datagenGates || !datagenGateStack(gc, agent))
+                agent.stepOutOfCombatPolicy(gc);
         }
     }
     search::g_onCombatDecision = nullptr;
@@ -7953,6 +7972,11 @@ int main(int argc, char **argv) {
         if (g_oocStrategicRest)
             std::cout << "[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]\n";
     }
+    if (const char *d = std::getenv("STS_DATAGEN_GATES")) {  // §127: combatgen/distgen OOC through the one-ply gate chain
+        g_datagenGates = std::atoi(d) != 0;
+        if (g_datagenGates)
+            std::cout << "[datagen OOC gate stack ON: combat labels from the deployed one-ply distribution (§127)]\n";
+    }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_EVENT")) {
         g_oocStrategicEvent = std::atoi(d) != 0;
         if (g_oocStrategicEvent)
@@ -8784,7 +8808,10 @@ int main(int argc, char **argv) {
                   iVis=idxOf("visit"), iTot=idxOf("total");
         if (iSeed<0||iFid<0||iDid<0||iVis<0||iTot<0){ std::cerr << "missing meta column\n"; return 1; }
         const int stateN = search::combatFeatureCount();
-        const int actionN = search::combatPolicyFeatureCount() - stateN;
+        // Action-block width is header-driven (14 pre-§3.5, 22 since) so old
+        // and new fairgen CSVs both analyze; predictVec reads the model's own
+        // name-mapped features from the state block regardless of width.
+        const int actionN = ncol - stateN - 5;   // 5 meta cols (seed..total)
         // Optional PVNet comparison: load the shared PVNet and report per-group
         // prior entropy for both models plus argmax agreement (4th arg "val",
         // 5th arg PVNet model path).
@@ -8795,7 +8822,7 @@ int main(int argc, char **argv) {
         double sumModelEnt=0, sumPvEnt=0, agree=0;
         std::vector<float> feat(search::combatPolicyFeatureCount());
         std::vector<double> logits, target;
-        std::vector<std::array<float,14>> grpActs;
+        std::vector<std::vector<float>> grpActs;
         std::array<float,1766> grpState{};
         std::vector<std::string> cells(ncol);
         int stateRow=0; bool inGroup=false; long long curSeed=0; int curFid=0,curDid=0;
@@ -8865,12 +8892,19 @@ int main(int argc, char **argv) {
             if (inGroup && (seed!=curSeed || fid!=curFid || did!=curDid)) flushGroup();
             if (valOnly && seed%100>=20) { inGroup=false; continue; }
             curSeed=seed; curFid=fid; curDid=did;
-            int fi=0; std::array<float,14> act{};
+            int fi=0; std::vector<float> act(actionN);
             for (int i = 0; i < ncol; ++i) {
                 if (i==iSeed||i==iFid||i==iDid||i==iVis||i==iTot) continue;
                 const float v = std::stof(cells[i]);
                 if (fi < stateN) feat[fi] = v;
-                else if (fi - stateN < actionN) act[fi - stateN] = v;
+                else if (fi - stateN < actionN) {
+                    // action block goes into feat (GBM predictVec path) AND
+                    // into act (optional PVNet comparison). Pre-§3.5 this was
+                    // only stored in act, so the GBM policy metrics evaluated
+                    // zeroed action features (uniform softmax per group).
+                    feat[stateN + (fi - stateN)] = v;
+                    act[fi - stateN] = v;
+                }
                 ++fi;
             }
             if (fi != stateN + actionN) { std::cerr << "feature count mismatch: " << fi << "\n"; return 1; }
