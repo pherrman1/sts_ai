@@ -91,22 +91,34 @@ def run_agent(
     print(f"===== {agent.upper()} =====")
     print()
 
-    result = run(
+    process = subprocess.Popen(
         cmd,
         cwd=ROOT,
-        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
     )
 
-    if result.stdout:
-        print(result.stdout)
+    output_lines: list[str] = []
 
-    if result.returncode != 0:
+    assert process.stdout is not None
+
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        output_lines.append(line)
+
+    returncode = process.wait()
+
+    output = "".join(output_lines)
+
+    if returncode != 0:
         raise RuntimeError(
             f"OpenCode agent '{agent}' failed with exit code "
-            f"{result.returncode}."
+            f"{returncode}."
         )
 
-    return result.stdout or ""
+    return output
 
 
 def save(path: Path, content: str) -> None:
