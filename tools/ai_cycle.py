@@ -1657,17 +1657,26 @@ def obtain_review(
                 )
 
     if single_attempt and candidate_file.exists():
-        exhausted_file = session_dir / "recovery-exhausted.json"
-        save_json(
-            exhausted_file,
-            {
-                "reason": f"{stem} attempt started without a complete transcript",
-                "artifact_file": candidate_file.name,
-                "candidate_fingerprint": fingerprint,
-            },
-        )
-        raise RejectedRecoveryExhausted(
-            f"The bounded {stem} attempt did not complete. See: {exhausted_file}"
+        metadata = load_json(candidate_file)
+        if metadata.get("candidate_fingerprint") == fingerprint:
+            exhausted_file = session_dir / "recovery-exhausted.json"
+            save_json(
+                exhausted_file,
+                {
+                    "reason": f"{stem} attempt started without a complete transcript",
+                    "artifact_file": candidate_file.name,
+                    "candidate_fingerprint": fingerprint,
+                },
+            )
+            raise RejectedRecoveryExhausted(
+                f"The bounded {stem} attempt did not complete. See: {exhausted_file}"
+            )
+        # A marker for a different candidate only means the repository changed
+        # since that attempt; the old call is stale, so start a fresh paid call
+        # instead of consuming the bounded recovery budget.
+        print(
+            f"Stale {stem} attempt marker for a different candidate; "
+            "starting a fresh call."
         )
 
     save_json(candidate_file, {"candidate_fingerprint": fingerprint})

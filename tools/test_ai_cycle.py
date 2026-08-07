@@ -712,6 +712,59 @@ class DeniedCallAndRecoveryTests(unittest.TestCase):
             self.assertTrue((session_dir / "recovery-sol-review.json").exists())
             self.assertFalse((session_dir / "recovery-exhausted.json").exists())
 
+    def test_matching_marker_without_log_exhausts(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            (session_dir / "recovery-review-candidate.json").write_text(
+                json.dumps({"candidate_fingerprint": "candidate"}),
+                encoding="utf-8",
+            )
+            with mock.patch("tools.ai_cycle.review") as review_mock:
+                with self.assertRaises(ai_cycle.RejectedRecoveryExhausted):
+                    ai_cycle.obtain_review(
+                        session_dir=session_dir,
+                        plan_file=session_dir / "plan.json",
+                        task_file=session_dir / "task.md",
+                        verification_file=session_dir / "cheap.json",
+                        fingerprint="candidate",
+                        round_number=1,
+                        artifact_stem="recovery-review",
+                        single_attempt=True,
+                    )
+            review_mock.assert_not_called()
+            self.assertTrue((session_dir / "recovery-exhausted.json").exists())
+
+    def test_stale_marker_triggers_fresh_call_not_exhaustion(self) -> None:
+        review = review_data("PASS")
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            (session_dir / "recovery-review-candidate.json").write_text(
+                json.dumps({"candidate_fingerprint": "old-candidate"}),
+                encoding="utf-8",
+            )
+            with mock.patch(
+                "tools.ai_cycle.review", return_value=review
+            ) as review_mock:
+                _, data = ai_cycle.obtain_review(
+                    session_dir=session_dir,
+                    plan_file=session_dir / "plan.json",
+                    task_file=session_dir / "task.md",
+                    verification_file=session_dir / "cheap.json",
+                    fingerprint="new-candidate",
+                    round_number=1,
+                    artifact_stem="recovery-review",
+                    single_attempt=True,
+                )
+            review_mock.assert_called_once()
+            self.assertEqual("PASS", data["verdict"])
+            self.assertFalse((session_dir / "recovery-exhausted.json").exists())
+            marker = json.loads(
+                (session_dir / "recovery-review-candidate.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual("new-candidate", marker["candidate_fingerprint"])
+
 
 if __name__ == "__main__":
     unittest.main()

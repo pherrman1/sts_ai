@@ -39,3 +39,7 @@ the one-fix or paid-review budget.
 ## Addendum (same day)
 
 - A token outage interrupted a paid recovery review and consumed the durable single-attempt budget (`recovery-exhausted.json`). Added explicit manual escape hatch `--retry-recovery` (`--resume SESSION --continue-rejected --retry-recovery`): clears only incomplete attempt markers (`recovery-*-candidate.json`, incomplete logs, interrupted fix marker) and preserves completed adjudications, fixes, and verification reports. The durable bound remains for unattended runs; retrying is a deliberate user decision.
+
+## Addendum 2 (same day)
+
+- Stale-marker fix: a single-attempt candidate marker whose fingerprint does not match the current repository tree (e.g. the tree changed between runs) now starts a fresh paid review instead of exhausting the recovery budget. Exhaustion is reserved for a marker of the current candidate whose call genuinely never completed.
