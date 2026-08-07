@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 import re
@@ -13,10 +14,92 @@ from pathlib import Path
 
 
 MAX_IMPLEMENTATION_RETRIES = 2
-MAX_REVIEW_ROUNDS = 2
+MAX_REVIEW_ROUNDS = 4
+MAX_SOL_REVIEW_ROUNDS = 3
+MAX_EXPENSIVE_REPAIRS = 2
 
 MAX_CHEAP_TIMEOUT_SECONDS = 3600
 MAX_EXPENSIVE_TIMEOUT_SECONDS = 6 * 3600
+MAX_AUTOMATED_SEEDS = 128
+
+KNOWN_ONE_COMBAT_SEED_SWEEP_ARG_INDEX = {
+    "allbench": 3,
+    "bench": 3,
+    "bestbench": 3,
+    "cardbench": 3,
+    "causalgen": 2,
+    "combatgen": 2,
+    "combobench": 3,
+    "cpsictr": 3,
+    "datagen": 2,
+    "datagen2": 2,
+    "datagen3": 2,
+    "distgen": 2,
+    "draftbench": 3,
+    "evalcombat": 3,
+    "evalrun": 3,
+    "fairgen": 2,
+    "fightgen": 2,
+    "oocnextgen": 2,
+    "pathbench": 3,
+    "pathcfgen": 2,
+    "policygen": 2,
+    "restbench": 3,
+    "runbench": 3,
+    "searchdiag": 2,
+    "shopbench": 3,
+    "skipbench": 3,
+    "strategicgen": 2,
+    "strategicgen2": 2,
+}
+
+KNOWN_PYTHON_SEED_SWEEP_ARG_INDEX = {
+    "check_replay.py": 3,
+}
+
+# Keep escalation policy centralized and inspectable. Documentation-only paths
+# do not trigger subsystem escalation unless the architecture plan itself
+# identifies a semantic risk.
+HIGH_RISK_PATH_RULES = {
+    "training": ("train_", "training", "selfplay/"),
+    "inference": ("inference", "export_", "native_model", "v_server.py"),
+    "selfplay": ("selfplay/", "selfplay"),
+    "search": ("search", "searcher", "battle_scum"),
+    "RNG/seed handling": ("rng", "random", "seed"),
+    "VNet/PVNet": ("vnet", "pvnet"),
+    "evaluation/benchmark methodology": (
+        "paired_analysis.py",
+        "benchmark",
+        "bestbench",
+        "evaluation",
+    ),
+    "strategic labels/targets": ("strategic", "label", "target"),
+    "counterfactual generation": ("counterfactual", "causalgen"),
+    "action masking/state encoding": ("action_mask", "masking", "encoder"),
+}
+
+HIGH_RISK_PLAN_TERMS = {
+    "training": ("training", "trainer", "retrain"),
+    "inference": ("inference", "model loading", "model export", "model use"),
+    "selfplay": ("selfplay", "self-play"),
+    "search": ("search semantics", "searcher", "tree search"),
+    "RNG/fairness": ("rng", "fairness", "known-rng", "known rng", "seed handling"),
+    "VNet/PVNet": ("vnet", "pvnet"),
+    "evaluation methodology": ("evaluation validity", "benchmark methodology"),
+    "labels/targets/bootstrap": (
+        "label semantics",
+        "target semantics",
+        "bootstrap semantics",
+    ),
+    "counterfactual generation": ("counterfactual generation",),
+    "action masking/state encoding": ("action masking", "state encoding"),
+    "leakage/parity mismatch": (
+        "leakage",
+        "training/inference parity",
+        "offline/online mismatch",
+        "model-use parity",
+    ),
+}
 
 ALLOWED_VERIFICATION_EXECUTABLES = {
     "cmake",
@@ -56,7 +139,10 @@ PROTECTED_WORKFLOW_PATHS = (
     Path(".opencode/prompts/architect.md"),
     Path(".opencode/prompts/implementer.md"),
     Path(".opencode/prompts/reviewer.md"),
+    Path(".opencode/prompts/reviewer-sol.md"),
     Path("tools/ai_cycle.py"),
+    Path("tools/ai_inspect.py"),
+    Path("tools/test_ai_cycle.py"),
 )
 
 
@@ -93,6 +179,65 @@ AI_ROOT = ROOT / ".ai"
 def git(*args: str) -> str:
     result = run(["git", *args], cwd=ROOT)
     return result.stdout
+
+
+def candidate_fingerprint(*, context_files: tuple[Path, ...] = ()) -> str:
+    """Identify the review candidate without hashing ignored experiment data."""
+    digest = hashlib.sha256()
+    digest.update(git("rev-parse", "HEAD").strip().encode("ascii"))
+    digest.update(git("diff", "--binary", "HEAD").encode("utf-8"))
+    for path in context_files:
+        digest.update(str(path.resolve()).encode("utf-8"))
+        digest.update(path.read_bytes())
+
+    # New non-ignored files are not in git diff, so hash their contents too.
+    status = git("status", "--porcelain", "--untracked-files=all")
+    digest.update(status.encode("utf-8"))
+    for line in status.splitlines():
+        if not line.startswith("?? "):
+            continue
+        path = ROOT / line[3:]
+        if path.is_file():
+            with path.open("rb") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    digest.update(chunk)
+
+    return digest.hexdigest()
+
+
+def changed_diff_stats() -> tuple[list[str], int, int]:
+    paths = [
+        line
+        for line in git("diff", "--name-only", "HEAD").splitlines()
+        if line
+    ]
+    changed_lines = 0
+    tracked_files = 0
+    for line in git("diff", "--numstat", "HEAD").splitlines():
+        parts = line.split("\t", 2)
+        if len(parts) != 3:
+            continue
+        tracked_files += 1
+        if parts[0].isdigit():
+            changed_lines += int(parts[0])
+        if parts[1].isdigit():
+            changed_lines += int(parts[1])
+
+    status = git("status", "--porcelain", "--untracked-files=all")
+    for line in status.splitlines():
+        if not line.startswith("?? "):
+            continue
+        relative_path = line[3:]
+        paths.append(relative_path)
+        path = ROOT / relative_path
+        if path.is_file():
+            tracked_files += 1
+            try:
+                with path.open("r", encoding="utf-8", errors="replace") as handle:
+                    changed_lines += sum(1 for _ in handle)
+            except OSError:
+                pass
+    return sorted(set(paths)), changed_lines, tracked_files
 
 
 def ensure_safe_start() -> None:
@@ -142,6 +287,19 @@ def extract_final_markdown(transcript: str) -> str:
 
     # Last resort: keep the cleaned transcript rather than ANSI garbage.
     return clean + "\n"
+
+
+def recover_completed_implementer_summary(log_file: Path, summary_file: Path) -> bool:
+    if summary_file.exists():
+        return True
+    if not log_file.exists():
+        return False
+    transcript = log_file.read_text(encoding="utf-8", errors="replace")
+    if FINAL_RESPONSE_END not in strip_ansi(transcript):
+        return False
+    save(summary_file, extract_final_markdown(transcript))
+    print(f"Recovered completed implementer response from: {log_file}")
+    return True
 
 
 def snapshot_protected_workflow_files() -> dict[Path, bytes | None]:
@@ -424,7 +582,11 @@ def recover_or_load_plan(
 
     if plan_file.exists():
         plan = load_json(plan_file)
+        upgraded = upgrade_legacy_seed_counts(plan)
         validate_plan(plan)
+        if upgraded:
+            save_json(plan_file, plan)
+            print("Added seed_count to known legacy sweep checks.")
         print(f"Reusing architecture plan: {plan_file}")
         return plan, plan_file
 
@@ -451,6 +613,7 @@ def recover_or_load_plan(
         transcript,
         source="Architect resume log",
     )
+    upgrade_legacy_seed_counts(plan)
     validate_plan(plan)
     save_json(plan_file, plan)
 
@@ -470,32 +633,64 @@ def existing_review_rounds(session_dir: Path) -> list[tuple[int, Path, dict]]:
 
         round_number = int(match.group(1))
         data = load_json(path)
-        validate_review(data)
+        validate_review(data, allow_legacy=True)
         found.append((round_number, path, data))
 
     found.sort(key=lambda item: item[0])
     return found
 
 
-def latest_successful_verification(
-    session_dir: Path,
-) -> Path | None:
-    candidates: list[Path] = []
+def existing_sol_review_rounds(session_dir: Path) -> list[tuple[int, Path, dict]]:
+    found: list[tuple[int, Path, dict]] = []
+    pattern = re.compile(r"^sol-review-(\d+)\.json$")
 
+    for path in session_dir.glob("sol-review-*.json"):
+        match = pattern.match(path.name)
+        if not match:
+            continue
+        data = load_json(path)
+        validate_review(data, allow_legacy=True)
+        found.append((int(match.group(1)), path, data))
+
+    found.sort(key=lambda item: item[0])
+    return found
+
+
+def matching_review(
+    reviews: list[tuple[int, Path, dict]],
+    fingerprint: str,
+) -> tuple[int, Path, dict] | None:
+    for item in reversed(reviews):
+        if item[2].get("candidate_fingerprint") == fingerprint:
+            return item
+    return None
+
+
+def verification_reports(session_dir: Path) -> list[tuple[Path, dict]]:
+    reports: list[tuple[Path, dict]] = []
     for path in session_dir.glob("*verification-*.json"):
         try:
-            data = load_json(path)
+            reports.append((path, load_json(path)))
         except RuntimeError:
             continue
+    reports.sort(key=lambda item: item[0].stat().st_mtime)
+    return reports
 
+
+def matching_successful_verification(
+    session_dir: Path,
+    fingerprint: str,
+    costs: set[str],
+) -> Path | None:
+    candidates = []
+    for path, data in verification_reports(session_dir):
+        if data.get("candidate_fingerprint") != fingerprint:
+            continue
+        if set(data.get("costs_run", [])) != costs:
+            continue
         if data.get("required_checks_passed") is True:
             candidates.append(path)
-
-    if not candidates:
-        return None
-
-    return max(candidates, key=lambda path: path.stat().st_mtime)
-
+    return candidates[-1] if candidates else None
 
 
 def create_session_dir() -> Path:
@@ -540,6 +735,43 @@ def resolve_verification_cwd(relative_cwd: str) -> Path:
         )
 
     return cwd
+
+
+def known_seed_sweep_arg_index(argv: list[str]) -> int | None:
+    executable_name = Path(argv[0]).name
+    if (
+        executable_name == "one_combat"
+        and len(argv) >= 2
+        and argv[1] in KNOWN_ONE_COMBAT_SEED_SWEEP_ARG_INDEX
+    ):
+        return KNOWN_ONE_COMBAT_SEED_SWEEP_ARG_INDEX[argv[1]]
+    if (
+        executable_name in {"python", "python3"}
+        and len(argv) >= 2
+        and Path(argv[1]).name in KNOWN_PYTHON_SEED_SWEEP_ARG_INDEX
+    ):
+        return KNOWN_PYTHON_SEED_SWEEP_ARG_INDEX[Path(argv[1]).name]
+    return None
+
+
+def upgrade_legacy_seed_counts(plan: dict) -> bool:
+    """Upgrade only known pre-seed_count plans while preserving strict new plans."""
+    upgraded = False
+    for check in plan.get("verification", []):
+        if not isinstance(check, dict) or "seed_count" in check:
+            continue
+        argv = check.get("argv")
+        if not isinstance(argv, list) or not all(isinstance(x, str) for x in argv):
+            continue
+        seed_arg_index = known_seed_sweep_arg_index(argv)
+        if seed_arg_index is None or len(argv) <= seed_arg_index:
+            continue
+        try:
+            check["seed_count"] = int(argv[seed_arg_index])
+        except ValueError:
+            continue
+        upgraded = True
+    return upgraded
 
 
 def validate_plan(plan: dict) -> None:
@@ -666,6 +898,45 @@ def validate_plan(plan: dict) -> None:
                 "'cheap' or 'expensive'."
             )
 
+        seed_count = check.get("seed_count")
+        if seed_count is not None and (
+            not isinstance(seed_count, int)
+            or isinstance(seed_count, bool)
+            or seed_count <= 0
+        ):
+            raise RuntimeError(
+                f"verification[{index}].seed_count must be a positive integer."
+            )
+        if seed_count is not None and seed_count > MAX_AUTOMATED_SEEDS:
+            raise RuntimeError(
+                f"verification[{index}].seed_count={seed_count} exceeds the "
+                f"automated maximum of {MAX_AUTOMATED_SEEDS}."
+            )
+
+        seed_arg_index = known_seed_sweep_arg_index(argv)
+
+        if seed_arg_index is not None:
+            if seed_count is None:
+                raise RuntimeError(
+                    f"verification[{index}] is a known game-seed sweep and "
+                    "must declare seed_count."
+                )
+            if len(argv) <= seed_arg_index:
+                raise RuntimeError(
+                    f"verification[{index}] omits the known seed-count argv."
+                )
+            try:
+                argv_seed_count = int(argv[seed_arg_index])
+            except ValueError as exc:
+                raise RuntimeError(
+                    f"verification[{index}] has a non-integer seed-count argv."
+                ) from exc
+            if argv_seed_count != seed_count:
+                raise RuntimeError(
+                    f"verification[{index}].seed_count={seed_count} does not "
+                    f"match argv seed count {argv_seed_count}."
+                )
+
         timeout = check.get("timeout_seconds", 300)
 
         if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout <= 0:
@@ -687,7 +958,7 @@ def validate_plan(plan: dict) -> None:
             )
 
 
-def validate_review(review_data: dict) -> None:
+def validate_review(review_data: dict, *, allow_legacy: bool = False) -> None:
     verdict = review_data.get("verdict")
 
     if verdict not in {"PASS", "FIX"}:
@@ -696,9 +967,25 @@ def validate_review(review_data: dict) -> None:
         )
 
     summary = review_data.get("summary")
-    if not isinstance(summary, str):
+    if not isinstance(summary, str) or not summary.strip():
         raise RuntimeError(
-            "Reviewer summary must be a string."
+            "Reviewer summary must be a non-empty string."
+        )
+
+    eli5_summary = review_data.get("eli5_summary")
+    if allow_legacy and eli5_summary is None:
+        eli5_summary = "Legacy review artifact; no ELI5 summary was recorded."
+    if not isinstance(eli5_summary, str) or not eli5_summary.strip():
+        raise RuntimeError(
+            "Reviewer eli5_summary must be a non-empty string."
+        )
+
+    uncertainty = review_data.get("uncertainty")
+    if allow_legacy and uncertainty is None:
+        uncertainty = "HIGH"
+    if uncertainty not in {"LOW", "MEDIUM", "HIGH"}:
+        raise RuntimeError(
+            "Reviewer uncertainty must be LOW, MEDIUM, or HIGH."
         )
 
     issues = review_data.get("issues")
@@ -735,20 +1022,30 @@ def validate_review(review_data: dict) -> None:
                     f"Reviewer issue {index}.{key} must be a string."
                 )
 
+    if verdict == "PASS" and any(
+        issue["severity"] in {"CRITICAL", "MAJOR"} for issue in issues
+    ):
+        raise RuntimeError(
+            "Reviewer returned PASS with a CRITICAL or MAJOR issue."
+        )
+
 
 def run_verification(
     plan: dict,
     *,
-    allow_expensive: bool,
+    costs_to_run: set[str],
 ) -> dict:
+    if not costs_to_run <= {"cheap", "expensive"}:
+        raise ValueError(f"Invalid verification costs: {sorted(costs_to_run)}")
+
     results = []
 
     for index, check in enumerate(plan["verification"], start=1):
         cost = check["cost"]
 
-        if cost == "expensive" and not allow_expensive:
+        if cost not in costs_to_run:
             print()
-            print(f"===== SKIP EXPENSIVE: {check['name']} =====")
+            print(f"===== NOT RUN THIS PHASE: {check['name']} =====")
             print()
 
             results.append(
@@ -759,7 +1056,7 @@ def run_verification(
                     "env": check.get("env", {}),
                     "required": check["required"],
                     "cost": cost,
-                    "status": "SKIPPED_EXPENSIVE",
+                    "status": "NOT_RUN_THIS_PHASE",
                     "returncode": None,
                     "stdout": "",
                 }
@@ -852,11 +1149,12 @@ def run_verification(
     required_ok = all(
         result["status"] == "PASS"
         for result in results
-        if result["required"]
+        if result["required"] and result["cost"] in costs_to_run
     )
 
     return {
         "required_checks_passed": required_ok,
+        "costs_run": sorted(costs_to_run),
         "checks": results,
     }
 
@@ -875,8 +1173,9 @@ Actually modify the repository. The orchestration program, not you, is
 authoritative for final verification and will execute the plan's verification
 commands independently after you finish.
 
-You may run focused checks yourself when useful for debugging, but do not
-modify the architecture plan or its verification commands.
+You may run cheap focused checks yourself when useful for debugging, but do not
+run checks marked expensive and do not modify the architecture plan or its
+verification commands.
 
 Do not commit or push.
 
@@ -982,10 +1281,12 @@ def review(
     task_file: Path,
     verification_file: Path,
     *,
+    agent: str = "reviewer",
+    extra_files: list[Path] | None = None,
     log_file: Path,
 ) -> dict:
     review_text = run_agent(
-        "reviewer",
+        agent,
         """
 Review the current working-tree implementation against:
 - the original user task
@@ -1006,16 +1307,192 @@ Do not modify files.
 Return ONLY the valid JSON review object required by your reviewer
 instructions.
 """.strip(),
-        files=[task_file, plan_file, verification_file],
+        files=[task_file, plan_file, verification_file, *(extra_files or [])],
         log_file=log_file,
     )
 
     review_data = parse_json_response(
         review_text,
-        source="Reviewer",
+        source=agent,
     )
     validate_review(review_data)
     return review_data
+
+
+def save_and_print_review(
+    session_dir: Path,
+    review_data: dict,
+    *,
+    round_number: int,
+    sol: bool = False,
+) -> Path:
+    stem = f"sol-review-{round_number}" if sol else f"review-{round_number}"
+    review_file = session_dir / f"{stem}.json"
+    save_json(review_file, review_data)
+    eli5_file = session_dir / f"{stem}-eli5.md"
+    save(eli5_file, review_data["eli5_summary"].strip() + "\n")
+
+    label = f"SOL REVIEW {round_number}" if sol else f"REVIEW {round_number}"
+    print()
+    print(f"===== {label}: {review_data['verdict']} =====")
+    print()
+    print("ELI5:")
+    print(review_data["eli5_summary"].strip())
+    print()
+    print("Technical review:")
+    print(review_file)
+    print()
+    return review_file
+
+
+def obtain_review(
+    *,
+    session_dir: Path,
+    plan_file: Path,
+    task_file: Path,
+    verification_file: Path,
+    fingerprint: str,
+    round_number: int,
+    sol: bool = False,
+    extra_files: list[Path] | None = None,
+) -> tuple[Path, dict]:
+    stem = f"sol-review-{round_number}" if sol else f"review-{round_number}"
+    log_file = session_dir / f"{stem}.log"
+    candidate_file = session_dir / f"{stem}-candidate.json"
+
+    if log_file.exists() and candidate_file.exists():
+        metadata = load_json(candidate_file)
+        if metadata.get("candidate_fingerprint") == fingerprint:
+            try:
+                data = parse_json_response(
+                    log_file.read_text(encoding="utf-8", errors="replace"),
+                    source=f"{stem} resume log",
+                )
+                validate_review(data)
+            except RuntimeError:
+                print(f"Incomplete {stem} transcript found; rerunning that call.")
+            else:
+                data["candidate_fingerprint"] = fingerprint
+                print(f"Recovered completed paid review from: {log_file}")
+                return (
+                    save_and_print_review(
+                        session_dir,
+                        data,
+                        round_number=round_number,
+                        sol=sol,
+                    ),
+                    data,
+                )
+
+    save_json(candidate_file, {"candidate_fingerprint": fingerprint})
+    data = review(
+        plan_file,
+        task_file,
+        verification_file,
+        agent="reviewer_sol" if sol else "reviewer",
+        extra_files=extra_files,
+        log_file=log_file,
+    )
+    data["candidate_fingerprint"] = fingerprint
+    return (
+        save_and_print_review(
+            session_dir,
+            data,
+            round_number=round_number,
+            sol=sol,
+        ),
+        data,
+    )
+
+
+def should_escalate_to_sol(
+    *,
+    changed_paths: list[str],
+    changed_lines: int,
+    tracked_file_count: int,
+    plan: dict,
+    verification_history: list[dict],
+    luna_reviews: list[dict],
+    latest_luna_review: dict,
+) -> tuple[bool, list[str]]:
+    reasons: list[str] = []
+
+    for concept, fragments in HIGH_RISK_PATH_RULES.items():
+        if any(
+            not path.startswith("docs/")
+            and any(fragment in path.lower() for fragment in fragments)
+            for path in changed_paths
+        ):
+            reasons.append(f"high-risk subsystem changed: {concept}")
+
+    plan_text = json.dumps(
+        {
+            "design": plan.get("design", ""),
+            "risks": plan.get("risks", []),
+            "acceptance_criteria": plan.get("acceptance_criteria", []),
+        },
+        sort_keys=True,
+    ).lower()
+    for concept, terms in HIGH_RISK_PLAN_TERMS.items():
+        if any(term in plan_text for term in terms):
+            reasons.append(f"architect identified high-risk concept: {concept}")
+
+    if changed_lines > 300:
+        reasons.append(f"change size exceeds 300 lines: {changed_lines}")
+    if tracked_file_count > 8:
+        reasons.append(f"change spans more than 8 tracked files: {tracked_file_count}")
+
+    if any(
+        check.get("required")
+        and check.get("status") in {"FAIL", "TIMEOUT"}
+        for report in verification_history
+        for check in report.get("checks", [])
+    ):
+        reasons.append("required verification failed earlier in this session")
+
+    if any(
+        any(issue.get("severity") == "CRITICAL" for issue in review.get("issues", []))
+        for review in luna_reviews
+    ):
+        reasons.append("a Luna review reported a CRITICAL issue")
+    if any(
+        sum(issue.get("severity") == "MAJOR" for issue in review.get("issues", [])) >= 2
+        for review in luna_reviews
+    ):
+        reasons.append("a Luna review reported at least two MAJOR issues")
+    if latest_luna_review.get("uncertainty") == "HIGH":
+        reasons.append("Luna reviewer uncertainty is HIGH")
+
+    # Preserve deterministic order while removing overlapping-rule duplicates.
+    reasons = list(dict.fromkeys(reasons))
+    return bool(reasons), reasons
+
+
+def write_escalation_decision(
+    session_dir: Path,
+    fingerprint: str,
+    escalated: bool,
+    reasons: list[str],
+) -> Path:
+    path = session_dir / "escalation.json"
+    save_json(
+        path,
+        {
+            "escalated": escalated,
+            "reasons": reasons,
+            "candidate_fingerprint": fingerprint,
+        },
+    )
+    print()
+    print(f"===== SOL ESCALATION: {'YES' if escalated else 'NO'} =====")
+    if reasons:
+        for reason in reasons:
+            print(f"- {reason}")
+    else:
+        print("No deterministic escalation rule matched.")
+    print(f"Decision: {path}")
+    print()
+    return path
 
 
 def run_verification_cycle(
@@ -1025,7 +1502,6 @@ def run_verification_cycle(
     task_file: Path,
     session_dir: Path,
     phase: str,
-    allow_expensive: bool,
 ) -> tuple[bool, Path]:
     verification_file: Path | None = None
 
@@ -1033,7 +1509,10 @@ def run_verification_cycle(
     for attempt in range(1, MAX_IMPLEMENTATION_RETRIES + 2):
         verification = run_verification(
             plan,
-            allow_expensive=allow_expensive,
+            costs_to_run={"cheap"},
+        )
+        verification["candidate_fingerprint"] = candidate_fingerprint(
+            context_files=(task_file, plan_file)
         )
 
         verification_file = (
@@ -1081,11 +1560,267 @@ def run_verification_cycle(
     return False, verification_file
 
 
+def finish_accepted(session_dir: Path, review_round: int) -> int:
+    snapshot_git_state(session_dir, f"{review_round + 1:02d}-accepted")
+    print()
+    print("===== ACCEPTED =====")
+    print(f"Latest Luna review: {review_round}")
+    print(f"Session data:       {session_dir}")
+    print()
+    print("No commit was created.")
+    print("Inspect the final diff manually before committing:")
+    print("  git status --short")
+    print("  git diff")
+    return 0
+
+
+def complete_candidate_workflow(
+    *,
+    plan: dict,
+    plan_file: Path,
+    task_file: Path,
+    session_dir: Path,
+    allow_expensive: bool,
+) -> int:
+    for log_file in session_dir.glob("expensive-fix-*.log"):
+        recover_completed_implementer_summary(
+            log_file, log_file.with_suffix(".md")
+        )
+    expensive_repairs = len(list(session_dir.glob("expensive-fix-*.md")))
+
+    while True:
+        fingerprint = candidate_fingerprint(context_files=(task_file, plan_file))
+        verification_file = matching_successful_verification(
+            session_dir, fingerprint, {"cheap"}
+        )
+        if verification_file is None:
+            phase = f"cheap-{dt.datetime.now().strftime('%H%M%S%f')}"
+            verification_ok, verification_file = run_verification_cycle(
+                plan=plan,
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+                phase=phase,
+            )
+            if not verification_ok:
+                snapshot_git_state(session_dir, "99-cheap-verification-failed")
+                print()
+                print("===== NOT ACCEPTED =====")
+                print(f"Required cheap verification failed. See: {verification_file}")
+                return 2
+            fingerprint = candidate_fingerprint(
+                context_files=(task_file, plan_file)
+            )
+        else:
+            print(f"Reusing cheap verification for unchanged candidate: {verification_file}")
+
+        luna_rounds = existing_review_rounds(session_dir)
+        luna_match = matching_review(luna_rounds, fingerprint)
+        if luna_match is not None and luna_match[2]["verdict"] == "FIX":
+            fix_log = session_dir / f"review-fix-{luna_match[0]}.log"
+            fix_summary = session_dir / f"review-fix-{luna_match[0]}.md"
+            if not recover_completed_implementer_summary(fix_log, fix_summary):
+                fix_result = fix_review(
+                    plan_file,
+                    task_file,
+                    luna_match[1],
+                    log_file=fix_log,
+                )
+                save(
+                    fix_summary,
+                    extract_final_markdown(fix_result),
+                )
+                snapshot_git_state(
+                    session_dir, f"review-{luna_match[0]}-after-fix"
+                )
+                continue
+            luna_match = None
+
+        if luna_match is None:
+            luna_round = (luna_rounds[-1][0] + 1) if luna_rounds else 1
+            if luna_round > MAX_REVIEW_ROUNDS:
+                print()
+                print("===== NOT ACCEPTED =====")
+                print(f"The session used all {MAX_REVIEW_ROUNDS} Luna review rounds.")
+                return 2
+            review_file, review_data = obtain_review(
+                session_dir=session_dir,
+                plan_file=plan_file,
+                task_file=task_file,
+                verification_file=verification_file,
+                fingerprint=fingerprint,
+                round_number=luna_round,
+            )
+            luna_match = (luna_round, review_file, review_data)
+        else:
+            print(
+                "Reusing Luna review for unchanged candidate: "
+                f"{luna_match[1]}"
+            )
+
+        luna_round, luna_file, luna_data = luna_match
+        if luna_data["verdict"] == "FIX":
+            fix_result = fix_review(
+                plan_file,
+                task_file,
+                luna_file,
+                log_file=session_dir / f"review-fix-{luna_round}.log",
+            )
+            save(
+                session_dir / f"review-fix-{luna_round}.md",
+                extract_final_markdown(fix_result),
+            )
+            snapshot_git_state(session_dir, f"review-{luna_round}-after-fix")
+            continue
+
+        paths, changed_lines, tracked_files = changed_diff_stats()
+        reports = [data for _, data in verification_reports(session_dir)]
+        all_luna_data = [data for _, _, data in existing_review_rounds(session_dir)]
+        escalated, reasons = should_escalate_to_sol(
+            changed_paths=paths,
+            changed_lines=changed_lines,
+            tracked_file_count=tracked_files,
+            plan=plan,
+            verification_history=reports,
+            luna_reviews=all_luna_data,
+            latest_luna_review=luna_data,
+        )
+        prior_escalation_file = session_dir / "escalation.json"
+        if prior_escalation_file.exists():
+            prior_escalation = load_json(prior_escalation_file)
+            if prior_escalation.get("escalated") is True and not escalated:
+                escalated = True
+                reasons.append("task was previously classified high-risk")
+        escalation_file = write_escalation_decision(
+            session_dir, fingerprint, escalated, reasons
+        )
+
+        if escalated:
+            sol_rounds = existing_sol_review_rounds(session_dir)
+            sol_match = matching_review(sol_rounds, fingerprint)
+            if sol_match is not None and sol_match[2]["verdict"] == "FIX":
+                sol_fix_log = session_dir / f"sol-review-fix-{sol_match[0]}.log"
+                sol_fix_summary = session_dir / f"sol-review-fix-{sol_match[0]}.md"
+                if not recover_completed_implementer_summary(
+                    sol_fix_log, sol_fix_summary
+                ):
+                    fix_result = fix_review(
+                        plan_file,
+                        task_file,
+                        sol_match[1],
+                        log_file=sol_fix_log,
+                    )
+                    save(
+                        sol_fix_summary,
+                        extract_final_markdown(fix_result),
+                    )
+                    snapshot_git_state(
+                        session_dir, f"sol-review-{sol_match[0]}-after-fix"
+                    )
+                    continue
+                sol_match = None
+
+            if sol_match is None:
+                sol_round = (sol_rounds[-1][0] + 1) if sol_rounds else 1
+                if sol_round > MAX_SOL_REVIEW_ROUNDS:
+                    print()
+                    print("===== NOT ACCEPTED =====")
+                    print(
+                        f"The session used all {MAX_SOL_REVIEW_ROUNDS} Sol "
+                        "review rounds."
+                    )
+                    return 2
+                sol_file, sol_data = obtain_review(
+                    session_dir=session_dir,
+                    plan_file=plan_file,
+                    task_file=task_file,
+                    verification_file=verification_file,
+                    fingerprint=fingerprint,
+                    round_number=sol_round,
+                    sol=True,
+                    extra_files=[luna_file, escalation_file],
+                )
+                sol_match = (sol_round, sol_file, sol_data)
+            else:
+                print(
+                    "Reusing Sol review for unchanged candidate: "
+                    f"{sol_match[1]}"
+                )
+
+            if sol_match[2]["verdict"] == "FIX":
+                fix_result = fix_review(
+                    plan_file,
+                    task_file,
+                    sol_match[1],
+                    log_file=session_dir / f"sol-review-fix-{sol_match[0]}.log",
+                )
+                save(
+                    session_dir / f"sol-review-fix-{sol_match[0]}.md",
+                    extract_final_markdown(fix_result),
+                )
+                snapshot_git_state(
+                    session_dir, f"sol-review-{sol_match[0]}-after-fix"
+                )
+                continue
+
+        if not allow_expensive:
+            final_report = run_verification(plan, costs_to_run=set())
+            final_report["candidate_fingerprint"] = fingerprint
+            final_report["expensive_gate_enabled"] = False
+            final_file = session_dir / "final-expensive-verification-disabled.json"
+            save_json(final_file, final_report)
+            print("Final expensive verification not enabled; recorded as not run.")
+            return finish_accepted(session_dir, luna_round)
+
+        expensive_file = matching_successful_verification(
+            session_dir, fingerprint, {"expensive"}
+        )
+        if expensive_file is not None:
+            print(
+                "Reusing final expensive verification for unchanged candidate: "
+                f"{expensive_file}"
+            )
+            return finish_accepted(session_dir, luna_round)
+
+        expensive = run_verification(plan, costs_to_run={"expensive"})
+        expensive["candidate_fingerprint"] = fingerprint
+        expensive["expensive_gate_enabled"] = True
+        attempt = expensive_repairs + 1
+        expensive_file = session_dir / f"final-expensive-verification-{attempt}.json"
+        save_json(expensive_file, expensive)
+        if expensive["required_checks_passed"]:
+            return finish_accepted(session_dir, luna_round)
+
+        if expensive_repairs >= MAX_EXPENSIVE_REPAIRS:
+            print()
+            print("===== NOT ACCEPTED =====")
+            print(f"Final expensive verification failed. See: {expensive_file}")
+            return 2
+
+        expensive_repairs += 1
+        fix_result = fix_verification(
+            plan_file,
+            task_file,
+            expensive_file,
+            log_file=session_dir / f"expensive-fix-{expensive_repairs}.log",
+        )
+        save(
+            session_dir / f"expensive-fix-{expensive_repairs}.md",
+            extract_final_markdown(fix_result),
+        )
+        snapshot_git_state(
+            session_dir, f"after-expensive-fix-{expensive_repairs}"
+        )
+        # Never rerun the expensive check directly after edits. The next loop
+        # starts with cheap verification and fresh semantic acceptance.
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Run or resume the GPT architect -> DeepSeek implementer -> "
-            "independent verification -> GPT reviewer workflow."
+            "cheap verification -> Luna review -> optional Sol audit -> "
+            "final expensive verification workflow."
         )
     )
 
@@ -1093,8 +1828,8 @@ def main() -> int:
         "--allow-expensive",
         action="store_true",
         help=(
-            "Also execute verification checks marked cost=expensive. "
-            "Without this flag they are recorded as skipped."
+            "Execute checks marked cost=expensive only as the final gate after "
+            "semantic review. Without this flag they are recorded as not run."
         ),
     )
 
@@ -1136,8 +1871,11 @@ def main() -> int:
         # A resumed cycle is expected to have tracked task changes already,
         # so ensure_safe_start() must deliberately NOT run here.
         implementation_log = session_dir / "implementation-1.log"
+        implementation_summary = session_dir / "implementation-1.md"
 
-        if not implementation_log.exists():
+        if not recover_completed_implementer_summary(
+            implementation_log, implementation_summary
+        ):
             print(
                 "No implementation transcript found; continuing from "
                 "the implementation stage."
@@ -1149,7 +1887,7 @@ def main() -> int:
                 log_file=implementation_log,
             )
             save(
-                session_dir / "implementation-1.md",
+                implementation_summary,
                 extract_final_markdown(implementation),
             )
 
@@ -1164,183 +1902,13 @@ def main() -> int:
                 "DeepSeek's initial implementation."
             )
 
-        # If a previous semantic review already passed, the session is done.
-        reviews = existing_review_rounds(session_dir)
-        for review_round, review_file, review_data in reviews:
-            if review_data["verdict"] == "PASS":
-                print()
-                print("===== ALREADY ACCEPTED =====")
-                print(f"Review round: {review_round}")
-                print(f"Review file:  {review_file}")
-                print(f"Session data: {session_dir}")
-                return 0
-
-        # Determine where a prior FIX review left us.
-        next_review_round = 1
-
-        if reviews:
-            last_round, last_review_file, last_review_data = reviews
-            next_review_round = last_round + 1
-
-            if last_review_data["verdict"] == "FIX":
-                fix_log = session_dir / f"review-fix-{last_round}.log"
-
-                if not fix_log.exists():
-                    print(
-                        f"Review {last_round} requested fixes but no fixer "
-                        "transcript exists; applying those fixes now."
-                    )
-
-                    fix_result = fix_review(
-                        plan_file,
-                        task_file,
-                        last_review_file,
-                        log_file=fix_log,
-                    )
-
-                    save(
-                        session_dir / f"review-fix-{last_round}.md",
-                        extract_final_markdown(fix_result),
-                    )
-
-                    snapshot_git_state(
-                        session_dir,
-                        f"review-{last_round}-after-fix",
-                    )
-                else:
-                    print(
-                        f"Review {last_round} fixer transcript already exists; "
-                        "not rerunning that DeepSeek call."
-                    )
-
-        # Re-run verification on resume rather than trusting that the current
-        # working tree still exactly matches an old verification artifact.
-        # This costs local compute, not another architect/reviewer call.
-        verification_ok, verification_file = run_verification_cycle(
+        return complete_candidate_workflow(
             plan=plan,
             plan_file=plan_file,
             task_file=task_file,
             session_dir=session_dir,
-            phase=f"resume-{dt.datetime.now().strftime('%H%M%S')}",
             allow_expensive=args.allow_expensive,
         )
-
-        if not verification_ok:
-            snapshot_git_state(
-                session_dir,
-                "99-resume-verification-failed",
-            )
-
-            print()
-            print("===== NOT ACCEPTED =====")
-            print(
-                "Required verification still fails after resume repair "
-                f"attempts. See: {verification_file}"
-            )
-            return 2
-
-        if next_review_round > MAX_REVIEW_ROUNDS:
-            print()
-            print("===== NOT ACCEPTED =====")
-            print(
-                f"The session already used all {MAX_REVIEW_ROUNDS} semantic "
-                "review rounds."
-            )
-            return 2
-
-        for review_round in range(
-            next_review_round,
-            MAX_REVIEW_ROUNDS + 1,
-        ):
-            review_data = review(
-                plan_file,
-                task_file,
-                verification_file,
-                log_file=session_dir / f"review-{review_round}.log",
-            )
-
-            review_file = (
-                session_dir / f"review-{review_round}.json"
-            )
-            save_json(
-                review_file,
-                review_data,
-            )
-
-            if review_data["verdict"] == "PASS":
-                snapshot_git_state(
-                    session_dir,
-                    f"{review_round + 1:02d}-accepted",
-                )
-
-                print()
-                print("===== ACCEPTED =====")
-                print(f"Review round: {review_round}")
-                print(f"Session data: {session_dir}")
-                print()
-                print("No commit was created.")
-                print("Inspect the final diff manually before committing:")
-                print("  git status --short")
-                print("  git diff")
-                return 0
-
-            if review_round == MAX_REVIEW_ROUNDS:
-                snapshot_git_state(
-                    session_dir,
-                    "99-review-failed",
-                )
-
-                print()
-                print("===== NOT ACCEPTED =====")
-                print(
-                    "Implementation still failed semantic review after "
-                    f"{MAX_REVIEW_ROUNDS} rounds."
-                )
-                print(f"See: {review_file}")
-                return 2
-
-            fix_result = fix_review(
-                plan_file,
-                task_file,
-                review_file,
-                log_file=session_dir / f"review-fix-{review_round}.log",
-            )
-
-            save(
-                session_dir / f"review-fix-{review_round}.md",
-                extract_final_markdown(fix_result),
-            )
-
-            snapshot_git_state(
-                session_dir,
-                f"review-{review_round}-after-fix",
-            )
-
-            verification_ok, verification_file = run_verification_cycle(
-                plan=plan,
-                plan_file=plan_file,
-                task_file=task_file,
-                session_dir=session_dir,
-                phase=f"review-{review_round}-fix",
-                allow_expensive=args.allow_expensive,
-            )
-
-            if not verification_ok:
-                snapshot_git_state(
-                    session_dir,
-                    "99-post-review-verification-failed",
-                )
-
-                print()
-                print("===== NOT ACCEPTED =====")
-                print(
-                    "Required verification failed after applying reviewer "
-                    "fixes."
-                )
-                print(f"See: {verification_file}")
-                return 2
-
-        return 2
 
     # -----------------------------------------------------------------
     # Fresh session
@@ -1421,120 +1989,13 @@ Do not modify repository files.
         "01-after-implementation",
     )
 
-    verification_ok, verification_file = run_verification_cycle(
+    return complete_candidate_workflow(
         plan=plan,
         plan_file=plan_file,
         task_file=task_file,
         session_dir=session_dir,
-        phase="implementation",
         allow_expensive=args.allow_expensive,
     )
-
-    if not verification_ok:
-        snapshot_git_state(
-            session_dir,
-            "99-verification-failed",
-        )
-
-        print()
-        print("===== NOT ACCEPTED =====")
-        print(
-            "Required verification still fails after "
-            f"{MAX_IMPLEMENTATION_RETRIES} repair attempts."
-        )
-        print(f"See: {verification_file}")
-        return 2
-
-    for review_round in range(1, MAX_REVIEW_ROUNDS + 1):
-        review_data = review(
-            plan_file,
-            task_file,
-            verification_file,
-            log_file=session_dir / f"review-{review_round}.log",
-        )
-
-        review_file = (
-            session_dir / f"review-{review_round}.json"
-        )
-        save_json(
-            review_file,
-            review_data,
-        )
-
-        if review_data["verdict"] == "PASS":
-            snapshot_git_state(
-                session_dir,
-                f"{review_round + 1:02d}-accepted",
-            )
-
-            print()
-            print("===== ACCEPTED =====")
-            print(f"Review round: {review_round}")
-            print(f"Session data: {session_dir}")
-            print()
-            print("No commit was created.")
-            print("Inspect the final diff manually before committing:")
-            print("  git status --short")
-            print("  git diff")
-            return 0
-
-        if review_round == MAX_REVIEW_ROUNDS:
-            snapshot_git_state(
-                session_dir,
-                "99-review-failed",
-            )
-
-            print()
-            print("===== NOT ACCEPTED =====")
-            print(
-                "Implementation still failed semantic review after "
-                f"{MAX_REVIEW_ROUNDS} rounds."
-            )
-            print(f"See: {review_file}")
-            return 2
-
-        fix_result = fix_review(
-            plan_file,
-            task_file,
-            review_file,
-            log_file=session_dir / f"review-fix-{review_round}.log",
-        )
-
-        save(
-            session_dir / f"review-fix-{review_round}.md",
-            extract_final_markdown(fix_result),
-        )
-
-        snapshot_git_state(
-            session_dir,
-            f"review-{review_round}-after-fix",
-        )
-
-        verification_ok, verification_file = run_verification_cycle(
-            plan=plan,
-            plan_file=plan_file,
-            task_file=task_file,
-            session_dir=session_dir,
-            phase=f"review-{review_round}-fix",
-            allow_expensive=args.allow_expensive,
-        )
-
-        if not verification_ok:
-            snapshot_git_state(
-                session_dir,
-                "99-post-review-verification-failed",
-            )
-
-            print()
-            print("===== NOT ACCEPTED =====")
-            print(
-                "Required verification failed after applying reviewer fixes."
-            )
-            print(f"See: {verification_file}")
-            return 2
-
-    return 2
-
 
 if __name__ == "__main__":
     try:

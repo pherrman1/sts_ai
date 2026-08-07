@@ -29,6 +29,9 @@ Implementation rules:
 Tests:
 - add a regression test first for bug fixes when feasible
 - run focused checks before broad checks
+- run only cheap checks while implementing or repairing; broad seed sweeps,
+  training runs, statistical evaluations, and long benchmarks are reserved for
+  the orchestrator's final expensive gate
 - rebuild all affected C++ translation units when shared layout/header changes require it
 - do not substitute "it compiles" for behavioral verification
 

@@ -5,7 +5,8 @@
     "architect": {
       "description": "Senior architect. Understands the task and writes a precise implementation plan without modifying the repository.",
       "mode": "primary",
-      "model": "openai/gpt-5.6-sol",
+      "model": "opencode/gpt-5.6-luna",
+      "reasoningEffort": "high",
       "prompt": "{file:./.opencode/prompts/architect.md}",
       "permission": {
         "edit": "deny",
@@ -55,7 +56,8 @@
     "reviewer": {
       "description": "Senior adversarial reviewer. Reviews implementation correctness without modifying files.",
       "mode": "primary",
-      "model": "openai/gpt-5.6-sol",
+      "model": "opencode/gpt-5.6-luna",
+      "reasoningEffort": "high",
       "prompt": "{file:./.opencode/prompts/reviewer.md}",
       "permission": {
         "edit": "deny",
@@ -73,6 +75,38 @@
           "git show *": "allow",
           "git grep *": "allow",
           "python3 -I tools/ai_inspect.py *": "allow"
+        }
+      }
+    },
+
+    "reviewer_sol": {
+      "description": "Escalation auditor. Performs a stronger semantic audit after Luna passes without modifying files.",
+      "mode": "primary",
+      "model": "opencode/gpt-5.6-sol",
+      "reasoningEffort": "medium",
+      "prompt": "{file:./.opencode/prompts/reviewer.md}\n\n{file:./.opencode/prompts/reviewer-sol.md}",
+      "permission": {
+        "edit": "deny",
+        "task": "deny",
+        "webfetch": "allow",
+        "websearch": "allow",
+        "bash": {
+          "*": "deny",
+          "git status": "allow",
+          "git status *": "allow",
+          "git diff": "allow",
+          "git diff *": "allow",
+          "git log": "allow",
+          "git log *": "allow",
+          "git show *": "allow",
+          "git grep *": "allow",
+          "python3 -I tools/ai_inspect.py *": "allow",
+          "*&&*": "deny",
+          "*||*": "deny",
+          "*;*": "deny",
+          "*|*": "deny",
+          "*>*": "deny",
+          "*<*": "deny"
         }
       }
     }

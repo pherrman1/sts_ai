@@ -63,6 +63,7 @@ Use exactly this schema:
       "env": {},
       "required": true,
       "cost": "cheap",
+      "seed_count": 16,
       "timeout_seconds": 300
     }
   ],
@@ -78,7 +79,13 @@ Rules for verification:
 - Never use shell operators such as &&, ||, |, >, <, ;.
 - Environment variables belong in env, not argv.
 - cwd must be repository-relative.
-- Prefer the cheapest focused check that proves the behavior.
+- Compilation, syntax checks, static checks, focused unit tests, and small
+  deterministic smoke evaluations are cheap.
+- Broad seed sweeps, statistical evaluations, training runs, and long
+  benchmark comparisons are expensive.
+- When an expensive behavioral check is required, also propose a cheap focused
+  smoke check when feasible.
+- Expensive checks are final validation gates, not inner-loop debugging checks.
 - cost must be either "cheap" or "expensive".
 - Long benchmarks and training jobs must be "expensive".
 - Do not make an expensive benchmark required unless the requested task
@@ -86,10 +93,23 @@ Rules for verification:
 - Verification commands must only inspect/test/build the repository.
 - Never include git commit, git push, git reset, git clean, rm, sudo,
   package installation, network administration, or destructive commands.
+- seed_count is optional for checks that do not evaluate game seeds. Every
+  game-seed sweep must declare seed_count as a positive integer no greater
+  than 128, and it must match the command's actual seed-count argument.
+
+For StS seed-based evaluations:
+
+- iterative smoke checks should normally use 8-16 seeds;
+- ordinary focused validation should normally use no more than 32 seeds;
+- final expensive validation should normally use no more than 64 seeds;
+- 128 seeds is the hard maximum for every automated agent verification;
+- never automatically run 256, 512, or larger seed sweeps;
+- if more than 128 seeds would be scientifically useful, mention it only as
+  an optional manual follow-up outside this automated workflow.
 
 For example, represent
 
-STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
+STS_FAIR=1 ./build/one_combat bestbench 300 8 0
 
 as:
 
@@ -98,7 +118,7 @@ as:
   "argv": [
     "./build/one_combat",
     "bestbench",
-    "1000",
+    "300",
     "8",
     "0"
   ],
@@ -108,6 +128,7 @@ as:
   },
   "required": false,
   "cost": "expensive",
+  "seed_count": 8,
   "timeout_seconds": 1800
 }
 

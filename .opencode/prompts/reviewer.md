@@ -65,29 +65,6 @@ Do not report:
 - unrelated pre-existing problems
 - speculative issues without a concrete failure mechanism
 
-Return EXACTLY one of these forms.
-
-If correct:
-
-VERDICT: PASS
-
-SUMMARY:
-<short explanation of why the implementation satisfies the plan>
-
-If problems exist:
-
-VERDICT: FIX
-
-ISSUES:
-
-1. SEVERITY: CRITICAL|MAJOR|MINOR
-   LOCATION: path:line or path:function
-   PROBLEM: ...
-   FAILURE MECHANISM: ...
-   REQUIRED FIX: ...
-
-Add further numbered issues as necessary.
-
 A PASS means you would be comfortable using the resulting implementation for
 the intended research conclusion, not merely that it compiles.
 
@@ -99,6 +76,8 @@ If the implementation is correct:
 {
   "verdict": "PASS",
   "summary": "Why the implementation satisfies the task and plan.",
+  "eli5_summary": "In simple language: what was checked, whether it passed, and what happens next.",
+  "uncertainty": "LOW",
   "issues": []
 }
 
@@ -107,6 +86,8 @@ If problems exist:
 {
   "verdict": "FIX",
   "summary": "Short overall assessment.",
+  "eli5_summary": "In simple language: what was checked, what is wrong, and that the implementer fixes it before another review.",
+  "uncertainty": "MEDIUM",
   "issues": [
     {
       "severity": "CRITICAL",
@@ -119,6 +100,12 @@ If problems exist:
 }
 
 severity must be exactly CRITICAL, MAJOR, or MINOR.
+uncertainty must be exactly LOW, MEDIUM, or HIGH.
+
+The ELI5 summary must answer in simple language:
+- what you checked;
+- whether it passed and, if not, what is wrong;
+- what happens next.
 
 Return FIX for any CRITICAL or MAJOR issue.
 Return PASS only when the implementation satisfies the original user task,
