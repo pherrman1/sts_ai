@@ -103,6 +103,12 @@ namespace sts::search {
         // schema as Searcher2; Phase 4 fair-tree measurement).
         SearchDiagnostics diag;
 
+        // Forced-action contraction (same as Searcher2, §120/§121): exactly one
+        // legal action -> commit directly, no search. Enumerated on the live
+        // root state, so it fires only when the move is truly forced in every
+        // determinization.
+        bool onlyLegalAction(Action &out);
+
         [[nodiscard]] bool isTerminal(const BattleContext &bc) const;
         double evaluateTerminal(const BattleContext &bc);
         double evaluateLeaf(const BattleContext &bc);

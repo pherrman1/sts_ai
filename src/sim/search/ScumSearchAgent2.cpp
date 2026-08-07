@@ -112,6 +112,19 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             const std::int64_t sims = isBossEncounter(bc.encounter)
                 ? (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
             BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+            // Forced-action contraction (same promoted shortcut as the S2 fair
+            // path, §120/§121): exactly one legal action -> commit directly, no
+            // search. Enumerated on the live root state, so it fires only when
+            // the move is truly forced in every determinization. The fair path
+            // builds a fresh searcher per decision, so the skip is
+            // decision-neutral (pending the §123 S3 gate). Forced decisions
+            // skip the search, so g_onSearchComplete3 does not fire for them.
+            search::Action forced;
+            if (search::g_forcedMoveSkip && s3.onlyLegalAction(forced)) {
+                takeAction(bc, forced);
+                ++decisionIdx;
+                continue;
+            }
             s3.search(sims);
             simulationCountTotal += s3.root.simulationCount;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);

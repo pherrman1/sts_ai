@@ -177,17 +177,22 @@ Phase 5: when the live root state has exactly one legal action
 strictly-forced-only — no multi-step contraction (Searcher3 chain
 compression was net-negative, EXPERIMENTS.md §106). **Default ON in the
 fair path since 2026-08-06 (§120/§121); `STS_FORCED_MOVE=0` disables.**
-Fair-path note: forced decisions skip the search, so `g_onSearchComplete`
-(searchdiag A rows) does not fire for them. **Non-fair path: the standalone
-flag is a no-op by design** — the persistent searcher reuses the tree
-across decisions, so skipping a forced-node search changes later trees and
-the shared RNG stream (measured divergent on 3/8 diagnostic seeds, §121);
-the non-fair forced shortcut fires only inside the `g_convRootStop` arm
-(falsified §118, hang fixed §121 — it clears the cached winning line after
-a forced skip, which otherwise left `stepThroughSolution` looping on an
-empty action list). Two independent 256-seed fair gates show exact per-seed
-outcome equality (0/256 diffs each) at −16 to −18% cpu; decision-neutral by
-construction, so all historical fair results remain valid. Decision log:
+Since 2026-08-07 the same shortcut applies to the Searcher3 fair path
+(`BattleScumSearcher3::onlyLegalAction`, same live-root canonical
+enumeration; the S3 fair path builds a fresh searcher per decision, so the
+skip is decision-neutral pending the §123 gate).
+Fair-path note: forced decisions skip the search, so `g_onSearchComplete` /
+`g_onSearchComplete3` (searchdiag A rows) does not fire for them. **Non-fair
+path: the standalone flag is a no-op by design** — the persistent searcher
+reuses the tree across decisions, so skipping a forced-node search changes
+later trees and the shared RNG stream (measured divergent on 3/8 diagnostic
+seeds, §121); the non-fair forced shortcut fires only inside the
+`g_convRootStop` arm (falsified §118, hang fixed §121 — it clears the
+cached winning line after a forced skip, which otherwise left
+`stepThroughSolution` looping on an empty action list). Two independent
+256-seed fair gates show exact per-seed outcome equality (0/256 diffs each)
+at −16 to −18% cpu; decision-neutral by construction, so all historical
+fair results remain valid. Decision log:
 `2026-08-06-forced-move-phase5.md`.
 
 ### Root-stability adaptive search (STS_CONV_ROOT, opt-in)

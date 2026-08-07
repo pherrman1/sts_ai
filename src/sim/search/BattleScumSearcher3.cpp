@@ -617,6 +617,14 @@ void enumerateActionsForNode(BattleScumSearcher3::Node &node,
     }
 }
 
+bool search::BattleScumSearcher3::onlyLegalAction(Action &out) {
+    Node tmp;
+    enumerateActionsForNode(tmp, *rootBc);
+    if (tmp.edges.size() != 1) return false;
+    out = tmp.edges[0].action;
+    return true;
+}
+
 // ---- Policy priors ----------------------------------------------------------
 void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc) {
     const int n = (int)node.edges.size();
