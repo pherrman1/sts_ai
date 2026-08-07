@@ -5033,3 +5033,41 @@ extFight*/emElites/emFights parity-excluded) and
 - **Cost:** datagen ~40 min local (12 threads); training + export ~15 min
   local; gates ~3×22 min + 2×45 min (8 threads) + 1×4 min resume (24
   threads) on GCP.
+
+## §130 5.2 counter-aware OOC pricing — CLOSED on evidence, no retrain gate (2026-08-07, local diagnostic only)
+
+- **What:** plan `plan-winrate-ideas-2026-08-07.md` §5.2 (counter-aware OOC
+  pricing): the deployed win tree has zero counter-relic sensitivity (§110:
+  0/1,060 splits on the eight counter features despite all being among its
+  448 selected features), and the plan proposed fixing it by (a) retraining
+  the win GBM on a corpus with populated counter columns, or (b) a C_psi
+  next-fight survival term for rest/event decisions. Closed **without** a
+  retrain gate by user decision after the diagnostic below.
+- **Diagnostic (this session, read-only):** the fresh deployed combat vnet
+  (`build/v_combat_honest.txt`, 804 trees, 287,517 honest `combatgen` rows)
+  assigns the counter features ~0.01% of total split gain (Happy Flower
+  0.0047%, Incense Burner 0.0073%, Ink Bottle 0.0009%; Nunchaku/Pen Nib/
+  Sundial/Panache below that) — and its training data HAD real counter
+  variance: happyFlowerCtr 0-2 (6,075 nonzero rows), incenseBurnerCtr 0-5
+  (3,086), inkBottleCtr 0-9 (3,577), nunchakuCtr 0-9 (7,879), penNibCtr
+  −1..8 (7,160), sundialCtr 0-2 (2,677), panacheCtr −5..5 (148); only
+  inserterCtr was constant 0 (correctly — Inserter is a Defect-only relic
+  and the agent plays Ironclad).
+- **Evidence chain (four independent readings):** (1) §110 win tree
+  0/1,060 splits; (2) this diagnostic — a second, fresh-data GBM also
+  reads no signal in counters conditional on HP/gold/potions/deck; (3)
+  §116 — the controlled forced-Happy-Flower benchmark found no winrate or
+  stall-behavior benefit from counter-aligned play; (4) §125 — the
+  counter-SENSITIVE evaluator (C_psi) applied at the combat leaf was
+  significantly NEGATIVE (−8.6pp, CI [+2.0,+15.2]).
+- **Verdict:** the counter-insensitivity is the models correctly reading
+  "no signal", not a data artifact; OOC decisions (rest vs upgrade, events,
+  shop, pathing) barely depend on counter state, and the in-combat
+  energy-tick signal the counters carry is already visible to the deployed
+  combat vnet (§126). The §110 open question ("counter pricing requires a
+  counter-aware terminal model") is answered negatively for the OOC side;
+  the combat-side counter-pricing line was already closed (§116, §125).
+  **5.2 closed; no retrain gate, no code change, nothing deployed.**
+- **Artifacts:** none (diagnostic only; computed from the tracked
+  `build/v_combat_honest.txt` JSON and `build/vcombat_honest.csv`).
+- **Cost:** ~15 min local, read-only.

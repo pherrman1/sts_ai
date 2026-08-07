@@ -260,15 +260,20 @@ stronger than the one that produced the labels. Steps:
    tracked V4/V5 artifacts. Pre-register: this is the cleanest test of the
    distribution hypothesis; a null falsifies 5.7.3 for good (record it).
 
-### 5.2 Counter-aware OOC pricing (parallel, lower priority)
+### 5.2 Counter-aware OOC pricing — **CLOSED on evidence (2026-08-07, EXPERIMENTS.md §130)**
 
 The deployed win tree has zero counter-relic sensitivity (§110) while C_psi
-prices counters correctly. Options: (a) retrain the win GBM on the larger
-current corpus (counter features exist in the 1,017-value rich row) — §108
-warns retrains can be negative, gate against the tracked `v_win_trees.txt`;
-(b) C_psi next-fight survival as an additive rest/event term (machinery:
-`cpsiEntryFromRich`, `cpsictr`). Cheaper to gate than 5.1; runs on local +
-short GCP bursts.
+prices counters correctly. Options were: (a) retrain the win GBM on the
+larger current corpus; (b) C_psi next-fight survival as an additive
+rest/event term. **Closed without a retrain gate**: the diagnostic showed
+the fresh vnet's training data had real counter variance (Happy Flower 0-2/
+6,075 nonzero rows, Nunchaku 0-9/7,879, Pen Nib, Sundial, Panache) yet the
+trained model assigns counters ~0.01% of split gain — two independent GBMs
+read "no signal", consistent with §116 (forced-Happy-Flower controlled
+benchmark: null) and §125 (counter-sensitive C_psi leaf: −8.6pp). OOC
+decisions barely depend on counter state; the in-combat energy-tick signal
+the counters carry is already visible to the deployed combat vnet. No
+retrain gate, no code change.
 
 ## 6. Recording and hygiene
 
