@@ -80,7 +80,7 @@
     },
 
     "reviewer_sol": {
-      "description": "Escalation auditor. Performs a stronger semantic audit after Luna passes without modifying files.",
+      "description": "Escalation auditor. Reviews high-risk Luna passes and adjudicates bounded rejected-session recovery without modifying files.",
       "mode": "primary",
       "model": "opencode/gpt-5.6-sol",
       "reasoningEffort": "medium",

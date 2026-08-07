@@ -10,11 +10,12 @@ import os
 import re
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 
 MAX_IMPLEMENTATION_RETRIES = 2
-MAX_REVIEW_ROUNDS = 4
+MAX_REVIEW_ROUNDS = 2
 MAX_SOL_REVIEW_ROUNDS = 3
 MAX_EXPENSIVE_REPAIRS = 2
 
@@ -130,6 +131,10 @@ ANSI_ESCAPE_RE = re.compile(
 
 FINAL_RESPONSE_BEGIN = "FINAL_RESPONSE_BEGIN"
 FINAL_RESPONSE_END = "FINAL_RESPONSE_END"
+
+
+class RejectedRecoveryExhausted(RuntimeError):
+    pass
 
 # The implementation model must never rewrite the workflow that controls it.
 # These files are restored byte-for-byte after every implementer invocation
@@ -583,7 +588,7 @@ def recover_or_load_plan(
     if plan_file.exists():
         plan = load_json(plan_file)
         upgraded = upgrade_legacy_seed_counts(plan)
-        validate_plan(plan)
+        validate_plan(plan, allow_legacy_sweeps=True)
         if upgraded:
             save_json(plan_file, plan)
             print("Added seed_count to known legacy sweep checks.")
@@ -614,7 +619,7 @@ def recover_or_load_plan(
         source="Architect resume log",
     )
     upgrade_legacy_seed_counts(plan)
-    validate_plan(plan)
+    validate_plan(plan, allow_legacy_sweeps=True)
     save_json(plan_file, plan)
 
     print(f"Recovered architecture plan: {plan_file}")
@@ -693,6 +698,19 @@ def matching_successful_verification(
     return candidates[-1] if candidates else None
 
 
+def matching_verification_report(
+    session_dir: Path,
+    fingerprint: str,
+    costs: set[str],
+) -> tuple[Path, dict] | None:
+    for path, data in reversed(verification_reports(session_dir)):
+        if data.get("candidate_fingerprint") != fingerprint:
+            continue
+        if set(data.get("costs_run", [])) == costs:
+            return path, data
+    return None
+
+
 def create_session_dir() -> Path:
     timestamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     session_dir = AI_ROOT / timestamp
@@ -755,7 +773,12 @@ def known_seed_sweep_arg_index(argv: list[str]) -> int | None:
 
 
 def upgrade_legacy_seed_counts(plan: dict) -> bool:
-    """Upgrade only known pre-seed_count plans while preserving strict new plans."""
+    """Upgrade only known pre-seed_count plans while preserving strict new plans.
+
+    A recorded legacy sweep whose inferred seed count exceeds the automated
+    cap is left without seed_count: it documents a pre-existing experiment and
+    must not be rejected merely because it predates the cap.
+    """
     upgraded = False
     for check in plan.get("verification", []):
         if not isinstance(check, dict) or "seed_count" in check:
@@ -767,14 +790,17 @@ def upgrade_legacy_seed_counts(plan: dict) -> bool:
         if seed_arg_index is None or len(argv) <= seed_arg_index:
             continue
         try:
-            check["seed_count"] = int(argv[seed_arg_index])
+            inferred = int(argv[seed_arg_index])
         except ValueError:
             continue
+        if inferred > MAX_AUTOMATED_SEEDS:
+            continue
+        check["seed_count"] = inferred
         upgraded = True
     return upgraded
 
 
-def validate_plan(plan: dict) -> None:
+def validate_plan(plan: dict, *, allow_legacy_sweeps: bool = False) -> None:
     required_keys = {
         "task_interpretation",
         "current_behavior",
@@ -917,10 +943,12 @@ def validate_plan(plan: dict) -> None:
 
         if seed_arg_index is not None:
             if seed_count is None:
-                raise RuntimeError(
-                    f"verification[{index}] is a known game-seed sweep and "
-                    "must declare seed_count."
-                )
+                if not allow_legacy_sweeps:
+                    raise RuntimeError(
+                        f"verification[{index}] is a known game-seed sweep and "
+                        "must declare seed_count."
+                    )
+                continue
             if len(argv) <= seed_arg_index:
                 raise RuntimeError(
                     f"verification[{index}] omits the known seed-count argv."
@@ -1283,11 +1311,12 @@ def review(
     *,
     agent: str = "reviewer",
     extra_files: list[Path] | None = None,
+    prompt: str | None = None,
     log_file: Path,
 ) -> dict:
     review_text = run_agent(
         agent,
-        """
+        prompt or """
 Review the current working-tree implementation against:
 - the original user task
 - the architecture plan
@@ -1325,14 +1354,20 @@ def save_and_print_review(
     *,
     round_number: int,
     sol: bool = False,
+    artifact_stem: str | None = None,
+    display_label: str | None = None,
 ) -> Path:
-    stem = f"sol-review-{round_number}" if sol else f"review-{round_number}"
+    stem = artifact_stem or (
+        f"sol-review-{round_number}" if sol else f"review-{round_number}"
+    )
     review_file = session_dir / f"{stem}.json"
     save_json(review_file, review_data)
     eli5_file = session_dir / f"{stem}-eli5.md"
     save(eli5_file, review_data["eli5_summary"].strip() + "\n")
 
-    label = f"SOL REVIEW {round_number}" if sol else f"REVIEW {round_number}"
+    label = display_label or (
+        f"SOL REVIEW {round_number}" if sol else f"REVIEW {round_number}"
+    )
     print()
     print(f"===== {label}: {review_data['verdict']} =====")
     print()
@@ -1355,8 +1390,15 @@ def obtain_review(
     round_number: int,
     sol: bool = False,
     extra_files: list[Path] | None = None,
+    artifact_stem: str | None = None,
+    display_label: str | None = None,
+    prompt: str | None = None,
+    review_transform: Callable[[dict], None] | None = None,
+    single_attempt: bool = False,
 ) -> tuple[Path, dict]:
-    stem = f"sol-review-{round_number}" if sol else f"review-{round_number}"
+    stem = artifact_stem or (
+        f"sol-review-{round_number}" if sol else f"review-{round_number}"
+    )
     log_file = session_dir / f"{stem}.log"
     candidate_file = session_dir / f"{stem}-candidate.json"
 
@@ -1369,7 +1411,23 @@ def obtain_review(
                     source=f"{stem} resume log",
                 )
                 validate_review(data)
+                if review_transform is not None:
+                    review_transform(data)
             except RuntimeError:
+                if single_attempt:
+                    exhausted_file = session_dir / "recovery-exhausted.json"
+                    save_json(
+                        exhausted_file,
+                        {
+                            "reason": f"{stem} returned an incomplete or invalid review",
+                            "artifact_file": log_file.name,
+                            "candidate_fingerprint": fingerprint,
+                        },
+                    )
+                    raise RejectedRecoveryExhausted(
+                        f"The bounded {stem} attempt was incomplete or invalid. "
+                        f"See: {exhausted_file}"
+                    )
                 print(f"Incomplete {stem} transcript found; rerunning that call.")
             else:
                 data["candidate_fingerprint"] = fingerprint
@@ -1380,26 +1438,63 @@ def obtain_review(
                         data,
                         round_number=round_number,
                         sol=sol,
+                        artifact_stem=artifact_stem,
+                        display_label=display_label,
                     ),
                     data,
                 )
 
+    if single_attempt and candidate_file.exists():
+        exhausted_file = session_dir / "recovery-exhausted.json"
+        save_json(
+            exhausted_file,
+            {
+                "reason": f"{stem} attempt started without a complete transcript",
+                "artifact_file": candidate_file.name,
+                "candidate_fingerprint": fingerprint,
+            },
+        )
+        raise RejectedRecoveryExhausted(
+            f"The bounded {stem} attempt did not complete. See: {exhausted_file}"
+        )
+
     save_json(candidate_file, {"candidate_fingerprint": fingerprint})
-    data = review(
-        plan_file,
-        task_file,
-        verification_file,
-        agent="reviewer_sol" if sol else "reviewer",
-        extra_files=extra_files,
-        log_file=log_file,
-    )
+    try:
+        data = review(
+            plan_file,
+            task_file,
+            verification_file,
+            agent="reviewer_sol" if sol else "reviewer",
+            extra_files=extra_files,
+            prompt=prompt,
+            log_file=log_file,
+        )
+    except Exception as exc:
+        if not single_attempt:
+            raise
+        exhausted_file = session_dir / "recovery-exhausted.json"
+        save_json(
+            exhausted_file,
+            {
+                "reason": f"{stem} call failed",
+                "artifact_file": log_file.name,
+                "candidate_fingerprint": fingerprint,
+            },
+        )
+        raise RejectedRecoveryExhausted(
+            f"The bounded {stem} call failed. See: {exhausted_file}"
+        ) from exc
     data["candidate_fingerprint"] = fingerprint
+    if review_transform is not None:
+        review_transform(data)
     return (
         save_and_print_review(
             session_dir,
             data,
             round_number=round_number,
             sol=sol,
+            artifact_stem=artifact_stem,
+            display_label=display_label,
         ),
         data,
     )
@@ -1574,6 +1669,418 @@ def finish_accepted(session_dir: Path, review_round: int) -> int:
     return 0
 
 
+def latest_rejected_luna_review(
+    session_dir: Path,
+) -> tuple[int, Path, dict] | None:
+    reviews = existing_review_rounds(session_dir)
+    if not reviews:
+        return None
+    latest = reviews[-1]
+    if latest[0] < MAX_REVIEW_ROUNDS or latest[2]["verdict"] != "FIX":
+        return None
+    return latest
+
+
+def reject_after_semantic_limit(
+    *,
+    session_dir: Path,
+    review_round: int,
+    review_file: Path,
+    review_data: dict,
+    fingerprint: str,
+    allow_expensive: bool,
+) -> int:
+    rejection_path = session_dir / "semantic-rejection.json"
+    if rejection_path.exists():
+        previous = load_json(rejection_path)
+        allow_expensive = allow_expensive or previous.get("allow_expensive") is True
+    severities = {
+        issue.get("severity")
+        for issue in review_data.get("issues", [])
+        if issue.get("severity") in {"CRITICAL", "MAJOR"}
+    }
+    issue_label = "/".join(sorted(severities)) or "blocking"
+    save_json(
+        rejection_path,
+        {
+            "reason": "semantic_review_limit",
+            "review_round": review_round,
+            "review_file": str(review_file.relative_to(session_dir)),
+            "candidate_fingerprint": fingerprint,
+            "recovery_available": True,
+            "allow_expensive": allow_expensive,
+        },
+    )
+
+    print()
+    print("===== NOT ACCEPTED =====")
+    print()
+    print("Reason:")
+    print(
+        f"Semantic review still reports {issue_label} issues after "
+        f"{review_round} review rounds."
+    )
+    print()
+    print("ELI5:")
+    print(review_data["eli5_summary"].strip())
+    print()
+    print("Recommended next step:")
+    print("Run:")
+    expensive_flag = " --allow-expensive" if allow_expensive else ""
+    print(
+        f"  python3 tools/ai_cycle.py --resume {session_dir} "
+        f"--continue-rejected{expensive_flag}"
+    )
+    print()
+    print("This uses Sol to adjudicate the remaining disagreement.")
+    print("The existing Architect plan will NOT be regenerated.")
+    return 2
+
+
+def ensure_cheap_candidate_verification(
+    *,
+    plan: dict,
+    plan_file: Path,
+    task_file: Path,
+    session_dir: Path,
+    phase: str,
+) -> tuple[bool, Path, str]:
+    fingerprint = candidate_fingerprint(context_files=(task_file, plan_file))
+    existing = matching_verification_report(
+        session_dir, fingerprint, {"cheap"}
+    )
+    if existing is not None:
+        verification_file, verification = existing
+        print(f"Reusing cheap verification for unchanged candidate: {verification_file}")
+        return verification.get("required_checks_passed") is True, verification_file, fingerprint
+
+    verification = run_verification(plan, costs_to_run={"cheap"})
+    fingerprint = candidate_fingerprint(context_files=(task_file, plan_file))
+    verification["candidate_fingerprint"] = fingerprint
+    verification_file = session_dir / f"{phase}-verification-1.json"
+    save_json(
+        verification_file,
+        verification,
+    )
+    return (
+        verification["required_checks_passed"],
+        verification_file,
+        fingerprint,
+    )
+
+
+def exhaust_rejected_recovery(
+    *,
+    session_dir: Path,
+    reason: str,
+    candidate_fingerprint_value: str,
+    artifact_file: Path,
+) -> int:
+    path = session_dir / "recovery-exhausted.json"
+    save_json(
+        path,
+        {
+            "reason": reason,
+            "artifact_file": str(artifact_file.relative_to(session_dir)),
+            "candidate_fingerprint": candidate_fingerprint_value,
+        },
+    )
+    print()
+    print("===== NOT ACCEPTED =====")
+    print("The one additional rejected-session recovery cycle is exhausted.")
+    print(f"Reason: {reason}")
+    print(f"See: {artifact_file}")
+    return 2
+
+
+def normalize_recovery_final_eli5(review_data: dict) -> None:
+    if review_data.get("verdict") != "FIX":
+        return
+    review_data["eli5_summary"] = (
+        "Sol found a blocking issue. The one automated recovery cycle is "
+        "exhausted, so manual intervention or architecture revision comes next."
+    )
+
+
+def run_recovery_final_gate(
+    *,
+    plan: dict,
+    session_dir: Path,
+    fingerprint: str,
+    allow_expensive: bool,
+) -> tuple[bool, Path]:
+    if not allow_expensive:
+        report = run_verification(plan, costs_to_run=set())
+        report["candidate_fingerprint"] = fingerprint
+        report["expensive_gate_enabled"] = False
+        path = session_dir / "recovery-final-expensive-verification-disabled.json"
+        save_json(path, report)
+        print("Final expensive verification not enabled; recorded as not run.")
+        return True, path
+
+    existing = matching_verification_report(
+        session_dir, fingerprint, {"expensive"}
+    )
+    if existing is not None:
+        existing_file, existing_report = existing
+        print(
+            "Reusing final expensive verification for unchanged candidate: "
+            f"{existing_file}"
+        )
+        return existing_report.get("required_checks_passed") is True, existing_file
+
+    report = run_verification(plan, costs_to_run={"expensive"})
+    report["candidate_fingerprint"] = fingerprint
+    report["expensive_gate_enabled"] = True
+    attempt = len(list(session_dir.glob("recovery-final-expensive-verification-*.json"))) + 1
+    path = session_dir / f"recovery-final-expensive-verification-{attempt}.json"
+    save_json(path, report)
+    return report["required_checks_passed"], path
+
+
+def continue_rejected_workflow(
+    *,
+    plan: dict,
+    plan_file: Path,
+    task_file: Path,
+    session_dir: Path,
+    allow_expensive: bool,
+) -> int:
+    rejected = latest_rejected_luna_review(session_dir)
+    if rejected is None:
+        raise RuntimeError(
+            "--continue-rejected requires a session whose latest Luna review "
+            f"is FIX at or beyond the {MAX_REVIEW_ROUNDS}-round limit."
+        )
+
+    rejected_round, rejected_file, _ = rejected
+    fingerprint = candidate_fingerprint(context_files=(task_file, plan_file))
+    complete_file = session_dir / "recovery-complete.json"
+    if complete_file.exists():
+        complete = load_json(complete_file)
+        if complete.get("candidate_fingerprint") == fingerprint:
+            print("Rejected-session recovery already completed for this candidate.")
+            return finish_accepted(session_dir, rejected_round)
+
+    exhausted_file = session_dir / "recovery-exhausted.json"
+    if exhausted_file.exists():
+        print()
+        print("===== NOT ACCEPTED =====")
+        print("The one additional rejected-session recovery cycle is exhausted.")
+        print(f"See: {exhausted_file}")
+        return 2
+
+    original_reviews = [path for _, path, _ in existing_review_rounds(session_dir)]
+    recovery_fix_log = session_dir / "recovery-fix-1.log"
+    recovery_fix_summary = session_dir / "recovery-fix-1.md"
+    recovery_fix_source = session_dir / "recovery-fix-1-source.json"
+    fix_used = recovery_fix_source.exists()
+    if fix_used:
+        recover_completed_implementer_summary(
+            recovery_fix_log, recovery_fix_summary
+        )
+
+    if not fix_used:
+        ok, verification_file, fingerprint = ensure_cheap_candidate_verification(
+            plan=plan,
+            plan_file=plan_file,
+            task_file=task_file,
+            session_dir=session_dir,
+            phase="recovery-adjudication-cheap",
+        )
+        if not ok:
+            return exhaust_rejected_recovery(
+                session_dir=session_dir,
+                reason="required cheap verification failed before Sol adjudication",
+                candidate_fingerprint_value=fingerprint,
+                artifact_file=verification_file,
+            )
+
+        adjudication_prompt = """
+This is a manual-intervention adjudication after the ordinary Luna reviewer
+returned FIX through its bounded review limit. The cheaper reviewer did NOT
+return PASS.
+
+Read the task, unchanged architecture plan, latest cheap verification report,
+all prior Luna reviews, and the current repository diff/code. Decide whether
+the remaining objections are legitimate.
+
+Return PASS if the current code is actually acceptable despite Luna's
+objections. Return FIX only for legitimate remaining problems, with the
+minimal precise fix required. Be especially alert for a confused, repetitive,
+or contradictory prior review. Do not repeat style observations and do not
+modify files. Return only the required JSON review object.
+""".strip()
+        adjudication_file, adjudication = obtain_review(
+            session_dir=session_dir,
+            plan_file=plan_file,
+            task_file=task_file,
+            verification_file=verification_file,
+            fingerprint=fingerprint,
+            round_number=1,
+            sol=True,
+            extra_files=original_reviews,
+            artifact_stem="recovery-adjudication",
+            display_label="SOL ADJUDICATION",
+            prompt=adjudication_prompt,
+            single_attempt=True,
+        )
+
+        if adjudication["verdict"] == "PASS":
+            final_ok, final_file = run_recovery_final_gate(
+                plan=plan,
+                session_dir=session_dir,
+                fingerprint=fingerprint,
+                allow_expensive=allow_expensive,
+            )
+            if final_ok:
+                save_json(
+                    complete_file,
+                    {
+                        "candidate_fingerprint": fingerprint,
+                        "accepted_by": "Sol adjudication",
+                    },
+                )
+                return finish_accepted(session_dir, rejected_round)
+            fix_source_file = final_file
+            save_json(
+                recovery_fix_source,
+                {
+                    "source": str(fix_source_file.relative_to(session_dir)),
+                    "candidate_fingerprint_before_fix": fingerprint,
+                },
+            )
+            fix_result = fix_verification(
+                plan_file,
+                task_file,
+                final_file,
+                log_file=recovery_fix_log,
+            )
+        else:
+            fix_source_file = adjudication_file
+            save_json(
+                recovery_fix_source,
+                {
+                    "source": str(fix_source_file.relative_to(session_dir)),
+                    "candidate_fingerprint_before_fix": fingerprint,
+                },
+            )
+            fix_result = fix_review(
+                plan_file,
+                task_file,
+                adjudication_file,
+                log_file=recovery_fix_log,
+            )
+
+        save(recovery_fix_summary, extract_final_markdown(fix_result))
+        snapshot_git_state(session_dir, "recovery-after-fix-1")
+
+    ok, verification_file, fingerprint = ensure_cheap_candidate_verification(
+        plan=plan,
+        plan_file=plan_file,
+        task_file=task_file,
+        session_dir=session_dir,
+        phase="recovery-post-fix-cheap",
+    )
+    if not ok:
+        return exhaust_rejected_recovery(
+            session_dir=session_dir,
+            reason="required cheap verification failed after the recovery fix",
+            candidate_fingerprint_value=fingerprint,
+            artifact_file=verification_file,
+        )
+
+    recovery_luna_file, _ = obtain_review(
+        session_dir=session_dir,
+        plan_file=plan_file,
+        task_file=task_file,
+        verification_file=verification_file,
+        fingerprint=fingerprint,
+        round_number=1,
+        artifact_stem="recovery-review",
+        display_label="RECOVERY LUNA REVIEW",
+        extra_files=[rejected_file, session_dir / "recovery-adjudication.json"],
+        single_attempt=True,
+    )
+
+    final_sol_prompt = """
+This is the final Sol audit in a one-cycle recovery after the ordinary Luna
+review limit was reached. Independently inspect the current repository
+diff/code and adjudicate the attached recovery Luna review as well as all prior
+evidence. A Luna FIX is not automatically authoritative, but return FIX if any
+legitimate blocking issue remains. Return PASS only if this candidate can
+proceed to final verification. Do not modify files or repeat style observations.
+If returning FIX, the ELI5 must say that the one automated recovery cycle is
+exhausted and manual intervention or architecture revision comes next; do not
+claim that another automatic implementer fix will run.
+Return only the required JSON review object.
+""".strip()
+    recovery_sol_file, recovery_sol = obtain_review(
+        session_dir=session_dir,
+        plan_file=plan_file,
+        task_file=task_file,
+        verification_file=verification_file,
+        fingerprint=fingerprint,
+        round_number=1,
+        sol=True,
+        artifact_stem="recovery-sol-review",
+        display_label="RECOVERY SOL FINAL AUDIT",
+        prompt=final_sol_prompt,
+        review_transform=normalize_recovery_final_eli5,
+        single_attempt=True,
+        extra_files=[
+            *original_reviews,
+            session_dir / "recovery-adjudication.json",
+            recovery_luna_file,
+        ],
+    )
+    if recovery_sol["verdict"] == "FIX":
+        save_json(
+            exhausted_file,
+            {
+                "reason": "Sol final audit returned FIX",
+                "review_file": str(recovery_sol_file.relative_to(session_dir)),
+                "candidate_fingerprint": fingerprint,
+            },
+        )
+        print()
+        print("===== NOT ACCEPTED =====")
+        print("The one additional rejected-session recovery cycle is exhausted.")
+        print("ELI5:")
+        print(recovery_sol["eli5_summary"].strip())
+        print(f"Technical review: {recovery_sol_file}")
+        return 2
+
+    final_ok, final_file = run_recovery_final_gate(
+        plan=plan,
+        session_dir=session_dir,
+        fingerprint=fingerprint,
+        allow_expensive=allow_expensive,
+    )
+    if not final_ok:
+        save_json(
+            exhausted_file,
+            {
+                "reason": "final expensive verification failed after recovery fix",
+                "verification_file": str(final_file.relative_to(session_dir)),
+                "candidate_fingerprint": fingerprint,
+            },
+        )
+        print("===== NOT ACCEPTED =====")
+        print(f"Final expensive verification failed. See: {final_file}")
+        return 2
+
+
+    save_json(
+        complete_file,
+        {
+            "candidate_fingerprint": fingerprint,
+            "accepted_by": "recovery Luna review plus Sol final audit",
+        },
+    )
+    return finish_accepted(session_dir, rejected_round)
+
+
 def complete_candidate_workflow(
     *,
     plan: dict,
@@ -1617,6 +2124,15 @@ def complete_candidate_workflow(
         luna_rounds = existing_review_rounds(session_dir)
         luna_match = matching_review(luna_rounds, fingerprint)
         if luna_match is not None and luna_match[2]["verdict"] == "FIX":
+            if luna_match[0] >= MAX_REVIEW_ROUNDS:
+                return reject_after_semantic_limit(
+                    session_dir=session_dir,
+                    review_round=luna_match[0],
+                    review_file=luna_match[1],
+                    review_data=luna_match[2],
+                    fingerprint=fingerprint,
+                    allow_expensive=allow_expensive,
+                )
             fix_log = session_dir / f"review-fix-{luna_match[0]}.log"
             fix_summary = session_dir / f"review-fix-{luna_match[0]}.md"
             if not recover_completed_implementer_summary(fix_log, fix_summary):
@@ -1639,10 +2155,19 @@ def complete_candidate_workflow(
         if luna_match is None:
             luna_round = (luna_rounds[-1][0] + 1) if luna_rounds else 1
             if luna_round > MAX_REVIEW_ROUNDS:
-                print()
-                print("===== NOT ACCEPTED =====")
-                print(f"The session used all {MAX_REVIEW_ROUNDS} Luna review rounds.")
-                return 2
+                rejected = latest_rejected_luna_review(session_dir)
+                if rejected is None:
+                    raise RuntimeError(
+                        "Luna review limit reached without a reusable FIX review."
+                    )
+                return reject_after_semantic_limit(
+                    session_dir=session_dir,
+                    review_round=rejected[0],
+                    review_file=rejected[1],
+                    review_data=rejected[2],
+                    fingerprint=fingerprint,
+                    allow_expensive=allow_expensive,
+                )
             review_file, review_data = obtain_review(
                 session_dir=session_dir,
                 plan_file=plan_file,
@@ -1660,6 +2185,15 @@ def complete_candidate_workflow(
 
         luna_round, luna_file, luna_data = luna_match
         if luna_data["verdict"] == "FIX":
+            if luna_round >= MAX_REVIEW_ROUNDS:
+                return reject_after_semantic_limit(
+                    session_dir=session_dir,
+                    review_round=luna_round,
+                    review_file=luna_file,
+                    review_data=luna_data,
+                    fingerprint=fingerprint,
+                    allow_expensive=allow_expensive,
+                )
             fix_result = fix_review(
                 plan_file,
                 task_file,
@@ -1843,12 +2377,24 @@ def main() -> int:
     )
 
     parser.add_argument(
+        "--continue-rejected",
+        action="store_true",
+        help=(
+            "Use one bounded Sol-adjudicated recovery cycle for a resumed "
+            "session that exhausted ordinary Luna review rounds."
+        ),
+    )
+
+    parser.add_argument(
         "task",
         nargs="*",
         help="Description of the requested repository change",
     )
 
     args = parser.parse_args()
+
+    if args.continue_rejected and not args.resume:
+        parser.error("--continue-rejected requires --resume SESSION.")
 
     # -----------------------------------------------------------------
     # Session creation / recovery
@@ -1867,6 +2413,23 @@ def main() -> int:
         print(f"Resuming:   {session_dir}")
 
         plan, plan_file = recover_or_load_plan(session_dir)
+
+        if args.continue_rejected:
+            effective_allow_expensive = args.allow_expensive
+            rejection_file = session_dir / "semantic-rejection.json"
+            if rejection_file.exists():
+                rejection = load_json(rejection_file)
+                effective_allow_expensive = (
+                    effective_allow_expensive
+                    or rejection.get("allow_expensive") is True
+                )
+            return continue_rejected_workflow(
+                plan=plan,
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+                allow_expensive=effective_allow_expensive,
+            )
 
         # A resumed cycle is expected to have tracked task changes already,
         # so ensure_safe_start() must deliberately NOT run here.
@@ -2003,6 +2566,10 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\nInterrupted.", file=sys.stderr)
         raise SystemExit(130)
+    except RejectedRecoveryExhausted as exc:
+        print("\n===== NOT ACCEPTED =====", file=sys.stderr)
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(2)
     except Exception as exc:
         print(f"\nERROR: {exc}", file=sys.stderr)
         raise SystemExit(1)
