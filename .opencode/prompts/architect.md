@@ -134,6 +134,10 @@ as:
 
 Do not modify repository files.
 
+Tool use: bash is limited to the allowed read-only git commands one at a time
+(git status/diff/log/show/grep/blame/ls-files); never chain, pipe, or
+redirect. Prefer the built-in read/grep/glob tools for file inspection.
+
 For read-only inspection of CSV/JSON experiment artifacts, use:
 
 python3 -I tools/ai_inspect.py ...

@@ -635,6 +635,26 @@ class CostTrackingTests(unittest.TestCase):
             self.assertEqual(0.03, loaded["entries"][1]["cost"])
 
 
+    def test_review_prompt_includes_orchestrator_changed_files(self) -> None:
+        review = review_data("PASS")
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.changed_diff_stats",
+            return_value=(["src/foo.cpp", "tools/ai_cycle.py"], 10, 2),
+        ), mock.patch(
+            "tools.ai_cycle.run_agent", return_value=json.dumps(review)
+        ) as agent_mock:
+            ai_cycle.review(
+                Path(raw_dir) / "plan.json",
+                Path(raw_dir) / "task.md",
+                Path(raw_dir) / "verification.json",
+                log_file=Path(raw_dir) / "review-1.log",
+            )
+        prompt = agent_mock.call_args.args[1]
+        self.assertIn("Orchestrator-provided changed files", prompt)
+        self.assertIn("- src/foo.cpp", prompt)
+        self.assertIn("- tools/ai_cycle.py", prompt)
+
+
 class DeniedCallAndRecoveryTests(unittest.TestCase):
     def test_extract_denied_tool_calls(self) -> None:
         lines = [

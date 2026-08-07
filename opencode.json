@@ -14,15 +14,16 @@
         "websearch": "allow",
         "bash": {
           "*": "deny",
-          "git status": "allow",
-          "git status *": "allow",
+          "git blame *": "allow",
           "git diff": "allow",
           "git diff *": "allow",
+          "git grep *": "allow",
           "git log": "allow",
           "git log *": "allow",
+          "git ls-files *": "allow",
           "git show *": "allow",
-          "git grep *": "allow",
-          "git blame *": "allow",
+          "git status": "allow",
+          "git status *": "allow",
           "python3 -I tools/ai_inspect.py *": "allow"
         }
       }
@@ -64,14 +65,15 @@
         "websearch": "allow",
         "bash": {
           "*": "deny",
-          "git status": "allow",
-          "git status *": "allow",
           "git diff": "allow",
           "git diff *": "allow",
+          "git grep *": "allow",
           "git log": "allow",
           "git log *": "allow",
+          "git ls-files *": "allow",
           "git show *": "allow",
-          "git grep *": "allow",
+          "git status": "allow",
+          "git status *": "allow",
           "python3 -I tools/ai_inspect.py *": "allow"
         }
       }
@@ -89,21 +91,22 @@
         "websearch": "allow",
         "bash": {
           "*": "deny",
-          "git status": "allow",
-          "git status *": "allow",
+          "*&&*": "deny",
+          "*;*": "deny",
+          "*<*": "deny",
+          "*>*": "deny",
+          "*|*": "deny",
+          "*||*": "deny",
           "git diff": "allow",
           "git diff *": "allow",
+          "git grep *": "allow",
           "git log": "allow",
           "git log *": "allow",
+          "git ls-files *": "allow",
           "git show *": "allow",
-          "git grep *": "allow",
-          "python3 -I tools/ai_inspect.py *": "allow",
-          "*&&*": "deny",
-          "*||*": "deny",
-          "*;*": "deny",
-          "*|*": "deny",
-          "*>*": "deny",
-          "*<*": "deny"
+          "git status": "allow",
+          "git status *": "allow",
+          "python3 -I tools/ai_inspect.py *": "allow"
         }
       }
     }

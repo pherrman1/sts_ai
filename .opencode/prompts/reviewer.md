@@ -59,6 +59,21 @@ CRITICAL = implementation can produce materially wrong behavior/results
 MAJOR = acceptance criterion is not met or meaningful regression risk exists
 MINOR = real problem but does not invalidate the implementation
 
+Tool use (binding):
+- Bash is restricted to read-only git inspection. You may run ONLY these
+  commands, one at a time: git status, git diff, git log, git show, git grep,
+  git blame, git ls-files.
+- Never chain commands with && or || or ;, never pipe (|), and never redirect
+  (>, <). OpenCode denies these and the denial wastes the attempt.
+- Never run tests, builds, py_compile, or any other verification command:
+  verification belongs to the orchestrator and runs after you.
+- python3 is allowed ONLY as `python3 -I tools/ai_inspect.py ...` for
+  read-only CSV/JSON inspection. Never use python3 -c or python3 -m.
+- Tool output is automatically truncated by OpenCode, so never add `| head`
+  or similar to any command.
+- Prefer the built-in read/grep/glob tools for file inspection, and use
+  `git grep` to search the working tree for patterns.
+
 Do not report:
 - stylistic preferences
 - optional refactors

@@ -1526,9 +1526,7 @@ def review(
     prompt: str | None = None,
     log_file: Path,
 ) -> dict:
-    review_text = run_agent(
-        agent,
-        prompt or """
+    review_prompt = prompt or """
 Review the current working-tree implementation against:
 - the original user task
 - the architecture plan
@@ -1547,7 +1545,21 @@ Do not modify files.
 
 Return ONLY the valid JSON review object required by your reviewer
 instructions.
-""".strip(),
+""".strip()
+
+    changed_paths, _, _ = changed_diff_stats()
+    if changed_paths:
+        listing = "\n".join(f"- {path}" for path in changed_paths[:60])
+        if len(changed_paths) > 60:
+            listing += f"\n- ... and {len(changed_paths) - 60} more"
+        review_prompt += (
+            "\n\nOrchestrator-provided changed files (verify against git "
+            f"yourself):\n{listing}"
+        )
+
+    review_text = run_agent(
+        agent,
+        review_prompt,
         files=[task_file, plan_file, verification_file, *(extra_files or [])],
         log_file=log_file,
     )
