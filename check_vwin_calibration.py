@@ -191,9 +191,12 @@ read_cols = (["labelBootstrap", "won", "chosen"]
 if CKPT:
     read_cols += ["action", "actionType", "c1", "c2", "c3", "cand1", "cand2", "cand3", "screen"]
 for chunk in pd.read_csv(CSV, usecols=read_cols, chunksize=CHUNK, dtype=np.float32):
-    # Restrict to rows whose chosen-action branch terminated within the rollout.
-    # All actions at a decision share the same live pre-decision state; non-chosen
-    # rows differ by counterfactual action, while `won` records the live run outcome.
+    # Restrict to chosen-action rows whose sampled counterfactual continuations
+    # all terminated: labelBootstrap averages the per-future censored flag over
+    # STRATEGIC_BRANCH_FUTURES, so labelBootstrap==0 means every sampled future
+    # terminated without bootstrapping. All actions at a decision share the same
+    # live pre-decision state; non-chosen rows differ by counterfactual action,
+    # while `won` records the live run outcome.
     m = (chunk.labelBootstrap.to_numpy(np.float32) == 0) & (chunk.chosen.to_numpy(np.float32) == 1)
     if not m.any():
         continue
