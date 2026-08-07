@@ -4589,3 +4589,213 @@ extFight*/emElites/emFights parity-excluded) and
   `2026-08-07-s3-forced-move.md`, `2026-08-07-live-valid-promotion.md`.
 - **Cost:** 3 arms × ~12 min wall parallel on GCP (24 threads each,
   oversubscribed 3×); ~2 min/arm local at 8 seeds.
+## §124 Winrate-wave baseline re-measurement + S3 feature-ablation re-derivation on the live-valid default binary (2026-08-07, local + GCP)
+
+- **What:** the winrate-wave (§124-numbered) baseline wave
+  (`docs/knowledge-base/plan-winrate-ideas-2026-08-07.md`): re-measure the
+  recorded §113/§115 references (44.5% @3k/256p, 37.5% @1k/64p) on the
+  current binary (HEAD 7b1a8d2, live-valid + forced-move defaults ON, §123)
+  — the §123 flip happened after the references were measured — and
+  re-derive the §106 S3 feature-ablation deltas (belief/chain), which §113
+  invalidated and §115 flagged for re-derivation.
+- **Config (all arms):** `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+  STS_S3_CHAIN=0` + full V4 gate stack (`STS_OOC_STRATEGIC_TOK_NN=
+  selfplay/models/ooc_strategic_tok_final.native`, REST/EVENT/SHOP/TREASURE/
+  BOSS_RELIC=1, `STS_OOC_STRATEGIC_MARGIN=1.0`); block 126700–126955 (256
+  seeds); asc 0; native OOC; policy PUCT on (`build/policy_trees_c.txt`);
+  no combat value/PVNet; `bestbench` at 12 or 24 threads on sts-test.
+- **Results (256 paired seeds, block 126700):**
+  - **@1k/64p (S3−belief−chain, current binary): 37.9% / 40.2 floor / 21.9
+    hp / 20.34 cpu-s·run** (`build/b2c_1k_64p.csv`) vs recorded reference
+    37.5% (`honest_p64_1k_256.csv`): **−0.4pp (CI [−6.6,+5.9]), flips 36/35 —
+    the §123 defaults are decision-neutral on the full stack @1k/64p.**
+  - **@1k/256p: 41.4%** (`b3c_1k_256p.csv`) vs 64p: +3.5pp (CI [−10.2,+3.1],
+    n.s.) — particles still flat-ish within noise on the new binary.
+  - **@3k/256p: 46.9% / 42.9 floor / 26.1 hp / 35.49 cpu-s·run**
+    (`b1c_3k_256p.csv`) vs recorded reference 44.5% (`honest_fix2_3k_256.csv`):
+    **+2.3pp (CI [−9.0,+4.3], flips 40/34, n.s. directionally positive)** —
+    new @3k headline on the current binary.
+  - **@3k/64p: 42.6% / 24.79 cpu-s·run** (`b4_3k_64p.csv`) — 64p is ~2.6×
+    cheaper than 256p at 3k with the same win rate as the pre-live-valid
+    reference (42.6 vs 44.5, n.s.).
+- **Ablation re-derivation (belief+chain ON vs OFF, accidentally clean
+  config bug):** the original B1/B2/B3 runs launched without the
+  `STS_S3_BELIEF=0 STS_S3_CHAIN=0` exports (config bug, banners read
+  `S3-abl=11110`), producing full-S3-feature arms that pair directly with
+  the correct S3−belief−chain arms: **belief+chain ON costs −11.3pp @64p
+  (26.6 vs 37.9, CI [+5.1,+17.6]) and −12.1pp @256p (29.3 vs 41.4, CI
+  [+5.5,+18.8])** — the §106 direction is confirmed with the honest
+  enumerator + live-valid defaults, with a LARGER magnitude than the
+  invalidated §106 deltas (+8.6/+4.7). The deployed S3−belief−chain config
+  is re-confirmed; belief/chain stay off. @3k the same cost appears
+  (−9.4pp: full-S3 37.5 vs S3−bc 46.9).
+- **Verdict:** the recorded references reproduce on the current binary
+  (flat @1k, n.s. +2.3pp @3k) — the §123 cpu-trade call does not transfer
+  a loss to the full V4 stack. §115's "particles flat" holds within noise.
+  New paired references for future gates: `b2c_1k_64p.csv` (@1k/64p),
+  `b1c_3k_256p.csv` (@3k/256p), `b4_3k_64p.csv` (@3k/64p efficient).
+- **Artifacts:** `build/{b1c_3k_256p,b2c_1k_64p,b3c_1k_256p,b4_3k_64p}.csv`
+  (current binary, correct flags); `build/{b1_3k_256p,b2_1k_64p,b3_1k_256p}.csv`
+  (full-S3-feature accidentals, kept as ablation data); logs on sts-test.
+- **Cost:** ~2-20 min/arm wall on GCP; one GCP instance preemption killed
+  and required relaunches (preemptible instance; no data lost — runs
+  truncated before completion were re-run).
+
+## §124a PVNet deployment-speed smoke (phase 6 of plan-value-targets-2026-08-07): conditional leaf gating + visible-state leaf cache implemented; behavior-preserving cache verified; gate pending on the §124 baseline (2026-08-07, local WSL)
+
+- **What:** phase-6 speed work for the PVNet leaf in Searcher3, per
+  `docs/knowledge-base/plan-value-targets-2026-08-07.md` (user request;
+  a phase-5 value-only trainer draft was reverted in the same session —
+  nothing of it remains). Two mechanisms:
+  1. `STS_PVNET_COND_{TURN,DEPTH,BOSS}` gate the per-expansion NN leaf
+     (`BattleScumSearcher3::pvnetCondAllowed`): failing conditions make the
+     sim use the ordinary rollout value only (α=0 for that sim); the NN fires
+     for long/unresolved continuations (post-rollout and direct-eval
+     `evaluateLeaf` calls stay ungated). Defaults off — behavior preserved.
+  2. `STS_PVNET_CACHE` (default ON): PVNet leaf values cached by
+     `node.obsHash` at the direct-eval sites (no-legal-action, invalid-edge,
+     depth cap), where repeated sims re-evaluate the same visible state.
+- **Config (all arms):** `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+  STS_S3_CHAIN=0 STS_S3_PARTICLES=64 STS_PVNET=build/v_combat_pvnet.txt`
+  (α=1.0 default), `./build/one_combat bestbench 300 8 0 0 <out.csv>`, 12
+  threads, seeds 0-7, asc 0, local WSL; full V4 OOC gate stack on (native
+  OOC). Model `build/v_combat_pvnet.txt` (d128 h256 hds4 L2 nq11, Jul 26).
+- **Results (8 seeds @300 sims — smoke only, not a gate):**
+  | arm | win% | avg_floor | cpu_sec/run | note |
+  |---|---|---|---|---|
+  | cache ON (default) | 0.0 | 25.8 | 44.7 | reference |
+  | `STS_PVNET_CACHE=0` | 0.0 | 25.8 | 44.5 | per-seed rows identical (only `sec` differs) |
+  | `STS_PVNET_COND_DEPTH=2` | 0.0 | 28.9 | 69.3 | outcomes differ (gate fires) |
+  | `STS_PVNET_COND_TURN=3` | 12.5 | 36.6 | 77.5 | outcomes differ (gate fires) |
+  | `STS_PVNET_COND_BOSS=1` | 0.0 | 30.5 | 64.0 | outcomes differ (gate fires) |
+  cpu differences between gated arms track run depth (deeper runs = more
+  decisions = more search), not per-sim cost; timing conclusions require the
+  real gate. All knobs print in the `[PVNet alpha = ...]` banner.
+- **Verification:** cache-on vs cache-off per-seed outcomes identical
+  (sorted-by-seed, all non-`sec` columns) — cache is behavior-preserving;
+  `ctest` 5/5; `searchdiag 2 300 0` runs clean with `STS_PVNET_COND_TURN=3`.
+- **Deferred (recorded reasons):** batched NN leaf calls (leaf evals are on
+  effectively unique states — batching needs a `step()`/`backpropagate`
+  restructure for BLAS-efficiency-only gain); GBM/MLP distillation (phase-5
+  training line); rollout-skip at α=1.0 (observed `playoutRandom` still runs
+  and its terminal value is discarded by the α=1.0 blend — wasted compute —
+  but removing it changes `bestActionSequence` semantics; candidate knob).
+- **Artifacts:** `build/pv6_cache_{on,off}.csv`, `build/pv6_cond_{depth,turn,boss}.csv`,
+  `build/pv6_sdiag.csv`, logs `build/pv6_*.log`. Code:
+  `BattleScumSearcher3.{h,cpp}` (`pvnetCondAllowed`, `evaluateLeaf` cache,
+  blend-site gate), `apps/one_combat.cpp` env parse. Decision log:
+  `2026-08-07-pvnet-deployment-speed.md`.
+- **Next:** paired 256-seed gate @1k/64p vs the §124 baseline (winrate wave
+  B1-B4 not yet recorded on GCP), then @3k if positive; pre-registered null
+  at both budgets closes the PVNet leaf line (winrate-plan §4.3 rule).
+
+## §125 Winrate-wave Wave-1/2 gates: cPUCT sweep, STS_S3_EXPAND, TERM_WIN+cpsi — all null or negative; the leaf-evaluator line flips POSITIVE with a fresh honest-data vnet (§126) (2026-08-07, local + GCP)
+
+- **What:** the winrate-wave gated items that do not involve the vnet
+  (`docs/knowledge-base/plan-winrate-ideas-2026-08-07.md` §3.3/§4.1/§4.2).
+  All arms: full V4 gate stack, S3−belief−chain, block 126700 (unless noted),
+  asc 0, fair, paired with `paired_analysis.py` vs the §124 references.
+- **cPUCT sweep (STS_CPUCT; §3.3):** 128-seed local probe @1k/64p:
+  cPUCT 1.0 → 21.1%, 1.5 → 28.9%, **2.5 (default) → 39.1%**, 4.0 → 40.6%,
+  6.0 → **42.2%** — monotone, higher exploration better (consistent with
+  §26's UCB > PUCT at deep budgets). Gate 1 (256 seeds, block 126700):
+  cPUCT=6.0 **42.2% vs 2.5 37.9% = +4.3pp (CI [−10.9,+2.3])**. Gate 2
+  (fresh block 250000, paired control): 6.0 **39.8% vs 38.7% = +1.1pp
+  (CI [−8.2,+5.9])**. Both n.s. → **not promotable; the cPUCT line is
+  closed** (direction consistent but sub-significant at 256 seeds twice;
+  `g_cPuct` default stays 2.5). Artifacts: `build/cpuct_*_128.csv`,
+  `build/cpuct_{4,6}_256.csv`, `build/cpuct2_{2_5,6}_256.csv`.
+- **STS_S3_EXPAND (§4.1, new code):** when no stored edge is valid in the
+  current determinization (the live-valid residual, ~5.4% of rollouts at
+  the deployed point), enumerate the live state's legal actions into the
+  tree (action-keyed, priors on the new edges only, cap 32) instead of a
+  random rollout; env `STS_S3_EXPAND=1`, `STS_S3_EXPAND_MAX` (default 32),
+  requires live-valid semantics. searchdiag (6 seeds @3k/64p, deployed
+  stack): illegal-stored share 0.054 → **0.0**, treeActions +10%. Gates:
+  @1k/64p **35.5% vs 37.9% = −2.3pp (CI [−2.7,+7.4], flips 18/24, 16%
+  discordant)**; @3k/64p **44.1% vs 42.6% = +1.5pp (CI [−6.6,+3.5], flips
+  23/19)**. Mixed null at both budgets → **falsified, line closed per the
+  pre-registered rule; the env stays opt-in** (`build/s3exp_{1k_64p,3k_64p}.csv`).
+- **TERM_WIN + C_psi evaluator (§4.2):** the §110/§116 follow-up — terminal
+  victory leaves priced with the counter-sensitive C_psi next-fight model
+  (`STS_TERM_WIN=1 STS_TERM_WIN_EVAL=cpsi STS_CPSI_NN=build/v_combat_cpsi.txt`)
+  instead of the counter-insensitive win tree (§110: 0 splits on counter
+  features). @1k/64p: **29.3% vs 37.9% = −8.6pp (CI [+2.0,+15.2],
+  SIGNIFICANT, flips 28/50) at 3.7× cpu (73.83 vs 20.34 cpu-s·run)** — the
+  cross-combat setup pricing is decisively negative at the efficient point;
+  **falsified, line closed** (the §116 win-tree variant was null; the cpsi
+  variant is negative). Artifact `build/termcpsi_1k_64p.csv`.
+- **Recording note:** the §124 config-bug accidentals (§124) double as the
+  clean ablation data; this entry's arms were all verified by their
+  `S3-abl[b,p,c,l,crn]=01010` banners.
+
+
+## §126 Fresh honest-data combat V_combat leaf (STS_VNET, α=0.3): THREE significant gates (+12.5/+12.1/+12.5pp) — PROMOTED to default ON in the fair-S3 path (recorded cpu-trade call); §97's rejection reversed (2026-08-07, local + GCP)
+
+- **What:** the winrate-wave boss-leaf item (§4.3 of
+  `docs/knowledge-base/plan-winrate-ideas-2026-08-07.md`), reframed by the
+  evidence: a NEW combat value net trained on fresh honest trajectories,
+  applied UNCONDITIONALLY at a LOW blend weight. §97's rejection (old
+  1,500-tree vnet, old-era data, α0.3/0.5 under the pre-§113 stack) does not
+  transfer: the boss-only conditioning idea was tested first (flat, see
+  below) and the unconditional fresh model is strongly positive.
+- **New labels:** `combatgen` 1,500 seeds @1k sims with the current honest
+  searcher (`STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0`,
+  live-valid default ON; heuristic-OOC run loop — `runCombatGenSeed`), seeds
+  0-1499 → `build/vcombat_honest.csv`: **287,517 rows, 16,337 fights, 733
+  features** (~3.5 min on GCP). `train_value_combat.py` (XGBoost, val-rmse
+  7.99 endHp, scaling probe positive on Demon Form/Feel No Pain/etc.) →
+  `export_combat_model.py` → **`build/v_combat_honest.txt`: 804 trees, 733
+  features, base_score 25.97**.
+- **New code:** `STS_VNET_COND_BOSS` / `STS_VNET_COND_ACT3` gate the vnet
+  leaf to rollout-dominant contexts (boss fights / act 3, §117) via
+  `vnetCondAllowed` (S3 `step()` leaf capture + `evaluateLeaf`); both unset
+  = always on, byte-identical to pre-conditioning behavior.
+- **Gates (256 seeds each, full V4 gate stack, S3−belief−chain, fair, asc 0;**
+  vnet = `STS_VNET=build/v_combat_honest.txt`):
+  | arm | config | win% | paired vs | Δ (95% CI) | flips | cpu |
+  |---|---|---|---:|---:|---:|---:|
+  | gate 1 @1k/64p | α=0.3 | **50.4%** | B2c 37.9% | **+12.5 [+5.5,+19.5]** | 60/28 | 41.2 s·run |
+  | gate 2 @1k/64p (block 250000+) | α=0.3 | **50.8%** | ctl 38.7% | **+12.1 [+4.7,+19.5]** | 65/34 | 49.8 (contended) |
+  | win point @3k/64p | α=0.3 | **55.1%** | B4 42.6% | **+12.5 [+6.2,+18.8]** | 52/20 | 85.5 (contended) |
+  | @1k/64p | α=0.5 | 43.4% | B2c 37.9% | +5.5 [+1.2,+12.5] | 47/33 | 43.9 |
+  | @3k/64p | α=0.5 | 47.7% | B4 42.6% | +5.1 [−11.7,+2.0] | 47/34 | 87.3 (contended) |
+  | @1k/64p | α=0.7 | 43.8% | B2c 37.9% | +5.9 [−1.2,+12.9] | 47/31 | 42.6 |
+  | @1k/64p | α=0.3 + cond-boss | 38.7% | B2c 37.9% | +0.8 [−5.5,+3.9] | 20/18 | 38.1 |
+  | @1k/64p | α=0.5 + cond-boss | 38.3% | B2c 37.9% | +0.4 [−4.7,+3.9] | 17/16 | 39.2 |
+  The α curve is monotone down (12.5 → 5.5 → 5.9 pp from α0.3 → 0.5 → 0.7
+  at 1k): a noisy-but-right leaf blended lightly is the operating point.
+  **Boss-only conditioning KILLS the benefit** (flat at both α, 13-15%
+  discordance) — the vnet's value is spread across all rollout-heavy
+  contexts, not just bosses.
+- **Verdict: ✅ PROMOTED — default ON in the fair-S3 path.** Three
+  independent significant gates (two blocks × @1k/64p, plus the @3k/64p win
+  point) at α=0.3; the §123-style two-gate rule is exceeded. **Recorded
+  cpu-trade call:** accept ~2-2.4× cpu (43.9-49.8 vs ~20 cpu-s·run at 1k;
+  contended 3k reads inflated) for a reproducible **~+12pp win, +2-3 floor,
+  +4-6 end HP** — the strongest win-rate result of the project (honest
+  top: 55.1% @3k/64p vs the pre-vnet 46.9%). Scope mirrors the live-valid
+  default: fires only when `STS_FAIR=1` and `STS_SEARCHER3=1` after the
+  env parse; `STS_VNET` unset → default model `build/v_combat_honest.txt`
+  at α=0.3; any explicit `STS_VNET=…` overrides (e.g. `STS_VNET=1` → the
+  legacy `build/v_combat_trees.txt` 100-tree model at α=0.5, or
+  `STS_VNET=<missing-path>` → load failure → vnet off, usable as a disable).
+  `fairgen` datagen is not covered (regime forced after parse);
+  `combatgen` IS covered (envs set during parse) — future combat datagen
+  includes the vnet by default, aligning the label distribution with the
+  deployed leaf.
+- **Known caveats:** the model is trained on the heuristic-OOC run
+  distribution (combatgen's own loop, not the V4 gate stack); the transfer
+  to the gate-stack distribution is measured empirically (it works) but a
+  gate-stack-distribution retrain is the natural follow-up. S2 fair and
+  non-fair paths unchanged (env-only). The vnet leaf adds ~0.2-0.3 ms per
+  blended leaf eval (804 trees).
+- **Artifacts:** `build/vcombat_honest.csv` (1 GB, ignored),
+  `build/v_combat_honest.{json,txt,val.csv}`, per-seed gate CSVs
+  `build/vnet_{all_a03_1k,all_a05_1k,all_a07_1k,boss_a03_1k,boss_a05_1k,a03_3k,all_a05_3k}.csv`,
+  `build/vnet2_{ctl,a03}_250k.csv`; code `vnetCondAllowed`,
+  `g_vnetCondBossOnly`/`g_vnetCondAct3` (`BattleScumSearcher3.cpp`,
+  `apps/one_combat.cpp`). Model sha256 in
+  `docs/knowledge-base/evaluation/current-baselines.md`.
+- **Cost:** datagen ~3.5 min + training ~10 min + export on the desktop;
+  each 256-seed arm ~7-30 min wall on GCP.

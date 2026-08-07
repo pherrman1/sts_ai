@@ -1,6 +1,6 @@
 # Current baselines
 
-Last verified: 2026-08-07 against the current working tree.
+Last verified: 2026-08-07 against the current working tree (winrate wave §124–§126: §124 re-measurement + ablation re-derivation; §125 cPUCT/S3_EXPAND/TERM_WIN gates; §126 V_combat leaf default ON).
 Experiments invalidated by fixes are tracked in the
 [rerun ledger](rerun-ledger.md) (2026-08-05 code review, issues 31–46); the
 **2026-08-05 §113 battle-skip exploit invalidates every Searcher3 measurement
@@ -39,13 +39,22 @@ disables). The §113 headline (44.5% @3k) was measured before the live-valid
 default flip and remains valid as recorded; a full-stack re-measurement with
 the new default is an open follow-up. `STS_CONV_ROOT`, `STS_ROLLOUT_CAPS`,
 and the non-fair forced-move variant remain opt-in (falsified at the gates,
-§118/§119).
+§118/§119). Since 2026-08-07 (EXPERIMENTS.md §124/§126) the **Searcher3 fair
+path also loads the fresh honest-data combat value leaf by default** — the
+804-tree vnet `build/v_combat_honest.txt` at α=0.3 (three significant paired
+gates: +12.5/+12.1/+12.5pp win at ~2-2.4× cpu; the §126 recorded cpu-trade
+call; `STS_VNET=<path>` overrides, `STS_VNET=<missing-path>` disables, and
+the S2 fair / non-fair paths stay env-only). The §124 re-measurement on the
+current binary confirmed the recorded references (flat @1k, +2.3pp n.s.
+@3k/256p) and re-confirmed S3−belief−chain as the particle config (belief+
+chain ON costs −11.3 to −12.1pp, significant).
 ## Baseline table
 
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |
 | --- | --- | ---: | ---: | --- | --- | --- |
 | **Current executable configuration**, verified 2026-07-31 | Caller-selected | Caller-selected | Caller-selected | Default Searcher2 is known-RNG unless `STS_FAIR=1`; opt-in Searcher3 samples particles in either path and `STS_FAIR` controls rebuild/reuse | Native tracked floor/win trees; heuristic path; shop-V; win-rest; tracked policy prior auto-load; no combat value/PVNet by default | Configuration only; **no current-checkout full-run measurement is claimed**. |
-| **Recommended configuration — canonical CARD_SELECT enumerator + `exitBattle` UNDECIDED guard + expanded observation identity + V4 one-ply gate stack**, 2026-08-05 (`EXPERIMENTS.md` §113, §114, §115) | 126700–126955 (256) | 0 | 3,000 sims/decision (win point, 256 particles); 1,000 sims/decision (efficient point, 64 particles) | `STS_FAIR=1`, **Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`** (`STS_S3_PARTICLES=256` or 64), 24 threads | V4 token-net gate stack (`STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`); canonical CARD_SELECT enumeration (issue 47) + `BattleContext::exitBattle` UNDECIDED→LOSS guard (issue 48) + `CombatObservation` decision-context identity (§114); no combat value/PVNet | Full Act-3 run win on the current binary: **114/256 (44.5%)** at 3k/256p; **96/256 (37.5%)** at 1k/256p and **96/256 (37.5%)** at 1k/64p — **honest re-baseline after the §113 battle-skip-exploit invalidation** (the "60.2% @3k" §107 headline was inflated by control S3 skip-winning battles at WARCRY/GAMBLE CARD_SELECT states; honest control S3 = 9.0% @1k). Particles flat (64p = 256p at 1k, §115). Future gate rounds pair against `build/honest_fix2_3k_256.csv` (3k) / `build/honest_p64_1k_256.csv` or `p2_obs_expand_1k_256.csv` (1k). |
+| **Recommended configuration — canonical CARD_SELECT enumerator + `exitBattle` UNDECIDED guard + expanded observation identity + V4 one-ply gate stack + fresh honest-data V_combat leaf @α=0.3**, 2026-08-07 (`EXPERIMENTS.md` §124, §126) | 126700–126955 (256) | 0 | 3,000 sims/decision (win point, 64p); 1,000 sims/decision (efficient point, 64p) | `STS_FAIR=1`, **Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`** (`STS_S3_PARTICLES=64`), 24 threads | V4 token-net gate stack (as §113 row); **`STS_VNET` default ON in the fair-S3 path since 2026-08-07**: `build/v_combat_honest.txt` (804 trees, sha256 `e69d64cf…`, α=0.3; §126 three-gate +12.5/+12.1/+12.5pp, ~2-2.4× cpu) | Full Act-3 run win on the current binary: **55.1% @3k/64p** (`build/vnet_a03_3k.csv`, +12.5pp CI [+6.2,+18.8] vs §124 `b4_3k_64p.csv` 42.6%); **50.4% @1k/64p** (`build/vnet_all_a03_1k.csv`, +12.5pp CI [+5.5,+19.5] vs `b2c_1k_64p.csv` 37.9%) — highest honest numbers recorded. |
+| **Previous recommended configuration — canonical CARD_SELECT enumerator + `exitBattle` UNDECIDED guard + expanded observation identity + V4 one-ply gate stack**, 2026-08-05 (`EXPERIMENTS.md` §113, §114, §115; re-measured 2026-08-07 §124) | 126700–126955 (256) | 0 | 3,000 sims/decision (win point, 256 particles); 1,000 sims/decision (efficient point, 64 particles) | `STS_FAIR=1`, **Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`** (`STS_S3_PARTICLES=256` or 64), 24 threads | V4 token-net gate stack (`STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`); canonical CARD_SELECT enumeration (issue 47) + `BattleContext::exitBattle` UNDECIDED→LOSS guard (issue 48) + `CombatObservation` decision-context identity (§114); no combat value/PVNet | Full Act-3 run win on the current binary: **114/256 (44.5%)** at 3k/256p; **96/256 (37.5%)** at 1k/256p and **96/256 (37.5%)** at 1k/64p — **honest re-baseline after the §113 battle-skip-exploit invalidation** (the "60.2% @3k" §107 headline was inflated by control S3 skip-winning battles at WARCRY/GAMBLE CARD_SELECT states; honest control S3 = 9.0% @1k). Particles flat (64p = 256p at 1k, §115). §124 re-measured on the live-valid binary: 37.9% @1k/64p (flat) and 46.9% @3k/256p (+2.3pp n.s.). Future gate rounds pair against `build/b2c_1k_64p.csv` (1k/64p) / `build/b1c_3k_256p.csv` (3k/256p) / `build/b4_3k_64p.csv` (3k/64p). |
 | **Previous recommended configuration — V4 one-ply gate stack @3,000 sims**, 2026-08-04 (`EXPERIMENTS.md` §99) | 126700–126955 (256) | 0 | 3,000 sims/decision | `STS_FAIR=1`, default Searcher2, 24 threads | Native tracked floor/win trees; heuristic path/shop/win-rest; **opt-in V4 token net + full one-ply Q gate stack** (`STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`); no combat value net (vnet A/B'd and rejected under the gates, §97) | Full Act-3 run win: **116/256 (45.3%)**, mean floor 42.9, mean end HP 25.3 — **+8.2pp win (CI [+0.8,+15.6]) and +2.0 floor (CI [+0.3,+3.7]) vs the previous recommended V3@1k reference on the same block**, at 3.4× cpu (31.3 vs 9.2 cpu-sec/run). V4@4k adds only +1.2pp (noise; floor/HP flat), so 3,000 sims is the operating point. Per-seed CSVs `build/simsweep_{2k,3k,4k}_256.csv`, `build/simsweep_v4_{3k,4k}_256.csv`. **S2-based, unaffected by the §113 S3 skip exploit.** |
 | **Invalidated S3 headline — S3−belief−chain + V4 one-ply gate stack**, 2026-08-05 (`EXPERIMENTS.md` §106, §107; **invalidated by §113**) | 126700–126955 (256) | 0 | 3,000 sims/decision | `STS_FAIR=1`, Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`, 24 threads | Same V4 gate stack; pre-fix (619c12c) S3 enumerator | **60.2% @3k / 57.4% @1k64p — INVALID: the pre-fix S3 enumerator skip-won battles at WARCRY/GAMBLE CARD_SELECT states (zero valid edges → UNDECIDED break → rewards/advance). Not an honest baseline; superseded by the §113 recommended row.** |
 | **Previous recommended configuration — V3 one-ply gate stack @1,000 sims**, 2026-08-03 (`EXPERIMENTS.md` §82) | 126700–126827 (128); also 126700–126955 (256) | 0 | 1,000 sims/decision | `STS_FAIR=1`, default Searcher2, 12 threads | Native tracked floor/win trees; heuristic path/shop/win-rest; **plus the opt-in one-ply Q gate stack** (`STS_OOC_STRATEGIC_NN=selfplay/models/ooc_strategic.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`) | Full Act-3 run win: **51/128 (39.8%)** on the 128 block (reference CSV `build/gates_ref_m1.csv`, bit-identical to §76 m1.0); **95/256 (37.1%, +14.1pp vs the 23.0% flags-off baseline)** on the 256 block (`build/sec256_gate_m1.csv`). Superseded as the recommendation by §99 but still the paired 128-block reference. |
@@ -74,6 +83,7 @@ build/v_rich_trees.txt    sha256 3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a
 build/v_win_trees.txt     sha256 fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70
 build/policy_trees_c.txt  sha256 24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321
 build/v_combat_pvnet.txt  sha256 05d809298921623af7c87c06e7dd31f5129abfd77cc702f75b9867949a59533f
+build/v_combat_honest.txt sha256 e69d64cf520759a3b48d76c831658090c0492ce98532a7dcebd4519a4b261cf7
 ```
 
 These hashes identify the current tracked files, not the unavailable historical
@@ -93,8 +103,9 @@ artifact set behind §66i.
 ## Known limitations
 
 - The primary fair result cannot be exactly reproduced from tracked artifacts.
-- The current checkout has no fresh benchmark proving the current default stack
-  equals or exceeds the primary reference.
+- The current checkout's default stack is benchmarked at §124 (flat @1k vs the
+  §113/§115 references; the recommended config with the §126 vnet default is
+  measured at §126).
 - Fair-play is partial hidden-information handling, especially under Searcher2.
 - The PVNet sweep omits a recorded seed range and exact full command, and its
   “heuristic OOC baseline” label is not a reproducible policy definition.

@@ -24,7 +24,20 @@ bool g_s3Live = true;
 bool g_s3Crn = false;
 int g_s3Particles = 64;
 double g_riskLambda = 0.5;
+bool g_s3Expand = false;
+int g_s3ExpandMaxNew = 32;
+bool g_vnetCondBossOnly = false;
+bool g_vnetCondAct3 = false;
 thread_local std::function<double(const BattleContext &)> g_terminalBonus;
+
+// Phase 6 PVNet deployment-speed knobs (see header; STS_PVNET_* parse in
+// apps/one_combat.cpp). The leaf cache is behavior-preserving (deterministic
+// given the visible state) and on by default; the COND_* gates are off by
+// default, preserving the pre-phase-6 per-expansion blend behavior.
+bool g_pvnetCache = true;
+int g_pvnetCondMinTurn = 0;
+int g_pvnetCondMinDepth = 0;
+bool g_pvnetCondBossOnly = false;
 extern double g_vnetAlpha;
 
 // ---- Particle application: 6 RNG streams + draw pile order -----------------
@@ -232,6 +245,17 @@ bool BattleScumSearcher3::isGuaranteedLethal(const BattleContext &bc) const {
     return totalDmg > 0 && totalDmg >= totalHp;
 }
 
+// V_combat leaf conditioning (STS_VNET_COND_BOSS / STS_VNET_COND_ACT3):
+// restricts the learned leaf to the rollout-dominant contexts measured by
+// §117 (boss fights, act 3) where the random rollout would otherwise carry
+// most of the search mass. Both unset = always on (byte-identical to the
+// pre-conditioning vnet behavior).
+static bool vnetCondAllowed(const BattleContext &bc) {
+    if (g_vnetCondBossOnly && !isBossEncounter(bc.encounter)) return false;
+    if (g_vnetCondAct3 && bc.floorNum < 34) return false;
+    return true;
+}
+
 // ---- ISMCTS step ------------------------------------------------------------
 void BattleScumSearcher3::step() {
     ++diag.simulations;
@@ -272,7 +296,7 @@ void BattleScumSearcher3::step() {
 
             if (cur->edges.empty()) {
                 ++diag.leafDirectEval;
-                backpropagate(path, evaluateLeaf(state), actionStack);
+                backpropagate(path, evaluateLeaf(state, cur->obsHash), actionStack);
                 return;
             }
 
@@ -282,7 +306,7 @@ void BattleScumSearcher3::step() {
 
             if (!edge.action.isValidAction(state)) {
                 ++diag.leafDirectEval;
-                backpropagate(path, evaluateLeaf(state), actionStack);
+                backpropagate(path, evaluateLeaf(state, cur->obsHash), actionStack);
                 return;
             }
 
@@ -321,13 +345,18 @@ void BattleScumSearcher3::step() {
                 }
             }
 
-            // Blend: capture leaf value, then rollout, then blend
+            // Blend: capture leaf value, then rollout, then blend. Phase 6:
+            // STS_PVNET_COND_* gates the PVNet leaf here — cheap/easy
+            // continuations (early turn, shallow tree, non-boss rooms) use the
+            // ordinary rollout only; the NN fires for the long/unresolved
+            // continuations where the rollout would otherwise dominate.
             double vLeaf = std::numeric_limits<double>::quiet_NaN();
             if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha < 1.0
-                && state.outcome == Outcome::UNDECIDED)
+                && state.outcome == Outcome::UNDECIDED && vnetCondAllowed(state))
                 vLeaf = g_combatVNet.predict(state);
             else if (g_usePVNet && g_combatPVNet.loaded()
-                     && state.outcome == Outcome::UNDECIDED)
+                     && state.outcome == Outcome::UNDECIDED
+                     && pvnetCondAllowed(state, depth))
                 vLeaf = g_combatPVNet.leafValue(state, riskLambda);
 
             const int rollSteps = playoutRandom(state, actionStack);
@@ -364,6 +393,54 @@ void BattleScumSearcher3::step() {
                     if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
                     continue;
                 }
+                // STS_S3_EXPAND (Phase 6): no stored edge is valid in this
+                // particle world. Instead of a random rollout, enumerate the
+                // live state's legal actions, add the ones not already stored
+                // as new tree edges (priors computed on the new edges only —
+                // stored edges may be invalid here, so their action features
+                // cannot be filled safely), and descend into the PUCT-best
+                // live-valid edge. Action-keyed tree: unchanged from §114's
+                // falsified obs-keyed descent. Requires live-valid semantics
+                // (g_liveValid); without it this branch is unreachable.
+                if (g_s3Expand) {
+                    Node live;
+                    enumerateActionsForNode(live, state);
+                    if (!live.edges.empty()) {
+                        std::vector<Action> newActs;
+                        newActs.reserve(live.edges.size());
+                        for (const auto &le : live.edges) {
+                            bool dup = false;
+                            for (const auto &se : cur->edges) {
+                                if (se.action == le.action) { dup = true; break; }
+                            }
+                            if (!dup) newActs.push_back(le.action);
+                        }
+                        if ((int)newActs.size() > g_s3ExpandMaxNew) {
+                            std::shuffle(newActs.begin(), newActs.end(), rng);
+                            newActs.resize(g_s3ExpandMaxNew);
+                        }
+                        if (!newActs.empty()) {
+                            Node priors;
+                            for (const auto &a : newActs)
+                                priors.edges.push_back(Edge{a});
+                            if ((g_usePolicyNet && g_policyNet.loaded())
+                                || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly))
+                                computeEdgePriors(priors, state);
+                            for (size_t i = 0; i < newActs.size(); ++i)
+                                cur->edges.push_back(Edge{newActs[i], Node{}, priors.edges[i].prior});
+                            const int newIdx = selectBestValidEdgePUCT(*cur, state);
+                            if (newIdx >= 0) {
+                                auto &newEdge = cur->edges[newIdx];
+                                newEdge.action.execute(state);
+                                ++diag.treeActions;
+                                actionStack.push_back(newEdge.action);
+                                cur = &newEdge.child;
+                                if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
+                                continue;
+                            }
+                        }
+                    }
+                }
             }
             ++diag.rolloutCalls;
             ++diag.fairIllegalStoredEdge;
@@ -385,8 +462,11 @@ void BattleScumSearcher3::step() {
         }
     }
 
+    // Depth cap: the final child node may never have been visited, so cache
+    // its observation before the leaf eval to make the leaf-cache key valid.
+    ensureObservation(*cur, state);
     ++diag.leafDirectEval;
-    backpropagate(path, evaluateLeaf(state), actionStack);
+    backpropagate(path, evaluateLeaf(state, cur->obsHash), actionStack);
 }
 
 // ---- Backpropagation --------------------------------------------------------
@@ -544,14 +624,28 @@ double BattleScumSearcher3::evaluateTerminal(const BattleContext &bc) {
     return v;
 }
 
-double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc) {
+double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc, std::uint64_t obsHash) {
     if (isTerminal(bc)) return evaluateTerminal(bc);
-    if (g_usePVNet && g_combatPVNet.loaded())
-        return g_combatPVNet.leafValue(bc, riskLambda);
+    if (g_usePVNet && g_combatPVNet.loaded()) {
+        // Phase 6: the direct-eval sites (no-legal-action, invalid-edge,
+        // depth cap) re-evaluate the same visible state on repeated sims.
+        // Cache by the node's obsHash — the transformer forward is the
+        // dominant cost and the result is deterministic given the visible
+        // state. obsHash == 0 disables caching (post-rollout states are
+        // effectively unique).
+        if (g_pvnetCache && obsHash != 0) {
+            auto it = leafCache.find(obsHash);
+            if (it != leafCache.end()) return it->second;
+        }
+        const double v = g_combatPVNet.leafValue(bc, riskLambda);
+        if (g_pvnetCache && obsHash != 0) leafCache.emplace(obsHash, v);
+        return v;
+    }
     if (g_useDistVNet && g_combatDistVNet.loaded())
         return g_combatDistVNet.predictFromBC(bc).riskAdjustedValue(
             riskLambda, bc.player.maxHp, g_combatDistVNet.winBonus);
-    if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha > 0.0)
+    if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha > 0.0
+        && vnetCondAllowed(bc))
         return g_combatVNet.predict(bc);
     double hpR = (double)bc.player.curHp / bc.player.maxHp;
     double eR = 0;
@@ -560,6 +654,13 @@ double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc) {
             eR += (double)bc.monsters.arr[i].curHp / bc.monsters.arr[i].maxHp;
     eR /= std::max(1, bc.monsters.monstersAlive);
     return 100.0 * (0.7 * hpR + 0.3 * (1.0 - eR));
+}
+
+bool BattleScumSearcher3::pvnetCondAllowed(const BattleContext &bc, int depth) const {
+    if (g_pvnetCondMinTurn > 0 && bc.turn < g_pvnetCondMinTurn) return false;
+    if (g_pvnetCondMinDepth > 0 && depth < g_pvnetCondMinDepth) return false;
+    if (g_pvnetCondBossOnly && !isBossEncounter(bc.encounter)) return false;
+    return true;
 }
 
 // ---- Action enumeration -----------------------------------------------------

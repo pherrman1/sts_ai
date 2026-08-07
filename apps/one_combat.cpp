@@ -8391,6 +8391,14 @@ int main(int argc, char **argv) {
             std::cout << "[S3 particles = " << search::g_s3Particles << "]\n";
         }
     }
+    if (const char *d = std::getenv("STS_S3_EXPAND")) {      // Phase 6: on-no-valid-edge expansion (requires live-valid semantics)
+        search::g_s3Expand = std::atoi(d) != 0;
+        std::cout << "[S3 expand = " << (search::g_s3Expand ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_EXPAND_MAX")) {  // cap on new edges added per expansion (default 32)
+        const int n = std::atoi(d);
+        if (n >= 1) search::g_s3ExpandMaxNew = n;
+    }
     if (const char *d = std::getenv("STS_RISK_LAMBDA")) {    // risk sensitivity for Searcher3 PUCT
         search::g_riskLambda = std::atof(d);
         std::cout << "[risk lambda = " << search::g_riskLambda << "]\n";
@@ -8402,11 +8410,37 @@ int main(int argc, char **argv) {
             if (const char *a = std::getenv("STS_VNET_ALPHA")) search::g_vnetAlpha = std::atof(a);
             if (const char *b = std::getenv("STS_COMBAT_WIN_BONUS"))
                 search::g_combatVNet.setWinBonus(std::atof(b));
+            if (const char *c = std::getenv("STS_VNET_COND_BOSS"))
+                search::g_vnetCondBossOnly = std::atoi(c) != 0;
+            if (const char *c = std::getenv("STS_VNET_COND_ACT3"))
+                search::g_vnetCondAct3 = std::atoi(c) != 0;
             std::cout << "[V_combat leaf value ON: " << path << ", "
                       << search::g_combatVNet.description() << ", alpha "
-                      << search::g_vnetAlpha << "]\n";
+                      << search::g_vnetAlpha
+                      << (search::g_vnetCondBossOnly ? ", cond-boss-only" : "")
+                      << (search::g_vnetCondAct3 ? ", cond-act3" : "") << "]\n";
         } else {
             std::cout << "[V_combat load FAILED: " << path << "]\n";
+        }
+    }
+    // V_combat leaf default (winrate wave §126): the fresh honest-data vnet
+    // at α=0.3 is a three-gate-confirmed ~+12pp win at ~2-2.4× cpu (recorded
+    // cpu-trade call). Scoped like the live-valid default: fair + Searcher3
+    // only, when STS_VNET is unset (an explicit STS_VNET=… always overrides,
+    // e.g. STS_VNET=1 loads the legacy build/v_combat_trees.txt and
+    // STS_VNET=<missing-path> fails the load and leaves the vnet off). The
+    // fairgen datagen mode forces its regime after this parse and is NOT
+    // covered; combatgen IS covered (envs set during parse).
+    if (!std::getenv("STS_VNET") && search::g_fairPlay && search::g_useSearcher3) {
+        if (search::g_combatVNet.load("build/v_combat_honest.txt")) {
+            search::g_useVNet = true;
+            search::g_vnetAlpha = 0.3;
+            std::cout << "[V_combat leaf default ON: build/v_combat_honest.txt, "
+                      << search::g_combatVNet.description() << ", alpha "
+                      << search::g_vnetAlpha << " (fair S3, §126)]\n";
+        } else {
+            std::cout << "[V_combat leaf default load FAILED: build/v_combat_honest.txt "
+                         "(continuing without)]\n";
         }
     }
     if (const char *d = std::getenv("STS_DIST_VNET")) {    // distributional V_combat (transformer, 5-head)
@@ -8432,8 +8466,23 @@ int main(int argc, char **argv) {
     if (search::g_usePVNet) {
         if (const char *a = std::getenv("STS_PVNET_ALPHA")) search::g_pvnetAlpha = std::atof(a);
         if (const char *v = std::getenv("STS_PVNET_VALUE_ONLY")) search::g_pvnetValueOnly = std::atoi(v) != 0;
+        if (const char *h = std::getenv("STS_PVNET_HP_SCALE")) search::g_pvnetHpScale = std::atoi(h) != 0;
+        // Phase 6 deployment-speed knobs (S3 leaf). STS_PVNET_CACHE defaults
+        // ON (behavior-preserving; visibleHash leaf-value cache at the
+        // direct-eval sites). STS_PVNET_COND_{TURN,DEPTH,BOSS} gate the
+        // per-expansion NN leaf: rollout-only for easy continuations, NN for
+        // long/unresolved ones. Defaults preserve pre-phase-6 behavior.
+        if (const char *c = std::getenv("STS_PVNET_CACHE")) search::g_pvnetCache = std::atoi(c) != 0;
+        if (const char *c = std::getenv("STS_PVNET_COND_TURN")) search::g_pvnetCondMinTurn = std::atoi(c);
+        if (const char *c = std::getenv("STS_PVNET_COND_DEPTH")) search::g_pvnetCondMinDepth = std::atoi(c);
+        if (const char *c = std::getenv("STS_PVNET_COND_BOSS")) search::g_pvnetCondBossOnly = std::atoi(c) != 0;
         std::cout << "[PVNet alpha = " << search::g_pvnetAlpha;
         if (search::g_pvnetValueOnly) std::cout << ", value-only";
+        if (search::g_pvnetHpScale) std::cout << ", hp-scale";
+        if (search::g_pvnetCondMinTurn > 0) std::cout << ", cond-turn>=" << search::g_pvnetCondMinTurn;
+        if (search::g_pvnetCondMinDepth > 0) std::cout << ", cond-depth>=" << search::g_pvnetCondMinDepth;
+        if (search::g_pvnetCondBossOnly) std::cout << ", cond-boss-only";
+        if (!search::g_pvnetCache) std::cout << ", leaf-cache-off";
         std::cout << "]\n";
     }
     // AZ-lite policy-guided PUCT selection. DEFAULT ON (+4.3pp full-run win @512

@@ -79,6 +79,14 @@ namespace sts::search {
         double minActionValue = std::numeric_limits<double>::max();
         int outcomePlayerHp = 0;
 
+        // Visible-state leaf-value cache (phase 6, STS_PVNET_CACHE): keys are
+        // node obsHash values at the direct-eval sites (no-legal-action,
+        // invalid-edge, depth cap), where repeated sims evaluate the same
+        // visible state; the PVNet transformer forward is the dominant cost.
+        // Values are deterministic given the visible state, so the cache is
+        // behavior-preserving. Per-searcher (per decision) lifetime.
+        std::unordered_map<std::uint64_t, double> leafCache;
+
         explicit BattleScumSearcher3(const BattleContext &bc, int particleCount = 128);
         BattleScumSearcher3(const BattleContext &bc, std::uint64_t agentSeed,
                             int decisionIndex, int particleCount = 128);
@@ -111,7 +119,11 @@ namespace sts::search {
 
         [[nodiscard]] bool isTerminal(const BattleContext &bc) const;
         double evaluateTerminal(const BattleContext &bc);
-        double evaluateLeaf(const BattleContext &bc);
+        // obsHash != 0 enables the visible-state leaf cache for this call.
+        double evaluateLeaf(const BattleContext &bc, std::uint64_t obsHash = 0);
+        // STS_PVNET_COND_* gating: whether the per-expansion PVNet leaf blend
+        // may run on this state (min turn / min tree depth / boss-only).
+        [[nodiscard]] bool pvnetCondAllowed(const BattleContext &bc, int depth) const;
 
         // -- Lethal / death detection ----------------------------------------
         [[nodiscard]] bool isGuaranteedLethal(const BattleContext &bc) const;
@@ -138,9 +150,26 @@ namespace sts::search {
     // Searcher2; re-select among stored edges valid in the current
     // determinization instead of falling back to a rollout.
     extern bool g_liveValid;
+    // STS_S3_EXPAND (Phase 6, opt-in): when no stored edge is valid in the
+    // current determinization, expand the live state's legal actions into the
+    // tree (action-keyed) instead of falling back to a random rollout.
+    extern bool g_s3Expand;
+    extern int g_s3ExpandMaxNew;
+    // V_combat leaf conditioning (STS_VNET_COND_BOSS/ACT3, opt-in): restrict
+    // the learned leaf to rollout-dominant contexts (§117: boss fights, act 3).
+    // Both unset = always on (byte-identical pre-conditioning behavior).
+    extern bool g_vnetCondBossOnly;
+    extern bool g_vnetCondAct3;
     // Particle count for the S3 belief (env STS_S3_PARTICLES; default 64).
     extern int g_s3Particles;
     extern double g_riskLambda;
+    // Phase 6 PVNet deployment-speed knobs (all consumed only when the PVNet
+    // leaf is active; defaults preserve pre-phase-6 behavior except the
+    // leaf cache, which is behavior-preserving and on by default).
+    extern bool g_pvnetCache;          // STS_PVNET_CACHE=0 disables
+    extern int g_pvnetCondMinTurn;     // STS_PVNET_COND_TURN=N: NN leaf only when bc.turn >= N
+    extern int g_pvnetCondMinDepth;    // STS_PVNET_COND_DEPTH=N: NN leaf only when tree depth >= N
+    extern bool g_pvnetCondBossOnly;   // STS_PVNET_COND_BOSS=1: NN leaf only in boss encounters
     // Optional additive terminal-victory bonus, supplied by the integration
     // driver (one_combat): prices the post-combat run state (HP, gold,
     // potions, relic counters) with a run-level evaluator so the combat

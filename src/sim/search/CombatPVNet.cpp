@@ -16,6 +16,14 @@ CombatPVNet g_combatPVNet;
 bool g_usePVNet = false;
 double g_pvnetAlpha = 1.0;
 bool g_pvnetValueOnly = false;
+// Value-scale fix (STS_PVNET_HP_SCALE=1, opt-in, §123): the quantile head is
+// trained on endHp/maxHp fractions in [0,1], but the terminal value is
+// curHp+50 (HP scale). Without scaling, a state one action from a 40/80
+// victory leaf-scores ~50.5 while its terminal scores 90 — a ~maxHp-sized
+// discontinuity, and the risk term λ(median−cvar) is scaled down ~80x to
+// near zero. When enabled, median and cvar are multiplied by maxHp so the
+// leaf and terminal scales agree. Default off (recorded §103 behavior).
+bool g_pvnetHpScale = false;
 
 // ---- BLAS integration ------------------------------------------------------
 static void *blas_handle = nullptr;
@@ -336,6 +344,13 @@ double CombatPVNet::leafValue(const BattleContext&bc,double riskLambda)const{
     std::sort(sq.begin(),sq.begin()+nQuantile);
     int cvCount=std::max(1,(int)(nQuantile*0.25));
     double cvar=0.0;for(int i=0;i<cvCount;++i)cvar+=sq[i];cvar/=cvCount;
+    if (g_pvnetHpScale) {
+        // §123: quantiles are endHp/maxHp fractions; map back to the HP scale
+        // the terminal evaluation (curHp+50) uses, so leaf and terminal agree.
+        const double maxHp = std::max(1.0, (double)bc.player.maxHp);
+        median *= maxHp;
+        cvar *= maxHp;
+    }
     return (double)wp*(winBonus+median)-riskLambda*(median-cvar);
 }
 

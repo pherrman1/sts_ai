@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-06 against the current working tree.
+Last verified: 2026-08-07 against the current working tree (winrate wave §124-§126: baseline re-measurement, S3_EXPAND, vnet default).
 
 ## Purpose
 
@@ -148,6 +148,22 @@ and the `fairgen` datagen mode are unchanged unless the env flag is set
 explicitly (datagen keeps the recorded §117 behavior — open question: align
 datagen with the deployed fix). Decision log:
 `2026-08-06-live-valid-phase4.md`, `2026-08-07-live-valid-promotion.md`.
+
+### On-no-valid-edge expansion (STS_S3_EXPAND, opt-in — falsified)
+
+Phase 6: after live-valid, the residual no-valid-stored-edge fallback (~5.4%
+of rollout calls at the deployed point, §124 searchdiag) expands the live
+state's legal actions into the tree instead of a random rollout:
+`STS_S3_EXPAND=1` (`BattleScumSearcher3::step`, action-keyed, dedup against
+stored edges, priors computed on the new edges only via a temp node,
+cap `STS_S3_EXPAND_MAX` default 32, PUCT pick via `selectBestValidEdgePUCT`;
+requires live-valid semantics — without `g_liveValid` the branch is
+unreachable). Effect: illegal-stored share 0.054→0.00, treeActions +10%
+(searchdiag 6 seeds @3k/64p). **Falsified at the paired gates
+(EXPERIMENTS.md §125, 2026-08-07):** @1k/64p 35.5% vs 37.9% (−2.3pp, CI
+[−2.7,+7.4], 16% discordant) and @3k/64p 44.1% vs 42.6% (+1.5pp, CI
+[−6.6,+3.5], 16% discordant) — mixed null, no consistent signal; the env
+stays default-off.
 
 ### Context-adaptive rollout caps (STS_ROLLOUT_CAPS, opt-in — falsified)
 
@@ -337,9 +353,41 @@ Learned guidance is loaded by `apps/one_combat.cpp::main`:
   `build/policy_trees_c.txt` is attempted except in `policygen` mode.
 - `STS_VNET` loads a separate combat value model and `STS_VNET_ALPHA` controls
   its rollout blend.
+  **Default since 2026-08-07 (EXPERIMENTS.md §126):** in the fair-S3 path
+  (after the `STS_FAIR`/`STS_SEARCHER3` parse) an unset `STS_VNET`
+  auto-loads `build/v_combat_honest.txt` (804 trees, sha256 `e69d64cf…`) at
+  `STS_VNET_ALPHA` 0.3 — three significant paired gates (+12.5/+12.1/+12.5pp
+  win at ~2-2.4× cpu; the §126 cpu-trade call). Any explicit `STS_VNET=…`
+  overrides (e.g. `STS_VNET=1` → legacy `build/v_combat_trees.txt` at α0.5;
+  `STS_VNET=<missing-path>` → load failure → vnet off). The S2 fair and
+  non-fair paths stay env-only. `STS_VNET_COND_BOSS=1`/`STS_VNET_COND_ACT3=1`
+  (opt-in) restrict the vnet leaf to rollout-dominant contexts (boss
+  encounters, act 3 floors ≥ 34) via `vnetCondAllowed` (S3 `step()` leaf
+  capture + `evaluateLeaf`); measured FLAT at both α (boss-only killed the
+  benefit, §126) — the unconditional low-α blend is the operating point.
+  The model trains on `combatgen` rows from the heuristic-OOC run loop
+  (`runCombatGenSeed`), not the gate-stack distribution (transfer measured
+  empirically, §126). `fairgen` datagen is not covered by the default (it
+  forces its regime after the parse); `combatgen` datagen IS covered.
 - `STS_DIST_VNET` loads the distributional transformer evaluator.
 - `STS_PVNET` loads the shared `CombatPVNet`; `STS_PVNET_ALPHA` defaults to
   `1.0` (pure neural leaf) and `STS_PVNET_VALUE_ONLY` disables its policy head.
+- `STS_PVNET_CACHE=0` disables the S3 visible-state leaf-value cache (default
+  on since 2026-08-07, phase 6): `evaluateLeaf` caches PVNet leaf values by the
+  node's `obsHash` at the direct-eval sites (no-legal-action, invalid-edge,
+  depth cap — `BattleScumSearcher3::evaluateLeaf`), where repeated sims
+  evaluate the same visible state. Behavior-preserving (deterministic given
+  the visible state); verified identical per-seed outcomes cache-on vs off
+  (8 seeds local smoke). The per-expansion blend site (new child state) and
+  post-rollout states are effectively unique and not cached.
+- `STS_PVNET_COND_TURN=N`, `STS_PVNET_COND_DEPTH=N` (default 0 = off) and
+  `STS_PVNET_COND_BOSS=1` (default off) gate the **per-expansion** NN leaf
+  (`BattleScumSearcher3::pvnetCondAllowed`): when a condition fails, the sim
+  uses the ordinary rollout value only (α=0 for that sim) instead of the
+  blend — cheap/easy continuations skip the transformer forward, the NN fires
+  for long/unresolved continuations. The direct-eval and post-rollout
+  `evaluateLeaf` calls are not gated. Defaults preserve the pre-phase-6
+  behavior exactly.
 - `STS_CPUCT` overrides the shared default `g_cPuct=2.5` when a policy or PV
   model is active (`src/sim/search/CombatValueNet.cpp::g_cPuct`).
 

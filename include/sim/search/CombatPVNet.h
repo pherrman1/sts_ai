@@ -152,6 +152,7 @@ namespace sts::search {
     extern bool g_usePVNet;
     extern double g_pvnetAlpha;              // blend: 1.0=pure neural, 0.0=pure rollout
     extern bool g_pvnetValueOnly;            // suppress PVNet policy head, use GBM priors instead
+    extern bool g_pvnetHpScale;              // STS_PVNET_HP_SCALE: scale leaf quantiles by maxHp (§123)
 
 } // namespace sts::search
 
