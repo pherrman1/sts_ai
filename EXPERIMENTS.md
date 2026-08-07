@@ -5071,3 +5071,160 @@ extFight*/emElites/emFights parity-excluded) and
 - **Artifacts:** none (diagnostic only; computed from the tracked
   `build/v_combat_honest.txt` JSON and `build/vcombat_honest.csv`).
 - **Cost:** ~15 min local, read-only.
+
+## §131 Target-vs-data ablation (phase-5 follow-up): fresh data is the big lever (2.7×), the 51-bin utility target still adds 31% on identical data (2026-08-07, local)
+
+- **What:** isolates the two changes conflated in §128. Trained the
+  old-style PVNet (win/death/quantile/potion/turns heads, shared encoder) on
+  the SAME fresh rows as the §128 utility model (`train_combat_pvnet.py` on
+  `build/fair34_v.csv` + `build/fair34_p.csv`, 10 epochs, batch 1024, best
+  val 1.487 → `build/v_pvnet_fresh.txt`). Trainer fixed for the §3.5
+  22-action-feature policy CSV (slices the first 14 for the PVNet action
+  encoder, mirroring the eval/parity scripts).
+- **Results (identical 30,000 held-out val rows of fair34_v.csv):**
+  | metric | old PVNet (old fair_v data) | fresh PVNet (fresh data, old target) | utility 51-bin (fresh data, new target) |
+  |---|---|---:|---:|
+  | win Brier | 0.2505 | 0.0940 | **0.0647** |
+  | win ECE | 0.3298 | 0.0987 | **0.0688** |
+  | death BCE | 2.2076 | 5.2731 | **0.2287** |
+  - Data effect: fresh-data-only retrain 0.2505 → 0.0940 Brier (2.7×) —
+    the distribution-gap finding (§128) stands; training on the current
+    controller's rows is the bigger lever.
+  - Target effect: the 51-bin terminal-utility head on IDENTICAL data still
+    beats the win/quantile heads: 0.0940 → 0.0647 Brier (−31%), ECE −30%.
+  - The fresh PVNet's separate death head collapsed (death BCE 5.27, predicts
+    ≈0 death always) while its win head is fine — the utility head gets death
+    probability for free from bin 0 (0.2287) — evidence for the single-head
+    design.
+- **Interplay with §129 (gate-stack vnet retrain, NULL):** the parallel
+  session's fresh-data retrain kept the endHp-regression target and did NOT
+  replace the deployed vnet — so on the GBM side a data-only retrain is
+  already exhausted. This ablation shows the target change is a separate,
+  measurable lever (31% Brier on identical transformer rows) — the untested
+  combination is a GBM with a distribution/quantile target over
+  R = 0 | 50+endHp instead of endHp regression (`train_value_combat.py`
+  endHp target; `train_combat_cpsi.py` already uses fraction targets).
+  Same GBM architecture, better target — the cheap deployable path.
+- **Artifacts:** `build/v_pvnet_fresh.txt`, `build/eval_pvnet_fresh.json`,
+  `build/train_pvnet_fresh.log`. Decision log:
+  `2026-08-07-value-only-utility-net.md` (appended).
+
+## §132 Target experiment on the GBM leaf: quantile regression on the terminal utility R vs raw endHp — same rows, same model class; EV on-scale (10.1 vs 45.9) (2026-08-07, local)
+
+- **What:** the §131-recommended deployable test: does the target change
+  (not the model) transfer to the GBM? Two 9-quantile XGBoost models
+  (τ=0.1..0.9, 150 rounds, depth 6, `reg:quantileerror`) on the SAME rows
+  as the deployed vnet (`build/vcombat_honest.csv`, 287k rows, same
+  GroupShuffleSplit val 0.15/random_state 0), differing only in label:
+  utility_R = won ? 50+endHp : 0 vs raw endHp. The R target also cleans the
+  493 abandoned-fight rows (loss with endHp>0 in the old target). A 51-class
+  softprob port would cost ~50× the trees; 9 quantiles of R is the cheap
+  distributional equivalent (low quantiles = death mass, P(win) ≈
+  mean(q_τ > 0)).
+- **Results (val, 43k rows; deployed model evaluated on the identical rows):**
+  | model | EV-MAE vs R | win Brier (from quantiles) |
+  |---|---|---:|
+  | deployed vnet (endHp regression, 804 trees) | 45.90 | — |
+  | quantile endHp (old target, 9×150 trees) | 45.89 | 0.0739 |
+  | **quantile utility_R (new target, 9×150 trees)** | **10.10** | 0.0851 |
+  - The utility target's mean-of-quantiles is directly on the leaf's terminal
+    scale; both endHp variants miss R by ~50·P(win) ≈ 46 — the scale
+    mismatch the deployed stack compensates via the α-blend and
+    rank-sensitivity (and the §123 HP-scale saga).
+  - Win-prob-from-quantiles is slightly worse for the R target (0.085 vs
+    0.074) — the endHp quantiles split the 0 boundary marginally better;
+    the leaf would use EV (and optionally CVaR) directly, not this coarse
+    win estimate.
+  - Quantile coverage well calibrated for both (L2 ≈ 0.02).
+- **Interpretation:** the §128/§131 finding (direct utility target beats
+  the reconstructed target) transfers to the deployable GBM class. The
+  deployed vnet's endHp prediction is ≈46 HP off the utility scale; an
+  EV-on-scale leaf could allow a higher α (cf. §129: gated model's α
+  optimum shifted 0.3→0.5 with better calibration).
+- **Next (deployment experiment, not run):** export the 9 quantile tree sets
+  in a C++-consumable format + `leafValue` = mean-of-quantiles (± CVaR risk
+  term), α sweep, paired 256-seed gate vs the deployed vnet §126 config.
+  Tree cost: 9×150 ≈ 1350 trees ≈ 1.7× the deployed 804-tree eval —
+  acceptable at the §126 cpu-trade bar.
+- **Artifacts:** `build/vcombat_q{,_150}_results.json`, `train_vcombat_quantile.py`.
+  Decision log: `2026-08-07-vnet-target-experiment.md`.
+## §133 Rollout-leaf estimator experiments A1/A4 (STS_S3_ROLLOUT_K, STS_S3_ROLLOUT_TURN_STOP): implemented opt-in with structural-equality check; gates held for the §131/§132 leaf-net verdict (2026-08-07, local WSL)
+
+- **What:** two opt-in Searcher3 rollout-leaf estimators (plan: A1 + A4 of the
+  rollout-ideas session; gates deferred per the split decision until the
+  other session's leaf-net verdict lands, because both arms modify the same
+  α-blend leaf the new net would redeploy):
+  - **A1 (`STS_S3_ROLLOUT_K`, default 1):** run K independent rollouts from
+    the same pre-rollout leaf state and average their outcomes; backprop once
+    (single visit). Reduces rollout-outcome variance without changing PUCT
+    visit counts or tree exploration. `BattleScumSearcher3::multiRollout`
+    (`src/sim/search/BattleScumSearcher3.cpp`), used at both rollout sites in
+    `step()` (leaf-expansion blend site and the fair-illegal-stored-edge
+    fallback). The first rollout's actions go into `actionStack` so
+    `bestActionSequence` stays replayable; caller `state` is left unmutated
+    (each rollout runs on its own `BattleContext` copy).
+  - **A4 (`STS_S3_ROLLOUT_TURN_STOP=N`, default 0):** stop the rollout after
+    N completed player turns (turn boundary = `bc.turn` increment inside the
+    END_TURN action chain, `BattleContext::afterMonsterTurns`); the
+    non-terminal endpoint is then evaluated by the learned leaf, giving
+    `α·VNet(s0) + (1−α)·VNet(s1)` — an n-step bootstrap, distinct from the
+    §119 capped-rollout gate (which used the pre-vnet heuristic endpoint on
+    Searcher2).
+- **Verification (local smoke, 8 seeds @300 sims + searchdiag3, 2 seeds
+  @300):** structural equality — `STS_S3_ROLLOUT_K=1` reproduces the unset
+  arm byte-identically on all 8 seeds (all game columns); behavior fires —
+  K=2 rolloutActions ≈ 2.03× control (1,946,275 → 3,952,264; per-leaf
+  rollouts independent, 7/8 seeds' outcomes differ); turn-stop=1 collapses
+  avgRolloutLen 13.94 → 2.50 (rolloutActions 232,681) and differs on 8/8
+  seeds. `ctest` 5/5. Artifacts: `build/rk_{ctl,k1b,k2b,ts1}_8.csv`,
+  `build/rk_sd_{ctl,k2b,ts1}.csv`. Banner + BEST-stack provenance:
+  `S3-rollK=` / `S3-turnStop=`.
+- **Pre-registered gates (pending, GCP):** paired 256-seed @1k/64p on the
+  §126 config vs `build/vnet_all_a03_1k.csv` (50.4%): (1) K=2 @500 sims
+  (equal rollout-action budget — the deployment question), (2) K=2 @1000 only
+  if (1) is positive/neutral (same tree size, ~2× cpu), (3) turn-stop N=1
+  @1k (and an equal-CPU reinvestment arm if positive/neutral). Gate ordering
+  after the §131/§132 leaf-net verdict: a promoted net re-bases the pairing.
+  Decision log: `2026-08-07-rollout-leaf-estimators.md`.
+
+## §133 Quantile-R GBM leaf (target experiment, §132 deployment gate): SIGNIFICANTLY NEGATIVE at every α — deployed vnet stays; offline EV calibration does not transfer (2026-08-07, GCP)
+
+- **What:** the §132-recommended deployment gate for the quantile-R GBM
+  leaf: `combat_quantile_v1` native format (9 tree sets, τ=0.1..0.9, 150
+  rounds, depth 6, over R = won ? 50+endHp : 0), C++ loader +
+  `predictQuantileEV` (mean of quantiles, on the terminal scale; dispatch in
+  `CombatValueNet::predictVec`, so no searcher changes), parity PASS vs
+  Python (max diff 0.0005, `vnettest` on 1999 val rows). Trained on the same
+  rows as the deployed vnet (`build/vcombat_honest.csv`); val EV-MAE vs R
+  10.10, quantile coverage L2 0.022 (vs 45.90 for the deployed endHp model).
+- **Gates (256 seeds, block 126700, full V4 stack, S3−belief−chain/64p,
+  paired vs the §126 deployed-vnet control `build/vnet_all_a03_1k.csv`,
+  50.4% — reproduced twice on this block, §124c/§127):**
+  | arm | win% | Δ (95% CI) | floor Δ | HP Δ | cpu-s/run |
+  |---|---|---:|---:|---:|---:|
+  | quantile-R α0.3 | 37.5% | −12.9pp [−19.9, −6.2] | −2.4 | −5.5 | 68.5 |
+  | quantile-R α0.5 | 40.2% | −10.2pp [−17.2, −3.1] | −3.4 | −6.0 | 85.6 |
+  | quantile-R α0.7 | 32.0% | −18.4pp [−25.4, −11.3] | −3.7 | −11.0 | 80.9 |
+  All three SIGNIFICANTLY negative, at 1.7-2× the deployed cpu
+  (41.2 s/run). The α curve is inverted vs §129's gated model (which
+  improved with α 0.3→0.5): here higher α is worse — the EV-on-scale
+  leaf's in-tree ranking is worse than the deployed endHp model's, and
+  heavier blending makes it worse.
+- **Verdict: ❌ line closed; the deployed honest-data vnet (§126)
+  STAYS.** The §132 offline finding (EV-MAE 10.1 vs 45.9) does not
+  transfer — the third consecutive offline≠online falsification
+  (§124c prior-guided rollouts, §127 prior v2, now the target
+  experiment). Hypothesis: the deployed endHp model's under-scaled value
+  blended at α0.3 acts as a ranking-friendly prior over the rollout's
+  terminal scale; the "correctly scaled" EV value is not better at ranking
+  tree states, and the mean-of-9-quantiles estimator is crude for the
+  bimodal R distribution (90% wins). The transformer 51-bin CE model
+  (§128/§131) remains the best offline value signal but has no
+  deployable GBM port yet; the §126 vnet-retrain line (data side) stays
+  as recorded.
+- **Artifacts:** `build/v_combat_quantile.txt` (kept as reference), gate CSVs
+  `build/vq_{a03,a05,a07}_256.csv`, logs on sts-test, parity
+  `/tmp/vq_parity.csv`. Code: `CombatValueNet::load`/`predictQuantileEV`
+  (`src/sim/search/CombatValueNet.{h,cpp}`), `combat_quantile_v1` exporter
+  `train_export_vcombat_quantile.py`. Decision log:
+  `2026-08-07-vnet-target-experiment.md` (verdict appended).

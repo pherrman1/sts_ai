@@ -2956,6 +2956,8 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
                     + std::to_string(search::g_s3Prune) + std::to_string(search::g_s3Chain)
                     + std::to_string(search::g_s3Live) + std::to_string(search::g_s3Crn)
                     + "  S3-particles=" + std::to_string(search::g_s3Particles)
+                    + "  S3-rollK=" + std::to_string(search::g_s3RolloutK)
+                    + "  S3-turnStop=" + std::to_string(search::g_s3RolloutTurnStop)
                   : std::string())
               << (search::g_fairPlay ? "  fair-play" : "")
               << "  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
@@ -8426,6 +8428,20 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_ROLLOUT_POLICY")) {  // sample rollout actions from the GBM policy prior (opt-in)
         search::g_s3RolloutPolicy = std::atoi(d) != 0;
         std::cout << "[S3 rollout-policy = " << (search::g_s3RolloutPolicy ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_ROLLOUT_K")) {      // A1: K rollouts per leaf, averaged (opt-in)
+        const int k = std::atoi(d);
+        if (k >= 1) {
+            search::g_s3RolloutK = k;
+            std::cout << "[S3 rollout-K = " << search::g_s3RolloutK << "]\n";
+        }
+    }
+    if (const char *d = std::getenv("STS_S3_ROLLOUT_TURN_STOP")) {  // A4: stop rollout after N full player turns (opt-in)
+        const int n = std::atoi(d);
+        if (n >= 0) {
+            search::g_s3RolloutTurnStop = n;
+            std::cout << "[S3 rollout turn-stop = " << search::g_s3RolloutTurnStop << "]\n";
+        }
     }
     if (const char *d = std::getenv("STS_RISK_LAMBDA")) {    // risk sensitivity for Searcher3 PUCT
         search::g_riskLambda = std::atof(d);

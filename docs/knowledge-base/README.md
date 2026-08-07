@@ -18,6 +18,12 @@ For architecture:
 5. [Phase F handoff plan](architecture/ooc-phase-f-plan.md) — **active plan**:
    policy-head search distillation (5.7.1 + 5.7.2), to be executed by the
    next session; not yet started.
+6. [Self-play relabeling handoff plan](plan-selfplay-relabeling-2026-08-07.md) —
+   **active plan (2026-08-07, ready to execute)**: 5.7.3 — generate Tier-B
+   strategic labels with the current combat controller (S3−belief−chain +
+   live-valid + §126 vnet) and gate a same-recipe tok-net retrain vs the
+   deployed artifact; control/candidate design, exact commands, pre-registered
+   verdict rule inside.
 6. [Phase 1 continuation plan](plan-phase1-cardselect-continuation.md) —
    **executed 2026-08-05**: T1–T5 done, issue 48 closed; the §112 "regression"
    was a control S3 battle-skip exploit — the parity fix is correct and is the

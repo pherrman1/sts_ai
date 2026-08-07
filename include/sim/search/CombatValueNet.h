@@ -56,6 +56,14 @@ namespace sts::search {
         };
         std::vector<std::vector<Node>> trees;
         std::vector<int> sel;   // model-feature i -> index into the canonical feature vector
+        // §132 target experiment: quantile regression over the terminal utility
+        // R = 0 | 50+endHp (combat_quantile_v1 format). quantileTrees[q] is a
+        // tree set (same layout as `trees`); predict()/predictVec() return the
+        // mean over quantiles (EV), which is on the leaf's terminal scale.
+        // Mutually exclusive with the single-set `trees` path.
+        std::vector<std::vector<std::vector<Node>>> quantileTrees;
+        std::vector<float> quantileBase;
+        int nQuantiles = 0;
         // Compact distilled MLP alternative.  Weights are output-major so each
         // neuron's dot product is contiguous and easy for -O3 to vectorize.
         bool isMlp = false;
@@ -97,6 +105,8 @@ namespace sts::search {
         void setWinBonus(float value) { if (isEntity) entityWinBonus = value; }
         [[nodiscard]] double predict(const BattleContext &bc) const;
         [[nodiscard]] double predictVec(const float *canonFeatures) const;  // canonical vector
+        // Quantile model (combat_quantile_v1): EV = mean over quantiles of R.
+        [[nodiscard]] double predictQuantileEV(const float *canonFeatures) const;
         [[nodiscard]] CombatOutcomePrediction predictOutcome(const BattleContext &bc) const;
         [[nodiscard]] CombatOutcomePrediction predictOutcomeVec(const float *canonFeatures) const;
         // Comparator score for one candidate action (policy net; isPolicy must be set).

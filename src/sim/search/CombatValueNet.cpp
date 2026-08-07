@@ -380,6 +380,7 @@ bool CombatValueNet::load(const std::string &path) {
     isEntity = false;
     isEntityPolicy = false;
     trees.clear(); sel.clear();
+    quantileTrees.clear(); quantileBase.clear(); nQuantiles = 0;
     xMean.clear(); xInvStd.clear(); w1.clear(); b1.clear();
     w2.clear(); b2.clear(); w3.clear();
     h1 = h2 = 0; b3 = 0.f; yMean = 0.f; yScale = 1.f;
@@ -498,6 +499,12 @@ bool CombatValueNet::load(const std::string &path) {
         isMlp = true;
         isSparseMlp = tok == "combat_mlp_sparse_v1";
         f >> tok >> nfeat;                   // "nfeat <k>"
+    } else if (tok == "combat_quantile_v1") {  // §132: quantile regression over R = 0 | 50+endHp
+        f >> tok; if (tok != "nquantiles") return false;
+        f >> nQuantiles;
+        if (nQuantiles <= 0 || nQuantiles > 20) return false;
+        f >> tok; if (tok != "nfeat") return false;
+        f >> nfeat;                          // "nfeat <k>"
     } else if (tok == "nfeat") {
         f >> nfeat;                          // legacy tree model
     } else {
@@ -544,27 +551,40 @@ bool CombatValueNet::load(const std::string &path) {
         return true;
     }
 
-    f >> tok >> baseScore;                   // "base_score <f>"
-    int ntrees = 0;
-    f >> tok >> ntrees;                      // "ntrees <t>"
-
-    trees.assign(ntrees, {});
-    for (int t = 0; t < ntrees; ++t) {
-        int idx = 0, nnodes = 0;
-        f >> tok >> idx >> nnodes;           // "tree <idx> <nnodes>"
-        auto &nodes = trees[t];
-        nodes.resize(nnodes);
-        for (int n = 0; n < nnodes; ++n) {
-            f >> tok;
-            if (tok == "L") {
-                float v; f >> v;
-                nodes[n] = { -1, v, -1, -1 };
-            } else {  // "S <featIdx> <thresh> <yes> <no>"
-                int fi, yes, no; float th;
-                f >> fi >> th >> yes >> no;
-                nodes[n] = { fi, th, yes, no };
+    auto readTrees = [&](std::vector<std::vector<Node>> &out, float &bs) -> bool {
+        f >> tok; if (tok != "base_score") return false;
+        f >> bs;
+        int ntrees = 0;
+        f >> tok; if (tok != "ntrees") return false;
+        f >> ntrees;
+        out.assign(ntrees, {});
+        for (int t = 0; t < ntrees; ++t) {
+            int idx = 0, nnodes = 0;
+            f >> tok; if (tok != "tree") return false;
+            f >> idx >> nnodes;
+            auto &nodes = out[t];
+            nodes.resize(nnodes);
+            for (int n = 0; n < nnodes; ++n) {
+                f >> tok;
+                if (tok == "L") {
+                    float v; f >> v;
+                    nodes[n] = { -1, v, -1, -1 };
+                } else {  // "S <featIdx> <thresh> <yes> <no>"
+                    int fi, yes, no; float th;
+                    f >> fi >> th >> yes >> no;
+                    nodes[n] = { fi, th, yes, no };
+                }
             }
         }
+        return bool(f);
+    };
+    if (nQuantiles > 0) {
+        quantileBase.resize(nQuantiles);
+        quantileTrees.resize(nQuantiles);
+        for (int q = 0; q < nQuantiles; ++q)
+            if (!readTrees(quantileTrees[q], quantileBase[q])) return false;
+    } else {
+        if (!readTrees(trees, baseScore)) return false;
     }
     if (!f) return false;
     isLoaded = true;
@@ -736,6 +756,7 @@ CombatOutcomePrediction CombatValueNet::predictOutcomeVec(const float *canonFeat
 }
 
 double CombatValueNet::predictVec(const float *canonFeatures) const {
+    if (nQuantiles > 0) return predictQuantileEV(canonFeatures);
     if (isEntityPolicy) {
         float state64[64];
         encodePolicyStateVec(canonFeatures, state64);
@@ -790,12 +811,33 @@ double CombatValueNet::predictVec(const float *canonFeatures) const {
     return sum;
 }
 
+// §132: EV of the terminal utility distribution = mean over quantiles of
+// R = 0 | 50+endHp. On the leaf's terminal scale by construction.
+double CombatValueNet::predictQuantileEV(const float *canonFeatures) const {
+    double sum = 0.0;
+    for (int q = 0; q < nQuantiles; ++q) {
+        double s = quantileBase[q];
+        for (const auto &nodes : quantileTrees[q]) {
+            int n = 0;
+            while (nodes[n].featIdx >= 0) {
+                const float x = canonFeatures[sel[nodes[n].featIdx]];
+                n = (x < nodes[n].thresh) ? nodes[n].yes : nodes[n].no;
+            }
+            s += nodes[n].thresh;
+        }
+        sum += s;
+    }
+    return sum / (double)nQuantiles;
+}
+
 std::string CombatValueNet::description() const {
     if (isEntityPolicy) return "shared entity policy 64d";
     if (isEntity) return "entity multi-head (bonus " + std::to_string(entityWinBonus) + ")";
     if (isMlp) return std::string(isSparseMlp ? "sparse MLP " : "MLP ")
         + std::to_string(sel.size()) + "x"
         + std::to_string(h1) + "x" + std::to_string(h2) + "x1";
+    if (nQuantiles > 0)
+        return std::to_string(nQuantiles) + "q x" + std::to_string(quantileTrees[0].size()) + " trees (EV)";
     return std::to_string(trees.size()) + " trees";
 }
 

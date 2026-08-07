@@ -100,6 +100,14 @@ namespace sts::search {
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
         void ensureObservation(Node &node, const BattleContext &state);
         int  playoutRandom(BattleContext &state, std::vector<Action> &actionStack);
+        // A1 (STS_S3_ROLLOUT_K): run g_s3RolloutK independent rollouts from
+        // the same pre-rollout leaf state and average the leaf evals. The
+        // first rollout's actions go into actionStack so bestActionSequence
+        // stays a valid replayable line; `state` is left unmutated. Returns
+        // the total rollout steps; fills evalOut with the mean. K=1 is
+        // byte-identical to playoutRandom + evaluateLeaf on the same state.
+        int  multiRollout(BattleContext &state, std::vector<Action> &actionStack,
+                          double &evalOut);
         void backpropagate(const std::vector<Node *> &path, double evaluation,
                           const std::vector<Action> &actionStack);
         int  selectBestEdgePUCT(const Node &node);
@@ -159,6 +167,14 @@ namespace sts::search {
     // policy prior instead of the static rolloutWeight heuristic. Resticted
     // to the GBM policy net (PVNet-head rollouts would cost ~14-18x a sim).
     extern bool g_s3RolloutPolicy;
+    // Rollout-leaf estimator experiments (opt-in; defaults preserve behavior):
+    // STS_S3_ROLLOUT_K (default 1): run K rollouts from the same leaf state,
+    // average their outcomes, and backpropagate once — reduces rollout-outcome
+    // variance without changing PUCT visit counts. STS_S3_ROLLOUT_TURN_STOP=N
+    // (default 0): stop the rollout after N full player turns; the non-terminal
+    // endpoint is then evaluated by the learned leaf (n-step bootstrap).
+    extern int g_s3RolloutK;
+    extern int g_s3RolloutTurnStop;
     // V_combat leaf conditioning (STS_VNET_COND_BOSS/ACT3, opt-in): restrict
     // the learned leaf to rollout-dominant contexts (§117: boss fights, act 3).
     // Both unset = always on (byte-identical pre-conditioning behavior).

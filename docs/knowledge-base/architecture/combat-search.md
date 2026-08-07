@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-07 against the current working tree (winrate wave §124-§126: baseline re-measurement, S3_EXPAND, vnet default).
+Last verified: 2026-08-07 against the current working tree (winrate wave §124-§126: baseline re-measurement, S3_EXPAND, vnet default; §133 rollout-leaf estimators STS_S3_ROLLOUT_K / STS_S3_ROLLOUT_TURN_STOP opt-in).
 
 ## Purpose
 
@@ -184,6 +184,36 @@ exactly (50.4%). The prior — trained on older-policy visit distributions —
 actively hurts rollouts; line closed per the pre-registered rule, env stays
 opt-in. Follow-ups (temperature/mixture) only after a current-stack prior
 retrain (winrate-plan §3.4).
+
+### Rollout-leaf estimators (STS_S3_ROLLOUT_K, STS_S3_ROLLOUT_TURN_STOP — opt-in)
+
+Two opt-in Searcher3 rollout-leaf estimators (EXPERIMENTS.md §133, 2026-08-07;
+decision log `2026-08-07-rollout-leaf-estimators.md`); both default off and
+byte-identical when unset (smoke-proven on 8 seeds):
+
+- **A1 — `STS_S3_ROLLOUT_K=N` (default 1):** run K independent rollouts from
+  the same pre-rollout leaf state and average their outcomes, then backprop
+  the mean once as a single visit. Rollout-outcome variance reduction without
+  changing PUCT visit counts or tree exploration. Implemented as
+  `BattleScumSearcher3::multiRollout` (`src/sim/search/BattleScumSearcher3.cpp`),
+  used at both rollout sites in `step()` (the leaf-expansion blend site and
+  the fair-illegal-stored-edge fallback). Each rollout runs on its own
+  `BattleContext` copy of the pre-rollout state (the caller's `state` is left
+  unmutated); the first rollout's actions fill `actionStack` so
+  `bestActionSequence` remains replayable.
+- **A4 — `STS_S3_ROLLOUT_TURN_STOP=N` (default 0):** stop the rollout after
+  N completed player turns and let the learned leaf evaluate the non-terminal
+  endpoint → `α·VNet(s0) + (1−α)·VNet(s1)` (n-step bootstrap). Turn boundary
+  detection: `bc.turn` increments inside the END_TURN action chain
+  (`BattleContext::afterMonsterTurns`). Distinct from the falsified §119
+  rollout caps, which capped with the pre-vnet heuristic endpoint on
+  Searcher2; a trained endpoint is the difference. Early termination is
+  terminal-safe (`evaluateTerminal` still wins when the battle ends).
+
+Paired 256-seed gates (@1k/64p on the §126 config vs `build/vnet_all_a03_1k.csv`,
+50.4%) are pre-registered (EXPERIMENTS.md §133) and held for the concurrent
+leaf-net verdict (§131/§132): both arms modify the same α-blend leaf the new
+net would redeploy, and a promoted net re-bases the pairing.
 
 ### Context-adaptive rollout caps (STS_ROLLOUT_CAPS, opt-in — falsified)
 
@@ -601,7 +631,8 @@ PUCT-with-zero-priors quirk.
 - `src/sim/search/BattleScumSearcher2.cpp::step`, `playoutRandom`,
   `collectFrontierStats`, `searchToTotalRootStable`, `onlyLegalAction`
 - `src/sim/search/BattleScumSearcher3.cpp::step`, `computeEdgePriors`,
-  `evaluateTerminal`, `g_terminalBonus`
+  `multiRollout` (STS_S3_ROLLOUT_K), `playoutRandom` (incl.
+  STS_S3_ROLLOUT_TURN_STOP), `evaluateTerminal`, `g_terminalBonus`
 - `src/sim/search/Action.cpp::enumerateCardSelectActions` (canonical legal
   CARD_SELECT action set; S2/S3 delegate to it), `Action.cpp::isValidAction`
 - `apps/test.cpp::testCardSelectParity` (command `cardselect_parity`)

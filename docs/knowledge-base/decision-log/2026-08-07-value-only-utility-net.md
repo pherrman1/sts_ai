@@ -58,3 +58,19 @@ the VNet — answered: it is a third, offline research artifact.
   head); (2) shared-encoder variant; (3) fold the recipe into the vnet
   retrain line (distribution/utility targets in `train_value_combat.py`);
   (4) C++ loader only when a deployment gate exists.
+
+## Ablation verdict (2026-08-07, §131 — appended; §129/§130 taken by the parallel session's vnet-retrain gate and 5.2 close)
+
+- **Both levers real:** fresh-data-only retrain (old-style PVNet heads on the
+  same 225k rows) 0.2505 → 0.0940 Brier (2.7×); the 51-bin utility target on
+  IDENTICAL data adds another 0.0940 → 0.0647 (−31%) and ECE −30%. The
+  §128 result was not data-only.
+- The fresh PVNet's separate death head collapsed (5.27 BCE, ~always 0) while
+  the utility head's bin-0 mass is well calibrated (0.2287) — single-head
+  design wins again.
+- **Actionable for the vnet retrain (other agent):** fresh data + a
+  distribution/quantile target over R = 0 | 50+endHp instead of endHp
+  regression — same GBM, cheap, deployable. This closes the phase-5 research
+  line; the shared-encoder variant (does policy sharing hurt value?) remains
+  the only unanswered phase-5 question and is deferred (dual-CSV policy
+  pass).

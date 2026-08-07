@@ -27,6 +27,8 @@ double g_riskLambda = 0.5;
 bool g_s3Expand = false;
 int g_s3ExpandMaxNew = 32;
 bool g_s3RolloutPolicy = false;
+int g_s3RolloutK = 1;
+int g_s3RolloutTurnStop = 0;
 bool g_vnetCondBossOnly = false;
 bool g_vnetCondAct3 = false;
 thread_local std::function<double(const BattleContext &)> g_terminalBonus;
@@ -360,11 +362,11 @@ void BattleScumSearcher3::step() {
                      && pvnetCondAllowed(state, depth))
                 vLeaf = g_combatPVNet.leafValue(state, riskLambda);
 
-            const int rollSteps = playoutRandom(state, actionStack);
+            double eval = 0.0;
+            const int rollSteps = multiRollout(state, actionStack, eval);
             ++diag.rolloutCalls;
             ++diag.rolloutLeafCalls;
             diag.rolloutActions += rollSteps;
-            double eval = evaluateLeaf(state);
             if (g_usePVNet && g_combatPVNet.loaded() && !std::isnan(vLeaf))
                 eval = g_pvnetAlpha * vLeaf + (1.0 - g_pvnetAlpha) * eval;
             else if (!std::isnan(vLeaf))
@@ -445,8 +447,9 @@ void BattleScumSearcher3::step() {
             }
             ++diag.rolloutCalls;
             ++diag.fairIllegalStoredEdge;
-            diag.rolloutActions += playoutRandom(state, actionStack);
-            backpropagate(path, evaluateLeaf(state), actionStack);
+            double eval = 0.0;
+            diag.rolloutActions += multiRollout(state, actionStack, eval);
+            backpropagate(path, eval, actionStack);
             return;
         }
 
@@ -575,6 +578,26 @@ static int rolloutWeight(const Action &a, const BattleContext &bc) {
     }
 }
 
+int BattleScumSearcher3::multiRollout(BattleContext &state,
+                                      std::vector<Action> &actionStack,
+                                      double &evalOut) {
+    const int k = std::max(1, g_s3RolloutK);
+    int steps = 0;
+    double sum = 0.0;
+    std::vector<Action> scratch;
+    for (int i = 0; i < k; ++i) {
+        // Each rollout starts from the same pre-rollout state (independent
+        // copy); the caller's `state` is left unmutated. The first rollout's
+        // actions go into actionStack so bestActionSequence stays a valid,
+        // replayable line.
+        BattleContext sc = state;
+        steps += playoutRandom(sc, i == 0 ? actionStack : scratch);
+        sum += evaluateLeaf(sc);
+    }
+    evalOut = sum / k;
+    return steps;
+}
+
 int BattleScumSearcher3::playoutRandom(BattleContext &state,
                                         std::vector<Action> &actionStack) {
     if ((g_useVNet && g_combatVNet.loaded() && g_vnetAlpha >= 1.0)
@@ -582,6 +605,7 @@ int BattleScumSearcher3::playoutRandom(BattleContext &state,
 
     Node tmp;
     int steps = 0;
+    int turnsCompleted = 0;
     // STS_S3_ROLLOUT_POLICY (opt-in): sample rollout actions from the GBM
     // policy prior (the same distribution PUCT priors come from) instead of
     // the static rolloutWeight heuristic. Restricted to the GBM policy net —
@@ -615,8 +639,16 @@ int BattleScumSearcher3::playoutRandom(BattleContext &state,
         }
         const auto &a = tmp.edges[sel].action;
         if (a.isValidAction(state)) {
+            const int turnBefore = state.turn;
             actionStack.push_back(a);
             a.execute(state);
+            // STS_S3_ROLLOUT_TURN_STOP (A4): a player turn completed when the
+            // action chain ran afterMonsterTurns (bc.turn incremented). Stop
+            // after N completed turns; the non-terminal endpoint is then
+            // evaluated by the learned leaf (n-step bootstrap).
+            if (g_s3RolloutTurnStop > 0 && state.turn != turnBefore
+                && ++turnsCompleted >= g_s3RolloutTurnStop)
+                break;
         }
         tmp.edges.clear();
     }
