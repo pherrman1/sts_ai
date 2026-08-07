@@ -1,0 +1,74 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "agent": {
+    "architect": {
+      "description": "Senior architect. Understands the task and writes a precise implementation plan without modifying the repository.",
+      "mode": "primary",
+      "model": "openai/gpt-5.6-sol",
+      "prompt": "{file:./.opencode/prompts/architect.md}",
+      "permission": {
+        "edit": "deny",
+        "task": "deny",
+        "webfetch": "allow",
+        "websearch": "allow",
+        "bash": {
+          "*": "deny",
+          "git status": "allow",
+          "git status *": "allow",
+          "git diff": "allow",
+          "git diff *": "allow",
+          "git log": "allow",
+          "git log *": "allow",
+          "git show *": "allow",
+          "git grep *": "allow"
+        }
+      }
+    },
+
+    "implementer": {
+      "description": "Implementation agent. Executes an approved plan, edits code and runs focused verification.",
+      "mode": "primary",
+      "model": "deepseek/deepseek-v4-flash",
+      "prompt": "{file:./.opencode/prompts/implementer.md}",
+      "permission": {
+        "edit": "allow",
+        "task": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "bash": {
+          "*": "allow",
+          "git commit *": "deny",
+          "git push *": "deny",
+          "git reset --hard *": "deny",
+          "git clean *": "deny",
+          "rm -rf *": "deny"
+        }
+      }
+    },
+
+    "reviewer": {
+      "description": "Senior adversarial reviewer. Reviews implementation correctness without modifying files.",
+      "mode": "primary",
+      "model": "openai/gpt-5.6-sol",
+      "prompt": "{file:./.opencode/prompts/reviewer.md}",
+      "permission": {
+        "edit": "deny",
+        "task": "deny",
+        "webfetch": "allow",
+        "websearch": "allow",
+        "bash": {
+          "*": "deny",
+          "git status": "allow",
+          "git status *": "allow",
+          "git diff": "allow",
+          "git diff *": "allow",
+          "git log": "allow",
+          "git log *": "allow",
+          "git show *": "allow",
+          "git grep *": "allow"
+        }
+      }
+    }
+  }
+}

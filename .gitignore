@@ -36,3 +36,6 @@
 /selfplay/logs_run.out
 build/pilot_val.csv
 build/pilot_pol.csv
+
+# Local multi-model agent workflow state.
+/.ai/
