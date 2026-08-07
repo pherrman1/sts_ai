@@ -17,9 +17,20 @@ MAX_REVIEW_ROUNDS = 2
 ALLOWED_VERIFICATION_EXECUTABLES = {
     "cmake",
     "ctest",
+    "git",
     "python",
     "python3",
     "pytest",
+}
+
+ALLOWED_GIT_VERIFICATION_SUBCOMMANDS = {
+    "blame",
+    "diff",
+    "grep",
+    "log",
+    "rev-parse",
+    "show",
+    "status",
 }
 
 
@@ -130,23 +141,55 @@ def run_agent(
 
 
 def parse_json_response(text: str, *, source: str) -> dict:
+    """Extract the agent's final JSON object from OpenCode's streamed transcript."""
     text = text.strip()
 
+    # Fast path for quiet/plain output.
     try:
         data = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(
-            f"{source} returned invalid JSON:\n"
-            f"{exc}\n\n"
-            f"Raw response:\n{text}"
-        ) from exc
+    except json.JSONDecodeError:
+        data = None
 
-    if not isinstance(data, dict):
-        raise RuntimeError(
-            f"{source} response must be a JSON object."
-        )
+    if isinstance(data, dict):
+        return data
 
-    return data
+    # `opencode run` prints tool activity and status lines before the model's
+    # final answer. The requested JSON answer is therefore the trailing
+    # top-level JSON object, not the complete captured stdout transcript.
+    line_starts = [0]
+    line_starts.extend(
+        index + 1
+        for index, char in enumerate(text)
+        if char == "\n"
+    )
+
+    last_error: json.JSONDecodeError | None = None
+
+    for start in reversed(line_starts):
+        if start >= len(text) or text[start] != "{":
+            continue
+
+        candidate = text[start:].strip()
+
+        try:
+            data = json.loads(candidate)
+        except json.JSONDecodeError as exc:
+            last_error = exc
+            continue
+
+        if isinstance(data, dict):
+            return data
+
+    detail = (
+        str(last_error)
+        if last_error is not None
+        else "No trailing JSON object found."
+    )
+    raise RuntimeError(
+        f"{source} returned no parseable final JSON object:\n"
+        f"{detail}\n\n"
+        f"Raw response:\n{text}"
+    )
 
 
 def save(path: Path, content: str) -> None:
@@ -310,6 +353,16 @@ def validate_plan(plan: dict) -> None:
             raise RuntimeError(
                 f"Verification executable is not allowed: {executable}"
             )
+
+        if executable == "git":
+            if (
+                len(argv) < 2
+                or argv[1] not in ALLOWED_GIT_VERIFICATION_SUBCOMMANDS
+            ):
+                raise RuntimeError(
+                    f"verification[{index}] uses a disallowed git command: "
+                    f"{argv!r}"
+                )
 
         relative_cwd = check.get("cwd", ".")
         if not isinstance(relative_cwd, str):
