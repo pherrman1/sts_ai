@@ -5431,3 +5431,158 @@ extFight*/emElites/emFights parity-excluded) and
   (VCOMBAT_TARGET/VCOMBAT_WIN_BONUS), `export_combat_model.py`,
   `apps/one_combat.cpp::main` (vnettest), `paired_analysis.py`. Decision log:
   `2026-08-07-experiment-132-133-audit.md`.
+
+## §135 Leaf-state diagnostic infrastructure: measure the §126-vs-§134 gap on actual Searcher3 leaf states (2026-08-08, local — infrastructure only, no gameplay result)
+
+- **What:** the handover cycle's diagnostics for "why does the deployed end-HP
+  vnet beat the direct utility-R vnet online (§126 +12.1pp vs §134 −12.1pp)
+  despite fitting its target worse offline (val MAE 9.73 vs 45.82)". This
+  entry records the TOOLING, not a verdict — the task explicitly forbids a new
+  model before the diagnostics exist. The measurement cycle runs next; its
+  results will be appended here.
+- **Implemented:**
+  - `search::g_onS3LeafQuery` / `S3LeafDiagnostic` (thread_local, nullptr by
+    default) fire at the Searcher3 leaf-expansion blend site in
+    `BattleScumSearcher3::step` — the states the learned leaf actually scores.
+    The leaf identity is the leaf state's own `visibleHash` (computed inside
+    the hook guard; `cur->obsHash` would be the PARENT's, which predates the
+    committed action). Defaults byte-identical when unset.
+  - `one_combat leafdiag NSEEDS SIMS ASC OUTFILE [SEEDOFFSET]`: per-stratum
+    reservoir (10 strata: 3 HP bands × 3 difficulties + 1 deep-tree;
+    `STS_LEAFDIAG_PER_STRATUM` default 50/seed, `STS_LEAFDIAG_DEEP_DEPTH`
+    default 20) of leaf states with canonical combat features + deployed
+    end-HP prediction + `STS_DIAG_VNET2` secondary prediction (never read by
+    the search) + raw/blended rollout evals + provenance + per-fight labels.
+    Sampling deterministic per seed (row SET reproducible; row order follows
+    seed completion order like fairGen).
+  - `one_combat leafref INFILE OUTFILE HIGH_BUDGET_SIMS NSEEDSREF ASC
+    [REPLAY_SIMS]`: deterministic replay of the recorded decisions; the
+    regenerated leaves match the recorded ones by obsHash (smoke: 450/450);
+    each recorded leaf gets a FRESH high-budget Searcher3 root mean evaluation
+    with per-group CRN reseeding (rng+belief+particles from one group seed).
+    Reference value = `root.evaluationSum/simulationCount` — documented as an
+    approximation (`referenceValue`), never ground truth. The per-group CRN
+    reseeding gives PARTIALLY shared determinization draws only (the
+    belief/particle shuffle prefix consumes a state-dependent number of RNG
+    draws, so the streams diverge after the prefix). The reference search runs
+    with the same learned-leaf environment as the leafdiag run (deployed
+    `STS_VNET` @ configured alpha), so the reference is NOT model-free — run
+    the sensitivity checks (rank vs `rawRolloutEval`, or a leafref run with
+    `STS_VNET` pointed at a missing path) before drawing the central verdict.
+    Replay config (particles, `STS_VNET`+alpha, OOC env arms, ascension) must
+    match the leafdiag run; a mismatch shows as a re-capture WARNING.
+  - `one_combat rollouttrace INFILE OUTFILE NSEEDSREF ASC [REPLAY_SIMS]`:
+    actual search-policy rollout state sequences per recorded leaf
+    (`search::g_onRolloutStep` fires inside `playoutRandom` after every
+    executed action); same config-match requirement as leafref.
+  - leafdiag CSV provenance carries the encounter as its UPPER_CASE enum NAME
+    (`encounterName` column); numeric `encounter`/`turn` encodings live in the
+    canonical feature block only (no duplicate columns). The 10 capture strata
+    have no dedicated disagreement/close-decision stratum (raw |endHp − utilityR|
+    is dominated by the +50-on-win scale offset); disagreement is stratified
+    post-hoc in `tools/leaf_ranking.py`.
+  - Analysis: `tools/leaf_ranking.py` (within-group pairwise ranking
+    accuracy / top-1 / regret / MAE-RMSE-Pearson-Spearman / stratified,
+    deterministic bootstrap CIs, `--self-test` works under `python3 -I`),
+    `tools/leaf_distribution_shift.py` (per-feature KS + held-out logistic
+    classifier combatgen-vs-search-leaf, ROC-AUC, `--write-ood`),
+    `tools/leaf_split_check.py` (fight-level vs seed-level validation split
+    for both targets, §134 recipe), `tools/leaf_smoothness.py` (delta-V
+    smoothness/shaping per model).
+- **Local smoke validation (not evidence of any gameplay effect):**
+  - `leafdiag 4 300 0` (STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+    STS_S3_CHAIN=0 STS_S3_PARTICLES=32, STS_VNET=build/v_combat_honest.txt,
+    STS_DIAG_VNET2=build/v_combat_utility_direct.txt): 1755 rows, 1783 cols
+    (13 provenance + 1766 features + 4 model/rollout cols); identical row SET
+    across reruns.
+  - `bestbench 1000 8 0 0` twice (deployed default): game-outcome columns
+    byte-identical (cpu_sec is wall-time and varies) — default behavior
+    unchanged.
+  - `leafref` (high-budget 400, replay 300): 450/450 recorded leaves
+    regenerated and matched by obsHash; join to leafdiag keys 1:1.
+  - `rollouttrace`: 450 trajectories × ~9.3 steps with both predictions.
+  - `tools/*.py` self-tests pass; CTest 8/8; `vnettest` parity on the §134
+    direct-R model passes.
+  - 16-seed leafdiag smoke: `leafdiag 16 1000 0 build/leafdiag_16.csv` →
+    7590 rows.
+- **Known constraint:** the leafdiag/leafref/rollouttrace run distribution is
+  the heuristic-OOC (native floor/win) run distribution unless the V4 gate
+  env arms are also set — the recorded §126/§134 gates used the full V4 gate
+  stack, so a gate-matching diagnostic dataset must set the same OOC env arms.
+  Probing OOC arms (STS_OOC_ACTION_NN, STS_BOSS_DRAFT, M1/M2, STS_DATAGEN_GATES)
+  MUST NOT be enabled during capture (their inner probe battles pollute the
+  dataset).
+- **Verdict: NONE (infrastructure only).** No model change, no default change,
+  no promotion; the deployed `build/v_combat_honest.txt` @α0.3 stays, and
+  §133/§134 candidates stay rejected. Next step: run the diagnostics on a
+  gate-sized dataset and record the hypothesis verdict here.
+- **Decision log:** `2026-08-08-leaf-state-diagnostics.md`.
+
+## §135a Leaf-state diagnostics: gate-matching measurement (2026-08-08, local — diagnostic evidence, no gameplay promotion)
+
+- **Dataset:** 64 seeds (126700–126763), 1000 sims, asc 0, 12 threads, local
+  (no GCP). Full gate-matching env: `STS_FAIR=1 STS_SEARCHER3=1
+  STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_S3_PARTICLES=64`,
+  `STS_VNET=build/v_combat_honest.txt` @ `STS_VNET_ALPHA=0.3` (deployed §126
+  regime), `STS_DIAG_VNET2=build/v_combat_utility_direct.txt` (§134 direct-R,
+  diagnostics only), `STS_LEAFDIAG_PER_STRATUM=500`, full V4 OOC gate arms
+  (`STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`,
+  REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1, MARGIN=1.0). Probing OOC arms OFF.
+- **Artifacts (build/, git-ignored):** `leafdiag_gate_64.csv` (288,537 leaf
+  rows, 142s), `leafref_gate_64_4k.csv` (287,211 reference rows, high-budget
+  4000 sims × 128 particles, per-group CRN reseeding, replay 1000 — matched
+  100%, no re-capture WARNINGs, 3367s), `rollouttrace_gate_64.csv` (3,341,845
+  rows, 150s), `leafdiag_gate_64_ood.csv`, JSON summaries
+  `leaf_ranking_gate_64{,_ood,_rawrollout}.json`,
+  `leaf_distribution_shift_gate_64.json`, `leaf_split_check_gate_64.json`,
+  `leaf_smoothness_gate_64.json`.
+- **Ranking vs high-budget reference (Task 3; reference is vnet-influenced,
+  see caveat):** endHp Pearson 0.758 / Spearman 0.769 / MAE 31.2 vs utilityR
+  Pearson 0.806 / Spearman 0.820 / MAE 21.5 (own scales, not comparable
+  directly — utilityR fits the reference better in correlation). Within-group
+  pairwise accuracy: **endHp 0.719 [0.717,0.722] vs utilityR 0.711
+  [0.708,0.714]** (+0.8pp, CIs disjoint); top-1: 0.359 vs 0.336 (+2.3pp);
+  regret 7.253 [7.076,7.424] vs 7.597 [7.419,7.768]. Disagree-high stratum
+  (|Δ| ≥ 50): 0.734 vs 0.720. Deep-tree stratum (d≥15): 0.798 vs 0.779.
+- **Model-free cross-check (rawRolloutEval single-sample reference, no
+  leafref):** pairwise 0.725 [0.722,0.728] vs 0.719 [0.715,0.722], top-1 0.333
+  vs 0.316, regret 14.50 vs 15.16 — same direction, so the endHp ranking
+  advantage is NOT an artifact of the vnet-influenced reference.
+- **Distribution shift (Task 4):** held-out logistic classifier
+  combatgen-vs-search-leaf: **ROC-AUC 0.9998** (60k×60k rows, test ~1/3) —
+  near-perfect separation; the search-leaf regime is essentially entirely
+  outside the `vcombat_honest.csv` training distribution (OOD flagging: only
+  37 decision groups classified in-dist, 3046 OOD, rest na). Top separating
+  features by standardized |coef| (correlation, NOT causal): r116 (+4.87),
+  maxHp (+2.74), gold (+2.07), nSklAvail (−1.92), dr25 (+1.88), ds25 (+1.87).
+- **Split-sensitivity (Task 5):** fight-split vs seed-split diagnostic
+  retrains (canonical §134 recipe): endhp val MAE 5.581 → 5.536 (−0.045);
+  utility_r 9.730 → 9.173 (−0.557). The fight-level split is NOT optimistic —
+  seed-level validation is, if anything, slightly easier for the deployed
+  models (deployed endHp val MAE 5.589 fight vs 3.930 seed). The offline
+  story was not inflated by same-run fight leakage.
+- **Smoothness/shaping (Task 6):** endHp lag-1 autocorrelation 0.549 vs
+  utilityR 0.502 (endHp smoother); near-death steps: endHp mean ΔV −1.094 /
+  std 3.227 vs utilityR −2.457 / 8.571; but utilityR is MORE sign-consistent
+  on raw surface progress (progSign 0.459 vs 0.432, negOnHpLoss 0.247 vs
+  0.221, strUp 0.442 vs 0.416). Shaping evidence is MIXED — smoothness yes,
+  sign-consistency no.
+- **Verdict (diagnostic, not causal):** the dominant, unambiguous finding is
+  massive train-vs-search covariate shift (AUC 0.9998). Within the OOD
+  search-leaf regime the deployed endHp model ranks slightly better (pairwise
+  +0.8pp, top-1 +2.3pp, regret −0.34) despite correlating worse with the
+  high-budget reference (Spearman 0.769 vs 0.820). The online gap (−12.1pp) is
+  far larger than any measured ranking difference (≤2.3pp top-1), so the
+  ranking hypothesis alone cannot explain the §134 collapse; covariate shift
+  (or its interaction with the blend scale) is the primary suspect. Next
+  experiment (per the handover decision point, covariate-shift branch):
+  retrain the existing model class on a mixture of combatgen + actual
+  leafdiag states with SEPARATE on-policy and search-leaf holdouts, and test
+  search-leaf ranking improvement before any gameplay gate.
+- **Caveats:** the leafref reference searcher itself used the deployed endHp
+  leaf (vnet-influenced reference) — mitigated by the rawRolloutEval
+  cross-check above; OOD in-dist groups are few (n=37) so the ood=id stratum
+  is anecdotal; delta-V scales differ across models (only scale-free
+  comparisons valid); classifier feature weights are correlational.
+- **Decision log:** `2026-08-08-leaf-state-diagnostics.md` (results
+  addendum).

@@ -1,6 +1,6 @@
 # Decision log
 
-Last verified: 2026-08-05 against the current working tree.
+Last verified: 2026-08-08 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one
@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-08 | [`2026-08-08-leaf-state-diagnostics.md`](2026-08-08-leaf-state-diagnostics.md) | Handover "why does the end-HP leaf beat direct utility-R online": build diagnostics FIRST (no new model) — `g_onS3LeafQuery`/`S3LeafDiagnostic` at the Searcher3 leaf-blend site, `leafdiag` reservoir dataset (both model predictions + features + provenance, deterministic per seed), `leafref` CRN-paired high-budget references (approximation, not ground truth), `rollouttrace` actual rollout sequences (`g_onRolloutStep`), analysis tools `leaf_ranking.py` / `leaf_distribution_shift.py` / `leaf_split_check.py` / `leaf_smoothness.py`; `STS_DIAG_VNET2` secondary model is never read by the search; defaults byte-identical (nullptr hooks). |
 | 2026-08-07 | [`2026-08-07-deepseek-agent-models.md`](2026-08-07-deepseek-agent-models.md) | Workflow agents are DeepSeek-only: architect `deepseek-v4-pro` (high), implementer and cheap reviewer `deepseek-v4-flash` (high), escalation reviewer `reviewer_escalation` = `deepseek-v4-pro` (max). Agent renamed from `reviewer_sol`; `ai_cycle.py` reports per-call cost from opencode's session database, recovers completed paid reviews from failed runs (fenced JSON + nonzero-exit fix), and logs permission-denied tool calls per agent in `denied-tool-calls.md`. |
 | 2026-08-07 | [`2026-08-07-rejected-ai-cycle-recovery.md`](2026-08-07-rejected-ai-cycle-recovery.md) | Semantic-review exhaustion is now a two-round manual checkpoint; `--continue-rejected` performs one durable Sol-adjudicated recovery cycle without regenerating the Architect plan. |
 | 2026-08-07 | [`2026-08-07-multi-model-ai-cycle.md`](2026-08-07-multi-model-ai-cycle.md) | AI cycle now defaults to Luna-high architecture/review, escalates deterministic high-risk candidates to Sol-medium, isolates expensive checks as a final gate, caps automated seed sweeps at 128, and stores ELI5 review summaries. |

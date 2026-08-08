@@ -20,6 +20,22 @@
 
 namespace sts::search {
 
+    // Leaf-query diagnostic record (leafdiag mode, apps/one_combat.cpp). Fired
+    // at the leaf-expansion blend site in BattleScumSearcher3::step() — the
+    // same place the learned leaf value is blended with the multi-rollout
+    // outcome before backpropagation. The BattleContext pointer is the
+    // pre-rollout leaf state and is valid ONLY for the duration of the
+    // callback; the callback must not mutate it and must not consume search
+    // RNG (reservoir sampling uses its own RNG).
+    struct S3LeafDiagnostic {
+        const BattleContext* bc = nullptr;     // pre-rollout leaf state (const)
+        int treeDepth = 0;                     // tree depth at the blend site
+        std::uint64_t obsHash = 0;             // leaf state visibleHash (identity for leafref matching)
+        double vnetPred = std::numeric_limits<double>::quiet_NaN();  // learned leaf used by the search (NaN = none fired)
+        double rawRolloutEval = std::numeric_limits<double>::quiet_NaN(); // multi-rollout outcome BEFORE the alpha blend
+        double blendedEval = std::numeric_limits<double>::quiet_NaN();    // evaluation backpropagated to the tree
+    };
+
     struct BattleScumSearcher3 {
 
         // Forward-declare Edge (needed by Node for std::vector<Edge>)
@@ -196,6 +212,18 @@ namespace sts::search {
     // search can reason about cross-combat setup (e.g. Happy Flower counter
     // alignment). Empty = off. Consumed only in evaluateTerminal.
     extern thread_local std::function<double(const BattleContext &)> g_terminalBonus;
+    // Leaf-query diagnostic hook (leafdiag mode). nullptr by default — when
+    // unset, step() is byte-identical to pre-hook behavior (the callback is
+    // checked before any work and the leaf obsHash is computed only inside the
+    // guard). Fires ONLY at the leaf-expansion blend site (rolloutLeafCalls
+    // path), never at the direct-eval sites or terminal evaluations.
+    extern thread_local std::function<void(const S3LeafDiagnostic &)> g_onS3LeafQuery;
+    // Rollout-step trace hook (rollouttrace mode, apps/one_combat.cpp): fires
+    // inside playoutRandom after every executed rollout action, with the
+    // resulting state and the 1-based step index. Read-only; nullptr by
+    // default (unset = byte-identical behavior). Used to capture actual
+    // search-rollout state sequences for delta-V smoothness diagnostics.
+    extern thread_local std::function<void(const BattleContext &, int steps)> g_onRolloutStep;
 
 
 } // namespace sts::search

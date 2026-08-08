@@ -1,8 +1,6 @@
 # Training and inference
 
-Last verified: 2026-08-07 against the current working tree (VCOMBAT_TARGET
-trainer option + metrics sidecar; asserting `vnettest` parity; §134 direct-R
-ablation).
+Last verified: 2026-08-08 against the current working tree (leafdiag/leafref/rollouttrace leaf-state diagnostic producers + `STS_DIAG_VNET2`; VCOMBAT_TARGET, asserting `vnettest`, §134 direct-R ablation unchanged).
 
 ## Purpose
 
@@ -111,6 +109,29 @@ gate other modes. `fightgen` installs Searcher2 hooks and omits Searcher3 policy
 rows if Searcher3 is forced (`apps/one_combat.cpp::fairGen`,
 `runFairGenSeed`, fight-generation callbacks).
 
+The 2026-08-08 leaf-state diagnostic producers (`one_combat leafdiag`,
+`leafref`, `rollouttrace`) record ACTUAL Searcher3 leaf/query states instead of
+on-policy pre-action snapshots — the leaf states that the learned leaf value
+actually scores. `BattleScumSearcher3::step` fires the thread-local
+`search::g_onS3LeafQuery` hook at the leaf-expansion blend site
+(`S3LeafDiagnostic`; see `combat-search.md` "Leaf-state diagnostics"); the
+`leafdiag` mode reservoir-samples those states with canonical combat features
+(`combatFeatureNames()`), both model predictions (deployed `STS_VNET`/default
+end-HP vnet + `STS_DIAG_VNET2` secondary — never read by the search), and
+raw/blended rollout evals; `leafref` replays the recorded decisions and writes
+CRN-paired high-budget reference values (an approximation, never ground truth;
+the reference searcher runs with the same deployed `STS_VNET`/alpha as the
+leafdiag run, so the reference is NOT model-free — see `combat-search.md`);
+`rollouttrace` writes actual search-policy rollout state sequences
+(`search::g_onRolloutStep`). The leafdiag CSV provenance carries the encounter
+as its UPPER_CASE enum NAME (`encounterName` column); the numeric `encounter`
+and `turn` encodings live in the canonical feature block only (no duplicate
+columns). Analysis scripts: `tools/leaf_ranking.py`,
+`tools/leaf_distribution_shift.py` (combatgen-vs-search-leaf covariate shift,
+ROC-AUC + `--write-ood` flags), `tools/leaf_split_check.py` (fight-level vs
+seed-level validation-split sensitivity, §134 recipe), `tools/leaf_smoothness.py`
+(delta-V shaping diagnostics).
+
 ### Run/OOC schema
 
 `apps/one_combat.cpp::vFeatCsv` is the rich-state producer and
@@ -137,7 +158,10 @@ leakage analysis.
 `apps/one_combat.cpp::main` owns environment parsing and load messages. Native
 OOC floor/win models are default. Separate combat value, distributional value,
 PVNet, and policy models are selected with `STS_VNET`, `STS_DIST_VNET`,
-`STS_PVNET`, and `STS_POLICY`. Optional server models are selected through
+`STS_PVNET`, and `STS_POLICY`. `STS_DIAG_VNET2` loads a SECOND combat value
+model used only by the leafdiag/leafref/rollouttrace diagnostics (never by the
+search); a failed secondary load is non-fatal and the diagnostic CSVs report
+NaN for its predictions. Optional server models are selected through
 `v_server.py` environment variables. Current tracked artifact hashes are listed
 only in [current baselines](../evaluation/current-baselines.md).
 The distributional and PV models are consumed only by Searcher3; a successful
@@ -269,10 +293,14 @@ startup load is not evidence of use under default Searcher2.
 ## Relevant code
 
 - `apps/one_combat.cpp::main`, `fairGen`, `fightGen`, `strategicGen`,
-  `strategicGen2`, `vFeatCsv`
+  `strategicGen2`, `leafDiag`, `leafRef`, `rolloutTrace`, `vFeatCsv`
 - `include/sim/search/ScumSearchAgent2.h` data-generation hooks
+- `include/sim/search/BattleScumSearcher3.h::S3LeafDiagnostic`, `g_onS3LeafQuery`,
+  `g_onRolloutStep`
 - `src/sim/search/CombatValueNet.cpp::combatFeatureNames`,
   `combatExtractFeatures`, `combatFillActionFeatures`
+- `tools/leaf_ranking.py`, `tools/leaf_distribution_shift.py`,
+  `tools/leaf_split_check.py`, `tools/leaf_smoothness.py`
 - `train_winrate.py`, `train_value_combat.py`, `train_policy.py`
 - `train_combat_pvnet.py::PolicyValueNet`
 - `train_ooc_checkpoint.py`; `export_ooc_checkpoint.py`

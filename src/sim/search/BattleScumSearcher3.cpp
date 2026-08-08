@@ -32,6 +32,8 @@ int g_s3RolloutTurnStop = 0;
 bool g_vnetCondBossOnly = false;
 bool g_vnetCondAct3 = false;
 thread_local std::function<double(const BattleContext &)> g_terminalBonus;
+thread_local std::function<void(const S3LeafDiagnostic &)> g_onS3LeafQuery;
+thread_local std::function<void(const BattleContext &, int steps)> g_onRolloutStep;
 
 // Phase 6 PVNet deployment-speed knobs (see header; STS_PVNET_* parse in
 // apps/one_combat.cpp). The leaf cache is behavior-preserving (deterministic
@@ -364,6 +366,7 @@ void BattleScumSearcher3::step() {
 
             double eval = 0.0;
             const int rollSteps = multiRollout(state, actionStack, eval);
+            const double rawEval = eval;   // pre-blend rollout outcome (leafdiag snapshot)
             ++diag.rolloutCalls;
             ++diag.rolloutLeafCalls;
             diag.rolloutActions += rollSteps;
@@ -371,6 +374,18 @@ void BattleScumSearcher3::step() {
                 eval = g_pvnetAlpha * vLeaf + (1.0 - g_pvnetAlpha) * eval;
             else if (!std::isnan(vLeaf))
                 eval = g_vnetAlpha * vLeaf + (1.0 - g_vnetAlpha) * eval;
+            // Leafdiag hook (nullptr by default; the leaf obsHash is computed
+            // only when the hook is registered, so unset behavior is
+            // unchanged). The leaf identity hash is the state's visibleHash —
+            // computed fresh, NOT the parent node's cached obsHash (cur is the
+            // expanded parent at this point, its observation predates the
+            // committed action + chain compression).
+            if (g_onS3LeafQuery) {
+                const std::uint64_t leafObsHash =
+                    CombatObservation::fromBattleContext(state).visibleHash();
+                g_onS3LeafQuery(S3LeafDiagnostic{&state, depth, leafObsHash,
+                                                 vLeaf, rawEval, eval});
+            }
             backpropagate(path, eval, actionStack);
             return;
         }
@@ -642,6 +657,9 @@ int BattleScumSearcher3::playoutRandom(BattleContext &state,
             const int turnBefore = state.turn;
             actionStack.push_back(a);
             a.execute(state);
+            // rollouttrace diagnostics: consecutive actual-rollout states
+            // (read-only hook; nullptr by default).
+            if (g_onRolloutStep) g_onRolloutStep(state, steps);
             // STS_S3_ROLLOUT_TURN_STOP (A4): a player turn completed when the
             // action chain ran afterMonsterTurns (bc.turn incremented). Stop
             // after N completed turns; the non-terminal endpoint is then

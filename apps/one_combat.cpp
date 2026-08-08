@@ -2396,6 +2396,186 @@ static thread_local SdiagRunCtx g_sdiagCtx;
 
 static void sdiagFightRow(const BattleContext &bc);   // defined in the SEARCHDIAG section
 
+// ---------------------------------------------------------------------------
+// LEAFLIAG: Searcher3 leaf-state diagnostic dataset (2026-08-08 handover).
+// Records states at the leaf-expansion blend site (search::g_onS3LeafQuery —
+// the same place the learned leaf value is blended with the multi-rollout
+// outcome, see BattleScumSearcher3::step) with canonical combat features,
+// the deployed end-HP vnet prediction, a secondary diagnostic vnet
+// prediction (STS_DIAG_VNET2), and the raw/blended rollout evals, using
+// per-stratum reservoir sampling. The companion `leafref` mode replays the
+// recorded decisions deterministically and writes high-budget reference
+// values. runFullRunOOC touches only this guarded state at battle entry/exit
+// when g_leafdiagActive; default runs are byte-identical (flag false).
+// Sampling is per-seed and deterministic: the reservoir RNG is seeded from
+// the run seed only, never from search RNG, so registering the hook does not
+// change search behavior (the callback only reads the leaf state).
+// ---------------------------------------------------------------------------
+static constexpr int kLeafDiagStrata = 10;   // 3 hpFrac bands x 3 difficulties + 1 deep-tree stratum
+static bool g_leafdiagActive = false;
+static search::CombatValueNet g_combatVNetDiag;  // secondary diagnostic vnet (STS_DIAG_VNET2); NEVER read by the searcher
+static int  g_ldPerStratum = 50;                 // STS_LEAFDIAG_PER_STRATUM: reservoir capacity per stratum per seed
+static int  g_ldDeepDepth   = 20;                // STS_LEAFDIAG_DEEP_DEPTH: depth >= this maps to the dedicated deep stratum
+
+struct LeafDiagRow {
+    std::uint64_t seed = 0;
+    int fightIdx = -1, decIdx = -1;
+    int floor = 0, act = 0;
+    std::string encounter;                 // UPPER_CASE enum NAME (monsterEncounterEnumNames)
+    int depth = 0;
+    std::uint64_t obsHash = 0;
+    int nLegalActions = 0;
+    int stratum = -1;
+    std::vector<float> feats;                    // canonical combat features (combatExtractFeatures)
+    double endHpPred = std::numeric_limits<double>::quiet_NaN();
+    double utilityRPred = std::numeric_limits<double>::quiet_NaN();
+    double rawRolloutEval = std::numeric_limits<double>::quiet_NaN();
+    double blendedEval = std::numeric_limits<double>::quiet_NaN();
+    int won = -1, fightEndHp = -1;               // fight labels, filled at battle end
+};
+
+// leafref group identity: one Searcher3 decision inside one fight of one run.
+struct LeafRefGroupKey {
+    std::uint64_t seed = 0;
+    int fightIdx = -1, decIdx = -1;
+    bool operator==(const LeafRefGroupKey &o) const {
+        return seed == o.seed && fightIdx == o.fightIdx && decIdx == o.decIdx;
+    }
+};
+struct LeafRefGroupKeyHash {
+    size_t operator()(const LeafRefGroupKey &k) const {
+        std::uint64_t h = k.seed ^ ((std::uint64_t)(std::uint32_t)k.fightIdx << 32)
+                        ^ (std::uint64_t)(std::uint32_t)k.decIdx;
+        h ^= h >> 33; h *= 0xff51afd7ed558ccdULL; h ^= h >> 33;
+        return (size_t)h;
+    }
+};
+
+struct LeafDiagCtx {
+    std::uint64_t seed = 0;
+    int fightIdx = 0, floor = 0, act = 0;
+    std::string encounter;                 // UPPER_CASE enum NAME (monsterEncounterEnumNames)
+    int decIdx = 0;                              // per-fight searched-decision counter (g_onSearchComplete3)
+    std::mt19937_64 rng;                         // reservoir RNG (deterministic per seed; never the search RNG)
+    std::vector<std::vector<LeafDiagRow>> strata;   // reservoir per stratum (capacity g_ldPerStratum)
+    std::vector<int> stratumCounts;              // candidates seen per stratum
+    // leafref-only state (filled per replayed seed; unused by leafdiag):
+    std::unordered_map<LeafRefGroupKey, std::unordered_set<std::uint64_t>,
+                       LeafRefGroupKeyHash> recorded;   // group -> recorded leaf obsHashes
+    std::vector<BattleContext> capturedLeaves;          // regenerated leaves of the current decision
+    std::unordered_set<std::uint64_t> capturedSeen;     // dedup: one capture per obsHash per decision
+    void init(std::uint64_t sd) {
+        seed = sd; fightIdx = 0; floor = 0; act = 0; encounter.clear(); decIdx = 0;
+        rng.seed(sd ? sd : 1);
+        strata.assign(kLeafDiagStrata, {});
+        stratumCounts.assign(kLeafDiagStrata, 0);
+        recorded.clear();
+        capturedLeaves.clear();
+        capturedSeen.clear();
+    }
+};
+static thread_local LeafDiagCtx t_ld;
+
+// 0 = hallway, 1 = elite, 2 = boss (elite set = MonsterEncounterPool::elites).
+static int encounterDifficulty(sts::MonsterEncounter e) {
+    if (sts::isBossEncounter(e)) return 2;
+    for (const auto &row : MonsterEncounterPool::elites)
+        for (const auto &el : row)
+            if (el == e) return 1;
+    return 0;
+}
+
+// Stratum partition: depth >= g_ldDeepDepth -> 9 (dedicated deep-tree subset);
+// otherwise hpFrac band (0,1,2) x difficulty (0,1,2) -> 0..8. The deep subset
+// is its own reservoir so early- AND late-depth states both get coverage; the
+// hpFrac x difficulty reservoirs cover the rest of the search distribution.
+static int leafDiagStratum(const BattleContext &bc, int depth) {
+    if (depth >= g_ldDeepDepth) return 9;
+    const double hpFrac = bc.player.maxHp > 0
+        ? (double)bc.player.curHp / bc.player.maxHp : 0.0;
+    const int hb = hpFrac < 0.30 ? 0 : (hpFrac < 0.70 ? 1 : 2);
+    return hb * 3 + encounterDifficulty(bc.encounter);
+}
+
+static LeafDiagRow leafDiagMakeRow(const search::S3LeafDiagnostic &d, int stratum) {
+    LeafDiagRow r;
+    const BattleContext &bc = *d.bc;
+    r.seed = t_ld.seed; r.fightIdx = t_ld.fightIdx; r.decIdx = t_ld.decIdx;
+    r.floor = t_ld.floor; r.act = t_ld.act; r.encounter = t_ld.encounter;
+    r.depth = d.treeDepth; r.obsHash = d.obsHash;
+    r.nLegalActions = (int)legalActions(bc).size();
+    r.stratum = stratum;
+    const int nf = search::combatFeatureCount();
+    r.feats.assign(nf, 0.f);
+    search::combatExtractFeatures(bc, r.feats.data());
+    r.endHpPred = d.vnetPred;
+    if (std::isnan(d.vnetPred) && search::g_useVNet && search::g_combatVNet.loaded())
+        r.endHpPred = search::g_combatVNet.predict(bc);
+    r.utilityRPred = g_combatVNetDiag.loaded() ? g_combatVNetDiag.predict(bc)
+                                               : std::numeric_limits<double>::quiet_NaN();
+    r.rawRolloutEval = d.rawRolloutEval;
+    r.blendedEval = d.blendedEval;
+    return r;
+}
+
+// Hot-path leaf hook: cheap stratum computation + reservoir sampling per
+// stratum. Full features + model predictions are computed only for accepted
+// rows. Uses only t_ld.rng (never search RNG) and reads the leaf state.
+static void leafDiagOnLeafQuery(const search::S3LeafDiagnostic &d) {
+    const int stratum = leafDiagStratum(*d.bc, d.treeDepth);
+    auto &res = t_ld.strata[stratum];
+    int &cnt = t_ld.stratumCounts[stratum];
+    if (cnt < g_ldPerStratum) {
+        res.push_back(leafDiagMakeRow(d, stratum));
+    } else {
+        const int j = std::uniform_int_distribution<int>(0, cnt)(t_ld.rng);
+        if (j < g_ldPerStratum) res[j] = leafDiagMakeRow(d, stratum);
+    }
+    ++cnt;
+}
+
+// Called at battle exit (runFullRunOOC, g_leafdiagActive): label the current
+// fight's sampled rows with the fight outcome.
+static void leafDiagFightEnd(const BattleContext &bc) {
+    const int won = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
+    for (auto &stratum : t_ld.strata)
+        for (auto &row : stratum)
+            if (row.fightIdx == t_ld.fightIdx) { row.won = won; row.fightEndHp = bc.player.curHp; }
+}
+
+static std::string leafDiagSeedCsv() {
+    std::ostringstream o;
+    for (int s = 0; s < kLeafDiagStrata; ++s)
+        for (const auto &row : t_ld.strata[s]) {
+            o << row.seed << ',' << row.fightIdx << ',' << row.decIdx << ','
+              << row.floor << ',' << row.act << ',' << row.encounter << ','
+              << row.depth << ',' << row.obsHash << ','
+              << row.nLegalActions << ',' << row.stratum << ',' << row.won << ','
+              << row.fightEndHp;
+            for (const float v : row.feats) {
+                o << ',';
+                if (v == (float)(long)v) o << (long)v; else o << v;
+            }
+            o << ',' << row.endHpPred << ',' << row.utilityRPred << ','
+              << row.rawRolloutEval << ',' << row.blendedEval << '\n';
+        }
+    return o.str();
+}
+
+static std::string leafDiagHeaderStr() {
+    // Provenance prefix: encounterName is the UPPER_CASE enum NAME (Python's
+    // encounter_difficulty() tables); the canonical feature block below
+    // carries the numeric "encounter" and "turn" encodings, so those two are
+    // NOT repeated here (duplicate CSV column names would shadow them under
+    // csv.DictReader).
+    std::string h = "seed,fightIdx,decIdx,floor,act,encounterName,treeDepth,"
+                    "obsHash,nLegalActions,stratum,fightWon,fightEndHp,";
+    const auto &names = search::combatFeatureNames();
+    for (size_t i = 0; i < names.size(); ++i) { if (i) h += ','; h += names[i]; }
+    h += ",endHp_pred,utilityR_pred,rawRolloutEval,blendedEval";
+    return h;
+}
+
 static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV) {
     vDisconnect();
     t_shopV = shopV;
@@ -2439,8 +2619,20 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
                 g_sdiagCtx.encounter = (int)bc.encounter;
                 g_sdiagCtx.fightIdx = fightsTotal;
             }
+            if (g_leafdiagActive) {   // leafdiag: per-fight run context
+                t_ld.fightIdx = fightsTotal;
+                t_ld.floor = gc.floorNum;
+                t_ld.act = gc.act;
+                // UPPER_CASE enum NAME, so the CSV column matches the Python
+                // tools' encounter_difficulty() tables (BOSSES/ELITES); the
+                // canonical feature vector separately carries the numeric
+                // encoding (combatExtractFeatures "encounter").
+                t_ld.encounter = monsterEncounterEnumNames[(int)bc.encounter];
+                t_ld.decIdx = 0;
+            }
             agent.playoutBattle(bc);
             if (g_sdiagActive) sdiagFightRow(bc);   // searchdiag: fight summary
+            if (g_leafdiagActive) leafDiagFightEnd(bc);   // leafdiag: label this fight's sampled rows
             if (search::g_useSearcher3 && g_termWin) termWinDisarm();
             ++fightsTotal;
             if (bc.outcome == Outcome::PLAYER_LOSS) { ++fightsLost; if (deathCombat < 0) { deathCombat = fightsTotal; deathEncounter = (int)bc.encounter; } }
@@ -6028,6 +6220,429 @@ static void fairGen(int nSeeds, int sims, int asc, double epsilon,
 }
 
 // ---------------------------------------------------------------------------
+// LEAFLIAG mode driver: run full runs via runFullRunOOC (fair Searcher3, the
+// §126 deployed regime) with the leaf-query hook registered, collecting a
+// per-stratum reservoir of actual Searcher3 leaf-expansion states. Sampling
+// is deterministic per seed (t_ld.rng seeded from the run seed only), so the
+// collected leaf SET is reproducible; CSV row order follows seed completion
+// order (nondeterministic under dynamic scheduling, like fairGen). Do NOT set
+// probing OOC env arms (STS_OOC_ACTION_NN, STS_BOSS_DRAFT, M1/M2 path gates,
+// STS_DATAGEN_GATES, …): their inner probe battles would fire the leaf hook
+// and pollute the dataset with non-live decision states.
+// ---------------------------------------------------------------------------
+static void leafDiag(int nSeeds, int sims, int asc,
+                     const std::string &outFile, long long seedOffset = 0) {
+    search::g_richCombatFeatures = true;
+    std::cout << "leafdiag   seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
+              << "  sims " << sims << "  asc " << asc
+              << "  per-stratum " << g_ldPerStratum << " x " << kLeafDiagStrata << " strata"
+              << "  threads " << numThreads() << "  -> " << outFile << "\n";
+    if (!g_combatVNetDiag.loaded())
+        std::cout << "[leafdiag WARNING: no STS_DIAG_VNET2 secondary model loaded; "
+                     "utilityR_pred will be NaN]\n";
+    std::ofstream f(outFile);
+    if (!f) { std::cerr << "leafdiag: cannot open " << outFile << "\n"; return; }
+    f << leafDiagHeaderStr() << "\n";
+    f.flush();
+
+    g_leafdiagActive = true;
+    auto t0 = std::chrono::steady_clock::now();
+    long long rows = 0; int done = 0;
+    std::vector<long long> stratumSeen(kLeafDiagStrata, 0);
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        // thread_local hooks: set per worker
+        search::g_onS3LeafQuery = leafDiagOnLeafQuery;
+        search::g_onSearchComplete3 = [](const BattleContext &,
+                                         const search::BattleScumSearcher3 &) { ++t_ld.decIdx; };
+        t_ld.init((std::uint64_t)(seedOffset + s));
+        runFullRunOOC((std::uint64_t)(seedOffset + s), sims, asc, false, false);
+        const std::string out = leafDiagSeedCsv();
+        search::g_onS3LeafQuery = nullptr;
+        search::g_onSearchComplete3 = nullptr;
+        #pragma omp critical
+        {
+            f << out;
+            f.flush();
+            rows += std::count(out.begin(), out.end(), '\n');
+            for (int st = 0; st < kLeafDiagStrata; ++st) stratumSeen[st] += t_ld.stratumCounts[st];
+            if (++done % 10 == 0) {
+                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+                std::printf("  %d/%d runs, %lld rows, %.0fs (%.3fs/run)\n",
+                            done, nSeeds, rows, el, el/done);
+                std::fflush(stdout);
+            }
+        }
+    }
+    g_leafdiagActive = false;
+    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("wrote %lld leaf rows from %d runs in %.1fs\n", rows, nSeeds, wall);
+    std::printf("stratum fills (candidates seen):");
+    for (int st = 0; st < kLeafDiagStrata; ++st)
+        std::printf("  s%d=%lld", st, stratumSeen[st]);
+    std::printf("\n");
+}
+
+// ---------------------------------------------------------------------------
+// LEAFLREF mode: high-budget reference values for recorded leafdiag leaves.
+// Reads a leafdiag CSV, replays each recorded seed deterministically via
+// runFullRunOOC (same config + REPLAY_SIMS as the leafdiag run, so the
+// regenerated search produces the identical leaf states), re-captures the
+// recorded leaves by obsHash, and evaluates each with a FRESH high-budget
+// Searcher3. Within a decision group all reference searchers are reseeded
+// (rng + belief + particles) from one per-group CRN seed, giving PARTIALLY
+// shared determinization draws — the draw-pile shuffle prefix consumes a
+// state-dependent number of RNG draws, so the streams diverge after the
+// belief/particle prefix (partial CRN, not exact noise cancellation);
+// sibling ranking comparison still benefits from the shared prefix. The
+// reference value is s3.root mean evaluation (evaluationSum/simulationCount)
+// at the leaf — a high-budget Searcher3 estimate, NEVER ground truth; the
+// reference searcher runs with the same learned-leaf environment as the
+// leafdiag run (deployed STS_VNET at the configured alpha), so the reference
+// is NOT model-free (see combat-search.md "Leaf-state diagnostics"). See
+// docs/knowledge-base/.../combat-search.md (leafdiag/leafref). Output:
+// seed,fightIdx,decIdx,obsHash,referenceValue, budget,particleCount,crnSeed,
+// treeSize.
+// ---------------------------------------------------------------------------
+static thread_local struct {
+    int highBudgetSims = 3000;
+    int particleCount = 128;
+    std::ostringstream out;   // reference rows for the current seed (thread-local)
+    long long capturedCount = 0;   // recorded leaves actually re-captured (match-rate sanity)
+    long long recordedCount = 0;   // recorded leaves expected for the seed
+} t_lr;
+
+static void leafRefOnLeafQuery(const search::S3LeafDiagnostic &d) {
+    const LeafRefGroupKey key{t_ld.seed, t_ld.fightIdx, t_ld.decIdx};
+    auto it = t_ld.recorded.find(key);
+    if (it == t_ld.recorded.end()) return;
+    if (it->second.find(d.obsHash) == it->second.end()) return;
+    if (!t_ld.capturedSeen.insert(d.obsHash).second) return;   // one capture per obsHash per decision
+    t_ld.capturedLeaves.push_back(*d.bc);
+    ++t_lr.capturedCount;   // match-rate sanity counter
+}
+
+static void leafRefOnSearchComplete3(const BattleContext &,
+                                     const search::BattleScumSearcher3 &) {
+    const int dec = t_ld.decIdx;
+    ++t_ld.decIdx;
+    const LeafRefGroupKey key{t_ld.seed, t_ld.fightIdx, dec};
+    if (t_ld.recorded.find(key) == t_ld.recorded.end() || t_ld.capturedLeaves.empty()) {
+        t_ld.capturedLeaves.clear();
+        t_ld.capturedSeen.clear();
+        return;
+    }
+    // One CRN seed per decision group: every reference searcher in the group
+    // reseeds rng + belief + particles from it, giving PARTIALLY shared
+    // determinization draws. Belief::initial + prepareCRNParticles each
+    // std::shuffle the draw pile, consuming a state-dependent number of RNG
+    // draws (draw-pile size varies between sibling leaf states), so the
+    // streams diverge after that prefix — CRN is partial, not exact. The
+    // main replay searcher is NOT running while this fires (between
+    // decisions), and g_s3Crn stays untouched — the CRN here is explicit
+    // per-searcher reseeding, not the global warm-start path.
+    std::uint64_t gs = t_ld.seed;
+    gs ^= (std::uint64_t)(std::uint32_t)t_ld.fightIdx * 0x9e3779b97f4a7c15ULL;
+    gs ^= (std::uint64_t)(std::uint32_t)dec * 0xbf58476d1ce4e5b9ULL;
+    if (!gs) gs = 1;
+    search::g_onS3LeafQuery = nullptr;   // suppress the capture hook inside the reference searches
+    for (const auto &leaf : t_ld.capturedLeaves) {
+        search::BattleScumSearcher3 s3(leaf, 0, 0, t_lr.particleCount);
+        s3.rng.seed(gs);   // shared determinization PREFIX across the group (partial CRN, see above)
+        s3.belief = Belief::initial(leaf, t_lr.particleCount, s3.rng);
+        s3.prepareCRNParticles();
+        s3.searchToTotal(t_lr.highBudgetSims);
+        const double ref = s3.root.simulationCount > 0
+            ? s3.root.evaluationSum / s3.root.simulationCount
+            : std::numeric_limits<double>::quiet_NaN();
+        const std::uint64_t obsHash =
+            CombatObservation::fromBattleContext(leaf).visibleHash();
+        t_lr.out << t_ld.seed << ',' << t_ld.fightIdx << ',' << dec << ',' << obsHash << ','
+                 << ref << ',' << t_lr.highBudgetSims << ',' << t_lr.particleCount << ','
+                 << gs << ',' << s3.root.simulationCount << '\n';
+    }
+    search::g_onS3LeafQuery = leafRefOnLeafQuery;
+    t_ld.capturedLeaves.clear();
+    t_ld.capturedSeen.clear();
+}
+
+// Parse a leafdiag CSV into seed -> [(fightIdx, decIdx) -> recorded obsHash
+// set]; shared by the leafref and rollouttrace replay modes.
+static std::map<std::uint64_t, std::map<std::pair<int,int>, std::unordered_set<std::uint64_t>>>
+parseLeafDiagGroups(const std::string &inFile) {
+    std::ifstream in(inFile);
+    if (!in) { std::cerr << "leafref/rollouttrace: cannot open " << inFile << "\n"; return {}; }
+    std::string headerLine;
+    if (!std::getline(in, headerLine)) { std::cerr << "leafref/rollouttrace: empty CSV\n"; return {}; }
+    std::vector<std::string> cols;
+    {
+        std::istringstream hs(headerLine); std::string c;
+        while (std::getline(hs, c, ',')) cols.push_back(c);
+    }
+    const auto colIdx = [&](const char *name) -> int {
+        for (size_t i = 0; i < cols.size(); ++i) if (cols[i] == name) return (int)i;
+        return -1;
+    };
+    const int ciSeed = colIdx("seed"), ciFight = colIdx("fightIdx"),
+              ciDec = colIdx("decIdx"), ciObs = colIdx("obsHash");
+    if (ciSeed < 0 || ciFight < 0 || ciDec < 0 || ciObs < 0) {
+        std::cerr << "leafref/rollouttrace: leafdiag CSV missing "
+                     "seed/fightIdx/decIdx/obsHash columns\n";
+        return {};
+    }
+    std::map<std::uint64_t, std::map<std::pair<int,int>, std::unordered_set<std::uint64_t>>> groups;
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        std::istringstream ls(line); std::string tok;
+        std::vector<std::string> f;
+        while (std::getline(ls, tok, ',')) f.push_back(tok);
+        if ((int)f.size() <= std::max({ciSeed, ciFight, ciDec, ciObs})) continue;
+        const std::uint64_t seed = std::strtoull(f[ciSeed].c_str(), nullptr, 10);
+        const int fight = std::atoi(f[ciFight].c_str());
+        const int dec = std::atoi(f[ciDec].c_str());
+        const std::uint64_t obs = std::strtoull(f[ciObs].c_str(), nullptr, 10);
+        groups[seed][{fight, dec}].insert(obs);
+    }
+    return groups;
+}
+
+static void leafRef(const std::string &inFile, const std::string &outFile,
+                    int highBudgetSims, int nSeedsRef, int asc, int replaySims) {
+    // (a) parse the leafdiag CSV: seed -> [(fightIdx, decIdx) -> obsHash set]
+    auto groups = parseLeafDiagGroups(inFile);
+    if (groups.empty()) { std::cerr << "leafref: no recorded groups in " << inFile << "\n"; return; }
+
+    std::ofstream f(outFile);
+    if (!f) { std::cerr << "leafref: cannot open " << outFile << "\n"; return; }
+    f << "seed,fightIdx,decIdx,obsHash,referenceValue,budget,particleCount,crnSeed,treeSize\n";
+    f.flush();
+    std::cout << "leafref    " << groups.size() << " recorded seeds, "
+              << nSeedsRef << " to process, high-budget " << highBudgetSims
+              << " sims x " << t_lr.particleCount << " particles, replay sims " << replaySims
+              << "  -> " << outFile << "\n";
+    std::cout << "[leafref: replay must match the leafdiag run — SAME particles "
+                 "(STS_S3_PARTICLES), STS_VNET+alpha, OOC env arms, ascension; "
+                 "a mismatch shows up as a re-capture WARNING]\n";
+    if (highBudgetSims < replaySims)
+        std::cout << "[leafref WARNING: high-budget " << highBudgetSims
+                  << " < replay sims " << replaySims
+                  << " — reference budget should exceed the datagen budget]\n";
+
+    g_leafdiagActive = true;   // runFullRunOOC fight-context hooks
+    auto t0 = std::chrono::steady_clock::now();
+    long long refRows = 0; int done = 0;
+    int processed = 0;
+    const int nProcess = std::min(nSeedsRef, (int)groups.size());
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < nProcess; ++i) {
+        // deterministic seed selection: the i-th recorded seed in sorted order
+        std::uint64_t seed = 0;
+        #pragma omp critical
+        {
+            auto it = groups.begin();
+            std::advance(it, i);
+            seed = it->first;
+        }
+        const auto &grp = groups[seed];
+        // thread_local hook setup per worker (t_lr is thread_local too)
+        t_lr.highBudgetSims = highBudgetSims;
+        search::g_onS3LeafQuery = leafRefOnLeafQuery;
+        search::g_onSearchComplete3 = leafRefOnSearchComplete3;
+        t_ld.init(seed);
+        t_lr.capturedCount = 0;
+        t_lr.recordedCount = 0;
+        for (const auto &kv : grp) {
+            t_ld.recorded[{seed, kv.first.first, kv.first.second}] = kv.second;
+            t_lr.recordedCount += (long long)kv.second.size();
+        }
+        t_lr.out.str(""); t_lr.out.clear();
+        runFullRunOOC(seed, replaySims, asc, false, false);
+        const std::string out = t_lr.out.str();
+        search::g_onS3LeafQuery = nullptr;
+        search::g_onSearchComplete3 = nullptr;
+        #pragma omp critical
+        {
+            f << out;
+            f.flush();
+            refRows += std::count(out.begin(), out.end(), '\n');
+            if (t_lr.capturedCount < t_lr.recordedCount)
+                std::cout << "[leafref seed " << seed << " WARNING: re-captured "
+                          << t_lr.capturedCount << " of " << t_lr.recordedCount
+                          << " recorded leaves — replay config differs from the "
+                          << "leafdiag run (particles / STS_VNET+alpha / OOC env arms / "
+                          << "ascension must match)\n";
+            if (++done % 10 == 0) {
+                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+                std::printf("  %d/%d seeds, %lld reference rows, %.0fs (%.3fs/seed)\n",
+                            done, nSeedsRef, refRows, el, el/done);
+                std::fflush(stdout);
+            }
+        }
+        ++processed;
+    }
+    g_leafdiagActive = false;
+    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("wrote %lld reference rows from %d replayed seeds in %.1fs\n",
+                refRows, processed, wall);
+}
+
+// ---------------------------------------------------------------------------
+// ROLLOUTTRACE mode (Task 6 of the 2026-08-08 handover): actual-rollout state
+// sequences for delta-V smoothness diagnostics. Replays recorded leafdiag
+// decisions deterministically (same machinery as leafref), re-captures the
+// recorded leaves by obsHash, then runs ONE search-policy rollout from each
+// leaf INSIDE a BattleScumSearcher3 (search::g_onRolloutStep fires after every
+// executed rollout action, so the sequence is the actual rollout policy, not a
+// reconstructed approximation). Each row: one state of one trajectory, with
+// both model predictions. Output columns:
+//   seed,fightIdx,decIdx,obsHash,step,turn,curHp,maxHp,block,energy,strength,
+//   hand,draw,discard,monSumHp,monMaxHp,incomingDmg,isTerminal,
+//   endHp_pred,utilityR_pred
+// step 0 is the recorded leaf state itself (pre-rollout).
+// ---------------------------------------------------------------------------
+static thread_local struct {
+    std::ostringstream out;        // trace rows for the current seed (thread-local)
+    std::uint64_t seed = 0;
+    int fightIdx = -1, dec = -1;
+    std::uint64_t obsHash = 0;
+} t_rt;
+
+static void rolloutTraceWriteRow(const BattleContext &bc, int step, bool isTerminal) {
+    double eH = search::g_useVNet && search::g_combatVNet.loaded()
+        ? search::g_combatVNet.predict(bc) : std::numeric_limits<double>::quiet_NaN();
+    double uR = g_combatVNetDiag.loaded()
+        ? g_combatVNetDiag.predict(bc) : std::numeric_limits<double>::quiet_NaN();
+    int monSum = 0, monMax = 0;
+    for (int i = 0; i < bc.monsters.monsterCount; ++i)
+        if (bc.monsters.arr[i].curHp > 0) { monSum += bc.monsters.arr[i].curHp; monMax += bc.monsters.arr[i].maxHp; }
+    // incoming damage the player faces (same formula as the canonical
+    // combatExtractFeatures incomingDmg feature)
+    int incoming = 0;
+    for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+        const auto &mm = bc.monsters.arr[i];
+        if (mm.curHp <= 0 || !mm.isAttacking()) continue;
+        const auto di = mm.getMoveBaseDamage(bc);
+        incoming += mm.calculateDamageToPlayer(bc, di.damage) * di.attackCount;
+    }
+    t_rt.out << t_rt.seed << ',' << t_rt.fightIdx << ',' << t_rt.dec << ','
+             << t_rt.obsHash << ',' << step << ',' << bc.turn << ','
+             << bc.player.curHp << ',' << bc.player.maxHp << ',' << bc.player.block << ','
+             << bc.player.energy << ',' << bc.player.strength << ','
+             << bc.cards.cardsInHand << ',' << (int)bc.cards.drawPile.size() << ','
+             << (int)bc.cards.discardPile.size() << ',' << monSum << ',' << monMax << ','
+             << incoming << ',' << (isTerminal ? 1 : 0) << ','
+             << eH << ',' << uR << '\n';
+}
+
+static void rolloutTraceOnStep(const BattleContext &bc, int steps) {
+    rolloutTraceWriteRow(bc, steps, bc.outcome != Outcome::UNDECIDED);
+}
+
+static void rolloutTraceOnSearchComplete3(const BattleContext &,
+                                          const search::BattleScumSearcher3 &) {
+    const int dec = t_ld.decIdx;
+    ++t_ld.decIdx;
+    if (t_ld.recorded.find({t_ld.seed, t_ld.fightIdx, dec}) == t_ld.recorded.end()
+        || t_ld.capturedLeaves.empty()) {
+        t_ld.capturedLeaves.clear();
+        t_ld.capturedSeen.clear();
+        return;
+    }
+    std::uint64_t gs = t_ld.seed;
+    gs ^= (std::uint64_t)(std::uint32_t)t_ld.fightIdx * 0x9e3779b97f4a7c15ULL;
+    gs ^= (std::uint64_t)(std::uint32_t)dec * 0xbf58476d1ce4e5b9ULL;
+    if (!gs) gs = 1;
+    search::g_onS3LeafQuery = nullptr;   // suppress the capture hook inside the trace rollouts
+    for (const auto &leaf : t_ld.capturedLeaves) {
+        t_rt.seed = t_ld.seed; t_rt.fightIdx = t_ld.fightIdx; t_rt.dec = dec;
+        t_rt.obsHash = CombatObservation::fromBattleContext(leaf).visibleHash();
+        rolloutTraceWriteRow(leaf, 0, false);                 // step 0: the leaf state itself
+        search::BattleScumSearcher3 s3(leaf, 0, 0, 64);
+        s3.rng.seed(gs);
+        search::g_onRolloutStep = rolloutTraceOnStep;
+        BattleContext sc = leaf;
+        std::vector<search::Action> stack;
+        s3.playoutRandom(sc, stack);
+        search::g_onRolloutStep = nullptr;
+    }
+    search::g_onS3LeafQuery = leafRefOnLeafQuery;
+    t_ld.capturedLeaves.clear();
+    t_ld.capturedSeen.clear();
+}
+
+static void rolloutTrace(const std::string &inFile, const std::string &outFile,
+                         int nSeedsRef, int asc, int replaySims) {
+    auto groups = parseLeafDiagGroups(inFile);
+    if (groups.empty()) { std::cerr << "rollouttrace: no recorded groups in " << inFile << "\n"; return; }
+    std::ofstream f(outFile);
+    if (!f) { std::cerr << "rollouttrace: cannot open " << outFile << "\n"; return; }
+    f << "seed,fightIdx,decIdx,obsHash,step,turn,curHp,maxHp,block,energy,"
+         "strength,hand,draw,discard,monSumHp,monMaxHp,incomingDmg,isTerminal,"
+         "endHp_pred,utilityR_pred\n";
+    f.flush();
+    std::cout << "rollouttrace " << groups.size() << " recorded seeds, " << nSeedsRef
+              << " to process, replay sims " << replaySims << "  -> " << outFile << "\n";
+    std::cout << "[rollouttrace: replay must match the leafdiag run — SAME particles "
+                 "(STS_S3_PARTICLES), STS_VNET+alpha, OOC env arms, ascension; "
+                 "a mismatch shows up as a re-capture WARNING]\n";
+    if (!g_combatVNetDiag.loaded())
+        std::cout << "[rollouttrace WARNING: no STS_DIAG_VNET2 secondary model loaded; "
+                     "utilityR_pred will be NaN]\n";
+
+    g_leafdiagActive = true;
+    auto t0 = std::chrono::steady_clock::now();
+    long long rows = 0; int done = 0;
+    const int nProcess = std::min(nSeedsRef, (int)groups.size());
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < nProcess; ++i) {
+        std::uint64_t seed = 0;
+        #pragma omp critical
+        {
+            auto it = groups.begin();
+            std::advance(it, i);
+            seed = it->first;
+        }
+        const auto &grp = groups[seed];
+        search::g_onS3LeafQuery = leafRefOnLeafQuery;
+        search::g_onSearchComplete3 = rolloutTraceOnSearchComplete3;
+        t_ld.init(seed);
+        t_lr.capturedCount = 0;
+        t_lr.recordedCount = 0;
+        for (const auto &kv : grp) {
+            t_ld.recorded[{seed, kv.first.first, kv.first.second}] = kv.second;
+            t_lr.recordedCount += (long long)kv.second.size();
+        }
+        t_rt.out.str(""); t_rt.out.clear();
+        runFullRunOOC(seed, replaySims, asc, false, false);
+        const std::string out = t_rt.out.str();
+        search::g_onS3LeafQuery = nullptr;
+        search::g_onSearchComplete3 = nullptr;
+        #pragma omp critical
+        {
+            f << out;
+            f.flush();
+            rows += std::count(out.begin(), out.end(), '\n');
+            if (t_lr.capturedCount < t_lr.recordedCount)
+                std::cout << "[rollouttrace seed " << seed << " WARNING: re-captured "
+                          << t_lr.capturedCount << " of " << t_lr.recordedCount
+                          << " recorded leaves — replay config differs from the "
+                          << "leafdiag run (particles / STS_VNET+alpha / OOC env arms / "
+                          << "ascension must match)\n";
+            if (++done % 10 == 0) {
+                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+                std::printf("  %d/%d seeds, %lld trace rows, %.0fs (%.3fs/seed)\n",
+                            done, nProcess, rows, el, el/done);
+                std::fflush(stdout);
+            }
+        }
+    }
+    g_leafdiagActive = false;
+    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("wrote %lld trace rows from %d replayed seeds in %.1fs\n", rows, nProcess, wall);
+}
+
+// ---------------------------------------------------------------------------
 // STRATEGIC data generation: one CSV row per LEGAL action at each OOC decision,
 // with full rich state, structured candidate fields, a chosen flag, and the
 // terminal outcome. Feeds Phase 5 run-level model training.
@@ -8489,6 +9104,28 @@ int main(int argc, char **argv) {
                          "(continuing without)]\n";
         }
     }
+    if (const char *d = std::getenv("STS_DIAG_VNET2")) {   // secondary diagnostic vnet (leafdiag/leafref only)
+        std::string path = d;
+        if (g_combatVNetDiag.load(path)) {
+            std::cout << "[DIAG V_combat #2 ON: " << path << ", "
+                      << g_combatVNetDiag.description()
+                      << " (leafdiag/leafref diagnostics only; never used by the search)]\n";
+        } else {
+            std::cout << "[DIAG V_combat #2 load FAILED: " << path
+                         << " (leafdiag reports NaN for secondary predictions)]\n";
+        }
+    }
+    if (const char *a = std::getenv("STS_DIAG_VNET2_ALPHA")) {   // reporting-only blend for the secondary model
+        std::cout << "[DIAG V_combat #2 alpha = " << std::atof(a) << " (reporting only)]\n";
+    }
+    if (const char *d = std::getenv("STS_LEAFDIAG_PER_STRATUM")) {   // leafdiag reservoir capacity per stratum per seed
+        const int n = std::atoi(d);
+        if (n >= 1) g_ldPerStratum = n;
+    }
+    if (const char *d = std::getenv("STS_LEAFDIAG_DEEP_DEPTH")) {    // leafdiag deep-tree stratum threshold
+        const int n = std::atoi(d);
+        if (n >= 1) g_ldDeepDepth = n;
+    }
     if (const char *d = std::getenv("STS_DIST_VNET")) {    // distributional V_combat (transformer, 5-head)
         std::string path = d;
         if (search::g_combatDistVNet.load(path)) {
@@ -9099,6 +9736,64 @@ int main(int argc, char **argv) {
         search::g_useSearcher3 = true;
         std::cout << "[fairgen forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
         fairGen(nSeeds, sims, asc, eps, vout, pout, oout, seedOff);
+
+    } else if (mode == "leafdiag") {      // Searcher3 leaf-state diagnostic dataset (handover 2026-08-08)
+        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 4;
+        int sims      = argc > 3 ? std::stoi(argv[3]) : 300;
+        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
+        std::string out = argc > 5 ? argv[5] : "build/leafdiag.csv";
+        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
+        // Same forced regime as fairgen: the dataset must come from the deployed
+        // fair-Searcher3 search (leaf states only exist there).
+        search::g_fairPlay = true;
+        search::g_useSearcher3 = true;
+        std::cout << "[leafdiag forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
+        leafDiag(nSeeds, sims, asc, out, seedOff);
+
+    } else if (mode == "leafref") {       // high-budget reference values for recorded leafdiag leaves
+        if (argc < 5) {
+            std::cerr << "usage: one_combat leafref INFILE OUTFILE HIGH_BUDGET_SIMS NSEEDSREF ASC [REPLAY_SIMS]\n"
+                         "  REPLAY_SIMS (default 300) must match the sims of the leafdiag run.\n"
+                         "  The whole replay config must match the leafdiag run so the identical\n"
+                         "  leaf states regenerate: SAME STS_S3_PARTICLES, STS_VNET+alpha,\n"
+                         "  OOC env arms, and ascension. Any mismatch shows as a re-capture\n"
+                         "  WARNING (re-captured < recorded leaves).\n";
+            return 2;
+        }
+        {
+            std::string inFile   = argv[2];
+            std::string outFile  = argv[3];
+            int highBudgetSims   = std::stoi(argv[4]);
+            int nSeedsRef        = argc > 5 ? std::stoi(argv[5]) : 4;
+            int asc              = argc > 6 ? std::stoi(argv[6]) : 0;
+            int replaySims       = argc > 7 ? std::stoi(argv[7]) : 300;
+            search::g_fairPlay = true;
+            search::g_useSearcher3 = true;
+            std::cout << "[leafref forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
+            leafRef(inFile, outFile, highBudgetSims, nSeedsRef, asc, replaySims);
+        }
+
+    } else if (mode == "rollouttrace") {   // actual-rollout state sequences for delta-V smoothness (Task 6)
+        if (argc < 4) {
+            std::cerr << "usage: one_combat rollouttrace INFILE OUTFILE NSEEDSREF ASC [REPLAY_SIMS]\n"
+                         "  REPLAY_SIMS (default 300) must match the sims of the leafdiag run.\n"
+                         "  The whole replay config must match the leafdiag run so the identical\n"
+                         "  leaf states regenerate: SAME STS_S3_PARTICLES, STS_VNET+alpha,\n"
+                         "  OOC env arms, and ascension. Any mismatch shows as a re-capture\n"
+                         "  WARNING (re-captured < recorded leaves).\n";
+            return 2;
+        }
+        {
+            std::string inFile  = argv[2];
+            std::string outFile = argv[3];
+            int nSeedsRef       = argc > 4 ? std::stoi(argv[4]) : 4;
+            int asc             = argc > 5 ? std::stoi(argv[5]) : 0;
+            int replaySims      = argc > 6 ? std::stoi(argv[6]) : 300;
+            search::g_fairPlay = true;
+            search::g_useSearcher3 = true;
+            std::cout << "[rollouttrace forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
+            rolloutTrace(inFile, outFile, nSeedsRef, asc, replaySims);
+        }
 
     } else if (mode == "strategicgen") {  // Phase 5: one row per OOC decision, full rich state
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 500;

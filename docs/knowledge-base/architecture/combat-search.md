@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-07 against the current working tree (winrate wave §124-§126: baseline re-measurement, S3_EXPAND, vnet default; §133 rollout-leaf estimators STS_S3_ROLLOUT_K / STS_S3_ROLLOUT_TURN_STOP opt-in; §134 same-recipe direct utility-R leaf falsified at α0.1, paired-analysis/vnettest hardened).
+Last verified: 2026-08-08 against the current working tree (leafdiag/leafref/rollouttrace leaf-state diagnostics: `g_onS3LeafQuery`/`g_onRolloutStep` hooks, `STS_DIAG_VNET2`, leaf-query dataset + high-budget CRN-paired references + rollout traces; §126 vnet default unchanged, §133/§134 candidates stay rejected).
 
 ## Purpose
 
@@ -256,6 +256,98 @@ differs" reading of §132. Offline val MAE vs R was 9.73 (the quantile-R got
 tree states worse than the deployed endHp leaf at α0.1. Env stays opt-in;
 `VCOMBAT_TARGET` is a trainer-side option only (no runtime switch). Decision
 log `2026-08-07-experiment-132-133-audit.md`.
+
+### Leaf-state diagnostics (leafdiag / leafref / rollouttrace, 2026-08-08)
+
+Why the §126 end-HP leaf beats the §134 direct utility-R leaf online despite
+fitting its target worse offline is an open diagnostic question (handover
+2026-08-08). Three opt-in modes measure how both models behave on ACTUAL
+Searcher3 leaf/candidate states instead of training on new labels:
+
+- `search::g_onS3LeafQuery` (`BattleScumSearcher3.h`, thread_local, nullptr by
+  default) fires inside `BattleScumSearcher3::step` at the leaf-expansion
+  blend site — the same place the learned leaf is blended with the
+  multi-rollout outcome, immediately before `backpropagate`. The
+  `S3LeafDiagnostic` record carries the pre-rollout leaf state (const
+  `BattleContext*`, valid only during the callback), tree depth, the leaf
+  state's `visibleHash` (computed fresh — `cur` is the expanded PARENT at
+  that point, so `cur->obsHash` predates the committed action and is NOT the
+  leaf identity), the learned leaf prediction used by the search (NaN when no
+  learned leaf fired), the raw pre-blend rollout outcome, and the blended
+  evaluation. Unset = byte-identical behavior (the leaf hash is computed only
+  inside the guard). The callback must not mutate the state or consume search
+  RNG; the one_combat handlers use their own per-seed RNG.
+- `one_combat leafdiag NSEEDS SIMS ASC OUTFILE [SEEDOFFSET]` forces
+  `STS_FAIR=1 STS_SEARCHER3=1` and records a per-stratum reservoir (10 strata:
+  3 player-HP bands × 3 encounter difficulties + 1 dedicated deep-tree
+  stratum, `STS_LEAFDIAG_PER_STRATUM` capacity per seed, default 50,
+  `STS_LEAFDIAG_DEEP_DEPTH` threshold, default 20) of leaf states with the
+  canonical combat features (combatExtractFeatures), both model predictions
+  (deployed `STS_VNET`/default §126 end-HP vnet + a secondary diagnostic model
+  via `STS_DIAG_VNET2` — never read by the search), raw/blended rollout evals,
+  provenance (seed, fightIdx, decIdx, floor, act, `encounterName`, treeDepth,
+  obsHash, nLegalActions, stratum), and per-fight labels (fightWon,
+  fightEndHp). `encounterName` is the UPPER_CASE enum NAME
+  (`monsterEncounterEnumNames[(int)bc.encounter]`); the canonical feature block
+  separately carries the numeric `encounter` and `turn` encodings, so those
+  two columns are NOT repeated in the provenance prefix (duplicate column
+  names would shadow each other under Python `csv.DictReader`). Sampling is
+  deterministic per seed (reservoir RNG seeded from the run seed only), so the
+  collected leaf SET is reproducible. Rows are labeled at battle exit via
+  guarded state inside `runFullRunOOC` (`g_leafdiagActive`). Do NOT enable the
+  probing OOC arms (STS_OOC_ACTION_NN, STS_BOSS_DRAFT, M1/M2 path gates,
+  STS_DATAGEN_GATES, …): their inner probe battles fire the leaf hook and
+  pollute the dataset. Note: the 10 capture strata do NOT include a dedicated
+  model-disagreement / close-decision stratum — the raw |endHp − utilityR|
+  difference is dominated by the +50-on-win scale offset, so a raw-difference
+  stratum would be nearly constant; disagreement/close-decision subsets are
+  instead stratified POST-HOC in `tools/leaf_ranking.py` (every sampled row
+  carries both predictions).
+- `one_combat leafref INFILE OUTFILE HIGH_BUDGET_SIMS NSEEDSREF ASC
+  [REPLAY_SIMS]` reads a leafdiag CSV and, for each recorded seed, replays the
+  run deterministically (same policy + REPLAY_SIMS as the leafdiag run — the
+  search regenerates the identical leaf states, matched by obsHash), then
+  evaluates each recorded leaf with a FRESH high-budget Searcher3
+  (`searchToTotal(HIGH_BUDGET_SIMS)`). Within a decision group all reference
+  searchers are reseeded (rng + belief + particles) from one per-group CRN
+  seed, giving PARTIALLY shared determinization draws — `Belief::initial` and
+  `prepareCRNParticles` each `std::shuffle` the draw pile, consuming a
+  state-dependent number of RNG draws, so the streams diverge after that
+  prefix (partial CRN, not exact noise cancellation). The reference value is
+  `root.evaluationSum/root.simulationCount` at the leaf — a high-budget
+  Searcher3 estimate, NEVER ground truth (reported as `referenceValue`).
+  `g_s3Crn` is left untouched (the CRN here is explicit per-searcher
+  reseeding, not the global warm-start path). The reference searcher runs
+  with the SAME learned-leaf environment as the leafdiag run (deployed
+  `STS_VNET` at the configured alpha), so the reference is NOT model-free —
+  the end-HP model is blended into the reference values at the configured
+  alpha. Before drawing the central verdict, run the sensitivity checks
+  suggested by `tools/leaf_ranking.py` docs: rank against `rawRolloutEval`
+  (no leafref file) or produce a model-free reference (run leafref with
+  `STS_VNET` pointed at a missing path so the load fails and the vnet stays
+  off). Replay config must match the leafdiag run (particles, `STS_VNET`+alpha,
+  OOC env arms, ascension); a mismatch shows up as a re-capture WARNING
+  (re-captured < recorded leaves) and silently missing join keys.
+- `one_combat rollouttrace INFILE OUTFILE NSEEDSREF ASC [REPLAY_SIMS]` — Task
+  6: replays recorded decisions, re-captures the recorded leaves, and runs ONE
+  search-policy rollout from each leaf inside `BattleScumSearcher3`
+  (`search::g_onRolloutStep` fires after every executed rollout action, so the
+  state sequence is the actual rollout policy, not a reconstruction). Each row
+  is one state of one trajectory with both model predictions; `tools/
+  leaf_smoothness.py` computes per-model delta-V statistics. Same
+  config-match requirement as leafref (particles, `STS_VNET`+alpha, OOC env
+  arms, ascension; a mismatch shows as a re-capture WARNING).
+- Analysis tools: `tools/leaf_ranking.py` (within-group pairwise ranking
+  accuracy, top-1, regret, MAE/RMSE/correlation, stratified by HP band /
+  fight outcome / act / difficulty / turn / tree depth / legal-action count /
+  model disagreement / OOD flag, deterministic bootstrap CIs),
+  `tools/leaf_distribution_shift.py` (per-feature KS + a held-out logistic
+  classifier separating combatgen states from Searcher3 leaf states, ROC-AUC;
+  `--write-ood` emits per-row ood_prob flags),
+  `tools/leaf_split_check.py` (fight-level vs seed-level validation-split
+  sensitivity for both targets, §134 recipe), `tools/leaf_smoothness.py`
+  (delta-V smoothness/shaping). Env `STS_DIAG_VNET2` loads the secondary
+  diagnostic model; `STS_DIAG_VNET2_ALPHA` is reporting-only.
 
 ### Context-adaptive rollout caps (STS_ROLLOUT_CAPS, opt-in — falsified)
 
@@ -674,7 +766,11 @@ PUCT-with-zero-priors quirk.
   `collectFrontierStats`, `searchToTotalRootStable`, `onlyLegalAction`
 - `src/sim/search/BattleScumSearcher3.cpp::step`, `computeEdgePriors`,
   `multiRollout` (STS_S3_ROLLOUT_K), `playoutRandom` (incl.
-  STS_S3_ROLLOUT_TURN_STOP), `evaluateTerminal`, `g_terminalBonus`
+  STS_S3_ROLLOUT_TURN_STOP and `g_onRolloutStep`), `evaluateTerminal`,
+  `g_terminalBonus`, `g_onS3LeafQuery` (leafdiag hook at the blend site)
+- `apps/one_combat.cpp::leafDiag`, `leafRef`, `rolloutTrace` modes;
+  `tools/leaf_ranking.py`, `tools/leaf_distribution_shift.py`,
+  `tools/leaf_split_check.py`, `tools/leaf_smoothness.py`
 - `src/sim/search/Action.cpp::enumerateCardSelectActions` (canonical legal
   CARD_SELECT action set; S2/S3 delegate to it), `Action.cpp::isValidAction`
 - `apps/test.cpp::testCardSelectParity` (command `cardselect_parity`)
