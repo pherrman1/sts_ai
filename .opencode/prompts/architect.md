@@ -81,6 +81,12 @@ shown to the user at the start of the cycle.
 Rules for verification:
 
 - argv MUST be an argument array, never a shell command string.
+- argv[0] must be one of the allowed executables: cmake, ctest, git,
+  python, python3, pytest, or a repository-relative ./executable. Do not
+  use standalone grep, find, sed, awk, or other shell tools.
+- git checks must use an allowed subcommand: status, diff, log, show,
+  grep, blame, rev-parse. Use `git grep <pattern> <file>` instead of
+  standalone grep.
 - Never use shell operators such as &&, ||, |, >, <, ;.
 - Environment variables belong in env, not argv.
 - cwd must be repository-relative.

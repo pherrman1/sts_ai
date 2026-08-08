@@ -101,6 +101,13 @@ marker and does not claim byte-identity.
   escalation classification, recovery markers, ELI5 artifacts, and
   experiment/decision-log requirements. `sts-safety.ts` is defense in depth
   only.
+- Plan verification argv[0] must be one of `ALLOWED_VERIFICATION_EXECUTABLES`
+  (cmake, ctest, git, python, python3, pytest) or a repository-relative
+  `./executable`; git checks are limited to
+  `ALLOWED_GIT_VERIFICATION_SUBCOMMANDS`. Both architect prompts enumerate
+  this allowlist so plans comply at generation time
+  (`BackendSafetySyncTests::test_architect_prompt_documents_verification_allowlist`
+  keeps prompt and code in sync).
 - `--backend pi` children always pass `--approve` and explicit `--extension`
   paths for `sts-tools.ts` and `sts-safety.ts`; Pi dedupes these with
   trust-discovery paths.

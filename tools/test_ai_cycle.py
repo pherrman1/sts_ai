@@ -1750,6 +1750,22 @@ class PiBackendCycleTests(unittest.TestCase):
 
 
 class BackendSafetySyncTests(unittest.TestCase):
+    def test_architect_prompt_documents_verification_allowlist(self) -> None:
+        allowed = "cmake, ctest, git, python, python3, pytest"
+        for relative in (".pi/agents/architect.md",
+                         ".opencode/prompts/architect.md"):
+            body = (ai_cycle.ROOT / relative).read_text(encoding="utf-8")
+            # Normalize so the enumeration survives markdown line wrapping.
+            normalized = " ".join(body.split())
+            with self.subTest(path=relative):
+                self.assertIn(allowed, normalized)
+                self.assertIn("git grep", normalized)
+                self.assertIn("repository-relative ./executable", normalized)
+        self.assertEqual(
+            {"cmake", "ctest", "git", "python", "python3", "pytest"},
+            ai_cycle.ALLOWED_VERIFICATION_EXECUTABLES,
+        )
+
     def test_pi_safety_ts_seed_tables_match_python(self) -> None:
         source = (ai_cycle.ROOT / ".pi/extensions/sts-safety.ts").read_text(
             encoding="utf-8"
