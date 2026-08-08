@@ -10,8 +10,10 @@ run-level choices combine C++ policy code, learned models, and experimental
 counterfactual evaluators. The active integration executable is `one_combat`
 (`apps/one_combat.cpp::main`).
 
-Before changing a subsystem, read the
-[knowledge-base index](docs/knowledge-base/README.md) and its linked page.
+Before changing a subsystem, read
+[docs/knowledge-base/CODE_MAP.md](docs/knowledge-base/CODE_MAP.md) for fast
+routing, then the [knowledge-base index](docs/knowledge-base/README.md) and
+its linked page.
 Current benchmark qualification lives only in
 [`evaluation/current-baselines.md`](docs/knowledge-base/evaluation/current-baselines.md).
 Chronological experiment evidence and decisions live in `EXPERIMENTS.md`.
@@ -61,6 +63,34 @@ file is missing from the tree.
 | `build/` | Mixed ignored build output and tracked model artifacts; some are default, others experimental. |
 | `docs/knowledge-base/` | Maintained technical knowledge. |
 | `EXPERIMENTS.md` | Chronological experiment ledger. |
+
+## Agent context and large-file navigation
+
+Agents must minimise how much of the repository they read before producing
+useful work. These rules apply to all agent sessions unless a specific task
+geninely requires broader inspection.
+
+- Read `docs/knowledge-base/CODE_MAP.md` and the relevant maintained KB page
+  before broad repository search. The code map is the first routing document.
+- Do not read large source or history files from beginning to end unless
+  whole-file understanding is genuinely required by the task.
+- Search for a symbol, mode, experiment number, keyword, caller, artifact
+  name, or date first, then read a focused region around the result.
+- For large source files, read a focused region around the relevant symbol
+  or call site and expand only when dependencies require it.
+- For `EXPERIMENTS.md`, search first and read only the relevant sections.
+- When a task crosses subsystem boundaries, identify those boundaries first
+  rather than reading the entire integration driver.
+- Do not inspect generated or model artifacts under `build/` unless the
+  task explicitly depends on them.
+- Ignore `docs/archive/`, `.ai/`, ignored experiment buffers, generated
+  outputs, and similar historical or session data unless explicitly relevant.
+- Reviewers may expand scope when needed to prove semantics, but should
+  still prefer targeted reads over full-file audits.
+
+These rules are not arbitrary line-count caps. They are routing guidance to
+reduce latency and token use. When the cheapest available check can prove a
+property with a targeted read, prefer it over a broad sweep.
 
 ## Build and focused checks
 

@@ -1,17 +1,23 @@
 # Issue 45: eval/train hygiene batch — stale defaults, import safety, misc
 
-- **Status:** open
+- **Status:** open (one sub-item resolved as not-a-bug, see Resolution)
 - **Tier:** Low
-- **Last verified:** 2026-08-05
+- **Last verified:** 2026-08-08
 - **Source:** code review 2026-08-05
 
 ## Symptom (batch)
 
 - `train_strategic.py:38` defaults to `build/strategic_200.csv` while the tok
-  trainer and `probe_cpsi.py` default to `build/strategic_tierb.csv`;
-  `fit_vwin_calibration.py:19-21` writes `build/strategic_qwin_cal.csv` while
-  `check_vwin_calibration.py:34-35` defaults to the uncalibrated
-  `build/strategic_qwin.csv` — consumers can silently check pre-calibration data.
+  trainer and `probe_cpsi.py` default to `build/strategic_tierb.csv`.
+  ~~`fit_vwin_calibration.py:19-21` writes `build/strategic_qwin_cal.csv` while
+  `check_vwin_calibration.py:42` defaults to the uncalibrated
+  `build/strategic_qwin.csv` — consumers can silently check pre-calibration
+  data.~~ **Resolved 2026-08-08 as not-a-bug:** `check_vwin_calibration.py`
+  keeps only terminal chosen rows (`labelBootstrap==0`, `chosen==1`), reads
+  only `labelBootstrap`/`won`/`chosen` plus the state block, and never reads
+  `labelWon` — the only column `fit_vwin_calibration.py` modifies, and only on
+  censored rows (`labelBootstrap==1`). Terminal rows are value-identical in
+  both files, so the checker's output does not depend on the CSV path.
 - `train_strategic.py` has no `if __name__ == "__main__"` guard (import-unsafe).
 - `train_combat_cpsi.py:89`: `STRAT_EPOCHS` overrides `CPSI_EPOCHS` (env
   namespace collision).
@@ -32,8 +38,14 @@
 ## Why it matters
 
 Individually minor; collectively they are silent footguns (wrong CSV checked,
-wrong epoch knob, wrong val filter) that have already cost one wrong headline
-per `check_vwin_calibration`'s uncalibrated default (§94-96 context).
+wrong epoch knob, wrong val filter). Note: the "wrong headline" in the
+§94-96 context was **not** caused by `check_vwin_calibration`'s CSV default —
+EXPERIMENTS.md §94/§95 record that the false Brier 0.232 / max-decile 0.42
+headline came from a checker bug (base_score treated as a probability added
+directly to leaf margins instead of converted to logit space, as the C++
+`WinNet::predict` does), caught and corrected by the `parity_vwin.py` /
+`one_combat winnettest` parity check. See decision log
+`2026-08-08-check-vwin-default-resolution.md`.
 
 ## Candidate fix direction
 
@@ -50,3 +62,14 @@ fix labels, add `no_grad`, guard the float32 re-read.
 ## Resolution
 
 Open — minor batch; no experiment rerun required.
+
+Sub-item **resolved 2026-08-08 as not-a-bug** (no code change): the
+`check_vwin_calibration.py` default CSV is correct and must not be changed to
+`build/strategic_qwin_cal.csv`. The checker audits V_win calibration on
+terminal chosen rows against the live run's terminal outcome `won`; the
+calibration map only alters `labelWon` on censored (`labelBootstrap==1`)
+rows, which the checker excludes. Terminal rows are value-identical between
+`strategic_qwin.csv` and `strategic_qwin_cal.csv`, so switching the default
+would be a no-op that misleadingly implies the script depends on the
+calibrated artifact. The remaining sub-items (trainer defaults, `__main__`
+guard, `STRAT_EPOCHS` collision, val-filter hardcode, misc) stay open.

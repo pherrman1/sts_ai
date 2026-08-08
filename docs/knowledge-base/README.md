@@ -7,6 +7,12 @@ Code and executable behavior remain authoritative; `EXPERIMENTS.md` retains
 chronological evidence; `README.md` remains human-facing; and `AGENTS.md`
 remains the coding-agent operating contract.
 
+## Fast routing
+
+Start with the [code map](CODE_MAP.md) before reading subsystem pages or
+searching the repository. It maps topics to primary files, key symbols, and
+the relevant knowledge-base page.
+
 ## Reading paths
 
 For architecture:

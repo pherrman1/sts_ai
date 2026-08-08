@@ -6025,3 +6025,35 @@ extFight*/emElites/emFights parity-excluded) and
   `tools/train_value_mixture.py` (new; default single-CSV path of
   `train_value_combat.py` is untouched and byte-identical). Decision log:
   `2026-08-08-covariate-shift-mixture.md`.
+
+## §138 Quick partial-data tok retrain + 64-seed feel-run (5.7.3 interim, 2026-08-08, local — INFORMAL smoke, NOT the 5.7.3 gate)
+
+- **What:** while the 3×500-seed GCP datagen (Phase 1) is still running, a
+  snapshot of chunk 1 (`build/sp_300000_partial.csv`, 160,276 rows / 302 seeds,
+  seeds 300000–3003XX) was pulled and used for a quick V4-token-net retrain and
+  a 64-seed paired feel-run. Purpose: exercise the full train/export/gate chain
+  end-to-end early; NOT a verdict on 5.7.3.
+- **Train (local GPU, .venv, torch 2.5.1+cu121, rung 4, 40 epochs, defaults):**
+  `train_strategic_tok.py build/sp_300000_partial.csv build/tok_sp_partial.pt`
+  → held-out (31,813 rows / 7,910 groups): `val_pol_ce` 0.559, `policy_top1`
+  0.754, `q_top1` 0.288, `margin` 4.75, `value_mae` 4.00. Deployed
+  `ooc_strategic_tok_final` metrics for reference (different val split, NOT
+  comparable): `val_pol_ce` 0.486, `policy_top1` 0.793, `q_top1` 0.290,
+  `margin` 10.32, `value_mae` 10.18. Export:
+  `export_strategic_tok.py build/tok_sp_partial.pt.pt
+  selfplay/models/ooc_strategic_tok_sp_partial.native` — 32/32 parity checks.
+- **64-seed paired feel-run** (seeds 126700–126763, asc 0, 1k sims, fair S3
+  −belief−chain, 64p, 12 threads, full V4 gate stack, `STS_OOC_STRATEGIC_MARGIN=1.0`):
+  control `STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`
+  vs candidate `.../ooc_strategic_tok_sp_partial.native`:
+  **deployed 54.7% vs partial 28.1% wins, Δ −26.6pp, 95% CI [−42.2, −10.9]**;
+  floor 44.5 vs 39.5 (Δ −5.1 [−8.1, −2.1]); HP end 30.1 vs 15.3;
+  discordant 29/64. Runtime ~4.5 min total (bestbench ~2.4s/seed wall @12t).
+  CSVs: `build/tok_cmp_{final,sp}_64.csv`; `paired_analysis.py` strict.
+- **Interpretation (informal):** the partial model is clearly worse online, but
+  it trained on ~20% of the planned corpus (underfitting expected) and the
+  plan's §62/§100/§127/§129 pattern (offline gains do not transfer) is
+  consistent. This run does NOT close 5.7.3 — the gate requires the same-recipe
+  control (old corpus) vs the full 1500-seed candidate + 256-seed paired gate
+  + second confirmation block. No default change; deployed artifact untouched.
+- **Decision log:** `2026-08-08-selfplay-relabeling.md` (addendum).

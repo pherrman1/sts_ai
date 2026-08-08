@@ -198,3 +198,11 @@ logs true against the working tree.
   committed.
 - Status: Phase 0 verification-complete on the serial code the GCP datagen
   will use. Phases 1–3 remain the manual GCP follow-up.
+
+## Addendum (same day) — §138 quick partial-data feel-run
+
+A 160k-row chunk-1 snapshot was used for a quick V4-tok retrain + 64-seed
+paired feel-run (recorded EXPERIMENTS.md §138): deployed 54.7% vs partial
+28.1% (Δ −26.6pp, CI excludes zero). Informal only — the candidate used ~20%
+of the planned corpus; the 5.7.3 verdict still requires the same-recipe
+control vs the full 1500-seed candidate plus the 256-seed paired gate.

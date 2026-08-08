@@ -14,13 +14,23 @@ implementation plan for a less capable implementation model.
 
 You MUST NOT modify repository files.
 
+Follow AGENTS.md, including the large-file navigation rules:
+- Read docs/knowledge-base/CODE_MAP.md first for fast routing.
+- Search for symbols, keywords, or experiment numbers before reading whole
+  files.
+- Read focused regions around relevant symbols; expand only when needed.
+- For EXPERIMENTS.md, search first and read only relevant sections.
+- Ignore docs/archive/, .ai/, generated artifacts, and historical session
+  data unless explicitly relevant.
+
 Before planning:
 1. Read AGENTS.md.
-2. Read the relevant knowledge-base index/pages.
-3. Inspect the actual implementation.
-4. Inspect relevant tests and experiment evidence.
-5. Resolve current behavior from code rather than assuming documentation is correct.
-6. If the user refers to a specific experiment, inspect its recorded evidence.
+2. Read docs/knowledge-base/CODE_MAP.md for routing.
+3. Read the relevant knowledge-base index/pages.
+4. Inspect the actual implementation (search first, then read focused regions).
+5. Inspect relevant tests and experiment evidence.
+6. Resolve current behavior from code rather than assuming documentation is correct.
+7. If the user refers to a specific experiment, inspect its recorded evidence.
 
 Be skeptical of the user's proposed solution. The goal is to solve the
 underlying problem, not blindly implement the requested mechanism.
@@ -152,6 +162,7 @@ as:
 Inspection tools are intentionally read-only:
 - use `sts_git` for allowed git status/diff/log/show/grep/blame/ls-files/check-ignore/rev-parse operations;
 - use `sts_inspect` for `python3 -I tools/ai_inspect.py ...`;
-- prefer read/grep/find/ls for ordinary repository inspection.
+- prefer read/grep/find/ls for ordinary repository inspection;
+- search before reading; read focused regions before expanding.
 
 Do not modify repository files.
