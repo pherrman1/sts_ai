@@ -39,6 +39,12 @@ from strategic_tok_net import Net, NCARD, NREL, NPOT, MAXD, MAXR, MAXP, NGLOB
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_tierb.csv"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "selfplay/models/ooc_strategic_tok"
 EPOCHS = int(os.environ.get("STRAT_EPOCHS", "40"))
+PATIENCE = int(os.environ.get("STRAT_PATIENCE", "0"))  # 0 = disabled; stop after N epochs without >=MIN_DELTA val_pol_ce improvement
+MIN_DELTA = float(os.environ.get("STRAT_MIN_DELTA", "1e-4"))
+SELECT_METRIC = os.environ.get("STRAT_SELECT_METRIC", "val_pol_ce")  # best-checkpoint metric: val_pol_ce (min) or q_top1 (max)
+RANK_LAMBDA = float(os.environ.get("STRAT_RANK_LAMBDA", "0"))  # 0 = disabled; pairwise labelWon ranking term weight
+RANK_MARGIN = float(os.environ.get("STRAT_RANK_MARGIN", "1.0"))  # hinge margin for the ranking term
+RANK_MAX_PAIRS = int(os.environ.get("STRAT_RANK_MAX_PAIRS", "16"))  # max ranking pairs per group per batch
 BATCH = int(os.environ.get("STRAT_BATCH", "4096"))   # target ROWS per batch (whole groups)
 EVAL_CHUNK = int(os.environ.get("STRAT_EVAL_CHUNK", "8192"))  # eval forward chunk (no group constraint; keep small: VRAM holds the 2.9 GB resident state)
 LR = float(os.environ.get("STRAT_LR", "2e-3"))
@@ -170,6 +176,7 @@ screen = np.clip(df.screen.to_numpy(np.int64), 0, 15).astype(np.int16)
 value = (10 * df.won.to_numpy(np.float32) + df.endHp.to_numpy(np.float32)).astype(np.float32)
 q_target = (10 * df.labelWon.to_numpy(np.float32) + df.labelHp.to_numpy(np.float32)).astype(np.float32)
 q_valid = np.isfinite(q_target)
+lw_all = df.labelWon.to_numpy(np.float32)
 
 # Candidate entity embedding (contract 2.5): entType 0=none 1=card 2=relic 3=potion.
 scr = df.screen.to_numpy(np.int64)
@@ -498,12 +505,42 @@ def train_batch_loss(gs):
     else:
         val_loss = torch.zeros((), device=DEVICE)
     qm = q_valid[rows]
+    rank_loss = torch.zeros((), device=DEVICE)
     if qm.any():
         ql = torch.from_numpy(q_target[rows]).to(DEVICE)[qm]
         q_loss = nn.functional.mse_loss(q[qm], ql)
+        if RANK_LAMBDA > 0:
+            lr = np.flatnonzero(q_valid[rows])
+            if len(lr) >= 2:
+                grp_ids_batch = np.repeat(np.arange(len(gs)), sizes_b)
+                gl = grp_ids_batch[lr]
+                lw = lw_all[rows[lr]]
+                ii: list[int] = []
+                jj: list[int] = []
+                for gpos in np.unique(gl):
+                    sel = np.flatnonzero(gl == gpos)
+                    if len(sel) < 2:
+                        continue
+                    lwg = lw[sel]
+                    order = np.argsort(-lwg)
+                    cnt = 0
+                    for a in range(len(sel)):
+                        for b in range(a + 1, len(sel)):
+                            if lwg[order[a]] > lwg[order[b]]:
+                                ii.append(sel[order[a]])
+                                jj.append(sel[order[b]])
+                                cnt += 1
+                                if cnt >= RANK_MAX_PAIRS:
+                                    break
+                        if cnt >= RANK_MAX_PAIRS:
+                            break
+                if ii:
+                    qi = q[qm][torch.from_numpy(np.asarray(ii)).to(DEVICE)]
+                    qj = q[qm][torch.from_numpy(np.asarray(jj)).to(DEVICE)]
+                    rank_loss = nn.functional.relu(RANK_MARGIN - (qi - qj)).mean()
     else:
         q_loss = torch.zeros((), device=DEVICE)
-    loss = pol_loss + VLAMBDA * val_loss + QLAMBDA * q_loss
+    loss = pol_loss + VLAMBDA * val_loss + QLAMBDA * q_loss + RANK_LAMBDA * rank_loss
     if NQUANTS > 0 and qq is not None and m.any():
         tau = model.qtau.view(1, -1)
         y = tl.unsqueeze(1)
@@ -624,8 +661,11 @@ def to_py(obj):
 
 
 if __name__ == "__main__":
-    best_ce = float("inf")
+    maximize = SELECT_METRIC == "q_top1"
+    best_sel = float("-inf") if maximize else float("inf")
     best_state = None
+    epochs_no_improve = 0
+    early_stopped = False
     tr_gs = np.flatnonzero(tr_mask)
     for epoch in range(1, EPOCHS + 1):
         t_ep = time.time()
@@ -653,19 +693,32 @@ if __name__ == "__main__":
             q_losses.append(ql)
         model.eval()
         em = evaluate()
-        if em["val_pol_ce"] < best_ce:
-            best_ce = em["val_pol_ce"]
+        sel = em[SELECT_METRIC]
+        improved = (sel > best_sel + MIN_DELTA) if maximize else (sel < best_sel - MIN_DELTA)
+        if improved:
+            best_sel = sel
             best_state = {k: v.detach().clone() for k, v in net.state_dict().items()}
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+            if PATIENCE and epochs_no_improve >= PATIENCE:
+                print(f"early stop after epoch {epoch}: no {SELECT_METRIC} improvement of "
+                      f">= {MIN_DELTA} for {PATIENCE} epochs", flush=True)
+                early_stopped = True
+                break
         if epoch == 1 or epoch % 10 == 0 or epoch == EPOCHS:
             print(f"epoch={epoch:03d} ({time.time() - t_ep:5.1f}s) train_pol={np.mean(p_losses):.4f} "
                   f"train_val={np.mean(v_losses):.4f} train_q={np.mean(q_losses):.4f} "
                   f"val_pol_ce={em['val_pol_ce']:.4f} "
                   f"metrics={to_py(em)}", flush=True)
 
+    if not early_stopped and EPOCHS > 1:
+        print(f"reached max epochs ({EPOCHS}) without early stop", flush=True)
+
     net.load_state_dict(best_state)
     model.eval()
     eval_metrics = to_py(evaluate())
-    print(f"\nbest held-out (val_pol_ce={best_ce:.4f}): {eval_metrics}", flush=True)
+    print(f"\nbest held-out ({SELECT_METRIC}={best_sel:.4f}): {eval_metrics}", flush=True)
 
     os.makedirs(os.path.dirname(OUT) or ".", exist_ok=True)
     torch.save({"state_dict": net.cpu().state_dict(), "mean": mean, "inv": inv,

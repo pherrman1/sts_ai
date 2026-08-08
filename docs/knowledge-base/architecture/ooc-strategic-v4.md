@@ -174,6 +174,19 @@ zero (no gradient through them). All rungs share the same topology and losses.
   value_mae_screen, q_top1, q_mae, q_mae_screen, q_rmse, q_n.
 - Best checkpoint by val_pol_ce. Defaults: epochs 40 (ladder), batch 4096,
   lr 2e-3, clip 1.0, AdamW 2e-4, CUDA default (`device: cuda` print required).
+- Early stopping (opt-in, default off): `STRAT_PATIENCE=N` stops after N
+  consecutive epochs without a `val_pol_ce` improvement of at least
+  `STRAT_MIN_DELTA` (default 1e-4); the best-epoch checkpoint is still saved.
+  Pairs with `STRAT_EPOCHS` as the hard ceiling (e.g. 500).
+- Best-epoch selection metric (opt-in): `STRAT_SELECT_METRIC=q_top1` selects
+  the best checkpoint by Q-head top-1 (maximize) instead of `val_pol_ce`
+  (minimize, default). §139: +1.7pp q_top1 at ~−0.3pp policy_top1 on the
+  partial 373k-row data (60 epochs).
+- Pairwise labelWon ranking term (opt-in, default off): `STRAT_RANK_LAMBDA>0`
+  adds `RANK_LAMBDA · mean(relu(RANK_MARGIN − (q_i − q_j)))` over same-group
+  labeled pairs with differing labelWon (`RANK_MARGIN` default 1.0,
+  `RANK_MAX_PAIRS` default 16 per group per batch). §139: flat at λ=0.1 on
+  the partial data (q_top1 +0.1pp).
 - Memory: write a group-ordered float16 mmap `OUT_tok_state.bin` of the 482 raw
   columns per row `[glob 44, thr 6, deck 96×3, rel 64×2, pot 8×2]` (chunked CSV
   read, like train_strategic.py:140-179). Global mean/inv from train rows over

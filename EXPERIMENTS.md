@@ -3807,7 +3807,9 @@ enabling condition, but the omitted command prevents verification.
   fight (hidden future fights resampled from the act pool, ossId/
 
 extEliteId/
-extFight*/emElites/emFights parity-excluded) and
+extFight*/
+emElites/
+emFights parity-excluded) and
   patching the exitBattle-transferred fields by index; bonus =
   w * v_win_trees.txt P(win). Flags STS_TERM_WIN=1, STS_TERM_WIN_W
   (100), STS_TERM_WIN_HIDDEN=resample|zero. Decision log
@@ -3824,7 +3826,8 @@ extFight*/emElites/emFights parity-excluded) and
   Inserter unselected). The bonus currently prices HP/gold/potions; counter
   pricing needs a counter-aware terminal model — generic across all counter
   relics, not Happy Flower only (follow-up).
-- **Parity:** patched rich row == full ichFeatureVec on a real post-combat
+- **Parity:** patched rich row == full
+ichFeatureVec on a real post-combat
   copy (hidden features zeroed in both), 0 mismatches on 4-seed runs.
 - **Determinism:** two identical STS_TERM_WIN=1 runs (4 seeds, 100 sims)
   agree on every per-seed game column; only wall-clock sec differs.
@@ -3856,7 +3859,8 @@ extFight*/emElites/emFights parity-excluded) and
   (artifact not on this machine).
 - **New code:** cpsictr mode + STS_CPSI_CTR_PROBE=1
   (pps/one_combat.cpp::cpsiCounterProbeAtState/cpsiCtrProbeReport): at
-  every post-combat state of unFullRunOOC runs, for each counter relic the
+  every post-combat state of
+unFullRunOOC runs, for each counter relic the
   run owns, re-predict C_psi with that relic's counter scalar set to each
   value 0..k-1 and accumulate the mean ΔP(death)/ΔP(win) vs the state's own
   counter, averaged over the six fixed probe encounters (TWO_LOUSE/GREMLIN_NOB/
@@ -6059,3 +6063,198 @@ extFight*/emElites/emFights parity-excluded) and
 - **Decision log:** `2026-08-08-selfplay-relabeling.md` (addendum).
 
 **§138 follow-up (same day): 100-epoch retrain on the same partial data.** `STRAT_EPOCHS=100` on `build/sp_300000_partial.csv` → best held-out `val_pol_ce` 0.5454, `policy_top1` 0.766, `margin` 5.54 (vs 40-epoch 0.559/0.754/4.75 — more epochs helps the offline fit). 64-seed paired gate (same seeds/env): 32.8% vs deployed 54.7% (**Δ −21.9pp, CI [−35.9, −7.8]**); vs the 40-epoch arm **+4.7pp, CI [−7.8, +18.8]** (direction only, n.s.). Conclusion: epoch count explains only a small part of the online gap; the data (volume ~20% + label-producer change) dominates. Artifacts: `build/tok_sp_partial_e100.pt.pt`, `build/tok_e100_train.log`, `build/tok_cmp_sp_e100_64.csv`, `selfplay/models/ooc_strategic_tok_sp_partial_e100.native` (32/32 parity).
+
+## §139 Experiment A: Stratified leaf ranking — endHp vs utilityR ranking gap by stratum (2026-08-08, local — diagnostic, no gameplay)
+
+- **What:** Re-analysis of the §135a leafdiag/leafref corpus (288k leaves, 267k
+  references, 17,194 decision groups, 16,676 usable) stratified by fight
+  outcome, HP band, tree depth, and cross-strata to test the hypothesis that
+  the endHp model's ranking advantage concentrates in near-death deep-tree
+  states.
+- **Method:** Per-group pairwise ranking accuracy (top-1, regret) of pure model
+  predictions (no rollout blend) against leafref high-budget references,
+  bootstrap CIs (2,000 iterations, fixed seed 20260808) per stratum.
+  Standalone script (not `leaf_ranking.py` — the full tool times out on the
+  1 GB CSV due to DictReader memory on this machine; a 28 MB column-pre-filtered
+  `build/leafdiag_slim.csv` was used).
+- **Artifacts:** `build/leaf_ranking_reconfirm.json`
+- **Headline results:**
+
+  | Stratum | nGroups | endHp pairAcc | utilR pairAcc | Δpair | Δtop1 |
+  |---|---|---:|---:|---:|---:|
+  | **all** | 16,676 | 0.7195 [0.7167,0.7224] | 0.7112 [0.7085,0.7141] | **+0.0082** | **+0.0231** |
+  | won=1 | 15,651 | 0.7237 | 0.7157 | +0.0080 | +0.0225 |
+  | won=0 (lost) | 1,025 | 0.6549 | 0.6428 | **+0.0121** | +0.0322 |
+  | hp_low (<30%) | 6,932 | 0.7291 | 0.7252 | **+0.0039** | +0.0113 |
+  | hp_mid (30-70%) | 6,582 | 0.7229 | 0.7146 | +0.0083 | +0.0324 |
+  | hp_high (≥70%) | 3,162 | 0.6912 | 0.6735 | **+0.0177** | +0.0297 |
+  | deep (d≥15) | 381 | 0.7948 | 0.7768 | **+0.0180** | +0.0525 |
+  | mid_depth | 14,364 | 0.7163 | 0.7091 | +0.0072 | +0.0236 |
+  | shallow (d<5) | 1,931 | 0.7282 | 0.7143 | +0.0140 | +0.0135 |
+  | **low_deep** | 60 | 0.8074 | 0.8068 | **+0.0006** | **−0.0500** |
+  | low_shallow | 887 | 0.7430 | 0.7396 | +0.0034 | +0.0079 |
+  | won_deep | 381 | 0.7948 | 0.7768 | +0.0180 | +0.0525 |
+  | lost_low | 727 | 0.6514 | 0.6469 | +0.0045 | +0.0165 |
+  | won_low | 6,205 | 0.7382 | 0.7344 | +0.0038 | +0.0106 |
+
+- **Key findings:**
+  1. **The gap does NOT concentrate in near-death states** — it is narrowest
+     in hp_low (+0.0039, half the overall gap) and effectively zero at
+     low_deep (+0.0006, utilityR actually wins top1 by −0.0500). This refutes
+     the architect's cliff-edge hypothesis.
+  2. **The gap is widest in high-HP (+0.0177, 2.2× overall) and deep-tree
+     (+0.0180, 2.2×) states** — complex, information-rich positions where
+     ranking is hardest but individual decisions most differentiate the search
+     tree.
+  3. **The gap is also larger in lost fights (+0.0121) than won (+0.0080)** —
+     in fights the agent eventually loses, model ranking quality matters more.
+  4. The overall +0.0082 pairwise gap (and +0.0231 top1) still cannot directly
+     explain ±12pp win-rate swings without amplification through PUCT
+     visit-redistribution dynamics or direct-eval (unblended) sites.
+- **Verdict: diagnostic only.** The ranking advantage exists but is small, does
+  not concentrate where hypothesized, and cannot directly explain the ±12pp
+  online swing. Experiment B (blend sweep) is the next discriminating test.
+- **Decision log:** `2026-08-08-vnet-offline-online-diagnosis.md`
+
+## §140 Experiment B: Blend-α sweep — both models are nearly identical when blended (2026-08-08, local — diagnostic, no gameplay)
+
+- **What:** For 8 α values ∈ [0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7], compute
+  within-group pairwise ranking accuracy of the BLENDED value
+  `α·model_pred + (1−α)·rawRolloutEval` against the leafref high-budget
+  reference. Tests whether: (a) endHp achieves peak ranking at α≈0.2–0.3
+  (the deployed sweet spot), (b) utilityR ranking degrades monotonically from
+  α=0, (c) any α exists where utilityR approaches endHp.
+- **Tool:** `tools/leaf_blend_sweep.py` (new, ~180 lines). Reuses existing
+  `build/leafdiag_slim.csv` + `build/leafref_gate_64_4k.csv`.
+- **Artifacts:** `build/leaf_blend_sweep.json`
+- **Headline results:**
+
+  | α | endHp pairAcc | utilR pairAcc | Δpair | endHp top1 | utilR top1 |
+  |---:|---|---:|---:|---:|---:|
+  | 0.00 | 0.7192 [0.7163,0.7220] | 0.7192 [0.7163,0.7220] | +0.0000 | 0.3970 | 0.3970 |
+  | 0.05 | 0.7456 [0.7429,0.7482] | 0.7444 [0.7418,0.7472] | +0.0011 | 0.4290 | 0.4283 |
+  | 0.10 | 0.7465 [0.7439,0.7492] | 0.7455 [0.7429,0.7483] | +0.0010 | 0.4294 | 0.4297 |
+  | 0.15 | 0.7473 [0.7447,0.7500] | 0.7465 [0.7439,0.7493] | +0.0009 | 0.4307 | 0.4309 |
+  | 0.20 | 0.7482 [0.7456,0.7509] | 0.7472 [0.7446,0.7499] | +0.0010 | 0.4310 | 0.4301 |
+  | **0.30** | **0.7499 [0.7474,0.7527]** | **0.7486 [0.7459,0.7514]** | **+0.0013** | **0.4311** | **0.4291** |
+  | 0.50 | 0.7517 [0.7491,0.7544] | 0.7484 [0.7457,0.7511] | +0.0033 | 0.4275 | 0.4189 |
+  | 0.70 | 0.7498 [0.7471,0.7526] | 0.7436 [0.7409,0.7464] | +0.0062 | 0.4177 | 0.3999 |
+
+  α=0 sanity check: both models identical (0.7192) — they share the same
+  rawRolloutEval.
+
+- **Key findings:**
+  1. **Both models IMPROVE with any blend > 0.** Even utilityR gains from
+     blending — it does NOT degrade monotonically. The pure-model ranking
+     (Experiment A) understates both models' usefulness.
+  2. **At the deployed α=0.3, the models are statistically INDISTINGUISHABLE.**
+     endHp 0.7499 [0.7474,0.7527] vs utilityR 0.7486 [0.7459,0.7514] — CIs
+     overlap substantially, gap only +0.0013. The pure-model gap of +0.0082
+     (Experiment A) collapses because the 70% shared rollout component dominates.
+  3. **endHp peaks at α=0.5** (0.7517), not at the deployed α=0.3. The deployed
+     sweet spot is below peak ranking — gameplay wins rate, not ranking
+     accuracy, determined α=0.3.
+  4. **The gap only visibly separates at α≥0.5:** at α=0.5 gap=+0.0033, at
+     α=0.7 gap=+0.0062. Heavier model influence favors endHp, consistent with
+     the universal α-curve finding (heavier model influence never helps online).
+  5. **The ±12pp online win-rate gap CANNOT be explained by per-leaf blended
+     ranking quality.** At the deployed α=0.3, the models rank nearly
+     identically. The online gap must come from: (a) direct-eval sites where
+     the model fires at full weight (depth cap, no rollout blended),
+     (b) PUCT range normalization interacting with model scale (endHp [0,~80]
+     vs utilityR [0,~150]), (c) visit-redistribution dynamics amplifying small
+     value differences through backprop.
+  6. **Top-1 accuracy also nearly identical** at moderate α: endHp 0.4311 vs
+     utilityR 0.4291 at α=0.3.
+- **Verdict: diagnostic — blend ranking parity disproves the ranking-quality
+  hypothesis for the deployed α=0.3.** The online gap is NOT caused by better
+  leaf ranking in the blended evaluation. The mechanism must involve
+  unblended evaluation sites, PUCT value-scale dynamics, or
+  visit-redistribution amplification. Experiment C (top-action agreement + per-
+  fight outcome correlation) is the next discriminating test.
+- **Decision log:** `2026-08-08-vnet-offline-online-diagnosis.md`
+
+## §141 Experiment C: Top-action agreement — models agree 81% of the time, essentially tied when they disagree (2026-08-08, local — diagnostic, no gameplay)
+
+- **What:** For each of 17,098 decision groups, identify which leaf each model
+  picks as "best" (using blended values at deployed α: endHp@0.3, utilityR@0.1)
+  and compare against the leafref high-budget reference's choice. Measures
+  agreement rate, per-model correctness when they disagree, and stratification
+  by fight outcome, HP band, and tree depth.
+- **Tool:** `tools/leaf_top_action.py` (new, ~290 lines).
+- **Artifacts:** `build/leaf_top_action.json`
+- **Headline results:**
+
+  | Metric | Value |
+  |---|---:|
+  | Total decisions | 17,098 |
+  | Models agree on best leaf | 80.9% |
+  | endHp matches reference | 44.5% |
+  | utilityR matches reference | 44.3% |
+  | Both match reference | 39.7% |
+  | **Neither matches reference** | **50.9%** |
+
+  **When models disagree (19.1% of decisions):**
+  - endHp right: 25.1%, utilityR right: 24.4%, both wrong: 50.4%
+  - endHp wins 50.7% of resolvable disagreements — a coin flip
+  - Overall endHp advantage: +23 decisions (+0.13pp) out of 17,098
+
+  **Key strata (agreement rate / endHp=ref% / utilR=ref%):**
+  - won=1 (83.0% / 45.6% / 45.6%) — identical in won fights
+  - won=0 (48.4% / 26.4% / 24.6%) — agreement collapses in lost fights,
+    endHp +1.8pp
+  - depth=deep (85.9% / 53.7% / 51.2%) — endHp +2.6pp in deep trees
+  - hp=mid|depth=deep (87.0% / 53.2% / 50.0%) — endHp +3.2pp
+  - hp=low (78.3% / 40.8% / 41.2%) — utilityR +0.4pp in low-HP
+
+  **Per-fight averages:**
+  - Won fights (1,309): 12.3 decisions/fight, endHp=ref 53.2%, utilR=ref
+    53.1%, models agree 85.4%
+  - Lost fights (41): 25.7 decisions/fight, endHp=ref 26.2%, utilR=ref
+    25.3%, models agree 49.9%
+  - Per-fight winner count: endHp 308, utilityR 330, tie 712
+
+- **Key findings:**
+  1. **The two models are effectively IDENTICAL at top-action selection.**
+     The models are a coin flip on disagreements, agree 81% of the time,
+     and differ by only +23 decisions (+0.13pp) out of 17,098.
+  2. **The reference itself is unreliable:** neither model matches it in 50.9%
+     of decisions. The high-budget Searcher3 reference is an approximation,
+     not ground truth.
+  3. **Lost fights are chaotic:** agreement drops from 83% (won) to 48%
+     (lost). Top-1 accuracy drops from ~46% to ~26%.
+  4. **Deep-tree decisions favor endHp** (+2.6pp, n=391) but sample is small.
+  5. **The ±12pp online win-rate gap CANNOT be explained by top-action
+     choice.** The models are indistinguishable at ranking (Experiment B)
+     AND top-action selection (Experiment C). The gap must come from PUCT
+     value-magnitude propagation, visit-redistribution dynamics, or the
+     unblended direct-eval sites where the model fires at full weight.
+- **Verdict: diagnostic — all three static leaf-analysis hypotheses are
+  now closed.** Per-leaf ranking (Exp B), top-action choice (Exp C), and
+  cliff-edge concentration (Exp A) all fail to explain the ±12pp gap.
+  The remaining causal paths require dynamic search-tree analysis
+  (PUCT Q-range normalization, visit-count redistribution, unblended
+  evaluation sites).
+- **Decision log:** `2026-08-08-vnet-offline-online-diagnosis.md`
+
+## §139 Q-head objective experiments on partial 5.7.3 data (2026-08-08, local, offline only — 373,616 rows / 707 seeds of chunk-1+2 partial, batch 2048, 60 epochs unless noted)
+
+- **What:** two cheap trainer experiments on the new-datagen partial data:
+  (A) best-epoch selection by `q_top1` instead of `val_pol_ce`
+  (`STRAT_SELECT_METRIC=q_top1`); (B) a pairwise labelWon ranking term
+  (`STRAT_RANK_LAMBDA=0.1`, margin 1.0, max 16 pairs/group) added to the Q
+  MSE loss. Both opt-in envs, defaults unchanged.
+- **Results (held-out):**
+  | metric | baseline 60ep (early-stop run) | A: select q_top1 (60ep) | B: rank λ=0.1 (60ep) | baseline 200ep (val_pol_ce sel) |
+  |---|---|---|---|---|
+  | val_pol_ce | 0.5311 | 0.5374 | 0.5303 | 0.5252 |
+  | policy_top1 | 0.773 | 0.770 | 0.774 | 0.776 |
+  | margin | 5.57 | 7.71 | 5.65 | 6.40 |
+  | q_top1 | 0.2899 | **0.3072** | 0.2904 | 0.2864 |
+- **Reading:** selection-by-q_top1 directly improves the Q-head ranking
+  agreement (+1.7pp vs the matched 60-ep baseline) at a small policy cost
+  (−0.3pp top1); the ranking loss at λ=0.1 is flat (+0.1pp q_top1). Tie-heavy
+  labelWon limits pair availability (§105). Offline only — no gate; the
+  deployed gate uses the Q-head argmax, so a future online comparison would
+  be the real judge. Artifacts: `build/tok_new_{200,selq,rank}.pt.pt` +
+  `_metrics.json`.
