@@ -22,10 +22,12 @@ bool g_s3Prune = true;
 bool g_s3Chain = true;
 bool g_s3Live = true;
 bool g_s3Crn = false;
+bool g_s3PoolRedirect = false; // STS_S3_POOL_REDIRECT: forced-move budget pool redirect (opt-in)
 int g_s3Particles = 64;
 double g_riskLambda = 0.5;
 bool g_s3Expand = false;
 int g_s3ExpandMaxNew = 32;
+bool g_s3ExpandSimple = false; // like g_s3Expand but picks deterministically with uniform prior
 bool g_s3RolloutPolicy = false;
 int g_s3RolloutK = 1;
 int g_s3RolloutTurnStop = 0;
@@ -438,6 +440,56 @@ void BattleScumSearcher3::step() {
                 // live-valid edge. Action-keyed tree: unchanged from §114's
                 // falsified obs-keyed descent. Requires live-valid semantics
                 // (g_liveValid); without it this branch is unreachable.
+                // STS_S3_EXPAND_SIMPLE: same edge expansion but picks the
+                // live-valid edge with the highest rolloutWeight instead of
+                // computing PUCT priors and running selectBestValidEdgePUCT.
+                // Hypothesis: the §125 penalty comes from PUCT over-committing
+                // to the (stale) prior on zero-evidence edges; a deterministic
+                // heuristic pick avoids both the GBM inference cost and the
+                // prior-distribution risk.
+                if (g_s3ExpandSimple) {
+                    Node live;
+                    enumerateActionsForNode(live, state);
+                    if (!live.edges.empty()) {
+                        std::vector<Action> newActs;
+                        newActs.reserve(live.edges.size());
+                        for (const auto &le : live.edges) {
+                            bool dup = false;
+                            for (const auto &se : cur->edges) {
+                                if (se.action == le.action) { dup = true; break; }
+                            }
+                            if (!dup) newActs.push_back(le.action);
+                        }
+                        if ((int)newActs.size() > g_s3ExpandMaxNew) {
+                            std::shuffle(newActs.begin(), newActs.end(), rng);
+                            newActs.resize(g_s3ExpandMaxNew);
+                        }
+                        if (!newActs.empty()) {
+                            // Add to tree with uniform prior so PUCT explores
+                            // them on equal footing. No GBM inference needed.
+                            double uniPrior = 1.0 / newActs.size();
+                            for (const auto &a : newActs)
+                                cur->edges.push_back(Edge{a, Node{}, uniPrior});
+                            // Pick the first live-valid edge to descend into
+                            // (deterministic; PUCT will sort out visit counts later)
+                            int bestIdx = -1;
+                            for (int i = 0; i < (int)cur->edges.size(); ++i) {
+                                if (cur->edges[i].action.isValidAction(state)) {
+                                    bestIdx = i; break;
+                                }
+                            }
+                            if (bestIdx >= 0) {
+                                auto &newEdge = cur->edges[bestIdx];
+                                newEdge.action.execute(state);
+                                ++diag.treeActions;
+                                actionStack.push_back(newEdge.action);
+                                cur = &newEdge.child;
+                                if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
+                                continue;
+                            }
+                        }
+                    }
+                }
                 if (g_s3Expand) {
                     Node live;
                     enumerateActionsForNode(live, state);

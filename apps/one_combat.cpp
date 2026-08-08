@@ -3405,13 +3405,14 @@ static std::string vFeatCsv(const GameContext &gc) {
 }
 
 // ---------------------------------------------------------------------------
-// V4 TOKEN STATE (ooc-strategic-v4.md §2): 50 globals (44 richRow scalars +
-// 6 derived thresholds) plus canonical deck/relic/potion tokens, built from the
-// same GameContext loops as richRow(). Built once per decision, reused across
-// the legal actions of that decision.
+// V4 TOKEN STATE (ooc-strategic-v4.md §2): 41 globals (35 richRow scalars
+// minus 9 hidden-information leaks + 6 derived thresholds) plus canonical
+// deck/relic/potion tokens, built from the same GameContext loops as richRow().
+// Built once per decision, reused across the legal actions of that decision.
 // ---------------------------------------------------------------------------
+static constexpr int TOK_NGLOB = 41;
 struct TokState {
-    float glob[50];
+    float glob[TOK_NGLOB];
     int nDk, nRl, nPt;
     int dk[96][3];
     int rl[64][2];
@@ -3420,12 +3421,14 @@ struct TokState {
 
 // Parity hook (STS_OOC_STRATEGIC_TOK_CHECK=1): once per run, on the first
 // gated decision, when the token net is loaded. Armed at run start.
+// The 9 hidden-information leaks (bossId, nextEliteId, nextFight0/1/2,
+// remElites, remFights, monOffset, eliteOffset) are excluded.
+static constexpr int TOK_NRAW = 35;
 static void tokCheckGlobParity(const GameContext &gc, const TokState &ts) {
-    static const char *const names[44] = {
+    static const char *const names[TOK_NRAW] = {
         "ascension", "act", "floor", "curHp", "maxHp", "gold", "deckSize", "potionChance",
         "cardRarityFactor", "blueKey", "greenKey", "redKey", "potionCount", "potionCapacity",
-        "bossId", "nextEliteId", "nextFight0", "nextFight1", "nextFight2", "remElites", "remFights",
-        "monOffset", "eliteOffset", "pvShop", "pvRest", "pvEvent", "pvElite", "pvMonster", "pvTreasure",
+        "pvShop", "pvRest", "pvEvent", "pvElite", "pvMonster", "pvTreasure",
         "bottledAtkId", "bottledSkillId", "bottledPowId",
         "fmDElite", "fmDRest", "fmDShop", "fmDBoss", "fmCElite", "fmCRest", "fmCShop", "fmCEvent",
         "fmCMonster", "fmCTreasure", "curMapX", "curMapY"
@@ -3435,7 +3438,7 @@ static void tokCheckGlobParity(const GameContext &gc, const TokState &ts) {
     for (char c : csv) { if (c == ',') { rich.push_back(std::strtof(cur.c_str(), nullptr)); cur.clear(); } else cur += c; }
     if (!cur.empty()) rich.push_back(std::strtof(cur.c_str(), nullptr));
     const auto &idx = richIdxMap();
-    for (int i = 0; i < 44; ++i) {
+    for (int i = 0; i < TOK_NRAW; ++i) {
         const auto it = idx.find(names[i]);
         if (it == idx.end() || it->second >= (int)rich.size()) continue;
         const float rv = rich[it->second];
@@ -3464,7 +3467,7 @@ static TokState buildTokState(const GameContext &gc, const PathHistory &path) {
     std::array<int, kNumRelics> r{};
     for (const auto &ri : gc.relics.relics) {
         const int id = (int)ri.id;
-        if (id >= 0 && id < kNumRelics) r[id] = 1 + (ri.data > 0 ? ri.data : 0);  // presence + counter
+        if (id >= 0 && id < kNumRelics) r[id] = 1 + (ri.data > 0 ? ri.data : 0);
     }
     std::array<int, kNumPotions> pot{};
     for (int i = 0; i < gc.potionCapacity && i < (int)gc.potions.size(); ++i) {
@@ -3472,23 +3475,16 @@ static TokState buildTokState(const GameContext &gc, const PathHistory &path) {
         const int id = (int)gc.potions[i];
         if (id >= 0 && id < kNumPotions) ++pot[id];
     }
-    const int nextElite = gc.eliteMonsterListOffset < gc.eliteMonsterList.size()
-                        ? (int)gc.eliteMonsterList[gc.eliteMonsterListOffset] : 0;
-    auto nf = [&](int k) -> int {
-        const int idx = gc.monsterListOffset + k;
-        return idx < gc.monsterList.size() ? (int)gc.monsterList[idx] : 0;
-    };
     const FwdMap fm = forwardMapFeatures(gc);
-    const float glob[44] = {
+    // 35 raw scalars: same as richRow() minus the 9 hidden-information leaks
+    // (bossId, nextEliteId, nextFight0/1/2, remElites, remFights, monOffset,
+    //  eliteOffset at original indices 14-22).
+    const float glob[TOK_NRAW] = {
         (float)gc.ascension, (float)gc.act, (float)gc.floorNum, (float)gc.curHp,
         (float)gc.maxHp, (float)gc.gold, (float)gc.deck.size(),
         (float)gc.potionChance, (float)gc.cardRarityFactor,
         (float)(gc.blueKey ? 1 : 0), (float)(gc.greenKey ? 1 : 0), (float)(gc.redKey ? 1 : 0),
         (float)gc.potionCount, (float)gc.potionCapacity,
-        (float)gc.boss, (float)nextElite, (float)nf(0), (float)nf(1), (float)nf(2),
-        (float)(gc.eliteMonsterList.size() - gc.eliteMonsterListOffset),
-        (float)(gc.monsterList.size() - gc.monsterListOffset),
-        (float)gc.monsterListOffset, (float)gc.eliteMonsterListOffset,
         (float)path.roomVisits[(int)Room::SHOP], (float)path.roomVisits[(int)Room::REST],
         (float)path.roomVisits[(int)Room::EVENT], (float)path.roomVisits[(int)Room::ELITE],
         (float)path.roomVisits[(int)Room::MONSTER], (float)path.roomVisits[(int)Room::TREASURE],
@@ -3498,15 +3494,17 @@ static TokState buildTokState(const GameContext &gc, const PathHistory &path) {
         (float)fm.cMonster, (float)fm.cTreasure,
         (float)gc.curMapNodeX, (float)gc.curMapNodeY
     };
-    for (int i = 0; i < 44; ++i) ts.glob[i] = glob[i];
-    // derived threshold features (ooc-strategic-v4.md §2.1), raw inputs
-    ts.glob[44] = gc.maxHp > 0 ? (float)gc.curHp / gc.maxHp : 0.0f;
-    ts.glob[45] = (float)(gc.maxHp - gc.curHp);
-    ts.glob[46] = gc.potionCount < gc.potionCapacity ? 1.0f : 0.0f;
-    ts.glob[47] = gc.gold >= 75 ? 1.0f : 0.0f;
-    ts.glob[48] = (gc.eliteMonsterList.size() - gc.eliteMonsterListOffset) > 0
+    for (int i = 0; i < TOK_NRAW; ++i) ts.glob[i] = glob[i];
+    // derived threshold features (ooc-strategic-v4.md §2.1)
+    // canTakeEliteKey now uses fmCElite (reachable elites on the visible map)
+    // instead of the removed remElites (exact hidden-queue count).
+    ts.glob[TOK_NRAW + 0] = gc.maxHp > 0 ? (float)gc.curHp / gc.maxHp : 0.0f;
+    ts.glob[TOK_NRAW + 1] = (float)(gc.maxHp - gc.curHp);
+    ts.glob[TOK_NRAW + 2] = gc.potionCount < gc.potionCapacity ? 1.0f : 0.0f;
+    ts.glob[TOK_NRAW + 3] = gc.gold >= 75 ? 1.0f : 0.0f;
+    ts.glob[TOK_NRAW + 4] = fm.cElite > 0
                   && !(gc.blueKey && gc.greenKey && gc.redKey) ? 1.0f : 0.0f;
-    ts.glob[49] = fm.dBoss <= 3 ? 1.0f : 0.0f;
+    ts.glob[TOK_NRAW + 5] = fm.dBoss <= 3 ? 1.0f : 0.0f;
 
     // deck tokens: canonical ascending cardId, upgraded=1 token before the
     // unupgraded one, capped at MAXDK=96
@@ -6595,7 +6593,12 @@ static void leafRef(const std::string &inFile, const std::string &outFile,
 // both model predictions. Output columns:
 //   seed,fightIdx,decIdx,obsHash,step,turn,curHp,maxHp,block,energy,strength,
 //   hand,draw,discard,monSumHp,monMaxHp,incomingDmg,isTerminal,
-//   endHp_pred,utilityR_pred
+//   endHp_pred,utilityR_pred,stateHash
+// stateHash is the row state's OWN visibleHash
+// (CombatObservation::fromBattleContext(bc).visibleHash()); at step 0 it
+// equals obsHash. Diagnostic-only: used to measure mid-rollout visible-state
+// collisions per search (rollout-TT / path-reuse viability), never read by
+// the search.
 // step 0 is the recorded leaf state itself (pre-rollout).
 // ---------------------------------------------------------------------------
 static thread_local struct {
@@ -6622,6 +6625,7 @@ static void rolloutTraceWriteRow(const BattleContext &bc, int step, bool isTermi
         const auto di = mm.getMoveBaseDamage(bc);
         incoming += mm.calculateDamageToPlayer(bc, di.damage) * di.attackCount;
     }
+    const std::uint64_t stateHash = CombatObservation::fromBattleContext(bc).visibleHash();
     t_rt.out << t_rt.seed << ',' << t_rt.fightIdx << ',' << t_rt.dec << ','
              << t_rt.obsHash << ',' << step << ',' << bc.turn << ','
              << bc.player.curHp << ',' << bc.player.maxHp << ',' << bc.player.block << ','
@@ -6629,7 +6633,7 @@ static void rolloutTraceWriteRow(const BattleContext &bc, int step, bool isTermi
              << bc.cards.cardsInHand << ',' << (int)bc.cards.drawPile.size() << ','
              << (int)bc.cards.discardPile.size() << ',' << monSum << ',' << monMax << ','
              << incoming << ',' << (isTerminal ? 1 : 0) << ','
-             << eH << ',' << uR << '\n';
+             << eH << ',' << uR << ',' << stateHash << '\n';
 }
 
 static void rolloutTraceOnStep(const BattleContext &bc, int steps) {
@@ -6676,7 +6680,7 @@ static void rolloutTrace(const std::string &inFile, const std::string &outFile,
     if (!f) { std::cerr << "rollouttrace: cannot open " << outFile << "\n"; return; }
     f << "seed,fightIdx,decIdx,obsHash,step,turn,curHp,maxHp,block,energy,"
          "strength,hand,draw,discard,monSumHp,monMaxHp,incomingDmg,isTerminal,"
-         "endHp_pred,utilityR_pred\n";
+         "endHp_pred,utilityR_pred,stateHash\n";
     f.flush();
     std::cout << "rollouttrace " << groups.size() << " recorded seeds, " << nSeedsRef
               << " to process, replay sims " << replaySims << "  -> " << outFile << "\n";
@@ -9725,6 +9729,10 @@ int main(int argc, char **argv) {
         search::g_s3Belief = std::atoi(d) != 0;
         std::cout << "[S3 ablation: belief=" << (search::g_s3Belief ? "ON" : "off") << "]\n";
     }
+    if (const char *d = std::getenv("STS_S3_POOL_REDIRECT")) {  // S3 fair: forced-move budget pool redirect (opt-in)
+        search::g_s3PoolRedirect = std::atoi(d) != 0;
+        std::cout << "[S3 pool-redirect = " << (search::g_s3PoolRedirect ? "ON" : "off") << "]\n";
+    }
     if (const char *d = std::getenv("STS_S3_PRUNE")) {       // S3 ablation: canPruneAsDead pruning
         search::g_s3Prune = std::atoi(d) != 0;
         std::cout << "[S3 ablation: prune=" << (search::g_s3Prune ? "ON" : "off") << "]\n";
@@ -9755,6 +9763,10 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_EXPAND_MAX")) {  // cap on new edges added per expansion (default 32)
         const int n = std::atoi(d);
         if (n >= 1) search::g_s3ExpandMaxNew = n;
+    }
+    if (const char *d = std::getenv("STS_S3_EXPAND_SIMPLE")) {  // no-PUCT edge expansion: pick by rolloutWeight
+        search::g_s3ExpandSimple = std::atoi(d) != 0;
+        std::cout << "[S3 expand-simple = " << (search::g_s3ExpandSimple ? "ON" : "off") << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_ROLLOUT_POLICY")) {  // sample rollout actions from the GBM policy prior (opt-in)
         search::g_s3RolloutPolicy = std::atoi(d) != 0;

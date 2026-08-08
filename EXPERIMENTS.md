@@ -6431,3 +6431,34 @@ unFullRunOOC runs, for each counter relic the
   branch (deterministic descent only) — might avoid the §125 penalty. The
   near-tie decisions (25%, value gap < 2) are also candidates for dynamic sim
   allocation (give more budget when the top actions are close).
+
+## §143 S3 fair forced-move budget pool redirect (STS_S3_POOL_REDIRECT): implemented opt-in; 8-seed smoke only — paired 256-seed gate pending (2026-08-09, local WSL)
+
+- **What:** the §123 forced-move contraction (−8.5% cpu in the S3 fair
+  path) discards the sims it saves. This opt-in flag reinvests them: each
+  forced decision credits its unspent base sim budget to a per-fight
+  `fightPool` (`ScumSearchAgent2::playoutBattleFair`, S3 branch), and each
+  non-forced decision spends `baseSims + min(pool, baseSims)` (poolFrac
+  1.0). Pure budget redirect — **no stability-based early stopping**: the
+  STS_CONV_ROOT stability line (§118, −2.3pp at 256 seeds) is deliberately
+  not revived; this isolates the clean forced-move-only sub-case that §118
+  never tested. Env: `STS_S3_POOL_REDIRECT=1` (default off), parsed in
+  `apps/one_combat.cpp::main` next to `STS_S3_BELIEF`.
+- **Config (smoke):** `one_combat bestbench 300 8 0 126700 <out.csv>`;
+  `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
+  STS_S3_PARTICLES=64` (+ `STS_S3_POOL_REDIRECT=1` for the candidate arm);
+  asc 0; fair S3−belief−chain; native OOC; floor=`build/v_rich_trees.txt`,
+  win=`build/v_win_trees.txt`; threads 12 (auto). Metric formula = producer
+  `bestbench` summary; per-seed outcome columns won/floor/act/hpEnd/maxHp/
+  fightsLost/deathCombat/deathEncounter.
+- **Parity (required precondition):** unset vs `STS_S3_POOL_REDIRECT=0`
+  give per-seed-identical outcomes on all 8 outcome columns (8/8 seeds;
+  only the wall-time `sec` column differs) — the flag is decision-neutral
+  when off, so the pair can gate against the same reference.
+- **Smoke results (8 seeds, 300 sims — noise-dominated, not a gate):**
+  candidate ON **25.0%** (2/8 wins) / floor 35.9 / hp 13.2 / cpu_sec/run
+  3.73 vs OFF 37.5% (3/8) / floor 35.8 / hp 10.5 / cpu_sec/run 3.50–3.76.
+  4/8 seeds change outcome (pool demonstrably engages and shifts
+  decisions). cpu_sec/run at 300 sims is dominated by per-run wall-clock
+  noise (12 threads), so no cpu claim is made from this smoke. Paired
+  256-seed gate pending (orchestrator).

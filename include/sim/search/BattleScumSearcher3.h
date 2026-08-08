@@ -188,6 +188,12 @@ namespace sts::search {
     extern bool g_s3Chain;
     extern bool g_s3Live;
     extern bool g_s3Crn;
+    // STS_S3_POOL_REDIRECT (opt-in): in the S3 fair path, forced-move
+    // contractions (g_forcedMoveSkip) donate their unspent base sim budget to
+    // a per-fight pool; non-forced decisions then spend baseSims + up to
+    // min(pool, baseSims) extra. Pure budget redirect -- no stability-based
+    // early stopping (the STS_CONV_ROOT stability line was falsified, §118).
+    extern bool g_s3PoolRedirect;
     // Fair-tree structural fix (STS_LIVE_VALID=1, opt-in, Phase 4): shared with
     // Searcher2; re-select among stored edges valid in the current
     // determinization instead of falling back to a rollout.
@@ -197,6 +203,7 @@ namespace sts::search {
     // tree (action-keyed) instead of falling back to a random rollout.
     extern bool g_s3Expand;
     extern int g_s3ExpandMaxNew;
+    extern bool g_s3ExpandSimple;
     // STS_S3_ROLLOUT_POLICY (opt-in): sample rollout actions from the GBM
     // policy prior instead of the static rolloutWeight heuristic. Resticted
     // to the GBM policy net (PVNet-head rollouts would cost ~14-18x a sim).
