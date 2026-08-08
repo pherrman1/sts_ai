@@ -24,7 +24,8 @@
           "git show *": "allow",
           "git status": "allow",
           "git status *": "allow",
-          "python3 -I tools/ai_inspect.py *": "allow"
+          "python3 -I tools/ai_inspect.py *": "allow",
+          "git check-ignore *": "allow"
         }
       }
     },
@@ -74,7 +75,9 @@
           "git show *": "allow",
           "git status": "allow",
           "git status *": "allow",
-          "python3 -I tools/ai_inspect.py *": "allow"
+          "python3 -I tools/ai_inspect.py *": "allow",
+          "git blame *": "allow",
+          "git check-ignore *": "allow"
         }
       }
     },
@@ -106,7 +109,9 @@
           "git show *": "allow",
           "git status": "allow",
           "git status *": "allow",
-          "python3 -I tools/ai_inspect.py *": "allow"
+          "python3 -I tools/ai_inspect.py *": "allow",
+          "git blame *": "allow",
+          "git check-ignore *": "allow"
         }
       }
     }

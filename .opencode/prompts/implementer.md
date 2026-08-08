@@ -64,6 +64,10 @@ DEVIATIONS FROM PLAN
 
 OPEN CONCERNS
 - "None" or precise unresolved concerns
+
+ELI5
+- one plain-language paragraph for a non-technical reader: what was changed,
+  why it matters, and what happens next. Simple words, no jargon.
 The orchestration program, not you, is authoritative for final verification.
 
 The architecture plan contains machine-readable verification commands.

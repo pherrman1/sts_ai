@@ -45,6 +45,7 @@ Use exactly this schema:
   "task_interpretation": "string",
   "current_behavior": "string",
   "design": "string",
+  "eli5_summary": "In simple language: what the requested change is, why, and what the plan will do next.",
 
   "implementation_steps": [
     {
@@ -72,6 +73,10 @@ Use exactly this schema:
   "acceptance_criteria": ["string"],
   "risks": ["string"]
 }
+
+The eli5_summary must be written for a non-technical reader in simple
+language: what the change does, why it matters, and what happens next. It is
+shown to the user at the start of the cycle.
 
 Rules for verification:
 
@@ -135,8 +140,9 @@ as:
 Do not modify repository files.
 
 Tool use: bash is limited to the allowed read-only git commands one at a time
-(git status/diff/log/show/grep/blame/ls-files); never chain, pipe, or
-redirect. Prefer the built-in read/grep/glob tools for file inspection.
+(git status/diff/log/show/grep/blame/ls-files/check-ignore); never chain,
+pipe, or redirect. Prefer the built-in read/grep/glob tools for file
+inspection.
 
 For read-only inspection of CSV/JSON experiment artifacts, use:
 

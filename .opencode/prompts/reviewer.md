@@ -62,7 +62,7 @@ MINOR = real problem but does not invalidate the implementation
 Tool use (binding):
 - Bash is restricted to read-only git inspection. You may run ONLY these
   commands, one at a time: git status, git diff, git log, git show, git grep,
-  git blame, git ls-files.
+  git blame, git ls-files, git check-ignore.
 - Never chain commands with && or || or ;, never pipe (|), and never redirect
   (>, <). OpenCode denies these and the denial wastes the attempt.
 - Never run tests, builds, py_compile, or any other verification command:

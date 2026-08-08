@@ -304,9 +304,132 @@ def recover_completed_implementer_summary(log_file: Path, summary_file: Path) ->
     transcript = log_file.read_text(encoding="utf-8", errors="replace")
     if FINAL_RESPONSE_END not in strip_ansi(transcript):
         return False
-    save(summary_file, extract_final_markdown(transcript))
+    save_summary_with_eli5(summary_file, transcript)
     print(f"Recovered completed implementer response from: {log_file}")
     return True
+
+
+ELI5_HEADING_RE = re.compile(r"^#{0,4}\s*ELI5\s*:?\s*$", re.IGNORECASE)
+SECTION_HEADING_RE = re.compile(r"^(#{1,6}\s+|(?=[A-Z][A-Z0-9 _\-/]+$))")
+
+
+def extract_eli5_section(markdown: str) -> str:
+    """Extract the plain-language ELI5 section from an implementer final
+    response: the ELI5 heading plus the non-empty lines after it, stopping at
+    the next section heading (markdown heading or all-caps line)."""
+    lines = markdown.splitlines()
+    for index, line in enumerate(lines):
+        if not ELI5_HEADING_RE.match(line.strip()):
+            continue
+        body: list[str] = []
+        for following in lines[index + 1:]:
+            stripped = following.strip()
+            if not stripped:
+                continue
+            if SECTION_HEADING_RE.match(stripped):
+                break
+            body.append(re.sub(r"^[-*]\s+", "", stripped))
+        if body:
+            return "\n".join(body).strip()
+    return ""
+
+
+def save_summary_with_eli5(summary_file: Path, transcript: str) -> str:
+    """Save the implementer's final summary and its ELI5 section side by
+    side, print the ELI5, and return the summary text."""
+    text = extract_final_markdown(transcript)
+    save(summary_file, text)
+    eli5 = extract_eli5_section(text)
+    if not eli5:
+        eli5 = "No ELI5 section was recorded in the implementer response."
+    save(
+        summary_file.with_name(summary_file.stem + "-eli5.md"),
+        eli5.strip() + "\n",
+    )
+    print()
+    print("ELI5 (implementer):")
+    print(eli5.strip())
+    print()
+    return text
+
+
+def save_plan_eli5(session_dir: Path, plan: dict) -> None:
+    """Persist the architect's ELI5 next to plan.json so the final wrap-up
+    can read it without re-parsing the plan."""
+    eli5 = plan.get("eli5_summary")
+    if isinstance(eli5, str) and eli5.strip():
+        save(session_dir / "plan-eli5.md", eli5.strip() + "\n")
+
+
+def print_architect_eli5(plan: dict) -> None:
+    """Print the architect's plain-language plan summary right after the
+    architecture phase (fresh plan or resume)."""
+    eli5 = plan.get("eli5_summary")
+    if not isinstance(eli5, str) or not eli5.strip():
+        eli5 = "No architect ELI5 summary was recorded."
+    print()
+    print("ELI5 (architect):")
+    print(eli5.strip())
+    print()
+
+
+def read_eli5_artifact(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    text = path.read_text(encoding="utf-8", errors="replace").strip()
+    return text or None
+
+
+def print_final_eli5(session_dir: Path, *, accepted: bool) -> None:
+    """Compose and print a plain-language cycle wrap-up from the stored
+    per-agent ELI5 artifacts, plus the verdict and what to do next."""
+    plan_eli5 = read_eli5_artifact(session_dir / "plan-eli5.md")
+    if plan_eli5 is None:
+        plan = load_json(session_dir / "plan.json") if (
+            session_dir / "plan.json"
+        ).exists() else {}
+        if isinstance(plan.get("eli5_summary"), str):
+            plan_eli5 = plan["eli5_summary"].strip() or None
+
+    implementation = read_eli5_artifact(session_dir / "implementation-1-eli5.md")
+    if implementation is None:
+        candidates = sorted(
+            path for path in session_dir.glob("*-eli5.md")
+            if not path.name.startswith(("plan-", "review-", "sol-", "recovery-"))
+        )
+        implementation = (
+            read_eli5_artifact(candidates[-1]) if candidates else None
+        )
+
+    reviews = sorted(session_dir.glob("review-*-eli5.md"))
+    review = read_eli5_artifact(reviews[-1]) if reviews else None
+
+    lines = ["===== FINAL ELI5 ====="]
+    lines.append("")
+    if plan_eli5:
+        lines.append("What we wanted:")
+        lines.append(plan_eli5)
+        lines.append("")
+    if implementation:
+        lines.append("What was built:")
+        lines.append(implementation)
+        lines.append("")
+    if review:
+        lines.append("What the reviewer found:")
+        lines.append(review)
+        lines.append("")
+    if accepted:
+        lines.append("Verdict: ACCEPTED — the change passed the review loop.")
+        lines.append("What to do next: inspect the diff (git status --short, "
+                     "git diff) and commit if it matches the task.")
+    else:
+        lines.append("Verdict: NOT ACCEPTED — the review loop could not reach "
+                     "a passing state.")
+        lines.append("What to do next: see the session rejection notes above; "
+                     "a bounded escalation recovery may be available via "
+                     "--resume SESSION --continue-rejected.")
+    print("\n".join(lines))
+    print()
 
 
 def snapshot_protected_workflow_files() -> dict[Path, bytes | None]:
@@ -800,7 +923,9 @@ def recover_or_load_plan(
     if plan_file.exists():
         plan = load_json(plan_file)
         upgraded = upgrade_legacy_seed_counts(plan)
+        upgrade_legacy_eli5(plan)
         validate_plan(plan, allow_legacy_sweeps=True)
+        save_plan_eli5(session_dir, plan)
         if upgraded:
             save_json(plan_file, plan)
             print("Added seed_count to known legacy sweep checks.")
@@ -831,8 +956,10 @@ def recover_or_load_plan(
         source="Architect resume log",
     )
     upgrade_legacy_seed_counts(plan)
+    upgrade_legacy_eli5(plan)
     validate_plan(plan, allow_legacy_sweeps=True)
     save_json(plan_file, plan)
+    save_plan_eli5(session_dir, plan)
 
     print(f"Recovered architecture plan: {plan_file}")
     return plan, plan_file
@@ -1012,11 +1139,24 @@ def upgrade_legacy_seed_counts(plan: dict) -> bool:
     return upgraded
 
 
+def upgrade_legacy_eli5(plan: dict) -> None:
+    """Fill a missing architect eli5_summary on plans created before the ELI5
+    requirement, so legacy sessions resume and print a placeholder instead of
+    failing validation."""
+    if not isinstance(plan, dict) or plan.get("eli5_summary"):
+        return
+    plan["eli5_summary"] = (
+        "Legacy plan: the architect for this session predates the ELI5 "
+        "requirement, so no plain-language summary was recorded."
+    )
+
+
 def validate_plan(plan: dict, *, allow_legacy_sweeps: bool = False) -> None:
     required_keys = {
         "task_interpretation",
         "current_behavior",
         "design",
+        "eli5_summary",
         "implementation_steps",
         "verification",
         "documentation",
@@ -1029,6 +1169,12 @@ def validate_plan(plan: dict, *, allow_legacy_sweeps: bool = False) -> None:
     if missing:
         raise RuntimeError(
             f"Architecture plan is missing keys: {sorted(missing)}"
+        )
+
+    eli5_summary = plan["eli5_summary"]
+    if not isinstance(eli5_summary, str) or not eli5_summary.strip():
+        raise RuntimeError(
+            "Architect eli5_summary must be a non-empty string."
         )
 
     if not isinstance(plan["implementation_steps"], list):
@@ -1904,9 +2050,9 @@ def run_verification_cycle(
             log_file=fix_log_file,
         )
 
-        save(
+        save_summary_with_eli5(
             session_dir / f"{phase}-verification-fix-{attempt}.md",
-            extract_final_markdown(fix_result),
+            fix_result,
         )
 
         snapshot_git_state(
@@ -1925,6 +2071,7 @@ def finish_accepted(session_dir: Path, review_round: int) -> int:
     print(f"Latest review round: {review_round}")
     print(f"Session data:       {session_dir}")
     print()
+    print_final_eli5(session_dir, accepted=True)
     print("No commit was created.")
     print("Inspect the final diff manually before committing:")
     print("  git status --short")
@@ -1997,6 +2144,8 @@ def reject_after_semantic_limit(
     print()
     print("This uses the escalation reviewer to adjudicate the remaining disagreement.")
     print("The existing Architect plan will NOT be regenerated.")
+    print()
+    print_final_eli5(session_dir, accepted=False)
     return 2
 
 
@@ -2271,7 +2420,7 @@ modify files. Return only the required JSON review object.
                 log_file=recovery_fix_log,
             )
 
-        save(recovery_fix_summary, extract_final_markdown(fix_result))
+        save_summary_with_eli5(recovery_fix_summary, fix_result)
         snapshot_git_state(session_dir, "recovery-after-fix-1")
 
     ok, verification_file, fingerprint = ensure_cheap_candidate_verification(
@@ -2442,9 +2591,9 @@ def complete_candidate_workflow(
                     luna_match[1],
                     log_file=fix_log,
                 )
-                save(
+                save_summary_with_eli5(
                     fix_summary,
-                    extract_final_markdown(fix_result),
+                    fix_result,
                 )
                 snapshot_git_state(
                     session_dir, f"review-{luna_match[0]}-after-fix"
@@ -2500,9 +2649,9 @@ def complete_candidate_workflow(
                 luna_file,
                 log_file=session_dir / f"review-fix-{luna_round}.log",
             )
-            save(
+            save_summary_with_eli5(
                 session_dir / f"review-fix-{luna_round}.md",
-                extract_final_markdown(fix_result),
+                fix_result,
             )
             snapshot_git_state(session_dir, f"review-{luna_round}-after-fix")
             continue
@@ -2544,9 +2693,9 @@ def complete_candidate_workflow(
                         sol_match[1],
                         log_file=sol_fix_log,
                     )
-                    save(
+                    save_summary_with_eli5(
                         sol_fix_summary,
-                        extract_final_markdown(fix_result),
+                        fix_result,
                     )
                     snapshot_git_state(
                         session_dir, f"sol-review-{sol_match[0]}-after-fix"
@@ -2588,9 +2737,9 @@ def complete_candidate_workflow(
                     sol_match[1],
                     log_file=session_dir / f"sol-review-fix-{sol_match[0]}.log",
                 )
-                save(
+                save_summary_with_eli5(
                     session_dir / f"sol-review-fix-{sol_match[0]}.md",
-                    extract_final_markdown(fix_result),
+                    fix_result,
                 )
                 snapshot_git_state(
                     session_dir, f"sol-review-{sol_match[0]}-after-fix"
@@ -2638,9 +2787,9 @@ def complete_candidate_workflow(
             expensive_file,
             log_file=session_dir / f"expensive-fix-{expensive_repairs}.log",
         )
-        save(
+        save_summary_with_eli5(
             session_dir / f"expensive-fix-{expensive_repairs}.md",
-            extract_final_markdown(fix_result),
+            fix_result,
         )
         snapshot_git_state(
             session_dir, f"after-expensive-fix-{expensive_repairs}"
@@ -2726,6 +2875,7 @@ def main() -> int:
         print(f"Resuming:   {session_dir}")
 
         plan, plan_file = recover_or_load_plan(session_dir)
+        print_architect_eli5(plan)
 
         if args.continue_rejected:
             if args.retry_recovery:
@@ -2774,9 +2924,9 @@ def main() -> int:
                 task_file,
                 log_file=implementation_log,
             )
-            save(
+            save_summary_with_eli5(
                 implementation_summary,
-                extract_final_markdown(implementation),
+                implementation,
             )
 
             snapshot_git_state(
@@ -2843,9 +2993,11 @@ Do not modify repository files.
         source="Architect",
     )
     validate_plan(plan)
+    print_architect_eli5(plan)
 
     plan_file = session_dir / "plan.json"
     save_json(plan_file, plan)
+    save_plan_eli5(session_dir, plan)
 
     # The architect is read-only. At this point the tracked tree must still be
     # exactly as clean as it was before the cycle.
@@ -2867,9 +3019,9 @@ Do not modify repository files.
         task_file,
         log_file=session_dir / "implementation-1.log",
     )
-    save(
+    save_summary_with_eli5(
         session_dir / "implementation-1.md",
-        extract_final_markdown(implementation),
+        implementation,
     )
 
     snapshot_git_state(

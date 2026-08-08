@@ -12,11 +12,15 @@ from unittest import mock
 from tools import ai_cycle
 
 
-def plan_with(checks: list[dict]) -> dict:
-    return {
+FINAL_BEGIN = ai_cycle.FINAL_RESPONSE_BEGIN
+FINAL_END = ai_cycle.FINAL_RESPONSE_END
+
+
+def plan_with(checks: list[dict]) -> dict:    return {
         "task_interpretation": "test",
         "current_behavior": "test",
         "design": "ordinary tooling change",
+        "eli5_summary": "It changes a tool so its messages are easier to read.",
         "implementation_steps": [],
         "verification": checks,
         "documentation": [],
@@ -276,6 +280,118 @@ class ReviewAndResumeTests(unittest.TestCase):
         self.assertFalse(ai_cycle.upgrade_legacy_seed_counts(plan))
         self.assertIsNone(plan["verification"][0].get("seed_count"))
         ai_cycle.validate_plan(plan, allow_legacy_sweeps=True)
+
+    def test_plan_without_eli5_is_rejected(self) -> None:
+        plan = plan_with([check(cost="cheap")])
+        del plan["eli5_summary"]
+        with self.assertRaisesRegex(RuntimeError, "missing keys"):
+            ai_cycle.validate_plan(plan)
+
+    def test_plan_with_blank_eli5_is_rejected(self) -> None:
+        plan = plan_with([check(cost="cheap")])
+        plan["eli5_summary"] = "   "
+        with self.assertRaisesRegex(RuntimeError, "eli5_summary"):
+            ai_cycle.validate_plan(plan)
+
+    def test_upgrade_legacy_eli5_fills_placeholder(self) -> None:
+        plan = plan_with([check(cost="cheap")])
+        del plan["eli5_summary"]
+        ai_cycle.upgrade_legacy_eli5(plan)
+        self.assertIn("Legacy plan", plan["eli5_summary"])
+        ai_cycle.validate_plan(plan, allow_legacy_sweeps=True)
+
+    def test_upgrade_legacy_eli5_keeps_existing(self) -> None:
+        plan = plan_with([check(cost="cheap")])
+        ai_cycle.upgrade_legacy_eli5(plan)
+        self.assertEqual(
+            "It changes a tool so its messages are easier to read.",
+            plan["eli5_summary"],
+        )
+
+
+class Eli5ArtifactTests(unittest.TestCase):
+    def test_extract_eli5_section(self) -> None:
+        md = (
+            "IMPLEMENTATION SUMMARY\n- change\n\n"
+            "ELI5\n- simple words\n- plain language\n\n"
+            "FILES CHANGED\n- x\n"
+        )
+        self.assertEqual("simple words\nplain language", ai_cycle.extract_eli5_section(md))
+
+    def test_extract_eli5_section_missing(self) -> None:
+        md = "IMPLEMENTATION SUMMARY\n- change\n"
+        self.assertEqual("", ai_cycle.extract_eli5_section(md))
+
+    def test_extract_eli5_section_heading_variants(self) -> None:
+        for heading in ("ELI5", "## ELI5", "ELI5:"):
+            md = f"summary\n\n{heading}\n- explained\n"
+            self.assertEqual("explained", ai_cycle.extract_eli5_section(md))
+
+    def test_save_summary_with_eli5_writes_pair(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            transcript = (
+                f"noise\n{FINAL_BEGIN}\nsummary text\nELI5\n- the plain version\n"
+                f"{FINAL_END}\n"
+            )
+            summary_file = session_dir / "implementation-1.md"
+            output = StringIO()
+            with redirect_stdout(output):
+                text = ai_cycle.save_summary_with_eli5(summary_file, transcript)
+            self.assertEqual("summary text\nELI5\n- the plain version\n", text)
+            self.assertEqual(
+                "the plain version\n",
+                (session_dir / "implementation-1-eli5.md").read_text(encoding="utf-8"),
+            )
+            self.assertIn("ELI5 (implementer)", output.getvalue())
+
+    def test_save_summary_with_eli5_missing_section(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            transcript = f"noise\n{FINAL_BEGIN}\nsummary only\n{FINAL_END}\n"
+            with redirect_stdout(StringIO()):
+                ai_cycle.save_summary_with_eli5(
+                    session_dir / "implementation-1.md", transcript
+                )
+            self.assertEqual(
+                "No ELI5 section was recorded in the implementer response.\n",
+                (session_dir / "implementation-1-eli5.md").read_text(encoding="utf-8"),
+            )
+
+    def test_final_eli5_composes_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            (session_dir / "plan-eli5.md").write_text(
+                "plan explanation\n", encoding="utf-8"
+            )
+            (session_dir / "implementation-1-eli5.md").write_text(
+                "built explanation\n", encoding="utf-8"
+            )
+            (session_dir / "review-1-eli5.md").write_text(
+                "review explanation\n", encoding="utf-8"
+            )
+            output = StringIO()
+            with redirect_stdout(output):
+                ai_cycle.print_final_eli5(session_dir, accepted=True)
+            text = output.getvalue()
+            self.assertIn("What we wanted:", text)
+            self.assertIn("plan explanation", text)
+            self.assertIn("What was built:", text)
+            self.assertIn("built explanation", text)
+            self.assertIn("What the reviewer found:", text)
+            self.assertIn("review explanation", text)
+            self.assertIn("Verdict: ACCEPTED", text)
+            self.assertIn("What to do next", text)
+
+    def test_final_eli5_composes_rejected_without_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            output = StringIO()
+            with redirect_stdout(output):
+                ai_cycle.print_final_eli5(session_dir, accepted=False)
+            text = output.getvalue()
+            self.assertIn("Verdict: NOT ACCEPTED", text)
+            self.assertIn("--continue-rejected", text)
 
 
 class RejectedRecoveryTests(unittest.TestCase):
