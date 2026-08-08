@@ -1407,6 +1407,214 @@ class PiBackendUnitTests(unittest.TestCase):
                 )
 
 
+class PiLiveStreamingTests(unittest.TestCase):
+    """Pi live status streaming: lifecycle-only stdout, no content dumping.
+
+    Covers the JSONL lifecycle events (turn_start, message_update,
+    tool_execution_start/end) surfaced by `pi_live_status_line` and the
+    model-bearing Pi banner, with fake streams - no API calls.
+    """
+
+    def setUp(self) -> None:
+        self.addCleanup(ai_cycle.CYCLE_COST_ENTRIES.clear)
+        self.addCleanup(ai_cycle.CYCLE_DENIED_CALLS.clear)
+        self.addCleanup(setattr, ai_cycle, "ACTIVE_BACKEND",
+                        ai_cycle.OpenCodeBackend())
+
+    def invoke_captured(
+        self,
+        agent: str = "architect",
+        events: list[dict] | None = None,
+        **kwargs,
+    ) -> tuple[str, str]:
+        stdout = StringIO()
+        with redirect_stdout(stdout), mock.patch(
+            "tools.ai_cycle.subprocess.Popen",
+            return_value=FakeProcess(
+                stdout_lines=jsonl_lines(events or [assistant_message_end("ok")])
+            ),
+        ):
+            result = ai_cycle.PiBackend().invoke(
+                agent=agent, prompt="plan", **kwargs
+            )
+        return result, stdout.getvalue()
+
+    def test_thinking_responding_status_lifecycle(self) -> None:
+        events = [
+            {"type": "turn_start"},
+            {"type": "message_start", "message": {"role": "user"}},
+            {"type": "message_update",
+             "assistantMessageEvent": {"type": "thinking_start"}},
+            {"type": "message_update",
+             "assistantMessageEvent": {"type": "thinking_delta",
+                                       "delta": "secret reasoning"}},
+            {"type": "message_update",
+             "assistantMessageEvent": {"type": "text_start"}},
+            {"type": "message_update",
+             "assistantMessageEvent": {"type": "text_delta",
+                                       "delta": "half an answer"}},
+            assistant_message_end("final answer"),
+        ]
+        result, printed = self.invoke_captured(events=events)
+        self.assertEqual("final answer\n", result)
+        self.assertIn("[architect] model thinking...", printed)
+        self.assertIn("[architect] model responding...", printed)
+        self.assertLess(printed.index("model thinking..."),
+                        printed.index("model responding..."))
+        self.assertNotIn("secret reasoning", printed)
+        self.assertNotIn("half an answer", printed)
+        self.assertNotIn("final answer", printed)
+
+    def test_tool_start_printed_before_tool_done(self) -> None:
+        events = [
+            {"type": "turn_start"},
+            {"type": "tool_execution_start", "toolName": "read",
+             "args": {"file_path": "AGENTS.md", "offset": 1, "limit": 20}},
+            {"type": "tool_execution_update", "toolName": "read",
+             "partialResult": {}},
+            {"type": "tool_execution_end", "toolName": "read",
+             "isError": False, "result": {}},
+            assistant_message_end("done"),
+        ]
+        result, printed = self.invoke_captured(events=events)
+        self.assertEqual("done\n", result)
+        self.assertIn("[architect] tool: read AGENTS.md:1-20", printed)
+        self.assertIn("[architect] tool done", printed)
+        self.assertLess(printed.index("tool: read AGENTS.md:1-20"),
+                        printed.index("tool done"))
+
+    def test_tool_done_printed_for_success_and_failure(self) -> None:
+        for is_error in (False, True):
+            with self.subTest(isError=is_error):
+                events = [
+                    {"type": "tool_execution_start", "toolName": "bash",
+                     "args": {"command": "make -j"}},
+                    {"type": "tool_execution_end", "toolName": "bash",
+                     "isError": is_error, "result": {}},
+                    assistant_message_end("done"),
+                ]
+                _, printed = self.invoke_captured(agent="implementer",
+                                                  events=events)
+                self.assertIn("[implementer] tool: bash make -j", printed)
+                self.assertEqual(1, printed.count("[implementer] tool done"))
+
+    def test_responding_printed_once_per_response(self) -> None:
+        events = [
+            {"type": "turn_start"},
+            {"type": "message_update",
+             "assistantMessageEvent": {"type": "text_delta", "delta": "a"}},
+            {"type": "message_update",
+             "assistantMessageEvent": {"type": "text_delta", "delta": "b"}},
+            {"type": "message_update",
+             "assistantMessageEvent": {"type": "text_delta", "delta": "c"}},
+            assistant_message_end("abc"),
+        ]
+        result, printed = self.invoke_captured(events=events)
+        self.assertEqual("abc\n", result)
+        self.assertEqual(1, printed.count("[architect] model responding..."))
+
+    def test_responding_printed_again_on_next_turn(self) -> None:
+        events = [
+            {"type": "turn_start"},
+            {"type": "message_update",
+             "assistantMessageEvent": {"type": "text_delta", "delta": "a"}},
+            {"type": "tool_execution_start", "toolName": "read",
+             "args": {"file_path": "x"}},
+            {"type": "tool_execution_end", "toolName": "read",
+             "isError": False, "result": {}},
+            {"type": "turn_start"},
+            {"type": "message_update",
+             "assistantMessageEvent": {"type": "text_delta", "delta": "b"}},
+            assistant_message_end("done"),
+        ]
+        result, printed = self.invoke_captured(events=events)
+        self.assertEqual("done\n", result)
+        self.assertEqual(2, printed.count("[architect] model responding..."))
+
+    def test_malformed_lines_interleaved_with_live_events(self) -> None:
+        raw_lines = [
+            "garbage\n",
+            '{"type": "turn_start"}\n',
+            '{"type": "message_update", "assistantMessageEvent": '
+            '{"type": "thinking_start"}}\n',
+            "not json either\n",
+            json.dumps(assistant_message_end("ok")) + "\n",
+        ]
+        stdout = StringIO()
+        with redirect_stdout(stdout), mock.patch(
+            "tools.ai_cycle.subprocess.Popen",
+            return_value=FakeProcess(stdout_lines=raw_lines),
+        ):
+            result = ai_cycle.PiBackend().invoke(agent="architect",
+                                                 prompt="plan")
+        self.assertEqual("ok\n", result)
+        self.assertIn("[architect] model thinking...", stdout.getvalue())
+
+    def test_pi_banner_shows_model_display_name(self) -> None:
+        _, printed = self.invoke_captured(agent="architect")
+        self.assertIn("====== ARCHITECT · DeepSeek V4 Pro ======", printed)
+        _, printed = self.invoke_captured(agent="implementer")
+        self.assertIn("====== IMPLEMENTER · DeepSeek V4 Flash ======", printed)
+        _, printed = self.invoke_captured(agent="reviewer_escalation")
+        self.assertIn("====== REVIEWER_ESCALATION · DeepSeek V4 Pro ======",
+                      printed)
+
+    def test_tool_line_formatting_unit(self) -> None:
+        cases = [
+            ("read", {"file_path": "AGENTS.md"}, "read AGENTS.md"),
+            ("read", {"file_path": "AGENTS.md", "offset": 10},
+             "read AGENTS.md:10"),
+            ("read", {"file_path": "AGENTS.md", "offset": 10, "limit": 5},
+             "read AGENTS.md:10-14"),
+            ("read", {"path": "docs/knowledge-base/README.md", "limit": 3},
+             "read docs/knowledge-base/README.md:1-3"),
+            ("grep", {"pattern": "VNet", "path": "docs/knowledge-base/"},
+             'grep "VNet" docs/knowledge-base/'),
+            ("find", {"pattern": "*.cpp", "path": "src"},
+             "find *.cpp in src"),
+            ("ls", {"path": "build"}, "ls build"),
+            ("edit", {"file_path": "src/a.cpp"}, "edit src/a.cpp"),
+            ("write", {"path": "out.txt"}, "write out.txt"),
+            ("sts_git", {"subcommand": "status", "args": ["--short"]},
+             "sts_git status --short"),
+            ("sts_inspect", {"args": ["show", "x.csv"]},
+             "sts_inspect show x.csv"),
+            ("mystery", {"file_path": "x", "other": 1},
+             "mystery file_path=x other=1"),
+            ("weird_tool", {"nested": {"deep": True}}, "weird_tool"),
+        ]
+        for tool_name, args, expected in cases:
+            with self.subTest(tool=tool_name):
+                self.assertEqual(
+                    expected, ai_cycle.pi_format_tool_call(tool_name, args)
+                )
+
+    def test_tool_line_formatting_odd_args(self) -> None:
+        self.assertEqual("read ?", ai_cycle.pi_format_tool_call("read", None))
+        self.assertEqual("read ?", ai_cycle.pi_format_tool_call("read", 7))
+        self.assertEqual("bash ?",
+                         ai_cycle.pi_format_tool_call("bash", {"command": 7}))
+        self.assertEqual('grep "?" ?',
+                         ai_cycle.pi_format_tool_call("grep", {}))
+        self.assertEqual("ls .", ai_cycle.pi_format_tool_call("ls", {}))
+
+    def test_bash_command_truncated(self) -> None:
+        line = ai_cycle.pi_format_tool_call(
+            "bash", {"command": "cmake --build build -j" * 5}
+        )
+        self.assertTrue(line.startswith("bash cmake"))
+        self.assertTrue(line.endswith("..."))
+        self.assertLessEqual(len(line), 65)
+
+    def test_unknown_tool_summary_truncated(self) -> None:
+        line = ai_cycle.pi_format_tool_call(
+            "mystery", {"file_path": "long" * 40}
+        )
+        self.assertTrue(line.startswith("mystery file_path="))
+        self.assertTrue(line.endswith("..."))
+        self.assertLessEqual(len(line), 90)
+
+
 class PiBackendCycleTests(unittest.TestCase):
     """End-to-end orchestration driven through the Pi backend, no API calls."""
 

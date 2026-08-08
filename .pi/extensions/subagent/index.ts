@@ -12,6 +12,32 @@
  * Uses JSON mode to capture structured output from subagents.
  */
 
+// ============================================================================
+// STS-LOCAL FORK
+// Base: upstream commit c185d412382581860a489b4959737bad1d119492
+//     https://github.com/earendil-works/pi
+//     (packages/coding-agent/examples/extensions/subagent/index.ts),
+//     byte-identical at fork time (2026-08-08). agents.ts stays upstream.
+// Local changes (observability only; no agent-prompt, model, or routing
+// changes):
+//   - Live activity state per subagent run (turn, status, current tool,
+//     recent completed tool calls, usage, model) driven by Pi's JSON
+//     lifecycle events (turn_start, message_update, tool_execution_start,
+//     tool_execution_end, agent_end).
+//   - The collapsed renderer shows live activity while an agent is running
+//     (agent + model, current turn, waiting/thinking/responding/running-a-
+//     tool status, current tool with concise args, several recent completed
+//     tool calls, usage so far); the expanded renderer additionally exposes
+//     it. Reasoning/thinking contents are never displayed - a thinking delta
+//     only moves the status label.
+//   - message_update-driven UI refreshes are throttled to ~150 ms; tool
+//     start/end updates are immediate; message_end remains the authoritative
+//     source for completed messages, usage, stop reason, and final output.
+// Updating: scripts/install_pi_subagent.sh refuses to overwrite this fork
+// (set STS_FORCE_PI_SUBAGENT=1 to force); scripts/check_pi_setup.sh detects
+// the fork and never claims byte-identity.
+// ============================================================================
+
 import { spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -34,6 +60,13 @@ const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
 const COLLAPSED_ITEM_COUNT = 10;
 const PER_TASK_OUTPUT_CAP = 50 * 1024;
+
+// STS-local fork additions: live observability knobs. message_update deltas
+// arrive at token frequency; UI refreshes for them are throttled to roughly
+// LIVE_THROTTLE_MS. Tool start/end and message_end updates bypass the
+// throttle. RECENT_TOOL_CAP bounds the remembered completed tool calls.
+const LIVE_THROTTLE_MS = 150;
+const RECENT_TOOL_CAP = 5;
 
 function formatTokens(count: number): string {
 	if (count < 1000) return count.toString();
@@ -128,6 +161,18 @@ function formatToolCall(
 				themeFg("dim", ` in ${shortenPath(rawPath)}`)
 			);
 		}
+		// STS-local fork addition: concise formatting for the two custom
+		// read-only tools (sts-tools.ts).
+		case "sts_git": {
+			const subcommand = (args.subcommand || "") as string;
+			const extra = Array.isArray(args.args) ? (args.args as string[]).slice(0, 8).join(" ") : "";
+			const preview = [subcommand, extra].filter(Boolean).join(" ");
+			return themeFg("muted", "sts_git ") + themeFg("accent", preview || "…");
+		}
+		case "sts_inspect": {
+			const extra = Array.isArray(args.args) ? (args.args as string[]).slice(0, 8).join(" ") : "";
+			return themeFg("muted", "sts_inspect ") + themeFg("accent", extra || "…");
+		}
 		default: {
 			const argsStr = JSON.stringify(args);
 			const preview = argsStr.length > 50 ? `${argsStr.slice(0, 50)}...` : argsStr;
@@ -146,6 +191,28 @@ interface UsageStats {
 	turns: number;
 }
 
+// STS-local fork addition: transient live activity for one subagent run,
+// updated from Pi JSON lifecycle events and rendered while the agent runs.
+interface CompletedToolCall {
+	name: string;
+	args: Record<string, unknown>;
+	ok: boolean;
+}
+
+interface LiveActivity {
+	/** False once agent_end arrives (final emit happens via the completed result). */
+	running: boolean;
+	/** 1-based count of turn_start events seen. */
+	turn: number;
+	status: "waiting" | "thinking" | "responding" | "tool";
+	currentTool: CompletedToolCall | null;
+	/** Most recent completed tool calls, newest last, capped at RECENT_TOOL_CAP. */
+	recentTools: CompletedToolCall[];
+	/** Usage accumulated from assistant message_end events so far. */
+	usage: UsageStats;
+	model?: string;
+}
+
 interface SingleResult {
 	agent: string;
 	agentSource: "user" | "project" | "unknown";
@@ -158,6 +225,8 @@ interface SingleResult {
 	stopReason?: string;
 	errorMessage?: string;
 	step?: number;
+	/** STS-local fork addition: live activity while the subagent runs. */
+	live?: LiveActivity;
 }
 
 interface SubagentDetails {
@@ -202,6 +271,49 @@ function truncateParallelOutput(output: string): string {
 }
 
 type DisplayItem = { type: "text"; text: string } | { type: "toolCall"; name: string; args: Record<string, any> };
+
+// STS-local fork additions: live activity helpers shared by the collapsed
+// and expanded renderers.
+function isRunningResult(result: SingleResult): boolean {
+	return result.exitCode === -1 || result.live?.running === true;
+}
+
+function liveStatusLabel(status: LiveActivity["status"]): string {
+	switch (status) {
+		case "thinking":
+			return "thinking...";
+		case "responding":
+			return "responding...";
+		case "tool":
+			return "running a tool";
+		default:
+			return "waiting";
+	}
+}
+
+function renderLiveActivity(result: SingleResult, theme: any): string {
+	const live = result.live;
+	if (!live) return "";
+	const model = live.model || result.model;
+	const lines: string[] = [];
+	const status = live.running ? liveStatusLabel(live.status) : "done";
+	const head = `turn ${live.turn} · ${status}`;
+	lines.push(model ? `${theme.fg("dim", `[${model}]`)} ${theme.fg("accent", head)}` : theme.fg("accent", head));
+	if (live.currentTool) {
+		lines.push(
+			theme.fg("muted", "→ ") +
+				formatToolCall(live.currentTool.name, live.currentTool.args, theme.fg.bind(theme)) +
+				theme.fg("dim", " running…"),
+		);
+	}
+	for (const tool of live.recentTools) {
+		const mark = tool.ok ? theme.fg("success", "✓") : theme.fg("error", "✗");
+		lines.push(theme.fg("muted", "→ ") + formatToolCall(tool.name, tool.args, theme.fg.bind(theme)) + " " + mark);
+	}
+	const usageStr = formatUsageStats({ ...live.usage, turns: live.turn }, model);
+	if (usageStr) lines.push(theme.fg("dim", usageStr));
+	return lines.join("\n");
+}
 
 function getDisplayItems(messages: Message[]): DisplayItem[] {
 	const items: DisplayItem[] = [];
@@ -310,13 +422,34 @@ async function runSingleAgent(
 		step,
 	};
 
-	const emitUpdate = () => {
+	// STS-local fork addition: transient live activity, updated from Pi JSON
+	// lifecycle events so the UI can show progress before message_end.
+	const liveActivity: LiveActivity = {
+		running: true,
+		turn: 0,
+		status: "waiting",
+		currentTool: null,
+		recentTools: [],
+		usage: { ...currentResult.usage },
+		model: agent.model,
+	};
+	currentResult.live = liveActivity;
+
+	let lastEmitAt = 0;
+	const emitUpdateNow = () => {
+		lastEmitAt = Date.now();
 		if (onUpdate) {
 			onUpdate({
 				content: [{ type: "text", text: getFinalOutput(currentResult.messages) || "(running...)" }],
 				details: makeDetails([currentResult]),
 			});
 		}
+	};
+	// message_update deltas arrive at token frequency; throttle refreshes so
+	// the TUI does not redraw hundreds of times per response.
+	const emitUpdateThrottled = () => {
+		if (Date.now() - lastEmitAt < LIVE_THROTTLE_MS) return;
+		emitUpdateNow();
 	};
 
 	try {
@@ -348,6 +481,54 @@ async function runSingleAgent(
 					return;
 				}
 
+				// STS-local fork additions: lifecycle events drive the live
+				// activity state. Thinking/text deltas only move the status
+				// label; reasoning and partial text are never rendered or
+				// stored here. message_end stays authoritative for completed
+				// messages, usage, stop reason, and final output.
+				if (event.type === "turn_start") {
+					liveActivity.turn++;
+					liveActivity.status = "waiting";
+					emitUpdateNow();
+					return;
+				}
+
+				if (event.type === "message_update") {
+					const assistantEvent = event.assistantMessageEvent;
+					const subtype = assistantEvent?.type;
+					if (subtype === "thinking_start" || subtype === "thinking_delta") {
+						liveActivity.status = "thinking";
+						emitUpdateThrottled();
+					} else if (subtype === "text_start" || subtype === "text_delta") {
+						liveActivity.status = "responding";
+						emitUpdateThrottled();
+					}
+					return;
+				}
+
+				if (event.type === "tool_execution_start") {
+					liveActivity.status = "tool";
+					liveActivity.currentTool = { name: event.toolName, args: event.args ?? {} };
+					emitUpdateNow();
+					return;
+				}
+
+				if (event.type === "tool_execution_end") {
+					const tool = liveActivity.currentTool ?? { name: event.toolName, args: event.args ?? {} };
+					liveActivity.recentTools.push({ ...tool, ok: !event.isError });
+					if (liveActivity.recentTools.length > RECENT_TOOL_CAP) liveActivity.recentTools.shift();
+					liveActivity.currentTool = null;
+					liveActivity.status = "waiting";
+					emitUpdateNow();
+					return;
+				}
+
+				if (event.type === "agent_end") {
+					liveActivity.running = false;
+					liveActivity.status = "waiting";
+					return;
+				}
+
 				if (event.type === "message_end" && event.message) {
 					const msg = event.message as Message;
 					currentResult.messages.push(msg);
@@ -366,13 +547,15 @@ async function runSingleAgent(
 						if (!currentResult.model && msg.model) currentResult.model = msg.model;
 						if (msg.stopReason) currentResult.stopReason = msg.stopReason;
 						if (msg.errorMessage) currentResult.errorMessage = msg.errorMessage;
+						liveActivity.usage = { ...currentResult.usage };
+						if (msg.model) liveActivity.model = msg.model;
 					}
-					emitUpdate();
+					emitUpdateNow();
 				}
 
 				if (event.type === "tool_result_end" && event.message) {
 					currentResult.messages.push(event.message as Message);
-					emitUpdate();
+					emitUpdateNow();
 				}
 			};
 
@@ -773,6 +956,19 @@ export default function (pi: ExtensionAPI) {
 				const displayItems = getDisplayItems(r.messages);
 				const finalOutput = getFinalOutput(r.messages);
 
+				if (r.live?.running) {
+					// STS-local fork addition: collapsed live view while the
+					// subagent runs.
+					let text =
+						theme.fg("warning", "⏳") +
+						" " +
+						theme.fg("toolTitle", theme.bold(r.agent)) +
+						theme.fg("muted", ` (${r.agentSource})`);
+					text += `\n${renderLiveActivity(r, theme)}`;
+					if (!expanded) text += `\n${theme.fg("muted", "(Ctrl+O to expand)")}`;
+					return new Text(text, 0, 0);
+				}
+
 				if (expanded) {
 					const container = new Container();
 					let header = `${icon} ${theme.fg("toolTitle", theme.bold(r.agent))}${theme.fg("muted", ` (${r.agentSource})`)}`;
@@ -780,6 +976,13 @@ export default function (pi: ExtensionAPI) {
 					container.addChild(new Text(header, 0, 0));
 					if (isError && r.errorMessage)
 						container.addChild(new Text(theme.fg("error", `Error: ${r.errorMessage}`), 0, 0));
+					// STS-local fork addition: expose the live/recent activity
+					// in the expanded view while the agent is running.
+					if (r.live?.running) {
+						container.addChild(new Spacer(1));
+						container.addChild(new Text(theme.fg("muted", "─── Live ───"), 0, 0));
+						container.addChild(new Text(renderLiveActivity(r, theme), 0, 0));
+					}
 					container.addChild(new Spacer(1));
 					container.addChild(new Text(theme.fg("muted", "─── Task ───"), 0, 0));
 					container.addChild(new Text(theme.fg("dim", r.task), 0, 0));
@@ -855,7 +1058,11 @@ export default function (pi: ExtensionAPI) {
 					);
 
 					for (const r of details.results) {
-						const rIcon = r.exitCode === 0 ? theme.fg("success", "✓") : theme.fg("error", "✗");
+						const rIcon = r.live?.running
+							? theme.fg("warning", "⏳")
+							: r.exitCode === 0
+								? theme.fg("success", "✓")
+								: theme.fg("error", "✗");
 						const displayItems = getDisplayItems(r.messages);
 						const finalOutput = getFinalOutput(r.messages);
 
@@ -868,6 +1075,8 @@ export default function (pi: ExtensionAPI) {
 							),
 						);
 						container.addChild(new Text(theme.fg("muted", "Task: ") + theme.fg("dim", r.task), 0, 0));
+						// STS-local fork addition: live activity for the running step.
+						if (r.live?.running) container.addChild(new Text(renderLiveActivity(r, theme), 0, 0));
 
 						// Show tool calls
 						for (const item of displayItems) {
@@ -907,10 +1116,16 @@ export default function (pi: ExtensionAPI) {
 					theme.fg("toolTitle", theme.bold("chain ")) +
 					theme.fg("accent", `${successCount}/${details.results.length} steps`);
 				for (const r of details.results) {
-					const rIcon = r.exitCode === 0 ? theme.fg("success", "✓") : theme.fg("error", "✗");
+					const rIcon = r.live?.running
+						? theme.fg("warning", "⏳")
+						: r.exitCode === 0
+							? theme.fg("success", "✓")
+							: theme.fg("error", "✗");
 					const displayItems = getDisplayItems(r.messages);
 					text += `\n\n${theme.fg("muted", `─── Step ${r.step}: `)}${theme.fg("accent", r.agent)} ${rIcon}`;
-					if (displayItems.length === 0) text += `\n${theme.fg("muted", "(no output)")}`;
+					// STS-local fork addition: live activity for the running step.
+					if (r.live?.running) text += `\n${renderLiveActivity(r, theme)}`;
+					else if (displayItems.length === 0) text += `\n${theme.fg("muted", "(no output)")}`;
 					else text += `\n${renderDisplayItems(displayItems, 5)}`;
 				}
 				const usageStr = formatUsageStats(aggregateUsage(details.results));
@@ -920,9 +1135,13 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			if (details.mode === "parallel") {
-				const running = details.results.filter((r) => r.exitCode === -1).length;
-				const successCount = details.results.filter((r) => r.exitCode !== -1 && !isFailedResult(r)).length;
-				const failCount = details.results.filter((r) => r.exitCode !== -1 && isFailedResult(r)).length;
+				// STS-local fork addition: a task is running while its exit
+				// code is the -1 placeholder or its live state says so (live
+				// state is present on streaming results whose exitCode is
+				// still 0).
+				const running = details.results.filter(isRunningResult).length;
+				const successCount = details.results.filter((r) => !isRunningResult(r) && !isFailedResult(r)).length;
+				const failCount = details.results.filter((r) => !isRunningResult(r) && isFailedResult(r)).length;
 				const isRunning = running > 0;
 				const icon = isRunning
 					? theme.fg("warning", "⏳")
@@ -988,15 +1207,16 @@ export default function (pi: ExtensionAPI) {
 				// Collapsed view (or still running)
 				let text = `${icon} ${theme.fg("toolTitle", theme.bold("parallel "))}${theme.fg("accent", status)}`;
 				for (const r of details.results) {
-					const rIcon =
-						r.exitCode === -1
-							? theme.fg("warning", "⏳")
-							: isFailedResult(r)
-								? theme.fg("error", "✗")
-								: theme.fg("success", "✓");
+					const rIcon = isRunningResult(r)
+						? theme.fg("warning", "⏳")
+						: isFailedResult(r)
+							? theme.fg("error", "✗")
+							: theme.fg("success", "✓");
 					const displayItems = getDisplayItems(r.messages);
 					text += `\n\n${theme.fg("muted", "─── ")}${theme.fg("accent", r.agent)} ${rIcon}`;
-					if (displayItems.length === 0)
+					// STS-local fork addition: live activity for running tasks.
+					if (r.live?.running) text += `\n${renderLiveActivity(r, theme)}`;
+					else if (displayItems.length === 0)
 						text += `\n${theme.fg("muted", r.exitCode === -1 ? "(running...)" : "(no output)")}`;
 					else text += `\n${renderDisplayItems(displayItems, 5)}`;
 				}

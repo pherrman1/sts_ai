@@ -1,6 +1,6 @@
 # StS AI project guidance
 
-Last verified: 2026-08-05 against the current working tree.
+Last verified: 2026-08-08 against the current working tree.
 
 ## Purpose and required reading
 
@@ -47,6 +47,9 @@ base in the same change. Do not invent rationale; use **Inference**,
 | `bindings/` | Run-level pybind11 API, not card-by-card combat control. |
 | root `train_*.py`, `export_*.py`, `v_server.py` | Training, export, optional Python inference. |
 | `selfplay/` | Generation, retraining, paired gates, snapshots, local state. |
+| `tools/ai_cycle.py` | Deterministic architect → implementer → reviewer orchestration, verification gates, retry/escalation policy, and automated seed limits. |
+| `.pi/` | Pi project agents, read-only inspection tools, safety hooks, and prompt templates. |
+| `.opencode/`, `opencode.json` | Legacy/rollback OpenCode agent backend and prompts during the Pi migration. |
 
 Deployable native exports under `selfplay/models/*.native` are git-tracked
 (since 2026-08-05) so model handoff between machines happens via `git pull`;
@@ -101,6 +104,32 @@ Build the relevant target before using these commands. `json/` and `pybind11/`
 are gitlinks; a fresh clone requires `git submodule update --init` before the
 first configure.
 
+### Automated agent verification limits
+
+`tools/ai_cycle.py` is authoritative for automated verification policy. In
+particular, `MAX_AUTOMATED_SEEDS = 128` is a hard safety limit for every
+agent-driven game-seed sweep.
+
+Use smaller checks by default:
+
+- iterative smoke checks: normally 8–16 seeds;
+- ordinary focused validation: normally no more than 32 seeds;
+- final automated statistical validation: normally no more than 64 seeds;
+- 128 seeds: absolute maximum for any automated agent verification;
+- more than 128 seeds: human-controlled/manual research run only, never an
+  automatically launched verification step.
+
+Do not infer that the 128-seed maximum is the recommended default. It is a
+ceiling. Prefer the cheapest sample size that can establish the requested
+property, and reserve larger paired evaluations for claims that genuinely need
+them.
+
+The orchestration program, not an LLM prompt, decides whether a proposed
+verification command is allowed, whether a seed count is within bounds, and
+whether required checks passed. Pi's `.pi/extensions/sts-safety.ts` provides
+defense in depth for interactive use but does not replace the deterministic
+checks in `tools/ai_cycle.py`.
+
 The current cached build is Linux/WSL Unix Makefiles using `/usr/bin/c++`.
 The pybind11 module is skipped with a warning when CPython development headers
 are absent; check startup/configure output before assuming `slaythespire`
@@ -108,6 +137,29 @@ exists. Do not claim a clean configure or native MSVC build unless you actually
 perform it. CMake does not define `build/libsts.a`; do not use old manual
 archive-link instructions. More detail:
 [`operations/build-and-debugging.md`](docs/knowledge-base/operations/build-and-debugging.md).
+
+## Agent orchestration
+
+`tools/ai_cycle.py` owns the deterministic multi-agent workflow. It preserves
+repository-specific behavior such as clean-working-tree checks, protected
+workflow paths, verification allowlisting, retry/review limits, high-risk
+classification, candidate fingerprinting, ELI5 summaries, and the automated
+seed cap.
+
+As of 2026-08-08, both OpenCode and Pi backends exist. Pi integration is
+available through `--backend pi`; OpenCode remains the default rollback path
+until the live Pi bake-off is completed and the default is deliberately
+changed. Do not silently remove or weaken the rollback path while evaluating
+the new backend.
+
+Project-local Pi roles live in `.pi/agents/`. Read-only architect/reviewer
+roles use the restricted `sts_git` and `sts_inspect` tools rather than arbitrary
+Bash. `.pi/` is workflow control-plane code: ordinary implementation agents
+must not rewrite agent prompts, safety extensions, orchestration code, or their
+tests as part of unrelated STS work.
+
+Pi project trust enables project extensions and prompts; it is not a security
+sandbox. Deterministic repository protections remain authoritative.
 
 ## Modification workflow
 
@@ -126,7 +178,9 @@ archive-link instructions. More detail:
 5. Rebuild every translation unit affected by shared header-layout changes.
 6. Run focused checks first. For a bug fix, write a reproducing test first when
    feasible. For multi-step tasks, state a brief `step → verify` loop. Use a
-   paired project-fair benchmark before making a policy-quality claim.
+   paired project-fair benchmark before making a policy-quality claim. Agent-run
+   seed sweeps must obey the automated limits above; do not escalate sample
+   size merely because a larger benchmark would be more statistically precise.
 7. Inspect `git diff`, generated artifacts, paths, symbols, and documentation.
 
 ## Critical safety and correctness traps
@@ -258,7 +312,9 @@ fixes, obvious one-liners) use judgment and do not apply full rigor.
 
 Do not assume:
 
-- `outcome` (not `isBattleOver()`) is the canonical combat terminal flag;
+- `isBattleOver()` is an independent combat terminal flag; canonical combat
+  termination is `bc.outcome == Outcome::UNDECIDED`, and `isBattleOver()` is
+  derived from `outcome`;
 - a model loaded because its file exists;
 - `v_server.py` is required for default native OOC;
 - Python can issue card-by-card combat actions;
@@ -269,7 +325,12 @@ Do not assume:
 - `runtrace` exactly mirrors `runFullRunOOC`;
 - `selfplay/state.env` proves a loop is active or resumable;
 - a dated “running now,” “current best,” or model-version claim is still current;
-- design rationale can be reconstructed from code shape.
+- design rationale can be reconstructed from code shape;
+- 128 seeds is a normal/default automated benchmark size rather than a hard
+  ceiling;
+- Pi project trust is a sandbox or replaces the deterministic safety checks in
+  `tools/ai_cycle.py`;
+- the Pi backend is the default unless `tools/ai_cycle.py` currently says so.
 
 When genuinely uncertain, stop and ask rather than proceeding on an
 unverified interpretation.

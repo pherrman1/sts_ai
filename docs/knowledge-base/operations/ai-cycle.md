@@ -49,8 +49,23 @@ extension cannot weaken them to arbitrary Bash.
 Pi prompt bodies are read from `.pi/agents/*.md` with YAML frontmatter
 stripped (`pi_agent_prompt_body`); `reviewer_escalation` uses
 `reviewer-pro.md`. The same files drive interactive Pi through the vendored
-reference subagent extension (`.pi/extensions/subagent/`); `@file`
-attachments substitute for OpenCode's `--file`.
+subagent extension (`.pi/extensions/subagent/`); `@file` attachments
+substitute for OpenCode's `--file`.
+
+Interactive Pi observability: `.pi/extensions/subagent/index.ts` is an
+**STS-local fork** of Pi's reference subagent extension (base commit
+`c185d412382581860a489b4959737bad1d119492`, see the `STS-LOCAL FORK` header
+comment). The fork adds live activity to the subagent tool's collapsed and
+expanded rendering — agent + model, current turn,
+waiting/thinking/responding/running-a-tool status, the current tool with
+concise args, recent completed tool calls, and usage so far — driven by Pi's
+JSON lifecycle events (`turn_start`, `message_update`,
+`tool_execution_start/end`, `agent_end`). `message_update` refreshes are
+throttled to ~150 ms; tool start/end are immediate; `message_end` remains
+authoritative. Reasoning/thinking contents are never displayed.
+`scripts/install_pi_subagent.sh` refuses to overwrite the fork unless
+`STS_FORCE_PI_SUBAGENT=1`; `scripts/check_pi_setup.sh` detects the fork
+marker and does not claim byte-identity.
 
 ## Important data flow
 
@@ -59,10 +74,17 @@ attachments substitute for OpenCode's `--file`.
    invocation (dirty tracked tree → abort before any LLM call).
 2. Architect/reviewer/escalation prompts are role bodies from `.pi/agents/`
    plus per-call task text; implementer calls attach task/plan/report files.
-3. Pi runs stream live `→ <toolName>` lines; the extracted final response is
-   appended to the session log after `===== PI FINAL RESPONSE BEGIN =====`
-   as the last content, so `parse_json_response`-based recovery on paid
-   transcripts works exactly as for OpenCode logs.
+3. Pi runs print a model-bearing banner and stream concise lifecycle status
+   lines (`[role] model thinking...`, `[role] tool: read <path>:<range>`,
+   `[role] tool done`, `[role] model responding...`) while the full raw
+   JSONL stream is written verbatim to the session log. Status is
+   lifecycle-only: thinking/text deltas never print content, and the
+   thinking/responding transition is printed once per response
+   (`pi_live_status_line`, `pi_format_tool_call`). The extracted final
+   response is appended to the session log after
+   `===== PI FINAL RESPONSE BEGIN =====` as the last content, so
+   `parse_json_response`-based recovery on paid transcripts works exactly
+   as for OpenCode logs.
 4. Cost/usage from Pi `message_end` events is recorded in the session's
    `costs.json` with the same schema OpenCode's sqlite rows produce; denied
    tool calls go to `denied-tool-calls.md`.
@@ -78,7 +100,7 @@ attachments substitute for OpenCode's `--file`.
   `MAX_REVIEW_ROUNDS`, `MAX_SOL_REVIEW_ROUNDS`, `MAX_EXPENSIVE_REPAIRS`),
   escalation classification, recovery markers, ELI5 artifacts, and
   experiment/decision-log requirements. `sts-safety.ts` is defense in depth
-  only (handoff Phase 5).
+  only.
 - `--backend pi` children always pass `--approve` and explicit `--extension`
   paths for `sts-tools.ts` and `sts-safety.ts`; Pi dedupes these with
   trust-discovery paths.
@@ -90,23 +112,30 @@ attachments substitute for OpenCode's `--file`.
   failed-run recovery re-parses.
 - Pi has no `--` terminator; prompts are prefixed `Task: ` so they are never
   parsed as flags or `@file` attachments.
+- Pi terminal output is lifecycle status only; the complete raw JSONL stream
+  lives in the session log (`*.log`) for forensic debugging, and the
+  extracted final response is appended to it for log-based recovery.
 
 ## Relevant code
 
 - `tools/ai_cycle.py`: `AgentBackend`, `OpenCodeBackend`, `PiBackend`,
   `select_backend`, `run_agent`, `pi_final_response`,
   `pi_cost_entries_from_events`, `extract_pi_denied_calls`,
-  `pi_agent_prompt_body`, `PROTECTED_WORKFLOW_PATHS`, `--backend`.
-- `tools/test_ai_cycle.py`: `PiBackendUnitTests`, `PiBackendCycleTests`,
-  `BackendSafetySyncTests` (fake `subprocess.Popen`, no API calls).
+  `pi_agent_prompt_body`, `pi_format_tool_call`, `pi_live_status_line`,
+  `PI_MODEL_DISPLAY_NAME`, `PROTECTED_WORKFLOW_PATHS`, `--backend`.
+- `tools/test_ai_cycle.py`: `PiBackendUnitTests`, `PiLiveStreamingTests`,
+  `PiBackendCycleTests`, `BackendSafetySyncTests` (fake
+  `subprocess.Popen`, no API calls).
 - `.pi/agents/*.md`, `.pi/extensions/sts-tools.ts`,
-  `.pi/extensions/sts-safety.ts`, `.pi/prompts/sts-investigate.md`,
-  `scripts/install_pi_subagent.sh`, `scripts/check_pi_setup.sh`.
+  `.pi/extensions/sts-safety.ts`, `.pi/extensions/subagent/index.ts`
+  (STS-local fork of Pi reference, see `STS-LOCAL FORK` header),
+  `.pi/prompts/sts-investigate.md`, `scripts/install_pi_subagent.sh`,
+  `scripts/check_pi_setup.sh`.
 
 ## Known limitations
 
 - `DEFAULT_BACKEND` is still `opencode`; flipping it to `pi` requires the
-  handoff Phase 1/3/7 live verification (API key) and a test re-run.
+  live bake-off verification (API key) and a test re-run.
 - Pi cost figures come from the model usage reported by Pi itself; OpenCode
   costs come from the opencode session database. The two backends are not
   directly comparable per call.
@@ -115,6 +144,10 @@ attachments substitute for OpenCode's `--file`.
 - `pi update --models` refreshes the model catalog; if the catalog IDs
   change, update only the `model:` lines in `.pi/agents/*.md` and the
   routing table in `tools/ai_cycle.py`.
+- `.pi/extensions/subagent/index.ts` diverges from the pinned upstream Pi
+  commit (live observability fork). Upstream changes to the reference
+  subagent extension must be re-merged by hand; `install_pi_subagent.sh`
+  refuses to overwrite the fork without `STS_FORCE_PI_SUBAGENT=1`.
 
 ## Open questions
 
@@ -124,5 +157,6 @@ attachments substitute for OpenCode's `--file`.
 
 ## Related
 
-- Decision log: `docs/knowledge-base/decision-log/2026-08-08-pi-backend-integration.md`
-- Handoff: `PI_INTEGRATION_HANDOFF.md`
+- Decision log:
+  `docs/knowledge-base/decision-log/2026-08-08-pi-backend-integration.md`,
+  `docs/knowledge-base/decision-log/2026-08-08-pi-live-observability.md`

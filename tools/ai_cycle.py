@@ -45,6 +45,14 @@ PI_MODEL_BY_ROLE = {
     "reviewer_escalation": "deepseek/deepseek-v4-pro:xhigh",
 }
 
+# Human-friendly model names for the live Pi banner; unknown model IDs fall
+# back to the raw ID. Display only - routing uses PI_MODEL_BY_ROLE.
+PI_MODEL_DISPLAY_NAME = {
+    "deepseek/deepseek-v4-pro:high": "DeepSeek V4 Pro",
+    "deepseek/deepseek-v4-flash:high": "DeepSeek V4 Flash",
+    "deepseek/deepseek-v4-pro:xhigh": "DeepSeek V4 Pro",
+}
+
 # Roles whose Pi child process must never run arbitrary Bash. The allowlist
 # covers Pi's read-only built-ins plus the two custom STS tools provided by
 # .pi/extensions/sts-tools.ts. The implementer keeps its normal tools;
@@ -740,6 +748,121 @@ def json_try_loads(line: str) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+def pi_format_tool_call(tool_name: str, args) -> str:
+    """One-line concise description of a Pi tool call for the terminal.
+
+    Displays paths, patterns, and truncated commands only - never tool
+    outputs, file contents, or reasoning. Unknown tools fall back to a
+    safely truncated argument summary.
+    """
+    if not isinstance(args, dict):
+        args = {}
+
+    def path_arg(fallback: str = "?") -> str:
+        value = args.get("file_path") or args.get("path")
+        return value if isinstance(value, str) and value else fallback
+
+    if tool_name == "read":
+        file_path = path_arg()
+        offset = args.get("offset")
+        limit = args.get("limit")
+        if isinstance(offset, int) or isinstance(limit, int):
+            start = offset if isinstance(offset, int) else 1
+            if isinstance(limit, int):
+                file_path += f":{start}-{start + limit - 1}"
+            else:
+                file_path += f":{start}"
+        return f"read {file_path}"
+
+    if tool_name in ("edit", "write"):
+        return f"{tool_name} {path_arg()}"
+
+    if tool_name == "grep":
+        pattern = args.get("pattern")
+        pattern = pattern if isinstance(pattern, str) and pattern else "?"
+        return f'grep "{pattern}" {path_arg()}'
+
+    if tool_name == "find":
+        pattern = args.get("pattern")
+        pattern = pattern if isinstance(pattern, str) and pattern else "*"
+        return f"find {pattern} in {path_arg()}"
+
+    if tool_name == "ls":
+        return f"ls {path_arg('.')}"
+
+    if tool_name == "bash":
+        command = args.get("command")
+        if isinstance(command, str):
+            command = " ".join(command.split())
+            if len(command) > 60:
+                command = command[:57] + "..."
+            return f"bash {command}"
+        return "bash ?"
+
+    if tool_name in ("sts_git", "sts_inspect"):
+        subcommand = args.get("subcommand")
+        extra = args.get("args")
+        extra_str = ""
+        if isinstance(extra, list):
+            extra_str = " ".join(str(value) for value in extra[:8])
+            if len(extra) > 8:
+                extra_str += " ..."
+        sub = subcommand if isinstance(subcommand, str) else ""
+        summary = " ".join(part for part in (sub, extra_str) if part)
+        return f"{tool_name} {summary}".rstrip()
+
+    parts = []
+    for key in sorted(args):
+        value = args[key]
+        if isinstance(value, list):
+            value = " ".join(str(item) for item in value[:8])
+        elif not isinstance(value, (str, int, float, bool)):
+            continue
+        parts.append(f"{key}={value}")
+    summary = " ".join(parts)
+    if len(summary) > 80:
+        summary = summary[:77] + "..."
+    return f"{tool_name} {summary}".rstrip()
+
+
+def pi_live_status_line(
+    agent: str, event: dict, state: str | None
+) -> tuple[str | None, str | None]:
+    """Map one Pi JSONL event to a concise terminal status line.
+
+    Returns ``(line | None, next_state)``. Only lifecycle status is printed:
+    thinking/text deltas update the state without ever dumping their content.
+    ``state`` gates the thinking/responding transitions so one response
+    prints at most one line no matter how many deltas arrive. Tool start/end
+    lines are unconditional so parallel tool batches all surface.
+    """
+    event_type = event.get("type")
+
+    if event_type == "tool_execution_start":
+        tool_name = event.get("toolName", "?")
+        line = f"[{agent}] tool: {pi_format_tool_call(tool_name, event.get('args'))}"
+        return line, "tool"
+
+    if event_type == "tool_execution_end":
+        return f"[{agent}] tool done", state
+
+    if event_type == "message_update":
+        assistant_event = event.get("assistantMessageEvent")
+        if not isinstance(assistant_event, dict):
+            return None, state
+        subtype = assistant_event.get("type")
+        if subtype in ("thinking_start", "thinking_delta"):
+            if state != "thinking":
+                return f"[{agent}] model thinking...", "thinking"
+            return None, state
+        if subtype in ("text_start", "text_delta"):
+            if state != "responding":
+                return f"[{agent}] model responding...", "responding"
+            return None, state
+
+    return None, state
+
+
 # Delimiter written after the raw JSONL stream in Pi session logs so that the
 # existing log-based recovery paths (parse_json_response on a paid transcript)
 # work identically for Pi runs. The extracted final response runs from the
@@ -1042,8 +1165,10 @@ class PiBackend(AgentBackend):
         if agent in PI_READONLY_ROLES:
             cmd.extend(["--tools", PI_READONLY_TOOLS])
 
+        model_id = PI_MODEL_BY_ROLE[agent]
+        model_display = PI_MODEL_DISPLAY_NAME.get(model_id, model_id)
         print()
-        print(f"===== {agent.upper()} =====")
+        print(f"====== {agent.upper()} · {model_display} ======")
         print()
 
         prompt_path: str | None = None
@@ -1096,6 +1221,12 @@ class PiBackend(AgentBackend):
             try:
                 assert process.stdout is not None
 
+                # Lifecycle status only: thinking/responding transitions are
+                # gated so high-frequency deltas never spam the terminal, and
+                # reasoning/text contents are never printed. The raw JSONL
+                # stream above stays complete in the session log.
+                live_state: str | None = None
+
                 for line in process.stdout:
                     if log_handle is not None:
                         log_handle.write(strip_ansi(line))
@@ -1105,11 +1236,11 @@ class PiBackend(AgentBackend):
                     if event is None:
                         continue
                     events.append(event)
-                    if event.get("type") == "tool_execution_start":
-                        print(
-                            f"\u2192 {event.get('toolName', '?')}",
-                            flush=True,
-                        )
+                    status_line, live_state = pi_live_status_line(
+                        agent, event, live_state
+                    )
+                    if status_line is not None:
+                        print(status_line, flush=True)
 
                 if timeout_seconds is not None:
                     try:

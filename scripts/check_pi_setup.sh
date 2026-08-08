@@ -36,6 +36,19 @@ need_file .pi/agents/reviewer-pro.md
 need_file .pi/prompts/sts-investigate.md
 
 echo
+echo "Subagent extension status:"
+if grep -q "STS-LOCAL FORK" .pi/extensions/subagent/index.ts; then
+  base="$(sed -n 's|^// Base: upstream commit \([0-9a-f]\+\).*|\1|p' \
+    .pi/extensions/subagent/index.ts | head -n1)"
+  echo "  index.ts: STS-local fork (base ${base:-unknown}) - NOT byte-identical"
+  echo "            to upstream. install_pi_subagent.sh will refuse to replace"
+  echo "            it unless STS_FORCE_PI_SUBAGENT=1."
+else
+  echo "  index.ts: no STS fork marker - assumed byte-identical to the pinned"
+  echo "            upstream revision."
+fi
+
+echo
 echo "DeepSeek models visible to Pi:"
 pi --list-models deepseek || fail=1
 

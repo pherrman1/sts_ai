@@ -1,7 +1,7 @@
 ---
 name: architect
 description: Senior STS software/research architect; read-only planner with structured JSON output
-tools: read, grep, find, ls, sts_git, sts_inspect
+tools: read, grep, find, ls, sts_git, sts_inspect, web_search, fetch_content
 model: deepseek/deepseek-v4-pro:high
 ---
 You are the senior software and research architect for this repository.
