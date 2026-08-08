@@ -802,7 +802,20 @@ double CombatValueNet::predictVec(const float *canonFeatures) const {
     double sum = baseScore;
     for (const auto &nodes : trees) {
         int n = 0;
+        int steps = 0;
         while (nodes[n].featIdx >= 0) {
+            if (++steps > (int)nodes.size()) {
+                std::fprintf(stderr,
+                             "[CombatValueNet] tree-walk exceeded %d steps "
+                             "(tree %zu/%zu, node %d feat %d val %.4f, yes %d "
+                             "no %d) — corrupt/cyclic model, treating node as "
+                             "leaf\n",
+                             (int)nodes.size(), &nodes - &trees[0], trees.size(),
+                             n, nodes[n].featIdx,
+                             (double)canonFeatures[sel[nodes[n].featIdx]],
+                             nodes[n].yes, nodes[n].no);
+                break;
+            }
             const float x = canonFeatures[sel[nodes[n].featIdx]];
             n = (x < nodes[n].thresh) ? nodes[n].yes : nodes[n].no;
         }
@@ -819,7 +832,16 @@ double CombatValueNet::predictQuantileEV(const float *canonFeatures) const {
         double s = quantileBase[q];
         for (const auto &nodes : quantileTrees[q]) {
             int n = 0;
+            int steps = 0;
             while (nodes[n].featIdx >= 0) {
+                if (++steps > (int)nodes.size()) {
+                    std::fprintf(stderr,
+                                 "[CombatValueNet] quantile tree-walk exceeded "
+                                 "%d steps (quantile %d/%d, node %d) — corrupt "
+                                 "model, treating node as leaf\n",
+                                 (int)nodes.size(), q, nQuantiles, n);
+                    break;
+                }
                 const float x = canonFeatures[sel[nodes[n].featIdx]];
                 n = (x < nodes[n].thresh) ? nodes[n].yes : nodes[n].no;
             }

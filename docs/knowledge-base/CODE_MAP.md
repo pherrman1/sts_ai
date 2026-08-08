@@ -104,8 +104,8 @@ before broad repository search.
 | Pi inspect tools | `.pi/extensions/sts-tools.ts` | `sts_git`, `sts_inspect` — read-only tools for architect/reviewer | (inline) |
 | Pi subagent runner | `.pi/extensions/subagent/index.ts` | Spawns subagent Pi processes, live activity renderer | (inline) |
 | Pi agent prompts | `.pi/agents/*.md` | architect, implementer, investigator, reviewer | (inline) |
-| Context telemetry | `tools/agent_telemetry.py` (writer), `.pi/extensions/sts-telemetry.ts` (hook) | Diagnostic read/search measurement | [CODE_MAP.md](CODE_MAP.md) |
-| Telemetry summarizer | `tools/summarize_agent_context.py` | Aggregates read/search stats from telemetry JSONL | [CODE_MAP.md](CODE_MAP.md) |
+| Context telemetry | `tools/agent_telemetry.py` (writer), `.pi/extensions/sts-telemetry.ts` (hook) | Diagnostic read/search measurement | [context-telemetry.md](operations/context-telemetry.md) |
+| Telemetry summarizer | `tools/summarize_agent_context.py` | Aggregates read/search stats from telemetry JSONL | [context-telemetry.md](operations/context-telemetry.md) |
 
 ## Legend
 

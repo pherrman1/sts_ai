@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-08-08 against the current working tree (leafdiag/leafref/rollouttrace leaf-state diagnostic producers + `STS_DIAG_VNET2`; VCOMBAT_TARGET, asserting `vnettest`, §134 direct-R ablation unchanged; `.venv` training-environment note added; system-`python3` torch provisioning note added).
+Last verified: 2026-08-09 against the current working tree (V4 tok trainer convergence measurement, PATIENCE default change, vectorized row-index construction; leafdiag/leafref/rollouttrace leaf-state diagnostic producers + `STS_DIAG_VNET2`; VCOMBAT_TARGET, asserting `vnettest`, §134 direct-R ablation unchanged; `.venv` training-environment note; system-`python3` torch provisioning note).
 
 ## Purpose
 
@@ -164,8 +164,11 @@ search); a failed secondary load is non-fatal and the diagnostic CSVs report
 NaN for its predictions. Optional server models are selected through
 `v_server.py` environment variables. Current tracked artifact hashes are listed
 only in [current baselines](../evaluation/current-baselines.md).
-The distributional and PV models are consumed only by Searcher3; a successful
-startup load is not evidence of use under default Searcher2.
+The distributional model is consumed only by Searcher3; the PV model adds
+policy-head priors to default Searcher2 since 2026-08-05 (value leaf is
+Searcher3-only). A successful startup load is not evidence of use under
+default Searcher2 for DistVNet; PVNet policy priors ARE used under Searcher2
+unless STS_PVNET_VALUE_ONLY=1.
 
 ## Invariants and assumptions
 
@@ -280,6 +283,30 @@ startup load is not evidence of use under default Searcher2.
   score legal actions with Q directly (no successor clones) behind
   `STS_OOC_STRATEGIC_MARGIN`; `STS_OOC_STRATEGIC_Q=0`
   restores the V2 successor-`predictValue` scoring path.
+- `train_strategic_tok.py` (V4 token-state, Phase A round 5) trains the
+  `strategic_tok_net.py::Net` architecture from `strategicgen2` Tier-B CSVs.
+  Architecture and training contract: `docs/knowledge-base/architecture/ooc-strategic-v4.md`.
+  The state block is 482 raw float16 columns per row (50 globals, 96 deck slots
+  ×3, 64 relic slots ×2, 8 potion slots ×2), written once to a group-ordered
+  `OUT_tok_state.bin` (fingerprinted; reused on match). Global mean/inv are
+  computed from train rows only and applied per batch. On CUDA, the entire
+  state is uploaded to GPU VRAM once (~2.9 GB for 3.06M rows) and rows are
+  gathered on-device; falls back to CPU mmap on OOM. `torch.compile`
+  (mode="default", Triton fusion) is enabled by default on CUDA
+  (`STRAT_TOK_COMPILE=1`), giving ~2.15× speedup over eager
+  (2026-08-03 decision log).
+- **Convergence** (40 epochs, full 3.06M-row Tier-B dataset, CUDA/compiled):
+  val_pol_ce 0.6018@1 → 0.5128@10 → 0.5031@20 → 0.4962@30 → 0.4924@40.
+  The last 10 epochs (30→40) buy only 0.0038 CE — within run-to-run noise
+  (~0.002 CE from non-deterministic `scatter_add_` atomics). Best checkpoint
+  (val_pol_ce 0.4917) occurs at an intermediate epoch.
+- **`STRAT_PATIENCE`** (default `6` since 2026-08-09, was `0` = disabled):
+  stops training after N consecutive epochs without a `SELECT_METRIC`
+  improvement of at least `STRAT_MIN_DELTA` (1e-4). Best-epoch checkpoint
+  is always restored. On the full dataset this saves ~20–25% wall time
+  (stops around epoch 30–36). On smaller datasets where the model hasn't
+  converged, PATIENCE correctly does not trigger. Set `STRAT_PATIENCE=0`
+  to restore the old unlimited-epochs behavior.
 - Tracked artifacts under `build/` coexist with ignored build output; path
   location does not indicate whether an artifact was generated, deployed, or
   benchmarked.
@@ -315,6 +342,7 @@ startup load is not evidence of use under default Searcher2.
 - `train_combat_pvnet.py::PolicyValueNet`
 - `train_ooc_checkpoint.py`; `export_ooc_checkpoint.py`
 - `train_strategic.py`; `export_strategic.py`; `apps/ooc_strategic_net.h`
+- `train_strategic_tok.py`; `strategic_tok_net.py`; `export_strategic_tok.py`; `apps/ooc_strategic_tok_net.h`
 - `v_server.py::H.handle`, `RAW`
 - `selfplay/loop.sh`
 - `parity_test.py`; `apps/parity_test.cpp`

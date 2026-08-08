@@ -4551,6 +4551,16 @@ struct FutureFightProbe {
     std::vector<Observation> fights;
 };
 
+struct PredictedCheckpointFight {
+    double winProbability = 0.0;
+    int endHpIfWin = 1;
+    int maxHp = 1;
+    bool predictedWin = false;
+};
+
+static PredictedCheckpointFight predictCheckpointFight(const GameContext &gc,
+                                                        MonsterEncounter encounter);
+
 // Continue a copied run after any out-of-combat counterfactual action. Every
 // branch in one decision uses the same agent seed and copied GameContext RNG
 // state (common random numbers).  maxFights < 0 means finish the whole run.  A
@@ -4560,7 +4570,8 @@ static OocCounterfactualResult
 finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         PathHistory path, int maxFights = -1, bool bootstrap = false,
                         FutureFightProbe *probe = nullptr, int stopAfterAct = 0,
-                        const std::vector<int> *fightSimsSeq = nullptr) {
+                        const std::vector<int> *fightSimsSeq = nullptr,
+                        bool usePredict = false) {
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(agentSeed);
@@ -4578,11 +4589,32 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
             agent.simulationCountBase = fightSimsSeq && !fightSimsSeq->empty()
                 ? (*fightSimsSeq)[std::min(fights, (int)fightSimsSeq->size() - 1)]
                 : fightSims(gc, sims);
-            BattleContext bc; bc.init(gc); agent.playoutBattle(bc); bc.exitBattle(gc);
+            BattleContext bc; bc.init(gc);
+            bool passed; int endHp, endMaxHp;
+            if (usePredict) {
+                const auto prediction = predictCheckpointFight(gc, bc.encounter);
+                passed = prediction.predictedWin;
+                endHp = passed ? prediction.endHpIfWin : 0;
+                endMaxHp = prediction.maxHp;
+                if (!passed) {
+                    gc.outcome = GameOutcome::PLAYER_LOSS;
+                } else {
+                    BattleContext virtualBattle{};
+                    virtualBattle.init(gc, bc.encounter);
+                    virtualBattle.player.curHp = prediction.endHpIfWin;
+                    virtualBattle.outcome = Outcome::PLAYER_VICTORY;
+                    virtualBattle.exitBattle(gc);
+                }
+            } else {
+                agent.playoutBattle(bc);
+                passed = bc.outcome == Outcome::PLAYER_VICTORY;
+                endHp = passed ? gc.curHp : 0;
+                endMaxHp = gc.maxHp;
+                bc.exitBattle(gc);
+            }
             if (probe) {
-                const bool passed = bc.outcome == Outcome::PLAYER_VICTORY;
-                probe->fights.push_back({room, bc.encounter, gc.floorNum, gc.curHp,
-                                         gc.maxHp, passed});
+                probe->fights.push_back({room, bc.encounter, gc.floorNum, endHp,
+                                         endMaxHp, passed});
                 if (!probe->nextCombatSeen) {
                     probe->nextCombatSeen = true;
                     probe->nextCombatPassed = passed;
@@ -4743,6 +4775,14 @@ static bool actFightProbeDraftPolicy(GameContext &gc) {
         const int nCards = r.cardRewards[rIdx].size();
         double bestScore = -1e100;
         int bestIdx = 5;  // the simulator evaluates Skip as a normal candidate
+        // Diagnostic: compute the baseline floor-model pick for comparison
+        int baselinePick = 5;
+        if (g_actFightProbeTrace)
+            baselinePick = nativeFloorCardPick(gc, rIdx);
+        // Per-candidate per-future probes saved for trace breakdown
+        std::vector<std::vector<FutureFightProbe>> traceFutureProbes;
+        if (g_actFightProbeTrace)
+            traceFutureProbes.resize(nCards + 1);
         std::vector<double> candidateScores(nCards + 1, 0.0);
         for (int cand = 0; cand <= nCards; ++cand) {
             const int cardIdx = cand < nCards ? cand : 5;
@@ -4758,21 +4798,81 @@ static bool actFightProbeDraftPolicy(GameContext &gc) {
                 resampleRemainingActEncounters(branch, branchSeed);
                 FutureFightProbe probe;
                 finishOocCounterfactual(std::move(branch), g_actFightProbeSims,
-                                        branchSeed, basePath, -1, false, &probe, gc.act);
+                                        branchSeed, basePath, -1, false, &probe, gc.act,
+                                        nullptr, g_actFightProbePredict);
                 total += allActFightUtility(probe, gc.floorNum);
+                if (g_actFightProbeTrace)
+                    traceFutureProbes[cand].push_back(probe);
             }
             const double score = total / std::max(1, g_actFightProbeFutures);
             candidateScores[cand] = score;
             if (score > bestScore) { bestScore = score; bestIdx = cardIdx; }
         }
         if (g_actFightProbeTrace) {
-            std::cerr << "[act-fight draft floor=" << gc.floorNum << " act=" << gc.act << "]";
+            // Consecutive-oracle-override counter
+            static int consecutiveOverrideCount = 0;
+            const bool oracleOverrides = (bestIdx != baselinePick);
+            if (oracleOverrides) ++consecutiveOverrideCount;
+            else consecutiveOverrideCount = 0;
+            std::cerr << "[act-fight draft floor=" << gc.floorNum << " act=" << gc.act
+                      << " baseline=" << (baselinePick == 5 ? "skip" : r.cardRewards[rIdx][baselinePick].getName())
+                      << "(" << baselinePick << ")"
+                      << " overrides=" << consecutiveOverrideCount << "]\n  scores:";
             for (int cand = 0; cand <= nCards; ++cand) {
                 if (cand == nCards) std::cerr << " skip=" << candidateScores[cand];
                 else std::cerr << ' ' << r.cardRewards[rIdx][cand].getName()
                                << '=' << candidateScores[cand];
             }
-            std::cerr << " -> " << (bestIdx == 5 ? "skip" : r.cardRewards[rIdx][bestIdx].getName()) << '\n';
+            std::cerr << " -> " << (bestIdx == 5 ? "skip" : r.cardRewards[rIdx][bestIdx].getName());
+            if (oracleOverrides)
+                std::cerr << " OVERRIDES";
+            std::cerr << '\n';
+            // Per-future fight breakdown for the winning candidate
+            const int winCand = (bestIdx == 5) ? nCards : bestIdx;
+            std::cerr << "  futures=" << g_actFightProbeFutures
+                      << " floor-dcy=" << g_actFightProbeFloorDecay << ':';
+            for (int f = 0; f < (int)traceFutureProbes[winCand].size()
+                              && f < g_actFightProbeFutures; ++f) {
+                const auto &probe = traceFutureProbes[winCand][f];
+                double futUtil = allActFightUtility(probe, gc.floorNum);
+                std::cerr << (f ? " |" : " [") << "f" << f
+                          << " util=" << futUtil;
+                for (const auto &fight : probe.fights) {
+                    const int floorsAway = std::max(0, fight.floor - gc.floorNum);
+                    const double urgency = std::pow(g_actFightProbeFloorDecay, floorsAway);
+                    const double safety = fight.passed
+                        ? nonlinearHpSafety(fight.hp, fight.maxHp) : -1.0;
+                    std::cerr << " " << (fight.passed ? "W" : "L")
+                              << " f" << fight.floor
+                              << " " << monsterEncounterEnumNames[(int)fight.encounter]
+                              << " hp" << fight.hp << "/" << fight.maxHp
+                              << " d" << floorsAway
+                              << " u" << urgency
+                              << " s" << safety;
+                }
+                std::cerr << ']';
+            }
+            std::cerr << '\n';
+        }
+        // Margin gate: if the oracle isn't confident enough about its best pick,
+        // fall through to the baseline card policy for this rewards screen.
+        if (g_actFightProbeMargin > 0.0) {
+            double secondScore = -1e100;
+            for (int cand = 0; cand <= nCards; ++cand) {
+                const int cardIdx = cand < nCards ? cand : 5;
+                if (cardIdx == bestIdx) continue;
+                if (candidateScores[cand] > secondScore) secondScore = candidateScores[cand];
+            }
+            const double margin = bestScore - secondScore;
+            if (margin < g_actFightProbeMargin) {
+                if (g_actFightProbeTrace)
+                    std::cerr << "  margin=" << margin << " < " << g_actFightProbeMargin
+                              << " -> fallback\n";
+                t_curPath = savedPath;
+                return false;
+            }
+            if (g_actFightProbeTrace)
+                std::cerr << "  margin=" << margin << " >= " << g_actFightProbeMargin << " fire\n";
         }
         search::GameAction(RT::CARD, rIdx, bestIdx).execute(gc);
     }
@@ -4847,13 +4947,6 @@ struct CheckpointFightComponent {
     double safety = 0.0;
     double contribution = 0.0;
     int sims = 0;
-};
-
-struct PredictedCheckpointFight {
-    double winProbability = 0.0;
-    int endHpIfWin = 1;
-    int maxHp = 1;
-    bool predictedWin = false;
 };
 
 static PredictedCheckpointFight predictCheckpointFight(const GameContext &gc,
@@ -9360,6 +9453,9 @@ int main(int argc, char **argv) {
             if (!g_floorNet.ok) {
                 std::cerr << "[native OOC] failed to load build/v_rich_trees.txt\n";
                 return 1;
+            }
+            if (!g_winNet.ok) {
+                std::cout << "[native V_win NOT loaded; win-rest helpers will use v_server fallback]\n";
             }
             std::cout << "[native OOC floor/win GBMs ON; no v_server required]\n";
         }

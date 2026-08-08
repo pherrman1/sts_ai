@@ -39,7 +39,7 @@ from strategic_tok_net import Net, NCARD, NREL, NPOT, MAXD, MAXR, MAXP, NGLOB
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_tierb.csv"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "selfplay/models/ooc_strategic_tok"
 EPOCHS = int(os.environ.get("STRAT_EPOCHS", "40"))
-PATIENCE = int(os.environ.get("STRAT_PATIENCE", "0"))  # 0 = disabled; stop after N epochs without >=MIN_DELTA val_pol_ce improvement
+PATIENCE = int(os.environ.get("STRAT_PATIENCE", "6"))  # stop after N epochs without >=MIN_DELTA val_pol_ce improvement
 MIN_DELTA = float(os.environ.get("STRAT_MIN_DELTA", "1e-4"))
 SELECT_METRIC = os.environ.get("STRAT_SELECT_METRIC", "val_pol_ce")  # best-checkpoint metric: val_pol_ce (min) or q_top1 (max)
 RANK_LAMBDA = float(os.environ.get("STRAT_RANK_LAMBDA", "0"))  # 0 = disabled; pairwise labelWon ranking term weight
@@ -475,8 +475,7 @@ def fwd_rows(rows):
 
 def train_batch_loss(gs):
     sizes_b = sizes[gs]
-    rows = np.concatenate([np.arange(block_start[g], block_start[g] + sizes[g])
-                           for g in gs])
+    rows = np.repeat(block_start[gs], sizes_b) + np.arange(sizes_b.sum()) - np.repeat(np.cumsum(sizes_b) - sizes_b, sizes_b)
     logit, val, q, qq = fwd_rows(rows)
     gstart = np.concatenate(([0], np.cumsum(sizes_b[:-1])))
     ok = valid_pol[gs]
