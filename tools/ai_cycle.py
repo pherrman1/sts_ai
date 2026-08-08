@@ -36,7 +36,7 @@ MAX_AUTOMATED_SEEDS = 128
 # .pi/extensions/). Flip DEFAULT_BACKEND to "pi" only after the end-to-end
 # bake-off in PI_INTEGRATION_HANDOFF.md Phase 7-8 passes.
 # ---------------------------------------------------------------------------
-DEFAULT_BACKEND = "opencode"
+DEFAULT_BACKEND = "pi"
 
 PI_MODEL_BY_ROLE = {
     "architect": "deepseek/deepseek-v4-pro:high",
