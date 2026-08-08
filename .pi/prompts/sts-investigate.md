@@ -8,22 +8,32 @@ $@
 
 Use the `subagent` tool with `agentScope: "project"`.
 
-First run 2-3 `investigator` agents in parallel on genuinely distinct aspects
-of the question. Choose the aspects from the repository evidence; for ML/search
-problems useful divisions often include training/inference parity,
-offline/online distribution, actual online model use, search/RNG semantics, and
-prior experiment evidence.
+First choose 2-5 genuinely distinct investigation aspects.
 
-All investigators are read-only.
+For the investigator stage, make EXACTLY ONE `subagent` tool call using
+parallel `tasks` mode:
 
-After they finish, run the `architect` agent with `agentScope: "project"`.
-Give the architect:
-- the original question;
-- the investigator findings;
-- instructions to inspect any missing evidence itself;
-- instructions to synthesize a single conclusion or implementation plan.
+{
+  "tasks": [
+    {"agent": "investigator", "task": "<aspect 1>"},
+    {"agent": "investigator", "task": "<aspect 2>"},
+    {"agent": "investigator", "task": "<aspect 3>"},
+    {"agent": "investigator", "task": "<aspect 4>"},
+    {"agent": "investigator", "task": "<aspect 5>"}
+  ],
+  "agentScope": "project"
+}
 
-Do not invoke the implementer. This command is investigation/planning only.
+Do NOT emit multiple independent `subagent` tool calls in one assistant
+response.
+
+Wait for the single combined parallel result before doing anything else.
+
+After the investigator results return, make EXACTLY ONE separate `subagent`
+call to the `architect` agent.
+
+Do not automatically retry an investigator batch if the subagent tool fails
+or returns no usable output. Report the failure instead.
 
 At the end, summarize for the user:
 - strongest finding;

@@ -18,8 +18,8 @@
 //     https://github.com/earendil-works/pi
 //     (packages/coding-agent/examples/extensions/subagent/index.ts),
 //     byte-identical at fork time (2026-08-08). agents.ts stays upstream.
-// Local changes (observability only; no agent-prompt, model, or routing
-// changes):
+// Local changes (observability + subprocess lifecycle hardening; no
+// agent-prompt, model, or routing changes):
 //   - Live activity state per subagent run (turn, status, current tool,
 //     recent completed tool calls, usage, model) driven by Pi's JSON
 //     lifecycle events (turn_start, message_update, tool_execution_start,
@@ -33,6 +33,10 @@
 //   - message_update-driven UI refreshes are throttled to ~150 ms; tool
 //     start/end updates are immediate; message_end remains the authoritative
 //     source for completed messages, usage, stop reason, and final output.
+//   - STS-SUBAGENT-LIFECYCLE-GUARD: subagent promises cannot wait forever on
+//     a missing child-process `close` event. After `agent_end`, the child gets
+//     a short grace period to close normally, then a bounded TERM/KILL cleanup;
+//     every invocation also has a hard wall-clock timeout.
 // Updating: scripts/install_pi_subagent.sh refuses to overwrite this fork
 // (set STS_FORCE_PI_SUBAGENT=1 to force); scripts/check_pi_setup.sh detects
 // the fork and never claims byte-identity.
@@ -67,6 +71,16 @@ const PER_TASK_OUTPUT_CAP = 50 * 1024;
 // throttle. RECENT_TOOL_CAP bounds the remembered completed tool calls.
 const LIVE_THROTTLE_MS = 150;
 const RECENT_TOOL_CAP = 5;
+
+// STS-SUBAGENT-LIFECYCLE-GUARD
+// `agent_end` means Pi has finished the model turn, but Node's child-process
+// `close` event can still fail to arrive if a stdio handle is left open.
+// Give normal shutdown a short grace period, then terminate the child and
+// settle the tool call from the already captured result. The hard timeout is
+// defense in depth for hangs that never reach `agent_end`.
+const AGENT_END_CLOSE_GRACE_MS = 5_000;
+const CHILD_TERMINATION_GRACE_MS = 5_000;
+const SUBAGENT_HARD_TIMEOUT_MS = 30 * 60 * 1_000;
 
 function formatTokens(count: number): string {
 	if (count < 1000) return count.toString();
@@ -205,7 +219,7 @@ interface LiveActivity {
 	/** 1-based count of turn_start events seen. */
 	turn: number;
 	status: "waiting" | "thinking" | "responding" | "tool";
-	currentTool: CompletedToolCall | null;
+	currentTool: Omit<CompletedToolCall, "ok"> | null;
 	/** Most recent completed tool calls, newest last, capped at RECENT_TOOL_CAP. */
 	recentTools: CompletedToolCall[];
 	/** Usage accumulated from assistant message_end events so far. */
@@ -414,7 +428,7 @@ async function runSingleAgent(
 		agent: agentName,
 		agentSource: agent.source,
 		task,
-		exitCode: 0,
+		exitCode: -1,
 		messages: [],
 		stderr: "",
 		usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, contextTokens: 0, turns: 0 },
@@ -471,6 +485,32 @@ async function runSingleAgent(
 				stdio: ["ignore", "pipe", "pipe"],
 			});
 			let buffer = "";
+			let settled = false;
+			let sawFinalAssistantMessage = false;
+			let forcedExitCode: number | null = null;
+			let agentEndTimer: ReturnType<typeof setTimeout> | null = null;
+			let terminationTimer: ReturnType<typeof setTimeout> | null = null;
+			let hardTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
+			let abortHandler: (() => void) | null = null;
+
+			const processStillRunning = () => proc.exitCode === null && proc.signalCode === null;
+
+			const clearTimer = (timer: ReturnType<typeof setTimeout> | null) => {
+				if (timer !== null) clearTimeout(timer);
+			};
+
+			const cleanupLifecycle = () => {
+				clearTimer(agentEndTimer);
+				clearTimer(terminationTimer);
+				clearTimer(hardTimeoutTimer);
+				agentEndTimer = null;
+				terminationTimer = null;
+				hardTimeoutTimer = null;
+				if (signal && abortHandler) {
+					signal.removeEventListener("abort", abortHandler);
+					abortHandler = null;
+				}
+			};
 
 			const processLine = (line: string) => {
 				if (!line.trim()) return;
@@ -526,6 +566,39 @@ async function runSingleAgent(
 				if (event.type === "agent_end") {
 					liveActivity.running = false;
 					liveActivity.status = "waiting";
+					emitUpdateNow();
+
+					// Pi has declared the agent complete. Normally the child
+					// process should close almost immediately. If its stdio
+					// never closes, do not leave the parent tool awaiting the
+					// child forever: after a short grace period, terminate the
+					// child and settle from the final assistant message already
+					// captured above.
+					clearTimer(agentEndTimer);
+					agentEndTimer = setTimeout(() => {
+						if (settled) return;
+
+						if (!sawFinalAssistantMessage) {
+							currentResult.stopReason = "error";
+							currentResult.errorMessage =
+								"Subagent emitted agent_end without a final assistant message.";
+							forcedExitCode = 1;
+						} else {
+							forcedExitCode = 0;
+						}
+
+						if (!processStillRunning()) {
+							finish(forcedExitCode);
+							return;
+						}
+
+						proc.kill("SIGTERM");
+						terminationTimer = setTimeout(() => {
+							if (settled) return;
+							if (processStillRunning()) proc.kill("SIGKILL");
+							finish(forcedExitCode ?? 1);
+						}, CHILD_TERMINATION_GRACE_MS);
+					}, AGENT_END_CLOSE_GRACE_MS);
 					return;
 				}
 
@@ -534,6 +607,11 @@ async function runSingleAgent(
 					currentResult.messages.push(msg);
 
 					if (msg.role === "assistant") {
+						const hasFinalText = msg.content.some(
+							(part) => part.type === "text" && part.text.trim().length > 0,
+						);
+						const hasToolCall = msg.content.some((part) => part.type === "toolCall");
+						if (hasFinalText && !hasToolCall) sawFinalAssistantMessage = true;
 						currentResult.usage.turns++;
 						const usage = msg.usage;
 						if (usage) {
@@ -559,6 +637,43 @@ async function runSingleAgent(
 				}
 			};
 
+			const flushBufferedLine = () => {
+				if (!buffer.trim()) return;
+				const pending = buffer;
+				buffer = "";
+				processLine(pending);
+			};
+
+			const finish = (code: number) => {
+				if (settled) return;
+				settled = true;
+				flushBufferedLine();
+				cleanupLifecycle();
+				resolve(code);
+			};
+
+			const terminateAndFinish = (code: number, errorMessage?: string) => {
+				if (settled) return;
+				forcedExitCode = code;
+				if (errorMessage) {
+					currentResult.stopReason = "error";
+					currentResult.errorMessage = errorMessage;
+				}
+
+				if (!processStillRunning()) {
+					finish(code);
+					return;
+				}
+
+				proc.kill("SIGTERM");
+				clearTimer(terminationTimer);
+				terminationTimer = setTimeout(() => {
+					if (settled) return;
+					if (processStillRunning()) proc.kill("SIGKILL");
+					finish(code);
+				}, CHILD_TERMINATION_GRACE_MS);
+			};
+
 			proc.stdout.on("data", (data) => {
 				buffer += data.toString();
 				const lines = buffer.split("\n");
@@ -571,24 +686,31 @@ async function runSingleAgent(
 			});
 
 			proc.on("close", (code) => {
-				if (buffer.trim()) processLine(buffer);
-				resolve(code ?? 0);
+				finish(forcedExitCode ?? code ?? 0);
 			});
 
-			proc.on("error", () => {
-				resolve(1);
+			proc.on("error", (error) => {
+				currentResult.stopReason = "error";
+				currentResult.errorMessage ||= `Failed to run subagent process: ${error.message}`;
+				finish(1);
 			});
+
+			// Defense in depth: even a child that never reaches `agent_end`
+			// cannot keep the parent Pi tool call pending indefinitely.
+			hardTimeoutTimer = setTimeout(() => {
+				terminateAndFinish(
+					1,
+					`Subagent exceeded hard timeout of ${Math.round(SUBAGENT_HARD_TIMEOUT_MS / 60_000)} minutes.`,
+				);
+			}, SUBAGENT_HARD_TIMEOUT_MS);
 
 			if (signal) {
-				const killProc = () => {
+				abortHandler = () => {
 					wasAborted = true;
-					proc.kill("SIGTERM");
-					setTimeout(() => {
-						if (!proc.killed) proc.kill("SIGKILL");
-					}, 5000);
+					terminateAndFinish(1);
 				};
-				if (signal.aborted) killProc();
-				else signal.addEventListener("abort", killProc, { once: true });
+				if (signal.aborted) abortHandler();
+				else signal.addEventListener("abort", abortHandler, { once: true });
 			}
 		});
 
@@ -793,8 +915,8 @@ export default function (pi: ExtensionAPI) {
 
 				const emitParallelUpdate = () => {
 					if (onUpdate) {
-						const running = allResults.filter((r) => r.exitCode === -1).length;
-						const done = allResults.filter((r) => r.exitCode !== -1).length;
+						const running = allResults.filter(isRunningResult).length;
+						const done = allResults.length - running;
 						onUpdate({
 							content: [
 								{ type: "text", text: `Parallel: ${done}/${allResults.length} done, ${running} running...` },
@@ -1136,9 +1258,7 @@ export default function (pi: ExtensionAPI) {
 
 			if (details.mode === "parallel") {
 				// STS-local fork addition: a task is running while its exit
-				// code is the -1 placeholder or its live state says so (live
-				// state is present on streaming results whose exitCode is
-				// still 0).
+				// code is the -1 placeholder or its live state says so.
 				const running = details.results.filter(isRunningResult).length;
 				const successCount = details.results.filter((r) => !isRunningResult(r) && !isFailedResult(r)).length;
 				const failCount = details.results.filter((r) => !isRunningResult(r) && isFailedResult(r)).length;
