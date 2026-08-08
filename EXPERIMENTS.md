@@ -5904,3 +5904,124 @@ extFight*/emElites/emFights parity-excluded) and
   leaves @10k sims, GCP-parallel) and the phase-4 verdict gate (top-1 ≥ 80% +
   Spearman ≥ 0.7 pre-registered rule) await the batch corpus.
 - **Decision log:** `2026-08-08-frontiergen-leafrelabel.md`.
+
+## §137 Covariate-shift mixture retrain (§135a next experiment): combatgen + leafdiag training mixture with SEPARATE on-policy/search-leaf holdouts — mixture does NOT improve held-out search-leaf ranking (pairwise −3.5pp, top-1 −3.9pp, regret +0.78) AND hurts the on-policy fit — branch closed, no gameplay gate (2026-08-08, local)
+
+- **What:** the pre-registered covariate-shift branch experiment from the
+  §135a verdict (decision log `2026-08-08-leaf-state-diagnostics.md`):
+  retrain the deployed §126 end-HP leaf on a MIXTURE of on-policy combatgen
+  states PLUS actual Searcher3 search-leaf states, with separate on-policy
+  and search-leaf holdouts, and test whether search-leaf RANKING on held-out
+  search-leaf states improves. Diagnostic artifact only — no default change,
+  no promotion, no C++ change (the deployed `build/v_combat_honest.txt`
+  @α0.3 stays). NO gameplay gate (pre-registered: ranking evidence first).
+- **Training data and pre-registered split:**
+  - combatgen source `build/vcombat_honest.csv` (287,517 rows, 16,337
+    fights, seeds 0-1499): fight-group holdout
+    `GroupShuffleSplit(test_size=0.15, random_state=0, groups=(seed,fightIdx))`
+    → on-policy val (43,473 rows).
+  - search-leaf source `build/leafdiag_gate_64.csv` (288,537 rows, seeds
+    126700-126763): ONLY train seeds 126700-126747 (48 seeds, 216,079 rows,
+    1,012 fights) enter training/validation, with the same fight-group
+    split → search-leaf val (30,316 rows); eval seeds 126748-126763 (16
+    seeds, 72,458 rows) held out ENTIRELY — asserted absent from every
+    training row (runtime assert; 72,458 eval rows counted and filtered).
+  - Mixture training set = 429,807 rows (244,044 combatgen + 185,763
+    leafdiag). Labels = fight outcome (`fightWon`→`won`, `fightEndHp`→
+    `endHp`), same semantics as combatgen; the leafref reference values are
+    vnet-influenced approximations and were NEVER training labels. The
+    12 diagnostic/metadata leafdiag columns (decIdx, floor, act,
+    encounterName, treeDepth, obsHash, nLegalActions, stratum, endHp_pred,
+    utilityR_pred, rawRolloutEval, blendedEval) were dropped.
+- **Canonical §126 recipe (byte-identical parameters):**
+  `VCOMBAT_TARGET=endhp` (default), device `cuda` (RTX 3060 Ti, local),
+  max_depth=8, eta=0.05, subsample=0.8, colsample_bytree=0.7,
+  min_child_weight=20, max_bin=256, num_boost_round=1500,
+  early_stopping_rounds=40, critical-state weight formula
+  (won/curHp/maxHp/encounter-failure; POLICY_CSV unset → teacher
+  disagreement 0). Early stopping signal = the on-policy (combatgen
+  holdout) regime, the same stopping signal as §126. Feature filter = the
+  canonical combatgen-derived std>1e-9 filter → **733 features, exactly the
+  deployed model's feature set** (filtering on the concatenated frame would
+  give 750 — differing variance across the 64-seed leafdiag slice — and
+  break the "training mixture is the only difference" comparison). Best
+  iteration 1349 (of 1500); exported `build/v_combat_mix.txt` = 1,390
+  trees, 733 features, base_score 28.04239; sha256
+  `0ed6672c…` (txt) / `c1764f63…` (json). Asserting `one_combat vnettest`
+  PASS (max|diff| 1.27e-4 vs tol 0.001, 200 rows).
+- **Per-regime validation metrics (trainer, `build/v_combat_mix_metrics.json`):**
+  | regime | rows | RMSE vs endHp | MAE vs endHp | RMSE vs R | MAE vs R |
+  |---|---|---|---:|---:|---:|
+  | on-policy val (combatgen holdout) | 43,473 | **8.23** | **5.97** | 48.37 | 45.65 |
+  | search-leaf val (leafdiag train-seed holdout) | 30,316 | **15.46** | **11.33** | 49.20 | 46.20 |
+  On-policy comparison: the deployed §126 control measured val RMSE 7.88 /
+  MAE 5.58 (§134) and §126 recorded val-rmse 7.99 on the SAME combatgen
+  holdout split → **the mixture HURTS the on-policy fit** (RMSE +0.35,
+  MAE +0.39). The search-leaf val remains much harder than on-policy
+  (RMSE 15.46 vs 8.23) even after training on the search-leaf distribution.
+- **Search-leaf ranking evaluation (the DECISIVE pre-registered test):**
+  re-ran `one_combat leafdiag 16 1000 0 build/leafdiag_mix_eval.csv 126748`
+  on the 16 held-out eval seeds @1000 sims asc 0 with EXACTLY the §135a
+  gate-matching env (`STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+  STS_S3_CHAIN=0 STS_S3_PARTICLES=64`, `STS_VNET=build/v_combat_honest.txt`
+  @`STS_VNET_ALPHA=0.3`, `STS_DIAG_VNET2=build/v_combat_mix.txt`,
+  `STS_LEAFDIAG_PER_STRATUM=500`, full V4 OOC arms
+  `STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`,
+  REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1, `STS_OOC_STRATEGIC_MARGIN=1.0`).
+  The search is unchanged (`STS_DIAG_VNET2` is never read by the searcher)
+  so the identical leaves regenerate: 72,458 rows re-captured, and
+  **100% of re-captured leaves join `build/leafref_gate_64_4k.csv` by
+  (seed, fightIdx, decIdx, obsHash)** — the re-capture sanity check passes
+  (identical leaves to §135a, no mismatch). New CSV columns: `endHp_pred` =
+  deployed §126 model, `utilityR_pred` = mixture model, on identical leaves.
+  `tools/leaf_ranking.py --leafdiag build/leafdiag_mix_eval.csv --leafref
+  build/leafref_gate_64_4k.csv --ood build/leafdiag_gate_64_ood.csv --json
+  build/leaf_ranking_mix_eval.json` (4,395 decision groups re-captured;
+  4,387 contribute pairwise metrics, 890,941 pairs, fixed bootstrap seed
+  20260808):
+  | metric | deployed endHp | mixture (utilityR_pred) | Δ (mixture − deployed) |
+  |---|---|---:|---:|
+  | pairwise accuracy | **0.7262 [0.7209, 0.7318]** | 0.6914 [0.6858, 0.6970] | **−3.5pp, CIs disjoint** |
+  | top-1 | **0.3686 [0.3545, 0.3823]** | 0.3298 [0.3152, 0.3433] | **−3.9pp, CIs disjoint** |
+  | regret | **7.431 [7.088, 7.783]** | 8.209 [7.850, 8.569] | **+0.78 (worse)** |
+  | Spearman vs ref | 0.790 | 0.803 | +0.013 (mixture better) |
+  | Pearson vs ref | 0.779 | 0.801 | +0.022 |
+  | MAE vs ref (own scales) | 31.75 | 28.12 | (not comparable across scales) |
+  Note the deployed endHp's held-out numbers (pairwise 0.726, top-1 0.369)
+  are consistent with the §135a full-64-seed measurement (0.719 / 0.359),
+  confirming the 16-seed eval block is representative.
+- **Model-free cross-check (rawRolloutEval single-sample reference, no
+  leafref; `build/leaf_ranking_mix_eval_rawrollout.json`, 4,085 groups):**
+  pairwise 0.7289 [0.7229,0.7350] vs 0.6921 [0.6857,0.6980] (−3.7pp),
+  top-1 0.335 vs 0.305, regret 14.47 vs 15.83 — same direction, so the
+  mixture's ranking disadvantage is NOT an artifact of the vnet-influenced
+  leafref reference.
+- **Verdict: ❌ the covariate-shift branch is CLOSED — the mixture does NOT
+  improve held-out search-leaf ranking; it makes all three pre-registered
+  ranking metrics WORSE (pairwise −3.5pp, top-1 −3.9pp, regret +0.78, all
+  CIs disjoint for the accuracies), and it HURTS the on-policy fit (val
+  RMSE 8.23 vs 7.88 control, MAE 5.97 vs 5.58).** Pre-registered rule: a
+  gameplay gate is a separate follow-up ONLY if ranking improves → **no
+  gameplay gate; the deployed §126 vnet stays default.** Notable nuance:
+  the mixture correlates with the high-budget reference BETTER than the
+  deployed model (Spearman 0.803 vs 0.790, Pearson 0.801 vs 0.779) — the
+  same pattern as §134's direct-R model (correlates better, ranks worse) —
+  so absolute fit to the (vnet-influenced) reference does not predict
+  within-group ranking even when the model is trained ON the search-leaf
+  distribution. Training on actual search-leaf states did not make the
+  end-HP target rank those states better; the §134 hypothesis space
+  (target semantics / ranking-vs-absolute) is not resolved by adding
+  search-leaf states to the endHp objective.
+- **Artifacts (build/, git-ignored, NOT promoted):**
+  `build/v_combat_mix.{json,txt,val.csv,_metrics.json}`,
+  `build/leafdiag_mix_eval.csv` (72,458 rows),
+  `build/leaf_ranking_mix_eval.json`,
+  `build/leaf_ranking_mix_eval_rawrollout.json`, smoke slices
+  `build/smoke_{combatgen,leafdiag,mixed}.csv`,
+  `build/leafdiag_mix_smoke_2.csv`, `build/v_combat_mix_smoke.*`,
+  logs `/tmp/opencode/train_mix_full.log`,
+  `/tmp/opencode/leafdiag_mix_eval.log`,
+  `/tmp/opencode/leaf_ranking_mix_eval2.log`. Code:
+  `tools/train_value_mixture.py` (new; default single-CSV path of
+  `train_value_combat.py` is untouched and byte-identical). Decision log:
+  `2026-08-08-covariate-shift-mixture.md`.

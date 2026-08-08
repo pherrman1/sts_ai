@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-08 against the current working tree (frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending).
+Last verified: 2026-08-08 against the current working tree (covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending).
 
 ## Purpose
 
@@ -310,6 +310,30 @@ differs" reading of §132. Offline val MAE vs R was 9.73 (the quantile-R got
 tree states worse than the deployed endHp leaf at α0.1. Env stays opt-in;
 `VCOMBAT_TARGET` is a trainer-side option only (no runtime switch). Decision
 log `2026-08-07-experiment-132-133-audit.md`.
+
+### Covariate-shift mixture retrain (`tools/train_value_mixture.py`, §137 — closed, diagnostic only)
+
+The §135a diagnostics found near-perfect train-vs-search covariate shift
+(ROC-AUC 0.9998), so the pre-registered next experiment (EXPERIMENTS.md
+§137) trained the end-HP leaf on a MIXTURE of all on-policy combatgen rows
+(`build/vcombat_honest.csv`) PLUS actual Searcher3 search-leaf states
+(`build/leafdiag_gate_64.csv`, leafdiag train seeds 126700-126747 ONLY) with
+SEPARATE on-policy (combatgen fight-group holdout) and search-leaf (leafdiag
+train-seed fight-group holdout) validation; leafdiag eval seeds 126748-126763
+are held out ENTIRELY (runtime-asserted). `tools/train_value_mixture.py`
+keeps the canonical §126 recipe byte-for-byte (same params, same
+critical-state weights, same combatgen-derived std>1e-9 feature filter → the
+733-feature set of the deployed model, so the training mixture is the only
+difference) and reports val RMSE/MAE vs endHp AND vs utility R per regime.
+**Verdict: closed — the mixture does NOT improve held-out search-leaf
+ranking (pairwise 0.726→0.691, top-1 0.369→0.330, regret 7.43→8.21, all
+worse) and hurts the on-policy fit (val RMSE 8.23 vs 7.88 control); no
+gameplay gate per the pre-registered rule; the deployed
+`build/v_combat_honest.txt` @α0.3 stays default.** The mixture model
+(`build/v_combat_mix.txt`) is a diagnostic artifact only; `STS_DIAG_VNET2`
+can point at it for leafdiag/leafref/rollouttrace diagnostics (never read by
+the search). Default single-CSV path of `train_value_combat.py` is
+untouched.
 
 ### Leaf-state diagnostics (leafdiag / leafref / rollouttrace, 2026-08-08)
 
