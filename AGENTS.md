@@ -182,6 +182,14 @@ until the live Pi bake-off is completed and the default is deliberately
 changed. Do not silently remove or weaken the rollback path while evaluating
 the new backend.
 
+A deterministic fast-path classification (`classify_fast_path_task`) may
+skip the architect and Pro escalation for a genuinely trivial non-behavioral
+task (comments, typos, docs, formatting only). Classification is narrow and
+conservative; any uncertainty falls back to the full NORMAL workflow.
+Post-implementation diff confirmation (`confirm_trivial_diff`) rejects any
+change that is not confidently comment/docstring/whitespace-only. See
+`docs/knowledge-base/operations/ai-cycle.md`.
+
 Project-local Pi roles live in `.pi/agents/`. Read-only architect/reviewer
 roles use the restricted `sts_git` and `sts_inspect` tools rather than arbitrary
 Bash. `.pi/` is workflow control-plane code: ordinary implementation agents

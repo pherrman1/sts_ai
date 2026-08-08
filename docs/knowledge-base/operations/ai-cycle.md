@@ -139,6 +139,55 @@ marker and does not claim byte-identity.
   `.pi/prompts/sts-investigate.md`, `scripts/install_pi_subagent.sh`,
   `scripts/check_pi_setup.sh`.
 
+## Fast-path workflow (trivial non-behavioral tasks)
+
+Added 2026-08-08.  The orchestrator classifies every new task
+*deterministically* (no LLM call) before the architect stage.  Tasks that
+are clearly comment / docstring / typo / spelling / grammar /
+wording-only / documentation-only / formatting-only changes **and**
+(for source-code comment/docstring tasks) explicitly constrain behaviour
+may take a reduced path:
+
+```
+TRIVIAL_CANDIDATE
+  deterministic classification
+  -> Flash implementer
+  -> post-implementation diff confirmation (comment/docstring/whitespace only)
+  -> cheap deterministic verification (git diff --check)
+  -> Flash reviewer
+  -> PASS => accepted
+  -> no architect, no Pro escalation
+```
+
+Classification is narrow and conservative.  A task that mentions any
+semantic operation (implement, bug fix, refactor, train, inference, RNG,
+etc.) is immediately classified NORMAL.  Uncertainty falls back to
+NORMAL.
+
+Post-implementation diff confirmation is mandatory: the orchestrator
+parses `git diff HEAD` and verifies every changed line in every source
+file is a comment, docstring, or blank line (documentation files allow
+normal prose).  At most 2 files and 50 changed lines are permitted; any
+config / build / schema / protected path change rejects immediately.  If
+the diff cannot be confidently proven trivial the fast path aborts and
+the task must be rerun through the normal cycle.
+
+The escalation function `should_escalate_to_sol(…,
+confirmed_trivial=False)` suppresses path-name and plan-term escalation
+triggers when `confirmed_trivial=True`, but retains all hard safety
+rules: required verification failure, CRITICAL review issues, reviewer
+uncertainty HIGH, and any explicit safety failure still escalate.
+
+Fast-path policy is implemented by:
+- `classify_fast_path_task()` — deterministic keyword classification.
+- `create_trivial_plan()` — minimal plan compatible with `validate_plan`.
+- `confirm_trivial_diff()` — post-implementation git-diff analysis.
+- `run_fast_path_workflow()` — reduced workflow (implementer → diff confirm
+  → cheap verification → reviewer).
+- `should_escalate_to_sol(confirmed_trivial=…)`.
+
+Session artefacts: `task-classification.json`, `diff-confirmation.json`.
+
 ## Known limitations
 
 - `DEFAULT_BACKEND` is still `opencode`; flipping it to `pi` requires the
@@ -166,4 +215,5 @@ marker and does not claim byte-identity.
 
 - Decision log:
   `docs/knowledge-base/decision-log/2026-08-08-pi-backend-integration.md`,
-  `docs/knowledge-base/decision-log/2026-08-08-pi-live-observability.md`
+  `docs/knowledge-base/decision-log/2026-08-08-pi-live-observability.md`,
+  `docs/knowledge-base/decision-log/2026-08-08-fast-path-workflow.md`

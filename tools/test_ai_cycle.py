@@ -1838,5 +1838,649 @@ class BackendSafetySyncTests(unittest.TestCase):
                 ai_cycle.ensure_safe_start()
 
 
+# ---------------------------------------------------------------------------
+# Fast-path classification tests
+# ---------------------------------------------------------------------------
+
+
+class FastPathClassificationTests(unittest.TestCase):
+    def test_explicit_comment_plus_no_behavior(self) -> None:
+        ok, reasons = ai_cycle.classify_fast_path_task(
+            "improve a misleading explanatory comment; do not change behavior"
+        )
+        self.assertTrue(ok)
+        self.assertIn("comment", reasons)
+
+    def test_typo_in_readme_is_candidate(self) -> None:
+        ok, _ = ai_cycle.classify_fast_path_task(
+            "fix a typo in README.md"
+        )
+        self.assertTrue(ok)
+
+    def test_documentation_only_is_candidate(self) -> None:
+        ok, _ = ai_cycle.classify_fast_path_task(
+            "documentation-only wording fix in docs/knowledge-base/"
+        )
+        self.assertTrue(ok)
+
+    def test_short_bug_fix_request_is_normal(self) -> None:
+        ok, reasons = ai_cycle.classify_fast_path_task(
+            "fix the bug in combat search"
+        )
+        self.assertFalse(ok)
+        self.assertTrue(any("semantic keyword" in r for r in reasons))
+
+    def test_refactor_no_behavior_is_normal_first_version(self) -> None:
+        ok, reasons = ai_cycle.classify_fast_path_task(
+            "refactor this function, no behavior change"
+        )
+        self.assertFalse(ok)
+        self.assertTrue(any("semantic keyword" in r for r in reasons))
+
+    def test_vnet_comment_task_is_candidate_despite_keyword(self) -> None:
+        ok, reasons = ai_cycle.classify_fast_path_task(
+            "fix a comment in VNet code; do not change behavior"
+        )
+        self.assertTrue(ok)
+        self.assertIn("comment", reasons)
+
+    def test_rng_semantic_task_never_trivial(self) -> None:
+        ok, reasons = ai_cycle.classify_fast_path_task(
+            "fix the RNG seed handling in search"
+        )
+        self.assertFalse(ok)
+        self.assertTrue(any("semantic keyword" in r for r in reasons))
+
+    def test_source_comment_without_no_behavior_is_normal(self) -> None:
+        ok, reasons = ai_cycle.classify_fast_path_task(
+            "improve comments in Searcher.cpp"
+        )
+        self.assertFalse(ok)
+        self.assertTrue(any("no-behavior" in r for r in reasons))
+
+    def test_behavior_constraint_alone_not_trivial(self) -> None:
+        """"Clean up this code. Do not change behavior." must NOT become a
+        fast-path candidate just because the semantic blacklist missed it.
+        The no-behavior phrase is a constraint, not a trivial-task signal."""
+        ok, reasons = ai_cycle.classify_fast_path_task(
+            "Clean up this code. Do not change behavior."
+        )
+        self.assertFalse(ok)
+        self.assertIn("no fast-path keyword matched", reasons[0])
+
+
+    def test_empty_task_is_normal(self) -> None:
+        ok, reasons = ai_cycle.classify_fast_path_task("")
+        self.assertFalse(ok)
+        self.assertIn("empty task", reasons)
+
+    def test_formatting_only_is_candidate(self) -> None:
+        ok, _ = ai_cycle.classify_fast_path_task(
+            "formatting-only change to align whitespace"
+        )
+        self.assertTrue(ok)
+
+    def test_behavior_change_semantic_rejected(self) -> None:
+        ok, reasons = ai_cycle.classify_fast_path_task(
+            "implement a new reward model"
+        )
+        self.assertFalse(ok)
+        self.assertTrue(any("semantic keyword" in r for r in reasons))
+
+    def test_normal_task_prints_normal_classification(self) -> None:
+        """Normal task: no fast-path keywords at all."""
+        ok, _ = ai_cycle.classify_fast_path_task(
+            "add a new battle reward calculation"
+        )
+        self.assertFalse(ok)
+
+
+# ---------------------------------------------------------------------------
+# Diff confirmation tests
+# ---------------------------------------------------------------------------
+
+
+class FastPathDiffConfirmationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._patches: list = []
+
+    def tearDown(self) -> None:
+        for p in self._patches:
+            p.stop()
+
+    def _mock_diff(self, diff_text: str, *, paths=None, lines=1, files=1) -> mock._patch:
+        actual_paths = ["test.py"] if paths is None else paths
+        p_stats = mock.patch(
+            "tools.ai_cycle.changed_diff_stats",
+            return_value=(actual_paths, lines, files),
+        )
+        p_git = mock.patch(
+            "tools.ai_cycle.git",
+            return_value=diff_text,
+        )
+        self._patches.extend([p_stats, p_git])
+        p_stats.start()
+        p_git.start()
+        return p_stats
+
+    def test_one_line_python_hash_comment_is_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/test.py b/test.py\n"
+            "--- a/test.py\n+++ b/test.py\n"
+            "@@ -1,1 +1,1 @@\n"
+            "-# old comment\n+# improved comment\n"
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertTrue(ok, msg=str(reasons))
+
+    def test_cpp_double_slash_comment_is_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/test.cpp b/test.cpp\n"
+            "--- a/test.cpp\n+++ b/test.cpp\n"
+            "@@ -1,1 +1,1 @@\n"
+            "-// old note\n+// clearer note\n"
+        )
+        ok, _ = ai_cycle.confirm_trivial_diff()
+        self.assertTrue(ok)
+
+    def test_markdown_prose_is_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/README.md b/README.md\n"
+            "--- a/README.md\n+++ b/README.md\n"
+            "@@ -1,1 +1,1 @@\n"
+            "-old text\n+new text\n",
+            paths=["README.md"],
+        )
+        ok, _ = ai_cycle.confirm_trivial_diff()
+        self.assertTrue(ok)
+
+    def test_source_expression_change_is_not_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/test.py b/test.py\n"
+            "--- a/test.py\n+++ b/test.py\n"
+            "@@ -1,1 +1,1 @@\n"
+            "-x = 1\n+x = 2\n"
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+        self.assertTrue(any("Non-comment" in r for r in reasons))
+
+    def test_comment_plus_source_expression_not_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/test.py b/test.py\n"
+            "--- a/test.py\n+++ b/test.py\n"
+            "@@ -1,1 +1,2 @@\n"
+            "-# old comment\n+# better comment\n+x = 2\n",
+            paths=["test.py"], files=1, lines=2,
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+        self.assertTrue(any("Non-comment" in r for r in reasons))
+
+    def test_more_than_two_files_not_trivial(self) -> None:
+        self._mock_diff(
+            "", paths=["a.py", "b.py", "c.py"], files=3,
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+        self.assertTrue(any("Too many changed files" in r for r in reasons))
+
+    def test_more_than_50_lines_not_trivial(self) -> None:
+        self._mock_diff(
+            "", paths=["a.py"], files=1, lines=51,
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+        self.assertTrue(any("Too many changed lines" in r for r in reasons))
+
+    def test_protected_workflow_path_not_trivial(self) -> None:
+        self._mock_diff(
+            "", paths=["tools/ai_cycle.py"], files=1, lines=1,
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+        self.assertTrue(any("protected workflow path" in r for r in reasons))
+
+    def test_config_file_not_trivial(self) -> None:
+        self._mock_diff(
+            "", paths=["CMakeLists.txt"], files=1, lines=1,
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+        self.assertTrue(any("config" in r.lower() for r in reasons),
+                        msg=str(reasons))
+
+    def test_build_dir_not_trivial(self) -> None:
+        self._mock_diff(
+            "", paths=["build/config.json"], files=1, lines=1,
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+
+    def test_empty_diff_is_allowed_noop(self) -> None:
+        self._mock_diff(
+            "", paths=[], files=0, lines=0,
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertTrue(ok)
+        self.assertTrue(any("Empty diff" in r for r in reasons))
+
+    def test_block_comment_changes_are_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/test.py b/test.py\n"
+            "--- a/test.py\n+++ b/test.py\n"
+            "@@ -1,3 +1,3 @@\n"
+            '-"""old docstring"""\n'
+            '+"""better docstring"""\n'
+            " # trailing comment\n"
+        )
+        ok, _ = ai_cycle.confirm_trivial_diff()
+        self.assertTrue(ok)
+
+    def test_c_block_comment_changes_are_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/test.c b/test.c\n"
+            "--- a/test.c\n+++ b/test.c\n"
+            "@@ -1,2 +1,2 @@\n"
+            "-/* old */\n"
+            "+/* clearer */\n"
+        )
+        ok, _ = ai_cycle.confirm_trivial_diff()
+        self.assertTrue(ok)
+
+    def test_unknown_file_type_not_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/data.json b/data.json\n"
+            "--- a/data.json\n+++ b/data.json\n"
+            "@@ -1,1 +1,1 @@\n"
+            '-{"key": "old"}\n'
+            '+{"key": "new"}\n',
+            paths=["data.json"], files=1, lines=1,
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+
+
+    def test_c_preprocessor_directive_not_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/test.c b/test.c\n"
+            "--- a/test.c\n+++ b/test.c\n"
+            "@@ -1,1 +1,1 @@\n"
+            "-#define OLD 256\n+#define NEW 512\n"
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+        self.assertTrue(any("Non-comment" in r for r in reasons))
+
+    def test_c_pointer_deref_not_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/test.cpp b/test.cpp\n"
+            "--- a/test.cpp\n+++ b/test.cpp\n"
+            "@@ -1,1 +1,1 @@\n"
+            "-*ptr = old_value;\n+*ptr = new_value;\n"
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+        self.assertTrue(any("Non-comment" in r for r in reasons))
+
+    def test_python_string_literal_with_triple_quotes_not_trivial(self) -> None:
+        self._mock_diff(
+            "diff --git a/test.py b/test.py\n"
+            "--- a/test.py\n+++ b/test.py\n"
+            "@@ -1,1 +1,1 @@\n"
+            "-x = \"\"\"old docstring\"\"\"\n+x = \"\"\"new docstring\"\"\"\n"
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+        self.assertTrue(any("Non-comment" in r for r in reasons))
+
+    def test_c_hash_define_not_mistaken_for_python_comment(self) -> None:
+        """#define in a C file must be rejected even though # is a comment in Python."""
+        self._mock_diff(
+            "diff --git a/test.cpp b/test.cpp\n"
+            "--- a/test.cpp\n+++ b/test.cpp\n"
+            "@@ -1,1 +1,1 @@\n"
+            "-#define BUFFER_SIZE 1024\n+#define BUFFER_SIZE 2048\n"
+        )
+        ok, reasons = ai_cycle.confirm_trivial_diff()
+        self.assertFalse(ok)
+        self.assertTrue(any("Non-comment" in r for r in reasons))
+
+# ---------------------------------------------------------------------------
+# Fast-path orchestration tests
+# ---------------------------------------------------------------------------
+
+
+class FastPathOrchestrationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.addCleanup(ai_cycle.CYCLE_COST_ENTRIES.clear)
+        self.addCleanup(ai_cycle.CYCLE_DENIED_CALLS.clear)
+        self.addCleanup(setattr, ai_cycle, "ACTIVE_BACKEND",
+                        ai_cycle.OpenCodeBackend())
+        ai_cycle.ACTIVE_BACKEND = ai_cycle.PiBackend()
+
+    def test_trivial_candidate_skips_architect(self) -> None:
+        plan = ai_cycle.create_trivial_plan("fix a typo; no behavior change")
+        self.assertEqual("Trivial non-behavioral edit (fast path).",
+                         plan["design"])
+        self.assertTrue(len(plan["verification"]) >= 1)
+        self.assertEqual(["git", "diff", "--check"],
+                         plan["verification"][0]["argv"])
+
+    def test_trivial_candidate_calls_flash_implementer(self) -> None:
+        factory = PiFakeFactory(
+            fix_text=(f"{FINAL_BEGIN}\ndone\nELI5\n- fix\n{FINAL_END}\n")
+        )
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen", factory
+        ), mock.patch(
+            "tools.ai_cycle.confirm_trivial_diff", return_value=(True, [])
+        ), mock.patch(
+            "tools.ai_cycle.candidate_fingerprint", return_value="candidate"
+        ), mock.patch(
+            "tools.ai_cycle.ensure_cheap_candidate_verification",
+            return_value=(True, Path(raw_dir) / "verification.json", "candidate"),
+        ), mock.patch(
+            "tools.ai_cycle.obtain_review",
+            return_value=(Path(raw_dir) / "review-1.json", review_data("PASS")),
+        ):
+            session_dir = Path(raw_dir)
+            task = "fix a typo; no behavior change"
+            task_file = session_dir / "task.md"
+            task_file.write_text(f"# User task\n\n{task}\n", encoding="utf-8")
+            plan = ai_cycle.create_trivial_plan(task)
+            plan_file = session_dir / "plan.json"
+            ai_cycle.save_json(plan_file, plan)
+
+            result = ai_cycle.run_fast_path_workflow(
+                task=task,
+                plan=plan,
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+            )
+            self.assertEqual(0, result)
+            self.assertEqual(1, len(factory.calls))
+            self.assertTrue((session_dir / "implementation-1.md").exists())
+            self.assertTrue((session_dir / "diff-confirmation.json").exists())
+            diff_data = json.loads(
+                (session_dir / "diff-confirmation.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertTrue(diff_data["confirmed"])
+
+    def test_trivial_pass_uses_one_reviewer_call(self) -> None:
+        factory = PiFakeFactory()
+        review_pass = review_data("PASS")
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen", factory
+        ), mock.patch(
+            "tools.ai_cycle.confirm_trivial_diff", return_value=(True, [])
+        ), mock.patch(
+            "tools.ai_cycle.candidate_fingerprint", return_value="candidate"
+        ), mock.patch(
+            "tools.ai_cycle.ensure_cheap_candidate_verification",
+            return_value=(True, Path(raw_dir) / "verification.json", "candidate"),
+        ), mock.patch(
+            "tools.ai_cycle.obtain_review",
+            return_value=(Path(raw_dir) / "review-1.json", review_pass),
+        ) as obtain_mock:
+            session_dir = Path(raw_dir)
+            task = "fix a typo; no behavior change"
+            task_file = session_dir / "task.md"
+            task_file.write_text(f"# User task\n\n{task}\n", encoding="utf-8")
+            plan = ai_cycle.create_trivial_plan(task)
+            plan_file = session_dir / "plan.json"
+            ai_cycle.save_json(plan_file, plan)
+
+            result = ai_cycle.run_fast_path_workflow(
+                task=task,
+                plan=plan,
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+            )
+            self.assertEqual(0, result)
+            obtain_mock.assert_called_once()
+
+    def test_trivial_pass_makes_zero_pro_escalation_calls(self) -> None:
+        factory = PiFakeFactory()
+        review_pass = review_data("PASS")
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen", factory
+        ), mock.patch(
+            "tools.ai_cycle.confirm_trivial_diff", return_value=(True, [])
+        ), mock.patch(
+            "tools.ai_cycle.candidate_fingerprint", return_value="candidate"
+        ), mock.patch(
+            "tools.ai_cycle.ensure_cheap_candidate_verification",
+            return_value=(True, Path(raw_dir) / "verification.json", "candidate"),
+        ), mock.patch(
+            "tools.ai_cycle.obtain_review",
+            return_value=(Path(raw_dir) / "review-1.json", review_pass),
+        ) as obtain_mock:
+            session_dir = Path(raw_dir)
+            task = "fix a typo; no behavior change"
+            task_file = session_dir / "task.md"
+            task_file.write_text(f"# User task\n\n{task}\n", encoding="utf-8")
+            plan = ai_cycle.create_trivial_plan(task)
+            plan_file = session_dir / "plan.json"
+            ai_cycle.save_json(plan_file, plan)
+
+            result = ai_cycle.run_fast_path_workflow(
+                task=task,
+                plan=plan,
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+            )
+            self.assertEqual(0, result)
+            # Only one obtian_review call, and the reviewer role is just
+            # "reviewer" (Flash), never escalation.
+            obtain_mock.assert_called_once()
+            call_kwargs = obtain_mock.call_args.kwargs
+            # The fast path never requests a sol/escalation review.
+            self.assertFalse(call_kwargs.get("sol", False))
+
+    def test_failed_verification_blocks_acceptance(self) -> None:
+        factory = PiFakeFactory()
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen", factory
+        ), mock.patch(
+            "tools.ai_cycle.confirm_trivial_diff", return_value=(True, [])
+        ), mock.patch(
+            "tools.ai_cycle.candidate_fingerprint", return_value="candidate"
+        ), mock.patch(
+            "tools.ai_cycle.ensure_cheap_candidate_verification",
+            return_value=(False, Path(raw_dir) / "failed.json", "candidate"),
+        ):
+            session_dir = Path(raw_dir)
+            task = "fix a typo; no behavior change"
+            task_file = session_dir / "task.md"
+            task_file.write_text(f"# User task\n\n{task}\n", encoding="utf-8")
+            plan = ai_cycle.create_trivial_plan(task)
+            plan_file = session_dir / "plan.json"
+            ai_cycle.save_json(plan_file, plan)
+
+            result = ai_cycle.run_fast_path_workflow(
+                task=task,
+                plan=plan,
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+            )
+            self.assertEqual(2, result)
+
+    def test_non_trivial_diff_after_candidate_not_accepted(self) -> None:
+        factory = PiFakeFactory()
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen", factory
+        ), mock.patch(
+            "tools.ai_cycle.confirm_trivial_diff",
+            return_value=(False, ["Non-comment change in source file test.py: x = 2"]),
+        ), mock.patch(
+            "tools.ai_cycle.candidate_fingerprint", return_value="candidate"
+        ):
+            session_dir = Path(raw_dir)
+            task = "fix a typo; no behavior change"
+            task_file = session_dir / "task.md"
+            task_file.write_text(f"# User task\n\n{task}\n", encoding="utf-8")
+            plan = ai_cycle.create_trivial_plan(task)
+            plan_file = session_dir / "plan.json"
+            ai_cycle.save_json(plan_file, plan)
+
+            result = ai_cycle.run_fast_path_workflow(
+                task=task,
+                plan=plan,
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+            )
+            self.assertEqual(2, result)
+            diff_data = json.loads(
+                (session_dir / "diff-confirmation.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertFalse(diff_data["confirmed"])
+
+    def test_trivial_reviewer_fix_uses_existing_repair_path(self) -> None:
+        factory = PiFakeFactory(fix_text=(
+            f"{FINAL_BEGIN}\nfixed\nELI5\n- plain\n{FINAL_END}\n"
+        ))
+        verif_file = None
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen", factory
+        ), mock.patch(
+            "tools.ai_cycle.confirm_trivial_diff", return_value=(True, [])
+        ), mock.patch(
+            "tools.ai_cycle.candidate_fingerprint", return_value="candidate"
+        ), mock.patch(
+            "tools.ai_cycle.ensure_cheap_candidate_verification",
+            return_value=(True, Path(raw_dir) / "verification.json", "candidate"),
+        ), mock.patch(
+            "tools.ai_cycle.obtain_review",
+            side_effect=[
+                (Path(raw_dir) / "review-1.json", review_data("FIX")),
+                (Path(raw_dir) / "review-2.json", review_data("PASS")),
+            ],
+        ):
+            session_dir = Path(raw_dir)
+            task = "fix a typo; no behavior change"
+            task_file = session_dir / "task.md"
+            task_file.write_text(f"# User task\n\n{task}\n", encoding="utf-8")
+            plan = ai_cycle.create_trivial_plan(task)
+            plan_file = session_dir / "plan.json"
+            ai_cycle.save_json(plan_file, plan)
+
+            result = ai_cycle.run_fast_path_workflow(
+                task=task,
+                plan=plan,
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+            )
+            self.assertEqual(0, result)
+            self.assertTrue((session_dir / "review-fix-1.md").exists())
+
+    def test_high_risk_semantic_task_still_escalates(self) -> None:
+        """A NORMAL/high-risk task still goes through escalation exactly as before."""
+        ok, _ = ai_cycle.classify_fast_path_task(
+            "refactor the search algorithm for better performance"
+        )
+        self.assertFalse(ok)
+
+    def test_opencode_rollback_unchanged(self) -> None:
+        """OpenCode backend selection still works."""
+        backend = ai_cycle.select_backend("opencode")
+        self.assertIsInstance(backend, ai_cycle.OpenCodeBackend)
+
+    def test_hard_seed_cap_unchanged(self) -> None:
+        self.assertEqual(128, ai_cycle.MAX_AUTOMATED_SEEDS)
+
+    def test_dirty_tree_check_still_happens(self) -> None:
+        with mock.patch(
+            "tools.ai_cycle.git",
+            return_value=" M src/main.cpp\n",
+        ):
+            with self.assertRaisesRegex(RuntimeError, "Tracked working-tree"):
+                ai_cycle.ensure_safe_start()
+
+    def test_classification_persists_to_session(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            session_dir = Path(raw_dir)
+            ai_cycle.persist_fast_path_classification(
+                session_dir, "TRIVIAL_CANDIDATE", ["comment", "no behavior change"]
+            )
+            data = json.loads(
+                (session_dir / "task-classification.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual("TRIVIAL_CANDIDATE", data["class"])
+            self.assertEqual(2, len(data["reasons"]))
+
+    def test_escalation_suppressed_for_confirmed_trivial(self) -> None:
+        """Path-based escalation is suppressed when confirmed_trivial=True."""
+        escalated, reasons = ai_cycle.should_escalate_to_sol(
+            changed_paths=["src/search/Searcher.cpp"],
+            changed_lines=1,
+            tracked_file_count=1,
+            plan=plan_with([]),
+            verification_history=[],
+            luna_reviews=[],
+            latest_luna_review=review_data("PASS"),
+            confirmed_trivial=True,
+        )
+        self.assertFalse(escalated)
+        self.assertEqual([], reasons)
+
+    def test_escalation_not_suppressed_without_confirmed_trivial(self) -> None:
+        """Path-based escalation fires when confirmed_trivial is False (default)."""
+        escalated, reasons = ai_cycle.should_escalate_to_sol(
+            changed_paths=["src/search/Searcher.cpp"],
+            changed_lines=1,
+            tracked_file_count=1,
+            plan=plan_with([]),
+            verification_history=[],
+            luna_reviews=[],
+            latest_luna_review=review_data("PASS"),
+        )
+        self.assertTrue(escalated)
+        self.assertIn("high-risk subsystem changed: search", reasons)
+
+    def test_still_escalates_on_critical_review_even_if_trivial(self) -> None:
+        """CRITICAL issue from reviewer still escalates even if confirmed_trivial."""
+        escalated, reasons = ai_cycle.should_escalate_to_sol(
+            changed_paths=["README.md"],
+            changed_lines=1,
+            tracked_file_count=1,
+            plan=plan_with([]),
+            verification_history=[],
+            luna_reviews=[
+                {
+                    "verdict": "FIX",
+                    "summary": "bad",
+                    "eli5_summary": "bad",
+                    "uncertainty": "LOW",
+                    "issues": [
+                        {
+                            "severity": "CRITICAL",
+                            "location": "src/x:1",
+                            "problem": "broken",
+                            "failure_mechanism": "crash",
+                            "required_fix": "fix",
+                        }
+                    ],
+                }
+            ],
+            latest_luna_review=review_data("PASS"),
+            confirmed_trivial=True,
+        )
+        self.assertTrue(escalated)
+        self.assertIn("CRITICAL issue", reasons[0])
+
+
 if __name__ == "__main__":
     unittest.main()

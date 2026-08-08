@@ -23,6 +23,89 @@ MAX_REVIEW_ROUNDS = 2
 MAX_SOL_REVIEW_ROUNDS = 3
 MAX_EXPENSIVE_REPAIRS = 2
 
+# Fast-path thresholds for trivial/non-behavioral changes.
+FAST_PATH_MAX_FILES = 2
+FAST_PATH_MAX_LINES = 50
+
+# File extensions recognised as source code for comment-only checks.
+_SOURCE_EXTENSIONS = frozenset({
+    '.py', '.cpp', '.h', '.hpp', '.c', '.cc', '.cxx',
+    '.ts', '.js', '.mjs', '.java', '.rs', '.go', '.swift',
+    '.kt', '.scala', '.rb', '.sh', '.bash',
+})
+
+# C-family extensions where '#' is a preprocessor directive, not a comment.
+# These languages use '//' and '/* */' for comments only.
+_C_FAMILY_EXTENSIONS = frozenset({
+    '.c', '.cpp', '.cc', '.cxx', '.h', '.hpp',
+    '.java', '.js', '.mjs', '.ts', '.jsx', '.tsx',
+    '.rs', '.swift', '.kt', '.scala', '.go', '.m', '.mm',
+})
+
+# File extensions whose changes are accepted without comment-only
+# verification (documentation / prose).
+_DOC_EXTENSIONS = frozenset({'.md', '.txt', '.rst', '.adoc'})
+
+# Fast-path task classification keywords.
+_TRIVIAL_TASK_KEYWORDS = [
+    'comment',
+    'comments',
+    'explanatory comment',
+    'explanatory comments',
+    'docstring',
+    'docstrings',
+    'typo',
+    'spelling',
+    'grammar',
+    'wording',
+    'wording-only',
+    'documentation',
+    'documentation-only',
+    'formatting',
+    'formatting-only',
+]
+
+_SEMANTIC_TASK_KEYWORDS = [
+    'implement',
+    'add feature',
+    'add behavior',
+    'add behaviour',
+    'remove behavior',
+    'remove behaviour',
+    'bug fix',
+    'fix bug',
+    'fix the bug',
+    'refactor',
+    'restructure',
+    'rewrite',
+    'redesign',
+    'model architecture',
+    'training pipeline',
+    'train',
+    'inference',
+    'rng seed handling',
+    'fairness evaluation',
+    'benchmark methodology',
+    'schema change',
+    'interface change',
+    'build system',
+    'cmake',
+    'configuration',
+    'generated',
+    'artifact',
+    'export',
+    'deploy',
+    'optimize',
+    'optimise',
+    'performance',
+    'encoding',
+    'mask',
+    'masking',
+    'action space',
+    'leakage',
+    'parity',
+]
+
 MAX_CHEAP_TIMEOUT_SECONDS = 3600
 MAX_EXPENSIVE_TIMEOUT_SECONDS = 6 * 3600
 MAX_AUTOMATED_SEEDS = 128
@@ -321,6 +404,450 @@ def ensure_safe_start() -> None:
         )
 
 
+def classify_fast_path_task(task: str) -> tuple[bool, list[str]]:
+    """Deterministically decide whether *task* is a fast-path candidate.
+
+    Returns ``(is_candidate, reasons)``.  The classification is intentionally
+    narrow and errs on the side of NORMAL.  It never calls an LLM.
+    """
+    task_lower = task.strip().lower()
+    if not task_lower:
+        return False, ["empty task"]
+
+    # A source-code comment/docstring task must also explicitly constrain
+    # behaviour, otherwise it is not a fast-path candidate.
+    source_keywords = {"comment", "comments", "docstring", "docstrings",
+                       "explanatory comment", "explanatory comments"}
+    wording_keywords = {"typo", "spelling", "grammar", "wording",
+                        "wording-only", "formatting", "formatting-only",
+                        "documentation", "documentation-only"}
+    no_behaviour_keywords = {"do not change behavior", "no behavior change",
+                             "not change behaviour", "non-behavioral",
+                             "non behavioral", "without changing behavior",
+                             "without changing behaviour"}
+
+    matched_trivial: list[str] = []
+
+    for kw in sorted(_TRIVIAL_TASK_KEYWORDS, key=len, reverse=True):
+        if kw in task_lower:
+            matched_trivial.append(kw)
+
+    # Reject if any semantic keyword is present (checked first so the
+    # reason always names the semantic blocker).
+    for kw in _SEMANTIC_TASK_KEYWORDS:
+        if kw in task_lower:
+            return False, [f"semantic keyword present: {kw}"]
+
+    if not matched_trivial:
+        return False, ["no fast-path keyword matched"]
+
+    # If the task mentions source-code comments or docstrings, it must
+    # also explicitly forbid behaviour changes.
+    has_source_trivial = any(kw in source_keywords for kw in matched_trivial)
+    has_wording_trivial = any(kw in wording_keywords for kw in matched_trivial)
+    has_no_behaviour = any(kw in task_lower for kw in no_behaviour_keywords)
+
+    if has_source_trivial and not has_no_behaviour:
+        return False, [
+            "source-code comment/docstring task without explicit "
+            "no-behavior-change constraint"
+        ]
+
+    # A task that is only wording/docs/formatting without explicit
+    # no-behaviour is still a candidate (those categories imply
+    # non-behavioural).
+    reasons = matched_trivial[:]
+    return True, reasons
+
+
+def create_trivial_plan(task: str) -> dict:
+    """Return a minimal deterministic architecture plan for a trivial task.
+
+    The plan is compatible with ``validate_plan`` and the existing
+    implementer / reviewer interfaces.
+    """
+    return {
+        "task_interpretation": (
+            "Non-behavioral change: "
+            + task.strip().splitlines()[0][:120]
+        ),
+        "current_behavior": "Unchanged; only comments/docs/formatting are affected.",
+        "design": "Trivial non-behavioral edit (fast path).",
+        "eli5_summary": (
+            "It fixes wording, comments, or formatting without changing "
+            "what the code actually does."
+        ),
+        "implementation_steps": [
+            "Implement only the exact non-behavioural edit the task requests.",
+            "Do not alter executable semantics.",
+            "No opportunistic cleanup.",
+            "If satisfying the request requires behaviour changes, make no "
+            "change and report it.",
+        ],
+        "verification": [
+            {
+                "name": "git diff --check",
+                "argv": ["git", "diff", "--check"],
+                "cwd": ".",
+                "env": {},
+                "required": True,
+                "cost": "cheap",
+                "timeout_seconds": 30,
+            }
+        ],
+        "documentation": [],
+        "acceptance_criteria": [
+            "git diff --check passes.",
+            "Changed lines are comment / docstring / whitespace only.",
+            "No behavioural / semantic changes.",
+        ],
+        "risks": [],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Post-implementation diff confirmation
+# ---------------------------------------------------------------------------
+
+def _is_source_file(relative_path: str) -> bool:
+    return Path(relative_path).suffix in _SOURCE_EXTENSIONS
+
+
+def _is_doc_file(relative_path: str) -> bool:
+    return Path(relative_path).suffix in _DOC_EXTENSIONS
+
+
+def _is_config_or_build_path(relative_path: str) -> bool:
+    """Return True for paths that are definitely not trivial-compatible."""
+    p = Path(relative_path)
+    name = p.name
+    if name in {
+        "CMakeLists.txt", "Makefile", "meson.build", "Dockerfile",
+        ".gitignore", ".gitmodules", ".gitattributes",
+    }:
+        return True
+    parts = p.parts
+    if parts and parts[0] == "build":
+        return True
+    if p.suffix in {
+        ".json", ".yaml", ".yml", ".toml", ".cfg", ".ini",
+        ".cmake", ".proto", ".xml",
+    }:
+        return True
+    return False
+
+
+def _is_comment_or_blank_line(line: str, *, file_path: str) -> bool:
+    """Conservative check: is *line* a comment, docstring, or blank line?
+
+    Rules vary by language family to avoid misclassifying preprocessor
+    directives (``#define`` etc.) as comments in C-family languages, and
+    to reject ambiguous patterns like leading ``*`` (which could be a
+    pointer dereference rather than a block-comment continuation line).
+    """
+    stripped = line.lstrip()
+    if not stripped:
+        return True
+
+    suffix = Path(file_path).suffix
+    is_c_family = suffix in _C_FAMILY_EXTENSIONS
+
+    # C++ / C / Java / JS / Go / Rust / Swift / etc.
+    if is_c_family:
+        if stripped.startswith("//"):
+            return True
+        if stripped.startswith("/*"):
+            return True
+        if stripped == "*/":
+            return True
+        return False
+
+    # Python / shell / Ruby / everything else: '#' is a line comment.
+    if stripped.startswith("#"):
+        return True
+
+    # Python docstring delimiters: only at line start, never a bare
+    # inline check because a string-literal assignment contains them too.
+    if suffix == ".py":
+        if stripped[:3] == '"""' or stripped[:3] == "'''":
+            return True
+
+    return False
+
+
+def confirm_trivial_diff() -> tuple[bool, list[str]]:
+    """Validate that the current working-tree diff is conservatively trivial.
+
+    Returns ``(confirmed, reasons)``.  A confirmed trivial diff means every
+    changed line in every source file is a comment, docstring, or blank
+    line, and no config / build / schema / interface / model / binary files
+    were touched.
+    """
+    paths, changed_lines, tracked_files = changed_diff_stats()
+    reasons: list[str] = []
+
+    if tracked_files > FAST_PATH_MAX_FILES:
+        reasons.append(
+            f"Too many changed files: {tracked_files} (max {FAST_PATH_MAX_FILES})"
+        )
+        return False, reasons
+
+    if changed_lines > FAST_PATH_MAX_LINES:
+        reasons.append(
+            f"Too many changed lines: {changed_lines} (max {FAST_PATH_MAX_LINES})"
+        )
+        return False, reasons
+
+    for p_str in paths:
+        path_obj = Path(p_str)
+        if path_obj in PROTECTED_WORKFLOW_PATHS:
+            reasons.append(f"Changed protected workflow path: {p_str}")
+            return False, reasons
+
+    for p_str in paths:
+        if _is_config_or_build_path(p_str):
+            reasons.append(f"Changed config / build / schema path: {p_str}")
+            return False, reasons
+
+    # Parse git diff hunks line-by-line.  For doc files any change is
+    # acceptable; for source files every addition / removal must be a
+    # comment or blank line; anything else is rejected.
+    diff_text = git("diff", "HEAD")
+    current_file: str | None = None
+    in_source_file = False
+    in_doc_file = False
+    in_hunk = False
+
+    for raw_line in diff_text.splitlines():
+        line = raw_line.rstrip("\n")
+        if line.startswith("diff --git "):
+            in_hunk = False
+            current_file = None
+            continue
+        if line.startswith("--- ") or line.startswith("+++ "):
+            fname = line[line.find("/") + 1:]
+            current_file = fname
+            in_source_file = _is_source_file(fname)
+            in_doc_file = _is_doc_file(fname)
+            continue
+        if line.startswith("@@ "):
+            in_hunk = True
+            continue
+        if not in_hunk:
+            continue
+        # Defensive: diff header inside hunk (shouldn't happen but safe).
+        if line.startswith("diff --git "):
+            in_hunk = False
+            current_file = None
+            continue
+
+        if line.startswith("+") or line.startswith("-"):
+            content = line[1:]
+            if in_doc_file:
+                continue
+            if in_source_file:
+                if not _is_comment_or_blank_line(content, file_path=current_file):
+                    reasons.append(
+                        f"Non-comment change in source file "
+                        f"{current_file}: {content[:80]}"
+                    )
+                    return False, reasons
+            elif current_file is not None:
+                # Unknown file type - not conservatively trivial.
+                reasons.append(
+                    f"Unrecognised file type changed: {current_file}"
+                )
+                return False, reasons
+
+    if not paths:
+        reasons.append("Empty diff (no-op)")
+    return True, reasons
+
+
+def persist_fast_path_classification(
+    session_dir: Path,
+    classification: str,
+    reasons: list[str],
+) -> None:
+    save_json(
+        session_dir / "task-classification.json",
+        {
+            "class": classification,
+            "reasons": reasons,
+        },
+    )
+
+
+def persist_diff_confirmation(
+    session_dir: Path,
+    confirmed: bool,
+    reasons: list[str],
+) -> None:
+    save_json(
+        session_dir / "diff-confirmation.json",
+        {
+            "confirmed": confirmed,
+            "reasons": reasons,
+        },
+    )
+
+
+def run_fast_path_workflow(
+    *,
+    task: str,
+    plan: dict,
+    plan_file: Path,
+    task_file: Path,
+    session_dir: Path,
+) -> int:
+    """Run the narrow deterministic fast path for a confirmed trivial task.
+
+    Flow: implementer -> cheap verification -> diff confirmation ->
+    reviewer (Flash).  No architect, no Pro escalation.
+    """
+    # 1. Implementer (Flash)
+    implementation_log = session_dir / "implementation-1.log"
+    implementation_summary = session_dir / "implementation-1.md"
+
+    implementation = implement(
+        plan_file,
+        task_file,
+        log_file=implementation_log,
+    )
+    save_summary_with_eli5(implementation_summary, implementation)
+    snapshot_git_state(session_dir, "01-after-implementation")
+
+    # 2. Diff confirmation
+    confirmed, reasons = confirm_trivial_diff()
+    persist_diff_confirmation(session_dir, confirmed, reasons)
+
+    if not confirmed:
+        print()
+        print("===== FAST PATH ABORTED =====")
+        print("The resulting diff is not confidently non-behavioral.")
+        print("No acceptance decision was made.")
+        print("Rerun the task through the normal cycle.")
+        for reason in reasons:
+            print(f"- {reason}")
+        return 2
+
+    print()
+    print("Fast-path diff confirmation: PASS")
+    if reasons:
+        for reason in reasons:
+            print(f"  {reason}")
+    else:
+        path_list, line_count, file_count = changed_diff_stats()
+        print(f"  {file_count} file(s), {line_count} changed line(s), "
+              f"comments/docs/formatting only")
+
+    # 3. Cheap verification
+    ok, verification_file, fingerprint = ensure_cheap_candidate_verification(
+        plan=plan,
+        plan_file=plan_file,
+        task_file=task_file,
+        session_dir=session_dir,
+        phase="fast-path-cheap",
+    )
+    if not ok:
+        print()
+        print("===== NOT ACCEPTED =====")
+        print(f"Required cheap verification failed. See: {verification_file}")
+        return 2
+
+    # 4. Reviewer (Flash only, one round)
+    review_file, review_data = obtain_review(
+        session_dir=session_dir,
+        plan_file=plan_file,
+        task_file=task_file,
+        verification_file=verification_file,
+        fingerprint=fingerprint,
+        round_number=1,
+    )
+
+    if review_data["verdict"] == "PASS":
+        snapshot_git_state(session_dir, "02-accepted")
+        print()
+        print("===== ACCEPTED =====")
+        print(f"Implementation rounds: 1")
+        print(f"Review rounds: 1")
+        print(f"Architect calls: 0")
+        print(f"Pro escalation calls: 0")
+        print(f"Session data:       {session_dir}")
+        print()
+        print_final_eli5(session_dir, accepted=True)
+        print("No commit was created.")
+        print("Inspect the final diff manually before committing:")
+        print("  git status --short")
+        print("  git diff")
+        return 0
+
+    # FIX: use existing repair path (one attempt)
+    assert review_data["verdict"] == "FIX"
+    fix_log = session_dir / "review-fix-1.log"
+    fix_summary = session_dir / "review-fix-1.md"
+    fix_result = fix_review(
+        plan_file,
+        task_file,
+        review_file,
+        log_file=fix_log,
+    )
+    save_summary_with_eli5(fix_summary, fix_result)
+    snapshot_git_state(session_dir, "review-1-after-fix")
+
+    # Re-verify cheap
+    ok2, verification_file2, fingerprint2 = ensure_cheap_candidate_verification(
+        plan=plan,
+        plan_file=plan_file,
+        task_file=task_file,
+        session_dir=session_dir,
+        phase="fast-path-fix-cheap",
+    )
+    if not ok2:
+        print()
+        print("===== NOT ACCEPTED =====")
+        print(f"Cheap verification failed after fix. See: {verification_file2}")
+        return 2
+
+    # Re-confirm diff
+    confirmed2, reasons2 = confirm_trivial_diff()
+    if not confirmed2:
+        print()
+        print("===== FAST PATH ABORTED =====")
+        print("Post-fix diff is not confidently non-behavioral.")
+        for reason in reasons2:
+            print(f"- {reason}")
+        return 2
+
+    # One more review
+    review_file2, review_data2 = obtain_review(
+        session_dir=session_dir,
+        plan_file=plan_file,
+        task_file=task_file,
+        verification_file=verification_file2,
+        fingerprint=fingerprint2,
+        round_number=2,
+    )
+    if review_data2["verdict"] == "PASS":
+        snapshot_git_state(session_dir, "02-accepted")
+        print()
+        print("===== ACCEPTED =====")
+        print(f"Implementation rounds: 2")
+        print(f"Review rounds: 2")
+        print(f"Architect calls: 0")
+        print(f"Pro escalation calls: 0")
+        print(f"Session data:       {session_dir}")
+        print()
+        print_final_eli5(session_dir, accepted=True)
+        return 0
+
+    # Still FIX after repair - reject
+    print()
+    print("===== NOT ACCEPTED =====")
+    print("Fast-path review still reports issues after one fix round.")
+    print("Run the task through the normal cycle for deeper review.")
+    print_final_eli5(session_dir, accepted=False)
+    return 2
 
 def strip_ansi(text: str) -> str:
     return ANSI_ESCAPE_RE.sub("", text).replace("\r", "")
@@ -2528,28 +3055,30 @@ def should_escalate_to_sol(
     verification_history: list[dict],
     luna_reviews: list[dict],
     latest_luna_review: dict,
+    confirmed_trivial: bool = False,
 ) -> tuple[bool, list[str]]:
     reasons: list[str] = []
 
-    for concept, fragments in HIGH_RISK_PATH_RULES.items():
-        if any(
-            not path.startswith("docs/")
-            and any(fragment in path.lower() for fragment in fragments)
-            for path in changed_paths
-        ):
-            reasons.append(f"high-risk subsystem changed: {concept}")
+    if not confirmed_trivial:
+        for concept, fragments in HIGH_RISK_PATH_RULES.items():
+            if any(
+                not path.startswith("docs/")
+                and any(fragment in path.lower() for fragment in fragments)
+                for path in changed_paths
+            ):
+                reasons.append(f"high-risk subsystem changed: {concept}")
 
-    plan_text = json.dumps(
-        {
-            "design": plan.get("design", ""),
-            "risks": plan.get("risks", []),
-            "acceptance_criteria": plan.get("acceptance_criteria", []),
-        },
-        sort_keys=True,
-    ).lower()
-    for concept, terms in HIGH_RISK_PLAN_TERMS.items():
-        if any(term in plan_text for term in terms):
-            reasons.append(f"architect identified high-risk concept: {concept}")
+        plan_text = json.dumps(
+            {
+                "design": plan.get("design", ""),
+                "risks": plan.get("risks", []),
+                "acceptance_criteria": plan.get("acceptance_criteria", []),
+            },
+            sort_keys=True,
+        ).lower()
+        for concept, terms in HIGH_RISK_PLAN_TERMS.items():
+            if any(term in plan_text for term in terms):
+                reasons.append(f"architect identified high-risk concept: {concept}")
 
     if changed_lines > 300:
         reasons.append(f"change size exceeds 300 lines: {changed_lines}")
@@ -3582,6 +4111,76 @@ def main() -> int:
         )
 
     task = " ".join(args.task).strip()
+
+    # -----------------------------------------------------------------
+    # Fast-path classification (deterministic, no LLM call)
+    # -----------------------------------------------------------------
+    is_fast_candidate, fast_reasons = classify_fast_path_task(task)
+
+    if is_fast_candidate:
+        print()
+        print("Task class: TRIVIAL_CANDIDATE")
+        print("Workflow: implementer -> cheap verification -> reviewer")
+        for reason in fast_reasons:
+            print(f"  Reason: {reason}")
+
+        ensure_safe_start()
+
+        session_dir = create_session_dir()
+        task_file = session_dir / "task.md"
+
+        save(
+            task_file,
+            f"# User task\n\n{task}\n",
+        )
+
+        persist_fast_path_classification(
+            session_dir, "TRIVIAL_CANDIDATE", fast_reasons
+        )
+
+        snapshot_git_state(session_dir, "00-before")
+
+        print(f"Repository: {ROOT}")
+        print(f"Session:    {session_dir}")
+        print(f"Task:       {task}")
+        print()
+        print("===== FAST PATH CANDIDATE =====")
+        print(f"Reason: {fast_reasons[0]}")
+        print("Architect skipped.")
+        print()
+
+        # Create deterministic trivial plan (no architect call).
+        plan = create_trivial_plan(task)
+        validate_plan(plan)
+        plan_file = session_dir / "plan.json"
+        save_json(plan_file, plan)
+        save_plan_eli5(session_dir, plan)
+
+        implementation = implement(
+            plan_file,
+            task_file,
+            log_file=session_dir / "implementation-1.log",
+        )
+        save_summary_with_eli5(
+            session_dir / "implementation-1.md",
+            implementation,
+        )
+
+        snapshot_git_state(session_dir, "01-after-implementation")
+
+        return run_fast_path_workflow(
+            task=task,
+            plan=plan,
+            plan_file=plan_file,
+            task_file=task_file,
+            session_dir=session_dir,
+        )
+
+    # --- Normal workflow below ---
+    print()
+    print("Task class: NORMAL")
+    print("Workflow: architect -> implementer -> verification -> "
+          "reviewer -> conditional escalation")
 
     ensure_safe_start()
 
