@@ -1,6 +1,6 @@
 # StS AI knowledge base
 
-Last verified: 2026-08-02 against the current working tree.
+Last verified: 2026-08-08 against the current working tree.
 
 This knowledge base is the maintained technical reference for the repository.
 Code and executable behavior remain authoritative; `EXPERIMENTS.md` retains
@@ -41,6 +41,7 @@ For evaluation and operation:
 2. [Benchmark protocol](evaluation/benchmark-protocol.md)
 3. [Build and debugging](operations/build-and-debugging.md)
 4. [Self-play loop](operations/selfplay-loop.md)
+5. [AI cycle and agent backends](operations/ai-cycle.md)
 
 For correctness:
 

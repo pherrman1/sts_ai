@@ -11,6 +11,8 @@ import re
 import sqlite3
 import subprocess
 import sys
+import tempfile
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -24,6 +26,41 @@ MAX_EXPENSIVE_REPAIRS = 2
 MAX_CHEAP_TIMEOUT_SECONDS = 3600
 MAX_EXPENSIVE_TIMEOUT_SECONDS = 6 * 3600
 MAX_AUTOMATED_SEEDS = 128
+
+# ---------------------------------------------------------------------------
+# Agent backend selection
+#
+# The deterministic cycle can run either agent runtime. OpenCode is the
+# default during the Pi migration so the existing path stays available as a
+# rollback; `--backend pi` selects Pi (see .pi/agents/*.md and
+# .pi/extensions/). Flip DEFAULT_BACKEND to "pi" only after the end-to-end
+# bake-off in PI_INTEGRATION_HANDOFF.md Phase 7-8 passes.
+# ---------------------------------------------------------------------------
+DEFAULT_BACKEND = "opencode"
+
+PI_MODEL_BY_ROLE = {
+    "architect": "deepseek/deepseek-v4-pro:high",
+    "implementer": "deepseek/deepseek-v4-flash:high",
+    "reviewer": "deepseek/deepseek-v4-flash:high",
+    "reviewer_escalation": "deepseek/deepseek-v4-pro:xhigh",
+}
+
+# Roles whose Pi child process must never run arbitrary Bash. The allowlist
+# covers Pi's read-only built-ins plus the two custom STS tools provided by
+# .pi/extensions/sts-tools.ts. The implementer keeps its normal tools;
+# destructive commands are denied there by .pi/extensions/sts-safety.ts.
+PI_READONLY_TOOLS = "read,grep,find,ls,sts_git,sts_inspect"
+PI_READONLY_ROLES = {"architect", "reviewer", "reviewer_escalation"}
+
+# Prompt body per role lives in the .pi/agents markdown files; the YAML
+# frontmatter is stripped by pi_agent_prompt_body(). reviewer_escalation uses
+# the stronger reviewer-pro agent body.
+PI_AGENT_PROMPT_FILE = {
+    "architect": ".pi/agents/architect.md",
+    "implementer": ".pi/agents/implementer.md",
+    "reviewer": ".pi/agents/reviewer.md",
+    "reviewer_escalation": ".pi/agents/reviewer-pro.md",
+}
 
 KNOWN_ONE_COMBAT_SEED_SWEEP_ARG_INDEX = {
     "allbench": 3,
@@ -150,6 +187,19 @@ PROTECTED_WORKFLOW_PATHS = (
     Path("tools/ai_cycle.py"),
     Path("tools/ai_inspect.py"),
     Path("tools/test_ai_cycle.py"),
+    # Pi's own control plane: agents should not rewrite their harness while
+    # doing ordinary STS implementation work. Mirrors the PROTECTED_PATHS
+    # allowlist in .pi/extensions/sts-safety.ts.
+    Path(".pi/agents/architect.md"),
+    Path(".pi/agents/implementer.md"),
+    Path(".pi/agents/investigator.md"),
+    Path(".pi/agents/reviewer.md"),
+    Path(".pi/agents/reviewer-pro.md"),
+    Path(".pi/extensions/sts-safety.ts"),
+    Path(".pi/extensions/sts-tools.ts"),
+    Path(".pi/extensions/subagent/agents.ts"),
+    Path(".pi/extensions/subagent/index.ts"),
+    Path(".pi/prompts/sts-investigate.md"),
 )
 
 
@@ -636,8 +686,7 @@ def print_cycle_cost_summary() -> None:
     if not CYCLE_COST_ENTRIES:
         print()
         print("===== AI CYCLE COST =====")
-        print("No cost data recorded (opencode session database not found or")
-        print("no agent calls were made in this run).")
+        print("No cost data recorded (no agent call reported usage in this run).")
         return
 
     summary = summarize_cost_entries(CYCLE_COST_ENTRIES)
@@ -659,7 +708,528 @@ def print_cycle_cost_summary() -> None:
         for agent, count in sorted(by_agent.items()):
             print(f"{agent:<22} {count}")
         print("Review them in the session's denied-tool-calls.md and adjust")
-        print("permission rules in opencode.json if needed.")
+        print("permission rules (opencode.json or .pi/extensions/sts-safety.ts)")
+        print("if needed.")
+
+
+def strip_markdown_frontmatter(markdown: str) -> str:
+    """Return the Markdown body after a leading YAML frontmatter block."""
+    if markdown.startswith("---"):
+        end = markdown.find("\n---", 3)
+        if end != -1:
+            return markdown[end + 4:].lstrip("\n")
+    return markdown
+
+
+def pi_agent_prompt_body(agent: str) -> str:
+    """Load the role's prompt body from its .pi/agents markdown file."""
+    relative_path = PI_AGENT_PROMPT_FILE[agent]
+    markdown = (ROOT / relative_path).read_text(encoding="utf-8")
+    body = strip_markdown_frontmatter(markdown).strip()
+    if not body:
+        raise RuntimeError(f"Pi agent prompt file has no body: {relative_path}")
+    return body
+
+
+def json_try_loads(line: str) -> dict | None:
+    """Parse one Pi JSONL event line, ignoring non-JSON noise."""
+    try:
+        data = json.loads(line)
+    except json.JSONDecodeError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+# Delimiter written after the raw JSONL stream in Pi session logs so that the
+# existing log-based recovery paths (parse_json_response on a paid transcript)
+# work identically for Pi runs. The extracted final response runs from the
+# marker to end of file: the model's answer must be the last content so the
+# trailing-JSON scan in parse_json_response can find it.
+PI_FINAL_RESPONSE_BEGIN = "===== PI FINAL RESPONSE BEGIN ====="
+
+# Reasons emitted by .pi/extensions/sts-safety.ts when it blocks a tool call.
+PI_BLOCK_MARKERS = (
+    "Blocked STS command",
+    "Protected STS workflow path",
+    "automated maximum is 128",
+)
+
+
+def pi_final_response(events: list[dict]) -> str:
+    """Extract the last assistant text from Pi's JSONL message_end events."""
+    for event in reversed(events):
+        if event.get("type") != "message_end":
+            continue
+        message = event.get("message")
+        if not isinstance(message, dict) or message.get("role") != "assistant":
+            continue
+        content = message.get("content")
+        if not isinstance(content, list):
+            continue
+        text_parts = [
+            part.get("text")
+            for part in content
+            if isinstance(part, dict)
+            and part.get("type") == "text"
+            and isinstance(part.get("text"), str)
+        ]
+        if text_parts:
+            return "\n".join(text_parts).strip() + "\n"
+    return ""
+
+
+def pi_last_assistant_message(events: list[dict]) -> dict:
+    for event in reversed(events):
+        if event.get("type") != "message_end":
+            continue
+        message = event.get("message")
+        if isinstance(message, dict) and message.get("role") == "assistant":
+            return message
+    return {}
+
+
+def pi_cost_entries_from_events(agent: str, events: list[dict]) -> list[dict]:
+    """Aggregate Pi usage/cost reported on assistant message_end events."""
+    totals = {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+    reasoning = 0
+    total_cost = 0.0
+    model = ""
+
+    for event in events:
+        if event.get("type") != "message_end":
+            continue
+        message = event.get("message")
+        if not isinstance(message, dict) or message.get("role") != "assistant":
+            continue
+        usage = message.get("usage")
+        if isinstance(usage, dict):
+            totals["input"] += int(usage.get("input") or 0)
+            totals["output"] += int(usage.get("output") or 0)
+            totals["cacheRead"] += int(usage.get("cacheRead") or 0)
+            totals["cacheWrite"] += int(usage.get("cacheWrite") or 0)
+            reasoning += int(usage.get("reasoning") or 0)
+            cost = usage.get("cost")
+            if isinstance(cost, dict):
+                total_cost += float(cost.get("total") or 0.0)
+        if isinstance(message.get("model"), str):
+            model = message["model"]
+
+    if model or total_cost or any(totals.values()):
+        return [
+            {
+                "agent": agent,
+                "model": model,
+                "cost": total_cost,
+                "tokens_input": totals["input"],
+                "tokens_output": totals["output"],
+                "tokens_reasoning": reasoning,
+                "tokens_cache_read": totals["cacheRead"],
+                "tokens_cache_write": totals["cacheWrite"],
+            }
+        ]
+    return []
+
+
+def extract_pi_denied_calls(events: list[dict]) -> list[str]:
+    """Find tool calls that .pi/extensions/sts-safety.ts blocked.
+
+    A blocked call surfaces as an error tool result whose text is the block
+    reason, emitted as a tool_result_end JSONL event.
+    """
+    calls: list[str] = []
+    for event in events:
+        if event.get("type") != "tool_result_end":
+            continue
+        message = event.get("message")
+        if not isinstance(message, dict) or message.get("isError") is not True:
+            continue
+        content = message.get("content")
+        if not isinstance(content, list):
+            continue
+        texts = [
+            part.get("text", "")
+            for part in content
+            if isinstance(part, dict) and isinstance(part.get("text"), str)
+        ]
+        joined = "\n".join(texts)
+        if not any(marker in joined for marker in PI_BLOCK_MARKERS):
+            continue
+        first_line = joined.strip().splitlines()[0] if joined.strip() else ""
+        calls.append(f"{message.get('toolName', '?')}: {first_line}")
+    return calls
+
+
+class AgentBackend:
+    """Provider-neutral agent runtime for the deterministic AI cycle."""
+
+    name: str = "abstract"
+
+    def invoke(
+        self,
+        *,
+        agent: str,
+        prompt: str,
+        files: list[Path] | None = None,
+        log_file: Path | None = None,
+        timeout_seconds: float | None = None,
+    ) -> str:
+        raise NotImplementedError
+
+
+class OpenCodeBackend(AgentBackend):
+    """Agent runtime backed by `opencode run`. Retained as the rollback path."""
+
+    name = "opencode"
+
+    def invoke(
+        self,
+        *,
+        agent: str,
+        prompt: str,
+        files: list[Path] | None = None,
+        log_file: Path | None = None,
+        timeout_seconds: float | None = None,
+    ) -> str:
+        cmd = [
+            "opencode",
+            "run",
+            "--auto",
+            "--agent",
+            agent,
+            "--dir",
+            str(ROOT),
+        ]
+
+        for file in files or []:
+            cmd.extend(["--file", str(file)])
+
+        # --file is an array option in OpenCode. Explicitly terminate option
+        # parsing so the prompt is not consumed as another filename.
+        cmd.extend(["--", prompt])
+
+        print()
+        print(f"===== {agent.upper()} =====")
+        print()
+
+        call_start_ms = time.time() * 1000
+
+        process = subprocess.Popen(
+            cmd,
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+        )
+
+        output_lines: list[str] = []
+        log_handle = None
+
+        if log_file is not None:
+            log_file.parent.mkdir(parents=True, exist_ok=True)
+            log_handle = log_file.open(
+                "w",
+                encoding="utf-8",
+            )
+
+        try:
+            assert process.stdout is not None
+
+            for line in process.stdout:
+                # Keep OpenCode's live terminal rendering, including colors.
+                print(line, end="", flush=True)
+                output_lines.append(line)
+
+                # Session logs are deliberately plain text without ANSI escapes.
+                if log_handle is not None:
+                    log_handle.write(strip_ansi(line))
+                    log_handle.flush()
+
+            returncode = process.wait()
+        finally:
+            if log_handle is not None:
+                log_handle.close()
+
+            cost_entries = fetch_costs_since(call_start_ms)
+            if cost_entries:
+                CYCLE_COST_ENTRIES.extend(cost_entries)
+                if log_file is not None:
+                    append_cost_entries(log_file.parent, cost_entries)
+                call_total = sum(entry["cost"] for entry in cost_entries)
+                models = ", ".join(
+                    sorted(
+                        {
+                            entry["model"]
+                            for entry in cost_entries
+                            if entry["model"]
+                        }
+                    )
+                )
+                print()
+                print(
+                    f"===== AGENT COST: {agent} ${call_total:.4f}"
+                    + (f" ({models})" if models else "")
+                    + " ====="
+                )
+
+            denied_calls = extract_denied_tool_calls(output_lines)
+            if denied_calls:
+                CYCLE_DENIED_CALLS.extend(
+                    (agent, call) for call in denied_calls
+                )
+                if log_file is not None:
+                    append_denied_tool_calls(
+                        log_file.parent,
+                        agent,
+                        denied_calls,
+                        dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    )
+                print()
+                print(
+                    f"===== DENIED TOOL CALLS: {len(denied_calls)} ====="
+                )
+                print(
+                    "Recorded in denied-tool-calls.md for "
+                    "permission-rule review."
+                )
+
+        output = "".join(output_lines)
+
+        if returncode != 0:
+            raise RuntimeError(
+                f"OpenCode agent '{agent}' failed with exit code {returncode}."
+            )
+
+        return output
+
+
+class PiBackend(AgentBackend):
+    """Agent runtime backed by Pi child processes in JSON mode.
+
+    Launches `pi --mode json -p --no-session --approve` per role, streams the
+    JSONL event protocol, and returns the last assistant text response.
+    """
+
+    name = "pi"
+
+    def invoke(
+        self,
+        *,
+        agent: str,
+        prompt: str,
+        files: list[Path] | None = None,
+        log_file: Path | None = None,
+        timeout_seconds: float | None = None,
+    ) -> str:
+        cmd = [
+            "pi",
+            "--mode",
+            "json",
+            "-p",
+            "--no-session",
+            "--approve",
+            # Explicit extension paths keep read-only tools and the safety
+            # hook deterministic even before a project-trust decision is
+            # recorded; --approve discovery dedupes the same paths.
+            "--extension",
+            str(ROOT / ".pi/extensions/sts-tools.ts"),
+            "--extension",
+            str(ROOT / ".pi/extensions/sts-safety.ts"),
+            "--model",
+            PI_MODEL_BY_ROLE[agent],
+        ]
+
+        if agent in PI_READONLY_ROLES:
+            cmd.extend(["--tools", PI_READONLY_TOOLS])
+
+        print()
+        print(f"===== {agent.upper()} =====")
+        print()
+
+        prompt_path: str | None = None
+
+        try:
+            descriptor, prompt_path = tempfile.mkstemp(
+                prefix="sts-pi-prompt-",
+                suffix=".md",
+            )
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                handle.write(pi_agent_prompt_body(agent))
+
+            cmd.extend(["--append-system-prompt", prompt_path])
+
+            for file in files or []:
+                cmd.extend([f"@{file}"])
+
+            # Pi's argument parser has no "--" terminator, so the prompt is
+            # prefixed to guarantee it is never mistaken for a flag or @file.
+            cmd.append(f"Task: {prompt}")
+
+            process = subprocess.Popen(
+                cmd,
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                bufsize=1,
+            )
+
+            output_lines: list[str] = []
+            events: list[dict] = []
+            log_handle = None
+
+            if log_file is not None:
+                log_file.parent.mkdir(parents=True, exist_ok=True)
+                log_handle = log_file.open(
+                    "w",
+                    encoding="utf-8",
+                )
+
+            stderr_lines: list[str] = []
+            assert process.stderr is not None
+            stderr_reader = threading.Thread(
+                target=lambda: stderr_lines.extend(process.stderr),
+                daemon=True,
+            )
+            stderr_reader.start()
+
+            try:
+                assert process.stdout is not None
+
+                for line in process.stdout:
+                    if log_handle is not None:
+                        log_handle.write(strip_ansi(line))
+                        log_handle.flush()
+
+                    event = json_try_loads(line)
+                    if event is None:
+                        continue
+                    events.append(event)
+                    if event.get("type") == "tool_execution_start":
+                        print(
+                            f"\u2192 {event.get('toolName', '?')}",
+                            flush=True,
+                        )
+
+                if timeout_seconds is not None:
+                    try:
+                        returncode = process.wait(timeout=timeout_seconds)
+                    except subprocess.TimeoutExpired:
+                        process.terminate()
+                        try:
+                            process.wait(timeout=10)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            process.wait()
+                        raise RuntimeError(
+                            f"Pi agent '{agent}' timed out after "
+                            f"{timeout_seconds:.0f} seconds."
+                        )
+                else:
+                    returncode = process.wait()
+            finally:
+                stderr_reader.join(timeout=10)
+
+                final_response = pi_final_response(events)
+                if log_handle is not None:
+                    # Keep paid transcripts recoverable: the raw JSONL stream
+                    # above plus the model's final answer as the last content
+                    # in the file, so log-based recovery parses it exactly as
+                    # it does OpenCode transcripts.
+                    if final_response:
+                        log_handle.write(
+                            f"\n\n{PI_FINAL_RESPONSE_BEGIN}\n"
+                            f"{final_response}"
+                        )
+                    log_handle.close()
+
+                cost_entries = pi_cost_entries_from_events(agent, events)
+                if cost_entries:
+                    CYCLE_COST_ENTRIES.extend(cost_entries)
+                    if log_file is not None:
+                        append_cost_entries(log_file.parent, cost_entries)
+                    call_total = sum(
+                        entry["cost"] for entry in cost_entries
+                    )
+                    models = ", ".join(
+                        sorted(
+                            {
+                                entry["model"]
+                                for entry in cost_entries
+                                if entry["model"]
+                            }
+                        )
+                    )
+                    print()
+                    print(
+                        f"===== AGENT COST: {agent} ${call_total:.4f}"
+                        + (f" ({models})" if models else "")
+                        + " ====="
+                    )
+
+                denied_calls = extract_pi_denied_calls(events)
+                if denied_calls:
+                    CYCLE_DENIED_CALLS.extend(
+                        (agent, call) for call in denied_calls
+                    )
+                    if log_file is not None:
+                        append_denied_tool_calls(
+                            log_file.parent,
+                            agent,
+                            denied_calls,
+                            dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        )
+                    print()
+                    print(
+                        f"===== DENIED TOOL CALLS: {len(denied_calls)} ====="
+                    )
+                    print(
+                        "Recorded in denied-tool-calls.md for "
+                        "permission-rule review."
+                    )
+        finally:
+            if prompt_path is not None:
+                try:
+                    os.unlink(prompt_path)
+                except OSError:
+                    pass
+
+        if returncode != 0:
+            detail = "".join(stderr_lines).strip()
+            message = (
+                f"Pi agent '{agent}' failed with exit code {returncode}."
+            )
+            if detail:
+                message += f"\n{detail[-2000:]}"
+            raise RuntimeError(message)
+
+        last_assistant = pi_last_assistant_message(events)
+        stop_reason = last_assistant.get("stopReason")
+        if stop_reason in {"error", "aborted"}:
+            error_message = last_assistant.get("errorMessage")
+            message = f"Pi agent '{agent}' stopped with {stop_reason}."
+            if error_message:
+                message += f" {error_message}"
+            raise RuntimeError(message)
+
+        final_response = pi_final_response(events)
+        if not final_response:
+            raise RuntimeError(
+                f"Pi agent '{agent}' produced no final assistant response."
+            )
+
+        return final_response
+
+
+ACTIVE_BACKEND: AgentBackend = OpenCodeBackend()
+
+
+def select_backend(name: str) -> AgentBackend:
+    if name == "opencode":
+        return OpenCodeBackend()
+    if name == "pi":
+        return PiBackend()
+    raise ValueError(f"Unknown agent backend: {name}")
 
 
 def run_agent(
@@ -668,107 +1238,16 @@ def run_agent(
     *,
     files: list[Path] | None = None,
     log_file: Path | None = None,
+    timeout_seconds: float | None = None,
 ) -> str:
-    cmd = [
-        "opencode",
-        "run",
-        "--auto",
-        "--agent",
-        agent,
-        "--dir",
-        str(ROOT),
-    ]
-
-    for file in files or []:
-        cmd.extend(["--file", str(file)])
-
-    # --file is an array option in OpenCode. Explicitly terminate option
-    # parsing so the prompt is not consumed as another filename.
-    cmd.extend(["--", prompt])
-
-    print()
-    print(f"===== {agent.upper()} =====")
-    print()
-
-    call_start_ms = time.time() * 1000
-
-    process = subprocess.Popen(
-        cmd,
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        bufsize=1,
+    """Invoke the selected agent runtime for one role."""
+    return ACTIVE_BACKEND.invoke(
+        agent=agent,
+        prompt=prompt,
+        files=files,
+        log_file=log_file,
+        timeout_seconds=timeout_seconds,
     )
-
-    output_lines: list[str] = []
-    log_handle = None
-
-    if log_file is not None:
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        log_handle = log_file.open(
-            "w",
-            encoding="utf-8",
-        )
-
-    try:
-        assert process.stdout is not None
-
-        for line in process.stdout:
-            # Keep OpenCode's live terminal rendering, including colors.
-            print(line, end="", flush=True)
-            output_lines.append(line)
-
-            # Session logs are deliberately plain text without ANSI escapes.
-            if log_handle is not None:
-                log_handle.write(strip_ansi(line))
-                log_handle.flush()
-
-        returncode = process.wait()
-    finally:
-        if log_handle is not None:
-            log_handle.close()
-
-        cost_entries = fetch_costs_since(call_start_ms)
-        if cost_entries:
-            CYCLE_COST_ENTRIES.extend(cost_entries)
-            if log_file is not None:
-                append_cost_entries(log_file.parent, cost_entries)
-            call_total = sum(entry["cost"] for entry in cost_entries)
-            models = ", ".join(
-                sorted({entry["model"] for entry in cost_entries if entry["model"]})
-            )
-            print()
-            print(
-                f"===== AGENT COST: {agent} ${call_total:.4f}"
-                + (f" ({models})" if models else "")
-                + " ====="
-            )
-
-        denied_calls = extract_denied_tool_calls(output_lines)
-        if denied_calls:
-            CYCLE_DENIED_CALLS.extend((agent, call) for call in denied_calls)
-            if log_file is not None:
-                append_denied_tool_calls(
-                    log_file.parent,
-                    agent,
-                    denied_calls,
-                    dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                )
-            print()
-            print(
-                f"===== DENIED TOOL CALLS: {len(denied_calls)} ====="
-            )
-            print("Recorded in denied-tool-calls.md for permission-rule review.")
-
-    output = "".join(output_lines)
-
-    if returncode != 0:
-        raise RuntimeError(
-            f"OpenCode agent '{agent}' failed with exit code {returncode}."
-        )
-
-    return output
 
 def parse_json_response(text: str, *, source: str) -> dict:
     """Extract the agent's final JSON object from OpenCode's streamed transcript."""
@@ -2826,6 +3305,17 @@ def main() -> int:
     )
 
     parser.add_argument(
+        "--backend",
+        choices=("opencode", "pi"),
+        default=DEFAULT_BACKEND,
+        help=(
+            f"Agent runtime backend (default: {DEFAULT_BACKEND}). "
+            "'opencode' is the legacy runtime kept as a rollback path; 'pi' "
+            "runs Pi child processes in JSON mode."
+        ),
+    )
+
+    parser.add_argument(
         "--continue-rejected",
         action="store_true",
         help=(
@@ -2857,6 +3347,10 @@ def main() -> int:
         parser.error("--continue-rejected requires --resume SESSION.")
     if args.retry_recovery and not (args.resume and args.continue_rejected):
         parser.error("--retry-recovery requires --resume SESSION --continue-rejected.")
+
+    global ACTIVE_BACKEND
+    ACTIVE_BACKEND = select_backend(args.backend)
+    print(f"Agent backend: {args.backend}")
 
     # -----------------------------------------------------------------
     # Session creation / recovery

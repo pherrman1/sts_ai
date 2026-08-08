@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import tempfile
 import unittest
@@ -900,6 +901,717 @@ class DeniedCallAndRecoveryTests(unittest.TestCase):
                 )
             )
             self.assertEqual("new-candidate", marker["candidate_fingerprint"])
+
+
+def assistant_message_end(text: str, **overrides) -> dict:
+    message = {
+        "role": "assistant",
+        "content": [{"type": "text", "text": text}],
+        "model": "deepseek/deepseek-v4-flash:high",
+        "stopReason": "stop",
+        "usage": {
+            "input": 10,
+            "output": 5,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 15,
+            "cost": {"input": 0.0, "output": 0.0, "cacheRead": 0.0,
+                     "cacheWrite": 0.0, "total": 0.001},
+        },
+    }
+    message.update(overrides)
+    return {"type": "message_end", "message": message}
+
+
+def jsonl_lines(events: list[dict]) -> list[str]:
+    return [json.dumps(event) + "\n" for event in events]
+
+
+class FakeProcess:
+    """Minimal subprocess.Popen stand-in for Pi/OpenCode child processes."""
+
+    def __init__(
+        self,
+        *,
+        stdout_lines: list[str],
+        returncode: int = 0,
+        stderr_lines: list[str] | None = None,
+        timed_out: bool = False,
+    ):
+        self.stdout = iter(stdout_lines)
+        self.stderr = iter(stderr_lines or [])
+        self.returncode = returncode
+        self._timed_out = timed_out
+        self.terminated = False
+        self.killed = False
+
+    def wait(self, timeout=None):
+        if self._timed_out and not self.terminated:
+            raise subprocess.TimeoutExpired(["pi"], timeout)
+        return self.returncode
+
+    def terminate(self) -> None:
+        self.terminated = True
+
+    def kill(self) -> None:
+        self.killed = True
+
+
+class PiFakeFactory:
+    """Produces FakeProcess responses keyed on the Pi argv of each call.
+
+    Roles are distinguished by model flag and the presence of --tools:
+    - reviewer_escalation: deepseek/deepseek-v4-pro:xhigh
+    - reviewer: --model deepseek/deepseek-v4-flash:high with --tools
+    - implementer: --model deepseek/deepseek-v4-flash:high without --tools
+    """
+
+    def __init__(self, reviews=None, sol_reviews=None, fix_text=None):
+        self.review_iter = iter(reviews or [])
+        self.sol_iter = iter(sol_reviews or [])
+        self.fix_text = fix_text or (
+            f"{FINAL_BEGIN}\nfixed\nELI5\n- plain summary\n{FINAL_END}\n"
+        )
+        self.calls: list[list[str]] = []
+        self.real_popen = subprocess.Popen
+
+    def __call__(self, cmd, **kwargs):
+        if not cmd or cmd[0] != "pi":
+            if cmd and cmd[0] in {
+                "python3", "python", "git", "cmake", "ctest", "pytest",
+            }:
+                return self.real_popen(cmd, **kwargs)
+            raise AssertionError(
+                f"unexpected real command through Popen mock: {cmd}"
+            )
+        self.calls.append(cmd)
+        joined = " ".join(cmd)
+        if "--model deepseek/deepseek-v4-pro:xhigh" in joined:
+            data = next(self.sol_iter)
+        elif "--tools" in joined:
+            data = next(self.review_iter)
+        else:
+            return FakeProcess(
+                stdout_lines=jsonl_lines(
+                    [assistant_message_end(self.fix_text)]
+                )
+            )
+        return FakeProcess(
+            stdout_lines=jsonl_lines([assistant_message_end(json.dumps(data))])
+        )
+
+
+def write_pi_session_files(session_dir: Path) -> tuple[Path, Path]:
+    plan_file = session_dir / "plan.json"
+    task_file = session_dir / "task.md"
+    plan_file.write_text(
+        json.dumps(plan_with([check(cost="cheap")])), encoding="utf-8"
+    )
+    task_file.write_text("# User task\n\ntest\n", encoding="utf-8")
+    return plan_file, task_file
+
+
+class PiBackendUnitTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.addCleanup(ai_cycle.CYCLE_COST_ENTRIES.clear)
+        self.addCleanup(ai_cycle.CYCLE_DENIED_CALLS.clear)
+        self.addCleanup(setattr, ai_cycle, "ACTIVE_BACKEND",
+                        ai_cycle.OpenCodeBackend())
+
+    def invoke(
+        self,
+        agent: str = "architect",
+        prompt: str = "plan",
+        *,
+        files: list | None = None,
+        log_file: Path | None = None,
+        timeout_seconds: float | None = None,
+        process: FakeProcess | None = None,
+    ):
+        backend = ai_cycle.PiBackend()
+        return backend.invoke(
+            agent=agent,
+            prompt=prompt,
+            files=files,
+            log_file=log_file,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def test_backend_selection(self) -> None:
+        self.assertIsInstance(ai_cycle.select_backend("opencode"),
+                              ai_cycle.OpenCodeBackend)
+        self.assertIsInstance(ai_cycle.select_backend("pi"),
+                              ai_cycle.PiBackend)
+        with self.assertRaises(ValueError):
+            ai_cycle.select_backend("other")
+        self.assertIsInstance(ai_cycle.ACTIVE_BACKEND,
+                              ai_cycle.OpenCodeBackend)
+
+    def test_run_agent_dispatches_to_active_backend(self) -> None:
+        invoked = {}
+
+        class StubBackend(ai_cycle.AgentBackend):
+            def invoke(self, **kwargs) -> str:
+                invoked.update(kwargs)
+                return "answer"
+
+        ai_cycle.ACTIVE_BACKEND = StubBackend()
+        result = ai_cycle.run_agent(
+            "reviewer", "prompt", files=[], log_file=None
+        )
+        self.assertEqual("answer", result)
+        self.assertEqual("reviewer", invoked["agent"])
+        self.assertEqual("prompt", invoked["prompt"])
+        self.assertIsNone(invoked["timeout_seconds"])
+
+    def test_pi_argv_construction_per_role(self) -> None:
+        cases = [
+            (
+                "architect",
+                "deepseek/deepseek-v4-pro:high",
+                "read,grep,find,ls,sts_git,sts_inspect",
+            ),
+            (
+                "reviewer",
+                "deepseek/deepseek-v4-flash:high",
+                "read,grep,find,ls,sts_git,sts_inspect",
+            ),
+            (
+                "reviewer_escalation",
+                "deepseek/deepseek-v4-pro:xhigh",
+                "read,grep,find,ls,sts_git,sts_inspect",
+            ),
+            ("implementer", "deepseek/deepseek-v4-flash:high", None),
+        ]
+        for agent, model, tools in cases:
+            with self.subTest(agent=agent), mock.patch(
+                "tools.ai_cycle.subprocess.Popen",
+                return_value=FakeProcess(
+                    stdout_lines=jsonl_lines(
+                        [assistant_message_end("ok")]
+                    )
+                ),
+            ) as popen_mock:
+                result = self.invoke(agent=agent)
+            self.assertEqual("ok\n", result)
+            cmd = popen_mock.call_args.args[0]
+            self.assertEqual("pi", cmd[0])
+            for expected in (
+                "--mode", "json", "-p", "--no-session", "--approve",
+                "--extension",
+                str(ai_cycle.ROOT / ".pi/extensions/sts-tools.ts"),
+                "--extension",
+                str(ai_cycle.ROOT / ".pi/extensions/sts-safety.ts"),
+                "--model", model,
+            ):
+                self.assertIn(expected, cmd)
+            if tools is None:
+                self.assertNotIn("--tools", cmd)
+            else:
+                self.assertIn("--tools", cmd)
+                self.assertEqual(tools,
+                                 cmd[cmd.index("--tools") + 1])
+            self.assertEqual(cmd[-1], "Task: plan")
+            self.assertEqual(
+                "Task: plan", cmd[-1],
+            )
+
+    def test_pi_argv_attaches_files_and_prompt_body(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen",
+            return_value=FakeProcess(
+                stdout_lines=jsonl_lines(
+                    [assistant_message_end('{"verdict": "PASS"}')]
+                )
+            ),
+        ) as popen_mock:
+            result = ai_cycle.PiBackend().invoke(
+                agent="reviewer",
+                prompt="review it",
+                files=[Path(raw_dir) / "plan.json"],
+            )
+        self.assertEqual('{"verdict": "PASS"}\n', result)
+        cmd = popen_mock.call_args.args[0]
+        append_index = cmd.index("--append-system-prompt")
+        prompt_path = Path(cmd[append_index + 1])
+        self.assertTrue(prompt_path.exists() or not prompt_path.exists())
+        body = ai_cycle.pi_agent_prompt_body("reviewer")
+        self.assertIn("senior adversarial reviewer", body)
+        self.assertNotIn("---", body.splitlines()[0])
+        self.assertIn(f"@{raw_dir}/plan.json", cmd)
+        self.assertEqual("Task: review it", cmd[-1])
+
+    def test_pi_agent_prompt_body_strips_frontmatter(self) -> None:
+        for agent, expected_fragment in [
+            ("architect", "senior software and research architect"),
+            ("implementer", "implementation agent"),
+            ("reviewer", "adversarial reviewer"),
+            ("reviewer_escalation", "escalation auditor"),
+        ]:
+            with self.subTest(agent=agent):
+                body = ai_cycle.pi_agent_prompt_body(agent)
+                self.assertIn(expected_fragment, body)
+                self.assertNotIn("name:", body.splitlines()[0])
+                self.assertNotIn("model:", body.splitlines()[0])
+
+    def test_pi_final_response_extraction(self) -> None:
+        events = [
+            {"type": "session_header", "sessionId": "x"},
+            {"type": "tool_execution_start", "toolName": "read"},
+            {
+                "type": "tool_result_end",
+                "message": {
+                    "role": "toolResult",
+                    "toolName": "read",
+                    "isError": False,
+                    "content": [{"type": "text", "text": "file"}],
+                },
+            },
+            assistant_message_end("first"),
+            assistant_message_end("second"),
+        ]
+        self.assertEqual("second\n", ai_cycle.pi_final_response(events))
+        self.assertEqual({}, ai_cycle.pi_last_assistant_message([]))
+
+    def test_pi_final_response_ignores_thinking_parts(self) -> None:
+        message = assistant_message_end("answer")
+        message["message"]["content"] = [
+            {"type": "thinking", "thinking": "hidden reasoning"},
+            {"type": "text", "text": "answer"},
+        ]
+        events = [message]
+        self.assertEqual("answer\n", ai_cycle.pi_final_response(events))
+
+    def test_malformed_jsonl_ignored(self) -> None:
+        with mock.patch(
+            "tools.ai_cycle.subprocess.Popen",
+            return_value=FakeProcess(
+                stdout_lines=[
+                    "not json\n",
+                    "also not json\n",
+                    '{"type": "agent_end", "messages": []}\n',
+                ]
+            ),
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError, "no final assistant response"
+            ):
+                self.invoke()
+
+    def test_nonzero_pi_exit_raises(self) -> None:
+        with mock.patch(
+            "tools.ai_cycle.subprocess.Popen",
+            return_value=FakeProcess(
+                stdout_lines=jsonl_lines(
+                    [assistant_message_end("partial answer")]
+                ),
+                returncode=1,
+                stderr_lines=["api error: nope\n"],
+            ),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "exit code 1"):
+                self.invoke()
+
+    def test_pi_stop_reason_error_raises(self) -> None:
+        with mock.patch(
+            "tools.ai_cycle.subprocess.Popen",
+            return_value=FakeProcess(
+                stdout_lines=jsonl_lines(
+                    [
+                        assistant_message_end(
+                            "x", stopReason="error",
+                            errorMessage="rate limited",
+                        )
+                    ]
+                )
+            ),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "stopped with error"):
+                self.invoke()
+
+    def test_timeout_propagates_and_terminates(self) -> None:
+        process = FakeProcess(
+            stdout_lines=[],
+            timed_out=True,
+        )
+        with mock.patch(
+            "tools.ai_cycle.subprocess.Popen", return_value=process
+        ):
+            with self.assertRaisesRegex(RuntimeError, "timed out after"):
+                self.invoke(timeout_seconds=60)
+        self.assertTrue(process.terminated)
+        self.assertFalse(process.killed)
+
+    def test_timeout_without_deadline_wait_forever(self) -> None:
+        process = FakeProcess(
+            stdout_lines=jsonl_lines([assistant_message_end("ok")])
+        )
+        with mock.patch(
+            "tools.ai_cycle.subprocess.Popen", return_value=process
+        ):
+            self.assertEqual("ok\n", self.invoke(timeout_seconds=None))
+        self.assertFalse(process.terminated)
+
+    def test_log_recovery_block_parses_after_failed_run(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen",
+            return_value=FakeProcess(
+                stdout_lines=jsonl_lines(
+                    [assistant_message_end('{"verdict": "PASS"}')]
+                ),
+                returncode=1,
+            ),
+        ):
+            log_file = Path(raw_dir) / "review-1.log"
+            with self.assertRaisesRegex(RuntimeError, "exit code 1"):
+                ai_cycle.PiBackend().invoke(
+                    agent="reviewer",
+                    prompt="review it",
+                    log_file=log_file,
+                )
+            transcript = log_file.read_text(encoding="utf-8")
+            self.assertIn(ai_cycle.PI_FINAL_RESPONSE_BEGIN, transcript)
+            self.assertNotIn("PI FINAL RESPONSE END", transcript)
+            data = ai_cycle.parse_json_response(
+                transcript, source="test log"
+            )
+            self.assertEqual("PASS", data["verdict"])
+
+    def test_pi_cost_entries_recorded_per_agent(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            log_file = Path(raw_dir) / "review-1.log"
+            with mock.patch(
+                "tools.ai_cycle.subprocess.Popen",
+                return_value=FakeProcess(
+                    stdout_lines=jsonl_lines(
+                        [assistant_message_end("ok")]
+                    )
+                ),
+            ):
+                self.invoke(agent="reviewer", log_file=log_file)
+            entry = ai_cycle.CYCLE_COST_ENTRIES[-1]
+            self.assertEqual("reviewer", entry["agent"])
+            self.assertEqual(0.001, entry["cost"])
+            self.assertEqual(10, entry["tokens_input"])
+            self.assertEqual(5, entry["tokens_output"])
+            saved = json.loads(
+                log_file.parent.joinpath("costs.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual("reviewer", saved["entries"][-1]["agent"])
+
+    def test_pi_denied_calls_extracted(self) -> None:
+        events = [
+            {
+                "type": "tool_result_end",
+                "message": {
+                    "role": "toolResult",
+                    "toolName": "bash",
+                    "isError": True,
+                    "content": [{
+                        "type": "text",
+                        "text": "Blocked STS command: git commit is "
+                                "controlled by the human/orchestrator",
+                    }],
+                },
+            },
+            {
+                "type": "tool_result_end",
+                "message": {
+                    "role": "toolResult",
+                    "toolName": "write",
+                    "isError": True,
+                    "content": [{
+                        "type": "text",
+                        "text": "Protected STS workflow path: "
+                                "tools/ai_cycle.py",
+                    }],
+                },
+            },
+            {
+                "type": "tool_result_end",
+                "message": {
+                    "role": "toolResult",
+                    "toolName": "bash",
+                    "isError": False,
+                    "content": [{"type": "text", "text": "clean run"}],
+                },
+            },
+        ]
+        calls = ai_cycle.extract_pi_denied_calls(events)
+        self.assertEqual(2, len(calls))
+        self.assertIn("bash: Blocked STS command", calls[0])
+        self.assertIn("write: Protected STS workflow path", calls[1])
+
+    def test_pi_denied_calls_recorded_with_log(self) -> None:
+        events = [
+            {
+                "type": "tool_result_end",
+                "message": {
+                    "role": "toolResult",
+                    "toolName": "bash",
+                    "isError": True,
+                    "content": [{
+                        "type": "text",
+                        "text": "Blocked STS command: git push is "
+                                "controlled by the human/orchestrator",
+                    }],
+                },
+            }
+        ]
+        with tempfile.TemporaryDirectory() as raw_dir:
+            log_file = Path(raw_dir) / "implementer-1.log"
+            with mock.patch(
+                "tools.ai_cycle.subprocess.Popen",
+                return_value=FakeProcess(
+                    stdout_lines=jsonl_lines(
+                        [*events, assistant_message_end("done")]
+                    )
+                ),
+            ):
+                self.invoke(agent="implementer", log_file=log_file)
+            text = (log_file.parent / "denied-tool-calls.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("## implementer", text)
+            self.assertIn("Blocked STS command", text)
+
+    def test_opencode_backend_argv_and_failure(self) -> None:
+        with mock.patch(
+            "tools.ai_cycle.subprocess.Popen",
+            return_value=FakeProcess(stdout_lines=["noise\n"]),
+        ) as popen_mock:
+            result = ai_cycle.OpenCodeBackend().invoke(
+                agent="architect", prompt="plan",
+                files=[Path("plan.json")],
+            )
+        self.assertEqual("noise\n", result)
+        cmd = popen_mock.call_args.args[0]
+        self.assertEqual(
+            ["opencode", "run", "--auto", "--agent", "architect",
+             "--dir", str(ai_cycle.ROOT), "--file", "plan.json",
+             "--", "plan"],
+            cmd,
+        )
+
+        with mock.patch(
+            "tools.ai_cycle.subprocess.Popen",
+            return_value=FakeProcess(stdout_lines=[], returncode=2),
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError, "OpenCode agent 'architect' failed"
+            ):
+                ai_cycle.OpenCodeBackend().invoke(
+                    agent="architect", prompt="plan"
+                )
+
+
+class PiBackendCycleTests(unittest.TestCase):
+    """End-to-end orchestration driven through the Pi backend, no API calls."""
+
+    def setUp(self) -> None:
+        self.addCleanup(ai_cycle.CYCLE_COST_ENTRIES.clear)
+        self.addCleanup(ai_cycle.CYCLE_DENIED_CALLS.clear)
+        self.addCleanup(setattr, ai_cycle, "ACTIVE_BACKEND",
+                        ai_cycle.OpenCodeBackend())
+        ai_cycle.ACTIVE_BACKEND = ai_cycle.PiBackend()
+
+    def test_cheap_review_fix_repair_rereview_through_pi(self) -> None:
+        factory = PiFakeFactory(reviews=[review_data("FIX"), review_data("PASS")])
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen", factory
+        ), mock.patch(
+            "tools.ai_cycle.changed_diff_stats",
+            return_value=([], 0, 0),
+        ):
+            session_dir = Path(raw_dir)
+            plan_file, task_file = write_pi_session_files(session_dir)
+            result = ai_cycle.complete_candidate_workflow(
+                plan=plan_with([check(cost="cheap")]),
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+                allow_expensive=False,
+            )
+            self.assertEqual(0, result)
+            self.assertEqual(3, len(factory.calls))
+            self.assertTrue((session_dir / "review-1.json").exists())
+            self.assertTrue((session_dir / "review-2.json").exists())
+            self.assertTrue((session_dir / "review-fix-1.md").exists())
+            escalation = json.loads(
+                (session_dir / "escalation.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertFalse(escalation["escalated"])
+            self.assertFalse((session_dir / "sol-review-1.json").exists())
+            reviews = [d["verdict"] for _, _, d in
+                       ai_cycle.existing_review_rounds(session_dir)]
+            self.assertEqual(["FIX", "PASS"], reviews)
+
+    def test_high_risk_pass_escalates_through_pi(self) -> None:
+        plan = plan_with([check(cost="cheap")])
+        plan["design"] = "training/inference parity change"
+        factory = PiFakeFactory(reviews=[review_data("PASS")],
+                                sol_reviews=[review_data("PASS")])
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen", factory
+        ), mock.patch(
+            "tools.ai_cycle.changed_diff_stats",
+            return_value=([], 0, 0),
+        ):
+            session_dir = Path(raw_dir)
+            plan_file, task_file = write_pi_session_files(session_dir)
+            result = ai_cycle.complete_candidate_workflow(
+                plan=plan,
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+                allow_expensive=False,
+            )
+            self.assertEqual(0, result)
+            self.assertTrue((session_dir / "escalation.json").exists())
+            self.assertTrue((session_dir / "sol-review-1.json").exists())
+            self.assertEqual(2, len(factory.calls))
+            sol_model = [
+                cmd for cmd in factory.calls
+                if "--model deepseek/deepseek-v4-pro:xhigh" in " ".join(cmd)
+            ]
+            self.assertEqual(1, len(sol_model))
+
+    def test_rejected_session_recovery_through_pi(self) -> None:
+        factory = PiFakeFactory(sol_reviews=[review_data("PASS")])
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen", factory
+        ):
+            session_dir = Path(raw_dir)
+            plan_file, task_file = write_pi_session_files(session_dir)
+            rejected = review_data("FIX")
+            rejected["candidate_fingerprint"] = "candidate"
+            (session_dir / "review-2.json").write_text(
+                json.dumps(rejected), encoding="utf-8"
+            )
+            result = ai_cycle.continue_rejected_workflow(
+                plan=plan_with([check(cost="cheap")]),
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+                allow_expensive=False,
+            )
+            self.assertEqual(0, result)
+            self.assertTrue(
+                (session_dir / "recovery-complete.json").exists()
+            )
+            self.assertTrue(
+                (session_dir / "recovery-adjudication.json").exists()
+            )
+            self.assertEqual(1, len(factory.calls))
+
+    def test_verification_repair_retry_through_pi(self) -> None:
+        failing = {"required_checks_passed": False, "checks": []}
+        passing = {"required_checks_passed": True, "checks": []}
+        factory = PiFakeFactory(fix_text=(
+            f"{FINAL_BEGIN}\nfixed\nELI5\n- plain\n{FINAL_END}\n"
+        ))
+        with tempfile.TemporaryDirectory() as raw_dir, mock.patch(
+            "tools.ai_cycle.subprocess.Popen", factory
+        ), mock.patch(
+            "tools.ai_cycle.run_verification",
+            side_effect=[failing.copy(), passing.copy()],
+        ), mock.patch(
+            "tools.ai_cycle.candidate_fingerprint", return_value="candidate"
+        ):
+            session_dir = Path(raw_dir)
+            plan_file, task_file = write_pi_session_files(session_dir)
+            ok, verification_file = ai_cycle.run_verification_cycle(
+                plan=plan_with([check(cost="cheap")]),
+                plan_file=plan_file,
+                task_file=task_file,
+                session_dir=session_dir,
+                phase="cheap",
+            )
+            self.assertTrue(ok)
+            self.assertTrue(
+                verification_file.name.startswith("cheap-verification-2")
+            )
+            self.assertEqual(1, len(factory.calls))
+            self.assertTrue(
+                (session_dir / "cheap-verification-fix-1.md").exists()
+            )
+
+
+class BackendSafetySyncTests(unittest.TestCase):
+    def test_pi_safety_ts_seed_tables_match_python(self) -> None:
+        source = (ai_cycle.ROOT / ".pi/extensions/sts-safety.ts").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("const MAX_AUTOMATED_SEEDS = 128", source)
+
+        def parse_table(block_name: str) -> dict[str, int]:
+            match = re.search(
+                rf"const {block_name}.*?\{{(.*?)\}}",
+                source,
+                re.DOTALL,
+            )
+            self.assertIsNotNone(match, block_name)
+            entries = {}
+            for line in match.group(1).splitlines():
+                stripped = line.strip().rstrip(",")
+                if not stripped or ":" not in stripped:
+                    continue
+                key, _, value = stripped.partition(":")
+                entries[key.strip().strip('"')] = int(value.strip())
+            return entries
+
+        self.assertEqual(
+            parse_table("ONE_COMBAT_SEED_ARG_INDEX"),
+            ai_cycle.KNOWN_ONE_COMBAT_SEED_SWEEP_ARG_INDEX,
+        )
+        self.assertEqual(
+            parse_table("PYTHON_SEED_ARG_INDEX"),
+            ai_cycle.KNOWN_PYTHON_SEED_SWEEP_ARG_INDEX,
+        )
+        self.assertEqual(
+            ai_cycle.KNOWN_ONE_COMBAT_SEED_SWEEP_ARG_INDEX["bestbench"], 3
+        )
+
+    def test_pi_control_plane_paths_protected(self) -> None:
+        relative = {str(path) for path in ai_cycle.PROTECTED_WORKFLOW_PATHS}
+        self.assertIn(".pi/agents/architect.md", relative)
+        self.assertIn(".pi/agents/reviewer-pro.md", relative)
+        self.assertIn(".pi/extensions/sts-safety.ts", relative)
+        self.assertIn(".pi/extensions/sts-tools.ts", relative)
+        self.assertIn(".pi/prompts/sts-investigate.md", relative)
+        for path in ai_cycle.PROTECTED_WORKFLOW_PATHS:
+            if str(path).startswith(".pi/"):
+                self.assertTrue((ai_cycle.ROOT / path).exists(),
+                                f"missing {path}")
+
+    def test_implementer_protected_files_restored(self) -> None:
+        protected = ai_cycle.ROOT / ".pi/agents/reviewer.md"
+        original = protected.read_bytes()
+        with mock.patch("tools.ai_cycle.run_agent") as run_mock:
+            def sabotage(agent, prompt, **kwargs):
+                protected.write_text(
+                    "---\nname: hacked\n---\nrewritten", encoding="utf-8"
+                )
+                return "FINAL_RESPONSE_BEGIN\nx\nFINAL_RESPONSE_END\n"
+
+            run_mock.side_effect = sabotage
+            ai_cycle.run_implementer_agent(
+                "task",
+                log_file=Path(tempfile.mkdtemp()) / "implementation-1.log",
+            )
+        self.assertEqual(original, protected.read_bytes())
+
+    def test_dirty_tree_refuses_before_agent_invocation(self) -> None:
+        with mock.patch(
+            "tools.ai_cycle.git",
+            return_value=" M tools/ai_cycle.py\n",
+        ):
+            with self.assertRaisesRegex(RuntimeError, "Tracked working-tree"):
+                ai_cycle.ensure_safe_start()
 
 
 if __name__ == "__main__":
