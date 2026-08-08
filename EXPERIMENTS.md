@@ -5821,3 +5821,86 @@ extFight*/emElites/emFights parity-excluded) and
   that had accumulated in git-tracked `selfplay/models/` was removed (it must
   not be committed; only the Phase-2/3 control/candidate .native files ship).
 - **Decision log:** `2026-08-08-selfplay-relabeling.md`.
+
+## §136 Frontier-leaf corpus + empirical relabeling (frontiergen/leafrelabel): infrastructure implemented with local smoke verification, no gameplay result yet (2026-08-08, local)
+
+- **What:** phases 2-3 of the plan "Combat-value targets" (`.ai/20260808-120025`):
+  (2) `one_combat frontiergen` captures Searcher3 frontier-leaf states as
+  versioned binary `BattleContext` snapshots (`include/combat/BattleContextBinary.h`,
+  `sts::serializeBattleContext`/`deserializeBattleContext`; round-trip contract =
+  `combatExtractFeatures` identity, verified by the new `battlecontext_roundtrip`
+  unit-test subcommand registered in CTest) at the THREE S3 frontier sites —
+  the leaf-expansion blend site always fires when `search::g_onS3LeafQuery` is
+  set; the fair illegal-stored-edge rollout fallback and the depth-cap direct
+  eval fire ONLY under `search::g_s3LeafQueryAllSites` (thread_local, default
+  false), which ONLY frontiergen sets, so leafdiag/leafref/rollouttrace keep
+  the historical single-site corpus (`S3LeafDiagnostic::frontierType` 0/1/2 and
+  `rolloutSteps` record the site + rollout length) — and (3) `one_combat
+  leafrelabel` restores each leaf and runs a FRESH high-budget Searcher3
+  recording every terminal evaluation (`evaluateTerminal` made virtual;
+  `TerminalRecordingSearcher` records won/endHp per terminal eval) → empirical
+  P(win), HP|win mean/quantiles; plus a CRN sibling pass (one Belief + particle
+  set from the parent visible state, `installSharedParticles`, sibling actions
+  enumerated with the searcher's OWN contract `search::enumerateActionsForNode`
+  — potions included) at a separate sibling budget. leaf.csv/sibling.csv
+  self-document the denominator: `totalTerminals` counts ONLY terminal evals
+  and a `nonTerminal` column (= budget − totalTerminals, clamped ≥ 0) reports
+  sims without one (prune-as-dead / non-terminal depth-cap/rollout-cap evals).
+  Phase-4 analysis scaffold: `tools/leaf_ranking.py --frontier` (pairwise
+  ranking accuracy / top-1 / Spearman / regret of the deployed leaf model's
+  `modelPred` vs the teacher pWin, stratified, deterministic bootstrap CIs;
+  Brier/ECE only with a probability-scale `--prob-col`).
+- **Regime forced by both modes:** `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+  STS_S3_CHAIN=0 STS_LIVE_VALID=1` (deployed fair-S3 datagen regime; live-valid
+  set explicitly — datagen is not covered by the parse-time default, §123).
+- **Corpus dedup:** per-seed at capture time (first kept, `duplicateCount`
+  incremented) AND corpus-wide at flush time under the critical section — a
+  visible state already written by an earlier-flushed seed is dropped without
+  re-serialization (counted in the run summary, 0 in the 8-seed smoke); parent
+  marker rows (frontierType=-1) are not deduped.
+- **Local smoke (this entry, no gameplay claim):**
+  - `cmake --build build -j` clean; `./build/test battlecontext_roundtrip` PASS
+    (seeds 0..3 x JAW_WORM/CULTIST/GREMLIN_NOB/SLIME_BOSS after several executed
+    turns; feature-byte + 6 RNG streams + decision-state fields identical);
+    `ctest --test-dir build --output-on-failure` 9/9 PASS.
+  - `STS_S3_PARTICLES=16 STS_FRONTIERGEN_PER_STRATUM=10 ./build/one_combat
+    frontiergen 8 300 0 build/frontier_smoke.csv 0 smoke` → 963 CSV rows
+    (828 leaf rows + 135 parent marker rows), 99 rows with duplicateCount>0
+    (dedup by obsHash verified), all 11 strata filled
+    (s0-8=80, s9=28, s10=80; 0 cross-seed duplicates dropped),
+    `build/frontier_smoke_smoke.csv` + `build/frontier_smoke_smoke.bin`
+    (751 KB; blob offsets point at the blob DATA after the 4-byte length
+    prefix). NOTE: the illegal-fallback/depth-cap sites did not fire in the
+    smoke (small trees at 300 sims; depth cap needs 100-level descents) — the
+    type-1/2 strata are expected to populate in the batch corpus (long boss
+    fights at higher budgets).
+  - `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0 ./build/one_combat
+    leafrelabel build/frontier_smoke_smoke.csv build/frontier_smoke_smoke.bin
+    build/leaf_smoke.csv build/sibling_smoke.csv 5000 5 16` → 5 leaf rows
+    (pWin in [0,1], totalTerminals == 5000 == high budget, nonTerminal 0) + 15
+    sibling rows (matching leafObsHash, distinct siblingObsHash,
+    totalTerminals == 3000, nonTerminal 0, modelPred = deployed vnet
+    prediction on the endHp scale; NaN only when no combat value model is
+    loaded). Two re-runs on the same inputs are BYTE-IDENTICAL (stability
+    criterion: identical pWin/meanHpOnWin).
+  - `tools/leaf_ranking.py --frontier --leaf build/leaf_smoke.csv --sibling
+    build/sibling_smoke.csv` runs and reports pairwise/top-1/Spearman/regret
+    (smoke values: pairwiseAcc 0.667, top1 0.000, Spearman 0.5, regret 0.001 —
+    illustrative only, 5 groups; the vnet endHp-scale value is NOT a calibrated
+    probability, Brier/ECE correctly reported as not computed);
+    `--self-test` PASS.
+  - Existing modes re-verified after the review gating fix:
+    `one_combat leafdiag 4 300 0 build/ld_smoke.csv` → 1710 rows with the
+    UNCHANGED leafdiag schema (no frontierType column); `one_combat leafref
+    build/ld_smoke.csv build/ld_ref.csv 3000 4 0 300` re-captured 1710/1710
+    recorded leaves (no re-capture WARNING) — leafdiag/leafref/rollouttrace
+    behavior is unchanged by the frontiergen extension.
+- **Artifacts (local, disposable smokes under build/):**
+  `build/frontier_smoke_smoke.{csv,bin}`, `build/leaf_smoke{,2}.csv`,
+  `build/sibling_smoke{,2}.csv`, `build/ld_smoke.csv`, `build/ld_ref*.csv`.
+- **Not implemented / deferred (recorded in the plan + KB):** per-particle
+  terminal-outcome breakdown (`STS_LEAFRELABEL_PARTICLE_BREAKDOWN` — the
+  particle id is internal to `step()`); the full phase-3 batch (500-1000
+  leaves @10k sims, GCP-parallel) and the phase-4 verdict gate (top-1 ≥ 80% +
+  Spearman ≥ 0.7 pre-registered rule) await the batch corpus.
+- **Decision log:** `2026-08-08-frontiergen-leafrelabel.md`.

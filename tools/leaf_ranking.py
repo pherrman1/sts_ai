@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Ranking diagnostics for the Searcher3 leaf-state dataset (leafdiag/leafref).
+"""Ranking diagnostics for the Searcher3 leaf-state dataset (leafdiag/leafref
+and frontiergen/leafrelabel).
 
+leafdiag/leafref mode (default):
 Reads a leafdiag CSV (produced by `one_combat leafdiag`; the
 search::g_onS3LeafQuery hook records actual Searcher3 leaf-expansion states at
 the value/rollout blend site) and optionally a leafref CSV of high-budget
@@ -19,10 +21,19 @@ search). When no leafref file is given, the raw rollout outcome
 (rawRolloutEval) is used as a weak single-sample reference and the report
 says so.
 
-Stratification: player-HP band (from the canonical curHp/maxHp features), fight
-won/lost, act, encounter difficulty, turn, tree depth, number of legal
-actions, model-disagreement bin, and (optionally) an out-of-distribution flag
-from tools/leaf_distribution_shift.py --write-ood.
+--frontier mode (phase 4, plan "combat-value targets" 2026-08-08):
+Consumes the leafrelabel outputs (`one_combat leafrelabel`: leaf.csv absolute
+per-leaf labels + sibling.csv per-sibling evaluations). The teacher value is
+the empirical pWin (high-budget Searcher3 terminal-outcome distribution).
+Within each (seed, fightIdx, decIdx, leafObsHash) sibling group the tool
+computes pairwise ranking accuracy, top-1 accuracy, Spearman, and regret
+(teacherV[bestTeacher] - teacherV[modelBest]) against the optional modelPred
+column written by leafrelabel (the deployed PVNet leaf value when a PVNet is
+loaded, else the vnet prediction — raw scale, so the ranking metrics are
+scale-invariant). Brier/ECE require a PROBABILITY-scale model column supplied
+with --prob-col; without one they are reported as unavailable. Stratification
+by isBoss / turn band / tree depth band / frontierType / HP band / rollout
+length band (leaf.csv metadata joined via leafObsHash).
 
 Bootstrap confidence intervals over groups use one fixed-seed generator, so
 repeated analysis of identical inputs produces identical intervals.
@@ -496,6 +507,243 @@ def self_test():
     print("leaf_ranking self-test PASS")
 
 
+# ---------------------------------------------------------------------------
+# --frontier mode: sibling-ranking evaluation of the deployed leaf model on
+# the leafrelabel corpus (plan "combat-value targets" phase 4).
+# ---------------------------------------------------------------------------
+
+def load_leafrelabel_leaf(path):
+    """leaf.csv: absolute per-leaf empirical labels (leafrelabel output)."""
+    with open(path, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def load_leafrelabel_sibling(path):
+    """sibling.csv: per-sibling empirical labels keyed by leafObsHash."""
+    with open(path, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def frontier_group_key(row):
+    return (row["seed"], row["fightIdx"], row["decIdx"], row["leafObsHash"])
+
+
+def frontier_group_siblings(sibling_rows):
+    """Group sibling rows by (seed, fightIdx, decIdx, leafObsHash)."""
+    groups = {}
+    for r in sibling_rows:
+        groups.setdefault(frontier_group_key(r), []).append(r)
+    return groups
+
+
+def frontier_stratify(row, leaf_meta):
+    """Stratification labels for one leaf (leaf.csv metadata + bands)."""
+    t = _f(leaf_meta.get("turn", "nan"))
+    d = _f(leaf_meta.get("depth", "nan"))
+    rl = _f(leaf_meta.get("rolloutLength", "nan"))
+    ft = str(leaf_meta.get("frontierType", "na"))
+    return {
+        "isBoss": str(leaf_meta.get("isBoss", "na")),
+        "frontierType": {  "0": "unexpanded", "1": "illegal-fallback",
+                          "2": "depth-cap"}.get(ft, ft),
+        "turn": turn_band(int(t)) if not math.isnan(t) else "na",
+        "treeDepth": tree_depth_band(int(d)) if not math.isnan(d) else "na",
+        "hpBand": hp_band({"curHp": leaf_meta.get("curHp", "nan"),
+                           "maxHp": leaf_meta.get("maxHp", "nan")}),
+        "rolloutLength": ("short<8" if not math.isnan(rl) and rl < 8
+                          else "long>=8" if not math.isnan(rl) else "na"),
+    }
+
+
+def frontier_group_metrics(siblings, model_col):
+    """Per-group ranking metrics of modelPred vs the teacher pWin. None when
+    the group is unusable (no model predictions)."""
+    triples = []
+    for r in siblings:
+        p = _f(r.get(model_col, "nan"))
+        t = _f(r.get("pWin", "nan"))
+        if math.isnan(p) or math.isnan(t):
+            continue
+        triples.append((t, p, r))
+    if len(triples) < 2:
+        return None
+    ts = [x[0] for x in triples]
+    ps = [x[1] for x in triples]
+    correct = total = 0
+    for i in range(len(ts)):
+        for j in range(i + 1, len(ts)):
+            dref = ts[i] - ts[j]
+            if abs(dref) <= PAIR_EPS:
+                continue
+            dmod = ps[i] - ps[j]
+            total += 1
+            if (dmod > 0) == (dref > 0):
+                correct += 1
+    m = {
+        "nSiblings": len(triples),
+        "pairwiseAcc": correct / total if total else float("nan"),
+        "top1": float(np.argmax(ps) == np.argmax(ts)) if np is not None else
+                float(ps.index(max(ps)) == ts.index(max(ts))),
+        "regret": float(max(ts) - ts[np.argmax(ps)]) if np is not None else
+                  float(max(ts) - ts[ps.index(max(ps))]),
+        "spearman": spearman(ts, ps),
+    }
+    return m
+
+
+def frontier_agg(groups, leaf_meta, model_col, strat_keys):
+    """Per-bucket mean + bootstrap CI of the ranking metrics over groups."""
+    buckets = {}
+    for key, sibs in groups.items():
+        m = frontier_group_metrics(sibs, model_col)
+        if m is None or math.isnan(m["pairwiseAcc"]):
+            continue
+        meta = leaf_meta.get(key, {})
+        buckets.setdefault("all", []).append(m)
+        if strat_keys:
+            labels = frontier_stratify(None, meta)
+            bucket = "|".join(f"{k}={labels[k]}" for k in strat_keys)
+            buckets.setdefault(bucket, []).append(m)
+    results = {}
+    for bucket, ms in buckets.items():
+        results[bucket] = {
+            "nGroups": len(ms),
+            "acc": bootstrap_ci([m["pairwiseAcc"] for m in ms]),
+            "top1": bootstrap_ci([m["top1"] for m in ms if not math.isnan(m["top1"])]),
+            "regret": bootstrap_ci([m["regret"] for m in ms if not math.isnan(m["regret"])]),
+            "spearman": bootstrap_ci([m["spearman"] for m in ms if not math.isnan(m["spearman"])]),
+        }
+    return results
+
+
+def frontier_brier_ece(leaf_rows, prob_col):
+    """Brier score + ECE (10 bins) of a probability-scale model column vs the
+    empirical pWin per leaf. NaN when the column is absent/never finite."""
+    pairs = []
+    for r in leaf_rows:
+        p = _f(r.get(prob_col, "nan"))
+        t = _f(r.get("pWin", "nan"))
+        if not math.isnan(p) and not math.isnan(t):
+            pairs.append((p, t))
+    m = {"n": len(pairs), "brier": float("nan"), "ece": float("nan")}
+    if len(pairs) == 0:
+        return m
+    m["brier"] = float(sum((p - t) ** 2 for p, t in pairs) / len(pairs))
+    # ECE over 10 equal-width bins of the model probability
+    bins = [0.0] * 10
+    bins_n = [0] * 10
+    for p, t in pairs:
+        b = min(9, int(p * 10))
+        if b < 0:
+            b = 0
+        bins[b] += t
+        bins_n[b] += 1
+    ece = 0.0
+    n = len(pairs)
+    for b in range(10):
+        if bins_n[b] == 0:
+            continue
+        conf = (b + 0.5) / 10.0
+        ece += (bins_n[b] / n) * abs(conf - bins[b] / bins_n[b])
+    m["ece"] = float(ece)
+    return m
+
+
+def frontier_has_model(groups, model_col):
+    """True when at least one sibling row carries a finite model value."""
+    for sibs in groups.values():
+        for s in sibs:
+            if not math.isnan(_f(s.get(model_col, "nan"))):
+                return True
+    return False
+
+
+def frontier_report(groups, leaf_meta, model_col, prob_col, args):
+    lines = []
+    lines.append("=" * 78)
+    lines.append("Searcher3 frontier-leaf sibling ranking (leafrelabel, phase 4)")
+    lines.append("=" * 78)
+    lines.append(f"sibling groups: {len(groups)}")
+    lines.append(f"teacher: empirical pWin from high-budget Searcher3 "
+                 f"terminal-outcome relabeling (approximation, not ground truth)")
+    if frontier_has_model(groups, model_col):
+        lines.append(f"model: {model_col} column (deployed leaf model value; "
+                     f"ranking metrics are scale-invariant)")
+    else:
+        lines.append(f"model: {model_col} column missing/absent — ranking metrics N/A")
+    lines.append("")
+    agg = frontier_agg(groups, leaf_meta, model_col, ())
+    if "all" in agg and agg["all"]["nGroups"] > 0:
+        a = agg["all"]
+        lines.append(f"{'metric':<14} {'value':>10}  95% CI")
+        lines.append(f"{'pairwiseAcc':<14} {a['acc'][0]:>10.3f}  "
+                     f"[{a['acc'][1]:.3f},{a['acc'][2]:.3f}]")
+        lines.append(f"{'top1Acc':<14} {a['top1'][0]:>10.3f}  "
+                     f"[{a['top1'][1]:.3f},{a['top1'][2]:.3f}]")
+        lines.append(f"{'spearman':<14} {a['spearman'][0]:>10.3f}  "
+                     f"[{a['spearman'][1]:.3f},{a['spearman'][2]:.3f}]")
+        lines.append(f"{'regret':<14} {a['regret'][0]:>10.3f}  "
+                     f"[{a['regret'][1]:.3f},{a['regret'][2]:.3f}]")
+    else:
+        lines.append("no usable sibling groups (need >= 2 model-scored siblings per group)")
+    lines.append("")
+    be = frontier_brier_ece(leaf_meta.values(), prob_col) if prob_col else {"n": 0}
+    if prob_col and be["n"] > 0:
+        lines.append(f"Brier (model '{prob_col}' vs pWin, n={be['n']}): "
+                     f"{be['brier']:.4f}   ECE: {be['ece']:.4f}")
+    elif prob_col:
+        lines.append(f"Brier/ECE: no finite '{prob_col}' column values")
+    else:
+        lines.append("Brier/ECE: not computed (no --prob-col probability-scale "
+                     "model column given)")
+    lines.append("")
+    for strat_key in ("isBoss", "turn", "treeDepth", "frontierType", "hpBand",
+                      "rolloutLength"):
+        lines.append(f"--- stratified pairwise accuracy (mean [95% CI]) / regret: {strat_key} ---")
+        sub = frontier_agg(groups, leaf_meta, model_col, (strat_key,))
+        for bucket, v in sorted(sub.items()):
+            if bucket == "all":
+                continue
+            lines.append(f"  {bucket:<24} n={v['nGroups']:>4}  "
+                         f"acc={v['acc'][0]:.3f} [{v['acc'][1]:.3f},{v['acc'][2]:.3f}]  "
+                         f"regret={v['regret'][0]:.3f} [{v['regret'][1]:.3f},{v['regret'][2]:.3f}]")
+        lines.append("")
+    text = "\n".join(lines)
+    print(text)
+    if args.json:
+        out = {
+            "nGroups": len(groups),
+            "nLeaves": len(leaf_meta),
+            "modelCol": model_col,
+            "probCol": prob_col,
+            "brierEce": be,
+            "overall": agg.get("all"),
+            "stratified": {k: frontier_agg(groups, leaf_meta, model_col, (k,))
+                           for k in ("isBoss", "turn", "treeDepth", "frontierType",
+                                     "hpBand", "rolloutLength")},
+        }
+        with open(args.json, "w") as f:
+            json.dump(out, f, indent=2, sort_keys=True)
+        print(f"[leaf_ranking] JSON summary -> {args.json}")
+
+
+def run_frontier(args):
+    leaf_rows = load_leafrelabel_leaf(args.leaf)
+    sibling_rows = load_leafrelabel_sibling(args.sibling)
+    if not sibling_rows:
+        print(f"leaf_ranking --frontier: no sibling rows in {args.sibling}",
+              file=sys.stderr)
+        return 2
+    groups = frontier_group_siblings(sibling_rows)
+    # leaf metadata keyed by (seed, fightIdx, decIdx, obsHash)
+    leaf_meta = {}
+    for r in leaf_rows:
+        key = (r["seed"], r["fightIdx"], r["decIdx"], r["obsHash"])
+        leaf_meta[key] = r
+    frontier_report(groups, leaf_meta, args.model_col, args.prob_col, args)
+    return 0
+
+
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--leafdiag", required=False, default=None,
@@ -505,10 +753,29 @@ def main(argv):
                     help="OOD-flags CSV from leaf_distribution_shift.py --write-ood (optional)")
     ap.add_argument("--json", default=None, help="write machine-readable JSON summary")
     ap.add_argument("--self-test", action="store_true", help="run the synthetic self-test")
+    ap.add_argument("--frontier", action="store_true",
+                    help="phase-4 mode: rank the deployed leaf model on the leafrelabel "
+                         "corpus (requires --leaf + --sibling)")
+    ap.add_argument("--leaf", default=None,
+                    help="--frontier: leafrelabel leaf.csv (absolute per-leaf labels)")
+    ap.add_argument("--sibling", default=None,
+                    help="--frontier: leafrelabel sibling.csv (per-sibling evals)")
+    ap.add_argument("--model-col", default="modelPred",
+                    help="--frontier: sibling.csv column holding the model value "
+                         "(default modelPred)")
+    ap.add_argument("--prob-col", default=None,
+                    help="--frontier: probability-scale model column for Brier/ECE "
+                         "(optional; ranking metrics do not need it)")
     args = ap.parse_args(argv)
     if args.self_test:
         self_test()
         return 0
+    if args.frontier:
+        if not args.leaf or not args.sibling:
+            print("leaf_ranking --frontier: --leaf and --sibling are required",
+                  file=sys.stderr)
+            return 2
+        return run_frontier(args)
 
     path = args.leafdiag or "build/leafdiag.csv"
     rows = load_leafdiag(path)

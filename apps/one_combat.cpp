@@ -39,6 +39,7 @@
 
 #include "game/GameContext.h"
 #include "combat/BattleContext.h"
+#include "combat/BattleContextBinary.h"
 #include "sim/search/Action.h"
 #include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/ScumSearchAgent2.h"
@@ -2413,6 +2414,8 @@ static void sdiagFightRow(const BattleContext &bc);   // defined in the SEARCHDI
 // ---------------------------------------------------------------------------
 static constexpr int kLeafDiagStrata = 10;   // 3 hpFrac bands x 3 difficulties + 1 deep-tree stratum
 static bool g_leafdiagActive = false;
+static bool g_frontiergenActive = false;     // frontiergen: same per-fight context hooks (t_ld)
+static int  g_fgPerStratum = 200;            // STS_FRONTIERGEN_PER_STRATUM (defined with frontiergen below)
 static search::CombatValueNet g_combatVNetDiag;  // secondary diagnostic vnet (STS_DIAG_VNET2); NEVER read by the searcher
 static int  g_ldPerStratum = 50;                 // STS_LEAFDIAG_PER_STRATUM: reservoir capacity per stratum per seed
 static int  g_ldDeepDepth   = 20;                // STS_LEAFDIAG_DEEP_DEPTH: depth >= this maps to the dedicated deep stratum
@@ -2619,7 +2622,7 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
                 g_sdiagCtx.encounter = (int)bc.encounter;
                 g_sdiagCtx.fightIdx = fightsTotal;
             }
-            if (g_leafdiagActive) {   // leafdiag: per-fight run context
+            if (g_leafdiagActive || g_frontiergenActive) {   // leafdiag/frontiergen: per-fight run context
                 t_ld.fightIdx = fightsTotal;
                 t_ld.floor = gc.floorNum;
                 t_ld.act = gc.act;
@@ -6644,6 +6647,620 @@ static void rolloutTrace(const std::string &inFile, const std::string &outFile,
 }
 
 // ---------------------------------------------------------------------------
+// FRONTIERGEN: Searcher3 frontier-leaf corpus with restorable BattleContext
+// snapshots (plan "combat-value targets" phase 2). Runs the deployed fair-S3
+// stack (STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
+// STS_LIVE_VALID=1 — forced here, the same regime leafdiag/fairgen use, with
+// explicit live-valid since datagen is not covered by the parse-time default,
+// §123) over fresh seeds. search::g_onS3LeafQuery fires at ALL THREE frontier
+// sites of BattleScumSearcher3::step() (S3LeafDiagnostic::frontierType:
+// 0=unexpanded-leaf blend, 1=illegal-fallback rollout, 2=depth-cap direct
+// eval) — gated by search::g_s3LeafQueryAllSites, which ONLY frontiergen sets
+// (leafdiag/leafref/rollouttrace keep their historical single-site corpus);
+// each captured leaf is serialized with serializeBattleContext into
+// OUTFILE[_STAMP].bin (flat concatenation of 4-byte little-endian length +
+// blob) and gets one CSV row with provenance + binary offset/size.
+//
+// Sampling: per-stratum reservoirs (11 strata: 3 hpFrac bands x 3 encounter
+// difficulties + 1 deep-tree stratum + 1 boss-only stratum), capacity
+// STS_FRONTIERGEN_PER_STRATUM (default 200) per stratum per seed; dedup by
+// obsHash per seed at capture time (first kept, duplicateCount incremented,
+// no re-serialized blob) AND corpus-wide at flush time (a visible state
+// already written by an earlier-flushed seed is dropped without re-
+// serialization and counted in the run summary — the corpus holds each
+// visible state at most once). Root policy entropy (-sum p_i log p_i over
+// root edge visit shares) is computed at search-complete (g_onSearchComplete3)
+// and attached to the decision's captured leaves. The search's ROOT
+// BattleContext (the pre-action decision state whose search produced the
+// leaves — captured by the search-complete hook) is ALSO serialized for the
+// leafrelabel sibling pass and indexed in the CSV by a marker row with
+// frontierType=-1 (obsHash 0); parent markers are NOT corpus-deduped (each
+// decision needs its own parent for the sibling pass).
+//
+// Do NOT enable the probing OOC arms (STS_OOC_ACTION_NN, STS_BOSS_DRAFT,
+// M1/M2 path gates, STS_DATAGEN_GATES, …): their inner probe battles fire the
+// leaf hook and pollute the dataset.
+// ---------------------------------------------------------------------------
+static constexpr int kFrontierStrata = 11;   // 9 (hpFrac x diff) + deep + boss
+
+struct FrontierRow {
+    std::uint64_t seed = 0;
+    int fightIdx = -1, decIdx = -1;
+    std::uint64_t obsHash = 0;
+    int frontierType = 0;                    // 0/1/2 leaf sites; -1 = parent marker
+    int treeDepth = 0;
+    int budget = 0;
+    int turn = 0, floor = 0, act = 0;
+    std::string encounter;                   // UPPER_CASE enum NAME
+    int curHp = 0, maxHp = 0;
+    int isBoss = 0;
+    int rolloutLength = 0;
+    double policyEntropy = std::numeric_limits<double>::quiet_NaN();
+    std::uint64_t binaryOffset = 0;
+    std::uint32_t binarySize = 0;
+    int duplicateCount = 0;
+};
+
+// Per-seed frontiergen state. The fight context (fightIdx/floor/act/encounter/
+// decIdx) lives in the shared t_ld struct (populated by runFullRunOOC under
+// the g_frontiergenActive guard), so the hooks read it from there; this struct
+// only carries the seed, budget, reservoirs, and pending captures.
+static thread_local struct {
+    std::uint64_t seed = 0;
+    int budget = 0;
+    std::vector<FrontierRow> rows;                  // finalized rows (this seed)
+    std::unordered_map<std::uint64_t, int> rowByObsHash;  // obsHash -> rows index
+    std::array<int, kFrontierStrata> stratumCounts{};     // accepted per stratum
+    std::vector<FrontierRow> pending;               // current decision's captures
+    std::vector<std::vector<std::uint8_t>> pendingBlobs;
+    void init(std::uint64_t sd, int sims) {
+        seed = sd; budget = sims;
+        rows.clear(); rowByObsHash.clear();
+        stratumCounts.fill(0);
+        pending.clear(); pendingBlobs.clear();
+    }
+} t_fg;
+
+// bin file shared across threads (writes happen only under the critical
+// section inside the search-complete hook, so offsets are global and final).
+static std::ofstream *g_fgBinFile = nullptr;
+
+// Corpus-wide obsHash dedup: a leaf visible state is written AT MOST ONCE
+// across the whole run — the first seed to flush it wins, later occurrences
+// are dropped without re-serialization and counted here. All access happens
+// under the frontierGenOnSearchComplete3 critical section. (The per-row
+// duplicateCount column keeps its per-seed meaning: duplicates of that
+// obsHash seen within the same seed.)
+static std::unordered_set<std::uint64_t> g_fgSeenObsHashes;
+static long long g_fgCorpusDuplicates = 0;   // cross-seed duplicates dropped
+
+static std::string frontierGenHeaderStr() {
+    return "seed,fightIdx,decIdx,obsHash,frontierType,treeDepth,budget,turn,"
+           "floor,act,encounterName,curHp,maxHp,isBoss,rolloutLength,"
+           "policyEntropy,binaryOffset,binarySize,duplicateCount";
+}
+
+// Acceptance rule for one captured leaf: its natural stratum (leafdiag
+// mapping) must have capacity; boss leaves additionally draw on the dedicated
+// boss-only stratum (stratum 10) so boss rooms are oversampled.
+static bool frontierGenAccept(const BattleContext &bc, int depth) {
+    const int s0 = leafDiagStratum(bc, depth);
+    if (t_fg.stratumCounts[s0] < g_fgPerStratum) { ++t_fg.stratumCounts[s0]; return true; }
+    if (isBossEncounter(bc.encounter)
+        && t_fg.stratumCounts[10] < g_fgPerStratum) { ++t_fg.stratumCounts[10]; return true; }
+    return false;
+}
+
+static void writeFgBlob(std::ofstream &f, const std::vector<std::uint8_t> &blob) {
+    const std::uint32_t len = (std::uint32_t)blob.size();
+    const char hdr[4] = { (char)(len & 0xFF), (char)((len >> 8) & 0xFF),
+                          (char)((len >> 16) & 0xFF), (char)((len >> 24) & 0xFF) };
+    f.write(hdr, 4);
+    f.write((const char *)blob.data(), (std::streamsize)blob.size());
+}
+
+static void frontierGenOnLeafQuery(const search::S3LeafDiagnostic &d) {
+    const std::uint64_t oh = d.obsHash;
+    auto it = t_fg.rowByObsHash.find(oh);
+    if (it != t_fg.rowByObsHash.end()) { ++t_fg.rows[it->second].duplicateCount; return; }
+    for (auto &pr : t_fg.pending)
+        if (pr.obsHash == oh) { ++pr.duplicateCount; return; }   // same-decision repeat
+    if (!frontierGenAccept(*d.bc, d.treeDepth)) return;
+    if (std::getenv("STS_FRONTIERGEN_DEBUG"))
+        std::cerr << "[fg debug] type " << d.frontierType << " depth " << d.treeDepth
+                  << " inputState " << (int)d.bc->inputState
+                  << " task " << (int)d.bc->cardSelectInfo.cardSelectTask
+                  << " turn " << d.bc->turn << " inHand " << d.bc->cards.cardsInHand
+                  << " draw " << d.bc->cards.drawPile.size() << "\n";
+    FrontierRow r;
+    r.seed = t_fg.seed; r.fightIdx = t_ld.fightIdx; r.decIdx = t_ld.decIdx;
+    r.obsHash = oh; r.frontierType = d.frontierType; r.treeDepth = d.treeDepth;
+    r.budget = t_fg.budget;
+    r.turn = d.bc->turn; r.floor = t_ld.floor; r.act = t_ld.act;
+    r.encounter = t_ld.encounter;
+    r.curHp = d.bc->player.curHp; r.maxHp = d.bc->player.maxHp;
+    r.isBoss = isBossEncounter(d.bc->encounter) ? 1 : 0;
+    r.rolloutLength = d.rolloutSteps;
+    // policyEntropy filled at search-complete
+    t_fg.pending.push_back(std::move(r));
+    t_fg.pendingBlobs.push_back(sts::serializeBattleContext(*d.bc));
+}
+
+// Search-complete hook: compute the root policy entropy, capture the search's
+// ROOT BattleContext (the pre-action decision state, for the sibling pass),
+// and flush the decision's captured leaves + parent to the shared bin/CSV.
+static void frontierGenOnSearchComplete3(const BattleContext &bc,
+                                         const search::BattleScumSearcher3 &s3) {
+    double entropy = 0.0;
+    std::int64_t total = 0;
+    for (const auto &e : s3.root.edges) total += e.child.simulationCount;
+    if (total > 0) {
+        for (const auto &e : s3.root.edges) {
+            const double p = (double)e.child.simulationCount / total;
+            if (p > 0) entropy -= p * std::log(p);
+        }
+    }
+    for (auto &r : t_fg.pending) r.policyEntropy = entropy;
+
+    // parent marker row (only when this decision captured >= 1 leaf)
+    FrontierRow parentRow;
+    bool haveParent = !t_fg.pending.empty();
+    std::vector<std::uint8_t> parentBlob;
+    if (haveParent) {
+        parentRow.seed = t_fg.seed; parentRow.fightIdx = t_ld.fightIdx; parentRow.decIdx = t_ld.decIdx;
+        parentRow.frontierType = -1;                       // marker
+        parentRow.turn = bc.turn; parentRow.floor = t_ld.floor; parentRow.act = t_ld.act;
+        parentRow.encounter = t_ld.encounter;
+        parentRow.curHp = bc.player.curHp; parentRow.maxHp = bc.player.maxHp;
+        parentRow.isBoss = isBossEncounter(bc.encounter) ? 1 : 0;
+        parentRow.policyEntropy = entropy;
+        parentBlob = sts::serializeBattleContext(bc);
+    }
+
+    #pragma omp critical
+    {
+        if (haveParent && g_fgBinFile) {
+            const std::uint64_t off = (std::uint64_t)g_fgBinFile->tellp();
+            writeFgBlob(*g_fgBinFile, parentBlob);
+            // binaryOffset points at the blob DATA (after the 4-byte length
+            // prefix), so readFgBlob(offset, size) reads the exact blob.
+            parentRow.binaryOffset = off + 4;
+            parentRow.binarySize = (std::uint32_t)parentBlob.size();
+            t_fg.rows.push_back(std::move(parentRow));
+        }
+        for (size_t i = 0; i < t_fg.pending.size(); ++i) {
+            // Corpus-wide dedup: a leaf visible state already written by an
+            // earlier-flushed seed is dropped (counted; no row, no blob —
+            // parent marker rows above are NOT deduped because each decision
+            // needs its own parent for the sibling pass).
+            if (!g_fgSeenObsHashes.insert(t_fg.pending[i].obsHash).second) {
+                ++g_fgCorpusDuplicates;
+                continue;
+            }
+            const std::uint64_t off = (std::uint64_t)g_fgBinFile->tellp();
+            writeFgBlob(*g_fgBinFile, t_fg.pendingBlobs[i]);
+            t_fg.pending[i].binaryOffset = off + 4;
+            t_fg.pending[i].binarySize = (std::uint32_t)t_fg.pendingBlobs[i].size();
+            t_fg.rowByObsHash.emplace(t_fg.pending[i].obsHash, (int)t_fg.rows.size());
+            t_fg.rows.push_back(std::move(t_fg.pending[i]));
+        }
+        g_fgBinFile->flush();
+    }
+    t_fg.pending.clear();
+    t_fg.pendingBlobs.clear();
+    ++t_ld.decIdx;
+}
+
+static std::string frontierGenSeedCsv() {
+    std::ostringstream o;
+    for (const auto &r : t_fg.rows) {
+        o << r.seed << ',' << r.fightIdx << ',' << r.decIdx << ',' << r.obsHash << ','
+          << r.frontierType << ',' << r.treeDepth << ',' << r.budget << ','
+          << r.turn << ',' << r.floor << ',' << r.act << ',' << r.encounter << ','
+          << r.curHp << ',' << r.maxHp << ',' << r.isBoss << ','
+          << r.rolloutLength << ',' << r.policyEntropy << ','
+          << r.binaryOffset << ',' << r.binarySize << ',' << r.duplicateCount << '\n';
+    }
+    return o.str();
+}
+
+static void frontierGen(int nSeeds, int sims, int asc,
+                        const std::string &outBase, long long seedOffset = 0,
+                        const std::string &stamp = "") {
+    // OUTFILE_CSV[_STAMP].csv: the stamp slots in before the .csv extension
+    // (build/frontier_smoke.csv + stamp "smoke" -> build/frontier_smoke_smoke.csv).
+    std::string base = outBase;
+    if (base.size() >= 4 && base.compare(base.size() - 4, 4, ".csv") == 0)
+        base.resize(base.size() - 4);
+    const std::string csvFile = stamp.empty() ? base + ".csv" : base + "_" + stamp + ".csv";
+    const std::string binFile = stamp.empty() ? base + ".bin" : base + "_" + stamp + ".bin";
+    std::cout << "frontiergen seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
+              << "  sims " << sims << "  asc " << asc
+              << "  per-stratum " << g_fgPerStratum << " x " << kFrontierStrata << " strata"
+              << "  threads " << numThreads() << "  -> " << csvFile << " + " << binFile << "\n";
+    std::ofstream f(csvFile);
+    if (!f) { std::cerr << "frontiergen: cannot open " << csvFile << "\n"; return; }
+    std::ofstream bin(binFile, std::ios::binary);
+    if (!bin) { std::cerr << "frontiergen: cannot open " << binFile << "\n"; return; }
+    f << frontierGenHeaderStr() << "\n";
+    f.flush();
+    g_fgBinFile = &bin;
+    g_fgSeenObsHashes.clear();
+    g_fgCorpusDuplicates = 0;
+    g_frontiergenActive = true;
+
+    auto t0 = std::chrono::steady_clock::now();
+    long long rows = 0; int done = 0;
+    std::vector<long long> stratumSeen(kFrontierStrata, 0);
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        search::g_onS3LeafQuery = frontierGenOnLeafQuery;
+        search::g_onSearchComplete3 = frontierGenOnSearchComplete3;
+        search::g_s3LeafQueryAllSites = true;   // frontiergen needs the illegal-fallback + depth-cap sites
+        t_fg.init((std::uint64_t)(seedOffset + s), sims);
+        runFullRunOOC((std::uint64_t)(seedOffset + s), sims, asc, false, false);
+        const std::string out = frontierGenSeedCsv();
+        search::g_onS3LeafQuery = nullptr;
+        search::g_onSearchComplete3 = nullptr;
+        search::g_s3LeafQueryAllSites = false;
+        #pragma omp critical
+        {
+            f << out;
+            f.flush();
+            rows += std::count(out.begin(), out.end(), '\n');
+            for (int st = 0; st < kFrontierStrata; ++st) stratumSeen[st] += t_fg.stratumCounts[st];
+            if (++done % 10 == 0) {
+                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+                std::printf("  %d/%d runs, %lld rows, %.0fs (%.3fs/run)\n",
+                            done, nSeeds, rows, el, el / done);
+                std::fflush(stdout);
+            }
+        }
+    }
+    g_frontiergenActive = false;
+    g_fgBinFile = nullptr;
+    bin.flush();
+    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("wrote %lld frontier rows + binary snapshots from %d runs in %.1fs "
+                "(%lld cross-seed duplicate obsHashes dropped)\n",
+                rows, nSeeds, wall, g_fgCorpusDuplicates);
+    std::printf("stratum fills (accepted per stratum):");
+    for (int st = 0; st < kFrontierStrata; ++st)
+        std::printf("  s%d=%lld", st, stratumSeen[st]);
+    std::printf("\n");
+}
+
+// ---------------------------------------------------------------------------
+// LEAFRELABEL: empirical terminal-outcome distribution per recorded frontier
+// leaf (plan phase 3). Reads a frontiergen CSV + bin, deserializes each
+// selected leaf's BattleContext, runs a FRESH high-budget Searcher3 with
+// terminal-outcome recording (TerminalRecordingSearcher overrides the now-
+// virtual evaluateTerminal, so every terminal eval in the search — rollout
+// ends, terminal-in-tree, terminal direct evals — records (won, endHp)), and
+// writes:
+//   leaf.csv     seed,fightIdx,decIdx,obsHash,frontierType,depth,budget,turn,
+//                curHp,maxHp,isBoss,pWin,meanHpOnWin,hpQuantile25,
+//                hpQuantile50,hpQuantile75,totalTerminals,winCount,nonTerminal
+//   sibling.csv  seed,fightIdx,decIdx,leafObsHash,siblingObsHash,actionIdx,
+//                pWin,meanHpOnWin,totalTerminals,modelPred,nonTerminal
+// totalTerminals counts ONLY terminal evaluations (rollout ends + terminal-in-
+// tree + terminal direct evals); sims that end without a terminal eval (prune-
+// as-dead backpropagations, non-terminal depth-cap/rollout-cap evals) are
+// reported in nonTerminal = budget - totalTerminals (clamped at 0), so the
+// denominator semantics are self-documented and totalTerminals need not equal
+// the sim budget.
+// Sibling mode: per leaf, restore the search's ROOT state (frontierType=-1
+// marker rows), enumerate legal actions (the SAME contract as the searcher —
+// search::enumerateActionsForNode, which includes potions), and evaluate each
+// child with the SAME particle set (one Belief + CRN particle set constructed
+// from the parent visible state, seeded from one per-group CRN seed — partial
+// CRN, same pattern as leafref) at a separate sibling budget (3-5k sims).
+// modelPred is the deployed leaf model's value on the child state (PVNet
+// leafValue if a PVNet is loaded, else the vnet prediction) — the ranking
+// signal for phase 4; NaN when no combat value model is loaded. Deterministic
+// per leaf: the searcher seeds from (agentSeed=0, obsHash, decisionIndex=0),
+// so two runs on the same binary inputs produce identical
+// pWin/meanHpOnWin.
+// ---------------------------------------------------------------------------
+struct TerminalRecordingSearcher : public search::BattleScumSearcher3 {
+    long long winCount = 0;         // terminal evals that ended in victory
+    long long winHpSum = 0;         // sum of player hp over victory evals
+    long long totalTerminals = 0;   // all terminal evals observed
+    std::vector<long long> hpHist;  // hp -> count (victory evals only)
+    using search::BattleScumSearcher3::BattleScumSearcher3;
+
+    double evaluateTerminal(const BattleContext &bc) override {
+        const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+        const int hp = bc.player.curHp;
+        ++totalTerminals;
+        if (won) {
+            ++winCount;
+            winHpSum += hp;
+            if ((int)hpHist.size() <= hp) hpHist.resize(hp + 1, 0);
+            ++hpHist[hp];
+        }
+        return search::BattleScumSearcher3::evaluateTerminal(bc);
+    }
+};
+
+struct FrontierLeafEntry {
+    std::uint64_t seed = 0;
+    int fightIdx = -1, decIdx = -1;
+    std::uint64_t obsHash = 0;
+    int frontierType = 0;
+    int treeDepth = 0;
+    int budget = 0;
+    int turn = 0, floor = 0, act = 0;
+    std::string encounter;
+    int curHp = 0, maxHp = 0;
+    int isBoss = 0;
+    int rolloutLength = 0;
+    double policyEntropy = std::numeric_limits<double>::quiet_NaN();
+    std::uint64_t binaryOffset = 0;
+    std::uint32_t binarySize = 0;
+};
+
+// Parse a frontiergen CSV: leaf rows (frontierType 0/1/2) -> entries; parent
+// marker rows (frontierType -1) -> (seed, fightIdx, decIdx) -> (offset, size).
+static std::vector<FrontierLeafEntry> parseFrontierCsv(
+    const std::string &inFile,
+    std::map<std::tuple<std::uint64_t, int, int>,
+             std::pair<std::uint64_t, std::uint32_t>> &parents) {
+    std::vector<FrontierLeafEntry> leaves;
+    std::ifstream in(inFile);
+    if (!in) { std::cerr << "leafrelabel: cannot open " << inFile << "\n"; return leaves; }
+    std::string headerLine;
+    if (!std::getline(in, headerLine)) { std::cerr << "leafrelabel: empty CSV\n"; return leaves; }
+    std::vector<std::string> cols;
+    {
+        std::istringstream hs(headerLine); std::string c;
+        while (std::getline(hs, c, ',')) cols.push_back(c);
+    }
+    const auto colIdx = [&](const char *name) -> int {
+        for (size_t i = 0; i < cols.size(); ++i) if (cols[i] == name) return (int)i;
+        return -1;
+    };
+    const int ciSeed = colIdx("seed"), ciFight = colIdx("fightIdx"),
+              ciDec = colIdx("decIdx"), ciObs = colIdx("obsHash"),
+              ciType = colIdx("frontierType"), ciDepth = colIdx("treeDepth"),
+              ciBudget = colIdx("budget"), ciTurn = colIdx("turn"),
+              ciFloor = colIdx("floor"), ciAct = colIdx("act"),
+              ciEnc = colIdx("encounterName"), ciCur = colIdx("curHp"),
+              ciMax = colIdx("maxHp"), ciBoss = colIdx("isBoss"),
+              ciRoll = colIdx("rolloutLength"), ciEnt = colIdx("policyEntropy"),
+              ciOff = colIdx("binaryOffset"), ciSize = colIdx("binarySize");
+    if (ciSeed < 0 || ciFight < 0 || ciDec < 0 || ciObs < 0 || ciType < 0
+        || ciOff < 0 || ciSize < 0) {
+        std::cerr << "leafrelabel: frontier CSV missing required columns\n";
+        return leaves;
+    }
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        std::istringstream ls(line); std::string tok;
+        std::vector<std::string> f;
+        while (std::getline(ls, tok, ',')) f.push_back(tok);
+        const int need = std::max({ciSeed, ciFight, ciDec, ciObs, ciType, ciOff, ciSize});
+        if ((int)f.size() <= need) continue;
+        FrontierLeafEntry e;
+        e.seed = std::strtoull(f[ciSeed].c_str(), nullptr, 10);
+        e.fightIdx = std::atoi(f[ciFight].c_str());
+        e.decIdx = std::atoi(f[ciDec].c_str());
+        e.obsHash = std::strtoull(f[ciObs].c_str(), nullptr, 10);
+        e.frontierType = std::atoi(f[ciType].c_str());
+        e.binaryOffset = std::strtoull(f[ciOff].c_str(), nullptr, 10);
+        e.binarySize = (std::uint32_t)std::strtoul(f[ciSize].c_str(), nullptr, 10);
+        if (ciDepth >= 0) e.treeDepth = std::atoi(f[ciDepth].c_str());
+        if (ciBudget >= 0) e.budget = std::atoi(f[ciBudget].c_str());
+        if (ciTurn >= 0) e.turn = std::atoi(f[ciTurn].c_str());
+        if (ciFloor >= 0) e.floor = std::atoi(f[ciFloor].c_str());
+        if (ciAct >= 0) e.act = std::atoi(f[ciAct].c_str());
+        if (ciEnc >= 0 && ciEnc < (int)f.size()) e.encounter = f[ciEnc];
+        if (ciCur >= 0) e.curHp = std::atoi(f[ciCur].c_str());
+        if (ciMax >= 0) e.maxHp = std::atoi(f[ciMax].c_str());
+        if (ciBoss >= 0) e.isBoss = std::atoi(f[ciBoss].c_str());
+        if (ciRoll >= 0) e.rolloutLength = std::atoi(f[ciRoll].c_str());
+        if (ciEnt >= 0) e.policyEntropy = std::atof(f[ciEnt].c_str());
+        if (e.frontierType == -1) {
+            parents[{e.seed, e.fightIdx, e.decIdx}] = {e.binaryOffset, e.binarySize};
+        } else {
+            leaves.push_back(std::move(e));
+        }
+    }
+    return leaves;
+}
+
+// HP|win quantiles from the victory histogram (0.25/0.50/0.75).
+static void hpWinQuantiles(const std::vector<long long> &hist,
+                           double &q25, double &q50, double &q75) {
+    q25 = q50 = q75 = std::numeric_limits<double>::quiet_NaN();
+    long long n = 0;
+    for (long long c : hist) n += c;
+    if (n == 0) return;
+    auto quantile = [&](double q) -> double {
+        const long long idx = (long long)(q * (n - 1));
+        long long acc = 0;
+        for (size_t hp = 0; hp < hist.size(); ++hp) {
+            acc += hist[hp];
+            if (acc > idx) return (double)hp;
+        }
+        return (double)hist.size() - 1;
+    };
+    q25 = quantile(0.25);
+    q50 = quantile(0.50);
+    q75 = quantile(0.75);
+}
+
+static std::vector<std::uint8_t> readFgBlob(std::ifstream &f,
+                                            std::uint64_t offset, std::uint32_t size) {
+    std::vector<std::uint8_t> blob(size);
+    if (size == 0) return blob;
+    f.clear();
+    f.seekg((std::streamoff)offset);
+    f.read((char *)blob.data(), (std::streamsize)size);
+    if (!f) blob.clear();
+    return blob;
+}
+
+static void leafRelabel(const std::string &inCsv, const std::string &inBin,
+                        const std::string &leafOut, const std::string &siblingOut,
+                        int highBudgetSims, int nLeaves, int particleCount,
+                        int siblingBudget) {
+    std::map<std::tuple<std::uint64_t, int, int>,
+             std::pair<std::uint64_t, std::uint32_t>> parents;
+    std::vector<FrontierLeafEntry> leaves = parseFrontierCsv(inCsv, parents);
+    if (leaves.empty()) { std::cerr << "leafrelabel: no leaf rows in " << inCsv << "\n"; return; }
+    const int n = std::min(nLeaves, (int)leaves.size());
+    std::ofstream lf(leafOut);
+    if (!lf) { std::cerr << "leafrelabel: cannot open " << leafOut << "\n"; return; }
+    std::ofstream sf(siblingOut);
+    if (!sf) { std::cerr << "leafrelabel: cannot open " << siblingOut << "\n"; return; }
+    lf << "seed,fightIdx,decIdx,obsHash,frontierType,depth,budget,turn,curHp,"
+          "maxHp,isBoss,pWin,meanHpOnWin,hpQuantile25,hpQuantile50,hpQuantile75,"
+          "totalTerminals,winCount,nonTerminal\n";
+    sf << "seed,fightIdx,decIdx,leafObsHash,siblingObsHash,actionIdx,pWin,"
+          "meanHpOnWin,totalTerminals,modelPred,nonTerminal\n";
+    lf.flush(); sf.flush();
+
+    std::cout << "leafrelabel " << n << " of " << leaves.size()
+              << " recorded leaves, high-budget " << highBudgetSims
+              << " sims x " << particleCount << " particles, sibling budget "
+              << siblingBudget << "  -> " << leafOut << " + " << siblingOut << "\n";
+
+    auto t0 = std::chrono::steady_clock::now();
+    long long leafRows = 0, siblingRows = 0;
+    // Output rows buffered per leaf index so the CSV order is deterministic
+    // (independent of OMP completion order); each index is written by exactly
+    // one thread, so no locking is needed on the vectors.
+    std::vector<std::string> outLeaf((std::size_t)n), outSib((std::size_t)n);
+    std::atomic<int> done{0};
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < n; ++i) {
+        const FrontierLeafEntry &le = leaves[i];
+        std::ifstream bin(inBin, std::ios::binary);
+        if (!bin) { std::cerr << "leafrelabel: cannot open " << inBin << "\n"; continue; }
+        const std::vector<std::uint8_t> blob =
+            readFgBlob(bin, le.binaryOffset, le.binarySize);
+        if (blob.empty()) continue;
+        const BattleContext leaf =
+            sts::deserializeBattleContext(blob.data(), blob.size());
+        if (leaf.outcome != Outcome::UNDECIDED) continue;   // datagen only captures live states
+
+        TerminalRecordingSearcher s3(leaf, 0, 0, particleCount);
+        s3.searchToTotal(highBudgetSims);
+        const long long total = s3.totalTerminals;
+        const double pWin = total > 0 ? (double)s3.winCount / total
+                                      : std::numeric_limits<double>::quiet_NaN();
+        const double meanHp = s3.winCount > 0 ? (double)s3.winHpSum / s3.winCount
+                                              : std::numeric_limits<double>::quiet_NaN();
+        double q25, q50, q75;
+        hpWinQuantiles(s3.hpHist, q25, q50, q75);
+
+        std::ostringstream lrow;
+        const long long nonTerm = std::max(0LL, (long long)highBudgetSims - total);
+        lrow << le.seed << ',' << le.fightIdx << ',' << le.decIdx << ','
+             << le.obsHash << ',' << le.frontierType << ',' << le.treeDepth << ','
+             << highBudgetSims << ',' << le.turn << ',' << le.curHp << ','
+             << le.maxHp << ',' << le.isBoss << ',' << pWin << ',' << meanHp << ','
+             << q25 << ',' << q50 << ',' << q75 << ',' << total << ','
+             << s3.winCount << ',' << nonTerm << '\n';
+
+        // Sibling pass: same particle set (CRN) over the search root's
+        // children. The root state is the frontiergen parent marker blob.
+        std::ostringstream srow;
+        auto pit = parents.find({le.seed, le.fightIdx, le.decIdx});
+        if (pit != parents.end()) {
+            const std::vector<std::uint8_t> pblob =
+                readFgBlob(bin, pit->second.first, pit->second.second);
+            if (!pblob.empty()) {
+                const BattleContext parent =
+                    sts::deserializeBattleContext(pblob.data(), pblob.size());
+                if (parent.outcome == Outcome::UNDECIDED) {
+                    // One CRN seed + one belief/particle set from the parent
+                    // visible state (partial CRN, same pattern as leafref).
+                    std::uint64_t gs = le.seed;
+                    gs ^= (std::uint64_t)(std::uint32_t)le.fightIdx * 0x9e3779b97f4a7c15ULL;
+                    gs ^= (std::uint64_t)(std::uint32_t)le.decIdx * 0xbf58476d1ce4e5b9ULL;
+                    if (!gs) gs = 1;
+                    search::BattleScumSearcher3 crnSeed(parent, 0, 0, particleCount);
+                    crnSeed.rng.seed(gs);
+                    crnSeed.belief = Belief::initial(parent, particleCount, crnSeed.rng);
+                    crnSeed.prepareCRNParticles();
+
+                    // Sibling action set = the searcher's OWN enumeration
+                    // contract (search::enumerateActionsForNode, which
+                    // includes potion actions; one_combat.cpp::legalActions
+                    // omits potions and would under-cover the ranking set).
+                    search::BattleScumSearcher3::Node actNode;
+                    search::enumerateActionsForNode(actNode, parent);
+                    const std::vector<search::Action> actions =
+                        [&] { std::vector<search::Action> a; a.reserve(actNode.edges.size());
+                              for (const auto &e : actNode.edges) a.push_back(e.action);
+                              return a; }();
+                    std::unordered_set<std::uint64_t> childSeen;
+                    for (int ai = 0; ai < (int)actions.size(); ++ai) {
+                        BattleContext child = parent;
+                        actions[ai].execute(child);
+                        const std::uint64_t childHash =
+                            CombatObservation::fromBattleContext(child).visibleHash();
+                        if (!childSeen.insert(childHash).second) continue;   // dedup children
+                        double pWinS = std::numeric_limits<double>::quiet_NaN();
+                        double meanHpS = std::numeric_limits<double>::quiet_NaN();
+                        long long totalS = 0;
+                        long long nonTermS = 0;
+                        double modelPred = std::numeric_limits<double>::quiet_NaN();
+                        if (child.outcome != Outcome::UNDECIDED) {
+                            const bool won = child.outcome == Outcome::PLAYER_VICTORY;
+                            pWinS = won ? 1.0 : 0.0;
+                            meanHpS = won ? (double)child.player.curHp
+                                          : std::numeric_limits<double>::quiet_NaN();
+                            totalS = 1;
+                        } else {
+                            TerminalRecordingSearcher cs3(child, 0, 0, particleCount);
+                            cs3.rng.seed(gs);
+                            cs3.installSharedParticles(crnSeed.belief, crnSeed.crnParticles);
+                            cs3.searchToTotal(siblingBudget);
+                            totalS = cs3.totalTerminals;
+                            nonTermS = std::max(0LL, (long long)siblingBudget - totalS);
+                            pWinS = totalS > 0 ? (double)cs3.winCount / totalS
+                                               : std::numeric_limits<double>::quiet_NaN();
+                            meanHpS = cs3.winCount > 0 ? (double)cs3.winHpSum / cs3.winCount
+                                                       : std::numeric_limits<double>::quiet_NaN();
+                        }
+                        if (search::g_usePVNet && search::g_combatPVNet.loaded())
+                            modelPred = search::g_combatPVNet.leafValue(child, search::g_riskLambda);
+                        else if (search::g_useVNet && search::g_combatVNet.loaded())
+                            modelPred = search::g_combatVNet.predict(child);
+                        srow << le.seed << ',' << le.fightIdx << ',' << le.decIdx << ','
+                             << le.obsHash << ',' << childHash << ',' << ai << ','
+                             << pWinS << ',' << meanHpS << ',' << totalS << ','
+                             << modelPred << ',' << nonTermS << '\n';
+                    }
+                }
+            }
+        }
+        outLeaf[(std::size_t)i] = lrow.str();
+        outSib[(std::size_t)i] = srow.str();
+        if (++done % 10 == 0) {
+            double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+            std::printf("  %d/%d leaves, %.0fs (%.2fs/leaf)\n",
+                        done.load(), n, el, el / done.load());
+            std::fflush(stdout);
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        lf << outLeaf[(std::size_t)i];
+        sf << outSib[(std::size_t)i];
+        leafRows += std::count(outLeaf[(std::size_t)i].begin(), outLeaf[(std::size_t)i].end(), '\n');
+        siblingRows += std::count(outSib[(std::size_t)i].begin(), outSib[(std::size_t)i].end(), '\n');
+    }
+    lf.flush(); sf.flush();
+    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("wrote %lld leaf rows + %lld sibling rows from %d leaves in %.1fs\n",
+                leafRows, siblingRows, n, wall);
+}
+
+// ---------------------------------------------------------------------------
 // STRATEGIC data generation: one CSV row per LEGAL action at each OOC decision,
 // with full rich state, structured candidate fields, a chosen flag, and the
 // terminal outcome. Feeds Phase 5 run-level model training.
@@ -9145,6 +9762,10 @@ int main(int argc, char **argv) {
         const int n = std::atoi(d);
         if (n >= 1) g_ldDeepDepth = n;
     }
+    if (const char *d = std::getenv("STS_FRONTIERGEN_PER_STRATUM")) {   // frontiergen reservoir capacity per stratum per seed
+        const int n = std::atoi(d);
+        if (n >= 1) g_fgPerStratum = n;
+    }
     if (const char *d = std::getenv("STS_DIST_VNET")) {    // distributional V_combat (transformer, 5-head)
         std::string path = d;
         if (search::g_combatDistVNet.load(path)) {
@@ -9812,6 +10433,61 @@ int main(int argc, char **argv) {
             search::g_useSearcher3 = true;
             std::cout << "[rollouttrace forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
             rolloutTrace(inFile, outFile, nSeedsRef, asc, replaySims);
+        }
+
+    } else if (mode == "frontiergen") {  // S3 frontier-leaf corpus with restorable snapshots (phases 2-3)
+        if (argc < 6) {
+            std::cerr << "usage: one_combat frontiergen NSEEDS SIMS ASC OUTFILE_CSV [SEEDOFFSET] [STAMP]\n"
+                         "  Writes OUTFILE_CSV[_STAMP].csv + OUTFILE_CSV[_STAMP].bin (binary leaf +\n"
+                         "  parent-state snapshots, 4-byte little-endian len + serializeBattleContext blob).\n"
+                         "  Forces the deployed fair-S3 datagen regime: STS_FAIR=1 STS_SEARCHER3=1\n"
+                         "  STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_LIVE_VALID=1.\n";
+            return 2;
+        }
+        {
+            int nSeeds = std::stoi(argv[2]);
+            int sims   = std::stoi(argv[3]);
+            int asc    = std::stoi(argv[4]);
+            std::string out = argv[5];
+            long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
+            std::string stamp = argc > 7 ? argv[7] : "";
+            search::g_fairPlay = true;
+            search::g_useSearcher3 = true;
+            search::g_s3Belief = false;
+            search::g_s3Chain = false;
+            search::g_liveValid = true;
+            std::cout << "[frontiergen forced: fair-play / determinized MCTS + Searcher3 engine ON, "
+                         "STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_LIVE_VALID=1 (deployed fair-S3 datagen regime)]\n";
+            frontierGen(nSeeds, sims, asc, out, seedOff, stamp);
+        }
+
+    } else if (mode == "leafrelabel") {  // empirical terminal-outcome labels for recorded frontier leaves (phase 3)
+        if (argc < 8) {
+            std::cerr << "usage: one_combat leafrelabel INFILE_CSV INFILE_BIN OUTFILE_LEAF OUTFILE_SIBLING "
+                         "HIGH_BUDGET_SIMS NLEAVES [PARTICLES] [SUBSAMPLE_BUDGET]\n"
+                         "  INFILE_CSV/INFILE_BIN are frontiergen outputs (same stamp).\n"
+                         "  PARTICLES defaults to 16; SUBSAMPLE_BUDGET (default 3000) is the sibling\n"
+                         "  evaluation budget (3-5k sims). Forces the same fair-S3 regime as frontiergen.\n";
+            return 2;
+        }
+        {
+            std::string inCsv = argv[2];
+            std::string inBin = argv[3];
+            std::string leafOut = argv[4];
+            std::string siblingOut = argv[5];
+            int highBudgetSims = std::stoi(argv[6]);
+            int nLeaves = std::stoi(argv[7]);
+            int particles = argc > 8 ? std::stoi(argv[8]) : 16;
+            int siblingBudget = argc > 9 ? std::stoi(argv[9]) : 3000;
+            search::g_fairPlay = true;
+            search::g_useSearcher3 = true;
+            search::g_s3Belief = false;
+            search::g_s3Chain = false;
+            search::g_liveValid = true;
+            std::cout << "[leafrelabel forced: fair-play / determinized MCTS + Searcher3 engine ON, "
+                         "STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_LIVE_VALID=1]\n";
+            leafRelabel(inCsv, inBin, leafOut, siblingOut, highBudgetSims, nLeaves,
+                        particles, siblingBudget);
         }
 
     } else if (mode == "strategicgen") {  // Phase 5: one row per OOC decision, full rich state

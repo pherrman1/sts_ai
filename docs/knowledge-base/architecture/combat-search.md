@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-08 against the current working tree (leafdiag/leafref/rollouttrace leaf-state diagnostics: `g_onS3LeafQuery`/`g_onRolloutStep` hooks, `STS_DIAG_VNET2`, leaf-query dataset + high-budget CRN-paired references + rollout traces; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending).
+Last verified: 2026-08-08 against the current working tree (frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending).
 
 ## Purpose
 
@@ -321,7 +321,13 @@ Searcher3 leaf/candidate states instead of training on new labels:
 - `search::g_onS3LeafQuery` (`BattleScumSearcher3.h`, thread_local, nullptr by
   default) fires inside `BattleScumSearcher3::step` at the leaf-expansion
   blend site — the same place the learned leaf is blended with the
-  multi-rollout outcome, immediately before `backpropagate`. The
+  multi-rollout outcome, immediately before `backpropagate`. Since 2026-08-08
+  it ALSO fires at the fair illegal-stored-edge rollout fallback and the
+  depth-cap direct eval, but ONLY when the new `search::g_s3LeafQueryAllSites`
+  flag (thread_local, default false) is set — `frontiergen` is the only mode
+  that sets it, so leafdiag/leafref/rollouttrace keep the historical
+  single-site corpus (see "Frontier-leaf corpus" below for the three
+  `S3LeafDiagnostic::frontierType` values). The
   `S3LeafDiagnostic` record carries the pre-rollout leaf state (const
   `BattleContext*`, valid only during the callback), tree depth, the leaf
   state's `visibleHash` (computed fresh — `cur` is the expanded PARENT at
@@ -402,6 +408,134 @@ Searcher3 leaf/candidate states instead of training on new labels:
   sensitivity for both targets, §134 recipe), `tools/leaf_smoothness.py`
   (delta-V smoothness/shaping). Env `STS_DIAG_VNET2` loads the secondary
   diagnostic model; `STS_DIAG_VNET2_ALPHA` is reporting-only.
+
+### Frontier-leaf corpus (frontiergen / leafrelabel, 2026-08-08)
+
+The phases-2-3 of the "combat-value targets" plan: capture Searcher3 frontier
+leaf states with RESTORABLE `BattleContext` snapshots and relabel them with
+empirical terminal-outcome distributions, so the deployed leaf model can be
+ranked on actual frontier candidates (phase 4) instead of on-policy
+trajectory rows.
+
+- **Hook extension:** `search::g_onS3LeafQuery` fires at the THREE frontier
+  sites of `BattleScumSearcher3::step()` — the leaf-expansion blend site
+  (`frontierType=0`), the fair illegal-stored-edge rollout fallback
+  (`frontierType=1`), and the depth-cap direct eval (`frontierType=2`, where
+  `rolloutSteps=0` because no rollout runs). The two extra sites fire ONLY
+  under the new `search::g_s3LeafQueryAllSites` flag (thread_local, default
+  false), which ONLY `frontiergen` sets — leafdiag/leafref/rollouttrace keep
+  their historical single-site corpus (the hook was previously fired at all
+  three sites unconditionally, silently changing the leafdiag reservoir
+  composition; gated after review). `S3LeafDiagnostic` gained `rolloutSteps`
+  (multi-rollout action count) and `frontierType`.
+- **Serializer:** `include/combat/BattleContextBinary.h` —
+  `sts::serializeBattleContext` / `sts::deserializeBattleContext` (versioned,
+  stateless, little-endian; magic `STSBC` + version 1 + total size, then
+  field groups: RNG (6 `Random` streams), Player (incl. statusMap/relicBits/
+  counters), Monsters (per-monster statuses + `moveHistory` + MonsterGroup
+  encounter bits), Cards (hand/piles/stasis + counters; `limbo` skipped),
+  Potions, Misc (ascension/outcome/inputState/cardSelectInfo/turn/floorNum/
+  encounter/seed). It deliberately SKIPS the transient execution state
+  (ActionQueue, CardQueue, curCardQueueItem, endTurnQueued, turnHasEnded,
+  skipMonsterTurn, monsterTurnIdx, haveUsedDiscoveryAction,
+  undefinedBehaviorEvoked, loopCount, energyWasted, cardsDrawn, miscBits) —
+  the hooks fire only at PLAYER_NORMAL/CARD_SELECT decision states where those
+  queues are empty and the flags are consumed. The round-trip contract is
+  `combatExtractFeatures(original) == combatExtractFeatures(restored)` plus
+  RNG-stream equality; verified by the `battlecontext_roundtrip` unit-test
+  subcommand (registered in CTest) over seeds 0..3 and encounters
+  JAW_WORM/CULTIST/GREMLIN_NOB/SLIME_BOSS after several executed turns.
+  The format is bound to the sts_lightspeed version that wrote it: any
+  BattleContext layout change requires a version bump or re-collection.
+- `one_combat frontiergen NSEEDS SIMS ASC OUTFILE_CSV [SEEDOFFSET] [STAMP]`
+  runs the deployed fair-S3 stack (forces `STS_FAIR=1 STS_SEARCHER3=1
+  STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_LIVE_VALID=1` — live-valid is set
+  explicitly because datagen is not covered by the parse-time default, §123)
+  and writes `OUTFILE_CSV[_STAMP].csv` + `OUTFILE_CSV[_STAMP].bin`. The .bin
+  is a flat concatenation of `4-byte little-endian length + blob` where each
+  blob is a `serializeBattleContext` snapshot of a captured leaf — and of the
+  search's ROOT state (the pre-action decision state whose search produced
+  the leaves, captured at search-complete for the sibling pass). CSV columns:
+  `seed,fightIdx,decIdx,obsHash,frontierType,treeDepth,budget,turn,floor,
+  act,encounterName,curHp,maxHp,isBoss,rolloutLength,policyEntropy,
+  binaryOffset,binarySize,duplicateCount`. `binaryOffset` points at the blob
+  DATA (after the 4-byte length prefix). Sampling uses 11 per-stratum
+  reservoirs (3 hpFrac bands × 3 encounter difficulties + 1 deep-tree stratum
+  + 1 boss-only stratum that boss leaves may additionally fill), capacity
+  `STS_FRONTIERGEN_PER_STRATUM` (default 200). Dedup is two-level: per seed at
+  capture time (first kept, `duplicateCount` incremented, no re-serialized
+  blob) AND corpus-wide at flush time under the critical section — a visible
+  state already written by an earlier-flushed seed is dropped without
+  re-serialization and counted in the run summary, so the corpus holds each
+  visible state at most once (the first seed to flush it wins; the kept-row
+  provenance is therefore flush-order dependent, but the set of kept
+  obsHashes is deterministic). Parent marker rows are NOT corpus-deduped
+  (each decision needs its own parent for the sibling pass). Root policy
+  entropy (-sum p_i log p_i over root edge visit shares) is computed at
+  search-complete and attached to the decision's captured leaves. Parent
+  snapshots are indexed in the CSV by marker rows with `frontierType=-1`
+  (obsHash 0). Same OOC-arm warning as leafdiag: do NOT enable the probing
+  OOC arms — their inner probe battles pollute the corpus.
+- `one_combat leafrelabel INFILE_CSV INFILE_BIN OUTFILE_LEAF OUTFILE_SIBLING
+  HIGH_BUDGET_SIMS NLEAVES [PARTICLES] [SUBSAMPLE_BUDGET]` deserializes each
+  selected leaf (first NLEAVES rows in CSV order), runs a FRESH high-budget
+  Searcher3 (`searchToTotal(HIGH_BUDGET_SIMS)`, PARTICLES default 16), and
+  records every terminal evaluation — `evaluateTerminal` is now VIRTUAL so
+  the `TerminalRecordingSearcher` subclass records (won, endHp) without
+  touching `step()`. Output leaf.csv:
+  `seed,fightIdx,decIdx,obsHash,frontierType,depth,budget,turn,curHp,maxHp,
+  isBoss,pWin,meanHpOnWin,hpQuantile25,hpQuantile50,hpQuantile75,
+  totalTerminals,winCount,nonTerminal` where pWin = wins/totalTerminals over
+  the empirical terminal-outcome distribution. `totalTerminals` counts ONLY
+  terminal evaluations (rollout ends + terminal-in-tree + terminal direct
+  evals); sims that end without one (prune-as-dead backpropagations,
+  non-terminal depth-cap/rollout-cap evals) are reported in `nonTerminal` =
+  budget − totalTerminals (clamped ≥ 0), so totalTerminals need not equal the
+  sim budget and the denominator is self-documented. Sibling pass: restore the
+  search's ROOT state (frontierType=-1 marker blob), enumerate actions with
+  the SEARCHER'S OWN contract (`search::enumerateActionsForNode`, which
+  INCLUDES potion actions — the app-level `legalActions` helper omits potions
+  and would under-cover the phase-4 ranking set), and evaluate each child with
+  the SAME particle set — one `Belief` + CRN particle set built from the
+  parent visible state, seeded from one per-group CRN seed
+  (`installSharedParticles`, partial CRN like leafref) — at the separate
+  SUBSAMPLE_BUDGET (default 3000). Output sibling.csv:
+  `seed,fightIdx,decIdx,leafObsHash,siblingObsHash,actionIdx,pWin,meanHpOnWin,
+  totalTerminals,modelPred,nonTerminal` where `modelPred` is the deployed leaf
+  model's value on the child (PVNet `leafValue` if a PVNet is loaded, else
+  the vnet prediction; NaN when no combat value model is loaded) and
+  `nonTerminal` = sibling budget − totalTerminals for searched children (0 for
+  directly-labeled terminal children). The searcher seeds from (agentSeed=0,
+  obsHash, decisionIndex=0), so two runs on identical binary inputs produce
+  identical labels (verified: smoke leaf.csv/sibling.csv byte-identical across
+  re-runs). Children are deduped by visibleHash; a child that is already
+  terminal is labeled directly (totalTerminals=1). Per-particle breakdown
+  (`STS_LEAFRELABEL_PARTICLE_BREAKDOWN`) is NOT implemented — the particle id
+  is internal to `step()` and the optional column is deferred.
+- **Phase-4 analysis:** `tools/leaf_ranking.py --frontier --leaf LEAF.csv
+  --sibling SIBLING.csv [--model-col modelPred] [--prob-col P] [--json OUT]`
+  groups sibling rows by (seed, fightIdx, decIdx, leafObsHash) and computes
+  pairwise ranking accuracy, top-1 accuracy, Spearman, and regret
+  (teacherV[bestTeacher] − teacherV[modelBest]) of `modelPred` vs the teacher
+  pWin, with deterministic bootstrap CIs over groups, stratified by isBoss /
+  turn band / tree depth band / frontierType / HP band / rolloutLength band
+  (leaf.csv metadata joined via leafObsHash). Brier/ECE are computed only
+  when `--prob-col` names a probability-scale column (the raw leaf-model
+  values are on the endHp / 50+HP scale, so Brier/ECE are not meaningful
+  without a calibrated probability column). Pre-registered verdict (plan
+  phase 4): top-1 ≥ 80% and Spearman ≥ 0.7 weaken the value-quality
+  hypothesis; otherwise phases 5-6 are indicated.
+- Known limitations: (1) the snapshot skips ActionQueue/CardQueue and the
+  transient execution flags — restoring requires the state to be at a player
+  decision point, which the three frontier sites guarantee; (2) the RNG
+  streams round-trip, but a restored search's RNG consumption depends on the
+  particle count used at relabel time, so labels are only reproducible with
+  the same particle count; (3) sibling CRN is partial (draw-pile shuffles in
+  `Belief::initial` consume a state-dependent RNG prefix), same caveat as
+  leafref; (4) the frontiergen regime (S3 −belief −chain + live-valid) is the
+  deployed recommendation as of 2026-08-08 — if the recommended config
+  changes, frontiergen must be updated to match (the banner prints the forced
+  flags).
 
 ### Context-adaptive rollout caps (STS_ROLLOUT_CAPS, opt-in — falsified)
 

@@ -30,6 +30,8 @@
 
 #include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/BattleScumSearcher3.h"
+#include "sim/search/CombatValueNet.h"
+#include "combat/BattleContextBinary.h"
 #include "constants/MonsterMoves.h"
 
 using namespace sts;
@@ -797,6 +799,96 @@ int mcts(int argc, const char *argv[]) {
     return 0;
 }
 
+// BattleContext binary round-trip contract (frontiergen/leafrelabel, plan
+// "combat-value targets": phases 2-3). The serializer captures the visible
+// state + 6 RNG streams (skipping the transient ActionQueue/CardQueue and
+// execution flags), and the round-trip correctness contract is
+// combatExtractFeatures identity:
+//   combatExtractFeatures(bc) == combatExtractFeatures(deserialize(serialize(bc)))
+// Byte-for-byte feature equality plus RNG-stream equality across multiple
+// seeds, encounters, and several executed turns of play.
+int testBattleContextRoundtrip() {
+    search::g_richCombatFeatures = true;   // the 1766-feature rich path
+    const MonsterEncounter encounters[] = {
+        MonsterEncounter::JAW_WORM, MonsterEncounter::CULTIST,
+        MonsterEncounter::GREMLIN_NOB, MonsterEncounter::SLIME_BOSS,
+    };
+    const int nf = search::combatFeatureCount();
+    int failures = 0;
+    for (std::uint64_t seed = 0; seed < 4; ++seed) {
+        for (MonsterEncounter enc : encounters) {
+            GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+            BattleContext bc;
+            bc.init(gc, enc);
+            // Execute several turns of random legal play (cards + END_TURN,
+            // card-select actions included) so the round-trip is exercised on
+            // a non-trivial, action-advanced state.
+            std::mt19937 rng(seed * 2654435761u + (std::uint32_t)enc + 1);
+            int guard = 0;
+            while (bc.outcome == Outcome::UNDECIDED && bc.turn < 3 && guard++ < 300) {
+                search::BattleScumSearcher3::Node tmp;
+                search::enumerateActionsForNode(tmp, bc);
+                if (tmp.edges.empty()) break;
+                const auto &a = tmp.edges[rng() % tmp.edges.size()].action;
+                if (!a.isValidAction(bc)) break;
+                a.execute(bc);
+            }
+
+            const std::vector<std::uint8_t> bytes = sts::serializeBattleContext(bc);
+            const BattleContext restored =
+                sts::deserializeBattleContext(bytes.data(), bytes.size());
+
+            std::vector<float> f1(nf), f2(nf);
+            search::combatExtractFeatures(bc, f1.data());
+            search::combatExtractFeatures(restored, f2.data());
+            bool same = true;
+            int badIdx = -1;
+            for (int i = 0; i < nf; ++i) {
+                if (f1[i] != f2[i]) { same = false; badIdx = i; break; }
+            }
+            const bool stateSame = bc.inputState == restored.inputState
+                && bc.turn == restored.turn && bc.player.curHp == restored.player.curHp
+                && bc.cards.cardsInHand == restored.cards.cardsInHand
+                && (int)bc.cards.drawPile.size() == (int)restored.cards.drawPile.size()
+                && bc.cardSelectInfo.cardSelectTask == restored.cardSelectInfo.cardSelectTask;
+            const bool rngSame = bc.aiRng.counter == restored.aiRng.counter
+                && bc.aiRng.seed0 == restored.aiRng.seed0
+                && bc.aiRng.seed1 == restored.aiRng.seed1
+                && bc.cardRandomRng.counter == restored.cardRandomRng.counter
+                && bc.cardRandomRng.seed0 == restored.cardRandomRng.seed0
+                && bc.cardRandomRng.seed1 == restored.cardRandomRng.seed1
+                && bc.miscRng.counter == restored.miscRng.counter
+                && bc.miscRng.seed0 == restored.miscRng.seed0
+                && bc.miscRng.seed1 == restored.miscRng.seed1
+                && bc.monsterHpRng.counter == restored.monsterHpRng.counter
+                && bc.monsterHpRng.seed0 == restored.monsterHpRng.seed0
+                && bc.monsterHpRng.seed1 == restored.monsterHpRng.seed1
+                && bc.potionRng.counter == restored.potionRng.counter
+                && bc.potionRng.seed0 == restored.potionRng.seed0
+                && bc.potionRng.seed1 == restored.potionRng.seed1
+                && bc.shuffleRng.counter == restored.shuffleRng.counter
+                && bc.shuffleRng.seed0 == restored.shuffleRng.seed0
+                && bc.shuffleRng.seed1 == restored.shuffleRng.seed1;
+            if (!same || !rngSame || !stateSame || restored.actionQueue.size != 0) {
+                ++failures;
+                std::cout << "battlecontext_roundtrip FAIL: seed " << seed
+                          << " encounter " << monsterEncounterEnumNames[(int)enc]
+                          << " turn " << bc.turn
+                          << (same ? "" : " features differ at index " + std::to_string(badIdx))
+                          << (rngSame ? "" : " RNG streams differ")
+                          << (stateSame ? "" : " decision-state fields differ (inputState/turn/hp/hand/task)")
+                          << (restored.actionQueue.size == 0 ? "" : " action queue non-empty")
+                          << '\n';
+            }
+        }
+    }
+    if (failures == 0) {
+        std::cout << "battlecontext_roundtrip PASS\n";
+        return 0;
+    }
+    std::cout << "battlecontext_roundtrip FAIL (" << failures << " cases)\n";
+    return 1;
+}
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -883,6 +975,8 @@ int main(int argc, const char* argv[]) {
         return testHappyFlowerCounter(std::stoull(argv[2]));
     } else if (command == "cardselect_parity") {
         return testCardSelectParity();
+    } else if (command == "battlecontext_roundtrip") {
+        return testBattleContextRoundtrip();
     }
 
     //    printSizes();

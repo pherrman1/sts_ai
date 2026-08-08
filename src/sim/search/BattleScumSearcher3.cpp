@@ -43,6 +43,7 @@ bool g_vnetCondBossOnly = false;
 bool g_vnetCondAct3 = false;
 thread_local std::function<double(const BattleContext &)> g_terminalBonus;
 thread_local std::function<void(const S3LeafDiagnostic &)> g_onS3LeafQuery;
+thread_local bool g_s3LeafQueryAllSites = false;   // frontiergen-only: also fire at the illegal-fallback + depth-cap sites
 thread_local std::function<void(const BattleContext &, int steps)> g_onRolloutStep;
 
 // Phase 6 PVNet deployment-speed knobs (see header; STS_PVNET_* parse in
@@ -151,6 +152,12 @@ void BattleScumSearcher3::prepareCRNParticles() {
         p.drawPileOrder = rootObs.drawPileContents;
         std::shuffle(p.drawPileOrder.begin(), p.drawPileOrder.end(), rng);
     }
+}
+
+void BattleScumSearcher3::installSharedParticles(
+    const Belief &sharedBelief, std::vector<HiddenBattleState> sharedCrn) {
+    belief = sharedBelief;
+    crnParticles = std::move(sharedCrn);
 }
 
 void BattleScumSearcher3::warmStartRootCRN(const BattleContext &bc) {
@@ -394,7 +401,8 @@ void BattleScumSearcher3::step() {
                 const std::uint64_t leafObsHash =
                     CombatObservation::fromBattleContext(state).visibleHash();
                 g_onS3LeafQuery(S3LeafDiagnostic{&state, depth, leafObsHash,
-                                                 vLeaf, rawEval, eval});
+                                                 vLeaf, rawEval, eval,
+                                                 rollSteps, 0});
             }
             backpropagate(path, eval, actionStack);
             return;
@@ -473,7 +481,21 @@ void BattleScumSearcher3::step() {
             ++diag.rolloutCalls;
             ++diag.fairIllegalStoredEdge;
             double eval = 0.0;
-            diag.rolloutActions += multiRollout(state, actionStack, eval);
+            const int rollSteps = multiRollout(state, actionStack, eval);
+            diag.rolloutActions += rollSteps;
+            // Frontier hook at the illegal-fallback site (frontierType=1),
+            // gated to frontiergen (g_s3LeafQueryAllSites) so leafdiag keeps
+            // its historical single-site corpus. The state is the pre-rollout
+            // leaf state (multiRollout leaves it unmutated); no learned leaf
+            // fires here, so vnetPred stays NaN and raw/blended evals are the
+            // plain multi-rollout outcome.
+            if (g_onS3LeafQuery && g_s3LeafQueryAllSites) {
+                const std::uint64_t leafObsHash =
+                    CombatObservation::fromBattleContext(state).visibleHash();
+                g_onS3LeafQuery(S3LeafDiagnostic{&state, depth, leafObsHash,
+                                                 std::numeric_limits<double>::quiet_NaN(),
+                                                 eval, eval, rollSteps, 1});
+            }
             backpropagate(path, eval, actionStack);
             return;
         }
@@ -495,7 +517,20 @@ void BattleScumSearcher3::step() {
     // its observation before the leaf eval to make the leaf-cache key valid.
     ensureObservation(*cur, state);
     ++diag.leafDirectEval;
-    backpropagate(path, evaluateLeaf(state, cur->obsHash), actionStack);
+    const double leafEval = evaluateLeaf(state, cur->obsHash);
+    // Frontier hook at the depth-cap site (frontierType=2), gated to
+    // frontiergen (g_s3LeafQueryAllSites) so leafdiag keeps its historical
+    // single-site corpus. No rollout runs here, so rolloutSteps is 0; the
+    // direct leaf eval is the blended value.
+    if (g_onS3LeafQuery && g_s3LeafQueryAllSites) {
+        const std::uint64_t leafObsHash =
+            CombatObservation::fromBattleContext(state).visibleHash();
+        g_onS3LeafQuery(S3LeafDiagnostic{&state, depth, leafObsHash,
+                                         std::numeric_limits<double>::quiet_NaN(),
+                                         std::numeric_limits<double>::quiet_NaN(),
+                                         leafEval, 0, 2});
+    }
+    backpropagate(path, leafEval, actionStack);
 }
 
 // ---- Backpropagation --------------------------------------------------------

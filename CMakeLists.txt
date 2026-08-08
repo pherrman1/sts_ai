@@ -72,5 +72,6 @@ add_test(NAME py_compile_check_replay COMMAND python3 -m py_compile ${CMAKE_SOUR
 add_test(NAME py_compile_vnettest_selftest COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/vnettest_selftest.py)
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/check_replay.py --self-test)
 add_test(NAME vnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/vnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
-set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest check_replay_selftest vnettest_selftest
+add_test(NAME battlecontext_roundtrip COMMAND $<TARGET_FILE:unit-test> battlecontext_roundtrip)
+set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest check_replay_selftest vnettest_selftest battlecontext_roundtrip
     PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")
