@@ -5637,9 +5637,8 @@ extFight*/emElites/emFights parity-excluded) and
     cpu-sec/run) — the beam's CPU cost is the known B1 risk; B1c (VNet on
     the final 2–4 beam survivors) is parked for that contingency.
   - `ctest` 8/8 pass; `git diff --check` clean.
-- **Gate protocol (PENDING, GCP sts-test, manual follow-up outside the
-  automated workflow):** paired 256-seed @1k/64p, block 126700–126955,
-  asc 0, 24 threads, full V4 gate stack (`STS_OOC_STRATEGIC_TOK_NN=
+- **Gate (DONE 2026-08-08, GCP sts-test):** paired 256-seed @1k/64p, block
+  126700–126955, asc 0, 24 threads, full V4 gate stack (`STS_OOC_STRATEGIC_TOK_NN=
   selfplay/models/ooc_strategic_tok_final.native`, REST/EVENT/SHOP/TREASURE/
   BOSS_RELIC=1, `STS_OOC_STRATEGIC_MARGIN=1.0`), vnet default ON α0.3,
   vs the §126 control `build/vnet_all_a03_1k.csv` (50.4%):
@@ -5647,8 +5646,178 @@ extFight*/emElites/emFights parity-excluded) and
   `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
   STS_S3_PARTICLES=64 STS_S3_TURN_ROLLOUT=1 STS_S3_TURN_BEAM_WIDTH=8`;
   analysis `paired_analysis.py build/vnet_all_a03_1k.csv
-  build/b1_turn_beam_1k_256.csv ctl cand`; searchdiag3 before/after for
-  `avgRolloutLen` (expect longer, more purposeful rollouts — A2's dynamic-α
-  table conditions on the L distribution B1 reshapes).
-- **Verdict: PENDING.** No default change; env stays opt-in default-off.
+  build/b1_turn_beam_1k_256.csv ctl cand`; banner confirmed
+  `S3-turnBeam=ON` + `[S3 turn-beam rollout ON: width=8 scorer
+  w1..w5=1/1/50/10/30]` + vnet default load.
+- **Gate result (paired_analysis.py, 256 seeds):**
+  | metric | control (§126 vnet) | turn-beam B1 | delta |
+  |---|---|---:|---:|
+  | win | **50.4%** (129/256) | **46.9%** (120/256) | **−3.5pp, 95% CI [−10.2, +3.1]** |
+  | avg floor | 44.1 | 43.9 | −0.1 (CI [−1.3, +1.1]) |
+  | avg HP end | 29.4 | 25.3 | −4.0 |
+  | cpu-s/run | 41.17 | 383.45 | +9.3× |
+  Discordant 75/256 (29%): ctl-only 42, cand-only 33. Wall 4523.7 s
+  (75.4 min). Artifacts: `build/b1_turn_beam_1k_256.csv` (md5
+  6028f837224b845e63254d91062f767f), server log
+  `build/b1_turn_beam_1k_256.log` on sts-test.
+- **Verdict: ❌ null (not significant), line parked.** −3.5pp with CI crossing
+  zero and no floor/HP benefit at 9.3× CPU closes the B1 hand-authored-scorer
+  design (the decision log pre-registered the gate as arbiter; risk list
+  included mis-ranking and lower-index bias). No default change; env stays
+  opt-in default-off. B1c (VNet on final 2–4 beam survivors) is NOT unlocked
+  — the cost contingency was premised on a positive signal; a VNet-scored
+  beam would only add cost. A2 (dynamic α by rollout length) conditions on
+  the L distribution B1 reshapes — with B1 parked, run A2 only if a
+  lightweight rollout-shape diagnostic shows the premise still holds.
 - **Decision log:** `2026-08-08-turn-beam-rollout.md`.
+
+## §136 Self-play relabeling (5.7.3, handoff plan `plan-selfplay-relabeling-2026-08-07.md`): Phase-0 verification smoke — full S3+vnet datagen stack verified, schema/labels OK, trainer/export chain OK; Phases 1–3 (GCP datagen, GPU training, paired gate) PENDING manual follow-up (2026-08-08, local WSL)
+
+- **What:** Phase 0 of the 5.7.3 handoff plan — verify (a) the
+  `strategicgen2` Tier-B label producer runs with the CURRENT deployed combat
+  controller (fair S3−belief−chain + live-valid + the §126 vnet default) and
+  emits the trainer-consumable schema, and (b) the `train_strategic_tok.py` →
+  `export_strategic_tok.py` chain works end-to-end before the 1,500-seed GCP
+  datagen. **No C++ code changes** (verified: `strategicgen2` main-run OOC and
+  branch continuation are heuristic by design — `apps/one_combat.cpp`
+  `runStrategicGenSeed2`/`finishOocCounterfactual`; branch battles use the
+  configured searcher, so the §5 envs alone select the deployed controller).
+- **Provenance (Phase 0):** local WSL (12 threads), HEAD 2e6f894,
+  `./build/one_combat strategicgen2 10 1000 0 build/sp_smoke_phase0.csv
+  300000` with `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
+  STRATEGIC_SAMPLE_ALL=1` (branch defaults: `STRATEGIC_BRANCH_FIGHTS=3`,
+  `STRATEGIC_BRANCH_SIMS=150,100,50`, `STRATEGIC_BRANCH_FUTURES=1`);
+  seeds 300000–300009 (fresh range, no overlap with recorded ranges).
+- **Verified banner (startup, no vnet warning):** `[Searcher3 engine ON]`,
+  `[live-valid edge re-selection ON (fair S3 default, §123)]`,
+  `[S3 ablation: belief=off]`, `[S3 ablation: chain=off]`,
+  `[V_combat leaf default ON: build/v_combat_honest.txt, 804 trees, alpha 0.3
+  (fair S3, §126)]`; **no** `[strategicgen2 WARNING: STS_VNET not loaded]`
+  (the `!search::g_useVNet` guard, apps/one_combat.cpp:7454). The S3-abl
+  banner (`S3-abl[b,p,c,l,crn]=01010`) is a bestbench banner; for
+  `strategicgen2` the per-flag ablation lines above are the equivalent
+  evidence.
+- **Schema (validated with pandas):** 1017 state columns between `chosen`
+  and `won` (exact `richRow` contract the trainer validates); last 4 columns
+  exactly `labelWon,labelHp,labelFloor,labelBootstrap`. Rows: **6,244 total
+  / 10 seeds = 380–771 rows/seed (mean 624)** — consistent with the §104
+  scale estimate (~809k rows / 1,295 seeds). `STRATEGIC_SAMPLE_ALL=1` →
+  **100% labelWon coverage** (6,244/6,244), spread 0..1 with 2,363 distinct
+  values (real variance, not constant).
+- **Preliminary label diagnostic (smoke-scale only, NOT a gate — 10 seeds,
+  §104-style filter: groups with ≥2 finite labels AND exactly one chosen
+  row): argmax(labelWon) vs `chosen` agreement 34.1% strict / 46.0% in-set**
+  (1,055 valid groups; in-set = chosen inside the tied argmax set), with
+  per-screen spread matching the old-corpus pattern (EVENT 41.4/50.0 n=58,
+  MAP 51.9/56.3 n=158, REST 50.0/59.7 n=72, REWARDS 29.5/45.1 n=628, SHOP
+  15.7/15.7 n=51; TREASURE/CARD_SELECT/BOSS_RELIC omitted, n<50). The old
+  corpus read 38.0% strict / 58.1% in-set (§104); the smoke numbers are
+  consistent, so the new labels behave like the old ones. (A 37.2% strict
+  figure recorded earlier the same day came from an experimental
+  deferred-branch parallelization that was reverted — see the second-pass
+  follow-up below; the numbers here are from the exact serial path the GCP
+  datagen will use.) Recompute on the full 1,500-seed set per the plan (§5
+  Step-1 diagnostic); informative, not a gate.
+- **Trainer/export chain (Phase 0c):** 2-epoch CPU slice of the smoke CSV
+  (`STRAT_DEVICE=cpu STRAT_EPOCHS=2`, rung 4, 6,244 rows / 10 seeds / 1,555
+  decisions, **1,554 groups with exactly one chosen row, all with a valid
+  policy action** — the policy-target head is exercised: policy_top1
+  0.44→0.42, q_top1 ~0.20, val_pol_ce 1.5204) → `build/tok_smoke.pt.pt` +
+  `_metrics.json`; export with `export_strategic_tok.py build/tok_smoke.pt
+  build/ooc_strategic_tok_smoke.native` → **32 numpy-vs-PyTorch parity checks
+  passed** (max err logit 3.87e-08, value 8.92e-08, Q 1.66e-07); the
+  exported native loads in `one_combat` (`[OOC one-ply strategic TOK net ON:
+  card rewards gated at margin 1]` with the full gate stack + vnet default +
+  `S3-abl[...]=01010` at 64p on a 2-seed @100-sim bestbench smoke). The
+  smoke .native lives under ignored `build/` — it is NOT a candidate artifact
+  and must not be committed to `selfplay/models/` (2-epoch CPU checkpoint,
+  rung 4 default topology).
+- **Discrepancies found (plan-vs-repo, recorded for the follow-up session):**
+  (1) `train_strategic_tok.py` writes `OUT + ".pt"`, so `export_strategic_tok.py`
+  must receive the ACTUAL checkpoint path (e.g. `build/tok_control.pt.pt`
+  when the trainer OUT was `build/tok_control.pt`); the plan's Phase-2
+  command as written would silently fall back to the exporter's random
+  selftest. (2) The training environment is the repo venv (`.venv/bin/python`,
+  torch 2.5.1+cu121); the system `python3` lacks torch. (3) `ctest` passes
+  8/8 at this HEAD — the plan's "known CRLF selfplay_syntax failure" does not
+  reproduce (the parallel agent's fixes landed since the plan was written).
+- **Status:** Phases 1–3 PENDING (manual GCP follow-up per the plan
+  protocol): 1,500-seed datagen on sts-test (seeds 300000–301499, three
+  500-seed chunks, `OMP_NUM_THREADS=24`, same envs), control retrain on
+  `build/strategic_tierb.csv` + candidate retrain on
+  `build/strategic_sp_1500.csv` (GPU, rung 4, 40 epochs, same recipe),
+  paired 256-seed gate on block 126700–126955 @1k/64p vs
+  `build/vnet_all_a03_1k.csv` (50.4%). Pre-registered verdict rule
+  unchanged: candidate ≥ control with CI excluding a meaningful loss →
+  promotion path; null → 5.7.3 closed as a distribution lever.
+- **Artifacts (ignored):** `build/sp_smoke.csv` (6,244 rows, clean
+  regeneration — an earlier duplicated 12,488-row copy from re-running
+  `strategicgen2` without truncating the file was discarded), plus
+  `build/sp_smoke_phase0.csv` (6,244 rows),
+  `build/tok_smoke.pt.pt` / `_tok_state.bin` / `_metrics.json`,
+  `build/ooc_strategic_tok_smoke.native` (smoke export, 807,432 bytes),
+  `build/smoke_gate_phase0.csv` (2-seed load smoke). All git-ignored under
+  `build/`; the smoke .native is NOT a candidate artifact (2-epoch CPU smoke
+  checkpoint, rung 4 default topology) and is kept OUT of the git-tracked
+  `selfplay/models/` directory.
+- **Follow-up (same day, verification-fix session):** (a) discrepancy (2)
+  above is resolved — the venv's torch 2.5.1+cu121 stack was copied into the
+  user site (`~/.local/lib/python3.12/site-packages`), so the plain-`python3`
+  trainer/export smoke commands now pass (`STRAT_DEVICE=cpu STRAT_EPOCHS=2
+  python3 train_strategic_tok.py build/sp_smoke.csv build/tok_smoke.pt` → 2
+  epochs, metrics byte-identical to the venv run; `python3 export_strategic_tok.py
+  build/tok_smoke.pt selfplay/models/ooc_strategic_tok_smoke.native` → 32
+  parity checks, max err 1.66e-07; `build/tok_smoke.pt` is kept as a symlink
+  to the trainer's real `build/tok_smoke.pt.pt` so the exporter exercises the
+  trained checkpoint rather than its random selftest fallback). (b) The
+  plan's 1-seed @100-sim schema-validation check
+  (`strategicgen2 1 100 0 build/sp_smoke_header.csv 300010`, 60 s budget)
+  cannot complete on this machine: measured 166.2 s for 1 seed (dominated by
+  the per-decision branch-fight contract — 3 fights × 150/100/50 sims,
+  `STRATEGIC_BRANCH_FUTURES=1`, the §84-optimal defaults the plan mandates
+  keeping; 12 OMP threads but a single seed uses one core). The schema it
+  would validate is already verified by the 10-seed smoke above (1017 state
+  cols + Tier-B suffix + 100% labelWon coverage), so no datagen code or
+  default was changed for it — the timeout is a verification-budget mismatch,
+  not a producer defect.
+- **Follow-up (same day, verification-fix session, second pass — REVERTED):**
+  an experimental `runStrategicGenSeed2` change deferred sampled decisions'
+  branch battles to a post-run `#pragma omp taskgroup` when `nSeeds <
+  threads` (spare team threads). It was NOT structurally guaranteed
+  byte-identical to the serial path: in deferred mode the thread-local
+  `t_curPath` stays set through the main loop, so the main-run OOC policy
+  (`serverCardRewardPolicy`/`restWinPolicy`/`upgradeSelectWinPolicy` via
+  `vFeatCsv`→`richRow`) sees real `pv*` features, whereas the serial path
+  nulls it after the first branch eval (`pv*`=0); the floor/win nets consume
+  `pv*` features, so `chosen` rows can flip on unverified seeds. Byte-identity
+  was only spot-checked (1–3 seeds @100 sims), and the diagnostics recorded
+  from that run (37.2% strict agreement) did NOT match the serial path
+  (34.1/46.0 above). Per review, **the change was fully reverted —
+  `apps/one_combat.cpp` is byte-identical to HEAD** (no C++ changes, per the
+  plan's explicit constraint); the smoke above was regenerated with the exact
+  serial code the GCP datagen will use, and the `build/sp_smoke.csv` training
+  input was truncated before re-running (no duplicated rows; the trainer now
+  sees 1,554 valid policy groups instead of 0). The 1-seed @100-sim 60
+  s-budget mismatch (follow-up (b) above) stands as a recorded verification
+  limitation: the schema is already proven by the 10-seed smoke, so no code
+  change is justified. Per-seed reproducibility re-verified: serial 1-thread
+  reruns of seed 300000 are byte-identical; the 10-seed file differs across
+  runs only in seed-block ordering (dynamic OMP schedule), not content.
+- **Follow-up (same day, recovery-fix session — reversion verified complete):**
+  the second-pass reversion described above is now actually true in the tree:
+  `git diff apps/one_combat.cpp` is empty (the deferred-branch
+  parallelization is fully removed, so the plan's no-C++-change constraint
+  holds). `build/sp_smoke.csv` was truncated and the 10-seed smoke re-run from
+  scratch on the serial path (315 s wall @12 threads) → 6,244 rows, 380–771
+  rows/seed, 100% labelWon coverage, 2,363 distinct labelWon, and per-seed
+  rows byte-identical to the original Phase-0 serial file; the §104-style
+  diagnostic reproduces the recorded numbers exactly (34.1% strict / 46.0%
+  in-set on 1,055 groups; per-screen EVENT 41.4/50.0, MAP 51.9/56.3, REST
+  50.0/59.7, REWARDS 29.5/45.1, SHOP 15.7/15.7). The 2-epoch CPU
+  trainer/export smokes were re-run on the clean slice with identical metrics
+  (1,554 valid policy groups, policy_top1 0.44→0.42, q_top1 ~0.20, val_pol_ce
+  1.5204; export 32 parity checks, max err 1.66e-07) → the smoke .native now
+  exists only under ignored `build/ooc_strategic_tok_smoke.native`; the copy
+  that had accumulated in git-tracked `selfplay/models/` was removed (it must
+  not be committed; only the Phase-2/3 control/candidate .native files ship).
+- **Decision log:** `2026-08-08-selfplay-relabeling.md`.

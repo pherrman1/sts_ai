@@ -280,11 +280,11 @@ is byte-identical pre-B1 behavior (structural-equality smoke on 8 seeds).
   action (same contract as the random path).
 - **Env:** `STS_S3_TURN_ROLLOUT=1` (opt-in default-off), parsed in
   `apps/one_combat.cpp::main` next to the other S3 rollout gates; the BEST
-  stack banner prints `S3-turnBeam=ON/off`. The beam's cost is untested at
-  gate scale (up to `beamWidth × handSize` full BattleContext copies per
-  turn); **B1c (parked)** would put the VNet on the final 2–4 beam survivors
-  instead of the heuristic on all candidates if B1's cost is prohibitive.
-  Gate (256-seed paired @1k/64p vs `build/vnet_all_a03_1k.csv`) pending;
+  stack banner prints `S3-turnBeam=ON/off`. **Gate (2026-08-08, GCP):
+  null — line parked.** Paired 256-seed @1k/64p vs `build/vnet_all_a03_1k.csv`
+  (50.4%): 46.9% win (−3.5pp, 95% CI [−10.2, +3.1]), floor −0.1, HP end
+  −4.0, at 9.3× CPU (383.5 vs 41.2 cpu-s/run); env stays default-off.
+  B1c (VNet on final 2–4 beam survivors) parked with the line.
   EXPERIMENTS.md §135b; decision log `2026-08-08-turn-beam-rollout.md`.
 
 ### Direct utility-R leaf (same-recipe target ablation, §134 — falsified)

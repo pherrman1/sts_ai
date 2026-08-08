@@ -244,6 +244,17 @@ fallback — separate env, separate gate. Do not start before §3.2's verdict.
 
 ### 5.1 Self-play relabeling (5.7.3, the last unchecked action-plan item)
 
+**Status (2026-08-08): IN EXECUTION — Phase 0 verification done, phases 1–3
+pending.** The handoff plan
+`docs/knowledge-base/plan-selfplay-relabeling-2026-08-07.md` executed Phase 0
+locally (EXPERIMENTS.md §136): the `strategicgen2` producer verified on the
+current deployed controller (fair S3−belief−chain + live-valid + §126 vnet
+default) — 1017-col schema + Tier-B suffix intact, no vnet warning, 380–771
+rows/seed, trainer→export parity chain OK (2-epoch CPU smoke). Datagen
+(1,500 seeds, 300000–301499), control/candidate retrains, and the paired gate
+are the manual GCP follow-up; the pre-registered verdict rule is unchanged
+(null → 5.7.3 falsified as a distribution lever).
+
 All strategic models (V4/V5, Q_win labels) were trained on trajectories from
 **old, weaker policies** (pre-§113, pre-live-valid; the §94 datagen even
 predates the honest enumerator). Hypothesis A.15 #1: the combat controller

@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-08-08 against the current working tree (leafdiag/leafref/rollouttrace leaf-state diagnostic producers + `STS_DIAG_VNET2`; VCOMBAT_TARGET, asserting `vnettest`, §134 direct-R ablation unchanged).
+Last verified: 2026-08-08 against the current working tree (leafdiag/leafref/rollouttrace leaf-state diagnostic producers + `STS_DIAG_VNET2`; VCOMBAT_TARGET, asserting `vnettest`, §134 direct-R ablation unchanged; `.venv` training-environment note added; system-`python3` torch provisioning note added).
 
 ## Purpose
 
@@ -206,7 +206,17 @@ startup load is not evidence of use under default Searcher2.
 ## Known limitations
 
 - No dependency lock or environment definition exists. Scripts import NumPy,
-  pandas, XGBoost, scikit-learn, and sometimes PyTorch.
+  pandas, XGBoost, scikit-learn, and sometimes PyTorch. On this machine the
+  working training environment is the repo venv (`.venv/bin/python`, torch
+  2.5.1+cu121 with CUDA); the system `python3` (which the plan's commands and
+  the automated verification harness invoke) had no torch, so on 2026-08-08
+  the venv's torch 2.5.1+cu121 stack (torch, torchgen, functorch, triton,
+  nvidia-* cu12 libs, and torch deps filelock/fsspec/jinja2/markupsafe/
+  mpmath/networkx/sympy) was copied into the user site
+  (`~/.local/lib/python3.12/site-packages`) so plain `python3` trains and
+  exports identically to `.venv/bin/python` (verified with the §136 2-epoch
+  smoke under `python3`). The venv remains the canonical environment; the
+  user-site copy is a provisioning mirror, not a separate install.
 - `parity_test.py` fails loudly when its binary or checkpoint is missing and
   resolves the binary via `STS_PARITY_BIN` or `build/parity_test`, but it does
   not yet load weights into the trained model; real trained-model parity is
