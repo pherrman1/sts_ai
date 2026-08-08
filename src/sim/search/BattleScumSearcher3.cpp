@@ -29,6 +29,16 @@ int g_s3ExpandMaxNew = 32;
 bool g_s3RolloutPolicy = false;
 int g_s3RolloutK = 1;
 int g_s3RolloutTurnStop = 0;
+// B1 tactical turn-beam rollout (STS_S3_TURN_ROLLOUT, opt-in; see header).
+// Defaults: beam width 8; scorer weights w1=ΔHP_enemy, w2=ΔHP_player,
+// w3=kills, w4=persistent setup, w5=potion penalty.
+bool g_s3TurnRollout = false;
+int g_s3TurnBeamWidth = 8;
+double g_s3TurnScoreW1 = 1.0;
+double g_s3TurnScoreW2 = 1.0;
+double g_s3TurnScoreW3 = 50.0;
+double g_s3TurnScoreW4 = 10.0;
+double g_s3TurnScoreW5 = 30.0;
 bool g_vnetCondBossOnly = false;
 bool g_vnetCondAct3 = false;
 thread_local std::function<double(const BattleContext &)> g_terminalBonus;
@@ -593,6 +603,129 @@ static int rolloutWeight(const Action &a, const BattleContext &bc) {
     }
 }
 
+// ---- B1 tactical turn-beam rollout (STS_S3_TURN_ROLLOUT, opt-in) ------------
+// Beam-search a complete player turn: BFS over card/potion sequences to
+// END_TURN, scoring only COMPLETE turns after the monster turn resolves (all
+// candidates are copies of the same pre-turn state, so draw order and monster
+// RNG are shared — common-random-numbers for free). Pruning between depths is
+// simple first-N truncation (deterministic by enumeration order); there is no
+// intermediate card-state scoring. The returned sequence is the best-scored
+// complete turn and always contains at least END_TURN.
+struct BeamCandidate {
+    BattleContext bc;             // mid-turn state copy (PLAYER_NORMAL)
+    std::vector<Action> actions;  // card/potion actions played so far this turn
+    int powersPlayed = 0;
+    int potionsUsed = 0;
+};
+
+struct TurnCandidate {
+    std::vector<Action> actions;  // full turn: played actions + END_TURN
+    double score = 0;
+};
+
+// S = w1·ΔHP_enemy − w2·ΔHP_player + w3·kills + w4·persistent_setup
+//     − w5·potion_use
+// `pre` is the pre-turn state, `post` the state after the full turn resolved
+// (monster turn included; block reset, next hand drawn). Uses only
+// BattleContext fields plus the tracked powers/potion counts — no search RNG.
+static double scoreCompleteTurn(const BattleContext &pre, const BattleContext &post,
+                                int powersPlayed, int potionsUsed) {
+    int enemyHpLoss = 0;
+    int kills = 0;
+    for (int i = 0; i < pre.monsters.monsterCount; ++i) {
+        const int preHp = pre.monsters.arr[i].curHp;
+        const int postHp = post.monsters.arr[i].curHp;
+        if (preHp > 0 && postHp <= 0) ++kills;
+        if (preHp > postHp) enemyHpLoss += preHp - postHp;
+    }
+    const int playerEffLoss = std::max(0,
+        (pre.player.curHp + pre.player.block) - (post.player.curHp + post.player.block));
+    const int setup = (post.player.strength - pre.player.strength)
+                    + (post.player.dexterity - pre.player.dexterity)
+                    + (post.player.focus - pre.player.focus)
+                    + powersPlayed;
+    return g_s3TurnScoreW1 * enemyHpLoss
+         - g_s3TurnScoreW2 * playerEffLoss
+         + g_s3TurnScoreW3 * kills
+         + g_s3TurnScoreW4 * setup
+         - g_s3TurnScoreW5 * potionsUsed;
+}
+
+static std::vector<Action> turnBeamSearch(const BattleContext &start) {
+    const int beamWidth = std::max(1, g_s3TurnBeamWidth);
+    const int maxDepth = std::max(1, start.cards.cardsInHand);
+
+    std::vector<TurnCandidate> candidates;
+    std::vector<BeamCandidate> beam;
+    beam.emplace_back(BeamCandidate{start, {}, 0, 0});
+
+    for (int depth = 0; depth < maxDepth; ++depth) {
+        // Score a complete turn (END_TURN -> monster turn resolves) for every
+        // beam state at this depth.
+        for (const auto &c : beam) {
+            BattleContext post = c.bc;
+            const Action endTurn(ActionType::END_TURN);
+            endTurn.execute(post);
+            std::vector<Action> full = c.actions;
+            full.push_back(endTurn);
+            double score;
+            if (post.outcome == Outcome::PLAYER_VICTORY) score = 1000.0;
+            else if (post.outcome == Outcome::PLAYER_LOSS) score = -1000.0;
+            else score = scoreCompleteTurn(start, post, c.powersPlayed, c.potionsUsed);
+            candidates.push_back(TurnCandidate{std::move(full), score});
+        }
+        if (depth + 1 >= maxDepth) break;
+
+        // Expand: play every valid non-END_TURN action on a copy. Sequences
+        // that leave PLAYER_NORMAL (CARD_SELECT etc.) or lose the battle are
+        // dropped; lethal (PLAYER_VICTORY) sequences are captured as +1000
+        // candidates. The next level is pruned to beamWidth by first-N
+        // truncation (no intermediate scoring).
+        std::vector<BeamCandidate> next;
+        BattleScumSearcher3::Node tmp;
+        for (const auto &c : beam) {
+            tmp.edges.clear();
+            enumerateActionsForNode(tmp, c.bc);
+            for (const auto &e : tmp.edges) {
+                if (e.action.getActionType() == ActionType::END_TURN) continue;
+                BattleContext child = c.bc;
+                e.action.execute(child);
+                if (child.outcome == Outcome::PLAYER_VICTORY) {
+                    std::vector<Action> full = c.actions;
+                    full.push_back(e.action);
+                    candidates.push_back(TurnCandidate{std::move(full), 1000.0});
+                    continue;
+                }
+                if (child.outcome == Outcome::PLAYER_LOSS) continue;
+                if (child.inputState != InputState::PLAYER_NORMAL) continue;
+                BeamCandidate nc;
+                nc.bc = std::move(child);
+                nc.actions = c.actions;
+                nc.actions.push_back(e.action);
+                nc.powersPlayed = c.powersPlayed;
+                nc.potionsUsed = c.potionsUsed;
+                if (e.action.getActionType() == ActionType::CARD
+                    && c.bc.cards.hand[e.action.getSourceIdx()].getType() == CardType::POWER)
+                    ++nc.powersPlayed;
+                if (e.action.getActionType() == ActionType::POTION
+                    && e.action.getTargetIdx() <= 5)
+                    ++nc.potionsUsed;
+                next.push_back(std::move(nc));
+            }
+        }
+        if (next.empty()) break;
+        if ((int)next.size() > beamWidth) next.resize(beamWidth);
+        beam = std::move(next);
+    }
+
+    // Best complete turn; the depth-0 END_TURN candidate guarantees non-empty.
+    const TurnCandidate *best = nullptr;
+    for (const auto &c : candidates)
+        if (!best || c.score > best->score) best = &c;
+    if (best) return best->actions;
+    return std::vector<Action>{Action(ActionType::END_TURN)};
+}
+
 int BattleScumSearcher3::multiRollout(BattleContext &state,
                                       std::vector<Action> &actionStack,
                                       double &evalOut) {
@@ -629,6 +762,34 @@ int BattleScumSearcher3::playoutRandom(BattleContext &state,
         && g_usePolicyNet && g_policyNet.loaded()
         && !(g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly);
     while (!isTerminal(state) && steps < 200) {
+        // B1 tactical turn-beam (STS_S3_TURN_ROLLOUT, opt-in): at PLAYER_NORMAL
+        // states plan a complete turn by beam search and execute the best
+        // sequence (cards/potions + END_TURN, monster turn included). Multi-turn
+        // continuation is mandatory (A4 falsification, §133): after the beam
+        // completes the turn the outer loop fires again on the next hand.
+        // Non-PLAYER_NORMAL states (CARD_SELECT etc.) fall through to the
+        // weighted random pick below; the whole branch is skipped when the env
+        // gate is unset (byte-identical pre-B1 behavior).
+        if (g_s3TurnRollout && state.inputState == InputState::PLAYER_NORMAL) {
+            const std::vector<Action> seq = turnBeamSearch(state);
+            for (const auto &a : seq) {
+                if (steps >= 200 || isTerminal(state)) break;
+                if (!a.isValidAction(state)) continue;
+                const int turnBefore = state.turn;
+                ++steps;
+                actionStack.push_back(a);
+                a.execute(state);
+                // rollouttrace diagnostics: consecutive actual-rollout states
+                // (read-only hook; nullptr by default).
+                if (g_onRolloutStep) g_onRolloutStep(state, steps);
+                // STS_S3_ROLLOUT_TURN_STOP (A4): fires when the beam's END_TURN
+                // completes the player turn (bc.turn incremented).
+                if (g_s3RolloutTurnStop > 0 && state.turn != turnBefore
+                    && ++turnsCompleted >= g_s3RolloutTurnStop)
+                    return steps;
+            }
+            continue;
+        }
         ++steps;
         enumerateActionsForNode(tmp, state);
         if (tmp.edges.empty()) break;

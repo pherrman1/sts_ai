@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-08 against the current working tree (leafdiag/leafref/rollouttrace leaf-state diagnostics: `g_onS3LeafQuery`/`g_onRolloutStep` hooks, `STS_DIAG_VNET2`, leaf-query dataset + high-budget CRN-paired references + rollout traces; §126 vnet default unchanged, §133/§134 candidates stay rejected).
+Last verified: 2026-08-08 against the current working tree (leafdiag/leafref/rollouttrace leaf-state diagnostics: `g_onS3LeafQuery`/`g_onRolloutStep` hooks, `STS_DIAG_VNET2`, leaf-query dataset + high-budget CRN-paired references + rollout traces; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending).
 
 ## Purpose
 
@@ -232,6 +232,60 @@ load-bearing, the second short-rollout falsification (§119), and the
 turn-beam follow-up must play across turns. Both env gates stay opt-in
 default-off. EXPERIMENTS.md §133 (first entry); decision log
 `2026-08-07-rollout-leaf-estimators.md`.
+
+### Tactical turn-beam rollout (STS_S3_TURN_ROLLOUT, opt-in — B1)
+
+The B1 line (plan `plan-rollout-experiments-2026-08-07.md` §2, revised
+spec per the §134 audit) replaces the per-action random pick at
+PLAYER_NORMAL rollout states with a deterministic beam search over
+card/potion sequences to END_TURN, scoring only COMPLETE turns after the
+monster turn resolves. Implemented 2026-08-08 in
+`BattleScumSearcher3::playoutRandom` (`src/sim/search/BattleScumSearcher3.cpp`):
+when `g_s3TurnRollout` is set and `state.inputState == PLAYER_NORMAL`, the
+beam runs and the weighted-random/prior pick is skipped for that iteration;
+all other states (CARD_SELECT etc.) keep the existing pick. Unset or `=0`
+is byte-identical pre-B1 behavior (structural-equality smoke on 8 seeds).
+
+- **Beam:** `turnBeamSearch` (file-scope in `BattleScumSearcher3.cpp`) is a
+  BFS over card/potion sequences up to hand-size depth (≤ 10,
+  `CardManager::MAX_HAND_SIZE`). At every depth each beam state spawns an
+  END_TURN candidate (executed on a copy — `Action::execute` runs the monster
+  turn too), then expands by executing every valid non-END_TURN action on
+  copies. The next level is pruned to `beamWidth` (default 8,
+  `STS_S3_TURN_BEAM_WIDTH`) by **simple first-N truncation** (deterministic
+  by enumeration order) — there is NO intermediate card-state scoring, per
+  the user-approved scorer-(b) design. All candidates are copies of the same
+  pre-turn state, so draw order and monster RNG are shared
+  (common-random-numbers for free). Sequences that leave PLAYER_NORMAL
+  (mid-turn CARD_SELECT from Dual Wield/Exhume/etc.) or lose the battle are
+  dropped from the beam; lethal sequences (PLAYER_VICTORY before END_TURN)
+  are captured as +1000 candidates at expansion time. `turnBeamSearch` always
+  returns at least `{END_TURN}` (the depth-0 candidate guarantees non-empty).
+- **Scorer:** `scoreCompleteTurn(pre, post, powersPlayed, potionsUsed)` —
+  `S = w1·ΔHP_enemy − w2·ΔHP_player + w3·kills + w4·persistent_setup
+  − w5·potion_use`; `post` is the state after the full turn resolved (monster
+  turn included; block reset, next hand drawn), which is what lets
+  "Defend, Defend, End Turn" rank correctly against a heavy intent without a
+  block heuristic. ΔHP_enemy sums per-monster HP reduction; ΔHP_player is the
+  player's effective (HP+block) loss clamped ≥ 0; setup = strength+dex+focus
+  deltas + powers played; terminal outcomes score ±1000. Weights
+  `STS_S3_TURN_SCORE_W1..W5`, defaults 1.0/1.0/50.0/10.0/30.0. The scorer is a
+  **hand-authored rollout heuristic** (same class as the existing
+  `rolloutWeight`), NOT a learning objective.
+- **Multi-turn continuation (mandatory):** the best complete turn (cards +
+  END_TURN) is executed on the rollout state and the outer `playoutRandom`
+  loop fires again on the next hand — A4 proved one-turn stopping loses
+  −16.4pp (§133). `g_s3RolloutTurnStop` (A4) still fires after the beam's
+  END_TURN advances `bc.turn`; `g_onRolloutStep` fires after every beam
+  action (same contract as the random path).
+- **Env:** `STS_S3_TURN_ROLLOUT=1` (opt-in default-off), parsed in
+  `apps/one_combat.cpp::main` next to the other S3 rollout gates; the BEST
+  stack banner prints `S3-turnBeam=ON/off`. The beam's cost is untested at
+  gate scale (up to `beamWidth × handSize` full BattleContext copies per
+  turn); **B1c (parked)** would put the VNet on the final 2–4 beam survivors
+  instead of the heuristic on all candidates if B1's cost is prohibitive.
+  Gate (256-seed paired @1k/64p vs `build/vnet_all_a03_1k.csv`) pending;
+  EXPERIMENTS.md §135b; decision log `2026-08-08-turn-beam-rollout.md`.
 
 ### Direct utility-R leaf (same-recipe target ablation, §134 — falsified)
 
@@ -766,8 +820,10 @@ PUCT-with-zero-priors quirk.
   `collectFrontierStats`, `searchToTotalRootStable`, `onlyLegalAction`
 - `src/sim/search/BattleScumSearcher3.cpp::step`, `computeEdgePriors`,
   `multiRollout` (STS_S3_ROLLOUT_K), `playoutRandom` (incl.
-  STS_S3_ROLLOUT_TURN_STOP and `g_onRolloutStep`), `evaluateTerminal`,
-  `g_terminalBonus`, `g_onS3LeafQuery` (leafdiag hook at the blend site)
+  STS_S3_ROLLOUT_TURN_STOP, the B1 turn beam `turnBeamSearch`/
+  `scoreCompleteTurn` under STS_S3_TURN_ROLLOUT, and `g_onRolloutStep`),
+  `evaluateTerminal`, `g_terminalBonus`, `g_onS3LeafQuery` (leafdiag hook at
+  the blend site)
 - `apps/one_combat.cpp::leafDiag`, `leafRef`, `rolloutTrace` modes;
   `tools/leaf_ranking.py`, `tools/leaf_distribution_shift.py`,
   `tools/leaf_split_check.py`, `tools/leaf_smoothness.py`

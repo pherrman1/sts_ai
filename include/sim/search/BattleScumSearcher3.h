@@ -191,6 +191,20 @@ namespace sts::search {
     // endpoint is then evaluated by the learned leaf (n-step bootstrap).
     extern int g_s3RolloutK;
     extern int g_s3RolloutTurnStop;
+    // B1 tactical turn-beam rollout (STS_S3_TURN_ROLLOUT, opt-in): at
+    // PLAYER_NORMAL states the rollout replaces the per-action weighted random
+    // pick with a deterministic beam search over card/potion sequences to
+    // END_TURN, scoring only COMPLETE turns after the monster turn resolves.
+    // Beam width (default 8) and the five hand-authored scorer weights
+    // (ΔHP_enemy / ΔHP_player / kills / persistent setup / potion penalty) are
+    // env-tunable. Unset = byte-identical pre-B1 behavior.
+    extern bool g_s3TurnRollout;
+    extern int g_s3TurnBeamWidth;
+    extern double g_s3TurnScoreW1;
+    extern double g_s3TurnScoreW2;
+    extern double g_s3TurnScoreW3;
+    extern double g_s3TurnScoreW4;
+    extern double g_s3TurnScoreW5;
     // V_combat leaf conditioning (STS_VNET_COND_BOSS/ACT3, opt-in): restrict
     // the learned leaf to rollout-dominant contexts (§117: boss fights, act 3).
     // Both unset = always on (byte-identical pre-conditioning behavior).

@@ -5586,3 +5586,69 @@ extFight*/emElites/emFights parity-excluded) and
   comparisons valid); classifier feature weights are correlational.
 - **Decision log:** `2026-08-08-leaf-state-diagnostics.md` (results
   addendum).
+
+## §135b B1 tactical turn-beam rollout (STS_S3_TURN_ROLLOUT): implemented opt-in with structural-equality check; paired 256-seed gate PENDING (2026-08-08, local WSL)
+
+- **What:** the B1 line from `plan-rollout-experiments-2026-08-07.md` §2
+  (user-approved scorer-(b) design; the §134 audit flagged the original B1
+  spec as incomplete — pruning needs intermediate scores — so the revised
+  spec scores COMPLETE turns only and prunes between turns by first-N
+  truncation). At PLAYER_NORMAL states during the Searcher3 rollout, the
+  per-action weighted random pick is replaced by a deterministic beam search
+  over card/potion sequences to END_TURN; the best-scored complete turn is
+  executed and the rollout continues to the next hand (multi-turn
+  continuation is mandatory per the A4 falsification, §133).
+- **Implementation:**
+  - `turnBeamSearch` (file-scope static, `src/sim/search/
+    BattleScumSearcher3.cpp`): BFS to END_TURN, depth = hand size (≤10),
+    width `STS_S3_TURN_BEAM_WIDTH` (default 8), pruned between depths by
+    first-N truncation (deterministic enumeration order, no intermediate
+    scoring). Every beam state spawns an END_TURN candidate scored after the
+    monster turn resolves on a copy (common-random-numbers for free).
+    CARD_SELECT-producing sequences are dropped; lethal sequences captured as
+    +1000 candidates; `turnBeamSearch` never returns empty (depth-0 END_TURN
+    candidate).
+  - `scoreCompleteTurn(pre, post, powersPlayed, potionsUsed)`:
+    `S = w1·ΔHP_enemy − w2·ΔHP_player + w3·kills + w4·persistent_setup
+    − w5·potion_use`; ΔHP_player = effective (HP+block) loss clamped ≥0;
+    setup = strength+dex+focus deltas + powers played; terminal outcomes
+    ±1000. Weights `STS_S3_TURN_SCORE_W1..W5` defaults
+    1.0/1.0/50.0/10.0/30.0 (educated guesses, pre-registered). Hand-authored
+    rollout heuristic (same class as `rolloutWeight`), NOT a learning
+    objective.
+  - `playoutRandom` branch (gated `g_s3TurnRollout &&
+    inputState == PLAYER_NORMAL`): executes the best sequence, fires
+    `g_onRolloutStep` after each action, honors `g_s3RolloutTurnStop` (A4)
+    after the beam's END_TURN. Non-PLAYER_NORMAL states keep the weighted
+    pick; unset/`=0` is byte-identical pre-B1.
+  - Env parsed in `apps/one_combat.cpp::main`; BEST stack banner prints
+    `S3-turnBeam=ON/off` (only in the Searcher3 arm of the banner).
+- **Local smoke (2026-08-08):**
+  - Structural equality: `bestbench 300 8 0 126700` with `STS_FAIR=1
+    STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_S3_PARTICLES=64`,
+    unset vs `STS_S3_TURN_ROLLOUT=0` → per-seed game-outcome columns
+    (won/floor/act/hpEnd/maxHp/fightsLost/deathCombat/deathEncounter)
+    identical (only the wall-time `sec` column varies); logs identical
+    modulo cpu.
+  - Turn-beam smoke: same config + `STS_S3_TURN_ROLLOUT=1
+    STS_S3_TURN_BEAM_WIDTH=8` → runs to completion on 8 seeds @300 sims, no
+    crash/hang/assert (win 25.0% vs control 37.5% on 8 seeds — NOT
+    evidence, smoke only). Cost ~16× control at 300 sims (55.9 vs 3.45
+    cpu-sec/run) — the beam's CPU cost is the known B1 risk; B1c (VNet on
+    the final 2–4 beam survivors) is parked for that contingency.
+  - `ctest` 8/8 pass; `git diff --check` clean.
+- **Gate protocol (PENDING, GCP sts-test, manual follow-up outside the
+  automated workflow):** paired 256-seed @1k/64p, block 126700–126955,
+  asc 0, 24 threads, full V4 gate stack (`STS_OOC_STRATEGIC_TOK_NN=
+  selfplay/models/ooc_strategic_tok_final.native`, REST/EVENT/SHOP/TREASURE/
+  BOSS_RELIC=1, `STS_OOC_STRATEGIC_MARGIN=1.0`), vnet default ON α0.3,
+  vs the §126 control `build/vnet_all_a03_1k.csv` (50.4%):
+  `bestbench 1000 256 0 126700 build/b1_turn_beam_1k_256.csv` with
+  `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
+  STS_S3_PARTICLES=64 STS_S3_TURN_ROLLOUT=1 STS_S3_TURN_BEAM_WIDTH=8`;
+  analysis `paired_analysis.py build/vnet_all_a03_1k.csv
+  build/b1_turn_beam_1k_256.csv ctl cand`; searchdiag3 before/after for
+  `avgRolloutLen` (expect longer, more purposeful rollouts — A2's dynamic-α
+  table conditions on the L distribution B1 reshapes).
+- **Verdict: PENDING.** No default change; env stays opt-in default-off.
+- **Decision log:** `2026-08-08-turn-beam-rollout.md`.

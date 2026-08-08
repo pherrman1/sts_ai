@@ -3152,6 +3152,7 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
                     + "  S3-particles=" + std::to_string(search::g_s3Particles)
                     + "  S3-rollK=" + std::to_string(search::g_s3RolloutK)
                     + "  S3-turnStop=" + std::to_string(search::g_s3RolloutTurnStop)
+                    + "  S3-turnBeam=" + (search::g_s3TurnRollout ? "ON" : "off")
                   : std::string())
               << (search::g_fairPlay ? "  fair-play" : "")
               << "  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
@@ -9058,6 +9059,24 @@ int main(int argc, char **argv) {
         if (n >= 0) {
             search::g_s3RolloutTurnStop = n;
             std::cout << "[S3 rollout turn-stop = " << search::g_s3RolloutTurnStop << "]\n";
+        }
+    }
+    if (const char *d = std::getenv("STS_S3_TURN_ROLLOUT")) {  // B1: tactical turn-beam rollout (opt-in)
+        search::g_s3TurnRollout = std::atoi(d) != 0;
+        if (search::g_s3TurnRollout) {
+            if (const char *w = std::getenv("STS_S3_TURN_BEAM_WIDTH")) {
+                const int n = std::atoi(w);
+                if (n >= 1) search::g_s3TurnBeamWidth = n;
+            }
+            if (const char *w = std::getenv("STS_S3_TURN_SCORE_W1")) search::g_s3TurnScoreW1 = std::atof(w);
+            if (const char *w = std::getenv("STS_S3_TURN_SCORE_W2")) search::g_s3TurnScoreW2 = std::atof(w);
+            if (const char *w = std::getenv("STS_S3_TURN_SCORE_W3")) search::g_s3TurnScoreW3 = std::atof(w);
+            if (const char *w = std::getenv("STS_S3_TURN_SCORE_W4")) search::g_s3TurnScoreW4 = std::atof(w);
+            if (const char *w = std::getenv("STS_S3_TURN_SCORE_W5")) search::g_s3TurnScoreW5 = std::atof(w);
+            std::cout << "[S3 turn-beam rollout ON: width=" << search::g_s3TurnBeamWidth
+                      << " scorer w1..w5=" << search::g_s3TurnScoreW1 << "/" << search::g_s3TurnScoreW2
+                      << "/" << search::g_s3TurnScoreW3 << "/" << search::g_s3TurnScoreW4
+                      << "/" << search::g_s3TurnScoreW5 << "]\n";
         }
     }
     if (const char *d = std::getenv("STS_RISK_LAMBDA")) {    // risk sensitivity for Searcher3 PUCT
