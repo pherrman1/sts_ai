@@ -8159,50 +8159,105 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
     return out.str();
 }
 
+// ── Shared strategic branch label evaluator (Tier-B contract) ──────────────
+// Used by both strategicgen2 and strategicmarggen. Evaluates K=3 fights with
+// bootstrap=true and the standard 150/100/50 sim schedule. Returns the same
+// OocCounterfactualResult fields used by Tier-B label averaging.
+static OocCounterfactualResult evaluateStrategicBranch(
+    GameContext gc, std::uint64_t branchSeed, const PathHistory &path)
+{
+    return finishOocCounterfactual(std::move(gc), /*sims=*/0, branchSeed, path,
+        g_strategicBranchFights, /*bootstrap=*/true,
+        /*probe=*/nullptr, /*stopAfterAct=*/0, &g_strategicBranchSims);
+}
+
+// ── Production V4 OOC step (frozen baseline) ───────────────────────────────
+// Executes exactly one OOC decision using the current frozen V4 gate stack.
+static void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent) {
+    const bool inRemove = gc.screenState == ScreenState::CARD_SELECT
+                          && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
+    using RT = search::GameAction::RewardsActionType;
+    if (gc.screenState == ScreenState::BATTLE) {
+        BattleContext bc; bc.init(gc);
+        agent.playoutBattle(bc);
+        bc.exitBattle(gc);
+    } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+        if (!oocActionNNPolicy(gc))
+            if (!oocMapRouteSearchPolicy(gc, agent))
+                if (!oocOnePlyMapPolicy(gc, agent))
+                    search::GameAction(chooseMapAction(gc)).execute(gc);
+    } else if (gc.screenState == ScreenState::EVENT_SCREEN) {
+        if (!oocActionNNPolicy(gc))
+            if (!oocOnePlyEventPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
+    } else if (gc.screenState == ScreenState::REST_ROOM) {
+        if (!oocActionNNPolicy(gc)) {
+            if (!oocOnePlyRestPolicy(gc, agent)) {
+                if (g_restWin && restWinPolicy(gc)) {}
+                else agent.stepOutOfCombatPolicy(gc);
+            }
+        }
+    } else if (gc.screenState == ScreenState::TREASURE_ROOM) {
+        if (!oocActionNNPolicy(gc))
+            if (!oocOnePlyTreasurePolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
+    } else if (gc.screenState == ScreenState::SHOP_ROOM) {
+        if (!oocActionNNPolicy(gc))
+            if (!oocShopBeamPolicy(gc))
+                if (!oocOnePlyShopPolicy(gc, agent)) shopVPolicy(gc);
+    } else if (inRemove) {
+        if (!oocActionNNPolicy(gc))
+            if (!oocShopBeamPolicy(gc)) removeSelectVPolicy(gc);
+    } else if (gc.screenState == ScreenState::REWARDS) {
+        auto &r = gc.info.rewardsContainer;
+        if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
+        else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
+        else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
+        else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+        else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+        else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
+        else {
+            if (!oocActionNNPolicy(gc))
+                if (!oocOnePlyCardRewardPolicy(gc, agent)) serverCardRewardPolicy(gc);
+        }
+    } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
+               && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
+        if (!oocActionNNPolicy(gc))
+            if (!oocOnePlyUpgradeSelectPolicy(gc, agent)) upgradeSelectWinPolicy(gc);
+    } else if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) {
+        if (!oocActionNNPolicy(gc))
+            if (!oocOnePlyBossRelicPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
+    } else {
+        agent.stepOutOfCombatPolicy(gc);
+    }
+}
+
 // ── Hidden-future marginalization diagnostic ───────────────────────────────
 // For each sampled OOC decision, evaluate every legal action under both:
 //   Regime F: fixed hidden world (current Tier-B style)
 //   Regime M: encounter-marginalized (resample hidden encounters per sample)
 // All actions in a sample share the same hidden world (CRN pairing).
 
-struct MargResult { double utility, hp, floor; bool bootstrap; };
+struct MargResult { double won, hp, floor, boot; };
 
-static MargResult finishMargCf(GameContext gc, int sims, std::uint64_t agentSeed,
-                                PathHistory path, int maxFights) {
-    // Use the same continuation as Tier-B strategicgen2
-    FutureFightProbe probe;
-    // K-fight schedule: 150, 100, 50 for 3 fights
-    std::vector<int> simsSeq;
-    if (maxFights == 3) simsSeq = {150, 100, 50};
-    else if (maxFights == 2) simsSeq = {200, 100};
-    else simsSeq = {(maxFights > 0 ? sims : 100)};
-    finishOocCounterfactual(std::move(gc), sims, agentSeed, path, maxFights, false,
-                            &probe, 0, &simsSeq, false);
-    // Utility = 10*won + hp (same as Tier-B)
-    double util = 0;
-    double hp = 0;
-    double fl = 0;
-    bool won = false;
-    if (!probe.fights.empty()) {
-        won = probe.fights.back().passed;
-        hp = probe.fights.back().hp;
-        fl = probe.fights.back().floor;
-    }
-    util = (won ? 10.0 : 0.0) + hp;
-    return {util, hp, fl, false};
+static MargResult finishMargCf(GameContext gc, std::uint64_t branchSeed,
+                                const PathHistory &path) {
+    OocCounterfactualResult r = evaluateStrategicBranch(
+        std::move(gc), branchSeed, path);
+    return {r.won, r.hp, r.floor, (double)r.bootstrapped};
 }
 
-static void strategicMargGen(int nSeeds, int outerSims, int branchSims, int nFights,
+static void strategicMargGen(int nSeeds, int outerSims, int /*branchSims*/, int /*nFights*/,
                              int H, int maxDecisions, const std::string &outFile,
                              long long seedOffset) {
     std::ofstream out(outFile);
-    out << "seed,decIdx,screen,gateKind,actionIdx,nCand,hiddenIdx,regime,"
-           "continuationSeed,hiddenSeed,utility,hp,floor,won"
-           ",v4ModelIdx,v4Margin\n";
+    out << "seed,decIdx,act,floor,screen,gateKind,actionIdx,nCand,hiddenIdx,regime,"
+           "continuationSeed,hiddenSeed,labelWon,labelHp,labelFloor,labelBootstrap,utility,"
+           "fallbackIdx,fallbackExact,v4ModelIdx,v4Margin,v4Threshold,v4Fired,v4ExecutedIdx,v4Override"
+           ",richState\n";
     out.flush();
     auto t0 = std::chrono::steady_clock::now();
     std::mutex outMtx;
     int totalDecisions = 0;
+    const double v4Threshold = g_oocStrategicMargin;
 
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
@@ -8217,44 +8272,93 @@ static void strategicMargGen(int nSeeds, int outerSims, int branchSims, int nFig
         PathHistory path;
         t_curPath = &path;
         int decIdx = 0;
+        int perRunMax = maxDecisions / std::max(1, nSeeds) + 5;
 
-        while (gc.outcome == GameOutcome::UNDECIDED && localDecisions < maxDecisions / std::max(1, nSeeds) + 5) {
+        while (gc.outcome == GameOutcome::UNDECIDED && localDecisions < perRunMax) {
             path.update(gc);
-            if (gc.screenState == ScreenState::BATTLE) {
-                BattleContext bc; bc.init(gc);
-                agent.playoutBattle(bc);
-                bc.exitBattle(gc);
-                continue;
-            }
-            // Only evaluate V4-owned gate screens
+            // ── Determine gate kind before stepping ──
             int screen = (int)gc.screenState;
-            // Gate-kind: map ScreenState to gate kind (1=EVENT,2=CARD,3=BOSS,5=TREASURE,6=REST,7=SHOP)
             int gateKind = 0;
             bool isOwned = false;
-            if (screen == 1) { gateKind = 1; isOwned = true; }       // EVENT
-            else if (screen == 2) { gateKind = 2; isOwned = true; }  // CARD_REWARD
-            else if (screen == 3) { gateKind = 3; isOwned = true; }  // BOSS_RELIC
-            else if (screen == 6) { gateKind = 5; isOwned = true; }  // TREASURE
-            else if (screen == 7) { gateKind = 6; isOwned = true; }  // REST
-            else if (screen == 8) { gateKind = 7; isOwned = true; }  // SHOP
-            if (!isOwned) {
-                agent.stepOutOfCombatPolicy(gc);
-                continue;
+            if (screen == 1) {
+                gateKind = 1; isOwned = true;  // EVENT
+            } else if (screen == 2) {
+                // REWARDS: only owned if card reward is pending
+                auto &r = gc.info.rewardsContainer;
+                if (r.cardRewardCount > 0) {
+                    // After auto-collection, card reward is the decision
+                    gateKind = 2; isOwned = true;  // CARD_REWARD
+                }
+            } else if (screen == 3) {
+                gateKind = 3; isOwned = true;  // BOSS_RELIC
+            } else if (screen == 4) {
+                // CARD_SELECT: only UPGRADE is owned
+                if (gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
+                    gateKind = 4; isOwned = true;  // UPGRADE_SELECT
+                }
+            } else if (screen == 6) {
+                gateKind = 5; isOwned = true;  // TREASURE
+            } else if (screen == 7) {
+                gateKind = 6; isOwned = true;  // REST
+            } else if (screen == 8) {
+                gateKind = 7; isOwned = true;  // SHOP
             }
-            // Get legal actions
-            auto actions = search::GameAction::getAllActionsInState(gc);
-            if (actions.size() < 2) {
-                agent.stepOutOfCombatPolicy(gc);
+
+            if (!isOwned) {
+                stepFrozenV4Ooc(gc, agent);
                 continue;
             }
 
-            // Deterministic continuation seeds per decision (candidate-independent)
-            std::uint64_t baseSeed = seed ^ ((std::uint64_t)decIdx * 0x9e3779b97f4a7c15ULL);
-            if (!baseSeed) baseSeed = 1;
+            // Snapshot parent state before any action
+            GameContext pre = detachedCounterfactualCopy(gc);
+            PathHistory prePath = path;
+            auto actions = search::GameAction::getAllActionsInState(gc);
+            if (actions.size() < 2) {
+                stepFrozenV4Ooc(gc, agent);
+                continue;
+            }
+            int actNum = gc.act, floorNum = gc.floorNum;
+            std::string stateRow = richRow(pre, prePath);  // 1017-column rich state
+
+            // ── Exact fallback identification via fingerprint ──
+            int fallbackIdx = -1;
+            int fallbackExact = 0;
+            {
+                GameContext fbGc = detachedCounterfactualCopy(pre);
+                // Execute the actual frozen fallback (not V4 gate) for this screen
+                if (screen == 1) {           // EVENT
+                    agent.stepOutOfCombatPolicy(fbGc);
+                } else if (screen == 2) {    // REWARDS
+                    serverCardRewardPolicy(fbGc);
+                } else if (screen == 3) {    // BOSS_RELIC
+                    if (g_bossRelicV) bossRelicVPolicy(fbGc);
+                    else agent.stepOutOfCombatPolicy(fbGc);
+                } else if (screen == 4) {    // CARD_SELECT/UPGRADE
+                    upgradeSelectWinPolicy(fbGc);
+                } else if (screen == 6) {    // TREASURE
+                    agent.stepOutOfCombatPolicy(fbGc);
+                } else if (screen == 7) {    // REST
+                    if (g_restWin && restWinPolicy(fbGc)) {}
+                    else agent.stepOutOfCombatPolicy(fbGc);
+                } else if (screen == 8) {    // SHOP
+                    shopVPolicy(fbGc);
+                }
+                auto fbFp = stratFingerprint(fbGc);
+                // Find which action produces this fingerprint
+                for (int ai = 0; ai < (int)actions.size(); ++ai) {
+                    GameContext testGc = detachedCounterfactualCopy(pre);
+                    actions[ai].execute(testGc);
+                    if (stratFingerprint(testGc) == fbFp) {
+                        if (fallbackIdx < 0) { fallbackIdx = ai; fallbackExact = 1; }
+                        else { fallbackExact = 0; break; }
+                    }
+                }
+            }
 
             // ── V4 predictions ──
             int v4BestIdx = -1;
             double v4Margin = 0;
+            bool v4Fired = false;
             if (g_oocStrategicTokNet.ok) {
                 TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
                 double bestV4 = -1e100, secondV4 = -1e100;
@@ -8264,61 +8368,78 @@ static void strategicMargGen(int nSeeds, int outerSims, int branchSims, int nFig
                     const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
                     int entType, entId; float goldGePrice;
                     tokEntity(gc, actions[ai], entType, entId, goldGePrice);
-                    const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
-                                           entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+                    const float entT[4] = {entType==0?1.f:0.f, entType==1?1.f:0.f,
+                                           entType==2?1.f:0.f, entType==3?1.f:0.f};
                     const double v = g_oocStrategicTokNet.predictActionValue(
                         ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                        actions[ai].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+                        actions[ai].bits, cats, actionType, screen, entT, entId, goldGePrice);
                     if (v > bestV4) { secondV4 = bestV4; bestV4 = v; v4BestIdx = ai; }
                     else if (v > secondV4) secondV4 = v;
                 }
                 v4Margin = bestV4 - secondV4;
+                v4Fired = v4Margin >= v4Threshold;
             }
+            int v4ExecutedIdx = (v4Fired && v4BestIdx >= 0) ? v4BestIdx : fallbackIdx;
+            int v4Override = (fallbackExact == 1 && v4Fired && v4BestIdx >= 0
+                              && v4BestIdx != fallbackIdx) ? 1 : 0;
+
+            // ── Seeds: same continuation seed for F and M in sample h ──
+            std::uint64_t baseSeed = seed ^ ((std::uint64_t)decIdx * 0x9e3779b97f4a7c15ULL);
+            if (!baseSeed) baseSeed = 1;
 
             // ── Regime F: fixed hidden world ──
             for (int h = 0; h < H; ++h) {
                 std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
                 if (!contSeed) contSeed = 1;
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                    GameContext branch = detachedCounterfactualCopy(gc);
+                    GameContext branch = detachedCounterfactualCopy(pre);
                     actions[ai].execute(branch);
-                    MargResult r = finishMargCf(std::move(branch), branchSims, contSeed, path, nFights);
-                    local << seed << ',' << decIdx << ',' << screen << ',' << gateKind << ',' << ai << ','
+                    MargResult r = finishMargCf(std::move(branch), contSeed, prePath);
+                    double util = 10.0 * r.won + r.hp;
+                    local << seed << ',' << decIdx << ',' << actNum << ',' << floorNum
+                          << ',' << screen << ',' << gateKind << ',' << ai << ','
                           << actions.size() << ',' << h << ",fixed," << contSeed << ",0,"
-                          << r.utility << ',' << r.hp << ',' << r.floor << ','
-                          << (r.utility > 5.0 ? 1 : 0)
-                          << ',' << v4BestIdx << ',' << v4Margin << '\n';
+                          << r.won << ',' << r.hp << ',' << r.floor << ',' << r.boot
+                          << ',' << util << ',' << fallbackIdx << ',' << fallbackExact
+                          << ',' << v4BestIdx << ',' << v4Margin << ',' << v4Threshold
+                          << ',' << (v4Fired?1:0) << ',' << v4ExecutedIdx << ',' << v4Override
+                          << ',' << stateRow << '\n';
                 }
             }
 
             // ── Regime M: encounter-marginalized ──
             for (int h = 0; h < H; ++h) {
-                std::uint64_t hiddenSeed = baseSeed ^ ((std::uint64_t)(h + H) * 0xbf58476d1ce4e5b9ULL);
-                std::uint64_t contSeed  = baseSeed ^ ((std::uint64_t)(h + 2*H) * 0x9e3779b97f4a7c15ULL);
-                if (!hiddenSeed) hiddenSeed = 1;
+                // SAME continuation seed as Regime F
+                std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
+                std::uint64_t hiddenSeed = baseSeed ^ ((std::uint64_t)(h + H) * 0x9e3779b97f4a7c15ULL);
                 if (!contSeed) contSeed = 1;
-                // Same hidden world for all actions in this sample
-                GameContext hiddenBase = detachedCounterfactualCopy(gc);
+                if (!hiddenSeed) hiddenSeed = 1;
+                GameContext hiddenBase = detachedCounterfactualCopy(pre);
                 resampleRemainingActEncounters(hiddenBase, hiddenSeed);
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
                     GameContext branch = detachedCounterfactualCopy(hiddenBase);
                     actions[ai].execute(branch);
-                    MargResult r = finishMargCf(std::move(branch), branchSims, contSeed, path, nFights);
-                    local << seed << ',' << decIdx << ',' << screen << ',' << gateKind << ',' << ai << ','
+                    MargResult r = finishMargCf(std::move(branch), contSeed, prePath);
+                    double util = 10.0 * r.won + r.hp;
+                    local << seed << ',' << decIdx << ',' << actNum << ',' << floorNum
+                          << ',' << screen << ',' << gateKind << ',' << ai << ','
                           << actions.size() << ',' << h << ",marg," << contSeed << ','
-                          << hiddenSeed << ',' << r.utility << ',' << r.hp << ',' << r.floor << ','
-                          << (r.utility > 5.0 ? 1 : 0)
-                          << ',' << v4BestIdx << ',' << v4Margin << '\n';
+                          << hiddenSeed << ','
+                          << r.won << ',' << r.hp << ',' << r.floor << ',' << r.boot
+                          << ',' << util << ',' << fallbackIdx << ',' << fallbackExact
+                          << ',' << v4BestIdx << ',' << v4Margin << ',' << v4Threshold
+                          << ',' << (v4Fired?1:0) << ',' << v4ExecutedIdx << ',' << v4Override
+                          << ',' << stateRow << '\n';
                 }
             }
 
             ++decIdx;
             ++localDecisions;
-            agent.stepOutOfCombatPolicy(gc);
+            stepFrozenV4Ooc(gc, agent);
         }
         t_curPath = nullptr;
 
-        #pragma omp critical(marg_write)
+        #pragma omp critical(marg_write2)
         {
             out << local.str(); out.flush();
             totalDecisions += localDecisions;
