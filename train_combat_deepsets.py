@@ -32,8 +32,8 @@ from sklearn.model_selection import GroupShuffleSplit
 from sklearn.metrics import r2_score
 
 # ── constants matching CombatValueNet.cpp offsets ──
-_NBASE  = 27    # ascension..potions
-_NPOW   = 26    # pDemonForm..pFrail
+_NBASE  = 26    # ascension..potions
+_NPOW   = 24    # pDemonForm..pFrail
 _NREL   = 128   # r0..r127
 _NCARD  = 371   # card IDs per zone
 _NZONE  = 4     # hand, draw, discard, exhaust
@@ -155,9 +155,10 @@ class CombatDeepSet(nn.Module):
         ms = ms * mon_alive.unsqueeze(-1)
         cm = ms.sum(dim=1) / mon_alive.sum(dim=1, keepdim=True).clamp(min=1)
 
-        # ── scalars: z-normalize → linear ──
+        # ── scalars: z-normalize → clamp → linear ──
         sc = x[:, _SCALAR_IDXS]
         sc = (sc - self.scalar_mean) * self.scalar_inv
+        sc = torch.clamp(sc, -5.0, 5.0)
         cs = sc @ self.scalar_w.t() + self.scalar_b
         cs = torch.relu(cs)
 
@@ -394,17 +395,49 @@ def write_parity_csv(model, X_va, y_va, feat_cols, path, y_mean, y_std, DEV):
         pv = model(X_va.to(DEV)).cpu()
         pv_raw = pv * y_std + y_mean
 
-    # Take first 200 rows
     n = min(200, len(X_va))
     X_sample = X_va[:n].numpy()
     pred_sample = pv_raw[:n].numpy()
 
-    # Write CSV with canonical feature names
+    # Use canonical 1766 feature names matching combatFeatureNames()
+    canon_names = _build_canonical_names()
+
     with open(path, 'w') as f:
-        f.write(','.join(feat_cols) + ',pyPred\n')
+        f.write(','.join(canon_names) + ',pyPred\n')
         for i in range(n):
-            row = ','.join(str(int(v)) if v == int(v) else f'{v:.6g}' for v in X_sample[i, :len(feat_cols)])
+            row = ','.join(str(int(v)) if v == int(v) else f'{v:.6g}' for v in X_sample[i])
             f.write(f'{row},{pred_sample[i]:.6g}\n')
+
+
+def _build_canonical_names():
+    """Build the full 1766 canonical feature names matching combatFeatureNames()."""
+    names = []
+    base = ["ascension","encounter","turn","curHp","maxHp","block","energy",
+            "strength","dexterity","focus","artifact","monAlive","monSumHp",
+            "monMaxHp","monSumBlock","monSumStr","monSumArt",
+            "hand","draw","discard","exhaust","nAtkAvail","nSklAvail",
+            "nPowAvail","nOtherAvail","potions"]
+    names.extend(base)
+    powers = ["pDemonForm","pMetallicize","pFeelNoPain","pBarricade","pPlatedArmor",
+              "pRupture","pCombust","pDarkEmbrace","pBrutality","pFireBreath",
+              "pJuggernaut","pCorruption","pVigor","pMayhem","pPanache",
+              "pNoxious","pFlameBarrier","pThorns","pRegen","pBuffer",
+              "pIntangible","pVulnerable","pWeak","pFrail"]
+    names.extend(powers)
+    for i in range(128): names.append(f"r{i}")
+    for i in range(371): names.append(f"hd{i}")
+    for i in range(371): names.append(f"dr{i}")
+    for i in range(371): names.append(f"ds{i}")
+    for i in range(371): names.append(f"ex{i}")
+    names.extend(["incomingDmg","nAttacking"])
+    for i in range(5):
+        names.extend([f"m{i}Id",f"m{i}Hp",f"m{i}Block",f"m{i}Str",
+                      f"m{i}Intent",f"m{i}Atk",f"m{i}Vuln",f"m{i}Weak",f"m{i}Poison"])
+    for i in range(44): names.append(f"pot{i}")
+    names.extend(["gold","potionCap","cardsPlayed","attacksPlayed","skillsPlayed"])
+    names.extend(["happyFlowerCtr","incenseBurnerCtr","inkBottleCtr","inserterCtr",
+                  "nunchakuCtr","penNibCtr","sundialCtr","panacheCtr"])
+    return names
 
 
 if __name__ == "__main__":
