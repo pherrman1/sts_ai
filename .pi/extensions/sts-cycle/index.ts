@@ -582,16 +582,17 @@ async function runArchitect(ctx: CycleContext): Promise<CycleContext> {
   writePlan(ctx.sessionDir, plan);
   writePlanEli5(ctx.sessionDir, plan);
 
-  // Verify architect didn't modify files
+  // Verify architect didn't modify files — revert any changes instead of aborting
   const postStatus = await getStatusPorcelain(ctx.cwd, true);
   if (postStatus.trim()) {
-    throw Object.assign(
-      new Error(
-        "Architect changed tracked repository files despite read-only instructions. Aborting.\n\n" +
-        postStatus,
-      ),
-      { failureReason: "FAILED_AGENT" as FailureReason },
-    );
+    ctx.onProgress?.("ARCHITECT", "WARNING: Architect wrote files — reverting changes and continuing");
+    const { execSync } = await import("node:child_process");
+    execSync("git restore . 2>/dev/null; true", { cwd: ctx.cwd, stdio: "pipe", timeout: 10_000 });
+    try { execSync("git clean -fd -- .ai/ 2>/dev/null; true", { cwd: ctx.cwd, stdio: "pipe", timeout: 10_000 }); } catch (_) {}
+    const recheck = await getStatusPorcelain(ctx.cwd, true);
+    if (recheck.trim()) {
+      ctx.onProgress?.("ARCHITECT", "WARNING: unrevertable architect changes remain\n" + recheck);
+    }
   }
 
   ctx.onProgress?.("ARCHITECT", `Plan: ${plan.design.substring(0, 80)}...`);

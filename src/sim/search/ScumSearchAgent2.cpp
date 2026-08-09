@@ -444,11 +444,11 @@ void search::ScumSearchAgent2::stepOutOfCombatPolicy(GameContext &gc) {
             break;
 
         case ScreenState::TREASURE_ROOM: {
-            bool takeChest = true;
+            bool openChest = true;
             if (gc.relics.has(RelicId::CURSED_KEY)) {
-                takeChest = gc.info.chestSize == ChestSize::LARGE;
+                openChest = gc.info.chestSize != ChestSize::LARGE;
             }
-            takeAction(gc, takeChest);
+            takeAction(gc, !openChest);
             break;
         }
 
