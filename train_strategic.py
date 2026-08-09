@@ -34,6 +34,8 @@ import pandas as pd
 import torch
 from torch import nn
 
+from strategic_split import SPLIT_VERSION, seed_disjoint_split
+
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_200.csv"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "selfplay/models/ooc_strategic"
 # Map-DAG encoder (5.3.2): optional third CLI arg (or STRAT_MAPS_CSV) is the
@@ -131,16 +133,17 @@ valid_pol = one_chosen & (chosen_act != -1)
 print(f"{NG} decisions, {int(one_chosen.sum())} groups with exactly one chosen row "
       f"({int(valid_pol.sum())} with a valid policy action)", flush=True)
 
-# Grouped 80/20 split, shuffling decision groups.
-rng = np.random.default_rng(0)
-order_g = rng.permutation(NG)
-cut = max(1, int(0.8 * NG))
-tr_mask = np.zeros(NG, bool)
-tr_mask[order_g[:cut]] = True
-va_groups = order_g[cut:]
+# Seed-disjoint 80/20 split; decisions remain the batching unit.
+tr_rows, train_seeds, val_seeds = seed_disjoint_split(df.seed.to_numpy(), random_seed=0)
+tr_mask = tr_rows[block_start].copy()
+if not np.array_equal(tr_rows, tr_mask[grp_ids]):
+    raise AssertionError("seed split crossed a decision group")
+va_groups = np.flatnonzero(~tr_mask)
 if len(va_groups) == 0:
     raise ValueError("need held-out decision groups")
-tr_rows = tr_mask[grp_ids]
+print(f"train seeds ({len(train_seeds)}): {train_seeds.tolist()}", flush=True)
+print(f"validation seeds ({len(val_seeds)}): {val_seeds.tolist()}", flush=True)
+print(f"seed intersection: {np.intersect1d(train_seeds, val_seeds).tolist()}", flush=True)
 print(f"train: {int(tr_rows.sum()):,} rows / {int(tr_mask.sum()):,} groups, "
       f"val: {int((~tr_rows).sum()):,} rows / {len(va_groups):,} groups", flush=True)
 
@@ -278,6 +281,7 @@ for f in (CSV, os.path.abspath(__file__)):
     except OSError:
         pass
 fp.update(str(nrows).encode()); fp.update(str(NSTATE).encode())
+fp.update(SPLIT_VERSION.encode())
 fp.update(mean.tobytes()); fp.update(inv.tobytes())
 fp_hex = fp.hexdigest()
 old_fp = None

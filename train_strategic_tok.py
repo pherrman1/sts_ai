@@ -35,6 +35,8 @@ import torch
 from torch import nn
 
 from strategic_tok_net import Net, NCARD, NREL, NPOT, MAXD, MAXR, MAXP, NGLOB, NRAW
+from strategic_split import SPLIT_VERSION, seed_disjoint_split
+from strategic_tok_contract import build_globals, make_layout
 
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_tierb.csv"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "selfplay/models/ooc_strategic_tok"
@@ -93,6 +95,7 @@ NSTATE = wi - ci - 1
 if NSTATE != 1017:
     raise ValueError(f"expected the 1017-col rich state block, got {NSTATE} columns")
 state_cols = list(hdr[ci + 1:wi])
+contract_layout = make_layout(state_cols)
 re_d = re.compile(r"^d(\d+)$")
 re_u = re.compile(r"^u(\d+)$")
 re_r = re.compile(r"^r(\d+)$")
@@ -147,16 +150,17 @@ valid_pol = one_chosen & (chosen_act != -1)
 print(f"{NG} decisions, {int(one_chosen.sum())} groups with exactly one chosen row "
       f"({int(valid_pol.sum())} with a valid policy action)", flush=True)
 
-# Grouped 80/20 split, shuffling decision groups.
-rng = np.random.default_rng(0)
-order_g = rng.permutation(NG)
-cut = max(1, int(0.8 * NG))
-tr_mask = np.zeros(NG, bool)
-tr_mask[order_g[:cut]] = True
-va_groups = order_g[cut:]
+# Seed-disjoint 80/20 split; decisions remain the batching unit.
+tr_rows, train_seeds, val_seeds = seed_disjoint_split(df.seed.to_numpy(), random_seed=0)
+tr_mask = tr_rows[block_start].copy()
+if not np.array_equal(tr_rows, tr_mask[grp_ids]):
+    raise AssertionError("seed split crossed a decision group")
+va_groups = np.flatnonzero(~tr_mask)
 if len(va_groups) == 0:
     raise ValueError("need held-out decision groups")
-tr_rows = tr_mask[grp_ids]
+print(f"train seeds ({len(train_seeds)}): {train_seeds.tolist()}", flush=True)
+print(f"validation seeds ({len(val_seeds)}): {val_seeds.tolist()}", flush=True)
+print(f"seed intersection: {np.intersect1d(train_seeds, val_seeds).tolist()}", flush=True)
 print(f"train: {int(tr_rows.sum()):,} rows / {int(tr_mask.sum()):,} groups, "
       f"val: {int((~tr_rows).sum()):,} rows / {len(va_groups):,} groups", flush=True)
 
@@ -306,6 +310,7 @@ for f in (CSV, os.path.abspath(__file__)):
     except OSError:
         pass
 fp.update(str(nrows).encode()); fp.update(str(NFILE).encode())
+fp.update(SPLIT_VERSION.encode())
 fp_hex = fp.hexdigest()
 old_fp = None
 if os.path.exists(fp_file):
@@ -356,6 +361,9 @@ for chunk in pd.read_csv(CSV, usecols=state_cols, chunksize=CHUNK, dtype=np.floa
     # canTakeEliteKey: fmCElite (c col 1009) replaces removed remElites (c col 19)
     g[:, NRAW + 4] = ((c_m[:, 1009] > 0) & ~((c_m[:, 9] > 0) & (c_m[:, 10] > 0) & (c_m[:, 11] > 0))).astype(np.float64)
     g[:, NRAW + 5] = (c_m[:, 1008] <= 3.0).astype(np.float64)         # bossNear (fmDBoss, c col 1008)
+    if cnt == 0 and len(c_m):
+        if not np.array_equal(g, build_globals(c_m, contract_layout)):
+            raise AssertionError("V4 glob construction disagrees with the shared contract")
     mean += g.sum(0)
     sumsq += (g * g).sum(0)
     cnt += int(m.sum())
