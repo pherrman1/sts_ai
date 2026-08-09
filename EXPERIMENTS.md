@@ -7253,3 +7253,177 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
 - **Open:** Full 128/256-seed gate to tighten CIs; 3k win-point
   measurement; investigation into why the skewfix V4 gates reverse sign
   on S3+vnet (the §126 V4 model showed +12.5pp on S3+vnet at Act 3).
+
+## §154 V_combat training-vs-deployment distribution shift: DIAGNOSIS — mismatch is WEAK, do NOT build relabeling pipeline (2026-08-09, local)
+
+- **Question:** Are ordinary `combatgen` per-decision combat snapshots
+  representative of the MCTS leaf states where `CombatValueNet` is queried
+  during Searcher3 deployment?
+
+- **Method:** Instrumented `CombatValueNet::predict()` with a thread-local
+  hook (`STS_VNET_QUERY_LOG=<path>`) that logs the canonical feature vector
+  of every VNet query during Searcher3 search. Collected two populations:
+  - A: 287k combatgen trajectory states (seeds 0–1460, `build/vcombat_honest.csv`)
+  - B: 163k deployed VNet-query states (seeds 200000–200047, S3 fair,
+    belief=off, chain=off, 64p, 1k sims, A0, `build/vnet_query_deploy_b.csv`)
+  Trained an XGBoost domain classifier (200 trees, max_depth=6) to distinguish
+  A from B using only the 1,766 canonical combat features. **Split by seed,
+  not by row** (70/30 per population, stratified). Zero behavior change when
+  `STS_VNET_QUERY_LOG` is unset (verified: identical outcomes on 8-seed smoke).
+
+- **ROC-AUC: 0.56** (XGBoost, held-out seeds). Confirmed with SGD logistic
+  regression (AUC 0.24 — inverted ranking, equally poor discriminative power).
+  The classifier operates barely above chance and cannot reliably distinguish
+  individual combatgen states from deployed VNet-query states.
+
+- **Characterization:** Deploy states are at slightly higher turns (3.7 vs 2.1),
+  have more monster HP remaining (192 vs 68 sum), and more incoming damage
+  (17.7 vs 9.2). Top distinguishing features are relic presence flags (r26
+  Happy Flower, r51, r6, r4), reflecting later-turn relic accumulation — but
+  the effect sizes are small relative to within-class variance. Deploy queries
+  are spread broadly across HP bands (46% >70% HP, 43% 30-70%, 12% <30%)
+  and turns (35% turns 3-4, 23% turns 5-7, 21% turn 2).
+
+- **VNet predictions on deploy states:** mean 32.9, std 23.5 — closely
+  matches the combatgen label distribution (mean 36.4, std 24.1). No evidence
+  of systematic extrapolation or pathological behavior.
+
+- **Verdict: Recommendation A — distribution mismatch is small; do NOT
+  build expensive deployment-leaf relabeling pipeline.** The suspected
+  mismatch between training (trajectory snapshots) and deployment (MCTS
+  leaf states) is NOT the primary issue. The §148 hyperparameter-tuning
+  improvement (major online gain with flat offline RMSE) more likely
+  reflects regularization benefits than a distribution-shift fix.
+
+- **Artifacts:** `build/vnet_query_deploy_b.csv` (163k rows),
+  `build/vnet_shift_report.json`, `tools/vnet_distribution_shift.py`,
+  `docs/knowledge-base/experiments/vnet-distribution-shift-2026-08-09.md`.
+
+- **Code:** `STS_VNET_QUERY_LOG` env var + `STS_VNET_QUERY_SAMPLE`;
+  hook in `CombatValueNet::predict()`; thread-local buffered CSV logging
+  in `apps/one_combat.cpp`. All changes additive and gated — behavior
+  byte-identical when the env var is unset.
+
+## §155 Corrected honest V4 on frozen S3 + 7k-VNet Act-3 stack: INCONCLUSIVE due reproducibility failure (2026-08-09)
+
+- **Question:** Does the corrected honest V4 token gate remain positive on the
+  current Searcher3 + 7k combat-value stack under the explicit Act-3 objective?
+- **Configuration:** git `c8d438a5a140d023ca348a334fa4ac467d1bd8e5`; A0;
+  `STS_FAIR=1`, Searcher3, `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`,
+  `STS_S3_LIVE_VALID=1`, 64 particles, 1,000 sims/decision, 12 threads;
+  `STS_VNET=build/v_combat_7k_tuned.txt`, alpha 0.3;
+  `STS_COLLECT_KEYS=0`, `STS_STOP_AFTER_ACT=3`; paired seeds 126700–126763.
+  V4 artifact `selfplay/models/ooc_strategic_tok_final.native`, SHA256
+  `e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`;
+  VNet SHA256 `ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c`.
+- **Control:** all V4 OOC gates off, 37.5% (24/64), mean floor 42.6,
+  mean end HP 18.4.
+- **Candidate:** corrected V4 gates on, all REST/EVENT/SHOP/TREASURE/
+  BOSS_RELIC flags on, margin 1.0, 14.1% (9/64), mean floor 30.0,
+  mean end HP 42.8.
+- **Paired result (not qualified):** first control/candidate comparison was
+  −23.4pp, bootstrap 95% CI [−35.9, −10.9]pp; floor −12.5
+  [−16.8, −8.3], HP +24.4, discordant 21/64. The candidate in that run had
+  `STS_OOC_STRATEGIC_TRACE` enabled, while the ablation candidate did not.
+- **Reproducibility failure:** the same no-trace control command and seed block
+  later produced 37.5% (24/64) and 7.8% (5/64), with the same 1k/64p stack.
+  The no-trace ablation full arm produced 15.6% (10/64); the earlier trace-on
+  candidate produced 14.1% (9/64). These runs cannot establish a causal delta.
+  Investigate thread/RNG/global-state nondeterminism before using this gate.
+- **Trace:** 2,375 gate opportunities across 64 runs; 1,228 owned (51.7%).
+  Fire rates: EVENT 57.1%, REWARDS 46.9%, BOSS_RELIC 78.9%, CARD_SELECT
+  21.3%, TREASURE 51.9%, REST 58.2%, SHOP 56.1%.
+- **Artifacts:** `build/ooc_v4_s3_act3_off_64_1786290767.csv`,
+  `build/ooc_v4_s3_act3_on_64_1786290767.csv`, corresponding `.meta.json`
+  files and logs, `build/ooc_v4_s3_act3_64_1786290767_paired.txt`, and
+  `build/ooc_v4_s3_act3_on_64_1786290767_trace.csv`.
+- **Verdict:** **INCONCLUSIVE / invalidated as a causal gate** until repeated
+  controls are reproducible. The observed negative/positive deltas are
+  diagnostic only. The earlier S2-fair +15.6pp result still does not transfer
+  cleanly, but no model-quality conclusion is permitted from §155. Audit
+  thread/RNG/global-state determinism before further policy interpretation;
+  Act-4 objective and per-screen traces remain open.
+
+## §156 Per-screen V4 ablation diagnostic on same S3+7k-VNet Act-3 block: not qualified (2026-08-09)
+
+- **Configuration:** same A0, 1k sims, 64 particles, S3 belief/chain off,
+  live-valid on, 7k VNet alpha 0.3, `STS_COLLECT_KEYS=0`,
+  `STS_STOP_AFTER_ACT=3`, seeds 126700–126763; corrected V4 full stack at
+  margin 1.0. The script explicitly uses the V4 artifact and records JSON
+  sidecars. Results are diagnostic because §155 showed repeated-control
+  non-reproducibility.
+- **Full stack:** 10/64 (15.6%), mean floor 30.7, mean HP 48.8.
+- **Minus REST:** 14/64 (21.9%), paired full-minus-ablation +6.2pp,
+  CI [−4.7,+17.2]pp; floor +2.5.
+- **Minus EVENT:** 11/64 (17.2%), +1.6pp, CI [−6.2,+9.4]pp; floor +2.0.
+- **Minus SHOP:** 11/64 (17.2%), +1.6pp, CI [−9.4,+10.9]pp; floor +2.5.
+- **Minus TREASURE:** 16/64 (25.0%), +9.4pp, CI [+0.0,+18.8]pp;
+  floor +3.9.
+- **Minus BOSS RELIC:** 9/64 (14.1%), −1.6pp, CI [−10.9,+7.8]pp;
+  floor +2.7.
+- **Interpretation:** treasure and rest are the largest apparent contributors,
+  but these effects are not causal/promotion-qualified until exact repeated
+  controls are stable. Artifacts are under
+  `build/ooc_v4_s3_act3_ablate_64_1786291107/` plus the paired reports.
+
+## §157 DeepSets combat VNet parity — RMSE 8.66, C++ parity verified, online 0% win (2026-08-09)
+
+- **What:** implemented a DeepSets neural combat value net
+  (`train_combat_deepsets.py`, `combat_deepsets_v1` native format in
+  `CombatValueNet.cpp`). Architecture: combat state decomposed into
+  permutation-invariant sets — cards (4 zones × 371 IDs, shared embedding
+  table, sum-pool per zone), relics (128, sum-pool over present), potions
+  (44, count-weighted sum), monsters (5 slots × 9 feat, per-slot 2-layer
+  MLP → mean-pool over alive), encounter (ID embedding), scalars (68 features
+  z-normalized → linear → ReLU). All pooled vectors concatenated → MLP
+  (384 → 128 → 64 → 1). 90K params. Trained on honest vcombat data (287K
+  rows, 30 epochs, AdamW, MSE on endHP, critical-state weighting).
+- **Parity:** C++ vs Python max|diff| < 0.001 (vnettest, 200 rows).
+  All 15 CTests pass.
+- **Offline:** val RMSE 8.66 (XGBoost 7.83), R² 0.87. On trajectory
+  validation states, XGB/DS Pearson 0.974, Spearman 0.972 — the model
+  works well in-distribution.
+- **Online gate:** 0% win (0/32) at S3 fair −belief−chain, 1k sims, 64p,
+  α=0.3, no gate stack — **worse than no VNet (12.5%)**. XGBoost at 31.2%
+  on the same block. `build/dsgate_*.log` on sts-test.
+- **Verdict:** ❌ DeepSets in current form is actively harmful. Follow-up
+  §158 diagnoses the root cause as numerical collapse on OOD MCTS leaf
+  states.
+- **Artifacts:** `train_combat_deepsets.py`, `build/v_combat_deepsets.txt`,
+  `build/v_combat_deepsets_val.csv`, `include/sim/search/CombatValueNet.h`
+  (isDeepSets + ds* fields), `src/sim/search/CombatValueNet.cpp` (format
+  parser + inference).
+
+## §158 MCTS leaf-state diagnosis: DeepSets numerically collapses on OOD search states (2026-08-09)
+
+- **What:** extended `STS_VNET_QUERY_LOG` (existing opt-in VNet tracing)
+  with `parentObsHash` and `depth` columns, enabling sibling-grouped
+  MCTS leaf-state analysis. Collected 1M leaf evaluations under XGBoost-
+  guided S3 search (8 seeds, 1k sims, 64p), sampled 50K for offline
+  comparison. Evaluated both XGBoost and DeepSets on the identical states.
+- **Key result:** On MCTS leaf states, XGB/DS Pearson drops from 0.974
+  (trajectory) to **0.098**. DeepSets mean prediction = **−34 million HP**
+  (XGBoost = 27 HP). DeepSets produces NaN-range values on many states.
+- **All extreme disagreements** (|Δ| = 40–430 million HP) involve a single
+  encounter: **TRANSIENT** (encounter 44, monSumHp ~950–980). The scalar
+  z-normalizer was calibrated on training data (monSumHp mean ~50); MCTS
+  leaf states with monSumHp ~970 produce z-scores of 20+ standard deviations,
+  causing unbounded activations in the scalar encoder that cascade through
+  the MLP.
+- **Distribution shift confirmed:** a simple RandomForest classifier
+  distinguishes trajectory vs MCTS states with **95% accuracy**.
+  Top shifted features: rare card/relic IDs appearing in counterfactual
+  branches, plus numerical extremes on boss/special encounters.
+- **Sibling analysis:** top-child agreement 0.7%, pairwise agreement 58%,
+  DS reversal rate 48.5% at XGB margin ≥1 HP — all dominated by the
+  numerical collapse rather than subtle ranking errors.
+- **Root cause:** numerical instability in the scalar z-normalizer on
+  out-of-distribution feature values. The model architecture is sound
+  (works well in-distribution) but lacks input robustness.
+- **Recommended fix:** clamp z-scores to [−5, +5] before the scalar
+  encoder (one line in Python + C++).
+- **Artifacts:** `tools/analyze_mcts_leaves.py`,
+  `build/vnet_mcts_leaves_xgb.csv` (1M rows, 3.4GB),
+  `build/vnet_mcts_leaves_50k.csv` (50K sample),
+  `build/mcts_diag.json`. Decision log:
+  `docs/knowledge-base/decision-log/2026-08-09-deepsets-combat-vnet.md`.
