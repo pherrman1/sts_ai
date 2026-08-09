@@ -388,7 +388,10 @@ unless STS_PVNET_VALUE_ONLY=1.
   is always restored. On the full dataset this saves ~20–25% wall time
   (stops around epoch 30–36). On smaller datasets where the model hasn't
   converged, PATIENCE correctly does not trigger. Set `STRAT_PATIENCE=0`
-  to restore the old unlimited-epochs behavior.
+  to restore the old unlimited-epochs behavior. Both strategic trainers accept
+  `STRAT_SELECT_METRIC=val_pol_ce` (default, minimize) or `q_top1` (maximize)
+  for best-checkpoint selection; this does not establish either metric as an
+  online gameplay proxy.
 - Tracked artifacts under `build/` coexist with ignored build output; path
   location does not indicate whether an artifact was generated, deployed, or
   benchmarked.

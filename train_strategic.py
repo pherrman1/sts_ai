@@ -73,6 +73,9 @@ THREADS = int(os.environ.get("OMP_NUM_THREADS", "8"))
 # Stop after STRAT_PATIENCE epochs without an improvement in held-out
 # val_pol_ce (0 = never stop early).  Useful on slow CPU-only machines.
 PATIENCE = int(os.environ.get("STRAT_PATIENCE", "0"))
+SELECT_METRIC = os.environ.get("STRAT_SELECT_METRIC", "val_pol_ce")
+if SELECT_METRIC not in {"val_pol_ce", "q_top1"}:
+    raise ValueError("STRAT_SELECT_METRIC must be val_pol_ce or q_top1")
 # Default to CUDA when available; STRAT_DEVICE only overrides (e.g. "cpu").
 DEVICE = os.environ.get("STRAT_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu")
 if not DEVICE.startswith("cuda"):
@@ -113,6 +116,9 @@ for ch in chunks:
     small.append(ch)
 df = pd.concat(small, ignore_index=True)
 del small
+# Group offsets below require all rows for a (seed, decIdx) decision to be
+# contiguous. CSV production order is not a contract, so canonicalize it here.
+df = df.sort_values(["seed", "decIdx"], kind="stable").reset_index(drop=True)
 nrows = len(df)
 print(f"{nrows:,} rows, {df.seed.nunique()} seeds", flush=True)
 
@@ -146,6 +152,7 @@ print(f"validation seeds ({len(val_seeds)}): {val_seeds.tolist()}", flush=True)
 print(f"seed intersection: {np.intersect1d(train_seeds, val_seeds).tolist()}", flush=True)
 print(f"train: {int(tr_rows.sum()):,} rows / {int(tr_mask.sum()):,} groups, "
       f"val: {int((~tr_rows).sum()):,} rows / {len(va_groups):,} groups", flush=True)
+rng = np.random.default_rng(0)
 
 # Group-ordered row sequence and its inverse (CSV row -> group-order position).
 order = np.argsort(grp_ids, kind="stable")
@@ -776,7 +783,8 @@ def to_py(obj):
     return obj
 
 
-best_ce = float("inf")
+maximize = SELECT_METRIC == "q_top1"
+best_select = float("-inf") if maximize else float("inf")
 best_state = None
 best_epoch = 0
 tr_gs = np.flatnonzero(tr_mask)
@@ -807,8 +815,10 @@ for epoch in range(1, EPOCHS + 1):
         fl_losses.append(fl)
     model.eval()
     em = evaluate()
-    if em["val_pol_ce"] < best_ce:
-        best_ce = em["val_pol_ce"]
+    sel = em[SELECT_METRIC]
+    improved = (sel > best_select) if maximize else (sel < best_select)
+    if improved:
+        best_select = sel
         best_epoch = epoch
         best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
     if epoch == 1 or epoch % 10 == 0 or epoch == EPOCHS:
@@ -818,14 +828,14 @@ for epoch in range(1, EPOCHS + 1):
               f"val_pol_ce={em['val_pol_ce']:.4f} "
               f"metrics={to_py(em)}", flush=True)
     if PATIENCE > 0 and epoch - best_epoch >= PATIENCE and best_state is not None:
-        print(f"[train-strategic] early stop: no val_pol_ce improvement for "
+        print(f"[train-strategic] early stop: no {SELECT_METRIC} improvement for "
               f"{PATIENCE} epochs (best epoch {best_epoch})", flush=True)
         break
 
 model.load_state_dict(best_state)
 model.eval()
 eval_metrics = to_py(evaluate())
-print(f"\nbest held-out (val_pol_ce={best_ce:.4f}): {eval_metrics}", flush=True)
+print(f"\nbest held-out ({SELECT_METRIC}={best_select:.4f}): {eval_metrics}", flush=True)
 
 os.makedirs(os.path.dirname(OUT) or ".", exist_ok=True)
 torch.save({"state_dict": model.cpu().state_dict(), "mean": mean, "inv": inv,

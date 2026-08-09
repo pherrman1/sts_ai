@@ -130,6 +130,9 @@ for ch in chunks:
     small.append(ch)
 df = pd.concat(small, ignore_index=True)
 del small
+# Group offsets below require all rows for a (seed, decIdx) decision to be
+# contiguous. CSV production order is not a contract, so canonicalize it here.
+df = df.sort_values(["seed", "decIdx"], kind="stable").reset_index(drop=True)
 nrows = len(df)
 print(f"{nrows:,} rows, {df.seed.nunique()} seeds", flush=True)
 
@@ -163,6 +166,7 @@ print(f"validation seeds ({len(val_seeds)}): {val_seeds.tolist()}", flush=True)
 print(f"seed intersection: {np.intersect1d(train_seeds, val_seeds).tolist()}", flush=True)
 print(f"train: {int(tr_rows.sum()):,} rows / {int(tr_mask.sum()):,} groups, "
       f"val: {int((~tr_rows).sum()):,} rows / {len(va_groups):,} groups", flush=True)
+rng = np.random.default_rng(0)
 
 order = np.argsort(grp_ids, kind="stable")
 inv_perm = np.empty(nrows, np.int64)
