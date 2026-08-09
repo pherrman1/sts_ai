@@ -151,7 +151,6 @@ async function invokeAgent(
   const cfg = agentConfig(cwd, role);
   const model = cfg.model;
 
-  console.log(`[sts-cycle] ${role.toUpperCase()} · ${model}`);
 
   const args: string[] = [
     "--model", model,
@@ -315,7 +314,10 @@ async function runClassify(ctx: CycleContext): Promise<CycleContext> {
 }
 
 async function runArchitect(ctx: CycleContext): Promise<CycleContext> {
-  ctx.onProgress?.("ARCHITECT", "Running architect...");
+  ctx.onProgress?.(
+  "ARCHITECT",
+  `Running architect · ${agentConfig(ctx.cwd, "architect").model}`
+);
 
   const taskFile = path.join(ctx.sessionDir, "task.txt");
   const result = await invokeAgent(ctx.cwd, "architect", ARCHITECT_PROMPT, [taskFile], ctx.signal);
@@ -363,7 +365,11 @@ async function runArchitect(ctx: CycleContext): Promise<CycleContext> {
 }
 
 async function runImplement(ctx: CycleContext): Promise<CycleContext> {
-  ctx.onProgress?.("IMPLEMENT", "Running implementer...");
+  // Implementer
+  ctx.onProgress?.(
+    "IMPLEMENT",
+    `Running implementer · ${agentConfig(ctx.cwd, "implementer").model}`,
+  );
 
   const taskFile = path.join(ctx.sessionDir, "task.txt");
   const planFile = path.join(ctx.sessionDir, "plan.json");
@@ -422,6 +428,11 @@ async function runReview(
   const planFile = path.join(ctx.sessionDir, "plan.json");
   const role = sol ? "reviewer_escalation" : "reviewer";
 
+  ctx.onProgress?.(
+    sol ? "ESCALATE" : "REVIEW",
+    `${label} round ${round} · ${agentConfig(ctx.cwd, role).model}`,
+  );
+
   const reviewPrompt = prompt || REVIEW_PROMPT;
 
   const stats = await getChangedPathsStats(ctx.cwd);
@@ -474,7 +485,10 @@ async function runFix(
   reviewFile: string,
   label: string,
 ): Promise<void> {
-  ctx.onProgress?.("REPAIR", `Fixing: ${label}...`);
+    ctx.onProgress?.(
+    "REPAIR",
+    `Fixing: ${label} · ${agentConfig(ctx.cwd, "implementer").model}`,
+  );
 
   const taskFile = path.join(ctx.sessionDir, "task.txt");
   const planFile = path.join(ctx.sessionDir, "plan.json");
