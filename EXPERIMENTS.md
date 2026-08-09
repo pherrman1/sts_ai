@@ -7179,3 +7179,77 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
   corrected-capture ranking eval (16 seeds), then a paired fair-S3 @1k/32-seed
   gameplay gate before any promotion consideration.
 - **Decision log:** `2026-08-09-zero-mean-rank-correction.md`.
+
+## §153 Ascension sweep: V4-skewfix gates + S3 fair + 7k-vnet @1k, 32 seeds, A0–A20 — Act 4 now reachable; V4 gates essential for Heart survival but hurt Act-3-only performance (2026-08-09, GCP sts-test)
+
+- **What:** 5-ascension paired sweep (A0/A5/A10/A15/A20, 32 seeds each,
+  126700–126731) of the current recommended stack: S3 fair −belief−chain
+  @64p, V4 skewfix token-net gate stack (§149, all gates ON, margin 1.0),
+  7k-tuned vnet default @α=0.3 (§148), 1k sims/decision, 24 threads (GCP
+  sts-test). Also ran the no-gates baseline (same config minus V4 gates)
+  and a STOP_AFTER_ACT=3 comparison for §148 compatibility.
+
+- **Context — key-collection horizon change:** commit `32281a2`
+  ("ooc: collect act-4 keys in every rewards/rest chain", 2026-08-09)
+  made Act 4 reachable in `bestbench` for the first time. Previously the
+  agent never collected keys and won by defeating the Act 3 boss. Now keys
+  are taken at rewards screens (emerald/sapphire, after gold/relic/potion)
+  and at rest sites (ruby key via RECALL when act ≥ 3, displacing a
+  heal/upgrade). Every prior §148/§126 baseline predates this commit and
+  reflects Act-3-only wins.
+
+- **With Act 4 (current binary default):**
+
+  | Asc | V4 Gates ON | No Gates |
+  |--:|:--|:--|
+  | A0 | **21.9%** (7/32) | 0.0% (0/32) |
+  | A5 | **12.5%** (4/32) | 3.1% (1/32) |
+  | A10 | **12.5%** (4/32) | 0.0% (0/32) |
+  | A15 | **9.4%** (3/32) | 0.0% (0/32) |
+  | A20 | **0.0%** (0/32) | 0.0% (0/32) |
+
+  No-gates A0 also probed on a second 32-seed block (126732–126763):
+  4/32 (12.5%), avg floor 43.9, end HP 8.2, cpu 31.2 s/run. Combined
+  A0 no-gates: **4/64 = 6.3%**.
+
+  The agent reaches Act 4 in 12/32 A0 runs (floor 55) but dies to the
+  Heart without V4 gates — the gates are critical for Act 4 survival.
+  Without them, 0/32 survived the Heart in the primary block.
+
+- **Act 3 only (STS_STOP_AFTER_ACT=3, comparable to §148):**
+
+  | Config | Win% (32 seeds) | Floor | End HP | CPU s/run |
+  |---|---|---:|---:|---:|
+  | V4 Gates ON | 31.2% (10/32) | 42.8 | 20.5 | 27.0 |
+  | No Gates | **37.5%** (12/32) | 42.4 | 31.1 | 28.8 |
+
+  The no-gates STOP_AFTER_ACT=3 result (37.5%, 12/32) reproduces the §148
+  7k-tuned gate (37.5%, 24/64) exactly on the overlapping seed range
+  (126700–126731 ⊆ 126700–126763). The V4 skewfix gates **reduce** Act-3
+  win rate by −6.3pp in this regime (31.2% vs 37.5%).
+
+- **Key findings:**
+  1. The V4 skewfix gates (+15.6pp on S2-fair, §149) **reverse sign** on
+     S3+vnet at Act 3 (−6.3pp) but are **essential** for Act 4 (+15.7pp
+     delta: 21.9% vs 6.3%). The gates build decks that survive the Heart.
+  2. The Key-collection commit changed the benchmark horizon — all
+     pre-`32281a2` baselines are Act-3-only and not directly comparable.
+  3. Ascension scaling is steep: A5 roughly halves A0 win rate, A10–A15
+     near-zero, A20 is 0/32 even with the full stack.
+  4. CPU cost drops with ascension (27.8 → 11.4 s/run) as runs end earlier.
+
+- **Artifacts:** `build/asc{0,5,10,15,20}_1k_32.csv` (gates ON),
+  `build/asc{0,5,10,15,20}_nogates_1k_32.csv` (gates OFF),
+  `build/asc0_nogates2_1k_32.csv` (second no-gates block),
+  `build/asc0_stopact3_gates_1k_32.csv`,
+  `build/asc0_stopact3_nogates_1k_32.csv`.
+
+- **Verdict:** ↗ V4 gates are essential for Act-4-inclusive benchmarks.
+  The current recommended configuration (V4 skewfix gates + S3 + 7k-vnet)
+  is the best known fair stack at A0=21.9% (with Act 4). The STOP_AFTER_ACT=3
+  number (31.2%) is the nearest Act-3-only comparable but should not be
+  presented as the headline — the binary now plays Act 4 by default.
+
+- **Open:** Full 128/256-seed gate to tighten CIs; 3k win-point
+  measurement; investigation into why the skewfix V4 gates reverse sign
+  on S3+vnet (the §126 V4 model showed +12.5pp on S3+vnet at Act 3).

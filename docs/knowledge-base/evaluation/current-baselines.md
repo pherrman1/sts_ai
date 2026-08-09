@@ -1,6 +1,6 @@
 # Current baselines
 
-Last verified: 2026-08-09 against the current working tree (V4 token-net artifact swapped to honest NGLOB=42 model; §148 V_combat leaf default swapped to hyperparameter-tuned model).
+Last verified: 2026-08-09 against the current working tree (V4 token-net artifact = skewfix §149 model; §148 V_combat leaf = 7k-tuned; Act-4 keys now collected by default — pre-32281a2 baselines are Act-3-only).
 Experiments invalidated by fixes are tracked in the
 [rerun ledger](rerun-ledger.md) (2026-08-05 code review, issues 31–46); the
 **2026-08-05 §113 battle-skip exploit invalidates every Searcher3 measurement
@@ -49,16 +49,26 @@ path also loads the fresh honest-data combat value leaf by default** — the
 804-tree vnet `build/v_combat_honest.txt` at α=0.3 (three significant paired
 gates: +12.5/+12.1/+12.5pp win at ~2-2.4× cpu; the §126 recorded cpu-trade
 call; `STS_VNET=<path>` overrides, `STS_VNET=<missing-path>` disables, and
-the S2 fair / non-fair paths stay env-only). The §124 re-measurement on the
+the S2 fair / non-fair paths stay env-only). The default vnet was promoted to
+`build/v_combat_7k_tuned.txt` (1000 trees, §148). The §124 re-measurement on the
 current binary confirmed the recorded references (flat @1k, +2.3pp n.s.
 @3k/256p) and re-confirmed S3−belief−chain as the particle config (belief+
 chain ON costs −11.3 to −12.1pp, significant).
+
+**Since 2026-08-09 (commit `32281a2`) the agent collects Act-4 keys by
+default** (emerald/sapphire at rewards screens, ruby at rest sites when
+act ≥ 3). Every baseline measured before this commit (all entries below
+marked "Act-3 run win") reflects Act-3-only wins — the agent never entered
+Act 4. Current binary wins require clearing the Heart. Use
+`STS_STOP_AFTER_ACT=3` to approximate the pre-commit Act-3-only horizon
+(keys are still collected, so it is not bit-identical to the pre-commit
+binary).
 ## Baseline table
 
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |
 | --- | --- | ---: | ---: | --- | --- | --- |
 | **Current executable configuration**, verified 2026-07-31 | Caller-selected | Caller-selected | Caller-selected | Default Searcher2 is known-RNG unless `STS_FAIR=1`; opt-in Searcher3 samples particles in either path and `STS_FAIR` controls rebuild/reuse | Native tracked floor/win trees; heuristic path; shop-V; win-rest; tracked policy prior auto-load; no combat value/PVNet by default | Configuration only; **no current-checkout full-run measurement is claimed**. |
-| **Recommended configuration — V4 one-ply gate stack + hyperparameter-tuned V_combat leaf @α=0.3 (7k data)**, 2026-08-09 (`EXPERIMENTS.md` §148) | 126700–126955 (256) | 0 | 3,000 sims/decision (win point, 64p); 1,000 sims/decision (efficient point, 64p) | `STS_FAIR=1`, **Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`** (`STS_S3_PARTICLES=64`), 24 threads | V4 token-net gate stack (as §113 row); **`STS_VNET` default ON in the fair-S3 path**: `build/v_combat_7k_tuned.txt` (1000 trees, sha256 `ea35b78c…`, α=0.3; §148 tuned hyperparams on 1.58M-row 7k combat dataset, +17.2pp total win vs original §126 model at 64-seed gate) | Full Act-3 run win: **not yet re-measured on the current binary**; the §126 headline (55.1% @3k/64p) was measured with the previous default model. The §148 64-seed paired gate at 1k sims (no gate stack, default OOC) shows: original 20.3% → honest-tuned 31.2% → 7k-tuned 37.5%. A full-stack re-measurement with the V4 gate stack is an open follow-up. |
+| **Recommended configuration — V4 skewfix one-ply gate stack + hyperparameter-tuned V_combat leaf @α=0.3 (7k data)**, 2026-08-09 (§153, GCP sts-test) | 126700–126731 (32) | 0–20 | 1,000 sims/decision (efficient point, 64p); 3,000 sims/decision (win point — not yet measured at this stack) | `STS_FAIR=1`, **Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`** (`STS_S3_PARTICLES=64`), 24 threads | V4 skewfix token-net gate stack (§149, `STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native` sha256 `e62abd83…`, all gates ON, margin 1.0); **`STS_VNET` default ON in the fair-S3 path**: `build/v_combat_7k_tuned.txt` (1000 trees, sha256 `ea35b78c…`, α=0.3) | **Full Act-3+4 run win (current binary default, Act 4 reachable):** A0 **21.9%** (7/32), A5 12.5% (4/32), A10 12.5% (4/32), A15 9.4% (3/32), A20 0.0% (0/32). No-gates baseline: A0 0/32 (but 6.3% across 64 seeds). Act-3 only (`STS_STOP_AFTER_ACT=3`): gates ON 31.2% (10/32), gates OFF 37.5% (12/32 — reproduces §148). V4 gates hurt Act-3 (−6.3pp) but are essential for Act 4 (+15.7pp). See §153. **A0 headline: 21.9% with Act 4; 31.2% Act-3-only.** 32 seeds only — CIs are wide (A0 Wilson 95%: [9.9%, 40.4%]). Full 128/256-seed gate and 3k win point are open follow-ups. |
 | **Previous recommended configuration — canonical CARD_SELECT enumerator + `exitBattle` UNDECIDED guard + expanded observation identity + V4 one-ply gate stack**, 2026-08-05 (`EXPERIMENTS.md` §113, §114, §115; re-measured 2026-08-07 §124) | 126700–126955 (256) | 0 | 3,000 sims/decision (win point, 256 particles); 1,000 sims/decision (efficient point, 64 particles) | `STS_FAIR=1`, **Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`** (`STS_S3_PARTICLES=256` or 64), 24 threads | V4 token-net gate stack (`STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`); canonical CARD_SELECT enumeration (issue 47) + `BattleContext::exitBattle` UNDECIDED→LOSS guard (issue 48) + `CombatObservation` decision-context identity (§114); no combat value/PVNet | Full Act-3 run win on the current binary: **114/256 (44.5%)** at 3k/256p; **96/256 (37.5%)** at 1k/256p and **96/256 (37.5%)** at 1k/64p — **honest re-baseline after the §113 battle-skip-exploit invalidation** (the "60.2% @3k" §107 headline was inflated by control S3 skip-winning battles at WARCRY/GAMBLE CARD_SELECT states; honest control S3 = 9.0% @1k). Particles flat (64p = 256p at 1k, §115). §124 re-measured on the live-valid binary: 37.9% @1k/64p (flat) and 46.9% @3k/256p (+2.3pp n.s.). Future gate rounds pair against `build/b2c_1k_64p.csv` (1k/64p) / `build/b1c_3k_256p.csv` (3k/256p) / `build/b4_3k_64p.csv` (3k/64p). |
 | **Previous recommended configuration — V4 one-ply gate stack @3,000 sims**, 2026-08-04 (`EXPERIMENTS.md` §99) | 126700–126955 (256) | 0 | 3,000 sims/decision | `STS_FAIR=1`, default Searcher2, 24 threads | Native tracked floor/win trees; heuristic path/shop/win-rest; **opt-in V4 token net + full one-ply Q gate stack** (`STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`); no combat value net (vnet A/B'd and rejected under the gates, §97) | Full Act-3 run win: **116/256 (45.3%)**, mean floor 42.9, mean end HP 25.3 — **+8.2pp win (CI [+0.8,+15.6]) and +2.0 floor (CI [+0.3,+3.7]) vs the previous recommended V3@1k reference on the same block**, at 3.4× cpu (31.3 vs 9.2 cpu-sec/run). V4@4k adds only +1.2pp (noise; floor/HP flat), so 3,000 sims is the operating point. Per-seed CSVs `build/simsweep_{2k,3k,4k}_256.csv`, `build/simsweep_v4_{3k,4k}_256.csv`. **S2-based, unaffected by the §113 S3 skip exploit.** |
 | **Invalidated S3 headline — S3−belief−chain + V4 one-ply gate stack**, 2026-08-05 (`EXPERIMENTS.md` §106, §107; **invalidated by §113**) | 126700–126955 (256) | 0 | 3,000 sims/decision | `STS_FAIR=1`, Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`, 24 threads | Same V4 gate stack; pre-fix (619c12c) S3 enumerator | **60.2% @3k / 57.4% @1k64p — INVALID: the pre-fix S3 enumerator skip-won battles at WARCRY/GAMBLE CARD_SELECT states (zero valid edges → UNDECIDED break → rewards/advance). Not an honest baseline; superseded by the §113 recommended row.** |
@@ -89,7 +99,7 @@ build/v_win_trees.txt     sha256 fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe
 build/policy_trees_c.txt  sha256 24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321
 build/v_combat_pvnet.txt  sha256 05d809298921623af7c87c06e7dd31f5129abfd77cc702f75b9867949a59533f
 build/v_combat_7k_tuned.txt sha256 ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c
-selfplay/models/ooc_strategic_tok_final.native sha256 f6bc6a96baab278af94b578abfdc20b1b31ddfef063ca4d8c2ab5790dbb0db4e
+selfplay/models/ooc_strategic_tok_final.native sha256 e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c
 ```
 
 These hashes identify the current tracked files, not the unavailable historical
@@ -113,14 +123,12 @@ artifact set behind §66i.
   §113/§115 references; the recommended config with the §126 vnet default is
   measured at §126).
 - Fair-play is partial hidden-information handling, especially under Searcher2.
-- The V4 token-net artifact at `selfplay/models/ooc_strategic_tok_final.native` was
-  replaced on 2026-08-09 with an honest NGLOB=42 model (8 hidden-information leaks
-  removed; bossId retained as legitimate player-visible information). The leaky
-  NGLOB=50 model is rejected by the current C++ loader (dims-check failure).
-  The honest model's gate benefit collapsed from ~+20pp (leaky) to negligible or
-  negative on the S2-fair base (15.6–22.7% vs 21.1% baseline; decision log
-  `2026-08-09-v4-feature-leak-audit.md`). Its contribution on the current
-  S3+vnet stack is unmeasured as of 2026-08-09.
+- The V4 token-net artifact at `selfplay/models/ooc_strategic_tok_final.native` is
+  the §149 skewfix model (sha256 `e62abd83…`, 42-glob, honest). On S2-fair it gates
+  at +15.6pp (39.1% vs 23.4%, §149). On S3+vnet at Act 3 it **reverses sign**
+  (−6.3pp: 31.2% vs 37.5%, §153) but is **essential for Act 4** (+15.7pp:
+  21.9% vs 6.3%). The leaky NGLOB=50 model is rejected by the current C++ loader
+  (dims-check failure).
 - The V3 strategic net at `selfplay/models/ooc_strategic.native`
   (sha256 `b096498abf…`) is also **leaky** — it consumes the full `richRow()`
   feature vector which includes all 8 hidden-information leaks (nextEliteId,
@@ -153,6 +161,10 @@ artifact set behind §66i.
 - Which exact artifact hashes and flags produced the 39/128 result?
 - Should a reproducible baseline bundle include executable/model hashes and
   captured startup output?
+- The key-collection commit (`32281a2`) changed the benchmark horizon from
+  Act 3 to Act 3+4. All pre-commit baselines are Act-3-only. Should the
+  recommended configuration headline be Act-3+4 (current default) or
+  Act-3-only (`STS_STOP_AFTER_ACT=3`)?
 
 ## Relevant code
 
