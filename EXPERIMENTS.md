@@ -6730,3 +6730,23 @@ unFullRunOOC runs, for each counter relic the
   separate from `decisionIdx`, which seeds the per-decision searcher).
 - **Verification:** seed 300865 locally: 3 stall warnings, completes in 245s,
   746 rows, rc=0; on GCP: same, chunk 2 now 500/500 seeds (273,518 rows).
+
+## §141 Self-play relabeling Phase 1 datagen COMPLETE: 801,782 rows / 1,500 seeds (2026-08-08→09, GCP sts-test)
+
+- **Config:** `strategicgen2` 3×500 seeds (offsets 300000/300500/301000, seeds 300000–301499),
+  1000 sims, asc 0, `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
+  STRATEGIC_SAMPLE_ALL=1`, 24 threads, current controller (S3−belief−chain + live-valid +
+  deployed vnet α0.3 defaults), heuristic-OOC main/branch policy (plan §3 contract).
+- **Artifacts:** `build/sp_300000.csv` (263,622 rows), `sp_300500.csv` (273,518),
+  `sp_301000.csv` (264,642); concatenated `build/strategic_sp_1500.csv` (801,781 data rows,
+  1.6 GB, 1,500 distinct seeds). ~5.5h wall across the three chunks (95–110 min each),
+  preemption-safe chunking per the plan.
+- **Stall-battle incident (§140):** seed 300865 hung the chunk-2 run — the S3 search stalled
+  the act-1 boss fight forever (no game stall timer; the search blocks/heals instead of
+  finishing). Fixed with `kMaxBattleDecisions=1000` in all four battle loops; seed backfilled
+  (746 rows) — chunk 2 complete 500/500. No stall warnings in chunk 3.
+- **Row volume:** ~535 rows/seed, within the plan's 0.8–1.3M expectation (at the low end;
+  ~1/4 the old tierb corpus's 3.06M rows). The §104-style diagnostic (argmax(labelWon) vs
+  `chosen` agreement per screen) is the next check before training.
+- **Next:** Phase 2 training (same-recipe control on old tierb data + candidate on
+  `strategic_sp_1500.csv`), then the 256-seed paired gate.

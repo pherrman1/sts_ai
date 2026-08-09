@@ -206,3 +206,9 @@ paired feel-run (recorded EXPERIMENTS.md §138): deployed 54.7% vs partial
 28.1% (Δ −26.6pp, CI excludes zero). Informal only — the candidate used ~20%
 of the planned corpus; the 5.7.3 verdict still requires the same-recipe
 control vs the full 1500-seed candidate plus the 256-seed paired gate.
+
+## Addendum 2 (same day+1) — Phase 1 datagen complete
+
+`build/strategic_sp_1500.csv`: 801,781 rows / 1,500 seeds (3×500 chunks, GCP), with the
+§140 stall-guard fix applied mid-run (seed 300865 backfilled, 500/500). Next: same-recipe
+control + candidate training, then the 256-seed paired gate.
