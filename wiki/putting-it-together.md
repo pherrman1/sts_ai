@@ -16,7 +16,7 @@ flowchart TD
     F4 --> Elite["Floor 7: Lagavulin (Elite) → MCTS"]
     Elite --> R3["Card reward → NN"]
     R3 --> Chest["Treasure chest → NN"]
-    Chest --> Boss["Floor 17: Slime Boss → MCTS"]
+    Chest --> Boss["Floor 16: Slime Boss → MCTS"]
     Boss --> BossRelic["Boss relic → NN"]
     BossRelic --> Act2["... Act 2 ..."]
     Act2 --> Act3["... Act 3 ..."]
@@ -86,7 +86,7 @@ flowchart TD
 
 ## Act 4
 
-Since August 2026, the AI collects keys and fights the Heart by default:
+With `STS_COLLECT_KEYS=1`, the AI collects keys and can fight the Heart:
 - Emerald key: from a burning elite
 - Sapphire key: from a chest (skip the relic)
 - Ruby key: Recall at an Act 3 campfire

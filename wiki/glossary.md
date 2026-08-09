@@ -55,7 +55,7 @@ A file containing a trained model. GBMs → `.txt`; neural networks → `.native
 ## N–Z
 
 ### Neural network (NN)
-A parameterized function: input numbers → matrix multiplications → output predictions. The strategic NN takes run-state features and outputs Q-values per action. Several layers, tens of thousands of parameters. See [How the models learned](how-models-learn.md).
+A parameterized function: input numbers → matrix multiplications → output predictions. The strategic NN takes run-state features and outputs Q-values per action. Several layers, hundreds of thousands of parameters. See [How the models learned](how-models-learn.md).
 
 ### OOC (Out Of Combat)
 Everything between fights: card rewards, rest sites, shops, events, boss relics, path selection.
@@ -94,7 +94,7 @@ The automated improvement cycle: generate data with current AI → train new mod
 One complete MCTS walk: select → expand → rollout → backpropagate. 1,000–3,000 sims per combat decision.
 
 ### Terminal node
-A tree node where the fight has ended (win or loss). Value is exact (won HP or 0); no rollout or GBM prediction needed.
+A tree node where the fight has ended (win or loss). Value is exact (won HP + 50 for victory; 0 for loss); no rollout or GBM prediction needed.
 
 ### Tree (decision tree, in a GBM)
 A binary flowchart: "feature X < threshold? Yes → left, No → right." The leaf contains a prediction value.

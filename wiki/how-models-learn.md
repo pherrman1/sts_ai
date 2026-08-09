@@ -58,9 +58,9 @@ Each new tree focuses on the examples the previous trees got wrong. After ~1,000
 | **V_combat** | End-of-fight HP | 1.58M combat states, 87K fights | 1,000 trees |
 | **V_rich** (floor value) | Run quality at each floor | Millions of run states | ~1,000 trees |
 | **V_win** (win value) | Chance of winning the run | Millions of run states | ~1,000 trees |
-| **Policy prior** | Which card to play next | Millions of combat turns | ~1,000 trees |
+| **Policy prior** | Which card to play next | Hundreds of thousands of combat turns | 100 trees |
 
-V_combat was hyperparameter-tuned: Optuna tried thousands of (tree depth, learning rate, subsampling, regularization) combinations. The tuned settings: max_depth 8, learning rate 0.03, subsample 0.54, colsample_bytree 0.81, min_child_weight 82, reg_alpha 1.8, gamma 4.4, 2,000 rounds with early stopping at 40. The tuned model is about 11 percentage points better than the previously deployed model at the same tree count.
+V_combat was hyperparameter-tuned: Optuna tried 50 combinations of (tree depth, learning rate, subsampling, regularization). The tuned settings: max_depth 8, learning rate 0.03, subsample 0.54, colsample_bytree 0.81, min_child_weight 82, reg_alpha 1.8, gamma 4.4, 2,000 rounds with early stopping at 40. The tuned model is about 11 percentage points better than the previously deployed model at the same tree count.
 
 ## Step 3: Training the neural network
 
@@ -79,7 +79,7 @@ Training is supervised learning:
 3. Adjust the weights to make the correct action score higher
 4. Repeat across ~3 million training examples (4,650 simulated runs)
 
-Training takes tens of minutes on a GPU. The model is compact (tens of thousands of parameters, ~800 KB exported) and runs inline in the C++ executable with negligible overhead.
+Training takes tens of minutes on a GPU. The model has hundreds of thousands of parameters (~800 KB exported) and runs inline in the C++ executable with negligible overhead.
 
 ## Step 4: Export
 

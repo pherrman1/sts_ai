@@ -40,7 +40,7 @@ Starting at the root (current game state), the AI descends the tree using a form
 - **Exploitation:** branches with good results so far
 - **Exploration:** branches that haven't been tried much
 
-A **policy prior** — a separate GBM trained on millions of past combat turns — provides a starting bias: "Bash is probably better than Strike here." This is the "P" in PUCT. It guides exploration without locking out alternatives.
+A **policy prior** — a separate GBM trained on hundreds of thousands of past combat turns — provides a starting bias: "Bash is probably better than Strike here." This is the "P" in PUCT. It guides exploration without locking out alternatives.
 
 ![Bash card](assets/bash-card.png)
 

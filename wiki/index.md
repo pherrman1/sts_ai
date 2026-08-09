@@ -39,7 +39,7 @@ flowchart LR
 | Type | Analogy | Predicts | Size |
 |------|---------|----------|------|
 | **GBM** | Flowchart with ~1,000 branches, each checking conditions like "HP < 30?" or "has Corruption?" | Future HP, win chance, good next moves | ~1,000 trees, a few MB |
-| **Neural network** | Formula with ~40+ inputs and tens of thousands of parameters | Q-values for run decisions | Trained on ~3M decisions |
+| **Neural network** | Formula with ~40+ inputs and hundreds of thousands of parameters | Q-values for run decisions | ~800 KB exported |
 
 Both models load inline in the executable; the combined model files total a few megabytes.
 

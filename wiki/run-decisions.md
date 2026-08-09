@@ -29,7 +29,7 @@ Each card: (identity, upgraded, count). Each relic: (identity, counter). Each po
 ### Per-action details
 For a card reward: the offered card's identity, cost, type, upgrades. For a shop: the item being considered. For an event: which option. For a boss relic: which relic.
 
-The network represents cards, relics, and potions as **tokens** — small learned vectors of numbers that capture their identity. These are processed alongside the global features through several feed-forward layers to produce one Q-value per action. The network has tens of thousands of parameters and was trained on ~3 million run decisions.
+The network represents cards, relics, and potions as **tokens** — small learned vectors of numbers that capture their identity. These are processed alongside the global features through several feed-forward layers to produce one Q-value per action. The network has hundreds of thousands of parameters and was trained on ~3 million action rows (~724,000 decisions).
 
 ## Where the network operates
 
@@ -55,10 +55,10 @@ When the network doesn't fire (or when running without it):
 | Screen | Rule |
 |--------|------|
 | Card reward | Floor-value GBM scores each card. Pick highest; skip if all below −0.5 |
-| Rest site | Win-chance GBM: rest if HP is critically low, otherwise upgrade the highest-value card |
-| Shop | Floor-value GBM evaluates purchases against gold budget |
-| Events | Simple expected-value rule per option |
-| Boss relic | Floor-value GBM scores each relic |
+| Rest site | Win-chance GBM: rest if healing raises P(win) more than the best upgrade would |
+| Shop | Shop-value GBM evaluates purchases against gold budget |
+| Events | Per-event hand-coded rules |
+| Boss relic | Hand-coded `Expert` ordering (opt-in: V_win GBM) |
 
 The floor-value GBM and win-chance GBM are separate from the combat GBM — they predict run-level outcomes, not fight outcomes.
 
@@ -83,7 +83,7 @@ Margin: 52.3 − 45.7 = **6.6** (≥ 1.0). Network picks Offering. Same result h
 ## Limitations
 
 - The network evaluates choices one at a time — it doesn't plan sequences. A card pick is scored by "how good will the run be after adding this?" not "what synergies will this enable three floors from now?"
-- It's a compact model (tens of thousands of parameters), trained on ~3 million run decisions. It learns broad patterns, not specific card interactions.
+- It has hundreds of thousands of parameters, trained on ~3 million action rows (~724,000 decisions). It learns broad patterns, not specific card interactions.
 - On the current combat configuration, the gating step adds about 12 percentage points to Act-3 win rate (measured on 128 paired seeds; an earlier 32-seed sample suggested a penalty, but the larger paired test reversed that finding). The gates are essential for Act 4 and show no Act-3 penalty at adequate sample sizes.
 
 ---
