@@ -70,8 +70,13 @@ add_test(NAME paired_analysis_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/paire
 add_test(NAME py_compile_parity_test COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/parity_test.py)
 add_test(NAME py_compile_check_replay COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/check_replay.py)
 add_test(NAME py_compile_vnettest_selftest COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/vnettest_selftest.py)
+add_test(NAME py_compile_winnettest_selftest COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/winnettest_selftest.py)
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/check_replay.py --self-test)
 add_test(NAME vnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/vnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
+add_test(NAME winnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/winnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME battlecontext_roundtrip COMMAND $<TARGET_FILE:unit-test> battlecontext_roundtrip)
-set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest check_replay_selftest vnettest_selftest battlecontext_roundtrip
+add_test(NAME designer_in_spire COMMAND $<TARGET_FILE:unit-test> designer_in_spire)
+add_test(NAME scum_nonfair_empty_edges COMMAND $<TARGET_FILE:unit-test> scum_nonfair_empty_edges)
+add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_overflow)
+set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest py_compile_winnettest_selftest check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges
     PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")

@@ -11,6 +11,9 @@
 #include <set>
 #include <algorithm>
 #include <cstdlib>
+#include <csignal>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "data_structure/fixed_list.h"
 #include "constants/Cards.h"
@@ -759,6 +762,65 @@ int testCardSelectParity() {
     return 1;
 }
 
+// Regression (BattleScumSearcher2 non-fair empty-edge guard): a deterministic
+// (non-fair) enumeration that yields zero legal actions must resolve as a
+// direct leaf evaluation instead of reaching selectFirstActionForLeafNode's
+// uniform_int_distribution(0,-1) (UB/assert). The zero-option state below is
+// artificial -- PLAYER_NORMAL always adds END_TURN -- but a future enumerator
+// change could produce it, and fair mode already defends the same way.
+int testScumNonFairEmptyEdges() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) {
+            std::cout << "    " << msg << '\n';
+            ++failures;
+        }
+    };
+
+    // CARD_SELECT with no selectable options: SECRET_WEAPON picks attacks from
+    // the draw pile; an all-skill draw pile leaves zero legal actions.
+    BattleContext bc = cardSelectFixture(CardSelectTask::SECRET_WEAPON, 1, false);
+    bc.cards.drawPile.clear();
+    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+
+    check(search::Action::enumerateCardSelectActions(bc).empty(),
+          "fixture should have zero selectable options");
+
+    search::BattleScumSearcher2 s2(bc);
+
+    // playoutRandom: stop softly with NO_LEGAL_ACTION instead of asserting.
+    {
+        BattleContext rollState = bc;
+        std::vector<search::Action> stack;
+        search::RolloutStop stop = search::RolloutStop::TERMINAL;
+        s2.playoutRandom(rollState, stack, stop);
+        check(stop == search::RolloutStop::NO_LEGAL_ACTION,
+              "rollout should stop with NO_LEGAL_ACTION, got " + std::to_string(static_cast<int>(stop)));
+        check(stack.empty(), "rollout should not execute any action");
+    }
+
+    // step(): every simulation resolves as a direct leaf evaluation (no
+    // rollout; the node is recorded as a defeat).
+    s2.search(8);
+    check(s2.diag.consistent(),
+          "diagnostics invariant simulations == terminalInsideTree + rolloutCalls + leafDirectEval");
+    check(s2.diag.simulations == 8,
+          "expected 8 simulations, got " + std::to_string(s2.diag.simulations));
+    check(s2.diag.leafDirectEval == 8,
+          "expected all 8 simulations as direct leaf evals, got " + std::to_string(s2.diag.leafDirectEval));
+    check(s2.diag.rolloutCalls == 0,
+          "no rollout should run, got " + std::to_string(s2.diag.rolloutCalls));
+    check(s2.root.outcome == 2,
+          "no-legal-action node should be marked a defeat (2), got " + std::to_string(static_cast<int>(s2.root.outcome)));
+
+    if (failures == 0) {
+        std::cout << "scum_nonfair_empty_edges PASS\n";
+        return 0;
+    }
+    std::cout << "scum_nonfair_empty_edges FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 // ---- CARD_SELECT multi-select mask canonicalization -------------------------
 // With STS_MULTISELECT_CANONICAL=1, masks that select the same multiset of
 // identical hand cards collapse to the first-encountered mask; masks whose
@@ -1008,6 +1070,84 @@ int testBattleContextRoundtrip() {
     std::cout << "battlecontext_roundtrip FAIL (" << failures << " cases)\n";
     return 1;
 }
+
+// Regression: Designer In-Spire event options 3 and 4 must not fall through to
+// the next case. Before the fix, option 3 also paid the option-4 gold cost,
+// opened a REMOVE card select, and lost 5 HP; option 4 also lost 5 HP.
+int testDesignerInSpireOptions() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) {
+            std::cout << "    " << msg << '\n';
+            ++failures;
+        }
+    };
+
+    // Ascension 15 => unfavorable => option 3 costs 75 gold, option 4 costs
+    // 110 gold, and the option-5 HP loss is 5.
+    GameContext gc(sts::CharacterClass::IRONCLAD, 0xDE51u, 15);
+    gc.curEvent = Event::DESIGNER_IN_SPIRE;
+    gc.gold = 500;
+    gc.curHp = 80;
+    gc.deck.obtain(gc, CardId::STRIKE_RED, 3);
+    gc.regainControlAction = [](auto &gs) { gs.screenState = ScreenState::MAP_SCREEN; };
+
+    // Option 3: pay 75 gold, transform 2 cards, regain control immediately.
+    gc.chooseEventOption(3);
+    check(gc.gold == 425, "option 3: expected gold 425, got " + std::to_string(gc.gold));
+    check(gc.curHp == 80, "option 3: expected hp 80, got " + std::to_string(gc.curHp));
+    check(gc.screenState == ScreenState::MAP_SCREEN,
+          "option 3: expected MAP_SCREEN (regain control), got " + std::to_string((int)gc.screenState));
+
+    // Option 4: pay 110 gold, open a REMOVE card select (control not regained).
+    gc.gold = 500;
+    gc.curHp = 80;
+    gc.screenState = ScreenState::EVENT_SCREEN;
+    gc.chooseEventOption(4);
+    check(gc.gold == 390, "option 4: expected gold 390, got " + std::to_string(gc.gold));
+    check(gc.curHp == 80, "option 4: expected hp 80, got " + std::to_string(gc.curHp));
+    check(gc.screenState == ScreenState::CARD_SELECT,
+          "option 4: expected CARD_SELECT, got " + std::to_string((int)gc.screenState));
+    check(gc.info.selectScreenType == CardSelectScreenType::REMOVE,
+          "option 4: expected REMOVE card select, got " + std::to_string((int)gc.info.selectScreenType));
+    check(gc.info.toSelectCount == 1,
+          "option 4: expected 1 card to select, got " + std::to_string(gc.info.toSelectCount));
+
+    if (failures == 0) {
+        std::cout << "designer_in_spire PASS\n";
+        return 0;
+    }
+    std::cout << "designer_in_spire FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
+// Regression test for the CardQueue overflow fix: the capacity assertions in
+// CardQueue.cpp are guarded by sts_asserts (defined unconditionally in
+// sts_common.h), so pushing an 11th item into the capacity-10 ring must abort
+// in every build regime. A raw assert() would be compiled out under NDEBUG and
+// the overflow would silently wrap and corrupt the ring buffer.
+int testCardQueueOverflow() {
+    pid_t pid = fork();
+    if (pid == 0) {
+        CardQueue q;
+        for (int i = 0; i < CardQueue::capacity; ++i) {
+            q.pushBack(CardQueueItem{});
+        }
+        q.pushBack(CardQueueItem{}); // must abort, not wrap
+        _exit(0); // unreachable while the assertion fires
+    }
+    int status = 0;
+    if (pid < 0 || waitpid(pid, &status, 0) != pid) {
+        std::cout << "cardqueue_overflow FAIL (fork/waitpid error)\n";
+        return 1;
+    }
+    if (WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT) {
+        std::cout << "cardqueue_overflow PASS (overflow aborts)\n";
+        return 0;
+    }
+    std::cout << "cardqueue_overflow FAIL (expected SIGABRT, status " << status << ")\n";
+    return 1;
+}
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -1094,10 +1234,16 @@ int main(int argc, const char* argv[]) {
         return testHappyFlowerCounter(std::stoull(argv[2]));
     } else if (command == "cardselect_parity") {
         return testCardSelectParity();
+    } else if (command == "scum_nonfair_empty_edges") {
+        return testScumNonFairEmptyEdges();
     } else if (command == "cardselect_canonical") {
         return testCardSelectCanonical();
     } else if (command == "battlecontext_roundtrip") {
         return testBattleContextRoundtrip();
+    } else if (command == "designer_in_spire") {
+        return testDesignerInSpireOptions();
+    } else if (command == "cardqueue_overflow") {
+        return testCardQueueOverflow();
     }
 
     //    printSizes();
