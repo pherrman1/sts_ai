@@ -7486,3 +7486,49 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   ~2.9 GB state tensor; no checkpoint-selection conclusion is drawn. Avoid
   repeating this full GPU run from an IDE; use a redirected batch job or a
   reduced/synthetic fixture first.
+
+## §163 Corrected honest V4 confirmed at 128 paired seeds on S3+7k-VNet Act-3 stack (2026-08-09)
+
+- **Configuration:** git `3feb2a1` (block 1) / `d38272f` (block 2, behavior-neutral
+  because tree-reuse controls are env-gated and binary was verified bit-identical
+  across an earlier Searcher3 transition). A0, 1k sims, 12 threads, Searcher3,
+  belief/chain off, live-valid on, 64 particles, `STS_VNET=build/v_combat_7k_tuned.txt`
+  alpha 0.3, `STS_COLLECT_KEYS=0`, `STS_STOP_AFTER_ACT=3`.
+  V4 SHA256 `e62abd83…`, VNet `ea35b78c…`.
+- **128 paired seeds 126700–126827:**
+  - V4 OFF: 52/128 (40.6%), mean floor 42.0, mean HP 18.5;
+  - V4 ON:  67/128 (52.3%), mean floor 44.0, mean HP 24.5;
+  - paired delta **+11.7pp**, bootstrap 95% CI **[+1.6, +22.7]pp**;
+  - floor +2.0, HP +5.9, discordant 47/128 (37%), on-only 31 vs off-only 16.
+- **Verdict:** ↗ **V4 is confirmed positive on the current fair S3+7k-VNet
+  Act-3 stack.** The CI excludes zero. This is the first statistically significant
+  gate for the corrected honest V4 on this combat configuration.
+  V4 is now the provisional OOC baseline.
+- **Artifacts:** `build/ooc_v4_head_s3_act3_{off,on}_64_1786297628.csv` (block 1),
+  `build/ooc_v4_head128_s3_act3_{off,on}_64plus_1786297983.csv` (block 2),
+  sidecars and logs.
+
+## §164 Checkpoint-selection interface verified on small CPU fixture (2026-08-09)
+
+- Both `train_strategic_tok.py` and `train_strategic.py` accept
+  `STRAT_SELECT_METRIC=val_pol_ce` (minimize) or `q_top1` (maximize).
+- A 20-seed, 13K-row fixture from `build/strategic_k1.csv` was trained on CPU
+  for 10 epochs with both metrics:
+  - `val_pol_ce`: picked epoch 10, best CE=1.208;
+  - `q_top1`: early-stopped at epoch 7, best at epoch 2, best q_top1=0.211.
+- Different metrics select different checkpoints; min/max directions and
+  early-stopping logic are verified. Artifacts under `/tmp/ooc_ckpt_fixture_*`.
+
+## §165 SHOP-disabled V4 test on requalified Act-3 stack (2026-08-09)
+
+- **Configuration:** same frozen stack/seeds as §163, V4 ON with all screens
+  except SHOP (EVENT+REST+TREASURE+BOSS_RELIC+CARD only, margin 1.0).
+  64 paired seeds 126700–126763.
+- **Result:** SHOP-disabled 34/64 (53.1%) vs full V4 31/64 (48.4%),
+  delta +4.7pp, CI [−7.8,+17.2]pp; discordant 15/64, SHOP-disabled-only 9.
+- **Interpretation:** consistent with the Wave 0G minus-SHOP ablation
+  (also +4.7pp). The direction suggests SHOP overrides are net-harmful on
+  this stack, though the CI crosses zero at 64 seeds. This is a supplementary
+  diagnostic, not yet a promotion claim.
+- **Artifacts:** `build/ooc_v4_noshop_s3_act3_64_1786298692.csv`, paired
+  report, sidecar.
