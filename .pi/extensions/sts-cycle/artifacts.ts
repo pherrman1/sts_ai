@@ -160,8 +160,9 @@ export function summarizeCosts(entries: CycleCostEntry[]): CycleCostSummary {
   return { per_agent: perAgent, total };
 }
 
-export function writeEli5(sessionDir: string, eli5: string): void {
-  saveText(path.join(sessionDir, "eli5.md"), eli5.trim() + "\n");
+export function writeEli5(sessionDir: string, eli5: string, stem?: string): void {
+  const filename = stem ? `${stem}-eli5.md` : "eli5.md";
+  saveText(path.join(sessionDir, filename), eli5.trim() + "\n");
 }
 
 export function loadEli5(sessionDir: string, stem: string): string | null {

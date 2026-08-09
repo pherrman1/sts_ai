@@ -37,7 +37,7 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Mode dispatch | `apps/one_combat.cpp::main` | ~100 modes (`bestbench`, `datagen3`, `fairgen`, `strategicgen`, `searchdiag`, …), env-flag parsing, model loading | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md) |
+| Mode dispatch | `apps/one_combat.cpp::main` | ~100 modes (`bestbench`, `datagen3`, `fairgen`, `strategicgen`, `searchdiag`, …), env-flag parsing, model loading | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md), [environment-variables.md](operations/environment-variables.md) |
 
 ## Strategic data generation / counterfactuals
 

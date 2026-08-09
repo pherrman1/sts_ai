@@ -159,7 +159,8 @@ async function invokeAgent(
   ];
 
   if (PI_READONLY_ROLES.has(role)) {
-    args.push("--tools", PI_READONLY_TOOLS);
+    const toolAllowlist = cfg.tools || PI_READONLY_TOOLS;
+    args.push("--tools", toolAllowlist);
   }
 
   // Write system prompt to temp file
@@ -380,7 +381,7 @@ async function runImplement(ctx: CycleContext): Promise<CycleContext> {
   // Extract ELI5 section from final response
   const eli5Match = result.text.match(/(?:^|\n)#*\s*ELI5\s*:?\s*\n([\s\S]*?)(?:\n#+\s|\n[A-Z][A-Z\s/-]+$|$)/i);
   const eli5 = eli5Match ? eli5Match[1].replace(/^[-*]\s+/gm, "").trim() : "(no ELI5 recorded)";
-  writeEli5(ctx.sessionDir, eli5);
+  writeEli5(ctx.sessionDir, eli5, "implementation-1");
 
   ctx.state.state = "IMPLEMENT";
   ctx.state.implementationRound++;
@@ -639,19 +640,29 @@ async function runCycle(ctx: CycleContext): Promise<{ state: TerminalState; eli5
 
   if (escalated) {
     ctx.onProgress?.("ESCALATE", `Escalating: ${escalationReasons.join("; ")}`);
+    let escalationPassed = false;
     for (let solRound = 1; solRound <= MAX_SOL; solRound++) {
       const solResult = await runReview(
         ctx, activeVerifFile!, solRound, true,
         [path.join(ctx.sessionDir, "escalation.json")],
       );
 
-      if (solResult.data.verdict === "PASS") break;
+      if (solResult.data.verdict === "PASS") {
+        escalationPassed = true;
+        break;
+      }
 
       await runFix(ctx, solResult.file, `sol-review-${solRound}`);
       const verifResult = await runVerify(ctx);
       if (!verifResult.ok) {
         return { state: "FAILED_VERIFICATION" as any, eli5: "Verification failed after escalation fix." };
       }
+    }
+    if (!escalationPassed) {
+      return {
+        state: "REJECTED",
+        eli5: `Escalation reviewer could not reach PASS within ${MAX_SOL} rounds.`,
+      };
     }
   } else {
     ctx.onProgress?.("ESCALATE", "Not required");

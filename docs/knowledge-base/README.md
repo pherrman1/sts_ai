@@ -45,9 +45,10 @@ For evaluation and operation:
 
 1. [Current baselines](evaluation/current-baselines.md)
 2. [Benchmark protocol](evaluation/benchmark-protocol.md)
-3. [Build and debugging](operations/build-and-debugging.md)
-4. [Self-play loop](operations/selfplay-loop.md)
-5. [AI cycle and agent backends](operations/ai-cycle.md)
+4. [Environment variables](operations/environment-variables.md)
+5. [Self-play loop](operations/selfplay-loop.md)
+6. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
+7. [AI cycle and agent backends](operations/ai-cycle.md)
 
 For correctness:
 

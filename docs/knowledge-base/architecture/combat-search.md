@@ -870,6 +870,14 @@ PUCT-with-zero-priors quirk.
 
 ## Known limitations
 
+- **Cleanup note (2026-08-08)**: `g_devalueHighHp` (declared in
+  `include/sim/search/BattleScumSearcher2.h`, defined in
+  `src/sim/search/BattleScumSearcher2.cpp`, checked in
+  `evaluateEndState`) is unreachable dead code — no active mode ever sets it
+  to true after the `evalcombat`/`evalrun` modes were removed. Its `if` block
+  in `evaluateEndState` is always false. Remove it the next time Searcher2 is
+  modified for a real change. See decision log
+  `2026-08-08-surgical-refactor.md`.
 - Searcher2 project-fair determinization changes draw order plus only
   `shuffleRng` and `cardRandomRng`; it is not a complete hidden-state model
   (`src/sim/search/BattleScumSearcher2.cpp::determinize`). Whether it should

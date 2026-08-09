@@ -27,6 +27,64 @@ establish the intended project-fair Searcher3 generation path.
 
 ---
 
+## Current findings summary (2026-08-08)
+
+Brief orientation before searching the full ledger. The canonical configuration
+and current numbers live in `docs/knowledge-base/evaluation/current-baselines.md`.
+
+### Accepted (confirmed by multiple gates)
+
+- **Searcher3 ISMCTS > Searcher2 fair-play** (~+39pp win, §early S3 entries).
+- **V4 one-ply Q gate stack significantly raises win%** (card/rest/event/shop/
+  treasure/boss-relic; +8-14pp vs flags-off baseline, §76/§82/§99).
+- **V4 token net ≈ V3 strategic net** at matched budgets (§92/§99); V4 is the
+  deployed format since 2026-08-03.
+- **S3−belief−chain is the current particle config**: belief+chain ON costs
+  −11.3 to −12.1pp, significant (§124).
+- **V_combat honest-data leaf @α=0.3**: +12.5pp at ~2-2.4× cpu, three
+  independent gates confirm (§126). Now default ON in the fair-S3 path.
+- **Forced-move contraction is decision-neutral** at −8.5–18% cpu (§120/§121/§123).
+- **`STS_LIVE_VALID` fair-tree fix**: +5.5–5.9pp win at +7.9–14.6% cpu (§122/§123).
+  Default ON in the fair-S3 path since 2026-08-07.
+- **Native OOC GBMs replace v_server** for floor/win inference (§43/§68).
+  The server is only required by self-play meta and some experimental endpoints.
+- **Compact policy prior auto-loads** (+4.3pp win over plain UCB, §26).
+- **Heuristic path + shop-V + win-rest** is the default OOC stack without gates.
+
+### Falsified / closed (do not re-investigate without new evidence)
+
+- **Devalue-high-HP objective** — negative (§3, evalcombat/evalrun modes removed).
+- **Convergence-based early stopping** (`STS_CONVERGE`) — no free lunch (§22).
+- **Root-stability early stopping** (`STS_CONV_ROOT`) — falsified at gates (§118).
+- **Non-fair forced-move contraction** — divergent results, restricted to fair
+  path only (§120/§121).
+- **S3 deterministic chain compression** — net-negative on binary gates (§106).
+- **S3 particle belief reweighting** — costs −11 to −12pp (§124).
+- **Distilled native combat MLP** — rejected at 500 paired seeds (§56).
+- **Entity-aware multi-head combat model** — rejected at 500 paired seeds (§57).
+- **A4 one-turn rollout bootstrap** — falsified at gates (§133).
+- **A1 K-rollouts** — NULL result (visited, no improvement pattern).
+- **V_combat legacy (known-RNG data) on Searcher3** — rejected; the honest-data
+  retrain (§126) is the new baseline.
+
+### Open questions
+
+- Can the all-act checkpoint rollout be distilled into a deployable NN? (§66/§143).
+- Tactical turn-beam rollout (B1, §plan-rollout-experiments) — gate pending.
+- Dynamic α by rollout length (A2) — gate pending.
+- Policy-filtered rollout (A3) — gate pending.
+- S3 leaf-value cache (`STS_PVNET_CACHE`) — on by default, behavior-preserving;
+  `STS_PVNET_COND_*` gates for deployment speed still experimental.
+
+### Recommended starting points for new experiments
+
+- OOC: V4 token-net gate stack at margin 1.0 (baseline: §124 `b2c_1k_64p.csv`).
+- Combat: Searcher3 fair-path with `STS_S3_BELIEF=0 STS_S3_CHAIN=0` and
+  honest-data V_combat default ON (baseline: §126 `vnet_all_a03_1k.csv`).
+- Evaluation: `bestbench` paired-gate protocol; 256-seed block 126700–126955.
+
+---
+
 ## Historical baseline for experiments as of 2026-07-14
 
 New out-of-combat experiments should A/B against **this stack**, not the old default agent, so we

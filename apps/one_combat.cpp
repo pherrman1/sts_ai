@@ -9093,48 +9093,7 @@ static void dumpRun(std::uint64_t seed, int sims, int asc) {
     for (const auto &ri : gc.relics.relics) std::printf("  - %s\n", getRelicName(ri.id));
 }
 
-// ---------------------------------------------------------------------------
-// EVAL A/B: compare the baseline HP objective vs. the "devalue high HP" one,
-// on identical seeds, for both a single hard combat and whole runs.
-// ---------------------------------------------------------------------------
-static void evalCombatBench(int sims, int nSeeds) {
-    g_encounter = MonsterEncounter::GREMLIN_NOB; // an elite that punishes bad HP mgmt
-    std::cout << "eval A/B (combat: GremlinNob)   seeds 0.." << nSeeds - 1
-              << "   sims/decision: " << sims << "\n\n";
 
-    for (bool devalue : {false, true}) {
-        search::g_devalueHighHp = devalue;
-        Policy p = makeMctsPolicy(sims);
-        int wins = 0; long long hp = 0, turns = 0;
-        #pragma omp parallel for reduction(+:wins,hp,turns) schedule(dynamic)
-        for (int s = 0; s < nSeeds; ++s) {
-            Result r = runCombat((std::uint64_t)s, p, false);
-            wins += r.won; hp += r.hpEnd; turns += r.turns;
-        }
-        std::printf("%-16s  win%%=%5.1f   avg_hp_end=%5.1f   avg_turns=%4.1f\n",
-                    devalue ? "devalue-high-hp" : "baseline",
-                    100.0 * wins / nSeeds, (double)hp / nSeeds, (double)turns / nSeeds);
-    }
-}
-
-static void evalRunBench(int sims, int nSeeds, int asc) {
-    std::cout << "eval A/B (whole run)   seeds 0.." << nSeeds - 1
-              << "   ascension: " << asc << "   sims/decision: " << sims << "\n\n";
-
-    for (bool devalue : {false, true}) {
-        search::g_devalueHighHp = devalue;
-        int wins = 0; long long floor = 0, hp = 0; double sec = 0;
-        #pragma omp parallel for reduction(+:wins,floor,hp,sec) schedule(dynamic)
-        for (int s = 0; s < nSeeds; ++s) {
-            RunResult r = runFullRun((std::uint64_t)s, sims, asc, false);
-            wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec;
-        }
-        std::printf("%-16s  win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   avg_sec=%.2f\n",
-                    devalue ? "devalue-high-hp" : "baseline",
-                    100.0 * wins / nSeeds, (double)floor / nSeeds,
-                    (double)hp / nSeeds, sec / nSeeds);
-    }
-}
 
 // Export one deterministic full-map graph per (seed, ascension, act) present
 // in a card-counterfactual CSV.  The source CSV repeats the state once per
@@ -10005,17 +9964,6 @@ int main(int argc, char **argv) {
         int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
         runBenchmark(sims, nSeeds, asc);
 
-    } else if (mode == "evalcombat") {   // baseline vs devalue-high-hp, one hard combat
-        int sims   = argc > 2 ? std::stoi(argv[2]) : 3000;
-        int nSeeds = argc > 3 ? std::stoi(argv[3]) : 100;
-        evalCombatBench(sims, nSeeds);
-
-    } else if (mode == "evalrun") {       // baseline vs devalue-high-hp, whole runs
-        int sims   = argc > 2 ? std::stoi(argv[2]) : 8000;
-        int nSeeds = argc > 3 ? std::stoi(argv[3]) : 12;
-        int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
-        evalRunBench(sims, nSeeds, asc);
-
     } else if (mode == "draftbench") {    // weighted table vs lookahead drafting
         int outerSims = argc > 2 ? std::stoi(argv[2]) : 6000;
         int nSeeds    = argc > 3 ? std::stoi(argv[3]) : 16;
@@ -10876,7 +10824,7 @@ int main(int argc, char **argv) {
         runTraceRun(seed, sims, asc);
 
     } else {
-        std::cerr << "usage: one_combat [bench|mcts|random|run|runbench|evalcombat|evalrun|draftbench|pathbench|cardbench|combobench|datagen|deck] ...\n";
+        std::cerr << "usage: one_combat [bench|mcts|random|run|runbench|draftbench|pathbench|cardbench|combobench|datagen|deck] ...\n";
         return 1;
     }
     return 0;

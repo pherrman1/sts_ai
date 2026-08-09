@@ -189,16 +189,7 @@ export async function runVerification(
     });
   }
 
-  const requiredOk = results.every(
-    (r) =>
-      !r.required ||
-      r.status === "PASS" ||
-      r.cost === "NOT_RUN_THIS_PHASE" as any ||
-      (r.cost !== "cheap" && r.cost !== "expensive") ||
-      !costsToRun.has(r.cost),
-  );
-
-  // More precise: only check required checks that we actually ran
+  // Only check required checks that we actually ran
   const requiredPassed = results
     .filter((r) => r.required && costsToRun.has(r.cost as "cheap" | "expensive"))
     .every((r) => r.status === "PASS");
