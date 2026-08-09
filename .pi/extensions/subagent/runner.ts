@@ -80,6 +80,10 @@ export interface RunnerOptions {
   signal?: AbortSignal;
   /** Callback for each parsed event line, fired BEFORE internal processing. */
   onEvent?: (event: RunnerEvent) => void;
+  /** Hard wall-clock timeout (ms). Default: 30 min. */
+  hardTimeoutMs?: number;
+  /** Idle timeout between events (ms). Kills the child if no event arrives within this window. Default: no idle timeout. */
+  idleTimeoutMs?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -98,7 +102,7 @@ export interface RunnerOptions {
  * can drive live activity updates without duplicating lifecycle logic.
  */
 export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> {
-  const { cwd, args, signal, onEvent } = options;
+  const { cwd, args, signal, onEvent, hardTimeoutMs = SUBAGENT_HARD_TIMEOUT_MS, idleTimeoutMs } = options;
 
   const result: RunnerResult = {
     exitCode: -1,
@@ -125,6 +129,7 @@ export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> 
     let terminationTimer: ReturnType<typeof setTimeout> | null = null;
     let hardTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
     let abortHandler: (() => void) | null = null;
+    let idleTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
     const processStillRunning = () =>
       proc.exitCode === null && proc.signalCode === null;
@@ -137,9 +142,11 @@ export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> 
       clearTimer(agentEndTimer);
       clearTimer(terminationTimer);
       clearTimer(hardTimeoutTimer);
+      clearTimer(idleTimeoutTimer);
       agentEndTimer = null;
       terminationTimer = null;
       hardTimeoutTimer = null;
+      idleTimeoutTimer = null;
       if (signal && abortHandler) {
         signal.removeEventListener("abort", abortHandler);
         abortHandler = null;
@@ -159,6 +166,16 @@ export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> 
       // before internal processing.
       if (onEvent) {
         try { onEvent(event); } catch { /* ignore callback errors */ }
+      }
+
+      // Reset idle timeout on every event
+      if (idleTimeoutMs && idleTimeoutMs > 0) {
+        clearTimer(idleTimeoutTimer);
+        idleTimeoutTimer = setTimeout(() => {
+          if (settled) return;
+          result.wasTimedOut = true;
+          terminateAndFinish(1);
+        }, idleTimeoutMs);
       }
 
       result.events.push(event);
@@ -265,7 +282,7 @@ export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> 
     hardTimeoutTimer = setTimeout(() => {
       result.wasTimedOut = true;
       terminateAndFinish(1);
-    }, SUBAGENT_HARD_TIMEOUT_MS);
+    }, hardTimeoutMs);
 
     if (signal) {
       abortHandler = () => {

@@ -336,10 +336,22 @@ async function invokeAgent(
   onProgress?.(progressStage, `starting · ${model}`);
 
   try {
+    // Role-specific timeouts: read-only agents get tighter limits.
+    // Architect/reviewer should never legitimately sit idle for >2 min.
+    const roleTimeouts: Record<string, { hard: number; idle: number }> = {
+      architect: { hard: 10 * 60 * 1000, idle: 120 * 1000 },
+      implementer: { hard: 30 * 60 * 1000, idle: 300 * 1000 },
+      reviewer: { hard: 15 * 60 * 1000, idle: 120 * 1000 },
+      reviewer_escalation: { hard: 15 * 60 * 1000, idle: 120 * 1000 },
+    };
+    const rt = roleTimeouts[role] || { hard: 30 * 60 * 1000, idle: 0 };
+
     const result = await runPiChild({
       cwd,
       args,
       signal,
+      hardTimeoutMs: rt.hard,
+      idleTimeoutMs: rt.idle > 0 ? rt.idle : undefined,
       onEvent: (event) => {
         events.push(event);
         handleAgentRunnerEvent(event, progressStage, model, live, onProgress);
