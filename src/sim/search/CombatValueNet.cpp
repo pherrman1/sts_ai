@@ -1055,8 +1055,12 @@ double CombatValueNet::predictVec(const float *canonFeatures) const {
             for (float &v : a1) if (v < 0.f) v = 0.f;
         } else {
             x.resize(sel.size());
-            for (std::size_t i = 0; i < sel.size(); ++i)
-                x[i] = (canonFeatures[sel[i]] - xMean[i]) * xInvStd[i];
+            for (std::size_t i = 0; i < sel.size(); ++i) {
+                float z = (canonFeatures[sel[i]] - xMean[i]) * xInvStd[i];
+                if (z < -5.0f) z = -5.0f;
+                else if (z > 5.0f) z = 5.0f;
+                x[i] = z;
+            }
             for (int j = 0; j < h1; ++j) {
                 const float *w = w1.data() + std::size_t(j) * x.size();
                 float sum = b1[j];
