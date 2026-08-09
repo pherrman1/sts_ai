@@ -233,13 +233,19 @@ Implemented or present in the working tree:
 - `strategic_metrics.py` and `tools/analyze_strategic_metrics.py` for
   deployment-aligned prediction CSVs without retraining.
 
-Wave 0E was attempted on the frozen Act-3 S3+7k-VNet stack at 64 paired
-seeds. The first trace-on comparison was −23.4pp, but a no-trace harness full
-arm was 15.6% and an exact repeated no-trace control was 7.8% versus the first
-control's 37.5%. This reproducibility failure invalidates causal interpretation;
-see `EXPERIMENTS.md` §155. Do not run margin or model-selection conclusions
-until the repeated control behavior is explained. The six screen arms are
-recorded as diagnostic only for the same reason.
+Wave 0E was requalified after isolating per-fight `g_potionKeepValue` as
+thread-local. The repaired frozen Act-3 S3+7k-VNet stack gives V4 ON 31/64
+(48.4%) versus OFF 24/64 (37.5%), +10.9pp, CI [−1.6,+23.4]. Wave 0F tracing,
+Wave 0G screen ablations, and Wave 0H margin tests are now complete at the
+64-seed exploratory point; see `EXPERIMENTS.md` §§159–161. A 128-seed
+confirmation remains appropriate because the 64-seed CI crosses zero.
+
+Wave 0I checkpoint selection is implemented for both trainers, including the
+CSV group-contiguity fix and `STRAT_SELECT_METRIC` switch. A short
+`val_pol_ce` CUDA run completed, but the paired `q_top1` run was stopped before
+training after the first run's ~2.9 GB state allocation; do not claim a
+checkpoint-selection result yet. Avoid another full GPU run until resources are
+explicitly available.
 
 Focused self-tests, Python compilation, `bash -n`, `git diff --check`,
 `one_combat` build, 2-seed sidecar smoke, 1-seed trace/analyzer smoke, and the

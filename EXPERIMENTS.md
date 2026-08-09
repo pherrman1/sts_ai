@@ -7427,3 +7427,62 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
   `build/vnet_mcts_leaves_50k.csv` (50K sample),
   `build/mcts_diag.json`. Decision log:
   `docs/knowledge-base/decision-log/2026-08-09-deepsets-combat-vnet.md`.
+
+## §159 Requalified corrected honest V4 on frozen S3 + 7k-VNet Act-3 stack (2026-08-09)
+
+- **Fix/configuration:** made `search::g_potionKeepValue` thread-local;
+  `runFullRunOOC` writes it per fight while parallel seeds search concurrently.
+  Repeated 8-seed checks matched all outcomes, floors, HP, and death fields.
+  The 64-seed gate used a no-trace binary, A0, 1k sims, 12 threads,
+  `STS_FAIR=1`, Searcher3, belief/chain off, live-valid on, 64 particles,
+  fixed `build/v_combat_7k_tuned.txt` alpha 0.3, `STS_COLLECT_KEYS=0`,
+  `STS_STOP_AFTER_ACT=3`, seeds 126700–126763.
+- **Result:** V4 OFF 24/64 (37.5%), V4 ON 31/64 (48.4%), paired delta
+  **+10.9pp**, 95% CI [−1.6,+23.4]pp; floor +0.9 and HP +5.5.
+- **Trace:** same ON stack produced 3,419 opportunities, 1,834 owned
+  (53.6%); fire rates: EVENT 61.8%, REWARDS 44.8%, BOSS RELIC 84.0%,
+  CARD SELECT 18.0%, TREASURE 62.0%, REST 68.4%, SHOP 55.1%.
+- **Artifacts:** `build/ooc_v4_requal_s3_act3_{off,on}_64_1786292238.csv`,
+  paired report, trace and sidecars.
+
+## §160 Requalified per-screen V4 ablations (2026-08-09)
+
+Same fixed stack/seeds as §159, V4 margin 1.0. Full was 31/64 (48.4%).
+- minus REST: 31/64 (48.4%), paired delta 0.0pp;
+- minus EVENT: 26/64 (40.6%), delta −7.8pp, CI [−18.8,+3.1]pp;
+- minus SHOP: 34/64 (53.1%), delta +4.7pp, CI [−7.8,+17.2]pp;
+- minus TREASURE: 31/64 (48.4%), delta 0.0pp, no discordant seeds;
+- minus BOSS RELIC: 29/64 (45.3%), delta −3.1pp, CI [−10.9,+4.7]pp.
+
+These are exploratory 64-seed effects; only EVENT has a meaningful directional
+signal, and its CI still crosses zero. Artifacts:
+`build/ooc_v4_requal_s3_act3_ablate_64_1786292838/`.
+
+## §161 V4 margin sweep on requalified Act-3 stack (2026-08-09)
+
+Same configuration/seeds as §159, corrected V4 all five screens on, 64 seeds:
+- margin 0.5: 29/64 (45.3%), mean floor 43.9, HP 21.5;
+- margin 1.0: 31/64 (48.4%), mean floor 43.5, HP 23.9;
+- margin 2.0: 31/64 (48.4%), mean floor 44.4, HP 27.2;
+- margin 5.0: 29/64 (45.3%), mean floor 43.0, HP 24.2.
+
+Eight-seed trace samples measured fire rates 71.8%, 53.3%, 33.3%, and 13.5%
+for margins 0.5, 1, 2, and 5 respectively. Margin 1–2 is the current small
+sample plateau; no margin is promoted without confirmation at 128 seeds.
+Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
+
+## §162 Training split/checkpoint-selection follow-up (2026-08-09)
+
+- **Fixes:** canonicalize Tier-B CSV rows by `(seed, decIdx)` before group
+  offsets, and initialize the missing batch permutation RNG in both
+  `train_strategic.py` and `train_strategic_tok.py`. The prior assertion
+  correctly caught non-contiguous groups; without the RNG fix training then
+  failed before epoch 1.
+- **Selection interface:** both trainers accept
+  `STRAT_SELECT_METRIC=val_pol_ce` (minimize, default) or `q_top1` (maximize).
+- **Resource-safe result:** a three-epoch CUDA `val_pol_ce` run reached epoch 3
+  on `build/strategic_tierb.csv`; held-out `val_pol_ce=0.6093`, `q_top1=0.2982`.
+  The paired `q_top1` run was not completed after the first run allocated a
+  ~2.9 GB state tensor; no checkpoint-selection conclusion is drawn. Avoid
+  repeating this full GPU run from an IDE; use a redirected batch job or a
+  reduced/synthetic fixture first.

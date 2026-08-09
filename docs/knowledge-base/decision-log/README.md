@@ -58,6 +58,8 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-09 | [`2026-08-09-s3-tree-reuse-investigation.md`](2026-08-09-s3-tree-reuse-investigation.md) | Fair S3 tree reuse investigation: STS_REUSE_MAX_SEARCHES + stats modes + always-Q + diagnostics + hardened RNG gate — all reuse arms falsified at gate; topology staleness is the dominant failure mode. |
+| 2026-08-09 | [`2026-08-09-strategic-training-split-fix.md`](2026-08-09-strategic-training-split-fix.md) | Fixed non-contiguous grouped CSV assumptions and initialized deterministic trainer batch RNG. |
 | 2026-08-09 | [`2026-08-09-thread-local-potion-value.md`](2026-08-09-thread-local-potion-value.md) | Fixed cross-seed benchmark contamination by isolating per-fight potion keep value per worker thread. |
 | 2026-08-09 | [`2026-08-09-strategic-deployment-metrics.md`](2026-08-09-strategic-deployment-metrics.md) | Deployment-aligned gate-fire, override, fallback-relative advantage, and regret metrics plus standalone prediction-CSV analyzer. |
 | 2026-08-09 | [`2026-08-09-benchmark-provenance-and-analysis-tools.md`](2026-08-09-benchmark-provenance-and-analysis-tools.md) | BEST benchmark JSON provenance sidecars; strict strategic-trace, VNet-query distribution, and per-screen ablation analysis tools; screen harness now requires explicit `STS_COLLECT_KEYS`. |
