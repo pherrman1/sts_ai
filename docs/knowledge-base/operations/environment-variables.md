@@ -101,6 +101,7 @@ enable flag:
 | `STS_OOC_STRATEGIC_MARGIN_TREASURE` | — | −1.0 | `main` |
 | `STS_OOC_STRATEGIC_MARGIN_BOSS_RELIC` | — | −1.0 | `main` |
 | `STS_OOC_STRATEGIC_MARGIN_MAP` | — | −1.0 | `main` |
+| `STS_COLLECT_KEYS` | Collect act-4 keys (emerald/sapphire in rewards, ruby at rest) | `0` (off) | `main` ~L9244 |
 
 ## OOC model-driven decisions
 

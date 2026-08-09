@@ -1155,7 +1155,9 @@ int testCardQueueOverflow() {
 // (ScumSearchAgent2::stepRewardsPolicy / REST_ROOM case and
 // SimpleAgent::stepRestScreen); the apps/one_combat.cpp REWARDS/rest chains
 // mirror these handlers.
+extern bool g_collectKeys;
 int testKeyCollection() {
+    g_collectKeys = true;
     int failures = 0;
     auto check = [&](bool ok, const std::string &msg) {
         if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
@@ -1212,6 +1214,7 @@ int testKeyCollection() {
               "SimpleAgent::stepRestScreen act 3: ruby key not taken");
     }
 
+    g_collectKeys = false;
     if (failures == 0) {
         std::cout << "keys_collect PASS\n";
         return 0;

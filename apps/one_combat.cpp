@@ -70,6 +70,8 @@
 #include <set>
 #include <unordered_map>
 
+extern bool g_collectKeys;              // env STS_COLLECT_KEYS=1: collect act-4 keys
+
 // ---------------------------------------------------------------------------
 // Live progress line for long parallel benches. Threads call tick() as each run
 // finishes; it prints an in-place (\r) status to stderr -- completed/total,
@@ -361,8 +363,8 @@ static RunResult runFullRunDraft(std::uint64_t seed, int outerSims, bool lookahe
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else if (lookahead)             lookaheadCardPolicy(gc, N, innerSims, futures);
             else                            agent.weightedCardRewardPolicy(gc);
@@ -1820,7 +1822,7 @@ static std::vector<int> upgradeableIds(GameContext &gc) {
 static bool restWinPolicy(GameContext &gc) {
     // Ruby key (RECALL, rest action 2) is mandatory for Act 4: take it at the
     // first act-3+ campfire when we don't hold it yet.
-    if (gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+    if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
         search::GameAction(2, 0).execute(gc);
         return true;
     }
@@ -2067,8 +2069,8 @@ static RunResult runFullRunCards(std::uint64_t seed, int sims, int asc, int poli
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else if (policyId == 0)         agent.weightedCardRewardPolicy(gc);
             else if (policyId == 1)         greedyCardRewardPolicy(gc, skipRatio);
@@ -2300,8 +2302,8 @@ static RunResult runFullRunCombo(std::uint64_t seed, int sims, int asc, bool com
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else if (combo)                 evalCardRewardPolicy(gc, false);         // eval ranking, never skip
             else                            agent.weightedCardRewardPolicy(gc);
@@ -2696,8 +2698,8 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);   // else the screen
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);  // never clears
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else if (actFightProbeDraftPolicy(gc)) { /* all-act, encounter-weighted rollout draft */ }
             else if (bossGatedDraftPolicy(gc)) { /* rollout draft near a hard fight */ }
@@ -3096,8 +3098,8 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else { tr_logDraft(gc); if (!oocActionNNPolicy(gc)) { if (!oocOnePlyCardRewardPolicy(gc, agent)) serverCardRewardPolicy(gc); } }
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
@@ -3176,6 +3178,7 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
               << "  shop-V=ON  path=" << (g_pathV ? "model-driven" : "heuristic")
               << "  shop-beam=" << (g_oocShopBeam ? "ON" : "off")
               << "  native-OOC=" << (g_nativeOoc ? "ON" : "OFF")
+              << "  keys=" << (g_collectKeys ? "collect" : "skip")
               << "  searcher=" << (search::g_useSearcher3 ? "Searcher3" : "Searcher2")
               << (search::g_useSearcher3
                   ? "  S3-abl[b,p,c,l,crn]=" + std::to_string(search::g_s3Belief)
@@ -4672,8 +4675,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else serverCardRewardPolicy(gc);
         } else if (gc.screenState == ScreenState::SHOP_ROOM) {
@@ -5178,8 +5181,8 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else serverCardRewardPolicy(gc);
         } else if (gc.screenState == ScreenState::SHOP_ROOM) {
@@ -5187,7 +5190,7 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
         } else if (inRemoveSelect) {
             removeSelectVPolicy(gc);
         } else if (gc.screenState == ScreenState::REST_ROOM) {
-            if (gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+            if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
                 search::GameAction(2, 0).execute(gc);   // recall: take the ruby key
             } else {
                 auto actions = search::GameAction::getAllActionsInState(gc);
@@ -5273,8 +5276,8 @@ static bool advanceOocToNextBattle(GameContext &gc, int sims, std::uint64_t agen
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else                            serverCardRewardPolicy(gc);
         } else if (gc.screenState == ScreenState::SHOP_ROOM) {
@@ -5388,8 +5391,8 @@ static std::string runOocNextCombatSeed(std::uint64_t seed, int outerSims, int a
                 if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
                 else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
                 else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-                else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-                else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+                else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+                else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
                 else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
                 else                            serverCardRewardPolicy(gc);
             } else if (gc.screenState == ScreenState::SHOP_ROOM) shopVPolicy(gc);
@@ -5705,8 +5708,8 @@ static std::string runPathCounterfactualSeed(std::uint64_t seed, int outerSims, 
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else serverCardRewardPolicy(gc);
         } else if (gc.screenState == ScreenState::SHOP_ROOM) {
@@ -5856,8 +5859,8 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else {
                 rows.push_back(richRow(gc, path));                 // comprehensive snapshot
@@ -6203,8 +6206,8 @@ static std::string runCombatGenSeed(std::uint64_t seed, int sims, int asc, doubl
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else if (g_datagenGates && oocOnePlyCardRewardPolicy(gc, agent)) { /* gate-stack card pick (§127) */ }
             else if (ur(ex) < epsilon) {                     // explore drafting for state diversity
@@ -6303,8 +6306,8 @@ runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else if (ur(ex) < epsilon) {
                 while (r.cardRewardCount > 0) {
@@ -7934,8 +7937,8 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else {
                 // Same single-group logic as serverCardRewardPolicy.
@@ -8146,8 +8149,8 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else {
                 // Same single-group logic as serverCardRewardPolicy.
@@ -8314,8 +8317,8 @@ runFightGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else if (ur(ex) < epsilon) {
                 while (r.cardRewardCount > 0) {
@@ -8749,8 +8752,8 @@ static std::string runPolicyGenSeed(std::uint64_t seed, int sims, int asc, doubl
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else if (ur(ex) < epsilon) {                     // explore drafting for state diversity
                 while (r.cardRewardCount > 0) {
@@ -8790,8 +8793,8 @@ static std::string runDataGenSeed(std::uint64_t seed, int sims, int asc, double 
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else {
                 rows.push_back(featureRow(gc) + ',' + deckCountsCsv(gc));  // state + deck ids
@@ -8872,8 +8875,8 @@ static std::string runCausalGenSeed(std::uint64_t seed, int sims, int asc, int N
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else {
                 const int rIdx = r.cardRewardCount - 1;
@@ -9136,8 +9139,8 @@ static void dumpRun(std::uint64_t seed, int sims, int asc) {
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
             else                            evalCardRewardPolicy(gc);
         } else {
@@ -9238,6 +9241,11 @@ int main(int argc, char **argv) {
     std::string mode = argc > 1 ? argv[1] : "bench";
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
+
+    if (const char *d = std::getenv("STS_COLLECT_KEYS")) {
+        g_collectKeys = std::atoi(d) != 0;
+        std::cout << "[collect keys " << (g_collectKeys ? "ON" : "OFF") << "]\n";
+    }
 
     if (const char *d = std::getenv("STS_ROLLOUT_DEPTH")) {   // cap combat rollout length
         search::g_maxRolloutDepth = std::atoi(d);

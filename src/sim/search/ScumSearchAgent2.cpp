@@ -12,6 +12,8 @@
 #include "sim/PrintHelpers.h"
 #include "sim/search/BattleScumSearcher2.h"
 
+bool g_collectKeys = false;  // STS_COLLECT_KEYS=1: collect act-4 keys
+
 // Stall guard: a battle exceeding this many search decisions is treated as a
 // loss. StS has no stall timer, so a fight can in principle last forever, and
 // the search can exploit that (e.g. blocking forever against a boss instead of
@@ -504,7 +506,7 @@ void search::ScumSearchAgent2::stepOutOfCombatPolicy(GameContext &gc) {
         }
 
         case ScreenState::REST_ROOM: {
-            if (gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+            if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
                 takeAction(gc, 2);   // recall: take the ruby key (act 3+)
             } else if (gc.curHp > 50 && gc.deck.getUpgradeableCount() > 0 && !gc.hasRelic(RelicId::FUSION_HAMMER)) {
                 takeAction(gc, 1);
@@ -581,10 +583,10 @@ void search::ScumSearchAgent2::stepRewardsPolicy(GameContext &gc) {
     } else if (r.potionCount > 0) {
         takeAction(gc, GameAction(GameAction::RewardsActionType::POTION, 0));
 
-    } else if (r.emeraldKey) {
+    } else if (g_collectKeys && r.emeraldKey) {
         takeAction(gc, GameAction(GameAction::RewardsActionType::KEY));
 
-    } else if (r.sapphireKey) {
+    } else if (g_collectKeys && r.sapphireKey) {
         takeAction(gc, GameAction(GameAction::RewardsActionType::KEY));
 
     } else if (r.cardRewardCount == 0) {

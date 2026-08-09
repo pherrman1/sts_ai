@@ -3,6 +3,9 @@
 //
 
 #include <sim/search/SimpleAgent.h>
+
+extern bool g_collectKeys;
+
 #include <game/Game.h>
 #include "sim/PrintHelpers.h"
 
@@ -662,7 +665,7 @@ void search::SimpleAgent::stepRestScreen(GameContext &gc) {
     const bool canRemove = gc.relics.has(RelicId::PEACE_PIPE);
     const bool canTakeKey = !gc.hasKey(Key::RUBY_KEY);
 
-    if (canTakeKey && gc.act >= 3) {
+    if (g_collectKeys && canTakeKey && gc.act >= 3) {
         takeAction(gc, 2);   // recall: take the ruby key (act 3+)
         return;
     }
@@ -694,7 +697,7 @@ void search::SimpleAgent::stepRewardsScreen(GameContext &gc) {
         takeAction(gc, {GameAction::RewardsActionType::POTION, 0});
     } else if (r.relicCount > 0) {
         takeAction(gc, {GameAction::RewardsActionType::RELIC, 0});
-    } else if (r.sapphireKey || r.emeraldKey) {
+    } else if (g_collectKeys && (r.sapphireKey || r.emeraldKey)) {
         takeAction(gc, {GameAction::RewardsActionType::KEY});
     } if (r.cardRewardCount > 0) {
         stepCardReward(gc);
