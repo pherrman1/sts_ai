@@ -135,6 +135,16 @@ namespace sts::search {
     extern CombatValueNet g_combatVNet;   // loaded value model (if any)
     extern bool g_useVNet;                // use V_combat as the MCTS leaf value
 
+    // Zero-mean ranking correction model (experimental, STS_VNET_RANK_CORR,
+    // standalone diagnostic arm — never a default). A small compact-tree model
+    // trained on group-centered leafref - endHp_pred residuals; when loaded it
+    // is ADDED on top of the primary vnet/PVNet leaf value inside
+    // evaluateLeaf()/evaluateLeafState() to improve within-group action
+    // ranking without shifting the HP scale. Same CombatValueNet format and
+    // predict() interface, reusing all existing load/inference code.
+    extern CombatValueNet g_combatVNetRankCorr;
+    extern bool g_useVNetRankCorr;
+
     extern CombatValueNet g_policyNet;    // loaded policy comparator (if any)
     extern bool   g_usePolicyNet;         // use PUCT with the policy prior in selection
     extern double g_cPuct;                // PUCT exploration constant

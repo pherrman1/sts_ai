@@ -91,6 +91,9 @@ namespace sts::search {
 CombatValueNet g_combatVNet;
 bool g_useVNet = false;
 
+CombatValueNet g_combatVNetRankCorr;   // zero-mean ranking correction (experimental, STS_VNET_RANK_CORR)
+bool g_useVNetRankCorr = false;        // add the rank correction on top of the primary leaf value
+
 CombatValueNet g_policyNet;
 bool   g_usePolicyNet = false;
 double g_cPuct = 2.5;   // swept best at low-mid sims (0.5 under-explores; 2.5-4 best)

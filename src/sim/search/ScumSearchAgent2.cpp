@@ -159,6 +159,13 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             s3.search(spend);
             simulationCountTotal += s3.root.simulationCount;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
+            // Experimental STS_VNET_RANK_CORR: zero-mean clamp at search-complete
+            // (before the root action pick). Subtracts the mean per-search
+            // correction from each root edge's stored mean value; visit counts
+            // are untouched, so the most-visited root action is unchanged — a
+            // pure scale-preservation adjustment. No-op when the correction
+            // model is not loaded (rankCorrValues empty).
+            s3.clampRankCorrAtRoot();
             bool have = false;
             search::Action bestAction = s3PickRootAction(s3, bc, have);
             if (!have) {
@@ -219,6 +226,14 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
 
         // policy-target datagen: log this root's edge visit distribution (fair-play prior)
         if (g_onSearchComplete) g_onSearchComplete(bc, searcher);
+
+        // Experimental STS_VNET_RANK_CORR: zero-mean clamp at search-complete
+        // (before the root action pick). Same semantics as the Searcher3 fair
+        // path: subtract the mean per-search correction from each root edge's
+        // stored mean value; visit counts are untouched, so the most-visited
+        // root action is unchanged. No-op when the correction model is not
+        // loaded (rankCorrValues empty).
+        searcher.clampRankCorrAtRoot();
 
         // Robust ISMCTS move = the most-visited root child (best averaged over worlds).
         std::int64_t maxSim = -1;

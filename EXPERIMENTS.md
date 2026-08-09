@@ -7117,3 +7117,65 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
   falsified** — a proper gate at matched α and tree count is still open.
   The data pipeline (gzip, `/dev/fd/3`, seed subsetting) is proven and
   reusable.
+
+## §152 Zero-mean ranking correction for the combat leaf value: implemented (trainer + runtime + clamp), smoke/offline only — NO gameplay gate yet (2026-08-09, local)
+
+- **Idea:** train a small model to predict `leafref.referenceValue -
+  leafdiag.endHp_pred` (the gap between a high-budget Searcher3 reference and
+  the deployed end-HP vnet's prediction on the same leaf state), center the
+  residuals to zero-mean within each `(seed, fightIdx, decIdx)` decision
+  group, and ADD the prediction on top of the vnet/PVNet leaf value so
+  within-group action ranking improves without shifting the HP scale. A
+  fair-path search-complete clamp re-zeroes the per-search mean correction at
+  the root edges (visit counts untouched → no decision impact).
+- **Implementation (experimental, off by default):**
+  - `tools/train_rank_correction.py` — join leafdiag×leafref on
+    `(seed, fightIdx, decIdx, obsHash)`, group-center the residual, train
+    small XGBoost (max_depth 6, eta 0.05, subsample 0.8, colsample_bytree
+    0.7, min_child_weight 20, 100 rounds, 20-round early stop) on the SAME
+    733-feature layout as the deployed vnet (std>1e-9 on combatgen rows),
+    same fight-group GroupShuffleSplit as `train_value_combat.py`; export via
+    `export_combat_model.py` + vnettest parity CSV.
+  - `STS_VNET_RANK_CORR=<path>` loads `search::g_combatVNetRankCorr` /
+    `search::g_useVNetRankCorr` (non-fatal on failure). Correction added in
+    `BattleScumSearcher3::evaluateLeaf` (vnet + PVNet branches), the S3
+    leaf-blend site in `step()` (the leafdiag `endHp_pred` source), and
+    `BattleScumSearcher2::evaluateLeafState`; per-search accumulation +
+    `clampRankCorrAtRoot()` at search-complete in the fair paths.
+- **Env/regime:** leafdiag capture is the §135a gate-matching env (fair S3,
+  64 particles, `v_combat_honest.txt` @α0.3, `v_combat_utility_direct.txt`,
+  per-stratum 500, full V4 OOC gate arms). Reference: `leafref_gate_64_4k.csv`
+  (high-budget 4000 sims × 128 particles, CRN-paired; the reference is
+  NOT model-free — it uses the same deployed vnet at the same alpha).
+- **Smoke results (10 rounds, 5000 joined rows, seeds 126700-126715):**
+  - joined 68,534/73,643 leafdiag rows to leafref (93%);
+  - 733 features (combatgen filter), val RMSE 11.8 / MAE 7.4 on the centered
+    residual (10 smoke rounds, best_iter 1);
+  - held-out (fight-group val) within-decision ranking vs leafref: baseline
+    pairwiseAcc 0.6493 / top-1 0.212 / regret 10.5 → corrected 0.6459 /
+    0.182 / 11.1 (smoke-only; no signal expected at 10 rounds);
+  - `vnettest` parity PASS (max|diff| = 0.000001 vs tolerance 0.001);
+  - default (env unset) byte-identical: 8-seed fair-S3 `bestbench` output
+    matches the pre-change commit binary (modulo cpu_sec);
+  - 16-seed ranking diagnostic on the SAME leaves (post-processed
+    `build/leafdiag_16_corr.csv` = `leafdiag_smoke_16.csv` rows with
+    `endHp_pred += corr`, replicating the runtime semantics; a live corrected
+    run would change the leaf states and break the obsHash join): baseline
+    endHp pairwiseAcc 0.714 [0.708,0.719] / top-1 0.346 / regret 7.36 →
+    corrected 0.719 [0.713,0.725] / 0.359 / 6.88 (+0.005 acc, −0.48 regret,
+    Pearson 0.772→0.792). CAVEAT: the smoke model was trained on a subset of
+    these rows (4,276 of 73,643, fight-group split), so this diagnostic is
+    partially in-sample — it demonstrates the mechanism, not generalization;
+    the held-out (fight-group val) metrics inside the trainer showed −0.003
+    acc at 10 rounds (noise-level).
+- **Artifacts:** `build/leafdiag_smoke_16.csv` (seeds 126700-126715 subset of
+  `leafdiag_gate_64.csv`), `build/v_rank_corr_smoke.{json,txt}`,
+  `build/v_rank_corr_smoke_parity.csv`, `build/v_rank_corr_smoke_metrics.json`
+  (all build/, git-ignored except nothing tracked).
+- **Verdict: NONE (infrastructure/implementation only).** No model change, no
+  default change, no promotion. The correction may be learning the
+  reference's vnet-blend bias rather than true ranking error (same caveat as
+  §134 leafref analysis). Follow-ups: full-corpus training, leafdiag
+  corrected-capture ranking eval (16 seeds), then a paired fair-S3 @1k/32-seed
+  gameplay gate before any promotion consideration.
+- **Decision log:** `2026-08-09-zero-mean-rank-correction.md`.

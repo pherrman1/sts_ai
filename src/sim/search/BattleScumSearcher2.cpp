@@ -143,6 +143,7 @@ static std::uint64_t battleStateHash(const BattleContext &bc) {
 
 search::BattleScumSearcher2::BattleScumSearcher2(const BattleContext &bc, search::EvalFnc _evalFnc)
     : rootState(new BattleContext(bc)), evalFnc(std::move(_evalFnc)), randGen(bc.seed+bc.floorNum) {
+    rankCorrValues.clear();   // per-decision accumulator; empty until the correction model is loaded
 }
 
 void search::BattleScumSearcher2::search(int64_t simulations) {
@@ -314,6 +315,12 @@ bool search::BattleScumSearcher2::advanceRoot(const Action &action, const Battle
     bestActionValue = std::numeric_limits<double>::min();
     minActionValue = std::numeric_limits<double>::max();
     outcomePlayerHp = 0;
+
+    // Per-decision boundary of the non-fair persistent-searcher path: the next
+    // decision's search re-accumulates corrections from a clean slate (the
+    // zero-mean clamp runs in the fair path only, where a fresh searcher per
+    // decision already starts empty).
+    rankCorrValues.clear();
 
     return reused;
 }
@@ -1007,10 +1014,19 @@ double search::BattleScumSearcher2::evaluateLeafState(const BattleContext &bc) {
         // Learned-value mode: everything on the expected-end-HP scale. Terminal win
         // = HP kept, terminal loss = 0 (death), non-terminal = V_combat prediction.
         // Winning is strongly preferred (any death scores 0), higher HP among wins.
+        // Experimental STS_VNET_RANK_CORR: add the zero-mean ranking correction on
+        // top of the primary prediction (both terminal and non-terminal paths);
+        // accumulated into rankCorrValues for the search-complete zero-mean clamp
+        // (fair path).
+        double corr = 0.0;
+        if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
+            corr = g_combatVNetRankCorr.predict(bc);
+            rankCorrValues.push_back(corr);
+        }
         if (bc.outcome != Outcome::UNDECIDED)
-            return bc.outcome == Outcome::PLAYER_VICTORY
-                ? g_combatVNet.winBonus() + (double)bc.player.curHp : 0.0;
-        return g_combatVNet.predict(bc);
+            return (bc.outcome == Outcome::PLAYER_VICTORY
+                ? g_combatVNet.winBonus() + (double)bc.player.curHp : 0.0) + corr;
+        return g_combatVNet.predict(bc) + corr;
     }
     if (bc.outcome != Outcome::UNDECIDED) return evaluateEndState(bc);   // real terminal
 
@@ -1037,6 +1053,22 @@ double search::BattleScumSearcher2::evaluateLeafState(const BattleContext &bc) {
     // growing penalty eventually makes a progressing line out-score turtling, so
     // the real battle can't loop forever. Default 0 => no change.
     return winP * victoryVal + (1 - winP) * progressVal - g_leafTurnPenalty * bc.turn;
+}
+
+void search::BattleScumSearcher2::clampRankCorrAtRoot() {
+    if (rankCorrValues.empty()) return;   // correction model not loaded this search
+    double sum = 0.0;
+    for (const double c : rankCorrValues) sum += c;
+    const double meanCorr = sum / (double)rankCorrValues.size();
+    if (std::fabs(meanCorr) <= 0.1) return;   // below the zero-mean threshold: leave values untouched
+    // Subtract the mean correction from every root edge's STORED MEAN value
+    // (evaluationSum / simulationCount). Visit counts are unchanged, so the
+    // root action choice (most-visited edge) is unchanged — this is a pure
+    // scale-preservation adjustment so the correction cannot drift the HP
+    // scale over the search.
+    for (auto &e : root.edges)
+        if (e.node.simulationCount > 0)
+            e.node.evaluationSum -= meanCorr * (double)e.node.simulationCount;
 }
 
 struct LayerStruct {

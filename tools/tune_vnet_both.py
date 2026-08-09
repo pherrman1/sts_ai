@@ -156,6 +156,7 @@ class CBOObjective:
                   sample_weight=self.w_tr,
                   eval_set=(self.X_va, self.y_va),
                   early_stopping_rounds=40,
+                  feature_names=self.data.feat_cols,
                   verbose=False)
         best = model.get_best_iteration()
         # If we hit the iteration cap, the model may not have converged
@@ -219,7 +220,8 @@ def train_final_cb(data, params, model_path):
         pass
     model = cb.CatBoostRegressor(**params)
     model.fit(X_tr, y_tr, sample_weight=w_tr,
-              eval_set=(X_va, y_va), early_stopping_rounds=40)
+              eval_set=(X_va, y_va), early_stopping_rounds=40,
+              feature_names=data.feat_cols)
     best = model.get_best_iteration() or model.tree_count_
     pv = model.predict(X_va, ntree_end=best)
     val_rmse = float(np.sqrt(((y_va-pv)**2).mean()))

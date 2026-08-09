@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-08-09 against the current working tree (per-encounter combat value specialization: `train_value_combat_per_encounter.py` per-boss XGBoost fine-tuning + `train_value_combat_meta.py` Reptile MLP meta-learner, `combat_mlp_meta_v1` native format with per-encounter deltas, `CombatValueNet::loadEncounterModels` + `STS_VNET_PER_ENCOUNTER` dispatch, `vnettest --encounter` parity mode — experimental, gate pending; V4 tok trainer convergence measurement, PATIENCE default change, vectorized row-index construction; leafdiag/leafref/rollouttrace leaf-state diagnostic producers + `STS_DIAG_VNET2`; VCOMBAT_TARGET, asserting `vnettest`, §134 direct-R ablation unchanged; `.venv` training-environment note; system-`python3` torch provisioning note).
+Last verified: 2026-08-09 against the current working tree (per-encounter combat value specialization: `train_value_combat_per_encounter.py` per-boss XGBoost fine-tuning + `train_value_combat_meta.py` Reptile MLP meta-learner, `combat_mlp_meta_v1` native format with per-encounter deltas, `CombatValueNet::loadEncounterModels` + `STS_VNET_PER_ENCOUNTER` dispatch, `vnettest --encounter` parity mode — experimental, gate pending; V4 tok trainer convergence measurement, PATIENCE default change, vectorized row-index construction; leafdiag/leafref/rollouttrace leaf-state diagnostic producers + `STS_DIAG_VNET2`; VCOMBAT_TARGET, asserting `vnettest`, §134 direct-R ablation unchanged; `.venv` training-environment note; system-`python3` torch provisioning note; experimental zero-mean ranking-correction trainer `tools/train_rank_correction.py` + `STS_VNET_RANK_CORR` runtime load, off by default).
 
 ## Purpose
 
@@ -163,6 +163,27 @@ ROC-AUC + `--write-ood` flags), `tools/leaf_split_check.py` (fight-level vs
 seed-level validation-split sensitivity, §134 recipe), `tools/leaf_smoothness.py`
 (delta-V shaping diagnostics).
 
+### Rank-correction training (experimental, 2026-08-09)
+
+`tools/train_rank_correction.py` trains the optional zero-mean ranking-
+correction model loaded by `STS_VNET_RANK_CORR` (see `combat-search.md`;
+off by default, byte-identical when unset). It joins a leafdiag CSV with
+its leafref CSV on `(seed, fightIdx, decIdx, obsHash)`, computes
+`residual = referenceValue - endHp_pred`, centers the residual to zero-mean
+within each decision group, and trains a small XGBoost model (max_depth 6,
+eta 0.05, subsample 0.8, colsample_bytree 0.7, min_child_weight 20, 100
+rounds, 20-round early stop) on the SAME feature layout as the deployed
+vnet — the std>1e-9 filter runs on combatgen rows (`--combatgen-csv`, default
+`build/vcombat_honest.csv` → 733 features), NOT on leafdiag rows — with the
+same fight-group `GroupShuffleSplit` (test_size 0.15, random_state 0,
+groups = seed*1000+fightIdx) as `train_value_combat.py`. Export goes through
+`export_combat_model.py::export_trees` (compact-tree text) plus a parity CSV
+(canonical combat features + pyPred) validated by `one_combat vnettest`;
+validation reports centered-residual RMSE/MAE and held-out within-decision
+ranking metrics (pairwise accuracy, top-1, regret — `tools/leaf_ranking.py`
+internals). `--smoke-rows`/`--smoke-rounds` cap the joined rows and boosting
+rounds for fast smoke tests.
+
 ### Run/OOC schema
 
 `apps/one_combat.cpp::vFeatCsv` is the rich-state producer and
@@ -189,7 +210,10 @@ leakage analysis.
 `apps/one_combat.cpp::main` owns environment parsing and load messages. Native
 OOC floor/win models are default. Separate combat value, distributional value,
 PVNet, and policy models are selected with `STS_VNET`, `STS_DIST_VNET`,
-`STS_PVNET`, and `STS_POLICY`. `STS_VNET_PER_ENCOUNTER=<dir>` (parsed after the
+`STS_PVNET`, and `STS_POLICY`. `STS_VNET_RANK_CORR=<path>` (experimental,
+parsed after the STS_VNET region) additionally loads the zero-mean ranking-
+correction model into `search::g_combatVNetRankCorr` /
+`search::g_useVNetRankCorr`; a missing/invalid path only warns. `STS_VNET_PER_ENCOUNTER=<dir>` (parsed after the
 STS_VNET / fair-S3 default block) calls
 `CombatValueNet::loadEncounterModels(dir)`: per-encounter compact-tree files
 named `<ENUM_NAME>.txt` load into `encounterModels`, `<dir>/_pooled.txt` (when

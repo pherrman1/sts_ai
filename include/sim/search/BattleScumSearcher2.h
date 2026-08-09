@@ -55,6 +55,14 @@ namespace sts::search {
         std::vector<Action> bestActionSequence;
         std::default_random_engine randGen;
 
+        // Zero-mean ranking correction (experimental, STS_VNET_RANK_CORR): the
+        // correction values ADDED to leaf evals during THIS search (populated
+        // only when g_useVNetRankCorr is set — otherwise always empty, making
+        // clampRankCorrAtRoot a no-op). Cleared in the constructor (fresh
+        // fair-path searcher per decision) and in advanceRoot (per-decision
+        // boundary of the non-fair persistent-searcher path).
+        std::vector<double> rankCorrValues;
+
         std::vector<Node*> searchStack;
         std::vector<Action> actionStack;
 
@@ -133,7 +141,17 @@ namespace sts::search {
         // Value of a state at the rollout depth cap: terminal -> evaluateEndState;
         // non-terminal -> a heuristic estimate of the eventual terminal value, on
         // the same scale (so capped rollouts of long fights stay informative).
-        static double evaluateLeafState(const BattleContext &bc);
+        // Instance method (not static) so the experimental zero-mean ranking
+        // correction (STS_VNET_RANK_CORR) can accumulate per-search correction
+        // values into rankCorrValues.
+        double evaluateLeafState(const BattleContext &bc);
+        // Zero-mean clamp (experimental STS_VNET_RANK_CORR): subtract the mean
+        // per-search correction from every root edge's stored mean value
+        // (evaluationSum / simulationCount) so the correction cannot drift the
+        // HP scale. A pure scale-preservation adjustment — visit counts are
+        // untouched, so the root action choice (most-visited edge) is
+        // unchanged. No-op when no corrections were accumulated this search.
+        void clampRankCorrAtRoot();
 
         void printSearchTree(std::ostream &os, int levels);
         void printSearchStack(std::ostream &os, bool skipLast=false);

@@ -9937,6 +9937,29 @@ int main(int argc, char **argv) {
                          "already-loaded base model)]\n";
         }
     }
+    // Zero-mean ranking correction (STS_VNET_RANK_CORR, experimental,
+    // standalone diagnostic model — NOT a default; nothing is promoted without
+    // a paired gameplay gate): a small compact-tree model trained on
+    // group-centered leafref - endHp_pred residuals, ADDED on top of the
+    // primary vnet/PVNet leaf value in evaluateLeaf()/evaluateLeafState() to
+    // improve within-group action ranking without shifting the HP scale (the
+    // fair-path search-complete clamp re-zeroes the per-search mean). Parsed
+    // after the STS_VNET region so it works with the deployed vnet and with
+    // experimental vnets. Non-fatal: a missing/invalid path only warns and
+    // keeps the correction off (behavior byte-identical to the uncorrected
+    // searcher).
+    if (const char *d = std::getenv("STS_VNET_RANK_CORR")) {
+        const std::string path = d;
+        if (search::g_combatVNetRankCorr.load(path)) {
+            search::g_useVNetRankCorr = true;
+            std::cout << "[V_combat rank-correction ON: " << path << ", "
+                      << search::g_combatVNetRankCorr.description() << "]\n";
+        } else {
+            std::cout << "[V_combat rank-correction load FAILED: " << path
+                      << " (continuing without; behavior byte-identical to the "
+                         "uncorrected searcher)]\n";
+        }
+    }
     if (const char *d = std::getenv("STS_DIAG_VNET2")) {   // secondary diagnostic vnet (leafdiag/leafref only)
         std::string path = d;
         if (g_combatVNetDiag.load(path)) {

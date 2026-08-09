@@ -110,6 +110,13 @@ namespace sts::search {
         // behavior-preserving. Per-searcher (per decision) lifetime.
         std::unordered_map<std::uint64_t, double> leafCache;
 
+        // Zero-mean ranking correction (experimental, STS_VNET_RANK_CORR):
+        // the correction values ADDED to leaf evals during THIS search
+        // (populated only when g_useVNetRankCorr is set — otherwise always
+        // empty, making clampRankCorrAtRoot a no-op). Cleared in the
+        // constructor; per-searcher => per-thread, no locking needed.
+        std::vector<double> rankCorrValues;
+
         explicit BattleScumSearcher3(const BattleContext &bc, int particleCount = 128);
         BattleScumSearcher3(const BattleContext &bc, std::uint64_t agentSeed,
                             int decisionIndex, int particleCount = 128);
@@ -154,6 +161,13 @@ namespace sts::search {
         virtual double evaluateTerminal(const BattleContext &bc);
         // obsHash != 0 enables the visible-state leaf cache for this call.
         double evaluateLeaf(const BattleContext &bc, std::uint64_t obsHash = 0);
+        // Zero-mean clamp (experimental STS_VNET_RANK_CORR): subtract the mean
+        // per-search correction from every root edge's stored mean value
+        // (evaluationSum / simulationCount) so the correction cannot drift the
+        // HP scale. A pure scale-preservation adjustment — visit counts are
+        // untouched, so the root action choice (most-visited edge) is
+        // unchanged. No-op when no corrections were accumulated this search.
+        void clampRankCorrAtRoot();
         // STS_PVNET_COND_* gating: whether the per-expansion PVNet leaf blend
         // may run on this state (min turn / min tree depth / boss-only).
         [[nodiscard]] bool pvnetCondAllowed(const BattleContext &bc, int depth) const;

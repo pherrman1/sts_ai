@@ -133,6 +133,7 @@ BattleScumSearcher3::BattleScumSearcher3(const BattleContext &bc,
     , riskLambda(g_riskLambda)
     , crnParticleCount(std::min(particleCount, 128))
 {
+    rankCorrValues.clear();   // per-search accumulator; empty until the correction model is loaded
     rootObs = CombatObservation::fromBattleContext(bc);
     root.obs = rootObs;
     root.obsHash = rootObs.visibleHash();
@@ -390,12 +391,31 @@ void BattleScumSearcher3::step() {
             // continuations where the rollout would otherwise dominate.
             double vLeaf = std::numeric_limits<double>::quiet_NaN();
             if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha < 1.0
-                && state.outcome == Outcome::UNDECIDED && vnetCondAllowed(state))
+                && state.outcome == Outcome::UNDECIDED && vnetCondAllowed(state)) {
                 vLeaf = g_combatVNet.predict(state);
+                // Experimental STS_VNET_RANK_CORR: add the zero-mean ranking
+                // correction on top of the primary prediction here too — this
+                // blend site is where the leaf value actually enters the MCTS
+                // (the leafdiag endHp_pred column is exactly this value), so
+                // without it the correction could never improve within-group
+                // ordering. Accumulated into rankCorrValues for the
+                // search-complete zero-mean clamp (fair path).
+                if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
+                    const double corr = g_combatVNetRankCorr.predict(state);
+                    vLeaf += corr;
+                    rankCorrValues.push_back(corr);
+                }
+            }
             else if (g_usePVNet && g_combatPVNet.loaded()
                      && state.outcome == Outcome::UNDECIDED
-                     && pvnetCondAllowed(state, depth))
+                     && pvnetCondAllowed(state, depth)) {
                 vLeaf = g_combatPVNet.leafValue(state, riskLambda);
+                if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
+                    const double corr = g_combatVNetRankCorr.predict(state);
+                    vLeaf += corr;
+                    rankCorrValues.push_back(corr);
+                }
+            }
 
             double eval = 0.0;
             const int rollSteps = multiRollout(state, actionStack, eval);
@@ -972,7 +992,17 @@ double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc, std::uint64_t 
             auto it = leafCache.find(obsHash);
             if (it != leafCache.end()) return it->second;
         }
-        const double v = g_combatPVNet.leafValue(bc, riskLambda);
+        double v = g_combatPVNet.leafValue(bc, riskLambda);
+        // Experimental STS_VNET_RANK_CORR: add the zero-mean ranking
+        // correction on top of the primary prediction (same HP scale as the
+        // vnet output; the model predicts approximately group-centered
+        // residuals, and clampRankCorrAtRoot zeroes the per-search mean at
+        // search-complete in the fair path).
+        if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
+            const double corr = g_combatVNetRankCorr.predict(bc);
+            v += corr;
+            rankCorrValues.push_back(corr);
+        }
         if (g_pvnetCache && obsHash != 0) leafCache.emplace(obsHash, v);
         return v;
     }
@@ -980,8 +1010,16 @@ double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc, std::uint64_t 
         return g_combatDistVNet.predictFromBC(bc).riskAdjustedValue(
             riskLambda, bc.player.maxHp, g_combatDistVNet.winBonus);
     if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha > 0.0
-        && vnetCondAllowed(bc))
-        return g_combatVNet.predict(bc);
+        && vnetCondAllowed(bc)) {
+        double v = g_combatVNet.predict(bc);
+        // Experimental STS_VNET_RANK_CORR (see PVNet branch above).
+        if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
+            const double corr = g_combatVNetRankCorr.predict(bc);
+            v += corr;
+            rankCorrValues.push_back(corr);
+        }
+        return v;
+    }
     double hpR = (double)bc.player.curHp / bc.player.maxHp;
     double eR = 0;
     for (int i = 0; i < bc.monsters.monsterCount; ++i)
@@ -989,6 +1027,22 @@ double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc, std::uint64_t 
             eR += (double)bc.monsters.arr[i].curHp / bc.monsters.arr[i].maxHp;
     eR /= std::max(1, bc.monsters.monstersAlive);
     return 100.0 * (0.7 * hpR + 0.3 * (1.0 - eR));
+}
+
+void BattleScumSearcher3::clampRankCorrAtRoot() {
+    if (rankCorrValues.empty()) return;   // correction model not loaded this search
+    double sum = 0.0;
+    for (const double c : rankCorrValues) sum += c;
+    const double meanCorr = sum / (double)rankCorrValues.size();
+    if (std::fabs(meanCorr) <= 0.1) return;   // below the zero-mean threshold: leave values untouched
+    // Subtract the mean correction from every root edge's STORED MEAN value
+    // (evaluationSum / simulationCount). Visit counts are unchanged, so the
+    // root action choice (most-visited edge) is unchanged — this is a pure
+    // scale-preservation adjustment so the correction cannot drift the HP
+    // scale over the search.
+    for (auto &e : root.edges)
+        if (e.child.simulationCount > 0)
+            e.child.evaluationSum -= meanCorr * (double)e.child.simulationCount;
 }
 
 bool BattleScumSearcher3::pvnetCondAllowed(const BattleContext &bc, int depth) const {

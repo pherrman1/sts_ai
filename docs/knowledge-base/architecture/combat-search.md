@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-09 against the current working tree (per-encounter combat value specialization implemented opt-in: `STS_VNET_PER_ENCOUNTER` dir overlay + `combat_mlp_meta_v1` in-file deltas with `predict(bc)` dispatch, `vnettest --encounter` parity mode — gate pending; covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending).
+Last verified: 2026-08-09 against the current working tree (per-encounter combat value specialization implemented opt-in: `STS_VNET_PER_ENCOUNTER` dir overlay + `combat_mlp_meta_v1` in-file deltas with `predict(bc)` dispatch, `vnettest --encounter` parity mode — gate pending; covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending; experimental zero-mean ranking correction `STS_VNET_RANK_CORR` implemented opt-in (`tools/train_rank_correction.py`, additive on the vnet/PVNet leaf + fair-path search-complete clamp, off by default, byte-identical when unset).
 
 ## Purpose
 
@@ -83,7 +83,10 @@ by how it was entered: `rolloutLeafCalls` = newly expanded leaf,
 `fairIllegalStoredEdge` = stored edge invalid in this determinization — the
 fair fallback path; and by why the rollout stopped: `rolloutTerminated` /
 `rolloutDepthCapped` / `rolloutSkippedVNet` / `rolloutNoLegalAction`), or
-evaluated a fair-play leaf with no legal action (`leafDirectEval`); plus
+evaluated a leaf with no legal action (`leafDirectEval`) — fair mode after
+filtering invalid stored edges, non-fair mode when deterministic enumeration
+yields no legal action (that node is also recorded as a defeat, `outcome = 2`,
+in `step()`); plus
 `treeActions` (actions executed by explicit tree descent), `maxTreeDepth`,
 and `simSeconds` (wall time in the search loops). Invariants per searcher:
 `simulations == terminalInsideTree + rolloutCalls + leafDirectEval` and
@@ -91,7 +94,12 @@ and `simSeconds` (wall time in the search loops). Invariants per searcher:
 `playoutRandom` returns its action count and sets a `RolloutStop` cause
 (`src/sim/search/BattleScumSearcher2.cpp::step`, `playoutRandom`). The
 counters are write-only in the search path — they cannot alter search
-behavior. `Node::outcome` (0 non-terminal, 1 victory, 2 defeat) is recorded at
+behavior. The non-fair empty-edge guards (direct leaf eval + defeat marking
+in `step()`, soft stop with `rolloutNoLegalAction` in `playoutRandom`)
+mirror the fair-mode paths; they are defensive and currently unreachable
+(PLAYER_NORMAL always adds END_TURN), but a future enumerator change could
+hit them. Regression coverage: `testScumNonFairEmptyEdges` (`apps/test.cpp`,
+ctest entry `scum_nonfair_empty_edges`). `Node::outcome` (0 non-terminal, 1 victory, 2 defeat) is recorded at
 the in-tree terminal check; terminal nodes are never expanded, so an
 `outcome != 0` node has no edges. Fair @3k measurement (EXPERIMENTS.md §117,
 2026-08-06): the illegal-stored-edge path is ~half of fair rollouts and
@@ -814,6 +822,28 @@ Learned guidance is loaded by `apps/one_combat.cpp::main`:
   per-encounter parity (in-file delta first, then the
   `STS_VNET_PER_ENCOUNTER` dir). Experimental: per-boss fine-tuning and the
   meta-learner are research arms, NOT promoted to defaults (gate pending).
+- `STS_VNET_RANK_CORR=<path>` (experimental, off by default) loads a SMALL
+  standalone zero-mean ranking-correction model (`search::g_combatVNetRankCorr`
+  / `search::g_useVNetRankCorr`, parsed after the STS_VNET region in
+  `apps/one_combat.cpp::main`; missing/invalid path warns and keeps the
+  correction off — byte-identical to the uncorrected searcher). Trained by
+  `tools/train_rank_correction.py` on group-centered
+  `leafref.referenceValue - leafdiag.endHp_pred` residuals (same
+  733-feature combat layout as the deployed vnet, shallow XGBoost recipe,
+  fight-group split), the correction is ADDED on top of the primary
+  vnet/PVNet leaf value in `BattleScumSearcher3::evaluateLeaf` (vnet + PVNet
+  branches) and the S3 leaf-blend site in `step()` (where the leafdiag
+  `endHp_pred` column comes from), plus
+  `BattleScumSearcher2::evaluateLeafState` (vnet branch, terminal and
+  non-terminal). Corrections accumulate per search in `rankCorrValues`;
+  at search-complete in the fair paths (`ScumSearchAgent2::playoutBattleFair`)
+  `clampRankCorrAtRoot()` subtracts the per-search mean correction
+  (|mean| > 0.1 threshold) from every root edge's stored mean value — visit
+  counts are untouched, so the root action choice is unchanged (pure
+  scale-preservation). Non-fair S2 clears the accumulator at `advanceRoot`.
+  Diagnostic arm only: no default ON, no promotion without a paired gameplay
+  gate; `one_combat vnettest` on the exported compact tree verifies
+  inference parity (max|diff| < 0.001).
 - `STS_DIST_VNET` loads the distributional transformer evaluator.
 - `STS_PVNET` loads the shared `CombatPVNet`; `STS_PVNET_ALPHA` defaults to
   `1.0` (pure neural leaf) and `STS_PVNET_VALUE_ONLY` disables its policy head.
