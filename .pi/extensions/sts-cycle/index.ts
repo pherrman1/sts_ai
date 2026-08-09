@@ -143,6 +143,12 @@ interface AgentLiveProgress {
   currentTool: string | null;
   recentTools: string[];
   lastEmitAt: number;
+  /** Thinking tokens received in current thinking phase */
+  thinkingTokens: number;
+  /** Response characters received in current responding phase */
+  responseChars: number;
+  /** When the current status began (ms epoch) */
+  statusStartedAt: number;
 }
 
 function createAgentLiveProgress(): AgentLiveProgress {
@@ -152,6 +158,9 @@ function createAgentLiveProgress(): AgentLiveProgress {
     currentTool: null,
     recentTools: [],
     lastEmitAt: 0,
+    thinkingTokens: 0,
+    responseChars: 0,
+    statusStartedAt: Date.now(),
   };
 }
 
@@ -188,10 +197,19 @@ function conciseToolCall(event: any): string {
   return name;
 }
 
-function agentStatusLabel(status: AgentLiveProgress["status"]): string {
-  switch (status) {
-    case "thinking": return "thinking";
-    case "responding": return "responding";
+function agentStatusLabel(live: AgentLiveProgress): string {
+  const elapsed = Math.round((Date.now() - live.statusStartedAt) / 1000);
+  const elapsedStr = elapsed > 0 ? ` ${elapsed}s` : "";
+
+  switch (live.status) {
+    case "thinking": {
+      const tk = live.thinkingTokens > 0 ? ` · ${live.thinkingTokens}tk` : "";
+      return `thinking${elapsedStr}${tk}`;
+    }
+    case "responding": {
+      const ch = live.responseChars > 0 ? ` · ${live.responseChars}ch` : "";
+      return `responding${elapsedStr}${ch}`;
+    }
     case "tool": return "running tool";
     default: return "waiting";
   }
@@ -212,7 +230,7 @@ function emitAgentLiveProgress(
 
   const pieces = [
     `turn ${Math.max(1, live.turn)}`,
-    agentStatusLabel(live.status),
+    agentStatusLabel(live),
   ];
 
   if (live.currentTool) pieces.push(`→ ${live.currentTool}`);
@@ -236,17 +254,34 @@ function handleAgentRunnerEvent(
     live.turn++;
     live.status = "waiting";
     live.currentTool = null;
+    live.thinkingTokens = 0;
+    live.responseChars = 0;
+    live.statusStartedAt = Date.now();
     emitAgentLiveProgress(stage, model, live, onProgress, true);
     return;
   }
 
   if (e.type === "message_update") {
     const subtype = e.assistantMessageEvent?.type;
-    if (subtype === "thinking_start" || subtype === "thinking_delta") {
+
+    if (subtype === "thinking_start") {
       live.status = "thinking";
+      live.thinkingTokens = 0;
+      live.statusStartedAt = Date.now();
+      emitAgentLiveProgress(stage, model, live, onProgress, true);
+    } else if (subtype === "thinking_delta") {
+      live.status = "thinking";
+      live.thinkingTokens++;
       emitAgentLiveProgress(stage, model, live, onProgress);
-    } else if (subtype === "text_start" || subtype === "text_delta") {
+    } else if (subtype === "text_start") {
       live.status = "responding";
+      live.responseChars = 0;
+      live.statusStartedAt = Date.now();
+      emitAgentLiveProgress(stage, model, live, onProgress, true);
+    } else if (subtype === "text_delta") {
+      live.status = "responding";
+      const delta: string = e.assistantMessageEvent?.delta || "";
+      live.responseChars += delta.length;
       emitAgentLiveProgress(stage, model, live, onProgress);
     }
     return;
@@ -255,6 +290,7 @@ function handleAgentRunnerEvent(
   if (e.type === "tool_execution_start") {
     live.status = "tool";
     live.currentTool = conciseToolCall(e);
+    live.statusStartedAt = Date.now();
     emitAgentLiveProgress(stage, model, live, onProgress, true);
     return;
   }
@@ -267,12 +303,18 @@ function handleAgentRunnerEvent(
     }
     live.currentTool = null;
     live.status = "waiting";
+    live.thinkingTokens = 0;
+    live.responseChars = 0;
+    live.statusStartedAt = Date.now();
     emitAgentLiveProgress(stage, model, live, onProgress, true);
     return;
   }
 
   if (e.type === "message_end") {
     live.status = "waiting";
+    live.thinkingTokens = 0;
+    live.responseChars = 0;
+    live.statusStartedAt = Date.now();
     emitAgentLiveProgress(stage, model, live, onProgress, true);
     return;
   }
@@ -280,6 +322,8 @@ function handleAgentRunnerEvent(
   if (e.type === "agent_end") {
     live.status = "waiting";
     live.currentTool = null;
+    live.thinkingTokens = 0;
+    live.responseChars = 0;
     onProgress?.(stage, `completed · ${model}`);
   }
 }
@@ -337,12 +381,12 @@ async function invokeAgent(
 
   try {
     // Role-specific timeouts: read-only agents get tighter limits.
-    // Architect/reviewer should never legitimately sit idle for >2 min.
+    // Read-only agents get a 5 min idle timeout — enough for large-prompt initial processing but catches true API stalls.
     const roleTimeouts: Record<string, { hard: number; idle: number }> = {
-      architect: { hard: 10 * 60 * 1000, idle: 120 * 1000 },
+      architect: { hard: 15 * 60 * 1000, idle: 300 * 1000 },
       implementer: { hard: 30 * 60 * 1000, idle: 300 * 1000 },
-      reviewer: { hard: 15 * 60 * 1000, idle: 120 * 1000 },
-      reviewer_escalation: { hard: 15 * 60 * 1000, idle: 120 * 1000 },
+      reviewer: { hard: 15 * 60 * 1000, idle: 300 * 1000 },
+      reviewer_escalation: { hard: 20 * 60 * 1000, idle: 300 * 1000 },
     };
     const rt = roleTimeouts[role] || { hard: 30 * 60 * 1000, idle: 0 };
 
@@ -360,6 +404,13 @@ async function invokeAgent(
 
     const text = finalAssistantText(result.events);
     const costs = costEntriesFromEvents(role, result.events);
+
+    if (result.wasTimedOut) {
+      throw new Error(
+        `Pi agent '${role}' timed out — no events received for the idle period. ` +
+        `The model/API may be stalled or the prompt may be too large.`,
+      );
+    }
 
     if (result.exitCode !== 0 && !result.wasTerminated) {
       throw new Error(
