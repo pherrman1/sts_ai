@@ -1,10 +1,12 @@
 # Out-of-combat policy
 
-Last verified: 2026-08-05 against the current working tree (checkpoint-oracle
-terminal win-GBM + margin-gate levers added and falsified §111; Wave B regret
-gate + Q_win truth-check mode + map-DAG encoder (V6) + Phase F soft-target
-policy objective and policy-score gate env added; Phase F falsified §104,
-label-noise wave §105 null — learned one-ply label line closed).
+Last verified: 2026-08-09 against the current working tree (native WinNet
+loader validates truncation; native-OOC banner conditional on floor+win load).
+Previously verified 2026-08-05 (checkpoint-oracle terminal win-GBM +
+margin-gate levers added and falsified §111; Wave B regret gate + Q_win
+truth-check mode + map-DAG encoder (V6) + Phase F soft-target policy objective
+and policy-score gate env added; Phase F falsified §104, label-noise wave §105
+null — learned one-ply label line closed).
 
 ## Purpose
 
@@ -36,11 +38,17 @@ The active whole-run research policy is the ordered branch chain in
 `apps/one_combat.cpp::main` enables native OOC unless `STS_NATIVE_OOC=0`.
 Failure to load the floor model terminates startup; failure to load the default
 win model does not. If the win model is unavailable, win-rest helpers fall back
-to server requests even while native OOC is enabled, and the generic
-`[native OOC floor/win GBMs ON]` message is still printed. Confirm the
-path-specific win-model load message. With the tracked win artifact present,
-`v_server.py` is not a default `bestbench` dependency; it remains an optional
-localhost bridge for legacy and experimental endpoints.
+to server requests even while native OOC is enabled. The generic
+`[native OOC floor/win GBMs ON]` banner prints only when BOTH models loaded
+(`g_floorNet.ok && g_winNet.ok`); otherwise the path-specific
+`[native V_win NOT loaded; win-rest helpers will use v_server fallback]` line
+prints instead. `WinNet::load` (`apps/one_combat.cpp`) also rejects
+truncated/malformed compact tree files — stream-state checks after `ntrees` and
+after every node read, `ntrees < 1` rejection, a per-tree final-node-must-be-a-
+leaf check, and a trailing-data probe — instead of silently loading a partial
+model with `ok=true` (silent constant predictions). With the tracked win
+artifact present, `v_server.py` is not a default `bestbench` dependency; it
+remains an optional localhost bridge for legacy and experimental endpoints.
 
 A successfully loaded `STS_OOC_CHECKPOINT_NN=<path>` enables the compact native
 checkpoint-distilled action network in acts 1–3 before ordinary policy layers

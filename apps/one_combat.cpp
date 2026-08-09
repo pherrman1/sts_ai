@@ -1365,7 +1365,8 @@ struct WinNet {
 
     bool load(const std::string &path, const std::unordered_map<std::string,int> &richIdx) {
         this->path = path;
-        std::ifstream f(path); if (!f) return false;
+        ok = false;                                        // only set true after validation passes
+        std::ifstream f(path); if (!f) { std::cerr << "WinNet: cannot open " << path << "\n"; return false; }
         std::string tok; int nfeat = 0, ntrees = 0; double baseScore = 0.5;
         f >> tok >> nfeat;                                 // "nfeat N"
         sel.resize(nfeat);
@@ -1376,17 +1377,29 @@ struct WinNet {
         f >> tok >> logistic;                              // "logistic 0/1"
         f >> tok >> baseScore;                             // "base_score X"
         f >> tok >> ntrees;                                // "ntrees N"
+        if (!f.good() || ntrees < 1) {
+            std::cerr << "WinNet: truncated/missing tree count in " << path << "\n"; return false;
+        }
         baseMargin = logistic ? std::log(baseScore / (1.0 - baseScore)) : baseScore;
         trees.resize(ntrees);
         for (int t = 0; t < ntrees; ++t) {
             std::string kw; int ti, nn; f >> kw >> ti >> nn;   // "tree t count"
+            if (!f.good()) { std::cerr << "WinNet: truncated tree " << t << " header in " << path << "\n"; return false; }
             trees[t].resize(nn);
             for (int i = 0; i < nn; ++i) {
                 std::string type; f >> type;
-                if (type == "L") { double v; f >> v; trees[t][i] = { -1, (float)v, 0, 0 }; }
-                else { int fi, y, no; float th; f >> fi >> th >> y >> no; trees[t][i] = { fi, th, y, no }; }
+                Node nd = { -1, 0.0f, 0, 0 };
+                if (type == "L") { double v; f >> v; nd = { -1, (float)v, 0, 0 }; }
+                else { int fi = 0, y = 0, no = 0; float th = 0.0f; f >> fi >> th >> y >> no; nd = { fi, th, y, no }; }
+                if (!f.good()) { std::cerr << "WinNet: truncated node in tree " << t << " of " << path << "\n"; return false; }
+                trees[t][i] = nd;
+            }
+            if (trees[t].empty() || trees[t].back().feat >= 0) {
+                std::cerr << "WinNet: tree " << t << " does not end in a leaf in " << path << "\n"; return false;
             }
         }
+        f >> tok;                                          // probe: file must end cleanly after the last tree
+        if (!f.eof()) { std::cerr << "WinNet: trailing data after " << ntrees << " trees in " << path << "\n"; return false; }
         ok = true;
         std::cout << "[native V_win: " << ntrees << " trees, " << nfeat << " feats from " << path << "]\n";
         return true;
@@ -9424,8 +9437,9 @@ int main(int argc, char **argv) {
             }
             if (!g_winNet.ok) {
                 std::cout << "[native V_win NOT loaded; win-rest helpers will use v_server fallback]\n";
+            } else {
+                std::cout << "[native OOC floor/win GBMs ON; no v_server required]\n";
             }
-            std::cout << "[native OOC floor/win GBMs ON; no v_server required]\n";
         }
     }
     if (const char *d = std::getenv("STS_PATH_V")) {        // model-driven pathing (uses forward-map feats)
