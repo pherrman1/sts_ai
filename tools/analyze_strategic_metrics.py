@@ -21,12 +21,11 @@ from strategic_metrics import analyze_decisions
 REQUIRED = {"screen", "margin", "fired", "modelIdx", "fallbackIdx", "bestIdx",
             "predQ", "labelQ"}
 
-
 def _list(value):
     return [float(x) for x in value.split("|")] if value else []
 
 
-def load(path):
+def load(path, owned_only=False):
     with open(path, newline="") as f:
         reader = csv.DictReader(f)
         missing = REQUIRED - set(reader.fieldnames or ())
@@ -35,6 +34,8 @@ def load(path):
         rows = []
         for line, raw in enumerate(reader, 2):
             try:
+                if owned_only and int(raw.get("owned", "1")) == 0:
+                    continue
                 rows.append({"screen": raw["screen"], "margin": float(raw["margin"]),
                              "threshold": float(raw.get("threshold", "nan")),
                              "fired": int(raw["fired"]) != 0,
@@ -75,13 +76,16 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("csv", nargs="?")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--owned-only", action="store_true",
+                    help="restrict to rows where owned=1")
     ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args(argv)
     if args.self_test:
         selftest(); return 0
     if not args.csv:
         ap.error("CSV path required (or --self-test)")
-    report = analyze_decisions(load(args.csv))
+    rows = load(args.csv, owned_only=args.owned_only)
+    report = analyze_decisions(rows)
     if args.json: print(json.dumps(report, indent=2, sort_keys=True))
     else:
         print(json.dumps({"opportunities": report["opportunities"],
