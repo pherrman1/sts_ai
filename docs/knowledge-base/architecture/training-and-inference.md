@@ -49,7 +49,7 @@ Representative model families:
   `train_path_cf.py`, `train_ooc_next_action.py`, `train_ooc_checkpoint.py`;
 - strategic run-level: `train_strategic.py` (joint policy + value heads,
   Tier-A `chosen` labels; exported by `export_strategic.py`);
-- combat value: `train_value_combat.py`, entity/MLP/distribution variants;
+- combat value: `train_value_combat.py` (XGBoost, hyperparameter-tuned defaults §148: max_depth 8, eta 0.03, subsample 0.54, colsample_bytree 0.81, min_child_weight 82, reg_alpha 1.8, gamma 4.4, 2000 rounds, 40 early stop); entity/MLP/distribution variants;
 
 The canonical combat-value trainer (`train_value_combat.py`) selects its
 label with `VCOMBAT_TARGET`:
@@ -208,6 +208,17 @@ unless STS_PVNET_VALUE_ONLY=1.
 
 ## Known limitations
 
+- **Off-policy generalization (discovered §148):** the training dataset holds
+  on-policy pre-action snapshots from the teacher policy, but MCTS evaluates
+  counterfactual states outside that distribution. Offline metrics (RMSE,
+  R²) are near-identical between models that differ by 10pp in actual win
+  rate. Stronger regularization (min_child_weight 82, L1 α=1.8, γ=4.4,
+  subsample 0.54) improves off-policy generalization without measurably
+  changing on-policy fit. This is a training-recipe lever, not a data lever:
+  adding search-leaf states to the training mixture with the same endHp
+  objective did NOT improve ranking (§137). Future training work should
+  optimize for leaf-state ranking metrics directly rather than on-policy
+  RMSE.
 - No dependency lock or environment definition exists. Scripts import NumPy,
   pandas, XGBoost, scikit-learn, and sometimes PyTorch. On this machine the
   working training environment is the repo venv (`.venv/bin/python`, torch

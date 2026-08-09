@@ -3853,6 +3853,19 @@ enabling condition, but the omitted command prevents verification.
   (tracked native; .pt stays local per convention), `build/v4fix_128.csv`,
   `build/v4fix_256.csv`, `build/v4fix_s3_256.csv`,
   `/tmp/opencode/v4_retrain.log`.
+- **Post-hoc (2026-08-09, §108 synthesis):** the S3−belief−chain gate ran
+  with the pre-§113 enumerator (commit 619c12c) whose battle-skip exploit
+  (zero valid edges at WARCRY/GAMBLE CARD_SELECT → UNDECIDED break →
+  rewards/advance) inflated both arms. The 60.2% reference is invalidated
+  (§113; honest re-baseline 42.6–44.5% on the same block); the v4fix arm's
+  skip contamination was never instrumented and is plausibly model-dependent.
+  The "statistically significant (p=0.028)" claim therefore rests on a
+  confounded measurement. The only valid honest evidence is the S2 pairings
+  (−2.34pp @128 p=0.77, −3.91pp @256 p=0.36 — directionally negative, n.s.).
+  The deployed-model-stays decision is unchanged; this note clarifies the
+  evidence quality. The §108 retrain also fixed only one of two known trainer
+  bugs (the glob-block feature-order skew, discovered 2026-08-09, was still
+  present in both models); the interaction has never been tested.
 
 ## 109. Terminal-leaf run-value bonus (cross-combat setup) — infrastructure in, smoke only; no policy claim yet (2026-08-05)
 

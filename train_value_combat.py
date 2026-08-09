@@ -110,11 +110,16 @@ dtr = xgb.QuantileDMatrix(X[tr], label=y[tr], weight=weight[tr], feature_names=f
 dva = xgb.QuantileDMatrix(X[va], label=y[va], weight=weight[va], ref=dtr, feature_names=feat_cols)
 # GPU if available (local), else CPU (e.g. a many-core cloud box). STS_XGB_DEVICE overrides.
 DEVICE = os.environ.get("STS_XGB_DEVICE") or ("cuda" if shutil.which("nvidia-smi") else "cpu")
+# Hyperparameter-tuned defaults (§148): 50-trial Optuna TPE search found
+# stronger regularization (min_child_weight 82, L1 α=1.81, γ=4.36,
+# subsample 0.54) gives +10.9pp win at matched compute vs the old defaults
+# despite near-identical offline RMSE — the improvement comes from better
+# off-policy generalization to MCTS search-leaf states.
 params = dict(objective="reg:squarederror", tree_method="hist", device=DEVICE,
-              max_depth=8, eta=0.05, subsample=0.8, colsample_bytree=0.7,
-              min_child_weight=20, max_bin=256)
+              max_depth=8, eta=0.03, subsample=0.54, colsample_bytree=0.81,
+              min_child_weight=82, max_bin=256, reg_alpha=1.8, gamma=4.4)
 print(f"training on {DEVICE} ...", flush=True)
-bst = xgb.train(params, dtr, num_boost_round=1500, evals=[(dva, "val")],
+bst = xgb.train(params, dtr, num_boost_round=2000, evals=[(dva, "val")],
                 early_stopping_rounds=40, verbose_eval=100)
 best = bst.best_iteration
 pv = bst.predict(dva, iteration_range=(0, best + 1))

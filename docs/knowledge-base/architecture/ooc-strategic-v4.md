@@ -2,7 +2,8 @@
 
 Last verified: 2026-08-09 against the current working tree (feature-leak audit:
 8 genuine leaks removed; bossId confirmed legit; code corrected NGLOB=42;
-corrected model trained and gated).
+corrected model trained and gated; trainer glob-block feature-order skew fixed
+— see decision-log/2026-08-09-v4-glob-skew-fix.md).
 
 Status: **delivered and recorded** in EXPERIMENTS.md §75 (2026-08-02).
 **Code correction** (2026-08-09): bossId re-added to the glob block;
@@ -44,33 +45,52 @@ All built from the existing `strategicgen2` CSV row schema
 (`richHeader()` columns between `chosen` and `won`, one_combat.cpp:2792) and,
 at inference, from `GameContext` with the same loops as `richRow()` (one_combat.cpp:2810).
 
-### 2.1 Global scalar block — 50 values
+### 2.1 Global scalar block — 42 values (36 raw + 6 derived)
 
-The 44 existing state scalars in `richRow()` order:
+**Historical note (2026-08-09):** the original 50-glob layout included 8
+hidden-information leaks (nextEliteId, nextFight0–2, remElites, remFights,
+monOffset, eliteOffset at CSV cols 15–22). These were removed in the NGLOB=42
+correction. The deployed `ooc_strategic_tok_final.native` was trained as a
+50-glob model with those leaks; the honest 42-glob model gates at 15.6%
+(below baseline). See decision-log/2026-08-09-v4-feature-leak-audit.md.
+
+**Trainer skew (also 2026-08-09):** `train_strategic_tok.py` built its glob
+block by slicing CSV columns at positions that assumed all scalars were
+contiguous. Because the strategicgen2 CSV interleaves d/u/r/pot (cols 32–1004)
+before fm*/curMap* (cols 1005–1016), the trainer fed deck-count values
+(d0..d11) into glob slots 24–35, which the C++ inference fills with
+forward-map features. The deployed 50-glob model was trained with this skew.
+The trainer has been fixed (decision-log/2026-08-09-v4-glob-skew-fix.md);
+C++ `buildTokState` was always correct. The table below is the **corrected
+layout** that matches C++ and the fixed trainer.
+
+The 36 raw state scalars in the glob block, in order:
 
 ```
 ascension,act,floor,curHp,maxHp,gold,deckSize,potionChance,cardRarityFactor,
 blueKey,greenKey,redKey,potionCount,potionCapacity,
-bossId,nextEliteId,nextFight0,nextFight1,nextFight2,remElites,remFights,monOffset,eliteOffset,
+bossId,
+(skip: nextEliteId,nextFight0,nextFight1,nextFight2,remElites,remFights,monOffset,eliteOffset)
 pvShop,pvRest,pvEvent,pvElite,pvMonster,pvTreasure,
 bottledAtkId,bottledSkillId,bottledPowId,
+(skip: d/u/r/pot block, CSV cols 32–1004)
 fmDElite,fmDRest,fmDShop,fmDBoss,fmCElite,fmCRest,fmCShop,fmCEvent,fmCMonster,fmCTreasure,
 curMapX,curMapY
 ```
 
 Plus **6 derived threshold features** (exact formulas, identical both sides):
 
-| # | feature | formula |
-|---|---------|---------|
-| 45 | `hpFrac` | `curHp/maxHp` (0 if maxHp==0) |
-| 46 | `missingHp` | `maxHp - curHp` |
-| 47 | `freePotionSlot` | `potionCount < potionCapacity ? 1 : 0` |
-| 48 | `goldGeRemoval` | `gold >= 75 ? 1 : 0` |
-| 49 | `canTakeEliteKey` | `remElites > 0 && !(blueKey && greenKey && redKey) ? 1 : 0` |
-| 50 | `bossNear` | `fmDBoss <= 3 ? 1 : 0` |
+| # | glob slot | feature | formula |
+|---|-----------|---------|---------|
+| 1 | 36 | `hpFrac` | `curHp/maxHp` (0 if maxHp==0) |
+| 2 | 37 | `missingHp` | `maxHp - curHp` |
+| 3 | 38 | `freePotionSlot` | `potionCount < potionCapacity ? 1 : 0` |
+| 4 | 39 | `goldGeRemoval` | `gold >= 75 ? 1 : 0` |
+| 5 | 40 | `canTakeEliteKey` | `fmCElite > 0 && !(blueKey && greenKey && redKey) ? 1 : 0` |
+| 6 | 41 | `bossNear` | `fmDBoss <= 3 ? 1 : 0` |
 
 Thresholds are computed from RAW column values (trainer) / raw `GameContext`
-(C++). The whole 50-block is z-normalized with train-row mean/inv (see §4),
+(C++). The whole 42-block is z-normalized with train-row mean/inv (see §4),
 computed the same way V3 does for its state block (train rows only).
 
 ### 2.2 Deck tokens — counted `(cardId, upgraded, count)`
@@ -134,19 +154,19 @@ Note: `E_card/E_rel/E_pot` are the SAME tables as the deck/relic/potion tokens
 ## 3. Network (fixed topology, rung masks zero out inactive groups)
 
 ```
-globals(50, z-normalized) ─┐
-z_deck(32) [rung>=2 else 0] ├→ concat(106) → Linear(106→256) → LayerNorm(eps1e-5)
+globals(42, z-normalized) ─┐
+z_deck(32) [rung>=2 else 0] ├→ concat(98) → Linear(98→256) → LayerNorm(eps1e-5)
 z_rel(16)  [rung>=3 else 0] │              → GELU → Dropout(0.2) → Linear(256→128) → GELU
 z_pot(8)   [rung>=3 else 0] ┘              → z_state(128)
 ```
 
 ```mermaid
 flowchart LR
-    globals["globals(50, z-normalized)"] --> concat["concat(106)"]
+    globals["globals(42, z-normalized)"] --> concat["concat(98)"]
     z_deck["z_deck(32), rung>=2 else 0"] --> concat
     z_rel["z_rel(16), rung>=3 else 0"] --> concat
     z_pot["z_pot(8), rung>=3 else 0"] --> concat
-    concat --> lin1["Linear(106→256)"] --> ln["LayerNorm(1e-5)"] --> gelu1["GELU"] --> drop["Dropout(0.2)"] --> lin2["Linear(256→128)"] --> gelu2["GELU"] --> z_state["z_state(128)"]
+    concat --> lin1["Linear(98→256)"] --> ln["LayerNorm(1e-5)"] --> gelu1["GELU"] --> drop["Dropout(0.2)"] --> lin2["Linear(256→128)"] --> gelu2["GELU"] --> z_state["z_state(128)"]
 ```
 
 Action encoders (unchanged from V3, one new block):
@@ -199,33 +219,33 @@ zero (no gradient through them). All rungs share the same topology and losses.
   labeled pairs with differing labelWon (`RANK_MARGIN` default 1.0,
   `RANK_MAX_PAIRS` default 16 per group per batch). §139: flat at λ=0.1 on
   the partial data (q_top1 +0.1pp).
-- Memory: write a group-ordered float16 mmap `OUT_tok_state.bin` of the 482 raw
-  columns per row `[glob 44, thr 6, deck 96×3, rel 64×2, pot 8×2]` (chunked CSV
+- Memory: write a group-ordered float16 mmap `OUT_tok_state.bin` of the 474 raw
+  columns per row `[glob 42, deck 96×3, rel 64×2, pot 8×2]` (chunked CSV
   read, like train_strategic.py:140-179). Global mean/inv from train rows over
-  the 50-global block only. Count/data features already scaled 0..1; ids
+  the 42-global block only. Count/data features already scaled 0..1; ids
   embedded.
 - Trainer also loads raw `gold,curHp,maxHp,potionCount,potionCapacity,blueKey,
   greenKey,redKey,remElites,fmDBoss` from the CSV (small extra usecols) to
   compute thresholds and `goldGePrice`.
-- Checkpoint `OUT.pt` = `{"state_dict", "mean"(50), "inv"(50), "metrics", "rung", "nrows"}`;
+- Checkpoint `OUT.pt` = `{"state_dict", "mean"(42), "inv"(42), "metrics", "rung", "nrows"}`;
   metrics JSON `OUT_metrics.json`.
 - Artifacts: `selfplay/models/ooc_strategic_tok{,_rungN}.pt`, `_state.bin` per rung.
 
 ## 5. Export format `OOC_STRAT_V4` (binary, row-major float32)
 
 Magic `OOC_STRAT_V4` (12 bytes) then `int32[17]` dims:
-`{nGlob=50, nhidden=256, nhidden2=128, nbits=32, deckDim=32, relDim=16, potDim=8,
+`{nGlob=42, nhidden=256, nhidden2=128, nbits=32, deckDim=32, relDim=16, potDim=8,
  maxDeck=96, maxRel=64, maxPot=8, deckTokIn=41, relTokIn=17, potTokIn=9,
  entIn=37, entHid=32, entOut=16, polIn=184}` then blocks in this exact order:
 
 ```
-globMean[50], globInv[50],
+globMean[42], globInv[42],
 E_card[372×32], E_up[2×8],
 deckTokW[32×41], deckTokB[32],
 deckQkvW[96×32], deckQkvB[96], deckProjW[32×32], deckProjB[32], deckLnW[32], deckLnB[32],
 E_rel[181×16], relTokW[16×17], relTokB[16],
 E_pot[48×8],  potTokW[8×9],   potTokB[8],
-f0w[256×106], f0b[256], lnW[256], lnB[256], f4w[128×256], f4b[128],
+f0w[256×98], f0b[256], lnW[256], lnB[256], f4w[128×256], f4b[128],
 a0w[32×32], a0b[32], a3w[16×32], a3b[16],
 cat0w[32×32], cat0b[32], cat3w[16×32], cat3b[16],
 catsW[6×512×4], atypeW[16×8], screenW[16×8],
@@ -257,9 +277,9 @@ Zero tokens never participate (trainer masks invalid; C++ loops valid).
 ## 6. C++ integration (Track C, one_combat.cpp edits)
 
 - New file `apps/ooc_strategic_tok_net.h`: `struct OocStrategicTokNet` with
-  `load`, `predictValue(state50, screen)`, `predictActionValue(glob50, nDk, dk[96][3], nRl, rl[64][2], nPt, pt[8][2], actionBits, cats[6], actionType, screen, entityType, entityId, goldGePrice)`. Global `g_oocStrategicTokNet`.
+  `load`, `predictValue(glob42, screen)`, `predictActionValue(glob42, nDk, dk[96][3], nRl, rl[64][2], nPt, pt[8][2], actionBits, cats[6], actionType, screen, entityType, entityId, goldGePrice)`. Global `g_oocStrategicTokNet`.
 - Token builder in one_combat.cpp from `GameContext` (mirror `richRow` loops):
-  `struct TokState { float glob[50]; int nDk, nRl, nPt; int dk[96][3]; int rl[64][2]; int pt[8][2]; }`
+  `struct TokState { float glob[42]; int nDk, nRl, nPt; int dk[96][3]; int rl[64][2]; int pt[8][2]; }`
   built once per decision, reused across actions of that decision.
 - Env: `STS_OOC_STRATEGIC_TOK_NN=<path>` loads the V4 net. When loaded, the
   four gates (`oocOnePlyCardRewardPolicy`, `oocOnePlyRestPolicy`,
