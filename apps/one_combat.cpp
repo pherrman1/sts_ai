@@ -9921,6 +9921,22 @@ int main(int argc, char **argv) {
         search::g_reuseDiag = std::atoi(d) != 0;
         std::cout << "[reuse diagnostics = " << (search::g_reuseDiag ? "ON" : "off") << "]\n";
     }
+    if (const char *d = std::getenv("STS_REUSE_OBS_STABLE")) {
+        search::g_reuseObsStable = std::atoi(d) != 0;
+        std::cout << "[reuse obs-stable = " << (search::g_reuseObsStable ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_REUSE_RECONCILE_ROOT")) {
+        search::g_reuseReconcileRoot = std::atoi(d) != 0;
+        std::cout << "[reuse reconcile-root = " << (search::g_reuseReconcileRoot ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_REUSE_CARRY_DIAG")) {
+        search::g_reuseCarryDiag = std::atoi(d) != 0;
+        std::cout << "[reuse carry-diag = " << (search::g_reuseCarryDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_UNION_EXPAND")) {
+        search::g_s3UnionExpand = std::atoi(d) != 0;
+        std::cout << "[S3 union-expand = " << (search::g_s3UnionExpand ? "ON" : "off") << "]\n";
+    }
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
         const std::string name(d);
         int id = -1;

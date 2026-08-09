@@ -9,8 +9,11 @@
 #include "combat/BattleContext.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
+#include <set>
+#include <iomanip>
 
 using namespace sts;
 
@@ -24,10 +27,14 @@ bool g_s3Live = true;
 bool g_s3Crn = false;
 
 // ── Tree reuse control ─────────────────────────────────────────────────────
-int g_reuseMaxSearches = 0;    // STS_REUSE_MAX_SEARCHES (0 = fresh every decision)
-int g_reuseStatsMode = 0;      // STS_REUSE_STATS_MODE: 0=keep, 1=recursive_reset
-bool g_reuseAlwaysQ = false;   // STS_REUSE_ALWAYS_Q: always use Q on carried trees
-bool g_reuseDiag = false;      // STS_REUSE_DIAG: print reuse diagnostics
+int g_reuseMaxSearches = 0;     // STS_REUSE_MAX_SEARCHES (0 = fresh every decision)
+int g_reuseStatsMode = 0;       // STS_REUSE_STATS_MODE: 0=keep, 1=recursive_reset
+bool g_reuseAlwaysQ = false;    // STS_REUSE_ALWAYS_Q: always use Q on carried trees
+bool g_reuseDiag = false;       // STS_REUSE_DIAG: print reuse diagnostics
+bool g_reuseObsStable = false;  // STS_REUSE_OBS_STABLE: only promote obs-stable children
+bool g_reuseReconcileRoot = false; // STS_REUSE_RECONCILE_ROOT: add missing root edges
+bool g_reuseCarryDiag = false;  // STS_REUSE_CARRY_DIAG: detailed per-carry diagnostic
+bool g_s3UnionExpand = false;   // STS_S3_UNION_EXPAND: add missing edges at internal nodes
 bool g_s3PoolRedirect = false; // STS_S3_POOL_REDIRECT: forced-move budget pool redirect (opt-in)
 // A2 dynamic alpha by rollout length (STS_VNET_ALPHA_LEN, opt-in):
 // replaces the flat g_vnetAlpha at the leaf blend site with a lookup
@@ -180,6 +187,57 @@ void BattleScumSearcher3::recursiveResetStats(Node &node) {
     node.dist.loQ05 = 0;
     for (auto &edge : node.edges)
         recursiveResetStats(edge.child);
+}
+
+// ---- Card action key (semantic identity independent of hand position) ------
+bool BattleScumSearcher3::CardActionKey::operator==(const CardActionKey &o) const {
+    return id == o.id && upgradeCount == o.upgradeCount
+        && costForTurn == o.costForTurn && freeToPlayOnce == o.freeToPlayOnce
+        && specialData == o.specialData && target == o.target;
+}
+bool BattleScumSearcher3::CardActionKey::operator<(const CardActionKey &o) const {
+    if (id != o.id) return id < o.id;
+    if (upgradeCount != o.upgradeCount) return upgradeCount < o.upgradeCount;
+    if (costForTurn != o.costForTurn) return costForTurn < o.costForTurn;
+    if (freeToPlayOnce != o.freeToPlayOnce) return !freeToPlayOnce && o.freeToPlayOnce;
+    if (specialData != o.specialData) return specialData < o.specialData;
+    return target < o.target;
+}
+BattleScumSearcher3::CardActionKey
+BattleScumSearcher3::cardActionKey(const BattleContext &bc, const Action &a) {
+    CardActionKey k;
+    if (a.getActionType() == ActionType::CARD) {
+        int hi = a.getSourceIdx();
+        if (hi >= 0 && hi < bc.cards.cardsInHand) {
+            const auto &c = bc.cards.hand[hi];
+            k.id = c.getId();
+            k.upgradeCount = c.getUpgradeCount();
+            k.costForTurn = c.costForTurn;
+            k.freeToPlayOnce = c.freeToPlayOnce;
+            k.specialData = c.specialData;
+            k.target = a.getTargetIdx();
+        }
+    } else if (a.getActionType() == ActionType::SINGLE_CARD_SELECT) {
+        int si = a.getSelectIdx();
+        if (si >= 0 && si < (int)bc.cardSelectInfo.cards.size()
+            && bc.cardSelectInfo.cards[si] != CardId::INVALID) {
+            k.id = bc.cardSelectInfo.cards[si];
+            k.target = -1;
+        }
+    }
+    return k;
+}
+
+// ---- Per-node observation tracking -----------------------------------------
+void BattleScumSearcher3::trackNodeObservation(Node &node, const BattleContext &state) {
+    std::uint64_t curHash = CombatObservation::fromBattleContext(state).visibleHash();
+    if (node.nodeObsVisits == 0) {
+        node.firstObsHash = curHash;
+    } else if (curHash != node.firstObsHash) {
+        ++node.nodeObsMismatches;
+    }
+    node.lastObsHash = curHash;
+    ++node.nodeObsVisits;
 }
 
 void BattleScumSearcher3::prepareCRNParticles() {
@@ -370,6 +428,9 @@ void BattleScumSearcher3::step() {
     while (++depth < maxSearchDepth) {
         path.push_back(cur);
         ensureObservation(*cur, state);
+        // Per-node observation-stability tracking.
+        if (g_reuseObsStable || g_reuseCarryDiag || g_s3UnionExpand)
+            trackNodeObservation(*cur, state);
         diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(depth));
 
         if (isTerminal(state)) {
@@ -510,8 +571,44 @@ void BattleScumSearcher3::step() {
         }
 
         // Internal node
+        // ── STS_S3_UNION_EXPAND: add legal actions missing from this node ──
+        if (g_s3UnionExpand && cur->isExpanded()) {
+            Node live;
+            enumerateActionsForNode(live, state);
+            if (!live.edges.empty()) {
+                // Build set of semantic keys already present.
+                std::set<CardActionKey> present;
+                std::set<std::uint32_t> presentBits;
+                for (const auto &e : cur->edges) {
+                    if (e.action.getActionType() == ActionType::CARD
+                        || e.action.getActionType() == ActionType::SINGLE_CARD_SELECT)
+                        present.insert(cardActionKey(state, e.action));
+                    else
+                        presentBits.insert(e.action.bits);
+                }
+                for (auto &le : live.edges) {
+                    bool dup = false;
+                    if (le.action.getActionType() == ActionType::CARD
+                        || le.action.getActionType() == ActionType::SINGLE_CARD_SELECT) {
+                        auto key = cardActionKey(state, le.action);
+                        if (key.id != CardId::INVALID && present.count(key)) dup = true;
+                    } else {
+                        if (presentBits.count(le.action.bits)) dup = true;
+                    }
+                    if (!dup) {
+                        le.prior = 0.f;
+                        cur->edges.push_back(Edge{le.action, Node{}, 0.f, 0});
+                    }
+                }
+            }
+        }
+
         int selIdx = selectBestEdgePUCT(*cur);
         auto &edge = cur->edges[selIdx];
+
+        // ── Per-edge availability tracking ────────────────────────────
+        if (g_s3UnionExpand)
+            ++edge.availabilityCount;
 
         if (!edge.action.isValidAction(state)) {
             // Stored edges were enumerated in other determinizations; the chosen
@@ -523,6 +620,7 @@ void BattleScumSearcher3::step() {
                 const int validIdx = selectBestValidEdgePUCT(*cur, state);
                 if (validIdx >= 0) {
                     auto &validEdge = cur->edges[validIdx];
+                    if (g_s3UnionExpand) ++validEdge.availabilityCount;
                     validEdge.action.execute(state);
                     ++diag.treeActions;
                     actionStack.push_back(validEdge.action);
@@ -1246,6 +1344,189 @@ void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc)
     for (int i = 0; i < n; ++i) { logits[i] = std::exp(logits[i] - maxLog); sum += logits[i]; }
     double inv = sum > 0 ? 1.0 / sum : 1.0 / n;
     for (int i = 0; i < n; ++i) node.edges[i].prior = (float)(logits[i] * inv);
+}
+
+// ---- Root reconciliation (STS_REUSE_RECONCILE_ROOT) ------------------------
+void BattleScumSearcher3::reconcileRoot(const BattleContext &liveRoot) {
+    // 1. Enumerate all legal actions from the actual live root.
+    Node fresh;
+    enumerateActionsForNode(fresh, liveRoot);
+    if (fresh.edges.empty()) return;
+
+    // 2. Build a set of semantic card-action keys already present.
+    std::set<CardActionKey> present;
+    std::set<std::uint32_t> presentBits;  // for non-card actions (bits identity)
+    for (const auto &e : root.edges) {
+        if (e.action.getActionType() == ActionType::CARD
+            || e.action.getActionType() == ActionType::SINGLE_CARD_SELECT) {
+            present.insert(cardActionKey(liveRoot, e.action));
+        } else {
+            presentBits.insert(e.action.bits);
+        }
+    }
+
+    // 3. Add missing edges with zero prior and empty child.
+    int added = 0;
+    for (auto &fe : fresh.edges) {
+        if (fe.action.getActionType() == ActionType::CARD
+            || fe.action.getActionType() == ActionType::SINGLE_CARD_SELECT) {
+            auto key = cardActionKey(liveRoot, fe.action);
+            if (key.id == CardId::INVALID) continue;  // unresolvable
+            if (!present.count(key)) {
+                fe.prior = 0.f;
+                root.edges.push_back(std::move(fe));
+                present.insert(key);
+                ++added;
+            }
+        } else {
+            if (!presentBits.count(fe.action.bits)) {
+                fe.prior = 0.f;
+                root.edges.push_back(std::move(fe));
+                presentBits.insert(fe.action.bits);
+                ++added;
+            }
+        }
+    }
+    if (added > 0 && g_reuseDiag)
+        std::cerr << "[reconcile-root] added " << added << " missing root edges\n";
+}
+
+// ---- Carry diagnostic (STS_REUSE_CARRY_DIAG) --------------------------------
+void BattleScumSearcher3::printCarryDiagnostic(
+    const Action &committedAction,
+    const BattleContext &preState,
+    const BattleContext &postState,
+    const Node *promotedChild,
+    const std::array<std::int32_t,6> &rngSnapshots) const {
+
+    std::cerr << "\n[CARRY-DIAG] ===========================================\n";
+
+    // Committed action
+    std::cerr << "committed action: ";
+    committedAction.printDesc(std::cerr, preState);
+    std::cerr << "\n  type=" << (int)committedAction.getActionType();
+    if (committedAction.getActionType() == ActionType::CARD) {
+        int hi = committedAction.getSourceIdx();
+        if (hi >= 0 && hi < preState.cards.cardsInHand) {
+            const auto &c = preState.cards.hand[hi];
+            std::cerr << " handIdx=" << hi
+                      << " card=" << c.getName()
+                      << " id=" << (int)c.getId()
+                      << " upgraded=" << c.isUpgraded()
+                      << " costForTurn=" << (int)c.costForTurn
+                      << " freeToPlayOnce=" << c.freeToPlayOnce
+                      << " specialData=" << (int)c.specialData
+                      << " target=" << committedAction.getTargetIdx();
+        }
+    }
+    std::cerr << "\n";
+
+    // Observation hashes
+    std::cerr << "observation hashes:\n"
+              << "  old root obsHash    = " << rootObs.visibleHash() << "\n"
+              << "  child cached obsHash = " << (promotedChild ? promotedChild->obsHash : 0ULL) << "\n"
+              << "  new live root obsHash = "
+              << CombatObservation::fromBattleContext(postState).visibleHash() << "\n";
+
+    // Child observation stats
+    if (promotedChild) {
+        std::cerr << "child observation stability:\n"
+                  << "  firstObsHash       = " << promotedChild->firstObsHash << "\n"
+                  << "  nodeObsVisits      = " << promotedChild->nodeObsVisits << "\n"
+                  << "  nodeObsMismatches  = " << promotedChild->nodeObsMismatches << "\n"
+                  << "  total obs mismatch = " << obsMismatchCount << "\n";
+    }
+
+    // Hand before/after
+    std::cerr << "hand before (" << preState.cards.cardsInHand << " cards):\n";
+    for (int i = 0; i < preState.cards.cardsInHand; ++i) {
+        const auto &c = preState.cards.hand[i];
+        std::cerr << "  [" << i << "] " << c.getName()
+                  << " id=" << (int)c.getId()
+                  << " upg=" << c.isUpgraded() << "\n";
+    }
+    std::cerr << "hand after (" << postState.cards.cardsInHand << " cards):\n";
+    for (int i = 0; i < postState.cards.cardsInHand; ++i) {
+        const auto &c = postState.cards.hand[i];
+        std::cerr << "  [" << i << "] " << c.getName()
+                  << " id=" << (int)c.getId()
+                  << " upg=" << c.isUpgraded() << "\n";
+    }
+
+    // Draw pile
+    std::cerr << "drawPile: before=" << (int)preState.cards.drawPile.size()
+              << " after=" << (int)postState.cards.drawPile.size() << "\n";
+    std::cerr << "cardsDrawn: before=" << preState.cardsDrawn
+              << " after=" << postState.cardsDrawn << "\n";
+
+    // RNG deltas
+    const char *names[6] = {"shuffle","cardRandom","ai","misc","monsterHp","potion"};
+    std::int32_t cur[6] = {
+        postState.shuffleRng.counter, postState.cardRandomRng.counter,
+        postState.aiRng.counter, postState.miscRng.counter,
+        postState.monsterHpRng.counter, postState.potionRng.counter};
+    std::cerr << "RNG deltas:\n";
+    for (int i = 0; i < 6; ++i)
+        std::cerr << "  " << names[i] << "Rng: +" << (cur[i] - rngSnapshots[i]) << "\n";
+
+    // Stored child edges
+    if (promotedChild) {
+        std::cerr << "stored child edges (" << promotedChild->edges.size() << "):\n";
+        for (const auto &e : promotedChild->edges) {
+            std::cerr << "  ";
+            e.action.printDesc(std::cerr, postState);
+            std::cerr << " bits=0x" << std::hex << e.action.bits << std::dec;
+            std::cerr << " valid=" << (e.action.isValidAction(postState) ? "Y" : "N");
+            if (e.action.getActionType() == ActionType::CARD) {
+                int hi = e.action.getSourceIdx();
+                std::cerr << " handIdx=" << hi;
+                if (hi >= 0 && hi < postState.cards.cardsInHand) {
+                    const auto &c = postState.cards.hand[hi];
+                    std::cerr << " card=" << c.getName();
+                } else {
+                    std::cerr << " CARD-OUT-OF-BOUNDS";
+                }
+            }
+            std::cerr << "\n";
+        }
+    }
+
+    // Fresh live-root actions
+    std::cerr << "fresh live-root actions:\n";
+    Node freshRoot;
+    enumerateActionsForNode(freshRoot, postState);
+    for (const auto &e : freshRoot.edges) {
+        std::cerr << "  ";
+        e.action.printDesc(std::cerr, postState);
+        if (e.action.getActionType() == ActionType::CARD) {
+            std::cerr << " handIdx=" << e.action.getSourceIdx();
+        }
+        std::cerr << "\n";
+    }
+
+    // Flag stale positional card actions
+    if (promotedChild) {
+        for (const auto &se : promotedChild->edges) {
+            if (se.action.getActionType() != ActionType::CARD) continue;
+            int hi = se.action.getSourceIdx();
+            // Find if same-indexed card in postState is different
+            if (hi >= 0 && hi < preState.cards.cardsInHand
+                && hi < postState.cards.cardsInHand) {
+                const auto &preC = preState.cards.hand[hi];
+                const auto &postC = postState.cards.hand[hi];
+                if (preC.getId() != postC.getId()
+                    || preC.getUpgradeCount() != postC.getUpgradeCount()
+                    || preC.costForTurn != postC.costForTurn
+                    || preC.freeToPlayOnce != postC.freeToPlayOnce
+                    || preC.specialData != postC.specialData) {
+                    std::cerr << "STALE: old CARD(idx=" << hi << "," << preC.getName()
+                              << ") != new CARD(idx=" << hi << "," << postC.getName() << ")\n";
+                }
+            }
+        }
+    }
+
+    std::cerr << "[CARRY-DIAG] ===========================================\n\n";
 }
 
 // ---- Reuse diagnostics ------------------------------------------------------

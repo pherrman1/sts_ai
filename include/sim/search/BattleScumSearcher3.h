@@ -53,6 +53,18 @@ namespace sts::search {
             std::uint64_t obsHash = 0;
             bool obsCached = false;
 
+            // ── Per-node observation-stability tracking ──────────────
+            // Tracked on every visit (not just first); enables
+            // observation-stable reuse eligibility.
+            std::uint64_t firstObsHash = 0;
+            std::uint64_t lastObsHash = 0;
+            std::int64_t  nodeObsVisits = 0;      // total visits to this node
+            std::int64_t  nodeObsMismatches = 0;   // visits where visibleHash != firstObsHash
+
+            [[nodiscard]] bool isObsStable() const {
+                return nodeObsMismatches == 0 && nodeObsVisits > 0;
+            }
+
             std::int64_t simulationCount = 0;
             double evaluationSum = 0;
 
@@ -71,6 +83,8 @@ namespace sts::search {
             Action action;
             Node child;
             float prior = 0.f;
+            // ── Per-edge particle availability ───────────────────────
+            std::int64_t availabilityCount = 0;  // particle worlds where this edge was valid
         };
 
         std::unique_ptr<const BattleContext> rootBc;
@@ -120,6 +134,40 @@ namespace sts::search {
         std::vector<int> edgeAvailability;  // populated by computeEdgeAvailability
         // Print reuse diagnostics to stderr (called from the agent loop).
         void printReuseDiagnostics() const;
+
+        // ── Carry diagnostic (STS_REUSE_CARRY_DIAG) ─────────────────
+        void printCarryDiagnostic(const Action &committedAction,
+                                  const BattleContext &preState,
+                                  const BattleContext &postState,
+                                  const Node *promotedChild,
+                                  const std::array<std::int32_t,6> &rngSnapshots) const;
+
+        // ── Semantic card-action identity for reconciliation ─────────
+        // Identifies what a card-playing action means independently of
+        // hand position — used to match stored edges against fresh
+        // enumeration when the visible state changes.
+        struct CardActionKey {
+            CardId id = CardId::INVALID;
+            std::int8_t upgradeCount = 0;
+            std::int8_t costForTurn = 0;
+            bool freeToPlayOnce = false;
+            std::int16_t specialData = 0;
+            std::int32_t target = -1;
+            bool operator==(const CardActionKey &o) const;
+            bool operator<(const CardActionKey &o) const;
+        };
+        static CardActionKey cardActionKey(const BattleContext &bc, const Action &a);
+
+        // ── Root reconciliation (STS_REUSE_RECONCILE_ROOT) ───────────
+        // After advanceRoot carried the subtree into root, enumerate the
+        // actual live root's legal actions and add any that are missing
+        // from root.edges (matched by semantic card identity).
+        void reconcileRoot(const BattleContext &liveRoot);
+
+        // ── Per-node observation tracking ───────────────────────────
+        // Called once per node visit inside step(). Updates per-node
+        // firstObsHash/nodeObsMismatches/nodeObsVisits.
+        static void trackNodeObservation(Node &node, const BattleContext &state);
 
         // Visible-state leaf-value cache (phase 6, STS_PVNET_CACHE): keys are
         // node obsHash values at the direct-eval sites (no-legal-action,
@@ -240,6 +288,20 @@ namespace sts::search {
     extern bool g_reuseAlwaysQ;
     // STS_REUSE_DIAG: print reuse diagnostics after each search.
     extern bool g_reuseDiag;
+    // STS_REUSE_OBS_STABLE: only promote children whose observation was
+    // stable (single visibleHash) and matches the actual new root state.
+    extern bool g_reuseObsStable;
+    // STS_REUSE_RECONCILE_ROOT: after advanceRoot, re-enumerate the live
+    // root's legal actions and add any missing from root.edges matching
+    // by semantic card identity (not raw Action::operator==).
+    extern bool g_reuseReconcileRoot;
+    // STS_REUSE_CARRY_DIAG: print detailed per-carry diagnostics showing
+    // old/new action sets, hand contents, RNG deltas.
+    extern bool g_reuseCarryDiag;
+    // STS_S3_UNION_EXPAND: at every internal-node visit, add any stored
+    // legal actions that are missing from the node's edges (fresh-tree
+    // experiment, no cross-decision reuse).
+    extern bool g_s3UnionExpand;
 
     // A2 dynamic alpha by rollout length (STS_VNET_ALPHA_LEN, opt-in):
     // replaces the flat vnet/pvnet alpha at the leaf blend site with a

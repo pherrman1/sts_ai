@@ -5,6 +5,7 @@
 #include "sim/search/ScumSearchAgent2.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdlib>
 #include <iostream>
 #include <sim/search/ExpertKnowledge.h>
@@ -117,15 +118,18 @@ static void printHelper(const BattleContext &bc, const search::Action &a) {
 void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
     if (search::g_useSearcher3) {
         int decisionIdx = 0;
-        int fightPool = 0;   // STS_S3_POOL_REDIRECT: per-fight sim credit pool
+        int fightPool = 0;
         int stallCount = 0;
-        // Tree reuse control (STS_REUSE_MAX_SEARCHES): a promoted tree is
-        // searched at most N times before force-rebuild. N=0 = fresh every
-        // decision (current default). N=-1 = unlimited cascading reuse.
+        // Reuse-frequency tracking.
+        int reuseAttempts = 0, reuseAccepted = 0;
+        int reuseRejObsMismatch = 0, reuseRejHashMismatch = 0, reuseRejOther = 0;
+        int combatDecisions = 0;
+
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         bool searcherValid = true;
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
+            ++combatDecisions;
             if (++stallCount > kMaxBattleDecisions) {
                 std::cerr << "[battle-stall] encounter " << (int)bc.encounter
                           << " exceeded " << kMaxBattleDecisions
@@ -189,36 +193,89 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                               << " outcome=" << (int)bc.outcome << "\n";
                 break;
             }
-            // RNG gate: only retain the tree when the committed action leaves
-            // ALL hidden RNG streams untouched (not just shuffle/card). Saves
-            // every stream counter before the action and compares after.
-            auto snapAi       = bc.aiRng.counter;
-            auto snapCardRand = bc.cardRandomRng.counter;
-            auto snapMisc     = bc.miscRng.counter;
-            auto snapMonHp    = bc.monsterHpRng.counter;
-            auto snapPotion   = bc.potionRng.counter;
-            auto snapShuffle  = bc.shuffleRng.counter;
+            // Snapshot pre-state for carry diagnostic.
+            BattleContext preState = bc;
+            // Snap all 6 RNG counters.
+            std::array<std::int32_t,6> rngSnaps = {{
+                bc.shuffleRng.counter, bc.cardRandomRng.counter,
+                bc.aiRng.counter, bc.miscRng.counter,
+                bc.monsterHpRng.counter, bc.potionRng.counter}};
             takeAction(bc, bestAction);
-            bool rngSafe = (bc.aiRng.counter       == snapAi)
-                        && (bc.cardRandomRng.counter == snapCardRand)
-                        && (bc.miscRng.counter     == snapMisc)
-                        && (bc.monsterHpRng.counter == snapMonHp)
-                        && (bc.potionRng.counter   == snapPotion)
-                        && (bc.shuffleRng.counter  == snapShuffle);
-            if (rngSafe && s3.advanceRoot(bestAction, bc)) {
+            bool rngSafe = (bc.aiRng.counter       == rngSnaps[2])
+                        && (bc.cardRandomRng.counter == rngSnaps[1])
+                        && (bc.miscRng.counter     == rngSnaps[3])
+                        && (bc.monsterHpRng.counter == rngSnaps[4])
+                        && (bc.potionRng.counter   == rngSnaps[5])
+                        && (bc.shuffleRng.counter  == rngSnaps[0]);
+
+            // Look up the promoted child for diagnostics and obs-stable check.
+            const BattleScumSearcher3::Node *promotedChild = nullptr;
+            for (const auto &e : s3.root.edges) {
+                if (e.action == bestAction) { promotedChild = &e.child; break; }
+            }
+
+            // ── Carry diagnostics ─────────────────────────────────────
+            if (search::g_reuseCarryDiag)
+                s3.printCarryDiagnostic(bestAction, preState, bc, promotedChild, rngSnaps);
+
+            // ── Observation-stable reuse gate ─────────────────────────
+            bool obsStable = false;
+            if (promotedChild && search::g_reuseObsStable) {
+                std::uint64_t newHash =
+                    CombatObservation::fromBattleContext(bc).visibleHash();
+                obsStable = promotedChild->isObsStable()
+                         && promotedChild->firstObsHash == newHash;
+            }
+            bool reuseAllowed;
+            if (search::g_reuseObsStable) {
+                reuseAllowed = obsStable;
+                ++reuseAttempts;
+                if (!reuseAllowed) {
+                    if (promotedChild && !promotedChild->isObsStable())
+                        ++reuseRejObsMismatch;
+                    else if (promotedChild)
+                        ++reuseRejHashMismatch;
+                    else
+                        ++reuseRejOther;
+                }
+            } else {
+                reuseAllowed = rngSafe;
+            }
+
+            if (reuseAllowed && s3.advanceRoot(bestAction, bc)) {
+                if (search::g_reuseObsStable) ++reuseAccepted;
+                // ── Root reconciliation ────────────────────────────────
+                if (search::g_reuseReconcileRoot)
+                    s3.reconcileRoot(bc);
+
                 ++decisionIdx;
                 s3.decisionIndex = decisionIdx;
                 s3.reseed();
-                if (search::g_reuseMaxSearches == 0) {
+                if (search::g_reuseMaxSearches == 0
+                    && !search::g_reuseObsStable
+                    && !search::g_reuseReconcileRoot) {
+                    searcherValid = false;
+                } else if (search::g_reuseObsStable
+                           && search::g_reuseMaxSearches != -1
+                           && s3.reuseSearchCount >= search::g_reuseMaxSearches) {
                     searcherValid = false;
                 } else {
-                    // Keep the promoted tree for the next search.
                     searcherValid = true;
                 }
             } else {
                 ++decisionIdx;
                 searcherValid = false;
             }
+        }
+        // Print reuse-frequency summary at end of battle.
+        if ((search::g_reuseObsStable || search::g_reuseReconcileRoot)
+            && reuseAttempts > 0) {
+            std::cerr << "[reuse-freq] decisions=" << combatDecisions
+                      << " attempted=" << reuseAttempts
+                      << " accepted=" << reuseAccepted
+                      << " rej-obsMismatch=" << reuseRejObsMismatch
+                      << " rej-hashMismatch=" << reuseRejHashMismatch
+                      << " rej-other=" << reuseRejOther << "\n";
         }
         return;
     }
