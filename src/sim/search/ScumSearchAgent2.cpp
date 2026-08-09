@@ -489,7 +489,9 @@ void search::ScumSearchAgent2::stepOutOfCombatPolicy(GameContext &gc) {
         }
 
         case ScreenState::REST_ROOM: {
-            if (gc.curHp > 50 && gc.deck.getUpgradeableCount() > 0 && !gc.hasRelic(RelicId::FUSION_HAMMER)) {
+            if (gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+                takeAction(gc, 2);   // recall: take the ruby key (act 3+)
+            } else if (gc.curHp > 50 && gc.deck.getUpgradeableCount() > 0 && !gc.hasRelic(RelicId::FUSION_HAMMER)) {
                 takeAction(gc, 1);
             } else if (gc.curHp < 15 && !gc.relics.has(RelicId::COFFEE_DRIPPER)){
                 takeAction(gc, 0);
@@ -563,6 +565,12 @@ void search::ScumSearchAgent2::stepRewardsPolicy(GameContext &gc) {
 
     } else if (r.potionCount > 0) {
         takeAction(gc, GameAction(GameAction::RewardsActionType::POTION, 0));
+
+    } else if (r.emeraldKey) {
+        takeAction(gc, GameAction(GameAction::RewardsActionType::KEY));
+
+    } else if (r.sapphireKey) {
+        takeAction(gc, GameAction(GameAction::RewardsActionType::KEY));
 
     } else if (r.cardRewardCount == 0) {
         takeAction(gc, GameAction(GameAction::RewardsActionType::SKIP));

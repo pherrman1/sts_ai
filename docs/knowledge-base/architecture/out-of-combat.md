@@ -1,7 +1,8 @@
 # Out-of-combat policy
 
 Last verified: 2026-08-09 against the current working tree (native WinNet
-loader validates truncation; native-OOC banner conditional on floor+win load).
+loader validates truncation; native-OOC banner conditional on floor+win load;
+Act-4 key collection added to every REWARDS handler and act-3+ rest rooms).
 Previously verified 2026-08-05 (checkpoint-oracle terminal win-GBM +
 margin-gate levers added and falsified §111; Wave B regret gate + Q_win
 truth-check mode + map-DAG encoder (V6) + Phase F soft-target policy objective
@@ -275,6 +276,13 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    screen.
 2. `runFullRunOOC` evaluates opt-in action networks/evaluators first, then map,
    rewards, shop, rest, boss-relic/Neow, and finally the base policy.
+   Every REWARDS handler takes the emerald (burning elite) / sapphire (chest)
+   key via `RT::KEY` right after gold/relic/potion, and every act-3+ rest room
+   takes the ruby key (RECALL, rest action 2) before any heal/smith layer;
+   without key collection Act 4 (`THE_HEART`) is unreachable.
+   Sites: `apps/one_combat.cpp` REWARDS chains + `restWinPolicy`,
+   `src/sim/search/ScumSearchAgent2.cpp::stepRewardsPolicy` and its REST_ROOM
+   case, `src/sim/search/SimpleAgent.cpp::stepRestScreen`.
 3. Rich state is serialized by `vFeatCsv`/`richFeatureVec`. Current server-side
    raw layout has 1,017 values, including full card/relic/potion counts,
    forward-map summaries, and map position (`apps/one_combat.cpp::vFeatCsv`;

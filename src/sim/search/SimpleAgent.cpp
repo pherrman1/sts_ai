@@ -662,6 +662,11 @@ void search::SimpleAgent::stepRestScreen(GameContext &gc) {
     const bool canRemove = gc.relics.has(RelicId::PEACE_PIPE);
     const bool canTakeKey = !gc.hasKey(Key::RUBY_KEY);
 
+    if (canTakeKey && gc.act >= 3) {
+        takeAction(gc, 2);   // recall: take the ruby key (act 3+)
+        return;
+    }
+
     if (canRest &&
         (gc.curHp < gc.maxHp / 2 || (gc.act != 1 && gc.floorNum % 17 == 15 && gc.curHp < gc.maxHp * 0.9))) {
         takeAction(gc, 0);

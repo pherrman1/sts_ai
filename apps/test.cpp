@@ -1148,6 +1148,78 @@ int testCardQueueOverflow() {
     std::cout << "cardqueue_overflow FAIL (expected SIGABRT, status " << status << ")\n";
     return 1;
 }
+// Regression test for key collection in the default OOC policy chain: the
+// rewards handlers must take the emerald (burning elite) and sapphire (chest)
+// keys, and act-3+ rest rooms must take the ruby key (RECALL), otherwise
+// Act 4 is unreachable. This pins the shared fallback behavior
+// (ScumSearchAgent2::stepRewardsPolicy / REST_ROOM case and
+// SimpleAgent::stepRestScreen); the apps/one_combat.cpp REWARDS/rest chains
+// mirror these handlers.
+int testKeyCollection() {
+    int failures = 0;
+    auto check = [&](bool ok, const std::string &msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+
+    // 1) Emerald key on the rewards screen is taken by stepRewardsPolicy.
+    {
+        GameContext gc(sts::CharacterClass::IRONCLAD, 1, 0);
+        gc.screenState = ScreenState::REWARDS;
+        gc.regainControlAction = [](auto &gs) { gs.screenState = ScreenState::MAP_SCREEN; };
+        gc.info.rewardsContainer.emeraldKey = true;
+        search::ScumSearchAgent2 agent;
+        agent.rng = std::default_random_engine(1);
+        agent.stepRewardsPolicy(gc);
+        check(gc.hasKey(sts::Key::EMERALD_KEY),
+              "stepRewardsPolicy: emerald key not taken");
+    }
+
+    // 2) Sapphire key on the rewards screen is taken by stepRewardsPolicy.
+    {
+        GameContext gc(sts::CharacterClass::IRONCLAD, 2, 0);
+        gc.screenState = ScreenState::REWARDS;
+        gc.regainControlAction = [](auto &gs) { gs.screenState = ScreenState::MAP_SCREEN; };
+        gc.info.rewardsContainer.sapphireKey = true;
+        search::ScumSearchAgent2 agent;
+        agent.rng = std::default_random_engine(2);
+        agent.stepRewardsPolicy(gc);
+        check(gc.hasKey(sts::Key::SAPPHIRE_KEY),
+              "stepRewardsPolicy: sapphire key not taken");
+    }
+
+    // 3) Ruby key is taken at an act-3 rest room (ScumSearchAgent2 fallback).
+    {
+        GameContext gc(sts::CharacterClass::IRONCLAD, 3, 0);
+        gc.screenState = ScreenState::REST_ROOM;
+        gc.regainControlAction = [](auto &gs) { gs.screenState = ScreenState::MAP_SCREEN; };
+        gc.act = 3;
+        search::ScumSearchAgent2 agent;
+        agent.rng = std::default_random_engine(3);
+        agent.stepOutOfCombatPolicy(gc);
+        check(gc.hasKey(sts::Key::RUBY_KEY),
+              "ScumSearchAgent2 REST_ROOM act 3: ruby key not taken");
+    }
+
+    // 4) Ruby key is taken at an act-3 rest room (SimpleAgent fallback).
+    {
+        GameContext gc(sts::CharacterClass::IRONCLAD, 4, 0);
+        gc.screenState = ScreenState::REST_ROOM;
+        gc.regainControlAction = [](auto &gs) { gs.screenState = ScreenState::MAP_SCREEN; };
+        gc.act = 3;
+        search::SimpleAgent agent;
+        agent.stepRestScreen(gc);
+        check(gc.hasKey(sts::Key::RUBY_KEY),
+              "SimpleAgent::stepRestScreen act 3: ruby key not taken");
+    }
+
+    if (failures == 0) {
+        std::cout << "keys_collect PASS\n";
+        return 0;
+    }
+    std::cout << "keys_collect FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -1244,6 +1316,8 @@ int main(int argc, const char* argv[]) {
         return testDesignerInSpireOptions();
     } else if (command == "cardqueue_overflow") {
         return testCardQueueOverflow();
+    } else if (command == "keys_collect") {
+        return testKeyCollection();
     }
 
     //    printSizes();
