@@ -700,6 +700,7 @@ if __name__ == "__main__":
     # --- Predict-only mode (STRAT_PREDICT_ONLY=1) ---
     if os.environ.get("STRAT_PREDICT_ONLY") == "1":
         import json
+        from strategic_gate_contract import classify
         ckpt_path = os.environ.get("STRAT_PREDICT_CKPT", "")
         out_csv = os.environ.get("STRAT_PREDICT_OUT", OUT + "_preds.csv")
         threshold = float(os.environ.get("STRAT_PREDICT_THRESHOLD", "1.0"))
@@ -712,33 +713,45 @@ if __name__ == "__main__":
         print(f"[predict-only] loaded {ckpt_path}", flush=True)
         labelWon = df.labelWon.to_numpy(np.float32) if "labelWon" in df else None
         labelHp  = df.labelHp.to_numpy(np.float32)  if "labelHp"  in df else None
-        labelQ_raw = (10.0 * labelWon + labelHp) if (labelWon is not None and labelHp is not None) else None
-        screen_arr = df.screen.to_numpy(np.int64)
-        # Default owned: all V4-gated screens (CARD=2, TREASURE=5, REST=6, SHOP=7, BOSS_RELIC=8, EVENT=1)
-        owned_screens = set(int(s) for s in os.environ.get("STRAT_PREDICT_OWNED", "1,2,5,6,7,8").split(","))
+        labelQ_all = (10.0 * labelWon + labelHp) if (labelWon is not None and labelHp is not None) else None
+        actionType_all = df.actionType.to_numpy(np.int64) if "actionType" in df else None
+        screen_all = df.screen.to_numpy(np.int64)
+        c1_all = df.c1.to_numpy(np.int64) if "c1" in df else None
         N_pred = min(NG, max_groups) if max_groups > 0 else NG
-        print(f"[predict-only] {N_pred} groups, threshold={threshold}, owned_screens={owned_screens}", flush=True)
-        out = open(out_csv, "w")
-        out.write("seed,decIdx,screen,nCand,owned,modelIdx,bestIdx,behaviorFallbackIdx,fallbackIdx,fallbackSource,margin,threshold,fired,predQ,labelQ\n")
+        print(f"[predict-only] {N_pred} groups, threshold={threshold}", flush=True)
+        # Batch Q prediction over all rows (not per-group)
+        chunk = 4096
+        q_all = np.empty(nrows, np.float32)
+        print(f"[predict-only] running batched forward over {nrows} rows (chunk={chunk})...", flush=True)
         all_rows = np.arange(nrows, dtype=np.int64)
+        for lo in range(0, nrows, chunk):
+            hi = min(lo + chunk, nrows)
+            rows = all_rows[lo:hi]
+            with torch.no_grad():
+                _, _, q_chunk, _ = fwd_rows(rows)
+            q_all[lo:hi] = q_chunk.cpu().numpy()
+            if lo % (chunk * 50) == 0 and lo > 0:
+                print(f"  {lo}/{nrows} rows", flush=True)
+        print(f"[predict-only] forward done, writing groups...", flush=True)
+        out = open(out_csv, "w")
+        out.write("seed,decIdx,screen,gateKind,owned,ownershipExact,nCand,modelIdx,bestIdx,"
+                  "behaviorFallbackIdx,fallbackIdx,fallbackSource,margin,threshold,fired,predQ,labelQ\n")
         for g in range(N_pred):
             sz = int(sizes[g])
             if sz < 2:
                 continue
             lo = int(block_start[g])
             rows = all_rows[lo:lo + sz]
-            scr = int(screen_arr[lo])
-            owned = 1 if scr in owned_screens else 0
-            # Q prediction via fwd_rows
-            with torch.no_grad():
-                _, _, q_pred, _ = fwd_rows(rows)
-            q_pred = q_pred.cpu().numpy()
+            scr = int(screen_all[lo])
+            at = int(actionType_all[lo]) if actionType_all is not None else -1
+            c1v = int(c1_all[lo]) if c1_all is not None else -1
+            kind, owned_flag, exact = classify(scr, at, c1v)
+            owned = 1 if owned_flag else 0
+            q_pred = q_all[rows]
             model_idx = int(np.argmax(q_pred))
             best_idx = -1
-            if labelQ_raw is not None:
-                lq = labelQ_raw[rows]
-                best_idx = int(np.argmax(lq))
-            cho = int(chosen_off[g]) if chosen_off[g] >= 0 else -1
+            if labelQ_all is not None:
+                best_idx = int(np.argmax(labelQ_all[rows]))
             behavior_fb = int(rank_in_group[chosen_row_idx[g]]) if chosen_row_idx[g] >= 0 else -1
             second = np.partition(q_pred, -2)[-2] if sz >= 2 else q_pred[0]
             margin = float(q_pred[model_idx] - second)
@@ -747,10 +760,11 @@ if __name__ == "__main__":
             dec_val = int(df.decIdx.iloc[lo])
             pred_str = "|".join(f"{v:.6f}" for v in q_pred)
             label_str = ""
-            if labelQ_raw is not None:
-                label_str = "|".join(f"{v:.6f}" for v in labelQ_raw[rows])
-            out.write(f"{seed_val},{dec_val},{scr},{sz},{owned},{model_idx},{best_idx},"
-                      f"{behavior_fb},{behavior_fb},tierb_chosen,{margin:.6f},{threshold:.6f},{fired},"
+            if labelQ_all is not None:
+                label_str = "|".join(f"{v:.6f}" for v in labelQ_all[rows])
+            out.write(f"{seed_val},{dec_val},{scr},{int(kind)},{owned},{exact},"
+                      f"{sz},{model_idx},{best_idx},{behavior_fb},{behavior_fb},"
+                      f"tierb_chosen,{margin:.6f},{threshold:.6f},{fired},"
                       f"{pred_str},{label_str}\n")
         out.close()
         print(f"[predict-only] wrote {out_csv}", flush=True)
