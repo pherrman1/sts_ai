@@ -3,6 +3,7 @@
 //
 
 #include "combat/CardQueue.h"
+#include "sts_common.h"
 
 using namespace sts;
 
@@ -31,7 +32,9 @@ void CardQueue::clear() {
 }
 
 void CardQueue::pushFront(CardQueueItem item) {
+#ifdef sts_asserts
     assert(size != arr.size());
+#endif
     --frontIdx;
     ++size;
     if (frontIdx < 0) {
@@ -41,7 +44,9 @@ void CardQueue::pushFront(CardQueueItem item) {
 }
 
 void CardQueue::pushBack(CardQueueItem item) {
+#ifdef sts_asserts
     assert(size != capacity);
+#endif
     arr.at(backIdx) = std::move(item);
     ++backIdx;
     ++size;
@@ -51,7 +56,9 @@ void CardQueue::pushBack(CardQueueItem item) {
 }
 
 CardQueueItem CardQueue::popFront() {
+#ifdef sts_asserts
     assert(size > 0);
+#endif
     CardQueueItem &item = arr.at(frontIdx);
     ++frontIdx;
     --size;
@@ -62,7 +69,9 @@ CardQueueItem CardQueue::popFront() {
 }
 
 CardQueueItem CardQueue::popBack() {
+#ifdef sts_asserts
     assert(size > 0);
+#endif
     --backIdx;
     --size;
     if (backIdx < 0) {
@@ -73,6 +82,8 @@ CardQueueItem CardQueue::popBack() {
 }
 
 CardQueueItem &CardQueue::front() {
+#ifdef sts_asserts
     assert(size > 0);
+#endif
     return arr.at(frontIdx);
 }
