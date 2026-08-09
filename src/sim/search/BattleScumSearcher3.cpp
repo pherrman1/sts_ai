@@ -392,6 +392,8 @@ void BattleScumSearcher3::step() {
             double vLeaf = std::numeric_limits<double>::quiet_NaN();
             if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha < 1.0
                 && state.outcome == Outcome::UNDECIDED && vnetCondAllowed(state)) {
+                g_vnetTraceParent = cur->obsHash;
+                g_vnetTraceDepth = depth;
                 vLeaf = g_combatVNet.predict(state);
                 // Experimental STS_VNET_RANK_CORR: add the zero-mean ranking
                 // correction on top of the primary prediction here too — this
@@ -1011,6 +1013,8 @@ double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc, std::uint64_t 
             riskLambda, bc.player.maxHp, g_combatDistVNet.winBonus);
     if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha > 0.0
         && vnetCondAllowed(bc)) {
+        g_vnetTraceParent = obsHash;   // parent node identity (from evaluateLeaf arg)
+        g_vnetTraceDepth = 0;           // direct-eval site, not a tree leaf
         double v = g_combatVNet.predict(bc);
         // Experimental STS_VNET_RANK_CORR (see PVNet branch above).
         if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {

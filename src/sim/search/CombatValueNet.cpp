@@ -91,6 +91,13 @@ namespace sts::search {
 CombatValueNet g_combatVNet;
 bool g_useVNet = false;
 
+std::function<void(const BattleContext &, double)> g_onVNetQuery;
+
+// Thread-local context set by the search before calling predict(),
+// read by g_onVNetQuery to build sibling-grouped trace rows.
+thread_local std::uint64_t g_vnetTraceParent = 0;
+thread_local int g_vnetTraceDepth = 0;
+
 CombatValueNet g_combatVNetRankCorr;   // zero-mean ranking correction (experimental, STS_VNET_RANK_CORR)
 bool g_useVNetRankCorr = false;        // add the rank correction on top of the primary leaf value
 
@@ -1007,6 +1014,8 @@ double CombatValueNet::predictVec(const float *canonFeatures) const {
                 for (std::size_t i = 0; i < dsScalarSel.size(); ++i) {
                     float v = canonFeatures[dsScalarSel[i]];
                     v = (v - dsScalarMean[i]) * dsScalarInv[i];
+                    if (v < -5.0f) v = -5.0f;
+                    else if (v > 5.0f) v = 5.0f;
                     sum += v * dsScalarW[(std::size_t)j * dsScalarSel.size() + i];
                 }
                 sc[j] = sum > 0.f ? sum : 0.f;
@@ -1141,12 +1150,18 @@ double CombatValueNet::predict(const BattleContext &bc) const {
     // the base weights/trees; everything else keeps the pre-existing path.
     // When hasEncounterModels is false this is a single extra bool test with no
     // branch taken, byte-identical to the old behavior.
+    double v;
     if (hasEncounterModels) {
         auto it = encounterModels.find((int)bc.encounter);
-        if (it != encounterModels.end())
-            return it->second.predictVec(feat.data());
+        if (it != encounterModels.end()) {
+            v = it->second.predictVec(feat.data());
+            if (g_onVNetQuery) g_onVNetQuery(bc, v);
+            return v;
+        }
     }
-    return predictVec(feat.data());
+    v = predictVec(feat.data());
+    if (g_onVNetQuery) g_onVNetQuery(bc, v);
+    return v;
 }
 
 CombatOutcomePrediction CombatValueNet::predictOutcome(const BattleContext &bc) const {

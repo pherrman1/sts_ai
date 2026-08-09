@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 #include <cstdint>
 #include <unordered_map>
 
@@ -157,6 +158,21 @@ namespace sts::search {
     extern bool   g_usePolicyNet;         // use PUCT with the policy prior in selection
     extern double g_cPuct;                // PUCT exploration constant
     extern bool   g_richCombatFeatures;   // fill the wide relic/card-location block (else narrow fast path)
+
+    // Hook fired inside CombatValueNet::predict() after every
+    // VNet inference. The BattleContext pointer is valid only for the duration
+    // of the callback; the callback must not mutate it. prediction is the raw
+    // model output (not alpha-blended). nullptr by default — when unset,
+    // predict() is byte-identical to pre-hook behavior.
+    // NOT thread_local: set once from main() and read by all worker threads.
+    // The handler must be thread-safe (the one_combat.cpp handler uses
+    // per-thread buffers with a shared mutex for file writes).
+    extern std::function<void(const BattleContext &, double)> g_onVNetQuery;
+
+    // Thread-local context set by search code before calling predict().
+    // Read by g_onVNetQuery handlers to group siblings by parent obsHash.
+    extern thread_local std::uint64_t g_vnetTraceParent;
+    extern thread_local int g_vnetTraceDepth;
 
 }
 
