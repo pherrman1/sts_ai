@@ -139,12 +139,12 @@ const AGENT_PROGRESS_THROTTLE_MS = 150;
 
 interface AgentLiveProgress {
   turn: number;
-  status: "waiting" | "thinking" | "responding" | "tool";
+  status: "waiting" | "thinking" | "responding" | "tool" | "completed";
   currentTool: string | null;
   recentTools: string[];
   lastEmitAt: number;
-  /** Thinking tokens received in current thinking phase */
-  thinkingTokens: number;
+  /** Thinking characters received in current thinking phase */
+  thinkingChars: number;
   /** Response characters received in current responding phase */
   responseChars: number;
   /** When the current status began (ms epoch) */
@@ -158,7 +158,7 @@ function createAgentLiveProgress(): AgentLiveProgress {
     currentTool: null,
     recentTools: [],
     lastEmitAt: 0,
-    thinkingTokens: 0,
+    thinkingChars: 0,
     responseChars: 0,
     statusStartedAt: Date.now(),
   };
@@ -203,15 +203,16 @@ function agentStatusLabel(live: AgentLiveProgress): string {
 
   switch (live.status) {
     case "thinking": {
-      const tk = live.thinkingTokens > 0 ? ` · ${live.thinkingTokens}tk` : "";
-      return `thinking${elapsedStr}${tk}`;
+      const ch = live.thinkingChars > 0 ? ` · ${live.thinkingChars}ch` : "";
+      return `thinking${elapsedStr}${ch}`;
     }
     case "responding": {
       const ch = live.responseChars > 0 ? ` · ${live.responseChars}ch` : "";
       return `responding${elapsedStr}${ch}`;
     }
     case "tool": return "running tool";
-    default: return "waiting";
+    case "completed": return "completed";
+    default: return `waiting${elapsedStr}`;
   }
 }
 
@@ -254,7 +255,7 @@ function handleAgentRunnerEvent(
     live.turn++;
     live.status = "waiting";
     live.currentTool = null;
-    live.thinkingTokens = 0;
+    live.thinkingChars = 0;
     live.responseChars = 0;
     live.statusStartedAt = Date.now();
     emitAgentLiveProgress(stage, model, live, onProgress, true);
@@ -266,12 +267,13 @@ function handleAgentRunnerEvent(
 
     if (subtype === "thinking_start") {
       live.status = "thinking";
-      live.thinkingTokens = 0;
+      live.thinkingChars = 0;
       live.statusStartedAt = Date.now();
       emitAgentLiveProgress(stage, model, live, onProgress, true);
     } else if (subtype === "thinking_delta") {
       live.status = "thinking";
-      live.thinkingTokens++;
+      const delta: string = e.assistantMessageEvent?.delta || "";
+      live.thinkingChars += delta.length;
       emitAgentLiveProgress(stage, model, live, onProgress);
     } else if (subtype === "text_start") {
       live.status = "responding";
@@ -303,7 +305,7 @@ function handleAgentRunnerEvent(
     }
     live.currentTool = null;
     live.status = "waiting";
-    live.thinkingTokens = 0;
+    live.thinkingChars = 0;
     live.responseChars = 0;
     live.statusStartedAt = Date.now();
     emitAgentLiveProgress(stage, model, live, onProgress, true);
@@ -312,7 +314,7 @@ function handleAgentRunnerEvent(
 
   if (e.type === "message_end") {
     live.status = "waiting";
-    live.thinkingTokens = 0;
+    live.thinkingChars = 0;
     live.responseChars = 0;
     live.statusStartedAt = Date.now();
     emitAgentLiveProgress(stage, model, live, onProgress, true);
@@ -320,9 +322,9 @@ function handleAgentRunnerEvent(
   }
 
   if (e.type === "agent_end") {
-    live.status = "waiting";
+    live.status = "completed";
     live.currentTool = null;
-    live.thinkingTokens = 0;
+    live.thinkingChars = 0;
     live.responseChars = 0;
     onProgress?.(stage, `completed · ${model}`);
   }
@@ -334,7 +336,6 @@ function handleAgentRunnerEvent(
 
 interface AgentResult {
   text: string;
-  events: RunnerEvent[];
   costs: CycleCostEntry[];
 }
 
@@ -353,6 +354,8 @@ async function invokeAgent(
   const live = createAgentLiveProgress();
 
   const args: string[] = [
+    "--approve",
+    "--no-extensions",
     "--model", model,
     "--extension", path.join(cwd, ".pi/extensions/sts-tools.ts"),
     "--extension", path.join(cwd, ".pi/extensions/sts-safety.ts"),
@@ -375,20 +378,27 @@ async function invokeAgent(
 
   args.push(`Task: ${prompt}`);
 
-  let events: RunnerEvent[] = [];
+  let progressTimer: ReturnType<typeof setInterval> | null = null;
 
   onProgress?.(progressStage, `starting · ${model}`);
 
   try {
     // Role-specific timeouts: read-only agents get tighter limits.
-    // Read-only agents get a 5 min idle timeout — enough for large-prompt initial processing but catches true API stalls.
+    // Idle time is measured between parsed child events, including token deltas.
     const roleTimeouts: Record<string, { hard: number; idle: number }> = {
-      architect: { hard: 15 * 60 * 1000, idle: 300 * 1000 },
+      architect: { hard: 15 * 60 * 1000, idle: 180 * 1000 },
       implementer: { hard: 30 * 60 * 1000, idle: 300 * 1000 },
-      reviewer: { hard: 15 * 60 * 1000, idle: 300 * 1000 },
-      reviewer_escalation: { hard: 20 * 60 * 1000, idle: 300 * 1000 },
+      reviewer: { hard: 15 * 60 * 1000, idle: 180 * 1000 },
+      reviewer_escalation: { hard: 20 * 60 * 1000, idle: 180 * 1000 },
     };
     const rt = roleTimeouts[role] || { hard: 30 * 60 * 1000, idle: 0 };
+
+    // Event-driven updates alone cannot advance the elapsed-time label while a
+    // child is genuinely quiet. This heartbeat is UI-only and does not reset
+    // the runner's idle watchdog.
+    progressTimer = setInterval(() => {
+      emitAgentLiveProgress(progressStage, model, live, onProgress, true);
+    }, 1_000);
 
     const result = await runPiChild({
       cwd,
@@ -397,7 +407,6 @@ async function invokeAgent(
       hardTimeoutMs: rt.hard,
       idleTimeoutMs: rt.idle > 0 ? rt.idle : undefined,
       onEvent: (event) => {
-        events.push(event);
         handleAgentRunnerEvent(event, progressStage, model, live, onProgress);
       },
     });
@@ -406,9 +415,11 @@ async function invokeAgent(
     const costs = costEntriesFromEvents(role, result.events);
 
     if (result.wasTimedOut) {
+      const reason = result.timeoutKind === "idle"
+        ? "no JSON events arrived during the idle window"
+        : "the role's wall-clock limit was reached";
       throw new Error(
-        `Pi agent '${role}' timed out — no events received for the idle period. ` +
-        `The model/API may be stalled or the prompt may be too large.`,
+        `Pi agent '${role}' timed out: ${reason}.`,
       );
     }
 
@@ -432,8 +443,9 @@ async function invokeAgent(
       throw new Error(`Pi agent '${role}' produced no final assistant response.`);
     }
 
-    return { text, events, costs };
+    return { text, costs };
   } finally {
+    if (progressTimer) clearInterval(progressTimer);
     try { fs.unlinkSync(promptFile); } catch { /* ignore */ }
     try { fs.rmdirSync(tmpDir); } catch { /* ignore */ }
   }
@@ -538,6 +550,9 @@ async function runClassify(ctx: CycleContext): Promise<CycleContext> {
 }
 
 async function runArchitect(ctx: CycleContext): Promise<CycleContext> {
+  ctx.state.state = "ARCHITECT";
+  writeState(ctx.sessionDir, ctx.state);
+
   const taskFile = path.join(ctx.sessionDir, "task.txt");
   const result = await invokeAgent(
     ctx.cwd, "architect", ARCHITECT_PROMPT, [taskFile],
@@ -578,9 +593,6 @@ async function runArchitect(ctx: CycleContext): Promise<CycleContext> {
       { failureReason: "FAILED_AGENT" as FailureReason },
     );
   }
-
-  ctx.state.state = "ARCHITECT";
-  writeState(ctx.sessionDir, ctx.state);
 
   ctx.onProgress?.("ARCHITECT", `Plan: ${plan.design.substring(0, 80)}...`);
   return ctx;

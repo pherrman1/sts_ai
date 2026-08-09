@@ -10,7 +10,7 @@
  *   - agent_end → short grace period → SIGTERM → SIGKILL
  *   - Hard wall-clock timeout defense in depth
  *   - AbortSignal integration
- *   - Bounded output capture
+ *   - Bounded event retention without stopping stdout parsing
  */
 
 import { spawn } from "node:child_process";
@@ -28,8 +28,11 @@ export const CHILD_TERMINATION_GRACE_MS = 5_000;
 /** Absolute ceiling for any subagent invocation. */
 export const SUBAGENT_HARD_TIMEOUT_MS = 30 * 60 * 1_000;
 
-/** Maximum stdout+stderr captured per process. */
-const MAX_OUTPUT = 1 * 1024 * 1024;
+/** Maximum non-essential JSONL event data retained per process. */
+const MAX_RETAINED_EVENT_BYTES = 1 * 1024 * 1024;
+
+/** Maximum stderr captured per process. */
+const MAX_STDERR = 1 * 1024 * 1024;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,7 +62,7 @@ export interface CompletedMessage {
 export interface RunnerResult {
   /** Exit code or forced code. 0 on clean completion. */
   exitCode: number;
-  /** All parsed JSONL events. */
+  /** Retained JSONL events. Streaming deltas may be omitted after the memory cap. */
   events: RunnerEvent[];
   /** All completed assistant/toolResult messages. */
   messages: CompletedMessage[];
@@ -67,8 +70,10 @@ export interface RunnerResult {
   stderr: string;
   /** Whether the child was force-terminated. */
   wasTerminated: boolean;
-  /** Whether the hard timeout fired. */
+  /** Whether an idle or hard timeout fired. */
   wasTimedOut: boolean;
+  /** Which runner timeout fired, or null when the child did not time out. */
+  timeoutKind: "hard" | "idle" | null;
 }
 
 export interface RunnerOptions {
@@ -96,7 +101,7 @@ export interface RunnerOptions {
  * The returned Promise is GUARANTEED to settle. A child that emits
  * `agent_end` but never closes stdio will be SIGTERMed after a short
  * grace period, then SIGKILLed. A child that never reaches `agent_end`
- * will be killed by the hard timeout.
+ * will be killed by the idle or hard timeout when configured.
  *
  * The onEvent callback fires BEFORE internal processing, so callers
  * can drive live activity updates without duplicating lifecycle logic.
@@ -111,6 +116,7 @@ export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> 
     stderr: "",
     wasTerminated: false,
     wasTimedOut: false,
+    timeoutKind: null,
   };
 
   const allArgs = ["--mode", "json", "-p", "--no-session", ...args];
@@ -130,6 +136,7 @@ export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> 
     let hardTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
     let abortHandler: (() => void) | null = null;
     let idleTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
+    let retainedEventBytes = 0;
 
     const processStillRunning = () =>
       proc.exitCode === null && proc.signalCode === null;
@@ -174,13 +181,29 @@ export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> 
         idleTimeoutTimer = setTimeout(() => {
           if (settled) return;
           result.wasTimedOut = true;
+          result.timeoutKind = "idle";
           terminateAndFinish(1);
         }, idleTimeoutMs);
       }
 
-      result.events.push(event);
+      // Keep parsing and forwarding stdout after the retention cap. Pi emits a
+      // JSON event for every token delta, so stopping reads at the cap hides the
+      // final message_end/agent_end and makes a healthy child look frozen.
+      const eventBytes = Buffer.byteLength(line, "utf8");
+      const essential = event.type !== "message_update";
+      if (essential || retainedEventBytes + eventBytes <= MAX_RETAINED_EVENT_BYTES) {
+        result.events.push(event);
+        retainedEventBytes += eventBytes;
+      }
 
       if (event.type === "agent_end") {
+        // Completion now belongs to the bounded close watchdog. A role timeout
+        // during its grace period would misclassify a successfully completed child.
+        clearTimer(idleTimeoutTimer);
+        idleTimeoutTimer = null;
+        clearTimer(hardTimeoutTimer);
+        hardTimeoutTimer = null;
+
         // Pi has declared the agent complete. Give the child a short
         // grace period to close stdio cleanly. If it doesn't, force
         // termination and settle from the already-captured output.
@@ -250,11 +273,8 @@ export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> 
       }, CHILD_TERMINATION_GRACE_MS);
     };
 
-    let outputBytes = 0;
     proc.stdout.on("data", (data: Buffer) => {
-      if (outputBytes >= MAX_OUTPUT) return;
       const chunk = data.toString();
-      outputBytes += Buffer.byteLength(chunk, "utf8");
       buffer += chunk;
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
@@ -263,8 +283,8 @@ export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> 
 
     proc.stderr.on("data", (data: Buffer) => {
       const chunk = data.toString();
-      if (result.stderr.length < MAX_OUTPUT) {
-        result.stderr += chunk.substring(0, MAX_OUTPUT - result.stderr.length);
+      if (result.stderr.length < MAX_STDERR) {
+        result.stderr += chunk.substring(0, MAX_STDERR - result.stderr.length);
       }
     });
 
@@ -281,8 +301,20 @@ export async function runPiChild(options: RunnerOptions): Promise<RunnerResult> 
     // keep the parent waiting indefinitely.
     hardTimeoutTimer = setTimeout(() => {
       result.wasTimedOut = true;
+      result.timeoutKind = "hard";
       terminateAndFinish(1);
     }, hardTimeoutMs);
+
+    // Cover startup stalls too. Previously the idle watchdog was only armed
+    // after the first valid JSON event arrived.
+    if (idleTimeoutMs && idleTimeoutMs > 0) {
+      idleTimeoutTimer = setTimeout(() => {
+        if (settled) return;
+        result.wasTimedOut = true;
+        result.timeoutKind = "idle";
+        terminateAndFinish(1);
+      }, idleTimeoutMs);
+    }
 
     if (signal) {
       abortHandler = () => {

@@ -42,6 +42,7 @@ need_file .pi/extensions/sts-cycle/git-state.ts
 need_file .pi/extensions/sts-cycle/artifacts.ts
 need_file .pi/extensions/sts-cycle/types.ts
 need_file .pi/extensions/subagent/runner.ts
+need_file .pi/extensions/subagent/runner.test.mjs
 
 echo
 echo "Subagent extension status:"
@@ -75,6 +76,7 @@ fi
 echo
 echo "Subagent lifecycle regression tests:"
 python3 tools/test_pi_subagent_lifecycle.py || fail=1
+node --experimental-strip-types .pi/extensions/subagent/runner.test.mjs || fail=1
 
 echo
 echo "DeepSeek models visible to Pi:"

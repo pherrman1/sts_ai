@@ -1,20 +1,44 @@
 # AI cycle and agent backends
 
-Last verified: 2026-08-08 against the current working tree.
+Last verified: 2026-08-09 against the current working tree.
 
 ## Purpose
 
-`tools/ai_cycle.py` is the deterministic orchestrator that runs the
-architect → implementer → cheap verification → reviewer → optional escalation
-audit → final expensive verification workflow. It owns the repository-specific
-safety and review policy and must not delegate it to prompts or the parent
-LLM. This page documents how the cycle invokes agent runtimes and how the
-backend is selected.
+Pi-native `/sts-cycle` in `.pi/extensions/sts-cycle/` is the authoritative
+deterministic orchestrator. It runs the architect → implementer → cheap
+verification → reviewer → optional escalation audit → final expensive
+verification workflow. Repository safety and review policy stays in code, not
+prompts or the parent LLM. `tools/ai_cycle.py` remains the legacy rollback.
 
 ## Current implementation
 
-Every agent invocation goes through `run_agent()` in
-`tools/ai_cycle.py`, which forwards to the active `AgentBackend`:
+Pi-native invocations go through `invokeAgent()` in
+`.pi/extensions/sts-cycle/index.ts`. It launches:
+
+`pi --mode json -p --no-session --approve --no-extensions --extension
+.pi/extensions/sts-tools.ts --extension .pi/extensions/sts-safety.ts --model
+<role-model> [--tools read,grep,find,ls,sts_git,sts_inspect]
+--append-system-prompt <role-prompt-body> @<attached files> "Task: ..."`
+
+`--no-extensions` prevents unrelated discovered extensions from changing a
+child's behavior; the two required extensions still load explicitly. The
+shared runner parses JSONL stdout. Assistant `message_end` events provide the
+final response and cost; lifecycle deltas drive the progress widget.
+
+Agent definitions and role models are loaded from `.pi/agents/*.md`
+frontmatter, which is the Pi-native source of truth:
+
+| Role | Model | Tools |
+| --- | --- | --- |
+| architect | `deepseek/deepseek-v4-pro:high` | read, grep, find, ls, sts_git, sts_inspect |
+| implementer | `deepseek/deepseek-v4-flash:high` | normal tools; destructive commands denied by `sts-safety.ts` |
+| reviewer | `deepseek/deepseek-v4-flash:high` | read, grep, find, ls, sts_git, sts_inspect |
+| reviewer_escalation | `deepseek/deepseek-v4-pro:xhigh` | read, grep, find, ls, sts_git, sts_inspect |
+
+The read-only roles never receive Bash. Prompt frontmatter is stripped before
+the body is passed as the appended system prompt.
+
+The legacy `tools/ai_cycle.py` selects an `AgentBackend`:
 
 - `OpenCodeBackend` — launches `opencode run --auto --agent <role> --dir
   <root> [--file ...] -- <prompt>`; the legacy runtime, kept as the rollback
@@ -33,25 +57,6 @@ Every agent invocation goes through `run_agent()` in
 - `AgentBackend` — abstract base; `select_backend(name)` constructs either
   concrete backend.
 
-Role routing under Pi (deterministic table `PI_MODEL_BY_ROLE` /
-`PI_READONLY_TOOLS` in `tools/ai_cycle.py`):
-
-| Role | Model | Tools |
-| --- | --- | --- |
-| architect | `deepseek/deepseek-v4-pro:high` | read, grep, find, ls, sts_git, sts_inspect |
-| implementer | `deepseek/deepseek-v4-flash:high` | all normal tools; destructive commands denied by `sts-safety.ts` |
-| reviewer | `deepseek/deepseek-v4-flash:high` | read, grep, find, ls, sts_git, sts_inspect |
-| reviewer_escalation | `deepseek/deepseek-v4-pro:xhigh` | read, grep, find, ls, sts_git, sts_inspect |
-
-The architect/reviewer/escalation roles never receive bash, so a failing
-extension cannot weaken them to arbitrary Bash.
-
-Pi prompt bodies are read from `.pi/agents/*.md` with YAML frontmatter
-stripped (`pi_agent_prompt_body`); `reviewer_escalation` uses
-`reviewer-pro.md`. The same files drive interactive Pi through the vendored
-subagent extension (`.pi/extensions/subagent/`); `@file` attachments
-substitute for OpenCode's `--file`.
-
 Interactive Pi observability: `.pi/extensions/subagent/index.ts` is an
 **STS-local fork** of Pi's reference subagent extension (base commit
 `c185d412382581860a489b4959737bad1d119492`, see the `STS-LOCAL FORK` header
@@ -67,40 +72,46 @@ authoritative. Reasoning/thinking contents are never displayed.
 `STS_FORCE_PI_SUBAGENT=1`; `scripts/check_pi_setup.sh` detects the fork
 marker and does not claim byte-identity.
 
+Pi-native `/sts-cycle` and the interactive `subagent` tool share
+`.pi/extensions/subagent/runner.ts::runPiChild`. The runner always drains and
+parses the child's JSONL stdout through completion. To bound memory, it may
+stop retaining high-volume `message_update` deltas after 1 MiB, but it still
+forwards every parsed event to live progress and always retains lifecycle and
+completed-message events. This distinction is required because Pi emits one
+JSON event per thinking/text delta; stopping stdout processing at the retention
+limit previously hid final `message_end` and `agent_end` events and made long
+architect runs appear frozen. Role-specific idle timeouts are measured between
+parsed events and are armed at process start; hard timeouts remain independent.
+`/sts-cycle` writes `ARCHITECT` to `state.json` before invoking the child, and
+its one-second UI heartbeat advances elapsed time without affecting idle
+detection.
+
 ## Important data flow
 
-1. `main()` parses `--backend {opencode,pi}` (default `opencode`), selects
-   `ACTIVE_BACKEND`, then enforces `ensure_safe_start()` before any agent
-   invocation (dirty tracked tree → abort before any LLM call).
-2. Architect/reviewer/escalation prompts are role bodies from `.pi/agents/`
-   plus per-call task text; implementer calls attach task/plan/report files.
-3. Pi runs print a model-bearing banner and stream concise lifecycle status
-   lines (`[role] model thinking...`, `[role] tool: read <path>:<range>`,
-   `[role] tool done`, `[role] model responding...`) while the full raw
-   JSONL stream is written verbatim to the session log. Status is
-   lifecycle-only: thinking/text deltas never print content, and the
-   thinking/responding transition is printed once per response
-   (`pi_live_status_line`, `pi_format_tool_call`). The extracted final
-   response is appended to the session log after
-   `===== PI FINAL RESPONSE BEGIN =====` as the last content, so
-   `parse_json_response`-based recovery on paid transcripts works exactly
-   as for OpenCode logs.
-4. Cost/usage from Pi `message_end` events is recorded in the session's
-   `costs.json` with the same schema OpenCode's sqlite rows produce; denied
-   tool calls go to `denied-tool-calls.md`.
-5. `run_implementer_agent` snapshots `PROTECTED_WORKFLOW_PATHS` (OpenCode
-   config/prompts, `tools/*`, and the `.pi/` control plane) before the call
-   and restores byte-for-byte afterwards.
+1. The `/sts-cycle` handler creates `.ai/cycles/<timestamp>/`, writes the task,
+   and runs clean-tree preflight before any child LLM call.
+2. `runCycle()` performs deterministic state transitions. `policy.ts` owns
+   task classification, plan/review validation, escalation, protected paths,
+   seed limits, and verification allowlists; `verification.ts` executes checks.
+3. `invokeAgent()` loads the role body/model from `.pi/agents/`, attaches cycle
+   artifacts, and delegates process lifecycle to `runPiChild()`.
+4. JSON lifecycle events update the widget without showing reasoning contents.
+   Completed assistant messages supply structured JSON or implementer output;
+   costs and cycle artifacts are written into the session directory.
+5. The legacy Python entry point separately parses `--backend
+   {opencode,pi}` (default `opencode`) and retains transcript recovery and
+   backend comparison behavior as the rollback path.
 
 ## Invariants and assumptions
 
-- The deterministic Python policy is authoritative for: clean-tree start,
+- The Pi-native state machine and `policy.ts` are authoritative for: clean-tree start,
   128-seed cap (`MAX_AUTOMATED_SEEDS`), verification allowlisting and
   cheap/expensive handling, retry limits (`MAX_IMPLEMENTATION_RETRIES`,
   `MAX_REVIEW_ROUNDS`, `MAX_SOL_REVIEW_ROUNDS`, `MAX_EXPENSIVE_REPAIRS`),
-  escalation classification, recovery markers, ELI5 artifacts, and
-  experiment/decision-log requirements. `sts-safety.ts` is defense in depth
-  only.
+  escalation classification, ELI5 artifacts, and cycle state persistence.
+  `sts-safety.ts` is defense in depth only. Transcript recovery markers and
+  some process-level documentation requirements remain legacy/manual concerns.
+  The legacy Python policy remains a rollback implementation.
 - Plan verification argv[0] must be one of `ALLOWED_VERIFICATION_EXECUTABLES`
   (cmake, ctest, git, python, python3, pytest) or a repository-relative
   `./executable`; git checks are limited to
@@ -108,9 +119,8 @@ marker and does not claim byte-identity.
   this allowlist so plans comply at generation time
   (`BackendSafetySyncTests::test_architect_prompt_documents_verification_allowlist`
   keeps prompt and code in sync).
-- `--backend pi` children always pass `--approve` and explicit `--extension`
-  paths for `sts-tools.ts` and `sts-safety.ts`; Pi dedupes these with
-  trust-discovery paths.
+- `/sts-cycle` children pass `--approve`, `--no-extensions`, and explicit
+  `--extension` paths for `sts-tools.ts` and `sts-safety.ts`.
 - Pi's `:xhigh` thinking suffix on DeepSeek parses and clamps to `max` at
   request time (DeepSeek supports high/max only) — verified from Pi source,
   not a live run.
@@ -119,13 +129,23 @@ marker and does not claim byte-identity.
   failed-run recovery re-parses.
 - Pi has no `--` terminator; prompts are prefixed `Task: ` so they are never
   parsed as flags or `@file` attachments.
-- Pi terminal output is lifecycle status only; the complete raw JSONL stream
-  lives in the session log (`*.log`) for forensic debugging, and the
-  extracted final response is appended to it for log-based recovery.
+- The legacy Python Pi backend stores complete raw JSONL in its session log for
+  transcript recovery. Pi-native `/sts-cycle` keeps bounded parsed event
+  history in memory and writes structured cycle artifacts.
+- Child stdout must continue to be parsed after event-history retention reaches
+  its cap. `message_end` and `agent_end` are authoritative and must never be
+  dropped; `runner.test.mjs` covers a final response after more than 1 MiB of
+  token-delta events.
 
 ## Relevant code
 
-- `tools/ai_cycle.py`: `AgentBackend`, `OpenCodeBackend`, `PiBackend`,
+- `.pi/extensions/sts-cycle/index.ts`: `runCycle`, `invokeAgent`, state handlers,
+  progress UI, role-specific timeouts.
+- `.pi/extensions/sts-cycle/policy.ts`, `verification.ts`, `artifacts.ts`,
+  `git-state.ts`, `types.ts`: deterministic policy, checks, persistence, and
+  state schema.
+- `.pi/extensions/subagent/runner.ts`: shared child lifecycle and JSONL parser.
+- `tools/ai_cycle.py` (legacy rollback): `AgentBackend`, `OpenCodeBackend`, `PiBackend`,
   `select_backend`, `run_agent`, `pi_final_response`,
   `pi_cost_entries_from_events`, `extract_pi_denied_calls`,
   `pi_agent_prompt_body`, `pi_format_tool_call`, `pi_live_status_line`,
@@ -138,6 +158,8 @@ marker and does not claim byte-identity.
   (STS-local fork of Pi reference, see `STS-LOCAL FORK` header),
   `.pi/prompts/sts-investigate.md`, `scripts/install_pi_subagent.sh`,
   `scripts/check_pi_setup.sh`.
+- `.pi/extensions/subagent/runner.test.mjs`: subprocess lifecycle regression
+  for JSONL streams larger than the retained-event cap.
 
 ## Fast-path workflow (trivial non-behavioral tasks)
 
@@ -172,34 +194,30 @@ config / build / schema / protected path change rejects immediately.  If
 the diff cannot be confidently proven trivial the fast path aborts and
 the task must be rerun through the normal cycle.
 
-The escalation function `should_escalate_to_sol(…,
-confirmed_trivial=False)` suppresses path-name and plan-term escalation
-triggers when `confirmed_trivial=True`, but retains all hard safety
-rules: required verification failure, CRITICAL review issues, reviewer
-uncertainty HIGH, and any explicit safety failure still escalate.
+`shouldEscalate()` suppresses soft path/name triggers for a confirmed trivial
+diff, but retains hard safety rules: required verification failure, CRITICAL
+review issues, reviewer uncertainty HIGH, and explicit safety failures still
+escalate. The legacy rollback implements the equivalent rule in
+`should_escalate_to_sol()`.
 
-Fast-path policy is implemented by:
-- `classify_fast_path_task()` — deterministic keyword classification.
-- `create_trivial_plan()` — minimal plan compatible with `validate_plan`.
-- `confirm_trivial_diff()` — post-implementation git-diff analysis.
-- `run_fast_path_workflow()` — reduced workflow (implementer → diff confirm
-  → cheap verification → reviewer).
-- `should_escalate_to_sol(confirmed_trivial=…)`.
+Fast-path policy is implemented by `classifyTask()`, `createTrivialPlan()`,
+`confirmTrivialDiff()`, `shouldEscalate()`, and the `runCycle()` fast-path
+branch. The legacy Python rollback retains corresponding snake_case helpers.
 
 Session artefacts: `task-classification.json`, `diff-confirmation.json`.
 
 ## Known limitations
 
-- `DEFAULT_BACKEND` is still `opencode`; flipping it to `pi` requires the
-  live bake-off verification (API key) and a test re-run.
+- `tools/ai_cycle.py` still defaults to its OpenCode rollback backend; this does
+  not change the authority of the Pi-native `/sts-cycle` command.
 - Pi cost figures come from the model usage reported by Pi itself; OpenCode
   costs come from the opencode session database. The two backends are not
   directly comparable per call.
 - `scripts/check_pi_setup.sh` reports failure when no provider auth is
   configured because Pi hides unauthenticated models from `--list-models`.
 - `pi update --models` refreshes the model catalog; if the catalog IDs
-  change, update only the `model:` lines in `.pi/agents/*.md` and the
-  routing table in `tools/ai_cycle.py`.
+  change, update the `model:` lines in `.pi/agents/*.md`; update the legacy
+  routing table in `tools/ai_cycle.py` only while that rollback remains.
 - `.pi/extensions/subagent/index.ts` diverges from the pinned upstream Pi
   commit (live observability fork). Upstream changes to the reference
   subagent extension must be re-merged by hand; `install_pi_subagent.sh`
@@ -207,13 +225,14 @@ Session artefacts: `task-classification.json`, `diff-confirmation.json`.
 
 ## Open questions
 
-- Whether the model reliably emits single-line JSON for
-  `parse_json_response`'s trailing-object scan on Pi logs; multi-line JSON
-  is handled only when the answer is the last content of the log.
+- Legacy rollback only: whether the model reliably emits single-line JSON for
+  `parse_json_response`'s trailing-object scan on Pi logs; multi-line JSON is
+  handled only when the answer is the last content of the log.
 
 ## Related
 
 - Decision log:
   `docs/knowledge-base/decision-log/2026-08-08-pi-backend-integration.md`,
   `docs/knowledge-base/decision-log/2026-08-08-pi-live-observability.md`,
-  `docs/knowledge-base/decision-log/2026-08-08-fast-path-workflow.md`
+  `docs/knowledge-base/decision-log/2026-08-08-fast-path-workflow.md`,
+  `docs/knowledge-base/decision-log/2026-08-09-pi-runner-stdout-cap.md`

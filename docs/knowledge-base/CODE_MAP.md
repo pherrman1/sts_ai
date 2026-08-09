@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-08-08 against the current working tree.
+Last verified: 2026-08-09 against the current working tree.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -98,11 +98,11 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Orchestrator | `tools/ai_cycle.py` | Deterministic architect → implementer → reviewer workflow, seed limits, backend selection | [ai-cycle.md](operations/ai-cycle.md) |
+| Orchestrator | `.pi/extensions/sts-cycle/`, `tools/ai_cycle.py` | Pi-native authoritative state machine; legacy Python rollback, seed limits | [ai-cycle.md](operations/ai-cycle.md) |
 | Artifact inspector | `tools/ai_inspect.py` | Read-only CSV/JSON inspection for sts_inspect tool | [ai-cycle.md](operations/ai-cycle.md) |
 | Pi safety extension | `.pi/extensions/sts-safety.ts` | Blocks writes to protected paths, dangerous bash, oversized seed sweeps | (inline) |
 | Pi inspect tools | `.pi/extensions/sts-tools.ts` | `sts_git`, `sts_inspect` — read-only tools for architect/reviewer | (inline) |
-| Pi subagent runner | `.pi/extensions/subagent/index.ts` | Spawns subagent Pi processes, live activity renderer | (inline) |
+| Pi subagent runner | `.pi/extensions/subagent/runner.ts`, `.pi/extensions/subagent/index.ts` | Shared child lifecycle, bounded event retention, live activity renderer | [ai-cycle.md](operations/ai-cycle.md) |
 | Pi agent prompts | `.pi/agents/*.md` | architect, implementer, investigator, reviewer | (inline) |
 | Context telemetry | `tools/agent_telemetry.py` (writer), `.pi/extensions/sts-telemetry.ts` (hook) | Diagnostic read/search measurement | [context-telemetry.md](operations/context-telemetry.md) |
 | Telemetry summarizer | `tools/summarize_agent_context.py` | Aggregates read/search stats from telemetry JSONL | [context-telemetry.md](operations/context-telemetry.md) |
