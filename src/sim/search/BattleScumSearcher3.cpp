@@ -246,7 +246,13 @@ void BattleScumSearcher3::trackNodeObservation(Node &node, const BattleContext &
     }
     node.lastObsHash = curHash;
     ++node.nodeObsVisits;
+    // Diagnostic counter: number of visibleHash computations.
+    // Incremented AFTER the hash call so it counts actual hash work.
+    if (g_reuseCpuDiag) ++g_obsHashCalls;
 }
+
+// Per-search hash-call counter (reset by agent before each search).
+std::int64_t g_obsHashCalls = 0;
 
 void BattleScumSearcher3::prepareCRNParticles() {
     crnParticles.resize(crnParticleCount);
@@ -436,7 +442,11 @@ void BattleScumSearcher3::step() {
         path.push_back(cur);
         ensureObservation(*cur, state);
         // Per-node observation-stability tracking.
-        if (g_reuseObsStable || g_reuseCarryDiag || g_s3UnionExpand)
+        // Only immediate root children (depth==2) can be promoted via
+        // advanceRoot, so only they need obs-stability for the reuse
+        // eligibility check. Union-expand and carry-diag still track
+        // at all depths (experimental/diagnostic, not in deployed candidate).
+        if (g_s3UnionExpand || g_reuseCarryDiag || (g_reuseObsStable && depth == 2))
             trackNodeObservation(*cur, state);
         diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(depth));
 
@@ -1667,7 +1677,8 @@ void BattleScumSearcher3::writeCpuDiagRow(
              << "rolloutActions,treeActions,maxTreeDepth,"
              << "rootSimBefore,rootSimAfter,"
              << "retainedNodes,rootEdgeCount,"
-             << "playerHp,turn,cardsInHand,drawPile,discardPile\n";
+             << "playerHp,turn,cardsInHand,drawPile,discardPile,"
+             << "obsHashCalls\n";
         headerWritten = true;
     }
     std::int64_t simsExec = after.simulations - before.simulations;
@@ -1686,7 +1697,8 @@ void BattleScumSearcher3::writeCpuDiagRow(
          << rootSimBefore << "," << rootSimAfter << ","
          << retainedNodes << "," << rootEdgeCount << ","
          << playerHp << "," << turn << "," << cardsInHand << ","
-         << drawPile << "," << discardPile << "\n";
+         << drawPile << "," << discardPile << ","
+         << g_obsHashCalls << "\n";
     if (!g_reuseCpuDiagFile.empty()) diagFile.close();
 }
 

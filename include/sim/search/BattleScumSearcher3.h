@@ -334,6 +334,9 @@ namespace sts::search {
     // STS_REUSE_CPU_DIAG_FILE: output path (default stderr).
     extern bool g_reuseCpuDiag;
     extern std::string g_reuseCpuDiagFile;
+    // Per-search hash-call counter (STS_REUSE_CPU_DIAG). Reset by agent
+    // before each search; incremented by trackNodeObservation.
+    extern std::int64_t g_obsHashCalls;
 
     // A2 dynamic alpha by rollout length (STS_VNET_ALPHA_LEN, opt-in):
     // replaces the flat vnet/pvnet alpha at the leaf blend site with a
