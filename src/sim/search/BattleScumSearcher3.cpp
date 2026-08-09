@@ -33,11 +33,13 @@ bool g_s3Live = true;
 bool g_s3Crn = false;
 
 // ── Tree reuse control ─────────────────────────────────────────────────────
-int g_reuseMaxSearches = 0;     // STS_REUSE_MAX_SEARCHES (0 = fresh every decision)
+// Default: obs-stable N=1 reuse (fair S3 candidate, §2026-08-09).
+// STS_REUSE_MAX_SEARCHES=0 restores fresh-tree behaviour.
+int g_reuseMaxSearches = 1;     // STS_REUSE_MAX_SEARCHES (0 = fresh every decision)
 int g_reuseStatsMode = 0;       // STS_REUSE_STATS_MODE: 0=keep, 1=recursive_reset
 bool g_reuseAlwaysQ = false;    // STS_REUSE_ALWAYS_Q: always use Q on carried trees
 bool g_reuseDiag = false;       // STS_REUSE_DIAG: print reuse diagnostics
-bool g_reuseObsStable = false;  // STS_REUSE_OBS_STABLE: only promote obs-stable children
+bool g_reuseObsStable = true;   // STS_REUSE_OBS_STABLE: only promote obs-stable children
 bool g_reuseReconcileRoot = false; // STS_REUSE_RECONCILE_ROOT: add missing root edges
 bool g_reuseCarryDiag = false;  // STS_REUSE_CARRY_DIAG: detailed per-carry diagnostic
 bool g_s3UnionExpand = false;   // STS_S3_UNION_EXPAND: add missing edges at internal nodes
@@ -246,13 +248,7 @@ void BattleScumSearcher3::trackNodeObservation(Node &node, const BattleContext &
     }
     node.lastObsHash = curHash;
     ++node.nodeObsVisits;
-    // Diagnostic counter: number of visibleHash computations.
-    // Incremented AFTER the hash call so it counts actual hash work.
-    if (g_reuseCpuDiag) ++g_obsHashCalls;
 }
-
-// Per-search hash-call counter (reset by agent before each search).
-std::int64_t g_obsHashCalls = 0;
 
 void BattleScumSearcher3::prepareCRNParticles() {
     crnParticles.resize(crnParticleCount);
@@ -1677,8 +1673,7 @@ void BattleScumSearcher3::writeCpuDiagRow(
              << "rolloutActions,treeActions,maxTreeDepth,"
              << "rootSimBefore,rootSimAfter,"
              << "retainedNodes,rootEdgeCount,"
-             << "playerHp,turn,cardsInHand,drawPile,discardPile,"
-             << "obsHashCalls\n";
+             << "playerHp,turn,cardsInHand,drawPile,discardPile\n";
         headerWritten = true;
     }
     std::int64_t simsExec = after.simulations - before.simulations;
@@ -1697,8 +1692,7 @@ void BattleScumSearcher3::writeCpuDiagRow(
          << rootSimBefore << "," << rootSimAfter << ","
          << retainedNodes << "," << rootEdgeCount << ","
          << playerHp << "," << turn << "," << cardsInHand << ","
-         << drawPile << "," << discardPile << ","
-         << g_obsHashCalls << "\n";
+         << drawPile << "," << discardPile << "\n";
     if (!g_reuseCpuDiagFile.empty()) diagFile.close();
 }
 

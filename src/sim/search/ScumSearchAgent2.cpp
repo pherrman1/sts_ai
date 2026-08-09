@@ -186,7 +186,6 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             const char *searchKind = (carriedSearchesSinceFresh > 0) ? "carried" : "fresh";
             if (search::g_reuseCpuDiag) {
                 diagBefore = s3.snapshotDiag();
-                search::g_obsHashCalls = 0;
             }
             s3.search(spend);
             if (search::g_reuseCpuDiag) {
