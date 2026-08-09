@@ -98,7 +98,7 @@ All blocks positive. No block shows G < A.
 We tested the tree-carrying trick on a second batch of 128 brand-new games.
 It won 3 more games than normal (44.5% vs 42.2%) — still positive, but a
 smaller lead than the first batch. Over all 256 test games combined, the
-trick wins about 5 extra games per 100 (+4.7pp), which is a real improvement
+trick won about 4.7pp more often (+4.7pp), a consistent positive direction
 but not quite statistically bulletproof yet (p=0.22). The bigger concern is
 that the trick's CPU cost varies wildly — on one batch it saved 16% time,
 on this batch it cost 48% more. We can't guarantee it'll be faster. Keep it

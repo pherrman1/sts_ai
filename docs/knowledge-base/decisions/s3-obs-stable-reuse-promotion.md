@@ -49,19 +49,29 @@ This added ~15% per-simulation overhead.
 Semantic audit: only `root.edges` (depth==2) can be promoted via `advanceRoot`.
 Restricted tracking to `(g_reuseObsStable && depth == 2)`.
 
-Result on 16-seed diagnostic: G fresh per-1000-sims went from +14.7% vs A
-to −0.9% vs A. 106% of overhead eliminated.
+Result on 16-seed diagnostic:
+
+| | A fresh | G-old fresh | G-new fresh |
+|---|---|---|---|
+| ms/1000sims | 42.8 | 49.1 (+14.7%) | 42.4 (−0.9%) |
+
+The measured ~14.7% fresh-search overhead was fully eliminated in the
+diagnostic sample; optimized G was ~0.9% faster than baseline A in that
+comparison.
 
 ## Historical failures (retained as lessons)
 
-| Approach | Result | Why |
-|----------|--------|-----|
-| Raw RNG-gate reuse | 4.7% | Multi-observation tree promotes stale topology |
-| always_Q | 4.7% | Forces exploitation before winning line found |
-| recursive_reset on RNG-gate | 17.2% | Helps but topology still stale |
-| Cascade (N=-1) | 40.6% | Worse than N=1 (43.8%) |
-| Full-depth obs tracking | +15% overhead | Unnecessary — fixed to depth==2 |
-| **obs-stable + keep + N=1** | **40.2%** | **Winner** |
+| Mechanism | Conclusion |
+|-----------|------------|
+| RNG gate alone | Insufficient; RNG unchanged does not imply observation/topology compatibility |
+| keep + always_Q | Catastrophic; forcing inherited Q exploitation too early was the largest identified failure |
+| keep without always_Q | Recovered strongly (4.7% → 39.1%) |
+| recursive_reset | Removes useful inherited statistics and still cannot repair stale topology |
+| intended N=1 before counter fix | Actually cascaded; results cannot be interpreted as single-use |
+| true cascade | Worse than true N=1 in corrected development gate |
+| obs-stable + keep + true N=1 | Selected configuration |
+| full-depth obs tracking | Semantically unnecessary for reuse and ~15% slower in diagnostic |
+| depth==2 obs tracking | Equivalent reuse decisions with measured overhead removed |
 
 ## Smoke test
 
@@ -79,8 +89,17 @@ to −0.9% vs A. 106% of overhead eliminated.
 
 ## ELI5
 
-Tree reuse now works and is the default. When the search finds a good move and
-the next game state matches what it expected, it keeps its work instead of
-throwing it away. This wins about 5 more games per 100. The old speed problem
-was unnecessary bookkeeping that we removed — now it's as fast as the original.
-If you want the old behavior back, set one flag and it's gone.
+The search now keeps useful tree work when the next visible game state matches
+what the search expected, instead of always starting from zero.
+
+Across 256 new confirmation games, this version won about 4.7 percentage
+points more often than fresh search, and both test blocks favored reuse.
+That is a consistent positive signal, although the experiment was not large
+enough to prove the improvement statistically.
+
+The original speed penalty turned out to be unnecessary bookkeeping.
+Restricting observation tracking to the only nodes that can actually be
+reused removed that measured overhead without changing reuse decisions.
+
+The optimized one-step reuse is now the default, while
+`STS_REUSE_MAX_SEARCHES=0` restores fresh-tree behavior.
