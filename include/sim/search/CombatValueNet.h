@@ -154,6 +154,13 @@ namespace sts::search {
     extern CombatValueNet g_combatVNetRankCorr;
     extern bool g_useVNetRankCorr;
 
+    // Residual VNet correction (STS_VNET_RESIDUAL=<path>, STS_VNET_RESIDUAL_BETA=<b>):
+    // loaded model is ADDED with weight beta on top of the primary VNet prediction.
+    // At beta=0, behavior is unchanged.  Same CombatValueNet format as primary.
+    extern CombatValueNet g_combatVNetResidual;
+    extern double g_vnetResidualBeta;
+    extern bool g_useVNetResidual;
+
     extern CombatValueNet g_policyNet;    // loaded policy comparator (if any)
     extern bool   g_usePolicyNet;         // use PUCT with the policy prior in selection
     extern double g_cPuct;                // PUCT exploration constant

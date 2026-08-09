@@ -10188,6 +10188,22 @@ int main(int argc, char **argv) {
                          "uncorrected searcher)]\n";
         }
     }
+    // Residual VNet correction (STS_VNET_RESIDUAL=<path>, STS_VNET_RESIDUAL_BETA=<b>):
+    // the loaded model is ADDED with weight beta on top of the primary VNet.
+    // At beta=0, behavior is byte-identical to the uncorrected searcher.
+    if (const char *d = std::getenv("STS_VNET_RESIDUAL")) {
+        const std::string path = d;
+        if (const char *b = std::getenv("STS_VNET_RESIDUAL_BETA"))
+            search::g_vnetResidualBeta = std::atof(b);
+        if (search::g_combatVNetResidual.load(path)) {
+            search::g_useVNetResidual = true;
+            std::cout << "[V_combat residual ON: " << path << ", beta="
+                      << search::g_vnetResidualBeta << " "
+                      << search::g_combatVNetResidual.description() << "]\n";
+        } else {
+            std::cout << "[V_combat residual load FAILED: " << path << "]\n";
+        }
+    }
     if (const char *d = std::getenv("STS_DIAG_VNET2")) {   // secondary diagnostic vnet (leafdiag/leafref only)
         std::string path = d;
         if (g_combatVNetDiag.load(path)) {

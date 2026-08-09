@@ -572,7 +572,7 @@ void BattleScumSearcher3::step() {
                 // without it the correction could never improve within-group
                 // ordering. Accumulated into rankCorrValues for the
                 // search-complete zero-mean clamp (fair path).
-                if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
+                if (g_useVNetResidual && g_combatVNetResidual.loaded()) { const double res = g_combatVNetResidual.predict(state); vLeaf += g_vnetResidualBeta * res; } if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
                     const double corr = g_combatVNetRankCorr.predict(state);
                     vLeaf += corr;
                     rankCorrValues.push_back(corr);
@@ -582,7 +582,7 @@ void BattleScumSearcher3::step() {
                      && state.outcome == Outcome::UNDECIDED
                      && pvnetCondAllowed(state, depth)) {
                 vLeaf = g_combatPVNet.leafValue(state, riskLambda);
-                if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
+                if (g_useVNetResidual && g_combatVNetResidual.loaded()) { const double res = g_combatVNetResidual.predict(state); vLeaf += g_vnetResidualBeta * res; } if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
                     const double corr = g_combatVNetRankCorr.predict(state);
                     vLeaf += corr;
                     rankCorrValues.push_back(corr);
@@ -1326,7 +1326,7 @@ double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc, std::uint64_t 
         // vnet output; the model predicts approximately group-centered
         // residuals, and clampRankCorrAtRoot zeroes the per-search mean at
         // search-complete in the fair path).
-        if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
+        if (g_useVNetResidual && g_combatVNetResidual.loaded()) { const double res = g_combatVNetResidual.predict(bc); v += g_vnetResidualBeta * res; } if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
             const double corr = g_combatVNetRankCorr.predict(bc);
             v += corr;
             rankCorrValues.push_back(corr);
@@ -1343,7 +1343,7 @@ double BattleScumSearcher3::evaluateLeaf(const BattleContext &bc, std::uint64_t 
         g_vnetTraceDepth = 0;           // direct-eval site, not a tree leaf
         double v = g_combatVNet.predict(bc);
         // Experimental STS_VNET_RANK_CORR (see PVNet branch above).
-        if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
+        if (g_useVNetResidual && g_combatVNetResidual.loaded()) { const double res = g_combatVNetResidual.predict(bc); v += g_vnetResidualBeta * res; } if (g_useVNetRankCorr && g_combatVNetRankCorr.loaded()) {
             const double corr = g_combatVNetRankCorr.predict(bc);
             v += corr;
             rankCorrValues.push_back(corr);
