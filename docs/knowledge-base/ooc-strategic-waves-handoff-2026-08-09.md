@@ -1,143 +1,303 @@
-# OOC strategic investigation handoff — Waves 0A–0I
+# OOC strategic investigation — final Wave 0 report
 
 Date: 2026-08-09  
-Purpose: give the next coding/research model a compact, evidence-backed state
-of the corrected honest V4 investigation.
+Purpose: give the next coding/research model a complete, concise state of the
+corrected honest V4 investigation, including all completed work and the exact
+next experiments to run.
 
-## Executive status
+---
 
-The main benchmark blocker was fixed. `search::g_potionKeepValue` was process
-global even though `runFullRunOOC` recalculates it per fight while seeds run in
-parallel. It is now `thread_local` in:
+## 1. The one-sentence takeaway
+
+**Corrected honest V4 is statistically confirmed at 128 paired seeds on the
+frozen fair S3 + 7k-VNet Act-3 stack: +11.7pp, 95% bootstrap CI [+1.6, +22.7]pp.
+It is now the provisional OOC baseline.  SHOP overrides appear harmful; EVENT
+overrides appear useful.  Do not alter the combat stack, the feature set, or
+the label formulation until the next targeted experiments below are complete.**
+
+---
+
+## 2. Fixed blocker: parallel benchmark race
+
+`search::g_potionKeepValue` was process-global but `runFullRunOOC` recalculates
+it per fight while seeds run concurrently.  It is now `thread_local` in
 
 - `include/sim/search/BattleScumSearcher2.h`
 - `src/sim/search/BattleScumSearcher2.cpp`
 
-Repeated identical 8-seed runs then matched all `won`, `floor`, `act`, `hpEnd`,
-and death fields. The corrected V4 was requalified on the frozen S3 + 7k-VNet
-Act-3 stack: **31/64 (48.4%) ON vs 24/64 (37.5%) OFF, +10.9pp**, paired 95% CI
-`[-1.6,+23.4]`pp. The result is positive but not individually significant;
-128-seed confirmation remains required before promotion.
+After the fix, repeated identical 8-seed checkpoints match every `won`, `floor`,
+`act`, `hpEnd`, and death field.  The earlier pre-fix variability (37.5% vs
+7.8% on the same nominal control) was a genuine race, not ordinary noise.
 
-Do not use the earlier negative result as evidence against V4. It was generated
-before the race fix and is recorded as invalid/inconclusive in `EXPERIMENTS.md`
-§155.
+Trainer fixes from this pass:
 
-## Frozen gameplay configuration
+- Both trainers canonicalise CSV rows by `(seed, decIdx)` before constructing
+  group offsets (the prior code assumed contiguity that the frozen Tier-B CSV
+  did not satisfy).
+- Both trainers initialise a deterministic batch-permutation RNG.
 
-Unless explicitly stated otherwise:
+---
+
+## 3. Frozen benchmark contract
+
+Every experiment below uses exactly this unless one variable is intentionally
+changed:
 
 ```text
 A0
 STS_FAIR=1
 STS_SEARCHER3=1
-STS_S3_BELIEF=0
-STS_S3_CHAIN=0
-STS_S3_LIVE_VALID=1
+STS_S3_BELIEF=0          STS_S3_CHAIN=0          STS_S3_LIVE_VALID=1
 STS_S3_PARTICLES=64
-STS_VNET=build/v_combat_7k_tuned.txt
-STS_VNET_ALPHA=0.3
-STS_COLLECT_KEYS=0              # Act-3 objective
-STS_STOP_AFTER_ACT=3
-1,000 sims/decision
-12 OpenMP threads
-paired seeds 126700–126763
+STS_VNET=build/v_combat_7k_tuned.txt             STS_VNET_ALPHA=0.3
+STS_COLLECT_KEYS=0                                STS_STOP_AFTER_ACT=3
+1,000 sims/decision, 12 OpenMP threads
+paired seeds 126700–126827 (128 total; first 64 = 126700–126763, second 64 = 126764–126827)
 ```
 
 Models:
 
-- corrected honest V4: `selfplay/models/ooc_strategic_tok_final.native`
-- V4 SHA256: `e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`
-- VNet SHA256: `ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c`
+```text
+corrected honest V4 token gate:
+  selfplay/models/ooc_strategic_tok_final.native
+  SHA256 e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c
 
-The eight forbidden hidden features remain excluded:
+combat VNet:
+  build/v_combat_7k_tuned.txt
+  SHA256 ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c
+```
+
+Eight forbidden hidden features remain excluded (never restore them):
 `nextEliteId`, `nextFight0`, `nextFight1`, `nextFight2`, `remElites`,
-`remFights`, `monOffset`, `eliteOffset`.
+`remFights`, `monOffset`, `eliteOffset`.  `bossId` is legitimate.
 
-## Wave results
+---
 
-| Wave | Status | Result/evidence |
+## 4. Wave results summary
+
+| Wave | Status | Key result |
 |---|---|---|
-| **0A correctness/contract** | Complete | Python/C++ V4 contract/parity infrastructure, honest feature checks, action/candidate checks, and counterfactual map-detach fixes. Self-tests pass. |
-| **0B seed-disjoint validation** | Fixed/complete | Trainers split complete seeds with empty train/validation intersection. A bug was found: group offsets assumed CSV rows were contiguous. Both trainers now sort by `(seed, decIdx)` first. Missing batch RNG initialization was also fixed. |
-| **0C provenance** | Complete | `bestbench` writes `<results>.meta.json` with objective, seed block, flags, model-load state, and settings. |
-| **0D deployment metrics** | Partial/implemented | `strategic_metrics.py` and `tools/analyze_strategic_metrics.py` implement gate-fire curves, override quality, fallback-relative advantage, and regret. Synthetic self-test passes. A real checkpoint prediction-CSV pipeline is not yet connected end-to-end. |
-| **0E corrected V4 gate** | Requalified | ON 48.4% vs OFF 37.5%, +10.9pp, CI crosses zero. Artifacts: `build/ooc_v4_requal_s3_act3_off_64_1786292238.csv`, `...on...csv`, paired report and sidecars. |
-| **0F override tracing** | Complete | `STS_OOC_STRATEGIC_TRACE` and analyzer work. Requalified ON trace: 3,419 opportunities, 1,834 owned, 53.6% overall fire rate. |
-| **0G screen ablations** | Complete exploratory gate | Relative to full V4 48.4%: minus REST 48.4% (0.0pp), minus EVENT 40.6% (−7.8pp), minus SHOP 53.1% (+4.7pp), minus TREASURE 48.4% (0.0pp), minus BOSS RELIC 45.3% (−3.1pp). All 64-seed CIs are wide; only EVENT has a meaningful directional signal. Artifacts: `build/ooc_v4_requal_s3_act3_ablate_64_1786292838/`. |
-| **0H margin sweep** | Complete exploratory gate | Margin 0.5: 45.3%; 1.0: 48.4%; 2.0: 48.4%; 5.0: 45.3%. Mean floors: 43.9, 43.5, 44.4, 43.0. Eight-seed trace fire-rate samples: 71.8%, 53.3%, 33.3%, 13.5%. Margin 1–2 is a small-sample plateau; no promotion yet. |
-| **0I checkpoint selection** | Interface complete, experiment incomplete | Both trainers support `STRAT_SELECT_METRIC=val_pol_ce` (minimize, default) or `q_top1` (maximize). A three-epoch CUDA `val_pol_ce` run on the full 3.06M-row Tier-B dataset reached `val_pol_ce=0.6093`, `q_top1=0.2982`. The paired `q_top1` full run was stopped before training after resource pressure. No checkpoint-selection conclusion is valid. |
+| **0A correctness** | Done | Python/C++ V4 contract parity, Map detach fixes, self-tests pass |
+| **0B seed-disjoint** | Done | Trainers split complete seeds; contiguity + RNG bugs fixed |
+| **0C provenance** | Done | `bestbench` writes `<results>.meta.json` sidecars |
+| **0D deployment metrics** | Partial | `strategic_metrics.py` + analyzer exist; real checkpoint → prediction CSV pipeline has export script but needs trainer tensor-prep integration |
+| **0E V4 gate** | **Done, 128 seeds** | **V4 ON 67/128 = 52.3% vs OFF 52/128 = 40.6%, +11.7pp, CI [+1.6,+22.7]pp, CI excludes zero** |
+| **0F tracing** | Done | Integrates with `STS_OOC_STRATEGIC_TRACE` and `tools/analyze_strategic_trace.py` |
+| **0G screen ablations** | Done (64-seed) | EVENT useful (−7.8pp if removed), SHOP harmful (+4.7pp if removed), REST/TREASURE neutral |
+| **0H margin sweep** | Done (64-seed) | Plateau at margin 1–2 (both 48.4%); margin 0.5→45.3%, 5.0→45.3%. Fire rates: 0.5→71.8%, 1.0→53.3%, 2.0→33.3%, 5.0→13.5% |
+| **0I checkpoint selection** | Partial | `STRAT_SELECT_METRIC` interface verified on CPU fixture; `val_pol_ce` and `q_top1` pick different epochs. Full-dataset comparison not yet run |
 
-## Important artifacts and logs
+---
 
-- Plan: `docs/knowledge-base/plan-ooc-strategic-investigation-2026-08-09.md`
-- Chronology: `EXPERIMENTS.md` §§155–162
-- Metrics: `strategic_metrics.py`, `tools/analyze_strategic_metrics.py`
-- Trace: `tools/analyze_strategic_trace.py`
-- Ablation harness: `run_screen_ablate.sh`
-- Requalified gate CSVs: `build/ooc_v4_requal_s3_act3_*_64_1786292238.csv`
-- Requalified ablations: `build/ooc_v4_requal_s3_act3_ablate_64_1786292838/`
-- Margin CSVs: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv`
-- Determinism documentation: `docs/knowledge-base/behavior/determinism-and-rng.md`
-- Race decision: `docs/knowledge-base/decision-log/2026-08-09-thread-local-potion-value.md`
-- Split fix decision: `docs/knowledge-base/decision-log/2026-08-09-strategic-training-split-fix.md`
+## 5. 128-seed confirmation details (§163)
 
-## What not to conclude
+Two 64-seed blocks were combined for 128 paired seeds.  The first 64 were
+bit-identical to the earlier requalification (proving binary stability across
+the `baed55b` Searcher3 commit).  The second 64 used a slightly later binary
+(`dfc3ed8` tree-reuse controls, opt-in/env-gated, no behavioural impact).
 
-- The earlier S2-fair V4 result (+15.6pp) is promising but does not prove
-  current S3 transfer.
-- The pre-race S3 result (−23.4pp) is invalidated.
-- 64-seed Wave 0E/0G/0H outcomes are exploratory, not deployment promotions.
-- Runtime traces alone cannot measure harmful overrides because they contain no
-  counterfactual labels. Use the Wave 0D prediction-CSV schema for that.
-- Do not compare `STS_COLLECT_KEYS=0` Act-3 results with Heart/key-collection
-  results. No fresh Heart gate has been run in this pass.
-- Do not start Wave 1 fallback-relative labels or Wave 2 hidden-future
-  marginalization until Wave 0I and the 128-seed V4 confirmation are complete.
+| | OFF | ON | Delta |
+|---|---|---|---|
+| **Block 1** (126700–126763) | 24/64 (37.5%) | 31/64 (48.4%) | +10.9pp |
+| **Block 2** (126764–126827) | 28/64 (43.8%) | 36/64 (56.2%) | +12.5pp |
+| **Combined (128)** | 52/128 (40.6%) | 67/128 (52.3%) | **+11.7pp** |
+| | | | CI **[+1.6, +22.7]pp** |
 
-## Resource/process safety
+Discordant: 47/128 (37%).  ON-only wins: 31.  OFF-only wins: 16.  Floor +2.0,
+HP +5.9.
 
-A full Tier-B token trainer materializes roughly 2.9 GB of state before model
-memory and can overwhelm an IDE or cause excessive swap/output. The previous
-IDE crash occurred during the attempted paired full-dataset checkpoint runs;
-exact OS crash causality is unverified. Future training should:
+The CI lower bound is positive — this is the first statistically significant
+V4 gate on the S3+7k-VNet stack.
 
-1. use redirected logs, not an IDE console;
-2. use a reduced Tier-B fixture first for `val_pol_ce` vs `q_top1` logic;
-3. avoid concurrent CUDA trainers;
-4. check `nvidia-smi` and `free -h` before launching;
-5. retain `STRAT_EPOCHS` small for smoke tests;
-6. never delete unrelated self-play buffers or model artifacts.
+---
 
-There may be other Pi workers running benchmark/search experiments. Do not kill
-or broadly terminate them. Do not launch another large gameplay or training job
-until the machine is clear enough to avoid CPU/GPU/RAM contention.
+## 6. Screen-level interpretation
 
-## Next exact actions
+Full V4 at margin 1.0 = 31/64 (48.4%) on seeds 126700–126763.
 
-1. Run a tiny redirected trainer fixture using both selection metrics and verify
-   the selected epoch differs/behaves as expected; do not use the 3.06M-row
-   dataset for this test.
-2. When no competing worker is using the machine, run the **128-seed** paired
-   Wave 0E confirmation on the frozen stack. Keep `STS_COLLECT_KEYS=0` and
-   `STS_STOP_AFTER_ACT=3` explicit.
-3. If the 128-seed result confirms a positive effect, record it and consider
-   the current V4/margin-1 stack provisional. If not, keep it diagnostic.
-4. Only then decide whether to run a separate `STS_COLLECT_KEYS=1` Heart gate.
-5. Use Wave 0D metrics and checkpoint outputs before any label redesign.
+| Configuration | Wins | vs full V4 |
+|---|---|---|
+| **Full V4** | 31 | — |
+| minus REST | 31 | 0.0pp |
+| minus EVENT | 26 | **−7.8pp** |
+| minus SHOP | 34 | **+4.7pp** |
+| minus TREASURE | 31 | 0.0pp |
+| minus BOSS RELIC | 29 | −3.1pp |
 
-## Verification commands
+All CIs cross zero at 64 seeds.  The directions are:
 
-Cheap checks:
+- **EVENT is the strongest candidate for a genuinely useful V4 screen.**
+- **SHOP is the strongest candidate for a harmful V4 screen.**
+- REST and TREASURE show no gameplay signal.
+- BOSS RELIC may contribute modestly.
+
+These are exploratory.  Do not promote SHOP-disabling based on this alone.
+
+---
+
+## 7. Margin analysis
+
+Both margin 1.0 and 2.0 produced 31/64 wins.  They disagreed on 14 seeds —
+margin 2 trades different outcomes without aggregate gain.  Fire rates drop
+from 53.3% (margin 1) to 33.3% (margin 2) in an 8-seed trace sample.
+
+There is no evidence that margin ≠ 1.0 is better.  Keep margin 1.0 frozen
+for the next experiments.
+
+---
+
+## 8. Important artifacts
+
+| What | Where |
+|---|---|
+| Plan | `docs/knowledge-base/plan-ooc-strategic-investigation-2026-08-09.md` |
+| Experiment log | `EXPERIMENTS.md` §§155–165 |
+| Race fix decision | `docs/knowledge-base/decision-log/2026-08-09-thread-local-potion-value.md` |
+| Trainer split fix | `docs/knowledge-base/decision-log/2026-08-09-strategic-training-split-fix.md` |
+| Deployment metrics | `strategic_metrics.py`, `tools/analyze_strategic_metrics.py` |
+| Prediction export (partial) | `tools/export_strategic_predictions.py` |
+| Trace analyzer | `tools/analyze_strategic_trace.py` |
+| Screen ablation harness | `run_screen_ablate.sh` |
+| 128-seed OFF | `build/ooc_v4_head_s3_act3_off_64_1786297628.csv` + `build/ooc_v4_head128_s3_act3_off_64plus_1786297983.csv` |
+| 128-seed ON | `build/ooc_v4_head_s3_act3_on_64_1786297628.csv` + `build/ooc_v4_head128_s3_act3_on_64plus_1786297983.csv` |
+| Ablation CSVs | `build/ooc_v4_requal_s3_act3_ablate_64_1786292838/` |
+| Margin CSVs | `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` |
+| SHOP-disabled | `build/ooc_v4_noshop_s3_act3_64_1786298692.csv` |
+
+---
+
+## 9. What NOT to conclude
+
+- The earlier S2-fair +15.6pp result does **not** transfer to this stack in
+  magnitude; the current result is +11.7pp.
+- The earlier post-race negative gate (−23.4pp) is **invalidated** — it was
+  generated before the thread-local fix.
+- 64-seed screen/margin results are **exploratory**, not deployment decisions.
+- Runtime traces cannot measure harmful overrides without counterfactual
+  labels.  Use the prediction-CSV pipeline for that.
+- Do not compare `STS_COLLECT_KEYS=0` Act-3 results with Heart results.
+  No Heart gate has been run.
+- Do not start Wave 1 (fallback-relative labels) or Wave 2 (hidden-future
+  marginalisation) until the prediction-CSV pipeline is finished and the
+  SHOP/EVENT interpretation is solidified.
+
+---
+
+## 10. Resource safety rules
+
+Before any large trainer or benchmark:
+
+- Inspect `nvidia-smi` and `free -h`.
+- Check for existing `pi`, `one_combat`, or `train_strategic` workers;
+  do not terminate them.
+- Redirect large trainer output to files, not an IDE console.
+- Never run two full CUDA strategic trainers concurrently.
+- Reduced or synthetic fixtures are preferred for logic tests.
+- There is an existing `.venv/bin/python3` process using ~17 GB — do not touch it.
+
+---
+
+## 11. Cheapest verification commands
+
+Before every task:
 
 ```bash
 git diff --check
-python3 -m py_compile train_strategic.py train_strategic_tok.py strategic_metrics.py tools/analyze_strategic_metrics.py
+
+python3 -m py_compile \
+    train_strategic.py train_strategic_tok.py \
+    strategic_metrics.py tools/analyze_strategic_metrics.py
+
 python3 tools/analyze_strategic_metrics.py --self-test
 python3 tools/strategic_split_selftest.py
 python3 tools/ooc_strategic_contract_selftest.py
 ```
 
-For gameplay, use the frozen environment above and a unique results path. The
-automated seed ceiling is 128; prefer 8–16 for smoke checks and 64 for ordinary
-focused gates.
+For gameplay on the frozen stack:
+
+```bash
+# V4 OFF
+STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0 \
+STS_S3_LIVE_VALID=1 STS_S3_PARTICLES=64 \
+STS_VNET=build/v_combat_7k_tuned.txt STS_VNET_ALPHA=0.3 \
+STS_COLLECT_KEYS=0 STS_STOP_AFTER_ACT=3 \
+OMP_NUM_THREADS=12 ./build/one_combat bestbench 1000 N 0 SEED results.csv
+
+# V4 ON (add: STS_OOC_STRATEGIC_TOK_NN=..., REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1, MARGIN=1.0)
+```
+
+Seed ceiling: 8–16 smoke, 64 exploratory, 128 confirmation maximum.
+
+---
+
+## 12. Exact next experiments (in priority order)
+
+### A — Finish the prediction-CSV pipeline (Task 4)
+
+The `tools/export_strategic_predictions.py` skeleton exists and the
+`tools/analyze_strategic_metrics.py` consumer is verified.  What remains is
+integrating the trainer's full tensor-prep logic (deck/relic/potion token
+arrays, action bits, entity/screen/category tensors) into the export script.
+The trainer's `fwd_rows()` already does this — either extract that logic into
+a shared module or add a `--predict-only` mode to the trainer that loads a
+checkpoint and writes the deployment-aligned prediction CSV.
+
+The prediction CSV schema is: `seed,decIdx,screen,nCand,modelIdx,bestIdx,
+chosenIdx,margin,fired,predQ,labelQ` where the Q columns are pipe-delimited
+per-candidate lists.  The `fallbackIdx` column required by
+`analyze_strategic_metrics.py` is currently missing from the export; add it.
+
+Once this works, run it on the V4 checkpoint and the full Tier-B dataset to
+get real per-screen override quality, harmful-override rate, and
+fallback-relative advantage statistics.
+
+### B — Decide whether full checkpoint-selection training is worth it (Task 7)
+
+Two full-dataset strategic-token trainings (`val_pol_ce` vs `q_top1`
+selection) cost ~2× the GPU memory of one (~2.9 GB state tensor + model),
+plus significant wall time.  Given that offline metrics are weak gameplay
+predictors anyway (the V4 experience), this is **not** a blocker for label
+experiments.  Defer it until prediction-CSV pipeline is available and can
+compare the two checkpoints on deployment-aligned metrics instead of just
+CE/q_top1.
+
+### C — Wave 1A: fallback-relative advantage using existing Tier-B labels (Task 8)
+
+For each existing Tier-B decision group, derive `A(o,a) = labelQ(o,a) −
+labelQ(o,fallback)`.  Same dataset, split, encoder, architecture, optimizer,
+and epochs.  Only change the target/head/loss to predict advantage instead of
+absolute Q.  Keep `margin=1.0`, all five screens ON.  Run 64 paired seeds
+against the confirmed full-V4 baseline on the same seed block.
+
+This isolates the question: *is learning fallback-relative advantage easier
+or more deployment-aligned than learning absolute Q?*
+
+### D — Wave 1B: genuinely paired fallback-relative datagen (Task 9)
+
+Only if Wave 1A shows promise.  Generate new labels `A(o,a) = mean_k[ U(force a,
+future k) − U(force fallback, future k) ]` with common-random-number pairing.
+Start with 100–200 decisions, 8–16 futures each.  Do not generate a full
+multi-million-row dataset until the label formulation is validated.
+
+### E — Wave 2: hidden-future marginalisation (Task 10)
+
+Keep this separate from paired advantage generation.  For public observation
+`o`, create hidden futures `h_k` compatible with visible information.
+100–200 diverse decisions, 16 realisations (32 for ambiguous cases).
+Measure action-ranking changes and candidate/fallback sign changes.  If
+marginalisation rarely changes decisions, stop — it's not worth scaling.
+
+---
+
+## 13. Decision point before new labels (repeated from the handoff)
+
+1. **Is V4 positive at 128 seeds?** → **Yes.** ✓
+2. Which screens generate useful vs harmful overrides? → EVENT useful, SHOP harmful (exploratory 64-seed).
+3. Does predicted confidence correlate with label improvement? → Not yet measured (prediction-CSV pipeline needed).
+4. Does absolute-Q fail due to bad calibration, bad ranking, screen heterogeneity, or disagreement with fallback outcomes? → Partially answered by screen ablations; deep diagnostics need the pipeline.
+5. Is checkpoint selection leaving performance on the table? → Unclear; not yet measured in gameplay terms.
+
+The next research question is:
+
+> **Can we make V4 overrides more reliably beneficial relative to the
+> fallback without changing multiple causal variables at once?**
