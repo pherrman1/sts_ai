@@ -10,6 +10,8 @@
  * This extension decides transitions deterministically.
  */
 
+import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
@@ -88,7 +90,6 @@ let _agentConfigs: Map<string, AgentConfig> | null = null;
 function loadAgentConfigs(cwd: string): Map<string, AgentConfig> {
   if (_agentConfigs) return _agentConfigs;
   _agentConfigs = new Map();
-  const fs = require("node:fs");
   for (const [role, relPath] of Object.entries(ROLE_TO_AGENT_FILE)) {
     try {
       const fullPath = path.join(cwd, relPath);
@@ -163,8 +164,6 @@ async function invokeAgent(
   }
 
   // Write system prompt to temp file
-  const fs = require("node:fs");
-  const os = require("node:os");
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sts-cycle-prompt-"));
   const promptFile = path.join(tmpDir, "system.md");
   fs.writeFileSync(promptFile, cfg.body, "utf-8");
@@ -664,15 +663,15 @@ function accepted(ctx: CycleContext): { state: TerminalState; eli5: string } {
 // ============================================================================
 
 export default function stsCycle(pi: ExtensionAPI) {
-  pi.registerCommand({
-    name: "sts-cycle",
+  pi.registerCommand("sts-cycle", {
     description: "Deterministic agent orchestration: architect → implement → verify → review → accept/reject",
-    argumentHint: "<task>",
 
-    async execute(args, signal, ctx) {
+    handler: async (args, ctx) => {
       const task = args.trim();
       if (!task) {
-        return { content: [{ type: "text", text: "Usage: /sts-cycle <task description>" }] };
+        if (ctx.hasUI) ctx.ui.notify("Usage: /sts-cycle <task description>", "warning");
+        else console.error("Usage: /sts-cycle <task description>");
+        return;
       }
 
       const cwd = ctx.cwd;
@@ -706,11 +705,12 @@ export default function stsCycle(pi: ExtensionAPI) {
         state,
         plan: null,
         costs: [],
-        signal,
+        // Commands normally run while Pi is idle, so ctx.signal is usually
+        // undefined. runPiChild still enforces its own lifecycle watchdogs.
+        signal: ctx.signal,
         onProgress: (stateName: string, detail: string) => {
-          if (ctx.hasUI) {
-            ctx.ui.notify(`[${stateName}] ${detail}`, "info");
-          }
+          if (ctx.hasUI) ctx.ui.setStatus("sts-cycle", `${stateName}: ${detail}`);
+          else console.log(`[sts-cycle] ${stateName}: ${detail}`);
         },
       };
 
@@ -723,48 +723,58 @@ export default function stsCycle(pi: ExtensionAPI) {
         writeState(sessionDir, state);
         writeCosts(sessionDir, cycleCtx.costs);
 
-        let output = `# STS Cycle: ${result.state}\n\n`;
-        output += `**Session:** \`${sessionDir}\`\n`;
-        output += `**Task:** ${task.substring(0, 120)}${task.length > 120 ? "..." : ""}\n`;
-        output += `**Baseline:** \`${state.baselineCommit.substring(0, 8)}\`\n\n`;
-        output += `## Final ELI5\n\n${result.eli5}\n\n`;
+        let output = `STS Cycle: ${result.state}\n\n`;
+        output += `Session: ${sessionDir}\n`;
+        output += `Task: ${task.substring(0, 120)}${task.length > 120 ? "..." : ""}\n`;
+        output += `Baseline: ${state.baselineCommit.substring(0, 8)}\n\n`;
+        output += `Final ELI5\n${result.eli5}\n`;
 
         if (cycleCtx.costs.length > 0) {
-          output += "## Cost\n\n";
-          for (const [agent, costStr] of Object.entries(costSummary.per_agent)) {
-            output += `- ${agent}: $${costStr.toFixed(4)}\n`;
+          output += "\nCost\n";
+          for (const [agent, costValue] of Object.entries(costSummary.per_agent)) {
+            output += `- ${agent}: $${costValue.toFixed(4)}\n`;
           }
-          output += `- **Total: $${costSummary.total.toFixed(4)}**\n`;
+          output += `- Total: $${costSummary.total.toFixed(4)}\n`;
         }
 
         if (result.state === "ACCEPTED") {
-          output += "\nNo commit was created. Inspect the diff before committing:\n";
-          output += "```\n" + "git status --short\n" + "git diff\n" + "```\n";
+          output += "\nNo commit was created. Inspect with:\n";
+          output += "git status --short\n";
+          output += "git diff\n";
         }
 
-        return { content: [{ type: "text", text: output }] };
-
+        if (ctx.hasUI) {
+          ctx.ui.setStatus("sts-cycle", undefined);
+          ctx.ui.setWidget("sts-cycle-result", output.split("\n"));
+          ctx.ui.notify(
+            `STS Cycle finished: ${result.state}`,
+            result.state === "ACCEPTED" ? "info" : "warning",
+          );
+        } else {
+          console.log(output);
+        }
       } catch (error: any) {
         const failureReason = error.failureReason || "FAILED_AGENT";
-        const terminalState: TerminalState =
-          failureReason === "FAILED_POLICY" ? "FAILED" : "FAILED";
+        const terminalState: TerminalState = "FAILED";
 
         state.state = terminalState;
         writeState(sessionDir, state);
+        writeCosts(sessionDir, cycleCtx.costs);
 
-        return {
-          content: [{
-            type: "text",
-            text: `# STS Cycle: ${terminalState}\n\n**Reason:** ${failureReason}\n**Error:** ${error.message}\n\n**Session:** \`${sessionDir}\``,
-          }],
-          isError: true,
-        };
+        const output =
+          `STS Cycle: ${terminalState}\n\n` +
+          `Reason: ${failureReason}\n` +
+          `Error: ${error.message}\n\n` +
+          `Session: ${sessionDir}`;
+
+        if (ctx.hasUI) {
+          ctx.ui.setStatus("sts-cycle", undefined);
+          ctx.ui.setWidget("sts-cycle-result", output.split("\n"));
+          ctx.ui.notify(`STS Cycle failed: ${failureReason}`, "error");
+        } else {
+          console.error(output);
+        }
       }
-    },
-
-    renderResult(result: any) {
-      const text = result.content?.[0]?.text || "(no output)";
-      return { type: "text", text };
     },
   });
 }
