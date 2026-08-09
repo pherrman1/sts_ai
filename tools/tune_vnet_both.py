@@ -100,7 +100,7 @@ class XGBObjective:
             subsample=trial.suggest_float("subsample", 0.5, 1.0),
             colsample_bytree=trial.suggest_float("colsample_bytree", 0.3, 1.0),
             min_child_weight=trial.suggest_float("min_child_weight", 1.0, 200.0, log=True),
-            lambda_=trial.suggest_float("lambda", 1e-3, 10.0, log=True),
+            reg_lambda=trial.suggest_float("reg_lambda", 1e-3, 10.0, log=True),
             alpha=trial.suggest_float("alpha", 1e-3, 10.0, log=True),
             gamma=trial.suggest_float("gamma", 0.0, 10.0),
         )
@@ -118,7 +118,14 @@ class XGBObjective:
 class CBOObjective:
     def __init__(self, data: VNetData):
         self.data = data
-        # CatBoost uses sample_weight, not per-row weights in a DMatrix
+        gpu_available = False
+        try:
+            cb.CatBoostRegressor(iterations=2, task_type="GPU", verbose=False)
+            gpu_available = True
+        except Exception:
+            pass
+        # CatBoost GPU is ~3-5x faster than CPU on this dataset
+        self.task_type = "GPU" if gpu_available else "CPU"
         self.X_tr = data.X[data.tr_idx]
         self.y_tr = data.y[data.tr_idx]
         self.w_tr = data.weight[data.tr_idx]
@@ -127,26 +134,22 @@ class CBOObjective:
         self.w_va = data.weight[data.va_idx]
 
     def __call__(self, trial):
+        # Cap learning rate minimum to avoid trials that need 2000+ iterations
+        lr = trial.suggest_float("learning_rate", 0.03, 0.3, log=True)
         params = dict(
             loss_function="RMSE",
-            iterations=2000,
+            iterations=1000,  # cap for speed; final train uses 2000
             depth=trial.suggest_int("depth", 4, 10),
-            learning_rate=trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+            learning_rate=lr,
             l2_leaf_reg=trial.suggest_float("l2_leaf_reg", 1.0, 100.0, log=True),
             random_strength=trial.suggest_float("random_strength", 0.0, 20.0),
             bagging_temperature=trial.suggest_float("bagging_temperature", 0.0, 1.0),
-            border_count=trial.suggest_int("border_count", 128, 255),
-            # CatBoost params for speed + reproducibility
+            border_count=trial.suggest_int("border_count", 64, 255),
             random_seed=42,
-            bootstrap_type="Bayesian" if trial.params.get("bagging_temperature", 0) > 0 else "Bernoulli",
-            subsample=trial.suggest_float("subsample", 0.5, 1.0) if trial.params.get("bagging_temperature", 0) == 0 else None,
             verbose=False,
             allow_writing_files=False,
-            thread_count=-1,
-            task_type="CPU",  # CatBoost GPU needs different setup; CPU is fine for comparison
+            task_type=self.task_type,
         )
-        # Remove None values
-        params = {k: v for k, v in params.items() if v is not None}
 
         model = cb.CatBoostRegressor(**params)
         model.fit(self.X_tr, self.y_tr,
@@ -155,8 +158,21 @@ class CBOObjective:
                   early_stopping_rounds=40,
                   verbose=False)
         best = model.get_best_iteration()
-        pv = model.predict(self.X_va, ntree_end=best)
-        val_rmse = float(np.sqrt(((self.y_va - pv)**2).mean()))
+        # If we hit the iteration cap, the model may not have converged
+        if best and best >= 990:
+            # Penalize: add a small penalty proportional to remaining descent
+            pv = model.predict(self.X_va, ntree_end=best)
+            val_rmse = float(np.sqrt(((self.y_va - pv)**2).mean()))
+            # Check if RMSE is still dropping fast
+            last_50 = min(50, best or 0)
+            if last_50 > 0:
+                pv_early = model.predict(self.X_va, ntree_end=best - last_50)
+                rmse_early = float(np.sqrt(((self.y_va - pv_early)**2).mean()))
+                improvement = rmse_early - val_rmse
+                val_rmse += improvement * 1.5  # penalize unconverged trials
+        else:
+            pv = model.predict(self.X_va, ntree_end=best)
+            val_rmse = float(np.sqrt(((self.y_va - pv)**2).mean()))
         trial.set_user_attr("best_iteration", int(best or model.tree_count_))
         return val_rmse
 
@@ -194,7 +210,13 @@ def train_final_cb(data, params, model_path):
     X_tr, y_tr, w_tr = data.X[data.tr_idx], data.y[data.tr_idx], data.weight[data.tr_idx]
     X_va, y_va = data.X[data.va_idx], data.y[data.va_idx]
     params = {**params, "verbose": 100, "allow_writing_files": False,
-              "thread_count": -1, "random_seed": 42}
+              "random_seed": 42, "iterations": 2000}
+    # Use GPU if available
+    try:
+        cb.CatBoostRegressor(iterations=2, task_type="GPU", verbose=False)
+        params["task_type"] = "GPU"
+    except Exception:
+        pass
     model = cb.CatBoostRegressor(**params)
     model.fit(X_tr, y_tr, sample_weight=w_tr,
               eval_set=(X_va, y_va), early_stopping_rounds=40)
