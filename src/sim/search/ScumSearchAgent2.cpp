@@ -162,28 +162,11 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 spend += extra;
             }
             // search() gives the full budget even on a carried-over root.
-            // searchToTotal's shortfall is too aggressive — the carried root
-            // already has ~90% of the target visits, leaving 20-40 new sims.
+            // searchToTotal: the zeroed root (advanceRoot above) means full
+            // budget runs. On fresh roots (before==0) this equals search().
             const std::int64_t before = s3.root.simulationCount;
-            if (std::getenv("STS_TRACE_REUSE") && before > 0) {
-                std::cerr << "[trace] reuse: root visits=" << before << " edges=";
-                for (const auto &e : s3.root.edges)
-                    std::cerr << e.child.simulationCount << " ";
-                std::cerr << "\n";
-            }
-            s3.search(spend);
+            s3.searchToTotal(spend);
             simulationCountTotal += s3.root.simulationCount - before;
-            if (std::getenv("STS_TRACE_REUSE") && before > 0) {
-                std::int64_t maxV = -1; int maxI = -1;
-                for (int i = 0; i < (int)s3.root.edges.size(); ++i) {
-                    if (s3.root.edges[i].child.simulationCount > maxV)
-                        { maxV = s3.root.edges[i].child.simulationCount; maxI = i; }
-                }
-                std::cerr << "[trace] after:  root visits=" << s3.root.simulationCount
-                          << " picked=";
-                if (maxI >= 0) s3.root.edges[maxI].action.printDesc(std::cerr, bc);
-                std::cerr << " (" << maxV << " visits)\n";
-            }
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             s3.clampRankCorrAtRoot();
             s3.rankCorrValues.clear();
