@@ -70,6 +70,38 @@ bool g_s3OutcomeBucketDiag = false;
 std::string g_s3OutcomeBucketDiagFile;
 int g_s3OutcomeBucketDiagParticles = 64; // particles to sample per transition
 
+// ── Bucket-value diagnostic (STS_S3_BUCKET_VALUE_DIAG) ───────────────
+// Measures within-bucket value homogeneity: when multiple particles produce
+// the same visible observation after END_TURN, do they have similar
+// downstream continuation values? Critical for outcome aggregation.
+bool g_s3BucketValueDiag = false;
+std::string g_s3BucketValueDiagFile;
+int g_s3BucketValueDiagRollouts = 4;     // K rollouts per bucket member
+int g_s3BucketValueDiagMaxTransitions = 1000; // cap on measured transitions
+int g_s3BucketValueDiagSampleMembers = 8;     // max members sampled per bucket
+
+// ── END_TURN marginalization (STS_S3_ENDTURN_MARGINALIZE) ──────────────
+// Prototype: at eligible leaf-expansion END_TURN boundaries, generate
+// N particles, bucket by visible outcome, evaluate one rep per bucket,
+// and backpropagate the weighted expectation. Off by default.
+bool g_s3EndTurnMarginalize = false;
+int g_s3EndTurnMarginalizeParticles = 16;
+int g_s3EndTurnMarginalizeMaxPile = 8;
+
+// Marginalization diagnostic counters (per-searcher lifetime).
+thread_local std::int64_t t_margEligible = 0;
+thread_local std::int64_t t_margApplied = 0;
+thread_local std::int64_t t_margParticlesSampled = 0;
+thread_local std::int64_t t_margUniqueBuckets = 0;
+thread_local std::int64_t t_margContEvals = 0;
+thread_local std::int64_t t_margTermBuckets = 0;
+thread_local double t_margSeconds = 0.0;
+
+// Shadow-comparison counters (1% sample).
+thread_local std::int64_t t_margShadowCount = 0;
+thread_local double t_margShadowOrdinary = 0.0;
+thread_local double t_margShadowMarginal = 0.0;
+
 // Thread-local diagnostic state: per-thread RNG, per-thread output file,
 // and per-thread dedup set (visibleHash of pre-state). Each unique
 // (preState, END_TURN) pair is measured at most once per thread.
@@ -80,6 +112,14 @@ static thread_local bool t_diagOutOpen = false;
 static thread_local std::unordered_set<std::uint64_t> t_diagSeen;
 static thread_local int t_diagRowCount = 0;
 static constexpr int kMaxDiagRows = 2000;  // hard cap per thread
+
+// Bucket-value diag thread-local state.
+static thread_local std::unordered_set<std::uint64_t> t_bvdSeen;
+static thread_local int t_bvdRowCount = 0;
+static thread_local std::mt19937_64 t_bvdRng;
+static thread_local bool t_bvdRngSeeded = false;
+static thread_local std::ofstream t_bvdOut;
+static thread_local bool t_bvdOutOpen = false;
 
 bool g_s3RolloutPolicy = false;
 int g_s3RolloutK = 1;
@@ -447,6 +487,306 @@ static void runOutcomeBucketDiag(
     }
 }
 
+// ── Continuation-value evaluator (self-contained, no searcher needed) ───
+// Runs K weighted-random rollouts from a post-END_TURN state, evaluates each
+// with the learned leaf (vnet) or terminal outcome. Returns mean value.
+// The rng is reseeded per rollout-slot for CRN pairing across members.
+static double evalContinuation(const BattleContext &startState,
+                                int kRollouts, std::mt19937_64 &rng) {
+    double sum = 0.0;
+    for (int k = 0; k < kRollouts; ++k) {
+        BattleContext bc = startState;
+        for (int steps = 0; steps < 200 && bc.outcome == Outcome::UNDECIDED; ++steps) {
+            BattleScumSearcher3::Node tmp;
+            enumerateActionsForNode(tmp, bc);
+            if (tmp.edges.empty()) break;
+            int totalW = 0;
+            for (const auto &e : tmp.edges) {
+                if (e.action.getActionType() == ActionType::CARD) {
+                    auto t = bc.cards.hand[e.action.getSourceIdx()].getType();
+                    if (t == CardType::ATTACK) totalW += 8;
+                    else if (t == CardType::POWER) totalW += 3;
+                    else totalW += 2;
+                } else {
+                    totalW += 1;
+                }
+            }
+            if (totalW <= 0) break;
+            int pick = std::uniform_int_distribution<int>(0, totalW - 1)(rng);
+            int running = 0, chosen = -1;
+            for (int i = 0; i < (int)tmp.edges.size(); ++i) {
+                int w = 1;
+                if (tmp.edges[i].action.getActionType() == ActionType::CARD) {
+                    auto t = bc.cards.hand[tmp.edges[i].action.getSourceIdx()].getType();
+                    if (t == CardType::ATTACK) w = 8;
+                    else if (t == CardType::POWER) w = 3;
+                    else w = 2;
+                }
+                running += w;
+                if (pick < running) { chosen = i; break; }
+            }
+            if (chosen < 0) break;
+            const auto &a = tmp.edges[chosen].action;
+            if (!a.isValidAction(bc)) break;
+            a.execute(bc);
+        }
+        if (bc.outcome == Outcome::PLAYER_VICTORY) sum += 100.0;
+        else if (bc.outcome == Outcome::PLAYER_LOSS) sum += 0.0;
+        else if (g_useVNet && g_combatVNet.loaded())
+            sum += g_combatVNet.predict(bc);
+        else
+            sum += (double)bc.player.curHp;
+    }
+    return sum / kRollouts;
+}
+
+// ── Bucket-value diagnostic ─────────────────────────────────────────────
+// For each unique (preState, END_TURN) pair: generate particles, bucket by
+// post-transition visibleHash, sample members from each bucket, evaluate
+// continuation value per member, compute within/between-bucket statistics.
+static void runBucketValueDiag(
+    const BattleContext &preState, const Action &action,
+    std::uint64_t seed, int encounter, int floor, int turn, int decIdx,
+    std::mt19937_64 &diagRng, std::ostream &out)
+{
+    const int nParticles = 64;
+    const int kRollouts = g_s3BucketValueDiagRollouts;
+    const int maxSample = g_s3BucketValueDiagSampleMembers;
+
+    // 1. Generate particles and execute END_TURN.
+    auto obs = CombatObservation::fromBattleContext(preState);
+    auto particles = HiddenBattleState::sampleParticles(obs, preState, diagRng, nParticles);
+
+    struct Member {
+        BattleContext state;
+        int particleIdx;
+        std::uint64_t visHash;
+        // Hidden-state RNG seeds for stratification.
+        std::uint64_t shuffleSeed0, cardRandomSeed0, aiSeed0;
+    };
+    std::unordered_map<std::uint64_t, std::vector<Member>> buckets;
+
+    const int drawSizeBefore = (int)preState.cards.drawPile.size();
+    const int discardBefore = (int)preState.cards.discardPile.size();
+    int reshuffle = 0, cardsDrawn = 0, handAfter = 0;
+
+    for (int pi = 0; pi < nParticles; ++pi) {
+        BattleContext state = preState;
+        applyParticleImpl(state, particles[pi], diagRng);
+        if (drawSizeBefore == 0 && discardBefore > 0) reshuffle = 1;
+        state.executeActions();
+        action.execute(state);
+        state.executeActions();
+        if (cardsDrawn == 0) { cardsDrawn = state.cards.cardsInHand; handAfter = cardsDrawn; }
+
+        Member m;
+        m.state = state;
+        m.particleIdx = pi;
+        m.visHash = CombatObservation::fromBattleContext(state).visibleHash();
+        m.shuffleSeed0 = particles[pi].shuffleRngSeed0;
+        m.cardRandomSeed0 = particles[pi].cardRandomRngSeed0;
+        m.aiSeed0 = particles[pi].aiRngSeed0;
+        buckets[m.visHash].push_back(std::move(m));
+    }
+
+    // 2. For each bucket, sample members and evaluate.
+    struct BucketRow {
+        std::uint64_t visHash;
+        int bucketSize, sampledMembers;
+        double meanVal, stdVal, minVal, maxVal;
+        std::vector<double> memberValues;
+        // Hidden-state agreement flags.
+        bool allSameShuffleSeed, allSameCardRandSeed, allSameAiSeed;
+        bool allSameDrawPrefix; // first card of draw pile same?
+    };
+    std::vector<BucketRow> bucketRows;
+
+    for (auto &kv : buckets) {
+        auto &members = kv.second;
+        if ((int)members.size() < 2) continue; // skip singletons
+
+        BucketRow br;
+        br.visHash = kv.first;
+        br.bucketSize = (int)members.size();
+
+        // Sample members (shuffle so first N are random).
+        std::shuffle(members.begin(), members.end(), diagRng);
+        int nSample = std::min((int)members.size(), maxSample);
+        br.sampledMembers = nSample;
+
+        // Check hidden-state agreement.
+        std::uint64_t ss0 = members[0].shuffleSeed0;
+        std::uint64_t cr0 = members[0].cardRandomSeed0;
+        std::uint64_t ai0 = members[0].aiSeed0;
+        CardId firstCard = CardId::INVALID;
+        if (members[0].state.cards.drawPile.size() > 0)
+            firstCard = members[0].state.cards.drawPile[0].getId();
+        br.allSameShuffleSeed = true;
+        br.allSameCardRandSeed = true;
+        br.allSameAiSeed = true;
+        br.allSameDrawPrefix = true;
+        for (int i = 1; i < nSample; ++i) {
+            if (members[i].shuffleSeed0 != ss0) br.allSameShuffleSeed = false;
+            if (members[i].cardRandomSeed0 != cr0) br.allSameCardRandSeed = false;
+            if (members[i].aiSeed0 != ai0) br.allSameAiSeed = false;
+            if (br.allSameDrawPrefix && members[i].state.cards.drawPile.size() > 0) {
+                if (members[i].state.cards.drawPile[0].getId() != firstCard)
+                    br.allSameDrawPrefix = false;
+            }
+        }
+
+        // Evaluate each sampled member.
+        br.memberValues.reserve(nSample);
+        double sumV = 0.0;
+        br.minVal = 1e30; br.maxVal = -1e30;
+        for (int i = 0; i < nSample; ++i) {
+            // Use a fixed per-slot RNG for CRN pairing across members.
+            // Seed from visHash + member index so each "member slot" gets
+            // reproducible rollout RNG.
+            std::mt19937_64 slotRng;
+            std::uint64_t slotSeed = br.visHash ^ (std::uint64_t)(i * 2654435761ULL);
+            slotRng.seed(slotSeed ? slotSeed : 1);
+
+            double v = evalContinuation(members[i].state, kRollouts, slotRng);
+            br.memberValues.push_back(v);
+            sumV += v;
+            if (v < br.minVal) br.minVal = v;
+            if (v > br.maxVal) br.maxVal = v;
+        }
+        br.meanVal = sumV / nSample;
+        double varSum = 0.0;
+        for (double v : br.memberValues) varSum += (v - br.meanVal) * (v - br.meanVal);
+        br.stdVal = nSample > 1 ? std::sqrt(varSum / (nSample - 1)) : 0.0;
+
+        bucketRows.push_back(br);
+    }
+
+    if (bucketRows.empty()) return;
+
+    // 3. Compute transition-level statistics.
+    // Between-bucket variance: variance of bucket means.
+    double grandMean = 0.0;
+    double totalMass = 0.0;
+    for (const auto &br : bucketRows) {
+        grandMean += br.meanVal * br.bucketSize;
+        totalMass += br.bucketSize;
+    }
+    grandMean /= totalMass;
+
+    double betweenVar = 0.0;
+    double withinVarSum = 0.0;
+    double withinMass = 0.0;
+    for (const auto &br : bucketRows) {
+        double diff = br.meanVal - grandMean;
+        betweenVar += br.bucketSize * diff * diff;
+        if (br.sampledMembers > 1) {
+            double varEst = br.stdVal * br.stdVal;
+            withinVarSum += varEst * (br.bucketSize - 1);
+            withinMass += (br.bucketSize - 1);
+        }
+    }
+    betweenVar /= (totalMass - 1);
+    double withinVar = withinMass > 0 ? withinVarSum / withinMass : 0.0;
+    double wbRatio = betweenVar > 1e-9 ? withinVar / betweenVar : 0.0;
+
+    // 4. Representative error: one random member per bucket.
+    // Use the first sampled member as the representative (already shuffled).
+    double vBucketed = 0.0, vAll = 0.0;
+    double absErrSum = 0.0;
+    int bucketCount = (int)bucketRows.size();
+    for (const auto &br : bucketRows) {
+        double bucketMean = br.meanVal;
+        double repVal = br.memberValues[0]; // first (random) member
+        double weight = (double)br.bucketSize / nParticles;
+        vBucketed += weight * repVal;
+        vAll += weight * bucketMean;
+        absErrSum += std::abs(repVal - bucketMean);
+    }
+    double repMAE = bucketCount > 0 ? absErrSum / bucketCount : 0.0;
+
+    // Lethal fraction: what fraction of particle mass is in terminal states?
+    int lethalMass = 0;
+    for (const auto &kv : buckets) {
+        for (const auto &m : kv.second) {
+            if (m.state.outcome == Outcome::PLAYER_VICTORY
+                || m.state.outcome == Outcome::PLAYER_LOSS)
+                ++lethalMass;
+        }
+    }
+    double lethalFrac = (double)lethalMass / nParticles;
+
+    // 5. Write CSV rows (header written once).
+    static std::mutex bvMutex;
+    static bool bvHeaderWritten = false;
+    {
+        std::lock_guard<std::mutex> lk(bvMutex);
+        if (!bvHeaderWritten) {
+            out << "seed,floor,encounter,turn,decIdx,visHash,"
+                << "drawPileBefore,discardBefore,reshuffle,cardsDrawn,handAfter,lethalFrac,"
+                << "bucketSize,sampledMembers,"
+                << "meanVal,stdVal,minVal,maxVal,rangeVal,"
+                << "allSameShuffleSeed,allSameCardRandSeed,allSameAiSeed,allSameDrawPrefix,"
+                << "transition_nBuckets,transition_betweenVar,transition_withinVar,transition_wbRatio,"
+                << "transition_vAll,transition_vBucketed,transition_vBias,transition_repMAE,"
+                << "memberValues\n";
+            bvHeaderWritten = true;
+        }
+    }
+
+    for (const auto &br : bucketRows) {
+        std::ostringstream mv;
+        for (size_t i = 0; i < br.memberValues.size(); ++i) {
+            if (i) mv << ';';
+            mv << br.memberValues[i];
+        }
+        std::lock_guard<std::mutex> lk(bvMutex);
+        out << seed << ',' << floor << ',' << encounter << ','
+            << turn << ',' << decIdx << ',' << br.visHash << ','
+            << drawSizeBefore << ',' << discardBefore << ',' << reshuffle << ','
+            << cardsDrawn << ',' << handAfter << ',' << lethalFrac << ','
+            << br.bucketSize << ',' << br.sampledMembers << ','
+            << br.meanVal << ',' << br.stdVal << ',' << br.minVal << ',' << br.maxVal
+            << ',' << (br.maxVal - br.minVal) << ','
+            << (br.allSameShuffleSeed ? 1 : 0) << ','
+            << (br.allSameCardRandSeed ? 1 : 0) << ','
+            << (br.allSameAiSeed ? 1 : 0) << ','
+            << (br.allSameDrawPrefix ? 1 : 0) << ','
+            << bucketCount << ',' << betweenVar << ',' << withinVar << ',' << wbRatio << ','
+            << vAll << ',' << vBucketed << ',' << (vBucketed - vAll) << ',' << repMAE << ','
+            << '"' << mv.str() << '"' << '\n';
+        out.flush();
+    }
+}
+
+// ── Helper: maybe run bucket VALUE diagnostic before executing an action ──
+static void maybeBucketValueDiag(
+    const BattleContext &preState, const Action &action,
+    std::uint64_t seed, int encounter, int floor, int turn, int decIdx)
+{
+    if (!g_s3BucketValueDiag) return;
+    if (action.getActionType() != ActionType::END_TURN) return;
+    if (t_bvdRowCount >= g_s3BucketValueDiagMaxTransitions) return;
+
+    auto obs = CombatObservation::fromBattleContext(preState);
+    std::uint64_t key = obs.visibleHash();
+    if (!t_bvdSeen.insert(key).second) return;
+
+    if (!t_bvdRngSeeded) {
+        std::uint64_t h = key ^ seed;
+        t_bvdRng.seed(h ? h : 1);
+        t_bvdRngSeeded = true;
+    }
+    if (!t_bvdOutOpen && !g_s3BucketValueDiagFile.empty()) {
+        t_bvdOut.open(g_s3BucketValueDiagFile, std::ios::app);
+        t_bvdOutOpen = true;
+    }
+    std::ostream &out = t_bvdOutOpen ? t_bvdOut : std::cerr;
+
+    ++t_bvdRowCount;
+    runBucketValueDiag(preState, action, seed, encounter, floor, turn, decIdx,
+                       t_bvdRng, out);
+}
+
 // ── Helper: maybe run bucket diagnostic before executing an action ──────
 // Called at each action-execution site in step(). No-op when diag is off.
 // Deduplicates by pre-state visibleHash so each unique (state, END_TURN)
@@ -455,32 +795,32 @@ static void maybeOutcomeBucketDiag(
     const BattleContext &preState, const Action &action,
     std::uint64_t seed, int encounter, int floor, int turn, int decIdx)
 {
-    if (!g_s3OutcomeBucketDiag) return;
     if (action.getActionType() != ActionType::END_TURN) return;
-    if (t_diagRowCount >= kMaxDiagRows) return;
 
-    // Dedup by pre-state visibleHash.
-    auto obs = CombatObservation::fromBattleContext(preState);
-    std::uint64_t key = obs.visibleHash();
-    if (!t_diagSeen.insert(key).second) return;  // already measured
-
-    // Seed the thread-local RNG once from the first observed state.
-    if (!t_diagRngSeeded) {
-        std::uint64_t h = key ^ seed;
-        t_diagRng.seed(h ? h : 1);
-        t_diagRngSeeded = true;
+    // ── Outcome-bucket diag (compression measurement) ──────────────
+    if (g_s3OutcomeBucketDiag && t_diagRowCount < kMaxDiagRows) {
+        auto obs = CombatObservation::fromBattleContext(preState);
+        std::uint64_t key = obs.visibleHash();
+        if (t_diagSeen.insert(key).second) {
+            if (!t_diagRngSeeded) {
+                std::uint64_t h = key ^ seed;
+                t_diagRng.seed(h ? h : 1);
+                t_diagRngSeeded = true;
+            }
+            if (!t_diagOutOpen && !g_s3OutcomeBucketDiagFile.empty()) {
+                t_diagOut.open(g_s3OutcomeBucketDiagFile, std::ios::app);
+                t_diagOutOpen = true;
+            }
+            std::ostream &out = t_diagOutOpen ? t_diagOut : std::cerr;
+            ++t_diagRowCount;
+            runOutcomeBucketDiag(preState, action, g_s3OutcomeBucketDiagParticles,
+                                 t_diagRng, seed, encounter, floor, turn, decIdx, out);
+        }
     }
 
-    // Open the thread-local output file once.
-    if (!t_diagOutOpen && !g_s3OutcomeBucketDiagFile.empty()) {
-        t_diagOut.open(g_s3OutcomeBucketDiagFile, std::ios::app);
-        t_diagOutOpen = true;
-    }
-    std::ostream &out = t_diagOutOpen ? t_diagOut : std::cerr;
-
-    ++t_diagRowCount;
-    runOutcomeBucketDiag(preState, action, g_s3OutcomeBucketDiagParticles,
-                         t_diagRng, seed, encounter, floor, turn, decIdx, out);
+    // ── Bucket-value diag (value homogeneity measurement) ──────────
+    if (g_s3BucketValueDiag)
+        maybeBucketValueDiag(preState, action, seed, encounter, floor, turn, decIdx);
 }
 
 // ---- Card action key (semantic identity independent of hand position) ------
@@ -781,6 +1121,8 @@ void BattleScumSearcher3::step() {
                 return;
             }
 
+            // Save pre-state for possible END_TURN marginalization.
+            BattleContext preExecState = state;
             maybeOutcomeBucketDiag(state, edge.action,
                 agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                 state.turn, decisionIndex);
@@ -789,6 +1131,20 @@ void BattleScumSearcher3::step() {
             actionStack.push_back(edge.action);
             path.push_back(&edge.child);
             if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
+
+            // ── END_TURN marginalization (leaf-expansion boundary only) ──
+            if (g_s3EndTurnMarginalize
+                && edge.action.getActionType() == ActionType::END_TURN
+                && state.outcome == Outcome::UNDECIDED) {
+                double margEval = endTurnMarginalEval(preExecState, actionStack);
+                if (!std::isnan(margEval)) {
+                    // Skip chain compression + rollout + blend.
+                    // backpropagate the marginal expectation with 1 visit.
+                    backpropagate(path, margEval, actionStack);
+                    return;
+                }
+                // NaN = not eligible (large pile / reshuffle); fall through.
+            }
 
         if (g_s3Prune && canPruneAsDead(state)) {
                 backpropagate(path, 0.0, actionStack);
@@ -1564,6 +1920,165 @@ int BattleScumSearcher3::playoutRandom(BattleContext &state,
     return steps;
 }
 
+// ── END_TURN marginalization ────────────────────────────────────────────
+// At an eligible END_TURN leaf: generate N particles from the pre-END_TURN
+// state, execute END_TURN on each, bucket by visibleHash, evaluate one
+// representative per bucket, and return the weighted expectation.
+double BattleScumSearcher3::endTurnMarginalEval(
+    const BattleContext &preEndTurnState,
+    std::vector<Action> &bestSeq)
+{
+    const int nP = g_s3EndTurnMarginalizeParticles;
+    auto t0 = std::chrono::steady_clock::now();
+    ++t_margEligible;
+
+    // 1. Check eligibility.
+    const int drawSize = (int)preEndTurnState.cards.drawPile.size();
+    const int discardSize = (int)preEndTurnState.cards.discardPile.size();
+    const bool reshuffle = (drawSize == 0 && discardSize > 0);
+    if (drawSize > g_s3EndTurnMarginalizeMaxPile || reshuffle) {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+
+    ++t_margApplied;
+
+    // 2. Generate particles from the current visible observation.
+    auto obs = CombatObservation::fromBattleContext(preEndTurnState);
+    auto particles = HiddenBattleState::sampleParticles(obs, preEndTurnState, rng, nP);
+    t_margParticlesSampled += nP;
+
+    const Action endTurn(ActionType::END_TURN);
+
+    // 3. Execute END_TURN under each particle, bucket by visibleHash.
+    struct Mbucket {
+        std::uint64_t visHash;
+        int count = 0;
+        BattleContext repState;
+        std::vector<Action> repSeq;
+        double repValue = 0.0;
+    };
+    std::unordered_map<std::uint64_t, Mbucket> buckets;
+
+    for (const auto &p : particles) {
+        BattleContext state = preEndTurnState;
+        applyParticleImpl(state, p, rng);
+        state.executeActions();
+        endTurn.execute(state);
+        state.executeActions();
+
+        std::uint64_t vh = CombatObservation::fromBattleContext(state).visibleHash();
+        auto &b = buckets[vh];
+        if (b.count == 0) {
+            b.visHash = vh;
+            b.repState = state;
+        }
+        ++b.count;
+    }
+
+    const int nBuckets = (int)buckets.size();
+    t_margUniqueBuckets += nBuckets;
+
+    // 4. Evaluate each bucket's representative.
+    double weightedSum = 0.0;
+    double bestWeight = -1.0;
+    const Mbucket *bestBucket = nullptr;
+
+    for (auto &kv : buckets) {
+        auto &b = kv.second;
+        double weight = (double)b.count / nP;
+
+        if (b.repState.outcome != Outcome::UNDECIDED) {
+            b.repValue = evaluateTerminal(b.repState);
+            ++t_margTermBuckets;
+        } else {
+            BattleContext &bc = b.repState;
+            int compSteps = 0;
+            if (g_s3Chain) {
+                while (compSteps < 10 && bc.inputState == InputState::PLAYER_NORMAL
+                       && bc.outcome == Outcome::UNDECIDED && bc.isCardPlayAllowed()) {
+                    int handBefore = bc.cards.cardsInHand;
+                    bool played = false;
+                    for (int hi = 0; hi < bc.cards.cardsInHand && !played; ++hi) {
+                        const auto &c = bc.cards.hand[hi];
+                        if (!c.canUseOnAnyTarget(bc) || c.requiresTarget()) continue;
+                        Action a(ActionType::CARD, hi);
+                        if (!a.isValidAction(bc)) continue;
+                        a.execute(bc);
+                        b.repSeq.push_back(a);
+                        if (bc.cards.cardsInHand != handBefore - 1) break;
+                        played = true;
+                        ++compSteps;
+                    }
+                    if (!played) break;
+                }
+            }
+
+            double vLeaf = std::numeric_limits<double>::quiet_NaN();
+            if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha < 1.0
+                && bc.outcome == Outcome::UNDECIDED && vnetCondAllowed(bc)) {
+                vLeaf = g_combatVNet.predict(bc);
+            } else if (g_usePVNet && g_combatPVNet.loaded()
+                       && bc.outcome == Outcome::UNDECIDED
+                       && pvnetCondAllowed(bc, 0)) {
+                vLeaf = g_combatPVNet.leafValue(bc, riskLambda);
+            }
+
+            double rolloutEval = 0.0;
+            std::vector<Action> dummyStack;
+            multiRollout(bc, b.repSeq.empty() ? bestSeq : dummyStack, rolloutEval);
+            if (!b.repSeq.empty())
+                b.repSeq.insert(b.repSeq.end(), bestSeq.begin(), bestSeq.end());
+
+            if (!std::isnan(vLeaf)) {
+                double alpha = g_vnetAlphaLen ? 0.3 : g_vnetAlpha;
+                b.repValue = alpha * vLeaf + (1.0 - alpha) * rolloutEval;
+            } else {
+                b.repValue = rolloutEval;
+            }
+            ++t_margContEvals;
+        }
+
+        weightedSum += weight * b.repValue;
+        if (weight > bestWeight) {
+            bestWeight = weight;
+            bestBucket = &b;
+        }
+    }
+
+    if (bestBucket && !bestBucket->repSeq.empty())
+        bestSeq = bestBucket->repSeq;
+
+    auto t1 = std::chrono::steady_clock::now();
+    t_margSeconds += std::chrono::duration<double>(t1 - t0).count();
+
+    // Shadow comparison (~1% sample).
+    if (nBuckets > 0 && (rng() % 100) == 0) {
+        BattleContext ordinaryState = preEndTurnState;
+        applyParticleImpl(ordinaryState, particles[0], rng);
+        ordinaryState.executeActions();
+        endTurn.execute(ordinaryState);
+        ordinaryState.executeActions();
+        double ordinaryEval = 0.0;
+        std::vector<Action> ordStack;
+        if (ordinaryState.outcome != Outcome::UNDECIDED) {
+            ordinaryEval = evaluateTerminal(ordinaryState);
+        } else {
+            multiRollout(ordinaryState, ordStack, ordinaryEval);
+            double vLeaf = std::numeric_limits<double>::quiet_NaN();
+            if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha < 1.0
+                && ordinaryState.outcome == Outcome::UNDECIDED)
+                vLeaf = g_combatVNet.predict(ordinaryState);
+            if (!std::isnan(vLeaf))
+                ordinaryEval = g_vnetAlpha * vLeaf + (1.0 - g_vnetAlpha) * ordinaryEval;
+        }
+        ++t_margShadowCount;
+        t_margShadowOrdinary += ordinaryEval;
+        t_margShadowMarginal += weightedSum;
+    }
+
+    return weightedSum;
+}
+
 // ---- Terminal / leaf evaluation ---------------------------------------------
 bool BattleScumSearcher3::isTerminal(const BattleContext &bc) const {
     return bc.outcome != Outcome::UNDECIDED;
@@ -2025,6 +2540,23 @@ void BattleScumSearcher3::printReuseDiagnostics() const {
         if (semanticCardEdgeVisits > 0) {
             double rate = (double)rawIndexSemanticMismatches / semanticCardEdgeVisits;
             std::cerr << " mismatchRate=" << rate;
+        }
+    }
+    if (g_s3EndTurnMarginalize) {
+        std::cerr << " margElig=" << t_margEligible
+                  << " margApplied=" << t_margApplied
+                  << " margParts=" << t_margParticlesSampled
+                  << " margBuckets=" << t_margUniqueBuckets
+                  << " margContEvals=" << t_margContEvals
+                  << " margTermBuckets=" << t_margTermBuckets
+                  << " margSec=" << t_margSeconds;
+        if (t_margApplied > 0) {
+            std::cerr << " margAvgBuckets=" << ((double)t_margUniqueBuckets / t_margApplied);
+        }
+        if (t_margShadowCount > 0) {
+            std::cerr << " shadowN=" << t_margShadowCount
+                      << " shadowOrdMean=" << (t_margShadowOrdinary / t_margShadowCount)
+                      << " shadowMargMean=" << (t_margShadowMarginal / t_margShadowCount);
         }
     }
     std::cerr << "\n";

@@ -250,6 +250,10 @@ namespace sts::search {
         // byte-identical to playoutRandom + evaluateLeaf on the same state.
         int  multiRollout(BattleContext &state, std::vector<Action> &actionStack,
                           double &evalOut);
+        // END_TURN marginalization: bucketed expectation over alternative draws.
+        // Returns NaN when not eligible (draw pile too large / reshuffle).
+        double endTurnMarginalEval(const BattleContext &preEndTurnState,
+                                   std::vector<Action> &bestSeq);
         void backpropagate(const std::vector<Node *> &path, double evaluation,
                           const std::vector<Action> &actionStack);
         int  selectBestEdgePUCT(const Node &node);
@@ -415,6 +419,34 @@ namespace sts::search {
     extern bool g_s3OutcomeBucketDiag;
     extern std::string g_s3OutcomeBucketDiagFile;
     extern int g_s3OutcomeBucketDiagParticles;
+
+    // ── Bucket-value diagnostic (STS_S3_BUCKET_VALUE_DIAG) ───────────
+    // Measures within-bucket continuation-value homogeneity at END_TURN
+    // stochastic boundaries. Off by default.
+    extern bool g_s3BucketValueDiag;
+    extern std::string g_s3BucketValueDiagFile;
+    extern int g_s3BucketValueDiagRollouts;
+    extern int g_s3BucketValueDiagMaxTransitions;
+    extern int g_s3BucketValueDiagSampleMembers;
+
+    // ── END_TURN marginalization (STS_S3_ENDTURN_MARGINALIZE) ──────────
+    // Prototype: at eligible leaf-expansion END_TURN boundaries, evaluate
+    // a bucketed expectation over N alternative draw outcomes. Off by default.
+    extern bool g_s3EndTurnMarginalize;
+    extern int g_s3EndTurnMarginalizeParticles;
+    extern int g_s3EndTurnMarginalizeMaxPile;
+
+    // Marginalization diagnostics (thread-local).
+    extern thread_local std::int64_t t_margEligible;
+    extern thread_local std::int64_t t_margApplied;
+    extern thread_local std::int64_t t_margParticlesSampled;
+    extern thread_local std::int64_t t_margUniqueBuckets;
+    extern thread_local std::int64_t t_margContEvals;
+    extern thread_local std::int64_t t_margTermBuckets;
+    extern thread_local double t_margSeconds;
+    extern thread_local std::int64_t t_margShadowCount;
+    extern thread_local double t_margShadowOrdinary;
+    extern thread_local double t_margShadowMarginal;
 
     // Resolve a semantic CARD edge's key to a live-hand positional Action.
     // Returns nullopt when no matching card instance exists in the current

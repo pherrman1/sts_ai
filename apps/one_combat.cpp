@@ -10128,6 +10128,30 @@ int main(int argc, char **argv) {
         search::g_s3OutcomeBucketDiagParticles = std::atoi(d);
         std::cout << "[S3 outcome-bucket-diag particles = " << search::g_s3OutcomeBucketDiagParticles << "]\n";
     }
+    if (const char *d = std::getenv("STS_S3_BUCKET_VALUE_DIAG")) {
+        search::g_s3BucketValueDiag = std::atoi(d) != 0;
+        std::cout << "[S3 bucket-value-diag = " << (search::g_s3BucketValueDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_BUCKET_VALUE_DIAG_FILE")) {
+        search::g_s3BucketValueDiagFile = d;
+        std::cout << "[S3 bucket-value-diag file = " << search::g_s3BucketValueDiagFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_BUCKET_VALUE_DIAG_ROLLOUTS")) {
+        search::g_s3BucketValueDiagRollouts = std::atoi(d);
+        std::cout << "[S3 bucket-value-diag rollouts = " << search::g_s3BucketValueDiagRollouts << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_ENDTURN_MARGINALIZE")) {
+        search::g_s3EndTurnMarginalize = std::atoi(d) != 0;
+        std::cout << "[S3 END_TURN marginalization = " << (search::g_s3EndTurnMarginalize ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_ENDTURN_MARGINALIZE_PARTICLES")) {
+        search::g_s3EndTurnMarginalizeParticles = std::atoi(d);
+        std::cout << "[S3 END_TURN marg particles = " << search::g_s3EndTurnMarginalizeParticles << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_ENDTURN_MARGINALIZE_MAX_PILE")) {
+        search::g_s3EndTurnMarginalizeMaxPile = std::atoi(d);
+        std::cout << "[S3 END_TURN marg max-pile = " << search::g_s3EndTurnMarginalizeMaxPile << "]\n";
+    }
     if (const char *d = std::getenv("STS_S3_UNION_EXPAND")) {
         search::g_s3UnionExpand = std::atoi(d) != 0;
         std::cout << "[S3 union-expand = " << (search::g_s3UnionExpand ? "ON" : "off") << "]\n";
