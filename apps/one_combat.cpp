@@ -22,6 +22,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <ctime>
 #include <functional>
 #include <fstream>
 #include <limits>
@@ -51,6 +52,7 @@
 #include "sim/search/GameAction.h"
 #include "sim/search/ExpertKnowledge.h"
 #include "game/Map.h"
+#include "sim/util/BestBenchMeta.h"
 #include "ooc_checkpoint_net.h"
 #include "ooc_strategic_net.h"
 #include "ooc_strategic_tok_net.h"
@@ -71,6 +73,7 @@
 #include <unordered_map>
 
 extern bool g_collectKeys;              // env STS_COLLECT_KEYS=1: collect act-4 keys
+static std::vector<std::string> g_mainArgv;
 
 // ---------------------------------------------------------------------------
 // Live progress line for long parallel benches. Threads call tick() as each run
@@ -775,6 +778,10 @@ static int    g_oocMapRouteHorizon = 3;      // env STS_OOC_MAP_ROUTE_HORIZON (c
 static search::CombatCpsiNet g_cpsiNet;      // env STS_CPSI_NN=<path>: combat outcome surrogate
 static int    g_oocStrategicTok = 0;        // env STS_OOC_STRATEGIC_TOK_NN: V4 token net loaded
 static bool   g_oocStrategicTokCheck = false; // env STS_OOC_STRATEGIC_TOK_CHECK=1: first-decision glob parity hook
+static std::string g_oocStrategicTracePath;
+static std::mutex g_oocStrategicTraceMutex;
+static thread_local std::string t_oocStrategicTraceRows;
+static thread_local int t_oocStrategicTraceDecision = 0;
 static thread_local bool t_tokCheckPending = false;  // armed per run; consumed by the first gated decision
 static thread_local bool t_shopV = false;            // runFullRunOOC's shopV param, for the regret SHOP probe
 // Terminal-leaf run-value bonus (cross-combat setup, e.g. Happy Flower):
@@ -1527,7 +1534,9 @@ static void bossRelicVPolicy(GameContext &gc) {
     int best = -1; double bestV = -1e18;
     for (int i = 0; i < 3; ++i) {
         if (gc.info.bossRelics[i] == RelicId::INVALID) continue;
-        GameContext g2 = gc; g2.chooseBossRelic(i);
+        GameContext g2 = gc;
+        g2.map = std::make_shared<Map>(*gc.map);
+        g2.chooseBossRelic(i);
         const double v = vStateWin(g2);
         if (v > bestV) { bestV = v; best = i; }
     }
@@ -1536,7 +1545,9 @@ static void bossRelicVPolicy(GameContext &gc) {
 static void neowVPolicy(GameContext &gc) {
     int best = 0; double bestV = -1e18;
     for (int i = 0; i < (int)gc.info.neowRewards.size(); ++i) {
-        GameContext g2 = gc; g2.chooseNeowOption(g2.info.neowRewards[i]);
+        GameContext g2 = gc;
+        g2.map = std::make_shared<Map>(*gc.map);
+        g2.chooseNeowOption(g2.info.neowRewards[i]);
         const double v = vStateWin(g2);
         if (v > bestV) { bestV = v; best = i; }
     }
@@ -1616,7 +1627,9 @@ static bool eventVPolicy(GameContext &gc) {
     if (actions.empty()) return false;
     int best = 0; double bestV = -1e18;
     for (int i = 0; i < (int)actions.size(); ++i) {
-        GameContext g2 = gc; actions[i].execute(g2);
+        GameContext g2 = gc;
+        g2.map = std::make_shared<Map>(*gc.map);
+        actions[i].execute(g2);
         const double v = vStateWin(g2);
         if (v > bestV) { bestV = v; best = i; }
     }
@@ -2506,6 +2519,51 @@ struct LeafDiagCtx {
 };
 static thread_local LeafDiagCtx t_ld;
 
+// ---- VNet query log (STS_VNET_QUERY_LOG=<path>) -----------------------------------
+static std::string g_vnetQueryLogPath;
+static double      g_vnetQuerySample = 1.0;
+static std::mutex  g_vnetQueryLogMutex;
+static std::ofstream g_vnetQueryLogFile;
+static thread_local struct {
+    std::uint64_t seed = 0;
+    int fightIdx = -1;
+    int decIdx = -1;
+    bool active = false;
+    std::mt19937_64 rng;
+    std::string buf;
+} t_vq;
+
+static void vnetQueryLogFlush() {
+    if (t_vq.buf.empty()) return;
+    std::lock_guard<std::mutex> lock(g_vnetQueryLogMutex);
+    if (!g_vnetQueryLogFile.is_open()) return;
+    g_vnetQueryLogFile << t_vq.buf;
+    g_vnetQueryLogFile.flush();
+    t_vq.buf.clear();
+}
+
+static void onVNetQuery(const BattleContext &bc, double prediction) {
+    if (!t_vq.active) return;
+    if (g_vnetQuerySample < 1.0) {
+        std::uniform_real_distribution<double> dist(0.0, 1.0);
+        if (dist(t_vq.rng) >= g_vnetQuerySample) return;
+    }
+    const int nf = search::combatFeatureCount();
+    std::vector<float> feats(nf);
+    search::combatExtractFeatures(bc, feats.data());
+    std::ostringstream o;
+    o << t_vq.seed << ',' << t_vq.fightIdx << ',' << t_vq.decIdx
+      << ',' << search::g_vnetTraceParent << ',' << search::g_vnetTraceDepth;
+    for (int i = 0; i < nf; ++i) {
+        o << ',';
+        const float v = feats[i];
+        if (v == (float)(long)v) o << (long)v; else o << v;
+    }
+    o << ',' << prediction << '\n';
+    t_vq.buf += o.str();
+    if (t_vq.buf.size() > 65536) vnetQueryLogFlush();
+}
+
 // 0 = hallway, 1 = elite, 2 = boss (elite set = MonsterEncounterPool::elites).
 static int encounterDifficulty(sts::MonsterEncounter e) {
     if (sts::isBossEncounter(e)) return 2;
@@ -2608,6 +2666,8 @@ static std::string leafDiagHeaderStr() {
 
 static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV) {
     vDisconnect();
+    t_oocStrategicTraceRows.clear();
+    t_oocStrategicTraceDecision = 0;
     t_shopV = shopV;
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
@@ -2660,9 +2720,19 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
                 t_ld.encounter = monsterEncounterEnumNames[(int)bc.encounter];
                 t_ld.decIdx = 0;
             }
+            // VNet query log: set per-fight context before combat
+            // (the agent's internal Searcher3 loop handles per-decision iteration)
+            if (!g_vnetQueryLogPath.empty()) {
+                t_vq.active = true;
+                t_vq.seed = seed;
+                t_vq.fightIdx = fightsTotal;
+                t_vq.decIdx = -1;
+                t_vq.rng.seed(seed * 6364136223846793005ULL + (std::uint64_t)fightsTotal);
+            }
             agent.playoutBattle(bc);
             if (g_sdiagActive) sdiagFightRow(bc);   // searchdiag: fight summary
             if (g_leafdiagActive) leafDiagFightEnd(bc);   // leafdiag: label this fight's sampled rows
+            if (t_vq.active) vnetQueryLogFlush();         // VNet query log: flush this fight's rows
             if (search::g_useSearcher3 && g_termWin) termWinDisarm();
             ++fightsTotal;
             if (bc.outcome == Outcome::PLAYER_LOSS) { ++fightsLost; if (deathCombat < 0) { deathCombat = fightsTotal; deathEncounter = (int)bc.encounter; } }
@@ -2746,6 +2816,20 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
                               fightsLost,
                               std::chrono::duration<double>(t1 - t0).count(),
                               deathCombat, deathEncounter };
+    if (!g_oocStrategicTracePath.empty() && !t_oocStrategicTraceRows.empty()) {
+        std::lock_guard<std::mutex> lock(g_oocStrategicTraceMutex);
+        std::ofstream f(g_oocStrategicTracePath, std::ios::app);
+        if (f) {
+            if (f.tellp() == 0)
+                f << "seed,decIdx,act,floor,screen,nActions,actionBits,qValues,bestIdx,bestSecondMargin,threshold,heurIdx,takeIdx,rule,owned,collectKeys,stopAfterAct,won,finalFloor,finalHp\n";
+            std::istringstream in(t_oocStrategicTraceRows);
+            std::string line;
+            while (std::getline(in, line)) if (!line.empty())
+                f << line << ',' << (g_collectKeys ? 1 : 0) << ',' << g_stopAfterAct << ','
+                  << (result.won ? 1 : 0) << ',' << result.floor << ',' << result.hpEnd << '\n';
+        }
+    }
+    if (t_vq.active) vnetQueryLogFlush();
     vDisconnect();
     return result;
 }
@@ -3169,8 +3253,21 @@ static void skipBench(int sims, int nSeeds, int asc) {
 // with the default win-rate rest layer (g_restWin, heal-vs-upgrade in P(win)
 // units) and optional legacy rest-V via STS_REST_V=1. Use this as the baseline
 // arm for new experiments. Serverless under default native OOC.
+static std::string benchTimestampUtc() {
+    const std::time_t now = std::time(nullptr);
+    std::tm tm{};
+#if defined(_WIN32)
+    gmtime_s(&tm, &now);
+#else
+    gmtime_r(&now, &tm);
+#endif
+    char buf[32] = {};
+    std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &tm);
+    return buf;
+}
+
 static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 0,
-                      const std::string &resultsFile = "") {
+                      const std::string &resultsFile = "", const std::string &objective = "bestbench") {
     const bool restV = std::getenv("STS_REST_V") && std::atoi(std::getenv("STS_REST_V")) != 0;
     std::cout << "BEST stack config: skip@" << g_cardSkipThresh
               << "  rest=" << (g_restWin ? "win-rate" : "default")
@@ -3211,6 +3308,33 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             results << "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,sec\n";
             results.flush();
         }
+        sts::BenchConfigSidecar meta;
+        meta.objective = objective;
+        meta.argv = g_mainArgv;
+        meta.timestamp = benchTimestampUtc();
+        meta.seedLo = seedOffset;
+        meta.seedHi = seedOffset + (std::uint64_t)(nSeeds > 0 ? nSeeds - 1 : 0);
+        meta.nSeeds = nSeeds; meta.asc = asc; meta.sims = sims; meta.threads = numThreads();
+        meta.cardSkipThresh = g_cardSkipThresh;
+        meta.restPolicy = g_restWin ? "win-rate" : "default";
+        meta.restV = restV; meta.shopV = true; meta.nativeOoc = g_nativeOoc;
+        meta.pathMode = g_pathV ? "model-driven" : "heuristic";
+        meta.shopBeam = g_oocShopBeam; meta.collectKeys = g_collectKeys;
+        meta.searcher3 = search::g_useSearcher3; meta.fairPlay = search::g_fairPlay;
+        meta.s3Belief = search::g_s3Belief; meta.s3Prune = search::g_s3Prune;
+        meta.s3Chain = search::g_s3Chain; meta.s3Live = search::g_s3Live; meta.s3Crn = search::g_s3Crn;
+        meta.s3Particles = search::g_s3Particles; meta.s3RolloutK = search::g_s3RolloutK;
+        meta.s3RolloutTurnStop = search::g_s3RolloutTurnStop != 0;
+        meta.s3TurnRollout = search::g_s3TurnRollout;
+        meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
+        meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
+        meta.combatVNet = search::g_useVNet ? "ON" : "off";
+        meta.policyNet = search::g_usePolicyNet ? "ON" : "off";
+        meta.pvNet = search::g_usePVNet ? "ON" : "off";
+        meta.distVNet = search::g_useDistVNet ? "ON" : "off";
+        std::ofstream sidecar(resultsFile + ".meta.json", std::ios::app);
+        if (!sidecar) std::cerr << "[bestbench] warning: cannot open " << resultsFile << ".meta.json\n";
+        else sidecar << sts::benchConfigSidecarLine(meta) << '\n';
     }
     int wins = 0; long long floor = 0, hp = 0; double sec = 0;
     BenchProgress prog(nSeeds, "BEST");
@@ -3996,6 +4120,7 @@ static bool oocOnePlyCardRewardPolicy(GameContext &gc, const search::ScumSearchA
                                       cats, actionType, (int)gc.screenState);
             } else {
                 GameContext probe = gc;
+                probe.map = std::make_shared<Map>(*gc.map);
                 actions[i].execute(probe);
                 v = g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
                                                    (int)probe.screenState);
@@ -7538,6 +7663,7 @@ static int regretGateChoose(const GameContext &pre,
     int heurIdx = -1;
     for (int i = 0; i < (int)actions.size(); ++i) {
         GameContext probe2 = pre;
+        probe2.map = std::make_shared<Map>(*pre.map);
         actions[i].execute(probe2);                     // same per-action probe as the datagen
         if (stratFingerprint(probe2) == realFp) { heurIdx = i; break; }
     }
@@ -7547,6 +7673,32 @@ static int regretGateChoose(const GameContext &pre,
     for (int i = 0; i < (int)q.size(); ++i) if (q[i] > best) { best = q[i]; bestIdx = i; }
     if (bestIdx < 0) return -1;
     return (best - q[heurIdx] > eps) ? bestIdx : heurIdx;
+}
+
+static void writeOocTrace(const GameContext &gc,
+                          const std::vector<search::GameAction> &actions,
+                          const std::vector<double> &q, int bestIdx, int takeIdx,
+                          double best, double second, double threshold,
+                          const char *rule, bool owned) {
+    if (g_oocStrategicTracePath.empty()) return;
+    t_oocStrategicTraceRows += std::to_string(gc.seed) + ','
+        + std::to_string(t_oocStrategicTraceDecision++) + ','
+        + std::to_string(gc.act) + ',' + std::to_string(gc.floorNum) + ','
+        + std::to_string((int)gc.screenState) + ',' + std::to_string(actions.size()) + ',';
+    for (size_t i = 0; i < actions.size(); ++i) {
+        if (i) t_oocStrategicTraceRows += '|';
+        t_oocStrategicTraceRows += std::to_string(actions[i].bits);
+    }
+    t_oocStrategicTraceRows += ",";
+    for (size_t i = 0; i < q.size(); ++i) {
+        if (i) t_oocStrategicTraceRows += '|';
+        std::ostringstream s; s << q[i];
+        t_oocStrategicTraceRows += s.str();
+    }
+    t_oocStrategicTraceRows += ',' + std::to_string(bestIdx) + ','
+        + std::to_string(second > -1e90 ? best - second : -1.0) + ','
+        + std::to_string(threshold) + ",-1," + std::to_string(takeIdx) + ','
+        + rule + ',' + (owned ? "1" : "0") + '\n';
 }
 
 // Shared decision tail of every one-ply gate and the M2 route search: in
@@ -7561,9 +7713,20 @@ static bool regretGateTail(GameContext &gc, const std::vector<search::GameAction
                            const search::ScumSearchAgent2 &agent) {
     if (g_oocStrategicGateRegret) {
         const int take = regretGateChoose(gc, actions, q, eps, heuristic, agent);
-        if (take >= 0) { actions[take].execute(gc); return true; }
+        if (take >= 0) {
+            if (!g_oocStrategicTracePath.empty())
+                writeOocTrace(gc, actions, q, bestIdx, take, best, second, eps, "regret", true);
+            actions[take].execute(gc);
+            return true;
+        }
     }
-    if (bestIdx < 0 || best - second < margin) return false;
+    if (bestIdx < 0 || best - second < margin) {
+        if (!g_oocStrategicTracePath.empty())
+            writeOocTrace(gc, actions, q, bestIdx, -1, best, second, margin, "margin", false);
+        return false;
+    }
+    if (!g_oocStrategicTracePath.empty())
+        writeOocTrace(gc, actions, q, bestIdx, bestIdx, best, second, margin, "margin", true);
     actions[bestIdx].execute(gc);
     return true;
 }
@@ -9238,6 +9401,8 @@ static void exportCardCfMaps(const std::string &inputPath, const std::string &ou
 
 // ---------------------------------------------------------------------------
 int main(int argc, char **argv) {
+    g_mainArgv.clear();
+    for (int i = 1; i < argc; ++i) g_mainArgv.emplace_back(argv[i]);
     std::string mode = argc > 1 ? argv[1] : "bench";
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
@@ -9332,6 +9497,11 @@ int main(int argc, char **argv) {
         g_oocStrategicTokCheck = std::atoi(d) != 0;
         if (g_oocStrategicTokCheck)
             std::cout << "[OOC strategic tok parity check ON (first-decision globs vs richRow)]\n";
+    }
+    if (const char *d = std::getenv("STS_OOC_STRATEGIC_TRACE")) {
+        g_oocStrategicTracePath = d;
+        if (!g_oocStrategicTracePath.empty())
+            std::cout << "[OOC strategic decision trace: " << g_oocStrategicTracePath << "]\n";
     }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_Q")) {
         g_oocStrategicQ = std::atoi(d) != 0;
@@ -9981,6 +10151,31 @@ int main(int argc, char **argv) {
     }
     if (const char *a = std::getenv("STS_DIAG_VNET2_ALPHA")) {   // reporting-only blend for the secondary model
         std::cout << "[DIAG V_combat #2 alpha = " << std::atof(a) << " (reporting only)]\n";
+    }
+    // VNet query log (STS_VNET_QUERY_LOG=<path>): log every CombatValueNet::predict()
+    // call inside Searcher3 to a CSV for train-vs-deployment distribution shift diagnostics.
+    // STS_VNET_QUERY_SAMPLE=<prob> (default 1.0) controls the sampling rate.
+    // Zero behavior change when unset.
+    if (const char *d = std::getenv("STS_VNET_QUERY_LOG")) {
+        g_vnetQueryLogPath = d;
+        if (const char *s = std::getenv("STS_VNET_QUERY_SAMPLE")) {
+            g_vnetQuerySample = std::atof(s);
+            if (g_vnetQuerySample <= 0.0) g_vnetQuerySample = 1.0;
+            if (g_vnetQuerySample > 1.0)  g_vnetQuerySample = 1.0;
+        }
+        g_vnetQueryLogFile.open(g_vnetQueryLogPath, std::ios::out);
+        if (g_vnetQueryLogFile.is_open()) {
+            g_vnetQueryLogFile << "seed,fightIdx,decIdx,parentObsHash,depth";
+            for (const auto &name : search::combatFeatureNames())
+                g_vnetQueryLogFile << ',' << name;
+            g_vnetQueryLogFile << ",vnetPred\n";
+            g_vnetQueryLogFile.flush();
+            search::g_onVNetQuery = onVNetQuery;
+            std::cout << "[VNet query log ON: " << g_vnetQueryLogPath
+                      << " sample=" << g_vnetQuerySample << "]\n";
+        } else {
+            std::cerr << "[VNet query log FAILED to open: " << g_vnetQueryLogPath << "]\n";
+        }
     }
     if (const char *d = std::getenv("STS_LEAFDIAG_PER_STRATUM")) {   // leafdiag reservoir capacity per stratum per seed
         const int n = std::atoi(d);
@@ -10996,7 +11191,7 @@ int main(int argc, char **argv) {
         std::uint64_t seed = argc > 5 ? std::stoull(argv[5]) : 0;
         std::string resultsFile = argc > 6 ? argv[6] : "";
         std::cout << "[reprobench: seed " << seed << ", repeats " << repeats << "]\n";
-        for (int i = 0; i < repeats; ++i) bestBench(sims, 1, asc, seed, resultsFile);
+        for (int i = 0; i < repeats; ++i) bestBench(sims, 1, asc, seed, resultsFile, "reprobench");
 
     } else if (mode == "runtrace") {      // per-node human-readable trace of ONE seed (STS_FAIR for fair-play)
         std::uint64_t seed = argc > 2 ? std::stoull(argv[2]) : 0;
