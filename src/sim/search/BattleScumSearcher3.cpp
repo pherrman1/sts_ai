@@ -41,6 +41,8 @@ bool g_reuseObsStable = false;  // STS_REUSE_OBS_STABLE: only promote obs-stable
 bool g_reuseReconcileRoot = false; // STS_REUSE_RECONCILE_ROOT: add missing root edges
 bool g_reuseCarryDiag = false;  // STS_REUSE_CARRY_DIAG: detailed per-carry diagnostic
 bool g_s3UnionExpand = false;   // STS_S3_UNION_EXPAND: add missing edges at internal nodes
+bool g_reuseCpuDiag = false;       // STS_REUSE_CPU_DIAG: per-search CPU CSV
+std::string g_reuseCpuDiagFile;    // STS_REUSE_CPU_DIAG_FILE: output path
 bool g_s3PoolRedirect = false; // STS_S3_POOL_REDIRECT: forced-move budget pool redirect (opt-in)
 // A2 dynamic alpha by rollout length (STS_VNET_ALPHA_LEN, opt-in):
 // replaces the flat g_vnetAlpha at the leaf blend site with a lookup
@@ -1632,6 +1634,60 @@ void BattleScumSearcher3::printReuseDiagnostics() const {
         std::cerr << "]";
     }
     std::cerr << "\n";
+}
+
+// ---- Per-search CPU diagnostic (STS_REUSE_CPU_DIAG) ------------------------
+BattleScumSearcher3::DiagSnapshot BattleScumSearcher3::snapshotDiag() const {
+    return {diag.simulations, diag.terminalInsideTree, diag.rolloutCalls,
+            diag.rolloutLeafCalls, diag.leafDirectEval, diag.rolloutActions,
+            diag.treeActions, diag.maxTreeDepth, diag.simSeconds};
+}
+
+void BattleScumSearcher3::writeCpuDiagRow(
+    std::uint64_t seed, int floor, int encounter, int combatIdx,
+    int decisionIdx, const char *searchKind, int reuseGen,
+    int carriedSearches, std::int64_t simsReq,
+    const DiagSnapshot &before, const DiagSnapshot &after,
+    std::int64_t rootSimBefore, std::int64_t rootSimAfter,
+    int retainedNodes, int rootEdgeCount,
+    int playerHp, int turn, int cardsInHand, int drawPile, int discardPile) {
+
+    static bool headerWritten = false;
+    static std::ofstream diagFile;
+    std::ostream *out = &std::cerr;
+    if (!g_reuseCpuDiagFile.empty()) {
+        diagFile.open(g_reuseCpuDiagFile, headerWritten ? std::ios::app : std::ios::out);
+        if (diagFile) out = &diagFile;
+    }
+    if (!headerWritten) {
+        *out << "seed,floor,encounter,combatIdx,decisionIdx,"
+             << "searchKind,reuseGen,carriedSearches,"
+             << "simsReq,simsExec,simSeconds,"
+             << "terminalInTree,rolloutCalls,rolloutLeafCalls,leafDirectEval,"
+             << "rolloutActions,treeActions,maxTreeDepth,"
+             << "rootSimBefore,rootSimAfter,"
+             << "retainedNodes,rootEdgeCount,"
+             << "playerHp,turn,cardsInHand,drawPile,discardPile\n";
+        headerWritten = true;
+    }
+    std::int64_t simsExec = after.simulations - before.simulations;
+    double s = after.simSeconds - before.simSeconds;
+    *out << seed << "," << floor << "," << encounter << ","
+         << combatIdx << "," << decisionIdx << ","
+         << searchKind << "," << reuseGen << "," << carriedSearches << ","
+         << simsReq << "," << simsExec << "," << s << ","
+         << (after.terminalInsideTree - before.terminalInsideTree) << ","
+         << (after.rolloutCalls - before.rolloutCalls) << ","
+         << (after.rolloutLeafCalls - before.rolloutLeafCalls) << ","
+         << (after.leafDirectEval - before.leafDirectEval) << ","
+         << (after.rolloutActions - before.rolloutActions) << ","
+         << (after.treeActions - before.treeActions) << ","
+         << after.maxTreeDepth << ","
+         << rootSimBefore << "," << rootSimAfter << ","
+         << retainedNodes << "," << rootEdgeCount << ","
+         << playerHp << "," << turn << "," << cardsInHand << ","
+         << drawPile << "," << discardPile << "\n";
+    if (!g_reuseCpuDiagFile.empty()) diagFile.close();
 }
 
 } // namespace sts::search

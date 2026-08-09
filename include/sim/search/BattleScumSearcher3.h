@@ -169,6 +169,34 @@ namespace sts::search {
         // firstObsHash/nodeObsMismatches/nodeObsVisits.
         static void trackNodeObservation(Node &node, const BattleContext &state);
 
+        // ── Per-search CPU diagnostic (STS_REUSE_CPU_DIAG) ───────────
+        // Snapshot the current diag counters into snap (before search),
+        // then after search compute per-search deltas and write one CSV
+        // row. Called from the agent loop with context about this search.
+        struct DiagSnapshot {
+            std::int64_t simulations = 0, terminalInsideTree = 0,
+                         rolloutCalls = 0, rolloutLeafCalls = 0,
+                         leafDirectEval = 0, rolloutActions = 0,
+                         treeActions = 0, maxTreeDepth = 0;
+            double simSeconds = 0;
+        };
+        DiagSnapshot snapshotDiag() const;
+        // Write one CSV row to g_reuseCpuDiagFile (or stderr).
+        // searchKind = "fresh" or "carried".
+        // before/after: diag snapshots around s3.search().
+        // simsRequested: the `spend` value passed to search().
+        static void writeCpuDiagRow(std::uint64_t seed, int floor, int encounter,
+                                    int combatIdx, int decisionIdx,
+                                    const char *searchKind, int reuseGen,
+                                    int carriedSearches, std::int64_t simsRequested,
+                                    const DiagSnapshot &before,
+                                    const DiagSnapshot &after,
+                                    std::int64_t rootSimBefore,
+                                    std::int64_t rootSimAfter,
+                                    int retainedNodes, int rootEdgeCount,
+                                    int playerHp, int turn, int cardsInHand,
+                                    int drawPile, int discardPile);
+
         // Visible-state leaf-value cache (phase 6, STS_PVNET_CACHE): keys are
         // node obsHash values at the direct-eval sites (no-legal-action,
         // invalid-edge, depth cap), where repeated sims evaluate the same
@@ -302,6 +330,10 @@ namespace sts::search {
     // legal actions that are missing from the node's edges (fresh-tree
     // experiment, no cross-decision reuse).
     extern bool g_s3UnionExpand;
+    // STS_REUSE_CPU_DIAG: emit per-search CSV timing rows.
+    // STS_REUSE_CPU_DIAG_FILE: output path (default stderr).
+    extern bool g_reuseCpuDiag;
+    extern std::string g_reuseCpuDiagFile;
 
     // A2 dynamic alpha by rollout length (STS_VNET_ALPHA_LEN, opt-in):
     // replaces the flat vnet/pvnet alpha at the leaf blend site with a

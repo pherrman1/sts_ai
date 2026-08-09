@@ -9937,6 +9937,14 @@ int main(int argc, char **argv) {
         search::g_s3UnionExpand = std::atoi(d) != 0;
         std::cout << "[S3 union-expand = " << (search::g_s3UnionExpand ? "ON" : "off") << "]\n";
     }
+    if (const char *d = std::getenv("STS_REUSE_CPU_DIAG")) {
+        search::g_reuseCpuDiag = std::atoi(d) != 0;
+        std::cout << "[reuse cpu-diag = " << (search::g_reuseCpuDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_REUSE_CPU_DIAG_FILE")) {
+        search::g_reuseCpuDiagFile = d;
+        std::cout << "[reuse cpu-diag file = " << search::g_reuseCpuDiagFile << "]\n";
+    }
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
         const std::string name(d);
         int id = -1;

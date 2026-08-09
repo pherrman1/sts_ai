@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <sim/search/ExpertKnowledge.h>
@@ -180,10 +181,26 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 spend += extra;
             }
             const std::int64_t before = s3.root.simulationCount;
+            // Per-search CPU diagnostic snapshot.
+            BattleScumSearcher3::DiagSnapshot diagBefore;
+            const char *searchKind = (carriedSearchesSinceFresh > 0) ? "carried" : "fresh";
+            if (search::g_reuseCpuDiag)
+                diagBefore = s3.snapshotDiag();
             s3.search(spend);
+            if (search::g_reuseCpuDiag) {
+                auto diagAfter = s3.snapshotDiag();
+                s3.writeCpuDiagRow(
+                    bc.seed, (int)bc.floorNum, (int)bc.encounter,
+                    0, decisionIdx, searchKind, s3.reuseGeneration,
+                    carriedSearchesSinceFresh, spend,
+                    diagBefore, diagAfter,
+                    before, s3.root.simulationCount,
+                    s3.retainedNodeCount, (int)s3.root.edges.size(),
+                    bc.player.curHp, bc.turn, bc.cards.cardsInHand,
+                    (int)bc.cards.drawPile.size(),
+                    (int)bc.cards.discardPile.size());
+            }
             // Increment carried-search counter after every search.
-            // The check at the top of the loop will rebuild when the
-            // counter exceeds g_reuseMaxSearches.
             ++carriedSearchesSinceFresh;
             simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
