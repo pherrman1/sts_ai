@@ -194,6 +194,14 @@ namespace sts::search {
     // min(pool, baseSims) extra. Pure budget redirect -- no stability-based
     // early stopping (the STS_CONV_ROOT stability line was falsified, §118).
     extern bool g_s3PoolRedirect;
+    // A2 dynamic alpha by rollout length (STS_VNET_ALPHA_LEN, opt-in):
+    // replaces the flat vnet/pvnet alpha at the leaf blend site with a
+    // lookup over the rollout action count L. Pre-registered table
+    // {≤2:0.1, 3-5:0.2, 6-10:0.4, >10:0.6}: short rollout = trustworthy
+    // terminal → low α (trust rollout); long rollout = noisy → high α
+    // (trust learned leaf). Env STS_VNET_ALPHA_LEN_TABLE overrides.
+    extern bool g_vnetAlphaLen;
+    extern std::vector<std::pair<int,double>> g_vnetAlphaLenTable;
     // Fair-tree structural fix (STS_LIVE_VALID=1, opt-in, Phase 4): shared with
     // Searcher2; re-select among stored edges valid in the current
     // determinization instead of falling back to a rollout.

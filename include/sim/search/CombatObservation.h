@@ -136,7 +136,6 @@ struct HiddenBattleState {
 struct Belief {
     std::vector<HiddenBattleState> particles;
 
-    void resample(std::mt19937_64 &rng);
     void update(const CombatObservation &obs);
     const HiddenBattleState &sample(std::mt19937_64 &rng) const;
     [[nodiscard]] bool empty() const { return particles.empty(); }

@@ -6460,5 +6460,215 @@ unFullRunOOC runs, for each counter relic the
   3.73 vs OFF 37.5% (3/8) / floor 35.8 / hp 10.5 / cpu_sec/run 3.50–3.76.
   4/8 seeds change outcome (pool demonstrably engages and shifts
   decisions). cpu_sec/run at 300 sims is dominated by per-run wall-clock
-  noise (12 threads), so no cpu claim is made from this smoke. Paired
-  256-seed gate pending (orchestrator).
+  noise (12 threads), so no cpu claim is made from this smoke.
+- **Gate result (64 paired seeds, 2026-08-09, local, same config @1k sims):**
+  control 21.9% win / 38.6 floor / 8.5 HP / 22.2 cpu-s/run;
+  candidate 23.4% win / 39.1 floor / 10.2 HP / 24.7 cpu-s/run.
+  **+1.6pp (95% CI [−5.3, +8.4]), 5/64 discordant (8%, 3 up / 2 down),
+  cpu 1.11×.** Null at 64 seeds — direction favors candidate but CI spans
+  zero heavily; cpu went up (+11%) rather than down, suggesting the pool
+  spends extra sims without enough forced-move donations to offset, or
+  noise dominates. §118 precedent (pool+stop −2.3pp) makes a pure-redirect
+  positive plausible, but 256 paired seeds needed to confirm.
+- **Caveat:** the §142 tok-globals change (50→41, de75e6c) prevents loading
+  the deployed strategic tok-net model; both control and candidate arm run
+  without it (native OOC GBMs only, win% ~21.9, NOT comparable to the §126
+  50.4% reference). Paired deltas are internally valid, absolute win% is not.
+  Paired 256-seed gate pending (orchestrator, needs tok-net load fix first).
+
+## §144 Mid-rollout visible-state collision frequency in Searcher3 fair play — 0.089% exact collision rate, <1% dead end for rollout TT / path reuse (2026-08-09, local — diagnostic measurement, no gameplay change)
+
+- **What:** first direct measurement of mid-rollout visible-state collision
+  frequency under Searcher3 fair play (particle determinization). The §114
+  obs-keyed descent failure predicted near-zero collisions (visible states
+  diverge at every level) and the `leafCache` comment in
+  `BattleScumSearcher3.h` asserted post-rollout states are "effectively
+  unique" — both were expectations, never measured. This gates whether
+  rollout transposition tables, path reuse, or move-ordering optimizations
+  could ever help.
+- **Tooling:** the existing `rollouttrace` mode emitted the recorded leaf's
+  `obsHash` (deduped per decision by construction, so leaf-level collisions
+  are 0 by design) but not per-state hashes. Added a trailing `stateHash`
+  column (the row state's OWN `visibleHash`, equal to `obsHash` at step 0)
+  to the diagnostic output only — `search::g_onRolloutStep` stays nullptr in
+  all normal paths, so default behavior is byte-identical (verified: columns
+  1-20 of a 2-seed replay are byte-identical to the §135a
+  `rollouttrace_gate_64.csv` rows for those seeds).
+- **Dataset:** `rollouttrace` replay of the §135a corpus
+  `build/leafdiag_gate_64.csv`, 16 seeds (126700-126715), replay sims 1000,
+  asc 0, full gate-matching env (`STS_FAIR=1 STS_SEARCHER3=1
+  STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_S3_PARTICLES=64`, `STS_VNET=
+  build/v_combat_honest.txt` @ `STS_VNET_ALPHA=0.3`, `STS_DIAG_VNET2=
+  build/v_combat_utility_direct.txt`, V4 OOC gate arms
+  `STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`
+  + REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1 + `STS_OOC_STRATEGIC_MARGIN=1.0`);
+  100% leaf re-capture, no WARNINGs. Artifact:
+  `build/rollout_trace.csv` (830,753 rows, 4,821 searches, 73,354
+  trajectories). Run binary = commit 2fb271a + stateHash column; the §142
+  (de75e6c) tok-globals change (50→41) and its uncommitted `NGLB 50→41`
+  loader follow-up break loading of the deployed tok-net models, so a
+  de75e6c-era binary cannot reproduce the §135a gate distribution (0%
+  re-capture) — the reference build is the pre-§142 tree.
+- **Result (per search = seed,fightIdx,decIdx; exact `visibleHash`):**
+  - mid-rollout states (steps ≥ 1): **0.0891%** pooled collision rate
+    (756,724 unique / 757,399 states); per-search mean 0.0916%, median 0%,
+    max 50% (a 2-state outlier), 198/4,583 searches (4.3%) have any
+    collision;
+  - all states incl. leaves: 0.1340%;
+  - cross-trajectory repeats within a search (same hash in ≥2 trajectories):
+    0.139% of mid-rollout states;
+  - coarse-feature upper bound (turn/HP/block/energy/strength/hand/draw/
+    discard/monSumHp/monMaxHp/incomingDmg/isTerminal projection): 2.84% —
+    the extra hashed fields (hand/pile contents, per-monster detail, powers,
+    relics) differentiate ~97% of coarse-colliding states, confirming the
+    coarse projection massively over-counts.
+- **Verdict: DEAD END for rollout TT / path reuse / move-ordering caching.**
+  Exact mid-rollout visibleHash collisions are 0.089%, ~11× below the 1%
+  threshold; even cross-trajectory repeats (the only TT-usable signal) are
+  0.139%. The §114 expectation is now data: under particle determinization
+  every rollout step lands in an effectively unique visible state. Do not
+  invest in rollout-state caching; the leafCache comment's "effectively
+  unique" claim is confirmed.
+- **Decision log:** `2026-08-09-rollout-collision-diagnostic.md`.
+
+## §145 S3−belief−chain + canonicalized multiselect actions (STS_MULTISELECT_CANONICAL): implemented opt-in — null at 64 paired seeds (2026-08-09, local WSL)
+
+- **What:** GAMBLE/EXHAUST_MANY multi-select actions enumerate every hand
+  subset under the default `all` mode (up to 1023 edges for 10 identical
+  cards). `STS_MULTISELECT_CANONICAL=1` canonicalizes each subset mask by
+  the selected cards' identity multiset (`id`, upgradeCount, costForTurn,
+  freeToPlayOnce, specialData) — the same equivalence the existing
+  PLAYER_NORMAL duplicate-card collapse uses — and deduplicates identical
+  multisets in `Action::pushMultiSelectActions`. Upgraded/temporarily
+  modified copies remain distinct; only genuinely identical selections are
+  collapsed. Default off, opt-in.
+- **Config:** `one_combat bestbench 1000 64 0 126700 <out.csv>`;
+  `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
+  STS_S3_PARTICLES=64` (+ `STS_MULTISELECT_CANONICAL=1` for candidate);
+  no tok-net (broken by §142, see §143 caveat); native OOC;
+  floor=`build/v_rich_trees.txt`, win=`build/v_win_trees.txt`;
+  combatVNet=ON @α=0.3; policyNet=ON; PVNet/off; asc 0; threads 12.
+- **Parity:** `./build/test cardselect_parity` passes + new
+  `cardselect_canonical` test verifies: 1024→256 masks (3 Strikes+3
+  Defends+4 distinct, 10-card GAMBLE), 1023→11 (10 identical Strikes),
+  [Strike,Strike,Strike+,Defend] keeps {0,1} and {0,2} distinct while
+  collapsing {1,2}→{0,2}. `STS_MULTISELECT_CANONICAL=0` is behaviorally
+  identical to unset.
+- **Gate result (64 paired seeds, @1k sims):**
+  control 21.9% win / 38.6 floor / 8.5 HP / 22.2 cpu-s/run;
+  candidate 20.3% win / 39.1 floor / 8.2 HP / 22.0 cpu-s/run.
+  **−1.6pp (95% CI [−4.6, +1.5]), 1/64 discordant (2%), cpu 0.99×.**
+  Null — 4× branching reduction at GAMBLE states is decision-neutral
+  within sampling noise. GAMBLE/EXHAUST_MANY states are rare and the
+  current uniform-prior PUCT already dilutes visits harmlessly; the
+  expected benefit (more focused search on non-GAMBLE turns) is too small
+  to measure at 64 seeds. The parity test is the real win — canonicalization
+  preserves correctness under the full cardselect contract.
+- **Verdict:** env stays opt-in default-off. Gate pending for larger sample
+  (256 seeds) to confirm the null, but the low discordance (1/64) strongly
+  suggests zero effect; priority is low.
+- **Decision log:** `2026-08-09-multiselect-canonicalization.md`. Code:
+  `src/sim/search/Action.cpp::pushMultiSelectActions` (multiSelectCanonical,
+  cardIdentityKey, dedup); `apps/test.cpp::testCardSelectCanonical`.
+
+## §146 Searcher2 transposition table (STS_TT) — first-ever benchmark: CATASTROPHIC, 0% win (2026-08-09, local WSL)
+
+- **What:** `g_useTT` / `STS_TT` in `BattleScumSearcher2.cpp` shares value
+  statistics (`simulationCount`, `evaluationSum`) across action-order-
+  equivalent states via a hash table lookup in `selectBestEdgeToSearch`,
+  `selectBestValidEdgeToSearch`, and `evaluateEdge`. Implemented but NEVER
+  benchmarked through the entire §99–§135 experiment series.
+- **Config:** `one_combat bestbench 1000 32 0 126700 <out.csv>`;
+  `STS_FAIR=1` (S2 fair); asc 0; threads 12. Token-net, vnet, etc. not
+  relevant (Searcher2-only arm).
+- **Results (32 paired seeds, S2-fair @1k):**
+
+  | Arm | Win% | Floor | HP end | cpu-s/run |
+  |---|---|---|---|---|
+  | TT off (control) | **18.8%** | 37.1 | 9.5 | 9.08 |
+  | TT on (candidate) | **0.0%** | 20.1 | 0.0 | 3.51 |
+  | Δ (on − off) | **−18.8pp** | −17.0 | −9.5 | −5.57 |
+
+  Every single TT-on run died with 0 HP. The TT does make search ~2.6×
+  faster per run, but destroys play quality catastrophically.
+- **Mechanism (Inference):** plausible causes are (a) hash collisions in
+  `battleStateHash`, (b) value statistics shared across states that are
+  action-order-equivalent but NOT value-equivalent under fair
+  determinization (different enemy intents / residual HP per particle
+  world), or (c) stale/incorrect stateHash propagation when the searcher
+  reuses subtrees. The TT key includes all RNG streams, which should make
+  it exact-match-only — hash collisions are most likely.
+- **Verdict: CLOSED.** Do not port the TT to Searcher3 or invest further.
+  The TT code stays in the tree (off by default) as a cautionary artifact.
+- **Decision log:** (this entry). Code: `src/sim/search/
+  BattleScumSearcher2.cpp::g_useTT` (36), `battleStateHash` (63),
+  `selectBestEdgeToSearch` (501), `selectBestValidEdgeToSearch` (545),
+  `evaluateEdge` (496); parsed `STS_TT` in `apps/one_combat.cpp::main`
+  (line 9237).
+
+## §147 Dynamic alpha by rollout length (STS_VNET_ALPHA_LEN, A2): implemented opt-in — negative direction at 64 paired seeds (2026-08-09, local WSL)
+
+- **What:** plan-rollout-experiments-2026-08-07.md §3 A2 (dynamic α by
+  rollout length). Replaces the flat vnet/pvnet alpha at the leaf blend
+  site with a lookup over the rollout action count L. Pre-registered table
+  {≤2:0.1, 3–5:0.2, 6–10:0.4, >10:0.6}: short rollout = trustworthy
+  terminal → low α (trust rollout); long rollout = noisy → high α (trust
+  learned leaf). Applied to both vnet and pvnet blends. Env:
+  `STS_VNET_ALPHA_LEN=1` (default off), `STS_VNET_ALPHA_LEN_TABLE`
+  overrides the table (format "ceil:alpha,...").
+- **Config:** `one_combat bestbench 1000 64 0 126700 <out.csv>`;
+  `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
+  STS_S3_PARTICLES=64` (+ `STS_VNET_ALPHA_LEN=1` for candidate);
+  no tok-net (broken by §142); native OOC; combatVNet=ON @flat α=0.3
+  (overridden per-leaf by the table when flag is on); asc 0; threads 12.
+- **Parity:** `STS_VNET_ALPHA_LEN=0` vs unset — 8/8 seeds identical
+  (confirmed).
+- **Gate result (64 paired seeds, @1k sims):**
+  control 21.9% win / 38.6 floor / 8.5 HP / 22.2 cpu-s/run;
+  candidate 18.8% win / 38.2 floor / 7.4 HP / 22.5 cpu-s/run.
+  **−3.1pp (95% CI [−14.6, +8.3]), 14/64 discordant (22%, 6 up / 8 down),
+  cpu 1.01×.** Direction negative, high discordance (22%). Avg rollout
+  length ~14 actions → most leaves land in the >10 bucket (α=0.6) — the
+  table effectively RAISES α for the dominant case from the calibrated
+  optimum 0.3, pushing more weight onto the learned leaf where the
+  terminal outcome has already proven load-bearing (§133: "long-horizon
+  terminal grounding is load-bearing"). The short-rollout buckets get
+  lower α (0.1–0.2) but are too rare to offset.
+- **Note on table inversion:** the plan's pre-registered table
+  {≤2:0.1,…,>10:0.6} makes α INCREASE with rollout length (trust leaf
+  more when rollout is noisy). The task specification during this
+  session had the inverse table {≤2:0.6,…,>10:0.2} with opposite
+  rationale — the task was an error, and the plan's table was
+  implemented. The inverse would make α DECREASE with length, pushing
+  the flat-0.3 calibrated optimum toward ~0.2 for the dominant >10
+  bucket — directionally even worse.
+- **Verdict: negative direction at 64 seeds; env stays opt-in default-off.**
+  Table inversion (short→low, long→high) would flip the α direction for the
+  dominant long-rollout bucket and is testable as a follow-up, but the
+  current negative signal + high discordance makes either variant a weak
+  candidate. The flat calibrated α=0.3 is the robust default.
+- **Decision log:** (this entry). Code: `src/sim/search/
+  BattleScumSearcher3.cpp::alphaForRolloutSteps`, `g_vnetAlphaLen`,
+  `g_vnetAlphaLenTable`; parsed in `apps/one_combat.cpp::main`.
+
+## §140 Stall-battle hang in the S3 fair battle loop: root-caused and fixed (2026-08-08, local + GCP)
+
+- **Symptom:** datagen seed 300865 (and any seed hitting the same state) never
+  completed: the seed's single worker thread spun at ~1 core with zero rows
+  written (rows buffer until seed end), no deadlock, all backtraces showing
+  normal busy search activity.
+- **Root cause:** `ScumSearchAgent2::playoutBattleFair` (and the other three
+  battle loops) run `while (bc.outcome == Outcome::UNDECIDED) { search; takeAction; }`
+  with **no iteration bound**. StS has no stall timer, so a fight can last
+  forever; the S3 search plays such fights defensively (blocks/heals more than
+  the boss damages) and never finishes them. Seed 300865 reaches the act-1
+  boss (encounter 31, floor 16) — the cheap eval policy dies there instantly,
+  the search stalls it forever. ~1/1000 seeds hit a stallable fight, which is
+  why 999/1000 datagen seeds completed normally.
+- **Fix:** `kMaxBattleDecisions = 1000` stall guard in all four battle loops
+  (fair S3, fair S2, non-fair S3, non-fair S2); an exceeded battle is treated
+  as `PLAYER_LOSS` with a `[battle-stall]` warning. Normal battles finish in
+  well under 100 decisions, so default behavior is unchanged (the counter is
+  separate from `decisionIdx`, which seeds the per-decision searcher).
+- **Verification:** seed 300865 locally: 3 stall warnings, completes in 245s,
+  746 rows, rc=0; on GCP: same, chunk 2 now 500/500 seeds (273,518 rows).

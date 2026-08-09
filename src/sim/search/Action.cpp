@@ -4,9 +4,11 @@
 
 #include "sim/search/Action.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <set>
 
 using namespace sts;
 
@@ -504,13 +506,55 @@ static MultiSelectMode multiSelectMode() {
     return m;
 }
 
+// Multi-select mask canonicalization (env STS_MULTISELECT_CANONICAL, default
+// off): collapse bitmask choices that select the same multiset of identical
+// hand cards (e.g. exhausting Strikes at hand positions {0,1} vs {0,2}).
+static bool multiSelectCanonical() {
+    static const bool c = [] {
+        const char *e = std::getenv("STS_MULTISELECT_CANONICAL");
+        return e && std::atoi(e) != 0;
+    }();
+    return c;
+}
+
+// Identity key for one hand card: (id, upgradeCount, costForTurn,
+// freeToPlayOnce, specialData) -- the same equivalence the PLAYER_NORMAL
+// duplicate collapse uses (playerNormalGroundTruth in apps/test.cpp), so only
+// interchangeable copies collapse while upgraded/temporarily-modified copies
+// stay distinct. Packed into 49 bits so a multiset key is a sortable vector.
+static std::uint64_t cardIdentityKey(const CardInstance &c) {
+    std::uint64_t k = static_cast<std::uint64_t>(static_cast<std::uint16_t>(c.getId()));
+    k |= static_cast<std::uint64_t>(static_cast<std::uint8_t>(c.getUpgradeCount())) << 16;
+    k |= static_cast<std::uint64_t>(static_cast<std::uint8_t>(c.costForTurn)) << 24;
+    k |= static_cast<std::uint64_t>(c.freeToPlayOnce ? 1u : 0u) << 32;
+    k |= static_cast<std::uint64_t>(static_cast<std::uint16_t>(c.specialData)) << 33;
+    return k;
+}
+
 static void pushMultiSelectActions(std::vector<search::Action> &actions,
                                    const BattleContext &bc, bool cappedByPickCount) {
     const int n = bc.cards.cardsInHand;
     if (n <= 0 || n > 10) return;
     const int limit = bc.cardSelectInfo.pickCount;
     const MultiSelectMode m = multiSelectMode();
+    const bool canonical = multiSelectCanonical();
     const std::uint32_t full = (1u << n) - 1;
+    // Canonicalization bookkeeping: per multi-select task, keep only the first
+    // mask whose selected-card multiset key was not seen before.
+    std::set<std::vector<std::uint64_t>> seenKeys;
+    const auto emit = [&](std::uint32_t mask) {
+        const search::Action a(search::ActionType::MULTI_CARD_SELECT, (int)mask);
+        if (canonical) {
+            std::vector<std::uint64_t> key;
+            for (int idx : a.getSelectedIdxs()) {
+                key.push_back(cardIdentityKey(bc.cards.hand[idx]));
+            }
+            std::sort(key.begin(), key.end());
+            if (!seenKeys.insert(std::move(key)).second) return;
+        }
+        actions.push_back({a});
+    };
+
     if (m == MultiSelectMode::NONE) {
         if (!cappedByPickCount || 0 <= limit)
             actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, 0)});
@@ -521,14 +565,14 @@ static void pushMultiSelectActions(std::vector<search::Action> &actions,
             actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, 0)});
         for (int i = 0; i < n; ++i)
             if (!cappedByPickCount || 1 <= limit)
-                actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, 1u << i)});
+                emit(1u << i);
         if (n > 1 && (!cappedByPickCount || n <= limit))
             actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, (int)full)});
         return;
     }
     for (std::uint32_t mask = 0; mask < (1u << n); ++mask) {
         if (!cappedByPickCount || popcountInt(mask) <= limit) {
-            actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, (int)mask)});
+            emit(mask);
         }
     }
 }

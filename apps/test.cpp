@@ -759,6 +759,125 @@ int testCardSelectParity() {
     return 1;
 }
 
+// ---- CARD_SELECT multi-select mask canonicalization -------------------------
+// With STS_MULTISELECT_CANONICAL=1, masks that select the same multiset of
+// identical hand cards collapse to the first-encountered mask; masks whose
+// selected cards differ in any identity-relevant field (upgrade, costForTurn,
+// freeToPlayOnce, specialData) must all remain. The oracle below is an
+// independent reimplementation of the key; the hardcoded expected counts pin
+// the contract even if oracle and implementation share a bug.
+
+namespace {
+// Test-local reimplementation of Action.cpp's cardIdentityKey (must stay in
+// sync: (id, upgradeCount, costForTurn, freeToPlayOnce, specialData)).
+std::uint64_t testCardKey(const CardInstance &c) {
+    std::uint64_t k = static_cast<std::uint64_t>(static_cast<std::uint16_t>(c.getId()));
+    k |= static_cast<std::uint64_t>(static_cast<std::uint8_t>(c.getUpgradeCount())) << 16;
+    k |= static_cast<std::uint64_t>(static_cast<std::uint8_t>(c.costForTurn)) << 24;
+    k |= static_cast<std::uint64_t>(c.freeToPlayOnce ? 1u : 0u) << 32;
+    k |= static_cast<std::uint64_t>(static_cast<std::uint16_t>(c.specialData)) << 33;
+    return k;
+}
+}
+
+// Canonical ground truth: the full validity contract (every valid mask),
+// deduped by selected-card multiset key keeping the first (smallest) mask.
+static std::vector<std::uint32_t> canonicalGroundTruth(const BattleContext &bc) {
+    std::set<std::uint32_t> result;
+    std::set<std::vector<std::uint64_t>> seen;
+    const int n = bc.cards.cardsInHand;
+    if (n <= 0 || n > 10) return {};
+    for (std::uint32_t mask = 0; mask < (1u << n); ++mask) {
+        const search::Action a(search::ActionType::MULTI_CARD_SELECT, (int)mask);
+        if (!a.isValidAction(bc)) continue;
+        std::vector<std::uint64_t> key;
+        for (int idx : a.getSelectedIdxs()) key.push_back(testCardKey(bc.cards.hand[idx]));
+        std::sort(key.begin(), key.end());
+        if (seen.insert(std::move(key)).second) result.insert(a.bits);
+    }
+    return std::vector<std::uint32_t>(result.begin(), result.end());
+}
+
+static BattleContext gambleFixture(const CardInstance *handCards, int n) {
+    GameContext gc(CharacterClass::IRONCLAD, 0xBEEFu, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    bc.cards.cardsInHand = n;
+    for (int i = 0; i < n; ++i) bc.cards.hand[i] = handCards[i];
+    bc.inputState = InputState::CARD_SELECT;
+    bc.cardSelectInfo.cardSelectTask = CardSelectTask::GAMBLE;
+    return bc;
+}
+
+int testCardSelectCanonical() {
+    setenv("STS_MULTISELECT_MODE", "all", 1);
+    setenv("STS_MULTISELECT_CANONICAL", "1", 1);
+
+    int failures = 0;
+    std::cout << "cardselect_canonical: GAMBLE mask canonicalization\n";
+
+    // 3 identical Strikes + 3 identical Defends + 4 distinct cards (10-card
+    // hand): full contract 2^10 = 1024 masks; canonical = 4*4*16 = 256.
+    const CardInstance A[] = {
+        CardInstance(CardId::STRIKE_RED), CardInstance(CardId::STRIKE_RED), CardInstance(CardId::STRIKE_RED),
+        CardInstance(CardId::DEFEND_RED), CardInstance(CardId::DEFEND_RED), CardInstance(CardId::DEFEND_RED),
+        CardInstance(CardId::BASH), CardInstance(CardId::CLOTHESLINE),
+        CardInstance(CardId::IRON_WAVE), CardInstance(CardId::POMMEL_STRIKE),
+    };
+    const BattleContext bcA = gambleFixture(A, 10);
+    std::vector<std::uint32_t> gotA;
+    for (const auto &a : search::Action::enumerateCardSelectActions(bcA)) gotA.push_back(a.bits);
+    if (gotA.size() != 256) {
+        std::cout << "    duplicate-heavy GAMBLE: expected 256 canonical masks, got " << gotA.size() << '\n';
+        ++failures;
+    }
+    if (compareEnumerator("duplicate-heavy GAMBLE vs canonical oracle", canonicalGroundTruth(bcA), gotA) != 0) {
+        ++failures;
+    }
+
+    // 10 identical Strikes: full contract 1023 non-empty masks; canonical = 11.
+    const CardInstance C[] = {
+        CardInstance(CardId::STRIKE_RED), CardInstance(CardId::STRIKE_RED), CardInstance(CardId::STRIKE_RED),
+        CardInstance(CardId::STRIKE_RED), CardInstance(CardId::STRIKE_RED), CardInstance(CardId::STRIKE_RED),
+        CardInstance(CardId::STRIKE_RED), CardInstance(CardId::STRIKE_RED), CardInstance(CardId::STRIKE_RED),
+        CardInstance(CardId::STRIKE_RED),
+    };
+    const BattleContext bcC = gambleFixture(C, 10);
+    std::vector<std::uint32_t> gotC;
+    for (const auto &a : search::Action::enumerateCardSelectActions(bcC)) gotC.push_back(a.bits);
+    // Masks are encoded as MULTI_CARD_SELECT actions: bits = (type<<29)|mask.
+    const auto enc = [](int mask) { return search::Action(search::ActionType::MULTI_CARD_SELECT, mask).bits; };
+    const std::vector<std::uint32_t> expectC = {enc(0), enc(1), enc(3), enc(7), enc(15), enc(31), enc(63), enc(127), enc(255), enc(511), enc(1023)};
+    if (compareEnumerator("10 identical Strikes", expectC, gotC) != 0) {
+        ++failures;
+    }
+
+    // Upgraded copies are distinct effects: hand [Strike, Strike, Strike+,
+    // Defend] must keep {0,1} (two normal) and {0,2} (normal + upgraded)
+    // as separate actions; {1,2} collapses into {0,2}.
+    const CardInstance B[] = {
+        CardInstance(CardId::STRIKE_RED),
+        CardInstance(CardId::STRIKE_RED),
+        CardInstance(CardId::STRIKE_RED, true),
+        CardInstance(CardId::DEFEND_RED),
+    };
+    const BattleContext bcB = gambleFixture(B, 4);
+    std::vector<std::uint32_t> gotB;
+    for (const auto &a : search::Action::enumerateCardSelectActions(bcB)) gotB.push_back(a.bits);
+    const std::vector<std::uint32_t> expectB = {enc(0), enc(1), enc(3), enc(4), enc(5), enc(7), enc(8), enc(9), enc(11), enc(12), enc(13), enc(15)};
+    if (compareEnumerator("upgraded-copy GAMBLE", expectB, gotB) != 0) {
+        ++failures;
+    }
+
+    if (failures == 0) {
+        std::cout << "cardselect_canonical PASS (1024->256, 1023->11, upgraded copies distinct)\n";
+        return 0;
+    }
+    std::cout << "cardselect_canonical FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
+
 int mcts(int argc, const char *argv[]) {
     const auto saveFilePath = argv[2];
     const auto simulationCount = std::stoll(argv[3]);
@@ -975,6 +1094,8 @@ int main(int argc, const char* argv[]) {
         return testHappyFlowerCounter(std::stoull(argv[2]));
     } else if (command == "cardselect_parity") {
         return testCardSelectParity();
+    } else if (command == "cardselect_canonical") {
+        return testCardSelectCanonical();
     } else if (command == "battlecontext_roundtrip") {
         return testBattleContextRoundtrip();
     }

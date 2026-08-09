@@ -11,6 +11,14 @@
 #include <game/Game.h>
 #include "sim/PrintHelpers.h"
 #include "sim/search/BattleScumSearcher2.h"
+
+// Stall guard: a battle exceeding this many search decisions is treated as a
+// loss. StS has no stall timer, so a fight can in principle last forever, and
+// the search can exploit that (e.g. blocking forever against a boss instead of
+// finishing) — spinning playoutBattle* at one core with zero progress and no
+// rows written (observed on datagen seed 300865, 2026-08-08). Normal battles
+// finish in well under 100 decisions.
+static constexpr int kMaxBattleDecisions = 1000;
 #include "sim/search/BattleScumSearcher3.h"
 
 using namespace sts;
@@ -107,8 +115,17 @@ static void printHelper(const BattleContext &bc, const search::Action &a) {
 void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
     if (search::g_useSearcher3) {        // ISMCTS: new searcher per turn (different observations = different trees)
         int decisionIdx = 0;
+        int fightPool = 0;   // STS_S3_POOL_REDIRECT: per-fight sim credit pool (donations from forced moves)
+        int stallCount = 0;
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
+            if (++stallCount > kMaxBattleDecisions) {
+                std::cerr << "[battle-stall] encounter " << (int)bc.encounter
+                          << " exceeded " << kMaxBattleDecisions
+                          << " search decisions (fair S3); treating battle as LOSS\n";
+                bc.outcome = Outcome::PLAYER_LOSS;
+                break;
+            }
             const std::int64_t sims = isBossEncounter(bc.encounter)
                 ? (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
             BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
@@ -121,11 +138,25 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             // skip the search, so g_onSearchComplete3 does not fire for them.
             search::Action forced;
             if (search::g_forcedMoveSkip && s3.onlyLegalAction(forced)) {
+                if (search::g_s3PoolRedirect) fightPool += sims;  // donate the unspent budget to the pool
                 takeAction(bc, forced);
                 ++decisionIdx;
                 continue;
             }
-            s3.search(sims);
+            // STS_S3_POOL_REDIRECT (opt-in): spend the flat budget plus a
+            // fraction of the accumulated pool on non-forced decisions. Pure
+            // budget redirect -- no stability-based early stopping (the
+            // STS_CONV_ROOT stability line was falsified at §118; this is the
+            // clean forced-move-only sub-case that was never isolated).
+            std::int64_t spend = sims;
+            if (search::g_s3PoolRedirect && fightPool > 0) {
+                constexpr double poolFrac = 1.0;   // use all accumulated sims
+                const std::int64_t extra = std::min<std::int64_t>(
+                    fightPool, static_cast<std::int64_t>(std::llround(sims * poolFrac)));
+                fightPool -= static_cast<int>(extra);
+                spend += extra;
+            }
+            s3.search(spend);
             simulationCountTotal += s3.root.simulationCount;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             bool have = false;
@@ -145,8 +176,16 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
         return;
     }
     std::int64_t fightPool = 0;   // STS_CONV_ROOT: per-fight sim credit pool (budget-neutral reinvestment)
+    int stallCount = 0;
     while (bc.outcome == Outcome::UNDECIDED) {
         if (g_onCombatDecision) g_onCombatDecision(bc);   // snapshot state (fair-play value datagen)
+        if (++stallCount > kMaxBattleDecisions) {
+            std::cerr << "[battle-stall] encounter " << (int)bc.encounter
+                      << " exceeded " << kMaxBattleDecisions
+                      << " search decisions (fair S2); treating battle as LOSS\n";
+            bc.outcome = Outcome::PLAYER_LOSS;
+            break;
+        }
         const std::int64_t simulationCount = isBossEncounter(bc.encounter) ?
                                              (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
         search::BattleScumSearcher2 searcher(bc);
@@ -211,9 +250,17 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
     }
     if (search::g_useSearcher3) {
         int decisionIdx = 0;
+        int stallCount = 0;
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
+            if (++stallCount > kMaxBattleDecisions) {
+                std::cerr << "[battle-stall] encounter " << (int)bc.encounter
+                          << " exceeded " << kMaxBattleDecisions
+                          << " search decisions (non-fair S3); treating battle as LOSS\n";
+                bc.outcome = Outcome::PLAYER_LOSS;
+                break;
+            }
             const std::int64_t sims = isBossEncounter(bc.encounter)
                 ? (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
             const std::int64_t before = s3.root.simulationCount;
@@ -252,9 +299,17 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
     // the subtree we already searched. searchToTotal then only runs the shortfall.
     search::BattleScumSearcher2 searcher(bc);
     std::int64_t fightPool = 0;   // STS_CONV_ROOT: per-fight sim credit pool (budget-neutral reinvestment)
+    int stallCount = 0;
 
     while (bc.outcome == Outcome::UNDECIDED) {
         if (g_onCombatDecision) g_onCombatDecision(bc);   // snapshot state for value-fn training
+        if (++stallCount > kMaxBattleDecisions) {
+            std::cerr << "[battle-stall] encounter " << (int)bc.encounter
+                      << " exceeded " << kMaxBattleDecisions
+                      << " search decisions (non-fair S2); treating battle as LOSS\n";
+            bc.outcome = Outcome::PLAYER_LOSS;
+            break;
+        }
         const std::int64_t simulationCount = isBossEncounter(bc.encounter) ?
                                               (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
 

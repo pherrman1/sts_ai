@@ -325,33 +325,6 @@ Belief Belief::initial(const BattleContext &bc, int particleCount,
     return b;
 }
 
-void Belief::resample(std::mt19937_64 &rng) {
-    if (particles.empty()) return;
-    std::vector<double> weights(particles.size());
-    double total = 0.0;
-    for (size_t i = 0; i < particles.size(); ++i) {
-        weights[i] = particles[i].weight;
-        total += weights[i];
-    }
-    if (total <= 0.0) {
-        for (auto &p : particles) p.weight = 1.0 / particles.size();
-        return;
-    }
-
-    std::vector<HiddenBattleState> resampled(particles.size());
-    std::uniform_real_distribution<double> dist(0.0, total);
-    for (auto &p : resampled) {
-        double r = dist(rng);
-        double acc = 0.0;
-        for (const auto &src : particles) {
-            acc += src.weight;
-            if (acc >= r) { p = src; break; }
-        }
-        p.weight = 1.0 / particles.size();
-    }
-    particles = std::move(resampled);
-}
-
 // A particle contradicts an observation when the observed draw pile is not the
 // front remainder of the particle's sampled order. Cards pop from the pile's
 // back (CardManager::popFromDrawPile), so after any draws the observed pile

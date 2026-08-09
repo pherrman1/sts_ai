@@ -9733,6 +9733,36 @@ int main(int argc, char **argv) {
         search::g_s3PoolRedirect = std::atoi(d) != 0;
         std::cout << "[S3 pool-redirect = " << (search::g_s3PoolRedirect ? "ON" : "off") << "]\n";
     }
+    // A2: dynamic alpha by rollout length (opt-in)
+    if (const char *d = std::getenv("STS_VNET_ALPHA_LEN")) {
+        search::g_vnetAlphaLen = std::atoi(d) != 0;
+        if (const char *t = std::getenv("STS_VNET_ALPHA_LEN_TABLE")) {
+            search::g_vnetAlphaLenTable.clear();
+            std::string ts(t);
+            size_t pos = 0;
+            while (pos < ts.size()) {
+                auto comma = ts.find(',', pos);
+                if (comma == std::string::npos) comma = ts.size();
+                auto colon = ts.find(':', pos);
+                if (colon != std::string::npos && colon < comma) {
+                    int ceil = std::stoi(ts.substr(pos, colon-pos));
+                    double a = std::stod(ts.substr(colon+1, comma-colon-1));
+                    search::g_vnetAlphaLenTable.push_back({ceil, a});
+                }
+                pos = comma + 1;
+            }
+        }
+        std::cout << "[VNet alpha-len = " << (search::g_vnetAlphaLen ? "ON" : "off");
+        if (search::g_vnetAlphaLen) {
+            std::cout << " table=";
+            for (size_t i = 0; i < search::g_vnetAlphaLenTable.size(); ++i) {
+                if (i) std::cout << ",";
+                std::cout << search::g_vnetAlphaLenTable[i].first << ":"
+                          << search::g_vnetAlphaLenTable[i].second;
+            }
+        }
+        std::cout << "]\n";
+    }
     if (const char *d = std::getenv("STS_S3_PRUNE")) {       // S3 ablation: canPruneAsDead pruning
         search::g_s3Prune = std::atoi(d) != 0;
         std::cout << "[S3 ablation: prune=" << (search::g_s3Prune ? "ON" : "off") << "]\n";

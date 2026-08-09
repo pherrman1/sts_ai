@@ -23,6 +23,13 @@ bool g_s3Chain = true;
 bool g_s3Live = true;
 bool g_s3Crn = false;
 bool g_s3PoolRedirect = false; // STS_S3_POOL_REDIRECT: forced-move budget pool redirect (opt-in)
+// A2 dynamic alpha by rollout length (STS_VNET_ALPHA_LEN, opt-in):
+// replaces the flat g_vnetAlpha at the leaf blend site with a lookup
+// over the rollout's action count. Pre-registered table (§3 plan):
+// {≤2:0.1, 3-5:0.2, 6-10:0.4, >10:0.6} — short rollout = trustworthy
+// terminal → low alpha; long rollout = noisy → high alpha (trust leaf).
+bool g_vnetAlphaLen = false;
+std::vector<std::pair<int,double>> g_vnetAlphaLenTable = {{2,0.1},{5,0.2},{10,0.4},{999,0.6}};
 int g_s3Particles = 64;
 double g_riskLambda = 0.5;
 bool g_s3Expand = false;
@@ -280,6 +287,13 @@ static bool vnetCondAllowed(const BattleContext &bc) {
     return true;
 }
 
+// ---- Alpha by rollout length (A2, STS_VNET_ALPHA_LEN) ---------------------
+static double alphaForRolloutSteps(int steps) {
+    for (const auto &p : g_vnetAlphaLenTable)
+        if (steps <= p.first) return p.second;
+    return g_vnetAlphaLenTable.back().second;
+}
+
 // ---- ISMCTS step ------------------------------------------------------------
 void BattleScumSearcher3::step() {
     ++diag.simulations;
@@ -389,10 +403,14 @@ void BattleScumSearcher3::step() {
             ++diag.rolloutCalls;
             ++diag.rolloutLeafCalls;
             diag.rolloutActions += rollSteps;
-            if (g_usePVNet && g_combatPVNet.loaded() && !std::isnan(vLeaf))
-                eval = g_pvnetAlpha * vLeaf + (1.0 - g_pvnetAlpha) * eval;
-            else if (!std::isnan(vLeaf))
-                eval = g_vnetAlpha * vLeaf + (1.0 - g_vnetAlpha) * eval;
+            if (g_usePVNet && g_combatPVNet.loaded() && !std::isnan(vLeaf)) {
+                double alpha = g_vnetAlphaLen ? alphaForRolloutSteps(rollSteps) : g_pvnetAlpha;
+                eval = alpha * vLeaf + (1.0 - alpha) * eval;
+            }
+            else if (!std::isnan(vLeaf)) {
+                double alpha = g_vnetAlphaLen ? alphaForRolloutSteps(rollSteps) : g_vnetAlpha;
+                eval = alpha * vLeaf + (1.0 - alpha) * eval;
+            }
             // Leafdiag hook (nullptr by default; the leaf obsHash is computed
             // only when the hook is registered, so unset behavior is
             // unchanged). The leaf identity hash is the state's visibleHash —

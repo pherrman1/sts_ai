@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-08 against the current working tree (covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending).
+Last verified: 2026-08-09 against the current working tree (covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending).
 
 ## Purpose
 
@@ -49,6 +49,15 @@ pins all three enumerators to the validity contract across every
 `CardSelectTask` (issues 47/48). `STS_MULTISELECT_MODE=all|single|none`
 (default `all`) prunes the multi-select action space to empty+singles+full
 (`single`) or empty only (`none`); only `all` matches the parity contract.
+`STS_MULTISELECT_CANONICAL=1` (default off, parsed in
+`src/sim/search/Action.cpp::multiSelectCanonical` next to the
+`STS_MULTISELECT_MODE` parse) collapses bitmask choices that select the same
+multiset of identical hand cards (e.g. exhausting Strikes at positions
+`{0,1}` vs `{0,2}`), keeping the first-encountered mask; the identity key is
+(id, upgradeCount, costForTurn, freeToPlayOnce, specialData) — the same
+card equivalence the PLAYER_NORMAL duplicate collapse uses — so upgraded or
+temporarily-modified copies stay distinct actions (`./build/test
+cardselect_canonical` pins the canonical mode).
 The §112 report of a full-subset win-rate regression was **falsified
 (§113)**: the "control" enumerator skip-won battles at WARCRY/GAMBLE states
 (zero valid edges → UNDECIDED battle break → rewards/advance), so the §112
@@ -420,7 +429,12 @@ Searcher3 leaf/candidate states instead of training on new labels:
   is one state of one trajectory with both model predictions; `tools/
   leaf_smoothness.py` computes per-model delta-V statistics. Same
   config-match requirement as leafref (particles, `STS_VNET`+alpha, OOC env
-  arms, ascension; a mismatch shows as a re-capture WARNING).
+  arms, ascension; a mismatch shows as a re-capture WARNING). The trailing
+  `stateHash` column (2026-08-09) is the row state's OWN `visibleHash`
+  (`CombatObservation::fromBattleContext(bc).visibleHash()`; equals `obsHash`
+  at step 0) — diagnostic-only, added to measure mid-rollout visible-state
+  collision frequency per search (rollout-TT / path-reuse viability, §144:
+  0.089% exact mid-rollout collision rate → <1% dead end).
 - Analysis tools: `tools/leaf_ranking.py` (within-group pairwise ranking
   accuracy, top-1, regret, MAE/RMSE/correlation, stratified by HP band /
   fight outcome / act / difficulty / turn / tree depth / legal-action count /
@@ -601,6 +615,16 @@ skip is decision-neutral — confirmed at the §123 paired 256-seed gate:
 0/256 per-seed outcome diffs at −8.5% cpu; smaller than S2's −16-18%
 because the S3 searcher (incl. particle belief) is constructed before the
 check).
+Since 2026-08-09 the sims saved by that skip can be reinvested instead of
+discarded, when opted in: `STS_S3_POOL_REDIRECT=1` (default off, parsed in
+`apps/one_combat.cpp::main` next to `STS_S3_BELIEF`) credits each forced
+decision's unspent base sim budget to a per-fight `fightPool` and lets
+non-forced decisions spend `baseSims + min(pool, baseSims)` (poolFrac 1.0).
+Pure budget redirect — deliberately **no stability-based early stopping**
+(the STS_CONV_ROOT stability line was falsified, §118; this isolates the
+never-tested forced-move-only sub-case). Unset or `=0` is byte-identical to
+the pre-redirect build (8-seed per-seed parity verified; only the wall-time
+`sec` column varies). Gate: EXPERIMENTS.md §143.
 Fair-path note: forced decisions skip the search, so `g_onSearchComplete` /
 `g_onSearchComplete3` (searchdiag A rows) does not fire for them. **Non-fair
 path: the standalone flag is a no-op by design** — the persistent searcher
@@ -644,7 +668,7 @@ adaptive line is stopped; the env gate stays opt-in and the built-in
 
 Searcher3 feature-ablation toggles (all parsed by `apps/one_combat.cpp::main`
 next to `STS_SEARCHER3`; defaults preserve full behavior): `STS_S3_BELIEF=0`
-skips the two `belief.update` calls in `step()` (particles stay uniform),
+skips the five `belief.update` call sites in `step()` — four in-step after edge execution plus one after the internal-node PUCT edge (particles stay uniform),
 `STS_S3_PRUNE=0` skips the three `canPruneAsDead` checks, `STS_S3_CHAIN=0`
 skips the deterministic chain-compression loop, `STS_S3_LIVE=0` switches the
 root-action pick to the most-visited edge with **no live-valid filter** — an
@@ -901,6 +925,11 @@ PUCT-with-zero-priors quirk.
   the §112 delta was the removed exploit and `all` stays the deployment
   default; `STS_MULTISELECT_MODE=single|none` remains an opt-in scale knob
   (measured 31.6%/30.5% @1k on the honest block, negative vs `all` 36.3%).
+  `STS_MULTISELECT_CANONICAL=1` (opt-in, default off) additionally collapses
+  masks that select the same multiset of identical hand cards — a 10-identical-
+  card GAMBLE state drops from 1023 to 11 edges, and a 3-Strike/3-Defend/4-
+  distinct 10-card hand from 1024 to 256 — concentrating PUCT visits on the
+  canonical representatives without dropping any distinct-effect selection.
   The old S3 emitted no valid edges at those states, so pre-fix agents
   effectively never used those potions/cards — and the UNDECIDED break let
   them skip the battle (see the `exitBattle` guard, §113).
