@@ -697,6 +697,65 @@ def to_py(obj):
 
 
 if __name__ == "__main__":
+    # --- Predict-only mode (STRAT_PREDICT_ONLY=1) ---
+    if os.environ.get("STRAT_PREDICT_ONLY") == "1":
+        import json
+        ckpt_path = os.environ.get("STRAT_PREDICT_CKPT", "")
+        out_csv = os.environ.get("STRAT_PREDICT_OUT", OUT + "_preds.csv")
+        threshold = float(os.environ.get("STRAT_PREDICT_THRESHOLD", "1.0"))
+        max_groups = int(os.environ.get("STRAT_PREDICT_MAX_GROUPS", "0"))
+        if not ckpt_path:
+            raise SystemExit("STRAT_PREDICT_ONLY=1 requires STRAT_PREDICT_CKPT=<path>")
+        ckpt = torch.load(ckpt_path, map_location=DEVICE, weights_only=False)
+        net.load_state_dict(ckpt["state_dict"])
+        model.eval()
+        print(f"[predict-only] loaded {ckpt_path}", flush=True)
+        labelWon = df.labelWon.to_numpy(np.float32) if "labelWon" in df else None
+        labelHp  = df.labelHp.to_numpy(np.float32)  if "labelHp"  in df else None
+        labelQ_raw = (10.0 * labelWon + labelHp) if (labelWon is not None and labelHp is not None) else None
+        screen_arr = df.screen.to_numpy(np.int64)
+        # Default owned: all V4-gated screens (CARD=2, TREASURE=5, REST=6, SHOP=7, BOSS_RELIC=8, EVENT=1)
+        owned_screens = set(int(s) for s in os.environ.get("STRAT_PREDICT_OWNED", "1,2,5,6,7,8").split(","))
+        N_pred = min(NG, max_groups) if max_groups > 0 else NG
+        print(f"[predict-only] {N_pred} groups, threshold={threshold}, owned_screens={owned_screens}", flush=True)
+        out = open(out_csv, "w")
+        out.write("seed,decIdx,screen,nCand,owned,modelIdx,bestIdx,behaviorFallbackIdx,fallbackIdx,fallbackSource,margin,threshold,fired,predQ,labelQ\n")
+        all_rows = np.arange(nrows, dtype=np.int64)
+        for g in range(N_pred):
+            sz = int(sizes[g])
+            if sz < 2:
+                continue
+            lo = int(block_start[g])
+            rows = all_rows[lo:lo + sz]
+            scr = int(screen_arr[lo])
+            owned = 1 if scr in owned_screens else 0
+            # Q prediction via fwd_rows
+            with torch.no_grad():
+                _, _, q_pred, _ = fwd_rows(rows)
+            q_pred = q_pred.cpu().numpy()
+            model_idx = int(np.argmax(q_pred))
+            best_idx = -1
+            if labelQ_raw is not None:
+                lq = labelQ_raw[rows]
+                best_idx = int(np.argmax(lq))
+            cho = int(chosen_off[g]) if chosen_off[g] >= 0 else -1
+            behavior_fb = int(rank_in_group[chosen_row_idx[g]]) if chosen_row_idx[g] >= 0 else -1
+            second = np.partition(q_pred, -2)[-2] if sz >= 2 else q_pred[0]
+            margin = float(q_pred[model_idx] - second)
+            fired = 1 if (owned and margin >= threshold) else 0
+            seed_val = int(df.seed.iloc[lo])
+            dec_val = int(df.decIdx.iloc[lo])
+            pred_str = "|".join(f"{v:.6f}" for v in q_pred)
+            label_str = ""
+            if labelQ_raw is not None:
+                label_str = "|".join(f"{v:.6f}" for v in labelQ_raw[rows])
+            out.write(f"{seed_val},{dec_val},{scr},{sz},{owned},{model_idx},{best_idx},"
+                      f"{behavior_fb},{behavior_fb},tierb_chosen,{margin:.6f},{threshold:.6f},{fired},"
+                      f"{pred_str},{label_str}\n")
+        out.close()
+        print(f"[predict-only] wrote {out_csv}", flush=True)
+        raise SystemExit(0)
+
     maximize = SELECT_METRIC == "q_top1"
     best_sel = float("-inf") if maximize else float("inf")
     best_state = None
