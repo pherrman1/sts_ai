@@ -371,6 +371,19 @@ void search::BattleScumSearcher2::step() {
                     return;
                 }
             }
+            if (curNode.edges.empty() && !g_fairPlay) {
+                // Deterministic (non-fair) enumeration produced no legal action:
+                // the player cannot act, so record the node as a defeat and
+                // evaluate it directly. Mirrors the fair-mode guard above;
+                // currently unreachable (PLAYER_NORMAL always adds END_TURN) but
+                // a future enumerator change could hit it.
+                curNode.outcome = 2;
+                diag.treeActions += static_cast<std::int64_t>(searchStack.size()) - 1;
+                diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(searchStack.size()) - 1);
+                ++diag.leafDirectEval;
+                updateFromPlayout(searchStack, actionStack, curState);
+                return;
+            }
             const auto selectIdx = selectFirstActionForLeafNode(curNode);
             auto &edgeTaken = curNode.edges[selectIdx];
 
@@ -729,7 +742,13 @@ int search::BattleScumSearcher2::playoutRandom(BattleContext &state, std::vector
         if (tempNode.edges.empty()) {
             std::cerr << state.seed << " " << simulationIdx << std::endl;
             std::cerr << state.monsters.arr[0].getName() << " " << state.floorNum << " " << monsterEncounterStrings[static_cast<int>(state.encounter)] << std::endl;
-            assert(false);
+            // Deterministic (non-fair) enumeration produced no legal action:
+            // stop the rollout and let the leaf be evaluated directly (mirrors
+            // the fair-mode NO_LEGAL_ACTION break above). Currently unreachable
+            // (PLAYER_NORMAL always adds END_TURN) but a future enumerator
+            // change could hit it.
+            stop = RolloutStop::NO_LEGAL_ACTION;
+            break;
         }
 
         int selectedIdx;

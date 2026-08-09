@@ -20,8 +20,8 @@ namespace sts::search {
         std::int64_t rolloutTerminated = 0;    // rollout ran to a terminal state
         std::int64_t rolloutDepthCapped = 0;   // rollout stopped at g_maxRolloutDepth
         std::int64_t rolloutSkippedVNet = 0;   // pure-VNet mode: rollout skipped entirely
-        std::int64_t rolloutNoLegalAction = 0; // fair-play world with no legal action
-        std::int64_t leafDirectEval = 0;       // fair-play leaf with no legal action (no rollout)
+        std::int64_t rolloutNoLegalAction = 0; // rollout stopped at a state with no legal action
+        std::int64_t leafDirectEval = 0;       // leaf with no legal action (no rollout; fair or non-fair)
         std::int64_t rolloutActions = 0;       // actions executed inside random rollouts
         std::int64_t treeActions = 0;          // actions executed by explicit tree descent
         std::int64_t maxTreeDepth = 0;         // deepest explicit-tree path seen (actions)
