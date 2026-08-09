@@ -1642,6 +1642,184 @@ int testDrawProbEngine() {
     return 0;
 }
 
+// ---- Belief hidden-order invariance regression test -------------------------
+// Verifies that two CombatObservations identical in all player-visible
+// properties but with different internal drawPileContents ordering produce
+// the SAME Belief::update posterior. If not, the belief is leaking hidden
+// information through positional draw-order comparison.
+int testBeliefOrderInvariance() {
+    int failures = 0;
+
+    // Construct two CombatObservations with same draw pile but different order.
+    CombatObservation obsA, obsB;
+    obsA.turn = 1; obsB.turn = 1;
+    obsA.ascension = 0; obsB.ascension = 0;
+    obsA.drawPileContents = {
+        CardInstance(CardId::STRIKE_RED),
+        CardInstance(CardId::BASH),
+        CardInstance(CardId::DEFEND_RED)
+    };
+    obsB.drawPileContents = {
+        CardInstance(CardId::BASH),
+        CardInstance(CardId::DEFEND_RED),
+        CardInstance(CardId::STRIKE_RED)
+    };
+
+    // Verify they are equal under the observation contract.
+    if (!(obsA == obsB)) {
+        std::cout << "belief_order_invariance FAIL: obsA != obsB\n";
+        ++failures;
+    }
+    if (obsA.visibleHash() != obsB.visibleHash()) {
+        std::cout << "belief_order_invariance FAIL: hash differs\n";
+        ++failures;
+    }
+
+    // Create two identical beliefs with the same particles.
+    Belief b1, b2;
+    for (int i = 0; i < 4; ++i) {
+        HiddenBattleState p;
+        p.weight = 1.0;
+        // All particles have the same draw order: Strike, Bash, Defend
+        p.drawPileOrder = {
+            CardInstance(CardId::STRIKE_RED),
+            CardInstance(CardId::BASH),
+            CardInstance(CardId::DEFEND_RED)
+        };
+        b1.particles.push_back(p);
+        b2.particles.push_back(p);
+    }
+
+    // Update with the two equivalent observations.
+    b1.update(obsA);
+    b2.update(obsB);
+
+    // Compare weights — they should be identical.
+    for (size_t i = 0; i < b1.particles.size(); ++i) {
+        if (std::abs(b1.particles[i].weight - b2.particles[i].weight) > 1e-9) {
+            std::cout << "belief_order_invariance FAIL: particle " << i
+                      << " weight differs: " << b1.particles[i].weight
+                      << " vs " << b2.particles[i].weight << '\n';
+            ++failures;
+        }
+    }
+
+    if (failures == 0) {
+        std::cout << "belief_order_invariance PASS\n";
+        return 0;
+    }
+    std::cout << "belief_order_invariance FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
+// ---- Root-belief immutability regression test -------------------------------
+// Verifies that with STS_S3_INTERNAL_BELIEF_UPDATE=0, simulated MCTS
+// traversals do NOT mutate the root belief weights.
+int testBeliefImmutability() {
+    int failures = 0;
+
+    // Save flags.
+    bool savedBelief = search::g_s3Belief;
+    bool savedInternal = search::g_s3InternalBeliefUpdate;
+    search::g_s3Belief = true;
+
+    // Test 1: internal updates OFF → weights unchanged.
+    {
+        search::g_s3InternalBeliefUpdate = false;
+        GameContext gc(CharacterClass::IRONCLAD, 0x42, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::BattleScumSearcher3 s3(bc, 0x42, 0, 64);
+
+        // Snapshot weights.
+        std::vector<double> before(s3.belief.particles.size());
+        for (size_t i = 0; i < before.size(); ++i)
+            before[i] = s3.belief.particles[i].weight;
+
+        // Run search.
+        s3.search(200);
+
+        // Verify weights unchanged.
+        for (size_t i = 0; i < before.size(); ++i) {
+            if (std::abs(s3.belief.particles[i].weight - before[i]) > 1e-9) {
+                std::cout << "belief_immutability FAIL: particle " << i
+                          << " weight changed from " << before[i]
+                          << " to " << s3.belief.particles[i].weight << '\n';
+                ++failures;
+                break;
+            }
+        }
+        // Verify all 64 nonzero.
+        int nonzero = 0;
+        for (const auto &p : s3.belief.particles)
+            if (p.weight > 0) ++nonzero;
+        if (nonzero != 64) {
+            std::cout << "belief_immutability FAIL: " << nonzero << "/64 nonzero after search (OFF)\n";
+            ++failures;
+        }
+    }
+
+    // Test 2: internal updates ON (historical) → weights DO change.
+    {
+        search::g_s3InternalBeliefUpdate = true;
+        GameContext gc(CharacterClass::IRONCLAD, 0x43, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::BattleScumSearcher3 s3(bc, 0x43, 0, 64);
+
+        std::vector<double> before(s3.belief.particles.size());
+        for (size_t i = 0; i < before.size(); ++i)
+            before[i] = s3.belief.particles[i].weight;
+
+        s3.search(200);
+
+        bool anyChanged = false;
+        for (size_t i = 0; i < before.size(); ++i) {
+            if (std::abs(s3.belief.particles[i].weight - before[i]) > 1e-9) {
+                anyChanged = true;
+                break;
+            }
+        }
+        if (!anyChanged) {
+            std::cout << "belief_immutability FAIL: historical mode did NOT mutate weights\n";
+            ++failures;
+        }
+    }
+
+    // Test 3: determinism — two identical searches produce identical results.
+    {
+        search::g_s3InternalBeliefUpdate = false;
+        GameContext gc(CharacterClass::IRONCLAD, 0x44, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::BattleScumSearcher3 a(bc, 0x44, 0, 64);
+        search::BattleScumSearcher3 b(bc, 0x44, 0, 64);
+        a.search(200);
+        b.search(200);
+        if (a.root.edges.size() != b.root.edges.size()) {
+            std::cout << "belief_immutability FAIL: determinism edge count differs\n";
+            ++failures;
+        } else {
+            for (size_t i = 0; i < a.root.edges.size(); ++i) {
+                if (a.root.edges[i].child.simulationCount != b.root.edges[i].child.simulationCount) {
+                    std::cout << "belief_immutability FAIL: determinism visit count differs at edge " << i << '\n';
+                    ++failures;
+                    break;
+                }
+            }
+        }
+    }
+
+    search::g_s3Belief = savedBelief;
+    search::g_s3InternalBeliefUpdate = savedInternal;
+    if (failures == 0) {
+        std::cout << "belief_immutability PASS\n";
+        return 0;
+    }
+    std::cout << "belief_immutability FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -1746,6 +1924,10 @@ int main(int argc, const char* argv[]) {
         return testDrawProbHelper();
     } else if (command == "draw_prob_engine") {
         return testDrawProbEngine();
+    } else if (command == "belief_order_invariance") {
+        return testBeliefOrderInvariance();
+    } else if (command == "belief_immutability") {
+        return testBeliefImmutability();
     }
 
     //    printSizes();
