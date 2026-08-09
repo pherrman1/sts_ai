@@ -40,7 +40,7 @@ Several models are **gradient boosted machines** (GBMs), trained with XGBoost. A
 
 ```mermaid
 flowchart TD
-    State["Game state (733 numbers)"] --> T1["Tree 1: 'HP < 30?' → guess 15"]
+    State["Game state (751 numbers)"] --> T1["Tree 1: 'HP < 30?' → guess 15"]
     T1 --> Err1["Error: −8"]
     Err1 --> T2["Tree 2: 'Demon Form active?' → correction +6"]
     T2 --> Err2["Error: −2"]
@@ -55,22 +55,20 @@ Each new tree focuses on the examples the previous trees got wrong. After ~1,000
 
 | Model | Predicts | Training data | Size |
 |-------|----------|---------------|------|
-| **V_combat** | End-of-fight HP | 288k combat states, 16k fights | 1,000 trees |
+| **V_combat** | End-of-fight HP | 1.58M combat states, 87K fights | 1,000 trees |
 | **V_rich** (floor value) | Run quality at each floor | Millions of run states | ~1,000 trees |
 | **V_win** (win value) | Chance of winning the run | Millions of run states | ~1,000 trees |
 | **Policy prior** | Which card to play next | Millions of combat turns | ~1,000 trees |
 
-V_combat was hyperparameter-tuned: Optuna tried thousands of (tree depth, learning rate, subsampling, regularization) combinations. The tuned settings: max_depth 8, learning rate 0.03, subsample 0.54, colsample_bytree 0.81, min_child_weight 82, reg_alpha 1.8, gamma 4.4, 2,000 rounds with early stopping at 40. The tuned model is about 11 percentage points better than XGBoost defaults at the same tree count.
+V_combat was hyperparameter-tuned: Optuna tried thousands of (tree depth, learning rate, subsampling, regularization) combinations. The tuned settings: max_depth 8, learning rate 0.03, subsample 0.54, colsample_bytree 0.81, min_child_weight 82, reg_alpha 1.8, gamma 4.4, 2,000 rounds with early stopping at 40. The tuned model is about 11 percentage points better than the previously deployed model at the same tree count.
 
 ## Step 3: Training the neural network
 
-The strategic network is a feed-forward network with three layers:
+The strategic network is a feed-forward network with several layers:
 
 ```
-Input (50+ numbers + tokenized cards/relics)
-  → Layer 1 (linear + activation)
-  → Layer 2 (linear + activation)
-  → Layer 3 (linear)
+Input (~40 numbers + tokenized cards/relics)
+  → Layers (linear + activation, repeated)
   → Output (one Q-value per action)
 ```
 
@@ -79,9 +77,9 @@ Training is supervised learning:
 1. Show the network a run state and all available actions
 2. Compare its scores against the "correct" answer (the action the heuristic AI actually took, since that's our baseline policy)
 3. Adjust the weights to make the correct action score higher
-4. Repeat across ~77,000 training examples
+4. Repeat across ~3 million training examples (4,650 simulated runs)
 
-Training takes about 10 minutes on a GPU. The small size is deliberate — the network needs to load and run inline in the C++ executable with negligible overhead.
+Training takes tens of minutes on a GPU. The model is compact (tens of thousands of parameters, ~800 KB exported) and runs inline in the C++ executable with negligible overhead.
 
 ## Step 4: Export
 
@@ -106,7 +104,7 @@ Exported files live in `build/` and `selfplay/models/`. Startup messages show wh
 ```mermaid
 flowchart LR
     Gen["Generate data with current AI"] --> Train["Train new models"]
-    Train --> Gate["Paired test: 256 identical seeds,<br/>old vs new. Significant win-rate gain?"]
+    Train --> Gate["Paired test: hundreds of identical seeds,<br/>old vs new. Significant win-rate gain?"]
     Gate -->|"Yes"| Deploy2["Deploy new model"]
     Gate -->|"No"| Keep["Reject, keep old model"]
     Deploy2 --> Gen

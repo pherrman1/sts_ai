@@ -30,12 +30,12 @@ flowchart TD
 
 Every turn of every fight:
 
-1. Build tree from current state
+1. Build or reuse the tree from the current state
 2. Run 1,000–3,000 simulations: select → expand → rollout/GBM blend → backpropagate
 3. Average across 64 draw-order particles
 4. Pick most-visited root action
 
-The tree is rebuilt fresh for each decision. No information carries over from previous turns.
+The tree is carried between decisions within a fight when still valid (consistent draw/boss state) and within the allowed reuse limit; nothing carries between fights.
 
 ### Card reward (NN + heuristic)
 
@@ -87,11 +87,11 @@ flowchart TD
 ## Act 4
 
 Since August 2026, the AI collects keys and fights the Heart by default:
-- Emerald key: from a buffed elite
+- Emerald key: from a burning elite
 - Sapphire key: from a chest (skip the relic)
 - Ruby key: Recall at an Act 3 campfire
 
-After the Act 3 boss: Shield & Spear, then the Heart. This roughly halves the win rate compared to Act-3-only (22% vs 31% at A0, 1,000 sims).
+After the Act 3 boss: Shield & Spear, then the Heart. This cuts the A0 win rate by about a third compared to Act-3-only (22% vs 31% at A0, 1,000 sims).
 
 ---
 

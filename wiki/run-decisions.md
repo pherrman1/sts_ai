@@ -20,7 +20,7 @@ This gating architecture keeps the heuristic as a floor — the learned model on
 
 ## What the network sees
 
-### Global features (50 numbers)
+### Global features (~40 numbers)
 Current HP, max HP, gold, floor, act, deck size, strike/defend counts, boss relic status, key collection flags, etc.
 
 ### Tokenized entities
@@ -29,7 +29,7 @@ Each card: (identity, upgraded, count). Each relic: (identity, counter). Each po
 ### Per-action details
 For a card reward: the offered card's identity, cost, type, upgrades. For a shop: the item being considered. For an event: which option. For a boss relic: which relic.
 
-The network represents cards, relics, and potions as **tokens** — small learned vectors of numbers that capture their identity. These are processed alongside the global features through three feed-forward layers to produce one Q-value per action.
+The network represents cards, relics, and potions as **tokens** — small learned vectors of numbers that capture their identity. These are processed alongside the global features through several feed-forward layers to produce one Q-value per action. The network has tens of thousands of parameters and was trained on ~3 million run decisions.
 
 ## Where the network operates
 
@@ -83,8 +83,8 @@ Margin: 52.3 − 45.7 = **6.6** (≥ 1.0). Network picks Offering. Same result h
 ## Limitations
 
 - The network evaluates choices one at a time — it doesn't plan sequences. A card pick is scored by "how good will the run be after adding this?" not "what synergies will this enable three floors from now?"
-- It's small (a few thousand parameters), trained on ~77,000 run decisions. It learns broad patterns, not specific card interactions.
-- The gate stack helps Act 4 survival but actually hurts Act-3-only win rate by ~6 percentage points. The network learned strategies that are suboptimal for reaching Act 3 but essential for surviving the Heart.
+- It's a compact model (tens of thousands of parameters), trained on ~3 million run decisions. It learns broad patterns, not specific card interactions.
+- On the current combat configuration, the gating step adds about 12 percentage points to Act-3 win rate (measured on 128 paired seeds; an earlier 32-seed sample suggested a penalty, but the larger paired test reversed that finding). The gates are essential for Act 4 and show no Act-3 penalty at adequate sample sizes.
 
 ---
 

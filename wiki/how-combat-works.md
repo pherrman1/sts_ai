@@ -28,7 +28,7 @@ MCTS sends out thousands of "scouts" that walk possible futures and report back.
 flowchart TD
     S["Current game state"] --> Sel["① SELECT<br/>Walk down the tree,<br/>picking promising branches"]
     Sel --> Exp["② EXPAND<br/>At a leaf: add legal<br/>next moves as children"]
-    Exp --> Sim["③ SIMULATE<br/>Play out the rest of the<br/>fight (the 'rollout')"]
+    Exp --> Sim["③ EVALUATE<br/>Run a rollout + blend<br/>with the value predictor"]
     Sim --> Back["④ BACKPROPAGATE<br/>Send the result up<br/>the tree, update stats"]
     Back --> Sel
 ```
@@ -47,13 +47,18 @@ A **policy prior** — a separate GBM trained on millions of past combat turns �
 Bash is a useful example because its effect is not just its immediate 8 damage: it also applies Vulnerable. MCTS evaluates that effect in the successor states and in later action sequences. It does not treat the card image or its printed damage as the final value of playing it.
 
 ```mermaid
-graph TD
-    Root["Turn 3: Guardian 56/60 HP<br/>Hand: Bash, Strike×2, Defend×2, 3⚡"] --> A["Bash + 2× Strike<br/>visits: 1200, value: 45 HP"]
-    Root --> B["Bash + 2× Defend<br/>visits: 900, value: 48 HP"]
-    Root --> C["3× Strike<br/>visits: 600, value: 38 HP"]
-    Root --> D["2× Defend + Strike<br/>visits: 300, value: 42 HP"]
-    A --> A1["Enemy turn..."]
-    A --> A2["..."]
+flowchart TD
+    Root["⚡3 · hand: Bash, Strike, Strike, Defend, Defend"]
+    Root -->|"Bash (2⚡)"| Bash["⚡1 · hand: Strike, Strike, Defend, Defend<br/>visits: 1800"]
+    Root -->|"Strike (1⚡)"| Strike1["⚡2 · hand: Bash, Strike, Defend, Defend<br/>visits: 2300"]
+    Root -->|"Defend (1⚡)"| Defend1["⚡2 · hand: Bash, Strike, Strike, Defend<br/>visits: 2100"]
+    Root -->|"End Turn"| End["visits: 800"]
+    Bash -->|"Strike (1⚡)"| BashS["⚡0 · hand: Strike, Defend, Defend<br/>visits: 900"]
+    Bash -->|"Defend (1⚡)"| BashD["⚡0 · hand: Strike, Strike, Defend<br/>visits: 600"]
+    Bash -->|"End Turn"| BashE["⚡1 · unused<br/>visits: 300"]
+    Strike1 -->|"Bash (2⚡)"| S1B["⚡0 · hand: Strike, Defend, Defend<br/>visits: 1100"]
+    Strike1 -->|"Defend (1⚡)"| S1D["⚡1 · hand: Bash, Strike, Defend<br/>visits: 700"]
+    Strike1 -->|"End Turn"| S1E["⚡2 · unused<br/>visits: 500"]
 ```
 
 ### ② EXPAND — growing the tree
@@ -67,49 +72,37 @@ At a leaf (a state not yet explored), the AI adds all legal next moves as childr
 
 This covers the game's full card-selection rules — exhaust choices, Gambler's Brew discards, multi-enemy targeting, and multi-select subsets.
 
-### ③ SIMULATE — the rollout
+### ③ EVALUATE — rollout blended with prediction
 
-The AI plays out the rest of the fight using weighted random moves:
+After expanding, the AI evaluates the new leaf in two parts:
 
-- Attack cards: weight 8
-- Power cards: weight 3
-- Other cards: weight 2
-- End turn / potions: weight 1
+1. **Rollout:** play out the rest of the fight using weighted random moves (attack weight 8, power 3, other 2, end turn/potions 1). The rollout returns the player's HP at fight end (0 if dead).
+2. **GBM prediction:** the combat-value net (V_combat) predicts the end-of-fight HP from the current state without simulating further.
 
-The rollout returns the player's HP at the end of the fight (0 if dead).
+These are blended: **α × GBM prediction + (1−α) × rollout result**. With α = 0.3, the blend is 30% prediction, 70% rollout. The GBM stabilizes noisy rollouts; the rollout keeps the estimate grounded.
 
 ### ④ BACKPROPAGATE — updating the tree
 
-The rollout result propagates back up. Every node visited on the way down updates its **visit count** (+1) and **average value** (rolling update). Future SELECT steps use these updated statistics.
+The blended evaluation result propagates back up. Every node visited on the way down updates its **visit count** (+1) and **average value** (rolling update). Future SELECT steps use these updated statistics.
 
 ### Decision
 
 After all simulations (1,000–3,000), the AI picks the root child with the **most visits** — not the highest average value. Visit count is more stable.
 
-## The value leaf: shortcutting rollouts
+## The value leaf: the GBM model
 
-Simulating to the end of every fight is expensive. For non-terminal nodes (fight still in progress), the AI blends:
+The GBM (V_combat) that provides the prediction in step ③ is a collection of 1,000 decision trees, each asking questions like "enemy HP < 50%?" or "Demon Form active?" or "how much block?" It was trained on ~1.58 million combat states from ~87,000 simulated fights.
 
-```mermaid
-flowchart LR
-    Node["Non-terminal node"] --> Blend["70% rollout result<br/>+ 30% GBM prediction"]
-    Blend --> Value["HP estimate"]
-```
-
-The **GBM** (combat value net, V_combat) predicts end-of-fight HP from the current state. It's a collection of 1,000 decision trees, each asking questions like "enemy HP < 50%?" or "Demon Form active?" or "how much block?" It was trained on ~288,000 combat states from ~16,000 simulated fights.
-
-The blend is **α = 0.3** (30% GBM weight). Higher α values (0.5, 0.7) performed worse — the GBM is noisy, so it's used sparingly to stabilize rollouts rather than replace them.
-
-Terminal nodes (fight already won or lost) don't use the GBM — the result is exact.
+Terminal nodes (fight already won or lost) skip the blend — the result is exact, no prediction needed. The blend ratio α = 0.3 was chosen empirically; higher α values (0.5, 0.7) performed worse because the GBM is noisy and works best as a stabilizer, not a replacement for rollouts.
 
 ### V_combat specs
 
 - 1,000 trees, max depth 8 per tree
-- 733 input features (HP, enemy HP, status effects, card counts, etc.)
+- 751 input features (HP, enemy HP, status effects, card counts, etc.)
 - A few MB as a text file
 - ~0.0002 seconds per prediction
 
-Hyperparameters (tree depth, learning rate, subsampling, regularization) were tuned by Optuna, an automated search tool that tried thousands of combinations. The tuned model is about 11 percentage points better than default XGBoost settings.
+Hyperparameters (tree depth, learning rate, subsampling, regularization) were tuned by Optuna, an automated search tool that tried thousands of combinations. The tuned model is about 11 percentage points better than the previously deployed model at the same tree count.
 
 ## Hidden information: particle sampling
 
@@ -119,19 +112,18 @@ A practical fix: when descending the tree, stored edges from earlier simulations
 
 ### Particle configuration
 
-The current best setup disables belief conditioning and chain continuation (`STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`) — both hurt performance. The 64 particles alone provide sufficient hidden-information handling.
+The current best setup disables belief conditioning and chain continuation (internal config flags `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`) — both hurt performance. The 64 particles alone provide sufficient hidden-information handling.
 
 ## Forced-move contraction
 
-When only one legal action exists (e.g., hand is empty, or all cards cost more than remaining energy), the AI skips the search entirely and commits the move. This is decision-neutral (verified by paired testing) and saves ~16–18% CPU.
+When only one legal action exists (e.g., hand is empty, or all cards cost more than remaining energy), the AI skips the search entirely and commits the move. This is decision-neutral (verified by paired testing) and saves ~8.5% CPU on Searcher3 (16–18% on the simpler Searcher2 variant).
 
 ## Summary
 
 1. Build a tree of possible action sequences
-2. Run 1,000–3,000 simulations: select → expand → rollout → backpropagate
-3. Blend rollout results with GBM predictions for non-terminal nodes
-4. Average across 64 draw orders to handle hidden information
-5. Pick the most-visited root action
+2. Run 1,000–3,000 simulations: select → expand → evaluate (rollout + GBM blend) → backpropagate
+3. Average across 64 draw orders to handle hidden information
+4. Pick the most-visited root action
 
 ---
 

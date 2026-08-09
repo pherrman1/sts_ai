@@ -39,21 +39,25 @@ flowchart LR
 | Type | Analogy | Predicts | Size |
 |------|---------|----------|------|
 | **GBM** | Flowchart with ~1,000 branches, each checking conditions like "HP < 30?" or "has Corruption?" | Future HP, win chance, good next moves | ~1,000 trees, a few MB |
-| **Neural network** | Formula with ~50 inputs and a few thousand adjustable parameters | Q-values for run decisions | Tiny (~50 inputs, 3 layers) |
+| **Neural network** | Formula with ~40+ inputs and tens of thousands of parameters | Q-values for run decisions | Trained on ~3M decisions |
 
-Both models combined would fit on a floppy disk. No large language models here.
+Both models load inline in the executable; the combined model files total a few megabytes.
 
 ## Current performance
 
-| Ascension | Act-3 win rate | Act-4 (Heart) win rate |
-|-----------|---------------|------------------------|
-| A0 | 31% | 22% |
+Measured at 1,000 simulations/decision, 32 seeds. The A5–A20 numbers include the Heart fight (Act 4). Act-3-only was measured only at A0:
+
+| Ascension | Full run (Act 3+4) | Act-3 only |
+|-----------|---------------------|-------------|
+| A0 | 22% | 31% |
 | A5 | 13% | — |
 | A10 | 13% | — |
 | A15 | 9% | — |
 | A20 | 0% | — |
 
-Measured at 1,000 simulations/decision, 32 seeds. At 3,000 simulations on larger seed blocks, A0 Act-3 reaches 45–55%. Top human players win ~80–90% of A20 Heart runs.
+At 3,000 simulations on larger seed blocks, earlier Searcher2/Searcher3 stacks reached roughly 44–47% A0 Act-3 (not yet measured on the current stack).
+
+Top human players win roughly 40–60% of A20 Heart runs.
 
 The AI sees only what a player sees — draw pile order and event RNG are hidden and sampled probabilistically.
 
