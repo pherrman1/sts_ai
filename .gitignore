@@ -39,3 +39,6 @@ build/pilot_pol.csv
 
 # Local multi-model agent workflow state.
 /.ai/
+
+# CatBoost trainer output.
+/catboost_info/
