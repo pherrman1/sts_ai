@@ -212,3 +212,12 @@ control vs the full 1500-seed candidate plus the 256-seed paired gate.
 `build/strategic_sp_1500.csv`: 801,781 rows / 1,500 seeds (3×500 chunks, GCP), with the
 §140 stall-guard fix applied mid-run (seed 300865 backfilled, 500/500). Next: same-recipe
 control + candidate training, then the 256-seed paired gate.
+
+## Addendum 3 (2026-08-09) — 5.7.3 gate FALSIFIED, line closed
+
+Same-recipe paired 256-seed gate: control (old labels) 49.6% vs candidate (new
+controller labels) 39.5% — Δ −10.2pp, CI [−17.6, −2.7] (EXPERIMENTS.md §142).
+Pre-registered rule: significant loss → 5.7.3 closed as a distribution lever; no
+data-volume iteration. The §141 label diagnostic confirmed the labels genuinely
+changed (66.8%/83.9% agreement vs 38.0%/58.1%), so this is a clean falsification
+of the label-distribution hypothesis, not a no-op. Deployed model unchanged.

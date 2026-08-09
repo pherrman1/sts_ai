@@ -6750,3 +6750,29 @@ unFullRunOOC runs, for each counter relic the
   `chosen` agreement per screen) is the next check before training.
 - **Next:** Phase 2 training (same-recipe control on old tierb data + candidate on
   `strategic_sp_1500.csv`), then the 256-seed paired gate.
+
+## §142 Self-play relabeling 5.7.3 GATE: new-controller labels FALSIFIED — candidate −10.2pp (CI [−17.6, −2.7]); line closed as a distribution lever (2026-08-09, local)
+
+- **Datagen:** §141 (`build/strategic_sp_1500.csv`, 801,781 rows / 1,500 seeds, current
+  controller).
+- **Label diagnostic (informative, not a gate):** `tools/label_agreement.py` on the new
+  corpus: **66.8% strict / 83.9% in-set** argmax(labelWon)-vs-chosen agreement vs the old
+  tierb corpus's 38.0% / 58.1% (§104) — the new labels are far less tie-dominated; per
+  screen: MAP 42.7/74.1, CARD_SELECT 47.8/55.8, all others 100/100.
+- **Training (identical recipe both arms):** `train_strategic_tok.py`, rung 4, epochs 60
+  max, `STRAT_PATIENCE=6` early stop (best-epoch by val_pol_ce), batch 2048 (8GB GPU).
+  Control (`build/strategic_tierb.csv`, old labels): early stop at epoch 23, val_pol_ce
+  0.5014, policy_top1 0.7869, margin 10.86, q_top1 0.2787. Candidate
+  (`strategic_sp_1500.csv`): early stop at epoch 44, val_pol_ce 0.5075, policy_top1 0.7815,
+  margin 8.63, **q_top1 0.2951** (candidate better on Q-ranking, slightly worse on policy).
+  Exports: `selfplay/models/ooc_strategic_tok_{ctrl,sp}.native` (parity passed).
+- **Paired gate** (seeds 126700–126955, 1k sims, fair S3 −belief−chain, 64p, full V4 gate
+  stack, asc 0, local 12 threads): **control 49.6% vs candidate 39.5% wins, Δ −10.2pp,
+  95% CI [−17.6, −2.7]**; floor 42.9 vs 42.3 (Δ −0.5, n.s.); HP end 24.7 vs 20.9;
+  discordant 102/256. CSVs `build/gate_tok_{ctrl,sp}_256.csv`, strict `paired_analysis.py`.
+- **Verdict (pre-registered rule, plan §1): candidate ≥ control with CI excluding a
+  meaningful loss → promotion; here the candidate is SIGNIFICANTLY WORSE → 5.7.3 CLOSED
+  as a distribution lever. Recorded, NOT iterated on data volume.** The "better" label
+  source (current controller, §141 diagnostic confirms the labels genuinely changed) does
+  not transfer — consistent with §62/§100/§105/§127/§129. Deployed
+  `ooc_strategic_tok_final.native` unchanged.
