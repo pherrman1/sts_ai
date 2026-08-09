@@ -845,6 +845,14 @@ if __name__ == "__main__":
     epochs_no_improve = 0
     early_stopped = False
     tr_gs = np.flatnonzero(tr_mask)
+    # Seed initial checkpoints from epoch 0 evaluation
+    model.eval()
+    em0 = evaluate()
+    best_ce = em0.get("val_pol_ce", float("inf"))
+    best_qtop1 = em0.get("q_top1", float("-inf"))
+    best_ce_state = {k: v.detach().clone() for k, v in net.state_dict().items()}
+    best_qtop1_state = {k: v.detach().clone() for k, v in net.state_dict().items()}
+    print(f"epoch=000 (init) val_pol_ce={best_ce:.4f} q_top1={best_qtop1:.4f}", flush=True)
     for epoch in range(1, EPOCHS + 1):
         t_ep = time.time()
         model.train()
