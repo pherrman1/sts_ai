@@ -28,6 +28,13 @@ extern double g_vnetAlpha;   // from BattleScumSearcher2.cpp
 
 bool g_useSearcher3 = false;
 bool g_s3Belief = true;
+// STS_S3_INTERNAL_BELIEF_UPDATE: when 0, simulated observations inside step()
+// do NOT permanently mutate the root belief. The root belief represents
+// uncertainty at the real information state; imagined trajectories are
+// hypothetical and must not condition it across simulations.
+// Default 1 reproduces historical (broken) behavior where the root belief
+// is destroyed within ~60 simulations and all subsequent sampling is uniform.
+bool g_s3InternalBeliefUpdate = true;
 bool g_s3Prune = true;
 bool g_s3Chain = true;
 bool g_s3Live = true;
@@ -102,6 +109,17 @@ std::string g_s3LeafValueDiagFile;
 int g_s3LeafValueDiagNormalSims = 1000;
 int g_s3LeafValueDiagDeepSims = 4000;
 int g_s3LeafValueDiagMaxStates = 120;
+
+// ── Belief audit diagnostic (STS_S3_BELIEF_AUDIT) ─────────────────────
+bool g_s3BeliefAudit = false;
+std::string g_s3BeliefAuditFile;
+thread_local std::int64_t t_baUpdatesDuringSearch = 0;
+thread_local std::int64_t t_baParticlesZeroed = 0;
+thread_local std::int64_t t_baAllZeroEvents = 0;
+thread_local std::int64_t t_baUniformEqualCalls = 0;
+thread_local std::int64_t t_baUniformAllZeroCalls = 0;
+thread_local std::int64_t t_baApplyExactOrder = 0;
+thread_local std::int64_t t_baApplyFallbackShuffle = 0;
 
 // Cross-thread dedup: protocol is write-then-check under mutex.
 static std::mutex g_drawProbMutex;
@@ -1563,7 +1581,7 @@ void BattleScumSearcher3::step() {
             ++diag.treeActions;
             actionStack.push_back(edge.action);
             path.push_back(&edge.child);
-            if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
+            if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
 
             // ── END_TURN marginalization (leaf-expansion boundary only) ──
             if (g_s3EndTurnMarginalize
@@ -1912,7 +1930,7 @@ void BattleScumSearcher3::step() {
                     ++diag.treeActions;
                     actionStack.push_back(execAction);
                     cur = &validEdge.child;
-                    if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
+                    if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
                     continue;
                 }
                 // STS_S3_EXPAND (Phase 6): no stored edge is valid in this
@@ -1971,7 +1989,7 @@ void BattleScumSearcher3::step() {
                                 ++diag.treeActions;
                                 actionStack.push_back(newEdge.action);
                                 cur = &newEdge.child;
-                                if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
+                                if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
                                 continue;
                             }
                         }
@@ -2013,7 +2031,7 @@ void BattleScumSearcher3::step() {
                                 ++diag.treeActions;
                                 actionStack.push_back(newEdge.action);
                                 cur = &newEdge.child;
-                                if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
+                                if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
                                 continue;
                             }
                         }
@@ -2049,7 +2067,7 @@ void BattleScumSearcher3::step() {
         ++diag.treeActions;
         actionStack.push_back(effectiveAction);
         cur = &edge.child;
-        if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
+        if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
 
         if (g_s3Prune && canPruneAsDead(state)) {
             ++diag.leafDirectEval;

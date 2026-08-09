@@ -208,9 +208,38 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             s3.clampRankCorrAtRoot();
             s3.rankCorrValues.clear();
             // Edge-availability and reuse diagnostics.
-            if (search::g_reuseDiag || search::g_s3SemanticCardEdges) {
+            if (search::g_reuseDiag || search::g_s3SemanticCardEdges || search::g_s3BeliefAudit) {
                 s3.computeEdgeAvailability(bc);
                 s3.printReuseDiagnostics();
+            }
+            // Belief audit: print per-search belief stats.
+            if (search::g_s3BeliefAudit) {
+                double ess = 0.0;
+                double sumW = 0.0, sumW2 = 0.0;
+                int nonzero = 0;
+                for (const auto &p : s3.belief.particles) {
+                    if (p.weight > 0) { ++nonzero; sumW += p.weight; sumW2 += p.weight * p.weight; }
+                }
+                if (sumW2 > 0) ess = sumW * sumW / sumW2;
+                std::cerr << "[belief-audit] nonzero=" << nonzero
+                          << "/" << s3.belief.particles.size()
+                          << " ESS=" << ess
+                          << " updates=" << t_baUpdatesDuringSearch
+                          << " zeroed=" << t_baParticlesZeroed
+                          << " allZeroCalls=" << t_baAllZeroEvents
+                          << " unifAllZero=" << t_baUniformAllZeroCalls
+                          << " unifEqual=" << t_baUniformEqualCalls
+                          << " applyExact=" << t_baApplyExactOrder
+                          << " applyFallback=" << t_baApplyFallbackShuffle
+                          << "\n";
+                // Reset counters for next search.
+                t_baUpdatesDuringSearch = 0;
+                t_baParticlesZeroed = 0;
+                t_baAllZeroEvents = 0;
+                t_baUniformAllZeroCalls = 0;
+                t_baUniformEqualCalls = 0;
+                t_baApplyExactOrder = 0;
+                t_baApplyFallbackShuffle = 0;
             }
             bool have = false;
             search::Action bestAction = s3PickRootAction(s3, bc, have);

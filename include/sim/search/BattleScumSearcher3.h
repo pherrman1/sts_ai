@@ -314,6 +314,7 @@ namespace sts::search {
     // STS_S3_CRN is opt-in: root CRN warm start fires once per fresh searcher
     // and is skipped after advanceRoot carries the tree over).
     extern bool g_s3Belief;
+    extern bool g_s3InternalBeliefUpdate;  // guard simulated belief.update() in step()
     extern bool g_s3Prune;
     extern bool g_s3Chain;
     extern bool g_s3Live;
@@ -451,6 +452,19 @@ namespace sts::search {
     // ── Draw-probability diagnostic (STS_S3_DRAW_PROB_DIAG) ───────────
     extern bool g_s3DrawProbDiag;
     extern std::string g_s3DrawProbDiagFile;
+
+    // ── Belief audit diagnostic (STS_S3_BELIEF_AUDIT) ───────────────
+    extern bool g_s3BeliefAudit;
+    extern std::string g_s3BeliefAuditFile;
+
+    // Belief audit counters (thread-local, reset per search).
+    extern thread_local std::int64_t t_baUpdatesDuringSearch;
+    extern thread_local std::int64_t t_baParticlesZeroed;
+    extern thread_local std::int64_t t_baAllZeroEvents;
+    extern thread_local std::int64_t t_baUniformEqualCalls;
+    extern thread_local std::int64_t t_baUniformAllZeroCalls;
+    extern thread_local std::int64_t t_baApplyExactOrder;
+    extern thread_local std::int64_t t_baApplyFallbackShuffle;
 
     // ── Leaf-value residual diagnostic (STS_S3_LEAFVALUE_DIAG) ───────
     extern bool g_s3LeafValueDiag;

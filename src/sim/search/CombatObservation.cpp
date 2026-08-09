@@ -2,6 +2,7 @@
 // CombatObservation.cpp: implementation
 //
 #include "sim/search/CombatObservation.h"
+#include "sim/search/BattleScumSearcher3.h"
 #include "combat/BattleContext.h"
 #include "game/Random.h"
 
@@ -344,8 +345,14 @@ static bool drawOrderConsistent(const HiddenBattleState &p,
 
 void Belief::update(const CombatObservation &obs) {
     // Reweight particles based on consistency with the observed draw pile
-    for (auto &p : particles)
-        p.weight *= drawOrderConsistent(p, obs) ? 1.0 : 0.0;
+    for (auto &p : particles) {
+        bool consistent = drawOrderConsistent(p, obs);
+        if (!consistent) {
+            ++search::t_baParticlesZeroed;
+        }
+        p.weight *= consistent ? 1.0 : 0.0;
+    }
+    ++search::t_baUpdatesDuringSearch;
 }
 
 const HiddenBattleState &Belief::sample(std::mt19937_64 &rng) const {
@@ -358,6 +365,12 @@ const HiddenBattleState &Belief::sample(std::mt19937_64 &rng) const {
         total += p.weight;
     }
     if (uniform || total <= 0.0) {
+        if (total <= 0.0) {
+            ++search::t_baUniformAllZeroCalls;
+            ++search::t_baAllZeroEvents;
+        } else {
+            ++search::t_baUniformEqualCalls;
+        }
         std::uniform_int_distribution<size_t> dist(0, n - 1);
         return particles[dist(rng)];
     }
