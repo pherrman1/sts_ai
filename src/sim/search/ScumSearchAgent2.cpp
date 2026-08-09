@@ -8,6 +8,7 @@
 #include <array>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 #include <sim/search/ExpertKnowledge.h>
 #include <game/Game.h>
 #include "sim/PrintHelpers.h"
@@ -124,6 +125,13 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
         int reuseAttempts = 0, reuseAccepted = 0;
         int reuseRejObsMismatch = 0, reuseRejHashMismatch = 0, reuseRejOther = 0;
         int combatDecisions = 0;
+        // Per-agent carried-search counter (fixes STS_REUSE_MAX_SEARCHES).
+        // Incremented after every search; reset only on fresh-searcher
+        // construction. Checked against g_reuseMaxSearches BEFORE searching.
+        int carriedSearchesSinceFresh = 0;
+        // Generation histogram for cascade mode.
+        int maxCarriedGen = 0;
+        std::map<int,int> genHistogram;
 
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         bool searcherValid = true;
@@ -137,15 +145,18 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 bc.outcome = Outcome::PLAYER_LOSS;
                 break;
             }
-            // Reuse gate: rebuild the searcher when the reuse budget is
-            // exhausted or the previous decision was not RNG-safe.
+            // Reuse gate: rebuild when searcher invalid, or when the
+            // carried-search counter exceeds the configured maximum.
             if (!searcherValid) {
                 s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+                carriedSearchesSinceFresh = 0;
+                maxCarriedGen = 0;
                 searcherValid = true;
-            } else if (s3.reuseSearchCount >= 0 && search::g_reuseMaxSearches >= 0
-                       && s3.reuseSearchCount >= search::g_reuseMaxSearches) {
-                // Promote count exhausted: force-rebuild.
+            } else if (search::g_reuseMaxSearches >= 0
+                       && carriedSearchesSinceFresh > search::g_reuseMaxSearches) {
                 s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+                carriedSearchesSinceFresh = 0;
+                maxCarriedGen = 0;
             }
             const std::int64_t sims = isBossEncounter(bc.encounter)
                 ? (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
@@ -170,9 +181,10 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             }
             const std::int64_t before = s3.root.simulationCount;
             s3.search(spend);
-            // Increment the reuse search counter if this was a carried tree.
-            if (s3.reuseSearchCount >= 0)
-                s3.reuseSearchCount++;
+            // Increment carried-search counter after every search.
+            // The check at the top of the loop will rebuild when the
+            // counter exceeds g_reuseMaxSearches.
+            ++carriedSearchesSinceFresh;
             simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             s3.clampRankCorrAtRoot();
@@ -248,34 +260,45 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 if (search::g_reuseReconcileRoot)
                     s3.reconcileRoot(bc);
 
+                // ── Generation tracking for cascade mode ───────────────
+                int gen = s3.reuseGeneration;
+                if (gen > maxCarriedGen) maxCarriedGen = gen;
+                if (gen > 0) ++genHistogram[gen];
+
                 ++decisionIdx;
                 s3.decisionIndex = decisionIdx;
                 s3.reseed();
-                if (search::g_reuseMaxSearches == 0
-                    && !search::g_reuseObsStable
-                    && !search::g_reuseReconcileRoot) {
-                    searcherValid = false;
-                } else if (search::g_reuseObsStable
-                           && search::g_reuseMaxSearches != -1
-                           && s3.reuseSearchCount >= search::g_reuseMaxSearches) {
-                    searcherValid = false;
-                } else {
-                    searcherValid = true;
-                }
+                // Keep the promoted tree. The counter check at the top of
+                // the loop will rebuild when the budget is exhausted.
+                searcherValid = true;
             } else {
                 ++decisionIdx;
                 searcherValid = false;
             }
         }
-        // Print reuse-frequency summary at end of battle.
-        if ((search::g_reuseObsStable || search::g_reuseReconcileRoot)
-            && reuseAttempts > 0) {
-            std::cerr << "[reuse-freq] decisions=" << combatDecisions
-                      << " attempted=" << reuseAttempts
-                      << " accepted=" << reuseAccepted
-                      << " rej-obsMismatch=" << reuseRejObsMismatch
-                      << " rej-hashMismatch=" << reuseRejHashMismatch
-                      << " rej-other=" << reuseRejOther << "\n";
+        // Print reuse diagnostics at end of battle.
+        if (search::g_reuseDiag || (search::g_reuseObsStable && combatDecisions > 0)) {
+            std::cerr << "[reuse-generation] fresh=" << (combatDecisions - reuseAttempts)
+                      << " carriedSearchesSinceFresh=" << carriedSearchesSinceFresh
+                      << " maxGen=" << maxCarriedGen;
+            if (search::g_reuseObsStable) {
+                std::cerr << " attempted=" << reuseAttempts
+                          << " accepted=" << reuseAccepted
+                          << " rej-obsMismatch=" << reuseRejObsMismatch
+                          << " rej-hashMismatch=" << reuseRejHashMismatch
+                          << " rej-other=" << reuseRejOther;
+            }
+            if (!genHistogram.empty()) {
+                std::cerr << " genHist=[";
+                bool first = true;
+                for (auto &p : genHistogram) {
+                    if (!first) std::cerr << ",";
+                    std::cerr << "g" << p.first << ":" << p.second;
+                    first = false;
+                }
+                std::cerr << "]";
+            }
+            std::cerr << "\n";
         }
         return;
     }
