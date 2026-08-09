@@ -12,7 +12,11 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <fstream>
+#include <mutex>
+#include <random>
 #include <set>
+#include <sstream>
 #include <iomanip>
 
 using namespace sts;
@@ -565,6 +569,55 @@ void BattleScumSearcher3::step() {
                 g_onS3LeafQuery(S3LeafDiagnostic{&state, depth, leafObsHash,
                                                  vLeaf, rawEval, eval,
                                                  rollSteps, 0});
+            }
+            // Deep-target capture (STS_DEEP_TARGET_FILE=<path>,
+            // STS_DEEP_TARGET_SAMPLE=<prob>, STS_DEEP_TARGET_SIMS=<N>):
+            // for a random sample of leaf queries, clone the BattleContext
+            // and run a fresh deeper Searcher3 search to produce a stronger
+            // value target.  Zero overhead when env vars are unset.
+            if (const char *dtPath = std::getenv("STS_DEEP_TARGET_FILE")) {
+                static std::mutex dtMutex;
+                static std::ofstream dtFile;
+                static double dtSample = []{
+                    const char *s = std::getenv("STS_DEEP_TARGET_SAMPLE");
+                    return s ? std::atof(s) : 0.01;
+                }();
+                static int dtSims = []{
+                    const char *s = std::getenv("STS_DEEP_TARGET_SIMS");
+                    return s ? std::atoi(s) : 4000;
+                }();
+                static bool dtInit = false;
+                if (!dtInit) {
+                    std::lock_guard<std::mutex> lk(dtMutex);
+                    if (!dtInit) {
+                        dtFile.open(dtPath, std::ios::out);
+                        if (dtFile.is_open())
+                            dtFile << "depth,xgbValue,deepValue,deepSims,encounter,hp,turn\n";
+                        dtInit = true;
+                    }
+                }
+                if (dtFile.is_open()) {
+                    thread_local std::mt19937_64 dtRng(std::random_device{}());
+                    if (dtSample >= 1.0 ||
+                        std::uniform_real_distribution<double>(0.0,1.0)(dtRng) < dtSample) {
+                        BattleContext bcCopy = state;
+                        if (bcCopy.outcome == Outcome::UNDECIDED) {
+                            BattleScumSearcher3 deepSearch(bcCopy, bcCopy.seed, 0,
+                                                           g_s3Particles);
+                            deepSearch.search(dtSims);
+                            double dv = deepSearch.root.simulationCount > 0
+                                ? deepSearch.root.evaluationSum
+                                  / (double)deepSearch.root.simulationCount : 0.0;
+                            double xv = !std::isnan(vLeaf) ? vLeaf : rawEval;
+                            std::ostringstream o;
+                            o << depth << ',' << xv << ',' << dv << ',' << dtSims
+                              << ',' << (int)state.encounter
+                              << ',' << state.player.curHp << ',' << state.turn << '\n';
+                            std::lock_guard<std::mutex> lk(dtMutex);
+                            if (dtFile.is_open()) dtFile << o.str() << std::flush;
+                        }
+                    }
+                }
             }
             backpropagate(path, eval, actionStack);
             return;
