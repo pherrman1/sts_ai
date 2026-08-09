@@ -4,11 +4,8 @@
 # BOSS_RELIC) and then removes one screen at a time. The winrate DROP from
 # removing a screen is that screen's isolated contribution.
 #
-# Uses the V3 net (ooc_strategic.native) because the deployed V4 tok net
-# (ooc_strategic_tok_final.native, NGLOB=50) is incompatible with HEAD
-# (expects NGLOB=42). The compatible honest-V4 (tok_honest_v2.native) only
-# gets +1.6pp — too weak for per-screen ablation. V3 is the strongest
-# compatible model and was the deployed default before V4.
+# Uses the corrected honest V4 token net. This harness is diagnostic only;
+# it does not promote a model or combine objectives.
 #
 # Card gate is always ON (no disable flag) and serves as the constant
 # background. MAP is off (same as the deployed baseline).
@@ -29,6 +26,12 @@ SIMS=${3:-1000}
 OUTDIR=${4:-build}
 BIN=${ONE_COMBAT_BIN:-./build/one_combat}
 THREADS=${SCREEN_ABLATE_THREADS:-12}
+COLLECT_KEYS=${STS_COLLECT_KEYS:-0}
+STOP_AFTER_ACT=${STS_STOP_AFTER_ACT:-3}
+if [[ "$COLLECT_KEYS" != 0 && "$COLLECT_KEYS" != 1 ]]; then
+  echo "STS_COLLECT_KEYS must be 0 or 1" >&2
+  exit 2
+fi
 
 # V4 full gate stack: tok net + REST/EVENT/SHOP/TREASURE/BOSS_RELIC, margin 1.0.
 # Card gate is always on when the tok net loads (no disable flag). MAP is off.
@@ -39,7 +42,13 @@ COMMON=(
   STS_S3_BELIEF=0
   STS_S3_CHAIN=0
   STS_S3_PARTICLES=64
-  STS_OOC_STRATEGIC_NN=selfplay/models/ooc_strategic.native
+  STS_S3_LIVE_VALID=1
+  STS_VNET=build/v_combat_7k_tuned.txt
+  STS_VNET_ALPHA=0.3
+  STS_STOP_AFTER_ACT="$STOP_AFTER_ACT"
+  STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native
+  STS_OOC_STRATEGIC_TOK_CHECK=0
+  STS_COLLECT_KEYS="$COLLECT_KEYS"
   STS_OOC_STRATEGIC_MARGIN=1.0
   OMP_NUM_THREADS="$THREADS"
 )
@@ -49,11 +58,12 @@ echo "bin:       $BIN"
 echo "threads:   $THREADS"
 echo "sims:      $SIMS"
 echo "seeds:     $SEED_OFF..$((SEED_OFF+NSEEDS-1))"
-echo "gates:     V3 net + REST/EVENT/SHOP/TREASURE/BOSS_RELIC (card always on, MAP off)"
+echo "gates:     honest V4 tok net + REST/EVENT/SHOP/TREASURE/BOSS_RELIC (card always on, MAP off)"
+echo "objective: STS_COLLECT_KEYS=$COLLECT_KEYS (0=Act-3, 1=Heart), STOP_AFTER_ACT=$STOP_AFTER_ACT"
 echo
 
 # Verify the net exists
-sha256sum selfplay/models/ooc_strategic.native
+sha256sum selfplay/models/ooc_strategic_tok_final.native
 
 run_arm() {
   local name=$1; shift
