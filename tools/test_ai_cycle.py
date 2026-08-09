@@ -1767,15 +1767,27 @@ class BackendSafetySyncTests(unittest.TestCase):
         )
 
     def test_pi_safety_ts_seed_tables_match_python(self) -> None:
-        source = (ai_cycle.ROOT / ".pi/extensions/sts-safety.ts").read_text(
+        # The safety hook now imports MAX_AUTOMATED_SEEDS and seed-argument
+        # maps from .pi/extensions/sts-cycle/policy.ts (single source of truth)
+        # rather than duplicating them. Verify the policy module matches Python.
+        safety_source = (ai_cycle.ROOT / ".pi/extensions/sts-safety.ts").read_text(
             encoding="utf-8"
         )
-        self.assertIn("const MAX_AUTOMATED_SEEDS = 128", source)
+        policy_source = (ai_cycle.ROOT / ".pi/extensions/sts-cycle/policy.ts").read_text(
+            encoding="utf-8"
+        )
 
-        def parse_table(block_name: str) -> dict[str, int]:
+        # Safety imports from policy.ts (single authoritative source)
+        self.assertIn('from "./sts-cycle/policy.ts"', safety_source)
+        self.assertIn("MAX_AUTOMATED_SEEDS", safety_source)
+
+        # Policy.ts has the authoritative MAX_AUTOMATED_SEEDS definition
+        self.assertIn("export const MAX_AUTOMATED_SEEDS = 128", policy_source)
+
+        def parse_table(source_text: str, block_name: str) -> dict[str, int]:
             match = re.search(
                 rf"const {block_name}.*?\{{(.*?)\}}",
-                source,
+                source_text,
                 re.DOTALL,
             )
             self.assertIsNotNone(match, block_name)
@@ -1788,12 +1800,13 @@ class BackendSafetySyncTests(unittest.TestCase):
                 entries[key.strip().strip('"')] = int(value.strip())
             return entries
 
+        # Verify exported maps in policy.ts match Python
         self.assertEqual(
-            parse_table("ONE_COMBAT_SEED_ARG_INDEX"),
+            parse_table(policy_source, "KNOWN_ONE_COMBAT_SEED_SWEEP_ARG_INDEX"),
             ai_cycle.KNOWN_ONE_COMBAT_SEED_SWEEP_ARG_INDEX,
         )
         self.assertEqual(
-            parse_table("PYTHON_SEED_ARG_INDEX"),
+            parse_table(policy_source, "KNOWN_PYTHON_SEED_SWEEP_ARG_INDEX"),
             ai_cycle.KNOWN_PYTHON_SEED_SWEEP_ARG_INDEX,
         )
         self.assertEqual(

@@ -35,6 +35,13 @@ need_file .pi/agents/reviewer.md
 need_file .pi/agents/reviewer-pro.md
 need_file .pi/prompts/sts-investigate.md
 need_file tools/test_pi_subagent_lifecycle.py
+need_file .pi/extensions/sts-cycle/index.ts
+need_file .pi/extensions/sts-cycle/policy.ts
+need_file .pi/extensions/sts-cycle/verification.ts
+need_file .pi/extensions/sts-cycle/git-state.ts
+need_file .pi/extensions/sts-cycle/artifacts.ts
+need_file .pi/extensions/sts-cycle/types.ts
+need_file .pi/extensions/subagent/runner.ts
 
 echo
 echo "Subagent extension status:"
@@ -46,13 +53,16 @@ if grep -q "STS-LOCAL FORK" .pi/extensions/subagent/index.ts; then
   echo "            it unless STS_FORCE_PI_SUBAGENT=1."
 
   if grep -q "STS-SUBAGENT-LIFECYCLE-GUARD" .pi/extensions/subagent/index.ts &&
-     grep -q "AGENT_END_CLOSE_GRACE_MS" .pi/extensions/subagent/index.ts &&
-     grep -q "SUBAGENT_HARD_TIMEOUT_MS" .pi/extensions/subagent/index.ts; then
-    echo "  lifecycle: hardened (agent_end close watchdog + hard timeout present)"
+     (grep -q "AGENT_END_CLOSE_GRACE_MS" .pi/extensions/subagent/index.ts ||
+      grep -q "AGENT_END_CLOSE_GRACE_MS" .pi/extensions/subagent/runner.ts) &&
+     (grep -q "SUBAGENT_HARD_TIMEOUT_MS" .pi/extensions/subagent/index.ts ||
+      grep -q "SUBAGENT_HARD_TIMEOUT_MS" .pi/extensions/subagent/runner.ts); then
+    echo "  lifecycle: hardened (agent_end close watchdog + hard timeout present, via runner.ts import or local definition)"
   else
     echo "ERROR: STS-local subagent fork is missing lifecycle hardening."
-    echo "       Expected STS-SUBAGENT-LIFECYCLE-GUARD,"
-    echo "       AGENT_END_CLOSE_GRACE_MS, and SUBAGENT_HARD_TIMEOUT_MS."
+    echo "       Expected STS-SUBAGENT-LIFECYCLE-GUARD in index.ts, and"
+    echo "       AGENT_END_CLOSE_GRACE_MS / SUBAGENT_HARD_TIMEOUT_MS in"
+    echo "       index.ts or runner.ts."
     fail=1
   fi
 else
@@ -78,4 +88,3 @@ fi
 
 echo "Pi starter-kit files are present."
 echo "Next: run Pi interactively from this repo, review/trust project resources,"
-echo "then test a project-scoped read-only subagent."

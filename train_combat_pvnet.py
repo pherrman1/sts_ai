@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Streaming CombatPolicyValueNet training — no full dataset preload.
+"""CombatPolicyValueNet training — binary-preprocessed, vectorized, GPU-efficient.
 
-Reads fairgen CSVs in chunks, groups policy rows within each chunk,
-trains with alternating value/policy loss on a shared encoder.
+Preprocesses fairgen CSVs once into compact float16 memmaps (like
+train_strategic_tok.py), then trains from the memmap with no pandas in the
+training loop. Policy loss is vectorized across all action groups via scatter
+operations instead of a per-group Python loop.
 
 Usage:
   train_combat_pvnet.py VAL_CSV POL_CSV [OUT]
 """
-import os, sys, gc, math, time
-import numpy as np, pandas as pd
+import hashlib, os, sys, time
+import numpy as np
+import pandas as pd
 import torch
 from torch import nn
 
@@ -19,7 +22,6 @@ OUT = sys.argv[3] if len(sys.argv) > 3 else "build/v_combat_pvnet.txt"
 # ── Hyperparameters ──────────────────────────────────────────────────────────
 EPOCHS = int(os.environ.get("PVNET_EPOCHS", "10"))
 BATCH = int(os.environ.get("PVNET_BATCH", "512"))
-CHUNK = int(os.environ.get("PVNET_CHUNK_ROWS", "50000"))
 DEVICE = os.environ.get("PVNET_DEVICE", "cuda")
 DIM = int(os.environ.get("PVNET_ENTITY_DIM", "128"))
 HIDDEN = int(os.environ.get("PVNET_HIDDEN_DIM", "256"))
@@ -32,13 +34,13 @@ L_POL = float(os.environ.get("PVNET_L_POLICY", "1.0"))
 L_WIN = float(os.environ.get("PVNET_L_WIN", "1.0"))
 L_QUANT = float(os.environ.get("PVNET_L_QUANTILE", "0.5"))
 WIN_BONUS = float(os.environ.get("PVNET_WIN_BONUS", "50"))
+COMPILE = os.environ.get("PVNET_COMPILE", "1") == "1"
+USE_AMP = os.environ.get("PVNET_AMP", "0") == "1"
+CHUNK = int(os.environ.get("PVNET_CHUNK_ROWS", "50000"))  # preprocessing chunk
 
 LAMBDA = {"policy": L_POL, "win": L_WIN, "quantile": L_QUANT,
           "potion": 0.2, "turns": 0.1, "death": 1.0}
 
-# Seed-grouped validation split: deterministic rule, no overlap with train rows.
-# A group (seed, fightIdx, decIdx) is entirely train or val because the seed is
-# constant within a group.
 VAL_FRAC = float(os.environ.get("PVNET_VAL_FRAC", "0.2"))
 TRAIN_ONLY = os.environ.get("PVNET_TRAIN_ONLY", "0") == "1"
 
@@ -52,13 +54,12 @@ else:
     DEVICE = "cpu"
 torch.manual_seed(0)
 torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "8")))
-
+if DEVICE.startswith("cuda"):
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+    torch.set_float32_matmul_precision("high")
 
 # ── CSV schema ───────────────────────────────────────────────────────────────
 val_header = list(pd.read_csv(VAL_CSV, nrows=0).columns)
-# Optional rich labels (fairgen emits them since 2026-08-05; distgen already
-# did): endTurn + potionsConsumed + per-potion pUsed0..43. They train the
-# potion/turns heads; without them those heads stay fallback-trained.
 RICH_LABELS = "endTurn" in val_header and "potionsConsumed" in val_header
 pused_cols = [c for c in val_header if c.startswith("pUsed")]
 if RICH_LABELS:
@@ -76,8 +77,6 @@ assert len(canonical) == 1766
 pol_header = list(pd.read_csv(POL_CSV, nrows=0).columns)
 POL_META = ("seed", "fightIdx", "decIdx", "visit", "total")
 action_names = [c for c in pol_header if c not in canonical and c not in POL_META]
-# §3.5: fairgen policy rows carry extra subset-content action features; the
-# PVNet action encoder reads the first 14.
 assert len(action_names) >= 14
 action_names = action_names[:14]
 
@@ -93,8 +92,28 @@ entity_set = set(relic_cols + potion_cols + mon_flat + ["encounter"] +
 scalar_cols = [c for c in canonical if c not in entity_set]
 assert len(scalar_cols) == 64
 
+# ── Binary layout: pre-extracted state components, float16 ───────────────────
+# 1771 elements per row: scalar(64) + cards(4*371) + relics(128) + potions(44)
+#   + encounter(1) + mids(5) + intents(5) + mcont(35) + mmask(5)
+NSTATE = 64 + 4 * 371 + 128 + 44 + 1 + 5 + 5 + 35 + 5  # 1771
+S_SCALAR = slice(0, 64)
+S_CARDS = slice(64, 64 + 1484)
+S_RELICS = slice(64 + 1484, 64 + 1484 + 128)
+S_POTIONS = slice(64 + 1484 + 128, 64 + 1484 + 128 + 44)
+I_ENCOUNTER = 64 + 1484 + 128 + 44
+S_MIDS = slice(I_ENCOUNTER + 1, I_ENCOUNTER + 1 + 5)
+S_INTENTS = slice(I_ENCOUNTER + 1 + 5, I_ENCOUNTER + 1 + 5 + 5)
+S_MCONT = slice(I_ENCOUNTER + 1 + 5 + 5, I_ENCOUNTER + 1 + 5 + 5 + 35)
+S_MMASK = slice(I_ENCOUNTER + 1 + 5 + 5 + 35, I_ENCOUNTER + 1 + 5 + 5 + 35 + 5)
 
-# ── Data extraction ──────────────────────────────────────────────────────────
+# Label columns for value rows
+V_LABEL_COLS = ["won", "endHp", "maxHp"]
+if RICH_LABELS:
+    V_LABEL_COLS += ["endTurn", "turn"] + pused_cols
+N_VLABEL = len(V_LABEL_COLS)
+
+
+# ── State extraction (pandas-based, used only during preprocessing) ──────────
 def extract_state(df):
     n = len(df)
     scalar = df[scalar_cols].to_numpy(np.float32)
@@ -115,34 +134,221 @@ def extract_state(df):
     return scalar, cards, relics, potions, encounter, mids, intents, mcont, mmask
 
 
-def to_tensors(*arrs, device=DEVICE):
-    return tuple(torch.from_numpy(np.ascontiguousarray(a)).to(device) for a in arrs)
+def pack_state(scalar, cards, relics, potions, encounter, mids, intents, mcont, mmask):
+    """Pack extracted components into a single (N, NSTATE) float16 array."""
+    n = len(scalar)
+    out = np.zeros((n, NSTATE), np.float16)
+    out[:, S_SCALAR] = scalar.astype(np.float16)
+    out[:, S_CARDS] = cards.reshape(n, -1).astype(np.float16)
+    out[:, S_RELICS] = relics.astype(np.float16)
+    out[:, S_POTIONS] = potions.astype(np.float16)
+    out[:, I_ENCOUNTER] = encounter.astype(np.float16)
+    out[:, S_MIDS] = mids.astype(np.float16)
+    out[:, S_INTENTS] = intents.astype(np.float16)
+    out[:, S_MCONT] = mcont.reshape(n, -1).astype(np.float16)
+    out[:, S_MMASK] = mmask.astype(np.float16)
+    return out
 
 
-# ── Normalization pass (value CSV) ──────────────────────────────────────────
-print("[norm] scanning value CSV...", flush=True)
-scalar_sum = np.zeros(64, np.float64)
-scalar_sq = np.zeros(64, np.float64)
-mon_sum = np.zeros(7, np.float64)
-mon_sq = np.zeros(7, np.float64)
-n_total = 0; n_mon = 0
-for df in pd.read_csv(VAL_CSV, chunksize=CHUNK):
-    s, c, r, p, e, mi, it, mc, mm = extract_state(df)
-    scalar_sum += s.sum(axis=0)
-    scalar_sq += (s.astype(np.float64) ** 2).sum(axis=0)
-    n_total += len(df)
-    for i in range(5):
-        mask = mm[:, i]
-        if mask.any():
-            mon_sum += mc[mask, i, :].sum(axis=0)
-            mon_sq += (mc[mask, i, :].astype(np.float64) ** 2).sum(axis=0)
-            n_mon += mask.sum()
-scalar_mean = (scalar_sum / n_total).astype(np.float32)
-scalar_std = np.sqrt(scalar_sq / n_total - scalar_mean ** 2).astype(np.float32) + 1e-6
-mon_mean = (mon_sum / max(n_mon, 1)).astype(np.float32)
-mon_std = np.sqrt(mon_sq / max(n_mon, 1) - mon_mean ** 2).astype(np.float32) + 1e-6
-print(f"[norm] {n_total:,} rows, {n_mon:,} monster tokens", flush=True)
+def unpack_state(row):
+    """row: (N, NSTATE) float32 array → components as tensors on DEVICE."""
+    scalar = torch.from_numpy(np.ascontiguousarray(row[:, S_SCALAR])).to(DEVICE)
+    cards = torch.from_numpy(np.ascontiguousarray(row[:, S_CARDS].reshape(-1, 4, 371))).to(DEVICE)
+    relics = torch.from_numpy(np.ascontiguousarray(row[:, S_RELICS])).to(DEVICE)
+    potions = torch.from_numpy(np.ascontiguousarray(row[:, S_POTIONS])).to(DEVICE)
+    encounter = torch.from_numpy(np.ascontiguousarray(row[:, I_ENCOUNTER])).to(DEVICE)
+    mids = torch.from_numpy(np.ascontiguousarray(row[:, S_MIDS])).to(DEVICE)
+    intents = torch.from_numpy(np.ascontiguousarray(row[:, S_INTENTS])).to(DEVICE)
+    mcont = torch.from_numpy(np.ascontiguousarray(row[:, S_MCONT].reshape(-1, 5, 7))).to(DEVICE)
+    mmask = torch.from_numpy(np.ascontiguousarray(row[:, S_MMASK] > 0.5)).to(DEVICE)
+    return scalar, cards, relics, potions, encounter, mids, intents, mcont, mmask
 
+
+# ── Normalization pass + binary preprocessing ────────────────────────────────
+V_STATE_FILE = OUT + "_v_state.bin"
+V_SEED_FILE = OUT + "_v_seed.bin"
+V_LABEL_FILE = OUT + "_v_labels.bin"
+P_STATE_FILE = OUT + "_p_state.bin"
+P_SEED_FILE = OUT + "_p_seed.bin"
+P_ACT_FILE = OUT + "_p_act.bin"
+P_VISIT_FILE = OUT + "_p_visit.bin"
+P_TOTAL_FILE = OUT + "_p_total.bin"
+P_OFFSET_FILE = OUT + "_p_offset.bin"
+FP_FILE = OUT + "_pvnet_binaries.fp"
+
+# Fingerprint to skip reprocessing
+fp = hashlib.sha256()
+for f in (VAL_CSV, POL_CSV, os.path.abspath(__file__)):
+    try:
+        st = os.stat(f)
+        fp.update(f.encode()); fp.update(str(st.st_size).encode()); fp.update(str(st.st_mtime_ns).encode())
+    except OSError:
+        pass
+fp.update(str(RICH_LABELS).encode())
+fp_hex = fp.hexdigest()
+
+binaries_exist = all(os.path.exists(f) for f in (
+    V_STATE_FILE, V_SEED_FILE, V_LABEL_FILE,
+    P_STATE_FILE, P_SEED_FILE, P_ACT_FILE, P_VISIT_FILE, P_TOTAL_FILE, P_OFFSET_FILE))
+old_fp = None
+if os.path.exists(FP_FILE):
+    with open(FP_FILE) as f:
+        old_fp = f.read().strip()
+
+if not binaries_exist or old_fp != fp_hex:
+    # ── Normalization scan (all value rows) ──
+    print("[norm] scanning value CSV...", flush=True)
+    scalar_sum = np.zeros(64, np.float64)
+    scalar_sq = np.zeros(64, np.float64)
+    mon_sum = np.zeros(7, np.float64)
+    mon_sq = np.zeros(7, np.float64)
+    n_total = 0; n_mon = 0
+    for df in pd.read_csv(VAL_CSV, chunksize=CHUNK):
+        s, c, r, p, e, mi, it, mc, mm = extract_state(df)
+        scalar_sum += s.sum(axis=0)
+        scalar_sq += (s.astype(np.float64) ** 2).sum(axis=0)
+        n_total += len(df)
+        for i in range(5):
+            mask = mm[:, i]
+            if mask.any():
+                mon_sum += mc[mask, i, :].sum(axis=0)
+                mon_sq += (mc[mask, i, :].astype(np.float64) ** 2).sum(axis=0)
+                n_mon += mask.sum()
+    scalar_mean = (scalar_sum / n_total).astype(np.float32)
+    scalar_std = np.sqrt(scalar_sq / n_total - scalar_mean ** 2).astype(np.float32) + 1e-6
+    mon_mean = (mon_sum / max(n_mon, 1)).astype(np.float32)
+    mon_std = np.sqrt(mon_sq / max(n_mon, 1) - mon_mean ** 2).astype(np.float32) + 1e-6
+    print(f"[norm] {n_total:,} rows, {n_mon:,} monster tokens", flush=True)
+
+    # ── Build value binary ──
+    print("[prep] building value binary...", flush=True)
+    n_val = 0
+    for df in pd.read_csv(VAL_CSV, chunksize=CHUNK, usecols=canonical + ["seed"] + V_LABEL_COLS):
+        n_val += len(df)
+    v_state = np.memmap(V_STATE_FILE, dtype=np.float16, mode="w+", shape=(n_val, NSTATE))
+    v_seed = np.memmap(V_SEED_FILE, dtype=np.int32, mode="w+", shape=(n_val,))
+    v_label = np.memmap(V_LABEL_FILE, dtype=np.float16, mode="w+", shape=(n_val, N_VLABEL))
+    lo = 0
+    for df in pd.read_csv(VAL_CSV, chunksize=CHUNK):
+        hi = lo + len(df)
+        s, c, r, p, e, mi, it, mc, mm = extract_state(df)
+        v_state[lo:hi] = pack_state(s, c, r, p, e, mi, it, mc, mm)
+        v_seed[lo:hi] = df["seed"].to_numpy(np.int32)
+        labels = df[V_LABEL_COLS].to_numpy(np.float32).astype(np.float16)
+        v_label[lo:hi] = labels
+        lo = hi
+    v_state.flush(); v_seed.flush(); v_label.flush()
+    print(f"[prep] value: {n_val:,} rows → {V_STATE_FILE} ({n_val * NSTATE * 2:,} bytes)", flush=True)
+
+    # ── Build policy binary ──
+    print("[prep] building policy binary...", flush=True)
+    # Read entire policy CSV, sort by group key to get clean contiguous groups
+    pol_df = pd.read_csv(POL_CSV)
+    pol_df["_grp"] = (pol_df["seed"].astype(np.int64) * 1000000 +
+                      pol_df["fightIdx"].astype(np.int64) * 10000 +
+                      pol_df["decIdx"].astype(np.int64))
+    pol_df = pol_df.sort_values("_grp", kind="mergesort").reset_index(drop=True)
+
+    # Find group boundaries
+    grp = pol_df["_grp"].to_numpy(np.int64)
+    changes = np.where(grp[1:] != grp[:-1])[0] + 1
+    g_starts = np.concatenate([[0], changes])
+    g_ends = np.concatenate([changes, [len(pol_df)]])
+    valid = (g_ends - g_starts) >= 2
+    g_starts = g_starts[valid]
+    g_ends = g_ends[valid]
+    n_g = len(g_starts)
+    n_act_total = int((g_ends - g_starts).sum())
+
+    print(f"[prep] policy: {n_g:,} groups, {n_act_total:,} actions", flush=True)
+
+    # Extract group-start states
+    gs_rows = pol_df.iloc[g_starts]
+    s, c, r, p, e, mi, it, mc, mm = extract_state(gs_rows[canonical])
+
+    p_state = np.memmap(P_STATE_FILE, dtype=np.float16, mode="w+", shape=(n_g, NSTATE))
+    p_state[:] = pack_state(s, c, r, p, e, mi, it, mc, mm)
+    p_state.flush()
+
+    p_seed = np.memmap(P_SEED_FILE, dtype=np.int32, mode="w+", shape=(n_g,))
+    p_seed[:] = pol_df["seed"].iloc[g_starts].to_numpy(np.int32)
+    p_seed.flush()
+
+    p_total = np.memmap(P_TOTAL_FILE, dtype=np.int32, mode="w+", shape=(n_g,))
+    p_total[:] = pol_df["total"].iloc[g_starts].to_numpy(np.int32)
+    p_total.flush()
+
+    p_act = np.memmap(P_ACT_FILE, dtype=np.float16, mode="w+", shape=(n_act_total, 14))
+    p_visit = np.memmap(P_VISIT_FILE, dtype=np.int32, mode="w+", shape=(n_act_total,))
+    p_offset = np.memmap(P_OFFSET_FILE, dtype=np.int32, mode="w+", shape=(n_g + 1,))
+
+    pos = 0
+    for gi in range(n_g):
+        gs, ge = g_starts[gi], g_ends[gi]
+        sz = ge - gs
+        p_act[pos:pos + sz] = pol_df[action_names].iloc[gs:ge].to_numpy(np.float32).astype(np.float16)
+        p_visit[pos:pos + sz] = pol_df["visit"].iloc[gs:ge].to_numpy(np.int32)
+        p_offset[gi] = pos
+        pos += sz
+    p_offset[n_g] = pos
+    p_act.flush(); p_visit.flush(); p_offset.flush()
+
+    with open(FP_FILE, "w") as f:
+        f.write(fp_hex)
+    print(f"[prep] policy: {n_g:,} groups → {P_STATE_FILE}", flush=True)
+    del pol_df
+else:
+    # Re-read normalization stats from the binary values
+    print("[prep] reusing binary files, recomputing normalization...", flush=True)
+    n_val_tmp = os.path.getsize(V_STATE_FILE) // (NSTATE * 2)
+    v_state_tmp = np.memmap(V_STATE_FILE, dtype=np.float16, mode="r", shape=(n_val_tmp, NSTATE))
+    scalar_raw = v_state_tmp[:, S_SCALAR].astype(np.float64)
+    scalar_mean = scalar_raw.mean(axis=0).astype(np.float32)
+    scalar_sq = (scalar_raw ** 2).mean(axis=0)
+    scalar_std = np.sqrt(np.maximum(scalar_sq - scalar_mean.astype(np.float64) ** 2, 0)).astype(np.float32) + 1e-6
+    mcont_all = v_state_tmp[:, S_MCONT].astype(np.float64)
+    mmask_all = v_state_tmp[:, S_MMASK].astype(np.float64)
+    mon_mask = mmask_all.reshape(-1, 5) > 0.5
+    mon_vals = mcont_all.reshape(-1, 5, 7)[mon_mask]
+    if len(mon_vals) > 0:
+        mon_mean = mon_vals.mean(axis=0).astype(np.float32)
+        mon_sq = (mon_vals ** 2).mean(axis=0)
+        mon_std = np.sqrt(np.maximum(mon_sq - mon_mean.astype(np.float64) ** 2, 0)).astype(np.float32) + 1e-6
+    else:
+        mon_mean = np.zeros(7, np.float32)
+        mon_std = np.ones(7, np.float32)
+    del v_state_tmp
+    print(f"[prep] normalization recomputed from {n_val_tmp:,} binary rows", flush=True)
+
+# ── Open memmaps ──
+n_val = os.path.getsize(V_STATE_FILE) // (NSTATE * 2)
+v_state_mmap = np.memmap(V_STATE_FILE, dtype=np.float16, mode="r", shape=(n_val, NSTATE))
+v_seed_mmap = np.memmap(V_SEED_FILE, dtype=np.int32, mode="r", shape=(n_val,))
+v_label_mmap = np.memmap(V_LABEL_FILE, dtype=np.float16, mode="r", shape=(n_val, N_VLABEL))
+
+n_groups = os.path.getsize(P_STATE_FILE) // (NSTATE * 2)
+p_state_mmap = np.memmap(P_STATE_FILE, dtype=np.float16, mode="r", shape=(n_groups, NSTATE))
+p_seed_mmap = np.memmap(P_SEED_FILE, dtype=np.int32, mode="r", shape=(n_groups,))
+p_act_mmap = np.memmap(P_ACT_FILE, dtype=np.float16, mode="r",
+                       shape=(os.path.getsize(P_ACT_FILE) // (14 * 2), 14))
+p_visit_mmap = np.memmap(P_VISIT_FILE, dtype=np.int32, mode="r",
+                         shape=(os.path.getsize(P_VISIT_FILE) // 4,))
+p_total_mmap = np.memmap(P_TOTAL_FILE, dtype=np.int32, mode="r", shape=(n_groups,))
+p_offset_mmap = np.memmap(P_OFFSET_FILE, dtype=np.int32, mode="r", shape=(n_groups + 1,))
+
+# Precompute train/val masks
+v_is_val = np.array([is_val_seed(s) for s in v_seed_mmap])
+v_train = ~v_is_val if TRAIN_ONLY else np.ones(n_val, bool)
+v_train_rows = np.flatnonzero(v_train)
+v_val_rows = np.flatnonzero(v_is_val)
+
+p_is_val = np.array([is_val_seed(s) for s in p_seed_mmap])
+p_train_groups = np.flatnonzero(~p_is_val if TRAIN_ONLY else np.ones(n_groups, bool))
+p_val_groups = np.flatnonzero(p_is_val)
+
+print(f"[data] value: {n_val:,} rows (train={len(v_train_rows):,}, val={len(v_val_rows):,})", flush=True)
+print(f"[data] policy: {n_groups:,} groups (train={len(p_train_groups):,}, val={len(p_val_groups):,})",
+      flush=True)
 
 # ── Model ────────────────────────────────────────────────────────────────────
 class TransformerLayer(nn.Module):
@@ -154,7 +360,7 @@ class TransformerLayer(nn.Module):
         self.ln2 = nn.LayerNorm(dim)
 
     def forward(self, x):
-        a, _ = self.attn(x, x, x)
+        a, _ = self.attn(x, x, x, need_weights=False)
         x = self.ln1(x + a)
         x = self.ln2(x + self.ffn(x))
         return x
@@ -187,28 +393,20 @@ class SharedEncoder(nn.Module):
     def build_tokens(self, scalar, cards, relics, potions, encounter, mids, intents, mcont, mmask):
         B = scalar.shape[0]
         tokens = []
-        # 0: scalar
         s = (scalar - self.scalar_mean) * self.scalar_inv
         tokens.append((self.scalar_enc(s) + self.type_embed[0]).unsqueeze(1))
-        # 1: card zones
         for z in range(4):
             t = torch.einsum("bc,ce->be", cards[:, z, :].float(), self.card_embed)
             tokens.append((t + self.zone_pos[z] + self.type_embed[1]).unsqueeze(1))
-        # 2: relic
         t = torch.einsum("br,re->be", relics.float(), self.relic_embed)
         if 64 != self.dim: t = self.relic_proj(t)
         tokens.append((t + self.type_embed[2]).unsqueeze(1))
-        # 3: potion
         t = torch.einsum("bp,pe->be", potions.float(), self.potion_embed)
         if 32 != self.dim: t = self.potion_proj(t)
         tokens.append((t + self.type_embed[3]).unsqueeze(1))
-        # 4: encounter
-        t = self.enc_embed(encounter.long())
+        t = self.enc_embed(encounter.long().clamp(0, 127))
         if 32 != self.dim: t = self.enc_proj(t)
         tokens.append((t + self.type_embed[4]).unsqueeze(1))
-        # 5: monsters — always emit all 5 slots (fixed 14-token layout
-        # matching combat_pvnet_parity.py / the C++ forward); an all-dead slot
-        # contributes a zero token, never a skipped token.
         for s in range(5):
             alive = mmask[:, s]
             if not alive.any():
@@ -226,7 +424,7 @@ class SharedEncoder(nn.Module):
         x = self.build_tokens(scalar, cards, relics, potions, encounter, mids, intents, mcont, mmask)
         for layer in self.layers:
             x = layer(x)
-        return x[:, 0, :]  # GLOBAL token
+        return x[:, 0, :]
 
 
 class PolicyHead(nn.Module):
@@ -236,7 +434,6 @@ class PolicyHead(nn.Module):
         self.scorer = nn.Sequential(nn.Linear(dim * 3, dim), nn.ReLU(), nn.Linear(dim, 1))
 
     def forward(self, z_global, action_feats):
-        """z_global: (B, dim), action_feats: (B, 14). Returns (B,) logits."""
         ea = self.act_enc(action_feats)
         ctx = torch.cat([z_global, ea, z_global * ea], dim=-1)
         return self.scorer(ctx).squeeze(-1)
@@ -255,12 +452,26 @@ class PolicyValueNet(nn.Module):
 
 
 # ── Losses ───────────────────────────────────────────────────────────────────
-def policy_ce(logits, visit_counts, total):
-    """Cross-entropy against visit distribution. logits: (N_actions,), visits: (N_actions,)"""
-    logits = logits - logits.max()
-    lp = logits - torch.logsumexp(logits, dim=0)
-    target = visit_counts.float() / (float(total) + 1e-8)
-    return -(target * lp).sum()
+def policy_loss_vectorized(logits, group_ids, visits, totals):
+    """Vectorized grouped cross-entropy via scatter operations.
+
+    logits: (N_actions,)  group_ids: (N_actions,)  visits: (N_actions,)
+    totals: (N_groups,)  — returns scalar mean over groups.
+    """
+    n_g = len(totals)
+    # Per-group log-sum-exp
+    max_g = torch.full((n_g,), float("-inf"), device=logits.device)
+    max_g.scatter_reduce_(0, group_ids, logits, reduce="amax", include_self=False)
+    shifted = logits - max_g[group_ids]
+    lse_g = max_g + torch.zeros(n_g, device=logits.device).scatter_add_(
+        0, group_ids, shifted.exp()).clamp_min(1e-30).log()
+
+    log_probs = logits - lse_g[group_ids]
+    targets = visits.float() / (totals[group_ids].float() + 1e-8)
+
+    per_group_ce = torch.zeros(n_g, device=logits.device)
+    per_group_ce.scatter_add_(0, group_ids, -(targets * log_probs))
+    return per_group_ce.mean()
 
 
 def value_losses(preds, y_won, y_hp, max_hp, y_pot=None, y_turns=None):
@@ -291,91 +502,82 @@ def value_losses(preds, y_won, y_hp, max_hp, y_pot=None, y_turns=None):
     return {"death": ld, "win": lw, "quantile": lq, "potion": lp, "turns": lt}
 
 
-# ── Validation pass (held-out seeds) ────────────────────────────────────────
-def validation_pass(model):
-    """Stream both CSVs, keep only val-seed rows/groups, return weighted loss."""
+def value_forward(model, encoder_fn, rows, labels):
+    """Forward value heads on a batch of state rows. labels: (B, N_VLABEL) float16."""
+    row_data = v_state_mmap[rows].astype(np.float32)
+    s, ca, r, po, en, mi, it, mc, mm = unpack_state(row_data)
+    z = encoder_fn(s, ca, r, po, en, mi, it, mc, mm)
+    out = {
+        "death": model.death(z).squeeze(-1),
+        "win": model.win(z).squeeze(-1),
+        "quantile": model.quantile(z),
+        "potion": model.potion(z),
+        "turns": model.turns(z).squeeze(-1),
+    }
+    yw = torch.from_numpy(np.ascontiguousarray(labels[:, 0].astype(np.float32))).to(DEVICE)
+    yh = torch.from_numpy(np.ascontiguousarray(labels[:, 1].astype(np.float32))).to(DEVICE)
+    mh = torch.from_numpy(np.ascontiguousarray(labels[:, 2].astype(np.float32))).to(DEVICE)
+    yp = yt = None
+    if RICH_LABELS:
+        yt_raw = np.maximum(0.0, labels[:, 3].astype(np.float32) - labels[:, 4].astype(np.float32))
+        yt = torch.from_numpy(np.ascontiguousarray(yt_raw)).to(DEVICE)
+        yp = torch.from_numpy(np.ascontiguousarray(labels[:, 5:].astype(np.float32))).to(DEVICE)
+    vlosses = value_losses(out, yw, yh, mh, yp, yt)
+    loss = sum(LAMBDA[k] * vlosses[k] for k in vlosses)
+    return loss
+
+
+def validation_pass(model, encoder_fn, policy_fn):
     model.eval()
     total_v = 0.0; total_p = 0.0; total_n = 0
     with torch.no_grad():
-        v_reader = pd.read_csv(VAL_CSV, chunksize=CHUNK)
-        for df in v_reader:
-            m = df["seed"].map(is_val_seed).to_numpy(np.bool_)
-            if not m.any(): continue
-            sdf = df[m]
-            scalar, cards, relics, potions, enc, mids, intents, mcont, mmask = extract_state(sdf)
-            y_won = sdf["won"].to_numpy(np.float32)
-            y_hp = sdf["endHp"].to_numpy(np.float32)
-            max_hp = sdf["maxHp"].to_numpy(np.float32)
-            y_pot = None
-            y_turns = None
-            if RICH_LABELS:
-                y_pot = sdf[pused_cols].to_numpy(np.float32)
-                y_turns = np.maximum(0.0, sdf["endTurn"].to_numpy(np.float32)
-                                     - sdf["turn"].to_numpy(np.float32)).astype(np.float32)
-            for b in range(0, len(sdf), BATCH):
-                e = min(b + BATCH, len(sdf))
-                s, ca, r, po, en, mi, it, mc, mm = to_tensors(
-                    scalar[b:e], cards[b:e], relics[b:e], potions[b:e],
-                    enc[b:e], mids[b:e], intents[b:e], mcont[b:e], mmask[b:e])
-                yw, yh, mh = to_tensors(y_won[b:e], y_hp[b:e], max_hp[b:e])
-                yp = yt = None
-                if y_pot is not None:
-                    yp = torch.from_numpy(np.ascontiguousarray(y_pot[b:e])).to(DEVICE)
-                    yt = torch.from_numpy(np.ascontiguousarray(y_turns[b:e])).to(DEVICE)
-                z = model.encoder(s, ca, r, po, en, mi, it, mc, mm)
-                out = {
-                    "death": model.death(z).squeeze(-1),
-                    "win": model.win(z).squeeze(-1),
-                    "quantile": model.quantile(z),
-                    "potion": model.potion(z),
-                    "turns": model.turns(z).squeeze(-1),
-                }
-                vlosses = value_losses(out, yw, yh, mh, yp, yt)
-                loss = sum(LAMBDA[k] * vlosses[k] for k in vlosses)
-                total_v += loss.item() * (e - b)
-                total_n += e - b
+        # Value validation
+        for b in range(0, len(v_val_rows), BATCH):
+            e = min(b + BATCH, len(v_val_rows))
+            rows = v_val_rows[b:e]
+            n = e - b
+            labels = v_label_mmap[rows]
+            loss = value_forward(model, encoder_fn, rows, labels)
+            total_v += loss.item() * n
+            total_n += n
 
-        p_reader = pd.read_csv(POL_CSV, chunksize=CHUNK)
-        for df in p_reader:
-            if len(df) < 2: continue
-            seeds = df["seed"].to_numpy(np.int64)
-            fights = df["fightIdx"].to_numpy(np.int32)
-            decs = df["decIdx"].to_numpy(np.int32)
-            changes = (seeds[1:] != seeds[:-1]) | (fights[1:] != fights[:-1]) | (decs[1:] != decs[:-1])
-            boundaries = np.where(changes)[0] + 1
-            g_starts = np.concatenate([[0], boundaries])
-            g_ends = np.concatenate([boundaries, [len(df)]])
-            valid = (g_ends - g_starts) >= 2
-            g_starts = g_starts[valid]
-            g_ends = g_ends[valid]
-            valmask = np.array([is_val_seed(s) for s in seeds])
-            keep = valmask[g_starts]
-            g_starts = g_starts[keep]
-            g_ends = g_ends[keep]
-            if len(g_starts) == 0: continue
-            state_arr = df[canonical].to_numpy(np.float32)
-            action_arr = df[action_names].to_numpy(np.float32)
-            visit_arr = df["visit"].to_numpy(np.int32)
-            total_arr = df["total"].to_numpy(np.int32)
-            batch_states = state_arr[g_starts]
-            df_batch = pd.DataFrame(batch_states, columns=canonical)
-            scalar, cards, relics, potions, enc, mids, intents, mcont, mmask = extract_state(df_batch)
-            s_t, ca_t, r_t, po_t, en_t, mi_t, it_t, mc_t, mm_t = to_tensors(
-                scalar, cards, relics, potions, enc, mids, intents, mcont, mmask)
-            z_all = model.encoder(s_t, ca_t, r_t, po_t, en_t, mi_t, it_t, mc_t, mm_t)
-            for gi in range(len(g_starts)):
-                gs, ge = g_starts[gi], g_ends[gi]
-                n_act = ge - gs
-                if n_act < 2: continue
-                tot = int(total_arr[gs])
-                if tot <= 0: continue
-                z_i = z_all[gi:gi+1].expand(n_act, -1)
-                act_t = torch.from_numpy(np.ascontiguousarray(action_arr[gs:ge])).to(DEVICE)
-                vis_t = torch.from_numpy(visit_arr[gs:ge].astype(np.float32).copy()).to(DEVICE)
-                logits = model.policy(z_i, act_t)
-                ce = policy_ce(logits, vis_t, torch.tensor(float(tot), device=DEVICE))
-                total_p += ce.item() * n_act
-                total_n += n_act
+        # Policy validation (vectorized)
+        for b in range(0, len(p_val_groups), BATCH):
+            be = min(b + BATCH, len(p_val_groups))
+            gs = p_val_groups[b:be]
+            n_g = be - b
+            if n_g == 0:
+                continue
+
+            # Gather group-start states
+            gs_rows = p_state_mmap[gs].astype(np.float32)
+            s, ca, r, po, en, mi, it, mc, mm = unpack_state(gs_rows)
+            z_all = encoder_fn(s, ca, r, po, en, mi, it, mc, mm)
+
+            # Collect all actions for these groups
+            offsets = p_offset_mmap[gs]
+            ends = p_offset_mmap[gs + 1]
+            sizes = ends - offsets
+            total_actions = int(sizes.sum())
+            if total_actions == 0:
+                continue
+
+            # Build flat action arrays and group_ids
+            act_idx = np.concatenate([np.arange(offsets[i], ends[i]) for i in range(n_g)])
+            group_ids = np.repeat(np.arange(n_g), sizes)
+
+            z_expanded = z_all[torch.from_numpy(group_ids).to(DEVICE)]
+            act_t = torch.from_numpy(np.ascontiguousarray(
+                p_act_mmap[act_idx].astype(np.float32))).to(DEVICE)
+            vis_t = torch.from_numpy(p_visit_mmap[act_idx].astype(np.float32).copy()).to(DEVICE)
+            totals_t = torch.from_numpy(p_total_mmap[gs].astype(np.int32)).to(DEVICE)
+            gids_t = torch.from_numpy(group_ids).to(DEVICE)
+
+            logits = policy_fn(z_expanded, act_t)
+            ce = policy_loss_vectorized(logits, gids_t, vis_t, totals_t)
+            total_p += ce.item() * total_actions
+            total_n += total_actions
+
     model.train()
     return (total_v + total_p) / max(total_n, 1)
 
@@ -390,145 +592,119 @@ def main():
     n_params = sum(p.numel() for p in model.parameters())
     print(f"[model] {n_params:,} params", flush=True)
 
+    # torch.compile — compile the expensive submodules individually.
+    # Compiling at the PolicyValueNet level doesn't help because we call
+    # model.encoder() / model.policy() directly, which bypasses the wrapper.
+    encoder_fn = model.encoder
+    policy_fn = model.policy
+    if COMPILE and DEVICE.startswith("cuda"):
+        try:
+            torch._dynamo.config.suppress_errors = True
+            encoder_fn = torch.compile(model.encoder, mode="default")
+            policy_fn = torch.compile(model.policy, mode="default")
+            print("[pvnet] torch.compile enabled on encoder + policy head (default mode)", flush=True)
+        except Exception as ex:
+            print(f"[pvnet] torch.compile failed ({ex!r}); running eager", flush=True)
+
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WD)
+    scaler = torch.amp.GradScaler("cuda") if USE_AMP and DEVICE.startswith("cuda") else None
+    if scaler is not None:
+        print("[pvnet] AMP enabled (FP16 autocast + GradScaler)", flush=True)
+
     best_loss = float("inf")
     t_start = time.time()
 
-    # ── Pre-scan policy CSV for decision group indices within each chunk ──
-    # We'll process policy by reading chunks and grouping with pandas groupby.
-    # Groups that cross chunk boundaries are skipped (safe — they're rare).
-
     for epoch in range(EPOCHS):
         model.train()
-        total_loss = 0.0; total_v = 0.0; total_p = 0.0; total_n = 0
+        total_v = 0.0; total_p = 0.0; total_n = 0
         print(f"\n[epoch {epoch+1}/{EPOCHS}]", flush=True)
 
-        # ── Value pass ──
-        v_reader = pd.read_csv(VAL_CSV, chunksize=CHUNK)
-        for df in v_reader:
-            if TRAIN_ONLY:
-                m = ~df["seed"].map(is_val_seed).to_numpy(np.bool_)
-                df = df[m]
-                if len(df) == 0: continue
-            scalar, cards, relics, potions, enc, mids, intents, mcont, mmask = extract_state(df)
-            y_won = df["won"].to_numpy(np.float32)
-            y_hp = df["endHp"].to_numpy(np.float32)
-            max_hp = df["maxHp"].to_numpy(np.float32)
-            y_pot = None
-            y_turns = None
-            if RICH_LABELS:
-                y_pot = df[pused_cols].to_numpy(np.float32)
-                y_turns = np.maximum(0.0, df["endTurn"].to_numpy(np.float32)
-                                     - df["turn"].to_numpy(np.float32)).astype(np.float32)
+        # ── Value training pass ──
+        rng = np.random.default_rng(epoch)
+        v_order = rng.permutation(v_train_rows)
+        for b in range(0, len(v_order), BATCH):
+            e = min(b + BATCH, len(v_order))
+            rows = v_order[b:e]
+            n = e - b
+            labels = v_label_mmap[rows]
 
-            for b in range(0, len(df), BATCH):
-                e = min(b + BATCH, len(df))
-                n = e - b
-                s, ca, r, po, en, mi, it, mc, mm = to_tensors(
-                    scalar[b:e], cards[b:e], relics[b:e], potions[b:e],
-                    enc[b:e], mids[b:e], intents[b:e], mcont[b:e], mmask[b:e])
-                yw, yh, mh = to_tensors(y_won[b:e], y_hp[b:e], max_hp[b:e])
-                yp = yt = None
-                if y_pot is not None:
-                    yp = torch.from_numpy(np.ascontiguousarray(y_pot[b:e])).to(DEVICE)
-                    yt = torch.from_numpy(np.ascontiguousarray(y_turns[b:e])).to(DEVICE)
-
-                z = model.encoder(s, ca, r, po, en, mi, it, mc, mm)
-                out = {
-                    "death": model.death(z).squeeze(-1),
-                    "win": model.win(z).squeeze(-1),
-                    "quantile": model.quantile(z),
-                    "potion": model.potion(z),
-                    "turns": model.turns(z).squeeze(-1),
-                }
-                vlosses = value_losses(out, yw, yh, mh, yp, yt)
-                loss = sum(LAMBDA[k] * vlosses[k] for k in vlosses)
-
-                optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
+            if scaler is not None:
+                with torch.autocast("cuda", dtype=torch.float16):
+                    loss = value_forward(model, encoder_fn, rows, labels)
+                scaler.scale(loss).backward()
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                loss = value_forward(model, encoder_fn, rows, labels)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
 
-                total_v += loss.item() * n
-                total_n += n
+            total_v += loss.item() * n
+            total_n += n
 
-        # ── Policy pass (streaming, no-allocation grouping) ──
-        p_reader = pd.read_csv(POL_CSV, chunksize=CHUNK)
-        for df in p_reader:
-            if len(df) < 2: continue
-            # Use numpy for fast group detection (contiguous rows)
-            seeds = df["seed"].to_numpy(np.int64)
-            fights = df["fightIdx"].to_numpy(np.int32)
-            decs = df["decIdx"].to_numpy(np.int32)
-
-            # Find group boundaries within this chunk
-            changes = (seeds[1:] != seeds[:-1]) | (fights[1:] != fights[:-1]) | (decs[1:] != decs[:-1])
-            boundaries = np.where(changes)[0] + 1
-            g_starts = np.concatenate([[0], boundaries])
-            g_ends = np.concatenate([boundaries, [len(df)]])
-
-            # Filter to valid groups (skip singles, skip cross-chunk groups marked by flag)
-            valid = (g_ends - g_starts) >= 2
-            g_starts = g_starts[valid]
-            g_ends = g_ends[valid]
-            if TRAIN_ONLY:
-                valmask = np.array([is_val_seed(s) for s in df["seed"].to_numpy(np.int64)])
-                keep = ~valmask[g_starts]
-                g_starts = g_starts[keep]
-                g_ends = g_ends[keep]
-            if len(g_starts) == 0:
+        # ── Policy training pass (vectorized) ──
+        p_order = rng.permutation(p_train_groups)
+        for b in range(0, len(p_order), BATCH):
+            be = min(b + BATCH, len(p_order))
+            gs = p_order[b:be]
+            n_g = be - b
+            if n_g == 0:
                 continue
 
-            # Extract state features as numpy for all group-start rows
-            state_arr = df[canonical].to_numpy(np.float32)
-            action_arr = df[action_names].to_numpy(np.float32)
-            visit_arr = df["visit"].to_numpy(np.int32)
-            total_arr = df["total"].to_numpy(np.int32)
+            # Gather group-start states and encode
+            g_rows = p_state_mmap[gs].astype(np.float32)
+            s, ca, r, po, en, mi, it, mc, mm = unpack_state(g_rows)
+            z_all = encoder_fn(s, ca, r, po, en, mi, it, mc, mm)
 
-            # Batch state extraction
-            batch_states = state_arr[g_starts]  # (N_groups, 1766)
-            n_g = len(g_starts)
+            # Collect all actions for these groups
+            offsets = p_offset_mmap[gs]
+            ends = p_offset_mmap[gs + 1]
+            sizes = ends - offsets
+            total_actions = int(sizes.sum())
+            if total_actions == 0:
+                continue
 
-            # Build DataFrame for state extraction (fastest way to get entity tensors)
-            df_batch = pd.DataFrame(batch_states, columns=canonical)
-            scalar, cards, relics, potions, enc, mids, intents, mcont, mmask = extract_state(df_batch)
-            s_t, ca_t, r_t, po_t, en_t, mi_t, it_t, mc_t, mm_t = to_tensors(
-                scalar, cards, relics, potions, enc, mids, intents, mcont, mmask)
-            z_all = model.encoder(s_t, ca_t, r_t, po_t, en_t, mi_t, it_t, mc_t, mm_t)
+            # Flat action arrays and group_ids
+            act_idx = np.concatenate([np.arange(offsets[i], ends[i]) for i in range(n_g)])
+            group_ids = np.repeat(np.arange(n_g), sizes)
 
-            # Compute policy loss
-            p_loss = torch.tensor(0.0, device=DEVICE)
-            p_n = 0
-            for gi in range(n_g):
-                gs, ge = g_starts[gi], g_ends[gi]
-                n_act = ge - gs
-                if n_act < 2: continue
-                tot = int(total_arr[gs])
-                if tot <= 0: continue
+            z_expanded = z_all[torch.from_numpy(group_ids).to(DEVICE)]
+            act_t = torch.from_numpy(np.ascontiguousarray(
+                p_act_mmap[act_idx].astype(np.float32))).to(DEVICE)
+            vis_t = torch.from_numpy(p_visit_mmap[act_idx].astype(np.float32).copy()).to(DEVICE)
+            totals_t = torch.from_numpy(p_total_mmap[gs].astype(np.int32)).to(DEVICE)
+            gids_t = torch.from_numpy(group_ids).to(DEVICE)
 
-                z_i = z_all[gi:gi+1].expand(n_act, -1)
-                act_t = torch.from_numpy(np.ascontiguousarray(action_arr[gs:ge])).to(DEVICE)
-                vis_t = torch.from_numpy(visit_arr[gs:ge].astype(np.float32).copy()).to(DEVICE)
-
-                logits = model.policy(z_i, act_t)
-                p_loss = p_loss + policy_ce(logits, vis_t,
-                    torch.tensor(float(tot), device=DEVICE))
-                p_n += 1
-
-            if p_n > 0:
-                p_loss = p_loss / p_n
-                optimizer.zero_grad()
-                (LAMBDA["policy"] * p_loss).backward()
+            optimizer.zero_grad(set_to_none=True)
+            if scaler is not None:
+                with torch.autocast("cuda", dtype=torch.float16):
+                    logits = policy_fn(z_expanded, act_t)
+                    p_loss = policy_loss_vectorized(logits, gids_t, vis_t, totals_t)
+                    loss = LAMBDA["policy"] * p_loss
+                scaler.scale(loss).backward()
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                logits = policy_fn(z_expanded, act_t)
+                p_loss = policy_loss_vectorized(logits, gids_t, vis_t, totals_t)
+                loss = LAMBDA["policy"] * p_loss
+                loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
-                total_p += p_loss.item() * p_n
-                total_n += p_n
 
-        avg_loss = (total_v + total_p) / max(total_n, 1)
-        val_loss = validation_pass(model)
+            total_p += p_loss.item() * total_actions
+            total_n += total_actions
+
+        val_loss = validation_pass(model, encoder_fn, policy_fn)
         elapsed = time.time() - t_start
-        print(f"  loss={avg_loss:.4f}  v={total_v/max(total_n,1):.4f}  "
-              f"p={total_p/max(total_n,1):.4f}  val={val_loss:.4f}  {elapsed:.0f}s", flush=True)
+        print(f"  v={total_v/max(total_n,1):.4f}  p={total_p/max(total_n,1):.4f}  "
+              f"val={val_loss:.4f}  {elapsed:.0f}s", flush=True)
 
         if val_loss < best_loss or epoch == 0:
             best_loss = val_loss
@@ -593,7 +769,6 @@ def export_model(model, path):
                 wv(f"layer_{l}_ffn{part}_weight", st[p + f"ffn.{part}.weight"])
                 wv(f"layer_{l}_ffn{part}_bias", st[p + f"ffn.{part}.bias"])
 
-        # Policy head
         for i, s in enumerate(["0", "2"]):
             wv(f"policy_act_enc_{s}_weight", st[f"policy.act_enc.{i*2}.weight"])
             wv(f"policy_act_enc_{s}_bias", st[f"policy.act_enc.{i*2}.bias"])
@@ -601,7 +776,6 @@ def export_model(model, path):
             wv(f"policy_scorer_{s}_weight", st[f"policy.scorer.{i*2}.weight"])
             wv(f"policy_scorer_{s}_bias", st[f"policy.scorer.{i*2}.bias"])
 
-        # Value heads
         for n in ("win", "death", "quantile", "potion", "turns"):
             wv(f"{n}_weight", st[f"{n}.weight"])
             wv(f"{n}_bias", st[f"{n}.bias"])

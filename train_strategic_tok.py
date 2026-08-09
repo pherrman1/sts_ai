@@ -34,7 +34,7 @@ import pandas as pd
 import torch
 from torch import nn
 
-from strategic_tok_net import Net, NCARD, NREL, NPOT, MAXD, MAXR, MAXP, NGLOB
+from strategic_tok_net import Net, NCARD, NREL, NPOT, MAXD, MAXR, MAXP, NGLOB, NRAW
 
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_tierb.csv"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "selfplay/models/ooc_strategic_tok"
@@ -284,7 +284,7 @@ def pot_tokens(p):
 
 
 # --- State file: 482 raw float16 columns, group-ordered -----------------------
-NFILE = NGLOB + MAXD * 3 + MAXR * 2 + MAXP * 2   # 50 + 288 + 128 + 16 = 482
+NFILE = NGLOB + MAXD * 3 + MAXR * 2 + MAXP * 2   # 41 + 288 + 128 + 16 = 473
 STATE_FILE = OUT + "_tok_state.bin"
 expected = nrows * NFILE * 2
 reused = False
@@ -325,17 +325,23 @@ for chunk in pd.read_csv(CSV, usecols=state_cols, chunksize=CHUNK, dtype=np.floa
     hi = lo + len(chunk)
     c = chunk.to_numpy(np.float64)
     m = tr_rows[lo:hi]
-    g = c[m, :NGLOB].copy()
-    # Slots 44..49 are DERIVED features (the CSV's columns 44..49 are deck
-    # counts d0..d5 and must not supply their scale). Mirror the write pass.
-    hp = g[:, 3]
-    mx = np.maximum(g[:, 4], 1.0)
-    g[:, 44] = hp / mx                            # hpFrac
-    g[:, 45] = g[:, 4] - hp                       # missingHp
-    g[:, 46] = (g[:, 12] < g[:, 13]).astype(np.float64)   # freePotionSlot
-    g[:, 47] = (g[:, 5] >= 75.0).astype(np.float64)       # goldGeRemoval
-    g[:, 48] = ((g[:, 19] > 0) & ~((g[:, 9] > 0) & (g[:, 10] > 0) & (g[:, 11] > 0))).astype(np.float64)  # canTakeEliteKey
-    g[:, 49] = (g[:, 35] <= 3.0).astype(np.float64)       # bossNear (fmDBoss)
+    # Build the NRAW=35 non-leak glob block: columns 0-13 + 23-43 from c
+    # (skip columns 14-22: bossId/nextEliteId/nextFight0-2/remElites/remFights/
+    #  monOffset/eliteOffset — the hidden-information leaks).
+    c_m = c[m, :]
+    g = np.zeros((c_m.shape[0], NGLOB), np.float64)
+    g[:, :14] = c_m[:, :14]
+    g[:, 14:NRAW] = c_m[:, 23:44]
+    # Slots NRAW..NGLB-1 are DERIVED features.
+    hp = c_m[:, 3]
+    mx = np.maximum(c_m[:, 4], 1.0)
+    g[:, NRAW + 0] = hp / mx                                          # hpFrac
+    g[:, NRAW + 1] = c_m[:, 4] - hp                                   # missingHp
+    g[:, NRAW + 2] = (c_m[:, 12] < c_m[:, 13]).astype(np.float64)     # freePotionSlot
+    g[:, NRAW + 3] = (c_m[:, 5] >= 75.0).astype(np.float64)           # goldGeRemoval
+    # canTakeEliteKey: fmCElite (c col 36) replaces removed remElites (c col 19)
+    g[:, NRAW + 4] = ((c_m[:, 36] > 0) & ~((c_m[:, 9] > 0) & (c_m[:, 10] > 0) & (c_m[:, 11] > 0))).astype(np.float64)
+    g[:, NRAW + 5] = (c_m[:, 35] <= 3.0).astype(np.float64)           # bossNear (fmDBoss, c col 35)
     mean += g.sum(0)
     sumsq += (g * g).sum(0)
     cnt += int(m.sum())
@@ -354,15 +360,17 @@ if not reused:
         hi = lo + len(chunk)
         c = chunk.to_numpy(np.float64)
         out = np.zeros((len(chunk), NFILE), np.float32)
-        out[:, :NGLOB] = c[:, :NGLOB]
+        out[:, :14] = c[:, :14]
+        out[:, 14:NRAW] = c[:, 23:44]
         hp = c[:, 3]                                    # curHp
         mx = np.maximum(c[:, 4], 1.0)                   # maxHp
-        out[:, 44] = hp / mx                            # hpFrac
-        out[:, 45] = c[:, 4] - hp                       # missingHp
-        out[:, 46] = (c[:, 12] < c[:, 13]).astype(np.float32)             # freePotionSlot
-        out[:, 47] = (c[:, 5] >= 75.0).astype(np.float32)                 # goldGeRemoval
-        out[:, 48] = ((c[:, 19] > 0) & ~((c[:, 9] > 0) & (c[:, 10] > 0) & (c[:, 11] > 0))).astype(np.float32)  # canTakeEliteKey
-        out[:, 49] = (c[:, 35] <= 3.0).astype(np.float32)                 # bossNear (fmDBoss)
+        out[:, NRAW + 0] = hp / mx                      # hpFrac
+        out[:, NRAW + 1] = c[:, 4] - hp                 # missingHp
+        out[:, NRAW + 2] = (c[:, 12] < c[:, 13]).astype(np.float32)             # freePotionSlot
+        out[:, NRAW + 3] = (c[:, 5] >= 75.0).astype(np.float32)                 # goldGeRemoval
+        # canTakeEliteKey: fmCElite (c col 36) replaces removed remElites (c col 19)
+        out[:, NRAW + 4] = ((c[:, 36] > 0) & ~((c[:, 9] > 0) & (c[:, 10] > 0) & (c[:, 11] > 0))).astype(np.float32)
+        out[:, NRAW + 5] = (c[:, 35] <= 3.0).astype(np.float32)                 # bossNear (fmDBoss, c col 35)
         d = c[:, d_idx]
         u = c[:, u_idx]
         r = c[:, r_idx]

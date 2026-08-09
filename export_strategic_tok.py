@@ -180,7 +180,7 @@ def main():
         torch.save({"state_dict": m.state_dict(),
                     "mean": np.random.randn(NGLOB).astype(np.float32),
                     "inv": np.abs(np.random.randn(NGLOB)).astype(np.float32) + 0.5,
-                    "metrics": {}, "rung": 4, "nrows": 0, "features": 482}, PT)
+                    "metrics": {}, "rung": 4, "nrows": 0, "features": 473}, PT)
         print(f"[export-strategic-tok] selftest checkpoint -> {PT}", flush=True)
 
     ckpt = torch.load(PT, map_location="cpu", weights_only=False)

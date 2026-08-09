@@ -9,7 +9,7 @@
 #include <string>
 
 struct OocStrategicTokNet {
-    static constexpr int NGLB = 50, NHIDDEN = 256, NHIDDEN2 = 128, NBITS = 32;
+    static constexpr int NGLB = 41, NHIDDEN = 256, NHIDDEN2 = 128, NBITS = 32;
     static constexpr int DECKDIM = 32, RELDIM = 16, POTDIM = 8;
     static constexpr int MAXDK = 96, MAXRL = 64, MAXPT = 8;
     static constexpr int DKTOKIN = 41, RLTOKIN = 17, PTTOKIN = 9;
@@ -21,7 +21,7 @@ struct OocStrategicTokNet {
     static constexpr int AHIDDEN = 32, AHIDDEN2 = 16;
     static constexpr int POLHID = 96, VALHID = 64;
     static constexpr int QDIM = 3 * DECKDIM;             // 96
-    static constexpr int FUSIN = NGLB + DECKDIM + RELDIM + POTDIM;  // 106
+    static constexpr int FUSIN = NGLB + DECKDIM + RELDIM + POTDIM;  // 97
     static constexpr int CATIN = NCAT * CATDIM + ATYPEDIM;         // 32
 
     float globMean[NGLB], globInv[NGLB];
@@ -407,7 +407,7 @@ struct OocStrategicTokNet {
     }
 
     // Per-screen value head on z_state (token groups empty: z_deck/z_rel/z_pot = 0).
-    float predictValue(const float glob[50], int screen) const {
+    float predictValue(const float glob[NGLB], int screen) const {
         const float zDeck[DECKDIM] = {}, zRel[RELDIM] = {}, zPot[POTDIM] = {};
         float sOut[NHIDDEN2];
         encodeState(glob, zDeck, zRel, zPot, sOut);
@@ -424,7 +424,7 @@ struct OocStrategicTokNet {
     }
 
     // Q logit on z = concat(z_state(128), b(16), a(16), s8(8), e(16)) = 184.
-    float predictActionValue(const float glob[50], int nDk, const int dk[96][3],
+    float predictActionValue(const float glob[NGLB], int nDk, const int dk[96][3],
                              int nRl, const int rl[64][2], int nPt, const int pt[8][2],
                              std::uint32_t actionBits, const int cats[6], int actionType,
                              int screen, const float entityType[4], int entityId,

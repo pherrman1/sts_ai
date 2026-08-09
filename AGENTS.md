@@ -49,8 +49,8 @@ base in the same change. Do not invent rationale; use **Inference**,
 | `bindings/` | Run-level pybind11 API, not card-by-card combat control. |
 | root `train_*.py`, `export_*.py`, `v_server.py` | Training, export, optional Python inference. |
 | `selfplay/` | Generation, retraining, paired gates, snapshots, local state. |
-| `tools/ai_cycle.py` | Deterministic architect → implementer → reviewer orchestration, verification gates, retry/escalation policy, and automated seed limits. |
-| `.pi/` | Pi project agents, read-only inspection tools, safety hooks, and prompt templates. |
+| `tools/ai_cycle.py` | Legacy Python orchestrator (during migration). Retained as a rollback path; the new authoritative orchestrator is `/sts-cycle` (`.pi/extensions/sts-cycle/`). |
+| `.pi/` | Pi project agents, `/sts-cycle` deterministic orchestrator, read-only inspection tools, safety hooks, and prompt templates. |
 | `.opencode/`, `opencode.json` | Legacy/rollback OpenCode agent backend and prompts during the Pi migration. |
 
 Deployable native exports under `selfplay/models/*.native` are git-tracked
@@ -136,7 +136,10 @@ first configure.
 
 ### Automated agent verification limits
 
-`tools/ai_cycle.py` is authoritative for automated verification policy. In
+`.pi/extensions/sts-cycle/policy.ts` is authoritative for automated
+verification policy, providing a single definition of `MAX_AUTOMATED_SEEDS=128`,
+seed-sweep argument maps, and verification allowlists shared with the
+interactive safety hook (`.pi/extensions/sts-safety.ts`). In
 particular, `MAX_AUTOMATED_SEEDS = 128` is a hard safety limit for every
 agent-driven game-seed sweep.
 
@@ -170,7 +173,9 @@ archive-link instructions. More detail:
 
 ## Agent orchestration
 
-`tools/ai_cycle.py` owns the deterministic multi-agent workflow. It preserves
+`/sts-cycle` (`.pi/extensions/sts-cycle/`) is the authoritative deterministic
+multi-agent workflow. `tools/ai_cycle.py` is the legacy Python orchestrator
+retained as a rollback path during migration. The Pi-native state machine
 repository-specific behavior such as clean-working-tree checks, protected
 workflow paths, verification allowlisting, retry/review limits, high-risk
 classification, candidate fingerprinting, ELI5 summaries, and the automated
@@ -192,9 +197,18 @@ change that is not confidently comment/docstring/whitespace-only. See
 
 Project-local Pi roles live in `.pi/agents/`. Read-only architect/reviewer
 roles use the restricted `sts_git` and `sts_inspect` tools rather than arbitrary
-Bash. `.pi/` is workflow control-plane code: ordinary implementation agents
-must not rewrite agent prompts, safety extensions, orchestration code, or their
-tests as part of unrelated STS work.
+Bash.
+
+### Pi commands
+
+| Command | Purpose |
+| --- | --- |
+| `/sts-cycle <task>` | Implementation/review workflow: deterministic state machine (PREFLIGHT → CLASSIFY → ARCHITECT → IMPLEMENT → VERIFY → REVIEW → ESCALATE → ACCEPTED/REJECTED). LLMs must not improvise the workflow sequence. |
+| `/sts-investigate <question>` | Research/investigation workflow: parallel read-only subagent investigation followed by architect synthesis. |
+
+`.pi/` is workflow control-plane code: ordinary implementation agents
+must not rewrite agent prompts, safety extensions, `/sts-cycle` orchestration
+code, or their tests as part of unrelated STS work.
 
 Pi project trust enables project extensions and prompts; it is not a security
 sandbox. Deterministic repository protections remain authoritative.
@@ -367,8 +381,8 @@ Do not assume:
 - 128 seeds is a normal/default automated benchmark size rather than a hard
   ceiling;
 - Pi project trust is a sandbox or replaces the deterministic safety checks in
-  `tools/ai_cycle.py`;
-- the Pi backend is the default unless `tools/ai_cycle.py` currently says so.
+  `/sts-cycle` is the authorised orchestrator for the current task;
+- the Pi backend is the default unless `/sts-cycle` currently says so.
 
 When genuinely uncertain, stop and ask rather than proceeding on an
 unverified interpretation.

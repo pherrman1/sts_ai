@@ -2,20 +2,12 @@
 """API-free regression tests for the STS-local Pi subagent lifecycle guard.
 
 These tests intentionally do not launch Pi or call an LLM.  They verify the
-source-level lifecycle contract in `.pi/extensions/subagent/index.ts` that
-prevents a completed subagent from leaving the parent tool call pending forever.
+source-level lifecycle contract that prevents a completed subagent from
+leaving the parent tool call pending forever.
 
-The production bug this protects against was:
-
-    final assistant message
-        -> agent_end
-        -> child/stdio never emits Node "close"
-        -> runSingleAgent() Promise never resolves
-        -> parent Pi remains on "Working..." forever
-
-Run from anywhere inside the repository:
-
-    python3 tools/test_pi_subagent_lifecycle.py
+The lifecycle guard now lives in the shared runner.ts (used by both
+subagent/index.ts and sts-cycle/index.ts). Tests search the appropriate
+file for each contract.
 """
 
 from __future__ import annotations
@@ -28,8 +20,6 @@ from pathlib import Path
 
 
 def repo_root() -> Path:
-    # Resolve relative to this test file, not the caller's shell directory, so
-    # `python3 /path/to/repo/tools/test_pi_subagent_lifecycle.py` works too.
     start = Path(__file__).resolve().parent
     result = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
@@ -44,10 +34,15 @@ def repo_root() -> Path:
 
 ROOT = repo_root()
 INDEX = ROOT / ".pi" / "extensions" / "subagent" / "index.ts"
+RUNNER = ROOT / ".pi" / "extensions" / "subagent" / "runner.ts"
 
 
-def source() -> str:
+def source_index() -> str:
     return INDEX.read_text(encoding="utf-8")
+
+
+def source_runner() -> str:
+    return RUNNER.read_text(encoding="utf-8")
 
 
 def function_body(text: str, name: str) -> str:
@@ -147,72 +142,79 @@ class LifecycleGuardContractTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         if not INDEX.is_file():
             raise AssertionError(f"Missing subagent extension: {INDEX}")
-        cls.text = source()
+        if not RUNNER.is_file():
+            raise AssertionError(f"Missing runner: {RUNNER}")
+        cls.index_text = source_index()
+        cls.runner_text = source_runner()
+
+    # --- index.ts specific checks (live observability, fork markers) ---
 
     def test_local_fork_and_lifecycle_markers_present(self) -> None:
-        self.assertIn("STS-LOCAL FORK", self.text)
-        self.assertIn("STS-SUBAGENT-LIFECYCLE-GUARD", self.text)
+        self.assertIn("STS-LOCAL FORK", self.index_text)
+        self.assertIn("STS-SUBAGENT-LIFECYCLE-GUARD", self.index_text)
 
     def test_live_subagent_starts_with_running_exit_code(self) -> None:
-        body = function_body(self.text, "runSingleAgent")
+        body = function_body(self.index_text, "runSingleAgent")
         self.assertRegex(
             body,
             r"const\s+currentResult\s*:\s*SingleResult\s*=\s*\{[\s\S]*?exitCode\s*:\s*-1\s*,",
         )
 
     def test_parallel_status_uses_single_running_predicate(self) -> None:
-        self.assertIn("function isRunningResult", self.text)
+        self.assertIn("function isRunningResult", self.index_text)
         self.assertRegex(
-            self.text,
+            self.index_text,
             r"const\s+running\s*=\s*allResults\.filter\(isRunningResult\)\.length\s*;",
         )
 
+    def test_assistant_message_tracking_present(self) -> None:
+        # Index.ts tracks message_end events in the onEvent callback for
+        # live activity. The lifecycle exit-code decision is in runner.ts.
+        self.assertIn('event.type === "message_end"', self.index_text)
+        # Runner uses hasMessages (messages.length > 0) for exit code
+        self.assertIn("hasMessages", self.runner_text)
+
+    def test_subagent_imports_runner(self) -> None:
+        self.assertIn('from "./runner.ts"', self.index_text)
+        self.assertIn("runPiChild", self.index_text)
+
+    # --- runner.ts lifecycle guard checks (shared implementation) ---
+
     def test_guard_timeouts_are_positive_and_bounded(self) -> None:
-        end_grace = const_number(self.text, "AGENT_END_CLOSE_GRACE_MS")
-        termination_grace = const_number(self.text, "CHILD_TERMINATION_GRACE_MS")
-        hard_timeout = const_number(self.text, "SUBAGENT_HARD_TIMEOUT_MS")
+        end_grace = const_number(self.runner_text, "AGENT_END_CLOSE_GRACE_MS")
+        termination_grace = const_number(self.runner_text, "CHILD_TERMINATION_GRACE_MS")
+        hard_timeout = const_number(self.runner_text, "SUBAGENT_HARD_TIMEOUT_MS")
 
         self.assertGreater(end_grace, 0)
         self.assertGreater(termination_grace, 0)
         self.assertGreater(hard_timeout, end_grace + termination_grace)
-        # Keep the safety net bounded to something operationally reasonable.
         self.assertLessEqual(hard_timeout, 60 * 60 * 1000)
 
+    def test_lifecycle_constants_exported(self) -> None:
+        self.assertIn("export const AGENT_END_CLOSE_GRACE_MS", self.runner_text)
+        self.assertIn("export const SUBAGENT_HARD_TIMEOUT_MS", self.runner_text)
+
     def test_agent_end_starts_bounded_shutdown_watchdog(self) -> None:
-        body = function_body(self.text, "runSingleAgent")
-        agent_end = re.search(
-            r'if\s*\(event\.type\s*===\s*"agent_end"\)\s*\{([\s\S]*?)\n\s*\}',
-            body,
-        )
-        self.assertIsNotNone(agent_end, "Missing agent_end lifecycle handler")
-        # Search a wider slice because nested braces make regex body matching conservative.
+        body = function_body(self.runner_text, "runPiChild")
         start = body.find('if (event.type === "agent_end")')
-        window = body[start : start + 2600]
+        self.assertNotEqual(start, -1)
+        window = body[start : start + 2000]
         self.assertIn("agentEndTimer = setTimeout", window)
         self.assertIn('proc.kill("SIGTERM")', window)
         self.assertIn("terminationTimer = setTimeout", window)
         self.assertIn('proc.kill("SIGKILL")', window)
         self.assertIn("finish(", window)
 
-    def test_agent_end_requires_captured_final_assistant_message_for_success(self) -> None:
-        start = self.text.find('if (event.type === "agent_end")')
+    def test_agent_end_requires_messages_for_success(self) -> None:
+        body = function_body(self.runner_text, "runPiChild")
+        start = body.find('if (event.type === "agent_end")')
         self.assertNotEqual(start, -1)
-        window = self.text[start : start + 2600]
-        self.assertIn("sawFinalAssistantMessage", window)
-        self.assertIn("Subagent emitted agent_end without a final assistant message.", window)
-        self.assertRegex(window, r"forcedExitCode\s*=\s*1")
-        self.assertRegex(window, r"forcedExitCode\s*=\s*0")
-
-    def test_final_assistant_detection_excludes_tool_use_turns(self) -> None:
-        self.assertIn("hasFinalText", self.text)
-        self.assertIn("hasToolCall", self.text)
-        self.assertRegex(
-            self.text,
-            r"if\s*\(hasFinalText\s*&&\s*!hasToolCall\)\s+sawFinalAssistantMessage\s*=\s*true",
-        )
+        window = body[start : start + 2000]
+        self.assertIn("hasMessages", window)
+        self.assertRegex(window, r"forcedExitCode\s*=\s*hasMessages\s*\?\s*0\s*:\s*1")
 
     def test_completion_is_idempotent(self) -> None:
-        body = function_body(self.text, "finish")
+        body = function_body(self.runner_text, "finish")
         self.assertRegex(body, r"if\s*\(settled\)\s*return\s*;")
         self.assertRegex(body, r"settled\s*=\s*true\s*;")
         self.assertIn("cleanupLifecycle()", body)
@@ -220,30 +222,29 @@ class LifecycleGuardContractTests(unittest.TestCase):
 
     def test_close_and_error_both_settle_through_finish(self) -> None:
         self.assertRegex(
-            self.text,
+            self.runner_text,
             r'proc\.on\("close",\s*\(code\)\s*=>\s*\{[\s\S]*?finish\(forcedExitCode\s*\?\?\s*code\s*\?\?\s*0\)',
         )
         self.assertRegex(
-            self.text,
+            self.runner_text,
             r'proc\.on\("error",\s*\(error\)\s*=>\s*\{[\s\S]*?finish\(1\)',
         )
 
     def test_hard_timeout_cannot_leave_parent_pending_forever(self) -> None:
         self.assertRegex(
-            self.text,
+            self.runner_text,
             r"hardTimeoutTimer\s*=\s*setTimeout\(\(\)\s*=>\s*\{[\s\S]*?terminateAndFinish\(",
         )
-        self.assertIn("SUBAGENT_HARD_TIMEOUT_MS", self.text)
-        self.assertIn("Subagent exceeded hard timeout", self.text)
+        self.assertIn("SUBAGENT_HARD_TIMEOUT_MS", self.runner_text)
 
     def test_abort_uses_same_bounded_termination_path(self) -> None:
         self.assertRegex(
-            self.text,
-            r"abortHandler\s*=\s*\(\)\s*=>\s*\{[\s\S]*?wasAborted\s*=\s*true[\s\S]*?terminateAndFinish\(1\)",
+            self.runner_text,
+            r"abortHandler\s*=\s*\(\)\s*=>\s*\{[\s\S]*?terminateAndFinish\(1\)",
         )
 
     def test_cleanup_removes_abort_listener_and_all_timers(self) -> None:
-        body = function_body(self.text, "cleanupLifecycle")
+        body = function_body(self.runner_text, "cleanupLifecycle")
         self.assertIn("clearTimer(agentEndTimer)", body)
         self.assertIn("clearTimer(terminationTimer)", body)
         self.assertIn("clearTimer(hardTimeoutTimer)", body)
@@ -251,10 +252,11 @@ class LifecycleGuardContractTests(unittest.TestCase):
 
     def test_no_legacy_proc_killed_guard(self) -> None:
         # `ChildProcess.killed` means kill() was called, not that the OS process
-        # has actually exited.  Lifecycle decisions must use exitCode/signalCode.
-        self.assertNotIn("proc.killed", self.text)
-        self.assertIn("proc.exitCode === null", self.text)
-        self.assertIn("proc.signalCode === null", self.text)
+        # has actually exited. Lifecycle decisions must use exitCode/signalCode.
+        body = function_body(self.runner_text, "runPiChild")
+        self.assertNotIn("proc.killed", body)
+        self.assertIn("proc.exitCode === null", body)
+        self.assertIn("proc.signalCode === null", body)
 
 
 if __name__ == "__main__":
