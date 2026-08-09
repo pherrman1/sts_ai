@@ -8,6 +8,14 @@ Options: Bash + 2 Strikes? Bash + 2 Defends? 3 Strikes? Something else?
 
 The AI decides by simulating outcomes rather than using intuition.
 
+### What the search sees
+
+![Annotated Slay the Spire combat screenshot](assets/combat-annotated.jpg)
+
+*The blue outline marks the hand; the orange outline marks the enemy intent. The HP labels are invented, plausible teaching values — **not output from this project's model**. The hand is only part of the action set: potion use and End Turn are also legal actions, as shown in the image legend.*
+
+The search does not assign one permanent score to a card such as Bash. It evaluates **actions and action sequences**: for example, playing Bash now may change the enemy's Vulnerable state, which changes the value of later attacks. The value estimate belongs to the resulting state or branch.
+
 ## Monte Carlo Tree Search (MCTS)
 
 - **Monte Carlo** = try random things many times, count results
@@ -34,6 +42,10 @@ Starting at the root (current game state), the AI descends the tree using a form
 
 A **policy prior** — a separate GBM trained on millions of past combat turns — provides a starting bias: "Bash is probably better than Strike here." This is the "P" in PUCT. It guides exploration without locking out alternatives.
 
+![Bash card](assets/bash-card.png)
+
+Bash is a useful example because its effect is not just its immediate 8 damage: it also applies Vulnerable. MCTS evaluates that effect in the successor states and in later action sequences. It does not treat the card image or its printed damage as the final value of playing it.
+
 ```mermaid
 graph TD
     Root["Turn 3: Guardian 56/60 HP<br/>Hand: Bash, Strike×2, Defend×2, 3⚡"] --> A["Bash + 2× Strike<br/>visits: 1200, value: 45 HP"]
@@ -46,7 +58,14 @@ graph TD
 
 ### ② EXPAND — growing the tree
 
-At a leaf (a state not yet explored), the AI adds all legal next moves as children. This covers the game's full card selection rules — exhaust choices, Gambler's Brew discards, multi-enemy targeting, multi-select subsets.
+At a leaf (a state not yet explored), the AI adds all legal next moves as children. The action set can include:
+
+- playing a card, including choosing its target;
+- using a potion;
+- selecting cards for effects such as Gambler's Brew or an exhaust action; and
+- ending the turn.
+
+This covers the game's full card-selection rules — exhaust choices, Gambler's Brew discards, multi-enemy targeting, and multi-select subsets.
 
 ### ③ SIMULATE — the rollout
 
