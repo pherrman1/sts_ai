@@ -1,6 +1,6 @@
 # Benchmark protocol
 
-Last verified: 2026-08-07 against commit `67320b3` and the current working
+Last verified: 2026-08-09 against the current working tree
 tree (strict deterministic paired analysis + asserting vnettest, §134 audit).
 
 ## Purpose
@@ -40,7 +40,10 @@ must not be grouped with known-RNG Searcher2.
 2. `bestBench` invokes `runFullRunOOC` on each requested seed, using OpenMP
    outer parallelism for multi-seed runs.
 3. Per-seed rows are flushed in completion order, so consumers must align by
-   `seed`, not row order.
+   `seed`, not row order. When `resultsFile` is supplied, `bestBench` also
+   appends one JSON object per invocation to `<resultsFile>.meta.json`; this
+   records the explicit objective, argv, seed block, key-collection setting,
+   searcher flags, OOC settings, model paths/load status, and timestamp.
 4. Aggregate output reports full-run wins, mean final floor, end HP, per-run
    elapsed time, and wall time.
 5. Paired comparisons join candidate and baseline rows on identical seeds.
@@ -50,8 +53,9 @@ must not be grouped with known-RNG Searcher2.
 
 The `bestBench` banner and adjacent source comment are now emitted from the
 parsed configuration (skip threshold, rest/win layer, shop-V, path mode, native
-OOC, searcher, threads, model paths); use parsed flags and load messages as the
-authoritative provenance, not the banner alone.
+OOC, searcher, threads, model paths). The `.meta.json` JSON-lines sidecar is
+machine-readable provenance; use it plus observed load messages rather than the
+banner alone.
 
 ## Invariants and assumptions
 

@@ -344,6 +344,10 @@ flowchart LR
 - The fast predicted checkpoint evaluator compounds approximate transition
   error and is not in the default policy; historical results are in
   `EXPERIMENTS.md` §66j.
+- `STS_OOC_STRATEGIC_TRACE=<csv>` is the deployment-aligned gate trace;
+  `tools/analyze_strategic_trace.py` consumes it strictly and reports
+  per-screen fire rates, margins, and outcome summaries. The outcome split is
+  decision-level because final run outcomes repeat on each decision row.
 
 ## Open questions
 

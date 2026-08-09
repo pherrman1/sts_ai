@@ -393,6 +393,27 @@ unless STS_PVNET_VALUE_ONLY=1.
   location does not indicate whether an artifact was generated, deployed, or
   benchmarked.
 
+### Deployment-aligned strategic metrics
+
+`strategic_metrics.py` contains non-training metrics for gate-fire curves,
+override quality, fallback-relative label/predicted advantage, and model versus
+fallback regret. `tools/analyze_strategic_metrics.py` consumes a prediction
+CSV (`screen,margin,fired,modelIdx,fallbackIdx,bestIdx,predQ,labelQ`) and works
+on existing checkpoint/dataset prediction pairs without retraining. Its
+`--self-test` uses synthetic groups; it is intentionally separate from the
+ordinary policy CE/Q error reports.
+
+### Deployment VNet query distribution diagnostics
+
+`STS_VNET_QUERY_LOG=<csv>` (parsed by `apps/one_combat.cpp::main`) records
+canonical combat feature rows at deployed VNet queries with a `vnetPred`
+column. `tools/vnet_distribution_shift.py` compares this deployment sample
+against a seed-disjoint sample of `combatgen` rows: use
+`--deploy-vnet-col vnetPred` (the default), `--vnet-col` for a training-side
+prediction column when available, and `--label-col endHp` for combatgen labels.
+The script's `--self-test` exercises the prediction-column and skip paths
+without requiring XGBoost.
+
 ## Open questions
 
 - Which generated schemas should receive machine-readable version metadata and
