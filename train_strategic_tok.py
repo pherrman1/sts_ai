@@ -44,6 +44,12 @@ EPOCHS = int(os.environ.get("STRAT_EPOCHS", "40"))
 PATIENCE = int(os.environ.get("STRAT_PATIENCE", "6"))  # stop after N epochs without >=MIN_DELTA val_pol_ce improvement
 MIN_DELTA = float(os.environ.get("STRAT_MIN_DELTA", "1e-4"))
 SELECT_METRIC = os.environ.get("STRAT_SELECT_METRIC", "val_pol_ce")  # best-checkpoint metric: val_pol_ce (min) or q_top1 (max)
+Q_TARGET = os.environ.get("STRAT_Q_TARGET", "absolute")  # absolute or fallback_centered
+if Q_TARGET not in ("absolute", "fallback_centered"):
+    raise ValueError("STRAT_Q_TARGET must be absolute or fallback_centered")
+SPLIT_MANIFEST = os.environ.get("STRAT_SPLIT_MANIFEST", "")  # JSON file to save train/val seeds
+SPLIT_LOAD = os.environ.get("STRAT_SPLIT_LOAD", "")  # JSON file to load train/val seeds from
+MODEL_SEED = int(os.environ.get("STRAT_MODEL_SEED", "0"))  # model initialization seed
 RANK_LAMBDA = float(os.environ.get("STRAT_RANK_LAMBDA", "0"))  # 0 = disabled; pairwise labelWon ranking term weight
 RANK_MARGIN = float(os.environ.get("STRAT_RANK_MARGIN", "1.0"))  # hinge margin for the ranking term
 RANK_MAX_PAIRS = int(os.environ.get("STRAT_RANK_MAX_PAIRS", "16"))  # max ranking pairs per group per batch
@@ -67,7 +73,7 @@ DEVICE = os.environ.get("STRAT_DEVICE") or ("cuda" if torch.cuda.is_available() 
 if not DEVICE.startswith("cuda"):
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 torch.set_num_threads(THREADS)
-torch.manual_seed(0)
+torch.manual_seed(MODEL_SEED)
 print(f"device: {DEVICE}  rung: {RUNG}  epochs: {EPOCHS}"
       f"  transformer: {int(TRANSFORMER)}", flush=True)
 
@@ -155,6 +161,18 @@ print(f"{NG} decisions, {int(one_chosen.sum())} groups with exactly one chosen r
 
 # Seed-disjoint 80/20 split; decisions remain the batching unit.
 tr_rows, train_seeds, val_seeds = seed_disjoint_split(df.seed.to_numpy(), random_seed=0)
+
+# --- Load split from manifest if requested ---
+if SPLIT_LOAD:
+    with open(SPLIT_LOAD) as f:
+        m = json.load(f)
+    train_seeds = np.array(m["train_seeds"], dtype=np.int64)
+    val_seeds = np.array(m["val_seeds"], dtype=np.int64)
+    assert len(np.intersect1d(train_seeds, val_seeds)) == 0, "loaded split has seed intersection"
+    tr_rows = np.isin(df.seed.to_numpy(), train_seeds)
+    print(f"[train-strategic-tok] loaded split from {SPLIT_LOAD}: "
+          f"{len(train_seeds)} train, {len(val_seeds)} val seeds", flush=True)
+
 tr_mask = tr_rows[block_start].copy()
 if not np.array_equal(tr_rows, tr_mask[grp_ids]):
     raise AssertionError("seed split crossed a decision group")
@@ -167,6 +185,14 @@ print(f"seed intersection: {np.intersect1d(train_seeds, val_seeds).tolist()}", f
 print(f"train: {int(tr_rows.sum()):,} rows / {int(tr_mask.sum()):,} groups, "
       f"val: {int((~tr_rows).sum()):,} rows / {len(va_groups):,} groups", flush=True)
 rng = np.random.default_rng(0)
+
+# --- Split manifest: save if creating a new split ---
+if SPLIT_MANIFEST and not SPLIT_LOAD:
+    manifest = {"train_seeds": train_seeds.tolist(), "val_seeds": val_seeds.tolist(),
+                "split_seed": 0, "model_seed": MODEL_SEED, "batch_seed": 0}
+    with open(SPLIT_MANIFEST, "w") as f:
+        json.dump(manifest, f, indent=2)
+    print(f"[train-strategic-tok] wrote split manifest: {SPLIT_MANIFEST}", flush=True)
 
 order = np.argsort(grp_ids, kind="stable")
 inv_perm = np.empty(nrows, np.int64)
@@ -193,6 +219,46 @@ screen = np.clip(df.screen.to_numpy(np.int64), 0, 15).astype(np.int16)
 value = (10 * df.won.to_numpy(np.float32) + df.endHp.to_numpy(np.float32)).astype(np.float32)
 q_target = (10 * df.labelWon.to_numpy(np.float32) + df.labelHp.to_numpy(np.float32)).astype(np.float32)
 q_valid = np.isfinite(q_target)
+
+# --- Fallback-centering: subtract behavior fallback Q from all candidates ---
+if Q_TARGET == "fallback_centered":
+    q_target_abs = q_target.copy()
+    # Build per-group fallback Q value: Q at the chosen row in each group
+    _fb_group = np.full(NG, np.nan, np.float32)
+    valid_fb = chosen_row_idx >= 0
+    _fb_group[valid_fb] = q_target[chosen_row_idx[valid_fb]]
+    has_fb = np.isfinite(_fb_group)
+    n_missing = int((~has_fb).sum())
+    if n_missing > 0:
+        print(f"[train-strategic-tok] WARNING: {n_missing} groups lack a behavior fallback — "
+              f"q_target set to NaN for these groups", flush=True)
+        q_target[~has_fb[grp_ids]] = np.nan
+    q_target[has_fb[grp_ids]] = (q_target[has_fb[grp_ids]] -
+                                  _fb_group[has_fb][grp_ids[has_fb[grp_ids]]]).astype(np.float32)
+    q_valid = np.isfinite(q_target)
+    print(f"[train-strategic-tok] Q target: fallback_centered", flush=True)
+    # Self-test on groups with valid fallback
+    n_tested = 0
+    for _g in range(min(100, NG)):
+        if not has_fb[_g]:
+            continue
+        lo, sz = int(block_start[_g]), int(sizes[_g])
+        if sz < 2:
+            continue
+        fb_off = int(rank_in_group[chosen_row_idx[_g]])
+        orig = q_target_abs[lo:lo + sz]
+        centered = q_target[lo:lo + sz]
+        assert abs(centered[fb_off]) < 1e-4, f"centered[fallback]={centered[fb_off]}"
+        for i in range(sz):
+            for j in range(sz):
+                diff = abs((orig[i] - orig[j]) - (centered[i] - centered[j]))
+                assert diff < 1e-3, f"pairwise diff mismatch: {diff}"
+        assert np.argmax(orig) == np.argmax(centered), "argmax changed"
+        n_tested += 1
+        if n_tested >= 10:
+            break
+    print(f"[train-strategic-tok] centering self-test PASS ({n_tested} groups)", flush=True)
+
 lw_all = df.labelWon.to_numpy(np.float32)
 
 # Candidate entity embedding (contract 2.5): entType 0=none 1=card 2=relic 3=potion.
@@ -769,9 +835,13 @@ if __name__ == "__main__":
         print(f"[predict-only] wrote {out_csv}", flush=True)
         raise SystemExit(0)
 
-    maximize = SELECT_METRIC == "q_top1"
-    best_sel = float("-inf") if maximize else float("inf")
-    best_state = None
+    # Dual checkpoint tracking: independently track best CE and best q_top1
+    best_ce = float("inf")
+    best_qtop1 = float("-inf")
+    best_ce_state = None
+    best_qtop1_state = None
+    best_ce_epoch = 0
+    best_qtop1_epoch = 0
     epochs_no_improve = 0
     early_stopped = False
     tr_gs = np.flatnonzero(tr_mask)
@@ -801,39 +871,76 @@ if __name__ == "__main__":
             q_losses.append(ql)
         model.eval()
         em = evaluate()
-        sel = em[SELECT_METRIC]
-        improved = (sel > best_sel + MIN_DELTA) if maximize else (sel < best_sel - MIN_DELTA)
-        if improved:
-            best_sel = sel
-            best_state = {k: v.detach().clone() for k, v in net.state_dict().items()}
+        ce = em.get("val_pol_ce", float("inf"))
+        qtop = em.get("q_top1", float("-inf"))
+        # Track best CE (minimize)
+        if ce < best_ce - MIN_DELTA:
+            best_ce = ce
+            best_ce_state = {k: v.detach().clone() for k, v in net.state_dict().items()}
+            best_ce_epoch = epoch
+        # Track best q_top1 (maximize)
+        if qtop > best_qtop1 + MIN_DELTA:
+            best_qtop1 = qtop
+            best_qtop1_state = {k: v.detach().clone() for k, v in net.state_dict().items()}
+            best_qtop1_epoch = epoch
+        # Early-stop: use SELECT_METRIC for the stopping decision
+        primary_val = em[SELECT_METRIC]
+        if SELECT_METRIC == "q_top1":
+            primary_best = best_qtop1
+            primary_improved = primary_val > primary_best + MIN_DELTA
+        else:
+            primary_best = best_ce if best_ce_epoch > 0 else float("inf")
+            primary_improved = primary_val < primary_best - MIN_DELTA
+        if primary_improved:
             epochs_no_improve = 0
         else:
             epochs_no_improve += 1
             if PATIENCE and epochs_no_improve >= PATIENCE:
-                print(f"early stop after epoch {epoch}: no {SELECT_METRIC} improvement of "
-                      f">= {MIN_DELTA} for {PATIENCE} epochs", flush=True)
+                print(f"early stop after epoch {epoch}: no improvement for {PATIENCE} epochs", flush=True)
                 early_stopped = True
                 break
         if epoch == 1 or epoch % 10 == 0 or epoch == EPOCHS:
             print(f"epoch={epoch:03d} ({time.time() - t_ep:5.1f}s) train_pol={np.mean(p_losses):.4f} "
                   f"train_val={np.mean(v_losses):.4f} train_q={np.mean(q_losses):.4f} "
-                  f"val_pol_ce={em['val_pol_ce']:.4f} "
+                  f"val_pol_ce={em['val_pol_ce']:.4f} q_top1={em.get('q_top1',0):.4f} "
                   f"metrics={to_py(em)}", flush=True)
 
     if not early_stopped and EPOCHS > 1:
         print(f"reached max epochs ({EPOCHS}) without early stop", flush=True)
 
-    net.load_state_dict(best_state)
-    model.eval()
-    eval_metrics = to_py(evaluate())
-    print(f"\nbest held-out ({SELECT_METRIC}={best_sel:.4f}): {eval_metrics}", flush=True)
-
-    os.makedirs(os.path.dirname(OUT) or ".", exist_ok=True)
-    torch.save({"state_dict": net.cpu().state_dict(), "mean": mean, "inv": inv,
+    # Save both best checkpoints
+    for name, state, val, epoch_num in [("ce", best_ce_state, best_ce, best_ce_epoch),
+                                         ("qtop1", best_qtop1_state, best_qtop1, best_qtop1_epoch)]:
+        if state is None:
+            print(f"warning: no best_{name} checkpoint saved", flush=True)
+            continue
+        net.load_state_dict(state)
+        model.eval()
+        eval_metrics = to_py(evaluate())
+        ckpt = {"state_dict": net.cpu().state_dict(), "mean": mean, "inv": inv,
                 "metrics": eval_metrics, "rung": RUNG, "nrows": int(nrows),
                 "features": NFILE, "transformer": TRANSFORMER,
-                "nquants": NQUANTS, "ncross": CROSS, "nprobes": NPROBES},
-               OUT + ".pt")
-    with open(OUT + "_metrics.json", "w") as f:
-        json.dump(eval_metrics, f, indent=2)
-    print(f"wrote {OUT}.pt, {OUT}_metrics.json", flush=True)
+                "nquants": NQUANTS, "ncross": CROSS, "nprobes": NPROBES}
+        ckpt_path = f"{OUT}_best_{name}.pt"
+        metrics_path = f"{OUT}_best_{name}_metrics.json"
+        os.makedirs(os.path.dirname(OUT) or ".", exist_ok=True)
+        torch.save(ckpt, ckpt_path)
+        with open(metrics_path, "w") as f:
+            json.dump(eval_metrics, f, indent=2)
+        print(f"best {name} (epoch {epoch_num}, value={val:.4f}): {eval_metrics}", flush=True)
+        print(f"wrote {ckpt_path}, {metrics_path}", flush=True)
+
+    # Also save the default (SELECT_METRIC) checkpoint at the usual OUT path for compatibility
+    default_state = best_ce_state if SELECT_METRIC == "val_pol_ce" else best_qtop1_state
+    if default_state is not None:
+        net.load_state_dict(default_state)
+        model.eval()
+        eval_metrics = to_py(evaluate())
+        torch.save({"state_dict": net.cpu().state_dict(), "mean": mean, "inv": inv,
+                    "metrics": eval_metrics, "rung": RUNG, "nrows": int(nrows),
+                    "features": NFILE, "transformer": TRANSFORMER,
+                    "nquants": NQUANTS, "ncross": CROSS, "nprobes": NPROBES},
+                   OUT + ".pt")
+        with open(OUT + "_metrics.json", "w") as f:
+            json.dump(eval_metrics, f, indent=2)
+        print(f"wrote {OUT}.pt, {OUT}_metrics.json", flush=True)
