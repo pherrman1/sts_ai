@@ -409,6 +409,13 @@ namespace sts::search {
     // check / execution. Default off (current deployed behavior).
     extern bool g_s3SemanticCardEdges;
 
+    // ── Outcome-bucket diagnostic (STS_S3_OUTCOME_BUCKET_DIAG) ────────
+    // Measures visible-outcome redundancy across hidden particles at
+    // stochastic boundaries (END_TURN → next hand). Off by default.
+    extern bool g_s3OutcomeBucketDiag;
+    extern std::string g_s3OutcomeBucketDiagFile;
+    extern int g_s3OutcomeBucketDiagParticles;
+
     // Resolve a semantic CARD edge's key to a live-hand positional Action.
     // Returns nullopt when no matching card instance exists in the current
     // hand. Caller must check hasCardKey before calling.

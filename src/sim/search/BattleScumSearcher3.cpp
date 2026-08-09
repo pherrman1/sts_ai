@@ -18,6 +18,7 @@
 #include <set>
 #include <sstream>
 #include <iomanip>
+#include <unordered_set>
 
 using namespace sts;
 
@@ -59,6 +60,27 @@ bool g_s3Expand = false;
 int g_s3ExpandMaxNew = 32;
 bool g_s3ExpandSimple = false; // like g_s3Expand but picks deterministically with uniform prior
 bool g_s3SemanticCardEdges = false;
+
+// ── Outcome-bucket diagnostic (STS_S3_OUTCOME_BUCKET_DIAG) ────────────
+// Measures how many distinct visible outcomes different hidden particles
+// produce from the same pre-state + action (primarily END_TURN → next hand).
+// Off by default; zero cost when disabled. CSV rows written per measured
+// stochastic transition.
+bool g_s3OutcomeBucketDiag = false;
+std::string g_s3OutcomeBucketDiagFile;
+int g_s3OutcomeBucketDiagParticles = 64; // particles to sample per transition
+
+// Thread-local diagnostic state: per-thread RNG, per-thread output file,
+// and per-thread dedup set (visibleHash of pre-state). Each unique
+// (preState, END_TURN) pair is measured at most once per thread.
+static thread_local std::mt19937_64 t_diagRng;
+static thread_local bool t_diagRngSeeded = false;
+static thread_local std::ofstream t_diagOut;
+static thread_local bool t_diagOutOpen = false;
+static thread_local std::unordered_set<std::uint64_t> t_diagSeen;
+static thread_local int t_diagRowCount = 0;
+static constexpr int kMaxDiagRows = 2000;  // hard cap per thread
+
 bool g_s3RolloutPolicy = false;
 int g_s3RolloutK = 1;
 int g_s3RolloutTurnStop = 0;
@@ -102,8 +124,12 @@ static bool sameCardMultiset(const std::vector<CardInstance> &a,
     return as == bs;
 }
 
-void BattleScumSearcher3::applyParticle(BattleContext &state,
-                                        const HiddenBattleState &particle) {
+// Shared implementation: install particle RNG seeds + draw order.
+// The fallbackRng is used only when the particle's draw-pile order doesn't
+// match the current state (stale particle after tree reuse).
+static void applyParticleImpl(BattleContext &state,
+                              const HiddenBattleState &particle,
+                              std::mt19937_64 &fallbackRng) {
     state.shuffleRng.seed0    = particle.shuffleRngSeed0;
     state.shuffleRng.seed1    = particle.shuffleRngSeed1;
     state.shuffleRng.counter  = 0;
@@ -129,8 +155,14 @@ void BattleScumSearcher3::applyParticle(BattleContext &state,
         std::copy(particle.drawPileOrder.begin(), particle.drawPileOrder.end(),
                   state.cards.drawPile.begin());
     } else {
-        std::shuffle(state.cards.drawPile.begin(), state.cards.drawPile.end(), rng);
+        std::shuffle(state.cards.drawPile.begin(), state.cards.drawPile.end(),
+                     fallbackRng);
     }
+}
+
+void BattleScumSearcher3::applyParticle(BattleContext &state,
+                                        const HiddenBattleState &particle) {
+    applyParticleImpl(state, particle, rng);
 }
 
 // ---- Observation caching: compute once per node, reuse on subsequent visits
@@ -219,6 +251,236 @@ std::optional<Action> resolveSemanticCardEdge(
         }
     }
     return std::nullopt;
+}
+
+// ---- Hand-only multiset key (same identity fields as CombatObservation) -----
+// Used to measure hand compression independent of the full visible state.
+static std::uint64_t handMultisetHash(const BattleContext &bc) {
+    // Same card-identity hash as CombatObservation::visibleHash uses for piles.
+    // Mirrors cardIdentityHash from CombatObservation.cpp.
+    auto cardHash = [](const CardInstance &c) -> std::uint64_t {
+        std::uint64_t h = static_cast<std::uint64_t>(c.getId()) * 6364136223846793005ULL;
+        h += static_cast<std::uint64_t>(c.specialData) * 2654435761ULL;
+        h += static_cast<std::uint64_t>(c.costForTurn) * 40503ULL;
+        h += (c.isUpgraded() ? 1ULL : 0ULL) * 0x9e3779b97f4a7c15ULL;
+        h += (c.freeToPlayOnce ? 1ULL : 0ULL) * 15461ULL;
+        return h;
+    };
+    std::uint64_t acc = 0;
+    for (int i = 0; i < bc.cards.cardsInHand; ++i)
+        acc += cardHash(bc.cards.hand[i]);
+    // Also mix in hand size so [Strike] != [Strike,Strike].
+    acc ^= static_cast<std::uint64_t>(bc.cards.cardsInHand) * 0x9e3779b97f4a7c15ULL;
+    return acc ? acc : 1;
+}
+
+// ── Outcome-bucket diagnostic ────────────────────────────────────────────
+// For a pre-state + action at a stochastic boundary (END_TURN / card draw),
+// replay the same transition under N fresh particles, bucket identical
+// visible outcomes, and write one CSV row. This measures how many distinct
+// observable futures a single decision actually produces — the fundamental
+// number for local exact/chance outcome aggregation.
+static void runOutcomeBucketDiag(
+    const BattleContext &preState, const Action &action,
+    int nParticles, std::mt19937_64 &diagRng,
+    std::uint64_t seed, int encounter, int floorNum,
+    int turn, int decisionIndex,
+    std::ostream &out)
+{
+    // Generate fresh particles from the current observation.
+    auto obs = CombatObservation::fromBattleContext(preState);
+    auto particles = HiddenBattleState::sampleParticles(obs, preState, diagRng, nParticles);
+
+    // Determine transition metadata.
+    const char *transType = "END_TURN";
+    const char *actionType = "END_TURN";
+    int cardId = -1;
+    if (action.getActionType() == ActionType::CARD) {
+        transType = "CARD";
+        actionType = "CARD";
+        int hi = action.getSourceIdx();
+        if (hi >= 0 && hi < preState.cards.cardsInHand)
+            cardId = static_cast<int>(preState.cards.hand[hi].getId());
+    }
+
+    // Draw-pile metadata before transition.
+    const int drawSizeBefore = (int)preState.cards.drawPile.size();
+    const int discardSizeBefore = (int)preState.cards.discardPile.size();
+    const int handSizeBefore = preState.cards.cardsInHand;
+
+    // Replay under each particle, bucket by visibleHash and handHash.
+    std::unordered_map<std::uint64_t, int> fullBucket;   // visibleHash → count
+    std::unordered_map<std::uint64_t, int> handBucket;   // hand-only → count
+    int reshuffleCount = 0;
+    int cardsDrawn = 0;
+    int handSizeAfter = 0;
+    int lethalCount = 0;  // particles producing an immediately lethal hand
+
+    for (const auto &p : particles) {
+        BattleContext state = preState;
+        applyParticleImpl(state, p, diagRng);
+
+        // Detect reshuffle: if the draw pile was empty and discard was non-empty
+        // before the action, the game reshuffles on draw.
+        bool reshuffled = false;
+        if (action.getActionType() == ActionType::END_TURN) {
+            if (drawSizeBefore == 0 && discardSizeBefore > 0)
+                reshuffled = true;
+        }
+        if (reshuffled) ++reshuffleCount;
+
+        state.executeActions(); // process any queued actions
+        action.execute(state);
+        state.executeActions(); // finish the transition (monster turn, etc.)
+
+        if (cardsDrawn == 0 && action.getActionType() == ActionType::END_TURN) {
+            cardsDrawn = state.cards.cardsInHand; // new hand after draw
+            handSizeAfter = state.cards.cardsInHand;
+        }
+
+        // Full visible-state hash.
+        auto postObs = CombatObservation::fromBattleContext(state);
+        std::uint64_t vh = postObs.visibleHash();
+        ++fullBucket[vh];
+
+        // Hand-only multiset hash.
+        std::uint64_t hh = handMultisetHash(state);
+        ++handBucket[hh];
+
+        // Lethal check: does any legal CARD action immediately kill all monsters?
+        if (state.inputState == InputState::PLAYER_NORMAL
+            && state.outcome == Outcome::UNDECIDED
+            && state.isCardPlayAllowed()) {
+            bool lethal = false;
+            for (int hi = 0; hi < state.cards.cardsInHand && !lethal; ++hi) {
+                const auto &c = state.cards.hand[hi];
+                if (c.getType() != CardType::ATTACK || !c.canUseOnAnyTarget(state))
+                    continue;
+                Action ca(ActionType::CARD, hi);
+                if (!ca.isValidAction(state)) continue;
+                BattleContext check = state;
+                ca.execute(check);
+                check.executeActions();
+                bool allDead = true;
+                for (int mi = 0; mi < check.monsters.monsterCount; ++mi)
+                    if (check.monsters.arr[mi].curHp > 0) { allDead = false; break; }
+                if (allDead) { lethal = true; break; }
+            }
+            if (lethal) ++lethalCount;
+        }
+    }
+
+    // Sort bucket counts descending for compact representation.
+    std::vector<int> fullCounts, handCounts;
+    for (const auto &kv : fullBucket) fullCounts.push_back(kv.second);
+    for (const auto &kv : handBucket) handCounts.push_back(kv.second);
+    std::sort(fullCounts.begin(), fullCounts.end(), std::greater<int>());
+    std::sort(handCounts.begin(), handCounts.end(), std::greater<int>());
+
+    const int nFull = (int)fullBucket.size();
+    const int nHand = (int)handBucket.size();
+    const double comprFull = nFull > 0 ? (double)nParticles / nFull : 0.0;
+    const double comprHand = nHand > 0 ? (double)nParticles / nHand : 0.0;
+    const int largestFull = fullCounts.empty() ? 0 : fullCounts[0];
+    const double largestFrac = nParticles > 0 ? (double)largestFull / nParticles : 0.0;
+    const int singletonsFull = (int)std::count(fullCounts.begin(), fullCounts.end(), 1);
+    const int singletonsHand = (int)std::count(handCounts.begin(), handCounts.end(), 1);
+
+    // Entropy of the outcome distribution (in bits).
+    double entropyFull = 0.0;
+    for (int c : fullCounts) {
+        double p = (double)c / nParticles;
+        if (p > 0) entropyFull -= p * std::log2(p);
+    }
+
+    // Compact bucket representation: "21;14;10;..."
+    auto fmtBuckets = [](const std::vector<int> &v) -> std::string {
+        if (v.empty()) return "";
+        std::ostringstream oss;
+        for (size_t i = 0; i < v.size() && i < 12; ++i) {
+            if (i) oss << ';';
+            oss << v[i];
+        }
+        if (v.size() > 12) oss << ";...";
+        return oss.str();
+    };
+
+    // Write CSV row (header protected by mutex for thread safety).
+    static std::mutex headerMutex;
+    static bool headerWritten = false;
+    {
+        std::lock_guard<std::mutex> lk(headerMutex);
+        if (!headerWritten) {
+            out << "seed,floor,encounter,turn,decisionIndex,"
+                << "transitionType,actionType,cardId,"
+                << "particlesSampled,drawPileBefore,discardBefore,handBefore,"
+                << "cardsDrawn,handAfter,reshuffleOccurred,"
+                << "uniqueFullObs,uniqueHandObs,"
+                << "comprFull,comprHand,"
+                << "largestBucket,largestBucketFrac,"
+                << "singletonsFull,singletonsHand,"
+                << "entropyFull,"
+                << "lethalCount,lethalFrac,"
+                << "bucketCountsFull,bucketCountsHand\n";
+            headerWritten = true;
+        }
+    }
+
+    // Protect the write with the same mutex so rows don't interleave.
+    {
+        std::lock_guard<std::mutex> lk(headerMutex);
+        out << seed << ',' << floorNum << ',' << encounter << ','
+            << turn << ',' << decisionIndex << ','
+            << transType << ',' << actionType << ',' << cardId << ','
+            << nParticles << ',' << drawSizeBefore << ',' << discardSizeBefore
+            << ',' << handSizeBefore << ','
+            << cardsDrawn << ',' << handSizeAfter << ',' << (reshuffleCount > 0 ? 1 : 0) << ','
+            << nFull << ',' << nHand << ','
+            << comprFull << ',' << comprHand << ','
+            << largestFull << ',' << largestFrac << ','
+            << singletonsFull << ',' << singletonsHand << ','
+            << entropyFull << ','
+            << lethalCount << ',' << (nParticles > 0 ? (double)lethalCount / nParticles : 0.0) << ','
+            << '"' << fmtBuckets(fullCounts) << '"' << ','
+            << '"' << fmtBuckets(handCounts) << '"' << '\n';
+        out.flush();
+    }
+}
+
+// ── Helper: maybe run bucket diagnostic before executing an action ──────
+// Called at each action-execution site in step(). No-op when diag is off.
+// Deduplicates by pre-state visibleHash so each unique (state, END_TURN)
+// pair is measured at most once. Hard-capped at kMaxDiagRows per thread.
+static void maybeOutcomeBucketDiag(
+    const BattleContext &preState, const Action &action,
+    std::uint64_t seed, int encounter, int floor, int turn, int decIdx)
+{
+    if (!g_s3OutcomeBucketDiag) return;
+    if (action.getActionType() != ActionType::END_TURN) return;
+    if (t_diagRowCount >= kMaxDiagRows) return;
+
+    // Dedup by pre-state visibleHash.
+    auto obs = CombatObservation::fromBattleContext(preState);
+    std::uint64_t key = obs.visibleHash();
+    if (!t_diagSeen.insert(key).second) return;  // already measured
+
+    // Seed the thread-local RNG once from the first observed state.
+    if (!t_diagRngSeeded) {
+        std::uint64_t h = key ^ seed;
+        t_diagRng.seed(h ? h : 1);
+        t_diagRngSeeded = true;
+    }
+
+    // Open the thread-local output file once.
+    if (!t_diagOutOpen && !g_s3OutcomeBucketDiagFile.empty()) {
+        t_diagOut.open(g_s3OutcomeBucketDiagFile, std::ios::app);
+        t_diagOutOpen = true;
+    }
+    std::ostream &out = t_diagOutOpen ? t_diagOut : std::cerr;
+
+    ++t_diagRowCount;
+    runOutcomeBucketDiag(preState, action, g_s3OutcomeBucketDiagParticles,
+                         t_diagRng, seed, encounter, floor, turn, decIdx, out);
 }
 
 // ---- Card action key (semantic identity independent of hand position) ------
@@ -519,6 +781,9 @@ void BattleScumSearcher3::step() {
                 return;
             }
 
+            maybeOutcomeBucketDiag(state, edge.action,
+                agentSeed, (int)rootBc->encounter, rootBc->floorNum,
+                state.turn, decisionIndex);
             edge.action.execute(state);
             ++diag.treeActions;
             actionStack.push_back(edge.action);
@@ -779,6 +1044,9 @@ void BattleScumSearcher3::step() {
                         auto resolved = resolveSemanticCardEdge(validEdge, state);
                         if (resolved) execAction = *resolved;
                     }
+                    maybeOutcomeBucketDiag(state, execAction,
+                        agentSeed, (int)rootBc->encounter, rootBc->floorNum,
+                        state.turn, decisionIndex);
                     execAction.execute(state);
                     ++diag.treeActions;
                     actionStack.push_back(execAction);
@@ -835,6 +1103,9 @@ void BattleScumSearcher3::step() {
                             }
                             if (bestIdx >= 0) {
                                 auto &newEdge = cur->edges[bestIdx];
+                                maybeOutcomeBucketDiag(state, newEdge.action,
+                                    agentSeed, (int)rootBc->encounter, rootBc->floorNum,
+                                    state.turn, decisionIndex);
                                 newEdge.action.execute(state);
                                 ++diag.treeActions;
                                 actionStack.push_back(newEdge.action);
@@ -874,6 +1145,9 @@ void BattleScumSearcher3::step() {
                             const int newIdx = selectBestValidEdgePUCT(*cur, state);
                             if (newIdx >= 0) {
                                 auto &newEdge = cur->edges[newIdx];
+                                maybeOutcomeBucketDiag(state, newEdge.action,
+                                    agentSeed, (int)rootBc->encounter, rootBc->floorNum,
+                                    state.turn, decisionIndex);
                                 newEdge.action.execute(state);
                                 ++diag.treeActions;
                                 actionStack.push_back(newEdge.action);
@@ -907,6 +1181,9 @@ void BattleScumSearcher3::step() {
             return;
         }
 
+        maybeOutcomeBucketDiag(state, effectiveAction,
+            agentSeed, (int)rootBc->encounter, rootBc->floorNum,
+            state.turn, decisionIndex);
         effectiveAction.execute(state);
         ++diag.treeActions;
         actionStack.push_back(effectiveAction);

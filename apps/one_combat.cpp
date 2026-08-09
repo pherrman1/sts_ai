@@ -9939,6 +9939,18 @@ int main(int argc, char **argv) {
         search::g_s3SemanticCardEdges = std::atoi(d) != 0;
         std::cout << "[S3 semantic-card-edges = " << (search::g_s3SemanticCardEdges ? "ON" : "off") << "]\n";
     }
+    if (const char *d = std::getenv("STS_S3_OUTCOME_BUCKET_DIAG")) {
+        search::g_s3OutcomeBucketDiag = std::atoi(d) != 0;
+        std::cout << "[S3 outcome-bucket-diag = " << (search::g_s3OutcomeBucketDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_OUTCOME_BUCKET_DIAG_FILE")) {
+        search::g_s3OutcomeBucketDiagFile = d;
+        std::cout << "[S3 outcome-bucket-diag file = " << search::g_s3OutcomeBucketDiagFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_OUTCOME_BUCKET_DIAG_PARTICLES")) {
+        search::g_s3OutcomeBucketDiagParticles = std::atoi(d);
+        std::cout << "[S3 outcome-bucket-diag particles = " << search::g_s3OutcomeBucketDiagParticles << "]\n";
+    }
     if (const char *d = std::getenv("STS_S3_UNION_EXPAND")) {
         search::g_s3UnionExpand = std::atoi(d) != 0;
         std::cout << "[S3 union-expand = " << (search::g_s3UnionExpand ? "ON" : "off") << "]\n";
