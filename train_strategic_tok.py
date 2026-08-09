@@ -5,7 +5,7 @@ Same row schema and losses as `train_strategic.py` (V3): group-CE on `chosen`,
 per-screen value-MSE on chosen rows (target 10*won+endHp), Q-MSE on Tier-B
 labeled rows (target 10*labelWon+labelHp). The state representation is replaced
 by the V4 token state (contract docs/knowledge-base/architecture/ooc-strategic-v4.md):
-50 globals (44 rich scalars + 6 derived thresholds), counted deck tokens
+42 globals (36 raw scalars + 6 derived thresholds), counted deck tokens
 (id, upgraded, countF) through a 1-layer single-head attention, relic tokens
 (id, dataF) and potion tokens (id, countF) through mean-pooled MLPs, plus a
 candidate entity embedding in the action encoder (rung 4).
@@ -15,11 +15,11 @@ tokens; rung<3 -> no relic/potion tokens; rung<4 -> no entity embedding.
 All rungs share the same topology and training contract.
 
 Memory: like V3, the state block is read in pandas chunks and written ONCE to a
-group-ordered float16 binary (OUT + "_tok_state.bin") with 482 raw columns per
-row [glob 44, thr 6, deck 96x3, rel 64x2, pot 8x2]; training gathers contiguous
+group-ordered float16 binary (OUT + "_tok_state.bin") with 474 raw columns per
+row [glob 42, deck 96x3, rel 64x2, pot 8x2]; training gathers contiguous
 slices from an mmap of that file (uploaded to GPU VRAM once and gathered
 on-device when CUDA is available; CPU mmap fallback on OOM). Global mean/inv
-(50 values) are computed from train rows; normalization happens per batch (the
+(42 values) are computed from train rows; normalization happens per batch (the
 file stores RAW values).
 """
 import hashlib, json, math, os, re, sys, time
@@ -105,6 +105,15 @@ for i, name in enumerate(state_cols):
     elif re_pot.match(name): pot_idx.append(i)
     else: scalar_idx.append(i)
 assert len(scalar_idx) == 44, len(scalar_idx)
+# Verify column positions: the trainer relies on specific CSV column indices;
+# if richHeader() changes order, fail with a clear message rather than silently
+# producing a skewed model (see decision-log/2026-08-09-v4-glob-skew-fix.md).
+_col_checks = [
+    (23, 'pvShop'), (31, 'bottledPowId'),
+    (1005, 'fmDElite'), (1015, 'curMapX'), (1016, 'curMapY'),
+]
+for _idx, _name in _col_checks:
+    assert state_cols[_idx] == _name, f"state_cols[{_idx}] = {state_cols[_idx]!r}, expected {_name!r}"
 assert len(d_idx) == NCARD and len(u_idx) == NCARD, (len(d_idx), len(u_idx))
 assert len(r_idx) == NREL and len(pot_idx) == NPOT, (len(r_idx), len(pot_idx))
 
@@ -284,7 +293,7 @@ def pot_tokens(p):
 
 
 # --- State file: 482 raw float16 columns, group-ordered -----------------------
-NFILE = NGLOB + MAXD * 3 + MAXR * 2 + MAXP * 2   # 41 + 288 + 128 + 16 = 473
+NFILE = NGLOB + MAXD * 3 + MAXR * 2 + MAXP * 2   # 42 + 288 + 128 + 16 = 474
 STATE_FILE = OUT + "_tok_state.bin"
 expected = nrows * NFILE * 2
 reused = False
@@ -325,13 +334,18 @@ for chunk in pd.read_csv(CSV, usecols=state_cols, chunksize=CHUNK, dtype=np.floa
     hi = lo + len(chunk)
     c = chunk.to_numpy(np.float64)
     m = tr_rows[lo:hi]
-    # Build the NRAW=35 non-leak glob block: columns 0-13 + 23-43 from c
-    # (skip columns 14-22: bossId/nextEliteId/nextFight0-2/remElites/remFights/
-    #  monOffset/eliteOffset — the hidden-information leaks).
+    # Build the NRAW=36 glob block: columns 0-14 (ascension..bossId) +
+    # pv*/bottled* (cols 23-31) + fm*/mapPos (cols 1005-1016).
+    # Skip columns 15-22 (nextEliteId/nextFight0-2/remElites/remFights/
+    # monOffset/eliteOffset — the 8 hidden-information leaks) and the
+    # interleaved d/u/r/pot block (cols 32-1004).
     c_m = c[m, :]
     g = np.zeros((c_m.shape[0], NGLOB), np.float64)
     g[:, :14] = c_m[:, :14]
-    g[:, 14:NRAW] = c_m[:, 23:44]
+    g[:, 14] = c_m[:, 14]          # bossId (legit, visible on act map)
+    g[:, 15:24] = c_m[:, 23:32]    # pvShop..bottledPowId (9 scalars)
+    g[:, 24:34] = c_m[:, 1005:1015] # fmDElite..fmCTreasure (10 values)
+    g[:, 34:NRAW] = c_m[:, 1015:1017] # curMapX, curMapY (2 values)
     # Slots NRAW..NGLB-1 are DERIVED features.
     hp = c_m[:, 3]
     mx = np.maximum(c_m[:, 4], 1.0)
@@ -339,9 +353,9 @@ for chunk in pd.read_csv(CSV, usecols=state_cols, chunksize=CHUNK, dtype=np.floa
     g[:, NRAW + 1] = c_m[:, 4] - hp                                   # missingHp
     g[:, NRAW + 2] = (c_m[:, 12] < c_m[:, 13]).astype(np.float64)     # freePotionSlot
     g[:, NRAW + 3] = (c_m[:, 5] >= 75.0).astype(np.float64)           # goldGeRemoval
-    # canTakeEliteKey: fmCElite (c col 36) replaces removed remElites (c col 19)
-    g[:, NRAW + 4] = ((c_m[:, 36] > 0) & ~((c_m[:, 9] > 0) & (c_m[:, 10] > 0) & (c_m[:, 11] > 0))).astype(np.float64)
-    g[:, NRAW + 5] = (c_m[:, 35] <= 3.0).astype(np.float64)           # bossNear (fmDBoss, c col 35)
+    # canTakeEliteKey: fmCElite (c col 1009) replaces removed remElites (c col 19)
+    g[:, NRAW + 4] = ((c_m[:, 1009] > 0) & ~((c_m[:, 9] > 0) & (c_m[:, 10] > 0) & (c_m[:, 11] > 0))).astype(np.float64)
+    g[:, NRAW + 5] = (c_m[:, 1008] <= 3.0).astype(np.float64)         # bossNear (fmDBoss, c col 1008)
     mean += g.sum(0)
     sumsq += (g * g).sum(0)
     cnt += int(m.sum())
@@ -361,16 +375,19 @@ if not reused:
         c = chunk.to_numpy(np.float64)
         out = np.zeros((len(chunk), NFILE), np.float32)
         out[:, :14] = c[:, :14]
-        out[:, 14:NRAW] = c[:, 23:44]
+        out[:, 14] = c[:, 14]          # bossId (legit, visible on act map)
+        out[:, 15:24] = c[:, 23:32]    # pvShop..bottledPowId (9 scalars)
+        out[:, 24:34] = c[:, 1005:1015] # fmDElite..fmCTreasure (10 values)
+        out[:, 34:NRAW] = c[:, 1015:1017] # curMapX, curMapY (2 values)
         hp = c[:, 3]                                    # curHp
         mx = np.maximum(c[:, 4], 1.0)                   # maxHp
         out[:, NRAW + 0] = hp / mx                      # hpFrac
         out[:, NRAW + 1] = c[:, 4] - hp                 # missingHp
         out[:, NRAW + 2] = (c[:, 12] < c[:, 13]).astype(np.float32)             # freePotionSlot
         out[:, NRAW + 3] = (c[:, 5] >= 75.0).astype(np.float32)                 # goldGeRemoval
-        # canTakeEliteKey: fmCElite (c col 36) replaces removed remElites (c col 19)
-        out[:, NRAW + 4] = ((c[:, 36] > 0) & ~((c[:, 9] > 0) & (c[:, 10] > 0) & (c[:, 11] > 0))).astype(np.float32)
-        out[:, NRAW + 5] = (c[:, 35] <= 3.0).astype(np.float32)                 # bossNear (fmDBoss, c col 35)
+        # canTakeEliteKey: fmCElite (c col 1009) replaces removed remElites (c col 19)
+        out[:, NRAW + 4] = ((c[:, 1009] > 0) & ~((c[:, 9] > 0) & (c[:, 10] > 0) & (c[:, 11] > 0))).astype(np.float32)
+        out[:, NRAW + 5] = (c[:, 1008] <= 3.0).astype(np.float32)               # bossNear (fmDBoss, c col 1008)
         d = c[:, d_idx]
         u = c[:, u_idx]
         r = c[:, r_idx]

@@ -3,7 +3,7 @@
 
 Used by `train_strategic_tok.py` (training) and `export_strategic_tok.py`
 (native export + parity). Contract: docs/knowledge-base/architecture/ooc-strategic-v4.md.
-`forward` takes a NORMALIZED 41-glob block (35 raw scalars minus 9
+`forward` takes a NORMALIZED 42-glob block (36 raw scalars minus 8
 hidden-information leaks + 6 derived thresholds); the caller applies the
 checkpoint's mean/inv and the [-8,8] clamp exactly like the native C++ entry
 points.
@@ -15,8 +15,8 @@ from torch import nn
 
 NCARD, NREL, NPOT = 372, 181, 48
 MAXD, MAXR, MAXP = 96, 64, 8
-NGLOB = 41   # 35 legit raw scalars + 6 derived thresholds (9 leaks removed)
-NRAW = 35
+NGLOB = 42   # 36 legit raw scalars + 6 derived thresholds (8 leaks removed)
+NRAW = 36
 
 
 class Net(nn.Module):
@@ -35,7 +35,7 @@ class Net(nn.Module):
         self.nquants = nquants
         self.ncross = ncross
         self.transformer = transformer
-        self.f = nn.Sequential(nn.Linear(97 + nprobes * 6, 256), nn.LayerNorm(256, eps=1e-5),
+        self.f = nn.Sequential(nn.Linear(98 + nprobes * 6, 256), nn.LayerNorm(256, eps=1e-5),
                                nn.GELU(approximate="tanh"), nn.Dropout(0.2),
                                nn.Linear(256, 128), nn.GELU(approximate="tanh"))
         self.E_card = nn.Embedding(NCARD, 32)

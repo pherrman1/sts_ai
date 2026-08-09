@@ -9,7 +9,7 @@
 #include <string>
 
 struct OocStrategicTokNet {
-    static constexpr int NGLB = 41, NHIDDEN = 256, NHIDDEN2 = 128, NBITS = 32;
+    static constexpr int NGLB = 42, NHIDDEN = 256, NHIDDEN2 = 128, NBITS = 32;
     static constexpr int DECKDIM = 32, RELDIM = 16, POTDIM = 8;
     static constexpr int MAXDK = 96, MAXRL = 64, MAXPT = 8;
     static constexpr int DKTOKIN = 41, RLTOKIN = 17, PTTOKIN = 9;
@@ -21,7 +21,7 @@ struct OocStrategicTokNet {
     static constexpr int AHIDDEN = 32, AHIDDEN2 = 16;
     static constexpr int POLHID = 96, VALHID = 64;
     static constexpr int QDIM = 3 * DECKDIM;             // 96
-    static constexpr int FUSIN = NGLB + DECKDIM + RELDIM + POTDIM;  // 97
+    static constexpr int FUSIN = NGLB + DECKDIM + RELDIM + POTDIM;  // 98
     static constexpr int CATIN = NCAT * CATDIM + ATYPEDIM;         // 32
 
     float globMean[NGLB], globInv[NGLB];

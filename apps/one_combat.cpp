@@ -3405,12 +3405,12 @@ static std::string vFeatCsv(const GameContext &gc) {
 }
 
 // ---------------------------------------------------------------------------
-// V4 TOKEN STATE (ooc-strategic-v4.md §2): 41 globals (35 richRow scalars
-// minus 9 hidden-information leaks + 6 derived thresholds) plus canonical
+// V4 TOKEN STATE (ooc-strategic-v4.md §2): 42 globals (36 richRow scalars
+// minus 8 hidden-information leaks + 6 derived thresholds) plus canonical
 // deck/relic/potion tokens, built from the same GameContext loops as richRow().
 // Built once per decision, reused across the legal actions of that decision.
 // ---------------------------------------------------------------------------
-static constexpr int TOK_NGLOB = 41;
+static constexpr int TOK_NGLOB = 42;
 struct TokState {
     float glob[TOK_NGLOB];
     int nDk, nRl, nPt;
@@ -3421,13 +3421,14 @@ struct TokState {
 
 // Parity hook (STS_OOC_STRATEGIC_TOK_CHECK=1): once per run, on the first
 // gated decision, when the token net is loaded. Armed at run start.
-// The 9 hidden-information leaks (bossId, nextEliteId, nextFight0/1/2,
-// remElites, remFights, monOffset, eliteOffset) are excluded.
-static constexpr int TOK_NRAW = 35;
+// The 8 hidden-information leaks (nextEliteId, nextFight0/1/2,
+// remElites, remFights, monOffset, eliteOffset) are excluded; bossId is kept.
+static constexpr int TOK_NRAW = 36;
 static void tokCheckGlobParity(const GameContext &gc, const TokState &ts) {
     static const char *const names[TOK_NRAW] = {
         "ascension", "act", "floor", "curHp", "maxHp", "gold", "deckSize", "potionChance",
         "cardRarityFactor", "blueKey", "greenKey", "redKey", "potionCount", "potionCapacity",
+        "bossId",
         "pvShop", "pvRest", "pvEvent", "pvElite", "pvMonster", "pvTreasure",
         "bottledAtkId", "bottledSkillId", "bottledPowId",
         "fmDElite", "fmDRest", "fmDShop", "fmDBoss", "fmCElite", "fmCRest", "fmCShop", "fmCEvent",
@@ -3476,15 +3477,16 @@ static TokState buildTokState(const GameContext &gc, const PathHistory &path) {
         if (id >= 0 && id < kNumPotions) ++pot[id];
     }
     const FwdMap fm = forwardMapFeatures(gc);
-    // 35 raw scalars: same as richRow() minus the 9 hidden-information leaks
-    // (bossId, nextEliteId, nextFight0/1/2, remElites, remFights, monOffset,
-    //  eliteOffset at original indices 14-22).
+    // 36 raw scalars: same as richRow() minus the 8 hidden-information leaks
+    // (nextEliteId, nextFight0/1/2, remElites, remFights, monOffset,
+    //  eliteOffset at original indices 15-22); bossId is kept (visible on act map).
     const float glob[TOK_NRAW] = {
         (float)gc.ascension, (float)gc.act, (float)gc.floorNum, (float)gc.curHp,
         (float)gc.maxHp, (float)gc.gold, (float)gc.deck.size(),
         (float)gc.potionChance, (float)gc.cardRarityFactor,
         (float)(gc.blueKey ? 1 : 0), (float)(gc.greenKey ? 1 : 0), (float)(gc.redKey ? 1 : 0),
         (float)gc.potionCount, (float)gc.potionCapacity,
+        (float)gc.boss,
         (float)path.roomVisits[(int)Room::SHOP], (float)path.roomVisits[(int)Room::REST],
         (float)path.roomVisits[(int)Room::EVENT], (float)path.roomVisits[(int)Room::ELITE],
         (float)path.roomVisits[(int)Room::MONSTER], (float)path.roomVisits[(int)Room::TREASURE],
@@ -9817,24 +9819,24 @@ int main(int argc, char **argv) {
             std::cout << "[V_combat load FAILED: " << path << "]\n";
         }
     }
-    // V_combat leaf default (winrate wave §126): the fresh honest-data vnet
-    // at α=0.3 is a three-gate-confirmed ~+12pp win at ~2-2.4× cpu (recorded
-    // cpu-trade call). Scoped like the live-valid default: fair + Searcher3
-    // only, when STS_VNET is unset (an explicit STS_VNET=… always overrides,
-    // e.g. STS_VNET=1 loads the legacy build/v_combat_trees.txt and
-    // STS_VNET=<missing-path> fails the load and leaves the vnet off). The
-    // fairgen datagen mode forces its regime after this parse and is NOT
-    // covered; combatgen IS covered (envs set during parse).
+    // V_combat leaf default (hyperparameter-tuned §148, replacing the §126
+    // honest-data model): 50-trial Optuna TPE search found better-regularized
+    // XGBoost params (higher min_child_weight 81.6, L1 α=1.81, γ=4.36,
+    // subsample 0.54). At matched tree count (~800–1000) this gives +10.9pp
+    // win (20.3%→31.2%) in a 64-seed S3-fair paired gate. The 1000-tree
+    // export is the default (ties for best win% plus highest end-HP).
+    // Scoped like the live-valid default: fair + Searcher3 only, when
+    // STS_VNET is unset (an explicit STS_VNET=… always overrides).
     if (!std::getenv("STS_VNET") && search::g_fairPlay && search::g_useSearcher3) {
-        if (search::g_combatVNet.load("build/v_combat_honest.txt")) {
+        if (search::g_combatVNet.load("build/v_combat_hparam_1000.txt")) {
             search::g_useVNet = true;
             search::g_vnetAlpha = 0.3;
-            std::cout << "[V_combat leaf default ON: build/v_combat_honest.txt, "
+            std::cout << "[V_combat leaf default ON: build/v_combat_hparam_1000.txt, "
                       << search::g_combatVNet.description() << ", alpha "
-                      << search::g_vnetAlpha << " (fair S3, §126)]\n";
+                      << search::g_vnetAlpha << " (fair S3, §148)]\n";
         } else {
-            std::cout << "[V_combat leaf default load FAILED: build/v_combat_honest.txt "
-                         "(continuing without)]\n";
+            std::cout << "[V_combat leaf default load FAILED: "
+                         "build/v_combat_hparam_1000.txt (continuing without)]\n";
         }
     }
     if (const char *d = std::getenv("STS_DIAG_VNET2")) {   // secondary diagnostic vnet (leafdiag/leafref only)

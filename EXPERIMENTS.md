@@ -6776,3 +6776,75 @@ unFullRunOOC runs, for each counter relic the
   source (current controller, §141 diagnostic confirms the labels genuinely changed) does
   not transfer — consistent with §62/§100/§105/§127/§129. Deployed
   `ooc_strategic_tok_final.native` unchanged.
+
+## §148 V_combat hyperparameter optimization (Optuna TPE search + paired gate): +10.9pp win at matched tree count; new default vnet (2026-08-09, local)
+
+- **What:** 50-trial Optuna TPE hyperparameter search over the canonical
+  `train_value_combat.py` XGBoost recipe (max_depth, eta, subsample,
+  colsample_bytree, min_child_weight, lambda, alpha, gamma) on the
+  honest dataset (`build/vcombat_honest.csv`, 287K rows, 16K fights),
+  same GroupShuffleSplit and critical-state weighting. Best trial trained
+  to 2000 trees (eta 0.031), exported at 800/1000/2000 trees for a compute-
+  cost sweep. Paired gate: S3 fair −belief−chain, 64p, 1k sims, 64 seeds,
+  no OOC gate stack (default native OOC), α=0.3.
+
+- **Best hyperparameters vs deployed (§126):**
+
+  | Parameter | Deployed (§126) | Tuned (§148) |
+  |---|---|---|
+  | `max_depth` | 8 | 8 |
+  | `eta` | 0.05 | 0.031 |
+  | `subsample` | 0.8 | **0.54** |
+  | `colsample_bytree` | 0.7 | 0.81 |
+  | `min_child_weight` | 20 | **82** |
+  | `lambda` (L2) | 1.0 (default) | 0.003 |
+  | `alpha` (L1) | 0 (default) | **1.81** |
+  | `gamma` | 0 (default) | **4.36** |
+
+- **Offline metrics (same validation split):** tuned model RMSE 7.78 vs
+  deployed 7.88 (−1.3%). The improvement is small but consistent across
+  the top trials (7.78–7.82 cluster). Parameter importance:
+  `subsample` (0.29) and `min_child_weight` (0.29) dominate.
+
+- **Paired gate at matched compute (64 seeds, S3 fair, 1k sims, default
+  OOC, no gate stack):**
+
+  | Model | Trees | Offline RMSE | **Win%** | Floor | End HP | cpu_sec/run |
+  |---|---|---:|---:|---:|---:|---:|
+  | Baseline (§126 honest) | 804 | 7.88 | **20.3%** | 40.1 | 14.1 | 26.6 |
+  | Tuned @800 trees | 800 | ~7.90 | **31.2%** | 39.5 | 15.2 | 40.4 |
+  | Tuned @1000 trees | 1000 | ~7.90 | **31.2%** | 40.1 | 17.8 | 42.8 |
+  | Tuned @2000 trees | 2000 | 7.78 | 29.7% | 39.6 | 14.8 | 68.0 |
+
+  At matched tree count (~800 trees), the tuned hyperparameters give
+  **+10.9pp win** (20.3% → 31.2%). The 1000-tree version ties for best
+  win rate with the highest end-HP. The 2000-tree version performs WORSE
+  (29.7%) despite the best offline RMSE — offline metrics do not predict
+  MCTS action-ranking quality.
+
+- **Why the offline metrics barely change but gameplay improves 10pp**
+  (**Inference**, not experimentally decomposed): higher regularization
+  (`min_child_weight` 82 vs 20, L1 α=1.81, γ=4.36) and aggressive
+  subsampling (0.54 vs 0.8) make the ensemble more conservative and better-
+  generalizing. Offline RMSE is measured on on-policy pre-action snapshots
+  from the teacher policy; MCTS visits off-policy counterfactual states
+  that benefit from smoother, less-overfit value estimates. The higher
+  `min_child_weight` specifically forces each leaf to have ≥82 weighted
+  samples, preventing memorization of specific state configurations and
+  producing a smoother value landscape that guides search better.
+
+- **Verdict:** ↗ tuned hyperparameters are a clear improvement.
+  The 1000-tree export (`build/v_combat_hparam_1000.txt`, sha256
+  `7cd5a1eb…`) replaces `build/v_combat_honest.txt` as the default
+  S3-fair vnet at α=0.3. A full-stack re-measurement with the V4 gate
+  stack is an open follow-up.
+
+- **Artifacts:** `tools/tune_vnet_hparams.py` (Optuna search script),
+  `tools/tune_vnet_best.py` (final training + export),
+  `build/vnet_hparam_*.db` (Optuna study),
+  `build/v_combat_hparam*.txt` (tree exports at 800/1000/1400/2000 trees),
+  `build/vnet_hparam_{baseline,tuned,1k}_{1k_{32,64},1000t_64,800t_64}.log`
+  (benchmark logs).
+
+- **Cost:** ~18 min for the 50-trial search (CUDA), ~2 min/export, ~4 min
+  per 64-seed benchmark arm (local 12-thread WSL).
