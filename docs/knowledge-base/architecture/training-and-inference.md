@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-08-09 against the current working tree (V4 tok trainer convergence measurement, PATIENCE default change, vectorized row-index construction; leafdiag/leafref/rollouttrace leaf-state diagnostic producers + `STS_DIAG_VNET2`; VCOMBAT_TARGET, asserting `vnettest`, §134 direct-R ablation unchanged; `.venv` training-environment note; system-`python3` torch provisioning note).
+Last verified: 2026-08-09 against the current working tree (per-encounter combat value specialization: `train_value_combat_per_encounter.py` per-boss XGBoost fine-tuning + `train_value_combat_meta.py` Reptile MLP meta-learner, `combat_mlp_meta_v1` native format with per-encounter deltas, `CombatValueNet::loadEncounterModels` + `STS_VNET_PER_ENCOUNTER` dispatch, `vnettest --encounter` parity mode — experimental, gate pending; V4 tok trainer convergence measurement, PATIENCE default change, vectorized row-index construction; leafdiag/leafref/rollouttrace leaf-state diagnostic producers + `STS_DIAG_VNET2`; VCOMBAT_TARGET, asserting `vnettest`, §134 direct-R ablation unchanged; `.venv` training-environment note; system-`python3` torch provisioning note).
 
 ## Purpose
 
@@ -50,6 +50,37 @@ Representative model families:
 - strategic run-level: `train_strategic.py` (joint policy + value heads,
   Tier-A `chosen` labels; exported by `export_strategic.py`);
 - combat value: `train_value_combat.py` (XGBoost, hyperparameter-tuned defaults §148: max_depth 8, eta 0.03, subsample 0.54, colsample_bytree 0.81, min_child_weight 82, reg_alpha 1.8, gamma 4.4, 2000 rounds, 40 early stop); entity/MLP/distribution variants;
+
+**Per-encounter specialization (experimental, gate pending, 2026-08-09):**
+two independent arms feed the same runtime dispatch map
+(`CombatValueNet::encounterModels`, keyed by `MonsterEncounter` enum int):
+
+- `train_value_combat_per_encounter.py` continues the pooled XGBoost model on
+  each boss's own rows (`xgb.train(..., xgb_model=pooled_bst,
+  num_boost_round=N, early_stopping_rounds=10)`; same feature columns as the
+  pooled model's `feature_names`, fight-group split, critical-state weights and
+  QuantileDMatrix recipe as the pooled trainer). Exports compact-tree text as
+  `<ENUM_NAME>.txt` plus the pooled baseline as `_pooled.txt` and a
+  per-encounter validation CSV for `vnettest --encounter`. `PER_ENC_CONSERVATIVE=1`
+  switches to the tail-encounter recipe (15 rounds, `reg_alpha`/`gamma`
+  bumped) for sparse encounters. `export_combat_model.py --per-encounter <dir>`
+  converts a directory of per-encounter `.json` models to `.txt` without
+  retraining.
+- `train_value_combat_meta.py` implements Reptile meta-learning for a small
+  dense MLP (NFEAT→128→64→1, **ReLU** — the native `combat_mlp_v1` C++ path is
+  ReLU, so the plan's "GELU" wording is deliberately not followed to keep
+  inference parity) targeting tail encounters with sparse rows. Outer loop:
+  sample B encounters, K inner SGD steps per encounter from a clone of the
+  meta weights, then θ ← θ + ε·(θ′_e − θ)/B. Offline adaptation produces
+  per-encounter weight deltas vs the base weights (no online gradient descent
+  at inference). Exports `combat_mlp_meta_v1`: the base MLP in the dense
+  `combat_mlp_v1` layout (`x_mean`/`x_invstd`, raw weights — the C++ dense
+  path normalizes at predict time, so the trainer applies the identical
+  standardization with no clipping) followed by
+  `n_encounter_deltas` / per-encounter `dw1..db3` blocks. The C++ loader
+  reconstructs adapted weights as base + delta and stores them as
+  self-contained per-encounter `CombatValueNet` instances (~940KB per adapted
+  encounter).
 
 The canonical combat-value trainer (`train_value_combat.py`) selects its
 label with `VCOMBAT_TARGET`:
@@ -158,7 +189,18 @@ leakage analysis.
 `apps/one_combat.cpp::main` owns environment parsing and load messages. Native
 OOC floor/win models are default. Separate combat value, distributional value,
 PVNet, and policy models are selected with `STS_VNET`, `STS_DIST_VNET`,
-`STS_PVNET`, and `STS_POLICY`. `STS_DIAG_VNET2` loads a SECOND combat value
+`STS_PVNET`, and `STS_POLICY`. `STS_VNET_PER_ENCOUNTER=<dir>` (parsed after the
+STS_VNET / fair-S3 default block) calls
+`CombatValueNet::loadEncounterModels(dir)`: per-encounter compact-tree files
+named `<ENUM_NAME>.txt` load into `encounterModels`, `<dir>/_pooled.txt` (when
+present) replaces the base fallback, and `predict(bc)` dispatches to
+`encounterModels[(int)bc.encounter]` when present. A missing/invalid dir warns
+and keeps the pooled base; partial loads are rejected wholesale. The same map
+is populated in-file by `combat_mlp_meta_v1` deltas. Default behavior is
+unchanged (single bool test when no per-encounter models are loaded).
+`one_combat vnettest --encounter <NAME>` checks per-encounter parity against a
+per-encounter validation CSV (in-file delta first, then the
+`STS_VNET_PER_ENCOUNTER` dir). `STS_DIAG_VNET2` loads a SECOND combat value
 model used only by the leafdiag/leafref/rollouttrace diagnostics (never by the
 search); a failed secondary load is non-fatal and the diagnostic CSVs report
 NaN for its predictions. Optional server models are selected through
@@ -205,6 +247,11 @@ unless STS_PVNET_VALUE_ONLY=1.
 - File suffix can select serializer behavior; self-play training temporaries
   must preserve the intended XGBoost format (`EXPERIMENTS.md` entry 49).
 - Combat policy inputs currently include hand-authored Expert features.
+- Per-encounter specialization (2026-08-09, experimental): each per-encounter
+  tree model holds a full copy of the pooled tree set (~2000 trees), so 10
+  bosses ≈ 10× the base model's memory; the meta-MLP path adds ~940KB per
+  adapted encounter (shared `sel[]`/trees storage is a follow-up if the arm
+  survives its gate).
 
 ## Known limitations
 

@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <unordered_map>
 
 namespace sts {
     class BattleContext;
@@ -98,6 +99,20 @@ namespace sts::search {
         bool  isPolicy = false; // map model features against the POLICY layout, not the value one
 
         bool load(const std::string &path);
+        // Per-encounter specialization: encounterModels maps a MonsterEncounter
+        // enum int -> specialized model used by predict(bc) whenever
+        // hasEncounterModels is set. Encounters without an entry fall through to
+        // this object's own base weights/trees. Populated either by
+        // loadEncounterModels(dir) (compact-tree per-encounter files) or by the
+        // combat_mlp_meta_v1 per-encounter delta table inside load() itself.
+        std::unordered_map<int, CombatValueNet> encounterModels;
+        bool hasEncounterModels = false;
+        // Load <dir>/<ENUM_NAME>.txt per-encounter compact-tree files (names from
+        // monsterEncounterEnumNames[]); <dir>/_pooled.txt, when present, replaces
+        // this object's base weights as the non-specialized fallback. All files
+        // are validated before any state is replaced; a load failure leaves this
+        // object untouched and per-encounter dispatch off.
+        bool loadEncounterModels(const std::string &dir);
         [[nodiscard]] bool loaded() const { return isLoaded; }
         [[nodiscard]] bool hasOutcomeHeads() const { return isEntity; }
         [[nodiscard]] std::string description() const;

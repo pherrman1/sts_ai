@@ -6861,3 +6861,259 @@ unFullRunOOC runs, for each counter relic the
 
 - **Cost:** ~18 min for the 50-trial search (CUDA), ~2 min/export, ~4 min
   per 64-seed benchmark arm (local 12-thread WSL).
+
+- **7k-data extension (same session):** retrained with the §148 tuned
+  hyperparameters on the 1.58M-row `build/vcombat_7k.csv` (87K fights,
+  5.5× more data than honest). Exported at 1000 trees, 751 features,
+  parity-verified (max|diff|=8.6e-5). 64-seed S3-fair gate: **37.5% win**
+  vs 31.2% honest-tuned (+6.3pp from data volume). The 7k model
+  (`build/v_combat_7k_tuned.txt`, sha256 `ea35b78c…`) is now the default
+  vnet. Progression: §126 20.3% → honest-tuned 31.2% (+10.9pp params) →
+  7k-tuned 37.5% (+6.3pp data) = +17.2pp total. No hyperparameter re-sweep
+  needed — the parameter landscape is flat and the tuned regularization
+  transfers across datasets.
+
+## §149 V4 token-net trainer glob-skew fix + retrain (2026-08-09, local)
+
+**Context:** An encoding audit of all OOC model columns
+(decision-log/2026-08-09-v4-glob-skew-fix.md) discovered that
+`train_strategic_tok.py` had been building its 42-glob block from the wrong
+CSV columns since the NGLOB=42 correction. The strategicgen2 CSV interleaves
+the d/u/r/pot block (cols 32–1004) before fm*/curMap* (cols 1005–1016), but
+the trainer assumed all scalars were contiguous. Result: glob slots 24–35
+trained on deck counts `d0..d11` while C++ inference fed forward-map features
+`fmDElite..curMapY`; derived thresholds `canTakeEliteKey`/`bossNear` trained on
+`d4`/`d3` but served `fmCElite`/`fmDBoss`. Every V4 model trained before this
+fix (including the deployed 50-glob model and the honest_v2 42-glob model)
+was affected.
+
+**Fix:** Trainer corrected to slice the actual CSV columns (cols 23:32,
+1005:1017). Column-name assertions added to catch future `richHeader()`
+reorderings. C++ `buildTokState` was always correct — no C++ change needed.
+
+**Retrain:** Full 40-epoch retrain on `build/strategic_tierb.csv` (3,057,708
+rows, 4,650 seeds) with the fixed trainer, rung 4, torch.compile ON, CUDA
+(RTX 3060 Ti). Epoch times ~22-51s (compile ON; first epoch slower due to
+Triton warmup). Best epoch by val_pol_ce.
+
+- **Offline metrics** (best held-out, epoch 37):
+  - val_pol_ce: 0.4885, policy_top1: 0.7932, margin: 8.72
+  - value_mae: 10.93, value_rmse: 16.10 (epoch 40; best-val epoch 37 similar)
+  - q_top1: 0.2806, q_mae: 16.35, q_rmse: 22.11
+
+- **Offline comparison** with honest_v2 (previous 42-glob model, also 40 epochs):
+  - val_pol_ce: 0.4885 vs 0.488 (identical)
+  - policy_top1: 0.7932 vs 0.793 (identical)
+  - q_top1: 0.2806 vs 0.295 (slightly lower)
+
+  The offline metrics are nearly identical, consistent with the hypothesis
+  that the glob skew had minimal impact on training convergence — the network
+  capacity was sufficient to extract signal from either column set.
+
+- **Export:** `export_strategic_tok.py` → 32/32 parity checks passed
+  (max err logit 1.06e-05, value 8.19e-06, Q 1.28e-05).
+  File: `selfplay/models/ooc_strategic_tok_skewfix.native` (799,176 bytes,
+  nGlob=42, polIn=184).
+
+- **Paired gate** (64 seeds, seeds 126700–126763, S2 fair @1k sims,
+  12 threads, `STS_OOC_STRATEGIC_REST=1 STS_OOC_STRATEGIC_EVENT=1
+  STS_OOC_STRATEGIC_MARGIN=1.0`):
+
+  | Metric | Baseline | Skewfix | Delta | 95% CI |
+  |---|---|---|---|---|
+  | Win rate | 23.4% | 39.1% | **+15.6pp** | [+3.1, +28.1] |
+  | Avg floor | 37.4 | 40.7 | +3.3 | [+0.1, +6.6] |
+  | Avg HP end | 17.5 | 22.6 | +5.1 | — |
+  | CPU sec/run | 13.82 | 15.24 | +10% | — |
+
+  Discordant pairs: 20/64 (31%) — skewfix won 15, baseline won 5.
+  Baseline Wilson 95% CI: [14.7%, 35.1%]. Skewfix Wilson 95% CI: [28.1%, 51.3%].
+
+- **Gate verdict: SIGNIFICANT.** The 95% CI for the win-rate delta excludes
+  zero. This is the first 42-glob (honest, no hidden-info leaks) V4 model to
+  show a clear gate benefit. The previous honest_v2 model (also 42-glob,
+  trained with the glob skew) gated at 15.6% vs 21.1% = −5.5pp (lost to
+  baseline).
+
+- **Deployment decision:** The skewfix model replaces
+  `selfplay/models/ooc_strategic_tok_final.native` as the shipped V4 artifact.
+  SHA256: `e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`.
+  V4 remains opt-in behind `STS_OOC_STRATEGIC_TOK_NN`; V3 is still the
+  default OOC policy. The previous final model (50-glob leaky, sha256
+  `f6bc6a96…`) was already replaced with a 42-glob version earlier today;
+  this replaces that with the skewfix retrain.
+
+- **Artifacts:**
+  - `selfplay/models/ooc_strategic_tok_skewfix.pt` (checkpoint)
+  - `selfplay/models/ooc_strategic_tok_skewfix_tok_state.bin` (2.9 GB)
+  - `selfplay/models/ooc_strategic_tok_skewfix.native` (exported model)
+  - `selfplay/models/ooc_strategic_tok_skewfix_metrics.json`
+  - `selfplay/models/ooc_strategic_tok_final.native` (deployed, copy of skewfix)
+  - `build/gate_skewfix_base_64.csv`, `build/gate_skewfix_cand_64.csv`
+
+- **Open:** A larger gate (128–256 seeds) would tighten the CI. A gate at
+  multiple margins (0.5, 5.0) would characterize the sensitivity. A
+  head-to-head V3-vs-skewfix gate would determine whether V4 should become
+  the default. A full V4 gate stack (SHOP/TREASURE/BOSS_RELIC gates also ON)
+  would reproduce the §81 multi-gate configuration.
+
+## §150 Per-encounter combat value specialization: per-boss XGBoost fine-tuning + Reptile meta-learner — GATE NEGATIVE, close the line (2026-08-09, local)
+
+**What:** two experimental arms sharing one runtime dispatch map
+(`CombatValueNet::encounterModels`, keyed by `MonsterEncounter` enum int;
+`predict(bc)` dispatches to the specialized model when present and otherwise
+keeps the base path — byte-identical default behavior when nothing is loaded).
+
+- **Arm 1 — per-boss XGBoost fine-tuning**
+  (`train_value_combat_per_encounter.py`): continues the pooled §148 model on
+  each boss's own rows (`xgb_model=pooled_bst`, 50 extra rounds, early stop
+  10; `PER_ENC_CONSERVATIVE=1` = 15 rounds + bumped `reg_alpha`/`gamma` for
+  tail encounters). Same feature columns as the pooled model's
+  `feature_names`, fight-group split, critical-state weights and
+  QuantileDMatrix recipe as `train_value_combat.py`. Exports compact-tree
+  `<ENUM_NAME>.txt` + `_pooled.txt` fallback + per-encounter val CSVs.
+  Runtime: `STS_VNET_PER_ENCOUNTER=<dir>` →
+  `CombatValueNet::loadEncounterModels(dir)`; `export_combat_model.py
+  --per-encounter <dir>` converts a directory of `.json` models without
+  retraining.
+- **Arm 2 — Reptile meta-learning for tail encounters**
+  (`train_value_combat_meta.py`): dense MLP (1766→128→64→1, **ReLU** — the
+  native `combat_mlp_v1` C++ path is ReLU; the plan's "GELU" wording was
+  deliberately not followed to preserve inference parity) trained with the
+  Reptile outer loop (B=8 encounters/iter, K=5 inner SGD steps, ε=0.5), then
+  offline adaptation of tail encounters (meta-train rows ≤
+  `META_TAIL_MAX_ROWS`). Exports `combat_mlp_meta_v1` (base MLP dense layout +
+  per-encounter `dw1..db3` delta table); C++ reconstructs adapted weights as
+  base + delta in `encounterModels` (~940KB/encounter).
+
+**Verified (local, WSL, 2026-08-09):**
+
+- Per-encounter trainer on `build/vcombat_honest.csv` (287,517 rows; SLIME_BOSS
+  373 fights / 11,176 rows, THE_GUARDIAN 391 fights / 9,816 rows): pooled 2000
+  trees + 10 specialized each; `vnettest --encounter SLIME_BOSS` parity
+  max|diff| 6.7e-5 vs Python (tolerance 1e-3).
+- `export_combat_model.py --per-encounter` output byte-identical to the
+  trainer's direct export.
+- Meta smoke (META_ITERS=6, K=3, SAMPLE_MOD=8, adapt-all): 50 per-encounter
+  deltas; base parity max|diff| 1.1e-5; in-file SLIME_BOSS delta
+  reconstruction (base+delta) parity max|diff| 1.1e-5 vs Python adapted
+  predictions.
+- 8-seed S3-fair smokes: default unchanged (`combatVNet=off`), nonexistent
+  per-encounter dir warns and continues, per-encounter tree dir shows
+  `combatVNet=ON+per-encounter(2)`, meta model shows
+  `MLP 1766x128x64x1 +50 per-encounter`.
+- `ctest` 9/9, `vnettest_selftest.py --self-test` PASS.
+
+**Gate (local, WSL, 2026-08-09):** 64 paired seeds, S3 fair, 1k sims,
+`searchdiag` mode (per-fight boss data + run-level aggregates). Baseline:
+`STS_VNET=build/v_combat_boss/_pooled.txt` (2000 trees, no per-encounter
+dispatch). Treatment: same pooled plus `STS_VNET_PER_ENCOUNTER=build/v_combat_boss`
+(9 per-boss models, 2000+50 trees each, sharing the same pooled base for
+non-boss encounters).
+
+Run-level:
+- Win rate: 39.1% → 32.8% (−6.2pp, 95% CI [−15.6pp, +1.6pp]; n.s.)
+- Avg floor: 42.0 → 41.3 (−0.8)
+- Avg HP end: 21.3 → 17.1 (−4.2)
+- Discordant pairs: 8/64 (12%), pooled-only 6, per-boss-only 2
+
+Per-boss (exit HP when won, Δ treatment − baseline):
+- SLIME_BOSS −4.5pp win, +0.8 HP  |  THE_GUARDIAN +0.2pp, +2.4 HP
+- HEXAGHOST +4.5pp, −2.0 HP       |  AUTOMATON −0.9pp, +2.0 HP
+- COLLECTOR −8.6pp, +14.5 HP      |  CHAMP +5.9pp, −3.0 HP
+- AWAKENED_ONE 0pp, +9.4 HP       |  TIME_EATER −12.5pp, +12.4 HP
+- DONU_AND_DECA −6.0pp, −7.8 HP
+
+The COLLECTOR and TIME_EATER pattern (fewer wins but much higher exit HP when
+winning) suggests the fine-tuned model over-values HP preservation relative to
+win probability — consistent with the endHp label target without a sufficient
+win bonus. Non-boss encounters showed slight positive deltas (REPTOMANCER +5.6,
+MAW +5.3, WRITHING_MASS +5.2), likely a cascade effect from different boss-fight
+decks rather than direct model benefit.
+
+**Verdict: NEGATIVE — close the line.** Per-boss XGBoost fine-tuning does not
+improve run-level outcomes (direction negative, not significant at 64 seeds).
+The §126 result (binary boss-conditioning flat/negative) is confirmed: per-boss
+specialization, even with dedicated trees, does not capture value beyond what
+the pooled model already extracts from the encounter feature. The meta-learner
+(Arm 2, Reptile) was not gated; the high label noise on the endHp target and
+the negative XGBoost result make it unlikely to succeed, and it should only be
+revived if a different label target (e.g., P(win)-weighted endHp or a
+run-level credit assignment) is demonstrated to work first on the simpler
+XGBoost arm.
+
+**Artifacts (local):** `build/v_combat_boss/{_pooled,SLIME_BOSS,THE_GUARDIAN,
+HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.json)`
++ `_val.csv`, `build/v_combat_meta_smoke.txt(.pt)`,
+`build/v_combat_meta_smoke_slime_val.csv`. Gate CSVs:
+`.ai/cycles/2026-08-09-11-53-34/{baseline,treatment}_sdiag.csv.fights.csv`.
+
+## §151 Distillation investigation: NOT worthwhile; large-scale vnet datagen at 100k seeds (crashed at 14.8k); 5.5× data retrain — preliminary gate negative but confounded (2026-08-09, local + GCP)
+
+- **What (distillation investigation):** five parallel subagent investigations
+  into whether distilling expensive neural networks into cheaper models is
+  worthwhile. Architect synthesis: **no** — every prior distillation attempt
+  (§56 MLP, §57 entity, §58 policy prior, §104 Phase F soft-target, §106 chain
+  compression, §137 mixture retrain) failed at gameplay gates despite improving
+  offline metrics. The cited root cause is the §62 rule: "better absolute
+  prediction does not identify the causal best route." The only successful cost
+  reduction was pure additive tree truncation (§52: 1,500→400 trees, 1.85×
+  faster, passed −0.5 non-inferiority). The successful quality path is
+  data/target improvement (§126: +12.5pp from fresh labels).
+- **Recommended follow-up:** (1) Data-side vnet improvement — the proven lever;
+  (2) Tree→tree KD as a one-off cheap experiment; (3-4) Do not pursue
+  transformer→MLP, transformer→trees, KD of transformer, or int8 quantization.
+
+- **What (large-scale datagen):** `combatgen` 100,000 seeds at 1,000 sims on GCP
+  `sts-test` (24 threads), heuristic-OOC distribution (Option B — same as §126;
+  gate-stack distribution §129 was NULL). `STS_FAIR=1 STS_SEARCHER3=1`,
+  S3−belief−chain/64p, vnet default ON (804 trees, α=0.3). Seeds 3,000–102,999
+  (fresh after §126 0–1,499, §129 1,500–2,999). Output piped through gzip
+  (`/dev/fd/3` → gzip), achieving **59× compression**.
+- **Crash:** `ActionQueue::pushBack` assertion at run 14,800/100,000 —
+  capacity-50 overflow under fair-S3+vnet. Filed as
+  [issue #50](issues/2026-08-09-issue-actionqueue-overflow.md).
+- **Data recovered:** 3,355,244 rows, 181 MB gzipped, seeds 3,000–17,860
+  (~14,860 seeds, avg 226 rows/seed — vnet runs survive longer than §126's
+  192 rows/seed).
+
+- **VNet retrain (7k-seed subset):** extracted seeds 3,000–9,999 (1,580,243
+  rows, 87,414 fights) to fit 31 GB RAM. `train_value_combat.py` on CUDA:
+  751 features, 1,500 trees, val RMSE 8.04, R² 0.895, scaling probe positive.
+  Exported `build/v_combat_7k.txt`; parity PASS (max|diff| 0.000193).
+  Val RMSE slightly higher than §126's 7.99 — consistent with vnet runs
+  producing harder/longer states.
+
+- **Preliminary gate (⚠ confounded):** 256 seeds (126700–126955), 1,000 sims,
+  S3−belief−chain/64p, 24 threads. Both arms ran heuristic-OOC because the
+  token net model (`ooc_strategic_tok_final.native`) fails to load — the
+  model's version-suffixed magic `OOC_STRAT_V42` causes the loader to
+  misinterpret byte 12 as a dimension (50 ≠ NGLB 41).
+
+  | arm | model | trees | α | win% | floor | HP | cpu-s/run |
+  |---|---|---|---|---:|---:|---:|---:|
+  | control | `v_combat_honest.txt` (§126) | 804 | 0.3 | **28.9%** | 39.1 | 11.3 | 24.1 |
+  | candidate | `v_combat_7k.txt` | 1,500 | **0.5** ⚠ | 25.8% | 39.9 | 10.5 | 40.7 |
+
+  **The α mismatch (0.5 vs 0.3) and tree-count difference (1,500 vs 804)
+  confound the comparison.** The candidate ran at the non-default α=0.5
+  because `STS_VNET=<path>` changes the alpha default. The proper comparison
+  (`α=0.3`, matched tree count) was not run.
+
+- **New issues discovered:**
+  - ActionQueue capacity-50 overflow crashes long-running datagen (#50)
+  - Token net loader format mismatch prevents gate-stack benchmarks on
+    current binaries
+  - 31 GB RAM insufficient for 3.35M-row training (peak ~36 GB)
+
+- **Artifacts:** `build/vcombat_honest_100k.csv.gz` (181 MB, GCP + local),
+  `build/vcombat_7k.csv` (5.3 GB), `build/v_combat_7k.{json,txt}`,
+  `build/vnet_ctl_1k.csv` (28.9%), `build/vnet_7k_1k.csv` (25.8%).
+
+- **Verdict:** distillation investigation — **line closed** (not worth
+  standalone investment). Datagen — partial success, 3.35M rows recovered.
+  VNet retrain — 5.5× data produced a model with slightly worse offline RMSE
+  and a confounded preliminary gate. The more-data hypothesis is **not
+  falsified** — a proper gate at matched α and tree count is still open.
+  The data pipeline (gzip, `/dev/fd/3`, seed subsetting) is proven and
+  reusable.

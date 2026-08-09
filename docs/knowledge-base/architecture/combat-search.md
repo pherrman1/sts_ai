@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-09 against the current working tree (covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending).
+Last verified: 2026-08-09 against the current working tree (per-encounter combat value specialization implemented opt-in: `STS_VNET_PER_ENCOUNTER` dir overlay + `combat_mlp_meta_v1` in-file deltas with `predict(bc)` dispatch, `vnettest --encounter` parity mode — gate pending; covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending).
 
 ## Purpose
 
@@ -797,6 +797,23 @@ Learned guidance is loaded by `apps/one_combat.cpp::main`:
   (`runCombatGenSeed`), not the gate-stack distribution (transfer measured
   empirically, §126). `fairgen` datagen is not covered by the default (it
   forces its regime after the parse); `combatgen` datagen IS covered.
+- `STS_VNET_PER_ENCOUNTER=<dir>` overlays per-encounter specialized models on
+  the loaded base (parsed after the STS_VNET / fair-S3 default block).
+  `CombatValueNet::loadEncounterModels(dir)` loads `<dir>/<ENUM_NAME>.txt`
+  compact-tree files (names from `monsterEncounterEnumNames[]`, produced by
+  `train_value_combat_per_encounter.py`), keyed by the encounter enum int, and
+  uses `<dir>/_pooled.txt` (when present) as the non-specialized fallback;
+  `predict(bc)` dispatches to `encounterModels[(int)bc.encounter]` when a
+  specialized model exists and otherwise keeps the base path (a single bool
+  test when no per-encounter models are loaded — byte-identical default
+  behavior). The same dispatch map is populated in-file by the
+  `combat_mlp_meta_v1` per-encounter delta table (`train_value_combat_meta.py`,
+  Reptile meta-learned MLP: base weights + per-encounter weight deltas). A
+  missing/invalid dir only warns and keeps the pooled base; a partial load is
+  rejected wholesale. `one_combat vnettest --encounter <NAME>` checks
+  per-encounter parity (in-file delta first, then the
+  `STS_VNET_PER_ENCOUNTER` dir). Experimental: per-boss fine-tuning and the
+  meta-learner are research arms, NOT promoted to defaults (gate pending).
 - `STS_DIST_VNET` loads the distributional transformer evaluator.
 - `STS_PVNET` loads the shared `CombatPVNet`; `STS_PVNET_ALPHA` defaults to
   `1.0` (pure neural leaf) and `STS_PVNET_VALUE_ONLY` disables its policy head.

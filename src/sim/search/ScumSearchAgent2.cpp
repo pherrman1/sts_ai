@@ -674,8 +674,11 @@ void search::ScumSearchAgent2::stepEventPolicy(GameContext &gc) {
 
 
         case Event::GHOSTS:
-        case Event::MASKED_BANDITS:
             takeAction(gc, 0);
+            break;
+
+        case Event::MASKED_BANDITS:
+            takeAction(gc, 1);  // fight (25-35 gold + Red Mask + card reward), not lose-all-gold
             break;
 
         case Event::CURSED_TOME:

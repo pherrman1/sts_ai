@@ -3163,6 +3163,9 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
     std::cout << "BEST models: floor=" << (g_floorNet.ok ? g_floorNet.path : "MISSING")
               << "  win=" << (g_winNet.ok ? g_winNet.path : "not loaded")
               << "  combatVNet=" << (search::g_useVNet ? "ON" : "off")
+              << (search::g_combatVNet.hasEncounterModels
+                  ? "+per-encounter(" + std::to_string(search::g_combatVNet.encounterModels.size()) + ")"
+                  : "")
               << "  policyNet=" << (search::g_usePolicyNet ? "ON" : "off")
               << "  PVNet=" << (search::g_usePVNet ? "ON" : "off")
               << "  distVNet=" << (search::g_useDistVNet ? "ON" : "off") << "\n";
@@ -9819,24 +9822,53 @@ int main(int argc, char **argv) {
             std::cout << "[V_combat load FAILED: " << path << "]\n";
         }
     }
-    // V_combat leaf default (hyperparameter-tuned §148, replacing the §126
-    // honest-data model): 50-trial Optuna TPE search found better-regularized
-    // XGBoost params (higher min_child_weight 81.6, L1 α=1.81, γ=4.36,
-    // subsample 0.54). At matched tree count (~800–1000) this gives +10.9pp
-    // win (20.3%→31.2%) in a 64-seed S3-fair paired gate. The 1000-tree
-    // export is the default (ties for best win% plus highest end-HP).
-    // Scoped like the live-valid default: fair + Searcher3 only, when
-    // STS_VNET is unset (an explicit STS_VNET=… always overrides).
+    // V_combat leaf default (§148 hyperparameter-tuned model trained on the
+    // 7k combat dataset, 1.58M rows / 87K fights). 50-trial Optuna TPE search
+    // found better-regularized XGBoost params (min_child_weight 82, L1 α=1.8,
+    // γ=4.4, subsample 0.54, eta 0.03). Trained on the full 7k corpus with
+    // these params, exported at 1000 trees. 64-seed S3-fair gate: 37.5% win
+    // vs 31.2% for the honest-data tuned model and 20.3% for the original
+    // (§126 model). The improvement is +6.3pp from 5.5× data and +10.9pp
+    // from hyperparameters for a total of +17.2pp over the §126 baseline.
+    // Scoped: fair + Searcher3 only, when STS_VNET is unset.
     if (!std::getenv("STS_VNET") && search::g_fairPlay && search::g_useSearcher3) {
-        if (search::g_combatVNet.load("build/v_combat_hparam_1000.txt")) {
+        if (search::g_combatVNet.load("build/v_combat_7k_tuned.txt")) {
             search::g_useVNet = true;
             search::g_vnetAlpha = 0.3;
-            std::cout << "[V_combat leaf default ON: build/v_combat_hparam_1000.txt, "
+            std::cout << "[V_combat leaf default ON: build/v_combat_7k_tuned.txt, "
                       << search::g_combatVNet.description() << ", alpha "
                       << search::g_vnetAlpha << " (fair S3, §148)]\n";
         } else {
             std::cout << "[V_combat leaf default load FAILED: "
                          "build/v_combat_hparam_1000.txt (continuing without)]\n";
+        }
+    }
+    // Per-encounter specialization overlay (per-boss fine-tuned trees from
+    // train_value_combat_per_encounter.py, or combat_mlp_meta_v1 deltas already
+    // inside a loaded base). Must run after the base model is loaded (STS_VNET
+    // or the fair-S3 default): loadEncounterModels replaces the base weights
+    // with <dir>/_pooled.txt when present and dispatches predict(bc) to
+    // <dir>/<ENUM_NAME>.txt per-encounter models. A missing/invalid dir only
+    // warns and keeps the already-loaded base model.
+    if (const char *d = std::getenv("STS_VNET_PER_ENCOUNTER")) {
+        const std::string dir = d;
+        if (search::g_combatVNet.loadEncounterModels(dir)) {
+            std::vector<int> encs;
+            encs.reserve(search::g_combatVNet.encounterModels.size());
+            for (const auto &kv : search::g_combatVNet.encounterModels) encs.push_back(kv.first);
+            std::sort(encs.begin(), encs.end());
+            std::string names;
+            for (int e : encs) {
+                if (!names.empty()) names += ",";
+                names += monsterEncounterEnumNames[e];
+            }
+            std::cout << "[V_combat per-encounter models ON: " << dir << " ("
+                      << encs.size() << "): " << names << "; base "
+                      << search::g_combatVNet.description() << "]\n";
+        } else {
+            std::cout << "[V_combat per-encounter load FAILED: " << dir
+                      << " (no per-encounter dispatch; continuing with the "
+                         "already-loaded base model)]\n";
         }
     }
     if (const char *d = std::getenv("STS_DIAG_VNET2")) {   // secondary diagnostic vnet (leafdiag/leafref only)
@@ -10089,17 +10121,67 @@ int main(int argc, char **argv) {
             if (end != s.c_str() + s.size()) return false;   // trailing junk
             return std::isfinite(out);                        // NaN/Inf rejected
         };
-        std::string trees = argc > 2 ? argv[2] : "build/v_combat_trees.txt";
-        std::string val   = argc > 3 ? argv[3] : "build/v_combat_val.csv";
+        std::string trees = "build/v_combat_trees.txt";
+        std::string val   = "build/v_combat_val.csv";
         double tol = 0.001;
-        if (argc > 4) {
-            if (!parseFiniteDouble(argv[4], tol) || tol < 0) {
-                std::cerr << "bad tolerance '" << argv[4] << "' (must be a finite "
+        std::string encounterSel;   // optional --encounter <NAME>: test a per-encounter model
+        std::vector<std::string> pos;
+        for (int i = 2; i < argc; ++i) {
+            if (std::string(argv[i]) == "--encounter" && i + 1 < argc) {
+                encounterSel = argv[++i];
+            } else {
+                pos.emplace_back(argv[i]);
+            }
+        }
+        if (!pos.empty()) trees = pos[0];
+        if (pos.size() > 1) val = pos[1];
+        if (pos.size() > 2) {
+            if (!parseFiniteDouble(pos[2], tol) || tol < 0) {
+                std::cerr << "bad tolerance '" << pos[2] << "' (must be a finite "
                           << "non-negative number)\n";
                 return 1;
             }
         }
         if (!search::g_combatVNet.load(trees)) { std::cerr << "load failed: " << trees << "\n"; return 1; }
+        const search::CombatValueNet *net = &search::g_combatVNet;
+        if (!encounterSel.empty()) {
+            int enc = -1;
+            constexpr int kNumEncounters = sizeof(monsterEncounterEnumNames)
+                / sizeof(monsterEncounterEnumNames[0]);
+            for (int i = 0; i < kNumEncounters; ++i)
+                if (encounterSel == monsterEncounterEnumNames[i]) { enc = i; break; }
+            if (enc < 0) {
+                std::cerr << "unknown encounter '" << encounterSel << "'\n";
+                return 1;
+            }
+            // 1) in-file per-encounter deltas (combat_mlp_meta_v1) populated by
+            //    the load() above; 2) else the STS_VNET_PER_ENCOUNTER directory
+            //    overlay of per-encounter tree files.
+            auto it = search::g_combatVNet.encounterModels.find(enc);
+            if (it == search::g_combatVNet.encounterModels.end()) {
+                const char *d = std::getenv("STS_VNET_PER_ENCOUNTER");
+                if (!d) {
+                    std::cerr << "vnettest --encounter " << encounterSel
+                              << " requires STS_VNET_PER_ENCOUNTER=<dir> or a "
+                                 "combat_mlp_meta_v1 base with an in-file delta "
+                                 "for the encounter\n";
+                    return 1;
+                }
+                if (!search::g_combatVNet.loadEncounterModels(d)) {
+                    std::cerr << "per-encounter model load failed for dir '" << d << "'\n";
+                    return 1;
+                }
+                it = search::g_combatVNet.encounterModels.find(enc);
+                if (it == search::g_combatVNet.encounterModels.end()) {
+                    std::cerr << "no per-encounter model for '" << encounterSel
+                              << "' in " << d << "\n";
+                    return 1;
+                }
+            }
+            net = &it->second;
+            std::printf("VNET PER-ENCOUNTER: testing '%s' (%d) with base %s\n",
+                        encounterSel.c_str(), enc, trees.c_str());
+        }
         std::ifstream vf(val);
         if (!vf) { std::cerr << "cannot open validation csv: " << val << "\n"; return 1; }
         std::string line;
@@ -10163,7 +10245,7 @@ int main(int argc, char **argv) {
                 std::cerr << "row " << (n + 2) << " has extra columns after pyPred\n";
                 return 1;
             }
-            double cpp = search::g_combatVNet.predictVec(canon.data());
+            double cpp = net->predictVec(canon.data());
             if (!std::isfinite(cpp)) {   // malformed native model can yield NaN/Inf
                 std::cerr << "row " << (n + 2) << " native prediction is non-finite ("
                           << cpp << ") — malformed model or inference\n";

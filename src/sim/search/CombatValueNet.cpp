@@ -4,6 +4,7 @@
 #include "sim/search/CombatValueNet.h"
 
 #include "combat/BattleContext.h"
+#include "constants/MonsterEncounters.h"
 #include "constants/PlayerStatusEffects.h"
 #include "constants/MonsterStatusEffects.h"
 #include "constants/Cards.h"
@@ -379,6 +380,8 @@ bool CombatValueNet::load(const std::string &path) {
     isSparseMlp = false;
     isEntity = false;
     isEntityPolicy = false;
+    encounterModels.clear();
+    hasEncounterModels = false;
     trees.clear(); sel.clear();
     quantileTrees.clear(); quantileBase.clear(); nQuantiles = 0;
     xMean.clear(); xInvStd.clear(); w1.clear(); b1.clear();
@@ -499,6 +502,10 @@ bool CombatValueNet::load(const std::string &path) {
         isMlp = true;
         isSparseMlp = tok == "combat_mlp_sparse_v1";
         f >> tok >> nfeat;                   // "nfeat <k>"
+    } else if (tok == "combat_mlp_meta_v1") {  // Reptile meta-learned MLP + per-encounter deltas
+        isMlp = true;                        // dense layout (x_mean/x_invstd) + delta table
+        isSparseMlp = false;
+        f >> tok >> nfeat;                   // "nfeat <k>"
     } else if (tok == "combat_quantile_v1") {  // §132: quantile regression over R = 0 | 50+endHp
         f >> tok; if (tok != "nquantiles") return false;
         f >> nQuantiles;
@@ -547,6 +554,56 @@ bool CombatValueNet::load(const std::string &path) {
                 || !readVec("b2", b2, h2)
                 || !readVec("w3", w3, h2)) return false;
         f >> tok >> b3; if (tok != "b3" || !f) return false;
+        // combat_mlp_meta_v1: optional per-encounter delta table. Adapted weights
+        // are base + delta, stored as fully self-contained per-encounter MLP
+        // instances in encounterModels so predict(bc) can dispatch on the
+        // encounter without touching the base weights.
+        if (f >> tok) {
+            if (tok != "n_encounter_deltas") return false;
+            int nd = 0;
+            f >> nd;
+            if (nd < 0 || nd > 128) return false;
+            constexpr int kNumEncounters = sizeof(monsterEncounterEnumNames)
+                / sizeof(monsterEncounterEnumNames[0]);
+            for (int d = 0; d < nd; ++d) {
+                std::string name;
+                f >> tok >> name;
+                if (tok != "encounter") return false;
+                int enc = -1;
+                for (int e = 0; e < kNumEncounters; ++e)
+                    if (name == monsterEncounterEnumNames[e]) { enc = e; break; }
+                if (enc < 0) return false;   // unknown encounter name
+                std::vector<float> dw1, db1, dw2, db2, dw3;
+                float db3 = 0.f;
+                if (!readVec("dw1", dw1, std::size_t(h1) * nfeat)
+                        || !readVec("db1", db1, h1)
+                        || !readVec("dw2", dw2, std::size_t(h2) * h1)
+                        || !readVec("db2", db2, h2)
+                        || !readVec("dw3", dw3, h2)) return false;
+                f >> tok >> db3;
+                if (tok != "db3" || !f) return false;
+                CombatValueNet m;
+                m.isMlp = true;
+                m.isSparseMlp = false;
+                m.isLoaded = true;
+                m.isPolicy = isPolicy;
+                m.sel = sel;
+                m.xMean = xMean; m.xInvStd = xInvStd;
+                m.h1 = h1; m.h2 = h2;
+                m.yMean = yMean; m.yScale = yScale;
+                m.b3 = b3 + db3;
+                m.w1.resize(w1.size()); m.b1.resize(b1.size());
+                m.w2.resize(w2.size()); m.b2.resize(b2.size());
+                m.w3.resize(w3.size());
+                for (std::size_t i = 0; i < w1.size(); ++i) m.w1[i] = w1[i] + dw1[i];
+                for (std::size_t i = 0; i < b1.size(); ++i) m.b1[i] = b1[i] + db1[i];
+                for (std::size_t i = 0; i < w2.size(); ++i) m.w2[i] = w2[i] + dw2[i];
+                for (std::size_t i = 0; i < b2.size(); ++i) m.b2[i] = b2[i] + db2[i];
+                for (std::size_t i = 0; i < w3.size(); ++i) m.w3[i] = w3[i] + dw3[i];
+                encounterModels[enc] = std::move(m);
+            }
+            hasEncounterModels = nd > 0;
+        }
         isLoaded = true;
         return true;
     }
@@ -588,6 +645,45 @@ bool CombatValueNet::load(const std::string &path) {
     }
     if (!f) return false;
     isLoaded = true;
+    return true;
+}
+
+// Load <dir>/<ENUM_NAME>.txt per-encounter compact-tree models. Names come from
+// monsterEncounterEnumNames[]; any file present is loaded and keyed by its enum
+// int. <dir>/_pooled.txt (when present) replaces this object's base weights as
+// the non-specialized fallback; otherwise the previously loaded base is kept.
+// A missing dir / no files leaves per-encounter dispatch off and returns false;
+// a partial load (any present file that fails to load) is rejected wholesale.
+// All files are validated into temporaries first and this object is mutated only
+// on full success, so a corrupt per-encounter file or pooled fallback can never
+// destroy an already-loaded base model (e.g. the STS_VNET model).
+bool CombatValueNet::loadEncounterModels(const std::string &dir) {
+    auto fileExists = [](const std::string &p) {
+        std::ifstream f(p);
+        return f.good();
+    };
+    CombatValueNet pooledBase;      // staged _pooled.txt replacement base
+    bool havePooled = false;
+    const std::string pooled = dir + "/_pooled.txt";
+    if (fileExists(pooled)) {
+        if (!pooledBase.load(pooled)) return false;   // this untouched on failure
+        havePooled = true;
+    }
+    std::unordered_map<int, CombatValueNet> newMap;
+    constexpr int kNumEncounters = sizeof(monsterEncounterEnumNames)
+        / sizeof(monsterEncounterEnumNames[0]);
+    for (int enc = 0; enc < kNumEncounters; ++enc) {
+        const std::string path = dir + "/" + monsterEncounterEnumNames[enc] + ".txt";
+        if (!fileExists(path)) continue;
+        CombatValueNet m;
+        if (!m.load(path)) return false;   // this untouched on failure
+        newMap[enc] = std::move(m);
+    }
+    if (newMap.empty()) return false;   // nothing specialized
+    // Commit atomically: swap in the pooled base (when present) and the map.
+    if (havePooled) *this = std::move(pooledBase);
+    encounterModels = std::move(newMap);
+    hasEncounterModels = true;
     return true;
 }
 
@@ -853,19 +949,32 @@ double CombatValueNet::predictQuantileEV(const float *canonFeatures) const {
 }
 
 std::string CombatValueNet::description() const {
-    if (isEntityPolicy) return "shared entity policy 64d";
-    if (isEntity) return "entity multi-head (bonus " + std::to_string(entityWinBonus) + ")";
-    if (isMlp) return std::string(isSparseMlp ? "sparse MLP " : "MLP ")
+    std::string base;
+    if (isEntityPolicy) base = "shared entity policy 64d";
+    else if (isEntity) base = "entity multi-head (bonus " + std::to_string(entityWinBonus) + ")";
+    else if (isMlp) base = std::string(isSparseMlp ? "sparse MLP " : "MLP ")
         + std::to_string(sel.size()) + "x"
         + std::to_string(h1) + "x" + std::to_string(h2) + "x1";
-    if (nQuantiles > 0)
-        return std::to_string(nQuantiles) + "q x" + std::to_string(quantileTrees[0].size()) + " trees (EV)";
-    return std::to_string(trees.size()) + " trees";
+    else if (nQuantiles > 0)
+        base = std::to_string(nQuantiles) + "q x" + std::to_string(quantileTrees[0].size()) + " trees (EV)";
+    else base = std::to_string(trees.size()) + " trees";
+    if (hasEncounterModels)
+        base += " +" + std::to_string(encounterModels.size()) + " per-encounter";
+    return base;
 }
 
 double CombatValueNet::predict(const BattleContext &bc) const {
     thread_local std::vector<float> feat(combatFeatureCount());
     combatExtractFeatures(bc, feat.data());
+    // Per-encounter dispatch: a specialized model for this encounter overrides
+    // the base weights/trees; everything else keeps the pre-existing path.
+    // When hasEncounterModels is false this is a single extra bool test with no
+    // branch taken, byte-identical to the old behavior.
+    if (hasEncounterModels) {
+        auto it = encounterModels.find((int)bc.encounter);
+        if (it != encounterModels.end())
+            return it->second.predictVec(feat.data());
+    }
     return predictVec(feat.data());
 }
 

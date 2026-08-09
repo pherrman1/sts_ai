@@ -3,18 +3,26 @@
 Last verified: 2026-08-09 against the current working tree (feature-leak audit:
 8 genuine leaks removed; bossId confirmed legit; code corrected NGLOB=42;
 corrected model trained and gated; trainer glob-block feature-order skew fixed
-— see decision-log/2026-08-09-v4-glob-skew-fix.md).
+— see decision-log/2026-08-09-v4-glob-skew-fix.md; skewfix retrain gated at
++15.6pp — see EXPERIMENTS.md §149).
 
 Status: **delivered and recorded** in EXPERIMENTS.md §75 (2026-08-02).
 **Code correction** (2026-08-09): bossId re-added to the glob block;
 NRAW=36, NGLOB=42, FUSIN=98.
+**Trainer skew fix + retrain** (2026-08-09): glob-block feature-order skew
+fixed in `train_strategic_tok.py`; retrained model gates at **+15.6pp**
+(64 seeds, S2 fair @1k, margin 1.0) — first honest 42-glob V4 to show a
+clear gate benefit. Deployed artifact:
+`selfplay/models/ooc_strategic_tok_final.native` (sha256
+`e62abd833f…`). Previous deployed model (50-glob leaky, `f6bc6a96…`)
+replaced.
+**Honest model** (8 leaks removed, NGLOB=41, bossId incorrectly removed):
+trained 2026-08-09, `selfplay/models/ooc_strategic_tok_honest.native`,
+sha256 `fabbcb938a…`. 128-seed gate (S2 fair @1k): 22.7% (baseline 21.1%).
 **Corrected model** (NGLOB=42): `selfplay/models/ooc_strategic_tok_honest_v2.native`
 (799KB, 40 epochs, val_pol_ce 0.488, policy_top1 0.793, q_top1 0.295).
 192-seed gate (S2 fair @1k, margin 1.0): 15.6% win (baseline 21.1%) —
 offline→online inversion persists; gate benefit collapsed.
-**Honest model** (8 leaks removed, NGLOB=41, bossId incorrectly removed):
-trained 2026-08-09, `selfplay/models/ooc_strategic_tok_honest.native`,
-sha256 `fabbcb938a…`. 128-seed gate (S2 fair @1k): 22.7% (baseline 21.1%).
 See decision log `2026-08-09-v4-feature-leak-audit.md`.
 Implements plan items A1 (global token + explicit threshold features), A2
 (counted deck tokens), A3 (relic/potion entity tokens), A4 (decision-context

@@ -25,7 +25,7 @@ void BattleContext::init(const GameContext &gc, MonsterEncounter encounterToInit
     // an old value behind made a nominally fresh fair-play combat depend on
     // stack/object reuse from a previous run.
     cardSelectInfo = CardSelectInfo{};
-    actionQueue = ActionQueue<50>{};
+    actionQueue = ActionQueue<128>{};
     cardQueue = CardQueue{};
     player = Player{};
     monsters = MonsterGroup{};
