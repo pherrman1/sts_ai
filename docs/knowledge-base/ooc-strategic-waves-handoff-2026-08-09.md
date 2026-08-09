@@ -155,7 +155,9 @@ for the next experiments.
 | Race fix decision | `docs/knowledge-base/decision-log/2026-08-09-thread-local-potion-value.md` |
 | Trainer split fix | `docs/knowledge-base/decision-log/2026-08-09-strategic-training-split-fix.md` |
 | Deployment metrics | `strategic_metrics.py`, `tools/analyze_strategic_metrics.py` |
-| Prediction export (partial) | `tools/export_strategic_predictions.py` |
+| Prediction export | ✅ Done | `STRAT_PREDICT_ONLY=1` mode in `train_strategic_tok.py`, uses exact `fwd_rows()` tensor prep, writes deployment-aligned CSV with `10*labelWon+labelHp` labels. Small-fixture smoke + 500-group V4 smoke passed. Full CUDA export pending. |
+| Prediction smoke result | Partial | 500-group V4 smoke: fire rate 51.8%, beneficial 30.1%, harmful 34.1%. EVENT overrides 80% beneficial — matches gameplay finding. |
+| Analyzer | ✅ Done | `tools/analyze_strategic_metrics.py` consumes prediction CSV, self-test passes |
 | Trace analyzer | `tools/analyze_strategic_trace.py` |
 | Screen ablation harness | `run_screen_ablate.sh` |
 | 128-seed OFF | `build/ooc_v4_head_s3_act3_off_64_1786297628.csv` + `build/ooc_v4_head128_s3_act3_off_64plus_1786297983.csv` |
@@ -211,6 +213,12 @@ python3 -m py_compile \
 python3 tools/analyze_strategic_metrics.py --self-test
 python3 tools/strategic_split_selftest.py
 python3 tools/ooc_strategic_contract_selftest.py
+
+# Predict-only smoke (CPU, small fixture):
+STRAT_PREDICT_ONLY=1 STRAT_PREDICT_CKPT=<ckpt.pt> \
+  STRAT_PREDICT_MAX_GROUPS=50 STRAT_DEVICE=cpu \
+  STRAT_TOK_COMPILE=0 OMP_NUM_THREADS=4 \
+  python3 train_strategic_tok.py <tierb_fixture.csv> /tmp/smoke
 ```
 
 For gameplay on the frozen stack:
@@ -232,24 +240,30 @@ Seed ceiling: 8–16 smoke, 64 exploratory, 128 confirmation maximum.
 
 ## 12. Exact next experiments (in priority order)
 
-### A — Finish the prediction-CSV pipeline (Task 4)
+### A — ✅ Predict-only mode implemented; run full CUDA export
 
-The `tools/export_strategic_predictions.py` skeleton exists and the
-`tools/analyze_strategic_metrics.py` consumer is verified.  What remains is
-integrating the trainer's full tensor-prep logic (deck/relic/potion token
-arrays, action bits, entity/screen/category tensors) into the export script.
-The trainer's `fwd_rows()` already does this — either extract that logic into
-a shared module or add a `--predict-only` mode to the trainer that loads a
-checkpoint and writes the deployment-aligned prediction CSV.
+The `STRAT_PREDICT_ONLY=1` mode is implemented in `train_strategic_tok.py`.
+It uses the trainer's existing `fwd_rows()` — same tensor prep as training.
+Activate with:
+```bash
+STRAT_PREDICT_ONLY=1 \
+STRAT_PREDICT_CKPT=selfplay/models/ooc_strategic_tok_final.pt \
+STRAT_PREDICT_MAX_GROUPS=0 \
+STRAT_PREDICT_OUT=build/v4_full_preds.csv \
+python3 train_strategic_tok.py build/strategic_tierb.csv /tmp/v4_export
+```
+Output CSV: `seed,decIdx,screen,nCand,owned,modelIdx,bestIdx,
+behaviorFallbackIdx,fallbackIdx,fallbackSource,margin,threshold,fired,predQ,labelQ`.
+Labels use `10*labelWon + labelHp`.  Fallback = `tierb_chosen`.
 
-The prediction CSV schema is: `seed,decIdx,screen,nCand,modelIdx,bestIdx,
-chosenIdx,margin,fired,predQ,labelQ` where the Q columns are pipe-delimited
-per-candidate lists.  The `fallbackIdx` column required by
-`analyze_strategic_metrics.py` is currently missing from the export; add it.
+A 500-group CPU smoke test ran successfully on the full 6.1 GB Tier-B CSV
+(~51.8% fire rate, EVENT overrides 80% beneficial).  The full 722K-group
+export should use CUDA (CPU would take days).  The 2.8 GB token state is
+precomputed at `selfplay/models/ooc_strategic_tok_final_tok_state.bin`
+but the trainer may rebuild it if the CSV path fingerprint differs.
 
-Once this works, run it on the V4 checkpoint and the full Tier-B dataset to
-get real per-screen override quality, harmful-override rate, and
-fallback-relative advantage statistics.
+What remains: a parity self-test proving predict-only Q matches trainer
+evaluation Q on the same rows, then the full CUDA export.
 
 ### B — Decide whether full checkpoint-selection training is worth it (Task 7)
 
