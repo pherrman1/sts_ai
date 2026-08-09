@@ -23,6 +23,8 @@ using namespace sts;
 
 namespace sts::search {
 
+extern double g_vnetAlpha;   // from BattleScumSearcher2.cpp
+
 bool g_useSearcher3 = false;
 bool g_s3Belief = true;
 bool g_s3Prune = true;
@@ -338,7 +340,6 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
 
     // Reuse generation tracking.
     reuseGeneration = reuseGeneration + (reused ? 1 : 0);
-    reuseSearchCount = reused ? 0 : -1;
     // Snapshot tree depth at promotion time (max edge count along any path).
     reuseGenerationDepth = 0;
     if (reused) {
@@ -570,29 +571,30 @@ void BattleScumSearcher3::step() {
                                                  vLeaf, rawEval, eval,
                                                  rollSteps, 0});
             }
-            // Deep-target capture (STS_DEEP_TARGET_FILE=<path>,
-            // STS_DEEP_TARGET_SAMPLE=<prob>, STS_DEEP_TARGET_SIMS=<N>):
-            // for a random sample of leaf queries, clone the BattleContext
-            // and run a fresh deeper Searcher3 search to produce a stronger
-            // value target.  Zero overhead when env vars are unset.
+            // Deep-target capture
             if (const char *dtPath = std::getenv("STS_DEEP_TARGET_FILE")) {
                 static std::mutex dtMutex;
                 static std::ofstream dtFile;
                 static double dtSample = []{
                     const char *s = std::getenv("STS_DEEP_TARGET_SAMPLE");
-                    return s ? std::atof(s) : 0.01;
+                    return s ? std::atof(s) : 0.005;
                 }();
                 static int dtSims = []{
                     const char *s = std::getenv("STS_DEEP_TARGET_SIMS");
                     return s ? std::atoi(s) : 4000;
                 }();
+                static int dtSeq = 0;
                 static bool dtInit = false;
                 if (!dtInit) {
                     std::lock_guard<std::mutex> lk(dtMutex);
                     if (!dtInit) {
                         dtFile.open(dtPath, std::ios::out);
-                        if (dtFile.is_open())
-                            dtFile << "depth,xgbValue,deepValue,deepSims,encounter,hp,turn\n";
+                        if (dtFile.is_open()) {
+                            dtFile << "seq,depth";
+                            const auto &names = combatFeatureNames();
+                            for (const auto &n : names) dtFile << ',' << n;
+                            dtFile << ",xgbValue,deepEndHP,deepUtility,deepSims,encounter,hp,turn\n";
+                        }
                         dtInit = true;
                     }
                 }
@@ -602,16 +604,34 @@ void BattleScumSearcher3::step() {
                         std::uniform_real_distribution<double>(0.0,1.0)(dtRng) < dtSample) {
                         BattleContext bcCopy = state;
                         if (bcCopy.outcome == Outcome::UNDECIDED) {
+                            double savedAlpha = g_vnetAlpha;
+                            bool savedAlphaLen = g_vnetAlphaLen;
+                            g_vnetAlpha = 1.0;
+                            g_vnetAlphaLen = false;
                             BattleScumSearcher3 deepSearch(bcCopy, bcCopy.seed, 0,
                                                            g_s3Particles);
                             deepSearch.search(dtSims);
-                            double dv = deepSearch.root.simulationCount > 0
+                            double deepEndHP = deepSearch.root.simulationCount > 0
                                 ? deepSearch.root.evaluationSum
                                   / (double)deepSearch.root.simulationCount : 0.0;
+                            g_vnetAlpha = savedAlpha;
+                            g_vnetAlphaLen = savedAlphaLen;
+                            BattleScumSearcher3 deepSearchU(bcCopy, bcCopy.seed, 0,
+                                                            g_s3Particles);
+                            deepSearchU.search(dtSims);
+                            double deepUtility = deepSearchU.root.simulationCount > 0
+                                ? deepSearchU.root.evaluationSum
+                                  / (double)deepSearchU.root.simulationCount : 0.0;
                             double xv = !std::isnan(vLeaf) ? vLeaf : rawEval;
+                            int nf = combatFeatureCount();
+                            std::vector<float> feats(nf);
+                            combatExtractFeatures(state, feats.data());
                             std::ostringstream o;
-                            o << depth << ',' << xv << ',' << dv << ',' << dtSims
-                              << ',' << (int)state.encounter
+                            int seq = dtSeq++;
+                            o << seq << ',' << depth;
+                            for (int fi = 0; fi < nf; ++fi) o << ',' << feats[fi];
+                            o << ',' << xv << ',' << deepEndHP << ',' << deepUtility
+                              << ',' << dtSims << ',' << (int)state.encounter
                               << ',' << state.player.curHp << ',' << state.turn << '\n';
                             std::lock_guard<std::mutex> lk(dtMutex);
                             if (dtFile.is_open()) dtFile << o.str() << std::flush;
