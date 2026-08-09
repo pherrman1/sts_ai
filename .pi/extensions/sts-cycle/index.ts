@@ -422,7 +422,6 @@ async function runReview(
   prompt?: string,
 ): Promise<{ file: string; data: ReviewResult }> {
   const label = sol ? "ESCALATION REVIEW" : "REVIEW";
-  ctx.onProgress?.(sol ? "ESCALATE" : "REVIEW", `${label} round ${round}...`);
 
   const taskFile = path.join(ctx.sessionDir, "task.txt");
   const planFile = path.join(ctx.sessionDir, "plan.json");
@@ -673,6 +672,54 @@ function accepted(ctx: CycleContext): { state: TerminalState; eli5: string } {
 }
 
 // ============================================================================
+// Pi-native progress UI
+// ============================================================================
+
+/**
+ * Keep cycle progress in a compact widget above the editor instead of the
+ * footer/status line. Pi already owns the footer for cwd/context/model, so
+ * orchestration state is clearer in its own widget.
+ */
+function setCycleProgressWidget(
+  ctx: any,
+  stateName: string,
+  detail: string,
+): void {
+  if (!ctx.hasUI) {
+    console.log(`[sts-cycle] ${stateName}: ${detail}`);
+    return;
+  }
+
+  const separator = " · ";
+  const splitAt = detail.lastIndexOf(separator);
+  const hasModel =
+    splitAt > 0 &&
+    detail.substring(splitAt + separator.length).includes("/");
+
+  const lines: string[] = [];
+  if (hasModel) {
+    const message = detail.substring(0, splitAt);
+    const model = detail.substring(splitAt + separator.length);
+    lines.push(`STS CYCLE  ▶ ${stateName}`);
+    lines.push(message);
+    lines.push(`model: ${model}`);
+  } else {
+    lines.push(`STS CYCLE  ▶ ${stateName}`);
+    lines.push(detail);
+  }
+
+  // Default placement is above the editor.
+  ctx.ui.setWidget("sts-cycle-progress", lines);
+}
+
+function clearCycleProgressWidget(ctx: any): void {
+  if (!ctx.hasUI) return;
+  ctx.ui.setWidget("sts-cycle-progress", undefined);
+  // Also clear stale footer status from older versions of this extension.
+  ctx.ui.setStatus("sts-cycle", undefined);
+}
+
+// ============================================================================
 // Pi extension registration
 // ============================================================================
 
@@ -723,8 +770,7 @@ export default function stsCycle(pi: ExtensionAPI) {
         // undefined. runPiChild still enforces its own lifecycle watchdogs.
         signal: ctx.signal,
         onProgress: (stateName: string, detail: string) => {
-          if (ctx.hasUI) ctx.ui.setStatus("sts-cycle", `${stateName}: ${detail}`);
-          else console.log(`[sts-cycle] ${stateName}: ${detail}`);
+          setCycleProgressWidget(ctx, stateName, detail);
         },
       };
 
@@ -758,7 +804,7 @@ export default function stsCycle(pi: ExtensionAPI) {
         }
 
         if (ctx.hasUI) {
-          ctx.ui.setStatus("sts-cycle", undefined);
+          clearCycleProgressWidget(ctx);
           ctx.ui.setWidget("sts-cycle-result", output.split("\n"));
           ctx.ui.notify(
             `STS Cycle finished: ${result.state}`,
@@ -782,7 +828,7 @@ export default function stsCycle(pi: ExtensionAPI) {
           `Session: ${sessionDir}`;
 
         if (ctx.hasUI) {
-          ctx.ui.setStatus("sts-cycle", undefined);
+          clearCycleProgressWidget(ctx);
           ctx.ui.setWidget("sts-cycle-result", output.split("\n"));
           ctx.ui.notify(`STS Cycle failed: ${failureReason}`, "error");
         } else {
