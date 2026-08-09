@@ -119,12 +119,9 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
         int decisionIdx = 0;
         int fightPool = 0;   // STS_S3_POOL_REDIRECT: per-fight sim credit pool
         int stallCount = 0;
-        // Persistent searcher with single-use tree retention: after playing a
-        // card that does not consume shuffle/card RNG (within-turn plain
-        // attacks), advanceRoot carries the played child's subtree to the new
-        // root so the next search starts from existing work. The searcher is
-        // force-rebuilt after every reuse — cascading reuse compounds stale
-        // world-averaged statistics across particle determinizations.
+        // Tree reuse control (STS_REUSE_MAX_SEARCHES): a promoted tree is
+        // searched at most N times before force-rebuild. N=0 = fresh every
+        // decision (current default). N=-1 = unlimited cascading reuse.
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         bool searcherValid = true;
         while (bc.outcome == Outcome::UNDECIDED) {
@@ -136,9 +133,15 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 bc.outcome = Outcome::PLAYER_LOSS;
                 break;
             }
+            // Reuse gate: rebuild the searcher when the reuse budget is
+            // exhausted or the previous decision was not RNG-safe.
             if (!searcherValid) {
                 s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
                 searcherValid = true;
+            } else if (s3.reuseSearchCount >= 0 && search::g_reuseMaxSearches >= 0
+                       && s3.reuseSearchCount >= search::g_reuseMaxSearches) {
+                // Promote count exhausted: force-rebuild.
+                s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
             }
             const std::int64_t sims = isBossEncounter(bc.encounter)
                 ? (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
@@ -161,15 +164,20 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 fightPool -= static_cast<int>(extra);
                 spend += extra;
             }
-            // search() gives the full budget even on a carried-over root.
-            // searchToTotal: the zeroed root (advanceRoot above) means full
-            // budget runs. On fresh roots (before==0) this equals search().
             const std::int64_t before = s3.root.simulationCount;
-            s3.searchToTotal(spend);
+            s3.search(spend);
+            // Increment the reuse search counter if this was a carried tree.
+            if (s3.reuseSearchCount >= 0)
+                s3.reuseSearchCount++;
             simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             s3.clampRankCorrAtRoot();
             s3.rankCorrValues.clear();
+            // Edge-availability and reuse diagnostics.
+            if (search::g_reuseDiag) {
+                s3.computeEdgeAvailability(bc);
+                s3.printReuseDiagnostics();
+            }
             bool have = false;
             search::Action bestAction = s3PickRootAction(s3, bc, have);
             if (!have) {
@@ -182,31 +190,31 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 break;
             }
             // RNG gate: only retain the tree when the committed action leaves
-            // shuffle/card RNG untouched (no draw, shuffle, or random effects).
-            // Within a turn, plain attacks (Strike, Defend, etc.) always pass.
-            auto snapShuffle  = bc.shuffleRng.counter;
+            // ALL hidden RNG streams untouched (not just shuffle/card). Saves
+            // every stream counter before the action and compares after.
+            auto snapAi       = bc.aiRng.counter;
             auto snapCardRand = bc.cardRandomRng.counter;
+            auto snapMisc     = bc.miscRng.counter;
+            auto snapMonHp    = bc.monsterHpRng.counter;
+            auto snapPotion   = bc.potionRng.counter;
+            auto snapShuffle  = bc.shuffleRng.counter;
             takeAction(bc, bestAction);
-            bool rngSafe = (bc.shuffleRng.counter == snapShuffle)
-                        && (bc.cardRandomRng.counter == snapCardRand);
-            if (rngSafe && s3.advanceRoot(bestAction, bc) && !std::getenv("STS_NO_REUSE")) {
-                // Zero out carried visit counts so PUCT starts with a clean
-                // exploration slate. The tree topology (edges, cached obs,
-                // priors) is preserved — the costly part of search is
-                // enumeration + rollout, not tree structure. Resetting counts
-                // prevents the PUCT exploration-term miscalibration that
-                // occurs when parentCount reflects old-search totals but child
-                // visits are concentrated on a single edge (up to 54× skew).
-                s3.root.simulationCount = 0;
-                s3.root.evaluationSum = 0;
-                for (auto &e : s3.root.edges) {
-                    e.child.simulationCount = 0;
-                    e.child.evaluationSum = 0;
-                }
+            bool rngSafe = (bc.aiRng.counter       == snapAi)
+                        && (bc.cardRandomRng.counter == snapCardRand)
+                        && (bc.miscRng.counter     == snapMisc)
+                        && (bc.monsterHpRng.counter == snapMonHp)
+                        && (bc.potionRng.counter   == snapPotion)
+                        && (bc.shuffleRng.counter  == snapShuffle);
+            if (rngSafe && s3.advanceRoot(bestAction, bc)) {
                 ++decisionIdx;
                 s3.decisionIndex = decisionIdx;
                 s3.reseed();
-                if (!std::getenv("STS_CASCADE_REUSE")) searcherValid = false;
+                if (search::g_reuseMaxSearches == 0) {
+                    searcherValid = false;
+                } else {
+                    // Keep the promoted tree for the next search.
+                    searcherValid = true;
+                }
             } else {
                 ++decisionIdx;
                 searcherValid = false;

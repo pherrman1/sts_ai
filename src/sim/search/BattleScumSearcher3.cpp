@@ -22,6 +22,12 @@ bool g_s3Prune = true;
 bool g_s3Chain = true;
 bool g_s3Live = true;
 bool g_s3Crn = false;
+
+// ── Tree reuse control ─────────────────────────────────────────────────────
+int g_reuseMaxSearches = 0;    // STS_REUSE_MAX_SEARCHES (0 = fresh every decision)
+int g_reuseStatsMode = 0;      // STS_REUSE_STATS_MODE: 0=keep, 1=recursive_reset
+bool g_reuseAlwaysQ = false;   // STS_REUSE_ALWAYS_Q: always use Q on carried trees
+bool g_reuseDiag = false;      // STS_REUSE_DIAG: print reuse diagnostics
 bool g_s3PoolRedirect = false; // STS_S3_POOL_REDIRECT: forced-move budget pool redirect (opt-in)
 // A2 dynamic alpha by rollout length (STS_VNET_ALPHA_LEN, opt-in):
 // replaces the flat g_vnetAlpha at the leaf blend site with a lookup
@@ -115,6 +121,16 @@ void BattleScumSearcher3::ensureObservation(Node &node, const BattleContext &sta
         node.obs = CombatObservation::fromBattleContext(state);
         node.obsHash = node.obs.visibleHash();
         node.obsCached = true;
+    } else {
+        // When the observation is already cached from a previous
+        // determinization, the current state's visibleHash may differ from
+        // the node's stored obsHash — track these mismatches for reuse
+        // diagnostics.
+        if (g_reuseDiag) {
+            std::uint64_t curHash = CombatObservation::fromBattleContext(state).visibleHash();
+            if (curHash != node.obsHash)
+                ++obsMismatchCount;
+        }
     }
 }
 
@@ -153,6 +169,17 @@ void BattleScumSearcher3::reseed() {
     h ^= agentSeed + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
     h ^= (uint64_t)decisionIndex + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
     rng.seed(h ? h : 1);
+}
+
+// ---- Recursive stats reset (STS_REUSE_STATS_MODE=recursive_reset) ---------
+void BattleScumSearcher3::recursiveResetStats(Node &node) {
+    node.simulationCount = 0;
+    node.evaluationSum = 0;
+    node.dist.n = 0;
+    node.dist.loQ20 = 0;
+    node.dist.loQ05 = 0;
+    for (auto &edge : node.edges)
+        recursiveResetStats(edge.child);
 }
 
 void BattleScumSearcher3::prepareCRNParticles() {
@@ -234,6 +261,34 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
     if (!reused) root = Node{};
     rootCarried = true;
 
+    // Count retained nodes in the carried subtree and optionally reset stats.
+    if (reused) {
+        retainedNodeCount = 0;
+        std::function<void(Node&)> countNodes = [&](Node &nd) {
+            ++retainedNodeCount;
+            for (auto &e : nd.edges) countNodes(e.child);
+        };
+        countNodes(root);
+
+        if (g_reuseStatsMode == 1)   // recursive_reset
+            recursiveResetStats(root);
+    }
+
+    // Reuse generation tracking.
+    reuseGeneration = reuseGeneration + (reused ? 1 : 0);
+    reuseSearchCount = reused ? 0 : -1;
+    // Snapshot tree depth at promotion time (max edge count along any path).
+    reuseGenerationDepth = 0;
+    if (reused) {
+        std::function<int(const Node&)> maxDepth = [&](const Node &nd) -> int {
+            int d = 0;
+            for (const auto &e : nd.edges)
+                d = std::max(d, 1 + maxDepth(e.child));
+            return d;
+        };
+        reuseGenerationDepth = maxDepth(root);
+    }
+
     rootBc = std::make_unique<const BattleContext>(newRootState);
     rootObs = CombatObservation::fromBattleContext(newRootState);
     root.obs = rootObs;
@@ -243,6 +298,10 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
     bestActionSequence.clear();
     bestActionValue = std::numeric_limits<double>::min();
     outcomePlayerHp = 0;
+    obsMismatchCount = 0;
+    parentChildViolations = 0;
+    leafCache.clear();
+    edgeAvailability.clear();
     return reused;
 }
 
@@ -655,7 +714,10 @@ int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
                        || (g_usePVNet && g_combatPVNet.loaded());
     const double logParent  = usePuct ? 0.0 : std::log((double)(node.simulationCount + 1));
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
-    const bool exploit = !bestActionSequence.empty();  // Searcher2 pattern: exploit only after finding a winning line
+    // STS_REUSE_ALWAYS_Q: on carried trees, always use Q from sim 1.
+    // Otherwise (legacy): exploit only after finding a winning line.
+    const bool exploit = g_reuseAlwaysQ ? (reuseSearchCount >= 0)
+                                        : !bestActionSequence.empty();
     const double evalRange = std::max(1.0, bestActionValue - minActionValue);
 
     int best = 0;
@@ -689,7 +751,8 @@ int BattleScumSearcher3::selectBestValidEdgePUCT(const Node &node, const BattleC
                        || (g_usePVNet && g_combatPVNet.loaded());
     const double logParent  = usePuct ? 0.0 : std::log((double)(node.simulationCount + 1));
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
-    const bool exploit = !bestActionSequence.empty();
+    const bool exploit = g_reuseAlwaysQ ? (reuseSearchCount >= 0)
+                                        : !bestActionSequence.empty();
     const double evalRange = std::max(1.0, bestActionValue - minActionValue);
 
     int best = -1;
@@ -1183,6 +1246,38 @@ void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc)
     for (int i = 0; i < n; ++i) { logits[i] = std::exp(logits[i] - maxLog); sum += logits[i]; }
     double inv = sum > 0 ? 1.0 / sum : 1.0 / n;
     for (int i = 0; i < n; ++i) node.edges[i].prior = (float)(logits[i] * inv);
+}
+
+// ---- Reuse diagnostics ------------------------------------------------------
+void BattleScumSearcher3::computeEdgeAvailability(const BattleContext &bc) {
+    edgeAvailability.assign(root.edges.size(), 0);
+    if (crnParticles.empty()) return;
+    for (const auto &p : crnParticles) {
+        BattleContext state = bc;
+        applyParticle(state, p);
+        for (size_t i = 0; i < root.edges.size(); ++i) {
+            if (root.edges[i].action.isValidAction(state))
+                ++edgeAvailability[i];
+        }
+    }
+}
+
+void BattleScumSearcher3::printReuseDiagnostics() const {
+    std::cerr << "[reuse-diag] gen=" << reuseGeneration
+              << " depth=" << reuseGenerationDepth
+              << " searches=" << reuseSearchCount
+              << " retained=" << retainedNodeCount
+              << " obsMismatch=" << obsMismatchCount
+              << " parentChildViol=" << parentChildViolations;
+    if (!edgeAvailability.empty()) {
+        std::cerr << " edgeAvail=[";
+        for (size_t i = 0; i < edgeAvailability.size(); ++i) {
+            if (i) std::cerr << ",";
+            std::cerr << edgeAvailability[i];
+        }
+        std::cerr << "]";
+    }
+    std::cerr << "\n";
 }
 
 } // namespace sts::search

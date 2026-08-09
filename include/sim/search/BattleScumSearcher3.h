@@ -102,6 +102,25 @@ namespace sts::search {
         double minActionValue = std::numeric_limits<double>::max();
         int outcomePlayerHp = 0;
 
+        // ── Tree reuse counters & diagnostics ─────────────────────────
+        int reuseGeneration = 0;         // number of times advanceRoot carried the tree (0 = fresh)
+        int reuseSearchCount = -1;       // -1 = fresh/never promoted; >=0 = promoted, searches executed since last promotion
+        int retainedNodeCount = 0;       // nodes retained in the last advanceRoot
+        int reuseGenerationDepth = 0;    // tree depth at the time advanceRoot was called
+        int obsMismatchCount = 0;        // visits where the current state's visibleHash != node.obsHash
+        int parentChildViolations = 0;   // parent simCount < sum(child.simCount) invariants found
+
+        // Recursively zero simulationCount, evaluationSum, dist on every node
+        // in the carried tree (STS_REUSE_STATS_MODE=recursive_reset).
+        static void recursiveResetStats(Node &node);
+        // Per-edge particle-world availability: for each root edge, count how
+        // many pre-prepared CRN particles make the edge valid in the live root
+        // state (callable after search, from the agent loop).
+        void computeEdgeAvailability(const BattleContext &bc);
+        std::vector<int> edgeAvailability;  // populated by computeEdgeAvailability
+        // Print reuse diagnostics to stderr (called from the agent loop).
+        void printReuseDiagnostics() const;
+
         // Visible-state leaf-value cache (phase 6, STS_PVNET_CACHE): keys are
         // node obsHash values at the direct-eval sites (no-legal-action,
         // invalid-edge, depth cap), where repeated sims evaluate the same
@@ -208,6 +227,20 @@ namespace sts::search {
     // min(pool, baseSims) extra. Pure budget redirect -- no stability-based
     // early stopping (the STS_CONV_ROOT stability line was falsified, §118).
     extern bool g_s3PoolRedirect;
+    // ── Tree reuse control (STS_REUSE_*) ──────────────────────────────
+    // STS_REUSE_MAX_SEARCHES: max times a promoted tree is searched before
+    // force-rebuild (0=never, -1=unlimited). Default 0 (current behaviour).
+    extern int g_reuseMaxSearches;
+    // STS_REUSE_STATS_MODE: keep (0) = preserve subtree stats;
+    // recursive_reset (1) = zero simulationCount/evaluationSum/dist on every
+    // retained node.
+    extern int g_reuseStatsMode;
+    // STS_REUSE_ALWAYS_Q: on carried trees, PUCT always uses existing Q
+    // from simulation 1 — no gate on bestActionSequence.
+    extern bool g_reuseAlwaysQ;
+    // STS_REUSE_DIAG: print reuse diagnostics after each search.
+    extern bool g_reuseDiag;
+
     // A2 dynamic alpha by rollout length (STS_VNET_ALPHA_LEN, opt-in):
     // replaces the flat vnet/pvnet alpha at the leaf blend site with a
     // lookup over the rollout action count L. Pre-registered table

@@ -9901,6 +9901,26 @@ int main(int argc, char **argv) {
         search::g_liveValid = true;
         std::cout << "[live-valid edge re-selection ON (fair S3 default, §123)]\n";
     }
+    // ── Tree reuse control (STS_REUSE_*) ──────────────────────────────────
+    if (const char *d = std::getenv("STS_REUSE_MAX_SEARCHES")) {
+        search::g_reuseMaxSearches = std::atoi(d);
+        std::cout << "[reuse max-searches = " << search::g_reuseMaxSearches << "]\n";
+    }
+    if (const char *d = std::getenv("STS_REUSE_STATS_MODE")) {
+        if (std::string(d) == "recursive_reset")
+            search::g_reuseStatsMode = 1;
+        else
+            search::g_reuseStatsMode = 0;  // "keep" or unknown
+        std::cout << "[reuse stats-mode = " << (search::g_reuseStatsMode ? "recursive_reset" : "keep") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_REUSE_ALWAYS_Q")) {
+        search::g_reuseAlwaysQ = std::atoi(d) != 0;
+        std::cout << "[reuse always-Q = " << (search::g_reuseAlwaysQ ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_REUSE_DIAG")) {
+        search::g_reuseDiag = std::atoi(d) != 0;
+        std::cout << "[reuse diagnostics = " << (search::g_reuseDiag ? "ON" : "off") << "]\n";
+    }
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
         const std::string name(d);
         int id = -1;
