@@ -1738,6 +1738,78 @@ void BattleScumSearcher3::step() {
                     }
                 }
             }
+            // Terminal-endHP target capture (STS_ENDHP_TARGET_FILE=<path>,
+            // STS_ENDHP_TARGET_SAMPLE=<prob>, STS_ENDHP_TARGET_K=<k>):
+            // samples leaf states, clones BattleContext, plays to terminal via
+            // playoutBattleFair, records final HP (0=loss, curHp=win).
+            if (const char *ehPath = std::getenv("STS_ENDHP_TARGET_FILE")) {
+                static std::mutex ehMutex;
+                static std::ofstream ehFile;
+                static double ehSample = []{
+                    const char *s = std::getenv("STS_ENDHP_TARGET_SAMPLE");
+                    return s ? std::atof(s) : 0.01;
+                }();
+                static int ehK = []{
+                    const char *s = std::getenv("STS_ENDHP_TARGET_K");
+                    return s ? std::atoi(s) : 1;
+                }();
+                static int ehSims = []{
+                    const char *s = std::getenv("STS_ENDHP_TARGET_SIMS");
+                    return s ? std::atoi(s) : 2000;
+                }();
+                static bool ehInit = false;
+                if (!ehInit) {
+                    std::lock_guard<std::mutex> lk(ehMutex);
+                    if (!ehInit) {
+                        ehFile.open(ehPath, std::ios::out);
+                        if (ehFile.is_open())
+                            ehFile << "depth,encounter,hp,turn,teacherPred,endHP,K\n";
+                        ehInit = true;
+                    }
+                }
+                if (ehFile.is_open()) {
+                    thread_local std::mt19937_64 ehRng(std::random_device{}());
+                    if (ehSample >= 1.0 ||
+                        std::uniform_real_distribution<double>(0.0,1.0)(ehRng) < ehSample) {
+                        int k = std::max(1, ehK);
+                        double sumEndHP = 0.0; int wins = 0;
+                        for (int ki = 0; ki < k; ++ki) {
+                            BattleContext bcCopy = state;
+                            if (bcCopy.outcome == Outcome::UNDECIDED) {
+                                // Drive combat to terminal using Searcher3 at each decision
+                                int stall = 0;
+                                while (bcCopy.outcome == Outcome::UNDECIDED && stall < 200) {
+                                    ++stall;
+                                    BattleScumSearcher3 s3(bcCopy, bcCopy.seed, 0, g_s3Particles);
+                                    s3.search(ehSims);
+                                    if (s3.root.edges.empty()) break;
+                                    // Pick most-visited edge
+                                    int best = 0;
+                                    std::int64_t bestVisits = s3.root.edges[0].child.simulationCount;
+                                    for (int e = 1; e < (int)s3.root.edges.size(); ++e) {
+                                        if (s3.root.edges[e].child.simulationCount > bestVisits) {
+                                            bestVisits = s3.root.edges[e].child.simulationCount;
+                                            best = e;
+                                        }
+                                    }
+                                    if (!s3.root.edges[best].action.isValidAction(bcCopy)) break;
+                                    s3.root.edges[best].action.execute(bcCopy);
+                                }
+                                if (bcCopy.outcome == Outcome::PLAYER_VICTORY)
+                                    sumEndHP += bcCopy.player.curHp;
+                            }
+                        }
+                        double avgEndHP = k > 0 ? sumEndHP / (double)k : 0.0;
+                        double xv = !std::isnan(vLeaf) ? vLeaf : rawEval;
+                        std::ostringstream o;
+                        o << depth << ',' << (int)state.encounter
+                          << ',' << state.player.curHp << ',' << state.turn
+                          << ',' << xv << ',' << avgEndHP << ',' << k << '\n';
+                        std::lock_guard<std::mutex> lk(ehMutex);
+                        if (ehFile.is_open()) ehFile << o.str() << std::flush;
+                    }
+                }
+            }
             backpropagate(path, eval, actionStack);
             return;
         }
