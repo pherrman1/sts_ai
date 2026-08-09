@@ -629,7 +629,7 @@ export function validatePlan(
     }
   }
 
-  if (!plan.eli5_summary || !plan.eli5_summary.trim()) {
+  if (!plan.eli5_summary || typeof plan.eli5_summary !== "string" || !plan.eli5_summary.trim()) {
     return "Architect eli5_summary must be a non-empty string";
   }
 
@@ -665,7 +665,7 @@ export function validateReview(
     return "Reviewer summary must be a non-empty string";
   }
 
-  if (!review.eli5_summary || !review.eli5_summary.trim()) {
+  if (!review.eli5_summary || typeof review.eli5_summary !== "string" || !review.eli5_summary.trim()) {
     if (!allowLegacy) {
       return "Reviewer eli5_summary must be a non-empty string";
     }
