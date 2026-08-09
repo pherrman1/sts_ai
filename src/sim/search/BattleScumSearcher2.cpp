@@ -34,7 +34,7 @@ namespace sts::search {
     int g_rolloutCapAct23 = 8;       // cap for act 2-3 (floors 17..50)
     int g_rolloutCapLateAlive = 1;   // monsters alive <= this -> uncapped
     bool g_useTT = false;        // transposition table (value sharing across action orders)
-    double g_potionKeepValue = 4.0;      // HP-equiv per potion kept at fight end (dynamic potion-saving)
+    thread_local double g_potionKeepValue = 4.0; // HP-equiv per potion kept at fight end (dynamic potion-saving)
     bool g_convergeStop = false;         // convergence-based early stopping (see searchToTotalAdaptive)
     std::int64_t g_convPatience = 2000;  // sims of no best-value improvement before stopping
     std::int64_t g_convMinSims  = 1000;  // min sims before an early stop is allowed

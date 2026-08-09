@@ -180,7 +180,7 @@ namespace sts::search {
     extern bool g_useTT;             // enable the transposition table (value sharing across paths)
     extern double g_vnetAlpha;       // V_combat leaf blend weight: value = a*VNet + (1-a)*rollout; >=1 skips rollout
     extern bool g_convergeStop;      // early-stop a fight's search once the best line's value plateaus
-    extern double g_potionKeepValue; // HP-equiv value of each potion KEPT at fight end (default 4).
+    extern thread_local double g_potionKeepValue; // HP-equiv value of each potion KEPT at fight end (default 4).
                                      // Raise it (set per-fight by the app) to hoard potions for an
                                      // upcoming elite/boss; lower it in the hard fight to spend freely.
     extern std::int64_t g_convPatience;  // stop after this many sims with no best-value improvement

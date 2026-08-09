@@ -130,6 +130,13 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
 - `CombatObservation::operator==` and `visibleHash` share one canonical field
   set; card piles compare as `CardKey` multisets, so order-insensitive equality
   is deliberate and equal observations hash equally.
+- `search::g_potionKeepValue` is thread-local because `runFullRunOOC`
+  computes it per fight while fair benchmark seeds execute concurrently. A
+  process-global value caused cross-seed contamination and non-reproducible
+  outcomes; the declaration/definition are in
+  `include/sim/search/BattleScumSearcher2.h` and
+  `src/sim/search/BattleScumSearcher2.cpp`. A repeated 8-seed, 1k-sim,
+  12-thread check matched outcomes, floors, HP, and death fields after the fix.
 - Historical repeated fair multi-thread runs were not bit-identical
   (`EXPERIMENTS.md` entries 66e, 66j). Since commit `63d8b89` the recorded
   divergence does not reproduce: fair Searcher2/Searcher3 and known-RNG runs
