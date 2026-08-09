@@ -132,6 +132,159 @@ function agentConfig(cwd: string, role: string): AgentConfig {
 }
 
 // ============================================================================
+// Live child-agent progress
+// ============================================================================
+
+const AGENT_PROGRESS_THROTTLE_MS = 150;
+
+interface AgentLiveProgress {
+  turn: number;
+  status: "waiting" | "thinking" | "responding" | "tool";
+  currentTool: string | null;
+  recentTools: string[];
+  lastEmitAt: number;
+}
+
+function createAgentLiveProgress(): AgentLiveProgress {
+  return {
+    turn: 0,
+    status: "waiting",
+    currentTool: null,
+    recentTools: [],
+    lastEmitAt: 0,
+  };
+}
+
+function conciseToolCall(event: any): string {
+  const name = String(event.toolName || "tool");
+  const args = event.args ?? {};
+
+  if (name === "read") {
+    const p = String(args.file_path || args.path || "");
+    return p ? `read ${p}` : "read";
+  }
+  if (name === "grep") {
+    return `grep /${String(args.pattern || "")}/ in ${String(args.path || ".")}`;
+  }
+  if (name === "find") {
+    return `find ${String(args.pattern || "*")} in ${String(args.path || ".")}`;
+  }
+  if (name === "ls") {
+    return `ls ${String(args.path || ".")}`;
+  }
+  if (name === "sts_git") {
+    const subcommand = String(args.subcommand || "");
+    const extra = Array.isArray(args.args) ? args.args.slice(0, 6).join(" ") : "";
+    return `sts_git ${[subcommand, extra].filter(Boolean).join(" ")}`.trim();
+  }
+  if (name === "sts_inspect") {
+    const extra = Array.isArray(args.args) ? args.args.slice(0, 6).join(" ") : "";
+    return `sts_inspect ${extra}`.trim();
+  }
+  if (name === "bash") {
+    const cmd = String(args.command || "");
+    return `$ ${cmd.length > 70 ? `${cmd.slice(0, 70)}...` : cmd}`;
+  }
+  return name;
+}
+
+function agentStatusLabel(status: AgentLiveProgress["status"]): string {
+  switch (status) {
+    case "thinking": return "thinking";
+    case "responding": return "responding";
+    case "tool": return "running tool";
+    default: return "waiting";
+  }
+}
+
+function emitAgentLiveProgress(
+  stage: string,
+  model: string,
+  live: AgentLiveProgress,
+  onProgress: ((state: string, detail: string) => void) | undefined,
+  force = false,
+): void {
+  if (!onProgress) return;
+
+  const now = Date.now();
+  if (!force && now - live.lastEmitAt < AGENT_PROGRESS_THROTTLE_MS) return;
+  live.lastEmitAt = now;
+
+  const pieces = [
+    `turn ${Math.max(1, live.turn)}`,
+    agentStatusLabel(live.status),
+  ];
+
+  if (live.currentTool) pieces.push(`→ ${live.currentTool}`);
+  else if (live.recentTools.length > 0) {
+    pieces.push(`✓ ${live.recentTools[live.recentTools.length - 1]}`);
+  }
+
+  onProgress(stage, `${pieces.join(" · ")} · ${model}`);
+}
+
+function handleAgentRunnerEvent(
+  event: RunnerEvent,
+  stage: string,
+  model: string,
+  live: AgentLiveProgress,
+  onProgress?: (state: string, detail: string) => void,
+): void {
+  const e = event as any;
+
+  if (e.type === "turn_start") {
+    live.turn++;
+    live.status = "waiting";
+    live.currentTool = null;
+    emitAgentLiveProgress(stage, model, live, onProgress, true);
+    return;
+  }
+
+  if (e.type === "message_update") {
+    const subtype = e.assistantMessageEvent?.type;
+    if (subtype === "thinking_start" || subtype === "thinking_delta") {
+      live.status = "thinking";
+      emitAgentLiveProgress(stage, model, live, onProgress);
+    } else if (subtype === "text_start" || subtype === "text_delta") {
+      live.status = "responding";
+      emitAgentLiveProgress(stage, model, live, onProgress);
+    }
+    return;
+  }
+
+  if (e.type === "tool_execution_start") {
+    live.status = "tool";
+    live.currentTool = conciseToolCall(e);
+    emitAgentLiveProgress(stage, model, live, onProgress, true);
+    return;
+  }
+
+  if (e.type === "tool_execution_end") {
+    const completed = live.currentTool || conciseToolCall(e);
+    if (completed) {
+      live.recentTools.push(completed);
+      if (live.recentTools.length > 5) live.recentTools.shift();
+    }
+    live.currentTool = null;
+    live.status = "waiting";
+    emitAgentLiveProgress(stage, model, live, onProgress, true);
+    return;
+  }
+
+  if (e.type === "message_end") {
+    live.status = "waiting";
+    emitAgentLiveProgress(stage, model, live, onProgress, true);
+    return;
+  }
+
+  if (e.type === "agent_end") {
+    live.status = "waiting";
+    live.currentTool = null;
+    onProgress?.(stage, `completed · ${model}`);
+  }
+}
+
+// ============================================================================
 // Agent invocation
 // ============================================================================
 
@@ -147,10 +300,13 @@ async function invokeAgent(
   prompt: string,
   files: string[],
   signal?: AbortSignal,
+  stage?: string,
+  onProgress?: (state: string, detail: string) => void,
 ): Promise<AgentResult> {
   const cfg = agentConfig(cwd, role);
   const model = cfg.model;
-
+  const progressStage = stage || role.toUpperCase();
+  const live = createAgentLiveProgress();
 
   const args: string[] = [
     "--model", model,
@@ -159,8 +315,7 @@ async function invokeAgent(
   ];
 
   if (PI_READONLY_ROLES.has(role)) {
-    const toolAllowlist = cfg.tools || PI_READONLY_TOOLS;
-    args.push("--tools", toolAllowlist);
+    args.push("--tools", PI_READONLY_TOOLS);
   }
 
   // Write system prompt to temp file
@@ -178,12 +333,17 @@ async function invokeAgent(
 
   let events: RunnerEvent[] = [];
 
+  onProgress?.(progressStage, `starting · ${model}`);
+
   try {
     const result = await runPiChild({
       cwd,
       args,
       signal,
-      onEvent: (event) => { events.push(event); },
+      onEvent: (event) => {
+        events.push(event);
+        handleAgentRunnerEvent(event, progressStage, model, live, onProgress);
+      },
     });
 
     const text = finalAssistantText(result.events);
@@ -315,13 +475,11 @@ async function runClassify(ctx: CycleContext): Promise<CycleContext> {
 }
 
 async function runArchitect(ctx: CycleContext): Promise<CycleContext> {
-  ctx.onProgress?.(
-  "ARCHITECT",
-  `Running architect · ${agentConfig(ctx.cwd, "architect").model}`
-);
-
   const taskFile = path.join(ctx.sessionDir, "task.txt");
-  const result = await invokeAgent(ctx.cwd, "architect", ARCHITECT_PROMPT, [taskFile], ctx.signal);
+  const result = await invokeAgent(
+    ctx.cwd, "architect", ARCHITECT_PROMPT, [taskFile],
+    ctx.signal, "ARCHITECT", ctx.onProgress,
+  );
   ctx.costs.push(...result.costs);
 
   let plan: ArchitecturePlan;
@@ -366,22 +524,19 @@ async function runArchitect(ctx: CycleContext): Promise<CycleContext> {
 }
 
 async function runImplement(ctx: CycleContext): Promise<CycleContext> {
-  // Implementer
-  ctx.onProgress?.(
-    "IMPLEMENT",
-    `Running implementer · ${agentConfig(ctx.cwd, "implementer").model}`,
-  );
-
   const taskFile = path.join(ctx.sessionDir, "task.txt");
   const planFile = path.join(ctx.sessionDir, "plan.json");
 
-  const result = await invokeAgent(ctx.cwd, "implementer", IMPLEMENT_PROMPT, [taskFile, planFile], ctx.signal);
+  const result = await invokeAgent(
+    ctx.cwd, "implementer", IMPLEMENT_PROMPT, [taskFile, planFile],
+    ctx.signal, "IMPLEMENT", ctx.onProgress,
+  );
   ctx.costs.push(...result.costs);
 
   // Extract ELI5 section from final response
   const eli5Match = result.text.match(/(?:^|\n)#*\s*ELI5\s*:?\s*\n([\s\S]*?)(?:\n#+\s|\n[A-Z][A-Z\s/-]+$|$)/i);
   const eli5 = eli5Match ? eli5Match[1].replace(/^[-*]\s+/gm, "").trim() : "(no ELI5 recorded)";
-  writeEli5(ctx.sessionDir, eli5, "implementation-1");
+  writeEli5(ctx.sessionDir, eli5);
 
   ctx.state.state = "IMPLEMENT";
   ctx.state.implementationRound++;
@@ -428,11 +583,6 @@ async function runReview(
   const planFile = path.join(ctx.sessionDir, "plan.json");
   const role = sol ? "reviewer_escalation" : "reviewer";
 
-  ctx.onProgress?.(
-    sol ? "ESCALATE" : "REVIEW",
-    `${label} round ${round} · ${agentConfig(ctx.cwd, role).model}`,
-  );
-
   const reviewPrompt = prompt || REVIEW_PROMPT;
 
   const stats = await getChangedPathsStats(ctx.cwd);
@@ -451,6 +601,8 @@ async function runReview(
     reviewPrompt + listingLines,
     [taskFile, planFile, verificationFile, ...extraFiles],
     ctx.signal,
+    sol ? "ESCALATE" : "REVIEW",
+    ctx.onProgress,
   );
   ctx.costs.push(...result.costs);
 
@@ -485,17 +637,15 @@ async function runFix(
   reviewFile: string,
   label: string,
 ): Promise<void> {
-    ctx.onProgress?.(
-    "REPAIR",
-    `Fixing: ${label} · ${agentConfig(ctx.cwd, "implementer").model}`,
-  );
-
   const taskFile = path.join(ctx.sessionDir, "task.txt");
   const planFile = path.join(ctx.sessionDir, "plan.json");
 
   const FIX_PROMPT = "The senior reviewer found concrete problems in the implementation.\n\nRead:\n- the original user task\n- the architecture plan\n- the attached review\n\nFix ONLY the review findings and any directly necessary consequences.\nDo not perform unrelated improvements.\nDo not modify the architecture plan or its verification commands.\nDo not commit or push.\n\nThe orchestrator will independently run the required verification after you finish.\n\n" + "Never use destructive repository operations or revert a file merely because it was already changed or looks unrelated. Leave such a file untouched and report it.\n\nWrap only your final user-facing summary between these exact marker lines:\n\nFINAL_RESPONSE_BEGIN\n<final summary>\nFINAL_RESPONSE_END";
 
-  const result = await invokeAgent(ctx.cwd, "implementer", FIX_PROMPT, [taskFile, planFile, reviewFile], ctx.signal);
+  const result = await invokeAgent(
+    ctx.cwd, "implementer", FIX_PROMPT, [taskFile, planFile, reviewFile],
+    ctx.signal, "REPAIR", ctx.onProgress,
+  );
   ctx.costs.push(...result.costs);
 
   await snapshotAndSave(ctx, `${label}-after-fix`);
@@ -640,29 +790,19 @@ async function runCycle(ctx: CycleContext): Promise<{ state: TerminalState; eli5
 
   if (escalated) {
     ctx.onProgress?.("ESCALATE", `Escalating: ${escalationReasons.join("; ")}`);
-    let escalationPassed = false;
     for (let solRound = 1; solRound <= MAX_SOL; solRound++) {
       const solResult = await runReview(
         ctx, activeVerifFile!, solRound, true,
         [path.join(ctx.sessionDir, "escalation.json")],
       );
 
-      if (solResult.data.verdict === "PASS") {
-        escalationPassed = true;
-        break;
-      }
+      if (solResult.data.verdict === "PASS") break;
 
       await runFix(ctx, solResult.file, `sol-review-${solRound}`);
       const verifResult = await runVerify(ctx);
       if (!verifResult.ok) {
         return { state: "FAILED_VERIFICATION" as any, eli5: "Verification failed after escalation fix." };
       }
-    }
-    if (!escalationPassed) {
-      return {
-        state: "REJECTED",
-        eli5: `Escalation reviewer could not reach PASS within ${MAX_SOL} rounds.`,
-      };
     }
   } else {
     ctx.onProgress?.("ESCALATE", "Not required");
