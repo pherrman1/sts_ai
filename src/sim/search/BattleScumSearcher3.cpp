@@ -88,6 +88,47 @@ bool g_s3EndTurnMarginalize = false;
 int g_s3EndTurnMarginalizeParticles = 16;
 int g_s3EndTurnMarginalizeMaxPile = 8;
 
+// ── Draw-probability diagnostic (STS_S3_DRAW_PROB_DIAG) ───────────────
+// Computes exact hypergeometric draw probabilities for tactical features
+// (lethal outs, attack/block draws) at END_TURN pre-draw states.
+bool g_s3DrawProbDiag = false;
+std::string g_s3DrawProbDiagFile;
+
+// ── Leaf-value residual diagnostic (STS_S3_LEAFVALUE_DIAG) ────────────
+// Captures unique pre-END_TURN states and runs 1k + 4k fresh searches
+// on each to measure whether pLethal explains Q_4k - Q_1k residuals.
+bool g_s3LeafValueDiag = false;
+std::string g_s3LeafValueDiagFile;
+int g_s3LeafValueDiagNormalSims = 1000;
+int g_s3LeafValueDiagDeepSims = 4000;
+int g_s3LeafValueDiagMaxStates = 120;
+
+// Cross-thread dedup: protocol is write-then-check under mutex.
+static std::mutex g_drawProbMutex;
+static std::unordered_set<std::uint64_t> g_drawProbSeen;
+static bool g_drawProbHeaderWritten = false;
+static int g_drawProbRowCount = 0;
+static constexpr int kMaxDrawProbRows = 5000;
+
+// ── Exact hypergeometric: P(draw >= 1 from K outs | N total, D drawn) ─
+double hypergeometricAtLeastOne(int N, int K, int D) {
+    if (K <= 0 || N <= 0 || D <= 0) return 0.0;
+    if (D >= N) return (K > 0) ? 1.0 : 0.0;
+    if (K > N - D) return 1.0;  // more outs than cards left undrawn
+    // 1 - C(N-K, D) / C(N, D) = 1 - product_{i=0}^{D-1} (N-K-i)/(N-i)
+    double pMiss = 1.0;
+    for (int i = 0; i < D; ++i) {
+        pMiss *= (double)(N - K - i) / (double)(N - i);
+    }
+    return 1.0 - pMiss;
+}
+
+// ── Expected count: E[cards drawn from category] = D * K / N ──────────
+double expectedCount(int N, int K, int D) {
+    if (N <= 0 || D <= 0) return 0.0;
+    return (double)(D * K) / (double)N;
+}
+
 // Marginalization diagnostic counters (per-searcher lifetime).
 thread_local std::int64_t t_margEligible = 0;
 thread_local std::int64_t t_margApplied = 0;
@@ -787,6 +828,391 @@ static void maybeBucketValueDiag(
                        t_bvdRng, out);
 }
 
+// ── Card classification for draw-probability diagnostic ────────────────
+// Classify cards in the draw pile by their tactical role for the next turn.
+static void classifyDrawPile(
+    const BattleContext &preState,
+    int &attackOuts, int &playableAttackOuts,
+    int &blockOuts, int &enoughBlockOuts,
+    int &singleCardLethalOuts,
+    std::string &skipLethalReason)
+{
+    attackOuts = 0;
+    playableAttackOuts = 0;
+    blockOuts = 0;
+    enoughBlockOuts = 0;
+    singleCardLethalOuts = 0;
+    skipLethalReason.clear();
+
+    // Try to determine the post-monster-turn state for lethal checking.
+    // Copy the pre-state and advance through END_TURN + monster actions.
+    BattleContext postState = preState;
+
+    // Apply a neutral particle for determinism.
+    HiddenBattleState neutralP;
+    neutralP.randomize(t_diagRng);
+    applyParticleImpl(postState, neutralP, t_diagRng);
+
+    // Advance through END_TURN.
+    Action endTurn(ActionType::END_TURN);
+    endTurn.execute(postState);
+    postState.executeActions();
+
+    // Now postState is the post-monster-turn, pre-draw state.
+    // Check for effects that make the post-turn state nondeterministic.
+    bool monsterRngSafe = true;
+
+    // Skip if Ink Bottle would trigger (random draw on turn start).
+    if (postState.player.hasRelicRuntime(RelicId::INK_BOTTLE) &&
+        postState.player.inkBottleCounter == 9) {
+        if (!skipLethalReason.empty()) skipLethalReason += ";";
+        skipLethalReason += "inkBottle";
+        monsterRngSafe = false;
+    }
+    // Skip if there are random-target effects or unknown intents.
+    // For this diagnostic, most standard enemies have deterministic attack
+    // patterns; multi-hit attacks in this engine have fixed per-hit damage.
+
+    // Total enemy HP and incoming damage.
+    int enemyHpTotal = 0;
+    int incomingDamage = 0;
+    for (int mi = 0; mi < postState.monsters.monsterCount; ++mi) {
+        const auto &m = postState.monsters.arr[mi];
+        if (m.curHp > 0) {
+            enemyHpTotal += m.curHp + m.block;
+            if (m.isAttacking()) {
+                auto di = m.getMoveBaseDamage(postState);
+                incomingDamage += m.calculateDamageToPlayer(postState, di.damage) * di.attackCount;
+            }
+        }
+    }
+
+    // For each card in the draw pile, classify.
+    for (const auto &c : preState.cards.drawPile) {
+        CardType ct = c.getType();
+        bool isAttack = (ct == CardType::ATTACK);
+        bool isSkill = (ct == CardType::SKILL);
+
+        if (isAttack) ++attackOuts;
+        if (isSkill) ++blockOuts;  // approximate: most skills provide block/utility
+
+        // Check playability: cost and targeting.
+        bool playable = (c.costForTurn <= postState.player.energy || c.costForTurn == -1);
+        // Check targeting: need at least one targetable enemy.
+        bool hasTarget = false;
+        for (int mi = 0; mi < postState.monsters.monsterCount; ++mi)
+            if (postState.monsters.arr[mi].curHp > 0 && postState.monsters.arr[mi].isTargetable())
+                { hasTarget = true; break; }
+
+        if (isAttack && playable && (hasTarget || !c.requiresTarget()))
+            ++playableAttackOuts;
+
+        // Enough block: one playable block card covers all incoming damage.
+        if (isSkill && playable) {
+            // Simple heuristic: if the card provides block greater than incoming damage
+            // minus current block after enemy turn.
+            int currentBlock = postState.player.block;
+            // We don't know the exact block amount without executing the card.
+            // Use a rough estimate: Defend provides 5(8) block.
+            int approxBlock = 5 + (c.isUpgraded() ? 3 : 0);
+            if (currentBlock + approxBlock >= incomingDamage)
+                ++enoughBlockOuts;
+        }
+
+        // Single-card lethal check.
+        if (monsterRngSafe && isAttack && playable) {
+            // Simulate playing this one card from the post-monster-turn state.
+            BattleContext lethalCheck = postState;
+            // Add the card to hand and try to play it.
+            int hi = lethalCheck.cards.cardsInHand;
+            if (hi < CardManager::MAX_HAND_SIZE) {
+                lethalCheck.cards.hand[hi] = c;
+                lethalCheck.cards.cardsInHand = hi + 1;
+                Action ca(ActionType::CARD, hi);
+                // Check each targetable monster.
+                for (int t = lethalCheck.monsters.monsterCount - 1; t >= 0; --t) {
+                    if (lethalCheck.monsters.arr[t].curHp <= 0 ||
+                        !lethalCheck.monsters.arr[t].isTargetable()) continue;
+                    BattleContext check = lethalCheck;
+                    Action targeted(ActionType::CARD, hi, t);
+                    if (!targeted.isValidAction(check)) continue;
+                    targeted.execute(check);
+                    check.executeActions();
+                    bool allDead = true;
+                    for (int mi = 0; mi < check.monsters.monsterCount; ++mi)
+                        if (check.monsters.arr[mi].curHp > 0) { allDead = false; break; }
+                    if (allDead) {
+                        ++singleCardLethalOuts;
+                        break;  // card counted once
+                    }
+                }
+            }
+        }
+    }
+
+    if (!monsterRngSafe && skipLethalReason.empty())
+        skipLethalReason = "unknown";
+}
+
+// ── Draw-probability diagnostic hook ───────────────────────────────────
+static void maybeDrawProbDiag(
+    const BattleContext &preState,
+    std::uint64_t seed, int encounter, int floor, int turn, int decIdx,
+    std::int64_t endTurnVisits, double endTurnQ, float endTurnPrior)
+{
+    if (!g_s3DrawProbDiag) return;
+    if (preState.cards.drawPile.empty()) return;  // nothing to draw
+
+    // Pre-state identity for cross-thread dedup.
+    auto obs = CombatObservation::fromBattleContext(preState);
+    std::uint64_t vh = obs.visibleHash();
+
+    // Global dedup under mutex.
+    {
+        std::lock_guard<std::mutex> lk(g_drawProbMutex);
+        if (g_drawProbRowCount >= kMaxDrawProbRows) return;
+        if (!g_drawProbSeen.insert(vh).second) return;
+    }
+
+    // Determine draw count D by simulating END_TURN on a copy.
+    BattleContext simState = preState;
+    // Use a neutral particle for determinism.
+    HiddenBattleState neutralParticle;
+    neutralParticle.randomize(t_diagRng);
+    applyParticleImpl(simState, neutralParticle, t_diagRng);
+    simState.executeActions();
+    Action endTurn(ActionType::END_TURN);
+    endTurn.execute(simState);
+    simState.executeActions();
+
+    const int handAfter = simState.cards.cardsInHand;
+    const int handBefore = preState.cards.cardsInHand;
+    int cardsToDraw = handAfter;  // hand is discarded then D new cards drawn
+    if (preState.player.hasRelicRuntime(RelicId::RUNIC_PYRAMID))
+        cardsToDraw = handAfter - handBefore;  // retain hand
+
+    const int N = (int)preState.cards.drawPile.size();
+    const int discardBefore = (int)preState.cards.discardPile.size();
+    const bool reshuffle = (N == 0 && discardBefore > 0);
+    if (reshuffle) return;  // skip reshuffles
+    if (cardsToDraw <= 0 || N <= 0) return;
+
+    // Classify draw pile.
+    int attackOuts, playableAttackOuts, blockOuts, enoughBlockOuts, lethalOuts;
+    std::string skipLethalReason;
+    classifyDrawPile(preState, attackOuts, playableAttackOuts, blockOuts,
+                     enoughBlockOuts, lethalOuts, skipLethalReason);
+
+    // Compute probabilities.
+    // pLethal = -1: skipped/unclassifiable (RNG issues)
+    // pLethal = 0: classified, zero lethal outs
+    // pLethal > 0: has lethal outs
+    double pLethal;
+    if (!skipLethalReason.empty())
+        pLethal = -1.0;  // unclassifiable
+    else if (lethalOuts > 0)
+        pLethal = hypergeometricAtLeastOne(N, lethalOuts, cardsToDraw);
+    else
+        pLethal = 0.0;  // classified, no lethal outs
+    double pAnyAttack = hypergeometricAtLeastOne(N, attackOuts, cardsToDraw);
+    double pAnyPlayableAttack = hypergeometricAtLeastOne(N, playableAttackOuts, cardsToDraw);
+    double pAnyBlock = hypergeometricAtLeastOne(N, blockOuts, cardsToDraw);
+    double pEnoughBlock = hypergeometricAtLeastOne(N, enoughBlockOuts, cardsToDraw);
+    double expAttacks = expectedCount(N, attackOuts, cardsToDraw);
+    double expBlock = expectedCount(N, blockOuts, cardsToDraw);
+
+    // Player/enemy summary.
+    int enemyHpTotal = 0, incomingDamage = 0;
+    for (int mi = 0; mi < preState.monsters.monsterCount; ++mi) {
+        const auto &m = preState.monsters.arr[mi];
+        if (m.curHp > 0) enemyHpTotal += m.curHp + m.block;
+        if (m.isAttacking()) {
+            auto di = m.getMoveBaseDamage(preState);
+            incomingDamage += m.calculateDamageToPlayer(preState, di.damage) * di.attackCount;
+        }
+    }
+
+    // Write CSV (mutex-guarded).
+    {
+        std::lock_guard<std::mutex> lk(g_drawProbMutex);
+        ++g_drawProbRowCount;
+
+        // Open file lazily.
+        static std::ofstream dpOut;
+        static bool dpOutOpen = false;
+        if (!dpOutOpen && !g_s3DrawProbDiagFile.empty()) {
+            dpOut.open(g_s3DrawProbDiagFile, std::ios::app);
+            dpOutOpen = true;
+        }
+        std::ostream &out = dpOutOpen ? dpOut : std::cerr;
+
+        if (!g_drawProbHeaderWritten) {
+            out << "seed,floor,encounter,turn,decIdx,visibleHash,"
+                << "playerHp,playerBlock,energy,handSize,drawPileSize,discardPileSize,cardsToDraw,"
+                << "enemyHpTotal,incomingDamage,reshuffle,"
+                << "attackOuts,playableAttackOuts,blockOuts,enoughBlockOuts,lethalOuts,"
+                << "pLethal,pAnyAttack,pAnyPlayableAttack,pAnyBlock,pEnoughBlock,"
+                << "expAttacks,expBlock,"
+                << "endTurnVisits,endTurnQ,endTurnPrior,skipLethalReason\n";
+            g_drawProbHeaderWritten = true;
+        }
+
+        out << seed << ',' << floor << ',' << encounter << ','
+            << turn << ',' << decIdx << ',' << vh << ','
+            << preState.player.curHp << ',' << preState.player.block << ','
+            << preState.player.energy << ',' << handBefore << ','
+            << N << ',' << discardBefore << ',' << cardsToDraw << ','
+            << enemyHpTotal << ',' << incomingDamage << ',' << (reshuffle ? 1 : 0) << ','
+            << attackOuts << ',' << playableAttackOuts << ','
+            << blockOuts << ',' << enoughBlockOuts << ',' << lethalOuts << ','
+            << pLethal << ',' << pAnyAttack << ',' << pAnyPlayableAttack << ','
+            << pAnyBlock << ',' << pEnoughBlock << ','
+            << expAttacks << ',' << expBlock << ','
+            << endTurnVisits << ',' << endTurnQ << ',' << endTurnPrior << ','
+            << '"' << skipLethalReason << '"' << '\n';
+        out.flush();
+    }
+
+    // ── Leaf-value residual: if enabled, run 1k+4k fresh searches ────
+    if (g_s3LeafValueDiag && g_drawProbRowCount <= g_s3LeafValueDiagMaxStates) {
+        // Stratified sampling: aim for ~30 p=0, ~10 (0,0.5), ~15 [0.5,0.9), ~15 [0.9,1), ~30 p=1
+        // Only run deep search for states that fit within bin quotas.
+        static std::mutex lvMutex;
+        static int lvCountP0 = 0, lvCountLow = 0, lvCountMed = 0, lvCountHigh = 0, lvCountP1 = 0;
+        static constexpr int lvQuotaP0 = 30, lvQuotaLow = 10, lvQuotaMed = 15, lvQuotaHigh = 15, lvQuotaP1 = 30;
+
+        bool shouldRun = false;
+        {
+            std::lock_guard<std::mutex> lk(lvMutex);
+            if (pLethal < 0) { /* skip: unclassified */ }
+            else if (pLethal == 0.0 && lvCountP0 < lvQuotaP0) { ++lvCountP0; shouldRun = true; }
+            else if (pLethal > 0 && pLethal < 0.5 && lvCountLow < lvQuotaLow) { ++lvCountLow; shouldRun = true; }
+            else if (pLethal >= 0.5 && pLethal < 0.9 && lvCountMed < lvQuotaMed) { ++lvCountMed; shouldRun = true; }
+            else if (pLethal >= 0.9 && pLethal < 1.0 && lvCountHigh < lvQuotaHigh) { ++lvCountHigh; shouldRun = true; }
+            else if (pLethal >= 1.0 && lvCountP1 < lvQuotaP1) { ++lvCountP1; shouldRun = true; }
+        }
+        if (!shouldRun) return;
+
+        // ── Run fresh searcher: 1k then continue to 4k ──────────────
+        auto t0 = std::chrono::steady_clock::now();
+
+        // Use a fixed diagnostic seed based on state hash.
+        std::uint64_t diagSeed = vh ^ 0x9e3779b97f4a7c15ULL;
+        BattleContext stateCopy = preState;
+
+        BattleScumSearcher3 refSearcher(stateCopy, diagSeed, 0, 64);
+
+        // Search 1000 sims.
+        refSearcher.searchToTotal(g_s3LeafValueDiagNormalSims);
+
+        // Extract END_TURN Q at 1k.
+        double q1k = 0.0;
+        std::int64_t visits1k = 0;
+        double visitFrac1k = 0.0;
+        int bestAction1k = -1;
+        bool endTurnBest1k = false;
+        {
+            std::int64_t totalVisits = refSearcher.root.simulationCount;
+            for (size_t i = 0; i < refSearcher.root.edges.size(); ++i) {
+                const auto &e = refSearcher.root.edges[i];
+                if (e.action.getActionType() == ActionType::END_TURN) {
+                    visits1k = e.child.simulationCount;
+                    q1k = visits1k > 0 ? e.child.evaluationSum / visits1k : 0.0;
+                    visitFrac1k = totalVisits > 0 ? (double)visits1k / totalVisits : 0.0;
+                    if (e.child.simulationCount > 0)
+                        endTurnBest1k = true;
+                }
+                // Track best action at 1k.
+                if ((int)e.child.simulationCount > bestAction1k)
+                    bestAction1k = (int)i;
+            }
+            if (bestAction1k >= 0 && refSearcher.root.edges[bestAction1k].action.getActionType() == ActionType::END_TURN)
+                endTurnBest1k = true;
+        }
+
+        // Continue to 4k.
+        refSearcher.searchToTotal(g_s3LeafValueDiagDeepSims);
+
+        // Extract END_TURN Q at 4k.
+        double q4k = 0.0;
+        std::int64_t visits4k = 0;
+        double visitFrac4k = 0.0;
+        int bestAction4k = -1;
+        bool endTurnBest4k = false;
+        double rootValue1k = refSearcher.root.simulationCount > 0
+            ? refSearcher.root.evaluationSum / refSearcher.root.simulationCount : 0.0;
+        // Note: rootValue includes ALL sims (1k+3k=4k); we want 4k root value.
+        // The root eval after searchToTotal(4000) includes all 4000 sims.
+        double rootValue4k = rootValue1k; // same thing — includes all 4k
+        // Actually need to capture 1k snapshot. Let me recompute:
+        // Can't easily get 1k-only root value from cumulative stats.
+        // Use 4k root value as the deep root value; 1k root value not separately available.
+        {
+            std::int64_t totalVisits = refSearcher.root.simulationCount;
+            for (size_t i = 0; i < refSearcher.root.edges.size(); ++i) {
+                const auto &e = refSearcher.root.edges[i];
+                if (e.action.getActionType() == ActionType::END_TURN) {
+                    visits4k = e.child.simulationCount;
+                    q4k = visits4k > 0 ? e.child.evaluationSum / visits4k : 0.0;
+                    visitFrac4k = totalVisits > 0 ? (double)visits4k / totalVisits : 0.0;
+                }
+                if ((int)e.child.simulationCount > bestAction4k)
+                    bestAction4k = (int)i;
+            }
+            if (bestAction4k >= 0 && refSearcher.root.edges[bestAction4k].action.getActionType() == ActionType::END_TURN)
+                endTurnBest4k = true;
+        }
+
+        double residualQ = q4k - q1k;
+        double absResidualQ = std::abs(residualQ);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double elapsed = std::chrono::duration<double>(t1 - t0).count();
+
+        // Write CSV row.
+        static std::mutex lvOutMutex;
+        static bool lvHeaderWritten = false;
+        static std::ofstream lvOut;
+        static bool lvOutOpen = false;
+        {
+            std::lock_guard<std::mutex> lk(lvOutMutex);
+            if (!lvOutOpen && !g_s3LeafValueDiagFile.empty()) {
+                lvOut.open(g_s3LeafValueDiagFile, std::ios::app);
+                lvOutOpen = true;
+            }
+            std::ostream &out = lvOutOpen ? lvOut : std::cerr;
+            if (!lvHeaderWritten) {
+                out << "seed,floor,encounter,turn,decIdx,visibleHash,"
+                    << "playerHp,playerBlock,energy,enemyHpTotal,incomingDamage,"
+                    << "drawPileSize,cardsToDraw,handSize,"
+                    << "lethalOuts,pLethal,pAnyAttack,pEnoughBlock,"
+                    << "expAttacks,expBlock,"
+                    << "q1k,visits1k,visitFrac1k,"
+                    << "q4k,visits4k,visitFrac4k,"
+                    << "residualQ,absResidualQ,"
+                    << "endTurnBest1k,endTurnBest4k,"
+                    << "rootValue4k,elapsedSec\n";
+                lvHeaderWritten = true;
+            }
+
+            out << seed << ',' << floor << ',' << encounter << ','
+                << turn << ',' << decIdx << ',' << vh << ','
+                << preState.player.curHp << ',' << preState.player.block << ','
+                << preState.player.energy << ','
+                << enemyHpTotal << ',' << incomingDamage << ','
+                << N << ',' << cardsToDraw << ',' << handBefore << ','
+                << lethalOuts << ',' << pLethal << ',' << pAnyAttack << ',' << pEnoughBlock << ','
+                << expAttacks << ',' << expBlock << ','
+                << q1k << ',' << visits1k << ',' << visitFrac1k << ','
+                << q4k << ',' << visits4k << ',' << visitFrac4k << ','
+                << residualQ << ',' << absResidualQ << ','
+                << (endTurnBest1k ? 1 : 0) << ',' << (endTurnBest4k ? 1 : 0) << ','
+                << rootValue4k << ',' << elapsed << '\n';
+            out.flush();
+        }
+    }
+}
+
 // ── Helper: maybe run bucket diagnostic before executing an action ──────
 // Called at each action-execution site in step(). No-op when diag is off.
 // Deduplicates by pre-state visibleHash so each unique (state, END_TURN)
@@ -1126,6 +1552,13 @@ void BattleScumSearcher3::step() {
             maybeOutcomeBucketDiag(state, edge.action,
                 agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                 state.turn, decisionIndex);
+            maybeDrawProbDiag(state,
+                agentSeed, (int)rootBc->encounter, rootBc->floorNum,
+                state.turn, decisionIndex,
+                edge.child.simulationCount,
+                edge.child.simulationCount > 0
+                    ? edge.child.evaluationSum / edge.child.simulationCount : 0.0,
+                edge.prior);
             edge.action.execute(state);
             ++diag.treeActions;
             actionStack.push_back(edge.action);

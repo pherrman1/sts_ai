@@ -448,6 +448,17 @@ namespace sts::search {
     extern thread_local double t_margShadowOrdinary;
     extern thread_local double t_margShadowMarginal;
 
+    // ── Draw-probability diagnostic (STS_S3_DRAW_PROB_DIAG) ───────────
+    extern bool g_s3DrawProbDiag;
+    extern std::string g_s3DrawProbDiagFile;
+
+    // ── Leaf-value residual diagnostic (STS_S3_LEAFVALUE_DIAG) ───────
+    extern bool g_s3LeafValueDiag;
+    extern std::string g_s3LeafValueDiagFile;
+    extern int g_s3LeafValueDiagNormalSims;
+    extern int g_s3LeafValueDiagDeepSims;
+    extern int g_s3LeafValueDiagMaxStates;
+
     // Resolve a semantic CARD edge's key to a live-hand positional Action.
     // Returns nullopt when no matching card instance exists in the current
     // hand. Caller must check hasCardKey before calling.

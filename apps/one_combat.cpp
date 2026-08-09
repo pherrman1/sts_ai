@@ -10152,6 +10152,22 @@ int main(int argc, char **argv) {
         search::g_s3EndTurnMarginalizeMaxPile = std::atoi(d);
         std::cout << "[S3 END_TURN marg max-pile = " << search::g_s3EndTurnMarginalizeMaxPile << "]\n";
     }
+    if (const char *d = std::getenv("STS_S3_DRAW_PROB_DIAG")) {
+        search::g_s3DrawProbDiag = std::atoi(d) != 0;
+        std::cout << "[S3 draw-prob diag = " << (search::g_s3DrawProbDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_DRAW_PROB_DIAG_FILE")) {
+        search::g_s3DrawProbDiagFile = d;
+        std::cout << "[S3 draw-prob diag file = " << search::g_s3DrawProbDiagFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_LEAFVALUE_DIAG")) {
+        search::g_s3LeafValueDiag = std::atoi(d) != 0;
+        std::cout << "[S3 leafvalue diag = " << (search::g_s3LeafValueDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_LEAFVALUE_DIAG_FILE")) {
+        search::g_s3LeafValueDiagFile = d;
+        std::cout << "[S3 leafvalue diag file = " << search::g_s3LeafValueDiagFile << "]\n";
+    }
     if (const char *d = std::getenv("STS_S3_UNION_EXPAND")) {
         search::g_s3UnionExpand = std::atoi(d) != 0;
         std::cout << "[S3 union-expand = " << (search::g_s3UnionExpand ? "ON" : "off") << "]\n";
