@@ -1547,6 +1547,101 @@ int testSemanticCardEdges() {
     return 1;
 }
 
+// ---- Draw-probability unit tests -------------------------------------------
+// Validates the exact hypergeometric draw-probability helper.
+
+// Forward-declare the helper (defined in BattleScumSearcher3.cpp).
+namespace sts::search {
+    double hypergeometricAtLeastOne(int N, int K, int D);
+    double expectedCount(int N, int K, int D);
+}
+
+int testDrawProbHelper() {
+    using sts::search::hypergeometricAtLeastOne;
+    using sts::search::expectedCount;
+    int failures = 0;
+    auto check = [&](bool ok, const std::string &msg) {
+        if (!ok) { std::cout << "    FAIL: " << msg << '\n'; ++failures; }
+    };
+
+    // One lethal out: N=6, K=1, D=5 → P = 5/6
+    double p = hypergeometricAtLeastOne(6, 1, 5);
+    check(std::abs(p - 5.0/6.0) < 1e-9, "one lethal out: expected 0.8333, got " + std::to_string(p));
+
+    // Two outs in 5: N=6, K=2, D=5 → P = 1.0 (drawing 5 of 6, can't miss both)
+    p = hypergeometricAtLeastOne(6, 2, 5);
+    check(std::abs(p - 1.0) < 1e-9, "two outs: expected 1.0, got " + std::to_string(p));
+
+    // No outs: K=0 → P=0
+    p = hypergeometricAtLeastOne(6, 0, 5);
+    check(std::abs(p) < 1e-9, "no outs: expected 0, got " + std::to_string(p));
+
+    // Draw whole pile: D >= N, K > 0 → P = 1
+    p = hypergeometricAtLeastOne(3, 1, 3);
+    check(std::abs(p - 1.0) < 1e-9, "draw all: expected 1.0, got " + std::to_string(p));
+    p = hypergeometricAtLeastOne(3, 1, 5);  // D > N
+    check(std::abs(p - 1.0) < 1e-9, "draw more than pile: expected 1.0, got " + std::to_string(p));
+
+    // Half outs: N=10, K=5, D=5
+    // P = 1 - C(5,5)/C(10,5) = 1 - 1/252 ≈ 0.99603
+    p = hypergeometricAtLeastOne(10, 5, 5);
+    check(std::abs(p - (1.0 - 1.0/252.0)) < 1e-6, "half outs: expected ~0.996, got " + std::to_string(p));
+
+    // Expected count
+    double e = expectedCount(10, 3, 5);
+    check(std::abs(e - 1.5) < 1e-9, "expected attacks: expected 1.5, got " + std::to_string(e));
+
+    e = expectedCount(6, 2, 5);
+    check(std::abs(e - 10.0/6.0) < 1e-9, "expected: expected 1.667, got " + std::to_string(e));
+
+    if (failures == 0) {
+        std::cout << "draw_prob_helper PASS\n";
+        return 0;
+    }
+    std::cout << "draw_prob_helper FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
+// Engine-level test: construct a state with known lethal outs and verify.
+int testDrawProbEngine() {
+    // This test verifies the integration: a simple constructed combat state
+    // where the draw pile has one lethal card and several non-lethal cards.
+    GameContext gc(CharacterClass::IRONCLAD, 0x12345, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);  // single cultist
+
+    // Weaken the cultist so a single Strike is lethal.
+    // Cultist has ~48-54 HP at A0. Set it to 6 HP so Strike (6 base dmg) kills.
+    bc.monsters.arr[0].curHp = 6;
+    bc.monsters.arr[0].maxHp = 6;
+
+    // Set up draw pile: one Strike, three Defends.
+    bc.cards.drawPile.clear();
+    bc.cards.drawPile.push_back(CardInstance(CardId::STRIKE_RED));
+    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+    bc.cards.cardsInHand = 0;
+    bc.player.energy = 3;
+
+    // Enumerate END_TURN edges and verify there is at least one.
+    search::BattleScumSearcher3::Node node;
+    search::enumerateActionsForNode(node, bc);
+    bool hasEndTurn = false;
+    for (const auto &e : node.edges)
+        if (e.action.getActionType() == search::ActionType::END_TURN)
+            hasEndTurn = true;
+    if (!hasEndTurn) {
+        std::cout << "draw_prob_engine FAIL: no END_TURN edge\n";
+        return 1;
+    }
+
+    // The draw-prob diagnostic is tested via the CSV output.
+    // This smoke test just confirms the state is constructable.
+    std::cout << "draw_prob_engine PASS (state constructable)\n";
+    return 0;
+}
+
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -1647,6 +1742,10 @@ int main(int argc, const char* argv[]) {
         return testKeyCollection();
     } else if (command == "semantic_card_edges") {
         return testSemanticCardEdges();
+    } else if (command == "draw_prob_helper") {
+        return testDrawProbHelper();
+    } else if (command == "draw_prob_engine") {
+        return testDrawProbEngine();
     }
 
     //    printSizes();
