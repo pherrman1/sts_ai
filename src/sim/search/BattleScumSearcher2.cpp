@@ -742,6 +742,7 @@ int search::BattleScumSearcher2::playoutRandom(BattleContext &state, std::vector
         if (tempNode.edges.empty()) {
             std::cerr << state.seed << " " << simulationIdx << std::endl;
             std::cerr << state.monsters.arr[0].getName() << " " << state.floorNum << " " << monsterEncounterStrings[static_cast<int>(state.encounter)] << std::endl;
+            std::cerr << "GUARDDBG state=" << (int)state.inputState << " task=" << (int)state.cardSelectInfo.cardSelectTask << " hand=" << state.cards.cardsInHand << " pick=" << state.cardSelectInfo.pickCount << " turn=" << state.turn << std::endl;
             // Deterministic (non-fair) enumeration produced no legal action:
             // stop the rollout and let the leaf be evaluated directly (mirrors
             // the fair-mode NO_LEGAL_ACTION break above). Currently unreachable
