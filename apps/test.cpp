@@ -1223,6 +1223,330 @@ int testKeyCollection() {
     return 1;
 }
 
+// ---- S3 semantic CARD edge regression tests ---------------------------------
+// Verifies that edges carrying a semantic CardActionKey resolve to the
+// correct live-hand index, independent of hand permutation — the core
+// invariant that CombatObservation canonicalizes the hand as a multiset
+// but Edge::action stores a position-dependent index.
+int testSemanticCardEdges() {
+    search::g_s3SemanticCardEdges = true;
+    int failures = 0;
+
+    // Helper: build a BattleContext with a specific hand + monster setup.
+    auto makeContext = [](const std::vector<CardId> &handCards,
+                          MonsterEncounter enc = MonsterEncounter::CULTIST) {
+        GameContext gc(CharacterClass::IRONCLAD, 0x42, 0);
+        BattleContext bc;
+        bc.init(gc, enc);
+        // Replace the hand with the desired cards.
+        bc.cards.cardsInHand = (int)handCards.size();
+        for (int i = 0; i < (int)handCards.size(); ++i)
+            bc.cards.hand[i] = CardInstance(handCards[i]);
+        // Ensure we have energy to play them.
+        bc.player.energy = 3;
+        return bc;
+    };
+
+    // ── Test 1: Hand [Strike, Bash, Strike] — resolve Bash to index 1 ──
+    {
+        auto bc = makeContext({CardId::STRIKE_RED, CardId::BASH, CardId::STRIKE_RED});
+        search::BattleScumSearcher3::Node node;
+        search::enumerateActionsForNode(node, bc);
+
+        // Find the Bash edge (should have hasCardKey set).
+        const search::BattleScumSearcher3::Edge *bashEdge = nullptr;
+        for (const auto &e : node.edges) {
+            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
+                bashEdge = &e;
+                break;
+            }
+        }
+        if (!bashEdge) {
+            std::cout << "semantic_card_edges FAIL: no Bash edge with cardKey\n";
+            ++failures;
+        } else {
+            auto resolved = search::resolveSemanticCardEdge(*bashEdge, bc);
+            if (!resolved) {
+                std::cout << "semantic_card_edges FAIL: Bash not resolved in [Strike,Bash,Strike]\n";
+                ++failures;
+            } else if (resolved->getSourceIdx() != 1) {
+                std::cout << "semantic_card_edges FAIL: Bash resolved to idx "
+                          << resolved->getSourceIdx() << ", expected 1\n";
+                ++failures;
+            }
+        }
+    }
+
+    // ── Test 2: Hand [Bash, Strike, Strike] — resolve Bash to index 0 ──
+    {
+        auto bc = makeContext({CardId::BASH, CardId::STRIKE_RED, CardId::STRIKE_RED});
+        search::BattleScumSearcher3::Node node;
+        search::enumerateActionsForNode(node, bc);
+
+        const search::BattleScumSearcher3::Edge *bashEdge = nullptr;
+        for (const auto &e : node.edges) {
+            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
+                bashEdge = &e;
+                break;
+            }
+        }
+        if (!bashEdge) {
+            std::cout << "semantic_card_edges FAIL: no Bash edge from [Bash,Strike,Strike]\n";
+            ++failures;
+        } else {
+            auto resolved = search::resolveSemanticCardEdge(*bashEdge, bc);
+            if (!resolved) {
+                std::cout << "semantic_card_edges FAIL: Bash not resolved in [Bash,Strike,Strike]\n";
+                ++failures;
+            } else if (resolved->getSourceIdx() != 0) {
+                std::cout << "semantic_card_edges FAIL: Bash resolved to idx "
+                          << resolved->getSourceIdx() << ", expected 0\n";
+                ++failures;
+            }
+        }
+    }
+
+    // ── Test 3: same edge resolves Bash across different hand permutations ──
+    {
+        auto bcA = makeContext({CardId::STRIKE_RED, CardId::BASH, CardId::STRIKE_RED});
+        search::BattleScumSearcher3::Node nodeA;
+        search::enumerateActionsForNode(nodeA, bcA);
+
+        const search::BattleScumSearcher3::Edge *bashA = nullptr;
+        for (const auto &e : nodeA.edges) {
+            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
+                bashA = &e;
+                break;
+            }
+        }
+        if (!bashA) {
+            std::cout << "semantic_card_edges FAIL cross-perm: no Bash edge A\n";
+            ++failures;
+        } else {
+            // Resolve in a DIFFERENT BattleContext with Bash at index 0.
+            auto bcB = makeContext({CardId::BASH, CardId::STRIKE_RED, CardId::STRIKE_RED});
+            auto resolvedB = search::resolveSemanticCardEdge(*bashA, bcB);
+            if (!resolvedB) {
+                std::cout << "semantic_card_edges FAIL cross-perm: Bash not resolved\n";
+                ++failures;
+            } else if (resolvedB->getSourceIdx() != 0) {
+                std::cout << "semantic_card_edges FAIL cross-perm: Bash resolved to idx "
+                          << resolvedB->getSourceIdx() << ", expected 0\n";
+                ++failures;
+            }
+            // Resolve in original context.
+            auto resolvedA = search::resolveSemanticCardEdge(*bashA, bcA);
+            if (!resolvedA || resolvedA->getSourceIdx() != 1) {
+                std::cout << "semantic_card_edges FAIL cross-perm: Bash back-resolve wrong\n";
+                ++failures;
+            }
+        }
+    }
+
+    // ── Test 4: two identical Strikes — each has a cardKey (different idx, same key) ──
+    // enumerateActionsForNode deduplicates consecutive identical cards, so only
+    // one Strike edge is created for [Strike, Strike, Bash]. After resolution,
+    // the edge maps to the first matching Strike.
+    {
+        auto bc = makeContext({CardId::STRIKE_RED, CardId::STRIKE_RED, CardId::BASH});
+        search::BattleScumSearcher3::Node node;
+        search::enumerateActionsForNode(node, bc);
+
+        // Should have one STRIKE_RED CARD edge (deduped).
+        int strikeEdges = 0;
+        for (const auto &e : node.edges) {
+            if (e.hasCardKey && e.cardKey.id == CardId::STRIKE_RED)
+                ++strikeEdges;
+        }
+        if (strikeEdges != 1) {
+            std::cout << "semantic_card_edges FAIL two-strikes: expected 1 Strike edge, got "
+                      << strikeEdges << "\n";
+            ++failures;
+        } else {
+            const auto &strikeEdge = node.edges[0]; // first CARD edge should be Strike
+            // Resolve in hand [Bash, Strike, Strike] — should find Strike at idx 1
+            auto bc2 = makeContext({CardId::BASH, CardId::STRIKE_RED, CardId::STRIKE_RED});
+            auto resolved = search::resolveSemanticCardEdge(strikeEdge, bc2);
+            if (!resolved) {
+                std::cout << "semantic_card_edges FAIL two-strikes: Strike not resolved\n";
+                ++failures;
+            } else if (resolved->getSourceIdx() != 1) {
+                std::cout << "semantic_card_edges FAIL two-strikes: resolved to idx "
+                          << resolved->getSourceIdx() << ", expected 1\n";
+                ++failures;
+            }
+        }
+    }
+
+    // ── Test 5: upgraded vs non-upgraded — distinct cardKeys ──
+    {
+        auto bc = makeContext({CardId::STRIKE_RED, CardId::BASH});
+        // Manually upgrade the Bash.
+        bc.cards.hand[1].upgrade();
+        search::BattleScumSearcher3::Node node;
+        search::enumerateActionsForNode(node, bc);
+
+        int bashEdges = 0;
+        for (const auto &e : node.edges) {
+            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
+                ++bashEdges;
+                if (e.cardKey.upgradeCount != 1) {
+                    std::cout << "semantic_card_edges FAIL upgraded: Bash+ key upgradeCount="
+                              << (int)e.cardKey.upgradeCount << ", expected 1\n";
+                    ++failures;
+                }
+            }
+        }
+        if (bashEdges == 0) {
+            std::cout << "semantic_card_edges FAIL upgraded: no Bash+ edge\n";
+            ++failures;
+        }
+
+        // Unupgraded Bash in a fresh hand should NOT match the Bash+ key.
+        auto bc2 = makeContext({CardId::BASH, CardId::STRIKE_RED});
+        // bc2 has unupgraded Bash. Get its Bash edge.
+        search::BattleScumSearcher3::Node node2;
+        search::enumerateActionsForNode(node2, bc2);
+        const search::BattleScumSearcher3::Edge *unupEdge = nullptr;
+        for (const auto &e : node2.edges) {
+            if (e.hasCardKey && e.cardKey.id == CardId::BASH && e.cardKey.upgradeCount == 0)
+                { unupEdge = &e; break; }
+        }
+        // Try to resolve the Bash+ edge against an unupgraded Bash hand — should fail.
+        if (bashEdges > 0 && unupEdge) {
+            auto resolved = search::resolveSemanticCardEdge(node.edges[1], bc2);
+            // node.edges[1] should be Bash+ (idx 1 in [Strike, Bash+]).
+            // bc2 has unupgraded Bash at idx 0. cardKey.upgradeCount=1 vs 0 → no match.
+            if (resolved) {
+                std::cout << "semantic_card_edges FAIL upgrade: Bash+ incorrectly matched unupgraded Bash\n";
+                ++failures;
+            }
+        }
+    }
+
+    // ── Test 6: temporary cost difference (Madness / Mummified Hand) ──
+    {
+        auto bc = makeContext({CardId::STRIKE_RED, CardId::DEFEND_RED});
+        bc.cards.hand[1].costForTurn = 0;  // Defend is free this turn
+        search::BattleScumSearcher3::Node node;
+        search::enumerateActionsForNode(node, bc);
+
+        for (const auto &e : node.edges) {
+            if (e.hasCardKey && e.cardKey.id == CardId::DEFEND_RED) {
+                if (e.cardKey.costForTurn != 0) {
+                    std::cout << "semantic_card_edges FAIL temp-cost: Defend costForTurn="
+                              << (int)e.cardKey.costForTurn << ", expected 0\n";
+                    ++failures;
+                }
+                break;
+            }
+        }
+
+        // A standard Defend (cost=1) should NOT match.
+        auto bc2 = makeContext({CardId::DEFEND_RED, CardId::STRIKE_RED});
+        // Find the Defend-1 edge
+        search::BattleScumSearcher3::Node node2;
+        search::enumerateActionsForNode(node2, bc2);
+        // Try to resolve a cost=0 Defend against cost=1 Defend hand — should fail.
+        bool foundCostZeroEdge = false;
+        for (const auto &e : node.edges) {
+            if (e.hasCardKey && e.cardKey.id == CardId::DEFEND_RED && e.cardKey.costForTurn == 0) {
+                auto resolved = search::resolveSemanticCardEdge(e, bc2);
+                if (resolved) {
+                    std::cout << "semantic_card_edges FAIL temp-cost: cost=0 Defend matched cost=1 Defend\n";
+                    ++failures;
+                }
+                foundCostZeroEdge = true;
+                break;
+            }
+        }
+        if (!foundCostZeroEdge) {
+            std::cout << "semantic_card_edges FAIL temp-cost: no cost=0 Defend edge\n";
+            ++failures;
+        }
+    }
+
+    // ── Test 7: targeted CARD edge stores and resolves target ──
+    {
+        // Use a fight with two targetable monsters (CULTIST has 1, use JAW_WORM with double)
+        auto bc = makeContext({CardId::BASH}, MonsterEncounter::CULTIST);
+        search::BattleScumSearcher3::Node node;
+        search::enumerateActionsForNode(node, bc);
+
+        for (const auto &e : node.edges) {
+            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
+                if (e.cardKey.target != 0) {
+                    std::cout << "semantic_card_edges FAIL target: Bash target="
+                              << e.cardKey.target << ", expected 0\n";
+                    ++failures;
+                }
+                // Resolve in same context — target should be preserved.
+                auto resolved = search::resolveSemanticCardEdge(e, bc);
+                if (!resolved) {
+                    std::cout << "semantic_card_edges FAIL target: Bash not resolved\n";
+                    ++failures;
+                } else if (resolved->getTargetIdx() != 0) {
+                    std::cout << "semantic_card_edges FAIL target: resolved target="
+                              << resolved->getTargetIdx() << ", expected 0\n";
+                    ++failures;
+                }
+                break;
+            }
+        }
+    }
+
+    // ── Test 8: missing semantic card — edge unavailable ──
+    {
+        auto bc = makeContext({CardId::STRIKE_RED, CardId::BASH, CardId::STRIKE_RED});
+        search::BattleScumSearcher3::Node node;
+        search::enumerateActionsForNode(node, bc);
+
+        const search::BattleScumSearcher3::Edge *bashEdge = nullptr;
+        for (const auto &e : node.edges) {
+            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
+                bashEdge = &e;
+                break;
+            }
+        }
+        if (!bashEdge) {
+            std::cout << "semantic_card_edges FAIL missing-card: no Bash edge to test\n";
+            ++failures;
+        } else {
+            // Resolve in a hand without Bash.
+            auto bcNoBash = makeContext({CardId::STRIKE_RED, CardId::DEFEND_RED, CardId::STRIKE_RED});
+            auto resolved = search::resolveSemanticCardEdge(*bashEdge, bcNoBash);
+            if (resolved) {
+                std::cout << "semantic_card_edges FAIL missing-card: Bash incorrectly resolved in Bash-free hand\n";
+                ++failures;
+            }
+        }
+    }
+
+    // ── Test 9: observation identity — permuted hands have same visibleHash ──
+    {
+        auto bcA = makeContext({CardId::STRIKE_RED, CardId::BASH, CardId::STRIKE_RED});
+        auto bcB = makeContext({CardId::BASH, CardId::STRIKE_RED, CardId::STRIKE_RED});
+        auto obsA = CombatObservation::fromBattleContext(bcA);
+        auto obsB = CombatObservation::fromBattleContext(bcB);
+        if (obsA.visibleHash() != obsB.visibleHash()) {
+            std::cout << "semantic_card_edges FAIL obs-identity: permuted hands have different hash\n";
+            ++failures;
+        }
+        if (obsA != obsB) {
+            std::cout << "semantic_card_edges FAIL obs-identity: permuted hands != under operator==\n";
+            ++failures;
+        }
+    }
+
+    search::g_s3SemanticCardEdges = false;
+    if (failures == 0) {
+        std::cout << "semantic_card_edges PASS\n";
+        return 0;
+    }
+    std::cout << "semantic_card_edges FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -1321,6 +1645,8 @@ int main(int argc, const char* argv[]) {
         return testCardQueueOverflow();
     } else if (command == "keys_collect") {
         return testKeyCollection();
+    } else if (command == "semantic_card_edges") {
+        return testSemanticCardEdges();
     }
 
     //    printSizes();

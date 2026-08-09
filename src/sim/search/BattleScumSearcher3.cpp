@@ -58,6 +58,7 @@ double g_riskLambda = 0.5;
 bool g_s3Expand = false;
 int g_s3ExpandMaxNew = 32;
 bool g_s3ExpandSimple = false; // like g_s3Expand but picks deterministically with uniform prior
+bool g_s3SemanticCardEdges = false;
 bool g_s3RolloutPolicy = false;
 int g_s3RolloutK = 1;
 int g_s3RolloutTurnStop = 0;
@@ -199,6 +200,27 @@ void BattleScumSearcher3::recursiveResetStats(Node &node) {
         recursiveResetStats(edge.child);
 }
 
+// ---- Semantic card-edge resolution -----------------------------------------
+std::optional<Action> resolveSemanticCardEdge(
+    const BattleScumSearcher3::Edge &edge, const BattleContext &state) {
+    if (!edge.hasCardKey) return edge.action;
+    const auto &key = edge.cardKey;
+    for (int hi = 0; hi < state.cards.cardsInHand; ++hi) {
+        const auto &c = state.cards.hand[hi];
+        if (c.getId() == key.id
+            && c.getUpgradeCount() == key.upgradeCount
+            && c.costForTurn == key.costForTurn
+            && c.freeToPlayOnce == key.freeToPlayOnce
+            && c.specialData == key.specialData) {
+            if (key.target >= 0)
+                return Action(ActionType::CARD, hi, key.target);
+            else
+                return Action(ActionType::CARD, hi);
+        }
+    }
+    return std::nullopt;
+}
+
 // ---- Card action key (semantic identity independent of hand position) ------
 bool BattleScumSearcher3::CardActionKey::operator==(const CardActionKey &o) const {
     return id == o.id && upgradeCount == o.upgradeCount
@@ -319,11 +341,26 @@ void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
 bool BattleScumSearcher3::advanceRoot(const Action &action,
                                        const BattleContext &newRootState) {
     bool reused = false;
+    // Match by raw action bits first, then by semantic card key (if available)
+    // to handle hand-index remapping across tree reuse.
     for (auto &edge : root.edges) {
         if (edge.action == action) {
             root = std::move(edge.child);
             reused = true;
             break;
+        }
+    }
+    if (!reused && g_s3SemanticCardEdges
+        && action.getActionType() == ActionType::CARD) {
+        CardActionKey committedKey = cardActionKey(*rootBc, action);
+        if (committedKey.id != CardId::INVALID) {
+            for (auto &edge : root.edges) {
+                if (edge.hasCardKey && edge.cardKey == committedKey) {
+                    root = std::move(edge.child);
+                    reused = true;
+                    break;
+                }
+            }
         }
     }
     if (!reused) root = Node{};
@@ -662,8 +699,12 @@ void BattleScumSearcher3::step() {
                 std::set<std::uint32_t> presentBits;
                 for (const auto &e : cur->edges) {
                     if (e.action.getActionType() == ActionType::CARD
-                        || e.action.getActionType() == ActionType::SINGLE_CARD_SELECT)
-                        present.insert(cardActionKey(state, e.action));
+                        || e.action.getActionType() == ActionType::SINGLE_CARD_SELECT) {
+                        if (g_s3SemanticCardEdges && e.hasCardKey)
+                            present.insert(e.cardKey);
+                        else
+                            present.insert(cardActionKey(state, e.action));
+                    }
                     else
                         presentBits.insert(e.action.bits);
                 }
@@ -691,7 +732,37 @@ void BattleScumSearcher3::step() {
         if (g_s3UnionExpand)
             ++edge.availabilityCount;
 
-        if (!edge.action.isValidAction(state)) {
+        // ── Semantic CARD edge resolution ─────────────────────────────
+        // Resolve the edge's semantic identity to a live-hand index before
+        // the validity check; the edge's statistics (Q, visits) stay attached
+        // to "play Bash on target 0", not to hand slot 1.
+        Action effectiveAction = edge.action;
+        bool edgeAvailable = true;
+        if (g_s3SemanticCardEdges && edge.hasCardKey) {
+            ++semanticCardEdgeVisits;
+            // Diagnostic: does the raw index still point to the same card?
+            if (edge.action.getSourceIdx() >= 0
+                && edge.action.getSourceIdx() < state.cards.cardsInHand) {
+                const auto &rawCard = state.cards.hand[edge.action.getSourceIdx()];
+                if (rawCard.getId() != edge.cardKey.id
+                    || rawCard.getUpgradeCount() != edge.cardKey.upgradeCount
+                    || rawCard.costForTurn != edge.cardKey.costForTurn
+                    || rawCard.freeToPlayOnce != edge.cardKey.freeToPlayOnce
+                    || rawCard.specialData != edge.cardKey.specialData)
+                    ++rawIndexSemanticMismatches;
+            }
+            auto resolved = resolveSemanticCardEdge(edge, state);
+            if (resolved) {
+                if (resolved->getSourceIdx() != edge.action.getSourceIdx())
+                    ++semanticRebinds;
+                effectiveAction = *resolved;
+            } else {
+                ++semanticResolutionFailures;
+                edgeAvailable = false;
+            }
+        }
+
+        if (!edgeAvailable || !effectiveAction.isValidAction(state)) {
             // Stored edges were enumerated in other determinizations; the chosen
             // action may be illegal in this world. STS_LIVE_VALID (Phase 4):
             // re-select among stored edges valid in THIS particle world (same
@@ -702,9 +773,15 @@ void BattleScumSearcher3::step() {
                 if (validIdx >= 0) {
                     auto &validEdge = cur->edges[validIdx];
                     if (g_s3UnionExpand) ++validEdge.availabilityCount;
-                    validEdge.action.execute(state);
+                    // Semantic CARD edge: resolve to live-hand index before execution.
+                    Action execAction = validEdge.action;
+                    if (g_s3SemanticCardEdges && validEdge.hasCardKey) {
+                        auto resolved = resolveSemanticCardEdge(validEdge, state);
+                        if (resolved) execAction = *resolved;
+                    }
+                    execAction.execute(state);
                     ++diag.treeActions;
-                    actionStack.push_back(validEdge.action);
+                    actionStack.push_back(execAction);
                     cur = &validEdge.child;
                     if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
                     continue;
@@ -830,9 +907,9 @@ void BattleScumSearcher3::step() {
             return;
         }
 
-        edge.action.execute(state);
+        effectiveAction.execute(state);
         ++diag.treeActions;
-        actionStack.push_back(edge.action);
+        actionStack.push_back(effectiveAction);
         cur = &edge.child;
         if (g_s3Belief) belief.update(CombatObservation::fromBattleContext(state));
 
@@ -938,7 +1015,14 @@ int BattleScumSearcher3::selectBestValidEdgePUCT(const Node &node, const BattleC
     double bestVal = -1e30;
     for (int i = 0; i < n; ++i) {
         const auto &e = node.edges[i];
-        if (!e.action.isValidAction(bc)) continue;
+        // Semantic CARD edge: resolve to live-hand index before validity check.
+        Action effAction = e.action;
+        if (g_s3SemanticCardEdges && e.hasCardKey) {
+            auto resolved = resolveSemanticCardEdge(e, bc);
+            if (!resolved) continue;  // card not in current hand
+            effAction = *resolved;
+        }
+        if (!effAction.isValidAction(bc)) continue;
         double q = 0.0;
         if (exploit) {
             double avg = e.child.evaluationSum / (e.child.simulationCount + 1);
@@ -1317,11 +1401,23 @@ void enumerateActionsForNode(BattleScumSearcher3::Node &node,
                             continue;
                     }
                     if (c.requiresTarget()) {
-                        for (int t = bc.monsters.monsterCount - 1; t >= 0; --t)
-                            if (bc.monsters.arr[t].isTargetable())
-                                node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::CARD, hi, t)});
+                        for (int t = bc.monsters.monsterCount - 1; t >= 0; --t) {
+                            if (bc.monsters.arr[t].isTargetable()) {
+                                BattleScumSearcher3::Edge e{Action(ActionType::CARD, hi, t)};
+                                if (g_s3SemanticCardEdges) {
+                                    e.cardKey = BattleScumSearcher3::cardActionKey(bc, e.action);
+                                    e.hasCardKey = (e.cardKey.id != CardId::INVALID);
+                                }
+                                node.edges.push_back(std::move(e));
+                            }
+                        }
                     } else {
-                        node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::CARD, hi)});
+                        BattleScumSearcher3::Edge e{Action(ActionType::CARD, hi)};
+                        if (g_s3SemanticCardEdges) {
+                            e.cardKey = BattleScumSearcher3::cardActionKey(bc, e.action);
+                            e.hasCardKey = (e.cardKey.id != CardId::INVALID);
+                        }
+                        node.edges.push_back(std::move(e));
                     }
                 }
             }
@@ -1440,7 +1536,12 @@ void BattleScumSearcher3::reconcileRoot(const BattleContext &liveRoot) {
     for (const auto &e : root.edges) {
         if (e.action.getActionType() == ActionType::CARD
             || e.action.getActionType() == ActionType::SINGLE_CARD_SELECT) {
-            present.insert(cardActionKey(liveRoot, e.action));
+            // Use stored cardKey when available (stable identity across
+            // hand-index remapping); otherwise fall back to positional.
+            if (g_s3SemanticCardEdges && e.hasCardKey)
+                present.insert(e.cardKey);
+            else
+                present.insert(cardActionKey(liveRoot, e.action));
         } else {
             presentBits.insert(e.action.bits);
         }
@@ -1638,6 +1739,16 @@ void BattleScumSearcher3::printReuseDiagnostics() const {
             std::cerr << edgeAvailability[i];
         }
         std::cerr << "]";
+    }
+    if (g_s3SemanticCardEdges) {
+        std::cerr << " semCardVisits=" << semanticCardEdgeVisits
+                  << " semMismatches=" << rawIndexSemanticMismatches
+                  << " semRebinds=" << semanticRebinds
+                  << " semFailures=" << semanticResolutionFailures;
+        if (semanticCardEdgeVisits > 0) {
+            double rate = (double)rawIndexSemanticMismatches / semanticCardEdgeVisits;
+            std::cerr << " mismatchRate=" << rate;
+        }
     }
     std::cerr << "\n";
 }

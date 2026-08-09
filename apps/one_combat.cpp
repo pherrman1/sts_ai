@@ -3285,6 +3285,7 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
                     + "  S3-rollK=" + std::to_string(search::g_s3RolloutK)
                     + "  S3-turnStop=" + std::to_string(search::g_s3RolloutTurnStop)
                     + "  S3-turnBeam=" + (search::g_s3TurnRollout ? "ON" : "off")
+                    + "  S3-semCard=" + (search::g_s3SemanticCardEdges ? "ON" : "off")
                   : std::string())
               << (search::g_fairPlay ? "  fair-play" : "")
               << "  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
@@ -3326,6 +3327,7 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.s3Particles = search::g_s3Particles; meta.s3RolloutK = search::g_s3RolloutK;
         meta.s3RolloutTurnStop = search::g_s3RolloutTurnStop != 0;
         meta.s3TurnRollout = search::g_s3TurnRollout;
+        meta.s3SemanticCardEdges = search::g_s3SemanticCardEdges;
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = search::g_useVNet ? "ON" : "off";
@@ -9932,6 +9934,10 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_REUSE_CARRY_DIAG")) {
         search::g_reuseCarryDiag = std::atoi(d) != 0;
         std::cout << "[reuse carry-diag = " << (search::g_reuseCarryDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_SEMANTIC_CARD_EDGES")) {
+        search::g_s3SemanticCardEdges = std::atoi(d) != 0;
+        std::cout << "[S3 semantic-card-edges = " << (search::g_s3SemanticCardEdges ? "ON" : "off") << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_UNION_EXPAND")) {
         search::g_s3UnionExpand = std::atoi(d) != 0;

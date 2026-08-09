@@ -47,6 +47,7 @@ struct BenchConfigSidecar {
     bool s3Belief = false, s3Prune = false, s3Chain = false, s3Live = false, s3Crn = false;
     int s3Particles = 0, s3RolloutK = 0;
     bool s3RolloutTurnStop = false, s3TurnRollout = false;
+    bool s3SemanticCardEdges = false;
     bool fairPlay = false;
 
     // models block -- mirrors the "BEST models" banner fields
@@ -126,6 +127,7 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"s3RolloutK\":" << c.s3RolloutK;
     o << ",\"s3RolloutTurnStop\":" << (c.s3RolloutTurnStop ? "true" : "false");
     o << ",\"s3TurnRollout\":" << (c.s3TurnRollout ? "true" : "false");
+    o << ",\"s3SemanticCardEdges\":" << (c.s3SemanticCardEdges ? "true" : "false");
     o << ",\"fairPlay\":" << (c.fairPlay ? "true" : "false");
     o << '}';
     o << ",\"models\":{";

@@ -12,6 +12,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <random>
 #include <vector>
 #include <unordered_map>
@@ -45,8 +46,24 @@ namespace sts::search {
 
     struct BattleScumSearcher3 {
 
-        // Forward-declare Edge (needed by Node for std::vector<Edge>)
+        // Forward-declare (needed by Node for std::vector<Edge>)
         struct Edge;
+
+        // ── Semantic card-action identity for reconciliation / semantic edges ──
+        // Identifies what a card-playing action means independently of
+        // hand position — used to match stored edges against fresh
+        // enumeration when the visible state changes, and to rebind
+        // CARD edges to the correct hand index under STS_S3_SEMANTIC_CARD_EDGES.
+        struct CardActionKey {
+            CardId id = CardId::INVALID;
+            std::int8_t upgradeCount = 0;
+            std::int8_t costForTurn = 0;
+            bool freeToPlayOnce = false;
+            std::int16_t specialData = 0;
+            std::int32_t target = -1;
+            bool operator==(const CardActionKey &o) const;
+            bool operator<(const CardActionKey &o) const;
+        };
 
         struct Node {
             CombatObservation obs;
@@ -85,6 +102,13 @@ namespace sts::search {
             float prior = 0.f;
             // ── Per-edge particle availability ───────────────────────
             std::int64_t availabilityCount = 0;  // particle worlds where this edge was valid
+            // ── Semantic card-action identity (STS_S3_SEMANTIC_CARD_EDGES) ──
+            // Captured at edge creation: the stable identity of the card
+            // being played (id, upgradeCount, costForTurn, freeToPlayOnce,
+            // specialData, target). Independent of hand index, so an edge
+            // that means "play Bash on target 0" works across hand permutations.
+            CardActionKey cardKey;
+            bool hasCardKey = false;
         };
 
         std::unique_ptr<const BattleContext> rootBc;
@@ -142,20 +166,6 @@ namespace sts::search {
                                   const Node *promotedChild,
                                   const std::array<std::int32_t,6> &rngSnapshots) const;
 
-        // ── Semantic card-action identity for reconciliation ─────────
-        // Identifies what a card-playing action means independently of
-        // hand position — used to match stored edges against fresh
-        // enumeration when the visible state changes.
-        struct CardActionKey {
-            CardId id = CardId::INVALID;
-            std::int8_t upgradeCount = 0;
-            std::int8_t costForTurn = 0;
-            bool freeToPlayOnce = false;
-            std::int16_t specialData = 0;
-            std::int32_t target = -1;
-            bool operator==(const CardActionKey &o) const;
-            bool operator<(const CardActionKey &o) const;
-        };
         static CardActionKey cardActionKey(const BattleContext &bc, const Action &a);
 
         // ── Root reconciliation (STS_REUSE_RECONCILE_ROOT) ───────────
@@ -163,6 +173,13 @@ namespace sts::search {
         // actual live root's legal actions and add any that are missing
         // from root.edges (matched by semantic card identity).
         void reconcileRoot(const BattleContext &liveRoot);
+
+        // ── Semantic CARD edge diagnostics ──────────────────────────
+        // Populated during search when g_s3SemanticCardEdges is set.
+        std::int64_t semanticCardEdgeVisits = 0;      // semantic CARD edge traversals (internal node)
+        std::int64_t rawIndexSemanticMismatches = 0;  // stored index card ≠ semantic key card
+        std::int64_t semanticRebinds = 0;             // successful resolution to a different hand index
+        std::int64_t semanticResolutionFailures = 0;  // no matching card in current hand
 
         // ── Per-node observation tracking ───────────────────────────
         // Called once per node visit inside step(). Updates per-node
@@ -385,6 +402,19 @@ namespace sts::search {
     extern bool g_vnetCondBossOnly;
     extern bool g_vnetCondAct3;
     // Particle count for the S3 belief (env STS_S3_PARTICLES; default 64).
+    // ── Semantic CARD edges (STS_S3_SEMANTIC_CARD_EDGES) ────────────
+    // When set, CARD edges store a stable CardActionKey (id, upgrades,
+    // costForTurn, freeToPlayOnce, specialData, target) at creation
+    // and are resolved to the correct hand index before every validity
+    // check / execution. Default off (current deployed behavior).
+    extern bool g_s3SemanticCardEdges;
+
+    // Resolve a semantic CARD edge's key to a live-hand positional Action.
+    // Returns nullopt when no matching card instance exists in the current
+    // hand. Caller must check hasCardKey before calling.
+    std::optional<Action> resolveSemanticCardEdge(
+        const BattleScumSearcher3::Edge &edge, const BattleContext &state);
+
     extern int g_s3Particles;
     extern double g_riskLambda;
     // Phase 6 PVNet deployment-speed knobs (all consumed only when the PVNet

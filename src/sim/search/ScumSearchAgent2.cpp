@@ -208,7 +208,7 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             s3.clampRankCorrAtRoot();
             s3.rankCorrValues.clear();
             // Edge-availability and reuse diagnostics.
-            if (search::g_reuseDiag) {
+            if (search::g_reuseDiag || search::g_s3SemanticCardEdges) {
                 s3.computeEdgeAvailability(bc);
                 s3.printReuseDiagnostics();
             }
