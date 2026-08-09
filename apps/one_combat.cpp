@@ -8245,14 +8245,16 @@ static MargResult finishMargCf(GameContext gc, std::uint64_t branchSeed,
     return {r.won, r.hp, r.floor, (double)r.bootstrapped};
 }
 
-static void strategicMargGen(int nSeeds, int outerSims, int /*branchSims*/, int /*nFights*/,
+static void strategicMargGen(int nSeeds, int outerSims, int, int,
                              int H, int maxDecisions, const std::string &outFile,
                              long long seedOffset) {
     std::ofstream out(outFile);
     out << "seed,decIdx,act,floor,screen,gateKind,actionIdx,nCand,hiddenIdx,regime,"
            "continuationSeed,hiddenSeed,labelWon,labelHp,labelFloor,labelBootstrap,utility,"
-           "fallbackIdx,fallbackExact,v4ModelIdx,v4Margin,v4Threshold,v4Fired,v4ExecutedIdx,v4Override"
-           ",richState\n";
+           "fallbackIdx,fallbackExact,chosenIdx,chosenExact,"
+           "v4ModelIdx,v4Margin,v4Threshold,v4Fired,v4ExecutedIdx,v4Override,"
+           "richState,actionBits,actionType,c1,c2,c3,cand1,cand2,cand3,hiddenChanged,"
+           "sourceWon,sourceFloor,sourceHp\n";
     out.flush();
     auto t0 = std::chrono::steady_clock::now();
     std::mutex outMtx;
@@ -8273,106 +8275,103 @@ static void strategicMargGen(int nSeeds, int outerSims, int /*branchSims*/, int 
         t_curPath = &path;
         int decIdx = 0;
         int perRunMax = maxDecisions / std::max(1, nSeeds) + 5;
+        int sourceWon = 0, sourceFloor = 0, sourceHp = 0;
 
         while (gc.outcome == GameOutcome::UNDECIDED && localDecisions < perRunMax) {
             path.update(gc);
-            // ── Determine gate kind before stepping ──
             int screen = (int)gc.screenState;
             int gateKind = 0;
             bool isOwned = false;
             if (screen == 1) {
-                gateKind = 1; isOwned = true;  // EVENT
+                gateKind = 1; isOwned = true;
             } else if (screen == 2) {
-                // REWARDS: only owned if card reward is pending
                 auto &r = gc.info.rewardsContainer;
-                if (r.cardRewardCount > 0) {
-                    // After auto-collection, card reward is the decision
-                    gateKind = 2; isOwned = true;  // CARD_REWARD
-                }
+                if (r.cardRewardCount > 0) { gateKind = 2; isOwned = true; }
             } else if (screen == 3) {
-                gateKind = 3; isOwned = true;  // BOSS_RELIC
+                gateKind = 3; isOwned = true;
             } else if (screen == 4) {
-                // CARD_SELECT: only UPGRADE is owned
-                if (gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-                    gateKind = 4; isOwned = true;  // UPGRADE_SELECT
-                }
+                if (gc.info.selectScreenType == CardSelectScreenType::UPGRADE)
+                    { gateKind = 4; isOwned = true; }
             } else if (screen == 6) {
-                gateKind = 5; isOwned = true;  // TREASURE
+                gateKind = 5; isOwned = true;
             } else if (screen == 7) {
-                gateKind = 6; isOwned = true;  // REST
+                gateKind = 6; isOwned = true;
             } else if (screen == 8) {
-                gateKind = 7; isOwned = true;  // SHOP
+                gateKind = 7; isOwned = true;
             }
+            if (!isOwned) { stepFrozenV4Ooc(gc, agent); continue; }
 
-            if (!isOwned) {
-                stepFrozenV4Ooc(gc, agent);
-                continue;
-            }
-
-            // Snapshot parent state before any action
             GameContext pre = detachedCounterfactualCopy(gc);
             PathHistory prePath = path;
             auto actions = search::GameAction::getAllActionsInState(gc);
-            if (actions.size() < 2) {
-                stepFrozenV4Ooc(gc, agent);
-                continue;
-            }
+            if (actions.size() < 2) { stepFrozenV4Ooc(gc, agent); continue; }
             int actNum = gc.act, floorNum = gc.floorNum;
-            std::string stateRow = richRow(pre, prePath);  // 1017-column rich state
+            std::string stateRow = richRow(pre, prePath);
 
-            // ── Exact fallback identification via fingerprint ──
-            int fallbackIdx = -1;
-            int fallbackExact = 0;
+            // Per-action metadata for trainer schema
+            std::vector<std::string> actionMetas;
+            for (int ai = 0; ai < (int)actions.size(); ++ai) {
+                int at, c1v, c2v, c3v, ca1, ca2, ca3;
+                strategicCands(pre, actions[ai], at, c1v, c2v, c3v, ca1, ca2, ca3);
+                char buf[256];
+                std::snprintf(buf, sizeof(buf), "%u,%d,%d,%d,%d,%d,%d,%d",
+                              actions[ai].bits, at, c1v, c2v, c3v, ca1, ca2, ca3);
+                actionMetas.push_back(buf);
+            }
+
+            // Fallback via fingerprint
+            int fallbackIdx = -1, fallbackExact = 0;
             {
                 GameContext fbGc = detachedCounterfactualCopy(pre);
-                // Execute the actual frozen fallback (not V4 gate) for this screen
-                if (screen == 1) {           // EVENT
-                    agent.stepOutOfCombatPolicy(fbGc);
-                } else if (screen == 2) {    // REWARDS
-                    serverCardRewardPolicy(fbGc);
-                } else if (screen == 3) {    // BOSS_RELIC
-                    if (g_bossRelicV) bossRelicVPolicy(fbGc);
-                    else agent.stepOutOfCombatPolicy(fbGc);
-                } else if (screen == 4) {    // CARD_SELECT/UPGRADE
-                    upgradeSelectWinPolicy(fbGc);
-                } else if (screen == 6) {    // TREASURE
-                    agent.stepOutOfCombatPolicy(fbGc);
-                } else if (screen == 7) {    // REST
-                    if (g_restWin && restWinPolicy(fbGc)) {}
-                    else agent.stepOutOfCombatPolicy(fbGc);
-                } else if (screen == 8) {    // SHOP
-                    shopVPolicy(fbGc);
-                }
+                if (screen == 1) agent.stepOutOfCombatPolicy(fbGc);
+                else if (screen == 2) serverCardRewardPolicy(fbGc);
+                else if (screen == 3) { if (g_bossRelicV) bossRelicVPolicy(fbGc); else agent.stepOutOfCombatPolicy(fbGc); }
+                else if (screen == 4) upgradeSelectWinPolicy(fbGc);
+                else if (screen == 6) agent.stepOutOfCombatPolicy(fbGc);
+                else if (screen == 7) { if (g_restWin && restWinPolicy(fbGc)) {} else agent.stepOutOfCombatPolicy(fbGc); }
+                else if (screen == 8) shopVPolicy(fbGc);
                 auto fbFp = stratFingerprint(fbGc);
-                // Find which action produces this fingerprint
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                    GameContext testGc = detachedCounterfactualCopy(pre);
-                    actions[ai].execute(testGc);
-                    if (stratFingerprint(testGc) == fbFp) {
+                    GameContext tGc = detachedCounterfactualCopy(pre);
+                    actions[ai].execute(tGc);
+                    if (stratFingerprint(tGc) == fbFp) {
                         if (fallbackIdx < 0) { fallbackIdx = ai; fallbackExact = 1; }
                         else { fallbackExact = 0; break; }
                     }
                 }
             }
 
-            // ── V4 predictions ──
-            int v4BestIdx = -1;
-            double v4Margin = 0;
-            bool v4Fired = false;
+            // Source chosen action via fingerprint
+            int chosenIdx = -1, chosenExact = 0;
+            {
+                GameContext postGc = detachedCounterfactualCopy(pre);
+                stepFrozenV4Ooc(postGc, agent);
+                auto postFp = stratFingerprint(postGc);
+                for (int ai = 0; ai < (int)actions.size(); ++ai) {
+                    GameContext tGc = detachedCounterfactualCopy(pre);
+                    actions[ai].execute(tGc);
+                    if (stratFingerprint(tGc) == postFp) {
+                        if (chosenIdx < 0) { chosenIdx = ai; chosenExact = 1; }
+                        else { chosenExact = 0; break; }
+                    }
+                }
+            }
+
+            // V4 predictions
+            int v4BestIdx = -1; double v4Margin = 0; bool v4Fired = false;
             if (g_oocStrategicTokNet.ok) {
                 TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
                 double bestV4 = -1e100, secondV4 = -1e100;
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
-                    int actionType, c1, c2, c3, cand1, cand2, cand3;
-                    strategicCands(gc, actions[ai], actionType, c1, c2, c3, cand1, cand2, cand3);
-                    const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-                    int entType, entId; float goldGePrice;
-                    tokEntity(gc, actions[ai], entType, entId, goldGePrice);
-                    const float entT[4] = {entType==0?1.f:0.f, entType==1?1.f:0.f,
-                                           entType==2?1.f:0.f, entType==3?1.f:0.f};
-                    const double v = g_oocStrategicTokNet.predictActionValue(
+                    int at, c1v, c2v, c3v, ca1, ca2, ca3;
+                    strategicCands(gc, actions[ai], at, c1v, c2v, c3v, ca1, ca2, ca3);
+                    const int cats[6] = {c1v, c2v, c3v, ca1, ca2, ca3};
+                    int et, ei; float gg;
+                    tokEntity(gc, actions[ai], et, ei, gg);
+                    const float entT[4] = {et==0?1.f:0.f, et==1?1.f:0.f, et==2?1.f:0.f, et==3?1.f:0.f};
+                    double v = g_oocStrategicTokNet.predictActionValue(
                         ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                        actions[ai].bits, cats, actionType, screen, entT, entId, goldGePrice);
+                        actions[ai].bits, cats, at, screen, entT, ei, gg);
                     if (v > bestV4) { secondV4 = bestV4; bestV4 = v; v4BestIdx = ai; }
                     else if (v > secondV4) secondV4 = v;
                 }
@@ -8380,14 +8379,24 @@ static void strategicMargGen(int nSeeds, int outerSims, int /*branchSims*/, int 
                 v4Fired = v4Margin >= v4Threshold;
             }
             int v4ExecutedIdx = (v4Fired && v4BestIdx >= 0) ? v4BestIdx : fallbackIdx;
-            int v4Override = (fallbackExact == 1 && v4Fired && v4BestIdx >= 0
-                              && v4BestIdx != fallbackIdx) ? 1 : 0;
+            int v4Override = (fallbackExact == 1 && v4Fired && v4BestIdx >= 0 && v4BestIdx != fallbackIdx) ? 1 : 0;
 
-            // ── Seeds: same continuation seed for F and M in sample h ──
             std::uint64_t baseSeed = seed ^ ((std::uint64_t)decIdx * 0x9e3779b97f4a7c15ULL);
             if (!baseSeed) baseSeed = 1;
 
-            // ── Regime F: fixed hidden world ──
+            // Macro to emit one output row (avoids duplication bugs)
+            #define EMIT_ROW(regimeStr, contSeed, hiddenSeedVal, hiddenChangedVal) \
+                local << seed << ',' << decIdx << ',' << actNum << ',' << floorNum \
+                      << ',' << screen << ',' << gateKind << ',' << ai << ',' \
+                      << actions.size() << ',' << h << ',' << regimeStr << ',' << contSeed << ',' << hiddenSeedVal << ',' \
+                      << r.won << ',' << r.hp << ',' << r.floor << ',' << r.boot << ',' \
+                      << (10.0*r.won+r.hp) << ',' << fallbackIdx << ',' << fallbackExact << ',' \
+                      << chosenIdx << ',' << chosenExact << ',' \
+                      << v4BestIdx << ',' << v4Margin << ',' << v4Threshold << ',' \
+                      << (v4Fired?1:0) << ',' << v4ExecutedIdx << ',' << v4Override << ',' \
+                      << stateRow << ',' << actionMetas[ai] << ',' << hiddenChangedVal << ",0,0,0\n";
+
+            // Regime F
             for (int h = 0; h < H; ++h) {
                 std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
                 if (!contSeed) contSeed = 1;
@@ -8395,53 +8404,72 @@ static void strategicMargGen(int nSeeds, int outerSims, int /*branchSims*/, int 
                     GameContext branch = detachedCounterfactualCopy(pre);
                     actions[ai].execute(branch);
                     MargResult r = finishMargCf(std::move(branch), contSeed, prePath);
-                    double util = 10.0 * r.won + r.hp;
-                    local << seed << ',' << decIdx << ',' << actNum << ',' << floorNum
-                          << ',' << screen << ',' << gateKind << ',' << ai << ','
-                          << actions.size() << ',' << h << ",fixed," << contSeed << ",0,"
-                          << r.won << ',' << r.hp << ',' << r.floor << ',' << r.boot
-                          << ',' << util << ',' << fallbackIdx << ',' << fallbackExact
-                          << ',' << v4BestIdx << ',' << v4Margin << ',' << v4Threshold
-                          << ',' << (v4Fired?1:0) << ',' << v4ExecutedIdx << ',' << v4Override
-                          << ',' << stateRow << '\n';
+                    EMIT_ROW("fixed", contSeed, 0, 0)
                 }
             }
 
-            // ── Regime M: encounter-marginalized ──
+            // Regime I (identity)
+            for (int h = 0; h < std::min(H, 2); ++h) {
+                std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
+                if (!contSeed) contSeed = 1;
+                for (int ai = 0; ai < (int)actions.size(); ++ai) {
+                    GameContext branch = detachedCounterfactualCopy(pre);
+                    actions[ai].execute(branch);
+                    MargResult r = finishMargCf(std::move(branch), contSeed, prePath);
+                    EMIT_ROW("marg_id", contSeed, 0, 0)
+                }
+            }
+
+            // Regime M
             for (int h = 0; h < H; ++h) {
-                // SAME continuation seed as Regime F
                 std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
                 std::uint64_t hiddenSeed = baseSeed ^ ((std::uint64_t)(h + H) * 0x9e3779b97f4a7c15ULL);
                 if (!contSeed) contSeed = 1;
                 if (!hiddenSeed) hiddenSeed = 1;
                 GameContext hiddenBase = detachedCounterfactualCopy(pre);
+                std::uint64_t hashBefore = 0, hashAfter = 0;
+                for (int i = hiddenBase.monsterListOffset; i < (int)hiddenBase.monsterList.size(); ++i)
+                    hashBefore = hashBefore * 0x9e3779b97f4a7c15ULL + (int)hiddenBase.monsterList[i];
+                for (int i = hiddenBase.eliteMonsterListOffset; i < (int)hiddenBase.eliteMonsterList.size(); ++i)
+                    hashBefore = hashBefore * 0x9e3779b97f4a7c15ULL + (int)hiddenBase.eliteMonsterList[i];
                 resampleRemainingActEncounters(hiddenBase, hiddenSeed);
+                for (int i = hiddenBase.monsterListOffset; i < (int)hiddenBase.monsterList.size(); ++i)
+                    hashAfter = hashAfter * 0x9e3779b97f4a7c15ULL + (int)hiddenBase.monsterList[i];
+                for (int i = hiddenBase.eliteMonsterListOffset; i < (int)hiddenBase.eliteMonsterList.size(); ++i)
+                    hashAfter = hashAfter * 0x9e3779b97f4a7c15ULL + (int)hiddenBase.eliteMonsterList[i];
+                int hiddenChanged = (hashBefore != hashAfter) ? 1 : 0;
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
                     GameContext branch = detachedCounterfactualCopy(hiddenBase);
                     actions[ai].execute(branch);
                     MargResult r = finishMargCf(std::move(branch), contSeed, prePath);
-                    double util = 10.0 * r.won + r.hp;
-                    local << seed << ',' << decIdx << ',' << actNum << ',' << floorNum
-                          << ',' << screen << ',' << gateKind << ',' << ai << ','
-                          << actions.size() << ',' << h << ",marg," << contSeed << ','
-                          << hiddenSeed << ','
-                          << r.won << ',' << r.hp << ',' << r.floor << ',' << r.boot
-                          << ',' << util << ',' << fallbackIdx << ',' << fallbackExact
-                          << ',' << v4BestIdx << ',' << v4Margin << ',' << v4Threshold
-                          << ',' << (v4Fired?1:0) << ',' << v4ExecutedIdx << ',' << v4Override
-                          << ',' << stateRow << '\n';
+                    EMIT_ROW("marg", contSeed, hiddenSeed, hiddenChanged)
                 }
             }
+            #undef EMIT_ROW
 
-            ++decIdx;
-            ++localDecisions;
+            ++decIdx; ++localDecisions;
             stepFrozenV4Ooc(gc, agent);
         }
+        // Record source terminal outcome
+        sourceWon = (gc.outcome == GameOutcome::PLAYER_VICTORY) ? 1 : 0;
+        sourceFloor = gc.floorNum;
+        sourceHp = gc.curHp;
         t_curPath = nullptr;
 
-        #pragma omp critical(marg_write2)
+        #pragma omp critical(marg_write3)
         {
-            out << local.str(); out.flush();
+            // Prepend source outcome to all rows for this seed
+            std::string prefix = std::to_string(sourceWon) + "," + std::to_string(sourceFloor) + "," + std::to_string(sourceHp);
+            // Replace trailing ",0,0,0\n" with ",<sourceWon>,<sourceFloor>,<sourceHp>\n"
+            std::string localStr = local.str();
+            std::string from = ",0,0,0\n";
+            std::string to = "," + prefix + "\n";
+            size_t pos = 0;
+            while ((pos = localStr.find(from, pos)) != std::string::npos) {
+                localStr.replace(pos, from.length(), to);
+                pos += to.length();
+            }
+            out << localStr; out.flush();
             totalDecisions += localDecisions;
             if (totalDecisions % 10 == 0 || totalDecisions <= 5) {
                 double el = std::chrono::duration<double>(
@@ -8453,8 +8481,7 @@ static void strategicMargGen(int nSeeds, int outerSims, int /*branchSims*/, int 
         }
     }
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %d decisions to %s in %.1fs\n", totalDecisions,
-                outFile.c_str(), wall);
+    std::printf("wrote %d decisions to %s in %.1fs\n", totalDecisions, outFile.c_str(), wall);
 }
 
 static void strategicGen(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0) {
@@ -10288,6 +10315,14 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_LEAFVALUE_DIAG_FILE")) {
         search::g_s3LeafValueDiagFile = d;
         std::cout << "[S3 leafvalue diag file = " << search::g_s3LeafValueDiagFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_BELIEF_AUDIT")) {
+        search::g_s3BeliefAudit = std::atoi(d) != 0;
+        std::cout << "[S3 belief audit = " << (search::g_s3BeliefAudit ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_INTERNAL_BELIEF_UPDATE")) {
+        search::g_s3InternalBeliefUpdate = std::atoi(d) != 0;
+        std::cout << "[S3 internal-belief-update = " << (search::g_s3InternalBeliefUpdate ? "ON" : "off") << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_UNION_EXPAND")) {
         search::g_s3UnionExpand = std::atoi(d) != 0;
