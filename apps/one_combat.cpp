@@ -7922,6 +7922,7 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
         const int decIdx = (int)rows.size();
         for (const auto &a : actions) {
             GameContext probe = pre;
+            probe.map = std::make_shared<Map>(*pre.map);   // detach the shared map before probing
             a.execute(probe);
             const StratFingerprint probeFp = stratFingerprint(probe);
             const bool chosen = probeFp == realFp;
@@ -8130,6 +8131,7 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
         const StratFingerprint realFp = stratFingerprint(gc);
         for (int a = 0; a < (int)actions.size(); ++a) {
             GameContext probe = pre;
+            probe.map = std::make_shared<Map>(*pre.map);   // detach the shared map before probing
             actions[a].execute(probe);
             const StratFingerprint probeFp = stratFingerprint(probe);
             const bool chosen = probeFp == realFp;

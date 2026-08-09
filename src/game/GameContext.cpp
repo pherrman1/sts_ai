@@ -2676,6 +2676,7 @@ void GameContext::chooseEventOption(int idx) {
                     loseGold(unfavorable ? 75 : 60);
                     deck.transformRandomCards(miscRng, 2); // TODO
                     regainControl();
+                    break;
 
                 case 4:
                     loseGold(unfavorable ? 110 : 90);
@@ -2684,6 +2685,7 @@ void GameContext::chooseEventOption(int idx) {
                         returnToMapAction(gc);
                     };
                     openCardSelectScreen(CardSelectScreenType::REMOVE, 1);
+                    break;
 
                 case 5:
                     playerLoseHp(unfavorable ? 5 : 3);
