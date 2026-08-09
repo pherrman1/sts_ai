@@ -71,6 +71,7 @@ namespace sts::search {
         bool isSparseMlp = false;
         bool isEntity = false;
         bool isEntityPolicy = false;
+        bool isDeepSets = false;
         int h1 = 0, h2 = 0;
         std::vector<float> xMean, xInvStd;
         std::vector<float> w1, b1, w2, b2, w3;
@@ -94,6 +95,13 @@ namespace sts::search {
         std::vector<float> policyStateW, policyStateB, policyActionCard;
         std::vector<float> policyActionW, policyActionB, policyActionBiasW;
         float policyActionBiasB = 0.f;
+        // DeepSets fields (combat_deepsets_v1).
+        int d_card = 0, d_relic = 0, d_pot = 0, d_mon = 0, d_enc = 0, d_scalar = 0;
+        int encIdx = 1, nEncounter = 128;
+        std::vector<float> dsScalarMean, dsScalarInv, dsScalarW, dsScalarB;
+        std::vector<int> dsScalarSel;
+        std::vector<float> dsCardE, dsRelicE, dsPotionE, dsEncE;
+        std::vector<float> dsMonW1, dsMonB1, dsMonW2, dsMonB2;
         float baseScore = 0.f;
         bool  isLoaded = false;
         bool  isPolicy = false; // map model features against the POLICY layout, not the value one

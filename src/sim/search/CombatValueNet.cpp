@@ -383,6 +383,7 @@ bool CombatValueNet::load(const std::string &path) {
     isSparseMlp = false;
     isEntity = false;
     isEntityPolicy = false;
+    isDeepSets = false;
     encounterModels.clear();
     hasEncounterModels = false;
     trees.clear(); sel.clear();
@@ -403,6 +404,12 @@ bool CombatValueNet::load(const std::string &path) {
     policyMonsterW.clear(); policyMonsterB.clear(); policyStateW.clear(); policyStateB.clear();
     policyActionCard.clear(); policyActionW.clear(); policyActionB.clear(); policyActionBiasW.clear();
     policyActionBiasB = 0.f;
+    d_card = d_relic = d_pot = d_mon = d_enc = d_scalar = 0;
+    encIdx = 1; nEncounter = 128;
+    dsScalarMean.clear(); dsScalarInv.clear(); dsScalarW.clear(); dsScalarB.clear();
+    dsScalarSel.clear();
+    dsCardE.clear(); dsRelicE.clear(); dsPotionE.clear(); dsEncE.clear();
+    dsMonW1.clear(); dsMonB1.clear(); dsMonW2.clear(); dsMonB2.clear();
 
     f >> tok;
     int nfeat = 0;
@@ -515,6 +522,59 @@ bool CombatValueNet::load(const std::string &path) {
         if (nQuantiles <= 0 || nQuantiles > 20) return false;
         f >> tok; if (tok != "nfeat") return false;
         f >> nfeat;                          // "nfeat <k>"
+    } else if (tok == "combat_deepsets_v1") {
+        isDeepSets = true;
+        g_richCombatFeatures = true;
+        // Read dimensions
+        f >> tok >> d_card;   if (tok != "d_card"   || d_card   <= 0) return false;
+        f >> tok >> d_relic;  if (tok != "d_relic"  || d_relic  <= 0) return false;
+        f >> tok >> d_pot;    if (tok != "d_pot"    || d_pot    <= 0) return false;
+        f >> tok >> d_mon;    if (tok != "d_mon"    || d_mon    <= 0) return false;
+        f >> tok >> d_enc;    if (tok != "d_enc"    || d_enc    <= 0) return false;
+        f >> tok >> d_scalar; if (tok != "d_scalar" || d_scalar <= 0) return false;
+        f >> tok >> h1;       if (tok != "h1"       || h1       <= 0) return false;
+        f >> tok >> h2;       if (tok != "h2"       || h2       <= 0) return false;
+        f >> tok >> encIdx;   if (tok != "encounter_idx") return false;
+        f >> tok >> nEncounter; if (tok != "n_encounter" || nEncounter <= 0) return false;
+        int ns = 0;
+        f >> tok >> ns;       if (tok != "nscalar" || ns <= 0) return false;
+
+        auto readVec = [&](const char *want, std::vector<float> &v, std::size_t n) {
+            f >> tok; if (tok != want) return false;
+            v.resize(n); for (float &x : v) f >> x; return bool(f);
+        };
+        auto readIVec = [&](const char *want, std::vector<int> &v, std::size_t n) {
+            f >> tok; if (tok != want) return false;
+            v.resize(n); for (int &x : v) f >> x; return bool(f);
+        };
+
+        if (!readIVec("scalar_sel", dsScalarSel, ns)) return false;
+        if (!readVec("scalar_mean", dsScalarMean, ns)) return false;
+        if (!readVec("scalar_inv", dsScalarInv, ns)) return false;
+        if (!readVec("scalar_w", dsScalarW, (std::size_t)d_scalar * ns)) return false;
+        if (!readVec("scalar_b", dsScalarB, d_scalar)) return false;
+        if (!readVec("card_embed", dsCardE, (std::size_t)kNumCards * d_card)) return false;
+        if (!readVec("relic_embed", dsRelicE, (std::size_t)kNumRelics * d_relic)) return false;
+        if (!readVec("potion_embed", dsPotionE, (std::size_t)kNumPotions * d_pot)) return false;
+        if (!readVec("encounter_embed", dsEncE, (std::size_t)nEncounter * d_enc)) return false;
+        if (!readVec("mon_w1", dsMonW1, (std::size_t)d_mon * kMonFeats)) return false;
+        if (!readVec("mon_b1", dsMonB1, d_mon)) return false;
+        if (!readVec("mon_w2", dsMonW2, (std::size_t)d_mon * d_mon)) return false;
+        if (!readVec("mon_b2", dsMonB2, d_mon)) return false;
+        // MLP head: w1, b1, w2, b2, w3, b3
+        if (!readVec("w1", w1, (std::size_t)h1 * (4*d_card + d_relic + d_pot + d_mon + d_enc + d_scalar))) return false;
+        if (!readVec("b1", b1, h1)) return false;
+        if (!readVec("w2", w2, (std::size_t)h2 * h1)) return false;
+        if (!readVec("b2", b2, h2)) return false;
+        if (!readVec("w3", w3, h2)) return false;
+        std::vector<float> one;
+        if (!readVec("b3", one, 1)) return false;
+        b3 = one[0];
+        f >> tok >> yMean;   if (tok != "y_mean") return false;
+        f >> tok >> yScale;  if (tok != "y_scale" || yScale <= 0.f) return false;
+        if (!f) return false;
+        isLoaded = true;
+        return true;
     } else if (tok == "nfeat") {
         f >> nfeat;                          // legacy tree model
     } else {
@@ -865,6 +925,113 @@ double CombatValueNet::predictVec(const float *canonFeatures) const {
         const auto p = predictOutcomeVec(canonFeatures);
         return p.winProbability * (entityWinBonus + p.endHpFractionIfWin * canonFeatures[4]);
     }
+    if (isDeepSets) {
+        // DeepSets inference: embed → pool → MLP
+        thread_local std::vector<float> pool, a1, a2;
+        const int concatDim = 4*d_card + d_relic + d_pot + d_mon + d_enc + d_scalar;
+        pool.resize(concatDim);
+        float *p = pool.data();
+
+        // Cards: sum-pool per zone (counts @ embedding = dot-product per dim)
+        for (int z = 0; z < 4; ++z) {
+            int zOff = (z == 0) ? kHandOff : (z == 1) ? kDrawOff : (z == 2) ? kDiscOff : kExhOff;
+            for (int d = 0; d < d_card; ++d) {
+                float sum = 0.f;
+                const float *e = dsCardE.data() + (std::size_t)z * kNumCards * d_card + d;
+                for (int c = 0; c < kNumCards; ++c)
+                    sum += canonFeatures[zOff + c] * e[c * d_card];
+                *p++ = sum;
+            }
+        }
+
+        // Relics: sum-pool over present relics (binary mask)
+        for (int d = 0; d < d_relic; ++d) {
+            float sum = 0.f;
+            for (int r = 0; r < kNumRelics; ++r)
+                if (canonFeatures[kRelicOff + r] > 0.5f)
+                    sum += dsRelicE[(std::size_t)r * d_relic + d];
+            *p++ = sum;
+        }
+
+        // Potions: count-weighted sum
+        for (int d = 0; d < d_pot; ++d) {
+            float sum = 0.f;
+            for (int pt = 0; pt < kNumPotions; ++pt)
+                sum += canonFeatures[kPotOff + pt] * dsPotionE[(std::size_t)pt * d_pot + d];
+            *p++ = sum;
+        }
+
+        // Monsters: per-slot MLP → mean-pool over alive
+        {
+            thread_local std::vector<float> monAct(d_mon);
+            float monPool[32] = {};  // d_mon ≤ 32
+            int alive = 0;
+            for (int s = 0; s < kNumMonSlots; ++s) {
+                int mOff = kMonOff + s * kMonFeats;
+                if (canonFeatures[mOff + 1] <= 0.f) continue;  // m{i}Hp == 0 → dead
+                alive++;
+                // Layer 1: monFeats → d_mon
+                for (int j = 0; j < d_mon; ++j) {
+                    float sum = dsMonB1[j];
+                    for (int i = 0; i < kMonFeats; ++i)
+                        sum += canonFeatures[mOff + i] * dsMonW1[(std::size_t)j * kMonFeats + i];
+                    monAct[j] = sum > 0.f ? sum : 0.f;
+                }
+                // Layer 2: d_mon → d_mon
+                for (int j = 0; j < d_mon; ++j) {
+                    float sum = dsMonB2[j];
+                    for (int i = 0; i < d_mon; ++i)
+                        sum += monAct[i] * dsMonW2[(std::size_t)j * d_mon + i];
+                    monAct[j] = sum > 0.f ? sum : 0.f;
+                }
+                for (int j = 0; j < d_mon; ++j) monPool[j] += monAct[j];
+            }
+            float inv = alive > 0 ? 1.f / (float)alive : 1.f;
+            for (int j = 0; j < d_mon; ++j) *p++ = monPool[j] * inv;
+        }
+
+        // Encounter embedding
+        {
+            int enc = (int)canonFeatures[encIdx];
+            if (enc < 0) enc = 0;
+            if (enc >= nEncounter) enc = nEncounter - 1;
+            for (int d = 0; d < d_enc; ++d)
+                *p++ = dsEncE[(std::size_t)enc * d_enc + d];
+        }
+
+        // Scalars: z-normalize → linear → ReLU
+        {
+            thread_local std::vector<float> sc(d_scalar);
+            for (int j = 0; j < d_scalar; ++j) {
+                float sum = dsScalarB[j];
+                for (std::size_t i = 0; i < dsScalarSel.size(); ++i) {
+                    float v = canonFeatures[dsScalarSel[i]];
+                    v = (v - dsScalarMean[i]) * dsScalarInv[i];
+                    sum += v * dsScalarW[(std::size_t)j * dsScalarSel.size() + i];
+                }
+                sc[j] = sum > 0.f ? sum : 0.f;
+            }
+            for (int j = 0; j < d_scalar; ++j) *p++ = sc[j];
+        }
+
+        // MLP head
+        a1.resize(h1); a2.resize(h2);
+        for (int j = 0; j < h1; ++j) {
+            float sum = b1[j];
+            for (int i = 0; i < concatDim; ++i)
+                sum += pool[i] * w1[(std::size_t)j * concatDim + i];
+            a1[j] = sum > 0.f ? sum : 0.f;
+        }
+        for (int j = 0; j < h2; ++j) {
+            float sum = b2[j];
+            for (int i = 0; i < h1; ++i)
+                sum += a1[i] * w2[(std::size_t)j * h1 + i];
+            a2[j] = sum > 0.f ? sum : 0.f;
+        }
+        float out = b3;
+        for (int i = 0; i < h2; ++i) out += w3[i] * a2[i];
+        return (double)(yMean + yScale * out);
+    }
     if (isMlp) {
         thread_local std::vector<float> x, a1, a2;
         a1.resize(h1); a2.resize(h2);
@@ -954,6 +1121,7 @@ double CombatValueNet::predictQuantileEV(const float *canonFeatures) const {
 std::string CombatValueNet::description() const {
     std::string base;
     if (isEntityPolicy) base = "shared entity policy 64d";
+    else if (isDeepSets) base = "deepsets " + std::to_string(d_card) + "d";
     else if (isEntity) base = "entity multi-head (bonus " + std::to_string(entityWinBonus) + ")";
     else if (isMlp) base = std::string(isSparseMlp ? "sparse MLP " : "MLP ")
         + std::to_string(sel.size()) + "x"
