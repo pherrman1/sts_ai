@@ -115,10 +115,18 @@ static void printHelper(const BattleContext &bc, const search::Action &a) {
 // order per simulation, so the recommended line is world-specific -- we can only
 // commit the ONE most-visited root move, then re-search as the real draw reveals.
 void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
-    if (search::g_useSearcher3) {        // ISMCTS: new searcher per turn (different observations = different trees)
+    if (search::g_useSearcher3) {
         int decisionIdx = 0;
-        int fightPool = 0;   // STS_S3_POOL_REDIRECT: per-fight sim credit pool (donations from forced moves)
+        int fightPool = 0;   // STS_S3_POOL_REDIRECT: per-fight sim credit pool
         int stallCount = 0;
+        // Persistent searcher with single-use tree retention: after playing a
+        // card that does not consume shuffle/card RNG (within-turn plain
+        // attacks), advanceRoot carries the played child's subtree to the new
+        // root so the next search starts from existing work. The searcher is
+        // force-rebuilt after every reuse — cascading reuse compounds stale
+        // world-averaged statistics across particle determinizations.
+        BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+        bool searcherValid = true;
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
             if (++stallCount > kMaxBattleDecisions) {
@@ -128,46 +136,57 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 bc.outcome = Outcome::PLAYER_LOSS;
                 break;
             }
+            if (!searcherValid) {
+                s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+                searcherValid = true;
+            }
             const std::int64_t sims = isBossEncounter(bc.encounter)
                 ? (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
-            BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
-            // Forced-action contraction (same promoted shortcut as the S2 fair
-            // path, §120/§121): exactly one legal action -> commit directly, no
-            // search. Enumerated on the live root state, so it fires only when
-            // the move is truly forced in every determinization. The fair path
-            // builds a fresh searcher per decision, so the skip is
-            // decision-neutral (pending the §123 S3 gate). Forced decisions
-            // skip the search, so g_onSearchComplete3 does not fire for them.
+            // Forced-action contraction: exactly one legal action -> commit
+            // directly. No search runs, so no tree to carry forward — rebuild.
             search::Action forced;
             if (search::g_forcedMoveSkip && s3.onlyLegalAction(forced)) {
-                if (search::g_s3PoolRedirect) fightPool += sims;  // donate the unspent budget to the pool
+                if (search::g_s3PoolRedirect) fightPool += sims;
                 takeAction(bc, forced);
                 ++decisionIdx;
+                searcherValid = false;
                 continue;
             }
-            // STS_S3_POOL_REDIRECT (opt-in): spend the flat budget plus a
-            // fraction of the accumulated pool on non-forced decisions. Pure
-            // budget redirect -- no stability-based early stopping (the
-            // STS_CONV_ROOT stability line was falsified at §118; this is the
-            // clean forced-move-only sub-case that was never isolated).
+            // STS_S3_POOL_REDIRECT (opt-in).
             std::int64_t spend = sims;
             if (search::g_s3PoolRedirect && fightPool > 0) {
-                constexpr double poolFrac = 1.0;   // use all accumulated sims
+                constexpr double poolFrac = 1.0;
                 const std::int64_t extra = std::min<std::int64_t>(
                     fightPool, static_cast<std::int64_t>(std::llround(sims * poolFrac)));
                 fightPool -= static_cast<int>(extra);
                 spend += extra;
             }
+            // search() gives the full budget even on a carried-over root.
+            // searchToTotal's shortfall is too aggressive — the carried root
+            // already has ~90% of the target visits, leaving 20-40 new sims.
+            const std::int64_t before = s3.root.simulationCount;
+            if (std::getenv("STS_TRACE_REUSE") && before > 0) {
+                std::cerr << "[trace] reuse: root visits=" << before << " edges=";
+                for (const auto &e : s3.root.edges)
+                    std::cerr << e.child.simulationCount << " ";
+                std::cerr << "\n";
+            }
             s3.search(spend);
-            simulationCountTotal += s3.root.simulationCount;
+            simulationCountTotal += s3.root.simulationCount - before;
+            if (std::getenv("STS_TRACE_REUSE") && before > 0) {
+                std::int64_t maxV = -1; int maxI = -1;
+                for (int i = 0; i < (int)s3.root.edges.size(); ++i) {
+                    if (s3.root.edges[i].child.simulationCount > maxV)
+                        { maxV = s3.root.edges[i].child.simulationCount; maxI = i; }
+                }
+                std::cerr << "[trace] after:  root visits=" << s3.root.simulationCount
+                          << " picked=";
+                if (maxI >= 0) s3.root.edges[maxI].action.printDesc(std::cerr, bc);
+                std::cerr << " (" << maxV << " visits)\n";
+            }
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
-            // Experimental STS_VNET_RANK_CORR: zero-mean clamp at search-complete
-            // (before the root action pick). Subtracts the mean per-search
-            // correction from each root edge's stored mean value; visit counts
-            // are untouched, so the most-visited root action is unchanged — a
-            // pure scale-preservation adjustment. No-op when the correction
-            // model is not loaded (rankCorrValues empty).
             s3.clampRankCorrAtRoot();
+            s3.rankCorrValues.clear();
             bool have = false;
             search::Action bestAction = s3PickRootAction(s3, bc, have);
             if (!have) {
@@ -179,8 +198,36 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                               << " outcome=" << (int)bc.outcome << "\n";
                 break;
             }
+            // RNG gate: only retain the tree when the committed action leaves
+            // shuffle/card RNG untouched (no draw, shuffle, or random effects).
+            // Within a turn, plain attacks (Strike, Defend, etc.) always pass.
+            auto snapShuffle  = bc.shuffleRng.counter;
+            auto snapCardRand = bc.cardRandomRng.counter;
             takeAction(bc, bestAction);
-            ++decisionIdx;
+            bool rngSafe = (bc.shuffleRng.counter == snapShuffle)
+                        && (bc.cardRandomRng.counter == snapCardRand);
+            if (rngSafe && s3.advanceRoot(bestAction, bc) && !std::getenv("STS_NO_REUSE")) {
+                // Zero out carried visit counts so PUCT starts with a clean
+                // exploration slate. The tree topology (edges, cached obs,
+                // priors) is preserved — the costly part of search is
+                // enumeration + rollout, not tree structure. Resetting counts
+                // prevents the PUCT exploration-term miscalibration that
+                // occurs when parentCount reflects old-search totals but child
+                // visits are concentrated on a single edge (up to 54× skew).
+                s3.root.simulationCount = 0;
+                s3.root.evaluationSum = 0;
+                for (auto &e : s3.root.edges) {
+                    e.child.simulationCount = 0;
+                    e.child.evaluationSum = 0;
+                }
+                ++decisionIdx;
+                s3.decisionIndex = decisionIdx;
+                s3.reseed();
+                if (!std::getenv("STS_CASCADE_REUSE")) searcherValid = false;
+            } else {
+                ++decisionIdx;
+                searcherValid = false;
+            }
         }
         return;
     }
