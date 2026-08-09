@@ -700,7 +700,7 @@ if __name__ == "__main__":
     # --- Predict-only mode (STRAT_PREDICT_ONLY=1) ---
     if os.environ.get("STRAT_PREDICT_ONLY") == "1":
         import json
-        from strategic_gate_contract import classify
+        from strategic_gate_contract import classify_group
         ckpt_path = os.environ.get("STRAT_PREDICT_CKPT", "")
         out_csv = os.environ.get("STRAT_PREDICT_OUT", OUT + "_preds.csv")
         threshold = float(os.environ.get("STRAT_PREDICT_THRESHOLD", "1.0"))
@@ -743,9 +743,8 @@ if __name__ == "__main__":
             lo = int(block_start[g])
             rows = all_rows[lo:lo + sz]
             scr = int(screen_all[lo])
-            at = int(actionType_all[lo]) if actionType_all is not None else -1
-            c1v = int(c1_all[lo]) if c1_all is not None else -1
-            kind, owned_flag, exact = classify(scr, at, c1v)
+            group_atypes = actionType_all[rows] if actionType_all is not None else [-1]
+            kind, owned_flag, exact = classify_group(scr, group_atypes)
             owned = 1 if owned_flag else 0
             q_pred = q_all[rows]
             model_idx = int(np.argmax(q_pred))
