@@ -8159,6 +8159,183 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
     return out.str();
 }
 
+// ── Hidden-future marginalization diagnostic ───────────────────────────────
+// For each sampled OOC decision, evaluate every legal action under both:
+//   Regime F: fixed hidden world (current Tier-B style)
+//   Regime M: encounter-marginalized (resample hidden encounters per sample)
+// All actions in a sample share the same hidden world (CRN pairing).
+
+struct MargResult { double utility, hp, floor; bool bootstrap; };
+
+static MargResult finishMargCf(GameContext gc, int sims, std::uint64_t agentSeed,
+                                PathHistory path, int maxFights) {
+    // Use the same continuation as Tier-B strategicgen2
+    FutureFightProbe probe;
+    // K-fight schedule: 150, 100, 50 for 3 fights
+    std::vector<int> simsSeq;
+    if (maxFights == 3) simsSeq = {150, 100, 50};
+    else if (maxFights == 2) simsSeq = {200, 100};
+    else simsSeq = {(maxFights > 0 ? sims : 100)};
+    finishOocCounterfactual(std::move(gc), sims, agentSeed, path, maxFights, false,
+                            &probe, 0, &simsSeq, false);
+    // Utility = 10*won + hp (same as Tier-B)
+    double util = 0;
+    double hp = 0;
+    double fl = 0;
+    bool won = false;
+    if (!probe.fights.empty()) {
+        won = probe.fights.back().passed;
+        hp = probe.fights.back().hp;
+        fl = probe.fights.back().floor;
+    }
+    util = (won ? 10.0 : 0.0) + hp;
+    return {util, hp, fl, false};
+}
+
+static void strategicMargGen(int nSeeds, int outerSims, int branchSims, int nFights,
+                             int H, int maxDecisions, const std::string &outFile,
+                             long long seedOffset) {
+    std::ofstream out(outFile);
+    out << "seed,decIdx,screen,gateKind,actionIdx,nCand,hiddenIdx,regime,"
+           "continuationSeed,hiddenSeed,utility,hp,floor,won"
+           ",v4ModelIdx,v4Margin\n";
+    out.flush();
+    auto t0 = std::chrono::steady_clock::now();
+    std::mutex outMtx;
+    int totalDecisions = 0;
+
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        std::ostringstream local;
+        int localDecisions = 0;
+        std::uint64_t seed = (std::uint64_t)(seedOffset + s);
+        GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+        vDisconnect();
+        search::ScumSearchAgent2 agent;
+        agent.simulationCountBase = outerSims;
+        agent.rng = std::default_random_engine(seed);
+        PathHistory path;
+        t_curPath = &path;
+        int decIdx = 0;
+
+        while (gc.outcome == GameOutcome::UNDECIDED && localDecisions < maxDecisions / std::max(1, nSeeds) + 5) {
+            path.update(gc);
+            if (gc.screenState == ScreenState::BATTLE) {
+                BattleContext bc; bc.init(gc);
+                agent.playoutBattle(bc);
+                bc.exitBattle(gc);
+                continue;
+            }
+            // Only evaluate V4-owned gate screens
+            int screen = (int)gc.screenState;
+            // Gate-kind: map ScreenState to gate kind (1=EVENT,2=CARD,3=BOSS,5=TREASURE,6=REST,7=SHOP)
+            int gateKind = 0;
+            bool isOwned = false;
+            if (screen == 1) { gateKind = 1; isOwned = true; }       // EVENT
+            else if (screen == 2) { gateKind = 2; isOwned = true; }  // CARD_REWARD
+            else if (screen == 3) { gateKind = 3; isOwned = true; }  // BOSS_RELIC
+            else if (screen == 6) { gateKind = 5; isOwned = true; }  // TREASURE
+            else if (screen == 7) { gateKind = 6; isOwned = true; }  // REST
+            else if (screen == 8) { gateKind = 7; isOwned = true; }  // SHOP
+            if (!isOwned) {
+                agent.stepOutOfCombatPolicy(gc);
+                continue;
+            }
+            // Get legal actions
+            auto actions = search::GameAction::getAllActionsInState(gc);
+            if (actions.size() < 2) {
+                agent.stepOutOfCombatPolicy(gc);
+                continue;
+            }
+
+            // Deterministic continuation seeds per decision (candidate-independent)
+            std::uint64_t baseSeed = seed ^ ((std::uint64_t)decIdx * 0x9e3779b97f4a7c15ULL);
+            if (!baseSeed) baseSeed = 1;
+
+            // ── V4 predictions ──
+            int v4BestIdx = -1;
+            double v4Margin = 0;
+            if (g_oocStrategicTokNet.ok) {
+                TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+                double bestV4 = -1e100, secondV4 = -1e100;
+                for (int ai = 0; ai < (int)actions.size(); ++ai) {
+                    int actionType, c1, c2, c3, cand1, cand2, cand3;
+                    strategicCands(gc, actions[ai], actionType, c1, c2, c3, cand1, cand2, cand3);
+                    const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+                    int entType, entId; float goldGePrice;
+                    tokEntity(gc, actions[ai], entType, entId, goldGePrice);
+                    const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
+                                           entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+                    const double v = g_oocStrategicTokNet.predictActionValue(
+                        ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+                        actions[ai].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+                    if (v > bestV4) { secondV4 = bestV4; bestV4 = v; v4BestIdx = ai; }
+                    else if (v > secondV4) secondV4 = v;
+                }
+                v4Margin = bestV4 - secondV4;
+            }
+
+            // ── Regime F: fixed hidden world ──
+            for (int h = 0; h < H; ++h) {
+                std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
+                if (!contSeed) contSeed = 1;
+                for (int ai = 0; ai < (int)actions.size(); ++ai) {
+                    GameContext branch = detachedCounterfactualCopy(gc);
+                    actions[ai].execute(branch);
+                    MargResult r = finishMargCf(std::move(branch), branchSims, contSeed, path, nFights);
+                    local << seed << ',' << decIdx << ',' << screen << ',' << gateKind << ',' << ai << ','
+                          << actions.size() << ',' << h << ",fixed," << contSeed << ",0,"
+                          << r.utility << ',' << r.hp << ',' << r.floor << ','
+                          << (r.utility > 5.0 ? 1 : 0)
+                          << ',' << v4BestIdx << ',' << v4Margin << '\n';
+                }
+            }
+
+            // ── Regime M: encounter-marginalized ──
+            for (int h = 0; h < H; ++h) {
+                std::uint64_t hiddenSeed = baseSeed ^ ((std::uint64_t)(h + H) * 0xbf58476d1ce4e5b9ULL);
+                std::uint64_t contSeed  = baseSeed ^ ((std::uint64_t)(h + 2*H) * 0x9e3779b97f4a7c15ULL);
+                if (!hiddenSeed) hiddenSeed = 1;
+                if (!contSeed) contSeed = 1;
+                // Same hidden world for all actions in this sample
+                GameContext hiddenBase = detachedCounterfactualCopy(gc);
+                resampleRemainingActEncounters(hiddenBase, hiddenSeed);
+                for (int ai = 0; ai < (int)actions.size(); ++ai) {
+                    GameContext branch = detachedCounterfactualCopy(hiddenBase);
+                    actions[ai].execute(branch);
+                    MargResult r = finishMargCf(std::move(branch), branchSims, contSeed, path, nFights);
+                    local << seed << ',' << decIdx << ',' << screen << ',' << gateKind << ',' << ai << ','
+                          << actions.size() << ',' << h << ",marg," << contSeed << ','
+                          << hiddenSeed << ',' << r.utility << ',' << r.hp << ',' << r.floor << ','
+                          << (r.utility > 5.0 ? 1 : 0)
+                          << ',' << v4BestIdx << ',' << v4Margin << '\n';
+                }
+            }
+
+            ++decIdx;
+            ++localDecisions;
+            agent.stepOutOfCombatPolicy(gc);
+        }
+        t_curPath = nullptr;
+
+        #pragma omp critical(marg_write)
+        {
+            out << local.str(); out.flush();
+            totalDecisions += localDecisions;
+            if (totalDecisions % 10 == 0 || totalDecisions <= 5) {
+                double el = std::chrono::duration<double>(
+                    std::chrono::steady_clock::now() - t0).count();
+                std::printf("  %d decisions, %.0fs (%.1fs/dec)\n",
+                            totalDecisions, el, el / std::max(1, totalDecisions));
+                std::fflush(stdout);
+            }
+        }
+    }
+    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("wrote %d decisions to %s in %.1fs\n", totalDecisions,
+                outFile.c_str(), wall);
+}
+
 static void strategicGen(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0) {
     const bool append = seedOffset > 0;
     std::cout << "strategicgen  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
@@ -10340,6 +10517,25 @@ int main(int argc, char **argv) {
         int sims   = argc > 2 ? std::stoi(argv[2]) : 2000;
         int nSeeds = argc > 3 ? std::stoi(argv[3]) : 100;
         benchmark(sims, nSeeds);
+
+    } else if (mode == "strategicmarggen") {
+        // Hidden-future marginalization diagnostic: for sampled OOC decisions,
+        // compare fixed-world vs encounter-marginalized action advantages.
+        int nSeeds     = argc > 2 ? std::stoi(argv[2]) : 20;
+        int outerSims  = argc > 3 ? std::stoi(argv[3]) : 1000;
+        int branchSims = argc > 4 ? std::stoi(argv[4]) : 150;
+        int nFights    = argc > 5 ? std::stoi(argv[5]) : 3;
+        int H          = argc > 6 ? std::stoi(argv[6]) : 8;
+        int maxDecisions = argc > 7 ? std::stoi(argv[7]) : 200;
+        std::string out = argc > 8 ? argv[8] : "build/hidden_marg.csv";
+        long long seedOff = argc > 9 ? std::stoll(argv[9]) : 300000;
+        std::cout << "strategicmarggen seeds " << seedOff << ".." << seedOff+nSeeds-1
+                  << " outerSims=" << outerSims << " branchSims=" << branchSims
+                  << " nFights=" << nFights << " H=" << H
+                  << " maxDecisions=" << maxDecisions
+                  << " -> " << out << '\n';
+        strategicMargGen(nSeeds, outerSims, branchSims, nFights, H, maxDecisions, out,
+                         seedOff);
 
     } else if (mode == "mcts") {
         int sims          = argc > 2 ? std::stoi(argv[2]) : 2000;
