@@ -155,9 +155,13 @@ Use the cheapest check that proves the change, for example:
 
 ```bash
 ./build/test
-STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
+tools/seed_guard.sh env STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
 ctest --test-dir build --output-on-failure
 ```
+
+Direct `one_combat` invocations are blocked by OpenCode permission rules; all
+game-seed commands must go through `tools/seed_guard.sh` (see "Automated agent
+verification limits" below for why).
 
 Build the relevant target before using these commands. `json/` and `pybind11/`
 are gitlinks; a fresh clone requires `git submodule update --init` before the
