@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Seed-sweep argument positions verified against apps/one_combat.cpp mode dispatch
+# (2026-08-10).  Modes that parse nSeeds from argc/argv are listed; modes not in
+# this table are passed through without seed checking.
 
 MAX_AUTOMATED_SEEDS=128
 
 declare -A ONE_COMBAT_SEED_INDEX=(
-  ["allbench"]=3 ["bench"]=3 ["bestbench"]=3 ["cardbench"]=3
-  ["causalgen"]=2 ["combatgen"]=2 ["combobench"]=3 ["cpsictr"]=3
-  ["datagen"]=2 ["datagen2"]=2 ["datagen3"]=2 ["distgen"]=2
-  ["draftbench"]=3 ["evalcombat"]=3 ["evalrun"]=3 ["fairgen"]=2
-  ["fightgen"]=2 ["frontiergen"]=2 ["leafdiag"]=2 ["leafref"]=5
-  ["oocnextgen"]=2 ["pathbench"]=3 ["pathcfgen"]=2 ["policygen"]=2
-  ["restbench"]=3 ["rollouttrace"]=4 ["runbench"]=3 ["searchdiag"]=2
-  ["shopbench"]=3 ["skipbench"]=3 ["strategicgen"]=2 ["strategicgen2"]=2
+  ["allbench"]=3            ["bench"]=3             ["bestbench"]=3
+  ["cardbench"]=3           ["causalgen"]=2         ["combatgen"]=2
+  ["combobench"]=3          ["cpsictr"]=3           ["datagen"]=2
+  ["datagen2"]=2            ["datagen3"]=2          ["distgen"]=2
+  ["draftbench"]=3          ["fairgen"]=2           ["fightgen"]=2
+  ["frontiergen"]=2         ["leafdiag"]=2          ["leafref"]=5
+  ["oocnextgen"]=2          ["pathbench"]=3         ["pathcfgen"]=2
+  ["policygen"]=2           ["restbench"]=3         ["rollouttrace"]=4
+  ["runbench"]=3            ["searchdiag"]=2        ["shopbench"]=3
+  ["skipbench"]=3           ["strategicgen"]=2      ["strategicgen2"]=2
+  ["strategicmarggen"]=2
 )
 
 declare -A PYTHON_SEED_INDEX=(

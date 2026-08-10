@@ -1,6 +1,6 @@
 # StS AI knowledge base
 
-Last verified: 2026-08-08 against the current working tree.
+Last verified: 2026-08-10 against the current working tree.
 
 This knowledge base is the maintained technical reference for the repository.
 Code and executable behavior remain authoritative; `EXPERIMENTS.md` retains
@@ -50,7 +50,6 @@ For evaluation and operation:
 4. [Environment variables](operations/environment-variables.md)
 5. [Self-play loop](operations/selfplay-loop.md)
 6. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
-7. [AI cycle and agent backends](operations/ai-cycle.md)
 
 For correctness:
 

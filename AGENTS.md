@@ -1,6 +1,6 @@
 # StS AI project guidance
 
-Last verified: 2026-08-08 against the current working tree.
+Last verified: 2026-08-10 against the current working tree.
 
 ## Purpose and required reading
 
@@ -49,9 +49,8 @@ base in the same change. Do not invent rationale; use **Inference**,
 | `bindings/` | Run-level pybind11 API, not card-by-card combat control. |
 | root `train_*.py`, `export_*.py`, `v_server.py` | Training, export, optional Python inference. |
 | `selfplay/` | Generation, retraining, paired gates, snapshots, local state. |
-| `tools/ai_cycle.py` | Legacy Python orchestrator (during migration). Retained as a rollback path; the new authoritative orchestrator is `/sts-cycle` (`.pi/extensions/sts-cycle/`). |
-| `.pi/` | Pi project agents, `/sts-cycle` deterministic orchestrator, read-only inspection tools, safety hooks, and prompt templates. |
-| `.opencode/`, `opencode.json` | Legacy/rollback OpenCode agent backend and prompts during the Pi migration. |
+| `tools/` | Inspection, safety, and diagnostic utilities. |
+| `.opencode/`, `opencode.json` | OpenCode agent configuration and prompts. |
 
 Deployable native exports under `selfplay/models/*.native` are git-tracked
 (since 2026-08-05) so model handoff between machines happens via `git pull`;
@@ -63,6 +62,36 @@ file is missing from the tree.
 | `build/` | Mixed ignored build output and tracked model artifacts; some are default, others experimental. |
 | `docs/knowledge-base/` | Maintained technical knowledge. |
 | `EXPERIMENTS.md` | Chronological experiment ledger. |
+
+## Agent workflow
+
+The local agent workflow uses interactive OpenCode with selectable models:
+
+```
+External research/review:
+    ChatGPT
+
+Local implementation:
+    interactive OpenCode (default agent: deepseek-v4-flash;
+    strong agent: deepseek-v4-pro for difficult debugging)
+
+Shared project knowledge:
+    AGENTS.md + maintained knowledge base
+
+Evidence:
+    current code, commit diff, exact verification output, raw experiment results
+```
+
+External ChatGPT owns research design and independent review.
+OpenCode is the interactive implementation agent — no automated
+orchestrator runs architect or reviewer steps independently.
+
+The `opencode.json` config defines two agents:
+- `default` — capable implementation agent (flash);
+- `strong` — more capable model for difficult debugging/reasoning (pro).
+
+Both agents receive `AGENTS.md` automatically and share the same prompt body;
+only the model differs.
 
 ## Agent context and large-file navigation
 
@@ -136,12 +165,14 @@ first configure.
 
 ### Automated agent verification limits
 
-`.pi/extensions/sts-cycle/policy.ts` is authoritative for automated
-verification policy, providing a single definition of `MAX_AUTOMATED_SEEDS=128`,
-seed-sweep argument maps, and verification allowlists shared with the
-interactive safety hook (`.pi/extensions/sts-safety.ts`). In
-particular, `MAX_AUTOMATED_SEEDS = 128` is a hard safety limit for every
-agent-driven game-seed sweep.
+`tools/seed_guard.sh` is the deterministic backstop for agent-driven seed
+counts. It rejects any seed sweep exceeding `MAX_AUTOMATED_SEEDS = 128`.
+
+Pass game-seed commands through the guard:
+
+```bash
+tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0
+```
 
 Use smaller checks by default:
 
@@ -157,12 +188,6 @@ ceiling. Prefer the cheapest sample size that can establish the requested
 property, and reserve larger paired evaluations for claims that genuinely need
 them.
 
-The orchestration program, not an LLM prompt, decides whether a proposed
-verification command is allowed, whether a seed count is within bounds, and
-whether required checks passed. Pi's `.pi/extensions/sts-safety.ts` provides
-defense in depth for interactive use but does not replace the deterministic
-checks in `tools/ai_cycle.py`.
-
 The current cached build is Linux/WSL Unix Makefiles using `/usr/bin/c++`.
 The pybind11 module is skipped with a warning when CPython development headers
 are absent; check startup/configure output before assuming `slaythespire`
@@ -170,48 +195,6 @@ exists. Do not claim a clean configure or native MSVC build unless you actually
 perform it. CMake does not define `build/libsts.a`; do not use old manual
 archive-link instructions. More detail:
 [`operations/build-and-debugging.md`](docs/knowledge-base/operations/build-and-debugging.md).
-
-## Agent orchestration
-
-`/sts-cycle` (`.pi/extensions/sts-cycle/`) is the authoritative deterministic
-multi-agent workflow. `tools/ai_cycle.py` is the legacy Python orchestrator
-retained as a rollback path during migration. The Pi-native state machine
-repository-specific behavior such as clean-working-tree checks, protected
-workflow paths, verification allowlisting, retry/review limits, high-risk
-classification, candidate fingerprinting, ELI5 summaries, and the automated
-seed cap.
-
-As of 2026-08-08, both OpenCode and Pi backends exist. Pi integration is
-available through `--backend pi`; OpenCode remains the default rollback path
-until the live Pi bake-off is completed and the default is deliberately
-changed. Do not silently remove or weaken the rollback path while evaluating
-the new backend.
-
-A deterministic fast-path classification (`classify_fast_path_task`) may
-skip the architect and Pro escalation for a genuinely trivial non-behavioral
-task (comments, typos, docs, formatting only). Classification is narrow and
-conservative; any uncertainty falls back to the full NORMAL workflow.
-Post-implementation diff confirmation (`confirm_trivial_diff`) rejects any
-change that is not confidently comment/docstring/whitespace-only. See
-`docs/knowledge-base/operations/ai-cycle.md`.
-
-Project-local Pi roles live in `.pi/agents/`. Read-only architect/reviewer
-roles use the restricted `sts_git` and `sts_inspect` tools rather than arbitrary
-Bash.
-
-### Pi commands
-
-| Command | Purpose |
-| --- | --- |
-| `/sts-cycle <task>` | Implementation/review workflow: deterministic state machine (PREFLIGHT → CLASSIFY → ARCHITECT → IMPLEMENT → VERIFY → REVIEW → ESCALATE → ACCEPTED/REJECTED). LLMs must not improvise the workflow sequence. |
-| `/sts-investigate <question>` | Research/investigation workflow: parallel read-only subagent investigation followed by architect synthesis. |
-
-`.pi/` is workflow control-plane code: ordinary implementation agents
-must not rewrite agent prompts, safety extensions, `/sts-cycle` orchestration
-code, or their tests as part of unrelated STS work.
-
-Pi project trust enables project extensions and prompts; it is not a security
-sandbox. Deterministic repository protections remain authoritative.
 
 ## Modification workflow
 
@@ -401,13 +384,10 @@ Do not assume:
 - CMake creates `build/libsts.a`;
 - `runtrace` exactly mirrors `runFullRunOOC`;
 - `selfplay/state.env` proves a loop is active or resumable;
-- a dated “running now,” “current best,” or model-version claim is still current;
+- a dated "running now," "current best," or model-version claim is still current;
 - design rationale can be reconstructed from code shape;
 - 128 seeds is a normal/default automated benchmark size rather than a hard
-  ceiling;
-- Pi project trust is a sandbox or replaces the deterministic safety checks in
-  `/sts-cycle` is the authorised orchestrator for the current task;
-- the Pi backend is the default unless `/sts-cycle` currently says so.
+  ceiling.
 
 When genuinely uncertain, stop and ask rather than proceeding on an
 unverified interpretation.
