@@ -213,6 +213,10 @@ start_server() {   # $1 = v_win json; optional $2 = paired rest model
     echo "ERROR: v_server did not come up" >> $SP/logs/loop.log; return 1
 }
 stop_server() { for p in $(pgrep -x python3); do grep -qa v_server.py /proc/$p/cmdline 2>/dev/null && kill $p 2>/dev/null; done; }
+# Native-OOC arms (baseline/value/policy gates) never consult v_server, so their
+# gate batches must not start (or fail on) it.  Only the server-backed META arm
+# (STS_NATIVE_OOC=0) needs the server (Issue 82).
+needs_server() { case " $MEAS_POLICY_ENV " in *" STS_NATIVE_OOC=0 "*) return 0;; *) return 1;; esac; }
 
 # Helpers for the adaptive held-out gate. Training seeds start near 1,000,000;
 # gate seeds start at zero and are paired across baseline/candidate arms.
@@ -315,7 +319,7 @@ ensure_baseline_cache() { # cumulative target, per-iteration baseline CSV
         batch="${BASE_CACHE}.batch.${N}.$$"; combined="${BASE_CACHE}.new.${N}.$$"
         rm -f "$batch" "$combined"
         MEAS_POLICY_ENV=$POLICY_ENV; MEAS_COMBAT=$CUR_COMBAT
-        if ! start_server "$SP/current/v_win.json" "$SP/current/rest_cf.json" \
+        if { needs_server && ! start_server "$SP/current/v_win.json" "$SP/current/rest_cf.json"; } \
            || ! run_gate_batch baseline "$done" "$missing" "$target" "$batch"; then
             rm -f "$batch" "$combined"; return 1
         fi
@@ -609,7 +613,7 @@ while :; do
         if [ "$value_decision" = continue ]; then
             MEAS_POLICY_ENV=$POLICY_ENV
             MEAS_COMBAT=$(cenv_files "$SP/cand/v_combat_trees.txt" "$SP/current/policy_trees_c.txt")
-            if ! start_server $SP/current/v_win.json $SP/current/rest_cf.json \
+            if { needs_server && ! start_server $SP/current/v_win.json $SP/current/rest_cf.json; } \
                || ! run_gate_batch value "$gate_done" "$batch" "$stage" "$value_csv"; then
                 value_decision=error
                 echo "iter $N: value gate batch failed" >> $SP/logs/loop.log
@@ -625,7 +629,7 @@ while :; do
         if [ "$policy_decision" = continue ]; then
             MEAS_POLICY_ENV=$POLICY_ENV
             MEAS_COMBAT=$(cenv_files "$SP/current/v_combat_trees.txt" "$SP/cand/policy_trees_c.txt")
-            if ! start_server $SP/current/v_win.json $SP/current/rest_cf.json \
+            if { needs_server && ! start_server $SP/current/v_win.json $SP/current/rest_cf.json; } \
                || ! run_gate_batch policy "$gate_done" "$batch" "$stage" "$policy_csv"; then
                 policy_decision=error
                 echo "iter $N: policy gate batch failed" >> $SP/logs/loop.log

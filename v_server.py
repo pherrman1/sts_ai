@@ -194,8 +194,9 @@ def decide_nn(cands, raw, w):
     marg = pnn[1:] - pnn[0]
     if w < 1.0 and WIN_BOOSTER is not None:
         base = raw[win_fsel].astype(np.float32)
-        pw = WIN_BOOSTER.predict(xgb.DMatrix(np.stack([base] + [add_card_win(base, c) for c in cands]),
-                                             feature_names=WIN_FEATS))
+        with LOCK:
+            pw = WIN_BOOSTER.predict(xgb.DMatrix(np.stack([base] + [add_card_win(base, c) for c in cands]),
+                                                 feature_names=WIN_FEATS))
         marg = w * marg + (1.0 - w) * (pw[1:] - pw[0])
     best = int(np.argmax(marg))
     return f"{best} {float(marg[best]):.6f}"
