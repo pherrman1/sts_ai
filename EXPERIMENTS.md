@@ -7532,3 +7532,78 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   diagnostic, not yet a promotion claim.
 - **Artifacts:** `build/ooc_v4_noshop_s3_act3_64_1786298692.csv`, paired
   report, sidecar.
+## §166 Post-correctness-batch full-stack A0–A20 rerun: completed, 125 seeds, gates-on only (2026-08-10, GCP sts-test)
+
+- **Purpose:** remeasure the recommended V4 skewfix + fair Searcher3 + 7k
+  combat-VNet stack after the 2026-08-10 correctness batch (issues 50–75,
+  83–84). This is a post-fix measurement, not a direct replacement for §153:
+  the agent safety ceiling limited the run to 25 seeds per ascension rather
+  than the prior 32.
+- **Configuration:** current fixed checkout at HEAD `5959e4c`; GCP
+  `sts-test`, 24 OpenMP threads; `bestbench 1000 25 <asc> 126700 <csv>`;
+  ascensions A0/A5/A10/A15/A20; fair Searcher3, 64 particles,
+  `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`, live-valid default; 7k tuned combat
+  VNet at alpha 0.3; native floor/win OOC models; V4 token-net gates for
+  REST/EVENT/SHOP/TREASURE/BOSS_RELIC at margin 1.0. No server was used.
+- **Results (25 seeds each, seeds 126700–126724):** A0 **6/25 (24.0%)**,
+  mean floor 41.3, mean end HP 15.5; A5 **9/25 (36.0%)**, floor 37.9,
+  HP 18.5; A10 **7/25 (28.0%)**, floor 31.0, HP 19.6; A15 **3/25
+  (12.0%)**, floor 32.1, HP 4.4; A20 **1/25 (4.0%)**, floor 28.9, HP 2.2.
+- **Verification:** all five CSVs contain 25 rows with binary `won` values;
+  no abort/assert/termination error appeared in the benchmark log. The fixed
+  C++ build completed and all 13 C++ regression tests passed. The aggregate
+  remote CTest command still reported six unrelated workspace failures:
+  CRLF in `selfplay/loop.sh`, missing NumPy, and absent optional Python
+  self-test scripts.
+- **Interpretation:** the run is usable as a smoke-scale post-fix reference,
+  but it does not establish a paired policy delta. A 128-seed cap-compliant
+  rerun or a human-controlled 160-seed reproduction is still needed before
+  replacing §153's 32-seed-per-ascension baseline.
+- **Artifacts:** `build/rerun_2026-08-10_asc{0,5,10,15,20}_gates_1k_25.csv`,
+  `build/rerun_2026-08-10_gates_v2.log`.
+## §167 Post-correctness-batch A0 confirmation: 128 seeds, gates-on (2026-08-10, GCP sts-test)
+
+- **Purpose:** confirm the post-fix recommended full stack at the standard
+  128-seed A0 block after §166's 25-seed-per-ascension smoke sweep.
+- **Configuration:** current fixed checkout at HEAD `5959e4c`; GCP
+  `sts-test`, 24 OpenMP threads; `bestbench 1000 128 0 126700`; seeds
+  126700–126827; fair Searcher3, 64 particles, `STS_S3_BELIEF=0`,
+  `STS_S3_CHAIN=0`, live-valid default; 7k tuned combat VNet at alpha 0.3;
+  native floor/win OOC models; V4 token-net REST/EVENT/SHOP/TREASURE/BOSS_RELIC
+  gates at margin 1.0. No server was used.
+- **Result:** **60/128 wins (46.9%)**, mean floor **43.9**, mean end HP
+  **24.6**, CPU **29.33 s/run**, wall **170.0 s**. The CSV has exactly 128
+  distinct rows covering the requested seed range and no malformed rows;
+  the log contains no abort/assert/termination error.
+- **Interpretation:** this confirms the fixed stack runs successfully at the
+  standard confirmation size. The 46.9% result is **not a causal paired delta**
+  against §153's 21.9% A0/32 result: the earlier control CSV is not present
+  locally, and the sample size/block differ. It is a new post-fix reference;
+  do not attribute the full +25.0pp difference to any individual fix without
+  a same-seed pre/post pair.
+- **Artifact:** `build/rerun_2026-08-10_a0_gates_1k_128.csv` and its `.log`.
+## §168 A0 simulation-budget sweep on the post-correctness-batch full stack: 3k and 10k (2026-08-10, GCP sts-test)
+
+- **Purpose:** measure the same post-fix full-stack A0 seed block at the 3,000
+  and 10,000 simulation budgets.
+- **Configuration:** current fixed checkout at HEAD `5959e4c`; GCP
+  `sts-test`, 24 OpenMP threads; seeds 126700–126827 (128); fair Searcher3,
+  64 particles, `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`, live-valid default; 7k
+  tuned combat VNet at alpha 0.3; native floor/win OOC models; V4 token-net
+  REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates at margin 1.0; no server.
+- **Results:**
+
+  | Simulations | Wins | Win rate | Mean floor | Mean end HP | Wall time |
+  | ---: | ---: | ---: | ---: | ---: | ---: |
+  | 3,000 | 66/128 | **51.6%** | 45.3 | 27.1 | 506.7 s (8.4 min) |
+  | 10,000 | 70/128 | **54.7%** | 44.7 | 29.8 | 1,486.9 s (24.8 min) |
+
+- **Verification:** both CSVs contain exactly 128 distinct rows covering
+  126700–126827, with no malformed rows. Neither log contains an abort,
+  assertion, or termination error.
+- **Interpretation:** the 10k budget is +3.1pp over 3k (4 additional wins),
+  while mean floor is 0.6 lower; this is a descriptive budget comparison, not
+  a policy-quality claim against another arm. The 10k run costs about 2.93×
+  the 3k wall time for +3.1pp in this block.
+- **Artifacts:** `build/rerun_2026-08-10_a0_gates_3k_128.csv`,
+  `build/rerun_2026-08-10_a0_gates_10k_128.csv`, and their `.log` files.
