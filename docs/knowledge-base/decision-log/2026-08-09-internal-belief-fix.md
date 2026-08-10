@@ -83,12 +83,28 @@ floor improvement favor the fix.
 | `apps/one_combat.cpp` | Flag parsing |
 | `apps/test.cpp` | `testBeliefImmutability()` — 3 sub-tests |
 
+### 64-seed GCP confirmation (sts-test, 24 threads)
+
+| Metric | OLD (updates ON) | NEW (updates OFF) | Delta |
+|--------|-----------------|-------------------|-------|
+| Win% | 43.8% | 40.6% | −3.1pp |
+| Avg floor | 42.4 | 43.9 | +1.5 |
+| Avg HP end | 20.9 | 22.3 | +1.4 |
+| CPU/run | 32.86s | 29.92s | −8.9% |
+| Discordant | — | 20/64 (31.2%) | — |
+| OLD-only wins | — | 11 | — |
+| NEW-only wins | — | 9 | — |
+
 ## Status and follow-up
 
-- **Status: fix implemented. Recommendation: 64-SEED CONFIRMATION.**
-- Run 64-seed paired gate to confirm win-rate neutrality and floor improvement.
-- After confirmation, change default to `STS_S3_INTERNAL_BELIEF_UPDATE=0`
-  (the correctness-preserving setting).
+- **Status: fix confirmed at 64 seeds. Recommendation: PROMOTE INTERNAL-BELIEF FIX.**
+- Win rate −3.1pp is modest and within the discordance range (20/64). Floor
+  (+1.5) and HP (+1.4) both improved. CPU −8.9% is real but smaller than
+  the local 27% due to 24-thread amortization.
+- The fix is correctness-preserving: the old behavior was conceptually
+  wrong (imaginary observations conditioning the root belief), and the new
+  behavior keeps 64/64 particles alive throughout search.
+- Change default to `STS_S3_INTERNAL_BELIEF_UPDATE=0` after promoting.
 - Remaining bugs (#1 hidden-order leak, #3 stale carry belief, #4 missing
   RNG counters) are NOT fixed — they are separate follow-up experiments.
 

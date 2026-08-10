@@ -1,6 +1,6 @@
 # Self-play loop
 
-Last verified: 2026-08-02 against the current working tree.
+Last verified: 2026-08-10 against the current working tree.
 
 ## Purpose
 
@@ -29,7 +29,9 @@ The meta arm runs server-backed: `META_POLICY_ENV` adds `STS_NATIVE_OOC=0` to
 the floor/win policy env, so meta datagen and meta gates exercise the V_win/rest
 models in `v_server.py` (candidate models during gates) instead of the fixed
 native trees. Combat datagen and value/policy gates keep native OOC with the
-deployed stack (`selfplay/loop.sh::META_POLICY_ENV`, meta gate block).
+deployed stack (`selfplay/loop.sh::META_POLICY_ENV`, meta gate block). Native-
+OOC gate batches (baseline/value/policy) skip `start_server` entirely — only the
+server-backed meta arm starts it (`selfplay/loop.sh::needs_server`, Issue 82).
 
 Bootstrap is an explicit three-branch state machine (Issues 11/30):
 
@@ -184,9 +186,10 @@ These were blocking before the 2026-08-02 fixes and are now resolved in
   `GATE_Z=2.58` is nominal per look, not a proven 99% sequential guarantee.
 - `POLICY_WINDOW=1` is the checked-in local snapshot. Historical memory-failure
   thresholds were not reproduced in this workspace.
-- The loop depends on Bash, Python training packages, a runnable `$BIN`, and an
-  inference server even when some native paths bypass it; only `$BIN` and the
-  first-run model sources are validated up front.
+- The loop depends on Bash, Python training packages, and a runnable `$BIN`;
+  the inference server is required only by the server-backed meta arm
+  (`STS_NATIVE_OOC=0`), never by native-OOC gate batches (Issue 82). Only
+  `$BIN` and the first-run model sources are validated up front.
 - There is no checked-in end-to-end test for bootstrap, resume, candidate-use,
   or atomic multi-arm promotion.
 - The checked-in `config.env` still records `VALUE_MARGIN=-0.5` without
@@ -206,7 +209,7 @@ These were blocking before the 2026-08-02 fixes and are now resolved in
 
 ## Relevant code
 
-- `selfplay/loop.sh::start_server`, `cenv_files`, `gate_stats`,
+- `selfplay/loop.sh::start_server`, `needs_server`, `cenv_files`, `gate_stats`,
   `baseline_cache_key`, `run_gate_batch`, bootstrap state machine,
   multiplicity guard
 - `selfplay/status.sh`

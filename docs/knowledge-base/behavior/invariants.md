@@ -21,6 +21,21 @@ points.
   helper equal to `outcome != UNDECIDED`, not an independent flag
   (`include/combat/BattleContext.h`; `src/combat/BattleContext.cpp::init`,
   `afterMonsterTurns`).
+- Combat outcome is first-write-wins: every combat-resolution outcome setter
+  (monster death/suicide, looter/mugger escape, `Player::wouldDie`) is guarded
+  by `if (outcome == Outcome::UNDECIDED)`, and `executeActions()` breaks as
+  soon as an outcome is decided, so queued retaliation actions (Thorns/Spikes,
+  player-damage actions) never execute after victory — the killing blow ends
+  the fight immediately (`src/combat/Monster.cpp::die`/`suicideAction`,
+  `src/combat/MonsterSpecific.cpp` LOOTER/MUGGER escape,
+  `src/combat/Player.cpp::wouldDie`, `src/combat/BattleContext.cpp::executeActions`).
+- Victory is only granted when `monstersAlive == 0` and no monster is a
+  half-dead Awakened One stage 1 awaiting its mandatory rebirth
+  (`MonsterGroup::anyHalfDead`, `src/combat/Monster.cpp::die`). Darklings are
+  intentionally excluded: their regrow is pre-empted by victory at
+  `monstersAlive == 0` (the last Darkling to die stays dead, matching the real
+  game's max-two-revives rule); a blanket half-dead check would loop the
+  Darkling fight forever.
 - Enumerate or validate actions before committing them. `Action::execute` and
   `GameAction::execute` assert validity only when `sts_asserts` is compiled
   (`src/sim/search/Action.cpp`; `GameAction.cpp`).

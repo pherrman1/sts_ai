@@ -101,9 +101,12 @@ mirror the fair-mode paths; they are defensive and currently unreachable
 hit them. Regression coverage: `testScumNonFairEmptyEdges` (`apps/test.cpp`,
 ctest entry `scum_nonfair_empty_edges`). `Node::outcome` (0 non-terminal, 1 victory, 2 defeat) is recorded at
 the in-tree terminal check; terminal nodes are never expanded, so an
-`outcome != 0` node has no edges. Fair @3k measurement (EXPERIMENTS.md §117,
-2026-08-06): the illegal-stored-edge path is ~half of fair rollouts and
-grows to 68% of rollout calls at 30k sims (act 1) — a real
+`outcome != 0` node has no edges. In fair mode a node terminal in one
+determinization can be non-terminal in another world; `step()` clears the
+stale outcome when it re-expands such a node, preserving the invariant
+(issue #70, regression `scum_convroot_stale_outcome`). Fair @3k measurement
+(EXPERIMENTS.md §117, 2026-08-06): the illegal-stored-edge path is ~half of
+fair rollouts and grows to 68% of rollout calls at 30k sims (act 1) — a real
 tree/determinization mismatch, not noise; obs-keyed descent is falsified
 (§114), so structural fixes are constrained.
 
@@ -664,6 +667,10 @@ fair play. The agent (`ScumSearchAgent2::playoutBattle`,
 budget-neutral; the forced-move shortcut `onlyLegalAction` commits directly
 when exactly one legal action exists. Env: `STS_CONV_ROOT=1`,
 `STS_CONV_ROOT_{START,GROW,CHECK,SHARE,VALUE,MIN,PATIENCE,MAX_FRAC}`.
+A zero-growth config (`STS_CONV_ROOT_START=0` or `STS_CONV_ROOT_GROW<=1.0`)
+can never raise the chunk budget, which previously hung the search in an
+infinite loop; the loop now forces the full budget instead (issue #54), and
+`apps/one_combat.cpp` prints a parse-time warning for such configs.
 Provisional 64-seed fair @1k measurement (decision log
 `2026-08-06-conv-root-stable-search.md`): MIN=500/PATIENCE=500 gives +3.1pp
 win at −9% cpu vs flat (within noise); stop-only loses ~3pp — the
@@ -675,8 +682,12 @@ adaptive line is stopped; the env gate stays opt-in and the built-in
 `g_convRootMinSims`/`g_convRootPatience` defaults (250) are unchanged.
 
 Searcher3 feature-ablation toggles (all parsed by `apps/one_combat.cpp::main`
-next to `STS_SEARCHER3`; defaults preserve full behavior): `STS_S3_BELIEF=0`
-skips the five `belief.update` call sites in `step()` — four in-step after edge execution plus one after the internal-node PUCT edge (particles stay uniform),
+next to `STS_SEARCHER3`): `STS_S3_BELIEF=0` skips the five `belief.update`
+call sites in `step()` — four in-step after edge execution plus one after the
+internal-node PUCT edge (particles stay uniform). Since issue #58 (2026-08-10)
+those sites are ALSO inert by default: `STS_S3_INTERNAL_BELIEF_UPDATE`
+defaults to 0 because the default-on update destroyed the root belief within
+~60 simulations (all subsequent sampling uniform; no resampling exists).
 `STS_S3_PRUNE=0` skips the three `canPruneAsDead` checks, `STS_S3_CHAIN=0`
 skips the deterministic chain-compression loop, `STS_S3_LIVE=0` switches the
 root-action pick to the most-visited edge with **no live-valid filter** — an
@@ -848,10 +859,13 @@ Learned guidance is loaded by `apps/one_combat.cpp::main`:
 - `STS_PVNET` loads the shared `CombatPVNet`; `STS_PVNET_ALPHA` defaults to
   `1.0` (pure neural leaf) and `STS_PVNET_VALUE_ONLY` disables its policy head.
 - `STS_PVNET_CACHE=0` disables the S3 visible-state leaf-value cache (default
-  on since 2026-08-07, phase 6): `evaluateLeaf` caches PVNet leaf values by the
-  node's `obsHash` at the direct-eval sites (no-legal-action, invalid-edge,
-  depth cap — `BattleScumSearcher3::evaluateLeaf`), where repeated sims
-  evaluate the same visible state. Behavior-preserving (deterministic given
+  on since 2026-08-07, phase 6): `evaluateLeaf` caches PVNet leaf values by
+  the state's `visibleHash` at the direct-eval sites (no-legal-action,
+  invalid-edge, depth cap — `BattleScumSearcher3::evaluateLeaf`), where
+  repeated sims evaluate the same visible state. The depth-cap site
+  recomputes the current state's `visibleHash` fresh instead of reusing the
+  node's cached `obsHash` (issue #55, 2026-08-10), so the cache key always
+  matches the evaluated state. Behavior-preserving (deterministic given
   the visible state); verified identical per-seed outcomes cache-on vs off
   (8 seeds local smoke). The per-expansion blend site (new child state) and
   post-rollout states are effectively unique and not cached.
@@ -886,8 +900,9 @@ Searcher2 consumes the PVNet **policy head** (priors + PUCT) whenever it is
 loaded and not value-only (`BattleScumSearcher2.cpp::computeEdgePriors`,
 mirroring S3). Per-searcher semantics therefore differ: in S2 only the policy
 head is used (the value/leaf blend `STS_PVNET_ALPHA` is S3-only), and with
-`STS_PVNET_VALUE_ONLY=1` the PVNet is fully inert in S2 while S3 keeps the
-PUCT-with-zero-priors quirk.
+`STS_PVNET_VALUE_ONLY=1` the PVNet is fully inert in S2. S3 used to keep a
+PUCT-with-zero-priors quirk there; since issue #71 (2026-08-10) its PUCT
+selection also requires `!g_pvnetValueOnly`, matching S2.
 
 ## Invariants and assumptions
 
@@ -944,7 +959,12 @@ PUCT-with-zero-priors quirk.
   particles whose draw order contradicts the observed pile, and `Belief::sample`
   falls back to uniform when all weights are equal or total zero, so a reshuffle
   or insert that contradicts every particle resets the belief
-  (`src/sim/search/CombatObservation.cpp::Belief::update`, `sample`).
+  (`src/sim/search/CombatObservation.cpp::Belief::update`, `sample`). Since
+  issue #58 (2026-08-10) the in-search `belief.update` calls are off by
+  default (`g_s3InternalBeliefUpdate = false`), so this collapse path no
+  longer fires inside `step()`; the fair path carries the belief across
+  decisions (advanceRoot + reuse gate) with no boundary reweighting, so a
+  carried belief can still go stale between decisions.
 - `HiddenBattleState::drawPileOrder` is installed by `applyParticle` only when
   the copied pile's size and card multiset match the particle; after tree reuse
   stale particles fall back to a searcher-RNG shuffle
@@ -957,8 +977,11 @@ PUCT-with-zero-priors quirk.
 - PVNet-only priors: `computeEdgePriors` runs when the separate policy net or a
   PVNet with its policy head enabled (`!STS_PVNET_VALUE_ONLY`) is loaded; the
   PVNet policy head takes precedence when both exist. With
-  `STS_PVNET_VALUE_ONLY=1` and no policy net, priors remain zero while
-  `selectBestEdgePUCT` still recognizes the PVNet.
+  `STS_PVNET_VALUE_ONLY=1` and no policy net, priors remain zero and
+  `selectBestEdgePUCT`/`selectBestValidEdgePUCT` no longer recognize the
+  PVNet (issue #71, 2026-08-10): PUCT stays off, so selection uses the
+  UCB-style explore term instead of the degenerate zero-prior PUCT (all-edge
+  tie → always edge 0).
 - `CombatObservation::operator==` and `visibleHash` share one canonical field
   set (see `CombatObservation.cpp::operator==`); card piles are compared as
   multisets of `CardKey`, so order-insensitive equality is deliberate.
@@ -1017,6 +1040,13 @@ PUCT-with-zero-priors quirk.
   `search`/`searchToTotal` call it once per fresh searcher (skipped when the
   tree is carried by `advanceRoot`), and the §106 ablation measured it harmful
   (−14.1pp vs the S3 control, CI excluding zero), so it stays off.
+- `STS_REUSE_ALWAYS_Q` is live since 2026-08-10: `advanceRoot` resets
+  `reuseSearchCount` to 0 when it promotes the tree, and
+  `search`/`searchToTotal` count searches since the last promotion, so the
+  PUCT exploit condition (`reuseSearchCount >= 0`) is true on carried trees
+  and Q is used from the first carried search onward (previously the counter
+  was never written and the flag was inert; issue 72). Opt-in, default off,
+  not yet benchmarked end-to-end.
 - Ablation evidence (§106, 128 seeds, V4 gate stack, fair, 3k sims): belief
   reweighting and chain compression are net-negative on the deployed package
   (removing them wins +8.6 / +4.7pp vs the control), while `canPruneAsDead`
@@ -1038,7 +1068,10 @@ PUCT-with-zero-priors quirk.
   aggressive predicate once its soundness is proven for all card-selection
   states?
 - Should PVNet-only operation with `STS_PVNET_VALUE_ONLY=1` disable PUCT
-  recognition instead of leaving zero priors?
+  recognition instead of leaving zero priors? **Resolved 2026-08-10 (issue
+  #71):** yes — both S3 PUCT selectors now gate on `!g_pvnetValueOnly`
+  (matching S2), so a value-only PVNet leaves selection on the UCB-style
+  explore term instead of the degenerate zero-prior PUCT.
 - Should Searcher2 fair determinization sample all six combat RNG streams
   (like Searcher3 particles) instead of only `shuffleRng`/`cardRandomRng`?
   Mid-fight hidden rolls that stay concrete today: `aiRng` (future enemy
