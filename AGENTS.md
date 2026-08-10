@@ -1,6 +1,6 @@
 # StS AI project guidance
 
-Last verified: 2026-08-10 against the current working tree.
+Last verified: 2026-08-11 against the current working tree.
 
 ## Purpose and required reading
 
@@ -236,6 +236,12 @@ A successfully completed coding handoff that changed the repository is
 committed and pushed by default. Do not wait for an explicit `git commit` or
 `git push` request.
 
+Before editing (Modification workflow step 1), record the starting state so
+task changes can be told apart from pre-existing work:
+- capture `git status --short` (pre-existing dirty files);
+- when an upstream is configured, capture the starting ahead-of-upstream set
+  with `git log --oneline @{upstream}..HEAD`.
+
 1. Verify the handoff's required checks pass (cheapest focused verification).
 2. Inspect `git status` and the complete `git diff`.
 3. Distinguish pre-existing changes from changes made for this handoff using
@@ -245,7 +251,11 @@ committed and pushed by default. Do not wait for an explicit `git commit` or
    task-scoped staging when unrelated local changes exist.
 5. Create one focused commit with a concise message describing the actual
    code/research change.
-6. Run exactly `git push` to push the current branch to its configured
+6. Before `git push`, re-inspect `git log --oneline @{upstream}..HEAD` and
+   compare it with the set recorded before editing. Automatic push is allowed
+   only when it would publish commits created for this handoff plus any
+   pre-existing ahead commits the user explicitly authorized for publishing.
+7. Run exactly `git push` to push the current branch to its configured
    upstream, then report the commit SHA and push result.
 
 Rules:
@@ -260,6 +270,12 @@ Rules:
 - Never commit unrelated pre-existing changes. If task changes cannot be
   safely separated from pre-existing changes, do not commit them together;
   report the problem.
+- When unrelated pre-existing commits are already ahead of upstream (recorded
+  before editing), do NOT automatically push them: report that push is
+  blocked by pre-existing local commits unless the user explicitly authorized
+  publishing them. Do not force/rebase/reset them away.
+- If there is no configured upstream, do not invent or set one automatically;
+  report that automatic push cannot safely occur.
 - Never force-push, never use `--force-with-lease`, never delete remote
   branches, never push with a remote/refspec argument, and never rewrite
   history. Use plain `git push` only.

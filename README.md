@@ -58,12 +58,15 @@ STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
 Check the startup messages for native OOC and policy-model loads. File presence
 alone does not prove a model was used.
 
-**Current checkout limitation:** `.gitmodules` names `json/` and `pybind11/`,
-but neither path is represented by a tracked gitlink and both root directories
-are absent. A fresh configure from this checkout is therefore unverified and
-currently lacks its declared dependency sources. The existing cache is a
-Linux/WSL Unix Makefiles build using `/usr/bin/c++`; native PowerShell/MSVC has
-not been verified. See [build and debugging](docs/knowledge-base/operations/build-and-debugging.md).
+`json/` and `pybind11/` are tracked submodules (gitlinks). A fresh clone must
+initialize them before the first configure:
+
+```bash
+git submodule update --init
+```
+
+The current cache is a Linux/WSL Unix Makefiles build using `/usr/bin/c++`;
+native PowerShell/MSVC has not been verified. See [build and debugging](docs/knowledge-base/operations/build-and-debugging.md).
 
 ## Repository tour
 

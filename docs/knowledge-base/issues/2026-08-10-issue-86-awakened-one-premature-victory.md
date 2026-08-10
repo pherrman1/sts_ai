@@ -1,4 +1,8 @@
-# Issue 51: Awakened One premature victory (stage 2 skipped)
+# Issue 86: Awakened One premature victory (stage 2 skipped)
+
+> Provenance: originally recorded under duplicate legacy ID #51; renumbered to
+> canonical #86 during documentation cleanup (2026-08-11). Substantive issue
+> evidence is unchanged.
 
 - **Status:** closed (2026-08-10)
 - **Fix:** `Monster::die()` victory predicate is now `monstersAlive == 0 &&

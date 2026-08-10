@@ -1,4 +1,8 @@
-# Issue 50: Lethal Thorns retaliation flips win to loss
+# Issue 85: Lethal Thorns retaliation flips win to loss
+
+> Provenance: originally recorded under duplicate legacy ID #50; renumbered to
+> canonical #85 during documentation cleanup (2026-08-11). Substantive issue
+> evidence is unchanged.
 
 - **Status:** closed (2026-08-10)
 - **Fix:** outcome setters guarded with `UNDECIDED` check (`Monster::die`,
