@@ -52,6 +52,7 @@ if DEVICE == "cuda" and torch.cuda.is_available():
           f"VRAM={torch.cuda.get_device_properties(0).total_memory/1e9:.1f}GB", flush=True)
 else:
     DEVICE = "cpu"
+print(f"device: {DEVICE}", flush=True)
 torch.manual_seed(0)
 torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "8")))
 if DEVICE.startswith("cuda"):

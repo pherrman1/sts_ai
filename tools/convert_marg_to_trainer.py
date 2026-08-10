@@ -13,7 +13,7 @@ def main():
         sys.exit(1)
 
     rows = list(csv.DictReader(open(sys.argv[1])))
-    
+
     # Group by (seed, decIdx) -> action -> regime -> list of (labelWon, labelHp, labelFloor, labelBootstrap)
     groups = defaultdict(lambda: defaultdict(lambda: {'fixed': [], 'marg': []}))
     dec_meta = {}
