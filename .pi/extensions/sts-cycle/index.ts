@@ -807,6 +807,7 @@ async function runCycle(ctx: CycleContext): Promise<{ state: TerminalState; eli5
   const MAX_R = 2;
   const MAX_SOL = 3;
   let lunaReviews: ReviewResult[] = [];
+  let verificationReports: VerificationReport[] = [];
   let activeVerifFile: string | null = null;
   let activeFingerprint: string | null = null;
 
@@ -816,6 +817,7 @@ async function runCycle(ctx: CycleContext): Promise<{ state: TerminalState; eli5
 
     const verifResult = await runVerify(ctx);
     activeVerifFile = verifResult.reportFile;
+    verificationReports.push(verifResult.report);
 
     if (!verifResult.ok) {
       if (ctx.state.implementationRound <= MAX_R) {
@@ -850,7 +852,7 @@ async function runCycle(ctx: CycleContext): Promise<{ state: TerminalState; eli5
     changedLines: stats.changedLines,
     trackedFileCount: stats.trackedFiles,
     plan: ctx.plan!,
-    verificationHistory: [],
+    verificationHistory: verificationReports,
     lunaReviews,
     latestLunaReview: latestLuna!,
     confirmedTrivial: ctx.state.confirmedTrivial,
@@ -866,28 +868,62 @@ async function runCycle(ctx: CycleContext): Promise<{ state: TerminalState; eli5
 
   if (escalated) {
     ctx.onProgress?.("ESCALATE", `Escalating: ${escalationReasons.join("; ")}`);
+    let latestSolVerdict: "PASS" | "FIX" = "FIX";
     for (let solRound = 1; solRound <= MAX_SOL; solRound++) {
       const solResult = await runReview(
         ctx, activeVerifFile!, solRound, true,
         [path.join(ctx.sessionDir, "escalation.json")],
       );
+      latestSolVerdict = solResult.data.verdict;
 
       if (solResult.data.verdict === "PASS") break;
 
       await runFix(ctx, solResult.file, `sol-review-${solRound}`);
       const verifResult = await runVerify(ctx);
+      // Refresh the artifacts the senior reviewer reads so the next round
+      // reviews the current working tree, not the pre-fix state.
+      activeVerifFile = verifResult.reportFile;
+      activeFingerprint = await candidateFingerprint(ctx.cwd);
       if (!verifResult.ok) {
         return { state: "FAILED_VERIFICATION" as any, eli5: "Verification failed after escalation fix." };
       }
+    }
+
+    if (latestSolVerdict === "FIX") {
+      return {
+        state: "REJECTED",
+        eli5: `Escalation review limit reached: senior review still reports FIX after ${MAX_SOL} rounds.`,
+      };
     }
   } else {
     ctx.onProgress?.("ESCALATE", "Not required");
   }
 
-  const finalReport = await runVerification(ctx.plan!, new Set(), ctx.cwd, ctx.signal);
+  // FINAL_VERIFY: run the plan's expensive tier as the final gate. Cheap
+  // checks already ran during VERIFY; broad benchmarks and long evaluations
+  // are marked cost=expensive by the architect and are final validation
+  // gates (see .pi/agents/architect.md). The gate is vacuous when the plan
+  // defines no expensive checks, so warn in that case.
+  ctx.state.state = "FINAL_VERIFY";
+  writeState(ctx.sessionDir, ctx.state);
+  ctx.onProgress?.("FINAL_VERIFY", "Running final verification...");
+
+  const finalReport = await runVerification(ctx.plan!, new Set(["expensive"]), ctx.cwd, ctx.signal);
   finalReport.candidate_fingerprint = activeFingerprint;
-  finalReport.expensive_gate_enabled = false;
+  finalReport.expensive_gate_enabled = true;
   writeVerification(ctx.sessionDir, "final-expensive", 1, finalReport);
+
+  const ranFinalChecks = finalReport.checks.filter((c) => c.status !== "NOT_RUN_THIS_PHASE");
+  if (ranFinalChecks.length === 0) {
+    ctx.onProgress?.("FINAL_VERIFY", "WARNING: plan defines no expensive checks; final verification ran zero checks");
+  }
+
+  if (!finalReport.required_checks_passed) {
+    return {
+      state: "REJECTED",
+      eli5: "Final expensive verification failed. See the final-expensive verification artifact in the session directory.",
+    };
+  }
 
   await snapshotAndSave(ctx, "02-accepted");
   return accepted(ctx);

@@ -44,8 +44,26 @@ const PROTECTED_PATHS = [
   ".pi/extensions/subagent/runner.ts",
   ".pi/extensions/sts-cycle/policy.ts",
   ".pi/extensions/sts-cycle/index.ts",
+  ".pi/extensions/sts-cycle/artifacts.ts",
+  ".pi/extensions/sts-cycle/git-state.ts",
+  ".pi/extensions/sts-cycle/types.ts",
+  ".pi/extensions/sts-cycle/verification.ts",
   ".pi/prompts/",
 ];
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// `>` / `>>` redirects to a protected path bypass the write/edit tool
+// protection, so they are blocked as dangerous bash patterns. Directory
+// entries match with or without their trailing slash.
+const REDIRECT_TO_PROTECTED_PATTERN = new RegExp(
+  ">[>]?\\s*(?:[^\\s;|&<>]*/)?(" +
+    PROTECTED_PATHS.map((p) => escapeRegExp(p.replace(/\/$/, ""))).join("|") +
+    ")",
+  "i",
+);
 
 const DANGEROUS_BASH_PATTERNS: Array<[RegExp, string]> = [
   [/\bgit\s+commit\b/i, "git commit is controlled by the human/orchestrator"],
@@ -55,6 +73,8 @@ const DANGEROUS_BASH_PATTERNS: Array<[RegExp, string]> = [
   [/\bgit\s+restore\b/i, "git restore can erase user changes"],
   [/\bgit\s+checkout\b/i, "git checkout can erase/switch working-tree state"],
   [/\brm\s+(-[A-Za-z]*r[A-Za-z]*f|-rf|-fr|--recursive)\b/i, "recursive deletion is forbidden"],
+  [/\brm\s+-[A-Za-z]*r[A-Za-z]*\b/i, "recursive deletion is forbidden"],
+  [REDIRECT_TO_PROTECTED_PATTERN, "bash redirects to a protected workflow path are forbidden"],
   [/\bsudo\b/i, "sudo is forbidden"],
 ];
 
@@ -118,7 +138,9 @@ function oversizedSeedSweep(command: string): string | null {
         const script = basename(tokens[scriptIndex]);
         const relativeSeedIndex = KNOWN_PYTHON_SEED_SWEEP_ARG_INDEX[script];
         if (relativeSeedIndex === undefined) continue;
-        const seedToken = tokens[scriptIndex + relativeSeedIndex];
+        // Map values are absolute argv indices (script expected at argv[1]);
+        // the seed token sits relativeSeedIndex - 1 tokens past the located script.
+        const seedToken = tokens[scriptIndex + relativeSeedIndex - 1];
         const seeds = Number(seedToken);
         if (Number.isInteger(seeds) && seeds > MAX_AUTOMATED_SEEDS) {
           return script + " requests " + seeds + " seeds; automated maximum is " + MAX_AUTOMATED_SEEDS;

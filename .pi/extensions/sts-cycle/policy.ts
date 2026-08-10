@@ -145,11 +145,15 @@ export const KNOWN_ONE_COMBAT_SEED_SWEEP_ARG_INDEX: Record<string, number> = {
   evalrun: 3,
   fairgen: 2,
   fightgen: 2,
+  frontiergen: 2,
+  leafdiag: 2,
+  leafref: 5,
   oocnextgen: 2,
   pathbench: 3,
   pathcfgen: 2,
   policygen: 2,
   restbench: 3,
+  rollouttrace: 4,
   runbench: 3,
   searchdiag: 2,
   shopbench: 3,
@@ -752,8 +756,8 @@ export function validateSeedCount(argv: string[]): string | null {
   if ((exeName === "python" || exeName === "python3") && argv.length >= 2) {
     const script = argv[1].split("/").pop()!;
     const relativeIdx = KNOWN_PYTHON_SEED_SWEEP_ARG_INDEX[script];
-    if (relativeIdx !== undefined && argv.length > relativeIdx + 1) {
-      const seeds = parseInt(argv[relativeIdx + 1], 10);
+    if (relativeIdx !== undefined && argv.length > relativeIdx) {
+      const seeds = parseInt(argv[relativeIdx], 10);
       if (!isNaN(seeds) && seeds > MAX_AUTOMATED_SEEDS) {
         return `${script} requests ${seeds} seeds; automated maximum is ${MAX_AUTOMATED_SEEDS}`;
       }
