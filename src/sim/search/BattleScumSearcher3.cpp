@@ -32,9 +32,11 @@ bool g_s3Belief = true;
 // do NOT permanently mutate the root belief. The root belief represents
 // uncertainty at the real information state; imagined trajectories are
 // hypothetical and must not condition it across simulations.
-// Default 1 reproduces historical (broken) behavior where the root belief
-// is destroyed within ~60 simulations and all subsequent sampling is uniform.
-bool g_s3InternalBeliefUpdate = true;
+// Default 0 (issue #58): the default-on internal update was historical
+// (broken) behavior — the root belief was destroyed within ~60 simulations
+// and all subsequent sampling was uniform. No resampling/rebirth exists yet,
+// so the update must not be the default.
+bool g_s3InternalBeliefUpdate = false;
 bool g_s3Prune = true;
 bool g_s3Chain = true;
 bool g_s3Live = true;
@@ -1369,6 +1371,7 @@ void BattleScumSearcher3::warmStartRootCRN(const BattleContext &bc) {
 // ---- Search -----------------------------------------------------------------
 void BattleScumSearcher3::search(int64_t simulations) {
     if (g_s3Crn && !rootCarried && !crnWarmStarted) { warmStartRootCRN(*rootBc); crnWarmStarted = true; }
+    if (reuseSearchCount >= 0) ++reuseSearchCount;  // searches executed since last promotion
     auto t0 = std::chrono::steady_clock::now();
     for (int64_t i = 0; i < simulations; ++i)
         step();
@@ -1378,6 +1381,7 @@ void BattleScumSearcher3::search(int64_t simulations) {
 void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
     if (isTerminal(*rootBc)) { outcomePlayerHp = rootBc->player.curHp; return; }
     if (g_s3Crn && !rootCarried && !crnWarmStarted) { warmStartRootCRN(*rootBc); crnWarmStarted = true; }
+    if (reuseSearchCount >= 0) ++reuseSearchCount;  // searches executed since last promotion
     auto t0 = std::chrono::steady_clock::now();
     while (root.simulationCount < targetSimulations)
         step();
@@ -1427,6 +1431,12 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
 
     // Reuse generation tracking.
     reuseGeneration = reuseGeneration + (reused ? 1 : 0);
+    if (reused) {
+        // Tree promoted: the STS_REUSE_ALWAYS_Q exploit condition
+        // (reuseSearchCount >= 0) becomes active. Reset the per-promotion
+        // search counter; search()/searchToTotal() count searches since it.
+        reuseSearchCount = 0;
+    }
     // Snapshot tree depth at promotion time (max edge count along any path).
     reuseGenerationDepth = 0;
     if (reused) {
@@ -1781,7 +1791,7 @@ void BattleScumSearcher3::step() {
                     if (!ehInit) {
                         ehFile.open(ehPath, std::ios::out);
                         if (ehFile.is_open())
-                            ehFile << "depth,encounter,hp,turn,teacherPred,endHP,K\n";
+                            ehFile << "seed,depth,encounter,hp,turn,teacherPred,endHP,K\n";
                         ehInit = true;
                     }
                 }
@@ -1820,7 +1830,7 @@ void BattleScumSearcher3::step() {
                         double avgEndHP = k > 0 ? sumEndHP / (double)k : 0.0;
                         double xv = !std::isnan(vLeaf) ? vLeaf : rawEval;
                         std::ostringstream o;
-                        o << depth << ',' << (int)state.encounter
+                        o << state.seed << ',' << depth << ',' << (int)state.encounter
                           << ',' << state.player.curHp << ',' << state.turn
                           << ',' << xv << ',' << avgEndHP << ',' << k << '\n';
                         std::lock_guard<std::mutex> lk(ehMutex);
@@ -2077,17 +2087,21 @@ void BattleScumSearcher3::step() {
     }
 
     // Depth cap: the final child node may never have been visited, so cache
-    // its observation before the leaf eval to make the leaf-cache key valid.
+    // its observation before the leaf eval. NOTE (issue #55): the node's
+    // cached obsHash is set on first visit and never refreshed — under a
+    // later determinization it is the FIRST world's hash while `state` is
+    // the current world, so using cur->obsHash as the leaf-cache key could
+    // serve a wrong-world value. Recompute the hash from the current state.
     ensureObservation(*cur, state);
     ++diag.leafDirectEval;
-    const double leafEval = evaluateLeaf(state, cur->obsHash);
+    const std::uint64_t leafObsHash =
+        CombatObservation::fromBattleContext(state).visibleHash();
+    const double leafEval = evaluateLeaf(state, leafObsHash);
     // Frontier hook at the depth-cap site (frontierType=2), gated to
     // frontiergen (g_s3LeafQueryAllSites) so leafdiag keeps its historical
     // single-site corpus. No rollout runs here, so rolloutSteps is 0; the
     // direct leaf eval is the blended value.
     if (g_onS3LeafQuery && g_s3LeafQueryAllSites) {
-        const std::uint64_t leafObsHash =
-            CombatObservation::fromBattleContext(state).visibleHash();
         g_onS3LeafQuery(S3LeafDiagnostic{&state, depth, leafObsHash,
                                          std::numeric_limits<double>::quiet_NaN(),
                                          std::numeric_limits<double>::quiet_NaN(),
@@ -2123,7 +2137,7 @@ int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
     if (n == 1) return 0;
 
     const bool usePuct = (g_usePolicyNet && g_policyNet.loaded())
-                       || (g_usePVNet && g_combatPVNet.loaded());
+                       || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly);
     const double logParent  = usePuct ? 0.0 : std::log((double)(node.simulationCount + 1));
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
     // STS_REUSE_ALWAYS_Q: on carried trees, always use Q from sim 1.
@@ -2160,7 +2174,7 @@ int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
 int BattleScumSearcher3::selectBestValidEdgePUCT(const Node &node, const BattleContext &bc) {
     const int n = (int)node.edges.size();
     const bool usePuct = (g_usePolicyNet && g_policyNet.loaded())
-                       || (g_usePVNet && g_combatPVNet.loaded());
+                       || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly);
     const double logParent  = usePuct ? 0.0 : std::log((double)(node.simulationCount + 1));
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
     const bool exploit = g_reuseAlwaysQ ? (reuseSearchCount >= 0)
@@ -2738,7 +2752,8 @@ void enumerateActionsForNode(BattleScumSearcher3::Node &node,
             }
             for (int p = 0; p < bc.potionCapacity; ++p) {
                 if (bc.potions[p] == Potion::EMPTY_POTION_SLOT
-                    || bc.potions[p] == Potion::FAIRY_POTION) continue;
+                    || bc.potions[p] == Potion::FAIRY_POTION
+                    || bc.potions[p] == Potion::SMOKE_BOMB) continue;
                 if (!potionRequiresTarget(bc.potions[p])) {
                     node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::POTION, p)});
                 } else {

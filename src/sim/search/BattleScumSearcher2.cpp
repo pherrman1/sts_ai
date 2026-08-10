@@ -252,6 +252,14 @@ void search::BattleScumSearcher2::searchToTotalRootStable(std::int64_t targetSim
 
     auto t0 = std::chrono::steady_clock::now();
     while (root.simulationCount < targetSimulations) {
+        if (budget <= root.simulationCount) {
+            // Zero-growth (g_convRootGrow <= 1.0) or zero-start (g_convRootStart
+            // <= 0) config: the escalation below can never raise the budget above
+            // the current sim count, so the chunk loop would run 0 steps and this
+            // outer loop would spin forever. Jump to the ceiling to force
+            // progress (issue #54).
+            budget = targetSimulations;
+        }
         const std::int64_t chunkEnd = std::min(budget, targetSimulations);
         while (root.simulationCount < chunkEnd) {
             step();
@@ -360,6 +368,12 @@ void search::BattleScumSearcher2::step() {
 
         const bool isLeaf = curNode.edges.empty();
         if (isLeaf) {
+            // Fair-mode re-expansion (issue #70): a node that was terminal in a
+            // previous determinization (outcome != 0, empty edges) can be
+            // non-terminal in this world. Re-enumerating edges without clearing
+            // the stale outcome breaks "outcome != 0 implies edges.empty()" and
+            // makes collectFrontierStats misclassify the node as a terminal leaf.
+            curNode.outcome = 0;
 
             ++simulationIdx;
             enumerateActionsForNode(curNode, curState);
@@ -917,7 +931,9 @@ void search::BattleScumSearcher2::enumeratePotionActions(search::BattleScumSearc
         // it away for zero benefit (drinkPotion's Fairy case is a no-op assert compiled
         // out under NDEBUG), forfeiting the revive. Never offer an action for it.
         // (Matches SimpleAgent canDrink and isValidPotionAction, which already exclude it.)
-        if (p == Potion::FAIRY_POTION) {
+        // Smoke Bomb is likewise forbidden in combat (real-game rule): drinkPotion
+        // refuses to consume it, so a "use" action is a no-op that stalls the search.
+        if (p == Potion::FAIRY_POTION || p == Potion::SMOKE_BOMB) {
             continue;
         }
 
