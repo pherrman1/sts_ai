@@ -284,6 +284,260 @@ int testHappyFlowerCounter(std::uint64_t seed) {
     return 0;
 }
 
+// Regression tests for issues #56 (Liquid Memories zero-cost), #66 (Omamori
+// counter underflow), #69 (Smoke Bomb drink no-op), and #68 (stale multi-select
+// validation outside CARD_SELECT input state).
+static BattleContext cardSelectFixture(CardSelectTask task, int pickCount, bool largeHand);
+int testIssueFixes() {
+    auto fail = [&](const char *msg) {
+        std::cout << "issue_fixes FAIL: " << msg << '\n';
+        return 1;
+    };
+
+    // #56: chooseDiscardToHandCard must honor its forZeroCost parameter, not
+    // the stale cardSelectInfo.cardSelectTask field.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        bc.cards.cardsInHand = 0;
+        bc.cards.discardPile.clear();
+        bc.cards.discardPile.push_back(CardInstance(CardId::BASH));
+        // Stale task left over from a prior (non-Liquid-Memories) select.
+        bc.cardSelectInfo.cardSelectTask = CardSelectTask::HOLOGRAM;
+        bc.chooseDiscardToHandCard(0, true); // Liquid Memories zero-cost
+        if (bc.cards.hand[0].costForTurn != 0) {
+            return fail("liquid memories did not zero-cost with stale cardSelectTask");
+        }
+    }
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        bc.cards.cardsInHand = 0;
+        bc.cards.discardPile.clear();
+        bc.cards.discardPile.push_back(CardInstance(CardId::BASH));
+        // Stale task left over from a prior Liquid Memories select: a Hologram
+        // pickup must NOT be zero-cost.
+        bc.cardSelectInfo.cardSelectTask = CardSelectTask::LIQUID_MEMORIES_POTION;
+        bc.chooseDiscardToHandCard(0, false); // Hologram pickup
+        if (bc.cards.hand[0].costForTurn == 0) {
+            return fail("hologram pickup wrongly zero-costed by stale cardSelectTask");
+        }
+    }
+
+    // #66: exitBattle must not underflow a 0-charge Omamori counter.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        gc.relics.add({RelicId::OMAMORI, 0});
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::WRITHING_MASS);
+        bc.monsters.arr[0].miscInfo = 1; // Implant move was used
+        bc.exitBattle(gc);
+        if (gc.relics.getRelicValue(RelicId::OMAMORI) < 0) {
+            return fail("omamori counter underflowed below 0");
+        }
+    }
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        gc.relics.add({RelicId::OMAMORI, 1});
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::WRITHING_MASS);
+        bc.monsters.arr[0].miscInfo = 1;
+        bc.exitBattle(gc);
+        if (gc.relics.getRelicValue(RelicId::OMAMORI) != 0) {
+            return fail("omamori counter not decremented from 1");
+        }
+    }
+
+    // #69: drinking a Smoke Bomb must be refused without consuming it.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        bc.potionCapacity = 3;
+        bc.potions[0] = Potion::SMOKE_BOMB;
+        bc.potionCount = 1;
+        bc.drinkPotion(0);
+        if (bc.potions[0] != Potion::SMOKE_BOMB || bc.potionCount != 1) {
+            return fail("smoke bomb consumed despite combat-use guard");
+        }
+    }
+
+    // #53: Fairy in a Bottle + Sacred Bark must revive at 60% max HP, not 1.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        gc.maxHp = 100;
+        gc.curHp = 0;
+        gc.potions[0] = Potion::FAIRY_POTION;
+        gc.potionCount = 1;
+        gc.relics.add({RelicId::SACRED_BARK, 0});
+        gc.playerOnDie();
+        if (gc.curHp != 60) {
+            return fail("fairy+bark revive did not restore 60% max HP");
+        }
+    }
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        gc.maxHp = 100;
+        gc.curHp = 0;
+        gc.potions[0] = Potion::FAIRY_POTION;
+        gc.potionCount = 1;
+        gc.playerOnDie();
+        if (gc.curHp != 30) {
+            return fail("fairy revive without bark did not restore 30% max HP");
+        }
+    }
+
+    // #63: Peace Pipe TOKE must keep the remove card-select screen open so a
+    // pick can be made (regainControl is invoked when the pick is resolved).
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        gc.screenState = ScreenState::REST_ROOM;
+        // Equivalent of the internal returnToMapAction: what a prior floor's
+        // resolution leaves installed. Old TOKE code would invoke it eagerly.
+        gc.regainControlAction = [](GameContext &gs) {
+            gs.screenState = ScreenState::MAP_SCREEN;
+            gs.regainControlAction = nullptr;
+        };
+        gc.chooseCampfireOption(4); // TOKE
+        if (gc.screenState != ScreenState::CARD_SELECT
+            || gc.info.selectScreenType != CardSelectScreenType::REMOVE) {
+            return fail("toke did not open and keep the remove card-select screen");
+        }
+    }
+
+    // #64: an event-fight regainControlAction lambda inherited by a branch
+    // copy must consume the branch's RNG, never the captured original's.
+    {
+        GameContext live(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        live.curEvent = Event::DESIGNER_IN_SPIRE;
+        live.screenState = ScreenState::EVENT_SCREEN;
+        live.chooseEventOption(4); // remove + random upgrade; sets the lambda
+        const int liveMiscCounter = live.miscRng.counter;
+        GameContext branch = live; // branch copy inherits the pending lambda
+        branch.chooseSelectCardScreenOption(0); // resolve the remove select
+        if (live.miscRng.counter != liveMiscCounter) {
+            return fail("branch event lambda advanced the original's miscRng");
+        }
+    }
+
+    // #68: multi-select validation must require CARD_SELECT input state. After
+    // a select resolves, cardSelectInfo.cardSelectTask is stale (EXHAUST_MANY /
+    // GAMBLE masks are re-validated against it in fair-mode edge re-checks), so
+    // MULTI_CARD_SELECT actions must not validate once inputState leaves
+    // CARD_SELECT -- matching isValidSingleCardSelectAction's guard.
+    {
+        BattleContext bc = cardSelectFixture(CardSelectTask::EXHAUST_MANY, 2, false);
+        search::Action valid(search::ActionType::MULTI_CARD_SELECT, 0b11); // hand idx {0,1}
+        if (!valid.isValidAction(bc)) {
+            return fail("multi-select EXHAUST_MANY mask invalid in CARD_SELECT state");
+        }
+        bc.inputState = InputState::PLAYER_NORMAL; // stale task remains installed
+        if (valid.isValidAction(bc)) {
+            return fail("multi-select EXHAUST_MANY validated with stale task outside CARD_SELECT");
+        }
+    }
+    {
+        BattleContext bc = cardSelectFixture(CardSelectTask::GAMBLE, 1, false);
+        search::Action valid(search::ActionType::MULTI_CARD_SELECT, 0b101); // hand idx {0,2}
+        if (!valid.isValidAction(bc)) {
+            return fail("multi-select GAMBLE mask invalid in CARD_SELECT state");
+        }
+        bc.inputState = InputState::PLAYER_NORMAL; // stale task remains installed
+        if (valid.isValidAction(bc)) {
+            return fail("multi-select GAMBLE validated with stale task outside CARD_SELECT");
+        }
+    }
+
+    // #67: default-constructed GameContext/BattleContext potion slots must be
+    // EMPTY_POTION_SLOT (1), not Potion::INVALID (0), so obtainPotion does not
+    // silently drop potions on an uninitialized context.
+    {
+        GameContext gc;
+        for (int i = 0; i < 5; ++i) {
+            if (gc.potions[i] != Potion::EMPTY_POTION_SLOT) {
+                return fail("default GameContext potion slot is INVALID");
+            }
+        }
+        BattleContext bc;
+        for (int i = 0; i < 5; ++i) {
+            if (bc.potions[i] != Potion::EMPTY_POTION_SLOT) {
+                return fail("default BattleContext potion slot is INVALID");
+            }
+        }
+    }
+
+    // #84: anyCardBottled must be true when ANY bottle slot is active (a
+    // bottled card exists), and remove() must keep the bottle indices aligned
+    // when a card is removed from below a bottled card.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        Deck d;
+        d.obtainRaw(Card(CardId::STRIKE_RED));   // idx 0 (attack)
+        d.obtainRaw(Card(CardId::DEFEND_RED));   // idx 1 (skill)
+        d.obtainRaw(Card(CardId::IRON_WAVE));    // idx 2 (attack)
+        d.obtainRaw(Card(CardId::DEMON_FORM));   // idx 3 (power)
+        if (d.anyCardBottled()) {
+            return fail("anyCardBottled true with no bottled cards");
+        }
+        d.bottleCard(1, CardType::SKILL);        // Bottled Lightning on idx 1
+        if (!d.anyCardBottled()) {
+            return fail("anyCardBottled false with one bottled card");
+        }
+        d.bottleCard(3, CardType::POWER);        // Bottled Tornado on idx 3
+        d.bottleCard(0, CardType::ATTACK);       // Bottled Flame on idx 0
+        if (!d.anyCardBottled()) {
+            return fail("anyCardBottled false with three bottled cards");
+        }
+        d.remove(gc, 2);                         // remove the card between bottled cards
+        if (!d.isCardBottled(2)) {
+            return fail("bottle index not shifted after removal");
+        }
+        if (d.isCardBottled(3)) {
+            return fail("bottle index stale after removal");
+        }
+    }
+
+    // #72: reuseSearchCount must track tree promotion so STS_REUSE_ALWAYS_Q
+    // (always use Q on carried trees) is not dead: -1 on a fresh searcher,
+    // 0 right after advanceRoot promotes the tree, then per-search counts.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::BattleScumSearcher3 s3(bc, bc.seed, 0, 8);
+        if (s3.reuseSearchCount != -1) {
+            return fail("fresh searcher reuseSearchCount != -1");
+        }
+        s3.search(64);
+        if (s3.root.edges.empty()) {
+            return fail("no root edges after search");
+        }
+        std::int64_t maxVisits = -1;
+        search::Action best;
+        for (const auto &e : s3.root.edges) {
+            if (e.child.simulationCount > maxVisits) {
+                maxVisits = e.child.simulationCount;
+                best = e.action;
+            }
+        }
+        if (!s3.advanceRoot(best, bc)) {
+            return fail("advanceRoot did not reuse a searched child");
+        }
+        if (s3.reuseSearchCount != 0) {
+            return fail("reuseSearchCount not reset on promotion");
+        }
+        s3.search(16);
+        if (s3.reuseSearchCount != 1) {
+            return fail("reuseSearchCount not incremented after promoted search");
+        }
+    }
+
+    std::cout << "issue_fixes PASS\n";
+    return 0;
+}
+
 int testSeedContract(std::uint64_t seed) {
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
     BattleContext bc;
@@ -553,7 +807,8 @@ static std::vector<std::uint32_t> playerNormalGroundTruth(const BattleContext &b
     }
     for (int p = 0; p < bc.potionCapacity; ++p) {
         const auto pot = bc.potions[p];
-        if (pot == Potion::INVALID || pot == Potion::EMPTY_POTION_SLOT || pot == Potion::FAIRY_POTION) continue;
+        if (pot == Potion::INVALID || pot == Potion::EMPTY_POTION_SLOT
+            || pot == Potion::FAIRY_POTION || pot == Potion::SMOKE_BOMB) continue;
         if (potionRequiresTarget(pot)) {
             for (int t = 0; t < bc.monsters.monsterCount; ++t) {
                 search::Action a(search::ActionType::POTION, p, t);
@@ -818,6 +1073,77 @@ int testScumNonFairEmptyEdges() {
         return 0;
     }
     std::cout << "scum_nonfair_empty_edges FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
+// Regression (issue #54 + #70, BattleScumSearcher2): (a) searchToTotalRootStable
+// must not hang when STS_CONV_ROOT_START=0 or STS_CONV_ROOT_GROW<=1.0 -- a
+// zero-growth budget makes the chunk loop run 0 steps, so the outer loop must
+// force the full budget instead of spinning forever; (b) step() must clear a
+// stale terminal outcome when re-expanding a node that was terminal in another
+// world (fair-mode determinization), preserving "outcome != 0 implies
+// edges.empty()" so collectFrontierStats does not misclassify the node.
+int testScumConvRootStaleOutcome() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) {
+            std::cout << "    " << msg << '\n';
+            ++failures;
+        }
+    };
+
+    // --- issue #54: zero-growth budget must still reach the target ----------
+    const std::int64_t savedStart = search::g_convRootStart;
+    const double savedGrow = search::g_convRootGrow;
+    {
+        // start == 0: budget never grows; without the guard the outer loop spins.
+        search::g_convRootStart = 0;
+        search::g_convRootGrow = 2.0;
+        {
+            BattleContext bc = playerNormalFixture(0x51u, 3);
+            search::BattleScumSearcher2 s2(bc);
+            s2.searchToTotalRootStable(16, 0, 1000000);   // patience huge -> no early stop
+            check(s2.root.simulationCount >= 16,
+                  "convroot start=0: expected >=16 sims, got " + std::to_string(s2.root.simulationCount));
+        }
+        // grow == 1.0: chunkEnd == budget after the first round; without the
+        // guard the outer loop spins once the budget stops growing.
+        search::g_convRootStart = 8;
+        search::g_convRootGrow = 1.0;
+        {
+            BattleContext bc = playerNormalFixture(0x52u, 3);
+            search::BattleScumSearcher2 s2(bc);
+            s2.searchToTotalRootStable(16, 0, 1000000);
+            check(s2.root.simulationCount >= 16,
+                  "convroot grow=1.0: expected >=16 sims, got " + std::to_string(s2.root.simulationCount));
+        }
+    }
+    search::g_convRootStart = savedStart;
+    search::g_convRootGrow = savedGrow;
+
+    // --- issue #70: re-expansion clears a stale terminal outcome ------------
+    {
+        BattleContext bc = playerNormalFixture(0x53u, 3);
+        search::BattleScumSearcher2 s2(bc);
+        // Simulate a node that was terminal (victory, outcome=1, no edges) in a
+        // previous world and is now reached in a non-terminal world: step() must
+        // clear the stale outcome when re-enumerating edges.
+        s2.root.outcome = 1;
+        s2.step();
+        check(s2.root.outcome == 0,
+              "stale-outcome re-expansion: expected outcome reset to 0 (UNDECIDED), got "
+                  + std::to_string(static_cast<int>(s2.root.outcome)));
+        check(!s2.root.edges.empty(),
+              "stale-outcome re-expansion: expected edges re-enumerated");
+        check(s2.root.outcome == 0 || s2.root.edges.empty(),
+              "stale-outcome re-expansion: invariant 'outcome != 0 implies edges.empty()' violated");
+    }
+
+    if (failures == 0) {
+        std::cout << "scum_convroot_stale_outcome PASS\n";
+        return 0;
+    }
+    std::cout << "scum_convroot_stale_outcome FAIL (" << failures << " cases)\n";
     return 1;
 }
 
@@ -1723,6 +2049,13 @@ int testBeliefImmutability() {
     bool savedInternal = search::g_s3InternalBeliefUpdate;
     search::g_s3Belief = true;
 
+    // Issue #58 regression: the internal belief update must default OFF — the
+    // default-on behavior destroyed the root belief within ~60 simulations.
+    if (savedInternal) {
+        std::cout << "belief_immutability FAIL: g_s3InternalBeliefUpdate must default to false (issue #58)\n";
+        ++failures;
+    }
+
     // Test 1: internal updates OFF → weights unchanged.
     {
         search::g_s3InternalBeliefUpdate = false;
@@ -1820,6 +2153,205 @@ int testBeliefImmutability() {
     return 1;
 }
 
+int testThornsRetaliationVictory() {
+    int failures = 0;
+
+    // Issue #50: player kills the last enemy with an attack while its Thorns
+    // retaliation would be lethal. Real StS ends the fight on the killing blow:
+    // the retaliation must never run and the outcome must stay PLAYER_VICTORY.
+    GameContext gc(CharacterClass::IRONCLAD, 0x42, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+
+    auto &m = bc.monsters.arr[0];
+    m.curHp = 1;                 // one hit from death
+    m.buff<MS::THORNS>(3);       // lethal retaliation for a 1 HP player
+    bc.player.curHp = 1;
+
+    bc.setState(InputState::EXECUTING_ACTIONS);
+    bc.addToBot(Actions::AttackEnemy(0, 6)); // killing blow; Thorns queued to top
+    bc.executeActions();
+
+    if (bc.outcome != Outcome::PLAYER_VICTORY) {
+        std::cout << "thorns_retaliation FAIL: outcome=" << (int)bc.outcome
+                  << " (expected PLAYER_VICTORY=" << (int)Outcome::PLAYER_VICTORY << ")\n";
+        ++failures;
+    }
+
+    if (failures == 0) {
+        std::cout << "thorns_retaliation PASS\n";
+        return 0;
+    }
+    std::cout << "thorns_retaliation FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
+int testAwakenedOneStage2() {
+    int failures = 0;
+
+    // Issue #51: Awakened One stage 1 dies first (half-dead, rebirth queued),
+    // then both Cultists die in the same round. monstersAlive reaches 0 while
+    // the boss is mid-revival; victory must NOT be granted yet and stage 2
+    // (the rebirth turn) must still be reachable.
+    GameContext gc(CharacterClass::IRONCLAD, 0x45, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::AWAKENED_ONE);
+
+    bc.setState(InputState::EXECUTING_ACTIONS);
+    bc.addToBot(Actions::DamageEnemy(2, 9999)); // Awakened One stage 1 dies first
+    bc.addToBot(Actions::DamageEnemy(0, 9999)); // cultist
+    bc.addToBot(Actions::DamageEnemy(1, 9999)); // cultist -> monstersAlive 0
+    bc.executeActions();
+
+    if (bc.outcome != Outcome::UNDECIDED) {
+        std::cout << "awakened_one_stage2 FAIL: outcome=" << (int)bc.outcome
+                  << " (expected UNDECIDED=" << (int)Outcome::UNDECIDED << ")\n";
+        ++failures;
+    }
+    if (!bc.monsters.arr[2].isHalfDead()) {
+        std::cout << "awakened_one_stage2 FAIL: Awakened One not half-dead after stage 1\n";
+        ++failures;
+    }
+    if (bc.monsters.monstersAlive != 0) {
+        std::cout << "awakened_one_stage2 FAIL: monstersAlive=" << bc.monsters.monstersAlive
+                  << " (expected 0)\n";
+        ++failures;
+    }
+
+    // Stage 2 must still be playable: run the Awakened One's rebirth turn.
+    bc.monsters.arr[2].takeTurn(bc);
+    if (bc.monsters.arr[2].isHalfDead()) {
+        std::cout << "awakened_one_stage2 FAIL: still half-dead after rebirth turn\n";
+        ++failures;
+    }
+    if (!bc.monsters.arr[2].hasStatus<MS::MINION_LEADER>()) {
+        std::cout << "awakened_one_stage2 FAIL: no MINION_LEADER after rebirth (stage 2 missing)\n";
+        ++failures;
+    }
+    if (bc.monsters.monstersAlive != 1) {
+        std::cout << "awakened_one_stage2 FAIL: monstersAlive=" << bc.monsters.monstersAlive
+                  << " after rebirth (expected 1)\n";
+        ++failures;
+    }
+
+    if (failures == 0) {
+        std::cout << "awakened_one_stage2 PASS\n";
+        return 0;
+    }
+    std::cout << "awakened_one_stage2 FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
+// Issue #52: PoisonLoseHpAction must not be an empty stub. A poisoned monster
+// takes poison damage (ignoring block) at end of turn and its poison counter
+// decreases by 1.
+int testPoisonLoseHp() {
+    int failures = 0;
+
+    GameContext gc(CharacterClass::IRONCLAD, 0x45, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+
+    Monster &m = bc.monsters.arr[0];
+    m.curHp = 20;
+    m.maxHp = 20;
+    m.block = 10;
+    m.addDebuff<MS::POISON>(5);
+
+    Actions::PoisonLoseHpAction(0).actFunc(bc);
+
+    if (m.curHp != 15) {
+        std::cout << "poison_lose_hp FAIL: curHp=" << m.curHp
+                  << " (expected 15; poison damage must be applied)\n";
+        ++failures;
+    }
+    if (m.block != 10) {
+        std::cout << "poison_lose_hp FAIL: block=" << m.block
+                  << " (expected 10; poison damage must ignore block)\n";
+        ++failures;
+    }
+    if (m.getStatus<MS::POISON>() != 4) {
+        std::cout << "poison_lose_hp FAIL: poison=" << m.getStatus<MS::POISON>()
+                  << " (expected 4 after tick)\n";
+        ++failures;
+    }
+
+    if (failures == 0) {
+        std::cout << "poison_lose_hp PASS\n";
+        return 0;
+    }
+    std::cout << "poison_lose_hp FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
+// Issue #57: TimeEaterPlayCardQueueItem must use the replayed card's own
+// exhaust property, not the triggering card's.
+int testTimeEaterExhaust() {
+    int failures = 0;
+
+    GameContext gc(CharacterClass::IRONCLAD, 0x45, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::TIME_EATER);
+
+    // Triggering card is a non-exhaust Strike; the replayed card is Fiend
+    // Fire (exhausts). The replayed item must exhaust.
+    bc.curCardQueueItem = CardQueueItem(CardInstance(CardId::STRIKE_RED), 0, 1);
+    CardQueueItem replayed(CardInstance(CardId::FIEND_FIRE), 0, 1);
+    replayed.exhaustOnUse = false;
+
+    Actions::TimeEaterPlayCardQueueItem(replayed).actFunc(bc);
+
+    if (!bc.curCardQueueItem.exhaustOnUse) {
+        std::cout << "time_eater_exhaust FAIL: replayed Fiend Fire did not exhaust\n";
+        ++failures;
+    }
+    if (bc.curCardQueueItem.card.getId() != CardId::FIEND_FIRE) {
+        std::cout << "time_eater_exhaust FAIL: curCardQueueItem card is not the replayed card\n";
+        ++failures;
+    }
+    if (bc.curCardQueueItem.triggerOnUse) {
+        std::cout << "time_eater_exhaust FAIL: triggerOnUse not cleared for replay\n";
+        ++failures;
+    }
+
+    if (failures == 0) {
+        std::cout << "time_eater_exhaust PASS\n";
+        return 0;
+    }
+    std::cout << "time_eater_exhaust FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
+int testDarklingVictory() {
+    int failures = 0;
+
+    // The last Darkling to die must NOT regrow: victory fires when all three
+    // are dead even though the first two are half-dead (real StS
+    // max-two-revives rule, pre-empted by victory at monstersAlive == 0). A
+    // blanket "no monster half-dead" victory predicate would loop forever
+    // here, so this guards the Awakened-One-only deferral in Monster::die.
+    GameContext gc(CharacterClass::IRONCLAD, 0x46, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::THREE_DARKLINGS);
+
+    bc.setState(InputState::EXECUTING_ACTIONS);
+    bc.addToBot(Actions::DamageAllEnemy(9999)); // all 3 die; last one ends the fight
+    bc.executeActions();
+
+    if (bc.outcome != Outcome::PLAYER_VICTORY) {
+        std::cout << "darkling_victory FAIL: outcome=" << (int)bc.outcome
+                  << " (expected PLAYER_VICTORY=" << (int)Outcome::PLAYER_VICTORY << ")\n";
+        ++failures;
+    }
+
+    if (failures == 0) {
+        std::cout << "darkling_victory PASS\n";
+        return 0;
+    }
+    std::cout << "darkling_victory FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -1904,10 +2436,14 @@ int main(int argc, const char* argv[]) {
         return testPrune(std::stoull(argv[2]));
     } else if (command == "happy_flower") {
         return testHappyFlowerCounter(std::stoull(argv[2]));
+    } else if (command == "issue_fixes") {
+        return testIssueFixes();
     } else if (command == "cardselect_parity") {
         return testCardSelectParity();
     } else if (command == "scum_nonfair_empty_edges") {
         return testScumNonFairEmptyEdges();
+    } else if (command == "scum_convroot_stale_outcome") {
+        return testScumConvRootStaleOutcome();
     } else if (command == "cardselect_canonical") {
         return testCardSelectCanonical();
     } else if (command == "battlecontext_roundtrip") {
@@ -1928,6 +2464,16 @@ int main(int argc, const char* argv[]) {
         return testBeliefOrderInvariance();
     } else if (command == "belief_immutability") {
         return testBeliefImmutability();
+    } else if (command == "thorns_retaliation") {
+        return testThornsRetaliationVictory();
+    } else if (command == "awakened_one_stage2") {
+        return testAwakenedOneStage2();
+    } else if (command == "darkling_victory") {
+        return testDarklingVictory();
+    } else if (command == "poison_lose_hp") {
+        return testPoisonLoseHp();
+    } else if (command == "time_eater_exhaust") {
+        return testTimeEaterExhaust();
     }
 
     //    printSizes();
