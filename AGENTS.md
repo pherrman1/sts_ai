@@ -65,15 +65,21 @@ file is missing from the tree.
 
 ## Agent workflow
 
-The local agent workflow uses interactive OpenCode with selectable models:
+The local agent workflow uses OpenCode's built-in primary agents with selectable
+models:
 
 ```
 External research/review:
     ChatGPT
 
 Local implementation:
-    interactive OpenCode (default agent: deepseek-v4-flash;
-    strong agent: deepseek-v4-pro for difficult debugging)
+    OpenCode Build
+
+Model selection:
+    use the model and reasoning effort recommended by the current handoff
+
+Optional local planning:
+    OpenCode Plan
 
 Shared project knowledge:
     AGENTS.md + maintained knowledge base
@@ -82,16 +88,18 @@ Evidence:
     current code, commit diff, exact verification output, raw experiment results
 ```
 
-External ChatGPT owns research design and independent review.
-OpenCode is the interactive implementation agent — no automated
-orchestrator runs architect or reviewer steps independently.
+External ChatGPT owns research design and independent final review.
+OpenCode `Build` is the standard local implementation agent. Select the model
+and reasoning effort recommended by the current handoff rather than encoding a
+fixed implementation model in the agent definition.
 
-The `opencode.json` config defines two agents:
-- `default` — capable implementation agent (flash);
-- `strong` — more capable model for difficult debugging/reasoning (pro).
+OpenCode `Plan` remains available for occasional local read-only planning, but
+it is not part of the standard research-handoff workflow and does not replace
+external research design or independent review.
 
-Both agents receive `AGENTS.md` automatically and share the same prompt body;
-only the model differs.
+Do not create separate primary agents merely to represent stronger or cheaper
+models. Model strength is a per-handoff execution choice, not a separate agent
+role.
 
 ## Agent context and large-file navigation
 
