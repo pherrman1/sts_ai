@@ -363,7 +363,7 @@ def evaluate_heads(model, z, act):
 # ── Parity CSV generation (script entry point) ──────────────────────────────
 def main():
     import sys
-    MODEL = sys.argv[1] if len(sys.argv) > 1 else "build/v_combat_pvnet.txt"
+    MODEL = sys.argv[1] if len(sys.argv) > 1 else "models/v_combat_pvnet.txt"
     VAL_CSV = sys.argv[2] if len(sys.argv) > 2 else "build/fair_v.csv"
     POL_CSV = sys.argv[3] if len(sys.argv) > 3 else "build/fair_p.csv"
     OUT = sys.argv[4] if len(sys.argv) > 4 else "build/pvnet_parity.csv"

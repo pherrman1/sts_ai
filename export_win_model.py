@@ -5,7 +5,7 @@ as export_combat_model.py, plus a `logistic 1` marker so C++ applies sigmoid.
 Usage: export_win_model.py [model.json] [out_trees.txt] [maxtrees]"""
 import sys, json, xgboost as xgb
 
-MODEL    = sys.argv[1] if len(sys.argv) > 1 else "build/v_win_xgb.json"
+MODEL    = sys.argv[1] if len(sys.argv) > 1 else "models/v_win_xgb.json"
 OUT      = sys.argv[2] if len(sys.argv) > 2 else "build/v_win_trees.txt"
 MAXTREES = int(sys.argv[3]) if len(sys.argv) > 3 else 0
 

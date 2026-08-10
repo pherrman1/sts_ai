@@ -40,7 +40,7 @@ if "--ckpt" in ARGS:
     del ARGS[i:i + 2]
 
 CSV = ARGS[0] if len(ARGS) > 0 else "build/strategic_qwin.csv"
-TREES = ARGS[1] if len(ARGS) > 1 else "build/v_win_trees.txt"
+TREES = ARGS[1] if len(ARGS) > 1 else "models/v_win_trees.txt"
 if CKPT:
     TREES = None
 

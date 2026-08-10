@@ -117,8 +117,8 @@ export OMP_NUM_THREADS=${OMP_NUM_THREADS:-12}
 FLOOR_POLICY_ENV="STS_FAIR=1 STS_CARD_WIN=0 STS_SHOP_WIN=0 STS_REST_WIN=1"
 WIN_POLICY_ENV="STS_FAIR=1 STS_CARD_WIN=1 STS_SHOP_WIN=1 STS_REST_WIN=1"
 # The META arm must exercise the CANDIDATE models through v_server (Issue 01):
-# with native OOC left on, one_combat's fixed build/v_rich_trees.txt +
-# build/v_win_trees.txt own every OOC decision and the candidate V_win/rest are
+# with native OOC left on, one_combat's fixed models/v_rich_trees.txt +
+# models/v_win_trees.txt own every OOC decision and the candidate V_win/rest are
 # never consulted.  STS_NATIVE_OOC=0 forces server-backed inference for meta
 # generation and meta gates.  Combat datagen and value/policy gates keep the
 # deployed native stack.
@@ -147,7 +147,7 @@ MEAS_POLICY_ENV="$POLICY_ENV"           # OOC policy env for the current gate ba
 #   repair: state.env but current/ missing  -> refuse with a diagnostic (a
 #           checked-in snapshot is not silently resumable).  The directories
 #           were created above, so the branches key on the current/ FILES.
-BOOT_SOURCES="build/v_win_xgb.json build/v_combat_fair_trees.txt build/policy_fair_trees_c.txt"
+BOOT_SOURCES="models/v_win_xgb.json build/v_combat_fair_trees.txt build/policy_fair_trees_c.txt"
 BOOT_BRANCH=resume
 if [ ! -f "$STATE" ]; then BOOT_BRANCH=fresh
 elif [ ! -f "$SP/current/v_win.json" ] || [ ! -f "$SP/current/v_combat_trees.txt" ] || [ ! -f "$SP/current/policy_trees_c.txt" ]; then
@@ -158,7 +158,7 @@ case "$BOOT_BRANCH" in
         for f in $BOOT_SOURCES; do
             [ -f "$f" ] || { echo "ERROR: first-run model source missing: $f" >&2; exit 1; }
         done
-        cp build/v_win_xgb.json          $SP/current/v_win.json
+        cp models/v_win_xgb.json        $SP/current/v_win.json
         cp build/v_combat_fair_trees.txt $SP/current/v_combat_trees.txt
         cp build/policy_fair_trees_c.txt $SP/current/policy_trees_c.txt
         echo "ITER=0"            > $STATE
@@ -178,7 +178,7 @@ case "$BOOT_BRANCH" in
         echo "  Repair options:" >&2
         echo "  1) restore $SP/current/ (v_win.json, v_combat_trees.txt, policy_trees_c.txt) from a backup, or" >&2
         echo "  2) fresh bootstrap: move $STATE and $SP/history.tsv aside, then re-run this script" >&2
-        echo "     (a fresh bootstrap copies build/v_win_xgb.json, build/v_combat_fair_trees.txt and" >&2
+        echo "     (a fresh bootstrap copies models/v_win_xgb.json, build/v_combat_fair_trees.txt and" >&2
         echo "      build/policy_fair_trees_c.txt into $SP/current/ and resets ITER/SEED_OFF/RUNS_TOTAL)." >&2
         exit 1
         ;;
@@ -283,7 +283,7 @@ baseline_cache_key() {
                   "$SP/current/v_combat_trees.txt" "$SP/current/policy_trees_c.txt"
         # Native-OOC gates (baseline/value/policy) also depend on the fixed tracked
         # trees, so hash them too: a tree change must invalidate the cache.
-        sha256sum build/v_rich_trees.txt build/v_win_trees.txt
+        sha256sum models/v_rich_trees.txt models/v_win_trees.txt
         if [ -f "$SP/current/rest_cf.json" ]; then sha256sum "$SP/current/rest_cf.json"
         else printf 'rest_cf=V_win_fallback\n'; fi
         # Server-backed rows (meta arm) depend on the server implementation.

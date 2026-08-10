@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-09 against the current working tree (per-encounter combat value specialization implemented opt-in: `STS_VNET_PER_ENCOUNTER` dir overlay + `combat_mlp_meta_v1` in-file deltas with `predict(bc)` dispatch, `vnettest --encounter` parity mode — gate pending; covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending; experimental zero-mean ranking correction `STS_VNET_RANK_CORR` implemented opt-in (`tools/train_rank_correction.py`, additive on the vnet/PVNet leaf + fair-path search-complete clamp, off by default, byte-identical when unset).
+Last verified: 2026-08-11 against the current working tree (per-encounter combat value specialization implemented opt-in: `STS_VNET_PER_ENCOUNTER` dir overlay + `combat_mlp_meta_v1` in-file deltas with `predict(bc)` dispatch, `vnettest --encounter` parity mode — gate pending; covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default superseded by the §148 7k-tuned model, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending; experimental zero-mean ranking correction `STS_VNET_RANK_CORR` implemented opt-in (`tools/train_rank_correction.py`, additive on the vnet/PVNet leaf + fair-path search-complete clamp, off by default, byte-identical when unset).
 
 ## Purpose
 
@@ -323,8 +323,9 @@ operating point (EXPERIMENTS.md §134, 2026-08-07):** paired 256-seed @1k/64p,
 block 126700–126955, full V4 stack, S3−belief−chain/64p, α0.1 (pre-registered
 because R sits on the larger 0..~150 terminal scale):
 **38.3% vs 50.4% = −12.1pp (95% CI [−18.8,−5.1]), floor −3.0, HP −5.0**;
-discordant 83/256. Significantly negative → α0.3 not tested, deployed
-`v_combat_honest.txt` @α0.3 stays; this is the fourth offline≠online
+discordant 83/256. Significantly negative → α0.3 not tested, the then-deployed
+`v_combat_honest.txt` @α0.3 stays (§148 later superseded it with the
+7k-tuned fair-S3 default); this is the fourth offline≠online
 falsification (§124c/§127/§133/§134) and it removes the "only the target
 differs" reading of §132. Offline val MAE vs R was 9.73 (the quantile-R got
 10.10 on the same rows), so the R-scale regression fits R yet still ranks
@@ -349,8 +350,9 @@ difference) and reports val RMSE/MAE vs endHp AND vs utility R per regime.
 **Verdict: closed — the mixture does NOT improve held-out search-leaf
 ranking (pairwise 0.726→0.691, top-1 0.369→0.330, regret 7.43→8.21, all
 worse) and hurts the on-policy fit (val RMSE 8.23 vs 7.88 control); no
-gameplay gate per the pre-registered rule; the deployed
-`build/v_combat_honest.txt` @α0.3 stays default.** The mixture model
+gameplay gate per the pre-registered rule; the then-deployed
+`build/v_combat_honest.txt` @α0.3 stays default (§148 later replaced the
+fair-S3 default with `build/v_combat_7k_tuned.txt`).** The mixture model
 (`build/v_combat_mix.txt`) is a diagnostic artifact only; `STS_DIAG_VNET2`
 can point at it for leafdiag/leafref/rollouttrace diagnostics (never read by
 the search). Default single-CSV path of `train_value_combat.py` is
@@ -790,7 +792,7 @@ flowchart TD
 Learned guidance is loaded by `apps/one_combat.cpp::main`:
 
 - `STS_POLICY` loads the compact tree prior; with no explicit setting,
-  `build/policy_trees_c.txt` is attempted except in `policygen` mode.
+  `models/policy_trees_c.txt` is attempted except in `policygen` mode.
 - `STS_DATAGEN_GATES=1` (opt-in, §127): `combatgen`/`distgen` run-loop OOC
   decisions route through the same one-ply gate chain as `bestbench`
   (`runCombatGenSeed` → `datagenGateStack` + the card-reward gate), so
@@ -798,14 +800,17 @@ Learned guidance is loaded by `apps/one_combat.cpp::main`:
   Each gate self-guards on its env flag + model load; unset behavior is
   byte-identical. §127: the gate-stack-distribution vnet retrain was NULL
   vs the deployed model (α optimum shifted 0.3→0.5, no significant winrate
-  difference) — the deployed `v_combat_honest.txt` stays.
+  difference) — the deployed (then-§126) `v_combat_honest.txt` stays (the
+  fair-S3 default moved to `build/v_combat_7k_tuned.txt` under §148).
 - `STS_VNET` loads a separate combat value model and `STS_VNET_ALPHA` controls
   its rollout blend.
   **Default since 2026-08-07 (EXPERIMENTS.md §126):** in the fair-S3 path
   (after the `STS_FAIR`/`STS_SEARCHER3` parse) an unset `STS_VNET`
-  auto-loads `build/v_combat_honest.txt` (804 trees, sha256 `e69d64cf…`) at
-  `STS_VNET_ALPHA` 0.3 — three significant paired gates (+12.5/+12.1/+12.5pp
-  win at ~2-2.4× cpu; the §126 cpu-trade call). Any explicit `STS_VNET=…`
+  auto-loads `build/v_combat_7k_tuned.txt` (1000 trees, sha256 `ea35b78c…`) at
+  `STS_VNET_ALPHA` 0.3 (EXPERIMENTS.md §148, 2026-08-09; it replaced the §126
+  804-tree honest model `build/v_combat_honest.txt` as the default — the §126
+  promotion record: three significant paired gates +12.5/+12.1/+12.5pp win at
+  ~2-2.4× cpu; the §148 cpu-trade call). Any explicit `STS_VNET=…`
   overrides (e.g. `STS_VNET=1` → legacy `build/v_combat_trees.txt` at α0.5;
   `STS_VNET=<missing-path>` → load failure → vnet off). The S2 fair and
   non-fair paths stay env-only. `STS_VNET_COND_BOSS=1`/`STS_VNET_COND_ACT3=1`

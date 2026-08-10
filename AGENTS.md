@@ -48,18 +48,20 @@ base in the same change. Do not invent rationale; use **Inference**,
 | `apps/` | Executables; `one_combat.cpp` is the research integration driver. |
 | `bindings/` | Run-level pybind11 API, not card-by-card combat control. |
 | root `train_*.py`, `export_*.py`, `v_server.py` | Training, export, optional Python inference. |
+| `models/` | Git-tracked deployed model artifacts in native text/JSON format (floor/win/policy compact trees, XGBoost JSON, PVNet); NOT `.native` and not self-play loop artifacts. |
 | `selfplay/` | Generation, retraining, paired gates, snapshots, local state. |
 | `tools/` | Inspection, safety, and diagnostic utilities. |
 | `.opencode/`, `opencode.json` | OpenCode agent configuration and prompts. |
 
-Deployable native exports under `selfplay/models/*.native` are git-tracked
-(since 2026-08-05) so model handoff between machines happens via `git pull`;
+Deployable native exports under `selfplay/models/*.native` and deployed
+text/JSON models under `models/` are git-tracked so model handoff between
+machines happens via `git pull`;
 trainer checkpoints (`*_state.bin`, `.pt`, `.npz`, `.torchscript`), buffers,
 and CSVs stay ignored and are handed off explicitly (scp/shared drive). A
 retrained artifact therefore ships in the same commit as its sha256 + docs
-update, and a pull alone does not update deployable models whose `.native`
-file is missing from the tree.
-| `build/` | Mixed ignored build output and tracked model artifacts; some are default, others experimental. |
+update, and a pull alone does not update deployable models whose artifact file
+is missing from the tree.
+| `build/` | Purely ignored build output and generated artifacts (no tracked files). |
 | `docs/knowledge-base/` | Maintained technical knowledge. |
 | `EXPERIMENTS.md` | Chronological experiment ledger. |
 

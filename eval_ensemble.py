@@ -23,7 +23,7 @@ yv = y[va]
 print(f"val rows {len(va)}  win base-rate {yv.mean():.3f}", flush=True)
 
 # ---- models ----
-bst = xgb.Booster(); bst.load_model("build/v_win_xgb.json"); gfeats = bst.feature_names
+bst = xgb.Booster(); bst.load_model("models/v_win_xgb.json"); gfeats = bst.feature_names
 ck = torch.load("build/v_deckset.pt", map_location="cpu", weights_only=False)
 DEV = "cuda" if torch.cuda.is_available() else "cpu"
 m = DeckSet(nboss=ck["nboss"]); m.load_state_dict(ck["state"]); m.to(DEV).eval()

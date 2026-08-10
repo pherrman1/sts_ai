@@ -1366,7 +1366,7 @@ static int g_neowV      = 0;   // STS_NEOW_V=1
 
 // --- NATIVE V_win: compact XGBoost tree-walk on the rich feature vector, to kill the
 // v_server socket for OOC V_win decisions (esp. the unbatched per-candidate ones:
-// boss-relic/Neow/pathing). Loaded from build/v_win_trees.txt (export_win_model.py).
+// boss-relic/Neow/pathing). Loaded from models/v_win_trees.txt (export_win_model.py).
 struct WinNet {
     struct Node { int feat; float thr; int yes, no; };   // feat<0 => leaf (value in thr)
     std::vector<std::vector<Node>> trees;
@@ -10026,7 +10026,7 @@ int main(int argc, char **argv) {
         if (g_neowV) std::cout << "[Neow bonus pick via V_win ON]\n";
     }
     if (const char *d = std::getenv("STS_WIN_NET")) {       // native V_win tree-walk (no v_server socket)
-        const std::string path = std::string(d) == "1" ? "build/v_win_trees.txt" : d;
+        const std::string path = std::string(d) == "1" ? "models/v_win_trees.txt" : d;
         if (!g_winNet.load(path, richIdxMap()))
             std::cerr << "[STS_WIN_NET] failed to load win tree: " << path << "\n";
     }
@@ -10036,10 +10036,10 @@ int main(int argc, char **argv) {
         const char *d = std::getenv("STS_NATIVE_OOC");
         g_nativeOoc = !d || std::atoi(d) != 0;
         if (g_nativeOoc) {
-            if (!g_winNet.ok) g_winNet.load("build/v_win_trees.txt", richIdxMap());
-            g_floorNet.load("build/v_rich_trees.txt", richIdxMap());
+            if (!g_winNet.ok) g_winNet.load("models/v_win_trees.txt", richIdxMap());
+            g_floorNet.load("models/v_rich_trees.txt", richIdxMap());
             if (!g_floorNet.ok) {
-                std::cerr << "[native OOC] failed to load build/v_rich_trees.txt\n";
+                std::cerr << "[native OOC] failed to load models/v_rich_trees.txt\n";
                 return 1;
             }
             if (!g_winNet.ok) {
@@ -10414,7 +10414,7 @@ int main(int argc, char **argv) {
         if (g_termWin) {
             if (g_termWinEval == 1 && !g_cpsiNet.loaded())
                 std::cerr << "[terminal-leaf cpsi evaluator: STS_CPSI_NN not loaded; falling back to win tree]\n";
-            if (!g_winNet.ok) g_winNet.load("build/v_win_trees.txt", richIdxMap());
+            if (!g_winNet.ok) g_winNet.load("models/v_win_trees.txt", richIdxMap());
             std::cout << "[terminal-leaf run-value bonus ON: w=" << g_termWinW
                       << " eval=" << (g_termWinEval == 1 ? "cpsi" : "win")
                       << " hidden=" << (g_termWinHidden ? "resample" : "zero")
@@ -10744,7 +10744,7 @@ int main(int argc, char **argv) {
         const char *d = std::getenv("STS_POLICY");
         const bool disabled = d && std::string(d) == "0";
         if (!disabled && mode != "policygen") {
-            std::string path = "build/policy_trees_c.txt";
+            std::string path = "models/policy_trees_c.txt";
             if (d && std::string(d) == "1")      path = "build/policy_trees.txt";
             else if (d)                          path = d;
             search::g_policyNet.isPolicy = true;
@@ -10893,7 +10893,7 @@ int main(int argc, char **argv) {
         // Reads a tierb-schema CSV (state block between `chosen` and `won`),
         // runs the native WinNet on the rich state of each row, and prints
         // "rowidx,vwin" so the Python checker can compare tree-walks exactly.
-        std::string trees = argc > 2 ? argv[2] : "build/v_win_trees.txt";
+        std::string trees = argc > 2 ? argv[2] : "models/v_win_trees.txt";
         std::string csv   = argc > 3 ? argv[3] : "build/strategic_qwin.csv";
         long long maxRows = argc > 4 ? std::stoll(argv[4]) : 200;
         if (!g_winNet.load(trees, richIdxMap())) { std::cerr << "load failed: " << trees << "\n"; return 1; }
@@ -11114,7 +11114,7 @@ int main(int argc, char **argv) {
         // Parity CSV layout per row: 1766 state feats, 14 action feats,
         // then Python outputs: global(ED), pol(1), win(1), death(1),
         // quantile(NQ), potion(44), turns(1).
-        std::string model = argc > 2 ? argv[2] : "build/v_combat_pvnet.txt";
+        std::string model = argc > 2 ? argv[2] : "models/v_combat_pvnet.txt";
         std::string val   = argc > 3 ? argv[3] : "build/pvnet_parity.csv";
         if (!search::g_combatPVNet.load(model)) { std::cerr << "load failed: " << model << "\n"; return 1; }
         const auto &pv = search::g_combatPVNet;
@@ -11165,7 +11165,7 @@ int main(int argc, char **argv) {
         // Mirrors eval_combat_pvnet.py's policy section for the GBM prior:
         // per decision group, softmax over edge logits vs teacher visit/total.
         // Optional 4th arg "val" restricts to seeds with seed%100<20.
-        std::string model = argc > 2 ? argv[2] : "build/policy_trees_c.txt";
+        std::string model = argc > 2 ? argv[2] : "models/policy_trees_c.txt";
         std::string val   = argc > 3 ? argv[3] : "build/fair_p.csv";
         const bool valOnly = argc > 4 && std::string(argv[4]) == "val";
         search::g_policyNet.isPolicy = true;

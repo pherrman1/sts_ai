@@ -28,7 +28,7 @@ before broad repository search.
 | Run state | `include/game/GameContext.h`, `src/game/GameContext.cpp` | `GameContext`, `ScreenState`, `GameOutcome` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Run-level actions | `include/sim/search/GameAction.h`, `src/sim/search/GameAction.cpp` | `GameAction`, `getAllActionsInState`, `execute` | [out-of-combat.md](architecture/out-of-combat.md) |
 | OOC policy chain | `apps/one_combat.cpp` | `runFullRunOOC` (~line 2369) — ordered branch chain, current default | [out-of-combat.md](architecture/out-of-combat.md) |
-| Native OOC floor/win | `build/v_rich_trees.txt`, `build/v_win_trees.txt` | Compact tree artifacts loaded at startup, `STS_NATIVE_OOC=0` disables | [out-of-combat.md](architecture/out-of-combat.md) |
+| Native OOC floor/win | `models/v_rich_trees.txt`, `models/v_win_trees.txt` | Compact tree artifacts loaded at startup, `STS_NATIVE_OOC=0` disables | [out-of-combat.md](architecture/out-of-combat.md) |
 | Checkpoint NN | `apps/ooc_checkpoint_net.h` | `OocCheckpointNet`, `oocActionNNPolicy`, `STS_OOC_CHECKPOINT_NN` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Strategic Q-gate (opt-in) | `apps/ooc_strategic_net.h`, `apps/one_combat.cpp` | `OocStrategicNet`, `oocOnePlyCardRewardPolicy` et al., `STS_OOC_STRATEGIC_NN`, `STS_OOC_STRATEGIC_MARGIN` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Strategic token net (opt-in) | `apps/ooc_strategic_tok_net.h` | Token-based OOC network, experimental | [out-of-combat.md](architecture/out-of-combat.md) |

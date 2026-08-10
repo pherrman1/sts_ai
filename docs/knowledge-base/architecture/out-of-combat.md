@@ -1,6 +1,8 @@
 # Out-of-combat policy
 
-Last verified: 2026-08-09 against the current working tree (key collection
+Last verified: 2026-08-11 against the current working tree (tracked native
+floor/win trees relocated from `build/` to `models/`).
+Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
 Previously verified 2026-08-09 (Act-4 key collection added to every REWARDS handler
 and act-3+ rest rooms, now opt-in via the flag).
@@ -29,8 +31,8 @@ act/floor, and the active `ScreenState`
 The active whole-run research policy is the ordered branch chain in
 `apps/one_combat.cpp::runFullRunOOC`. Under current defaults it uses:
 
-- native `build/v_rich_trees.txt` floor value for card and shop scoring;
-- native `build/v_win_trees.txt` win value for rest/upgrade decisions;
+- native `models/v_rich_trees.txt` floor value for card and shop scoring;
+- native `models/v_win_trees.txt` win value for rest/upgrade decisions;
 - card skip threshold `-0.5`;
 - heuristic map routing;
 - value-based shop planning;

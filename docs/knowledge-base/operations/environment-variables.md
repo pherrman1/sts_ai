@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-08-08 against `apps/one_combat.cpp::main`.
+Last verified: 2026-08-11 against `apps/one_combat.cpp::main`.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -14,15 +14,15 @@ These control the default executing configuration; they are always parsed.
 |----------|--------|---------|------------|
 | `VPORT` | v_server TCP port | 5555 | `main` L9210 |
 | `STS_NATIVE_OOC` | Use in-process GBMs for floor/win; `0` disables (legacy server mode) | `1` (ON) | `main` ~L9470 |
-| `STS_WIN_NET` | Path to V_win compact tree; `1` = default `build/v_win_trees.txt` | auto-loads `build/v_win_trees.txt` | `main` ~L9465 |
-| `STS_POLICY` | Compact policy net for PUCT; `0` disables, `1` = full 447-tree, or path | `build/policy_trees_c.txt` auto-loads | `main` ~L9950 |
+| `STS_WIN_NET` | Path to V_win compact tree; `1` = default `models/v_win_trees.txt` | auto-loads `models/v_win_trees.txt` | `main` ~L9465 |
+| `STS_POLICY` | Compact policy net for PUCT; `0` disables, `1` = full 447-tree, or path | `models/policy_trees_c.txt` auto-loads | `main` ~L9950 |
 | `STS_CPUCT` | PUCT exploration constant | varies (model-dependent) | `main` ~L9965 |
 | `STS_FAIR` | Determinized/ISMCTS combat (no future peeking) | `0` (known-RNG) | `main` ~L9685 |
 | `STS_SEARCHER3` | Use `BattleScumSearcher3` ISMCTS engine | `0` (Searcher2) | `main` ~L9690 |
 | `STS_LIVE_VALID` | Fair-tree live-valid edge re-selection (Phase 4) | Auto-ON for fair+S3 since 2026-08-07 (§123) | `main` ~L9700 |
 | `STS_FORCED_MOVE` | Forced-action contraction (fair path only); `0` disables | `1` (ON) | `main` ~L9228 |
-| `STS_VNET` | Learned V_combat leaf value; path or `1` = default | Auto-ON for fair+S3 since 2026-08-07 (honest-data `build/v_combat_honest.txt`, α=0.3, §126) | `main` ~L9850 |
-| `STS_VNET_ALPHA` | V_combat blend weight | 0.5 (or 0.3 for honest-data default) | `main` ~L9853 |
+| `STS_VNET` | Learned V_combat leaf value; path or `1` = default | Auto-ON for fair+S3 since 2026-08-07 (α=0.3, §126 honest-data model; **promoted to `build/v_combat_7k_tuned.txt` §148**) | `main` ~L9850 |
+| `STS_VNET_ALPHA` | V_combat blend weight | 0.5 (or 0.3 for the fair-S3 default) | `main` ~L9853 |
 | `STS_PVNET` | Shared policy-value network (AlphaZero-style) | off | `main` ~L9900 |
 | `STS_PVNET_ALPHA` | PVNet leaf blend weight | model-dependent | `main` ~L9910 |
 | `STS_PVNET_VALUE_ONLY` | Skip PVNet policy head (GBM provides priors) | `0` | `main` ~L9910 |

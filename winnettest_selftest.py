@@ -43,7 +43,7 @@ def write_csv(path):
 def run_winnettest(bin_path, model, csv):
     # Hermetic: disable the native OOC block (which would otherwise
     # fatal-exit before mode dispatch when its cwd-relative
-    # build/v_rich_trees.txt is missing, e.g. under ctest where the working
+    # models/v_rich_trees.txt is missing, e.g. under ctest where the working
     # directory is the build dir) and pin the cwd to the repo root so default
     # relative paths never influence the verdict.
     env = dict(os.environ)
