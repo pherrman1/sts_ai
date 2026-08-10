@@ -24,6 +24,7 @@ namespace sts {
         std::bitset<5> skipTurn;
 
         [[nodiscard]] bool areMonstersBasicallyDead() const;
+        [[nodiscard]] bool anyHalfDead() const;
         [[nodiscard]] int getAliveCount() const;
         [[nodiscard]] int getTargetableCount() const; // calculated here, not fast
         [[nodiscard]] int getFirstTargetable() const;

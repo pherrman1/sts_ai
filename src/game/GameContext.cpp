@@ -1363,7 +1363,7 @@ bool GameContext::obtainRelic(RelicId r) {
             openCardSelectScreen(CardSelectScreenType::REMOVE, 2);
             opensScreen = true;
             break;
-        }                                    
+        }
 
         case RelicId::LEES_WAFFLE: {
             playerIncreaseMaxHp(7);
@@ -2140,7 +2140,7 @@ void GameContext::playerOnDie() {
     if (it != potions.end()) {
         *it = Potion::EMPTY_POTION_SLOT;
         --potionCount;
-        curHp = std::max(1, static_cast<int>(hasBark ? 0.6f : 0.3f * static_cast<float>(maxHp)));
+        curHp = std::max(1, static_cast<int>((hasBark ? 0.6f : 0.3f) * static_cast<float>(maxHp)));
         return;
     }
 
@@ -2623,8 +2623,8 @@ void GameContext::chooseEventOption(int idx) {
                         if (addRelic) {
                             reward.addRelic(combatRewardRelic);
                         }
-                        reward.addCardReward(createCardReward(Room::EVENT));
-                        addPotionRewards(reward);
+                        reward.addCardReward(gc.createCardReward(Room::EVENT));
+                        gc.addPotionRewards(reward);
                         gc.openCombatRewardScreen(reward);
                         gc.regainControlAction = returnToMapAction;
                     };
@@ -2681,7 +2681,7 @@ void GameContext::chooseEventOption(int idx) {
                 case 4:
                     loseGold(unfavorable ? 110 : 90);
                     regainControlAction = [=](GameContext &gc) {
-                        gc.deck.upgradeRandomCards(miscRng, 1);
+                        gc.deck.upgradeRandomCards(gc.miscRng, 1);
                         returnToMapAction(gc);
                     };
                     openCardSelectScreen(CardSelectScreenType::REMOVE, 1);
@@ -3031,7 +3031,7 @@ void GameContext::chooseEventOption(int idx) {
                         Rewards reward;
                         reward.addGold(goldAmt);
                         reward.addRelic(rareRelic);
-                        addPotionRewards(reward);
+                        gc.addPotionRewards(reward);
                         reward.addCardReward(gc.createCardReward(Room::EVENT));
                         gc.openCombatRewardScreen(reward);
                         gc.regainControlAction = returnToMapAction;
@@ -3076,8 +3076,8 @@ void GameContext::chooseEventOption(int idx) {
                     Rewards reward;
                     reward.addGold(goldAmt);
                     reward.addRelic(RelicId::ODD_MUSHROOM);
-                    addPotionRewards(reward);
-                    reward.addCardReward(createCardReward(Room::EVENT));
+                    gc.addPotionRewards(reward);
+                    reward.addCardReward(gc.createCardReward(Room::EVENT));
                     gc.openCombatRewardScreen(reward);
                     gc.regainControlAction = returnToMapAction;
                 };
@@ -3735,7 +3735,6 @@ void GameContext::chooseCampfireOption(int idx) {
 
         case 4: { // TOKE
             openCardSelectScreen(CardSelectScreenType::REMOVE, 1);
-            regainControl();
             break;
         }
 

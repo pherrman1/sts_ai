@@ -477,7 +477,8 @@ void BattleContext::exitBattle(GameContext &g) const {
     const auto &m = monsters.arr[0];
     if (m.id == MonsterId::WRITHING_MASS && m.miscInfo) {
         if (player.hasRelic<R::OMAMORI>()) {
-            --g.relics.getRelicValueRef(RelicId::OMAMORI);
+            auto &omamori = g.relics.getRelicValueRef(RelicId::OMAMORI);
+            if (omamori > 0) --omamori;
         } else {
             g.deck.obtain(g, CardId::PARASITE);
 
@@ -773,7 +774,10 @@ void BattleContext::executeActions() {
             break;
         }
 
-        if (outcome == Outcome::PLAYER_LOSS) {
+        // Combat ends as soon as an outcome is decided (matches real StS:
+        // the killing blow ends the fight immediately, so queued retaliation
+        // actions such as Thorns/Spikes must never execute after victory).
+        if (outcome != Outcome::UNDECIDED) {
             break;
         }
 
@@ -2271,6 +2275,15 @@ void BattleContext::discardPotion(int idx) {
 void BattleContext::drinkPotion(int idx, int target) {
     const bool hasBark = player.hasRelic<R::SACRED_BARK>();
     const Potion p = potions[idx];
+
+    // The real game forbids using Smoke Bomb in combat. Refuse to consume the
+    // potion instead of silently wasting it (previously `// todo break;`).
+    if (p == Potion::SMOKE_BOMB) {
+        std::cerr << seed << " Smoke Bomb cannot be used in combat; potion slot "
+                  << idx << " not consumed" << std::endl;
+        return;
+    }
+
     discardPotion(idx);
 
     // todo - dont need to add to bot because always will have nothing in actionQueue?
@@ -2428,7 +2441,7 @@ void BattleContext::drinkPotion(int idx, int target) {
             break;
 
         case Potion::SMOKE_BOMB:
-            // todo
+            // unreachable: guarded before consumption above
             break;
 
         case Potion::SNECKO_OIL:
@@ -3018,7 +3031,7 @@ void BattleContext::chooseDualWieldCard(int handIdx) {
 void BattleContext::chooseDiscardToHandCard(int discardIdx, bool forZeroCost) {
     CardInstance c = cards.discardPile[discardIdx];
     cards.removeFromDiscard(discardIdx);
-    if (cardSelectInfo.cardSelectTask == CardSelectTask::LIQUID_MEMORIES_POTION) {
+    if (forZeroCost) {
         c.setCostForTurn(0);
     }
     moveToHandHelper(c);

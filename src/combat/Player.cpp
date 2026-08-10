@@ -343,7 +343,9 @@ void Player::wouldDie(BattleContext &bc) {
         }
     }
 
-    bc.outcome = Outcome::PLAYER_LOSS;
+    if (bc.outcome == Outcome::UNDECIDED) {
+        bc.outcome = Outcome::PLAYER_LOSS;
+    }
 }
 
 void Player::applyEndOfTurnPowers(BattleContext &bc) {

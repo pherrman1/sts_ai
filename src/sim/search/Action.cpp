@@ -87,7 +87,13 @@ bool isValidPotionAction(const BattleContext &bc, const search::Action &a) {
 
     } else {
 
-        if (p == sts::Potion::FAIRY_POTION) {
+        // Fairy in a Bottle is NOT usable in combat (auto-procs on lethal) and
+        // Smoke Bomb is forbidden in combat by the real game. Offering either a
+        // "use" action makes the search throw the potion away for zero benefit:
+        // drinkPotion's Fairy case is a no-op assert compiled out under NDEBUG,
+        // and the Smoke Bomb case refuses to consume the potion, so the action
+        // is a pure no-op. Never offer them.
+        if (p == sts::Potion::FAIRY_POTION || p == sts::Potion::SMOKE_BOMB) {
             return false;
         }
 
@@ -198,6 +204,10 @@ bool isValidSingleCardSelectAction(const BattleContext &bc, const search::Action
 }
 
 bool isValidMultiCardSelectAction(const BattleContext &bc, const search::Action &a) { // this can be sped up using compiler intrinsics
+    if (bc.inputState != InputState::CARD_SELECT) {
+        return false;
+    }
+
     switch (bc.cardSelectInfo.cardSelectTask) {
         case sts::CardSelectTask::EXHAUST_MANY: {
             const auto selected = a.getSelectedIdxs();

@@ -902,7 +902,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 #endif
             isEscapingB = true;
             bc.monsters.monstersAlive--;
-            if (bc.monsters.getAliveCount() == 0) {
+            if (bc.monsters.getAliveCount() == 0 && bc.outcome == Outcome::UNDECIDED) {
                 bc.outcome = Outcome::PLAYER_VICTORY;
             }
             break;
@@ -947,7 +947,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
 #endif
             isEscapingB = true;
             bc.monsters.monstersAlive--;
-            if (bc.monsters.getAliveCount() == 0) {
+            if (bc.monsters.getAliveCount() == 0 && bc.outcome == Outcome::UNDECIDED) {
                 bc.outcome = Outcome::PLAYER_VICTORY;
             }
             break;

@@ -14,6 +14,22 @@ bool MonsterGroup::areMonstersBasicallyDead() const {
     return monstersAlive <= 0;
 }
 
+bool MonsterGroup::anyHalfDead() const {
+    // A half-dead monster awaiting a MANDATORY revival defers victory until it
+    // comes back. Only the Awakened One stage 1 qualifies: its rebirth must
+    // run before victory (issue #51). Darkling regrow is intentionally
+    // pre-empted by victory at monstersAlive == 0 (the last darkling to die
+    // stays dead; matching the real game's max-two-revives rule), so a
+    // half-dead Darkling must NOT defer victory or the fight loops forever.
+    for (int i = 0; i < monsterCount; ++i) {
+        const auto &m = arr[i];
+        if (m.isHalfDead() && m.id == MonsterId::AWAKENED_ONE) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int MonsterGroup::getTargetableCount() const {
     int count = 0;
     for (int i = 0; i < monsterCount; ++i) {

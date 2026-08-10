@@ -126,7 +126,10 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
 - `Belief::update` zero-weights particles that contradict the observed pile,
   and `Belief::sample` falls back to uniform when all weights are equal or
   total zero, so an observation that contradicts every particle resets the
-  belief (`src/sim/search/CombatObservation.cpp`).
+  belief (`src/sim/search/CombatObservation.cpp`). Searcher3's in-search
+  `belief.update` calls are off by default since issue #58 (2026-08-10): the
+  default-on internal update destroyed the root belief within ~60 sims;
+  `STS_S3_INTERNAL_BELIEF_UPDATE=1` restores the historical behavior.
 - `CombatObservation::operator==` and `visibleHash` share one canonical field
   set; card piles compare as `CardKey` multisets, so order-insensitive equality
   is deliberate and equal observations hash equally.

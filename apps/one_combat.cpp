@@ -2782,7 +2782,10 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             // one-ply Q shop pick (R6, §76)
         } else if (shopV && gc.screenState == ScreenState::SHOP_ROOM) {
             shopVPolicy(gc);                                            // V-knapsack shop buys
-        } else if (shopV && inRemoveSelect) {
+        } else if (shopV && gc.curRoom == Room::SHOP && inRemoveSelect) {
+            // Shop-scoped (issue 65): CARD_SELECT/REMOVE is also used by Neow,
+            // EMPTY_CAGE, and events (Purifier, Ancient Writing); only the shop
+            // removal should hit the shop-V removal policy.
             removeSelectVPolicy(gc);                                    // shop removal target
         } else if (oocOnePlyRestPolicy(gc, agent)) {
             // one-ply Q campfire pick (Phase 5, 5.5.2)
@@ -8090,7 +8093,10 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
         }
 
         // Pre-decision copy: per-action successor simulations must start here.
-        const GameContext pre = gc;
+        // Detach the shared map (issue 83): the live policy's transitionToAct
+        // regenerates *map in place; pre must own a copy.
+        GameContext pre = gc;
+        if (gc.map) pre.map = std::make_shared<Map>(*gc.map);
 
         // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
         // heuristic map pathing, forced non-card rewards one at a time, native
@@ -8277,7 +8283,7 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
         int perRunMax = maxDecisions / std::max(1, nSeeds) + 5;
         int sourceWon = 0, sourceFloor = 0, sourceHp = 0;
 
-        while (gc.outcome == GameOutcome::UNDECIDED && localDecisions < perRunMax) {
+        while (gc.outcome == GameOutcome::UNDECIDED) {
             path.update(gc);
             int screen = (int)gc.screenState;
             int gateKind = 0;
@@ -8300,6 +8306,7 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
                 gateKind = 7; isOwned = true;
             }
             if (!isOwned) { stepFrozenV4Ooc(gc, agent); continue; }
+            if (localDecisions >= perRunMax) { stepFrozenV4Ooc(gc, agent); continue; }
 
             GameContext pre = detachedCounterfactualCopy(gc);
             PathHistory prePath = path;
@@ -8394,7 +8401,7 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
                       << chosenIdx << ',' << chosenExact << ',' \
                       << v4BestIdx << ',' << v4Margin << ',' << v4Threshold << ',' \
                       << (v4Fired?1:0) << ',' << v4ExecutedIdx << ',' << v4Override << ',' \
-                      << stateRow << ',' << actionMetas[ai] << ',' << hiddenChangedVal << ",0,0,0\n";
+                      << '"' << stateRow << '"' << ',' << actionMetas[ai] << ',' << hiddenChangedVal << ",0,0,0\n";
 
             // Regime F
             for (int h = 0; h < H; ++h) {
@@ -8574,7 +8581,10 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
         }
 
         // Pre-decision copy: per-action successor simulations must start here.
-        const GameContext pre = gc;
+        // Detach the shared map (issue 83): the live policy's transitionToAct
+        // regenerates *map in place; pre must own a copy.
+        GameContext pre = gc;
+        if (gc.map) pre.map = std::make_shared<Map>(*gc.map);
         const PathHistory prePath = path;
         const int decIdx = (int)rows.size();
 
@@ -9978,7 +9988,8 @@ int main(int argc, char **argv) {
     }
     if (const char *d = std::getenv("STS_WIN_NET")) {       // native V_win tree-walk (no v_server socket)
         const std::string path = std::string(d) == "1" ? "build/v_win_trees.txt" : d;
-        g_winNet.load(path, richIdxMap());
+        if (!g_winNet.load(path, richIdxMap()))
+            std::cerr << "[STS_WIN_NET] failed to load win tree: " << path << "\n";
     }
     {
         // The baseline is serverless by default. Set STS_NATIVE_OOC=0 only
@@ -10083,6 +10094,9 @@ int main(int argc, char **argv) {
                       << " minSims=" << search::g_convRootMinSims
                       << " patience=" << search::g_convRootPatience
                       << " maxFrac=" << search::g_convRootMaxFrac << "]\n";
+        if (search::g_convRootStop && (search::g_convRootStart <= 0 || search::g_convRootGrow <= 1.0))
+            std::cout << "[root-stability warning: STS_CONV_ROOT_START must be >0 and STS_CONV_ROOT_GROW >1.0;"
+                      << " searchToTotalRootStable forces the full budget instead of growing by chunks]\n";
     }
     if (const char *d = std::getenv("STS_BOSS_DRAFT")) {      // boss-gated rollout drafting
         g_bossDraft = std::atoi(d) != 0;
@@ -10775,6 +10789,12 @@ int main(int argc, char **argv) {
         double eps    = argc > 5 ? std::stod(argv[5]) : 0.25;
         std::string out = argc > 6 ? argv[6] : "data.csv";
         search::g_fairPlay = argc > 7 ? std::stoi(argv[7]) != 0 : false;
+        if (const char *sf = std::getenv("STS_FAIR")) {              // warn when the positional arg overrides the env
+            const bool envFair = std::atoi(sf) != 0;
+            if (envFair != search::g_fairPlay)
+                std::cerr << "[datagen] warning: positional arg overrides STS_FAIR=" << sf
+                          << " -> g_fairPlay=" << (search::g_fairPlay ? 1 : 0) << "\n";
+        }
         long long seedOff = argc > 8 ? std::stoll(argv[8]) : 0;
         dataGen(nSeeds, sims, asc, eps, out, seedOff);
 
@@ -11467,27 +11487,6 @@ int main(int argc, char **argv) {
             for (int i = 0; i < n.edgeCount; ++i) std::printf(" %d", n.edges[i]);
             std::printf("\n");
         }
-
-    } else if (mode == "winnettest") {    // validate native V_win == server VW on identical vectors
-        std::uint64_t seed = argc > 2 ? std::stoull(argv[2]) : 0;
-        int asc = argc > 3 ? std::stoi(argv[3]) : 0;
-        if (!g_winNet.ok && !g_winNet.load("build/v_win_trees.txt", richIdxMap())) { std::cerr << "load failed\n"; return 1; }
-        GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-        search::ScumSearchAgent2 agent; agent.simulationCountBase = 200; agent.rng = std::default_random_engine(seed);
-        PathHistory path; t_curPath = &path;
-        double maxDiff = 0, sumDiff = 0; int n = 0;
-        while (gc.outcome == GameOutcome::UNDECIDED && n < 300) {
-            path.update(gc);
-            if (gc.screenState != ScreenState::BATTLE) {
-                const double nat = g_winNet.predict(richFeatureVec(gc));
-                double srv = -1; std::sscanf(vSendRecv("VW;" + vFeatCsv(gc)).c_str(), "%lf", &srv);
-                if (srv >= 0) { const double d = std::fabs(nat - srv); maxDiff = std::max(maxDiff, d); sumDiff += d; ++n; }
-            }
-            if (gc.screenState == ScreenState::BATTLE) { BattleContext bc; bc.init(gc); agent.playoutBattle(bc); bc.exitBattle(gc); }
-            else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) search::GameAction(chooseMapAction(gc)).execute(gc);
-            else agent.stepOutOfCombatPolicy(gc);
-        }
-        std::printf("winnettest: %d samples  max|native-server| = %.6f  mean = %.6f\n", n, maxDiff, sumDiff / std::max(1, n));
 
     } else if (mode == "mapnntest") {    // deterministic C++-vs-Python parity for the V6 map-DAG path
         // Fixed synthetic inputs; the Python side (export_strategic.py) computes

@@ -34,7 +34,7 @@ void Monster::applyStartOfTurnPowers(BattleContext &bc) {
     }
 
     if (hasStatus<MS::POISON>() && !bc.monsters.areMonstersBasicallyDead()) {
-        bc.addToBot(Actions::PoisonLoseHpAction());
+        bc.addToBot(Actions::PoisonLoseHpAction(this->idx));
     }
 }
 
@@ -290,9 +290,11 @@ void Monster::die(BattleContext &bc) {
         setMove(MonsterMoveId::AWAKENED_ONE_REBIRTH);
         bc.cardQueue.clear();
 
-    } else if (bc.monsters.monstersAlive == 0 || hasStatus<MS::MINION_LEADER>()) {
+    } else if ((bc.monsters.monstersAlive == 0 && !bc.monsters.anyHalfDead()) || hasStatus<MS::MINION_LEADER>()) {
 //            bc.cleanCardQueue(); // todo should this really return like this?
-        bc.outcome = Outcome::PLAYER_VICTORY;
+        if (bc.outcome == Outcome::UNDECIDED) {
+            bc.outcome = Outcome::PLAYER_VICTORY;
+        }
         return;
     }
 
@@ -331,7 +333,7 @@ void Monster::suicideAction(BattleContext &bc) {
 
     --bc.monsters.monstersAlive;
     curHp = 0;
-    if (bc.monsters.monstersAlive == 0) {
+    if (bc.monsters.monstersAlive == 0 && bc.outcome == Outcome::UNDECIDED) {
         bc.outcome = Outcome::PLAYER_VICTORY;
     }
 }

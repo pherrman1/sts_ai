@@ -58,9 +58,9 @@ namespace sts {
 
         static Action AttackPlayer(int idx, int damage);
         static Action DamagePlayer(int damage, bool selfDamage=false);
-        
+
         static Action VampireAttack(int damage); // only used by shelled parasite
-        
+
         static Action PlayerLoseHp(int hp, bool selfDamage=false);
         static Action HealPlayer(int amount);
 
@@ -155,7 +155,7 @@ namespace sts {
 
         static Action SuicideAction(int monsterIdx, bool triggerRelics);
 
-        static Action PoisonLoseHpAction();
+        static Action PoisonLoseHpAction(int monsterIdx);
         static Action RemovePlayerDebuffs(); // Orange Pellets Relic
 
         static Action DualityAction(); // Duality Relic

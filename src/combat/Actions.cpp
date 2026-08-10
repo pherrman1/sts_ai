@@ -149,7 +149,9 @@ Action Actions::NoOpRollMove() {
 }
 
 Action Actions::ChangeStance(Stance stance) {
-    return sts::Action();
+    return {[] (BattleContext &bc) {
+        // stance system is not implemented; no-op to avoid an empty actFunc crash
+    }};
 }
 
 Action Actions::GainEnergy(int amount) {
@@ -890,7 +892,7 @@ Action Actions::WarcryAction() {
 Action Actions::TimeEaterPlayCardQueueItem(const CardQueueItem &x) {
     return {[=] (BattleContext &bc) {
         auto item = x;
-        item.exhaustOnUse |= bc.curCardQueueItem.card.doesExhaust();
+        item.exhaustOnUse |= item.card.doesExhaust();
         item.triggerOnUse = false;
         bc.curCardQueueItem = item;
         bc.onAfterUseCard();
@@ -907,11 +909,15 @@ Action Actions::UpgradeAllCardsInHand() {
 }
 
 Action Actions::EssenceOfDarkness(int darkOrbsPerSlot) {
-    return sts::Action();
+    return {[] (BattleContext &bc) {
+        // orb system is not implemented; no-op to avoid an empty actFunc crash
+    }};
 }
 
 Action Actions::IncreaseOrbSlots(int count) {
-    return sts::Action();
+    return {[] (BattleContext &bc) {
+        // orb system is not implemented; no-op to avoid an empty actFunc crash
+    }};
 }
 
 Action Actions::SuicideAction(int monsterIdx, bool triggerRelics) {
@@ -927,8 +933,17 @@ Action Actions::SuicideAction(int monsterIdx, bool triggerRelics) {
     }};
 }
 
-Action Actions::PoisonLoseHpAction() {
-    return sts::Action();
+Action Actions::PoisonLoseHpAction(int monsterIdx) {
+    return {[=] (BattleContext &bc) {
+        Monster &m = bc.monsters.arr[monsterIdx];
+        if (m.isDeadOrEscaped() || !m.hasStatus<MS::POISON>()) {
+            return;
+        }
+        // poison damage ignores block (DamageType.THORNS in the original game)
+        m.damageUnblockedHelper(bc, m.getStatus<MS::POISON>());
+        m.decrementStatus<MS::POISON>();
+        bc.checkCombat();
+    }};
 }
 
 Action Actions::RemovePlayerDebuffs() {
