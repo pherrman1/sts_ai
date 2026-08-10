@@ -4667,7 +4667,7 @@ unFullRunOOC runs, for each counter relic the
 ## §124 Winrate-wave baseline re-measurement + S3 feature-ablation re-derivation on the live-valid default binary (2026-08-07, local + GCP)
 
 - **What:** the winrate-wave (§124-numbered) baseline wave
-  (`docs/knowledge-base/plan-winrate-ideas-2026-08-07.md`): re-measure the
+  (`docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md`): re-measure the
   recorded §113/§115 references (44.5% @3k/256p, 37.5% @1k/64p) on the
   current binary (HEAD 7b1a8d2, live-valid + forced-move defaults ON, §123)
   — the §123 flip happened after the references were measured — and
@@ -4719,7 +4719,7 @@ unFullRunOOC runs, for each counter relic the
 ## §124a PVNet deployment-speed smoke (phase 6 of plan-value-targets-2026-08-07): conditional leaf gating + visible-state leaf cache implemented; behavior-preserving cache verified; gate pending on the §124 baseline (2026-08-07, local WSL)
 
 - **What:** phase-6 speed work for the PVNet leaf in Searcher3, per
-  `docs/knowledge-base/plan-value-targets-2026-08-07.md` (user request;
+  `docs/archive/research/plans/plan-value-targets-2026-08-07.md` (user request;
   a phase-5 value-only trainer draft was reverted in the same session —
   nothing of it remains). Two mechanisms:
   1. `STS_PVNET_COND_{TURN,DEPTH,BOSS}` gate the per-expansion NN leaf
@@ -4767,7 +4767,7 @@ unFullRunOOC runs, for each counter relic the
 ## §125 Winrate-wave Wave-1/2 gates: cPUCT sweep, STS_S3_EXPAND, TERM_WIN+cpsi — all null or negative; the leaf-evaluator line flips POSITIVE with a fresh honest-data vnet (§126) (2026-08-07, local + GCP)
 
 - **What:** the winrate-wave gated items that do not involve the vnet
-  (`docs/knowledge-base/plan-winrate-ideas-2026-08-07.md` §3.3/§4.1/§4.2).
+  (`docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md` §3.3/§4.1/§4.2).
   All arms: full V4 gate stack, S3−belief−chain, block 126700 (unless noted),
   asc 0, fair, paired with `paired_analysis.py` vs the §124 references.
 - **cPUCT sweep (STS_CPUCT; §3.3):** 128-seed local probe @1k/64p:
@@ -4808,7 +4808,7 @@ unFullRunOOC runs, for each counter relic the
 ## §126 Fresh honest-data combat V_combat leaf (STS_VNET, α=0.3): THREE significant gates (+12.5/+12.1/+12.5pp) — PROMOTED to default ON in the fair-S3 path (recorded cpu-trade call); §97's rejection reversed (2026-08-07, local + GCP)
 
 - **What:** the winrate-wave boss-leaf item (§4.3 of
-  `docs/knowledge-base/plan-winrate-ideas-2026-08-07.md`), reframed by the
+  `docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md`), reframed by the
   evidence: a NEW combat value net trained on fresh honest trajectories,
   applied UNCONDITIONALLY at a LOW blend weight. §97's rejection (old
   1,500-tree vnet, old-era data, α0.3/0.5 under the pre-§113 stack) does not
@@ -5009,7 +5009,7 @@ unFullRunOOC runs, for each counter relic the
   positive).
 ## §128 Value-only utility-distribution model (plan-value-targets phase 5): trained on the §3.4 fairgen rows; ~4× better win calibration than the tracked PVNet on the same held-out rows (2026-08-07, local)
 
-- **What:** phase 5 of `docs/knowledge-base/plan-value-targets-2026-08-07.md`:
+- **What:** phase 5 of `docs/archive/research/plans/plan-value-targets-2026-08-07.md`:
   a value-only transformer (same 14-token encoder as CombatPVNet, NO policy
   head) predicting a 51-bin categorical over the MCTS terminal utility
   R = 0 on loss, 50 + endHp on win (bin 0 = loss; bins 1-50 = endHp/maxHp
@@ -5491,7 +5491,7 @@ unFullRunOOC runs, for each counter relic the
   differ slightly from the originally recorded unseeded bootstrap (e.g. α0.3
   upper bound −6.2 → −5.9, α0.7 upper bound −11.3 → −10.9) because the
   bootstrap is now deterministic. The B1 'beam' idea in
-  `docs/knowledge-base/plan-rollout-experiments-2026-08-07.md` was NOT
+  `docs/archive/research/plans/plan-rollout-experiments-2026-08-07.md` was NOT
   implemented: as written it simultaneously requires beam pruning and forbids
   scoring partial beam states, which is not a complete algorithm; it needs a
   revised spec before any implementation.
@@ -7072,7 +7072,7 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
   (`/dev/fd/3` → gzip), achieving **59× compression**.
 - **Crash:** `ActionQueue::pushBack` assertion at run 14,800/100,000 —
   capacity-50 overflow under fair-S3+vnet. Filed as
-  [issue #50](issues/2026-08-09-issue-actionqueue-overflow.md).
+  [issue #50](docs/knowledge-base/issues/2026-08-09-issue-actionqueue-overflow.md).
 - **Data recovered:** 3,355,244 rows, 181 MB gzipped, seeds 3,000–17,860
   (~14,860 seeds, avg 226 rows/seed — vnet runs survive longer than §126's
   192 rows/seed).
@@ -7532,3 +7532,41 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   diagnostic, not yet a promotion claim.
 - **Artifacts:** `build/ooc_v4_noshop_s3_act3_64_1786298692.csv`, paired
   report, sidecar.
+
+## §166 Recovered MCTS-leaf MLP and deep-target experiment arc (2026-08-09; consolidated 2026-08-11)
+
+- **Provenance:** recovered before deleting ignored legacy agent state from
+  `.ai/session-summary-2026-08-09-deepsets-v3.md` through `v17.md`. These
+  summaries were not authoritative records and did not preserve every seed
+  range or artifact hash. Results below are therefore **Unverified historical
+  evidence** except where independently recorded in §157-§158.
+- **Configuration reported by the summaries:** project-fair Searcher3,
+  belief/chain off, 64 particles, 1,000 simulations per decision, no OOC gate
+  stack, and normally `STS_VNET_ALPHA=0.3`. Online comparisons used common
+  32-seed blocks unless stated otherwise; exact seed ranges and thread counts
+  were not recorded.
+- **MCTS-distribution imitation:** a flat `733 -> 256 -> 128 -> 1` MLP trained
+  on 278K XGBoost-guided MCTS leaf states reached held-out Pearson 0.964 versus
+  its XGBoost teacher. Reported online results were 46.9% versus XGBoost 43.8%
+  at 32 seeds and 43.8% versus 41.4% at 128 seeds. The 128-seed difference was
+  treated as noise, not a promotion. The corresponding reported artifact was
+  `build/v_combat_mlp_mcts.txt`.
+- **Deep-search utility targets:** a model trained on Searcher3 backed-up
+  utility achieved offline RMSE 8.75 and Pearson 0.964 against that target but
+  only 34.4% online versus the teacher MLP's 46.9%. One warm-start DAgger
+  iteration improved it to 40.6%; second iterations regressed to 25.0%
+  (warm-start) and 21.9% (fresh). The summaries report that XGBoost-, V0-, and
+  V1-guided state distributions remained 84-85% distinguishable.
+- **Residual correction:** adding a learned deep-utility residual to the
+  teacher with beta 0.01 reportedly reduced the 32-seed result from 46.9% to
+  34.4%. Larger corrections were worse. The residual mostly behaved as an
+  upward bias rather than a state-specific correction.
+- **Terminal-endHP target:** a warm-started MLP trained on 42K joined states
+  improved validation RMSE from 13.76 to 11.61 and Pearson from 0.737 to 0.750,
+  corrected a reported CULTIST overprediction blind spot, but tied the teacher
+  at 46.9% on 32 seeds.
+- **Verdict:** MCTS-distribution imitation was competitive with its tree
+  teacher, but raw deep-search utility, iterative DAgger beyond one iteration,
+  residual correction, and terminal-endHP relabeling did not establish an
+  online improvement. This research line is closed unless reconstructed from
+  preserved artifacts with a new premise and fully recorded paired protocol.

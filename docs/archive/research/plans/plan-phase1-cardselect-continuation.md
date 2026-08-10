@@ -1,6 +1,6 @@
 # Session continuation plan — Phase 1 (CARD_SELECT parity) completion
 
-Date: 2026-08-05. Status: **COMPLETE (T1–T5 executed 2026-08-05; §113)** —
+Date: 2026-08-05. Status: **ARCHIVED; COMPLETE (T1–T5 executed 2026-08-05; §113)** —
 the plan's tasks ran as written, the issue-48 hypothesis was **falsified**,
 and the follow-up bisect found the true cause: **the control S3 enumerator
 skip-won battles at WARCRY/GAMBLE CARD_SELECT states**. The parity fix is

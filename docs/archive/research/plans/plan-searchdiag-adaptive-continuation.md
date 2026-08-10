@@ -1,6 +1,6 @@
 # Session continuation plan — adaptive-combat-search (searchdiag Phase 0 + STS_CONV_ROOT Phase 1)
 
-Date: 2026-08-06. Status: **COMPLETE (T1–T6 executed 2026-08-06; §118–§120)** —Phase 0 (rollout-cause split + timing) and Phase 1 (root-stability adaptivesearch) were implemented, built, and locally measured on 64 fair seeds @1k
+Date: 2026-08-06. Status: **ARCHIVED; COMPLETE (T1–T6 executed 2026-08-06; §118–§120)** —Phase 0 (rollout-cause split + timing) and Phase 1 (root-stability adaptivesearch) were implemented, built, and locally measured on 64 fair seeds @1k
 (encouraging but provisional). The continuation session ran T1 (smoke), T2
 (128-seed local paired run), T3 (256-seed GCP gate on sts-test), T4
 (EXPERIMENTS.md §118), T5 (defaults decision), and T6 (Phase 2

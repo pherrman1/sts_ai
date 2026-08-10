@@ -3,6 +3,9 @@
 Date: 2026-08-10
 Git: current `main` (post-C0/A1 experiment)
 
+Status: **ARCHIVED preliminary diagnostic.** Superseded by
+`docs/knowledge-base/encounter-marg-final-summary-2026-08-10.md`.
+
 ---
 
 ## 1. Stack Bridge: fresh-tree vs obs-stable N=1 reuse

@@ -3,6 +3,9 @@
 Date: 2026-08-10  
 Git: current `main` (with `strategicmarggen` mode)
 
+Status: **ARCHIVED intermediate snapshot.** Superseded by
+`docs/knowledge-base/encounter-marg-final-summary-2026-08-10.md`.
+
 ---
 
 ## 1. Completed — Phase A (Fix + Revalidate)

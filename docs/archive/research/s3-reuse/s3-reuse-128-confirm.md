@@ -2,7 +2,7 @@
 
 Date: 2026-08-09
 Commit: `ecebb0e`
-Status: **KEEP EXPERIMENTAL — strong positive signal, needs second 128-seed block for p<0.05**
+Status: **ARCHIVED intermediate result.** Superseded by the final promotion record.
 
 ## 1. N=1 semantics verified
 

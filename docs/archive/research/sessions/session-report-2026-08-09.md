@@ -3,6 +3,9 @@
 Date: 2026-08-09  
 Session scope: Waves 0A–0I through deployment-metric export and screen confirmation
 
+Status: **ARCHIVED intermediate session snapshot.** Do not use as current
+research guidance.
+
 ## 1. Executive Summary
 
 **Corrected honest V4 is confirmed at 128 paired seeds on the frozen fair S3 + 7k-VNet Act-3 stack.**
@@ -199,8 +202,8 @@ Important caveat: these are **retrospective metrics on training data**, not a cl
 
 | What | Where |
 |---|---|
-| Plan | `docs/knowledge-base/plan-ooc-strategic-investigation-2026-08-09.md` |
-| Session handoff | `docs/knowledge-base/session-handoff-2026-08-09.md` |
+| Plan | `docs/archive/research/plans/plan-ooc-strategic-investigation-2026-08-09.md` |
+| Session handoff | `docs/archive/research/sessions/session-handoff-2026-08-09.md` |
 | Experiment log | `EXPERIMENTS.md` §§155–165 |
 | Race fix | `docs/knowledge-base/decision-log/2026-08-09-thread-local-potion-value.md` |
 | Trainer fix | `docs/knowledge-base/decision-log/2026-08-09-strategic-training-split-fix.md` |

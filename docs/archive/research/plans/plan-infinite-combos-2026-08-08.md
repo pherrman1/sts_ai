@@ -1,6 +1,6 @@
 # Infinite-combo research direction (2026-08-08)
 
-Status: **Future research direction** — investigation complete, phased plan
+Status: **ARCHIVED future research direction** — investigation complete, phased plan
 designed, not yet scheduled for implementation. No code changes.
 
 ## Purpose

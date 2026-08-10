@@ -1,6 +1,6 @@
 # Combat-value targets plan — frontier-leaf data, particle relabeling, utility-distribution target (2026-08-07)
 
-Status: **ACTIVE companion plan** to `plan-winrate-ideas-2026-08-07.md`. Phases are
+Status: **ARCHIVED companion plan** to `plan-winrate-ideas-2026-08-07.md`. Phases are
 numbered 1-7 in the order proposed by the user on 2026-08-07. Phase 1 is
 **owned by another agent** and not duplicated here. Phase 6 (PVNet deployment
 speed) is **implemented 2026-08-07** (gate pending); phase 5 (value-only

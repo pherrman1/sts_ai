@@ -1,6 +1,6 @@
 # S3 Fair Tree Reuse — Final Report
 
-Date: 2026-08-09 | Status: **PROMOTED TO DEFAULT**
+Date: 2026-08-09 | Status: **ARCHIVED final investigation report; PROMOTED TO DEFAULT**
 
 ## What we did
 
@@ -256,7 +256,7 @@ STS_REUSE_MAX_SEARCHES=0 ./build/one_combat bestbench ...
 - `src/sim/search/BattleScumSearcher3.cpp` — implementation, depth==2 gate, defaults
 - `src/sim/search/ScumSearchAgent2.cpp` — agent loop with reuse control, RNG gate, diag hooks
 - `apps/one_combat.cpp` — env var parsing
-- `docs/knowledge-base/investigations/s3-tree-reuse*.md` — investigation records
+- `docs/archive/research/s3-reuse/s3-tree-reuse*.md` — investigation records
 - `docs/knowledge-base/decisions/s3-obs-stable-reuse-promotion.md` — promotion decision
 
 ## ELI5

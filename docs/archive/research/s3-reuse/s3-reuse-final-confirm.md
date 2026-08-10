@@ -2,7 +2,7 @@
 
 Date: 2026-08-09
 Commit: `ecebb0e`
-Status: **KEEP EXPERIMENTAL — consistently positive direction but p=0.22, CPU inconsistent between blocks**
+Status: **ARCHIVED intermediate result.** Superseded by the final promotion record.
 
 ## Block 2: seeds 200000–200127 (128 seeds)
 

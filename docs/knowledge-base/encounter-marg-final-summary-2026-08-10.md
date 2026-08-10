@@ -2,6 +2,9 @@
 
 Date: 2026-08-10
 
+Status: Final evidence report. Current follow-up routing is maintained in
+`docs/knowledge-base/evaluation/current-research.md`.
+
 ---
 
 ## 1. What was accomplished vs the CLI queue

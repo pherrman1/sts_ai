@@ -1,6 +1,7 @@
 # Handoff plan — Self-play relabeling (5.7.3): retrain the strategic one-ply Q gate model on labels from the current combat controller
 
-Date: 2026-08-07. Status: **READY TO EXECUTE** (plan-mode handoff, no context assumed).
+Date: 2026-08-07. Status: **ARCHIVED**. Later controller and strategic-label
+work superseded this handoff; revalidate the premise before reuse.
 Owner: any new agent. Repo: `sts_lightspeed/` (working dir `.../Documents/sts/sts_lightspeed`).
 
 ---
@@ -11,7 +12,7 @@ Owner: any new agent. Repo: `sts_lightspeed/` (working dir `.../Documents/sts/st
 2. `docs/knowledge-base/README.md` (KB index) + `docs/knowledge-base/evaluation/current-baselines.md`.
 3. `EXPERIMENTS.md` §124–§130 (the winrate wave this plan extends; **§126 = the deployed vnet; §129 = the gate-stack combat datagen follow-up, NULL; §130 = counter-aware OOC closed**). §124a/b/c, §127, §128 belong to a parallel agent's sessions — check the file tail for new entries and use the **next free § number** before writing (see §7).
 4. `docs/knowledge-base/architecture/out-of-combat.md` (strategic model), `docs/knowledge-base/architecture/training-and-inference.md` (producers/trainers), `docs/knowledge-base/architecture/combat-search.md` (S3 + vnet).
-5. This plan's parent: `docs/knowledge-base/plan-winrate-ideas-2026-08-07.md` §5.1 (Wave 3, deferred until now).
+5. This plan's parent: `docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md` §5.1 (Wave 3, deferred until now).
 
 Concurrency note: a parallel agent owns `plan-value-targets-2026-08-07.md` (combat leaf/value work) and edits the same shared files (EXPERIMENTS.md, decision-log README, one_combat.cpp). Before writing anything, `git status` + `git log --oneline -3`; stage only your intended files; never `pkill -f v_server.py`; never delete ignored buffers.
 

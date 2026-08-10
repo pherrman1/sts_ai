@@ -1,7 +1,7 @@
 # S3 fair tree reuse — observation-stable investigation
 
 Date: 2026-08-09
-Status: **Observation-stable + keep stats beats control (+3.1pp). First reuse arm to do so.**
+Status: **ARCHIVED intermediate result.** Superseded by the final promotion record.
 
 ## 64-seed paired gate results (asc 0, 1000 sims, 64 particles, 12 threads)
 

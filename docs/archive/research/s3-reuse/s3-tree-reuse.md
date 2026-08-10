@@ -1,7 +1,7 @@
 # S3 fair tree reuse — investigation summary
 
 Date: 2026-08-09
-Status: All reuse arms falsified at 64-seed gate. Diagnostics in tree as opt-in tooling.
+Status: **ARCHIVED intermediate result.** Later observation-stable reuse work superseded it.
 
 ## What was done
 

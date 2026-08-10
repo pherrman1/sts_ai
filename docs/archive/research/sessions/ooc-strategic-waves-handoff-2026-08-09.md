@@ -1,4 +1,4 @@
-# OOC strategic investigation — final Wave 0 report
+# OOC strategic investigation — archived Wave 0 report
 
 Date: 2026-08-09  
 Purpose: give the next coding/research model a complete, concise state of the
@@ -150,7 +150,7 @@ for the next experiments.
 
 | What | Where |
 |---|---|
-| Plan | `docs/knowledge-base/plan-ooc-strategic-investigation-2026-08-09.md` |
+| Plan | `docs/archive/research/plans/plan-ooc-strategic-investigation-2026-08-09.md` |
 | Experiment log | `EXPERIMENTS.md` §§155–165 |
 | Race fix decision | `docs/knowledge-base/decision-log/2026-08-09-thread-local-potion-value.md` |
 | Trainer split fix | `docs/knowledge-base/decision-log/2026-08-09-strategic-training-split-fix.md` |

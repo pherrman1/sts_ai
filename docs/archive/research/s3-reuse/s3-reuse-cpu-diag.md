@@ -1,4 +1,4 @@
-# S3 obs-stable reuse — CPU diagnostic summary
+# Archived S3 obs-stable reuse — CPU diagnostic summary
 
 Date: 2026-08-09 | Commit: `ecebb0e` | 8 seeds each from blocks 100000–100007, 200000–200007
 

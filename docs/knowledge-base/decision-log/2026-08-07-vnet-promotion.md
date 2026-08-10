@@ -2,7 +2,7 @@
 
 Date: 2026-08-07
 Session/task: Winrate wave close-out; promotion decision for the fresh
-honest-data combat value leaf (`docs/knowledge-base/plan-winrate-ideas-2026-08-07.md`).
+honest-data combat value leaf (`docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md`).
 
 ## Decision
 
@@ -58,7 +58,7 @@ honest-data combat value leaf (`docs/knowledge-base/plan-winrate-ideas-2026-08-0
 - Per-seed CSVs `build/vnet_{all_a03_1k,a03_3k,all_a05_1k,all_a07_1k,boss_a03_1k,boss_a05_1k,all_a05_3k}.csv`,
   `build/vnet2_{ctl,a03}_250k.csv`; model sha256 `e69d64cf…`
   (`docs/knowledge-base/evaluation/current-baselines.md`).
-- `docs/knowledge-base/plan-winrate-ideas-2026-08-07.md` §4.3.
+- `docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md` §4.3.
 
 ## Status and follow-up
 

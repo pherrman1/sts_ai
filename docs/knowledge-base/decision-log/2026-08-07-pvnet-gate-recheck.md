@@ -2,7 +2,7 @@
 
 Date: 2026-08-07
 Session/task: Verify whether the phase-6 PVNet deployment-speed gate (planned
-in `docs/knowledge-base/plan-value-targets-2026-08-07.md` §"phase 6") is still
+in `docs/archive/research/plans/plan-value-targets-2026-08-07.md` §"phase 6") is still
 worth running, after the winrate wave §124-§126 landed in commit 3f04e82.
 
 ## Decision

@@ -1,4 +1,4 @@
-# OOC Strategic Investigation — Session Summary & Handoff
+# OOC Strategic Investigation — Archived Session Summary & Handoff
 
 Date: 2026-08-09  
 Git: `50b5867` / `ecebb0e`
@@ -189,8 +189,8 @@ STRAT_PREDICT_ONLY=1 STRAT_PREDICT_CKPT=<ckpt.pt> \
 
 | What | Where |
 |---|---|
-| Plan | `docs/knowledge-base/plan-ooc-strategic-investigation-2026-08-09.md` |
-| Wave 0 handoff | `docs/knowledge-base/ooc-strategic-waves-handoff-2026-08-09.md` |
+| Plan | `docs/archive/research/plans/plan-ooc-strategic-investigation-2026-08-09.md` |
+| Wave 0 handoff | `docs/archive/research/sessions/ooc-strategic-waves-handoff-2026-08-09.md` |
 | Experiment log | `EXPERIMENTS.md` §§155–165 |
 | Race fix decision | `docs/knowledge-base/decision-log/2026-08-09-thread-local-potion-value.md` |
 | Trainer split fix | `docs/knowledge-base/decision-log/2026-08-09-strategic-training-split-fix.md` |

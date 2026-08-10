@@ -1,6 +1,6 @@
 # StS AI knowledge base
 
-Last verified: 2026-08-10 against the current working tree.
+Last verified: 2026-08-11 against the current working tree.
 
 This knowledge base is the maintained technical reference for the repository.
 Code and executable behavior remain authoritative; `EXPERIMENTS.md` retains
@@ -21,35 +21,23 @@ For architecture:
 2. [Combat search](architecture/combat-search.md)
 3. [Out-of-combat policy](architecture/out-of-combat.md)
 4. [Training and inference](architecture/training-and-inference.md)
-5. [OOC strategic investigation handoff](plan-ooc-strategic-investigation-2026-08-09.md) — **active plan**: characterize corrected honest V4 before changing labels.
-6. [OOC strategic waves handoff](ooc-strategic-waves-handoff-2026-08-09.md) — current Wave 0 results, artifacts, blockers, and safe next actions.
-7. [Phase F handoff plan](architecture/ooc-phase-f-plan.md) — **historical active plan**:
-   policy-head search distillation (5.7.1 + 5.7.2), to be executed by the
-   next session; not yet started.
-8. [Self-play relabeling handoff plan](plan-selfplay-relabeling-2026-08-07.md) —
-   **active plan (2026-08-07, ready to execute)**: 5.7.3 — generate Tier-B
-   strategic labels with the current combat controller (S3−belief−chain +
-   live-valid + §126 vnet) and gate a same-recipe tok-net retrain vs the
-   deployed artifact; control/candidate design, exact commands, pre-registered
-   verdict rule inside.
-9. [Phase 1 continuation plan](plan-phase1-cardselect-continuation.md) —
-   **executed 2026-08-05**: T1–T5 done, issue 48 closed; the §112 "regression"
-   was a control S3 battle-skip exploit — the parity fix is correct and is the
-   new recommended baseline (EXPERIMENTS.md §113, `current-baselines.md`).
-10. [Rollout-experiment continuation plan](plan-rollout-experiments-2026-08-07.md) —
-   **active plan (2026-08-07)**: B1 tactical turn-beam rollout (scorer (b),
-   complete-turn scoring after END_TURN), then A2 dynamic α by rollout
-   length, then A3 policy-filtered rollout; A1 (K-rollouts) NULL and A4
-   (one-turn bootstrap) FALSIFIED at the gates (§133); protocol + closed
-   lines inside.
+
+For research status:
+
+1. [Current research](evaluation/current-research.md) — the only maintained
+   routing page for active, parked, and closed research lines.
+2. [Current baselines](evaluation/current-baselines.md) — qualified executable
+   configurations and benchmark references.
+3. `EXPERIMENTS.md` — chronological experiment evidence, including negative
+   and invalidated results.
 
 For evaluation and operation:
 
 1. [Current baselines](evaluation/current-baselines.md)
 2. [Benchmark protocol](evaluation/benchmark-protocol.md)
-4. [Environment variables](operations/environment-variables.md)
-5. [Self-play loop](operations/selfplay-loop.md)
-6. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
+3. [Environment variables](operations/environment-variables.md)
+4. [Self-play loop](operations/selfplay-loop.md)
+5. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
 
 For correctness:
 

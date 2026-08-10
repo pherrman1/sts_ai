@@ -1,7 +1,8 @@
 # OOC Strategic Model — Investigation and Experiment Handoff
 
 Date: 2026-08-09
-Status: active plan; source: user handoff in the agent session.
+Status: **ARCHIVED**. Superseded by completed experiments and
+`docs/knowledge-base/evaluation/current-research.md`.
 
 ## Objective
 

@@ -7,7 +7,7 @@ discovering and executing infinite combos in STS?"
 ## Decision
 
 A 5-investigator, 1-architect session produced
-`docs/knowledge-base/plan-infinite-combos-2026-08-08.md` — a concrete
+`docs/archive/research/plans/plan-infinite-combos-2026-08-08.md` — a concrete
 4-phase plan as a future research direction. No code changes made. The plan
 is not scheduled for implementation.
 

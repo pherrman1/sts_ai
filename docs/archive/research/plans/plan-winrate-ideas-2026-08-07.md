@@ -1,6 +1,6 @@
 # Winrate improvement plan — S3-centered wave (2026-08-07)
 
-Status: **EXECUTED through Wave 2 (2026-08-07), stop-after-Wave-2 per user
+Status: **ARCHIVED; EXECUTED through Wave 2 (2026-08-07), stop-after-Wave-2 per user
 instruction; the §126 follow-up (gate-stack-distribution vnet retrain, §129)
 is COMPLETE — NULL for replacement, the deployed honest-data model stays.**
 Results are in EXPERIMENTS.md §124–§129 and the decision logs
@@ -35,7 +35,7 @@ scope by choice; §122/§123 live-valid + forced-move promotions are DONE and
 not re-gated here. GCP sts-test is available for gates. Every policy-affecting
 item gets its own paired gate per the repo protocol; falsified lines are
 recorded, never silently dropped. When execution starts, copy this file to
-`sts_lightspeed/docs/knowledge-base/plan-winrate-ideas-2026-08-07.md` and log
+`sts_lightspeed/docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md` and log
 a decision-log entry.
 
 ## 1. Current state (verified 2026-08-07, HEAD 7b1a8d2)
@@ -246,7 +246,7 @@ fallback — separate env, separate gate. Do not start before §3.2's verdict.
 
 **Status (2026-08-08): IN EXECUTION — Phase 0 verification done, phases 1–3
 pending.** The handoff plan
-`docs/knowledge-base/plan-selfplay-relabeling-2026-08-07.md` executed Phase 0
+`docs/archive/research/plans/plan-selfplay-relabeling-2026-08-07.md` executed Phase 0
 locally (EXPERIMENTS.md §136): the `strategicgen2` producer verified on the
 current deployed controller (fair S3−belief−chain + live-valid + §126 vnet
 default) — 1017-col schema + Tier-B suffix intact, no vnet warning, 380–771

@@ -1,4 +1,4 @@
-# S3 obs-stable reuse — remove tracking overhead
+# Archived S3 obs-stable reuse — remove tracking overhead
 
 Date: 2026-08-09 | Commit: current HEAD (ecebb0e + optimization)
 

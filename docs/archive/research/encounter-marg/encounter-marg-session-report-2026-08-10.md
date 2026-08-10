@@ -2,6 +2,9 @@
 
 Date: 2026-08-10
 
+Status: **ARCHIVED intermediate snapshot.** Superseded by
+`docs/knowledge-base/encounter-marg-final-summary-2026-08-10.md`.
+
 ---
 
 ## 1. Stack Bridge

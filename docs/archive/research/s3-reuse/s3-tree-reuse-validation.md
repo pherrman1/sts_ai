@@ -1,7 +1,7 @@
 # S3 fair tree reuse — validation round
 
 Date: 2026-08-09
-Status: **obs-stable + keep + N=1 (G) beats control by +6.3pp. Promotable to 128-seed confirmation.**
+Status: **ARCHIVED intermediate result.** Superseded by the final promotion record.
 
 ## 1. STS_REUSE_MAX_SEARCHES bug (fixed)
 

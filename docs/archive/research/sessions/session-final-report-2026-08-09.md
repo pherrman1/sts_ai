@@ -3,6 +3,9 @@
 Date: 2026-08-09  
 Git range: `3feb2a1` through `d38272f` (plus concurrent agent changes to CMakeLists.txt, apps/test.cpp)
 
+Status: **ARCHIVED session report.** Current research status is maintained in
+`docs/knowledge-base/evaluation/current-research.md`.
+
 ---
 
 ## 1. What was accomplished

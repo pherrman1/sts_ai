@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-08-10 against the current working tree.
+Last verified: 2026-08-11 against the current working tree.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -79,6 +79,7 @@ before broad repository search.
 | `bestbench` | `apps/one_combat.cpp` | Default whole-run mode, `$ nSims $ nSeeds $ asc` | [current-baselines.md](evaluation/current-baselines.md), [benchmark-protocol.md](evaluation/benchmark-protocol.md) |
 | Paired analysis | `paired_analysis.py` | Parses `bestbench` header, validates HP/time | [benchmark-protocol.md](evaluation/benchmark-protocol.md) |
 | Current baselines | `docs/knowledge-base/evaluation/current-baselines.md` | Single source for headline configuration and numbers | (self) |
+| Current research | `docs/knowledge-base/evaluation/current-research.md` | Single routing source for active, parked, and closed research lines | (self) |
 
 ## Self-play
 

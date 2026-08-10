@@ -1,7 +1,7 @@
 # Phase F plan — policy-head search distillation (5.7.1 + 5.7.2 only)
 
-Status: **ACTIVE handoff plan (2026-08-04) for a new session.** Not yet
-executed — this is the plan to run. Scope: action-plan items 5.7.1 (produce
+Status: **ARCHIVED handoff plan (2026-08-04).** It is not current execution
+guidance. Scope: action-plan items 5.7.1 (produce
 improved policy targets `π_target(a|s) ∝ exp(Q_search(s,a)/τ)`) and 5.7.2
 (train the policy head toward those targets). **5.7.3 (the iterative
 play→search→train→repeat loop) is explicitly out of scope.** Record the

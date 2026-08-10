@@ -1,7 +1,7 @@
 # Plan: rollout-leaf experiment continuation (B1 turn-beam, A2 dynamic α, A3 policy filter)
 
-Date: 2026-08-07. Status: **active plan** for the next session. Supersedes the
-session-internal ordering; A1/A4 are closed, B1 is next.
+Date: 2026-08-07. Status: **ARCHIVED**. This is historical experiment design,
+not current execution guidance. See `docs/knowledge-base/evaluation/current-research.md`.
 
 ## 1. Program status
 
