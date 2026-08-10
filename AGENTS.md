@@ -235,6 +235,31 @@ sandbox. Deterministic repository protections remain authoritative.
    size merely because a larger benchmark would be more statistically precise.
 7. Inspect `git diff`, generated artifacts, paths, symbols, and documentation.
 
+## Research experiment handoffs
+
+Research handoffs are implementation contracts for testing a specific hypothesis. Treat each handoff as potentially coming from a fresh agent session.
+
+* Reconstruct relevant context from the current repository, maintained knowledge base, and experiment history. Do not rely on prior chat/session memory.
+* Verify all handoff assumptions against current code and tests before implementing them. Current code and reproducible evidence override the handoff.
+* Treat suggested implementation details as proposals, not authority. If the proposed mechanism does not fit the current implementation, choose the smallest correct implementation that tests the stated hypothesis and report the discrepancy.
+* Prefer experiments that change one conceptual variable at a time. Do not bundle unrelated cleanup, refactors, optimizations, or feature work into an experiment.
+* Preserve the stated baseline and comparison conditions unless changing them is required for correctness. If they cannot be preserved, stop and report why.
+* Use the cheapest verification that establishes implementation correctness. Do not automatically run large statistical evaluations when a focused test or small seed sweep is sufficient.
+* Separate implementation correctness from scientific interpretation. Your job is normally to implement the experiment and produce evidence, not to decide whether the hypothesis succeeded.
+
+At completion, return an evidence-oriented report containing:
+
+1. resulting commit SHA, if committed;
+2. files changed and `git diff --stat`;
+3. any important deviation from the handoff and why;
+4. exact verification commands executed;
+5. raw test and benchmark results;
+6. failures, warnings, or unresolved uncertainty;
+7. any additional experiment command that should be run manually.
+
+Do not replace raw evidence with a persuasive summary. A later reviewer should be able to inspect the code and results independently.
+
+
 ## Critical safety and correctness traps
 
 - Combat loops terminate on `bc.outcome == Outcome::UNDECIDED`; `isBattleOver()`
