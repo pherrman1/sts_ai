@@ -1,6 +1,6 @@
 # Decision log
 
-Last verified: 2026-08-08 against the current working tree.
+Last verified: 2026-08-10 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one
@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-10 | [`2026-08-10-default-commit-push.md`](2026-08-10-default-commit-push.md) | Default completion contract: successful coding handoffs now commit task-scoped changes and push with plain `git push`; opencode.json permits `git commit *` and bare `git push`, denies argument-bearing/dangerous push forms (`git push *`, explicit-path and git-option variants), keeps `--amend` and all destructive-git/seed-safety denies; matching semantics verified against opencode v1.18.15 source (last-match-wins, trailing ` *` is optional). |
 | 2026-08-10 | [`2026-08-10-issue-79-80-safety-fixes.md`](2026-08-10-issue-79-80-safety-fixes.md) | Issues 79/80: added `leafdiag`/`leafref`/`rollouttrace`/`frontiergen` to `KNOWN_ONE_COMBAT_SEED_SWEEP_ARG_INDEX` (argv positions verified in `one_combat.cpp`); fixed the `check_replay.py` off-by-one in `sts-safety.ts::oversizedSeedSweep` (argv[3] is nseeds, confirmed in `check_replay.py`); protected `.pi/extensions/sts-cycle/{artifacts,git-state,types,verification}.ts`; added `>`/`>>`-to-protected-path and bare `rm -r` patterns to `DANGEROUS_BASH_PATTERNS`. |
 | 2026-08-10 | [`2026-08-10-sts-cycle-final-verify-and-escalation-fix.md`](2026-08-10-sts-cycle-final-verify-and-escalation-fix.md) | `/sts-cycle` fixes (issues 77/78): FINAL_VERIFY now runs the plan's `expensive` tier as the real final gate (was an empty set no-op that vacuously passed) and rejects on gate failure; escalation exhaustion after `MAX_SOL` senior FIX rounds now returns REJECTED; `shouldEscalate` receives real verification history; senior reviewer artifacts refreshed after escalation fixes. |
 | 2026-08-10 | [`2026-08-10-issue-82-fix.md`](2026-08-10-issue-82-fix.md) | Issue 82: native-OOC gate batches (baseline/value/policy) no longer start v_server; only the server-backed meta arm (`STS_NATIVE_OOC=0`) does (`needs_server` guard). |

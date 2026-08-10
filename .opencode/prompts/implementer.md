@@ -21,8 +21,15 @@ Implementation rules:
 - do not perform opportunistic refactors
 - do not change formatting in unrelated areas
 - do not delete unrelated untracked or ignored files
-- do not commit unless the user explicitly asks
-- do not push unless the user explicitly asks
+
+Completion contract (see AGENTS.md "Default completion: commit and push"):
+- when the handoff completed successfully and changed the repository, commit
+  only task-scoped changes and push the current branch to its configured
+  upstream by default
+- do not commit unrelated pre-existing changes
+- an explicit user instruction not to commit/push overrides the default
+- use plain `git push` only; never force-push, delete remote branches, or
+  rewrite history
 
 Seed-sweep safety:
 - pass game-seed commands through tools/seed_guard.sh or use guard-only mode
@@ -65,3 +72,13 @@ DEVIATIONS FROM PLAN
 
 OPEN CONCERNS
 - "None" or precise unresolved concerns
+
+COMMIT
+- SHA
+- commit message
+- task-scoped files committed
+
+PUSH
+- exact command
+- PASS/FAIL
+- upstream/remote result reported by git

@@ -222,6 +222,42 @@ archive-link instructions. More detail:
    size merely because a larger benchmark would be more statistically precise.
 7. Inspect `git diff`, generated artifacts, paths, symbols, and documentation.
 
+## Default completion: commit and push
+
+A successfully completed coding handoff that changed the repository is
+committed and pushed by default. Do not wait for an explicit `git commit` or
+`git push` request.
+
+1. Verify the handoff's required checks pass (cheapest focused verification).
+2. Inspect `git status` and the complete `git diff`.
+3. Distinguish pre-existing changes from changes made for this handoff using
+   the `git status` captured before editing (Modification workflow step 1).
+   Never assume every dirty file belongs to the current task.
+4. Stage only files/hunks belonging to this handoff. Prefer explicit
+   task-scoped staging when unrelated local changes exist.
+5. Create one focused commit with a concise message describing the actual
+   code/research change.
+6. Run exactly `git push` to push the current branch to its configured
+   upstream, then report the commit SHA and push result.
+
+Rules:
+
+- A read-only investigation or handoff that made no repository changes must
+  not create an empty commit.
+- An explicit user instruction not to commit or push overrides this default.
+- If required verification fails or meaningful unresolved correctness
+  concerns remain, do not create a commit merely to make the tree clean;
+  report the failure instead, unless the handoff explicitly requests
+  preservation of a failed experimental state.
+- Never commit unrelated pre-existing changes. If task changes cannot be
+  safely separated from pre-existing changes, do not commit them together;
+  report the problem.
+- Never force-push, never use `--force-with-lease`, never delete remote
+  branches, never push with a remote/refspec argument, and never rewrite
+  history. Use plain `git push` only.
+- The existing reset/clean/restore/checkout and recursive-deletion safeguards
+  are unchanged and still apply.
+
 ## Research experiment handoffs
 
 Research handoffs are implementation contracts for testing a specific hypothesis. Treat each handoff as potentially coming from a fresh agent session.
@@ -236,7 +272,8 @@ Research handoffs are implementation contracts for testing a specific hypothesis
 
 At completion, return an evidence-oriented report containing:
 
-1. resulting commit SHA, if committed;
+1. resulting commit SHA and push result, if the handoff changed the repository
+   (default completion above applies);
 2. files changed and `git diff --stat`;
 3. any important deviation from the handoff and why;
 4. exact verification commands executed;
@@ -364,7 +401,9 @@ their inability to run is reported), model/data schemas still agree, `git diff`
 contains only intentional changes with every changed line tracing to the
 request and no speculative additions, referenced paths and symbols exist, and
 required knowledge-base, decision-log, or experiment-log updates are included.
-Policy-quality
+A completed handoff that changed the repository is additionally expected to
+land as a focused task-scoped commit pushed to upstream (see "Default
+completion: commit and push"). Policy-quality
 work additionally requires a reproducible, correctly labelled paired
 evaluation. Documentation work additionally requires link/path checks,
 `git diff --check`, stale-phrase review, and inspection of the complete diff.
