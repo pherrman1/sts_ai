@@ -1,11 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "agent": {
-    "default": {
+    "build": {
       "description": "Interactive implementation agent. Follows AGENTS.md for project conventions.",
       "mode": "primary",
-      "model": "deepseek/deepseek-v4-flash",
-      "reasoningEffort": "high",
       "prompt": "{file:./.opencode/prompts/implementer.md}",
       "permission": {
         "edit": "allow",
@@ -14,10 +12,13 @@
         "websearch": "deny",
         "bash": {
           "*": "allow",
+
           "*one_combat*": "deny",
           "tools/seed_guard.sh *": "allow",
+
           "git commit *": "allow",
           "git commit --amend*": "deny",
+
           "git push *": "deny",
           "git push": "allow",
           "*/git push*": "deny",
@@ -26,40 +27,7 @@
           "git --work-tree=* push*": "deny",
           "git -c * push*": "deny",
           "git --no-pager push*": "deny",
-          "git reset --hard *": "deny",
-          "git clean *": "deny",
-          "rm -rf *": "deny",
-          "git restore *": "deny",
-          "git checkout *": "deny",
-          "git reset *": "deny"
-        }
-      }
-    },
-    "strong": {
-      "description": "Stronger implementation/debugging agent using a more capable model.",
-      "mode": "primary",
-      "model": "deepseek/deepseek-v4-pro",
-      "reasoningEffort": "high",
-      "prompt": "{file:./.opencode/prompts/implementer.md}",
-      "permission": {
-        "edit": "allow",
-        "task": "deny",
-        "webfetch": "deny",
-        "websearch": "deny",
-        "bash": {
-          "*": "allow",
-          "*one_combat*": "deny",
-          "tools/seed_guard.sh *": "allow",
-          "git commit *": "allow",
-          "git commit --amend*": "deny",
-          "git push *": "deny",
-          "git push": "allow",
-          "*/git push*": "deny",
-          "git -C * push*": "deny",
-          "git --git-dir=* push*": "deny",
-          "git --work-tree=* push*": "deny",
-          "git -c * push*": "deny",
-          "git --no-pager push*": "deny",
+
           "git reset --hard *": "deny",
           "git clean *": "deny",
           "rm -rf *": "deny",
