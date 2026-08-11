@@ -2019,8 +2019,18 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   and `126819` win; the same 5 fights still never win (126704, 126731, 126735, 126753,
   126817). Runtime note: 10k-sims probe = 17.6s/fight single-core, so 100k ≈ 176s/fight
   expected; the observed 365.9s wall for 12 parallel fights is ~2x that, consistent with
-  super-linear per-decision cost at 300k sims/decision (boss x3) plus the slowest fight
-  dominating the parallel cell.
+   super-linear per-decision cost at 300k sims/decision (boss x3) plus the slowest fight
+   dominating the parallel cell.
+- **100k-sims particle sweep ({16,32,64,128,256,512} particles, sims fixed at 100k,
+  72 cells in 2054.2s wall / ~34 min, 2026-08-11):** per-cell wins of 12:
+  - 16p→4, 32p→5, 64p→3, 128p→5, 256p→3, 512p→5
+  Combined with the 1024p/100k cell (6/12), the 100k-sims particle axis
+  {16..1024} peaks at **1024p = 6/12**. At 100k sims `126773` wins at every particle
+  count (6/6) and `126783` wins 5/6 (all but 16p), while the never-win set is stable:
+  `126704 126731 126735 126753 126817` (5/6 counts) plus `126808` now also 0/6 at 100k.
+  The 10k-particles/100k-sims cell (3/12) is markedly worse than both 512p/100k (5/12)
+  and 1024p/100k (6/12), so beyond ~1k particles the extra belief particles do not help
+  and hurt. Descriptive isolated-fight results only.
 - **Replay determinism:** a second independent run of the 36 (64p) cells gave 0 diffs
   (won/hpEnd/turns identical).
 - **Fidelity gate (replay == capture-time outcome):** at the recorded config
@@ -2040,5 +2050,7 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
 - **Artifacts:** `build/fightrep_cap/` (captures), `build/fightrep_grid_12f.csv` (64/128/256p,
   108 cells), `build/fightrep_grid_32p512p1024p.csv` (32/512/1024p, 108 cells),
   `build/fightrep_1024p_100k.csv` (1024p/100k, 12 cells),
+  `build/fightrep_10kp_100k.csv` (10k particles/100k, 12 cells),
+  `build/fightrep_100k_16to512p.csv` (16..512p x 100k sims, 72 cells),
   `/tmp/opencode/weird_cases/` (126711 capture set aside for the separate fix).
 - **Status:** re-record complete; 2/12 fidelity flips are an open harness concern.
