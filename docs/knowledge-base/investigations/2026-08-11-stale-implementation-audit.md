@@ -177,22 +177,20 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 **Evidence:**
 - Labeled "CSV of (state features, run outcome) for offline V(state)".
-- Superseded by `datagen2` (rich per-decision state) and `datagen3` (rich + paired counterfactuals).
+- Scientifically superseded by `datagen2` (rich per-decision state) and `datagen3` (rich + paired counterfactuals).
 - The `datagen` mode has a positional `STS_FAIR` override argument (arg position 7) — a dated mechanism; all modern modes use env flags.
-- `datagen2` is still used by `tools/run/datagen2_loop.sh`; `datagen3` by selfplay scripts.
-- No shell/Python script calls the bare `datagen` mode.
+- **Retained caller:** `tools/run/datagen_loop.sh` line 19 directly invokes `./one_combat.elf datagen "$BLOCK" "$SIMS" "$ASC" "$EPS" "$OUT" 0 "$OFF"` for bulk datagen collection.
+- `datagen2` is also still used by `tools/run/datagen2_loop.sh`; `datagen3` by selfplay scripts.
 
-**Scientific status:** Superseded by richer datagen modes.
+**Scientific status:** Superseded theoretically by richer datagen modes, but the retained `tools/run/datagen_loop.sh` script still invokes it for production datagen. This script must be deliberately retired before the mode can be deleted.
 
 **Confidence:** HIGH
 
-**Cleanup value:** LOW (small function).
+**Cleanup value:** LOW.
 
-**Deletion risk:** LOW — `datagen2` and `datagen3` are independent implementations.
+**Deletion risk:** MEDIUM — deleting the mode would break `tools/run/datagen_loop.sh`. Deletion requires a separate decision to retire the script or migrate it to a newer datagen mode.
 
-**Verification cost:** LOW — `datagen2_loop.sh` syntax check; 8-seed smoke.
-
-**Classification:** DEAD_HIGH_CONFIDENCE
+**Classification:** SUPERSEDED_CONNECTED
 
 ---
 
@@ -227,20 +225,14 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 **Evidence:**
 - Labeled "CSV of (state, card features, CRN advantage) for causal card value."
-- No caller in any shell/Python script.
-- The causal card-value line predates the strategic Q-gate approach; no current research references it.
+- **Retained consumer:** `train_advantage.py` line 4 references "Ridge regression on the causalgen CSV" as its training data source. This script exists in the tree and consumes the CSV output of this mode.
+- The causal card-value line predates the strategic Q-gate approach; no current knowledge-base docs reference it.
 
-**Scientific status:** Historical experiment; not part of active or parked research.
+**Scientific status:** Historical experiment with a retained trainer consumer in the repository. The trainer itself may be obsolete, but verifying that requires a separate audit.
 
-**Confidence:** HIGH
+**Confidence:** MEDIUM (caller exists but may itself be dead).
 
-**Cleanup value:** LOW.
-
-**Deletion risk:** LOW.
-
-**Verification cost:** LOW.
-
-**Classification:** DEAD_HIGH_CONFIDENCE
+**Classification:** SUPERSEDED_CONNECTED
 
 ---
 
@@ -276,22 +268,19 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 **Evidence:**
 - These flags control CSV-file diagnostic logging from inside Searcher3.
-- All default off.
-- No caller found in scripts or tooling that sets these flags.
-- The maintained diagnostic modes (`leafdiag`, `leafref`, `rollouttrace`, `frontiergen`, `leafrelabel`) and `searchdiag` provide structured, versioned, documented diagnostics. These ad-hoc bucket/logging flags appear to predate the structured diagnostic infrastructure.
-- The diagnostic logging hooks (`g_onS3LeafQuery`, `g_onRolloutStep`) are the maintained interface.
+- All default off. All are write-only diagnostic CSV producers — none alter search selection, tree structure, belief state, or backpropagation.
+- Each flag family has a dedicated decision-log entry (2026-08-09): `outcome-bucket-diag.md`, `bucket-value-diag.md`, `draw-prob-diag.md`, `leafvalue-residual-diag.md`, and `s3-belief-vs-root-audit.md` (2026-08-10 for `ROOT_RACE_DIAG`).
+- The `BUCKET_VALUE_DIAG` and `OUTCOME_BUCKET_DIAG` were used to study outcome redundancy and value homogeneity, which informed the END_TURN marginalization prototype but remain independently useful diagnostics.
+- The `LEAFVALUE_DIAG` fires auxiliary reference searchers (`searchToTotal`) to establish deep referent values — these are separate searcher objects that do not alter the main search tree.
+- The maintained diagnostic modes (`leafdiag`, `leafref`, `rollouttrace`, `frontiergen`, `leafrelabel`) address different diagnostic questions (leaf-state ranking, rollout smoothness, frontier relabeling) — they do not directly supersede these per-transition/per-bucket outcome diagnostics.
 
-**Scientific status:** Ad-hoc diagnostic logging; superseded by the structured leaf-diagnostic infrastructure (leafdiag/leafref/rollouttrace/frontiergen and `g_onS3LeafQuery`/`g_onRolloutStep` hooks).
+**Scientific status:** Purpose-built diagnostic tools documented in decision logs; each flag captures a specific diagnostic measurement not replicated by the structured leaf-diagnostic modes. They are ad-hoc (flag-activation rather than a mode), but they are not "superseded" — they measure different phenomena.
 
-**Confidence:** MEDIUM (the hook infrastructure is newer; need to confirm these old flags are not needed for any current diagnostic experiment).
+**Confidence:** MEDIUM — each flag requires a deliberate retirement decision based on whether the diagnostic question it answers is still of interest.
 
-**Cleanup value:** MEDIUM (removes ~10 env flags + instrumentation branches from the Searcher3 hot path).
+**Classification:** SUPPORTED_OPTIONAL — diagnostic infrastructure with decision-log provenance. Deletion should be a separate per-flag decision, not bundled into a bulk cleanup.
 
-**Deletion risk:** LOW — these are CSV-write-only, never alter search behavior.
-
-**Verification cost:** MEDIUM — need to verify no script/analysis tool reads the CSV formats these flags produce.
-
-**Classification:** DEAD_HIGH_CONFIDENCE (tentative — verify before deletion).
+**Deletion risk in a future cleanup:** MEDIUM — need to confirm each flag's CSV output is not consumed by any current analysis tool.
 
 ---
 
@@ -299,17 +288,19 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 **Cluster:** `STS_S3_ENDTURN_MARGINALIZE`, `STS_S3_ENDTURN_MARGINALIZE_PARTICLES`, `STS_S3_ENDTURN_MARGINALIZE_MAX_PILE`
 
+**Files/symbols involved:** `apps/one_combat.cpp` lines 10344–10355; `include/sim/search/BattleScumSearcher3.h` lines 486–491; `src/sim/search/BattleScumSearcher3.cpp` lines 99–105, 1795–1798, 2662–2676, 3281 (endTurnMarginalEval)
+
 **Evidence:**
-- All default off.
-- No documentation in architecture or research pages.
-- No reference in experiment ledgers.
-- These appear to be a closed experiment in the same line as the falsified belief-reweighting approaches.
+- **Behavior-changing:** This is NOT write-only diagnostic instrumentation. When enabled, Searcher3 samples particles at END_TURN boundaries, buckets by visibleHash, evaluates one representative per bucket via the full multi-rollout + leaf blend path, computes a weighted marginal expectation, and backpropagates that alternative evaluation. It bypasses the ordinary chain/rollout/blend path when marginalization succeeds.
+- Decision log: `2026-08-09-endturn-marginalization.md`. Verdict: **STOP** — marginalization adds ~56% search CPU with no clear quality benefit at equal CPU. The prototype works correctly but the cost outweighs the variance reduction.
+- The decision log explicitly lists possible future uses: training target generation, root-only tactical calculation, offline leaf-value relabeling.
+- The code is not dead — it is a stopped prototype retained for possible reuse in non-MCTS contexts.
 
-**Scientific status:** Closed/falsified experiment; superseded by the `STS_S3_BELIEF=0` recommended regime.
+**Scientific status:** STOPped prototype (2026-08-09). The mechanism is correct; the cost/benefit in MCTS was unfavorable. Retained for potential future use in training targets or offline relabeling.
 
-**Confidence:** MEDIUM-HIGH (need to confirm no current experiment is actively testing END_TURN marginalization).
+**Confidence:** HIGH
 
-**Classification:** DEAD_HIGH_CONFIDENCE (tentative)
+**Classification:** REPRO_ONLY — a stopped experiment whose implementation remains for future investigation or offline applications. Should NOT be included in any HIGH-confidence deletion batch.
 
 ---
 
@@ -319,10 +310,10 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 **Evidence:**
 - Default off.
-- Tree reuse diagnostics; the non-fair reuse path is not the current research direction (fair S3 is the recommended combat searcher).
+- Tree reuse diagnostics; the non-fair reuse path is not the current research direction.
 - No active caller in scripts.
 
-**Scientific status:** Diagnostic from the non-fair reuse investigation; parked.
+**Scientific status:** Diagnostic from the reuse investigation; parked.
 
 **Confidence:** MEDIUM — `STS_REUSE_CARRY_DIAG` may still be useful for understanding reuse behavior; these are write-only diagnostics.
 
@@ -439,6 +430,13 @@ All meaningful experimental `STS_*` flags found in `apps/one_combat.cpp` main() 
 | `STS_S3_REAL_BELIEF_FILTER` | OFF | `apps/one_combat.cpp:10376` | Real-observation belief filter | SUPPORTED_OPTIONAL |
 | `STS_S3_REAL_BELIEF_COLLAPSE_FRESH` | OFF | `apps/one_combat.cpp:10380` | Collapse-fresh fallback | SUPPORTED_OPTIONAL |
 | `STS_S3_SEMANTIC_CARD_EDGES` | OFF | `apps/one_combat.cpp:10316` | Semantic card edges (tested) | SUPPORTED_OPTIONAL |
+| `STS_REUSE_MAX_SEARCHES` | 1 | `apps/one_combat.cpp:10285` | Max carried searches per fresh tree (0 = fresh only); promoted to default in fair-S3 path per `decisions/s3-obs-stable-reuse-promotion.md` | SUPPORTED_OPTIONAL |
+| `STS_REUSE_STATS_MODE` | keep (0) | `apps/one_combat.cpp:10289` | Subtree statistics handling (keep vs recursive_reset); `keep` is the promoted default | SUPPORTED_OPTIONAL |
+| `STS_REUSE_ALWAYS_Q` | OFF (false) | `apps/one_combat.cpp:10296` | Force Q exploitation from carried tree (catastrophic in gates; default off) | SUPPORTED_OPTIONAL |
+| `STS_REUSE_OBS_STABLE` | ON (true) | `apps/one_combat.cpp:10304` | Obs-stable one-step tree reuse; promoted to default in fair-S3 path since 2026-08-09 | SUPPORTED_OPTIONAL |
+| `STS_REUSE_RECONCILE_ROOT` | OFF (false) | `apps/one_combat.cpp:10308` | Experimental root reconciliation (not enabled) | SUPPORTED_OPTIONAL |
+| `STS_S3_UNION_EXPAND` | OFF (false) | `apps/one_combat.cpp:10404` | At every internal-node visit, add missing legal edges and track availability; changes tree structure and edge enumeration. Part of the S3 reuse architecture; listed in the promoted default configuration table as experimental/not-enabled | SUPPORTED_OPTIONAL |
+| `STS_S3_BELIEF_AUDIT` | OFF | `apps/one_combat.cpp:10372` | Belief audit CSV logging; diagnostic companion to the real-belief-filter research | DIAGNOSTIC |
 
 ### FALSIFIED / CLOSED (opt-in, default-off, retained as reproducibility/ablation levers)
 
@@ -489,23 +487,35 @@ All meaningful experimental `STS_*` flags found in `apps/one_combat.cpp` main() 
 | --- | --- | --- | --- | --- |
 | `STS_VNET_COND_BOSS` | OFF | `apps/one_combat.cpp:10568` | Load-only flag; parsed and stored but no code reads it at predict time — the CombatValueNet predict path does not check `g_vnetCondBossOnly` | DEAD_HIGH_CONFIDENCE |
 | `STS_VNET_COND_ACT3` | OFF | `apps/one_combat.cpp:10569` | Same as above — load-only, no runtime effect | DEAD_HIGH_CONFIDENCE |
-| `STS_COMBAT_WIN_BONUS` | OFF | `apps/one_combat.cpp:10566` | Load-only flag; `setWinBonus()` is called but the VNet's win-bonus field may not be used in the current predict path (end-HP target, not utility-R) — **need to verify** | UNKNOWN |
 
-### POTENTIALLY DEAD FLAGS (existed for closed experiments; need caller verification before deletion)
+### UNKNOWN (requires further investigation before classification)
 
 | Flag | Default | Location | Status | Classification |
 | --- | --- | --- | --- | --- |
-| `STS_S3_OUTCOME_BUCKET_DIAG*` | OFF | `apps/one_combat.cpp:10320` | Ad-hoc diagnostic CSV logging, superseded by structured leaf diagnostics | DEAD_HIGH_CONFIDENCE |
-| `STS_S3_BUCKET_VALUE_DIAG*` | OFF | `apps/one_combat.cpp:10332` | Same as above | DEAD_HIGH_CONFIDENCE |
-| `STS_S3_DRAW_PROB_DIAG*` | OFF | `apps/one_combat.cpp:10356` | Same as above | DEAD_HIGH_CONFIDENCE |
-| `STS_S3_LEAFVALUE_DIAG*` | OFF | `apps/one_combat.cpp:10364` | Same as above | DEAD_HIGH_CONFIDENCE |
-| `STS_S3_ENDTURN_MARGINALIZE*` | OFF | `apps/one_combat.cpp:10344` | Closed experiment; superseded by belief-OFF regime | DEAD_HIGH_CONFIDENCE |
-| `STS_S3_ROOT_RACE_DIAG*` | OFF | `apps/one_combat.cpp:10392` | Ad-hoc diagnostic logging | DEAD_HIGH_CONFIDENCE |
-| `STS_S3_UNION_EXPAND` | OFF | `apps/one_combat.cpp:10404` | Unknown experiment; no doc reference found | UNKNOWN |
-| `STS_S3_BELIEF_AUDIT*` | OFF | `apps/one_combat.cpp:10372` | Belief audit logging; kept separate from real-belief-filter research (which is parked) | DIAGNOSTIC |
-| `STS_REUSE_CPU_DIAG*` | OFF | `apps/one_combat.cpp:10408` | Tree-reuse CPU diagnostic; non-fair reuse path | DIAGNOSTIC |
-| `STS_REUSE_CARRY_DIAG` | OFF | `apps/one_combat.cpp:10312` | Same | DIAGNOSTIC |
-| `STS_REUSE_DIAG` | OFF | `apps/one_combat.cpp:10300` | Tree-reuse diagnostics | DIAGNOSTIC |
+| `STS_COMBAT_WIN_BONUS` | OFF | `apps/one_combat.cpp:10566` | Load-only flag; `setWinBonus()` is called but the VNet's win-bonus field may not be used in the current predict path (end-HP target, not utility-R) — need to verify | UNKNOWN |
+
+### DIAGNOSTIC-ONLY FLAGS (write-only CSV logging; not gameplay/search behavior changes)
+
+All of these flags have decision-log documentation from 2026-08-09/10 and are write-only CSV producers. They do not alter the search tree, belief state, selection, or backpropagation. Each should be retired via a deliberate per-flag decision, not bulk cleanup.
+
+| Flag | Default | Location | Scientific status | Classification |
+| --- | --- | --- | --- | --- |
+| `STS_S3_OUTCOME_BUCKET_DIAG*` | OFF | `apps/one_combat.cpp:10320` | Decision log `2026-08-09-outcome-bucket-diag.md`; measures outcome distribution per END_TURN transition | SUPPORTED_OPTIONAL |
+| `STS_S3_BUCKET_VALUE_DIAG*` | OFF | `apps/one_combat.cpp:10332` | Decision log `2026-08-09-bucket-value-diag.md`; measures continuation value per bucket | SUPPORTED_OPTIONAL |
+| `STS_S3_DRAW_PROB_DIAG*` | OFF | `apps/one_combat.cpp:10356` | Decision log `2026-08-09-draw-prob-diag.md`; computes exact hypergeometric draw probabilities | SUPPORTED_OPTIONAL |
+| `STS_S3_LEAFVALUE_DIAG*` | OFF | `apps/one_combat.cpp:10364` | Decision log `2026-08-09-leafvalue-residual-diag.md`; runs reference searchers to establish deep referent values (auxiliary searchers, does not alter main search tree) | SUPPORTED_OPTIONAL |
+| `STS_S3_ROOT_RACE_DIAG*` | OFF | `apps/one_combat.cpp:10392` | Decision log `2026-08-10-s3-belief-vs-root-audit.md`; writes per-root-action probe rows | SUPPORTED_OPTIONAL |
+| `STS_S3_BELIEF_AUDIT*` | OFF | `apps/one_combat.cpp:10372` | Belief audit CSV logging; diagnostic companion to the parked real-belief-filter research | SUPPORTED_OPTIONAL |
+| `STS_REUSE_CPU_DIAG*` | OFF | `apps/one_combat.cpp:10408` | Tree-reuse CPU diagnostic; parked diagnostic from reuse investigation | SUPERSEDED_CONNECTED |
+| `STS_REUSE_CARRY_DIAG` | OFF | `apps/one_combat.cpp:10312` | Similar to above; parked diagnostic | SUPERSEDED_CONNECTED |
+| `STS_REUSE_DIAG` | OFF | `apps/one_combat.cpp:10300` | General tree-reuse diagnostics | SUPERSEDED_CONNECTED |
+
+### BEHAVIOR-CHANGING EXPERIMENTAL FLAGS (NOT diagnostic-only; not recommended for bulk cleanup)
+
+| Flag | Default | Location | Scientific status | Classification |
+| --- | --- | --- | --- | --- |
+| `STS_S3_ENDTURN_MARGINALIZE*` | OFF | `apps/one_combat.cpp:10344` | STOPped prototype (2026-08-09 decision log). Changes search behavior: samples particles, buckets outcomes, backpropagates weighted marginal instead of ordinary rollout/blend. Retained for potential offline/training applications. | REPRO_ONLY |
+| `STS_S3_UNION_EXPAND` | OFF | `apps/one_combat.cpp:10404` | Experimental feature in S3 reuse architecture. At every internal-node visit, adds missing legal edges and tracks availability. Listed as experimental/not-enabled in the promoted default configuration (`decisions/s3-obs-stable-reuse-promotion.md`). Changes tree structure and edge enumeration — not write-only. | SUPPORTED_OPTIONAL |
 
 ---
 
@@ -549,7 +559,7 @@ All meaningful experimental `STS_*` flags found in `apps/one_combat.cpp` main() 
 | `bench` | Basic benchmark | No current caller found | Superseded by `bestbench` | DEAD_HIGH_CONFIDENCE |
 | `mcts` | Single combat MCTS | No current caller found | Ad-hoc test | DEAD_HIGH_CONFIDENCE |
 | `random` | Single combat random | No current caller found | Ad-hoc test | DEAD_HIGH_CONFIDENCE |
-| `datagen` | Original simple state-outcome CSV | No current caller found | Superseded by datagen2 | DEAD_HIGH_CONFIDENCE |
+| `datagen` | Original simple state-outcome CSV for offline V(state) | `tools/run/datagen_loop.sh` (directly invokes with seed offset) | Superseded by datagen2/datagen3 but retained caller exists | SUPERSEDED_CONNECTED |
 | `draftbench` | Weighted table vs lookahead drafting | No current caller found | Historical A/B | DEAD_HIGH_CONFIDENCE |
 | `cardbench` | Card drafting A/B | No current caller found | Historical A/B | DEAD_HIGH_CONFIDENCE |
 | `combobench` | Baseline vs greedy draft+heuristic path | No current caller found | Historical A/B | DEAD_HIGH_CONFIDENCE |
@@ -558,7 +568,7 @@ All meaningful experimental `STS_*` flags found in `apps/one_combat.cpp` main() 
 | `shopbench` | Default shop vs V-knapsack (needs v_server) | No current caller found | Historical A/B, server-dependent | DEAD_HIGH_CONFIDENCE |
 | `allbench` | All-default vs rest-V+shop-V (needs v_server) | No current caller found | Historical A/B, server-dependent | DEAD_HIGH_CONFIDENCE |
 | `skipbench` | Card-skip sweep (needs v_server) | No current caller found | Historical sweep, server-dependent | DEAD_HIGH_CONFIDENCE |
-| `causalgen` | CRN advantage for causal card value | No current caller found | Closed experiment | DEAD_HIGH_CONFIDENCE |
+| `causalgen` | CRN advantage for causal card value | `train_advantage.py` references its CSV output as training data | Historical experiment with a retained trainer consumer | SUPERSEDED_CONNECTED |
 | `carddump` | Dump card properties | No current caller found | One-off debug tool | DEAD_HIGH_CONFIDENCE |
 | `deck` | Dump final deck+relics | No current caller found | One-off debug tool | DEAD_HIGH_CONFIDENCE |
 
@@ -585,9 +595,10 @@ Ordered by cleanup value / deletion risk / verification cost, each batch changes
 
 ### Batch 2 — Basic dead modes (HIGH confidence, low risk)
 
-**Concept:** Remove `bench`, `runbench`, `mcts`, `random`, `datagen`, `draftbench`, `cardbench`, `combobench`, `pathbench`, `causalgen`, `carddump`, `deck` modes.
+**Concept:** Remove `bench`, `runbench`, `mcts`, `random`, `draftbench`, `cardbench`, `combobench`, `pathbench`, `carddump`, `deck` modes.
 
 **Why second:** Same confidence pattern as Batch 1 but across more modes. Each removal is independent. Some functions may be shared with live code — verify before deleting.
+- `datagen` and `causalgen` are EXCLUDED from this batch (retained callers: `tools/run/datagen_loop.sh` and `train_advantage.py`). Reclassify them as SUPERSEDED_CONNECTED; deletion requires first retiring the caller scripts.
 
 **Files changed:** `apps/one_combat.cpp` only.
 
@@ -595,21 +606,17 @@ Ordered by cleanup value / deletion risk / verification cost, each batch changes
 
 ---
 
-### Batch 3 — Dead S3 diagnostic flags (HIGH confidence, medium cleanup value)
+### Batch 3 — Load-only dead flags (HIGH confidence, low risk, small cleanup value)
 
-**Concept:** Remove `STS_S3_OUTCOME_BUCKET_DIAG*`, `STS_S3_BUCKET_VALUE_DIAG*`, `STS_S3_DRAW_PROB_DIAG*`, `STS_S3_LEAFVALUE_DIAG*`, `STS_S3_ROOT_RACE_DIAG*`, `STS_S3_UNION_EXPAND`, `STS_S3_ENDTURN_MARGINALIZE*` flags, their global declarations, and the CSV-write instrumentation inside `BattleScumSearcher3.cpp`.
+**Concept:** Remove `STS_VNET_COND_BOSS` and `STS_VNET_COND_ACT3` and their global declarations. These are parsed, echoed, and stored but never read at predict time — they are load-only dead code.
 
-**Why third:** These flags are default-off, write-only diagnostics. Removing them:
-- Reduces flag-count by ~15.
-- Removes instrumentation branches from the S3 hot path.
-- Low risk — proven default-off + byte-identical-when-unset.
-- Cleanup value is medium because it reduces Searcher3 code surface.
+**Why third:** These are the only flags with HIGH-confidence evidence of being truly dead (no runtime effect). They are separate from diagnostic flags (which have decision-log provenance) and from behavior-changing experimental flags (which need deliberate retirement decisions).
 
-**Files changed:** `apps/one_combat.cpp` (flag parsing + global declarations), `include/sim/search/BattleScumSearcher3.h` (global flags), `src/sim/search/BattleScumSearcher3.cpp` (instrumentation).
+**Files changed:** `apps/one_combat.cpp` (flag parsing + global declarations).
 
-**Verification:** 8-seed structural-equality smoke (prove byte-identical output pre/post removal); `bestbench` 8-seed smoke; `searchdiag` 4-seed smoke.
+**Verification:** `vnettest` parity check (prove byte-identical VNet predictions); `bestbench` 8-seed smoke.
 
----
+**Not included in this batch:** The S3 diagnostic flags (`STS_S3_OUTCOME_BUCKET_DIAG*`, etc.) have decision-log documentation and are write-only diagnostic tools. The behavior-changing experimental flags (`STS_S3_ENDTURN_MARGINALIZE*`, `STS_S3_UNION_EXPAND`) are NOT in this batch — see below for deferred items.
 
 ### Batch 4 — Server-dependent OOC flags (MEDIUM confidence, higher risk)
 
@@ -671,7 +678,10 @@ Ordered by cleanup value / deletion risk / verification cost, each batch changes
 | `apps/parity_test.cpp` | Maintained by `parity_test.py`; small file |
 | `apps/main.cpp` + ConsoleSimulator path | Part of the pybind11 module contract; needed for the `slaythespire` module |
 | `STS_CONV_ROOT`, `STS_ROLLOUT_CAPS` | Falsified at gates but isolated, byte-identical when unset; useful for reproduction |
-| `STS_S3_BELIEF_AUDIT*`, `STS_REUSE_*` diagnostic flags | Write-only CSV diagnostics; zero gameplay impact; useful for future investigations |
+| `STS_S3_ENDTURN_MARGINALIZE*` | STOPped prototype (2026-08-09); behavior-changing experimental flag; retained for potential offline/training applications |
+| `STS_S3_UNION_EXPAND` | Experimental S3 reuse feature; part of reuse architecture; changes tree structure; not recommended for deletion |
+| S3 diagnostic flags (OUTCOME_BUCKET_DIAG*, etc.) | Write-only CSV diagnostics with decision-log documentation; each requires per-flag retirement decision |
+| Core S3 reuse configuration (`STS_REUSE_OBS_STABLE`, `STS_REUSE_MAX_SEARCHES`, etc.) | Promoted to default since 2026-08-09 (decisions/s3-obs-stable-reuse-promotion.md); current behavior, NOT stale |
 
 ---
 
@@ -680,11 +690,17 @@ Ordered by cleanup value / deletion risk / verification cost, each batch changes
 | Candidate cluster | Confidence | Cleanup value | Deletion risk | Verification cost |
 | --- | --- | --- | --- | --- |
 | Batch 1: Server-dependent benchmark modes | HIGH | MEDIUM | LOW | LOW |
-| Batch 2: Basic dead modes | HIGH | LOW | LOW | LOW |
-| Batch 3: Dead S3 diagnostic flags | MEDIUM-HIGH | MEDIUM | LOW | MEDIUM |
+| Batch 2: Basic dead modes (excl. datagen/causalgen) | HIGH | LOW | LOW | LOW |
+| Batch 3: Load-only dead flags (`STS_VNET_COND_*`) | HIGH | LOW | LOW | LOW |
 | Batch 4: Server-dependent OOC flags | MEDIUM | HIGH | MEDIUM | MEDIUM |
 | Batch 5: Checkpoint oracle machinery | MEDIUM | HIGH | MEDIUM | HIGH |
 | Batch 6: Falsified S2 features | HIGH | LOW | LOW | LOW |
+
+Deferred (not in any cleanup batch):
+- S3 diagnostic flags (OUTCOME_BUCKET_DIAG*, etc.) — require per-flag retirement decisions
+- `STS_S3_ENDTURN_MARGINALIZE*` — behavior-changing STOPped prototype
+- `STS_S3_UNION_EXPAND` — active experimental feature in reuse architecture
+- `datagen` / `causalgen` modes — retained callers must be retired first
 
 ---
 
@@ -698,7 +714,7 @@ src/include search impl. units:    14 (Action, BattleContext, BattleScumSearcher
                                       ExpertKnowledge, GameAction, ScumSearchAgent2, SimpleAgent,
                                       SearchDiagnostics)
 one_combat modes inventoried:      44
-STS_* feature flags inventoried:   79+ 
+STS_* feature flags inventoried:   87 (includes all S3 reuse, diagnostic, behavioral, and experimental flags)
 model runtime implementations:     5 (CombatValueNet, CombatPVNet, CombatDistValueNet, CombatCpsiNet,
                                       CombatObservation)
 tests/callers inspected:           CTest 21 entries, test.cpp 30+ subcommands, ~10 shell/Python scripts
@@ -708,37 +724,54 @@ tests/callers inspected:           CTest 21 entries, test.cpp 30+ subcommands, ~
 
 ## CLASSIFICATION SUMMARY
 
+Exact counts from corrected tables:
+
 ```text
-CURRENT:                   ~12 (Searcher2, ScumSearchAgent2, CombatValueNet, ExpertKnowledge,
-                                bestbench mode, 5 + leaf-diagnostic modes, strategic-gen modes,
-                                fairgen, combatgen/fightgen, vnettest/winnettest, pvnetparity,
-                                policynettest, policystats, speedtest, searchdiag, policygen,
-                                mapbatch, dumpmap, cpsictr, reprobench, runtrace, run, oocnextgen,
-                                distgen, frontiengen/leafrelabel, STS_NATIVE_OOC/POLICY/SKIP_THR/
-                                COLLECT_KEYS/CPUCT/STOP_AFTER_ACT)
-SUPPORTED_OPTIONAL:         ~45 (Searcher3, SimpleAgent, CombatPVNet, CombatDistValueNet,
-                                CombatCpsiNet, OocCheckpointNet, OocStrategicNet,
-                                OocStrategicTokNet, ConsoleSimulator/BattleSimulator,
-                                STS_SEARCHER3/FAIR/LIVE_VALID/FORCED_MOVE/S3_*/VNET/PVNET/DIST_VNET/
-                                CPSI_NN/OOC_STRATEGIC_*/OOC_CHECKPOINT_NN/OOC_MAP_ROUTE/
-                                OOC_SHOP_BEAM/TERM_WIN/TERM_STALL/FORCE_RELIC/RISK_LAMBDA/
-                                SIM_ADAPT/SIMS_*/DG_TEMP/REST_WIN/REST_V_THRESH/ROLLOUT_DEPTH/
-                                MULTISELECT_*/TURN_PENALTY/TT/WIN_NET/VNET_PER_ENCOUNTER/
-                                VNET_RANK_CORR/VNET_RESIDUAL/VNET_QUERY_LOG/VNET_ALPHA_LEN/
-                                S3_EXPAND/S3_ROLLOUT_*/S3_POOL_REDIRECT/S3_INTERNAL_BELIEF_UPDATE/
-                                S3_REAL_BELIEF_*, STS_S3_SEMANTIC_CARD_EDGES)
-REPRO_ONLY:                 ~8 (datagen2, datagen3, pathcfgen, mapnntest, policystats,
-                                STS_CONV_ROOT, STS_ROLLOUT_CAPS, STS_CONVERGE,
-                                STS_ACT_FIGHT_PROBE_*)
-SUPERSEDED_CONNECTED:       ~16 (v_server-dependent OOC flags, CARD_NN, CARD_ACTION,
-                                OOC_ACTION_NN, BOSS_RELIC, NEOW_V, VPATH, BOSS_V, PATH_V,
-                                PATH_GRAPH, PATH_ACTION, EVENT_V, POTION_SAVE, SHOP_WIN,
-                                BOSS_DRAFT, ACT_FIGHT_PROBE_DRAFT, DATAGEN_GATES,
-                                REFIGHT_FLOOR/N, COMBAT_LOG)
-DEAD_HIGH_CONFIDENCE:       ~22 modes + 2 load-only flags + ~15 diagnostic flags
-UNKNOWN:                    2 (STS_COMBAT_WIN_BONUS — may be load-only flag;
-                                STS_S3_UNION_EXPAND — no doc reference found)
-```
+CURRENT:                   7 modes + ~6 flags
+  bestbench, strategicmarggen, searchdiag, leafdiag, leafref, rollouttrace,
+  frontiengen, leafrelabel, strategicgen, strategicgen2, fairgen, combatgen,
+  fightgen, vnettest, winnettest, pvnetparity, policynettest, speedtest,
+  Searcher2, ScumSearchAgent2, CombatValueNet, ExpertKnowledge,
+  STS_NATIVE_OOC, STS_SKIP_THR, STS_POLICY, STS_CPUCT, STS_STOP_AFTER_ACT,
+  STS_COLLECT_KEYS
+
+SUPPORTED_OPTIONAL:         ~58 flags + 4 model runtimes + ~12 modes
+  Searcher3, SimpleAgent, CombatPVNet, CombatDistValueNet, CombatCpsiNet,
+  OocCheckpointNet, OocStrategicNet, OocStrategicTokNet,
+  STS_SEARCHER3, STS_FAIR, STS_LIVE_VALID, STS_FORCED_MOVE,
+  STS_S3_BELIEF/CHAIN/PRUNE/LIVE/CRN/PARTICLES, STS_VNET, STS_PVNET,
+  STS_DIST_VNET, STS_CPSI_NN, STS_OOC_STRATEGIC_*, STS_OOC_CHECKPOINT_NN,
+  STS_REUSE_MAX_SEARCHES/STATS_MODE/ALWAYS_Q/OBS_STABLE/RECONCILE_ROOT,
+  STS_S3_UNION_EXPAND, STS_MULTISELECT_MODE/CANONICAL, S3 diagnostic flags
+  (OUTCOME_BUCKET_DIAG*, BUCKET_VALUE_DIAG*, DRAW_PROB_DIAG*,
+  LEAFVALUE_DIAG*, ROOT_RACE_DIAG*, BELIEF_AUDIT*),
+  datagen2, datagen3, policygen, mapbatch, dumpmap, distgen, cpsictr,
+  reprobench, runtrace, run, pvnetparity, policynettest, speedtest,
+  policystats, mapnntest, oocnextgen
+
+REPRO_ONLY:                 ~6 flags + 4 modes
+  STS_CONV_ROOT, STS_ROLLOUT_CAPS, STS_CONVERGE,
+  STS_ACT_FIGHT_PROBE_* (all-OOC checkpoint oracle),
+  STS_S3_ENDTURN_MARGINALIZE* (stopped prototype),
+  pathcfgen, datagen (retained loop script exists),
+  policystats
+
+SUPERSEDED_CONNECTED:       ~20 flags + 2 modes
+  v_server-dependent OOC flags (CARD_NN, CARD_ACTION, OOC_ACTION_NN,
+  BOSS_RELIC, NEOW_V, VPATH, BOSS_V, PATH_V, PATH_GRAPH, PATH_ACTION,
+  EVENT_V, POTION_SAVE, SHOP_WIN, BOSS_DRAFT, ACT_FIGHT_PROBE_DRAFT,
+  DATAGEN_GATES, REFIGHT_FLOOR/N, COMBAT_LOG),
+  STS_REUSE_CPU_DIAG*, STS_REUSE_CARRY_DIAG, STS_REUSE_DIAG,
+  causalgen, datagen (loop caller keeps it connected)
+
+DEAD_HIGH_CONFIDENCE:       10 modes + 2 flags
+  restbench, shopbench, allbench, skipbench, bench, runbench, mcts, random,
+  cardbench, combobench, pathbench, draftbench, carddump, deck
+  (14 modes — confirmed zero non-historical callers)
+  STS_VNET_COND_BOSS, STS_VNET_COND_ACT3 (2 load-only dead flags)
+
+UNKNOWN:                    1 flag
+  STS_COMBAT_WIN_BONUS (may be load-only; requires CombatValueNet::predict audit)
 
 ---
 
@@ -746,15 +779,17 @@ UNKNOWN:                    2 (STS_COMBAT_WIN_BONUS — may be load-only flag;
 
 1. **`STS_COMBAT_WIN_BONUS`:** The flag calls `search::g_combatVNet.setWinBonus(std::atof(b))`, but the deployed end-HP VNet (not utility-R) predict path may not use the win-bonus field. The `CombatValueNet::predict` function needs to be audited to confirm whether `winBonus` is actually used in the end-HP path. If unused, this flag is a load-only dead flag like `STS_VNET_COND_BOSS`/`STS_VNET_COND_ACT3`.
 
-2. **`STS_S3_UNION_EXPAND`:** This flag has no documentation reference in any architecture or research page. Grep the Searcher3 source to determine what union-expand does and whether it's connected to any current experiment. If it's an abandoned experiment with no current use, classify as DEAD_HIGH_CONFIDENCE.
+2. **All-OOC checkpoint oracle:** Is the teacher/ranker tool (`actFightProbeAllOocPolicy`) still needed for offline analysis? The §66k/§66l/§67 references suggest it has an offline-teacher role even though the live-policy use was falsified at §111. If still needed, Batch 5 should wait. If not, Batch 5 is the highest cleanup-value batch.
 
-3. **All-OOC checkpoint oracle:** Is the teacher/ranker tool (`actFightProbeAllOocPolicy`) still needed for offline analysis? The §66k/§66l/§67 references suggest it has an offline-teacher role even though the live-policy use was falsified at §111. If still needed, Batch 5 should wait. If not, Batch 5 is the highest cleanup-value batch.
+3. **`policygen` mode:** Referenced only in `train_policy.py` comment ("`one_combat.elf policygen`") — is this mode still actively used for policy training, or is `fairgen` / `fightgen` the current path? The comment is not evidence of active use.
 
-4. **`policygen` mode:** Referenced only in `train_policy.py` comment ("`one_combat.elf policygen`") — is this mode still actively used for policy training, or is `fairgen` / `fightgen` the current path? The comment is not evidence of active use.
+4. **S3 diagnostic flags retirement:** Each of the 5 diagnostic flag families (`OUTCOME_BUCKET_DIAG*`, `BUCKET_VALUE_DIAG*`, `DRAW_PROB_DIAG*`, `LEAFVALUE_DIAG*`, `ROOT_RACE_DIAG*`) has decision-log documentation. Does any current analysis tool consume their CSV output? If not, each flag can be retired independently.
 
-5. **`STS_VNET_COND_BOSS` / `STS_VNET_COND_ACT3`:** Confirm in `CombatValueNet.cpp::predict()` that these global flags are never read at predict time (the dispatch is per-VNet instance, not per-flag). The flags are stored as globals `search::g_vnetCondBossOnly` / `search::g_vnetCondAct3` but the CombatValueNet class itself may have been restructured to not read them.
+5. **`tools/run/datagen_loop.sh`:** This script directly invokes the older `datagen` mode for bulk collection. Should it be migrated to `datagen2` or retired? Until that decision is made, `datagen` mode cannot be deleted.
 
-6. **Dead test subcommands:** `scum_searcher` has its body commented out. Several other subcommands (`seed_contract`, `belief`, `drawpile`, `obs_identity`, `prune`, `happy_flower`, `draw_prob_helper`, `draw_prob_engine`, `belief_order_invariance`, `real_belief_filter`, `belief_immutability`) are not CTest-registered. Are these useful for debugging or should they be cleaned up? Most exercise Searcher3 invariants — keep as internal tooling for now.
+6. **`train_advantage.py`:** Consumes `causalgen` CSV output. Is this trainer still used? If not, both the trainer and the `causalgen` mode can be retired together.
+
+7. **`datagen2` vs `datagen3`:** Both have active callers (`datagen2_loop.sh`, `run_card_cf_collection.sh`). Which is the canonical datagen mode? Consolidation may be possible but is a separate investigation.
 
 ---
 
