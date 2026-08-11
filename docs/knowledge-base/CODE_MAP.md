@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-08-09 against the current working tree.
+Last verified: 2026-08-11 against the current working tree.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -28,7 +28,7 @@ before broad repository search.
 | Run state | `include/game/GameContext.h`, `src/game/GameContext.cpp` | `GameContext`, `ScreenState`, `GameOutcome` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Run-level actions | `include/sim/search/GameAction.h`, `src/sim/search/GameAction.cpp` | `GameAction`, `getAllActionsInState`, `execute` | [out-of-combat.md](architecture/out-of-combat.md) |
 | OOC policy chain | `apps/one_combat.cpp` | `runFullRunOOC` (~line 2369) — ordered branch chain, current default | [out-of-combat.md](architecture/out-of-combat.md) |
-| Native OOC floor/win | `build/v_rich_trees.txt`, `build/v_win_trees.txt` | Compact tree artifacts loaded at startup, `STS_NATIVE_OOC=0` disables | [out-of-combat.md](architecture/out-of-combat.md) |
+| Native OOC floor/win | `models/v_rich_trees.txt`, `models/v_win_trees.txt` | Compact tree artifacts loaded at startup, `STS_NATIVE_OOC=0` disables | [out-of-combat.md](architecture/out-of-combat.md) |
 | Checkpoint NN | `apps/ooc_checkpoint_net.h` | `OocCheckpointNet`, `oocActionNNPolicy`, `STS_OOC_CHECKPOINT_NN` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Strategic Q-gate (opt-in) | `apps/ooc_strategic_net.h`, `apps/one_combat.cpp` | `OocStrategicNet`, `oocOnePlyCardRewardPolicy` et al., `STS_OOC_STRATEGIC_NN`, `STS_OOC_STRATEGIC_MARGIN` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Strategic token net (opt-in) | `apps/ooc_strategic_tok_net.h` | Token-based OOC network, experimental | [out-of-combat.md](architecture/out-of-combat.md) |
@@ -77,8 +77,9 @@ before broad repository search.
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
 | `bestbench` | `apps/one_combat.cpp` | Default whole-run mode, `$ nSims $ nSeeds $ asc` | [current-baselines.md](evaluation/current-baselines.md), [benchmark-protocol.md](evaluation/benchmark-protocol.md) |
-| Paired analysis | `tools/ai_cycle.py` (verification), `paired_analysis.py` (external) | Parses `bestbench` header, validates HP/time | [benchmark-protocol.md](evaluation/benchmark-protocol.md) |
+| Paired analysis | `paired_analysis.py` | Parses `bestbench` header, validates HP/time | [benchmark-protocol.md](evaluation/benchmark-protocol.md) |
 | Current baselines | `docs/knowledge-base/evaluation/current-baselines.md` | Single source for headline configuration and numbers | (self) |
+| Current research | `docs/knowledge-base/evaluation/current-research.md` | Single routing source for active, parked, and closed research lines | (self) |
 
 ## Self-play
 
@@ -98,14 +99,9 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Orchestrator | `.pi/extensions/sts-cycle/`, `tools/ai_cycle.py` | Pi-native authoritative state machine; legacy Python rollback, seed limits | [ai-cycle.md](operations/ai-cycle.md) |
-| Artifact inspector | `tools/ai_inspect.py` | Read-only CSV/JSON inspection for sts_inspect tool | [ai-cycle.md](operations/ai-cycle.md) |
-| Pi safety extension | `.pi/extensions/sts-safety.ts` | Blocks writes to protected paths, dangerous bash, oversized seed sweeps | (inline) |
-| Pi inspect tools | `.pi/extensions/sts-tools.ts` | `sts_git`, `sts_inspect` — read-only tools for architect/reviewer | (inline) |
-| Pi subagent runner | `.pi/extensions/subagent/runner.ts`, `.pi/extensions/subagent/index.ts` | Shared child lifecycle, bounded event retention, live activity renderer | [ai-cycle.md](operations/ai-cycle.md) |
-| Pi agent prompts | `.pi/agents/*.md` | architect, implementer, investigator, reviewer | (inline) |
-| Context telemetry | `tools/agent_telemetry.py` (writer), `.pi/extensions/sts-telemetry.ts` (hook) | Diagnostic read/search measurement | [context-telemetry.md](operations/context-telemetry.md) |
-| Telemetry summarizer | `tools/summarize_agent_context.py` | Aggregates read/search stats from telemetry JSONL | [context-telemetry.md](operations/context-telemetry.md) |
+| Agent config | `opencode.json`, `.opencode/prompts/` | OpenCode agent definitions: default (flash), strong (pro) | [AGENTS.md](../../AGENTS.md) |
+| Safety guard | `tools/seed_guard.sh` | Deterministic 128-seed cap for automated verification | [AGENTS.md](../../AGENTS.md) |
+| Artifact inspector | `tools/ai_inspect.py` | Read-only CSV/JSON inspection | (inline) |
 
 ## Legend
 

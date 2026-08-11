@@ -176,7 +176,7 @@ The Q head is trained on Tier-B one-ply counterfactual labels collected by
   `export_strategic_tok.py`, `strategic_tok_net.py` (V4)
 - `docs/knowledge-base/architecture/out-of-combat.md`,
   `docs/knowledge-base/architecture/ooc-strategic-v4.md`
-- `docs/archive/ooc-action-plan-2026-08.md` — active plan (spec of record,
+- `docs/archive/ooc-action-plan-2026-08.md` — historical plan (former spec of record,
   5.5.1–5.5.4)
 - Decision log: `docs/knowledge-base/decision-log/2026-08-02-phase5-round3-tierb-q-labels.md`,
   `2026-08-02-phase5-round4-campfire-event-gates.md`,

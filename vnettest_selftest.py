@@ -115,7 +115,7 @@ def write_csv(path, feature_values):
 def run_vnettest(bin_path, model, csv):
     # Hermetic: vnettest only needs the passed model + CSV. Disable the native
     # OOC block (which would otherwise fatal-exit before mode dispatch when its
-    # cwd-relative build/v_rich_trees.txt is missing, e.g. under ctest where
+    # cwd-relative models/v_rich_trees.txt is missing, e.g. under ctest where
     # the working directory is the build dir) and pin the cwd to the repo root
     # so default relative paths never influence the verdict.
     env = dict(os.environ)

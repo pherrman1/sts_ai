@@ -47,6 +47,9 @@ SELECT_METRIC = os.environ.get("STRAT_SELECT_METRIC", "val_pol_ce")  # best-chec
 Q_TARGET = os.environ.get("STRAT_Q_TARGET", "absolute")  # absolute or fallback_centered
 if Q_TARGET not in ("absolute", "fallback_centered"):
     raise ValueError("STRAT_Q_TARGET must be absolute or fallback_centered")
+INIT_CKPT = os.environ.get("STRAT_INIT_CKPT", "")  # warm-start from a checkpoint
+INIT_REUSE_NORM = os.environ.get("STRAT_INIT_REUSE_NORM", "0") == "1"  # reuse ckpt mean/inv
+Q_ONLY = os.environ.get("STRAT_Q_ONLY", "0") == "1"  # freeze all except q.* parameters
 SPLIT_MANIFEST = os.environ.get("STRAT_SPLIT_MANIFEST", "")  # JSON file to save train/val seeds
 SPLIT_LOAD = os.environ.get("STRAT_SPLIT_LOAD", "")  # JSON file to load train/val seeds from
 MODEL_SEED = int(os.environ.get("STRAT_MODEL_SEED", "0"))  # model initialization seed
@@ -534,6 +537,40 @@ if COMPILE and DEVICE.startswith("cuda"):
         model = net
         print(f"[train-strategic-tok] torch.compile failed ({e!r}); running eager", flush=True)
 opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=2e-4)
+
+# ── Warm-start from checkpoint ──
+if INIT_CKPT:
+    print(f"[train-strategic-tok] warm-start from {INIT_CKPT}", flush=True)
+    init_ckpt = torch.load(INIT_CKPT, map_location=DEVICE, weights_only=False)
+    # Validate architecture compatibility
+    for key in ["rung", "transformer", "nquants", "ncross", "nprobes"]:
+        ckpt_val = init_ckpt.get(key, 0)
+        local_val = {"rung": RUNG, "transformer": TRANSFORMER, "nquants": NQUANTS,
+                     "ncross": CROSS, "nprobes": NPROBES}[key]
+        if bool(ckpt_val) != bool(local_val) and not (key == "rung" and ckpt_val == local_val):
+            if ckpt_val != local_val:
+                print(f"[train-strategic-tok] WARNING: ckpt {key}={ckpt_val} != local {local_val}", flush=True)
+    net.load_state_dict(init_ckpt["state_dict"], strict=False)
+    if INIT_REUSE_NORM:
+        print(f"[train-strategic-tok] reusing checkpoint normalization", flush=True)
+        mean = init_ckpt["mean"].copy()
+        inv = init_ckpt["inv"].copy()
+        MEAN = torch.from_numpy(mean).to(DEVICE)
+        INV = torch.from_numpy(inv).to(DEVICE)
+    print(f"[train-strategic-tok] warm-start loaded", flush=True)
+
+# ── Q-only mode: freeze all except q.* parameters ──
+if Q_ONLY:
+    print(f"[train-strategic-tok] Q-only mode: freezing all except q.*", flush=True)
+    for name, param in net.named_parameters():
+        if not name.startswith("q."):
+            param.requires_grad = False
+    # Rebuild optimizer with only trainable params
+    opt = torch.optim.AdamW(
+        (p for p in net.parameters() if p.requires_grad), lr=LR, weight_decay=2e-4)
+    frozen = sum(1 for p in net.parameters() if not p.requires_grad)
+    trainable = sum(1 for p in net.parameters() if p.requires_grad)
+    print(f"[train-strategic-tok] frozen={frozen} trainable={trainable}", flush=True)
 
 AR = np.arange(32, dtype=np.int64)
 MEAN = torch.from_numpy(mean).to(DEVICE)

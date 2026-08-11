@@ -43,7 +43,7 @@ if os.environ.get("VSERVER_ALLOW_CUDA", "0") != "1":
 import numpy as np
 import xgboost as xgb
 
-MODEL      = os.environ.get("VMODEL", "build/v_rich_xgb.json")  # trained by train_value_rich.py
+MODEL      = os.environ.get("VMODEL", "models/v_rich_xgb.json")  # trained by train_value_rich.py
 PORT       = int(os.environ.get("VPORT", "5555"))
 SKIP_THR   = float(os.environ.get("VSKIP", "0.0"))    # take iff best marginal > this
 NEVER_SKIP = os.environ.get("VNEVERSKIP", "0") == "1"
@@ -83,7 +83,7 @@ fmpos = {c: k for k, c in enumerate(FEATS)} # position within the model vector
 # ---- optional WIN-RATE model V_win(state)->P(win), for survival/heal decisions ----
 # HP has a sharp, nonlinear effect on P(win) but only a weak one on expected floor,
 # so heal-vs-upgrade is decided in win-probability units (HW/UW endpoints).
-WIN_MODEL = os.environ.get("VWIN", "build/v_win_xgb.json")
+WIN_MODEL = os.environ.get("VWIN", "models/v_win_xgb.json")
 WIN_REQUIRED = os.environ.get("VWIN_REQUIRED", "0") == "1"
 WIN_BOOSTER = None
 try:

@@ -37,8 +37,8 @@ echo "sims:      $SIMS"
 echo "seeds:     $SEED_OFF..$((SEED_OFF+NSEEDS-1))"
 
 # Artifact identity (must match local HEAD; the binary must contain pvnetparity)
-sha256sum build/v_combat_pvnet.txt build/policy_trees_c.txt 2>/dev/null || true
-if ! "$BIN" pvnetparity build/v_combat_pvnet.txt /nonexistent_parity.csv 2>&1 \
+sha256sum models/v_combat_pvnet.txt models/policy_trees_c.txt 2>/dev/null || true
+if ! "$BIN" pvnetparity models/v_combat_pvnet.txt /nonexistent_parity.csv 2>&1 \
      | grep -q "PVNET VALIDATION"; then
   echo "ERROR: binary lacks pvnetparity mode - parity-fixed build required" >&2
   exit 1
@@ -62,9 +62,9 @@ run_arm() {
 run_arm pvnetgate_s2_ref_3k_128.csv ""
 run_arm pvnetgate_s3_ctl_3k_128.csv "STS_SEARCHER3=1"
 run_arm pvnetgate_s3_pv0_3k_128.csv "STS_SEARCHER3=1" \
-  STS_PVNET=build/v_combat_pvnet.txt STS_PVNET_ALPHA=0
+  STS_PVNET=models/v_combat_pvnet.txt STS_PVNET_ALPHA=0
 run_arm pvnetgate_s3_pv1_3k_128.csv "STS_SEARCHER3=1" \
-  STS_PVNET=build/v_combat_pvnet.txt STS_PVNET_ALPHA=1.0
+  STS_PVNET=models/v_combat_pvnet.txt STS_PVNET_ALPHA=1.0
 
 echo "== done; aggregate: =="
 for f in "$OUTDIR"/pvnetgate_s3_*_3k_128.csv; do

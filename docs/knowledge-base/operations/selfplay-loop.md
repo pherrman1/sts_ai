@@ -1,6 +1,8 @@
 # Self-play loop
 
-Last verified: 2026-08-10 against the current working tree.
+Last verified: 2026-08-11 against the current working tree (tracked V_win
+bootstrap source relocated to `models/v_win_xgb.json`; the two other first-run
+sources stay ignored `build/` files).
 
 ## Purpose
 
@@ -36,7 +38,7 @@ server-backed meta arm starts it (`selfplay/loop.sh::needs_server`, Issue 82).
 Bootstrap is an explicit three-branch state machine (Issues 11/30):
 
 - fresh: no `state.env` — copies first-run sources
-  `build/v_win_xgb.json`, `build/v_combat_fair_trees.txt`,
+  `models/v_win_xgb.json`, `build/v_combat_fair_trees.txt`,
   `build/policy_fair_trees_c.txt` into `selfplay/current/` and writes state;
 - resume: `state.env` plus complete `selfplay/current/` — continues from the
   checkpoint;
@@ -53,7 +55,7 @@ stateDiagram-v2
     CurrentComplete: "selfplay/current/ models complete?"
     CurrentComplete --> Resume: "complete current/"
     CurrentComplete --> Repair: "current/ models missing"
-    Fresh: "copy build/v_win_xgb.json, build/v_combat_fair_trees.txt, build/policy_fair_trees_c.txt into selfplay/current/ and write state.env"
+    Fresh: "copy models/v_win_xgb.json, build/v_combat_fair_trees.txt, build/policy_fair_trees_c.txt into selfplay/current/ and write state.env"
     Resume: "continue from checkpoint"
     Repair: "refuse with diagnostic: restore current/ from backup, or move state.env/history.tsv aside for a fresh bootstrap"
     Fresh --> [*]
@@ -130,7 +132,7 @@ are counted by distinct seed and resumed beyond the observed maximum
 - Baseline outcomes are assumed deterministic for a fixed `$BIN`, model stack,
   policy mode, and evaluation config; the assumption is not re-verified on every
   cache hit. The cache key hashes `$BIN`, current models, the fixed native trees
-  `build/v_rich_trees.txt` + `build/v_win_trees.txt`, `v_server.py`, and the
+  `models/v_rich_trees.txt` + `models/v_win_trees.txt`, `v_server.py`, and the
   active `STS_*` environment (Issue 13). Python dependency versions are
   deliberately omitted.
 - The meta arm's candidate validity requires server use: with `STS_NATIVE_OOC=0`
@@ -164,7 +166,7 @@ These were blocking before the 2026-08-02 fixes and are now resolved in
   refuses with repair instructions. The checked-in `state.env` alone is still
   not resumable state — the loop now says so instead of silently running.
 - **Baseline cache provenance (Issue 13).** `baseline_cache_key` now hashes
-  `$BIN`, current models, `build/v_rich_trees.txt` + `build/v_win_trees.txt`,
+  `$BIN`, current models, `models/v_rich_trees.txt` + `models/v_win_trees.txt`,
   `v_server.py`, and both policy envs; the "deterministic" comment now states it
   is an assumption. Python dependency versions remain omitted (pip freeze is too
   expensive per key evaluation).

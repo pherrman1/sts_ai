@@ -27,7 +27,7 @@ import torch
 from combat_pvnet_parity import (column_groups, encode_states, evaluate_heads,
                                  load_native_model)
 
-MODEL = sys.argv[1] if len(sys.argv) > 1 else "build/v_combat_pvnet.txt"
+MODEL = sys.argv[1] if len(sys.argv) > 1 else "models/v_combat_pvnet.txt"
 VAL_CSV = sys.argv[2] if len(sys.argv) > 2 else "build/fair_v.csv"
 POL_CSV = sys.argv[3] if len(sys.argv) > 3 else "build/fair_p.csv"
 MAX_ROWS = None

@@ -1,6 +1,9 @@
 # Current baselines
 
-Last verified: 2026-08-09 against the current working tree (V4 token-net artifact = skewfix §149 model; §148 V_combat leaf = 7k-tuned; Act-4 keys now collected by default — pre-32281a2 baselines are Act-3-only).
+Last verified: 2026-08-11 against the current working tree (tracked model
+artifacts relocated from `build/` to `models/`; V4 token-net artifact =
+skewfix §149 model; §148 V_combat leaf = 7k-tuned; Act-4 keys now collected by
+default — pre-32281a2 baselines are Act-3-only).
 Experiments invalidated by fixes are tracked in the
 [rerun ledger](rerun-ledger.md) (2026-08-05 code review, issues 31–46); the
 **2026-08-05 §113 battle-skip exploit invalidates every Searcher3 measurement
@@ -45,12 +48,13 @@ default flip and remains valid as recorded; a full-stack re-measurement with
 the new default is an open follow-up. `STS_CONV_ROOT`, `STS_ROLLOUT_CAPS`,
 and the non-fair forced-move variant remain opt-in (falsified at the gates,
 §118/§119). Since 2026-08-07 (EXPERIMENTS.md §124/§126) the **Searcher3 fair
-path also loads the fresh honest-data combat value leaf by default** — the
-804-tree vnet `build/v_combat_honest.txt` at α=0.3 (three significant paired
-gates: +12.5/+12.1/+12.5pp win at ~2-2.4× cpu; the §126 recorded cpu-trade
-call; `STS_VNET=<path>` overrides, `STS_VNET=<missing-path>` disables, and
-the S2 fair / non-fair paths stay env-only). The default vnet was promoted to
-`build/v_combat_7k_tuned.txt` (1000 trees, §148). The §124 re-measurement on the
+path loads a combat value leaf by default** — first the fresh honest-data
+804-tree vnet `build/v_combat_honest.txt` at α=0.3 (§126: three significant
+paired gates +12.5/+12.1/+12.5pp win at ~2-2.4× cpu; the §126 recorded
+cpu-trade call), then promoted to `build/v_combat_7k_tuned.txt` (1000 trees,
+§148, 2026-08-09 — the honest model is superseded; `STS_VNET=<path>` overrides,
+`STS_VNET=<missing-path>` disables, and the S2 fair / non-fair paths stay
+env-only). The §124 re-measurement on the
 current binary confirmed the recorded references (flat @1k, +2.3pp n.s.
 @3k/256p) and re-confirmed S3−belief−chain as the particle config (belief+
 chain ON costs −11.3 to −12.1pp, significant).
@@ -94,10 +98,10 @@ historical evidence.
 Current tracked artifact identities:
 
 ```text
-build/v_rich_trees.txt    sha256 3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3
-build/v_win_trees.txt     sha256 fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70
-build/policy_trees_c.txt  sha256 24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321
-build/v_combat_pvnet.txt  sha256 05d809298921623af7c87c06e7dd31f5129abfd77cc702f75b9867949a59533f
+models/v_rich_trees.txt    sha256 3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3
+models/v_win_trees.txt     sha256 fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70
+models/policy_trees_c.txt  sha256 24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321
+models/v_combat_pvnet.txt  sha256 a7a55e5290fd6bece028ab0aeb9509a80dcb304f3103ba444b8205ec17e27b72
 build/v_combat_7k_tuned.txt sha256 ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c
 selfplay/models/ooc_strategic_tok_final.native sha256 e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c
 ```
@@ -174,4 +178,4 @@ artifact set behind §66i.
 - `src/sim/search/BattleScumSearcher3.cpp::g_useSearcher3`
 - `src/sim/search/CombatPVNet.cpp::g_pvnetAlpha`
 - `EXPERIMENTS.md` §26, §66i, and “Phase 4b PVNet alpha sweep”
-- tracked artifacts under `build/`
+- tracked deployable artifacts under `models/` and `selfplay/models/`

@@ -1,6 +1,6 @@
 # StS AI project guidance
 
-Last verified: 2026-08-08 against the current working tree.
+Last verified: 2026-08-11 against the current working tree.
 
 ## Purpose and required reading
 
@@ -48,21 +48,60 @@ base in the same change. Do not invent rationale; use **Inference**,
 | `apps/` | Executables; `one_combat.cpp` is the research integration driver. |
 | `bindings/` | Run-level pybind11 API, not card-by-card combat control. |
 | root `train_*.py`, `export_*.py`, `v_server.py` | Training, export, optional Python inference. |
+| `models/` | Git-tracked deployed model artifacts in native text/JSON format (floor/win/policy compact trees, XGBoost JSON, PVNet); NOT `.native` and not self-play loop artifacts. |
 | `selfplay/` | Generation, retraining, paired gates, snapshots, local state. |
-| `tools/ai_cycle.py` | Legacy Python orchestrator (during migration). Retained as a rollback path; the new authoritative orchestrator is `/sts-cycle` (`.pi/extensions/sts-cycle/`). |
-| `.pi/` | Pi project agents, `/sts-cycle` deterministic orchestrator, read-only inspection tools, safety hooks, and prompt templates. |
-| `.opencode/`, `opencode.json` | Legacy/rollback OpenCode agent backend and prompts during the Pi migration. |
+| `tools/` | Inspection, safety, and diagnostic utilities. |
+| `.opencode/`, `opencode.json` | OpenCode agent configuration and prompts. |
 
-Deployable native exports under `selfplay/models/*.native` are git-tracked
-(since 2026-08-05) so model handoff between machines happens via `git pull`;
+Deployable native exports under `selfplay/models/*.native` and deployed
+text/JSON models under `models/` are git-tracked so model handoff between
+machines happens via `git pull`;
 trainer checkpoints (`*_state.bin`, `.pt`, `.npz`, `.torchscript`), buffers,
 and CSVs stay ignored and are handed off explicitly (scp/shared drive). A
 retrained artifact therefore ships in the same commit as its sha256 + docs
-update, and a pull alone does not update deployable models whose `.native`
-file is missing from the tree.
-| `build/` | Mixed ignored build output and tracked model artifacts; some are default, others experimental. |
+update, and a pull alone does not update deployable models whose artifact file
+is missing from the tree.
+| `build/` | Purely ignored build output and generated artifacts (no tracked files). |
 | `docs/knowledge-base/` | Maintained technical knowledge. |
 | `EXPERIMENTS.md` | Chronological experiment ledger. |
+
+## Agent workflow
+
+The local agent workflow uses OpenCode's built-in primary agents with selectable
+models:
+
+```
+External research/review:
+    ChatGPT
+
+Local implementation:
+    OpenCode Build
+
+Model selection:
+    use the model and reasoning effort recommended by the current handoff
+
+Optional local planning:
+    OpenCode Plan
+
+Shared project knowledge:
+    AGENTS.md + maintained knowledge base
+
+Evidence:
+    current code, commit diff, exact verification output, raw experiment results
+```
+
+External ChatGPT owns research design and independent final review.
+OpenCode `Build` is the standard local implementation agent. Select the model
+and reasoning effort recommended by the current handoff rather than encoding a
+fixed implementation model in the agent definition.
+
+OpenCode `Plan` remains available for occasional local read-only planning, but
+it is not part of the standard research-handoff workflow and does not replace
+external research design or independent review.
+
+Do not create separate primary agents merely to represent stronger or cheaper
+models. Model strength is a per-handoff execution choice, not a separate agent
+role.
 
 ## Agent context and large-file navigation
 
@@ -126,9 +165,13 @@ Use the cheapest check that proves the change, for example:
 
 ```bash
 ./build/test
-STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
+tools/seed_guard.sh env STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
 ctest --test-dir build --output-on-failure
 ```
+
+Direct `one_combat` invocations are blocked by OpenCode permission rules; all
+game-seed commands must go through `tools/seed_guard.sh` (see "Automated agent
+verification limits" below for why).
 
 Build the relevant target before using these commands. `json/` and `pybind11/`
 are gitlinks; a fresh clone requires `git submodule update --init` before the
@@ -136,12 +179,14 @@ first configure.
 
 ### Automated agent verification limits
 
-`.pi/extensions/sts-cycle/policy.ts` is authoritative for automated
-verification policy, providing a single definition of `MAX_AUTOMATED_SEEDS=128`,
-seed-sweep argument maps, and verification allowlists shared with the
-interactive safety hook (`.pi/extensions/sts-safety.ts`). In
-particular, `MAX_AUTOMATED_SEEDS = 128` is a hard safety limit for every
-agent-driven game-seed sweep.
+`tools/seed_guard.sh` is the deterministic backstop for agent-driven seed
+counts. It rejects any seed sweep exceeding `MAX_AUTOMATED_SEEDS = 128`.
+
+Pass game-seed commands through the guard:
+
+```bash
+tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0
+```
 
 Use smaller checks by default:
 
@@ -157,12 +202,6 @@ ceiling. Prefer the cheapest sample size that can establish the requested
 property, and reserve larger paired evaluations for claims that genuinely need
 them.
 
-The orchestration program, not an LLM prompt, decides whether a proposed
-verification command is allowed, whether a seed count is within bounds, and
-whether required checks passed. Pi's `.pi/extensions/sts-safety.ts` provides
-defense in depth for interactive use but does not replace the deterministic
-checks in `tools/ai_cycle.py`.
-
 The current cached build is Linux/WSL Unix Makefiles using `/usr/bin/c++`.
 The pybind11 module is skipped with a warning when CPython development headers
 are absent; check startup/configure output before assuming `slaythespire`
@@ -170,48 +209,6 @@ exists. Do not claim a clean configure or native MSVC build unless you actually
 perform it. CMake does not define `build/libsts.a`; do not use old manual
 archive-link instructions. More detail:
 [`operations/build-and-debugging.md`](docs/knowledge-base/operations/build-and-debugging.md).
-
-## Agent orchestration
-
-`/sts-cycle` (`.pi/extensions/sts-cycle/`) is the authoritative deterministic
-multi-agent workflow. `tools/ai_cycle.py` is the legacy Python orchestrator
-retained as a rollback path during migration. The Pi-native state machine
-repository-specific behavior such as clean-working-tree checks, protected
-workflow paths, verification allowlisting, retry/review limits, high-risk
-classification, candidate fingerprinting, ELI5 summaries, and the automated
-seed cap.
-
-As of 2026-08-08, both OpenCode and Pi backends exist. Pi integration is
-available through `--backend pi`; OpenCode remains the default rollback path
-until the live Pi bake-off is completed and the default is deliberately
-changed. Do not silently remove or weaken the rollback path while evaluating
-the new backend.
-
-A deterministic fast-path classification (`classify_fast_path_task`) may
-skip the architect and Pro escalation for a genuinely trivial non-behavioral
-task (comments, typos, docs, formatting only). Classification is narrow and
-conservative; any uncertainty falls back to the full NORMAL workflow.
-Post-implementation diff confirmation (`confirm_trivial_diff`) rejects any
-change that is not confidently comment/docstring/whitespace-only. See
-`docs/knowledge-base/operations/ai-cycle.md`.
-
-Project-local Pi roles live in `.pi/agents/`. Read-only architect/reviewer
-roles use the restricted `sts_git` and `sts_inspect` tools rather than arbitrary
-Bash.
-
-### Pi commands
-
-| Command | Purpose |
-| --- | --- |
-| `/sts-cycle <task>` | Implementation/review workflow: deterministic state machine (PREFLIGHT → CLASSIFY → ARCHITECT → IMPLEMENT → VERIFY → REVIEW → ESCALATE → ACCEPTED/REJECTED). LLMs must not improvise the workflow sequence. |
-| `/sts-investigate <question>` | Research/investigation workflow: parallel read-only subagent investigation followed by architect synthesis. |
-
-`.pi/` is workflow control-plane code: ordinary implementation agents
-must not rewrite agent prompts, safety extensions, `/sts-cycle` orchestration
-code, or their tests as part of unrelated STS work.
-
-Pi project trust enables project extensions and prompts; it is not a security
-sandbox. Deterministic repository protections remain authoritative.
 
 ## Modification workflow
 
@@ -234,6 +231,84 @@ sandbox. Deterministic repository protections remain authoritative.
    seed sweeps must obey the automated limits above; do not escalate sample
    size merely because a larger benchmark would be more statistically precise.
 7. Inspect `git diff`, generated artifacts, paths, symbols, and documentation.
+
+## Default completion: commit and push
+
+A successfully completed coding handoff that changed the repository is
+committed and pushed by default. Do not wait for an explicit `git commit` or
+`git push` request.
+
+Before editing (Modification workflow step 1), record the starting state so
+task changes can be told apart from pre-existing work:
+- capture `git status --short` (pre-existing dirty files);
+- when an upstream is configured, capture the starting ahead-of-upstream set
+  with `git log --oneline @{upstream}..HEAD`.
+
+1. Verify the handoff's required checks pass (cheapest focused verification).
+2. Inspect `git status` and the complete `git diff`.
+3. Distinguish pre-existing changes from changes made for this handoff using
+   the `git status` captured before editing (Modification workflow step 1).
+   Never assume every dirty file belongs to the current task.
+4. Stage only files/hunks belonging to this handoff. Prefer explicit
+   task-scoped staging when unrelated local changes exist.
+5. Create one focused commit with a concise message describing the actual
+   code/research change.
+6. Before `git push`, re-inspect `git log --oneline @{upstream}..HEAD` and
+   compare it with the set recorded before editing. Automatic push is allowed
+   only when it would publish commits created for this handoff plus any
+   pre-existing ahead commits the user explicitly authorized for publishing.
+7. Run exactly `git push` to push the current branch to its configured
+   upstream, then report the commit SHA and push result.
+
+Rules:
+
+- A read-only investigation or handoff that made no repository changes must
+  not create an empty commit.
+- An explicit user instruction not to commit or push overrides this default.
+- If required verification fails or meaningful unresolved correctness
+  concerns remain, do not create a commit merely to make the tree clean;
+  report the failure instead, unless the handoff explicitly requests
+  preservation of a failed experimental state.
+- Never commit unrelated pre-existing changes. If task changes cannot be
+  safely separated from pre-existing changes, do not commit them together;
+  report the problem.
+- When unrelated pre-existing commits are already ahead of upstream (recorded
+  before editing), do NOT automatically push them: report that push is
+  blocked by pre-existing local commits unless the user explicitly authorized
+  publishing them. Do not force/rebase/reset them away.
+- If there is no configured upstream, do not invent or set one automatically;
+  report that automatic push cannot safely occur.
+- Never force-push, never use `--force-with-lease`, never delete remote
+  branches, never push with a remote/refspec argument, and never rewrite
+  history. Use plain `git push` only.
+- The existing reset/clean/restore/checkout and recursive-deletion safeguards
+  are unchanged and still apply.
+
+## Research experiment handoffs
+
+Research handoffs are implementation contracts for testing a specific hypothesis. Treat each handoff as potentially coming from a fresh agent session.
+
+* Reconstruct relevant context from the current repository, maintained knowledge base, and experiment history. Do not rely on prior chat/session memory.
+* Verify all handoff assumptions against current code and tests before implementing them. Current code and reproducible evidence override the handoff.
+* Treat suggested implementation details as proposals, not authority. If the proposed mechanism does not fit the current implementation, choose the smallest correct implementation that tests the stated hypothesis and report the discrepancy.
+* Prefer experiments that change one conceptual variable at a time. Do not bundle unrelated cleanup, refactors, optimizations, or feature work into an experiment.
+* Preserve the stated baseline and comparison conditions unless changing them is required for correctness. If they cannot be preserved, stop and report why.
+* Use the cheapest verification that establishes implementation correctness. Do not automatically run large statistical evaluations when a focused test or small seed sweep is sufficient.
+* Separate implementation correctness from scientific interpretation. Your job is normally to implement the experiment and produce evidence, not to decide whether the hypothesis succeeded.
+
+At completion, return an evidence-oriented report containing:
+
+1. resulting commit SHA and push result, if the handoff changed the repository
+   (default completion above applies);
+2. files changed and `git diff --stat`;
+3. any important deviation from the handoff and why;
+4. exact verification commands executed;
+5. raw test and benchmark results;
+6. failures, warnings, or unresolved uncertainty;
+7. any additional experiment command that should be run manually.
+
+Do not replace raw evidence with a persuasive summary. A later reviewer should be able to inspect the code and results independently.
+
 
 ## Critical safety and correctness traps
 
@@ -352,7 +427,9 @@ their inability to run is reported), model/data schemas still agree, `git diff`
 contains only intentional changes with every changed line tracing to the
 request and no speculative additions, referenced paths and symbols exist, and
 required knowledge-base, decision-log, or experiment-log updates are included.
-Policy-quality
+A completed handoff that changed the repository is additionally expected to
+land as a focused task-scoped commit pushed to upstream (see "Default
+completion: commit and push"). Policy-quality
 work additionally requires a reproducible, correctly labelled paired
 evaluation. Documentation work additionally requires link/path checks,
 `git diff --check`, stale-phrase review, and inspection of the complete diff.
@@ -376,13 +453,10 @@ Do not assume:
 - CMake creates `build/libsts.a`;
 - `runtrace` exactly mirrors `runFullRunOOC`;
 - `selfplay/state.env` proves a loop is active or resumable;
-- a dated “running now,” “current best,” or model-version claim is still current;
+- a dated "running now," "current best," or model-version claim is still current;
 - design rationale can be reconstructed from code shape;
 - 128 seeds is a normal/default automated benchmark size rather than a hard
-  ceiling;
-- Pi project trust is a sandbox or replaces the deterministic safety checks in
-  `/sts-cycle` is the authorised orchestrator for the current task;
-- the Pi backend is the default unless `/sts-cycle` currently says so.
+  ceiling.
 
 When genuinely uncertain, stop and ask rather than proceeding on an
 unverified interpretation.

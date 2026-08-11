@@ -1,6 +1,8 @@
 # Out-of-combat policy
 
-Last verified: 2026-08-09 against the current working tree (key collection
+Last verified: 2026-08-11 against the current working tree (tracked native
+floor/win trees relocated from `build/` to `models/`).
+Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
 Previously verified 2026-08-09 (Act-4 key collection added to every REWARDS handler
 and act-3+ rest rooms, now opt-in via the flag).
@@ -29,8 +31,8 @@ act/floor, and the active `ScreenState`
 The active whole-run research policy is the ordered branch chain in
 `apps/one_combat.cpp::runFullRunOOC`. Under current defaults it uses:
 
-- native `build/v_rich_trees.txt` floor value for card and shop scoring;
-- native `build/v_win_trees.txt` win value for rest/upgrade decisions;
+- native `models/v_rich_trees.txt` floor value for card and shop scoring;
+- native `models/v_win_trees.txt` win value for rest/upgrade decisions;
 - card skip threshold `-0.5`;
 - heuristic map routing;
 - value-based shop planning;
@@ -268,8 +270,9 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
   not beat the V3 flat-vector net (+7.0pp @ m1), so V3 stays deployed and
   the V4 net is opt-in behind `STS_OOC_STRATEGIC_TOK_NN`. The current
   deployment still uses per-screen scalar value heads; distributional
-  heads and the map DAG remain future work. The full spec and remaining
-  phases are the active plan in `docs/archive/ooc-action-plan-2026-08.md`.
+  heads and the map DAG remain future work. The original roadmap is archived
+  in `docs/archive/ooc-action-plan-2026-08.md`; current priorities are routed
+  through `docs/knowledge-base/evaluation/current-research.md`.
 
 ## Important data flow
 
@@ -373,6 +376,7 @@ flowchart LR
 - `train_strategic.py`, `export_strategic.py`, `v_server.py::H.handle`, `RAW`
 - `train_strategic_tok.py`, `export_strategic_tok.py`, `strategic_tok_net.py`
 - `docs/knowledge-base/architecture/ooc-strategic-v4.md` — V4 token-state contract
-- `docs/archive/ooc-action-plan-2026-08.md` — active strategic-model plan
+- `docs/archive/ooc-action-plan-2026-08.md` — historical strategic-model plan
+- `docs/knowledge-base/evaluation/current-research.md` — current research routing
 - `docs/knowledge-base/decisions/2026-08-02-semi-markov-strategic-model.md`
 - `bindings/slaythespire.cpp::PYBIND11_MODULE`

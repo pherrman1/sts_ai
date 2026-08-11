@@ -19,7 +19,7 @@ import pandas as pd
 from scipy.optimize import minimize
 
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_qwin.csv"
-TREES = sys.argv[2] if len(sys.argv) > 2 else "build/v_win_trees.txt"
+TREES = sys.argv[2] if len(sys.argv) > 2 else "models/v_win_trees.txt"
 OUT = sys.argv[3] if len(sys.argv) > 3 else "build/strategic_qwin_cal.csv"
 SPLIT = float(sys.argv[4]) if len(sys.argv) > 4 else 0.8
 

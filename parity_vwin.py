@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_qwin.csv"
-TREES = sys.argv[2] if len(sys.argv) > 2 else "build/v_win_trees.txt"
+TREES = sys.argv[2] if len(sys.argv) > 2 else "models/v_win_trees.txt"
 CPP = sys.argv[3] if len(sys.argv) > 3 else "winnettest.out"
 
 # --- load trees (same parser as check_vwin_calibration.py) ---

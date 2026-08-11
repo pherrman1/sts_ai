@@ -29,7 +29,7 @@ from sklearn.model_selection import GroupShuffleSplit
 
 CSV = sys.argv[1] if len(sys.argv) > 1 else "selfplay/buffer/_train.csv"
 WIN_REF = sys.argv[2] if len(sys.argv) > 2 else "selfplay/current/v_win.json"
-FLOOR_REF = sys.argv[3] if len(sys.argv) > 3 else "build/v_rich_xgb.json"
+FLOOR_REF = sys.argv[3] if len(sys.argv) > 3 else "models/v_rich_xgb.json"
 OUT = sys.argv[4] if len(sys.argv) > 4 else "selfplay/models/meta_entity"
 MAP_CSV = sys.argv[5] if len(sys.argv) > 5 else ""
 

@@ -1,6 +1,6 @@
 # Issues
 
-Last verified: 2026-08-10 against the current working tree.
+Last verified: 2026-08-11 against the current working tree.
 
 This directory collects known issues extracted from the knowledge-base pages,
 sorted by importance. Each entry records the symptom, evidence, why it matters,
@@ -16,9 +16,24 @@ history. Experiments invalidated by a fix are tracked in the
 - **Medium** — tooling or evidence gaps that waste effort or mislead readers.
 - **Low** — debt and design questions without an immediate functional impact.
 
-## Index
+## Open issues
 
-Sorted by importance; entry files are reverse-chronological in their own list.
+This table is the current work queue. The complete historical index follows.
+
+| ID | Tier | Title |
+| --- | --- | --- |
+| [16](2026-08-02-issue-16-pvnet-sweep-provenance.md) | High | Historical PVNet sweep provenance is unverified |
+| [49](2026-08-05-issue-49-term-win-mt-crash.md) | Medium | `STS_TERM_WIN=1` multi-thread crash |
+| [44](2026-08-05-issue-44-tok-pipeline-hygiene.md) | Medium | Token-pipeline implementation hygiene |
+| [45](2026-08-05-issue-45-eval-train-hygiene-batch.md) | Low | Evaluation/training hygiene batch |
+| [26](2026-08-02-issue-26-one-combat-centralization.md) | Low | `one_combat.cpp` centralizes policy and experiments |
+| [27](2026-08-02-issue-27-python-deps-unpinned.md) | Low | Python dependencies are not locked |
+| [29](2026-08-02-issue-29-python-combat-bindings.md) | Low | Python lacks card-by-card combat bindings |
+
+## Historical index
+
+Closed records remain here as provenance. Status in this table is historical;
+the open queue above is the routing source.
 
 | ID | Tier | Title | Status | Source pages |
 | --- | --- | --- | --- | --- |
@@ -56,8 +71,8 @@ Sorted by importance; entry files are reverse-chronological in their own list.
 | [49](2026-08-05-issue-49-term-win-mt-crash.md) | Medium | `STS_TERM_WIN=1` terminal-leaf bonus segfaults ~2/6 at 12 threads (0 output lines; 1-thread and ASAN clean; repro on Phase-1 too — pre-existing). Opt-in only; TERM_WIN stays off; needs a debugger session | open | [combat-search](../architecture/combat-search.md), [decision-log `2026-08-05-phase3-terminal-value-stage2.md`](../decision-log/2026-08-05-phase3-terminal-value-stage2.md) |
 | [50](2026-08-09-issue-actionqueue-overflow.md) | High | ActionQueue capacity-50 overflow crashes long-running datagen/benchmarks under fair-S3+vnet | closed | [combat-search](../architecture/combat-search.md) |
 | [51](2026-08-09-issue-cardqueue-silent-overflow.md) | High | CardQueue capacity-10 overflow silently corrupts under NDEBUG (assert not guarded by `sts_asserts`) | closed | [combat-search](../architecture/combat-search.md) |
-| [50](2026-08-10-issue-50-thorns-retaliation-flips-win.md) | High | Lethal Thorns retaliation after the killing blow flips win to loss | closed | [invariants](../behavior/invariants.md), [decision-log `2026-08-10-thorns-retaliation-and-awakened-one-outcome-fix.md`](../decision-log/2026-08-10-thorns-retaliation-and-awakened-one-outcome-fix.md) |
-| [51](2026-08-10-issue-51-awakened-one-premature-victory.md) | High | Awakened One stage 1 death with both Cultists grants premature victory (stage 2 skipped) | closed | [invariants](../behavior/invariants.md), [decision-log `2026-08-10-thorns-retaliation-and-awakened-one-outcome-fix.md`](../decision-log/2026-08-10-thorns-retaliation-and-awakened-one-outcome-fix.md) |
+| [85](2026-08-10-issue-85-thorns-retaliation-flips-win.md) | High | Lethal Thorns retaliation after the killing blow flips win to loss (renumbered from legacy duplicate #50) | closed | [invariants](../behavior/invariants.md), [decision-log `2026-08-10-thorns-retaliation-and-awakened-one-outcome-fix.md`](../decision-log/2026-08-10-thorns-retaliation-and-awakened-one-outcome-fix.md) |
+| [86](2026-08-10-issue-86-awakened-one-premature-victory.md) | High | Awakened One stage 1 death with both Cultists grants premature victory (stage 2 skipped) (renumbered from legacy duplicate #51) | closed | [invariants](../behavior/invariants.md), [decision-log `2026-08-10-thorns-retaliation-and-awakened-one-outcome-fix.md`](../decision-log/2026-08-10-thorns-retaliation-and-awakened-one-outcome-fix.md) |
 | [53](2026-08-10-issue-53-fairy-bark-revive-wrong-hp.md) | High | Sacred Bark + Fairy in a Bottle revives at 1 HP instead of 60% max HP (ternary precedence) | closed | [decision-log `2026-08-10-fix-53-63-64.md`](../decision-log/2026-08-10-fix-53-63-64.md) |
 | [63](2026-08-10-issue-63-toke-peace-pipe-noop.md) | Medium | TOKE (Peace Pipe) removes nothing: screen closed before any pick | closed | [decision-log `2026-08-10-fix-53-63-64.md`](../decision-log/2026-08-10-fix-53-63-64.md) |
 | [64](2026-08-10-issue-64-cf-branch-rng-pollution.md) | Medium | Event-fight `regainControlAction` lambdas consume the original context's RNG when a CF branch inherits them | closed | [decision-log `2026-08-10-fix-53-63-64.md`](../decision-log/2026-08-10-fix-53-63-64.md) |
@@ -89,7 +104,7 @@ Sorted by importance; entry files are reverse-chronological in their own list.
 | [43](2026-08-05-issue-43-pvnet-s3-doc-staleness.md) | Medium | `STS_PVNET`/`STS_S3_*` documentation stale or absent | closed | [combat-search](../architecture/combat-search.md), [AGENTS.md](../../../AGENTS.md) |
 | [44](2026-08-05-issue-44-tok-pipeline-hygiene.md) | Medium | Token-pipeline hygiene: dead gather, GELU mismatch, NaN-loss zeroing | open | [ooc-strategic-v4](../architecture/ooc-strategic-v4.md) |
 | [45](2026-08-05-issue-45-eval-train-hygiene-batch.md) | Low | Eval/train hygiene batch: stale defaults, import safety, misc | open | [training-and-inference](../architecture/training-and-inference.md) |
-| [46](2026-08-05-issue-46-bestbench-append-dedup.md) | Medium | `bestbench` appends without dedup — scripts must truncate | open | [benchmark-protocol](../evaluation/benchmark-protocol.md) |
+| [46](2026-08-05-issue-46-bestbench-append-dedup.md) | Medium | `bestbench` append/dedup consumer safety | closed | [benchmark-protocol](../evaluation/benchmark-protocol.md) |
 | [26](2026-08-02-issue-26-one-combat-centralization.md) | Low | `one_combat.cpp` centralizes policy and experiments | open | [overview](../architecture/overview.md), [out-of-combat](../architecture/out-of-combat.md) |
 | [27](2026-08-02-issue-27-python-deps-unpinned.md) | Low | No dependency lock for Python packages | open | [training-and-inference](../architecture/training-and-inference.md), [build-and-debugging](../operations/build-and-debugging.md) |
 | [28](2026-08-02-issue-28-expert-hand-authored-features.md) | Low | Policy input includes hand-authored Expert features | closed | [combat-search](../architecture/combat-search.md) |

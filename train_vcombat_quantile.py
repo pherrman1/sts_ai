@@ -3,7 +3,8 @@
 MCTS terminal utility R = 0 on loss, 50 + endHp on win, vs the old raw-endHp
 target — same rows, same model class, only the target differs.
 
-The deployed vnet (build/v_combat_honest.txt, §126) is an endHp-regression GBM.
+The §126 deployed vnet (build/v_combat_honest.txt, later superseded by the
+§148 7k-tuned fair-S3 default) is an endHp-regression GBM.
 A faithful 51-class softprob port would cost ~50x the trees; quantile
 regression on R (9 quantiles) is the cheap distributional equivalent: the low
 quantiles cluster at 0 (death mass), the rest encode HP|win, and

@@ -72,6 +72,6 @@ PY
 "$BIN" mapbatch "$DATA" "$MAPS"
 CARD_CF_DEVICE=cpu CARD_CF_INIT=build/v_deckset.pt \
 CARD_CF_MIN_DECISIONS=100 CARD_CF_EPOCHS=60 CARD_CF_BATCH=256 \
-../.venv/bin/python train_card_cf.py "$DATA" "$MODEL" build/v_rich_xgb.json "$MAPS"
+../.venv/bin/python train_card_cf.py "$DATA" "$MODEL" models/v_rich_xgb.json "$MAPS"
 
 printf 'complete tag=%s runs_added=%s seed_offset=%s\n' "$TAG" "$N_RUNS" "$SEED_OFFSET"

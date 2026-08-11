@@ -1,39 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "agent": {
-    "architect": {
-      "description": "Senior architect. Understands the task and writes a precise implementation plan without modifying the repository.",
+    "build": {
+      "description": "Interactive implementation agent. Follows AGENTS.md for project conventions.",
       "mode": "primary",
-      "model": "deepseek/deepseek-v4-pro",
-      "reasoningEffort": "high",
-      "prompt": "{file:./.opencode/prompts/architect.md}",
-      "permission": {
-        "edit": "deny",
-        "task": "deny",
-        "webfetch": "allow",
-        "websearch": "allow",
-        "bash": {
-          "*": "deny",
-          "git blame *": "allow",
-          "git diff": "allow",
-          "git diff *": "allow",
-          "git grep *": "allow",
-          "git log": "allow",
-          "git log *": "allow",
-          "git ls-files *": "allow",
-          "git show *": "allow",
-          "git status": "allow",
-          "git status *": "allow",
-          "python3 -I tools/ai_inspect.py *": "allow",
-          "git check-ignore *": "allow"
-        }
-      }
-    },
-    "implementer": {
-      "description": "Implementation agent. Executes an approved plan, edits code and runs focused verification.",
-      "mode": "primary",
-      "model": "deepseek/deepseek-v4-flash",
-      "reasoningEffort": "high",
       "prompt": "{file:./.opencode/prompts/implementer.md}",
       "permission": {
         "edit": "allow",
@@ -42,8 +12,18 @@
         "websearch": "deny",
         "bash": {
           "*": "allow",
-          "git commit *": "deny",
+          "*one_combat*": "deny",
+          "tools/seed_guard.sh *": "allow",
+          "git commit *": "allow",
+          "git commit --amend*": "deny",
           "git push *": "deny",
+          "git push": "allow",
+          "*/git push*": "deny",
+          "git -C * push*": "deny",
+          "git --git-dir=* push*": "deny",
+          "git --work-tree=* push*": "deny",
+          "git -c * push*": "deny",
+          "git --no-pager push*": "deny",
           "git reset --hard *": "deny",
           "git clean *": "deny",
           "rm -rf *": "deny",
@@ -53,66 +33,15 @@
         }
       }
     },
-    "reviewer": {
-      "description": "Senior adversarial reviewer. Reviews implementation correctness without modifying files.",
+    "plan": {
+      "description": "Optional read-only planning mode. Analyzes code and reviews suggestions without modifying the repository.",
       "mode": "primary",
-      "model": "deepseek/deepseek-v4-flash",
-      "reasoningEffort": "high",
-      "prompt": "{file:./.opencode/prompts/reviewer.md}",
       "permission": {
         "edit": "deny",
         "task": "deny",
-        "webfetch": "allow",
-        "websearch": "allow",
-        "bash": {
-          "*": "deny",
-          "git diff": "allow",
-          "git diff *": "allow",
-          "git grep *": "allow",
-          "git log": "allow",
-          "git log *": "allow",
-          "git ls-files *": "allow",
-          "git show *": "allow",
-          "git status": "allow",
-          "git status *": "allow",
-          "python3 -I tools/ai_inspect.py *": "allow",
-          "git blame *": "allow",
-          "git check-ignore *": "allow"
-        }
-      }
-    },
-    "reviewer_escalation": {
-      "description": "Escalation auditor. Reviews high-risk cheap-reviewer passes and adjudicates bounded rejected-session recovery without modifying files.",
-      "mode": "primary",
-      "model": "deepseek/deepseek-v4-pro",
-      "reasoningEffort": "max",
-      "prompt": "{file:./.opencode/prompts/reviewer.md}\n\n{file:./.opencode/prompts/reviewer-escalation.md}",
-      "permission": {
-        "edit": "deny",
-        "task": "deny",
-        "webfetch": "allow",
-        "websearch": "allow",
-        "bash": {
-          "*": "deny",
-          "*&&*": "deny",
-          "*;*": "deny",
-          "*<*": "deny",
-          "*>*": "deny",
-          "*|*": "deny",
-          "*||*": "deny",
-          "git diff": "allow",
-          "git diff *": "allow",
-          "git grep *": "allow",
-          "git log": "allow",
-          "git log *": "allow",
-          "git ls-files *": "allow",
-          "git show *": "allow",
-          "git status": "allow",
-          "git status *": "allow",
-          "python3 -I tools/ai_inspect.py *": "allow",
-          "git blame *": "allow",
-          "git check-ignore *": "allow"
-        }
+        "webfetch": "deny",
+        "websearch": "deny",
+        "bash": "deny"
       }
     }
   }

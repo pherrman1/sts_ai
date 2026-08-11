@@ -1366,7 +1366,7 @@ static int g_neowV      = 0;   // STS_NEOW_V=1
 
 // --- NATIVE V_win: compact XGBoost tree-walk on the rich feature vector, to kill the
 // v_server socket for OOC V_win decisions (esp. the unbatched per-candidate ones:
-// boss-relic/Neow/pathing). Loaded from build/v_win_trees.txt (export_win_model.py).
+// boss-relic/Neow/pathing). Loaded from models/v_win_trees.txt (export_win_model.py).
 struct WinNet {
     struct Node { int feat; float thr; int yes, no; };   // feat<0 => leaf (value in thr)
     std::vector<std::vector<Node>> trees;
@@ -8251,8 +8251,8 @@ static MargResult finishMargCf(GameContext gc, std::uint64_t branchSeed,
     return {r.won, r.hp, r.floor, (double)r.bootstrapped};
 }
 
-static void strategicMargGen(int nSeeds, int outerSims, int, int,
-                             int H, int maxDecisions, const std::string &outFile,
+static void strategicMargGen(int nSeeds, int outerSims,
+                             int H, int maxPerRun, const std::string &outFile,
                              long long seedOffset) {
     std::ofstream out(outFile);
     out << "seed,decIdx,act,floor,screen,gateKind,actionIdx,nCand,hiddenIdx,regime,"
@@ -8269,53 +8269,102 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
 
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
+        std::uint64_t seed = (std::uint64_t)(seedOffset + s);
+
+        // ── Pass 1: play full source run, collect eligible decision snapshots ──
+        struct DecisionSnap {
+            GameContext pre;
+            PathHistory prePath;
+            std::vector<search::GameAction> actions;
+            int decIdx, screen, gateKind, actNum, floorNum;
+            std::string stateRow;
+        };
+        std::vector<DecisionSnap> snaps;
+        {
+            GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+            vDisconnect();
+            search::ScumSearchAgent2 agent;
+            agent.simulationCountBase = outerSims;
+            agent.rng = std::default_random_engine(seed);
+            PathHistory path;
+            t_curPath = &path;
+            int decIdx = 0;
+            while (gc.outcome == GameOutcome::UNDECIDED) {
+                path.update(gc);
+                int screen = (int)gc.screenState;
+                int gateKind = 0;
+                bool isOwned = false;
+                if (screen == 1) { gateKind = 1; isOwned = true; }
+                else if (screen == 2) { auto &r = gc.info.rewardsContainer; if (r.cardRewardCount > 0) { gateKind = 2; isOwned = true; } }
+                else if (screen == 3) { gateKind = 3; isOwned = true; }
+                else if (screen == 4) { if (gc.info.selectScreenType == CardSelectScreenType::UPGRADE) { gateKind = 4; isOwned = true; } }
+                else if (screen == 6) { gateKind = 5; isOwned = true; }
+                else if (screen == 7) { gateKind = 6; isOwned = true; }
+                else if (screen == 8) { gateKind = 7; isOwned = true; }
+
+                if (isOwned) {
+                    GameContext pre = detachedCounterfactualCopy(gc);
+                    auto actions = search::GameAction::getAllActionsInState(gc);
+                    if (actions.size() >= 2) {
+                        snaps.push_back({std::move(pre), path, std::move(actions),
+                                         decIdx, screen, gateKind, gc.act, gc.floorNum,
+                                         richRow(pre, path)});
+                    }
+                    ++decIdx;
+                }
+                stepFrozenV4Ooc(gc, agent);
+            }
+            t_curPath = nullptr;
+        }
+
+        // ── Uniform sample up to maxPerRun decisions ──
+        int nSnaps = (int)snaps.size();
+        int nSample = std::min(maxPerRun, nSnaps);
+        if (nSnaps > maxPerRun) {
+            std::mt19937_64 rng(seed ^ 0x9e3779b97f4a7c15ULL);
+            for (int i = 0; i < nSample; ++i) {
+                int j = i + (int)(rng() % (std::uint64_t)(nSnaps - i));
+                std::swap(snaps[i], snaps[j]);
+            }
+        }
+        snaps.resize(nSample);
+
+        // ── Pass 2: evaluate sampled decisions ──
         std::ostringstream local;
         int localDecisions = 0;
-        std::uint64_t seed = (std::uint64_t)(seedOffset + s);
-        GameContext gc(CharacterClass::IRONCLAD, seed, 0);
-        vDisconnect();
-        search::ScumSearchAgent2 agent;
-        agent.simulationCountBase = outerSims;
-        agent.rng = std::default_random_engine(seed);
-        PathHistory path;
-        t_curPath = &path;
-        int decIdx = 0;
-        int perRunMax = maxDecisions / std::max(1, nSeeds) + 5;
         int sourceWon = 0, sourceFloor = 0, sourceHp = 0;
-
-        while (gc.outcome == GameOutcome::UNDECIDED) {
-            path.update(gc);
-            int screen = (int)gc.screenState;
-            int gateKind = 0;
-            bool isOwned = false;
-            if (screen == 1) {
-                gateKind = 1; isOwned = true;
-            } else if (screen == 2) {
-                auto &r = gc.info.rewardsContainer;
-                if (r.cardRewardCount > 0) { gateKind = 2; isOwned = true; }
-            } else if (screen == 3) {
-                gateKind = 3; isOwned = true;
-            } else if (screen == 4) {
-                if (gc.info.selectScreenType == CardSelectScreenType::UPGRADE)
-                    { gateKind = 4; isOwned = true; }
-            } else if (screen == 6) {
-                gateKind = 5; isOwned = true;
-            } else if (screen == 7) {
-                gateKind = 6; isOwned = true;
-            } else if (screen == 8) {
-                gateKind = 7; isOwned = true;
+        {
+            // Re-run the source game to get terminal outcome
+            GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+            vDisconnect();
+            search::ScumSearchAgent2 agent;
+            agent.simulationCountBase = outerSims;
+            agent.rng = std::default_random_engine(seed);
+            PathHistory path;
+            t_curPath = &path;
+            while (gc.outcome == GameOutcome::UNDECIDED) {
+                path.update(gc);
+                stepFrozenV4Ooc(gc, agent);
             }
-            if (!isOwned) { stepFrozenV4Ooc(gc, agent); continue; }
-            if (localDecisions >= perRunMax) { stepFrozenV4Ooc(gc, agent); continue; }
+            sourceWon = (gc.outcome == GameOutcome::PLAYER_VICTORY) ? 1 : 0;
+            sourceFloor = gc.floorNum;
+            sourceHp = gc.curHp;
+            t_curPath = nullptr;
+        }
 
-            GameContext pre = detachedCounterfactualCopy(gc);
-            PathHistory prePath = path;
-            auto actions = search::GameAction::getAllActionsInState(gc);
-            if (actions.size() < 2) { stepFrozenV4Ooc(gc, agent); continue; }
-            int actNum = gc.act, floorNum = gc.floorNum;
-            std::string stateRow = richRow(pre, prePath);
+        {
+            search::ScumSearchAgent2 evalAgent;
+            evalAgent.simulationCountBase = outerSims;
+            evalAgent.rng = std::default_random_engine(seed);
+        for (auto &snap : snaps) {
+            auto &pre = snap.pre; auto &prePath = snap.prePath;
+            auto &actions = snap.actions;
+            int screen = snap.screen, gateKind = snap.gateKind;
+            int actNum = snap.actNum, floorNum = snap.floorNum;
+            int decIdx = snap.decIdx;
+            std::string &stateRow = snap.stateRow;
 
-            // Per-action metadata for trainer schema
+            // Per-action metadata
             std::vector<std::string> actionMetas;
             for (int ai = 0; ai < (int)actions.size(); ++ai) {
                 int at, c1v, c2v, c3v, ca1, ca2, ca3;
@@ -8326,16 +8375,16 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
                 actionMetas.push_back(buf);
             }
 
-            // Fallback via fingerprint
+            // Fallback via fingerprint (abbreviated — identical to existing code)
             int fallbackIdx = -1, fallbackExact = 0;
             {
                 GameContext fbGc = detachedCounterfactualCopy(pre);
-                if (screen == 1) agent.stepOutOfCombatPolicy(fbGc);
+                if (screen == 1) evalAgent.stepOutOfCombatPolicy(fbGc);
                 else if (screen == 2) serverCardRewardPolicy(fbGc);
-                else if (screen == 3) { if (g_bossRelicV) bossRelicVPolicy(fbGc); else agent.stepOutOfCombatPolicy(fbGc); }
+                else if (screen == 3) { if (g_bossRelicV) bossRelicVPolicy(fbGc); else evalAgent.stepOutOfCombatPolicy(fbGc); }
                 else if (screen == 4) upgradeSelectWinPolicy(fbGc);
-                else if (screen == 6) agent.stepOutOfCombatPolicy(fbGc);
-                else if (screen == 7) { if (g_restWin && restWinPolicy(fbGc)) {} else agent.stepOutOfCombatPolicy(fbGc); }
+                else if (screen == 6) evalAgent.stepOutOfCombatPolicy(fbGc);
+                else if (screen == 7) { if (g_restWin && restWinPolicy(fbGc)) {} else evalAgent.stepOutOfCombatPolicy(fbGc); }
                 else if (screen == 8) shopVPolicy(fbGc);
                 auto fbFp = stratFingerprint(fbGc);
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
@@ -8348,11 +8397,11 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
                 }
             }
 
-            // Source chosen action via fingerprint
+            // Source chosen
             int chosenIdx = -1, chosenExact = 0;
             {
                 GameContext postGc = detachedCounterfactualCopy(pre);
-                stepFrozenV4Ooc(postGc, agent);
+                stepFrozenV4Ooc(postGc, evalAgent);
                 auto postFp = stratFingerprint(postGc);
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
                     GameContext tGc = detachedCounterfactualCopy(pre);
@@ -8367,14 +8416,14 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
             // V4 predictions
             int v4BestIdx = -1; double v4Margin = 0; bool v4Fired = false;
             if (g_oocStrategicTokNet.ok) {
-                TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+                TokState ts = buildTokState(pre, prePath);
                 double bestV4 = -1e100, secondV4 = -1e100;
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
                     int at, c1v, c2v, c3v, ca1, ca2, ca3;
-                    strategicCands(gc, actions[ai], at, c1v, c2v, c3v, ca1, ca2, ca3);
+                    strategicCands(pre, actions[ai], at, c1v, c2v, c3v, ca1, ca2, ca3);
                     const int cats[6] = {c1v, c2v, c3v, ca1, ca2, ca3};
                     int et, ei; float gg;
-                    tokEntity(gc, actions[ai], et, ei, gg);
+                    tokEntity(pre, actions[ai], et, ei, gg);
                     const float entT[4] = {et==0?1.f:0.f, et==1?1.f:0.f, et==2?1.f:0.f, et==3?1.f:0.f};
                     double v = g_oocStrategicTokNet.predictActionValue(
                         ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
@@ -8391,7 +8440,7 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
             std::uint64_t baseSeed = seed ^ ((std::uint64_t)decIdx * 0x9e3779b97f4a7c15ULL);
             if (!baseSeed) baseSeed = 1;
 
-            // Macro to emit one output row (avoids duplication bugs)
+            // EMIT_ROW macro (same as before)
             #define EMIT_ROW(regimeStr, contSeed, hiddenSeedVal, hiddenChangedVal) \
                 local << seed << ',' << decIdx << ',' << actNum << ',' << floorNum \
                       << ',' << screen << ',' << gateKind << ',' << ai << ',' \
@@ -8401,9 +8450,9 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
                       << chosenIdx << ',' << chosenExact << ',' \
                       << v4BestIdx << ',' << v4Margin << ',' << v4Threshold << ',' \
                       << (v4Fired?1:0) << ',' << v4ExecutedIdx << ',' << v4Override << ',' \
-                      << '"' << stateRow << '"' << ',' << actionMetas[ai] << ',' << hiddenChangedVal << ",0,0,0\n";
+                      << stateRow << ',' << actionMetas[ai] << ',' << hiddenChangedVal << ",0,0,0\n";
 
-            // Regime F
+            // Regime F, I, M (identical to existing)
             for (int h = 0; h < H; ++h) {
                 std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
                 if (!contSeed) contSeed = 1;
@@ -8414,8 +8463,6 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
                     EMIT_ROW("fixed", contSeed, 0, 0)
                 }
             }
-
-            // Regime I (identity)
             for (int h = 0; h < std::min(H, 2); ++h) {
                 std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
                 if (!contSeed) contSeed = 1;
@@ -8426,13 +8473,10 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
                     EMIT_ROW("marg_id", contSeed, 0, 0)
                 }
             }
-
-            // Regime M
             for (int h = 0; h < H; ++h) {
                 std::uint64_t contSeed = baseSeed ^ ((std::uint64_t)h * 0xbf58476d1ce4e5b9ULL);
                 std::uint64_t hiddenSeed = baseSeed ^ ((std::uint64_t)(h + H) * 0x9e3779b97f4a7c15ULL);
-                if (!contSeed) contSeed = 1;
-                if (!hiddenSeed) hiddenSeed = 1;
+                if (!contSeed) contSeed = 1; if (!hiddenSeed) hiddenSeed = 1;
                 GameContext hiddenBase = detachedCounterfactualCopy(pre);
                 std::uint64_t hashBefore = 0, hashAfter = 0;
                 for (int i = hiddenBase.monsterListOffset; i < (int)hiddenBase.monsterList.size(); ++i)
@@ -8453,29 +8497,23 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
                 }
             }
             #undef EMIT_ROW
-
-            ++decIdx; ++localDecisions;
-            stepFrozenV4Ooc(gc, agent);
+            ++localDecisions;
         }
-        // Record source terminal outcome
-        sourceWon = (gc.outcome == GameOutcome::PLAYER_VICTORY) ? 1 : 0;
-        sourceFloor = gc.floorNum;
-        sourceHp = gc.curHp;
-        t_curPath = nullptr;
+        }  // end evalAgent scope
 
-        #pragma omp critical(marg_write3)
+        // Source outcome post-processing
+        std::string prefix = std::to_string(sourceWon) + "," + std::to_string(sourceFloor) + "," + std::to_string(sourceHp);
+        std::string localStr = local.str();
+        std::string from = ",0,0,0\n";
+        std::string to = "," + prefix + "\n";
+        size_t pos = 0;
+        while ((pos = localStr.find(from, pos)) != std::string::npos) {
+            localStr.replace(pos, from.length(), to);
+            pos += to.length();
+        }
+
+        #pragma omp critical(marg_write4)
         {
-            // Prepend source outcome to all rows for this seed
-            std::string prefix = std::to_string(sourceWon) + "," + std::to_string(sourceFloor) + "," + std::to_string(sourceHp);
-            // Replace trailing ",0,0,0\n" with ",<sourceWon>,<sourceFloor>,<sourceHp>\n"
-            std::string localStr = local.str();
-            std::string from = ",0,0,0\n";
-            std::string to = "," + prefix + "\n";
-            size_t pos = 0;
-            while ((pos = localStr.find(from, pos)) != std::string::npos) {
-                localStr.replace(pos, from.length(), to);
-                pos += to.length();
-            }
             out << localStr; out.flush();
             totalDecisions += localDecisions;
             if (totalDecisions % 10 == 0 || totalDecisions <= 5) {
@@ -8490,6 +8528,7 @@ static void strategicMargGen(int nSeeds, int outerSims, int, int,
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::printf("wrote %d decisions to %s in %.1fs\n", totalDecisions, outFile.c_str(), wall);
 }
+
 
 static void strategicGen(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0) {
     const bool append = seedOffset > 0;
@@ -9987,7 +10026,7 @@ int main(int argc, char **argv) {
         if (g_neowV) std::cout << "[Neow bonus pick via V_win ON]\n";
     }
     if (const char *d = std::getenv("STS_WIN_NET")) {       // native V_win tree-walk (no v_server socket)
-        const std::string path = std::string(d) == "1" ? "build/v_win_trees.txt" : d;
+        const std::string path = std::string(d) == "1" ? "models/v_win_trees.txt" : d;
         if (!g_winNet.load(path, richIdxMap()))
             std::cerr << "[STS_WIN_NET] failed to load win tree: " << path << "\n";
     }
@@ -9997,10 +10036,10 @@ int main(int argc, char **argv) {
         const char *d = std::getenv("STS_NATIVE_OOC");
         g_nativeOoc = !d || std::atoi(d) != 0;
         if (g_nativeOoc) {
-            if (!g_winNet.ok) g_winNet.load("build/v_win_trees.txt", richIdxMap());
-            g_floorNet.load("build/v_rich_trees.txt", richIdxMap());
+            if (!g_winNet.ok) g_winNet.load("models/v_win_trees.txt", richIdxMap());
+            g_floorNet.load("models/v_rich_trees.txt", richIdxMap());
             if (!g_floorNet.ok) {
-                std::cerr << "[native OOC] failed to load build/v_rich_trees.txt\n";
+                std::cerr << "[native OOC] failed to load models/v_rich_trees.txt\n";
                 return 1;
             }
             if (!g_winNet.ok) {
@@ -10399,7 +10438,7 @@ int main(int argc, char **argv) {
         if (g_termWin) {
             if (g_termWinEval == 1 && !g_cpsiNet.loaded())
                 std::cerr << "[terminal-leaf cpsi evaluator: STS_CPSI_NN not loaded; falling back to win tree]\n";
-            if (!g_winNet.ok) g_winNet.load("build/v_win_trees.txt", richIdxMap());
+            if (!g_winNet.ok) g_winNet.load("models/v_win_trees.txt", richIdxMap());
             std::cout << "[terminal-leaf run-value bonus ON: w=" << g_termWinW
                       << " eval=" << (g_termWinEval == 1 ? "cpsi" : "win")
                       << " hidden=" << (g_termWinHidden ? "resample" : "zero")
@@ -10729,7 +10768,7 @@ int main(int argc, char **argv) {
         const char *d = std::getenv("STS_POLICY");
         const bool disabled = d && std::string(d) == "0";
         if (!disabled && mode != "policygen") {
-            std::string path = "build/policy_trees_c.txt";
+            std::string path = "models/policy_trees_c.txt";
             if (d && std::string(d) == "1")      path = "build/policy_trees.txt";
             else if (d)                          path = d;
             search::g_policyNet.isPolicy = true;
@@ -10753,23 +10792,20 @@ int main(int argc, char **argv) {
         benchmark(sims, nSeeds);
 
     } else if (mode == "strategicmarggen") {
-        // Hidden-future marginalization diagnostic: for sampled OOC decisions,
-        // compare fixed-world vs encounter-marginalized action advantages.
+        // Encounter-marginalization diagnostic: uniform sample per run, H hidden worlds.
+        // Tier-B branch contract frozen at K=3 fights, 150/100/50 sims, bootstrap=true.
         int nSeeds     = argc > 2 ? std::stoi(argv[2]) : 20;
         int outerSims  = argc > 3 ? std::stoi(argv[3]) : 1000;
-        int branchSims = argc > 4 ? std::stoi(argv[4]) : 150;
-        int nFights    = argc > 5 ? std::stoi(argv[5]) : 3;
-        int H          = argc > 6 ? std::stoi(argv[6]) : 8;
-        int maxDecisions = argc > 7 ? std::stoi(argv[7]) : 200;
-        std::string out = argc > 8 ? argv[8] : "build/hidden_marg.csv";
-        long long seedOff = argc > 9 ? std::stoll(argv[9]) : 300000;
+        int H          = argc > 4 ? std::stoi(argv[4]) : 4;
+        int maxPerRun  = argc > 5 ? std::stoi(argv[5]) : 20;
+        std::string out = argc > 6 ? argv[6] : "build/hidden_marg.csv";
+        long long seedOff = argc > 7 ? std::stoll(argv[7]) : 300000;
         std::cout << "strategicmarggen seeds " << seedOff << ".." << seedOff+nSeeds-1
-                  << " outerSims=" << outerSims << " branchSims=" << branchSims
-                  << " nFights=" << nFights << " H=" << H
-                  << " maxDecisions=" << maxDecisions
+                  << " outerSims=" << outerSims << " H=" << H
+                  << " maxPerRun=" << maxPerRun
+                  << " (Tier-B branch: K=3, 150/100/50, bootstrap=true)"
                   << " -> " << out << '\n';
-        strategicMargGen(nSeeds, outerSims, branchSims, nFights, H, maxDecisions, out,
-                         seedOff);
+        strategicMargGen(nSeeds, outerSims, H, maxPerRun, out, seedOff);
 
     } else if (mode == "mcts") {
         int sims          = argc > 2 ? std::stoi(argv[2]) : 2000;
@@ -10881,7 +10917,7 @@ int main(int argc, char **argv) {
         // Reads a tierb-schema CSV (state block between `chosen` and `won`),
         // runs the native WinNet on the rich state of each row, and prints
         // "rowidx,vwin" so the Python checker can compare tree-walks exactly.
-        std::string trees = argc > 2 ? argv[2] : "build/v_win_trees.txt";
+        std::string trees = argc > 2 ? argv[2] : "models/v_win_trees.txt";
         std::string csv   = argc > 3 ? argv[3] : "build/strategic_qwin.csv";
         long long maxRows = argc > 4 ? std::stoll(argv[4]) : 200;
         if (!g_winNet.load(trees, richIdxMap())) { std::cerr << "load failed: " << trees << "\n"; return 1; }
@@ -11102,7 +11138,7 @@ int main(int argc, char **argv) {
         // Parity CSV layout per row: 1766 state feats, 14 action feats,
         // then Python outputs: global(ED), pol(1), win(1), death(1),
         // quantile(NQ), potion(44), turns(1).
-        std::string model = argc > 2 ? argv[2] : "build/v_combat_pvnet.txt";
+        std::string model = argc > 2 ? argv[2] : "models/v_combat_pvnet.txt";
         std::string val   = argc > 3 ? argv[3] : "build/pvnet_parity.csv";
         if (!search::g_combatPVNet.load(model)) { std::cerr << "load failed: " << model << "\n"; return 1; }
         const auto &pv = search::g_combatPVNet;
@@ -11153,7 +11189,7 @@ int main(int argc, char **argv) {
         // Mirrors eval_combat_pvnet.py's policy section for the GBM prior:
         // per decision group, softmax over edge logits vs teacher visit/total.
         // Optional 4th arg "val" restricts to seeds with seed%100<20.
-        std::string model = argc > 2 ? argv[2] : "build/policy_trees_c.txt";
+        std::string model = argc > 2 ? argv[2] : "models/policy_trees_c.txt";
         std::string val   = argc > 3 ? argv[3] : "build/fair_p.csv";
         const bool valOnly = argc > 4 && std::string(argv[4]) == "val";
         search::g_policyNet.isPolicy = true;

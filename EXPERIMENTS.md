@@ -227,6 +227,7 @@ rejected particles, but it was gameplay-neutral in this small gate. Confirm the
 result before promotion; do not implement general rejuvenation yet.
 
 ---
+
 ## Historical baseline for experiments as of 2026-07-14
 
 New out-of-combat experiments should A/B against **this stack**, not the old default agent, so we
@@ -2246,7 +2247,7 @@ enabling condition, but the omitted command prevents verification.
   `build/oneply_gate_base.csv`, 21.1%/37.5/8.6):
 
   | margin | wins | floor Δ | win Δ | score Δ | discordant |
-  |---|---:|---:|---:|---:|
+  |---|---:|---:|---:|---:|---:|
   | 0 (greedy) | 22 (−3.9pp) | −0.11 CI [−2.13,+1.91] | −0.039 | −0.50 | 23 |
   | 0.25 | 26 (−0.8pp) | −0.33 CI [−2.35,+1.69] | −0.008 | −0.41 | 25 |
   | 0.5 | 33 (+4.7pp) | +0.06 CI [−2.08,+2.21] | +0.047 | +0.53 | 30 |
@@ -2302,7 +2303,7 @@ enabling condition, but the omitted command prevents verification.
   37.5 / 8.6):
 
   | config | wins | floor Δ | win Δ | score Δ | discordant |
-  |---|---|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|
   | cards+rest+event, margin 1.0 | **36 (28.1%, +7.0pp)** | +1.38 CI [−0.82,+3.58] | +0.070 CI [−0.012,+0.152] | +2.09 CI [−0.61,+4.78] | 10 A / 19 B |
   | cards+rest+event, margin 0.5 | 31 (24.2%, +3.1pp) | +0.23 CI [−2.21,+2.68] | +0.031 | +0.55 | 13 A / 17 B |
   | cards+rest+event, margin 5.0 | 30 (23.4%, +2.3pp) | −0.09 CI [−1.47,+1.30] | +0.023 | +0.15 | 10 A / 13 B |
@@ -2350,7 +2351,7 @@ enabling condition, but the omitted command prevents verification.
   `STRAT_EPOCHS=40` each, CUDA; V3 reference from §73 = 60 epochs):
 
   | rung | state groups | pol top-1 | logit margin | val pol CE | value MAE | Q top-1 | Q MAE |
-  |---|---|---|---:|---:|---:|---:|
+  |---|---|---|---:|---:|---:|---:|---:|
   | 1 | globals 50 only | 0.761 | 5.49 | 0.555 | 25.80 | 0.294 | 27.10 |
   | 2 | + deck tokens | 0.779 | 10.07 | 0.521 | 13.04 | 0.287 | 17.35 |
   | 3 | + relic/potion tokens | 0.777 | 9.38 | 0.526 | 11.05 | 0.291 | 16.70 |
@@ -2370,7 +2371,7 @@ enabling condition, but the omitted command prevents verification.
   V3 reference arm = §74):
 
   | margin | wins | floor Δ | win Δ | score Δ | hp Δ | discordant |
-  |---|---:|---:|---:|---:|---:|
+  |---|---:|---:|---:|---:|---:|---:|
   | 1.0 | 27 (21.1%, +0.0pp) | +1.83 CI [−1.05,+4.65] | +0.000 | +1.34 CI [−4.57,+7.23] | +1.3 | 19 A / 19 B |
   | 0.5 | 28 (21.9%, +0.8pp) | +0.71 CI [−2.33,+3.68] | +0.008 | +2.36 CI [−3.71,+8.48] | +2.3 | 20 A / 21 B |
   | 5.0 | **31 (24.2%, +3.1pp)** | +0.80 CI [−2.14,+3.80] | +0.031 | +2.15 CI [−3.78,+7.97] | +1.8 | 9 A / 13 B |
@@ -2423,7 +2424,7 @@ enabling condition, but the omitted command prevents verification.
   `build/tierb_gate_base.csv` bit-identical, 21.1% / 37.5 / 8.6):
 
   | margin | wins | floor Δ | win Δ | hp Δ | discordant |
-  |---|---:|---:|---:|---:|
+  |---|---:|---:|---:|---:|---:|
   | **1.0** | **51 (39.8%, +18.8pp)** | +3.6 CI [+1.1,+6.0] | +0.188 CI [+0.094,+0.281] | +1.2 | 10 A / 34 B |
   | **0.5** | **51 (39.8%, +18.8pp)** | +5.4 CI [+3.1,+7.6] | +0.188 | +1.2 | 10 A / 34 B |
   | 5.0 | 27 (21.1%, +0.0pp) | +0.4 CI [−1.0,+1.9] | +0.000 | +0.4 | 11 A / 11 B |
@@ -2468,7 +2469,7 @@ enabling condition, but the omitted command prevents verification.
 - **Held-out** (`build/strategic_tierb.csv`, grouped 80/20, 40 epochs, CUDA):
 
   | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
-  |---|---|---:|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|---:|
   | V3 ref (§73) | 0.784 | 9.35 | — | 5.45 | 0.284 | 14.32 |
   | Q-iso entity=1 | 0.790 | 9.21 | 0.491 | 5.76 | 0.280 | 14.47 |
   | Q-iso entity=0 | 0.782 | 9.20 | 0.516 | 5.75 | 0.287 | 14.43 |
@@ -2514,7 +2515,7 @@ enabling condition, but the omitted command prevents verification.
 - **K=1 vs K=3 label horizon — held-out** (V3 architecture, same split):
 
   | labels | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
-  |---|---|---:|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|---:|
   | K=1 (1,000 seeds) | 0.771 | 5.76 | 0.552 | 2.83 | 0.306 | **7.50** |
   | K=3 (§73, 4,650 seeds) | 0.784 | 9.35 | — | 5.45 | 0.284 | 14.32 |
 
@@ -2526,7 +2527,7 @@ enabling condition, but the omitted command prevents verification.
   baseline 21.1%):
 
   | config | wins | floor Δ | win Δ | discordant |
-  |---|---:|---:|---:|
+  |---|---:|---:|---:|---:|
   | K=1 head, margin 1.0 | 43 (33.6%, +12.5pp) | +3.6 CI [+1.3,+6.0] | +0.125 CI [+0.031,+0.219] | 11 A / 27 B |
   | K=1 head, margin 0.5 | 38 (29.7%, +8.6pp) | −0.0 CI [−3.0,+2.9] | +0.086 | 19 A / 30 B |
   | K=3 head (recall §76), margin 1.0 | **51 (39.8%, +18.8pp)** | +3.6 CI [+1.1,+6.0] | +0.188 CI [+0.094,+0.281] | 10 A / 34 B |
@@ -2601,7 +2602,7 @@ enabling condition, but the omitted command prevents verification.
 - **Held-out** (`build/strategic_tierb.csv`, grouped 80/20, 40 epochs, CUDA):
 
   | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
-  |---|---|---:|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|---:|
   | V4 plain (40ep, §75 ladder) | 0.790 | 10.01 | 0.492 | 11.37 | 0.282 | 17.00 |
   | **V4 + probes (40ep)** | 0.792 | 10.62 | 0.487 | 11.63 | 0.290 | 16.89 |
   | V4 plain (60ep, §75 final) | 0.793 | 10.32 | 0.486 | 10.18 | 0.290 | 16.22 |
@@ -2629,7 +2630,7 @@ enabling condition, but the omitted command prevents verification.
   (21.1% / 37.5 / 8.6).
 
   | margin | wins | floor Δ | win Δ | discordant |
-  |---|---:|---:|---:|
+  |---|---:|---:|---:|---:|
   | **1.0** | **53 (41.4%, +20.3pp)** | +5.7 CI [+2.8,+8.6] | +0.203 CI [+0.102,+0.305] | 12 A / 36 B |
   | 0.5 | 49 (38.3%, +17.2pp) | +3.0 CI [+0.2,+5.9] | +0.172 CI [+0.078,+0.266] | 11 A / 33 B |
   | 5.0 | 30 (23.4%, +2.3pp) | +0.6 CI [−1.0,+2.2] | +0.023 | 11 A / 14 B |
@@ -2665,7 +2666,7 @@ enabling condition, but the omitted command prevents verification.
   the extended range is slightly easier than the recorded block):
 
   | config | wins | floor Δ | win Δ | discordant |
-  |---|---:|---:|---:|
+  |---|---:|---:|---:|---:|
   | full stack @ m1.0 | **95 (37.1%, +14.1pp)** | +3.6 CI [+2.0,+5.3] | +0.141 CI [+0.078,+0.207] | 27 A / 49 B |
 
 - **Verdict:** ➕ the §76 result holds at 2× the block size with a tight CI
@@ -2695,7 +2696,7 @@ enabling condition, but the omitted command prevents verification.
 - **Paired block** (fair, 1,000 sims, seeds 126700–126827, baseline 21.1%):
 
   | config | wins | floor Δ | win Δ | discordant |
-  |---|---:|---:|---:|
+  |---|---:|---:|---:|---:|
   | beam-only (leaf bug) | 12 (9.4%, −11.7pp) | −4.0 CI [−6.5,−1.6] | −0.117 CI [−0.188,−0.047] | 14 A / 5 B |
   | beam-only (leaf fix) | 15 (11.7%, −9.4pp) | −3.0 CI [−5.6,−0.5] | −0.094 CI [−0.169,−0.020] | 15 A / 6 B |
   | beam+full stack (leaf fix) | 34 (26.6%, +5.5pp) | +0.9 CI [−1.3,+3.2] | +0.055 CI [−0.047,+0.156] | 14 A / 29 B |
@@ -2746,7 +2747,7 @@ enabling condition, but the omitted command prevents verification.
 - **Held-out** (`build/strategic_tierb.csv`, grouped 80/20, 40 epochs, CUDA):
 
   | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
-  |---|---|---:|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|---:|
   | V4 single-head (40ep) | 0.790 | 10.01 | 0.492 | 11.37 | 0.282 | 17.00 |
   | **V4 2-layer transformer (40ep)** | 0.793 | 10.39 | 0.487 | 10.59 | 0.289 | 16.62 |
   | V4 single-head (60ep, §75) | 0.793 | 10.32 | 0.486 | 10.18 | 0.290 | 16.22 |
@@ -2768,7 +2769,7 @@ enabling condition, but the omitted command prevents verification.
 - **Held-out** (`build/strategic_tierb.csv`, grouped 80/20, 40 epochs, CUDA):
 
   | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
-  |---|---|---:|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|---:|
   | V4 baseline (40ep) | 0.790 | 10.01 | 0.492 | 11.37 | 0.282 | 17.00 |
   | **V4 + quantile heads (40ep)** | 0.792 | 9.44 | 0.488 | 11.28 | **0.296** | 16.76 |
 
@@ -2789,7 +2790,7 @@ enabling condition, but the omitted command prevents verification.
 - **Held-out** (`build/strategic_tierb.csv`, grouped 80/20, 40 epochs, CUDA):
 
   | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
-  |---|---|---:|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|---:|
   | V4 baseline (40ep) | 0.790 | 10.01 | 0.492 | 11.37 | 0.282 | 17.00 |
   | **V4 + cross-attn (40ep)** | 0.782 | 9.00 | 0.511 | 11.53 | 0.289 | 16.69 |
   | C1 transformer | 0.793 | 10.39 | 0.487 | 10.59 | 0.289 | 16.62 |
@@ -2852,7 +2853,7 @@ enabling condition, but the omitted command prevents verification.
 - **Win rates by screen (anchor 39.8% = 51/128):**
 
   | screen | m0.1 | m0.25 | m0.5 | m2.0 | m1.0 (anchor) |
-  |---|---|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|
   | CARD | 31.2 | 35.2 | 36.7 | 35.2 | **39.8** |
   | REST | 38.3 | 36.7 | 38.3 | 38.3 | **39.8** |
   | EVENT | 39.8 | 39.8 | 36.7 | 37.5 | **39.8** |
@@ -2887,7 +2888,7 @@ enabling condition, but the omitted command prevents verification.
 - **Held-out:**
 
   | config | pol top-1 | margin | val CE | value MAE | Q top-1 | Q MAE |
-  |---|---|---:|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|---:|
   | V4 baseline (40ep) | 0.790 | 10.01 | 0.492 | 11.37 | 0.282 | 17.00 |
   | C1 / C4 / C2 individual best | 0.793 | 10.39 | 0.487 | 10.59 | 0.296 | 16.62 |
   | **Combined C1+C4+C2** | 0.783 | 9.60 | **0.515** | **13.41** | 0.290 | **18.38** |
@@ -2926,7 +2927,7 @@ enabling condition, but the omitted command prevents verification.
   `gates_ref_m1.csv`):
 
   | config | wins | win Δ | floor Δ | discordant |
-  |---|---:|---:|---:|
+  |---|---:|---:|---:|---:|
   | full stack ref m1 (no map gate) | **51 (39.8%)** | — | — | — |
   | + map gate m0.5 | 30 (23.4%) | −16.4pp CI [−26.6,−6.2] | −4.5 CI [−7.0,−2.0] | 47 (34 A / 13 B) |
   | + map gate m1.0 | 31 (24.2%) | −15.6pp CI [−24.2,−7.0] | −4.6 CI [−6.7,−2.5] | 34 (27 A / 7 B) |
@@ -3000,7 +3001,7 @@ enabling condition, but the omitted command prevents verification.
   isolates only the map pathing layer):
 
   | config | wins | win Δ | floor Δ | discordant |
-  |---|---:|---:|---:|
+  |---|---:|---:|---:|---:|
   | full stack ref m1 (heuristic pathing) | **51 (39.8%)** | — | — | — |
   | + route search m0.5 | 49 (38.3%) | −1.6pp CI [−10.9,+7.8] | **+2.0 CI [+0.1,+4.0]** | 36 (19 A / 17 B) |
   | + route search m1.0 | 38 (29.7%) | **−10.2pp CI [−18.0,−3.1]** | −1.4 CI [−3.3,+0.6] | 25 (19 A / 6 B) |
@@ -3181,7 +3182,7 @@ enabling condition, but the omitted command prevents verification.
   `/tmp/qwin_sweep/`, pulled to `build/`):
 
   | config | wins | win Δ | floor Δ | discordant |
-  |---|---:|---:|---:|
+  |---|---:|---:|---:|---:|
   | ref m1 (V3 legacy) | **51 (39.8%)** | — | — | — |
   | biased m0.01 | 43 (33.6%) | −6.2pp CI [−15.6,+3.1] | −2.8 CI [−4.9,−0.7] | 38 |
   | biased m0.03 | 33 (25.8%) | −14.1pp CI [−24.2,−4.7] | −2.9 CI [−5.4,−0.4] | 44 |
@@ -3199,7 +3200,7 @@ enabling condition, but the omitted command prevents verification.
   ε ∈ {0.01, 0.03, 0.05, 0.10}):
 
   | config | wins | win Δ | floor Δ | discordant |
-  |---|---:|---:|---:|
+  |---|---:|---:|---:|---:|
   | regret ε0.01 | 25 (19.5%) | −20.3pp CI [−29.7,−10.9] | −7.5 CI [−10.3,−4.7] | 42 |
   | regret ε0.03 | 29 (22.7%) | −17.2pp CI [−26.6,−7.8] | −3.7 CI [−5.9,−1.5] | 42 |
   | regret ε0.05 | 27 (21.1%) | −18.8pp CI [−28.1,−9.4] | −4.4 CI [−6.7,−2.1] | 44 |
@@ -3259,7 +3260,7 @@ enabling condition, but the omitted command prevents verification.
   SHOP/TREASURE/BOSS_RELIC=1, margin 1.0, `STS_VNET=build/v_combat_fair_trees.txt`.
 
   | arm | win% | win Δ | floor Δ | HP Δ | cpu_sec/run |
-  |---|---|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|
   | ref (gates only) | 39.8% | — | — | 19.3 | 9.16 |
   | + vnet α0.3 | 36.7% | −3.1 [−11.7,+5.5] | +0.5 | −1.3 | 28.35 |
   | + vnet α0.5 | 39.8% | +0.0 [−10.2,+10.2] | +0.4 | +0.2 | 29.19 |
@@ -3325,7 +3326,7 @@ enabling condition, but the omitted command prevents verification.
 - **Complete §98+§99 frontier (256-seed block, paired vs `sec256_gate_m1.csv`):**
 
   | config | win% | win Δ (95% CI) | floor Δ (95% CI) | HP Δ | cpu_sec/run |
-  |---|---|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|
   | V3 @1000 (ref) | 37.1% | — | — | 17.8 | ~9–20* |
   | V3 @2000 | 39.1% | +2.0 [−3.5,+7.8] | +1.2 [−0.1,+2.4] | +1.2 | 20.2 |
   | V3 @3000 | 43.0% | +5.9 [+0.0,+11.7] | +1.4 [−0.0,+2.8] | +4.6 | 30.4 |
@@ -3401,7 +3402,7 @@ enabling condition, but the omitted command prevents verification.
   margins; per-seed CSVs `build/mapgate_{qwin_cal,map_enc}_m*.csv`):
 
   | config | wins | win Δ (vs ref) | floor Δ | discordant |
-  |---|---:|---:|---:|
+  |---|---:|---:|---:|---:|
   | base m0.01 | 20 (15.6%) | −24.2pp CI [−33.6,−15.6] | −7.4 CI [−10.0,−4.9] | 45 |
   | base m0.03 | 32 (25.0%) | −14.8pp CI [−24.2,−4.7] | −3.1 CI [−5.5,−0.8] | 43 |
   | base m0.05 | 29 (22.7%) | −17.2pp CI [−26.6,−7.0] | −3.5 CI [−5.9,−1.1] | 44 |
@@ -3510,7 +3511,7 @@ enabling condition, but the omitted command prevents verification.
 - **Results — adaptive@2200 vs flat V4@2k (paired):**
 
   | block | win Δ (95% CI) | floor Δ | HP Δ | cpu Δ |
-  |---|---:|---:|---:|
+  |---|---:|---:|---:|---:|
   | 1 (126700) | +2.7 [−3.1,+8.6] | −0.0 | +2.8 | −2.94 (18.98 vs 21.92) |
   | 2 (126955) | +3.9 [−2.0,+9.4] | +0.5 | +1.7 | −2.01 (20.19 vs 22.20) |
   | 3 (127211) | −1.2 | −0.6 | −0.3 | −2.85 (19.26 vs 22.11) |
@@ -3773,7 +3774,7 @@ enabling condition, but the omitted command prevents verification.
 - **Results (128 seeds, paired):**
 
   | arm | wins | win% | floor | HP | cpu-sec/run | win Δ vs S3 ctl (CI) | win Δ vs S2 (CI) |
-  |---|---:|---:|---:|---:|---|---|
+  |---|---:|---:|---:|---:|---:|---|---|
   | A0 S2 ref | 56 | 43.8 | 43.1 | 24.9 | 32.9 | — | — |
   | A1 S3 ctl | 63 | 49.2 | 41.7 | 30.5 | 35.4 | — | +5.5 [−4.1,+15.0] |
   | A2 S3 − belief | 74 | **57.8** | 43.6 | 37.4 | 31.1 | **+8.6 [−1.1,+18.3]** | **+14.1 [+3.5,+24.7]** |
@@ -3892,7 +3893,7 @@ enabling condition, but the omitted command prevents verification.
 - **Batch 1 grid (128 seeds, paired vs recorded A2@64/3k = 57.8%):**
 
   | arm | particles | sims | wins | win% | floor | HP | cpu-sec/run |
-  |---|---:|---:|---:|---:|---:|---:|
+  |---|---:|---:|---:|---:|---:|---:|---:|
   | S3−belief | 16 | 1k | 70 | 54.7 | 43.3 | 32.7 | 10.6 |
   | S3−belief | 64 | 1k | 74 | 57.8 | 43.8 | 34.7 | 10.3 |
   | S3−belief | 256 | 1k | 71 | 55.5 | 42.9 | 35.2 | 10.3 |
@@ -3917,7 +3918,7 @@ enabling condition, but the omitted command prevents verification.
   reference `build/simsweep_v4_3k_256.csv`, 116/256 = 45.3%):**
 
   | arm | seeds | sims | wins | win% | floor | HP | cpu-sec/run | win Δ vs ref (CI) |
-  |---|---:|---:|---:|---:|---:|---:|---|
+  |---|---:|---:|---:|---:|---:|---:|---:|---|
   | E2 S3−b−c, 256 p | 128 | 4k | 80 | 62.5 | 45.3 | 37.9 | 41.6 | +18.8 [+8.6,+28.9] vs S2@3k slice |
   | S3−b−c, 64 p | 256 | 1k | 147 | 57.4 | 43.4 | 36.9 | 9.8 | **+12.1 [+4.9,+19.3]** |
   | S3−b−c, 256 p | 256 | 3k | 154 | **60.2** | 44.2 | 39.3 | 29.0 | **+14.8 [+7.9,+21.8]** |
@@ -3975,7 +3976,7 @@ enabling condition, but the omitted command prevents verification.
 - **Paired gates (fair, A0, 3k sims, full V4 gate stack, margin 1.0):**
 
   | pairing | new | old ref | Δ win (McNemar p) | floor Δ | HP Δ |
-  |---|---|---|---:|---:|
+  |---|---|---|---:|---:|---:|
   | S2 @128 (vs `s3ablate_s2_ref_3k_128.csv`, 43.8%) | 53/128 (41.4%) | 56/128 | −2.34pp (p=0.77) | −1.39 | −6.61 |
   | S2 @256 (vs `simsweep_v4_3k_256.csv`, 45.3%) | 106/256 (41.4%) | 116/256 | −3.91pp (p=0.36) | −2.07 | −7.53 |
   | **S3−belief−chain @256/256p (vs §107 `pt2_p256_s3k_both_256.csv`, 60.2%)** | **131/256 (51.2%)** | 154/256 | **−8.98pp (p=0.028)** | −3.29 | −7.86 |
@@ -4049,7 +4050,7 @@ ichFeatureVec on a real post-combat
   per-seed CSVs uild/termwin_off.csv / uild/termwin_on.csv):
 
   | arm | win | floor | end hp | cpu-sec/run |
-  |---|---|---:|---:|
+  |---|---|---:|---:|---:|
   | bonus off | 4/16 (25.0%) | 31.4 | 13.7 | 14.37 |
   | bonus on (w=100) | 3/16 (18.8%) | 29.0 | 10.8 | 25.21 |
 
@@ -4083,7 +4084,7 @@ unFullRunOOC runs, for each counter relic the
   states; mean ΔP(death) at the charged counter value vs state's own base):**
 
   | relic | states | charged ctr | ΔP(death) | ΔP(win) |
-  |---|---|---:|---:|
+  |---|---|---:|---:|---:|
   | HAPPY_FLOWER | 194 | c2 | **−0.0023** | +0.0020 |
   | INCENSE_BURNER | 67 | c5 | **−0.0072** | +0.0086 |
   | INK_BOTTLE | 276 | c9 | **−0.0066** | +0.0065 |
@@ -4809,7 +4810,7 @@ unFullRunOOC runs, for each counter relic the
 ## §124 Winrate-wave baseline re-measurement + S3 feature-ablation re-derivation on the live-valid default binary (2026-08-07, local + GCP)
 
 - **What:** the winrate-wave (§124-numbered) baseline wave
-  (`docs/knowledge-base/plan-winrate-ideas-2026-08-07.md`): re-measure the
+  (`docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md`): re-measure the
   recorded §113/§115 references (44.5% @3k/256p, 37.5% @1k/64p) on the
   current binary (HEAD 7b1a8d2, live-valid + forced-move defaults ON, §123)
   — the §123 flip happened after the references were measured — and
@@ -4861,7 +4862,7 @@ unFullRunOOC runs, for each counter relic the
 ## §124a PVNet deployment-speed smoke (phase 6 of plan-value-targets-2026-08-07): conditional leaf gating + visible-state leaf cache implemented; behavior-preserving cache verified; gate pending on the §124 baseline (2026-08-07, local WSL)
 
 - **What:** phase-6 speed work for the PVNet leaf in Searcher3, per
-  `docs/knowledge-base/plan-value-targets-2026-08-07.md` (user request;
+  `docs/archive/research/plans/plan-value-targets-2026-08-07.md` (user request;
   a phase-5 value-only trainer draft was reverted in the same session —
   nothing of it remains). Two mechanisms:
   1. `STS_PVNET_COND_{TURN,DEPTH,BOSS}` gate the per-expansion NN leaf
@@ -4909,7 +4910,7 @@ unFullRunOOC runs, for each counter relic the
 ## §125 Winrate-wave Wave-1/2 gates: cPUCT sweep, STS_S3_EXPAND, TERM_WIN+cpsi — all null or negative; the leaf-evaluator line flips POSITIVE with a fresh honest-data vnet (§126) (2026-08-07, local + GCP)
 
 - **What:** the winrate-wave gated items that do not involve the vnet
-  (`docs/knowledge-base/plan-winrate-ideas-2026-08-07.md` §3.3/§4.1/§4.2).
+  (`docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md` §3.3/§4.1/§4.2).
   All arms: full V4 gate stack, S3−belief−chain, block 126700 (unless noted),
   asc 0, fair, paired with `paired_analysis.py` vs the §124 references.
 - **cPUCT sweep (STS_CPUCT; §3.3):** 128-seed local probe @1k/64p:
@@ -4950,7 +4951,7 @@ unFullRunOOC runs, for each counter relic the
 ## §126 Fresh honest-data combat V_combat leaf (STS_VNET, α=0.3): THREE significant gates (+12.5/+12.1/+12.5pp) — PROMOTED to default ON in the fair-S3 path (recorded cpu-trade call); §97's rejection reversed (2026-08-07, local + GCP)
 
 - **What:** the winrate-wave boss-leaf item (§4.3 of
-  `docs/knowledge-base/plan-winrate-ideas-2026-08-07.md`), reframed by the
+  `docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md`), reframed by the
   evidence: a NEW combat value net trained on fresh honest trajectories,
   applied UNCONDITIONALLY at a LOW blend weight. §97's rejection (old
   1,500-tree vnet, old-era data, α0.3/0.5 under the pre-§113 stack) does not
@@ -4971,7 +4972,7 @@ unFullRunOOC runs, for each counter relic the
 - **Gates (256 seeds each, full V4 gate stack, S3−belief−chain, fair, asc 0;**
   vnet = `STS_VNET=build/v_combat_honest.txt`):
   | arm | config | win% | paired vs | Δ (95% CI) | flips | cpu |
-  |---|---|---|---:|---:|---:|
+  |---|---|---|---:|---:|---:|---:|
   | gate 1 @1k/64p | α=0.3 | **50.4%** | B2c 37.9% | **+12.5 [+5.5,+19.5]** | 60/28 | 41.2 s·run |
   | gate 2 @1k/64p (block 250000+) | α=0.3 | **50.8%** | ctl 38.7% | **+12.1 [+4.7,+19.5]** | 65/34 | 49.8 (contended) |
   | win point @3k/64p | α=0.3 | **55.1%** | B4 42.6% | **+12.5 [+6.2,+18.8]** | 52/20 | 85.5 (contended) |
@@ -5151,7 +5152,7 @@ unFullRunOOC runs, for each counter relic the
   positive).
 ## §128 Value-only utility-distribution model (plan-value-targets phase 5): trained on the §3.4 fairgen rows; ~4× better win calibration than the tracked PVNet on the same held-out rows (2026-08-07, local)
 
-- **What:** phase 5 of `docs/knowledge-base/plan-value-targets-2026-08-07.md`:
+- **What:** phase 5 of `docs/archive/research/plans/plan-value-targets-2026-08-07.md`:
   a value-only transformer (same 14-token encoder as CombatPVNet, NO policy
   head) predicting a 51-bin categorical over the MCTS terminal utility
   R = 0 on loss, 50 + endHp on win (bin 0 = loss; bins 1-50 = endHp/maxHp
@@ -5410,7 +5411,7 @@ unFullRunOOC runs, for each counter relic the
   ran (block 126700–126955, full V4 stack, S3−belief−chain/64p, fair, asc 0,
   24 threads, vnet α0.3 default ON):
   | arm | config | win% | Δ vs ctl (95% CI) | floor Δ | HP Δ | cpu-s/run |
-  |---|---|---|---:|---:|---:|
+  |---|---|---|---:|---:|---:|---:|
   | A1 gate 1 | K=2 @500 sims (equal rollout budget) | 49.2% | −1.2 [−7.4,+5.1] | −0.5 | −4.0 | 16.8 (−59%) |
   | A1 gate 2 | K=2 @1000 sims (equal tree size) | 48.4% | −2.0 [−8.2,+4.7] | −0.1 | −2.3 | 32.4 (−21%) |
   | A4 gate | turn-stop N=1 @1k | 34.0% | **−16.4 [−23.0,−9.4]** | −2.4 [−3.9,−1.0] | −10.9 | 33.6 (−18%) |
@@ -5456,7 +5457,7 @@ unFullRunOOC runs, for each counter relic the
   paired vs the §126 deployed-vnet control `build/vnet_all_a03_1k.csv`,
   50.4% — reproduced twice on this block, §124c/§127):**
   | arm | win% | Δ (95% CI) | floor Δ | HP Δ | cpu-s/run |
-  |---|---|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|
   | quantile-R α0.3 | 37.5% | −12.9pp [−19.9, −6.2] | −2.4 | −5.5 | 68.5 |
   | quantile-R α0.5 | 40.2% | −10.2pp [−17.2, −3.1] | −3.4 | −6.0 | 85.6 |
   | quantile-R α0.7 | 32.0% | −18.4pp [−25.4, −11.3] | −3.7 | −11.0 | 80.9 |
@@ -5568,7 +5569,7 @@ unFullRunOOC runs, for each counter relic the
   `build/vcombat_honest.csv` artifact with the identical canonical recipe,
   differing ONLY in the label, same device (CUDA) and package environment:
   | model | target | trees exported | val RMSE vs endHp | val MAE vs endHp | val RMSE vs R | val MAE vs R | best_iter |
-  |---|---|---|---:|---:|---:|---:|
+  |---|---|---|---:|---:|---:|---:|---:|
   | `build/v_combat_control_endhp.txt` | endHp | 1500 | 7.88 | 5.58 | 48.59 | 45.82 | 1479 |
   | `build/v_combat_utility_direct.txt` | utility R | 611 | 45.87 | 43.58 | 15.35 | 9.73 | 570 |
   The control is the same-recipe end-HP arm (val RMSE 7.88 vs the recorded
@@ -5633,7 +5634,7 @@ unFullRunOOC runs, for each counter relic the
   differ slightly from the originally recorded unseeded bootstrap (e.g. α0.3
   upper bound −6.2 → −5.9, α0.7 upper bound −11.3 → −10.9) because the
   bootstrap is now deterministic. The B1 'beam' idea in
-  `docs/knowledge-base/plan-rollout-experiments-2026-08-07.md` was NOT
+  `docs/archive/research/plans/plan-rollout-experiments-2026-08-07.md` was NOT
   implemented: as written it simultaneously requires beam pruning and forbids
   scoring partial beam states, which is not a complete algorithm; it needs a
   revised spec before any implementation.
@@ -6168,7 +6169,7 @@ unFullRunOOC runs, for each counter relic the
   PASS (max|diff| 1.27e-4 vs tol 0.001, 200 rows).
 - **Per-regime validation metrics (trainer, `build/v_combat_mix_metrics.json`):**
   | regime | rows | RMSE vs endHp | MAE vs endHp | RMSE vs R | MAE vs R |
-  |---|---|---|---:|---:|
+  |---|---|---|---:|---:|---:|
   | on-policy val (combatgen holdout) | 43,473 | **8.23** | **5.97** | 48.37 | 45.65 |
   | search-leaf val (leafdiag train-seed holdout) | 30,316 | **15.46** | **11.33** | 49.20 | 46.20 |
   On-policy comparison: the deployed §126 control measured val RMSE 7.88 /
@@ -6294,7 +6295,7 @@ unFullRunOOC runs, for each counter relic the
 - **Headline results:**
 
   | Stratum | nGroups | endHp pairAcc | utilR pairAcc | Δpair | Δtop1 |
-  |---|---|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|
   | **all** | 16,676 | 0.7195 [0.7167,0.7224] | 0.7112 [0.7085,0.7141] | **+0.0082** | **+0.0231** |
   | won=1 | 15,651 | 0.7237 | 0.7157 | +0.0080 | +0.0225 |
   | won=0 (lost) | 1,025 | 0.6549 | 0.6428 | **+0.0121** | +0.0322 |
@@ -6343,7 +6344,7 @@ unFullRunOOC runs, for each counter relic the
 - **Headline results:**
 
   | α | endHp pairAcc | utilR pairAcc | Δpair | endHp top1 | utilR top1 |
-  |---:|---|---:|---:|---:|
+  |---:|---|---:|---:|---:|---:|
   | 0.00 | 0.7192 [0.7163,0.7220] | 0.7192 [0.7163,0.7220] | +0.0000 | 0.3970 | 0.3970 |
   | 0.05 | 0.7456 [0.7429,0.7482] | 0.7444 [0.7418,0.7472] | +0.0011 | 0.4290 | 0.4283 |
   | 0.10 | 0.7465 [0.7439,0.7492] | 0.7455 [0.7429,0.7483] | +0.0010 | 0.4294 | 0.4297 |
@@ -6521,7 +6522,7 @@ unFullRunOOC runs, for each counter relic the
 - **Results (128 paired seeds, α=0.1):**
 
   | Arm | Win% | Floor | HP end | cpu-s/run |
-  |---|---|---:|---:|
+  |---|---|---:|---:|---:|
   | Non-scaled utilityR (original) | 36.7% | 40.9 | 24.6 | 19.1 |
   | Scaled utilityR (×0.41, endHp band) | **47.7%** | 42.4 | 24.9 | 20.7 |
   | Δ (scaled − non-scaled) | **+10.9pp** | +1.5 | +0.3 | +1.6 |
@@ -6573,7 +6574,7 @@ unFullRunOOC runs, for each counter relic the
 - **Results:**
 
   | Arm | Win% | Floor | HP end | cpu-s/run |
-  |---|---|---:|---:|
+  |---|---|---:|---:|---:|
   | Deployed endHp @α=0.30 | **56.2%** | 44.7 | 31.9 | 27.6 |
   | Scaled utilityR @α=0.10 | 47.7% | 42.4 | 24.9 | 20.7 |
   | Δ (util − endHp) | **−8.6pp** | −2.3 | −7.0 | −6.9 |
@@ -6965,7 +6966,7 @@ unFullRunOOC runs, for each counter relic the
   OOC, no gate stack):**
 
   | Model | Trees | Offline RMSE | **Win%** | Floor | End HP | cpu_sec/run |
-  |---|---|---:|---:|---:|---:|
+  |---|---|---:|---:|---:|---:|---:|
   | Baseline (§126 honest) | 804 | 7.88 | **20.3%** | 40.1 | 14.1 | 26.6 |
   | Tuned @800 trees | 800 | ~7.90 | **31.2%** | 39.5 | 15.2 | 40.4 |
   | Tuned @1000 trees | 1000 | ~7.90 | **31.2%** | 40.1 | 17.8 | 42.8 |
@@ -7214,7 +7215,7 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
   (`/dev/fd/3` → gzip), achieving **59× compression**.
 - **Crash:** `ActionQueue::pushBack` assertion at run 14,800/100,000 —
   capacity-50 overflow under fair-S3+vnet. Filed as
-  [issue #50](issues/2026-08-09-issue-actionqueue-overflow.md).
+  [issue #50](docs/knowledge-base/issues/2026-08-09-issue-actionqueue-overflow.md).
 - **Data recovered:** 3,355,244 rows, 181 MB gzipped, seeds 3,000–17,860
   (~14,860 seeds, avg 226 rows/seed — vnet runs survive longer than §126's
   192 rows/seed).
@@ -7233,7 +7234,7 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
   misinterpret byte 12 as a dimension (50 ≠ NGLB 41).
 
   | arm | model | trees | α | win% | floor | HP | cpu-s/run |
-  |---|---|---|---|---:|---:|---:|
+  |---|---|---|---|---:|---:|---:|---:|
   | control | `v_combat_honest.txt` (§126) | 804 | 0.3 | **28.9%** | 39.1 | 11.3 | 24.1 |
   | candidate | `v_combat_7k.txt` | 1,500 | **0.5** ⚠ | 25.8% | 39.9 | 10.5 | 40.7 |
 
@@ -7361,7 +7362,7 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
 - **Act 3 only (STS_STOP_AFTER_ACT=3, comparable to §148):**
 
   | Config | Win% (32 seeds) | Floor | End HP | CPU s/run |
-  |---|---|---:|---:|
+  |---|---|---:|---:|---:|
   | V4 Gates ON | 31.2% (10/32) | 42.8 | 20.5 | 27.0 |
   | No Gates | **37.5%** (12/32) | 42.4 | 31.1 | 28.8 |
 
@@ -7674,116 +7675,41 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   diagnostic, not yet a promotion claim.
 - **Artifacts:** `build/ooc_v4_noshop_s3_act3_64_1786298692.csv`, paired
   report, sidecar.
-## §166 Post-correctness-batch full-stack A0–A20 rerun: completed, 125 seeds, gates-on only (2026-08-10, GCP sts-test)
 
-- **Purpose:** remeasure the recommended V4 skewfix + fair Searcher3 + 7k
-  combat-VNet stack after the 2026-08-10 correctness batch (issues 50–75,
-  83–84). This is a post-fix measurement, not a direct replacement for §153:
-  the agent safety ceiling limited the run to 25 seeds per ascension rather
-  than the prior 32.
-- **Configuration:** current fixed checkout at HEAD `5959e4c`; GCP
-  `sts-test`, 24 OpenMP threads; `bestbench 1000 25 <asc> 126700 <csv>`;
-  ascensions A0/A5/A10/A15/A20; fair Searcher3, 64 particles,
-  `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`, live-valid default; 7k tuned combat
-  VNet at alpha 0.3; native floor/win OOC models; V4 token-net gates for
-  REST/EVENT/SHOP/TREASURE/BOSS_RELIC at margin 1.0. No server was used.
-- **Results (25 seeds each, seeds 126700–126724):** A0 **6/25 (24.0%)**,
-  mean floor 41.3, mean end HP 15.5; A5 **9/25 (36.0%)**, floor 37.9,
-  HP 18.5; A10 **7/25 (28.0%)**, floor 31.0, HP 19.6; A15 **3/25
-  (12.0%)**, floor 32.1, HP 4.4; A20 **1/25 (4.0%)**, floor 28.9, HP 2.2.
-- **Verification:** all five CSVs contain 25 rows with binary `won` values;
-  no abort/assert/termination error appeared in the benchmark log. The fixed
-  C++ build completed and all 13 C++ regression tests passed. The aggregate
-  remote CTest command still reported six unrelated workspace failures:
-  CRLF in `selfplay/loop.sh`, missing NumPy, and absent optional Python
-  self-test scripts.
-- **Interpretation:** the run is usable as a smoke-scale post-fix reference,
-  but it does not establish a paired policy delta. A 128-seed cap-compliant
-  rerun or a human-controlled 160-seed reproduction is still needed before
-  replacing §153's 32-seed-per-ascension baseline.
-- **Artifacts:** `build/rerun_2026-08-10_asc{0,5,10,15,20}_gates_1k_25.csv`,
-  `build/rerun_2026-08-10_gates_v2.log`.
-## §167 Post-correctness-batch A0 confirmation: 128 seeds, gates-on (2026-08-10, GCP sts-test)
+## §166 Recovered MCTS-leaf MLP and deep-target experiment arc (2026-08-09; consolidated 2026-08-11)
 
-- **Purpose:** confirm the post-fix recommended full stack at the standard
-  128-seed A0 block after §166's 25-seed-per-ascension smoke sweep.
-- **Configuration:** current fixed checkout at HEAD `5959e4c`; GCP
-  `sts-test`, 24 OpenMP threads; `bestbench 1000 128 0 126700`; seeds
-  126700–126827; fair Searcher3, 64 particles, `STS_S3_BELIEF=0`,
-  `STS_S3_CHAIN=0`, live-valid default; 7k tuned combat VNet at alpha 0.3;
-  native floor/win OOC models; V4 token-net REST/EVENT/SHOP/TREASURE/BOSS_RELIC
-  gates at margin 1.0. No server was used.
-- **Result:** **60/128 wins (46.9%)**, mean floor **43.9**, mean end HP
-  **24.6**, CPU **29.33 s/run**, wall **170.0 s**. The CSV has exactly 128
-  distinct rows covering the requested seed range and no malformed rows;
-  the log contains no abort/assert/termination error.
-- **Interpretation:** this confirms the fixed stack runs successfully at the
-  standard confirmation size. The 46.9% result is **not a causal paired delta**
-  against §153's 21.9% A0/32 result: the earlier control CSV is not present
-  locally, and the sample size/block differ. It is a new post-fix reference;
-  do not attribute the full +25.0pp difference to any individual fix without
-  a same-seed pre/post pair.
-- **Artifact:** `build/rerun_2026-08-10_a0_gates_1k_128.csv` and its `.log`.
-## §168 A0 simulation-budget sweep on the post-correctness-batch full stack: 3k and 10k (2026-08-10, GCP sts-test)
-
-- **Purpose:** measure the same post-fix full-stack A0 seed block at the 3,000
-  and 10,000 simulation budgets.
-- **Configuration:** current fixed checkout at HEAD `5959e4c`; GCP
-  `sts-test`, 24 OpenMP threads; seeds 126700–126827 (128); fair Searcher3,
-  64 particles, `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`, live-valid default; 7k
-  tuned combat VNet at alpha 0.3; native floor/win OOC models; V4 token-net
-  REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates at margin 1.0; no server.
-- **Results:**
-
-  | Simulations | Wins | Win rate | Mean floor | Mean end HP | Wall time |
-  | ---: | ---: | ---: | ---: | ---: | ---: |
-  | 3,000 | 66/128 | **51.6%** | 45.3 | 27.1 | 506.7 s (8.4 min) |
-  | 10,000 | 70/128 | **54.7%** | 44.7 | 29.8 | 1,486.9 s (24.8 min) |
-
-- **Verification:** both CSVs contain exactly 128 distinct rows covering
-  126700–126827, with no malformed rows. Neither log contains an abort,
-  assertion, or termination error.
-- **Interpretation:** the 10k budget is +3.1pp over 3k (4 additional wins),
-  while mean floor is 0.6 lower; this is a descriptive budget comparison, not
-  a policy-quality claim against another arm. The 10k run costs about 2.93×
-  the 3k wall time for +3.1pp in this block.
-- **Artifacts:** `build/rerun_2026-08-10_a0_gates_3k_128.csv`,
-  `build/rerun_2026-08-10_a0_gates_10k_128.csv`, and their `.log` files.
-
-## §169 Searcher3 belief maintenance versus root allocation diagnostic: BELIEF_FILTERING (2026-08-10, GCP sts-test)
-
-- **Question:** Should the next major Searcher3 experiment target real-observation
-  belief maintenance or root action allocation? This was diagnostic-only; no
-  gameplay default changed and no hypothetical belief updates were enabled.
-- **Configuration:** current fair Searcher3 stack, A0, 64 particles, 1,000
-  sims/live decision, 24 OpenMP threads, seeds 93000–93031, current native
-  floor/win OOC models, build/v_combat_7k_tuned.txt at alpha 0.3,
-  build/policy_trees_c.txt, PVNet/dist-VNet off, no v_server. The default
-  STS_S3_INTERNAL_BELIEF_UPDATE=0 remained in force. One real state per seed
-  received isolated fresh probes at 250/500/1000/4000 simulations.
-- **Diagnostics:** STS_S3_BELIEF_AUDIT with real-boundary CSV extension and
-  STS_S3_ROOT_RACE_DIAG; analyzer tools/analyze_s3_diagnostics.py.
-- **Belief result:** 9,462 boundary rows / 32 seeds. Mean compatible fraction
-  0.1004, stale fraction 0.8996, fallback-shuffle fraction 0.2090, distinct
-  compatible draw orders 0.3244, distinct compatible RNG signatures 6.43, and
-  ESS 64.0. The fair path carried the belief at 7,802 boundaries and rebuilt at
-  1,660; boundary reweighting was never applied. These compatibility numbers
-  use the current exact positional drawOrderConsistent predicate and are
-  diagnostic evidence, not a validated posterior model.
-- **Root result:** 32 captured states. P(a250 != a4000) = 1/32 (3.1%),
-  P(a500 != a4000) = 1/32, and P(a1000 != a4000) = 1/32. The three
-  shallow/deep disagreement events all had deep regret 1.417 in native value
-  units (0.5–2 band); none clustered in END_TURN states, large action sets, or
-  particle-availability mismatches.
-- **Verdict:** **RECOMMEND_NEXT: BELIEF_FILTERING**. Real-observation particle
-  inconsistency is common and diversity is low, while root allocation
-  disagreements are rare and modest. Next work should be a flagged
-  compatibility/likelihood + normalization/resampling/rejuvenation experiment,
-  preserving the default-off hypothetical-update guard. Root racing is not
-  justified as the next major line.
-- **Artifacts:** build/s3diag_gcp_belief.csv, build/s3diag_gcp_root.csv,
-  build/s3diag_belief16.csv, build/s3diag_smoke_belief.csv,
-  build/s3diag_smoke_root.csv, and tools/analyze_s3_diagnostics.py.
-- **Reproduction:** remote command used 93000–93031 with
-  STS_S3_ROOT_RACE_MAX_STATES=1; diagnostic file paths were under
-  /home/philippherrmann/sts_sweep/build/ on sts-test.
+- **Provenance:** recovered before deleting ignored legacy agent state from
+  `.ai/session-summary-2026-08-09-deepsets-v3.md` through `v17.md`. These
+  summaries were not authoritative records and did not preserve every seed
+  range or artifact hash. Results below are therefore **Unverified historical
+  evidence** except where independently recorded in §157-§158.
+- **Configuration reported by the summaries:** project-fair Searcher3,
+  belief/chain off, 64 particles, 1,000 simulations per decision, no OOC gate
+  stack, and normally `STS_VNET_ALPHA=0.3`. Online comparisons used common
+  32-seed blocks unless stated otherwise; exact seed ranges and thread counts
+  were not recorded.
+- **MCTS-distribution imitation:** a flat `733 -> 256 -> 128 -> 1` MLP trained
+  on 278K XGBoost-guided MCTS leaf states reached held-out Pearson 0.964 versus
+  its XGBoost teacher. Reported online results were 46.9% versus XGBoost 43.8%
+  at 32 seeds and 43.8% versus 41.4% at 128 seeds. The 128-seed difference was
+  treated as noise, not a promotion. The corresponding reported artifact was
+  `build/v_combat_mlp_mcts.txt`.
+- **Deep-search utility targets:** a model trained on Searcher3 backed-up
+  utility achieved offline RMSE 8.75 and Pearson 0.964 against that target but
+  only 34.4% online versus the teacher MLP's 46.9%. One warm-start DAgger
+  iteration improved it to 40.6%; second iterations regressed to 25.0%
+  (warm-start) and 21.9% (fresh). The summaries report that XGBoost-, V0-, and
+  V1-guided state distributions remained 84-85% distinguishable.
+- **Residual correction:** adding a learned deep-utility residual to the
+  teacher with beta 0.01 reportedly reduced the 32-seed result from 46.9% to
+  34.4%. Larger corrections were worse. The residual mostly behaved as an
+  upward bias rather than a state-specific correction.
+- **Terminal-endHP target:** a warm-started MLP trained on 42K joined states
+  improved validation RMSE from 13.76 to 11.61 and Pearson from 0.737 to 0.750,
+  corrected a reported CULTIST overprediction blind spot, but tied the teacher
+  at 46.9% on 32 seeds.
+- **Verdict:** MCTS-distribution imitation was competitive with its tree
+  teacher, but raw deep-search utility, iterative DAgger beyond one iteration,
+  residual correction, and terminal-endHP relabeling did not establish an
+  online improvement. This research line is closed unless reconstructed from
+  preserved artifacts with a new premise and fully recorded paired protocol.

@@ -1,7 +1,7 @@
 # 2026-08-07 — Phase 5 (value-only utility-distribution model) executed: fresh-data + direct-target leaf model ~4× better calibrated than the tracked PVNet offline; nothing deployed
 
 Date: 2026-08-07
-Session/task: Execute phase 5 of `docs/knowledge-base/plan-value-targets-2026-08-07.md`
+Session/task: Execute phase 5 of `docs/archive/research/plans/plan-value-targets-2026-08-07.md`
 (value-only model trained on the terminal-utility distribution target), per
 user request. User also asked why this line modifies neither the PVNet nor
 the VNet — answered: it is a third, offline research artifact.

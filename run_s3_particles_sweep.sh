@@ -36,7 +36,7 @@ echo "threads:   $THREADS"
 echo "seeds:     $SEED_OFF..$((SEED_OFF+NSEEDS-1))"
 echo "gates:     V4 full stack (tok net + REST/EVENT/SHOP/TREASURE/BOSS_RELIC, margin 1.0, MAP off)"
 
-sha256sum selfplay/models/ooc_strategic_tok_final.native build/policy_trees_c.txt
+sha256sum selfplay/models/ooc_strategic_tok_final.native models/policy_trees_c.txt
 
 run_arm() {
   local name=$1 sims=$2; shift 2

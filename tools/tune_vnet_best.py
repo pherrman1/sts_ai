@@ -199,7 +199,8 @@ def main():
 
     # ---- Compare with deployed baseline ----
     print(f"\n{'='*60}")
-    print("Comparison with deployed model (build/v_combat_honest.txt):")
+    print("Comparison with the §126 deployed model (build/v_combat_honest.txt,"
+          " superseded by the §148 7k-tuned fair-S3 default):")
     if os.path.exists("build/v_combat_control_endhp_metrics.json"):
         with open("build/v_combat_control_endhp_metrics.json") as f:
             base = json.load(f)

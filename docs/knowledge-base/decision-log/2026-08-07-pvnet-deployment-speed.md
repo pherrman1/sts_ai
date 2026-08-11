@@ -2,7 +2,7 @@
 
 Date: 2026-08-07
 Session/task: Execute phase 6 of
-`docs/knowledge-base/plan-value-targets-2026-08-07.md` — speed up PVNet leaf
+`docs/archive/research/plans/plan-value-targets-2026-08-07.md` — speed up PVNet leaf
 deployment in Searcher3. A phase-5 (value-only utility-target trainer) draft
 made earlier in the same session was reverted on user instruction (wrong
 phase); nothing of it remains in the tree.
