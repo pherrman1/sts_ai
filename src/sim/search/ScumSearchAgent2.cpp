@@ -18,6 +18,7 @@
 #include <game/Game.h>
 #include "sim/PrintHelpers.h"
 #include "sim/search/BattleScumSearcher2.h"
+#include "sim/search/SimHealth.h"
 
 bool g_collectKeys = false;  // STS_COLLECT_KEYS=1: collect act-4 keys
 
@@ -80,6 +81,14 @@ void search::ScumSearchAgent2::takeAction(BattleContext &bc, search::Action a) {
     if (printActions) {
         gameActionHistory.emplace_back(a.bits);
         std::cout << std::hex << a.bits << std::endl;
+    }
+    // Simulator health: an action committed to the live battle state must be
+    // legal on that exact state. Detection-only (the action still executes),
+    // so normal behavior is unchanged; this catches an invalid live commit in
+    // release builds where the sts_asserts validity check is compiled out.
+    if (bc.outcome == Outcome::UNDECIDED && !a.isValidAction(bc)) {
+        reportSimHealthFailure(bc, SimHealthFailure::INVALID_LIVE_ACTION,
+                               SimHealthMeta{-1, a.bits, true});
     }
 //    a.printDesc(std::cout, bc);
     a.execute(bc);
@@ -424,6 +433,10 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                               << " pickCount=" << bc.cardSelectInfo.pickCount
                               << " hand=" << bc.cards.cardsInHand
                               << " outcome=" << (int)bc.outcome << "\n";
+                // Simulator health: unresolved combat with zero legal
+                // progression actions at a genuine agent decision boundary.
+                reportSimHealthFailure(bc, SimHealthFailure::NO_LEGAL_PROGRESSION,
+                                       SimHealthMeta{decisionIdx});
                 break;
             }
             // Snapshot pre-state for carry diagnostic.
@@ -502,6 +515,13 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 searcherValid = false;
             }
             writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx - 1, carriedAtBoundary, filtered, filtered ? &filterStats : nullptr);
+        }
+        // Simulator health: the loop exited while the battle was still
+        // UNDECIDED. The stall guard converts stalls to PLAYER_LOSS before
+        // breaking, so only an unintentional unresolved exit reaches this.
+        if (bc.outcome == Outcome::UNDECIDED) {
+            reportSimHealthFailure(bc, SimHealthFailure::UNDECIDED_BATTLE_EXIT,
+                                   SimHealthMeta{decisionIdx});
         }
         // Print reuse diagnostics at end of battle.
         if (search::g_reuseDiag || (search::g_reuseObsStable && combatDecisions > 0)) {
@@ -589,16 +609,35 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
         for (const auto &e : searcher.root.edges) {
             if (e.node.simulationCount > maxSim) { maxSim = e.node.simulationCount; best = e.action; have = true; }
         }
-        if (!have || !best.isValidAction(bc)) {
+        if (!have) {
             if (std::getenv("STS_DEBUG_BATTLE_BREAKS"))
                 std::cerr << "[battle-break:s2] state=" << (int)bc.inputState
                           << " task=" << (int)bc.cardSelectInfo.cardSelectTask
                           << " pickCount=" << bc.cardSelectInfo.pickCount << "\n";
+            // Simulator health: unresolved combat with zero legal progression
+            // actions at a genuine agent decision boundary.
+            reportSimHealthFailure(bc, SimHealthFailure::NO_LEGAL_PROGRESSION);
+            break;   // no legal move (shouldn't happen pre-terminal)
+        }
+        if (!best.isValidAction(bc)) {
+            if (std::getenv("STS_DEBUG_BATTLE_BREAKS"))
+                std::cerr << "[battle-break:s2] state=" << (int)bc.inputState
+                          << " task=" << (int)bc.cardSelectInfo.cardSelectTask
+                          << " pickCount=" << bc.cardSelectInfo.pickCount << "\n";
+            // Simulator health: the chosen (most-visited) root action cannot
+            // execute on the live state.
+            reportSimHealthFailure(bc, SimHealthFailure::INVALID_LIVE_ACTION,
+                                   SimHealthMeta{-1, best.bits, true});
             break;   // no legal move (shouldn't happen pre-terminal)
         }
 
         if (printLogs) printHelper(bc, best);
         takeAction(bc, best);
+    }
+    // Simulator health: the loop exited while the battle was still UNDECIDED
+    // (the stall guard sets PLAYER_LOSS first, so this is an unresolved exit).
+    if (bc.outcome == Outcome::UNDECIDED) {
+        reportSimHealthFailure(bc, SimHealthFailure::UNDECIDED_BATTLE_EXIT);
     }
 }
 
@@ -637,6 +676,10 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
                     std::cerr << "[battle-break:s3] state=" << (int)bc.inputState
                               << " task=" << (int)bc.cardSelectInfo.cardSelectTask
                               << " pickCount=" << bc.cardSelectInfo.pickCount << "\n";
+                // Simulator health: unresolved combat with zero legal
+                // progression actions at a genuine agent decision boundary.
+                reportSimHealthFailure(bc, SimHealthFailure::NO_LEGAL_PROGRESSION,
+                                       SimHealthMeta{decisionIdx});
                 break;
             }
             BattleContext preState = bc;
@@ -657,6 +700,13 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             ++decisionIdx;
             s3.decisionIndex = decisionIdx;
             s3.reseed();
+        }
+        // Simulator health: the loop exited while the battle was still
+        // UNDECIDED (the stall guard sets PLAYER_LOSS first, so this is an
+        // unintentional unresolved exit).
+        if (bc.outcome == Outcome::UNDECIDED) {
+            reportSimHealthFailure(bc, SimHealthFailure::UNDECIDED_BATTLE_EXIT,
+                                   SimHealthMeta{decisionIdx});
         }
         return;
     }
@@ -736,6 +786,11 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
         } else {
             stepThroughSearchTree(bc, searcher);
         }
+    }
+    // Simulator health: safety net for an unresolved exit of the non-fair S2
+    // loop (the stall guard sets PLAYER_LOSS first, so this is unintentional).
+    if (bc.outcome == Outcome::UNDECIDED) {
+        reportSimHealthFailure(bc, SimHealthFailure::UNDECIDED_BATTLE_EXIT);
     }
 }
 

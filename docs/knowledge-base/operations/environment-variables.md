@@ -151,6 +151,12 @@ enable flag:
 |----------|--------|---------|------------|
 | `STS_FIGHTREP_CAPTURE_DIR` | While set, `runFullRunOOC` serializes every Act-3 boss fight-start to `<dir>/fight_<seed>.bin` (raw `serializeBattleContext` blob) and writes `<dir>/fight_<seed>.csv` (seed,encounter,floor,won,hpEnd,turns) after the fight. Consumed by the `one_combat fightrep` replay mode. | unset (off) | `main` ~L9720 |
 
+## Simulator health monitor
+
+| Variable | Effect | Default | Parse site |
+|----------|--------|---------|------------|
+| `STS_SIM_HEALTH_CAPTURE_DIR` | While set, every `[sim-health][HARD]` failure serializes the offending `BattleContext` to `<dir>/sim_bug_<seed>_f<floor>_t<turn>_d<decision>_<reason>_<seq>.bin` (raw `serializeBattleContext` blob) plus a `<stem>.txt` metadata sidecar (reason, seed, floor, encounter, turn, decision index, player HP, outcome, input state, card-select task/pickCount, pile sizes, action bits, RNG counters, searcher/fair/particles). Diagnostics print regardless. See `behavior/simulator-health-monitor.md`. | unset (off) | `SimHealth.cpp::reportSimHealthFailure` |
+
 ## Terminal-leaf run-value bonus (S3)
 
 | Variable | Effect | Default | Parse site |

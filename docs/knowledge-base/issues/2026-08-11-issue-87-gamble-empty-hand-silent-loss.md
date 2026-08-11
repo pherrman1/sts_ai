@@ -1,6 +1,14 @@
 # Issue 87: Gambler's Brew at an empty hand ends the run as an invisible loss (hpEnd > 0, deathEnc = -1)
 
 - **Status:** open (diagnosis complete; reproduction available; not fixed per request)
+- **Detection:** the runtime simulator health monitor (2026-08-11, see
+  [`behavior/simulator-health-monitor.md`](../behavior/simulator-health-monitor.md))
+  now automatically flags this seed: seed 126711 at the recorded stack fires
+  `[sim-health][HARD] NO_LEGAL_PROGRESSION` + `UNDECIDED_BATTLE_EXIT` at
+  `CARD_SELECT/GAMBLE/hand=0/UNDECIDED` without `STS_DEBUG_BATTLE_BREAKS`, and
+  `STS_SIM_HEALTH_CAPTURE_DIR` writes a reloadable `.bin` snapshot of the broken
+  decision. Detection only — the mechanism below and the invisible-loss row are
+  unchanged.
 - **Tier:** High
 - **Date:** 2026-08-11
 - **Source:** user-reported seed 126711 from the A0 1k/128-seed GCP rerun
@@ -93,7 +101,10 @@ Mechanism chain (each step confirmed in current code):
   state; the fightrep harness treats floor-50 losses as boss deaths, so one of
   the 14 recorded floor-50 losses is this mechanism, not a boss defeat.
 - Prevalence is unknown beyond this seed; scanning the GCP 128-seed CSV for
-  `won=0 ∧ deathEnc=-1 ∧ hpEnd>0` rows would quantify it.
+  `won=0 ∧ deathEnc=-1 ∧ hpEnd>0` rows would quantify it. The health monitor's
+  8-seed fair smoke (2026-08-11) already caught a second instance of the same
+  invisible-loss shape on seed 4 via the EXHAUST_MANY/empty-hand variant
+  (`won=0, floor=50, hpEnd=80, deathEnc=-1`, DONU_AND_DECA).
 
 ## Candidate fix directions
 

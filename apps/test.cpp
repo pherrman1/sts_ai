@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <csignal>
+#include <fstream>
+#include <sstream>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -34,6 +36,7 @@
 #include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/CombatValueNet.h"
+#include "sim/search/SimHealth.h"
 #include "combat/BattleContextBinary.h"
 #include "constants/MonsterMoves.h"
 
@@ -1397,6 +1400,114 @@ int testBattleContextRoundtrip() {
     return 1;
 }
 
+// Simulator-health monitor: issue-87 validation case. A CARD_SELECT/GAMBLE
+// state with an empty hand enumerates zero legal progression actions
+// (pushMultiSelectActions early-returns on n<=0), so the fair-S3 battle loop
+// must report NO_LEGAL_PROGRESSION at the decision boundary and
+// UNDECIDED_BATTLE_EXIT at the loop exit, while leaving bc.outcome UNDECIDED
+// (detection only -- issue 87 must NOT be repaired here).
+int testSimHealthGambleEmptyHand() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) {
+            std::cout << "    " << msg << '\n';
+            ++failures;
+        }
+    };
+
+    const bool savedFair = search::g_fairPlay;
+    const bool savedS3 = search::g_useSearcher3;
+    const bool savedBelief = search::g_s3Belief;
+    const bool savedChain = search::g_s3Chain;
+    const int savedParticles = search::g_s3Particles;
+    search::g_fairPlay = true;
+    search::g_useSearcher3 = true;
+    search::g_s3Belief = false;   // recorded issue-87 stack (STS_S3_BELIEF=0)
+    search::g_s3Chain = false;
+    search::g_s3Particles = 4;
+
+    const int before = search::g_simHealthFailureCount;
+    {
+        BattleContext bc = cardSelectFixture(CardSelectTask::GAMBLE, 1, false);
+        bc.cards.cardsInHand = 0;   // issue-87 shape: empty hand at GAMBLE
+        check(search::Action::enumerateCardSelectActions(bc).empty(),
+              "empty-hand GAMBLE must enumerate zero actions");
+
+        search::ScumSearchAgent2 agent;
+        agent.simulationCountBase = 1;   // search is a no-op on a zero-edge root
+        agent.playoutBattle(bc);
+        check(bc.outcome == Outcome::UNDECIDED,
+              "battle must remain UNDECIDED (detection must not repair issue 87), got "
+              + std::to_string((int)bc.outcome));
+
+        // Serialization round-trip of the offending state (what the capture
+        // writes / what the .bin loader restores).
+        const std::vector<std::uint8_t> bytes = sts::serializeBattleContext(bc);
+        const BattleContext restored =
+            sts::deserializeBattleContext(bytes.data(), bytes.size());
+        check(restored.inputState == InputState::CARD_SELECT,
+              "restored inputState must be CARD_SELECT");
+        check(restored.cardSelectInfo.cardSelectTask == CardSelectTask::GAMBLE,
+              "restored cardSelectTask must be GAMBLE");
+        check(restored.cards.cardsInHand == 0, "restored hand must be empty");
+        check(restored.outcome == Outcome::UNDECIDED,
+              "restored outcome must be UNDECIDED");
+    }
+    const int fired = search::g_simHealthFailureCount - before;
+    check(fired >= 2,
+          "monitor must fire NO_LEGAL_PROGRESSION + UNDECIDED_BATTLE_EXIT, got "
+          + std::to_string(fired) + " hard failure(s)");
+
+    search::g_fairPlay = savedFair;
+    search::g_useSearcher3 = savedS3;
+    search::g_s3Belief = savedBelief;
+    search::g_s3Chain = savedChain;
+    search::g_s3Particles = savedParticles;
+
+    if (failures == 0) {
+        std::cout << "simhealth_gamble_empty_hand PASS\n";
+        return 0;
+    }
+    std::cout << "simhealth_gamble_empty_hand FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
+// simhealth_load <path>: deserialize a sim-health capture .bin and print its
+// key fields. Load-only proof that a captured snapshot round-trips (used to
+// verify STS_SIM_HEALTH_CAPTURE_DIR outputs; no replay).
+int simHealthLoad(const std::string &path) {
+    std::ifstream bin(path, std::ios::binary);
+    if (!bin) {
+        std::cout << "simhealth_load FAIL: cannot open " << path << '\n';
+        return 1;
+    }
+    std::vector<std::uint8_t> blob((std::istreambuf_iterator<char>(bin)),
+                                   std::istreambuf_iterator<char>());
+    const BattleContext bc = sts::deserializeBattleContext(blob.data(), blob.size());
+    if (bc.encounter == MonsterEncounter::INVALID) {
+        std::cout << "simhealth_load FAIL: malformed/corrupt blob " << path << '\n';
+        return 1;
+    }
+    std::cout << "seed=" << bc.seed << '\n';
+    std::cout << "floor=" << bc.floorNum << '\n';
+    std::cout << "encounter=" << monsterEncounterEnumNames[(int)bc.encounter]
+              << '(' << (int)bc.encounter << ")\n";
+    std::cout << "turn=" << bc.turn << '\n';
+    std::cout << "outcome=" << battleOutcomeStrings[(int)bc.outcome]
+              << '(' << (int)bc.outcome << ")\n";
+    std::cout << "inputState=" << (int)bc.inputState << '\n';
+    std::cout << "cardSelectTask=" << cardSelectTaskStrings[(int)bc.cardSelectInfo.cardSelectTask]
+              << '(' << (int)bc.cardSelectInfo.cardSelectTask << ")\n";
+    std::cout << "pickCount=" << bc.cardSelectInfo.pickCount << '\n';
+    std::cout << "cardsInHand=" << bc.cards.cardsInHand << '\n';
+    std::cout << "playerHp=" << bc.player.curHp << '/' << bc.player.maxHp << '\n';
+    std::cout << "drawPile=" << bc.cards.drawPile.size()
+              << " discardPile=" << bc.cards.discardPile.size()
+              << " exhaustPile=" << bc.cards.exhaustPile.size() << '\n';
+    std::cout << "simhealth_load PASS\n";
+    return 0;
+}
+
 // Regression: Designer In-Spire event options 3 and 4 must not fall through to
 // the next case. Before the fix, option 3 also paid the option-4 gold cost,
 // opened a REMOVE card select, and lost 5 HP; option 4 also lost 5 HP.
@@ -2545,6 +2656,14 @@ int main(int argc, const char* argv[]) {
         return testPoisonLoseHp();
     } else if (command == "time_eater_exhaust") {
         return testTimeEaterExhaust();
+    } else if (command == "simhealth_gamble_empty_hand") {
+        return testSimHealthGambleEmptyHand();
+    } else if (command == "simhealth_load") {
+        if (argc < 3) {
+            std::cout << "usage: test simhealth_load <capture.bin>\n";
+            return 1;
+        }
+        return simHealthLoad(argv[2]);
     }
 
     //    printSizes();

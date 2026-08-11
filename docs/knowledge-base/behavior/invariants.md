@@ -1,6 +1,6 @@
 # Important invariants
 
-Last verified: 2026-07-31 against commit `67320b3` and the current working tree.
+Last verified: 2026-08-11 against commit `abba840` and the current working tree.
 
 ## Purpose
 
@@ -13,6 +13,29 @@ The repository relies on runtime checks, conventional calling discipline, and
 manual benchmark validation rather than an automated invariant test suite. The
 following rules are grounded in current code and are mandatory change-review
 points.
+
+### Runtime simulator health monitor
+
+Since 2026-08-11 a small runtime monitor checks three high-confidence invariants
+at every combat decision boundary and battle-loop exit during normal runs:
+
+- `UNDECIDED_BATTLE_EXIT`: a battle loop in `ScumSearchAgent2` must not exit
+  while `bc.outcome == Outcome::UNDECIDED` (the 1000-decision stall guard
+  converts stalls to `PLAYER_LOSS` first, so any UNDECIDED exit is
+  unintentional).
+- `NO_LEGAL_PROGRESSION`: at a genuine agent decision boundary with an
+  unresolved combat, enumeration/search must produce at least one legal
+  progression action.
+- `INVALID_LIVE_ACTION`: an action committed to the live `BattleContext` must
+  be legal on that exact state (`Action::isValidAction`; independent of
+  `sts_asserts`).
+
+Failures print `[sim-health][HARD]` diagnostics and, with
+`STS_SIM_HEALTH_CAPTURE_DIR` set, serialize the offending state to a
+reproducible `sim_bug_*.bin` snapshot (fightrep `serializeBattleContext`
+format). Detection-only: behavior is unchanged and issue 87 is not repaired.
+See
+[behavior/simulator-health-monitor.md](behavior/simulator-health-monitor.md).
 
 ### Simulator and action invariants
 
@@ -105,8 +128,13 @@ Operational assumptions that are not enforced by types or tests:
 - No test automatically asserts schema order, native/server parity, or
   self-play arm ownership end to end. CTest runs parse/syntax checks, and the
   `test` dispatcher gains targeted checks (observation identity, Searcher3 seed
-  contract, belief conditioning, draw-order application, conservative pruning;
-  `small-test isbattleover`); the remaining invariants are review-enforced.
+  contract, belief conditioning, draw-order application, conservative pruning,
+  card-select parity, battle-context round-trip, simulator-health empty-hand
+  detection; `small-test isbattleover`); the remaining invariants are
+  review-enforced.
+- The simulator health monitor covers only its three hard invariants (issue 87
+  GAMBLE/empty-hand and the same EXHAUST_MANY/empty-hand class are caught);
+  deeper simulator invariants remain review-enforced.
 - `OocCheckpointNet::load` and `OocStrategicNet::load` check every payload read;
   truncated files fail load and the net is not used (issue 08, closed).
 - `tools/verify/check_replay.py` probes repeated-seed CSV equality, but fair multi-thread
@@ -134,6 +162,7 @@ Operational assumptions that are not enforced by types or tests:
 - `src/sim/search/Action.cpp::isValidAction`, `execute`
 - `src/sim/search/GameAction.cpp::isValidAction`, `execute`
 - `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`
+- `src/sim/search/SimHealth.cpp::reportSimHealthFailure`
 - `include/sim/search/BattleScumSearcher3.h::Node`, `Edge`
 - `src/sim/search/CombatValueNet.cpp::combatFeatureNames`
 - `apps/one_combat.cpp::vFeatCsv`, `main`
