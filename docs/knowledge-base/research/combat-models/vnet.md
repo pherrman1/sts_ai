@@ -27,7 +27,7 @@ worse online — the third documented case of offline≠online transfer.
 | 2026-07-30 | [Phase 4b PVNet alpha sweep](../../../../docs/experiments/ledger-03.md) | Early experiment with PVNet as value leaf |
 | 2026-08-04 | [§97 Combat value under gate stack](../../../../docs/experiments/ledger-03.md) | Old-era 1,500-tree vnet rejected (−3.1pp at α0.3) |
 | 2026-08-07 | [§126 Honest-data V_combat promoted](../../../../docs/experiments/ledger-05.md) | Three gates +12.5/+12.1/+12.5pp → promoted to default ON in fair-S3 |
-| 2026-08-07 | [Decision: VNet promotion](../../../decision-log/2026-08-07-vnet-promotion.md) | Promotion rationale + cpu-trade call |
+| 2026-08-07 | [Decision: VNet promotion](../../decision-log/2026-08-07-vnet-promotion.md) | Promotion rationale + cpu-trade call |
 | 2026-08-07 | [§129 Gate-stack-distribution retrain](../../../../docs/experiments/ledger-05.md) | NULL for replacement; α optimum shifts 0.3→0.5 but no win improvement |
 | 2026-08-09 | [§148 Hyperparameter tuning](../../../../docs/experiments/ledger-06.md) | Optuna TPE search; +10.9pp at matched 804 trees → deployed as 7k model |
 | 2026-08-09 | [§154 Training-vs-deployment distribution shift](../../../../docs/experiments/ledger-06.md) | Mismatch is WEAK — do NOT build a relabeling pipeline |
@@ -70,6 +70,17 @@ and [`docs/knowledge-base/architecture/training-and-inference.md`](../../archite
 
 ## Open questions
 
-- The exact §126 `v_combat_honest.txt` (804-tree) artifact provenance is deferred.
-- The §148 `v_combat_7k_tuned.txt` artifact is verified at sha256 `ea35b78c…`.
+- The superseded §126 `v_combat_honest.txt` (804-tree) artifact was
+  intentionally removed from tracking during the 2026-08-11 build-artifact
+  cleanup (decision log
+  [`2026-08-11-build-artifact-relocation.md`](../../decision-log/2026-08-11-build-artifact-relocation.md)):
+  it was the previously deployed model, superseded by §148, and had zero
+  remaining code references.
+- The current §148 `v_combat_7k_tuned.txt` default remains an unresolved
+  provenance/fresh-clone issue: its recorded SHA-256 is
+  `ea35b78c…`, but the artifact is ignored/untracked under `build/` and is
+  not available on this machine. Tracking the exact artifact under `models/`
+  is deferred until the verified file can be transferred from the original
+  machine. The recorded SHA is a historical identity, not proof that this
+  checkout contains and independently verifies those bytes.
 - Is value-scale normalization a viable bridge between end-HP VNet and utility-R targets?

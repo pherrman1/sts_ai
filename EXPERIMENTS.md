@@ -40,7 +40,7 @@ under [`docs/experiments/`](docs/experiments/). Each shard is a frozen slice
 
 | Shard | Coverage | Status |
 | --- | --- | --- |
-| [`ledger-01.md`](docs/experiments/ledger-01.md) | Current findings summary (2026-08-08) through §25 V_win vs V_floor for SHOPS | FROZEN |
+| [`ledger-01.md`](docs/experiments/ledger-01.md) | Current findings summary (2026-08-08) through §27 rich fair value net (2026-07-15) | FROZEN |
 | [`ledger-02.md`](docs/experiments/ledger-02.md) | §28 Fair-play FULL-RUN validation through §66 Checkpointed combat-strength policy | FROZEN |
 | [`ledger-03.md`](docs/experiments/ledger-03.md) | §67 Checkpoint-oracle distilled OOC action NN through §96 Wave A1/B sweep Q_win | FROZEN |
 | [`ledger-04.md`](docs/experiments/ledger-04.md) | §97 Combat value net under the gate stack through §116 Phase 3 Stage 2 TERM_WIN | FROZEN |

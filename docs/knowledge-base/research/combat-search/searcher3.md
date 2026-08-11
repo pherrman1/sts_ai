@@ -20,7 +20,10 @@ particle×sims grid and §124 re-measurement on the live-valid binary:
 
 - belief ON costs −11.3 to −12.1pp (significant)
 - chain ON costs −4.7pp (from §106 ablation)
-- CRN is dead code (−14.1pp when removed, §106)
+- CRN warm-start code was historically uninvoked (dead), so it was absent
+  from earlier results. When explicitly activated via `STS_S3_CRN=1` in §106,
+  it was significantly harmful (−14.1pp vs control, CI excludes 0), so it
+  remains disabled.
 
 The default path since 2026-08-07 includes:
 
@@ -45,7 +48,9 @@ The default path since 2026-08-07 includes:
 
 - **S3 deterministic chain compression** — net-negative (§106)
 - **S3 particle belief reweighting** — costs −11 to −12pp (§124)
-- **CRN warm start** — dead code, −14.1pp when removed (§106)
+- **CRN warm start** — historically uninvoked (dead) code; when explicitly
+  enabled via `STS_S3_CRN=1` it was significantly harmful (−14.1pp vs control
+  at §106, CI excludes 0), so it remains disabled
 - **Non-fair forced-move contraction** — divergent results (§120/§121), restricted to fair only
 - **Obs-keyed descent** — tree grows linearly, floor 11 vs 33 (§114)
 

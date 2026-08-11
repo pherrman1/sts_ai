@@ -31,9 +31,9 @@ recommended particle config.
 | 2026-08-10 | [S3 belief-vs-root audit](../../../../docs/experiments/ledger-01.md) (search for "§2026-08-10 Searcher3") | ~90% stale carried particles; root allocation only 3.1% disagreement → recommends belief-filter experiment next |
 | 2026-08-10 | [Real-observation belief filtering](../../../../docs/experiments/ledger-01.md) (search for "real-observation belief filtering") | Compatible fraction 72%, collapse 14%, 1/32 win flips — diagnostic, not promoted |
 | 2026-08-10 | [Posterior-collapse diagnosis](../../../../docs/experiments/ledger-01.md) (search for "posterior-collapse") | Collapse largely from finite-particle deprivation; fresh reconstruction safe in 32-seed diagnostic |
-| 2026-08-10 | [Decision: belief-filter audit](../../../decision-log/2026-08-10-s3-real-belief-filter-audit.md) | Old drawOrderConsistent is not a posterior test; exact per-particle propagation is the oracle |
-| 2026-08-10 | [Decision: filter implementation](../../../decision-log/2026-08-10-s3-real-belief-filter.md) | Keep opt-in, recommend confirmation gate before rejuvenation |
-| 2026-08-10 | [Decision: collapse diagnosis](../../../decision-log/2026-08-10-s3-collapse-diagnosis.md) | Collapse classifications + fresh-belief fallback diagnostic |
+| 2026-08-10 | [Decision: belief-filter audit](../../decision-log/2026-08-10-s3-real-belief-filter-audit.md) | Old drawOrderConsistent is not a posterior test; exact per-particle propagation is the oracle |
+| 2026-08-10 | [Decision: filter implementation](../../decision-log/2026-08-10-s3-real-belief-filter.md) | Keep opt-in, recommend confirmation gate before rejuvenation |
+| 2026-08-10 | [Decision: collapse diagnosis](../../decision-log/2026-08-10-s3-collapse-diagnosis.md) | Collapse classifications + fresh-belief fallback diagnostic |
 
 ## Rejected / falsified approaches
 

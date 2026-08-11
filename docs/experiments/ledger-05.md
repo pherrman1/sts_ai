@@ -1284,3 +1284,31 @@
     for both targets, §134 recipe), `tools/leaf_smoothness.py` (delta-V
     smoothness/shaping per model).
 - **Local smoke validation (not evidence of any gameplay effect):**
+  - `leafdiag 4 300 0` (STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+    STS_S3_CHAIN=0 STS_S3_PARTICLES=32, STS_VNET=build/v_combat_honest.txt,
+    STS_DIAG_VNET2=build/v_combat_utility_direct.txt): 1755 rows, 1783 cols
+    (13 provenance + 1766 features + 4 model/rollout cols); identical row SET
+    across reruns.
+  - `bestbench 1000 8 0 0` twice (deployed default): game-outcome columns
+    byte-identical (cpu_sec is wall-time and varies) — default behavior
+    unchanged.
+  - `leafref` (high-budget 400, replay 300): 450/450 recorded leaves
+    regenerated and matched by obsHash; join to leafdiag keys 1:1.
+  - `rollouttrace`: 450 trajectories × ~9.3 steps with both predictions.
+  - `tools/*.py` self-tests pass; CTest 8/8; `vnettest` parity on the §134
+    direct-R model passes.
+  - 16-seed leafdiag smoke: `leafdiag 16 1000 0 build/leafdiag_16.csv` →
+    7590 rows.
+- **Known constraint:** the leafdiag/leafref/rollouttrace run distribution is
+  the heuristic-OOC (native floor/win) run distribution unless the V4 gate
+  env arms are also set — the recorded §126/§134 gates used the full V4 gate
+  stack, so a gate-matching diagnostic dataset must set the same OOC env arms.
+  Probing OOC arms (STS_OOC_ACTION_NN, STS_BOSS_DRAFT, M1/M2, STS_DATAGEN_GATES)
+  MUST NOT be enabled during capture (their inner probe battles pollute the
+  dataset).
+- **Verdict: NONE (infrastructure only).** No model change, no default change,
+  no promotion; the deployed `build/v_combat_honest.txt` @α0.3 stays, and
+  §133/§134 candidates stay rejected. Next step: run the diagnostics on a
+  gate-sized dataset and record the hypothesis verdict here.
+- **Decision log:** `2026-08-08-leaf-state-diagnostics.md`.
+
