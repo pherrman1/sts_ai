@@ -1975,3 +1975,48 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   residual correction, and terminal-endHP relabeling did not establish an
   online improvement. This research line is closed unless reconstructed from
   preserved artifacts with a new premise and fully recorded paired protocol.
+
+## §167 Fightrep: re-recorded floor-50 boss losses and particles x sims replay grid (2026-08-11)
+
+- **Purpose:** the fightrep harness (`apps/one_combat.cpp`,
+  `2026-08-11-fightrep-harness.md`) needs a captured fight set to re-search the
+  recorded floor-50 boss losses at other particle counts / sim budgets. The 14
+  original captures were never on this machine or on `sts-test`, so the set was
+  re-recorded locally.
+- **Source of the 14 losses:** `build/rerun_2026-08-10_a0_gates_1k_128.csv` (GCP A0
+  1k/128-seed full-stack rerun, 46.9% win). 14 seeds reached floor 50 and lost. Two of
+  them (`126711`, `126805`) are anomalous rows (hpEnd>0 with deathCombat=-1,
+  deathEncounter=-1; run ended without a combat death) and are excluded here for a
+  separate fix.
+- **Re-recorded captures:** `build/fightrep_cap/fight_<seed>.bin/.csv` for the 12 normal
+  loss seeds `126704 126721 126722 126731 126735 126753 126766 126773 126783 126808
+  126817 126819`, captured by `bestbench 1000 1 0 <seed>` with `STS_FIGHTREP_CAPTURE_DIR`
+  and the recorded full stack (fair S3, belief=off chain=off, 64 particles, live-valid
+  on, V4 tok-net gates all on margin 1.0, native OOC, VNet α=0.3, policy prior
+  c_puct=2.5). Every capture reproduced the historical encounter at floor 50: encounters
+  {54,53,55} match the historical `deathEncounter` column exactly for all 12 seeds.
+- **Replay grid** (`one_combat fightrep`, forced fair S3 belief=off chain=off
+  live-valid=on): 12 fights x {64,128,256} particles x {1000,3000,6000} sims = 108 cells
+  in 94.7s wall on 12 threads. Per-cell wins of 12:
+  - 64p: 1000→2, 3000→5, 6000→2
+  - 128p: 1000→2, 3000→3, 6000→3
+  - 256p: 1000→1, 3000→1, 6000→1
+- **Replay determinism:** a second independent run of the 36 (64p) cells gave 0 diffs
+  (won/hpEnd/turns identical).
+- **Fidelity gate (replay == capture-time outcome):** at the recorded config
+  (64p/1000s → boss x3 = 3000/decision) 10/12 seeds reproduce the capture-time loss;
+  **2 seeds flip to wins: `126722` (hpEnd 29) and `126773` (hpEnd 26)**. Both are Time
+  Eater / Awakened One loses at capture time. This is a real fidelity gap: the isolated
+  fight-start snapshot does not fully determine the replay outcome for these two seeds
+  (possible causes: run-context combat knobs such as `search::g_potionKeepValue` /
+  per-fight `fightSims` budget applied in `runFullRunOOC` but not in `fightRepReplay`).
+  Flagged as an open question for the fightrep harness, not a policy claim.
+- **Interpretation (descriptive, not paired):** at 64p the 3k budget flips 3 additional
+  losses (126766, 126783, 126808) to wins beyond the 64p/1k flips, but the 6k budget
+  regresses to 2/12 (126722 and 126773 stay wins; 126783/126808 lose again). More
+  particles (128/256) do not help and 256p wins FEWER fights than 64p at every sim
+  budget. This is an isolated-fight re-search result; it does not transfer to full-run
+  win rate without a full paired run.
+- **Artifacts:** `build/fightrep_cap/` (captures), `build/fightrep_grid_12f.csv` (108
+  cells), `/tmp/opencode/weird_cases/` (126711 capture set aside for the separate fix).
+- **Status:** re-record complete; 2/12 fidelity flips are an open harness concern.

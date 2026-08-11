@@ -46,8 +46,27 @@ Implementation + single-seed fidelity verified on the local build. The 14-seed
 capture set and the particles x sims sweep are pending (9/14 fights captured
 locally before the session was paused; remainder continue on another machine).
 
+**2026-08-11 update:** the original captures were never present on this machine
+or on `sts-test`, so the set was re-recorded locally (see `EXPERIMENTS.md`
+§167). 12 normal loss seeds captured with the recorded stack; all reproduce the
+historical floor-50 encounter. The 108-cell replay grid is complete and
+deterministic. Fidelity gate (replay == capture-time outcome at 64p/1000s)
+passes for 10/12 seeds; **2 seeds (126722, 126773) flip to wins in the isolated
+replay** — an open harness concern to investigate (candidate: run-context combat
+knobs not replicated by the replay path). The two anomalous historical rows
+(`126711`, `126805`, hpEnd>0 / deathCombat=-1) were set aside for a separate
+fix.
+
 ## Open question
 
-Local HEAD differs from the GCP historical commit `5959e4c`, so replay
-outcomes at the recorded config should be compared with the historical per-seed
-rows when possible; the hard fidelity gate is replay == capture-time outcome.
+- Local HEAD differs from the GCP historical commit `5959e4c`, so replay
+  outcomes at the recorded config should be compared with the historical
+  per-seed rows when possible; the hard fidelity gate is replay == capture-time
+  outcome.
+- Why do the 64p/1000s replay cells flip `126722` and `126773` to wins when the
+  capture-time outcome is a loss? Investigate whether `runFullRunOOC`-only
+  combat context (per-fight `fightSims` budget, `search::g_potionKeepValue`,
+  terminal-leaf setup) leaks into the captured fight in a way the replay path
+  does not reproduce.
+- At 64p the 6k sim budget regresses (2/12) vs the 3k budget (5/12): is this
+  search noise or a real budget interaction on these specific fights?

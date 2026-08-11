@@ -145,6 +145,12 @@ enable flag:
 | `STS_ACT_FIGHT_PROBE_DRAFT` | All-act encounter rollout draft | `0` (off) | `main` ~L9580 |
 | `STS_ACT_FIGHT_PROBE_ALL_OOC` | Acts 1-3 all-OOC checkpoint rollout | `0` (off) | `main` ~L9620 |
 
+## Fightrep (Act-3 boss fight-start snapshot/replay harness)
+
+| Variable | Effect | Default | Parse site |
+|----------|--------|---------|------------|
+| `STS_FIGHTREP_CAPTURE_DIR` | While set, `runFullRunOOC` serializes every Act-3 boss fight-start to `<dir>/fight_<seed>.bin` (raw `serializeBattleContext` blob) and writes `<dir>/fight_<seed>.csv` (seed,encounter,floor,won,hpEnd,turns) after the fight. Consumed by the `one_combat fightrep` replay mode. | unset (off) | `main` ~L9720 |
+
 ## Terminal-leaf run-value bonus (S3)
 
 | Variable | Effect | Default | Parse site |
