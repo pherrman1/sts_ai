@@ -7,10 +7,12 @@ investigation is evidence collection, not a decision or a speculative design.
 
 ## Current investigations
 
-No dedicated investigation in this directory is currently active. New work
-belongs here only after it has a minimal reproduction, captured observations,
-and an explicit next discriminating check. Candidate problems remain in the
-[issues index](../issues/README.md) until that threshold is met.
+- [Stale implementation audit (2026-08-11)](2026-08-11-stale-implementation-audit.md) —
+  ranked cleanup candidates from a reachability + scientific-status map of
+  `apps/`, `src/`, `include/`, `bindings/`. Identifies 22+ dead one_combat
+  modes, ~15 diagnostic-only flags, and 2 load-only flags as HIGH-confidence
+  deletion candidates. Recommends 6 sequential cleanup batches. **Investigation
+  only — no deletions performed.**
 
 The resolved Searcher3 reuse investigation was distilled into
 [`decisions/s3-obs-stable-reuse-promotion.md`](../decisions/s3-obs-stable-reuse-promotion.md).
