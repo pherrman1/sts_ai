@@ -8,7 +8,7 @@ gameplay. The hypothesis: some offline metrics capture properties that RMSE miss
 Usage:
   .venv/bin/python3 tools/vnet_diagnostics.py \
     --csv build/vcombat_honest.csv \
-    --xgb7k build/v_combat_7k_tuned.txt \
+    --xgb7k models/v_combat_7k_tuned.txt \
     --xgb build/vnet_xgb_tuned.txt \
     --cb build/vnet_cb_tuned.txt
 """
@@ -264,7 +264,7 @@ def compute_metrics(name, preds, data):
 def main():
     parser = argparse.ArgumentParser(description="VNet offline diagnostics")
     parser.add_argument("--csv", default="build/vcombat_honest.csv")
-    parser.add_argument("--xgb7k", default="build/v_combat_7k_tuned.txt")
+    parser.add_argument("--xgb7k", default="models/v_combat_7k_tuned.txt")
     parser.add_argument("--xgb", default="build/vnet_xgb_tuned.txt")
     parser.add_argument("--cb", default="build/vnet_cb_tuned.txt")
     parser.add_argument("--json", default="")

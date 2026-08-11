@@ -10588,15 +10588,16 @@ int main(int argc, char **argv) {
     // from hyperparameters for a total of +17.2pp over the §126 baseline.
     // Scoped: fair + Searcher3 only, when STS_VNET is unset.
     if (!std::getenv("STS_VNET") && search::g_fairPlay && search::g_useSearcher3) {
-        if (search::g_combatVNet.load("build/v_combat_7k_tuned.txt")) {
+        const char *vnetDefault = "models/v_combat_7k_tuned.txt";
+        if (search::g_combatVNet.load(vnetDefault)) {
             search::g_useVNet = true;
             search::g_vnetAlpha = 0.3;
-            std::cout << "[V_combat leaf default ON: build/v_combat_7k_tuned.txt, "
+            std::cout << "[V_combat leaf default ON: " << vnetDefault << ", "
                       << search::g_combatVNet.description() << ", alpha "
                       << search::g_vnetAlpha << " (fair S3, §148)]\n";
         } else {
             std::cout << "[V_combat leaf default load FAILED: "
-                         "build/v_combat_hparam_1000.txt (continuing without)]\n";
+                      << vnetDefault << " (continuing without)]\n";
         }
     }
     // Per-encounter specialization overlay (per-boss fine-tuned trees from

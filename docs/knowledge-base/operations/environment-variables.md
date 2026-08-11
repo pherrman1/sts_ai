@@ -21,7 +21,7 @@ These control the default executing configuration; they are always parsed.
 | `STS_SEARCHER3` | Use `BattleScumSearcher3` ISMCTS engine | `0` (Searcher2) | `main` ~L9690 |
 | `STS_LIVE_VALID` | Fair-tree live-valid edge re-selection (Phase 4) | Auto-ON for fair+S3 since 2026-08-07 (§123) | `main` ~L9700 |
 | `STS_FORCED_MOVE` | Forced-action contraction (fair path only); `0` disables | `1` (ON) | `main` ~L9228 |
-| `STS_VNET` | Learned V_combat leaf value; path or `1` = default | Auto-ON for fair+S3 since 2026-08-07 (α=0.3, §126 honest-data model; **promoted to `build/v_combat_7k_tuned.txt` §148**) | `main` ~L9850 |
+| `STS_VNET` | Learned V_combat leaf value; path or `1` = default | Auto-ON for fair+S3 since 2026-08-07 (α=0.3, §126 honest-data model; **promoted to `models/v_combat_7k_tuned.txt` §148**) | `main` ~L9850 |
 | `STS_VNET_ALPHA` | V_combat blend weight | 0.5 (or 0.3 for the fair-S3 default) | `main` ~L9853 |
 | `STS_PVNET` | Shared policy-value network (AlphaZero-style) | off | `main` ~L9900 |
 | `STS_PVNET_ALPHA` | PVNet leaf blend weight | model-dependent | `main` ~L9910 |

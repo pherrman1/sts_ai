@@ -352,7 +352,7 @@ ranking (pairwise 0.726→0.691, top-1 0.369→0.330, regret 7.43→8.21, all
 worse) and hurts the on-policy fit (val RMSE 8.23 vs 7.88 control); no
 gameplay gate per the pre-registered rule; the then-deployed
 `build/v_combat_honest.txt` @α0.3 stays default (§148 later replaced the
-fair-S3 default with `build/v_combat_7k_tuned.txt`).** The mixture model
+fair-S3 default with `models/v_combat_7k_tuned.txt`).** The mixture model
 (`build/v_combat_mix.txt`) is a diagnostic artifact only; `STS_DIAG_VNET2`
 can point at it for leafdiag/leafref/rollouttrace diagnostics (never read by
 the search). Default single-CSV path of `train_value_combat.py` is
@@ -801,12 +801,12 @@ Learned guidance is loaded by `apps/one_combat.cpp::main`:
   byte-identical. §127: the gate-stack-distribution vnet retrain was NULL
   vs the deployed model (α optimum shifted 0.3→0.5, no significant winrate
   difference) — the deployed (then-§126) `v_combat_honest.txt` stays (the
-  fair-S3 default moved to `build/v_combat_7k_tuned.txt` under §148).
+  fair-S3 default moved to `models/v_combat_7k_tuned.txt` under §148).
 - `STS_VNET` loads a separate combat value model and `STS_VNET_ALPHA` controls
   its rollout blend.
   **Default since 2026-08-07 (EXPERIMENTS.md §126):** in the fair-S3 path
   (after the `STS_FAIR`/`STS_SEARCHER3` parse) an unset `STS_VNET`
-  auto-loads `build/v_combat_7k_tuned.txt` (1000 trees, sha256 `ea35b78c…`) at
+  auto-loads `models/v_combat_7k_tuned.txt` (1000 trees, sha256 `ea35b78c…`) at
   `STS_VNET_ALPHA` 0.3 (EXPERIMENTS.md §148, 2026-08-09; it replaced the §126
   804-tree honest model `build/v_combat_honest.txt` as the default — the §126
   promotion record: three significant paired gates +12.5/+12.1/+12.5pp win at

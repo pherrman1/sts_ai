@@ -95,7 +95,7 @@ Exported files live in `build/` and `selfplay/models/`. Startup messages show wh
 
 ```
 [native OOC floor/win GBMs ON]
-[Combat vnet loaded: build/v_combat_7k_tuned.txt (1000 trees, alpha=0.30)]
+[Combat vnet loaded: models/v_combat_7k_tuned.txt (1000 trees, alpha=0.30)]
 [OOC strategic tok net loaded: selfplay/models/ooc_strategic_tok_final.native]
 ```
 

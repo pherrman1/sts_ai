@@ -12,7 +12,7 @@ best online transfer?
 
 **A hyperparameter-tuned XGBoost GBM trained on honest combat data predicting
 end-HP is the deployed combat value leaf.** It provides +12.5pp win over
-rollout-only at α=0.3. The deployed model is `build/v_combat_7k_tuned.txt`
+rollout-only at α=0.3. The deployed model is `models/v_combat_7k_tuned.txt`
 (1,000 trees, sha256 `ea35b78c…`, §148, 2026-08-09), which superseded the
 earlier 804-tree honest model (§126).
 
@@ -76,11 +76,9 @@ and [`docs/knowledge-base/architecture/training-and-inference.md`](../../archite
   [`2026-08-11-build-artifact-relocation.md`](../../decision-log/2026-08-11-build-artifact-relocation.md)):
   it was the previously deployed model, superseded by §148, and had zero
   remaining code references.
-- The current §148 `v_combat_7k_tuned.txt` default remains an unresolved
-  provenance/fresh-clone issue: its recorded SHA-256 is
-  `ea35b78c…`, but the artifact is ignored/untracked under `build/` and is
-  not available on this machine. Tracking the exact artifact under `models/`
-  is deferred until the verified file can be transferred from the original
-  machine. The recorded SHA is a historical identity, not proof that this
-  checkout contains and independently verifies those bytes.
+- The current §148 `models/v_combat_7k_tuned.txt` default is tracked under
+  `models/` (sha256 `ea35b78c…`), so a fresh clone receives it via `git pull`;
+  this closed the Phase-2 fresh-clone provenance gap (decision log
+  [`2026-08-11-build-artifact-relocation.md`](../../decision-log/2026-08-11-build-artifact-relocation.md),
+  follow-up 2026-08-11).
 - Is value-scale normalization a viable bridge between end-HP VNet and utility-R targets?

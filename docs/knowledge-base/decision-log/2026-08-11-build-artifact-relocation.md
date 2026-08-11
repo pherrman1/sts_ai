@@ -25,7 +25,7 @@ Session/task: Phase-2 repository hygiene — eliminate tracked artifacts from
     decision log `2026-08-07-policy-prior-v2-pipeline.md`)
   - `build/v_combat_honest.txt` (§126 deployed vnet, superseded by the §148
     7k-tuned model — zero code references; `apps/one_combat.cpp` default is
-    `build/v_combat_7k_tuned.txt`)
+    `models/v_combat_7k_tuned.txt`)
   - `build/v_combat_quantile.txt` (§133 quantile-R closed, reference-only)
   - `build/v_combat_utility.txt` (§128/§131 value-only utility net, offline
     research only, no C++ loader ever written)
@@ -93,6 +93,18 @@ Session/task: Phase-2 repository hygiene — eliminate tracked artifacts from
   the fair-S3 path without the vnet leaf unless the file is synced manually.
   Consider tracking it under `models/` in a follow-up, with sha256 + docs per
   the artifact-shipping convention.
+
+### Resolution (2026-08-11 follow-up)
+
+This open question is **closed**. The §148 7k-data tuned combat VNet is now
+tracked at `models/v_combat_7k_tuned.txt` (sha256
+`ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c`, byte-identical
+to the deployed artifact). `apps/one_combat.cpp` loads that tracked path for the
+automatic fair-S3 default (α=0.3), the load-failure diagnostic names the same
+path, and current KB docs (`current-baselines.md`, `combat-search.md`,
+`environment-variables.md`, `research/combat-models/vnet.md`) reference
+`models/v_combat_7k_tuned.txt`. A fresh clone now receives the fair-S3 default
+VNet through ordinary `git pull`; `build/` remains purely ignored/generated.
 
 ## Status
 
