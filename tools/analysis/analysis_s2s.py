@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stage-2 paired analysis for the terminal-leaf bonus weight sweep.
 
-Usage: python3 analysis_s2s.py <build_dir>
+Usage: python3 tools/analysis/analysis_s2s.py <build_dir>
 Reads bestbench per-seed CSVs (s2s_<arm>.csv) + stall logs (s2s_<arm>_stall.csv)
 in <build_dir>; prints paired win/floor/HP vs the control arm with McNemar
 significance, plus stall-telemetry stats (turns, end-HP, charged-counter

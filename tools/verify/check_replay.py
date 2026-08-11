@@ -7,8 +7,8 @@ into fresh CSV files and compares every column except `sec` (wall-clock
 timing). Rows are aligned on `seed` because bestbench flushes rows in
 completion order.
 
-Usage: check_replay.py <sims> <nseeds> <asc> [seedOffset]
-       check_replay.py --self-test
+Usage: python3 tools/verify/check_replay.py <sims> <nseeds> <asc> [seedOffset]
+       python3 tools/verify/check_replay.py --self-test
 """
 import os
 import subprocess

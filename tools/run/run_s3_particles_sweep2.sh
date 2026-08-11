@@ -7,7 +7,7 @@
 #                               paired 256-seed vs simsweep_v4_3k_256.csv (45.3%)
 #   pt2_p256_s3k_both_256.csv   top win point (60.9% at 128) on the 256 block
 #
-# Usage: ./run_s3_particles_sweep2.sh [outdir]
+# Usage: bash tools/run/run_s3_particles_sweep2.sh [outdir]
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

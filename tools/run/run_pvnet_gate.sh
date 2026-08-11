@@ -19,7 +19,7 @@
 #   - `cmake --build build -j --target one_combat` run,
 #   - artifacts present with the hashes verified below.
 #
-# Usage: ./run_pvnet_gate.sh [seeds] [offset] [outdir]
+# Usage: bash tools/run/run_pvnet_gate.sh [seeds] [offset] [outdir]
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

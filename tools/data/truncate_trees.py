@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Keep the first N trees of a CombatValueNet tree-text file (boosting is additive,
-so a prefix is a lower-capacity model). Usage: truncate_trees.py in.txt out.txt N"""
+so a prefix is a lower-capacity model). Usage: python3 tools/data/truncate_trees.py in.txt out.txt N"""
 import sys
 src, dst, N = sys.argv[1], sys.argv[2], int(sys.argv[3])
 with open(src) as f:

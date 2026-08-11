@@ -15,7 +15,7 @@
 # S2 ref = 43.8% (build/s3ablate_*_3k_128.csv). pt_sweep_p64_s3k_belf re-runs
 # the recorded A2 point on THIS binary (0 non-sec diffs expected).
 #
-# Usage: ./run_s3_particles_sweep.sh [seeds] [offset] [outdir]
+# Usage: bash tools/run/run_s3_particles_sweep.sh [seeds] [offset] [outdir]
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

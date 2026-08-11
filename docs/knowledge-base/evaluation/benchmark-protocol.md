@@ -128,8 +128,8 @@ env plus server port liveness, not a per-decision query log. See
 - CTest registers parse/syntax checks (`ctest --test-dir build`); the `test`
   dispatcher holds targeted Searcher3 and terminal-flag checks, and
   `small-test isbattleover` covers the terminal-field derivation. Deeper
-integration invariants remain review-enforced. `tools/verify/vnettest_selftest.py
---self-test` (CTest `vnettest_selftest`) regression-checks the asserting
+  integration invariants remain review-enforced. `tools/verify/vnettest_selftest.py
+  --self-test` (CTest `vnettest_selftest`) regression-checks the asserting
   parity path: non-finite native predictions, float-overflow features, and
   out-of-tolerance evidence must exit nonzero, clean parity evidence exit 0.
 - `parity_test.py` fails loudly when its binary or checkpoint is missing, but

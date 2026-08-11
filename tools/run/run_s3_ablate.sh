@@ -22,7 +22,7 @@
 #   - `cmake --build build -j --target one_combat` run,
 #   - artifacts present with the hashes verified below.
 #
-# Usage: ./run_s3_ablate.sh [seeds] [offset] [outdir]
+# Usage: bash tools/run/run_s3_ablate.sh [seeds] [offset] [outdir]
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

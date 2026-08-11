@@ -16,8 +16,8 @@ and compares the prediction against the live run's terminal outcome `won`
 calibration deciles.  Systematic error here would corrupt the Q_win labels
 that bootstrap from V_win.
 
-Usage: check_vwin_calibration.py <tierb.csv> [trees.txt]
-       check_vwin_calibration.py --ckpt <trainer.pt> <tierb.csv>
+Usage: python3 tools/analysis/check_vwin_calibration.py <tierb.csv> [trees.txt]
+       python3 tools/analysis/check_vwin_calibration.py --ckpt <trainer.pt> <tierb.csv>
 
 Wave B truth-check (--ckpt): instead of the win trees, predict Q_win(s,a) with
 an exported strategic net checkpoint (the V5 Q_win head, sigmoided) on the same

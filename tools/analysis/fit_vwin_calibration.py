@@ -10,7 +10,7 @@ Platt, isotonic — are fit on the fit-seed rows only, then compared on the
 held-out seeds), then apply C to censored labelWon and write a corrected
 CSV (same schema).
 
-Usage: fit_vwin_calibration.py <tierb.csv> <trees.txt> <out.csv> [seed_split]
+Usage: python3 tools/analysis/fit_vwin_calibration.py <tierb.csv> <trees.txt> <out.csv> [seed_split]
 """
 import sys
 import json

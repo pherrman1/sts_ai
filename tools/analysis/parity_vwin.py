@@ -5,7 +5,7 @@ Reads the C++ `winnettest` output (rowidx,vwin per line) and re-predicts the
 same rows with the Python tree-walk; reports max/mean |diff|. The two must
 match to ~1e-4 for the Python calibration checker to be trustworthy.
 
-Usage: parity_vwin.py <tierb.csv> <trees.txt> <cpp_out.txt>
+Usage: python3 tools/analysis/parity_vwin.py <tierb.csv> <trees.txt> <cpp_out.txt>
 """
 import sys
 import numpy as np

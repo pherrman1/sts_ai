@@ -16,7 +16,7 @@ bag), r0..r127 (relic counts), pot0..pot43, and the encounter ids from
 bossId/nextEliteId/nextFight0..2. The 8 relic counters of the C_psi scalar
 block are NOT in the rich row and are set to 0 (documented approximation).
 
-Usage: python3 probe_cpsi.py <tierb.csv> <cpsi.pt> <out.npy> [device]
+Usage: python3 tools/analysis/probe_cpsi.py <tierb.csv> <cpsi.pt> <out.npy> [device]
 Writes a float16 npy of shape (nrows, 54) aligned to the CSV rows.
 """
 import os, sys

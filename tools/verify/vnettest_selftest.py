@@ -13,7 +13,7 @@ A positive control (finite model matching pyPred) must exit 0, and a feature
 value that is a finite double but overflows float (1e300 -> inf) must also be
 rejected.
 
-Usage: vnettest_selftest.py [--self-test [ONECOMBAT_BIN]]
+Usage: python3 tools/verify/vnettest_selftest.py [--self-test [ONECOMBAT_BIN]]
 """
 import os
 import subprocess

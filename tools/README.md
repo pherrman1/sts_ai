@@ -22,13 +22,19 @@ adjusted to preserve repo-root CWD after the move.
 |-----------|---------|
 | `analysis/` | Offline analysis, calibration checks, diagnostic probes |
 | `data/` | Data preprocessing, tree truncation, format conversion |
-| `export/` | Model export for native consumption |
 | `run/` | Experiment orchestration shell scripts (ablation sweeps, gates, data generation loops) |
 | `verify/` | Regression self-tests, deterministic-replay checks, parity validation |
 
 Existing tools that predate this reorganization (e.g., `tools/analyze_*.py`,
 `tools/train_*.py`, `tools/tune_*.py`) remain in the flat `tools/` directory.
 They maintain their own conventions and import paths.
+
+Model export scripts have not been moved into a `tools/export/` category.
+Root exporters (`export_combat_model.py`, `export_strategic.py`,
+`export_strategic_tok.py`, `export_win_model.py`,
+`export_ooc_checkpoint.py`) and flat `tools/` exporters
+(`tools/export_catboost_vnet.py`, `tools/export_strategic_predictions.py`)
+retain their existing locations and invocation conventions.
 
 ## Active vs reproducibility-only
 

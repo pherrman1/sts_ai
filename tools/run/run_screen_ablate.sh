@@ -14,9 +14,9 @@
 # ~10 min per arm → ~60 min total.
 #
 # Usage:
-#   ./run_screen_ablate.sh                  # 128 seeds, block 126700
-#   ./run_screen_ablate.sh 64 126700        # 64 seeds
-#   ./run_screen_ablate.sh 128 126700 build # custom output dir
+#   bash tools/run/run_screen_ablate.sh                  # 128 seeds, block 126700
+#   bash tools/run/run_screen_ablate.sh 64 126700        # 64 seeds
+#   bash tools/run/run_screen_ablate.sh 128 126700 build # custom output dir
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

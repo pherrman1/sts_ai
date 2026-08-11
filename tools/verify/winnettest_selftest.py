@@ -9,7 +9,7 @@ returns false on truncation (stream-state checks, ntrees<1, non-leaf final
 node, trailing-data probe), so the asserting winnettest mode must exit nonzero
 on every malformed fixture while a well-formed file still loads and predicts.
 
-Usage: winnettest_selftest.py [--self-test [ONECOMBAT_BIN]]
+Usage: python3 tools/verify/winnettest_selftest.py [--self-test [ONECOMBAT_BIN]]
 """
 import os
 import subprocess
