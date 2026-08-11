@@ -80,6 +80,8 @@ before broad repository search.
 | Paired analysis | `paired_analysis.py` | Parses `bestbench` header, validates HP/time | [benchmark-protocol.md](evaluation/benchmark-protocol.md) |
 | Current baselines | `docs/knowledge-base/evaluation/current-baselines.md` | Single source for headline configuration and numbers | (self) |
 | Current research | `docs/knowledge-base/evaluation/current-research.md` | Single routing source for active, parked, and closed research lines | (self) |
+| Experiment ledger | `EXPERIMENTS.md` | Index; historical evidence in `docs/experiments/ledger-*.md` | [research/README.md](research/README.md) |
+| Research graph | `docs/knowledge-base/research/` | Topic-oriented maintained research synthesis | [research/README.md](research/README.md) |
 
 ## Self-play
 

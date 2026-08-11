@@ -16,7 +16,9 @@ routing, then the [knowledge-base index](docs/knowledge-base/README.md) and
 its linked page.
 Current benchmark qualification lives only in
 [`evaluation/current-baselines.md`](docs/knowledge-base/evaluation/current-baselines.md).
-Chronological experiment evidence and decisions live in `EXPERIMENTS.md`.
+Chronological experiment evidence is indexed by `EXPERIMENTS.md` and stored in
+`docs/experiments/ledger-*.md`; topic-oriented research understanding lives in
+`docs/knowledge-base/research/`.
 Decisions made during agent sessions are logged in the
 [decision log](docs/knowledge-base/decision-log/README.md); check its recent
 entries for context before acting. Dated plans under `docs/archive/` are not
@@ -30,8 +32,10 @@ current instructions.
 3. `CMakeLists.txt` is authoritative for the current CMake target graph.
 4. `selfplay/loop.sh` is authoritative for loop and gate mechanics;
    `selfplay/config.env` and `selfplay/state.env` are snapshots.
-5. `EXPERIMENTS.md` is authoritative for recorded experimental evidence, but a
-   dated interpretation may be superseded or incompletely reproducible.
+5. `EXPERIMENTS.md` indexes chronological evidence; the shards
+   `docs/experiments/ledger-*.md` are authoritative for recorded experimental
+   evidence, but a dated interpretation may be superseded or incompletely
+   reproducible.
 6. `docs/knowledge-base/` owns stable current understanding. It explains costly
    relationships but never overrides code or tests.
 7. `README.md` is human-facing orientation, not a technical specification.
@@ -63,7 +67,9 @@ update, and a pull alone does not update deployable models whose artifact file
 is missing from the tree.
 | `build/` | Purely ignored build output and generated artifacts (no tracked files). |
 | `docs/knowledge-base/` | Maintained technical knowledge. |
-| `EXPERIMENTS.md` | Chronological experiment ledger. |
+| `docs/knowledge-base/research/` | Topic-oriented maintained research synthesis. |
+| `docs/experiments/` | Chronological experiment shards (lossless). |
+| `EXPERIMENTS.md` | Experiment ledger index; points to shards and current-truth sources. |
 
 ## Agent workflow
 
@@ -412,13 +418,15 @@ change.
 
 ## Experiment-recording rules
 
-Record benchmarked policy/model ideas in `EXPERIMENTS.md`, including negative,
-inconclusive, and invalidated results. State the date, executable mode,
-environment flags, model paths or hashes, simulation budget, ascension, seeds,
-thread count, fair/known-RNG regime, searcher, OOC configuration, metric
-formula, output schema, and artifact location. Use paired common seeds.
-Clearly separate offline metrics, combat-only results, Act-clear metrics, and
-full-run outcomes. Never silently compare fair and known-RNG results.
+Record benchmarked policy/model ideas in `EXPERIMENTS.md`'s current ledger
+shard (`docs/experiments/ledger-*.md` — see root `EXPERIMENTS.md` for which
+shard is the active append target), including negative, inconclusive, and
+invalidated results. State the date, executable mode, environment flags, model
+paths or hashes, simulation budget, ascension, seeds, thread count,
+fair/known-RNG regime, searcher, OOC configuration, metric formula, output
+schema, and artifact location. Use paired common seeds. Clearly separate
+offline metrics, combat-only results, Act-clear metrics, and full-run outcomes.
+Never silently compare fair and known-RNG results.
 
 ## Definition of done
 

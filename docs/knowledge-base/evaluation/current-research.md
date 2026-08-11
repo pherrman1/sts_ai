@@ -49,6 +49,21 @@ artifact.
   and related variants were null or negative. Reopen only with a new premise.
 - Policy-head search distillation: the old Phase F handoff is not current
   execution guidance and must be revalidated against current labels and code.
+- Searcher3 real-observation belief filtering
+  ([decision log](../decision-log/2026-08-10-s3-real-belief-filter.md),
+  [ledger-01.md](../../../docs/experiments/ledger-01.md)): the
+  exact-transition posterior filter (`STS_S3_REAL_BELIEF_FILTER`) is
+  implemented opt-in. The 32-seed diagnostic shows compatible fraction 72%
+  (was ~10%), affordable CPU, and semantic correctness, but collapse is
+  ~14%. A confirmation gate is the next justified step; rejuvenation is
+  parked behind it. No gameplay default changed.
+- Searcher3 particle-count default
+  ([decision log](../decision-log/2026-08-10-s3-particle-count-sweep.md),
+  [ledger-01.md](../../../docs/experiments/ledger-01.md)): 128 particles
+  is directionally promising (monotonic collapse reduction, positive win
+  direction) but not confirmed for promotion. 64 particles remains the
+  gameplay default; a confirmation gate on a full seed block is the next
+  justified step.
 
 ## Closed lines
 

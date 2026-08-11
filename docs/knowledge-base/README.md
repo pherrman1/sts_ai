@@ -28,8 +28,10 @@ For research status:
    routing page for active, parked, and closed research lines.
 2. [Current baselines](evaluation/current-baselines.md) — qualified executable
    configurations and benchmark references.
-3. `EXPERIMENTS.md` — chronological experiment evidence, including negative
-   and invalidated results.
+3. `EXPERIMENTS.md` — chronological experiment evidence index; historical
+   content stored in `docs/experiments/ledger-*.md`.
+4. [Research graph](research/README.md) — topic-oriented maintained scientific
+   understanding.
 
 For evaluation and operation:
 
@@ -114,4 +116,5 @@ relationship as an explicit edge so the diagram remains LLM-readable.
 - `AGENTS.md` — operating and maintenance contract.
 - `CMakeLists.txt` — target graph and language flags.
 - `apps/one_combat.cpp::main` — active mode and model dispatcher.
-- `EXPERIMENTS.md` — chronological evidence ledger.
+- `EXPERIMENTS.md` — experiment ledger index; historical evidence in `docs/experiments/ledger-*.md`.
+- `docs/knowledge-base/research/` — topic-oriented maintained research understanding.
