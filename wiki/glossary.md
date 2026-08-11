@@ -82,7 +82,11 @@ The formula MCTS uses to select which child to explore. Balances exploitation (g
 MCTS step 3: simulate the rest of the fight by playing weighted-random cards until it ends. Returns final HP (0 on loss).
 
 ### Searcher
-The combat tree-search engine variant used by the AI. The current best results use Searcher3, which samples 64 particles (draw-order shuffles), blends the combat-value GBM, and has the live-valid fix enabled. An earlier, simpler Searcher2 variant runs faster but handles hidden information with a single determinization.
+The combat tree-search engine variant used by the AI. Searcher2 is the default
+and uses a simpler known-RNG-style determinization. Searcher3 is the recommended
+fair-play research path: it samples 64 possible draw orders, blends the
+combat-value GBM, and has the live-valid fix enabled. These are different
+configurations, so their benchmark results should not be mixed.
 
 ### Selection
 MCTS step 1: descend the existing tree using PUCT to pick which child to visit at each level.

@@ -35,10 +35,12 @@ flowchart TD
 
 ### ① SELECT — picking a path
 
-Starting at the root (current game state), the AI descends the tree using a formula called **PUCT** (Predictor + Upper Confidence bounds for Trees). It balances:
+Starting at the root (current game state), the AI descends the tree using a
+formula called **PUCT** (Predictor + Upper Confidence bounds for Trees). You
+can think of it as a score that balances:
 
 - **Exploitation:** branches with good results so far
-- **Exploration:** branches that haven't been tried much
+- **Exploration:** branches that have not been tried much
 
 A **policy prior** — a separate GBM trained on hundreds of thousands of past combat turns — provides a starting bias: "Bash is probably better than Strike here." This is the "P" in PUCT. It guides exploration without locking out alternatives.
 
@@ -76,8 +78,12 @@ This covers the game's full card-selection rules — exhaust choices, Gambler's 
 
 After expanding, the AI evaluates the new leaf in two parts:
 
-1. **Rollout:** play out the rest of the fight using weighted random moves (attack weight 8, power 3, other 2, end turn/potions 1). The rollout returns the player's HP at fight end (0 if dead).
-2. **GBM prediction:** the combat-value net (V_combat) predicts the end-of-fight HP from the current state without simulating further.
+1. **Rollout:** play out the rest of the fight using weighted random moves
+   (attacks are more likely than powers, and both are more likely than simply
+   ending the turn). The rollout returns the player's HP at fight end (0 if
+   dead).
+2. **GBM prediction:** the combat-value model (V_combat) predicts the
+   end-of-fight HP from the current state without simulating further.
 
 These are blended: **α × GBM prediction + (1−α) × rollout result**. With α = 0.3, the blend is 30% prediction, 70% rollout. The GBM stabilizes noisy rollouts; the rollout keeps the estimate grounded.
 
@@ -91,7 +97,10 @@ After all simulations (1,000–3,000), the AI picks the root child with the **mo
 
 ## The value leaf: the GBM model
 
-The GBM (V_combat) that provides the prediction in step ③ is a collection of 1,000 decision trees, each asking questions like "enemy HP < 50%?" or "Demon Form active?" or "how much block?" It was trained on ~1.58 million combat states from ~87,000 simulated fights.
+The GBM (V_combat) that provides the prediction in step ③ is a collection of
+1,000 small decision trees, each asking questions like "enemy HP < 50?" or
+"Demon Form active?" or "how much block?" It was trained on about 1.58 million
+combat states from about 87,000 simulated fights.
 
 Terminal nodes (fight already won or lost) skip the blend — the result is exact, no prediction needed. The blend ratio α = 0.3 was chosen empirically; higher α values (0.5, 0.7) performed worse because the GBM is noisy and works best as a stabilizer, not a replacement for rollouts.
 
@@ -106,13 +115,23 @@ Hyperparameters (tree depth, learning rate, subsampling, regularization) were tu
 
 ## Hidden information: particle sampling
 
-The AI doesn't know the draw pile order. It handles this by running MCTS across **64 different shuffled draw orders** (particles) simultaneously. This is IS-MCTS (Information Set MCTS). Actions are evaluated by their average outcome across all particles.
+The AI does not know the draw pile order. In the fair-play Searcher3 setup, it
+handles this by running MCTS across **64 different shuffled draw orders**
+(particles) simultaneously. This is IS-MCTS (Information Set MCTS). Actions
+are evaluated by their average outcome across those possible worlds.
+
+The ordinary executable defaults to Searcher2, which uses a simpler
+known-RNG-style determinization. Therefore, do not describe every benchmark as
+fair-play just because it ran the same combat code; the mode and flags matter.
 
 A practical fix: when descending the tree, stored edges from earlier simulations might be illegal in the current particle's draw order ("play Bash" when Bash isn't in hand). The **live-valid** check re-verifies each edge against the current draw order and re-selects among valid edges. This alone added about 5 percentage points to the win rate.
 
 ### Particle configuration
 
-The current best setup disables belief conditioning and chain continuation (internal config flags `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`) — both hurt performance. The 64 particles alone provide sufficient hidden-information handling.
+The current recommended fair-play setup disables belief conditioning and chain
+continuation (internal config flags `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`) — both
+hurt performance in the recorded tests. The 64 particles provide the practical
+hidden-information approximation used by that setup.
 
 ## Forced-move contraction
 
@@ -124,6 +143,10 @@ When only one legal action exists (e.g., hand is empty, or all cards cost more t
 2. Run 1,000–3,000 simulations: select → expand → evaluate (rollout + GBM blend) → backpropagate
 3. Average across 64 draw orders to handle hidden information
 4. Pick the most-visited root action
+
+This is not perfect play. A simulation budget is finite, the rollout is noisy,
+and the value model can be wrong. More simulations help only when the extra
+search is worth the extra CPU time.
 
 ---
 

@@ -14,9 +14,15 @@ flowchart TD
 
 **Layer 1** is hand-coded: floor-value GBM for card scoring, win-chance GBM for rest decisions, heuristic path routing.
 
-**Layer 2** is a learned neural network. For each available action, it predicts a **Q-value** — an estimate of how good the run will be after taking that action. If the best action's Q-value beats the second-best by at least 1.0, the network's choice is used. Otherwise the heuristic handles it.
+**Layer 2** is an optional learned neural network. For each available action, it
+predicts a **Q-value** — an estimate of how good the run will be after taking
+that action. If the best action's Q-value beats the second-best by at least 1.0,
+the network's choice is used. Otherwise the heuristic handles it.
 
-This gating architecture keeps the heuristic as a floor — the learned model only intervenes when confident.
+This gating architecture keeps the heuristic as a floor — the learned model
+only intervenes when confident. In the ordinary default executable, the
+strategic network is not automatically enabled just because its file exists;
+the relevant opt-in flags and a successful load are required.
 
 ## What the network sees
 
@@ -42,7 +48,8 @@ The network represents cards, relics, and potions as **tokens** — small learne
 | Treasure chest | ✅ | Take relic or skip (Sapphire Key)? |
 | Boss relic | ✅ | Runic Dome or Cursed Key? |
 
-All screens use the same margin rule (≥ 1.0) and the same network.
+When the strategic network is enabled, these screens use the same margin rule
+(≥ 1.0) and the same network.
 
 ## Path choice
 
@@ -84,7 +91,12 @@ Margin: 52.3 − 45.7 = **6.6** (≥ 1.0). Network picks Offering. Same result h
 
 - The network evaluates choices one at a time — it doesn't plan sequences. A card pick is scored by "how good will the run be after adding this?" not "what synergies will this enable three floors from now?"
 - It has hundreds of thousands of parameters, trained on ~3 million action rows (~724,000 decisions). It learns broad patterns, not specific card interactions.
-- On the current combat configuration, the gating step adds about 12 percentage points to Act-3 win rate (measured on 128 paired seeds; an earlier 32-seed sample suggested a penalty, but the larger paired test reversed that finding). The gates are essential for Act 4 and show no Act-3 penalty at adequate sample sizes.
+- The effect of the gate depends on the combat searcher, models, and whether the
+  Heart is included. On the current recommended fair Searcher3 + V_combat
+  configuration, the 32-seed measurement was **31.2% Act-3-only with gates vs
+  37.5% without**, but **21.9% full Act-3+4 with gates vs 6.3% without**. These
+  are small, wide-uncertainty measurements, not a universal promise that the
+  network helps every stack. See [current baselines](../docs/knowledge-base/evaluation/current-baselines.md).
 
 ---
 

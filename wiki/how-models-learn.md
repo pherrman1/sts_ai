@@ -1,6 +1,8 @@
 # How the models learned
 
-The models were trained on data from millions of simulated fights and runs, not programmed by hand.
+The models were trained on data from simulated fights and runs. They are not
+simply a list of "good cards" written by hand, although the project still has
+hand-coded rules as fallbacks and some combat features include expert weights.
 
 ## Pipeline
 
@@ -91,7 +93,9 @@ Every export is parity-tested: the Python training code and C++ inference code m
 
 ## Step 5: Deployment
 
-Exported files live in `build/` and `selfplay/models/`. Startup messages show what loaded:
+Tracked deployable models live in `models/` and `selfplay/models/`. Disposable
+trainer checkpoints and generated scratch data live under `build/` or ignored
+directories. Startup messages show what actually loaded:
 
 ```
 [native OOC floor/win GBMs ON]
@@ -111,7 +115,10 @@ flowchart LR
     Keep --> Gen
 ```
 
-New models must pass a paired gate before replacing the deployed model. This has rejected many ideas — most changes are neutral or negative, and the loop catches them.
+New models must pass a paired gate before replacing the deployed model. This has
+rejected many ideas — most changes are neutral or negative, and the loop catches
+them. An improvement on a spreadsheet metric is not enough by itself: the model
+must help when it is placed back into the game.
 
 ---
 
