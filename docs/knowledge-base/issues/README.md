@@ -29,6 +29,7 @@ This table is the current work queue. The complete historical index follows.
 | [26](2026-08-02-issue-26-one-combat-centralization.md) | Low | `one_combat.cpp` centralizes policy and experiments |
 | [27](2026-08-02-issue-27-python-deps-unpinned.md) | Low | Python dependencies are not locked |
 | [29](2026-08-02-issue-29-python-combat-bindings.md) | Low | Python lacks card-by-card combat bindings |
+| [87](2026-08-11-issue-87-gamble-empty-hand-silent-loss.md) | High | Gambler's Brew at an empty hand ends the run as an invisible loss (hpEnd > 0, deathEnc = -1) |
 
 ## Historical index
 
