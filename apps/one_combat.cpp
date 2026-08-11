@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <filesystem>
 #include <functional>
 #include <fstream>
 #include <limits>
@@ -2664,6 +2665,155 @@ static std::string leafDiagHeaderStr() {
     return h;
 }
 
+// ── fightrep: fight-start snapshot/replay harness ──────────────────────────
+// STS_FIGHTREP_CAPTURE_DIR=<dir>: during runFullRunOOC, serialize the
+// STARTING BattleContext of every Act-3 boss fight (battleRoom==BOSS,
+// battleAct==3, i.e. floor 50) into <dir>/fight_<seed>.bin (raw
+// serializeBattleContext blob) and write <dir>/fight_<seed>.csv after the
+// fight (seed,encounter,floor,won,hpEnd,turns). One file per seed makes
+// parallel capture processes safe (no shared-file races). The captured blob
+// is exactly the pre-search fight state (all 6 RNG streams + bc.seed + visible
+// state), so "fightrep" can re-search the isolated fight at other particle
+// counts / sim budgets with the recorded fair-S3 stack and report per-cell
+// outcomes.
+static std::string g_fightRepCaptureDir;
+
+struct FightRepCaptureMeta {
+    std::uint64_t seed;
+    int encounter, floor;
+    std::uint64_t offset;
+    std::uint32_t size;
+};
+
+// Fight-start capture (runFullRunOOC, after bc.init): write the blob now; the
+// CSV row is written after the fight so it carries the capture-time outcome
+// for the replay fidelity gate.
+static void fightRepCaptureStart(const BattleContext &bc, std::uint64_t seed) {
+    if (g_fightRepCaptureDir.empty()) return;
+    const std::vector<std::uint8_t> blob = sts::serializeBattleContext(bc);
+    std::ofstream bin(g_fightRepCaptureDir + "/fight_" + std::to_string(seed) + ".bin",
+                      std::ios::binary);
+    if (!bin) { std::cerr << "[fightrep] cannot open " << g_fightRepCaptureDir
+                          << "/fight_" << seed << ".bin\n"; return; }
+    bin.write((const char *)blob.data(), (std::streamsize)blob.size());
+}
+
+// Fight-end (runFullRunOOC, after playoutBattle): write the index row with the
+// capture-time outcome (won,hpEnd,turns) so the replay fidelity gate can
+// compare replay outcomes against what the full run actually did.
+static void fightRepCaptureEnd(const BattleContext &bc, std::uint64_t seed) {
+    if (g_fightRepCaptureDir.empty()) return;
+    std::ofstream csv(g_fightRepCaptureDir + "/fight_" + std::to_string(seed) + ".csv");
+    if (!csv) { std::cerr << "[fightrep] cannot open " << g_fightRepCaptureDir
+                          << "/fight_" << seed << ".csv\n"; return; }
+    csv << "seed,encounter,floor,won,hpEnd,turns\n"
+        << seed << ',' << (int)bc.encounter << ',' << bc.floorNum << ','
+        << (bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0) << ','
+        << bc.player.curHp << ',' << bc.turn << '\n';
+}
+
+// Replay captured Act-3 boss fight-start snapshots across a (particles x sims)
+// grid with the recorded fair-S3 stack. For each captured fight and each cell
+// it deserializes the fight-start BattleContext, sets the particle count and
+// the per-decision sim budget, and plays the isolated fight out. Output rows:
+// seed,encounter,floor,particles,sims,won,hpEnd,turns. The grid is bounded by
+// nFights x |particles| x |sims|; the caller passes it through seed_guard.
+static void fightRepReplay(const std::string &captureDir, const std::string &outCsv,
+                           const std::vector<int> &particles, const std::vector<int> &sims,
+                           int nFights) {
+    // ── Discover captured fights (fight_<seed>.csv + .bin) ─────────────
+    std::vector<FightRepCaptureMeta> fights;
+    std::error_code ec;
+    for (std::filesystem::directory_iterator it(captureDir, ec), end;
+         !ec && it != end; it.increment(ec)) {
+        const std::string fn = it->path().filename().string();
+        if (fn.size() < 11 || fn.compare(0, 6, "fight_") != 0
+            || fn.compare(fn.size() - 4, 4, ".csv") != 0)
+            continue;
+        std::uint64_t seed = 0;
+        try { seed = std::stoull(fn.substr(6, fn.size() - 10)); } catch (...) { continue; }
+        std::ifstream idx(it->path());
+        if (!idx) continue;
+        std::string line;
+        std::getline(idx, line);   // header
+        if (!std::getline(idx, line)) continue;
+        std::stringstream ss(line);
+        std::string tok;
+        std::vector<std::string> f;
+        while (std::getline(ss, tok, ',')) f.push_back(tok);
+        if (f.size() < 6) continue;
+        try {
+            fights.push_back({seed, std::stoi(f[1]), std::stoi(f[2]), 0, 0});
+        } catch (...) { continue; }
+    }
+    std::sort(fights.begin(), fights.end(),
+              [](const FightRepCaptureMeta &a, const FightRepCaptureMeta &b) {
+                  return a.seed < b.seed;
+              });
+    if (fights.empty()) {
+        std::cerr << "fightrep: no fight_<seed>.csv captures found in " << captureDir << "\n";
+        return;
+    }
+    const int n = std::min(nFights, (int)fights.size());
+    std::cout << "fightrep: replaying " << n << " captured boss fights x "
+              << particles.size() << " particle counts x " << sims.size()
+              << " sim budgets = " << (long long)n * particles.size() * sims.size()
+              << " cells -> " << outCsv << "\n";
+
+    // ── Forced recorded fair-S3 regime (same as frontiergen/leafrelabel) ──
+    search::g_fairPlay = true;
+    search::g_useSearcher3 = true;
+    search::g_s3Belief = false;
+    search::g_s3Chain = false;
+    search::g_liveValid = true;
+    std::cout << "[fightrep forced: fair-play / determinized MCTS + Searcher3 engine ON, "
+                 "STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_LIVE_VALID=1]\n";
+
+    std::ofstream out(outCsv);
+    if (!out) { std::cerr << "fightrep: cannot open " << outCsv << "\n"; return; }
+    out << "seed,encounter,floor,particles,sims,won,hpEnd,turns\n";
+
+    auto t0 = std::chrono::steady_clock::now();
+    // Outer loop over cells: g_s3Particles is a process global read at each
+    // searcher construction, so set it once per cell on the main thread and
+    // parallelize only over fights within a cell.
+    for (int p : particles) {
+        search::g_s3Particles = p;
+        for (int s : sims) {
+            std::vector<std::string> rows((std::size_t)n);
+            #pragma omp parallel for schedule(dynamic)
+            for (int i = 0; i < n; ++i) {
+                const FightRepCaptureMeta &m = fights[i];
+                std::ifstream bin(captureDir + "/fight_" + std::to_string(m.seed) + ".bin",
+                                  std::ios::binary);
+                std::vector<std::uint8_t> blob((std::istreambuf_iterator<char>(bin)),
+                                               std::istreambuf_iterator<char>());
+                BattleContext bc = sts::deserializeBattleContext(blob.data(), blob.size());
+                if (bc.outcome != Outcome::UNDECIDED) {   // shouldn't happen: snapshots are fight-start
+                    rows[i] = std::to_string(m.seed) + ',' + std::to_string(m.encounter) + ','
+                            + std::to_string(m.floor) + ',' + std::to_string(p) + ','
+                            + std::to_string(s) + ",skip,0,0\n";
+                    continue;
+                }
+                search::ScumSearchAgent2 agent;
+                agent.simulationCountBase = s;
+                agent.rng = std::default_random_engine(m.seed);
+                agent.playoutBattle(bc);
+                const int won = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
+                rows[i] = std::to_string(m.seed) + ',' + std::to_string((int)bc.encounter) + ','
+                        + std::to_string(bc.floorNum) + ',' + std::to_string(p) + ','
+                        + std::to_string(s) + ',' + std::to_string(won) + ','
+                        + std::to_string(bc.player.curHp) + ',' + std::to_string(bc.turn) + '\n';
+            }
+            for (const auto &r : rows) out << r;
+            out.flush();
+        }
+    }
+    const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::cout << "fightrep done: " << (long long)n * particles.size() * sims.size()
+              << " cells in " << wall << "s\n";
+}
+
 static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV) {
     vDisconnect();
     t_oocStrategicTraceRows.clear();
@@ -2700,6 +2850,8 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             if (search::g_useSearcher3 && g_termWin && g_winNet.ok)
                 termWinArmForBattle(gc);   // terminal-leaf run-value bonus (cross-combat setup)
             BattleContext bc{}; bc.init(gc);
+            if (!g_fightRepCaptureDir.empty() && battleAct == 3 && battleRoom == Room::BOSS)
+                fightRepCaptureStart(bc, seed);   // fightrep: fight-start snapshot (floor-50 boss)
             if (g_sdiagActive) {   // searchdiag: per-fight run context
                 g_sdiagCtx = SdiagRunCtx{};
                 g_sdiagCtx.seed = seed;
@@ -2730,6 +2882,8 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
                 t_vq.rng.seed(seed * 6364136223846793005ULL + (std::uint64_t)fightsTotal);
             }
             agent.playoutBattle(bc);
+            if (!g_fightRepCaptureDir.empty() && battleAct == 3 && battleRoom == Room::BOSS)
+                fightRepCaptureEnd(bc, seed);   // fightrep: index row + capture-time outcome
             if (g_sdiagActive) sdiagFightRow(bc);   // searchdiag: fight summary
             if (g_leafdiagActive) leafDiagFightEnd(bc);   // leafdiag: label this fight's sampled rows
             if (t_vq.active) vnetQueryLogFlush();         // VNet query log: flush this fight's rows
@@ -10239,6 +10393,11 @@ int main(int argc, char **argv) {
         if (g_stopAfterAct > 0)
             std::cout << "[benchmark stops after Act " << g_stopAfterAct << " boss]\n";
     }
+    if (const char *d = std::getenv("STS_FIGHTREP_CAPTURE_DIR")) {   // fightrep: Act-3 boss fight-start snapshots
+        g_fightRepCaptureDir = d;
+        std::cout << "[fightrep capture dir = " << d
+                  << " (serialize every Act-3 boss fight-start)]\n";
+    }
     if (const char *d = std::getenv("STS_BOSS_V")) {          // boss-survival V blended into near-boss picks
         g_bossV = std::atoi(d) != 0;
         if (const char *w = std::getenv("STS_BOSS_V_W"))       g_bossVW        = std::atof(w);
@@ -11501,6 +11660,40 @@ int main(int argc, char **argv) {
                          "STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_LIVE_VALID=1]\n";
             leafRelabel(inCsv, inBin, leafOut, siblingOut, highBudgetSims, nLeaves,
                         particles, siblingBudget);
+        }
+
+    } else if (mode == "fightrep") {  // isolated replay of captured Act-3 boss fights (fight-start snapshots)
+        if (argc < 5) {
+            std::cerr << "usage: one_combat fightrep CAPTURE_DIR OUTFILE_CSV PARTICLES SIMS [NFIGHTS]\n"
+                         "  CAPTURE_DIR must contain fight_<seed>.csv + fight_<seed>.bin from a run\n"
+                         "  with STS_FIGHTREP_CAPTURE_DIR=<CAPTURE_DIR> (runFullRunOOC serializes\n"
+                         "  every Act-3 boss fight-start). PARTICLES and SIMS are comma-separated\n"
+                         "  lists (e.g. \"64,128\" \"500,1000\"). NFIGHTS (default all) bounds the\n"
+                         "  fights. Replays each isolated fight with the recorded fair-S3 stack and\n"
+                         "  writes seed,encounter,floor,particles,sims,won,hpEnd,turns. Keep\n"
+                         "  nFights*|particles|*|sims| within the automated seed ceiling via seed_guard.\n";
+            return 2;
+        }
+        {
+            std::string captureDir = argv[2];
+            std::string outCsv = argv[3];
+            std::vector<int> particles, sims;
+            auto parseList = [](const std::string &s) {
+                std::vector<int> v;
+                std::stringstream ss(s);
+                std::string tok;
+                while (std::getline(ss, tok, ','))
+                    if (!tok.empty()) v.push_back(std::stoi(tok));
+                return v;
+            };
+            particles = parseList(argv[4]);
+            sims = parseList(argv[5]);
+            if (particles.empty() || sims.empty()) {
+                std::cerr << "fightrep: PARTICLES and SIMS must be non-empty comma lists\n";
+                return 2;
+            }
+            int nFights = argc > 6 ? std::stoi(argv[6]) : 1 << 30;
+            fightRepReplay(captureDir, outCsv, particles, sims, nFights);
         }
 
     } else if (mode == "strategicgen") {  // Phase 5: one row per OOC decision, full rich state

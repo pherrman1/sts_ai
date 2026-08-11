@@ -13,7 +13,8 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["datagen2"]=2            ["datagen3"]=2          ["distgen"]=2
   ["draftbench"]=3          ["fairgen"]=2           ["fightgen"]=2
   ["frontiergen"]=2         ["leafdiag"]=2          ["leafref"]=5
-  ["oocnextgen"]=2          ["pathbench"]=3         ["pathcfgen"]=2
+  ["fightrep"]=6            ["oocnextgen"]=2        ["pathbench"]=3
+  ["pathcfgen"]=2
   ["policygen"]=2           ["restbench"]=3         ["rollouttrace"]=4
   ["runbench"]=3            ["searchdiag"]=2        ["shopbench"]=3
   ["skipbench"]=3           ["strategicgen"]=2      ["strategicgen2"]=2
@@ -39,7 +40,26 @@ check_oversized() {
     if [ "$exe" = "one_combat" ]; then
       local mode="${argv[$((i + 1))]:-}"
       local idx="${ONE_COMBAT_SEED_INDEX[$mode]:-}"
-      if [ -n "$idx" ]; then
+      if [ "$mode" = "fightrep" ]; then
+        # Grid replay: seed-equivalent count = NFIGHTS x |PARTICLES| x |SIMS|.
+        # argv: one_combat fightrep CAPTURE_DIR OUTFILE PARTICLES SIMS [NFIGHTS]
+        local nf="${argv[$((i + 6))]:-}"
+        [[ "$nf" =~ ^[0-9]+$ ]] || nf=0
+        local cells=0
+        if [ "$nf" -gt 0 ]; then
+          local pc="${argv[$((i + 4))]:-}" sc="${argv[$((i + 5))]:-}"
+          local np=0 ns=0 tok
+          IFS=',' read -ra parts <<< "$pc"
+          for tok in "${parts[@]}"; do [ -n "$tok" ] && np=$((np + 1)); done
+          IFS=',' read -ra parts <<< "$sc"
+          for tok in "${parts[@]}"; do [ -n "$tok" ] && ns=$((ns + 1)); done
+          cells=$((nf * np * ns))
+        fi
+        if [ "$cells" -gt "$MAX_AUTOMATED_SEEDS" ]; then
+          echo "SEED_GUARD: one_combat fightrep requests $cells replay cells (${nf}x${np}x${ns}); automated maximum is $MAX_AUTOMATED_SEEDS" >&2
+          exit 1
+        fi
+      elif [ -n "$idx" ]; then
         local seeds="${argv[$((i + idx))]:-}"
         if [[ "$seeds" =~ ^[0-9]+$ ]] && [ "$seeds" -gt "$MAX_AUTOMATED_SEEDS" ]; then
           echo "SEED_GUARD: $exe $mode requests $seeds seeds; automated maximum is $MAX_AUTOMATED_SEEDS" >&2
