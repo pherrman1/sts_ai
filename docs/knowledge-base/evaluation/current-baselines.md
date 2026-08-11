@@ -139,8 +139,8 @@ artifact set behind §66i.
   nextFight0/1/2, remElites, remFights, monOffset, eliteOffset) with no
   filtering. It is not in the recommended configuration (which uses V4 token-net
   gates via `STS_OOC_STRATEGIC_TOK_NN`) but remains a git-tracked artifact and
-  is used by several experimental ablation scripts (`run_screen_ablate.sh`,
-  `run_mapgate_ab.sh`, `run_distgate_ab.sh`).
+  is used by several experimental ablation scripts (`tools/run/run_screen_ablate.sh`,
+  `tools/run/run_mapgate_ab.sh`, `tools/run/run_distgate_ab.sh`).
 - The PVNet sweep omits a recorded seed range and exact full command, and its
   “heuristic OOC baseline” label is not a reproducible policy definition.
   The 2026-08-02 re-check (§72) on the recorded block did not reproduce the

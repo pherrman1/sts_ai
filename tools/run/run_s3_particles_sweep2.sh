@@ -9,7 +9,7 @@
 #
 # Usage: ./run_s3_particles_sweep2.sh [outdir]
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/../.."
 
 OUTDIR=${1:-build}
 BIN=${ONE_COMBAT_BIN:-./build/one_combat}

@@ -148,7 +148,7 @@ margin rule** (`regretGateTail`). Implementation is shared via
 `regretGateChoose`/`regretGateTail` (defined after `stratFingerprint`);
 policies keep the margin path byte-identical when the flag is off (verified:
 margin-mode runs reproduce the pre-change binary's results on the recorded
-block). Q-consistency: `check_vwin_calibration.py --ckpt <trainer.pt> <csv>`
+block). Q-consistency: `tools/analysis/check_vwin_calibration.py --ckpt <trainer.pt> <csv>`
 adds a Wave-B truth-check mode that predicts the V5 Q_win head (torch
 checkpoint, export parity-checked to ~1e-5 logit) on terminal
 (`labelBootstrap==0`, chosen) rows instead of the win trees — run with the

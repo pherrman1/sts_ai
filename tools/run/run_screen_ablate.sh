@@ -18,7 +18,7 @@
 #   ./run_screen_ablate.sh 64 126700        # 64 seeds
 #   ./run_screen_ablate.sh 128 126700 build # custom output dir
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/../.."
 
 NSEEDS=${1:-128}
 SEED_OFF=${2:-126700}

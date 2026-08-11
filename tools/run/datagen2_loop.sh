@@ -17,7 +17,7 @@ SIMS=${SIMS:-1000}
 if ! python3 -c "import socket,sys; s=socket.socket(); s.settimeout(1);
 sys.exit(0 if s.connect_ex(('127.0.0.1',5555))==0 else 1)" 2>/dev/null; then
     echo "=== starting v_server.py $(date) ===" >>"$LOG"
-    ( cd "$(dirname "$0")" && python3 v_server.py >>"$LOG" 2>&1 ) &
+    ( cd "$(dirname "$0")/../.." && python3 v_server.py >>"$LOG" 2>&1 ) &
     for _ in $(seq 1 20); do
         python3 -c "import socket,sys; s=socket.socket(); s.settimeout(1);
 sys.exit(0 if s.connect_ex(('127.0.0.1',5555))==0 else 1)" 2>/dev/null && break

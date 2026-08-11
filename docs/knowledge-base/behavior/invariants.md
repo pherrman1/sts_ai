@@ -109,7 +109,7 @@ Operational assumptions that are not enforced by types or tests:
   `small-test isbattleover`); the remaining invariants are review-enforced.
 - `OocCheckpointNet::load` and `OocStrategicNet::load` check every payload read;
   truncated files fail load and the net is not used (issue 08, closed).
-- `check_replay.py` probes repeated-seed CSV equality, but fair multi-thread
+- `tools/verify/check_replay.py` probes repeated-seed CSV equality, but fair multi-thread
   replay is not bit-identical across invocations and no automated guarantee
   exists.
 - The self-play meta arm now disables native OOC for meta gates

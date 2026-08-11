@@ -109,7 +109,7 @@ env plus server port liveness, not a per-decision query log. See
   not an exact reproduction of §66i.
 - Multi-thread fair-play replay is bit-identical on the current code for
   tested configurations (gcc 13, `-O3`, Linux/WSL; `EXPERIMENTS.md` §69), and
-  `check_replay.py` probes repeated-seed CSV equality; other compilers,
+  `tools/verify/check_replay.py` probes repeated-seed CSV equality; other compilers,
   sanitizer builds, and machines are unverified.
 - `paired_analysis.py` parses by header and asserts the 10-column `bestbench`
   schema, so producer/consumer drift fails loudly; the assertion covers header
@@ -128,8 +128,8 @@ env plus server port liveness, not a per-decision query log. See
 - CTest registers parse/syntax checks (`ctest --test-dir build`); the `test`
   dispatcher holds targeted Searcher3 and terminal-flag checks, and
   `small-test isbattleover` covers the terminal-field derivation. Deeper
-  integration invariants remain review-enforced. `vnettest_selftest.py
-  --self-test` (CTest `vnettest_selftest`) regression-checks the asserting
+integration invariants remain review-enforced. `tools/verify/vnettest_selftest.py
+--self-test` (CTest `vnettest_selftest`) regression-checks the asserting
   parity path: non-finite native predictions, float-overflow features, and
   out-of-tolerance evidence must exit nonzero, clean parity evidence exit 0.
 - `parity_test.py` fails loudly when its binary or checkpoint is missing, but

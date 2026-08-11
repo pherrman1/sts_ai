@@ -23,9 +23,9 @@ artifacts below are git-ignored — they must be transferred manually.
   against `ref_m1.csv`) and V5. Laptop CPU retrain on the BIASED labels
   produced `selfplay/models/ooc_strategic_qwin.native` (V5, best epoch 24).
 - **Wave A2 (V_win recalibration, §95):** parity check first — new
-  `winnettest` mode + `parity_vwin.py` proved the Python tree-walk matches
+  `winnettest` mode + `tools/analysis/parity_vwin.py` proved the Python tree-walk matches
   C++ `WinNet` bit-identically (max |diff| 0.0 over 200 rows). Then
-  `fit_vwin_calibration.py` fit Platt + isotonic maps on 216,625 terminal
+  `tools/analysis/fit_vwin_calibration.py` fit Platt + isotonic maps on 216,625 terminal
   rows (seed-held-out); isotonic selected (val Brier 0.1310 vs raw 0.1512,
   max decile 0.24 → 0.08) and applied to the 684,291 censored rows →
   `build/strategic_qwin_cal.csv` (censored labelWon mean 0.4547 → 0.3369).
@@ -74,7 +74,7 @@ python export_strategic.py selfplay/models/ooc_strategic_qwin_cal.pt \
 A/B (both on the same held-out split, from the two `_metrics.json`):
 - q_brier / q_cal_max / q_mae (expect the corrected artifact to be better
   calibrated, possibly slightly worse label-fit since labels are now honest)
-- **the truth-check:** re-run `check_vwin_calibration.py`'s terminal-row
+- **the truth-check:** re-run `tools/analysis/check_vwin_calibration.py`'s terminal-row
   comparison against **Q_win** (not V_win) before/after — this directly
   tests whether the bootstrap bias propagated into the head. (Small script
   change: predict with the exported net instead of the trees.)

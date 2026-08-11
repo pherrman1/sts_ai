@@ -24,7 +24,7 @@
 #
 # Usage: ./run_s3_ablate.sh [seeds] [offset] [outdir]
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/../.."
 
 NSEEDS=${1:-128}
 SEED_OFF=${2:-126700}

@@ -25,7 +25,7 @@ check `find_package(Python)` results to know whether `slaythespire` exists.
 
 There is no reusable `sts`/`libsts.a` target. CTest is registered:
 `ctest --test-dir build` runs parse/syntax checks (`bash -n`, `py_compile`) and
-`check_replay.py --self-test`; run `ctest -N` to list them. The `test` target
+`ctest` checks including `tools/verify/check_replay.py --self-test`; run `ctest -N` to list them. The `test` target
 is named `unit-test` in CMake with `OUTPUT_NAME test` (CTest reserves the name
 `test`); `apps/test.cpp::main` is a manual command dispatcher that with no
 arguments prints `incorrect arguments` and exits successfully, and with a
@@ -164,7 +164,7 @@ reaching it (verified 2026-08-05):
 - `apps/one_combat.cpp::main`, `runTraceRun`, `bestBench`
 - `apps/test.cpp::main`
 - `apps/parity_test.cpp::main`; `parity_test.py`
-- `check_replay.py`
+- `tools/verify/check_replay.py`
 - `selfplay/loop.sh::run_gate_batch`
 - `src/sim/search/CombatPVNet.cpp` BLAS initialization
 - `src/sim/search/CombatDistValueNet.cpp` BLAS initialization

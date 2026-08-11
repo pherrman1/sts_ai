@@ -51,10 +51,10 @@ base in the same change. Do not invent rationale; use **Inference**,
 | `include/`, `src/` | C++ simulator, combat engine, agents, search, native inference. |
 | `apps/` | Executables; `one_combat.cpp` is the research integration driver. |
 | `bindings/` | Run-level pybind11 API, not card-by-card combat control. |
-| root `train_*.py`, `export_*.py`, `v_server.py` | Training, export, optional Python inference. |
+| root `train_*.py`, `export_*.py`, `v_server.py`, and strategic/paired modules | Training, export, shared modules, optional Python inference. Several dependency-sensitive clusters intentionally remain at root (see `tools/README.md`). |
 | `models/` | Git-tracked deployed model artifacts in native text/JSON format (floor/win/policy compact trees, XGBoost JSON, PVNet); NOT `.native` and not self-play loop artifacts. |
 | `selfplay/` | Generation, retraining, paired gates, snapshots, local state. |
-| `tools/` | Inspection, safety, and diagnostic utilities. |
+| `tools/` | Organized research tooling (analysis, data, export, run, verify) plus legacy utilities; see `tools/README.md`. |
 | `.opencode/`, `opencode.json` | OpenCode agent configuration and prompts. |
 
 Deployable native exports under `selfplay/models/*.native` and deployed

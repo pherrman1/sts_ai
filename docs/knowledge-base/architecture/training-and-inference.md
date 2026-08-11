@@ -255,7 +255,7 @@ unless STS_PVNET_VALUE_ONLY=1.
   compare as in-tolerance), rejects non-finite or negative tolerance arguments,
   and returns nonzero when max|diff| exceeds the absolute tolerance argument
   (default 0.001) (`apps/one_combat.cpp::main`). Regression coverage:
-  `vnettest_selftest.py --self-test` (CTest `vnettest_selftest`) asserts that a
+  `tools/verify/vnettest_selftest.py --self-test` (CTest `vnettest_selftest`) asserts that a
   non-finite native prediction (MLP whose finite tokens overflow float in the
   hidden layer), a float-overflow feature, and out-of-tolerance evidence all
   exit nonzero while clean parity evidence exits 0.

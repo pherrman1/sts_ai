@@ -147,7 +147,7 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
   (1/8/12) on this machine (`EXPERIMENTS.md` §69). **Inference:** the
   historical cause was stale `BattleContext` state under `schedule(dynamic)`
   reuse, fixed in `da8c902`'s `BattleContext::init` reset block.
-  `check_replay.py` probes repeated-seed CSV equality; `sec` legitimately
+  `tools/verify/check_replay.py` probes repeated-seed CSV equality; `sec` legitimately
   differs between runs.
 - The self-play baseline cache includes the fixed native floor/win artifacts in
   its key and treats deterministic outcomes as an assumption, not a proof
