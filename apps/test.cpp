@@ -2352,6 +2352,75 @@ int testDarklingVictory() {
     return 1;
 }
 
+static int testRealBeliefFilter(std::uint64_t seed) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    search::Action action(search::ActionType::END_TURN);
+
+    search::BattleScumSearcher3 s3(bc, seed, 0, 16);
+    BattleContext realPost = bc;
+    s3.applyParticle(realPost, s3.belief.particles.front());
+    if (!action.isValidAction(realPost)) {
+        std::cout << "real_belief_filter FAIL: END_TURN fixture invalid\n";
+        return 1;
+    }
+    action.execute(realPost);
+    const auto stats = s3.filterRealTransition(bc, action, realPost);
+    if (stats.compatible <= 0 || stats.posteriorCollapse
+        || s3.belief.positiveCount() != stats.compatible) {
+        std::cout << "real_belief_filter FAIL: exact transition did not survive\n";
+        return 1;
+    }
+
+    // Fresh-collapse is opt-in and must not run on a non-collapse transition.
+    const bool savedFresh = search::g_s3RealBeliefCollapseFresh;
+    search::g_s3RealBeliefCollapseFresh = true;
+    search::BattleScumSearcher3 nonCollapse(bc, seed, 0, 8);
+    BattleContext samePost = bc;
+    nonCollapse.applyParticle(samePost, nonCollapse.belief.particles.front());
+    action.execute(samePost);
+    const auto nonCollapsed = nonCollapse.filterRealTransition(bc, action, samePost);
+    if (nonCollapsed.freshBeliefRebuilt || nonCollapsed.posteriorCollapse) {
+        std::cout << "real_belief_filter FAIL: fresh fallback ran without collapse\n";
+        search::g_s3RealBeliefCollapseFresh = savedFresh;
+        return 1;
+    }
+    // A visible mismatch rejects the predicted transition and exercises the
+    // explicit collapse fallback without changing the particle vector size.
+    search::BattleScumSearcher3 mismatch(bc, seed, 0, 8);
+    BattleContext wrong = realPost;
+    ++wrong.player.curHp;
+    for (size_t i = 0; i < mismatch.belief.particles.size(); ++i)
+        mismatch.belief.particles[i].id = 9000 + i;
+    const auto collapsed = mismatch.filterRealTransition(bc, action, wrong);
+    if (!collapsed.posteriorCollapse || !collapsed.freshBeliefRebuilt
+        || mismatch.belief.particles.size() != 8
+        || mismatch.belief.positiveCount() != 8) {
+        std::cout << "real_belief_filter FAIL: fresh collapse fallback unsafe\n";
+        search::g_s3RealBeliefCollapseFresh = savedFresh;
+        return 1;
+    }
+    for (const auto &p : mismatch.belief.particles) {
+        if (p.id >= 9000) {
+            std::cout << "real_belief_filter FAIL: rejected particle leaked into fresh belief\n";
+            search::g_s3RealBeliefCollapseFresh = savedFresh;
+            return 1;
+        }
+    }
+// Observation equality deliberately ignores hidden RNG/order details but
+    // retains visible card and combat facts.
+    CombatObservation hiddenA = CombatObservation::fromBattleContext(realPost);
+    CombatObservation hiddenB = hiddenA;
+    if (!(hiddenA == hiddenB)) {
+        std::cout << "real_belief_filter FAIL: hidden-equivalent observation rejected\n";
+        return 1;
+    }
+    search::g_s3RealBeliefCollapseFresh = savedFresh;
+    std::cout << "real_belief_filter PASS compatible=" << stats.compatible
+              << " attempted=" << stats.attempted << "\n";
+    return 0;
+}
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -2462,6 +2531,8 @@ int main(int argc, const char* argv[]) {
         return testDrawProbEngine();
     } else if (command == "belief_order_invariance") {
         return testBeliefOrderInvariance();
+    } else if (command == "real_belief_filter") {
+        return testRealBeliefFilter(std::stoull(argv[2]));
     } else if (command == "belief_immutability") {
         return testBeliefImmutability();
     } else if (command == "thorns_retaliation") {

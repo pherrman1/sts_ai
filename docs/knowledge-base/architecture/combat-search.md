@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-08-09 against the current working tree (per-encounter combat value specialization implemented opt-in: `STS_VNET_PER_ENCOUNTER` dir overlay + `combat_mlp_meta_v1` in-file deltas with `predict(bc)` dispatch, `vnettest --encounter` parity mode — gate pending; covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending; experimental zero-mean ranking correction `STS_VNET_RANK_CORR` implemented opt-in (`tools/train_rank_correction.py`, additive on the vnet/PVNet leaf + fair-path search-complete clamp, off by default, byte-identical when unset).
+Last verified: 2026-08-10 against the current working tree (per-encounter combat value specialization implemented opt-in: `STS_VNET_PER_ENCOUNTER` dir overlay + `combat_mlp_meta_v1` in-file deltas with `predict(bc)` dispatch, `vnettest --encounter` parity mode — gate pending; covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default unchanged, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending; experimental zero-mean ranking correction `STS_VNET_RANK_CORR` implemented opt-in (`tools/train_rank_correction.py`, additive on the vnet/PVNet leaf + fair-path search-complete clamp, off by default, byte-identical when unset).
 
 ## Purpose
 
@@ -955,16 +955,22 @@ selection also requires `!g_pvnetValueOnly`, matching S2.
   It reproduces on a pristine build for seeds 0–7 at act-1 floor 13; the
   `STS_FAIR=1` path (the recorded baseline regime) is unaffected. Not yet
   root-caused; see decision log `2026-08-06-searchdiag-rollout-usage.md`.
-- Searcher3 belief conditioning is conservative: `Belief::update` zero-weights
-  particles whose draw order contradicts the observed pile, and `Belief::sample`
-  falls back to uniform when all weights are equal or total zero, so a reshuffle
-  or insert that contradicts every particle resets the belief
-  (`src/sim/search/CombatObservation.cpp::Belief::update`, `sample`). Since
-  issue #58 (2026-08-10) the in-search `belief.update` calls are off by
-  default (`g_s3InternalBeliefUpdate = false`), so this collapse path no
-  longer fires inside `step()`; the fair path carries the belief across
-  decisions (advanceRoot + reuse gate) with no boundary reweighting, so a
-  carried belief can still go stale between decisions.
+- Searcher3 belief conditioning has two separate paths. The historical
+  `Belief::update` predicate compares an old draw order to a visible pile prefix;
+  it remains available for the existing non-fair path when the new experimental
+  filter is off, but it is not an exact real-transition posterior test. Since
+  issue #58 (2026-08-10), in-search `belief.update` calls are off by default
+  (`g_s3InternalBeliefUpdate = false`), so hypothetical MCTS observations never
+  condition the root belief. The opt-in `STS_S3_REAL_BELIEF_FILTER=1` path at
+  `ScumSearchAgent2` real boundaries copies the pre-action state, installs each
+  particle, executes the real action through `Action::execute`/`executeActions`,
+  and compares the predicted `CombatObservation` to the real post-state. It
+  retains compatible particles with equal normalized weights, reports explicit
+  propagation failures, and restores a uniform prior on zero-survivor collapse.
+  It does not rejuvenate or duplicate particles. `HiddenBattleState` still lacks
+  RNG counters, so post-transition RNG signatures remain seed-based.
+- `STS_S3_REAL_BELIEF_COLLAPSE_FRESH=1` is an opt-in zero-survivor fallback: it discards the old particles and calls `Belief::initial` on the current real state. Collapse diagnostics record predicted-observation concentration and a capped 64/128/256/512 fresh-prior sensitivity probe; this fallback is not a default and is not rejuvenation.
+- Each BattleScumSearcher3::step samples one belief particle with replacement via Belief::sampleIndex; equal-weight beliefs are uniform. STS_S3_BELIEF_AUDIT=1 can record per-search particle coverage, sampling concentration, belief initialization CPU, filter CPU, and search CPU. Increasing particle count therefore increases belief construction/filter work, not the number of worlds replayed by each MCTS simulation.
 - `HiddenBattleState::drawPileOrder` is installed by `applyParticle` only when
   the copied pile's size and card multiset match the particle; after tree reuse
   stale particles fall back to a searcher-RNG shuffle

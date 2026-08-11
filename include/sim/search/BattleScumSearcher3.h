@@ -15,6 +15,7 @@
 #include <optional>
 #include <random>
 #include <vector>
+#include <string>
 #include <unordered_map>
 #include <cstdint>
 #include <limits>
@@ -42,6 +43,47 @@ namespace sts::search {
         double blendedEval = std::numeric_limits<double>::quiet_NaN();    // evaluation backpropagated to the tree
         int rolloutSteps = 0;                  // multi-rollout actions executed (0 at the depth cap)
         int frontierType = 0;                  // 0=unexpanded leaf, 1=illegal-fallback, 2=depth-cap
+    };
+
+    struct RealBeliefFilterStats {
+        int previousParticles = 0;
+        int attempted = 0;
+        int propagationFailures = 0;
+        int actionIllegal = 0;
+        int compatible = 0;
+        int incompatible = 0;
+        bool posteriorCollapse = false;
+        int fallbackShuffles = 0;
+        bool reshuffleObserved = false;
+        bool comparisonExact = false;
+        double cpuMs = 0.0;
+        std::uint32_t actionBits = 0;
+        int actionType = -1;
+        std::uint64_t realObservationHash = 0;
+        std::uint64_t dominantPredictedObservationHash = 0;
+        int distinctPredictedObservations = 0;
+        int dominantPredictedObservationCount = 0;
+        double predictedObservationEntropy = 0.0;
+        std::string collapseCategory;
+        bool freshBeliefRebuilt = false;
+        bool sensitivityProbed = false;
+        int sensitivity64 = -1;
+        int sensitivity128 = -1;
+        int sensitivity256 = -1;
+        int sensitivity512 = -1;
+        double sensitivityCpuMs = 0.0;
+        int configuredParticleCount = 0;
+        int simulations = 0;
+        int distinctParticlesSampled = 0;
+        int neverSampledParticles = 0;
+        int minSamplesPerParticle = 0;
+        double meanSamplesPerSampledParticle = 0.0;
+        double medianSamplesPerSampledParticle = 0.0;
+        int maxSamplesPerParticle = 0;
+        double sampledParticleFraction = 0.0;
+        double particleUsageEntropy = 0.0;
+        double beliefInitializationCpuMs = 0.0;
+        double searchCpuMs = 0.0;
     };
 
     struct BattleScumSearcher3 {
@@ -129,6 +171,11 @@ namespace sts::search {
         // CRN
         std::vector<HiddenBattleState> crnParticles;
         int crnParticleCount = 128;
+        // Per-search particle utilization; diagnostic counters only.
+        std::vector<int> particleSampleCounts;
+        double beliefInitializationCpuMs = 0.0;
+        double lastSearchCpuMs = 0.0;
+        int lastSearchSimulations = 0;
         // CRN warm start fires at most once per searcher and never after the
         // root tree was carried over by advanceRoot: particles are prepared
         // from the initial draw pile and Q priors would be stale/overwritten.
@@ -238,8 +285,12 @@ namespace sts::search {
         bool advanceRoot(const Action &action, const BattleContext &newRootState);
         void step();
         void reseed();
+        void resetParticleUsage();
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
+        RealBeliefFilterStats filterRealTransition(
+            const BattleContext &preState, const Action &action,
+            const BattleContext &realPostState);
         void ensureObservation(Node &node, const BattleContext &state);
         int  playoutRandom(BattleContext &state, std::vector<Action> &actionStack);
         // A1 (STS_S3_ROLLOUT_K): run g_s3RolloutK independent rollouts from
@@ -314,6 +365,8 @@ namespace sts::search {
     // STS_S3_CRN is opt-in: root CRN warm start fires once per fresh searcher
     // and is skipped after advanceRoot carries the tree over).
     extern bool g_s3Belief;
+    extern bool g_s3RealBeliefFilter;
+    extern bool g_s3RealBeliefCollapseFresh;
     extern bool g_s3InternalBeliefUpdate;  // guard simulated belief.update() in step()
     extern bool g_s3Prune;
     extern bool g_s3Chain;
@@ -456,6 +509,9 @@ namespace sts::search {
     // ── Belief audit diagnostic (STS_S3_BELIEF_AUDIT) ───────────────
     extern bool g_s3BeliefAudit;
     extern std::string g_s3BeliefAuditFile;
+    extern bool g_s3RootRaceDiag;
+    extern std::string g_s3RootRaceDiagFile;
+    extern int g_s3RootRaceDiagMaxStates;
 
     // Belief audit counters (thread-local, reset per search).
     extern thread_local std::int64_t t_baUpdatesDuringSearch;

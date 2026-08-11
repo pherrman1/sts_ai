@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <atomic>
 #include <cmath>
 #include <fstream>
 #include <mutex>
@@ -19,6 +20,7 @@
 #include <sstream>
 #include <iomanip>
 #include <unordered_set>
+#include <unordered_map>
 
 using namespace sts;
 
@@ -28,6 +30,10 @@ extern double g_vnetAlpha;   // from BattleScumSearcher2.cpp
 
 bool g_useSearcher3 = false;
 bool g_s3Belief = true;
+// Real-boundary posterior filtering is experimental and opt-in.
+bool g_s3RealBeliefFilter = false;
+// Rebuild a fresh visible-state-consistent prior only on filter collapse.
+bool g_s3RealBeliefCollapseFresh = false;
 // STS_S3_INTERNAL_BELIEF_UPDATE: when 0, simulated observations inside step()
 // do NOT permanently mutate the root belief. The root belief represents
 // uncertainty at the real information state; imagined trajectories are
@@ -64,6 +70,7 @@ bool g_s3PoolRedirect = false; // STS_S3_POOL_REDIRECT: forced-move budget pool 
 bool g_vnetAlphaLen = false;
 std::vector<std::pair<int,double>> g_vnetAlphaLenTable = {{2,0.1},{5,0.2},{10,0.4},{999,0.6}};
 int g_s3Particles = 64;
+static std::atomic<int> g_s3CollapseSensitivityEvents{0};
 double g_riskLambda = 0.5;
 bool g_s3Expand = false;
 int g_s3ExpandMaxNew = 32;
@@ -115,6 +122,9 @@ int g_s3LeafValueDiagMaxStates = 120;
 // ── Belief audit diagnostic (STS_S3_BELIEF_AUDIT) ─────────────────────
 bool g_s3BeliefAudit = false;
 std::string g_s3BeliefAuditFile;
+bool g_s3RootRaceDiag = false;
+std::string g_s3RootRaceDiagFile;
+int g_s3RootRaceDiagMaxStates = 32;
 thread_local std::int64_t t_baUpdatesDuringSearch = 0;
 thread_local std::int64_t t_baParticlesZeroed = 0;
 thread_local std::int64_t t_baAllZeroEvents = 0;
@@ -266,6 +276,178 @@ void BattleScumSearcher3::applyParticle(BattleContext &state,
     applyParticleImpl(state, particle, rng);
 }
 
+RealBeliefFilterStats BattleScumSearcher3::filterRealTransition(
+    const BattleContext &preState, const Action &action,
+    const BattleContext &realPostState) {
+    const auto filterStart = std::chrono::steady_clock::now();
+    RealBeliefFilterStats stats;
+    stats.previousParticles = static_cast<int>(belief.particles.size());
+    stats.actionBits = action.bits;
+    stats.actionType = static_cast<int>(action.getActionType());
+    stats.comparisonExact = true;
+    stats.reshuffleObserved = preState.cards.drawPile.empty()
+        && !preState.cards.discardPile.empty()
+        && !realPostState.cards.drawPile.empty();
+    const auto realObs = CombatObservation::fromBattleContext(realPostState);
+    stats.realObservationHash = realObs.visibleHash();
+    const auto oldParticles = belief.particles;
+    std::unordered_map<std::uint64_t, int> predictedCounts;
+    std::mt19937_64 fallbackRng(agentSeed ^
+        (static_cast<std::uint64_t>(decisionIndex) * 0x9e3779b97f4a7c15ULL));
+
+    for (size_t i = 0; i < belief.particles.size(); ++i) {
+        auto &particle = belief.particles[i];
+        ++stats.attempted;
+        if (particle.drawPileOrder.size() != preState.cards.drawPile.size()
+            || !sameCardMultiset(particle.drawPileOrder, preState.cards.drawPile)) {
+            ++stats.propagationFailures;
+            ++stats.fallbackShuffles;
+            particle.weight = 0.0;
+            continue;
+        }
+
+        BattleContext predicted = preState;
+        applyParticleImpl(predicted, particle, fallbackRng);
+        if (!action.isValidAction(predicted)) {
+            ++stats.actionIllegal;
+            ++stats.propagationFailures;
+            particle.weight = 0.0;
+            continue;
+        }
+        action.execute(predicted);
+        const auto predictedObs = CombatObservation::fromBattleContext(predicted);
+        ++predictedCounts[predictedObs.visibleHash()];
+        const bool compatible = predictedObs == realObs
+            && predicted.outcome == realPostState.outcome;
+        if (!compatible) {
+            ++stats.incompatible;
+            particle.weight = 0.0;
+            continue;
+        }
+
+        ++stats.compatible;
+        particle.weight = 1.0;
+        // Carry the propagated hidden draw order to the next real boundary.
+        // RNG counters are not represented by HiddenBattleState yet; seed
+        // signatures remain available, while exact counter propagation is
+        // reported as an open limitation in the audit.
+        particle.drawPileOrder = predicted.cards.drawPile;
+    }
+
+    int dominantCount = 0;
+    for (const auto &kv : predictedCounts) {
+        if (kv.second > dominantCount) {
+            dominantCount = kv.second;
+            stats.dominantPredictedObservationHash = kv.first;
+        }
+    }
+    stats.distinctPredictedObservations = static_cast<int>(predictedCounts.size());
+    stats.dominantPredictedObservationCount = dominantCount;
+    if (stats.attempted > 0) {
+        for (const auto &kv : predictedCounts) {
+            const double p = static_cast<double>(kv.second) / stats.attempted;
+            if (p > 0.0) stats.predictedObservationEntropy -= p * std::log(p);
+        }
+    }
+
+    if (stats.compatible == 0 && g_s3BeliefAudit) {
+        const int ticket = g_s3CollapseSensitivityEvents.fetch_add(1);
+        if (ticket < 64) {
+            const auto sensitivityStart = std::chrono::steady_clock::now();
+            stats.sensitivityProbed = true;
+            auto probeCount = [&](int count) {
+                std::mt19937_64 probeRng(agentSeed ^
+                    (static_cast<std::uint64_t>(decisionIndex + count) * 0xd1b54a32d192ed03ULL));
+                Belief probe = Belief::initial(preState, count, probeRng);
+                int survivors = 0;
+                for (auto &probeParticle : probe.particles) {
+                    BattleContext probeState = preState;
+                    applyParticleImpl(probeState, probeParticle, probeRng);
+                    if (!action.isValidAction(probeState)) continue;
+                    action.execute(probeState);
+                    const auto probeObs = CombatObservation::fromBattleContext(probeState);
+                    if (probeObs == realObs && probeState.outcome == realPostState.outcome)
+                        ++survivors;
+                }
+                return survivors;
+            };
+            stats.sensitivity64 = probeCount(64);
+            stats.sensitivity128 = probeCount(128);
+            stats.sensitivity256 = probeCount(256);
+            stats.sensitivity512 = probeCount(512);
+            stats.sensitivityCpuMs = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - sensitivityStart).count();
+        }
+    }
+    if (stats.compatible == 0) {
+        stats.posteriorCollapse = true;
+        if (stats.propagationFailures == stats.attempted) {
+            stats.collapseCategory = "PROPAGATION_FAILURE";
+        } else if (stats.actionIllegal > 0 && stats.propagationFailures == stats.actionIllegal) {
+            stats.collapseCategory = "ACTION_ILLEGAL_UNDER_PARTICLES";
+        } else if (stats.reshuffleObserved) {
+            stats.collapseCategory = "RESHUFFLE_OR_DRAW_TRANSITION";
+        } else if (action.getActionType() == ActionType::END_TURN) {
+            stats.collapseCategory = "STOCHASTIC_END_TURN_OR_PARTICLE_DEPRIVATION";
+        } else if (action.getActionType() == ActionType::CARD) {
+            stats.collapseCategory = "CARD_EFFECT_OR_AUTOMATIC_QUEUE_OR_PARTICLE_DEPRIVATION";
+        } else {
+            stats.collapseCategory = "PARTICLE_DEPRIVATION_OR_HIDDEN_STATE_MISMATCH";
+        }
+        if (g_s3RealBeliefCollapseFresh) {
+            belief = Belief::initial(realPostState, stats.previousParticles, fallbackRng);
+            stats.freshBeliefRebuilt = true;
+        } else {
+            // Preserve gameplay execution without pretending that the posterior
+            // is valid. Restore the prior particle set and use an explicit
+            // uniform fallback; the collapse remains in diagnostics.
+            belief.particles = oldParticles;
+            const double w = belief.particles.empty()
+                ? 0.0 : 1.0 / static_cast<double>(belief.particles.size());
+            for (auto &p : belief.particles) p.weight = w;
+        }
+    } else {
+        const double w = 1.0 / static_cast<double>(stats.compatible);
+        for (auto &p : belief.particles)
+            if (p.weight > 0.0) p.weight = w;
+    }
+    stats.configuredParticleCount = static_cast<int>(particleSampleCounts.size());
+    stats.simulations = lastSearchSimulations;
+    stats.searchCpuMs = lastSearchCpuMs;
+    stats.beliefInitializationCpuMs = beliefInitializationCpuMs;
+    int sampled = 0;
+    std::vector<int> used;
+    used.reserve(particleSampleCounts.size());
+    for (const int count : particleSampleCounts) {
+        if (count > 0) { ++sampled; used.push_back(count); }
+    }
+    stats.distinctParticlesSampled = sampled;
+    stats.neverSampledParticles = stats.configuredParticleCount - sampled;
+    stats.sampledParticleFraction = stats.configuredParticleCount > 0
+        ? static_cast<double>(sampled) / stats.configuredParticleCount : 0.0;
+    if (!used.empty()) {
+        std::sort(used.begin(), used.end());
+        stats.minSamplesPerParticle = used.front();
+        stats.maxSamplesPerParticle = used.back();
+        double totalUsed = 0.0;
+        for (const int count : used) totalUsed += count;
+        stats.meanSamplesPerSampledParticle = totalUsed / used.size();
+        stats.medianSamplesPerSampledParticle = (used.size() % 2 == 0)
+            ? 0.5 * (used[used.size() / 2 - 1] + used[used.size() / 2])
+            : used[used.size() / 2];
+        if (stats.simulations > 0) {
+            double entropy = 0.0;
+            for (const int count : used) {
+                const double q = static_cast<double>(count) / stats.simulations;
+                if (q > 0.0) entropy -= q * std::log(q);
+            }
+            stats.particleUsageEntropy = entropy;
+        }
+    }
+    stats.incompatible = stats.attempted - stats.compatible;
+    stats.cpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - filterStart).count();
+    return stats;
+}
 // ---- Observation caching: compute once per node, reuse on subsequent visits
 void BattleScumSearcher3::ensureObservation(Node &node, const BattleContext &state) {
     if (!node.obsCached) {
@@ -308,10 +490,18 @@ BattleScumSearcher3::BattleScumSearcher3(const BattleContext &bc,
 
     reseed();
 
+    const auto beliefStart = std::chrono::steady_clock::now();
     belief = Belief::initial(bc, maxParticles, rng);
+    beliefInitializationCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - beliefStart).count();
+    particleSampleCounts.assign(belief.particles.size(), 0);
     prepareCRNParticles();
 }
 
+void BattleScumSearcher3::resetParticleUsage() {
+    particleSampleCounts.assign(belief.particles.size(), 0);
+    lastSearchSimulations = 0;
+    lastSearchCpuMs = 0.0;
+}
 void BattleScumSearcher3::reseed() {
     // Seed RNG from composite: agentSeed ^ visibleHash ^ decisionIdx.
     // Same agent seed + same observation + same decision index = same search.
@@ -1370,22 +1560,28 @@ void BattleScumSearcher3::warmStartRootCRN(const BattleContext &bc) {
 
 // ---- Search -----------------------------------------------------------------
 void BattleScumSearcher3::search(int64_t simulations) {
+    resetParticleUsage();
     if (g_s3Crn && !rootCarried && !crnWarmStarted) { warmStartRootCRN(*rootBc); crnWarmStarted = true; }
     if (reuseSearchCount >= 0) ++reuseSearchCount;  // searches executed since last promotion
     auto t0 = std::chrono::steady_clock::now();
     for (int64_t i = 0; i < simulations; ++i)
         step();
-    diag.simSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    lastSearchSimulations = static_cast<int>(simulations);
+    lastSearchCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    diag.simSeconds += lastSearchCpuMs / 1000.0;
 }
 
 void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
+    resetParticleUsage();
     if (isTerminal(*rootBc)) { outcomePlayerHp = rootBc->player.curHp; return; }
     if (g_s3Crn && !rootCarried && !crnWarmStarted) { warmStartRootCRN(*rootBc); crnWarmStarted = true; }
     if (reuseSearchCount >= 0) ++reuseSearchCount;  // searches executed since last promotion
     auto t0 = std::chrono::steady_clock::now();
     while (root.simulationCount < targetSimulations)
         step();
-    diag.simSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    lastSearchSimulations = static_cast<int>(root.simulationCount);
+    lastSearchCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    diag.simSeconds += lastSearchCpuMs / 1000.0;
 }
 
 bool BattleScumSearcher3::advanceRoot(const Action &action,
@@ -1517,7 +1713,9 @@ static double alphaForRolloutSteps(int steps) {
 // ---- ISMCTS step ------------------------------------------------------------
 void BattleScumSearcher3::step() {
     ++diag.simulations;
-    const auto &particle = belief.sample(rng);
+    const size_t particleIndex = belief.sampleIndex(rng);
+    if (particleIndex < particleSampleCounts.size()) ++particleSampleCounts[particleIndex];
+    const auto &particle = belief.particles[particleIndex];
 
     BattleContext state = *rootBc;
     applyParticle(state, particle);

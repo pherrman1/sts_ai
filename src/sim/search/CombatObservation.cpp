@@ -355,7 +355,89 @@ void Belief::update(const CombatObservation &obs) {
     ++search::t_baUpdatesDuringSearch;
 }
 
-const HiddenBattleState &Belief::sample(std::mt19937_64 &rng) const {
+int Belief::compatibleCount(const CombatObservation &obs) const {
+    int count = 0;
+    for (const auto &p : particles)
+        if (drawOrderConsistent(p, obs)) ++count;
+    return count;
+}
+
+static std::uint64_t hiddenOrderHash(const std::vector<CardInstance> &cards) {
+    std::uint64_t h = 1469598103934665603ULL;
+    for (const auto &c : cards) {
+        const auto k = cardKeyOf(c);
+        h ^= static_cast<std::uint64_t>(k.id); h *= 1099511628211ULL;
+        h ^= static_cast<std::uint64_t>(static_cast<std::uint16_t>(k.specialData)); h *= 1099511628211ULL;
+        h ^= static_cast<std::uint64_t>(static_cast<std::uint8_t>(k.costForTurn)); h *= 1099511628211ULL;
+        h ^= k.upgraded ? 1ULL : 0ULL; h *= 1099511628211ULL;
+        h ^= k.freeToPlayOnce ? 1ULL : 0ULL; h *= 1099511628211ULL;
+    }
+    return h;
+}
+
+static std::uint64_t hiddenRngHash(const HiddenBattleState &p) {
+    std::uint64_t h = 0xcbf29ce484222325ULL;
+    const std::uint64_t values[] = {
+        p.shuffleRngSeed0, p.shuffleRngSeed1, p.cardRandomRngSeed0,
+        p.cardRandomRngSeed1, p.aiRngSeed0, p.aiRngSeed1, p.miscRngSeed0,
+        p.miscRngSeed1, p.monsterHpRngSeed0, p.monsterHpRngSeed1,
+        p.potionRngSeed0, p.potionRngSeed1};
+    for (auto v : values) { h ^= v; h *= 1099511628211ULL; }
+    return h;
+}
+
+int Belief::distinctCompatibleDrawOrders(const CombatObservation &obs) const {
+    std::set<std::uint64_t> seen;
+    for (const auto &p : particles)
+        if (drawOrderConsistent(p, obs)) seen.insert(hiddenOrderHash(p.drawPileOrder));
+    return static_cast<int>(seen.size());
+}
+
+int Belief::distinctCompatibleRngSignatures(const CombatObservation &obs) const {
+    std::set<std::uint64_t> seen;
+    for (const auto &p : particles)
+        if (drawOrderConsistent(p, obs)) seen.insert(hiddenRngHash(p));
+    return static_cast<int>(seen.size());
+}
+
+int Belief::fallbackShuffleCount(const BattleContext &bc) const {
+    int count = 0;
+    for (const auto &p : particles) {
+        if (p.drawPileOrder.size() != static_cast<size_t>(bc.cards.drawPile.size())
+            || !sameCardMultiset(p.drawPileOrder, bc.cards.drawPile))
+            ++count;
+    }
+    return count;
+}
+int Belief::positiveCount() const {
+    int count = 0;
+    for (const auto &p : particles) if (p.weight > 0.0) ++count;
+    return count;
+}
+
+int Belief::distinctPositiveDrawOrders() const {
+    std::set<std::uint64_t> seen;
+    for (const auto &p : particles) if (p.weight > 0.0) seen.insert(hiddenOrderHash(p.drawPileOrder));
+    return static_cast<int>(seen.size());
+}
+
+int Belief::distinctPositiveRngSignatures() const {
+    std::set<std::uint64_t> seen;
+    for (const auto &p : particles) if (p.weight > 0.0) seen.insert(hiddenRngHash(p));
+    return static_cast<int>(seen.size());
+}
+
+int Belief::distinctPositiveHypotheses() const {
+    std::set<std::uint64_t> seen;
+    for (const auto &p : particles) if (p.weight > 0.0) {
+        std::uint64_t h = hiddenOrderHash(p.drawPileOrder);
+        h ^= hiddenRngHash(p) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+        seen.insert(h);
+    }
+    return static_cast<int>(seen.size());
+}
+
+size_t Belief::sampleIndex(std::mt19937_64 &rng) const {
     const size_t n = particles.size();
     double total = 0.0;
     bool uniform = true;
@@ -372,16 +454,20 @@ const HiddenBattleState &Belief::sample(std::mt19937_64 &rng) const {
             ++search::t_baUniformEqualCalls;
         }
         std::uniform_int_distribution<size_t> dist(0, n - 1);
-        return particles[dist(rng)];
+        return dist(rng);
     }
     std::uniform_real_distribution<double> dist(0.0, total);
     double r = dist(rng);
     double acc = 0.0;
-    for (const auto &p : particles) {
-        acc += p.weight;
-        if (acc >= r) return p;
+    for (size_t i = 0; i < particles.size(); ++i) {
+        acc += particles[i].weight;
+        if (acc >= r) return i;
     }
-    return particles.back();
+    return particles.size() - 1;
+}
+
+const HiddenBattleState &Belief::sample(std::mt19937_64 &rng) const {
+    return particles[sampleIndex(rng)];
 }
 
 } // namespace sts

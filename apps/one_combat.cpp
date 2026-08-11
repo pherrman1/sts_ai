@@ -10334,9 +10334,33 @@ int main(int argc, char **argv) {
         search::g_s3BeliefAudit = std::atoi(d) != 0;
         std::cout << "[S3 belief audit = " << (search::g_s3BeliefAudit ? "ON" : "off") << "]\n";
     }
+    if (const char *d = std::getenv("STS_S3_REAL_BELIEF_FILTER")) {
+        search::g_s3RealBeliefFilter = std::atoi(d) != 0;
+        std::cout << "[S3 real-belief-filter = " << (search::g_s3RealBeliefFilter ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_REAL_BELIEF_COLLAPSE_FRESH")) {
+        search::g_s3RealBeliefCollapseFresh = std::atoi(d) != 0;
+        std::cout << "[S3 real-belief-collapse-fresh = " << (search::g_s3RealBeliefCollapseFresh ? "ON" : "off") << "]\n";
+    }
     if (const char *d = std::getenv("STS_S3_INTERNAL_BELIEF_UPDATE")) {
         search::g_s3InternalBeliefUpdate = std::atoi(d) != 0;
         std::cout << "[S3 internal-belief-update = " << (search::g_s3InternalBeliefUpdate ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_BELIEF_AUDIT_FILE")) {
+        search::g_s3BeliefAuditFile = d;
+        std::cout << "[S3 belief audit file = " << search::g_s3BeliefAuditFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_ROOT_RACE_DIAG")) {
+        search::g_s3RootRaceDiag = std::atoi(d) != 0;
+        std::cout << "[S3 root-race diag = " << (search::g_s3RootRaceDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_ROOT_RACE_DIAG_FILE")) {
+        search::g_s3RootRaceDiagFile = d;
+        std::cout << "[S3 root-race diag file = " << search::g_s3RootRaceDiagFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_ROOT_RACE_MAX_STATES")) {
+        search::g_s3RootRaceDiagMaxStates = std::max(1, std::atoi(d));
+        std::cout << "[S3 root-race max states = " << search::g_s3RootRaceDiagMaxStates << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_UNION_EXPAND")) {
         search::g_s3UnionExpand = std::atoi(d) != 0;

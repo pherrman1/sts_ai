@@ -138,6 +138,16 @@ struct Belief {
 
     void update(const CombatObservation &obs);
     const HiddenBattleState &sample(std::mt19937_64 &rng) const;
+    // Same draw as sample(), but exposes the selected index for diagnostics.
+    size_t sampleIndex(std::mt19937_64 &rng) const;
+    int compatibleCount(const CombatObservation &obs) const;
+    int distinctCompatibleDrawOrders(const CombatObservation &obs) const;
+    int distinctCompatibleRngSignatures(const CombatObservation &obs) const;
+    int fallbackShuffleCount(const BattleContext &bc) const;
+    int positiveCount() const;
+    int distinctPositiveDrawOrders() const;
+    int distinctPositiveRngSignatures() const;
+    int distinctPositiveHypotheses() const;
     [[nodiscard]] bool empty() const { return particles.empty(); }
     [[nodiscard]] size_t size() const { return particles.size(); }
 

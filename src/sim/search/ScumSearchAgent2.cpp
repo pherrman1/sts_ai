@@ -10,6 +10,10 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <cmath>
+#include <chrono>
+#include <limits>
+#include <mutex>
 #include <sim/search/ExpertKnowledge.h>
 #include <game/Game.h>
 #include "sim/PrintHelpers.h"
@@ -114,6 +118,170 @@ static void printHelper(const BattleContext &bc, const search::Action &a) {
     std::cout << bc << std::endl;
 }
 
+static double rootActionQ(const search::BattleScumSearcher3::Edge &edge) {
+    return edge.child.simulationCount > 0
+        ? edge.child.evaluationSum / edge.child.simulationCount
+        : std::numeric_limits<double>::quiet_NaN();
+}
+
+static void writeS3BeliefBoundaryDiag(
+    const BattleContext &bc, const search::BattleScumSearcher3 &s3,
+    std::uint64_t seed, int decisionIdx, bool carried, bool boundaryUpdated,
+    const search::RealBeliefFilterStats *filterStats = nullptr)
+{
+    if (!search::g_s3BeliefAudit || search::g_s3BeliefAuditFile.empty()) return;
+    const auto obs = CombatObservation::fromBattleContext(bc);
+    const int n = static_cast<int>(s3.belief.particles.size());
+    const int compatible = s3.belief.compatibleCount(obs);
+    const int fallback = s3.belief.fallbackShuffleCount(bc);
+    double sumW = 0.0, sumW2 = 0.0;
+    for (const auto &p : s3.belief.particles) {
+        sumW += p.weight;
+        sumW2 += p.weight * p.weight;
+    }
+    const double ess = sumW2 > 0.0 ? sumW * sumW / sumW2
+                                   : std::numeric_limits<double>::quiet_NaN();
+
+    static std::mutex mutex;
+    static bool header = false;
+    std::lock_guard<std::mutex> lock(mutex);
+    std::ofstream out(search::g_s3BeliefAuditFile, std::ios::app);
+    if (!out) return;
+    if (!header) {
+        out << "seed,floor,encounter,turn,decision_index,particles,compatible_particles,compatible_fraction,distinct_draw_orders,distinct_rng_signatures,ess,fallback_shuffles,fallback_fraction,stale_fraction,boundary_update_applied,belief_carried,belief_rebuilt,previous_particle_count,propagated_particles_attempted,propagation_failures,action_illegal_particles,filter_compatible,filter_compatible_fraction,filter_incompatible,posterior_collapse,distinct_surviving_draw_orders,distinct_surviving_rng_signatures,unique_hypotheses,filter_fallback_shuffles,reshuffle_observed,comparison_exact,filter_cpu_ms,weight_ess,action_bits,action_type,real_observation_hash,dominant_predicted_observation_hash,distinct_predicted_observations,dominant_predicted_observation_count,predicted_observation_entropy,collapse_category,fresh_belief_rebuilt,sensitivity_probed,sensitivity_64,sensitivity_128,sensitivity_256,sensitivity_512,sensitivity_cpu_ms,configured_particle_count,simulations,distinct_particles_sampled,sampled_particle_fraction,min_samples_per_sampled_particle,mean_samples_per_sampled_particle,median_samples_per_sampled_particle,max_samples_per_particle,never_sampled_particles,particle_usage_entropy,belief_initialization_cpu_ms,search_cpu_ms\n";
+        header = true;
+    }
+    out << seed << ',' << bc.floorNum << ',' << static_cast<int>(bc.encounter)
+        << ',' << bc.turn << ',' << decisionIdx << ',' << n << ','
+        << compatible << ',' << (n > 0 ? static_cast<double>(compatible) / n : 0.0)
+        << ',' << s3.belief.distinctCompatibleDrawOrders(obs)
+        << ',' << s3.belief.distinctCompatibleRngSignatures(obs)
+        << ',' << ess << ',' << fallback << ','
+        << (n > 0 ? static_cast<double>(fallback) / n : 0.0) << ','
+        << (n > 0 ? static_cast<double>(n - compatible) / n : 0.0) << ','
+        << (boundaryUpdated ? 1 : 0) << ',' << (carried ? 1 : 0) << ','
+        << (carried ? 0 : 1) << ','
+        << (filterStats ? filterStats->previousParticles : n) << ','
+        << (filterStats ? filterStats->attempted : 0) << ','
+        << (filterStats ? filterStats->propagationFailures : 0) << ','
+        << (filterStats ? filterStats->actionIllegal : 0) << ','
+        << (filterStats ? filterStats->compatible : 0) << ','
+        << (filterStats && filterStats->previousParticles > 0 ? static_cast<double>(filterStats->compatible) / filterStats->previousParticles : 0.0) << ','
+        << (filterStats ? filterStats->incompatible : 0) << ','
+        << (filterStats && filterStats->posteriorCollapse ? 1 : 0) << ','
+        << (filterStats ? s3.belief.distinctPositiveDrawOrders() : 0) << ','
+        << (filterStats ? s3.belief.distinctPositiveRngSignatures() : 0) << ','
+        << (filterStats ? s3.belief.distinctPositiveHypotheses() : 0) << ','
+        << (filterStats ? filterStats->fallbackShuffles : 0) << ','
+        << (filterStats && filterStats->reshuffleObserved ? 1 : 0) << ','
+        << (filterStats && filterStats->comparisonExact ? 1 : 0) << ','
+        << (filterStats ? filterStats->cpuMs : 0.0) << ','
+        << (filterStats ? static_cast<double>(s3.belief.positiveCount()) : ess) << ','
+        << (filterStats ? filterStats->actionBits : 0) << ','
+        << (filterStats ? filterStats->actionType : -1) << ','
+        << (filterStats ? filterStats->realObservationHash : 0) << ','
+        << (filterStats ? filterStats->dominantPredictedObservationHash : 0) << ','
+        << (filterStats ? filterStats->distinctPredictedObservations : 0) << ','
+        << (filterStats ? filterStats->dominantPredictedObservationCount : 0) << ','
+        << (filterStats ? filterStats->predictedObservationEntropy : 0.0) << ','
+        << (filterStats ? filterStats->collapseCategory : std::string()) << ','
+        << (filterStats && filterStats->freshBeliefRebuilt ? 1 : 0) << ','
+        << (filterStats && filterStats->sensitivityProbed ? 1 : 0) << ','
+        << (filterStats ? filterStats->sensitivity64 : -1) << ','
+        << (filterStats ? filterStats->sensitivity128 : -1) << ','
+        << (filterStats ? filterStats->sensitivity256 : -1) << ','
+        << (filterStats ? filterStats->sensitivity512 : -1) << ','
+        << (filterStats ? filterStats->sensitivityCpuMs : 0.0) << ','
+        << (filterStats ? filterStats->configuredParticleCount : n) << ','
+        << (filterStats ? filterStats->simulations : 0) << ','
+        << (filterStats ? filterStats->distinctParticlesSampled : 0) << ','
+        << (filterStats ? filterStats->sampledParticleFraction : 0.0) << ','
+        << (filterStats ? filterStats->minSamplesPerParticle : 0) << ','
+        << (filterStats ? filterStats->meanSamplesPerSampledParticle : 0.0) << ','
+        << (filterStats ? filterStats->medianSamplesPerSampledParticle : 0.0) << ','
+        << (filterStats ? filterStats->maxSamplesPerParticle : 0) << ','
+        << (filterStats ? filterStats->neverSampledParticles : 0) << ','
+        << (filterStats ? filterStats->particleUsageEntropy : 0.0) << ','
+        << (filterStats ? filterStats->beliefInitializationCpuMs : 0.0) << ','
+        << (filterStats ? filterStats->searchCpuMs : 0.0) << '\n';
+}
+
+static void writeS3RootRaceDiag(const BattleContext &bc,
+                                std::uint64_t seed, int decisionIdx)
+{
+    if (!search::g_s3RootRaceDiag || search::g_s3RootRaceDiagFile.empty()) return;
+    static thread_local std::uint64_t capturedSeed = std::numeric_limits<std::uint64_t>::max();
+    static thread_local int capturedStates = 0;
+    if (capturedSeed != seed) { capturedSeed = seed; capturedStates = 0; }
+    if (capturedStates >= search::g_s3RootRaceDiagMaxStates) return;
+    ++capturedStates;
+
+    constexpr std::array<int,4> budgets = {250, 500, 1000, 4000};
+    struct Row {
+        std::array<std::int64_t,4> visits{};
+        std::array<double,4> q{};
+        double prior = 0.0;
+        int availability = -1;
+    };
+    std::map<std::uint32_t, Row> rows;
+    std::array<std::uint32_t,4> chosen{};
+    for (auto &v : chosen) v = std::numeric_limits<std::uint32_t>::max();
+
+    for (size_t bi = 0; bi < budgets.size(); ++bi) {
+        search::BattleScumSearcher3 probe(
+            bc, bc.seed, decisionIdx, search::g_s3Particles);
+        probe.search(budgets[bi]);
+        probe.computeEdgeAvailability(bc);
+        bool have = false;
+        const auto picked = s3PickRootAction(probe, bc, have);
+        if (have) chosen[bi] = picked.bits;
+        for (size_t ei = 0; ei < probe.root.edges.size(); ++ei) {
+            const auto &edge = probe.root.edges[ei];
+            auto &row = rows[edge.action.bits];
+            row.visits[bi] = edge.child.simulationCount;
+            row.q[bi] = rootActionQ(edge);
+            row.prior = edge.prior;
+            if (ei < probe.edgeAvailability.size())
+                row.availability = probe.edgeAvailability[ei];
+        }
+    }
+
+    const auto bestBits = chosen[3];
+    double bestQ = std::numeric_limits<double>::quiet_NaN();
+    auto bestIt = rows.find(bestBits);
+    if (bestIt != rows.end()) bestQ = bestIt->second.q[3];
+
+    static std::mutex mutex;
+    static bool header = false;
+    std::lock_guard<std::mutex> lock(mutex);
+    std::ofstream out(search::g_s3RootRaceDiagFile, std::ios::app);
+    if (!out) return;
+    if (!header) {
+        out << "seed,floor,encounter,turn,decision_index,input_state,"
+               "particle_count,n_actions,action_bits,legal_now,availability,"
+               "chosen_250,chosen_500,chosen_1000,chosen_4000,best_4000,"
+               "visits_250,q_250,visits_500,q_500,visits_1000,q_1000,"
+               "visits_4000,q_4000,deep_regret\n";
+        header = true;
+    }
+    for (const auto &kv : rows) {
+        const auto &row = kv.second;
+        const double regret = (std::isnan(bestQ) || std::isnan(row.q[3]))
+            ? std::numeric_limits<double>::quiet_NaN() : bestQ - row.q[3];
+        out << seed << ',' << bc.floorNum << ',' << static_cast<int>(bc.encounter)
+            << ',' << bc.turn << ',' << decisionIdx
+            << ',' << static_cast<int>(bc.inputState)
+            << ',' << search::g_s3Particles << ',' << rows.size() << ','
+            << kv.first << ',' << (search::Action(kv.first).isValidAction(bc) ? 1 : 0)
+            << ',' << row.availability << ','
+            << chosen[0] << ',' << chosen[1] << ',' << chosen[2] << ','
+            << chosen[3] << ',' << bestBits << ','
+            << row.visits[0] << ',' << row.q[0] << ','
+            << row.visits[1] << ',' << row.q[1] << ','
+            << row.visits[2] << ',' << row.q[2] << ','
+            << row.visits[3] << ',' << row.q[3] << ',' << regret << '\n';
+    }
+}
 // Fair-play / determinized battle: each search re-randomizes the hidden draw
 // order per simulation, so the recommended line is world-specific -- we can only
 // commit the ONE most-visited root move, then re-search as the real draw reveals.
@@ -166,7 +334,12 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             search::Action forced;
             if (search::g_forcedMoveSkip && s3.onlyLegalAction(forced)) {
                 if (search::g_s3PoolRedirect) fightPool += sims;
+                BattleContext preState = bc;
                 takeAction(bc, forced);
+                search::RealBeliefFilterStats filterStats;
+                const bool filtered = search::g_s3RealBeliefFilter;
+                if (filtered) filterStats = s3.filterRealTransition(preState, forced, bc);
+                writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx, false, filtered, filtered ? &filterStats : nullptr);
                 ++decisionIdx;
                 searcherValid = false;
                 continue;
@@ -205,6 +378,7 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             ++carriedSearchesSinceFresh;
             simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
+            writeS3RootRaceDiag(bc, bc.seed, decisionIdx);
             s3.clampRankCorrAtRoot();
             s3.rankCorrValues.clear();
             // Edge-availability and reuse diagnostics.
@@ -260,6 +434,9 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 bc.aiRng.counter, bc.miscRng.counter,
                 bc.monsterHpRng.counter, bc.potionRng.counter}};
             takeAction(bc, bestAction);
+            search::RealBeliefFilterStats filterStats;
+            const bool filtered = search::g_s3RealBeliefFilter;
+            if (filtered) filterStats = s3.filterRealTransition(preState, bestAction, bc);
             bool rngSafe = (bc.aiRng.counter       == rngSnaps[2])
                         && (bc.cardRandomRng.counter == rngSnaps[1])
                         && (bc.miscRng.counter     == rngSnaps[3])
@@ -301,7 +478,9 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 reuseAllowed = rngSafe;
             }
 
+            bool carriedAtBoundary = false;
             if (reuseAllowed && s3.advanceRoot(bestAction, bc)) {
+                carriedAtBoundary = true;
                 if (search::g_reuseObsStable) ++reuseAccepted;
                 // ── Root reconciliation ────────────────────────────────
                 if (search::g_reuseReconcileRoot)
@@ -322,6 +501,7 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 ++decisionIdx;
                 searcherValid = false;
             }
+            writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx - 1, carriedAtBoundary, filtered, filtered ? &filterStats : nullptr);
         }
         // Print reuse diagnostics at end of battle.
         if (search::g_reuseDiag || (search::g_reuseObsStable && combatDecisions > 0)) {
@@ -449,6 +629,7 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             s3.searchToTotal(sims);
             simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
+            writeS3RootRaceDiag(bc, bc.seed, decisionIdx);
             bool have = false;
             search::Action bestAction = s3PickRootAction(s3, bc, have);
             if (!have) {
@@ -458,7 +639,11 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
                               << " pickCount=" << bc.cardSelectInfo.pickCount << "\n";
                 break;
             }
+            BattleContext preState = bc;
             takeAction(bc, bestAction);
+            search::RealBeliefFilterStats filterStats;
+            const bool filtered = search::g_s3RealBeliefFilter;
+            if (filtered) filterStats = s3.filterRealTransition(preState, bestAction, bc);
             s3.advanceRoot(bestAction, bc);
             // Live belief update at the agent boundary: the real observation
             // after the committed action reweights the particles. The fair
@@ -468,6 +653,7 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             // reweighting, so the carried belief can go stale (issue #58).
             if (search::g_s3Belief)
                 s3.belief.update(CombatObservation::fromBattleContext(bc));
+            writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx, true, filtered || search::g_s3Belief, filtered ? &filterStats : nullptr);
             ++decisionIdx;
             s3.decisionIndex = decisionIdx;
             s3.reseed();
