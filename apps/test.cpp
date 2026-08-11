@@ -1400,12 +1400,14 @@ int testBattleContextRoundtrip() {
     return 1;
 }
 
-// Simulator-health monitor: issue-87 validation case. A CARD_SELECT/GAMBLE
-// state with an empty hand enumerates zero legal progression actions
-// (pushMultiSelectActions early-returns on n<=0), so the fair-S3 battle loop
-// must report NO_LEGAL_PROGRESSION at the decision boundary and
-// UNDECIDED_BATTLE_EXIT at the loop exit, while leaving bc.outcome UNDECIDED
-// (detection only -- issue 87 must NOT be repaired here).
+// Simulator-health monitor: issue-87 validation case (Test A). A
+// CARD_SELECT/GAMBLE state with an empty hand enumerates zero legal
+// progression actions (pushMultiSelectActions early-returns on n<=0), so the
+// fair-S3 battle loop must classify the root-selection failure as
+// NO_LEGAL_PROGRESSION (canonical live action set is empty) at the decision
+// boundary and UNDECIDED_BATTLE_EXIT at the loop exit, while leaving
+// bc.outcome UNDECIDED (detection only -- issue 87 must NOT be repaired here).
+// ACTION_SELECTION_FAILED must NOT fire for this genuinely-empty state.
 int testSimHealthGambleEmptyHand() {
     int failures = 0;
     const auto check = [&failures](bool ok, const std::string &msg) {
@@ -1426,12 +1428,15 @@ int testSimHealthGambleEmptyHand() {
     search::g_s3Chain = false;
     search::g_s3Particles = 4;
 
-    const int before = search::g_simHealthFailureCount;
+    const auto nlpBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION];
+    const auto asfBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED];
     {
         BattleContext bc = cardSelectFixture(CardSelectTask::GAMBLE, 1, false);
         bc.cards.cardsInHand = 0;   // issue-87 shape: empty hand at GAMBLE
         check(search::Action::enumerateCardSelectActions(bc).empty(),
               "empty-hand GAMBLE must enumerate zero actions");
+        check(!search::hasLegalProgressionAction(bc),
+              "canonical live action check must report zero legal actions");
 
         search::ScumSearchAgent2 agent;
         agent.simulationCountBase = 1;   // search is a no-op on a zero-edge root
@@ -1453,10 +1458,14 @@ int testSimHealthGambleEmptyHand() {
         check(restored.outcome == Outcome::UNDECIDED,
               "restored outcome must be UNDECIDED");
     }
-    const int fired = search::g_simHealthFailureCount - before;
-    check(fired >= 2,
-          "monitor must fire NO_LEGAL_PROGRESSION + UNDECIDED_BATTLE_EXIT, got "
-          + std::to_string(fired) + " hard failure(s)");
+    const int nlpFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION] - nlpBefore;
+    const int asfFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED] - asfBefore;
+    check(nlpFired >= 1,
+          "primary classification must be NO_LEGAL_PROGRESSION (got "
+          + std::to_string(nlpFired) + ")");
+    check(asfFired == 0,
+          "ACTION_SELECTION_FAILED must not fire for a genuinely empty state (got "
+          + std::to_string(asfFired) + ")");
 
     search::g_fairPlay = savedFair;
     search::g_useSearcher3 = savedS3;
@@ -1469,6 +1478,131 @@ int testSimHealthGambleEmptyHand() {
         return 0;
     }
     std::cout << "simhealth_gamble_empty_hand FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
+// Simulator-health monitor: non-fair Searcher2 coverage (Test B). A
+// deterministic unresolved CARD_SELECT state with zero legal actions must be
+// diagnosed immediately through the AGENT control path as NO_LEGAL_PROGRESSION
+// instead of silently cycling to the 1000-decision stall guard (which
+// converts the battle to PLAYER_LOSS with no health diagnostic). On baseline
+// 9770856 this state degrades to a stall -> PLAYER_LOSS, so this test fails
+// there. The state shape reuses testScumNonFairEmptyEdges (SECRET_WEAPON with
+// an all-skill draw pile).
+int testSimHealthNonFairS2Empty() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) {
+            std::cout << "    " << msg << '\n';
+            ++failures;
+        }
+    };
+
+    const bool savedFair = search::g_fairPlay;
+    const bool savedS3 = search::g_useSearcher3;
+    search::g_fairPlay = false;    // non-fair (known-RNG) Searcher2
+    search::g_useSearcher3 = false;
+
+    const auto nlpBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION];
+    BattleContext bc = cardSelectFixture(CardSelectTask::SECRET_WEAPON, 1, false);
+    bc.cards.drawPile.clear();
+    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));   // no attacks -> zero selectable
+    check(search::Action::enumerateCardSelectActions(bc).empty(),
+          "fixture must have zero selectable actions");
+    check(!search::hasLegalProgressionAction(bc),
+          "canonical live action check must report zero legal actions");
+
+    search::ScumSearchAgent2 agent;
+    agent.simulationCountBase = 1;   // keep the (futile) search cheap on baseline
+    agent.playoutBattle(bc);
+
+    const int nlpFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION] - nlpBefore;
+    check(nlpFired >= 1,
+          "non-fair S2 must report NO_LEGAL_PROGRESSION immediately (got "
+          + std::to_string(nlpFired) + ")");
+    // The battle must NOT have been converted by the stall guard: the monitor
+    // breaks out of the loop while UNDECIDED instead of cycling to PLAYER_LOSS.
+    check(bc.outcome == Outcome::UNDECIDED,
+          "battle must exit UNDECIDED (not a stall-converted PLAYER_LOSS), got "
+          + std::to_string((int)bc.outcome));
+
+    search::g_fairPlay = savedFair;
+    search::g_useSearcher3 = savedS3;
+
+    if (failures == 0) {
+        std::cout << "simhealth_nonfair_s2_empty PASS\n";
+        return 0;
+    }
+    std::cout << "simhealth_nonfair_s2_empty FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
+// Simulator-health monitor: ACTION_SELECTION_FAILED classification (Test C).
+// When canonical live actions exist but root/action selection fails, the
+// monitor must classify the failure as ACTION_SELECTION_FAILED, not
+// NO_LEGAL_PROGRESSION. This is the classification contract used at every S3
+// root-selection failure site (e.g. g_s3Live=0 picking a stale invalid
+// most-visited edge while other live actions remain legal) and at the fair-S2
+// invalid-pick guard. The contract is unit-tested here on controlled states,
+// plus the reporter/counter wiring for the new reason.
+int testSimHealthSelectionFailure() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) {
+            std::cout << "    " << msg << '\n';
+            ++failures;
+        }
+    };
+
+    // (a) Genuinely empty canonical action set -> NO_LEGAL_PROGRESSION.
+    {
+        BattleContext bc = cardSelectFixture(CardSelectTask::GAMBLE, 1, false);
+        bc.cards.cardsInHand = 0;
+        check(!search::hasLegalProgressionAction(bc),
+              "empty-hand GAMBLE must have no legal progression action");
+        check(search::classifySelectionFailure(bc) == search::SimHealthFailure::NO_LEGAL_PROGRESSION,
+              "empty canonical set must classify as NO_LEGAL_PROGRESSION");
+    }
+
+    // (b) Legal live actions exist -> a selection failure must classify as
+    //     ACTION_SELECTION_FAILED, and the per-reason counter must count it.
+    {
+        BattleContext bc = cardSelectFixture(CardSelectTask::GAMBLE, 1, false);  // 5-card hand -> subsets
+        check(search::hasLegalProgressionAction(bc),
+              "GAMBLE with a 5-card hand must have legal progression actions");
+        check(search::classifySelectionFailure(bc) == search::SimHealthFailure::ACTION_SELECTION_FAILED,
+              "legal actions present + selection failure must classify as ACTION_SELECTION_FAILED");
+        const int asfBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED];
+        const int totalBefore = search::g_simHealthFailureCount;
+        search::reportSimHealthFailure(bc, search::SimHealthFailure::ACTION_SELECTION_FAILED);
+        check(search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED] == asfBefore + 1,
+              "ACTION_SELECTION_FAILED must be countable by the per-reason counter");
+        check(search::g_simHealthFailureCount == totalBefore + 1,
+              "total failure counter must also increment");
+    }
+
+    // (c) PLAYER_NORMAL always has a legal progression action (END_TURN).
+    {
+        BattleContext bc = playerNormalFixture(12345, 3);
+        check(search::hasLegalProgressionAction(bc),
+              "PLAYER_NORMAL must always have a legal progression action (END_TURN)");
+        check(search::classifySelectionFailure(bc) == search::SimHealthFailure::ACTION_SELECTION_FAILED,
+              "PLAYER_NORMAL selection failure must classify as ACTION_SELECTION_FAILED");
+    }
+
+    // (d) A decided battle is not an agent decision boundary.
+    {
+        BattleContext bc = cardSelectFixture(CardSelectTask::GAMBLE, 1, false);
+        bc.outcome = Outcome::PLAYER_VICTORY;
+        check(!search::hasLegalProgressionAction(bc),
+              "a decided battle must not report legal progression actions");
+    }
+
+    if (failures == 0) {
+        std::cout << "simhealth_selection_failure PASS\n";
+        return 0;
+    }
+    std::cout << "simhealth_selection_failure FAIL (" << failures << " cases)\n";
     return 1;
 }
 
@@ -2658,6 +2792,10 @@ int main(int argc, const char* argv[]) {
         return testTimeEaterExhaust();
     } else if (command == "simhealth_gamble_empty_hand") {
         return testSimHealthGambleEmptyHand();
+    } else if (command == "simhealth_nonfair_s2_empty") {
+        return testSimHealthNonFairS2Empty();
+    } else if (command == "simhealth_selection_failure") {
+        return testSimHealthSelectionFailure();
     } else if (command == "simhealth_load") {
         if (argc < 3) {
             std::cout << "usage: test simhealth_load <capture.bin>\n";

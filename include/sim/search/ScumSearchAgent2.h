@@ -65,9 +65,12 @@ namespace sts::search {
         void takeAction(GameContext &gc, GameAction a);
         void takeAction(BattleContext &bc, Action a);
 
-        void stepThroughSolution(BattleContext &bc, std::vector<search::Action> &actions, search::BattleScumSearcher2 &searcher);
-        void stepThroughSearchTree(BattleContext &bc, search::BattleScumSearcher2 &searcher);
-
+        // Return true when at least one action was committed this call; false
+        // when the tree/line could not supply an action at an unresolved
+        // decision (classified by playoutBattle against the canonical live
+        // action set for simulator-health reporting).
+        bool stepThroughSolution(BattleContext &bc, std::vector<search::Action> &actions, search::BattleScumSearcher2 &searcher);
+        bool stepThroughSearchTree(BattleContext &bc, search::BattleScumSearcher2 &searcher);
         void stepOutOfCombatPolicy(GameContext &gc);
         void cardSelectPolicy(GameContext &gc);
         void stepEventPolicy(GameContext &gc);

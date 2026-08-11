@@ -70,3 +70,38 @@ unneeded for detection-only instrumentation).
 
 Implemented and verified on the local build. Issue 87 remains open (monitor
 catches it; repair is a separate task).
+
+## 2026-08-11 correction: classification + non-fair S2 coverage
+
+Same-day correction to the implementation above (commit `9770856` + follow-up):
+
+- **New reason `ACTION_SELECTION_FAILED`.** `NO_LEGAL_PROGRESSION` was too
+  broad: `s3PickRootAction` returns `have=false` not only when the live state
+  has zero legal actions but also when root selection fails while legal live
+  actions exist (e.g. `g_s3Live=0` picks a most-visited stored edge that is
+  invalid on the live state). All S3 (`fair`/`non-fair`) and fair-S2 root-pick
+  failure sites now classify via the canonical live action set
+  (`hasLegalProgressionAction` / `classifySelectionFailure` in `SimHealth`):
+  empty set → `NO_LEGAL_PROGRESSION`; legal actions exist → `ACTION_SELECTION_FAILED`.
+- **Non-fair S2 coverage hole closed.** `stepThroughSearchTree` could hit
+  `!haveAction` (or `stepThroughSolution` a consumed empty cached line) and
+  return to the battle loop, silently cycling to the 1000-decision stall guard
+  → synthetic `PLAYER_LOSS` with no diagnosis. The steppers now report whether
+  they committed an action, and `playoutBattle` classifies a zero-progress
+  unresolved decision with the canonical check and breaks (NO_LEGAL_PROGRESSION
+  immediately). Verified: on baseline `9770856` the zero-action fixture
+  produced `[battle-stall] ... 1000 decisions` with `fired=0` and
+  `outcome=PLAYER_LOSS`; after the fix it fires `NO_LEGAL_PROGRESSION` +
+  `UNDECIDED_BATTLE_EXIT` immediately with `outcome=UNDECIDED`.
+- `INVALID_LIVE_ACTION` now fires only at the actual commit choke point
+  (`takeAction`), preserving its "about to be committed and invalid" meaning;
+  the fair-S2 nothing-committed invalid-pick guard reclassifies.
+- Tests: per-reason counters (`g_simHealthFailureCounts`) added;
+  `simhealth_gamble_empty_hand` now asserts the primary classification is
+  `NO_LEGAL_PROGRESSION` with `ACTION_SELECTION_FAILED == 0`; new
+  `simhealth_nonfair_s2_empty` (agent-path, fails on baseline) and
+  `simhealth_selection_failure` (classification contract) tests registered in
+  ctest (26/26 pass). Smoke unchanged: seed 126711 reproduces
+  `NO_LEGAL_PROGRESSION` + `UNDECIDED_BATTLE_EXIT`, seed 4 (EXHAUST_MANY)
+  still `NO_LEGAL_PROGRESSION`, non-fair smoke clean, both smokes
+  byte-identical `BEST` lines vs pre-correction.

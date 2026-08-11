@@ -433,9 +433,12 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                               << " pickCount=" << bc.cardSelectInfo.pickCount
                               << " hand=" << bc.cards.cardsInHand
                               << " outcome=" << (int)bc.outcome << "\n";
-                // Simulator health: unresolved combat with zero legal
-                // progression actions at a genuine agent decision boundary.
-                reportSimHealthFailure(bc, SimHealthFailure::NO_LEGAL_PROGRESSION,
+                // Simulator health: root selection returned no usable action.
+                // `have=false` alone does not prove the live state is stuck
+                // (with g_s3Live=0 the most-visited stored edge can be invalid
+                // while other live actions are legal), so classify against the
+                // canonical live action set.
+                reportSimHealthFailure(bc, classifySelectionFailure(bc),
                                        SimHealthMeta{decisionIdx});
                 break;
             }
@@ -614,9 +617,12 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 std::cerr << "[battle-break:s2] state=" << (int)bc.inputState
                           << " task=" << (int)bc.cardSelectInfo.cardSelectTask
                           << " pickCount=" << bc.cardSelectInfo.pickCount << "\n";
-            // Simulator health: unresolved combat with zero legal progression
-            // actions at a genuine agent decision boundary.
-            reportSimHealthFailure(bc, SimHealthFailure::NO_LEGAL_PROGRESSION);
+            // Simulator health: the fair-S2 root is enumerated on the live
+            // visible state (determinization changes only hidden draw order /
+            // RNG, never the visible state that action legality depends on),
+            // so an empty search root is equivalent to zero canonical live
+            // legal actions; classify via the canonical check for uniformity.
+            reportSimHealthFailure(bc, classifySelectionFailure(bc));
             break;   // no legal move (shouldn't happen pre-terminal)
         }
         if (!best.isValidAction(bc)) {
@@ -625,9 +631,11 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                           << " task=" << (int)bc.cardSelectInfo.cardSelectTask
                           << " pickCount=" << bc.cardSelectInfo.pickCount << "\n";
             // Simulator health: the chosen (most-visited) root action cannot
-            // execute on the live state.
-            reportSimHealthFailure(bc, SimHealthFailure::INVALID_LIVE_ACTION,
-                                   SimHealthMeta{-1, best.bits, true});
+            // execute on the live state. Nothing is committed here, so this is
+            // a selection failure (ACTION_SELECTION_FAILED when legal live
+            // actions exist, NO_LEGAL_PROGRESSION otherwise) -- not an
+            // INVALID_LIVE_ACTION commit.
+            reportSimHealthFailure(bc, classifySelectionFailure(bc));
             break;   // no legal move (shouldn't happen pre-terminal)
         }
 
@@ -676,9 +684,9 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
                     std::cerr << "[battle-break:s3] state=" << (int)bc.inputState
                               << " task=" << (int)bc.cardSelectInfo.cardSelectTask
                               << " pickCount=" << bc.cardSelectInfo.pickCount << "\n";
-                // Simulator health: unresolved combat with zero legal
-                // progression actions at a genuine agent decision boundary.
-                reportSimHealthFailure(bc, SimHealthFailure::NO_LEGAL_PROGRESSION,
+                // Simulator health: classify the root-selection failure
+                // against the canonical live action set (see fair-S3 site).
+                reportSimHealthFailure(bc, classifySelectionFailure(bc),
                                        SimHealthMeta{decisionIdx});
                 break;
             }
@@ -781,10 +789,38 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             bestOutcomePlayerHp = searcher.outcomePlayerHp;
         }
 
+        bool madeProgress = true;
         if (bestOutcomePlayerHp > 0) {
-            stepThroughSolution(bc, bestActions, searcher);
+            madeProgress = stepThroughSolution(bc, bestActions, searcher);
         } else {
-            stepThroughSearchTree(bc, searcher);
+            madeProgress = stepThroughSearchTree(bc, searcher);
+        }
+
+        // Simulator health: a decision in which the tree-stepping machinery
+        // committed zero actions while the battle is unresolved. Classify
+        // against the canonical live action set so a genuinely stuck state is
+        // diagnosed immediately instead of silently cycling to the 1000-
+        // decision stall guard (which would become a synthetic PLAYER_LOSS
+        // with no NO_LEGAL_PROGRESSION / UNDECIDED_BATTLE_EXIT diagnostic).
+        if (bc.outcome == Outcome::UNDECIDED && !madeProgress) {
+            if (!hasLegalProgressionAction(bc)) {
+                reportSimHealthFailure(bc, SimHealthFailure::NO_LEGAL_PROGRESSION);
+                break;
+            }
+            if (bestOutcomePlayerHp <= 0) {
+                // stepThroughSearchTree no-oped: the persistent tree root is
+                // empty while legal live actions exist, so the
+                // search/action-selection machinery failed to supply an
+                // action. Expected-unreachable in the deterministic non-fair
+                // path (an empty tree root mirrors zero live legal actions),
+                // reported defensively rather than cycling.
+                reportSimHealthFailure(bc, SimHealthFailure::ACTION_SELECTION_FAILED);
+                break;
+            }
+            // stepThroughSolution with a consumed empty cached line while
+            // legal actions exist: a search-policy routing artifact (the tree
+            // can still supply actions on the next iteration), not a health
+            // failure. Preserve baseline behavior and keep looping.
         }
     }
     // Simulator health: safety net for an unresolved exit of the non-fair S2
@@ -794,7 +830,13 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
     }
 }
 
-void search::ScumSearchAgent2::stepThroughSolution(BattleContext &bc, std::vector<search::Action> &actions, search::BattleScumSearcher2 &searcher) {
+// Returns true when at least one action was committed this call (the caller
+// re-searches when the battle is still unresolved); false when the cached
+// winning line was already empty/exhausted at entry (a zero-progress
+// decision, classified by playoutBattle against the canonical live action
+// set).
+bool search::ScumSearchAgent2::stepThroughSolution(BattleContext &bc, std::vector<search::Action> &actions, search::BattleScumSearcher2 &searcher) {
+    bool committed = false;
     for (int i = 0; i < stepsWithSolution; ++i) {
         if (actions.empty()) {
             break;
@@ -808,14 +850,21 @@ void search::ScumSearchAgent2::stepThroughSolution(BattleContext &bc, std::vecto
         takeAction(bc, a);
         searcher.advanceRoot(a, bc);   // keep the subtree under the action we just played
         actions.pop_back();
+        committed = true;
 
         if (bc.outcome != Outcome::UNDECIDED) {
             break;
         }
     }
+    return committed;
 }
 
-void search::ScumSearchAgent2::stepThroughSearchTree(BattleContext &bc, search::BattleScumSearcher2 &searcher) {
+// Returns true when at least one action was committed this call (or the
+// battle finished); false when the persistent tree root has no edges at an
+// unresolved decision (zero-progress, classified by playoutBattle against the
+// canonical live action set).
+bool search::ScumSearchAgent2::stepThroughSearchTree(BattleContext &bc, search::BattleScumSearcher2 &searcher) {
+    bool committed = false;
     for (int actionCount = 0; actionCount < stepsNoSolution; ++actionCount) {
         if (bc.outcome != Outcome::UNDECIDED) {
             break;
@@ -845,7 +894,9 @@ void search::ScumSearchAgent2::stepThroughSearchTree(BattleContext &bc, search::
 
         takeAction(bc, maxAction);
         searcher.advanceRoot(maxAction, bc);
+        committed = true;
     }
+    return committed;
 }
 
 void search::ScumSearchAgent2::stepRandom(GameContext &gc) {

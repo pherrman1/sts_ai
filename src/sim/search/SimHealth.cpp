@@ -12,6 +12,7 @@
 
 #include "combat/BattleContextBinary.h"
 #include "constants/MonsterEncounters.h"
+#include "sim/search/Action.h"
 #include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/BattleScumSearcher3.h"
 
@@ -25,6 +26,7 @@
 namespace sts::search {
 
 thread_local int g_simHealthFailureCount = 0;
+thread_local std::array<int, 4> g_simHealthFailureCounts{};
 
 namespace {
 
@@ -32,6 +34,7 @@ const char *failureName(SimHealthFailure f) {
     switch (f) {
         case SimHealthFailure::UNDECIDED_BATTLE_EXIT: return "UNDECIDED_BATTLE_EXIT";
         case SimHealthFailure::NO_LEGAL_PROGRESSION:  return "NO_LEGAL_PROGRESSION";
+        case SimHealthFailure::ACTION_SELECTION_FAILED: return "ACTION_SELECTION_FAILED";
         case SimHealthFailure::INVALID_LIVE_ACTION:   return "INVALID_LIVE_ACTION";
     }
     return "UNKNOWN";
@@ -125,9 +128,31 @@ void writeCapture(const BattleContext &bc, const SimHealthMeta &meta,
 
 } // namespace
 
+bool hasLegalProgressionAction(const BattleContext &bc) {
+    if (bc.outcome != Outcome::UNDECIDED) return false;
+    switch (bc.inputState) {
+        case InputState::PLAYER_NORMAL:
+            // END_TURN is always legal at a PLAYER_NORMAL decision
+            // (Action::isValidAction only requires the input state).
+            return true;
+        case InputState::CARD_SELECT:
+            // Shared canonical enumerator: the single source of truth that
+            // both searchers delegate to for CARD_SELECT.
+            return !Action::enumerateCardSelectActions(bc).empty();
+        default:
+            return false;   // not a genuine agent decision boundary
+    }
+}
+
+SimHealthFailure classifySelectionFailure(const BattleContext &bc) {
+    return hasLegalProgressionAction(bc) ? SimHealthFailure::ACTION_SELECTION_FAILED
+                                         : SimHealthFailure::NO_LEGAL_PROGRESSION;
+}
+
 void reportSimHealthFailure(const BattleContext &bc, SimHealthFailure reason,
                             const SimHealthMeta &meta) {
     ++g_simHealthFailureCount;
+    ++g_simHealthFailureCounts[static_cast<int>(reason)];
     const char *name = failureName(reason);
 
     std::ostringstream diag;

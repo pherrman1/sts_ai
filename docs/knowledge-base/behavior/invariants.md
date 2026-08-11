@@ -16,7 +16,7 @@ points.
 
 ### Runtime simulator health monitor
 
-Since 2026-08-11 a small runtime monitor checks three high-confidence invariants
+Since 2026-08-11 a small runtime monitor checks four high-confidence invariants
 at every combat decision boundary and battle-loop exit during normal runs:
 
 - `UNDECIDED_BATTLE_EXIT`: a battle loop in `ScumSearchAgent2` must not exit
@@ -24,11 +24,16 @@ at every combat decision boundary and battle-loop exit during normal runs:
   converts stalls to `PLAYER_LOSS` first, so any UNDECIDED exit is
   unintentional).
 - `NO_LEGAL_PROGRESSION`: at a genuine agent decision boundary with an
-  unresolved combat, enumeration/search must produce at least one legal
-  progression action.
-- `INVALID_LIVE_ACTION`: an action committed to the live `BattleContext` must
-  be legal on that exact state (`Action::isValidAction`; independent of
-  `sts_asserts`).
+  unresolved combat, the CANONICAL live legal action set is empty
+  (`hasLegalProgressionAction`, built on `Action::enumerateCardSelectActions`
+  and the always-legal END_TURN at PLAYER_NORMAL).
+- `ACTION_SELECTION_FAILED`: at a genuine agent decision boundary with an
+  unresolved combat, at least one canonical live legal action exists but the
+  search/root-selection machinery failed to return a usable action (e.g.
+  `g_s3Live=0` picking a stale invalid most-visited edge).
+- `INVALID_LIVE_ACTION`: an action actually about to be committed to the live
+  `BattleContext` is not legal on that exact state (`Action::isValidAction`;
+  independent of `sts_asserts`).
 
 Failures print `[sim-health][HARD]` diagnostics and, with
 `STS_SIM_HEALTH_CAPTURE_DIR` set, serialize the offending state to a
@@ -132,9 +137,12 @@ Operational assumptions that are not enforced by types or tests:
   card-select parity, battle-context round-trip, simulator-health empty-hand
   detection; `small-test isbattleover`); the remaining invariants are
   review-enforced.
-- The simulator health monitor covers only its three hard invariants (issue 87
-  GAMBLE/empty-hand and the same EXHAUST_MANY/empty-hand class are caught);
-  deeper simulator invariants remain review-enforced.
+- The simulator health monitor covers only its four hard invariants
+  (UNDECIDED_BATTLE_EXIT, NO_LEGAL_PROGRESSION, ACTION_SELECTION_FAILED,
+  INVALID_LIVE_ACTION); issue 87 GAMBLE/empty-hand and the same
+  EXHAUST_MANY/empty-hand class are caught, and the non-fair Searcher2
+  zero-action path is covered; deeper simulator invariants remain
+  review-enforced.
 - `OocCheckpointNet::load` and `OocStrategicNet::load` check every payload read;
   truncated files fail load and the net is not used (issue 08, closed).
 - `tools/verify/check_replay.py` probes repeated-seed CSV equality, but fair multi-thread

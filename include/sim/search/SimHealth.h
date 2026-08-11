@@ -15,11 +15,20 @@
 //                           combat silently leaving the loop; e.g. the
 //                           Searcher3 `!have` break).
 //   NO_LEGAL_PROGRESSION   - at a genuine agent decision boundary with
-//                           outcome == UNDECIDED, the search/enumerator
-//                           produced zero legal progression actions.
-//   INVALID_LIVE_ACTION    - an action about to be committed to the live
-//                           BattleContext is not legal on that exact state
-//                           (Action::isValidAction, the shared source of
+//                           outcome == UNDECIDED, the CANONICAL live legal
+//                           action set is empty (the live state truly has no
+//                           legal progression action; e.g. issue 87's
+//                           CARD_SELECT/GAMBLE/empty-hand state).
+//   ACTION_SELECTION_FAILED - at a genuine agent decision boundary with
+//                           outcome == UNDECIDED, at least one canonical live
+//                           legal action exists, but the search/root-selection
+//                           machinery failed to return an action that can be
+//                           committed (e.g. Searcher3 with g_s3Live=0 whose
+//                           most-visited stored edge is invalid on the live
+//                           state while other live actions remain legal).
+//   INVALID_LIVE_ACTION    - an action actually about to be committed to the
+//                           live BattleContext is not legal on that exact
+//                           state (Action::isValidAction, the shared source of
 //                           truth; independent of sts_asserts, so it also
 //                           fires in release builds).
 //
@@ -30,6 +39,7 @@
 #ifndef STS_LIGHTSPEED_SIMHEALTH_H
 #define STS_LIGHTSPEED_SIMHEALTH_H
 
+#include <array>
 #include <cstdint>
 
 namespace sts {
@@ -38,10 +48,13 @@ namespace sts {
 
 namespace sts::search {
 
+// Keep the array size in simhealth-failure counts below in sync with this
+// enum: values are used directly as indexes into g_simHealthFailureCounts.
 enum class SimHealthFailure {
-    UNDECIDED_BATTLE_EXIT,
-    NO_LEGAL_PROGRESSION,
-    INVALID_LIVE_ACTION,
+    UNDECIDED_BATTLE_EXIT = 0,
+    NO_LEGAL_PROGRESSION = 1,
+    ACTION_SELECTION_FAILED = 2,
+    INVALID_LIVE_ACTION = 3,
 };
 
 // Optional per-failure context. decisionIdx is the searcher decision index at
@@ -52,9 +65,23 @@ struct SimHealthMeta {
     bool hasChosenAction = false;
 };
 
-// Test-visible count of hard failures reported on the calling thread. The
-// unit tests assert the monitor fires; incremented on every hard report.
-extern thread_local int g_simHealthFailureCount;
+// Test-visible counts of hard failures reported on the calling thread. The
+// unit tests assert the monitor fires and which reason fired; incremented on
+// every hard report.
+extern thread_local int g_simHealthFailureCount;              // total
+extern thread_local std::array<int, 4> g_simHealthFailureCounts;  // per reason
+
+// Canonical live-action availability: does this exact unresolved
+// BattleContext currently have at least one legal progression action? Uses
+// the shared/authoritative enumeration (search::Action::enumerateCardSelectActions
+// for CARD_SELECT; END_TURN is always legal at PLAYER_NORMAL), never a
+// duplicated legality rule. Only meaningful at genuine agent decision states.
+bool hasLegalProgressionAction(const BattleContext &bc);
+
+// Classify a search/root-selection failure at an unresolved agent decision:
+// empty canonical live action set -> NO_LEGAL_PROGRESSION, otherwise the
+// selection machinery failed -> ACTION_SELECTION_FAILED.
+SimHealthFailure classifySelectionFailure(const BattleContext &bc);
 
 // Report a hard simulator-health failure. Always prints the diagnostic to
 // stderr; then, when STS_SIM_HEALTH_CAPTURE_DIR is set, serializes the
