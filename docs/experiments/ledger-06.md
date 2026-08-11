@@ -2001,6 +2001,17 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   - 64p: 1000→2, 3000→5, 6000→2
   - 128p: 1000→2, 3000→3, 6000→3
   - 256p: 1000→1, 3000→1, 6000→1
+- **Follow-up grid ({32,512,1024} particles x {1000,3000,6000} sims, 108 cells in 103.1s,
+  2026-08-11):** per-cell wins of 12:
+  - 32p: 1000→1, 3000→2, 6000→3
+  - 512p: 1000→1, 3000→3, 6000→3
+  - 1024p: 1000→2, 3000→4, 6000→3
+  Combined particle axis {32,64,128,256,512,1024} x {1000,3000,6000} = 216 cells:
+  best cell remains **64p/3000s = 5/12**; 1024p/3000s = 4/12 is the only other >=4.
+  Per-seed win consistency across the 18 cells: 126704/126731/126735/126753/126817 = 0/18
+  (never won at any budget); 126808 = 1/18; 126819 = 4/18; 126721 = 6/18; 126773 = 6/18;
+  126766 = 8/18; 126783 = 8/18; 126722 = 9/18 (most flip-prone). So the replay win signal
+  is concentrated in ~6 of the 12 captured fights; 5 fights never flip at any budget.
 - **Replay determinism:** a second independent run of the 36 (64p) cells gave 0 diffs
   (won/hpEnd/turns identical).
 - **Fidelity gate (replay == capture-time outcome):** at the recorded config
@@ -2017,6 +2028,7 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   particles (128/256) do not help and 256p wins FEWER fights than 64p at every sim
   budget. This is an isolated-fight re-search result; it does not transfer to full-run
   win rate without a full paired run.
-- **Artifacts:** `build/fightrep_cap/` (captures), `build/fightrep_grid_12f.csv` (108
-  cells), `/tmp/opencode/weird_cases/` (126711 capture set aside for the separate fix).
+- **Artifacts:** `build/fightrep_cap/` (captures), `build/fightrep_grid_12f.csv` (64/128/256p,
+  108 cells), `build/fightrep_grid_32p512p1024p.csv` (32/512/1024p, 108 cells),
+  `/tmp/opencode/weird_cases/` (126711 capture set aside for the separate fix).
 - **Status:** re-record complete; 2/12 fidelity flips are an open harness concern.
