@@ -2011,7 +2011,16 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   Per-seed win consistency across the 18 cells: 126704/126731/126735/126753/126817 = 0/18
   (never won at any budget); 126808 = 1/18; 126819 = 4/18; 126721 = 6/18; 126773 = 6/18;
   126766 = 8/18; 126783 = 8/18; 126722 = 9/18 (most flip-prone). So the replay win signal
-  is concentrated in ~6 of the 12 captured fights; 5 fights never flip at any budget.
+   is concentrated in ~6 of the 12 captured fights; 5 fights never flip at any budget.
+- **Extreme cell (1024 particles x 100,000 sims, single cell, 12 fights parallel on 12
+  threads, 365.9s wall / ~6.1 min, 2026-08-11):** **6/12 wins — the best cell so far**
+  (previous best 5/12 at 64p/3000s). Winners: `126721 126722 126766 126773 126783
+  126819` (hpEnd 29/25/7/6/4/2). Note 1024p/100k is the only cell so far where `126721`
+  and `126819` win; the same 5 fights still never win (126704, 126731, 126735, 126753,
+  126817). Runtime note: 10k-sims probe = 17.6s/fight single-core, so 100k ≈ 176s/fight
+  expected; the observed 365.9s wall for 12 parallel fights is ~2x that, consistent with
+  super-linear per-decision cost at 300k sims/decision (boss x3) plus the slowest fight
+  dominating the parallel cell.
 - **Replay determinism:** a second independent run of the 36 (64p) cells gave 0 diffs
   (won/hpEnd/turns identical).
 - **Fidelity gate (replay == capture-time outcome):** at the recorded config
@@ -2030,5 +2039,6 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   win rate without a full paired run.
 - **Artifacts:** `build/fightrep_cap/` (captures), `build/fightrep_grid_12f.csv` (64/128/256p,
   108 cells), `build/fightrep_grid_32p512p1024p.csv` (32/512/1024p, 108 cells),
+  `build/fightrep_1024p_100k.csv` (1024p/100k, 12 cells),
   `/tmp/opencode/weird_cases/` (126711 capture set aside for the separate fix).
 - **Status:** re-record complete; 2/12 fidelity flips are an open harness concern.
