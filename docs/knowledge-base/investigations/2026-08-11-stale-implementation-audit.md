@@ -95,7 +95,7 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 **Cluster:** `restbench`, `shopbench`, `allbench`, `skipbench`
 
-**Files/symbols involved:** `apps/one_combat.cpp` lines 11641–11665 (mode dispatch), plus the corresponding `restBench`, `shopBench`, `allBench`, `skipBench` function implementations
+**Files/symbols involved:** `apps/one_combat.cpp` mode dispatch, plus the `restBench`, `shopBench`, `allOOCBench`, `skipBench`, and `oocBench` function implementations
 
 **Evidence:**
 - All four modes require `v_server.py` running (documented in their mode dispatch comments).
@@ -116,6 +116,8 @@ Based on direct static evidence (no meaningful current callers, no active resear
 **Verification cost:** LOW — `bestbench` 8-seed smoke suffices.
 
 **Classification:** DEAD_HIGH_CONFIDENCE
+
+**Status:** REMOVED — Batch 1 implemented in Phase 6 (`refactor: remove obsolete server benchmark modes`, 2026-08-12). All four modes, their dispatch branches, and their dedicated wrappers (`restBench`, `shopBench`, `allOOCBench`, `skipBench`, and the `oocBench` helper used only by `restBench`/`shopBench`) were deleted. Historical evidence is preserved here and in `docs/experiments/ledger-01.md`.
 
 ---
 
@@ -564,10 +566,10 @@ All of these flags have decision-log documentation from 2026-08-09/10 and are wr
 | `cardbench` | Card drafting A/B | No current caller found | Historical A/B | DEAD_HIGH_CONFIDENCE |
 | `combobench` | Baseline vs greedy draft+heuristic path | No current caller found | Historical A/B | DEAD_HIGH_CONFIDENCE |
 | `pathbench` | Random path vs heuristic path | No current caller found | Historical A/B | DEAD_HIGH_CONFIDENCE |
-| `restbench` | Default rest vs value policy (needs v_server) | No current caller found | Historical A/B, server-dependent | DEAD_HIGH_CONFIDENCE |
-| `shopbench` | Default shop vs V-knapsack (needs v_server) | No current caller found | Historical A/B, server-dependent | DEAD_HIGH_CONFIDENCE |
-| `allbench` | All-default vs rest-V+shop-V (needs v_server) | No current caller found | Historical A/B, server-dependent | DEAD_HIGH_CONFIDENCE |
-| `skipbench` | Card-skip sweep (needs v_server) | No current caller found | Historical sweep, server-dependent | DEAD_HIGH_CONFIDENCE |
+| `restbench` | Default rest vs value policy (needs v_server) | No current caller found | Historical A/B, server-dependent | REMOVED (Batch 1) |
+| `shopbench` | Default shop vs V-knapsack (needs v_server) | No current caller found | Historical A/B, server-dependent | REMOVED (Batch 1) |
+| `allbench` | All-default vs rest-V+shop-V (needs v_server) | No current caller found | Historical A/B, server-dependent | REMOVED (Batch 1) |
+| `skipbench` | Card-skip sweep (needs v_server) | No current caller found | Historical sweep, server-dependent | REMOVED (Batch 1) |
 | `causalgen` | CRN advantage for causal card value | `train_advantage.py` references its CSV output as training data | Historical experiment with a retained trainer consumer | SUPERSEDED_CONNECTED |
 | `carddump` | Dump card properties | No current caller found | One-off debug tool | DEAD_HIGH_CONFIDENCE |
 | `deck` | Dump final deck+relics | No current caller found | One-off debug tool | DEAD_HIGH_CONFIDENCE |
@@ -590,6 +592,12 @@ Ordered by cleanup value / deletion risk / verification cost, each batch changes
 **Files changed:** `apps/one_combat.cpp` only.
 
 **Verification:** `tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0`
+
+**Status: COMPLETED (Phase 6 Batch 1).** Implementation commit `refactor: remove obsolete server benchmark modes` (2026-08-12) removed:
+- the four `restbench`/`shopbench`/`allbench`/`skipbench` dispatch branches in `apps/one_combat.cpp`;
+- the dedicated wrappers `restBench`, `shopBench`, `allOOCBench`, `skipBench`, plus the `oocBench` helper used only by `restBench`/`shopBench`;
+- the four corresponding entries in `tools/seed_guard.sh`.
+`bestbench` and `runFullRunOOC` are unchanged; verification passed (build, `ctest`, guarded 8-seed `bestbench` smoke).
 
 ---
 
@@ -764,10 +772,11 @@ SUPERSEDED_CONNECTED:       ~20 flags + 2 modes
   STS_REUSE_CPU_DIAG*, STS_REUSE_CARRY_DIAG, STS_REUSE_DIAG,
   causalgen, datagen (loop caller keeps it connected)
 
-DEAD_HIGH_CONFIDENCE:       10 modes + 2 flags
-  restbench, shopbench, allbench, skipbench, bench, runbench, mcts, random,
-  cardbench, combobench, pathbench, draftbench, carddump, deck
-  (14 modes — confirmed zero non-historical callers)
+DEAD_HIGH_CONFIDENCE:       10 modes + 2 flags remaining
+  bench, runbench, mcts, random, cardbench, combobench, pathbench, draftbench,
+  carddump, deck
+  (originally 14 modes — confirmed zero non-historical callers;
+   4 removed in Batch 1: restbench, shopbench, allbench, skipbench)
   STS_VNET_COND_BOSS, STS_VNET_COND_ACT3 (2 load-only dead flags)
 
 UNKNOWN:                    1 flag
@@ -796,11 +805,12 @@ UNKNOWN:                    1 flag
 ## Implementation changes
 
 ```text
-implementation files changed: 0
-runtime behavior changed: no
+implementation files changed (this document): 0
+implementation files changed (Batch 1, 2026-08-12): apps/one_combat.cpp, tools/seed_guard.sh
+runtime behavior changed: no (bestbench unchanged)
 models changed: no
 experiments run: none
-seed gates run: none
+seed gates run: bestbench 8-seed smoke (guarded)
 ```
 
 ---

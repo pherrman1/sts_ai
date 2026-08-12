@@ -7,7 +7,7 @@ set -euo pipefail
 MAX_AUTOMATED_SEEDS=128
 
 declare -A ONE_COMBAT_SEED_INDEX=(
-  ["allbench"]=3            ["bench"]=3             ["bestbench"]=3
+  ["bench"]=3               ["bestbench"]=3
   ["cardbench"]=3           ["causalgen"]=2         ["combatgen"]=2
   ["combobench"]=3          ["cpsictr"]=3           ["datagen"]=2
   ["datagen2"]=2            ["datagen3"]=2          ["distgen"]=2
@@ -15,9 +15,9 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["frontiergen"]=2         ["leafdiag"]=2          ["leafref"]=5
   ["fightrep"]=6            ["oocnextgen"]=2        ["pathbench"]=3
   ["pathcfgen"]=2
-  ["policygen"]=2           ["restbench"]=3         ["rollouttrace"]=4
-  ["runbench"]=3            ["searchdiag"]=2        ["shopbench"]=3
-  ["skipbench"]=3           ["strategicgen"]=2      ["strategicgen2"]=2
+  ["policygen"]=2           ["rollouttrace"]=4
+  ["runbench"]=3            ["searchdiag"]=2
+  ["strategicgen"]=2        ["strategicgen2"]=2
   ["strategicmarggen"]=2
 )
 

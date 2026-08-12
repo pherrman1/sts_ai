@@ -3361,50 +3361,6 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
                 gc.floorNum, gc.act, gc.curHp, gc.maxHp);
 }
 
-// A/B one out-of-combat policy toggle (rest or shop) against the default agent,
-// holding server card picks + heuristic path fixed.
-static void oocBench(const char *label, int sims, int nSeeds, int asc, bool isShop) {
-    std::cout << label << "   seeds 0.." << nSeeds - 1
-              << "   ascension: " << asc << "   sims/decision: " << sims
-              << "   threads: " << numThreads() << "\n\n";
-    for (int mode = 0; mode < 2; ++mode) {
-        const bool on = (mode == 1);
-        const bool restV = on && !isShop, shopV = on && isShop;
-        int wins = 0; long long floor = 0, hp = 0; double sec = 0;
-        auto wall0 = std::chrono::steady_clock::now();
-        #pragma omp parallel for reduction(+:wins,floor,hp,sec) schedule(dynamic)
-        for (int s = 0; s < nSeeds; ++s) {
-            RunResult r = runFullRunOOC((std::uint64_t)s, sims, asc, restV, shopV);
-            wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec;
-        }
-        double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
-        const char *name = isShop ? (on ? "shop-V(knapsack)" : "shop-agent(default)")
-                                  : (on ? "rest-V(heal/upgrade)" : "rest-agent(default)");
-        std::printf("%-22s  win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
-                    name, 100.0 * wins / nSeeds, (double)floor / nSeeds,
-                    (double)hp / nSeeds, sec / nSeeds, wall);
-    }
-}
-
-// Single-arm run (server cards + heuristic path, no shop/rest V) at the current
-// STS_SKIP_THR. Isolates the card-skip threshold; sweep by re-invoking with env.
-static void skipBench(int sims, int nSeeds, int asc) {
-    std::cout << "card-skip run (server-cards + heuristic-path)   seeds 0.." << nSeeds - 1
-              << "   ascension: " << asc << "   sims/decision: " << sims
-              << "   skipThresh: " << g_cardSkipThresh << "   threads: " << numThreads() << "\n";
-    int wins = 0; long long floor = 0, hp = 0; double sec = 0;
-    auto wall0 = std::chrono::steady_clock::now();
-    #pragma omp parallel for reduction(+:wins,floor,hp,sec) schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        RunResult r = runFullRunOOC((std::uint64_t)s, sims, asc, false, false);
-        wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec;
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
-    std::printf("skip=%-8.3g  win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
-                g_cardSkipThresh, 100.0 * wins / nSeeds, (double)floor / nSeeds,
-                (double)hp / nSeeds, sec / nSeeds, wall);
-}
-
 // Single-arm readout of the CURRENT BEST out-of-combat stack: native floor-V
 // card picks (skip@g_cardSkipThresh, default -0.5) + heuristic path + shop-V,
 // with the default win-rate rest layer (g_restWin, heal-vs-upgrade in P(win)
@@ -3532,35 +3488,6 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
     std::printf("BEST                    win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
                 100.0 * wins / nSeeds, (double)floor / nSeeds, (double)hp / nSeeds, sec / nSeeds, wall);
-}
-
-static void restBench(int sims, int nSeeds, int asc) {
-    oocBench("rest-site A/B (server-cards + heuristic-path)", sims, nSeeds, asc, false);
-}
-static void shopBench(int sims, int nSeeds, int asc) {
-    oocBench("shop A/B (server-cards + heuristic-path)", sims, nSeeds, asc, true);
-}
-
-// A/B all-default vs (rest-V + shop-V together), holding server cards + path fixed.
-static void allOOCBench(int sims, int nSeeds, int asc) {
-    std::cout << "OOC A/B (rest-V + shop-V vs all-default; server-cards + heuristic-path)   seeds 0.."
-              << nSeeds - 1 << "   ascension: " << asc << "   sims/decision: " << sims
-              << "   healThresh: " << g_restVThreshold << "   threads: " << numThreads() << "\n\n";
-    for (int mode = 0; mode < 2; ++mode) {
-        const bool on = (mode == 1);
-        int wins = 0; long long floor = 0, hp = 0; double sec = 0;
-        auto wall0 = std::chrono::steady_clock::now();
-        #pragma omp parallel for reduction(+:wins,floor,hp,sec) schedule(dynamic)
-        for (int s = 0; s < nSeeds; ++s) {
-            RunResult r = runFullRunOOC((std::uint64_t)s, sims, asc, on, on);
-            wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec;
-        }
-        double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
-        std::printf("%-22s  win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
-                    on ? "rest+shop-V" : "all-default",
-                    100.0 * wins / nSeeds, (double)floor / nSeeds,
-                    (double)hp / nSeeds, sec / nSeeds, wall);
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -11830,30 +11757,6 @@ int main(int argc, char **argv) {
         int nSeeds = argc > 3 ? std::stoi(argv[3]) : 32;
         int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
         pathBench(sims, nSeeds, asc);
-
-    } else if (mode == "restbench") {     // default rest heuristic vs value policy (needs v_server.py)
-        int sims   = argc > 2 ? std::stoi(argv[2]) : 2000;
-        int nSeeds = argc > 3 ? std::stoi(argv[3]) : 96;
-        int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
-        restBench(sims, nSeeds, asc);
-
-    } else if (mode == "shopbench") {     // default shop heuristic vs V-knapsack (needs v_server.py)
-        int sims   = argc > 2 ? std::stoi(argv[2]) : 1000;
-        int nSeeds = argc > 3 ? std::stoi(argv[3]) : 512;
-        int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
-        shopBench(sims, nSeeds, asc);
-
-    } else if (mode == "allbench") {      // all-default vs rest-V + shop-V together (needs v_server.py)
-        int sims   = argc > 2 ? std::stoi(argv[2]) : 1000;
-        int nSeeds = argc > 3 ? std::stoi(argv[3]) : 512;
-        int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
-        allOOCBench(sims, nSeeds, asc);
-
-    } else if (mode == "skipbench") {     // single-arm card-skip sweep point (env STS_SKIP_THR; needs v_server.py)
-        int sims   = argc > 2 ? std::stoi(argv[2]) : 1000;
-        int nSeeds = argc > 3 ? std::stoi(argv[3]) : 512;
-        int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
-        skipBench(sims, nSeeds, asc);
 
     } else if (mode == "bestbench") {     // current best OOC stack, single arm (baseline for new experiments)
         int sims   = argc > 2 ? std::stoi(argv[2]) : 1000;

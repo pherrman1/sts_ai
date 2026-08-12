@@ -9,12 +9,14 @@ investigation is evidence collection, not a decision or a speculative design.
 
 - [Stale implementation audit (2026-08-11)](2026-08-11-stale-implementation-audit.md) —
   ranked cleanup candidates from a reachability + scientific-status map of
-  `apps/`, `src/`, `include/`, `bindings/`. Identifies 14 high-confidence
+  `apps/`, `src/`, `include/`, `bindings/`. Identified 14 high-confidence
   dead CLI modes, 2 load-only dead flags, and ~20 superseded-connected items.
-  Recommends 6 sequential cleanup batches plus deferred items. **Investigation
-  only — no deletions performed.** Corrected 2026-08-11 to fix classification
-  errors (datagen caller, S3_UNION_EXPAND behavior, ENDTURN_MARGINALIZE
-  behavior, missing reuse flags).
+  Recommends 6 sequential cleanup batches plus deferred items. **Phase 6
+  Batch 1 completed 2026-08-12:** the four server-dependent benchmark modes
+  (`restbench`, `shopbench`, `allbench`, `skipbench`) and their wrappers were
+  removed; 10 high-confidence dead CLI modes remain for Batch 2. Corrected
+  2026-08-11 to fix classification errors (datagen caller, S3_UNION_EXPAND
+  behavior, ENDTURN_MARGINALIZE behavior, missing reuse flags).
 
 The resolved Searcher3 reuse investigation was distilled into
 [`decisions/s3-obs-stable-reuse-promotion.md`](../decisions/s3-obs-stable-reuse-promotion.md).
