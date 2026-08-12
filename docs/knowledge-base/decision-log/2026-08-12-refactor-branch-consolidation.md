@@ -40,6 +40,9 @@ synthetic merge commit or history rewrite.
 - `tools/seed_guard.sh env STS_FAIR=1 ./build/one_combat bestbench 1000 8 0` —
   did not finish within a six-minute local timeout; the exact remaining child
   process was terminated.
+- Follow-up `wsl -e bash -lc "cd /mnt/c/Users/pherrman/projects/sts_ai && bash tools/seed_guard.sh ./build/one_combat bestbench 100 1 0"` — started the
+  current path but did not finish within two minutes; the exact child was
+  terminated. No completed `BEST` result was observed.
 
 ## Status and follow-up
 

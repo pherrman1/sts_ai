@@ -587,17 +587,40 @@ Ordered by cleanup value / deletion risk / verification cost, each batch changes
 **Why first:** These four modes require `v_server.py`, have zero callers, and represent historical policy comparisons that `bestbench` + gate experiments superseded. Removing them:
 - Simplifies the mode dispatch and `BEST stack` banner.
 - Does not touch any current path.
-- Tests immediately show failure: `bestbench` 8-seed smoke is the only verification needed.
+- Verification is limited to the current executable path and does not establish
+  a policy-quality benchmark result.
 
-**Files changed:** `apps/one_combat.cpp` only.
+**Files changed:** `apps/one_combat.cpp` and `tools/seed_guard.sh`.
 
-**Verification:** `tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0`
+**Implementation verification:**
+- Static diff/reachability check: **PASS**. The Batch 1 diff is one clean commit
+  with 97 deletions and zero additions in `apps/one_combat.cpp`; only the four
+  removed mode entries disappear from `tools/seed_guard.sh`. Current `fightrep`
+  handling and `MAX_AUTOMATED_SEEDS=128` remain present.
+- `cmake --build build -j --target one_combat`: **PASS** (existing narrowing
+  conversion warnings remain).
+- `wsl -e bash -lc "cd /mnt/c/Users/pherrman/projects/sts_ai && bash tools/seed_guard.sh ./build/one_combat bestbench 100 1 0"`:
+  **INCOMPLETE**. The one-seed/100-simulation current-path smoke started, but
+  did not finish within two minutes and the exact `one_combat` child was
+  terminated. It produced no completed `BEST` result.
+
+**Broader verification limitations:**
+- `ctest --test-dir build --output-on-failure`: **23/26 passed**. The failures
+  were `selfplay_syntax` (WSL CRLF parsing at `selfplay/loop.sh:136`),
+  `paired_analysis_selftest` (WSL Python missing NumPy), and
+  `cardqueue_overflow` (expected `SIGABRT`, received status 0). None exercises
+  the removed Batch 1 modes or their guard entries; these are the same general
+  failure classes recorded in the decision log.
+- Original guarded fair `bestbench` 1000 sims × 8 seeds: **INCOMPLETE**. It did
+  not finish within six minutes and was terminated; this remains unverified.
 
 **Status: COMPLETED (Phase 6 Batch 1).** Implementation commit `refactor: remove obsolete server benchmark modes` (2026-08-12) removed:
 - the four `restbench`/`shopbench`/`allbench`/`skipbench` dispatch branches in `apps/one_combat.cpp`;
 - the dedicated wrappers `restBench`, `shopBench`, `allOOCBench`, `skipBench`, plus the `oocBench` helper used only by `restBench`/`shopBench`;
 - the four corresponding entries in `tools/seed_guard.sh`.
-`bestbench` and `runFullRunOOC` are unchanged; verification passed (build, `ctest`, guarded 8-seed `bestbench` smoke).
+`bestbench` and `runFullRunOOC` are unchanged. The implementation checks pass,
+but the broader checks above remain incomplete or environment-limited; no
+runtime or policy-quality claim is made.
 
 ---
 
