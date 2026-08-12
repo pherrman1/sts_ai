@@ -802,25 +802,11 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
         // diagnosed immediately instead of silently cycling to the 1000-
         // decision stall guard (which would become a synthetic PLAYER_LOSS
         // with no NO_LEGAL_PROGRESSION / UNDECIDED_BATTLE_EXIT diagnostic).
+        // Non-fair S2 zero-progress rule: canonical actions == 0 →
+        // NO_LEGAL_PROGRESSION; canonical actions > 0 → ACTION_SELECTION_FAILED.
         if (bc.outcome == Outcome::UNDECIDED && !madeProgress) {
-            if (!hasLegalProgressionAction(bc)) {
-                reportSimHealthFailure(bc, SimHealthFailure::NO_LEGAL_PROGRESSION);
-                break;
-            }
-            if (bestOutcomePlayerHp <= 0) {
-                // stepThroughSearchTree no-oped: the persistent tree root is
-                // empty while legal live actions exist, so the
-                // search/action-selection machinery failed to supply an
-                // action. Expected-unreachable in the deterministic non-fair
-                // path (an empty tree root mirrors zero live legal actions),
-                // reported defensively rather than cycling.
-                reportSimHealthFailure(bc, SimHealthFailure::ACTION_SELECTION_FAILED);
-                break;
-            }
-            // stepThroughSolution with a consumed empty cached line while
-            // legal actions exist: a search-policy routing artifact (the tree
-            // can still supply actions on the next iteration), not a health
-            // failure. Preserve baseline behavior and keep looping.
+            reportSimHealthFailure(bc, classifySelectionFailure(bc));
+            break;
         }
     }
     // Simulator health: safety net for an unresolved exit of the non-fair S2

@@ -1606,6 +1606,79 @@ int testSimHealthSelectionFailure() {
     return 1;
 }
 
+// Simulator-health monitor: non-fair S2 ACTION_SELECTION_FAILED through agent
+// control path with positive bestOutcomePlayerHp (Test D). The earlier
+// correction (312c358) closed the zero-edge case but left the
+// empty-cached-solution branch silent: when bestOutcomePlayerHp > 0 (a
+// previously found winning line) and stepThroughSolution with
+// stepsWithSolution=0 commits zero actions, the agent loop would silently
+// retry instead of firing a health diagnostic. The detection-only rule
+// completes: every unresolved non-fair S2 decision with zero committed
+// actions now reports NO_LEGAL_PROGRESSION or ACTION_SELECTION_FAILED
+// immediately, governed by the canonical live action set.
+//
+// The regression forces the branch via stepsWithSolution=0 on a
+// PLAYER_NORMAL fixture where search finds a positive-HP winning line;
+// with the fix, classifySelectionFailure(bc) fires ACTION_SELECTION_FAILED
+// (legal live actions exist) followed by UNDECIDED_BATTLE_EXIT, and the
+// 1000-decision stall guard never fires.
+int testSimHealthNonFairS2SelectionFailed() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) {
+            std::cout << "    " << msg << '\n';
+            ++failures;
+        }
+    };
+
+    const bool savedFair = search::g_fairPlay;
+    const bool savedS3 = search::g_useSearcher3;
+    search::g_fairPlay = false;    // non-fair (known-RNG) Searcher2
+    search::g_useSearcher3 = false;
+
+    BattleContext bc = playerNormalFixture(0xBEEFu, 3);
+    check(bc.outcome == Outcome::UNDECIDED,
+          "fixture must start UNDECIDED");
+    check(search::hasLegalProgressionAction(bc),
+          "PLAYER_NORMAL must have a legal progression action (END_TURN)");
+
+    const auto nlpBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION];
+    const auto asfBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED];
+    const auto ubeBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::UNDECIDED_BATTLE_EXIT];
+
+    search::ScumSearchAgent2 agent;
+    agent.stepsWithSolution = 0;   // forces stepThroughSolution to commit zero actions
+    agent.simulationCountBase = 200;
+    agent.playoutBattle(bc);
+
+    const int nlpFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION] - nlpBefore;
+    const int asfFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED] - asfBefore;
+    const int ubeFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::UNDECIDED_BATTLE_EXIT] - ubeBefore;
+
+    check(asfFired >= 1,
+          "ACTION_SELECTION_FAILED must fire as the primary failure (got "
+          + std::to_string(asfFired) + ")");
+    check(nlpFired == 0,
+          "NO_LEGAL_PROGRESSION must not fire when legal live actions exist (got "
+          + std::to_string(nlpFired) + ")");
+    check(ubeFired >= 1,
+          "UNDECIDED_BATTLE_EXIT must fire as the secondary safety net (got "
+          + std::to_string(ubeFired) + ")");
+    check(bc.outcome == Outcome::UNDECIDED,
+          "battle must exit UNDECIDED (not a stall-converted PLAYER_LOSS), got "
+          + std::to_string((int)bc.outcome));
+
+    search::g_fairPlay = savedFair;
+    search::g_useSearcher3 = savedS3;
+
+    if (failures == 0) {
+        std::cout << "simhealth_nonfair_s2_selection_failed PASS\n";
+        return 0;
+    }
+    std::cout << "simhealth_nonfair_s2_selection_failed FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 // simhealth_load <path>: deserialize a sim-health capture .bin and print its
 // key fields. Load-only proof that a captured snapshot round-trips (used to
 // verify STS_SIM_HEALTH_CAPTURE_DIR outputs; no replay).
@@ -2796,6 +2869,8 @@ int main(int argc, const char* argv[]) {
         return testSimHealthNonFairS2Empty();
     } else if (command == "simhealth_selection_failure") {
         return testSimHealthSelectionFailure();
+    } else if (command == "simhealth_nonfair_s2_selection_failed") {
+        return testSimHealthNonFairS2SelectionFailed();
     } else if (command == "simhealth_load") {
         if (argc < 3) {
             std::cout << "usage: test simhealth_load <capture.bin>\n";

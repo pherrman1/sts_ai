@@ -1,8 +1,9 @@
 # Simulator health monitor
 
-Last verified: 2026-08-11 against commit `9770856` + the working tree
-(health-monitor correction: `ACTION_SELECTION_FAILED` classification, non-fair
-Searcher2 coverage, seed `126711` reproduction, 8+8 seed smoke).
+Last verified: 2026-08-12 against commit `488951e` + the working tree
+(close remaining non-fair S2 zero-progress health-monitor hole: the
+empty-cached-solution branch is now classified immediately rather than
+silently retrying).
 
 ## Purpose
 
@@ -117,8 +118,10 @@ avoided.
   at an unresolved decision likewise mirrors zero live legal actions, so
   `ACTION_SELECTION_FAILED` is expected-unreachable there (the site is
   defensive). A zero-progress `stepThroughSolution` (consumed empty cached
-  line) with legal actions present is a search-policy routing artifact, not a
-  health failure, and is left to baseline behavior.
+  solution line) with legal actions present is now also classified immediately
+  as `ACTION_SELECTION_FAILED` — a stale `bestOutcomePlayerHp > 0` from a
+  previous search can outlive the cached action list, and silent retry is
+  neither safe nor guaranteed to resolve on the next iteration.
 - A HARD failure implies the run's combat is broken (the row `won=0,
   deathCombat=-1` is the run-level symptom); the health monitor only flags the
   combat-level cause.
@@ -134,7 +137,7 @@ avoided.
 | `NO_LEGAL_PROGRESSION` | `src/sim/search/ScumSearchAgent2.cpp::playoutBattle` (non-fair S3 branch) | `s3PickRootAction` returns `!have` while `UNDECIDED`, classified via canonical check |
 | `ACTION_SELECTION_FAILED` | `playoutBattle` (non-fair S3 branch) | same `!have` condition with legal live actions present |
 | `NO_LEGAL_PROGRESSION` | `playoutBattle` (non-fair S2 branch) | tree-stepping committed zero actions while `UNDECIDED` and the canonical live set is empty (immediate diagnosis; no 1000-decision stall cycle) |
-| `ACTION_SELECTION_FAILED` | `playoutBattle` (non-fair S2 branch) | `stepThroughSearchTree` no-oped (empty tree root) while `UNDECIDED` and legal live actions exist (defensive; expected-unreachable) |
+| `ACTION_SELECTION_FAILED` | `playoutBattle` (non-fair S2 branch) | tree-stepping committed zero actions while `UNDECIDED` and canonical live actions exist — covers both `stepThroughSearchTree` no-oping on an empty root (defensive, expected-unreachable) and `stepThroughSolution` exhausting a cached solution line with a stale positive `bestOutcomePlayerHp` |
 | `UNDECIDED_BATTLE_EXIT` | `playoutBattleFair` (S3 and S2 branches) and `playoutBattle` (S3 and S2 branches) | `bc.outcome == Outcome::UNDECIDED` immediately after the battle `while` loop exits |
 | `INVALID_LIVE_ACTION` | `ScumSearchAgent2::takeAction(BattleContext&, Action)` | `bc.outcome == UNDECIDED && !a.isValidAction(bc)` immediately before `a.execute(bc)` |
 
@@ -199,11 +202,15 @@ false positives. An 8-seed non-fair (default Searcher2) smoke produced zero
 failures. Both smoke runs reproduced byte-identical `BEST` lines versus the
 pre-correction runs, confirming no gameplay/control-flow change.
 
-Non-fair Searcher2 coverage: a deterministic unresolved zero-legal-action
-`CARD_SELECT` state is now diagnosed immediately as `NO_LEGAL_PROGRESSION`
-through the agent control path (regression `simhealth_nonfair_s2_empty`,
-which fails on the pre-correction baseline where the state degraded to a
-1000-decision `[battle-stall]` → `PLAYER_LOSS`).
+Non-fair Searcher2 coverage: the zero-progress rule is now complete.
+Every unresolved non-fair S2 decision that commits zero actions is classified
+against the canonical live action set: empty → `NO_LEGAL_PROGRESSION`
+(regression `simhealth_nonfair_s2_empty`); legal actions exist →
+`ACTION_SELECTION_FAILED` (regression `simhealth_nonfair_s2_selection_failed`,
+covers the stale-`bestOutcomePlayerHp` / empty-cached-solution-line branch
+that the pre-correction code silently retried). Both tests fail on the
+pre-correction baseline where those states would cycle to the 1000-decision
+`[battle-stall]` → `PLAYER_LOSS`.
 
 ## Open questions
 
@@ -234,5 +241,6 @@ which fails on the pre-correction baseline where the state degraded to a
 - `include/combat/BattleContextBinary.h::serializeBattleContext` (capture
   format)
 - `apps/test.cpp::testSimHealthGambleEmptyHand`,
-  `testSimHealthNonFairS2Empty`, `testSimHealthSelectionFailure`, `simHealthLoad`
+  `testSimHealthNonFairS2Empty`, `testSimHealthSelectionFailure`,
+  `testSimHealthNonFairS2SelectionFailed`, `simHealthLoad`
 - `docs/knowledge-base/issues/2026-08-11-issue-87-gamble-empty-hand-silent-loss.md`
