@@ -1,6 +1,13 @@
+---
+name: implementation-review
+description: Use for independent implementation review, diff review, validation, and auditing of repository changes; not for ordinary implementation tasks.
+---
+
 # Implementation review workflow
 
-Use this skill when reviewing or implementing a repository change.
+Use this skill when independently reviewing, validating, or auditing a
+repository change after or alongside implementation. For ordinary
+implementation tasks, follow `AGENTS.md` without invoking this skill.
 
 1. Inspect `git status` first and distinguish pre-existing changes from this
    task. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`, the relevant

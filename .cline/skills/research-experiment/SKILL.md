@@ -1,3 +1,8 @@
+---
+name: research-experiment
+description: Use for hypothesis-driven research experiments, benchmark proposals, and evidence-based interpretation in this repository.
+---
+
 # Research experiment workflow
 
 Use this skill for research questions, experiment proposals, and benchmark
