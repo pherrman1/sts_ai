@@ -1,6 +1,6 @@
 # Decision log
 
-Last verified: 2026-08-11 against the current working tree.
+Last verified: 2026-08-13 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one
@@ -41,7 +41,7 @@ knowledge-base page in the same change instead of expanding the entry.
 
 ## Relationship to other records
 
-- `decisions/` holds durable, evidence-backed architectural decision records.
+- [`decisions/`](../../../decisions/) holds durable, evidence-backed architectural decision records.
   This log is the chronological source; a logged decision is distilled into
   `decisions/` only when its rationale is directly supported by repository
   evidence.
@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-13 | [`2026-08-13-guarded-repowise-pilot.md`](2026-08-13-guarded-repowise-pilot.md) | Guarded RepoWise pilot extends the Cline + Serena workflow: structural-only, mock-embedder local index and curated root ADRs; no LLM prose, decision mining, hooks, editor setup, Serena memories, or authoritative generated knowledge. |
 | 2026-08-12 | [`2026-08-12-refactor-branch-consolidation.md`](2026-08-12-refactor-branch-consolidation.md) | Consolidated the linear Phase 6 Batch 1 refactor onto `main` by fast-forward, removed redundant local branch names, and recorded local verification limitations (23/26 CTest; fair 8-seed smoke exceeded six minutes). |
 | 2026-08-11 | [`2026-08-11-sim-health-monitor.md`](2026-08-11-sim-health-monitor.md) | Runtime simulator health monitor + automatic bug capture: four hard invariants (`UNDECIDED_BATTLE_EXIT`, `NO_LEGAL_PROGRESSION`, `ACTION_SELECTION_FAILED`, `INVALID_LIVE_ACTION`) checked at every combat decision boundary / battle-loop exit in `ScumSearchAgent2.cpp`; detection-only (issue 87 stays open); `STS_SIM_HEALTH_CAPTURE_DIR` serializes the offending `BattleContext` (fightrep format) + metadata sidecar. Same-day correction: selection failures are classified against the canonical live action set (zero legal → `NO_LEGAL_PROGRESSION`, legal actions exist → `ACTION_SELECTION_FAILED`), and the non-fair S2 zero-action hole is closed (immediate diagnosis instead of a 1000-decision stall→PLAYER_LOSS; regression `simhealth_nonfair_s2_empty` fails on baseline). Seed 126711 auto-triggers the GAMBLE/empty-hand failure; 8-seed smokes (fair + non-fair) clean/byte-identical vs pre-correction; ctest 26/26. |
 | 2026-08-11 | [`2026-08-11-wiki-eli5-review.md`](2026-08-11-wiki-eli5-review.md) | Reviewed the player-facing wiki: simplified the explanations, corrected default vs fair-play/opt-in boundaries, and labelled benchmark figures by configuration. |

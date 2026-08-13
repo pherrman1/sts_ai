@@ -106,6 +106,25 @@ relationships. Use Cline's normal read/search tools for Markdown, configuration,
 logs, experiment output, Git history, diffs, and shell commands. Use optional
 read-only subagents only when parallel investigation has clear value.
 
+### Cline, Serena, and RepoWise routing
+
+Cline is the interactive coding-agent harness. Use Serena for live symbol
+definitions, references, diagnostics, and explicitly approved semantic
+refactoring. Use RepoWise for architectural overview, accepted ADR rationale,
+git/change risk, hotspots, code health, and candidate dead code. Use normal
+targeted reads plus the maintained knowledge base for experiment evidence and
+research interpretation.
+
+Current code, tests, raw experiment ledgers, curated knowledge-base pages, and
+accepted ADRs override RepoWise-generated output. RepoWise dead-code findings
+are hypotheses: check entry points, CLI modes, environment-driven paths,
+bindings, tests, and dynamic loading before deletion. Do not create Serena
+memories; do not commit `.repowise/`; do not allow RepoWise to generate or
+replace `AGENTS.md`; and do not use paid RepoWise generation without explicit
+authorization. Cline auto-approval remains limited to the reviewed read-only
+MCP operations; semantic edits, shell commands, and filesystem mutations still
+require explicit approval.
+
 ## Agent context and large-file navigation
 
 Agents must minimise how much of the repository they read before producing

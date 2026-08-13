@@ -46,5 +46,9 @@ build/pilot_pol.csv
 /.serena/memories/
 /.serena/project.local.yml
 
+# RepoWise is a derived local index. Its configuration, wiki, caches, and
+# databases are intentionally never versioned.
+/.repowise/
+
 # CatBoost trainer output.
 /catboost_info/
