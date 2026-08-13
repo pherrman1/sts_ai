@@ -54,6 +54,14 @@ model with `ok=true` (silent constant predictions). With the tracked win
 artifact present, `v_server.py` is not a default `bestbench` dependency; it
 remains an optional localhost bridge for legacy and experimental endpoints.
 
+Native shop planning also handles the follow-up card-removal screen in
+process: `nativeShopPlan` and `vQueryRemove` score candidate removals with the
+deployed floor model, so native `bestbench` does not connect to `v_server.py`
+merely because a shop removal is selected. Server-backed modes retain their
+existing queries. The socket bridge uses a bounded connect wait, so an
+explicitly server-dependent path fails fast when localhost:5555 is unavailable
+instead of stalling the whole run.
+
 A successfully loaded `STS_OOC_CHECKPOINT_NN=<path>` enables the compact native
 checkpoint-distilled action network in acts 1–3 before ordinary policy layers
 (`apps/ooc_checkpoint_net.h::OocCheckpointNet`;

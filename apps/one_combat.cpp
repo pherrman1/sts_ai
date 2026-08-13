@@ -66,8 +66,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <sys/select.h>
 #include <unistd.h>
 #include <cstring>
+#include <cerrno>
 #endif
 #include <atomic>
 #include <set>
@@ -1164,7 +1167,25 @@ static int vConnect() {
     addr.sin_family = AF_INET;
     addr.sin_port = htons((uint16_t)g_vPort);
     inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
-    if (connect(fd, (sockaddr *)&addr, sizeof(addr)) < 0) { close(fd); return -1; }
+    // A missing localhost server must not stall a native bestbench forever:
+    // WSL can leave a blocking connect in SYN-SENT when port 5555 is absent.
+    const int flags = fcntl(fd, F_GETFL, 0);
+    if (flags >= 0) fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    const int rc = connect(fd, (sockaddr *)&addr, sizeof(addr));
+    if (rc < 0 && errno != EINPROGRESS) { close(fd); return -1; }
+    if (rc < 0) {
+        fd_set writable, errors;
+        FD_ZERO(&writable); FD_SET(fd, &writable);
+        FD_ZERO(&errors); FD_SET(fd, &errors);
+        timeval timeout{1, 0};
+        const int ready = select(fd + 1, nullptr, &writable, &errors, &timeout);
+        if (ready <= 0 || FD_ISSET(fd, &errors)) { close(fd); return -1; }
+        int error = 0; socklen_t errorLen = sizeof(error);
+        if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &errorLen) < 0 || error != 0) {
+            close(fd); return -1;
+        }
+    }
+    if (flags >= 0) fcntl(fd, F_SETFL, flags);
     t_vSock = fd;
     return fd;
 }
@@ -1870,6 +1891,23 @@ static void upgradeSelectWinPolicy(GameContext &gc) {
 
 // index (into candIds) of the card whose REMOVAL most raises V (0 on error)
 static int vQueryRemove(GameContext &gc, const std::vector<int> &candIds) {
+    if (g_nativeOoc && !g_shopWin && g_floorNet.ok) {
+        const auto &idx = richIdxMap();
+        const int dsz = idx.at("deckSize");
+        const std::vector<float> base = richFeatureVec(gc);
+        const double v0 = g_floorNet.predict(base);
+        double best = -1e100;
+        int bestIdx = 0;
+        for (int i = 0; i < (int)candIds.size(); ++i) {
+            auto row = base;
+            auto it = idx.find("d" + std::to_string(candIds[i]));
+            if (it != idx.end()) row[it->second] -= 1.0f;
+            row[dsz] -= 1.0f;
+            const double gain = g_floorNet.predict(row) - v0;
+            if (gain > best) { best = gain; bestIdx = i; }
+        }
+        return bestIdx;
+    }
     std::string req = "X;";
     for (size_t i = 0; i < candIds.size(); ++i) { if (i) req += ','; req += std::to_string(candIds[i]); }
     req += ";" + vFeatCsv(gc) + "\n";
