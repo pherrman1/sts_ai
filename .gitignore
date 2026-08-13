@@ -40,5 +40,8 @@ build/pilot_pol.csv
 # Local multi-model agent workflow state.
 /.ai/
 
+# Local Serena project state (index, cache, and machine-specific configuration).
+/.serena/
+
 # CatBoost trainer output.
 /catboost_info/

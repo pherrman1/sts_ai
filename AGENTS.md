@@ -55,7 +55,7 @@ base in the same change. Do not invent rationale; use **Inference**,
 | `models/` | Git-tracked deployed model artifacts in native text/JSON format (floor/win/policy compact trees, XGBoost JSON, PVNet); NOT `.native` and not self-play loop artifacts. |
 | `selfplay/` | Generation, retraining, paired gates, snapshots, local state. |
 | `tools/` | Organized research tooling (analysis, data, export, run, verify) plus legacy utilities; see `tools/README.md`. |
-| `.opencode/`, `opencode.json` | OpenCode agent configuration and prompts. |
+| `.opencode/`, `opencode.json` | Legacy OpenCode configuration retained for rollback; not the project workflow contract. |
 
 Deployable native exports under `selfplay/models/*.native` and deployed
 text/JSON models under `models/` are git-tracked so model handoff between
@@ -73,21 +73,21 @@ is missing from the tree.
 
 ## Agent workflow
 
-The local agent workflow uses OpenCode's built-in primary agents with selectable
-models:
+The local agent workflow uses Cline as the harness and Serena as the preferred
+semantic code-intelligence layer:
 
 ```
 External research/review:
     ChatGPT
 
-Local implementation:
-    OpenCode Build
+Planning and implementation:
+    Cline Plan mode → reviewed plan → Cline Act mode
 
 Model selection:
     use the model and reasoning effort recommended by the current handoff
 
-Optional local planning:
-    OpenCode Plan
+Semantic code navigation/refactoring:
+    Serena symbols, definitions, implementations, references, and targeted edits
 
 Shared project knowledge:
     AGENTS.md + maintained knowledge base
@@ -96,18 +96,15 @@ Evidence:
     current code, commit diff, exact verification output, raw experiment results
 ```
 
-External ChatGPT owns research design and independent final review.
-OpenCode `Build` is the standard local implementation agent. Select the model
-and reasoning effort recommended by the current handoff rather than encoding a
-fixed implementation model in the agent definition.
+External research/design and independent final review remain separate from local
+implementation. Cline's provider/model selection is per handoff; do not create
+project-specific orchestration merely to represent stronger or cheaper models.
 
-OpenCode `Plan` remains available for occasional local read-only planning, but
-it is not part of the standard research-handoff workflow and does not replace
-external research design or independent review.
-
-Do not create separate primary agents merely to represent stronger or cheaper
-models. Model strength is a per-handoff execution choice, not a separate agent
-role.
+Use Serena preferentially for semantic questions about C++/Python classes,
+functions, methods, declarations, implementations, callers, and symbol
+relationships. Use Cline's normal read/search tools for Markdown, configuration,
+logs, experiment output, Git history, diffs, and shell commands. Use optional
+read-only subagents only when parallel investigation has clear value.
 
 ## Agent context and large-file navigation
 
@@ -175,9 +172,11 @@ tools/seed_guard.sh env STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
 ctest --test-dir build --output-on-failure
 ```
 
-Direct `one_combat` invocations are blocked by OpenCode permission rules; all
-game-seed commands must go through `tools/seed_guard.sh` (see "Automated agent
-verification limits" below for why).
+All game-seed commands must go through `tools/seed_guard.sh` (see "Automated
+agent verification limits" below for why). Keep explicit approval enabled for
+file modifications, non-trivial shell commands, and Serena semantic edits;
+never enable unrestricted auto-approval, autonomous `git push`, destructive
+filesystem commands, or privilege escalation for this project.
 
 Build the relevant target before using these commands. `json/` and `pybind11/`
 are gitlinks; a fresh clone requires `git submodule update --init` before the
