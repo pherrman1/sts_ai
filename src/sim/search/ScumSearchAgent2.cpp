@@ -294,8 +294,11 @@ static void writeS3RootRaceDiag(const BattleContext &bc,
 // Fair-play / determinized battle: each search re-randomizes the hidden draw
 // order per simulation, so the recommended line is world-specific -- we can only
 // commit the ONE most-visited root move, then re-search as the real draw reveals.
-void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
-    if (search::g_useSearcher3) {
+namespace {
+
+using namespace sts::search;
+
+void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &bc) {
         int decisionIdx = 0;
         int fightPool = 0;
         int stallCount = 0;
@@ -337,14 +340,14 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 maxCarriedGen = 0;
             }
             const std::int64_t sims = isBossEncounter(bc.encounter)
-                ? (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
+                ? (agent.bossSimulationMultiplier * agent.simulationCountBase) : agent.simulationCountBase;
             // Forced-action contraction: exactly one legal action -> commit
             // directly. No search runs, so no tree to carry forward — rebuild.
             search::Action forced;
             if (search::g_forcedMoveSkip && s3.onlyLegalAction(forced)) {
                 if (search::g_s3PoolRedirect) fightPool += sims;
                 BattleContext preState = bc;
-                takeAction(bc, forced);
+                agent.takeAction(bc, forced);
                 search::RealBeliefFilterStats filterStats;
                 const bool filtered = search::g_s3RealBeliefFilter;
                 if (filtered) filterStats = s3.filterRealTransition(preState, forced, bc);
@@ -385,7 +388,7 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             }
             // Increment carried-search counter after every search.
             ++carriedSearchesSinceFresh;
-            simulationCountTotal += s3.root.simulationCount - before;
+            agent.simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             writeS3RootRaceDiag(bc, bc.seed, decisionIdx);
             s3.clampRankCorrAtRoot();
@@ -449,7 +452,7 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
                 bc.shuffleRng.counter, bc.cardRandomRng.counter,
                 bc.aiRng.counter, bc.miscRng.counter,
                 bc.monsterHpRng.counter, bc.potionRng.counter}};
-            takeAction(bc, bestAction);
+            agent.takeAction(bc, bestAction);
             search::RealBeliefFilterStats filterStats;
             const bool filtered = search::g_s3RealBeliefFilter;
             if (filtered) filterStats = s3.filterRealTransition(preState, bestAction, bc);
@@ -550,9 +553,11 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             }
             std::cerr << "\n";
         }
-        return;
-    }
-    std::int64_t fightPool = 0;   // STS_CONV_ROOT: per-fight sim credit pool (budget-neutral reinvestment)
+
+}
+
+void playoutBattleFairSearcher2(search::ScumSearchAgent2 &agent, BattleContext &bc) {
+std::int64_t fightPool = 0;   // STS_CONV_ROOT: per-fight sim credit pool (budget-neutral reinvestment)
     int stallCount = 0;
     while (bc.outcome == Outcome::UNDECIDED) {
         if (g_onCombatDecision) g_onCombatDecision(bc);   // snapshot state (fair-play value datagen)
@@ -564,7 +569,7 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             break;
         }
         const std::int64_t simulationCount = isBossEncounter(bc.encounter) ?
-                                             (bossSimulationMultiplier * simulationCountBase) : simulationCountBase;
+                                             (agent.bossSimulationMultiplier * agent.simulationCountBase) : agent.simulationCountBase;
         search::BattleScumSearcher2 searcher(bc);
         // Forced-action contraction (default ON in the fair path; inside the
         // STS_CONV_ROOT arm it also fires on g_convRootStop): exactly one legal
@@ -576,7 +581,7 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
         // g_onSearchComplete (searchdiag A rows) does not fire for them.
         search::Action forced;
         if (search::g_forcedMoveSkip || search::g_convRootStop) {
-            if (searcher.onlyLegalAction(forced)) { takeAction(bc, forced); continue; }
+            if (searcher.onlyLegalAction(forced)) { agent.takeAction(bc, forced); continue; }
         }
         if (search::g_convRootStop) {
             // Root-stability adaptive budget (STS_CONV_ROOT): each decision credits
@@ -592,7 +597,7 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
         } else {
             searcher.search(simulationCount);
         }
-        simulationCountTotal += searcher.root.simulationCount;
+        agent.simulationCountTotal += searcher.root.simulationCount;
 
         // policy-target datagen: log this root's edge visit distribution (fair-play prior)
         if (g_onSearchComplete) g_onSearchComplete(bc, searcher);
@@ -639,14 +644,25 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
             break;   // no legal move (shouldn't happen pre-terminal)
         }
 
-        if (printLogs) printHelper(bc, best);
-        takeAction(bc, best);
+        if (agent.printLogs) printHelper(bc, best);
+        agent.takeAction(bc, best);
     }
     // Simulator health: the loop exited while the battle was still UNDECIDED
     // (the stall guard sets PLAYER_LOSS first, so this is an unresolved exit).
     if (bc.outcome == Outcome::UNDECIDED) {
         reportSimHealthFailure(bc, SimHealthFailure::UNDECIDED_BATTLE_EXIT);
     }
+
+}
+
+} // namespace
+
+void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
+    if (search::g_useSearcher3) {
+        playoutBattleFairSearcher3(*this, bc);
+        return;
+    }
+    playoutBattleFairSearcher2(*this, bc);
 }
 
 void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
