@@ -158,6 +158,48 @@ def guarded(parts, target):
     return any(base(parts[i]) == target and any(base(previous) == "seed_guard.sh" for previous in parts[:i]) for i in range(len(parts)))
 
 
+# Options of argv-forwarding wrappers that consume a separate argument token.
+# Per wrapper so a flag that takes no argument (e.g. `time -p`) is not
+# confused with an argument-taking option (e.g. `time -o FILE`).
+_WRAPPER_OPTION_ARGS = {
+    "env": {"-u", "--unset", "-c", "--chdir", "-s", "--split-string", "-p", "--argv0"},
+    "time": {"-o", "--output", "-f", "--format"},
+    "nice": {"-n", "--adjustment"},
+    "ionice": {"-c", "--class", "-n", "--classdata", "-p", "--pid"},
+}
+_ARGV_FORWARDING_WRAPPERS = {"env", "time", "nohup", "nice", "setsid", "command", "ionice"}
+
+
+def executed_command(parts):
+    """Return the token actually executed in a pipeline segment.
+
+    Known argv-forwarding wrappers (`env`, `time`, `nohup`, `nice`, `setsid`,
+    `command`, `ionice`) are resolved so their options, option arguments, and
+    (for `env`) `VAR=value` assignments are skipped; the first remaining token
+    is the executed command.
+    """
+    index = 0
+    while index < len(parts):
+        wrapper = base(parts[index])
+        if wrapper not in _ARGV_FORWARDING_WRAPPERS:
+            break
+        index += 1
+        option_args = _WRAPPER_OPTION_ARGS.get(wrapper, set())
+        while index < len(parts):
+            token = parts[index]
+            if token.startswith("-"):
+                option = base(token)
+                if option in option_args and "=" not in token and index + 1 < len(parts):
+                    index += 1  # skip the option's separate argument
+                index += 1
+                continue
+            if wrapper == "env" and "=" in token:
+                index += 1  # env VAR=value assignment
+                continue
+            break
+    return parts[index] if index < len(parts) else None
+
+
 def check_command(command, branch, depth=0):
     if depth > 1:
         return None
@@ -174,7 +216,21 @@ def check_command(command, branch, depth=0):
                     reason = check_command(parts[index], branch, depth + 1)
                     if reason:
                         return reason
-        if any(base(value) == "one_combat" for value in parts) and not guarded(parts, "one_combat"):
+        if parts and base(parts[0]) == "env":
+            for index, token in enumerate(parts[1:], start=1):
+                if base(token) in {"-s", "--split-string"}:
+                    if "=" in token:
+                        split_arg = token.split("=", 1)[1]
+                    elif index + 1 < len(parts):
+                        split_arg = parts[index + 1]
+                    else:
+                        split_arg = None
+                    if split_arg:
+                        reason = check_command(split_arg, branch, depth + 1)
+                        if reason:
+                            return reason
+        executed = executed_command(parts)
+        if executed and base(executed) == "one_combat" and not guarded(parts, "one_combat"):
             return "Direct one_combat execution is blocked; route it through tools/seed_guard.sh."
         if any(base(value) == "check_replay.py" for value in parts) and not guarded(parts, "check_replay.py"):
             return "Direct check_replay.py execution is blocked; route it through tools/seed_guard.sh."

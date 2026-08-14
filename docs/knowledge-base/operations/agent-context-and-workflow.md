@@ -168,9 +168,12 @@ relocation audit rather than silently deleting an instruction.
 ## Cline mechanical guardrails
 
 Repository-owned hooks live in `.clinerules/hooks/`. The extensionless
-`TaskStart`, `PreToolUse`, and `TaskComplete` files are the Linux/macOS entry
-points; the `.ps1` files are the corresponding native Windows wrappers. All wrappers
-delegate to the same stdlib-only `tools/agent/cline_guardrails.py` policy
+`TaskStart`, `PreToolUse`, and `TaskComplete` files are the sole entry points
+(removed 2026-08-14: the former `.ps1` Windows wrappers were deleted because
+Cline 4.1.8 executes `.ps1` hooks through `pwsh` even on Linux, and `pwsh` is
+absent here, so every hook event aborted with `spawn pwsh ENOENT` — see the
+decision log). All wrappers delegate to the same stdlib-only
+`tools/agent/cline_guardrails.py` policy
 implementation. Cline's current hook protocol supplies JSON on stdin and
 expects one JSON object on stdout; diagnostics are written to stderr.
 
@@ -179,8 +182,13 @@ hashed Git-local untracked path resolved by `git rev-parse --git-path`.
 `PreToolUse` mechanically cancels clear hazards: destructive Git history or
 working-tree operations, force pushes and pushes to `main`, pushes from
 `main`, broad process termination and privilege escalation, recursive file
-deletion, direct `one_combat` or `check_replay.py` execution outside
+deletion, direct execution of the `one_combat` binary (including through
+argv-forwarding wrappers such as `env`, `time`, `nohup`, `nice`, `setsid`,
+`command`, and `ionice`) or of `check_replay.py` outside
 `tools/seed_guard.sh`, and normal project-file edit tools while on `main`.
+Merely mentioning `one_combat` as an argument (for example
+`cmake --build build --target one_combat` or `rg one_combat CMakeLists.txt`)
+is allowed; only executing the binary requires `tools/seed_guard.sh`.
 Read/search tools, normal read-only Git commands, builds, CTest, and
 seed-guard-wrapped commands remain available. Other shell commands remain
 approval-controlled; this hook is intentionally conservative rather than a
