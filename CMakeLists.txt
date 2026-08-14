@@ -48,7 +48,7 @@ target_include_directories(parity_test PUBLIC json/include)
 
 # "test" is reserved by CTest, so the manual dispatcher target is unit-test
 # with OUTPUT_NAME "test" to keep the build/test binary path stable.
-add_executable(unit-test apps/test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+add_executable(unit-test apps/test.cpp apps/test_belief.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(unit-test PROPERTIES OUTPUT_NAME test)
 target_include_directories(unit-test PUBLIC include)
 target_link_directories(unit-test PUBLIC json::nlohmann_json)
