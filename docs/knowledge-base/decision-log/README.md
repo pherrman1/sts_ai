@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-15 | [`2026-08-15-retire-dormant-combat-trainers.md`](2026-08-15-retire-dormant-combat-trainers.md) | Retired two unlaunched, defective combat-training entry points after confirming no active pipeline, deployed artifact, or runtime contract depended on either executable; retained model-format runtime support and alternate tracked producers. |
 | 2026-08-14 | [`2026-08-14-gcp-unbounded-research-seeds.md`](2026-08-14-gcp-unbounded-research-seeds.md) | Retained the local 128-seed cap while authorizing the explicit, numerically unbounded GCP research path through the tracked launcher; credentials remain external user state. |
 | 2026-08-14 | [`2026-08-14-phase6-cmake-core-objects.md`](2026-08-14-phase6-cmake-core-objects.md) | Phase 6 native C++ core compilation deduplicated with the `sts_core_objects` OBJECT library; Python remains separate. |
 | 2026-08-14 | [`2026-08-14-cline-guardrail-integration-fixes.md`](2026-08-14-cline-guardrail-integration-fixes.md) | Cline guardrail integration fixes: `one_combat` is blocked only when executed (mention-as-argument allowed, argv-forwarding wrappers like `env` handled), and the `.ps1` hook wrappers were removed because Cline 4.1.8 runs them via absent `pwsh`, aborting every tool call with `spawn pwsh ENOENT` and surfacing `[migration] Tool result missing in legacy conversation history.` |
