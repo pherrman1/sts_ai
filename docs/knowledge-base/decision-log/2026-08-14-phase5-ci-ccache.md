@@ -10,16 +10,26 @@ launcher, without changing CMake targets, compiler flags, or build parallelism.
 
 ## Rationale
 
-The baseline pre-ccache CI (08:46:58Z–08:56:46Z, run 31785326007, SHA 5124f06d)
-showed ~9m48s total job time with ~8m47s Build duration and ~4s Test duration.
-Multiple targets (`main`, `one_combat`, `unit-test`, `small-test`, `parity_test`)
-compile the same `src/*.cpp` collection separately, yielding repeated
-compilation of identical translation units. Ccache can cache object files
-keyed by input content, compiler identity (`compiler_check=content`), and
-compilation flags, thereby eliminating redundant compilations both
-within a single build and across runs via cached `.ccache`. The approach is
-conservative: it changes **only** CI and **preserves** build semantics, test
-coverage, Debug mode, `jobs=1`, and all existing verification.
+The hypothesis was that repeated compilation of the same `src/*.cpp`
+collection across CMake targets could be reduced without changing build
+semantics. Ccache caches object files keyed by input content, compiler identity
+(`compiler_check=content`), and compilation flags. The approach changed
+**only** CI and preserved build semantics, test coverage, Debug mode, `jobs=1`,
+and all existing verification.
+
+### Final measurements
+
+| Configuration | Run / attempt | Commit | Linux GCC job | Build | ccache result | Tests |
+| --- | --- | --- | --- | --- | --- | --- |
+| Primary baseline | `31791405209` | `8be451c07150625ddb8933d1bd3fc65231a54181` | ~9m52s | 9m09s | N/A | Existing verification passed |
+| Cold/semi-cold ccache | `31792228896` / attempt 1 | `e85b99fc3400e1f7893be1846b3c44428b07dbde` | — | ~4m07s | 144 / 226 hits (63.72%); cache began empty; ~39–40 MB saved | 27/27 passed |
+| Warm ccache | `31792228896` / attempt 2 | same source commit | ~51s | ~5.7–6s | 225 / 226 hits (99.56%); exact ccache key restored | 27/27 passed |
+
+The cold/semi-cold Build improved by approximately 55% versus the 9m09s
+baseline Build. The warm Build improved by approximately 99%, and the total
+warm Linux GCC job improved by approximately 91% versus the ~9m52s baseline.
+Ccache statistics are zeroed before Configure, so the single warm miss may be
+a configure-time compiler probe rather than a build translation unit.
 
 ## Alternatives considered
 
@@ -37,14 +47,21 @@ coverage, Debug mode, `jobs=1`, and all existing verification.
   added `ccache --version`, `--show-config`, `--zero-stats`, `--show-stats`
   diagnostics around Build.
 - `build-and-debugging.md` Section 59-87 — documented ccache CI mechanism.
-- Baseline: run 31785326007.
+- Primary baseline: main SHA `8be451c07150625ddb8933d1bd3fc65231a54181`,
+  run `31791405209`.
+- Cold/semi-cold result: PR commit
+  `e85b99fc3400e1f7893be1846b3c44428b07dbde`, run `31792228896` attempt 1.
+- Warm result: the same run and commit, attempt 2, with the exact ccache key
+  restored.
 
 ## Status and follow-up
 
-- **Implementing**; changes staged on `infra/ci-ccache-phase5` branch.
-- Next: push, create PR, await first CI run (cold/semi-cold), then
-  `gh run rerun` same SHA for warm cache comparison.
-- Decision rule: keep if CI stays green and Build time materially improves:
-  cold/semi-cold ≤ 70% or warm ≤ 40% of baseline ~8m47s (clear success if
-  cold ≤ ~6m13s or warm ≤ ~3m30s); abandon if improvement < 20% and do not
-  tune risky ccache settings.
+- **Phase 5 successful; KEEP ccache.** The hypothesis is strongly supported:
+  ccache produced genuine compiler-cache hits, all 27 CTest checks passed in
+  both ccache runs, and both cold/semi-cold and warm results materially beat
+  the baseline.
+- The measured result exceeds the decision thresholds: cold/semi-cold Build
+  time is below 70% of baseline, and warm Build time is below 40% of baseline.
+- The next independent optimization experiment should examine the duplicated
+  CMake build graph and common simulator object compilation. Do not mix that
+  build-graph investigation into this ccache PR.
