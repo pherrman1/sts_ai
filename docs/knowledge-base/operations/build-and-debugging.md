@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-08-02 against the current working tree.
+Last verified: 2026-08-14 against the current working tree.
 
 ## Purpose
 
@@ -37,14 +37,87 @@ locates the binary via `STS_PARITY_BIN` or `build/parity_test`.
 Normal configured commands are:
 
 ```bash
-cmake -S . -B build
-cmake --build build -j
+cmake --preset linux-gcc-release
+cmake --build --preset linux-gcc-build
+
+cmake --preset linux-gcc-debug
+cmake --build --preset linux-gcc-debug-build
+ctest --preset linux-gcc-test
 ```
 
-The current `build/CMakeCache.txt` is a Release Unix Makefiles cache using
-`/usr/bin/c++` under Linux/WSL. The ignored `build/one_combat` is the cached
-CMake executable. `selfplay/loop.sh` defaults `BIN` to `build/one_combat`
-(overridable via `ONE_COMBAT_BIN`/`STS_BIN`).
+`CMakePresets.json` is checked in for the verified Linux/WSL GCC-style
+environment. `linux-gcc-release` uses Unix Makefiles, `g++`, and a Release
+build in `build/linux-gcc-release`; `linux-gcc-build` selects that normal
+build. `linux-gcc-debug` and `linux-gcc-debug-build` create a separate Debug
+build in `build/linux-gcc-debug`; `linux-gcc-debug-build` is serialized to keep
+that all-target Debug build reliable on constrained Linux/WSL hosts.
+`linux-gcc-test` runs the existing CTest suite there because `cardqueue_overflow`
+intentionally expects an assertion abort and therefore needs assertions enabled.
+The preset file requires CMake 3.21 or newer; the source graph itself still
+requires CMake 3.19. Native PowerShell/MSVC remains unverified and has no preset.
+
+`selfplay/loop.sh` still defaults to `build/one_combat` (overridable via
+`ONE_COMBAT_BIN`/`STS_BIN`). Set either variable to
+`build/linux-gcc-release/one_combat` when using the checked-in preset.
+
+### Python tooling environment
+
+`pyproject.toml` and `uv.lock` describe direct dependencies used by maintained
+repository scripts; this repository is not packaged as a Python module. The
+default environment contains only NumPy, which is sufficient for the cheap
+maintained Python CTest checks. Install additional direct-dependency groups
+only for the tooling that needs them:
+
+```bash
+uv sync --locked                         # default: NumPy and stdlib tooling
+uv sync --locked --extra analysis        # pandas, SciPy, scikit-learn
+uv sync --locked --extra ml              # PyTorch, XGBoost
+uv sync --locked --extra research        # CatBoost, Optuna
+uv sync --locked --all-extras            # every maintained tooling group
+uv run --extra analysis python paired_analysis.py --self-test
+uv run --extra ml python train_combat_pvnet.py --help
+```
+
+Use `uv run` for direct maintained Python commands so they execute against the
+locked project environment. Existing CMake/CTest commands intentionally retain
+their `python3` invocation and are not changed by this infrastructure phase.
+
+Run the read-only prerequisite diagnostic before configuring a new machine:
+
+```bash
+tools/agent/doctor.sh
+```
+
+It checks the repository root, expected checkout paths, initialized submodules,
+`cmake`/`g++`/`python3`/`uv` availability, and `uv lock --check`. It reports
+problems but never installs, initializes, deletes, or otherwise repairs local
+state.
+
+### Phase 2 reproducibility verification (2026-08-14)
+
+The following commands were run in this Linux/WSL GCC-style checkout with
+`uv 0.12.3`, CMake 4.4.2, GCC 13.3.0, and Python 3.12.3:
+
+```bash
+uv lock --check
+UV_PROJECT_ENVIRONMENT=/tmp/sts-ai-phase2-uv-sync uv sync --locked
+uv run --locked python paired_analysis.py --self-test
+cmake --preset linux-gcc-release
+cmake --build --preset linux-gcc-build
+cmake --preset linux-gcc-debug
+cmake --build --preset linux-gcc-debug-build
+ctest --preset linux-gcc-test --output-on-failure
+tools/agent/doctor.sh
+git diff --check
+```
+
+Results: the lock was consistent; the isolated sync installed NumPy 2.5.2;
+the `paired_analysis.py` self-test passed; the Release preset built `main`,
+`one_combat`, `parity_test`, `test`, `small-test`, and `slaythespire`; the
+serialized Debug preset built the same targets; CTest passed all 27 tests; the
+doctor reported all checks passed; and `git diff --check` was clean. Both builds
+reported pre-existing narrowing warnings in `apps/one_combat.cpp` and
+`src/sim/search/BattleScumSearcher3.cpp`; no build errors occurred.
 
 ## Important data flow
 
@@ -144,7 +217,8 @@ reaching it (verified 2026-08-05):
 - Native PowerShell/MSVC configuration is unverified; current flags are
   GNU-specific.
 - `build/test` exists in the current cache (target `unit-test`).
-- No repository dependency lock describes Python packages.
+- The checked-in presets cover only the verified Linux/WSL GCC-style workflow.
+  MSVC and other toolchains remain unverified.
 - `parity_test.py` needs a produced checkpoint to be a real parity check; its
   missing-binary/checkpoint failures are loud, but trained-model parity is not
   yet exercised.
@@ -159,7 +233,9 @@ reaching it (verified 2026-08-05):
 ## Relevant code
 
 - `CMakeLists.txt`
+- `CMakePresets.json`; `pyproject.toml`; `uv.lock`
 - `.gitmodules`; `.gitignore`
+- `tools/agent/doctor.sh`
 - `apps/main.cpp::main`
 - `apps/one_combat.cpp::main`, `runTraceRun`, `bestBench`
 - `apps/test.cpp::main`
