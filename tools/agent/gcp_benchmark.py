@@ -155,7 +155,7 @@ def remote_run(args: argparse.Namespace) -> int:
     command_text = shlex.join(command)
     guard_mode = "guard-only " if args.guard_only else ""
     guard = (
-        "STS_GCP_RESEARCH_CONTEXT=sts-test "
+        "env STS_GCP_RESEARCH_CONTEXT=sts-test "
         f"bash tools/seed_guard.sh --gcp-research {guard_mode}{command_text}"
     )
     check = "pgrep -af '[o]ne_combat' || true"

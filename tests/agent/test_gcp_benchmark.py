@@ -43,7 +43,7 @@ class GcpBenchmarkTests(unittest.TestCase):
         with mock.patch.object(module, "ssh_command", side_effect=fake_ssh):
             self.assertEqual(module.remote_run(args), 0)
         self.assertIn("cd /home/philippherrmann/sts_sweep;", captured["remote"])
-        self.assertIn("STS_GCP_RESEARCH_CONTEXT=sts-test", captured["remote"])
+        self.assertIn("env STS_GCP_RESEARCH_CONTEXT=sts-test", captured["remote"])
         self.assertIn("bash tools/seed_guard.sh --gcp-research guard-only", captured["remote"])
         self.assertIn("bestbench 1000 2000 0", captured["remote"])
 
@@ -92,7 +92,7 @@ class GcpBenchmarkTests(unittest.TestCase):
         self.assertIn("2000", captured["remote"])
         self.assertIn("nohup", captured["remote"])
         self.assertIn("remote_pid", captured["remote"])
-        self.assertIn("STS_GCP_RESEARCH_CONTEXT=sts-test", captured["remote"])
+        self.assertIn("env STS_GCP_RESEARCH_CONTEXT=sts-test", captured["remote"])
         self.assertIn("test -f tools/seed_guard.sh", captured["remote"])
         self.assertIn("command -v nohup", captured["remote"])
 
@@ -112,7 +112,7 @@ class GcpBenchmarkTests(unittest.TestCase):
         self.assertIn("--gcp-research guard-only", captured["remote"])
         self.assertNotIn("nohup", captured["remote"])
         self.assertIn("cd", captured["remote"])
-        self.assertIn("STS_GCP_RESEARCH_CONTEXT=sts-test", captured["remote"])
+        self.assertIn("env STS_GCP_RESEARCH_CONTEXT=sts-test", captured["remote"])
 
     def test_run_default_refuses_parallel_work(self):
         module = load_module()
