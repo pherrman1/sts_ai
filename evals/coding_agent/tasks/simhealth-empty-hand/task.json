@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "simhealth-empty-hand",
+  "version": 1,
+  "title": "Preserve empty-hand simulator-health classification",
+  "prompt_file": "prompt.md",
+  "setup_patch": "setup.patch",
+  "timeout_seconds": 300,
+  "allowed_changed_paths": ["src/sim/search/**", "include/sim/search/**", "apps/test.cpp", "tests/**"],
+  "forbidden_changed_paths": ["tools/agent/**", "CMakeLists.txt"],
+  "grader": "private/grader.py"
+}

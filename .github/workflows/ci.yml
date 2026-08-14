@@ -58,6 +58,9 @@ jobs:
       - name: Check repository prerequisites
         run: tools/agent/doctor.sh
 
+      - name: Test coding-agent evaluator
+        run: python3 -m unittest discover -s tests/agent -p 'test_*.py'
+
       - name: Restore ccache
         uses: actions/cache@v4
         id: ccache-cache

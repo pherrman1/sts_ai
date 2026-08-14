@@ -104,6 +104,7 @@ before broad repository search.
 | Agent contract and routing | `AGENTS.md`, `.cline/skills/` | Universal contract, progressive-disclosure skills, context/commit procedure | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
 | Safety guard | `tools/seed_guard.sh` | Deterministic 128-seed cap for automated verification | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
 | Artifact inspector | `tools/ai_inspect.py` | Read-only CSV/JSON inspection | (inline) |
+| Coding-agent evaluation harness | `tools/agent/eval.py`, `evals/coding_agent/` | Isolated candidate preparation, hidden grading, deterministic self-tests | [coding-agent-evals.md](evaluation/coding-agent-evals.md) |
 
 ## Legend
 

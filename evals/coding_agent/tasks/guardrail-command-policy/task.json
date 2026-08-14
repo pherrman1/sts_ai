@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "guardrail-command-policy",
+  "version": 1,
+  "title": "Restore command-policy coverage for option-prefixed Git commands",
+  "prompt_file": "prompt.md",
+  "setup_patch": "setup.patch",
+  "timeout_seconds": 60,
+  "allowed_changed_paths": ["tools/agent/**", "tests/agent/**"],
+  "forbidden_changed_paths": ["src/**", "apps/**"],
+  "grader": "private/grader.py"
+}

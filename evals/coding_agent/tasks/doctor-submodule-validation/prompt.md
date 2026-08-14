@@ -1,0 +1,1 @@
+The repository doctor must fail closed when a submodule is checked out at a different revision than the superproject records. It currently accepts one invalid synthetic submodule status while still needing to accept a clean status. Fix the validation and preserve the script's read-only behavior.
