@@ -14,6 +14,10 @@ set(CMAKE_CXX_FLAGS  "-Wno-shift-count-overflow -O3 -fopenmp")
 
 add_subdirectory(json)
 
+add_library(sts_core_objects OBJECT ${sts_lightspeed_SOURCES})
+target_include_directories(sts_core_objects PUBLIC include)
+target_include_directories(sts_core_objects PUBLIC json/include)
+
 # The pybind11 module needs CPython development headers (python3-dev). Core
 # targets (main, one_combat, test, small-test) must not depend on them, so the
 # module is skipped with a warning when headers are absent.
@@ -29,28 +33,28 @@ else()
 endif()
 
 
-add_executable(main apps/main.cpp ${sts_lightspeed_SOURCES})
+add_executable(main apps/main.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_link_directories(main PRIVATE json::nlohmann_json)
 target_include_directories(main PUBLIC include)
 target_include_directories(main PUBLIC json/include)
 
-add_executable(one_combat apps/one_combat.cpp ${sts_lightspeed_SOURCES})
+add_executable(one_combat apps/one_combat.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
 target_include_directories(one_combat PUBLIC json/include)
 
-add_executable(parity_test apps/parity_test.cpp ${sts_lightspeed_SOURCES})
+add_executable(parity_test apps/parity_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(parity_test PUBLIC include)
 target_include_directories(parity_test PUBLIC json/include)
 
 # "test" is reserved by CTest, so the manual dispatcher target is unit-test
 # with OUTPUT_NAME "test" to keep the build/test binary path stable.
-add_executable(unit-test apps/test.cpp ${sts_lightspeed_SOURCES})
+add_executable(unit-test apps/test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(unit-test PROPERTIES OUTPUT_NAME test)
 target_include_directories(unit-test PUBLIC include)
 target_link_directories(unit-test PUBLIC json::nlohmann_json)
 target_include_directories(unit-test PUBLIC json/include)
 
-add_executable(small-test apps/small-test.cpp bindings/bindings-util.cpp ${sts_lightspeed_SOURCES})
+add_executable(small-test apps/small-test.cpp bindings/bindings-util.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_link_directories(small-test PRIVATE json::nlohmann_json)
 target_include_directories(small-test PUBLIC include)
 target_include_directories(small-test PUBLIC json/include)

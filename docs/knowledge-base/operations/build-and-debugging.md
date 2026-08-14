@@ -11,7 +11,11 @@ manual checks, model-load diagnostics, and tracing boundaries.
 
 `CMakeLists.txt` requires CMake 3.19, C++17, and applies
 `-Wno-shift-count-overflow -O3 -fopenmp` globally. It recursively gathers
-`src/*.cpp` and compiles those sources directly into:
+`src/*.cpp` into the `sts_core_objects` OBJECT library, which is reused by
+the native executables `main`, `one_combat`, `parity_test`, `unit-test`, and
+`small-test`. The Python module continues to compile `${sts_lightspeed_SOURCES}`
+independently because its pybind11/PIC/visibility requirements are kept
+separate from the native object target. The resulting targets are:
 
 - pybind11 module `slaythespire` (only when CPython development headers are
   found; otherwise skipped with a warning);
@@ -23,7 +27,8 @@ manual checks, model-load diagnostics, and tracing boundaries.
 means a machine without `python3-dev` still builds the core executables;
 check `find_package(Python)` results to know whether `slaythespire` exists.
 
-There is no reusable `sts`/`libsts.a` target. CTest is registered:
+There is no reusable `sts`/`libsts.a` target; `sts_core_objects` is an internal
+native build object collection rather than a library. CTest is registered:
 `ctest --test-dir build` runs parse/syntax checks (`bash -n`, `py_compile`) and
 `ctest` checks including `tools/verify/check_replay.py --self-test`; run `ctest -N` to list them. The `test` target
 is named `unit-test` in CMake with `OUTPUT_NAME test` (CTest reserves the name
@@ -147,6 +152,28 @@ serialized Debug preset built the same targets; CTest passed all 27 tests; the
 doctor reported all checks passed; and `git diff --check` was clean. Both builds
 reported pre-existing narrowing warnings in `apps/one_combat.cpp` and
 `src/sim/search/BattleScumSearcher3.cpp`; no build errors occurred.
+
+### Phase 6 native core object reuse (2026-08-14)
+
+Phase 6 introduced `sts_core_objects` to compile each common `src/*.cpp`
+translation unit once and reuse its object files across the five native
+executables. The deliberately separate `slaythespire` target still compiles
+the common source glob itself. The serial Debug measurement used
+`CCACHE_DISABLE=1` and `/usr/bin/time -p`:
+
+| Configuration | Build directory | Result | real | user | sys |
+| --- | --- | --- | ---: | ---: | ---: |
+| Before | `build-phase6-before-2` | success | 286.27s | 258.09s | 23.39s |
+| After | `build-phase6-after-1` | success | 78.21s | 72.07s | 5.86s |
+
+Before evidence in `build-phase6-before-2` showed 36
+`CMakeFiles/<target>/src/...` compile lines for each native target, or 180
+common translation-unit compilations total. After evidence in
+`build-phase6-after-1` showed the 36 common objects under
+`CMakeFiles/sts_core_objects.dir/src/...` once, followed by linking of the
+five executables against those objects. CTest passed all 27 tests and the five
+expected executable paths were present. The timing is coarse supporting
+evidence; the primary result is the build-graph compilation ownership.
 
 ## Important data flow
 
