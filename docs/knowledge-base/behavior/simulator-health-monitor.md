@@ -15,13 +15,12 @@ of high-confidence invariants is checked at real combat decision boundaries and
 battle-loop exits, and a failing state is reported and (opt-in) captured as a
 reproducible `BattleContext` snapshot.
 
-The immediate known target is issue 87 (Gambler's Brew at an empty hand):
-`CARD_SELECT`/`GAMBLE` with `cardsInHand == 0` enumerates zero legal actions,
-the fair-Searcher3 loop breaks with `bc.outcome == UNDECIDED`, and
-`BattleContext::exitBattle` maps the unresolved battle to an invisible run loss
-(`won=0, hpEnd>0, fightsLost=0, deathCombat=-1, deathEncounter=-1`). The monitor
-makes that state explicit and captures it; it does **not** repair it (issue 87
-stays open).
+Issue 87 originally identified `CARD_SELECT`/`GAMBLE` with
+`cardsInHand == 0` as a zero-action state. Phase 11 corrected the generic
+multi-select enumerator: both `GAMBLE` and `EXHAUST_MANY` now expose the valid
+empty mask and progress normally. The monitor still retains independent
+coverage for true zero-action states and unresolved battle exits; it does not
+change those simulator-health classifications.
 
 ## Current implementation
 
@@ -180,18 +179,20 @@ verifier) or `sts::deserializeBattleContext`.
   `classifySelectionFailure`) rather than by a stochastic end-to-end fixture;
   the S3 `!have` wiring is the same call the unit tests exercise.
 
-## Known issue 87 as the validation case
+## Historical issue 87 validation case
 
-Seed `126711` (fair-S3, `STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_S3_PARTICLES=64
-STS_LIVE_VALID=1`, the recorded GCP A0 stack) deterministically triggers
-`NO_LEGAL_PROGRESSION` (primary, canonical live set empty) followed by
-`UNDECIDED_BATTLE_EXIT` at `CARD_SELECT`/`GAMBLE`/`hand=0`/`UNDECIDED`
-(floor 50, encounter `AWAKENED_ONE`, player HP 39/83), without
-`STS_DEBUG_BATTLE_BREAKS`, and with `ACTION_SELECTION_FAILED == 0`. The run
-still records the existing loss (`won=0, floor=50, hpEnd=39`) — detection, not
-repair. The captured `.bin` reloads to the same fields.
+Before Phase 11, seed `126711` (fair-S3, `STS_S3_BELIEF=0 STS_S3_CHAIN=0
+STS_S3_PARTICLES=64 STS_LIVE_VALID=1`, the recorded GCP A0 stack)
+deterministically triggered `NO_LEGAL_PROGRESSION` (primary, canonical live set
+empty) followed by `UNDECIDED_BATTLE_EXIT` at
+`CARD_SELECT`/`GAMBLE`/`hand=0`/`UNDECIDED` (floor 50, encounter
+`AWAKENED_ONE`, player HP 39/83), without `STS_DEBUG_BATTLE_BREAKS`, and with
+`ACTION_SELECTION_FAILED == 0`. The run still recorded the existing loss
+(`won=0, floor=50, hpEnd=39`) — detection, not repair. The captured `.bin`
+reloaded to the same fields. Phase 11's focused regression now executes the
+canonical mask-0 action for this state with no health diagnostic.
 
-8-seed fair smoke (seeds 1-8, same stack) also caught seed 4 at
+Before Phase 11, an 8-seed fair smoke (seeds 1-8, same stack) also caught seed 4 at
 `CARD_SELECT`/`EXHAUST_MANY`/`hand=0` (DONU_AND_DECA, floor 50, hp 80/105) —
 still classified `NO_LEGAL_PROGRESSION` (zero legal actions), the same
 empty-hand multi-select defect class documented in

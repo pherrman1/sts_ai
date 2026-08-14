@@ -551,7 +551,7 @@ static std::uint64_t cardIdentityKey(const CardInstance &c) {
 static void pushMultiSelectActions(std::vector<search::Action> &actions,
                                    const BattleContext &bc, bool cappedByPickCount) {
     const int n = bc.cards.cardsInHand;
-    if (n <= 0 || n > 10) return;
+    if (n < 0 || n > 10) return;
     const int limit = bc.cardSelectInfo.pickCount;
     const MultiSelectMode m = multiSelectMode();
     const bool canonical = multiSelectCanonical();
