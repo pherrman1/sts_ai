@@ -16,15 +16,6 @@ inline bool isValidTrainingTerminal(bool outcomeDecided, int healthFailuresBefor
     return outcomeDecided || allowUnresolvedBootstrap;
 }
 
-struct TrainingHealthScope {
-    int &counter;
-    const int before;
-
-    explicit TrainingHealthScope(int &counter_) : counter(counter_), before(counter_) {}
-    bool failed() const { return counter != before; }
-    ~TrainingHealthScope() { counter = before; }
-};
-
 } // namespace sts::search
 
 #endif // STS_LIGHTSPEED_TRAININGINTEGRITY_H

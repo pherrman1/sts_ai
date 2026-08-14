@@ -46,3 +46,15 @@ are quarantined on unresolved/health-failed combat; counterfactual branches are
 quarantined independently. `leafdiag`, `leafref`, `frontiergen`, `searchdiag`,
 and replay/benchmark modes are diagnostic or evaluation producers, not training
 label producers, and are intentionally outside this contract.
+
+## Counter accounting correction
+
+Simulator-health totals and per-reason counters remain canonical monotonic
+diagnostics. Counterfactual evaluation records its own total-counter delta as
+training-only branch exclusion accounting; it never restores or decrements the
+monitor. Source-run terminal validation subtracts only that branch-local delta,
+so a bad branch is quarantined without making an otherwise-clean source run
+invalid. The provenance sidecar records the current source-parsed reuse controls
+(`STS_REUSE_MAX_SEARCHES`, `STS_REUSE_STATS_MODE`, `STS_REUSE_ALWAYS_Q`,
+`STS_REUSE_DIAG`, `STS_REUSE_OBS_STABLE`, `STS_REUSE_RECONCILE_ROOT`,
+`STS_REUSE_CARRY_DIAG`, `STS_REUSE_CPU_DIAG`, and `STS_REUSE_CPU_DIAG_FILE`).

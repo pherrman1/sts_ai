@@ -1645,15 +1645,25 @@ int testTrainingIntegrity() {
     check(!search::isValidTrainingTerminal(false, 0, 1, true),
           "health-failed bootstrap is invalid");
     {
-        int health = 0;
-        bool failed = false;
-        {
-            search::TrainingHealthScope scope(health);
-            health = 1;
-            failed = scope.failed();
-        }
-        check(failed && health == 0,
-              "branch health scope reports and restores only its local failure");
+        BattleContext bc = playerNormalFixture(0xFACEu, 3);
+        const int totalBefore = search::g_simHealthFailureCount;
+        const int reasonBefore = search::g_simHealthFailureCounts[
+            (int)search::SimHealthFailure::ACTION_SELECTION_FAILED];
+        search::reportSimHealthFailure(bc, search::SimHealthFailure::ACTION_SELECTION_FAILED);
+        const int branchDelta = search::g_simHealthFailureCount - totalBefore;
+        check(branchDelta == 1, "branch failure increments canonical total exactly once");
+        check(search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED]
+              == reasonBefore + 1, "branch failure increments canonical per-reason count");
+        int reasonSum = 0;
+        for (const int count : search::g_simHealthFailureCounts) reasonSum += count;
+        check(reasonSum == search::g_simHealthFailureCount,
+              "canonical total remains consistent with per-reason counts");
+        check(search::isValidTrainingTerminal(true, totalBefore,
+                                              search::g_simHealthFailureCount - branchDelta),
+              "excluding only branch-local failures preserves a clean source run");
+        check(!search::isValidTrainingTerminal(true, totalBefore,
+                                               search::g_simHealthFailureCount),
+              "unexcluded health failure invalidates a source run");
     }
     if (failures == 0) {
         std::cout << "training_integrity PASS\n";

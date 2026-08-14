@@ -83,12 +83,16 @@ extern bool g_collectKeys;              // env STS_COLLECT_KEYS=1: collect act-4
 static std::vector<std::string> g_mainArgv;
 
 static thread_local int t_trainingHealthFailures = 0;
+static thread_local int t_trainingBranchHealthFailures = 0;
+static thread_local bool t_trainingRunActive = false;
 static std::atomic<int> g_trainingInvalidRuns{0};
 static std::atomic<int> g_trainingInvalidBranches{0};
 static std::atomic<int> g_trainingHealthFailures{0};
 
 static void trainingRunStart() {
     t_trainingHealthFailures = sts::search::g_simHealthFailureCount;
+    t_trainingBranchHealthFailures = 0;
+    t_trainingRunActive = true;
 }
 
 static void trainingCampaignStart() {
@@ -100,10 +104,12 @@ static void trainingCampaignStart() {
 static bool trainingRunValid(bool outcomeDecided) {
     const int after = sts::search::g_simHealthFailureCount;
     const bool valid = sts::search::isValidTrainingTerminal(
-        outcomeDecided, t_trainingHealthFailures, after);
+        outcomeDecided, t_trainingHealthFailures,
+        after - t_trainingBranchHealthFailures);
     if (!valid) {
         ++g_trainingInvalidRuns;
-        g_trainingHealthFailures += std::max(0, after - t_trainingHealthFailures);
+        g_trainingHealthFailures += std::max(0, after - t_trainingHealthFailures
+                                              - t_trainingBranchHealthFailures);
     }
     return valid;
 }
@@ -144,8 +150,11 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
     std::ofstream p(output + ".provenance.json");
     if (!p) return;
     const char *envs[] = {"STS_FAIR", "STS_SEARCHER3", "STS_S3_PARTICLES",
-                          "STS_S3_BELIEF", "STS_S3_CHAIN", "STS_REUSE",
-                          "STS_REUSE_CPU_DIAG", "STS_LIVE_VALID", "STS_FORCED_MOVE",
+                          "STS_S3_BELIEF", "STS_S3_CHAIN", "STS_REUSE_MAX_SEARCHES",
+                          "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_REUSE_DIAG",
+                          "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
+                          "STS_REUSE_CARRY_DIAG", "STS_REUSE_CPU_DIAG",
+                          "STS_REUSE_CPU_DIAG_FILE", "STS_LIVE_VALID", "STS_FORCED_MOVE",
                           "STS_VNET", "STS_VNET_ALPHA", "STS_OOC_STRATEGIC_TOK_NN",
                           "STS_OOC_STRATEGIC_MARGIN", "STS_OOC_STRATEGIC_CARD",
                           "STS_OOC_STRATEGIC_REST", "STS_OOC_STRATEGIC_EVENT",
@@ -4971,8 +4980,7 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         FutureFightProbe *probe = nullptr, int stopAfterAct = 0,
                         const std::vector<int> *fightSimsSeq = nullptr,
                         bool usePredict = false) {
-    search::TrainingHealthScope healthScope(search::g_simHealthFailureCount);
-    const int healthBefore = healthScope.before;
+    const int healthBefore = search::g_simHealthFailureCount;
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(agentSeed);
@@ -5077,8 +5085,10 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
         gc.outcome != GameOutcome::UNDECIDED, healthBefore,
         search::g_simHealthFailureCount,
         bootstrap && gc.outcome == GameOutcome::UNDECIDED);
-    if (!valid)
+    if (!valid && t_trainingRunActive) {
         g_trainingHealthFailures += std::max(0, search::g_simHealthFailureCount - healthBefore);
+        t_trainingBranchHealthFailures += std::max(0, search::g_simHealthFailureCount - healthBefore);
+    }
     // Branch health belongs to this branch, not to the enclosing source run.
     if (probe) probe->completed = valid && gc.outcome != GameOutcome::UNDECIDED;
     t_curPath = nullptr;
