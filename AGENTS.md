@@ -50,8 +50,10 @@ routing.
   ledgers, maintained KB pages, and accepted ADRs override tool-generated
   summaries.
 - Use the cheapest focused verification that proves the change. Every command
-  that drives game seeds must go through `tools/seed_guard.sh`; automated runs
-  may never exceed 128 seeds. See
+  that drives game seeds must go through the repository seed-run guard. Local
+  automated execution is capped at 128 seeds. Large research sweeps run
+  through the designated GCP research path, which has no fixed seed ceiling;
+  agents choose the smallest sample justified by the experiment design. See
   [build-and-debugging.md](docs/knowledge-base/operations/build-and-debugging.md)
   and the [research-experiment skill](.cline/skills/research-experiment/SKILL.md).
 - GitHub Actions CI (`.github/workflows/ci.yml`) is the authoritative

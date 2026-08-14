@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-08-11 against the current working tree.
+Last verified: 2026-08-14 against the current working tree.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -102,7 +102,8 @@ before broad repository search.
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
 | Agent contract and routing | `AGENTS.md`, `.cline/skills/` | Universal contract, progressive-disclosure skills, context/commit procedure | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
-| Safety guard | `tools/seed_guard.sh` | Deterministic 128-seed cap for automated verification | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
+| Safety guard | `tools/seed_guard.sh` | Local 128-seed cap; explicit unbounded `--gcp-research` mode on the designated host | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md), [build-and-debugging.md](operations/build-and-debugging.md) |
+| GCP benchmark launcher | `tools/agent/gcp_benchmark.py` | Probe/status/start/run through `gcloud compute ssh`; detached guarded research runs | [build-and-debugging.md](operations/build-and-debugging.md) |
 | Artifact inspector | `tools/ai_inspect.py` | Read-only CSV/JSON inspection | (inline) |
 | Coding-agent evaluation harness | `tools/agent/eval.py`, `evals/coding_agent/` | Isolated candidate preparation, hidden grading, deterministic self-tests | [coding-agent-evals.md](evaluation/coding-agent-evals.md) |
 

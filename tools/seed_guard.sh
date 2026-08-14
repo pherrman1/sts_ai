@@ -55,13 +55,13 @@ check_oversized() {
           for tok in "${parts[@]}"; do [ -n "$tok" ] && ns=$((ns + 1)); done
           cells=$((nf * np * ns))
         fi
-        if [ "$cells" -gt "$MAX_AUTOMATED_SEEDS" ]; then
+        if [ "$MAX_AUTOMATED_SEEDS" -gt 0 ] && [ "$cells" -gt "$MAX_AUTOMATED_SEEDS" ]; then
           echo "SEED_GUARD: one_combat fightrep requests $cells replay cells (${nf}x${np}x${ns}); automated maximum is $MAX_AUTOMATED_SEEDS" >&2
           exit 1
         fi
       elif [ -n "$idx" ]; then
         local seeds="${argv[$((i + idx))]:-}"
-        if [[ "$seeds" =~ ^[0-9]+$ ]] && [ "$seeds" -gt "$MAX_AUTOMATED_SEEDS" ]; then
+        if [ "$MAX_AUTOMATED_SEEDS" -gt 0 ] && [[ "$seeds" =~ ^[0-9]+$ ]] && [ "$seeds" -gt "$MAX_AUTOMATED_SEEDS" ]; then
           echo "SEED_GUARD: $exe $mode requests $seeds seeds; automated maximum is $MAX_AUTOMATED_SEEDS" >&2
           exit 1
         fi
@@ -73,7 +73,7 @@ check_oversized() {
       local idx="${PYTHON_SEED_INDEX[$script_name]:-}"
       if [ -n "$idx" ]; then
         local seeds="${argv[$((i + idx))]:-}"
-        if [[ "$seeds" =~ ^[0-9]+$ ]] && [ "$seeds" -gt "$MAX_AUTOMATED_SEEDS" ]; then
+        if [ "$MAX_AUTOMATED_SEEDS" -gt 0 ] && [[ "$seeds" =~ ^[0-9]+$ ]] && [ "$seeds" -gt "$MAX_AUTOMATED_SEEDS" ]; then
           echo "SEED_GUARD: $script_name requests $seeds seeds; automated maximum is $MAX_AUTOMATED_SEEDS" >&2
           exit 1
         fi
@@ -84,16 +84,36 @@ check_oversized() {
 }
 
 if [ $# -eq 0 ]; then
-  echo "Usage: tools/seed_guard.sh [guard-only] <command...>" >&2
+  echo "Usage: tools/seed_guard.sh [--gcp-research] [guard-only] <command...>" >&2
   echo "  With 'guard-only': validates seed count and exits 0/1 without running the command." >&2
   echo "  Without 'guard-only': validates seed count, then execs the command if valid." >&2
+  echo "  With '--gcp-research': use only on the designated GCP benchmark host;" >&2
+  echo "    seed parsing remains enabled but the local 128-seed ceiling is disabled." >&2
   exit 1
 fi
 
+gcp_research=false
+if [ "$1" = "--gcp-research" ]; then
+  gcp_research=true
+  shift
+fi
+
 guard_only=false
-if [ "$1" = "guard-only" ]; then
+if [ $# -gt 0 ] && [ "$1" = "guard-only" ]; then
   guard_only=true
   shift
+fi
+
+if [ $# -eq 0 ]; then
+  echo "SEED_GUARD: missing command after guard mode options" >&2
+  exit 1
+fi
+
+if $gcp_research; then
+  # The GCP path keeps all argument and replay-cell parsing, but deliberately
+  # has no numeric ceiling. It is an explicit operating mode, not a local
+  # safety bypass or a replacement for experiment provenance controls.
+  MAX_AUTOMATED_SEEDS=0
 fi
 
 check_oversized "$@"

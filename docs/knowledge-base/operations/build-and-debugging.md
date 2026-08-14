@@ -240,7 +240,7 @@ rows. It is the closest current manual determinism probe
 
 ## GCP benchmark server (sts-test)
 
-Long benchmark sweeps (128/256-seed gates, datagen) run on the GCP server
+Large benchmark sweeps and datagen run on the GCP server
 `sts-test` (preemptible, c4-highcpu-24, 24 threads, zone `europe-west3-c`,
 project `sts-ai-502709`, user `philippherrmann`). Recorded facts about
 reaching it (verified 2026-08-05):
@@ -267,6 +267,61 @@ reaching it (verified 2026-08-05):
   IAP tunnel error often just means it is down; probe with a trivial
   `hostname; uptime` command first. Before a long run, check the box is free
   (`ps aux | wc -l` / leftover `one_combat` processes from another agent).
+
+### Canonical Cline workflow
+
+Use the tracked launcher rather than reconstructing raw gcloud commands:
+
+```bash
+python3 tools/agent/gcp_benchmark.py status
+python3 tools/agent/gcp_benchmark.py start-instance
+python3 tools/agent/gcp_benchmark.py probe
+```
+
+The launcher defaults to project `sts-ai-502709`, instance `sts-test`, zone
+`europe-west3-c`, user `philippherrmann`, and remote root
+`/home/philippherrmann/sts_sweep`. It supports explicit `--project`, `--zone`,
+`--instance`, `--user`, and `--remote-root` overrides, but `start-instance`
+refuses to start a non-designated instance. It never creates, deletes, resizes,
+or reconfigures cloud resources.
+
+For a research command, first state the hypothesis/question, baseline and
+treatment, seed regime, simulation/particle budget, fair-vs-known-RNG regime,
+model hashes/configuration, intended seed count, and decision rule. Then launch
+through the helper; it checks for an active `one_combat` process and refuses to
+stack a run unless `--allow-parallel` is explicitly supplied:
+
+```bash
+python3 tools/agent/gcp_benchmark.py run -- \
+  ./build/one_combat bestbench 1000 2000 0
+```
+
+For the non-executing remote acceptance proof, add `--foreground
+--guard-only`; this validates the 2,000-seed command and exits without running
+gameplay:
+
+```bash
+python3 tools/agent/gcp_benchmark.py run --foreground --guard-only -- \
+  ./build/one_combat bestbench 1000 2000 0
+```
+
+`run` changes to the remote root and invokes
+`bash tools/seed_guard.sh --gcp-research ...`, so the GCP path retains argument
+validation but has no numeric seed ceiling. Detached runs use `nohup`, print
+`remote_pid` and `remote_log`, and survive SSH disconnects. Retrieve output with
+the printed log path through the same launcher/SSH route, for example:
+
+```bash
+gcloud compute ssh philippherrmann@sts-test --project=sts-ai-502709 \
+  --zone=europe-west3-c --command 'tail -n 50 /home/philippherrmann/sts_sweep/logs/<log>'
+```
+
+There is no repository credential: the helper uses the user's existing local
+gcloud authentication. If gcloud is absent or unauthenticated, report that
+one-time external blocker rather than creating credentials. Large N is not
+scientific evidence by itself; preserve paired common seeds, regime separation,
+budget comparability, provenance, schema validation, raw results, and ledger
+recording.
 
 ## Known limitations
 

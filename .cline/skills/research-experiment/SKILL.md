@@ -18,9 +18,16 @@ interpretation in this repository.
 3. Change one conceptual variable at a time where practical. Preserve paired
    common seeds, fair/known-RNG labels, model paths or hashes, simulation
    budgets, and output schema.
-4. Use the cheapest meaningful verification first. Route seed-based commands
-   through `tools/seed_guard.sh`; automated agent runs must not exceed 128
-   seeds and should normally use substantially fewer.
+4. Use the cheapest meaningful verification first. Route every seed-based
+   command through `tools/seed_guard.sh`. Local automated execution remains
+   capped at 128 seeds and should normally use substantially fewer. A justified
+   large research run may be launched autonomously on the designated GCP host
+   through `tools/agent/gcp_benchmark.py`; its explicit `--gcp-research` mode
+   has no numeric seed ceiling and does not require a further seed-count
+   approval step. Choose the smallest sample that answers the question.
+   Before launch state the hypothesis, baseline/treatment, seed regime, budget,
+   fair-vs-known-RNG regime, model/configuration provenance, intended N, and
+   decision rule.
 5. Separate implementation correctness from scientific interpretation. Record
    raw commands and results, update `EXPERIMENTS.md` or its current ledger shard
    when a benchmarked idea is run, and finish substantial cycles with a concise
