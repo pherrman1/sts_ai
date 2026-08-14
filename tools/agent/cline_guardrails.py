@@ -56,10 +56,39 @@ def git_head():
     return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=False).stdout.strip()
 
 
-def commands(parameters):
+def _json_value(value):
+    if not isinstance(value, str):
+        return value
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return value
+
+
+def _structured_command(value):
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, dict) or not isinstance(value.get("command"), str):
+        return ""
+    args = _json_value(value.get("args", []))
+    if not isinstance(args, list) or not all(isinstance(arg, str) for arg in args):
+        return value["command"]
+    return shlex.join([value["command"], *args])
+
+
+def commands(parameters, tool=""):
     if not isinstance(parameters, dict):
         return []
     result = []
+    if tool == "run_commands":
+        command = parameters.get("command")
+        args = _json_value(parameters.get("args", []))
+        if isinstance(command, str) and isinstance(args, list) and all(isinstance(arg, str) for arg in args):
+            result.append(shlex.join([command, *args]))
+        value = _json_value(parameters.get("commands", []))
+        if isinstance(value, list):
+            result.extend(command for item in value if (command := _structured_command(item)))
+        return result
     for key in ("command", "cmd", "commands"):
         value = parameters.get(key)
         if isinstance(value, str):
@@ -235,11 +264,20 @@ def handle_pre_tool_use(data):
     if effective in COMPLETION_TOOLS:
         error, context = validate_changes(task_id(data))
         return make_output(bool(error), error, context)
-    for command in commands(params):
+    for command in commands(params, tool):
         reason = check_command(command, branch)
         if reason:
             sys.stderr.write(f"CLINE_GUARD: blocked command {command!r}: {reason}\n")
             return make_output(True, reason)
+    return make_output(False)
+
+
+def handle_task_start(data):
+    current_task = task_id(data)
+    path = baseline_path(current_task)
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"taskId": current_task, "head": git_head(), "branch": git_branch()}) + "\n", encoding="utf-8")
     return make_output(False)
 
 
@@ -248,11 +286,7 @@ def main():
         data = json.load(sys.stdin)
         name = str(data.get("hookName") or data.get("hook_name") or "")
         if name == "TaskStart" or "taskStart" in data or "task_start" in data:
-            current_task = task_id(data)
-            path = baseline_path(current_task)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps({"taskId": current_task, "head": git_head(), "branch": git_branch()}) + "\n", encoding="utf-8")
-            result = make_output(False)
+            result = handle_task_start(data)
         elif name == "TaskComplete" or "taskComplete" in data or "task_complete" in data:
             try:
                 baseline_path(task_id(data)).unlink()

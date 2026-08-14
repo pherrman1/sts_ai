@@ -78,6 +78,27 @@ class PreToolUseTests(unittest.TestCase):
         payload = {"preToolUse": {"toolName": "write_to_file", "parameters": {"path": "x"}}, "branch": "main"}
         self.assertTrue(invoke(payload)["cancel"])
 
+    def test_current_sdk_run_commands_payloads(self):
+        blocked = (
+            {"commands": json.dumps(["git reset --hard HEAD"])},
+            {"commands": json.dumps(["git push --force"])},
+            {"commands": json.dumps(["rm -rf build"])},
+            {"commands": json.dumps([{"command": "git", "args": ["reset", "--hard", "HEAD"]}])},
+            {"commands": json.dumps([{"command": "./build/one_combat", "args": []}])},
+            {"command": "git", "args": json.dumps(["reset", "--hard", "HEAD"])},
+        )
+        for parameters in blocked:
+            payload = {"preToolUse": {"toolName": "run_commands", "parameters": parameters}, "branch": "feature"}
+            self.assertTrue(invoke(payload)["cancel"], parameters)
+        allowed = (
+            {"commands": json.dumps(["git status --short"])},
+            {"commands": json.dumps(["ctest --preset linux-gcc-test"])},
+            {"commands": json.dumps(["tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0"])},
+        )
+        for parameters in allowed:
+            payload = {"preToolUse": {"toolName": "run_commands", "parameters": parameters}, "branch": "feature"}
+            self.assertFalse(invoke(payload)["cancel"], parameters)
+
 
 class CompletionTests(unittest.TestCase):
     def test_completion_validation_is_pretooluse(self):
@@ -127,6 +148,19 @@ class CompletionTests(unittest.TestCase):
         self.assertFalse(one.exists())
         self.assertTrue(two.exists())
         invoke({"hookName": "TaskComplete", "taskId": "task/two", "taskComplete": {}})
+
+    def test_task_start_is_idempotent(self):
+        module = load_module()
+        task = "idempotent-task"
+        path = module.baseline_path(task)
+        try:
+            with mock.patch.object(module, "git_head", return_value="baseline-X"):
+                module.handle_task_start({"taskId": task, "taskStart": {}})
+            with mock.patch.object(module, "git_head", return_value="head-Y"):
+                module.handle_task_start({"taskId": task, "taskStart": {}})
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["head"], "baseline-X")
+        finally:
+            path.unlink(missing_ok=True)
 
     def test_committed_whitespace_diff_is_checked(self):
         module = load_module()

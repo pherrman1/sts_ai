@@ -191,8 +191,9 @@ baseline-to-HEAD committed diff, staged and unstaged diffs, and relevant
 untracked files. It runs `git diff --check`, Python syntax checks, `bash -n`
 for maintained shell files when Bash is available, and standard-library JSON
 parsing. Failures cancel the completion tool. C++/header/CMake changes never
-launch a full build; they add a focused-verification reminder and rely on the
-PR Linux GCC check. Markdown-only changes remain cheap.
+launch a full build. A reminder is returned where the Cline runtime preserves
+PreToolUse context, but it is not guaranteed to be displayed; the PR Linux GCC
+check remains authoritative. Markdown-only changes remain cheap.
 
 `TaskComplete` is not a blocking validation gate in the current Cline
 integration. It only removes the recorded baseline state as best-effort
