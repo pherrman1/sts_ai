@@ -86,6 +86,11 @@ class PreToolUseTests(unittest.TestCase):
             {"commands": json.dumps([{"command": "git", "args": ["reset", "--hard", "HEAD"]}])},
             {"commands": json.dumps([{"command": "./build/one_combat", "args": []}])},
             {"command": "git", "args": json.dumps(["reset", "--hard", "HEAD"])},
+            {"commands": "git reset --hard HEAD"},
+            {"command": "git reset --hard HEAD"},
+            {"cmd": "git push --force"},
+            {"command": "rm -rf build"},
+            {"commands": "./build/one_combat bestbench 1000 8 0"},
         )
         for parameters in blocked:
             payload = {"preToolUse": {"toolName": "run_commands", "parameters": parameters}, "branch": "feature"}
@@ -94,6 +99,9 @@ class PreToolUseTests(unittest.TestCase):
             {"commands": json.dumps(["git status --short"])},
             {"commands": json.dumps(["ctest --preset linux-gcc-test"])},
             {"commands": json.dumps(["tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0"])},
+            {"commands": "git status --short"},
+            {"command": "ctest --preset linux-gcc-test"},
+            {"cmd": "git diff --check"},
         )
         for parameters in allowed:
             payload = {"preToolUse": {"toolName": "run_commands", "parameters": parameters}, "branch": "feature"}

@@ -81,13 +81,20 @@ def commands(parameters, tool=""):
         return []
     result = []
     if tool == "run_commands":
-        command = parameters.get("command")
-        args = _json_value(parameters.get("args", []))
-        if isinstance(command, str) and isinstance(args, list) and all(isinstance(arg, str) for arg in args):
-            result.append(shlex.join([command, *args]))
-        value = _json_value(parameters.get("commands", []))
+        value = _json_value(parameters.get("commands"))
         if isinstance(value, list):
             result.extend(command for item in value if (command := _structured_command(item)))
+        elif isinstance(value, str):
+            result.append(value)
+        command = parameters.get("command")
+        if isinstance(command, str):
+            args = _json_value(parameters.get("args")) if "args" in parameters else None
+            if isinstance(args, list) and all(isinstance(arg, str) for arg in args):
+                result.append(shlex.join([command, *args]))
+            else:
+                result.append(command)
+        if isinstance(parameters.get("cmd"), str):
+            result.append(parameters["cmd"])
         return result
     for key in ("command", "cmd", "commands"):
         value = parameters.get(key)
