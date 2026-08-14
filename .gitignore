@@ -39,6 +39,14 @@ build/pilot_pol.csv
 
 # Local multi-model agent workflow state.
 /.ai/
+/.cache/
+/.claude/
+/.mcp.json
+/.vscode/
+
+# Generated CMake tooling metadata and emergency editor backups.
+/compile_commands.json
+*.bak
 
 # Serena project configuration is versioned; caches, memories, and local
 # machine-specific configuration are not.
