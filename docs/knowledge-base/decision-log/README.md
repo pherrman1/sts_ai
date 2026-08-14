@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-14 | [`2026-08-14-phase6-cmake-core-objects.md`](2026-08-14-phase6-cmake-core-objects.md) | Phase 6 native C++ core compilation deduplicated with the `sts_core_objects` OBJECT library; Python remains separate. |
 | 2026-08-14 | [`2026-08-14-cline-guardrail-integration-fixes.md`](2026-08-14-cline-guardrail-integration-fixes.md) | Cline guardrail integration fixes: `one_combat` is blocked only when executed (mention-as-argument allowed, argv-forwarding wrappers like `env` handled), and the `.ps1` hook wrappers were removed because Cline 4.1.8 runs them via absent `pwsh`, aborting every tool call with `spawn pwsh ENOENT` and surfacing `[migration] Tool result missing in legacy conversation history.` |
 | 2026-08-14 | [`2026-08-14-phase5-ci-ccache.md`](2026-08-14-phase5-ci-ccache.md) | Phase 5 CI compiler-cache experiment: ccache-only Linux GCC workflow integration, with baseline and cold/warm measurement follow-up. |
 | 2026-08-14 | [`2026-08-14-agent-context-phase1.md`](2026-08-14-agent-context-phase1.md) | Phase 1 reduced root `AGENTS.md` to a universal contract, preserved detailed workflow/safety guidance through an explicit relocation audit and existing pages/skills, and added conservative `.clineignore` coverage with tracked artifact exceptions. |
