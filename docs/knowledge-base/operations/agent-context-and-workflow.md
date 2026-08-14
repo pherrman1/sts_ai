@@ -165,6 +165,46 @@ experiment evidence remain visible through explicit exceptions.
 None for this workflow split. Future context reductions should update the
 relocation audit rather than silently deleting an instruction.
 
+## Cline mechanical guardrails
+
+Repository-owned hooks live in `.clinerules/hooks/`. The extensionless
+`PreToolUse` and `TaskComplete` files are the Linux/macOS entry points; the
+`.ps1` files are the corresponding native Windows wrappers. All wrappers
+delegate to the same stdlib-only `tools/agent/cline_guardrails.py` policy
+implementation. Cline's current hook protocol supplies JSON on stdin and
+expects one JSON object on stdout; diagnostics are written to stderr.
+
+`PreToolUse` mechanically cancels clear hazards: destructive Git history or
+working-tree operations, force pushes and pushes to `main`, pushes from
+`main`, broad process termination and privilege escalation, recursive file
+deletion, direct `one_combat` or `check_replay.py` execution outside
+`tools/seed_guard.sh`, and normal project-file edit tools while on `main`.
+Read/search tools, normal read-only Git commands, builds, CTest, and
+seed-guard-wrapped commands remain available. Other shell commands remain
+approval-controlled; this hook is intentionally conservative rather than a
+complete shell security model.
+
+`TaskComplete` always runs `git diff --check`. It syntax-checks changed Python
+files with the active interpreter, changed shell files with `bash -n` when
+available, and changed JSON files with the Python standard-library parser.
+Failures cancel completion. C++/header/CMake changes only add a reminder to
+run focused local verification and to wait for the PR Linux GCC CI check; the
+hook never launches a full build, gameplay benchmark, training, dependency
+installation, commit, push, GCP access, or deletion. Markdown-only changes
+therefore receive only the diff check.
+
+To enable or diagnose hooks, ensure the extensionless Linux/macOS wrappers are
+executable (`chmod +x .clinerules/hooks/PreToolUse
+.clinerules/hooks/TaskComplete`) and pipe synthetic JSON into them. If a safe
+command is falsely blocked, inspect the stderr diagnostic and reproduce the
+smallest synthetic input locally; do not weaken the hook by adding a broad path
+allowlist. Ask the user to perform the one-off operation manually if needed.
+
+GitHub Actions CI is the authoritative repository verification check. Changes
+should reach `main` through a pull request only after the Linux GCC check
+passes. Branch-protection enforcement is not currently available for this
+private repository on its GitHub plan.
+
 ## Relevant code
 
 - `AGENTS.md`
