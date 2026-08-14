@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Repository-owned Cline hook policy and cheap completion checks.
-
-Follows the Cline hook JSON protocol:
-- Stdin: JSON HookInput (with preToolUse / taskComplete data)
-- Stdout: JSON HookOutput {"cancel": bool, "errorMessage"?: str, "contextModification"?: str}
-- Stderr: Diagnostic logging
-"""
+"""Stdlib-only Cline safety policy and cheap completion validation."""
 from __future__ import annotations
 
 import json
@@ -18,266 +12,236 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-
-EDIT_TOOLS = {
-    "write_to_file", "replace_in_file", "apply_patch", "apply_diff",
-    "write_file", "replace_content", "replace_in_files", "editor",
-    "serena__replace_content", "serena__replace_symbol_body",
-    "serena__replace_in_files", "serena__insert_after_symbol",
-    "serena__insert_before_symbol", "serena__rename_symbol",
-    "serena__safe_delete_symbol",
-}
+EDIT_TOOLS = {"write_to_file", "replace_in_file", "apply_patch", "apply_diff", "write_file", "replace_content", "replace_in_files", "editor", "serena__replace_content", "serena__replace_symbol_body", "serena__replace_in_files", "serena__insert_after_symbol", "serena__insert_before_symbol", "serena__rename_symbol", "serena__safe_delete_symbol"}
+MUTATING_SERENA = {x for x in EDIT_TOOLS if x.startswith("serena__")}
+COMPLETION_TOOLS = {"attempt_completion", "submit_and_exit"}
 
 
-def make_output(cancel: bool = False, error: str = "", context: str = "") -> dict[str, Any]:
-    out: dict[str, Any] = {"cancel": cancel}
+def make_output(cancel=False, error="", context=""):
+    result = {"cancel": bool(cancel)}
     if error:
-        out["errorMessage"] = error
+        result["errorMessage"] = error
     if context:
-        out["contextModification"] = context
-    return out
+        result["contextModification"] = context
+    return result
 
 
-def _extract_commands(parameters: Any) -> list[str]:
+def git_path(name):
+    try:
+        value = subprocess.check_output(["git", "rev-parse", "--git-path", name], cwd=ROOT, text=True).strip()
+        return Path(value) if os.path.isabs(value) else (ROOT / value).resolve()
+    except (OSError, subprocess.CalledProcessError):
+        return ROOT / ".git" / name
+
+
+BASELINE_PATH = git_path("cline-task-baseline.json")
+
+
+def git_branch():
+    return os.environ.get("CLINE_GUARD_BRANCH", subprocess.run(["git", "branch", "--show-current"], cwd=ROOT, text=True, capture_output=True).stdout.strip())
+
+
+def git_head():
+    return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=False).stdout.strip()
+
+
+def commands(parameters):
     if not isinstance(parameters, dict):
         return []
-    values: list[str] = []
+    result = []
     for key in ("command", "cmd", "commands"):
-        val = parameters.get(key)
-        if isinstance(val, str):
-            values.append(val)
-        elif isinstance(val, list):
-            for item in val:
-                if isinstance(item, str):
-                    values.append(item)
-                elif isinstance(item, dict) and "command" in item:
-                    values.append(str(item["command"]))
-    return values
+        value = parameters.get(key)
+        if isinstance(value, str):
+            result.append(value)
+        elif isinstance(value, list):
+            result.extend(str(item.get("command", item)) if isinstance(item, dict) else str(item) for item in value)
+    return result
 
-def _split_pipeline_or_subcommands(command: str) -> list[list[str]]:
-    """Split command string on shell operators (;, &&, ||, |) into token lists."""
+
+def tokens(command):
+    command = command.replace("\n", " ; ")
     try:
         lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|")
         lexer.whitespace_split = True
-        raw_tokens = list(lexer)
+        return list(lexer)
     except ValueError:
-        raw_tokens = command.split()
+        return command.split()
 
-    segments: list[list[str]] = []
-    current: list[str] = []
-    for token in raw_tokens:
-        if token in {";", "&&", "||", "|"}:
+
+def segments(command):
+    result, current = [], []
+    for token in tokens(command):
+        if token in {";", "&&", "||", "|", "&"}:
             if current:
-                segments.append(current)
+                result.append(current)
                 current = []
         else:
             current.append(token)
     if current:
-        segments.append(current)
-    return segments
+        result.append(current)
+    return result
 
 
-def _basename(token: str) -> str:
-    cleaned = token.replace("\\", "/").rstrip("/")
-    return cleaned.split("/")[-1]
+def base(value):
+    return value.replace("\\", "/").rstrip("/").split("/")[-1].lower()
 
 
-def _is_seed_guarded(tokens: list[str], target_exe: str) -> bool:
-    """Return True if target_exe in tokens is invoked via seed_guard.sh."""
-    for idx, token in enumerate(tokens):
-        if _basename(token) == target_exe:
-            for prev_idx in range(idx):
-                if _basename(tokens[prev_idx]) == "seed_guard.sh":
-                    return True
+def git_args(parts):
+    try:
+        index = next(i for i, value in enumerate(parts) if base(value) == "git")
+    except StopIteration:
+        return None
+    args = parts[index + 1:]
+    options = {"-c", "-C", "--git-dir", "--work-tree", "--namespace", "--config-env"}
+    while args and (args[0] in options or any(args[0].startswith(option + "=") for option in options)):
+        args = args[2:] if args[0] in options else args[1:]
+    return args
+
+
+def pushes_main(args):
+    for value in args[1:]:
+        value = value.lstrip("+")
+        destination = value.split(":", 1)[1] if ":" in value else value
+        if destination in {"main", "refs/heads/main"}:
+            return True
     return False
 
 
-def _check_command_safety(command: str, branch: str) -> str | None:
-    segments = _split_pipeline_or_subcommands(command)
-    for tokens in segments:
-        if not tokens:
-            continue
-        lower_tokens = [t.lower() for t in tokens]
+def guarded(parts, target):
+    return any(base(parts[i]) == target and any(base(previous) == "seed_guard.sh" for previous in parts[:i]) for i in range(len(parts)))
 
-        # 1. Privilege escalation
-        if any(t in {"sudo", "doas", "su"} for t in lower_tokens):
-            return "Privilege escalation (sudo/doas/su) is blocked. Perform manual setup if needed."
 
-        # 2. Broad process termination
-        if any(t in {"pkill", "killall"} for t in lower_tokens) or (
-            lower_tokens[0] == "kill" and not (len(tokens) == 2 and tokens[1].lstrip("-").isdigit())
-        ):
-            return "Broad process termination (pkill/killall/kill) is blocked. Resolve and stop processes manually."
-
-        # 3. Direct one_combat / check_replay invocations without seed_guard.sh
-        if any(_basename(t) == "one_combat" for t in tokens):
-            if not _is_seed_guarded(tokens, "one_combat"):
-                return "Direct execution of one_combat is blocked. Route through tools/seed_guard.sh."
-
-        if any(_basename(t) == "check_replay.py" for t in tokens):
-            if not _is_seed_guarded(tokens, "check_replay.py"):
-                return "Direct execution of check_replay.py is blocked. Route through tools/seed_guard.sh."
-
-        # 4. Git destructive commands
-        git_idx = -1
-        for idx, t in enumerate(lower_tokens):
-            if _basename(t) == "git":
-                git_idx = idx
-                break
-
-        if git_idx != -1:
-            git_args = lower_tokens[git_idx + 1 :]
-            if git_args:
-                subcmd = git_args[0]
-                if subcmd == "reset" and "--hard" in git_args:
-                    return "git reset --hard is blocked."
-                if subcmd == "clean" and any(
-                    arg == "-f" or arg == "--force" or (arg.startswith("-") and "f" in arg and "d" in arg) or (arg.startswith("-") and "d" in arg)
-                    for arg in git_args[1:]
-                ):
-                    return "Destructive git clean is blocked."
-                if subcmd == "branch" and any(arg in {"-d", "-D", "--delete"} for arg in git_args):
-                    return "Branch deletion (git branch -d/-D) is blocked."
-                if subcmd == "push":
-                    if any(arg in {"--force", "-f", "--force-with-lease"} for arg in git_args):
-                        return "Force push (git push --force/-f/--force-with-lease) is blocked."
-                    if "main" in git_args:
-                        return "Direct push to main is blocked. Use a feature branch and pull request."
-                    if branch == "main":
-                        return "Plain git push from main is blocked. Work on a feature branch."
-                if subcmd in {"checkout", "restore"}:
-                    if any(arg in {".", "-- .", "--worktree", "--all"} for arg in git_args):
-                        return f"Broad working-tree discard (git {subcmd} .) is blocked."
-
-        # 5. Recursive filesystem deletion
-        first_token = _basename(lower_tokens[0])
-        if first_token in {"rm", "rmdir"}:
-            flags = [t for t in lower_tokens[1:] if t.startswith("-")]
-            if any("r" in f or "R" in f for f in flags) or "--recursive" in flags or "/s" in lower_tokens:
-                return "Broad recursive filesystem deletion (rm -r/-rf) is blocked."
-
+def check_command(command, branch, depth=0):
+    if depth > 1:
+        return None
+    for parts in segments(command):
+        lower = [value.lower() for value in parts]
+        if any(value in {"sudo", "doas", "su"} for value in lower):
+            return "Privilege escalation is blocked. Perform the operation manually."
+        if any(value in {"pkill", "killall"} for value in lower) or (lower and lower[0] == "kill" and not (len(parts) == 2 and parts[1].isdigit())):
+            return "Broad process termination is blocked. Resolve and stop processes manually."
+        for shell in ("bash", "sh"):
+            if shell in lower and "-c" in lower:
+                index = lower.index("-c") + 1
+                if index < len(parts):
+                    reason = check_command(parts[index], branch, depth + 1)
+                    if reason:
+                        return reason
+        if any(base(value) == "one_combat" for value in parts) and not guarded(parts, "one_combat"):
+            return "Direct one_combat execution is blocked; route it through tools/seed_guard.sh."
+        if any(base(value) == "check_replay.py" for value in parts) and not guarded(parts, "check_replay.py"):
+            return "Direct check_replay.py execution is blocked; route it through tools/seed_guard.sh."
+        args = git_args(parts)
+        if args:
+            subcommand = args[0]
+            if subcommand == "reset" and "--hard" in args:
+                return "git reset --hard is blocked."
+            if subcommand == "clean" and any(value == "--force" or (value.startswith("-") and "f" in value) for value in args[1:]):
+                return "Destructive git clean is blocked."
+            if subcommand == "branch" and any(value in {"-d", "-D", "--delete"} for value in args[1:]):
+                return "Branch deletion is blocked."
+            if subcommand == "push":
+                if any(value in {"--force", "-f", "--force-with-lease"} or value.startswith("--force-with-lease=") for value in args[1:]):
+                    return "Force push is blocked."
+                if pushes_main(args):
+                    return "Pushes to main are blocked."
+                if branch == "main":
+                    return "Plain git push from main is blocked."
+            if subcommand in {"checkout", "restore"} and any(value in {".", "--", "--all"} for value in args[1:]):
+                return "Broad working-tree discard is blocked."
+        if base(parts[0]) in {"rm", "rmdir"} and any("r" in flag for flag in lower[1:] if flag.startswith("-")):
+            return "Recursive filesystem deletion is blocked."
     return None
 
 
-def get_current_git_branch() -> str:
-    override = os.environ.get("CLINE_GUARD_BRANCH")
-    if override:
-        return override.strip()
+def changed_files(baseline):
+    names = []
+    specs = []
+    if baseline:
+        specs.append(["git", "diff", "--name-only", "--diff-filter=ACMRTUXB", f"{baseline}..HEAD"])
+    specs.extend([
+        ["git", "diff", "--name-only", "--diff-filter=ACMRTUXB"],
+        ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMRTUXB"],
+        ["git", "ls-files", "--others", "--exclude-standard"],
+    ])
+    for spec in specs:
+        result = subprocess.run(spec, cwd=ROOT, text=True, capture_output=True, check=False)
+        if result.returncode == 0:
+            names.extend(result.stdout.splitlines())
+    return [ROOT / name for name in dict.fromkeys(names) if name and (ROOT / name).is_file()]
+
+
+def load_baseline():
     try:
-        res = subprocess.check_output(
-            ["git", "branch", "--show-current"],
-            cwd=ROOT,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-        return res
-    except (OSError, subprocess.CalledProcessError):
-        return ""
+        value = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
-def handle_pre_tool_use(data: dict[str, Any]) -> dict[str, Any]:
-    pre = data.get("preToolUse") or data.get("pre_tool_use") or {}
-    tool_name = str(pre.get("toolName", pre.get("tool_name", "")))
-    parameters = pre.get("parameters", {})
-    branch = str(data.get("branch") or get_current_git_branch())
-
-    # Check main branch edit protection
-    if branch == "main" and tool_name in EDIT_TOOLS:
-        return make_output(
-            cancel=True,
-            error="Project-file modifications are blocked on main. Please create and switch to a feature branch first.",
-        )
-
-    # Check shell commands
-    commands = _extract_commands(parameters)
-    for cmd in commands:
-        danger = _check_command_safety(cmd, branch)
-        if danger:
-            sys.stderr.write(f"CLINE_GUARD: blocked command: {cmd!r} reason: {danger}\n")
-            return make_output(cancel=True, error=danger)
-
-    return make_output(cancel=False)
-
-
-def collect_changed_files(metadata: dict[str, Any]) -> list[Path]:
-    candidates: list[str] = []
-    for key in ("changedFiles", "changed_files", "files"):
-        val = metadata.get(key)
-        if isinstance(val, str):
-            try:
-                val = json.loads(val)
-            except json.JSONDecodeError:
-                val = val.splitlines()
-        if isinstance(val, list):
-            candidates.extend(str(item) for item in val)
-
-    if not candidates:
-        try:
-            res_diff = subprocess.run(
-                ["git", "diff", "--name-only", "--diff-filter=ACMRTUXB", "HEAD"],
-                cwd=ROOT,
-                text=True,
-                capture_output=True,
-                check=False,
-            )
-            if res_diff.returncode == 0:
-                candidates.extend(res_diff.stdout.splitlines())
-
-            res_untracked = subprocess.run(
-                ["git", "ls-files", "--others", "--exclude-standard"],
-                cwd=ROOT,
-                text=True,
-                capture_output=True,
-                check=False,
-            )
-            if res_untracked.returncode == 0:
-                candidates.extend(res_untracked.stdout.splitlines())
-        except OSError:
-            pass
-
-    out: list[Path] = []
-    seen: set[str] = set()
-    for item in candidates:
-        item = item.strip()
-        if item and item not in seen:
-            seen.add(item)
-            p = ROOT / item
-            if p.is_file():
-                out.append(p)
-    return out
-
-
-def handle_task_complete(data: dict[str, Any]) -> dict[str, Any]:
-    diff_check = subprocess.run(["git", "diff", "--check"], cwd=ROOT, text=True, capture_output=True, check=False)
-    if diff_check.returncode != 0:
-        err = "git diff --check failed; fix whitespace errors before completing:\n" + diff_check.stdout + diff_check.stderr
-        return make_output(True, err.strip())
-    task = data.get("taskComplete") or data.get("task_complete") or {}
-    metadata = task.get("taskMetadata") or task.get("task_metadata") or {}
-    changed = collect_changed_files(metadata if isinstance(metadata, dict) else {})
-    checks = [([p for p in changed if p.suffix == ".py"], [sys.executable, "-m", "py_compile"], "Python syntax")]
-    if shutil.which("bash"):
-        checks.append(([p for p in changed if p.suffix == ".sh"], ["bash", "-n"], "Shell syntax"))
-    for files, command, label in checks:
-        if files:
-            result = subprocess.run(command + [str(p) for p in files], cwd=ROOT, text=True, capture_output=True, check=False)
-            if result.returncode:
-                return make_output(True, f"{label} check failed:\n{result.stderr or result.stdout}".strip())
-    for path in (p for p in changed if p.suffix == ".json"):
+def validate_changes():
+    baseline = load_baseline().get("head")
+    checks = [subprocess.run(["git", "diff", "--check", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=False), subprocess.run(["git", "diff", "--cached", "--check"], cwd=ROOT, text=True, capture_output=True, check=False)]
+    if any(check.returncode for check in checks):
+        return "git diff --check failed; fix whitespace errors before completing.\n" + "".join(check.stdout + check.stderr for check in checks), ""
+    changed = changed_files(baseline)
+    py = [str(path) for path in changed if path.suffix == ".py"]
+    if py:
+        result = subprocess.run([sys.executable, "-m", "py_compile", *py], cwd=ROOT, text=True, capture_output=True, check=False)
+        if result.returncode:
+            return "Python syntax check failed:\n" + (result.stderr or result.stdout), ""
+    shell = [str(path) for path in changed if path.suffix == ".sh"]
+    if shell and shutil.which("bash"):
+        result = subprocess.run(["bash", "-n", *shell], cwd=ROOT, text=True, capture_output=True, check=False)
+        if result.returncode:
+            return "Shell syntax check failed:\n" + (result.stderr or result.stdout), ""
+    for path in (path for path in changed if path.suffix == ".json"):
         try:
             json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            return make_output(True, f"JSON syntax check failed for {path.relative_to(ROOT)}: {exc}")
-    if any(p.suffix in {".cpp", ".cc", ".cxx", ".h", ".hpp", ".hh", ".cmake"} or p.name in {"CMakeLists.txt", "CMakePresets.json"} for p in changed):
-        return make_output(False, context="C++/CMake files changed: run focused local verification when useful; the PR Linux GCC check must pass before manual merge. TaskComplete does not run a full build or gameplay benchmark.")
+            return f"JSON syntax check failed for {path.relative_to(ROOT)}: {exc}", ""
+    if any(path.suffix in {".cpp", ".cc", ".cxx", ".h", ".hpp", ".hh", ".cmake"} or path.name in {"CMakeLists.txt", "CMakePresets.json"} for path in changed):
+        return None, "C++/CMake files changed: run focused local verification when useful; the PR Linux GCC check must pass before manual merge. No full build or gameplay benchmark was launched by this hook."
+    return None, ""
+
+
+def handle_pre_tool_use(data):
+    pre = data.get("preToolUse") or data.get("pre_tool_use") or {}
+    tool = str(pre.get("toolName", pre.get("tool_name", "")))
+    params = pre.get("parameters", {})
+    generic = params.get("toolName") if isinstance(params, dict) else None
+    effective = str(generic or tool)
+    branch = str(data.get("branch") or git_branch())
+    if branch == "main" and (effective in EDIT_TOOLS or effective in MUTATING_SERENA or (effective.startswith("serena__") and any(word in effective for word in ("replace", "insert", "delete", "rename")))):
+        return make_output(True, "Project-file modifications are blocked on main. Create and switch to a feature branch first.")
+    if effective in COMPLETION_TOOLS:
+        error, context = validate_changes()
+        return make_output(bool(error), error, context)
+    for command in commands(params):
+        reason = check_command(command, branch)
+        if reason:
+            sys.stderr.write(f"CLINE_GUARD: blocked command {command!r}: {reason}\n")
+            return make_output(True, reason)
     return make_output(False)
 
 
-def main() -> int:
+def main():
     try:
         data = json.load(sys.stdin)
         name = str(data.get("hookName") or data.get("hook_name") or "")
-        result = handle_task_complete(data) if name == "TaskComplete" or "taskComplete" in data or "task_complete" in data else handle_pre_tool_use(data)
+        if name == "TaskStart" or "taskStart" in data or "task_start" in data:
+            task = data.get("taskStart") or data.get("task_start") or {}
+            task_id = str(data.get("taskId") or data.get("task_id") or task.get("taskId", "unknown"))
+            BASELINE_PATH.write_text(json.dumps({"taskId": task_id, "head": git_head(), "branch": git_branch()}) + "\n", encoding="utf-8")
+            result = make_output(False)
+        elif name == "TaskComplete" or "taskComplete" in data or "task_complete" in data:
+            try:
+                BASELINE_PATH.unlink()
+            except FileNotFoundError:
+                pass
+            result = make_output(False)
+        else:
+            result = handle_pre_tool_use(data)
         print(json.dumps(result, separators=(",", ":")))
     except Exception as exc:
         sys.stderr.write(f"CLINE_GUARD_ERROR: {exc}\n")

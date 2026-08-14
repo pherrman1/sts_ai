@@ -168,13 +168,14 @@ relocation audit rather than silently deleting an instruction.
 ## Cline mechanical guardrails
 
 Repository-owned hooks live in `.clinerules/hooks/`. The extensionless
-`PreToolUse` and `TaskComplete` files are the Linux/macOS entry points; the
-`.ps1` files are the corresponding native Windows wrappers. All wrappers
+`TaskStart`, `PreToolUse`, and `TaskComplete` files are the Linux/macOS entry
+points; the `.ps1` files are the corresponding native Windows wrappers. All wrappers
 delegate to the same stdlib-only `tools/agent/cline_guardrails.py` policy
 implementation. Cline's current hook protocol supplies JSON on stdin and
 expects one JSON object on stdout; diagnostics are written to stderr.
 
-`PreToolUse` mechanically cancels clear hazards: destructive Git history or
+`TaskStart` records the task ID, baseline `HEAD`, and branch in the Git-local
+untracked path resolved by `git rev-parse --git-path`. `PreToolUse` mechanically cancels clear hazards: destructive Git history or
 working-tree operations, force pushes and pushes to `main`, pushes from
 `main`, broad process termination and privilege escalation, recursive file
 deletion, direct `one_combat` or `check_replay.py` execution outside
@@ -184,14 +185,17 @@ seed-guard-wrapped commands remain available. Other shell commands remain
 approval-controlled; this hook is intentionally conservative rather than a
 complete shell security model.
 
-`TaskComplete` always runs `git diff --check`. It syntax-checks changed Python
-files with the active interpreter, changed shell files with `bash -n` when
-available, and changed JSON files with the Python standard-library parser.
-Failures cancel completion. C++/header/CMake changes only add a reminder to
-run focused local verification and to wait for the PR Linux GCC CI check; the
-hook never launches a full build, gameplay benchmark, training, dependency
-installation, commit, push, GCP access, or deletion. Markdown-only changes
-therefore receive only the diff check.
+Before `attempt_completion` or `submit_and_exit`, `PreToolUse` validates the
+baseline-to-HEAD committed diff, staged and unstaged diffs, and relevant
+untracked files. It runs `git diff --check`, Python syntax checks, `bash -n`
+for maintained shell files when Bash is available, and standard-library JSON
+parsing. Failures cancel the completion tool. C++/header/CMake changes never
+launch a full build; they add a focused-verification reminder and rely on the
+PR Linux GCC check. Markdown-only changes remain cheap.
+
+`TaskComplete` is not a blocking validation gate in the current Cline
+integration. It only removes the recorded baseline state as best-effort
+cleanup and returns an allow response.
 
 To enable or diagnose hooks, ensure the extensionless Linux/macOS wrappers are
 executable (`chmod +x .clinerules/hooks/PreToolUse
