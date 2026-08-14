@@ -2739,7 +2739,7 @@ static int testRealBeliefFilter(std::uint64_t seed) {
               << " attempted=" << stats.attempted << "\n";
     return 0;
 }
-static int dispatchTestCommand(int argc, const char* argv[]) {
+int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
         std::cout << "incorrect arguments" << std::endl;
@@ -2886,8 +2886,4 @@ static int dispatchTestCommand(int argc, const char* argv[]) {
 //    replayActionList(argv[1]);
 
     return 0;
-}
-
-int main(int argc, const char* argv[]) {
-    return dispatchTestCommand(argc, argv);
 }
