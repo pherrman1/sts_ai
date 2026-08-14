@@ -97,6 +97,13 @@ bool isValidPotionAction(const BattleContext &bc, const search::Action &a) {
             return false;
         }
 
+        // Gambler's Brew is unusable when the hand is empty. Allowing it would
+        // enqueue GAMBLE and enter CARD_SELECT with no legal actions because
+        // the generic multi-select enumerator has no cards to enumerate.
+        if (p == Potion::GAMBLERS_BREW && bc.cards.cardsInHand == 0) {
+            return false;
+        }
+
         if (!potionRequiresTarget(p)) {
             return true;
         }

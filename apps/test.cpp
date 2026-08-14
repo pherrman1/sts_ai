@@ -1421,6 +1421,35 @@ int testSimHealthGambleEmptyHand() {
     return 1;
 }
 
+// Gambler's Brew is not a legal PLAYER_NORMAL action when the hand is empty:
+// using it would open GAMBLE with no selectable cards. A non-empty hand must
+// retain the normal potion-use legality.
+int testGamblersBrewLegality() {
+    GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    bc.inputState = InputState::PLAYER_NORMAL;
+    bc.potions[0] = Potion::GAMBLERS_BREW;
+    bc.potionCount = 1;
+    const search::Action useBrew(search::ActionType::POTION, 0, 0);
+
+    bc.cards.cardsInHand = 0;
+    if (useBrew.isValidAction(bc)) {
+        std::cout << "gamblers_brew_legality FAIL: empty-hand use was legal\n";
+        return 1;
+    }
+
+    bc.cards.cardsInHand = 1;
+    bc.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+    if (!useBrew.isValidAction(bc)) {
+        std::cout << "gamblers_brew_legality FAIL: non-empty-hand use was illegal\n";
+        return 1;
+    }
+
+    std::cout << "gamblers_brew_legality PASS\n";
+    return 0;
+}
+
 // Simulator-health monitor: non-fair Searcher2 coverage (Test B). A
 // deterministic unresolved CARD_SELECT state with zero legal actions must be
 // diagnosed immediately through the AGENT control path as NO_LEGAL_PROGRESSION
@@ -2551,6 +2580,8 @@ int main(int argc, const char* argv[]) {
         return testTimeEaterExhaust();
     } else if (command == "simhealth_gamble_empty_hand") {
         return testSimHealthGambleEmptyHand();
+    } else if (command == "gamblers_brew_legality") {
+        return testGamblersBrewLegality();
     } else if (command == "simhealth_nonfair_s2_empty") {
         return testSimHealthNonFairS2Empty();
     } else if (command == "simhealth_selection_failure") {
