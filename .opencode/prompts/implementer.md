@@ -43,9 +43,10 @@ Seed-sweep safety:
   before running them:
     tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0
     tools/seed_guard.sh guard-only ./build/one_combat bestbench 1000 8 0
-- the guard rejects any automated call exceeding 128 seeds
+- local automated calls above 128 seeds are rejected; large research runs use
+  the designated GCP launcher and its explicit unbounded `--gcp-research` mode
 - verified smoke checks: 8–16 seeds; focused validation: ≤32;
-  statistical validation: ≤64; 128 is the absolute automated ceiling
+  statistical validation: ≤64; 128 remains the local automated ceiling
 - prefer the cheapest useful verification
 
 Tests:

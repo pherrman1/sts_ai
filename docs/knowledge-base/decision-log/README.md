@@ -1,6 +1,6 @@
 # Decision log
 
-Last verified: 2026-08-13 against the current working tree.
+Last verified: 2026-08-14 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one
@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-14 | [`2026-08-14-gcp-unbounded-research-seeds.md`](2026-08-14-gcp-unbounded-research-seeds.md) | Retained the local 128-seed cap while authorizing the explicit, numerically unbounded GCP research path through the tracked launcher; credentials remain external user state. |
 | 2026-08-14 | [`2026-08-14-phase6-cmake-core-objects.md`](2026-08-14-phase6-cmake-core-objects.md) | Phase 6 native C++ core compilation deduplicated with the `sts_core_objects` OBJECT library; Python remains separate. |
 | 2026-08-14 | [`2026-08-14-cline-guardrail-integration-fixes.md`](2026-08-14-cline-guardrail-integration-fixes.md) | Cline guardrail integration fixes: `one_combat` is blocked only when executed (mention-as-argument allowed, argv-forwarding wrappers like `env` handled), and the `.ps1` hook wrappers were removed because Cline 4.1.8 runs them via absent `pwsh`, aborting every tool call with `spawn pwsh ENOENT` and surfacing `[migration] Tool result missing in legacy conversation history.` |
 | 2026-08-14 | [`2026-08-14-phase5-ci-ccache.md`](2026-08-14-phase5-ci-ccache.md) | Phase 5 CI compiler-cache experiment: ccache-only Linux GCC workflow integration, with baseline and cold/warm measurement follow-up. |

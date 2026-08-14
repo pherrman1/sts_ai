@@ -84,12 +84,15 @@ environment. Header-layout changes to `Node`, `Edge`, or searcher structures
 require every including translation unit to be rebuilt.
 
 Use the cheapest proving check. All game-seed commands must use
-`tools/seed_guard.sh`; it rejects automated sweeps above 128 seeds. Prefer
-8–16 seeds for iterative smoke checks, at most 32 for ordinary focused
-validation, and at most 64 for final automated statistical validation. The
-128-seed cap is an absolute ceiling, not a normal target; larger research runs
-are human-controlled. Long sweeps and the GCP `sts-test` access procedure are
-documented only in [build and debugging](build-and-debugging.md).
+`tools/seed_guard.sh`. Local automated execution is capped at 128 seeds:
+prefer 8–16 seeds for iterative smoke checks, at most 32 for ordinary focused
+validation, and at most 64 when a small statistical check is sufficient. Large
+research runs use the tracked
+[`tools/agent/gcp_benchmark.py`](../../../tools/agent/gcp_benchmark.py) path on
+`sts-test`; its explicit `--gcp-research` guard mode has no numeric ceiling.
+Agents may choose a justified GCP seed count without a separate approval step,
+but must state the scientific design and use the smallest informative sample.
+Long-run details are in [build and debugging](build-and-debugging.md).
 
 ### Modification and Git procedure
 

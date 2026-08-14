@@ -1,6 +1,6 @@
 # Research tooling
 
-Last verified: 2026-08-11.
+Last verified: 2026-08-14.
 
 ## Invocation
 
@@ -24,6 +24,11 @@ adjusted to preserve repo-root CWD after the move.
 | `data/` | Data preprocessing, tree truncation, format conversion |
 | `run/` | Experiment orchestration shell scripts (ablation sweeps, gates, data generation loops) |
 | `verify/` | Regression self-tests, deterministic-replay checks, parity validation |
+
+The designated GCP benchmark workflow is centralized in
+`tools/agent/gcp_benchmark.py`. It uses the existing user's gcloud
+authentication and `gcloud compute ssh`; it does not store credentials or
+manage arbitrary cloud resources.
 
 Existing tools that predate this reorganization (e.g., `tools/analyze_*.py`,
 `tools/train_*.py`, `tools/tune_*.py`) remain in the flat `tools/` directory.
