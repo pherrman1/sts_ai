@@ -6115,6 +6115,7 @@ static std::string runPathCounterfactualSeed(std::uint64_t seed, int outerSims, 
         const int na = static_cast<int>(sampledCandidates.size());
         std::vector<double> bw(na, 0.0), bf(na, 0.0), bh(na, 0.0);
         const int nf = std::max(1, futures);
+        std::vector<int> validFutures(na, 0);
         for (int f = 0; f < nf; ++f) {
             const std::uint64_t futureSeed = seed
                 ^ (0xa24baed4963ee407ULL * static_cast<std::uint64_t>(sampledDecision * nf + f + 1))
@@ -6124,12 +6125,18 @@ static std::string runPathCounterfactualSeed(std::uint64_t seed, int outerSims, 
                 search::GameAction(sampledCandidates[a]).execute(branch);
                 const OocCounterfactualResult result = finishOocCounterfactual(
                     branch, branchSims, futureSeed, sampledPath, -1, false);
+                if (!result.valid) {
+                    ++g_trainingInvalidBranches;
+                    continue;
+                }
                 bw[a] += result.won; bf[a] += result.floor; bh[a] += result.hp;
+                ++validFutures[a];
             }
         }
         t_curPath = &sampledPath;
         const std::string state = richRow(*sampled, sampledPath);
         for (int a = 0; a < na; ++a) {
+            if (!search::hasCompleteCounterfactualFutureSet(validFutures[a], nf, nf)) continue;
             out << seed << ',' << sampledDecision << ',' << a << ',' << sampledCandidates[a] << ','
                 << sampledHeuristic << ',' << state << ',' << bw[a]/nf << ',' << bf[a]/nf << ','
                 << bh[a]/nf << '\n';
@@ -6275,6 +6282,7 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
                         const int futures = std::max(1, cardCfFutures);
                         const int maxFutures = std::max(futures, cardCfAdaptiveMaxFutures);
                         int usedFutures = 0;
+                        bool cardCfInvalid = false;
                         for (int f = 0; f < maxFutures; ++f) {
                             const std::uint64_t futureSeed = seed
                                 ^ (0xd1b54a32d192ed03ULL
@@ -6289,7 +6297,11 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
                                     branch, cardCfSims, futureSeed, path,
                                     std::max(1, cardCfFights), true, &probe);
                                 t_curPath = &path;
-                                if (!br.valid) { ++g_trainingInvalidBranches; continue; }
+                                if (!br.valid) {
+                                    ++g_trainingInvalidBranches;
+                                    cardCfInvalid = true;
+                                    break;
+                                }
                                 bw[a] += br.won;
                                 bf[a] += br.floor;
                                 bh[a] += br.hp;
@@ -6301,6 +6313,7 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
                                 nbp[a] += probe.nextBossPassed;
                                 nfc[a] += probe.completed;
                             }
+                            if (cardCfInvalid) break;
                             usedFutures = f + 1;
                             if (usedFutures >= futures) {
                                 std::vector<double> runningScore(na);
@@ -6313,21 +6326,25 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
                                 if (usedFutures >= maxFutures || gap > cardCfAdaptiveGap) break;
                             }
                         }
-                        const std::string state = richRow(gc, path);
-                        for (int a = 0; a < na; ++a) {
-                            const bool skip = a == nc;
-                            const Card *card = skip ? nullptr : &r.cardRewards[rIdx][a];
-                            std::ostringstream cr;
-                            cr << seed << ',' << cardDecisionIdx << ',' << (skip ? 5 : a) << ','
-                               << (skip ? -1 : (int)card->getId()) << ','
-                               << (skip ? 0 : (card->isUpgraded() ? 1 : 0)) << ',' << state << ','
-                               << usedFutures << ',' << bw[a]/usedFutures << ','
-                               << bf[a]/usedFutures << ',' << bh[a]/usedFutures << ','
-                               << ncs[a]/usedFutures << ',' << ncp[a]/usedFutures << ','
-                               << nes[a]/usedFutures << ',' << nep[a]/usedFutures << ','
-                               << nbs[a]/usedFutures << ',' << nbp[a]/usedFutures << ','
-                               << nfc[a]/usedFutures;
-                            cardRows.push_back(cr.str());
+                        if (!cardCfInvalid
+                            && search::hasCompleteCounterfactualFutureSet(usedFutures, usedFutures,
+                                                                            futures)) {
+                            const std::string state = richRow(gc, path);
+                            for (int a = 0; a < na; ++a) {
+                                const bool skip = a == nc;
+                                const Card *card = skip ? nullptr : &r.cardRewards[rIdx][a];
+                                std::ostringstream cr;
+                                cr << seed << ',' << cardDecisionIdx << ',' << (skip ? 5 : a) << ','
+                                   << (skip ? -1 : (int)card->getId()) << ','
+                                   << (skip ? 0 : (card->isUpgraded() ? 1 : 0)) << ',' << state << ','
+                                   << usedFutures << ',' << bw[a]/usedFutures << ','
+                                   << bf[a]/usedFutures << ',' << bh[a]/usedFutures << ','
+                                   << ncs[a]/usedFutures << ',' << ncp[a]/usedFutures << ','
+                                   << nes[a]/usedFutures << ',' << nep[a]/usedFutures << ','
+                                   << nbs[a]/usedFutures << ',' << nbp[a]/usedFutures << ','
+                                   << nfc[a]/usedFutures;
+                                cardRows.push_back(cr.str());
+                            }
                         }
                         ++cardCollected;
                     }
@@ -6356,6 +6373,8 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
                 && restCfStride > 0 && (seed % (std::uint64_t)restCfStride) == 0) {
                 double rw = 0, rf = 0, rh = 0, sw = 0, sf = 0, sh = 0;
                 const int futures = std::max(1, restCfFutures);
+                int validFutures = 0;
+                bool restCfInvalid = false;
                 for (int f = 0; f < futures; ++f) {
                     const std::uint64_t futureSeed = seed ^ (0x9e3779b97f4a7c15ULL
                                                     * (std::uint64_t)(restIdx * futures + f + 1));
@@ -6376,16 +6395,24 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
                         gs, restCfSims, futureSeed, path);
                     if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF smith branch done floor=" << sr.floor << "\n";
                     t_curPath = &path;
-                    if (rr.valid) { rw += rr.won; rf += rr.floor; rh += rr.hp; }
-                    else ++g_trainingInvalidBranches;
-                    if (sr.valid) { sw += sr.won; sf += sr.floor; sh += sr.hp; }
-                    else ++g_trainingInvalidBranches;
+                    if (!rr.valid || !sr.valid) {
+                        g_trainingInvalidBranches += !rr.valid + !sr.valid;
+                        restCfInvalid = true;
+                        break;
+                    }
+                    rw += rr.won; rf += rr.floor; rh += rr.hp;
+                    sw += sr.won; sf += sr.floor; sh += sr.hp;
+                    ++validFutures;
                 }
-                std::ostringstream cr;
-                cr << seed << ',' << restIdx << ',' << richRow(gc, path)
-                   << ',' << rw/futures << ',' << rf/futures << ',' << rh/futures
-                   << ',' << sw/futures << ',' << sf/futures << ',' << sh/futures;
-                restRows.push_back(cr.str());
+                if (!restCfInvalid
+                    && search::hasCompleteCounterfactualFutureSet(validFutures, validFutures,
+                                                                    futures)) {
+                    std::ostringstream cr;
+                    cr << seed << ',' << restIdx << ',' << richRow(gc, path)
+                       << ',' << rw/validFutures << ',' << rf/validFutures << ',' << rh/validFutures
+                       << ',' << sw/validFutures << ',' << sf/validFutures << ',' << sh/validFutures;
+                    restRows.push_back(cr.str());
+                }
                 ++restIdx;
             }
             if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF apply deployed rest policy\n";

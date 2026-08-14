@@ -1644,6 +1644,12 @@ int testTrainingIntegrity() {
           "health-failed decided label is invalid");
     check(!search::isValidTrainingTerminal(false, 0, 1, true),
           "health-failed bootstrap is invalid");
+    check(!search::hasCompleteCounterfactualFutureSet(1, 2, 2),
+          "one valid and one invalid future quarantines the label rather than averaging with zero");
+    check(search::hasCompleteCounterfactualFutureSet(2, 2, 2),
+          "all requested counterfactual futures permit a label");
+    check(search::hasCompleteCounterfactualFutureSet(3, 3, 2),
+          "adaptive extra futures remain valid when every evaluated future succeeded");
     {
         BattleContext bc = playerNormalFixture(0xFACEu, 3);
         const int totalBefore = search::g_simHealthFailureCount;
