@@ -1,6 +1,7 @@
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -169,10 +170,31 @@ class CompletionTests(unittest.TestCase):
         value = invoke({"hookName": "TaskStart", "taskId": "test-task"})
         self.assertFalse(value["cancel"])
         self.assertTrue(module.baseline_path("test-task").exists())
-        self.assertIn("docs/knowledge-base/operations/agent-context-and-workflow.md", [str(p.relative_to(ROOT)) for p in module.changed_files("4d6aecd49fe12b5423d9ca4ef7201307b8c82709")])
         cleanup = invoke({"hookName": "TaskComplete", "taskId": "test-task", "taskComplete": {}})
         self.assertFalse(cleanup["cancel"])
         self.assertFalse(module.baseline_path("test-task").exists())
+
+    def test_changed_files_finds_committed_diff_in_synthetic_repo(self):
+        module = load_module()
+        original_root = module.ROOT
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            try:
+                subprocess.run(["git", "init", "-q"], cwd=repository, check=True)
+                subprocess.run(["git", "config", "user.name", "agent-test"], cwd=repository, check=True)
+                subprocess.run(["git", "config", "user.email", "agent-test@example.invalid"], cwd=repository, check=True)
+                tracked = repository / "committed.txt"
+                tracked.write_text("before\n", encoding="utf-8")
+                subprocess.run(["git", "add", "committed.txt"], cwd=repository, check=True)
+                subprocess.run(["git", "commit", "-q", "-m", "baseline"], cwd=repository, check=True)
+                baseline = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repository, check=True, text=True, capture_output=True).stdout.strip()
+                tracked.write_text("after\n", encoding="utf-8")
+                subprocess.run(["git", "add", "committed.txt"], cwd=repository, check=True)
+                subprocess.run(["git", "commit", "-q", "-m", "change"], cwd=repository, check=True)
+                module.ROOT = repository
+                self.assertEqual(module.changed_files(baseline), [tracked])
+            finally:
+                module.ROOT = original_root
 
     def test_task_state_is_isolated(self):
         module = load_module()
