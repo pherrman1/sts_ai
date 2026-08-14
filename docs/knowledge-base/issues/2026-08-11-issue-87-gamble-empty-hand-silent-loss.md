@@ -1,6 +1,7 @@
 # Issue 87: Gambler's Brew at an empty hand ends the run as an invisible loss (hpEnd > 0, deathEnc = -1)
 
-- **Status:** open (diagnosis complete; reproduction available; not fixed per request)
+- **Status:** partially fixed (Gambler's Brew empty-hand trigger fixed; generic
+  empty-hand multi-select behavior remains open)
 - **Detection:** the runtime simulator health monitor (2026-08-11, see
   [`behavior/simulator-health-monitor.md`](../behavior/simulator-health-monitor.md))
   now automatically flags this seed: seed 126711 at the recorded stack fires
@@ -15,6 +16,26 @@
   `build/rerun_2026-08-10_a0_gates_1k_128.csv` (commit `5959e4c`, decision-log
   `2026-08-10-full-stack-rerun.md` §166); reproduced on local HEAD (`b750cc6`)
   at the same configuration.
+
+## Phase 10 disposition
+
+The narrow Gambler's Brew trigger is fixed in
+`src/sim/search/Action.cpp::isValidPotionAction`: the potion is now illegal at
+`PLAYER_NORMAL` when `cardsInHand == 0`, while remaining legal with a non-empty
+hand. This prevents the simulator from creating the documented
+`CARD_SELECT/GAMBLE/hand=0` state through an illegal potion action.
+
+The generic `pushMultiSelectActions` empty-hand behavior is intentionally not
+changed. `EXHAUST_MANY` and any other path that can independently create an
+empty-hand multi-select state remain follow-up work; this issue is not closed
+as a general empty-hand bug-class fix.
+
+The historical seed-126711 reproduction was not observed on the requested
+current baseline before the Phase 10 edit: the exact guarded configuration
+completed with `win%=100.0`, `avg_floor=51.0`, and no battle-break diagnostic.
+That result does not invalidate the source-level legality defect or the focused
+regression; it means only that the historical integration reproduction is not
+currently reproducible from this checkout.
 
 ## Symptom
 
