@@ -37,6 +37,7 @@
 #include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/SimHealth.h"
+#include "sim/search/TrainingIntegrity.h"
 #include "combat/BattleContextBinary.h"
 #include "constants/MonsterMoves.h"
 #include "test_belief.h"
@@ -1628,6 +1629,56 @@ int testSimHealthNonFairS2SelectionFailed() {
     return 1;
 }
 
+int testTrainingIntegrity() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const char *msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    check(search::isValidTrainingTerminal(true, 0, 0),
+          "decided victory/loss with no health failure is valid");
+    check(search::isValidTrainingTerminal(false, 0, 0, true),
+          "clean unresolved bounded bootstrap is valid");
+    check(!search::isValidTrainingTerminal(false, 0, 0),
+          "unresolved ordinary label is invalid");
+    check(!search::isValidTrainingTerminal(true, 0, 1),
+          "health-failed decided label is invalid");
+    check(!search::isValidTrainingTerminal(false, 0, 1, true),
+          "health-failed bootstrap is invalid");
+    check(!search::hasCompleteCounterfactualFutureSet(1, 2, 2),
+          "one valid and one invalid future quarantines the label rather than averaging with zero");
+    check(search::hasCompleteCounterfactualFutureSet(2, 2, 2),
+          "all requested counterfactual futures permit a label");
+    check(search::hasCompleteCounterfactualFutureSet(3, 3, 2),
+          "adaptive extra futures remain valid when every evaluated future succeeded");
+    {
+        BattleContext bc = playerNormalFixture(0xFACEu, 3);
+        const int totalBefore = search::g_simHealthFailureCount;
+        const int reasonBefore = search::g_simHealthFailureCounts[
+            (int)search::SimHealthFailure::ACTION_SELECTION_FAILED];
+        search::reportSimHealthFailure(bc, search::SimHealthFailure::ACTION_SELECTION_FAILED);
+        const int branchDelta = search::g_simHealthFailureCount - totalBefore;
+        check(branchDelta == 1, "branch failure increments canonical total exactly once");
+        check(search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED]
+              == reasonBefore + 1, "branch failure increments canonical per-reason count");
+        int reasonSum = 0;
+        for (const int count : search::g_simHealthFailureCounts) reasonSum += count;
+        check(reasonSum == search::g_simHealthFailureCount,
+              "canonical total remains consistent with per-reason counts");
+        check(search::isValidTrainingTerminal(true, totalBefore,
+                                              search::g_simHealthFailureCount - branchDelta),
+              "excluding only branch-local failures preserves a clean source run");
+        check(!search::isValidTrainingTerminal(true, totalBefore,
+                                               search::g_simHealthFailureCount),
+              "unexcluded health failure invalidates a source run");
+    }
+    if (failures == 0) {
+        std::cout << "training_integrity PASS\n";
+        return 0;
+    }
+    std::cout << "training_integrity FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 // simhealth_load <path>: deserialize a sim-health capture .bin and print its
 // key fields. Load-only proof that a captured snapshot round-trips (used to
 // verify STS_SIM_HEALTH_CAPTURE_DIR outputs; no replay).
@@ -2617,6 +2668,8 @@ int main(int argc, const char* argv[]) {
         return testSimHealthSelectionFailure();
     } else if (command == "simhealth_nonfair_s2_selection_failed") {
         return testSimHealthNonFairS2SelectionFailed();
+    } else if (command == "training_integrity") {
+        return testTrainingIntegrity();
     } else if (command == "simhealth_load") {
         if (argc < 3) {
             std::cout << "usage: test simhealth_load <capture.bin>\n";
