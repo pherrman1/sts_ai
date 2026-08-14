@@ -271,7 +271,10 @@ def handle_pre_tool_use(data):
     if effective in COMPLETION_TOOLS:
         error, context = validate_changes(task_id(data))
         return make_output(bool(error), error, context)
-    for command in commands(params, tool):
+    inspectable = commands(params, tool)
+    if tool == "run_commands" and not inspectable:
+        return make_output(True, "run_commands payload could not be inspected by the repository guardrail; use an object-form command payload.")
+    for command in inspectable:
         reason = check_command(command, branch)
         if reason:
             sys.stderr.write(f"CLINE_GUARD: blocked command {command!r}: {reason}\n")

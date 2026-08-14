@@ -80,6 +80,7 @@ class PreToolUseTests(unittest.TestCase):
 
     def test_current_sdk_run_commands_payloads(self):
         blocked = (
+            {},
             {"commands": json.dumps(["git reset --hard HEAD"])},
             {"commands": json.dumps(["git push --force"])},
             {"commands": json.dumps(["rm -rf build"])},
