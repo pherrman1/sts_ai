@@ -8,9 +8,10 @@ description: Use for hypothesis-driven research experiments, benchmark proposals
 Use this skill for research questions, experiment proposals, and benchmark
 interpretation in this repository.
 
-1. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`, the relevant maintained
-   knowledge-base page, and relevant experiment-ledger entries before proposing
-   a change.
+1. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`,
+   `docs/knowledge-base/operations/agent-context-and-workflow.md`, the relevant
+   maintained knowledge-base page, and relevant experiment-ledger entries before
+   proposing a change.
 2. State the hypothesis, baseline, expected evidence, decision rule, and
    constraints before an expensive run. Generate multiple plausible
    explanations when the question is uncertain.

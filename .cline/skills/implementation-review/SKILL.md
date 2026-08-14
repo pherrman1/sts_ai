@@ -10,7 +10,8 @@ repository change after or alongside implementation. For ordinary
 implementation tasks, follow `AGENTS.md` without invoking this skill.
 
 1. Inspect `git status` first and distinguish pre-existing changes from this
-   task. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`, the relevant
+   task. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`,
+   `docs/knowledge-base/operations/agent-context-and-workflow.md`, the relevant
    maintained page, implementation, and tests before editing.
 2. Use Serena for semantic code structure: symbol overviews, definitions,
    implementations, references, and targeted refactoring. Avoid whole-file
