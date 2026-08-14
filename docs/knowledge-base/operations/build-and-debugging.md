@@ -62,7 +62,7 @@ requires CMake 3.19. Native PowerShell/MSVC remains unverified and has no preset
 Changes should reach `main` through a pull request only after the Linux GCC
 check passes. It runs one public Linux GCC lane on pushes and pull requests:
 recursive submodule checkout,
-`build-essential`/CMake/CPython development prerequisites, Python 3.12 and uv,
+`build-essential`/CMake/CPython development prerequisites plus ccache, Python 3.12 and uv,
 `uv lock --check`, `uv sync --locked`, the read-only `tools/agent/doctor.sh`,
 and the checked-in Debug configure, build, and CTest presets. The workflow adds
 the synced `.venv/bin` to `PATH` before CTest so its existing `python3` commands
@@ -74,6 +74,16 @@ private GCP resources, use ignored training checkpoints, or deploy. The default
 uv dependency group is sufficient for every registered CTest check and the
 doctor; trained-model parity remains outside CI because it requires a produced
 checkpoint (see [Known limitations](#known-limitations)).
+
+The CI job enables ccache (v4+) as a C++ compiler launcher to reduce repeated
+compilation time. ccache is installed from Ubuntu packages, activated via
+`CMAKE_CXX_COMPILER_LAUNCHER=ccache` and `CCACHE_COMPILERCHECK=content` at the
+job level only; local and release builds outside CI are **not** affected. The
+`${{ github.workspace }}/.ccache` directory is cached by `actions/cache@v4`
+with a per-commit key `ccache-${{ runner.os }}-${{ runner.arch }}-gcc-${{ github.sha }}`
+and a restore-key prefix `ccache-${{ runner.os }}-${{ runner.arch }}-gcc-`; the
+cache is bounded to 1 GiB via `CCACHE_MAXSIZE`. Statistics are zeroed before
+the build and printed after the build (with `if: always`) for measurement.
 
 `selfplay/loop.sh` still defaults to `build/one_combat` (overridable via
 `ONE_COMBAT_BIN`/`STS_BIN`). Set either variable to

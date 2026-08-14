@@ -21,6 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    # Ccache: CI-only compiler cache. Does NOT alter local development builds.
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 1G
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -30,7 +37,7 @@ jobs:
       - name: Install compiler and build prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install --yes build-essential cmake python3-dev
+          sudo apt-get install --yes build-essential cmake python3-dev ccache
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -51,11 +58,34 @@ jobs:
       - name: Check repository prerequisites
         run: tools/agent/doctor.sh
 
+      - name: Restore ccache
+        uses: actions/cache@v4
+        id: ccache-cache
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ runner.arch }}-gcc-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ runner.arch }}-gcc-
+
+      - name: Print ccache diagnostic before build
+        run: |
+          ccache --version
+          ccache --show-config | head -20
+          echo "--- ccache stats (pre-build) ---"
+          ccache --zero-stats
+          ccache --show-stats
+
       - name: Configure
         run: cmake --preset linux-gcc-debug
 
       - name: Build
         run: cmake --build --preset linux-gcc-debug-build
+
+      - name: Print ccache statistics after build
+        if: always()
+        run: |
+          echo "--- ccache stats (post-build) ---"
+          ccache --show-stats || true
 
       - name: Test
         run: ctest --preset linux-gcc-test
