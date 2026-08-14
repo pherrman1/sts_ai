@@ -54,6 +54,10 @@ routing.
   may never exceed 128 seeds. See
   [build-and-debugging.md](docs/knowledge-base/operations/build-and-debugging.md)
   and the [research-experiment skill](.cline/skills/research-experiment/SKILL.md).
+- GitHub Actions CI (`.github/workflows/ci.yml`) is the authoritative merge
+  gate: it verifies the public Linux/GCC checkout with the locked default Python
+  environment and checked-in Debug CMake/CTest presets. It does not run gameplay
+  benchmarks, use GCP, or require training checkpoints.
 
 ## Critical safety and Git rules
 

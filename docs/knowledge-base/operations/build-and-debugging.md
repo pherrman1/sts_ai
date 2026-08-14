@@ -56,6 +56,23 @@ intentionally expects an assertion abort and therefore needs assertions enabled.
 The preset file requires CMake 3.21 or newer; the source graph itself still
 requires CMake 3.19. Native PowerShell/MSVC remains unverified and has no preset.
 
+### Authoritative GitHub Actions merge gate
+
+`.github/workflows/ci.yml` is the authoritative merge gate. It runs one public
+Linux GCC lane on pushes and pull requests: recursive submodule checkout,
+`build-essential`/CMake/CPython development prerequisites, Python 3.12 and uv,
+`uv lock --check`, `uv sync --locked`, the read-only `tools/agent/doctor.sh`,
+and the checked-in Debug configure, build, and CTest presets. The workflow adds
+the synced `.venv/bin` to `PATH` before CTest so its existing `python3` commands
+use the locked default environment; all test failures remain fatal and CTest
+prints failure output through its preset.
+
+This lane deliberately does not run statistical gameplay seed benchmarks, access
+private GCP resources, use ignored training checkpoints, or deploy. The default
+uv dependency group is sufficient for every registered CTest check and the
+doctor; trained-model parity remains outside CI because it requires a produced
+checkpoint (see [Known limitations](#known-limitations)).
+
 `selfplay/loop.sh` still defaults to `build/one_combat` (overridable via
 `ONE_COMBAT_BIN`/`STS_BIN`). Set either variable to
 `build/linux-gcc-release/one_combat` when using the checked-in preset.

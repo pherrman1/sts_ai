@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-gcc:
+    name: Linux GCC
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install compiler and build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes build-essential cmake python3-dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Verify and sync locked Python environment
+        run: |
+          uv lock --check
+          uv sync --locked
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Check repository prerequisites
+        run: tools/agent/doctor.sh
+
+      - name: Configure
+        run: cmake --preset linux-gcc-debug
+
+      - name: Build
+        run: cmake --build --preset linux-gcc-debug-build
+
+      - name: Test
+        run: ctest --preset linux-gcc-test
