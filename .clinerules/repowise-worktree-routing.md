@@ -1,6 +1,3 @@
-mkdir -p .clinerules
-
-cat > .clinerules/repowise-worktree-routing.md <<'EOF'
 # RepoWise and Serena worktree routing
 
 This repository may be opened through multiple Git worktrees in parallel.
