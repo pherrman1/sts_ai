@@ -49,7 +49,15 @@ Representative model families:
   `train_path_cf.py`, `train_ooc_next_action.py`, `train_ooc_checkpoint.py`;
 - strategic run-level: `train_strategic.py` (joint policy + value heads,
   Tier-A `chosen` labels; exported by `export_strategic.py`);
-- combat value: `train_value_combat.py` (XGBoost, hyperparameter-tuned defaults §148: max_depth 8, eta 0.03, subsample 0.54, colsample_bytree 0.81, min_child_weight 82, reg_alpha 1.8, gamma 4.4, 2000 rounds, 40 early stop); entity/MLP/distribution variants;
+- combat value: `train_value_combat.py` (XGBoost, hyperparameter-tuned defaults §148: max_depth 8, eta 0.03, subsample 0.54, colsample_bytree 0.81, min_child_weight 82, reg_alpha 1.8, gamma 4.4, 2000 rounds, 40 early stop); entity, meta-MLP, and distribution variants;
+
+Retired trainer entry points: `tools/train_deepsets_mcts.py` was an unlaunched,
+closed DeepSets MCTS-leaf experiment, and `train_value_combat_mlp.py` was an
+unlaunched flat sparse-MLP trainer with an invalid validation target. Their
+historical evidence remains in the experiment ledger and decision log. This
+does not retire `combat_deepsets_v1` or `combat_mlp_sparse_v1` runtime support:
+`train_combat_deepsets.py` and `train_value_combat_nn.py`, respectively, remain
+the tracked producers for those formats.
 
 **Per-encounter specialization (experimental, gate pending, 2026-08-09):**
 two independent arms feed the same runtime dispatch map
