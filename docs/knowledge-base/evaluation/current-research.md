@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-08-11 against the current working tree.
+Last verified: 2026-08-14 against the current working tree.
 
 ## Purpose
 
@@ -19,10 +19,12 @@ over 64 paired seeds, but both models were much weaker than deployed V4 because
 they were trained on only about 12K rows from 500 source seeds. The confidence
 interval crossed zero.
 
-The next justified experiment is one conceptual change: scale matched M0/M1
-generation to 2,000-5,000 source seeds while preserving the existing H=4,
+The preregistered next step is one conceptual change: run matched M0/M1
+generation and training at **2,000 source seeds** with the existing H=4,
 controller, split, trainer, export, and paired-gate contracts. Compare M0 and M1
-first; compare the winner with V4 only if the matched gate supports doing so.
+first, with no initial V4 gameplay arm and at most 64 paired gameplay seeds.
+Do not immediately scale to 5,000 source seeds; that is a future decision based
+on the 2,000-seed result. See the [Phase 12 decision log](../decision-log/2026-08-14-phase12-encounter-marginalization-next-step.md).
 
 Evidence:
 
