@@ -127,7 +127,7 @@ class GcpBenchmarkTests(unittest.TestCase):
         with mock.patch.object(module, "ssh_command", side_effect=fake_ssh):
             module.remote_run(args)
         self.assertIn("active one_combat process found", captured["remote"])
-        self.assertIn('comm= | awk \'$2 == "one_combat"', captured["remote"])
+        self.assertIn('comm= | awk \'$2 == "one_combat" {print; found=1}', captured["remote"])
         self.assertNotIn("parallel_run_explicitly_allowed", captured["remote"])
 
     def test_run_allows_parallel_work_only_with_explicit_opt_in(self):

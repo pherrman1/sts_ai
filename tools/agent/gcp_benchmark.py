@@ -158,14 +158,14 @@ def remote_run(args: argparse.Namespace) -> int:
         "env STS_GCP_RESEARCH_CONTEXT=sts-test "
         f"bash tools/seed_guard.sh --gcp-research {guard_mode}{command_text}"
     )
-    check = "ps -eo pid=,comm= | awk '$2 == \"one_combat\" {print}' || true"
+    check = "ps -eo pid=,comm= | awk '$2 == \"one_combat\" {print; found=1} END {exit !found}' || true"
     if args.guard_only:
         check = ":"
     elif args.allow_parallel:
         check = "echo parallel_run_explicitly_allowed; " + check
     else:
         check = (
-            "if ps -eo pid=,comm= | awk '$2 == \"one_combat\" {print}' >/tmp/sts_benchmark_active; then "
+            "if ps -eo pid=,comm= | awk '$2 == \"one_combat\" {print; found=1} END {exit !found}' >/tmp/sts_benchmark_active; then "
             "echo 'active one_combat process found; rerun with --allow-parallel only when intentional' >&2; "
             "cat /tmp/sts_benchmark_active >&2; rm -f /tmp/sts_benchmark_active; exit 2; "
             "fi"
