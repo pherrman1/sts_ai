@@ -59,6 +59,10 @@ artifact.
   (was ~10%), affordable CPU, and semantic correctness, but collapse is
   ~14%. A confirmation gate is the next justified step; rejuvenation is
   parked behind it. No gameplay default changed.
+  A 2026-08-15 lifecycle diagnostic found that useful filters are usually
+  discarded before the next search, but a fresh-tree posterior-transfer smoke
+  was invalid: seed-only hidden particles omit RNG counters and produced 79.1%
+  collapse. Transfer is rejected; only next-search-source telemetry remains.
 - Searcher3 particle-count default
   ([decision log](../decision-log/2026-08-10-s3-particle-count-sweep.md),
   [ledger-01.md](../../../docs/experiments/ledger-01.md)): 128 particles

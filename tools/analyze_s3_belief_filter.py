@@ -15,6 +15,8 @@ def main():
     ap.add_argument("--control")
     ap.add_argument("--filter")
     ap.add_argument("--fresh")
+    ap.add_argument("--next-search",
+                    help="sidecar from the belief audit that records the actual next-search belief source")
     args=ap.parse_args()
     ds=rows(args.diag)
     print(f"rows={len(ds)} seeds={len({r['seed'] for r in ds})}")
@@ -23,6 +25,37 @@ def main():
               "distinct_surviving_draw_orders",
               "distinct_surviving_rng_signatures", "filter_cpu_ms"):
         print(f"{k},mean={avg(ds,k):.6f},median={statistics.median(val(r,k) for r in ds):.6f}")
+    if args.next_search:
+        sources = rows(args.next_search)
+        source_by_boundary = {
+            (r["seed"], r["floor"], r["encounter"], r["decision_index"]): r["next_search_belief_source"]
+            for r in sources
+        }
+        filtered = [r for r in ds if int(r["boundary_update_applied"])]
+        resolved = [r for r in filtered
+                    if (r["seed"], r["floor"], r["encounter"], r["decision_index"])
+                    in source_by_boundary]
+        print(f"filtered_boundaries={len(filtered)} resolved_next_search_sources={len(resolved)}")
+        print("next_search_belief_sources", collections.Counter(
+            source_by_boundary[(r["seed"], r["floor"], r["encounter"], r["decision_index"])]
+            for r in resolved))
+        for label, predicate in (("nontrivial_lt_1", lambda x: x < 1.0),
+                                 ("strong_lt_075", lambda x: x < 0.75),
+                                 ("strong_lt_05", lambda x: x < 0.5)):
+            group = [r for r in resolved if predicate(val(r, "filter_compatible_fraction"))]
+            consumed = sum(source_by_boundary[(r["seed"], r["floor"], r["encounter"], r["decision_index"])]
+                           in ("existing_filtered_posterior", "collapse_fresh") for r in group)
+            discarded = sum(source_by_boundary[(r["seed"], r["floor"], r["encounter"], r["decision_index"])]
+                            == "fresh_initial" for r in group)
+            print(f"{label},total={len(group)},consumed={consumed},discarded={discarded},"
+                  f"discarded_fraction={discarded / len(group) if group else float('nan'):.6f}")
+        for source in ("existing_filtered_posterior", "collapse_fresh", "fresh_initial"):
+            group = [r for r in resolved if source_by_boundary[
+                (r["seed"], r["floor"], r["encounter"], r["decision_index"])] == source]
+            if group:
+                print(f"source={source},collapse_rate={avg(group, 'posterior_collapse'):.6f},"
+                      f"draw_diversity={avg(group, 'distinct_surviving_draw_orders'):.6f},"
+                      f"rng_diversity={avg(group, 'distinct_surviving_rng_signatures'):.6f}")
     collapses=[r for r in ds if int(r["posterior_collapse"])]
     print("collapse_categories", collections.Counter(r["collapse_category"] for r in collapses))
     print("collapse_action_types", collections.Counter(r["action_type"] for r in collapses))

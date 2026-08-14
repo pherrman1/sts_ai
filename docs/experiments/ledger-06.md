@@ -2054,3 +2054,47 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   `build/fightrep_100k_16to512p.csv` (16..512p x 100k sims, 72 cells),
   `/tmp/opencode/weird_cases/` (126711 capture set aside for the separate fix).
 - **Status:** re-record complete; 2/12 fidelity flips are an open harness concern.
+
+## 2026-08-15 — Searcher3 posterior lifetime diagnostic and rejected transfer smoke
+
+**Question:** Does exact real-boundary filtering meaningfully condition a
+posterior that is then discarded when fair Searcher3 rebuilds its tree, and can
+the posterior safely seed a deliberately fresh tree?
+
+**Lifecycle diagnostic:** Added opt-in sidecar telemetry under the existing
+`STS_S3_BELIEF_AUDIT[_FILE]`: one row per filtered boundary records the actual
+next-search source (`fresh_initial`, `existing_filtered_posterior`,
+`collapse_fresh`, or `no_next_search`). This correctly accounts for a carried
+subtree later rebuilt by `STS_REUSE_MAX_SEARCHES`; `belief_carried` is not used
+as the consumption proxy.
+
+Fair Searcher3, 64 particles, 1,000 sims/decision, current native OOC +
+V_combat/policy stack, 12 threads, seeds 94000–94007, filter ON, internal
+belief updates OFF produced 2,942 filtered boundaries. Of 1,035 non-trivial
+filters (`compatible fraction < 1`), 1,029 (99.42%) were followed by
+`fresh_initial`; six ended combat before another search. The `<0.75` and
+`<0.5` subsets were 1,026/1,032 (99.42%) and 996/1,002 (99.40%) fresh,
+respectively. The coupling is therefore material.
+
+**Rejected smoke:** A temporary treatment transferred the filtered `Belief`
+while forcing a fresh tree every actual search in both arms
+(`STS_REUSE_MAX_SEARCHES=0`). It was removed after the 8-seed smoke. Control
+had 15.14% posterior collapse and 44 propagation failures out of 183,488
+attempts; treatment had 79.11% collapse and 147,438/180,160 propagation
+failures, including 2,066 all-particle `PROPAGATION_FAILURE` collapses. The
+root cause is structural: `HiddenBattleState` stores RNG seeds but not counters,
+and `applyParticleImpl` resets counters to zero. A propagated particle cannot
+be safely carried through another real transition. No RNG reconstruction,
+resampling, or transfer feature was retained.
+
+The smoke’s whole-run outcomes were 3/8 wins in both arms; treatment mean floor
+was 43.8 vs 41.6 and mean HP 20.0 vs 18.6, with 0/8 discordant wins. This is
+not interpreted as quality evidence because the treatment was invalid. Mean CPU
+was 28.67 vs 28.35 s/run (+0.32 s/run). No simulator-health, stall, or
+battle-break output occurred. No 32-seed gate was run.
+
+**Artifacts (ignored build output):**
+`build/linux-gcc-release/s3_belief_lifecycle_phase2_8.{csv,csv.next_search.csv}`;
+`s3_persist_{control,treatment}_8.{csv,csv.next_search.csv,results.csv}` and
+their `.meta.json`, `.stdout`, and `.stderr` files. See
+`docs/knowledge-base/decision-log/2026-08-15-s3-persistent-posterior-lifecycle.md`.

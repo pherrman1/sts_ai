@@ -1,6 +1,6 @@
 # Searcher3 belief state
 
-Last verified: 2026-08-11.
+Last verified: 2026-08-15.
 
 ## Purpose / research question
 
@@ -22,6 +22,15 @@ The current default remains: fair S3 carries obs-stable trees between decisions
 but does NOT apply real-boundary belief updates. `STS_S3_BELIEF=0` is the
 recommended particle config.
 
+**Persistent posterior transfer across fresh trees is rejected for the current
+particle representation.** A 2026-08-15 diagnostic found that 99.4% of
+non-trivial exact filters were followed by a fresh initial belief, so the
+lifetime coupling is material. But an 8-seed fresh-tree treatment that
+transferred the posterior caused 79.1% collapse, mostly propagation failures:
+`HiddenBattleState` stores RNG seeds but not counters, while particle application
+resets counters to zero. It cannot represent a posterior safely across multiple
+real transitions. No transfer feature remains in the executable.
+
 ## Evidence map
 
 | When | Evidence | Result |
@@ -34,12 +43,15 @@ recommended particle config.
 | 2026-08-10 | [Decision: belief-filter audit](../../decision-log/2026-08-10-s3-real-belief-filter-audit.md) | Old drawOrderConsistent is not a posterior test; exact per-particle propagation is the oracle |
 | 2026-08-10 | [Decision: filter implementation](../../decision-log/2026-08-10-s3-real-belief-filter.md) | Keep opt-in, recommend confirmation gate before rejuvenation |
 | 2026-08-10 | [Decision: collapse diagnosis](../../decision-log/2026-08-10-s3-collapse-diagnosis.md) | Collapse classifications + fresh-belief fallback diagnostic |
+| 2026-08-15 | [Persistent-posterior lifecycle decision](../../decision-log/2026-08-15-s3-persistent-posterior-lifecycle.md) | Useful posteriors are usually discarded, but transfer is invalid with seed-only hidden RNG state; diagnostic retained, treatment removed |
 
 ## Rejected / falsified approaches
 
 - **Hypothetical MCTS belief updates** — default-off since issue #58
 - **Internal belief reweighting during search** — not in the recommended regime
 - **Obs-keyed descent** — falsified at §114
+- **Persistent posterior transfer with seed-only hidden state** — rejected:
+  propagated particles lack RNG counters and collapse on later real boundaries
 
 ## Relationships
 
@@ -56,11 +68,20 @@ See `src/sim/search/BattleScumSearcher3.cpp::filterRealTransition`.
 `STS_S3_INTERNAL_BELIEF_UPDATE=0` (default off) guards hypothetical updates
 during MCTS descent.
 
+When `STS_S3_BELIEF_AUDIT=1` and `STS_S3_BELIEF_AUDIT_FILE` are set, the fair
+S3 loop also writes `<audit-file>.next_search.csv`. It records the actual belief
+source for each filtered boundary's next search (`fresh_initial`,
+`existing_filtered_posterior`, `collapse_fresh`, or `no_next_search`), including
+reconstruction caused by `STS_REUSE_MAX_SEARCHES`. Analyze it with
+`tools/analyze_s3_belief_filter.py --next-search` rather than using
+`belief_carried` as a proxy.
+
 See [`docs/knowledge-base/architecture/combat-search.md`](../../architecture/combat-search.md)
 for the full implementation context.
 
 ## Open questions
 
-- Does posterior collapse harm useful diversity? (confirmation gate needed)
-- If so, can structured rejuvenation (resampling only unconstrained hidden degrees of freedom) help?
+- Can a future hidden-state representation carry exact RNG-counter state across
+  real boundaries without violating simulator invariants? **Open question**;
+  no such mechanism is implemented.
 - Can the filtering semantics be promoted to a gameplay default?

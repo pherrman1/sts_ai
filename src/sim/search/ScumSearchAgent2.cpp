@@ -215,6 +215,46 @@ static void writeS3BeliefBoundaryDiag(
         << (filterStats ? filterStats->searchCpuMs : 0.0) << '\n';
 }
 
+enum class S3NextSearchBeliefSource {
+    UNRESOLVED,
+    FRESH_INITIAL,
+};
+
+struct S3FilteredBoundary {
+    std::uint64_t seed;
+    int floor;
+    int encounter;
+    int decisionIndex;
+    bool collapseFresh;
+    S3NextSearchBeliefSource source = S3NextSearchBeliefSource::UNRESOLVED;
+};
+
+static void writeS3NextSearchBeliefDiag(
+    const std::vector<S3FilteredBoundary> &boundaries, bool nextSearch) {
+    if (!search::g_s3BeliefAudit || search::g_s3BeliefAuditFile.empty()) return;
+
+    static std::mutex mutex;
+    static bool header = false;
+    std::lock_guard<std::mutex> lock(mutex);
+    std::ofstream out(search::g_s3BeliefAuditFile + ".next_search.csv", std::ios::app);
+    if (!out) return;
+    if (!header) {
+        out << "seed,floor,encounter,decision_index,next_search_belief_source\n";
+        header = true;
+    }
+    for (const auto &boundary : boundaries) {
+        const char *source = "no_next_search";
+        if (nextSearch) {
+            source = boundary.source == S3NextSearchBeliefSource::FRESH_INITIAL
+                ? "fresh_initial"
+                : boundary.collapseFresh ? "collapse_fresh"
+                                         : "existing_filtered_posterior";
+        }
+        out << boundary.seed << ',' << boundary.floor << ',' << boundary.encounter
+            << ',' << boundary.decisionIndex << ',' << source << '\n';
+    }
+}
+
 static void writeS3RootRaceDiag(const BattleContext &bc,
                                 std::uint64_t seed, int decisionIdx)
 {
@@ -313,6 +353,7 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
         // Generation histogram for cascade mode.
         int maxCarriedGen = 0;
         std::map<int,int> genHistogram;
+        std::vector<S3FilteredBoundary> pendingFilteredBoundaries;
 
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         bool searcherValid = true;
@@ -330,12 +371,16 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             // carried-search counter exceeds the configured maximum.
             if (!searcherValid) {
                 s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+                for (auto &boundary : pendingFilteredBoundaries)
+                    boundary.source = S3NextSearchBeliefSource::FRESH_INITIAL;
                 carriedSearchesSinceFresh = 0;
                 maxCarriedGen = 0;
                 searcherValid = true;
             } else if (search::g_reuseMaxSearches >= 0
                        && carriedSearchesSinceFresh > search::g_reuseMaxSearches) {
                 s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+                for (auto &boundary : pendingFilteredBoundaries)
+                    boundary.source = S3NextSearchBeliefSource::FRESH_INITIAL;
                 carriedSearchesSinceFresh = 0;
                 maxCarriedGen = 0;
             }
@@ -352,6 +397,11 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 const bool filtered = search::g_s3RealBeliefFilter;
                 if (filtered) filterStats = s3.filterRealTransition(preState, forced, bc);
                 writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx, false, filtered, filtered ? &filterStats : nullptr);
+                if (filtered) {
+                    pendingFilteredBoundaries.push_back({bc.seed, bc.floorNum,
+                        static_cast<int>(bc.encounter), decisionIdx,
+                        filterStats.freshBeliefRebuilt});
+                }
                 ++decisionIdx;
                 searcherValid = false;
                 continue;
@@ -366,6 +416,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 spend += extra;
             }
             const std::int64_t before = s3.root.simulationCount;
+            writeS3NextSearchBeliefDiag(pendingFilteredBoundaries, true);
+            pendingFilteredBoundaries.clear();
             // Per-search CPU diagnostic snapshot.
             BattleScumSearcher3::DiagSnapshot diagBefore;
             const char *searchKind = (carriedSearchesSinceFresh > 0) ? "carried" : "fresh";
@@ -521,7 +573,13 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 searcherValid = false;
             }
             writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx - 1, carriedAtBoundary, filtered, filtered ? &filterStats : nullptr);
+            if (filtered) {
+                pendingFilteredBoundaries.push_back({bc.seed, bc.floorNum,
+                    static_cast<int>(bc.encounter), decisionIdx - 1,
+                    filterStats.freshBeliefRebuilt});
+            }
         }
+        writeS3NextSearchBeliefDiag(pendingFilteredBoundaries, false);
         // Simulator health: the loop exited while the battle was still
         // UNDECIDED. The stall guard converts stalls to PLAYER_LOSS before
         // breaking, so only an unintentional unresolved exit reaches this.
