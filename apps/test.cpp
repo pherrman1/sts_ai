@@ -1644,6 +1644,17 @@ int testTrainingIntegrity() {
           "health-failed decided label is invalid");
     check(!search::isValidTrainingTerminal(false, 0, 1, true),
           "health-failed bootstrap is invalid");
+    {
+        int health = 0;
+        bool failed = false;
+        {
+            search::TrainingHealthScope scope(health);
+            health = 1;
+            failed = scope.failed();
+        }
+        check(failed && health == 0,
+              "branch health scope reports and restores only its local failure");
+    }
     if (failures == 0) {
         std::cout << "training_integrity PASS\n";
         return 0;

@@ -36,3 +36,13 @@ Implemented and covered by the `training_integrity` unit test plus existing
 simulator-health regressions. A two-seed combatgen smoke produced normal rows,
 zero quarantines, zero health failures, and a provenance sidecar. No historical
 dataset or model artifact was modified.
+
+## Supported producer inventory
+
+The terminal-integrity contract covers all current label-producing entry points:
+`datagen`, `datagen2`/`datagen3`, `causalgen`, `combatgen`, `distgen`, `fairgen`,
+`fightgen`, `policygen`, `strategicgen`, and `strategicgen2`. Their source runs
+are quarantined on unresolved/health-failed combat; counterfactual branches are
+quarantined independently. `leafdiag`, `leafref`, `frontiergen`, `searchdiag`,
+and replay/benchmark modes are diagnostic or evaluation producers, not training
+label producers, and are intentionally outside this contract.
