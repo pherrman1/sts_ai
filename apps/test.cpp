@@ -37,6 +37,7 @@
 #include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/SimHealth.h"
+#include "sim/search/TrainingIntegrity.h"
 #include "combat/BattleContextBinary.h"
 #include "constants/MonsterMoves.h"
 #include "test_belief.h"
@@ -1628,6 +1629,29 @@ int testSimHealthNonFairS2SelectionFailed() {
     return 1;
 }
 
+int testTrainingIntegrity() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const char *msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    check(search::isValidTrainingTerminal(true, 0, 0),
+          "decided victory/loss with no health failure is valid");
+    check(search::isValidTrainingTerminal(false, 0, 0, true),
+          "clean unresolved bounded bootstrap is valid");
+    check(!search::isValidTrainingTerminal(false, 0, 0),
+          "unresolved ordinary label is invalid");
+    check(!search::isValidTrainingTerminal(true, 0, 1),
+          "health-failed decided label is invalid");
+    check(!search::isValidTrainingTerminal(false, 0, 1, true),
+          "health-failed bootstrap is invalid");
+    if (failures == 0) {
+        std::cout << "training_integrity PASS\n";
+        return 0;
+    }
+    std::cout << "training_integrity FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 // simhealth_load <path>: deserialize a sim-health capture .bin and print its
 // key fields. Load-only proof that a captured snapshot round-trips (used to
 // verify STS_SIM_HEALTH_CAPTURE_DIR outputs; no replay).
@@ -2617,6 +2641,8 @@ int main(int argc, const char* argv[]) {
         return testSimHealthSelectionFailure();
     } else if (command == "simhealth_nonfair_s2_selection_failed") {
         return testSimHealthNonFairS2SelectionFailed();
+    } else if (command == "training_integrity") {
+        return testTrainingIntegrity();
     } else if (command == "simhealth_load") {
         if (argc < 3) {
             std::cout << "usage: test simhealth_load <capture.bin>\n";

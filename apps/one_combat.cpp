@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <filesystem>
@@ -52,6 +53,8 @@
 #include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/ExpertKnowledge.h"
+#include "sim/search/SimHealth.h"
+#include "sim/search/TrainingIntegrity.h"
 #include "game/Map.h"
 #include "sim/util/BestBenchMeta.h"
 #include "ooc_checkpoint_net.h"
@@ -78,6 +81,77 @@
 
 extern bool g_collectKeys;              // env STS_COLLECT_KEYS=1: collect act-4 keys
 static std::vector<std::string> g_mainArgv;
+
+static thread_local int t_trainingHealthFailures = 0;
+static std::atomic<int> g_trainingInvalidRuns{0};
+static std::atomic<int> g_trainingInvalidBranches{0};
+static std::atomic<int> g_trainingHealthFailures{0};
+
+static void trainingRunStart() {
+    t_trainingHealthFailures = sts::search::g_simHealthFailureCount;
+}
+
+static void trainingCampaignStart() {
+    g_trainingInvalidRuns = 0;
+    g_trainingInvalidBranches = 0;
+    g_trainingHealthFailures = 0;
+}
+
+static bool trainingRunValid(bool outcomeDecided) {
+    const int after = sts::search::g_simHealthFailureCount;
+    const bool valid = sts::search::isValidTrainingTerminal(
+        outcomeDecided, t_trainingHealthFailures, after);
+    if (!valid) {
+        ++g_trainingInvalidRuns;
+        g_trainingHealthFailures += std::max(0, after - t_trainingHealthFailures);
+    }
+    return valid;
+}
+
+static std::string trainingGitValue(const char *command) {
+    std::string value;
+    FILE *pipe = popen(command, "r");
+    if (!pipe) return value;
+    char buf[256];
+    if (std::fgets(buf, sizeof(buf), pipe)) value = buf;
+    pclose(pipe);
+    while (!value.empty() && (value.back() == '\n' || value.back() == '\r')) value.pop_back();
+    return value;
+}
+
+static void writeTrainingProvenance(const std::string &output, const char *mode,
+                                    int requested, int completed, int invalid,
+                                    int healthFailures, long long rows,
+                                    long long seedOffset, int sims, int asc) {
+    std::ofstream p(output + ".provenance.json");
+    if (!p) return;
+    const char *envs[] = {"STS_FAIR", "STS_SEARCHER3", "STS_S3_PARTICLES",
+                          "STS_VNET", "STS_VNET_ALPHA", "STS_OOC_STRATEGIC_TOK_NN",
+                          "STS_OOC_STRATEGIC_MARGIN", "STRATEGIC_SAMPLE_ALL",
+                          "STRATEGIC_SAMPLES_PER_RUN", "STRATEGIC_BRANCH_FIGHTS",
+                          "STRATEGIC_BRANCH_SIMS", "STRATEGIC_BRANCH_FUTURES"};
+    p << "{\n  \"dataset_path\": \"" << output << "\",\n"
+      << "  \"timestamp_utc\": \"" << trainingGitValue("date -u +%Y-%m-%dT%H:%M:%SZ") << "\",\n"
+      << "  \"git_sha\": \"" << trainingGitValue("git rev-parse HEAD") << "\",\n"
+      << "  \"git_dirty\": " << (trainingGitValue("git diff --quiet; echo $?") != "0" ? "true" : "false") << ",\n"
+      << "  \"generator\": \"" << mode << "\",\n"
+      << "  \"seed_offset\": " << seedOffset << ",\n"
+      << "  \"requested_seeds\": " << requested << ",\n"
+      << "  \"completed_seeds\": " << completed << ",\n"
+      << "  \"invalid_or_quarantined_seeds\": " << invalid << ",\n"
+      << "  \"invalid_or_quarantined_branches\": " << g_trainingInvalidBranches.load() << ",\n"
+      << "  \"simulator_health_hard_failures\": " << healthFailures << ",\n"
+      << "  \"rows_written\": " << rows << ",\n"
+      << "  \"simulations\": " << sims << ",\n"
+      << "  \"ascension\": " << asc << ",\n  \"environment\": {";
+    for (int i = 0; i < (int)(sizeof(envs) / sizeof(envs[0])); ++i) {
+        if (i) p << ',';
+        const char *value = std::getenv(envs[i]);
+        p << "\n    \"" << envs[i] << "\": ";
+        if (value) p << '"' << value << '"'; else p << "null";
+    }
+    p << "\n  }\n}\n";
+}
 
 // ---------------------------------------------------------------------------
 // Live progress line for long parallel benches. Threads call tick() as each run
@@ -4856,6 +4930,7 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         FutureFightProbe *probe = nullptr, int stopAfterAct = 0,
                         const std::vector<int> *fightSimsSeq = nullptr,
                         bool usePredict = false) {
+    const int healthBefore = search::g_simHealthFailureCount;
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(agentSeed);
@@ -4956,9 +5031,16 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
         if (std::isfinite(vw) && vw >= 0 && vw <= 1) won = vw;
         bootstrapped = 1;
     }
-    if (probe) probe->completed = gc.outcome != GameOutcome::UNDECIDED;
+    const bool valid = search::isValidTrainingTerminal(
+        gc.outcome != GameOutcome::UNDECIDED, healthBefore,
+        search::g_simHealthFailureCount,
+        bootstrap && gc.outcome == GameOutcome::UNDECIDED);
+    if (!valid)
+        g_trainingHealthFailures += std::max(0, search::g_simHealthFailureCount - healthBefore);
+    if (probe) probe->completed = valid && gc.outcome != GameOutcome::UNDECIDED;
     t_curPath = nullptr;
-    return {won, floor, (double)gc.curHp, bootstrapped};
+    return {valid ? won : 0.0, valid ? floor : 0.0,
+            valid ? (double)gc.curHp : 0.0, valid ? bootstrapped : -1};
 }
 
 // GameContext normally shares its Map through a shared_ptr. A counterfactual may
@@ -6410,6 +6492,7 @@ static bool datagenGateStack(GameContext &gc, const search::ScumSearchAgent2 &ag
 
 static std::string runCombatGenSeed(std::uint64_t seed, int sims, int asc, double epsilon,
                                       bool richLabels = false) {
+    trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
@@ -6435,6 +6518,10 @@ static std::string runCombatGenSeed(std::uint64_t seed, int sims, int asc, doubl
             fightSnaps.clear();
             BattleContext bc; bc.init(gc);
             agent.playoutBattle(bc);
+            if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) {
+                search::g_onCombatDecision = nullptr;
+                return {};
+            }
             const int won      = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
             const int endHp    = bc.player.curHp;
             const int endTurn  = bc.turn;
@@ -8694,6 +8781,7 @@ static std::string strategicHeader2() {
 }
 
 static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
+    trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     vDisconnect();
     search::ScumSearchAgent2 agent;
@@ -8773,6 +8861,7 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
             labels.resize(actions.size());
             for (int a = 0; a < (int)actions.size(); ++a) {
                 double won = 0, hp = 0, floor = 0, boot = 0;
+                bool branchInvalid = false;
                 for (int f = 0; f < g_strategicBranchFutures; ++f) {
                     GameContext branch = detachedCounterfactualCopy(pre);
                     actions[a].execute(branch);
@@ -8783,7 +8872,13 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                         std::move(branch), sims, branchSeed, prePath,
                         g_strategicBranchFights, /*bootstrap=*/true,
                         /*probe=*/nullptr, /*stopAfterAct=*/0, &g_strategicBranchSims);
+                    if (r.bootstrapped < 0) { branchInvalid = true; break; }
                     won += r.won; hp += r.hp; floor += r.floor; boot += r.bootstrapped;
+                }
+                if (branchInvalid) {
+                    ++g_trainingInvalidBranches;
+                    labels.clear();
+                    break;
                 }
                 const int F = std::max(1, g_strategicBranchFutures);
                 char buf[128];
@@ -8858,6 +8953,8 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
     }
     t_curPath = nullptr;
 
+    if (!trainingRunValid(gc.outcome != GameOutcome::UNDECIDED)) return {};
+
     // Append the surviving Tier-B labels to their decision's rows.  The labels
     // belong AFTER the terminal won/endFloor/endHp columns, so store them in
     // rowLabel and emit them after the terminal fields below.
@@ -8877,6 +8974,7 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
 }
 
 static void strategicGen2(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0) {
+    trainingCampaignStart();
     const bool append = seedOffset > 0;
     std::cout << "strategicgen2  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
               << "  sims " << sims << "  asc " << asc << "  threads " << numThreads()
@@ -8906,6 +9004,12 @@ static void strategicGen2(int nSeeds, int sims, int asc, const std::string &outF
     }
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::printf("wrote %lld rows from %d runs in %.1fs\n", rows, nSeeds, wall);
+    std::printf("training integrity: requested=%d completed=%d invalid/quarantined=%d health_failures=%d rows=%lld output=%s\n",
+                nSeeds, nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
+                g_trainingHealthFailures.load(), rows, outFile.c_str());
+    writeTrainingProvenance(outFile, "strategicgen2", nSeeds,
+                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
+                            g_trainingHealthFailures.load(), rows, seedOffset, sims, asc);
 }
 
 // ---------------------------------------------------------------------------
@@ -8916,6 +9020,7 @@ static void strategicGen2(int nSeeds, int sims, int asc, const std::string &outF
 // aligned (same play). Returns {valueRows, policyRows}.
 static std::pair<std::string,std::string>
 runFightGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
+    trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
@@ -8962,6 +9067,12 @@ runFightGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
             fightRows.clear(); decIdx = 0;
             BattleContext bc; bc.init(gc);
             agent.playoutBattle(bc);
+            if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) {
+                search::g_onCombatDecision = nullptr;
+                search::g_onSearchComplete = nullptr;
+                t_curPath = nullptr;
+                return {};
+            }
             const int won   = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
             const int endHp = bc.player.curHp;
             for (const auto &fr : fightRows)
@@ -9637,6 +9748,7 @@ static void dataGen(int nSeeds, int sims, int asc, double epsilon, const std::st
 // Interrupt-safe (per-run flush) and append-capable, same as dataGen.
 static void combatGen(int nSeeds, int sims, int asc, double epsilon,
                       const std::string &outfile, long long seedOffset = 0) {
+    trainingCampaignStart();
     search::g_richCombatFeatures = true;   // datagen writes full-width rows
     const bool append = seedOffset > 0;
     std::cout << "combatgen  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
@@ -9664,6 +9776,12 @@ static void combatGen(int nSeeds, int sims, int asc, double epsilon,
     }
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::printf("wrote %lld combat rows from %d runs in %.1fs\n", rowCount, nSeeds, wall);
+                std::printf("training integrity: requested=%d completed=%d invalid/quarantined=%d branches=%d health_failures=%d rows=%lld output=%s\n",
+                nSeeds, nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
+                g_trainingInvalidBranches.load(), g_trainingHealthFailures.load(), rowCount, outfile.c_str());
+    writeTrainingProvenance(outfile, "combatgen", nSeeds,
+                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
+                            g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc);
 }
 
 // Policy-target dataset: per-decision root-edge visit distributions. Same
@@ -9702,6 +9820,7 @@ static void policyGen(int nSeeds, int sims, int asc, double epsilon,
 // Combined value+policy datagen: ONE play pass writes both CSVs (see runFightGenSeed).
 static void fightGen(int nSeeds, int sims, int asc, double epsilon,
                      const std::string &valFile, const std::string &polFile, long long seedOffset = 0) {
+    trainingCampaignStart();
     search::g_richCombatFeatures = true;
     const bool append = seedOffset > 0;
     std::cout << "fightgen  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
@@ -9733,6 +9852,12 @@ static void fightGen(int nSeeds, int sims, int asc, double epsilon,
     }
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::printf("wrote %lld value + %lld policy rows from %d runs in %.1fs\n", vRows, pRows, nSeeds, wall);
+    std::printf("training integrity: requested=%d completed=%d invalid/quarantined=%d branches=%d health_failures=%d rows=%lld output=%s\n",
+                nSeeds, nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
+                g_trainingInvalidBranches.load(), g_trainingHealthFailures.load(), vRows + pRows, valFile.c_str());
+    writeTrainingProvenance(valFile, "fightgen", nSeeds,
+                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
+                            g_trainingHealthFailures.load(), vRows + pRows, seedOffset, sims, asc);
 }
 
 // ---------------------------------------------------------------------------
