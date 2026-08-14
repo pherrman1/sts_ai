@@ -56,7 +56,7 @@ intentionally expects an assertion abort and therefore needs assertions enabled.
 The preset file requires CMake 3.21 or newer; the source graph itself still
 requires CMake 3.19. Native PowerShell/MSVC remains unverified and has no preset.
 
-### Authoritative GitHub Actions merge gate
+### Authoritative GitHub Actions verification
 
 `.github/workflows/ci.yml` is the authoritative merge gate. It runs one public
 Linux GCC lane on pushes and pull requests: recursive submodule checkout,
