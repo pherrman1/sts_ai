@@ -1628,11 +1628,6 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
     }
     if (!reused) root = Node{};
     rootCarried = reused;
-    if (!reused) {
-        retainedNodeCount = 0;
-        reuseSearchCount = -1;
-        reuseGeneration = 0;
-    }
 
     // Count retained nodes in the carried subtree and optionally reset stats.
     if (reused) {

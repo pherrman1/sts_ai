@@ -113,12 +113,14 @@ with `STS_REUSE_MAX_SEARCHES=1` (3/3) and were absent with reuse disabled
 (0/3). Enabling `STS_REUSE_RECONCILE_ROOT` did not remove the failures (3/3):
 reconciliation only adds current legal edges and retains stale carried edges.
 
-The confirmed mechanism is an index-identity boundary. `SECRET_TECHNIQUE`,
-`SECRET_WEAPON`, and `SEEK` enumerate `SINGLE_CARD_SELECT` actions using raw
-draw-pile indices. Searcher3 particles can reorder the hidden draw pile, while
-`advanceRoot` matches these actions by raw bits and has semantic fallback only
-for ordinary `CARD` hand actions. A carried subtree can therefore preserve a
-draw-pile index whose card or eligibility differs at the real root.
+The evidence strongly implicates an unsafe reuse boundary for raw
+draw-pile-index card-selection actions. `SECRET_TECHNIQUE`, `SECRET_WEAPON`,
+and `SEEK` enumerate `SINGLE_CARD_SELECT` actions using raw draw-pile indices.
+Searcher3 particles can reorder the hidden draw pile, while `advanceRoot`
+matches these actions by raw bits and has semantic fallback only for ordinary
+`CARD` hand actions. The available evidence does not directly observe a stale
+index at the failing root, so this remains the diagnosed hypothesis rather than
+a directly captured mechanism.
 
 The narrow fix is to reject subtree promotion at real `CARD_SELECT` roots for
 those three tasks and start a fresh tree. Ordinary reuse remains enabled for
@@ -126,11 +128,9 @@ other decisions and unrelated card-selection tasks. The focused
 `s3_drawpile_reuse_boundary` regression verifies fresh boundaries for all three
 tasks and continued reuse for `HOLOGRAM`.
 
-Verification on the local release build: focused unit tests passed. Seeds
-127050 and 127083 completed with reuse enabled and no captured
+Verification on the local release build: focused unit tests passed. All three
+known seeds completed with reuse enabled and no captured
 `ACTION_SELECTION_FAILED` or `UNDECIDED_BATTLE_EXIT` lines. Seed 126975
-reached the end of its available log with no health line, but the local command
-window expired before its result row was written; therefore the exact 3-seed
-scientific pass criterion remains **incomplete**, not claimed here. An 8-seed
+completed with result `126975,1,51,3,37,71,0,-1,-1,33.0857`. An 8-seed
 collateral smoke completed with no health lines and continued ordinary reuse;
 no strength conclusion is drawn.
