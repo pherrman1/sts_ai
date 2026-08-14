@@ -32,11 +32,14 @@ for path in CMakeLists.txt CMakePresets.json pyproject.toml uv.lock json pybind1
     fi
 done
 
-if submodule_status="$(git -C "$repo_root" submodule status --recursive 2>/dev/null)" &&
-   ! printf '%s\n' "$submodule_status" | grep -q '^-'; then
-    pass "submodules initialized"
+if submodule_status="$(git -C "$repo_root" submodule status --recursive 2>/dev/null)"; then
+    if printf '%s\n' "$submodule_status" | grep -Eq '^[+U-]'; then
+        fail "submodules are not at the revisions recorded by this checkout; run: git submodule update --init --recursive"
+    else
+        pass "submodules initialized and at recorded revisions"
+    fi
 else
-    fail "submodules are not initialized; run: git submodule update --init --recursive"
+    fail "could not inspect submodule state"
 fi
 
 for command in cmake g++ python3; do
