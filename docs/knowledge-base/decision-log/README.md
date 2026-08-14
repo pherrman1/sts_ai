@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-14 | [`2026-08-14-phase5-ci-ccache.md`](2026-08-14-phase5-ci-ccache.md) | Phase 5 CI compiler-cache experiment: ccache-only Linux GCC workflow integration, with baseline and cold/warm measurement follow-up. |
 | 2026-08-14 | [`2026-08-14-agent-context-phase1.md`](2026-08-14-agent-context-phase1.md) | Phase 1 reduced root `AGENTS.md` to a universal contract, preserved detailed workflow/safety guidance through an explicit relocation audit and existing pages/skills, and added conservative `.clineignore` coverage with tracked artifact exceptions. |
 | 2026-08-13 | [`2026-08-13-guarded-repowise-pilot.md`](2026-08-13-guarded-repowise-pilot.md) | Guarded RepoWise pilot extends the Cline + Serena workflow: structural-only, mock-embedder local index and curated root ADRs; no LLM prose, decision mining, hooks, editor setup, Serena memories, or authoritative generated knowledge. |
 | 2026-08-12 | [`2026-08-12-refactor-branch-consolidation.md`](2026-08-12-refactor-branch-consolidation.md) | Consolidated the linear Phase 6 Batch 1 refactor onto `main` by fast-forward, removed redundant local branch names, and recorded local verification limitations (23/26 CTest; fair 8-seed smoke exceeded six minutes). |
