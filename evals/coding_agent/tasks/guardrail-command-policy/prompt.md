@@ -1,0 +1,1 @@
+The command guardrail rejects direct destructive Git operations in ordinary and wrapper forms, but a recent option-prefixed Git invocation can slip through. Restore the safety policy without blocking harmless read-only commands or the existing seed-guard and build workflows. Keep the existing guardrail tests green and add focused regression coverage if appropriate.

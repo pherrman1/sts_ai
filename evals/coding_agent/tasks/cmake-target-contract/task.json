@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "cmake-target-contract",
+  "version": 1,
+  "title": "Restore the parity_test build target contract",
+  "prompt_file": "prompt.md",
+  "setup_patch": "setup.patch",
+  "timeout_seconds": 300,
+  "allowed_changed_paths": ["CMakeLists.txt", "CMakePresets.json", "tests/**"],
+  "forbidden_changed_paths": ["src/**", "apps/**"],
+  "grader": "private/grader.py"
+}

@@ -61,3 +61,6 @@ build/pilot_pol.csv
 
 # CatBoost trainer output.
 /catboost_info/
+
+# Disposable coding-agent evaluation workspaces and result records.
+/.agent-eval/

@@ -43,6 +43,7 @@ For evaluation and operation:
    progressive-disclosure workflow, Git procedure, recording rules, and the
    `AGENTS.md` relocation audit.
 6. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
+7. [Coding-agent evaluation harness](evaluation/coding-agent-evals.md)
 
 For correctness:
 

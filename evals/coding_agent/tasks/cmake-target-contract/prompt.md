@@ -1,0 +1,1 @@
+The native build no longer exposes the parity-test executable expected by downstream verification tooling. Restore the externally relied-upon CMake target and output without changing simulator gameplay code. Configure and build only that target.

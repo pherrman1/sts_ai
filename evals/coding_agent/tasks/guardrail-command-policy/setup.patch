@@ -1,0 +1,7 @@
+diff --git a/tools/agent/cline_guardrails.py b/tools/agent/cline_guardrails.py
+--- a/tools/agent/cline_guardrails.py
++++ b/tools/agent/cline_guardrails.py
+@@ -140,2 +140,2 @@ def git_args(parts):
+     args = parts[index + 1:]
+-    options = {"-c", "-C", "--git-dir", "--work-tree", "--namespace", "--config-env"}
++    options = {"-c", "-C", "--git-dir", "--work-tree", "--config-env"}

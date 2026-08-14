@@ -1,0 +1,1 @@
+An empty-hand card-selection state used by Gambler's Brew is being classified incorrectly by the simulator-health monitor. Restore the canonical distinction between a genuinely empty live action set and a selection failure, and keep the nearby selection-failure regression intact. Use the narrowest relevant unit-test target; no gameplay benchmark is needed.

@@ -1,0 +1,6 @@
+diff --git a/src/sim/search/SimHealth.cpp b/src/sim/search/SimHealth.cpp
+--- a/src/sim/search/SimHealth.cpp
++++ b/src/sim/search/SimHealth.cpp
+@@ -138,1 +138,1 @@ bool hasLegalProgressionAction(const BattleContext &bc) {
+-            return !Action::enumerateCardSelectActions(bc).empty();
++            return Action::enumerateCardSelectActions(bc).empty();
