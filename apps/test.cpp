@@ -715,7 +715,7 @@ static std::vector<std::uint32_t> cardSelectGroundTruth(const BattleContext &bc)
         if (a.isValidAction(bc)) s.insert(a.bits);
     }
     const int n = bc.cards.cardsInHand;
-    if (n > 0 && n <= 10) {
+    if (n >= 0 && n <= 10) {
         for (std::uint32_t mask = 0; mask < (1u << n); ++mask) {
             search::Action a(search::ActionType::MULTI_CARD_SELECT, (int)mask);
             if (a.isValidAction(bc)) s.insert(a.bits);
@@ -1340,14 +1340,9 @@ int testBattleContextRoundtrip() {
     return 1;
 }
 
-// Simulator-health monitor: issue-87 validation case (Test A). A
-// CARD_SELECT/GAMBLE state with an empty hand enumerates zero legal
-// progression actions (pushMultiSelectActions early-returns on n<=0), so the
-// fair-S3 battle loop must classify the root-selection failure as
-// NO_LEGAL_PROGRESSION (canonical live action set is empty) at the decision
-// boundary and UNDECIDED_BATTLE_EXIT at the loop exit, while leaving
-// bc.outcome UNDECIDED (detection only -- issue 87 must NOT be repaired here).
-// ACTION_SELECTION_FAILED must NOT fire for this genuinely-empty state.
+// Simulator-health monitor: issue-87 regression. Empty-hand multi-select tasks
+// have one canonical legal action: MULTI_CARD_SELECT mask=0. Executing it must
+// resolve CARD_SELECT normally without producing a zero-progression diagnostic.
 int testSimHealthGambleEmptyHand() {
     int failures = 0;
     const auto check = [&failures](bool ok, const std::string &msg) {
@@ -1357,61 +1352,45 @@ int testSimHealthGambleEmptyHand() {
         }
     };
 
-    const bool savedFair = search::g_fairPlay;
-    const bool savedS3 = search::g_useSearcher3;
-    const bool savedBelief = search::g_s3Belief;
-    const bool savedChain = search::g_s3Chain;
-    const int savedParticles = search::g_s3Particles;
-    search::g_fairPlay = true;
-    search::g_useSearcher3 = true;
-    search::g_s3Belief = false;   // recorded issue-87 stack (STS_S3_BELIEF=0)
-    search::g_s3Chain = false;
-    search::g_s3Particles = 4;
-
     const auto nlpBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION];
-    const auto asfBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED];
     {
         BattleContext bc = cardSelectFixture(CardSelectTask::GAMBLE, 1, false);
         bc.cards.cardsInHand = 0;   // issue-87 shape: empty hand at GAMBLE
-        check(search::Action::enumerateCardSelectActions(bc).empty(),
-              "empty-hand GAMBLE must enumerate zero actions");
-        check(!search::hasLegalProgressionAction(bc),
-              "canonical live action check must report zero legal actions");
-
-        search::ScumSearchAgent2 agent;
-        agent.simulationCountBase = 1;   // search is a no-op on a zero-edge root
-        agent.playoutBattle(bc);
-        check(bc.outcome == Outcome::UNDECIDED,
-              "battle must remain UNDECIDED (detection must not repair issue 87), got "
-              + std::to_string((int)bc.outcome));
-
-        // Serialization round-trip of the offending state (what the capture
-        // writes / what the .bin loader restores).
-        const std::vector<std::uint8_t> bytes = sts::serializeBattleContext(bc);
-        const BattleContext restored =
-            sts::deserializeBattleContext(bytes.data(), bytes.size());
-        check(restored.inputState == InputState::CARD_SELECT,
-              "restored inputState must be CARD_SELECT");
-        check(restored.cardSelectInfo.cardSelectTask == CardSelectTask::GAMBLE,
-              "restored cardSelectTask must be GAMBLE");
-        check(restored.cards.cardsInHand == 0, "restored hand must be empty");
-        check(restored.outcome == Outcome::UNDECIDED,
-              "restored outcome must be UNDECIDED");
+        const auto actions = search::Action::enumerateCardSelectActions(bc);
+        check(actions.size() == 1, "empty-hand GAMBLE must enumerate one action");
+        if (actions.size() == 1) {
+            check(actions[0].getActionType() == search::ActionType::MULTI_CARD_SELECT,
+                  "empty-hand GAMBLE action must be MULTI_CARD_SELECT");
+            check(actions[0].getSelectedIdxs().empty(),
+                  "empty-hand GAMBLE action must select no cards");
+            check(actions[0].isValidAction(bc),
+                  "empty-hand GAMBLE mask=0 must validate");
+            actions[0].execute(bc);
+            check(bc.inputState != InputState::CARD_SELECT,
+                  "empty-hand GAMBLE execution must leave CARD_SELECT");
+        }
+    }
+    {
+        BattleContext bc = cardSelectFixture(CardSelectTask::EXHAUST_MANY, 2, false);
+        bc.cards.cardsInHand = 0;   // empty-hand multi-select regression
+        const auto actions = search::Action::enumerateCardSelectActions(bc);
+        check(actions.size() == 1, "empty-hand EXHAUST_MANY must enumerate one action");
+        if (actions.size() == 1) {
+            check(actions[0].getActionType() == search::ActionType::MULTI_CARD_SELECT,
+                  "empty-hand EXHAUST_MANY action must be MULTI_CARD_SELECT");
+            check(actions[0].getSelectedIdxs().empty(),
+                  "empty-hand EXHAUST_MANY action must select no cards");
+            check(actions[0].isValidAction(bc),
+                  "empty-hand EXHAUST_MANY mask=0 must validate");
+            actions[0].execute(bc);
+            check(bc.inputState != InputState::CARD_SELECT,
+                  "empty-hand EXHAUST_MANY execution must leave CARD_SELECT");
+        }
     }
     const int nlpFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION] - nlpBefore;
-    const int asfFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED] - asfBefore;
-    check(nlpFired >= 1,
-          "primary classification must be NO_LEGAL_PROGRESSION (got "
+    check(nlpFired == 0,
+          "empty-hand GAMBLE must not fire NO_LEGAL_PROGRESSION (got "
           + std::to_string(nlpFired) + ")");
-    check(asfFired == 0,
-          "ACTION_SELECTION_FAILED must not fire for a genuinely empty state (got "
-          + std::to_string(asfFired) + ")");
-
-    search::g_fairPlay = savedFair;
-    search::g_useSearcher3 = savedS3;
-    search::g_s3Belief = savedBelief;
-    search::g_s3Chain = savedChain;
-    search::g_s3Particles = savedParticles;
 
     if (failures == 0) {
         std::cout << "simhealth_gamble_empty_hand PASS\n";
@@ -1525,10 +1504,11 @@ int testSimHealthSelectionFailure() {
 
     // (a) Genuinely empty canonical action set -> NO_LEGAL_PROGRESSION.
     {
-        BattleContext bc = cardSelectFixture(CardSelectTask::GAMBLE, 1, false);
-        bc.cards.cardsInHand = 0;
+        BattleContext bc = cardSelectFixture(CardSelectTask::SECRET_WEAPON, 1, false);
+        bc.cards.drawPile.clear();
+        bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
         check(!search::hasLegalProgressionAction(bc),
-              "empty-hand GAMBLE must have no legal progression action");
+              "empty SECRET_WEAPON options must have no legal progression action");
         check(search::classifySelectionFailure(bc) == search::SimHealthFailure::NO_LEGAL_PROGRESSION,
               "empty canonical set must classify as NO_LEGAL_PROGRESSION");
     }

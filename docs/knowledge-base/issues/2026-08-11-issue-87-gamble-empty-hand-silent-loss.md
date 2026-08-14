@@ -1,7 +1,8 @@
 # Issue 87: Gambler's Brew at an empty hand ends the run as an invisible loss (hpEnd > 0, deathEnc = -1)
 
-- **Status:** partially fixed (Gambler's Brew empty-hand trigger fixed; generic
-  empty-hand multi-select behavior remains open)
+- **Status:** generic empty-hand multi-select progression fixed for the currently
+  supported `GAMBLE` and `EXHAUST_MANY` tasks (Phase 11); independent loss-
+  accounting questions remain open
 - **Detection:** the runtime simulator health monitor (2026-08-11, see
   [`behavior/simulator-health-monitor.md`](../behavior/simulator-health-monitor.md))
   now automatically flags this seed: seed 126711 at the recorded stack fires
@@ -25,10 +26,22 @@ The narrow Gambler's Brew trigger is fixed in
 hand. This prevents the simulator from creating the documented
 `CARD_SELECT/GAMBLE/hand=0` state through an illegal potion action.
 
-The generic `pushMultiSelectActions` empty-hand behavior is intentionally not
-changed. `EXHAUST_MANY` and any other path that can independently create an
-empty-hand multi-select state remain follow-up work; this issue is not closed
-as a general empty-hand bug-class fix.
+## Phase 11 disposition
+
+`pushMultiSelectActions` now permits `cardsInHand == 0` through its existing
+multi-select mode logic. The canonical result is exactly one
+`MULTI_CARD_SELECT` action with mask `0`, which is valid for both `GAMBLE` and
+`EXHAUST_MANY`. Their existing execution helpers safely accept the empty
+selection and advance out of `CARD_SELECT`.
+
+This removes the generic zero-card multi-select `NO_LEGAL_PROGRESSION` defect
+for the currently supported tasks. The Phase 10 Gambler's Brew legality guard
+is unchanged and remains necessary because the real game does not allow the
+potion to be used with an empty hand.
+
+The issue is not treated as evidence of a win-rate improvement. The separate
+UNDECIDED/loss-accounting mechanism described below remains independently
+relevant if any other unresolved battle path reaches it.
 
 The historical seed-126711 reproduction was not observed on the requested
 current baseline before the Phase 10 edit: the exact guarded configuration
