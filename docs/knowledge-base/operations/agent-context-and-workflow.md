@@ -174,8 +174,9 @@ delegate to the same stdlib-only `tools/agent/cline_guardrails.py` policy
 implementation. Cline's current hook protocol supplies JSON on stdin and
 expects one JSON object on stdout; diagnostics are written to stderr.
 
-`TaskStart` records the task ID, baseline `HEAD`, and branch in the Git-local
-untracked path resolved by `git rev-parse --git-path`. `PreToolUse` mechanically cancels clear hazards: destructive Git history or
+`TaskStart` records the task ID, baseline `HEAD`, and branch in a task-specific,
+hashed Git-local untracked path resolved by `git rev-parse --git-path`.
+`PreToolUse` mechanically cancels clear hazards: destructive Git history or
 working-tree operations, force pushes and pushes to `main`, pushes from
 `main`, broad process termination and privilege escalation, recursive file
 deletion, direct `one_combat` or `check_replay.py` execution outside

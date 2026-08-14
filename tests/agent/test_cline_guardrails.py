@@ -57,7 +57,8 @@ class PreToolUseTests(unittest.TestCase):
             "git push origin +HEAD:main", "git push origin HEAD:refs/heads/main",
             "git -C . reset --hard HEAD", "echo ok & rm -rf build",
             "echo ok\nrm -rf build", "bash -c 'rm -rf build'",
-            "sh -c 'git reset --hard HEAD'",
+            "sh -c 'git reset --hard HEAD'", "zsh -c 'rm -rf build'",
+            "git push origin +HEAD:feature",
         ):
             self.assertTrue(pre(command)["cancel"], command)
         self.assertTrue(pre("git push", "main")["cancel"])
@@ -66,7 +67,12 @@ class PreToolUseTests(unittest.TestCase):
         for tool in ("serena__replace_symbol_body", "serena__replace_content"):
             self.assertTrue(invoke({"preToolUse": {"toolName": tool, "parameters": {}}, "branch": "main"})["cancel"])
         self.assertFalse(invoke({"preToolUse": {"toolName": "serena__find_symbol", "parameters": {}}, "branch": "main"})["cancel"])
-        self.assertTrue(invoke({"preToolUse": {"toolName": "mcp", "parameters": {"toolName": "serena__replace_symbol_body"}}, "branch": "main"})["cancel"])
+        for parameters in (
+            {"serverName": "serena", "toolName": "replace_symbol_body"},
+            {"server_name": "serena", "tool_name": "replace_symbol_body"},
+        ):
+            self.assertTrue(invoke({"preToolUse": {"toolName": "use_mcp_tool", "parameters": parameters}, "branch": "main"})["cancel"])
+        self.assertFalse(invoke({"preToolUse": {"toolName": "use_mcp_tool", "parameters": {"serverName": "serena", "toolName": "find_symbol"}}, "branch": "main"})["cancel"])
 
     def test_main_edit_block(self):
         payload = {"preToolUse": {"toolName": "write_to_file", "parameters": {"path": "x"}}, "branch": "main"}
@@ -104,11 +110,36 @@ class CompletionTests(unittest.TestCase):
         module = load_module()
         value = invoke({"hookName": "TaskStart", "taskId": "test-task"})
         self.assertFalse(value["cancel"])
-        self.assertTrue(module.BASELINE_PATH.exists())
+        self.assertTrue(module.baseline_path("test-task").exists())
         self.assertIn("docs/knowledge-base/operations/agent-context-and-workflow.md", [str(p.relative_to(ROOT)) for p in module.changed_files("4d6aecd49fe12b5423d9ca4ef7201307b8c82709")])
-        cleanup = invoke({"hookName": "TaskComplete", "taskComplete": {}})
+        cleanup = invoke({"hookName": "TaskComplete", "taskId": "test-task", "taskComplete": {}})
         self.assertFalse(cleanup["cancel"])
-        self.assertFalse(module.BASELINE_PATH.exists())
+        self.assertFalse(module.baseline_path("test-task").exists())
+
+    def test_task_state_is_isolated(self):
+        module = load_module()
+        invoke({"hookName": "TaskStart", "taskId": "task/one"})
+        invoke({"hookName": "TaskStart", "taskId": "task/two"})
+        one, two = module.baseline_path("task/one"), module.baseline_path("task/two")
+        self.assertNotEqual(one, two)
+        self.assertTrue(one.exists() and two.exists())
+        invoke({"hookName": "TaskComplete", "taskId": "task/one", "taskComplete": {}})
+        self.assertFalse(one.exists())
+        self.assertTrue(two.exists())
+        invoke({"hookName": "TaskComplete", "taskId": "task/two", "taskComplete": {}})
+
+    def test_committed_whitespace_diff_is_checked(self):
+        module = load_module()
+        baseline = "baseline-sha"
+        with mock.patch.object(module, "load_baseline", return_value={"head": baseline}), mock.patch.object(module, "changed_files", return_value=[]), mock.patch.object(module.subprocess, "run") as run:
+            run.side_effect = [
+                subprocess.CompletedProcess([], 1, "committed.py:1: trailing whitespace.\n", ""),
+                subprocess.CompletedProcess([], 0, "", ""),
+                subprocess.CompletedProcess([], 0, "", ""),
+            ]
+            error, _ = module.validate_changes("task")
+        self.assertIn("git diff --check", error)
+        self.assertEqual(run.call_args_list[0].args[0], ["git", "diff", "--check", f"{baseline}..HEAD"])
 
     def test_docs_only_and_cpp_completion_are_cheap(self):
         module = load_module()

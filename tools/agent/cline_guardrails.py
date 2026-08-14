@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import shlex
 import shutil
@@ -34,7 +35,17 @@ def git_path(name):
         return ROOT / ".git" / name
 
 
-BASELINE_PATH = git_path("cline-task-baseline.json")
+def task_id(data):
+    for container in (data, data.get("taskStart") or {}, data.get("task_start") or {}, data.get("preToolUse") or {}, data.get("taskComplete") or {}):
+        value = container.get("taskId") or container.get("task_id")
+        if value:
+            return str(value)
+    return "unknown"
+
+
+def baseline_path(task):
+    digest = hashlib.sha256(task.encode("utf-8")).hexdigest()
+    return git_path(f"cline-task-baselines/{digest}.json")
 
 
 def git_branch():
@@ -120,7 +131,7 @@ def check_command(command, branch, depth=0):
             return "Privilege escalation is blocked. Perform the operation manually."
         if any(value in {"pkill", "killall"} for value in lower) or (lower and lower[0] == "kill" and not (len(parts) == 2 and parts[1].isdigit())):
             return "Broad process termination is blocked. Resolve and stop processes manually."
-        for shell in ("bash", "sh"):
+        for shell in ("bash", "sh", "zsh"):
             if shell in lower and "-c" in lower:
                 index = lower.index("-c") + 1
                 if index < len(parts):
@@ -143,6 +154,8 @@ def check_command(command, branch, depth=0):
             if subcommand == "push":
                 if any(value in {"--force", "-f", "--force-with-lease"} or value.startswith("--force-with-lease=") for value in args[1:]):
                     return "Force push is blocked."
+                if any(value.startswith("+") for value in args[1:]):
+                    return "Force push via refspec is blocked."
                 if pushes_main(args):
                     return "Pushes to main are blocked."
                 if branch == "main":
@@ -171,17 +184,21 @@ def changed_files(baseline):
     return [ROOT / name for name in dict.fromkeys(names) if name and (ROOT / name).is_file()]
 
 
-def load_baseline():
+def load_baseline(task):
     try:
-        value = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
+        value = json.loads(baseline_path(task).read_text(encoding="utf-8"))
         return value if isinstance(value, dict) else {}
     except (OSError, json.JSONDecodeError):
         return {}
 
 
-def validate_changes():
-    baseline = load_baseline().get("head")
-    checks = [subprocess.run(["git", "diff", "--check", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=False), subprocess.run(["git", "diff", "--cached", "--check"], cwd=ROOT, text=True, capture_output=True, check=False)]
+def validate_changes(task):
+    baseline = load_baseline(task).get("head")
+    commands = []
+    if baseline:
+        commands.append(["git", "diff", "--check", f"{baseline}..HEAD"])
+    commands.extend([["git", "diff", "--check"], ["git", "diff", "--cached", "--check"]])
+    checks = [subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False) for command in commands]
     if any(check.returncode for check in checks):
         return "git diff --check failed; fix whitespace errors before completing.\n" + "".join(check.stdout + check.stderr for check in checks), ""
     changed = changed_files(baseline)
@@ -209,13 +226,14 @@ def handle_pre_tool_use(data):
     pre = data.get("preToolUse") or data.get("pre_tool_use") or {}
     tool = str(pre.get("toolName", pre.get("tool_name", "")))
     params = pre.get("parameters", {})
-    generic = params.get("toolName") if isinstance(params, dict) else None
-    effective = str(generic or tool)
+    generic = (params.get("toolName") or params.get("tool_name")) if isinstance(params, dict) else None
+    server = (params.get("serverName") or params.get("server_name")) if isinstance(params, dict) else None
+    effective = f"serena__{generic}" if tool == "use_mcp_tool" and server == "serena" and generic else str(generic or tool)
     branch = str(data.get("branch") or git_branch())
     if branch == "main" and (effective in EDIT_TOOLS or effective in MUTATING_SERENA or (effective.startswith("serena__") and any(word in effective for word in ("replace", "insert", "delete", "rename")))):
         return make_output(True, "Project-file modifications are blocked on main. Create and switch to a feature branch first.")
     if effective in COMPLETION_TOOLS:
-        error, context = validate_changes()
+        error, context = validate_changes(task_id(data))
         return make_output(bool(error), error, context)
     for command in commands(params):
         reason = check_command(command, branch)
@@ -230,13 +248,14 @@ def main():
         data = json.load(sys.stdin)
         name = str(data.get("hookName") or data.get("hook_name") or "")
         if name == "TaskStart" or "taskStart" in data or "task_start" in data:
-            task = data.get("taskStart") or data.get("task_start") or {}
-            task_id = str(data.get("taskId") or data.get("task_id") or task.get("taskId", "unknown"))
-            BASELINE_PATH.write_text(json.dumps({"taskId": task_id, "head": git_head(), "branch": git_branch()}) + "\n", encoding="utf-8")
+            current_task = task_id(data)
+            path = baseline_path(current_task)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps({"taskId": current_task, "head": git_head(), "branch": git_branch()}) + "\n", encoding="utf-8")
             result = make_output(False)
         elif name == "TaskComplete" or "taskComplete" in data or "task_complete" in data:
             try:
-                BASELINE_PATH.unlink()
+                baseline_path(task_id(data)).unlink()
             except FileNotFoundError:
                 pass
             result = make_output(False)
