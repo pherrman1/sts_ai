@@ -39,7 +39,10 @@ For evaluation and operation:
 2. [Benchmark protocol](evaluation/benchmark-protocol.md)
 3. [Environment variables](operations/environment-variables.md)
 4. [Self-play loop](operations/selfplay-loop.md)
-5. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
+5. [Agent context and workflow](operations/agent-context-and-workflow.md) —
+   progressive-disclosure workflow, Git procedure, recording rules, and the
+   `AGENTS.md` relocation audit.
+6. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
 
 For correctness:
 

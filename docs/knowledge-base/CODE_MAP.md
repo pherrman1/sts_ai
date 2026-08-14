@@ -101,8 +101,8 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Agent config | `opencode.json`, `.opencode/prompts/` | OpenCode agent definitions: default (flash), strong (pro) | [AGENTS.md](../../AGENTS.md) |
-| Safety guard | `tools/seed_guard.sh` | Deterministic 128-seed cap for automated verification | [AGENTS.md](../../AGENTS.md) |
+| Agent contract and routing | `AGENTS.md`, `.cline/skills/` | Universal contract, progressive-disclosure skills, context/commit procedure | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
+| Safety guard | `tools/seed_guard.sh` | Deterministic 128-seed cap for automated verification | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
 | Artifact inspector | `tools/ai_inspect.py` | Read-only CSV/JSON inspection | (inline) |
 
 ## Legend

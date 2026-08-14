@@ -1,0 +1,44 @@
+# Generated build output and local IDE/agent state.
+/build/
+/build2/
+/build_asan/
+/build-tsan/
+/cmake-build-*/
+/.ai/
+/.cache/
+/.claude/
+/.idea/
+/.venv/
+/.vscode/
+/.repowise/
+/catboost_info/
+
+# Serena configuration is tracked; local indexes, logs, and memories are not.
+/.serena/cache/
+/.serena/logs/
+/.serena/memories/
+/.serena/project.local.yml
+
+# Large local self-play buffers, checkpoints, gates, logs, snapshots, and
+# backups. Do not hide tracked deployable native models or tracked seed fixtures.
+/selfplay/buffer/
+/selfplay/cbuffer/
+/selfplay/pbuffer/
+/selfplay/card_buffer/
+/selfplay/path_buffer/
+/selfplay/card_models/
+/selfplay/current/
+/selfplay/cand/
+/selfplay/gate/
+/selfplay/logs/
+/selfplay/*backup*/
+/selfplay/models/*
+!/selfplay/models/*.native
+/selfplay/ooc_buffer/*
+!/selfplay/ooc_buffer/next_combat_2000.csv
+!/selfplay/ooc_buffer/next_combat_256.csv
+!/selfplay/ooc_buffer/next_combat_encounter_2000.csv
+!/selfplay/ooc_buffer/smoke.csv
+
+# Keep source, maintained documentation, experiment ledgers, tracked models,
+# and non-generated CSV/JSON data visible by default.
