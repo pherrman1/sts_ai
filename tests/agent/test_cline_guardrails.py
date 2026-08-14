@@ -45,6 +45,34 @@ class PreToolUseTests(unittest.TestCase):
             self.assertFalse(pre(command)["cancel"], command)
         self.assertFalse(invoke({"preToolUse": {"toolName": "read_file", "parameters": {"path": "x"}}, "branch": "main"})["cancel"])
 
+    def test_one_combat_mention_vs_execution(self):
+        # The guardrail must distinguish executing the one_combat binary from
+        # merely mentioning its name as an argument (e.g. a cmake build target
+        # or a grep pattern), including argv-forwarding wrappers such as env.
+        allowed = (
+            "cmake --build build --target one_combat",
+            "cmake --build build --target main one_combat unit-test",
+            "rg one_combat CMakeLists.txt",
+            "tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0",
+            "tools/seed_guard.sh guard-only ./build/one_combat bestbench 1000 8 0",
+        )
+        blocked = (
+            "./build/one_combat bestbench 1000 8 0",
+            "./build/one_combat",
+            "env STS_FAIR=1 ./build/one_combat bestbench 1000 8 0",
+            "env -i ./build/one_combat",
+            "env -u STS_FAIR ./build/one_combat bestbench 1000 8 0",
+            "env -S './build/one_combat bestbench 1000 8 0'",
+            "nohup ./build/one_combat bestbench 1000 8 0",
+            "time -p ./build/one_combat bestbench 1000 8 0",
+            "nice -n 10 ./build/one_combat bestbench 1000 8 0",
+            "setsid ./build/one_combat bestbench 1000 8 0",
+        )
+        for command in allowed:
+            self.assertFalse(pre(command)["cancel"], command)
+        for command in blocked:
+            self.assertTrue(pre(command)["cancel"], command)
+
     def test_blocked_commands(self):
         for command in (
             "git reset --hard HEAD~1", "git clean -fd", "git push --force",
