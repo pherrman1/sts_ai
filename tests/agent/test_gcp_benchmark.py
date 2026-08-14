@@ -1,5 +1,4 @@
 import importlib.util
-import os
 import subprocess
 import tempfile
 import unittest
@@ -30,32 +29,23 @@ class GcpBenchmarkTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("requires host sts-test", result.stderr)
 
-    def test_designated_remote_context_accepts_gcp_mode(self):
+    def test_designated_remote_command_uses_gcp_context(self):
         module = load_module()
-        remote_root = Path("/home/philippherrmann/sts_sweep")
-        with tempfile.TemporaryDirectory() as directory:
-            fake_hostname = Path(directory) / "hostname"
-            fake_hostname.write_text("#!/bin/sh\nprintf 'sts-test\\n'\n", encoding="utf-8")
-            fake_hostname.chmod(0o755)
-            remote_root.mkdir(parents=True, exist_ok=True)
-            try:
-                result = subprocess.run(
-                    [str(SEED_GUARD), "--gcp-research", "guard-only", "./build/one_combat", "bestbench", "1000", "2000", "0"],
-                    cwd=remote_root,
-                    env={
-                        **os.environ,
-                        "PATH": f"{directory}:{os.environ['PATH']}",
-                        "STS_GCP_RESEARCH_CONTEXT": "sts-test",
-                    },
-                    text=True,
-                    capture_output=True,
-                )
-                self.assertEqual(result.returncode, 0, result.stderr)
-            finally:
-                try:
-                    remote_root.rmdir()
-                except OSError:
-                    pass
+        args = module.parser().parse_args(
+            ["run", "--foreground", "--guard-only", "--", "./build/one_combat", "bestbench", "1000", "2000", "0"]
+        )
+        captured = {}
+
+        def fake_ssh(parsed, remote):
+            captured["remote"] = remote
+            return 0
+
+        with mock.patch.object(module, "ssh_command", side_effect=fake_ssh):
+            self.assertEqual(module.remote_run(args), 0)
+        self.assertIn("cd /home/philippherrmann/sts_sweep;", captured["remote"])
+        self.assertIn("STS_GCP_RESEARCH_CONTEXT=sts-test", captured["remote"])
+        self.assertIn("bash tools/seed_guard.sh --gcp-research guard-only", captured["remote"])
+        self.assertIn("bestbench 1000 2000 0", captured["remote"])
 
     def test_non_designated_run_is_rejected_before_gcloud(self):
         module = load_module()
