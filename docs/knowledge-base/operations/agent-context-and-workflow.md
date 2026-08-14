@@ -165,6 +165,52 @@ experiment evidence remain visible through explicit exceptions.
 None for this workflow split. Future context reductions should update the
 relocation audit rather than silently deleting an instruction.
 
+## Cline mechanical guardrails
+
+Repository-owned hooks live in `.clinerules/hooks/`. The extensionless
+`TaskStart`, `PreToolUse`, and `TaskComplete` files are the Linux/macOS entry
+points; the `.ps1` files are the corresponding native Windows wrappers. All wrappers
+delegate to the same stdlib-only `tools/agent/cline_guardrails.py` policy
+implementation. Cline's current hook protocol supplies JSON on stdin and
+expects one JSON object on stdout; diagnostics are written to stderr.
+
+`TaskStart` records the task ID, baseline `HEAD`, and branch in a task-specific,
+hashed Git-local untracked path resolved by `git rev-parse --git-path`.
+`PreToolUse` mechanically cancels clear hazards: destructive Git history or
+working-tree operations, force pushes and pushes to `main`, pushes from
+`main`, broad process termination and privilege escalation, recursive file
+deletion, direct `one_combat` or `check_replay.py` execution outside
+`tools/seed_guard.sh`, and normal project-file edit tools while on `main`.
+Read/search tools, normal read-only Git commands, builds, CTest, and
+seed-guard-wrapped commands remain available. Other shell commands remain
+approval-controlled; this hook is intentionally conservative rather than a
+complete shell security model.
+
+Before `attempt_completion` or `submit_and_exit`, `PreToolUse` validates the
+baseline-to-HEAD committed diff, staged and unstaged diffs, and relevant
+untracked files. It runs `git diff --check`, Python syntax checks, `bash -n`
+for maintained shell files when Bash is available, and standard-library JSON
+parsing. Failures cancel the completion tool. C++/header/CMake changes never
+launch a full build. A reminder is returned where the Cline runtime preserves
+PreToolUse context, but it is not guaranteed to be displayed; the PR Linux GCC
+check remains authoritative. Markdown-only changes remain cheap.
+
+`TaskComplete` is not a blocking validation gate in the current Cline
+integration. It only removes the recorded baseline state as best-effort
+cleanup and returns an allow response.
+
+To enable or diagnose hooks, ensure the extensionless Linux/macOS wrappers are
+executable (`chmod +x .clinerules/hooks/PreToolUse
+.clinerules/hooks/TaskComplete`) and pipe synthetic JSON into them. If a safe
+command is falsely blocked, inspect the stderr diagnostic and reproduce the
+smallest synthetic input locally; do not weaken the hook by adding a broad path
+allowlist. Ask the user to perform the one-off operation manually if needed.
+
+GitHub Actions CI is the authoritative repository verification check. Changes
+should reach `main` through a pull request only after the Linux GCC check
+passes. Branch-protection enforcement is not currently available for this
+private repository on its GitHub plan.
+
 ## Relevant code
 
 - `AGENTS.md`

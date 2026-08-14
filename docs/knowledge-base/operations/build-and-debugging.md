@@ -58,8 +58,10 @@ requires CMake 3.19. Native PowerShell/MSVC remains unverified and has no preset
 
 ### Authoritative GitHub Actions verification
 
-`.github/workflows/ci.yml` is the authoritative merge gate. It runs one public
-Linux GCC lane on pushes and pull requests: recursive submodule checkout,
+`.github/workflows/ci.yml` is the authoritative repository verification check.
+Changes should reach `main` through a pull request only after the Linux GCC
+check passes. It runs one public Linux GCC lane on pushes and pull requests:
+recursive submodule checkout,
 `build-essential`/CMake/CPython development prerequisites, Python 3.12 and uv,
 `uv lock --check`, `uv sync --locked`, the read-only `tools/agent/doctor.sh`,
 and the checked-in Debug configure, build, and CTest presets. The workflow adds
