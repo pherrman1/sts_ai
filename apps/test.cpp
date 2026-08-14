@@ -2140,6 +2140,53 @@ int testSemanticCardEdges() {
     return 1;
 }
 
+// ---- S3 draw-pile-index reuse boundary regression --------------------------
+int testS3DrawPileIndexReuseBoundary() {
+    int failures = 0;
+    auto check = [&](bool ok, const char *message) {
+        if (!ok) {
+            std::cout << "s3_drawpile_reuse_boundary FAIL: " << message << '\n';
+            ++failures;
+        }
+    };
+
+    for (CardSelectTask task : {CardSelectTask::SECRET_TECHNIQUE,
+                                CardSelectTask::SECRET_WEAPON,
+                                CardSelectTask::SEEK}) {
+        auto bc = cardSelectFixture(task, 1, false);
+        check(search::isDrawPileIndexSensitiveCardSelect(bc),
+              "draw-pile task not classified as sensitive");
+        search::BattleScumSearcher3 s3(bc, 0x1234, 0, 1);
+        s3.search(1);
+        check(!s3.root.edges.empty(), "sensitive fixture produced no root edges");
+        if (!s3.root.edges.empty()) {
+            const auto action = s3.root.edges.front().action;
+            check(!s3.advanceRoot(action, bc),
+                  "sensitive card-select root retained a subtree");
+            check(!s3.rootCarried && s3.reuseGeneration == 0,
+                  "fresh sensitive boundary reported as carried");
+        }
+    }
+
+    auto ordinary = cardSelectFixture(CardSelectTask::HOLOGRAM, 1, false);
+    check(!search::isDrawPileIndexSensitiveCardSelect(ordinary),
+          "unrelated card-select task classified as sensitive");
+    search::BattleScumSearcher3 ordinaryS3(ordinary, 0x5678, 0, 1);
+    ordinaryS3.search(1);
+    check(!ordinaryS3.root.edges.empty(), "ordinary fixture produced no root edges");
+    if (!ordinaryS3.root.edges.empty()) {
+        check(ordinaryS3.advanceRoot(ordinaryS3.root.edges.front().action, ordinary),
+              "ordinary card-select root did not reuse");
+    }
+
+    if (failures == 0) {
+        std::cout << "s3_drawpile_reuse_boundary PASS\n";
+        return 0;
+    }
+    std::cout << "s3_drawpile_reuse_boundary FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
 // ---- Draw-probability unit tests -------------------------------------------
 // Validates the exact hypergeometric draw-probability helper.
 
@@ -2538,6 +2585,8 @@ int main(int argc, const char* argv[]) {
         return testKeyCollection();
     } else if (command == "semantic_card_edges") {
         return testSemanticCardEdges();
+    } else if (command == "s3_drawpile_reuse_boundary") {
+        return testS3DrawPileIndexReuseBoundary();
     } else if (command == "draw_prob_helper") {
         return testDrawProbHelper();
     } else if (command == "draw_prob_engine") {

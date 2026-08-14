@@ -359,6 +359,10 @@ namespace sts::search {
 
     void enumerateActionsForNode(BattleScumSearcher3::Node &node, const BattleContext &bc);
     void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc);
+    // These card-selection tasks store a physical draw-pile index in the
+    // action.  A carried subtree cannot safely preserve that identity after
+    // hidden draw-pile order changes.
+    bool isDrawPileIndexSensitiveCardSelect(const BattleContext &bc);
 
     extern bool g_useSearcher3;
     // Searcher3 feature-ablation toggles (defaults preserve full behavior;

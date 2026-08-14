@@ -276,6 +276,18 @@ void BattleScumSearcher3::applyParticle(BattleContext &state,
     applyParticleImpl(state, particle, rng);
 }
 
+bool isDrawPileIndexSensitiveCardSelect(const BattleContext &bc) {
+    if (bc.inputState != InputState::CARD_SELECT) return false;
+    switch (bc.cardSelectInfo.cardSelectTask) {
+        case CardSelectTask::SECRET_TECHNIQUE:
+        case CardSelectTask::SECRET_WEAPON:
+        case CardSelectTask::SEEK:
+            return true;
+        default:
+            return false;
+    }
+}
+
 RealBeliefFilterStats BattleScumSearcher3::filterRealTransition(
     const BattleContext &preState, const Action &action,
     const BattleContext &realPostState) {
@@ -1587,30 +1599,40 @@ void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
 bool BattleScumSearcher3::advanceRoot(const Action &action,
                                        const BattleContext &newRootState) {
     bool reused = false;
-    // Match by raw action bits first, then by semantic card key (if available)
-    // to handle hand-index remapping across tree reuse.
-    for (auto &edge : root.edges) {
-        if (edge.action == action) {
-            root = std::move(edge.child);
-            reused = true;
-            break;
+    // SINGLE_CARD_SELECT stores a physical draw-pile index.  The hidden
+    // draw-pile order may differ even when the visible root observation is
+    // unchanged, so never carry a subtree into these roots.
+    if (!isDrawPileIndexSensitiveCardSelect(newRootState)) {
+        // Match by raw action bits first, then by semantic card key (if
+        // available) to handle hand-index remapping across tree reuse.
+        for (auto &edge : root.edges) {
+            if (edge.action == action) {
+                root = std::move(edge.child);
+                reused = true;
+                break;
+            }
         }
-    }
-    if (!reused && g_s3SemanticCardEdges
-        && action.getActionType() == ActionType::CARD) {
-        CardActionKey committedKey = cardActionKey(*rootBc, action);
-        if (committedKey.id != CardId::INVALID) {
-            for (auto &edge : root.edges) {
-                if (edge.hasCardKey && edge.cardKey == committedKey) {
-                    root = std::move(edge.child);
-                    reused = true;
-                    break;
+        if (!reused && g_s3SemanticCardEdges
+            && action.getActionType() == ActionType::CARD) {
+            CardActionKey committedKey = cardActionKey(*rootBc, action);
+            if (committedKey.id != CardId::INVALID) {
+                for (auto &edge : root.edges) {
+                    if (edge.hasCardKey && edge.cardKey == committedKey) {
+                        root = std::move(edge.child);
+                        reused = true;
+                        break;
+                    }
                 }
             }
         }
     }
     if (!reused) root = Node{};
-    rootCarried = true;
+    rootCarried = reused;
+    if (!reused) {
+        retainedNodeCount = 0;
+        reuseSearchCount = -1;
+        reuseGeneration = 0;
+    }
 
     // Count retained nodes in the carried subtree and optionally reset stats.
     if (reused) {
