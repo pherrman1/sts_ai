@@ -301,9 +301,10 @@ def validate_changes(task):
             return "Python syntax check failed:\n" + (result.stderr or result.stdout), ""
     shell = [str(path) for path in changed if path.suffix == ".sh"]
     if shell and shutil.which("bash"):
-        result = subprocess.run(["bash", "-n", *shell], cwd=ROOT, text=True, capture_output=True, check=False)
-        if result.returncode:
-            return "Shell syntax check failed:\n" + (result.stderr or result.stdout), ""
+        for path in shell:
+            result = subprocess.run(["bash", "-n", path], cwd=ROOT, text=True, capture_output=True, check=False)
+            if result.returncode:
+                return "Shell syntax check failed:\n" + (result.stderr or result.stdout), ""
     for path in (path for path in changed if path.suffix == ".json"):
         try:
             json.loads(path.read_text(encoding="utf-8"))

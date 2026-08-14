@@ -21,6 +21,7 @@ ZONE = "europe-west3-c"
 INSTANCE = "sts-test"
 REMOTE_USER = "philippherrmann"
 REMOTE_ROOT = "/home/philippherrmann/sts_sweep"
+RESEARCH_CONTEXT = "sts-test"
 WINDOWS_GCLOUD = (
     r"C:\Users\pherrman\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
     r"C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd",
@@ -54,6 +55,26 @@ def common_args(args: argparse.Namespace) -> list[str]:
         f"--project={args.project}",
         f"--zone={args.zone}",
     ]
+
+
+def require_designated_target(args: argparse.Namespace, action: str) -> None:
+    expected = {
+        "project": PROJECT,
+        "zone": ZONE,
+        "instance": INSTANCE,
+        "user": REMOTE_USER,
+        "remote_root": REMOTE_ROOT,
+    }
+    mismatches = [
+        f"{name}={getattr(args, name)!r} (expected {value!r})"
+        for name, value in expected.items()
+        if getattr(args, name) != value
+    ]
+    if mismatches:
+        raise ValueError(
+            f"{action} is restricted to the designated GCP target: "
+            + ", ".join(mismatches)
+        )
 
 
 def run_gcloud(args: argparse.Namespace, *command: str) -> subprocess.CompletedProcess[str]:
@@ -95,8 +116,7 @@ def status(args: argparse.Namespace) -> int:
 
 
 def start_instance(args: argparse.Namespace) -> int:
-    if args.instance != INSTANCE:
-        raise SystemExit(f"refusing to start non-designated instance {args.instance!r}")
+    require_designated_target(args, "start-instance")
     state = subprocess.run(
         [
             gcloud_path(),
@@ -126,6 +146,7 @@ def probe(args: argparse.Namespace) -> int:
 
 
 def remote_run(args: argparse.Namespace) -> int:
+    require_designated_target(args, "run")
     command = list(args.command)
     if command and command[0] == "--":
         command = command[1:]
@@ -133,7 +154,10 @@ def remote_run(args: argparse.Namespace) -> int:
         raise SystemExit("run requires a command after --")
     command_text = shlex.join(command)
     guard_mode = "guard-only " if args.guard_only else ""
-    guard = f"bash tools/seed_guard.sh --gcp-research {guard_mode}{command_text}"
+    guard = (
+        "STS_GCP_RESEARCH_CONTEXT=sts-test "
+        f"bash tools/seed_guard.sh --gcp-research {guard_mode}{command_text}"
+    )
     check = "pgrep -af '[o]ne_combat' || true"
     if args.guard_only:
         check = ":"
@@ -148,13 +172,22 @@ def remote_run(args: argparse.Namespace) -> int:
         )
 
     if args.foreground:
-        remote = f"cd {shlex.quote(args.remote_root)} && {check}; exec {guard}"
+        remote = (
+            "set -euo pipefail; "
+            f"cd {shlex.quote(args.remote_root)}; "
+            "test -f tools/seed_guard.sh; command -v bash >/dev/null; "
+            f"{check}; exec {guard}"
+        )
         return ssh_command(args, remote)
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     log = args.log or f"{args.remote_root}/logs/gcp_benchmark_{stamp}.log"
     remote = (
-        f"cd {shlex.quote(args.remote_root)} && mkdir -p logs && {check}; "
+        "set -euo pipefail; "
+        f"cd {shlex.quote(args.remote_root)}; "
+        "test -f tools/seed_guard.sh; command -v bash >/dev/null; "
+        "command -v nohup >/dev/null; mkdir -p logs; "
+        f"{check}; "
         f"nohup {guard} >{shlex.quote(log)} 2>&1 < /dev/null & pid=$!; "
         f"echo remote_pid=$pid; echo remote_log={shlex.quote(log)}"
     )
@@ -191,7 +224,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.action == "start-instance":
             return start_instance(args)
         return remote_run(args)
-    except (OSError, RuntimeError) as exc:
+    except (OSError, RuntimeError, ValueError) as exc:
         print(f"gcp_benchmark: {exc}", file=sys.stderr)
         return 2
 

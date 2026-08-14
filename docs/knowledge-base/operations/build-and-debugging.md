@@ -280,10 +280,11 @@ python3 tools/agent/gcp_benchmark.py probe
 
 The launcher defaults to project `sts-ai-502709`, instance `sts-test`, zone
 `europe-west3-c`, user `philippherrmann`, and remote root
-`/home/philippherrmann/sts_sweep`. It supports explicit `--project`, `--zone`,
-`--instance`, `--user`, and `--remote-root` overrides, but `start-instance`
-refuses to start a non-designated instance. It never creates, deletes, resizes,
-or reconfigures cloud resources.
+`/home/philippherrmann/sts_sweep`. Read-only `status`/`probe` options may be
+overridden for troubleshooting. Expensive or mutating `run` and
+`start-instance` operations reject any project, zone, instance, user, or remote
+root other than this designated target. It never creates, deletes, resizes, or
+reconfigures cloud resources.
 
 For a research command, first state the hypothesis/question, baseline and
 treatment, seed regime, simulation/particle budget, fair-vs-known-RNG regime,

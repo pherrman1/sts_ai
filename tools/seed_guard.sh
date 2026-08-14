@@ -110,6 +110,15 @@ if [ $# -eq 0 ]; then
 fi
 
 if $gcp_research; then
+  # The unrestricted path is mechanically tied to the designated remote
+  # working copy. The launcher supplies the context marker; local invocations
+  # cannot opt into this mode merely by adding a flag.
+  research_context="${STS_GCP_RESEARCH_CONTEXT:-}"
+  research_root="/home/philippherrmann/sts_sweep"
+  if [ "$research_context" != "sts-test" ] || [ "$(hostname)" != "sts-test" ] || [ "$PWD" != "$research_root" ]; then
+    echo "SEED_GUARD: --gcp-research requires host sts-test in $research_root via the GCP launcher" >&2
+    exit 1
+  fi
   # The GCP path keeps all argument and replay-cell parsing, but deliberately
   # has no numeric ceiling. It is an explicit operating mode, not a local
   # safety bypass or a replacement for experiment provenance controls.
