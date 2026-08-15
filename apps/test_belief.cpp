@@ -241,6 +241,20 @@ int testRealBeliefFilter(std::uint64_t seed) {
         return 1;
     }
 
+    search::BattleScumSearcher3 sequential(bc, seed, 0, 16);
+    BattleContext sequentialPost = bc;
+    sequential.applyParticle(sequentialPost, sequential.belief.particles.front());
+    action.execute(sequentialPost);
+    sequential.belief.particles[1].weight = 0.0;
+    sequential.belief.particles[1].drawPileOrder.clear();
+    const auto sequentialStats = sequential.filterRealTransition(bc, action, sequentialPost);
+    if (sequentialStats.attempted != 15
+        || sequentialStats.drawPileMismatch != 0
+        || sequential.belief.particles[1].weight != 0.0) {
+        std::cout << "real_belief_filter FAIL: zero-weight particle was reconsidered\n";
+        return 1;
+    }
+
     const bool savedFresh = search::g_s3RealBeliefCollapseFresh;
     search::g_s3RealBeliefCollapseFresh = true;
     search::BattleScumSearcher3 nonCollapse(bc, seed, 0, 8);

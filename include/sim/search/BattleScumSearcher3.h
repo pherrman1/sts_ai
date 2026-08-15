@@ -49,6 +49,7 @@ namespace sts::search {
         int previousParticles = 0;
         int attempted = 0;
         int propagationFailures = 0;
+        int drawPileMismatch = 0;
         int actionIllegal = 0;
         int compatible = 0;
         int incompatible = 0;

@@ -2054,3 +2054,114 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   `build/fightrep_100k_16to512p.csv` (16..512p x 100k sims, 72 cells),
   `/tmp/opencode/weird_cases/` (126711 capture set aside for the separate fix).
 - **Status:** re-record complete; 2/12 fidelity flips are an open harness concern.
+
+## 2026-08-15 — Searcher3 posterior lifetime diagnostic and rejected transfer smoke
+
+**Question:** Does exact real-boundary filtering meaningfully condition a
+posterior that is then discarded when fair Searcher3 rebuilds its tree, and can
+the posterior safely seed a deliberately fresh tree?
+
+**Lifecycle diagnostic:** Added opt-in sidecar telemetry under the existing
+`STS_S3_BELIEF_AUDIT[_FILE]`: one row per filtered boundary records the actual
+next-search source (`fresh_initial`, `existing_filtered_posterior`,
+`collapse_fresh`, or `no_next_search`). This correctly accounts for a carried
+subtree later rebuilt by `STS_REUSE_MAX_SEARCHES`; `belief_carried` is not used
+as the consumption proxy.
+
+Fair Searcher3, 64 particles, 1,000 sims/decision, current native OOC +
+V_combat/policy stack, 12 threads, seeds 94000–94007, filter ON, internal
+belief updates OFF produced 2,942 filtered boundaries. Of 1,035 non-trivial
+filters (`compatible fraction < 1`), 1,029 (99.42%) were followed by
+`fresh_initial`; six ended combat before another search. The `<0.75` and
+`<0.5` subsets were 1,026/1,032 (99.42%) and 996/1,002 (99.40%) fresh,
+respectively. The coupling is therefore material.
+
+**Rejected smoke:** A temporary treatment transferred the filtered `Belief`
+while forcing a fresh tree every actual search in both arms
+(`STS_REUSE_MAX_SEARCHES=0`). It was removed after the 8-seed smoke. Control
+had 15.14% posterior collapse and 44 propagation failures out of 183,488
+attempts; treatment had 79.11% collapse and 147,438/180,160 propagation
+failures, including 2,066 all-particle `PROPAGATION_FAILURE` collapses. The
+root cause is structural: `HiddenBattleState` stores RNG seeds but not counters,
+and `applyParticleImpl` resets counters to zero. A propagated particle cannot
+be safely carried through another real transition. No RNG reconstruction,
+resampling, or transfer feature was retained.
+
+The smoke’s whole-run outcomes were 3/8 wins in both arms; treatment mean floor
+was 43.8 vs 41.6 and mean HP 20.0 vs 18.6, with 0/8 discordant wins. This is
+not interpreted as quality evidence because the treatment was invalid. Mean CPU
+was 28.67 vs 28.35 s/run (+0.32 s/run). No simulator-health, stall, or
+battle-break output occurred. No 32-seed gate was run.
+
+**Artifacts (ignored build output):**
+`build/linux-gcc-release/s3_belief_lifecycle_phase2_8.{csv,csv.next_search.csv}`;
+`s3_persist_{control,treatment}_8.{csv,csv.next_search.csv,results.csv}` and
+their `.meta.json`, `.stdout`, and `.stderr` files. See
+`docs/knowledge-base/decision-log/2026-08-15-s3-persistent-posterior-lifecycle.md`.
+
+**Correction — paired collapse-fallback diagnostic (same date):** The preceding
+temporary treatment did not isolate missing RNG counters from stale-collapse
+fallback. With temporary posterior transfer and `STS_REUSE_MAX_SEARCHES=0` held
+constant, paired seeds 94000–94007 changed only
+`STS_S3_REAL_BELIEF_COLLAPSE_FRESH`: T0 (`0`) collapsed 2,536/3,177 boundaries
+(79.82%) with 169,738/203,328 propagation failures (83.48%), all 169,738 being
+draw-pile mismatches and 2,363 `PROPAGATION_FAILURE` collapses. T1 (`1`) rebuilt
+554 fresh post-state beliefs and collapsed 554/2,818 boundaries (19.66%) with
+56,329/180,352 propagation failures (31.23%): 56,233 draw-pile mismatches, 96
+action-illegal particles, and zero `PROPAGATION_FAILURE` collapses. Thus stale
+pre-transition restoration was the primary cause of the catastrophic cascade.
+Missing RNG counters remain an open limitation, not an established primary
+cause. The temporary transfer remained removed; no larger strength gate ran.
+T0/T1 whole-run wins were both 3/8 and are not quality evidence; CPU was 33.46
+vs 29.73 s/run. Artifacts: `s3_persist_t{0,1}_8.*` under
+`build/linux-gcc-release/`.
+
+**Rerun after zero-weight resurrection fix:** The same corrected T1 command and
+configuration on seeds 94000–94007 produced 2,867 filtered boundaries and
+183,488 attempts: 434 collapses (15.14%), 44 propagation failures (0.02398%),
+zero draw-pile mismatches, and 44 action-illegal particles. Fresh post-state
+beliefs were rebuilt 434 times; next-search sources were
+`fresh_initial=2698` and `no_next_search=169`. Whole-run output was 3/8 wins,
+mean floor 41.6, mean ending HP 18.6, and 17.82 s/run. This is a diagnostic
+rerun, not a quality gate. Artifacts: `build/linux-gcc-release/s3_persist_t1_rerun_8.*`.
+
+**Provenance correction:** The temporary transfer telemetry was then made
+explicit. A one-seed probe on 94000 reported 498
+`transferred_filtered_posterior` next searches and 24 `no_next_search` rows,
+before the 8-seed run. The provenance-correct 94000–94007 run reported 2,616
+`transferred_filtered_posterior` and 171 `no_next_search`, 540/2,787 collapses
+(19.38%), 17/120,391 propagation failures (0.0141%), zero draw-pile
+mismatches, and 17 action-illegal particles. This is compared with the pre-fix
+persistent T1’s 19.66% / 31.23% / 56,233 and the fresh-initial control’s
+15.14% / 0.024% / 0; no further seeds were run. Temporary transfer code was
+removed after the run; explicit telemetry vocabulary remains for future
+reproducible treatments. Artifacts: `build/linux-gcc-release/s3_persist_t1_probe_94000.*`
+and `s3_persist_t1_provenance_8.*`.
+
+## 2026-08-15 — Native C++ LTO build benchmark and default adoption
+
+**Question:** Does adding compiler optimization flags make the combat benchmark
+faster, and should LTO become the standard native build setting?
+
+- **Benchmark:** `one_combat bench 2000 8`, Jaw Worm combat, seeds `0..7`,
+  Ironclad ascension 0, GCC 13.3, `OMP_NUM_THREADS=1`, known-RNG Searcher2
+  MCTS, 2,000 simulations per decision. The primary metric is process user CPU
+  time from `/usr/bin/time`; the harness MCTS row is a secondary metric.
+- **Arms:** A current `-O3`; B `-O3 -march=native`; C
+  `-O3 -march=native -flto`. All runs used the same source revision, models,
+  seeds, and runtime settings, and were executed through
+  `tools/seed_guard.sh`.
+- **Results:** A **0.88 s** user CPU / **95.43 ms** MCTS average; B **0.87 s**
+  / **94.41 ms**; C **0.76 s** / **81.50 ms**. Relative to A, B was **1.1%
+  faster** and C was **13.6% faster** by process CPU time (**14.6% faster** by
+  the harness MCTS timing). All arms produced identical outcomes: 8/8 MCTS
+  wins, average ending HP 73.1, average 3.0 turns.
+- **Decision:** Make `-flto` standard in `CMakeLists.txt`. Do not make
+  `-march=native` standard: it is host-specific and the 8-seed result showed
+  no meaningful benefit by itself.
+- **Caveat:** This is a small 8-seed combat-only benchmark, so the LTO result is
+  evidence for the default build setting, not a general performance guarantee
+  across CPUs, compilers, workloads, or full-run benchmarks. LTO build time and
+  portability remain follow-up considerations.
+- **Artifacts:** temporary benchmark binaries and raw output were stored under
+  `/tmp/sts-opt-bench/` during the session; they are not repository artifacts.

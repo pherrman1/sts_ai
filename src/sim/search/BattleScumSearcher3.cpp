@@ -309,10 +309,12 @@ RealBeliefFilterStats BattleScumSearcher3::filterRealTransition(
 
     for (size_t i = 0; i < belief.particles.size(); ++i) {
         auto &particle = belief.particles[i];
+        if (particle.weight <= 0.0) continue;
         ++stats.attempted;
         if (particle.drawPileOrder.size() != preState.cards.drawPile.size()
             || !sameCardMultiset(particle.drawPileOrder, preState.cards.drawPile)) {
             ++stats.propagationFailures;
+            ++stats.drawPileMismatch;
             ++stats.fallbackShuffles;
             particle.weight = 0.0;
             continue;

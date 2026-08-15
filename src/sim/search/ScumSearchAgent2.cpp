@@ -157,7 +157,7 @@ static void writeS3BeliefBoundaryDiag(
     std::ofstream out(search::g_s3BeliefAuditFile, std::ios::app);
     if (!out) return;
     if (!header) {
-        out << "seed,floor,encounter,turn,decision_index,particles,compatible_particles,compatible_fraction,distinct_draw_orders,distinct_rng_signatures,ess,fallback_shuffles,fallback_fraction,stale_fraction,boundary_update_applied,belief_carried,belief_rebuilt,previous_particle_count,propagated_particles_attempted,propagation_failures,action_illegal_particles,filter_compatible,filter_compatible_fraction,filter_incompatible,posterior_collapse,distinct_surviving_draw_orders,distinct_surviving_rng_signatures,unique_hypotheses,filter_fallback_shuffles,reshuffle_observed,comparison_exact,filter_cpu_ms,weight_ess,action_bits,action_type,real_observation_hash,dominant_predicted_observation_hash,distinct_predicted_observations,dominant_predicted_observation_count,predicted_observation_entropy,collapse_category,fresh_belief_rebuilt,sensitivity_probed,sensitivity_64,sensitivity_128,sensitivity_256,sensitivity_512,sensitivity_cpu_ms,configured_particle_count,simulations,distinct_particles_sampled,sampled_particle_fraction,min_samples_per_sampled_particle,mean_samples_per_sampled_particle,median_samples_per_sampled_particle,max_samples_per_particle,never_sampled_particles,particle_usage_entropy,belief_initialization_cpu_ms,search_cpu_ms\n";
+        out << "seed,floor,encounter,turn,decision_index,particles,compatible_particles,compatible_fraction,distinct_draw_orders,distinct_rng_signatures,ess,fallback_shuffles,fallback_fraction,stale_fraction,boundary_update_applied,belief_carried,belief_rebuilt,previous_particle_count,propagated_particles_attempted,propagation_failures,draw_pile_mismatch_particles,action_illegal_particles,filter_compatible,filter_compatible_fraction,filter_incompatible,posterior_collapse,distinct_surviving_draw_orders,distinct_surviving_rng_signatures,unique_hypotheses,filter_fallback_shuffles,reshuffle_observed,comparison_exact,filter_cpu_ms,weight_ess,action_bits,action_type,real_observation_hash,dominant_predicted_observation_hash,distinct_predicted_observations,dominant_predicted_observation_count,predicted_observation_entropy,collapse_category,fresh_belief_rebuilt,sensitivity_probed,sensitivity_64,sensitivity_128,sensitivity_256,sensitivity_512,sensitivity_cpu_ms,configured_particle_count,simulations,distinct_particles_sampled,sampled_particle_fraction,min_samples_per_sampled_particle,mean_samples_per_sampled_particle,median_samples_per_sampled_particle,max_samples_per_particle,never_sampled_particles,particle_usage_entropy,belief_initialization_cpu_ms,search_cpu_ms\n";
         header = true;
     }
     out << seed << ',' << bc.floorNum << ',' << static_cast<int>(bc.encounter)
@@ -173,6 +173,7 @@ static void writeS3BeliefBoundaryDiag(
         << (filterStats ? filterStats->previousParticles : n) << ','
         << (filterStats ? filterStats->attempted : 0) << ','
         << (filterStats ? filterStats->propagationFailures : 0) << ','
+        << (filterStats ? filterStats->drawPileMismatch : 0) << ','
         << (filterStats ? filterStats->actionIllegal : 0) << ','
         << (filterStats ? filterStats->compatible : 0) << ','
         << (filterStats && filterStats->previousParticles > 0 ? static_cast<double>(filterStats->compatible) / filterStats->previousParticles : 0.0) << ','
@@ -213,6 +214,50 @@ static void writeS3BeliefBoundaryDiag(
         << (filterStats ? filterStats->particleUsageEntropy : 0.0) << ','
         << (filterStats ? filterStats->beliefInitializationCpuMs : 0.0) << ','
         << (filterStats ? filterStats->searchCpuMs : 0.0) << '\n';
+}
+
+enum class S3NextSearchBeliefSource {
+    UNRESOLVED,
+    FRESH_INITIAL,
+    TRANSFERRED_FILTERED_POSTERIOR,
+};
+
+struct S3FilteredBoundary {
+    std::uint64_t seed;
+    int floor;
+    int encounter;
+    int decisionIndex;
+    bool collapseFresh;
+    S3NextSearchBeliefSource source = S3NextSearchBeliefSource::UNRESOLVED;
+};
+
+static void writeS3NextSearchBeliefDiag(
+    const std::vector<S3FilteredBoundary> &boundaries, bool nextSearch) {
+    if (!search::g_s3BeliefAudit || search::g_s3BeliefAuditFile.empty()) return;
+
+    static std::mutex mutex;
+    static bool header = false;
+    std::lock_guard<std::mutex> lock(mutex);
+    std::ofstream out(search::g_s3BeliefAuditFile + ".next_search.csv", std::ios::app);
+    if (!out) return;
+    if (!header) {
+        out << "seed,floor,encounter,decision_index,next_search_belief_source\n";
+        header = true;
+    }
+    for (const auto &boundary : boundaries) {
+        const char *source = "no_next_search";
+        if (nextSearch) {
+            if (boundary.source == S3NextSearchBeliefSource::FRESH_INITIAL)
+                source = "fresh_initial";
+            else if (boundary.source == S3NextSearchBeliefSource::TRANSFERRED_FILTERED_POSTERIOR)
+                source = "transferred_filtered_posterior";
+            else
+                source = boundary.collapseFresh ? "collapse_fresh"
+                                                 : "existing_filtered_posterior";
+        }
+        out << boundary.seed << ',' << boundary.floor << ',' << boundary.encounter
+            << ',' << boundary.decisionIndex << ',' << source << '\n';
+    }
 }
 
 static void writeS3RootRaceDiag(const BattleContext &bc,
@@ -313,6 +358,7 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
         // Generation histogram for cascade mode.
         int maxCarriedGen = 0;
         std::map<int,int> genHistogram;
+        std::vector<S3FilteredBoundary> pendingFilteredBoundaries;
 
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         bool searcherValid = true;
@@ -330,12 +376,16 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             // carried-search counter exceeds the configured maximum.
             if (!searcherValid) {
                 s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+                for (auto &boundary : pendingFilteredBoundaries)
+                    boundary.source = S3NextSearchBeliefSource::FRESH_INITIAL;
                 carriedSearchesSinceFresh = 0;
                 maxCarriedGen = 0;
                 searcherValid = true;
             } else if (search::g_reuseMaxSearches >= 0
                        && carriedSearchesSinceFresh > search::g_reuseMaxSearches) {
                 s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+                for (auto &boundary : pendingFilteredBoundaries)
+                    boundary.source = S3NextSearchBeliefSource::FRESH_INITIAL;
                 carriedSearchesSinceFresh = 0;
                 maxCarriedGen = 0;
             }
@@ -352,6 +402,11 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 const bool filtered = search::g_s3RealBeliefFilter;
                 if (filtered) filterStats = s3.filterRealTransition(preState, forced, bc);
                 writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx, false, filtered, filtered ? &filterStats : nullptr);
+                if (filtered) {
+                    pendingFilteredBoundaries.push_back({bc.seed, bc.floorNum,
+                        static_cast<int>(bc.encounter), decisionIdx,
+                        filterStats.freshBeliefRebuilt});
+                }
                 ++decisionIdx;
                 searcherValid = false;
                 continue;
@@ -366,6 +421,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 spend += extra;
             }
             const std::int64_t before = s3.root.simulationCount;
+            writeS3NextSearchBeliefDiag(pendingFilteredBoundaries, true);
+            pendingFilteredBoundaries.clear();
             // Per-search CPU diagnostic snapshot.
             BattleScumSearcher3::DiagSnapshot diagBefore;
             const char *searchKind = (carriedSearchesSinceFresh > 0) ? "carried" : "fresh";
@@ -521,7 +578,13 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 searcherValid = false;
             }
             writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx - 1, carriedAtBoundary, filtered, filtered ? &filterStats : nullptr);
+            if (filtered) {
+                pendingFilteredBoundaries.push_back({bc.seed, bc.floorNum,
+                    static_cast<int>(bc.encounter), decisionIdx - 1,
+                    filterStats.freshBeliefRebuilt});
+            }
         }
+        writeS3NextSearchBeliefDiag(pendingFilteredBoundaries, false);
         // Simulator health: the loop exited while the battle was still
         // UNDECIDED. The stall guard converts stalls to PLAYER_LOSS before
         // breaking, so only an unintentional unresolved exit reaches this.
