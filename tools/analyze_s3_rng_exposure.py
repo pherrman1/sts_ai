@@ -13,6 +13,18 @@ HIST = {
     "card": ["card_first_0", "card_first_1", "card_first_2", "card_first_3", "card_first_4plus", "card_never"],
 }
 
+FAMILIES = {
+    "ORACLE",
+    "DRAW_ORDER",
+    "SHUFFLE_RNG",
+    "CARD_RANDOM_RNG",
+    "AI_RNG",
+    "MISC_RNG",
+    "MONSTER_HP_RNG",
+    "POTION_RNG",
+    "ALL_FRESH",
+}
+
 
 def quantile(values, p):
     values = sorted(values)
@@ -100,10 +112,29 @@ def mobility_join(roots, geometry):
             print(" ", key[0], key[1], cells[key])
 
 
+def validate_geometry(geometry, expected_proposals):
+    groups = collections.defaultdict(list)
+    for row in geometry:
+        groups[(row["seed"], row["encounter"], row["floor"], row["decision_idx"])].append(row)
+    assert groups, "geometry has no trigger groups"
+    for key, group in groups.items():
+        families = [r["proposal_family"] for r in group]
+        assert len(group) == 9, (key, len(group))
+        assert set(families) == FAMILIES, (key, sorted(set(families)))
+        assert len(families) == len(set(families)), (key, families)
+        assert families.count("ORACLE") == 1, key
+        for row in group:
+            proposals = int(row["proposals"])
+            expected = 1 if row["proposal_family"] == "ORACLE" else expected_proposals
+            assert proposals == expected, (key, row["proposal_family"], proposals, expected)
+    return set(groups)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("exposure", type=Path)
-    parser.add_argument("--geometry", type=Path)
+    parser.add_argument("--geometry", type=Path, required=True)
+    parser.add_argument("--proposals", type=int, default=64)
     args = parser.parse_args()
     with args.exposure.open(newline="") as handle:
         rows = list(csv.DictReader(handle))
@@ -122,13 +153,14 @@ def main():
             action_groups[row["action_bits"]].append(row)
     for action, action_rows in sorted(action_groups.items(), key=lambda item: -sum(int(r["simulations"]) for r in item[1])):
         print_summary(f"action_bits={action}", action_rows)
-    if args.geometry:
-        with args.geometry.open(newline="") as handle:
-            geometry = list(csv.DictReader(handle))
-        mobility_join(roots, geometry)
-        exposure_keys = {root_key(r) for r in roots}
-        geometry_keys = {(r["seed"], r["encounter"], r["floor"], r["decision_idx"]) for r in geometry if r["proposal_family"] == "ORACLE"}
-        print("COVERAGE geometry_oracle_groups", len(geometry_keys), "exposure_source_groups", len(exposure_keys), "matched", len(geometry_keys & exposure_keys), "absent", len(geometry_keys - exposure_keys), "unexpected", len(exposure_keys - geometry_keys))
+    with args.geometry.open(newline="") as handle:
+        geometry = list(csv.DictReader(handle))
+    geometry_keys = validate_geometry(geometry, args.proposals)
+    mobility_join(roots, geometry)
+    exposure_keys = {root_key(r) for r in roots}
+    unexpected = exposure_keys - geometry_keys
+    assert not unexpected, f"exposure source keys absent from same-run geometry: {sorted(unexpected)[:5]}"
+    print("COVERAGE geometry_trigger_groups", len(geometry_keys), "exposure_source_groups", len(exposure_keys), "matched", len(exposure_keys), "geometry_only", len(geometry_keys - exposure_keys), "unexpected", len(unexpected))
 
 
 if __name__ == "__main__":
