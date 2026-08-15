@@ -8553,6 +8553,252 @@ static void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent) {
     }
 }
 
+// Phase 13A is an offline-only audit.  M0 is kept in a separate net and is
+// never consulted by stepFrozenV4Ooc; these helpers only score legal actions
+// on a copied pre-decision state.
+static OocStrategicTokNet g_phase13aM0Net;
+
+struct Phase13aActionScore {
+    int best = -1;
+    double bestValue = -1e100;
+    double secondValue = -1e100;
+    std::vector<double> values;
+};
+
+static Phase13aActionScore phase13aScore(const GameContext &gc,
+                                         const PathHistory &path,
+                                         const std::vector<search::GameAction> &actions,
+                                         OocStrategicTokNet &net) {
+    Phase13aActionScore out;
+    out.values.resize(actions.size(), -1e100);
+    const TokState ts = buildTokState(gc, path);
+    for (int i = 0; i < (int)actions.size(); ++i) {
+        int at, c1, c2, c3, ca1, ca2, ca3;
+        strategicCands(gc, actions[i], at, c1, c2, c3, ca1, ca2, ca3);
+        const int cats[6] = {c1, c2, c3, ca1, ca2, ca3};
+        int et, ei; float gg;
+        tokEntity(gc, actions[i], et, ei, gg);
+        const float entT[4] = {et == 0 ? 1.0f : 0.0f, et == 1 ? 1.0f : 0.0f,
+                               et == 2 ? 1.0f : 0.0f, et == 3 ? 1.0f : 0.0f};
+        const double v = net.predictActionValue(
+            ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+            actions[i].bits, cats, at, (int)gc.screenState, entT, ei, gg);
+        out.values[i] = v;
+        if (v > out.bestValue) {
+            out.secondValue = out.bestValue;
+            out.bestValue = v;
+            out.best = i;
+        } else if (v > out.secondValue) {
+            out.secondValue = v;
+        }
+    }
+    return out;
+}
+
+static std::vector<search::GameAction> phase13aActions(const GameContext &gc) {
+    using RT = search::GameAction::RewardsActionType;
+    auto actions = search::GameAction::getAllActionsInState(gc);
+    if (gc.screenState == ScreenState::REWARDS
+        && gc.info.rewardsContainer.cardRewardCount > 0) {
+        const search::GameAction skip(RT::CARD,
+                                      gc.info.rewardsContainer.cardRewardCount - 1, 5);
+        bool found = false;
+        for (const auto &a : actions) if (a.bits == skip.bits) found = true;
+        if (!found) actions.push_back(skip);
+    }
+    return actions;
+}
+
+static bool phase13aOwnedScreen(const GameContext &gc,
+                                const std::vector<search::GameAction> &actions) {
+    if (g_oocStrategicGateRegret || actions.empty()) return false;
+    switch (gc.screenState) {
+        case ScreenState::EVENT_SCREEN:
+            return g_oocStrategicEvent;
+        case ScreenState::BOSS_RELIC_REWARDS:
+            return g_oocStrategicBossRelic;
+        case ScreenState::TREASURE_ROOM:
+            return g_oocStrategicTreasure;
+        case ScreenState::REST_ROOM:
+            return g_oocStrategicRest;
+        case ScreenState::SHOP_ROOM:
+            return g_oocStrategicShop;
+        case ScreenState::CARD_SELECT:
+            return g_oocStrategicRest
+                && gc.info.selectScreenType == CardSelectScreenType::UPGRADE;
+        case ScreenState::REWARDS: {
+            const auto &r = gc.info.rewardsContainer;
+            if (r.goldRewardCount > 0 || r.relicCount > 0 || r.potionCount > 0)
+                return false;
+            if (g_collectKeys && (r.emeraldKey || r.sapphireKey)) return false;
+            return g_oocStrategicTokNet.ok && r.cardRewardCount > 0;
+        }
+        default:
+            return false;
+    }
+}
+
+static std::string phase13aCandidateHeader() {
+    return "sourceSeed,decisionId,act,floor,screen,nActions,gateOwned,liveV4Idx,liveV4Margin,"
+           "v4Idx,v4Bits,v4I1,v4I2,v4I3,m0Idx,m0Bits,m0I1,m0I2,m0I3,v4Margin,modelDelta,"
+           "goldRewardCount,relicCount,potionCount,emeraldKey,sapphireKey\n";
+}
+
+static void phase13aCollect(int nSeeds, std::uint64_t seedOffset,
+                            const std::string &outFile, int sims, int asc) {
+    std::ofstream out(outFile);
+    out << phase13aCandidateHeader();
+    for (int si = 0; si < nSeeds; ++si) {
+        const std::uint64_t seed = seedOffset + (std::uint64_t)si;
+        GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+        search::ScumSearchAgent2 agent;
+        agent.simulationCountBase = sims;
+        agent.rng = std::default_random_engine(seed);
+        PathHistory path;
+        t_curPath = &path;
+        int decIdx = 0;
+        while (gc.outcome == GameOutcome::UNDECIDED) {
+            path.update(gc);
+            const auto actions = phase13aActions(gc);
+            if (phase13aOwnedScreen(gc, actions)) {
+                if (actions.size() >= 2 && g_oocStrategicTokNet.ok && g_phase13aM0Net.ok) {
+                    const auto v4 = phase13aScore(gc, path, actions, g_oocStrategicTokNet);
+                    const auto m0 = phase13aScore(gc, path, actions, g_phase13aM0Net);
+                    const double margin = v4.bestValue - v4.secondValue;
+                    const double delta = m0.values[m0.best] - m0.values[v4.best];
+                    if (v4.best >= 0 && m0.best >= 0 && margin >= g_oocStrategicMargin
+                        && m0.best != v4.best && delta >= 1.0) {
+                        const auto &va = actions[v4.best];
+                        const auto &ma = actions[m0.best];
+                        out << seed << ',' << decIdx << ',' << gc.act << ',' << gc.floorNum
+                            << ',' << (int)gc.screenState << ',' << actions.size() << ",1,"
+                            << v4.best << ',' << margin << ',' << v4.best << ',' << va.bits << ',' << va.getIdx1() << ','
+                            << va.getIdx2() << ',' << va.getIdx3() << ',' << m0.best << ','
+                            << ma.bits << ',' << ma.getIdx1() << ',' << ma.getIdx2() << ','
+                            << ma.getIdx3() << ',' << margin << ',' << delta << ','
+                            << gc.info.rewardsContainer.goldRewardCount << ','
+                            << gc.info.rewardsContainer.relicCount << ','
+                            << gc.info.rewardsContainer.potionCount << ','
+                            << (gc.info.rewardsContainer.emeraldKey ? 1 : 0) << ','
+                            << (gc.info.rewardsContainer.sapphireKey ? 1 : 0) << '\n';
+                    }
+                }
+            }
+            if (phase13aOwnedScreen(gc, actions)) ++decIdx;
+            stepFrozenV4Ooc(gc, agent);
+        }
+        t_curPath = nullptr;
+    }
+}
+
+static bool phase13aReadManifestRow(const std::string &line,
+                                    std::uint64_t &seed, int &decIdx, int &act,
+                                    int &floor, int &screen, std::uint32_t &v4Bits,
+                                    std::uint32_t &m0Bits, double &margin,
+                                    double &modelDelta) {
+    std::stringstream ss(line); std::string x;
+    std::vector<std::string> c;
+    while (std::getline(ss, x, ',')) c.push_back(x);
+    if (c.size() < 21) return false;
+    try {
+        seed = std::stoull(c[0]); decIdx = std::stoi(c[1]); act = std::stoi(c[2]);
+        floor = std::stoi(c[3]); screen = std::stoi(c[4]);
+        v4Bits = (std::uint32_t)std::stoull(c[10]);
+        m0Bits = (std::uint32_t)std::stoull(c[15]);
+        margin = std::stod(c[19]); modelDelta = std::stod(c[20]);
+    } catch (...) { return false; }
+    return true;
+}
+
+static std::string phase13aActionMeta(const GameContext &gc,
+                                      const search::GameAction &a) {
+    int at, c1, c2, c3, ca1, ca2, ca3;
+    strategicCands(gc, a, at, c1, c2, c3, ca1, ca2, ca3);
+    std::ostringstream out;
+    out << at << ':' << c1 << ':' << c2 << ':' << c3 << ':' << ca1 << ':' << ca2 << ':' << ca3;
+    return out.str();
+}
+
+static void phase13aEvaluate(const std::string &manifestFile,
+                             const std::string &outFile, int asc,
+                             int referenceSims = 1000, int futures = 4) {
+    std::ifstream in(manifestFile); std::string line;
+    std::ofstream out(outFile);
+    out << "sourceSeed,decisionId,act,floor,screen,actionRole,actionBits,idx1,idx2,idx3,"
+           "actionMeta,v4Margin,modelDelta,evaluator,future,continuationSeed,won,floorEnd,hpEnd,"
+           "bootstrap,valid,healthDelta\n";
+    std::getline(in, line);
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        std::uint64_t seed; std::uint32_t v4Bits, m0Bits;
+        int targetDecIdx, act, floor, screen; double margin, delta;
+        if (!phase13aReadManifestRow(line, seed, targetDecIdx, act, floor, screen,
+                                     v4Bits, m0Bits, margin, delta)) continue;
+        GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+        search::ScumSearchAgent2 agent; agent.simulationCountBase = 1000;
+        agent.rng = std::default_random_engine(seed);
+        PathHistory path; t_curPath = &path;
+        int decIdx = 0;
+        bool found = false;
+        while (gc.outcome == GameOutcome::UNDECIDED) {
+            path.update(gc);
+            const auto actions = phase13aActions(gc);
+            if (phase13aOwnedScreen(gc, actions)) {
+                if (actions.size() >= 2 && decIdx == targetDecIdx) {
+                    int vi = -1, mi = -1;
+                    for (int i = 0; i < (int)actions.size(); ++i) {
+                        if (actions[i].bits == v4Bits && vi < 0) vi = i;
+                        if (actions[i].bits == m0Bits && mi < 0) mi = i;
+                    }
+                    if (vi >= 0 && mi >= 0 && gc.act == act && gc.floorNum == floor
+                        && (int)gc.screenState == screen) {
+                        found = true;
+                        const PathHistory prePath = path;
+                        for (int f = 0; f < futures; ++f) {
+                            const std::uint64_t contSeed = seed ^
+                                ((std::uint64_t)(targetDecIdx + 1) * 0x9e3779b97f4a7c15ULL) ^
+                                ((std::uint64_t)(f + 1) * 0xbf58476d1ce4e5b9ULL);
+                            for (int ai : {vi, mi}) {
+                                const char role = ai == vi ? 'V' : 'M';
+                                GameContext branch = detachedCounterfactualCopy(gc);
+                                actions[ai].execute(branch);
+                                const int healthBefore = search::g_simHealthFailureCount;
+                                const OocCounterfactualResult s = evaluateStrategicBranch(
+                                    branch, contSeed, prePath);
+                                out << seed << ',' << decIdx << ',' << act << ',' << floor << ',' << screen
+                                    << ',' << role << ',' << actions[ai].bits << ',' << actions[ai].getIdx1()
+                                    << ',' << actions[ai].getIdx2() << ',' << actions[ai].getIdx3() << ','
+                                    << phase13aActionMeta(gc, actions[ai]) << ',' << margin << ',' << delta
+                                    << ",S," << f << ',' << contSeed << ',' << s.won << ',' << s.floor
+                                    << ',' << s.hp << ',' << s.bootstrapped << ',' << (s.valid ? 1 : 0)
+                                    << ',' << (search::g_simHealthFailureCount - healthBefore) << '\n';
+                                GameContext refBranch = detachedCounterfactualCopy(gc);
+                                actions[ai].execute(refBranch);
+                                const int refHealthBefore = search::g_simHealthFailureCount;
+                                const OocCounterfactualResult r = finishOocCounterfactual(
+                                    std::move(refBranch), referenceSims, contSeed, prePath, -1, false,
+                                    nullptr, 0, nullptr, false);
+                                out << seed << ',' << decIdx << ',' << act << ',' << floor << ',' << screen
+                                    << ',' << role << ',' << actions[ai].bits << ',' << actions[ai].getIdx1()
+                                    << ',' << actions[ai].getIdx2() << ',' << actions[ai].getIdx3() << ','
+                                    << phase13aActionMeta(gc, actions[ai]) << ',' << margin << ',' << delta
+                                    << ",R," << f << ',' << contSeed << ',' << r.won << ',' << r.floor
+                                    << ',' << r.hp << ',' << r.bootstrapped << ',' << (r.valid ? 1 : 0)
+                                    << ',' << (search::g_simHealthFailureCount - refHealthBefore) << '\n';
+                            }
+                        }
+                    }
+                }
+            }
+            if (phase13aOwnedScreen(gc, actions)) ++decIdx;
+            stepFrozenV4Ooc(gc, agent);
+        }
+        t_curPath = nullptr;
+        if (!found) std::cerr << "phase13a: manifest decision not replayed seed=" << seed
+                              << " decision=" << targetDecIdx << '\n';
+    }
+}
+
 // ── Hidden-future marginalization diagnostic ───────────────────────────────
 // For each sampled OOC decision, evaluate every legal action under both:
 //   Regime F: fixed hidden world (current Tier-B style)
@@ -12010,6 +12256,36 @@ int main(int argc, char **argv) {
         std::string out = argc > 5 ? argv[5] : "build/strategic_tierb.csv";
         long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
         strategicGen2(nSeeds, sims, asc, out, seedOff);
+
+    } else if (mode == "phase13a_collect") {
+        if (argc < 5 || !g_oocStrategicTokNet.ok) {
+            std::cerr << "usage: one_combat phase13a_collect N_SEEDS SEED_OFFSET OUT.csv [sims] [asc]\n"
+                      << "requires STS_OOC_STRATEGIC_TOK_NN=<V4> and STS_PHASE13A_M0_NN=<M0>\n";
+            return 2;
+        }
+        const char *m0 = std::getenv("STS_PHASE13A_M0_NN");
+        if (!m0 || !g_phase13aM0Net.load(m0)) {
+            std::cerr << "phase13a_collect: failed to load STS_PHASE13A_M0_NN\n";
+            return 1;
+        }
+        phase13aCollect(std::stoi(argv[2]), std::stoull(argv[3]), argv[4],
+                        argc > 5 ? std::stoi(argv[5]) : 1000,
+                        argc > 6 ? std::stoi(argv[6]) : 0);
+
+    } else if (mode == "phase13a_eval") {
+        if (argc < 4 || !g_oocStrategicTokNet.ok) {
+            std::cerr << "usage: one_combat phase13a_eval MANIFEST.csv OUT.csv [asc]\n"
+                      << "requires STS_OOC_STRATEGIC_TOK_NN=<V4> and STS_PHASE13A_M0_NN=<M0>\n";
+            return 2;
+        }
+        const char *m0 = std::getenv("STS_PHASE13A_M0_NN");
+        if (!m0 || !g_phase13aM0Net.load(m0)) {
+            std::cerr << "phase13a_eval: failed to load STS_PHASE13A_M0_NN\n";
+            return 1;
+        }
+        phase13aEvaluate(argv[2], argv[3], argc > 4 ? std::stoi(argv[4]) : 0,
+                         argc > 5 ? std::stoi(argv[5]) : 1000,
+                         argc > 6 ? std::stoi(argv[6]) : 4);
 
     } else if (mode == "policygen") {     // CSV of (state, action, visit/total) MCTS policy targets (AZ-lite)
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;
