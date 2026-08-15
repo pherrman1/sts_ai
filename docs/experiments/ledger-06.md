@@ -2055,6 +2055,71 @@ Artifacts: `build/ooc_v4_margin_*_s3_act3_64_1786293919.csv` and trace files.
   `/tmp/opencode/weird_cases/` (126711 capture set aside for the separate fix).
 - **Status:** re-record complete; 2/12 fidelity flips are an open harness concern.
 
+## 2026-08-15 — Searcher3 persistent filtered-posterior quality A/B preregistration
+
+**Question:** Does consuming the exact filtered real-observation Searcher3
+posterior in the next freshly constructed Searcher3 improve gameplay decisions
+when both arms use a fresh MCTS tree for every searched decision?
+
+**Frozen implementation:** baseline `166c48072a41760e146f3a99a1329849440bbb3a`;
+implementation commit `4a08736d0185c7c70f0fc731e0bc06b2702061a0`. The source,
+tests, and executable were frozen before quality-seed execution. No source-code
+changes are permitted after the first provenance seed; a required code fix
+invalidates affected results and requires a new frozen implementation commit
+and rerun. Subsequent result recording is documentation/analysis only.
+
+**Hypotheses:** H1, persistent filtered information improves decisions; H2, the
+information is decision-irrelevant at 1,000 simulations; H3, accurate
+sequential filtering is offset by particle depletion; H4, a hidden mechanism
+defect appears during longer gameplay. Mechanical failures invalidate quality
+interpretation.
+
+**Arms:** C is the **fresh-tree + fresh-belief experimental control**:
+`STS_S3_PERSIST_FILTERED_BELIEF=0`. P is the fresh-tree + persistent-filtered-
+posterior treatment: `STS_S3_PERSIST_FILTERED_BELIEF=1`. Both arms execute the
+real-belief filter and collapse-fresh fallback and explicitly set
+`STS_REUSE_MAX_SEARCHES=0`; C is not the current/deployed gameplay baseline.
+The only intended conceptual difference is whether the filtered `Belief` is
+consumed by the next fresh Searcher3. No tree nodes, visit counts, Q values,
+edge availability, reuse state, or searcher RNG state transfer.
+
+**Common configuration:** fair Searcher3, ascension 0, 1,000 simulations,
+64 particles, `STS_FAIR=1`, `STS_SEARCHER3=1`, `STS_S3_BELIEF=0`,
+`STS_S3_CHAIN=0`, `STS_S3_REAL_BELIEF_FILTER=1`,
+`STS_S3_REAL_BELIEF_COLLAPSE_FRESH=1`,
+`STS_S3_INTERNAL_BELIEF_UPDATE=0`, `STS_REUSE_MAX_SEARCHES=0`,
+`STS_LIVE_VALID=1`, `STS_VNET=models/v_combat_7k_tuned.txt`,
+`STS_VNET_ALPHA=0.3`, and V4 strategic token-net gates using
+`selfplay/models/ooc_strategic_tok_final.native`, REST/EVENT/SHOP/TREASURE/
+BOSS_RELIC enabled, strategic margin 1.0. Model SHA256 values are
+`ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c` for
+V_combat and `e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`
+for the strategic model. The same explicitly recorded OMP/thread setting and
+all unrelated environment variables are used in both arms.
+
+**Seeds and decision rule:** preregistered paired block `126732–126747` (16
+seeds). First run seed `126732` separately in C and P with full belief audit.
+The existing boundary-level next-search sidecar remains enabled, and the
+existing fair-loop diagnostic additionally reports
+`transferred_filtered_belief_searches`, the count of actual fresh searches
+initialized from a transferred posterior. The provenance gate requires C = 0
+actual transferred searches and P > 0. A failed gate, simulator-health failure,
+stall, unresolved exit, material draw-pile mismatch, propagation failures above
+approximately 1% of active attempts, or sharp action-illegal increase stops the
+experiment without quality interpretation.
+
+After exactly 16 paired seeds, extend only if substantive paired action,
+trajectory, or outcome divergence occurs; then run only the preregistered
+continuation `126748–126763` for 32 total. If trajectories are essentially
+identical, stop at 16. Stop at 32 in all cases; do not automatically run 64 or
+128 seeds. Primary analysis is seed-paired wins, P-only/C-only wins, both-win/
+both-loss, and paired P−C floor/ending-HP mean and median differences, with
+mechanical health, collapse, support, ESS if available, and CPU reported.
+
+**Non-goals:** no default enablement, particle-count change,
+resampling/rejuvenation, RNG-counter redesign, MCTS-statistics transfer, model
+or policy tuning, or current-baseline promotion.
+
 ## 2026-08-15 — Searcher3 posterior lifetime diagnostic and rejected transfer smoke
 
 **Question:** Does exact real-boundary filtering meaningfully condition a
