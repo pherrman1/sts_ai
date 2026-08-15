@@ -86,7 +86,13 @@ CI: [−4.7, +10.9]pp. Discordant: 6/64 (9%).
 
 ## 2. Critical limitation
 
-Both models are **very weak** (7.8–10.9% win rate vs V4's 48.4%) because training data is tiny: 12K rows from 500 seeds vs V4's 3M rows. The +3.1pp direction favors M1 but the absolute performance is too low for promotion against V4. Scaling to more seeds is the logical next step.
+Both models were weak in the historical 500-seed pilot (M0 7.8%, M1 10.9%)
+relative to that report's V4 reference (48.4%). The 2,000-seed models later
+achieved higher observed win rates, but the experiments used different
+runtime/controller states, so the increase cannot be attributed cleanly to
+dataset scale alone. Within the 2,000-seed matched experiment, M0 and M1 remain
+directly comparable and M1 does not separate from M0. The +3.1pp pilot direction
+therefore remains non-promotional and was not reproduced at scale.
 
 ---
 
