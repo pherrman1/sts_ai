@@ -37,6 +37,17 @@ namespace sts::search {
     thread_local std::function<void(const BattleContext&)> g_onCombatDecision = nullptr;
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher2&)> g_onSearchComplete = nullptr;
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher3&)> g_onSearchComplete3 = nullptr;
+
+    bool installTransferredBelief(BattleScumSearcher3 &searcher,
+                                  const Belief *pendingBelief) {
+        if (!pendingBelief) return false;
+        searcher.belief = *pendingBelief;
+        return true;
+    }
+
+    void countTransferredBeliefSearch(bool usesTransferredBelief, int &count) {
+        if (usesTransferredBelief) ++count;
+    }
 }
 
 namespace {
@@ -359,9 +370,26 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
         int maxCarriedGen = 0;
         std::map<int,int> genHistogram;
         std::vector<S3FilteredBoundary> pendingFilteredBoundaries;
+        std::optional<Belief> pendingFilteredBelief;
+        int transferredBeliefSearches = 0;
 
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         bool searcherValid = true;
+        bool currentSearcherUsesTransferredBelief = false;
+        auto rebuildFreshSearcher = [&]() {
+            s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+            currentSearcherUsesTransferredBelief = false;
+            if (search::g_s3PersistFilteredBelief && pendingFilteredBelief) {
+                currentSearcherUsesTransferredBelief = search::installTransferredBelief(
+                    s3, &*pendingFilteredBelief);
+                for (auto &boundary : pendingFilteredBoundaries)
+                    boundary.source = S3NextSearchBeliefSource::TRANSFERRED_FILTERED_POSTERIOR;
+                pendingFilteredBelief.reset();
+            } else {
+                for (auto &boundary : pendingFilteredBoundaries)
+                    boundary.source = S3NextSearchBeliefSource::FRESH_INITIAL;
+            }
+        };
         while (bc.outcome == Outcome::UNDECIDED) {
             if (g_onCombatDecision) g_onCombatDecision(bc);
             ++combatDecisions;
@@ -375,17 +403,13 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             // Reuse gate: rebuild when searcher invalid, or when the
             // carried-search counter exceeds the configured maximum.
             if (!searcherValid) {
-                s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
-                for (auto &boundary : pendingFilteredBoundaries)
-                    boundary.source = S3NextSearchBeliefSource::FRESH_INITIAL;
+                rebuildFreshSearcher();
                 carriedSearchesSinceFresh = 0;
                 maxCarriedGen = 0;
                 searcherValid = true;
             } else if (search::g_reuseMaxSearches >= 0
                        && carriedSearchesSinceFresh > search::g_reuseMaxSearches) {
-                s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
-                for (auto &boundary : pendingFilteredBoundaries)
-                    boundary.source = S3NextSearchBeliefSource::FRESH_INITIAL;
+                rebuildFreshSearcher();
                 carriedSearchesSinceFresh = 0;
                 maxCarriedGen = 0;
             }
@@ -403,6 +427,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 if (filtered) filterStats = s3.filterRealTransition(preState, forced, bc);
                 writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx, false, filtered, filtered ? &filterStats : nullptr);
                 if (filtered) {
+                    if (search::g_s3PersistFilteredBelief)
+                        pendingFilteredBelief = s3.belief;
                     pendingFilteredBoundaries.push_back({bc.seed, bc.floorNum,
                         static_cast<int>(bc.encounter), decisionIdx,
                         filterStats.freshBeliefRebuilt});
@@ -429,6 +455,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             if (search::g_reuseCpuDiag) {
                 diagBefore = s3.snapshotDiag();
             }
+            search::countTransferredBeliefSearch(
+                currentSearcherUsesTransferredBelief, transferredBeliefSearches);
             s3.search(spend);
             if (search::g_reuseCpuDiag) {
                 auto diagAfter = s3.snapshotDiag();
@@ -513,6 +541,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             search::RealBeliefFilterStats filterStats;
             const bool filtered = search::g_s3RealBeliefFilter;
             if (filtered) filterStats = s3.filterRealTransition(preState, bestAction, bc);
+            if (filtered && search::g_s3PersistFilteredBelief)
+                pendingFilteredBelief = s3.belief;
             bool rngSafe = (bc.aiRng.counter       == rngSnaps[2])
                         && (bc.cardRandomRng.counter == rngSnaps[1])
                         && (bc.miscRng.counter     == rngSnaps[3])
@@ -596,6 +626,7 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
         if (search::g_reuseDiag || (search::g_reuseObsStable && combatDecisions > 0)) {
             std::cerr << "[reuse-generation] fresh=" << (combatDecisions - reuseAttempts)
                       << " carriedSearchesSinceFresh=" << carriedSearchesSinceFresh
+                      << " transferred_filtered_belief_searches=" << transferredBeliefSearches
                       << " maxGen=" << maxCarriedGen;
             if (search::g_reuseObsStable) {
                 std::cerr << " attempted=" << reuseAttempts

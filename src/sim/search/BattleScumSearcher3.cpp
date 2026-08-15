@@ -34,6 +34,9 @@ bool g_s3Belief = true;
 bool g_s3RealBeliefFilter = false;
 // Rebuild a fresh visible-state-consistent prior only on filter collapse.
 bool g_s3RealBeliefCollapseFresh = false;
+// Replace a fresh searcher's initial belief with the filtered real-boundary
+// posterior; tree state remains fresh.
+bool g_s3PersistFilteredBelief = false;
 // STS_S3_INTERNAL_BELIEF_UPDATE: when 0, simulated observations inside step()
 // do NOT permanently mutate the root belief. The root belief represents
 // uncertainty at the real information state; imagined trajectories are

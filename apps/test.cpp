@@ -2646,6 +2646,8 @@ int main(int argc, const char* argv[]) {
         return testBeliefOrderInvariance();
     } else if (command == "real_belief_filter") {
         return testRealBeliefFilter(std::stoull(argv[2]));
+    } else if (command == "persistent_belief_transfer") {
+        return testPersistentBeliefTransfer(std::stoull(argv[2]));
     } else if (command == "belief_immutability") {
         return testBeliefImmutability();
     } else if (command == "thorns_retaliation") {

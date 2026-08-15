@@ -151,6 +151,7 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
     if (!p) return;
     const char *envs[] = {"STS_FAIR", "STS_SEARCHER3", "STS_S3_PARTICLES",
                           "STS_S3_BELIEF", "STS_S3_CHAIN", "STS_REUSE_MAX_SEARCHES",
+                          "STS_S3_PERSIST_FILTERED_BELIEF",
                           "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_REUSE_DIAG",
                           "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
                           "STS_REUSE_CARRY_DIAG", "STS_REUSE_CPU_DIAG",
@@ -10768,6 +10769,10 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_REAL_BELIEF_COLLAPSE_FRESH")) {
         search::g_s3RealBeliefCollapseFresh = std::atoi(d) != 0;
         std::cout << "[S3 real-belief-collapse-fresh = " << (search::g_s3RealBeliefCollapseFresh ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_PERSIST_FILTERED_BELIEF")) {
+        search::g_s3PersistFilteredBelief = std::atoi(d) != 0;
+        std::cout << "[S3 persist-filtered-belief = " << (search::g_s3PersistFilteredBelief ? "ON" : "off") << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_INTERNAL_BELIEF_UPDATE")) {
         search::g_s3InternalBeliefUpdate = std::atoi(d) != 0;
