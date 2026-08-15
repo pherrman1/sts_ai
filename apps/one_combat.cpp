@@ -8762,7 +8762,7 @@ static void strategicMargGen(int nSeeds, int outerSims,
                       << chosenIdx << ',' << chosenExact << ',' \
                       << v4BestIdx << ',' << v4Margin << ',' << v4Threshold << ',' \
                       << (v4Fired?1:0) << ',' << v4ExecutedIdx << ',' << v4Override << ',' \
-                      << stateRow << ',' << actionMetas[ai] << ',' << hiddenChangedVal << ",0,0,0\n";
+                      << csvQuote(stateRow) << ',' << actionMetas[ai] << ',' << hiddenChangedVal << ",0,0,0\n";
 
             // Regime F, I, M (identical to existing)
             for (int h = 0; h < H; ++h) {
