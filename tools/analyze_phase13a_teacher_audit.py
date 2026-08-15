@@ -27,6 +27,7 @@ def main() -> None:
     for key in sorted(groups, key=lambda k: (int(k[0]), int(k[1]))):
         rows = groups[key]
         invalid = [r for r in rows if r["valid"] != "1"]
+        valid_rows = [r for r in rows if r["valid"] == "1"]
         # Reconstruct future-paired deltas explicitly; rows are four futures per arm.
         def deltas(ev: str, field: str):
             m = {int(r["future"]): float(r[field]) for r in rows
@@ -59,7 +60,8 @@ def main() -> None:
             "refFutureStd": statistics.stdev(ru) if len(ru) > 1 else "",
             "refFutureRange": max(ru) - min(ru) if ru else "",
             "invalidRows": len(invalid),
-            "validRows": len(rows),
+            "totalRows": len(rows),
+            "validRows": len(valid_rows),
         })
     if len(out) != 16:
         raise SystemExit(f"expected 16 decisions, found {len(out)}")
@@ -72,6 +74,8 @@ def main() -> None:
     r_count = Counter(sign(float(r["refDelta"])) for r in valid_out)
     sr = sum(sign(float(r["shortDelta"])) == sign(float(r["refDelta"])) != 0 for r in valid_out)
     mr = sum(sign(float(r["modelDelta"])) == sign(float(r["refDelta"])) != 0 for r in valid_out)
+    sr_threeway = sum(r["shortSign"] == r["refSign"] for r in valid_out)
+    mr_threeway = sum(r["m0ModelSign"] == r["refSign"] for r in valid_out)
     mean_ref = statistics.mean(float(r["refDelta"]) for r in valid_out) if valid_out else float("nan")
     mean_win = statistics.mean(float(r["refWinDelta"]) for r in valid_out) if valid_out else float("nan")
     print(f"decisions={len(out)} valid_decisions={len(valid_out)} invalid_rows={sum(int(r['invalidRows']) for r in out)} "
@@ -79,6 +83,7 @@ def main() -> None:
     print(f"S_preference M0={s_count[1]} V4={s_count[-1]} tie={s_count[0]}")
     print(f"R_preference M0={r_count[1]} V4={r_count[-1]} tie={r_count[0]}")
     print(f"strict_sign_agreement short_ref={sr}/{len(valid_out)} model_ref={mr}/{len(valid_out)}")
+    print(f"threeway_sign_agreement short_ref={sr_threeway}/{len(valid_out)} model_ref={mr_threeway}/{len(valid_out)}")
     print("screen_counts " + " ".join(
         f"screen{screen}={sum(r['screen'] == screen for r in out)}"
         for screen in sorted({r['screen'] for r in out}, key=int)

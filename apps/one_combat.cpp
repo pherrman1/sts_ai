@@ -8607,27 +8607,39 @@ static std::vector<search::GameAction> phase13aActions(const GameContext &gc) {
     return actions;
 }
 
-static bool phase13aOwnedScreen(const GameContext &gc) {
-    if (gc.screenState == ScreenState::MAP_SCREEN) return false;
+static bool phase13aOwnedScreen(const GameContext &gc,
+                                const std::vector<search::GameAction> &actions) {
+    if (g_oocStrategicGateRegret || actions.empty()) return false;
     switch (gc.screenState) {
         case ScreenState::EVENT_SCREEN:
+            return g_oocStrategicEvent;
         case ScreenState::BOSS_RELIC_REWARDS:
+            return g_oocStrategicBossRelic;
         case ScreenState::TREASURE_ROOM:
+            return g_oocStrategicTreasure;
         case ScreenState::REST_ROOM:
+            return g_oocStrategicRest;
         case ScreenState::SHOP_ROOM:
-            return true;
-        case ScreenState::REWARDS:
-            return gc.info.rewardsContainer.cardRewardCount > 0;
+            return g_oocStrategicShop;
         case ScreenState::CARD_SELECT:
-            return gc.info.selectScreenType == CardSelectScreenType::UPGRADE;
+            return g_oocStrategicRest
+                && gc.info.selectScreenType == CardSelectScreenType::UPGRADE;
+        case ScreenState::REWARDS: {
+            const auto &r = gc.info.rewardsContainer;
+            if (r.goldRewardCount > 0 || r.relicCount > 0 || r.potionCount > 0)
+                return false;
+            if (g_collectKeys && (r.emeraldKey || r.sapphireKey)) return false;
+            return g_oocStrategicTokNet.ok && r.cardRewardCount > 0;
+        }
         default:
             return false;
     }
 }
 
 static std::string phase13aCandidateHeader() {
-    return "sourceSeed,decisionId,act,floor,screen,nActions,v4Idx,v4Bits,v4I1,v4I2,v4I3,"
-           "m0Idx,m0Bits,m0I1,m0I2,m0I3,v4Margin,modelDelta\n";
+    return "sourceSeed,decisionId,act,floor,screen,nActions,gateOwned,liveV4Idx,liveV4Margin,"
+           "v4Idx,v4Bits,v4I1,v4I2,v4I3,m0Idx,m0Bits,m0I1,m0I2,m0I3,v4Margin,modelDelta,"
+           "goldRewardCount,relicCount,potionCount,emeraldKey,sapphireKey\n";
 }
 
 static void phase13aCollect(int nSeeds, std::uint64_t seedOffset,
@@ -8645,8 +8657,8 @@ static void phase13aCollect(int nSeeds, std::uint64_t seedOffset,
         int decIdx = 0;
         while (gc.outcome == GameOutcome::UNDECIDED) {
             path.update(gc);
-            if (phase13aOwnedScreen(gc)) {
-                const auto actions = phase13aActions(gc);
+            const auto actions = phase13aActions(gc);
+            if (phase13aOwnedScreen(gc, actions)) {
                 if (actions.size() >= 2 && g_oocStrategicTokNet.ok && g_phase13aM0Net.ok) {
                     const auto v4 = phase13aScore(gc, path, actions, g_oocStrategicTokNet);
                     const auto m0 = phase13aScore(gc, path, actions, g_phase13aM0Net);
@@ -8657,15 +8669,20 @@ static void phase13aCollect(int nSeeds, std::uint64_t seedOffset,
                         const auto &va = actions[v4.best];
                         const auto &ma = actions[m0.best];
                         out << seed << ',' << decIdx << ',' << gc.act << ',' << gc.floorNum
-                            << ',' << (int)gc.screenState << ',' << actions.size() << ','
-                            << v4.best << ',' << va.bits << ',' << va.getIdx1() << ','
+                            << ',' << (int)gc.screenState << ',' << actions.size() << ",1,"
+                            << v4.best << ',' << margin << ',' << v4.best << ',' << va.bits << ',' << va.getIdx1() << ','
                             << va.getIdx2() << ',' << va.getIdx3() << ',' << m0.best << ','
                             << ma.bits << ',' << ma.getIdx1() << ',' << ma.getIdx2() << ','
-                            << ma.getIdx3() << ',' << margin << ',' << delta << '\n';
+                            << ma.getIdx3() << ',' << margin << ',' << delta << ','
+                            << gc.info.rewardsContainer.goldRewardCount << ','
+                            << gc.info.rewardsContainer.relicCount << ','
+                            << gc.info.rewardsContainer.potionCount << ','
+                            << (gc.info.rewardsContainer.emeraldKey ? 1 : 0) << ','
+                            << (gc.info.rewardsContainer.sapphireKey ? 1 : 0) << '\n';
                     }
                 }
-                ++decIdx;
             }
+            if (phase13aOwnedScreen(gc, actions)) ++decIdx;
             stepFrozenV4Ooc(gc, agent);
         }
         t_curPath = nullptr;
@@ -8680,13 +8697,13 @@ static bool phase13aReadManifestRow(const std::string &line,
     std::stringstream ss(line); std::string x;
     std::vector<std::string> c;
     while (std::getline(ss, x, ',')) c.push_back(x);
-    if (c.size() < 18) return false;
+    if (c.size() < 21) return false;
     try {
         seed = std::stoull(c[0]); decIdx = std::stoi(c[1]); act = std::stoi(c[2]);
         floor = std::stoi(c[3]); screen = std::stoi(c[4]);
-        v4Bits = (std::uint32_t)std::stoull(c[7]);
-        m0Bits = (std::uint32_t)std::stoull(c[12]);
-        margin = std::stod(c[16]); modelDelta = std::stod(c[17]);
+        v4Bits = (std::uint32_t)std::stoull(c[10]);
+        m0Bits = (std::uint32_t)std::stoull(c[15]);
+        margin = std::stod(c[19]); modelDelta = std::stod(c[20]);
     } catch (...) { return false; }
     return true;
 }
@@ -8723,8 +8740,8 @@ static void phase13aEvaluate(const std::string &manifestFile,
         bool found = false;
         while (gc.outcome == GameOutcome::UNDECIDED) {
             path.update(gc);
-            if (phase13aOwnedScreen(gc)) {
-                const auto actions = phase13aActions(gc);
+            const auto actions = phase13aActions(gc);
+            if (phase13aOwnedScreen(gc, actions)) {
                 if (actions.size() >= 2 && decIdx == targetDecIdx) {
                     int vi = -1, mi = -1;
                     for (int i = 0; i < (int)actions.size(); ++i) {
@@ -8770,8 +8787,8 @@ static void phase13aEvaluate(const std::string &manifestFile,
                         }
                     }
                 }
-                ++decIdx;
             }
+            if (phase13aOwnedScreen(gc, actions)) ++decIdx;
             stepFrozenV4Ooc(gc, agent);
         }
         t_curPath = nullptr;

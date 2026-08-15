@@ -1,7 +1,13 @@
-# Phase 13A counterfactual teacher-strength audit
+# Phase 13A counterfactual teacher-strength audit — INVALID RUN PRESERVED
 
 This is a diagnostic-only audit. M0 is loaded into a separate native network
 instance and is never used to execute the V4 source trajectory.
+
+**Status of the original run:** INVALID — ownership-selection bug. The original
+collector treated every REWARDS state with `cardRewardCount > 0` as V4-owned,
+even while live V4 was still auto-collecting gold, relic, potion, or enabled
+keys. Its candidate pool, manifest, raw outcomes, and conclusion must not be
+used scientifically. They are preserved below for auditability.
 
 ## Provenance
 
@@ -70,6 +76,9 @@ It must be run twice and produce byte-identical summaries.
 
 ## Final evidence
 
+The evidence in this section belongs to the invalid original run and is
+preserved without overwrite. It is not a scientific result.
+
 - Candidate pool: `run/candidates_920000_8.csv`, 119 eligible rows.
 - Raw evidence: `raw_evaluations.csv`, 256 rows, SHA256
   `81e686d4eab32500df2397345b44f4c6d19a377dac97b2edf4a5c528b0e2e7c0`.
@@ -103,6 +112,45 @@ and excluded from aggregate arithmetic. No replacement futures were run.
 For the 15 valid decisions: mean `refDelta=-2.05`, mean
 `refWinDelta=-0.083333`; S preferences were M0/V4/tie = 8/2/5 and R
 preferences were 3/5/7. Strict sign agreement was S-vs-R 3/15 and
-model-vs-R 3/15. Because the preregistered rules require all 16 decisions and
-the stronger reference is unstable on one selected decision, the conclusion is
-**H4 inconclusive**, not a positive signal and not a teacher/model diagnosis.
+Because ownership was wrong, the original result is **INVALID**, not H4
+inconclusive. The reference-health failure is secondary and must not be
+repaired before rerunning corrected ownership.
+
+## Corrected rerun
+
+The corrected collector mirrors live V4 gate precedence. REWARDS is owned only
+when gold, relic, potion, and enabled-key actions are exhausted and card rewards
+remain. REST, UPGRADE_SELECT, EVENT, SHOP, TREASURE, and BOSS_RELIC require the
+corresponding enabled strategic gate and a non-empty legal action set. MAP,
+REMOVE, and regret-gate ownership are excluded. The collector records
+`gateOwned`, `liveV4Idx`, and `liveV4Margin`; the smoke asserts these match the
+ordinary live margin computation before any outcomes are evaluated.
+
+The corrected scientific rerun used fresh source seeds `940000..940007` with
+the exact source/replay budget `sims=1000`. It produced 70 eligible states and
+froze 16 before evaluator outcomes. The corrected manifest SHA256 is
+`a84de37a038ead6750115bc8cb95d697710e8b60cd7788070b56297d1b1752db`.
+
+Corrected raw evidence contains 256 valid rows, SHA256
+`1f7778f3ce7200a08eec34f05885a0f8d08b373a36e798d8477657014dec1fa3`.
+The corrected decision summary SHA256 is
+`0f68996e239a960fdc9de3365d7951463119b401758e9aa88e2733d942543690`.
+
+Corrected results:
+
+```text
+mean refDelta      = -13.843750
+mean refWinDelta   = -0.250000
+S preference       M0=9 V4=5 tie=2
+R preference       M0=6 V4=9 tie=1
+strict agreement   short/reference=6/16 model/reference=6/16
+three-way agreement short/reference=7/16 model/reference=6/16
+invalid rows=0
+```
+
+All 128 R rows have `bootstrap=0`; all 256 rows are valid, with no replay or
+simulator-health failures. Under the preregistered rules, the corrected result
+is **H4 inconclusive**: R favors V4 on 9/16, below the 10/16 threshold, and
+neither the short teacher nor R favors M0 on at least 10/16. This valid result
+does not support M0 promotion or distinguish the teacher, model-fitting, and
+objective hypotheses.

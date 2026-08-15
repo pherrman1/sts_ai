@@ -2888,10 +2888,41 @@ valid decisions, mean `refDelta=-2.050000`, mean `refWinDelta=-0.083333`;
 S preferences M0/V4/tie were 8/2/5 and R preferences were 3/5/7. Strict sign
 agreement was 3/15 for short-vs-reference and 3/15 for model-vs-reference.
 
-Because the preregistered rule requires all 16 decisions and the stronger
-reference was unstable on one selected decision, the result is **H4
-inconclusive**. This is not evidence for M0 improvement, teacher failure, or
-model failure, and no scaling, retraining, or gameplay gate was run.
+This run is **INVALID — ownership-selection bug**. The collector treated every
+REWARDS state with `cardRewardCount > 0` as V4-owned even when live V4 was still
+auto-collecting gold, relic, potion, or enabled keys. Nine of the 16 selected
+states were REWARDS states, so the sampled population was not the registered
+population. The raw evidence remains preserved under
+`docs/experiments/evidence/phase13a-teacher-audit/`; its S/R aggregates and
+H4 conclusion must not be interpreted scientifically. A corrected fresh-seed
+rerun is required.
 
 Evidence and the complete decision table are under
 `docs/experiments/evidence/phase13a-teacher-audit/`.
+
+### §173 corrected ownership rerun
+
+The ownership bug was fixed before collecting a new candidate pool. The
+collector now mirrors live V4 precedence: REWARDS is eligible only after gold,
+relic, potion, and enabled-key actions are exhausted; other screens require
+their enabled live strategic gate and legal actions. The collector records
+`gateOwned`, `liveV4Idx`, and `liveV4Margin`, and the ownership smoke passed.
+
+Fresh seeds were `940000..940007`, with exact source/replay budget `sims=1000`.
+The corrected pool contained 70 candidates; deterministic sample seed 1301
+selected 16 before outcomes. Manifest SHA256:
+`a84de37a038ead6750115bc8cb95d697710e8b60cd7788070b56297d1b1752db`.
+
+The corrected audit produced 256/256 valid rows with no replay or health
+failures. Raw SHA256:
+`1f7778f3ce7200a08eec34f05885a0f8d08b373a36e798d8477657014dec1fa3`.
+Mean `refDelta=-13.843750`; mean `refWinDelta=-0.250000`. S preferences
+M0/V4/tie were 9/5/2; R preferences were 6/9/1. Strict sign agreement was
+6/16 for short-vs-reference and 6/16 for model-vs-reference; tie-aware
+three-way agreement was 7/16 and 6/16 respectively. All R rows had
+`bootstrap=0`.
+
+The corrected result is **H4 inconclusive** under the preregistered rules:
+reference V4 preference is 9/16, below the 10/16 threshold, while neither the
+short teacher nor R favors M0 on at least 10/16. This valid result does not
+support promotion or identify a causal teacher/model/objective diagnosis.
