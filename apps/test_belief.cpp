@@ -1217,7 +1217,13 @@ int testLiveRejuvenationAttemptGate() {
         && zeroChildAttemptConsumed
         && transferred.belief.particles[childSlot].id == aiChild.id && collapseBlocked;
     if (!ok) {
-        std::cout << "live_rejuv_attempt_gate FAIL: accepted-child contracts\n";
+        std::cout << "live_rejuv_attempt_gate FAIL: accepted-child contracts"
+                  << " single_child=" << singleChildSemantics
+                  << " retry=" << singleAttemptConsumed
+                  << " zero_child=" << zeroChildAttemptConsumed
+                  << " anchor=" << anchorHiddenFieldsIgnored
+                  << " telemetry=" << telemetrySemantics
+                  << " transfer=" << transferOk << "\n";
         return 1;
     }
     std::cout << "live_rejuv_attempt_gate PASS accepted_child=1 placebo_identity=1"
