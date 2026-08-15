@@ -372,6 +372,7 @@ namespace sts::search {
     extern bool g_s3Belief;
     extern bool g_s3RealBeliefFilter;
     extern bool g_s3RealBeliefCollapseFresh;
+    extern bool g_s3PersistFilteredBelief;
     extern bool g_s3InternalBeliefUpdate;  // guard simulated belief.update() in step()
     extern bool g_s3Prune;
     extern bool g_s3Chain;

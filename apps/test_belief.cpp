@@ -298,3 +298,35 @@ int testRealBeliefFilter(std::uint64_t seed) {
               << " attempted=" << stats.attempted << "\n";
     return 0;
 }
+
+int testPersistentBeliefTransfer(std::uint64_t seed) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    search::Action action(search::ActionType::END_TURN);
+    search::BattleScumSearcher3 source(bc, seed, 0, 8);
+    BattleContext realPost = bc;
+    source.applyParticle(realPost, source.belief.particles.front());
+    action.execute(realPost);
+    source.filterRealTransition(bc, action, realPost);
+    source.belief.particles.front().weight = 0.0;
+
+    search::BattleScumSearcher3 fresh(realPost, seed, 1, 8);
+    fresh.belief = source.belief;
+    if (fresh.root.simulationCount != 0
+        || fresh.belief.particles.size() != source.belief.particles.size()) {
+        std::cout << "persistent_belief_transfer FAIL: fresh tree or particle count changed\n";
+        return 1;
+    }
+    for (size_t i = 0; i < source.belief.particles.size(); ++i) {
+        const auto &a = source.belief.particles[i];
+        const auto &b = fresh.belief.particles[i];
+        if (a.id != b.id || a.weight != b.weight
+            || !sameDrawOrder(a, b)) {
+            std::cout << "persistent_belief_transfer FAIL: particle identity/weight changed\n";
+            return 1;
+        }
+    }
+    std::cout << "persistent_belief_transfer PASS\n";
+    return 0;
+}
