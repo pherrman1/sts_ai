@@ -3029,3 +3029,32 @@ complete eight-seed rerun; the prior complete geometry result remains valid,
 and the incomplete rerun must not replace its aggregates. The paired-source,
 family-order invariance, and shadow non-interference checks remained passing.
 The scientific interpretation is unchanged.
+
+## 2026-08-15 — Searcher3 live AI_RNG rejuvenation implementation/control attempt
+
+**Implementation:** Added opt-in `STS_S3_AI_REJUV_LIVE=off|placebo|ai` support
+to fair Searcher3. The mode defaults off. Live treatment uses immutable
+battle-start particle lineage IDs, particle-anchored full-history replay, the
+existing conditional AI_RNG proposal distribution, zero-weight-only 50/50
+splits, and one attempted intervention per combat. Placebo and AI share
+proposal generation, successful-source selection, destination slots, weights,
+and intervention timing; placebo inserts an exact source duplicate while AI
+inserts the accepted novel AI_RNG state. Collapse-fresh invalidates ancestry.
+Telemetry is written through `STS_S3_AI_REJUV_LIVE_FILE`.
+
+**Frozen implementation values:** The global shadow defaults remain unchanged
+(`g_s3RejuvTrigger=16`, `g_s3RejuvProposals=256`). Causal invocations explicitly
+set `STS_S3_REJUV_TRIGGER=16 STS_S3_REJUV_PROPOSALS=64`.
+
+**Verification:** Release build succeeded. The focused live-attempt,
+conditional-block, history-replay, semantic-select, real-filter,
+persistent-transfer, RNG-propagation, and shadow-noninterference tests passed.
+The one-seed guarded smoke passed for OFF, placebo, and AI. Correct-executable
+8-seed baseline and placebo arms completed; placebo produced 1,543 telemetry
+rows and the AI run produced 1,733 telemetry rows but the AI result artifact
+was interrupted at 7/8 seeds by the execution harness. This is an incomplete
+implementation/control validation, not a gameplay result.
+
+**Decision:** Do not start the preregistered 32-seed scientific gate until a
+complete 8-seed implementation/control rerun is obtained and all controls are
+clean. The incomplete AI arm is not interpreted as H0, H1, or H_resample.

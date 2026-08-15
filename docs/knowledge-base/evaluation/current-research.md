@@ -71,7 +71,15 @@ artifact.
   the prior 79.1% temporary-transfer collapse was primarily stale pre-transition
   particle restoration: post-state fresh recovery reduced collapse to 19.7%.
   Transfer remains experimental and absent from the executable; only telemetry
-  remains pending a separate action/quality experiment.
+  remains pending a separate action/quality experiment. A new opt-in live causal
+  rejuvenation implementation is now present on the experiment branch, but its
+  8-seed implementation/control run is incomplete and no scientific gate has
+  started. `STS_S3_AI_REJUV_LIVE=off|placebo|ai` defaults to `off`; live runs
+  require persistent filtered belief and use one first eligible attempt per
+  combat, with `STS_S3_REJUV_TRIGGER` and `STS_S3_REJUV_PROPOSALS` supplied
+  explicitly. Treatment children are particle-lineage anchored, replay the
+  complete history, replace only AI_RNG, and inherit the source lineage ID.
+  Collapse-fresh invalidates battle-start ancestry for the remainder of combat.
 - Searcher3 particle-count default
   ([decision log](../decision-log/2026-08-10-s3-particle-count-sweep.md),
   [ledger-01.md](../../../docs/experiments/ledger-01.md)): 128 particles

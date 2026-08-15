@@ -2660,6 +2660,8 @@ int main(int argc, const char* argv[]) {
         return testRejuvNoninterference(std::stoull(argv[2]));
     } else if (command == "rejuv_conditional_blocks") {
         return testRejuvConditionalBlocks();
+    } else if (command == "live_rejuv_attempt_gate") {
+        return testLiveRejuvenationAttemptGate();
     } else if (command == "belief_immutability") {
         return testBeliefImmutability();
     } else if (command == "thorns_retaliation") {

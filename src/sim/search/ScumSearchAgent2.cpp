@@ -379,9 +379,21 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
         int pendingExposureTurn = 0;
 
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
-        // Shadow-only rejuvenation probe history (opt-in; empty when off).
+        const bool liveRejuv = search::g_s3LiveRejuvenationMode
+            != search::S3LiveRejuvenationMode::OFF;
+        Belief battleStartBelief = s3.belief;
+        if (liveRejuv) {
+            for (size_t i = 0; i < battleStartBelief.particles.size(); ++i) {
+                battleStartBelief.particles[i].id = static_cast<std::uint64_t>(i + 1);
+                s3.belief.particles[i].id = static_cast<std::uint64_t>(i + 1);
+            }
+        }
+        bool liveRejuvAttempted = false;
+        bool liveAncestryValid = liveRejuv;
+        // Shadow history and live treatment history share recording, but the
+        // live path always starts from the battle-start copy.
         std::optional<search::S3RejuvenationHistory> rejuvHistory;
-        if (search::g_s3RejuvShadow || search::g_s3AiSensitivityShadow)
+        if (liveRejuv || search::g_s3RejuvShadow || search::g_s3AiSensitivityShadow)
             rejuvHistory.emplace(bc);
         bool searcherValid = true;
         bool currentSearcherUsesTransferredBelief = false;
@@ -395,6 +407,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                     boundary.source = S3NextSearchBeliefSource::TRANSFERRED_FILTERED_POSTERIOR;
                 pendingFilteredBelief.reset();
             } else {
+                if (liveRejuv && !pendingFilteredBelief)
+                    liveAncestryValid = false;
                 for (auto &boundary : pendingFilteredBoundaries)
                     boundary.source = S3NextSearchBeliefSource::FRESH_INITIAL;
             }
@@ -431,9 +445,17 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 if (search::g_s3PoolRedirect) fightPool += sims;
                 BattleContext preState = bc;
                 agent.takeAction(bc, forced);
+                if (rejuvHistory) rejuvHistory->record(preState, forced, bc);
                 search::RealBeliefFilterStats filterStats;
                 const bool filtered = search::g_s3RealBeliefFilter;
                 if (filtered) filterStats = s3.filterRealTransition(preState, forced, bc);
+                if (filtered && liveRejuv) {
+                    if (filterStats.freshBeliefRebuilt) liveAncestryValid = false;
+                    search::runLiveRejuvenation(
+                        search::g_s3LiveRejuvenationMode, liveRejuvAttempted,
+                        liveAncestryValid, battleStartBelief, *rejuvHistory,
+                        filterStats, s3.belief, bc, decisionIdx);
+                }
                 if (!filtered) pendingExposureCompatible = -1;
                 writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx, false, filtered, filtered ? &filterStats : nullptr);
                 if (filtered) {
@@ -448,7 +470,6 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 }
                 // ── Shadow rejuvenation probe (opt-in, telemetry only) ──
                 if (rejuvHistory) {
-                    rejuvHistory->record(preState, forced, bc);
                 if (filtered && (search::g_s3RejuvShadow || search::g_s3AiSensitivityShadow))
                     search::runRejuvenationShadowProbe(
                             *rejuvHistory, filterStats, s3.belief, bc, decisionIdx,
@@ -579,6 +600,13 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             // ── Shadow rejuvenation probe (opt-in, telemetry only) ──
             if (rejuvHistory) {
                 rejuvHistory->record(preState, bestAction, bc);
+            }
+            if (filtered && liveRejuv) {
+                if (filterStats.freshBeliefRebuilt) liveAncestryValid = false;
+                search::runLiveRejuvenation(
+                    search::g_s3LiveRejuvenationMode, liveRejuvAttempted,
+                    liveAncestryValid, battleStartBelief, *rejuvHistory,
+                    filterStats, s3.belief, bc, decisionIdx);
             }
             if (filtered && search::g_s3PersistFilteredBelief)
                 pendingFilteredBelief = s3.belief;

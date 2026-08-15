@@ -56,6 +56,12 @@ struct S3RejuvenationHistory {
                 const BattleContext &postState);
 };
 
+enum class S3LiveRejuvenationMode {
+    OFF,
+    PLACEBO,
+    AI_RNG,
+};
+
 enum class S3RejuvenationProposalFamily {
     ORACLE,
     DRAW_ORDER,
@@ -145,11 +151,27 @@ void runAiSensitivityShadow(const S3RejuvenationHistory &history,
                             bool nextSearchEligible,
                             const std::vector<HiddenBattleState> &acceptedAiStates);
 
+// Apply at most one live first-treatment attempt for this combat boundary.
+// The battleStartBelief supplies immutable lineage anchors; no live battle
+// hidden state is extracted as a proposal base. Returns whether the attempt
+// was made and records one low-support row when a telemetry file is set.
+bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
+                         bool &attemptedThisCombat,
+                         bool ancestryValid,
+                         const Belief &battleStartBelief,
+                         const S3RejuvenationHistory &history,
+                         const RealBeliefFilterStats &filterStats,
+                         Belief &belief,
+                         const BattleContext &bc,
+                         int sourceFilterDecisionIdx);
+
 // Flags (env STS_S3_REJUV_*; parsed in apps/one_combat.cpp; off by default).
 extern bool g_s3RejuvShadow;
 extern int g_s3RejuvTrigger;
 extern int g_s3RejuvProposals;
 extern std::string g_s3RejuvShadowFile;
+extern S3LiveRejuvenationMode g_s3LiveRejuvenationMode;
+extern std::string g_s3LiveRejuvenationFile;
 extern bool g_s3AiSensitivityShadow;
 extern std::string g_s3AiSensitivityFile;
 extern int g_s3AiSensitivityRootsPerSeed;

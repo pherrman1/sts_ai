@@ -933,6 +933,59 @@ int testRejuvConditionalBlocks() {
     return 0;
 }
 
+int testLiveRejuvenationAttemptGate() {
+    GameContext gc(CharacterClass::IRONCLAD, 126732, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    search::BattleScumSearcher3 s3(bc, bc.seed, 0, 64);
+    search::S3RejuvenationHistory history(bc);
+    Belief start = s3.belief;
+    for (size_t i = 0; i < start.particles.size(); ++i) {
+        start.particles[i].id = i + 1;
+        s3.belief.particles[i].id = i + 1;
+        if (i > 0) s3.belief.particles[i].weight = 0.0;
+    }
+    s3.belief.particles.front().weight = 1.0;
+    search::RealBeliefFilterStats stats;
+    stats.compatible = 1;
+    const auto before = s3.belief;
+    bool attempted = false;
+    const auto oldMode = search::g_s3LiveRejuvenationMode;
+    const auto oldFile = search::g_s3LiveRejuvenationFile;
+    const bool oldPersist = search::g_s3PersistFilteredBelief;
+    const int oldTrigger = search::g_s3RejuvTrigger;
+    const int oldProposals = search::g_s3RejuvProposals;
+    search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO;
+    search::g_s3LiveRejuvenationFile.clear();
+    search::g_s3PersistFilteredBelief = true;
+    search::g_s3RejuvTrigger = 16;
+    search::g_s3RejuvProposals = 64;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::PLACEBO, attempted, true,
+                                start, history, stats, s3.belief, bc, 0);
+    const auto after = s3.belief;
+    const bool weightSame = std::abs(
+        std::accumulate(before.particles.begin(), before.particles.end(), 0.0,
+            [](double x, const HiddenBattleState &p) { return x + p.weight; })
+        - std::accumulate(after.particles.begin(), after.particles.end(), 0.0,
+            [](double x, const HiddenBattleState &p) { return x + p.weight; })) < 1e-9;
+    const int supportAfterFirst = after.positiveCount();
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::PLACEBO, attempted, true,
+                                start, history, stats, s3.belief, bc, 1);
+    const bool unchanged = s3.belief.positiveCount() == supportAfterFirst;
+    search::g_s3LiveRejuvenationMode = oldMode;
+    search::g_s3LiveRejuvenationFile = oldFile;
+    search::g_s3PersistFilteredBelief = oldPersist;
+    search::g_s3RejuvTrigger = oldTrigger;
+    search::g_s3RejuvProposals = oldProposals;
+    if (!attempted || !weightSame || supportAfterFirst != before.positiveCount() || !unchanged) {
+        std::cout << "live_rejuv_attempt_gate FAIL: one-attempt or weight/support contract\n";
+        return 1;
+    }
+    std::cout << "live_rejuv_attempt_gate PASS support=" << before.positiveCount()
+              << "->" << supportAfterFirst << " no_accepted_child=1 weight_conserved=1\n";
+    return 0;
+}
+
 // Shadow-probe non-interference: with the probe enabled, the live battle must
 // be bit-identical to the probe-disabled run (committed action bits, decision
 // observations, RNG-counter trajectories, positive-particle full-hidden-state

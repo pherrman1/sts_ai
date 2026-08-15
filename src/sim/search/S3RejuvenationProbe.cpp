@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <mutex>
 #include <map>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include <iostream>
@@ -22,6 +23,8 @@ bool g_s3RejuvShadow = false;
 int g_s3RejuvTrigger = 16;
 int g_s3RejuvProposals = 256;
 std::string g_s3RejuvShadowFile;
+S3LiveRejuvenationMode g_s3LiveRejuvenationMode = S3LiveRejuvenationMode::OFF;
+std::string g_s3LiveRejuvenationFile;
 bool g_s3AiSensitivityShadow = false;
 std::string g_s3AiSensitivityFile;
 int g_s3AiSensitivityRootsPerSeed = 4;
@@ -68,6 +71,36 @@ void writeRejuvCsvRow(const std::vector<std::string> &cols) {
         out << cols[i];
     }
     out << '\n';
+}
+
+void writeLiveCsvRow(const std::vector<std::string> &cols) {
+    if (g_s3LiveRejuvenationFile.empty()) return;
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+    std::ifstream probe(g_s3LiveRejuvenationFile, std::ios::binary);
+    const bool empty = !probe.good() || probe.peek() == std::ifstream::traits_type::eof();
+    std::ofstream out(g_s3LiveRejuvenationFile, std::ios::app);
+    if (!out) return;
+    if (empty) {
+        out << "seed,floor,encounter,decision_idx,mode,ancestry_valid,pre_support,"
+               "eligible,attempt_already_made,attempt_made,proposal_attempts,parents_considered,"
+               "parents_accepted,children_injected,post_support,injected_mass,"
+               "unique_children,collapse,fresh_rebuild,cpu_ms\n";
+    }
+    for (size_t i = 0; i < cols.size(); ++i) {
+        if (i) out << ',';
+        out << cols[i];
+    }
+    out << '\n';
+}
+
+const char *liveModeName(S3LiveRejuvenationMode mode) {
+    switch (mode) {
+    case S3LiveRejuvenationMode::OFF: return "off";
+    case S3LiveRejuvenationMode::PLACEBO: return "placebo";
+    case S3LiveRejuvenationMode::AI_RNG: return "ai";
+    }
+    return "off";
 }
 
 struct RootActionMetrics {
@@ -519,6 +552,159 @@ const char *proposalFamilyName(S3RejuvenationProposalFamily family) {
     case S3RejuvenationProposalFamily::ALL_FRESH: return "ALL_FRESH";
     }
     return "UNKNOWN";
+}
+
+bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
+                         bool &attemptedThisCombat,
+                         bool ancestryValid,
+                         const Belief &battleStartBelief,
+                         const S3RejuvenationHistory &history,
+                         const RealBeliefFilterStats &filterStats,
+                         Belief &belief,
+                         const BattleContext &bc,
+                         int sourceFilterDecisionIdx) {
+    if (filterStats.compatible > g_s3RejuvTrigger) return false;
+    const int preSupport = belief.positiveCount();
+    const bool attemptAlreadyMade = attemptedThisCombat;
+    const bool eligible = mode != S3LiveRejuvenationMode::OFF
+        && !attemptedThisCombat && ancestryValid && !filterStats.posteriorCollapse
+        && !filterStats.freshBeliefRebuilt && g_s3PersistFilteredBelief
+        && preSupport >= 1 && preSupport <= g_s3RejuvTrigger;
+    const auto start = std::chrono::steady_clock::now();
+    int proposalAttempts = 0;
+    int parentsConsidered = 0;
+    int parentsAccepted = 0;
+    int childrenInjected = 0;
+    int uniqueChildren = 0;
+    double injectedMass = 0.0;
+    if (eligible) {
+        attemptedThisCombat = true;
+        std::uint64_t h = 0x9e3779b97f4a7c15ULL;
+        auto mix = [&h](std::uint64_t x) {
+            h ^= x + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+        };
+        mix(bc.seed);
+        mix(static_cast<std::uint64_t>(bc.floorNum));
+        mix(static_cast<std::uint64_t>(bc.encounter));
+        mix(static_cast<std::uint64_t>(sourceFilterDecisionIdx));
+        mix(history.entries.size());
+        std::mt19937_64 proposalRng(h ? h : 1);
+        const int proposals = std::max(1, g_s3RejuvProposals);
+        const auto fresh = HiddenBattleState::sampleParticles(
+            history.anchorObs, history.anchor, proposalRng, proposals);
+        std::vector<const HiddenBattleState *> sources;
+        std::vector<int> sourceIndices;
+        for (size_t i = 0; i < belief.particles.size(); ++i) {
+            if (belief.particles[i].weight <= 0.0) continue;
+            ++parentsConsidered;
+            sources.push_back(&belief.particles[i]);
+            sourceIndices.push_back(static_cast<int>(i));
+        }
+        std::set<FullHiddenStateKey> existing;
+        for (const auto &p : belief.particles)
+            if (p.weight > 0.0) existing.insert(fullHiddenStateKey(p));
+        std::set<FullHiddenStateKey> accepted;
+        std::set<int> acceptedSources;
+        struct Injection { int source; int slot; HiddenBattleState child; };
+        std::vector<Injection> injections;
+        std::vector<int> zeroSlots;
+        for (size_t i = 0; i < belief.particles.size(); ++i)
+            if (belief.particles[i].weight <= 0.0) zeroSlots.push_back(static_cast<int>(i));
+        for (int attempt = 0; attempt < proposals && !sources.empty(); ++attempt) {
+            ++proposalAttempts;
+            const int sourcePos = attempt % static_cast<int>(sources.size());
+            const int sourceIndex = sourceIndices[sourcePos];
+            if (acceptedSources.count(sourceIndex)) continue;
+            const auto &source = *sources[sourcePos];
+            const auto anchorIt = std::find_if(
+                battleStartBelief.particles.begin(), battleStartBelief.particles.end(),
+                [&](const HiddenBattleState &p) { return p.id == source.id; });
+            if (anchorIt == battleStartBelief.particles.end()) continue;
+            HiddenBattleState proposal = makeConditionalBlockProposal(
+                *anchorIt, fresh[attempt], S3RejuvenationProposalFamily::AI_RNG);
+            std::mt19937_64 fallbackRng(h ^ (static_cast<std::uint64_t>(attempt + 1)
+                                             * 0xbf58476d1ce4e5b9ULL));
+            const auto replay = replayRejuvenationHistory(history, proposal, fallbackRng);
+            if (replay.status != S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED
+                || !replay.hasFinalState) continue;
+            HiddenBattleState child;
+            child.drawPileOrder = replay.finalState.cards.drawPile;
+            child.shuffleRngSeed0 = replay.finalState.shuffleRng.seed0;
+            child.shuffleRngSeed1 = replay.finalState.shuffleRng.seed1;
+            child.shuffleRngCounter = replay.finalState.shuffleRng.counter;
+            child.cardRandomRngSeed0 = replay.finalState.cardRandomRng.seed0;
+            child.cardRandomRngSeed1 = replay.finalState.cardRandomRng.seed1;
+            child.cardRandomRngCounter = replay.finalState.cardRandomRng.counter;
+            child.aiRngSeed0 = replay.finalState.aiRng.seed0;
+            child.aiRngSeed1 = replay.finalState.aiRng.seed1;
+            child.aiRngCounter = replay.finalState.aiRng.counter;
+            child.miscRngSeed0 = replay.finalState.miscRng.seed0;
+            child.miscRngSeed1 = replay.finalState.miscRng.seed1;
+            child.miscRngCounter = replay.finalState.miscRng.counter;
+            child.monsterHpRngSeed0 = replay.finalState.monsterHpRng.seed0;
+            child.monsterHpRngSeed1 = replay.finalState.monsterHpRng.seed1;
+            child.monsterHpRngCounter = replay.finalState.monsterHpRng.counter;
+            child.potionRngSeed0 = replay.finalState.potionRng.seed0;
+            child.potionRngSeed1 = replay.finalState.potionRng.seed1;
+            child.potionRngCounter = replay.finalState.potionRng.counter;
+            const auto sourceKey = fullHiddenStateKey(source);
+            const auto childKey = fullHiddenStateKey(child);
+            if (childKey == sourceKey || existing.count(childKey)) continue;
+            auto sameNonAi = [](const FullHiddenStateKey &a, const FullHiddenStateKey &b) {
+                if (a.drawPileOrder != b.drawPileOrder) return false;
+                for (const int i : {0, 1, 3, 4, 5}) {
+                    if (a.seed0[i] != b.seed0[i] || a.seed1[i] != b.seed1[i]
+                        || a.counter[i] != b.counter[i]) return false;
+                }
+                return true;
+            };
+            const auto sourceFinal = fullHiddenStateKey(source);
+            if (!sameNonAi(sourceFinal, childKey)
+                || (sourceFinal.seed0[2] == childKey.seed0[2]
+                    && sourceFinal.seed1[2] == childKey.seed1[2]
+                    && sourceFinal.counter[2] == childKey.counter[2])) continue;
+            if (!accepted.insert(childKey).second) continue;
+            if (injections.size() >= zeroSlots.size()) continue;
+            acceptedSources.insert(sourceIndex);
+            injections.push_back({sourceIndex, zeroSlots[injections.size()], child});
+        }
+        parentsAccepted = static_cast<int>(injections.size());
+        uniqueChildren = parentsAccepted;
+        const double oldTotal = std::accumulate(
+            belief.particles.begin(), belief.particles.end(), 0.0,
+            [](double total, const HiddenBattleState &p) { return total + p.weight; });
+        for (const auto &injection : injections) {
+            auto &source = belief.particles[injection.source];
+            const double half = source.weight / 2.0;
+            source.weight = half;
+            auto &child = belief.particles[injection.slot];
+            child = mode == S3LiveRejuvenationMode::AI_RNG
+                ? injection.child : source;
+            child.weight = half;
+            child.id = source.id;
+            injectedMass += half;
+            ++childrenInjected;
+        }
+        const double newTotal = std::accumulate(
+            belief.particles.begin(), belief.particles.end(), 0.0,
+            [](double total, const HiddenBattleState &p) { return total + p.weight; });
+        if (std::abs(oldTotal - newTotal) > 1e-9) {
+            std::cerr << "[S3 live rejuv] weight conservation failure\n";
+        }
+    }
+    const double cpuMs = std::chrono::duration<double, std::milli>(
+        std::chrono::steady_clock::now() - start).count();
+    writeLiveCsvRow({std::to_string(bc.seed), std::to_string(bc.floorNum),
+        std::to_string(static_cast<int>(bc.encounter)), std::to_string(sourceFilterDecisionIdx),
+        liveModeName(mode), ancestryValid ? "1" : "0", std::to_string(preSupport),
+        eligible ? "1" : "0", attemptAlreadyMade ? "1" : "0", eligible ? "1" : "0",
+        std::to_string(proposalAttempts),
+        std::to_string(parentsConsidered), std::to_string(parentsAccepted),
+        std::to_string(childrenInjected), std::to_string(belief.positiveCount()),
+        enc(injectedMass), std::to_string(uniqueChildren),
+        filterStats.posteriorCollapse ? "1" : "0",
+        filterStats.freshBeliefRebuilt ? "1" : "0", enc(cpuMs)});
+    return eligible;
 }
 
 const char *replayStatusName(S3RejuvenationReplayResult::Status status) {

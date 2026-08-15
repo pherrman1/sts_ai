@@ -155,6 +155,7 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_S3_PERSIST_FILTERED_BELIEF",
                           "STS_S3_REJUV_SHADOW", "STS_S3_REJUV_TRIGGER",
                           "STS_S3_REJUV_PROPOSALS", "STS_S3_REJUV_SHADOW_FILE",
+                           "STS_S3_AI_REJUV_LIVE", "STS_S3_AI_REJUV_LIVE_FILE",
                           "STS_S3_RNG_EXPOSURE_DIAG", "STS_S3_RNG_EXPOSURE_DIAG_FILE",
                           "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_REUSE_DIAG",
                           "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
@@ -10797,6 +10798,17 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_REJUV_SHADOW_FILE")) {
         search::g_s3RejuvShadowFile = d;
         std::cout << "[S3 rejuv shadow file = " << search::g_s3RejuvShadowFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_AI_REJUV_LIVE")) {
+        const std::string mode = d;
+        if (mode == "placebo") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO;
+        else if (mode == "ai") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG;
+        else search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::OFF;
+        std::cout << "[S3 AI rejuvenation live = " << mode << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_AI_REJUV_LIVE_FILE")) {
+        search::g_s3LiveRejuvenationFile = d;
+        std::cout << "[S3 AI rejuvenation live file = " << search::g_s3LiveRejuvenationFile << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_SHADOW")) {
         search::g_s3AiSensitivityShadow = std::atoi(d) != 0;
