@@ -1100,12 +1100,29 @@ int testLiveRejuvenationAttemptGate() {
         && ai1Fixture.current.particles.front().weight
             == placebo1Fixture.current.particles.front().weight
         && ai1Child.weight == placebo1Child.weight;
-    bool secondSingleAttempt = false;
+    const auto singleBeforeRetry = ai1Fixture.current.particles;
     search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
-                                secondSingleAttempt, true, ai1Fixture.start,
+                                ai1Attempted, true, ai1Fixture.start,
                                 ai1Fixture.history, ai1Fixture.stats,
                                 ai1Fixture.current, ai1Fixture.bc, 1);
-    const bool singleAttemptConsumed = !secondSingleAttempt;
+    const bool singleAttemptConsumed = ai1Attempted
+        && ai1Fixture.current.positiveCount() == 3
+        && ai1Fixture.current.particles == singleBeforeRetry;
+    auto zeroChildFixture = makeFixture(fixture.bc.seed);
+    zeroChildFixture.current.particles.front().id = 999;
+    bool zeroChildAttempted = false;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
+                                zeroChildAttempted, true, zeroChildFixture.start,
+                                zeroChildFixture.history, zeroChildFixture.stats,
+                                zeroChildFixture.current, zeroChildFixture.bc, 0);
+    const auto zeroChildAfterFirst = zeroChildFixture.current.particles;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
+                                zeroChildAttempted, true, zeroChildFixture.start,
+                                zeroChildFixture.history, zeroChildFixture.stats,
+                                zeroChildFixture.current, zeroChildFixture.bc, 1);
+    const bool zeroChildAttemptConsumed = zeroChildAttempted
+        && zeroChildFixture.current.positiveCount() == 1
+        && zeroChildFixture.current.particles == zeroChildAfterFirst;
     auto alteredFixture = makeFixture(fixture.bc.seed);
     alteredFixture.history.anchor.aiRng.seed0 ^= 0x12345678ULL;
     alteredFixture.history.anchor.shuffleRng.seed1 ^= 0x87654321ULL;
@@ -1188,6 +1205,7 @@ int testLiveRejuvenationAttemptGate() {
         && onlySourceAndChildPositive && placeboIdentity && sameMechanics && transferOk
         && telemetrySemantics && initialRng == finalRng
         && anchorHiddenFieldsIgnored && singleChildSemantics && singleAttemptConsumed
+        && zeroChildAttemptConsumed
         && transferred.belief.particles[childSlot].id == aiChild.id && collapseBlocked;
     if (!ok) {
         std::cout << "live_rejuv_attempt_gate FAIL: accepted-child contracts\n";
