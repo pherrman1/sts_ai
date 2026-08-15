@@ -2397,3 +2397,144 @@ faster, and should LTO become the standard native build setting?
   portability remain follow-up considerations.
 - **Artifacts:** temporary benchmark binaries and raw output were stored under
   `/tmp/sts-opt-bench/` during the session; they are not repository artifacts.
+
+## 2026-08-15 — Searcher3 history-replay rejuvenation shadow probe (preregistration)
+
+**Question:** When the persistent filtered posterior loses support at a
+real-observation boundary, can new hidden-state hypotheses compatible with the
+FULL real observation history be generated at all? Equivalently: is the
+observed `collapseFresh` fallback a consequence of particle depletion
+(in-principle recoverable by re-proposing hidden state), or of a hard
+inconsistency between the real history and the hidden-state model? If
+recoverable, how many fresh proposals are needed to reach 4/8/16/32 distinct
+full hypotheses, and how many of those are novel relative to the surviving
+posterior?
+
+**Design:** opt-in shadow-only probe (`STS_S3_REJUV_SHADOW=1`, off by default;
+off ⇒ bit-identical live behavior). At each filtered boundary with
+`compatible <= STS_S3_REJUV_TRIGGER` (16), after `filterRealTransition`
+returns: (1) record the committed semantic action + raw bits + real post-action
+observation + outcome into a per-combat history anchored at battle start;
+(2) sample `STS_S3_REJUV_PROPOSALS` (256) fresh hidden hypotheses from the
+anchor observation using a dedicated deterministic probe RNG (independent of
+all battle RNG); (3) replay the full recorded history under each hypothesis
+using semantic action remap (position-independent card identity, multiset
+multi-select, raw END_TURN/POTION), `applyHiddenState` on a copy of the
+anchor, and bare `Action::execute` (exact live transition semantics). A
+hypothesis is **accepted** iff it reproduces every recorded post-action
+observation and outcome exactly (full `CombatObservation::operator==` equality
+plus outcome). Uniqueness, novelty, and milestone counts use the
+equality-backed `FullHiddenStateKey` (ordered canonical draw-pile identity +
+all six RNG seed0/seed1/counter triples); draw-order-only and RNG-only counts
+are telemetry hashes only. Novelty compares against the positive particles
+currently in `s3.belief` when `compatible > 0` (already propagated to the
+current hidden state); when `compatible == 0` the pre-fallback survivor set is
+empty and no comparator is used. Pure telemetry: the probe mutates only copies
+and appends one CSV row per trigger.
+
+**Frozen implementation:** baseline `0132a5b`; the implementation commit is
+recorded in the results section below. Source, tests, and executable are frozen
+before quality-seed execution; no source changes are permitted after the first
+provenance seed.
+
+**Mechanical gate criteria:** (a) shadow OFF vs ON produce identical committed
+action bits, decision observations, RNG-counter trajectories, positive-particle
+full-hidden-state keys, and outcome on the same seeds (non-interference test);
+(b) per-row sanity: `0 <= accepted <= proposals`, `0 <= unique <= accepted`,
+`0 <= novel <= unique`, and where present the milestone proposal indices are
+non-decreasing (4 ≤ 8 ≤ 16 ≤ 32); (c) no simulator-health failure, stall, or
+unresolved exit attributable to the probe (probe never calls
+`reportSimHealthFailure`); (d) no replay `transitionsExecuted` beyond the
+recorded history length. A failed gate invalidates quality interpretation.
+
+**Common configuration:** fair Searcher3, ascension 0, 1,000 simulations, 64
+particles, `STS_FAIR=1`, `STS_SEARCHER3=1`, `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`,
+`STS_S3_REAL_BELIEF_FILTER=1`, `STS_S3_REAL_BELIEF_COLLAPSE_FRESH=1`,
+`STS_S3_INTERNAL_BELIEF_UPDATE=0`, `STS_REUSE_MAX_SEARCHES=0`,
+`STS_LIVE_VALID=1`, `STS_VNET=models/v_combat_7k_tuned.txt`,
+`STS_VNET_ALPHA=0.3`, V4 strategic token-net gates using
+`selfplay/models/ooc_strategic_tok_final.native`, REST/EVENT/SHOP/TREASURE/
+BOSS_RELIC enabled, strategic margin 1.0, plus shadow flags
+`STS_S3_REJUV_SHADOW=1 STS_S3_REJUV_TRIGGER=16 STS_S3_REJUV_PROPOSALS=256` and
+`STS_S3_REJUV_SHADOW_FILE` pointing at the artifact path.
+
+**Seeds and decision rule:** preregistered block **126732–126739 (8 seeds)**,
+run once through `tools/seed_guard.sh` with the frozen executable. Primary
+analysis is mechanical: distribution of accepted / unique / novel per trigger,
+milestone proposal indices (4/8/16/32), final-state-compatible-but-not-full
+counts, per-row status mix, and their relationship to `compatible`. No
+win-rate or floor interpretation — this is a feasibility probe, not a quality
+gate. Stop at 8 seeds; do not extend automatically.
+
+**Non-goals:** no default enablement, no live-belief rejuvenation (the probe
+never modifies `s3.belief`), no change to `filterRealTransition`, no
+resampling-policy change, no RNG-counter redesign, no gameplay promotion.
+
+## 2026-08-15 — Searcher3 history-replay rejuvenation shadow probe results
+
+**Frozen execution:** the preregistered 8-seed run (126732–126739) used the
+implementation commit recorded below with the preregistered common
+configuration plus `STS_S3_REJUV_SHADOW=1 STS_S3_REJUV_TRIGGER=16
+STS_S3_REJUV_PROPOSALS=256` and
+`STS_S3_REJUV_SHADOW_FILE=build/linux-gcc-release/s3_rejuv_shadow_8.rejuv.csv`,
+executed through `tools/seed_guard.sh` with `OMP_NUM_THREADS=12`. Run exited 0;
+whole-run outcome was 4/8 wins, avg floor 46.6, avg ending HP 17.6, 31.57 s
+cpu/run (informational only — no quality interpretation per the
+preregistration). Artifacts:
+`build/linux-gcc-release/s3_rejuv_shadow_8{.stdout,.stderr,.meta.json,<base CSV>,.rejuv.csv}`.
+
+**Mechanical gates:** (a) non-interference — `rejuv_noninterference` test:
+shadow OFF vs ON produced identical committed action bits (9/9), decision
+observation hashes, all-18 RNG-field trajectories, positive-particle
+`FullHiddenStateKey` sequences, final state, and zero sim-health counter
+movement on both arms; (b) per-row sanity — 0 violations of
+`0 <= accepted <= proposals`, `0 <= unique <= accepted`, `0 <= novel <= unique`
+across all 981 rows, and milestone indices were non-decreasing wherever
+present; (c) `sim_health` column total = 0 and no battle-break/stall output
+attributable to the probe; (d) `transitions` per row never exceeds the recorded
+history length by construction (replay executes exactly the recorded
+boundaries).
+
+**Primary mechanical findings (981 trigger rows, 251,136 proposals):**
+
+- Full-history regeneration by anchor-fresh re-sampling **is possible**: 2,013
+  accepted hypotheses (0.80% of proposals) in 128 of 981 rows (13.0%). 83 rows
+  reached ≥4 unique accepted hypotheses within 256 proposals, 66 reached 8,
+  37 reached 16, 21 reached 32. The hidden-state model is therefore NOT
+  hard-inconsistent with the real observation history at these collapses —
+  consistent with the particle-depletion hypothesis, not with a model/history
+  contradiction.
+- Acceptance is a **first-turn phenomenon**: decision_idx 0–4 account for
+  103/128 accepted rows (80.4%) and decision_idx 0 alone for 24 rows and 560
+  accepted hypotheses; after decision ~8 accepted ≈ 0. Once a fight history
+  contains enough RNG-sensitive boundaries, anchor-fresh random-seed hypotheses
+  essentially never reproduce it (the RNG seed/counter space is astronomically
+  large and observations become discriminative). Naive anchor re-sampling
+  therefore cannot resurrect the posterior mid-fight; any viable rejuvenation
+  would have to reuse propagated RNG state rather than fresh random seeds.
+  (**Inference** — the mechanism follows from the decision_idx distribution;
+  the distribution itself is measured.)
+- Novelty: every accepted hypothesis was novel relative to the surviving
+  posterior comparator (novel == unique == 2,013). For the 104 accepted rows
+  with `compatible > 0` (1,920 accepted), none coincided with a positive
+  particle's full hidden state in `s3.belief` after the filter. For the 565
+  `compatible == 0` rows (57.6% of triggers — collapseFresh fired at a
+  majority of filtered boundaries under this config), no comparator applies by
+  preregistered design; accepted there totalled 93.
+- Status mix: 240,792 intermediate mismatches (first failure at a divergent
+  boundary), 8,331 remap failures (recorded semantic action had no counterpart
+  in the divergent replay state — the dominant way the final-only diagnostic
+  aborts), 0 action-illegal, 0 sim-health, 0 final-only mismatches (no proposal
+  matched every intermediate then failed only the last).
+- Overhead: probe CPU 1.73 s total across 981 triggers (1.76 ms/trigger,
+  6.9 µs/proposal) against 31.57 s cpu/run — immaterial.
+
+**Caveats:** acceptance at early boundaries can be inflated by particle-
+invariant segments (scripted enemy turns; full-cycle deck draws make
+hand/pile multisets order-insensitive — the degenerate case proved by the
+CULTIST fixture in `rejuv_history_replay`), so "accepted" is an upper bound on
+true hidden-state recovery. Whole-run wins are reported only as run health
+context. Status columns were corrected once mid-development (aborted
+final-only diagnostics previously reported `FINAL_MISMATCH` instead of
+`INTERMEDIATE_MISMATCH`); the run above used the corrected executable and is
+the frozen result.

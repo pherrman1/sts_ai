@@ -547,6 +547,20 @@ namespace sts::search {
     std::optional<Action> resolveSemanticCardEdge(
         const BattleScumSearcher3::Edge &edge, const BattleContext &state);
 
+    // Resolve a CardActionKey to a live-hand index via position-independent
+    // card identity scan. Shared by resolveSemanticCardEdge and the
+    // rejuvenation shadow probe's semantic action remap.
+    std::optional<int> resolveCardKeyInHand(
+        const BattleScumSearcher3::CardActionKey &key, const BattleContext &state);
+
+    // Install a hidden-state hypothesis (RNG seeds + draw order) on a battle
+    // state copy. Public wrapper over the shared particle-application
+    // implementation used by filterRealTransition; fallbackRng is used only
+    // for the stale-particle draw fallback. Used by the rejuvenation shadow
+    // probe's history replay; never touches the searcher or live state.
+    void applyHiddenState(BattleContext &state, const HiddenBattleState &particle,
+                          std::mt19937_64 &fallbackRng);
+
     extern int g_s3Particles;
     extern double g_riskLambda;
     // Phase 6 PVNet deployment-speed knobs (all consumed only when the PVNet

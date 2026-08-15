@@ -2652,6 +2652,10 @@ int main(int argc, const char* argv[]) {
         return testRngStatePropagation(std::stoull(argv[2]));
     } else if (command == "s3_rand64_prior_sampler") {
         return testS3Rand64PriorSampler();
+    } else if (command == "rejuv_history_replay") {
+        return testRejuvHistoryReplay(std::stoull(argv[2]));
+    } else if (command == "rejuv_noninterference") {
+        return testRejuvNoninterference(std::stoull(argv[2]));
     } else if (command == "belief_immutability") {
         return testBeliefImmutability();
     } else if (command == "thorns_retaliation") {
