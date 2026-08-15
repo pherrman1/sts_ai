@@ -1100,14 +1100,23 @@ int testLiveRejuvenationAttemptGate() {
         && ai1Fixture.current.particles.front().weight
             == placebo1Fixture.current.particles.front().weight
         && ai1Child.weight == placebo1Child.weight;
-    const auto singleBeforeRetry = ai1Fixture.current.particles;
+    const auto particleStateEqual = [](const Belief &a, const Belief &b) {
+        if (a.particles.size() != b.particles.size()) return false;
+        for (size_t i = 0; i < a.particles.size(); ++i) {
+            if (fullHiddenStateKey(a.particles[i])
+                    != fullHiddenStateKey(b.particles[i])
+                || a.particles[i].weight != b.particles[i].weight) return false;
+        }
+        return true;
+    };
+    const auto singleBeforeRetry = ai1Fixture.current;
     search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
                                 ai1Attempted, true, ai1Fixture.start,
                                 ai1Fixture.history, ai1Fixture.stats,
                                 ai1Fixture.current, ai1Fixture.bc, 1);
     const bool singleAttemptConsumed = ai1Attempted
         && ai1Fixture.current.positiveCount() == 3
-        && ai1Fixture.current.particles == singleBeforeRetry;
+        && particleStateEqual(ai1Fixture.current, singleBeforeRetry);
     auto zeroChildFixture = makeFixture(fixture.bc.seed);
     zeroChildFixture.current.particles.front().id = 999;
     bool zeroChildAttempted = false;
@@ -1115,14 +1124,14 @@ int testLiveRejuvenationAttemptGate() {
                                 zeroChildAttempted, true, zeroChildFixture.start,
                                 zeroChildFixture.history, zeroChildFixture.stats,
                                 zeroChildFixture.current, zeroChildFixture.bc, 0);
-    const auto zeroChildAfterFirst = zeroChildFixture.current.particles;
+    const auto zeroChildAfterFirst = zeroChildFixture.current;
     search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
                                 zeroChildAttempted, true, zeroChildFixture.start,
                                 zeroChildFixture.history, zeroChildFixture.stats,
                                 zeroChildFixture.current, zeroChildFixture.bc, 1);
     const bool zeroChildAttemptConsumed = zeroChildAttempted
         && zeroChildFixture.current.positiveCount() == 1
-        && zeroChildFixture.current.particles == zeroChildAfterFirst;
+        && particleStateEqual(zeroChildFixture.current, zeroChildAfterFirst);
     auto alteredFixture = makeFixture(fixture.bc.seed);
     alteredFixture.history.anchor.aiRng.seed0 ^= 0x12345678ULL;
     alteredFixture.history.anchor.shuffleRng.seed1 ^= 0x87654321ULL;
