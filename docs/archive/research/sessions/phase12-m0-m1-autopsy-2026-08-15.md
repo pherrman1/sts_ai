@@ -116,6 +116,44 @@ argmax same. All cells come from the same records as the headline metrics.
 
 Marginals: A different=16,951; B different=3,154; C different=9,932.
 
+## Prediction artifact provenance
+
+The model-output table was computed from inference-only prediction CSVs
+produced by the committed `STRAT_PREDICT_ONLY=1` mode of
+`train_strategic_tok.py` (which uses the exact training-time `fwd_rows()`
+tensor preparation; this commit adds the policy-logit column to that export,
+previously emitted only by the session's ad-hoc copy). Both artifacts were
+regenerated with the committed script and verified **byte-identical**:
+
+| artifact | path | SHA256 | rows |
+|---|---|---|---:|
+| M0 predictions | `/tmp/c0_preds.csv` | `64f294e90518baff0c9bd9dbeca8288e11ae8eade0bb8f7e30c8baed68933e39` | 39,870 groups |
+| M1 predictions | `/tmp/c1_preds.csv` | `3969c9df10566c3b6b97bb86f75569e3cf38753d20c9f3d337b0d6e9e71e789d` | 39,870 groups |
+
+Generation commands (exact, from repo root; the second positional argument
+names the trainer output prefix whose `_tok_state.bin` is rebuilt from the
+corrected CSV):
+
+```bash
+PYTHONPATH=. STRAT_DEVICE=cuda STRAT_TOK_COMPILE=0 STRAT_PREDICT_ONLY=1 \
+  STRAT_PREDICT_CKPT=/tmp/strict_m0_best_ce.pt \
+  STRAT_PREDICT_OUT=/tmp/c0_preds.csv \
+  python3 train_strategic_tok.py /tmp/phase12b_m0_screen_corrected.csv /tmp/c0
+
+PYTHONPATH=. STRAT_DEVICE=cuda STRAT_TOK_COMPILE=0 STRAT_PREDICT_ONLY=1 \
+  STRAT_PREDICT_CKPT=/tmp/strict_m1_best_ce.pt \
+  STRAT_PREDICT_OUT=/tmp/c1_preds.csv \
+  python3 train_strategic_tok.py /tmp/phase12b_m1_screen_corrected.csv /tmp/c1
+```
+
+Checkpoint hashes are the strict values above (`e600d1bfebb…4f369b2e`,
+`3c98841018f5…fd2102`), verified before inference; the label inputs are the
+corrected datasets hashed in the provenance table. The regenerated CSVs
+matched the original artifacts byte-for-byte (`cmp` PASS), and the autopsy
+script rerun on them reproduced the headline numbers unchanged (Q-target
+disagreement 16,951 = 42.52%, predicted-Q 9,932 = 24.91%, policy 3,154 =
+7.91%, reversal 3,338 = 8.37%).
+
 ## Root causes of reverted-draft errors
 
 The screen error came from using diagnostic `gateKind`-like numbering instead of
