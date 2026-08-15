@@ -34,6 +34,11 @@ struct S3RejuvenationEntry {
     BattleScumSearcher3::CardActionKey cardKey;
     bool hasMultiKeys = false;                   // MULTI_CARD_SELECT
     std::vector<BattleScumSearcher3::CardActionKey> multiKeys;
+    std::vector<std::int16_t> multiUniqueIds;
+    CardSelectTask selectTask = CardSelectTask::INVALID;
+    int rawSelectIndex = -1;
+    std::int16_t selectedUniqueId = -1;
+    std::vector<CardInstance> selectSourcePile;
     CombatObservation postObs;
     Outcome postOutcome = Outcome::UNDECIDED;
 };
@@ -92,6 +97,7 @@ struct S3RejuvenationReplayResult {
     Status status = Status::FINAL_MISMATCH;
     int firstMismatchIndex = -1;    // boundary of the first obs/outcome mismatch
     int firstMismatchActionType = -1;
+    int firstRemappedIndex = -1;
     bool finalObsMatched = false;   // final-state-compatible diagnostic
     bool finalDiagAborted = false;  // continuation after a first mismatch became impossible
     int transitionsExecuted = 0;    // replay transitions actually executed
@@ -104,6 +110,14 @@ struct S3RejuvenationReplayResult {
 // Action::execute (exact live transition semantics). fallbackRng is used only
 // by applyHiddenState's stale-particle draw fallback.
 S3RejuvenationReplayResult replayRejuvenationHistory(
+    const S3RejuvenationHistory &history,
+    const HiddenBattleState &particle,
+    std::mt19937_64 &fallbackRng);
+
+// Same exact replay and equality checks, but executes each recorded Action's
+// original raw bits instead of semantic remapping. This is an oracle-only
+// discriminator for replay correctness, not a proposal or gameplay path.
+S3RejuvenationReplayResult replayRejuvenationHistoryRaw(
     const S3RejuvenationHistory &history,
     const HiddenBattleState &particle,
     std::mt19937_64 &fallbackRng);

@@ -13,6 +13,7 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <iostream>
 
 namespace sts::search {
 
@@ -41,7 +42,7 @@ void writeRejuvCsvRow(const std::vector<std::string> &cols) {
     if (empty) {
             out << "seed,encounter,floor,decision_idx,turn,compatible,attempted,"
                "collapse,fresh_rebuild,posterior_support,history_length,proposal_family,"
-               "oracle_status,proposals,accepted,acceptance_rate,"
+               "oracle_status,oracle_raw_status,proposals,accepted,acceptance_rate,"
                "unique,duplicate,novel,final_state_compatible,final_only_not_full,"
                "remap_failure,action_illegal,sim_health,intermediate_mismatch,"
                "final_mismatch,final_diag_aborted,transitions,unique_draw_orders,"
@@ -117,12 +118,17 @@ void S3RejuvenationHistory::record(const BattleContext &preState,
                                    const BattleContext &postState) {
     S3RejuvenationEntry e;
     e.action = action;
+    e.selectTask = preState.cardSelectInfo.cardSelectTask;
+    e.rawSelectIndex = action.getActionType() == ActionType::SINGLE_CARD_SELECT
+        ? action.getSelectIdx() : -1;
     switch (action.getActionType()) {
     case ActionType::CARD:
         // Hand card: full canonical identity + target via the shared CARD key
         // helper (independent of hand position).
         e.cardKey = BattleScumSearcher3::cardActionKey(preState, action);
         e.hasCardKey = e.cardKey.id != CardId::INVALID;
+        if (action.getSourceIdx() >= 0 && action.getSourceIdx() < preState.cards.cardsInHand)
+            e.selectedUniqueId = preState.cards.hand[action.getSourceIdx()].uniqueId;
         break;
     case ActionType::SINGLE_CARD_SELECT: {
         // Probe-specific semantic recording: the selected card's canonical
@@ -173,6 +179,22 @@ void S3RejuvenationHistory::record(const BattleContext &preState,
             break;   // not a semantically recordable single-select task
         }
         e.hasCardKey = e.cardKey.id != CardId::INVALID;
+        if (e.selectTask == CardSelectTask::CODEX || e.selectTask == CardSelectTask::DISCOVERY) {
+            for (const auto id : preState.cardSelectInfo.cards)
+                e.selectSourcePile.emplace_back(id);
+        } else if (e.selectTask == CardSelectTask::EXHUME) {
+            e.selectSourcePile = preState.cards.exhaustPile;
+        } else if (e.selectTask == CardSelectTask::HOLOGRAM
+                   || e.selectTask == CardSelectTask::LIQUID_MEMORIES_POTION
+                   || e.selectTask == CardSelectTask::HEADBUTT
+                   || e.selectTask == CardSelectTask::MEDITATE) {
+            e.selectSourcePile = preState.cards.discardPile;
+        } else {
+            e.selectSourcePile.assign(preState.cards.hand.begin(),
+                                      preState.cards.hand.begin() + preState.cards.cardsInHand);
+        }
+        if (si >= 0 && si < static_cast<int>(e.selectSourcePile.size()))
+            e.selectedUniqueId = e.selectSourcePile[si].uniqueId;
         break;
     }
     case ActionType::MULTI_CARD_SELECT:
@@ -183,6 +205,7 @@ void S3RejuvenationHistory::record(const BattleContext &preState,
         for (int hi : action.getSelectedIdxs()) {
             if (hi < 0 || hi >= preState.cards.cardsInHand) continue;
             e.multiKeys.push_back(semanticCardKey(preState.cards.hand[hi]));
+            e.multiUniqueIds.push_back(preState.cards.hand[hi].uniqueId);
         }
         std::sort(e.multiKeys.begin(), e.multiKeys.end());
         break;
@@ -286,6 +309,15 @@ std::optional<Action> remapRejuvenationAction(const S3RejuvenationEntry &entry,
         return entry.action;
     case ActionType::CARD: {
         if (!entry.hasCardKey) return std::nullopt;
+        if (entry.selectedUniqueId >= 0) {
+            for (int hi = 0; hi < state.cards.cardsInHand; ++hi) {
+                if (state.cards.hand[hi].uniqueId == entry.selectedUniqueId) {
+                    if (entry.cardKey.target >= 0)
+                        return Action(ActionType::CARD, hi, entry.cardKey.target);
+                    return Action(ActionType::CARD, hi);
+                }
+            }
+        }
         const auto hi = resolveCardKeyInHand(entry.cardKey, state);
         if (!hi) return std::nullopt;
         if (entry.cardKey.target >= 0)
@@ -293,9 +325,16 @@ std::optional<Action> remapRejuvenationAction(const S3RejuvenationEntry &entry,
         return Action(ActionType::CARD, *hi);
     }
     case ActionType::SINGLE_CARD_SELECT: {
+        // CODEX index 3 is the explicit skip action, not a card identity.
+        if (entry.selectTask == CardSelectTask::CODEX && entry.rawSelectIndex == 3)
+            return entry.action;
         if (!entry.hasCardKey) return std::nullopt;
         const CardSelectTask task = state.cardSelectInfo.cardSelectTask;
         auto scanCard = [&](const std::vector<CardInstance> &pile) -> std::optional<int> {
+            if (entry.selectedUniqueId >= 0) {
+                for (size_t i = 0; i < pile.size(); ++i)
+                    if (pile[i].uniqueId == entry.selectedUniqueId) return static_cast<int>(i);
+            }
             for (size_t i = 0; i < pile.size(); ++i)
                 if (matchesSemanticKey(pile[i], entry.cardKey)) return static_cast<int>(i);
             return std::nullopt;
@@ -327,6 +366,11 @@ std::optional<Action> remapRejuvenationAction(const S3RejuvenationEntry &entry,
         case CardSelectTask::SETUP:
         case CardSelectTask::WARCRY:
         {
+            if (entry.selectedUniqueId >= 0) {
+                for (int hi = 0; hi < state.cards.cardsInHand; ++hi)
+                    if (state.cards.hand[hi].uniqueId == entry.selectedUniqueId)
+                        return Action(ActionType::SINGLE_CARD_SELECT, hi);
+            }
             for (int hi = 0; hi < state.cards.cardsInHand; ++hi)
                 if (matchesSemanticKey(state.cards.hand[hi], entry.cardKey))
                     return Action(ActionType::SINGLE_CARD_SELECT, hi);
@@ -351,6 +395,25 @@ std::optional<Action> remapRejuvenationAction(const S3RejuvenationEntry &entry,
         // Greedy multiset match of the recorded selected cards onto the hand.
         std::vector<char> used(entry.multiKeys.size(), 0);
         std::uint32_t mask = 0;
+        if (entry.multiUniqueIds.size() == entry.multiKeys.size()
+            && !entry.multiUniqueIds.empty()) {
+            for (int hi = 0; hi < state.cards.cardsInHand; ++hi) {
+                for (const auto uid : entry.multiUniqueIds) {
+                    if (uid >= 0 && state.cards.hand[hi].uniqueId == uid) {
+                        mask |= 1u << hi;
+                        break;
+                    }
+                }
+            }
+            int matched = 0;
+            for (const auto uid : entry.multiUniqueIds) {
+                for (int hi = 0; hi < state.cards.cardsInHand; ++hi)
+                    if (uid >= 0 && state.cards.hand[hi].uniqueId == uid) { ++matched; break; }
+            }
+            if (matched == static_cast<int>(entry.multiUniqueIds.size()))
+                return Action(static_cast<std::uint32_t>(ActionType::MULTI_CARD_SELECT) << 29 | mask);
+            mask = 0;
+        }
         for (int hi = 0; hi < state.cards.cardsInHand; ++hi) {
             const auto key = semanticCardKey(state.cards.hand[hi]);
             for (size_t k = 0; k < entry.multiKeys.size(); ++k) {
@@ -370,11 +433,18 @@ std::optional<Action> remapRejuvenationAction(const S3RejuvenationEntry &entry,
     }
 }
 
+static std::optional<int> remappedSelectIndex(const S3RejuvenationEntry &entry,
+                                              const BattleContext &state) {
+    const auto a = remapRejuvenationAction(entry, state);
+    return a ? std::optional<int>(a->getSelectIdx()) : std::nullopt;
+}
+
 // ── Full-history replay ────────────────────────────────────────────────────
-S3RejuvenationReplayResult replayRejuvenationHistory(
+static S3RejuvenationReplayResult replayRejuvenationHistoryImpl(
     const S3RejuvenationHistory &history,
     const HiddenBattleState &particle,
-    std::mt19937_64 &fallbackRng) {
+    std::mt19937_64 &fallbackRng,
+    bool semantic) {
     S3RejuvenationReplayResult result;
     if (history.entries.empty()) return result;   // nothing recorded: not accepted
     BattleContext state = history.anchor;
@@ -382,12 +452,15 @@ S3RejuvenationReplayResult replayRejuvenationHistory(
     bool allMatched = true;
     for (size_t i = 0; i < history.entries.size(); ++i) {
         const auto &e = history.entries[i];
-        const auto remapped = remapRejuvenationAction(e, state);
+        const auto remapped = semantic ? remapRejuvenationAction(e, state)
+                                       : std::optional<Action>(e.action);
         if (!remapped) {
             if (allMatched) {
                 result.status = S3RejuvenationReplayResult::Status::REMAP_FAILURE;
                 result.firstMismatchIndex = static_cast<int>(i);
                 result.firstMismatchActionType = static_cast<int>(e.action.getActionType());
+                if (semantic && e.action.getActionType() == ActionType::SINGLE_CARD_SELECT)
+                    result.firstRemappedIndex = remappedSelectIndex(e, state).value_or(-1);
                 return result;
             }
             // First failure was an intermediate mismatch; the final-only
@@ -401,6 +474,8 @@ S3RejuvenationReplayResult replayRejuvenationHistory(
                 result.status = S3RejuvenationReplayResult::Status::ACTION_ILLEGAL;
                 result.firstMismatchIndex = static_cast<int>(i);
                 result.firstMismatchActionType = static_cast<int>(e.action.getActionType());
+                if (semantic && e.action.getActionType() == ActionType::SINGLE_CARD_SELECT)
+                    result.firstRemappedIndex = remappedSelectIndex(e, state).value_or(-1);
                 return result;
             }
             result.status = S3RejuvenationReplayResult::Status::INTERMEDIATE_MISMATCH;
@@ -440,6 +515,20 @@ S3RejuvenationReplayResult replayRejuvenationHistory(
         result.status = S3RejuvenationReplayResult::Status::INTERMEDIATE_MISMATCH;
     }
     return result;
+}
+
+S3RejuvenationReplayResult replayRejuvenationHistory(
+    const S3RejuvenationHistory &history,
+    const HiddenBattleState &particle,
+    std::mt19937_64 &fallbackRng) {
+    return replayRejuvenationHistoryImpl(history, particle, fallbackRng, true);
+}
+
+S3RejuvenationReplayResult replayRejuvenationHistoryRaw(
+    const S3RejuvenationHistory &history,
+    const HiddenBattleState &particle,
+    std::mt19937_64 &fallbackRng) {
+    return replayRejuvenationHistoryImpl(history, particle, fallbackRng, false);
 }
 
 // ── Shadow probe driver ────────────────────────────────────────────────────
@@ -514,13 +603,42 @@ void runRejuvenationShadowProbe(const S3RejuvenationHistory &history,
         std::set<FullHiddenStateKey> acceptedKeys;
         std::set<std::uint64_t> acceptedDrawOrders, acceptedRngSignatures;
         std::array<int, 4> milestones = {-1, -1, -1, -1};
-        std::string oracleStatus;
+        std::string oracleStatus, oracleRawStatus;
         const auto t0 = std::chrono::steady_clock::now();
         for (int i = 0; i < count; ++i) {
             const HiddenBattleState p = family == S3RejuvenationProposalFamily::ORACLE
                 ? oracle : makeConditionalBlockProposal(oracle, sources[i], family);
             std::mt19937_64 fallbackRng(mixSeed(i, family));
             const auto res = replayRejuvenationHistory(history, p, fallbackRng);
+            if (family == S3RejuvenationProposalFamily::ORACLE) {
+                std::mt19937_64 rawFallbackRng(mixSeed(i, S3RejuvenationProposalFamily::ORACLE));
+                const auto raw = replayRejuvenationHistoryRaw(history, p, rawFallbackRng);
+                oracleStatus = replayStatusName(res.status);
+                oracleRawStatus = replayStatusName(raw.status);
+                if (res.status != S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED) {
+                    std::cerr << "[S3 oracle replay] seed=" << bc.seed
+                              << " floor=" << bc.floorNum
+                              << " encounter=" << static_cast<int>(bc.encounter)
+                              << " decision=" << decisionIdx
+                              << " boundary=" << res.firstMismatchIndex
+                              << " action_type=" << res.firstMismatchActionType;
+                    if (res.firstMismatchIndex >= 0
+                        && res.firstMismatchIndex < static_cast<int>(history.entries.size())) {
+                        const auto &e = history.entries[res.firstMismatchIndex];
+                        if (e.action.getActionType() == ActionType::SINGLE_CARD_SELECT) {
+                            std::cerr << " task=" << static_cast<int>(e.selectTask)
+                                      << " raw_select=" << e.rawSelectIndex
+                                      << " semantic_select=" << res.firstRemappedIndex
+                                      << " source_size=" << e.selectSourcePile.size()
+                                      << " source_ids=";
+                            for (const auto &c : e.selectSourcePile)
+                                std::cerr << static_cast<int>(c.getId()) << ':'
+                                          << static_cast<int>(c.getUpgradeCount()) << ',';
+                        }
+                    }
+                    std::cerr << " raw_status=" << oracleRawStatus << '\n';
+                }
+            }
             if (family == S3RejuvenationProposalFamily::ORACLE)
                 oracleStatus = replayStatusName(res.status);
             totalTransitions += res.transitionsExecuted;
@@ -570,7 +688,8 @@ void runRejuvenationShadowProbe(const S3RejuvenationHistory &history,
             std::to_string(filterStats.posteriorCollapse ? 1 : 0),
             std::to_string(filterStats.freshBeliefRebuilt ? 1 : 0),
             std::to_string(belief.positiveCount()), std::to_string(history.entries.size()),
-            proposalFamilyName(family), oracleStatus, std::to_string(count), std::to_string(acceptedCount),
+            proposalFamilyName(family), oracleStatus, oracleRawStatus,
+            std::to_string(count), std::to_string(acceptedCount),
             enc(static_cast<double>(acceptedCount) / count),
             std::to_string(acceptedKeys.size()), std::to_string(acceptedCount - acceptedKeys.size()),
             std::to_string(novel), std::to_string(finalStateCompatible),

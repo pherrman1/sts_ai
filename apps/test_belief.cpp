@@ -569,9 +569,13 @@ int testRejuvHistoryReplay(std::uint64_t seed) {
     // 1. The true hidden state accepts the full history exactly and the replay
     // is deterministic.
     const auto res = search::replayRejuvenationHistory(history, trueParticle, rng);
+    std::mt19937_64 rawRng(seed ^ 0xA5A5A5A5A5A5A5A5ULL);
+    const auto rawRes = search::replayRejuvenationHistoryRaw(history, trueParticle, rawRng);
     if (res.status != search::S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED
         || !res.finalObsMatched || res.firstMismatchIndex != -1
-        || res.transitionsExecuted != static_cast<int>(history.entries.size())) {
+        || res.transitionsExecuted != static_cast<int>(history.entries.size())
+        || rawRes.status != search::S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED
+        || rawRes.transitionsExecuted != static_cast<int>(history.entries.size())) {
         std::cout << "rejuv_history_replay FAIL: true hidden state not accepted\n";
         return 1;
     }
@@ -669,6 +673,20 @@ int testRejuvSemanticSelect() {
         bc.cards.exhaustPile.clear();
         return bc;
     };
+
+    // CODEX index 3 is the explicit skip option and has no card identity.
+    {
+        BattleContext pre = makeState(CardSelectTask::CODEX);
+        pre.cardSelectInfo.cards = {CardId::STRIKE_RED, CardId::DEFEND_RED, CardId::BASH};
+        search::Action skip(search::ActionType::SINGLE_CARD_SELECT, 3);
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, skip, pre);
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), pre);
+        if (!remapped || remapped->bits != skip.bits || !remapped->isValidAction(pre)) {
+            std::cout << "rejuv_semantic_select FAIL: Codex skip remap broken\n";
+            return 1;
+        }
+    }
 
     // 1. SINGLE_CARD_SELECT from hand survives a permutation.
     {
@@ -797,6 +815,23 @@ int testRejuvSemanticSelect() {
         if (!remapped || !remapped->getSelectedIdxs().empty()
             || !remapped->isValidAction(pre)) {
             std::cout << "rejuv_semantic_select FAIL: empty multi-select round-trip broken\n";
+            return 1;
+        }
+    }
+
+    // 5. Duplicate visually equivalent cards preserve the selected uniqueId.
+    {
+        BattleContext pre = makeState(CardSelectTask::EXHAUST_ONE);
+        CardInstance first(CardId::STRIKE_RED), second(CardId::STRIKE_RED);
+        first.uniqueId = 41; second.uniqueId = 42;
+        pre.cards.hand[0] = first; pre.cards.hand[1] = second; pre.cards.cardsInHand = 2;
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, search::Action(search::ActionType::SINGLE_CARD_SELECT, 0), pre);
+        BattleContext perm = makeState(CardSelectTask::EXHAUST_ONE);
+        perm.cards.hand[0] = second; perm.cards.hand[1] = first; perm.cards.cardsInHand = 2;
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), perm);
+        if (!remapped || remapped->getSelectIdx() != 1) {
+            std::cout << "rejuv_semantic_select FAIL: uniqueId duplicate remap wrong\n";
             return 1;
         }
     }

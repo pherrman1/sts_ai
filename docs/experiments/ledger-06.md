@@ -2662,3 +2662,80 @@ acceptance counts. Gameplay was not a treatment and its whole-run result is
 not interpreted. The one justified next experiment is a replay-correctness
 investigation that localizes the remaining single-card-select/oracle failures;
 no live blockwise rejuvenation experiment should proceed first.
+
+## 2026-08-15 — Conditional-block oracle replay correction and authoritative rerun
+
+The required RAW-vs-SEMANTIC discriminator localized the prior oracle failure.
+On failing seed `126733`, RAW replay succeeded **311/311 (100%)**, while the
+original semantic path succeeded only **218/311 (70.10%)**. The first defect
+was `CardSelectTask::CODEX` (task value 2), raw select index 3: index 3 is the
+explicit Codex skip action and has no card identity. The existing semantic path
+incorrectly rejected it. A targeted Codex-skip regression was added.
+
+The remaining semantic-only divergences then occurred later at `END_TURN` after
+visible observations still matched. The simulator uses `CardInstance::uniqueId`
+for internal card removal/targeting, while the existing semantic key omitted
+that field. The narrow probe-local correction now records and prefers unique IDs
+for `CARD`, `SINGLE_CARD_SELECT`, and `MULTI_CARD_SELECT`, with the existing
+semantic-key fallback for synthetic cards without a valid unique ID. No global
+observation identity, Searcher3 semantic-edge key, RNG behavior, or gameplay
+path was changed.
+
+Focused tests passed: `rejuv_semantic_select`, `rejuv_history_replay`,
+`rejuv_conditional_blocks`, `rejuv_noninterference`,
+`rng_state_propagation`, and `s3_rand64_prior_sampler`. The focused raw-vs-
+semantic smoke passed on seeds `126733` (312/312 both modes) and `126737`
+(213/213 both modes).
+
+The exact frozen eight-seed conditional-block run was then repeated with the
+same configuration and seeds `126732–126739`, 1,000 simulations, 64 particles,
+12 threads, fair Searcher3, real filtering, collapse-fresh, persistent
+filtered posterior, no tree reuse, the same combat and strategic artifacts,
+trigger 16, and 64 paired proposals per family. Raw artifacts:
+`build/s3_conditional_8_final.rejuv.csv`, `build/s3_conditional_8_final.csv`,
+`.meta.json`, `.stdout`, and `.stderr`.
+
+**Oracle gate:** RAW **1,596/1,596 (100%)**; SEMANTIC
+**1,596/1,596 (100%)**. All oracle remap, action-illegal, simulator-health,
+intermediate, and final mismatch counts were zero. The prior STOP result was
+therefore a semantic replay defect, not a deeper replay nondeterminism failure.
+
+**Authoritative proposal results:** 1,596 trigger rows and 102,144 proposals
+per 64-proposal family. Overall acceptance was DRAW_ORDER 6,504 (6.37%),
+SHUFFLE_RNG 73,005 (71.47%), CARD_RANDOM_RNG 58,520 (57.29%), AI_RNG 60,599
+(59.33%), MISC_RNG 102,144 (100%), MONSTER_HP_RNG 93,157 (91.20%),
+POTION_RNG 101,184 (99.06%), and ALL_FRESH 1,563 (1.53%). All accepted
+hypotheses were equality-backed unique and novel in the recorded comparator.
+
+At `decision_idx >= 8`, acceptance was DRAW_ORDER 1,752/64,448 (2.72%),
+SHUFFLE_RNG 37,119/64,448 (57.60%), CARD_RANDOM_RNG 33,164/64,448 (51.46%),
+AI_RNG 32,303/64,448 (50.12%), MISC_RNG 64,448/64,448 (100%), MONSTER_HP_RNG
+56,649/64,448 (87.90%), POTION_RNG 63,808/64,448 (99.01%), and ALL_FRESH
+251/64,448 (0.39%). Late rows with at least four unique accepted states were
+DRAW_ORDER 6, SHUFFLE_RNG 634, CARD_RANDOM_RNG 613, AI_RNG 772, MISC_RNG
+1,007, MONSTER_HP_RNG 948, POTION_RNG 997, and ALL_FRESH 20.
+
+RNG-use telemetry showed unused-stream acceptance at approximately 100% for
+all applicable RNG families. Used-stream acceptance was approximately 4.35%
+for SHUFFLE_RNG, 23.58% for CARD_RANDOM_RNG, 47.44% for AI_RNG, 8.22% for
+MONSTER_HP_RNG, and 0% for POTION_RNG in this run; MISC_RNG had no used rows.
+Total probe CPU was approximately 11.85 seconds. No oracle first-mismatch
+patterns remained.
+
+**Interpretation:** The diagnostic is now mechanically valid. The data support
+H1: simultaneous whole-state fresh proposals are much less likely to remain
+compatible than several single-block moves, especially late. They also support
+H3/H6 directionally: replacing historically unused RNG streams is nearly free,
+while consumed raw PRNG-state blocks are substantially less mobile, with
+stream-specific differences. MISC_RNG and POTION_RNG remained highly mobile
+in this frozen run, while DRAW_ORDER was the most constrained proposal family.
+These are posterior-geometry results, not gameplay results; no live treatment
+was implemented.
+
+The preregistered practical promotion signal is clearly met by multiple
+families at late history (at least four novel accepted states on roughly half
+or more of applicable rows). The one justified next experiment is a **live
+shadow-neutral resample-move experiment using only a validated future-relevant
+block selected after reviewing the stream-use and causal-event breakdown**;
+this follow-up must remain a separate preregistered treatment and must not
+promote all high-acceptance blocks automatically.
