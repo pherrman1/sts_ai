@@ -72,14 +72,21 @@ artifact.
   particle restoration: post-state fresh recovery reduced collapse to 19.7%.
   Transfer remains experimental and absent from the executable; only telemetry
   remains pending a separate action/quality experiment. A new opt-in live causal
-  rejuvenation implementation is now present on the experiment branch, but its
-  8-seed implementation/control run is incomplete and no scientific gate has
-  started. `STS_S3_AI_REJUV_LIVE=off|placebo|ai` defaults to `off`; live runs
+  rejuvenation implementation is now present on the experiment branch. Its
+  completed 32-seed gate on seeds 910000–910031 was **mixed/inconclusive**:
+  `STS_S3_AI_REJUV_LIVE=off|placebo|ai` defaults to `off`; live runs
   require persistent filtered belief and use one first eligible attempt per
   combat, with `STS_S3_REJUV_TRIGGER` and `STS_S3_REJUV_PROPOSALS` supplied
   explicitly. Treatment children are particle-lineage anchored, replay the
   complete history, replace only AI_RNG, and inherit the source lineage ID.
   Collapse-fresh invalidates battle-start ancestry for the remainder of combat.
+  AI−PLACEBO was +3/32 wins and +1.25 mean floor, but the exact paired-win
+  McNemar p-value was 0.5078125 and the bootstrap floor CI included zero.
+  Both live arms were below OFF in aggregate; exposure was 32/32 seeds for
+  both. The raw-data audit is
+  `build/s3live32_causal_gate_910000_910031/s3live32_causal_gate_audit.md`.
+  The result does not establish H1 or the proposed novelty-versus-duplication
+  mechanism, and no 64-seed extension is currently authorized.
 - Searcher3 particle-count default
   ([decision log](../decision-log/2026-08-10-s3-particle-count-sweep.md),
   [ledger-01.md](../../../docs/experiments/ledger-01.md)): 128 particles

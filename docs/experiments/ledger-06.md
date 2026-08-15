@@ -3064,6 +3064,10 @@ implementation/control validation, not a gameplay result.
 complete 8-seed implementation/control rerun is obtained and all controls are
 clean. The incomplete AI arm is not interpreted as H0, H1, or H_resample.
 
+The preceding decision was superseded by the completed gate below after the
+corrected 8-seed implementation/control rerun. The 32-seed result is recorded
+as mixed/inconclusive, not as H0, H1, or H_resample.
+
 ## 2026-08-15 — First live AI_RNG causal gate, untouched block 910000–910031
 
 **Question:** Does live particle-lineage AI_RNG support expansion improve
@@ -3103,3 +3107,19 @@ duplicate children, and `unique_children=0`, with all 32 seeds exposed. AI had
 was 98.087 ms placebo and 93.017 ms AI across telemetry rows. This is a causal
 screen result, not a promotion claim; follow the preregistered decision rule
 before extending to 64 seeds.
+
+An independent raw-data audit is preserved at
+`build/s3live32_causal_gate_910000_910031/s3live32_causal_gate_audit.md`, with
+copies of all five raw result/telemetry files. It found AI−PLACEBO paired floor
+mean `+1.25` with median `0`, SD `9.073`, bootstrap 95% CI
+`[-1.9375,+4.25]`, positive/negative/zero counts `6/5/21`, and exact McNemar
+discordance `(6,3)`, two-sided `p=0.5078125`. Omitting seed 910018 leaves
+`+0.645161`; omitting 910020 gives `+2.290323`. Placebo children versus
+Placebo−OFF floor delta had descriptive Pearson `r=-0.153538`; AI children
+versus AI−OFF had `r=0.077262`. These correlations are observational and do
+not establish that duplication caused harm or novelty caused benefit.
+
+**Autopsy decision:** classify the gate as **mixed/inconclusive**. Exposure was
+adequate in all 32 seeds for both live arms, but AI was below OFF in aggregate
+and the primary AI−PLACEBO uncertainty includes zero. Do not promote H1 and do
+not start the 64-seed extension without a new preregistered decision.

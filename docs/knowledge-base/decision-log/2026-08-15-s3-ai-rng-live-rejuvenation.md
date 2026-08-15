@@ -57,4 +57,11 @@ passed. The corrected matched 8-seed baseline, placebo, and AI arms each have
 children and `unique_children=424`. The paired AI-minus-placebo deltas are zero
 for both win and floor on this implementation/control block. This is an
 implementation/control validation, not a scientific treatment result. The
-32-seed causal gate was not started.
+The completed 32-seed gate on seeds `910000–910031` was mixed/inconclusive.
+AI−PLACEBO was +3/32 wins and +1.25 mean floor, with exact McNemar
+`p=0.5078125` and bootstrap floor CI `[-1.9375,+4.25]`. Both live arms were
+exposed in all 32 seeds, but AI remained below OFF in aggregate. An independent
+raw-data audit is preserved at
+`build/s3live32_causal_gate_910000_910031/s3live32_causal_gate_audit.md`.
+The result does not establish H1 or prove that generic duplication was harmful;
+no 64-seed extension was started.
