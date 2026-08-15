@@ -55,6 +55,10 @@ the previous catastrophic cascade.
 - Corrected: sequential real-boundary filtering now skips particles with
   non-positive weight, so rejected hypotheses cannot resurrect without an
   explicit resampling/rejuvenation mechanism; `real_belief_filter` covers this.
+- Rerun after that correction: corrected T1 on seeds 94000–94007 produced
+  15.14% collapse, 44/183,488 propagation failures (0.02398%), zero draw-pile
+  mismatches, and 44 action-illegal particles. Its next-search sources were
+  `fresh_initial=2698` and `no_next_search=169`; no larger quality gate was run.
 - Removed: temporary posterior-transfer gameplay treatment after the causal
   diagnostic; a separately designed quality experiment is required.
 - **Open question:** whether a future exact hidden-state representation can

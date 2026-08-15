@@ -2116,6 +2116,15 @@ T0/T1 whole-run wins were both 3/8 and are not quality evidence; CPU was 33.46
 vs 29.73 s/run. Artifacts: `s3_persist_t{0,1}_8.*` under
 `build/linux-gcc-release/`.
 
+**Rerun after zero-weight resurrection fix:** The same corrected T1 command and
+configuration on seeds 94000–94007 produced 2,867 filtered boundaries and
+183,488 attempts: 434 collapses (15.14%), 44 propagation failures (0.02398%),
+zero draw-pile mismatches, and 44 action-illegal particles. Fresh post-state
+beliefs were rebuilt 434 times; next-search sources were
+`fresh_initial=2698` and `no_next_search=169`. Whole-run output was 3/8 wins,
+mean floor 41.6, mean ending HP 18.6, and 17.82 s/run. This is a diagnostic
+rerun, not a quality gate. Artifacts: `build/linux-gcc-release/s3_persist_t1_rerun_8.*`.
+
 ## 2026-08-15 — Native C++ LTO build benchmark and default adoption
 
 **Question:** Does adding compiler optimization flags make the combat benchmark

@@ -31,7 +31,9 @@ from the real post-state on collapse. The earlier catastrophic result was
 therefore primarily stale pre-transition particle restoration, not established
 proof that missing RNG counters make transfer invalid. No transfer feature
 remains in the executable; a separate experiment is required before promotion.
-
+After the zero-weight resurrection fix, the same
+corrected-T1 configuration produced 15.14% collapse and only 44 propagation
+failures, all action-illegal and none draw-pile mismatches, on seeds 94000–94007.
 ## Evidence map
 
 | When | Evidence | Result |
