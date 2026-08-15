@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-15 | [`2026-08-15-s3-rand64-prior-sampler.md`](2026-08-15-s3-rand64-prior-sampler.md) | Confirmed and corrected the biased Searcher3 hidden-RNG prior word construction; preserved 24 engine draws for 12 seed words, with no retrospective reinterpretation of historical experiments. |
 | 2026-08-15 | [`2026-08-15-s3-rng-state-propagation.md`](2026-08-15-s3-rng-state-propagation.md) | Searcher3 real-boundary particles now carry and propagate all six RNG seed pairs and counters; a two-transition regression proves exact first-transition state equality and second-transition compatibility. The prior `rand64()` sampler concern remains separate and unfixed. |
 | 2026-08-15 | [`2026-08-15-standardize-native-lto.md`](2026-08-15-standardize-native-lto.md) | Standardized `-flto` in the native CMake build after an 8-seed combat benchmark showed 13.6% lower process CPU time; rejected `-march=native` as host-specific and effectively neutral in the same test. |
 | 2026-08-15 | [`2026-08-15-s3-persistent-posterior-lifecycle.md`](2026-08-15-s3-persistent-posterior-lifecycle.md) | Confirmed useful exact filtered posteriors are usually discarded before the next fair-S3 search; fresh post-state collapse recovery corrected the earlier stale-fallback cascade, while missing RNG counters remain unresolved; retained only next-search-source telemetry. |

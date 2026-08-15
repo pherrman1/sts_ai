@@ -450,3 +450,45 @@ int testRngStatePropagation(std::uint64_t seed) {
               << post2.monsterHpRng.counter << ',' << post2.potionRng.counter << "]\n";
     return 0;
 }
+
+int testS3Rand64PriorSampler() {
+    constexpr std::uint64_t seed = 0x123456789abcdef0ULL;
+    std::mt19937_64 actual(seed);
+    std::mt19937_64 reference(seed);
+    HiddenBattleState particle;
+    particle.randomize(actual);
+
+    const auto expectedWord = [&]() {
+        const std::uint64_t hi = reference() & 0xffffffffULL;
+        const std::uint64_t lo = reference() & 0xffffffffULL;
+        return (hi << 32) | lo;
+    };
+    const std::uint64_t expected[] = {
+        expectedWord(), expectedWord(), expectedWord(), expectedWord(),
+        expectedWord(), expectedWord(), expectedWord(), expectedWord(),
+        expectedWord(), expectedWord(), expectedWord(), expectedWord(),
+    };
+    const std::uint64_t actualSeeds[] = {
+        particle.shuffleRngSeed0, particle.shuffleRngSeed1,
+        particle.cardRandomRngSeed0, particle.cardRandomRngSeed1,
+        particle.aiRngSeed0, particle.aiRngSeed1,
+        particle.miscRngSeed0, particle.miscRngSeed1,
+        particle.monsterHpRngSeed0, particle.monsterHpRngSeed1,
+        particle.potionRngSeed0, particle.potionRngSeed1,
+    };
+    for (size_t i = 0; i < std::size(expected); ++i) {
+        if (actualSeeds[i] != expected[i]) {
+            std::cout << "s3_rand64_prior_sampler FAIL: seed word " << i
+                      << " differs\n";
+            return 1;
+        }
+    }
+    for (int i = 0; i < 8; ++i) {
+        if (actual() != reference()) {
+            std::cout << "s3_rand64_prior_sampler FAIL: engine state differs after 24 draws\n";
+            return 1;
+        }
+    }
+    std::cout << "s3_rand64_prior_sampler PASS seed_words=12 engine_draws=24\n";
+    return 0;
+}

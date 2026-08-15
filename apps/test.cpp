@@ -2650,6 +2650,8 @@ int main(int argc, const char* argv[]) {
         return testPersistentBeliefTransfer(std::stoull(argv[2]));
     } else if (command == "rng_state_propagation") {
         return testRngStatePropagation(std::stoull(argv[2]));
+    } else if (command == "s3_rand64_prior_sampler") {
+        return testS3Rand64PriorSampler();
     } else if (command == "belief_immutability") {
         return testBeliefImmutability();
     } else if (command == "thorns_retaliation") {

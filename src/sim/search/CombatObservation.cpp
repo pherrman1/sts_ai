@@ -283,7 +283,9 @@ CombatObservation CombatObservation::fromBattleContext(const BattleContext &bc) 
 // ---- HiddenBattleState -----------------------------------------------------
 void HiddenBattleState::randomize(std::mt19937_64 &rng) {
     auto rand64 = [&]() -> std::uint64_t {
-        return static_cast<std::uint64_t>(rng()) << 32 | rng();
+        const std::uint64_t hi = static_cast<std::uint64_t>(rng()) & 0xffffffffULL;
+        const std::uint64_t lo = static_cast<std::uint64_t>(rng()) & 0xffffffffULL;
+        return (hi << 32) | lo;
     };
     shuffleRngSeed0 = rand64();
     shuffleRngSeed1 = rand64();
