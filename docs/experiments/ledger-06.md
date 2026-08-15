@@ -2762,3 +2762,28 @@ Artifacts (corrected): `build/linux-gcc-release/s3_rejuv_shadow_8{.stdout,
 .stderr,.meta.json,<base CSV>,.rejuv.csv}` (corrected executable; the
 superseded run's CSV was overwritten, its aggregate numbers are preserved in
 the table above).
+
+## §170 Phase-12 screen-contract correction: corrected M0/M1 retrain and gate (2026-08-15)
+
+Independent audit confirmed that `tools/convert_marg_to_trainer.py` wrote
+diagnostic `gateKind` into the trainer `screen` feature, while native deployment
+passes actual `gc.screenState`. Temporary corrected datasets changed only
+`screen`: 210,838 rows and 39,870 groups remained; 45,088 rows and 7,690 groups
+changed; MAP became zero; corrected TREASURE/REST/SHOP counts were 1,294/3,260/
+3,136 groups. The local expectation that SHOP had 1,294 groups was incorrect.
+
+Corrected M0 and M1 were retrained with the original 40-epoch rung-4,
+non-transformer, absolute-Q recipe, identical split, model seed, and eager CUDA.
+On the paired fair Searcher3 gate (seeds 900000–900063, 1,000 sims, 64
+particles, 7k VNet alpha 0.3, all strategic gates on, margin 1.0):
+
+| Arm | Original | Corrected | Delta |
+|---|---:|---:|---:|
+| M0 win rate | 17/64 = 26.56% | 16/64 = 25.00% | -1.56pp |
+| M1 win rate | 16/64 = 25.00% | 12/64 = 18.75% | -6.25pp |
+
+Corrected-screen retraining did not improve this exploratory gate for either
+objective. The contract bug is real and requires a permanent converter fix, but
+these results rule out the bug alone as the explanation for V4's advantage.
+See `docs/archive/research/sessions/phase12-screen-contract-corrected-m0-m1-2026-08-15.md`
+for hashes and detailed provenance.
