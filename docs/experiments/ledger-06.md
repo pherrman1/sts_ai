@@ -3198,3 +3198,66 @@ AI1 telemetry `e56183ebb524e70f1946e26dc9ceb43a4d3a811d835c845d25bbc9e8c0f6ec8a`
 but mixed because AI1 lost on mean floor against both comparators. Exposure is
 not limiting. Stop at 16 seeds; do not automatically extend or promote live
 rejuvenation.
+
+## 2026-08-15 — Searcher3 AI1 single-child confirmation, fresh block 920016–920079
+
+**Question:** Does the 16-seed AI1 win-rate direction confirm on a fresh 64-seed
+block, with floor/depth monitored as safety evidence? The matched arms were OFF,
+PLACEBO1, and AI1. This confirmation stopped at exactly 64 seeds.
+
+**Configuration:** The frozen 16-seed configuration was retained: fair
+Searcher3, A0, 1,000 base simulations, 3,000 boss simulations, 64 particles,
+12 threads, internal belief update off, chain off, CRN off, real-boundary
+filtering on, collapse-fresh on, persistent filtered posterior on, reuse 0,
+END_TURN marginalization off, `STS_S3_REJUV_TRIGGER=16`,
+`STS_S3_REJUV_PROPOSALS=64`, VNet `models/v_combat_7k_tuned.txt` alpha 0.3,
+the same V4 OOC model, REST/EVENT/SHOP/TREASURE/BOSS_RELIC on, margin 1.0.
+All arms used `tools/seed_guard.sh` and seeds `920016–920079`.
+
+**Aggregates:**
+
+| arm | wins | win rate | mean floor |
+|---|---:|---:|---:|
+| OFF | 40/64 | 62.50% | 45.3281 |
+| PLACEBO1 | 38/64 | 59.375% | 45.5625 |
+| AI1 | 41/64 | 64.0625% | 45.4688 |
+
+**Paired comparisons:**
+
+- AI1−PLACEBO1: win delta `+3/64`, exact discordance `(4,1)`, exact
+  two-sided binomial/McNemar p `0.375`; floor mean `−0.0938`, median `0`,
+  positive/negative/zero `6/4/54`, bootstrap 95% CI `[-1.4531,+1.1094]`.
+- AI1−OFF: win delta `+1/64`, exact discordance `(4,3)`, p `1.0`; floor mean
+  `+0.1406`, median `0`, positive/negative/zero `6/6/52`, bootstrap 95% CI
+  `[-1.3281,+1.4688]`.
+- PLACEBO1−OFF: win delta `−2/64`, exact discordance `(3,5)`, p `0.7265625`;
+  floor mean `+0.2344`, median `0`, positive/negative/zero `5/5/54`, bootstrap
+  95% CI `[-0.7969,+1.3125]`.
+
+Largest AI1 floor deltas were `+18` and `−28` versus PLACEBO1, and `+18` and
+`−28` versus OFF. Leave-one-out floor means ranged from `−0.3810` to `+0.3492`
+for AI1−PLACEBO1 and `−0.1429` to `+0.5873` for AI1−OFF. AI1 lost while the
+comparator won on 1 seed versus PLACEBO1 and 3 seeds versus OFF. Severe AI1
+floor regressions of at least 10 floors occurred on seeds `920031` (`−17`) and
+`920079` (`−28`) against both comparators.
+
+**Exposure/integrity:** PLACEBO1 had 13,223 telemetry rows, 643 attempts, 640
+children, and 139.805 injected mass. AI1 had 13,229 rows, 627 attempts, 624
+children, and 143.970 injected mass. Both exposed all 64 seeds. Maximum
+children per combat was `1` for both; `children_injected` was only `0/1`;
+PLACEBO1 had `unique_children=0`; AI1 had `unique_children` equal to
+`children_injected`; integrity failures were zero.
+
+**Raw hashes:** OFF result `bbf0f95cefcf7ac5859efdaf4ad81458a96b25f5068b0a02d5b87ac31f0e6a47`,
+PLACEBO1 result `f88b9209c4dfd8c72e5d440175bb7db2213dde1655e6957ed776c00e13756627`,
+AI1 result `0543dc31a90cab103b32d39871d542fbcb603464de9894b9ed442c8e6d8faa98`,
+PLACEBO1 telemetry `4c09cc1a93a125aaeaa976ed56ffa23444dae4b10b1c30a6f91a286e4df8e8ec`,
+AI1 telemetry `73039d4c9a02cba9b1e557a5bdc97c2f391566f8049f13050b0d37985fef8d9a`.
+
+**Decision:** AI1 remained directionally above PLACEBO1 and at least as good as
+OFF on wins, with four treatment-only wins versus one reverse discordance in
+the primary comparison. The win advantage is not statistically persuasive and
+the floor result is approximately null, not a clear downside on aggregate.
+However, two shared severe early-loss regressions warrant explicit caution.
+Classify as **promising win-rate direction with a possible downside tail**, not
+as a clean promotion result. Do not extend beyond 64 seeds automatically.

@@ -95,6 +95,15 @@ artifact.
   This is mixed mechanism evidence, directionally promising on wins but with a
   possible depth/downside cost; no promotion or automatic extension is
   authorized. See [ledger-06 single-child follow-up](../../../docs/experiments/ledger-06.md).
+- Fresh 64-seed confirmation on `920016–920079` retained the direction: OFF
+  40/64 (mean floor 45.3281), PLACEBO1 38/64 (45.5625), AI1 41/64 (45.4688).
+  AI1−PLACEBO1 was +3 wins, discordance 4–1, floor delta −0.0938 with bootstrap
+  CI [−1.4531,+1.1094]; AI1−OFF was +1 win, discordance 4–3, floor delta
+  +0.1406 with CI [−1.3281,+1.4688]. Both live arms exposed 64/64 seeds,
+  maximum one child/combat, and zero telemetry integrity failures. Two severe
+  AI1 floor regressions (−17 and −28 floors) occurred against both comparators;
+  classify as promising win-rate direction with a possible downside tail, not
+  clean promotion evidence. No automatic extension beyond 64 seeds.
 - Searcher3 particle-count default
   ([decision log](../decision-log/2026-08-10-s3-particle-count-sweep.md),
   [ledger-01.md](../../../docs/experiments/ledger-01.md)): 128 particles
