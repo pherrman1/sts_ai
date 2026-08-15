@@ -312,8 +312,9 @@ int testPersistentBeliefTransfer(std::uint64_t seed) {
     source.belief.particles.front().weight = 0.0;
 
     search::BattleScumSearcher3 fresh(realPost, seed, 1, 8);
-    fresh.belief = source.belief;
+    const bool transferred = search::installTransferredBelief(fresh, &source.belief);
     if (fresh.root.simulationCount != 0
+        || !transferred
         || fresh.belief.particles.size() != source.belief.particles.size()) {
         std::cout << "persistent_belief_transfer FAIL: fresh tree or particle count changed\n";
         return 1;
@@ -326,6 +327,30 @@ int testPersistentBeliefTransfer(std::uint64_t seed) {
             std::cout << "persistent_belief_transfer FAIL: particle identity/weight changed\n";
             return 1;
         }
+    }
+
+    int transferredSearches = 0;
+    if (transferred && fresh.root.simulationCount == 0) {
+        // A forced transition may invalidate this fresh searcher without
+        // calling search(); construction alone must not count as consumption.
+        search::countTransferredBeliefSearch(false, transferredSearches);
+        if (transferredSearches != 0) {
+            std::cout << "persistent_belief_transfer FAIL: no-search transfer counted\n";
+            return 1;
+        }
+        search::countTransferredBeliefSearch(true, transferredSearches);
+        fresh.search(1);
+    }
+    if (transferredSearches != 1 || fresh.root.simulationCount == 0) {
+        std::cout << "persistent_belief_transfer FAIL: actual search not counted\n";
+        return 1;
+    }
+
+    search::BattleScumSearcher3 control(realPost, seed, 2, 8);
+    if (search::installTransferredBelief(control, nullptr)
+        || control.belief.particles.front().weight == 0.0) {
+        std::cout << "persistent_belief_transfer FAIL: persistence-off path transferred\n";
+        return 1;
     }
     std::cout << "persistent_belief_transfer PASS\n";
     return 0;

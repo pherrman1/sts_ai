@@ -37,6 +37,17 @@ namespace sts::search {
     thread_local std::function<void(const BattleContext&)> g_onCombatDecision = nullptr;
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher2&)> g_onSearchComplete = nullptr;
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher3&)> g_onSearchComplete3 = nullptr;
+
+    bool installTransferredBelief(BattleScumSearcher3 &searcher,
+                                  const Belief *pendingBelief) {
+        if (!pendingBelief) return false;
+        searcher.belief = *pendingBelief;
+        return true;
+    }
+
+    void countTransferredBeliefSearch(bool usesTransferredBelief, int &count) {
+        if (usesTransferredBelief) ++count;
+    }
 }
 
 namespace {
@@ -364,11 +375,13 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
 
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         bool searcherValid = true;
+        bool currentSearcherUsesTransferredBelief = false;
         auto rebuildFreshSearcher = [&]() {
             s3 = BattleScumSearcher3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+            currentSearcherUsesTransferredBelief = false;
             if (search::g_s3PersistFilteredBelief && pendingFilteredBelief) {
-                s3.belief = *pendingFilteredBelief;
-                ++transferredBeliefSearches;
+                currentSearcherUsesTransferredBelief = search::installTransferredBelief(
+                    s3, &*pendingFilteredBelief);
                 for (auto &boundary : pendingFilteredBoundaries)
                     boundary.source = S3NextSearchBeliefSource::TRANSFERRED_FILTERED_POSTERIOR;
                 pendingFilteredBelief.reset();
@@ -442,6 +455,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             if (search::g_reuseCpuDiag) {
                 diagBefore = s3.snapshotDiag();
             }
+            search::countTransferredBeliefSearch(
+                currentSearcherUsesTransferredBelief, transferredBeliefSearches);
             s3.search(spend);
             if (search::g_reuseCpuDiag) {
                 auto diagAfter = s3.snapshotDiag();

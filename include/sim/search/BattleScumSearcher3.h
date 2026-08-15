@@ -358,6 +358,12 @@ namespace sts::search {
                                     std::vector<HiddenBattleState> sharedCrn);
     };
 
+    // Install a pending real-boundary posterior into a freshly constructed
+    // searcher. Returns whether the searcher now uses transferred belief.
+    bool installTransferredBelief(BattleScumSearcher3 &searcher,
+                                   const Belief *pendingBelief);
+    void countTransferredBeliefSearch(bool usesTransferredBelief, int &count);
+
     void enumerateActionsForNode(BattleScumSearcher3::Node &node, const BattleContext &bc);
     void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc);
     // These card-selection tasks store a physical draw-pile index in the
