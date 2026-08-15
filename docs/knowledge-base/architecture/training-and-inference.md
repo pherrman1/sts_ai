@@ -202,6 +202,12 @@ their specific producer; consumers must use headers, not old comments.
 
 ### Grouping and leakage
 
+`tools/train_particle_leaf_probe.py` is an offline-only paired analysis. It
+keeps all variants of a source leaf together and uses a fixed seed-level split;
+its visible control and positional first-10-card treatment consume identical
+rows and targets. The treatment uses sparse positional one-hot features and
+does not alter the 1,766-feature native combat schema.
+
 Correlated samples remain together:
 
 - run values split by seed (`train_winrate.py::GroupShuffleSplit`);
