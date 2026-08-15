@@ -11,12 +11,13 @@ M0 and M1 have identical policy supervision (`chosen`). Marginalization changes
 auxiliary Q supervision with `Q_target = 10*labelWon + labelHp`.
 
 On 39,870 matched groups: Q-target argmax disagreement was **16,951/39,870
-(42.52%)**; exact top-two reversal **3,351/39,870 (8.41%)**; predicted-Q
+(42.52%)**; exact top-two reversal **3,338/39,870 (8.37%)**; predicted-Q
 argmax disagreement **9,932/39,870 (24.91%)**; and model policy-logit
-argmax disagreement **3,154/39,870 (7.91%)**. Mean target margin fell from
-6.9049 to 5.7728. The strict gameplay result remains M0 23/64 (35.9%) vs M1
-16/64 (25.0%), Δ −10.9pp, approximately [−25.0,+3.1]pp; the interval crosses
-zero.
+argmax disagreement **3,154/39,870 (7.91%)**, concentrated on SHOP (32.08%)
+and UPGRADE_SELECT (33.30%) versus CARD (3.90%) and TREASURE (0.00%). Mean
+target margin fell from 6.9049 to 5.7728. The strict gameplay result remains
+M0 23/64 (35.9%) vs M1 16/64 (25.0%), Δ −10.9pp, approximately
+[−25.0,+3.1]pp; the interval crosses zero.
 
 ## Verified mapping and semantics
 
@@ -36,9 +37,11 @@ Serena verified `include/game/GameContext.h::sts/ScreenState`:
 The trainer uses `chosen` for policy CE and `10*labelWon + labelHp` for
 absolute Q MSE. `labelFloor` and `labelBootstrap` do not enter the current
 loss. `q_top1` compares predicted-Q argmax with Q-target argmax; policy
-`margin` is policy-logit top1−top2. First occurrence wins ties, matching
-`numpy.argmax` and the trainer. Duplicate action rows are retained in source
-order.
+`margin` is policy-logit top1−top2. All argmax decisions use first-occurrence
+tie-breaking, matching `numpy.argmax` and the trainer; top-two extraction and
+reversal use `np.argsort(-x, kind="stable")`, so tied values resolve to the
+earlier row. The M0/M1 `chosen` supervision is asserted identical for every
+matched row, and duplicate action rows are retained in source order.
 
 ## Provenance
 
@@ -59,19 +62,25 @@ EVENT 2,832; BOSS_RELIC 696; UPGRADE_SELECT 1,084; TREASURE 1,294; REST
 
 | screen | groups | Q diff | top-two reversal | M0 margin | M1 margin | Δ margin |
 |---|---:|---:|---:|---:|---:|---:|
-| ALL | 39,870 | 42.52% | 8.41% | 6.9049 | 5.7728 | −1.1320 |
+| ALL | 39,870 | 42.52% | 8.37% | 6.9049 | 5.7728 | −1.1320 |
 | EVENT | 2,832 | 32.95% | 21.79% | 13.2677 | 11.0801 | −2.1876 |
-| CARD | 27,568 | 44.88% | 6.40% | 6.0548 | 5.0041 | −1.0507 |
+| CARD | 27,568 | 44.88% | 6.34% | 6.0548 | 5.0041 | −1.0507 |
 | BOSS_RELIC | 696 | 1.58% | 1.01% | 8.8555 | 8.8534 | −0.0020 |
-| UPGRADE_SELECT | 1,084 | 44.37% | 1.75% | 2.0799 | 1.9665 | −0.1134 |
+| UPGRADE_SELECT | 1,084 | 44.37% | 1.85% | 2.0799 | 1.9665 | −0.1134 |
 | TREASURE | 1,294 | 30.68% | 30.68% | 11.8743 | 8.4579 | −3.4164 |
 | REST | 3,260 | 26.29% | 10.61% | 9.2308 | 8.2940 | −0.9368 |
-| SHOP | 3,136 | 60.62% | 6.41% | 5.3982 | 4.6412 | −0.7570 |
+| SHOP | 3,136 | 60.62% | 6.51% | 5.3982 | 4.6412 | −0.7570 |
 
-Overall raw M1−M0 action-row mean/median/absolute mean: `labelWon`
-0.000919/0/0.039386; `labelHp` 0.036456/0/5.622855; `labelFloor`
-0.013027/0/0.992208; `labelBootstrap` 0.000570/0/0.041822. Within-decision
-centered absolute means: 0.043369, 5.962535, 1.096999, 0.048899.
+Overall action-row M1−M0 statistics across all 210,838 matched rows, reported
+as mean / median / mean absolute / within-decision centered absolute:
+`labelWon` 0.000913/0/0.054109/0.044798; `labelHp` 0.031911/0/7.879336/
+6.138981; `labelFloor` 0.016875/0/1.341882/1.135842; `labelBootstrap`
+0.000634/0/0.054882/0.051060. Action-row 5/95% quantiles: `labelWon`
+[−0.164786, +0.159648]; `labelHp` [−21.5, +22.5]; `labelFloor` [−4.084828,
++3.717980]; `labelBootstrap` [−0.25, +0.25]. Decision-weighted means (mean of
+per-decision means) are 0.000919, 0.036456, 0.013027, and 0.000570; an
+earlier draft mislabeled these decision-weighted values as action-row
+statistics.
 
 ## Model-output table
 
@@ -81,7 +90,7 @@ centered absolute means: 0.043369, 5.962535, 1.096999, 0.048899.
 | EVENT | 2,832 | 11.02% | 17.62% | 0.5024 / 0.5451 | 0.8744 / 0.8630 |
 | CARD | 27,568 | 3.90% | 25.95% | 7.4275 / 6.8516 | 0.2632 / 0.2710 |
 | BOSS_RELIC | 696 | 11.35% | 14.08% | 1.1438 / 1.0313 | 0.8040 / 0.8557 |
-| UPGRADE_SELECT | 1,084 | 44.37% | 47.79% | 0.5449 / 0.5402 | 2.2423 / 2.2458 |
+| UPGRADE_SELECT | 1,084 | 33.30% | 47.79% | 0.5449 / 0.5402 | 2.2423 / 2.2458 |
 | TREASURE | 1,294 | 0.00% | 3.25% | 3.3610 / 3.3466 | 0.1506 / 0.1512 |
 | REST | 3,260 | 9.85% | 5.25% | 1.1246 / 1.0700 | 0.5924 / 0.6111 |
 | SHOP | 3,136 | 32.08% | 46.11% | 0.5762 / 0.5270 | 1.8180 / 1.8761 |
@@ -123,8 +132,11 @@ Established: M1 changes Q targets substantially and model Q outputs more often
 than policy outputs; M1 is not clearly less faithful to its own Q target.
 Inference: auxiliary-Q/representation coupling remains plausible because Q
 supervision changes while policy labels are fixed and policy outputs diverge in
-7.91% of groups. This does not establish that any screen caused a gameplay loss
-or explain the −10.9pp point estimate causally.
+7.91% of groups overall — a smaller overall rate than predicted-Q divergence,
+but strongly concentrated, with SHOP policy disagreement at 32.08% and
+UPGRADE_SELECT at 33.30% versus CARD 3.90% and TREASURE 0.00%. This does not
+establish that any screen caused a gameplay loss or explain the −10.9pp point
+estimate causally.
 
 **STOP the M0/M1 investigation.** No M2, retraining, new seeds, gameplay
 tracing, label generation, or model changes are justified.

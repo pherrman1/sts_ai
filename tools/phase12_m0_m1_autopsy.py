@@ -3,6 +3,10 @@
 
 The prediction CSVs are inference-only outputs from the strict checkpoints;
 this script does not train or run the simulator.
+
+Tie convention: all argmax decisions use first occurrence (numpy.argmax,
+matching the trainer), and top-two extraction/reversal use
+np.argsort(-x, kind="stable") so tied values resolve to the earlier row.
 """
 import argparse
 import csv
@@ -98,14 +102,21 @@ def summarize(records):
         },
     }
     for name in LABELS:
-        changes = np.array([r["label_delta"][name] for r in records for _ in (0,)], dtype=float)
-        relative = np.array([r["label_relative_abs"][name] for r in records], dtype=float)
+        # Every matched action-row M1-M0 delta (210,838 rows overall), plus a
+        # decision-weighted mean (mean of per-decision means) for reference.
+        deltas = np.concatenate([r["label_deltas"][name] for r in records])
+        decision_means = np.array([r["label_deltas"][name].mean() for r in records])
+        centered = np.concatenate(
+            [r["label_deltas"][name] - r["label_deltas"][name].mean() for r in records]
+        )
         out["raw"][name] = {
-            "mean": float(changes.mean()),
-            "median": float(np.median(changes)),
-            "abs_mean": float(np.abs(changes).mean()),
-            "quantiles": quantiles(changes),
-            "within_decision_centered_abs_mean": float(relative.mean()),
+            "action_rows": int(deltas.size),
+            "mean": float(deltas.mean()),
+            "median": float(np.median(deltas)),
+            "abs_mean": float(np.abs(deltas).mean()),
+            "quantiles": quantiles(deltas),
+            "decision_weighted_mean": float(decision_means.mean()),
+            "within_decision_centered_abs_mean": float(np.abs(centered).mean()),
         }
     return out
 
@@ -132,6 +143,9 @@ def main():
         rows0, rows1 = m0[key], m1[key]
         assert len(rows0) == len(rows1)
         assert [r["action"] for r in rows0] == [r["action"] for r in rows1]
+        # M0/M1 differ only in the four label columns; identical policy
+        # supervision (`chosen`) is asserted per matched row.
+        assert [r["chosen"] for r in rows0] == [r["chosen"] for r in rows1]
         screen = rows0[0]["screen"]
         assert screen in SCREENS and all(r["screen"] == screen for r in rows0)
         assert p0[key]["screen"] == p1[key]["screen"] == screen
@@ -148,23 +162,24 @@ def main():
         prob0 /= prob0.sum()
         prob1 = np.exp(p1[key]["policy"] - p1[key]["policy"].max())
         prob1 /= prob1.sum()
-        delta = {name: float(np.mean([r1[name] - r0[name] for r0, r1 in zip(rows0, rows1)])) for name in LABELS}
-        relative = {}
-        for name in LABELS:
-            values = np.array([r1[name] - r0[name] for r0, r1 in zip(rows0, rows1)])
-            relative[name] = float(np.abs(values - values.mean()).mean())
+        label_deltas = {
+            name: np.array([r1[name] - r0[name] for r0, r1 in zip(rows0, rows1)])
+            for name in LABELS
+        }
         records.append({
             "screen": screen,
             "target_same": t0 == t1,
             "policy_same": p0i == p1i,
             "pred_q_same": q0i == q1i,
-            "target_reversal": len(rows0) >= 2 and np.array_equal(np.argsort(-q0)[:2], np.argsort(-q1)[:2][::-1]),
+            "target_reversal": len(rows0) >= 2 and np.array_equal(
+                np.argsort(-q0, kind="stable")[:2], np.argsort(-q1, kind="stable")[:2][::-1]
+            ),
             "target_m0_margin": margin(q0), "target_m1_margin": margin(q1),
             "policy_m0_margin": margin(p0[key]["policy"]), "policy_m1_margin": margin(p1[key]["policy"]),
             "policy_m0_entropy": float(-(prob0 * np.log(np.maximum(prob0, 1e-30))).sum()),
             "policy_m1_entropy": float(-(prob1 * np.log(np.maximum(prob1, 1e-30))).sum()),
             "pred_q_m0_target_same": q0i == t0, "pred_q_m1_target_same": q1i == t1,
-            "label_delta": delta, "label_relative_abs": relative,
+            "label_deltas": label_deltas,
         })
 
     assert sum(screen_counts.values()) == 39_870
