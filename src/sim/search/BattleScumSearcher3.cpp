@@ -246,22 +246,22 @@ static void applyParticleImpl(BattleContext &state,
                               std::mt19937_64 &fallbackRng) {
     state.shuffleRng.seed0    = particle.shuffleRngSeed0;
     state.shuffleRng.seed1    = particle.shuffleRngSeed1;
-    state.shuffleRng.counter  = 0;
+    state.shuffleRng.counter  = particle.shuffleRngCounter;
     state.cardRandomRng.seed0 = particle.cardRandomRngSeed0;
     state.cardRandomRng.seed1 = particle.cardRandomRngSeed1;
-    state.cardRandomRng.counter = 0;
+    state.cardRandomRng.counter = particle.cardRandomRngCounter;
     state.aiRng.seed0    = particle.aiRngSeed0;
     state.aiRng.seed1    = particle.aiRngSeed1;
-    state.aiRng.counter  = 0;
+    state.aiRng.counter  = particle.aiRngCounter;
     state.miscRng.seed0  = particle.miscRngSeed0;
     state.miscRng.seed1  = particle.miscRngSeed1;
-    state.miscRng.counter = 0;
+    state.miscRng.counter = particle.miscRngCounter;
     state.monsterHpRng.seed0 = particle.monsterHpRngSeed0;
     state.monsterHpRng.seed1 = particle.monsterHpRngSeed1;
-    state.monsterHpRng.counter = 0;
+    state.monsterHpRng.counter = particle.monsterHpRngCounter;
     state.potionRng.seed0   = particle.potionRngSeed0;
     state.potionRng.seed1   = particle.potionRngSeed1;
-    state.potionRng.counter = 0;
+    state.potionRng.counter = particle.potionRngCounter;
     // Install the sampled draw order when it still matches the copied pile;
     // stale particles (tree reuse across decisions) fall back to a shuffle.
     if (particle.drawPileOrder.size() == (size_t)state.cards.drawPile.size()
@@ -344,11 +344,25 @@ RealBeliefFilterStats BattleScumSearcher3::filterRealTransition(
 
         ++stats.compatible;
         particle.weight = 1.0;
-        // Carry the propagated hidden draw order to the next real boundary.
-        // RNG counters are not represented by HiddenBattleState yet; seed
-        // signatures remain available, while exact counter propagation is
-        // reported as an open limitation in the audit.
         particle.drawPileOrder = predicted.cards.drawPile;
+        particle.shuffleRngSeed0 = predicted.shuffleRng.seed0;
+        particle.shuffleRngSeed1 = predicted.shuffleRng.seed1;
+        particle.shuffleRngCounter = predicted.shuffleRng.counter;
+        particle.cardRandomRngSeed0 = predicted.cardRandomRng.seed0;
+        particle.cardRandomRngSeed1 = predicted.cardRandomRng.seed1;
+        particle.cardRandomRngCounter = predicted.cardRandomRng.counter;
+        particle.aiRngSeed0 = predicted.aiRng.seed0;
+        particle.aiRngSeed1 = predicted.aiRng.seed1;
+        particle.aiRngCounter = predicted.aiRng.counter;
+        particle.miscRngSeed0 = predicted.miscRng.seed0;
+        particle.miscRngSeed1 = predicted.miscRng.seed1;
+        particle.miscRngCounter = predicted.miscRng.counter;
+        particle.monsterHpRngSeed0 = predicted.monsterHpRng.seed0;
+        particle.monsterHpRngSeed1 = predicted.monsterHpRng.seed1;
+        particle.monsterHpRngCounter = predicted.monsterHpRng.counter;
+        particle.potionRngSeed0 = predicted.potionRng.seed0;
+        particle.potionRngSeed1 = predicted.potionRng.seed1;
+        particle.potionRngCounter = predicted.potionRng.counter;
     }
 
     int dominantCount = 0;

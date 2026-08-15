@@ -22,6 +22,35 @@ bool sameDrawOrder(const HiddenBattleState &a, const HiddenBattleState &b) {
     return true;
 }
 
+bool sameDrawOrder(const HiddenBattleState &particle,
+                   const std::vector<CardInstance> &drawPile) {
+    if (particle.drawPileOrder.size() != drawPile.size()) return false;
+    for (size_t i = 0; i < drawPile.size(); ++i)
+        if (particle.drawPileOrder[i].getId() != drawPile[i].getId()) return false;
+    return true;
+}
+
+bool sameRngState(const HiddenBattleState &particle, const BattleContext &state) {
+    return particle.shuffleRngSeed0 == state.shuffleRng.seed0
+        && particle.shuffleRngSeed1 == state.shuffleRng.seed1
+        && particle.shuffleRngCounter == state.shuffleRng.counter
+        && particle.cardRandomRngSeed0 == state.cardRandomRng.seed0
+        && particle.cardRandomRngSeed1 == state.cardRandomRng.seed1
+        && particle.cardRandomRngCounter == state.cardRandomRng.counter
+        && particle.aiRngSeed0 == state.aiRng.seed0
+        && particle.aiRngSeed1 == state.aiRng.seed1
+        && particle.aiRngCounter == state.aiRng.counter
+        && particle.miscRngSeed0 == state.miscRng.seed0
+        && particle.miscRngSeed1 == state.miscRng.seed1
+        && particle.miscRngCounter == state.miscRng.counter
+        && particle.monsterHpRngSeed0 == state.monsterHpRng.seed0
+        && particle.monsterHpRngSeed1 == state.monsterHpRng.seed1
+        && particle.monsterHpRngCounter == state.monsterHpRng.counter
+        && particle.potionRngSeed0 == state.potionRng.seed0
+        && particle.potionRngSeed1 == state.potionRng.seed1
+        && particle.potionRngCounter == state.potionRng.counter;
+}
+
 } // namespace
 
 int testBelief() {
@@ -353,5 +382,71 @@ int testPersistentBeliefTransfer(std::uint64_t seed) {
         return 1;
     }
     std::cout << "persistent_belief_transfer PASS\n";
+    return 0;
+}
+
+int testRngStatePropagation(std::uint64_t seed) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    BattleContext preState;
+    preState.init(gc, MonsterEncounter::CULTIST);
+    const search::Action action(search::ActionType::END_TURN);
+    search::BattleScumSearcher3 s3(preState, seed, 0, 8);
+    for (size_t i = 0; i < s3.belief.particles.size(); ++i)
+        s3.belief.particles[i].id = i + 1;
+
+    BattleContext post1 = preState;
+    s3.applyParticle(post1, s3.belief.particles.front());
+    if (!action.isValidAction(post1)) {
+        std::cout << "rng_state_propagation FAIL: first END_TURN invalid\n";
+        return 1;
+    }
+    action.execute(post1);
+    const bool firstConsumedRng = post1.aiRng.counter != preState.aiRng.counter
+        || post1.cardRandomRng.counter != preState.cardRandomRng.counter
+        || post1.shuffleRng.counter != preState.shuffleRng.counter
+        || post1.miscRng.counter != preState.miscRng.counter
+        || post1.monsterHpRng.counter != preState.monsterHpRng.counter
+        || post1.potionRng.counter != preState.potionRng.counter;
+    if (!firstConsumedRng) {
+        std::cout << "rng_state_propagation FAIL: first transition consumed no represented RNG\n";
+        return 1;
+    }
+
+    const auto firstStats = s3.filterRealTransition(preState, action, post1);
+    const auto &firstParticle = s3.belief.particles.front();
+    if (firstStats.compatible <= 0 || firstParticle.weight <= 0.0
+        || !sameDrawOrder(firstParticle, post1.cards.drawPile)
+        || !sameRngState(firstParticle, post1)) {
+        std::cout << "rng_state_propagation FAIL: first post-state mismatch"
+                  << " compatible=" << firstStats.compatible
+                  << " particle_weight=" << firstParticle.weight << '\n';
+        return 1;
+    }
+    std::cout << "rng_state_propagation transition1 PASS compatible="
+              << firstStats.compatible << " draw_pile=match rng_fields=18/18 counters=["
+              << post1.shuffleRng.counter << ',' << post1.cardRandomRng.counter << ','
+              << post1.aiRng.counter << ',' << post1.miscRng.counter << ','
+              << post1.monsterHpRng.counter << ',' << post1.potionRng.counter << "]\n";
+
+    BattleContext post2 = post1;
+    if (!action.isValidAction(post2)) {
+        std::cout << "rng_state_propagation FAIL: second END_TURN invalid\n";
+        return 1;
+    }
+    action.execute(post2);
+    const auto secondStats = s3.filterRealTransition(post1, action, post2);
+    const auto &secondParticle = s3.belief.particles.front();
+    if (secondStats.compatible <= 0 || secondParticle.weight <= 0.0
+        || !sameRngState(secondParticle, post2)) {
+        std::cout << "rng_state_propagation FAIL: second transition incompatible"
+                  << " compatible=" << secondStats.compatible
+                  << " particle_weight=" << secondParticle.weight << '\n';
+        return 1;
+    }
+    std::cout << "rng_state_propagation transition2 PASS compatible="
+              << secondStats.compatible << " draw_pile=match rng_fields=18/18 counters=["
+              << post2.shuffleRng.counter << ',' << post2.cardRandomRng.counter << ','
+              << post2.aiRng.counter << ',' << post2.miscRng.counter << ','
+              << post2.monsterHpRng.counter << ',' << post2.potionRng.counter << "]\n";
     return 0;
 }

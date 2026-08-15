@@ -379,9 +379,13 @@ static std::uint64_t hiddenRngHash(const HiddenBattleState &p) {
     std::uint64_t h = 0xcbf29ce484222325ULL;
     const std::uint64_t values[] = {
         p.shuffleRngSeed0, p.shuffleRngSeed1, p.cardRandomRngSeed0,
-        p.cardRandomRngSeed1, p.aiRngSeed0, p.aiRngSeed1, p.miscRngSeed0,
+        static_cast<std::uint64_t>(p.shuffleRngCounter), p.cardRandomRngSeed1,
+        static_cast<std::uint64_t>(p.cardRandomRngCounter), p.aiRngSeed0,
+        p.aiRngSeed1, static_cast<std::uint64_t>(p.aiRngCounter), p.miscRngSeed0,
         p.miscRngSeed1, p.monsterHpRngSeed0, p.monsterHpRngSeed1,
-        p.potionRngSeed0, p.potionRngSeed1};
+        static_cast<std::uint64_t>(p.miscRngCounter),
+        static_cast<std::uint64_t>(p.monsterHpRngCounter), p.potionRngSeed0,
+        p.potionRngSeed1, static_cast<std::uint64_t>(p.potionRngCounter)};
     for (auto v : values) { h ^= v; h *= 1099511628211ULL; }
     return h;
 }

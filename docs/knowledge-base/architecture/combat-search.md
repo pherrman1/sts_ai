@@ -973,8 +973,9 @@ selection also requires `!g_pvnetValueOnly`, matching S2.
   and compares the predicted `CombatObservation` to the real post-state. It
   retains compatible particles with equal normalized weights, reports explicit
   propagation failures, and restores a uniform prior on zero-survivor collapse.
-  It does not rejuvenate or duplicate particles. `HiddenBattleState` still lacks
-  RNG counters, so post-transition RNG signatures remain seed-based.
+  It does not rejuvenate or duplicate particles. `HiddenBattleState` carries the
+  six current RNG seed pairs and counters; compatible transitions propagate all
+  of them, so post-transition RNG signatures include counters as well as seeds.
 - `STS_S3_REAL_BELIEF_COLLAPSE_FRESH=1` is an opt-in zero-survivor fallback: it discards the old particles and calls `Belief::initial` on the current real state. Collapse diagnostics record predicted-observation concentration and a capped 64/128/256/512 fresh-prior sensitivity probe; this fallback is not a default and is not rejuvenation.
 - Each BattleScumSearcher3::step samples one belief particle with replacement via Belief::sampleIndex; equal-weight beliefs are uniform. STS_S3_BELIEF_AUDIT=1 can record per-search particle coverage, sampling concentration, belief initialization CPU, filter CPU, and search CPU. Increasing particle count therefore increases belief construction/filter work, not the number of worlds replayed by each MCTS simulation.
 - `HiddenBattleState::drawPileOrder` is installed by `applyParticle` only when
