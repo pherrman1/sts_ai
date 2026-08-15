@@ -56,8 +56,7 @@ passed. The corrected matched 8-seed baseline, placebo, and AI arms each have
 `unique_children=0`; AI telemetry has 1,553 rows with 424 injected novel
 children and `unique_children=424`. The paired AI-minus-placebo deltas are zero
 for both win and floor on this implementation/control block. This is an
-implementation/control validation, not a scientific treatment result. The
-The completed 32-seed gate on seeds `910000–910031` was mixed/inconclusive.
+implementation/control validation, not a scientific treatment result. The completed 32-seed gate on seeds `910000–910031` was mixed/inconclusive.
 AI−PLACEBO was +3/32 wins and +1.25 mean floor, with exact McNemar
 `p=0.5078125` and bootstrap floor CI `[-1.9375,+4.25]`. Both live arms were
 exposed in all 32 seeds, but AI remained below OFF in aggregate. An independent
@@ -65,3 +64,18 @@ raw-data audit is preserved at
 `build/s3live32_causal_gate_910000_910031/s3live32_causal_gate_audit.md`.
 The result does not establish H1 or prove that generic duplication was harmful;
 no 64-seed extension was started.
+
+## Single-child follow-up
+
+The preregistered single-child follow-up used fresh seeds `920000–920015` with
+the same fair Searcher3 causal-gate configuration. OFF won 10/16 with mean
+floor 47.3125, PLACEBO1 won 8/16 with mean floor 47.8125, and AI1 won 11/16
+with mean floor 45.25. AI1−PLACEBO1 was +3 wins and −2.5625 mean floor;
+AI1−OFF was +1 win and −2.0625 mean floor; PLACEBO1−OFF was −2 wins and
++0.5 mean floor. Both live arms exposed all 16 seeds. PLACEBO1 injected 186
+children and AI1 injected 178; both had maximum one child per combat and zero
+telemetry integrity failures.
+
+This is directionally closest to **Outcome A** on wins, but the floor metric
+does not replicate that direction. Treat it as mixed mechanism evidence, not a
+promotion result; stop at 16 seeds and do not extend automatically.

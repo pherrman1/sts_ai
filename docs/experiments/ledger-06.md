@@ -3123,4 +3123,78 @@ not establish that duplication caused harm or novelty caused benefit.
 **Autopsy decision:** classify the gate as **mixed/inconclusive**. Exposure was
 adequate in all 32 seeds for both live arms, but AI was below OFF in aggregate
 and the primary AI−PLACEBO uncertainty includes zero. Do not promote H1 and do
+
+## 2026-08-15 — Searcher3 single-child AI_RNG rejuvenation follow-up, fresh block 920000–920015
+
+**Question:** Does limiting live rejuvenation to one accepted child per combat
+retain useful AI_RNG novelty while reducing multiplicity/dose distortion? The
+paired arms were OFF, PLACEBO1, and AI1. This was a mechanism-discrimination
+follow-up, not a promotion run; it stopped at exactly 16 seeds.
+
+**Configuration:** Fair Searcher3, A0, 1,000 base simulations, 3,000 boss
+simulations, 64 particles, 12 threads, internal belief update off, chain off,
+CRN off, real-boundary filtering on, collapse-fresh on, persistent filtered
+posterior on, reuse 0, END_TURN marginalization off,
+`STS_S3_REJUV_TRIGGER=16`, `STS_S3_REJUV_PROPOSALS=64`, combat VNet
+`models/v_combat_7k_tuned.txt` (sha256
+`ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c`), VNet
+alpha 0.3, V4 strategic token model
+`selfplay/models/ooc_strategic_tok_final.native` (sha256
+`e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`), and
+REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates with margin 1.0. Every arm ran
+through `tools/seed_guard.sh` on seeds `920000–920015`.
+
+**Aggregates:**
+
+| arm | wins | win rate | mean floor |
+|---|---:|---:|---:|
+| OFF | 10/16 | 62.5% | 47.3125 |
+| PLACEBO1 | 8/16 | 50.0% | 47.8125 |
+| AI1 | 11/16 | 68.75% | 45.2500 |
+
+**Per-seed results:**
+
+| seed | OFF won/floor | PLACEBO1 won/floor | AI1 won/floor | PLACEBO1 children | AI1 children | PLACEBO1 mass | AI1 mass |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 920000 | 1/51 | 1/51 | 1/51 | 6 | 6 | 1.079 | 1.079 |
+| 920001 | 1/51 | 1/51 | 1/51 | 7 | 7 | 0.822 | 0.822 |
+| 920002 | 0/33 | 0/33 | 0/33 | 7 | 7 | 1.821 | 1.821 |
+| 920003 | 1/51 | 1/51 | 1/51 | 8 | 8 | 2.325 | 2.296 |
+| 920004 | 1/51 | 0/50 | 1/51 | 12 | 16 | 2.759 | 4.005 |
+| 920005 | 0/45 | 0/45 | 0/41 | 13 | 13 | 2.319 | 2.319 |
+| 920006 | 0/33 | 0/33 | 0/33 | 11 | 13 | 1.630 | 2.630 |
+| 920007 | 1/51 | 0/50 | 0/33 | 18 | 10 | 4.306 | 2.367 |
+| 920008 | 0/50 | 0/50 | 1/51 | 13 | 12 | 3.425 | 2.842 |
+| 920009 | 1/51 | 1/51 | 1/51 | 19 | 17 | 4.539 | 3.042 |
+| 920010 | 0/46 | 0/46 | 0/23 | 12 | 9 | 1.431 | 0.589 |
+| 920011 | 0/40 | 1/51 | 1/51 | 13 | 13 | 3.019 | 3.019 |
+| 920012 | 1/51 | 1/51 | 1/51 | 9 | 9 | 1.967 | 1.967 |
+| 920013 | 1/51 | 1/51 | 1/51 | 17 | 14 | 3.724 | 3.070 |
+| 920014 | 1/51 | 0/50 | 1/51 | 9 | 12 | 1.918 | 2.679 |
+| 920015 | 1/51 | 1/51 | 1/51 | 12 | 12 | 2.992 | 2.992 |
+
+**Paired comparisons:** AI1−PLACEBO1 was `+3/16` wins and `−2.5625`
+mean floor, median `0`, floor positive/negative/zero `3/3/10`, exact win
+discordance `(3,0)`. AI1−OFF was `+1/16` wins and `−2.0625` mean floor,
+median `0`, floor positive/negative/zero `2/3/11`, discordance `(2,1)`.
+PLACEBO1−OFF was `−2/16` wins and `+0.5` mean floor, median `0`, floor
+positive/negative/zero `1/3/12`, discordance `(1,3)`.
+
+**Exposure/integrity:** PLACEBO1 had 3,712 telemetry rows, 187 attempt rows,
+186 injected children, and 40.076 injected mass. AI1 had 3,413 rows, 179
+attempt rows, 178 injected children, and 37.539 injected mass. Both arms were
+exposed in 16/16 seeds. Maximum children per combat was `1` in both arms;
+`children_injected` was only `0/1`; PLACEBO1 had `unique_children=0`; AI1 had
+`unique_children` equal to `children_injected`; integrity failures were zero.
+
+**Raw hashes:** OFF result `3767fa33b80f9af8c87497740ddecc6de347975fb5364088ec3ee15f5e1a317a`,
+PLACEBO1 result `63d7323c1f37e21f59290e843ae596f940e8eaca7d38d0e4cc3d5e90a00bd383`,
+AI1 result `139133aaca5f38898ef7fc8c44f00408e22af5b25f153309b98299c8aeb250f7`,
+PLACEBO1 telemetry `c43ac1b6215da7a9dfb702b04b079e94a6d4a04940eaa8f7975e3606f3c20f3c`,
+AI1 telemetry `e56183ebb524e70f1946e26dc9ceb43a4d3a811d835c845d25bbc9e8c0f6ec8a`.
+
+**Decision:** Closest to preregistered **Outcome A** directionally on wins,
+but mixed because AI1 lost on mean floor against both comparators. Exposure is
+not limiting. Stop at 16 seeds; do not automatically extend or promote live
+rejuvenation.
 not start the 64-seed extension without a new preregistered decision.
