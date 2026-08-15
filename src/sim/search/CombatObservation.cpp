@@ -476,4 +476,70 @@ const HiddenBattleState &Belief::sample(std::mt19937_64 &rng) const {
     return particles[sampleIndex(rng)];
 }
 
+// ---- Equality-backed full-hidden-state identity --------------------------
+FullHiddenCardId::FullHiddenCardId(const CardInstance &c)
+    : id(c.getId()), specialData(c.specialData), costForTurn(c.costForTurn),
+      upgradeCount(c.getUpgradeCount()), freeToPlayOnce(c.freeToPlayOnce) {}
+
+bool FullHiddenCardId::operator==(const FullHiddenCardId &o) const {
+    return id == o.id && specialData == o.specialData && costForTurn == o.costForTurn
+        && upgradeCount == o.upgradeCount && freeToPlayOnce == o.freeToPlayOnce;
+}
+
+bool FullHiddenCardId::operator<(const FullHiddenCardId &o) const {
+    if (id != o.id) return id < o.id;
+    if (specialData != o.specialData) return specialData < o.specialData;
+    if (costForTurn != o.costForTurn) return costForTurn < o.costForTurn;
+    if (upgradeCount != o.upgradeCount) return upgradeCount < o.upgradeCount;
+    return !freeToPlayOnce && o.freeToPlayOnce;
+}
+
+std::uint64_t FullHiddenCardId::hash() const {
+    std::uint64_t h = 0xcbf29ce484222325ULL;
+    h ^= static_cast<std::uint64_t>(id); h *= 1099511628211ULL;
+    h ^= static_cast<std::uint64_t>(specialData); h *= 1099511628211ULL;
+    h ^= static_cast<std::uint64_t>(costForTurn); h *= 1099511628211ULL;
+    h ^= static_cast<std::uint64_t>(upgradeCount); h *= 1099511628211ULL;
+    h ^= freeToPlayOnce ? 1ULL : 0ULL; h *= 1099511628211ULL;
+    return h;
+}
+
+bool FullHiddenStateKey::operator==(const FullHiddenStateKey &o) const {
+    return drawPileOrder == o.drawPileOrder && seed0 == o.seed0
+        && seed1 == o.seed1 && counter == o.counter;
+}
+
+bool FullHiddenStateKey::operator<(const FullHiddenStateKey &o) const {
+    if (drawPileOrder != o.drawPileOrder) return drawPileOrder < o.drawPileOrder;
+    if (seed0 != o.seed0) return seed0 < o.seed0;
+    if (seed1 != o.seed1) return seed1 < o.seed1;
+    return counter < o.counter;
+}
+
+FullHiddenStateKey fullHiddenStateKey(const HiddenBattleState &particle) {
+    FullHiddenStateKey k;
+    k.drawPileOrder.reserve(particle.drawPileOrder.size());
+    for (const auto &c : particle.drawPileOrder) k.drawPileOrder.emplace_back(c);
+    k.seed0 = {particle.shuffleRngSeed0, particle.cardRandomRngSeed0, particle.aiRngSeed0,
+               particle.miscRngSeed0, particle.monsterHpRngSeed0, particle.potionRngSeed0};
+    k.seed1 = {particle.shuffleRngSeed1, particle.cardRandomRngSeed1, particle.aiRngSeed1,
+               particle.miscRngSeed1, particle.monsterHpRngSeed1, particle.potionRngSeed1};
+    k.counter = {particle.shuffleRngCounter, particle.cardRandomRngCounter, particle.aiRngCounter,
+                 particle.miscRngCounter, particle.monsterHpRngCounter, particle.potionRngCounter};
+    return k;
+}
+
+FullHiddenStateKey fullHiddenStateKey(const BattleContext &bc) {
+    FullHiddenStateKey k;
+    k.drawPileOrder.reserve(bc.cards.drawPile.size());
+    for (const auto &c : bc.cards.drawPile) k.drawPileOrder.emplace_back(c);
+    k.seed0 = {bc.shuffleRng.seed0, bc.cardRandomRng.seed0, bc.aiRng.seed0,
+               bc.miscRng.seed0, bc.monsterHpRng.seed0, bc.potionRng.seed0};
+    k.seed1 = {bc.shuffleRng.seed1, bc.cardRandomRng.seed1, bc.aiRng.seed1,
+               bc.miscRng.seed1, bc.monsterHpRng.seed1, bc.potionRng.seed1};
+    k.counter = {bc.shuffleRng.counter, bc.cardRandomRng.counter, bc.aiRng.counter,
+                 bc.miscRng.counter, bc.monsterHpRng.counter, bc.potionRng.counter};
+    return k;
+}
+
 } // namespace sts

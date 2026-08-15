@@ -51,6 +51,7 @@
 #include "sim/search/CombatPVNet.h"
 #include "sim/search/CombatCpsiNet.h"
 #include "sim/search/BattleScumSearcher3.h"
+#include "sim/search/S3RejuvenationProbe.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/ExpertKnowledge.h"
 #include "sim/search/SimHealth.h"
@@ -152,6 +153,8 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
     const char *envs[] = {"STS_FAIR", "STS_SEARCHER3", "STS_S3_PARTICLES",
                           "STS_S3_BELIEF", "STS_S3_CHAIN", "STS_REUSE_MAX_SEARCHES",
                           "STS_S3_PERSIST_FILTERED_BELIEF",
+                          "STS_S3_REJUV_SHADOW", "STS_S3_REJUV_TRIGGER",
+                          "STS_S3_REJUV_PROPOSALS", "STS_S3_REJUV_SHADOW_FILE",
                           "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_REUSE_DIAG",
                           "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
                           "STS_REUSE_CARRY_DIAG", "STS_REUSE_CPU_DIAG",
@@ -10777,6 +10780,22 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_INTERNAL_BELIEF_UPDATE")) {
         search::g_s3InternalBeliefUpdate = std::atoi(d) != 0;
         std::cout << "[S3 internal-belief-update = " << (search::g_s3InternalBeliefUpdate ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_REJUV_SHADOW")) {
+        search::g_s3RejuvShadow = std::atoi(d) != 0;
+        std::cout << "[S3 rejuv-shadow = " << (search::g_s3RejuvShadow ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_REJUV_TRIGGER")) {
+        search::g_s3RejuvTrigger = std::max(0, std::atoi(d));
+        std::cout << "[S3 rejuv trigger = " << search::g_s3RejuvTrigger << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_REJUV_PROPOSALS")) {
+        search::g_s3RejuvProposals = std::max(1, std::atoi(d));
+        std::cout << "[S3 rejuv proposals = " << search::g_s3RejuvProposals << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_REJUV_SHADOW_FILE")) {
+        search::g_s3RejuvShadowFile = d;
+        std::cout << "[S3 rejuv shadow file = " << search::g_s3RejuvShadowFile << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_BELIEF_AUDIT_FILE")) {
         search::g_s3BeliefAuditFile = d;

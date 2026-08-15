@@ -30,6 +30,7 @@ bool g_collectKeys = false;  // STS_COLLECT_KEYS=1: collect act-4 keys
 // finish in well under 100 decisions.
 static constexpr int kMaxBattleDecisions = 1000;
 #include "sim/search/BattleScumSearcher3.h"
+#include "sim/search/S3RejuvenationProbe.h"
 
 using namespace sts;
 
@@ -374,6 +375,9 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
         int transferredBeliefSearches = 0;
 
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
+        // Shadow-only rejuvenation probe history (opt-in; empty when off).
+        std::optional<search::S3RejuvenationHistory> rejuvHistory;
+        if (search::g_s3RejuvShadow) rejuvHistory.emplace(bc);
         bool searcherValid = true;
         bool currentSearcherUsesTransferredBelief = false;
         auto rebuildFreshSearcher = [&]() {
@@ -432,6 +436,13 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                     pendingFilteredBoundaries.push_back({bc.seed, bc.floorNum,
                         static_cast<int>(bc.encounter), decisionIdx,
                         filterStats.freshBeliefRebuilt});
+                }
+                // ── Shadow rejuvenation probe (opt-in, telemetry only) ──
+                if (rejuvHistory) {
+                    rejuvHistory->record(preState, forced, bc);
+                    if (filtered)
+                        search::runRejuvenationShadowProbe(
+                            *rejuvHistory, filterStats, s3.belief, bc, decisionIdx);
                 }
                 ++decisionIdx;
                 searcherValid = false;
@@ -541,6 +552,13 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             search::RealBeliefFilterStats filterStats;
             const bool filtered = search::g_s3RealBeliefFilter;
             if (filtered) filterStats = s3.filterRealTransition(preState, bestAction, bc);
+            // ── Shadow rejuvenation probe (opt-in, telemetry only) ──
+            if (rejuvHistory) {
+                rejuvHistory->record(preState, bestAction, bc);
+                if (filtered)
+                    search::runRejuvenationShadowProbe(
+                        *rejuvHistory, filterStats, s3.belief, bc, decisionIdx);
+            }
             if (filtered && search::g_s3PersistFilteredBelief)
                 pendingFilteredBelief = s3.belief;
             bool rngSafe = (bc.aiRng.counter       == rngSnaps[2])

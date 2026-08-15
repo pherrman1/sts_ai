@@ -138,6 +138,46 @@ struct HiddenBattleState {
         int count);
 };
 
+// -- Equality-backed full-hidden-state identity -----------------------------
+// Canonical ordered identity of one draw-pile card. FullHiddenStateKey uses
+// these so hidden-state uniqueness/novelty comparisons are exact (vector
+// equality + full RNG triples), never a combined hash. Same identity fields
+// as CardActionKey (id, upgradeCount, costForTurn, freeToPlayOnce, specialData)
+// so replay states and belief particles project identically.
+struct FullHiddenCardId {
+    CardId id = CardId::INVALID;
+    std::int16_t specialData = 0;
+    std::int8_t costForTurn = 0;
+    std::int8_t upgradeCount = 0;
+    bool freeToPlayOnce = false;
+
+    FullHiddenCardId() = default;
+    explicit FullHiddenCardId(const CardInstance &c);
+
+    bool operator==(const FullHiddenCardId &o) const;
+    bool operator!=(const FullHiddenCardId &o) const { return !(*this == o); }
+    bool operator<(const FullHiddenCardId &o) const;
+    std::uint64_t hash() const;
+};
+
+// One full hidden hypothesis: the ordered draw pile plus the six RNG
+// (seed0, seed1, counter) triples. Equality is exact; ordering (operator<)
+// makes it usable as an equality-backed std::set key.
+struct FullHiddenStateKey {
+    std::vector<FullHiddenCardId> drawPileOrder;
+    // Six streams, fixed order: shuffle, cardRandom, ai, misc, monsterHp, potion.
+    std::array<std::uint64_t, 6> seed0{};
+    std::array<std::uint64_t, 6> seed1{};
+    std::array<std::int32_t, 6> counter{};
+
+    bool operator==(const FullHiddenStateKey &o) const;
+    bool operator!=(const FullHiddenStateKey &o) const { return !(*this == o); }
+    bool operator<(const FullHiddenStateKey &o) const;
+};
+
+FullHiddenStateKey fullHiddenStateKey(const HiddenBattleState &particle);
+FullHiddenStateKey fullHiddenStateKey(const BattleContext &bc);
+
 // -- Belief: weighted set of particles -------------------------------------
 struct Belief {
     std::vector<HiddenBattleState> particles;

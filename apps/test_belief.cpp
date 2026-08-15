@@ -1,8 +1,13 @@
 #include "test_belief.h"
 
+#include <array>
 #include <cmath>
+#include <cstdio>
+#include <fstream>
 #include <iostream>
 #include <random>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "combat/BattleContext.h"
@@ -10,6 +15,10 @@
 #include "game/GameContext.h"
 #include "sim/search/Action.h"
 #include "sim/search/BattleScumSearcher3.h"
+#include "sim/search/CombatObservation.h"
+#include "sim/search/S3RejuvenationProbe.h"
+#include "sim/search/ScumSearchAgent2.h"
+#include "sim/search/SimHealth.h"
 
 using namespace sts;
 
@@ -491,4 +500,446 @@ int testS3Rand64PriorSampler() {
     }
     std::cout << "s3_rand64_prior_sampler PASS seed_words=12 engine_draws=24\n";
     return 0;
+}
+
+// Rejuvenation replay semantics: the true hidden state accepts the full
+// recorded history; contradictory hypotheses are rejected at an exact boundary
+// index; a permuted replay hand still remaps semantically.
+//
+// Fixture: TWO_FUNGI_BEASTS (each beast's move is aiRng-rolled: Bite 6 dmg vs
+// Grow +3 strength), so random candidate hypotheses diverge observably at the
+// first END_TURN boundary. CULTIST would be degenerate here: its moves are
+// scripted and with the 10-card starter deck every hand/pile multiset is
+// particle-invariant.
+int testRejuvHistoryReplay(std::uint64_t seed) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::TWO_FUNGI_BEASTS);
+    search::BattleScumSearcher3 s3(bc, seed, 0, 16);
+    const auto trueParticle = s3.belief.particles.front();
+
+    BattleContext truth = bc;
+    s3.applyParticle(truth, trueParticle);
+
+    // Record three boundaries under the true hidden state: END_TURN, the first
+    // legal CARD action (or a second END_TURN if none is playable), END_TURN.
+    search::S3RejuvenationHistory history(bc);
+    int cardEntryIdx = -1;
+    {
+        BattleContext pre = truth;
+        search::Action a(search::ActionType::END_TURN);
+        if (!a.isValidAction(pre)) {
+            std::cout << "rejuv_history_replay FAIL: END_TURN fixture invalid\n";
+            return 1;
+        }
+        a.execute(truth);
+        history.record(pre, a, truth);
+    }
+    for (int hi = 0; hi < truth.cards.cardsInHand && cardEntryIdx < 0; ++hi) {
+        search::Action a(search::ActionType::CARD, hi, 0);
+        if (!a.isValidAction(truth)) continue;
+        BattleContext pre = truth;
+        a.execute(truth);
+        history.record(pre, a, truth);
+        cardEntryIdx = static_cast<int>(history.entries.size()) - 1;
+    }
+    if (cardEntryIdx < 0) {   // fall back to a second END_TURN boundary
+        BattleContext pre = truth;
+        search::Action a(search::ActionType::END_TURN);
+        a.execute(truth);
+        history.record(pre, a, truth);
+    }
+    {
+        BattleContext pre = truth;
+        search::Action a(search::ActionType::END_TURN);
+        if (!a.isValidAction(pre)) {
+            std::cout << "rejuv_history_replay FAIL: second END_TURN fixture invalid\n";
+            return 1;
+        }
+        a.execute(truth);
+        history.record(pre, a, truth);
+    }
+    if (history.entries.size() < 3) {
+        std::cout << "rejuv_history_replay FAIL: history too short\n";
+        return 1;
+    }
+
+    std::mt19937_64 rng(seed ^ 0x9E3779B97F4A7C15ULL);
+
+    // 1. The true hidden state accepts the full history exactly and the replay
+    // is deterministic.
+    const auto res = search::replayRejuvenationHistory(history, trueParticle, rng);
+    if (res.status != search::S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED
+        || !res.finalObsMatched || res.firstMismatchIndex != -1
+        || res.transitionsExecuted != static_cast<int>(history.entries.size())) {
+        std::cout << "rejuv_history_replay FAIL: true hidden state not accepted\n";
+        return 1;
+    }
+    const auto resRepeat = search::replayRejuvenationHistory(history, trueParticle, rng);
+    if (resRepeat.status != res.status || resRepeat.firstMismatchIndex != res.firstMismatchIndex
+        || resRepeat.transitionsExecuted != res.transitionsExecuted) {
+        std::cout << "rejuv_history_replay FAIL: replay not deterministic\n";
+        return 1;
+    }
+
+    // 2. Contradictory hypotheses are rejected at an exact boundary index.
+    bool sawExactRejection = false;
+    std::array<int, 6> statusHist{};
+    for (int i = 0; i < 512 && !sawExactRejection; ++i) {
+        auto cand = HiddenBattleState::sampleParticles(
+            history.anchorObs, history.anchor, rng, 1)[0];
+        const auto cr = search::replayRejuvenationHistory(history, cand, rng);
+        ++statusHist[static_cast<int>(cr.status)];
+        if (cr.status == search::S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED)
+            continue;
+        if (cr.firstMismatchIndex >= 0
+            && cr.firstMismatchIndex < static_cast<int>(history.entries.size()))
+            sawExactRejection = true;
+    }
+    if (!sawExactRejection) {
+        std::cout << "rejuv_history_replay FAIL: no contradictory hypothesis rejected at a boundary\n"
+                  << "  statusHist(accepted,remap,illegal,simhealth,intermediate,final) = ";
+        for (int v : statusHist) std::cout << v << ' ';
+        std::cout << "\n";
+        return 1;
+    }
+
+    // 3. Semantic permutation: replay the prefix under the true particle, swap
+    // two distinct hand cards, and verify the recorded CARD action still remaps
+    // to a legal action on a card with the recorded identity.
+    if (cardEntryIdx >= 0) {
+        BattleContext prefix = bc;
+        search::applyHiddenState(prefix, trueParticle, rng);
+        for (int i = 0; i < cardEntryIdx; ++i) {
+            auto a = search::remapRejuvenationAction(history.entries[i], prefix);
+            if (!a || !a->isValidAction(prefix)) {
+                std::cout << "rejuv_history_replay FAIL: prefix remap failed\n";
+                return 1;
+            }
+            a->execute(prefix);
+        }
+        const CombatObservation prefixObs = CombatObservation::fromBattleContext(prefix);
+        if (!(prefixObs == history.entries[cardEntryIdx - 1].postObs)) {
+            std::cout << "rejuv_history_replay FAIL: prefix obs mismatch\n";
+            return 1;
+        }
+        BattleContext permuted = prefix;
+        int i1 = -1, i2 = -1;
+        for (int i = 0; i < permuted.cards.cardsInHand; ++i)
+            for (int j = i + 1; j < permuted.cards.cardsInHand; ++j)
+                if (permuted.cards.hand[i].getId() != permuted.cards.hand[j].getId()) {
+                    i1 = i; i2 = j;
+                }
+        if (i1 >= 0) std::swap(permuted.cards.hand[i1], permuted.cards.hand[i2]);
+        const auto remapped =
+            search::remapRejuvenationAction(history.entries[cardEntryIdx], permuted);
+        if (!remapped || !remapped->isValidAction(permuted)) {
+            std::cout << "rejuv_history_replay FAIL: semantic remap failed on permuted hand\n";
+            return 1;
+        }
+        const int hi = remapped->getSourceIdx();
+        if (hi < 0 || hi >= permuted.cards.cardsInHand
+            || permuted.cards.hand[hi].getId() != history.entries[cardEntryIdx].cardKey.id) {
+            std::cout << "rejuv_history_replay FAIL: remap targeted wrong card identity\n";
+            return 1;
+        }
+    }
+
+    std::cout << "rejuv_history_replay PASS entries=" << history.entries.size()
+              << " cardEntryIdx=" << cardEntryIdx << "\n";
+    return 0;
+}
+
+// Targeted SINGLE/MULTI_CARD_SELECT semantic-recording + remap regressions:
+// hand permutation selects the same semantic card; discard and draw piles
+// remap; two same-CardId copies with different semantic properties resolve the
+// recorded copy; an intentionally empty MULTI_CARD_SELECT round-trips.
+int testRejuvSemanticSelect() {
+    GameContext gc(CharacterClass::IRONCLAD, 12345, 0);
+    BattleContext base;
+    base.init(gc, MonsterEncounter::CULTIST);
+
+    auto makeState = [&](CardSelectTask task) {
+        BattleContext bc = base;
+        bc.inputState = InputState::CARD_SELECT;
+        bc.cardSelectInfo.cardSelectTask = task;
+        bc.cards.cardsInHand = 0;
+        bc.cards.drawPile.clear();
+        bc.cards.discardPile.clear();
+        bc.cards.exhaustPile.clear();
+        return bc;
+    };
+
+    // 1. SINGLE_CARD_SELECT from hand survives a permutation.
+    {
+        BattleContext pre = makeState(CardSelectTask::EXHAUST_ONE);
+        pre.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+        pre.cards.hand[1] = CardInstance(CardId::DEFEND_RED);
+        pre.cards.hand[2] = CardInstance(CardId::BASH);
+        pre.cards.cardsInHand = 3;
+        search::Action a(search::ActionType::SINGLE_CARD_SELECT, 1);  // DEFEND
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, a, pre);
+        if (!hist.entries.back().hasCardKey
+            || hist.entries.back().cardKey.id != CardId::DEFEND_RED) {
+            std::cout << "rejuv_semantic_select FAIL: hand select not recorded semantically\n";
+            return 1;
+        }
+        BattleContext perm = makeState(CardSelectTask::EXHAUST_ONE);
+        perm.cards.hand[0] = CardInstance(CardId::BASH);
+        perm.cards.hand[1] = CardInstance(CardId::STRIKE_RED);
+        perm.cards.hand[2] = CardInstance(CardId::DEFEND_RED);   // moved to idx 2
+        perm.cards.cardsInHand = 3;
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), perm);
+        if (!remapped || remapped->getSelectIdx() != 2
+            || perm.cards.hand[remapped->getSelectIdx()].getId() != CardId::DEFEND_RED) {
+            std::cout << "rejuv_semantic_select FAIL: hand permutation remap wrong\n";
+            return 1;
+        }
+    }
+
+    // 2a. SINGLE_CARD_SELECT from discardPile remaps.
+    {
+        BattleContext pre = makeState(CardSelectTask::HOLOGRAM);
+        pre.cards.discardPile.push_back(CardInstance(CardId::STRIKE_RED));
+        pre.cards.discardPile.push_back(CardInstance(CardId::DEFEND_RED));
+        pre.cards.discardPile.push_back(CardInstance(CardId::BASH));
+        search::Action a(search::ActionType::SINGLE_CARD_SELECT, 1);  // DEFEND
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, a, pre);
+        if (!hist.entries.back().hasCardKey
+            || hist.entries.back().cardKey.id != CardId::DEFEND_RED) {
+            std::cout << "rejuv_semantic_select FAIL: discard select not recorded semantically\n";
+            return 1;
+        }
+        BattleContext st = makeState(CardSelectTask::HOLOGRAM);
+        st.cards.discardPile.push_back(CardInstance(CardId::BASH));
+        st.cards.discardPile.push_back(CardInstance(CardId::DEFEND_RED));  // idx 1
+        st.cards.discardPile.push_back(CardInstance(CardId::STRIKE_RED));
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), st);
+        if (!remapped || remapped->getSelectIdx() != 1) {
+            std::cout << "rejuv_semantic_select FAIL: discard remap wrong\n";
+            return 1;
+        }
+    }
+
+    // 2b. SINGLE_CARD_SELECT from drawPile remaps.
+    {
+        BattleContext pre = makeState(CardSelectTask::SEEK);
+        pre.cards.drawPile.push_back(CardInstance(CardId::STRIKE_RED));
+        pre.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+        pre.cards.drawPile.push_back(CardInstance(CardId::BASH));
+        search::Action a(search::ActionType::SINGLE_CARD_SELECT, 2);  // BASH
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, a, pre);
+        if (!hist.entries.back().hasCardKey
+            || hist.entries.back().cardKey.id != CardId::BASH) {
+            std::cout << "rejuv_semantic_select FAIL: draw select not recorded semantically\n";
+            return 1;
+        }
+        BattleContext st = makeState(CardSelectTask::SEEK);
+        st.cards.drawPile.push_back(CardInstance(CardId::STRIKE_RED));
+        st.cards.drawPile.push_back(CardInstance(CardId::BASH));       // idx 1
+        st.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), st);
+        if (!remapped || remapped->getSelectIdx() != 1) {
+            std::cout << "rejuv_semantic_select FAIL: draw remap wrong\n";
+            return 1;
+        }
+    }
+
+    // 3. Two same-CardId copies with different semantic properties resolve the
+    // recorded copy (costForTurn differentiates).
+    {
+        BattleContext pre = makeState(CardSelectTask::EXHAUST_ONE);
+        CardInstance expensive(CardId::STRIKE_RED);
+        expensive.costForTurn = 1;
+        CardInstance cheap(CardId::STRIKE_RED);
+        cheap.costForTurn = 0;
+        pre.cards.hand[0] = expensive;
+        pre.cards.hand[1] = cheap;
+        pre.cards.cardsInHand = 2;
+        search::Action a(search::ActionType::SINGLE_CARD_SELECT, 0);  // the cost-1 copy
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, a, pre);
+        if (!hist.entries.back().hasCardKey
+            || hist.entries.back().cardKey.costForTurn != 1) {
+            std::cout << "rejuv_semantic_select FAIL: semantic copy not recorded with cost\n";
+            return 1;
+        }
+        BattleContext perm = makeState(CardSelectTask::EXHAUST_ONE);
+        perm.cards.hand[0] = cheap;      // now the cost-0 copy is first
+        perm.cards.hand[1] = expensive;
+        perm.cards.cardsInHand = 2;
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), perm);
+        if (!remapped || remapped->getSelectIdx() != 1
+            || perm.cards.hand[remapped->getSelectIdx()].costForTurn != 1) {
+            std::cout << "rejuv_semantic_select FAIL: identical-CardId copies not resolved\n";
+            return 1;
+        }
+    }
+
+    // 4. Empty legal MULTI_CARD_SELECT round-trips (select-none is a valid
+    // semantic identity, distinguishable from "identity unavailable").
+    {
+        BattleContext pre = makeState(CardSelectTask::EXHAUST_MANY);
+        pre.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+        pre.cards.cardsInHand = 1;
+        pre.cardSelectInfo.pickCount = 10;
+        search::Action a(static_cast<std::uint32_t>(search::ActionType::MULTI_CARD_SELECT) << 29);
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, a, pre);
+        if (!hist.entries.back().hasMultiKeys || !hist.entries.back().multiKeys.empty()) {
+            std::cout << "rejuv_semantic_select FAIL: empty multi-select not recorded as valid\n";
+            return 1;
+        }
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), pre);
+        if (!remapped || !remapped->getSelectedIdxs().empty()
+            || !remapped->isValidAction(pre)) {
+            std::cout << "rejuv_semantic_select FAIL: empty multi-select round-trip broken\n";
+            return 1;
+        }
+    }
+
+    std::cout << "rejuv_semantic_select PASS\n";
+    return 0;
+}
+
+// Shadow-probe non-interference: with the probe enabled, the live battle must
+// be bit-identical to the probe-disabled run (committed action bits, decision
+// observations, RNG-counter trajectories, positive-particle full-hidden-state
+// keys, outcome), sim-health counters must be untouched, and the shadow CSV
+// must be written. Exercises the PUBLIC ScumSearchAgent2::playoutBattleFair
+// path with Searcher3 configured on.
+int testRejuvNoninterference(std::uint64_t seed) {
+    const bool savedUseS3 = search::g_useSearcher3;
+    const bool savedFilter = search::g_s3RealBeliefFilter;
+    const bool savedFresh = search::g_s3RealBeliefCollapseFresh;
+    const bool savedShadow = search::g_s3RejuvShadow;
+    const int savedTrigger = search::g_s3RejuvTrigger;
+    const int savedProposals = search::g_s3RejuvProposals;
+    const std::string savedFile = search::g_s3RejuvShadowFile;
+    const auto savedDecision = search::g_onCombatDecision;
+    const auto savedSearch = search::g_onSearchComplete3;
+    const int savedSimCount = search::g_simHealthFailureCount;
+
+    struct RejuvCapture {
+        std::vector<std::uint64_t> obsHashes;
+        std::vector<std::array<std::int64_t, 18>> rngState;
+        std::vector<int> actionBits;
+        std::vector<std::vector<sts::FullHiddenStateKey>> positiveKeys;
+        int outcome = -1;
+        int finalHp = 0;
+        std::array<std::int64_t, 18> finalRng{};
+        int simHealthDelta = 0;
+    };
+    auto run = [&](bool shadow, const std::string &file) -> RejuvCapture {
+        GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::ScumSearchAgent2 agent;
+        agent.simulationCountBase = 400;
+        agent.bossSimulationMultiplier = 1;
+        search::g_useSearcher3 = true;
+        search::g_s3RealBeliefFilter = true;
+        search::g_s3RealBeliefCollapseFresh = true;
+        search::g_s3RejuvShadow = shadow;
+        search::g_s3RejuvShadowFile = file;
+        search::g_s3RejuvTrigger = 1 << 30;   // fire at every filtered boundary
+        search::g_s3RejuvProposals = 4;
+        RejuvCapture cap;
+        auto snap = [](const BattleContext &b) {
+            std::array<std::int64_t, 18> r{};
+            auto put = [&](int i, const Random &x) {
+                r[i * 3] = static_cast<std::int64_t>(x.seed0);
+                r[i * 3 + 1] = static_cast<std::int64_t>(x.seed1);
+                r[i * 3 + 2] = static_cast<std::int64_t>(x.counter);
+            };
+            put(0, b.shuffleRng); put(1, b.cardRandomRng); put(2, b.aiRng);
+            put(3, b.miscRng); put(4, b.monsterHpRng); put(5, b.potionRng);
+            return r;
+        };
+        search::g_onCombatDecision = [&](const BattleContext &b) {
+            cap.obsHashes.push_back(CombatObservation::fromBattleContext(b).visibleHash());
+            cap.rngState.push_back(snap(b));
+        };
+        search::g_onSearchComplete3 = [&](const BattleContext &, const search::BattleScumSearcher3 &s) {
+            std::vector<sts::FullHiddenStateKey> keys;
+            for (const auto &p : s.belief.particles)
+                if (p.weight > 0) keys.push_back(sts::fullHiddenStateKey(p));
+            cap.positiveKeys.push_back(std::move(keys));
+        };
+        agent.printActions = true;   // fills gameActionHistory with committed bits
+        std::stringstream sink;      // silence the hex dump; bits come from the history
+        auto *old = std::cout.rdbuf(sink.rdbuf());
+        agent.playoutBattleFair(bc);
+        std::cout.rdbuf(old);
+        cap.actionBits = agent.gameActionHistory;
+        cap.outcome = static_cast<int>(bc.outcome);
+        cap.finalHp = bc.player.curHp;
+        cap.finalRng = snap(bc);
+        cap.simHealthDelta = search::g_simHealthFailureCount - savedSimCount;
+        return cap;
+    };
+
+    const std::string shadowFile = "/tmp/sts_rejuv_shadow_test.csv";
+    std::remove(shadowFile.c_str());
+    const RejuvCapture off = run(false, "");
+    const RejuvCapture on = run(true, shadowFile);
+
+    int failures = 0;
+    if (off.actionBits != on.actionBits) {
+        std::cout << "rejuv_noninterference FAIL: action bit sequence differs (off="
+                  << off.actionBits.size() << " on=" << on.actionBits.size() << ")\n";
+        ++failures;
+    }
+    if (off.obsHashes != on.obsHashes) {
+        std::cout << "rejuv_noninterference FAIL: decision observation hashes differ\n";
+        ++failures;
+    }
+    if (off.rngState != on.rngState) {
+        std::cout << "rejuv_noninterference FAIL: RNG trajectories differ\n";
+        ++failures;
+    }
+    if (off.positiveKeys != on.positiveKeys) {
+        std::cout << "rejuv_noninterference FAIL: positive-particle keys differ\n";
+        ++failures;
+    }
+    if (off.outcome != on.outcome || off.finalHp != on.finalHp || off.finalRng != on.finalRng) {
+        std::cout << "rejuv_noninterference FAIL: final state differs\n";
+        ++failures;
+    }
+    if (off.simHealthDelta != 0 || on.simHealthDelta != 0) {
+        std::cout << "rejuv_noninterference FAIL: sim-health counters moved (off="
+                  << off.simHealthDelta << " on=" << on.simHealthDelta << ")\n";
+        ++failures;
+    }
+    int shadowRows = 0;
+    {
+        std::ifstream csv(shadowFile);
+        std::string line;
+        while (std::getline(csv, line)) ++shadowRows;
+    }
+    if (shadowRows < 2) {   // header + at least one data row
+        std::cout << "rejuv_noninterference FAIL: shadow CSV missing/empty\n";
+        ++failures;
+    }
+
+    // Restore globals (single exit point).
+    search::g_useSearcher3 = savedUseS3;
+    search::g_s3RealBeliefFilter = savedFilter;
+    search::g_s3RealBeliefCollapseFresh = savedFresh;
+    search::g_s3RejuvShadow = savedShadow;
+    search::g_s3RejuvTrigger = savedTrigger;
+    search::g_s3RejuvProposals = savedProposals;
+    search::g_s3RejuvShadowFile = savedFile;
+    search::g_onCombatDecision = savedDecision;
+    search::g_onSearchComplete3 = savedSearch;
+    if (failures == 0) {
+        std::cout << "rejuv_noninterference PASS decisions=" << off.obsHashes.size()
+                  << " actions=" << off.actionBits.size() << " shadowRows=" << shadowRows - 1 << "\n";
+        return 0;
+    }
+    std::cout << "rejuv_noninterference FAIL (" << failures << " checks)\n";
+    return 1;
 }
