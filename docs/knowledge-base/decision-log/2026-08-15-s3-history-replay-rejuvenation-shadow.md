@@ -78,20 +78,39 @@ non-interference test).
   observation hashes, all-18 RNG field trajectories, positive-particle
   `FullHiddenStateKey` sequences, final state; sim-health counters untouched;
   shadow CSV written (9/9 rows at proposals=4).
+- `apps/test_belief.cpp::testRejuvSemanticSelect` — targeted regressions for
+  the corrected semantic replay: hand SINGLE_CARD_SELECT survives a
+  permutation and selects the same semantic card; discard and draw pile
+  selections remap; two same-CardId copies with different semantic properties
+  resolve the recorded copy; an intentionally empty MULTI_CARD_SELECT
+  round-trips (select-none distinct from "identity unavailable").
 - 8-seed mechanical run (seeds 126732–126739, 1,000 sims, 12 threads, run
-  through `tools/seed_guard.sh`): 981 trigger rows, 251,136 proposals, 2,013
-  full-history-accepted hypotheses (0.80%) in 128 rows; 83/66/37/21 rows
-  reached 4/8/16/32 unique accepted hypotheses; acceptance concentrated at
-  decision_idx 0–4 (80.4% of accepted rows) and ≈0 after ~8; all accepted
-  hypotheses novel vs the surviving posterior; 0 action-illegal, 0 sim-health;
-  probe CPU 1.76 ms/trigger. Per-row sanity and milestone-monotonicity gates:
-  0 violations. Whole-run 4/8 wins (informational only). Details in
-  ledger-06 results section.
+  through `tools/seed_guard.sh`), **corrected executable**: 981 trigger rows,
+  251,136 proposals, 2,018 full-history-accepted hypotheses (0.80%) in 132
+  rows; 83/66/37/21 rows reached 4/8/16/32 unique accepted hypotheses;
+  acceptance concentrated at decision_idx 0–4 and rare after ~8 (9 rows at
+  decision ≥8, 75 accepted); 0 remap failures, 0 action-illegal, 0 sim-health;
+  43,489 final-only mismatches (FINAL_MISMATCH now reachable); all accepted
+  hypotheses novel vs the surviving posterior; probe CPU 1.19 s total. Whole-run
+  4/8 wins (informational only). Details in ledger-06 results section.
 
 ## Status and follow-up
 
 - Implemented and mechanically verified (build release, focused tests, 8-seed
   run through `tools/seed_guard.sh`).
+- **Correction (reviewer-found, same session):** the first 8-seed run
+  (implementation commit `ac603e5`) recorded SINGLE_CARD_SELECT via
+  `BattleScumSearcher3::cardActionKey` (CardId-only, `cardSelectInfo.cards`),
+  so hand/discard/draw/exhaust-pile selections remapped incorrectly and
+  produced 8,331 artificial `remap_failure`s. Corrected recording + remap
+  eliminated remap failures (→0), made FINAL_MISMATCH reachable (43,489), and
+  slightly increased late-fight acceptance (9 rows at decision ≥8 vs 7).
+  `ac603e5` / the first run is **invalidated for late-history inference**; the
+  corrected rerun is the authoritative frozen result. Scientific interpretation
+  softened: compatible full-history states were demonstrated for **some**
+  low-support boundaries; zero-acceptance boundaries remain **inconclusive**
+  between very low proposal probability and hidden-state/model inconsistency —
+  no global consistency claim.
 - **Open question:** the 2-boundary CULTIST fixture revealed that with the
   10-card starter deck and fully scripted enemy moves, observation histories
   can be particle-invariant (accepted-by-every-hypothesis); the probe's
