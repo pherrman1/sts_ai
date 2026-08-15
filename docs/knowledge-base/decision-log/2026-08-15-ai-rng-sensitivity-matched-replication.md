@@ -12,6 +12,25 @@ exploratory belief-ON artifact names, hashes, and summary counts while claiming
 the belief-OFF/V4 regime. That record is explicitly superseded in
 `docs/experiments/ledger-06.md`.
 
+## Rationale
+
+The matched evidence had to be regenerated rather than inferred from the
+exploratory run because belief state, proposal count, and strategic OOC gates
+are part of the frozen experimental regime. **Inference:** preserving the
+invalid record without an explicit correction would make later treatment
+decisions non-reproducible.
+
+## Alternatives considered
+
+- Reuse the existing `/tmp/final8_*` artifacts — rejected because they were the
+  exploratory belief-ON/native-OOC run, not the matched belief-OFF/V4 run.
+- Silently replace the prior ledger text — rejected because the repository
+  requires chronological evidence and explicit supersession of prior records.
+- Rerun with code changes — rejected because the implementation was already
+  validated; only provenance/configuration needed correction.
+
+## Evidence
+
 The corrected run used commit `d0c02cd`, seeds `126732–126739`, fair Searcher3,
 `STS_S3_BELIEF=0`, 64 particles, 1,000 base / 3,000 boss simulations, real
 filtering with collapse-fresh and persistent posterior, chain/reuse/end-turn
@@ -56,3 +75,11 @@ decision/ranking effects across multiple seeds and encounter groups with valid
 controls. This clears a separately preregistered, targeted live-treatment
 experiment, not a global gameplay-promotion claim. No live rejuvenation was
 implemented or run here.
+
+## Status and follow-up
+
+- **Status:** corrected matched evidence committed and pushed; the invalid
+  `d68af8c` matched record is explicitly superseded.
+- **Follow-up:** a separately preregistered, targeted live-treatment experiment
+  may proceed. This result does not authorize global gameplay promotion or
+  implement live rejuvenation.
