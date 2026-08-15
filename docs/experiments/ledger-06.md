@@ -2120,6 +2120,137 @@ mechanical health, collapse, support, ESS if available, and CPU reported.
 resampling/rejuvenation, RNG-counter redesign, MCTS-statistics transfer, model
 or policy tuning, or current-baseline promotion.
 
+## 2026-08-15 — Searcher3 persistent filtered-posterior quality A/B results
+
+**Frozen execution:** all quality runs used the frozen implementation commit
+`4a08736d0185c7c70f0fc731e0bc06b2702061a0` and the preregistration commit
+`f583ec007916e3fd7f117877d7c111b0392487b4`. No source code changed after
+provenance execution began. The Release executable SHA256 was
+`19e1160642e262b3b77949790c7e573d740db5296105d38d8bca3858b08b8a16`.
+
+**Provenance gate, seed 126732:** C, the fresh-tree + fresh-belief
+experimental control, reported exactly 0 actual fresh searches initialized
+from a transferred posterior. Its boundary-level sources were
+`fresh_initial=409`, `no_next_search=24`. P reported 58 actual transferred
+fresh searches; its boundary-level sources were
+`transferred_filtered_posterior=422`, `no_next_search=24`. Thus the treatment
+was active, and the boundary-level sidecar was not mistaken for actual-search
+consumption. Both arms had zero propagation failures, draw-pile mismatches, and
+action-illegal particles on this provenance seed. Both lost at floor 50 with
+ending HP 0; runtime was 18.3457s C versus 22.03s P.
+
+**Common environment:** `OMP_NUM_THREADS=12`,
+`STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0
+STS_S3_PARTICLES=64 STS_S3_REAL_BELIEF_FILTER=1
+STS_S3_REAL_BELIEF_COLLAPSE_FRESH=1 STS_S3_INTERNAL_BELIEF_UPDATE=0
+STS_REUSE_MAX_SEARCHES=0 STS_LIVE_VALID=1 STS_VNET=models/v_combat_7k_tuned.txt
+STS_VNET_ALPHA=0.3
+STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native
+STS_OOC_STRATEGIC_MARGIN=1.0 STS_OOC_STRATEGIC_REST=1
+STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1
+STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1
+STS_S3_BELIEF_AUDIT=1`. The sole arm difference was
+`STS_S3_PERSIST_FILTERED_BELIEF=0` for C versus `=1` for P. Startup output
+confirmed Searcher3, fair-play, 64 particles, 1,000 sims, 12 threads, and
+`models/v_combat_7k_tuned.txt` loaded at alpha 0.3. The strategic model path
+was present in the startup/configuration provenance. Model hashes were the
+preregistered values: V_combat
+`ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c` and
+strategic token net
+`e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`.
+
+**16-seed gate, 126732–126747:** meaningful paired trajectory and outcome
+divergence occurred, so the preregistered extension rule fired.
+
+| Metric | C | P |
+|---|---:|---:|
+| Wins | 7 | 7 |
+| P-only wins | 2 | — |
+| C-only wins | 2 | — |
+| Both win | 5 | — |
+| Both lose | 7 | — |
+| Mean floor | 43.2500 | 41.8750 |
+| Mean ending HP | 18.8125 | 17.3750 |
+| Mean runtime sec/run | 49.6159 | 45.7638 |
+
+The paired P−C floor delta was mean `-1.375`, median `0`; ending-HP delta
+was mean `-1.4375`, median `0`. The 16-seed direction was not a coherent
+quality advantage; the full 32-seed discordance is reported below.
+
+**32-seed gate, 126732–126763:** the continuation was run exactly as
+preregistered, using only `126748–126763`, and execution stopped at 32.
+
+| Metric | C | P |
+|---|---:|---:|
+| Wins | 15 | 16 |
+| P-only wins | 6 | — |
+| C-only wins | 5 | — |
+| Both win | 10 | — |
+| Both lose | 11 | — |
+| Mean floor | 43.2813 | 43.5938 |
+| Mean ending HP | 23.9063 | 24.6563 |
+| Mean runtime sec/run | 53.1608 | 51.6669 |
+
+Across paired seeds, P−C floor was mean `+0.3125`, median `0`; P−C
+ending HP was mean `+0.75`, median `0`. Runtime delta P−C was mean
+`-1.4940s`, median `-1.1792s`, descriptive only. The exact paired outcome
+table was P-only `6`, C-only `5`, both win `10`, both lose `11`; the two-sided
+conditional discordance test was not informative at this sample size (p=1.0).
+Per-seed rows and raw artifacts are retained under the ignored
+`build/linux-gcc-release/s3_ab_{c,p}_{16,32tail}.*` paths.
+
+**Provenance and posterior mechanics across 32 seeds:** C had 0 actual
+transferred fresh searches and boundary sources
+`fresh_initial=12508`, `no_next_search=759`. P had 12,691 actual transferred
+fresh searches and boundary sources
+`transferred_filtered_posterior=12662`, `no_next_search=759`.
+
+| Mechanical metric | C | P |
+|---|---:|---:|
+| Filtered boundaries | 13,267 | 13,421 |
+| Posterior collapses | 1,970 (14.85%) | 2,517 (18.75%) |
+| Propagation failures / attempts | 253 / 849,088 (0.0298%) | 155 / 612,277 (0.0253%) |
+| Draw-pile mismatches | 0 | 0 |
+| Action-illegal particles | 253 | 155 |
+| Mean distinct surviving draw orders | 44.13 | 37.48 |
+| Mean ESS over audit rows | 55.62 | 44.36 |
+
+No battle stalls, unresolved exits, simulator-health failures, or material
+draw-pile regressions occurred. The treatment had lower support/ESS and higher
+collapse frequency, consistent with H3's support-depletion concern, but did
+not cross the mechanical stop rule.
+
+**Treatment support depletion:** Existing `[belief-audit]` output covered
+11,278 actual-search audit points. Positive-particle count had mean `46.53`,
+median `64`; fractions at or below thresholds were `<=4: 17.0%`
+(`1,917/11,278`), `<=8: 21.5%` (`2,424/11,278`), `<=16: 26.5%`
+(`2,990/11,278`), and `<=32: 30.3%` (`3,416/11,278`). ESS had mean `46.53`,
+median `64`, first quartile `14`, third quartile `64`, and range `0–64`.
+These distributions are descriptive of the treatment's actual searches and
+were derived offline without adding runtime telemetry.
+
+**Implementation verdict:** the feature is mechanically active, default-off,
+fresh-tree isolated, provenance-correct, and preserves zero-weight particle
+identity in focused tests. The treatment passed the mechanical validity gate.
+
+**Scientific verdict:** **mixed / inconclusive at 64 particles and 1,000
+fresh-tree Searcher3 simulations.** P produced substantial trajectory
+divergence and one additional win (16 vs 15), with small positive mean floor
+and HP deltas, but also six P-only versus five C-only wins, zero median paired
+quality delta, higher collapse rate, lower support/ESS, and no statistically
+informative paired binary result. This is not evidence to enable persistence by
+default and does not establish a durable gameplay-quality improvement.
+
+**Competing explanations and limits:** the sample is small; paired outcomes
+are noisy; the treatment changes posterior support and therefore search
+sampling, not only semantic accuracy; `HiddenBattleState` still lacks complete
+RNG-counter representation; CPU differences may reflect the extra belief
+handling; and the strategic/OOC and combat models remain sources of variance.
+The result does not establish that persistence is beneficial at other particle
+counts, simulation budgets, searcher-tree policies, model stacks, or longer
+seed blocks. No resampling, rejuvenation, RNG redesign, default promotion, or
+64/128-seed follow-up was performed.
+
 ## 2026-08-15 — Searcher3 posterior lifetime diagnostic and rejected transfer smoke
 
 **Question:** Does exact real-boundary filtering meaningfully condition a
