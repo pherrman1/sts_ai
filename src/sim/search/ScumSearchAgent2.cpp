@@ -373,6 +373,10 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
         std::vector<S3FilteredBoundary> pendingFilteredBoundaries;
         std::optional<Belief> pendingFilteredBelief;
         int transferredBeliefSearches = 0;
+        int pendingExposureCompatible = -1;
+        int pendingExposureSourceDecision = -1;
+        int pendingExposureSearchDecision = -1;
+        int pendingExposureTurn = 0;
 
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         // Shadow-only rejuvenation probe history (opt-in; empty when off).
@@ -429,8 +433,12 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 search::RealBeliefFilterStats filterStats;
                 const bool filtered = search::g_s3RealBeliefFilter;
                 if (filtered) filterStats = s3.filterRealTransition(preState, forced, bc);
+                if (!filtered) pendingExposureCompatible = -1;
                 writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx, false, filtered, filtered ? &filterStats : nullptr);
                 if (filtered) {
+                    pendingExposureCompatible = filterStats.compatible;
+                    pendingExposureSourceDecision = decisionIdx;
+                    pendingExposureTurn = preState.turn;
                     if (search::g_s3PersistFilteredBelief)
                         pendingFilteredBelief = s3.belief;
                     pendingFilteredBoundaries.push_back({bc.seed, bc.floorNum,
@@ -445,6 +453,7 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                             *rejuvHistory, filterStats, s3.belief, bc, decisionIdx);
                 }
                 ++decisionIdx;
+                if (filtered) pendingExposureSearchDecision = decisionIdx;
                 searcherValid = false;
                 continue;
             }
@@ -468,7 +477,19 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             }
             search::countTransferredBeliefSearch(
                 currentSearcherUsesTransferredBelief, transferredBeliefSearches);
+            if (search::g_s3RngExposureDiag && pendingExposureCompatible >= 0
+                && pendingExposureCompatible <= 16) {
+                s3.enableRngExposureDiagnostic(
+                    bc.seed, static_cast<int>(bc.encounter), bc.floorNum,
+                    pendingExposureSourceDecision, pendingExposureSearchDecision,
+                    pendingExposureTurn, CombatObservation::fromBattleContext(bc).visibleHash(),
+                    pendingExposureCompatible);
+            }
             s3.search(spend);
+            s3.flushRngExposureDiagnostic();
+            pendingExposureCompatible = -1;
+            pendingExposureSourceDecision = -1;
+            pendingExposureSearchDecision = -1;
             if (search::g_reuseCpuDiag) {
                 auto diagAfter = s3.snapshotDiag();
                 s3.writeCpuDiagRow(
@@ -552,6 +573,7 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             search::RealBeliefFilterStats filterStats;
             const bool filtered = search::g_s3RealBeliefFilter;
             if (filtered) filterStats = s3.filterRealTransition(preState, bestAction, bc);
+            if (!filtered) pendingExposureCompatible = -1;
             // ── Shadow rejuvenation probe (opt-in, telemetry only) ──
             if (rejuvHistory) {
                 rejuvHistory->record(preState, bestAction, bc);
@@ -627,6 +649,10 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             }
             writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx - 1, carriedAtBoundary, filtered, filtered ? &filterStats : nullptr);
             if (filtered) {
+                pendingExposureCompatible = filterStats.compatible;
+                pendingExposureSourceDecision = decisionIdx - 1;
+                pendingExposureSearchDecision = decisionIdx;
+                pendingExposureTurn = preState.turn;
                 pendingFilteredBoundaries.push_back({bc.seed, bc.floorNum,
                     static_cast<int>(bc.encounter), decisionIdx - 1,
                     filterStats.freshBeliefRebuilt});

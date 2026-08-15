@@ -155,6 +155,7 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_S3_PERSIST_FILTERED_BELIEF",
                           "STS_S3_REJUV_SHADOW", "STS_S3_REJUV_TRIGGER",
                           "STS_S3_REJUV_PROPOSALS", "STS_S3_REJUV_SHADOW_FILE",
+                          "STS_S3_RNG_EXPOSURE_DIAG", "STS_S3_RNG_EXPOSURE_DIAG_FILE",
                           "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_REUSE_DIAG",
                           "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
                           "STS_REUSE_CARRY_DIAG", "STS_REUSE_CPU_DIAG",
@@ -10796,6 +10797,14 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_REJUV_SHADOW_FILE")) {
         search::g_s3RejuvShadowFile = d;
         std::cout << "[S3 rejuv shadow file = " << search::g_s3RejuvShadowFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_RNG_EXPOSURE_DIAG")) {
+        search::g_s3RngExposureDiag = std::atoi(d) != 0;
+        std::cout << "[S3 RNG exposure diag = " << (search::g_s3RngExposureDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_RNG_EXPOSURE_DIAG_FILE")) {
+        search::g_s3RngExposureDiagFile = d;
+        std::cout << "[S3 RNG exposure diag file = " << search::g_s3RngExposureDiagFile << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_BELIEF_AUDIT_FILE")) {
         search::g_s3BeliefAuditFile = d;
