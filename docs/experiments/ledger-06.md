@@ -2488,7 +2488,7 @@ also changed. No promotion; do not auto-scale to 5,000.
 
 > **Correction (2026-08-15, §169):** this gate ran with `keys=skip` (default),
 > which is an Act-3-only horizon — the earlier "vs deployed V4 ~48%" comparison
-> was a cross-block/horizon error. On a same-seed/same-config Act-3 calibration,
+> was an invalid cross-block comparison. On a same-seed/same-config Act-3 calibration,
 > V4 scored 37.5% vs M0 26.6% / M1 25.0% (§169). Both arms remain below V4 but
 > by a smaller, same-block margin; H4 (another bottleneck) remains plausible.
 
