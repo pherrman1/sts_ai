@@ -962,7 +962,11 @@ if __name__ == "__main__":
         net.load_state_dict(state)
         model.eval()
         eval_metrics = to_py(evaluate())
-        ckpt = {"state_dict": net.cpu().state_dict(), "mean": mean, "inv": inv,
+        # Serialize CPU state dict as a COPY. net.cpu() would move the live model
+        # off DEVICE, so the next checkpoint's compiled evaluate() would feed CPU
+        # parameters into Triton kernels ("Pointer argument ... cpu tensor?").
+        ckpt = {"state_dict": {k: v.detach().cpu() for k, v in net.state_dict().items()},
+                "mean": mean, "inv": inv,
                 "metrics": eval_metrics, "rung": RUNG, "nrows": int(nrows),
                 "features": NFILE, "transformer": TRANSFORMER,
                 "nquants": NQUANTS, "ncross": CROSS, "nprobes": NPROBES}
@@ -981,7 +985,8 @@ if __name__ == "__main__":
         net.load_state_dict(default_state)
         model.eval()
         eval_metrics = to_py(evaluate())
-        torch.save({"state_dict": net.cpu().state_dict(), "mean": mean, "inv": inv,
+        torch.save({"state_dict": {k: v.detach().cpu() for k, v in net.state_dict().items()},
+                    "mean": mean, "inv": inv,
                     "metrics": eval_metrics, "rung": RUNG, "nrows": int(nrows),
                     "features": NFILE, "transformer": TRANSFORMER,
                     "nquants": NQUANTS, "ncross": CROSS, "nprobes": NPROBES},
