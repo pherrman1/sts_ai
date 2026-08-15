@@ -10,7 +10,7 @@ manual checks, model-load diagnostics, and tracing boundaries.
 ## Current implementation
 
 `CMakeLists.txt` requires CMake 3.19, C++17, and applies
-`-Wno-shift-count-overflow -O3 -fopenmp` globally. It recursively gathers
+`-Wno-shift-count-overflow -O3 -fopenmp -flto` globally. It recursively gathers
 `src/*.cpp` into the `sts_core_objects` OBJECT library, which is reused by
 the native executables `main`, `one_combat`, `parity_test`, `unit-test`, and
 `small-test`. The Python module continues to compile `${sts_lightspeed_SOURCES}`

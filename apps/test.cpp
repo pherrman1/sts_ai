@@ -37,6 +37,7 @@
 #include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/SimHealth.h"
+#include "sim/search/TrainingIntegrity.h"
 #include "combat/BattleContextBinary.h"
 #include "constants/MonsterMoves.h"
 #include "test_belief.h"
@@ -1628,6 +1629,56 @@ int testSimHealthNonFairS2SelectionFailed() {
     return 1;
 }
 
+int testTrainingIntegrity() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const char *msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    check(search::isValidTrainingTerminal(true, 0, 0),
+          "decided victory/loss with no health failure is valid");
+    check(search::isValidTrainingTerminal(false, 0, 0, true),
+          "clean unresolved bounded bootstrap is valid");
+    check(!search::isValidTrainingTerminal(false, 0, 0),
+          "unresolved ordinary label is invalid");
+    check(!search::isValidTrainingTerminal(true, 0, 1),
+          "health-failed decided label is invalid");
+    check(!search::isValidTrainingTerminal(false, 0, 1, true),
+          "health-failed bootstrap is invalid");
+    check(!search::hasCompleteCounterfactualFutureSet(1, 2, 2),
+          "one valid and one invalid future quarantines the label rather than averaging with zero");
+    check(search::hasCompleteCounterfactualFutureSet(2, 2, 2),
+          "all requested counterfactual futures permit a label");
+    check(search::hasCompleteCounterfactualFutureSet(3, 3, 2),
+          "adaptive extra futures remain valid when every evaluated future succeeded");
+    {
+        BattleContext bc = playerNormalFixture(0xFACEu, 3);
+        const int totalBefore = search::g_simHealthFailureCount;
+        const int reasonBefore = search::g_simHealthFailureCounts[
+            (int)search::SimHealthFailure::ACTION_SELECTION_FAILED];
+        search::reportSimHealthFailure(bc, search::SimHealthFailure::ACTION_SELECTION_FAILED);
+        const int branchDelta = search::g_simHealthFailureCount - totalBefore;
+        check(branchDelta == 1, "branch failure increments canonical total exactly once");
+        check(search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED]
+              == reasonBefore + 1, "branch failure increments canonical per-reason count");
+        int reasonSum = 0;
+        for (const int count : search::g_simHealthFailureCounts) reasonSum += count;
+        check(reasonSum == search::g_simHealthFailureCount,
+              "canonical total remains consistent with per-reason counts");
+        check(search::isValidTrainingTerminal(true, totalBefore,
+                                              search::g_simHealthFailureCount - branchDelta),
+              "excluding only branch-local failures preserves a clean source run");
+        check(!search::isValidTrainingTerminal(true, totalBefore,
+                                               search::g_simHealthFailureCount),
+              "unexcluded health failure invalidates a source run");
+    }
+    if (failures == 0) {
+        std::cout << "training_integrity PASS\n";
+        return 0;
+    }
+    std::cout << "training_integrity FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 // simhealth_load <path>: deserialize a sim-health capture .bin and print its
 // key fields. Load-only proof that a captured snapshot round-trips (used to
 // verify STS_SIM_HEALTH_CAPTURE_DIR outputs; no replay).
@@ -2140,6 +2191,53 @@ int testSemanticCardEdges() {
     return 1;
 }
 
+// ---- S3 draw-pile-index reuse boundary regression --------------------------
+int testS3DrawPileIndexReuseBoundary() {
+    int failures = 0;
+    auto check = [&](bool ok, const char *message) {
+        if (!ok) {
+            std::cout << "s3_drawpile_reuse_boundary FAIL: " << message << '\n';
+            ++failures;
+        }
+    };
+
+    for (CardSelectTask task : {CardSelectTask::SECRET_TECHNIQUE,
+                                CardSelectTask::SECRET_WEAPON,
+                                CardSelectTask::SEEK}) {
+        auto bc = cardSelectFixture(task, 1, false);
+        check(search::isDrawPileIndexSensitiveCardSelect(bc),
+              "draw-pile task not classified as sensitive");
+        search::BattleScumSearcher3 s3(bc, 0x1234, 0, 1);
+        s3.search(1);
+        check(!s3.root.edges.empty(), "sensitive fixture produced no root edges");
+        if (!s3.root.edges.empty()) {
+            const auto action = s3.root.edges.front().action;
+            check(!s3.advanceRoot(action, bc),
+                  "sensitive card-select root retained a subtree");
+            check(!s3.rootCarried && s3.reuseGeneration == 0,
+                  "fresh sensitive boundary reported as carried");
+        }
+    }
+
+    auto ordinary = cardSelectFixture(CardSelectTask::HOLOGRAM, 1, false);
+    check(!search::isDrawPileIndexSensitiveCardSelect(ordinary),
+          "unrelated card-select task classified as sensitive");
+    search::BattleScumSearcher3 ordinaryS3(ordinary, 0x5678, 0, 1);
+    ordinaryS3.search(1);
+    check(!ordinaryS3.root.edges.empty(), "ordinary fixture produced no root edges");
+    if (!ordinaryS3.root.edges.empty()) {
+        check(ordinaryS3.advanceRoot(ordinaryS3.root.edges.front().action, ordinary),
+              "ordinary card-select root did not reuse");
+    }
+
+    if (failures == 0) {
+        std::cout << "s3_drawpile_reuse_boundary PASS\n";
+        return 0;
+    }
+    std::cout << "s3_drawpile_reuse_boundary FAIL (" << failures << " checks)\n";
+    return 1;
+}
+
 // ---- Draw-probability unit tests -------------------------------------------
 // Validates the exact hypergeometric draw-probability helper.
 
@@ -2538,6 +2636,8 @@ int main(int argc, const char* argv[]) {
         return testKeyCollection();
     } else if (command == "semantic_card_edges") {
         return testSemanticCardEdges();
+    } else if (command == "s3_drawpile_reuse_boundary") {
+        return testS3DrawPileIndexReuseBoundary();
     } else if (command == "draw_prob_helper") {
         return testDrawProbHelper();
     } else if (command == "draw_prob_engine") {
@@ -2546,6 +2646,12 @@ int main(int argc, const char* argv[]) {
         return testBeliefOrderInvariance();
     } else if (command == "real_belief_filter") {
         return testRealBeliefFilter(std::stoull(argv[2]));
+    } else if (command == "persistent_belief_transfer") {
+        return testPersistentBeliefTransfer(std::stoull(argv[2]));
+    } else if (command == "rng_state_propagation") {
+        return testRngStatePropagation(std::stoull(argv[2]));
+    } else if (command == "s3_rand64_prior_sampler") {
+        return testS3Rand64PriorSampler();
     } else if (command == "belief_immutability") {
         return testBeliefImmutability();
     } else if (command == "thorns_retaliation") {
@@ -2568,6 +2674,8 @@ int main(int argc, const char* argv[]) {
         return testSimHealthSelectionFailure();
     } else if (command == "simhealth_nonfair_s2_selection_failed") {
         return testSimHealthNonFairS2SelectionFailed();
+    } else if (command == "training_integrity") {
+        return testTrainingIntegrity();
     } else if (command == "simhealth_load") {
         if (argc < 3) {
             std::cout << "usage: test simhealth_load <capture.bin>\n";

@@ -34,6 +34,9 @@ bool g_s3Belief = true;
 bool g_s3RealBeliefFilter = false;
 // Rebuild a fresh visible-state-consistent prior only on filter collapse.
 bool g_s3RealBeliefCollapseFresh = false;
+// Replace a fresh searcher's initial belief with the filtered real-boundary
+// posterior; tree state remains fresh.
+bool g_s3PersistFilteredBelief = false;
 // STS_S3_INTERNAL_BELIEF_UPDATE: when 0, simulated observations inside step()
 // do NOT permanently mutate the root belief. The root belief represents
 // uncertainty at the real information state; imagined trajectories are
@@ -243,22 +246,22 @@ static void applyParticleImpl(BattleContext &state,
                               std::mt19937_64 &fallbackRng) {
     state.shuffleRng.seed0    = particle.shuffleRngSeed0;
     state.shuffleRng.seed1    = particle.shuffleRngSeed1;
-    state.shuffleRng.counter  = 0;
+    state.shuffleRng.counter  = particle.shuffleRngCounter;
     state.cardRandomRng.seed0 = particle.cardRandomRngSeed0;
     state.cardRandomRng.seed1 = particle.cardRandomRngSeed1;
-    state.cardRandomRng.counter = 0;
+    state.cardRandomRng.counter = particle.cardRandomRngCounter;
     state.aiRng.seed0    = particle.aiRngSeed0;
     state.aiRng.seed1    = particle.aiRngSeed1;
-    state.aiRng.counter  = 0;
+    state.aiRng.counter  = particle.aiRngCounter;
     state.miscRng.seed0  = particle.miscRngSeed0;
     state.miscRng.seed1  = particle.miscRngSeed1;
-    state.miscRng.counter = 0;
+    state.miscRng.counter = particle.miscRngCounter;
     state.monsterHpRng.seed0 = particle.monsterHpRngSeed0;
     state.monsterHpRng.seed1 = particle.monsterHpRngSeed1;
-    state.monsterHpRng.counter = 0;
+    state.monsterHpRng.counter = particle.monsterHpRngCounter;
     state.potionRng.seed0   = particle.potionRngSeed0;
     state.potionRng.seed1   = particle.potionRngSeed1;
-    state.potionRng.counter = 0;
+    state.potionRng.counter = particle.potionRngCounter;
     // Install the sampled draw order when it still matches the copied pile;
     // stale particles (tree reuse across decisions) fall back to a shuffle.
     if (particle.drawPileOrder.size() == (size_t)state.cards.drawPile.size()
@@ -274,6 +277,18 @@ static void applyParticleImpl(BattleContext &state,
 void BattleScumSearcher3::applyParticle(BattleContext &state,
                                         const HiddenBattleState &particle) {
     applyParticleImpl(state, particle, rng);
+}
+
+bool isDrawPileIndexSensitiveCardSelect(const BattleContext &bc) {
+    if (bc.inputState != InputState::CARD_SELECT) return false;
+    switch (bc.cardSelectInfo.cardSelectTask) {
+        case CardSelectTask::SECRET_TECHNIQUE:
+        case CardSelectTask::SECRET_WEAPON:
+        case CardSelectTask::SEEK:
+            return true;
+        default:
+            return false;
+    }
 }
 
 RealBeliefFilterStats BattleScumSearcher3::filterRealTransition(
@@ -297,10 +312,12 @@ RealBeliefFilterStats BattleScumSearcher3::filterRealTransition(
 
     for (size_t i = 0; i < belief.particles.size(); ++i) {
         auto &particle = belief.particles[i];
+        if (particle.weight <= 0.0) continue;
         ++stats.attempted;
         if (particle.drawPileOrder.size() != preState.cards.drawPile.size()
             || !sameCardMultiset(particle.drawPileOrder, preState.cards.drawPile)) {
             ++stats.propagationFailures;
+            ++stats.drawPileMismatch;
             ++stats.fallbackShuffles;
             particle.weight = 0.0;
             continue;
@@ -327,11 +344,25 @@ RealBeliefFilterStats BattleScumSearcher3::filterRealTransition(
 
         ++stats.compatible;
         particle.weight = 1.0;
-        // Carry the propagated hidden draw order to the next real boundary.
-        // RNG counters are not represented by HiddenBattleState yet; seed
-        // signatures remain available, while exact counter propagation is
-        // reported as an open limitation in the audit.
         particle.drawPileOrder = predicted.cards.drawPile;
+        particle.shuffleRngSeed0 = predicted.shuffleRng.seed0;
+        particle.shuffleRngSeed1 = predicted.shuffleRng.seed1;
+        particle.shuffleRngCounter = predicted.shuffleRng.counter;
+        particle.cardRandomRngSeed0 = predicted.cardRandomRng.seed0;
+        particle.cardRandomRngSeed1 = predicted.cardRandomRng.seed1;
+        particle.cardRandomRngCounter = predicted.cardRandomRng.counter;
+        particle.aiRngSeed0 = predicted.aiRng.seed0;
+        particle.aiRngSeed1 = predicted.aiRng.seed1;
+        particle.aiRngCounter = predicted.aiRng.counter;
+        particle.miscRngSeed0 = predicted.miscRng.seed0;
+        particle.miscRngSeed1 = predicted.miscRng.seed1;
+        particle.miscRngCounter = predicted.miscRng.counter;
+        particle.monsterHpRngSeed0 = predicted.monsterHpRng.seed0;
+        particle.monsterHpRngSeed1 = predicted.monsterHpRng.seed1;
+        particle.monsterHpRngCounter = predicted.monsterHpRng.counter;
+        particle.potionRngSeed0 = predicted.potionRng.seed0;
+        particle.potionRngSeed1 = predicted.potionRng.seed1;
+        particle.potionRngCounter = predicted.potionRng.counter;
     }
 
     int dominantCount = 0;
@@ -1587,30 +1618,35 @@ void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
 bool BattleScumSearcher3::advanceRoot(const Action &action,
                                        const BattleContext &newRootState) {
     bool reused = false;
-    // Match by raw action bits first, then by semantic card key (if available)
-    // to handle hand-index remapping across tree reuse.
-    for (auto &edge : root.edges) {
-        if (edge.action == action) {
-            root = std::move(edge.child);
-            reused = true;
-            break;
+    // SINGLE_CARD_SELECT stores a physical draw-pile index.  The hidden
+    // draw-pile order may differ even when the visible root observation is
+    // unchanged, so never carry a subtree into these roots.
+    if (!isDrawPileIndexSensitiveCardSelect(newRootState)) {
+        // Match by raw action bits first, then by semantic card key (if
+        // available) to handle hand-index remapping across tree reuse.
+        for (auto &edge : root.edges) {
+            if (edge.action == action) {
+                root = std::move(edge.child);
+                reused = true;
+                break;
+            }
         }
-    }
-    if (!reused && g_s3SemanticCardEdges
-        && action.getActionType() == ActionType::CARD) {
-        CardActionKey committedKey = cardActionKey(*rootBc, action);
-        if (committedKey.id != CardId::INVALID) {
-            for (auto &edge : root.edges) {
-                if (edge.hasCardKey && edge.cardKey == committedKey) {
-                    root = std::move(edge.child);
-                    reused = true;
-                    break;
+        if (!reused && g_s3SemanticCardEdges
+            && action.getActionType() == ActionType::CARD) {
+            CardActionKey committedKey = cardActionKey(*rootBc, action);
+            if (committedKey.id != CardId::INVALID) {
+                for (auto &edge : root.edges) {
+                    if (edge.hasCardKey && edge.cardKey == committedKey) {
+                        root = std::move(edge.child);
+                        reused = true;
+                        break;
+                    }
                 }
             }
         }
     }
     if (!reused) root = Node{};
-    rootCarried = true;
+    rootCarried = reused;
 
     // Count retained nodes in the carried subtree and optionally reset stats.
     if (reused) {

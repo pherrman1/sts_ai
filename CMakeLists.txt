@@ -10,7 +10,7 @@ enable_testing()
 file (GLOB_RECURSE sts_lightspeed_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS  "-Wno-shift-count-overflow -O3 -fopenmp")
+set(CMAKE_CXX_FLAGS  "-Wno-shift-count-overflow -O3 -fopenmp -flto")
 
 add_subdirectory(json)
 
@@ -86,6 +86,7 @@ add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_over
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
 add_test(NAME semantic_card_edges COMMAND $<TARGET_FILE:unit-test> semantic_card_edges)
+add_test(NAME s3_drawpile_reuse_boundary COMMAND $<TARGET_FILE:unit-test> s3_drawpile_reuse_boundary)
 add_test(NAME thorns_retaliation COMMAND $<TARGET_FILE:unit-test> thorns_retaliation)
 add_test(NAME awakened_one_stage2 COMMAND $<TARGET_FILE:unit-test> awakened_one_stage2)
 add_test(NAME darkling_victory COMMAND $<TARGET_FILE:unit-test> darkling_victory)
@@ -96,5 +97,8 @@ add_test(NAME gamblers_brew_legality COMMAND $<TARGET_FILE:unit-test> gamblers_b
 add_test(NAME simhealth_nonfair_s2_empty COMMAND $<TARGET_FILE:unit-test> simhealth_nonfair_s2_empty)
 add_test(NAME simhealth_selection_failure COMMAND $<TARGET_FILE:unit-test> simhealth_selection_failure)
 add_test(NAME simhealth_nonfair_s2_selection_failed COMMAND $<TARGET_FILE:unit-test> simhealth_nonfair_s2_selection_failed)
-set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest py_compile_winnettest_selftest check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed
+add_test(NAME training_integrity COMMAND $<TARGET_FILE:unit-test> training_integrity)
+add_test(NAME rng_state_propagation COMMAND $<TARGET_FILE:unit-test> rng_state_propagation 12345)
+add_test(NAME s3_rand64_prior_sampler COMMAND $<TARGET_FILE:unit-test> s3_rand64_prior_sampler)
+set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest py_compile_winnettest_selftest check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity
     PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")

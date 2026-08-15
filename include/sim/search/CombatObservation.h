@@ -108,16 +108,22 @@ struct HiddenBattleState {
     std::vector<CardInstance> drawPileOrder;   // actual order (hidden)
     std::uint64_t shuffleRngSeed0 = 0;
     std::uint64_t shuffleRngSeed1 = 0;
+    std::int32_t shuffleRngCounter = 0;
     std::uint64_t cardRandomRngSeed0 = 0;
     std::uint64_t cardRandomRngSeed1 = 0;
+    std::int32_t cardRandomRngCounter = 0;
     std::uint64_t aiRngSeed0 = 0;
     std::uint64_t aiRngSeed1 = 0;
+    std::int32_t aiRngCounter = 0;
     std::uint64_t miscRngSeed0 = 0;
     std::uint64_t miscRngSeed1 = 0;
+    std::int32_t miscRngCounter = 0;
     std::uint64_t monsterHpRngSeed0 = 0;
     std::uint64_t monsterHpRngSeed1 = 0;
+    std::int32_t monsterHpRngCounter = 0;
     std::uint64_t potionRngSeed0 = 0;
     std::uint64_t potionRngSeed1 = 0;
+    std::int32_t potionRngCounter = 0;
 
     double weight = 1.0;
     std::uint64_t id = 0;

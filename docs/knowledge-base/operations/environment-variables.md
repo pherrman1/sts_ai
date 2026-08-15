@@ -43,6 +43,7 @@ These control the default executing configuration; they are always parsed.
 | `STS_S3_LIVE` | Live-valid root-edge filter (ablation) | `1` (ON) | `main` ~L9737 |
 | `STS_S3_CRN` | Root CRN warm start (opt-in) | `0` (off) | `main` ~L9738 |
 | `STS_S3_POOL_REDIRECT` | Forced-move budget pool redirect (opt-in) | `0` (off) | `main` ~L9732 |
+| `STS_S3_PERSIST_FILTERED_BELIEF` | Transfer the exact filtered real-boundary posterior into the next fresh Searcher3 tree (experimental) | `0` (off) | `main` ~L10772 |
 | `STS_RISK_LAMBDA` | Risk sensitivity for S3 PUCT | 0.5 | `main` ~L9845 |
 
 ## Searcher3 experimental rollout / expansion

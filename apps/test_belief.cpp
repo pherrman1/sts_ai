@@ -22,6 +22,35 @@ bool sameDrawOrder(const HiddenBattleState &a, const HiddenBattleState &b) {
     return true;
 }
 
+bool sameDrawOrder(const HiddenBattleState &particle,
+                   const std::vector<CardInstance> &drawPile) {
+    if (particle.drawPileOrder.size() != drawPile.size()) return false;
+    for (size_t i = 0; i < drawPile.size(); ++i)
+        if (particle.drawPileOrder[i].getId() != drawPile[i].getId()) return false;
+    return true;
+}
+
+bool sameRngState(const HiddenBattleState &particle, const BattleContext &state) {
+    return particle.shuffleRngSeed0 == state.shuffleRng.seed0
+        && particle.shuffleRngSeed1 == state.shuffleRng.seed1
+        && particle.shuffleRngCounter == state.shuffleRng.counter
+        && particle.cardRandomRngSeed0 == state.cardRandomRng.seed0
+        && particle.cardRandomRngSeed1 == state.cardRandomRng.seed1
+        && particle.cardRandomRngCounter == state.cardRandomRng.counter
+        && particle.aiRngSeed0 == state.aiRng.seed0
+        && particle.aiRngSeed1 == state.aiRng.seed1
+        && particle.aiRngCounter == state.aiRng.counter
+        && particle.miscRngSeed0 == state.miscRng.seed0
+        && particle.miscRngSeed1 == state.miscRng.seed1
+        && particle.miscRngCounter == state.miscRng.counter
+        && particle.monsterHpRngSeed0 == state.monsterHpRng.seed0
+        && particle.monsterHpRngSeed1 == state.monsterHpRng.seed1
+        && particle.monsterHpRngCounter == state.monsterHpRng.counter
+        && particle.potionRngSeed0 == state.potionRng.seed0
+        && particle.potionRngSeed1 == state.potionRng.seed1
+        && particle.potionRngCounter == state.potionRng.counter;
+}
+
 } // namespace
 
 int testBelief() {
@@ -241,6 +270,20 @@ int testRealBeliefFilter(std::uint64_t seed) {
         return 1;
     }
 
+    search::BattleScumSearcher3 sequential(bc, seed, 0, 16);
+    BattleContext sequentialPost = bc;
+    sequential.applyParticle(sequentialPost, sequential.belief.particles.front());
+    action.execute(sequentialPost);
+    sequential.belief.particles[1].weight = 0.0;
+    sequential.belief.particles[1].drawPileOrder.clear();
+    const auto sequentialStats = sequential.filterRealTransition(bc, action, sequentialPost);
+    if (sequentialStats.attempted != 15
+        || sequentialStats.drawPileMismatch != 0
+        || sequential.belief.particles[1].weight != 0.0) {
+        std::cout << "real_belief_filter FAIL: zero-weight particle was reconsidered\n";
+        return 1;
+    }
+
     const bool savedFresh = search::g_s3RealBeliefCollapseFresh;
     search::g_s3RealBeliefCollapseFresh = true;
     search::BattleScumSearcher3 nonCollapse(bc, seed, 0, 8);
@@ -282,5 +325,170 @@ int testRealBeliefFilter(std::uint64_t seed) {
     search::g_s3RealBeliefCollapseFresh = savedFresh;
     std::cout << "real_belief_filter PASS compatible=" << stats.compatible
               << " attempted=" << stats.attempted << "\n";
+    return 0;
+}
+
+int testPersistentBeliefTransfer(std::uint64_t seed) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    search::Action action(search::ActionType::END_TURN);
+    search::BattleScumSearcher3 source(bc, seed, 0, 8);
+    BattleContext realPost = bc;
+    source.applyParticle(realPost, source.belief.particles.front());
+    action.execute(realPost);
+    source.filterRealTransition(bc, action, realPost);
+    source.belief.particles.front().weight = 0.0;
+
+    search::BattleScumSearcher3 fresh(realPost, seed, 1, 8);
+    const bool transferred = search::installTransferredBelief(fresh, &source.belief);
+    if (fresh.root.simulationCount != 0
+        || !transferred
+        || fresh.belief.particles.size() != source.belief.particles.size()) {
+        std::cout << "persistent_belief_transfer FAIL: fresh tree or particle count changed\n";
+        return 1;
+    }
+    for (size_t i = 0; i < source.belief.particles.size(); ++i) {
+        const auto &a = source.belief.particles[i];
+        const auto &b = fresh.belief.particles[i];
+        if (a.id != b.id || a.weight != b.weight
+            || !sameDrawOrder(a, b)) {
+            std::cout << "persistent_belief_transfer FAIL: particle identity/weight changed\n";
+            return 1;
+        }
+    }
+
+    int transferredSearches = 0;
+    if (transferred && fresh.root.simulationCount == 0) {
+        // A forced transition may invalidate this fresh searcher without
+        // calling search(); construction alone must not count as consumption.
+        search::countTransferredBeliefSearch(false, transferredSearches);
+        if (transferredSearches != 0) {
+            std::cout << "persistent_belief_transfer FAIL: no-search transfer counted\n";
+            return 1;
+        }
+        search::countTransferredBeliefSearch(true, transferredSearches);
+        fresh.search(1);
+    }
+    if (transferredSearches != 1 || fresh.root.simulationCount == 0) {
+        std::cout << "persistent_belief_transfer FAIL: actual search not counted\n";
+        return 1;
+    }
+
+    search::BattleScumSearcher3 control(realPost, seed, 2, 8);
+    if (search::installTransferredBelief(control, nullptr)
+        || control.belief.particles.front().weight == 0.0) {
+        std::cout << "persistent_belief_transfer FAIL: persistence-off path transferred\n";
+        return 1;
+    }
+    std::cout << "persistent_belief_transfer PASS\n";
+    return 0;
+}
+
+int testRngStatePropagation(std::uint64_t seed) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    BattleContext preState;
+    preState.init(gc, MonsterEncounter::CULTIST);
+    const search::Action action(search::ActionType::END_TURN);
+    search::BattleScumSearcher3 s3(preState, seed, 0, 8);
+    for (size_t i = 0; i < s3.belief.particles.size(); ++i)
+        s3.belief.particles[i].id = i + 1;
+
+    BattleContext post1 = preState;
+    s3.applyParticle(post1, s3.belief.particles.front());
+    if (!action.isValidAction(post1)) {
+        std::cout << "rng_state_propagation FAIL: first END_TURN invalid\n";
+        return 1;
+    }
+    action.execute(post1);
+    const bool firstConsumedRng = post1.aiRng.counter != preState.aiRng.counter
+        || post1.cardRandomRng.counter != preState.cardRandomRng.counter
+        || post1.shuffleRng.counter != preState.shuffleRng.counter
+        || post1.miscRng.counter != preState.miscRng.counter
+        || post1.monsterHpRng.counter != preState.monsterHpRng.counter
+        || post1.potionRng.counter != preState.potionRng.counter;
+    if (!firstConsumedRng) {
+        std::cout << "rng_state_propagation FAIL: first transition consumed no represented RNG\n";
+        return 1;
+    }
+
+    const auto firstStats = s3.filterRealTransition(preState, action, post1);
+    const auto &firstParticle = s3.belief.particles.front();
+    if (firstStats.compatible <= 0 || firstParticle.weight <= 0.0
+        || !sameDrawOrder(firstParticle, post1.cards.drawPile)
+        || !sameRngState(firstParticle, post1)) {
+        std::cout << "rng_state_propagation FAIL: first post-state mismatch"
+                  << " compatible=" << firstStats.compatible
+                  << " particle_weight=" << firstParticle.weight << '\n';
+        return 1;
+    }
+    std::cout << "rng_state_propagation transition1 PASS compatible="
+              << firstStats.compatible << " draw_pile=match rng_fields=18/18 counters=["
+              << post1.shuffleRng.counter << ',' << post1.cardRandomRng.counter << ','
+              << post1.aiRng.counter << ',' << post1.miscRng.counter << ','
+              << post1.monsterHpRng.counter << ',' << post1.potionRng.counter << "]\n";
+
+    BattleContext post2 = post1;
+    if (!action.isValidAction(post2)) {
+        std::cout << "rng_state_propagation FAIL: second END_TURN invalid\n";
+        return 1;
+    }
+    action.execute(post2);
+    const auto secondStats = s3.filterRealTransition(post1, action, post2);
+    const auto &secondParticle = s3.belief.particles.front();
+    if (secondStats.compatible <= 0 || secondParticle.weight <= 0.0
+        || !sameRngState(secondParticle, post2)) {
+        std::cout << "rng_state_propagation FAIL: second transition incompatible"
+                  << " compatible=" << secondStats.compatible
+                  << " particle_weight=" << secondParticle.weight << '\n';
+        return 1;
+    }
+    std::cout << "rng_state_propagation transition2 PASS compatible="
+              << secondStats.compatible << " draw_pile=match rng_fields=18/18 counters=["
+              << post2.shuffleRng.counter << ',' << post2.cardRandomRng.counter << ','
+              << post2.aiRng.counter << ',' << post2.miscRng.counter << ','
+              << post2.monsterHpRng.counter << ',' << post2.potionRng.counter << "]\n";
+    return 0;
+}
+
+int testS3Rand64PriorSampler() {
+    constexpr std::uint64_t seed = 0x123456789abcdef0ULL;
+    std::mt19937_64 actual(seed);
+    std::mt19937_64 reference(seed);
+    HiddenBattleState particle;
+    particle.randomize(actual);
+
+    const auto expectedWord = [&]() {
+        const std::uint64_t hi = reference() & 0xffffffffULL;
+        const std::uint64_t lo = reference() & 0xffffffffULL;
+        return (hi << 32) | lo;
+    };
+    const std::uint64_t expected[] = {
+        expectedWord(), expectedWord(), expectedWord(), expectedWord(),
+        expectedWord(), expectedWord(), expectedWord(), expectedWord(),
+        expectedWord(), expectedWord(), expectedWord(), expectedWord(),
+    };
+    const std::uint64_t actualSeeds[] = {
+        particle.shuffleRngSeed0, particle.shuffleRngSeed1,
+        particle.cardRandomRngSeed0, particle.cardRandomRngSeed1,
+        particle.aiRngSeed0, particle.aiRngSeed1,
+        particle.miscRngSeed0, particle.miscRngSeed1,
+        particle.monsterHpRngSeed0, particle.monsterHpRngSeed1,
+        particle.potionRngSeed0, particle.potionRngSeed1,
+    };
+    for (size_t i = 0; i < std::size(expected); ++i) {
+        if (actualSeeds[i] != expected[i]) {
+            std::cout << "s3_rand64_prior_sampler FAIL: seed word " << i
+                      << " differs\n";
+            return 1;
+        }
+    }
+    for (int i = 0; i < 8; ++i) {
+        if (actual() != reference()) {
+            std::cout << "s3_rand64_prior_sampler FAIL: engine state differs after 24 draws\n";
+            return 1;
+        }
+    }
+    std::cout << "s3_rand64_prior_sampler PASS seed_words=12 engine_draws=24\n";
     return 0;
 }
