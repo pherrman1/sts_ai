@@ -22,14 +22,15 @@ The current default remains: fair S3 carries obs-stable trees between decisions
 but does NOT apply real-boundary belief updates. `STS_S3_BELIEF=0` is the
 recommended particle config.
 
-**Persistent posterior transfer across fresh trees is rejected for the current
-particle representation.** A 2026-08-15 diagnostic found that 99.4% of
+**Persistent posterior transfer remains experimental, not rejected by the
+initial collapse smoke.** A 2026-08-15 diagnostic found that 99.4% of
 non-trivial exact filters were followed by a fresh initial belief, so the
-lifetime coupling is material. But an 8-seed fresh-tree treatment that
-transferred the posterior caused 79.1% collapse, mostly propagation failures:
-`HiddenBattleState` stores RNG seeds but not counters, while particle application
-resets counters to zero. It cannot represent a posterior safely across multiple
-real transitions. No transfer feature remains in the executable.
+lifetime coupling is material. A paired collapse-fallback test then reduced
+temporary transfer collapse from 79.8% to 19.7% by rebuilding a fresh belief
+from the real post-state on collapse. The earlier catastrophic result was
+therefore primarily stale pre-transition particle restoration, not established
+proof that missing RNG counters make transfer invalid. No transfer feature
+remains in the executable; a separate experiment is required before promotion.
 
 ## Evidence map
 
@@ -43,15 +44,13 @@ real transitions. No transfer feature remains in the executable.
 | 2026-08-10 | [Decision: belief-filter audit](../../decision-log/2026-08-10-s3-real-belief-filter-audit.md) | Old drawOrderConsistent is not a posterior test; exact per-particle propagation is the oracle |
 | 2026-08-10 | [Decision: filter implementation](../../decision-log/2026-08-10-s3-real-belief-filter.md) | Keep opt-in, recommend confirmation gate before rejuvenation |
 | 2026-08-10 | [Decision: collapse diagnosis](../../decision-log/2026-08-10-s3-collapse-diagnosis.md) | Collapse classifications + fresh-belief fallback diagnostic |
-| 2026-08-15 | [Persistent-posterior lifecycle decision](../../decision-log/2026-08-15-s3-persistent-posterior-lifecycle.md) | Useful posteriors are usually discarded, but transfer is invalid with seed-only hidden RNG state; diagnostic retained, treatment removed |
+| 2026-08-15 | [Persistent-posterior lifecycle decision](../../decision-log/2026-08-15-s3-persistent-posterior-lifecycle.md) | Useful posteriors are usually discarded; stale collapse restoration explained the prior catastrophic transfer smoke; treatment remains experimental and removed |
 
 ## Rejected / falsified approaches
 
 - **Hypothetical MCTS belief updates** — default-off since issue #58
 - **Internal belief reweighting during search** — not in the recommended regime
 - **Obs-keyed descent** — falsified at §114
-- **Persistent posterior transfer with seed-only hidden state** — rejected:
-  propagated particles lack RNG counters and collapse on later real boundaries
 
 ## Relationships
 
@@ -81,7 +80,9 @@ for the full implementation context.
 
 ## Open questions
 
+- Does persistent transfer with post-state fresh collapse recovery change search
+  beliefs or actions beneficially? **Open question**; no such mechanism is
+  currently implemented.
 - Can a future hidden-state representation carry exact RNG-counter state across
-  real boundaries without violating simulator invariants? **Open question**;
-  no such mechanism is implemented.
+  real boundaries without violating simulator invariants? **Open question**.
 - Can the filtering semantics be promoted to a gameplay default?

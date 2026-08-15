@@ -20,10 +20,13 @@ def main():
     args=ap.parse_args()
     ds=rows(args.diag)
     print(f"rows={len(ds)} seeds={len({r['seed'] for r in ds})}")
-    for k in ("filter_compatible_fraction", "posterior_collapse",
-              "propagation_failures", "filter_fallback_shuffles",
-              "distinct_surviving_draw_orders",
-              "distinct_surviving_rng_signatures", "filter_cpu_ms"):
+    metrics = ("filter_compatible_fraction", "posterior_collapse",
+               "propagation_failures", "draw_pile_mismatch_particles",
+               "action_illegal_particles", "filter_fallback_shuffles",
+               "distinct_surviving_draw_orders",
+               "distinct_surviving_rng_signatures", "filter_cpu_ms")
+    for k in metrics:
+        if k not in ds[0]: continue
         print(f"{k},mean={avg(ds,k):.6f},median={statistics.median(val(r,k) for r in ds):.6f}")
     if args.next_search:
         sources = rows(args.next_search)

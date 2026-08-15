@@ -2098,3 +2098,20 @@ battle-break output occurred. No 32-seed gate was run.
 `s3_persist_{control,treatment}_8.{csv,csv.next_search.csv,results.csv}` and
 their `.meta.json`, `.stdout`, and `.stderr` files. See
 `docs/knowledge-base/decision-log/2026-08-15-s3-persistent-posterior-lifecycle.md`.
+
+**Correction — paired collapse-fallback diagnostic (same date):** The preceding
+temporary treatment did not isolate missing RNG counters from stale-collapse
+fallback. With temporary posterior transfer and `STS_REUSE_MAX_SEARCHES=0` held
+constant, paired seeds 94000–94007 changed only
+`STS_S3_REAL_BELIEF_COLLAPSE_FRESH`: T0 (`0`) collapsed 2,536/3,177 boundaries
+(79.82%) with 169,738/203,328 propagation failures (83.48%), all 169,738 being
+draw-pile mismatches and 2,363 `PROPAGATION_FAILURE` collapses. T1 (`1`) rebuilt
+554 fresh post-state beliefs and collapsed 554/2,818 boundaries (19.66%) with
+56,329/180,352 propagation failures (31.23%): 56,233 draw-pile mismatches, 96
+action-illegal particles, and zero `PROPAGATION_FAILURE` collapses. Thus stale
+pre-transition restoration was the primary cause of the catastrophic cascade.
+Missing RNG counters remain an open limitation, not an established primary
+cause. The temporary transfer remained removed; no larger strength gate ran.
+T0/T1 whole-run wins were both 3/8 and are not quality evidence; CPU was 33.46
+vs 29.73 s/run. Artifacts: `s3_persist_t{0,1}_8.*` under
+`build/linux-gcc-release/`.

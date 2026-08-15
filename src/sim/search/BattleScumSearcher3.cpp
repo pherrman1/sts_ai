@@ -313,6 +313,7 @@ RealBeliefFilterStats BattleScumSearcher3::filterRealTransition(
         if (particle.drawPileOrder.size() != preState.cards.drawPile.size()
             || !sameCardMultiset(particle.drawPileOrder, preState.cards.drawPile)) {
             ++stats.propagationFailures;
+            ++stats.drawPileMismatch;
             ++stats.fallbackShuffles;
             particle.weight = 0.0;
             continue;
