@@ -2857,3 +2857,41 @@ the −10.9pp 64-seed point estimate (CI crosses zero). The autopsy is
 
 Full tables, hashes, root causes, and provenance:
 `docs/archive/research/sessions/phase12-m0-m1-autopsy-2026-08-15.md`.
+
+## §173 Phase-13A counterfactual teacher-strength audit (2026-08-15)
+
+Phase 13A audited whether the Phase-12 short fixed-world teacher gives
+reliable rankings on high-confidence strict-M0/V4 disagreements. The fresh
+source block was `920000..920007` (8 seeds; no prior V4/M0 comparison use),
+with the frozen V4 source trajectory, non-MAP V4 margin ownership, and M0
+score-only eligibility `Q_M0(a_M0)-Q_M0(a_V4) >= 1.0`. The pool contained 119
+eligible states. A deterministic `random.Random(1301)` sample selected exactly
+16 states before any evaluator outcomes; manifest SHA256 is
+`88795a8b46db5296f453bd2dcd17ebb6453dbf352cbba4a65949d20098857bc4`.
+
+Evaluator S preserved Phase-12 Tier-B semantics: H=4, K=3, bootstrap enabled,
+150/100/50 fight schedule. Evaluator R used the same copied fixed-world state,
+paired continuation seeds, and existing OOC continuation chain, but ran to the
+terminal horizon with `sims=1000`, no fight cap, no bootstrap, and no fixed
+fight schedule. The exact V4 native hash was
+`e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`; the
+durable strict-M0 native hash was
+`97564d1be6b4f2356ef5807645a3b45126726bf8ae07cc2b7e273a860106e62a`.
+
+The committed raw evidence has 256 rows (16 decisions × 2 actions × 4
+futures × 2 evaluators), SHA256
+`81e686d4eab32500df2397345b44f4c6d19a377dac97b2edf4a5c528b0e2e7c0`.
+Fifteen decisions were fully valid. Two R futures for `(920000,12)` failed
+the existing Searcher3 health contract (`TRANSIENT` / `SECRET_WEAPON`), and
+were retained as invalid rows rather than averaged or replaced. On the 15
+valid decisions, mean `refDelta=-2.050000`, mean `refWinDelta=-0.083333`;
+S preferences M0/V4/tie were 8/2/5 and R preferences were 3/5/7. Strict sign
+agreement was 3/15 for short-vs-reference and 3/15 for model-vs-reference.
+
+Because the preregistered rule requires all 16 decisions and the stronger
+reference was unstable on one selected decision, the result is **H4
+inconclusive**. This is not evidence for M0 improvement, teacher failure, or
+model failure, and no scaling, retraining, or gameplay gate was run.
+
+Evidence and the complete decision table are under
+`docs/experiments/evidence/phase13a-teacher-audit/`.
