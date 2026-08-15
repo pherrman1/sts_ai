@@ -1174,9 +1174,12 @@ int testLiveRejuvenationAttemptGate() {
         std::stringstream parsed(row);
         std::string field;
         while (std::getline(parsed, field, ',')) fields.push_back(field);
-        if (fields.size() < 17 || fields[9] != "1" || fields[13] != "1") continue;
-        if (fields[4] == "ai" && fields[16] == "1") telemetryAi = true;
-        if (fields[4] == "placebo" && fields[16] == "0") telemetryPlacebo = true;
+        if (fields.size() < 17 || fields[9] != "1") continue;
+        const int children = std::stoi(fields[13]);
+        const int unique = std::stoi(fields[16]);
+        if (children <= 0) continue;
+        if (fields[4] == "ai" && unique == children) telemetryAi = true;
+        if (fields[4] == "placebo" && unique == 0) telemetryPlacebo = true;
     }
     const bool telemetrySemantics = telemetryAi && telemetryPlacebo;
     bool secondAttempt = false;
