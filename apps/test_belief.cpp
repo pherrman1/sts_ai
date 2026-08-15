@@ -1043,7 +1043,7 @@ int testLiveRejuvenationAttemptGate() {
     bool alteredAttempted = false;
     search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG;
     search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG, alteredAttempted,
-                                true, fixture.start, fixture.history,
+                                true, fixture.start, alteredFixture.history,
                                 fixture.stats, alteredFixture.current,
                                 fixture.bc, 0);
     bool anchorHiddenFieldsIgnored = alteredFixture.current.positiveCount()

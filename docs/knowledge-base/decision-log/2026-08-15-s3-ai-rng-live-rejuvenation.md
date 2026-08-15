@@ -22,7 +22,6 @@ mechanics but inserts an exact duplicate.
 Each accepted source is split 50/50 into the source and one zero-weight slot;
 the child inherits the source lineage ID. Collapse-fresh invalidates ancestry
 and disables further live attempts for that combat. Proposal/replay RNG is
-local and deterministic and does not consume live or search RNG.
 local and deterministic and does not consume live or search RNG. The initial
 implementation used one combat-level proposal sequence; this review correction
 derives each proposal stream from the fixed salt, game seed, floor, encounter,
