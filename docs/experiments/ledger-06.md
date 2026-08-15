@@ -2481,8 +2481,10 @@ M0 Wilson 95% CI [17.3%, 38.5%]; M1 Wilson 95% CI [16.0%, 36.8%].
 
 Paired delta −1.6pp (95% CI crosses zero). Per the preregistered decision rule:
 **null / approximately equal** — M1 does not separate from M0 at 2,000 seeds.
-Consistent with H2 (sampling noise / M0 ≈ M1) or H3 (data quantity dominates;
-both improve but M1 does not separate). No promotion; do not auto-scale to 5,000.
+Consistent with H2 (M0 ≈ M1). H3 remains compatible with the evidence, but the
+higher absolute win rates relative to the historical 500-seed pilot cannot be
+attributed specifically to dataset quantity because runtime/controller state
+also changed. No promotion; do not auto-scale to 5,000.
 
 > **Correction (2026-08-15, §169):** this gate ran with `keys=skip` (default),
 > which is an Act-3-only horizon — the earlier "vs deployed V4 ~48%" comparison

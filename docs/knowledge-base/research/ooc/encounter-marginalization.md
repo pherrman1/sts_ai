@@ -21,8 +21,10 @@ Per the preregistered decision rule this is a **null / approximately-equal**
 result: it does not support promotion or immediate scaling to 5,000 seeds. A
 corrective same-seed/same-config Act-3 calibration (ledger-06 §169) placed
 deployed V4 at 37.5% vs M0 26.6% / M1 25.0% (V4−M1 +12.5pp CI [+3.1,+23.4];
-V4−M0 +10.9pp CI [−1.6,+23.4]), so the Phase-12 models remain below V4 but by a
-smaller same-block margin — the historical 48.4% V4 figure was a different
+V4−M0 +10.9pp CI [−1.6,+23.4]). The same-seed calibration favors deployed V4:
+V4 significantly outperformed M1 on this 64-seed block, while the V4−M0
+difference favored V4 but remained inconclusive because its paired 95% CI
+crossed zero. The historical 48.4% V4 figure was a different
 Act-3-only seed block. A separate bottleneck (H4) remains plausible; do not
 infer that fixed-world leakage is beneficial.
 
@@ -73,6 +75,7 @@ for the active research routing and next-steps.
 - Does a different M1 formulation (or the fixed-world leakage itself) explain
   why scaling to 2,000 source seeds did not separate M1 from M0?
 - Is another bottleneck (controller distribution, feature schema, model capacity,
-  optimization; H4) the binding constraint given both arms remain far below
-  deployed V4?
+  optimization; H4) the binding constraint? Same-seed calibration favors deployed
+  V4: significantly over M1, while the V4−M0 difference remains inconclusive at
+  64 seeds.
 - Should any further 5,000-seed scaling be pursued, given the null 2,000-seed gate?
