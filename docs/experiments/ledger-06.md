@@ -2823,3 +2823,23 @@ to M0's gap, without establishing full causality or promotion.
 
 See `docs/archive/research/sessions/phase12-screen-contract-strict-rerun-2026-08-15.md`
 for complete hashes, paired contingency counts, and parity errors.
+
+## §172 Phase-12 M0/M1 post-hoc Q-supervision autopsy (2026-08-15)
+
+The policy labels are identical (`chosen`); encounter marginalization changes
+only the auxiliary Q supervision, whose actual target is
+`10*labelWon + labelHp`. Across 39,870 corrected matched decisions, M0/M1
+Q-target argmax differed on 42.53% and exact top-two ordering reversed on
+8.31%. The largest disagreement rates were SHOP 60.62%, EVENT 44.91%, CARD
+32.95%, TREASURE 30.68%, and REST 26.29%; BOSS_RELIC was 1.58%. Mean Q-target
+margin fell 6.906 → 5.773 overall.
+
+Inference on the exact strict checkpoints found predicted-Q argmax disagreement
+24.28% but policy-logit argmax disagreement only 4.90%; policy entropy was
+essentially unchanged. All-input predicted-Q top-1 fidelity was 25.55% M0 vs
+25.66% M1. The evidence supports substantial auxiliary-Q relabeling with
+limited policy propagation, making auxiliary-Q/representation coupling
+plausible but not causal proof of the −10.9pp 64-seed point estimate. The
+autopsy is **closed**; no M2, retraining, gameplay tracing, or new seeds.
+
+Full tables and provenance: `docs/archive/research/sessions/phase12-m0-m1-autopsy-2026-08-15.md`.
