@@ -18,9 +18,13 @@ paired Δ (M1−M0) = **−1.6pp** with 95% CI [−14.1, +10.9]pp (crosses zero)
 Offline best-CE: M0 0.50897 vs M1 0.51181.
 
 Per the preregistered decision rule this is a **null / approximately-equal**
-result: it does not support promotion or immediate scaling to 5,000 seeds. Both
-arms remain far below deployed V4, so a separate bottleneck (H4) remains
-plausible; do not infer that fixed-world leakage is beneficial.
+result: it does not support promotion or immediate scaling to 5,000 seeds. A
+corrective same-seed/same-config Act-3 calibration (ledger-06 §169) placed
+deployed V4 at 37.5% vs M0 26.6% / M1 25.0% (V4−M1 +12.5pp CI [+3.1,+23.4];
+V4−M0 +10.9pp CI [−1.6,+23.4]), so the Phase-12 models remain below V4 but by a
+smaller same-block margin — the historical 48.4% V4 figure was a different
+Act-3-only seed block. A separate bottleneck (H4) remains plausible; do not
+infer that fixed-world leakage is beneficial.
 
 ## Evidence map
 
@@ -30,6 +34,7 @@ plausible; do not infer that fixed-world leakage is beneficial.
 | 2026-08-10 | [Phase A diagnostic](../../encounter-marg-final-summary-2026-08-10.md) | 57.9% best-action changes; 10.8% V4 reversals → PROMOTE to training |
 | 2026-08-10 | [Phase D gate](../../encounter-marg-final-summary-2026-08-10.md) | 500-seed pilot: M0 7.8% vs M1 10.9% (+3.1pp, CI crosses zero) |
 | 2026-08-15 | [ledger-06 §168](../../../experiments/ledger-06.md) | 2,000-seed: M0 26.6% vs M1 25.0% (−1.6pp, CI crosses zero) → NULL |
+| 2026-08-15 | [ledger-06 §169](../../../experiments/ledger-06.md) | Corrective Act-3 gate (same result) + V4 calibration 37.5% (V4−M1 +12.5pp) |
 
 ## Key implementation details
 

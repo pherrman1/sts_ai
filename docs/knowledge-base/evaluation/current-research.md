@@ -24,15 +24,19 @@ screens ON, margin 1.0), M1 did not separate from M0:
 Per the preregistered decision rule this is a **null / approximately-equal**
 result: encounter marginalization does not separate from the fixed-world control
 at 2,000 source seeds. It does not support promotion or immediate scaling to
-5,000 seeds. Both arms remain far below deployed V4, so a separate bottleneck
-(H4) remains plausible; do not infer that fixed-world leakage is beneficial.
-See [ledger-06 §168](../../../docs/experiments/ledger-06.md) and the
+5,000 seeds. A corrective same-seed/same-config Act-3 calibration (§169) placed
+deployed V4 at 37.5% vs M0 26.6% / M1 25.0% — so the Phase-12 models remain
+below V4, but by a smaller same-block margin (the historical 48.4% V4 figure was
+a different Act-3-only seed block, not a direct comparator). A separate
+bottleneck (H4) remains plausible; do not infer that fixed-world leakage is
+beneficial. See [ledger-06 §168–169](../../../docs/experiments/ledger-06.md) and
+the
 [Phase 12 decision log](../decision-log/2026-08-14-phase12-encounter-marginalization-next-step.md).
 
 Evidence:
 
 - [Encounter-marginalization final report](../encounter-marg-final-summary-2026-08-10.md) (500-seed pilot, +3.1pp M1)
-- `docs/experiments/ledger-06.md` §168 (2,000-seed null result)
+- `docs/experiments/ledger-06.md` §168 (2,000-seed null result) and §169 (corrective Act-3 gate + V4 calibration)
 - `apps/one_combat.cpp::strategicMargGen`
 - `tools/convert_marg_to_trainer.py`, `tools/reconstruct_marg_csv.py`
 

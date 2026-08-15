@@ -2483,13 +2483,84 @@ Paired delta −1.6pp (95% CI crosses zero). Per the preregistered decision rule
 **null / approximately equal** — M1 does not separate from M0 at 2,000 seeds.
 Consistent with H2 (sampling noise / M0 ≈ M1) or H3 (data quantity dominates;
 both improve but M1 does not separate). No promotion; do not auto-scale to 5,000.
-Both arms remain weak (25–27% vs deployed V4's ~48%), so H4 (another bottleneck
-dominates) should be flagged separately; do not infer that fixed-world leakage
-is beneficial.
+
+> **Correction (2026-08-15, §169):** this gate ran with `keys=skip` (default),
+> which is an Act-3-only horizon — the earlier "vs deployed V4 ~48%" comparison
+> was a cross-block/horizon error. On a same-seed/same-config Act-3 calibration,
+> V4 scored 37.5% vs M0 26.6% / M1 25.0% (§169). Both arms remain below V4 but
+> by a smaller, same-block margin; H4 (another bottleneck) remains plausible.
 
 ### Warnings
 
 - `STRAT_PATIENCE=0` was used to satisfy the "full 40 epochs" contract (matches
   the pilot; the trainer default 6 would early-stop).
 - Dataset producer is the pre-merge Searcher3 binary; do not relabel it as
+## §169 Phase 12B corrective Act-3 gate + V4 calibration (2026-08-15)
+
+**Correction finding.** Independent review suspected that the §168 gate had run
+a full Act-3+4/Heart horizon (because `STS_COLLECT_KEYS`/`STS_STOP_AFTER_ACT`
+were not set). Verification shows this suspicion was **incorrect**: the §168
+gate ran with `keys=skip` (default `STS_COLLECT_KEYS` unset → off), so the agent
+never collected keys, the Act-3 boss victory ended the run, and **zero** runs
+entered Act 4 (all winning rows are `act=3, floor=51`; Act-3 boss deaths at
+`floor=50`, deathEncounter 53/54/55). The §168 result was therefore already an
+Act-3-boss win rate, not a Heart-horizon rate.
+
+### Corrective Act-3 gate (explicit historical contract)
+
+Restored the explicit historical Act-3 contract on the **same 64 seeds**
+(900000–900063) and the same current executable, with
+`STS_COLLECT_KEYS=0 STS_STOP_AFTER_ACT=3` added. All other flags unchanged
+(fair S3, 64 particles, 7k-VNet alpha 0.3, all strategic screens ON, margin 1.0,
+12 threads). The three arms differ only in `STS_OOC_STRATEGIC_TOK_NN`.
+
+| Arm | Wins | Win rate | mean floor | mean HP | output SHA256 |
+|---|---|---|---|---|---|
+| M0 | 17/64 | 26.6% | 38.8 | 14.6 | `build/phase12b_m0_act3_64.csv` |
+| M1 | 16/64 | 25.0% | 38.7 | 10.3 | `build/phase12b_m1_act3_64.csv` |
+| V4 (POST-HOC SAME-SEED/SAME-CONFIG CALIBRATION) | 24/64 | 37.5% | 41.8 | 20.1 | `build/phase12b_v4_act3_64.csv` |
+
+M0/M1 Act-3 numbers are **identical** to the §168 gate (26.6% / 25.0%),
+confirming the §168 gate was already Act-3-only and there was no horizon mismatch.
+
+Model artifacts (unchanged from §168): M0 `161c14bc…`, M1 `92332a4b…`,
+V4 `e62abd83…` (`selfplay/models/ooc_strategic_tok_final.native`).
+
+### Primary paired result (M0 vs M1, Act-3)
+
+- M1−M0 win delta = **−1.6pp**, 95% CI [−14.1pp, +10.9pp] (crosses zero).
+- Discordant 15/64: both win 9, both lose 40, M0-only 8, M1-only 7.
+
+Per the preregistered decision rule this remains **NULL / approximately equal**:
+encounter marginalization does not separate from the fixed-world control under
+the explicit Act-3 horizon either. Do not auto-scale to 5,000 seeds.
+
+### V4 calibration (post-hoc, same 64 seeds, same Act-3 config)
+
+| Pair | Delta | 95% CI | Discordant |
+|---|---|---|---|
+| V4 − M0 | +10.9pp | [−1.6pp, +23.4pp] | 17/64 (both win 12, both lose 35, M0-only 5, V4-only 12) |
+| V4 − M1 | +12.5pp | [+3.1pp, +23.4pp] | 12/64 (both win 14, both lose 38, M1-only 2, V4-only 10) |
+
+V4 (37.5%) exceeds M1 significantly at 95% (CI excludes zero) and M0
+non-significantly (CI crosses zero but mostly positive). This is valid same-block
+evidence that the Phase-12 models remain weaker than deployed V4, but by a
+smaller margin than the historical 48.4% figure suggested — that figure was a
+**different seed block (126700–126763), Act-3-only**, not a direct comparator.
+
+### Hypothesis outcomes
+
+- **H1 (horizon mismatch explains low win rates): REJECTED.** The §168 gate was
+  already Act-3-only; the corrective Act-3 gate reproduces 26.6%/25.0% exactly.
+- **H2 (M0 ≈ M1): SUPPORTED.** The null persists under the explicit Act-3 horizon.
+- **H3 (M0/M1 weaker than V4): PARTIALLY SUPPORTED.** V4 > M1 significantly,
+  V4 > M0 non-significantly, on the same 64-seed block.
+- **H4 (V4 advantage was an invalid comparison): WEAKENED.** The V4 advantage is
+  real on the same block, but smaller than the cross-block 48.4% implied.
+
+### Warnings
+
+- 64 seeds is a small sample; the V4 calibration CIs are wide.
+- The V4 arm is post-hoc same-config calibration, not a preregistered treatment.
+
   current HEAD.
