@@ -219,6 +219,7 @@ static void writeS3BeliefBoundaryDiag(
 enum class S3NextSearchBeliefSource {
     UNRESOLVED,
     FRESH_INITIAL,
+    TRANSFERRED_FILTERED_POSTERIOR,
 };
 
 struct S3FilteredBoundary {
@@ -246,10 +247,13 @@ static void writeS3NextSearchBeliefDiag(
     for (const auto &boundary : boundaries) {
         const char *source = "no_next_search";
         if (nextSearch) {
-            source = boundary.source == S3NextSearchBeliefSource::FRESH_INITIAL
-                ? "fresh_initial"
-                : boundary.collapseFresh ? "collapse_fresh"
-                                         : "existing_filtered_posterior";
+            if (boundary.source == S3NextSearchBeliefSource::FRESH_INITIAL)
+                source = "fresh_initial";
+            else if (boundary.source == S3NextSearchBeliefSource::TRANSFERRED_FILTERED_POSTERIOR)
+                source = "transferred_filtered_posterior";
+            else
+                source = boundary.collapseFresh ? "collapse_fresh"
+                                                 : "existing_filtered_posterior";
         }
         out << boundary.seed << ',' << boundary.floor << ',' << boundary.encounter
             << ',' << boundary.decisionIndex << ',' << source << '\n';

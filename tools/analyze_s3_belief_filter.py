@@ -47,12 +47,14 @@ def main():
                                  ("strong_lt_05", lambda x: x < 0.5)):
             group = [r for r in resolved if predicate(val(r, "filter_compatible_fraction"))]
             consumed = sum(source_by_boundary[(r["seed"], r["floor"], r["encounter"], r["decision_index"])]
-                           in ("existing_filtered_posterior", "collapse_fresh") for r in group)
+                           in ("existing_filtered_posterior", "collapse_fresh",
+                               "transferred_filtered_posterior") for r in group)
             discarded = sum(source_by_boundary[(r["seed"], r["floor"], r["encounter"], r["decision_index"])]
                             == "fresh_initial" for r in group)
             print(f"{label},total={len(group)},consumed={consumed},discarded={discarded},"
                   f"discarded_fraction={discarded / len(group) if group else float('nan'):.6f}")
-        for source in ("existing_filtered_posterior", "collapse_fresh", "fresh_initial"):
+        for source in ("existing_filtered_posterior", "collapse_fresh",
+                       "transferred_filtered_posterior", "fresh_initial"):
             group = [r for r in resolved if source_by_boundary[
                 (r["seed"], r["floor"], r["encounter"], r["decision_index"])] == source]
             if group:

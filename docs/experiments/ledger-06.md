@@ -2125,6 +2125,19 @@ beliefs were rebuilt 434 times; next-search sources were
 mean floor 41.6, mean ending HP 18.6, and 17.82 s/run. This is a diagnostic
 rerun, not a quality gate. Artifacts: `build/linux-gcc-release/s3_persist_t1_rerun_8.*`.
 
+**Provenance correction:** The temporary transfer telemetry was then made
+explicit. A one-seed probe on 94000 reported 498
+`transferred_filtered_posterior` next searches and 24 `no_next_search` rows,
+before the 8-seed run. The provenance-correct 94000–94007 run reported 2,616
+`transferred_filtered_posterior` and 171 `no_next_search`, 540/2,787 collapses
+(19.38%), 17/120,391 propagation failures (0.0141%), zero draw-pile
+mismatches, and 17 action-illegal particles. This is compared with the pre-fix
+persistent T1’s 19.66% / 31.23% / 56,233 and the fresh-initial control’s
+15.14% / 0.024% / 0; no further seeds were run. Temporary transfer code was
+removed after the run; explicit telemetry vocabulary remains for future
+reproducible treatments. Artifacts: `build/linux-gcc-release/s3_persist_t1_probe_94000.*`
+and `s3_persist_t1_provenance_8.*`.
+
 ## 2026-08-15 — Native C++ LTO build benchmark and default adoption
 
 **Question:** Does adding compiler optimization flags make the combat benchmark

@@ -59,6 +59,15 @@ the previous catastrophic cascade.
   15.14% collapse, 44/183,488 propagation failures (0.02398%), zero draw-pile
   mismatches, and 44 action-illegal particles. Its next-search sources were
   `fresh_initial=2698` and `no_next_search=169`; no larger quality gate was run.
+- Provenance-correct temporary T1 rerun: a one-seed probe first reported
+  `transferred_filtered_posterior=498` and `no_next_search=24`. The subsequent
+  seeds 94000–94007 run reported
+  `transferred_filtered_posterior=2616` and `no_next_search=171`, with 540/2787
+  collapses (19.38%), 17/120391 propagation failures (0.0141%), zero draw-pile
+  mismatches, and 17 action-illegal particles. Compared with the pre-fix
+  persistent T1 (19.66% / 31.23% / 56,233 mismatches), this is a provenance-
+  confirmed transfer result; compared with the fresh-initial control (15.14% /
+  0.024%), it remains diagnostic rather than a quality conclusion.
 - Removed: temporary posterior-transfer gameplay treatment after the causal
   diagnostic; a separately designed quality experiment is required.
 - **Open question:** whether a future exact hidden-state representation can
