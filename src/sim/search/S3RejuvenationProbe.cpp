@@ -22,8 +22,18 @@ bool g_s3RejuvShadow = false;
 int g_s3RejuvTrigger = 16;
 int g_s3RejuvProposals = 256;
 std::string g_s3RejuvShadowFile;
+bool g_s3AiSensitivityShadow = false;
+std::string g_s3AiSensitivityFile;
+int g_s3AiSensitivityRootsPerSeed = 4;
+int g_s3AiSensitivityAlternatives = 4;
+int g_s3AiSensitivitySims = 256;
 
 namespace {
+
+std::string enc(double v);
+std::uint64_t drawOrderOnlyHash(const FullHiddenStateKey &k);
+std::uint64_t rngOnlyHash(const FullHiddenStateKey &k);
+void writeSensitivityRow(const std::vector<std::string> &cols);
 
 // ── CSV telemetry writer (append + mutex; header written once per file). ──
 std::mutex &rejuvCsvMutex() {
@@ -57,6 +67,200 @@ void writeRejuvCsvRow(const std::vector<std::string> &cols) {
         if (i) out << ',';
         out << cols[i];
     }
+    out << '\n';
+}
+
+struct RootActionMetrics {
+    std::int64_t visits = 0;
+    double q = 0.0;
+    std::int64_t availability = -1;
+};
+
+using RootMetrics = std::map<std::uint32_t, RootActionMetrics>;
+
+RootMetrics rootMetrics(const BattleScumSearcher3 &s) {
+    RootMetrics out;
+    for (const auto &e : s.root.edges) {
+        const auto visits = e.child.simulationCount;
+        out[e.action.bits] = {visits, visits > 0 ? e.child.evaluationSum / visits : 0.0, -1};
+    }
+    return out;
+}
+
+std::uint32_t selectedRootAction(const BattleScumSearcher3 &s,
+                                 const BattleContext &bc) {
+    std::uint32_t selected = 0;
+    std::int64_t best = -1;
+    for (const auto &e : s.root.edges) {
+        if (e.child.simulationCount > best
+            && (!g_s3Live || e.action.isValidAction(bc))) {
+            best = e.child.simulationCount;
+            selected = e.action.bits;
+        }
+    }
+    return selected;
+}
+
+std::vector<std::uint32_t> topTwoRootActions(const RootMetrics &m) {
+    std::vector<std::uint32_t> actions;
+    for (const auto &[bits, stats] : m) {
+        const auto it = std::find_if(actions.begin(), actions.end(), [&](std::uint32_t x) {
+            return m.at(x).visits < stats.visits;
+        });
+        actions.insert(it, bits);
+    }
+    if (actions.size() > 2) actions.resize(2);
+    return actions;
+}
+
+double visitShareTv(const RootMetrics &a, const RootMetrics &b) {
+    std::int64_t totalA = 0, totalB = 0;
+    for (const auto &[_, s] : a) totalA += s.visits;
+    for (const auto &[_, s] : b) totalB += s.visits;
+    if (totalA <= 0 || totalB <= 0) return 0.0;
+    std::set<std::uint32_t> keys;
+    for (const auto &[k, _] : a) keys.insert(k);
+    for (const auto &[k, _] : b) keys.insert(k);
+    double tv = 0.0;
+    for (const auto k : keys) {
+        const double pa = static_cast<double>(a.count(k) ? a.at(k).visits : 0) / totalA;
+        const double pb = static_cast<double>(b.count(k) ? b.at(k).visits : 0) / totalB;
+        tv += std::abs(pa - pb);
+    }
+    return 0.5 * tv;
+}
+
+bool sameCurrentBoundary(const BattleContext &oracleBc,
+                         const HiddenBattleState &candidate,
+                         const BattleContext &candidateBc,
+                         bool requireDifferentAi) {
+    if (CombatObservation::fromBattleContext(oracleBc)
+        != CombatObservation::fromBattleContext(candidateBc)) return false;
+    if (oracleBc.outcome != candidateBc.outcome) return false;
+    const auto oracle = fullHiddenStateKey(oracleHiddenState(oracleBc));
+    const auto actual = fullHiddenStateKey(candidate);
+    if (oracle.drawPileOrder != actual.drawPileOrder) return false;
+    for (int i : {0, 1, 3, 4, 5}) {
+        if (oracle.seed0[i] != actual.seed0[i] || oracle.seed1[i] != actual.seed1[i]
+            || oracle.counter[i] != actual.counter[i]) return false;
+    }
+    const bool differentAi = oracle.seed0[2] != actual.seed0[2]
+        || oracle.seed1[2] != actual.seed1[2]
+        || oracle.counter[2] != actual.counter[2];
+    return !requireDifferentAi || differentAi;
+}
+
+std::uint64_t hiddenIdentityHash(const HiddenBattleState &state) {
+    const auto key = fullHiddenStateKey(state);
+    return drawOrderOnlyHash(key) ^ (rngOnlyHash(key) + 0x9e3779b97f4a7c15ULL
+        + (drawOrderOnlyHash(key) << 6) + (drawOrderOnlyHash(key) >> 2));
+}
+
+bool sameOracleSearch(const RootMetrics &a, const RootMetrics &b,
+                      std::uint32_t selectedA, std::uint32_t selectedB) {
+    if (selectedA != selectedB || a.size() != b.size()) return false;
+    for (const auto &[bits, x] : a) {
+        const auto it = b.find(bits);
+        if (it == b.end() || x.visits != it->second.visits
+            || x.q != it->second.q || x.availability != it->second.availability) return false;
+    }
+    return true;
+}
+
+void runFixedHiddenSearch(const HiddenBattleState &hidden, int simulations,
+                          BattleScumSearcher3 &out) {
+    Belief fixed;
+    fixed.particles.assign(64, hidden);
+    for (auto &p : fixed.particles) p.weight = 1.0 / fixed.particles.size();
+    out.belief = std::move(fixed);
+    out.search(simulations);
+}
+
+void runSensitivityCondition(const BattleContext &bc, const HiddenBattleState &hidden,
+                             const char *condition, int alternative,
+                             std::uint64_t rootHash, int decisionIdx,
+                             const RootMetrics *oracleMetrics,
+                             std::uint32_t oracleSelected, int novelCount,
+                             bool supportEmpty, bool &oracleControlOk) {
+    BattleContext fixedBc = bc;
+    std::mt19937_64 fallback(0x4d595df4d0f33173ULL);
+    applyHiddenState(fixedBc, hidden, fallback);
+    const bool sameBoundary = sameCurrentBoundary(
+        bc, hidden, fixedBc, std::string(condition).find("ORACLE") != 0);
+    if (!sameBoundary) {
+        writeSensitivityRow({std::to_string(bc.seed), std::to_string(static_cast<int>(bc.encounter)),
+            std::to_string(bc.floorNum), std::to_string(decisionIdx), std::to_string(bc.turn),
+            std::to_string(rootHash), condition, std::to_string(alternative),
+            std::to_string(hiddenIdentityHash(hidden)), "", "", "", "", "",
+            "BLOCK_ISOLATION_FAILURE", "", "", "", "", "", "", "", "", "",
+            std::to_string(novelCount), std::to_string(supportEmpty)});
+        oracleControlOk = false;
+        return;
+    }
+
+    const bool oldCrn = g_s3Crn;
+    g_s3Crn = false;
+    RootMetrics metrics;
+    std::uint32_t selected = 0;
+    if (std::string(condition) == "ORACLE_A") {
+        metrics = *oracleMetrics;
+        selected = oracleSelected;
+    } else {
+        BattleScumSearcher3 searcher(bc, bc.seed, decisionIdx, 64);
+        runFixedHiddenSearch(hidden, g_s3AiSensitivitySims, searcher);
+        metrics = rootMetrics(searcher);
+        selected = selectedRootAction(searcher, bc);
+    }
+    g_s3Crn = oldCrn;
+    const bool control = oracleMetrics && sameOracleSearch(*oracleMetrics, metrics,
+                                                           oracleSelected, selected);
+    std::int64_t totalVisits = 0;
+    for (const auto &[_, stats] : metrics) totalVisits += stats.visits;
+    const double total = std::max<std::int64_t>(1, totalVisits);
+    const double tv = oracleMetrics ? visitShareTv(*oracleMetrics, metrics) : 0.0;
+    const auto top = topTwoRootActions(metrics);
+    const auto oracleTop = oracleMetrics ? topTwoRootActions(*oracleMetrics) : top;
+    const bool topChanged = top != oracleTop;
+    double maxDq = 0.0, selectedDq = 0.0;
+    for (const auto &[bits, stats] : metrics) {
+        const auto it = oracleMetrics ? oracleMetrics->find(bits) : metrics.end();
+        if (it == metrics.end()) continue;
+        maxDq = std::max(maxDq, std::abs(stats.q - it->second.q));
+        if (bits == oracleSelected) selectedDq = stats.q - it->second.q;
+    }
+    double margin = 0.0;
+    if (oracleTop.size() == 2 && oracleMetrics)
+        margin = oracleMetrics->at(oracleTop[0]).q - oracleMetrics->at(oracleTop[1]).q;
+    const bool selectedChanged = selected != oracleSelected;
+    const bool marginCrossed = std::abs(selectedDq) >= margin && margin > 0.0;
+    for (const auto &[bits, stats] : metrics) {
+        const double share = stats.visits / total;
+        writeSensitivityRow({std::to_string(bc.seed), std::to_string(static_cast<int>(bc.encounter)),
+            std::to_string(bc.floorNum), std::to_string(decisionIdx), std::to_string(bc.turn),
+            std::to_string(rootHash), condition, std::to_string(alternative),
+            std::to_string(hiddenIdentityHash(hidden)), std::to_string(bits),
+            std::to_string(stats.visits), enc(share), enc(stats.q), std::to_string(selected),
+            "OK", control ? "EXACT" : "MISMATCH", selectedChanged ? "1" : "0",
+            topChanged ? "1" : "0", enc(tv), enc(maxDq), enc(selectedDq),
+            marginCrossed ? "1" : "0", std::to_string(novelCount), std::to_string(supportEmpty)});
+    }
+    if (oracleMetrics && !control && std::string(condition) == "ORACLE_B") {
+        oracleControlOk = false;
+    }
+}
+
+void writeSensitivityRow(const std::vector<std::string> &cols) {
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+    std::ifstream probe(g_s3AiSensitivityFile, std::ios::binary);
+    const bool empty = !probe.good() || probe.peek() == std::ifstream::traits_type::eof();
+    std::ofstream out(g_s3AiSensitivityFile, std::ios::app);
+    if (!out) return;
+    if (empty) out << "seed,encounter,floor,decision_idx,turn,root_obs_hash,condition,alternative,"
+        "hidden_hash,action_bits,visits,visit_share,q,selected_action,block_isolation,"
+        "oracle_control,selected_changed,top2_changed,visit_tv,max_common_abs_dq,"
+        "oracle_selected_dq,margin_crossed,novel_candidates,positive_support_empty\n";
+    for (size_t i = 0; i < cols.size(); ++i) { if (i) out << ','; out << cols[i]; }
     out << '\n';
 }
 
@@ -541,8 +745,9 @@ void runRejuvenationShadowProbe(const S3RejuvenationHistory &history,
                                 const Belief &belief,
                                 const BattleContext &bc,
                                 int decisionIdx) {
-    if (history.entries.empty() || g_s3RejuvShadowFile.empty()) return;
-    if (!g_s3RejuvShadow || filterStats.compatible > g_s3RejuvTrigger) return;
+    if (history.entries.empty()) return;
+    if ((!g_s3RejuvShadow && !g_s3AiSensitivityShadow)
+        || filterStats.compatible > g_s3RejuvTrigger) return;
     const int proposals = std::max(1, g_s3RejuvProposals);
 
     // Deterministic probe RNG stream, independent of all battle RNG.
@@ -570,6 +775,8 @@ void runRejuvenationShadowProbe(const S3RejuvenationHistory &history,
         for (const auto &p : belief.particles)
             if (p.weight > 0) existingSupport.insert(fullHiddenStateKey(p));
     }
+    std::vector<HiddenBattleState> acceptedAiStates;
+    std::set<FullHiddenStateKey> acceptedAiKeys;
 
     std::array<std::int32_t, 6> counters = {
         bc.shuffleRng.counter, bc.cardRandomRng.counter, bc.aiRng.counter,
@@ -664,6 +871,11 @@ void runRejuvenationShadowProbe(const S3RejuvenationHistory &history,
             if (res.finalDiagAborted) ++finalDiagAborted;
             if (res.status == S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED) {
                 ++acceptedCount;
+                if (family == S3RejuvenationProposalFamily::AI_RNG) {
+                    const auto current = oracleHiddenState(res.finalState);
+                    if (acceptedAiKeys.insert(fullHiddenStateKey(current)).second)
+                        acceptedAiStates.push_back(current);
+                }
                 const FullHiddenStateKey key = fullHiddenStateKey(res.finalState);
                 acceptedDrawOrders.insert(drawOrderOnlyHash(key));
                 acceptedRngSignatures.insert(rngOnlyHash(key));
@@ -717,6 +929,84 @@ void runRejuvenationShadowProbe(const S3RejuvenationHistory &history,
     std::vector<HiddenBattleState> noSources(1, oracle);
     writeFamily(S3RejuvenationProposalFamily::ORACLE, noSources, 1);
     for (const auto family : families) writeFamily(family, fresh, proposals);
+    runAiSensitivityShadow(history, filterStats, belief, bc, decisionIdx, acceptedAiStates);
+}
+
+void runAiSensitivityShadow(const S3RejuvenationHistory &history,
+                            const RealBeliefFilterStats &filterStats,
+                            const Belief &belief,
+                            const BattleContext &bc,
+                            int decisionIdx,
+                            const std::vector<HiddenBattleState> &acceptedAiStates) {
+    (void)history;
+    if (!g_s3AiSensitivityShadow || g_s3AiSensitivityFile.empty()) return;
+    if (decisionIdx < 8 || acceptedAiStates.size() < 8 || bc.aiRng.counter <= 0) return;
+
+    static std::mutex rootMutex;
+    static std::map<std::uint64_t, int> rootsBySeed;
+    static std::set<std::tuple<std::uint64_t, int, int>> rootGroups;
+    static int totalRoots = 0;
+    std::lock_guard<std::mutex> lock(rootMutex);
+    if (rootsBySeed[bc.seed] >= std::max(1, g_s3AiSensitivityRootsPerSeed)
+        || totalRoots >= 32) return;
+    const auto group = std::make_tuple(bc.seed, static_cast<int>(bc.encounter), bc.floorNum);
+    if (rootGroups.count(group)) return;
+
+    const HiddenBattleState oracle = oracleHiddenState(bc);
+    const bool supportEmpty = filterStats.compatible == 0;
+    std::set<FullHiddenStateKey> existingSupport;
+    if (!supportEmpty)
+        for (const auto &p : belief.particles)
+            if (p.weight > 0.0) existingSupport.insert(fullHiddenStateKey(p));
+    std::vector<HiddenBattleState> candidates;
+    std::set<FullHiddenStateKey> chosen;
+    for (const auto &candidate : acceptedAiStates) {
+        const auto key = fullHiddenStateKey(candidate);
+        if (existingSupport.count(key) || !chosen.insert(key).second) continue;
+        BattleContext candidateBc = bc;
+        std::mt19937_64 fallback(0x4d595df4d0f33173ULL);
+        applyHiddenState(candidateBc, candidate, fallback);
+        if (!sameCurrentBoundary(bc, candidate, candidateBc, true)) {
+            writeSensitivityRow({std::to_string(bc.seed), std::to_string(static_cast<int>(bc.encounter)),
+                std::to_string(bc.floorNum), std::to_string(decisionIdx), std::to_string(bc.turn),
+                std::to_string(CombatObservation::fromBattleContext(bc).visibleHash()), "AI_ALT",
+                "-1", std::to_string(hiddenIdentityHash(candidate)), "", "", "", "", "",
+                "BLOCK_ISOLATION_FAILURE", "NOT_EVALUATED", "", "", "", "", "", "", "",
+                std::to_string(candidates.size()), std::to_string(supportEmpty)});
+            continue;
+        }
+        candidates.push_back(candidate);
+        if (static_cast<int>(candidates.size()) >= std::max(1, g_s3AiSensitivityAlternatives)) break;
+    }
+    if (candidates.empty()) return;
+
+    ++rootsBySeed[bc.seed];
+    ++totalRoots;
+    rootGroups.insert(group);
+    const auto rootHash = CombatObservation::fromBattleContext(bc).visibleHash();
+    const bool oldCrn = g_s3Crn;
+    g_s3Crn = false;
+    BattleScumSearcher3 oracleA(bc, bc.seed, decisionIdx, 64);
+    runFixedHiddenSearch(oracle, g_s3AiSensitivitySims, oracleA);
+    const RootMetrics oracleMetrics = rootMetrics(oracleA);
+    const auto oracleSelected = selectedRootAction(oracleA, bc);
+    bool controlOk = true;
+    runSensitivityCondition(bc, oracle, "ORACLE_A", 0, rootHash, decisionIdx,
+                             &oracleMetrics, oracleSelected, candidates.size(), supportEmpty, controlOk);
+    BattleScumSearcher3 oracleB(bc, bc.seed, decisionIdx, 64);
+    runFixedHiddenSearch(oracle, g_s3AiSensitivitySims, oracleB);
+    runSensitivityCondition(bc, oracle, "ORACLE_B", 0, rootHash, decisionIdx,
+                             &oracleMetrics, oracleSelected, candidates.size(), supportEmpty, controlOk);
+    for (size_t i = 0; i < candidates.size() && controlOk; ++i)
+        runSensitivityCondition(bc, candidates[i], "AI_ALT", static_cast<int>(i + 1), rootHash,
+                                decisionIdx, &oracleMetrics, oracleSelected,
+                                candidates.size(), supportEmpty, controlOk);
+    g_s3Crn = oldCrn;
+    if (!controlOk) {
+        std::cerr << "[S3 AI sensitivity] ORACLE_DUPLICATE_FAILURE seed=" << bc.seed
+                  << " floor=" << bc.floorNum << " encounter=" << static_cast<int>(bc.encounter)
+                  << " decision=" << decisionIdx << '\n';
+    }
 }
 
 } // namespace sts::search

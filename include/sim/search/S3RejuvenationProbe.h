@@ -132,11 +132,25 @@ void runRejuvenationShadowProbe(const S3RejuvenationHistory &history,
                                 const BattleContext &bc,
                                 int decisionIdx);
 
+// Conditional AI_RNG decision-sensitivity diagnostic. This is a nested,
+// fixed-hidden Searcher3 evaluation and never changes the live search.
+void runAiSensitivityShadow(const S3RejuvenationHistory &history,
+                            const RealBeliefFilterStats &filterStats,
+                            const Belief &belief,
+                            const BattleContext &bc,
+                            int decisionIdx,
+                            const std::vector<HiddenBattleState> &acceptedAiStates);
+
 // Flags (env STS_S3_REJUV_*; parsed in apps/one_combat.cpp; off by default).
 extern bool g_s3RejuvShadow;
 extern int g_s3RejuvTrigger;
 extern int g_s3RejuvProposals;
 extern std::string g_s3RejuvShadowFile;
+extern bool g_s3AiSensitivityShadow;
+extern std::string g_s3AiSensitivityFile;
+extern int g_s3AiSensitivityRootsPerSeed;
+extern int g_s3AiSensitivityAlternatives;
+extern int g_s3AiSensitivitySims;
 
 } // namespace sts::search
 #endif // STS_LIGHTSPEED_S3REJUVENATIONPROBE_H

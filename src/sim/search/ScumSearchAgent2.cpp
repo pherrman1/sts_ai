@@ -381,7 +381,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
         BattleScumSearcher3 s3(bc, bc.seed, decisionIdx, search::g_s3Particles);
         // Shadow-only rejuvenation probe history (opt-in; empty when off).
         std::optional<search::S3RejuvenationHistory> rejuvHistory;
-        if (search::g_s3RejuvShadow) rejuvHistory.emplace(bc);
+        if (search::g_s3RejuvShadow || search::g_s3AiSensitivityShadow)
+            rejuvHistory.emplace(bc);
         bool searcherValid = true;
         bool currentSearcherUsesTransferredBelief = false;
         auto rebuildFreshSearcher = [&]() {
@@ -448,7 +449,7 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 // ── Shadow rejuvenation probe (opt-in, telemetry only) ──
                 if (rejuvHistory) {
                     rejuvHistory->record(preState, forced, bc);
-                    if (filtered)
+                if (filtered && (search::g_s3RejuvShadow || search::g_s3AiSensitivityShadow))
                         search::runRejuvenationShadowProbe(
                             *rejuvHistory, filterStats, s3.belief, bc, decisionIdx);
                 }
@@ -577,7 +578,7 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             // ── Shadow rejuvenation probe (opt-in, telemetry only) ──
             if (rejuvHistory) {
                 rejuvHistory->record(preState, bestAction, bc);
-                if (filtered)
+                    if (filtered && (search::g_s3RejuvShadow || search::g_s3AiSensitivityShadow))
                     search::runRejuvenationShadowProbe(
                         *rejuvHistory, filterStats, s3.belief, bc, decisionIdx);
             }

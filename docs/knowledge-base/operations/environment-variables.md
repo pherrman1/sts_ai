@@ -44,6 +44,11 @@ These control the default executing configuration; they are always parsed.
 | `STS_S3_CRN` | Root CRN warm start (opt-in) | `0` (off) | `main` ~L9738 |
 | `STS_S3_POOL_REDIRECT` | Forced-move budget pool redirect (opt-in) | `0` (off) | `main` ~L9732 |
 | `STS_S3_PERSIST_FILTERED_BELIEF` | Transfer the exact filtered real-boundary posterior into the next fresh Searcher3 tree (experimental) | `0` (off) | `main` ~L10772 |
+| `STS_S3_AI_SENSITIVITY_SHADOW` | Conditional AI_RNG fixed-hidden Searcher3 sensitivity diagnostic; shadow-only | `0` | `main` |
+| `STS_S3_AI_SENSITIVITY_FILE` | CSV output for the AI_RNG sensitivity diagnostic | unset | `main` |
+| `STS_S3_AI_SENSITIVITY_ROOTS_PER_SEED` | Maximum selected roots per seed | `4` | `main` |
+| `STS_S3_AI_SENSITIVITY_ALTS` | Maximum novel AI alternatives per selected root | `4` | `main` |
+| `STS_S3_AI_SENSITIVITY_SIMS` | Mini-search simulations per fixed-hidden condition | `256` | `main` |
 | `STS_RISK_LAMBDA` | Risk sensitivity for S3 PUCT | 0.5 | `main` ~L9845 |
 
 ## Searcher3 experimental rollout / expansion

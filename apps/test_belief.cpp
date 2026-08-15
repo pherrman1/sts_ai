@@ -947,6 +947,8 @@ int testRejuvNoninterference(std::uint64_t seed) {
     const int savedTrigger = search::g_s3RejuvTrigger;
     const int savedProposals = search::g_s3RejuvProposals;
     const std::string savedFile = search::g_s3RejuvShadowFile;
+    const bool savedAiSensitivity = search::g_s3AiSensitivityShadow;
+    const std::string savedAiSensitivityFile = search::g_s3AiSensitivityFile;
     const bool savedExposure = search::g_s3RngExposureDiag;
     const std::string savedExposureFile = search::g_s3RngExposureDiagFile;
     const auto savedDecision = search::g_onCombatDecision;
@@ -978,7 +980,9 @@ int testRejuvNoninterference(std::uint64_t seed) {
         search::g_s3RngExposureDiag = shadow;
         search::g_s3RngExposureDiagFile = shadow ? "/tmp/sts_rng_exposure_noninterference.csv" : "";
         search::g_s3RejuvTrigger = 1 << 30;   // fire at every filtered boundary
-        search::g_s3RejuvProposals = 4;
+        search::g_s3RejuvProposals = 64;
+        search::g_s3AiSensitivityShadow = shadow;
+        search::g_s3AiSensitivityFile = shadow ? "/tmp/sts_ai_sensitivity_noninterference.csv" : "";
         RejuvCapture cap;
         auto snap = [](const BattleContext &b) {
             std::array<std::int64_t, 18> r{};
@@ -1017,6 +1021,7 @@ int testRejuvNoninterference(std::uint64_t seed) {
     const std::string shadowFile = "/tmp/sts_rejuv_shadow_test.csv";
     std::remove(shadowFile.c_str());
     std::remove("/tmp/sts_rng_exposure_noninterference.csv");
+    std::remove("/tmp/sts_ai_sensitivity_noninterference.csv");
     const RejuvCapture off = run(false, "");
     const RejuvCapture on = run(true, shadowFile);
 
@@ -1067,6 +1072,16 @@ int testRejuvNoninterference(std::uint64_t seed) {
         std::cout << "rejuv_noninterference FAIL: RNG exposure CSV missing/empty\n";
         ++failures;
     }
+    int sensitivityRows = 0;
+    {
+        std::ifstream csv("/tmp/sts_ai_sensitivity_noninterference.csv");
+        std::string line;
+        while (std::getline(csv, line)) ++sensitivityRows;
+    }
+    if (sensitivityRows < 1) {
+        std::cout << "rejuv_noninterference FAIL: AI sensitivity CSV missing\n";
+        ++failures;
+    }
     if (on.actionBits != off.actionBits || on.obsHashes != off.obsHashes
         || on.rngState != off.rngState || on.outcome != off.outcome
         || on.finalHp != off.finalHp || on.finalRng != off.finalRng) {
@@ -1082,6 +1097,8 @@ int testRejuvNoninterference(std::uint64_t seed) {
     search::g_s3RejuvTrigger = savedTrigger;
     search::g_s3RejuvProposals = savedProposals;
     search::g_s3RejuvShadowFile = savedFile;
+    search::g_s3AiSensitivityShadow = savedAiSensitivity;
+    search::g_s3AiSensitivityFile = savedAiSensitivityFile;
     search::g_s3RngExposureDiag = savedExposure;
     search::g_s3RngExposureDiagFile = savedExposureFile;
     search::g_onCombatDecision = savedDecision;

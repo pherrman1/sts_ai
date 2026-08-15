@@ -10798,6 +10798,24 @@ int main(int argc, char **argv) {
         search::g_s3RejuvShadowFile = d;
         std::cout << "[S3 rejuv shadow file = " << search::g_s3RejuvShadowFile << "]\n";
     }
+    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_SHADOW")) {
+        search::g_s3AiSensitivityShadow = std::atoi(d) != 0;
+        std::cout << "[S3 AI sensitivity shadow = "
+                  << (search::g_s3AiSensitivityShadow ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_FILE")) {
+        search::g_s3AiSensitivityFile = d;
+        std::cout << "[S3 AI sensitivity file = " << search::g_s3AiSensitivityFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_ROOTS_PER_SEED")) {
+        search::g_s3AiSensitivityRootsPerSeed = std::max(1, std::atoi(d));
+    }
+    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_ALTS")) {
+        search::g_s3AiSensitivityAlternatives = std::max(1, std::atoi(d));
+    }
+    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_SIMS")) {
+        search::g_s3AiSensitivitySims = std::max(1, std::atoi(d));
+    }
     if (const char *d = std::getenv("STS_S3_RNG_EXPOSURE_DIAG")) {
         search::g_s3RngExposureDiag = std::atoi(d) != 0;
         std::cout << "[S3 RNG exposure diag = " << (search::g_s3RngExposureDiag ? "ON" : "off") << "]\n";
