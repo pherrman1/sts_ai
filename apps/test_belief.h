@@ -12,3 +12,5 @@ int testS3Rand64PriorSampler();
 int testRejuvHistoryReplay(std::uint64_t seed);
 int testRejuvSemanticSelect();
 int testRejuvNoninterference(std::uint64_t seed);
+int testRejuvConditionalBlocks();
+int testLiveRejuvenationAttemptGate();

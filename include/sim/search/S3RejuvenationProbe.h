@@ -34,6 +34,11 @@ struct S3RejuvenationEntry {
     BattleScumSearcher3::CardActionKey cardKey;
     bool hasMultiKeys = false;                   // MULTI_CARD_SELECT
     std::vector<BattleScumSearcher3::CardActionKey> multiKeys;
+    std::vector<std::int16_t> multiUniqueIds;
+    CardSelectTask selectTask = CardSelectTask::INVALID;
+    int rawSelectIndex = -1;
+    std::int16_t selectedUniqueId = -1;
+    std::vector<CardInstance> selectSourcePile;
     CombatObservation postObs;
     Outcome postOutcome = Outcome::UNDECIDED;
 };
@@ -50,6 +55,33 @@ struct S3RejuvenationHistory {
     void record(const BattleContext &preState, const Action &action,
                 const BattleContext &postState);
 };
+
+enum class S3LiveRejuvenationMode {
+    OFF,
+    PLACEBO,
+    AI_RNG,
+    PLACEBO1,
+    AI_RNG1,
+};
+
+enum class S3RejuvenationProposalFamily {
+    ORACLE,
+    DRAW_ORDER,
+    SHUFFLE_RNG,
+    CARD_RANDOM_RNG,
+    AI_RNG,
+    MISC_RNG,
+    MONSTER_HP_RNG,
+    POTION_RNG,
+    ALL_FRESH,
+};
+
+HiddenBattleState oracleHiddenState(const BattleContext &anchor);
+HiddenBattleState makeConditionalBlockProposal(
+    const HiddenBattleState &oracle,
+    const HiddenBattleState &fresh,
+    S3RejuvenationProposalFamily family);
+const char *proposalFamilyName(S3RejuvenationProposalFamily family);
 
 // Remap a recorded semantic action onto a replay state whose hand order may
 // differ from the live one. END_TURN / POTION replay their raw bits directly
@@ -72,6 +104,8 @@ struct S3RejuvenationReplayResult {
     };
     Status status = Status::FINAL_MISMATCH;
     int firstMismatchIndex = -1;    // boundary of the first obs/outcome mismatch
+    int firstMismatchActionType = -1;
+    int firstRemappedIndex = -1;
     bool finalObsMatched = false;   // final-state-compatible diagnostic
     bool finalDiagAborted = false;  // continuation after a first mismatch became impossible
     int transitionsExecuted = 0;    // replay transitions actually executed
@@ -88,6 +122,14 @@ S3RejuvenationReplayResult replayRejuvenationHistory(
     const HiddenBattleState &particle,
     std::mt19937_64 &fallbackRng);
 
+// Same exact replay and equality checks, but executes each recorded Action's
+// original raw bits instead of semantic remapping. This is an oracle-only
+// discriminator for replay correctness, not a proposal or gameplay path.
+S3RejuvenationReplayResult replayRejuvenationHistoryRaw(
+    const S3RejuvenationHistory &history,
+    const HiddenBattleState &particle,
+    std::mt19937_64 &fallbackRng);
+
 // Shadow probe (pure telemetry; never mutates live state). Called by the
 // fair-S3 boundary sites after filterRealTransition returns; no-ops unless
 // g_s3RejuvShadow and g_s3RejuvShadowFile are set and
@@ -96,13 +138,47 @@ void runRejuvenationShadowProbe(const S3RejuvenationHistory &history,
                                 const RealBeliefFilterStats &filterStats,
                                 const Belief &belief,
                                 const BattleContext &bc,
-                                int decisionIdx);
+                                int sourceFilterDecisionIdx,
+                                int searchDecisionIdx = -1,
+                                bool nextSearchEligible = true);
+
+// Conditional AI_RNG decision-sensitivity diagnostic. This is a nested,
+// fixed-hidden Searcher3 evaluation and never changes the live search.
+void runAiSensitivityShadow(const S3RejuvenationHistory &history,
+                            const RealBeliefFilterStats &filterStats,
+                            const Belief &belief,
+                            const BattleContext &bc,
+                            int sourceFilterDecisionIdx,
+                            int searchDecisionIdx,
+                            bool nextSearchEligible,
+                            const std::vector<HiddenBattleState> &acceptedAiStates);
+
+// Apply at most one live first-treatment attempt for this combat boundary.
+// The battleStartBelief supplies immutable lineage anchors; no live battle
+// hidden state is extracted as a proposal base. Returns whether the attempt
+// was made and records one low-support row when a telemetry file is set.
+bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
+                         bool &attemptedThisCombat,
+                         bool ancestryValid,
+                         const Belief &battleStartBelief,
+                         const S3RejuvenationHistory &history,
+                         const RealBeliefFilterStats &filterStats,
+                         Belief &belief,
+                         const BattleContext &bc,
+                         int sourceFilterDecisionIdx);
 
 // Flags (env STS_S3_REJUV_*; parsed in apps/one_combat.cpp; off by default).
 extern bool g_s3RejuvShadow;
 extern int g_s3RejuvTrigger;
 extern int g_s3RejuvProposals;
 extern std::string g_s3RejuvShadowFile;
+extern S3LiveRejuvenationMode g_s3LiveRejuvenationMode;
+extern std::string g_s3LiveRejuvenationFile;
+extern bool g_s3AiSensitivityShadow;
+extern std::string g_s3AiSensitivityFile;
+extern int g_s3AiSensitivityRootsPerSeed;
+extern int g_s3AiSensitivityAlternatives;
+extern int g_s3AiSensitivitySims;
 
 } // namespace sts::search
 #endif // STS_LIGHTSPEED_S3REJUVENATIONPROBE_H
