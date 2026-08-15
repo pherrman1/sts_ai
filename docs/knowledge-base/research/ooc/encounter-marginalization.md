@@ -1,6 +1,6 @@
 # Encounter marginalization
 
-Last verified: 2026-08-11.
+Last verified: 2026-08-15.
 
 ## Purpose / research question
 
@@ -10,14 +10,17 @@ improve strategic decision quality over a fixed-world baseline?
 
 ## Current conclusion
 
-**Encounter-marginalized labels (M1) show directional promise but are not
-promoted.** The matched M0/M1 gate on 64 paired seeds showed M1 leading M0
-by 3.1pp (10.9% vs 7.8%), but the confidence interval crosses zero and both
-models are weaker than deployed V4.
+**Encounter-marginalized labels (M1) do not separate from matched fixed-world
+M0 at 2,000 source seeds — null result.** The preregistered 64-seed paired
+gameplay gate (seeds 900000–900063, frozen S3 + 7k-VNet Act-3 stack, all
+strategic screens ON, margin 1.0) showed M1 16/64 (25.0%) vs M0 17/64 (26.6%),
+paired Δ (M1−M0) = **−1.6pp** with 95% CI [−14.1, +10.9]pp (crosses zero).
+Offline best-CE: M0 0.50897 vs M1 0.51181.
 
-The active research line is to **scale matched M0/M1 generation to 2,000-5,000
-source seeds** while preserving the existing contracts, then compare the winner
-with V4 only if the matched gate supports it.
+Per the preregistered decision rule this is a **null / approximately-equal**
+result: it does not support promotion or immediate scaling to 5,000 seeds. Both
+arms remain far below deployed V4, so a separate bottleneck (H4) remains
+plausible; do not infer that fixed-world leakage is beneficial.
 
 ## Evidence map
 
@@ -25,8 +28,8 @@ with V4 only if the matched gate supports it.
 | --- | --- | --- |
 | 2026-08-10 | [Encounter-marg final summary](../../encounter-marg-final-summary-2026-08-10.md) | Phase A-D complete: bugs fixed, M0/M1 trained, 64-seed gate |
 | 2026-08-10 | [Phase A diagnostic](../../encounter-marg-final-summary-2026-08-10.md) | 57.9% best-action changes; 10.8% V4 reversals → PROMOTE to training |
-| 2026-08-10 | [Phase D gate](../../encounter-marg-final-summary-2026-08-10.md) | M0 7.8% vs M1 10.9% (+3.1pp, CI crosses zero) |
-| Latest | [current-research.md](../../evaluation/current-research.md) | Active line: scale M0/M1 to 2,000-5,000 seeds |
+| 2026-08-10 | [Phase D gate](../../encounter-marg-final-summary-2026-08-10.md) | 500-seed pilot: M0 7.8% vs M1 10.9% (+3.1pp, CI crosses zero) |
+| 2026-08-15 | [ledger-06 §168](../../../experiments/ledger-06.md) | 2,000-seed: M0 26.6% vs M1 25.0% (−1.6pp, CI crosses zero) → NULL |
 
 ## Key implementation details
 
@@ -40,7 +43,10 @@ with V4 only if the matched gate supports it.
 
 ## Rejected / falsified approaches
 
-None yet — this is the first matched M0/M1 experiment.
+- **Matched M0 vs M1 at 2,000 source seeds (2026-08-15): NULL.** The preregistered
+  64-seed paired gameplay gate showed M1 (25.0%) not separating from M0 (26.6%),
+  paired Δ −1.6pp (95% CI crosses zero). The scaled marginalization formulation
+  did not improve the deployed-policy objective over the fixed-world control.
 
 ## Relationships
 
@@ -51,13 +57,17 @@ None yet — this is the first matched M0/M1 experiment.
 
 `apps/one_combat.cpp::strategicMargGen` produces the M0/M1 CSV rows.
 `tools/convert_marg_to_trainer.py` converts diagnostic CSVs to trainer format.
+`tools/reconstruct_marg_csv.py` deterministically reconstructs the malformed
+legacy raw CSV (unquoted richState) into the 40-column schema.
 
 See [`docs/knowledge-base/evaluation/current-research.md`](../../evaluation/current-research.md)
 for the active research routing and next-steps.
 
 ## Open questions
 
-- Does scaled M0/M1 (2,000-5,000 seeds) produce a statistically significant gate?
-- If so, does the winner become competitive with deployed V4?
-- Is the encounter-marginalization benefit dominated by the V4 gate stack's
-  Act-4 survival premium?
+- Does a different M1 formulation (or the fixed-world leakage itself) explain
+  why scaling to 2,000 source seeds did not separate M1 from M0?
+- Is another bottleneck (controller distribution, feature schema, model capacity,
+  optimization; H4) the binding constraint given both arms remain far below
+  deployed V4?
+- Should any further 5,000-seed scaling be pursued, given the null 2,000-seed gate?

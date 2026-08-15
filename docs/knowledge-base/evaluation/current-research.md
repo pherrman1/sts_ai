@@ -13,25 +13,28 @@ lines. It does not replace the current benchmark configuration in
 
 ### Encounter-marginalized strategic labels
 
-The latest completed experiment compared matched fixed-world M0 and
-encounter-marginalized M1 strategic models. M1 led M0 by 3.1 percentage points
-over 64 paired seeds, but both models were much weaker than deployed V4 because
-they were trained on only about 12K rows from 500 source seeds. The confidence
-interval crossed zero.
+The 2,000-source-seed matched M0 (fixed-world) vs M1 (encounter-marginalized)
+experiment completed (2026-08-15). On the preregistered 64-seed paired gameplay
+gate (seeds 900000–900063, frozen S3 + 7k-VNet Act-3 stack, all strategic
+screens ON, margin 1.0), M1 did not separate from M0:
 
-The preregistered next step is one conceptual change: run matched M0/M1
-generation and training at **2,000 source seeds** with the existing H=4,
-controller, split, trainer, export, and paired-gate contracts. Compare M0 and M1
-first, with no initial V4 gameplay arm and at most 64 paired gameplay seeds.
-Do not immediately scale to 5,000 source seeds; that is a future decision based
-on the 2,000-seed result. See the [Phase 12 decision log](../decision-log/2026-08-14-phase12-encounter-marginalization-next-step.md).
+- M0 17/64 = 26.6%; M1 16/64 = 25.0%; paired Δ (M1−M0) = **−1.6pp**, 95% CI [−14.1, +10.9]pp.
+- Offline best-CE: M0 `val_pol_ce` 0.50897 vs M1 0.51181 (both trained 40 epochs).
+
+Per the preregistered decision rule this is a **null / approximately-equal**
+result: encounter marginalization does not separate from the fixed-world control
+at 2,000 source seeds. It does not support promotion or immediate scaling to
+5,000 seeds. Both arms remain far below deployed V4, so a separate bottleneck
+(H4) remains plausible; do not infer that fixed-world leakage is beneficial.
+See [ledger-06 §168](../../../docs/experiments/ledger-06.md) and the
+[Phase 12 decision log](../decision-log/2026-08-14-phase12-encounter-marginalization-next-step.md).
 
 Evidence:
 
-- [Encounter-marginalization final report](../encounter-marg-final-summary-2026-08-10.md)
-- `EXPERIMENTS.md` latest encounter-marginalization entries
+- [Encounter-marginalization final report](../encounter-marg-final-summary-2026-08-10.md) (500-seed pilot, +3.1pp M1)
+- `docs/experiments/ledger-06.md` §168 (2,000-seed null result)
 - `apps/one_combat.cpp::strategicMargGen`
-- `tools/convert_marg_to_trainer.py`
+- `tools/convert_marg_to_trainer.py`, `tools/reconstruct_marg_csv.py`
 
 ## Current baseline
 
