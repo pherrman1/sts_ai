@@ -825,20 +825,22 @@ if __name__ == "__main__":
         # Batch Q prediction over all rows (not per-group)
         chunk = 4096
         q_all = np.empty(nrows, np.float32)
+        pol_all = np.empty(nrows, np.float32)
         print(f"[predict-only] running batched forward over {nrows} rows (chunk={chunk})...", flush=True)
         all_rows = np.arange(nrows, dtype=np.int64)
         for lo in range(0, nrows, chunk):
             hi = min(lo + chunk, nrows)
             rows = all_rows[lo:hi]
             with torch.no_grad():
-                _, _, q_chunk, _ = fwd_rows(rows)
+                pol_chunk, _, q_chunk, _ = fwd_rows(rows)
             q_all[lo:hi] = q_chunk.cpu().numpy()
+            pol_all[lo:hi] = pol_chunk.cpu().numpy()
             if lo % (chunk * 50) == 0 and lo > 0:
                 print(f"  {lo}/{nrows} rows", flush=True)
         print(f"[predict-only] forward done, writing groups...", flush=True)
         out = open(out_csv, "w")
         out.write("seed,decIdx,screen,gateKind,owned,ownershipExact,nCand,modelIdx,bestIdx,"
-                  "behaviorFallbackIdx,fallbackIdx,fallbackSource,margin,threshold,fired,predQ,labelQ\n")
+                  "behaviorFallbackIdx,fallbackIdx,fallbackSource,margin,threshold,fired,policy,predQ,labelQ\n")
         for g in range(N_pred):
             sz = int(sizes[g])
             if sz < 2:
@@ -861,13 +863,14 @@ if __name__ == "__main__":
             seed_val = int(df.seed.iloc[lo])
             dec_val = int(df.decIdx.iloc[lo])
             pred_str = "|".join(f"{v:.6f}" for v in q_pred)
+            pol_str = "|".join(f"{v:.6f}" for v in pol_all[rows])
             label_str = ""
             if labelQ_all is not None:
                 label_str = "|".join(f"{v:.6f}" for v in labelQ_all[rows])
             out.write(f"{seed_val},{dec_val},{scr},{int(kind)},{owned},{exact},"
                       f"{sz},{model_idx},{best_idx},{behavior_fb},{behavior_fb},"
                       f"tierb_chosen,{margin:.6f},{threshold:.6f},{fired},"
-                      f"{pred_str},{label_str}\n")
+                      f"{pol_str},{pred_str},{label_str}\n")
         out.close()
         print(f"[predict-only] wrote {out_csv}", flush=True)
         raise SystemExit(0)

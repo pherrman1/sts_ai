@@ -2823,3 +2823,37 @@ to M0's gap, without establishing full causality or promotion.
 
 See `docs/archive/research/sessions/phase12-screen-contract-strict-rerun-2026-08-15.md`
 for complete hashes, paired contingency counts, and parity errors.
+
+## §172 Phase-12 M0/M1 post-hoc Q-supervision autopsy — corrected after reverted draft (2026-08-15)
+
+An earlier autopsy commit was reverted for a wrong screen mapping and an
+internally inconsistent cross-classification. This corrected rerun (baseline
+`ab18dce`, branch `phase12-m0-m1-autopsy-fixed`) uses one deterministic script
+(`tools/phase12_m0_m1_autopsy.py`) on the exact corrected datasets and strict
+checkpoints, derives screen names from the actual `ScreenState` numeric field
+(`include/game/GameContext.h::sts/ScreenState`), preserves duplicate action
+rows, and asserts every invariant.
+
+The policy labels are identical (`chosen`, asserted per matched row); encounter
+marginalization changes only the auxiliary Q supervision, whose actual target
+is `10*labelWon + labelHp`. Across 39,870 matched decisions, M0/M1 Q-target
+argmax differed on 16,951 (42.52%) and exact top-two ordering reversed on
+3,338 (8.37%, stable tie-breaking). Corrected semantic rates were SHOP 60.62%,
+CARD 44.88%, EVENT 32.95%, TREASURE 30.68%, REST 26.29%, UPGRADE_SELECT
+44.37%, and BOSS_RELIC 1.58%. Mean Q-target margin fell 6.9049 → 5.7728.
+
+Inference on the exact strict checkpoints found predicted-Q argmax
+disagreement 9,932 (24.91%) and policy-logit argmax disagreement 3,154
+(7.91%) — a smaller overall rate than predicted-Q divergence, but strongly
+concentrated: SHOP 32.08% and UPGRADE_SELECT 33.30% policy disagreement
+versus CARD 3.90% and TREASURE 0.00%. Policy entropy rose slightly
+(0.5154 → 0.5271). All-input predicted-Q top-1 fidelity was 25.72% M0 vs
+25.67% M1. The complete 8-cell A/B/C cross-classification sums to 39,870 with
+marginals exactly matching the headline counts. The evidence supports
+substantial auxiliary-Q relabeling with screen-concentrated policy effects,
+making auxiliary-Q/representation coupling plausible but not causal proof of
+the −10.9pp 64-seed point estimate (CI crosses zero). The autopsy is
+**closed**; no M2, retraining, gameplay tracing, or new seeds.
+
+Full tables, hashes, root causes, and provenance:
+`docs/archive/research/sessions/phase12-m0-m1-autopsy-2026-08-15.md`.
