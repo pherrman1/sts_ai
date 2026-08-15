@@ -2857,3 +2857,72 @@ the −10.9pp 64-seed point estimate (CI crosses zero). The autopsy is
 
 Full tables, hashes, root causes, and provenance:
 `docs/archive/research/sessions/phase12-m0-m1-autopsy-2026-08-15.md`.
+
+## §173 Phase-13A counterfactual teacher-strength audit (2026-08-15)
+
+Phase 13A audited whether the Phase-12 short fixed-world teacher gives
+reliable rankings on high-confidence strict-M0/V4 disagreements. The fresh
+source block was `920000..920007` (8 seeds; no prior V4/M0 comparison use),
+with the frozen V4 source trajectory, non-MAP V4 margin ownership, and M0
+score-only eligibility `Q_M0(a_M0)-Q_M0(a_V4) >= 1.0`. The pool contained 119
+eligible states. A deterministic `random.Random(1301)` sample selected exactly
+16 states before any evaluator outcomes; manifest SHA256 is
+`88795a8b46db5296f453bd2dcd17ebb6453dbf352cbba4a65949d20098857bc4`.
+
+Evaluator S preserved Phase-12 Tier-B semantics: H=4, K=3, bootstrap enabled,
+150/100/50 fight schedule. Evaluator R used the same copied fixed-world state,
+paired continuation seeds, and existing OOC continuation chain, but ran to the
+terminal horizon with `sims=1000`, no fight cap, no bootstrap, and no fixed
+fight schedule. The exact V4 native hash was
+`e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`; the
+durable strict-M0 native hash was
+`97564d1be6b4f2356ef5807645a3b45126726bf8ae07cc2b7e273a860106e62a`.
+
+The committed raw evidence has 256 rows (16 decisions × 2 actions × 4
+futures × 2 evaluators), SHA256
+`81e686d4eab32500df2397345b44f4c6d19a377dac97b2edf4a5c528b0e2e7c0`.
+Fifteen decisions were fully valid. Two R futures for `(920000,12)` failed
+the existing Searcher3 health contract (`TRANSIENT` / `SECRET_WEAPON`), and
+were retained as invalid rows rather than averaged or replaced. On the 15
+valid decisions, mean `refDelta=-2.050000`, mean `refWinDelta=-0.083333`;
+S preferences M0/V4/tie were 8/2/5 and R preferences were 3/5/7. Strict sign
+agreement was 3/15 for short-vs-reference and 3/15 for model-vs-reference.
+
+This run is **INVALID — ownership-selection bug**. The collector treated every
+REWARDS state with `cardRewardCount > 0` as V4-owned even when live V4 was still
+auto-collecting gold, relic, potion, or enabled keys. Nine of the 16 selected
+states were REWARDS states, so the sampled population was not the registered
+population. The raw evidence remains preserved under
+`docs/experiments/evidence/phase13a-teacher-audit/`; its S/R aggregates and
+H4 conclusion must not be interpreted scientifically. A corrected fresh-seed
+rerun is required.
+
+Evidence and the complete decision table are under
+`docs/experiments/evidence/phase13a-teacher-audit/`.
+
+### §173 corrected ownership rerun
+
+The ownership bug was fixed before collecting a new candidate pool. The
+collector now mirrors live V4 precedence: REWARDS is eligible only after gold,
+relic, potion, and enabled-key actions are exhausted; other screens require
+their enabled live strategic gate and legal actions. The collector records
+`gateOwned`, `liveV4Idx`, and `liveV4Margin`, and the ownership smoke passed.
+
+Fresh seeds were `940000..940007`, with exact source/replay budget `sims=1000`.
+The corrected pool contained 70 candidates; deterministic sample seed 1301
+selected 16 before outcomes. Manifest SHA256:
+`a84de37a038ead6750115bc8cb95d697710e8b60cd7788070b56297d1b1752db`.
+
+The corrected audit produced 256/256 valid rows with no replay or health
+failures. Raw SHA256:
+`1f7778f3ce7200a08eec34f05885a0f8d08b373a36e798d8477657014dec1fa3`.
+Mean `refDelta=-13.843750`; mean `refWinDelta=-0.250000`. S preferences
+M0/V4/tie were 9/5/2; R preferences were 6/9/1. Strict sign agreement was
+6/16 for short-vs-reference and 6/16 for model-vs-reference; tie-aware
+three-way agreement was 7/16 and 6/16 respectively. All R rows had
+`bootstrap=0`.
+
+The corrected result is **H4 inconclusive** under the preregistered rules:
+reference V4 preference is 9/16, below the 10/16 threshold, while neither the
+short teacher nor R favors M0 on at least 10/16. This valid result does not
+support promotion or identify a causal teacher/model/objective diagnosis.

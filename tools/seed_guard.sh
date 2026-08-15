@@ -18,7 +18,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["policygen"]=2           ["rollouttrace"]=4
   ["runbench"]=3            ["searchdiag"]=2
   ["strategicgen"]=2        ["strategicgen2"]=2
-  ["strategicmarggen"]=2
+  ["strategicmarggen"]=2    ["phase13a_collect"]=2
 )
 
 declare -A PYTHON_SEED_INDEX=(
