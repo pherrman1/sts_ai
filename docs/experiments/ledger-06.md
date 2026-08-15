@@ -3041,6 +3041,11 @@ proposal generation, successful-source selection, destination slots, weights,
 and intervention timing; placebo inserts an exact source duplicate while AI
 inserts the accepted novel AI_RNG state. Collapse-fresh invalidates ancestry.
 Telemetry is written through `STS_S3_AI_REJUV_LIVE_FILE`.
+After review, proposal RNG provenance was corrected to derive each proposal
+from fixed salt, game seed, floor/encounter, source filter decision, lineage ID,
+and proposal number while preserving the validated AI_RNG sampling
+distribution. The earlier implementation/control artifacts are superseded by
+the corrected run below.
 
 **Frozen implementation values:** The global shadow defaults remain unchanged
 (`g_s3RejuvTrigger=16`, `g_s3RejuvProposals=256`). Causal invocations explicitly

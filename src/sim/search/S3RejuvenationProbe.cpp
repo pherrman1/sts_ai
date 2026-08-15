@@ -1,7 +1,8 @@
 //
-// S3RejuvenationProbe implementation. Pure telemetry: replay uses copies of
-// the anchor state and a dedicated probe RNG; nothing here touches the live
-// battle, the searcher, its belief, or any battle RNG stream.
+// S3RejuvenationProbe implementation. Shadow replay uses copies of the anchor
+// state and a dedicated probe RNG. The live treatment path additionally applies
+// accepted children to the filtered belief; neither path mutates BattleContext
+// RNG streams or Searcher3 search RNG.
 //
 #include "sim/search/S3RejuvenationProbe.h"
 
@@ -588,10 +589,7 @@ bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
         mix(static_cast<std::uint64_t>(bc.encounter));
         mix(static_cast<std::uint64_t>(sourceFilterDecisionIdx));
         mix(history.entries.size());
-        std::mt19937_64 proposalRng(h ? h : 1);
         const int proposals = std::max(1, g_s3RejuvProposals);
-        const auto fresh = HiddenBattleState::sampleParticles(
-            history.anchorObs, history.anchor, proposalRng, proposals);
         std::vector<const HiddenBattleState *> sources;
         std::vector<int> sourceIndices;
         for (size_t i = 0; i < belief.particles.size(); ++i) {
@@ -620,8 +618,18 @@ bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
                 battleStartBelief.particles.begin(), battleStartBelief.particles.end(),
                 [&](const HiddenBattleState &p) { return p.id == source.id; });
             if (anchorIt == battleStartBelief.particles.end()) continue;
+            std::uint64_t proposalSeed = h;
+            auto mixProposal = [&proposalSeed](std::uint64_t x) {
+                proposalSeed ^= x + 0x9e3779b97f4a7c15ULL
+                    + (proposalSeed << 6) + (proposalSeed >> 2);
+            };
+            mixProposal(source.id);
+            mixProposal(static_cast<std::uint64_t>(attempt));
+            std::mt19937_64 proposalRng(proposalSeed ? proposalSeed : 1);
+            const auto fresh = HiddenBattleState::sampleParticles(
+                history.anchorObs, history.anchor, proposalRng, 1);
             HiddenBattleState proposal = makeConditionalBlockProposal(
-                *anchorIt, fresh[attempt], S3RejuvenationProposalFamily::AI_RNG);
+                *anchorIt, fresh.front(), S3RejuvenationProposalFamily::AI_RNG);
             std::mt19937_64 fallbackRng(h ^ (static_cast<std::uint64_t>(attempt + 1)
                                              * 0xbf58476d1ce4e5b9ULL));
             const auto replay = replayRejuvenationHistory(history, proposal, fallbackRng);
@@ -669,7 +677,7 @@ bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
             injections.push_back({sourceIndex, zeroSlots[injections.size()], child});
         }
         parentsAccepted = static_cast<int>(injections.size());
-        uniqueChildren = parentsAccepted;
+        uniqueChildren = mode == S3LiveRejuvenationMode::AI_RNG ? parentsAccepted : 0;
         const double oldTotal = std::accumulate(
             belief.particles.begin(), belief.particles.end(), 0.0,
             [](double total, const HiddenBattleState &p) { return total + p.weight; });

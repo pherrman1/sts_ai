@@ -10801,9 +10801,14 @@ int main(int argc, char **argv) {
     }
     if (const char *d = std::getenv("STS_S3_AI_REJUV_LIVE")) {
         const std::string mode = d;
-        if (mode == "placebo") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO;
+        if (mode == "off") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::OFF;
+        else if (mode == "placebo") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO;
         else if (mode == "ai") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG;
-        else search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::OFF;
+        else {
+            std::cerr << "Invalid STS_S3_AI_REJUV_LIVE='" << mode
+                      << "'; expected off, placebo, or ai\n";
+            return 2;
+        }
         std::cout << "[S3 AI rejuvenation live = " << mode << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_AI_REJUV_LIVE_FILE")) {

@@ -23,7 +23,11 @@ Each accepted source is split 50/50 into the source and one zero-weight slot;
 the child inherits the source lineage ID. Collapse-fresh invalidates ancestry
 and disables further live attempts for that combat. Proposal/replay RNG is
 local and deterministic and does not consume live or search RNG.
-
+local and deterministic and does not consume live or search RNG. The initial
+implementation used one combat-level proposal sequence; this review correction
+derives each proposal stream from the fixed salt, game seed, floor, encounter,
+source filter decision, source lineage ID, and proposal number, while retaining
+the validated `sampleParticles()` AI_RNG distribution semantics.
 ## Alternatives rejected
 
 - Reusing the shadow oracle-anchored proposal path — rejected because it can
@@ -47,8 +51,11 @@ local and deterministic and does not consume live or search RNG.
 
 ## Status
 
-Implementation and focused verification pass. The one-seed smoke passed. The
-correct-executable 8-seed baseline and placebo arms completed with telemetry;
-the AI arm was interrupted by the execution harness and has only 7/8 result
-rows, so the implementation/control gate is incomplete. The 32-seed causal
-gate was not started.
+Implementation and focused verification pass. The corrected one-seed smoke
+passed. The corrected matched 8-seed baseline, placebo, and AI arms each have
+8/8 rows. Placebo telemetry has 1,573 rows with 442 injected duplicates and
+`unique_children=0`; AI telemetry has 1,553 rows with 424 injected novel
+children and `unique_children=424`. The paired AI-minus-placebo deltas are zero
+for both win and floor on this implementation/control block. This is an
+implementation/control validation, not a scientific treatment result. The
+32-seed causal gate was not started.
