@@ -2655,9 +2655,17 @@ The 32-root analysis found selected-action changes in 3/32 roots, top-two visit
 ordering changes in 4/32, and Q-order flips in 3/32. This run demonstrated
 conditional sensitivity but is explicitly regime-dependent exploratory evidence.
 
-## 2026-08-15 — AI_RNG conditional sensitivity: matched belief-OFF/V4 replication
+## 2026-08-15 — CORRECTION: invalid matched AI_RNG record in d68af8c
 
-The matched replication used the same commit `d0c02cd`, seed block
+The matched-replication section previously committed by `d68af8c` is invalid.
+It reused the exploratory belief-ON artifact names, hashes, and results while
+claiming belief-OFF/V4 provenance. That section must not be used as evidence and
+is superseded by the actual matched run recorded below. The exploratory
+belief-ON section above remains valid as exploratory evidence.
+
+## 2026-08-15 — AI_RNG conditional sensitivity: matched belief-OFF/V4 replication (corrected)
+
+The corrected matched replication used commit `d0c02cd`, seed block
 `126732–126739`, ascension 0, 1,000 base simulations, 3,000 boss simulations,
 64 particles, 12 threads, fair Searcher3, `STS_S3_BELIEF=0`, chain off, CRN
 off, real filtering, collapse-fresh, persistent filtered posterior, no tree
@@ -2686,36 +2694,38 @@ STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1
 tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0 126732 /tmp/final8_matched_live.csv
 ```
 
-The run completed with 32 selected roots, 8 seed breadth, 15 encounter breadth,
+The run completed with 32 selected roots, 8 seed breadth, 13 encounter breadth,
 14 floor breadth, and 32 encounter/floor groups. ORACLE_A was `BASELINE` for
-all 147 root-action rows, ORACLE_B was `EXACT` for all 147 rows, and all 588
+all 146 root-action rows, ORACLE_B was `EXACT` for all 146 rows, and all 584
 AI alternative rows were `N/A`; block-isolation and source/search-index
-failures were zero. The 32-root cross-tab was: 26 roots with no support-empty
-flag and no policy/Q-order change; 1 with top-two and Q-order changes; 1 with
-selected/top-two changes but no Q-order flip; 2 with selected/top-two/Q-order
-changes; and 2 support-empty roots with no change. Overall, selected action
-changed in 3/32, top-two ordering in 4/32, Q-order flipped in 3/32, and any
-nonzero common-edge Q difference occurred in 13/32 roots. Per-root visit-TV
-Q25/median/Q75/max was 0/0/0.013/0.922; max common-edge |dQ| was
-0/0/6.1715/107.0; max oracle-selected |dQ| was 0/0/0.8065/9.510.
-
-Artifacts and hashes: `/tmp/final8_sensitivity.csv`
-(`c591c6abf080e7722cb507af4eacfb9b75d80e4fb29cd7db42e5e78fbe93f8e0`),
-`/tmp/final8_live.csv`
-(`2654a45bcdbd85a44953d21bda5b4119f65a3cf2bc1a325761ee1cbe1eb13280`),
-`/tmp/final8_live.csv.meta.json`
-(`a1aa28565c049a9a67194134402e00cd1d418514500fcd3bd99159f8c5898547`),
-`/tmp/final8_exposure.csv`
-(`6336767c4f85431df6699204e3fe3f03b20efdd5aeac69c2ba9668295ff4745d`), and
-`/tmp/final8.log`
-(`0fe4586147eec744b29e05898d99b9a4a32b65b2c462f82faf3d6606200341f5`).
+failures were zero. The 32-root cross-tab was: 25 roots with no
+support-empty flag and no policy/Q-order change; 1 with only a Q-order flip;
+3 with selected/top-two/Q-order changes; and 3 support-empty roots with no
+selected-action change (one had a Q-order flip and one had a top-two change).
+Overall, selected action changed in 3/32, top-two ordering in 4/32, Q-order
+flipped in 5/32, and any nonzero common-edge Q difference occurred in 9/32
+roots. Per-root visit-TV Q25/median/Q75/max was 0/0/0.01275/0.906; max
+common-edge |dQ| was 0/0/2.42775/131.362; max oracle-selected |dQ| was
+0/0/0.30925/17.482.
+`/tmp/final8_matched_sensitivity.csv`
+(`cb724466559a74437ebefd7e3c20d660a623fefd7e0ffb8c5492ff8610a1398a`),
+`/tmp/final8_matched_live.csv`
+(`1447919f936fb421cb81fcda831af8c5d59e62f7eff754699b34629019f6b50c`),
+`/tmp/final8_matched_live.csv.meta.json`
+(`159f2e1cbac329841aeedeb8f256d96b66879d209c1f1f781fb957626ed3a6a8`),
+`/tmp/final8_matched_exposure.csv`
+(`5add23d9c22757ff3e1cfd06c26a19ab71e2f5c7b9a8d55aced320d3ba9c08e4`),
+`/tmp/final8_matched_rejuv.csv`
+(`b915e93fddb0f8083bfec1bc98bb62c601d74cc0666b636500929f3e4a1b5496`), and
+`/tmp/final8_matched.log`
+(`3105f6c9c429eaae2ef05838e96c2b569140be5bced7ce6fc93a1eebf6e34ba4`).
 
 The exposure join covered all 32 roots. Aggregate AI exposure fractions on the
-four roots with selected-action changes were 1.000, 0.030, 1.000, and 1.000.
-The matched run therefore again shows decision-relevant AI_RNG sensitivity
-across multiple seeds/encounters, but the effect remains sparse and does not
-itself establish live gameplay benefit. A later targeted live-treatment study
-is justified; no live rejuvenation is implemented here.
+three roots with selected-action changes were 0.020, 1.000, and 1.000. The
+matched run again shows decision-relevant AI_RNG sensitivity across multiple
+seeds/encounters, but the effect remains sparse and does not itself establish
+live gameplay benefit. A later targeted live-treatment study is justified; no
+live rejuvenation is implemented here.
 
 ## 2026-08-15 — Searcher3 history-replay rejuvenation shadow probe results
 
