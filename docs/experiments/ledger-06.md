@@ -2782,9 +2782,9 @@ particles, 7k VNet alpha 0.3, all strategic gates on, margin 1.0):
 | M0 win rate | 17/64 = 26.56% | 16/64 = 25.00% | -1.56pp |
 | M1 win rate | 16/64 = 25.00% | 12/64 = 18.75% | -6.25pp |
 
-Corrected-screen retraining did not improve this exploratory gate for either
-objective. The contract bug is real and requires a permanent converter fix, but
-these results rule out the bug alone as the explanation for V4's advantage.
+This eager-mode result was subsequently superseded by the strict compile-enabled
+rerun in §171 and should not be interpreted causally. The contract bug is real
+and requires a permanent converter fix; §171 provides the controlled follow-up.
 See `docs/archive/research/sessions/phase12-screen-contract-corrected-m0-m1-2026-08-15.md`
 for hashes and detailed provenance.
 
