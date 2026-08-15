@@ -3063,3 +3063,43 @@ implementation/control validation, not a gameplay result.
 **Decision:** Do not start the preregistered 32-seed scientific gate until a
 complete 8-seed implementation/control rerun is obtained and all controls are
 clean. The incomplete AI arm is not interpreted as H0, H1, or H_resample.
+
+## 2026-08-15 — First live AI_RNG causal gate, untouched block 910000–910031
+
+**Question:** Does live particle-lineage AI_RNG support expansion improve
+gameplay relative to the matched placebo, with OFF retained as a secondary
+baseline? The prior 8-seed implementation/control block is not interpreted
+scientifically and was not reused for this gate.
+
+**Configuration:** Three matched arms used fair Searcher3, A0, 1,000 base
+simulations, 3,000 boss simulations, 64 particles, 12 threads, belief/internal
+update off, chain off, CRN off, real-boundary filtering on, collapse-fresh on,
+persistent filtered posterior on, reuse 0, END_TURN marginalization off,
+`STS_S3_REJUV_TRIGGER=16`, `STS_S3_REJUV_PROPOSALS=64`,
+`models/v_combat_7k_tuned.txt`, VNet alpha 0.3, the V4 strategic token model,
+and all REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates with margin 1.0. Every arm
+ran through `tools/seed_guard.sh` on seeds `910000–910031`.
+
+**Raw artifacts:** `/tmp/s3live32_off.csv`, `/tmp/s3live32_placebo.csv`,
+`/tmp/s3live32_ai.csv`, and placebo/AI telemetry at
+`/tmp/s3live32_{placebo,ai}.telemetry.csv`. Result hashes are OFF
+`e44c782a15cb3645298dfccb072b101ebee10a60bcb52f27a13b14fb942607fb`, placebo
+`c0390f0daae92460c24b8dceade97443221319a46fa759034eb3324e0a4001e8`, and AI
+`cf8b518b273bc97edbc38687b86609cfad68b7b2b45832f34761fd53925527be`.
+
+**Gameplay:** OFF won 17/32 with mean floor 47.781; placebo won 12/32 with
+mean floor 45.406; AI won 15/32 with mean floor 46.656. Primary AI−placebo
+paired delta was +3/32 wins (+9.375 percentage points) and +1.25 mean floor.
+AI−OFF was −2/32 wins and −1.125 mean floor. Placebo−OFF was −5/32 wins and
+−2.375 mean floor. AI−placebo floor gains occurred on 6 seeds and losses on 5;
+the +1.25 mean was not solely an outlier, although seed 910020 contributed a
+−31 floor loss and seed 910018 a +20 gain. The paired win delta was spread over
+three seeds, with no reverse AI-over-placebo win losses on this block.
+
+**Exposure:** Placebo had 6,133 telemetry rows, 317 first attempts, 1,427
+duplicate children, and `unique_children=0`, with all 32 seeds exposed. AI had
+6,440 rows, 329 first attempts, 1,494 novel children, and
+`unique_children=1494`, with all 32 seeds exposed. Reported intervention CPU
+was 98.087 ms placebo and 93.017 ms AI across telemetry rows. This is a causal
+screen result, not a promotion claim; follow the preregistered decision rule
+before extending to 64 seeds.
