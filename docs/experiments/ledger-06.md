@@ -2919,16 +2919,24 @@ IDs, and reordered replay state, and verifies the selected unique ID survives.
 
 The preserved prior CSV/log artifacts did not retain complete
 `CardSelectTask` values, and no reliable task-occurrence evidence was found, so
-the exact frozen eight-seed run was repeated once. The rerun used the same
-seeds/configuration and produced **RAW 1,593/1,593** and **SEMANTIC
-1,593/1,593**, with zero oracle remap/action-illegal/sim-health/intermediate/
-final failures. The rerun had 1,593 trigger rows (versus 1,596 previously), so
-its aggregates are authoritative for this corrected branch state. Overall
-accepted totals were DRAW_ORDER 6,504, SHUFFLE_RNG 73,003, CARD_RANDOM_RNG
-58,520, AI_RNG 60,552, MISC_RNG 101,952, MONSTER_HP_RNG 92,965, POTION_RNG
-100,928, and ALL_FRESH 1,563. At `decision_idx >= 8`, accepted totals were
-DRAW_ORDER 1,752/64,256, SHUFFLE_RNG 37,117/64,256, CARD_RANDOM_RNG
-33,164/64,256, AI_RNG 32,256/64,256, MISC_RNG 64,256/64,256, MONSTER_HP_RNG
-56,457/64,256, POTION_RNG 63,552/64,192, and ALL_FRESH 251/64,192.
-The paired-source and family-order invariance checks and shadow
-non-interference remained passing. The scientific interpretation is unchanged.
+the exact frozen eight-seed command was repeated once. That rerun's raw
+`build/s3_conditional_8_drawsource.rejuv.csv` artifact is **incomplete**, not a
+smaller valid experiment: it contains 1,593 trigger keys, but one trigger has
+only 7 of the required 9 family rows (missing `POTION_RNG` and `ALL_FRESH`),
+and its base result CSV omits seed `126733`. The three trigger keys present in
+the complete 1,596-trigger artifact but absent from the incomplete artifact are
+all later in that same seed/encounter/floor trajectory: seed `126733`, encounter
+50, floor 41, decisions 22, 26, and 27 (the preceding decision 21 is the
+partial 7-row trigger). This is an interrupted/partial artifact, not evidence
+of three scientifically different triggers.
+
+The complete `build/s3_conditional_8_final.rejuv.csv` remains the authoritative
+raw geometry artifact: programmatic validation finds 1,596 trigger groups, each
+with exactly `ORACLE + 8` families, 64 proposals for every non-oracle row, and
+identical family denominators in all/early/late slices. Its oracle gate remains
+RAW **1,596/1,596** and SEMANTIC **1,596/1,596**, with zero failure counts.
+The source-pile correction was therefore not established as exercised by a
+complete eight-seed rerun; the prior complete geometry result remains valid,
+and the incomplete rerun must not replace its aggregates. The paired-source,
+family-order invariance, and shadow non-interference checks remained passing.
+The scientific interpretation is unchanged.
