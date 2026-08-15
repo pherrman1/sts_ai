@@ -2115,3 +2115,31 @@ cause. The temporary transfer remained removed; no larger strength gate ran.
 T0/T1 whole-run wins were both 3/8 and are not quality evidence; CPU was 33.46
 vs 29.73 s/run. Artifacts: `s3_persist_t{0,1}_8.*` under
 `build/linux-gcc-release/`.
+
+## 2026-08-15 — Native C++ LTO build benchmark and default adoption
+
+**Question:** Does adding compiler optimization flags make the combat benchmark
+faster, and should LTO become the standard native build setting?
+
+- **Benchmark:** `one_combat bench 2000 8`, Jaw Worm combat, seeds `0..7`,
+  Ironclad ascension 0, GCC 13.3, `OMP_NUM_THREADS=1`, known-RNG Searcher2
+  MCTS, 2,000 simulations per decision. The primary metric is process user CPU
+  time from `/usr/bin/time`; the harness MCTS row is a secondary metric.
+- **Arms:** A current `-O3`; B `-O3 -march=native`; C
+  `-O3 -march=native -flto`. All runs used the same source revision, models,
+  seeds, and runtime settings, and were executed through
+  `tools/seed_guard.sh`.
+- **Results:** A **0.88 s** user CPU / **95.43 ms** MCTS average; B **0.87 s**
+  / **94.41 ms**; C **0.76 s** / **81.50 ms**. Relative to A, B was **1.1%
+  faster** and C was **13.6% faster** by process CPU time (**14.6% faster** by
+  the harness MCTS timing). All arms produced identical outcomes: 8/8 MCTS
+  wins, average ending HP 73.1, average 3.0 turns.
+- **Decision:** Make `-flto` standard in `CMakeLists.txt`. Do not make
+  `-march=native` standard: it is host-specific and the 8-seed result showed
+  no meaningful benefit by itself.
+- **Caveat:** This is a small 8-seed combat-only benchmark, so the LTO result is
+  evidence for the default build setting, not a general performance guarantee
+  across CPUs, compilers, workloads, or full-run benchmarks. LTO build time and
+  portability remain follow-up considerations.
+- **Artifacts:** temporary benchmark binaries and raw output were stored under
+  `/tmp/sts-opt-bench/` during the session; they are not repository artifacts.
