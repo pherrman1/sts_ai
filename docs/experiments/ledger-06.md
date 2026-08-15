@@ -2787,3 +2787,39 @@ objective. The contract bug is real and requires a permanent converter fix, but
 these results rule out the bug alone as the explanation for V4's advantage.
 See `docs/archive/research/sessions/phase12-screen-contract-corrected-m0-m1-2026-08-15.md`
 for hashes and detailed provenance.
+
+## §171 Phase-12 corrected-screen strict compile-enabled rerun (2026-08-15)
+
+The §170 corrected retrain used eager CUDA despite the original contract's
+`STRAT_TOK_COMPILE=1`. A strict rerun held the intended single variable to the
+screen IDs while restoring `STRAT_PATIENCE=0`, compile-enabled CUDA, exactly 40
+epochs, the original split/model seed/objective/architecture, and the same
+64-seed Act-3 gate. All corrected dataset invariants passed.
+
+The epoch-6 best-CE anomaly disappeared: strict M0 and M1 selected epoch 40.
+Strict M0 achieved `val_pol_ce=0.501773`, `policy_top1=0.792266`, and
+`q_top1=0.251409`; strict M1 achieved `val_pol_ce=0.498305`,
+`policy_top1=0.790982`, and `q_top1=0.249154`. Both native exports passed
+32-sample parity.
+
+On the fair Searcher3 Act-3 gate (seeds 900000–900063, 1,000 sims, 64
+particles, all strategic gates, margin 1.0, explicit `STS_COLLECT_KEYS=0` and
+`STS_STOP_AFTER_ACT=3`):
+
+| Arm | Wins | Win rate | Mean floor | Mean HP |
+|---|---:|---:|---:|---:|
+| Strict corrected M0 | 23/64 | 35.9% | 40.281 | 16.672 |
+| Strict corrected M1 | 16/64 | 25.0% | 37.562 | 8.672 |
+| Original M0 | 17/64 | 26.6% | 38.812 | 14.562 |
+| Original M1 | 16/64 | 25.0% | 38.719 | 10.312 |
+| V4 | 24/64 | 37.5% | 41.797 | 20.062 |
+
+Strict M0 vs original M0 was +9.4pp (deterministic bootstrap 95% CI
+[-21.9,+3.1]pp); strict M0 vs V4 was -1.6pp (CI [-17.2,+14.1]pp).
+The point estimate recovers approximately 86% of the original 10.9pp M0/V4
+gap, but the small-block intervals cross zero. Strict M1 remained null versus
+original M1 at 25.0%. This supports material contribution from the screen bug
+to M0's gap, without establishing full causality or promotion.
+
+See `docs/archive/research/sessions/phase12-screen-contract-strict-rerun-2026-08-15.md`
+for complete hashes, paired contingency counts, and parity errors.
