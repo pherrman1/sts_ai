@@ -2760,6 +2760,3 @@ Artifacts (corrected): `build/linux-gcc-release/s3_rejuv_shadow_8{.stdout,
 .stderr,.meta.json,<base CSV>,.rejuv.csv}` (corrected executable; the
 superseded run's CSV was overwritten, its aggregate numbers are preserved in
 the table above).
-=======
-- The V4 arm is post-hoc same-config calibration, not a preregistered treatment.
->>>>>>> Stashed changes
