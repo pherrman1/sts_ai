@@ -2638,6 +2638,95 @@ gate. Stop at 8 seeds; do not extend automatically.
 never modifies `s3.belief`), no change to `filterRealTransition`, no
 resampling-policy change, no RNG-counter redesign, no gameplay promotion.
 
+## 2026-08-15 — AI_RNG conditional sensitivity: exploratory belief-ON run
+
+This diagnostic run is retained as exploratory evidence and is not the intended
+frozen paired baseline. It used commit `d0c02cd`, fair Searcher3, seeds
+`126732–126739`, 1,000 base simulations, 3,000 boss simulations, 64 particles,
+12 threads, real-boundary filtering, collapse-fresh, persistent filtered belief,
+no tree reuse, chain off, CRN off, the deployed 7k combat VNet at alpha 0.3,
+and native heuristic OOC policy. `STS_S3_BELIEF` was unset (effective ON),
+`STS_S3_REJUV_PROPOSALS` was unset (effective 256), and the V4 strategic token
+model/gates were OFF. Artifacts were `/tmp/final8_sensitivity.csv`,
+`/tmp/final8_live.csv`, `/tmp/final8_live.csv.meta.json`,
+`/tmp/final8_exposure.csv`, and `/tmp/final8.log`.
+
+The 32-root analysis found selected-action changes in 3/32 roots, top-two visit
+ordering changes in 4/32, and Q-order flips in 3/32. This run demonstrated
+conditional sensitivity but is explicitly regime-dependent exploratory evidence.
+
+## 2026-08-15 — CORRECTION: invalid matched AI_RNG record in d68af8c
+
+The matched-replication section previously committed by `d68af8c` is invalid.
+It reused the exploratory belief-ON artifact names, hashes, and results while
+claiming belief-OFF/V4 provenance. That section must not be used as evidence and
+is superseded by the actual matched run recorded below. The exploratory
+belief-ON section above remains valid as exploratory evidence.
+
+## 2026-08-15 — AI_RNG conditional sensitivity: matched belief-OFF/V4 replication (corrected)
+
+The corrected matched replication used commit `d0c02cd`, seed block
+`126732–126739`, ascension 0, 1,000 base simulations, 3,000 boss simulations,
+64 particles, 12 threads, fair Searcher3, `STS_S3_BELIEF=0`, chain off, CRN
+off, real filtering, collapse-fresh, persistent filtered posterior, no tree
+reuse, END_TURN marginalization off, deployed 7k combat VNet at alpha 0.3, and
+the V4 strategic token model
+`selfplay/models/ooc_strategic_tok_final.native` with REST/EVENT/SHOP/TREASURE/
+BOSS_RELIC gates enabled and margin 1.0. Rejuvenation used trigger 16 and 64
+proposals; sensitivity used at most 4 roots/seed, 4 alternatives/root, and
+256 mini-search simulations. The exact command was run through
+`tools/seed_guard.sh` as:
+
+```text
+env -i PATH="$PATH" HOME="$HOME" PWD="$PWD" OMP_NUM_THREADS=12 STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+STS_S3_CHAIN=0 STS_S3_PARTICLES=64 STS_S3_CRN=0
+STS_S3_REAL_BELIEF_FILTER=1 STS_S3_REAL_BELIEF_COLLAPSE_FRESH=1
+STS_S3_PERSIST_FILTERED_BELIEF=1 STS_REUSE_MAX_SEARCHES=0
+STS_S3_ENDTURN_MARGINALIZE=0 STS_S3_REJUV_SHADOW=1 STS_S3_REJUV_SHADOW_FILE=/tmp/final8_matched_rejuv.csv
+STS_S3_REJUV_TRIGGER=16 STS_S3_REJUV_PROPOSALS=64
+STS_S3_RNG_EXPOSURE_DIAG=1 STS_S3_RNG_EXPOSURE_DIAG_FILE=/tmp/final8_matched_exposure.csv STS_S3_AI_SENSITIVITY_SHADOW=1
+STS_S3_AI_SENSITIVITY_ROOTS_PER_SEED=4 STS_S3_AI_SENSITIVITY_ALTS=4
+STS_S3_AI_SENSITIVITY_SIMS=256 STS_S3_AI_SENSITIVITY_FILE=/tmp/final8_matched_sensitivity.csv STS_VNET=models/v_combat_7k_tuned.txt
+STS_VNET_ALPHA=0.3 STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native
+STS_OOC_STRATEGIC_MARGIN=1.0 STS_OOC_STRATEGIC_REST=1
+STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1
+STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1
+tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0 126732 /tmp/final8_matched_live.csv
+```
+
+The run completed with 32 selected roots, 8 seed breadth, 13 encounter breadth,
+14 floor breadth, and 32 encounter/floor groups. ORACLE_A was `BASELINE` for
+all 146 root-action rows, ORACLE_B was `EXACT` for all 146 rows, and all 584
+AI alternative rows were `N/A`; block-isolation and source/search-index
+failures were zero. The 32-root cross-tab was: 25 roots with no
+support-empty flag and no policy/Q-order change; 1 with only a Q-order flip;
+3 with selected/top-two/Q-order changes; and 3 support-empty roots with no
+selected-action change (one had a Q-order flip and one had a top-two change).
+Overall, selected action changed in 3/32, top-two ordering in 4/32, Q-order
+flipped in 5/32, and any nonzero common-edge Q difference occurred in 9/32
+roots. Per-root visit-TV Q25/median/Q75/max was 0/0/0.01275/0.906; max
+common-edge |dQ| was 0/0/2.42775/131.362; max oracle-selected |dQ| was
+0/0/0.30925/17.482.
+`/tmp/final8_matched_sensitivity.csv`
+(`cb724466559a74437ebefd7e3c20d660a623fefd7e0ffb8c5492ff8610a1398a`),
+`/tmp/final8_matched_live.csv`
+(`1447919f936fb421cb81fcda831af8c5d59e62f7eff754699b34629019f6b50c`),
+`/tmp/final8_matched_live.csv.meta.json`
+(`159f2e1cbac329841aeedeb8f256d96b66879d209c1f1f781fb957626ed3a6a8`),
+`/tmp/final8_matched_exposure.csv`
+(`5add23d9c22757ff3e1cfd06c26a19ab71e2f5c7b9a8d55aced320d3ba9c08e4`),
+`/tmp/final8_matched_rejuv.csv`
+(`b915e93fddb0f8083bfec1bc98bb62c601d74cc0666b636500929f3e4a1b5496`), and
+`/tmp/final8_matched.log`
+(`3105f6c9c429eaae2ef05838e96c2b569140be5bced7ce6fc93a1eebf6e34ba4`).
+
+The exposure join covered all 32 roots. Aggregate AI exposure fractions on the
+three roots with selected-action changes were 0.020, 1.000, and 1.000. The
+matched run again shows decision-relevant AI_RNG sensitivity across multiple
+seeds/encounters, but the effect remains sparse and does not itself establish
+live gameplay benefit. A later targeted live-treatment study is justified; no
+live rejuvenation is implemented here.
+
 ## 2026-08-15 — Searcher3 history-replay rejuvenation shadow probe results
 
 > **INVALIDATED for late-history inference (correction 2026-08-15):** this
@@ -2857,3 +2946,413 @@ the −10.9pp 64-seed point estimate (CI crosses zero). The autopsy is
 
 Full tables, hashes, root causes, and provenance:
 `docs/archive/research/sessions/phase12-m0-m1-autopsy-2026-08-15.md`.
+
+## 2026-08-15 — Searcher3 conditional-block posterior-geometry shadow diagnostic (STOP: oracle gate failed)
+
+**Question:** Given one hidden state compatible with the recorded real history,
+does replacing only one latent block produce additional full-history-compatible
+states compared with the current whole-state fresh proposal?
+
+**Implementation:** Follow-up to the corrected whole-state history-replay probe
+above. The prior 256-proposal whole-state result remains valid for its frozen
+implementation and is not overwritten or reinterpreted. This diagnostic was
+shadow-only and default-off. At each trigger (`compatible <= 16`), one paired
+set of 64 ordinary fresh Searcher3 prior samples was generated. Each source was
+used for `ALL_FRESH` and for each of `DRAW_ORDER`, `SHUFFLE_RNG`,
+`CARD_RANDOM_RNG`, `AI_RNG`, `MISC_RNG`, `MONSTER_HP_RNG`, and `POTION_RNG`,
+with all non-selected oracle blocks copied bit-identically. Proposal generation
+used a dedicated deterministic RNG; replay fallback RNGs were independently
+keyed by trigger, proposal index, and family, so family iteration order could
+not alter the source proposals.
+
+The oracle was constructed from the copied replay-anchor `BattleContext` and
+was used only by the shadow driver. It was not exposed to MCTS, belief
+filtering, action selection, tree reuse, fallback, or live rejuvenation. Exact
+full-history replay, semantic remapping, observation equality, outcome equality,
+and `FullHiddenStateKey` equality were reused from the existing probe.
+
+**Mechanical verification:** Release build passed. The paired-source and
+family-order invariance test passed (`rejuv_conditional_blocks`). Existing
+`rejuv_history_replay`, `rejuv_semantic_select`, and
+`rejuv_noninterference` tests passed, as did `rng_state_propagation` and
+`s3_rand64_prior_sampler`. A one-seed smoke produced all nine row families and
+64 proposals per non-oracle family. Gameplay remained behavior-neutral in the
+non-interference test.
+
+**Frozen execution:** Exactly seeds `126732–126739`, ascension 0, 1,000
+simulations, 64 particles, 12 threads, fair Searcher3, real posterior filter,
+collapse-fresh fallback, persistent filtered posterior, no tree reuse,
+`STS_VNET=models/v_combat_7k_tuned.txt`, `STS_VNET_ALPHA=0.3`, and the V4
+strategic token-net artifact with REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates and
+margin 1.0. Shadow flags were `STS_S3_REJUV_SHADOW=1`,
+`STS_S3_REJUV_TRIGGER=16`, `STS_S3_REJUV_PROPOSALS=64`. Raw artifacts are
+`build/s3_conditional_8.rejuv.csv`, `build/s3_conditional_8.csv`, its
+`.meta.json`, `.stdout`, and `.stderr` in the experiment worktree.
+
+**Oracle integrity result:** **STOP.** The untouched oracle replay succeeded
+for **1,444 / 1,569 trigger rows (92.03%)**, not the required 100%. Failures
+were 65 `REMAP_FAILURE`, 52 `INTERMEDIATE_MISMATCH`, and 8 `FINAL_MISMATCH`;
+there were no action-illegal or simulator-health failures. The failures
+concentrated on single-card-select action type 2, with later type-4 mismatches
+after history divergence. This indicates an unresolved replay/hidden-state
+boundary or semantic-select coverage problem. The proposal-family acceptance
+counts below are retained as raw diagnostic output only and are **not valid
+scientific evidence** under the preregistered rule.
+
+**Raw diagnostic totals (not interpretable after the STOP):** 1,569 trigger
+rows per family and 100,416 proposals per 64-proposal family. Accepted totals
+were DRAW_ORDER 6,406, SHUFFLE_RNG 69,081, CARD_RANDOM_RNG 55,703, AI_RNG
+56,265, MISC_RNG 92,416, MONSTER_HP_RNG 86,047, POTION_RNG 91,456, and
+ALL_FRESH 1,554. The oracle control itself reported 1,444 accepted rows. These
+figures must not be used to support blockwise resample-move promotion because
+the oracle integrity gate failed.
+
+**Interpretation:** Implementation correctness is incomplete because the oracle
+control is not clean on the frozen quality run. Scientific interpretation is
+therefore unresolved; H1–H6 are neither supported nor weakened by the family
+acceptance counts. Gameplay was not a treatment and its whole-run result is
+not interpreted. The one justified next experiment is a replay-correctness
+investigation that localizes the remaining single-card-select/oracle failures;
+no live blockwise rejuvenation experiment should proceed first.
+
+## 2026-08-15 — Conditional-block oracle replay correction and authoritative rerun
+
+The required RAW-vs-SEMANTIC discriminator localized the prior oracle failure.
+On failing seed `126733`, RAW replay succeeded **311/311 (100%)**, while the
+original semantic path succeeded only **218/311 (70.10%)**. The first defect
+was `CardSelectTask::CODEX` (task value 2), raw select index 3: index 3 is the
+explicit Codex skip action and has no card identity. The existing semantic path
+incorrectly rejected it. A targeted Codex-skip regression was added.
+
+The remaining semantic-only divergences then occurred later at `END_TURN` after
+visible observations still matched. The simulator uses `CardInstance::uniqueId`
+for internal card removal/targeting, while the existing semantic key omitted
+that field. The narrow probe-local correction now records and prefers unique IDs
+for `CARD`, `SINGLE_CARD_SELECT`, and `MULTI_CARD_SELECT`, with the existing
+semantic-key fallback for synthetic cards without a valid unique ID. No global
+observation identity, Searcher3 semantic-edge key, RNG behavior, or gameplay
+path was changed.
+
+Focused tests passed: `rejuv_semantic_select`, `rejuv_history_replay`,
+`rejuv_conditional_blocks`, `rejuv_noninterference`,
+`rng_state_propagation`, and `s3_rand64_prior_sampler`. The focused raw-vs-
+semantic smoke passed on seeds `126733` (312/312 both modes) and `126737`
+(213/213 both modes).
+
+The exact frozen eight-seed conditional-block run was then repeated with the
+same configuration and seeds `126732–126739`, 1,000 simulations, 64 particles,
+12 threads, fair Searcher3, real filtering, collapse-fresh, persistent
+filtered posterior, no tree reuse, the same combat and strategic artifacts,
+trigger 16, and 64 paired proposals per family. Raw artifacts:
+`build/s3_conditional_8_final.rejuv.csv`, `build/s3_conditional_8_final.csv`,
+`.meta.json`, `.stdout`, and `.stderr`.
+
+**Oracle gate:** RAW **1,596/1,596 (100%)**; SEMANTIC
+**1,596/1,596 (100%)**. All oracle remap, action-illegal, simulator-health,
+intermediate, and final mismatch counts were zero. The prior STOP result was
+therefore a semantic replay defect, not a deeper replay nondeterminism failure.
+
+**Authoritative proposal results:** 1,596 trigger rows and 102,144 proposals
+per 64-proposal family. Overall acceptance was DRAW_ORDER 6,504 (6.37%),
+SHUFFLE_RNG 73,005 (71.47%), CARD_RANDOM_RNG 58,520 (57.29%), AI_RNG 60,599
+(59.33%), MISC_RNG 102,144 (100%), MONSTER_HP_RNG 93,157 (91.20%),
+POTION_RNG 101,184 (99.06%), and ALL_FRESH 1,563 (1.53%). All accepted
+hypotheses were equality-backed unique and novel in the recorded comparator.
+
+At `decision_idx >= 8`, acceptance was DRAW_ORDER 1,752/64,448 (2.72%),
+SHUFFLE_RNG 37,119/64,448 (57.60%), CARD_RANDOM_RNG 33,164/64,448 (51.46%),
+AI_RNG 32,303/64,448 (50.12%), MISC_RNG 64,448/64,448 (100%), MONSTER_HP_RNG
+56,649/64,448 (87.90%), POTION_RNG 63,808/64,448 (99.01%), and ALL_FRESH
+251/64,448 (0.39%). Late rows with at least four unique accepted states were
+DRAW_ORDER 6, SHUFFLE_RNG 634, CARD_RANDOM_RNG 613, AI_RNG 772, MISC_RNG
+1,007, MONSTER_HP_RNG 948, POTION_RNG 997, and ALL_FRESH 20.
+
+RNG-use telemetry showed unused-stream acceptance at approximately 100% for
+all applicable RNG families. Used-stream acceptance was approximately 4.35%
+for SHUFFLE_RNG, 23.58% for CARD_RANDOM_RNG, 47.44% for AI_RNG, 8.22% for
+MONSTER_HP_RNG, and 0% for POTION_RNG in this run; MISC_RNG had no used rows.
+Total probe CPU was approximately 11.85 seconds. No oracle first-mismatch
+patterns remained.
+
+**Interpretation:** The diagnostic is now mechanically valid. The data support
+H1: simultaneous whole-state fresh proposals are much less likely to remain
+compatible than several single-block moves, especially late. They also support
+H3/H6 directionally: replacing historically unused RNG streams is nearly free,
+while consumed raw PRNG-state blocks are substantially less mobile, with
+stream-specific differences. MISC_RNG and POTION_RNG remained highly mobile
+in this frozen run, while DRAW_ORDER was the most constrained proposal family.
+These are posterior-geometry results, not gameplay results; no live treatment
+was implemented.
+
+The preregistered practical promotion signal is clearly met by multiple
+families at late history (at least four novel accepted states on roughly half
+or more of applicable rows). The one justified next experiment is a **live
+shadow-neutral resample-move experiment using only a validated future-relevant
+block selected after reviewing the stream-use and causal-event breakdown**;
+this follow-up must remain a separate preregistered treatment and must not
+promote all high-acceptance blocks automatically.
+
+**Follow-up correction (draw-pile source mapping):** Independent review found
+that `SECRET_TECHNIQUE`, `SECRET_WEAPON`, and `SEEK` built their semantic key
+from `preState.cards.drawPile` but recorded `selectedUniqueId` from the hand
+fallback. This was a probe-local source-pile mismatch. The recording branch now
+uses `preState.cards.drawPile` for all three tasks; the semantic-key switch and
+global simulator behavior were unchanged. `rejuv_semantic_select` now includes
+a SEEK fixture with visually identical draw-pile cards, distinct valid unique
+IDs, and reordered replay state, and verifies the selected unique ID survives.
+
+The preserved prior CSV/log artifacts did not retain complete
+`CardSelectTask` values, and no reliable task-occurrence evidence was found, so
+the exact frozen eight-seed command was repeated once. That rerun's raw
+`build/s3_conditional_8_drawsource.rejuv.csv` artifact is **incomplete**, not a
+smaller valid experiment: it contains 1,593 trigger keys, but one trigger has
+only 7 of the required 9 family rows (missing `POTION_RNG` and `ALL_FRESH`),
+and its base result CSV omits seed `126733`. The three trigger keys present in
+the complete 1,596-trigger artifact but absent from the incomplete artifact are
+all later in that same seed/encounter/floor trajectory: seed `126733`, encounter
+50, floor 41, decisions 22, 26, and 27 (the preceding decision 21 is the
+partial 7-row trigger). This is an interrupted/partial artifact, not evidence
+of three scientifically different triggers.
+
+The complete `build/s3_conditional_8_final.rejuv.csv` remains the authoritative
+raw geometry artifact: programmatic validation finds 1,596 trigger groups, each
+with exactly `ORACLE + 8` families, 64 proposals for every non-oracle row, and
+identical family denominators in all/early/late slices. Its oracle gate remains
+RAW **1,596/1,596** and SEMANTIC **1,596/1,596**, with zero failure counts.
+The source-pile correction was therefore not established as exercised by a
+complete eight-seed rerun; the prior complete geometry result remains valid,
+and the incomplete rerun must not replace its aggregates. The paired-source,
+family-order invariance, and shadow non-interference checks remained passing.
+The scientific interpretation is unchanged.
+
+## 2026-08-15 — Searcher3 live AI_RNG rejuvenation implementation/control attempt
+
+**Implementation:** Added opt-in `STS_S3_AI_REJUV_LIVE=off|placebo|ai` support
+to fair Searcher3. The mode defaults off. Live treatment uses immutable
+battle-start particle lineage IDs, particle-anchored full-history replay, the
+existing conditional AI_RNG proposal distribution, zero-weight-only 50/50
+splits, and one attempted intervention per combat. Placebo and AI share
+proposal generation, successful-source selection, destination slots, weights,
+and intervention timing; placebo inserts an exact source duplicate while AI
+inserts the accepted novel AI_RNG state. Collapse-fresh invalidates ancestry.
+Telemetry is written through `STS_S3_AI_REJUV_LIVE_FILE`.
+After review, proposal RNG provenance was corrected to derive each proposal
+from fixed salt, game seed, floor/encounter, source filter decision, lineage ID,
+and proposal number while preserving the validated AI_RNG sampling
+distribution. The earlier implementation/control artifacts are superseded by
+the corrected run below.
+
+**Frozen implementation values:** The global shadow defaults remain unchanged
+(`g_s3RejuvTrigger=16`, `g_s3RejuvProposals=256`). Causal invocations explicitly
+set `STS_S3_REJUV_TRIGGER=16 STS_S3_REJUV_PROPOSALS=64`.
+
+**Verification:** Release build succeeded. The focused live-attempt,
+conditional-block, history-replay, semantic-select, real-filter,
+persistent-transfer, RNG-propagation, and shadow-noninterference tests passed.
+The one-seed guarded smoke passed for OFF, placebo, and AI. Correct-executable
+8-seed baseline and placebo arms completed; placebo produced 1,543 telemetry
+rows and the AI run produced 1,733 telemetry rows but the AI result artifact
+was interrupted at 7/8 seeds by the execution harness. This is an incomplete
+implementation/control validation, not a gameplay result.
+
+**Decision:** Do not start the preregistered 32-seed scientific gate until a
+complete 8-seed implementation/control rerun is obtained and all controls are
+clean. The incomplete AI arm is not interpreted as H0, H1, or H_resample.
+
+The preceding decision was superseded by the completed gate below after the
+corrected 8-seed implementation/control rerun. The 32-seed result is recorded
+as mixed/inconclusive, not as H0, H1, or H_resample.
+
+## 2026-08-15 — First live AI_RNG causal gate, untouched block 910000–910031
+
+**Question:** Does live particle-lineage AI_RNG support expansion improve
+gameplay relative to the matched placebo, with OFF retained as a secondary
+baseline? The prior 8-seed implementation/control block is not interpreted
+scientifically and was not reused for this gate.
+
+**Configuration:** Three matched arms used fair Searcher3, A0, 1,000 base
+simulations, 3,000 boss simulations, 64 particles, 12 threads, belief/internal
+update off, chain off, CRN off, real-boundary filtering on, collapse-fresh on,
+persistent filtered posterior on, reuse 0, END_TURN marginalization off,
+`STS_S3_REJUV_TRIGGER=16`, `STS_S3_REJUV_PROPOSALS=64`,
+`models/v_combat_7k_tuned.txt`, VNet alpha 0.3, the V4 strategic token model,
+and all REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates with margin 1.0. Every arm
+ran through `tools/seed_guard.sh` on seeds `910000–910031`.
+
+**Raw artifacts:** `/tmp/s3live32_off.csv`, `/tmp/s3live32_placebo.csv`,
+`/tmp/s3live32_ai.csv`, and placebo/AI telemetry at
+`/tmp/s3live32_{placebo,ai}.telemetry.csv`. Result hashes are OFF
+`e44c782a15cb3645298dfccb072b101ebee10a60bcb52f27a13b14fb942607fb`, placebo
+`c0390f0daae92460c24b8dceade97443221319a46fa759034eb3324e0a4001e8`, and AI
+`cf8b518b273bc97edbc38687b86609cfad68b7b2b45832f34761fd53925527be`.
+
+**Gameplay:** OFF won 17/32 with mean floor 47.781; placebo won 12/32 with
+mean floor 45.406; AI won 15/32 with mean floor 46.656. Primary AI−placebo
+paired delta was +3/32 wins (+9.375 percentage points) and +1.25 mean floor.
+AI−OFF was −2/32 wins and −1.125 mean floor. Placebo−OFF was −5/32 wins and
+−2.375 mean floor. AI−placebo floor gains occurred on 6 seeds and losses on 5;
+The +1.25 mean was not solely an outlier, although seed 910020 contributed a
+−31 floor loss and seed 910018 a +20 gain. The audited paired win discordance
+was AI wins/placebo losses `6` versus AI losses/placebo wins `3`, for a net
+difference of `+3` wins; reverse discordant pairs were present.
+
+**Exposure:** Placebo had 6,133 telemetry rows, 317 first attempts, 1,427
+duplicate children, and `unique_children=0`, with all 32 seeds exposed. AI had
+6,440 rows, 329 first attempts, 1,494 novel children, and
+`unique_children=1494`, with all 32 seeds exposed. Reported intervention CPU
+was 98.087 ms placebo and 93.017 ms AI across telemetry rows. This is a causal
+screen result, not a promotion claim; follow the preregistered decision rule
+before extending to 64 seeds.
+
+An independent raw-data audit is preserved at
+`build/s3live32_causal_gate_910000_910031/s3live32_causal_gate_audit.md`, with
+copies of all five raw result/telemetry files. It found AI−PLACEBO paired floor
+mean `+1.25` with median `0`, SD `9.073`, bootstrap 95% CI
+`[-1.9375,+4.25]`, positive/negative/zero counts `6/5/21`, and exact McNemar
+discordance `(6,3)`, two-sided `p=0.5078125`. Omitting seed 910018 leaves
+`+0.645161`; omitting 910020 gives `+2.290323`. Placebo children versus
+Placebo−OFF floor delta had descriptive Pearson `r=-0.153538`; AI children
+versus AI−OFF had `r=0.077262`. These correlations are observational and do
+not establish that duplication caused harm or novelty caused benefit.
+
+**Autopsy decision:** classify the gate as **mixed/inconclusive**. Exposure was
+adequate in all 32 seeds for both live arms, but AI was below OFF in aggregate
+and the primary AI−PLACEBO uncertainty includes zero. Do not promote H1 and do
+not start the 64-seed extension without a new preregistered decision.
+
+## 2026-08-15 — Searcher3 single-child AI_RNG rejuvenation follow-up, fresh block 920000–920015
+
+**Question:** Does limiting live rejuvenation to one accepted child per combat
+retain useful AI_RNG novelty while reducing multiplicity/dose distortion? The
+paired arms were OFF, PLACEBO1, and AI1. This was a mechanism-discrimination
+follow-up, not a promotion run; it stopped at exactly 16 seeds.
+
+**Configuration:** Fair Searcher3, A0, 1,000 base simulations, 3,000 boss
+simulations, 64 particles, 12 threads, internal belief update off, chain off,
+CRN off, real-boundary filtering on, collapse-fresh on, persistent filtered
+posterior on, reuse 0, END_TURN marginalization off,
+`STS_S3_REJUV_TRIGGER=16`, `STS_S3_REJUV_PROPOSALS=64`, combat VNet
+`models/v_combat_7k_tuned.txt` (sha256
+`ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c`), VNet
+alpha 0.3, V4 strategic token model
+`selfplay/models/ooc_strategic_tok_final.native` (sha256
+`e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c`), and
+REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates with margin 1.0. Every arm ran
+through `tools/seed_guard.sh` on seeds `920000–920015`.
+
+**Aggregates:**
+
+| arm | wins | win rate | mean floor |
+|---|---:|---:|---:|
+| OFF | 10/16 | 62.5% | 47.3125 |
+| PLACEBO1 | 8/16 | 50.0% | 47.8125 |
+| AI1 | 11/16 | 68.75% | 45.2500 |
+
+**Per-seed results:**
+
+| seed | OFF won/floor | PLACEBO1 won/floor | AI1 won/floor | PLACEBO1 children | AI1 children | PLACEBO1 mass | AI1 mass |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 920000 | 1/51 | 1/51 | 1/51 | 6 | 6 | 1.079 | 1.079 |
+| 920001 | 1/51 | 1/51 | 1/51 | 7 | 7 | 0.822 | 0.822 |
+| 920002 | 0/33 | 0/33 | 0/33 | 7 | 7 | 1.821 | 1.821 |
+| 920003 | 1/51 | 1/51 | 1/51 | 8 | 8 | 2.325 | 2.296 |
+| 920004 | 1/51 | 0/50 | 1/51 | 12 | 16 | 2.759 | 4.005 |
+| 920005 | 0/45 | 0/45 | 0/41 | 13 | 13 | 2.319 | 2.319 |
+| 920006 | 0/33 | 0/33 | 0/33 | 11 | 13 | 1.630 | 2.630 |
+| 920007 | 1/51 | 0/50 | 0/33 | 18 | 10 | 4.306 | 2.367 |
+| 920008 | 0/50 | 0/50 | 1/51 | 13 | 12 | 3.425 | 2.842 |
+| 920009 | 1/51 | 1/51 | 1/51 | 19 | 17 | 4.539 | 3.042 |
+| 920010 | 0/46 | 0/46 | 0/23 | 12 | 9 | 1.431 | 0.589 |
+| 920011 | 0/40 | 1/51 | 1/51 | 13 | 13 | 3.019 | 3.019 |
+| 920012 | 1/51 | 1/51 | 1/51 | 9 | 9 | 1.967 | 1.967 |
+| 920013 | 1/51 | 1/51 | 1/51 | 17 | 14 | 3.724 | 3.070 |
+| 920014 | 1/51 | 0/50 | 1/51 | 9 | 12 | 1.918 | 2.679 |
+| 920015 | 1/51 | 1/51 | 1/51 | 12 | 12 | 2.992 | 2.992 |
+
+**Paired comparisons:** AI1−PLACEBO1 was `+3/16` wins and `−2.5625`
+mean floor, median `0`, floor positive/negative/zero `3/3/10`, exact win
+discordance `(3,0)`. AI1−OFF was `+1/16` wins and `−2.0625` mean floor,
+median `0`, floor positive/negative/zero `2/3/11`, discordance `(2,1)`.
+PLACEBO1−OFF was `−2/16` wins and `+0.5` mean floor, median `0`, floor
+positive/negative/zero `1/3/12`, discordance `(1,3)`.
+
+**Exposure/integrity:** PLACEBO1 had 3,712 telemetry rows, 187 attempt rows,
+186 injected children, and 40.076 injected mass. AI1 had 3,413 rows, 179
+attempt rows, 178 injected children, and 37.539 injected mass. Both arms were
+exposed in 16/16 seeds. Maximum children per combat was `1` in both arms;
+`children_injected` was only `0/1`; PLACEBO1 had `unique_children=0`; AI1 had
+`unique_children` equal to `children_injected`; integrity failures were zero.
+
+**Raw hashes:** OFF result `3767fa33b80f9af8c87497740ddecc6de347975fb5364088ec3ee15f5e1a317a`,
+PLACEBO1 result `63d7323c1f37e21f59290e843ae596f940e8eaca7d38d0e4cc3d5e90a00bd383`,
+AI1 result `139133aaca5f38898ef7fc8c44f00408e22af5b25f153309b98299c8aeb250f7`,
+PLACEBO1 telemetry `c43ac1b6215da7a9dfb702b04b079e94a6d4a04940eaa8f7975e3606f3c20f3c`,
+AI1 telemetry `e56183ebb524e70f1946e26dc9ceb43a4d3a811d835c845d25bbc9e8c0f6ec8a`.
+
+**Decision:** Closest to preregistered **Outcome A** directionally on wins,
+but mixed because AI1 lost on mean floor against both comparators. Exposure is
+not limiting. Stop at 16 seeds; do not automatically extend or promote live
+rejuvenation.
+
+## 2026-08-15 — Searcher3 AI1 single-child confirmation, fresh block 920016–920079
+
+**Question:** Does the 16-seed AI1 win-rate direction confirm on a fresh 64-seed
+block, with floor/depth monitored as safety evidence? The matched arms were OFF,
+PLACEBO1, and AI1. This confirmation stopped at exactly 64 seeds.
+
+**Configuration:** The frozen 16-seed configuration was retained: fair
+Searcher3, A0, 1,000 base simulations, 3,000 boss simulations, 64 particles,
+12 threads, internal belief update off, chain off, CRN off, real-boundary
+filtering on, collapse-fresh on, persistent filtered posterior on, reuse 0,
+END_TURN marginalization off, `STS_S3_REJUV_TRIGGER=16`,
+`STS_S3_REJUV_PROPOSALS=64`, VNet `models/v_combat_7k_tuned.txt` alpha 0.3,
+the same V4 OOC model, REST/EVENT/SHOP/TREASURE/BOSS_RELIC on, margin 1.0.
+All arms used `tools/seed_guard.sh` and seeds `920016–920079`.
+
+**Aggregates:**
+
+| arm | wins | win rate | mean floor |
+|---|---:|---:|---:|
+| OFF | 40/64 | 62.50% | 45.3281 |
+| PLACEBO1 | 38/64 | 59.375% | 45.5625 |
+| AI1 | 41/64 | 64.0625% | 45.4688 |
+
+**Paired comparisons:**
+
+- AI1−PLACEBO1: win delta `+3/64`, exact discordance `(4,1)`, exact
+  two-sided binomial/McNemar p `0.375`; floor mean `−0.0938`, median `0`,
+  positive/negative/zero `6/4/54`, bootstrap 95% CI `[-1.4531,+1.1094]`.
+- AI1−OFF: win delta `+1/64`, exact discordance `(4,3)`, p `1.0`; floor mean
+  `+0.1406`, median `0`, positive/negative/zero `6/6/52`, bootstrap 95% CI
+  `[-1.3281,+1.4688]`.
+- PLACEBO1−OFF: win delta `−2/64`, exact discordance `(3,5)`, p `0.7265625`;
+  floor mean `+0.2344`, median `0`, positive/negative/zero `5/5/54`, bootstrap
+  95% CI `[-0.7969,+1.3125]`.
+
+Largest AI1 floor deltas were `+18` and `−28` versus PLACEBO1, and `+18` and
+`−28` versus OFF. Leave-one-out floor means ranged from `−0.3810` to `+0.3492`
+for AI1−PLACEBO1 and `−0.1429` to `+0.5873` for AI1−OFF. AI1 lost while the
+comparator won on 1 seed versus PLACEBO1 and 3 seeds versus OFF. Severe AI1
+floor regressions of at least 10 floors occurred on seeds `920031` (`−17`) and
+`920079` (`−28`) against both comparators.
+
+**Exposure/integrity:** PLACEBO1 had 13,223 telemetry rows, 643 attempts, 640
+children, and 139.805 injected mass. AI1 had 13,229 rows, 627 attempts, 624
+children, and 143.970 injected mass. Both exposed all 64 seeds. Maximum
+children per combat was `1` for both; `children_injected` was only `0/1`;
+PLACEBO1 had `unique_children=0`; AI1 had `unique_children` equal to
+`children_injected`; integrity failures were zero.
+
+**Raw hashes:** OFF result `bbf0f95cefcf7ac5859efdaf4ad81458a96b25f5068b0a02d5b87ac31f0e6a47`,
+PLACEBO1 result `f88b9209c4dfd8c72e5d440175bb7db2213dde1655e6957ed776c00e13756627`,
+AI1 result `0543dc31a90cab103b32d39871d542fbcb603464de9894b9ed442c8e6d8faa98`,
+PLACEBO1 telemetry `4c09cc1a93a125aaeaa976ed56ffa23444dae4b10b1c30a6f91a286e4df8e8ec`,
+AI1 telemetry `73039d4c9a02cba9b1e557a5bdc97c2f391566f8049f13050b0d37985fef8d9a`.
+
+**Decision:** AI1 remained directionally above PLACEBO1 and at least as good as
+OFF on wins, with four treatment-only wins versus one reverse discordance in
+the primary comparison. The win advantage is not statistically persuasive and
+the floor result is approximately null, not a clear downside on aggregate.
+However, two shared severe early-loss regressions warrant explicit caution.
+Classify as **promising win-rate direction with a possible downside tail**, not
+as a clean promotion result. Do not extend beyond 64 seeds automatically.

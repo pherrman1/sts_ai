@@ -155,6 +155,8 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_S3_PERSIST_FILTERED_BELIEF",
                           "STS_S3_REJUV_SHADOW", "STS_S3_REJUV_TRIGGER",
                           "STS_S3_REJUV_PROPOSALS", "STS_S3_REJUV_SHADOW_FILE",
+                           "STS_S3_AI_REJUV_LIVE", "STS_S3_AI_REJUV_LIVE_FILE",
+                          "STS_S3_RNG_EXPOSURE_DIAG", "STS_S3_RNG_EXPOSURE_DIAG_FILE",
                           "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_REUSE_DIAG",
                           "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
                           "STS_REUSE_CARRY_DIAG", "STS_REUSE_CPU_DIAG",
@@ -10796,6 +10798,50 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_REJUV_SHADOW_FILE")) {
         search::g_s3RejuvShadowFile = d;
         std::cout << "[S3 rejuv shadow file = " << search::g_s3RejuvShadowFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_AI_REJUV_LIVE")) {
+        const std::string mode = d;
+        if (mode == "off") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::OFF;
+        else if (mode == "placebo") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO;
+        else if (mode == "ai") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG;
+        else if (mode == "placebo1") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO1;
+        else if (mode == "ai1") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG1;
+        else {
+            std::cerr << "Invalid STS_S3_AI_REJUV_LIVE='" << mode
+                      << "'; expected off, placebo, ai, placebo1, or ai1\n";
+            return 2;
+        }
+        std::cout << "[S3 AI rejuvenation live = " << mode << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_AI_REJUV_LIVE_FILE")) {
+        search::g_s3LiveRejuvenationFile = d;
+        std::cout << "[S3 AI rejuvenation live file = " << search::g_s3LiveRejuvenationFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_SHADOW")) {
+        search::g_s3AiSensitivityShadow = std::atoi(d) != 0;
+        std::cout << "[S3 AI sensitivity shadow = "
+                  << (search::g_s3AiSensitivityShadow ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_FILE")) {
+        search::g_s3AiSensitivityFile = d;
+        std::cout << "[S3 AI sensitivity file = " << search::g_s3AiSensitivityFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_ROOTS_PER_SEED")) {
+        search::g_s3AiSensitivityRootsPerSeed = std::max(1, std::atoi(d));
+    }
+    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_ALTS")) {
+        search::g_s3AiSensitivityAlternatives = std::max(1, std::atoi(d));
+    }
+    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_SIMS")) {
+        search::g_s3AiSensitivitySims = std::max(1, std::atoi(d));
+    }
+    if (const char *d = std::getenv("STS_S3_RNG_EXPOSURE_DIAG")) {
+        search::g_s3RngExposureDiag = std::atoi(d) != 0;
+        std::cout << "[S3 RNG exposure diag = " << (search::g_s3RngExposureDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_RNG_EXPOSURE_DIAG_FILE")) {
+        search::g_s3RngExposureDiagFile = d;
+        std::cout << "[S3 RNG exposure diag file = " << search::g_s3RngExposureDiagFile << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_BELIEF_AUDIT_FILE")) {
         search::g_s3BeliefAuditFile = d;

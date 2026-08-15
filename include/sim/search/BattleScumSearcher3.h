@@ -11,12 +11,14 @@
 #include "sim/search/SearchDiagnostics.h"
 
 #include <functional>
+#include <array>
 #include <memory>
 #include <optional>
 #include <random>
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <cstdint>
 #include <limits>
 
@@ -188,6 +190,29 @@ namespace sts::search {
         double minActionValue = std::numeric_limits<double>::max();
         int outcomePlayerHp = 0;
 
+        struct RngExposureAggregate {
+            std::int64_t simulations = 0;
+            std::int64_t aiExposed = 0, cardExposed = 0;
+            std::int64_t aiAdvances = 0, cardAdvances = 0;
+            std::array<std::int64_t, 6> aiFirst{};
+            std::array<std::int64_t, 6> cardFirst{};
+        };
+        bool rngExposureEnabled = false;
+        std::uint64_t rngExposureSeed = 0;
+        int rngExposureEncounter = 0, rngExposureFloor = 0;
+        int rngExposureSourceFilterDecisionIndex = 0;
+        int rngExposureSearchDecisionIndex = 0, rngExposureTurn = 0;
+        std::uint64_t rngExposureRootObservationHash = 0;
+        int rngExposureCompatible = 0;
+        int rngExposureActionIndex = 0;
+        std::int32_t rngExposureAiBaseline = 0, rngExposureCardBaseline = 0;
+        bool rngExposureAiSeen = false, rngExposureCardSeen = false;
+        int rngExposureAiFirst = -1, rngExposureCardFirst = -1;
+        std::int32_t rngExposureAiTotalDelta = 0, rngExposureCardTotalDelta = 0;
+        std::uint32_t rngExposureCurrentRootActionBits = 0xFFFFFFFFu;
+        RngExposureAggregate rngExposureAll;
+        std::map<std::uint32_t, RngExposureAggregate> rngExposureByAction;
+
         // ── Tree reuse counters & diagnostics ─────────────────────────
         int reuseGeneration = 0;         // number of times advanceRoot carried the tree (0 = fresh)
         int reuseSearchCount = -1;       // -1 = fresh/never promoted; >=0 = promoted, searches executed since last promotion
@@ -283,10 +308,18 @@ namespace sts::search {
 
         void search(int64_t simulations);
         void searchToTotal(int64_t targetSimulations);
+        void enableRngExposureDiagnostic(std::uint64_t seed, int encounter, int floor,
+                                         int sourceFilterDecisionIndex, int searchDecisionIndex,
+                                         int turn, std::uint64_t rootObservationHash,
+                                         int compatible);
+        void flushRngExposureDiagnostic();
         bool advanceRoot(const Action &action, const BattleContext &newRootState);
         void step();
         void reseed();
         void resetParticleUsage();
+
+        void observeRngExposureAction(const Action &action, BattleContext &state);
+        void finishRngExposureSimulation();
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
         RealBeliefFilterStats filterRealTransition(
@@ -592,6 +625,8 @@ namespace sts::search {
     // leafdiag/leafref/rollouttrace see only the blend site, exactly as before
     // the frontiergen extension.
     extern thread_local bool g_s3LeafQueryAllSites;
+    extern bool g_s3RngExposureDiag;
+    extern std::string g_s3RngExposureDiagFile;
     // Rollout-step trace hook (rollouttrace mode, apps/one_combat.cpp): fires
     // inside playoutRandom after every executed rollout action, with the
     // resulting state and the 1-based step index. Read-only; nullptr by

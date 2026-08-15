@@ -71,7 +71,39 @@ artifact.
   the prior 79.1% temporary-transfer collapse was primarily stale pre-transition
   particle restoration: post-state fresh recovery reduced collapse to 19.7%.
   Transfer remains experimental and absent from the executable; only telemetry
-  remains pending a separate action/quality experiment.
+  remains pending a separate action/quality experiment. A new opt-in live causal
+  rejuvenation implementation is now present on the experiment branch. Its
+  completed 32-seed gate on seeds 910000–910031 was **mixed/inconclusive**:
+  `STS_S3_AI_REJUV_LIVE=off|placebo|ai` defaults to `off`; live runs
+  require persistent filtered belief and use one first eligible attempt per
+  combat, with `STS_S3_REJUV_TRIGGER` and `STS_S3_REJUV_PROPOSALS` supplied
+  explicitly. Treatment children are particle-lineage anchored, replay the
+  complete history, replace only AI_RNG, and inherit the source lineage ID.
+  Collapse-fresh invalidates battle-start ancestry for the remainder of combat.
+  AI−PLACEBO was +3/32 wins and +1.25 mean floor, but the exact paired-win
+  McNemar p-value was 0.5078125 and the bootstrap floor CI included zero.
+  Both live arms were below OFF in aggregate; exposure was 32/32 seeds for
+  both. The raw-data audit is
+  `build/s3live32_causal_gate_910000_910031/s3live32_causal_gate_audit.md`.
+  The result does not establish H1 or the proposed novelty-versus-duplication
+  mechanism, and no 64-seed extension is currently authorized.
+- Single-child follow-up on fresh seeds 920000–920015: OFF won 10/16 with mean
+  floor 47.3125, PLACEBO1 won 8/16 with mean floor 47.8125, and AI1 won 11/16
+  with mean floor 45.25. AI1−PLACEBO1 was +3 wins but −2.5625 floor; AI1−OFF
+  was +1 win but −2.0625 floor. Both live arms exposed all 16 seeds, injected
+  at most one child per combat, and had zero telemetry integrity failures.
+  This is mixed mechanism evidence, directionally promising on wins but with a
+  possible depth/downside cost; no promotion or automatic extension is
+  authorized. See [ledger-06 single-child follow-up](../../../docs/experiments/ledger-06.md).
+- Fresh 64-seed confirmation on `920016–920079` retained the direction: OFF
+  40/64 (mean floor 45.3281), PLACEBO1 38/64 (45.5625), AI1 41/64 (45.4688).
+  AI1−PLACEBO1 was +3 wins, discordance 4–1, floor delta −0.0938 with bootstrap
+  CI [−1.4531,+1.1094]; AI1−OFF was +1 win, discordance 4–3, floor delta
+  +0.1406 with CI [−1.3281,+1.4688]. Both live arms exposed 64/64 seeds,
+  maximum one child/combat, and zero telemetry integrity failures. Two severe
+  AI1 floor regressions (−17 and −28 floors) occurred against both comparators;
+  classify as promising win-rate direction with a possible downside tail, not
+  clean promotion evidence. No automatic extension beyond 64 seeds.
 - Searcher3 particle-count default
   ([decision log](../decision-log/2026-08-10-s3-particle-count-sweep.md),
   [ledger-01.md](../../../docs/experiments/ledger-01.md)): 128 particles

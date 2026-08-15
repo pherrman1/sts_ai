@@ -79,6 +79,33 @@ bool g_s3Expand = false;
 int g_s3ExpandMaxNew = 32;
 bool g_s3ExpandSimple = false; // like g_s3Expand but picks deterministically with uniform prior
 bool g_s3SemanticCardEdges = false;
+bool g_s3RngExposureDiag = false;
+std::string g_s3RngExposureDiagFile;
+
+namespace {
+std::mutex &rngExposureMutex() {
+    static std::mutex m;
+    return m;
+}
+
+void writeRngExposureRows(const std::vector<std::string> &rows) {
+    if (g_s3RngExposureDiagFile.empty()) return;
+    std::lock_guard<std::mutex> lock(rngExposureMutex());
+    std::ifstream probe(g_s3RngExposureDiagFile);
+    const bool empty = !probe.good() || probe.peek() == std::ifstream::traits_type::eof();
+    std::ofstream out(g_s3RngExposureDiagFile, std::ios::app);
+    if (!out) return;
+    if (empty) {
+        out << "seed,encounter,floor,source_filter_decision_idx,search_decision_idx,turn,"
+               "root_observation_hash,compatible,action_bits,"
+               "simulations,ai_exposed,ai_fraction,ai_advances,ai_first_0,ai_first_1,"
+               "ai_first_2,ai_first_3,ai_first_4plus,ai_never,card_exposed,card_fraction,"
+               "card_advances,card_first_0,card_first_1,card_first_2,card_first_3,"
+               "card_first_4plus,card_never\n";
+    }
+    for (const auto &row : rows) out << row << '\n';
+}
+}
 
 // ── Outcome-bucket diagnostic (STS_S3_OUTCOME_BUCKET_DIAG) ────────────
 // Measures how many distinct visible outcomes different hidden particles
@@ -537,6 +564,91 @@ void BattleScumSearcher3::resetParticleUsage() {
     particleSampleCounts.assign(belief.particles.size(), 0);
     lastSearchSimulations = 0;
     lastSearchCpuMs = 0.0;
+}
+
+void BattleScumSearcher3::enableRngExposureDiagnostic(
+    std::uint64_t seed, int encounter, int floor, int sourceFilterDecisionIdx,
+    int searchDecisionIdx, int turn, std::uint64_t rootObservationHash, int compatible) {
+    rngExposureEnabled = g_s3RngExposureDiag && !g_s3RngExposureDiagFile.empty();
+    if (!rngExposureEnabled) return;
+    rngExposureSeed = seed;
+    rngExposureEncounter = encounter;
+    rngExposureFloor = floor;
+    rngExposureSourceFilterDecisionIndex = sourceFilterDecisionIdx;
+    rngExposureSearchDecisionIndex = searchDecisionIdx;
+    rngExposureTurn = turn;
+    rngExposureRootObservationHash = rootObservationHash;
+    rngExposureCompatible = compatible;
+    rngExposureAll = {};
+    rngExposureByAction.clear();
+    rngExposureActionIndex = 0;
+}
+
+void BattleScumSearcher3::observeRngExposureAction(const Action &action, BattleContext &state) {
+    if (!rngExposureEnabled) {
+        action.execute(state);
+        return;
+    }
+    const int index = rngExposureActionIndex;
+    if (index == 0) rngExposureCurrentRootActionBits = action.bits;
+    action.execute(state);
+    ++rngExposureActionIndex;
+    const int aiDelta = state.aiRng.counter - rngExposureAiBaseline;
+    const int cardDelta = state.cardRandomRng.counter - rngExposureCardBaseline;
+    auto observe = [&](int delta, bool &seen, int &first) {
+        if (delta > 0 && !seen) { seen = true; first = index; }
+    };
+    observe(aiDelta, rngExposureAiSeen, rngExposureAiFirst);
+    observe(cardDelta, rngExposureCardSeen, rngExposureCardFirst);
+    rngExposureAiTotalDelta = aiDelta;
+    rngExposureCardTotalDelta = cardDelta;
+}
+
+void BattleScumSearcher3::finishRngExposureSimulation() {
+    if (!rngExposureEnabled) return;
+    auto add = [&](RngExposureAggregate &a) {
+        ++a.simulations;
+        if (rngExposureAiSeen) {
+            ++a.aiExposed;
+            a.aiFirst[rngExposureAiFirst < 4 ? rngExposureAiFirst : 4]++;
+        } else ++a.aiFirst[5];
+        a.aiAdvances += rngExposureAiTotalDelta;
+        if (rngExposureCardSeen) {
+            ++a.cardExposed;
+            a.cardFirst[rngExposureCardFirst < 4 ? rngExposureCardFirst : 4]++;
+        } else ++a.cardFirst[5];
+        a.cardAdvances += rngExposureCardTotalDelta;
+    };
+    add(rngExposureAll);
+    add(rngExposureByAction[rngExposureCurrentRootActionBits]);
+    rngExposureAiSeen = rngExposureCardSeen = false;
+    rngExposureAiFirst = rngExposureCardFirst = -1;
+    rngExposureAiTotalDelta = rngExposureCardTotalDelta = 0;
+    rngExposureActionIndex = 0;
+}
+
+void BattleScumSearcher3::flushRngExposureDiagnostic() {
+    if (!rngExposureEnabled) return;
+    std::vector<std::string> rows;
+    auto emit = [&](std::uint32_t bits, const RngExposureAggregate &a) {
+        auto frac = [](std::int64_t n, std::int64_t d) {
+            return d ? std::to_string(static_cast<double>(n) / d) : "0";
+        };
+        std::ostringstream o;
+        o << rngExposureSeed << ',' << rngExposureEncounter << ',' << rngExposureFloor << ','
+          << rngExposureSourceFilterDecisionIndex << ',' << rngExposureSearchDecisionIndex << ','
+          << rngExposureTurn << ',' << rngExposureRootObservationHash << ',' << rngExposureCompatible << ','
+          << bits << ',' << a.simulations << ',' << a.aiExposed << ',' << frac(a.aiExposed, a.simulations)
+          << ',' << a.aiAdvances;
+        for (auto n : a.aiFirst) o << ',' << n;
+        o << ',' << a.cardExposed << ',' << frac(a.cardExposed, a.simulations) << ',' << a.cardAdvances;
+        for (auto n : a.cardFirst) o << ',' << n;
+        rows.push_back(o.str());
+    };
+    emit(0xFFFFFFFFu, rngExposureAll);
+    for (const auto &p : rngExposureByAction) emit(p.first, p.second);
+    writeRngExposureRows(rows);
+    rngExposureEnabled = false;
 }
 void BattleScumSearcher3::reseed() {
     // Seed RNG from composite: agentSeed ^ visibleHash ^ decisionIdx.
@@ -1765,6 +1877,15 @@ void BattleScumSearcher3::step() {
 
     BattleContext state = *rootBc;
     applyParticle(state, particle);
+    if (rngExposureEnabled) {
+        rngExposureAiBaseline = state.aiRng.counter;
+        rngExposureCardBaseline = state.cardRandomRng.counter;
+        rngExposureAiSeen = rngExposureCardSeen = false;
+        rngExposureAiFirst = rngExposureCardFirst = -1;
+        rngExposureAiTotalDelta = rngExposureCardTotalDelta = 0;
+        rngExposureCurrentRootActionBits = 0xFFFFFFFFu;
+        rngExposureActionIndex = 0;
+    }
 
     std::vector<Node *> path;
     std::vector<Action> actionStack;
@@ -1786,12 +1907,14 @@ void BattleScumSearcher3::step() {
         if (isTerminal(state)) {
             ++diag.terminalInsideTree;
             backpropagate(path, evaluateTerminal(state), actionStack);
+            finishRngExposureSimulation();
             return;
         }
 
         if (g_s3Prune && canPruneAsDead(state)) {
             ++diag.leafDirectEval;
             backpropagate(path, 0.0, actionStack);
+            finishRngExposureSimulation();
             return;
         }
 
@@ -1806,6 +1929,7 @@ void BattleScumSearcher3::step() {
             if (cur->edges.empty()) {
                 ++diag.leafDirectEval;
                 backpropagate(path, evaluateLeaf(state, cur->obsHash), actionStack);
+                finishRngExposureSimulation();
                 return;
             }
 
@@ -1816,6 +1940,7 @@ void BattleScumSearcher3::step() {
             if (!edge.action.isValidAction(state)) {
                 ++diag.leafDirectEval;
                 backpropagate(path, evaluateLeaf(state, cur->obsHash), actionStack);
+                finishRngExposureSimulation();
                 return;
             }
 
@@ -1831,7 +1956,7 @@ void BattleScumSearcher3::step() {
                 edge.child.simulationCount > 0
                     ? edge.child.evaluationSum / edge.child.simulationCount : 0.0,
                 edge.prior);
-            edge.action.execute(state);
+            observeRngExposureAction(edge.action, state);
             ++diag.treeActions;
             actionStack.push_back(edge.action);
             path.push_back(&edge.child);
@@ -1846,6 +1971,7 @@ void BattleScumSearcher3::step() {
                     // Skip chain compression + rollout + blend.
                     // backpropagate the marginal expectation with 1 visit.
                     backpropagate(path, margEval, actionStack);
+                    finishRngExposureSimulation();
                     return;
                 }
                 // NaN = not eligible (large pile / reshuffle); fall through.
@@ -1853,6 +1979,7 @@ void BattleScumSearcher3::step() {
 
         if (g_s3Prune && canPruneAsDead(state)) {
                 backpropagate(path, 0.0, actionStack);
+                finishRngExposureSimulation();
                 return;
             }
 
@@ -1869,7 +1996,7 @@ void BattleScumSearcher3::step() {
                     if (!c.canUseOnAnyTarget(state) || c.requiresTarget()) continue;
                     Action a(ActionType::CARD, hi);
                     if (!a.isValidAction(state)) continue;
-                    a.execute(state);
+                    observeRngExposureAction(a, state);
                     actionStack.push_back(a);
                     // If hand didn't decrease by exactly 1, something unexpected happened (draw, exhaust, etc.) — stop
                     if (state.cards.cardsInHand != handBefore - 1) { break; }
@@ -2083,6 +2210,7 @@ void BattleScumSearcher3::step() {
                 }
             }
             backpropagate(path, eval, actionStack);
+            finishRngExposureSimulation();
             return;
         }
 
@@ -2180,7 +2308,7 @@ void BattleScumSearcher3::step() {
                     maybeOutcomeBucketDiag(state, execAction,
                         agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                         state.turn, decisionIndex);
-                    execAction.execute(state);
+                    observeRngExposureAction(execAction, state);
                     ++diag.treeActions;
                     actionStack.push_back(execAction);
                     cur = &validEdge.child;
@@ -2239,7 +2367,7 @@ void BattleScumSearcher3::step() {
                                 maybeOutcomeBucketDiag(state, newEdge.action,
                                     agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                                     state.turn, decisionIndex);
-                                newEdge.action.execute(state);
+                                observeRngExposureAction(newEdge.action, state);
                                 ++diag.treeActions;
                                 actionStack.push_back(newEdge.action);
                                 cur = &newEdge.child;
@@ -2281,7 +2409,7 @@ void BattleScumSearcher3::step() {
                                 maybeOutcomeBucketDiag(state, newEdge.action,
                                     agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                                     state.turn, decisionIndex);
-                                newEdge.action.execute(state);
+                                observeRngExposureAction(newEdge.action, state);
                                 ++diag.treeActions;
                                 actionStack.push_back(newEdge.action);
                                 cur = &newEdge.child;
@@ -2311,13 +2439,14 @@ void BattleScumSearcher3::step() {
                                                  eval, eval, rollSteps, 1});
             }
             backpropagate(path, eval, actionStack);
+            finishRngExposureSimulation();
             return;
         }
 
         maybeOutcomeBucketDiag(state, effectiveAction,
             agentSeed, (int)rootBc->encounter, rootBc->floorNum,
             state.turn, decisionIndex);
-        effectiveAction.execute(state);
+        observeRngExposureAction(effectiveAction, state);
         ++diag.treeActions;
         actionStack.push_back(effectiveAction);
         cur = &edge.child;
@@ -2326,6 +2455,7 @@ void BattleScumSearcher3::step() {
         if (g_s3Prune && canPruneAsDead(state)) {
             ++diag.leafDirectEval;
             backpropagate(path, 0.0, actionStack);
+            finishRngExposureSimulation();
             return;
         }
     }
@@ -2352,6 +2482,7 @@ void BattleScumSearcher3::step() {
                                          leafEval, 0, 2});
     }
     backpropagate(path, leafEval, actionStack);
+    finishRngExposureSimulation();
 }
 
 // ---- Backpropagation --------------------------------------------------------
@@ -2645,7 +2776,7 @@ int BattleScumSearcher3::playoutRandom(BattleContext &state,
                 const int turnBefore = state.turn;
                 ++steps;
                 actionStack.push_back(a);
-                a.execute(state);
+                observeRngExposureAction(a, state);
                 // rollouttrace diagnostics: consecutive actual-rollout states
                 // (read-only hook; nullptr by default).
                 if (g_onRolloutStep) g_onRolloutStep(state, steps);
@@ -2684,7 +2815,7 @@ int BattleScumSearcher3::playoutRandom(BattleContext &state,
         if (a.isValidAction(state)) {
             const int turnBefore = state.turn;
             actionStack.push_back(a);
-            a.execute(state);
+            observeRngExposureAction(a, state);
             // rollouttrace diagnostics: consecutive actual-rollout states
             // (read-only hook; nullptr by default).
             if (g_onRolloutStep) g_onRolloutStep(state, steps);

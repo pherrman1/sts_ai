@@ -569,9 +569,13 @@ int testRejuvHistoryReplay(std::uint64_t seed) {
     // 1. The true hidden state accepts the full history exactly and the replay
     // is deterministic.
     const auto res = search::replayRejuvenationHistory(history, trueParticle, rng);
+    std::mt19937_64 rawRng(seed ^ 0xA5A5A5A5A5A5A5A5ULL);
+    const auto rawRes = search::replayRejuvenationHistoryRaw(history, trueParticle, rawRng);
     if (res.status != search::S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED
         || !res.finalObsMatched || res.firstMismatchIndex != -1
-        || res.transitionsExecuted != static_cast<int>(history.entries.size())) {
+        || res.transitionsExecuted != static_cast<int>(history.entries.size())
+        || rawRes.status != search::S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED
+        || rawRes.transitionsExecuted != static_cast<int>(history.entries.size())) {
         std::cout << "rejuv_history_replay FAIL: true hidden state not accepted\n";
         return 1;
     }
@@ -670,6 +674,20 @@ int testRejuvSemanticSelect() {
         return bc;
     };
 
+    // CODEX index 3 is the explicit skip option and has no card identity.
+    {
+        BattleContext pre = makeState(CardSelectTask::CODEX);
+        pre.cardSelectInfo.cards = {CardId::STRIKE_RED, CardId::DEFEND_RED, CardId::BASH};
+        search::Action skip(search::ActionType::SINGLE_CARD_SELECT, 3);
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, skip, pre);
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), pre);
+        if (!remapped || remapped->bits != skip.bits || !remapped->isValidAction(pre)) {
+            std::cout << "rejuv_semantic_select FAIL: Codex skip remap broken\n";
+            return 1;
+        }
+    }
+
     // 1. SINGLE_CARD_SELECT from hand survives a permutation.
     {
         BattleContext pre = makeState(CardSelectTask::EXHAUST_ONE);
@@ -748,6 +766,24 @@ int testRejuvSemanticSelect() {
         }
     }
 
+    // 2c. Draw-pile uniqueId disambiguates visually identical SEEK copies.
+    {
+        BattleContext pre = makeState(CardSelectTask::SEEK);
+        CardInstance first(CardId::STRIKE_RED), second(CardId::STRIKE_RED);
+        first.uniqueId = 71; second.uniqueId = 72;
+        pre.cards.drawPile = {first, second};
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, search::Action(search::ActionType::SINGLE_CARD_SELECT, 1), pre);
+        BattleContext perm = makeState(CardSelectTask::SEEK);
+        perm.cards.drawPile = {second, first};
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), perm);
+        if (!remapped || remapped->getSelectIdx() != 0
+            || perm.cards.drawPile[remapped->getSelectIdx()].uniqueId != 72) {
+            std::cout << "rejuv_semantic_select FAIL: SEEK draw-pile uniqueId remap wrong\n";
+            return 1;
+        }
+    }
+
     // 3. Two same-CardId copies with different semantic properties resolve the
     // recorded copy (costForTurn differentiates).
     {
@@ -801,7 +837,382 @@ int testRejuvSemanticSelect() {
         }
     }
 
+    // 5. Duplicate visually equivalent cards preserve the selected uniqueId.
+    {
+        BattleContext pre = makeState(CardSelectTask::EXHAUST_ONE);
+        CardInstance first(CardId::STRIKE_RED), second(CardId::STRIKE_RED);
+        first.uniqueId = 41; second.uniqueId = 42;
+        pre.cards.hand[0] = first; pre.cards.hand[1] = second; pre.cards.cardsInHand = 2;
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, search::Action(search::ActionType::SINGLE_CARD_SELECT, 0), pre);
+        BattleContext perm = makeState(CardSelectTask::EXHAUST_ONE);
+        perm.cards.hand[0] = second; perm.cards.hand[1] = first; perm.cards.cardsInHand = 2;
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), perm);
+        if (!remapped || remapped->getSelectIdx() != 1) {
+            std::cout << "rejuv_semantic_select FAIL: uniqueId duplicate remap wrong\n";
+            return 1;
+        }
+    }
+
     std::cout << "rejuv_semantic_select PASS\n";
+    return 0;
+}
+
+int testRejuvConditionalBlocks() {
+    GameContext gc(CharacterClass::IRONCLAD, 12345, 0);
+    BattleContext anchor;
+    anchor.init(gc, MonsterEncounter::CULTIST);
+    const HiddenBattleState oracle = search::oracleHiddenState(anchor);
+    std::mt19937_64 sourceA(777), sourceB(777);
+    const auto obs = CombatObservation::fromBattleContext(anchor);
+    const auto freshA = HiddenBattleState::sampleParticles(obs, anchor, sourceA, 64);
+    const auto freshB = HiddenBattleState::sampleParticles(obs, anchor, sourceB, 64);
+    if (freshA.size() != freshB.size()) return 1;
+    for (size_t i = 0; i < freshA.size(); ++i) {
+        if (fullHiddenStateKey(freshA[i]) != fullHiddenStateKey(freshB[i])) {
+            std::cout << "rejuv_conditional_blocks FAIL: paired sources differ\n";
+            return 1;
+        }
+    }
+    const std::array<search::S3RejuvenationProposalFamily, 8> orderA = {
+        search::S3RejuvenationProposalFamily::DRAW_ORDER,
+        search::S3RejuvenationProposalFamily::SHUFFLE_RNG,
+        search::S3RejuvenationProposalFamily::CARD_RANDOM_RNG,
+        search::S3RejuvenationProposalFamily::AI_RNG,
+        search::S3RejuvenationProposalFamily::MISC_RNG,
+        search::S3RejuvenationProposalFamily::MONSTER_HP_RNG,
+        search::S3RejuvenationProposalFamily::POTION_RNG,
+        search::S3RejuvenationProposalFamily::ALL_FRESH};
+    auto proposalKeys = [&](const auto &order) {
+        std::vector<std::pair<int, FullHiddenStateKey>> keys;
+        for (const auto family : order)
+            for (int i = 0; i < 64; ++i)
+                keys.emplace_back(static_cast<int>(family), fullHiddenStateKey(
+                    search::makeConditionalBlockProposal(oracle, freshA[i], family)));
+        return keys;
+    };
+    auto orderB = orderA;
+    std::reverse(orderB.begin(), orderB.end());
+    auto keysA = proposalKeys(orderA);
+    auto keysB = proposalKeys(orderB);
+    std::sort(keysA.begin(), keysA.end());
+    std::sort(keysB.begin(), keysB.end());
+    if (keysA != keysB) {
+        std::cout << "rejuv_conditional_blocks FAIL: family order changes source proposals\n";
+        return 1;
+    }
+    const std::array<search::S3RejuvenationProposalFamily, 7> families = {
+        search::S3RejuvenationProposalFamily::DRAW_ORDER,
+        search::S3RejuvenationProposalFamily::SHUFFLE_RNG,
+        search::S3RejuvenationProposalFamily::CARD_RANDOM_RNG,
+        search::S3RejuvenationProposalFamily::AI_RNG,
+        search::S3RejuvenationProposalFamily::MISC_RNG,
+        search::S3RejuvenationProposalFamily::MONSTER_HP_RNG,
+        search::S3RejuvenationProposalFamily::POTION_RNG};
+    for (const auto family : families) {
+        const auto p = search::makeConditionalBlockProposal(oracle, freshA[0], family);
+        const auto pk = fullHiddenStateKey(p);
+        const auto ok = fullHiddenStateKey(oracle);
+        const auto fk = fullHiddenStateKey(freshA[0]);
+        bool drawChanged = pk.drawPileOrder != ok.drawPileOrder;
+        int changedRngBlocks = 0;
+        for (int i = 0; i < 6; ++i) {
+            if (pk.seed0[i] != ok.seed0[i] || pk.seed1[i] != ok.seed1[i]
+                || pk.counter[i] != ok.counter[i]) ++changedRngBlocks;
+        }
+        const bool drawFamily = family == search::S3RejuvenationProposalFamily::DRAW_ORDER;
+        const bool selectedDrawExact = !drawFamily || pk.drawPileOrder == fk.drawPileOrder;
+        const bool nonSelectedDrawExact = drawFamily || pk.drawPileOrder == ok.drawPileOrder;
+        if (!selectedDrawExact || !nonSelectedDrawExact
+            || (drawFamily && changedRngBlocks != 0) || (!drawFamily && changedRngBlocks != 1)) {
+            std::cout << "rejuv_conditional_blocks FAIL: block isolation\n";
+            return 1;
+        }
+    }
+    std::cout << "rejuv_conditional_blocks PASS paired_sources=64 families=7\n";
+    return 0;
+}
+
+int testLiveRejuvenationAttemptGate() {
+    struct Fixture {
+        BattleContext bc;
+        Belief start;
+        search::S3RejuvenationHistory history;
+        search::RealBeliefFilterStats stats;
+        Belief current;
+    };
+    auto makeFixture = [](std::uint64_t seed) -> Fixture {
+        GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::BattleScumSearcher3 s3(bc, seed, 0, 64);
+        Belief start = s3.belief;
+        for (size_t i = 0; i < start.particles.size(); ++i) {
+            start.particles[i].id = i + 1;
+            if (i > 0) start.particles[i].weight = 0.0;
+        }
+        start.particles.front().weight = 1.0;
+        BattleContext post = bc;
+        s3.applyParticle(post, start.particles.front());
+        search::Action action(search::ActionType::END_TURN);
+        action.execute(post);
+        search::S3RejuvenationHistory history(bc);
+        history.record(bc, action, post);
+        Belief current;
+        current.particles.assign(64, HiddenBattleState{});
+        current.particles.front() = search::oracleHiddenState(post);
+        current.particles.front().id = 1;
+        current.particles.front().weight = 1.0;
+        for (size_t i = 1; i < current.particles.size(); ++i)
+            current.particles[i].weight = 0.0;
+        search::RealBeliefFilterStats stats;
+        stats.compatible = 1;
+        return {bc, start, std::move(history), stats, std::move(current)};
+    };
+    const auto oldMode = search::g_s3LiveRejuvenationMode;
+    const auto oldFile = search::g_s3LiveRejuvenationFile;
+    const bool oldPersist = search::g_s3PersistFilteredBelief;
+    const int oldTrigger = search::g_s3RejuvTrigger;
+    const int oldProposals = search::g_s3RejuvProposals;
+    search::g_s3PersistFilteredBelief = true;
+    search::g_s3RejuvTrigger = 16;
+    search::g_s3RejuvProposals = 64;
+    search::g_s3LiveRejuvenationFile = "/tmp/live_rejuv_fixture.csv";
+    std::remove(search::g_s3LiveRejuvenationFile.c_str());
+    std::optional<Fixture> acceptedFixture;
+    for (std::uint64_t seed = 0; seed < 256 && !acceptedFixture; ++seed) {
+        auto fixture = makeFixture(seed);
+        bool attempted = false;
+        search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG;
+        search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG, attempted,
+                                    true, fixture.start, fixture.history, fixture.stats,
+                                    fixture.current, fixture.bc, 0);
+        if (fixture.current.positiveCount() > 1) acceptedFixture = std::move(fixture);
+    }
+    if (!acceptedFixture) {
+        search::g_s3LiveRejuvenationMode = oldMode;
+        search::g_s3LiveRejuvenationFile = oldFile;
+        search::g_s3PersistFilteredBelief = oldPersist;
+        search::g_s3RejuvTrigger = oldTrigger;
+        search::g_s3RejuvProposals = oldProposals;
+        std::cout << "live_rejuv_attempt_gate FAIL: no accepted AI child fixture\n";
+        return 1;
+    }
+    const Fixture &fixture = *acceptedFixture;
+    const auto initialRng = std::array<std::int32_t, 18>{
+        fixture.bc.shuffleRng.counter, fixture.bc.cardRandomRng.counter,
+        fixture.bc.aiRng.counter, fixture.bc.miscRng.counter,
+        fixture.bc.monsterHpRng.counter, fixture.bc.potionRng.counter,
+        static_cast<std::int32_t>(fixture.bc.shuffleRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.cardRandomRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.aiRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.miscRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.monsterHpRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.potionRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.shuffleRng.seed1),
+        static_cast<std::int32_t>(fixture.bc.cardRandomRng.seed1),
+        static_cast<std::int32_t>(fixture.bc.aiRng.seed1),
+        static_cast<std::int32_t>(fixture.bc.miscRng.seed1),
+        static_cast<std::int32_t>(fixture.bc.monsterHpRng.seed1),
+        static_cast<std::int32_t>(fixture.bc.potionRng.seed1)};
+    const auto &source = fixture.current.particles.front();
+    int childSlot = -1;
+    for (size_t i = 1; i < fixture.current.particles.size(); ++i)
+        if (fixture.current.particles[i].weight > 0.0) { childSlot = static_cast<int>(i); break; }
+    const auto &aiChild = fixture.current.particles[childSlot];
+    const auto sourceKey = fullHiddenStateKey(source);
+    const auto childKey = fullHiddenStateKey(aiChild);
+    auto sameNonAi = [](const FullHiddenStateKey &a, const FullHiddenStateKey &b) {
+        if (a.drawPileOrder != b.drawPileOrder) return false;
+        for (const int i : {0, 1, 3, 4, 5})
+            if (a.seed0[i] != b.seed0[i] || a.seed1[i] != b.seed1[i]
+                || a.counter[i] != b.counter[i]) return false;
+        return true;
+    };
+    auto sameAi = [](const FullHiddenStateKey &a, const FullHiddenStateKey &b) {
+        return a.seed0[2] == b.seed0[2] && a.seed1[2] == b.seed1[2]
+            && a.counter[2] == b.counter[2];
+    };
+    const double mass = std::accumulate(fixture.current.particles.begin(),
+        fixture.current.particles.end(), 0.0,
+        [](double x, const HiddenBattleState &p) { return x + p.weight; });
+    const auto singleFile = std::string("/tmp/live_rejuv_single_fixture.csv");
+    search::g_s3LiveRejuvenationFile = singleFile;
+    std::remove(singleFile.c_str());
+    auto makeMultiFixture = [&makeFixture](std::uint64_t seed) {
+        auto multi = makeFixture(seed);
+        multi.start.particles[1] = multi.start.particles.front();
+        multi.start.particles[1].id = 2;
+        multi.start.particles[0].weight = 0.5;
+        multi.start.particles[1].weight = 0.5;
+        multi.current.particles[1] = multi.current.particles.front();
+        multi.current.particles[1].id = 2;
+        multi.current.particles[0].weight = 0.5;
+        multi.current.particles[1].weight = 0.5;
+        return multi;
+    };
+    auto historical = makeMultiFixture(fixture.bc.seed);
+    bool historicalAttempted = false;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG,
+                                historicalAttempted, true, historical.start,
+                                historical.history, historical.stats,
+                                historical.current, historical.bc, 0);
+    const int historicalChildren = historical.current.positiveCount() - 2;
+    auto ai1Fixture = makeMultiFixture(fixture.bc.seed);
+    bool ai1Attempted = false;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
+                                ai1Attempted, true, ai1Fixture.start,
+                                ai1Fixture.history, ai1Fixture.stats,
+                                ai1Fixture.current, ai1Fixture.bc, 0);
+    auto placebo1Fixture = makeMultiFixture(fixture.bc.seed);
+    bool placebo1Attempted = false;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::PLACEBO1,
+                                placebo1Attempted, true, placebo1Fixture.start,
+                                placebo1Fixture.history, placebo1Fixture.stats,
+                                placebo1Fixture.current, placebo1Fixture.bc, 0);
+    const int ai1Children = ai1Fixture.current.positiveCount() - 2;
+    const int placebo1Children = placebo1Fixture.current.positiveCount() - 2;
+    const int ai1Slot = ai1Children == 1
+        ? static_cast<int>(std::find_if(ai1Fixture.current.particles.begin(),
+              ai1Fixture.current.particles.end(), [&](const HiddenBattleState &p) {
+                  return p.weight > 0.0
+                      && &p >= ai1Fixture.current.particles.data() + 2;
+              }) - ai1Fixture.current.particles.begin()) : -1;
+    const int placebo1Slot = placebo1Children == 1
+        ? static_cast<int>(std::find_if(placebo1Fixture.current.particles.begin(),
+              placebo1Fixture.current.particles.end(), [&](const HiddenBattleState &p) {
+                  return p.weight > 0.0
+                      && &p >= placebo1Fixture.current.particles.data() + 2;
+              }) - placebo1Fixture.current.particles.begin()) : -1;
+    const auto &ai1Child = ai1Fixture.current.particles[ai1Slot];
+    const auto &placebo1Child = placebo1Fixture.current.particles[placebo1Slot];
+    const bool singleChildSemantics = historicalChildren > 1
+        && ai1Attempted && placebo1Attempted
+        && ai1Children == 1 && placebo1Children == 1
+        && ai1Slot == placebo1Slot
+        && fullHiddenStateKey(placebo1Child)
+            == fullHiddenStateKey(placebo1Fixture.current.particles.front())
+        && sameNonAi(fullHiddenStateKey(ai1Fixture.current.particles.front()),
+                     fullHiddenStateKey(ai1Child))
+        && !sameAi(fullHiddenStateKey(ai1Fixture.current.particles.front()),
+                   fullHiddenStateKey(ai1Child))
+        && ai1Child.id == placebo1Child.id
+        && ai1Fixture.current.particles.front().weight
+            == placebo1Fixture.current.particles.front().weight
+        && ai1Child.weight == placebo1Child.weight;
+    const auto singleBeforeRetry = ai1Fixture.current.particles;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
+                                ai1Attempted, true, ai1Fixture.start,
+                                ai1Fixture.history, ai1Fixture.stats,
+                                ai1Fixture.current, ai1Fixture.bc, 1);
+    const bool singleAttemptConsumed = ai1Attempted
+        && ai1Fixture.current.positiveCount() == 3
+        && ai1Fixture.current.particles == singleBeforeRetry;
+    auto zeroChildFixture = makeFixture(fixture.bc.seed);
+    zeroChildFixture.current.particles.front().id = 999;
+    bool zeroChildAttempted = false;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
+                                zeroChildAttempted, true, zeroChildFixture.start,
+                                zeroChildFixture.history, zeroChildFixture.stats,
+                                zeroChildFixture.current, zeroChildFixture.bc, 0);
+    const auto zeroChildAfterFirst = zeroChildFixture.current.particles;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
+                                zeroChildAttempted, true, zeroChildFixture.start,
+                                zeroChildFixture.history, zeroChildFixture.stats,
+                                zeroChildFixture.current, zeroChildFixture.bc, 1);
+    const bool zeroChildAttemptConsumed = zeroChildAttempted
+        && zeroChildFixture.current.positiveCount() == 1
+        && zeroChildFixture.current.particles == zeroChildAfterFirst;
+    auto alteredFixture = makeFixture(fixture.bc.seed);
+    alteredFixture.history.anchor.aiRng.seed0 ^= 0x12345678ULL;
+    alteredFixture.history.anchor.shuffleRng.seed1 ^= 0x87654321ULL;
+    alteredFixture.history.anchor.aiRng.counter += 17;
+    bool alteredAttempted = false;
+    search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG, alteredAttempted,
+                                true, fixture.start, alteredFixture.history,
+                                fixture.stats, alteredFixture.current,
+                                fixture.bc, 0);
+    bool anchorHiddenFieldsIgnored = alteredFixture.current.positiveCount()
+        == fixture.current.positiveCount();
+    for (size_t i = 0; i < fixture.current.particles.size() && anchorHiddenFieldsIgnored; ++i)
+        anchorHiddenFieldsIgnored = fullHiddenStateKey(alteredFixture.current.particles[i])
+            == fullHiddenStateKey(fixture.current.particles[i]);
+    auto placebo = makeFixture(fixture.bc.seed);
+    bool placeboAttempted = false;
+    search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::PLACEBO, placeboAttempted,
+                                true, placebo.start, placebo.history, placebo.stats,
+                                placebo.current, placebo.bc, 0);
+    const auto &placeboChild = placebo.current.particles[childSlot];
+    const bool placeboIdentity = fullHiddenStateKey(placeboChild) ==
+        fullHiddenStateKey(placebo.current.particles.front());
+    const bool sameMechanics = placeboChild.id == aiChild.id
+        && placeboChild.weight == aiChild.weight
+        && placebo.current.particles.front().weight == source.weight;
+    search::BattleScumSearcher3 transferred(fixture.bc, fixture.bc.seed, 1, 64);
+    const bool transferOk = search::installTransferredBelief(transferred, &fixture.current);
+    bool onlySourceAndChildPositive = true;
+    for (size_t i = 0; i < fixture.current.particles.size(); ++i)
+        if (i != 0 && static_cast<int>(i) != childSlot
+            && fixture.current.particles[i].weight > 0.0) onlySourceAndChildPositive = false;
+    std::ifstream telemetry("/tmp/live_rejuv_fixture.csv");
+    std::string header, row;
+    std::getline(telemetry, header);
+    bool telemetryAi = false, telemetryPlacebo = false;
+    while (std::getline(telemetry, row)) {
+        if (row.find(",ai,") != std::string::npos
+            && row.find(",1,0,1,64,1,1,1,2,0.500,1,") != std::string::npos)
+            telemetryAi = true;
+        if (row.find(",placebo,") != std::string::npos
+            && row.find(",1,0,1,64,1,1,1,2,0.500,0,") != std::string::npos)
+            telemetryPlacebo = true;
+    }
+    const bool telemetrySemantics = telemetryAi && telemetryPlacebo;
+    bool secondAttempt = false;
+    search::RealBeliefFilterStats collapsed = fixture.stats;
+    collapsed.posteriorCollapse = true;
+    auto collapseFixture = makeFixture(fixture.bc.seed);
+    collapsed.freshBeliefRebuilt = true;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG, secondAttempt,
+                                true, collapseFixture.start, collapseFixture.history,
+                                collapsed, collapseFixture.current, collapseFixture.bc, 0);
+    const bool collapseBlocked = !secondAttempt;
+    const auto finalRng = std::array<std::int32_t, 18>{
+        fixture.bc.shuffleRng.counter, fixture.bc.cardRandomRng.counter,
+        fixture.bc.aiRng.counter, fixture.bc.miscRng.counter,
+        fixture.bc.monsterHpRng.counter, fixture.bc.potionRng.counter,
+        static_cast<std::int32_t>(fixture.bc.shuffleRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.cardRandomRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.aiRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.miscRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.monsterHpRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.potionRng.seed0),
+        static_cast<std::int32_t>(fixture.bc.shuffleRng.seed1),
+        static_cast<std::int32_t>(fixture.bc.cardRandomRng.seed1),
+        static_cast<std::int32_t>(fixture.bc.aiRng.seed1),
+        static_cast<std::int32_t>(fixture.bc.miscRng.seed1),
+        static_cast<std::int32_t>(fixture.bc.monsterHpRng.seed1),
+        static_cast<std::int32_t>(fixture.bc.potionRng.seed1)};
+    search::g_s3LiveRejuvenationMode = oldMode;
+    search::g_s3LiveRejuvenationFile = oldFile;
+    search::g_s3PersistFilteredBelief = oldPersist;
+    search::g_s3RejuvTrigger = oldTrigger;
+    search::g_s3RejuvProposals = oldProposals;
+    const bool ok = sameNonAi(sourceKey, childKey) && !sameAi(sourceKey, childKey)
+        && sourceKey != childKey && aiChild.id == source.id
+        && source.weight == aiChild.weight && mass == 1.0
+        && onlySourceAndChildPositive && placeboIdentity && sameMechanics && transferOk
+        && telemetrySemantics && initialRng == finalRng
+        && anchorHiddenFieldsIgnored && singleChildSemantics && singleAttemptConsumed
+        && zeroChildAttemptConsumed
+        && transferred.belief.particles[childSlot].id == aiChild.id && collapseBlocked;
+    if (!ok) {
+        std::cout << "live_rejuv_attempt_gate FAIL: accepted-child contracts\n";
+        return 1;
+    }
+    std::cout << "live_rejuv_attempt_gate PASS accepted_child=1 placebo_identity=1"
+              << " block_isolation=1 novelty=1 transfer=1 collapse_blocked=1\n";
     return 0;
 }
 
@@ -819,6 +1230,10 @@ int testRejuvNoninterference(std::uint64_t seed) {
     const int savedTrigger = search::g_s3RejuvTrigger;
     const int savedProposals = search::g_s3RejuvProposals;
     const std::string savedFile = search::g_s3RejuvShadowFile;
+    const bool savedAiSensitivity = search::g_s3AiSensitivityShadow;
+    const std::string savedAiSensitivityFile = search::g_s3AiSensitivityFile;
+    const bool savedExposure = search::g_s3RngExposureDiag;
+    const std::string savedExposureFile = search::g_s3RngExposureDiagFile;
     const auto savedDecision = search::g_onCombatDecision;
     const auto savedSearch = search::g_onSearchComplete3;
     const int savedSimCount = search::g_simHealthFailureCount;
@@ -845,8 +1260,12 @@ int testRejuvNoninterference(std::uint64_t seed) {
         search::g_s3RealBeliefCollapseFresh = true;
         search::g_s3RejuvShadow = shadow;
         search::g_s3RejuvShadowFile = file;
+        search::g_s3RngExposureDiag = shadow;
+        search::g_s3RngExposureDiagFile = shadow ? "/tmp/sts_rng_exposure_noninterference.csv" : "";
         search::g_s3RejuvTrigger = 1 << 30;   // fire at every filtered boundary
-        search::g_s3RejuvProposals = 4;
+        search::g_s3RejuvProposals = 64;
+        search::g_s3AiSensitivityShadow = shadow;
+        search::g_s3AiSensitivityFile = shadow ? "/tmp/sts_ai_sensitivity_noninterference.csv" : "";
         RejuvCapture cap;
         auto snap = [](const BattleContext &b) {
             std::array<std::int64_t, 18> r{};
@@ -884,6 +1303,8 @@ int testRejuvNoninterference(std::uint64_t seed) {
 
     const std::string shadowFile = "/tmp/sts_rejuv_shadow_test.csv";
     std::remove(shadowFile.c_str());
+    std::remove("/tmp/sts_rng_exposure_noninterference.csv");
+    std::remove("/tmp/sts_ai_sensitivity_noninterference.csv");
     const RejuvCapture off = run(false, "");
     const RejuvCapture on = run(true, shadowFile);
 
@@ -924,6 +1345,31 @@ int testRejuvNoninterference(std::uint64_t seed) {
         std::cout << "rejuv_noninterference FAIL: shadow CSV missing/empty\n";
         ++failures;
     }
+    int exposureRows = 0;
+    {
+        std::ifstream csv("/tmp/sts_rng_exposure_noninterference.csv");
+        std::string line;
+        while (std::getline(csv, line)) ++exposureRows;
+    }
+    if (exposureRows < 2) {
+        std::cout << "rejuv_noninterference FAIL: RNG exposure CSV missing/empty\n";
+        ++failures;
+    }
+    int sensitivityRows = 0;
+    {
+        std::ifstream csv("/tmp/sts_ai_sensitivity_noninterference.csv");
+        std::string line;
+        while (std::getline(csv, line)) ++sensitivityRows;
+    }
+    // This compact fixture may have no actual searchable late boundary after
+    // the sensitivity eligibility gate. If it does emit rows, schema/output
+    // reconciliation is checked by the smoke and scientific-run validators.
+    if (on.actionBits != off.actionBits || on.obsHashes != off.obsHashes
+        || on.rngState != off.rngState || on.outcome != off.outcome
+        || on.finalHp != off.finalHp || on.finalRng != off.finalRng) {
+        std::cout << "rejuv_noninterference FAIL: RNG exposure diagnostic changed live behavior\n";
+        ++failures;
+    }
 
     // Restore globals (single exit point).
     search::g_useSearcher3 = savedUseS3;
@@ -933,6 +1379,10 @@ int testRejuvNoninterference(std::uint64_t seed) {
     search::g_s3RejuvTrigger = savedTrigger;
     search::g_s3RejuvProposals = savedProposals;
     search::g_s3RejuvShadowFile = savedFile;
+    search::g_s3AiSensitivityShadow = savedAiSensitivity;
+    search::g_s3AiSensitivityFile = savedAiSensitivityFile;
+    search::g_s3RngExposureDiag = savedExposure;
+    search::g_s3RngExposureDiagFile = savedExposureFile;
     search::g_onCombatDecision = savedDecision;
     search::g_onSearchComplete3 = savedSearch;
     if (failures == 0) {
