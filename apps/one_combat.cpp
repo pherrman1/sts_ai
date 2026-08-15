@@ -2627,6 +2627,10 @@ static int  g_fgPerStratum = 200;            // STS_FRONTIERGEN_PER_STRATUM (def
 static search::CombatValueNet g_combatVNetDiag;  // secondary diagnostic vnet (STS_DIAG_VNET2); NEVER read by the searcher
 static int  g_ldPerStratum = 50;                 // STS_LEAFDIAG_PER_STRATUM: reservoir capacity per stratum per seed
 static int  g_ldDeepDepth   = 20;                // STS_LEAFDIAG_DEEP_DEPTH: depth >= this maps to the dedicated deep stratum
+static std::string g_particleLeafProbeFile;
+static int g_particleLeafProbeK = 8;
+static double g_particleLeafProbeRate = 1.0;
+static int g_particleLeafProbeMaxGroups = 0;
 
 struct LeafDiagRow {
     std::uint64_t seed = 0;
@@ -2643,6 +2647,17 @@ struct LeafDiagRow {
     double rawRolloutEval = std::numeric_limits<double>::quiet_NaN();
     double blendedEval = std::numeric_limits<double>::quiet_NaN();
     int won = -1, fightEndHp = -1;               // fight labels, filled at battle end
+};
+
+struct ParticleLeafProbeRow {
+    std::uint64_t seed = 0, obsHash = 0, groupId = 0;
+    int fightIdx = -1, decIdx = -1, variant = -1, depth = 0, turn = 0;
+    int curHp = 0, maxHp = 0, rolloutSteps = 0, terminal = 0;
+    int invariantOk = 0, drawPileSize = 0;
+    double target = std::numeric_limits<double>::quiet_NaN();
+    double rawRolloutEval = std::numeric_limits<double>::quiet_NaN();
+    std::string encounter, drawOrder;
+    std::vector<float> feats;
 };
 
 // leafref group identity: one Searcher3 decision inside one fight of one run.
@@ -2675,6 +2690,8 @@ struct LeafDiagCtx {
                        LeafRefGroupKeyHash> recorded;   // group -> recorded leaf obsHashes
     std::vector<BattleContext> capturedLeaves;          // regenerated leaves of the current decision
     std::unordered_set<std::uint64_t> capturedSeen;     // dedup: one capture per obsHash per decision
+    std::vector<ParticleLeafProbeRow> particleProbeRows;
+    int particleProbeGroups = 0;
     void init(std::uint64_t sd) {
         seed = sd; fightIdx = 0; floor = 0; act = 0; encounter.clear(); decIdx = 0;
         rng.seed(sd ? sd : 1);
@@ -2683,6 +2700,8 @@ struct LeafDiagCtx {
         recorded.clear();
         capturedLeaves.clear();
         capturedSeen.clear();
+        particleProbeRows.clear();
+        particleProbeGroups = 0;
     }
 };
 static thread_local LeafDiagCtx t_ld;
@@ -2790,6 +2809,98 @@ static void leafDiagOnLeafQuery(const search::S3LeafDiagnostic &d) {
     ++cnt;
 }
 
+static std::string particleLeafDrawOrder(const BattleContext &bc) {
+    std::ostringstream out;
+    for (int i = (int)bc.cards.drawPile.size() - 1; i >= 0; --i) {
+        if (i != (int)bc.cards.drawPile.size() - 1) out << ';';
+        out << (int)bc.cards.drawPile[i].getId();
+    }
+    return out.str();
+}
+
+static bool particleLeafRngEqual(const BattleContext &a, const BattleContext &b) {
+    return a.shuffleRng.seed0 == b.shuffleRng.seed0 && a.shuffleRng.seed1 == b.shuffleRng.seed1
+        && a.shuffleRng.counter == b.shuffleRng.counter
+        && a.cardRandomRng.seed0 == b.cardRandomRng.seed0 && a.cardRandomRng.seed1 == b.cardRandomRng.seed1
+        && a.cardRandomRng.counter == b.cardRandomRng.counter
+        && a.aiRng.seed0 == b.aiRng.seed0 && a.aiRng.seed1 == b.aiRng.seed1
+        && a.aiRng.counter == b.aiRng.counter
+        && a.miscRng.seed0 == b.miscRng.seed0 && a.miscRng.seed1 == b.miscRng.seed1
+        && a.miscRng.counter == b.miscRng.counter
+        && a.potionRng.seed0 == b.potionRng.seed0 && a.potionRng.seed1 == b.potionRng.seed1
+        && a.potionRng.counter == b.potionRng.counter
+        && a.monsterHpRng.seed0 == b.monsterHpRng.seed0 && a.monsterHpRng.seed1 == b.monsterHpRng.seed1
+        && a.monsterHpRng.counter == b.monsterHpRng.counter;
+}
+
+static bool particleLeafSameMultiset(const BattleContext &a, const BattleContext &b) {
+    if (a.cards.drawPile.size() != b.cards.drawPile.size()) return false;
+    std::map<int, int> ca, cb;
+    for (const auto &c : a.cards.drawPile) ++ca[(int)c.getId()];
+    for (const auto &c : b.cards.drawPile) ++cb[(int)c.getId()];
+    return ca == cb;
+}
+
+static std::uint64_t particleLeafHash(std::uint64_t seed, int fight, int dec,
+                                      std::uint64_t obsHash) {
+    std::uint64_t h = seed ^ (std::uint64_t)(std::uint32_t)fight << 32
+                    ^ (std::uint64_t)(std::uint32_t)dec ^ obsHash;
+    h ^= h >> 33; h *= 0xff51afd7ed558ccdULL; h ^= h >> 33;
+    return h;
+}
+
+static void particleLeafProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
+    if (g_particleLeafProbeFile.empty() || !d.searcher || !d.bc) return;
+    if (g_particleLeafProbeMaxGroups > 0
+        && t_ld.particleProbeGroups >= g_particleLeafProbeMaxGroups) return;
+    if (g_particleLeafProbeRate < 1.0) {
+        if (std::uniform_real_distribution<double>(0.0, 1.0)(t_ld.rng)
+            >= g_particleLeafProbeRate) return;
+    }
+    const BattleContext &base = *d.bc;
+    const int k = std::max(1, std::min(g_particleLeafProbeK, 64));
+    const std::uint64_t groupId = particleLeafHash(t_ld.seed, t_ld.fightIdx,
+                                                    t_ld.decIdx, d.obsHash);
+    const std::uint64_t rngSeed = groupId ^ 0x9e3779b97f4a7c15ULL;
+    const int nf = search::combatFeatureCount();
+    std::vector<float> baseFeatures(nf);
+    search::combatExtractFeatures(base, baseFeatures.data());
+    const std::string baseDrawOrder = particleLeafDrawOrder(base);
+    for (int variant = 0; variant < k; ++variant) {
+        BattleContext state = base;
+        if (variant > 0) {
+            std::mt19937_64 permutationRng(rngSeed + (std::uint64_t)variant);
+            std::shuffle(state.cards.drawPile.begin(), state.cards.drawPile.end(), permutationRng);
+            if (particleLeafDrawOrder(state) == baseDrawOrder && state.cards.drawPile.size() > 1) {
+                std::swap(state.cards.drawPile.front(), state.cards.drawPile.back());
+            }
+        }
+        std::vector<float> features(nf);
+        search::combatExtractFeatures(state, features.data());
+        bool sameFeatures = features == baseFeatures;
+        bool sameRng = particleLeafRngEqual(base, state);
+        bool sameMultiset = particleLeafSameMultiset(base, state);
+        std::mt19937_64 diagnosticRng(rngSeed);
+        std::vector<search::Action> actions;
+        double target = std::numeric_limits<double>::quiet_NaN();
+        bool terminal = false;
+        const int steps = d.searcher->diagnosticRollout(state, actions, diagnosticRng,
+                                                         target, terminal);
+        ParticleLeafProbeRow row;
+        row.seed = t_ld.seed; row.fightIdx = t_ld.fightIdx; row.decIdx = t_ld.decIdx;
+        row.groupId = groupId; row.obsHash = d.obsHash; row.variant = variant;
+        row.depth = d.treeDepth; row.turn = base.turn; row.curHp = base.player.curHp;
+        row.maxHp = base.player.maxHp; row.rolloutSteps = steps; row.terminal = terminal ? 1 : 0;
+        row.invariantOk = (sameFeatures && sameRng && sameMultiset) ? 1 : 0;
+        row.drawPileSize = (int)base.cards.drawPile.size(); row.target = target;
+        row.rawRolloutEval = d.rawRolloutEval;
+        row.encounter = t_ld.encounter; row.drawOrder = particleLeafDrawOrder(state);
+        row.feats = std::move(features);
+        t_ld.particleProbeRows.push_back(std::move(row));
+    }
+    ++t_ld.particleProbeGroups;
+}
+
 // Called at battle exit (runFullRunOOC, g_leafdiagActive): label the current
 // fight's sampled rows with the fight outcome.
 static void leafDiagFightEnd(const BattleContext &bc) {
@@ -2816,6 +2927,27 @@ static std::string leafDiagSeedCsv() {
               << row.rawRolloutEval << ',' << row.blendedEval << '\n';
         }
     return o.str();
+}
+
+static std::string particleLeafProbeSeedCsv() {
+    std::ostringstream o;
+    for (const auto &row : t_ld.particleProbeRows) {
+        o << row.seed << ',' << row.fightIdx << ',' << row.decIdx << ',' << row.groupId << ','
+          << row.obsHash << ',' << row.variant << ',' << row.depth << ',' << row.encounter << ','
+          << row.turn << ',' << row.curHp << ',' << row.maxHp << ',' << row.drawPileSize << ','
+          << row.rolloutSteps << ',' << row.terminal << ',' << row.invariantOk << ',' << row.target
+          << ',' << row.rawRolloutEval << ',' << row.drawOrder;
+        for (const float v : row.feats) o << ',' << v;
+        o << '\n';
+    }
+    return o.str();
+}
+
+static std::string particleLeafProbeHeaderStr() {
+    std::string h = "seed,fightIdx,decIdx,groupId,obsHash,variant,treeDepth,encounterName,turn,"
+                    "curHp,maxHp,drawPileSize,rolloutSteps,terminal,invariantOk,target,rawRolloutEval,drawOrder";
+    for (const auto &name : search::combatFeatureNames()) h += ',' + name;
+    return h;
 }
 
 static std::string leafDiagHeaderStr() {
@@ -6878,6 +7010,32 @@ static void leafDiag(int nSeeds, int sims, int asc,
     for (int st = 0; st < kLeafDiagStrata; ++st)
         std::printf("  s%d=%lld", st, stratumSeen[st]);
     std::printf("\n");
+}
+
+static void particleLeafProbe(int nSeeds, int sims, int asc,
+                              const std::string &outFile, long long seedOffset = 0) {
+    search::g_richCombatFeatures = true;
+    std::ofstream f(outFile);
+    if (!f) { std::cerr << "particle_leaf_probe: cannot open " << outFile << '\n'; return; }
+    f << particleLeafProbeHeaderStr() << '\n';
+    g_leafdiagActive = true;
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        search::g_onS3LeafQuery = particleLeafProbeOnLeafQuery;
+        search::g_onSearchComplete3 = [](const BattleContext &,
+                                         const search::BattleScumSearcher3 &) { ++t_ld.decIdx; };
+        t_ld.init((std::uint64_t)(seedOffset + s));
+        runFullRunOOC((std::uint64_t)(seedOffset + s), sims, asc, false, false);
+        const std::string out = particleLeafProbeSeedCsv();
+        search::g_onS3LeafQuery = nullptr;
+        search::g_onSearchComplete3 = nullptr;
+        #pragma omp critical
+        f << out;
+    }
+    g_leafdiagActive = false;
+    std::cout << "particle leaf probe wrote " << outFile << " (K="
+              << g_particleLeafProbeK << ", rate=" << g_particleLeafProbeRate
+              << ", max_groups=" << g_particleLeafProbeMaxGroups << ")\n";
 }
 
 // ---------------------------------------------------------------------------
@@ -11418,6 +11576,19 @@ int main(int argc, char **argv) {
         const int n = std::atoi(d);
         if (n >= 1) g_ldDeepDepth = n;
     }
+    if (const char *d = std::getenv("STS_PARTICLE_LEAF_PROBE_FILE")) {
+        g_particleLeafProbeFile = d;
+    }
+    if (const char *d = std::getenv("STS_PARTICLE_LEAF_PROBE_K")) {
+        const int k = std::atoi(d); if (k >= 1) g_particleLeafProbeK = k;
+    }
+    if (const char *d = std::getenv("STS_PARTICLE_LEAF_PROBE_RATE")) {
+        g_particleLeafProbeRate = std::atof(d);
+        g_particleLeafProbeRate = std::max(0.0, std::min(1.0, g_particleLeafProbeRate));
+    }
+    if (const char *d = std::getenv("STS_PARTICLE_LEAF_PROBE_MAX_GROUPS")) {
+        const int n = std::atoi(d); if (n >= 0) g_particleLeafProbeMaxGroups = n;
+    }
     if (const char *d = std::getenv("STS_FRONTIERGEN_PER_STRATUM")) {   // frontiergen reservoir capacity per stratum per seed
         const int n = std::atoi(d);
         if (n >= 1) g_fgPerStratum = n;
@@ -12106,6 +12277,18 @@ int main(int argc, char **argv) {
         search::g_useSearcher3 = true;
         std::cout << "[leafdiag forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
         leafDiag(nSeeds, sims, asc, out, seedOff);
+
+    } else if (mode == "particle_leaf_probe") {
+        int nSeeds = argc > 2 ? std::stoi(argv[2]) : 4;
+        int sims = argc > 3 ? std::stoi(argv[3]) : 300;
+        int asc = argc > 4 ? std::stoi(argv[4]) : 0;
+        std::string out = argc > 5 ? argv[5] : "build/particle_leaf_probe.csv";
+        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
+        if (g_particleLeafProbeFile.empty()) g_particleLeafProbeFile = out;
+        search::g_fairPlay = true;
+        search::g_useSearcher3 = true;
+        std::cout << "[particle_leaf_probe forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
+        particleLeafProbe(nSeeds, sims, asc, out, seedOff);
 
     } else if (mode == "leafref") {       // high-budget reference values for recorded leafdiag leaves
         if (argc < 5) {

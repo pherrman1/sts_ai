@@ -24,6 +24,8 @@
 
 namespace sts::search {
 
+class BattleScumSearcher3;
+
     // Leaf-query diagnostic record (leafdiag / frontiergen modes,
     // apps/one_combat.cpp). Fired inside BattleScumSearcher3::step() at the
     // leaf-expansion blend site (where the learned leaf value is blended with
@@ -37,6 +39,7 @@ namespace sts::search {
     // rollout, 2 = depth-cap direct eval. rolloutSteps is the multi-rollout
     // action count (0 at the depth cap, where no rollout runs).
     struct S3LeafDiagnostic {
+        BattleScumSearcher3* searcher = nullptr; // valid only during callback
         const BattleContext* bc = nullptr;     // pre-rollout leaf state (const)
         int treeDepth = 0;                     // tree depth at the blend site
         std::uint64_t obsHash = 0;             // leaf state visibleHash (identity for leafref matching)
@@ -327,6 +330,11 @@ namespace sts::search {
             const BattleContext &realPostState);
         void ensureObservation(Node &node, const BattleContext &state);
         int  playoutRandom(BattleContext &state, std::vector<Action> &actionStack);
+        int  playoutRandomWithRng(BattleContext &state, std::vector<Action> &actionStack,
+                                  std::mt19937_64 &rolloutRng);
+        int diagnosticRollout(BattleContext &state, std::vector<Action> &actionStack,
+                              std::mt19937_64 &diagnosticRng, double &evalOut,
+                              bool &terminalOut);
         // A1 (STS_S3_ROLLOUT_K): run g_s3RolloutK independent rollouts from
         // the same pre-rollout leaf state and average the leaf evals. The
         // first rollout's actions go into actionStack so bestActionSequence

@@ -2065,7 +2065,7 @@ void BattleScumSearcher3::step() {
             if (g_onS3LeafQuery) {
                 const std::uint64_t leafObsHash =
                     CombatObservation::fromBattleContext(state).visibleHash();
-                g_onS3LeafQuery(S3LeafDiagnostic{&state, depth, leafObsHash,
+                g_onS3LeafQuery(S3LeafDiagnostic{this, &state, depth, leafObsHash,
                                                  vLeaf, rawEval, eval,
                                                  rollSteps, 0});
             }
@@ -2434,7 +2434,7 @@ void BattleScumSearcher3::step() {
             if (g_onS3LeafQuery && g_s3LeafQueryAllSites) {
                 const std::uint64_t leafObsHash =
                     CombatObservation::fromBattleContext(state).visibleHash();
-                g_onS3LeafQuery(S3LeafDiagnostic{&state, depth, leafObsHash,
+                g_onS3LeafQuery(S3LeafDiagnostic{this, &state, depth, leafObsHash,
                                                  std::numeric_limits<double>::quiet_NaN(),
                                                  eval, eval, rollSteps, 1});
             }
@@ -2476,7 +2476,7 @@ void BattleScumSearcher3::step() {
     // single-site corpus. No rollout runs here, so rolloutSteps is 0; the
     // direct leaf eval is the blended value.
     if (g_onS3LeafQuery && g_s3LeafQueryAllSites) {
-        g_onS3LeafQuery(S3LeafDiagnostic{&state, depth, leafObsHash,
+        g_onS3LeafQuery(S3LeafDiagnostic{this, &state, depth, leafObsHash,
                                          std::numeric_limits<double>::quiet_NaN(),
                                          std::numeric_limits<double>::quiet_NaN(),
                                          leafEval, 0, 2});
@@ -2746,6 +2746,22 @@ int BattleScumSearcher3::multiRollout(BattleContext &state,
 
 int BattleScumSearcher3::playoutRandom(BattleContext &state,
                                         std::vector<Action> &actionStack) {
+    return playoutRandomWithRng(state, actionStack, rng);
+}
+
+int BattleScumSearcher3::diagnosticRollout(BattleContext &state,
+                                            std::vector<Action> &actionStack,
+                                            std::mt19937_64 &diagnosticRng,
+                                            double &evalOut, bool &terminalOut) {
+    const int steps = playoutRandomWithRng(state, actionStack, diagnosticRng);
+    terminalOut = isTerminal(state);
+    evalOut = evaluateLeaf(state);
+    return steps;
+}
+
+int BattleScumSearcher3::playoutRandomWithRng(BattleContext &state,
+                                               std::vector<Action> &actionStack,
+                                               std::mt19937_64 &rolloutRng) {
     if ((g_useVNet && g_combatVNet.loaded() && g_vnetAlpha >= 1.0)
         || (g_useDistVNet && g_combatDistVNet.loaded())) return 0;
 
@@ -2797,7 +2813,7 @@ int BattleScumSearcher3::playoutRandom(BattleContext &state,
             computeEdgePriors(tmp, state);
             double total = 0;
             for (const auto &e : tmp.edges) total += e.prior;
-            double pick = std::uniform_real_distribution<double>(0.0, std::max(total, 1e-12))(rng);
+            double pick = std::uniform_real_distribution<double>(0.0, std::max(total, 1e-12))(rolloutRng);
             for (int i = 0; i < (int)tmp.edges.size(); ++i) {
                 pick -= tmp.edges[i].prior;
                 if (pick < 0) { sel = i; break; }
@@ -2805,7 +2821,7 @@ int BattleScumSearcher3::playoutRandom(BattleContext &state,
         } else {
             int total = 0;
             for (const auto &e : tmp.edges) total += rolloutWeight(e.action, state);
-            int pick = std::uniform_int_distribution<int>(0, total - 1)(rng);
+            int pick = std::uniform_int_distribution<int>(0, total - 1)(rolloutRng);
             for (int i = 0; i < (int)tmp.edges.size(); ++i) {
                 pick -= rolloutWeight(tmp.edges[i].action, state);
                 if (pick < 0) { sel = i; break; }

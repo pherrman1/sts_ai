@@ -360,6 +360,18 @@ untouched.
 
 ### Leaf-state diagnostics (leafdiag / leafref / rollouttrace, 2026-08-08)
 
+The off-by-default `one_combat particle_leaf_probe` diagnostic samples real
+Searcher3 frontier-type-0 leaves and writes one row per draw-order variant.
+It keeps the visible state, draw-pile multiset, and all six simulator RNG
+streams fixed, while permuting only `cards.drawPile`. Because
+`CardManager::popFromDrawPile()` removes `drawPile.back()`, serialized order
+is back-to-front: next draw first. Every variant, including variant 0, uses
+the same locally seeded RNG through `BattleScumSearcher3::diagnosticRollout`;
+the search RNG and tree statistics are never consumed or modified. Nonterminal
+rows are retained with `terminal=0` for audit and are excluded by the paired
+offline trainer when terminal rows are available. The probe adds no runtime
+cost unless `STS_PARTICLE_LEAF_PROBE_FILE` is set and the probe mode is run.
+
 Why the §126 end-HP leaf beats the §134 direct utility-R leaf online despite
 fitting its target worse offline is an open diagnostic question (handover
 2026-08-08). Three opt-in modes measure how both models behave on ACTUAL
