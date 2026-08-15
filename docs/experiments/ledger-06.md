@@ -3123,6 +3123,7 @@ not establish that duplication caused harm or novelty caused benefit.
 **Autopsy decision:** classify the gate as **mixed/inconclusive**. Exposure was
 adequate in all 32 seeds for both live arms, but AI was below OFF in aggregate
 and the primary AI−PLACEBO uncertainty includes zero. Do not promote H1 and do
+not start the 64-seed extension without a new preregistered decision.
 
 ## 2026-08-15 — Searcher3 single-child AI_RNG rejuvenation follow-up, fresh block 920000–920015
 
@@ -3197,4 +3198,3 @@ AI1 telemetry `e56183ebb524e70f1946e26dc9ceb43a4d3a811d835c845d25bbc9e8c0f6ec8a`
 but mixed because AI1 lost on mean floor against both comparators. Exposure is
 not limiting. Stop at 16 seeds; do not automatically extend or promote live
 rejuvenation.
-not start the 64-seed extension without a new preregistered decision.

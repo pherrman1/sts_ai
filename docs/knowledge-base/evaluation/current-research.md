@@ -87,6 +87,14 @@ artifact.
   `build/s3live32_causal_gate_910000_910031/s3live32_causal_gate_audit.md`.
   The result does not establish H1 or the proposed novelty-versus-duplication
   mechanism, and no 64-seed extension is currently authorized.
+- Single-child follow-up on fresh seeds 920000–920015: OFF won 10/16 with mean
+  floor 47.3125, PLACEBO1 won 8/16 with mean floor 47.8125, and AI1 won 11/16
+  with mean floor 45.25. AI1−PLACEBO1 was +3 wins but −2.5625 floor; AI1−OFF
+  was +1 win but −2.0625 floor. Both live arms exposed all 16 seeds, injected
+  at most one child per combat, and had zero telemetry integrity failures.
+  This is mixed mechanism evidence, directionally promising on wins but with a
+  possible depth/downside cost; no promotion or automatic extension is
+  authorized. See [ledger-06 single-child follow-up](../../../docs/experiments/ledger-06.md).
 - Searcher3 particle-count default
   ([decision log](../decision-log/2026-08-10-s3-particle-count-sweep.md),
   [ledger-01.md](../../../docs/experiments/ledger-01.md)): 128 particles
