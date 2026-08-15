@@ -2638,6 +2638,85 @@ gate. Stop at 8 seeds; do not extend automatically.
 never modifies `s3.belief`), no change to `filterRealTransition`, no
 resampling-policy change, no RNG-counter redesign, no gameplay promotion.
 
+## 2026-08-15 — AI_RNG conditional sensitivity: exploratory belief-ON run
+
+This diagnostic run is retained as exploratory evidence and is not the intended
+frozen paired baseline. It used commit `d0c02cd`, fair Searcher3, seeds
+`126732–126739`, 1,000 base simulations, 3,000 boss simulations, 64 particles,
+12 threads, real-boundary filtering, collapse-fresh, persistent filtered belief,
+no tree reuse, chain off, CRN off, the deployed 7k combat VNet at alpha 0.3,
+and native heuristic OOC policy. `STS_S3_BELIEF` was unset (effective ON),
+`STS_S3_REJUV_PROPOSALS` was unset (effective 256), and the V4 strategic token
+model/gates were OFF. Artifacts were `/tmp/final8_sensitivity.csv`,
+`/tmp/final8_live.csv`, `/tmp/final8_live.csv.meta.json`,
+`/tmp/final8_exposure.csv`, and `/tmp/final8.log`.
+
+The 32-root analysis found selected-action changes in 3/32 roots, top-two visit
+ordering changes in 4/32, and Q-order flips in 3/32. This run demonstrated
+conditional sensitivity but is explicitly regime-dependent exploratory evidence.
+
+## 2026-08-15 — AI_RNG conditional sensitivity: matched belief-OFF/V4 replication
+
+The matched replication used the same commit `d0c02cd`, seed block
+`126732–126739`, ascension 0, 1,000 base simulations, 3,000 boss simulations,
+64 particles, 12 threads, fair Searcher3, `STS_S3_BELIEF=0`, chain off, CRN
+off, real filtering, collapse-fresh, persistent filtered posterior, no tree
+reuse, END_TURN marginalization off, deployed 7k combat VNet at alpha 0.3, and
+the V4 strategic token model
+`selfplay/models/ooc_strategic_tok_final.native` with REST/EVENT/SHOP/TREASURE/
+BOSS_RELIC gates enabled and margin 1.0. Rejuvenation used trigger 16 and 64
+proposals; sensitivity used at most 4 roots/seed, 4 alternatives/root, and
+256 mini-search simulations. The exact command was run through
+`tools/seed_guard.sh` as:
+
+```text
+OMP_NUM_THREADS=12 STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+STS_S3_CHAIN=0 STS_S3_PARTICLES=64 STS_S3_CRN=0
+STS_S3_REAL_BELIEF_FILTER=1 STS_S3_REAL_BELIEF_COLLAPSE_FRESH=1
+STS_S3_PERSIST_FILTERED_BELIEF=1 STS_REUSE_MAX_SEARCHES=0
+STS_S3_ENDTURN_MARGINALIZE=0 STS_S3_REJUV_SHADOW=1
+STS_S3_REJUV_TRIGGER=16 STS_S3_REJUV_PROPOSALS=64
+STS_S3_RNG_EXPOSURE_DIAG=1 STS_S3_AI_SENSITIVITY_SHADOW=1
+STS_S3_AI_SENSITIVITY_ROOTS_PER_SEED=4 STS_S3_AI_SENSITIVITY_ALTS=4
+STS_S3_AI_SENSITIVITY_SIMS=256 STS_VNET=models/v_combat_7k_tuned.txt
+STS_VNET_ALPHA=0.3 STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native
+STS_OOC_STRATEGIC_MARGIN=1.0 STS_OOC_STRATEGIC_REST=1
+STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1
+STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1
+tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0 126732 /tmp/final8_matched_live.csv
+```
+
+The run completed with 32 selected roots, 8 seed breadth, 15 encounter breadth,
+14 floor breadth, and 32 encounter/floor groups. ORACLE_A was `BASELINE` for
+all 147 root-action rows, ORACLE_B was `EXACT` for all 147 rows, and all 588
+AI alternative rows were `N/A`; block-isolation and source/search-index
+failures were zero. The 32-root cross-tab was: 26 roots with no support-empty
+flag and no policy/Q-order change; 1 with top-two and Q-order changes; 1 with
+selected/top-two changes but no Q-order flip; 2 with selected/top-two/Q-order
+changes; and 2 support-empty roots with no change. Overall, selected action
+changed in 3/32, top-two ordering in 4/32, Q-order flipped in 3/32, and any
+nonzero common-edge Q difference occurred in 13/32 roots. Per-root visit-TV
+Q25/median/Q75/max was 0/0/0.013/0.922; max common-edge |dQ| was
+0/0/6.1715/107.0; max oracle-selected |dQ| was 0/0/0.8065/9.510.
+
+Artifacts and hashes: `/tmp/final8_sensitivity.csv`
+(`c591c6abf080e7722cb507af4eacfb9b75d80e4fb29cd7db42e5e78fbe93f8e0`),
+`/tmp/final8_live.csv`
+(`2654a45bcdbd85a44953d21bda5b4119f65a3cf2bc1a325761ee1cbe1eb13280`),
+`/tmp/final8_live.csv.meta.json`
+(`a1aa28565c049a9a67194134402e00cd1d418514500fcd3bd99159f8c5898547`),
+`/tmp/final8_exposure.csv`
+(`6336767c4f85431df6699204e3fe3f03b20efdd5aeac69c2ba9668295ff4745d`), and
+`/tmp/final8.log`
+(`0fe4586147eec744b29e05898d99b9a4a32b65b2c462f82faf3d6606200341f5`).
+
+The exposure join covered all 32 roots. Aggregate AI exposure fractions on the
+four roots with selected-action changes were 1.000, 0.030, 1.000, and 1.000.
+The matched run therefore again shows decision-relevant AI_RNG sensitivity
+across multiple seeds/encounters, but the effect remains sparse and does not
+itself establish live gameplay benefit. A later targeted live-treatment study
+is justified; no live rejuvenation is implemented here.
+
 ## 2026-08-15 — Searcher3 history-replay rejuvenation shadow probe results
 
 > **INVALIDATED for late-history inference (correction 2026-08-15):** this
