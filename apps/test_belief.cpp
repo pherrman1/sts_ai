@@ -650,6 +650,161 @@ int testRejuvHistoryReplay(std::uint64_t seed) {
     return 0;
 }
 
+// Targeted SINGLE/MULTI_CARD_SELECT semantic-recording + remap regressions:
+// hand permutation selects the same semantic card; discard and draw piles
+// remap; two same-CardId copies with different semantic properties resolve the
+// recorded copy; an intentionally empty MULTI_CARD_SELECT round-trips.
+int testRejuvSemanticSelect() {
+    GameContext gc(CharacterClass::IRONCLAD, 12345, 0);
+    BattleContext base;
+    base.init(gc, MonsterEncounter::CULTIST);
+
+    auto makeState = [&](CardSelectTask task) {
+        BattleContext bc = base;
+        bc.inputState = InputState::CARD_SELECT;
+        bc.cardSelectInfo.cardSelectTask = task;
+        bc.cards.cardsInHand = 0;
+        bc.cards.drawPile.clear();
+        bc.cards.discardPile.clear();
+        bc.cards.exhaustPile.clear();
+        return bc;
+    };
+
+    // 1. SINGLE_CARD_SELECT from hand survives a permutation.
+    {
+        BattleContext pre = makeState(CardSelectTask::EXHAUST_ONE);
+        pre.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+        pre.cards.hand[1] = CardInstance(CardId::DEFEND_RED);
+        pre.cards.hand[2] = CardInstance(CardId::BASH);
+        pre.cards.cardsInHand = 3;
+        search::Action a(search::ActionType::SINGLE_CARD_SELECT, 1);  // DEFEND
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, a, pre);
+        if (!hist.entries.back().hasCardKey
+            || hist.entries.back().cardKey.id != CardId::DEFEND_RED) {
+            std::cout << "rejuv_semantic_select FAIL: hand select not recorded semantically\n";
+            return 1;
+        }
+        BattleContext perm = makeState(CardSelectTask::EXHAUST_ONE);
+        perm.cards.hand[0] = CardInstance(CardId::BASH);
+        perm.cards.hand[1] = CardInstance(CardId::STRIKE_RED);
+        perm.cards.hand[2] = CardInstance(CardId::DEFEND_RED);   // moved to idx 2
+        perm.cards.cardsInHand = 3;
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), perm);
+        if (!remapped || remapped->getSelectIdx() != 2
+            || perm.cards.hand[remapped->getSelectIdx()].getId() != CardId::DEFEND_RED) {
+            std::cout << "rejuv_semantic_select FAIL: hand permutation remap wrong\n";
+            return 1;
+        }
+    }
+
+    // 2a. SINGLE_CARD_SELECT from discardPile remaps.
+    {
+        BattleContext pre = makeState(CardSelectTask::HOLOGRAM);
+        pre.cards.discardPile.push_back(CardInstance(CardId::STRIKE_RED));
+        pre.cards.discardPile.push_back(CardInstance(CardId::DEFEND_RED));
+        pre.cards.discardPile.push_back(CardInstance(CardId::BASH));
+        search::Action a(search::ActionType::SINGLE_CARD_SELECT, 1);  // DEFEND
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, a, pre);
+        if (!hist.entries.back().hasCardKey
+            || hist.entries.back().cardKey.id != CardId::DEFEND_RED) {
+            std::cout << "rejuv_semantic_select FAIL: discard select not recorded semantically\n";
+            return 1;
+        }
+        BattleContext st = makeState(CardSelectTask::HOLOGRAM);
+        st.cards.discardPile.push_back(CardInstance(CardId::BASH));
+        st.cards.discardPile.push_back(CardInstance(CardId::DEFEND_RED));  // idx 1
+        st.cards.discardPile.push_back(CardInstance(CardId::STRIKE_RED));
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), st);
+        if (!remapped || remapped->getSelectIdx() != 1) {
+            std::cout << "rejuv_semantic_select FAIL: discard remap wrong\n";
+            return 1;
+        }
+    }
+
+    // 2b. SINGLE_CARD_SELECT from drawPile remaps.
+    {
+        BattleContext pre = makeState(CardSelectTask::SEEK);
+        pre.cards.drawPile.push_back(CardInstance(CardId::STRIKE_RED));
+        pre.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+        pre.cards.drawPile.push_back(CardInstance(CardId::BASH));
+        search::Action a(search::ActionType::SINGLE_CARD_SELECT, 2);  // BASH
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, a, pre);
+        if (!hist.entries.back().hasCardKey
+            || hist.entries.back().cardKey.id != CardId::BASH) {
+            std::cout << "rejuv_semantic_select FAIL: draw select not recorded semantically\n";
+            return 1;
+        }
+        BattleContext st = makeState(CardSelectTask::SEEK);
+        st.cards.drawPile.push_back(CardInstance(CardId::STRIKE_RED));
+        st.cards.drawPile.push_back(CardInstance(CardId::BASH));       // idx 1
+        st.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), st);
+        if (!remapped || remapped->getSelectIdx() != 1) {
+            std::cout << "rejuv_semantic_select FAIL: draw remap wrong\n";
+            return 1;
+        }
+    }
+
+    // 3. Two same-CardId copies with different semantic properties resolve the
+    // recorded copy (costForTurn differentiates).
+    {
+        BattleContext pre = makeState(CardSelectTask::EXHAUST_ONE);
+        CardInstance expensive(CardId::STRIKE_RED);
+        expensive.costForTurn = 1;
+        CardInstance cheap(CardId::STRIKE_RED);
+        cheap.costForTurn = 0;
+        pre.cards.hand[0] = expensive;
+        pre.cards.hand[1] = cheap;
+        pre.cards.cardsInHand = 2;
+        search::Action a(search::ActionType::SINGLE_CARD_SELECT, 0);  // the cost-1 copy
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, a, pre);
+        if (!hist.entries.back().hasCardKey
+            || hist.entries.back().cardKey.costForTurn != 1) {
+            std::cout << "rejuv_semantic_select FAIL: semantic copy not recorded with cost\n";
+            return 1;
+        }
+        BattleContext perm = makeState(CardSelectTask::EXHAUST_ONE);
+        perm.cards.hand[0] = cheap;      // now the cost-0 copy is first
+        perm.cards.hand[1] = expensive;
+        perm.cards.cardsInHand = 2;
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), perm);
+        if (!remapped || remapped->getSelectIdx() != 1
+            || perm.cards.hand[remapped->getSelectIdx()].costForTurn != 1) {
+            std::cout << "rejuv_semantic_select FAIL: identical-CardId copies not resolved\n";
+            return 1;
+        }
+    }
+
+    // 4. Empty legal MULTI_CARD_SELECT round-trips (select-none is a valid
+    // semantic identity, distinguishable from "identity unavailable").
+    {
+        BattleContext pre = makeState(CardSelectTask::EXHAUST_MANY);
+        pre.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+        pre.cards.cardsInHand = 1;
+        pre.cardSelectInfo.pickCount = 10;
+        search::Action a(static_cast<std::uint32_t>(search::ActionType::MULTI_CARD_SELECT) << 29);
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, a, pre);
+        if (!hist.entries.back().hasMultiKeys || !hist.entries.back().multiKeys.empty()) {
+            std::cout << "rejuv_semantic_select FAIL: empty multi-select not recorded as valid\n";
+            return 1;
+        }
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), pre);
+        if (!remapped || !remapped->getSelectedIdxs().empty()
+            || !remapped->isValidAction(pre)) {
+            std::cout << "rejuv_semantic_select FAIL: empty multi-select round-trip broken\n";
+            return 1;
+        }
+    }
+
+    std::cout << "rejuv_semantic_select PASS\n";
+    return 0;
+}
+
 // Shadow-probe non-interference: with the probe enabled, the live battle must
 // be bit-identical to the probe-disabled run (committed action bits, decision
 // observations, RNG-counter trajectories, positive-particle full-hidden-state

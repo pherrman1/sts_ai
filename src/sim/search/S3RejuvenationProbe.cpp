@@ -77,7 +77,7 @@ std::uint64_t rngOnlyHash(const FullHiddenStateKey &k) {
     return h;
 }
 
-BattleScumSearcher3::CardActionKey handCardKey(const CardInstance &c) {
+BattleScumSearcher3::CardActionKey semanticCardKey(const CardInstance &c) {
     BattleScumSearcher3::CardActionKey k;
     k.id = c.getId();
     k.upgradeCount = c.getUpgradeCount();
@@ -86,6 +86,17 @@ BattleScumSearcher3::CardActionKey handCardKey(const CardInstance &c) {
     k.specialData = c.specialData;
     k.target = -1;
     return k;
+}
+
+// Full canonical semantic identity match (id + upgrade + costForTurn +
+// freeToPlayOnce + specialData). Discovery/Codex offer identity is CardId
+// only and is matched separately.
+bool matchesSemanticKey(const CardInstance &c, const BattleScumSearcher3::CardActionKey &k) {
+    return c.getId() == k.id
+        && c.getUpgradeCount() == k.upgradeCount
+        && c.costForTurn == k.costForTurn
+        && c.freeToPlayOnce == k.freeToPlayOnce
+        && c.specialData == k.specialData;
 }
 
 } // namespace
@@ -101,16 +112,71 @@ void S3RejuvenationHistory::record(const BattleContext &preState,
     e.action = action;
     switch (action.getActionType()) {
     case ActionType::CARD:
-    case ActionType::SINGLE_CARD_SELECT:
+        // Hand card: full canonical identity + target via the shared CARD key
+        // helper (independent of hand position).
         e.cardKey = BattleScumSearcher3::cardActionKey(preState, action);
         e.hasCardKey = e.cardKey.id != CardId::INVALID;
         break;
+    case ActionType::SINGLE_CARD_SELECT: {
+        // Probe-specific semantic recording: the selected card's canonical
+        // identity comes from the task's actual source pile, never the raw
+        // physical index. cardSelectInfo.cards only represents Discovery/Codex
+        // ordered offers (CardId), so real CardInstance piles are recorded
+        // with full canonical identity.
+        const int si = action.getSelectIdx();
+        const CardSelectTask task = preState.cardSelectInfo.cardSelectTask;
+        switch (task) {
+        case CardSelectTask::CODEX:
+        case CardSelectTask::DISCOVERY:
+            if (si >= 0 && si < static_cast<int>(preState.cardSelectInfo.cards.size())
+                && preState.cardSelectInfo.cards[si] != CardId::INVALID) {
+                e.cardKey.id = preState.cardSelectInfo.cards[si];
+                e.hasCardKey = true;
+            }
+            break;
+        case CardSelectTask::HOLOGRAM:
+        case CardSelectTask::LIQUID_MEMORIES_POTION:
+        case CardSelectTask::HEADBUTT:
+        case CardSelectTask::MEDITATE:
+            if (si >= 0 && si < static_cast<int>(preState.cards.discardPile.size()))
+                e.cardKey = semanticCardKey(preState.cards.discardPile[si]);
+            break;
+        case CardSelectTask::EXHUME:
+            if (si >= 0 && si < static_cast<int>(preState.cards.exhaustPile.size()))
+                e.cardKey = semanticCardKey(preState.cards.exhaustPile[si]);
+            break;
+        case CardSelectTask::EXHAUST_ONE:
+        case CardSelectTask::FORETHOUGHT:
+        case CardSelectTask::NIGHTMARE:
+        case CardSelectTask::RECYCLE:
+        case CardSelectTask::SETUP:
+        case CardSelectTask::WARCRY:
+        case CardSelectTask::ARMAMENTS:
+        case CardSelectTask::DUAL_WIELD:
+            if (si >= 0 && si < preState.cards.cardsInHand)
+                e.cardKey = semanticCardKey(preState.cards.hand[si]);
+            break;
+        case CardSelectTask::SECRET_TECHNIQUE:
+        case CardSelectTask::SECRET_WEAPON:
+        case CardSelectTask::SEEK:
+            if (si >= 0 && si < static_cast<int>(preState.cards.drawPile.size()))
+                e.cardKey = semanticCardKey(preState.cards.drawPile[si]);
+            break;
+        default:
+            break;   // not a semantically recordable single-select task
+        }
+        e.hasCardKey = e.cardKey.id != CardId::INVALID;
+        break;
+    }
     case ActionType::MULTI_CARD_SELECT:
+        // An intentionally empty selection is a distinct, valid semantic
+        // identity (Gamble / EXHAUST_MANY select-none): keep hasMultiKeys
+        // true even when multiKeys is empty.
+        e.hasMultiKeys = true;
         for (int hi : action.getSelectedIdxs()) {
             if (hi < 0 || hi >= preState.cards.cardsInHand) continue;
-            e.multiKeys.push_back(handCardKey(preState.cards.hand[hi]));
+            e.multiKeys.push_back(semanticCardKey(preState.cards.hand[hi]));
         }
-        e.hasMultiKeys = !e.multiKeys.empty();
         std::sort(e.multiKeys.begin(), e.multiKeys.end());
         break;
     default:
@@ -140,9 +206,9 @@ std::optional<Action> remapRejuvenationAction(const S3RejuvenationEntry &entry,
     case ActionType::SINGLE_CARD_SELECT: {
         if (!entry.hasCardKey) return std::nullopt;
         const CardSelectTask task = state.cardSelectInfo.cardSelectTask;
-        auto scan = [&](const std::vector<CardInstance> &pile) -> std::optional<int> {
+        auto scanCard = [&](const std::vector<CardInstance> &pile) -> std::optional<int> {
             for (size_t i = 0; i < pile.size(); ++i)
-                if (pile[i].getId() == entry.cardKey.id) return static_cast<int>(i);
+                if (matchesSemanticKey(pile[i], entry.cardKey)) return static_cast<int>(i);
             return std::nullopt;
         };
         switch (task) {
@@ -156,11 +222,11 @@ std::optional<Action> remapRejuvenationAction(const S3RejuvenationEntry &entry,
         case CardSelectTask::LIQUID_MEMORIES_POTION:
         case CardSelectTask::HEADBUTT:
         case CardSelectTask::MEDITATE:
-            if (auto i = scan(state.cards.discardPile))
+            if (auto i = scanCard(state.cards.discardPile))
                 return Action(ActionType::SINGLE_CARD_SELECT, *i);
             return std::nullopt;
         case CardSelectTask::EXHUME:
-            if (auto i = scan(state.cards.exhaustPile))
+            if (auto i = scanCard(state.cards.exhaustPile))
                 return Action(ActionType::SINGLE_CARD_SELECT, *i);
             return std::nullopt;
         case CardSelectTask::EXHAUST_ONE:
@@ -172,14 +238,14 @@ std::optional<Action> remapRejuvenationAction(const S3RejuvenationEntry &entry,
         case CardSelectTask::ARMAMENTS:
         case CardSelectTask::DUAL_WIELD: {
             for (int hi = 0; hi < state.cards.cardsInHand; ++hi)
-                if (state.cards.hand[hi].getId() == entry.cardKey.id)
+                if (matchesSemanticKey(state.cards.hand[hi], entry.cardKey))
                     return Action(ActionType::SINGLE_CARD_SELECT, hi);
             return std::nullopt;
         }
         case CardSelectTask::SECRET_TECHNIQUE:
         case CardSelectTask::SECRET_WEAPON:
         case CardSelectTask::SEEK:
-            if (auto i = scan(state.cards.drawPile))
+            if (auto i = scanCard(state.cards.drawPile))
                 return Action(ActionType::SINGLE_CARD_SELECT, *i);
             return std::nullopt;
         default:
@@ -196,7 +262,7 @@ std::optional<Action> remapRejuvenationAction(const S3RejuvenationEntry &entry,
         std::vector<char> used(entry.multiKeys.size(), 0);
         std::uint32_t mask = 0;
         for (int hi = 0; hi < state.cards.cardsInHand; ++hi) {
-            const auto key = handCardKey(state.cards.hand[hi]);
+            const auto key = semanticCardKey(state.cards.hand[hi]);
             for (size_t k = 0; k < entry.multiKeys.size(); ++k) {
                 if (!used[k] && entry.multiKeys[k] == key) {
                     used[k] = 1;
@@ -270,9 +336,14 @@ S3RejuvenationReplayResult replayRejuvenationHistory(
     }
     result.finalState = state;
     result.hasFinalState = true;
-    result.status = allMatched
-        ? S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED
-        : S3RejuvenationReplayResult::Status::INTERMEDIATE_MISMATCH;
+    if (allMatched) {
+        result.status = S3RejuvenationReplayResult::Status::FULL_HISTORY_ACCEPTED;
+    } else if (result.firstMismatchIndex == static_cast<int>(history.entries.size()) - 1) {
+        // The first (and only) failure was the final boundary.
+        result.status = S3RejuvenationReplayResult::Status::FINAL_MISMATCH;
+    } else {
+        result.status = S3RejuvenationReplayResult::Status::INTERMEDIATE_MISMATCH;
+    }
     return result;
 }
 

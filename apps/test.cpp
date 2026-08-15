@@ -2654,6 +2654,8 @@ int main(int argc, const char* argv[]) {
         return testS3Rand64PriorSampler();
     } else if (command == "rejuv_history_replay") {
         return testRejuvHistoryReplay(std::stoull(argv[2]));
+    } else if (command == "rejuv_semantic_select") {
+        return testRejuvSemanticSelect();
     } else if (command == "rejuv_noninterference") {
         return testRejuvNoninterference(std::stoull(argv[2]));
     } else if (command == "belief_immutability") {
