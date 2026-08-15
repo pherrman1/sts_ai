@@ -49,13 +49,31 @@ def main():
             action_meta[key] = am
 
     # Write M0 and M1
-    with open(sys.argv[2], 'w') as f0, open(sys.argv[3], 'w') as f1:
-        hdr = "seed,decIdx,screen,action,actionType,c1,c2,c3,cand1,cand2,cand3,chosen," + \
-              "ascension,act,floor,curHp,maxHp,gold,deckSize,potionChance,cardRarityFactor," + \
-              "blueKey,greenKey,redKey,potionCount,potionCapacity,bossId," + \
-              "won,endFloor,endHp,labelWon,labelHp,labelFloor,labelBootstrap\n"
-        f0.write(hdr)
-        f1.write(hdr)
+    rich_header = [
+        "ascension", "act", "floor", "curHp", "maxHp", "gold", "deckSize",
+        "potionChance", "cardRarityFactor", "blueKey", "greenKey", "redKey",
+        "potionCount", "potionCapacity", "bossId", "nextEliteId", "nextFight0",
+        "nextFight1", "nextFight2", "remElites", "remFights", "monOffset",
+        "eliteOffset", "pvShop", "pvRest", "pvEvent", "pvElite", "pvMonster",
+        "pvTreasure", "bottledAtkId", "bottledSkillId", "bottledPowId",
+    ]
+    rich_header += [f"d{i}" for i in range(372)]
+    rich_header += [f"u{i}" for i in range(372)]
+    rich_header += [f"r{i}" for i in range(181)]
+    rich_header += [f"pot{i}" for i in range(48)]
+    rich_header += [
+        "fmDElite", "fmDRest", "fmDShop", "fmDBoss", "fmCElite", "fmCRest",
+        "fmCShop", "fmCEvent", "fmCMonster", "fmCTreasure", "curMapX", "curMapY",
+    ]
+    hdr = (["seed", "decIdx", "screen", "action", "actionType", "c1", "c2",
+            "c3", "cand1", "cand2", "cand3", "chosen"] + rich_header +
+           ["won", "endFloor", "endHp", "labelWon", "labelHp", "labelFloor",
+            "labelBootstrap"])
+    assert len(hdr) == 1036
+    with open(sys.argv[2], 'w', newline='') as f0, open(sys.argv[3], 'w', newline='') as f1:
+        w0, w1 = csv.writer(f0, lineterminator='\n'), csv.writer(f1, lineterminator='\n')
+        w0.writerow(hdr)
+        w1.writerow(hdr)
 
         for key in sorted(groups):
             dec = groups[key]
@@ -82,11 +100,12 @@ def main():
                 am = action_meta.get((key[0], key[1], str(ai)), "0,-1,0,0,0,-1,-1,-1")
                 chosen = "1" if str(ai) == meta.get('chosenIdx', '-1') else "0"
 
-                base = f"{key[0]},{key[1]},{meta['screen']},{am},{chosen},{meta['state']}," \
-                       f"{meta['sourceWon']},{meta['sourceFloor']},{meta['sourceHp']}"
-
-                f0.write(f"{base},{fw:.6f},{fh:.6f},{ff:.6f},{fb:.6f}\n")
-                f1.write(f"{base},{mw:.6f},{mh:.6f},{mf:.6f},{mb:.6f}\n")
+                base = ([key[0], key[1], meta['screen']] + am.split(',') + [chosen] +
+                        meta['state'].split(',') + [meta['sourceWon'], meta['sourceFloor'],
+                        meta['sourceHp']])
+                assert len(base) == 1032
+                w0.writerow(base + [f"{fw:.6f}", f"{fh:.6f}", f"{ff:.6f}", f"{fb:.6f}"])
+                w1.writerow(base + [f"{mw:.6f}", f"{mh:.6f}", f"{mf:.6f}", f"{mb:.6f}"])
 
     print(f"wrote {sys.argv[2]} and {sys.argv[3]}")
 
