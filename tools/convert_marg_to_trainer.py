@@ -28,7 +28,7 @@ def main():
             float(r['labelFloor']), float(r['labelBootstrap'])))
         if key not in dec_meta:
             dec_meta[key] = {
-                'screen': r['gateKind'],
+                'screen': r['screen'],
                 'state': r['richState'],
                 'act': r['act'],
                 'floor': r['floor'],
