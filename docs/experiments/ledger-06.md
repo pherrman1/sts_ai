@@ -2515,11 +2515,11 @@ Restored the explicit historical Act-3 contract on the **same 64 seeds**
 (fair S3, 64 particles, 7k-VNet alpha 0.3, all strategic screens ON, margin 1.0,
 12 threads). The three arms differ only in `STS_OOC_STRATEGIC_TOK_NN`.
 
-| Arm | Wins | Win rate | mean floor | mean HP | output SHA256 |
-|---|---|---|---|---|---|
-| M0 | 17/64 | 26.6% | 38.8 | 14.6 | `build/phase12b_m0_act3_64.csv` |
-| M1 | 16/64 | 25.0% | 38.7 | 10.3 | `build/phase12b_m1_act3_64.csv` |
-| V4 (POST-HOC SAME-SEED/SAME-CONFIG CALIBRATION) | 24/64 | 37.5% | 41.8 | 20.1 | `build/phase12b_v4_act3_64.csv` |
+| Arm | Wins | Win rate | mean floor | mean HP | artifact | SHA256 |
+|---|---|---|---|---|---|---|
+| M0 | 17/64 | 26.6% | 38.8 | 14.6 | `build/phase12b_m0_act3_64.csv` | `e4cc5fef11bc88b2c018c12aaec8597d89e065f4d9009cd192fe3e4ebdd1eef4` |
+| M1 | 16/64 | 25.0% | 38.7 | 10.3 | `build/phase12b_m1_act3_64.csv` | `edc01b56453f7ce17b65636115f39192d92508c4199764ddd3974d674fe03442` |
+| V4 (POST-HOC SAME-SEED/SAME-CONFIG CALIBRATION) | 24/64 | 37.5% | 41.8 | 20.1 | `build/phase12b_v4_act3_64.csv` | `c7292bf84e09de0ddd543443f421970e91ac02734c6ef4d0d183def0c47a5bd1` |
 
 M0/M1 Act-3 numbers are **identical** to the §168 gate (26.6% / 25.0%),
 confirming the §168 gate was already Act-3-only and there was no horizon mismatch.
@@ -2760,3 +2760,6 @@ Artifacts (corrected): `build/linux-gcc-release/s3_rejuv_shadow_8{.stdout,
 .stderr,.meta.json,<base CSV>,.rejuv.csv}` (corrected executable; the
 superseded run's CSV was overwritten, its aggregate numbers are preserved in
 the table above).
+=======
+- The V4 arm is post-hoc same-config calibration, not a preregistered treatment.
+>>>>>>> Stashed changes

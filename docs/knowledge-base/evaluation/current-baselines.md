@@ -1,9 +1,9 @@
 # Current baselines
 
-Last verified: 2026-08-11 against the current working tree (tracked model
+Last verified: 2026-08-15 against the current working tree (tracked model
 artifacts relocated from `build/` to `models/`; V4 token-net artifact =
-skewfix §149 model; §148 V_combat leaf = 7k-tuned; Act-4 keys now collected by
-default — pre-32281a2 baselines are Act-3-only).
+skewfix §149 model; §148 V_combat leaf = 7k-tuned; Act-4 key collection is
+explicitly opt-in — pre-32281a2 baselines are Act-3-only).
 Experiments invalidated by fixes are tracked in the
 [rerun ledger](rerun-ledger.md) (2026-08-05 code review, issues 31–46); the
 **2026-08-05 §113 battle-skip exploit invalidates every Searcher3 measurement
@@ -59,14 +59,13 @@ current binary confirmed the recorded references (flat @1k, +2.3pp n.s.
 @3k/256p) and re-confirmed S3−belief−chain as the particle config (belief+
 chain ON costs −11.3 to −12.1pp, significant).
 
-**Since 2026-08-09 (commit `32281a2`) the agent collects Act-4 keys by
-default** (emerald/sapphire at rewards screens, ruby at rest sites when
-act ≥ 3). Every baseline measured before this commit (all entries below
-marked "Act-3 run win") reflects Act-3-only wins — the agent never entered
-Act 4. Current binary wins require clearing the Heart. Use
-`STS_STOP_AFTER_ACT=3` to approximate the pre-commit Act-3-only horizon
-(keys are still collected, so it is not bit-identical to the pre-commit
-binary).
+Commit `32281a2` initially enabled automatic Act-4 key collection (emerald/
+sapphire at rewards screens, ruby at rest sites when act ≥ 3). Commit
+`ee6cfa8fb65d4d4c39dbbbeaf84ee48e91152b19` later gated that behavior behind
+`STS_COLLECT_KEYS=1`. **The current default is key collection OFF**: unset or
+`STS_COLLECT_KEYS=0` leaves Act 4 unreachable, while `STS_COLLECT_KEYS=1`
+explicitly enables key collection. `STS_STOP_AFTER_ACT=3` additionally makes
+the Act-3 horizon explicit for comparisons.
 ## Baseline table
 
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |
@@ -165,10 +164,6 @@ artifact set behind §66i.
 - Which exact artifact hashes and flags produced the 39/128 result?
 - Should a reproducible baseline bundle include executable/model hashes and
   captured startup output?
-- The key-collection commit (`32281a2`) changed the benchmark horizon from
-  Act 3 to Act 3+4. All pre-commit baselines are Act-3-only. Should the
-  recommended configuration headline be Act-3+4 (current default) or
-  Act-3-only (`STS_STOP_AFTER_ACT=3`)?
 
 ## Relevant code
 
