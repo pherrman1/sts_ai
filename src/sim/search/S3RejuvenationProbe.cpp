@@ -72,8 +72,9 @@ void writeRejuvCsvRow(const std::vector<std::string> &cols) {
 
 struct RootActionMetrics {
     std::int64_t visits = 0;
-    double q = 0.0;
-    std::int64_t availability = -1;
+    double evaluationSum = 0.0;
+    double meanQ = 0.0;
+    std::int64_t availabilityCount = 0;
 };
 
 using RootMetrics = std::map<std::uint32_t, RootActionMetrics>;
@@ -82,7 +83,10 @@ RootMetrics rootMetrics(const BattleScumSearcher3 &s) {
     RootMetrics out;
     for (const auto &e : s.root.edges) {
         const auto visits = e.child.simulationCount;
-        out[e.action.bits] = {visits, visits > 0 ? e.child.evaluationSum / visits : 0.0, -1};
+        const double evaluationSum = e.child.evaluationSum;
+        out[e.action.bits] = {
+            visits, evaluationSum, visits > 0 ? evaluationSum / visits : 0.0,
+            e.availabilityCount};
     }
     return out;
 }
@@ -178,7 +182,9 @@ bool sameOracleSearch(const RootMetrics &a, const RootMetrics &b,
     for (const auto &[bits, x] : a) {
         const auto it = b.find(bits);
         if (it == b.end() || x.visits != it->second.visits
-            || x.q != it->second.q || x.availability != it->second.availability) return false;
+            || x.evaluationSum != it->second.evaluationSum
+            || x.meanQ != it->second.meanQ
+            || x.availabilityCount != it->second.availabilityCount) return false;
     }
     return true;
 }
@@ -232,18 +238,18 @@ void runSensitivityCondition(const BattleContext &bc, const HiddenBattleState &h
     for (const auto &[bits, stats] : metrics) {
         const auto it = oracleMetrics.find(bits);
         if (it == oracleMetrics.end()) continue;
-        maxDq = std::max(maxDq, std::abs(stats.q - it->second.q));
-        if (bits == oracleSelected) selectedDq = stats.q - it->second.q;
+        maxDq = std::max(maxDq, std::abs(stats.meanQ - it->second.meanQ));
+        if (bits == oracleSelected) selectedDq = stats.meanQ - it->second.meanQ;
     }
     bool qOrderFlip = false;
     if (oracleMetrics.count(oracleSelected)) {
-        const double oracleSelectedQ = oracleMetrics.at(oracleSelected).q;
+        const double oracleSelectedQ = oracleMetrics.at(oracleSelected).meanQ;
         const double treatmentSelectedQ = metrics.count(oracleSelected)
-            ? metrics.at(oracleSelected).q : oracleSelectedQ;
+            ? metrics.at(oracleSelected).meanQ : oracleSelectedQ;
         for (const auto &[bits, oracleStats] : oracleMetrics) {
             if (bits == oracleSelected || !metrics.count(bits)) continue;
-            const double treatmentQ = metrics.at(bits).q;
-            const bool oracleAbove = oracleSelectedQ >= oracleStats.q;
+            const double treatmentQ = metrics.at(bits).meanQ;
+            const bool oracleAbove = oracleSelectedQ >= oracleStats.meanQ;
             const bool treatmentAbove = treatmentSelectedQ >= treatmentQ;
             if (oracleAbove != treatmentAbove) { qOrderFlip = true; break; }
         }
@@ -259,7 +265,7 @@ void runSensitivityCondition(const BattleContext &bc, const HiddenBattleState &h
             std::to_string(searchDecisionIdx), std::to_string(bc.turn),
             std::to_string(rootHash), condition, std::to_string(alternative),
             std::to_string(hiddenIdentityHash(hidden)), std::to_string(bits),
-            std::to_string(stats.visits), enc(share), enc(stats.q), std::to_string(selected),
+            std::to_string(stats.visits), enc(share), enc(stats.meanQ), std::to_string(selected),
             "OK", control, selectedChanged ? "1" : "0", topChanged ? "1" : "0",
             enc(tv), enc(maxDq), enc(selectedDq), qOrderFlip ? "1" : "0",
             std::to_string(novelCount), std::to_string(supportEmpty)});
@@ -967,9 +973,14 @@ void runAiSensitivityShadow(const S3RejuvenationHistory &history,
                             const std::vector<HiddenBattleState> &acceptedAiStates) {
     (void)history;
     if (!g_s3AiSensitivityShadow || g_s3AiSensitivityFile.empty()) return;
+    if (g_s3Crn) {
+        std::cerr << "[S3 AI sensitivity] unsupported with STS_S3_CRN=1; skipped\n";
+        return;
+    }
     if (!nextSearchEligible || bc.outcome != Outcome::UNDECIDED
         || sourceFilterDecisionIdx < 8 || searchDecisionIdx != sourceFilterDecisionIdx + 1
-        || acceptedAiStates.size() < 8 || bc.aiRng.counter <= 0) return;
+        || acceptedAiStates.size() < 8
+        || bc.aiRng.counter <= history.anchor.aiRng.counter) return;
 
     BattleScumSearcher3::Node liveRoot;
     enumerateActionsForNode(liveRoot, bc);
@@ -1021,8 +1032,6 @@ void runAiSensitivityShadow(const S3RejuvenationHistory &history,
     ++totalRoots;
     rootGroups.insert(group);
     const auto rootHash = CombatObservation::fromBattleContext(bc).visibleHash();
-    const bool oldCrn = g_s3Crn;
-    g_s3Crn = false;
     BattleScumSearcher3 oracleA(bc, bc.seed, searchDecisionIdx, 64);
     runFixedHiddenSearch(oracle, g_s3AiSensitivitySims, oracleA);
     const RootMetrics oracleMetrics = rootMetrics(oracleA);
@@ -1039,17 +1048,13 @@ void runAiSensitivityShadow(const S3RejuvenationHistory &history,
                              supportEmpty, oracleBMetrics, controlOk);
     for (size_t i = 0; i < candidates.size() && controlOk; ++i)
     {
-        const bool oldCrn = g_s3Crn;
-        g_s3Crn = false;
         BattleScumSearcher3 alt(bc, bc.seed, searchDecisionIdx, 64);
         runFixedHiddenSearch(candidates[i], g_s3AiSensitivitySims, alt);
-        g_s3Crn = oldCrn;
         runSensitivityCondition(bc, candidates[i], "AI_ALT", static_cast<int>(i + 1), rootHash,
                                 sourceFilterDecisionIdx, searchDecisionIdx, oracleMetrics,
                                 oracleSelected, candidates.size(), supportEmpty,
                                 rootMetrics(alt), controlOk);
     }
-    g_s3Crn = oldCrn;
     if (!controlOk) {
         std::cerr << "[S3 AI sensitivity] ORACLE_DUPLICATE_FAILURE seed=" << bc.seed
                   << " floor=" << bc.floorNum << " encounter=" << static_cast<int>(bc.encounter)
