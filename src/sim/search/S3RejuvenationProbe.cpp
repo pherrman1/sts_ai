@@ -189,6 +189,10 @@ void S3RejuvenationHistory::record(const BattleContext &preState,
                    || e.selectTask == CardSelectTask::HEADBUTT
                    || e.selectTask == CardSelectTask::MEDITATE) {
             e.selectSourcePile = preState.cards.discardPile;
+        } else if (e.selectTask == CardSelectTask::SECRET_TECHNIQUE
+                   || e.selectTask == CardSelectTask::SECRET_WEAPON
+                   || e.selectTask == CardSelectTask::SEEK) {
+            e.selectSourcePile = preState.cards.drawPile;
         } else {
             e.selectSourcePile.assign(preState.cards.hand.begin(),
                                       preState.cards.hand.begin() + preState.cards.cardsInHand);

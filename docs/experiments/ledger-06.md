@@ -2739,3 +2739,28 @@ shadow-neutral resample-move experiment using only a validated future-relevant
 block selected after reviewing the stream-use and causal-event breakdown**;
 this follow-up must remain a separate preregistered treatment and must not
 promote all high-acceptance blocks automatically.
+
+**Follow-up correction (draw-pile source mapping):** Independent review found
+that `SECRET_TECHNIQUE`, `SECRET_WEAPON`, and `SEEK` built their semantic key
+from `preState.cards.drawPile` but recorded `selectedUniqueId` from the hand
+fallback. This was a probe-local source-pile mismatch. The recording branch now
+uses `preState.cards.drawPile` for all three tasks; the semantic-key switch and
+global simulator behavior were unchanged. `rejuv_semantic_select` now includes
+a SEEK fixture with visually identical draw-pile cards, distinct valid unique
+IDs, and reordered replay state, and verifies the selected unique ID survives.
+
+The preserved prior CSV/log artifacts did not retain complete
+`CardSelectTask` values, and no reliable task-occurrence evidence was found, so
+the exact frozen eight-seed run was repeated once. The rerun used the same
+seeds/configuration and produced **RAW 1,593/1,593** and **SEMANTIC
+1,593/1,593**, with zero oracle remap/action-illegal/sim-health/intermediate/
+final failures. The rerun had 1,593 trigger rows (versus 1,596 previously), so
+its aggregates are authoritative for this corrected branch state. Overall
+accepted totals were DRAW_ORDER 6,504, SHUFFLE_RNG 73,003, CARD_RANDOM_RNG
+58,520, AI_RNG 60,552, MISC_RNG 101,952, MONSTER_HP_RNG 92,965, POTION_RNG
+100,928, and ALL_FRESH 1,563. At `decision_idx >= 8`, accepted totals were
+DRAW_ORDER 1,752/64,256, SHUFFLE_RNG 37,117/64,256, CARD_RANDOM_RNG
+33,164/64,256, AI_RNG 32,256/64,256, MISC_RNG 64,256/64,256, MONSTER_HP_RNG
+56,457/64,256, POTION_RNG 63,552/64,192, and ALL_FRESH 251/64,192.
+The paired-source and family-order invariance checks and shadow
+non-interference remained passing. The scientific interpretation is unchanged.

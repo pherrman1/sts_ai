@@ -766,6 +766,24 @@ int testRejuvSemanticSelect() {
         }
     }
 
+    // 2c. Draw-pile uniqueId disambiguates visually identical SEEK copies.
+    {
+        BattleContext pre = makeState(CardSelectTask::SEEK);
+        CardInstance first(CardId::STRIKE_RED), second(CardId::STRIKE_RED);
+        first.uniqueId = 71; second.uniqueId = 72;
+        pre.cards.drawPile = {first, second};
+        search::S3RejuvenationHistory hist(base);
+        hist.record(pre, search::Action(search::ActionType::SINGLE_CARD_SELECT, 1), pre);
+        BattleContext perm = makeState(CardSelectTask::SEEK);
+        perm.cards.drawPile = {second, first};
+        const auto remapped = search::remapRejuvenationAction(hist.entries.back(), perm);
+        if (!remapped || remapped->getSelectIdx() != 0
+            || perm.cards.drawPile[remapped->getSelectIdx()].uniqueId != 72) {
+            std::cout << "rejuv_semantic_select FAIL: SEEK draw-pile uniqueId remap wrong\n";
+            return 1;
+        }
+    }
+
     // 3. Two same-CardId copies with different semantic properties resolve the
     // recorded copy (costForTurn differentiates).
     {
