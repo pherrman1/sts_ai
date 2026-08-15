@@ -52,6 +52,9 @@ the previous catastrophic cascade.
 ## Status and follow-up
 
 - Implemented: diagnostic-only next-search-source telemetry and analysis.
+- Corrected: sequential real-boundary filtering now skips particles with
+  non-positive weight, so rejected hypotheses cannot resurrect without an
+  explicit resampling/rejuvenation mechanism; `real_belief_filter` covers this.
 - Removed: temporary posterior-transfer gameplay treatment after the causal
   diagnostic; a separately designed quality experiment is required.
 - **Open question:** whether a future exact hidden-state representation can

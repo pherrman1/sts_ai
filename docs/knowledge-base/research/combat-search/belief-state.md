@@ -63,6 +63,8 @@ remains in the executable; a separate experiment is required before promotion.
 The filter lives behind `STS_S3_REAL_BELIEF_FILTER=1` (opt-in, default off).
 Collapse-fresh fallback behind `STS_S3_REAL_BELIEF_COLLAPSE_FRESH=1`.
 See `src/sim/search/BattleScumSearcher3.cpp::filterRealTransition`.
+Sequential filtering skips non-positive-weight particles; rejected hypotheses
+cannot resurrect without an explicit resampling/rejuvenation mechanism.
 
 `STS_S3_INTERNAL_BELIEF_UPDATE=0` (default off) guards hypothetical updates
 during MCTS descent.
