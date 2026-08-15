@@ -75,7 +75,7 @@ Repository `paired_analysis.py` deterministic bootstrap results:
 
 | Comparison | Win delta (A-B) | 95% CI | Both win/loss | A-only/B-only | Floor delta | HP delta |
 |---|---:|---|---|---|---:|---:|
-| Strict M0 vs original M0 | +9.4pp | [-21.9,+3.1]pp | 11/35 | 12/6 | +1.5 | +2.1 |
+| Strict M0 vs original M0 | +9.4pp | [-3.1,+21.9]pp | 11/35 | 12/6 | +1.5 | +2.1 |
 | Strict M1 vs original M1 | +0.0pp | [-9.4,+9.4]pp | 11/43 | 5/5 | -1.2 | -1.6 |
 | Strict M1 vs strict M0 | -10.9pp | [-25.0,+3.1]pp | 9/34 | 7/14 | -2.7 | -8.0 |
 | Strict M0 vs V4 | -1.6pp | [-17.2,+14.1]pp | 11/28 | 12/13 | -1.5 | -3.4 |

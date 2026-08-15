@@ -2815,7 +2815,7 @@ particles, all strategic gates, margin 1.0, explicit `STS_COLLECT_KEYS=0` and
 | V4 | 24/64 | 37.5% | 41.797 | 20.062 |
 
 Strict M0 vs original M0 was +9.4pp (deterministic bootstrap 95% CI
-[-21.9,+3.1]pp); strict M0 vs V4 was -1.6pp (CI [-17.2,+14.1]pp).
+[-3.1,+21.9]pp); strict M0 vs V4 was -1.6pp (CI [-17.2,+14.1]pp).
 The point estimate recovers approximately 86% of the original 10.9pp M0/V4
 gap, but the small-block intervals cross zero. Strict M1 remained null versus
 original M1 at 25.0%. This supports material contribution from the screen bug
