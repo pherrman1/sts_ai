@@ -51,6 +51,25 @@ struct S3RejuvenationHistory {
                 const BattleContext &postState);
 };
 
+enum class S3RejuvenationProposalFamily {
+    ORACLE,
+    DRAW_ORDER,
+    SHUFFLE_RNG,
+    CARD_RANDOM_RNG,
+    AI_RNG,
+    MISC_RNG,
+    MONSTER_HP_RNG,
+    POTION_RNG,
+    ALL_FRESH,
+};
+
+HiddenBattleState oracleHiddenState(const BattleContext &anchor);
+HiddenBattleState makeConditionalBlockProposal(
+    const HiddenBattleState &oracle,
+    const HiddenBattleState &fresh,
+    S3RejuvenationProposalFamily family);
+const char *proposalFamilyName(S3RejuvenationProposalFamily family);
+
 // Remap a recorded semantic action onto a replay state whose hand order may
 // differ from the live one. END_TURN / POTION replay their raw bits directly
 // (visible slot/target); CARD / SINGLE_CARD_SELECT resolve by card identity;
@@ -72,6 +91,7 @@ struct S3RejuvenationReplayResult {
     };
     Status status = Status::FINAL_MISMATCH;
     int firstMismatchIndex = -1;    // boundary of the first obs/outcome mismatch
+    int firstMismatchActionType = -1;
     bool finalObsMatched = false;   // final-state-compatible diagnostic
     bool finalDiagAborted = false;  // continuation after a first mismatch became impossible
     int transitionsExecuted = 0;    // replay transitions actually executed

@@ -2594,3 +2594,71 @@ Artifacts (corrected): `build/linux-gcc-release/s3_rejuv_shadow_8{.stdout,
 .stderr,.meta.json,<base CSV>,.rejuv.csv}` (corrected executable; the
 superseded run's CSV was overwritten, its aggregate numbers are preserved in
 the table above).
+
+## 2026-08-15 — Searcher3 conditional-block posterior-geometry shadow diagnostic (STOP: oracle gate failed)
+
+**Question:** Given one hidden state compatible with the recorded real history,
+does replacing only one latent block produce additional full-history-compatible
+states compared with the current whole-state fresh proposal?
+
+**Implementation:** Follow-up to the corrected whole-state history-replay probe
+above. The prior 256-proposal whole-state result remains valid for its frozen
+implementation and is not overwritten or reinterpreted. This diagnostic was
+shadow-only and default-off. At each trigger (`compatible <= 16`), one paired
+set of 64 ordinary fresh Searcher3 prior samples was generated. Each source was
+used for `ALL_FRESH` and for each of `DRAW_ORDER`, `SHUFFLE_RNG`,
+`CARD_RANDOM_RNG`, `AI_RNG`, `MISC_RNG`, `MONSTER_HP_RNG`, and `POTION_RNG`,
+with all non-selected oracle blocks copied bit-identically. Proposal generation
+used a dedicated deterministic RNG; replay fallback RNGs were independently
+keyed by trigger, proposal index, and family, so family iteration order could
+not alter the source proposals.
+
+The oracle was constructed from the copied replay-anchor `BattleContext` and
+was used only by the shadow driver. It was not exposed to MCTS, belief
+filtering, action selection, tree reuse, fallback, or live rejuvenation. Exact
+full-history replay, semantic remapping, observation equality, outcome equality,
+and `FullHiddenStateKey` equality were reused from the existing probe.
+
+**Mechanical verification:** Release build passed. The paired-source and
+family-order invariance test passed (`rejuv_conditional_blocks`). Existing
+`rejuv_history_replay`, `rejuv_semantic_select`, and
+`rejuv_noninterference` tests passed, as did `rng_state_propagation` and
+`s3_rand64_prior_sampler`. A one-seed smoke produced all nine row families and
+64 proposals per non-oracle family. Gameplay remained behavior-neutral in the
+non-interference test.
+
+**Frozen execution:** Exactly seeds `126732–126739`, ascension 0, 1,000
+simulations, 64 particles, 12 threads, fair Searcher3, real posterior filter,
+collapse-fresh fallback, persistent filtered posterior, no tree reuse,
+`STS_VNET=models/v_combat_7k_tuned.txt`, `STS_VNET_ALPHA=0.3`, and the V4
+strategic token-net artifact with REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates and
+margin 1.0. Shadow flags were `STS_S3_REJUV_SHADOW=1`,
+`STS_S3_REJUV_TRIGGER=16`, `STS_S3_REJUV_PROPOSALS=64`. Raw artifacts are
+`build/s3_conditional_8.rejuv.csv`, `build/s3_conditional_8.csv`, its
+`.meta.json`, `.stdout`, and `.stderr` in the experiment worktree.
+
+**Oracle integrity result:** **STOP.** The untouched oracle replay succeeded
+for **1,444 / 1,569 trigger rows (92.03%)**, not the required 100%. Failures
+were 65 `REMAP_FAILURE`, 52 `INTERMEDIATE_MISMATCH`, and 8 `FINAL_MISMATCH`;
+there were no action-illegal or simulator-health failures. The failures
+concentrated on single-card-select action type 2, with later type-4 mismatches
+after history divergence. This indicates an unresolved replay/hidden-state
+boundary or semantic-select coverage problem. The proposal-family acceptance
+counts below are retained as raw diagnostic output only and are **not valid
+scientific evidence** under the preregistered rule.
+
+**Raw diagnostic totals (not interpretable after the STOP):** 1,569 trigger
+rows per family and 100,416 proposals per 64-proposal family. Accepted totals
+were DRAW_ORDER 6,406, SHUFFLE_RNG 69,081, CARD_RANDOM_RNG 55,703, AI_RNG
+56,265, MISC_RNG 92,416, MONSTER_HP_RNG 86,047, POTION_RNG 91,456, and
+ALL_FRESH 1,554. The oracle control itself reported 1,444 accepted rows. These
+figures must not be used to support blockwise resample-move promotion because
+the oracle integrity gate failed.
+
+**Interpretation:** Implementation correctness is incomplete because the oracle
+control is not clean on the frozen quality run. Scientific interpretation is
+therefore unresolved; H1–H6 are neither supported nor weakened by the family
+acceptance counts. Gameplay was not a treatment and its whole-run result is
+not interpreted. The one justified next experiment is a replay-correctness
+investigation that localizes the remaining single-card-select/oracle failures;
+no live blockwise rejuvenation experiment should proceed first.

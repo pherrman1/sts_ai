@@ -805,6 +805,81 @@ int testRejuvSemanticSelect() {
     return 0;
 }
 
+int testRejuvConditionalBlocks() {
+    GameContext gc(CharacterClass::IRONCLAD, 12345, 0);
+    BattleContext anchor;
+    anchor.init(gc, MonsterEncounter::CULTIST);
+    const HiddenBattleState oracle = search::oracleHiddenState(anchor);
+    std::mt19937_64 sourceA(777), sourceB(777);
+    const auto obs = CombatObservation::fromBattleContext(anchor);
+    const auto freshA = HiddenBattleState::sampleParticles(obs, anchor, sourceA, 64);
+    const auto freshB = HiddenBattleState::sampleParticles(obs, anchor, sourceB, 64);
+    if (freshA.size() != freshB.size()) return 1;
+    for (size_t i = 0; i < freshA.size(); ++i) {
+        if (fullHiddenStateKey(freshA[i]) != fullHiddenStateKey(freshB[i])) {
+            std::cout << "rejuv_conditional_blocks FAIL: paired sources differ\n";
+            return 1;
+        }
+    }
+    const std::array<search::S3RejuvenationProposalFamily, 8> orderA = {
+        search::S3RejuvenationProposalFamily::DRAW_ORDER,
+        search::S3RejuvenationProposalFamily::SHUFFLE_RNG,
+        search::S3RejuvenationProposalFamily::CARD_RANDOM_RNG,
+        search::S3RejuvenationProposalFamily::AI_RNG,
+        search::S3RejuvenationProposalFamily::MISC_RNG,
+        search::S3RejuvenationProposalFamily::MONSTER_HP_RNG,
+        search::S3RejuvenationProposalFamily::POTION_RNG,
+        search::S3RejuvenationProposalFamily::ALL_FRESH};
+    auto proposalKeys = [&](const auto &order) {
+        std::vector<std::pair<int, FullHiddenStateKey>> keys;
+        for (const auto family : order)
+            for (int i = 0; i < 64; ++i)
+                keys.emplace_back(static_cast<int>(family), fullHiddenStateKey(
+                    search::makeConditionalBlockProposal(oracle, freshA[i], family)));
+        return keys;
+    };
+    auto orderB = orderA;
+    std::reverse(orderB.begin(), orderB.end());
+    auto keysA = proposalKeys(orderA);
+    auto keysB = proposalKeys(orderB);
+    std::sort(keysA.begin(), keysA.end());
+    std::sort(keysB.begin(), keysB.end());
+    if (keysA != keysB) {
+        std::cout << "rejuv_conditional_blocks FAIL: family order changes source proposals\n";
+        return 1;
+    }
+    const std::array<search::S3RejuvenationProposalFamily, 7> families = {
+        search::S3RejuvenationProposalFamily::DRAW_ORDER,
+        search::S3RejuvenationProposalFamily::SHUFFLE_RNG,
+        search::S3RejuvenationProposalFamily::CARD_RANDOM_RNG,
+        search::S3RejuvenationProposalFamily::AI_RNG,
+        search::S3RejuvenationProposalFamily::MISC_RNG,
+        search::S3RejuvenationProposalFamily::MONSTER_HP_RNG,
+        search::S3RejuvenationProposalFamily::POTION_RNG};
+    for (const auto family : families) {
+        const auto p = search::makeConditionalBlockProposal(oracle, freshA[0], family);
+        const auto pk = fullHiddenStateKey(p);
+        const auto ok = fullHiddenStateKey(oracle);
+        const auto fk = fullHiddenStateKey(freshA[0]);
+        bool drawChanged = pk.drawPileOrder != ok.drawPileOrder;
+        int changedRngBlocks = 0;
+        for (int i = 0; i < 6; ++i) {
+            if (pk.seed0[i] != ok.seed0[i] || pk.seed1[i] != ok.seed1[i]
+                || pk.counter[i] != ok.counter[i]) ++changedRngBlocks;
+        }
+        const bool drawFamily = family == search::S3RejuvenationProposalFamily::DRAW_ORDER;
+        const bool selectedDrawExact = !drawFamily || pk.drawPileOrder == fk.drawPileOrder;
+        const bool nonSelectedDrawExact = drawFamily || pk.drawPileOrder == ok.drawPileOrder;
+        if (!selectedDrawExact || !nonSelectedDrawExact
+            || (drawFamily && changedRngBlocks != 0) || (!drawFamily && changedRngBlocks != 1)) {
+            std::cout << "rejuv_conditional_blocks FAIL: block isolation\n";
+            return 1;
+        }
+    }
+    std::cout << "rejuv_conditional_blocks PASS paired_sources=64 families=7\n";
+    return 0;
+}
+
 // Shadow-probe non-interference: with the probe enabled, the live battle must
 // be bit-identical to the probe-disabled run (committed action bits, decision
 // observations, RNG-counter trajectories, positive-particle full-hidden-state
