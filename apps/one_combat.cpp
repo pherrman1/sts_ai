@@ -10804,9 +10804,11 @@ int main(int argc, char **argv) {
         if (mode == "off") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::OFF;
         else if (mode == "placebo") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO;
         else if (mode == "ai") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG;
+        else if (mode == "placebo1") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO1;
+        else if (mode == "ai1") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG1;
         else {
             std::cerr << "Invalid STS_S3_AI_REJUV_LIVE='" << mode
-                      << "'; expected off, placebo, or ai\n";
+                      << "'; expected off, placebo, ai, placebo1, or ai1\n";
             return 2;
         }
         std::cout << "[S3 AI rejuvenation live = " << mode << "]\n";

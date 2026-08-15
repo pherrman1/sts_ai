@@ -86,7 +86,8 @@ void writeLiveCsvRow(const std::vector<std::string> &cols) {
         out << "seed,floor,encounter,decision_idx,mode,ancestry_valid,pre_support,"
                "eligible,attempt_already_made,attempt_made,proposal_attempts,parents_considered,"
                "parents_accepted,children_injected,post_support,injected_mass,"
-               "unique_children,collapse,fresh_rebuild,cpu_ms\n";
+               "unique_children,collapse,fresh_rebuild,cpu_ms,source_lineage_id,"
+               "source_slot,destination_slot\n";
     }
     for (size_t i = 0; i < cols.size(); ++i) {
         if (i) out << ',';
@@ -100,6 +101,8 @@ const char *liveModeName(S3LiveRejuvenationMode mode) {
     case S3LiveRejuvenationMode::OFF: return "off";
     case S3LiveRejuvenationMode::PLACEBO: return "placebo";
     case S3LiveRejuvenationMode::AI_RNG: return "ai";
+    case S3LiveRejuvenationMode::PLACEBO1: return "placebo1";
+    case S3LiveRejuvenationMode::AI_RNG1: return "ai1";
     }
     return "off";
 }
@@ -577,6 +580,9 @@ bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
     int parentsAccepted = 0;
     int childrenInjected = 0;
     int uniqueChildren = 0;
+    int sourceSlot = -1;
+    int destinationSlot = -1;
+    std::uint64_t sourceLineageId = 0;
     double injectedMass = 0.0;
     if (eligible) {
         attemptedThisCombat = true;
@@ -590,6 +596,8 @@ bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
         mix(static_cast<std::uint64_t>(sourceFilterDecisionIdx));
         mix(history.entries.size());
         const int proposals = std::max(1, g_s3RejuvProposals);
+        const bool singleChildMode = mode == S3LiveRejuvenationMode::PLACEBO1
+            || mode == S3LiveRejuvenationMode::AI_RNG1;
         std::vector<const HiddenBattleState *> sources;
         std::vector<int> sourceIndices;
         for (size_t i = 0; i < belief.particles.size(); ++i) {
@@ -608,7 +616,8 @@ bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
         std::vector<int> zeroSlots;
         for (size_t i = 0; i < belief.particles.size(); ++i)
             if (belief.particles[i].weight <= 0.0) zeroSlots.push_back(static_cast<int>(i));
-        for (int attempt = 0; attempt < proposals && !sources.empty(); ++attempt) {
+        for (int attempt = 0; attempt < proposals && !sources.empty()
+             && (!singleChildMode || injections.empty()); ++attempt) {
             ++proposalAttempts;
             const int sourcePos = attempt % static_cast<int>(sources.size());
             const int sourceIndex = sourceIndices[sourcePos];
@@ -677,16 +686,24 @@ bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
             injections.push_back({sourceIndex, zeroSlots[injections.size()], child});
         }
         parentsAccepted = static_cast<int>(injections.size());
-        uniqueChildren = mode == S3LiveRejuvenationMode::AI_RNG ? parentsAccepted : 0;
+        uniqueChildren = (mode == S3LiveRejuvenationMode::AI_RNG
+                          || mode == S3LiveRejuvenationMode::AI_RNG1)
+            ? parentsAccepted : 0;
         const double oldTotal = std::accumulate(
             belief.particles.begin(), belief.particles.end(), 0.0,
             [](double total, const HiddenBattleState &p) { return total + p.weight; });
         for (const auto &injection : injections) {
             auto &source = belief.particles[injection.source];
+            if (childrenInjected == 0) {
+                sourceSlot = injection.source;
+                destinationSlot = injection.slot;
+                sourceLineageId = source.id;
+            }
             const double half = source.weight / 2.0;
             source.weight = half;
             auto &child = belief.particles[injection.slot];
-            child = mode == S3LiveRejuvenationMode::AI_RNG
+            child = (mode == S3LiveRejuvenationMode::AI_RNG
+                     || mode == S3LiveRejuvenationMode::AI_RNG1)
                 ? injection.child : source;
             child.weight = half;
             child.id = source.id;
@@ -711,7 +728,9 @@ bool runLiveRejuvenation(S3LiveRejuvenationMode mode,
         std::to_string(childrenInjected), std::to_string(belief.positiveCount()),
         enc(injectedMass), std::to_string(uniqueChildren),
         filterStats.posteriorCollapse ? "1" : "0",
-        filterStats.freshBeliefRebuilt ? "1" : "0", enc(cpuMs)});
+        filterStats.freshBeliefRebuilt ? "1" : "0", enc(cpuMs),
+        std::to_string(sourceLineageId), std::to_string(sourceSlot),
+        std::to_string(destinationSlot)});
     return eligible;
 }
 

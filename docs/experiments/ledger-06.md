@@ -3096,9 +3096,10 @@ mean floor 45.406; AI won 15/32 with mean floor 46.656. Primary AI−placebo
 paired delta was +3/32 wins (+9.375 percentage points) and +1.25 mean floor.
 AI−OFF was −2/32 wins and −1.125 mean floor. Placebo−OFF was −5/32 wins and
 −2.375 mean floor. AI−placebo floor gains occurred on 6 seeds and losses on 5;
-the +1.25 mean was not solely an outlier, although seed 910020 contributed a
-−31 floor loss and seed 910018 a +20 gain. The paired win delta was spread over
-three seeds, with no reverse AI-over-placebo win losses on this block.
+The +1.25 mean was not solely an outlier, although seed 910020 contributed a
+−31 floor loss and seed 910018 a +20 gain. The audited paired win discordance
+was AI wins/placebo losses `6` versus AI losses/placebo wins `3`, for a net
+difference of `+3` wins; reverse discordant pairs were present.
 
 **Exposure:** Placebo had 6,133 telemetry rows, 317 first attempts, 1,427
 duplicate children, and `unique_children=0`, with all 32 seeds exposed. AI had

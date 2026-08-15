@@ -60,6 +60,8 @@ enum class S3LiveRejuvenationMode {
     OFF,
     PLACEBO,
     AI_RNG,
+    PLACEBO1,
+    AI_RNG1,
 };
 
 enum class S3RejuvenationProposalFamily {

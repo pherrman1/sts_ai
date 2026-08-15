@@ -1036,6 +1036,76 @@ int testLiveRejuvenationAttemptGate() {
     const double mass = std::accumulate(fixture.current.particles.begin(),
         fixture.current.particles.end(), 0.0,
         [](double x, const HiddenBattleState &p) { return x + p.weight; });
+    const auto singleFile = std::string("/tmp/live_rejuv_single_fixture.csv");
+    search::g_s3LiveRejuvenationFile = singleFile;
+    std::remove(singleFile.c_str());
+    auto makeMultiFixture = [&makeFixture](std::uint64_t seed) {
+        auto multi = makeFixture(seed);
+        multi.start.particles[1] = multi.start.particles.front();
+        multi.start.particles[1].id = 2;
+        multi.start.particles[0].weight = 0.5;
+        multi.start.particles[1].weight = 0.5;
+        multi.current.particles[1] = multi.current.particles.front();
+        multi.current.particles[1].id = 2;
+        multi.current.particles[0].weight = 0.5;
+        multi.current.particles[1].weight = 0.5;
+        return multi;
+    };
+    auto historical = makeMultiFixture(fixture.bc.seed);
+    bool historicalAttempted = false;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG,
+                                historicalAttempted, true, historical.start,
+                                historical.history, historical.stats,
+                                historical.current, historical.bc, 0);
+    const int historicalChildren = historical.current.positiveCount() - 2;
+    auto ai1Fixture = makeMultiFixture(fixture.bc.seed);
+    bool ai1Attempted = false;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
+                                ai1Attempted, true, ai1Fixture.start,
+                                ai1Fixture.history, ai1Fixture.stats,
+                                ai1Fixture.current, ai1Fixture.bc, 0);
+    auto placebo1Fixture = makeMultiFixture(fixture.bc.seed);
+    bool placebo1Attempted = false;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::PLACEBO1,
+                                placebo1Attempted, true, placebo1Fixture.start,
+                                placebo1Fixture.history, placebo1Fixture.stats,
+                                placebo1Fixture.current, placebo1Fixture.bc, 0);
+    const int ai1Children = ai1Fixture.current.positiveCount() - 2;
+    const int placebo1Children = placebo1Fixture.current.positiveCount() - 2;
+    const int ai1Slot = ai1Children == 1
+        ? static_cast<int>(std::find_if(ai1Fixture.current.particles.begin(),
+              ai1Fixture.current.particles.end(), [&](const HiddenBattleState &p) {
+                  return p.weight > 0.0
+                      && &p >= ai1Fixture.current.particles.data() + 2;
+              }) - ai1Fixture.current.particles.begin()) : -1;
+    const int placebo1Slot = placebo1Children == 1
+        ? static_cast<int>(std::find_if(placebo1Fixture.current.particles.begin(),
+              placebo1Fixture.current.particles.end(), [&](const HiddenBattleState &p) {
+                  return p.weight > 0.0
+                      && &p >= placebo1Fixture.current.particles.data() + 2;
+              }) - placebo1Fixture.current.particles.begin()) : -1;
+    const auto &ai1Child = ai1Fixture.current.particles[ai1Slot];
+    const auto &placebo1Child = placebo1Fixture.current.particles[placebo1Slot];
+    const bool singleChildSemantics = historicalChildren > 1
+        && ai1Attempted && placebo1Attempted
+        && ai1Children == 1 && placebo1Children == 1
+        && ai1Slot == placebo1Slot
+        && fullHiddenStateKey(placebo1Child)
+            == fullHiddenStateKey(placebo1Fixture.current.particles.front())
+        && sameNonAi(fullHiddenStateKey(ai1Fixture.current.particles.front()),
+                     fullHiddenStateKey(ai1Child))
+        && !sameAi(fullHiddenStateKey(ai1Fixture.current.particles.front()),
+                   fullHiddenStateKey(ai1Child))
+        && ai1Child.id == placebo1Child.id
+        && ai1Fixture.current.particles.front().weight
+            == placebo1Fixture.current.particles.front().weight
+        && ai1Child.weight == placebo1Child.weight;
+    bool secondSingleAttempt = false;
+    search::runLiveRejuvenation(search::S3LiveRejuvenationMode::AI_RNG1,
+                                secondSingleAttempt, true, ai1Fixture.start,
+                                ai1Fixture.history, ai1Fixture.stats,
+                                ai1Fixture.current, ai1Fixture.bc, 1);
+    const bool singleAttemptConsumed = !secondSingleAttempt;
     auto alteredFixture = makeFixture(fixture.bc.seed);
     alteredFixture.history.anchor.aiRng.seed0 ^= 0x12345678ULL;
     alteredFixture.history.anchor.shuffleRng.seed1 ^= 0x87654321ULL;
@@ -1117,7 +1187,7 @@ int testLiveRejuvenationAttemptGate() {
         && source.weight == aiChild.weight && mass == 1.0
         && onlySourceAndChildPositive && placeboIdentity && sameMechanics && transferOk
         && telemetrySemantics && initialRng == finalRng
-        && anchorHiddenFieldsIgnored
+        && anchorHiddenFieldsIgnored && singleChildSemantics && singleAttemptConsumed
         && transferred.belief.particles[childSlot].id == aiChild.id && collapseBlocked;
     if (!ok) {
         std::cout << "live_rejuv_attempt_gate FAIL: accepted-child contracts\n";
