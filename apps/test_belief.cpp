@@ -1170,12 +1170,13 @@ int testLiveRejuvenationAttemptGate() {
     std::getline(telemetry, header);
     bool telemetryAi = false, telemetryPlacebo = false;
     while (std::getline(telemetry, row)) {
-        if (row.find(",ai,") != std::string::npos
-            && row.find(",1,0,1,64,1,1,1,2,0.500,1,") != std::string::npos)
-            telemetryAi = true;
-        if (row.find(",placebo,") != std::string::npos
-            && row.find(",1,0,1,64,1,1,1,2,0.500,0,") != std::string::npos)
-            telemetryPlacebo = true;
+        std::vector<std::string> fields;
+        std::stringstream parsed(row);
+        std::string field;
+        while (std::getline(parsed, field, ',')) fields.push_back(field);
+        if (fields.size() < 17 || fields[9] != "1" || fields[13] != "1") continue;
+        if (fields[4] == "ai" && fields[16] == "1") telemetryAi = true;
+        if (fields[4] == "placebo" && fields[16] == "0") telemetryPlacebo = true;
     }
     const bool telemetrySemantics = telemetryAi && telemetryPlacebo;
     bool secondAttempt = false;
