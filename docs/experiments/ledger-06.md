@@ -2129,10 +2129,12 @@ provenance execution began. The Release executable SHA256 was
 `19e1160642e262b3b77949790c7e573d740db5296105d38d8bca3858b08b8a16`.
 
 **Provenance gate, seed 126732:** C, the fresh-tree + fresh-belief
-experimental control, reported exactly 0 actual fresh searches initialized
-from a transferred posterior. Its boundary-level sources were
-`fresh_initial=409`, `no_next_search=24`. P reported 58 actual transferred
-fresh searches; its boundary-level sources were
+experimental control, reported exactly 0 transferred-belief searches. Its
+boundary-level sources were `fresh_initial=409`, `no_next_search=24`. The
+original diagnostic wording called P's 58 transferred-belief reconstructions
+"actual fresh searches"; that wording was later corrected because a fresh
+Searcher3 can receive the posterior and then take a forced action without
+calling `s3.search()`. P's boundary-level sources were
 `transferred_filtered_posterior=422`, `no_next_search=24`. Thus the treatment
 was active, and the boundary-level sidecar was not mistaken for actual-search
 consumption. Both arms had zero propagation failures, draw-pile mismatches, and
@@ -2199,11 +2201,16 @@ conditional discordance test was not informative at this sample size (p=1.0).
 Per-seed rows and raw artifacts are retained under the ignored
 `build/linux-gcc-release/s3_ab_{c,p}_{16,32tail}.*` paths.
 
-**Provenance and posterior mechanics across 32 seeds:** C had 0 actual
-transferred fresh searches and boundary sources
-`fresh_initial=12508`, `no_next_search=759`. P had 12,691 actual transferred
-fresh searches and boundary sources
-`transferred_filtered_posterior=12662`, `no_next_search=759`.
+**Provenance and posterior mechanics across 32 seeds:** The historical
+32-seed artifacts were produced by the frozen implementation before the
+counter correction. C's old counter was 0 and its boundary sources were
+`fresh_initial=12508`, `no_next_search=759`. P's old counter was 12,691 fresh
+Searcher3 reconstructions receiving a transferred belief, including some
+reconstructions followed only by forced actions; it was incorrectly labelled
+as actual transferred searches. P's boundary sources were
+`transferred_filtered_posterior=12662`, `no_next_search=759`. The exact
+32-seed actual-search count was not measured by the frozen implementation and
+is not reconstructed here.
 
 | Mechanical metric | C | P |
 |---|---:|---:|
@@ -2228,6 +2235,35 @@ median `64`; fractions at or below thresholds were `<=4: 17.0%`
 median `64`, first quartile `14`, third quartile `64`, and range `0–64`.
 These distributions are descriptive of the treatment's actual searches and
 were derived offline without adding runtime telemetry.
+
+**Post-experiment counter correction:** Commit
+`187617c63024e69bf942cdc4215b6cb4f1f96d1f` corrected
+`transferred_filtered_belief_searches` so it increments immediately before
+the real `s3.search(...)` call only when the current Searcher3 was initialized
+from a transferred posterior. Mere reconstruction and forced-move processing
+do not increment it. The focused lifecycle regression now exercises the shared
+transfer/counting seam and verifies persistence-off, transfer identity,
+zero-weight preservation, fresh-root state, no-search non-consumption, and
+exactly-one count for an actual search.
+
+The corrected one-seed diagnostic used the same pinned configuration and seed
+126732, but was not new quality evidence. C reported corrected counter `0`; P
+reported corrected counter `367`, compared with 390 retained P belief-audit
+points. P's boundary-level sidecar remained
+`transferred_filtered_posterior=422`, demonstrating that boundary resolution
+and actual-search consumption are distinct measurements. Both arms had zero
+propagation failures, draw-pile mismatches, and action-illegal particles, with
+no simulator-health failure, unresolved exit, or stall; startup confirmed the
+correct treatment flag and model loading.
+
+The 16- and 32-seed quality experiments were **not rerun**. Their evidence
+remains tied to frozen implementation commit
+`4a08736d0185c7c70f0fc731e0bc06b2702061a0`; this correction changes diagnostic
+counting and regression coverage, not posterior-transfer gameplay semantics.
+The scientific verdict remains **mixed / inconclusive at 64 particles and
+1,000 fresh-tree simulations**: persistence materially changes trajectories
+but provides no convincing gameplay improvement, and particle depletion remains
+a plausible cost.
 
 **Implementation verdict:** the feature is mechanically active, default-off,
 fresh-tree isolated, provenance-correct, and preserves zero-weight particle
