@@ -450,8 +450,9 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 if (rejuvHistory) {
                     rejuvHistory->record(preState, forced, bc);
                 if (filtered && (search::g_s3RejuvShadow || search::g_s3AiSensitivityShadow))
-                        search::runRejuvenationShadowProbe(
-                            *rejuvHistory, filterStats, s3.belief, bc, decisionIdx);
+                    search::runRejuvenationShadowProbe(
+                            *rejuvHistory, filterStats, s3.belief, bc, decisionIdx,
+                            decisionIdx + 1, false);
                 }
                 ++decisionIdx;
                 if (filtered) pendingExposureSearchDecision = decisionIdx;
@@ -578,9 +579,6 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             // ── Shadow rejuvenation probe (opt-in, telemetry only) ──
             if (rejuvHistory) {
                 rejuvHistory->record(preState, bestAction, bc);
-                    if (filtered && (search::g_s3RejuvShadow || search::g_s3AiSensitivityShadow))
-                    search::runRejuvenationShadowProbe(
-                        *rejuvHistory, filterStats, s3.belief, bc, decisionIdx);
             }
             if (filtered && search::g_s3PersistFilteredBelief)
                 pendingFilteredBelief = s3.belief;
@@ -647,6 +645,19 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             } else {
                 ++decisionIdx;
                 searcherValid = false;
+            }
+            if (rejuvHistory && filtered
+                && (search::g_s3RejuvShadow || search::g_s3AiSensitivityShadow)) {
+                BattleScumSearcher3::Node nextRoot;
+                enumerateActionsForNode(nextRoot, bc);
+                int validActions = 0;
+                for (const auto &edge : nextRoot.edges)
+                    if (edge.action.isValidAction(bc)) ++validActions;
+                const bool nextSearchEligible = bc.outcome == Outcome::UNDECIDED
+                    && !(search::g_forcedMoveSkip && validActions == 1);
+                search::runRejuvenationShadowProbe(
+                    *rejuvHistory, filterStats, s3.belief, bc, decisionIdx - 1,
+                    decisionIdx, nextSearchEligible);
             }
             writeS3BeliefBoundaryDiag(bc, s3, bc.seed, decisionIdx - 1, carriedAtBoundary, filtered, filtered ? &filterStats : nullptr);
             if (filtered) {
