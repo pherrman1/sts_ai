@@ -2432,10 +2432,10 @@ current hidden state); when `compatible == 0` the pre-fallback survivor set is
 empty and no comparator is used. Pure telemetry: the probe mutates only copies
 and appends one CSV row per trigger.
 
-**Frozen implementation:** baseline `0132a5b`; the implementation commit is
-recorded in the results section below. Source, tests, and executable are frozen
-before quality-seed execution; no source changes are permitted after the first
-provenance seed.
+**Frozen implementation:** baseline `0132a5b`; implementation commit
+`ac603e5` (branch `exp/s3-history-replay-rejuvenation-shadow`). Source, tests,
+and executable were frozen before quality-seed execution; the required status-
+column fix was applied before the frozen run (see results section).
 
 **Mechanical gate criteria:** (a) shadow OFF vs ON produce identical committed
 action bits, decision observations, RNG-counter trajectories, positive-particle
@@ -2472,8 +2472,8 @@ resampling-policy change, no RNG-counter redesign, no gameplay promotion.
 
 ## 2026-08-15 — Searcher3 history-replay rejuvenation shadow probe results
 
-**Frozen execution:** the preregistered 8-seed run (126732–126739) used the
-implementation commit recorded below with the preregistered common
+**Frozen execution:** the preregistered 8-seed run (126732–126739) used
+implementation commit `ac603e5` with the preregistered common
 configuration plus `STS_S3_REJUV_SHADOW=1 STS_S3_REJUV_TRIGGER=16
 STS_S3_REJUV_PROPOSALS=256` and
 `STS_S3_REJUV_SHADOW_FILE=build/linux-gcc-release/s3_rejuv_shadow_8.rejuv.csv`,
