@@ -2397,3 +2397,200 @@ faster, and should LTO become the standard native build setting?
   portability remain follow-up considerations.
 - **Artifacts:** temporary benchmark binaries and raw output were stored under
   `/tmp/sts-opt-bench/` during the session; they are not repository artifacts.
+
+## 2026-08-15 — Searcher3 history-replay rejuvenation shadow probe (preregistration)
+
+**Question:** When the persistent filtered posterior loses support at a
+real-observation boundary, can new hidden-state hypotheses compatible with the
+FULL real observation history be generated at all? Equivalently: is the
+observed `collapseFresh` fallback a consequence of particle depletion
+(in-principle recoverable by re-proposing hidden state), or of a hard
+inconsistency between the real history and the hidden-state model? If
+recoverable, how many fresh proposals are needed to reach 4/8/16/32 distinct
+full hypotheses, and how many of those are novel relative to the surviving
+posterior?
+
+**Design:** opt-in shadow-only probe (`STS_S3_REJUV_SHADOW=1`, off by default;
+off ⇒ bit-identical live behavior). At each filtered boundary with
+`compatible <= STS_S3_REJUV_TRIGGER` (16), after `filterRealTransition`
+returns: (1) record the committed semantic action + raw bits + real post-action
+observation + outcome into a per-combat history anchored at battle start;
+(2) sample `STS_S3_REJUV_PROPOSALS` (256) fresh hidden hypotheses from the
+anchor observation using a dedicated deterministic probe RNG (independent of
+all battle RNG); (3) replay the full recorded history under each hypothesis
+using semantic action remap (position-independent card identity, multiset
+multi-select, raw END_TURN/POTION), `applyHiddenState` on a copy of the
+anchor, and bare `Action::execute` (exact live transition semantics). A
+hypothesis is **accepted** iff it reproduces every recorded post-action
+observation and outcome exactly (full `CombatObservation::operator==` equality
+plus outcome). Uniqueness, novelty, and milestone counts use the
+equality-backed `FullHiddenStateKey` (ordered canonical draw-pile identity +
+all six RNG seed0/seed1/counter triples); draw-order-only and RNG-only counts
+are telemetry hashes only. Novelty compares against the positive particles
+currently in `s3.belief` when `compatible > 0` (already propagated to the
+current hidden state); when `compatible == 0` the pre-fallback survivor set is
+empty and no comparator is used. Pure telemetry: the probe mutates only copies
+and appends one CSV row per trigger.
+
+**Frozen implementation:** baseline `0132a5b`; implementation commit
+`ac603e5` (branch `exp/s3-history-replay-rejuvenation-shadow`). Source, tests,
+and executable were frozen before quality-seed execution; the required status-
+column fix was applied before the frozen run (see results section).
+
+**Mechanical gate criteria:** (a) shadow OFF vs ON produce identical committed
+action bits, decision observations, RNG-counter trajectories, positive-particle
+full-hidden-state keys, and outcome on the same seeds (non-interference test);
+(b) per-row sanity: `0 <= accepted <= proposals`, `0 <= unique <= accepted`,
+`0 <= novel <= unique`, and where present the milestone proposal indices are
+non-decreasing (4 ≤ 8 ≤ 16 ≤ 32); (c) no simulator-health failure, stall, or
+unresolved exit attributable to the probe (probe never calls
+`reportSimHealthFailure`); (d) no replay `transitionsExecuted` beyond the
+recorded history length. A failed gate invalidates quality interpretation.
+
+**Common configuration:** fair Searcher3, ascension 0, 1,000 simulations, 64
+particles, `STS_FAIR=1`, `STS_SEARCHER3=1`, `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`,
+`STS_S3_REAL_BELIEF_FILTER=1`, `STS_S3_REAL_BELIEF_COLLAPSE_FRESH=1`,
+`STS_S3_INTERNAL_BELIEF_UPDATE=0`, `STS_REUSE_MAX_SEARCHES=0`,
+`STS_LIVE_VALID=1`, `STS_VNET=models/v_combat_7k_tuned.txt`,
+`STS_VNET_ALPHA=0.3`, V4 strategic token-net gates using
+`selfplay/models/ooc_strategic_tok_final.native`, REST/EVENT/SHOP/TREASURE/
+BOSS_RELIC enabled, strategic margin 1.0, plus shadow flags
+`STS_S3_REJUV_SHADOW=1 STS_S3_REJUV_TRIGGER=16 STS_S3_REJUV_PROPOSALS=256` and
+`STS_S3_REJUV_SHADOW_FILE` pointing at the artifact path.
+
+**Seeds and decision rule:** preregistered block **126732–126739 (8 seeds)**,
+run once through `tools/seed_guard.sh` with the frozen executable. Primary
+analysis is mechanical: distribution of accepted / unique / novel per trigger,
+milestone proposal indices (4/8/16/32), final-state-compatible-but-not-full
+counts, per-row status mix, and their relationship to `compatible`. No
+win-rate or floor interpretation — this is a feasibility probe, not a quality
+gate. Stop at 8 seeds; do not extend automatically.
+
+**Non-goals:** no default enablement, no live-belief rejuvenation (the probe
+never modifies `s3.belief`), no change to `filterRealTransition`, no
+resampling-policy change, no RNG-counter redesign, no gameplay promotion.
+
+## 2026-08-15 — Searcher3 history-replay rejuvenation shadow probe results
+
+> **INVALIDATED for late-history inference (correction 2026-08-15):** this
+> first 8-seed run (implementation commit `ac603e5`) recorded
+> SINGLE_CARD_SELECT actions via `BattleScumSearcher3::cardActionKey`, which
+> only extracts identity from `cardSelectInfo.cards` (Discovery/Codex offers).
+> Hand/discard/draw/exhaust-pile single-selects therefore recorded a missing or
+> CardId-only identity and remapped incorrectly (8,331 artificial
+> `remap_failure`s). The corrected semantic recording/remap rerun is in the
+> section immediately below; this section's `remap_failure`, status-mix, and
+> late-fight acceptance figures are superseded and must not be used for
+> late-history inference. Early-boundary and aggregate-acceptance conclusions
+> are re-reported on the corrected data below.
+
+**Frozen execution (superseded):** the preregistered 8-seed run
+(126732–126739) used implementation commit `ac603e5` with the preregistered
+common configuration plus `STS_S3_REJUV_SHADOW=1 STS_S3_REJUV_TRIGGER=16
+STS_S3_REJUV_PROPOSALS=256` and
+`STS_S3_REJUV_SHADOW_FILE=build/linux-gcc-release/s3_rejuv_shadow_8.rejuv.csv`,
+executed through `tools/seed_guard.sh` with `OMP_NUM_THREADS=12`. Run exited 0;
+whole-run outcome was 4/8 wins, avg floor 46.6, avg ending HP 17.6, 31.57 s
+cpu/run (informational only — no quality interpretation per the
+preregistration). Artifacts:
+`build/linux-gcc-release/s3_rejuv_shadow_8{.stdout,.stderr,.meta.json,<base CSV>,.rejuv.csv}`
+(overwritten by the corrected rerun below; the old aggregate numbers are
+recorded here for provenance).
+
+**Mechanical gates:** (a) non-interference — `rejuv_noninterference` test:
+shadow OFF vs ON produced identical committed action bits (9/9), decision
+observation hashes, all-18 RNG-field trajectories, positive-particle
+`FullHiddenStateKey` sequences, final state, and zero sim-health counter
+movement on both arms; (b) per-row sanity — 0 violations of
+`0 <= accepted <= proposals`, `0 <= unique <= accepted`, `0 <= novel <= unique`
+across all 981 rows, and milestone indices were non-decreasing wherever
+present; (c) `sim_health` column total = 0 and no battle-break/stall output
+attributable to the probe; (d) `transitions` per row never exceeds the recorded
+history length by construction (replay executes exactly the recorded
+boundaries).
+
+**Primary mechanical findings (superseded — 981 trigger rows, 251,136
+proposals):**
+
+- Full-history regeneration by anchor-fresh re-sampling is possible: 2,013
+  accepted hypotheses (0.80% of proposals) in 128 of 981 rows (13.0%). 83 rows
+  reached ≥4 unique accepted hypotheses within 256 proposals, 66 reached 8,
+  37 reached 16, 21 reached 32. **Corrected interpretation:** compatible
+  full-history states were demonstrated for **some** low-support boundaries;
+  zero-acceptance boundaries remain **inconclusive** between very low proposal
+  probability and hidden-state/model inconsistency — the data do not support a
+  global "the model is not hard-inconsistent" claim.
+- Acceptance is a **first-turn phenomenon**: decision_idx 0–4 account for
+  103/128 accepted rows (80.4%) and decision_idx 0 alone for 24 rows and 560
+  accepted hypotheses; after decision ~8 accepted ≈ 0 in this (superseded) run.
+  (**Inference** — the mechanism follows from the decision_idx distribution;
+  the distribution itself is measured; late-history figures are superseded by
+  the corrected rerun below.)
+- Novelty: every accepted hypothesis was novel relative to the surviving
+  posterior comparator (novel == unique == 2,013).
+- Status mix (superseded): 240,792 intermediate mismatches, 8,331 remap
+  failures (largely an artifact of the SINGLE_CARD_SELECT recording bug), 0
+  action-illegal, 0 sim-health, 0 final-only mismatches (unreachable before
+  the FINAL_MISMATCH classification fix).
+- Overhead: probe CPU 1.73 s total across 981 triggers (1.76 ms/trigger,
+  6.9 µs/proposal) — immaterial.
+
+**Caveats:** acceptance at early boundaries can be inflated by particle-
+invariant segments (scripted enemy turns; full-cycle deck draws make
+hand/pile multisets order-insensitive — the degenerate case proved by the
+CULTIST fixture in `rejuv_history_replay`), so "accepted" is an upper bound on
+true hidden-state recovery. Whole-run wins are reported only as run health
+context.
+
+## 2026-08-15 — Searcher3 history-replay rejuvenation shadow probe — corrected semantic replay rerun
+
+**Correction (same branch, same frozen 8 seeds):** independent review found
+that `record` used `BattleScumSearcher3::cardActionKey` for
+SINGLE_CARD_SELECT, which reads only `cardSelectInfo.cards`; hand/discard/
+draw/exhaust-pile selections therefore recorded an incomplete (CardId-only or
+missing) identity and remapped wrongly. Fixed by probe-specific semantic
+recording per `cardSelectTask` (full canonical identity: id, upgradeCount,
+costForTurn, freeToPlayOnce, specialData), full-identity remap matching,
+explicit empty-MULTI_CARD_SELECT validity, and correct FINAL_MISMATCH
+classification (first failure at the final boundary). `rejuv_semantic_select`
+regression added (hand permutation, discard/draw remap, identical-CardId
+distinct-property resolution, empty multi round-trip).
+
+**Corrected frozen rerun:** identical preregistered command (seeds
+126732–126739, 64 particles, 1000 sims, trigger ≤16, 256 proposals, same
+model/config flags). Run exited 0; whole-run outcome **4/8 wins, avg floor
+46.6, avg ending HP 17.6** — identical to the superseded run (shadow-only
+telemetry; live behavior unchanged). 981 trigger rows, 251,136 proposals.
+
+**Old → corrected comparison:**
+
+| Metric | ac603e5 (superseded) | Corrected |
+|---|---:|---:|
+| remap_failure (total) | 8,331 | **0** |
+| remap_failure by decision_idx | non-zero (artifact) | 0 at every decision_idx |
+| intermediate_mismatch | 240,792 | 205,629 |
+| final_mismatch (reachable?) | 0 (misclassified) | **43,489** |
+| accepted / unique / novel | 2,013 | **2,018** |
+| rows with any accepted | 128 | **132** |
+| collapse rows with any accepted | 24 (93 accepted) | **27 (96 accepted)** |
+| milestones 4/8/16/32 | 83/66/37/21 | 83/66/37/21 |
+| acceptance at decision ≥8 | 7 rows (d8–d11) | **9 rows (d8–d13), 75 accepted** |
+
+**Corrected scientific interpretation:** the semantic-replay bug inflated
+`remap_failure` and suppressed late-fight acceptance, but did not materially
+change the headline: full-history regeneration by anchor-fresh re-sampling is
+possible at **some** low-support boundaries (2,018 accepted, 0.80%; 83/66/37/21
+rows reached 4/8/16/32 unique; acceptance concentrated at decision_idx 0–4 and
+rare after ~8). With remap now exact (0 failures), late-fight acceptance rose
+slightly (9 rows at decision ≥8, vs 7), consistent with correct semantic replay
+of card-select boundaries. **Zero-acceptance boundaries remain inconclusive**
+between very low proposal probability (the RNG seed/counter space is
+astronomically large) and hidden-state/model inconsistency; no global
+consistency claim is warranted. All accepted hypotheses remain novel vs the
+surviving posterior; sim-health = 0; probe CPU 1.19 s total. Per-row sanity and
+milestone-monotonicity gates: 0 violations.
+
+Artifacts (corrected): `build/linux-gcc-release/s3_rejuv_shadow_8{.stdout,
+.stderr,.meta.json,<base CSV>,.rejuv.csv}` (corrected executable; the
+superseded run's CSV was overwritten, its aggregate numbers are preserved in
+the table above).

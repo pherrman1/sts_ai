@@ -279,6 +279,11 @@ void BattleScumSearcher3::applyParticle(BattleContext &state,
     applyParticleImpl(state, particle, rng);
 }
 
+void applyHiddenState(BattleContext &state, const HiddenBattleState &particle,
+                      std::mt19937_64 &fallbackRng) {
+    applyParticleImpl(state, particle, fallbackRng);
+}
+
 bool isDrawPileIndexSensitiveCardSelect(const BattleContext &bc) {
     if (bc.inputState != InputState::CARD_SELECT) return false;
     switch (bc.cardSelectInfo.cardSelectTask) {
@@ -555,10 +560,8 @@ void BattleScumSearcher3::recursiveResetStats(Node &node) {
 }
 
 // ---- Semantic card-edge resolution -----------------------------------------
-std::optional<Action> resolveSemanticCardEdge(
-    const BattleScumSearcher3::Edge &edge, const BattleContext &state) {
-    if (!edge.hasCardKey) return edge.action;
-    const auto &key = edge.cardKey;
+std::optional<int> resolveCardKeyInHand(
+    const BattleScumSearcher3::CardActionKey &key, const BattleContext &state) {
     for (int hi = 0; hi < state.cards.cardsInHand; ++hi) {
         const auto &c = state.cards.hand[hi];
         if (c.getId() == key.id
@@ -566,13 +569,20 @@ std::optional<Action> resolveSemanticCardEdge(
             && c.costForTurn == key.costForTurn
             && c.freeToPlayOnce == key.freeToPlayOnce
             && c.specialData == key.specialData) {
-            if (key.target >= 0)
-                return Action(ActionType::CARD, hi, key.target);
-            else
-                return Action(ActionType::CARD, hi);
+            return hi;
         }
     }
     return std::nullopt;
+}
+
+std::optional<Action> resolveSemanticCardEdge(
+    const BattleScumSearcher3::Edge &edge, const BattleContext &state) {
+    if (!edge.hasCardKey) return edge.action;
+    const auto hi = resolveCardKeyInHand(edge.cardKey, state);
+    if (!hi) return std::nullopt;
+    if (edge.cardKey.target >= 0)
+        return Action(ActionType::CARD, *hi, edge.cardKey.target);
+    return Action(ActionType::CARD, *hi);
 }
 
 // ---- Hand-only multiset key (same identity fields as CombatObservation) -----
