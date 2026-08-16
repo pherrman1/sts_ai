@@ -3255,9 +3255,34 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
         int rootIndex = -1;
         double weight = 0.0;
         bool source = false;
-        bool followsRawSource = false;
         BattleContext state;
         sts::FullHiddenStateKey key;
+    };
+    using PhysicalCardKey = std::tuple<std::int16_t, CardId, std::int16_t,
+                                       std::int8_t, std::int8_t, bool, bool, bool>;
+    struct ReplayStateKey {
+        sts::FullHiddenStateKey hidden;
+        std::vector<PhysicalCardKey> hand, discard, exhaust;
+        bool operator<(const ReplayStateKey &o) const {
+            return std::tie(hidden, hand, discard, exhaust)
+                < std::tie(o.hidden, o.hand, o.discard, o.exhaust);
+        }
+    };
+    auto physicalCards = [](const std::vector<CardInstance> &cards) {
+        std::vector<PhysicalCardKey> out;
+        out.reserve(cards.size());
+        for (const auto &c : cards)
+            out.emplace_back(c.uniqueId, c.id, c.specialData, c.cost,
+                             c.costForTurn, c.upgraded, c.freeToPlayOnce, c.retain);
+        return out;
+    };
+    auto replayStateKey = [&](const BattleContext &state) {
+        ReplayStateKey key{sts::fullHiddenStateKey(state), {}, {}, {}};
+        key.hand = physicalCards(std::vector<CardInstance>(
+            state.cards.hand.begin(), state.cards.hand.begin() + state.cards.cardsInHand));
+        key.discard = physicalCards(state.cards.discardPile);
+        key.exhaust = physicalCards(state.cards.exhaustPile);
+        return key;
     };
     std::vector<Candidate> compatible;
     std::map<sts::FullHiddenStateKey, size_t> byKey;   // equality-backed exact identity
@@ -3268,7 +3293,6 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
         c.rootIndex = particleIndex;
         c.weight = particles[particleIndex].weight;
         c.source = isSource;
-        c.followsRawSource = isSource;
         c.state = *d.searcher->rootBc;
         if (!search::applyHiddenStateExact(c.state, particles[particleIndex])) {
             ++g.drawPileMismatches;
@@ -3304,8 +3328,6 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                 }
                 for (const auto &action : actions) {
                     Candidate successor = stateCandidate;
-                    successor.followsRawSource = successor.followsRawSource
-                        && action.bits == cp.action.bits;
                     action.execute(successor.state);
                     const auto obs = CombatObservation::fromBattleContext(successor.state);
                     if (obs == cp.observation && successor.state.outcome == cp.outcome)
@@ -3314,22 +3336,15 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                     else ++g.intermediateOutcomeMismatches;
                 }
             }
-            std::map<sts::FullHiddenStateKey, size_t> checkpointKeys;
+            std::map<ReplayStateKey, size_t> checkpointKeys;
             std::vector<Candidate> deduped;
             for (auto &candidate : next) {
-                const auto key = sts::fullHiddenStateKey(candidate.state);
+                const auto key = replayStateKey(candidate.state);
                 const auto inserted = checkpointKeys.emplace(key, deduped.size());
                 if (inserted.second)
                     deduped.push_back(std::move(candidate));
                 else {
                     auto &existing = deduped[inserted.first->second];
-                    // The experiment's identity key intentionally omits
-                    // physical CardInstance::uniqueId. Preserve the source
-                    // trajectory representative when equivalent hidden keys
-                    // collide, so sourceParticleReplayOk cannot lose its
-                    // witness solely to representative ordering.
-                    if (candidate.followsRawSource && !existing.followsRawSource)
-                        existing = std::move(candidate);
                     ++g.branchesCollapsed;
                 }
             }
@@ -3344,13 +3359,13 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
         }
         const double branchWeight = particles[particleIndex].weight
             / std::max<size_t>(1, frontier.size());
+        bool finalAccepted = false;
         for (auto &survivor : frontier) {
             const CombatObservation finalObs = CombatObservation::fromBattleContext(survivor.state);
             if (finalObs != sourceFinalObs || survivor.state.outcome != d.outcome) {
                 ++g.finalObservationMismatches;
                 continue;
             }
-            survivor.weight = branchWeight;
             survivor.key = sts::fullHiddenStateKey(survivor.state);
             const auto found = byKey.find(survivor.key);
             if (found != byKey.end()) {
@@ -3360,8 +3375,9 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                 byKey.emplace(survivor.key, compatible.size());
                 compatible.push_back(std::move(survivor));
             }
+            finalAccepted = true;
         }
-        if (!frontier.empty()) ++acceptedParticles;
+        if (finalAccepted) ++acceptedParticles;
     };
 
     g.replayAttempted = g.positiveParticleCount
@@ -3370,6 +3386,13 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
     for (int i = 0; i < (int)particles.size(); ++i)
         if (particles[i].weight > 0.0 && i != sourceIndex)
             replayCandidate(i, false);
+
+    if (g.replayExplosion) {
+        g.groupEligible = 0;
+        g.sourceParticleReplayOk = -1;
+        finishGroup();
+        return;
+    }
 
     g.replayCompatibleParticles = acceptedParticles;
     bool sourceOk = false;

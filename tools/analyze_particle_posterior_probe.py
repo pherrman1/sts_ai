@@ -283,6 +283,7 @@ GROUP_FIELDS = ("rowType,seed,fightIdx,decIdx,sourceLeafId,obsHash,treeDepth,enc
                 "drawPileMismatches,rootCarried,reuseGeneration,reuseSearchCount,candidateParticleIndex,"
                 "candidateWeight,candidateIsSource,dedupOrdinal,semanticBranchesCreated,maxSurvivingBranches,"
                 "branchesCollapsed,replayExplosion,rngSignature,drawOrder,terminal,target,"
+                "branchesCollapsed,replayExplosion,rngSignature,drawOrder,terminal,target,"
                 "fullTarget,controlledTarget,controlledTargetStd,rolloutSteps")
 
 
