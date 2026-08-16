@@ -15,6 +15,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("raw", type=Path)
     ap.add_argument("summary", type=Path)
+    ap.add_argument("--reference-futures", type=int, default=4)
     args = ap.parse_args()
     groups = defaultdict(list)
     with args.raw.open(newline="") as f:
@@ -36,9 +37,8 @@ def main() -> None:
                  if r["valid"] == "1" and r["evaluator"] == ev and r["actionRole"] == "V"}
             return [m[i] - v[i] for i in sorted(set(m) & set(v))]
 
-        usable = not invalid and all(
-            len(deltas(ev, "utility")) == 4 for ev in ("S", "R")
-        )
+        usable = not invalid and len(deltas("S", "utility")) == 4 \
+            and len(deltas("R", "utility")) == args.reference_futures
         su = deltas("S", "utility") if usable else []
         ru = deltas("R", "utility") if usable else []
         rw = deltas("R", "won") if usable else []
