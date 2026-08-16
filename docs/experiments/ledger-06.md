@@ -3607,3 +3607,81 @@ Artifacts: `build/e2_postcombat_runwin/metrics.json`,
 `sha256sums.txt`. Reproduction command:
 `STS_XGB_DEVICE=cuda python3 tools/train_postcombat_runwin.py build/vrich.csv
 build/e2_postcombat_runwin`.
+
+## E2b — masked post-combat feature-availability diagnostic (2026-08-17)
+
+**Baseline / branch:** starting `e777d2fdbb8c11786aef4fe91d433af35b7d0cd2`,
+`exp/e2b-leaf-available-runwin`. Offline only; no Searcher3, particle,
+gameplay, V_combat, or producer code changed.
+
+**Audit and primary subset:** the live `apps/one_combat.cpp::richHeader` /
+`richRow` contract classifies 9 verified hidden/future columns (`bossId`,
+`nextEliteId`, `nextFight0..2`, `remElites`, `remFights`, `monOffset`,
+`eliteOffset`) plus the `fmD*`/`fmC*` forward-map families as hidden/future.
+Gold, potion metadata/inventory, card-rarity state, key state, and all `r*`
+relic ownership-plus-counter columns are reward-mutated. Elite relic pickup
+also makes HP, max HP, deck composition/upgrades, bottle state, and potion
+capacity reward-induced side effects. Unknown schema fields fail closed as
+ambiguous.
+The actual historical `build/vrich.csv` used here has exactly **1,009
+columns**. It contains neither the ten `fmD*`/`fmC*` columns nor `curMapX` /
+`curMapY`; those 12 fields are known to current live `richHeader()` but were
+not present in the July-15 E2 CSV. Thus they are current-schema provenance
+categories only, not columns classified from the historical file.
+The existing CSV has no room/encounter identifier, and rows are captured after
+`BattleContext::exitBattle` and forced gold/relic/potion pickup. Therefore an
+ordinary-combat/raw-terminal subset cannot be identified defensibly. E2b uses
+all represented card-reward rows and calls the final arm **T-masked**, not
+raw-terminal-safe or exact leaf-safe.
+
+**Method:** B1, T-full, T-fair, and T-masked share all rows, labels,
+`GroupShuffleSplit(test_size=0.15, random_state=0)` by seed, the E2 XGBoost
+recipe (depth 8, eta .05, subsample .8, colsample .7, min child 20, max bin
+256, 1,500 rounds, early stopping 40), and 2,000 contiguous held-out-seed
+bootstrap resamples. Counts: 1,444,372 rows / 67,655 seeds / 479,498 wins /
+964,874 losses; held-out 216,620 rows / 10,149 seeds / 71,672 positives /
+144,948 negatives; 57,506 training seeds.
+
+| arm | features | AUC | log loss | Brier | ECE | best iteration |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| B0 | — | 0.500000 | 0.634793 | 0.221395 | 0.001308 | — |
+| B1 | 5 | 0.649746 | 0.595168 | 0.203594 | 0.003631 | 136 |
+| T-full | 448 | 0.748164 | 0.535066 | 0.179130 | 0.008419 | 983 |
+| T-fair | 439 | 0.746827 | 0.536352 | 0.179548 | 0.007152 | 944 |
+| T-masked | 8 | 0.611091 | 0.613848 | 0.211795 | 0.002156 | 88 |
+
+The held-out positive/negative counts are identical for every arm. Log-loss
+gain from B1 was 0.060102 for T-full, 0.058816 for T-fair, and −0.018680 for
+T-masked; retention was 97.86% and −31.08%, respectively. T-masked−B1 point
+differences were log loss +0.018680, Brier +0.008201, and AUC −0.038654.
+The seed-bootstrap comparisons (log loss / Brier / AUC mean, 95% CI) are in
+`build/e2b_leaf_available/metrics.json` for T-full−B1, T-fair−B1,
+T-masked−B1, T-fair−T-full, and T-masked−T-fair.
+
+**Comparator asymmetry:** the `MASKED NEGATIVE` result is the preregistered
+verdict against the original E2 B1 comparator, which uses `curHp`, `maxHp`,
+and `hpFrac`. The strict T-masked arm intentionally excludes `curHp` and
+`maxHp` because elite relic pickup can mutate them. Therefore this is not an
+information-matched comparison and must not be interpreted as evidence that a
+true raw-terminal critic, or an information-matched raw-terminal model, is
+inferior. E2c remains necessary to measure that boundary fairly.
+
+**Decision:** **MASKED NEGATIVE**. T-masked fails to beat B1 on log loss,
+Brier, and AUC; its log-loss bootstrap CI is unfavorable and masked retention
+is negative. The hidden/future removal itself preserves almost all E2 gain;
+the corrected reward mask removes the state that carried the remaining
+predictive signal. This is predictive evidence only, not causal feature value
+or exact raw-boundary calibration. The counter arm is
+**NOT TESTABLE FROM E2 DATASET** because relic columns combine ownership and
+counter and pickup can add relics.
+
+**Follow-up:** E2c raw-boundary collection remains scientifically worthwhile,
+despite the negative masked result, because conservative masking may discard
+legitimate pre-existing resource information that cannot be reconstructed from
+post-reward rows. The missing room/encounter identifier also prevents exact
+boundary confirmation. The ideal producer records matched raw
+combat-terminal and pre-card-reward states for each survived fight, with room /
+encounter type and reward deltas, while preserving the eventual run label.
+Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
+`calibration_deciles.csv`, `validation_predictions.npz`, four model JSON files,
+`provenance.json`, and `sha256sums.txt`.
