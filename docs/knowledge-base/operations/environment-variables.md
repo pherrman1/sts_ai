@@ -39,8 +39,8 @@ These control the default executing configuration; they are always parsed.
 | `STS_S3_PARTICLES` | Belief particle count | 64 | `main` ~L9740 |
 | `STS_PARTICLE_LEAF_PROBE_FILE` | Enable the off-by-default draw-order particle leaf CSV probe | unset | `main` |
 | `STS_PARTICLE_LEAF_PROBE_K` | Draw-order variants per selected leaf | 8 | `main` |
-| `STS_PARTICLE_LEAF_PROBE_RATE` | Fraction of type-0 leaves sampled | 1.0 when file is set | `main` |
-| `STS_PARTICLE_LEAF_PROBE_MAX_GROUPS` | Optional per-seed cap on sampled leaf groups; 0 is unlimited | 0 | `main` |
+| `STS_PARTICLE_LEAF_PROBE_RATE` | Fraction of type-0 leaves sampled | 0.05 | `main` |
+| `STS_PARTICLE_LEAF_PROBE_MAX_GROUPS` | Per-seed cap on sampled leaf groups | 16 | `main` |
 | `STS_S3_BELIEF` | Particle belief reweighting (ablation) | `1` (ON) | `main` ~L9730 |
 | `STS_S3_PRUNE` | `canPruneAsDead` pruning (ablation) | `1` (ON) | `main` ~L9735 |
 | `STS_S3_CHAIN` | Deterministic chain compression (ablation) | `1` (ON) | `main` ~L9736 |

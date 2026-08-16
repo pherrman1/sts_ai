@@ -2629,8 +2629,8 @@ static int  g_ldPerStratum = 50;                 // STS_LEAFDIAG_PER_STRATUM: re
 static int  g_ldDeepDepth   = 20;                // STS_LEAFDIAG_DEEP_DEPTH: depth >= this maps to the dedicated deep stratum
 static std::string g_particleLeafProbeFile;
 static int g_particleLeafProbeK = 8;
-static double g_particleLeafProbeRate = 1.0;
-static int g_particleLeafProbeMaxGroups = 0;
+static double g_particleLeafProbeRate = 0.05;
+static int g_particleLeafProbeMaxGroups = 16;
 
 struct LeafDiagRow {
     std::uint64_t seed = 0;
@@ -2650,10 +2650,11 @@ struct LeafDiagRow {
 };
 
 struct ParticleLeafProbeRow {
-    std::uint64_t seed = 0, obsHash = 0, groupId = 0;
+    std::uint64_t seed = 0, obsHash = 0, sourceLeafId = 0;
     int fightIdx = -1, decIdx = -1, variant = -1, depth = 0, turn = 0;
     int curHp = 0, maxHp = 0, rolloutSteps = 0, terminal = 0;
     int invariantOk = 0, drawPileSize = 0;
+    int distinctDrawOrders = 0;
     double target = std::numeric_limits<double>::quiet_NaN();
     double rawRolloutEval = std::numeric_limits<double>::quiet_NaN();
     std::string encounter, drawOrder;
@@ -2692,6 +2693,7 @@ struct LeafDiagCtx {
     std::unordered_set<std::uint64_t> capturedSeen;     // dedup: one capture per obsHash per decision
     std::vector<ParticleLeafProbeRow> particleProbeRows;
     int particleProbeGroups = 0;
+    std::uint64_t particleProbeSourceLeafSeq = 0;
     void init(std::uint64_t sd) {
         seed = sd; fightIdx = 0; floor = 0; act = 0; encounter.clear(); decIdx = 0;
         rng.seed(sd ? sd : 1);
@@ -2702,6 +2704,7 @@ struct LeafDiagCtx {
         capturedSeen.clear();
         particleProbeRows.clear();
         particleProbeGroups = 0;
+        particleProbeSourceLeafSeq = 0;
     }
 };
 static thread_local LeafDiagCtx t_ld;
@@ -2841,16 +2844,9 @@ static bool particleLeafSameMultiset(const BattleContext &a, const BattleContext
     return ca == cb;
 }
 
-static std::uint64_t particleLeafHash(std::uint64_t seed, int fight, int dec,
-                                      std::uint64_t obsHash) {
-    std::uint64_t h = seed ^ (std::uint64_t)(std::uint32_t)fight << 32
-                    ^ (std::uint64_t)(std::uint32_t)dec ^ obsHash;
-    h ^= h >> 33; h *= 0xff51afd7ed558ccdULL; h ^= h >> 33;
-    return h;
-}
-
 static void particleLeafProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
     if (g_particleLeafProbeFile.empty() || !d.searcher || !d.bc) return;
+    const std::uint64_t sourceLeafId = ++t_ld.particleProbeSourceLeafSeq;
     if (g_particleLeafProbeMaxGroups > 0
         && t_ld.particleProbeGroups >= g_particleLeafProbeMaxGroups) return;
     if (g_particleLeafProbeRate < 1.0) {
@@ -2859,22 +2855,37 @@ static void particleLeafProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
     }
     const BattleContext &base = *d.bc;
     const int k = std::max(1, std::min(g_particleLeafProbeK, 64));
-    const std::uint64_t groupId = particleLeafHash(t_ld.seed, t_ld.fightIdx,
-                                                    t_ld.decIdx, d.obsHash);
-    const std::uint64_t rngSeed = groupId ^ 0x9e3779b97f4a7c15ULL;
+    const std::uint64_t rngSeed = (t_ld.seed * 0x9e3779b97f4a7c15ULL)
+                                ^ sourceLeafId ^ 0x9e3779b97f4a7c15ULL;
     const int nf = search::combatFeatureCount();
     std::vector<float> baseFeatures(nf);
     search::combatExtractFeatures(base, baseFeatures.data());
     const std::string baseDrawOrder = particleLeafDrawOrder(base);
+    std::vector<std::vector<CardInstance>> orders;
+    std::unordered_set<std::string> distinctOrders;
+    orders.push_back(base.cards.drawPile);
+    distinctOrders.insert(baseDrawOrder);
+    std::mt19937_64 orderRng(rngSeed ^ 0xd1b54a32d192ed03ULL);
+    const int maxAttempts = std::max(16, k * 16);
+    for (int attempt = 0; attempt < maxAttempts && (int)orders.size() < k; ++attempt) {
+        std::vector<int> permutation(base.cards.drawPile.size());
+        for (size_t i = 0; i < permutation.size(); ++i) permutation[i] = (int)i;
+        std::shuffle(permutation.begin(), permutation.end(), orderRng);
+        std::vector<CardInstance> candidate;
+        candidate.reserve(permutation.size());
+        for (int idx : permutation) candidate.push_back(base.cards.drawPile[idx]);
+        std::ostringstream order;
+        for (auto it = candidate.rbegin(); it != candidate.rend(); ++it) {
+            if (it != candidate.rbegin()) order << ';';
+            order << (int)it->getId();
+        }
+        if (distinctOrders.insert(order.str()).second) orders.push_back(std::move(candidate));
+    }
+    while ((int)orders.size() < k) orders.push_back(orders.front());
+    const int distinctCount = (int)distinctOrders.size();
     for (int variant = 0; variant < k; ++variant) {
         BattleContext state = base;
-        if (variant > 0) {
-            std::mt19937_64 permutationRng(rngSeed + (std::uint64_t)variant);
-            std::shuffle(state.cards.drawPile.begin(), state.cards.drawPile.end(), permutationRng);
-            if (particleLeafDrawOrder(state) == baseDrawOrder && state.cards.drawPile.size() > 1) {
-                std::swap(state.cards.drawPile.front(), state.cards.drawPile.back());
-            }
-        }
+        state.cards.drawPile = orders[variant];
         std::vector<float> features(nf);
         search::combatExtractFeatures(state, features.data());
         bool sameFeatures = features == baseFeatures;
@@ -2888,10 +2899,11 @@ static void particleLeafProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
                                                          target, terminal);
         ParticleLeafProbeRow row;
         row.seed = t_ld.seed; row.fightIdx = t_ld.fightIdx; row.decIdx = t_ld.decIdx;
-        row.groupId = groupId; row.obsHash = d.obsHash; row.variant = variant;
+        row.sourceLeafId = sourceLeafId; row.obsHash = d.obsHash; row.variant = variant;
         row.depth = d.treeDepth; row.turn = base.turn; row.curHp = base.player.curHp;
         row.maxHp = base.player.maxHp; row.rolloutSteps = steps; row.terminal = terminal ? 1 : 0;
         row.invariantOk = (sameFeatures && sameRng && sameMultiset) ? 1 : 0;
+        row.distinctDrawOrders = distinctCount;
         row.drawPileSize = (int)base.cards.drawPile.size(); row.target = target;
         row.rawRolloutEval = d.rawRolloutEval;
         row.encounter = t_ld.encounter; row.drawOrder = particleLeafDrawOrder(state);
@@ -2932,10 +2944,10 @@ static std::string leafDiagSeedCsv() {
 static std::string particleLeafProbeSeedCsv() {
     std::ostringstream o;
     for (const auto &row : t_ld.particleProbeRows) {
-        o << row.seed << ',' << row.fightIdx << ',' << row.decIdx << ',' << row.groupId << ','
+        o << row.seed << ',' << row.fightIdx << ',' << row.decIdx << ',' << row.sourceLeafId << ','
           << row.obsHash << ',' << row.variant << ',' << row.depth << ',' << row.encounter << ','
           << row.turn << ',' << row.curHp << ',' << row.maxHp << ',' << row.drawPileSize << ','
-          << row.rolloutSteps << ',' << row.terminal << ',' << row.invariantOk << ',' << row.target
+          << row.rolloutSteps << ',' << row.terminal << ',' << row.invariantOk << ',' << row.distinctDrawOrders << ',' << row.target
           << ',' << row.rawRolloutEval << ',' << row.drawOrder;
         for (const float v : row.feats) o << ',' << v;
         o << '\n';
@@ -2944,8 +2956,8 @@ static std::string particleLeafProbeSeedCsv() {
 }
 
 static std::string particleLeafProbeHeaderStr() {
-    std::string h = "seed,fightIdx,decIdx,groupId,obsHash,variant,treeDepth,encounterName,turn,"
-                    "curHp,maxHp,drawPileSize,rolloutSteps,terminal,invariantOk,target,rawRolloutEval,drawOrder";
+    std::string h = "seed,fightIdx,decIdx,sourceLeafId,obsHash,variant,treeDepth,encounterName,turn,"
+                    "curHp,maxHp,drawPileSize,rolloutSteps,terminal,invariantOk,distinctDrawOrders,target,rawRolloutEval,drawOrder";
     for (const auto &name : search::combatFeatureNames()) h += ',' + name;
     return h;
 }
