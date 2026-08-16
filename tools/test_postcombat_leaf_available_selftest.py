@@ -10,18 +10,28 @@ spec = importlib.util.spec_from_file_location("e2b", path)
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
-header = ["seed", "curHp", "maxHp", "nextFight0", "gold", "r7", "pot3", "redKey", "d1", "fmDElite", "mystery", "won"]
+header = ["seed", "curHp", "maxHp", "potionChance", "cardRarityFactor", "potionCapacity", "nextFight0", "gold", "r7", "pot3", "blueKey", "greenKey", "redKey", "d1", "bottledAtkId", "fmDElite", "mystery", "won"]
 rows = {r["feature"]: r for r in mod.manifest(header)}
 assert rows["nextFight0"]["family"] == "hidden/future"
 assert rows["fmDElite"]["family"] == "hidden/future"
-assert rows["gold"]["family"] == "reward-mutated"
-assert rows["r7"]["family"] == "reward-mutated"
-assert rows["pot3"]["family"] == "reward-mutated"
-assert rows["redKey"]["family"] == "fair+post-reward-stable"
+assert rows["gold"]["family"] == "reward-mutated-direct"
+assert rows["r7"]["family"] == "reward-mutated-direct"
+assert rows["pot3"]["family"] == "reward-mutated-direct"
+assert rows["potionChance"]["family"] == "reward-mutated-direct"
+assert rows["cardRarityFactor"]["family"] == "reward-mutated-direct"
+assert rows["maxHp"]["family"] == "reward-mutated-side-effect"
+assert rows["potionCapacity"]["family"] == "reward-mutated-side-effect"
+assert rows["blueKey"]["family"] == "reward-mutated-direct"
+assert rows["greenKey"]["family"] == "reward-mutated-direct"
+assert rows["redKey"]["family"] == "reward-mutated-direct"
+assert rows["d1"]["family"] == "reward-mutated-side-effect"
+assert rows["bottledAtkId"]["family"] == "reward-mutated-side-effect"
 assert rows["mystery"]["family"] == "ambiguous"
 full, fair, masked = mod.feature_sets(header, set(header) - mod.LABELS - {"seed"})
 assert set(fair) < set(full) and set(masked) < set(fair)
 assert "mystery" not in masked and "nextFight0" not in fair and "gold" not in masked
+assert "potionChance" not in masked and "cardRarityFactor" not in masked
+assert "maxHp" not in masked and "d1" not in masked and "bottledAtkId" not in masked
 seeds = np.array([10, 10, 20, 20, 30, 30])
 tr, va = mod.grouped_split(seeds)
 assert not set(seeds[tr]) & set(seeds[va])

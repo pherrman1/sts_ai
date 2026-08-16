@@ -26,21 +26,25 @@ XGB_PARAMS = dict(objective="binary:logistic", eval_metric=["auc", "logloss"],
 HIDDEN_EXACT = {"bossId", "nextEliteId", "nextFight0", "nextFight1", "nextFight2",
                 "remElites", "remFights", "monOffset", "eliteOffset"}
 HIDDEN_PREFIXES = ("fmD", "fmC")
-REWARD_EXACT = {"gold", "potionCount", "potionCapacity"}
-STABLE_EXACT = {"ascension", "act", "floor", "curHp", "maxHp", "deckSize",
-                "blueKey", "greenKey", "redKey", "potionChance", "cardRarityFactor",
+DIRECT_REWARD_EXACT = {"gold", "potionCount", "potionChance",
+                       "cardRarityFactor", "blueKey", "greenKey", "redKey"}
+REWARD_SIDE_EFFECT_EXACT = {"curHp", "maxHp", "deckSize", "potionCapacity",
+                            "bottledAtkId", "bottledSkillId", "bottledPowId"}
+STABLE_EXACT = {"ascension", "act", "floor", "blueKey", "greenKey", "redKey",
                 "pvShop", "pvRest", "pvEvent", "pvElite", "pvMonster", "pvTreasure",
-                "bottledAtkId", "bottledSkillId", "bottledPowId", "curMapX", "curMapY"}
+                "curMapX", "curMapY"}
 STABLE_PREFIXES = ("d", "u")
 
 
 def classify_feature(name):
     if name in HIDDEN_EXACT or name.startswith(HIDDEN_PREFIXES):
         return "hidden/future", False, False, "future encounter/map-derived information"
-    if (name in REWARD_EXACT or
+    if (name in DIRECT_REWARD_EXACT or
             (name.startswith("r") and name[1:].isdigit()) or
             (name.startswith("pot") and name[3:].isdigit())):
-        return "reward-mutated", False, False, "forced non-card reward pickup can change this value"
+        return "reward-mutated-direct", False, False, "reward generation or direct pickup changes this value"
+    if name in REWARD_SIDE_EFFECT_EXACT or name.startswith(("d", "u")):
+        return "reward-mutated-side-effect", False, False, "elite relic pickup can change this encoded state"
     if name in STABLE_EXACT or name.startswith(STABLE_PREFIXES):
         return "fair+post-reward-stable", True, True, "persistent state emitted by richRow"
     return "ambiguous", False, False, "no exact live-code boundary proof"

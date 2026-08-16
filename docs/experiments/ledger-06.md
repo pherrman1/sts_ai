@@ -3618,8 +3618,11 @@ gameplay, V_combat, or producer code changed.
 `richRow` contract classifies 9 verified hidden/future columns (`bossId`,
 `nextEliteId`, `nextFight0..2`, `remElites`, `remFights`, `monOffset`,
 `eliteOffset`) plus the `fmD*`/`fmC*` forward-map families as hidden/future.
-Gold, potion metadata/inventory, and all `r*` relic ownership-plus-counter
-columns are reward-mutated. Unknown schema fields fail closed as ambiguous.
+Gold, potion metadata/inventory, card-rarity state, key state, and all `r*`
+relic ownership-plus-counter columns are reward-mutated. Elite relic pickup
+also makes HP, max HP, deck composition/upgrades, bottle state, and potion
+capacity reward-induced side effects. Unknown schema fields fail closed as
+ambiguous.
 The existing CSV has no room/encounter identifier, and rows are captured after
 `BattleContext::exitBattle` and forced gold/relic/potion pickup. Therefore an
 ordinary-combat/raw-terminal subset cannot be identified defensibly. E2b uses
@@ -3640,28 +3643,30 @@ bootstrap resamples. Counts: 1,444,372 rows / 67,655 seeds / 479,498 wins /
 | B1 | 5 | 0.649746 | 0.595168 | 0.203594 | 0.003631 | 136 |
 | T-full | 448 | 0.748164 | 0.535066 | 0.179130 | 0.008419 | 983 |
 | T-fair | 439 | 0.746827 | 0.536352 | 0.179548 | 0.007152 | 944 |
-| T-masked | 256 | 0.702764 | 0.568621 | 0.192539 | 0.003583 | 517 |
+| T-masked | 8 | 0.611091 | 0.613848 | 0.211795 | 0.002156 | 88 |
 
 The held-out positive/negative counts are identical for every arm. Log-loss
-gain from B1 was 0.060102 for T-full, 0.058816 for T-fair, and 0.026547 for
-T-masked; retention was 97.86% and 44.17%, respectively. T-masked−B1 point
-differences were log loss −0.026547, Brier −0.011055, and AUC +0.053018.
+gain from B1 was 0.060102 for T-full, 0.058816 for T-fair, and −0.018680 for
+T-masked; retention was 97.86% and −31.08%, respectively. T-masked−B1 point
+differences were log loss +0.018680, Brier +0.008201, and AUC −0.038654.
 The seed-bootstrap comparisons (log loss / Brier / AUC mean, 95% CI) are in
 `build/e2b_leaf_available/metrics.json` for T-full−B1, T-fair−B1,
 T-masked−B1, T-fair−T-full, and T-masked−T-fair.
 
-**Decision:** **MASKED INCONCLUSIVE**. T-masked beats B1 on all three point
-metrics, has ECE below 0.10, and its log-loss bootstrap CI is favorable, but
-masked retention is below the preregistered 0.50 threshold. The hidden/future
-removal itself preserves almost all E2 gain; the larger loss comes from the
-the conservative reward mask. This is predictive evidence only, not
-causal feature value or exact raw-boundary calibration. The counter arm is
+**Decision:** **MASKED NEGATIVE**. T-masked fails to beat B1 on log loss,
+Brier, and AUC; its log-loss bootstrap CI is unfavorable and masked retention
+is negative. The hidden/future removal itself preserves almost all E2 gain;
+the corrected reward mask removes the state that carried the remaining
+predictive signal. This is predictive evidence only, not causal feature value
+or exact raw-boundary calibration. The counter arm is
 **NOT TESTABLE FROM E2 DATASET** because relic columns combine ownership and
 counter and pickup can add relics.
 
-**Follow-up:** E2c raw-boundary collection is justified because the
-inconclusive result is specifically driven by reward mutation and the missing
-room/encounter identifier. The ideal producer records matched raw
+**Follow-up:** E2c raw-boundary collection remains scientifically worthwhile,
+despite the negative masked result, because conservative masking may discard
+legitimate pre-existing resource information that cannot be reconstructed from
+post-reward rows. The missing room/encounter identifier also prevents exact
+boundary confirmation. The ideal producer records matched raw
 combat-terminal and pre-card-reward states for each survived fight, with room /
 encounter type and reward deltas, while preserving the eventual run label.
 Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,

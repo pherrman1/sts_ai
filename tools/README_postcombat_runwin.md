@@ -30,7 +30,9 @@ STS_XGB_DEVICE=cuda python3 tools/analyze_postcombat_leaf_available.py \
 It compares B1, T-full, T-fair, and T-masked on all represented card-reward
 rows with one seed-grouped split and held-out seed bootstrap. T-fair removes
 the verified future encounter and forward-map families. T-masked additionally
-removes gold, potion, relic, and any unclassified features. The manifest is
+removes direct reward fields and all verified elite-relic-induced side effects
+(including HP/max HP, deck/upgrades, bottle state, potion capacity, and relic
+state). The manifest is
 fail-closed and the output verdicts are `MASKED SUPPORT`, `MASKED INCONCLUSIVE`,
 or `MASKED NEGATIVE`.
 
