@@ -371,6 +371,12 @@ the search RNG and tree statistics are never consumed or modified. Nonterminal
 rows are retained with `terminal=0` for audit and are excluded by the paired
 offline trainer when terminal rows are available. The probe adds no runtime
 cost unless `STS_PARTICLE_LEAF_PROBE_FILE` is set and the probe mode is run.
+Each callback receives a monotonically increasing per-seed `sourceLeafId`; this
+identifier, rather than `obsHash`, defines a variant group because distinct
+hidden RNG states can share the same visible hash. `distinctDrawOrders` records
+how many unique permutations were available; when K exceeds the finite number
+of unique multiset permutations, rows are repeated and the analysis reports
+that limitation.
 
 Why the §126 end-HP leaf beats the §134 direct utility-R leaf online despite
 fitting its target worse offline is an open diagnostic question (handover

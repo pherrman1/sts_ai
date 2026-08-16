@@ -1,4 +1,4 @@
-## §168 Particle-conditioned leaf probe implementation (2026-08-16; diagnostic/offline; no gameplay promotion)
+## §174 Particle-conditioned leaf probe implementation (2026-08-16; diagnostic/offline; no gameplay promotion)
 
 - **Implementation:** added `one_combat particle_leaf_probe`, guarded by
   `STS_PARTICLE_LEAF_PROBE_FILE` and optional K/rate/group-cap controls. It
@@ -13,11 +13,12 @@
   K=1/2/4/8 averaging metrics, and reports draw-pile-length coverage. It is
   analysis infrastructure only; no scientific dataset or GO/STOP verdict is
   recorded in this implementation entry.
-- **Smoke:** one seed, 8 variants for 2 groups produced 16 rows, all variants
-  had `invariantOk=1`, all eight variant indices were present, draw-pile size
-  was 3, and all smoke labels were terminal. Full 8-seed evidence remains a
-  separate execution step and must be recorded with its exact startup flags,
-  artifacts, and raw output.
+- **Verification status:** the initial implementation smoke was only one seed,
+  2 groups, 16 rows and is retained as historical implementation evidence.
+  It must not be treated as the required 8-seed verification or as scientific
+  evidence. This corrected follow-up adds callback-unique `sourceLeafId`,
+  centered-RMSE/tie/sampling fixes, distinct-order reporting, and bounded
+  defaults; no 16–32 seed scientific run is authorized here.
 - **Non-goals:** no particle-conditioned runtime VNet, VNet-only search,
   policy-prior change, belief change, RNG conditioning, particle-count change,
   or OOC change.
