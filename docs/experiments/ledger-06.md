@@ -3595,3 +3595,164 @@ negative mean reference utility Δ). The high-confidence M0 improvement signal
 is therefore rejected under the stronger reference. The agreement metrics do
 not distinguish teacher/target failure from model-learning failure. No new
 labels, reselection, threshold tuning, or gameplay gate was run.
+
+## 2026-08-16 — Searcher3 cheap behavior-preserving speedups (perf/s3-cheap-speedups)
+
+Bounded implementation-efficiency pass on the fair Searcher3 path; no search
+parameter, RNG, model, or feature changed. Baseline `main` `a7573e1`
+(2026-08-16), measured in a dedicated worktree on branch
+`perf/s3-cheap-speedups`; the particle-conditioned leaf-value Phase-1 branch
+was not touched.
+
+Configuration: `OMP_NUM_THREADS=1 STS_FAIR=1 STS_SEARCHER3=1
+STS_S3_PARTICLES=64 STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_LIVE_VALID=1`, vnet
+leaf auto-default `models/v_combat_7k_tuned.txt` α=0.3 (§148), policy PUCT
+`models/policy_trees_c.txt` c=2.5, rejuvenation off (default), persistent
+posterior / pool-redirect / rank-corr / all other experimental flags at
+default (off). Workload: `bash tools/seed_guard.sh ./build/linux-gcc-release/
+one_combat bestbench 1000 4 0` (4 seeds, 1399 searches, 2,133,000 simulations
+per repetition; fresh LTO Release build per arm).
+
+Interventions (both in `src/sim/search/BattleScumSearcher3.cpp`):
+
+- A — `step()`: the per-expansion full `BattleContext preExecState` copy is
+  taken only when `g_s3EndTurnMarginalize` (default off, `STS_S3_END_TURN_MARGINALIZE`)
+  can consume it; the consumer guard now tests `preExecState` itself, so the
+  enabled-feature behavior is unchanged.
+- B — `sameCardMultiset` (particle draw-order compatibility, runs once per
+  simulation via `applyParticleImpl`): exact multiset equality via a fixed
+  `std::array<int, cardEnumStrings-size>` count table instead of two heap
+  vectors + two sorts. Same id-only identity domain as before (upgrade state
+  was and is outside this comparison; duplicates count per occurrence).
+
+Primary metric: median `simSeconds*1e6/simsExec` per search from
+`STS_REUSE_CPU_DIAG` CSV (ms/1000 sims). 9 interleaved rounds × 3 arms
+(base / A / A+B), rotating arm order per round; per-round medians (ms/1000
+sims):
+
+| Round | base | A | A+B |
+| --- | --- | --- | --- |
+| 1 | 28.271 | 27.693 | 27.309 |
+| 2 | 28.423 | 28.122 | 27.273 |
+| 3 | 27.551 | 27.432 | 28.785 |
+| 4 | 27.613 | 27.640 | 27.008 |
+| 5 | 27.616 | 27.474 | 26.946 |
+| 6 | 30.200 | 29.286 | 28.002 |
+| 7 | 28.805 | 28.093 | 28.230 |
+| 8 | 30.250 | 28.879 | 27.653 |
+| 9 | 28.041 | 28.117 | 27.726 |
+| median | 28.271 | 28.086 | 27.647 |
+
+Result: A alone +0.66%, A+B +2.21% (paired per-round median +2.43%). Host
+noise between rounds is up to ±4% (rounds 6/8 baseline slowdowns), so only the
+paired interleaved comparison is decision-relevant. Retained as one combined
+change under the small-diff rule; A alone or B alone fall under the 2% floor.
+
+Behavioral equivalence (exact, not aggregate):
+
+- `one_combat fairgen 2 1000 0 0.3 ...` value/policy/OOC CSVs byte-identical
+  (md5 match) between base and A, and between base and A+B.
+- All 27 CPU-diag runs identical on every non-timing column (seed, floor,
+  decisionIdx, simsExec, treeActions, rolloutActions, rootSimAfter, playerHp,
+  turn) — same root visit totals, same trajectories.
+- `bestbench` win%/avg_floor/avg_hp_end identical across arms; wall-clock
+  whole-run time reported as secondary evidence only.
+
+Focused tests (perf-worktree `test` binary, all PASS): belief, drawpile 77,
+obs_identity 77, prune 77, battlecontext_roundtrip, rng_state_propagation 77,
+seed_contract 77, belief_immutability, rejuv_history_replay 77,
+rejuv_noninterference 77, cardselect_parity, issue_fixes, real_belief_filter
+77, s3_drawpile_reuse_boundary. `belief_order_invariance` FAILS identically on
+untouched main `a7573e1` (pre-existing, 4 weight checks) — not caused by this
+change and not addressed here.
+
+Largest remaining Searcher3 hotspots (code inspection; no perf on this host):
+vnet leaf inference per rollout endpoint (`evaluateLeaf` →
+`g_combatVNet.predict`), per-rollout-slot `BattleContext` copies in
+`multiRollout`, and action execution itself. Reducing these requires
+representation/architecture work (BattleContext copy semantics, observation
+architecture, model serving) — explicitly out of scope; recommendation is STOP
+and return to particle-conditioned leaf-value research.
+
+## E2 — post-combat run-win critic (2026-08-16)
+
+**Baseline / branch:** `548742ab973d7f22eb6b1186dadb942c3aed10b5`,
+`exp/postcombat-runwin`. This is an offline target-validity diagnostic only;
+no Searcher3, particle, OOC policy, or deployed combat model was changed.
+
+**Boundary:** `BattleContext::exitBattle` commits HP, potions, deck, relic,
+gold, and combat RNG state; victory returns through `GameContext::afterBattle`.
+`datagen2` emits one row at the first card-reward decision after the fixed
+gold/relic/potion auto-pickup and immediately before card pick/skip. Normal,
+elite, and act-1/2 boss rewards always include a card reward. Act-3 terminal
+boss fights and event-room fights are not represented. Thus this is the first
+stable post-combat decision boundary, not the raw pre-reward screen.
+
+**Dataset / provenance:** existing ignored `build/vrich.csv`, generated by
+`tools/run/datagen2_loop.sh` on 2026-07-15: Ironclad ascension 0, 10,000
+simulations, epsilon 0.05, `v_server.py` V-marginal card continuation policy
+(softmax temperature 3 plus 5% uniform floor and skip threshold), heuristic
+map/shop/rest elsewhere. The canonical `vFeatCsv`/`richRow` path supplies the
+features; no feature definition was duplicated. The file has 1,444,372 rows,
+67,655 seeds, 18,601 wins and 49,054 losses. Act rows: 664,571 / 488,021 /
+291,780 for Acts 1 / 2 / 3. Per-seed `won` consistency check: zero violations.
+The source file SHA256 is retained in `build/e2_postcombat_runwin/`.
+
+**Method:** `GroupShuffleSplit(test_size=0.15, random_state=0)` by seed,
+matched for all arms: 57,506 train seeds and 10,149 held-out seeds. B0 is
+training prevalence. B1 uses exactly `curHp`, `maxHp`, `hpFrac`, `act`, and
+`floor`. T uses all 448 non-label, non-constant canonical rich features. B1
+and T use the existing `train_winrate.py` XGBoost recipe: binary logistic,
+hist, depth 8, eta .05, subsample .8, column sample .7, min child weight 20,
+max bin 256, 1,500 rounds, early stopping 40. Bootstrap is 2,000 resamples
+of held-out seeds, reporting T minus B1.
+
+**Held-out metrics:** 216,620 rows, 71,672 positives and 144,948 negatives.
+
+| arm | ROC-AUC | log loss | Brier | ECE |
+| --- | ---: | ---: | ---: | ---: |
+| B0 | 0.50000 | 0.63479 | 0.22140 | 0.00131 |
+| B1 | 0.64975 | 0.59517 | 0.20359 | 0.00363 |
+| T | 0.74816 | 0.53507 | 0.17913 | 0.00842 |
+
+T act metrics (rows / AUC / log loss / Brier / ECE): Act 1 99,790 /
+0.63555 / 0.56327 / 0.18946 / 0.00451; Act 2 73,074 / 0.78048 / 0.50662 /
+0.16843 / 0.01659; Act 3 43,756 / 0.81932 / 0.51825 / 0.17344 / 0.01069.
+All act strata have adequate held-out seed counts (10,149 / 9,726 / 6,204)
+and no major calibration failure.
+
+Seed bootstrap differences T−B1: log-loss mean −0.06009, 95% CI
+[−0.06507, −0.05535]; Brier mean −0.02445, CI [−0.02647, −0.02247]; AUC
+mean +0.09840, CI [+0.09200, +0.10500]. **Decision: SUPPORTED.** The rich
+post-combat state is predictively useful beyond HP/progression under this
+continuation policy. This does not establish causal item values, gameplay
+improvement, generic `V_win` correctness, Searcher3 integration, or a new
+`V_combat` target. Known-RNG encounter fields are included in T and are a
+limitation for interpreting transfer to a different information regime.
+
+**Correction before merge:** the first artifact used sparse full-dataset run
+IDs when resampling validation seeds. The trainer now reindexes the held-out
+run IDs contiguously before bootstrap, and the bootstrap artifacts below were
+regenerated. This changes uncertainty estimates only; model fitting and the
+held-out predictions are unchanged. The corrected bootstrap is the result to
+use for interpretation. Corrected values are log-loss mean −0.0600867,
+95% CI [−0.0650689, −0.0553531]; Brier mean −0.0244549, CI
+[−0.0264704, −0.0224724]; AUC mean +0.0983964, CI
+[+0.0920018, +0.1050012].
+
+**Relation to §116:** §116's TERM_WIN terminal-leaf benchmark was null because
+the deployed win tree was insensitive to the counter features; it therefore
+deferred Stage 3 until a counter-aware terminal evaluator existed. E2 is a
+potentially relevant prerequisite because it demonstrates that a rich
+post-combat state can predict eventual run outcome beyond HP/progression under
+the recorded continuation policy. E2 has **not** demonstrated a
+counter-aware terminal evaluator, has not shown that counters are causally
+priced, and does not authorize TERM_WIN, Searcher3, V_combat, or any deployed
+model change. It is merged as a useful offline positive diagnostic only.
+
+Artifacts: `build/e2_postcombat_runwin/metrics.json`,
+`calibration_deciles.csv`, `provenance.json`, `bootstrap` in metrics,
+`b1_model.json`, `t_model.json`, `val_predictions.npz`, and
+`sha256sums.txt`. Reproduction command:
+`STS_XGB_DEVICE=cuda python3 tools/train_postcombat_runwin.py build/vrich.csv
+build/e2_postcombat_runwin`.

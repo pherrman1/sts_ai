@@ -257,13 +257,15 @@ extern double g_vnetAlpha;
 static bool sameCardMultiset(const std::vector<CardInstance> &a,
                              const std::vector<CardInstance> &b) {
     if (a.size() != b.size()) return false;
-    std::vector<CardId> as, bs;
-    as.reserve(a.size()); bs.reserve(b.size());
-    for (const auto &c : a) as.push_back(c.getId());
-    for (const auto &c : b) bs.push_back(c.getId());
-    std::sort(as.begin(), as.end());
-    std::sort(bs.begin(), bs.end());
-    return as == bs;
+    // Exact multiset equality over card ids, allocation-free: fixed-size
+    // counts over the dense CardId range. Same identity domain as the previous
+    // sort-and-compare (id only — upgrade state is outside this comparison,
+    // exactly as before; duplicates count per occurrence).
+    std::array<int, sizeof(cardEnumStrings) / sizeof(cardEnumStrings[0])> counts{};
+    for (const auto &c : a) ++counts[static_cast<std::size_t>(c.getId())];
+    for (const auto &c : b)
+        if (--counts[static_cast<std::size_t>(c.getId())] < 0) return false;
+    return true;
 }
 
 // Shared implementation: install particle RNG seeds + draw order.
@@ -2011,8 +2013,11 @@ void BattleScumSearcher3::step() {
                 return;
             }
 
-            // Save pre-state for possible END_TURN marginalization.
-            BattleContext preExecState = state;
+            // Save pre-state for possible END_TURN marginalization. The copy
+            // is a full BattleContext per expansion, so only take it when the
+            // opt-in feature (STS_S3_END_TURN_MARGINALIZE) can consume it.
+            std::optional<BattleContext> preExecState;
+            if (g_s3EndTurnMarginalize) preExecState = state;
             maybeOutcomeBucketDiag(state, edge.action,
                 agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                 state.turn, decisionIndex);
@@ -2030,10 +2035,10 @@ void BattleScumSearcher3::step() {
             if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
 
             // ── END_TURN marginalization (leaf-expansion boundary only) ──
-            if (g_s3EndTurnMarginalize
+            if (preExecState
                 && edge.action.getActionType() == ActionType::END_TURN
                 && state.outcome == Outcome::UNDECIDED) {
-                double margEval = endTurnMarginalEval(preExecState, actionStack);
+                double margEval = endTurnMarginalEval(*preExecState, actionStack);
                 if (!std::isnan(margEval)) {
                     // Skip chain compression + rollout + blend.
                     // backpropagate the marginal expectation with 1 visit.
