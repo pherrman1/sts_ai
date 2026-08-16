@@ -2654,7 +2654,7 @@ struct ParticleLeafProbeRow {
     int fightIdx = -1, decIdx = -1, variant = -1, depth = 0, turn = 0;
     int curHp = 0, maxHp = 0, rolloutSteps = 0, terminal = 0;
     int invariantOk = 0, drawPileSize = 0;
-    int distinctDrawOrders = 0;
+    int uniqueVariantsSampled = 0;
     double target = std::numeric_limits<double>::quiet_NaN();
     double rawRolloutEval = std::numeric_limits<double>::quiet_NaN();
     std::string encounter, drawOrder;
@@ -2903,7 +2903,7 @@ static void particleLeafProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
         row.depth = d.treeDepth; row.turn = base.turn; row.curHp = base.player.curHp;
         row.maxHp = base.player.maxHp; row.rolloutSteps = steps; row.terminal = terminal ? 1 : 0;
         row.invariantOk = (sameFeatures && sameRng && sameMultiset) ? 1 : 0;
-        row.distinctDrawOrders = distinctCount;
+        row.uniqueVariantsSampled = distinctCount;
         row.drawPileSize = (int)base.cards.drawPile.size(); row.target = target;
         row.rawRolloutEval = d.rawRolloutEval;
         row.encounter = t_ld.encounter; row.drawOrder = drawOrder;
@@ -2947,7 +2947,7 @@ static std::string particleLeafProbeSeedCsv() {
         o << row.seed << ',' << row.fightIdx << ',' << row.decIdx << ',' << row.sourceLeafId << ','
           << row.obsHash << ',' << row.variant << ',' << row.depth << ',' << row.encounter << ','
           << row.turn << ',' << row.curHp << ',' << row.maxHp << ',' << row.drawPileSize << ','
-          << row.rolloutSteps << ',' << row.terminal << ',' << row.invariantOk << ',' << row.distinctDrawOrders << ',' << row.target
+          << row.rolloutSteps << ',' << row.terminal << ',' << row.invariantOk << ',' << row.uniqueVariantsSampled << ',' << row.target
           << ',' << row.rawRolloutEval << ',' << row.drawOrder;
         for (const float v : row.feats) o << ',' << v;
         o << '\n';
@@ -2957,7 +2957,7 @@ static std::string particleLeafProbeSeedCsv() {
 
 static std::string particleLeafProbeHeaderStr() {
     std::string h = "seed,fightIdx,decIdx,sourceLeafId,obsHash,variant,treeDepth,encounterName,turn,"
-                    "curHp,maxHp,drawPileSize,rolloutSteps,terminal,invariantOk,distinctDrawOrders,target,rawRolloutEval,drawOrder";
+                    "curHp,maxHp,drawPileSize,rolloutSteps,terminal,invariantOk,uniqueVariantsSampled,target,rawRolloutEval,drawOrder";
     for (const auto &name : search::combatFeatureNames()) h += ',' + name;
     return h;
 }

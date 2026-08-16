@@ -76,6 +76,7 @@ add_test(NAME py_compile_check_replay COMMAND python3 -m py_compile ${CMAKE_SOUR
 add_test(NAME py_compile_vnettest_selftest COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/verify/vnettest_selftest.py)
 add_test(NAME py_compile_winnettest_selftest COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/verify/winnettest_selftest.py)
 add_test(NAME py_compile_particle_leaf_probe COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/train_particle_leaf_probe.py)
+add_test(NAME particle_leaf_probe_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/train_particle_leaf_probe.py --self-test)
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/check_replay.py --self-test)
 add_test(NAME vnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/vnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME winnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/winnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)

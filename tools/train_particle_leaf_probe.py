@@ -28,7 +28,64 @@ def groups(rows):
     out = defaultdict(list)
     for row in rows:
         out[(row["seed"], row["sourceLeafId"])].append(row)
-    return {key: value for key, value in out.items() if len(value) >= 2}
+    deduped = {}
+    for key, value in out.items():
+        seen = set()
+        unique = []
+        for row in value:
+            if row["drawOrder"] not in seen:
+                seen.add(row["drawOrder"])
+                unique.append(row)
+        if unique:
+            deduped[key] = unique
+    return deduped
+
+
+def eligible_counts(vmap, k):
+    eligible = [key for key, values in vmap.items() if len(values[0]) >= k]
+    return {"groupsEligible": len(eligible),
+            "seedsEligible": len({int(key[0]) for key in eligible})}
+
+
+def grouped_metrics(vmap):
+    centered_y = []; centered_control = []; centered_particle = []
+    pair_control = []; pair_particle = []
+    for ys, vcs, vps in vmap.values():
+        ys, vcs, vps = map(np.asarray, (ys, vcs, vps))
+        centered_y.extend(ys - ys.mean())
+        centered_control.extend(vcs - vcs.mean())
+        centered_particle.extend(vps - vps.mean())
+        for i, j in itertools.combinations(range(len(ys)), 2):
+            if ys[i] == ys[j]: continue
+            truth_sign = ys[i] > ys[j]
+            for pred, result in ((vcs, pair_control), (vps, pair_particle)):
+                delta = pred[i] - pred[j]
+                result.append(.5 if delta == 0 else float((delta > 0) == truth_sign))
+    return {
+        "centeredRMSE": {
+            "control": float(np.sqrt(np.mean((np.asarray(centered_y) - np.asarray(centered_control)) ** 2))) if centered_y else float("nan"),
+            "treatment": float(np.sqrt(np.mean((np.asarray(centered_y) - np.asarray(centered_particle)) ** 2))) if centered_y else float("nan"),
+        },
+        "pairwise": {
+            "control": float(np.mean(pair_control)) if pair_control else float("nan"),
+            "treatment": float(np.mean(pair_particle)) if pair_particle else float("nan"),
+            "pairs": len(pair_particle),
+        },
+    }
+
+
+def self_test():
+    def row(order, target):
+        return {"seed": "900001", "sourceLeafId": "1", "drawOrder": order,
+                "target": str(target), "drawPileSize": "3", "invariantOk": "1", "terminal": "1"}
+    deduped = groups([row("a", 1), row("a", 99), row("b", 2), row("c", 3)])
+    assert len(deduped) == 1 and len(deduped[("900001", "1")]) == 3
+    vmap = {key: ([r["target"] for r in value], [], []) for key, value in deduped.items()}
+    assert eligible_counts(vmap, 1) == {"groupsEligible": 1, "seedsEligible": 1}
+    assert eligible_counts(vmap, 2) == {"groupsEligible": 1, "seedsEligible": 1}
+    assert eligible_counts(vmap, 4) == {"groupsEligible": 0, "seedsEligible": 0}
+    assert eligible_counts(vmap, 8) == {"groupsEligible": 0, "seedsEligible": 0}
+    print("train_particle_leaf_probe self-test: PASS")
 
 
 def metrics(y, pred):
@@ -47,10 +104,14 @@ def bootstrap(values, rng, n=2000):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("csv")
+    ap.add_argument("csv", nargs="?")
     ap.add_argument("--json", default="")
     ap.add_argument("--model-alpha", type=float, default=1.0)
+    ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
+    if args.self_test:
+        self_test()
+        return
     raw_rows, feature_names = load(args.csv)
     invariant_dropped = sum(int(r["invariantOk"]) != 1 for r in raw_rows)
     nonterminal_dropped = sum(int(r["invariantOk"]) == 1 and int(r["terminal"]) != 1 for r in raw_rows)
@@ -133,6 +194,23 @@ def main():
         ys, vcs, vps = map(np.asarray, (ys, vcs, vps))
         seed_rmse[int(key[0])].append(float(np.sqrt(np.mean((vps - ys) ** 2)) -
                                            np.sqrt(np.mean((vcs - ys) ** 2))))
+    size_strata = {}
+    for name, predicate in (("le10", lambda r: int(r["drawPileSize"]) <= 10),
+                            ("gt10", lambda r: int(r["drawPileSize"]) > 10)):
+        stratum_rows = [r for r in rows if predicate(r)]
+        stratum_groups = groups(stratum_rows)
+        size_strata[name] = {
+            "rows": len(stratum_rows), "groups": len(stratum_groups),
+            "seeds": len({int(key[0]) for key in stratum_groups}),
+            "fractionRows": float(len(stratum_rows) / len(rows)) if rows else float("nan"),
+        }
+    validation_strata = {}
+    for name, predicate in (("le10", lambda r: int(r["drawPileSize"]) <= 10),
+                            ("gt10", lambda r: int(r["drawPileSize"]) > 10)):
+        keys = {key for key, value in vmap.items()
+                if value[0] and predicate(next(r for r in val if (r["seed"], r["sourceLeafId"]) == key))}
+        validation_strata[name] = grouped_metrics({key: vmap[key] for key in keys})
+        validation_strata[name].update({"groups": len(keys), "seeds": len({int(key[0]) for key in keys})})
     result = {
         "rows": len(rows), "raw_rows": len(raw_rows), "invariant_rows_dropped": invariant_dropped,
         "nonterminal_rows_dropped": nonterminal_dropped, "groups": len(gs),
@@ -143,7 +221,8 @@ def main():
         "draw_pile": {"length_mean": float(np.mean([int(r["drawPileSize"]) for r in rows])),
                       "length_median": float(np.median([int(r["drawPileSize"]) for r in rows])),
                       "fraction_le_10": float(np.mean([int(r["drawPileSize"]) <= 10 for r in rows])),
-                      "distinct_orders_mean": float(np.mean([int(r["distinctDrawOrders"]) for r in rows]))},
+                      "unique_variants_sampled_mean": float(np.mean([int(r["uniqueVariantsSampled"]) for r in rows])),
+                      "sizeStrata": size_strata},
         "spread": {"mean_std": float(np.mean(spreads)), "median_std": float(np.median(spreads)),
                     "mean_range": float(np.mean(ranges)), "median_range": float(np.median(ranges)),
                     "global_std": float(np.std(y_val))},
@@ -153,9 +232,11 @@ def main():
         "pairwise": {"control": float(np.mean(pair_control)) if pair_control else float("nan"),
                      "particle": float(np.mean(pair_particle)) if pair_particle else float("nan"),
                      "pairs": len(pair_particle), "groups": len(vmap)},
-        "averaging_curve": {str(k): {"raw_rollout_rmse": float(np.sqrt(np.mean(raw_curve[k]))),
-                                      "particle_model_rmse": float(np.sqrt(np.mean(model_curve[k])))}
-                            for k in raw_curve},
+        "averaging_curve": {str(k): {"raw_rollout_rmse": float(np.sqrt(np.mean(raw_curve[k]))) if raw_curve[k] else float("nan"),
+                                      "particle_model_rmse": float(np.sqrt(np.mean(model_curve[k]))),
+                                      **eligible_counts(vmap, k)}
+                            for k in (1, 2, 4, 8)},
+        "validation_strata": validation_strata,
     }
     b_rng = np.random.default_rng(BOOTSTRAP_SEED)
     result["bootstrap"] = {

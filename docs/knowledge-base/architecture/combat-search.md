@@ -373,10 +373,11 @@ offline trainer when terminal rows are available. The probe adds no runtime
 cost unless `STS_PARTICLE_LEAF_PROBE_FILE` is set and the probe mode is run.
 Each callback receives a monotonically increasing per-seed `sourceLeafId`; this
 identifier, rather than `obsHash`, defines a variant group because distinct
-hidden RNG states can share the same visible hash. `distinctDrawOrders` records
-how many unique permutations were available; when K exceeds the finite number
-of unique multiset permutations, the probe emits only the unique rows and the
-analysis omits unavailable averaging-curve K values for that group.
+hidden RNG states can share the same visible hash. `uniqueVariantsSampled` records
+how many unique permutations bounded sampling found; when K exceeds that sampled
+count, the probe emits only the unique rows and the analysis omits unavailable
+averaging-curve K values for that group. The offline trainer deduplicates exact
+draw orders defensively before metrics and reports draw-pile-size strata.
 
 Why the §126 end-HP leaf beats the §134 direct utility-R leaf online despite
 fitting its target worse offline is an open diagnostic question (handover

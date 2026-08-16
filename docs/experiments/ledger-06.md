@@ -19,11 +19,14 @@
   evidence. This corrected follow-up adds callback-unique `sourceLeafId`,
   centered-RMSE/tie/sampling fixes, distinct-order reporting, and bounded
   defaults. Review correction: groups now emit only unique sampled draw orders
-  (no K-padding duplicates), averaging-curve K values unavailable for a short
-  group are omitted, and `drawOrder` is captured before diagnostic rollout
-  mutates the draw pile. The focused corrected smoke produced 107 rows across
-  16 groups with no duplicate orders, all invariants passing, and no trainer
-  group-split leakage; no 16–32 seed scientific run is authorized here.
+  (no K-padding duplicates), `uniqueVariantsSampled` names the bounded-sampling
+  count, averaging-curve K values unavailable for a short group are omitted, and
+  `drawOrder` is captured before diagnostic rollout mutates the draw pile. The
+  trainer defensively deduplicates exact orders, reports K-specific eligible
+  groups/seeds and draw-pile-size strata, and has a synthetic self-test. The
+  focused corrected smoke produced 107 rows across 16 groups with no duplicate
+  orders, all invariants passing, and no trainer group-split leakage; no 16–32
+  seed scientific run is authorized here.
 - **Non-goals:** no particle-conditioned runtime VNet, VNet-only search,
   policy-prior change, belief change, RNG conditioning, particle-count change,
   or OOC change.
