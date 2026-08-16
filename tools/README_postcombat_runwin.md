@@ -17,3 +17,25 @@ The boundary is after forced gold/relic/potion pickup and immediately before
 the first card pick/skip. This is not a new gameplay or data-generation mode.
 The result is predictive under the datagen continuation policy and is not a
 causal estimate of item values.
+
+## E2b masked diagnostic
+
+The broader offline E2b diagnostic is intentionally separate:
+
+```bash
+STS_XGB_DEVICE=cuda python3 tools/analyze_postcombat_leaf_available.py \
+  build/vrich.csv build/e2b_leaf_available
+```
+
+It compares B1, T-full, T-fair, and T-masked on all represented card-reward
+rows with one seed-grouped split and held-out seed bootstrap. T-fair removes
+the verified future encounter and forward-map families. T-masked additionally
+removes gold, potion, relic, and any unclassified features. The manifest is
+fail-closed and the output verdicts are `MASKED SUPPORT`, `MASKED INCONCLUSIVE`,
+or `MASKED NEGATIVE`.
+
+This is not an exact raw-terminal or ordinary-combat result: `vrich.csv` has no
+room/encounter identifier and is captured after forced non-card reward pickup.
+Relic columns combine ownership and counters, so the counter-awareness arm is
+reported as not testable rather than treating post-pickup relics as a clean
+counter intervention.
