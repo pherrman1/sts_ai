@@ -33,6 +33,7 @@
 #include <sstream>
 #include <iostream>
 #include <mutex>
+#include <optional>
 #include <random>
 #include <string>
 #include <thread>
@@ -2632,6 +2633,15 @@ static int g_particleLeafProbeK = 8;
 static double g_particleLeafProbeRate = 0.05;
 static int g_particleLeafProbeMaxGroups = 16;
 
+// Phase 1b: posterior-valid particle sensitivity probe. K=0 (default)
+// evaluates ALL unique compatible leaf hidden states from the current finite
+// root belief; K>0 caps evaluation at the K highest-mass states (the source
+// world is always included, no duplicate padding). MAX_GROUPS: -1 unlimited,
+// 0 captures nothing (probe-OFF determinism arm), >0 per-seed group cap.
+static std::string g_particlePosteriorProbeFile;
+static int g_particlePosteriorProbeK = 0;
+static int g_particlePosteriorProbeMaxGroups = 16;
+
 struct LeafDiagRow {
     std::uint64_t seed = 0;
     int fightIdx = -1, decIdx = -1;
@@ -2694,6 +2704,9 @@ struct LeafDiagCtx {
     std::vector<ParticleLeafProbeRow> particleProbeRows;
     int particleProbeGroups = 0;
     std::uint64_t particleProbeSourceLeafSeq = 0;
+    std::vector<struct ParticlePosteriorProbeRow> particlePosteriorRows;
+    int particlePosteriorGroups = 0;
+    std::uint64_t particlePosteriorSourceLeafSeq = 0;
     void init(std::uint64_t sd) {
         seed = sd; fightIdx = 0; floor = 0; act = 0; encounter.clear(); decIdx = 0;
         rng.seed(sd ? sd : 1);
@@ -2705,6 +2718,9 @@ struct LeafDiagCtx {
         particleProbeRows.clear();
         particleProbeGroups = 0;
         particleProbeSourceLeafSeq = 0;
+        particlePosteriorRows.clear();
+        particlePosteriorGroups = 0;
+        particlePosteriorSourceLeafSeq = 0;
     }
 };
 static thread_local LeafDiagCtx t_ld;
@@ -2960,6 +2976,304 @@ static std::string particleLeafProbeHeaderStr() {
                     "curHp,maxHp,drawPileSize,rolloutSteps,terminal,invariantOk,uniqueVariantsSampled,target,rawRolloutEval,drawOrder";
     for (const auto &name : search::combatFeatureNames()) h += ',' + name;
     return h;
+}
+
+// ---------------------------------------------------------------------------
+// PHASE-1b posterior-valid particle sensitivity probe (particle_posterior_probe)
+//
+// For a sampled Searcher3 frontier-type-0 source leaf, replay the exact
+// SEMANTIC pre-rollout action prefix (tree actions + expansion action +
+// deterministic chain actions, with actual post-action observations recorded
+// per step) under EVERY positive-weight particle of the searcher's CURRENT
+// finite root belief. A candidate is compatible only if every checkpoint
+// observation AND outcome match exactly (INTERMEDIATE_OBSERVATION_MISMATCH
+// rejects even if the leaf later reconverges) and the final visible leaf
+// observation + outcome match. Accepted leaf worlds are deduplicated by
+// FullHiddenStateKey EQUALITY (ordered std::map, never a combined hash) with
+// probability mass aggregated across collapsing root particles. Each
+// evaluated compatible world is scored with the isolated diagnosticRollout
+// using one per-group CRN seed; the searcher's RNG, tree, belief, and the
+// live battle are never touched. Source groups whose source particle needed
+// the stale-particle fallback shuffle are marked SOURCE_PARTICLE_FALLBACK and
+// are scientifically ineligible (their replay is NOT an implementation
+// failure). "Posterior-valid" is relative to Searcher3's finite belief
+// approximation, not an exact Bayesian posterior.
+// ---------------------------------------------------------------------------
+struct ParticlePosteriorProbeRow {
+    int rowType = 0;                     // 0 = group summary, 1 = evaluated compatible world
+    std::uint64_t seed = 0, obsHash = 0, sourceLeafId = 0;
+    int fightIdx = -1, decIdx = -1, treeDepth = 0, turn = 0;
+    int curHp = 0, maxHp = 0, drawPileSize = 0;
+    int rootParticleCount = 0, positiveParticleCount = 0, replayAttempted = 0;
+    int replayCompatibleParticles = 0, uniqueCompatibleStates = 0, evaluatedWorldCount = 0;
+    double compatibleMass = 0.0, evaluatedMass = 0.0;
+    int sourceParticleIndex = -1, sourceParticleReplayOk = -1, sourceParticleFallback = 0;
+    int groupEligible = 1, invariantOk = 1;
+    std::string replayFailure;
+    int semanticReplayFailures = 0, actionIllegalFailures = 0, intermediateObservationMismatches = 0;
+    int intermediateOutcomeMismatches = 0, finalObservationMismatches = 0, drawPileMismatches = 0;
+    int firstMismatchCheckpoint = -1;
+    std::uint64_t expectedMismatchHash = 0, actualMismatchHash = 0;
+    std::uint32_t mismatchActionBits = 0;
+    int rootCarriedFlag = 0, reuseGeneration = 0, reuseSearchCount = -1;
+    int candidateParticleIndex = -1, candidateIsSource = 0, dedupOrdinal = -1;
+    int rolloutSteps = 0, terminal = 0;
+    double candidateWeight = 0.0, target = std::numeric_limits<double>::quiet_NaN();
+    std::string encounter, rngSignature, drawOrder;
+};
+
+// Audit-only RNG signature telemetry; hidden-state identity/dedup uses
+// FullHiddenStateKey equality, never this hash.
+static std::string posteriorProbeRngSignature(const sts::FullHiddenStateKey &key) {
+    std::uint64_t h = 0xcbf29ce484222325ULL;
+    for (int i = 0; i < 6; ++i) {
+        h ^= key.seed0[i]; h *= 1099511628211ULL;
+        h ^= key.seed1[i]; h *= 1099511628211ULL;
+        h ^= (std::uint64_t)(std::int64_t)key.counter[i]; h *= 1099511628211ULL;
+    }
+    std::ostringstream o;
+    o << std::hex << h;
+    return o.str();
+}
+
+// Semantic remap of one recorded checkpoint action onto a candidate replay
+// state whose hand order may differ. CARD rebinds by canonical card identity
+// (resolveCardKeyInHand); END_TURN and POTION raw bits carry visible
+// slot/target semantics and replay exactly. Any other action type (all
+// card-select paths) has no exact semantic replay here -> nullopt, which
+// marks the whole source group ineligible rather than guessing.
+static std::optional<search::Action> posteriorProbeRemapAction(
+    const search::S3LeafActionCheckpoint &cp, const BattleContext &state) {
+    switch (cp.action.getActionType()) {
+    case search::ActionType::CARD: {
+        if (!cp.hasCardKey) return std::nullopt;
+        search::BattleScumSearcher3::CardActionKey key;
+        key.id = cp.cardId;
+        key.upgradeCount = cp.upgradeCount;
+        key.costForTurn = cp.costForTurn;
+        key.freeToPlayOnce = cp.freeToPlayOnce;
+        key.specialData = cp.specialData;
+        key.target = cp.target;
+        const auto hi = search::resolveCardKeyInHand(key, state);
+        if (!hi) return std::nullopt;
+        if (key.target >= 0)
+            return search::Action(search::ActionType::CARD, *hi, key.target);
+        return search::Action(search::ActionType::CARD, *hi);
+    }
+    case search::ActionType::END_TURN:
+    case search::ActionType::POTION:
+        return cp.action;
+    default:
+        return std::nullopt;   // SINGLE_/MULTI_CARD_SELECT: not exactly replayable
+    }
+}
+
+static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
+    if (g_particlePosteriorProbeFile.empty() || !d.searcher || !d.bc) return;
+    if (d.frontierType != 0) return;   // actual S3 frontier leaves only
+    if (g_particlePosteriorProbeMaxGroups >= 0
+        && t_ld.particlePosteriorGroups >= g_particlePosteriorProbeMaxGroups) return;
+    const std::uint64_t sourceLeafId = ++t_ld.particlePosteriorSourceLeafSeq;
+    const BattleContext &base = *d.bc;
+    const auto &particles = d.searcher->belief.particles;
+    const int sourceIndex = static_cast<int>(d.particleIndex);
+
+    ParticlePosteriorProbeRow g;
+    g.seed = t_ld.seed; g.fightIdx = t_ld.fightIdx; g.decIdx = t_ld.decIdx;
+    g.sourceLeafId = sourceLeafId; g.obsHash = d.obsHash; g.treeDepth = d.treeDepth;
+    g.turn = base.turn; g.curHp = base.player.curHp; g.maxHp = base.player.maxHp;
+    g.drawPileSize = (int)base.cards.drawPile.size(); g.encounter = t_ld.encounter;
+    g.rootParticleCount = (int)particles.size();
+    g.positiveParticleCount = (int)std::count_if(
+        particles.begin(), particles.end(),
+        [](const sts::HiddenBattleState &p) { return p.weight > 0.0; });
+    g.sourceParticleIndex = sourceIndex;
+    g.sourceParticleFallback = d.particleUsedFallback ? 1 : 0;
+    g.rootCarriedFlag = d.rootCarried ? 1 : 0;
+    g.reuseGeneration = d.reuseGeneration;
+    g.reuseSearchCount = d.reuseSearchCount;
+
+    auto finishGroup = [&]() {
+        t_ld.particlePosteriorRows.push_back(g);
+        ++t_ld.particlePosteriorGroups;
+    };
+
+    // (1) Source simulation needed the stale-particle fallback shuffle: the
+    // stored particle alone does not specify that world. Scientifically
+    // ineligible; NOT an implementation failure and replay is not attempted.
+    if (d.particleUsedFallback) {
+        g.groupEligible = 0;
+        g.sourceParticleReplayOk = -1;
+        g.replayFailure = "SOURCE_PARTICLE_FALLBACK";
+        finishGroup();
+        return;
+    }
+    if (sourceIndex < 0 || sourceIndex >= (int)particles.size()) {
+        g.groupEligible = 0; g.sourceParticleReplayOk = -1; g.invariantOk = 0;
+        g.replayFailure = "SOURCE_PARTICLE_INDEX_INVALID";
+        finishGroup();
+        return;
+    }
+    // (2) The prefix must be exactly replayable by action semantics. Any
+    // card-select action (or a CARD without recorded identity) makes the whole
+    // group ineligible — no raw-index replay is pretended to be equivalent.
+    for (const auto &cp : d.actionCheckpoints) {
+        const auto type = cp.action.getActionType();
+        const bool intrinsicallyUnsupported =
+            (type != search::ActionType::CARD
+             && type != search::ActionType::END_TURN
+             && type != search::ActionType::POTION)
+            || (type == search::ActionType::CARD && !cp.hasCardKey);
+        if (intrinsicallyUnsupported) {
+            g.groupEligible = 0;
+            g.sourceParticleReplayOk = -1;
+            g.replayFailure = "UNREPLAYABLE_ACTION_PREFIX";
+            finishGroup();
+            return;
+        }
+    }
+
+    const CombatObservation sourceFinalObs = CombatObservation::fromBattleContext(base);
+    struct Candidate {
+        int rootIndex = -1;
+        double weight = 0.0;
+        bool source = false;
+        BattleContext state;
+        sts::FullHiddenStateKey key;
+    };
+    std::vector<Candidate> compatible;
+    std::map<sts::FullHiddenStateKey, size_t> byKey;   // equality-backed exact identity
+    int acceptedParticles = 0;
+
+    auto replayCandidate = [&](int particleIndex, bool isSource) {
+        Candidate c;
+        c.rootIndex = particleIndex;
+        c.weight = particles[particleIndex].weight;
+        c.source = isSource;
+        c.state = *d.searcher->rootBc;
+        if (!search::applyHiddenStateExact(c.state, particles[particleIndex])) {
+            ++g.drawPileMismatches;
+            return;
+        }
+        int checkpointIndex = 0;
+        for (const auto &cp : d.actionCheckpoints) {
+            const auto action = posteriorProbeRemapAction(cp, c.state);
+            if (!action) { ++g.semanticReplayFailures; return; }
+            if (!action->isValidAction(c.state)) { ++g.actionIllegalFailures; return; }
+            action->execute(c.state);
+            const CombatObservation obs = CombatObservation::fromBattleContext(c.state);
+            if (obs != cp.observation) {
+                ++g.intermediateObservationMismatches;
+                if (isSource && g.firstMismatchCheckpoint < 0) {
+                    g.firstMismatchCheckpoint = checkpointIndex;
+                    g.expectedMismatchHash = cp.observation.visibleHash();
+                    g.actualMismatchHash = obs.visibleHash();
+                    g.mismatchActionBits = action->bits;
+                }
+                return;
+            }
+            if (c.state.outcome != cp.outcome) { ++g.intermediateOutcomeMismatches; return; }
+            ++checkpointIndex;
+        }
+        const CombatObservation finalObs = CombatObservation::fromBattleContext(c.state);
+        if (finalObs != sourceFinalObs || c.state.outcome != d.outcome) {
+            ++g.finalObservationMismatches;   // final visible observation OR outcome mismatch
+            return;
+        }
+        ++acceptedParticles;
+        c.key = sts::fullHiddenStateKey(c.state);
+        const auto found = byKey.find(c.key);
+        if (found != byKey.end()) {
+            // Multiple root particles collapse to one exact leaf hidden state:
+            // aggregate their probability mass, never count as independent worlds.
+            compatible[found->second].weight += c.weight;
+            compatible[found->second].source |= c.source;
+        } else {
+            byKey.emplace(c.key, compatible.size());
+            compatible.push_back(std::move(c));
+        }
+    };
+
+    g.replayAttempted = g.positiveParticleCount
+        + (particles[sourceIndex].weight > 0.0 ? 0 : 1);
+    replayCandidate(sourceIndex, true);
+    for (int i = 0; i < (int)particles.size(); ++i)
+        if (particles[i].weight > 0.0 && i != sourceIndex)
+            replayCandidate(i, false);
+
+    g.replayCompatibleParticles = acceptedParticles;
+    bool sourceOk = false;
+    double compatibleMass = 0.0;
+    for (const auto &c : compatible) {
+        compatibleMass += c.weight;
+        if (c.source) sourceOk = true;
+    }
+    g.uniqueCompatibleStates = (int)compatible.size();
+    g.compatibleMass = compatibleMass;
+
+    // (3) Mandatory source-particle replay invariant. The exact source
+    // particle MUST reproduce the source leaf; failure is an implementation
+    // failure that invalidates the run.
+    if (!sourceOk) {
+        g.sourceParticleReplayOk = 0;
+        g.invariantOk = 0;
+        g.replayFailure = "SOURCE_PARTICLE_REPLAY_FAILED";
+        finishGroup();
+        return;
+    }
+    g.sourceParticleReplayOk = 1;
+
+    // (4) Evaluation set: all unique compatible states by default; if K > 0,
+    // deterministic mass-respecting selection (highest weight first, ties by
+    // discovery order) with the source world always included, no padding.
+    std::vector<int> order(compatible.size());
+    for (size_t i = 0; i < order.size(); ++i) order[i] = (int)i;
+    const int cap = g_particlePosteriorProbeK > 0
+        ? std::min(g_particlePosteriorProbeK, (int)compatible.size())
+        : (int)compatible.size();
+    if ((int)order.size() > cap) {
+        std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
+            return compatible[a].weight > compatible[b].weight;
+        });
+        order.resize(cap);
+        int sourceSlot = -1;
+        for (int i = 0; i < (int)compatible.size(); ++i)
+            if (compatible[i].source) { sourceSlot = i; break; }
+        if (sourceSlot >= 0 && !order.empty()
+            && std::find(order.begin(), order.end(), sourceSlot) == order.end())
+            order.back() = sourceSlot;
+    }
+    g.evaluatedWorldCount = (int)order.size();
+    double evaluatedMass = 0.0;
+    for (int idx : order) evaluatedMass += compatible[idx].weight;
+    g.evaluatedMass = evaluatedMass;
+
+    const std::uint64_t rngSeed = (t_ld.seed * 0x9e3779b97f4a7c15ULL)
+                                ^ sourceLeafId ^ 0x9e3779b97f4a7c15ULL;
+    t_ld.particlePosteriorRows.push_back(g);   // group summary row first
+    ++t_ld.particlePosteriorGroups;
+    for (int ordinal = 0; ordinal < (int)order.size(); ++ordinal) {
+        const auto &c = compatible[order[ordinal]];
+        BattleContext state = c.state;   // exact full leaf world, draw order + 6 RNG streams preserved
+        std::mt19937_64 diagnosticRng(rngSeed);   // same CRN seed across worlds within this group
+        std::vector<search::Action> actions;
+        double target = std::numeric_limits<double>::quiet_NaN();
+        bool terminal = false;
+        const int steps = d.searcher->diagnosticRollout(state, actions, diagnosticRng,
+                                                        target, terminal);
+        ParticlePosteriorProbeRow w = g;   // repeat source-group metadata on every world row
+        w.rowType = 1;
+        w.candidateParticleIndex = c.rootIndex;
+        w.candidateWeight = c.weight;
+        w.candidateIsSource = c.source ? 1 : 0;
+        w.dedupOrdinal = ordinal;
+        w.rngSignature = posteriorProbeRngSignature(c.key);
+        w.drawOrder = particleLeafDrawOrder(c.state);
+        w.rolloutSteps = steps;
+        w.terminal = terminal ? 1 : 0;
+        w.target = target;
+        t_ld.particlePosteriorRows.push_back(std::move(w));
+    }
 }
 
 static std::string leafDiagHeaderStr() {
@@ -7048,6 +7362,91 @@ static void particleLeafProbe(int nSeeds, int sims, int asc,
     std::cout << "particle leaf probe wrote " << outFile << " (K="
               << g_particleLeafProbeK << ", rate=" << g_particleLeafProbeRate
               << ", max_groups=" << g_particleLeafProbeMaxGroups << ")\n";
+}
+
+static std::string particlePosteriorProbeHeaderStr() {
+    return "rowType,seed,fightIdx,decIdx,sourceLeafId,obsHash,treeDepth,encounterName,turn,"
+           "curHp,maxHp,drawPileSize,rootParticleCount,positiveParticleCount,replayAttempted,"
+           "replayCompatibleParticles,uniqueCompatibleStates,compatibleMass,evaluatedWorldCount,"
+           "evaluatedMass,sourceParticleIndex,sourceParticleReplayOk,sourceParticleFallback,"
+           "groupEligible,invariantOk,replayFailure,semanticReplayFailures,actionIllegalFailures,"
+           "intermediateObservationMismatches,intermediateOutcomeMismatches,finalObservationMismatches,"
+           "drawPileMismatches,firstMismatchCheckpoint,expectedMismatchHash,actualMismatchHash,mismatchActionBits,"
+           "rootCarried,reuseGeneration,reuseSearchCount,candidateParticleIndex,"
+           "candidateWeight,candidateIsSource,dedupOrdinal,rngSignature,drawOrder,terminal,target,"
+           "rolloutSteps";
+}
+
+static std::string particlePosteriorProbeSeedCsv() {
+    std::ostringstream o;
+    for (const auto &r : t_ld.particlePosteriorRows) {
+        o << r.rowType << ',' << r.seed << ',' << r.fightIdx << ',' << r.decIdx << ','
+          << r.sourceLeafId << ',' << r.obsHash << ',' << r.treeDepth << ',' << r.encounter << ','
+          << r.turn << ',' << r.curHp << ',' << r.maxHp << ',' << r.drawPileSize << ','
+          << r.rootParticleCount << ',' << r.positiveParticleCount << ',' << r.replayAttempted << ','
+          << r.replayCompatibleParticles << ',' << r.uniqueCompatibleStates << ','
+          << r.compatibleMass << ',' << r.evaluatedWorldCount << ',' << r.evaluatedMass << ','
+          << r.sourceParticleIndex << ',' << r.sourceParticleReplayOk << ','
+          << r.sourceParticleFallback << ',' << r.groupEligible << ',' << r.invariantOk << ','
+          << (r.replayFailure.empty() ? std::string("-") : r.replayFailure) << ','
+          << r.semanticReplayFailures << ',' << r.actionIllegalFailures << ','
+          << r.intermediateObservationMismatches << ',' << r.intermediateOutcomeMismatches << ','
+          << r.finalObservationMismatches << ',' << r.drawPileMismatches << ','
+          << r.firstMismatchCheckpoint << ',' << r.expectedMismatchHash << ','
+          << r.actualMismatchHash << ',' << r.mismatchActionBits << ','
+          << r.rootCarriedFlag << ',' << r.reuseGeneration << ',' << r.reuseSearchCount << ','
+          << r.candidateParticleIndex << ',' << r.candidateWeight << ','
+          << r.candidateIsSource << ',' << r.dedupOrdinal << ',' << r.rngSignature << ','
+          << '"' << r.drawOrder << '"' << ',' << r.terminal << ',' << r.target << ','
+          << r.rolloutSteps << '\n';
+    }
+    return o.str();
+}
+
+// Phase-1b driver. Identical run regime to particle_leaf_probe (forced
+// fair-Searcher3); additionally sets g_s3LeafTraceActions so step() records
+// per-action semantic checkpoints. Writes <out>.runs.csv (one row per seed,
+// game-independent of probe work) as the probe-OFF vs probe-ON determinism
+// comparator.
+static void particlePosteriorProbe(int nSeeds, int sims, int asc,
+                                   const std::string &outFile, long long seedOffset = 0) {
+    search::g_richCombatFeatures = true;
+    std::ofstream f(outFile);
+    if (!f) { std::cerr << "particle_posterior_probe: cannot open " << outFile << '\n'; return; }
+    std::ofstream runs(outFile + ".runs.csv");
+    if (!runs) { std::cerr << "particle_posterior_probe: cannot open " << outFile << ".runs.csv\n"; return; }
+    runs << "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter\n";
+    f << particlePosteriorProbeHeaderStr() << '\n';
+    g_leafdiagActive = true;
+    const auto t0 = std::chrono::steady_clock::now();
+    long long rows = 0;
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        search::g_onS3LeafQuery = particlePosteriorProbeOnLeafQuery;
+        search::g_s3LeafTraceActions = true;
+        search::g_onSearchComplete3 = [](const BattleContext &,
+                                         const search::BattleScumSearcher3 &) { ++t_ld.decIdx; };
+        t_ld.init((std::uint64_t)(seedOffset + s));
+        const RunResult r = runFullRunOOC((std::uint64_t)(seedOffset + s), sims, asc, false, false);
+        const std::string out = particlePosteriorProbeSeedCsv();
+        search::g_onS3LeafQuery = nullptr;
+        search::g_s3LeafTraceActions = false;
+        search::g_onSearchComplete3 = nullptr;
+        #pragma omp critical
+        {
+            f << out;
+            runs << (seedOffset + s) << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
+                 << r.act << ',' << r.hpEnd << ',' << r.maxHp << ',' << r.fightsLost << ','
+                 << r.deathCombat << ',' << r.deathEncounter << '\n';
+            rows += std::count(out.begin(), out.end(), '\n');
+        }
+    }
+    g_leafdiagActive = false;
+    const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("particle posterior probe wrote %s (%lld rows, K=%s, max_groups=%d) in %.1fs (%.2fs/seed)\n",
+                outFile.c_str(), rows,
+                g_particlePosteriorProbeK > 0 ? std::to_string(g_particlePosteriorProbeK).c_str() : "all",
+                g_particlePosteriorProbeMaxGroups, wall, wall / std::max(1, nSeeds));
 }
 
 // ---------------------------------------------------------------------------
@@ -11605,6 +12004,15 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_PARTICLE_LEAF_PROBE_MAX_GROUPS")) {
         const int n = std::atoi(d); if (n >= 0) g_particleLeafProbeMaxGroups = n;
     }
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_PROBE_FILE")) {
+        g_particlePosteriorProbeFile = d;
+    }
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_PROBE_K")) {
+        const int k = std::atoi(d); if (k >= 0) g_particlePosteriorProbeK = k;
+    }
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_PROBE_MAX_GROUPS")) {
+        const int n = std::atoi(d); if (n >= -1) g_particlePosteriorProbeMaxGroups = n;
+    }
     if (const char *d = std::getenv("STS_FRONTIERGEN_PER_STRATUM")) {   // frontiergen reservoir capacity per stratum per seed
         const int n = std::atoi(d);
         if (n >= 1) g_fgPerStratum = n;
@@ -12305,6 +12713,18 @@ int main(int argc, char **argv) {
         search::g_useSearcher3 = true;
         std::cout << "[particle_leaf_probe forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
         particleLeafProbe(nSeeds, sims, asc, out, seedOff);
+
+    } else if (mode == "particle_posterior_probe") {   // Phase-1b posterior-valid probe
+        int nSeeds = argc > 2 ? std::stoi(argv[2]) : 4;
+        int sims = argc > 3 ? std::stoi(argv[3]) : 300;
+        int asc = argc > 4 ? std::stoi(argv[4]) : 0;
+        std::string out = argc > 5 ? argv[5] : "build/particle_posterior_probe.csv";
+        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
+        if (g_particlePosteriorProbeFile.empty()) g_particlePosteriorProbeFile = out;
+        search::g_fairPlay = true;
+        search::g_useSearcher3 = true;
+        std::cout << "[particle_posterior_probe forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
+        particlePosteriorProbe(nSeeds, sims, asc, out, seedOff);
 
     } else if (mode == "leafref") {       // high-budget reference values for recorded leafdiag leaves
         if (argc < 5) {

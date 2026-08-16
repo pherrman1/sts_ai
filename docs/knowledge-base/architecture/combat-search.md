@@ -379,6 +379,29 @@ count, the probe emits only the unique rows and the analysis omits unavailable
 averaging-curve K values for that group. The offline trainer deduplicates exact
 draw orders defensively before metrics and reports draw-pile-size strata.
 
+### Posterior-valid particle sensitivity probe (particle_posterior_probe, Phase 1b, 2026-08-16)
+
+Distinct from the draw-order probe above: instead of artificially permuting
+draw order, `one_combat particle_posterior_probe` replays the exact SEMANTIC
+pre-rollout action prefix (recorded per action with actual post-action
+observations by `BattleScumSearcher3::step` under `g_s3LeafTraceActions`)
+under every positive-weight particle of the searcher's CURRENT finite root
+belief, using exact hidden-state application that rejects the stale-particle
+fallback rather than shuffling. Compatibility requires exact
+`CombatObservation` and `Outcome` equality at EVERY intermediate checkpoint
+and at the final leaf; accepted worlds are deduplicated by `FullHiddenStateKey`
+equality with probability mass aggregated, and each evaluated world is scored
+by the isolated `diagnosticRollout` with one per-group CRN seed. Source
+groups that needed the fallback shuffle are recorded as
+`SOURCE_PARTICLE_FALLBACK` and are scientifically ineligible (not an
+implementation failure); failed replay of an exactly-applied source particle
+is an implementation invariant failure. Default `STS_PARTICLE_POSTERIOR_PROBE_K=0`
+evaluates ALL unique compatible states; range metrics are flagged as
+subsampled lower bounds whenever any group is capped. Validity is relative to
+Searcher3's finite belief approximation — never call it an exact Bayesian
+posterior. Analysis: `tools/analyze_particle_posterior_probe.py`; entry and
+pre-registered decision rule in `docs/experiments/ledger-06.md` §175.
+
 Why the §126 end-HP leaf beats the §134 direct utility-R leaf online despite
 fitting its target worse offline is an open diagnostic question (handover
 2026-08-08). Three opt-in modes measure how both models behave on ACTUAL

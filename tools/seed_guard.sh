@@ -14,6 +14,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["draftbench"]=3          ["fairgen"]=2           ["fightgen"]=2
   ["frontiergen"]=2         ["leafdiag"]=2          ["leafref"]=5
   ["particle_leaf_probe"]=2
+  ["particle_posterior_probe"]=2
   ["fightrep"]=6            ["oocnextgen"]=2        ["pathbench"]=3
   ["pathcfgen"]=2
   ["policygen"]=2           ["rollouttrace"]=4
