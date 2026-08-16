@@ -151,6 +151,29 @@ The corrected preregistration is the designated contract for any future
 scientific run. The 16-seed experiment remains unrun and requires independent
 review of this correction commit first.
 
+### §177 Corrected Phase-1b preregistration decision rule (set before designated scientific data)
+
+The numerical thresholds from §175 v1 are transferred unchanged to the
+corrected controlled draw-order primary target; they are not retuned from the
+§176 smoke. All references below mean equal-source-group statistics for the
+controlled target. Compatible-mass-weighted results remain secondary and are
+not substituted into the gate.
+
+- **GO / posterior-valid draw-order sensitivity established:** all
+  implementation invariants pass; controlled fraction of source groups with
+  range >5 is at least 10%; the seed-bootstrap 95% CI lower bound for that
+  fraction is >5%; and equal-group controlled mean range is at least 3.
+- **STOP the draw-order/full-particle-conditioning line:** invariants pass;
+  controlled fraction(range>5) is <5%; bootstrap upper 95% CI is <10%; and
+  equal-group controlled mean range is <1.
+- **Otherwise INCONCLUSIVE:** do not train a particle-conditioned VNet; at
+  most one focused extension to 32 seeds may be proposed. If GO, roadmap
+  #2 remains next; #3 is scientifically justified only if #2 also succeeds.
+
+These are pragmatic thresholds, not validated gameplay thresholds. The §175
+v1 full-particle smoke is not eligible for this rule; §177 is the designated
+scientific decision contract.
+
 ## §174 Particle-conditioned leaf probe implementation (2026-08-16; diagnostic/offline; no gameplay promotion)
 
 - **Implementation:** added `one_combat particle_leaf_probe`, guarded by

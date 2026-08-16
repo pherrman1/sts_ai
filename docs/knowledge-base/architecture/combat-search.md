@@ -405,6 +405,11 @@ equally; compatible-mass-weighted results are secondary. Validity is relative
 to Searcher3's finite belief approximation — never call it an exact Bayesian
 posterior. Analysis: `tools/analyze_particle_posterior_probe.py`; corrected
 pre-registration in `docs/experiments/ledger-06.md` §176.
+The transferred numerical GO/STOP thresholds are recorded in §177 before the
+designated scientific run: controlled equal-group fraction(range>5) >=10%,
+bootstrap lower bound >5%, and equal-group mean range >=3 for GO; controlled
+fraction <5%, bootstrap upper bound <10%, and equal-group mean range <1 for
+STOP; otherwise INCONCLUSIVE.
 
 Why the §126 end-HP leaf beats the §134 direct utility-R leaf online despite
 fitting its target worse offline is an open diagnostic question (handover

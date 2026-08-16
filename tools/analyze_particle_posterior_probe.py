@@ -63,8 +63,8 @@ def group_range(worlds, field="target"):
     return max(targets) - min(targets)
 
 
-def group_std(worlds):
-    targets = [float(w["target"]) for w in worlds if w.get("target") not in ("", None)]
+def group_std(worlds, field="target"):
+    targets = [float(w[field]) for w in worlds if w.get(field) not in ("", None, "", "nan")]
     if len(targets) < 2:
         return 0.0
     m = sum(targets) / len(targets)
@@ -160,7 +160,7 @@ def analyze(rows, bootstrap_iters=10000):
 
     def mass_stats(subset, field="target"):
         range_pairs = [(group_range(w, field), _num(m, "compatibleMass")) for _, m, w in subset]
-        std_pairs = [(group_std(w), _num(m, "compatibleMass")) for _, m, w in subset]
+        std_pairs = [(group_std(w, field), _num(m, "compatibleMass")) for _, m, w in subset]
         return {
             "mass_weighted_mean_range": weighted_mean(range_pairs),
             "mass_weighted_mean_std": weighted_mean(std_pairs),
@@ -296,21 +296,23 @@ def _g(seed, lid, uniq, comp_mass, evald, failure="-", eligible=1, replay_ok=1):
                 drawPileSize="9", encounterName="JAW_WORM", replayCompatibleParticles="2")
 
 
-def _w(seed, lid, target, is_src, ordinal, weight):
+def _w(seed, lid, target, is_src, ordinal, weight, controlled=None):
+    if controlled is None:
+        controlled = target
     return dict(rowType="1", seed=str(seed), sourceLeafId=str(lid),
                 target=str(target), candidateIsSource=str(is_src), dedupOrdinal=str(ordinal),
                 candidateWeight=str(weight), invariantOk="1", groupEligible="1",
                 sourceParticleReplayOk="1", uniqueCompatibleStates="2",
                 evaluatedWorldCount="2", compatibleMass="1.0",
-                fullTarget=str(target), controlledTarget=str(target),
+                fullTarget=str(target), controlledTarget=str(controlled),
                 controlledTargetStd="0.0")
 
 
 def _self_test():
-    # seed 0: two worlds, range 8 (sensitive). seed 1: single-state group
+    # seed 0: two worlds, full range 8 but controlled range 0. seed 1: single-state group
     # (range 0) + one fallback-ineligible group (non-sensitive in primary).
     rows = [
-        _g(0, 1, 2, 0.6, 2), _w(0, 1, 0.5, 1, 0, 0.3), _w(0, 1, 8.5, 0, 1, 0.3),
+        _g(0, 1, 2, 0.6, 2), _w(0, 1, 0.5, 1, 0, 0.3, controlled=1.0), _w(0, 1, 8.5, 0, 1, 0.3, controlled=1.0),
         _g(1, 1, 1, 0.2, 1), _w(1, 1, 0.5, 1, 0, 0.2),
         _g(1, 2, 0, 0.0, 0, failure="SOURCE_PARTICLE_FALLBACK", eligible=0, replay_ok=-1),
     ]
@@ -319,6 +321,9 @@ def _self_test():
     # Primary all-group prevalence: 3 groups, 1 with range > 5 -> 1/3.
     assert res["all_groups"]["groups"] == 3
     assert abs(res["all_groups"]["frac_range_gt5"] - 1 / 3) < 1e-9
+    assert res["secondary_full_particle"]["frac_range_gt5"] == 1 / 3
+    assert res["primary_controlled_draw_order"]["frac_range_gt5"] == 0.0
+    assert res["primary_controlled_draw_order"]["mean_range"] == 0.0
     # <2-state and ineligible groups count as range 0 in the primary fraction.
     assert abs(res["all_groups"]["frac_range_eq0"] - 2 / 3) < 1e-9
     # Multi-state-only measurement restricts to >= 2 evaluated states.

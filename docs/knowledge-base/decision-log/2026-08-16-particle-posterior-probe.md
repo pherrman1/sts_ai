@@ -32,6 +32,9 @@ Key implementation facts:
 - `one_combat particle_posterior_probe`; env `STS_PARTICLE_POSTERIOR_PROBE_FILE`,
   `…_K` (0 = evaluate all unique compatible states), `…_MAX_GROUPS`
   (-1 unlimited / 0 probe-OFF determinism arm / >0 cap).
+- The CSV's legacy `target` column is a backward-compatible alias of
+  `fullTarget`; `controlledTarget` and `controlledTargetStd` are the corrected
+  primary draw-order-conditioned values.
 - `BattleScumSearcher3::step` gains optional per-action semantic checkpoints
   (`g_s3LeafTraceActions`, default off) capturing card identity from the
   pre-action state and actual post-action `CombatObservation` + `Outcome`.
