@@ -14,6 +14,11 @@
   `POTION` after `BattleContext::exitBattle`. **Verified:** the existing schema
   has no room/encounter identifier. Therefore ordinary-combat filtering and
   exact raw-terminal confirmation are not defensible from E2 rows.
+- **Historical schema:** **Verified:** the July-15 `build/vrich.csv` has 1,009
+  columns and contains no `fmD*`/`fmC*` or `curMapX`/`curMapY` fields. Those
+  names remain in the current live `richHeader()` contract but were not present
+  in the historical E2 file; they must not be described as constant dataset
+  columns.
 - **Interpretation:** The verdict is `MASKED SUPPORT`, `MASKED INCONCLUSIVE`, or
   `MASKED NEGATIVE`, never the original exact-leaf `STRONG SUPPORT`. The
   corrected result is `MASKED NEGATIVE`: the strict all-row mask leaves only
@@ -29,6 +34,11 @@
   `0.613848`, Brier `0.211795`, ECE `0.002156`, and masked retention
   `-0.310800`. The verdict is **MASKED NEGATIVE**. Its T-masked−B1 log-loss
   bootstrap mean is `+0.018650`, 95% CI `[+0.016415,+0.020872]`.
+- **Comparator caveat:** B1 retains `curHp`, `maxHp`, and `hpFrac`, while
+  T-masked intentionally excludes HP/maxHP. `MASKED NEGATIVE` is therefore
+  only the preregistered verdict against the original asymmetric B1 comparator;
+  it is not evidence that a true raw-terminal or information-matched
+  raw-terminal critic is inferior. E2c remains required.
 - **Follow-up:** E2c raw-boundary collection remains scientifically worthwhile
   because the negative result is confounded by conservative removal of fields
   that cannot be disentangled from post-reward mutations in E2 rows.

@@ -246,6 +246,13 @@ def main():
     np.savez_compressed(os.path.join(out, "validation_predictions.npz"), seed=seeds[va], y=y[va], **{k.replace("-", "_"): v for k, v in preds.items()})
     result = {"experiment": "E2b masked post-combat run-win diagnostic", "dataset": os.path.abspath(csv),
               "dataset_sha256": sha256(csv), "boundary": "after forced gold/relic/potion pickup before card pick/skip",
+              "dataset_schema": {"column_count": len(header),
+                                  "fm_columns_present": any(c.startswith(("fmD", "fmC")) for c in header),
+                                  "map_position_columns_present": all(c in header for c in ("curMapX", "curMapY")),
+                                  "current_live_only_fields_absent": [c for c in
+                                      ("fmDElite", "fmDRest", "fmDShop", "fmDBoss", "fmCElite", "fmCRest",
+                                       "fmCShop", "fmCEvent", "fmCMonster", "fmCTreasure", "curMapX", "curMapY")
+                                      if c not in header]},
               "primary_subset": "all represented card-reward rows; exact ordinary-combat subset unavailable",
               "rows": int(len(y)), "seeds": int(len(np.unique(seeds))), "wins": int(y.sum()), "losses": int(len(y) - y.sum()),
               "heldout_rows": int(len(va)), "heldout_seeds": int(len(np.unique(seeds[va]))), "train_seeds": int(len(np.unique(seeds[tr]))),

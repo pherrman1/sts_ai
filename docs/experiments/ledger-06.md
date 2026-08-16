@@ -3623,6 +3623,11 @@ relic ownership-plus-counter columns are reward-mutated. Elite relic pickup
 also makes HP, max HP, deck composition/upgrades, bottle state, and potion
 capacity reward-induced side effects. Unknown schema fields fail closed as
 ambiguous.
+The actual historical `build/vrich.csv` used here has exactly **1,009
+columns**. It contains neither the ten `fmD*`/`fmC*` columns nor `curMapX` /
+`curMapY`; those 12 fields are known to current live `richHeader()` but were
+not present in the July-15 E2 CSV. Thus they are current-schema provenance
+categories only, not columns classified from the historical file.
 The existing CSV has no room/encounter identifier, and rows are captured after
 `BattleContext::exitBattle` and forced gold/relic/potion pickup. Therefore an
 ordinary-combat/raw-terminal subset cannot be identified defensibly. E2b uses
@@ -3652,6 +3657,14 @@ differences were log loss +0.018680, Brier +0.008201, and AUC −0.038654.
 The seed-bootstrap comparisons (log loss / Brier / AUC mean, 95% CI) are in
 `build/e2b_leaf_available/metrics.json` for T-full−B1, T-fair−B1,
 T-masked−B1, T-fair−T-full, and T-masked−T-fair.
+
+**Comparator asymmetry:** the `MASKED NEGATIVE` result is the preregistered
+verdict against the original E2 B1 comparator, which uses `curHp`, `maxHp`,
+and `hpFrac`. The strict T-masked arm intentionally excludes `curHp` and
+`maxHp` because elite relic pickup can mutate them. Therefore this is not an
+information-matched comparison and must not be interpreted as evidence that a
+true raw-terminal critic, or an information-matched raw-terminal model, is
+inferior. E2c remains necessary to measure that boundary fairly.
 
 **Decision:** **MASKED NEGATIVE**. T-masked fails to beat B1 on log loss,
 Brier, and AUC; its log-loss bootstrap CI is unfavorable and masked retention

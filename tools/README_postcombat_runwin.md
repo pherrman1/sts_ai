@@ -38,6 +38,12 @@ or `MASKED NEGATIVE`.
 
 This is not an exact raw-terminal or ordinary-combat result: `vrich.csv` has no
 room/encounter identifier and is captured after forced non-card reward pickup.
+The historical E2 file has exactly 1,009 columns and predates the current
+`richHeader()` `fmD*`/`fmC*` and `curMapX`/`curMapY` fields; their absence is
+recorded in the manifest provenance rather than treated as constant values.
+The original B1 comparator retains HP/maxHP/hpFrac while T-masked excludes
+HP/maxHP, so `MASKED NEGATIVE` is not an information-matched raw-terminal
+comparison.
 Relic columns combine ownership and counters, so the counter-awareness arm is
 reported as not testable rather than treating post-pickup relics as a clean
 counter intervention.
