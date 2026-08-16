@@ -3572,9 +3572,9 @@ T act metrics (rows / AUC / log loss / Brier / ECE): Act 1 99,790 /
 All act strata have adequate held-out seed counts (10,149 / 9,726 / 6,204)
 and no major calibration failure.
 
-Seed bootstrap differences T−B1: log-loss mean −0.06011, 95% CI
-[−0.06483, −0.05534]; Brier mean −0.02447, CI [−0.02635, −0.02253]; AUC
-mean +0.09840, CI [+0.09172, +0.10488]. **Decision: SUPPORTED.** The rich
+Seed bootstrap differences T−B1: log-loss mean −0.06009, 95% CI
+[−0.06507, −0.05535]; Brier mean −0.02445, CI [−0.02647, −0.02247]; AUC
+mean +0.09840, CI [+0.09200, +0.10500]. **Decision: SUPPORTED.** The rich
 post-combat state is predictively useful beyond HP/progression under this
 continuation policy. This does not establish causal item values, gameplay
 improvement, generic `V_win` correctness, Searcher3 integration, or a new
@@ -3586,7 +3586,10 @@ IDs when resampling validation seeds. The trainer now reindexes the held-out
 run IDs contiguously before bootstrap, and the bootstrap artifacts below were
 regenerated. This changes uncertainty estimates only; model fitting and the
 held-out predictions are unchanged. The corrected bootstrap is the result to
-use for interpretation.
+use for interpretation. Corrected values are log-loss mean −0.0600867,
+95% CI [−0.0650689, −0.0553531]; Brier mean −0.0244549, CI
+[−0.0264704, −0.0224724]; AUC mean +0.0983964, CI
+[+0.0920018, +0.1050012].
 
 **Relation to §116:** §116's TERM_WIN terminal-leaf benchmark was null because
 the deployed win tree was insensitive to the counter features; it therefore
