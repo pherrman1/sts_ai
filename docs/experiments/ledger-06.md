@@ -3446,3 +3446,81 @@ negative mean reference utility Δ). The high-confidence M0 improvement signal
 is therefore rejected under the stronger reference. The agreement metrics do
 not distinguish teacher/target failure from model-learning failure. No new
 labels, reselection, threshold tuning, or gameplay gate was run.
+
+## 2026-08-16 — Searcher3 cheap behavior-preserving speedups (perf/s3-cheap-speedups)
+
+Bounded implementation-efficiency pass on the fair Searcher3 path; no search
+parameter, RNG, model, or feature changed. Baseline `main` `a7573e1`
+(2026-08-16), measured in a dedicated worktree on branch
+`perf/s3-cheap-speedups`; the particle-conditioned leaf-value Phase-1 branch
+was not touched.
+
+Configuration: `OMP_NUM_THREADS=1 STS_FAIR=1 STS_SEARCHER3=1
+STS_S3_PARTICLES=64 STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_LIVE_VALID=1`, vnet
+leaf auto-default `models/v_combat_7k_tuned.txt` α=0.3 (§148), policy PUCT
+`models/policy_trees_c.txt` c=2.5, rejuvenation off (default), persistent
+posterior / pool-redirect / rank-corr / all other experimental flags at
+default (off). Workload: `bash tools/seed_guard.sh ./build/linux-gcc-release/
+one_combat bestbench 1000 4 0` (4 seeds, 1399 searches, 2,133,000 simulations
+per repetition; fresh LTO Release build per arm).
+
+Interventions (both in `src/sim/search/BattleScumSearcher3.cpp`):
+
+- A — `step()`: the per-expansion full `BattleContext preExecState` copy is
+  taken only when `g_s3EndTurnMarginalize` (default off, `STS_S3_END_TURN_MARGINALIZE`)
+  can consume it; the consumer guard now tests `preExecState` itself, so the
+  enabled-feature behavior is unchanged.
+- B — `sameCardMultiset` (particle draw-order compatibility, runs once per
+  simulation via `applyParticleImpl`): exact multiset equality via a fixed
+  `std::array<int, cardEnumStrings-size>` count table instead of two heap
+  vectors + two sorts. Same id-only identity domain as before (upgrade state
+  was and is outside this comparison; duplicates count per occurrence).
+
+Primary metric: median `simSeconds*1e6/simsExec` per search from
+`STS_REUSE_CPU_DIAG` CSV (ms/1000 sims). 9 interleaved rounds × 3 arms
+(base / A / A+B), rotating arm order per round; per-round medians (ms/1000
+sims):
+
+| Round | base | A | A+B |
+| --- | --- | --- | --- |
+| 1 | 28.271 | 27.693 | 27.309 |
+| 2 | 28.423 | 28.122 | 27.273 |
+| 3 | 27.551 | 27.432 | 28.785 |
+| 4 | 27.613 | 27.640 | 27.008 |
+| 5 | 27.616 | 27.474 | 26.946 |
+| 6 | 30.200 | 29.286 | 28.002 |
+| 7 | 28.805 | 28.093 | 28.230 |
+| 8 | 30.250 | 28.879 | 27.653 |
+| 9 | 28.041 | 28.117 | 27.726 |
+| median | 28.271 | 28.086 | 27.647 |
+
+Result: A alone +0.66%, A+B +2.21% (paired per-round median +2.43%). Host
+noise between rounds is up to ±4% (rounds 6/8 baseline slowdowns), so only the
+paired interleaved comparison is decision-relevant. Retained as one combined
+change under the small-diff rule; A alone or B alone fall under the 2% floor.
+
+Behavioral equivalence (exact, not aggregate):
+
+- `one_combat fairgen 2 1000 0 0.3 ...` value/policy/OOC CSVs byte-identical
+  (md5 match) between base and A, and between base and A+B.
+- All 27 CPU-diag runs identical on every non-timing column (seed, floor,
+  decisionIdx, simsExec, treeActions, rolloutActions, rootSimAfter, playerHp,
+  turn) — same root visit totals, same trajectories.
+- `bestbench` win%/avg_floor/avg_hp_end identical across arms; wall-clock
+  whole-run time reported as secondary evidence only.
+
+Focused tests (perf-worktree `test` binary, all PASS): belief, drawpile 77,
+obs_identity 77, prune 77, battlecontext_roundtrip, rng_state_propagation 77,
+seed_contract 77, belief_immutability, rejuv_history_replay 77,
+rejuv_noninterference 77, cardselect_parity, issue_fixes, real_belief_filter
+77, s3_drawpile_reuse_boundary. `belief_order_invariance` FAILS identically on
+untouched main `a7573e1` (pre-existing, 4 weight checks) — not caused by this
+change and not addressed here.
+
+Largest remaining Searcher3 hotspots (code inspection; no perf on this host):
+vnet leaf inference per rollout endpoint (`evaluateLeaf` →
+`g_combatVNet.predict`), per-rollout-slot `BattleContext` copies in
+`multiRollout`, and action execution itself. Reducing these requires
+representation/architecture work (BattleContext copy semantics, observation
+architecture, model serving) — explicitly out of scope; recommendation is STOP
+and return to particle-conditioned leaf-value research.
