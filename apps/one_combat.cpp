@@ -2881,11 +2881,11 @@ static void particleLeafProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
         }
         if (distinctOrders.insert(order.str()).second) orders.push_back(std::move(candidate));
     }
-    while ((int)orders.size() < k) orders.push_back(orders.front());
     const int distinctCount = (int)distinctOrders.size();
-    for (int variant = 0; variant < k; ++variant) {
+    for (int variant = 0; variant < (int)orders.size(); ++variant) {
         BattleContext state = base;
         state.cards.drawPile = orders[variant];
+        const std::string drawOrder = particleLeafDrawOrder(state);
         std::vector<float> features(nf);
         search::combatExtractFeatures(state, features.data());
         bool sameFeatures = features == baseFeatures;
@@ -2906,7 +2906,7 @@ static void particleLeafProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
         row.distinctDrawOrders = distinctCount;
         row.drawPileSize = (int)base.cards.drawPile.size(); row.target = target;
         row.rawRolloutEval = d.rawRolloutEval;
-        row.encounter = t_ld.encounter; row.drawOrder = particleLeafDrawOrder(state);
+        row.encounter = t_ld.encounter; row.drawOrder = drawOrder;
         row.feats = std::move(features);
         t_ld.particleProbeRows.push_back(std::move(row));
     }

@@ -122,9 +122,9 @@ def main():
                 score = .5 if delta == 0 else float((delta > 0) == truth_sign)
                 result.append(score)
                 if result is pair_particle: seed_pair[int(key[0])].append(score - .5)
-        if len(ys) >= 8:
-            for k in (1, 2, 4, 8):
-                for indexes in itertools.combinations(range(8), k):
+        for k in (1, 2, 4, 8):
+            if len(ys) >= k:
+                for indexes in itertools.combinations(range(len(ys)), k):
                     raw_curve[k].append(float((np.mean(ys[list(indexes)]) - ys.mean()) ** 2))
                     model_curve[k].append(float((np.mean(vps[list(indexes)]) - ys.mean()) ** 2))
 

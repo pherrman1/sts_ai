@@ -375,8 +375,8 @@ Each callback receives a monotonically increasing per-seed `sourceLeafId`; this
 identifier, rather than `obsHash`, defines a variant group because distinct
 hidden RNG states can share the same visible hash. `distinctDrawOrders` records
 how many unique permutations were available; when K exceeds the finite number
-of unique multiset permutations, rows are repeated and the analysis reports
-that limitation.
+of unique multiset permutations, the probe emits only the unique rows and the
+analysis omits unavailable averaging-curve K values for that group.
 
 Why the §126 end-HP leaf beats the §134 direct utility-R leaf online despite
 fitting its target worse offline is an open diagnostic question (handover
