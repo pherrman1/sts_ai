@@ -144,6 +144,10 @@ def analyze(rows, bootstrap_iters=10000):
 
     eligible = [(s, m, w) for s, m, w in all_groups
                 if m is not None and int(_num(m, "groupEligible")) == 1]
+    aborted = [(s, m, w) for s, m, w in all_groups
+               if m is not None and int(_num(m, "invariantOk")) == 0]
+    ineligible = [(s, m, w) for s, m, w in all_groups
+                  if m is not None and int(_num(m, "groupEligible")) == 0]
     multi = [(s, m, w) for s, m, w in eligible
              if int(_num(m, "evaluatedWorldCount")) >= 2]
 
@@ -170,8 +174,9 @@ def analyze(rows, bootstrap_iters=10000):
             "mean_evaluated_mass": mean([_num(m, "evaluatedMass") for _, m, _ in subset]),
         }
 
-    capped = sum(1 for _, m, _ in all_groups
+    capped = sum(1 for _, m, _ in eligible
                  if m is not None
+                 and int(_num(m, "invariantOk")) == 1
                  and int(_num(m, "evaluatedWorldCount")) < int(_num(m, "uniqueCompatibleStates")))
 
     seed_ranges = defaultdict(list)
@@ -249,6 +254,8 @@ def analyze(rows, bootstrap_iters=10000):
             "median": median([_num(m, "replayCompatibleParticles") for m in metas]),
         },
         "groups_with_capped_evaluation": capped,
+        "groups_aborted_by_invariant": len(aborted),
+        "groups_ineligible": len(ineligible),
         "range_metrics_are_subsampled": capped > 0,
         "seed_bootstrap": {"frac_range_gt5_ci95": frac_gt5_ci,
                            "mean_range_ci95": mean_range_ci,
@@ -339,6 +346,8 @@ def _self_test():
     # Structure validation: no padding, source world present exactly once.
     assert res["structure_violations"] == {}, res["structure_violations"]
     assert res["groups_with_capped_evaluation"] == 0
+    assert res["groups_aborted_by_invariant"] == 0
+    assert res["groups_ineligible"] == 1
     assert res["range_metrics_are_subsampled"] is False
     # Seed bootstrap grouping: seeds present and CI well-formed.
     assert set(res["per_seed"]) == {"0", "1"}
@@ -350,6 +359,14 @@ def _self_test():
     res2 = analyze(_to_csv(rows2), bootstrap_iters=50)
     assert res2["groups_with_capped_evaluation"] == 1
     assert res2["range_metrics_are_subsampled"] is True
+
+    # An invariant-aborted group with positive support is not K-capped.
+    aborted = _g(0, 2, 4, 1.0, 0, replay_ok=0)
+    aborted["invariantOk"] = "0"
+    aborted["replayFailure"] = "SOURCE_PARTICLE_REPLAY_FAILED"
+    res_aborted = analyze(_to_csv([aborted]), bootstrap_iters=50)
+    assert res_aborted["groups_with_capped_evaluation"] == 0
+    assert res_aborted["groups_aborted_by_invariant"] == 1
 
     # Fake padding is caught (duplicate dedupOrdinal + row-count mismatch).
     rows3 = [_g(0, 1, 2, 1.0, 2), _w(0, 1, 0.5, 1, 0, 0.5), _w(0, 1, 0.6, 0, 1, 0.5),

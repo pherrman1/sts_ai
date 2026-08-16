@@ -669,6 +669,9 @@ void BattleScumSearcher3::recordDiagnosticAction(const Action &action,
         const int hi = action.getSourceIdx();
         if (hi >= 0 && hi < preState.cards.cardsInHand) {
             const auto &card = preState.cards.hand[hi];
+            checkpoint.sourceUniqueId = card.uniqueId;
+            checkpoint.sourceCost = card.cost;
+            checkpoint.sourceRetain = card.retain;
             checkpoint.cardId = card.getId();
             checkpoint.upgradeCount = card.getUpgradeCount();
             checkpoint.costForTurn = card.costForTurn;
@@ -680,6 +683,12 @@ void BattleScumSearcher3::recordDiagnosticAction(const Action &action,
     }
     checkpoint.observation = CombatObservation::fromBattleContext(postState);
     checkpoint.outcome = postState.outcome;
+    std::uint64_t fingerprint = checkpoint.observation.visibleHash();
+    fingerprint ^= static_cast<std::uint64_t>(postState.shuffleRng.counter) * 0x9e3779b97f4a7c15ULL;
+    fingerprint ^= static_cast<std::uint64_t>(postState.cardRandomRng.counter) * 0xbf58476d1ce4e5b9ULL;
+    fingerprint ^= static_cast<std::uint64_t>(postState.aiRng.counter) * 0x94d049bb133111ebULL;
+    fingerprint ^= static_cast<std::uint64_t>(postState.miscRng.counter) * 0x369dea0f31a53f85ULL;
+    checkpoint.hiddenFingerprint = fingerprint;
     diagnosticActionCheckpoints.push_back(std::move(checkpoint));
 }
 

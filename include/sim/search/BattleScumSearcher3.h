@@ -36,8 +36,20 @@ class BattleScumSearcher3;
         std::int32_t target = -1;
         bool hasCardKey = false;
         bool replayable = true;
+        std::int16_t sourceUniqueId = -1;
+        std::int8_t sourceCost = 0;
+        bool sourceRetain = false;
         CombatObservation observation;
         Outcome outcome = Outcome::UNDECIDED;
+        std::uint64_t hiddenFingerprint = 0;
+    };
+
+    struct S3SourceReplayDebug {
+        bool rawOk = false;
+        bool semanticOk = false;
+        int rawFirstMismatch = -1;
+        int semanticFirstMismatch = -1;
+        std::string detail;
     };
 
     // Leaf-query diagnostic record (leafdiag / frontiergen modes,
@@ -71,6 +83,7 @@ class BattleScumSearcher3;
         int reuseSearchCount = -1;
         Outcome outcome = Outcome::UNDECIDED;
         std::vector<S3LeafActionCheckpoint> actionCheckpoints;
+        S3SourceReplayDebug sourceReplayDebug;
     };
 
     struct RealBeliefFilterStats {

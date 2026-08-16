@@ -2641,6 +2641,7 @@ static int g_particleLeafProbeMaxGroups = 16;
 static std::string g_particlePosteriorProbeFile;
 static int g_particlePosteriorProbeK = 0;
 static int g_particlePosteriorProbeMaxGroups = 16;
+static std::string g_particlePosteriorReplayDebugFile;
 
 struct LeafDiagRow {
     std::uint64_t seed = 0;
@@ -3073,6 +3074,108 @@ static std::optional<search::Action> posteriorProbeRemapAction(
     }
 }
 
+static std::string replayCardDebug(const search::S3LeafActionCheckpoint &cp,
+                                   const BattleContext &state,
+                                   const search::Action &resolved) {
+    std::ostringstream out;
+    const int raw = cp.action.getSourceIdx();
+    const int resolvedIndex = resolved.getSourceIdx();
+    const int matches = std::count_if(state.cards.hand.begin(),
+                                      state.cards.hand.begin() + state.cards.cardsInHand,
+                                      [&](const CardInstance &card) {
+        return card.getId() == cp.cardId
+            && card.getUpgradeCount() == cp.upgradeCount
+            && card.costForTurn == cp.costForTurn
+            && card.freeToPlayOnce == cp.freeToPlayOnce
+            && card.specialData == cp.specialData;
+    });
+    const CardInstance *resolvedCard = (resolvedIndex >= 0
+        && resolvedIndex < state.cards.cardsInHand) ? &state.cards.hand[resolvedIndex] : nullptr;
+    out << "checkpoint=" << cp.action.getSourceIdx()
+        << ",rawIndex=" << raw
+        << ",sourceUniqueId=" << cp.sourceUniqueId
+        << ",resolvedIndex=" << resolvedIndex
+        << ",resolvedUniqueId=" << (resolvedCard ? resolvedCard->uniqueId : -1)
+        << ",sameIndex=" << (raw == resolvedIndex)
+        << ",sameUniqueId=" << (resolvedCard && resolvedCard->uniqueId == cp.sourceUniqueId)
+        << ",semanticMatches=" << matches
+        << ",sourceCardId=" << (int)cp.cardId
+        << ",sourceUpgradeCount=" << (int)cp.upgradeCount
+        << ",sourceCost=" << (int)cp.sourceCost
+        << ",sourceCostForTurn=" << (int)cp.costForTurn
+        << ",sourceFreeToPlayOnce=" << cp.freeToPlayOnce
+        << ",sourceSpecialData=" << cp.specialData
+        << ",sourceRetain=" << cp.sourceRetain
+        << ",target=" << cp.target;
+    if (resolvedCard) {
+        out << ",resolvedCardId=" << (int)resolvedCard->getId()
+            << ",resolvedUpgradeCount=" << resolvedCard->getUpgradeCount()
+            << ",resolvedCost=" << (int)resolvedCard->cost
+            << ",resolvedCostForTurn=" << (int)resolvedCard->costForTurn
+            << ",resolvedFreeToPlayOnce=" << resolvedCard->freeToPlayOnce
+            << ",resolvedSpecialData=" << resolvedCard->specialData
+            << ",resolvedRetain=" << resolvedCard->retain;
+    }
+    return out.str();
+}
+
+static bool replaySourcePrefix(const BattleContext &root,
+                               const search::S3LeafDiagnostic &d,
+                               bool semantic, int &firstMismatch,
+                               std::string &detail) {
+    BattleContext state = root;
+    firstMismatch = -1;
+    for (size_t i = 0; i < d.actionCheckpoints.size(); ++i) {
+        const auto &cp = d.actionCheckpoints[i];
+        std::optional<search::Action> action = semantic
+            ? posteriorProbeRemapAction(cp, state)
+            : std::optional<search::Action>(cp.action);
+        if (!action || !action->isValidAction(state)) {
+            firstMismatch = (int)i;
+            detail = "unresolved_or_illegal";
+            return false;
+        }
+        if (semantic && cp.action.getActionType() == search::ActionType::CARD) {
+            if (!detail.empty()) detail += ";";
+            detail += replayCardDebug(cp, state, *action);
+        }
+        action->execute(state);
+        const auto obs = sts::CombatObservation::fromBattleContext(state);
+        if (obs != cp.observation || state.outcome != cp.outcome) {
+            firstMismatch = (int)i;
+            return false;
+        }
+    }
+    return true;
+}
+
+static void writeReplayDebugRow(const search::S3LeafDiagnostic &d,
+                                const BattleContext &sourceRoot,
+                                std::uint64_t seed, int fightIdx, int decIdx,
+                                std::uint64_t sourceLeafId) {
+    if (g_particlePosteriorReplayDebugFile.empty()) return;
+    int rawMismatch = -1, semanticMismatch = -1;
+    std::string rawDetail, semanticDetail;
+    const bool rawOk = replaySourcePrefix(sourceRoot, d, false, rawMismatch, rawDetail);
+    const bool semanticOk = replaySourcePrefix(sourceRoot, d, true, semanticMismatch, semanticDetail);
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+    std::ifstream probe(g_particlePosteriorReplayDebugFile);
+    const bool empty = !probe.good() || probe.peek() == std::ifstream::traits_type::eof();
+    std::ofstream out(g_particlePosteriorReplayDebugFile, std::ios::app);
+    if (!out) return;
+    if (empty) out << "seed,fightIdx,decIdx,sourceLeafId,sourceParticleIndex,rawSourceReplayOk,"
+                      "semanticSourceReplayOk,rawFirstMismatchCheckpoint,semanticFirstMismatchCheckpoint,"
+                      "rootCarried,reuseGeneration,hiddenFingerprintBeforeMismatch,cardDebug\n";
+    std::uint64_t hiddenBefore = 0;
+    if (semanticMismatch > 0 && semanticMismatch - 1 < (int)d.actionCheckpoints.size())
+        hiddenBefore = d.actionCheckpoints[semanticMismatch - 1].hiddenFingerprint;
+    out << seed << ',' << fightIdx << ',' << decIdx << ',' << sourceLeafId << ','
+        << d.particleIndex << ',' << rawOk << ',' << semanticOk << ','
+        << rawMismatch << ',' << semanticMismatch << ',' << d.rootCarried << ','
+        << d.reuseGeneration << ',' << hiddenBefore << ",\"" << semanticDetail << "\"\n";
+}
+
 static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
     if (g_particlePosteriorProbeFile.empty() || !d.searcher || !d.bc) return;
     if (d.frontierType != 0) return;   // actual S3 frontier leaves only
@@ -3097,6 +3200,13 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
     g.rootCarriedFlag = d.rootCarried ? 1 : 0;
     g.reuseGeneration = d.reuseGeneration;
     g.reuseSearchCount = d.reuseSearchCount;
+    if (!g_particlePosteriorReplayDebugFile.empty()
+        && sourceIndex >= 0 && sourceIndex < (int)particles.size()) {
+        BattleContext sourceRoot = *d.searcher->rootBc;
+        if (search::applyHiddenStateExact(sourceRoot, particles[sourceIndex]))
+            writeReplayDebugRow(d, sourceRoot, t_ld.seed, t_ld.fightIdx,
+                                t_ld.decIdx, sourceLeafId);
+    }
 
     auto finishGroup = [&]() {
         t_ld.particlePosteriorRows.push_back(g);
@@ -12068,6 +12178,8 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_PROBE_MAX_GROUPS")) {
         const int n = std::atoi(d); if (n >= -1) g_particlePosteriorProbeMaxGroups = n;
     }
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_REPLAY_DEBUG_FILE"))
+        g_particlePosteriorReplayDebugFile = d;
     if (const char *d = std::getenv("STS_FRONTIERGEN_PER_STRATUM")) {   // frontiergen reservoir capacity per stratum per seed
         const int n = std::atoi(d);
         if (n >= 1) g_fgPerStratum = n;
