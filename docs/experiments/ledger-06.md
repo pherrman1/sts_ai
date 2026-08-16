@@ -3581,6 +3581,23 @@ improvement, generic `V_win` correctness, Searcher3 integration, or a new
 `V_combat` target. Known-RNG encounter fields are included in T and are a
 limitation for interpreting transfer to a different information regime.
 
+**Correction before merge:** the first artifact used sparse full-dataset run
+IDs when resampling validation seeds. The trainer now reindexes the held-out
+run IDs contiguously before bootstrap, and the bootstrap artifacts below were
+regenerated. This changes uncertainty estimates only; model fitting and the
+held-out predictions are unchanged. The corrected bootstrap is the result to
+use for interpretation.
+
+**Relation to §116:** §116's TERM_WIN terminal-leaf benchmark was null because
+the deployed win tree was insensitive to the counter features; it therefore
+deferred Stage 3 until a counter-aware terminal evaluator existed. E2 is a
+potentially relevant prerequisite because it demonstrates that a rich
+post-combat state can predict eventual run outcome beyond HP/progression under
+the recorded continuation policy. E2 has **not** demonstrated a
+counter-aware terminal evaluator, has not shown that counters are causally
+priced, and does not authorize TERM_WIN, Searcher3, V_combat, or any deployed
+model change. It is merged as a useful offline positive diagnostic only.
+
 Artifacts: `build/e2_postcombat_runwin/metrics.json`,
 `calibration_deciles.csv`, `provenance.json`, `bootstrap` in metrics,
 `b1_model.json`, `t_model.json`, `val_predictions.npz`, and

@@ -25,4 +25,11 @@ d1 = mod.bootstrap_deltas(y, p, np.full(6, .5), run, n=20, seed=7)
 d2 = mod.bootstrap_deltas(y, p, np.full(6, .5), run, n=20, seed=7)
 assert d1 == d2
 assert set(d1) == {"logloss", "brier", "auc"}
+
+# Validation groups can be sparse slices of a full-dataset group index. The
+# caller must reindex them contiguously before bootstrap; verify that the
+# result is invariant to arbitrary global group IDs.
+sparse = np.array([100, 100, 700, 700, 1200, 1200])
+_, contiguous = np.unique(sparse, return_inverse=True)
+assert mod.bootstrap_deltas(y, p, np.full(6, .5), contiguous, n=20, seed=7) == d1
 print("postcombat run-win selftest: PASS")

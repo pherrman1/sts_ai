@@ -34,3 +34,19 @@ T is every non-label, non-constant column in the rich schema using the
 `train_winrate.py` XGBoost recipe. This decision establishes predictive
 diagnostic methodology only; it does not authorize Searcher3, V_combat, or
 gameplay integration.
+
+## Relation to §116 and correction before merge
+
+§116 recorded a null TERM_WIN terminal-leaf benchmark: the deployed win tree
+was insensitive to counter features, so the counterfactual terminal-value
+stage was deferred pending a counter-aware evaluator. E2 potentially satisfies
+that previously missing *prerequisite* in the limited sense that it provides
+an offline post-combat run-outcome critic with rich state information. It does
+not demonstrate a counter-aware terminal evaluator, causal counter pricing, or
+that TERM_WIN/Searcher3/V_combat should consume it.
+
+The initial E2 artifact bootstrapped sparse full-dataset run IDs for validation
+rows. Before merge, the trainer was corrected to reindex validation run IDs
+contiguously; the full offline bootstrap and recorded numbers were regenerated.
+This correction changes uncertainty estimates, not fitted models or held-out
+predictions.

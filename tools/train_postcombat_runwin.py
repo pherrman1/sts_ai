@@ -191,7 +191,11 @@ def main():
         act_cal[str(a)] = {"ece": ece(y[va][sel], pt[sel]),
                            "seeds": int(len(np.unique(run[va][sel]))),
                            "rows": int(sel.sum())}
-    boot = bootstrap_deltas(y[va], pt, p1, run[va])
+    # Reindex validation runs contiguously before bootstrap. ``run`` is
+    # indexed over the full dataset, so run[va] otherwise leaves thousands of
+    # nonexistent training-run slots in the bootstrap population.
+    _, val_run = np.unique(run[va], return_inverse=True)
+    boot = bootstrap_deltas(y[va], pt, p1, val_run)
     boot_summary = {k: {"mean": float(np.mean(v)), "ci95": ci(v)} for k, v in boot.items()}
     result, decision = classify(mt, m1, boot, act_cal)
     print(f"bootstrap={boot_summary}\nclassification={result}", flush=True)
