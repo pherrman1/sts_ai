@@ -2642,6 +2642,8 @@ static std::string g_particlePosteriorProbeFile;
 static int g_particlePosteriorProbeK = 0;
 static int g_particlePosteriorProbeMaxGroups = 16;
 static std::string g_particlePosteriorReplayDebugFile;
+static int g_particlePosteriorReplayCeiling = 128;
+static std::string g_particlePosteriorReplayTraceFile;
 
 struct LeafDiagRow {
     std::uint64_t seed = 0;
@@ -3261,7 +3263,7 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
         BattleContext state;
         sts::FullHiddenStateKey key;
     };
-    using PhysicalCardKey = std::tuple<std::int16_t, CardId, std::int16_t,
+    using PhysicalCardKey = std::tuple<CardId, std::int16_t,
                                        std::int8_t, std::int8_t, bool, bool, bool>;
     struct ReplayStateKey {
         sts::FullHiddenStateKey hidden;
@@ -3271,11 +3273,17 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                 < std::tie(o.hidden, o.draw, o.hand, o.discard, o.exhaust);
         }
     };
+    // Canonicalize the identity of each ordered card zone so that
+    // permutations of behaviorally-identical duplicate cards (differing only
+    // by simulator-private CardInstance::uniqueId) collapse during replay
+    // dedup. All gameplay-meaningful fields (id, specialData, cost,
+    // costForTurn, upgraded, freeToPlayOnce, retain) remain in the key; zone
+    // ORDER is preserved (hand/draw/discard ordering is observably meaningful).
     auto physicalCards = [](const std::vector<CardInstance> &cards) {
         std::vector<PhysicalCardKey> out;
         out.reserve(cards.size());
         for (const auto &c : cards)
-            out.emplace_back(c.uniqueId, c.id, c.specialData, c.cost,
+            out.emplace_back(c.id, c.specialData, c.cost,
                              c.costForTurn, c.upgraded, c.freeToPlayOnce, c.retain);
         return out;
     };
@@ -3307,6 +3315,7 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
         for (size_t checkpointIndex = 0; checkpointIndex < d.actionCheckpoints.size(); ++checkpointIndex) {
             const auto &cp = d.actionCheckpoints[checkpointIndex];
             std::vector<Candidate> next;
+            int generatedThisCheckpoint = 0;
             for (const auto &stateCandidate : frontier) {
                 std::vector<search::Action> actions;
                 if (cp.action.getActionType() == search::ActionType::CARD) {
@@ -3328,6 +3337,7 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                     }
                     g.semanticBranchesCreated += (int)actions.size();
                     g.extraSemanticBranches += std::max(0, (int)actions.size() - 1);
+                    generatedThisCheckpoint += (int)actions.size();
                 } else {
                     const auto action = posteriorProbeRemapAction(cp, stateCandidate.state);
                     if (action && action->isValidAction(stateCandidate.state)) actions.push_back(*action);
@@ -3355,7 +3365,22 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                 }
             }
             g.maxSurvivingBranches = std::max(g.maxSurvivingBranches, (int)deduped.size());
-            if (deduped.size() > 128) {
+            if (!g_particlePosteriorReplayTraceFile.empty()) {
+                static std::mutex traceMutex;
+                std::lock_guard<std::mutex> lock(traceMutex);
+                std::ifstream probe(g_particlePosteriorReplayTraceFile);
+                const bool empty = !probe.good() || probe.peek() == std::ifstream::traits_type::eof();
+                std::ofstream out(g_particlePosteriorReplayTraceFile, std::ios::app);
+                if (out) {
+                    if (empty)
+                        out << "seed,sourceLeafId,checkpoint,incoming,generated,outgoing,actionType,cardId\n";
+                    out << t_ld.seed << ',' << sourceLeafId << ',' << checkpointIndex << ','
+                        << (int)frontier.size() << ',' << generatedThisCheckpoint
+                        << ',' << (int)deduped.size()
+                        << ',' << (int)cp.action.getActionType() << ',' << (int)cp.cardId << '\n';
+                }
+            }
+            if (deduped.size() > g_particlePosteriorReplayCeiling) {
                 g.replayExplosion = 1;
                 g.replayFailure = "AMBIGUOUS_SEMANTIC_REPLAY_EXPLOSION";
                 return;
@@ -12274,6 +12299,11 @@ int main(int argc, char **argv) {
     }
     if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_REPLAY_DEBUG_FILE"))
         g_particlePosteriorReplayDebugFile = d;
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_REPLAY_CEILING")) {
+        const int n = std::atoi(d); if (n >= 1) g_particlePosteriorReplayCeiling = n;
+    }
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_REPLAY_TRACE_FILE"))
+        g_particlePosteriorReplayTraceFile = d;
     if (const char *d = std::getenv("STS_FRONTIERGEN_PER_STRATUM")) {   // frontiergen reservoir capacity per stratum per seed
         const int n = std::atoi(d);
         if (n >= 1) g_fgPerStratum = n;
