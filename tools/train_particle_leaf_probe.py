@@ -74,9 +74,21 @@ def grouped_metrics(vmap):
     }
 
 
+def split_by_seed(rows, rng):
+    seeds = sorted({int(row["seed"]) for row in rows})
+    shuffled = list(seeds); rng.shuffle(shuffled)
+    if len(seeds) >= 2:
+        cut = max(1, int(.8 * len(shuffled)))
+        train_seeds, val_seeds = set(shuffled[:cut]), set(shuffled[cut:])
+        train = [row for row in rows if int(row["seed"]) in train_seeds]
+        val = [row for row in rows if int(row["seed"]) in val_seeds]
+        return train, val, train_seeds, val_seeds, "seed"
+    return [], [], set(seeds), set(seeds), "source_leaf_group_smoke_fallback"
+
+
 def self_test():
-    def row(order, target):
-        return {"seed": "900001", "sourceLeafId": "1", "drawOrder": order,
+    def row(order, target, seed="900001"):
+        return {"seed": seed, "sourceLeafId": "1", "drawOrder": order,
                 "target": str(target), "drawPileSize": "3", "invariantOk": "1", "terminal": "1"}
     deduped = groups([row("a", 1), row("a", 99), row("b", 2), row("c", 3)])
     assert len(deduped) == 1 and len(deduped[("900001", "1")]) == 3
@@ -85,6 +97,15 @@ def self_test():
     assert eligible_counts(vmap, 2) == {"groupsEligible": 1, "seedsEligible": 1}
     assert eligible_counts(vmap, 4) == {"groupsEligible": 0, "seedsEligible": 0}
     assert eligible_counts(vmap, 8) == {"groupsEligible": 0, "seedsEligible": 0}
+    tie = grouped_metrics({
+        ("900001", "1"): ([1.0, 2.0], [0.0, 0.0], [1.0, 1.0]),
+    })
+    assert tie["pairwise"]["control"] == .5 and tie["pairwise"]["treatment"] == .5
+    split_rows = [row("a", 1, "900001"), row("b", 2, "900002"),
+                  row("c", 3, "900003"), row("d", 4, "900004")]
+    train, val, train_seeds, val_seeds, method = split_by_seed(split_rows, np.random.default_rng(SPLIT_SEED))
+    assert method == "seed" and train_seeds.isdisjoint(val_seeds)
+    assert {r["seed"] for r in train}.isdisjoint({r["seed"] for r in val})
     print("train_particle_leaf_probe self-test: PASS")
 
 
@@ -117,16 +138,10 @@ def main():
     nonterminal_dropped = sum(int(r["invariantOk"]) == 1 and int(r["terminal"]) != 1 for r in raw_rows)
     rows = [r for r in raw_rows if int(r["invariantOk"]) == 1 and int(r["terminal"]) == 1]
     gs = groups(rows)
-    seeds = sorted({int(key[0]) for key in gs})
     rng = np.random.default_rng(SPLIT_SEED)
-    shuffled = list(seeds); rng.shuffle(shuffled)
-    split_method = "seed"
-    if len(seeds) >= 2:
-        cut = max(1, int(.8 * len(shuffled)))
-        train_seeds, val_seeds = set(shuffled[:cut]), set(shuffled[cut:])
-        train = [r for key, value in gs.items() if int(key[0]) in train_seeds for r in value]
-        val = [r for key, value in gs.items() if int(key[0]) in val_seeds for r in value]
-    else:
+    deduped_rows = [row for value in gs.values() for row in value]
+    train, val, train_seeds, val_seeds, split_method = split_by_seed(deduped_rows, rng)
+    if split_method != "seed":
         split_method = "source_leaf_group_smoke_fallback"
         keys = list(gs); rng.shuffle(keys)
         cut = max(1, int(.8 * len(keys)))
@@ -169,7 +184,7 @@ def main():
 
     spreads = []; ranges = []; centered_y = []; centered_control = []; centered_particle = []
     pair_control = []; pair_particle = []; seed_pair = defaultdict(list)
-    raw_curve = defaultdict(list); model_curve = defaultdict(list)
+    raw_curve_by_seed = defaultdict(list); model_curve_by_seed = defaultdict(list)
     for key, (ys, vcs, vps) in vmap.items():
         ys, vcs, vps = map(np.asarray, (ys, vcs, vps))
         spreads.append(float(ys.std())); ranges.append(float(ys.max() - ys.min()))
@@ -185,9 +200,12 @@ def main():
                 if result is pair_particle: seed_pair[int(key[0])].append(score - .5)
         for k in (1, 2, 4, 8):
             if len(ys) >= k:
+                raw_errors = []; model_errors = []
                 for indexes in itertools.combinations(range(len(ys)), k):
-                    raw_curve[k].append(float((np.mean(ys[list(indexes)]) - ys.mean()) ** 2))
-                    model_curve[k].append(float((np.mean(vps[list(indexes)]) - ys.mean()) ** 2))
+                    raw_errors.append(float((np.mean(ys[list(indexes)]) - ys.mean()) ** 2))
+                    model_errors.append(float((np.mean(vps[list(indexes)]) - ys.mean()) ** 2))
+                raw_curve_by_seed[k].append((int(key[0]), float(np.mean(raw_errors))))
+                model_curve_by_seed[k].append((int(key[0]), float(np.mean(model_errors))))
 
     seed_rmse = defaultdict(list)
     for key, (ys, vcs, vps) in vmap.items():
@@ -232,8 +250,8 @@ def main():
         "pairwise": {"control": float(np.mean(pair_control)) if pair_control else float("nan"),
                      "particle": float(np.mean(pair_particle)) if pair_particle else float("nan"),
                      "pairs": len(pair_particle), "groups": len(vmap)},
-        "averaging_curve": {str(k): {"raw_rollout_rmse": float(np.sqrt(np.mean(raw_curve[k]))) if raw_curve[k] else float("nan"),
-                                      "particle_model_rmse": float(np.sqrt(np.mean(model_curve[k]))),
+        "averaging_curve": {str(k): {"raw_rollout_rmse": float(np.sqrt(np.mean([np.mean([v for seed, v in raw_curve_by_seed[k] if seed == s]) for s in {seed for seed, v in raw_curve_by_seed[k]}]))) if raw_curve_by_seed[k] else float("nan"),
+                                      "particle_model_rmse": float(np.sqrt(np.mean([np.mean([v for seed, v in model_curve_by_seed[k] if seed == s]) for s in {seed for seed, v in model_curve_by_seed[k]}]))) if model_curve_by_seed[k] else float("nan"),
                                       **eligible_counts(vmap, k)}
                             for k in (1, 2, 4, 8)},
         "validation_strata": validation_strata,

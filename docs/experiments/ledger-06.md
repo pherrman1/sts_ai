@@ -27,6 +27,16 @@
   focused corrected smoke produced 107 rows across 16 groups with no duplicate
   orders, all invariants passing, and no trainer group-split leakage; no 16–32
   seed scientific run is authorized here.
+- **32-seed collection/correction follow-up:** collected the preserved raw
+  artifact `build/particle_leaf_probe_phase1_32seed_raw.csv` with 32 seeds,
+  300 simulations, ascension 0, K=8, rate=1, and max-groups=16 through the
+  seed guard. It contains 2,364 data rows across 512 source groups and 32
+  seeds; SHA-256 is
+  `25c17387a5a324c806c020eef3d13b14937271e122b4bacc432bb6bbc17700e1`.
+  The offline K curve was then corrected to average combination errors within
+  each source leaf and use seed-level outer aggregation. The raw CSV was not
+  regenerated after this correction. These outputs are collection/analysis
+  provenance only, not a scientific conclusion or promotion decision.
 - **Non-goals:** no particle-conditioned runtime VNet, VNet-only search,
   policy-prior change, belief change, RNG conditioning, particle-count change,
   or OOC change.
