@@ -154,3 +154,34 @@ is **H4 inconclusive**: R favors V4 on 9/16, below the 10/16 threshold, and
 neither the short teacher nor R favors M0 on at least 10/16. This valid result
 does not support M0 promotion or distinguish the teacher, model-fitting, and
 objective hypotheses.
+
+## H=8 reference extension
+
+The corrected 16-state manifest and all existing S/H=4 rows were preserved
+unchanged. Four additional R futures (`future=4..7`) were evaluated per action
+and state: 128 new R continuations total. The additional rows were valid, with
+no replay warnings or simulator-health failures.
+
+The combined H=8 R analysis reports:
+
+```text
+mean refDelta      = -11.320312
+mean refWinDelta   = -0.195312
+R preference       M0=5 V4=10 tie=1
+strict agreement   short/reference=5/16 model/reference=5/16
+three-way agreement short/reference=6/16 model/reference=5/16
+invalid rows=0
+```
+
+Combined H=8 raw evidence SHA256:
+`b1a048945ffc485f39aa4c75696816dbace5919d9907ef5f21db2d4a42c347b4`.
+Combined H=8 decision summary SHA256:
+`1c9a0785040492400cdefe13e6331261ad8ec5970dd8bfda92bd5f7e9f2709d6`.
+
+H=8 reaches the preregistered reference condition: V4 is preferred on 10/16
+decisions and mean reference utility Δ is negative. Therefore the high-
+confidence M0 improvement signal is rejected under the stronger reference.
+This does not by itself distinguish teacher/target failure from model learning
+failure; short/reference and model/reference agreement remain only 5/16 under
+the strict metric. No new labels, reselection, threshold tuning, or gameplay
+gate was performed.

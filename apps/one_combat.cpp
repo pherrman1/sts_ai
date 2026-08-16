@@ -8721,7 +8721,8 @@ static std::string phase13aActionMeta(const GameContext &gc,
 
 static void phase13aEvaluate(const std::string &manifestFile,
                              const std::string &outFile, int asc,
-                             int referenceSims = 1000, int futures = 4) {
+                             int referenceSims = 1000, int futures = 4,
+                             int futureStart = 0, bool referenceOnly = false) {
     std::ifstream in(manifestFile); std::string line;
     std::ofstream out(outFile);
     out << "sourceSeed,decisionId,act,floor,screen,actionRole,actionBits,idx1,idx2,idx3,"
@@ -8754,7 +8755,8 @@ static void phase13aEvaluate(const std::string &manifestFile,
                         && (int)gc.screenState == screen) {
                         found = true;
                         const PathHistory prePath = path;
-                        for (int f = 0; f < futures; ++f) {
+                        for (int fi = 0; fi < futures; ++fi) {
+                            const int f = futureStart + fi;
                             const std::uint64_t contSeed = seed ^
                                 ((std::uint64_t)(targetDecIdx + 1) * 0x9e3779b97f4a7c15ULL) ^
                                 ((std::uint64_t)(f + 1) * 0xbf58476d1ce4e5b9ULL);
@@ -8762,16 +8764,18 @@ static void phase13aEvaluate(const std::string &manifestFile,
                                 const char role = ai == vi ? 'V' : 'M';
                                 GameContext branch = detachedCounterfactualCopy(gc);
                                 actions[ai].execute(branch);
-                                const int healthBefore = search::g_simHealthFailureCount;
-                                const OocCounterfactualResult s = evaluateStrategicBranch(
-                                    branch, contSeed, prePath);
-                                out << seed << ',' << decIdx << ',' << act << ',' << floor << ',' << screen
-                                    << ',' << role << ',' << actions[ai].bits << ',' << actions[ai].getIdx1()
-                                    << ',' << actions[ai].getIdx2() << ',' << actions[ai].getIdx3() << ','
-                                    << phase13aActionMeta(gc, actions[ai]) << ',' << margin << ',' << delta
-                                    << ",S," << f << ',' << contSeed << ',' << s.won << ',' << s.floor
-                                    << ',' << s.hp << ',' << s.bootstrapped << ',' << (s.valid ? 1 : 0)
-                                    << ',' << (search::g_simHealthFailureCount - healthBefore) << '\n';
+                                if (!referenceOnly) {
+                                    const int healthBefore = search::g_simHealthFailureCount;
+                                    const OocCounterfactualResult s = evaluateStrategicBranch(
+                                        branch, contSeed, prePath);
+                                    out << seed << ',' << decIdx << ',' << act << ',' << floor << ',' << screen
+                                        << ',' << role << ',' << actions[ai].bits << ',' << actions[ai].getIdx1()
+                                        << ',' << actions[ai].getIdx2() << ',' << actions[ai].getIdx3() << ','
+                                        << phase13aActionMeta(gc, actions[ai]) << ',' << margin << ',' << delta
+                                        << ",S," << f << ',' << contSeed << ',' << s.won << ',' << s.floor
+                                        << ',' << s.hp << ',' << s.bootstrapped << ',' << (s.valid ? 1 : 0)
+                                        << ',' << (search::g_simHealthFailureCount - healthBefore) << '\n';
+                                }
                                 GameContext refBranch = detachedCounterfactualCopy(gc);
                                 actions[ai].execute(refBranch);
                                 const int refHealthBefore = search::g_simHealthFailureCount;
@@ -12286,6 +12290,21 @@ int main(int argc, char **argv) {
         phase13aEvaluate(argv[2], argv[3], argc > 4 ? std::stoi(argv[4]) : 0,
                          argc > 5 ? std::stoi(argv[5]) : 1000,
                          argc > 6 ? std::stoi(argv[6]) : 4);
+
+    } else if (mode == "phase13a_ref_eval") {
+        if (argc < 4 || !g_oocStrategicTokNet.ok) {
+            std::cerr << "usage: one_combat phase13a_ref_eval MANIFEST.csv OUT.csv [asc] [start] [count]\n"
+                      << "requires STS_OOC_STRATEGIC_TOK_NN=<V4> and STS_PHASE13A_M0_NN=<M0>\n";
+            return 2;
+        }
+        const char *m0 = std::getenv("STS_PHASE13A_M0_NN");
+        if (!m0 || !g_phase13aM0Net.load(m0)) {
+            std::cerr << "phase13a_ref_eval: failed to load STS_PHASE13A_M0_NN\n";
+            return 1;
+        }
+        phase13aEvaluate(argv[2], argv[3], argc > 4 ? std::stoi(argv[4]) : 0,
+                         1000, argc > 6 ? std::stoi(argv[6]) : 4,
+                         argc > 5 ? std::stoi(argv[5]) : 4, true);
 
     } else if (mode == "policygen") {     // CSV of (state, action, visit/total) MCTS policy targets (AZ-lite)
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;
