@@ -395,12 +395,16 @@ by the isolated `diagnosticRollout` with one per-group CRN seed. Source
 groups that needed the fallback shuffle are recorded as
 `SOURCE_PARTICLE_FALLBACK` and are scientifically ineligible (not an
 implementation failure); failed replay of an exactly-applied source particle
-is an implementation invariant failure. Default `STS_PARTICLE_POSTERIOR_PROBE_K=0`
-evaluates ALL unique compatible states; range metrics are flagged as
-subsampled lower bounds whenever any group is capped. Validity is relative to
-Searcher3's finite belief approximation — never call it an exact Bayesian
-posterior. Analysis: `tools/analyze_particle_posterior_probe.py`; entry and
-pre-registered decision rule in `docs/experiments/ledger-06.md` §175.
+Default `STS_PARTICLE_POSTERIOR_PROBE_K=0` evaluates ALL unique compatible
+states; range metrics are flagged as subsampled lower bounds whenever any group
+is capped. The corrected Phase-1b primary target holds the source leaf's six
+RNG streams fixed for each compatible draw order and averages R=4 common
+rollouts; the original full-particle target remains secondary for total
+determinization variation. The primary statistic weights source groups
+equally; compatible-mass-weighted results are secondary. Validity is relative
+to Searcher3's finite belief approximation — never call it an exact Bayesian
+posterior. Analysis: `tools/analyze_particle_posterior_probe.py`; corrected
+pre-registration in `docs/experiments/ledger-06.md` §176.
 
 Why the §126 end-HP leaf beats the §134 direct utility-R leaf online despite
 fitting its target worse offline is an open diagnostic question (handover

@@ -2707,6 +2707,7 @@ struct LeafDiagCtx {
     std::vector<struct ParticlePosteriorProbeRow> particlePosteriorRows;
     int particlePosteriorGroups = 0;
     std::uint64_t particlePosteriorSourceLeafSeq = 0;
+    std::string actionFingerprint;
     void init(std::uint64_t sd) {
         seed = sd; fightIdx = 0; floor = 0; act = 0; encounter.clear(); decIdx = 0;
         rng.seed(sd ? sd : 1);
@@ -2721,6 +2722,7 @@ struct LeafDiagCtx {
         particlePosteriorRows.clear();
         particlePosteriorGroups = 0;
         particlePosteriorSourceLeafSeq = 0;
+        actionFingerprint.clear();
     }
 };
 static thread_local LeafDiagCtx t_ld;
@@ -3018,7 +3020,10 @@ struct ParticlePosteriorProbeRow {
     int rootCarriedFlag = 0, reuseGeneration = 0, reuseSearchCount = -1;
     int candidateParticleIndex = -1, candidateIsSource = 0, dedupOrdinal = -1;
     int rolloutSteps = 0, terminal = 0;
-    double candidateWeight = 0.0, target = std::numeric_limits<double>::quiet_NaN();
+    double candidateWeight = 0.0;
+    double target = std::numeric_limits<double>::quiet_NaN();
+    double controlledTarget = std::numeric_limits<double>::quiet_NaN();
+    double controlledTargetStd = std::numeric_limits<double>::quiet_NaN();
     std::string encounter, rngSignature, drawOrder;
 };
 
@@ -3250,6 +3255,34 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
 
     const std::uint64_t rngSeed = (t_ld.seed * 0x9e3779b97f4a7c15ULL)
                                 ^ sourceLeafId ^ 0x9e3779b97f4a7c15ULL;
+    constexpr int kControlledRollouts = 4;
+    struct ControlledValue { double mean = 0.0; double std = 0.0; };
+    std::map<std::vector<sts::FullHiddenCardId>, ControlledValue> controlled;
+    for (int idx : order) {
+        const auto &candidate = compatible[idx];
+        auto &value = controlled[candidate.key.drawPileOrder];
+        std::vector<double> samples;
+        samples.reserve(kControlledRollouts);
+        for (int replicate = 0; replicate < kControlledRollouts; ++replicate) {
+            BattleContext controlledState = base;
+            controlledState.cards.drawPile = candidate.state.cards.drawPile;
+            std::mt19937_64 controlledRng(rngSeed ^ (std::uint64_t)replicate
+                                          * 0xd1b54a32d192ed03ULL);
+            std::vector<search::Action> controlledActions;
+            double controlledTarget = std::numeric_limits<double>::quiet_NaN();
+            bool controlledTerminal = false;
+            d.searcher->diagnosticRollout(controlledState, controlledActions,
+                                          controlledRng, controlledTarget,
+                                          controlledTerminal);
+            samples.push_back(controlledTarget);
+        }
+        value.mean = std::accumulate(samples.begin(), samples.end(), 0.0)
+            / samples.size();
+        double variance = 0.0;
+        for (double sample : samples)
+            variance += (sample - value.mean) * (sample - value.mean);
+        value.std = std::sqrt(variance / samples.size());
+    }
     t_ld.particlePosteriorRows.push_back(g);   // group summary row first
     ++t_ld.particlePosteriorGroups;
     for (int ordinal = 0; ordinal < (int)order.size(); ++ordinal) {
@@ -3272,6 +3305,11 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
         w.rolloutSteps = steps;
         w.terminal = terminal ? 1 : 0;
         w.target = target;
+        const auto controlledIt = controlled.find(c.key.drawPileOrder);
+        if (controlledIt != controlled.end()) {
+            w.controlledTarget = controlledIt->second.mean;
+            w.controlledTargetStd = controlledIt->second.std;
+        }
         t_ld.particlePosteriorRows.push_back(std::move(w));
     }
 }
@@ -7374,7 +7412,7 @@ static std::string particlePosteriorProbeHeaderStr() {
            "drawPileMismatches,firstMismatchCheckpoint,expectedMismatchHash,actualMismatchHash,mismatchActionBits,"
            "rootCarried,reuseGeneration,reuseSearchCount,candidateParticleIndex,"
            "candidateWeight,candidateIsSource,dedupOrdinal,rngSignature,drawOrder,terminal,target,"
-           "rolloutSteps";
+           "fullTarget,controlledTarget,controlledTargetStd,rolloutSteps";
 }
 
 static std::string particlePosteriorProbeSeedCsv() {
@@ -7398,9 +7436,26 @@ static std::string particlePosteriorProbeSeedCsv() {
           << r.candidateParticleIndex << ',' << r.candidateWeight << ','
           << r.candidateIsSource << ',' << r.dedupOrdinal << ',' << r.rngSignature << ','
           << '"' << r.drawOrder << '"' << ',' << r.terminal << ',' << r.target << ','
+          << r.target << ',' << r.controlledTarget << ',' << r.controlledTargetStd << ','
           << r.rolloutSteps << '\n';
     }
     return o.str();
+}
+
+static void recordPosteriorSearchFingerprint(
+    const BattleContext &bc, const search::BattleScumSearcher3 &s3) {
+    int best = -1;
+    std::int64_t visits = -1;
+    for (int i = 0; i < (int)s3.root.edges.size(); ++i) {
+        const auto count = s3.root.edges[i].child.simulationCount;
+        if (count > visits) { visits = count; best = i; }
+    }
+    std::ostringstream row;
+    row << t_ld.seed << ':' << t_ld.decIdx++ << ':'
+        << sts::CombatObservation::fromBattleContext(bc).visibleHash() << ':'
+        << (best >= 0 ? s3.root.edges[best].action.bits : 0xffffffffu) << ':'
+        << visits << ';';
+    t_ld.actionFingerprint += row.str();
 }
 
 // Phase-1b driver. Identical run regime to particle_leaf_probe (forced
@@ -7415,7 +7470,7 @@ static void particlePosteriorProbe(int nSeeds, int sims, int asc,
     if (!f) { std::cerr << "particle_posterior_probe: cannot open " << outFile << '\n'; return; }
     std::ofstream runs(outFile + ".runs.csv");
     if (!runs) { std::cerr << "particle_posterior_probe: cannot open " << outFile << ".runs.csv\n"; return; }
-    runs << "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter\n";
+    runs << "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,actionFingerprint\n";
     f << particlePosteriorProbeHeaderStr() << '\n';
     g_leafdiagActive = true;
     const auto t0 = std::chrono::steady_clock::now();
@@ -7424,8 +7479,7 @@ static void particlePosteriorProbe(int nSeeds, int sims, int asc,
     for (int s = 0; s < nSeeds; ++s) {
         search::g_onS3LeafQuery = particlePosteriorProbeOnLeafQuery;
         search::g_s3LeafTraceActions = true;
-        search::g_onSearchComplete3 = [](const BattleContext &,
-                                         const search::BattleScumSearcher3 &) { ++t_ld.decIdx; };
+        search::g_onSearchComplete3 = recordPosteriorSearchFingerprint;
         t_ld.init((std::uint64_t)(seedOffset + s));
         const RunResult r = runFullRunOOC((std::uint64_t)(seedOffset + s), sims, asc, false, false);
         const std::string out = particlePosteriorProbeSeedCsv();
@@ -7437,7 +7491,8 @@ static void particlePosteriorProbe(int nSeeds, int sims, int asc,
             f << out;
             runs << (seedOffset + s) << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
                  << r.act << ',' << r.hpEnd << ',' << r.maxHp << ',' << r.fightsLost << ','
-                 << r.deathCombat << ',' << r.deathEncounter << '\n';
+                 << r.deathCombat << ',' << r.deathEncounter << ',"'
+                 << t_ld.actionFingerprint << '"\n';
             rows += std::count(out.begin(), out.end(), '\n');
         }
     }

@@ -55,9 +55,9 @@ def build_groups(rows):
     return groups
 
 
-def group_range(worlds):
-    """max(target)-min(target) over evaluated worlds; 0 when fewer than 2."""
-    targets = [float(w["target"]) for w in worlds if w.get("target") not in ("", None)]
+def group_range(worlds, field="target"):
+    """max(value)-min(value); 0 when fewer than 2 evaluated worlds."""
+    targets = [float(w[field]) for w in worlds if w.get(field) not in ("", None, "nan")]
     if len(targets) < 2:
         return 0.0
     return max(targets) - min(targets)
@@ -147,8 +147,8 @@ def analyze(rows, bootstrap_iters=10000):
     multi = [(s, m, w) for s, m, w in eligible
              if int(_num(m, "evaluatedWorldCount")) >= 2]
 
-    def prevalences(subset):
-        ranges = [group_range(w) for _, _, w in subset]
+    def prevalences(subset, field="target"):
+        ranges = [group_range(w, field) for _, _, w in subset]
         n = len(ranges)
         out = {"groups": n,
                "frac_range_eq0": (sum(1 for r in ranges if r == 0) / n) if n else float("nan")}
@@ -158,8 +158,8 @@ def analyze(rows, bootstrap_iters=10000):
         out["median_range"] = median(ranges)
         return out
 
-    def mass_stats(subset):
-        range_pairs = [(group_range(w), _num(m, "compatibleMass")) for _, m, w in subset]
+    def mass_stats(subset, field="target"):
+        range_pairs = [(group_range(w, field), _num(m, "compatibleMass")) for _, m, w in subset]
         std_pairs = [(group_std(w), _num(m, "compatibleMass")) for _, m, w in subset]
         return {
             "mass_weighted_mean_range": weighted_mean(range_pairs),
@@ -175,21 +175,31 @@ def analyze(rows, bootstrap_iters=10000):
                  and int(_num(m, "evaluatedWorldCount")) < int(_num(m, "uniqueCompatibleStates")))
 
     seed_ranges = defaultdict(list)
+    controlled_seed_ranges = defaultdict(list)
     for s, m, w in all_groups:
         seed_ranges[s].append(group_range(w))
+        controlled_seed_ranges[s].append(group_range(w, "controlledTarget"))
 
     frac_gt5_ci = seed_bootstrap(
         seed_ranges,
         lambda rs: (sum(1 for r in rs if r > 5) / len(rs)) if rs else float("nan"),
         bootstrap_iters)
     mean_range_ci = seed_bootstrap(seed_ranges, lambda rs: mean(rs), bootstrap_iters)
+    controlled_frac_gt5_ci = seed_bootstrap(
+        controlled_seed_ranges,
+        lambda rs: (sum(1 for r in rs if r > 5) / len(rs)) if rs else float("nan"),
+        bootstrap_iters)
+    controlled_mean_range_ci = seed_bootstrap(
+        controlled_seed_ranges, lambda rs: mean(rs), bootstrap_iters)
 
     per_seed = {}
     for s in sorted(seed_ranges):
         rs = seed_ranges[s]
         per_seed[s] = {"groups": len(rs),
                        "frac_range_gt5": sum(1 for r in rs if r > 5) / len(rs),
-                       "mean_range": mean(rs)}
+                       "mean_range": mean(rs),
+                       "controlled_frac_range_gt5": sum(1 for r in controlled_seed_ranges[s] if r > 5) / len(rs),
+                       "controlled_mean_range": mean(controlled_seed_ranges[s])}
 
     def stratify(field, subset, key_fn):
         buckets = defaultdict(list)
@@ -216,10 +226,13 @@ def analyze(rows, bootstrap_iters=10000):
     n_all = len(all_groups)
     return {
         "all_groups": prevalences(all_groups),
+        "primary_controlled_draw_order": prevalences(all_groups, "controlledTarget"),
+        "secondary_full_particle": prevalences(all_groups, "target"),
         "eligible_groups": prevalences(eligible),
         "multi_state_groups": prevalences(multi),
         "mass_stats_all": mass_stats(all_groups),
         "mass_stats_multi": mass_stats(multi),
+        "controlled_mass_stats_all": mass_stats(all_groups, "controlledTarget"),
         "source_replay_failures": sum(1 for m in metas if _num(m, "sourceParticleReplayOk") == 0),
         "invariant_failures": sum(1 for m in metas if _num(m, "invariantOk") == 0),
         "replay_failure_categories": dict(failures),
@@ -239,6 +252,8 @@ def analyze(rows, bootstrap_iters=10000):
         "range_metrics_are_subsampled": capped > 0,
         "seed_bootstrap": {"frac_range_gt5_ci95": frac_gt5_ci,
                            "mean_range_ci95": mean_range_ci,
+                           "controlled_frac_range_gt5_ci95": controlled_frac_gt5_ci,
+                           "controlled_mean_range_ci95": controlled_mean_range_ci,
                            "iters": bootstrap_iters},
         "per_seed": per_seed,
         "strata_descriptive": {
@@ -260,7 +275,7 @@ GROUP_FIELDS = ("rowType,seed,fightIdx,decIdx,sourceLeafId,obsHash,treeDepth,enc
                 "intermediateObservationMismatches,intermediateOutcomeMismatches,finalObservationMismatches,"
                 "drawPileMismatches,rootCarried,reuseGeneration,reuseSearchCount,candidateParticleIndex,"
                 "candidateWeight,candidateIsSource,dedupOrdinal,rngSignature,drawOrder,terminal,target,"
-                "rolloutSteps")
+                "fullTarget,controlledTarget,controlledTargetStd,rolloutSteps")
 
 
 def _to_csv(rows):
@@ -286,7 +301,9 @@ def _w(seed, lid, target, is_src, ordinal, weight):
                 target=str(target), candidateIsSource=str(is_src), dedupOrdinal=str(ordinal),
                 candidateWeight=str(weight), invariantOk="1", groupEligible="1",
                 sourceParticleReplayOk="1", uniqueCompatibleStates="2",
-                evaluatedWorldCount="2", compatibleMass="1.0")
+                evaluatedWorldCount="2", compatibleMass="1.0",
+                fullTarget=str(target), controlledTarget=str(target),
+                controlledTargetStd="0.0")
 
 
 def _self_test():

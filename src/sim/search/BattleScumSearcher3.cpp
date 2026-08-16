@@ -268,6 +268,22 @@ static bool sameCardMultiset(const std::vector<CardInstance> &a,
     return true;
 }
 
+// Diagnostic-only identity check. Gameplay particle application intentionally
+// retains the historical CardId-only predicate; posterior-valid diagnostics
+// must also distinguish upgrades, temporary cost, specialData, and
+// freeToPlayOnce.
+static bool sameDiagnosticCardMultiset(const std::vector<CardInstance> &a,
+                                       const std::vector<CardInstance> &b) {
+    if (a.size() != b.size()) return false;
+    std::vector<FullHiddenCardId> as, bs;
+    as.reserve(a.size()); bs.reserve(b.size());
+    for (const auto &c : a) as.emplace_back(c);
+    for (const auto &c : b) bs.emplace_back(c);
+    std::sort(as.begin(), as.end());
+    std::sort(bs.begin(), bs.end());
+    return as == bs;
+}
+
 // Shared implementation: install particle RNG seeds + draw order.
 // The fallbackRng is used only when the particle's draw-pile order doesn't
 // match the current state (stale particle after tree reuse).
@@ -321,7 +337,7 @@ void applyHiddenState(BattleContext &state, const HiddenBattleState &particle,
 bool applyHiddenStateExact(BattleContext &state,
                            const HiddenBattleState &particle) {
     if (particle.drawPileOrder.size() != state.cards.drawPile.size()
-        || !sameCardMultiset(particle.drawPileOrder, state.cards.drawPile))
+        || !sameDiagnosticCardMultiset(particle.drawPileOrder, state.cards.drawPile))
         return false;
     state.shuffleRng.seed0 = particle.shuffleRngSeed0;
     state.shuffleRng.seed1 = particle.shuffleRngSeed1;

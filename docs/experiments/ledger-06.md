@@ -1,4 +1,4 @@
-## §175 Posterior-valid particle sensitivity probe — Phase 1b implementation and preregistration (2026-08-16; diagnostic/offline; no gameplay promotion)
+## §175 Posterior-valid particle sensitivity probe — Phase 1b implementation and preregistration v1 (2026-08-16; superseded before scientific run)
 
 Phase 1b extends the §174 draw-order probe. Where Phase 1a artificially
 permuted draw order while holding the visible state, draw-pile multiset, and
@@ -51,7 +51,7 @@ approximation; it is NOT an exact Bayesian posterior.
   is capped), and structure validation (no fake padding, source world present
   exactly once). Groups with <2 evaluated compatible states count as range 0
   in the primary all-group prevalence.
-- **Pre-registered Phase-1b decision rule (set BEFORE any Phase-1b scientific
+- **Pre-registered Phase-1b v1 decision rule (set BEFORE any Phase-1b scientific
   data collection):** PRIMARY quantity = fraction of ALL sampled source
   groups with posterior-valid target range > 5 (single-state and ineligible
   groups count as non-sensitive). GO if implementation invariants all pass
@@ -65,6 +65,14 @@ approximation; it is NOT an exact Bayesian posterior.
   is substantively successful, roadmap continues with #2 (post-combat
   V_run_win); #3 (particle-conditioned VNet) becomes justified only if #2
   also succeeds.
+- **Supersession before designated scientific data:** the 4-seed implementation
+  smoke showed that the original full-particle target combines draw-order
+  variation, six simulator-RNG-stream variation, and one-rollout estimation
+  noise. That target remains useful as a secondary total-determinizations
+  quantity for future #4 belief averaging, but is not a clean primary gate for
+  particle-conditioned #3 valuation. No designated scientific data were
+  collected under v1. This entry is superseded by the controlled decomposition
+  below; the v1 GO/STOP rule must not be applied to the v1 full-particle smoke.
 - **Verification status:** implementation + self-test + 4-seed guard-approved
   smoke only (appended below when run). No Phase-1b scientific dataset or
   GO/STOP verdict exists yet; the intended first scientific run is 16 seeds,
@@ -104,6 +112,44 @@ approximation; it is NOT an exact Bayesian posterior.
   build/particle_posterior_probe_on4_v3.csv --bootstrap-iters 200` ran
   successfully. No scientific GO/STOP interpretation is made from four
   seeds.
+
+### §176 Phase-1b measurement correction — controlled draw-order primary (2026-08-16; 4-seed smoke only)
+
+The implementation-review correction retains the exact posterior compatibility
+and replay machinery, but splits continuation targets:
+
+- **Primary controlled draw-order target:** for every compatible draw order,
+  use that order with the source leaf's six simulator RNG streams, and average
+  `R=4` diagnostic rollouts using four common per-group rollout-policy RNG
+  seeds. This asks whether draw orders that Searcher3 actually considers
+  possible change expected continuation value, without mixing in candidate RNG
+  states or relying on one rollout per world.
+- **Secondary full-particle target:** retain the original exact candidate draw
+  order plus all six candidate RNG streams and one common diagnostic rollout
+  seed. This measures total hidden-determinization variation and is useful for
+  later #4 belief averaging, but is not the primary #3 gate.
+
+The diagnostic exact draw-pile multiset check now uses `FullHiddenCardId`
+(CardId, upgrades, specialData, costForTurn, freeToPlayOnce); gameplay's
+historical CardId-only `sameCardMultiset` was not changed. The run sidecar now
+records a per-decision Searcher3 root fingerprint (visible observation hash,
+chosen root action bits, and visits), allowing OFF/ON action/search-level
+comparison rather than only run-outcome comparison.
+
+The corrected smoke used the same fair-S3 environment as §175, 4 seeds, 300
+sims, 4 source groups/seed, `K=0`, and `R=4`. It produced 16 groups and 592
+evaluated worlds with zero source replay failures and zero invariant failures.
+The full-particle target had mean range 19.75 and 16/16 groups above 5. The
+controlled draw-order target had mean range 2.09375, median range 0, and 3/16
+groups above 5. The compatible-mass-weighted controlled mean range was 3.368;
+the **primary statistic is the equal-source-group mean/range prevalence**, with
+mass-weighted results secondary. OFF/ON root action/search fingerprints were
+identical. These four-seed results are implementation smoke evidence only,
+not a scientific verdict.
+
+The corrected preregistration is the designated contract for any future
+scientific run. The 16-seed experiment remains unrun and requires independent
+review of this correction commit first.
 
 ## §174 Particle-conditioned leaf probe implementation (2026-08-16; diagnostic/offline; no gameplay promotion)
 

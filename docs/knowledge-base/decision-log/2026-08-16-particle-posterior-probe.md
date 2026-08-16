@@ -18,6 +18,15 @@ made. The pre-registered GO/STOP/INCONCLUSIVE decision rule was recorded in
 `docs/experiments/ledger-06.md` §175 BEFORE any Phase-1b scientific data
 collection.
 
+The §175 v1 full-particle gate was superseded before the designated scientific
+run after implementation review identified a confound: full candidate RNG
+streams plus draw order plus one rollout measure total random-future variation,
+not clean draw-order-conditioned valuation. §176 therefore makes the
+controlled draw-order target primary (source RNG streams held fixed, R=4 common
+rollouts per compatible draw order) and retains the full-particle target as a
+secondary #4-oriented quantity. The primary statistic is equal-source-group
+mean/range prevalence; compatible-mass-weighted results are secondary.
+
 Key implementation facts:
 
 - `one_combat particle_posterior_probe`; env `STS_PARTICLE_POSTERIOR_PROBE_FILE`,
@@ -28,6 +37,12 @@ Key implementation facts:
   pre-action state and actual post-action `CombatObservation` + `Outcome`.
 - `applyHiddenStateExact` installs a particle exactly or returns false;
   fallback shuffles are never accepted as compatible worlds.
+- Diagnostic exact draw-pile multiset identity uses `FullHiddenCardId`; the
+  gameplay CardId-only multiset predicate remains unchanged.
+- The smoke sidecar records per-decision Searcher3 root fingerprints: visible
+  observation hash, chosen root action bits, and chosen-edge visits. This
+  supports action/search-level OFF/ON equality checks rather than only outcome
+  equality.
 - Source-particle replay is mandatory for exactly-applied source groups
   (`sourceParticleReplayOk` must be 1); `SOURCE_PARTICLE_FALLBACK` groups are
   ineligible, with `rootCarried`/`reuseGeneration` recorded for attribution.
