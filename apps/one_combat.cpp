@@ -3020,6 +3020,8 @@ struct ParticlePosteriorProbeRow {
     std::uint32_t mismatchActionBits = 0;
     int rootCarriedFlag = 0, reuseGeneration = 0, reuseSearchCount = -1;
     int candidateParticleIndex = -1, candidateIsSource = 0, dedupOrdinal = -1;
+    int semanticBranchesCreated = 0, maxSurvivingBranches = 0, branchesCollapsed = 0;
+    int replayExplosion = 0;
     int rolloutSteps = 0, terminal = 0;
     double candidateWeight = 0.0;
     double target = std::numeric_limits<double>::quiet_NaN();
@@ -3253,6 +3255,7 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
         int rootIndex = -1;
         double weight = 0.0;
         bool source = false;
+        bool followsRawSource = false;
         BattleContext state;
         sts::FullHiddenStateKey key;
     };
@@ -3265,48 +3268,100 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
         c.rootIndex = particleIndex;
         c.weight = particles[particleIndex].weight;
         c.source = isSource;
+        c.followsRawSource = isSource;
         c.state = *d.searcher->rootBc;
         if (!search::applyHiddenStateExact(c.state, particles[particleIndex])) {
             ++g.drawPileMismatches;
             return;
         }
-        int checkpointIndex = 0;
-        for (const auto &cp : d.actionCheckpoints) {
-            const auto action = posteriorProbeRemapAction(cp, c.state);
-            if (!action) { ++g.semanticReplayFailures; return; }
-            if (!action->isValidAction(c.state)) { ++g.actionIllegalFailures; return; }
-            action->execute(c.state);
-            const CombatObservation obs = CombatObservation::fromBattleContext(c.state);
-            if (obs != cp.observation) {
-                ++g.intermediateObservationMismatches;
-                if (isSource && g.firstMismatchCheckpoint < 0) {
-                    g.firstMismatchCheckpoint = checkpointIndex;
-                    g.expectedMismatchHash = cp.observation.visibleHash();
-                    g.actualMismatchHash = obs.visibleHash();
-                    g.mismatchActionBits = action->bits;
+        std::vector<Candidate> frontier{std::move(c)};
+        for (size_t checkpointIndex = 0; checkpointIndex < d.actionCheckpoints.size(); ++checkpointIndex) {
+            const auto &cp = d.actionCheckpoints[checkpointIndex];
+            std::vector<Candidate> next;
+            for (const auto &stateCandidate : frontier) {
+                std::vector<search::Action> actions;
+                if (cp.action.getActionType() == search::ActionType::CARD) {
+                    search::BattleScumSearcher3::CardActionKey key;
+                    key.id = cp.cardId; key.upgradeCount = cp.upgradeCount;
+                    key.costForTurn = cp.costForTurn; key.freeToPlayOnce = cp.freeToPlayOnce;
+                    key.specialData = cp.specialData; key.target = cp.target;
+                    for (int hi = 0; hi < stateCandidate.state.cards.cardsInHand; ++hi) {
+                        const auto &card = stateCandidate.state.cards.hand[hi];
+                        if (card.getId() == key.id && card.getUpgradeCount() == key.upgradeCount
+                            && card.costForTurn == key.costForTurn
+                            && card.freeToPlayOnce == key.freeToPlayOnce
+                            && card.specialData == key.specialData) {
+                            auto action = key.target >= 0
+                                ? search::Action(search::ActionType::CARD, hi, key.target)
+                                : search::Action(search::ActionType::CARD, hi);
+                            if (action.isValidAction(stateCandidate.state)) actions.push_back(action);
+                        }
+                    }
+                    g.semanticBranchesCreated += (int)actions.size();
+                } else {
+                    const auto action = posteriorProbeRemapAction(cp, stateCandidate.state);
+                    if (action && action->isValidAction(stateCandidate.state)) actions.push_back(*action);
                 }
+                for (const auto &action : actions) {
+                    Candidate successor = stateCandidate;
+                    successor.followsRawSource = successor.followsRawSource
+                        && action.bits == cp.action.bits;
+                    action.execute(successor.state);
+                    const auto obs = CombatObservation::fromBattleContext(successor.state);
+                    if (obs == cp.observation && successor.state.outcome == cp.outcome)
+                        next.push_back(std::move(successor));
+                    else if (obs != cp.observation) ++g.intermediateObservationMismatches;
+                    else ++g.intermediateOutcomeMismatches;
+                }
+            }
+            std::map<sts::FullHiddenStateKey, size_t> checkpointKeys;
+            std::vector<Candidate> deduped;
+            for (auto &candidate : next) {
+                const auto key = sts::fullHiddenStateKey(candidate.state);
+                const auto inserted = checkpointKeys.emplace(key, deduped.size());
+                if (inserted.second)
+                    deduped.push_back(std::move(candidate));
+                else {
+                    auto &existing = deduped[inserted.first->second];
+                    // The experiment's identity key intentionally omits
+                    // physical CardInstance::uniqueId. Preserve the source
+                    // trajectory representative when equivalent hidden keys
+                    // collide, so sourceParticleReplayOk cannot lose its
+                    // witness solely to representative ordering.
+                    if (candidate.followsRawSource && !existing.followsRawSource)
+                        existing = std::move(candidate);
+                    ++g.branchesCollapsed;
+                }
+            }
+            g.maxSurvivingBranches = std::max(g.maxSurvivingBranches, (int)deduped.size());
+            if (deduped.size() > 64) {
+                g.replayExplosion = 1;
+                g.replayFailure = "AMBIGUOUS_SEMANTIC_REPLAY_EXPLOSION";
                 return;
             }
-            if (c.state.outcome != cp.outcome) { ++g.intermediateOutcomeMismatches; return; }
-            ++checkpointIndex;
+            frontier = std::move(deduped);
+            if (frontier.empty()) return;
         }
-        const CombatObservation finalObs = CombatObservation::fromBattleContext(c.state);
-        if (finalObs != sourceFinalObs || c.state.outcome != d.outcome) {
-            ++g.finalObservationMismatches;   // final visible observation OR outcome mismatch
-            return;
+        const double branchWeight = particles[particleIndex].weight
+            / std::max<size_t>(1, frontier.size());
+        for (auto &survivor : frontier) {
+            const CombatObservation finalObs = CombatObservation::fromBattleContext(survivor.state);
+            if (finalObs != sourceFinalObs || survivor.state.outcome != d.outcome) {
+                ++g.finalObservationMismatches;
+                continue;
+            }
+            survivor.weight = branchWeight;
+            survivor.key = sts::fullHiddenStateKey(survivor.state);
+            const auto found = byKey.find(survivor.key);
+            if (found != byKey.end()) {
+                compatible[found->second].weight += survivor.weight;
+                compatible[found->second].source |= survivor.source;
+            } else {
+                byKey.emplace(survivor.key, compatible.size());
+                compatible.push_back(std::move(survivor));
+            }
         }
-        ++acceptedParticles;
-        c.key = sts::fullHiddenStateKey(c.state);
-        const auto found = byKey.find(c.key);
-        if (found != byKey.end()) {
-            // Multiple root particles collapse to one exact leaf hidden state:
-            // aggregate their probability mass, never count as independent worlds.
-            compatible[found->second].weight += c.weight;
-            compatible[found->second].source |= c.source;
-        } else {
-            byKey.emplace(c.key, compatible.size());
-            compatible.push_back(std::move(c));
-        }
+        if (!frontier.empty()) ++acceptedParticles;
     };
 
     g.replayAttempted = g.positiveParticleCount
@@ -7521,7 +7576,8 @@ static std::string particlePosteriorProbeHeaderStr() {
            "intermediateObservationMismatches,intermediateOutcomeMismatches,finalObservationMismatches,"
            "drawPileMismatches,firstMismatchCheckpoint,expectedMismatchHash,actualMismatchHash,mismatchActionBits,"
            "rootCarried,reuseGeneration,reuseSearchCount,candidateParticleIndex,"
-           "candidateWeight,candidateIsSource,dedupOrdinal,rngSignature,drawOrder,terminal,target,"
+           "candidateWeight,candidateIsSource,dedupOrdinal,semanticBranchesCreated,maxSurvivingBranches,"
+           "branchesCollapsed,replayExplosion,rngSignature,drawOrder,terminal,target,"
            "fullTarget,controlledTarget,controlledTargetStd,rolloutSteps";
 }
 
@@ -7544,7 +7600,9 @@ static std::string particlePosteriorProbeSeedCsv() {
           << r.actualMismatchHash << ',' << r.mismatchActionBits << ','
           << r.rootCarriedFlag << ',' << r.reuseGeneration << ',' << r.reuseSearchCount << ','
           << r.candidateParticleIndex << ',' << r.candidateWeight << ','
-          << r.candidateIsSource << ',' << r.dedupOrdinal << ',' << r.rngSignature << ','
+          << r.candidateIsSource << ',' << r.dedupOrdinal << ',' << r.semanticBranchesCreated << ','
+          << r.maxSurvivingBranches << ',' << r.branchesCollapsed << ',' << r.replayExplosion << ','
+          << r.rngSignature << ','
           << '"' << r.drawOrder << '"' << ',' << r.terminal << ',' << r.target << ','
           << r.target << ',' << r.controlledTarget << ',' << r.controlledTargetStd << ','
           << r.rolloutSteps << '\n';
