@@ -281,8 +281,7 @@ GROUP_FIELDS = ("rowType,seed,fightIdx,decIdx,sourceLeafId,obsHash,treeDepth,enc
                 "groupEligible,invariantOk,replayFailure,semanticReplayFailures,actionIllegalFailures,"
                 "intermediateObservationMismatches,intermediateOutcomeMismatches,finalObservationMismatches,"
                 "drawPileMismatches,rootCarried,reuseGeneration,reuseSearchCount,candidateParticleIndex,"
-                "candidateWeight,candidateIsSource,dedupOrdinal,semanticBranchesCreated,maxSurvivingBranches,"
-                "branchesCollapsed,replayExplosion,rngSignature,drawOrder,terminal,target,"
+                "candidateWeight,candidateIsSource,dedupOrdinal,semanticBranchesCreated,extraSemanticBranches,maxSurvivingBranches,"
                 "branchesCollapsed,replayExplosion,rngSignature,drawOrder,terminal,target,"
                 "fullTarget,controlledTarget,controlledTargetStd,rolloutSteps")
 

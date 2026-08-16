@@ -3021,6 +3021,7 @@ struct ParticlePosteriorProbeRow {
     int rootCarriedFlag = 0, reuseGeneration = 0, reuseSearchCount = -1;
     int candidateParticleIndex = -1, candidateIsSource = 0, dedupOrdinal = -1;
     int semanticBranchesCreated = 0, maxSurvivingBranches = 0, branchesCollapsed = 0;
+    int extraSemanticBranches = 0;
     int replayExplosion = 0;
     int rolloutSteps = 0, terminal = 0;
     double candidateWeight = 0.0;
@@ -3197,6 +3198,8 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
     g.positiveParticleCount = (int)std::count_if(
         particles.begin(), particles.end(),
         [](const sts::HiddenBattleState &p) { return p.weight > 0.0; });
+    double positiveWeightTotal = 0.0;
+    for (const auto &p : particles) if (p.weight > 0.0) positiveWeightTotal += p.weight;
     g.sourceParticleIndex = sourceIndex;
     g.sourceParticleFallback = d.particleUsedFallback ? 1 : 0;
     g.rootCarriedFlag = d.rootCarried ? 1 : 0;
@@ -3262,10 +3265,10 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                                        std::int8_t, std::int8_t, bool, bool, bool>;
     struct ReplayStateKey {
         sts::FullHiddenStateKey hidden;
-        std::vector<PhysicalCardKey> hand, discard, exhaust;
+        std::vector<PhysicalCardKey> draw, hand, discard, exhaust;
         bool operator<(const ReplayStateKey &o) const {
-            return std::tie(hidden, hand, discard, exhaust)
-                < std::tie(o.hidden, o.hand, o.discard, o.exhaust);
+            return std::tie(hidden, draw, hand, discard, exhaust)
+                < std::tie(o.hidden, o.draw, o.hand, o.discard, o.exhaust);
         }
     };
     auto physicalCards = [](const std::vector<CardInstance> &cards) {
@@ -3277,7 +3280,8 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
         return out;
     };
     auto replayStateKey = [&](const BattleContext &state) {
-        ReplayStateKey key{sts::fullHiddenStateKey(state), {}, {}, {}};
+        ReplayStateKey key{sts::fullHiddenStateKey(state), {}, {}, {}, {}};
+        key.draw = physicalCards(state.cards.drawPile);
         key.hand = physicalCards(std::vector<CardInstance>(
             state.cards.hand.begin(), state.cards.hand.begin() + state.cards.cardsInHand));
         key.discard = physicalCards(state.cards.discardPile);
@@ -3291,7 +3295,8 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
     auto replayCandidate = [&](int particleIndex, bool isSource) {
         Candidate c;
         c.rootIndex = particleIndex;
-        c.weight = particles[particleIndex].weight;
+        c.weight = positiveWeightTotal > 0.0
+            ? particles[particleIndex].weight / positiveWeightTotal : 0.0;
         c.source = isSource;
         c.state = *d.searcher->rootBc;
         if (!search::applyHiddenStateExact(c.state, particles[particleIndex])) {
@@ -3322,6 +3327,7 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                         }
                     }
                     g.semanticBranchesCreated += (int)actions.size();
+                    g.extraSemanticBranches += std::max(0, (int)actions.size() - 1);
                 } else {
                     const auto action = posteriorProbeRemapAction(cp, stateCandidate.state);
                     if (action && action->isValidAction(stateCandidate.state)) actions.push_back(*action);
@@ -3349,7 +3355,7 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                 }
             }
             g.maxSurvivingBranches = std::max(g.maxSurvivingBranches, (int)deduped.size());
-            if (deduped.size() > 64) {
+            if (deduped.size() > 128) {
                 g.replayExplosion = 1;
                 g.replayFailure = "AMBIGUOUS_SEMANTIC_REPLAY_EXPLOSION";
                 return;
@@ -3357,8 +3363,7 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
             frontier = std::move(deduped);
             if (frontier.empty()) return;
         }
-        const double branchWeight = particles[particleIndex].weight
-            / std::max<size_t>(1, frontier.size());
+        std::map<sts::FullHiddenStateKey, Candidate> localLeaves;
         bool finalAccepted = false;
         for (auto &survivor : frontier) {
             const CombatObservation finalObs = CombatObservation::fromBattleContext(survivor.state);
@@ -3367,13 +3372,20 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                 continue;
             }
             survivor.key = sts::fullHiddenStateKey(survivor.state);
-            const auto found = byKey.find(survivor.key);
-            if (found != byKey.end()) {
-                compatible[found->second].weight += survivor.weight;
-                compatible[found->second].source |= survivor.source;
-            } else {
-                byKey.emplace(survivor.key, compatible.size());
-                compatible.push_back(std::move(survivor));
+            localLeaves.emplace(survivor.key, std::move(survivor));
+        }
+        if (!localLeaves.empty()) {
+            const double branchWeight = c.weight / localLeaves.size();
+            for (auto &[key, survivor] : localLeaves) {
+                survivor.weight = branchWeight;
+                const auto found = byKey.find(key);
+                if (found != byKey.end()) {
+                    compatible[found->second].weight += survivor.weight;
+                    compatible[found->second].source |= survivor.source;
+                } else {
+                    byKey.emplace(key, compatible.size());
+                    compatible.push_back(std::move(survivor));
+                }
             }
             finalAccepted = true;
         }
@@ -7599,7 +7611,7 @@ static std::string particlePosteriorProbeHeaderStr() {
            "intermediateObservationMismatches,intermediateOutcomeMismatches,finalObservationMismatches,"
            "drawPileMismatches,firstMismatchCheckpoint,expectedMismatchHash,actualMismatchHash,mismatchActionBits,"
            "rootCarried,reuseGeneration,reuseSearchCount,candidateParticleIndex,"
-           "candidateWeight,candidateIsSource,dedupOrdinal,semanticBranchesCreated,maxSurvivingBranches,"
+           "candidateWeight,candidateIsSource,dedupOrdinal,semanticBranchesCreated,extraSemanticBranches,maxSurvivingBranches,"
            "branchesCollapsed,replayExplosion,rngSignature,drawOrder,terminal,target,"
            "fullTarget,controlledTarget,controlledTargetStd,rolloutSteps";
 }
@@ -7624,6 +7636,7 @@ static std::string particlePosteriorProbeSeedCsv() {
           << r.rootCarriedFlag << ',' << r.reuseGeneration << ',' << r.reuseSearchCount << ','
           << r.candidateParticleIndex << ',' << r.candidateWeight << ','
           << r.candidateIsSource << ',' << r.dedupOrdinal << ',' << r.semanticBranchesCreated << ','
+          << r.extraSemanticBranches << ','
           << r.maxSurvivingBranches << ',' << r.branchesCollapsed << ',' << r.replayExplosion << ','
           << r.rngSignature << ','
           << '"' << r.drawOrder << '"' << ',' << r.terminal << ',' << r.target << ','
