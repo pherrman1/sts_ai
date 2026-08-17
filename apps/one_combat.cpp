@@ -89,6 +89,7 @@ static thread_local bool t_trainingRunActive = false;
 struct E2cCapture;
 static thread_local E2cCapture *t_e2c = nullptr;
 static thread_local std::string t_e2cRows;
+static std::atomic<long long> g_e2cCounts[3][6]{}; // eligible, raw, post, pairs, raw_only, post_only
 static void e2cBeginFight(int, const sts::GameContext &, const sts::BattleContext &);
 static void e2cRawObserver(const sts::BattleContext &, sts::GameContext &);
 static void e2cCapturePost(sts::GameContext &);
@@ -96,6 +97,7 @@ static std::string e2cRunRows(const E2cCapture &, bool, int, int);
 static std::string e2cExplicitRelics(const sts::GameContext &);
 static std::string e2cHeader();
 static std::string richStateHeader();
+static std::string e2cRoomName(int);
 static std::atomic<int> g_trainingInvalidRuns{0};
 static std::atomic<int> g_trainingInvalidBranches{0};
 static std::atomic<int> g_trainingHealthFailures{0};
@@ -846,11 +848,15 @@ struct E2cFight {
     std::string raw, post, rawRelics, postRelics;
     bool rawSeen = false, postSeen = false;
 };
+struct E2cRoomStats {
+    int eligible = 0, raw = 0, post = 0, pairs = 0;
+};
 struct E2cCapture {
     std::uint64_t seed = 0;
     PathHistory *path = nullptr;
     std::vector<E2cFight> fights;
     E2cFight *current = nullptr;
+    E2cRoomStats roomStats[3]{};
 };
 // Current run's path history, so vFeatCsv() can emit pv* features (nullptr = none).
 static thread_local const PathHistory *t_curPath = nullptr;
@@ -3200,6 +3206,26 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
         const bool decided = result.won || gc.outcome != GameOutcome::UNDECIDED;
         if (trainingRunValid(decided))
             t_e2cRows = e2cRunRows(e2c, result.won, result.floor, result.hpEnd);
+        for (int i = 0; i < 3; ++i) {
+            const auto &s = e2c.roomStats[i];
+            g_e2cCounts[i][0] += s.eligible;
+            g_e2cCounts[i][1] += s.raw;
+            g_e2cCounts[i][2] += s.post;
+            g_e2cCounts[i][3] += std::count_if(e2c.fights.begin(), e2c.fights.end(),
+                [i](const E2cFight &f) { return f.rawSeen && f.postSeen &&
+                    (f.room == (i == 0 ? (int)Room::MONSTER : i == 1 ? (int)Room::ELITE : (int)Room::BOSS)); });
+            g_e2cCounts[i][4] += std::count_if(e2c.fights.begin(), e2c.fights.end(),
+                [i](const E2cFight &f) { return f.rawSeen && !f.postSeen &&
+                    (f.room == (i == 0 ? (int)Room::MONSTER : i == 1 ? (int)Room::ELITE : (int)Room::BOSS)); });
+            g_e2cCounts[i][5] += std::count_if(e2c.fights.begin(), e2c.fights.end(),
+                [i](const E2cFight &f) { return !f.rawSeen && f.postSeen &&
+                    (f.room == (i == 0 ? (int)Room::MONSTER : i == 1 ? (int)Room::ELITE : (int)Room::BOSS)); });
+        }
+        for (const auto &f : e2c.fights)
+            if (f.rawSeen != f.postSeen)
+                std::cerr << "e2c incomplete seed=" << e2c.seed << " fight=" << f.index
+                          << " room=" << e2cRoomName(f.room) << " encounter=" << f.encounter
+                          << " raw=" << f.rawSeen << " post=" << f.postSeen << '\n';
         t_e2c = nullptr;
         g_onBattleExitPersistent = nullptr;
     }
@@ -6288,6 +6314,7 @@ static std::string e2cHeader() {
 
 static void e2cBeginFight(int fightIndex, const GameContext &gc, const BattleContext &bc) {
     if (!t_e2c) return;
+    t_e2c->current = nullptr;
     if (gc.curRoom != Room::MONSTER && gc.curRoom != Room::ELITE && gc.curRoom != Room::BOSS) return;
     if (gc.curRoom == Room::BOSS && gc.act > 2) return;   // exclude act-3/4 terminal boss
     E2cFight f;
@@ -6302,6 +6329,10 @@ static void e2cRawObserver(const BattleContext &bc, GameContext &gc) {
         t_e2c->current->raw = richRow(gc, *t_e2c->path);
         t_e2c->current->rawRelics = e2cExplicitRelics(gc);
         t_e2c->current->rawSeen = true;
+        auto &s = t_e2c->roomStats[t_e2c->current->room == (int)Room::MONSTER ? 0
+                                  : t_e2c->current->room == (int)Room::ELITE ? 1 : 2];
+        ++s.eligible;
+        ++s.raw;
     }
 }
 
@@ -6309,10 +6340,14 @@ static void e2cCapturePost(GameContext &gc) {
     if (!t_e2c || !t_e2c->current || t_e2c->current->postSeen) return;
     auto &r = gc.info.rewardsContainer;
     if (gc.screenState != ScreenState::REWARDS || r.goldRewardCount || r.relicCount ||
-        r.potionCount || r.emeraldKey || r.sapphireKey || r.cardRewardCount == 0) return;
+        r.potionCount || (g_collectKeys && (r.emeraldKey || r.sapphireKey)) ||
+        r.cardRewardCount == 0) return;
     t_e2c->current->post = richRow(gc, *t_e2c->path);
     t_e2c->current->postRelics = e2cExplicitRelics(gc);
     t_e2c->current->postSeen = true;
+    auto &s = t_e2c->roomStats[t_e2c->current->room == (int)Room::MONSTER ? 0
+                              : t_e2c->current->room == (int)Room::ELITE ? 1 : 2];
+    ++s.post;
 }
 
 static std::string e2cRunRows(const E2cCapture &cap, bool won, int finalFloor, int endHp) {
@@ -6331,6 +6366,7 @@ static std::string e2cRunRows(const E2cCapture &cap, bool won, int finalFloor, i
 static void e2cGen(int nSeeds, int sims, int asc, const std::string &outfile,
                    long long seedOffset = 0) {
     trainingCampaignStart();
+    for (auto &row : g_e2cCounts) for (auto &v : row) v = 0;
     const bool append = seedOffset > 0;
     std::cout << "e2cgen    seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
               << "  sims " << sims << "  asc " << asc
@@ -6361,6 +6397,11 @@ static void e2cGen(int nSeeds, int sims, int asc, const std::string &outfile,
                 "branches=%d health_failures=%d rows=%lld output=%s\n",
                 nSeeds, nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
                 g_trainingInvalidBranches.load(), g_trainingHealthFailures.load(), rowCount, outfile.c_str());
+    for (int i = 0; i < 3; ++i)
+        std::printf("e2c accounting room=%s eligible=%lld raw=%lld post=%lld pairs=%lld raw_only=%lld post_only=%lld\n",
+                    i == 0 ? "MONSTER" : i == 1 ? "ELITE" : "BOSS",
+                    g_e2cCounts[i][0].load(), g_e2cCounts[i][1].load(), g_e2cCounts[i][2].load(),
+                    g_e2cCounts[i][3].load(), g_e2cCounts[i][4].load(), g_e2cCounts[i][5].load());
     writeTrainingProvenance(outfile, "e2cgen", nSeeds,
                             nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
                             g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc);

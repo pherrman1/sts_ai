@@ -62,3 +62,25 @@ the hook are inert, so normal `bestbench` behavior is byte-identical. Smoke
 and clean RAW-to-POST deltas (gold rises, potionChance/cardRarityFactor change
 only after RAW). No scientific verdict is recorded — E2c support/partial/negative
 is determined only from the human-controlled production dataset.
+
+## Corrected human production launcher
+
+Do not run from a local checkout. The designated launcher supplies
+`STS_GCP_RESEARCH_CONTEXT=sts-test` and wraps the remote command in
+`tools/seed_guard.sh --gcp-research`:
+
+```bash
+python3 tools/agent/gcp_benchmark.py run -- \
+  env STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0 \
+  STS_S3_PARTICLES=64 STS_S3_LIVE_VALID=1 \
+  STS_VNET=models/v_combat_7k_tuned.txt STS_VNET_ALPHA=0.3 \
+  STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native \
+  STS_OOC_STRATEGIC_MARGIN=1.0 STS_OOC_STRATEGIC_REST=1 \
+  STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1 \
+  STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1 \
+  STS_COLLECT_KEYS=0 STS_STOP_AFTER_ACT=3 \
+  build/one_combat e2cgen 2000 1000 0 \
+  build/e2c_raw_terminal_2000.csv 2000000
+```
+
+This was not launched during the implementation or correction sessions.

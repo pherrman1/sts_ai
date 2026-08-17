@@ -55,7 +55,7 @@ import re as _re
 def _is_observable(name):
     if name in OBSERVABLE_EXACT:
         return True
-    if _re.fullmatch(r"(d|u|r|pot)[0-9]+", name):
+    if _re.fullmatch(r"(d|u|pot)[0-9]+", name):
         return True
     if name.startswith(("fmD", "fmC", "relic_has_", "relic_data_")):
         return True
@@ -105,8 +105,18 @@ def t_features(header, use_counter=True):
             continue  # pairing key/control columns are never features
         if name.startswith("relic_data_") and not use_counter:
             continue
+        if _re.fullmatch(r"r[0-9]+", name):
+            continue  # legacy ownership+counter encoding is invalid for E2c arms
         feats.append(name)
     return feats
+
+
+def post_boundary_ready(screen_state, rewards, collect_keys):
+    """Mirror e2cCapturePost's reward-drain predicate for self-testability."""
+    return (screen_state == "REWARDS" and rewards["gold"] == 0 and
+            rewards["relic"] == 0 and rewards["potion"] == 0 and
+            (not collect_keys or (not rewards["emerald"] and not rewards["sapphire"])) and
+            rewards["cards"] > 0)
 
 
 def arm_predictions(dfb, feats, val_pairs, dev):
@@ -126,6 +136,21 @@ def arm_predictions(dfb, feats, val_pairs, dev):
     return s.values, best, gain
 
 
+def classify_verdict(checks, gain_post):
+    if gain_post <= 0:
+        return "E2C INCONCLUSIVE"
+    if not checks["T-raw_logloss_below_B2-raw"] or not checks["bootstrap_logloss_ci_below_zero"]:
+        return "E2C NEGATIVE"
+    if all(checks.values()):
+        return "E2C SUPPORTED"
+    if (checks["T-raw_logloss_below_B2-raw"] and
+            checks["T-raw_brier_below_B2-raw"] and
+            checks["T-raw_auc_above_B2-raw"] and
+            (not checks["raw_retention_ge_0.50"] or not checks["T-raw_ece_le_0.10"])):
+        return "E2C PARTIAL"
+    return "E2C INCONCLUSIVE"
+
+
 def main():
     csv = sys.argv[1] if len(sys.argv) > 1 else "build/e2c_raw_terminal.csv"
     out = sys.argv[2] if len(sys.argv) > 2 else "build/e2c_raw_terminal"
@@ -136,6 +161,9 @@ def main():
     man, hidden = manifest(header)
 
     # ── Pairing invariants (producer contract) ────────────────────────────
+    key = ["seed", "fight_index", "boundary"]
+    if df.duplicated(key).any():
+        raise AssertionError("duplicate (seed, fight_index, boundary) rows")
     piv = df.pivot_table(index=["seed", "fight_index"], columns="boundary",
                          values="won", aggfunc="first")
     missing = piv[(~piv["RAW"].notna()) | (~piv["POST"].notna())]
@@ -176,8 +204,12 @@ def main():
         results[name] = {"p": p, "best": best, "count_gain": gain,
                          "metrics": e2.metrics(yv, p), "feats": feats}
 
-    b0 = {"pos_rate": float(yv.mean()), "n": int(len(yv)),
-          "seeds": int(len(np.unique(val_pairs.get_level_values("seed"))))}
+    train_pairs = dfr.index[dfr.index.get_level_values("seed").isin(tr_seeds)]
+    yt = y_all.reindex(train_pairs).values
+    b0p = float(yt.mean())
+    b0pred = np.full(len(yv), b0p)
+    b0 = {"n": int(len(yv)), "seeds": int(len(np.unique(train_pairs.get_level_values("seed")))),
+          "training_prevalence": b0p, "metrics": e2.metrics(yv, b0pred)}
     for k, v in results.items():
         print(f"{k}: {v['metrics']} best_iter={v['best']}", flush=True)
     print(f"B0 (val prevalence): {b0}", flush=True)
@@ -217,18 +249,8 @@ def main():
     }
     primary = all(checks[k] for k in ("T-raw_logloss_below_B2-raw",
                                       "T-raw_brier_below_B2-raw", "T-raw_auc_above_B2-raw"))
-    beats_b2 = checks["T-raw_logloss_below_B2-raw"]
-    if all(checks.values()):
-        verdict = "E2C SUPPORTED"
-    elif beats_b2 and (not checks["raw_retention_ge_0.50"] or
-                       not checks["T-raw_ece_le_0.10"]) and primary:
-        verdict = "E2C PARTIAL"
-    elif primary and beats_b2:
-        verdict = "E2C PARTIAL"
-    elif not beats_b2 or not checks["bootstrap_logloss_ci_below_zero"]:
-        verdict = "E2C NEGATIVE"
-    else:
-        verdict = "E2C INCONCLUSIVE"
+    significant_raw = checks["bootstrap_logloss_ci_below_zero"]
+    verdict = classify_verdict(checks, gain_post)
 
     # Counter diagnostic
     boot_ctr = comparisons["T-raw-no-counter - T-raw"]["logloss"]

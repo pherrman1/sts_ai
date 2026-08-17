@@ -36,6 +36,10 @@ assert "mystery_col" not in T                                           # ambigu
 assert "room_type" in T and "encounter_id" in T                         # legit context retained
 Tn = mod.t_features(header, use_counter=False)
 assert "relic_data_7" not in Tn and "relic_has_7" in Tn                 # ownership-only ablation
+assert "r7" not in T and "r7" not in Tn                                # legacy counter encoding cannot leak
+rewards = {"gold": 0, "relic": 0, "potion": 0, "emerald": True, "sapphire": False, "cards": 1}
+assert mod.post_boundary_ready("REWARDS", rewards, False)                  # key-off must not block POST
+assert not mod.post_boundary_ready("REWARDS", rewards, True)               # key-on consumes the key first
 
 # Pairing integrity: pivoting by (seed, fight_index) must cross RAW/POST labels.
 df = pd.DataFrame({
@@ -53,5 +57,23 @@ assert (piv["RAW"] == piv["POST"]).all()                                # identi
 seeds = np.array([100, 100, 700, 700, 1200, 1200])
 _, contiguous = np.unique(seeds, return_inverse=True)
 assert list(contiguous) == [0, 0, 1, 1, 2, 2]
+
+# Duplicate pair keys must be rejected before any pivot/aggfunc can hide them.
+dup = pd.concat([df, df.iloc[[0]]], ignore_index=True)
+assert dup.duplicated(["seed", "fight_index", "boundary"]).any()
+
+# Exact preregistered verdict ordering.
+checks = {"T-raw_logloss_below_B2-raw": True,
+          "T-raw_brier_below_B2-raw": True,
+          "T-raw_auc_above_B2-raw": True,
+          "bootstrap_logloss_ci_below_zero": True,
+          "T-raw_ece_le_0.10": True,
+          "raw_retention_ge_0.50": True}
+assert mod.classify_verdict(checks, 0.1) == "E2C SUPPORTED"
+checks["raw_retention_ge_0.50"] = False
+assert mod.classify_verdict(checks, 0.1) == "E2C PARTIAL"
+checks["bootstrap_logloss_ci_below_zero"] = False
+assert mod.classify_verdict(checks, 0.1) == "E2C NEGATIVE"
+assert mod.classify_verdict(checks, 0.0) == "E2C INCONCLUSIVE"
 
 print("postcombat raw-terminal selftest: PASS")
