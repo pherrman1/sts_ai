@@ -47,3 +47,40 @@ comparison.
 Relic columns combine ownership and counters, so the counter-awareness arm is
 reported as not testable rather than treating post-pickup relics as a clean
 counter intervention.
+## E2c exact RAW/POST combat-terminal dataset (new producer)
+
+The E2/E2b datasets were captured after reward processing, so they could not
+answer whether raw combat-terminal state already predicts run victory. E2c
+records TWO matched snapshots of every survived ordinary/elite/act-1-2-boss
+combat from the SAME run, then the analyzer compares information-matched
+baselines at each boundary.
+
+Producer (opt-in, no default/policy change; seeded via `tools/seed_guard.sh`):
+
+```bash
+tools/seed_guard.sh build/one_combat e2cgen <nSeeds> <sims> <asc> \
+  build/e2c_raw_terminal.csv <seedOffset>
+```
+
+- **RAW** boundary: inside `BattleContext::exitBattle`, after persistent combat
+  transfer and before `regainControl()`/reward generation.
+- **POST** boundary: at the `REWARDS` screen after non-card rewards, before the
+  first card pick/skip.
+- Export includes explicit `relic_has_*` / `relic_data_*` (exact signed data)
+  and `room_type`/`encounter_id`, and `<out>.provenance.json`.
+
+Analyze:
+
+```bash
+STS_XGB_DEVICE=cuda python3 tools/analyze_postcombat_raw_terminal.py \
+  build/e2c_raw_terminal.csv build/e2c_raw_terminal
+```
+
+It fits B0/B1/B2/T at both RAW and POST using the same XGBoost recipe and
+seed-grouped held-out split as E2/E2b, reports log loss / Brier / AUC / ECE,
+seed-bootstrap 95% CIs, and the preregistered E2C SUPPORTED / PARTIAL /
+NEGATIVE / INCONCLUSIVE decision rule. The `T-raw-no-counter` arm isolates relic
+ownership from counter/data for the counter diagnostic.
+
+Do not draw a scientific verdict from the 8-seed smoke; the decision is made
+only on the human-controlled production dataset.

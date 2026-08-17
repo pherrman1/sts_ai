@@ -11,7 +11,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["cardbench"]=3           ["causalgen"]=2         ["combatgen"]=2
   ["combobench"]=3          ["cpsictr"]=3           ["datagen"]=2
   ["datagen2"]=2            ["datagen3"]=2          ["distgen"]=2
-  ["draftbench"]=3          ["fairgen"]=2           ["fightgen"]=2
+  ["draftbench"]=3          ["e2cgen"]=2            ["fairgen"]=2           ["fightgen"]=2
   ["frontiergen"]=2         ["leafdiag"]=2          ["leafref"]=5
   ["fightrep"]=6            ["oocnextgen"]=2        ["pathbench"]=3
   ["pathcfgen"]=2
