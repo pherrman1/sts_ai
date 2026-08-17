@@ -3397,7 +3397,12 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
                 continue;
             }
             survivor.key = sts::fullHiddenStateKey(survivor.state);
-            localLeaves.emplace(survivor.key, std::move(survivor));
+            const auto existing = localLeaves.find(survivor.key);
+            if (existing == localLeaves.end()) {
+                localLeaves.emplace(survivor.key, std::move(survivor));
+            } else if (survivor.source && !existing->second.source) {
+                existing->second = std::move(survivor);
+            }
         }
         if (!localLeaves.empty()) {
             const double branchWeight = c.weight / localLeaves.size();

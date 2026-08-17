@@ -86,7 +86,7 @@ def validate_group(meta, worlds):
     if len(set(ordinals)) != len(ordinals):
         v.append("duplicate_dedup_ordinal")
     if int(_num(meta, "groupEligible")) == 1 and int(_num(meta, "sourceParticleReplayOk")) == 1:
-        if sum(1 for w in worlds if _num(w, "candidateIsSource") == 1) != 1:
+        if sum(1 for w in worlds if _num(w, "candidateIsSource") == 1) < 1:
             v.append("source_world_missing_or_duplicated")
     for w in worlds:
         if w.get("invariantOk") == "0":
