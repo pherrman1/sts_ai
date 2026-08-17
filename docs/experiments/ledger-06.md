@@ -1,3 +1,221 @@
+## §175 Posterior-valid particle sensitivity probe — Phase 1b implementation and preregistration v1 (2026-08-16; superseded before scientific run)
+
+Phase 1b extends the §174 draw-order probe. Where Phase 1a artificially
+permuted draw order while holding the visible state, draw-pile multiset, and
+all six simulator RNG streams fixed, Phase 1b asks whether multiple FULL
+hidden states that are actually compatible with Searcher3's CURRENT finite
+root belief — and with the same semantic action history and resulting visible
+leaf observation — have materially different continuation values.
+"Posterior-valid" here means validity relative to Searcher3's finite belief
+approximation; it is NOT an exact Bayesian posterior.
+
+- **Implementation:** `one_combat particle_posterior_probe` (branch
+  `exp/particle-posterior-sensitivity-phase1b`), guarded by
+  `STS_PARTICLE_POSTERIOR_PROBE_FILE` with `…_K` (0 = evaluate ALL unique
+  compatible leaf hidden states; >0 = deterministic mass-respecting cap with
+  the source world always included and no duplicate padding) and
+  `…_MAX_GROUPS` (-1 unlimited, 0 = probe-OFF determinism arm, >0 per-seed
+  cap). `BattleScumSearcher3::step` records per-action semantic checkpoints
+  (tree actions, expansion action, deterministic chain actions — never random
+  rollout actions) with the ACTUAL post-action `CombatObservation` and
+  `Outcome` when the new `g_s3LeafTraceActions` flag is set. The callback
+  replays the semantic prefix under every positive-weight root particle with
+  exact hidden-state application (`applyHiddenStateExact`; stale-particle
+  fallback is rejected, never shuffled), requires exact observation AND
+  outcome equality at EVERY intermediate checkpoint
+  (`INTERMEDIATE_OBSERVATION_MISMATCH` rejects even if the leaf reconverges)
+  and at the final leaf, deduplicates accepted leaf worlds by
+  `FullHiddenStateKey` EQUALITY (ordered map; combined hashes are audit
+  telemetry only) with probability mass aggregated across collapsing
+  particles, and scores each evaluated world via the isolated
+  `diagnosticRollout` with one per-group CRN seed. CARD actions rebind by
+  canonical card identity (`resolveCardKeyInHand`); END_TURN/POTION replay
+  raw bits; all card-select paths mark the group
+  `UNREPLAYABLE_ACTION_PREFIX` (ineligible) rather than guessing. Source
+  groups whose source particle needed the fallback shuffle are marked
+  `SOURCE_PARTICLE_FALLBACK` and scientifically ineligible — that is NOT an
+  implementation failure; for exact-source groups, failed source replay
+  (`sourceParticleReplayOk == 0`) IS an implementation invariant failure.
+  `rootCarried`/`reuseGeneration`/`reuseSearchCount` are recorded per group so
+  fallback ineligibility can be attributed to carried-search roots. Searcher3
+  gameplay/search behavior, belief updates, particle count, tree reuse, and
+  the Phase-1a `particle_leaf_probe` are unchanged; leafdiag/frontiergen
+  costs are unchanged (trace flag default off).
+- **Offline analysis:** `tools/analyze_particle_posterior_probe.py`
+  (analysis only, no training) groups by source leaf, reports
+  all-group/eligible/multi-state prevalences, range thresholds (=0, >1, >5,
+  >10), compatible/evaluated probability mass, mass-weighted range/std,
+  per-seed metrics, seed-bootstrap 95% CIs for fraction(range>5) and mean
+  range, descriptive turn/draw-pile/encounter/depth strata, capped-evaluation
+  detection (range metrics flagged as subsampled lower bounds when any group
+  is capped), and structure validation (no fake padding, source world present
+  exactly once). Groups with <2 evaluated compatible states count as range 0
+  in the primary all-group prevalence.
+- **Pre-registered Phase-1b v1 decision rule (set BEFORE any Phase-1b scientific
+  data collection):** PRIMARY quantity = fraction of ALL sampled source
+  groups with posterior-valid target range > 5 (single-state and ineligible
+  groups count as non-sensitive). GO if implementation invariants all pass
+  AND fraction(range>5) >= 10% AND seed-bootstrap 95% CI lower bound > 5% AND
+  group-weighted (compatible-mass-weighted) mean range >= 3. STOP the
+  draw-order/full-particle-conditioning line if invariants pass AND
+  fraction(range>5) < 5% AND bootstrap upper 95% CI < 10% AND mean range
+  < 1. Otherwise INCONCLUSIVE: no particle VNet training, at most one
+  focused 32-seed extension proposal. These are pragmatic Phase-1b
+  thresholds, not previously validated gameplay thresholds. If GO: Phase 1
+  is substantively successful, roadmap continues with #2 (post-combat
+  V_run_win); #3 (particle-conditioned VNet) becomes justified only if #2
+  also succeeds.
+- **Supersession before designated scientific data:** the 4-seed implementation
+  smoke showed that the original full-particle target combines draw-order
+  variation, six simulator-RNG-stream variation, and one-rollout estimation
+  noise. That target remains useful as a secondary total-determinizations
+  quantity for future #4 belief averaging, but is not a clean primary gate for
+  particle-conditioned #3 valuation. No designated scientific data were
+  collected under v1. This entry is superseded by the controlled decomposition
+  below; the v1 GO/STOP rule must not be applied to the v1 full-particle smoke.
+- **Verification status:** implementation + self-test + 4-seed guard-approved
+  smoke only (appended below when run). No Phase-1b scientific dataset or
+  GO/STOP verdict exists yet; the intended first scientific run is 16 seeds,
+  300 sims, ascension 0, complete finite-belief evaluation unless the smoke
+  shows unacceptable cost, and has NOT been executed.
+
+### Phase-1b implementation smoke (2026-08-16; 4 seeds, 300 sims, asc 0)
+
+- **Exact environment:** `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+  STS_S3_CHAIN=0 STS_S3_PARTICLES=64
+  STS_PARTICLE_POSTERIOR_PROBE_K=0
+  STS_PARTICLE_POSTERIOR_PROBE_MAX_GROUPS=4`; command was wrapped by
+  `tools/seed_guard.sh`. This is an implementation smoke, not scientific
+  evidence. The complete Phase-1a model/OOC provenance was not fully
+  recoverable, so no claim of perfect Phase-1a stack matching is made.
+- **ON command:**
+  `tools/seed_guard.sh ./build/linux-gcc-release/one_combat
+  particle_posterior_probe 4 300 0
+  build/particle_posterior_probe_on4_v3.csv`.
+  Runtime 10.4s (2.59s/seed); 608 rows = 16 source groups + 592 evaluated
+  compatible hidden leaf states; all groups used complete finite-belief
+  evaluation (`K=0`), so no capped/lower-bound range metric was involved.
+- **Invariants:** source-particle replay failures 0/16; invariant failures
+  0/16; replay-failure categories empty; source fallback groups 0; accepted
+  candidates reproduced every intermediate and final observation/outcome.
+  Compatible particle/unique-state counts were
+  `{4:1, 6:1, 12:1, 14:1, 19:1, 21:1, 31:2, 35:2, 64:6}`; groups with
+  >=2/4/8 unique states were 16/16/14. All 16 groups had range >5 in this
+  tiny smoke (mean range 19.75; mass-weighted mean range 20.85), which is
+  not a scientific result.
+- **OFF/ON determinism:** the OFF arm used the same command/configuration
+  with `STS_PARTICLE_POSTERIOR_PROBE_MAX_GROUPS=0`, wrote zero probe rows,
+  and ran in 12.2s. Its per-seed gameplay sidecar was byte-identical after
+  sorting to the ON sidecar (`seed,won,floor,act,hpEnd,maxHp,fightsLost,
+  deathCombat,deathEncounter`).
+- **Analyzer:** `python3 tools/analyze_particle_posterior_probe.py
+  build/particle_posterior_probe_on4_v3.csv --bootstrap-iters 200` ran
+  successfully. No scientific GO/STOP interpretation is made from four
+  seeds.
+
+### §176 Phase-1b measurement correction — controlled draw-order primary (2026-08-16; 4-seed smoke only)
+
+The implementation-review correction retains the exact posterior compatibility
+and replay machinery, but splits continuation targets:
+
+- **Primary controlled draw-order target:** for every compatible draw order,
+  use that order with the source leaf's six simulator RNG streams, and average
+  `R=4` diagnostic rollouts using four common per-group rollout-policy RNG
+  seeds. This asks whether draw orders that Searcher3 actually considers
+  possible change expected continuation value, without mixing in candidate RNG
+  states or relying on one rollout per world.
+- **Secondary full-particle target:** retain the original exact candidate draw
+  order plus all six candidate RNG streams and one common diagnostic rollout
+  seed. This measures total hidden-determinization variation and is useful for
+  later #4 belief averaging, but is not the primary #3 gate.
+
+The diagnostic exact draw-pile multiset check now uses `FullHiddenCardId`
+(CardId, upgrades, specialData, costForTurn, freeToPlayOnce); gameplay's
+historical CardId-only `sameCardMultiset` was not changed. The run sidecar now
+records a per-decision Searcher3 root fingerprint (visible observation hash,
+chosen root action bits, and visits), allowing OFF/ON action/search-level
+comparison rather than only run-outcome comparison.
+
+The corrected smoke used the same fair-S3 environment as §175, 4 seeds, 300
+sims, 4 source groups/seed, `K=0`, and `R=4`. It produced 16 groups and 592
+evaluated worlds with zero source replay failures and zero invariant failures.
+The full-particle target had mean range 19.75 and 16/16 groups above 5. The
+controlled draw-order target had mean range 2.09375, median range 0, and 3/16
+groups above 5. The compatible-mass-weighted controlled mean range was 3.368;
+the **primary statistic is the equal-source-group mean/range prevalence**, with
+mass-weighted results secondary. OFF/ON root action/search fingerprints were
+identical. These four-seed results are implementation smoke evidence only,
+not a scientific verdict.
+
+The corrected preregistration is the designated contract for any future
+scientific run. The 16-seed experiment remains unrun and requires independent
+review of this correction commit first.
+
+### §177 Corrected Phase-1b preregistration decision rule (set before designated scientific data)
+
+The numerical thresholds from §175 v1 are transferred unchanged to the
+corrected controlled draw-order primary target; they are not retuned from the
+§176 smoke. All references below mean equal-source-group statistics for the
+controlled target. Compatible-mass-weighted results remain secondary and are
+not substituted into the gate.
+
+- **GO / posterior-valid draw-order sensitivity established:** all
+  implementation invariants pass; controlled fraction of source groups with
+  range >5 is at least 10%; the seed-bootstrap 95% CI lower bound for that
+  fraction is >5%; and equal-group controlled mean range is at least 3.
+- **STOP the draw-order/full-particle-conditioning line:** invariants pass;
+  controlled fraction(range>5) is <5%; bootstrap upper 95% CI is <10%; and
+  equal-group controlled mean range is <1.
+- **Otherwise INCONCLUSIVE:** do not train a particle-conditioned VNet; at
+  most one focused extension to 32 seeds may be proposed. If GO, roadmap
+  #2 remains next; #3 is scientifically justified only if #2 also succeeds.
+
+These are pragmatic thresholds, not validated gameplay thresholds. The §175
+v1 full-particle smoke is not eligible for this rule; §177 is the designated
+scientific decision contract.
+
+## §174 Particle-conditioned leaf probe implementation (2026-08-16; diagnostic/offline; no gameplay promotion)
+
+- **Implementation:** added `one_combat particle_leaf_probe`, guarded by
+  `STS_PARTICLE_LEAF_PROBE_FILE` and optional K/rate/group-cap controls. It
+  samples actual Searcher3 frontier-type-0 leaves, preserves all six simulator
+  RNG streams and the draw-pile multiset, permutes only draw order, and writes
+  one row per variant. `drawPile.back()` is the next draw, so `drawOrder` is
+  serialized back-to-front. All variants, including variant 0, use the same
+  isolated diagnostic rollout RNG; `rawRolloutEval` is parity-only.
+- **Offline analysis:** `tools/train_particle_leaf_probe.py` compares a
+  visible-only Ridge control with a sparse positional first-10-card treatment,
+  uses a fixed seed-group split, computes spread/ordinary/centered/pairwise and
+  K=1/2/4/8 averaging metrics, and reports draw-pile-length coverage. It is
+  analysis infrastructure only; no scientific dataset or GO/STOP verdict is
+  recorded in this implementation entry.
+- **Verification status:** the initial implementation smoke was only one seed,
+  2 groups, 16 rows and is retained as historical implementation evidence.
+  It must not be treated as the required 8-seed verification or as scientific
+  evidence. This corrected follow-up adds callback-unique `sourceLeafId`,
+  centered-RMSE/tie/sampling fixes, distinct-order reporting, and bounded
+  defaults. Review correction: groups now emit only unique sampled draw orders
+  (no K-padding duplicates), `uniqueVariantsSampled` names the bounded-sampling
+  count, averaging-curve K values unavailable for a short group are omitted, and
+  `drawOrder` is captured before diagnostic rollout mutates the draw pile. The
+  trainer defensively deduplicates exact orders, reports K-specific eligible
+  groups/seeds and draw-pile-size strata, and has a synthetic self-test. The
+  focused corrected smoke produced 107 rows across 16 groups with no duplicate
+  orders, all invariants passing, and no trainer group-split leakage; no 16–32
+  seed scientific run is authorized here.
+- **32-seed collection/correction follow-up:** collected the preserved raw
+  artifact `build/particle_leaf_probe_phase1_32seed_raw.csv` with 32 seeds,
+  300 simulations, ascension 0, K=8, rate=1, and max-groups=16 through the
+  seed guard. It contains 2,364 data rows across 512 source groups and 32
+  seeds; SHA-256 is
+  `25c17387a5a324c806c020eef3d13b14937271e122b4bacc432bb6bbc17700e1`.
+  The offline K curve was then corrected to average combination errors within
+  each source leaf and use seed-level outer aggregation. The raw CSV was not
+  regenerated after this correction. These outputs are collection/analysis
+  provenance only, not a scientific conclusion or promotion decision.
+- **Non-goals:** no particle-conditioned runtime VNet, VNet-only search,
+  policy-prior change, belief change, RNG conditioning, particle-count change,
+  or OOC change.
 ## §135a Leaf-state diagnostics: gate-matching measurement (2026-08-08, local — diagnostic evidence, no gameplay promotion)
 
 - **Dataset:** 64 seeds (126700–126763), 1000 sims, asc 0, 12 threads, local
