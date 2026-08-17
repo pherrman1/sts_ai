@@ -166,13 +166,13 @@ def main():
         raise AssertionError("duplicate (seed, fight_index, boundary) rows")
     piv = df.pivot_table(index=["seed", "fight_index"], columns="boundary",
                          values="won", aggfunc="first")
-    missing = piv[(~piv["RAW"].notna()) | (~piv["POST"].notna())]
-    if not missing.empty:
-        raise AssertionError(f"pairs with a missing boundary: {len(missing)}")
-    if not (piv["RAW"] == piv["POST"]).all():
+    complete = piv[piv["RAW"].notna() & piv["POST"].notna()]
+    if not (complete["RAW"] == complete["POST"]).all():
         raise AssertionError("RAW/POST labels differ within a pair")
     meta_raw = df[df.boundary == "RAW"].set_index(["seed", "fight_index"])[["room_type", "encounter_id"]]
     meta_post = df[df.boundary == "POST"].set_index(["seed", "fight_index"])[["room_type", "encounter_id"]]
+    meta_raw = meta_raw.loc[complete.index]
+    meta_post = meta_post.loc[complete.index]
     if not (meta_raw == meta_post).all().all():
         raise AssertionError("RAW/POST pair metadata disagree")
 
@@ -184,9 +184,10 @@ def main():
 
     dfr = df[df.boundary == "RAW"].set_index(["seed", "fight_index"])
     dfp = df[df.boundary == "POST"].set_index(["seed", "fight_index"])
-    val_pairs = dfr.index[dfr.index.get_level_values("seed").isin(va_seeds)]
-    yv = y_all.reindex(val_pairs).values
-    _, run = np.unique(val_pairs.get_level_values("seed"), return_inverse=True)
+    val_raw = dfr.index[dfr.index.get_level_values("seed").isin(va_seeds)]
+    val_pairs = complete.index[complete.index.get_level_values("seed").isin(va_seeds)]
+    yv = y_all.reindex(val_raw).values
+    _, run = np.unique(val_raw.get_level_values("seed"), return_inverse=True)
 
     B1 = B1_FEATURES
     B2 = B1 + ["room_type", "encounter_id"]
@@ -195,14 +196,21 @@ def main():
 
     arms = {
         "B1-raw": (dfr, B1), "B2-raw": (dfr, B2), "T-raw": (dfr, T),
-        "B1-post": (dfp, B1), "B2-post": (dfp, B2), "T-post": (dfp, T),
         "T-raw-no-counter": (dfr, Tn),
+        "B1-raw-paired": (dfr.loc[complete.index], B1),
+        "B2-raw-paired": (dfr.loc[complete.index], B2),
+        "T-raw-paired": (dfr.loc[complete.index], T),
+        "B2-post": (dfp.loc[complete.index], B2),
+        "T-post": (dfp.loc[complete.index], T),
     }
     results = {}
     for name, (dfb, feats) in arms.items():
-        p, best, gain = arm_predictions(dfb, feats, val_pairs, dev)
+        target = val_pairs if name.endswith("paired") or name in ("B2-post", "T-post") else val_raw
+        p, best, gain = arm_predictions(dfb, feats, target, dev)
+        ytgt = y_all.reindex(target).values
         results[name] = {"p": p, "best": best, "count_gain": gain,
-                         "metrics": e2.metrics(yv, p), "feats": feats}
+                         "metrics": e2.metrics(ytgt, p), "feats": feats,
+                         "target": target, "y": ytgt}
 
     train_pairs = dfr.index[dfr.index.get_level_values("seed").isin(tr_seeds)]
     yt = y_all.reindex(train_pairs).values
@@ -212,17 +220,17 @@ def main():
           "training_prevalence": b0p, "metrics": e2.metrics(yv, b0pred)}
     for k, v in results.items():
         print(f"{k}: {v['metrics']} best_iter={v['best']}", flush=True)
-    print(f"B0 (val prevalence): {b0}", flush=True)
+    print(f"B0 (training prevalence): {b0}", flush=True)
 
     # Primary seed-bootstrap comparisons (T - baseline log loss/Brier/AUC)
     comparisons = {}
-    comps = [
-        ("T-raw", "B1-raw"), ("T-raw", "B2-raw"),
-        ("T-post", "B1-post"), ("T-post", "B2-post"),
-        ("T-raw", "T-post"), ("T-raw-no-counter", "T-raw"),
-    ]
+    comps = [("T-raw", "B1-raw"), ("T-raw", "B2-raw"),
+             ("T-raw-paired", "B2-raw-paired"),
+             ("T-post", "B2-post"), ("T-raw-paired", "T-post"),
+             ("T-raw-no-counter", "T-raw")]
     for a, b in comps:
-        boot = e2.bootstrap_deltas(yv, results[a]["p"], results[b]["p"], run,
+        boot = e2.bootstrap_deltas(results[a]["y"], results[a]["p"], results[b]["p"],
+                                   np.unique(results[a]["target"].get_level_values("seed"), return_inverse=True)[1],
                                    n=BOOTSTRAP_N, seed=BOOTSTRAP_SEED)
         comparisons[f"{a} - {b}"] = {k: {"mean": float(np.mean(v)), "ci95": e2.ci(v)}
                                      for k, v in boot.items()}
@@ -231,16 +239,16 @@ def main():
     def _ll(name):
         return results[name]["metrics"]["logloss"]
 
-    gain_raw = _ll("B2-raw") - _ll("T-raw")
+    gain_raw = _ll("B2-raw-paired") - _ll("T-raw-paired")
     gain_post = _ll("B2-post") - _ll("T-post")
     raw_retention = (gain_raw / gain_post) if gain_post > 0 else None
-    reward_gap = _ll("T-raw") - _ll("T-post")
+    reward_gap = _ll("T-raw-paired") - _ll("T-post")
 
     # Preregistered decision rule
-    Tr, B2r = results["T-raw"], results["B2-raw"]
-    boot_raw = comparisons["T-raw - B2-raw"]["logloss"]
+    Tr, B2r = results["T-raw-paired"], results["B2-raw-paired"]
+    boot_raw = comparisons["T-raw-paired - B2-raw-paired"]["logloss"]
     checks = {
-        "T-raw_logloss_below_B2-raw": _ll("T-raw") < _ll("B2-raw"),
+        "T-raw_logloss_below_B2-raw": _ll("T-raw-paired") < _ll("B2-raw-paired"),
         "T-raw_brier_below_B2-raw": Tr["metrics"]["brier"] < B2r["metrics"]["brier"],
         "T-raw_auc_above_B2-raw": Tr["metrics"]["auc"] > B2r["metrics"]["auc"],
         "bootstrap_logloss_ci_below_zero": boot_raw["ci95"][1] < 0,
@@ -262,13 +270,32 @@ def main():
                              else "NO EVIDENCE OF COUNTER SENSITIVITY"))
 
 
+    pair_rows = df.groupby(["seed", "fight_index"], as_index=False).agg(
+        boundary_count=("boundary", "nunique"), room_type=("room_type", "first"),
+        won=("won", "first"))
+    pair_rows["complete"] = pair_rows["boundary_count"] == 2
+    by_room = {}
+    by_outcome = {}
+    for room, g in pair_rows.groupby("room_type"):
+        by_room[str(room)] = {"pairs": int(len(g)), "complete": int(g["complete"].sum()),
+                              "rate": float(g["complete"].mean()) if len(g) else None}
+    for outcome, g in pair_rows.groupby("won"):
+        by_outcome[str(int(outcome))] = {"pairs": int(len(g)), "complete": int(g["complete"].sum()),
+                                        "rate": float(g["complete"].mean()) if len(g) else None}
+
     result = {
         "experiment": "E2c exact raw/post combat-terminal run-win critic",
         "dataset": os.path.abspath(csv), "dataset_sha256": e2.sha256(csv),
-        "schema_version": "e2c-v1", "column_count": len(header),
-        "pairs": int(len(val_pairs)), "val_rows": int(len(yv)),
+        "schema_version": "e2c-v2", "column_count": len(header),
+        "raw_rows": int(len(dfr)), "complete_pairs": int(len(complete)),
+        "val_raw_rows": int(len(val_raw)), "val_pairs": int(len(val_pairs)),
         "val_seeds": int(len(np.unique(val_pairs.get_level_values("seed")))),
         "prev": b0,
+        "pair_completeness": {
+            "overall": float(len(complete) / len(piv)) if len(piv) else None,
+            "by_room": by_room,
+            "by_outcome": by_outcome,
+        },
         "arms": {k: {"features": v["feats"], "best_iteration": v["best"],
                      "metrics": v["metrics"], "counter_feature_gain": v["count_gain"]}
                  for k, v in results.items()},

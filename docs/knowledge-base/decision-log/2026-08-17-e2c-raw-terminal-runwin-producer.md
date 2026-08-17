@@ -72,7 +72,7 @@ Do not run from a local checkout. The designated launcher supplies
 ```bash
 python3 tools/agent/gcp_benchmark.py run -- \
   env STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0 \
-  STS_S3_PARTICLES=64 STS_S3_LIVE_VALID=1 \
+  STS_S3_PARTICLES=64 STS_LIVE_VALID=1 \
   STS_VNET=models/v_combat_7k_tuned.txt STS_VNET_ALPHA=0.3 \
   STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native \
   STS_OOC_STRATEGIC_MARGIN=1.0 STS_OOC_STRATEGIC_REST=1 \
@@ -84,3 +84,53 @@ python3 tools/agent/gcp_benchmark.py run -- \
 ```
 
 This was not launched during the implementation or correction sessions.
+
+## Current-main integration and missingness correction
+
+- Merged current `origin/main` at `280a7845ccad854d209268b03c76c7c8fa278c07`
+  into the E2c branch with a normal merge (`3f8dd57`). The Phase-1b
+  `particle_leaf_probe` and `particle_posterior_probe` changes are preserved;
+  `tools/seed_guard.sh` retains both registrations plus `e2cgen`.
+- Deterministic replay of the three RAW-only elite cases from the earlier smoke:
+  - seed 0, fight 4, encounter 16, Act 1 floor 10: reward relic
+    `BOTTLED_FLAME` (enum 94);
+  - seed 1, fight 16, encounter 34, Act 2 floor 32: reward relic
+    `BOTTLED_LIGHTNING` (enum 95);
+  - seed 3, fight 13, encounter 36, Act 2 floor 30: reward relic
+    `BOTTLED_LIGHTNING` (enum 95).
+  In every case the reward screen had one relic and one pending combat card
+  reward. Obtaining the bottled relic opened `CARD_SELECT` for bottling; the
+  subsequent control transition left the reward flow while `cardRewardCount`
+  remained one. POST therefore could not be captured. This is reward-dependent
+  missingness, not a key-policy failure.
+- E2c now uses the fallback contract and bumps the analyzer schema to `e2c-v2`:
+  every valid survived RAW row is retained for primary RAW arms; matched
+  `B2-raw-paired`/`T-raw-paired` and `B2-post`/`T-post` arms use complete pairs
+  only. Retention and reward-information gap use the same complete pair set.
+  Pair completeness is reported overall, by room type, and by eventual outcome.
+- Accounting is accumulated only after `trainingRunValid()` accepts the run;
+  invalid runs cannot inflate dataset counts. Incomplete valid-run pairs remain
+  explicit `raw_only`/`post_only` accounting and are not silently treated as
+  complete.
+- Production documentation uses `STS_LIVE_VALID=1` (not the stale
+  `STS_S3_LIVE_VALID`) and does not add a separate strategic-card flag.
+- No scientific verdict is recorded.
+
+## Final merged-v2 smoke facts (no scientific verdict)
+
+On merged current-main branch `3f8dd57036968711bee84de2728620ce8390f814`,
+corrected smoke (`e2c_v2_smoke.csv`, 8 seeds 0-7, 30 sims) produced valid-run
+accounting:
+
+```text
+MONSTER eligible=98 raw=98 post=98 pairs=98 raw_only=0 post_only=0
+ELITE   eligible=30 raw=30 post=27 pairs=27 raw_only=3 post_only=0
+BOSS    eligible=9  raw=9  post=9  pairs=9  raw_only=0 post_only=0
+```
+
+The three incomplete valid-run pairs are the bottled-relic cases documented
+above. The v2 analyzer retained 137 valid RAW rows and 134 complete pairs;
+pair completeness was 97.81% overall, MONSTER 100%, ELITE 90%, BOSS 100%;
+loss rows were 97.30% complete and win rows 100% complete. Primary RAW arms
+use all valid RAW rows; paired arms use complete pairs only. No scientific
+verdict is inferred from this smoke.

@@ -84,3 +84,30 @@ ownership from counter/data for the counter diagnostic.
 
 Do not draw a scientific verdict from the 8-seed smoke; the decision is made
 only on the human-controlled production dataset.
+
+### E2c-v2 missingness contract
+
+Current-main integration is `280a7845ccad854d209268b03c76c7c8fa278c07`
+(merged into the E2c branch at `3f8dd57`). The three known RAW-only elite
+cases were caused by `BOTTLED_FLAME`/`BOTTLED_LIGHTNING` reward relics opening
+CARD_SELECT while one combat card reward remained pending. E2c-v2 therefore
+retains every valid RAW row for primary RAW analysis and uses complete
+RAW+POST pairs only for explicitly named paired arms and retention calculations.
+The analyzer reports completeness overall, by room, and by eventual outcome.
+
+Correct human launcher: use `STS_LIVE_VALID=1` and the designated GCP wrapper;
+do not launch it during implementation:
+
+```bash
+python3 tools/agent/gcp_benchmark.py run -- \
+  env STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0 \
+  STS_S3_PARTICLES=64 STS_LIVE_VALID=1 \
+  STS_VNET=models/v_combat_7k_tuned.txt STS_VNET_ALPHA=0.3 \
+  STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native \
+  STS_OOC_STRATEGIC_MARGIN=1.0 STS_OOC_STRATEGIC_REST=1 \
+  STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1 \
+  STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1 \
+  STS_COLLECT_KEYS=0 STS_STOP_AFTER_ACT=3 \
+  build/one_combat e2cgen 2000 1000 0 \
+  build/e2c_raw_terminal_2000.csv 2000000
+```

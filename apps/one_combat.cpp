@@ -848,6 +848,9 @@ struct E2cFight {
     int index = -1, room = -1, encounter = -1;
     std::string raw, post, rawRelics, postRelics;
     bool rawSeen = false, postSeen = false;
+    std::string screenTrace;
+    std::string rewardRelics;
+    int pendingCards = -1;
 };
 struct E2cRoomStats {
     int eligible = 0, raw = 0, post = 0, pairs = 0;
@@ -3856,6 +3859,8 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             using RT = search::GameAction::RewardsActionType;
             auto &r = gc.info.rewardsContainer;                          // take non-card rewards first,
             if (t_e2c) e2cCapturePost(gc);                               // POST boundary: non-card rewards drained, card reward pending
+            if (t_e2c && t_e2c->current)
+                t_e2c->current->screenTrace += "S=" + std::to_string((int)gc.screenState) + ";";
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);   // else the screen
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);  // never clears
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
@@ -3930,9 +3935,10 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
         // gc.outcome). Integrity still rejects genuinely unresolved runs and any
         // simulator-health failure, so E2c does not weaken the shared predicate.
         const bool decided = result.won || gc.outcome != GameOutcome::UNDECIDED;
-        if (trainingRunValid(decided))
+        const bool validRun = trainingRunValid(decided);
+        if (validRun)
             t_e2cRows = e2cRunRows(e2c, result.won, result.floor, result.hpEnd);
-        for (int i = 0; i < 3; ++i) {
+        if (validRun) for (int i = 0; i < 3; ++i) {
             const auto &s = e2c.roomStats[i];
             g_e2cCounts[i][0] += s.eligible;
             g_e2cCounts[i][1] += s.raw;
@@ -3947,11 +3953,13 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
                 [i](const E2cFight &f) { return !f.rawSeen && f.postSeen &&
                     (f.room == (i == 0 ? (int)Room::MONSTER : i == 1 ? (int)Room::ELITE : (int)Room::BOSS)); });
         }
-        for (const auto &f : e2c.fights)
+        if (validRun) for (const auto &f : e2c.fights)
             if (f.rawSeen != f.postSeen)
                 std::cerr << "e2c incomplete seed=" << e2c.seed << " fight=" << f.index
                           << " room=" << e2cRoomName(f.room) << " encounter=" << f.encounter
-                          << " raw=" << f.rawSeen << " post=" << f.postSeen << '\n';
+                          << " raw=" << f.rawSeen << " post=" << f.postSeen
+                          << " relics=" << f.rewardRelics << " pending_cards=" << f.pendingCards
+                          << " trace=" << f.screenTrace << '\n';
         t_e2c = nullptr;
         g_onBattleExitPersistent = nullptr;
     }
@@ -7065,6 +7073,15 @@ static void e2cRawObserver(const BattleContext &bc, GameContext &gc) {
 static void e2cCapturePost(GameContext &gc) {
     if (!t_e2c || !t_e2c->current || t_e2c->current->postSeen) return;
     auto &r = gc.info.rewardsContainer;
+    t_e2c->current->screenTrace += "REWARDS(" + std::to_string(r.relicCount) + "," +
+        std::to_string(r.cardRewardCount) + ");";
+    if (t_e2c->current->rewardRelics.empty()) {
+        for (int i = 0; i < r.relicCount; ++i) {
+            if (i) t_e2c->current->rewardRelics += ";";
+            t_e2c->current->rewardRelics += std::to_string((int)r.relics[i]);
+        }
+    }
+    t_e2c->current->pendingCards = r.cardRewardCount;
     if (gc.screenState != ScreenState::REWARDS || r.goldRewardCount || r.relicCount ||
         r.potionCount || (g_collectKeys && (r.emeraldKey || r.sapphireKey)) ||
         r.cardRewardCount == 0) return;
@@ -7079,12 +7096,14 @@ static void e2cCapturePost(GameContext &gc) {
 static std::string e2cRunRows(const E2cCapture &cap, bool won, int finalFloor, int endHp) {
     std::ostringstream out;
     for (const auto &f : cap.fights) {
-        if (!f.rawSeen || !f.postSeen) continue;   // emit only unambiguous pairs
+        if (!f.rawSeen && !f.postSeen) continue;
         const std::string meta = std::string(e2cRoomName(f.room)) + ',' + std::to_string(f.encounter) + ',';
-        out << cap.seed << ',' << f.index << ",RAW," << meta << f.raw << ',' << f.rawRelics
-            << ',' << (won ? 1 : 0) << ',' << finalFloor << ',' << endHp << '\n';
-        out << cap.seed << ',' << f.index << ",POST," << meta << f.post << ',' << f.postRelics
-            << ',' << (won ? 1 : 0) << ',' << finalFloor << ',' << endHp << '\n';
+        if (f.rawSeen)
+            out << cap.seed << ',' << f.index << ",RAW," << meta << f.raw << ',' << f.rawRelics
+                << ',' << (won ? 1 : 0) << ',' << finalFloor << ',' << endHp << '\n';
+        if (f.postSeen)
+            out << cap.seed << ',' << f.index << ",POST," << meta << f.post << ',' << f.postRelics
+                << ',' << (won ? 1 : 0) << ',' << finalFloor << ',' << endHp << '\n';
     }
     return out.str();
 }
@@ -7131,6 +7150,11 @@ static void e2cGen(int nSeeds, int sims, int asc, const std::string &outfile,
     writeTrainingProvenance(outfile, "e2cgen", nSeeds,
                             nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
                             g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc);
+    std::ofstream schema(outfile + ".schema.json");
+    if (schema)
+        schema << "{\n  \"schema_version\": \"e2c-v2\",\n"
+               << "  \"raw_primary_retains_incomplete_pairs\": true,\n"
+               << "  \"matched_arms_require_complete_raw_post_pairs\": true\n}\n";
 }
 
 static std::string restCounterfactualHeader() {
