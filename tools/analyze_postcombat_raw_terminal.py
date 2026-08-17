@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """E2c: exact RAW / POST combat-terminal run-win critic analysis.
 
-Input is the matched long-format dataset produced by ``one_combat e2cgen``:
-each survived ordinary/elite/act-1-2-boss combat contributes exactly one RAW row
-(immediately after persistent combat transfer, before regainControl()/rewards)
-and one POST row (after all non-card rewards, before the first card pick/skip),
-sharing ``(seed, fight_index)`` and the same eventual ``won`` label.
+Input is the E2c-v2 long-format dataset produced by ``one_combat e2cgen``.
+Every valid survived eligible combat contributes a RAW row immediately after
+persistent combat transfer and before regainControl()/rewards. POST may be
+missing when reward-side-effect control flow leaves the standard reward flow
+before the card decision. Primary RAW arms use all valid RAW rows; explicitly
+named paired arms and retention use complete RAW+POST cases only.
 
 Uses the same XGBoost recipe and seed-grouped split methodology as E2/E2b so the
 conceptual variable is the state boundary/features, not the learner. Held-out
@@ -164,6 +165,10 @@ def main():
     key = ["seed", "fight_index", "boundary"]
     if df.duplicated(key).any():
         raise AssertionError("duplicate (seed, fight_index, boundary) rows")
+    raw_keys = set(map(tuple, df.loc[df.boundary == "RAW", ["seed", "fight_index"]].to_numpy()))
+    post_keys = set(map(tuple, df.loc[df.boundary == "POST", ["seed", "fight_index"]].to_numpy()))
+    if post_keys - raw_keys:
+        raise AssertionError("POST-only rows violate the E2c producer contract")
     piv = df.pivot_table(index=["seed", "fight_index"], columns="boundary",
                          values="won", aggfunc="first")
     complete = piv[piv["RAW"].notna() & piv["POST"].notna()]
@@ -239,16 +244,18 @@ def main():
     def _ll(name):
         return results[name]["metrics"]["logloss"]
 
-    gain_raw = _ll("B2-raw-paired") - _ll("T-raw-paired")
+    all_raw_gain = _ll("B2-raw") - _ll("T-raw")
+    paired_raw_gain = _ll("B2-raw-paired") - _ll("T-raw-paired")
+    gain_raw = paired_raw_gain
     gain_post = _ll("B2-post") - _ll("T-post")
     raw_retention = (gain_raw / gain_post) if gain_post > 0 else None
     reward_gap = _ll("T-raw-paired") - _ll("T-post")
 
     # Preregistered decision rule
-    Tr, B2r = results["T-raw-paired"], results["B2-raw-paired"]
-    boot_raw = comparisons["T-raw-paired - B2-raw-paired"]["logloss"]
+    Tr, B2r = results["T-raw"], results["B2-raw"]
+    boot_raw = comparisons["T-raw - B2-raw"]["logloss"]
     checks = {
-        "T-raw_logloss_below_B2-raw": _ll("T-raw-paired") < _ll("B2-raw-paired"),
+        "T-raw_logloss_below_B2-raw": _ll("T-raw") < _ll("B2-raw"),
         "T-raw_brier_below_B2-raw": Tr["metrics"]["brier"] < B2r["metrics"]["brier"],
         "T-raw_auc_above_B2-raw": Tr["metrics"]["auc"] > B2r["metrics"]["auc"],
         "bootstrap_logloss_ci_below_zero": boot_raw["ci95"][1] < 0,
@@ -261,8 +268,9 @@ def main():
     verdict = classify_verdict(checks, gain_post)
 
     # Counter diagnostic
+    Traw = results["T-raw"]
     boot_ctr = comparisons["T-raw-no-counter - T-raw"]["logloss"]
-    counter_sensitive = (Tr["count_gain"] > 0.0 and
+    counter_sensitive = (Traw["count_gain"] > 0.0 and
                          _ll("T-raw-no-counter") > _ll("T-raw") and
                          boot_ctr["ci95"][0] > 0.0)
     counter_verdict = ("COUNTER-SENSITIVE" if counter_sensitive
@@ -288,8 +296,10 @@ def main():
         "dataset": os.path.abspath(csv), "dataset_sha256": e2.sha256(csv),
         "schema_version": "e2c-v2", "column_count": len(header),
         "raw_rows": int(len(dfr)), "complete_pairs": int(len(complete)),
-        "val_raw_rows": int(len(val_raw)), "val_pairs": int(len(val_pairs)),
-        "val_seeds": int(len(np.unique(val_pairs.get_level_values("seed")))),
+        "val_raw_rows": int(len(val_raw)),
+        "val_raw_seeds": int(len(np.unique(val_raw.get_level_values("seed")))),
+        "val_pairs": int(len(val_pairs)),
+        "val_paired_seeds": int(len(np.unique(val_pairs.get_level_values("seed")))),
         "prev": b0,
         "pair_completeness": {
             "overall": float(len(complete) / len(piv)) if len(piv) else None,
@@ -302,9 +312,10 @@ def main():
         "feature_manifest": man, "hidden_excluded": sorted(hidden),
         "comparisons": comparisons,
         "retention": {"gain_raw": gain_raw, "gain_post": gain_post,
+                      "all_raw_gain": all_raw_gain, "paired_raw_gain": paired_raw_gain,
                       "raw_retention": raw_retention, "reward_information_gap": reward_gap},
         "checks": checks, "verdict": verdict,
-        "counter": {"verdict": counter_verdict, "gain": Tr["count_gain"],
+        "counter": {"verdict": counter_verdict, "gain": Traw["count_gain"],
                     "T-raw_no_counter_vs_T_logloss_delta": boot_ctr["mean"]},
         "split": SPLIT,
         "xgb_params": e2.XGB_PARAMS,
@@ -318,15 +329,31 @@ def main():
     with open(os.path.join(out, "calibration_deciles.csv"), "w") as f:
         f.write("arm,bin_lo,bin_hi,n,mean_pred,observed\n")
         for name in results:
-            for row in e2.calibration(yv, results[name]["p"]):
+            for row in e2.calibration(results[name]["y"], results[name]["p"]):
                 f.write(name + "," + ",".join(str(row[k]) for k in
                         ("bin_lo", "bin_hi", "n", "mean_pred", "observed")) + "\n")
 
-    np.savez_compressed(os.path.join(out, "validation_predictions.npz"),
-                        seed=val_pairs.get_level_values("seed").values,
-                        fight_index=val_pairs.get_level_values("fight_index").values,
-                        y=yv, run=run,
-                        **{k.replace("-", "_"): v["p"] for k, v in results.items()})
+    raw_target = results["T-raw"]["target"]
+    _, raw_run = np.unique(raw_target.get_level_values("seed"), return_inverse=True)
+    np.savez_compressed(os.path.join(out, "validation_predictions_raw.npz"),
+                        seed=raw_target.get_level_values("seed").to_numpy(),
+                        fight_index=raw_target.get_level_values("fight_index").to_numpy(),
+                        y=results["T-raw"]["y"], run=raw_run,
+                        p_B1_raw=results["B1-raw"]["p"],
+                        p_B2_raw=results["B2-raw"]["p"],
+                        p_T_raw=results["T-raw"]["p"],
+                        p_T_raw_no_counter=results["T-raw-no-counter"]["p"])
+    paired_target = results["T-raw-paired"]["target"]
+    _, paired_run = np.unique(paired_target.get_level_values("seed"), return_inverse=True)
+    np.savez_compressed(os.path.join(out, "validation_predictions_paired.npz"),
+                        seed=paired_target.get_level_values("seed").to_numpy(),
+                        fight_index=paired_target.get_level_values("fight_index").to_numpy(),
+                        y=results["T-raw-paired"]["y"], run=paired_run,
+                        p_B1_raw_paired=results["B1-raw-paired"]["p"],
+                        p_B2_raw_paired=results["B2-raw-paired"]["p"],
+                        p_T_raw_paired=results["T-raw-paired"]["p"],
+                        p_B2_post=results["B2-post"]["p"],
+                        p_T_post=results["T-post"]["p"])
 
     print(json.dumps({"verdict": verdict, "checks": checks, "retention": result["retention"],
                       "comparisons": comparisons, "counter": result["counter"]}, indent=2))

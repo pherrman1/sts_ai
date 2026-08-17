@@ -43,15 +43,17 @@ assert not mod.post_boundary_ready("REWARDS", rewards, True)               # key
 
 # Pairing integrity: pivoting by (seed, fight_index) must cross RAW/POST labels.
 df = pd.DataFrame({
-    "seed": [1, 1, 1, 1, 2, 2, 2, 2],
-    "fight_index": [0, 0, 1, 1, 0, 0, 1, 1],
-    "boundary": ["RAW", "POST", "RAW", "POST", "RAW", "POST", "RAW", "POST"],
-    "won": [1, 1, 0, 0, 1, 1, 1, 1],
-    "room_type": ["MONSTER", "MONSTER", "ELITE", "ELITE", "BOSS", "BOSS", "MONSTER", "MONSTER"],
+    "seed": [1, 1, 1, 1, 2, 2, 2, 2, 2],
+    "fight_index": [0, 0, 1, 1, 0, 0, 1, 1, 2],
+    "boundary": ["RAW", "POST", "RAW", "POST", "RAW", "POST", "RAW", "POST", "RAW"],
+    "won": [1, 1, 0, 0, 1, 1, 1, 1, 0],
+    "room_type": ["MONSTER", "MONSTER", "ELITE", "ELITE", "BOSS", "BOSS", "MONSTER", "MONSTER", "ELITE"],
 })
 piv = df.pivot_table(index=["seed", "fight_index"], columns="boundary", values="won", aggfunc="first")
-assert not piv["RAW"].isna().any() and not piv["POST"].isna().any()     # every pair both boundaries
-assert (piv["RAW"] == piv["POST"]).all()                                # identical labels within pair
+complete = piv[piv["RAW"].notna() & piv["POST"].notna()]
+assert not piv["RAW"].isna().any() and piv["POST"].isna().sum() == 1
+assert (complete["RAW"] == complete["POST"]).all()
+assert len(piv) == 5 and len(complete) == 4
 
 # Contiguous held-out seed bootstrap: arbitrary global seed IDs must be reindexed.
 seeds = np.array([100, 100, 700, 700, 1200, 1200])
@@ -61,6 +63,9 @@ assert list(contiguous) == [0, 0, 1, 1, 2, 2]
 # Duplicate pair keys must be rejected before any pivot/aggfunc can hide them.
 dup = pd.concat([df, df.iloc[[0]]], ignore_index=True)
 assert dup.duplicated(["seed", "fight_index", "boundary"]).any()
+assert not set(zip(df.loc[df.boundary == "POST", "seed"],
+                   df.loc[df.boundary == "POST", "fight_index"])) - set(zip(df.loc[df.boundary == "RAW", "seed"],
+                                                                              df.loc[df.boundary == "RAW", "fight_index"]))
 
 # Exact preregistered verdict ordering.
 checks = {"T-raw_logloss_below_B2-raw": True,
@@ -75,5 +80,15 @@ assert mod.classify_verdict(checks, 0.1) == "E2C PARTIAL"
 checks["bootstrap_logloss_ci_below_zero"] = False
 assert mod.classify_verdict(checks, 0.1) == "E2C NEGATIVE"
 assert mod.classify_verdict(checks, 0.0) == "E2C INCONCLUSIVE"
+
+# Population alignment: a RAW-only validation fight belongs to raw artifacts,
+# never to paired artifacts; every saved prediction population must have equal
+# IDs, labels, and predictions.
+raw_ids = [(1, 0), (1, 1), (2, 0), (2, 1), (2, 2)]
+paired_ids = raw_ids[:-1]
+assert (1, 0) in raw_ids and (2, 2) in raw_ids and (2, 2) not in paired_ids
+for ids, pred in ((raw_ids, [0.1] * len(raw_ids)), (paired_ids, [0.2] * len(paired_ids))):
+    assert len(ids) == len(pred)
+
 
 print("postcombat raw-terminal selftest: PASS")

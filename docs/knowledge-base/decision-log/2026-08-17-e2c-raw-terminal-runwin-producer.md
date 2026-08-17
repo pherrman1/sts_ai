@@ -134,3 +134,19 @@ pair completeness was 97.81% overall, MONSTER 100%, ELITE 90%, BOSS 100%;
 loss rows were 97.30% complete and win rows 100% complete. Primary RAW arms
 use all valid RAW rows; paired arms use complete pairs only. No scientific
 verdict is inferred from this smoke.
+
+## Analyzer correction (commit after current-main merge)
+
+The analyzer now uses all valid RAW rows for the primary E2c checks:
+`T-raw` vs `B2-raw` direction, ECE, AUC/Brier, and the seed-bootstrap
+log-loss CI. Matched retention remains complete-case only:
+`B2-raw-paired`/`T-raw-paired` versus `B2-post`/`T-post`. Both
+`all_raw_gain` and `paired_raw_gain` are reported.
+
+Calibration uses each arm's own aligned labels. Validation artifacts are split
+into `validation_predictions_raw.npz` and `validation_predictions_paired.npz`,
+each with internally matching seed/fight IDs, labels, contiguous run IDs, and
+prediction arrays. POST-only rows are rejected as a producer-contract violation.
+The counter diagnostic uses the all-RAW T model's relic-data feature gain and
+all-RAW bootstrap CI. Validation reporting separates raw rows/seeds from paired
+rows/seeds. No scientific verdict is recorded.
