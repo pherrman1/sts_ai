@@ -37,6 +37,13 @@ These control the default executing configuration; they are always parsed.
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_S3_PARTICLES` | Belief particle count | 64 | `main` ~L9740 |
+| `STS_PARTICLE_LEAF_PROBE_FILE` | Enable the off-by-default draw-order particle leaf CSV probe | unset | `main` |
+| `STS_PARTICLE_LEAF_PROBE_K` | Draw-order variants per selected leaf | 8 | `main` |
+| `STS_PARTICLE_LEAF_PROBE_RATE` | Fraction of type-0 leaves sampled | 0.05 | `main` |
+| `STS_PARTICLE_LEAF_PROBE_MAX_GROUPS` | Per-seed cap on sampled leaf groups | 16 | `main` |
+| `STS_PARTICLE_POSTERIOR_PROBE_FILE` | Enable the off-by-default Phase-1b posterior-valid particle leaf CSV probe (`particle_posterior_probe` mode) | unset | `main` |
+| `STS_PARTICLE_POSTERIOR_PROBE_K` | Cap on evaluated unique compatible hidden states per source leaf (0 = evaluate all) | 0 | `main` |
+| `STS_PARTICLE_POSTERIOR_PROBE_MAX_GROUPS` | Per-seed cap on posterior probe source groups (-1 unlimited, 0 = probe-OFF determinism arm) | 16 | `main` |
 | `STS_S3_BELIEF` | Particle belief reweighting (ablation) | `1` (ON) | `main` ~L9730 |
 | `STS_S3_PRUNE` | `canPruneAsDead` pruning (ablation) | `1` (ON) | `main` ~L9735 |
 | `STS_S3_CHAIN` | Deterministic chain compression (ablation) | `1` (ON) | `main` ~L9736 |
@@ -50,6 +57,10 @@ These control the default executing configuration; they are always parsed.
 | `STS_S3_AI_SENSITIVITY_ALTS` | Maximum novel AI alternatives per selected root | `4` | `main` |
 | `STS_S3_AI_SENSITIVITY_SIMS` | Mini-search simulations per fixed-hidden condition | `256` | `main` |
 | `STS_RISK_LAMBDA` | Risk sensitivity for S3 PUCT | 0.5 | `main` ~L9845 |
+
+The probe CSV contains `target` from the isolated common-RNG rollout for every
+variant, while `rawRolloutEval` is retained only as an optional parity field
+from the actual search simulation and is never used as the scientific target.
 
 ## Searcher3 experimental rollout / expansion
 
