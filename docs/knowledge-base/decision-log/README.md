@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-17 | [`2026-08-17-e2c-raw-terminal-runwin-producer.md`](2026-08-17-e2c-raw-terminal-runwin-producer.md) | E2c opt-in `e2cgen` matched RAW/POST combat-terminal producer + offline analyzer; live-only armed hook, act-horizon labels, explicit relic ownership/data, versioned schema. No scientific verdict from smoke. |
 | 2026-08-17 | [`2026-08-17-e2b-masked-feature-availability.md`](2026-08-17-e2b-masked-feature-availability.md) | E2b uses an all-row post-reward masked approximation because `vrich.csv` cannot identify ordinary combats or establish the raw terminal boundary. |
 | 2026-08-16 | [`2026-08-16-e2-postcombat-runwin-dataset-reuse.md`](2026-08-16-e2-postcombat-runwin-dataset-reuse.md) | E2 dataset reuse, corrected validation-seed bootstrap reindexing, and the limited relationship to the missing §116 counter-aware terminal-evaluator prerequisite. |
 | 2026-08-15 | [`2026-08-15-ai-rng-sensitivity-matched-replication.md`](2026-08-15-ai-rng-sensitivity-matched-replication.md) | Corrected the invalid matched AI_RNG replication record with a genuine belief-OFF/V4 run; controls passed and decision sensitivity recurred across multiple seeds/encounters. |

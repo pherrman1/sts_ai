@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <array>
+#include <functional>
 
 #include "sts_common.h"
 
@@ -41,6 +42,8 @@ namespace sts {
     };
 
     class GameContext;
+
+    extern thread_local std::function<void(const BattleContext &, GameContext &)> g_onBattleExitPersistent;
 
     extern thread_local BattleContext *g_debug_bc;
 
