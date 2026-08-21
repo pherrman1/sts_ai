@@ -1,6 +1,6 @@
 # Decision log
 
-Last verified: 2026-08-14 against the current working tree.
+Last verified: 2026-08-22 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one
@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-22 | [`2026-08-22-codex-cli-migration.md`](2026-08-22-codex-cli-migration.md) | Codex CLI becomes the interactive agent with repository skills, conservative sandbox/MCP defaults, explicit Serena/RepoWise worktree routing, and no false reuse of Cline-specific hook enforcement. |
 | 2026-08-17 | [`2026-08-17-e2c-raw-terminal-runwin-producer.md`](2026-08-17-e2c-raw-terminal-runwin-producer.md) | E2c opt-in `e2cgen` matched RAW/POST combat-terminal producer + offline analyzer; live-only armed hook, act-horizon labels, explicit relic ownership/data, versioned schema. No scientific verdict from smoke. |
 | 2026-08-17 | [`2026-08-17-e2b-masked-feature-availability.md`](2026-08-17-e2b-masked-feature-availability.md) | E2b uses an all-row post-reward masked approximation because `vrich.csv` cannot identify ordinary combats or establish the raw terminal boundary. |
 | 2026-08-16 | [`2026-08-16-e2-postcombat-runwin-dataset-reuse.md`](2026-08-16-e2-postcombat-runwin-dataset-reuse.md) | E2 dataset reuse, corrected validation-seed bootstrap reindexing, and the limited relationship to the missing §116 counter-aware terminal-evaluator prerequisite. |
