@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-22 | [`2026-08-22-codex-workflow-v2.md`](2026-08-22-codex-workflow-v2.md) | Workflow-v2: repo-grounded ChatGPT/Sol handoffs are accepted design plans; Codex uses bounded preflight, evidence-packet PR handoffs, explicit session routing, and reviewed-SHA freeze before expensive science. |
 | 2026-08-22 | [`2026-08-22-codex-cli-migration.md`](2026-08-22-codex-cli-migration.md) | Codex CLI becomes the interactive agent with repository skills, conservative sandbox/MCP defaults, explicit Serena/RepoWise worktree routing, and no false reuse of Cline-specific hook enforcement. |
 | 2026-08-17 | [`2026-08-17-e2c-raw-terminal-runwin-producer.md`](2026-08-17-e2c-raw-terminal-runwin-producer.md) | E2c opt-in `e2cgen` matched RAW/POST combat-terminal producer + offline analyzer; live-only armed hook, act-horizon labels, explicit relic ownership/data, versioned schema. No scientific verdict from smoke. |
 | 2026-08-17 | [`2026-08-17-e2b-masked-feature-availability.md`](2026-08-17-e2b-masked-feature-availability.md) | E2b uses an all-row post-reward masked approximation because `vrich.csv` cannot identify ordinary combats or establish the raw terminal boundary. |

@@ -1,6 +1,6 @@
 # StS AI agent contract
 
-Last verified: 2026-08-14 against the current working tree.
+Last verified: 2026-08-22 against the current working tree.
 
 ## Purpose and authority
 
@@ -44,14 +44,15 @@ routing.
 - State the success criterion and cheapest proving check. Make the smallest
   scoped change that satisfies the request; do not bundle cleanup, refactors,
   gameplay, model, or research changes.
-- Use Codex CLI for interactive work. Use Serena for live semantic code
-  navigation and approved semantic refactoring only after verifying that it is
-  attached to the active Git worktree. Use RepoWise only for advisory
-  architecture/history signals and only with the explicitly matched worktree
-  alias. Targeted reads plus the maintained KB provide evidence. Code, tests,
-  ledgers, maintained KB pages, and accepted ADRs override tool-generated
-  summaries. If an MCP server is unavailable or misrouted, continue with Git,
-  `rg`, and focused file reads rather than using another worktree's results.
+- Use the repo-grounded ChatGPT/Sol handoff as the accepted design plan when it
+  includes the baseline, goal/hypothesis, verified repo facts, required
+  behavior, non-goals, and verification criteria. Codex performs a bounded
+  local preflight and does not restart broad research or planning unless local
+  evidence materially contradicts the handoff. Use Serena optionally for
+  high-leverage semantic navigation/refactoring after verifying it is attached
+  to this Git worktree. Use RepoWise only for broad architecture, dead-code,
+  history, or risk work, not routine tasks. If an MCP server is unavailable or
+  misrouted, continue with Git, `rg`, and focused reads.
 - Use the cheapest focused verification that proves the change. Every command
   that drives game seeds must go through the repository seed-run guard. Local
   automated execution is capped at 128 seeds. Large research sweeps run
@@ -63,6 +64,17 @@ routing.
   repository verification check. Changes should reach `main` through a pull
   request only after the `Linux GCC` check passes. Branch-protection enforcement
   is not currently available for this private repository on its GitHub plan.
+
+## Workflow-v2 handoff boundary
+
+The draft pull request is the Codex-to-reviewer handoff. It must include an
+evidence packet: baseline and reviewed SHA, scope, changed paths, checks run
+and their raw outcomes, checks not run, and remaining uncertainty. Minor review
+corrections continue the same Codex session. A conceptual redesign, new
+hypothesis, or changed success criterion starts a new session. After repeated
+failures or unresolved conceptual ambiguity, stop and report the blocker rather
+than wandering into unbounded re-investigation. After implementation review
+passes, freeze the reviewed SHA before any expensive scientific run.
 
 ## Critical safety and Git rules
 
