@@ -268,7 +268,7 @@ reaching it (verified 2026-08-05):
   `hostname; uptime` command first. Before a long run, check the box is free
   (`ps aux | wc -l` / leftover `one_combat` processes from another agent).
 
-### Canonical Cline workflow
+### Canonical agent workflow
 
 Use the tracked launcher rather than reconstructing raw gcloud commands:
 

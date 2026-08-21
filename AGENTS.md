@@ -44,18 +44,21 @@ routing.
 - State the success criterion and cheapest proving check. Make the smallest
   scoped change that satisfies the request; do not bundle cleanup, refactors,
   gameplay, model, or research changes.
-- Use Cline for interactive work, Serena for live semantic code navigation and
-  approved semantic refactoring, RepoWise only for advisory architecture/history
-  signals, and targeted reads plus the maintained KB for evidence. Code, tests,
+- Use Codex CLI for interactive work. Use Serena for live semantic code
+  navigation and approved semantic refactoring only after verifying that it is
+  attached to the active Git worktree. Use RepoWise only for advisory
+  architecture/history signals and only with the explicitly matched worktree
+  alias. Targeted reads plus the maintained KB provide evidence. Code, tests,
   ledgers, maintained KB pages, and accepted ADRs override tool-generated
-  summaries.
+  summaries. If an MCP server is unavailable or misrouted, continue with Git,
+  `rg`, and focused file reads rather than using another worktree's results.
 - Use the cheapest focused verification that proves the change. Every command
   that drives game seeds must go through the repository seed-run guard. Local
   automated execution is capped at 128 seeds. Large research sweeps run
   through the designated GCP research path, which has no fixed seed ceiling;
   agents choose the smallest sample justified by the experiment design. See
   [build-and-debugging.md](docs/knowledge-base/operations/build-and-debugging.md)
-  and the [research-experiment skill](.cline/skills/research-experiment/SKILL.md).
+  and the [research-experiment skill](.agents/skills/research-experiment/SKILL.md).
 - GitHub Actions CI (`.github/workflows/ci.yml`) is the authoritative
   repository verification check. Changes should reach `main` through a pull
   request only after the `Linux GCC` check passes. Branch-protection enforcement
@@ -85,5 +88,5 @@ routing.
   [determinism/RNG](docs/knowledge-base/behavior/determinism-and-rng.md)
 - [Decision log](docs/knowledge-base/decision-log/README.md) and
   [experiment ledger](EXPERIMENTS.md)
-- [Implementation-review skill](.cline/skills/implementation-review/SKILL.md)
-  and [research-experiment skill](.cline/skills/research-experiment/SKILL.md)
+- [Implementation-review skill](.agents/skills/implementation-review/SKILL.md)
+  and [research-experiment skill](.agents/skills/research-experiment/SKILL.md)

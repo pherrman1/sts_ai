@@ -1,0 +1,17 @@
+# Repository-scoped Codex defaults. Keep execution contained to this worktree;
+# commands that require broader access remain subject to explicit approval.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = false
+
+[mcp_servers.serena]
+command = "serena"
+args = ["start-mcp-server", "--context=ide", "--project-from-cwd", "--transport", "stdio"]
+startup_timeout_sec = 120
+
+[mcp_servers.repowise]
+command = "repowise"
+args = ["mcp", "..", "--transport", "stdio"]
+startup_timeout_sec = 120

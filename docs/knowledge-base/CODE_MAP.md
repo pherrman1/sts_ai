@@ -101,7 +101,7 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Agent contract and routing | `AGENTS.md`, `.cline/skills/` | Universal contract, progressive-disclosure skills, context/commit procedure | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
+| Agent contract and routing | `AGENTS.md`, `.agents/skills/`, `.codex/config.toml` | Universal contract, progressive-disclosure skills, Codex sandbox/MCP defaults, context/commit procedure | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
 | Safety guard | `tools/seed_guard.sh` | Local 128-seed cap; explicit unbounded `--gcp-research` mode on the designated host | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md), [build-and-debugging.md](operations/build-and-debugging.md) |
 | GCP benchmark launcher | `tools/agent/gcp_benchmark.py` | Probe/status/start/run through `gcloud compute ssh`; detached guarded research runs | [build-and-debugging.md](operations/build-and-debugging.md) |
 | Artifact inspector | `tools/ai_inspect.py` | Read-only CSV/JSON inspection | (inline) |
