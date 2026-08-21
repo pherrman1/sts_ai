@@ -12,11 +12,36 @@ implementation, review, experiment, documentation, or Git procedure.
 ## Current implementation
 
 `AGENTS.md` contains the project purpose, authority hierarchy, CODE_MAP-first
-navigation, minimal-change principle, concise tool routing, seed-guard rule,
-critical safety/Git rules, and links here. Repository skills under
-`.agents/skills/` provide progressive disclosure for research experiments and
-implementation reviews. `.codex/config.toml` contains conservative
-repository-scoped Codex sandbox and MCP defaults.
+navigation, minimal-change principle, bounded Codex handoff boundary,
+seed-guard rule, critical safety/Git rules, and links here. Repository skills
+under `.agents/skills/` provide progressive disclosure for external research,
+Codex-originated research, and implementation review. `.codex/config.toml`
+contains conservative repository-scoped Codex sandbox and MCP defaults.
+
+### Workflow-v2 operating boundary
+
+The external ChatGPT/Sol handoff is an accepted design plan when it states the
+baseline commit or branch, goal and hypothesis when research-facing, relevant
+facts verified against the current repository, required behavior, explicit
+non-goals, and cheapest verification criteria with expected evidence.
+
+Codex's bounded preflight is limited to checking branch/HEAD/status and
+upstream divergence; reading `AGENTS.md`, `CODE_MAP.md`, the routed page and
+relevant symbols/tests; checking handoff paths and assumptions; and identifying
+contradictions, missing prerequisites, or unsafe scope. It may refine an
+implementation detail from local evidence, but must not repeat broad
+literature review, architecture discovery, or experiment redesign when the
+handoff is consistent. A material contradiction changes the baseline, required
+behavior, affected subsystem, safety constraint, or verification decision rule.
+
+The draft PR is the implementation-to-reviewer handoff. Its evidence packet
+records the baseline, final reviewed SHA, changed paths, exact checks and
+outcomes, omitted checks, and open uncertainty. The reviewer separates
+implementation correctness from scientific-design quality. A minor correction
+continues the same Codex session; a conceptual redesign, new hypothesis, or
+changed success criterion starts a new session. After repeated failures or
+conceptual ambiguity, stop and report the blocker. Once implementation review
+passes, freeze the reviewed SHA before expensive scientific runs.
 
 ### AGENTS.md relocation audit (Phase 1)
 
@@ -25,7 +50,7 @@ repository-scoped Codex sandbox and MCP defaults.
 | Purpose and required reading | `AGENTS.md`, KB index, this page | Condensed universal contract; detailed reading routes remain linked. |
 | Authoritative sources | `AGENTS.md` | Kept as the universal source hierarchy. |
 | Repository map | `CODE_MAP.md`; [architecture overview](../architecture/overview.md); [self-play loop](selfplay-loop.md); [tools README](../../../tools/README.md) | Existing subsystem maps remain authoritative; artifact handling is below. Legacy `.opencode/`/`opencode.json` rollback configuration remains documented in `CODE_MAP.md`. |
-| Agent workflow / Codex, Serena, and RepoWise routing | `AGENTS.md`; [ADR-0008](../../../decisions/0008-guarded-cline-serena-repowise-routing.md); this page | Concise routing stays universal; operating limits are retained below. |
+| Agent workflow / ChatGPT, Codex, Serena, and RepoWise routing | `AGENTS.md`; [ADR-0010](../../../decisions/0010-codex-chatgpt-agent-workflow.md); this page | Concise routing stays universal; operating limits are retained below. ADR-0008 remains the historical Cline-era record. |
 | Agent context and large-file navigation | This page | Retained below as focused-reading guidance. |
 | Build and focused checks | [build and debugging](build-and-debugging.md); this page | Commands, target graph, GCP details, and caveats remain on the build page. |
 | Build and focused checks / Automated agent verification limits | [build and debugging](build-and-debugging.md); `AGENTS.md`; [ADR-0006](../../../decisions/0006-automated-game-seed-limit.md); research skill | Commands, target graph, GCP details, guard rule, and sample guidance remain reachable. |
@@ -66,7 +91,9 @@ does not prove runtime loading or branch use. See
 
 1. Read `AGENTS.md` for universal constraints.
 2. Route through `CODE_MAP.md` and the relevant maintained page.
-3. Use a task-specific skill when reviewing or conducting research.
+3. Use a task-specific skill when reviewing or conducting research. The
+   research skill distinguishes an external-handoff path from a
+   Codex-originated-research path.
 4. Inspect status, state the success criterion, make the smallest change, and
    run the cheapest proving check.
 5. Inspect the complete diff and record documentation, decisions, or experiment

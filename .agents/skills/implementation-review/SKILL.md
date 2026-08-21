@@ -5,9 +5,11 @@ description: Use for independent implementation review, diff review, validation,
 
 # Implementation review workflow
 
-Use this skill when independently reviewing, validating, or auditing a
-repository change after or alongside implementation. For ordinary
-implementation tasks, follow `AGENTS.md` without invoking this skill.
+Use this skill when reviewing, validating, or auditing a repository change
+after implementation. For ordinary implementation tasks, follow `AGENTS.md`
+without invoking this skill. The default reviewer is independent from the
+implementer; do not require the same agent to perform a second broad
+self-review.
 
 1. Inspect `git status` first and distinguish pre-existing changes from this
    task. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`,
@@ -24,9 +26,16 @@ implementation tasks, follow `AGENTS.md` without invoking this skill.
    `git diff`, `git diff --check`, changed paths, and generated artifacts.
 5. Report exact commands and raw outcomes. Judge implementation correctness and
    experimental-design quality separately; identify unresolved uncertainty.
-6. Before completion, stage only task-scoped files when the user requested a
+6. Review the evidence packet in the draft PR: baseline, reviewed SHA, changed
+   paths, raw checks, omitted checks, and uncertainty. Separate implementation
+   correctness from scientific-design quality. Minor corrections may continue
+   the same Codex session; conceptual redesigns or new hypotheses require a
+   new session. After repeated failures or conceptual ambiguity, stop and
+   report the blocker.
+7. Before completion, stage only task-scoped files when the user requested a
    commit. Follow `AGENTS.md` for commit/push provenance and never use
-   destructive Git commands or unrestricted auto-approval.
+   destructive Git commands or unrestricted auto-approval. Freeze the reviewed
+   SHA before expensive scientific runs.
 
 `AGENTS.md` remains authoritative for project policy; this skill is a reusable
 procedure, not a replacement for that file.

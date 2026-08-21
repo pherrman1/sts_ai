@@ -5,8 +5,28 @@ description: Use for hypothesis-driven research experiments, benchmark proposals
 
 # Research experiment workflow
 
-Use this skill for research questions, experiment proposals, and benchmark
-interpretation in this repository.
+Use this skill for research questions, experiment proposals, benchmark
+interpretation, and evidence recording in this repository.
+
+## Choose the path first
+
+### External ChatGPT/Sol handoff
+
+Use this path when the handoff supplies the baseline, goal/hypothesis, verified
+repository facts, required behavior, non-goals, and verification criteria.
+Treat it as the accepted design plan. Codex performs only the bounded preflight
+in the operations workflow, checks for material contradiction, and then
+implements or runs the specified experiment. Do not restart broad research or
+planning merely to reproduce the handoff.
+
+### Codex-originated research
+
+Use this path when Codex is asked to investigate an open question without an
+accepted external plan. Establish the current baseline, inspect relevant
+history and maintained pages, generate competing hypotheses, and propose a
+one-variable intervention before implementation or an expensive run. If the
+question becomes conceptually ambiguous, stop and report what decision is
+missing rather than expanding the search indefinitely.
 
 1. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`,
    `docs/knowledge-base/operations/agent-context-and-workflow.md`, the relevant
@@ -31,7 +51,8 @@ interpretation in this repository.
 5. Separate implementation correctness from scientific interpretation. Record
    raw commands and results, update `EXPERIMENTS.md` or its current ledger shard
    when a benchmarked idea is run, and finish substantial cycles with a concise
-   ELI5 conclusion.
+   ELI5 conclusion. After implementation review passes, freeze the reviewed
+   commit SHA before any expensive scientific run.
 
 `AGENTS.md` remains authoritative for project policy; this skill is a reusable
 procedure, not a replacement for that file.
