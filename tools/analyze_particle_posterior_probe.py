@@ -145,7 +145,8 @@ def paired_bootstrap(seed_values, iters, rng_seed=12345):
             "paired_seeds": len(seeds), "iters": iters}
 
 
-def analyze(rows, bootstrap_iters=10000):
+def analyze(rows, bootstrap_iters=10000, expected_seed_start=None,
+            expected_seed_count=None):
     groups = build_groups(rows)
     all_groups = []          # (seed, meta, worlds) for every sampled group
     for key, g in groups.items():
@@ -314,9 +315,15 @@ def analyze(rows, bootstrap_iters=10000):
                                for s, v in paired_values.items()}
 
     expected_bins = set(range(16))
+    observed_seeds = sorted({s for s, _, _ in all_groups})
+    if expected_seed_start is not None and expected_seed_count is not None:
+        expected_seeds = [str(expected_seed_start + i) for i in range(expected_seed_count)]
+    else:
+        expected_seeds = observed_seeds
     coverage = {}
     for name in ("EARLY", "LATE"):
         by_seed = defaultdict(list)
+        for seed in expected_seeds: by_seed[seed] = []
         for s, m, _ in all_groups:
             if m is not None and m.get("ageStratum") == name:
                 by_seed[s].append(int(_num(m, "ageBin")))
@@ -393,7 +400,9 @@ def analyze(rows, bootstrap_iters=10000):
                              .get("frac_range_gt5_ci95", (0, 0))[0] > 0.05
                          and strata.get("LATE", {}).get("controlledTarget", {}).get("mean_range", 0) >= 3),
         },
-        "seeds": len({s for s, _, _ in all_groups}),
+        "seeds": len(expected_seeds),
+        "observed_seeds": len(observed_seeds),
+        "missing_expected_seeds": [s for s in expected_seeds if s not in observed_seeds],
         "groups_total": n_all,
     }
 
@@ -507,6 +516,8 @@ def main():
     ap.add_argument("csv", nargs="?", help="particle_posterior_probe CSV")
     ap.add_argument("--json", action="store_true", help="emit JSON (default)")
     ap.add_argument("--bootstrap-iters", type=int, default=10000)
+    ap.add_argument("--expected-seed-start", type=int)
+    ap.add_argument("--expected-seeds", type=int)
     ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
     if args.self_test:
@@ -514,7 +525,11 @@ def main():
         return 0
     if not args.csv:
         ap.error("csv path required (or --self-test)")
-    print(json.dumps(analyze(load_rows(args.csv), bootstrap_iters=args.bootstrap_iters),
+    if (args.expected_seed_start is None) != (args.expected_seeds is None):
+        ap.error("--expected-seed-start and --expected-seeds must be supplied together")
+    print(json.dumps(analyze(load_rows(args.csv), bootstrap_iters=args.bootstrap_iters,
+                             expected_seed_start=args.expected_seed_start,
+                             expected_seed_count=args.expected_seeds),
                      indent=2, sort_keys=True))
     return 0
 

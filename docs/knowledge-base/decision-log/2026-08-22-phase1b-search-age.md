@@ -77,3 +77,10 @@ seeds 0..15 were not run.
 The initial fixed-sub-bin implementation and its incomplete smoke are
 superseded by this whole-window deferred-probe design; their artifacts remain
 preserved for provenance.
+
+The revised one-seed deferred-probe check produced exactly 16 EARLY and 16
+LATE groups, with complete coverage and zero validity counters. The revised
+8-seed smoke produced 16+16 groups for 7 of 8 seeds; seed `100003` had fewer
+than 16 eligible LATE callbacks and therefore no LATE groups. With expected
+seed coverage made explicit in the analyzer, the smoke remains
+implementation-incomplete and scientific seeds are still unauthorized.
