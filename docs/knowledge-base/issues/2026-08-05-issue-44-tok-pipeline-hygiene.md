@@ -1,8 +1,8 @@
 # Issue 44: token-pipeline hygiene — dead gather, GELU mismatch, NaN-loss zeroing
 
-- **Status:** open
+- **Status:** closed
 - **Tier:** Medium
-- **Last verified:** 2026-08-05
+- **Last verified:** 2026-08-22
 - **Source:** code review 2026-08-05
 
 ## Symptom
@@ -10,18 +10,22 @@
 - `train_strategic_tok.py::fwd_rows` recomputes `bits/c/a/s/et/ei/gg/pr` from
   CPU arrays unconditionally after the GPU-resident gather, discarding the
   on-device tensors (dead path; **fixed 2026-08-05**).
-- V3-family GELU mismatch: trainers use `nn.GELU()` (erf) while
+- V3-family GELU mismatch: trainers used `nn.GELU()` (erf) while
   `export_strategic.py`'s reference/parity use `approximate="tanh"` — the
-  deployed V3 artifact uses a slightly different activation than the training
-  forward (~1e-4) (**unfixed, documented**).
-- `train_strategic.py:589-590` and `train_strategic_tok.py:494-495` silently
-  zero non-finite losses, masking NaN bugs in the distillation machinery
-  (**unfixed**).
+  deployed V3 artifact used a slightly different activation than the training
+  forward (~1e-4) (**fixed 2026-08-22**).
+- `train_strategic.py` and `train_strategic_tok.py` silently zeroed non-finite
+  losses, masking NaN bugs in the distillation machinery (**fixed 2026-08-22**).
 
 ## Evidence
 
-- `train_strategic_tok.py:433-455` (dead recompute), `:494-495` (NaN zeroing).
-- `train_strategic.py:374-378` vs `export_strategic.py:93-94,282` (GELU).
+- `train_strategic_tok.py::fwd_rows` now retains the GPU-resident action
+  tensors; the former CPU recompute was removed in the review change.
+- `train_strategic.py::Net` and `export_strategic.py::Tmp` now both specify
+  `nn.GELU(approximate="tanh")`.
+- `train_strategic.py::train_batch_loss` and
+  `train_strategic_tok.py::train_batch_loss` now diagnose and raise on a
+  non-finite total loss.
 
 ## Why it matters
 
@@ -40,6 +44,11 @@ replace NaN-zeroing with a loud counter/warning.
 
 ## Resolution
 
-Open — minor batch from the 2026-08-05 code review; the dead recompute was
-removed in the review working tree. No experiment rerun required (numerics
-within parity tolerance).
+Closed in the implementation change for issue #44. The V3 trainer now uses
+`nn.GELU(approximate="tanh")` throughout the exported/native network, and the
+V3 and V4 trainers report loss components then raise `FloatingPointError` on a
+non-finite loss instead of continuing with a zero. The dead token gather was
+already fixed in the review working tree. No experiment rerun is required;
+the activation change is within the existing parity tolerance, and the
+non-finite path is a failure-mode correction rather than a model recipe
+change.
