@@ -401,32 +401,43 @@ class Net(nn.Module):
     def __init__(self, use_map=False):
         super().__init__()
         self.use_map = use_map
-        self.s = nn.Sequential(nn.Linear(NSTATE, 256), nn.LayerNorm(256), nn.GELU(),
-                               nn.Dropout(0.2), nn.Linear(256, 128), nn.GELU())
-        self.a_bits = nn.Sequential(nn.Linear(32, 32), nn.GELU(), nn.Dropout(0.2),
+        self.s = nn.Sequential(nn.Linear(NSTATE, 256), nn.LayerNorm(256),
+                               nn.GELU(approximate="tanh"),
+                               nn.Dropout(0.2), nn.Linear(256, 128),
+                               nn.GELU(approximate="tanh"))
+        self.a_bits = nn.Sequential(nn.Linear(32, 32), nn.GELU(approximate="tanh"),
+                                    nn.Dropout(0.2),
                                     nn.Linear(32, 16))
-        self.a_cat = nn.Sequential(nn.Linear(32, 32), nn.GELU(), nn.Linear(32, 16))
+        self.a_cat = nn.Sequential(nn.Linear(32, 32), nn.GELU(approximate="tanh"),
+                                   nn.Linear(32, 16))
         self.cats = nn.ModuleList([nn.Embedding(512, 4) for _ in range(6)])
         self.atype = nn.Embedding(16, 8)
         self.screen = nn.Embedding(16, 8)
-        self.pol = nn.Sequential(nn.Linear(168, 96), nn.GELU(), nn.Linear(96, 1))
+        self.pol = nn.Sequential(nn.Linear(168, 96), nn.GELU(approximate="tanh"),
+                                 nn.Linear(96, 1))
         # Q_win(s,a) head on the same (z,b,a,screen) concat as the policy head,
         # trained on the soft win-probability label labelWon (sigmoid + BCE).
-        self.q = nn.Sequential(nn.Linear(168, 96), nn.GELU(), nn.Linear(96, 1))
+        self.q = nn.Sequential(nn.Linear(168, 96), nn.GELU(approximate="tanh"),
+                               nn.Linear(96, 1))
         # Auxiliary probability heads (shared encoders; never summed into the
         # action score): Q_HP = E[labelHp/maxHp], Q_floor = E[labelFloor/60].
-        self.q_hp = nn.Sequential(nn.Linear(168, 96), nn.GELU(), nn.Linear(96, 1))
-        self.q_floor = nn.Sequential(nn.Linear(168, 96), nn.GELU(), nn.Linear(96, 1))
+        self.q_hp = nn.Sequential(nn.Linear(168, 96), nn.GELU(approximate="tanh"),
+                                  nn.Linear(96, 1))
+        self.q_floor = nn.Sequential(nn.Linear(168, 96), nn.GELU(approximate="tanh"),
+                                     nn.Linear(96, 1))
         # One value head per screen (screens 1..8 -> index 0..7), trained on
         # that screen's chosen rows only; the shared encoder is unchanged.
-        self.vals = nn.ModuleList([nn.Sequential(nn.Linear(128, 64), nn.GELU(), nn.Linear(64, 1))
+        self.vals = nn.ModuleList([nn.Sequential(nn.Linear(128, 64),
+                                                 nn.GELU(approximate="tanh"),
+                                                 nn.Linear(64, 1))
                                    for _ in range(8)])
         # Map-DAG route encoder + zero-init residual adapter (5.3.2): the
         # adapter output is added to the (z,b,a,screen) concat for MAP-screen
         # rows only, so at init the MAP path is a no-op on the base heads.
         if use_map:
             self.map_enc = FullMapGraphEncoder()
-            self.map_adapter = nn.Sequential(nn.Linear(96, 168), nn.GELU(),
+            self.map_adapter = nn.Sequential(nn.Linear(96, 168),
+                                             nn.GELU(approximate="tanh"),
                                              nn.Linear(168, 168))
             with torch.no_grad():
                 self.map_adapter[2].weight.zero_()
@@ -618,11 +629,15 @@ def train_batch_loss(gs):
             + HPLAMBDA * hp_loss + FLOORLAMBDA * floor_loss)
     if not torch.isfinite(loss):
         nonfinite_batches[0] += 1
-        if nonfinite_batches[0] <= 10:
-            print(f"[train-strategic] WARNING: non-finite loss zeroed "
-                  f"({nonfinite_batches[0]}x so far) — masks a NaN bug in the "
-                  f"distillation machinery", flush=True)
-        loss = torch.zeros((), device=DEVICE)
+        print(f"[train-strategic] ERROR: non-finite loss in batch "
+              f"{nonfinite_batches[0]} "
+              f"(policy={pol_loss.detach().item()!r}, "
+              f"value={val_loss.detach().item()!r}, "
+              f"q={q_loss.detach().item()!r}, "
+              f"hp={hp_loss.detach().item()!r}, "
+              f"floor={floor_loss.detach().item()!r}); aborting",
+              file=sys.stderr, flush=True)
+        raise FloatingPointError("non-finite strategic training loss")
     return (loss, float(pol_loss.detach()), float(val_loss.detach()),
             float(q_loss.detach()), float(hp_loss.detach()), float(floor_loss.detach()))
 

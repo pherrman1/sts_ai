@@ -689,11 +689,14 @@ def train_batch_loss(gs):
         loss = loss + 0.5 * pin
     if not torch.isfinite(loss):
         nonfinite_batches[0] += 1
-        if nonfinite_batches[0] <= 10:
-            print(f"[train-strategic-tok] WARNING: non-finite loss zeroed "
-                  f"({nonfinite_batches[0]}x so far) — masks a NaN bug in the "
-                  f"distillation machinery", flush=True)
-        loss = torch.zeros((), device=DEVICE)
+        print(f"[train-strategic-tok] ERROR: non-finite loss in batch "
+              f"{nonfinite_batches[0]} "
+              f"(policy={pol_loss.detach().item()!r}, "
+              f"value={val_loss.detach().item()!r}, "
+              f"q={q_loss.detach().item()!r}, "
+              f"rank={rank_loss.detach().item()!r}); aborting",
+              file=sys.stderr, flush=True)
+        raise FloatingPointError("non-finite token strategic training loss")
     return loss, float(pol_loss.detach()), float(val_loss.detach()), float(q_loss.detach())
 
 

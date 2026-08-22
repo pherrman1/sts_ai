@@ -355,7 +355,11 @@ unless STS_PVNET_VALUE_ONLY=1.
   decision share a branch seed (common random numbers); `STRATEGIC_BRANCH_FUTURES`
   averages over extra seeds per action.
 - `train_strategic.py` (round 3) adds a Q(s,a) head
-  `Linear(168,96)→GELU→Linear(96,1)` on the same concat as the policy head,
+  `Linear(168,96)→GELU(tanh approximation)→Linear(96,1)` on the same concat as
+  the policy head. The trainer uses the same tanh-approximate GELU as
+  `export_strategic.py` and the native forward for every V3 activation, and
+  aborts with component diagnostics on a non-finite loss rather than masking
+  the batch with a zero loss,
   trained on `10·labelWon+labelHp` of every labeled row (loss
   `CE + 0.5·value_MSE + STRAT_QLAMBDA·Q_MSE`, default λ=1.0). For multi-GB
   CSVs the state block is read in pandas chunks, standardized on train rows

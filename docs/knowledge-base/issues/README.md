@@ -24,7 +24,6 @@ This table is the current work queue. The complete historical index follows.
 | --- | --- | --- |
 | [16](2026-08-02-issue-16-pvnet-sweep-provenance.md) | High | Historical PVNet sweep provenance is unverified |
 | [49](2026-08-05-issue-49-term-win-mt-crash.md) | Medium | `STS_TERM_WIN=1` multi-thread crash |
-| [44](2026-08-05-issue-44-tok-pipeline-hygiene.md) | Medium | Token-pipeline implementation hygiene |
 | [45](2026-08-05-issue-45-eval-train-hygiene-batch.md) | Low | Evaluation/training hygiene batch |
 | [26](2026-08-02-issue-26-one-combat-centralization.md) | Low | `one_combat.cpp` centralizes policy and experiments |
 | [27](2026-08-02-issue-27-python-deps-unpinned.md) | Low | Python dependencies are not locked |
@@ -103,7 +102,7 @@ the open queue above is the routing source.
 | [24](2026-08-02-issue-24-isbattleover-trap.md) | Medium | `isBattleOver` is never set true | closed | [invariants](../behavior/invariants.md) |
 | [25](2026-08-02-issue-25-blas-hardcoded-path.md) | Medium | Native inference probes a hard-coded OpenBLAS path | closed | [combat-search](../architecture/combat-search.md), [build-and-debugging](../operations/build-and-debugging.md) |
 | [43](2026-08-05-issue-43-pvnet-s3-doc-staleness.md) | Medium | `STS_PVNET`/`STS_S3_*` documentation stale or absent | closed | [combat-search](../architecture/combat-search.md), [AGENTS.md](../../../AGENTS.md) |
-| [44](2026-08-05-issue-44-tok-pipeline-hygiene.md) | Medium | Token-pipeline hygiene: dead gather, GELU mismatch, NaN-loss zeroing | open | [ooc-strategic-v4](../architecture/ooc-strategic-v4.md) |
+| [44](2026-08-05-issue-44-tok-pipeline-hygiene.md) | Medium | Token-pipeline hygiene: dead gather, GELU mismatch, NaN-loss zeroing | closed | [ooc-strategic-v4](../architecture/ooc-strategic-v4.md) |
 | [45](2026-08-05-issue-45-eval-train-hygiene-batch.md) | Low | Eval/train hygiene batch: stale defaults, import safety, misc | open | [training-and-inference](../architecture/training-and-inference.md) |
 | [46](2026-08-05-issue-46-bestbench-append-dedup.md) | Medium | `bestbench` append/dedup consumer safety | closed | [benchmark-protocol](../evaluation/benchmark-protocol.md) |
 | [26](2026-08-02-issue-26-one-combat-centralization.md) | Low | `one_combat.cpp` centralizes policy and experiments | open | [overview](../architecture/overview.md), [out-of-combat](../architecture/out-of-combat.md) |
