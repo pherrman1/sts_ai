@@ -219,13 +219,19 @@ relocation audit rather than silently deleting an instruction.
 
 Repository-scoped Codex defaults live in `.codex/config.toml`. They select the
 `workspace-write` sandbox, retain approval-on-request, disable sandboxed network
-access, and configure Serena plus RepoWise over local stdio. Serena detects the
-active project from the process working directory; RepoWise runs in single-repo
-mode at `.` so it cannot silently select a sibling checkout from a parent
-workspace. Codex must be launched with this Git worktree as its root so project
-configuration, skills, and worktree-relative tool routing agree. RepoWise also
-requires an ignored index for the active worktree; when that index is absent or
-stale, use Git, `rg`, and focused reads rather than another checkout's index.
+access, and configure Serena over local stdio. Serena detects the active project
+from the process working directory. Codex must be launched with this Git
+worktree as its root so project configuration, skills, and worktree-relative
+tool routing agree.
+
+Repository-scoped RepoWise MCP is intentionally not configured. RepoWise 0.42.0
+detects an ancestor `.repowise-workspace.yaml` even when started with an exact
+repository path; an unregistered linked worktree then falls back to the
+workspace's primary alias. RepoWise therefore remains an opt-in, manually
+routed advisory tool. Before relying on it, verify that its reported absolute
+repository path exactly matches `git rev-parse --show-toplevel`. If exact
+routing cannot be established, or the worktree's ignored index is absent or
+stale, skip RepoWise and use Git, `rg`, and focused reads.
 
 No repository Codex hook adapter is configured. The mechanical execution
 boundary for seeded game commands is `tools/seed_guard.sh`, while sandboxing,

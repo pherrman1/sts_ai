@@ -10,8 +10,3 @@ network_access = false
 command = "serena"
 args = ["start-mcp-server", "--context=ide", "--project-from-cwd", "--transport", "stdio"]
 startup_timeout_sec = 120
-
-[mcp_servers.repowise]
-command = "repowise"
-args = ["mcp", ".", "--transport", "stdio"]
-startup_timeout_sec = 120
