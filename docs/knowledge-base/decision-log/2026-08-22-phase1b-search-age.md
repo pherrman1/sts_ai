@@ -93,3 +93,18 @@ counts were 16 for seeds `100000`, `100001`, `100002`, `100004`, `100005`,
 `100005`, and zero for `100003` and `100006`. Thus the 8-seed validity gate
 still fails despite zero replay, invariant, explosion, structure, and mass
 failures. Scientific seeds `0..15` remain unrun.
+
+To avoid post hoc seed selection, fixed smoke blocks `100008..100015` and
+`100016..100023` were then run with the frozen minimum-8 configuration. The
+second block had all eight seeds present, 16 EARLY groups per seed, and LATE
+counts of 11, 16, 16, 16, 16, 16, 15, and 16. The third block had 16 EARLY
+groups per seed and LATE counts of 12, 16, 16, 16, 16, 16, 16, and 16. Both
+blocks had zero source replay failures, invariant failures, replay explosions,
+structure violations, mass violations, and duplicate bins; all selected rows
+remained first-fight/first-decision rows.
+
+Across the predetermined cohort `100000..100023`, 22 of 24 seeds satisfy the
+minimum 8..16 groups in both strata. Seeds `100003` and `100006` fail the
+minimum late-support requirement. This is a bounded smoke-coverage result,
+not scientific evidence, and it does not authorize changing the preregistered
+scientific seed set `0..15` or selecting a favorable subset from this cohort.
