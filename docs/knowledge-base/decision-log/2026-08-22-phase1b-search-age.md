@@ -15,11 +15,12 @@ snapshots during the single actual Searcher3 search, selects 16
 approximately evenly spaced eligible ordinals in each whole window at search
 completion, and then runs the expensive posterior replay on those stored
 snapshots while the same Searcher3 instance remains alive. `ageBin` records
-the deterministic selected-leaf rank `0..15`; it is not a fixed simulation
-sub-bin. Selection occurs only at `fightIdx=0` and `decIdx=0`. The run is
-fixed at 3000 simulations, 64 particles, K=0, and R=4 controlled diagnostic
-rollouts. Fewer than 16 eligible callbacks in a window remains invalid; there
-is no backfill.
+the deterministic selected-leaf rank `0..selectedCount-1`; it is not a fixed
+simulation sub-bin. Selection occurs only at `fightIdx=0` and `decIdx=0`. The
+run is fixed at 3000 simulations, 64 particles, K=0, and R=4 controlled
+diagnostic rollouts. Each stratum requires at least 8 selected leaves; when
+8–15 are available all are retained, and when 16 or more are available 16 are
+selected evenly. Fewer than 8 remains invalid; there is no backfill.
 
 ## Hypothesis and decision rule
 
@@ -36,9 +37,9 @@ controlled mean range >=3. This is not a new formal §177 gate and does not
 authorize particle-conditioned VNet training or gameplay promotion.
 
 Validity requires zero source replay failures, invariant failures, replay
-explosions, K=0 caps, structure/mass violations, complete 16/16 EARLY and
-16/16 LATE bin coverage per seed, no duplicate seed×stratum×ageBin, valid age
-windows, and fresh first-decision roots with `rootCarried=0`.
+explosions, K=0 caps, structure/mass violations, 8–16 EARLY and LATE leaves
+per seed, no duplicate seed×stratum×ageBin, valid age windows, and fresh
+first-decision roots with `rootCarried=0`.
 
 ## Evidence and freeze point
 

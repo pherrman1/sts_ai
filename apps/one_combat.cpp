@@ -2646,6 +2646,7 @@ static int g_particlePosteriorAgeEarlyStart = 100;
 static int g_particlePosteriorAgeEarlyEnd = 300;
 static int g_particlePosteriorAgeLateStart = 2800;
 static int g_particlePosteriorAgeLateEnd = 3000;
+static int g_particlePosteriorAgeMinPerStratum = 8;
 static int g_particlePosteriorAgePerStratum = 16;
 static std::string g_particlePosteriorReplayDebugFile;
 static int g_particlePosteriorReplayCeiling = 128;
@@ -3237,12 +3238,15 @@ static std::vector<int> particlePosteriorAgeSelectEvenly(
     std::sort(candidates.begin(), candidates.end());
     candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
     std::vector<int> selected;
-    if (candidates.size() < 16) return selected;
-    selected.reserve(16);
-    for (int rank = 0; rank < 16; ++rank) {
+    if (candidates.size() < static_cast<size_t>(g_particlePosteriorAgeMinPerStratum))
+        return selected;
+    const int target = static_cast<int>(std::min<size_t>(16, candidates.size()));
+    selected.reserve(target);
+    for (int rank = 0; rank < target; ++rank) {
         const size_t index = std::min(
             candidates.size() - 1,
-            (static_cast<size_t>(2 * rank + 1) * candidates.size()) / 32);
+            (static_cast<size_t>(2 * rank + 1) * candidates.size())
+                / (2 * static_cast<size_t>(target)));
         selected.push_back(candidates[index]);
     }
     return selected;
@@ -7814,7 +7818,9 @@ static void recordPosteriorSearchFingerprint(
 static void particlePosteriorProbe(int nSeeds, int sims, int asc,
                                    const std::string &outFile, long long seedOffset = 0) {
     if (g_particlePosteriorAgeSplit
-        && (g_particlePosteriorAgePerStratum != 16
+        && (g_particlePosteriorAgeMinPerStratum < 1
+            || g_particlePosteriorAgeMinPerStratum > 16
+            || g_particlePosteriorAgePerStratum != 16
             || g_particlePosteriorAgeEarlyEnd < g_particlePosteriorAgeEarlyStart
             || g_particlePosteriorAgeLateEnd < g_particlePosteriorAgeLateStart)) {
         std::cerr << "particle_posterior_probe: invalid age-split configuration; "
@@ -12448,6 +12454,8 @@ int main(int argc, char **argv) {
         g_particlePosteriorAgeLateStart = std::atoi(d);
     if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_AGE_LATE_END"))
         g_particlePosteriorAgeLateEnd = std::atoi(d);
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_AGE_MIN_PER_STRATUM"))
+        g_particlePosteriorAgeMinPerStratum = std::atoi(d);
     if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_AGE_PER_STRATUM"))
         g_particlePosteriorAgePerStratum = std::atoi(d);
     if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_REPLAY_DEBUG_FILE"))

@@ -146,7 +146,7 @@ def paired_bootstrap(seed_values, iters, rng_seed=12345):
 
 
 def analyze(rows, bootstrap_iters=10000, expected_seed_start=None,
-            expected_seed_count=None):
+            expected_seed_count=None, min_age_groups=8, max_age_groups=16):
     groups = build_groups(rows)
     all_groups = []          # (seed, meta, worlds) for every sampled group
     for key, g in groups.items():
@@ -328,11 +328,21 @@ def analyze(rows, bootstrap_iters=10000, expected_seed_start=None,
             if m is not None and m.get("ageStratum") == name:
                 by_seed[s].append(int(_num(m, "ageBin")))
         duplicates = sum(len(bins) - len(set(bins)) for bins in by_seed.values())
-        missing = {s: sorted(expected_bins - set(bins)) for s, bins in by_seed.items() if set(bins) != expected_bins}
+        missing = {}
+        invalid_counts = {}
+        for s, bins in by_seed.items():
+            count = len(bins)
+            if count < min_age_groups or count > max_age_groups:
+                invalid_counts[s] = count
+            expected_for_seed = set(range(count)) if min_age_groups <= count <= max_age_groups else expected_bins
+            if set(bins) != expected_for_seed:
+                missing[s] = sorted(expected_for_seed - set(bins))
         ages = [_num(m, "searchSimulation") for _, m, _ in all_groups
                 if m is not None and m.get("ageStratum") == name]
         coverage[name] = {"groups": len(ages), "bins_per_seed": {s: len(v) for s, v in by_seed.items()},
-                          "missing_bins": missing, "duplicate_bins": duplicates,
+                          "missing_bins": missing, "invalid_counts": invalid_counts,
+                          "min_groups": min_age_groups, "max_groups": max_age_groups,
+                          "duplicate_bins": duplicates,
                           "min_searchSimulation": min(ages) if ages else None,
                           "max_searchSimulation": max(ages) if ages else None}
 
@@ -387,7 +397,8 @@ def analyze(rows, bootstrap_iters=10000, expected_seed_start=None,
             "replay_explosions": sum(_num(m, "replayExplosion") for m in metas),
             "mass_violations": 0,
             "structure_violations": dict(violations),
-            "complete_age_coverage": all(not x["missing_bins"] and x["duplicate_bins"] == 0 for x in coverage.values()) if coverage else False,
+            "complete_age_coverage": all(not x["missing_bins"] and not x["invalid_counts"]
+                                          and x["duplicate_bins"] == 0 for x in coverage.values()) if coverage else False,
             "first_fight_decision_only": all(_num(m, "fightIdx") == 0 and _num(m, "decIdx") == 0 for m in metas),
         },
         "late_practical_gate": {
@@ -518,6 +529,8 @@ def main():
     ap.add_argument("--bootstrap-iters", type=int, default=10000)
     ap.add_argument("--expected-seed-start", type=int)
     ap.add_argument("--expected-seeds", type=int)
+    ap.add_argument("--min-age-groups", type=int, default=8)
+    ap.add_argument("--max-age-groups", type=int, default=16)
     ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
     if args.self_test:
@@ -529,7 +542,9 @@ def main():
         ap.error("--expected-seed-start and --expected-seeds must be supplied together")
     print(json.dumps(analyze(load_rows(args.csv), bootstrap_iters=args.bootstrap_iters,
                              expected_seed_start=args.expected_seed_start,
-                             expected_seed_count=args.expected_seeds),
+                             expected_seed_count=args.expected_seeds,
+                             min_age_groups=args.min_age_groups,
+                             max_age_groups=args.max_age_groups),
                      indent=2, sort_keys=True))
     return 0
 

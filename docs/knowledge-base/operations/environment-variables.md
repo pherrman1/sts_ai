@@ -47,6 +47,7 @@ These control the default executing configuration; they are always parsed.
 | `STS_PARTICLE_POSTERIOR_AGE_SPLIT` | Opt-in Searcher3 age-stratified posterior probe; owns 16 EARLY + 16 LATE bins and bypasses the legacy group cap | 0 | `main` |
 | `STS_PARTICLE_POSTERIOR_AGE_EARLY_START/END` | Inclusive EARLY searchSimulation window | 100/300 | `main` |
 | `STS_PARTICLE_POSTERIOR_AGE_LATE_START/END` | Inclusive LATE searchSimulation window | 2800/3000 | `main` |
+| `STS_PARTICLE_POSTERIOR_AGE_MIN_PER_STRATUM` | Minimum selected eligible leaves per age stratum and seed; fewer is invalid | 8 | `main` |
 | `STS_PARTICLE_POSTERIOR_AGE_PER_STRATUM` | Required age bins per stratum in age mode | 16 | `main` |
 | `STS_S3_BELIEF` | Particle belief reweighting (ablation) | `1` (ON) | `main` ~L9730 |
 | `STS_S3_PRUNE` | `canPruneAsDead` pruning (ablation) | `1` (ON) | `main` ~L9735 |
