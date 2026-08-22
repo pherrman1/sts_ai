@@ -48,3 +48,20 @@ Scientific seeds are 0..15 only. Structural smoke uses separate seeds
 run only after smoke and after this implementation/preregistration is frozen.
 No 32-seed extension, VNet training, gameplay change, or merge to `main` is
 part of this experiment.
+
+## Bounded smoke outcome
+
+The frozen implementation was smoke-tested at 8 seeds (`100000..100007`),
+3000 simulations, 64 particles, K=0. It produced 176 source groups rather
+than the required 256: EARLY coverage was 104/128 bins and LATE coverage was
+72/128 bins. There were zero source replay failures, invariant failures,
+replay explosions, structure violations, mass violations, and duplicate bins;
+all selected groups were `fightIdx=0`, `decIdx=0`, `rootCarried=0`,
+`reuseGeneration=0`, and `reuseSearchCount=-1`. The missing bins were genuine
+absence of eligible frontierType-0 callbacks in those age bins, not tree reuse
+contamination. The smoke is therefore implementation-invalid/incomplete and
+has no scientific interpretation.
+
+A matched 2-seed OFF-vs-age check (`100000..100001`, 3000 simulations) passed:
+committed action fingerprints and run outcomes were identical. Scientific
+seeds 0..15 were not run.
