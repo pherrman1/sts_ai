@@ -8,6 +8,7 @@
 /build_asan/
 /build-tsan/
 /one_combat*.elf
+/logs/
 /.venv/
 /__pycache__/
 *.py[cod]

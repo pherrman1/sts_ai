@@ -85,6 +85,11 @@ ownership from counter/data for the counter diagnostic.
 Do not draw a scientific verdict from the 8-seed smoke; the decision is made
 only on the human-controlled production dataset.
 
+The completed E2c-v2 2,000-seed production review is recorded in
+`docs/experiments/ledger-06.md`: the analyzer and independent reconstruction
+both return **E2C SUPPORTED**. This is offline predictive evidence only; it
+does not show that an online MCTS critic improves action ranking or win rate.
+
 ### E2c-v2 missingness contract
 
 Current-main integration is `280a7845ccad854d209268b03c76c7c8fa278c07`
