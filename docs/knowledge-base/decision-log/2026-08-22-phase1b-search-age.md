@@ -108,3 +108,14 @@ minimum 8..16 groups in both strata. Seeds `100003` and `100006` fail the
 minimum late-support requirement. This is a bounded smoke-coverage result,
 not scientific evidence, and it does not authorize changing the preregistered
 scientific seed set `0..15` or selecting a favorable subset from this cohort.
+
+## Scientific cohort amendment before data collection
+
+Before scientific data collection, the fixed scientific cohort is amended to
+seeds `0..23` (24 seeds), with no later seed extension or favorable-subset
+selection. Per seed, include the seed only if it has at least 8 selected EARLY
+leaves and at least 8 selected LATE leaves and all replay, invariant, and mass
+validity gates pass. The primary analysis includes all qualifying seeds. The
+interpretability requirement is at least 16 qualifying seeds. The final report
+must give qualifying/24, exact excluded seed IDs and reasons, and EARLY/LATE
+candidate counts for every seed.
