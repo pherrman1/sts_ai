@@ -1,0 +1,138 @@
+# 2026-08-22 — Phase-1b Search-Age EARLY/LATE preregistration
+
+## Decision
+
+Run a new diagnostic experiment on baseline
+`4a0b3772be7fa402049594816ee18ed5969c0154` to test whether posterior-supported
+controlled draw-order sensitivity differs between EARLY leaves
+`searchSimulation ∈ [100,300]` and LATE leaves
+`searchSimulation ∈ [2800,3000]` from the same 3000-simulation Searcher3
+search. This does not retroactively modify the valid Phase-1b §177
+INCONCLUSIVE result.
+
+The implementation captures lightweight eligible `frontierType=0` leaf
+snapshots during the single actual Searcher3 search, selects 16
+approximately evenly spaced eligible ordinals in each whole window at search
+completion, and then runs the expensive posterior replay on those stored
+snapshots while the same Searcher3 instance remains alive. `ageBin` records
+the deterministic selected-leaf rank `0..selectedCount-1`; it is not a fixed
+simulation sub-bin. Selection occurs only at `fightIdx=0` and `decIdx=0`. The
+run is fixed at 3000 simulations, 64 particles, K=0, and R=4 controlled
+diagnostic rollouts. Each stratum requires at least 8 selected leaves; when
+8–15 are available all are retained, and when 16 or more are available 16 are
+selected evenly. Fewer than 8 remains invalid; there is no backfill.
+
+## Hypothesis and decision rule
+
+H_age: mature Searcher3 search may change the visited leaf distribution and
+therefore controlled draw-order sensitivity; the practical direction of
+interest is LATE > EARLY. The analyzer reports existing controlled and
+full-particle targets separately by stratum, paired seed-level contrasts, and
+10,000 paired-seed bootstrap intervals. Descriptive depth, turn, draw-pile,
+and compatible-support composition is explanatory only.
+
+The external practical LATE reference gate is PASS only if controlled
+fraction(range >5) >= 10%, seed-bootstrap lower 95% bound >5%, and equal-group
+controlled mean range >=3. This is not a new formal §177 gate and does not
+authorize particle-conditioned VNet training or gameplay promotion.
+
+Validity requires zero source replay failures, invariant failures, replay
+explosions, K=0 caps, structure/mass violations, 8–16 EARLY and LATE leaves
+per seed, no duplicate seed×stratum×ageBin, valid age windows, and fresh
+first-decision roots with `rootCarried=0`.
+
+## Evidence and freeze point
+
+The Searcher3 loop assigns a 1-based `searchSimulationOrdinal` immediately
+before each `step()` in `BattleScumSearcher3::search()`; it resets for each
+search invocation and is copied into `S3LeafDiagnostic`. The age mode is
+opt-in and behavior-neutral, bypasses the legacy first-16 cap, and preserves
+the existing semantic replay, deduplication, mass accounting, K=0, controlled
+R=4, and secondary full-particle machinery. The lightweight capture callback
+is read-only; expensive replay is deferred until search completion and does
+not alter the completed Searcher3 search.
+
+Scientific seeds are 0..15 only. Structural smoke uses separate seeds
+100000..100007 at the full 3000-simulation budget. The scientific command is
+run only after smoke and after this implementation/preregistration is frozen.
+No 32-seed extension, VNet training, gameplay change, or merge to `main` is
+part of this experiment.
+
+## Bounded smoke outcome
+
+The initial fixed-sub-bin implementation was smoke-tested at 8 seeds (`100000..100007`),
+3000 simulations, 64 particles, K=0. It produced 176 source groups rather
+than the required 256: EARLY coverage was 104/128 bins and LATE coverage was
+72/128 bins. There were zero source replay failures, invariant failures,
+replay explosions, structure violations, mass violations, and duplicate bins;
+all selected groups were `fightIdx=0`, `decIdx=0`, `rootCarried=0`,
+`reuseGeneration=0`, and `reuseSearchCount=-1`. The missing bins were genuine
+absence of eligible frontierType-0 callbacks in those age bins, not tree reuse
+contamination. The smoke is therefore implementation-invalid/incomplete and
+has no scientific interpretation.
+
+A matched 2-seed OFF-vs-age check (`100000..100001`, 3000 simulations) passed:
+committed action fingerprints and run outcomes were identical. Scientific
+seeds 0..15 were not run.
+
+The initial fixed-sub-bin implementation and its incomplete smoke are
+superseded by this whole-window deferred-probe design; their artifacts remain
+preserved for provenance.
+
+The revised one-seed deferred-probe check produced exactly 16 EARLY and 16
+LATE groups, with complete coverage and zero validity counters. The revised
+8-seed smoke produced 16+16 groups for 7 of 8 seeds; seed `100003` had fewer
+than 16 eligible LATE callbacks and therefore no LATE groups. With expected
+seed coverage made explicit in the analyzer, the smoke remains
+implementation-incomplete and scientific seeds are still unauthorized.
+
+The frozen minimum-8 rerun at 8 smoke seeds produced 200 source groups. EARLY
+counts were 16 for seeds `100000`, `100001`, `100002`, `100004`, `100005`,
+`100006`, and `100007`, but zero for `100003`. LATE counts were 16 for
+`100000`, `100001`, `100004`, and `100007`, 14 for `100002`, 10 for
+`100005`, and zero for `100003` and `100006`. Thus the 8-seed validity gate
+still fails despite zero replay, invariant, explosion, structure, and mass
+failures. Scientific seeds `0..15` remain unrun.
+
+To avoid post hoc seed selection, fixed smoke blocks `100008..100015` and
+`100016..100023` were then run with the frozen minimum-8 configuration. The
+second block had all eight seeds present, 16 EARLY groups per seed, and LATE
+counts of 11, 16, 16, 16, 16, 16, 15, and 16. The third block had 16 EARLY
+groups per seed and LATE counts of 12, 16, 16, 16, 16, 16, 16, and 16. Both
+blocks had zero source replay failures, invariant failures, replay explosions,
+structure violations, mass violations, and duplicate bins; all selected rows
+remained first-fight/first-decision rows.
+
+Across the predetermined cohort `100000..100023`, 22 of 24 seeds satisfy the
+minimum 8..16 groups in both strata. Seeds `100003` and `100006` fail the
+minimum late-support requirement. This is a bounded smoke-coverage result,
+not scientific evidence, and it does not authorize changing the preregistered
+scientific seed set `0..15` or selecting a favorable subset from this cohort.
+
+## Scientific run result
+
+The amended cohort was run exactly once for seeds `0..23` at 3000 simulations,
+64 particles, K=0, and R=4 under the frozen fair Searcher3 age-split
+configuration. The raw CSV is
+`build/particle_posterior_search_age_scientific_24.csv`, SHA256
+`28e7eb24f6516695adf2ecf36cf6edc9ecf417eadf74b98b492c07339bad73f0`, with
+6556 total rows, 725 source groups, and 5831 world rows; runtime was 297.04 s.
+
+Twenty-three of 24 seeds qualify and are included in the primary analysis.
+Seed `12` is excluded because it produced 16 EARLY selected leaves but 0 LATE
+selected leaves; no replay, invariant, explosion, structure, or mass gate
+failed. The remaining qualifying seeds have at least 8 selected leaves in
+each stratum. The qualifying analysis uses 709 source groups from those 23
+seeds. This result satisfies the preregistered interpretability requirement
+of at least 16 qualifying seeds.
+
+## Scientific cohort amendment before data collection
+
+Before scientific data collection, the fixed scientific cohort is amended to
+seeds `0..23` (24 seeds), with no later seed extension or favorable-subset
+selection. Per seed, include the seed only if it has at least 8 selected EARLY
+leaves and at least 8 selected LATE leaves and all replay, invariant, and mass
+validity gates pass. The primary analysis includes all qualifying seeds. The
+interpretability requirement is at least 16 qualifying seeds. The final report
+must give qualifying/24, exact excluded seed IDs and reasons, and EARLY/LATE
+candidate counts for every seed.
