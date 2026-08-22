@@ -97,7 +97,8 @@ Long-run details are in [build and debugging](build-and-debugging.md).
 ### Modification and Git procedure
 
 1. Capture `git status --short` before editing and preserve unrelated changes
-   and ignored data. When an upstream exists, also record
+   and ignored data. Record the current branch, `origin` URL, and baseline
+   `HEAD`; when an upstream exists, also record
    `git log --oneline @{upstream}..HEAD`.
 2. Read the routed KB page, implementation, and focused tests. State the
    behavioral success criterion and cheapest proving check. Ask when a material
@@ -107,11 +108,26 @@ Long-run details are in [build and debugging](build-and-debugging.md).
    affected translation units and run focused checks before broader checks.
 4. Inspect `git diff --check`, the complete diff, status, paths, symbols, and
    generated artifacts. Stage only task-scoped files.
-5. A changed handoff normally creates one focused commit. Before a plain
-   `git push`, compare `@{upstream}..HEAD` with the recorded starting set. Do
-   not push pre-existing ahead commits without explicit authorization; do not
-   invent an upstream. Never force-push, rewrite history, delete branches, or
-   push a remote/refspec. Do not create an empty commit for read-only work.
+5. A changed handoff normally creates one focused commit. Before publishing,
+   compare the committed range with the recorded baseline and confirm that
+   only task-scoped commits would be sent. If the current task created a new,
+   non-`main` branch with no upstream, the agent may establish exactly
+   `origin/<current-branch>` with `git push --set-upstream origin HEAD` only
+   after all of the following are true: implementation and focused
+   verification succeeded; the task changes are committed; `origin` is the
+   intended remote; no unrelated pre-existing local commits would be
+   published; and the remote branch is absent or has no unexpected/unrelated
+   history. Otherwise, stop and report the push blocker. Once an upstream
+   exists, use plain `git push`. Never force-push, rewrite history, delete
+   branches, push to/from `main`, or enable Git's global `autoSetupRemote`.
+   Do not create an empty commit for read-only work.
+
+6. For nontrivial successful branch work, the default completion is focused
+   commit, permitted push, and creation or update of a draft pull request when
+   the repository's PR workflow supports it. Keep the existing PR-centered
+   workflow-v2 semantics: `main` receives changes through a pull request after
+   the authoritative CI check passes; do not merge, approve, or bypass that
+   review path automatically.
 
 ### Recording and documentation
 

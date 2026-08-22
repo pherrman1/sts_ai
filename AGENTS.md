@@ -72,7 +72,8 @@ routing.
   generation without explicit authorization. RepoWise dead-code results are
   hypotheses, not deletion authority.
 - Stage only task-scoped changes. Never rewrite history, force-push, delete
-  branches, or push a remote/refspec. Follow the commit/push procedure in the
+  branches, or push from `main`. After successful verification and commit,
+  follow the controlled task-branch first-push and PR procedure in the
   workflow page; an explicit user instruction not to commit or push overrides
   it.
 

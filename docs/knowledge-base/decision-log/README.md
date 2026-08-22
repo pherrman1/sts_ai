@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-22 | [`2026-08-22-controlled-task-branch-push.md`](2026-08-22-controlled-task-branch-push.md) | Allow a guarded first push for newly created task branches and default successful nontrivial work to commit, push, and draft PR while preserving PR-centered workflow-v2 protections. |
 | 2026-08-15 | [`2026-08-15-ai-rng-sensitivity-matched-replication.md`](2026-08-15-ai-rng-sensitivity-matched-replication.md) | Corrected the invalid matched AI_RNG replication record with a genuine belief-OFF/V4 run; controls passed and decision sensitivity recurred across multiple seeds/encounters. |
 | 2026-08-15 | [`2026-08-15-s3-ai-rng-live-rejuvenation.md`](2026-08-15-s3-ai-rng-live-rejuvenation.md) | Implemented opt-in one-attempt-per-combat particle-lineage live placebo/AI_RNG rejuvenation; focused checks pass, but the 8-seed AI implementation/control arm is incomplete and the scientific gate is not started. |
 | 2026-08-15 | [`2026-08-15-s3-rand64-prior-sampler.md`](2026-08-15-s3-rand64-prior-sampler.md) | Confirmed and corrected the biased Searcher3 hidden-RNG prior word construction; preserved 24 engine draws for 12 seed words, with no retrospective reinterpretation of historical experiments. |
