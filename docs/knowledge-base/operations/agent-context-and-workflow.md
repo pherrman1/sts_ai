@@ -205,10 +205,8 @@ rewrite earlier entries. Promote stable evidence-backed rationale to
 The concise root contract cannot enumerate subsystem-specific facts. `CODE_MAP`
 and the technical pages above must be consulted before changing a subsystem.
 Codex searches must honor the focused-context exclusions above and normal Git
-ignore boundaries. `.clineignore` remains temporarily for Cline compatibility;
-it is not a Codex security boundary. Tracked deployable models, source,
-maintained docs, tests, and recorded experiment evidence remain available when
-the task requires them.
+ignore boundaries. Tracked deployable models, source, maintained docs, tests,
+and recorded experiment evidence remain available when the task requires them.
 
 ## Open questions
 
@@ -221,77 +219,39 @@ relocation audit rather than silently deleting an instruction.
 
 Repository-scoped Codex defaults live in `.codex/config.toml`. They select the
 `workspace-write` sandbox, retain approval-on-request, disable sandboxed network
-access, and configure Serena plus RepoWise over local stdio. Codex must be
-launched with this Git worktree as its root so project configuration, skills,
-and worktree-relative tool routing agree.
+access, and configure Serena over local stdio. Serena detects the active project
+from the process working directory. Codex must be launched with this Git
+worktree as its root so project configuration, skills, and worktree-relative
+tool routing agree.
 
-The Codex migration does not attach the Cline hook wrappers or
-`tools/agent/cline_guardrails.py` to Codex. That policy consumes Cline-specific
-JSON and emits Cline-specific cancellation responses; treating it as a Codex
-hook without an adapter would create a false enforcement claim. Until a tested
-Codex hook adapter is added, the mechanical execution boundary for seeded game
-commands is `tools/seed_guard.sh`, while sandboxing, approvals, `AGENTS.md`, and
-the completion checks below provide the remaining layers. Never use
-`--dangerously-bypass-approvals-and-sandbox` for repository work.
+Repository-scoped RepoWise MCP is intentionally not configured. RepoWise 0.42.0
+detects an ancestor `.repowise-workspace.yaml` even when started with an exact
+repository path; an unregistered linked worktree then falls back to the
+workspace's primary alias. RepoWise therefore remains an opt-in, manually
+routed advisory tool. Before relying on it, verify that its reported absolute
+repository path exactly matches `git rev-parse --show-toplevel`. If exact
+routing cannot be established, or the worktree's ignored index is absent or
+stale, skip RepoWise and use Git, `rg`, and focused reads.
+
+No repository Codex hook adapter is configured. The mechanical execution
+boundary for seeded game commands is `tools/seed_guard.sh`, while sandboxing,
+approvals, `AGENTS.md`, and the completion checks below provide the remaining
+layers. Never use `--dangerously-bypass-approvals-and-sandbox` for repository
+work.
 
 Before completion, run the cheapest relevant tests plus `git diff --check`,
 inspect the complete diff and untracked files, and report checks that were not
 run. C++/CMake changes require focused build/test verification; GitHub Actions
 Linux GCC remains the authoritative repository check.
 
-### Cline compatibility during migration
+### Legacy command-policy evaluation fixture
 
-Legacy repository-owned hooks live in `.clinerules/hooks/`. The extensionless
-`TaskStart`, `PreToolUse`, and `TaskComplete` files are the sole entry points
-(removed 2026-08-14: the former `.ps1` Windows wrappers were deleted because
-Cline 4.1.8 executes `.ps1` hooks through `pwsh` even on Linux, and `pwsh` is
-absent here, so every hook event aborted with `spawn pwsh ENOENT` — see the
-decision log). All wrappers delegate to the same stdlib-only
-`tools/agent/cline_guardrails.py` policy
-implementation. Cline's current hook protocol supplies JSON on stdin and
-expects one JSON object on stdout; diagnostics are written to stderr.
-
-`TaskStart` records the task ID, baseline `HEAD`, and branch in a task-specific,
-hashed Git-local untracked path resolved by `git rev-parse --git-path`.
-`PreToolUse` mechanically cancels clear hazards: destructive Git history or
-working-tree operations, force pushes and pushes to `main`, pushes from
-`main`, broad process termination and privilege escalation, recursive file
-deletion, direct execution of the `one_combat` binary (including through
-argv-forwarding wrappers such as `env`, `time`, `nohup`, `nice`, `setsid`,
-`command`, and `ionice`) or of `check_replay.py` outside
-`tools/seed_guard.sh`, and normal project-file edit tools while on `main`.
-Merely mentioning `one_combat` as an argument (for example
-`cmake --build build --target one_combat` or `rg one_combat CMakeLists.txt`)
-is allowed; only executing the binary requires `tools/seed_guard.sh`.
-Read/search tools, normal read-only Git commands, builds, CTest, and
-seed-guard-wrapped commands remain available. Other shell commands remain
-approval-controlled; this hook is intentionally conservative rather than a
-complete shell security model.
-
-Before `attempt_completion` or `submit_and_exit`, `PreToolUse` validates the
-baseline-to-HEAD committed diff, staged and unstaged diffs, and relevant
-untracked files. It runs `git diff --check`, Python syntax checks, `bash -n`
-for maintained shell files when Bash is available, and standard-library JSON
-parsing. Failures cancel the completion tool. C++/header/CMake changes never
-launch a full build. A reminder is returned where the Cline runtime preserves
-PreToolUse context, but it is not guaranteed to be displayed; the PR Linux GCC
-check remains authoritative. Markdown-only changes remain cheap.
-
-`TaskComplete` is not a blocking validation gate in the current Cline
-integration. It only removes the recorded baseline state as best-effort
-cleanup and returns an allow response.
-
-To enable or diagnose hooks, ensure the extensionless Linux/macOS wrappers are
-executable (`chmod +x .clinerules/hooks/PreToolUse
-.clinerules/hooks/TaskComplete`) and pipe synthetic JSON into them. If a safe
-command is falsely blocked, inspect the stderr diagnostic and reproduce the
-smallest synthetic input locally; do not weaken the hook by adding a broad path
-allowlist. Ask the user to perform the one-off operation manually if needed.
-
-GitHub Actions CI is the authoritative repository verification check. Changes
-should reach `main` through a pull request only after the Linux GCC check
-passes. Branch-protection enforcement is not currently available for this
-private repository on its GitHub plan.
+`tools/agent/cline_guardrails.py` and its focused tests remain because the
+model-agnostic `guardrail-command-policy` coding-agent evaluation task invokes
+them and CI runs the evaluator tests. They are not connected to Codex or to any
+active repository hook and must not be described as runtime enforcement. The
+retired runtime configuration and its historical rationale remain available in
+the dated decision records.
 
 ## Relevant code
 
@@ -300,5 +260,6 @@ private repository on its GitHub plan.
 - `.agents/skills/research-experiment/SKILL.md`
 - `.codex/config.toml`
 - `tools/seed_guard.sh`
-- `.gitignore`; `.clineignore`
+- `tools/agent/eval.py`; `tools/agent/cline_guardrails.py`
+- `.gitignore`
 - `docs/knowledge-base/CODE_MAP.md`; `docs/knowledge-base/README.md`
