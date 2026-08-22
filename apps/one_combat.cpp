@@ -2697,6 +2697,13 @@ struct LeafRefGroupKeyHash {
     }
 };
 
+struct ParticlePosteriorAgeCandidate {
+    int stratum = -1;
+    int ordinal = -1;
+    BattleContext state;
+    search::S3LeafDiagnostic diagnostic;
+};
+
 struct LeafDiagCtx {
     std::uint64_t seed = 0;
     int fightIdx = 0, floor = 0, act = 0;
@@ -2717,6 +2724,8 @@ struct LeafDiagCtx {
     int particlePosteriorGroups = 0;
     std::uint64_t particlePosteriorSourceLeafSeq = 0;
     bool particlePosteriorAgeBins[2][16]{};
+    std::vector<ParticlePosteriorAgeCandidate> particlePosteriorAgeCandidates[2];
+    std::vector<int> particlePosteriorAgeSelected[2];
     std::string actionFingerprint;
     void init(std::uint64_t sd) {
         seed = sd; fightIdx = 0; floor = 0; act = 0; encounter.clear(); decIdx = 0;
@@ -2734,6 +2743,8 @@ struct LeafDiagCtx {
         particlePosteriorSourceLeafSeq = 0;
         for (auto &stratum : particlePosteriorAgeBins)
             for (bool &seen : stratum) seen = false;
+        for (auto &candidates : particlePosteriorAgeCandidates) candidates.clear();
+        for (auto &ordinals : particlePosteriorAgeSelected) ordinals.clear();
         actionFingerprint.clear();
     }
 };
@@ -3193,6 +3204,50 @@ static void writeReplayDebugRow(const search::S3LeafDiagnostic &d,
         << d.reuseGeneration << ',' << hiddenBefore << ",\"" << semanticDetail << "\"\n";
 }
 
+static int particlePosteriorAgeStratumForOrdinal(int ordinal) {
+    if (ordinal >= g_particlePosteriorAgeEarlyStart
+        && ordinal <= g_particlePosteriorAgeEarlyEnd) return 0;
+    if (ordinal >= g_particlePosteriorAgeLateStart
+        && ordinal <= g_particlePosteriorAgeLateEnd) return 1;
+    return -1;
+}
+
+static void particlePosteriorAgeCaptureOnLeafQuery(
+    const search::S3LeafDiagnostic &d) {
+    if (d.frontierType != 0 || t_ld.fightIdx != 0 || t_ld.decIdx != 0) return;
+    const int stratum = particlePosteriorAgeStratumForOrdinal(
+        d.searchSimulationOrdinal);
+    if (stratum < 0) return;
+    auto &candidates = t_ld.particlePosteriorAgeCandidates[stratum];
+    if (!candidates.empty() && candidates.back().ordinal == d.searchSimulationOrdinal)
+        return;
+    ParticlePosteriorAgeCandidate candidate;
+    candidate.stratum = stratum;
+    candidate.ordinal = d.searchSimulationOrdinal;
+    candidate.state = *d.bc;
+    candidate.diagnostic = d;
+    candidates.push_back(std::move(candidate));
+}
+
+static std::vector<int> particlePosteriorAgeSelectEvenly(
+    const std::vector<ParticlePosteriorAgeCandidate> &candidateRows) {
+    std::vector<int> candidates;
+    candidates.reserve(candidateRows.size());
+    for (const auto &candidate : candidateRows) candidates.push_back(candidate.ordinal);
+    std::sort(candidates.begin(), candidates.end());
+    candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());
+    std::vector<int> selected;
+    if (candidates.size() < 16) return selected;
+    selected.reserve(16);
+    for (int rank = 0; rank < 16; ++rank) {
+        const size_t index = std::min(
+            candidates.size() - 1,
+            (static_cast<size_t>(2 * rank + 1) * candidates.size()) / 32);
+        selected.push_back(candidates[index]);
+    }
+    return selected;
+}
+
 static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
     if (g_particlePosteriorProbeFile.empty() || !d.searcher || !d.bc) return;
     if (d.frontierType != 0) return;   // actual S3 frontier leaves only
@@ -3200,23 +3255,15 @@ static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d)
     int ageBin = -1;
     if (g_particlePosteriorAgeSplit) {
         if (t_ld.fightIdx != 0 || t_ld.decIdx != 0) return;
-        const auto locate = [](int ordinal, int start, int end) {
-            if (ordinal < start || ordinal > end) return -1;
-            const int width = end - start + 1;
-            return std::min(15, ((ordinal - start) * 16) / width);
-        };
-        ageBin = locate(d.searchSimulationOrdinal,
-                        g_particlePosteriorAgeEarlyStart,
-                        g_particlePosteriorAgeEarlyEnd);
-        if (ageBin >= 0) ageStratum = 0;
-        else {
-            ageBin = locate(d.searchSimulationOrdinal,
-                            g_particlePosteriorAgeLateStart,
-                            g_particlePosteriorAgeLateEnd);
-            if (ageBin >= 0) ageStratum = 1;
-        }
-        if (ageStratum < 0 || ageBin >= 16
-            || t_ld.particlePosteriorAgeBins[ageStratum][ageBin]) return;
+        ageStratum = particlePosteriorAgeStratumForOrdinal(
+            d.searchSimulationOrdinal);
+        if (ageStratum < 0) return;
+        const auto &selected = t_ld.particlePosteriorAgeSelected[ageStratum];
+        const auto it = std::find(selected.begin(), selected.end(),
+                                  d.searchSimulationOrdinal);
+        if (it == selected.end()) return;
+        ageBin = static_cast<int>(it - selected.begin());
+        if (ageBin >= 16 || t_ld.particlePosteriorAgeBins[ageStratum][ageBin]) return;
     } else if (g_particlePosteriorProbeMaxGroups >= 0
                && t_ld.particlePosteriorGroups >= g_particlePosteriorProbeMaxGroups) return;
     const std::uint64_t sourceLeafId = ++t_ld.particlePosteriorSourceLeafSeq;
@@ -7725,12 +7772,38 @@ static void recordPosteriorSearchFingerprint(
         const auto count = s3.root.edges[i].child.simulationCount;
         if (count > visits) { visits = count; best = i; }
     }
+    const int decision = t_ld.decIdx;
     std::ostringstream row;
-    row << t_ld.seed << ':' << t_ld.decIdx++ << ':'
+    row << t_ld.seed << ':' << decision << ':'
         << sts::CombatObservation::fromBattleContext(bc).visibleHash() << ':'
         << (best >= 0 ? s3.root.edges[best].action.bits : 0xffffffffu) << ':'
         << visits << ';';
     t_ld.actionFingerprint += row.str();
+
+    if (g_particlePosteriorAgeSplit && t_ld.fightIdx == 0 && decision == 0) {
+        for (int stratum = 0; stratum < 2; ++stratum) {
+            t_ld.particlePosteriorAgeSelected[stratum] =
+                particlePosteriorAgeSelectEvenly(
+                    t_ld.particlePosteriorAgeCandidates[stratum]);
+            for (int rank = 0; rank < (int)t_ld.particlePosteriorAgeSelected[stratum].size(); ++rank) {
+                const int ordinal = t_ld.particlePosteriorAgeSelected[stratum][rank];
+                auto it = std::find_if(
+                    t_ld.particlePosteriorAgeCandidates[stratum].begin(),
+                    t_ld.particlePosteriorAgeCandidates[stratum].end(),
+                    [ordinal](const ParticlePosteriorAgeCandidate &candidate) {
+                        return candidate.ordinal == ordinal;
+                    });
+                if (it == t_ld.particlePosteriorAgeCandidates[stratum].end()) continue;
+                auto diagnostic = it->diagnostic;
+                diagnostic.searcher = const_cast<search::BattleScumSearcher3 *>(&s3);
+                diagnostic.bc = &it->state;
+                particlePosteriorProbeOnLeafQuery(diagnostic);
+            }
+        }
+        t_ld.particlePosteriorAgeCandidates[0].clear();
+        t_ld.particlePosteriorAgeCandidates[1].clear();
+    }
+    ++t_ld.decIdx;
 }
 
 // Phase-1b driver. Identical run regime to particle_leaf_probe (forced
@@ -7760,11 +7833,25 @@ static void particlePosteriorProbe(int nSeeds, int sims, int asc,
     long long rows = 0;
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
-        search::g_onS3LeafQuery = particlePosteriorProbeOnLeafQuery;
-        search::g_s3LeafTraceActions = true;
-        search::g_onSearchComplete3 = recordPosteriorSearchFingerprint;
-        t_ld.init((std::uint64_t)(seedOffset + s));
-        const RunResult r = runFullRunOOC((std::uint64_t)(seedOffset + s), sims, asc, false, false);
+        const std::uint64_t seed = static_cast<std::uint64_t>(seedOffset + s);
+        RunResult r;
+        if (g_particlePosteriorAgeSplit) {
+            // Capture lightweight leaf snapshots during the single actual
+            // search. At search completion, select evenly spaced ordinals and
+            // run the expensive posterior replay on those stored snapshots
+            // while the same Searcher3 instance is still alive.
+            t_ld.init(seed);
+            search::g_onS3LeafQuery = particlePosteriorAgeCaptureOnLeafQuery;
+            search::g_s3LeafTraceActions = true;
+            search::g_onSearchComplete3 = recordPosteriorSearchFingerprint;
+            r = runFullRunOOC(seed, sims, asc, false, false);
+        } else {
+            t_ld.init(seed);
+            search::g_onS3LeafQuery = particlePosteriorProbeOnLeafQuery;
+            search::g_s3LeafTraceActions = true;
+            search::g_onSearchComplete3 = recordPosteriorSearchFingerprint;
+            r = runFullRunOOC(seed, sims, asc, false, false);
+        }
         const std::string out = particlePosteriorProbeSeedCsv();
         search::g_onS3LeafQuery = nullptr;
         search::g_s3LeafTraceActions = false;
