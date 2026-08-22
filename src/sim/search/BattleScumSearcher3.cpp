@@ -1805,8 +1805,10 @@ void BattleScumSearcher3::search(int64_t simulations) {
     if (g_s3Crn && !rootCarried && !crnWarmStarted) { warmStartRootCRN(*rootBc); crnWarmStarted = true; }
     if (reuseSearchCount >= 0) ++reuseSearchCount;  // searches executed since last promotion
     auto t0 = std::chrono::steady_clock::now();
-    for (int64_t i = 0; i < simulations; ++i)
+    for (int64_t i = 0; i < simulations; ++i) {
+        searchSimulationOrdinal = static_cast<int>(i + 1);
         step();
+    }
     lastSearchSimulations = static_cast<int>(simulations);
     lastSearchCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     diag.simSeconds += lastSearchCpuMs / 1000.0;
@@ -1818,8 +1820,11 @@ void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
     if (g_s3Crn && !rootCarried && !crnWarmStarted) { warmStartRootCRN(*rootBc); crnWarmStarted = true; }
     if (reuseSearchCount >= 0) ++reuseSearchCount;  // searches executed since last promotion
     auto t0 = std::chrono::steady_clock::now();
-    while (root.simulationCount < targetSimulations)
+    int ordinal = 0;
+    while (root.simulationCount < targetSimulations) {
+        searchSimulationOrdinal = ++ordinal;
         step();
+    }
     lastSearchSimulations = static_cast<int>(root.simulationCount);
     lastSearchCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     diag.simSeconds += lastSearchCpuMs / 1000.0;
@@ -2185,6 +2190,7 @@ void BattleScumSearcher3::step() {
                 diagnostic.rootCarried = rootCarried;
                 diagnostic.reuseGeneration = reuseGeneration;
                 diagnostic.reuseSearchCount = reuseSearchCount;
+                diagnostic.searchSimulationOrdinal = searchSimulationOrdinal;
                 diagnostic.outcome = state.outcome;
                 diagnostic.actionCheckpoints = diagnosticActionCheckpoints;
                 g_onS3LeafQuery(diagnostic);
@@ -2570,6 +2576,7 @@ void BattleScumSearcher3::step() {
                 diagnostic.rootCarried = rootCarried;
                 diagnostic.reuseGeneration = reuseGeneration;
                 diagnostic.reuseSearchCount = reuseSearchCount;
+                diagnostic.searchSimulationOrdinal = searchSimulationOrdinal;
                 diagnostic.outcome = state.outcome;
                 diagnostic.actionCheckpoints = diagnosticActionCheckpoints;
                 g_onS3LeafQuery(diagnostic);
@@ -2626,6 +2633,7 @@ void BattleScumSearcher3::step() {
         diagnostic.rootCarried = rootCarried;
         diagnostic.reuseGeneration = reuseGeneration;
         diagnostic.reuseSearchCount = reuseSearchCount;
+        diagnostic.searchSimulationOrdinal = searchSimulationOrdinal;
         diagnostic.outcome = state.outcome;
         diagnostic.actionCheckpoints = diagnosticActionCheckpoints;
         g_onS3LeafQuery(diagnostic);

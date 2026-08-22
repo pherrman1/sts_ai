@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-22 | [`2026-08-22-phase1b-search-age.md`](2026-08-22-phase1b-search-age.md) | Preregistered the EARLY/LATE Searcher3 search-age diagnostic and paired-seed analysis. |
 | 2026-08-16 | [`2026-08-16-e2-postcombat-runwin-dataset-reuse.md`](2026-08-16-e2-postcombat-runwin-dataset-reuse.md) | E2 dataset reuse, corrected validation-seed bootstrap reindexing, and the limited relationship to the missing §116 counter-aware terminal-evaluator prerequisite. |
 | 2026-08-15 | [`2026-08-15-ai-rng-sensitivity-matched-replication.md`](2026-08-15-ai-rng-sensitivity-matched-replication.md) | Corrected the invalid matched AI_RNG replication record with a genuine belief-OFF/V4 run; controls passed and decision sensitivity recurred across multiple seeds/encounters. |
 | 2026-08-15 | [`2026-08-15-s3-ai-rng-live-rejuvenation.md`](2026-08-15-s3-ai-rng-live-rejuvenation.md) | Implemented opt-in one-attempt-per-combat particle-lineage live placebo/AI_RNG rejuvenation; focused checks pass, but the 8-seed AI implementation/control arm is incomplete and the scientific gate is not started. |

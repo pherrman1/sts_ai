@@ -7,6 +7,9 @@ invalidated, and superseded.
 Historical statements such as "best," "current," "deployed," or "running"
 describe the state at that point in time unless later evidence says otherwise.
 
+The 2026-08-22 Phase-1b Search-Age preregistration is recorded in
+[`docs/knowledge-base/decision-log/2026-08-22-phase1b-search-age.md`](docs/knowledge-base/decision-log/2026-08-22-phase1b-search-age.md).
+
 ## Where to find current truth
 
 - **Current baselines** — qualified executable configurations and benchmark

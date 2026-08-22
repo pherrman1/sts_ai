@@ -81,6 +81,7 @@ class BattleScumSearcher3;
         bool rootCarried = false;
         int reuseGeneration = 0;
         int reuseSearchCount = -1;
+        int searchSimulationOrdinal = 0;
         Outcome outcome = Outcome::UNDECIDED;
         std::vector<S3LeafActionCheckpoint> actionCheckpoints;
         S3SourceReplayDebug sourceReplayDebug;
@@ -255,6 +256,7 @@ class BattleScumSearcher3;
         // ── Tree reuse counters & diagnostics ─────────────────────────
         int reuseGeneration = 0;         // number of times advanceRoot carried the tree (0 = fresh)
         int reuseSearchCount = -1;       // -1 = fresh/never promoted; >=0 = promoted, searches executed since last promotion
+        int searchSimulationOrdinal = 0; // 1-based ordinal in the active search invocation
         int retainedNodeCount = 0;       // nodes retained in the last advanceRoot
         int reuseGenerationDepth = 0;    // tree depth at the time advanceRoot was called
         int obsMismatchCount = 0;        // visits where the current state's visibleHash != node.obsHash

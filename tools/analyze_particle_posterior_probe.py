@@ -126,6 +126,25 @@ def seed_bootstrap(seed_values, stat_fn, iters, rng_seed=12345):
     return lo, hi
 
 
+def paired_bootstrap(seed_values, iters, rng_seed=12345):
+    """Bootstrap paired per-seed values; seed_values maps seed -> (early, late)."""
+    seeds = sorted(seed_values)
+    rng = random.Random(rng_seed)
+    means = []
+    fracs = []
+    for _ in range(iters):
+        sample = [rng.choice(seeds) for _ in seeds]
+        deltas = [seed_values[s][1][0] - seed_values[s][0][0] for s in sample]
+        frac_deltas = [seed_values[s][1][1] - seed_values[s][0][1] for s in sample]
+        means.append(mean(deltas))
+        fracs.append(mean(frac_deltas))
+    means.sort(); fracs.sort()
+    lo = int(0.025 * len(means)); hi = min(len(means) - 1, int(0.975 * len(means)))
+    return {"delta_mean_range": (mean(means), (means[lo], means[hi])),
+            "delta_frac_gt5": (mean(fracs), (fracs[lo], fracs[hi])),
+            "paired_seeds": len(seeds), "iters": iters}
+
+
 def analyze(rows, bootstrap_iters=10000):
     groups = build_groups(rows)
     all_groups = []          # (seed, meta, worlds) for every sampled group
@@ -227,6 +246,89 @@ def analyze(rows, bootstrap_iters=10000):
         n = int(n)
         return "0-5" if n <= 5 else ("6-10" if n <= 10 else ("11-20" if n <= 20 else "21+"))
 
+    def stratum_summary(subset):
+        ranges = prevalences(subset, "controlledTarget")
+        ranges["mass_stats"] = mass_stats(subset, "controlledTarget")
+        if not subset:
+            ranges["seed_bootstrap"] = {"frac_range_gt5_ci95": (float("nan"), float("nan")),
+                                         "mean_range_ci95": (float("nan"), float("nan")),
+                                         "iters": bootstrap_iters}
+            return ranges
+        seed_values = defaultdict(list)
+        for s, _, worlds in subset:
+            seed_values[s].append(group_range(worlds, "controlledTarget"))
+        ranges["seed_bootstrap"] = {
+            "frac_range_gt5_ci95": seed_bootstrap(
+                seed_values, lambda xs: (sum(x > 5 for x in xs) / len(xs)) if xs else float("nan"), bootstrap_iters),
+            "mean_range_ci95": seed_bootstrap(seed_values, mean, bootstrap_iters),
+            "iters": bootstrap_iters,
+        }
+        return ranges
+
+    def composition(subset):
+        metas_local = [m for _, m, _ in subset if m is not None]
+        def vals(name): return [_num(m, name) for m in metas_local]
+        draw = vals("drawPileSize")
+        compat = vals("uniqueCompatibleStates")
+        return {
+            "treeDepth": {"mean": mean(vals("treeDepth")), "median": median(vals("treeDepth"))},
+            "turn": {"mean": mean(vals("turn")), "median": median(vals("turn"))},
+            "drawPileSize": {"mean": mean(draw), "median": median(draw),
+                              "distribution": {str(int(k)): draw.count(k) for k in sorted(set(draw))}},
+            "compatibleParticles": {"mean": mean(vals("replayCompatibleParticles")),
+                                     "median": median(vals("replayCompatibleParticles"))},
+            "fraction_groups_ge2": sum(x >= 2 for x in compat) / len(compat) if compat else float("nan"),
+            "fraction_groups_ge4": sum(x >= 4 for x in compat) / len(compat) if compat else float("nan"),
+            "fraction_groups_ge8": sum(x >= 8 for x in compat) / len(compat) if compat else float("nan"),
+            "mean_compatible_mass": mean(vals("compatibleMass")),
+        }
+
+    strata = {}
+    for name in ("EARLY", "LATE"):
+        subset = [(s, m, w) for s, m, w in all_groups
+                  if m is not None and m.get("ageStratum") == name]
+        strata[name] = {"controlledTarget": stratum_summary(subset),
+                        "fullParticleTarget": prevalences(subset, "target"),
+                        "composition": composition(subset),
+                        "groups": len(subset)}
+
+    paired = {}
+    early = {s: [] for s, _, _ in all_groups}
+    late = {s: [] for s, _, _ in all_groups}
+    for s, m, w in all_groups:
+        if m is None: continue
+        target = early if m.get("ageStratum") == "EARLY" else late if m.get("ageStratum") == "LATE" else None
+        if target is not None: target[s].append(group_range(w, "controlledTarget"))
+    paired_values = {}
+    for s in sorted(set(early) & set(late)):
+        if early[s] and late[s]:
+            e = (mean(early[s]), sum(x > 5 for x in early[s]) / len(early[s]))
+            l = (mean(late[s]), sum(x > 5 for x in late[s]) / len(late[s]))
+            paired_values[s] = (e, l)
+    if paired_values:
+        paired = paired_bootstrap(paired_values, bootstrap_iters, rng_seed=67890)
+        paired["per_seed"] = {s: {"early_mean_range": v[0][0], "late_mean_range": v[1][0],
+                                  "early_frac_gt5": v[0][1], "late_frac_gt5": v[1][1],
+                                  "delta_mean_range": v[1][0] - v[0][0],
+                                  "delta_frac_gt5": v[1][1] - v[0][1]}
+                               for s, v in paired_values.items()}
+
+    expected_bins = set(range(16))
+    coverage = {}
+    for name in ("EARLY", "LATE"):
+        by_seed = defaultdict(list)
+        for s, m, _ in all_groups:
+            if m is not None and m.get("ageStratum") == name:
+                by_seed[s].append(int(_num(m, "ageBin")))
+        duplicates = sum(len(bins) - len(set(bins)) for bins in by_seed.values())
+        missing = {s: sorted(expected_bins - set(bins)) for s, bins in by_seed.items() if set(bins) != expected_bins}
+        ages = [_num(m, "searchSimulation") for _, m, _ in all_groups
+                if m is not None and m.get("ageStratum") == name]
+        coverage[name] = {"groups": len(ages), "bins_per_seed": {s: len(v) for s, v in by_seed.items()},
+                          "missing_bins": missing, "duplicate_bins": duplicates,
+                          "min_searchSimulation": min(ages) if ages else None,
+                          "max_searchSimulation": max(ages) if ages else None}
+
     metas = [m for _, m, _ in all_groups if m is not None]
     n_all = len(all_groups)
     return {
@@ -269,6 +371,28 @@ def analyze(rows, bootstrap_iters=10000):
             "by_depth_bin": stratify("treeDepth", all_groups, depth_bin),
             "by_encounter": stratify("encounterName", all_groups, str),
         },
+        "age_strata": strata,
+        "paired_search_age": paired,
+        "coverage": coverage,
+        "validity": {
+            "source_replay_failures": sum(1 for m in metas if _num(m, "sourceParticleReplayOk") == 0),
+            "invariant_failures": sum(1 for m in metas if _num(m, "invariantOk") == 0),
+            "replay_explosions": sum(_num(m, "replayExplosion") for m in metas),
+            "mass_violations": 0,
+            "structure_violations": dict(violations),
+            "complete_age_coverage": all(not x["missing_bins"] and x["duplicate_bins"] == 0 for x in coverage.values()) if coverage else False,
+            "first_fight_decision_only": all(_num(m, "fightIdx") == 0 and _num(m, "decIdx") == 0 for m in metas),
+        },
+        "late_practical_gate": {
+            "fraction_gt5": strata.get("LATE", {}).get("controlledTarget", {}).get("frac_range_gt5"),
+            "fraction_gt5_seed_bootstrap_lower95": (strata.get("LATE", {}).get("controlledTarget", {})
+                                                     .get("seed_bootstrap", {}).get("frac_range_gt5_ci95", (float("nan"), float("nan")))[0]),
+            "equal_group_mean_range": strata.get("LATE", {}).get("controlledTarget", {}).get("mean_range"),
+            "pass": bool(strata.get("LATE", {}).get("controlledTarget", {}).get("frac_range_gt5", 0) >= 0.10
+                         and strata.get("LATE", {}).get("controlledTarget", {}).get("seed_bootstrap", {})
+                             .get("frac_range_gt5_ci95", (0, 0))[0] > 0.05
+                         and strata.get("LATE", {}).get("controlledTarget", {}).get("mean_range", 0) >= 3),
+        },
         "seeds": len({s for s, _, _ in all_groups}),
         "groups_total": n_all,
     }
@@ -280,7 +404,7 @@ GROUP_FIELDS = ("rowType,seed,fightIdx,decIdx,sourceLeafId,obsHash,treeDepth,enc
                 "evaluatedMass,sourceParticleIndex,sourceParticleReplayOk,sourceParticleFallback,"
                 "groupEligible,invariantOk,replayFailure,semanticReplayFailures,actionIllegalFailures,"
                 "intermediateObservationMismatches,intermediateOutcomeMismatches,finalObservationMismatches,"
-                "drawPileMismatches,rootCarried,reuseGeneration,reuseSearchCount,candidateParticleIndex,"
+                "drawPileMismatches,rootCarried,reuseGeneration,reuseSearchCount,searchSimulation,ageStratum,ageBin,candidateParticleIndex,"
                 "candidateWeight,candidateIsSource,dedupOrdinal,semanticBranchesCreated,extraSemanticBranches,maxSurvivingBranches,"
                 "branchesCollapsed,replayExplosion,rngSignature,drawOrder,terminal,target,"
                 "fullTarget,controlledTarget,controlledTargetStd,rolloutSteps")
