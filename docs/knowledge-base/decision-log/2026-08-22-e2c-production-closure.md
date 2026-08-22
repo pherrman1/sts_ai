@@ -24,6 +24,6 @@ Full evidence is in `docs/experiments/ledger-06.md`. The result supports an
 offline RAW-terminal predictor; it does not establish online MCTS action or
 win-rate improvement. The production dataset is not regenerated.
 
-The changes are local, uncommitted, and unpushed pending user review. A future
+The changes are committed and pushed on the reviewed branch. A future
 provenance redesign may separately report tracked-source dirtiness and
 untracked runtime artifacts.
