@@ -1165,7 +1165,7 @@ int testLiveRejuvenationAttemptGate() {
     for (size_t i = 0; i < fixture.current.particles.size(); ++i)
         if (i != 0 && static_cast<int>(i) != childSlot
             && fixture.current.particles[i].weight > 0.0) onlySourceAndChildPositive = false;
-    std::ifstream telemetry("/tmp/live_rejuv_fixture.csv");
+    std::ifstream telemetry(singleFile);
     std::string header, row;
     std::getline(telemetry, header);
     bool telemetryAi = false, telemetryPlacebo = false;
@@ -1178,8 +1178,10 @@ int testLiveRejuvenationAttemptGate() {
         const int children = std::stoi(fields[13]);
         const int unique = std::stoi(fields[16]);
         if (children <= 0) continue;
-        if (fields[4] == "ai" && unique == children) telemetryAi = true;
-        if (fields[4] == "placebo" && unique == 0) telemetryPlacebo = true;
+        if ((fields[4] == "ai" || fields[4] == "ai1") && unique == children)
+            telemetryAi = true;
+        if ((fields[4] == "placebo" || fields[4] == "placebo1") && unique == 0)
+            telemetryPlacebo = true;
     }
     const bool telemetrySemantics = telemetryAi && telemetryPlacebo;
     bool secondAttempt = false;
