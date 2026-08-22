@@ -85,3 +85,11 @@ LATE groups, with complete coverage and zero validity counters. The revised
 than 16 eligible LATE callbacks and therefore no LATE groups. With expected
 seed coverage made explicit in the analyzer, the smoke remains
 implementation-incomplete and scientific seeds are still unauthorized.
+
+The frozen minimum-8 rerun at 8 smoke seeds produced 200 source groups. EARLY
+counts were 16 for seeds `100000`, `100001`, `100002`, `100004`, `100005`,
+`100006`, and `100007`, but zero for `100003`. LATE counts were 16 for
+`100000`, `100001`, `100004`, and `100007`, 14 for `100002`, 10 for
+`100005`, and zero for `100003` and `100006`. Thus the 8-seed validity gate
+still fails despite zero replay, invariant, explosion, structure, and mass
+failures. Scientific seeds `0..15` remain unrun.
