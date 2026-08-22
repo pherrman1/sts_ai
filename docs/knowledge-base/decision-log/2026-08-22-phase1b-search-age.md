@@ -109,6 +109,23 @@ minimum late-support requirement. This is a bounded smoke-coverage result,
 not scientific evidence, and it does not authorize changing the preregistered
 scientific seed set `0..15` or selecting a favorable subset from this cohort.
 
+## Scientific run result
+
+The amended cohort was run exactly once for seeds `0..23` at 3000 simulations,
+64 particles, K=0, and R=4 under the frozen fair Searcher3 age-split
+configuration. The raw CSV is
+`build/particle_posterior_search_age_scientific_24.csv`, SHA256
+`28e7eb24f6516695adf2ecf36cf6edc9ecf417eadf74b98b492c07339bad73f0`, with
+6556 total rows, 725 source groups, and 5831 world rows; runtime was 297.04 s.
+
+Twenty-three of 24 seeds qualify and are included in the primary analysis.
+Seed `12` is excluded because it produced 16 EARLY selected leaves but 0 LATE
+selected leaves; no replay, invariant, explosion, structure, or mass gate
+failed. The remaining qualifying seeds have at least 8 selected leaves in
+each stratum. The qualifying analysis uses 709 source groups from those 23
+seeds. This result satisfies the preregistered interpretability requirement
+of at least 16 qualifying seeds.
+
 ## Scientific cohort amendment before data collection
 
 Before scientific data collection, the fixed scientific cohort is amended to
