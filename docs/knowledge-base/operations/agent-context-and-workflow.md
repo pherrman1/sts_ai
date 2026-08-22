@@ -1,6 +1,6 @@
 # Agent context and workflow
 
-Last verified: 2026-08-14 against the current working tree.
+Last verified: 2026-08-22 against the current working tree.
 
 ## Purpose
 

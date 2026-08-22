@@ -1,6 +1,6 @@
 # Decision log
 
-Last verified: 2026-08-14 against the current working tree.
+Last verified: 2026-08-22 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one
