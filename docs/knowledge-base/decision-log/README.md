@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-22 | [`2026-08-22-cline-compatibility-retirement.md`](2026-08-22-cline-compatibility-retirement.md) | Retired runtime Cline rollback files after representative Codex evidence, retained the guardrail code only as a live coding-agent evaluation fixture, and made RepoWise fail safely at the exact active worktree instead of selecting a sibling checkout. |
 | 2026-08-22 | [`2026-08-22-ci-gate-follow-up.md`](2026-08-22-ci-gate-follow-up.md) | Reproduced the rejuvenation telemetry failure on current main, corrected the test fixture, and made CI install the locked analysis dependencies; local Debug CTest is 41/41. |
 | 2026-08-22 | [`2026-08-22-e2c-production-closure.md`](2026-08-22-e2c-production-closure.md) | Closed E2c-v2 as SUPPORTED with the `/logs/` provenance exception; fixed Secret Technique/Weapon live-root reconciliation and stopped further collection. |
 | 2026-08-22 | [`2026-08-22-phase1b-search-age.md`](2026-08-22-phase1b-search-age.md) | Preregistered the EARLY/LATE Searcher3 search-age diagnostic and paired-seed analysis. |

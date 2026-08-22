@@ -13,5 +13,5 @@ startup_timeout_sec = 120
 
 [mcp_servers.repowise]
 command = "repowise"
-args = ["mcp", "..", "--transport", "stdio"]
+args = ["mcp", ".", "--transport", "stdio"]
 startup_timeout_sec = 120
