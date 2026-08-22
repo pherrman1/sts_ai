@@ -98,13 +98,14 @@ the build and printed after the build (with `if: always`) for measurement.
 
 `pyproject.toml` and `uv.lock` describe direct dependencies used by maintained
 repository scripts; this repository is not packaged as a Python module. The
-default environment contains only NumPy, which is sufficient for the cheap
-maintained Python CTest checks. Install additional direct-dependency groups
-only for the tooling that needs them:
+default environment contains only NumPy. The Linux GCC CI job additionally
+installs the locked `analysis` extra because CTest includes pandas/SciPy
+self-tests. Install additional direct-dependency groups only for the tooling
+that needs them:
 
 ```bash
 uv sync --locked                         # default: NumPy and stdlib tooling
-uv sync --locked --extra analysis        # pandas, SciPy, scikit-learn
+uv sync --locked --extra analysis        # pandas, SciPy, scikit-learn, XGBoost
 uv sync --locked --extra ml              # PyTorch, XGBoost
 uv sync --locked --extra research        # CatBoost, Optuna
 uv sync --locked --all-extras            # every maintained tooling group
