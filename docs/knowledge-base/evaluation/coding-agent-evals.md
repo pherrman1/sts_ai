@@ -28,8 +28,8 @@ invokes a paid model API.
 ```bash
 python3 tools/agent/eval.py list
 python3 tools/agent/eval.py prepare <task-id>
-# Work on the printed workspace with Cline or another agent.
-python3 tools/agent/eval.py grade <task-id> <workspace> --agent cline --model <label>
+# Work on the printed workspace with Codex or another agent.
+python3 tools/agent/eval.py grade <task-id> <workspace> --agent codex --model <label>
 python3 tools/agent/eval.py self-test
 ```
 
@@ -37,7 +37,7 @@ python3 tools/agent/eval.py self-test
 submodule contents when present, applies the setup mutation, removes `evals/`,
 initializes a fresh Git repository, and commits a clean candidate baseline.
 Runtime workspaces and result records live below `.agent-eval/`, which is
-ignored. A human can point Cline at the printed workspace, give it the printed
+ignored. A human can point Codex at the printed workspace, give it the printed
 public prompt, and grade the workspace afterward.
 
 ## Manifest schema
@@ -74,6 +74,11 @@ the harness does not compare exact patches or reward small diffs.
 
 The C++ and CMake graders configure/build only the required target and run no
 gameplay seed sweep.
+
+The `guardrail-command-policy` task intentionally retains
+`tools/agent/cline_guardrails.py` and its focused tests as an agent-agnostic
+Python maintenance fixture. Those files are not connected to Codex or to an
+active repository hook.
 
 ## Hidden-data boundary
 
