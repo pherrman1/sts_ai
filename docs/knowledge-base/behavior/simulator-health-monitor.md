@@ -1,9 +1,6 @@
 # Simulator health monitor
 
-Last verified: 2026-08-12 against commit `488951e` + the working tree
-(close remaining non-fair S2 zero-progress health-monitor hole: the
-empty-cached-solution branch is now classified immediately rather than
-silently retrying).
+Last verified: 2026-08-22 against the current working tree.
 
 ## Purpose
 
@@ -222,9 +219,19 @@ pre-correction baseline where those states would cycle to the 1000-decision
   checks, pile-count consistency) should join the monitor?
 - Should the monitor eventually gate datagen chunks (fail-fast) rather than
   only reporting?
-- Is `ACTION_SELECTION_FAILED` reachable in the S3 paths under any deployed
-  configuration (stale carried roots with legal live actions), or only via the
-  `g_s3Live=0` ablation? No instance has been observed in smoke so far.
+
+## 2026-08-22 Secret Technique/Weapon correction
+
+The production quarantine audit found 20 seeds with paired
+`ACTION_SELECTION_FAILED` and `UNDECIDED_BATTLE_EXIT` failures at Secret
+Technique/Secret Weapon card selection. Searcher3 root expansion can use a
+hidden particle draw order, while these actions encode raw draw-pile indices;
+the live legal index can therefore be absent from the root edges. The fair and
+non-fair Searcher3 paths now reconcile these sensitive roots against the live
+canonical action enumeration before picking an action. The focused
+`s3_drawpile_reuse_boundary` regression covers a swapped live draw order for
+Secret Technique, Secret Weapon, and Seek. The historical production dataset
+is not regenerated.
 
 ## Relevant code
 
