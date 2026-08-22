@@ -29,3 +29,12 @@ sections. If a decision changes, add a new ADR that states what it supersedes
 and links the historical record; do not rewrite the old ADR or chronological
 entry. Mark the earlier ADR `superseded` only when current evidence establishes
 the replacement.
+
+## Current routing ADRs
+
+- [ADR-0010](0010-codex-chatgpt-agent-workflow.md) defines the ChatGPT/Sol
+  handoff, bounded Codex preflight, evidence-packet review boundary, session
+  continuation rules, optional Serena/RepoWise routing, and reviewed-SHA freeze.
+- [ADR-0008](0008-guarded-cline-serena-repowise-routing.md) is retained as the
+  historical Cline-era routing decision and is superseded by ADR-0010 for
+  harness/routing policy.

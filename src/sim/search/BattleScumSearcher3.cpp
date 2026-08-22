@@ -240,6 +240,7 @@ bool g_vnetCondAct3 = false;
 thread_local std::function<double(const BattleContext &)> g_terminalBonus;
 thread_local std::function<void(const S3LeafDiagnostic &)> g_onS3LeafQuery;
 thread_local bool g_s3LeafQueryAllSites = false;   // frontiergen-only: also fire at the illegal-fallback + depth-cap sites
+thread_local bool g_s3LeafTraceActions = false;    // particle_posterior_probe-only: record per-action semantic checkpoints
 thread_local std::function<void(const BattleContext &, int steps)> g_onRolloutStep;
 
 // Phase 6 PVNet deployment-speed knobs (see header; STS_PVNET_* parse in
@@ -256,10 +257,28 @@ extern double g_vnetAlpha;
 static bool sameCardMultiset(const std::vector<CardInstance> &a,
                              const std::vector<CardInstance> &b) {
     if (a.size() != b.size()) return false;
-    std::vector<CardId> as, bs;
+    // Exact multiset equality over card ids, allocation-free: fixed-size
+    // counts over the dense CardId range. Same identity domain as the previous
+    // sort-and-compare (id only — upgrade state is outside this comparison,
+    // exactly as before; duplicates count per occurrence).
+    std::array<int, sizeof(cardEnumStrings) / sizeof(cardEnumStrings[0])> counts{};
+    for (const auto &c : a) ++counts[static_cast<std::size_t>(c.getId())];
+    for (const auto &c : b)
+        if (--counts[static_cast<std::size_t>(c.getId())] < 0) return false;
+    return true;
+}
+
+// Diagnostic-only identity check. Gameplay particle application intentionally
+// retains the historical CardId-only predicate; posterior-valid diagnostics
+// must also distinguish upgrades, temporary cost, specialData, and
+// freeToPlayOnce.
+static bool sameDiagnosticCardMultiset(const std::vector<CardInstance> &a,
+                                       const std::vector<CardInstance> &b) {
+    if (a.size() != b.size()) return false;
+    std::vector<FullHiddenCardId> as, bs;
     as.reserve(a.size()); bs.reserve(b.size());
-    for (const auto &c : a) as.push_back(c.getId());
-    for (const auto &c : b) bs.push_back(c.getId());
+    for (const auto &c : a) as.emplace_back(c);
+    for (const auto &c : b) bs.emplace_back(c);
     std::sort(as.begin(), as.end());
     std::sort(bs.begin(), bs.end());
     return as == bs;
@@ -303,12 +322,43 @@ static void applyParticleImpl(BattleContext &state,
 
 void BattleScumSearcher3::applyParticle(BattleContext &state,
                                         const HiddenBattleState &particle) {
+    const bool exact = particle.drawPileOrder.size() == state.cards.drawPile.size()
+        && sameCardMultiset(particle.drawPileOrder, state.cards.drawPile);
     applyParticleImpl(state, particle, rng);
+    diagnosticParticleAppliedExactly = exact;
+    diagnosticParticleUsedFallback = !exact;
 }
 
 void applyHiddenState(BattleContext &state, const HiddenBattleState &particle,
                       std::mt19937_64 &fallbackRng) {
     applyParticleImpl(state, particle, fallbackRng);
+}
+
+bool applyHiddenStateExact(BattleContext &state,
+                           const HiddenBattleState &particle) {
+    if (particle.drawPileOrder.size() != state.cards.drawPile.size()
+        || !sameDiagnosticCardMultiset(particle.drawPileOrder, state.cards.drawPile))
+        return false;
+    state.shuffleRng.seed0 = particle.shuffleRngSeed0;
+    state.shuffleRng.seed1 = particle.shuffleRngSeed1;
+    state.shuffleRng.counter = particle.shuffleRngCounter;
+    state.cardRandomRng.seed0 = particle.cardRandomRngSeed0;
+    state.cardRandomRng.seed1 = particle.cardRandomRngSeed1;
+    state.cardRandomRng.counter = particle.cardRandomRngCounter;
+    state.aiRng.seed0 = particle.aiRngSeed0;
+    state.aiRng.seed1 = particle.aiRngSeed1;
+    state.aiRng.counter = particle.aiRngCounter;
+    state.miscRng.seed0 = particle.miscRngSeed0;
+    state.miscRng.seed1 = particle.miscRngSeed1;
+    state.miscRng.counter = particle.miscRngCounter;
+    state.monsterHpRng.seed0 = particle.monsterHpRngSeed0;
+    state.monsterHpRng.seed1 = particle.monsterHpRngSeed1;
+    state.monsterHpRng.counter = particle.monsterHpRngCounter;
+    state.potionRng.seed0 = particle.potionRngSeed0;
+    state.potionRng.seed1 = particle.potionRngSeed1;
+    state.potionRng.counter = particle.potionRngCounter;
+    state.cards.drawPile = particle.drawPileOrder;
+    return true;
 }
 
 bool isDrawPileIndexSensitiveCardSelect(const BattleContext &bc) {
@@ -585,13 +635,18 @@ void BattleScumSearcher3::enableRngExposureDiagnostic(
 }
 
 void BattleScumSearcher3::observeRngExposureAction(const Action &action, BattleContext &state) {
+    BattleContext preState;
+    const bool trace = diagnosticTraceActive;
+    if (trace) preState = state;
     if (!rngExposureEnabled) {
         action.execute(state);
+        if (trace) recordDiagnosticAction(action, preState, state);
         return;
     }
     const int index = rngExposureActionIndex;
     if (index == 0) rngExposureCurrentRootActionBits = action.bits;
     action.execute(state);
+    if (trace) recordDiagnosticAction(action, preState, state);
     ++rngExposureActionIndex;
     const int aiDelta = state.aiRng.counter - rngExposureAiBaseline;
     const int cardDelta = state.cardRandomRng.counter - rngExposureCardBaseline;
@@ -602,6 +657,39 @@ void BattleScumSearcher3::observeRngExposureAction(const Action &action, BattleC
     observe(cardDelta, rngExposureCardSeen, rngExposureCardFirst);
     rngExposureAiTotalDelta = aiDelta;
     rngExposureCardTotalDelta = cardDelta;
+}
+
+void BattleScumSearcher3::recordDiagnosticAction(const Action &action,
+                                                 const BattleContext &preState,
+                                                 const BattleContext &postState) {
+    if (!diagnosticTraceActive) return;
+    S3LeafActionCheckpoint checkpoint;
+    checkpoint.action = action;
+    if (action.getActionType() == ActionType::CARD) {
+        const int hi = action.getSourceIdx();
+        if (hi >= 0 && hi < preState.cards.cardsInHand) {
+            const auto &card = preState.cards.hand[hi];
+            checkpoint.sourceUniqueId = card.uniqueId;
+            checkpoint.sourceCost = card.cost;
+            checkpoint.sourceRetain = card.retain;
+            checkpoint.cardId = card.getId();
+            checkpoint.upgradeCount = card.getUpgradeCount();
+            checkpoint.costForTurn = card.costForTurn;
+            checkpoint.freeToPlayOnce = card.freeToPlayOnce;
+            checkpoint.specialData = card.specialData;
+            checkpoint.target = action.getTargetIdx();
+            checkpoint.hasCardKey = true;
+        }
+    }
+    checkpoint.observation = CombatObservation::fromBattleContext(postState);
+    checkpoint.outcome = postState.outcome;
+    std::uint64_t fingerprint = checkpoint.observation.visibleHash();
+    fingerprint ^= static_cast<std::uint64_t>(postState.shuffleRng.counter) * 0x9e3779b97f4a7c15ULL;
+    fingerprint ^= static_cast<std::uint64_t>(postState.cardRandomRng.counter) * 0xbf58476d1ce4e5b9ULL;
+    fingerprint ^= static_cast<std::uint64_t>(postState.aiRng.counter) * 0x94d049bb133111ebULL;
+    fingerprint ^= static_cast<std::uint64_t>(postState.miscRng.counter) * 0x369dea0f31a53f85ULL;
+    checkpoint.hiddenFingerprint = fingerprint;
+    diagnosticActionCheckpoints.push_back(std::move(checkpoint));
 }
 
 void BattleScumSearcher3::finishRngExposureSimulation() {
@@ -1876,6 +1964,12 @@ void BattleScumSearcher3::step() {
     const auto &particle = belief.particles[particleIndex];
 
     BattleContext state = *rootBc;
+    diagnosticParticleIndex = particleIndex;
+    diagnosticParticleWeight = particle.weight;
+    diagnosticParticleAppliedExactly = false;
+    diagnosticParticleUsedFallback = false;
+    diagnosticActionCheckpoints.clear();
+    diagnosticTraceActive = g_s3LeafTraceActions && g_onS3LeafQuery;
     applyParticle(state, particle);
     if (rngExposureEnabled) {
         rngExposureAiBaseline = state.aiRng.counter;
@@ -1944,8 +2038,11 @@ void BattleScumSearcher3::step() {
                 return;
             }
 
-            // Save pre-state for possible END_TURN marginalization.
-            BattleContext preExecState = state;
+            // Save pre-state for possible END_TURN marginalization. The copy
+            // is a full BattleContext per expansion, so only take it when the
+            // opt-in feature (STS_S3_END_TURN_MARGINALIZE) can consume it.
+            std::optional<BattleContext> preExecState;
+            if (g_s3EndTurnMarginalize) preExecState = state;
             maybeOutcomeBucketDiag(state, edge.action,
                 agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                 state.turn, decisionIndex);
@@ -1963,10 +2060,10 @@ void BattleScumSearcher3::step() {
             if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
 
             // ── END_TURN marginalization (leaf-expansion boundary only) ──
-            if (g_s3EndTurnMarginalize
+            if (preExecState
                 && edge.action.getActionType() == ActionType::END_TURN
                 && state.outcome == Outcome::UNDECIDED) {
-                double margEval = endTurnMarginalEval(preExecState, actionStack);
+                double margEval = endTurnMarginalEval(*preExecState, actionStack);
                 if (!std::isnan(margEval)) {
                     // Skip chain compression + rollout + blend.
                     // backpropagate the marginal expectation with 1 visit.
@@ -2042,6 +2139,12 @@ void BattleScumSearcher3::step() {
                 }
             }
 
+            // The posterior prefix ends at the pre-rollout frontier. Rollout
+            // actions are intentionally excluded from the semantic trace.
+            diagnosticTraceActive = false;
+            // The posterior prefix ends at the pre-rollout frontier. Rollout
+            // actions are intentionally excluded from the semantic trace.
+            diagnosticTraceActive = false;
             double eval = 0.0;
             const int rollSteps = multiRollout(state, actionStack, eval);
             const double rawEval = eval;   // pre-blend rollout outcome (leafdiag snapshot)
@@ -2065,9 +2168,26 @@ void BattleScumSearcher3::step() {
             if (g_onS3LeafQuery) {
                 const std::uint64_t leafObsHash =
                     CombatObservation::fromBattleContext(state).visibleHash();
-                g_onS3LeafQuery(S3LeafDiagnostic{this, &state, depth, leafObsHash,
-                                                 vLeaf, rawEval, eval,
-                                                 rollSteps, 0});
+                S3LeafDiagnostic diagnostic;
+                diagnostic.searcher = this;
+                diagnostic.bc = &state;
+                diagnostic.treeDepth = depth;
+                diagnostic.obsHash = leafObsHash;
+                diagnostic.vnetPred = vLeaf;
+                diagnostic.rawRolloutEval = rawEval;
+                diagnostic.blendedEval = eval;
+                diagnostic.rolloutSteps = rollSteps;
+                diagnostic.frontierType = 0;
+                diagnostic.particleIndex = diagnosticParticleIndex;
+                diagnostic.particleWeight = diagnosticParticleWeight;
+                diagnostic.particleAppliedExactly = diagnosticParticleAppliedExactly;
+                diagnostic.particleUsedFallback = diagnosticParticleUsedFallback;
+                diagnostic.rootCarried = rootCarried;
+                diagnostic.reuseGeneration = reuseGeneration;
+                diagnostic.reuseSearchCount = reuseSearchCount;
+                diagnostic.outcome = state.outcome;
+                diagnostic.actionCheckpoints = diagnosticActionCheckpoints;
+                g_onS3LeafQuery(diagnostic);
             }
             // Deep-target capture
             if (const char *dtPath = std::getenv("STS_DEEP_TARGET_FILE")) {
@@ -2434,9 +2554,25 @@ void BattleScumSearcher3::step() {
             if (g_onS3LeafQuery && g_s3LeafQueryAllSites) {
                 const std::uint64_t leafObsHash =
                     CombatObservation::fromBattleContext(state).visibleHash();
-                g_onS3LeafQuery(S3LeafDiagnostic{this, &state, depth, leafObsHash,
-                                                 std::numeric_limits<double>::quiet_NaN(),
-                                                 eval, eval, rollSteps, 1});
+                S3LeafDiagnostic diagnostic;
+                diagnostic.searcher = this;
+                diagnostic.bc = &state;
+                diagnostic.treeDepth = depth;
+                diagnostic.obsHash = leafObsHash;
+                diagnostic.rawRolloutEval = eval;
+                diagnostic.blendedEval = eval;
+                diagnostic.rolloutSteps = rollSteps;
+                diagnostic.frontierType = 1;
+                diagnostic.particleIndex = diagnosticParticleIndex;
+                diagnostic.particleWeight = diagnosticParticleWeight;
+                diagnostic.particleAppliedExactly = diagnosticParticleAppliedExactly;
+                diagnostic.particleUsedFallback = diagnosticParticleUsedFallback;
+                diagnostic.rootCarried = rootCarried;
+                diagnostic.reuseGeneration = reuseGeneration;
+                diagnostic.reuseSearchCount = reuseSearchCount;
+                diagnostic.outcome = state.outcome;
+                diagnostic.actionCheckpoints = diagnosticActionCheckpoints;
+                g_onS3LeafQuery(diagnostic);
             }
             backpropagate(path, eval, actionStack);
             finishRngExposureSimulation();
@@ -2476,10 +2612,23 @@ void BattleScumSearcher3::step() {
     // single-site corpus. No rollout runs here, so rolloutSteps is 0; the
     // direct leaf eval is the blended value.
     if (g_onS3LeafQuery && g_s3LeafQueryAllSites) {
-        g_onS3LeafQuery(S3LeafDiagnostic{this, &state, depth, leafObsHash,
-                                         std::numeric_limits<double>::quiet_NaN(),
-                                         std::numeric_limits<double>::quiet_NaN(),
-                                         leafEval, 0, 2});
+        S3LeafDiagnostic diagnostic;
+        diagnostic.searcher = this;
+        diagnostic.bc = &state;
+        diagnostic.treeDepth = depth;
+        diagnostic.obsHash = leafObsHash;
+        diagnostic.blendedEval = leafEval;
+        diagnostic.frontierType = 2;
+        diagnostic.particleIndex = diagnosticParticleIndex;
+        diagnostic.particleWeight = diagnosticParticleWeight;
+        diagnostic.particleAppliedExactly = diagnosticParticleAppliedExactly;
+        diagnostic.particleUsedFallback = diagnosticParticleUsedFallback;
+        diagnostic.rootCarried = rootCarried;
+        diagnostic.reuseGeneration = reuseGeneration;
+        diagnostic.reuseSearchCount = reuseSearchCount;
+        diagnostic.outcome = state.outcome;
+        diagnostic.actionCheckpoints = diagnosticActionCheckpoints;
+        g_onS3LeafQuery(diagnostic);
     }
     backpropagate(path, leafEval, actionStack);
     finishRngExposureSimulation();

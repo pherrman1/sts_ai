@@ -826,6 +826,50 @@ static BattleContext playerNormalFixture(std::uint64_t seed, int energy) {
     return bc;
 }
 
+// E2c observer scoping: the BattleContext persistent-exit hook must be inert by
+// default. A deliberately executed non-live exitBattle (outside the E2c run-loop
+// scope) never arms it, so it cannot produce a RAW row. Only an explicitly armed
+// live victory exit invokes the observer, exactly once, before regainControl.
+int testE2cObserverScope() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    check(!sts::g_onBattleExitPersistent, "hook must be null by default (inert)");
+
+    GameContext gc(CharacterClass::IRONCLAD, 0xE2C1u, 0);
+    gc.regainControlAction = [](GameContext &g) { g.screenState = ScreenState::MAP_SCREEN; };
+    int fired = 0;
+    const auto obs = [&fired](const BattleContext &, GameContext &) { ++fired; };
+
+    // Non-live exit (observer NOT armed): must not fire, even on victory.
+    {
+        BattleContext bc = playerNormalFixture(0xE2C1u, 3);
+        bc.outcome = Outcome::PLAYER_VICTORY;
+        check(!sts::g_onBattleExitPersistent, "non-live path must not arm the hook");
+        fired = 0;
+        bc.exitBattle(gc);
+        check(fired == 0, "unarmed non-live exitBattle must not invoke the observer");
+    }
+
+    // Live-scope armed victory exit: fires exactly once, before regainControl.
+    {
+        BattleContext bc = playerNormalFixture(0xE2C2u, 3);
+        bc.outcome = Outcome::PLAYER_VICTORY;
+        sts::g_onBattleExitPersistent = obs;
+        fired = 0;
+        gc.screenState = ScreenState::BATTLE;
+        bc.exitBattle(gc);
+        check(fired == 1, "armed victory exit must invoke the observer exactly once");
+        sts::g_onBattleExitPersistent = nullptr;
+    }
+    check(!sts::g_onBattleExitPersistent, "hook reset to null after use");
+
+    if (failures == 0) { std::cout << "e2c_observer_scope PASS\n"; return 0; }
+    std::cout << "e2c_observer_scope FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
 static int compareEnumerator(const char *label, const std::vector<std::uint32_t> &truth,
                              std::vector<std::uint32_t> got) {
     std::sort(got.begin(), got.end());
@@ -2686,6 +2730,8 @@ int main(int argc, const char* argv[]) {
         return testSimHealthNonFairS2SelectionFailed();
     } else if (command == "training_integrity") {
         return testTrainingIntegrity();
+    } else if (command == "e2c_observer_scope") {
+        return testE2cObserverScope();
     } else if (command == "simhealth_load") {
         if (argc < 3) {
             std::cout << "usage: test simhealth_load <capture.bin>\n";

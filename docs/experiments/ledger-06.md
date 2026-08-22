@@ -1,3 +1,179 @@
+## §175 Posterior-valid particle sensitivity probe — Phase 1b implementation and preregistration v1 (2026-08-16; superseded before scientific run)
+
+Phase 1b extends the §174 draw-order probe. Where Phase 1a artificially
+permuted draw order while holding the visible state, draw-pile multiset, and
+all six simulator RNG streams fixed, Phase 1b asks whether multiple FULL
+hidden states that are actually compatible with Searcher3's CURRENT finite
+root belief — and with the same semantic action history and resulting visible
+leaf observation — have materially different continuation values.
+"Posterior-valid" here means validity relative to Searcher3's finite belief
+approximation; it is NOT an exact Bayesian posterior.
+
+- **Implementation:** `one_combat particle_posterior_probe` (branch
+  `exp/particle-posterior-sensitivity-phase1b`), guarded by
+  `STS_PARTICLE_POSTERIOR_PROBE_FILE` with `…_K` (0 = evaluate ALL unique
+  compatible leaf hidden states; >0 = deterministic mass-respecting cap with
+  the source world always included and no duplicate padding) and
+  `…_MAX_GROUPS` (-1 unlimited, 0 = probe-OFF determinism arm, >0 per-seed
+  cap). `BattleScumSearcher3::step` records per-action semantic checkpoints
+  (tree actions, expansion action, deterministic chain actions — never random
+  rollout actions) with the ACTUAL post-action `CombatObservation` and
+  `Outcome` when the new `g_s3LeafTraceActions` flag is set. The callback
+  replays the semantic prefix under every positive-weight root particle with
+  exact hidden-state application (`applyHiddenStateExact`; stale-particle
+  fallback is rejected, never shuffled), requires exact observation AND
+  outcome equality at EVERY intermediate checkpoint
+  (`INTERMEDIATE_OBSERVATION_MISMATCH` rejects even if the leaf reconverges)
+  and at the final leaf, deduplicates accepted leaf worlds by
+  `FullHiddenStateKey` EQUALITY (ordered map; combined hashes are audit
+  telemetry only) with probability mass aggregated across collapsing
+  particles, and scores each evaluated world via the isolated
+  `diagnosticRollout` with one per-group CRN seed. CARD actions rebind by
+  canonical card identity (`resolveCardKeyInHand`); END_TURN/POTION replay
+  raw bits; all card-select paths mark the group
+  `UNREPLAYABLE_ACTION_PREFIX` (ineligible) rather than guessing. Source
+  groups whose source particle needed the fallback shuffle are marked
+  `SOURCE_PARTICLE_FALLBACK` and scientifically ineligible — that is NOT an
+  implementation failure; for exact-source groups, failed source replay
+  (`sourceParticleReplayOk == 0`) IS an implementation invariant failure.
+  `rootCarried`/`reuseGeneration`/`reuseSearchCount` are recorded per group so
+  fallback ineligibility can be attributed to carried-search roots. Searcher3
+  gameplay/search behavior, belief updates, particle count, tree reuse, and
+  the Phase-1a `particle_leaf_probe` are unchanged; leafdiag/frontiergen
+  costs are unchanged (trace flag default off).
+- **Offline analysis:** `tools/analyze_particle_posterior_probe.py`
+  (analysis only, no training) groups by source leaf, reports
+  all-group/eligible/multi-state prevalences, range thresholds (=0, >1, >5,
+  >10), compatible/evaluated probability mass, mass-weighted range/std,
+  per-seed metrics, seed-bootstrap 95% CIs for fraction(range>5) and mean
+  range, descriptive turn/draw-pile/encounter/depth strata, capped-evaluation
+  detection (range metrics flagged as subsampled lower bounds when any group
+  is capped), and structure validation (no fake padding, source world present
+  exactly once). Groups with <2 evaluated compatible states count as range 0
+  in the primary all-group prevalence.
+- **Pre-registered Phase-1b v1 decision rule (set BEFORE any Phase-1b scientific
+  data collection):** PRIMARY quantity = fraction of ALL sampled source
+  groups with posterior-valid target range > 5 (single-state and ineligible
+  groups count as non-sensitive). GO if implementation invariants all pass
+  AND fraction(range>5) >= 10% AND seed-bootstrap 95% CI lower bound > 5% AND
+  group-weighted (compatible-mass-weighted) mean range >= 3. STOP the
+  draw-order/full-particle-conditioning line if invariants pass AND
+  fraction(range>5) < 5% AND bootstrap upper 95% CI < 10% AND mean range
+  < 1. Otherwise INCONCLUSIVE: no particle VNet training, at most one
+  focused 32-seed extension proposal. These are pragmatic Phase-1b
+  thresholds, not previously validated gameplay thresholds. If GO: Phase 1
+  is substantively successful, roadmap continues with #2 (post-combat
+  V_run_win); #3 (particle-conditioned VNet) becomes justified only if #2
+  also succeeds.
+- **Supersession before designated scientific data:** the 4-seed implementation
+  smoke showed that the original full-particle target combines draw-order
+  variation, six simulator-RNG-stream variation, and one-rollout estimation
+  noise. That target remains useful as a secondary total-determinizations
+  quantity for future #4 belief averaging, but is not a clean primary gate for
+  particle-conditioned #3 valuation. No designated scientific data were
+  collected under v1. This entry is superseded by the controlled decomposition
+  below; the v1 GO/STOP rule must not be applied to the v1 full-particle smoke.
+- **Verification status:** implementation + self-test + 4-seed guard-approved
+  smoke only (appended below when run). No Phase-1b scientific dataset or
+  GO/STOP verdict exists yet; the intended first scientific run is 16 seeds,
+  300 sims, ascension 0, complete finite-belief evaluation unless the smoke
+  shows unacceptable cost, and has NOT been executed.
+
+### Phase-1b implementation smoke (2026-08-16; 4 seeds, 300 sims, asc 0)
+
+- **Exact environment:** `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0
+  STS_S3_CHAIN=0 STS_S3_PARTICLES=64
+  STS_PARTICLE_POSTERIOR_PROBE_K=0
+  STS_PARTICLE_POSTERIOR_PROBE_MAX_GROUPS=4`; command was wrapped by
+  `tools/seed_guard.sh`. This is an implementation smoke, not scientific
+  evidence. The complete Phase-1a model/OOC provenance was not fully
+  recoverable, so no claim of perfect Phase-1a stack matching is made.
+- **ON command:**
+  `tools/seed_guard.sh ./build/linux-gcc-release/one_combat
+  particle_posterior_probe 4 300 0
+  build/particle_posterior_probe_on4_v3.csv`.
+  Runtime 10.4s (2.59s/seed); 608 rows = 16 source groups + 592 evaluated
+  compatible hidden leaf states; all groups used complete finite-belief
+  evaluation (`K=0`), so no capped/lower-bound range metric was involved.
+- **Invariants:** source-particle replay failures 0/16; invariant failures
+  0/16; replay-failure categories empty; source fallback groups 0; accepted
+  candidates reproduced every intermediate and final observation/outcome.
+  Compatible particle/unique-state counts were
+  `{4:1, 6:1, 12:1, 14:1, 19:1, 21:1, 31:2, 35:2, 64:6}`; groups with
+  >=2/4/8 unique states were 16/16/14. All 16 groups had range >5 in this
+  tiny smoke (mean range 19.75; mass-weighted mean range 20.85), which is
+  not a scientific result.
+- **OFF/ON determinism:** the OFF arm used the same command/configuration
+  with `STS_PARTICLE_POSTERIOR_PROBE_MAX_GROUPS=0`, wrote zero probe rows,
+  and ran in 12.2s. Its per-seed gameplay sidecar was byte-identical after
+  sorting to the ON sidecar (`seed,won,floor,act,hpEnd,maxHp,fightsLost,
+  deathCombat,deathEncounter`).
+- **Analyzer:** `python3 tools/analyze_particle_posterior_probe.py
+  build/particle_posterior_probe_on4_v3.csv --bootstrap-iters 200` ran
+  successfully. No scientific GO/STOP interpretation is made from four
+  seeds.
+
+### §176 Phase-1b measurement correction — controlled draw-order primary (2026-08-16; 4-seed smoke only)
+
+The implementation-review correction retains the exact posterior compatibility
+and replay machinery, but splits continuation targets:
+
+- **Primary controlled draw-order target:** for every compatible draw order,
+  use that order with the source leaf's six simulator RNG streams, and average
+  `R=4` diagnostic rollouts using four common per-group rollout-policy RNG
+  seeds. This asks whether draw orders that Searcher3 actually considers
+  possible change expected continuation value, without mixing in candidate RNG
+  states or relying on one rollout per world.
+- **Secondary full-particle target:** retain the original exact candidate draw
+  order plus all six candidate RNG streams and one common diagnostic rollout
+  seed. This measures total hidden-determinization variation and is useful for
+  later #4 belief averaging, but is not the primary #3 gate.
+
+The diagnostic exact draw-pile multiset check now uses `FullHiddenCardId`
+(CardId, upgrades, specialData, costForTurn, freeToPlayOnce); gameplay's
+historical CardId-only `sameCardMultiset` was not changed. The run sidecar now
+records a per-decision Searcher3 root fingerprint (visible observation hash,
+chosen root action bits, and visits), allowing OFF/ON action/search-level
+comparison rather than only run-outcome comparison.
+
+The corrected smoke used the same fair-S3 environment as §175, 4 seeds, 300
+sims, 4 source groups/seed, `K=0`, and `R=4`. It produced 16 groups and 592
+evaluated worlds with zero source replay failures and zero invariant failures.
+The full-particle target had mean range 19.75 and 16/16 groups above 5. The
+controlled draw-order target had mean range 2.09375, median range 0, and 3/16
+groups above 5. The compatible-mass-weighted controlled mean range was 3.368;
+the **primary statistic is the equal-source-group mean/range prevalence**, with
+mass-weighted results secondary. OFF/ON root action/search fingerprints were
+identical. These four-seed results are implementation smoke evidence only,
+not a scientific verdict.
+
+The corrected preregistration is the designated contract for any future
+scientific run. The 16-seed experiment remains unrun and requires independent
+review of this correction commit first.
+
+### §177 Corrected Phase-1b preregistration decision rule (set before designated scientific data)
+
+The numerical thresholds from §175 v1 are transferred unchanged to the
+corrected controlled draw-order primary target; they are not retuned from the
+§176 smoke. All references below mean equal-source-group statistics for the
+controlled target. Compatible-mass-weighted results remain secondary and are
+not substituted into the gate.
+
+- **GO / posterior-valid draw-order sensitivity established:** all
+  implementation invariants pass; controlled fraction of source groups with
+  range >5 is at least 10%; the seed-bootstrap 95% CI lower bound for that
+  fraction is >5%; and equal-group controlled mean range is at least 3.
+- **STOP the draw-order/full-particle-conditioning line:** invariants pass;
+  controlled fraction(range>5) is <5%; bootstrap upper 95% CI is <10%; and
+  equal-group controlled mean range is <1.
+- **Otherwise INCONCLUSIVE:** do not train a particle-conditioned VNet; at
+  most one focused extension to 32 seeds may be proposed. If GO, roadmap
+  #2 remains next; #3 is scientifically justified only if #2 also succeeds.
+
+These are pragmatic thresholds, not validated gameplay thresholds. The §175
+v1 full-particle smoke is not eligible for this rule; §177 is the designated
+scientific decision contract.
+
 ## §174 Particle-conditioned leaf probe implementation (2026-08-16; diagnostic/offline; no gameplay promotion)
 
 - **Implementation:** added `one_combat particle_leaf_probe`, guarded by
@@ -3488,3 +3664,272 @@ negative mean reference utility Δ). The high-confidence M0 improvement signal
 is therefore rejected under the stronger reference. The agreement metrics do
 not distinguish teacher/target failure from model-learning failure. No new
 labels, reselection, threshold tuning, or gameplay gate was run.
+
+## 2026-08-16 — Searcher3 cheap behavior-preserving speedups (perf/s3-cheap-speedups)
+
+Bounded implementation-efficiency pass on the fair Searcher3 path; no search
+parameter, RNG, model, or feature changed. Baseline `main` `a7573e1`
+(2026-08-16), measured in a dedicated worktree on branch
+`perf/s3-cheap-speedups`; the particle-conditioned leaf-value Phase-1 branch
+was not touched.
+
+Configuration: `OMP_NUM_THREADS=1 STS_FAIR=1 STS_SEARCHER3=1
+STS_S3_PARTICLES=64 STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_LIVE_VALID=1`, vnet
+leaf auto-default `models/v_combat_7k_tuned.txt` α=0.3 (§148), policy PUCT
+`models/policy_trees_c.txt` c=2.5, rejuvenation off (default), persistent
+posterior / pool-redirect / rank-corr / all other experimental flags at
+default (off). Workload: `bash tools/seed_guard.sh ./build/linux-gcc-release/
+one_combat bestbench 1000 4 0` (4 seeds, 1399 searches, 2,133,000 simulations
+per repetition; fresh LTO Release build per arm).
+
+Interventions (both in `src/sim/search/BattleScumSearcher3.cpp`):
+
+- A — `step()`: the per-expansion full `BattleContext preExecState` copy is
+  taken only when `g_s3EndTurnMarginalize` (default off, `STS_S3_END_TURN_MARGINALIZE`)
+  can consume it; the consumer guard now tests `preExecState` itself, so the
+  enabled-feature behavior is unchanged.
+- B — `sameCardMultiset` (particle draw-order compatibility, runs once per
+  simulation via `applyParticleImpl`): exact multiset equality via a fixed
+  `std::array<int, cardEnumStrings-size>` count table instead of two heap
+  vectors + two sorts. Same id-only identity domain as before (upgrade state
+  was and is outside this comparison; duplicates count per occurrence).
+
+Primary metric: median `simSeconds*1e6/simsExec` per search from
+`STS_REUSE_CPU_DIAG` CSV (ms/1000 sims). 9 interleaved rounds × 3 arms
+(base / A / A+B), rotating arm order per round; per-round medians (ms/1000
+sims):
+
+| Round | base | A | A+B |
+| --- | --- | --- | --- |
+| 1 | 28.271 | 27.693 | 27.309 |
+| 2 | 28.423 | 28.122 | 27.273 |
+| 3 | 27.551 | 27.432 | 28.785 |
+| 4 | 27.613 | 27.640 | 27.008 |
+| 5 | 27.616 | 27.474 | 26.946 |
+| 6 | 30.200 | 29.286 | 28.002 |
+| 7 | 28.805 | 28.093 | 28.230 |
+| 8 | 30.250 | 28.879 | 27.653 |
+| 9 | 28.041 | 28.117 | 27.726 |
+| median | 28.271 | 28.086 | 27.647 |
+
+Result: A alone +0.66%, A+B +2.21% (paired per-round median +2.43%). Host
+noise between rounds is up to ±4% (rounds 6/8 baseline slowdowns), so only the
+paired interleaved comparison is decision-relevant. Retained as one combined
+change under the small-diff rule; A alone or B alone fall under the 2% floor.
+
+Behavioral equivalence (exact, not aggregate):
+
+- `one_combat fairgen 2 1000 0 0.3 ...` value/policy/OOC CSVs byte-identical
+  (md5 match) between base and A, and between base and A+B.
+- All 27 CPU-diag runs identical on every non-timing column (seed, floor,
+  decisionIdx, simsExec, treeActions, rolloutActions, rootSimAfter, playerHp,
+  turn) — same root visit totals, same trajectories.
+- `bestbench` win%/avg_floor/avg_hp_end identical across arms; wall-clock
+  whole-run time reported as secondary evidence only.
+
+Focused tests (perf-worktree `test` binary, all PASS): belief, drawpile 77,
+obs_identity 77, prune 77, battlecontext_roundtrip, rng_state_propagation 77,
+seed_contract 77, belief_immutability, rejuv_history_replay 77,
+rejuv_noninterference 77, cardselect_parity, issue_fixes, real_belief_filter
+77, s3_drawpile_reuse_boundary. `belief_order_invariance` FAILS identically on
+untouched main `a7573e1` (pre-existing, 4 weight checks) — not caused by this
+change and not addressed here.
+
+Largest remaining Searcher3 hotspots (code inspection; no perf on this host):
+vnet leaf inference per rollout endpoint (`evaluateLeaf` →
+`g_combatVNet.predict`), per-rollout-slot `BattleContext` copies in
+`multiRollout`, and action execution itself. Reducing these requires
+representation/architecture work (BattleContext copy semantics, observation
+architecture, model serving) — explicitly out of scope; recommendation is STOP
+and return to particle-conditioned leaf-value research.
+
+## E2 — post-combat run-win critic (2026-08-16)
+
+**Baseline / branch:** `548742ab973d7f22eb6b1186dadb942c3aed10b5`,
+`exp/postcombat-runwin`. This is an offline target-validity diagnostic only;
+no Searcher3, particle, OOC policy, or deployed combat model was changed.
+
+**Boundary:** `BattleContext::exitBattle` commits HP, potions, deck, relic,
+gold, and combat RNG state; victory returns through `GameContext::afterBattle`.
+`datagen2` emits one row at the first card-reward decision after the fixed
+gold/relic/potion auto-pickup and immediately before card pick/skip. Normal,
+elite, and act-1/2 boss rewards always include a card reward. Act-3 terminal
+boss fights and event-room fights are not represented. Thus this is the first
+stable post-combat decision boundary, not the raw pre-reward screen.
+
+**Dataset / provenance:** existing ignored `build/vrich.csv`, generated by
+`tools/run/datagen2_loop.sh` on 2026-07-15: Ironclad ascension 0, 10,000
+simulations, epsilon 0.05, `v_server.py` V-marginal card continuation policy
+(softmax temperature 3 plus 5% uniform floor and skip threshold), heuristic
+map/shop/rest elsewhere. The canonical `vFeatCsv`/`richRow` path supplies the
+features; no feature definition was duplicated. The file has 1,444,372 rows,
+67,655 seeds, 18,601 wins and 49,054 losses. Act rows: 664,571 / 488,021 /
+291,780 for Acts 1 / 2 / 3. Per-seed `won` consistency check: zero violations.
+The source file SHA256 is retained in `build/e2_postcombat_runwin/`.
+
+**Method:** `GroupShuffleSplit(test_size=0.15, random_state=0)` by seed,
+matched for all arms: 57,506 train seeds and 10,149 held-out seeds. B0 is
+training prevalence. B1 uses exactly `curHp`, `maxHp`, `hpFrac`, `act`, and
+`floor`. T uses all 448 non-label, non-constant canonical rich features. B1
+and T use the existing `train_winrate.py` XGBoost recipe: binary logistic,
+hist, depth 8, eta .05, subsample .8, column sample .7, min child weight 20,
+max bin 256, 1,500 rounds, early stopping 40. Bootstrap is 2,000 resamples
+of held-out seeds, reporting T minus B1.
+
+**Held-out metrics:** 216,620 rows, 71,672 positives and 144,948 negatives.
+
+| arm | ROC-AUC | log loss | Brier | ECE |
+| --- | ---: | ---: | ---: | ---: |
+| B0 | 0.50000 | 0.63479 | 0.22140 | 0.00131 |
+| B1 | 0.64975 | 0.59517 | 0.20359 | 0.00363 |
+| T | 0.74816 | 0.53507 | 0.17913 | 0.00842 |
+
+T act metrics (rows / AUC / log loss / Brier / ECE): Act 1 99,790 /
+0.63555 / 0.56327 / 0.18946 / 0.00451; Act 2 73,074 / 0.78048 / 0.50662 /
+0.16843 / 0.01659; Act 3 43,756 / 0.81932 / 0.51825 / 0.17344 / 0.01069.
+All act strata have adequate held-out seed counts (10,149 / 9,726 / 6,204)
+and no major calibration failure.
+
+Seed bootstrap differences T−B1: log-loss mean −0.06009, 95% CI
+[−0.06507, −0.05535]; Brier mean −0.02445, CI [−0.02647, −0.02247]; AUC
+mean +0.09840, CI [+0.09200, +0.10500]. **Decision: SUPPORTED.** The rich
+post-combat state is predictively useful beyond HP/progression under this
+continuation policy. This does not establish causal item values, gameplay
+improvement, generic `V_win` correctness, Searcher3 integration, or a new
+`V_combat` target. Known-RNG encounter fields are included in T and are a
+limitation for interpreting transfer to a different information regime.
+
+**Correction before merge:** the first artifact used sparse full-dataset run
+IDs when resampling validation seeds. The trainer now reindexes the held-out
+run IDs contiguously before bootstrap, and the bootstrap artifacts below were
+regenerated. This changes uncertainty estimates only; model fitting and the
+held-out predictions are unchanged. The corrected bootstrap is the result to
+use for interpretation. Corrected values are log-loss mean −0.0600867,
+95% CI [−0.0650689, −0.0553531]; Brier mean −0.0244549, CI
+[−0.0264704, −0.0224724]; AUC mean +0.0983964, CI
+[+0.0920018, +0.1050012].
+
+**Relation to §116:** §116's TERM_WIN terminal-leaf benchmark was null because
+the deployed win tree was insensitive to the counter features; it therefore
+deferred Stage 3 until a counter-aware terminal evaluator existed. E2 is a
+potentially relevant prerequisite because it demonstrates that a rich
+post-combat state can predict eventual run outcome beyond HP/progression under
+the recorded continuation policy. E2 has **not** demonstrated a
+counter-aware terminal evaluator, has not shown that counters are causally
+priced, and does not authorize TERM_WIN, Searcher3, V_combat, or any deployed
+model change. It is merged as a useful offline positive diagnostic only.
+
+Artifacts: `build/e2_postcombat_runwin/metrics.json`,
+`calibration_deciles.csv`, `provenance.json`, `bootstrap` in metrics,
+`b1_model.json`, `t_model.json`, `val_predictions.npz`, and
+`sha256sums.txt`. Reproduction command:
+`STS_XGB_DEVICE=cuda python3 tools/train_postcombat_runwin.py build/vrich.csv
+build/e2_postcombat_runwin`.
+
+## E2b — masked post-combat feature-availability diagnostic (2026-08-17)
+
+**Baseline / branch:** starting `e777d2fdbb8c11786aef4fe91d433af35b7d0cd2`,
+`exp/e2b-leaf-available-runwin`. Offline only; no Searcher3, particle,
+gameplay, V_combat, or producer code changed.
+
+**Audit and primary subset:** the live `apps/one_combat.cpp::richHeader` /
+`richRow` contract classifies 9 verified hidden/future columns (`bossId`,
+`nextEliteId`, `nextFight0..2`, `remElites`, `remFights`, `monOffset`,
+`eliteOffset`) plus the `fmD*`/`fmC*` forward-map families as hidden/future.
+Gold, potion metadata/inventory, card-rarity state, key state, and all `r*`
+relic ownership-plus-counter columns are reward-mutated. Elite relic pickup
+also makes HP, max HP, deck composition/upgrades, bottle state, and potion
+capacity reward-induced side effects. Unknown schema fields fail closed as
+ambiguous.
+The actual historical `build/vrich.csv` used here has exactly **1,009
+columns**. It contains neither the ten `fmD*`/`fmC*` columns nor `curMapX` /
+`curMapY`; those 12 fields are known to current live `richHeader()` but were
+not present in the July-15 E2 CSV. Thus they are current-schema provenance
+categories only, not columns classified from the historical file.
+The existing CSV has no room/encounter identifier, and rows are captured after
+`BattleContext::exitBattle` and forced gold/relic/potion pickup. Therefore an
+ordinary-combat/raw-terminal subset cannot be identified defensibly. E2b uses
+all represented card-reward rows and calls the final arm **T-masked**, not
+raw-terminal-safe or exact leaf-safe.
+
+**Method:** B1, T-full, T-fair, and T-masked share all rows, labels,
+`GroupShuffleSplit(test_size=0.15, random_state=0)` by seed, the E2 XGBoost
+recipe (depth 8, eta .05, subsample .8, colsample .7, min child 20, max bin
+256, 1,500 rounds, early stopping 40), and 2,000 contiguous held-out-seed
+bootstrap resamples. Counts: 1,444,372 rows / 67,655 seeds / 479,498 wins /
+964,874 losses; held-out 216,620 rows / 10,149 seeds / 71,672 positives /
+144,948 negatives; 57,506 training seeds.
+
+| arm | features | AUC | log loss | Brier | ECE | best iteration |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| B0 | — | 0.500000 | 0.634793 | 0.221395 | 0.001308 | — |
+| B1 | 5 | 0.649746 | 0.595168 | 0.203594 | 0.003631 | 136 |
+| T-full | 448 | 0.748164 | 0.535066 | 0.179130 | 0.008419 | 983 |
+| T-fair | 439 | 0.746827 | 0.536352 | 0.179548 | 0.007152 | 944 |
+| T-masked | 8 | 0.611091 | 0.613848 | 0.211795 | 0.002156 | 88 |
+
+The held-out positive/negative counts are identical for every arm. Log-loss
+gain from B1 was 0.060102 for T-full, 0.058816 for T-fair, and −0.018680 for
+T-masked; retention was 97.86% and −31.08%, respectively. T-masked−B1 point
+differences were log loss +0.018680, Brier +0.008201, and AUC −0.038654.
+The seed-bootstrap comparisons (log loss / Brier / AUC mean, 95% CI) are in
+`build/e2b_leaf_available/metrics.json` for T-full−B1, T-fair−B1,
+T-masked−B1, T-fair−T-full, and T-masked−T-fair.
+
+**Comparator asymmetry:** the `MASKED NEGATIVE` result is the preregistered
+verdict against the original E2 B1 comparator, which uses `curHp`, `maxHp`,
+and `hpFrac`. The strict T-masked arm intentionally excludes `curHp` and
+`maxHp` because elite relic pickup can mutate them. Therefore this is not an
+information-matched comparison and must not be interpreted as evidence that a
+true raw-terminal critic, or an information-matched raw-terminal model, is
+inferior. E2c remains necessary to measure that boundary fairly.
+
+**Decision:** **MASKED NEGATIVE**. T-masked fails to beat B1 on log loss,
+Brier, and AUC; its log-loss bootstrap CI is unfavorable and masked retention
+is negative. The hidden/future removal itself preserves almost all E2 gain;
+the corrected reward mask removes the state that carried the remaining
+predictive signal. This is predictive evidence only, not causal feature value
+or exact raw-boundary calibration. The counter arm is
+**NOT TESTABLE FROM E2 DATASET** because relic columns combine ownership and
+counter and pickup can add relics.
+
+**Follow-up:** E2c raw-boundary collection remains scientifically worthwhile,
+despite the negative masked result, because conservative masking may discard
+legitimate pre-existing resource information that cannot be reconstructed from
+post-reward rows. The missing room/encounter identifier also prevents exact
+boundary confirmation. The ideal producer records matched raw
+combat-terminal and pre-card-reward states for each survived fight, with room /
+encounter type and reward deltas, while preserving the eventual run label.
+Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
+`calibration_deciles.csv`, `validation_predictions.npz`, four model JSON files,
+`provenance.json`, and `sha256sums.txt`.
+
+## E2c exact RAW/POST combat-terminal run-win producer: implemented + smoke (2026-08-17, local)
+
+- **What:** opt-in `one_combat e2cgen` producer recording matched RAW and POST
+  snapshots for every survived ordinary/elite/act-1-2-boss combat, plus offline
+  analyzer `tools/analyze_postcombat_raw_terminal.py`. Measurement infra only;
+  no deployment/model/policy change (decision log
+  `2026-08-17-e2c-raw-terminal-runwin-producer.md`).
+- **Boundaries:** RAW fires in `BattleContext::exitBattle` after persistent
+  transfer and before `regainControl()`/reward generation; POST fires at the
+  `REWARDS` screen after non-card rewards drained, before the first card
+  pick/skip. Pair key `(seed, fight_index)`; identical eventual `won` per pair.
+- **Scoping:** thread-local `g_onBattleExitPersistent` hook is null by default;
+  armed only around the real `exitBattle` in the live run, so copied/
+  counterfactual exits cannot produce rows. `testE2cObserverScope` pins this.
+- **Act horizon:** rows labelled by `runFullRunOOC`'s `RunResult` (honors
+  `STS_STOP_AFTER_ACT`); shared training-integrity predicate unchanged.
+- **Relic repr:** explicit `relic_has_*`/`relic_data_*` (exact signed data),
+  distinct from legacy `r*`, enabling the counter diagnostic.
+- **Schema:** versioned `e2c-v1` long format + `<out>.provenance.json`; the
+  prefix keeps only `room_type`/`encounter_id` (state carries act/floor).
+- **Verification:** `e2c_observer_scope`, analyzer compile + selftest CTest
+  entries pass (37-test ctest: 36 pass; only pre-existing
+  `live_rejuv_attempt_gate` fails, confirmed identical on baseline).
+- **Smoke:** 8 seeds (0-7), 30 sims: 130 matched pairs, 0 quarantines, schema
+  aligned (1387 cols), RAW->POST deltas show gold rising and
+  potionChance/cardRarityFactor changing only after RAW.
+- **No scientific verdict:** E2c SUPPORTED/PARTIAL/NEGATIVE is determined only
+  from the human-controlled production dataset (2,000-seed command in the
+  handoff), not from smoke.

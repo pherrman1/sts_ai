@@ -33,6 +33,7 @@
 #include <sstream>
 #include <iostream>
 #include <mutex>
+#include <optional>
 #include <random>
 #include <string>
 #include <thread>
@@ -86,6 +87,18 @@ static std::vector<std::string> g_mainArgv;
 static thread_local int t_trainingHealthFailures = 0;
 static thread_local int t_trainingBranchHealthFailures = 0;
 static thread_local bool t_trainingRunActive = false;
+struct E2cCapture;
+static thread_local E2cCapture *t_e2c = nullptr;
+static thread_local std::string t_e2cRows;
+static std::atomic<long long> g_e2cCounts[3][6]{}; // eligible, raw, post, pairs, raw_only, post_only
+static void e2cBeginFight(int, const sts::GameContext &, const sts::BattleContext &);
+static void e2cRawObserver(const sts::BattleContext &, sts::GameContext &);
+static void e2cCapturePost(sts::GameContext &);
+static std::string e2cRunRows(const E2cCapture &, bool, int, int);
+static std::string e2cExplicitRelics(const sts::GameContext &);
+static std::string e2cHeader();
+static std::string richStateHeader();
+static std::string e2cRoomName(int);
 static std::atomic<int> g_trainingInvalidRuns{0};
 static std::atomic<int> g_trainingInvalidBranches{0};
 static std::atomic<int> g_trainingHealthFailures{0};
@@ -160,7 +173,8 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_REUSE_DIAG",
                           "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
                           "STS_REUSE_CARRY_DIAG", "STS_REUSE_CPU_DIAG",
-                          "STS_REUSE_CPU_DIAG_FILE", "STS_LIVE_VALID", "STS_FORCED_MOVE",
+                          "STS_REUSE_CPU_DIAG_FILE", "STS_LIVE_VALID", "STS_STOP_AFTER_ACT",
+                          "STS_FORCED_MOVE",
                           "STS_VNET", "STS_VNET_ALPHA", "STS_OOC_STRATEGIC_TOK_NN",
                           "STS_OOC_STRATEGIC_MARGIN", "STS_OOC_STRATEGIC_CARD",
                           "STS_OOC_STRATEGIC_REST", "STS_OOC_STRATEGIC_EVENT",
@@ -830,6 +844,24 @@ struct PathHistory {
         const int ri = (int)gc.getCurMapNode().room;
         if (ri >= 0 && ri < 10) ++roomVisits[ri];
     }
+};
+struct E2cFight {
+    int index = -1, room = -1, encounter = -1;
+    std::string raw, post, rawRelics, postRelics;
+    bool rawSeen = false, postSeen = false;
+    std::string screenTrace;
+    std::string rewardRelics;
+    int pendingCards = -1;
+};
+struct E2cRoomStats {
+    int eligible = 0, raw = 0, post = 0, pairs = 0;
+};
+struct E2cCapture {
+    std::uint64_t seed = 0;
+    PathHistory *path = nullptr;
+    std::vector<E2cFight> fights;
+    E2cFight *current = nullptr;
+    E2cRoomStats roomStats[3]{};
 };
 // Current run's path history, so vFeatCsv() can emit pv* features (nullptr = none).
 static thread_local const PathHistory *t_curPath = nullptr;
@@ -2632,6 +2664,18 @@ static int g_particleLeafProbeK = 8;
 static double g_particleLeafProbeRate = 0.05;
 static int g_particleLeafProbeMaxGroups = 16;
 
+// Phase 1b: posterior-valid particle sensitivity probe. K=0 (default)
+// evaluates ALL unique compatible leaf hidden states from the current finite
+// root belief; K>0 caps evaluation at the K highest-mass states (the source
+// world is always included, no duplicate padding). MAX_GROUPS: -1 unlimited,
+// 0 captures nothing (probe-OFF determinism arm), >0 per-seed group cap.
+static std::string g_particlePosteriorProbeFile;
+static int g_particlePosteriorProbeK = 0;
+static int g_particlePosteriorProbeMaxGroups = 16;
+static std::string g_particlePosteriorReplayDebugFile;
+static int g_particlePosteriorReplayCeiling = 128;
+static std::string g_particlePosteriorReplayTraceFile;
+
 struct LeafDiagRow {
     std::uint64_t seed = 0;
     int fightIdx = -1, decIdx = -1;
@@ -2694,6 +2738,10 @@ struct LeafDiagCtx {
     std::vector<ParticleLeafProbeRow> particleProbeRows;
     int particleProbeGroups = 0;
     std::uint64_t particleProbeSourceLeafSeq = 0;
+    std::vector<struct ParticlePosteriorProbeRow> particlePosteriorRows;
+    int particlePosteriorGroups = 0;
+    std::uint64_t particlePosteriorSourceLeafSeq = 0;
+    std::string actionFingerprint;
     void init(std::uint64_t sd) {
         seed = sd; fightIdx = 0; floor = 0; act = 0; encounter.clear(); decIdx = 0;
         rng.seed(sd ? sd : 1);
@@ -2705,6 +2753,10 @@ struct LeafDiagCtx {
         particleProbeRows.clear();
         particleProbeGroups = 0;
         particleProbeSourceLeafSeq = 0;
+        particlePosteriorRows.clear();
+        particlePosteriorGroups = 0;
+        particlePosteriorSourceLeafSeq = 0;
+        actionFingerprint.clear();
     }
 };
 static thread_local LeafDiagCtx t_ld;
@@ -2962,6 +3014,567 @@ static std::string particleLeafProbeHeaderStr() {
     return h;
 }
 
+// ---------------------------------------------------------------------------
+// PHASE-1b posterior-valid particle sensitivity probe (particle_posterior_probe)
+//
+// For a sampled Searcher3 frontier-type-0 source leaf, replay the exact
+// SEMANTIC pre-rollout action prefix (tree actions + expansion action +
+// deterministic chain actions, with actual post-action observations recorded
+// per step) under EVERY positive-weight particle of the searcher's CURRENT
+// finite root belief. A candidate is compatible only if every checkpoint
+// observation AND outcome match exactly (INTERMEDIATE_OBSERVATION_MISMATCH
+// rejects even if the leaf later reconverges) and the final visible leaf
+// observation + outcome match. Accepted leaf worlds are deduplicated by
+// FullHiddenStateKey EQUALITY (ordered std::map, never a combined hash) with
+// probability mass aggregated across collapsing root particles. Each
+// evaluated compatible world is scored with the isolated diagnosticRollout
+// using one per-group CRN seed; the searcher's RNG, tree, belief, and the
+// live battle are never touched. Source groups whose source particle needed
+// the stale-particle fallback shuffle are marked SOURCE_PARTICLE_FALLBACK and
+// are scientifically ineligible (their replay is NOT an implementation
+// failure). "Posterior-valid" is relative to Searcher3's finite belief
+// approximation, not an exact Bayesian posterior.
+// ---------------------------------------------------------------------------
+struct ParticlePosteriorProbeRow {
+    int rowType = 0;                     // 0 = group summary, 1 = evaluated compatible world
+    std::uint64_t seed = 0, obsHash = 0, sourceLeafId = 0;
+    int fightIdx = -1, decIdx = -1, treeDepth = 0, turn = 0;
+    int curHp = 0, maxHp = 0, drawPileSize = 0;
+    int rootParticleCount = 0, positiveParticleCount = 0, replayAttempted = 0;
+    int replayCompatibleParticles = 0, uniqueCompatibleStates = 0, evaluatedWorldCount = 0;
+    double compatibleMass = 0.0, evaluatedMass = 0.0;
+    int sourceParticleIndex = -1, sourceParticleReplayOk = -1, sourceParticleFallback = 0;
+    int groupEligible = 1, invariantOk = 1;
+    std::string replayFailure;
+    int semanticReplayFailures = 0, actionIllegalFailures = 0, intermediateObservationMismatches = 0;
+    int intermediateOutcomeMismatches = 0, finalObservationMismatches = 0, drawPileMismatches = 0;
+    int firstMismatchCheckpoint = -1;
+    std::uint64_t expectedMismatchHash = 0, actualMismatchHash = 0;
+    std::uint32_t mismatchActionBits = 0;
+    int rootCarriedFlag = 0, reuseGeneration = 0, reuseSearchCount = -1;
+    int candidateParticleIndex = -1, candidateIsSource = 0, dedupOrdinal = -1;
+    int semanticBranchesCreated = 0, maxSurvivingBranches = 0, branchesCollapsed = 0;
+    int extraSemanticBranches = 0;
+    int replayExplosion = 0;
+    int rolloutSteps = 0, terminal = 0;
+    double candidateWeight = 0.0;
+    double target = std::numeric_limits<double>::quiet_NaN();
+    double controlledTarget = std::numeric_limits<double>::quiet_NaN();
+    double controlledTargetStd = std::numeric_limits<double>::quiet_NaN();
+    std::string encounter, rngSignature, drawOrder;
+};
+
+// Audit-only RNG signature telemetry; hidden-state identity/dedup uses
+// FullHiddenStateKey equality, never this hash.
+static std::string posteriorProbeRngSignature(const sts::FullHiddenStateKey &key) {
+    std::uint64_t h = 0xcbf29ce484222325ULL;
+    for (int i = 0; i < 6; ++i) {
+        h ^= key.seed0[i]; h *= 1099511628211ULL;
+        h ^= key.seed1[i]; h *= 1099511628211ULL;
+        h ^= (std::uint64_t)(std::int64_t)key.counter[i]; h *= 1099511628211ULL;
+    }
+    std::ostringstream o;
+    o << std::hex << h;
+    return o.str();
+}
+
+// Semantic remap of one recorded checkpoint action onto a candidate replay
+// state whose hand order may differ. CARD rebinds by canonical card identity
+// (resolveCardKeyInHand); END_TURN and POTION raw bits carry visible
+// slot/target semantics and replay exactly. Any other action type (all
+// card-select paths) has no exact semantic replay here -> nullopt, which
+// marks the whole source group ineligible rather than guessing.
+static std::optional<search::Action> posteriorProbeRemapAction(
+    const search::S3LeafActionCheckpoint &cp, const BattleContext &state) {
+    switch (cp.action.getActionType()) {
+    case search::ActionType::CARD: {
+        if (!cp.hasCardKey) return std::nullopt;
+        search::BattleScumSearcher3::CardActionKey key;
+        key.id = cp.cardId;
+        key.upgradeCount = cp.upgradeCount;
+        key.costForTurn = cp.costForTurn;
+        key.freeToPlayOnce = cp.freeToPlayOnce;
+        key.specialData = cp.specialData;
+        key.target = cp.target;
+        const auto hi = search::resolveCardKeyInHand(key, state);
+        if (!hi) return std::nullopt;
+        if (key.target >= 0)
+            return search::Action(search::ActionType::CARD, *hi, key.target);
+        return search::Action(search::ActionType::CARD, *hi);
+    }
+    case search::ActionType::END_TURN:
+    case search::ActionType::POTION:
+        return cp.action;
+    default:
+        return std::nullopt;   // SINGLE_/MULTI_CARD_SELECT: not exactly replayable
+    }
+}
+
+static std::string replayCardDebug(const search::S3LeafActionCheckpoint &cp,
+                                   const BattleContext &state,
+                                   const search::Action &resolved) {
+    std::ostringstream out;
+    const int raw = cp.action.getSourceIdx();
+    const int resolvedIndex = resolved.getSourceIdx();
+    const int matches = std::count_if(state.cards.hand.begin(),
+                                      state.cards.hand.begin() + state.cards.cardsInHand,
+                                      [&](const CardInstance &card) {
+        return card.getId() == cp.cardId
+            && card.getUpgradeCount() == cp.upgradeCount
+            && card.costForTurn == cp.costForTurn
+            && card.freeToPlayOnce == cp.freeToPlayOnce
+            && card.specialData == cp.specialData;
+    });
+    const CardInstance *resolvedCard = (resolvedIndex >= 0
+        && resolvedIndex < state.cards.cardsInHand) ? &state.cards.hand[resolvedIndex] : nullptr;
+    out << "checkpoint=" << cp.action.getSourceIdx()
+        << ",rawIndex=" << raw
+        << ",sourceUniqueId=" << cp.sourceUniqueId
+        << ",resolvedIndex=" << resolvedIndex
+        << ",resolvedUniqueId=" << (resolvedCard ? resolvedCard->uniqueId : -1)
+        << ",sameIndex=" << (raw == resolvedIndex)
+        << ",sameUniqueId=" << (resolvedCard && resolvedCard->uniqueId == cp.sourceUniqueId)
+        << ",semanticMatches=" << matches
+        << ",sourceCardId=" << (int)cp.cardId
+        << ",sourceUpgradeCount=" << (int)cp.upgradeCount
+        << ",sourceCost=" << (int)cp.sourceCost
+        << ",sourceCostForTurn=" << (int)cp.costForTurn
+        << ",sourceFreeToPlayOnce=" << cp.freeToPlayOnce
+        << ",sourceSpecialData=" << cp.specialData
+        << ",sourceRetain=" << cp.sourceRetain
+        << ",target=" << cp.target;
+    if (resolvedCard) {
+        out << ",resolvedCardId=" << (int)resolvedCard->getId()
+            << ",resolvedUpgradeCount=" << resolvedCard->getUpgradeCount()
+            << ",resolvedCost=" << (int)resolvedCard->cost
+            << ",resolvedCostForTurn=" << (int)resolvedCard->costForTurn
+            << ",resolvedFreeToPlayOnce=" << resolvedCard->freeToPlayOnce
+            << ",resolvedSpecialData=" << resolvedCard->specialData
+            << ",resolvedRetain=" << resolvedCard->retain;
+    }
+    return out.str();
+}
+
+static bool replaySourcePrefix(const BattleContext &root,
+                               const search::S3LeafDiagnostic &d,
+                               bool semantic, int &firstMismatch,
+                               std::string &detail) {
+    BattleContext state = root;
+    firstMismatch = -1;
+    for (size_t i = 0; i < d.actionCheckpoints.size(); ++i) {
+        const auto &cp = d.actionCheckpoints[i];
+        std::optional<search::Action> action = semantic
+            ? posteriorProbeRemapAction(cp, state)
+            : std::optional<search::Action>(cp.action);
+        if (!action || !action->isValidAction(state)) {
+            firstMismatch = (int)i;
+            detail = "unresolved_or_illegal";
+            return false;
+        }
+        if (semantic && cp.action.getActionType() == search::ActionType::CARD) {
+            if (!detail.empty()) detail += ";";
+            detail += replayCardDebug(cp, state, *action);
+        }
+        action->execute(state);
+        const auto obs = sts::CombatObservation::fromBattleContext(state);
+        if (obs != cp.observation || state.outcome != cp.outcome) {
+            firstMismatch = (int)i;
+            return false;
+        }
+    }
+    return true;
+}
+
+static void writeReplayDebugRow(const search::S3LeafDiagnostic &d,
+                                const BattleContext &sourceRoot,
+                                std::uint64_t seed, int fightIdx, int decIdx,
+                                std::uint64_t sourceLeafId) {
+    if (g_particlePosteriorReplayDebugFile.empty()) return;
+    int rawMismatch = -1, semanticMismatch = -1;
+    std::string rawDetail, semanticDetail;
+    const bool rawOk = replaySourcePrefix(sourceRoot, d, false, rawMismatch, rawDetail);
+    const bool semanticOk = replaySourcePrefix(sourceRoot, d, true, semanticMismatch, semanticDetail);
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+    std::ifstream probe(g_particlePosteriorReplayDebugFile);
+    const bool empty = !probe.good() || probe.peek() == std::ifstream::traits_type::eof();
+    std::ofstream out(g_particlePosteriorReplayDebugFile, std::ios::app);
+    if (!out) return;
+    if (empty) out << "seed,fightIdx,decIdx,sourceLeafId,sourceParticleIndex,rawSourceReplayOk,"
+                      "semanticSourceReplayOk,rawFirstMismatchCheckpoint,semanticFirstMismatchCheckpoint,"
+                      "rootCarried,reuseGeneration,hiddenFingerprintBeforeMismatch,cardDebug\n";
+    std::uint64_t hiddenBefore = 0;
+    if (semanticMismatch > 0 && semanticMismatch - 1 < (int)d.actionCheckpoints.size())
+        hiddenBefore = d.actionCheckpoints[semanticMismatch - 1].hiddenFingerprint;
+    out << seed << ',' << fightIdx << ',' << decIdx << ',' << sourceLeafId << ','
+        << d.particleIndex << ',' << rawOk << ',' << semanticOk << ','
+        << rawMismatch << ',' << semanticMismatch << ',' << d.rootCarried << ','
+        << d.reuseGeneration << ',' << hiddenBefore << ",\"" << semanticDetail << "\"\n";
+}
+
+static void particlePosteriorProbeOnLeafQuery(const search::S3LeafDiagnostic &d) {
+    if (g_particlePosteriorProbeFile.empty() || !d.searcher || !d.bc) return;
+    if (d.frontierType != 0) return;   // actual S3 frontier leaves only
+    if (g_particlePosteriorProbeMaxGroups >= 0
+        && t_ld.particlePosteriorGroups >= g_particlePosteriorProbeMaxGroups) return;
+    const std::uint64_t sourceLeafId = ++t_ld.particlePosteriorSourceLeafSeq;
+    const BattleContext &base = *d.bc;
+    const auto &particles = d.searcher->belief.particles;
+    const int sourceIndex = static_cast<int>(d.particleIndex);
+
+    ParticlePosteriorProbeRow g;
+    g.seed = t_ld.seed; g.fightIdx = t_ld.fightIdx; g.decIdx = t_ld.decIdx;
+    g.sourceLeafId = sourceLeafId; g.obsHash = d.obsHash; g.treeDepth = d.treeDepth;
+    g.turn = base.turn; g.curHp = base.player.curHp; g.maxHp = base.player.maxHp;
+    g.drawPileSize = (int)base.cards.drawPile.size(); g.encounter = t_ld.encounter;
+    g.rootParticleCount = (int)particles.size();
+    g.positiveParticleCount = (int)std::count_if(
+        particles.begin(), particles.end(),
+        [](const sts::HiddenBattleState &p) { return p.weight > 0.0; });
+    double positiveWeightTotal = 0.0;
+    for (const auto &p : particles) if (p.weight > 0.0) positiveWeightTotal += p.weight;
+    g.sourceParticleIndex = sourceIndex;
+    g.sourceParticleFallback = d.particleUsedFallback ? 1 : 0;
+    g.rootCarriedFlag = d.rootCarried ? 1 : 0;
+    g.reuseGeneration = d.reuseGeneration;
+    g.reuseSearchCount = d.reuseSearchCount;
+    if (!g_particlePosteriorReplayDebugFile.empty()
+        && sourceIndex >= 0 && sourceIndex < (int)particles.size()) {
+        BattleContext sourceRoot = *d.searcher->rootBc;
+        if (search::applyHiddenStateExact(sourceRoot, particles[sourceIndex]))
+            writeReplayDebugRow(d, sourceRoot, t_ld.seed, t_ld.fightIdx,
+                                t_ld.decIdx, sourceLeafId);
+    }
+
+    auto finishGroup = [&]() {
+        t_ld.particlePosteriorRows.push_back(g);
+        ++t_ld.particlePosteriorGroups;
+    };
+
+    // (1) Source simulation needed the stale-particle fallback shuffle: the
+    // stored particle alone does not specify that world. Scientifically
+    // ineligible; NOT an implementation failure and replay is not attempted.
+    if (d.particleUsedFallback) {
+        g.groupEligible = 0;
+        g.sourceParticleReplayOk = -1;
+        g.replayFailure = "SOURCE_PARTICLE_FALLBACK";
+        finishGroup();
+        return;
+    }
+    if (sourceIndex < 0 || sourceIndex >= (int)particles.size()) {
+        g.groupEligible = 0; g.sourceParticleReplayOk = -1; g.invariantOk = 0;
+        g.replayFailure = "SOURCE_PARTICLE_INDEX_INVALID";
+        finishGroup();
+        return;
+    }
+    // (2) The prefix must be exactly replayable by action semantics. Any
+    // card-select action (or a CARD without recorded identity) makes the whole
+    // group ineligible — no raw-index replay is pretended to be equivalent.
+    for (const auto &cp : d.actionCheckpoints) {
+        const auto type = cp.action.getActionType();
+        const bool intrinsicallyUnsupported =
+            (type != search::ActionType::CARD
+             && type != search::ActionType::END_TURN
+             && type != search::ActionType::POTION)
+            || (type == search::ActionType::CARD && !cp.hasCardKey);
+        if (intrinsicallyUnsupported) {
+            g.groupEligible = 0;
+            g.sourceParticleReplayOk = -1;
+            g.replayFailure = "UNREPLAYABLE_ACTION_PREFIX";
+            finishGroup();
+            return;
+        }
+    }
+
+    const CombatObservation sourceFinalObs = CombatObservation::fromBattleContext(base);
+    struct Candidate {
+        int rootIndex = -1;
+        double weight = 0.0;
+        bool source = false;
+        BattleContext state;
+        sts::FullHiddenStateKey key;
+    };
+    using PhysicalCardKey = std::tuple<CardId, std::int16_t,
+                                       std::int8_t, std::int8_t, bool, bool, bool>;
+    struct ReplayStateKey {
+        sts::FullHiddenStateKey hidden;
+        std::vector<PhysicalCardKey> draw, hand, discard, exhaust;
+        bool operator<(const ReplayStateKey &o) const {
+            return std::tie(hidden, draw, hand, discard, exhaust)
+                < std::tie(o.hidden, o.draw, o.hand, o.discard, o.exhaust);
+        }
+    };
+    // Canonicalize the identity of each ordered card zone so that
+    // permutations of behaviorally-identical duplicate cards (differing only
+    // by simulator-private CardInstance::uniqueId) collapse during replay
+    // dedup. All gameplay-meaningful fields (id, specialData, cost,
+    // costForTurn, upgraded, freeToPlayOnce, retain) remain in the key; zone
+    // ORDER is preserved (hand/draw/discard ordering is observably meaningful).
+    auto physicalCards = [](const std::vector<CardInstance> &cards) {
+        std::vector<PhysicalCardKey> out;
+        out.reserve(cards.size());
+        for (const auto &c : cards)
+            out.emplace_back(c.id, c.specialData, c.cost,
+                             c.costForTurn, c.upgraded, c.freeToPlayOnce, c.retain);
+        return out;
+    };
+    auto replayStateKey = [&](const BattleContext &state) {
+        ReplayStateKey key{sts::fullHiddenStateKey(state), {}, {}, {}, {}};
+        key.draw = physicalCards(state.cards.drawPile);
+        key.hand = physicalCards(std::vector<CardInstance>(
+            state.cards.hand.begin(), state.cards.hand.begin() + state.cards.cardsInHand));
+        key.discard = physicalCards(state.cards.discardPile);
+        key.exhaust = physicalCards(state.cards.exhaustPile);
+        return key;
+    };
+    std::vector<Candidate> compatible;
+    std::map<sts::FullHiddenStateKey, size_t> byKey;   // equality-backed exact identity
+    int acceptedParticles = 0;
+
+    auto replayCandidate = [&](int particleIndex, bool isSource) {
+        Candidate c;
+        c.rootIndex = particleIndex;
+        c.weight = positiveWeightTotal > 0.0
+            ? particles[particleIndex].weight / positiveWeightTotal : 0.0;
+        c.source = isSource;
+        c.state = *d.searcher->rootBc;
+        if (!search::applyHiddenStateExact(c.state, particles[particleIndex])) {
+            ++g.drawPileMismatches;
+            return;
+        }
+        std::vector<Candidate> frontier{std::move(c)};
+        for (size_t checkpointIndex = 0; checkpointIndex < d.actionCheckpoints.size(); ++checkpointIndex) {
+            const auto &cp = d.actionCheckpoints[checkpointIndex];
+            std::vector<Candidate> next;
+            int generatedThisCheckpoint = 0;
+            for (const auto &stateCandidate : frontier) {
+                std::vector<search::Action> actions;
+                if (cp.action.getActionType() == search::ActionType::CARD) {
+                    search::BattleScumSearcher3::CardActionKey key;
+                    key.id = cp.cardId; key.upgradeCount = cp.upgradeCount;
+                    key.costForTurn = cp.costForTurn; key.freeToPlayOnce = cp.freeToPlayOnce;
+                    key.specialData = cp.specialData; key.target = cp.target;
+                    for (int hi = 0; hi < stateCandidate.state.cards.cardsInHand; ++hi) {
+                        const auto &card = stateCandidate.state.cards.hand[hi];
+                        if (card.getId() == key.id && card.getUpgradeCount() == key.upgradeCount
+                            && card.costForTurn == key.costForTurn
+                            && card.freeToPlayOnce == key.freeToPlayOnce
+                            && card.specialData == key.specialData) {
+                            auto action = key.target >= 0
+                                ? search::Action(search::ActionType::CARD, hi, key.target)
+                                : search::Action(search::ActionType::CARD, hi);
+                            if (action.isValidAction(stateCandidate.state)) actions.push_back(action);
+                        }
+                    }
+                    g.semanticBranchesCreated += (int)actions.size();
+                    g.extraSemanticBranches += std::max(0, (int)actions.size() - 1);
+                    generatedThisCheckpoint += (int)actions.size();
+                } else {
+                    const auto action = posteriorProbeRemapAction(cp, stateCandidate.state);
+                    if (action && action->isValidAction(stateCandidate.state)) actions.push_back(*action);
+                }
+                for (const auto &action : actions) {
+                    Candidate successor = stateCandidate;
+                    action.execute(successor.state);
+                    const auto obs = CombatObservation::fromBattleContext(successor.state);
+                    if (obs == cp.observation && successor.state.outcome == cp.outcome)
+                        next.push_back(std::move(successor));
+                    else if (obs != cp.observation) ++g.intermediateObservationMismatches;
+                    else ++g.intermediateOutcomeMismatches;
+                }
+            }
+            std::map<ReplayStateKey, size_t> checkpointKeys;
+            std::vector<Candidate> deduped;
+            for (auto &candidate : next) {
+                const auto key = replayStateKey(candidate.state);
+                const auto inserted = checkpointKeys.emplace(key, deduped.size());
+                if (inserted.second)
+                    deduped.push_back(std::move(candidate));
+                else {
+                    auto &existing = deduped[inserted.first->second];
+                    ++g.branchesCollapsed;
+                }
+            }
+            g.maxSurvivingBranches = std::max(g.maxSurvivingBranches, (int)deduped.size());
+            if (!g_particlePosteriorReplayTraceFile.empty()) {
+                static std::mutex traceMutex;
+                std::lock_guard<std::mutex> lock(traceMutex);
+                std::ifstream probe(g_particlePosteriorReplayTraceFile);
+                const bool empty = !probe.good() || probe.peek() == std::ifstream::traits_type::eof();
+                std::ofstream out(g_particlePosteriorReplayTraceFile, std::ios::app);
+                if (out) {
+                    if (empty)
+                        out << "seed,sourceLeafId,checkpoint,incoming,generated,outgoing,actionType,cardId\n";
+                    out << t_ld.seed << ',' << sourceLeafId << ',' << checkpointIndex << ','
+                        << (int)frontier.size() << ',' << generatedThisCheckpoint
+                        << ',' << (int)deduped.size()
+                        << ',' << (int)cp.action.getActionType() << ',' << (int)cp.cardId << '\n';
+                }
+            }
+            if (deduped.size() > g_particlePosteriorReplayCeiling) {
+                g.replayExplosion = 1;
+                g.replayFailure = "AMBIGUOUS_SEMANTIC_REPLAY_EXPLOSION";
+                return;
+            }
+            frontier = std::move(deduped);
+            if (frontier.empty()) return;
+        }
+        std::map<sts::FullHiddenStateKey, Candidate> localLeaves;
+        bool finalAccepted = false;
+        for (auto &survivor : frontier) {
+            const CombatObservation finalObs = CombatObservation::fromBattleContext(survivor.state);
+            if (finalObs != sourceFinalObs || survivor.state.outcome != d.outcome) {
+                ++g.finalObservationMismatches;
+                continue;
+            }
+            survivor.key = sts::fullHiddenStateKey(survivor.state);
+            const auto existing = localLeaves.find(survivor.key);
+            if (existing == localLeaves.end()) {
+                localLeaves.emplace(survivor.key, std::move(survivor));
+            } else if (survivor.source && !existing->second.source) {
+                existing->second = std::move(survivor);
+            }
+        }
+        if (!localLeaves.empty()) {
+            const double branchWeight = c.weight / localLeaves.size();
+            for (auto &[key, survivor] : localLeaves) {
+                survivor.weight = branchWeight;
+                const auto found = byKey.find(key);
+                if (found != byKey.end()) {
+                    compatible[found->second].weight += survivor.weight;
+                    compatible[found->second].source |= survivor.source;
+                } else {
+                    byKey.emplace(key, compatible.size());
+                    compatible.push_back(std::move(survivor));
+                }
+            }
+            finalAccepted = true;
+        }
+        if (finalAccepted) ++acceptedParticles;
+    };
+
+    g.replayAttempted = g.positiveParticleCount
+        + (particles[sourceIndex].weight > 0.0 ? 0 : 1);
+    replayCandidate(sourceIndex, true);
+    for (int i = 0; i < (int)particles.size(); ++i)
+        if (particles[i].weight > 0.0 && i != sourceIndex)
+            replayCandidate(i, false);
+
+    if (g.replayExplosion) {
+        g.groupEligible = 0;
+        g.sourceParticleReplayOk = -1;
+        finishGroup();
+        return;
+    }
+
+    g.replayCompatibleParticles = acceptedParticles;
+    bool sourceOk = false;
+    double compatibleMass = 0.0;
+    for (const auto &c : compatible) {
+        compatibleMass += c.weight;
+        if (c.source) sourceOk = true;
+    }
+    g.uniqueCompatibleStates = (int)compatible.size();
+    g.compatibleMass = compatibleMass;
+
+    // (3) Mandatory source-particle replay invariant. The exact source
+    // particle MUST reproduce the source leaf; failure is an implementation
+    // failure that invalidates the run.
+    if (!sourceOk) {
+        g.sourceParticleReplayOk = 0;
+        g.invariantOk = 0;
+        g.replayFailure = "SOURCE_PARTICLE_REPLAY_FAILED";
+        finishGroup();
+        return;
+    }
+    g.sourceParticleReplayOk = 1;
+
+    // (4) Evaluation set: all unique compatible states by default; if K > 0,
+    // deterministic mass-respecting selection (highest weight first, ties by
+    // discovery order) with the source world always included, no padding.
+    std::vector<int> order(compatible.size());
+    for (size_t i = 0; i < order.size(); ++i) order[i] = (int)i;
+    const int cap = g_particlePosteriorProbeK > 0
+        ? std::min(g_particlePosteriorProbeK, (int)compatible.size())
+        : (int)compatible.size();
+    if ((int)order.size() > cap) {
+        std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
+            return compatible[a].weight > compatible[b].weight;
+        });
+        order.resize(cap);
+        int sourceSlot = -1;
+        for (int i = 0; i < (int)compatible.size(); ++i)
+            if (compatible[i].source) { sourceSlot = i; break; }
+        if (sourceSlot >= 0 && !order.empty()
+            && std::find(order.begin(), order.end(), sourceSlot) == order.end())
+            order.back() = sourceSlot;
+    }
+    g.evaluatedWorldCount = (int)order.size();
+    double evaluatedMass = 0.0;
+    for (int idx : order) evaluatedMass += compatible[idx].weight;
+    g.evaluatedMass = evaluatedMass;
+
+    const std::uint64_t rngSeed = (t_ld.seed * 0x9e3779b97f4a7c15ULL)
+                                ^ sourceLeafId ^ 0x9e3779b97f4a7c15ULL;
+    constexpr int kControlledRollouts = 4;
+    struct ControlledValue { double mean = 0.0; double std = 0.0; };
+    std::map<std::vector<sts::FullHiddenCardId>, ControlledValue> controlled;
+    for (int idx : order) {
+        const auto &candidate = compatible[idx];
+        auto &value = controlled[candidate.key.drawPileOrder];
+        std::vector<double> samples;
+        samples.reserve(kControlledRollouts);
+        for (int replicate = 0; replicate < kControlledRollouts; ++replicate) {
+            BattleContext controlledState = base;
+            controlledState.cards.drawPile = candidate.state.cards.drawPile;
+            std::mt19937_64 controlledRng(rngSeed ^ (std::uint64_t)replicate
+                                          * 0xd1b54a32d192ed03ULL);
+            std::vector<search::Action> controlledActions;
+            double controlledTarget = std::numeric_limits<double>::quiet_NaN();
+            bool controlledTerminal = false;
+            d.searcher->diagnosticRollout(controlledState, controlledActions,
+                                          controlledRng, controlledTarget,
+                                          controlledTerminal);
+            samples.push_back(controlledTarget);
+        }
+        value.mean = std::accumulate(samples.begin(), samples.end(), 0.0)
+            / samples.size();
+        double variance = 0.0;
+        for (double sample : samples)
+            variance += (sample - value.mean) * (sample - value.mean);
+        value.std = std::sqrt(variance / samples.size());
+    }
+    t_ld.particlePosteriorRows.push_back(g);   // group summary row first
+    ++t_ld.particlePosteriorGroups;
+    for (int ordinal = 0; ordinal < (int)order.size(); ++ordinal) {
+        const auto &c = compatible[order[ordinal]];
+        BattleContext state = c.state;   // exact full leaf world, draw order + 6 RNG streams preserved
+        std::mt19937_64 diagnosticRng(rngSeed);   // same CRN seed across worlds within this group
+        std::vector<search::Action> actions;
+        double target = std::numeric_limits<double>::quiet_NaN();
+        bool terminal = false;
+        const int steps = d.searcher->diagnosticRollout(state, actions, diagnosticRng,
+                                                        target, terminal);
+        ParticlePosteriorProbeRow w = g;   // repeat source-group metadata on every world row
+        w.rowType = 1;
+        w.candidateParticleIndex = c.rootIndex;
+        w.candidateWeight = c.weight;
+        w.candidateIsSource = c.source ? 1 : 0;
+        w.dedupOrdinal = ordinal;
+        w.rngSignature = posteriorProbeRngSignature(c.key);
+        w.drawOrder = particleLeafDrawOrder(c.state);
+        w.rolloutSteps = steps;
+        w.terminal = terminal ? 1 : 0;
+        w.target = target;
+        const auto controlledIt = controlled.find(c.key.drawPileOrder);
+        if (controlledIt != controlled.end()) {
+            w.controlledTarget = controlledIt->second.mean;
+            w.controlledTargetStd = controlledIt->second.std;
+        }
+        t_ld.particlePosteriorRows.push_back(std::move(w));
+    }
+}
+
 static std::string leafDiagHeaderStr() {
     // Provenance prefix: encounterName is the UPPER_CASE enum NAME (Python's
     // encounter_difficulty() tables); the canonical feature block below
@@ -3125,7 +3738,8 @@ static void fightRepReplay(const std::string &captureDir, const std::string &out
               << " cells in " << wall << "s\n";
 }
 
-static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV) {
+static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV,
+                               bool e2cCapture = false) {
     vDisconnect();
     t_oocStrategicTraceRows.clear();
     t_oocStrategicTraceDecision = 0;
@@ -3142,6 +3756,14 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
     }
 
     PathHistory path;                // pv* features for V queries (train/serve parity)
+    E2cCapture e2c;
+    if (e2cCapture) {
+        trainingRunStart();
+        e2c.seed = seed;
+        e2c.path = &path;
+        t_e2c = &e2c;
+        t_e2cRows.clear();
+    }
     t_pathActionUses = 0;
     t_actFightProbeDecisionIdx = 0;
     t_curPath = &path;
@@ -3161,6 +3783,7 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             if (search::g_useSearcher3 && g_termWin && g_winNet.ok)
                 termWinArmForBattle(gc);   // terminal-leaf run-value bonus (cross-combat setup)
             BattleContext bc{}; bc.init(gc);
+            if (t_e2c) e2cBeginFight(fightsTotal, gc, bc);
             if (!g_fightRepCaptureDir.empty() && battleAct == 3 && battleRoom == Room::BOSS)
                 fightRepCaptureStart(bc, seed);   // fightrep: fight-start snapshot (floor-50 boss)
             if (g_sdiagActive) {   // searchdiag: per-fight run context
@@ -3201,7 +3824,13 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             if (search::g_useSearcher3 && g_termWin) termWinDisarm();
             ++fightsTotal;
             if (bc.outcome == Outcome::PLAYER_LOSS) { ++fightsLost; if (deathCombat < 0) { deathCombat = fightsTotal; deathEncounter = (int)bc.encounter; } }
-            bc.exitBattle(gc);
+            if (t_e2c) {
+                g_onBattleExitPersistent = e2cRawObserver;
+                bc.exitBattle(gc);
+                g_onBattleExitPersistent = nullptr;
+            } else {
+                bc.exitBattle(gc);
+            }
             if (g_cpsiCtrProbe) cpsiCounterProbeAtState(gc);   // C_psi counter-sensitivity probe
             stallLogRow(gc, bc, seed);                          // stall telemetry (opt-in)
             if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
@@ -3230,6 +3859,9 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
         } else if (gc.screenState == ScreenState::REWARDS) {
             using RT = search::GameAction::RewardsActionType;
             auto &r = gc.info.rewardsContainer;                          // take non-card rewards first,
+            if (t_e2c) e2cCapturePost(gc);                               // POST boundary: non-card rewards drained, card reward pending
+            if (t_e2c && t_e2c->current)
+                t_e2c->current->screenTrace += "S=" + std::to_string((int)gc.screenState) + ";";
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);   // else the screen
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);  // never clears
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
@@ -3298,6 +3930,40 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
         }
     }
     if (t_vq.active) vnetQueryLogFlush();
+    if (e2cCapture) {
+        // Same effective label semantics as this function's RunResult (honors an
+        // explicit STS_STOP_AFTER_ACT horizon without labelling solely from
+        // gc.outcome). Integrity still rejects genuinely unresolved runs and any
+        // simulator-health failure, so E2c does not weaken the shared predicate.
+        const bool decided = result.won || gc.outcome != GameOutcome::UNDECIDED;
+        const bool validRun = trainingRunValid(decided);
+        if (validRun)
+            t_e2cRows = e2cRunRows(e2c, result.won, result.floor, result.hpEnd);
+        if (validRun) for (int i = 0; i < 3; ++i) {
+            const auto &s = e2c.roomStats[i];
+            g_e2cCounts[i][0] += s.eligible;
+            g_e2cCounts[i][1] += s.raw;
+            g_e2cCounts[i][2] += s.post;
+            g_e2cCounts[i][3] += std::count_if(e2c.fights.begin(), e2c.fights.end(),
+                [i](const E2cFight &f) { return f.rawSeen && f.postSeen &&
+                    (f.room == (i == 0 ? (int)Room::MONSTER : i == 1 ? (int)Room::ELITE : (int)Room::BOSS)); });
+            g_e2cCounts[i][4] += std::count_if(e2c.fights.begin(), e2c.fights.end(),
+                [i](const E2cFight &f) { return f.rawSeen && !f.postSeen &&
+                    (f.room == (i == 0 ? (int)Room::MONSTER : i == 1 ? (int)Room::ELITE : (int)Room::BOSS)); });
+            g_e2cCounts[i][5] += std::count_if(e2c.fights.begin(), e2c.fights.end(),
+                [i](const E2cFight &f) { return !f.rawSeen && f.postSeen &&
+                    (f.room == (i == 0 ? (int)Room::MONSTER : i == 1 ? (int)Room::ELITE : (int)Room::BOSS)); });
+        }
+        if (validRun) for (const auto &f : e2c.fights)
+            if (f.rawSeen != f.postSeen)
+                std::cerr << "e2c incomplete seed=" << e2c.seed << " fight=" << f.index
+                          << " room=" << e2cRoomName(f.room) << " encounter=" << f.encounter
+                          << " raw=" << f.rawSeen << " post=" << f.postSeen
+                          << " relics=" << f.rewardRelics << " pending_cards=" << f.pendingCards
+                          << " trace=" << f.screenTrace << '\n';
+        t_e2c = nullptr;
+        g_onBattleExitPersistent = nullptr;
+    }
     vDisconnect();
     return result;
 }
@@ -6342,6 +7008,156 @@ static std::string richStateHeader() {
     return h;
 }
 
+// ---------------------------------------------------------------------------
+// E2c: matched RAW / POST snapshots of survived ordinary/elite/act-1-2 boss
+// combats at the exact combat-terminal boundary.  RAW fires inside
+// BattleContext::exitBattle immediately after persistent-transfer and before
+// regainControl()/reward generation; POST fires at the REWARDS screen after all
+// non-card rewards are drained, immediately before the first card pick/skip.
+// Only the real run-loop exit arms the BattleContext hook (see runFullRunOOC),
+// so copied/counterfactual exits cannot produce rows.
+// ---------------------------------------------------------------------------
+static std::string e2cRoomName(int room) {
+    switch ((Room)room) {
+        case Room::MONSTER: return "MONSTER";
+        case Room::ELITE: return "ELITE";
+        case Room::BOSS: return "BOSS";
+        default: return "OTHER";
+    }
+}
+
+static std::string e2cExplicitRelics(const GameContext &gc) {
+    std::vector<int> has(kNumRelics, 0), data(kNumRelics, 0);
+    for (const auto &ri : gc.relics.relics) {
+        const int id = (int)ri.id;
+        if (id >= 0 && id < kNumRelics) { has[id] = 1; data[id] = ri.data; }   // exact signed data
+    }
+    std::ostringstream out;
+    for (int i = 0; i < kNumRelics; ++i) { if (i) out << ','; out << has[i]; }      // relic_has_<id>
+    for (int i = 0; i < kNumRelics; ++i) out << ',' << data[i];                     // relic_data_<id>
+    return out.str();
+}
+
+static std::string e2cHeader() {
+    std::ostringstream out;
+    out << "seed,fight_index,boundary,room_type,encounter_id," << richStateHeader();
+    for (int i = 0; i < kNumRelics; ++i) out << ",relic_has_" << i;
+    for (int i = 0; i < kNumRelics; ++i) out << ",relic_data_" << i;
+    out << ",won,finalFloor,endHp\n";
+    return out.str();
+}
+
+static void e2cBeginFight(int fightIndex, const GameContext &gc, const BattleContext &bc) {
+    if (!t_e2c) return;
+    t_e2c->current = nullptr;
+    if (gc.curRoom != Room::MONSTER && gc.curRoom != Room::ELITE && gc.curRoom != Room::BOSS) return;
+    if (gc.curRoom == Room::BOSS && gc.act > 2) return;   // exclude act-3/4 terminal boss
+    E2cFight f;
+    f.room = (int)gc.curRoom; f.encounter = (int)bc.encounter;
+    f.index = fightIndex;
+    t_e2c->fights.push_back(std::move(f));
+    t_e2c->current = &t_e2c->fights.back();
+}
+
+static void e2cRawObserver(const BattleContext &bc, GameContext &gc) {
+    if (t_e2c && t_e2c->current && bc.outcome == Outcome::PLAYER_VICTORY) {
+        t_e2c->current->raw = richRow(gc, *t_e2c->path);
+        t_e2c->current->rawRelics = e2cExplicitRelics(gc);
+        t_e2c->current->rawSeen = true;
+        auto &s = t_e2c->roomStats[t_e2c->current->room == (int)Room::MONSTER ? 0
+                                  : t_e2c->current->room == (int)Room::ELITE ? 1 : 2];
+        ++s.eligible;
+        ++s.raw;
+    }
+}
+
+static void e2cCapturePost(GameContext &gc) {
+    if (!t_e2c || !t_e2c->current || t_e2c->current->postSeen) return;
+    auto &r = gc.info.rewardsContainer;
+    t_e2c->current->screenTrace += "REWARDS(" + std::to_string(r.relicCount) + "," +
+        std::to_string(r.cardRewardCount) + ");";
+    if (t_e2c->current->rewardRelics.empty()) {
+        for (int i = 0; i < r.relicCount; ++i) {
+            if (i) t_e2c->current->rewardRelics += ";";
+            t_e2c->current->rewardRelics += std::to_string((int)r.relics[i]);
+        }
+    }
+    t_e2c->current->pendingCards = r.cardRewardCount;
+    if (gc.screenState != ScreenState::REWARDS || r.goldRewardCount || r.relicCount ||
+        r.potionCount || (g_collectKeys && (r.emeraldKey || r.sapphireKey)) ||
+        r.cardRewardCount == 0) return;
+    t_e2c->current->post = richRow(gc, *t_e2c->path);
+    t_e2c->current->postRelics = e2cExplicitRelics(gc);
+    t_e2c->current->postSeen = true;
+    auto &s = t_e2c->roomStats[t_e2c->current->room == (int)Room::MONSTER ? 0
+                              : t_e2c->current->room == (int)Room::ELITE ? 1 : 2];
+    ++s.post;
+}
+
+static std::string e2cRunRows(const E2cCapture &cap, bool won, int finalFloor, int endHp) {
+    std::ostringstream out;
+    for (const auto &f : cap.fights) {
+        if (!f.rawSeen && !f.postSeen) continue;
+        const std::string meta = std::string(e2cRoomName(f.room)) + ',' + std::to_string(f.encounter) + ',';
+        if (f.rawSeen)
+            out << cap.seed << ',' << f.index << ",RAW," << meta << f.raw << ',' << f.rawRelics
+                << ',' << (won ? 1 : 0) << ',' << finalFloor << ',' << endHp << '\n';
+        if (f.postSeen)
+            out << cap.seed << ',' << f.index << ",POST," << meta << f.post << ',' << f.postRelics
+                << ',' << (won ? 1 : 0) << ',' << finalFloor << ',' << endHp << '\n';
+    }
+    return out.str();
+}
+
+static void e2cGen(int nSeeds, int sims, int asc, const std::string &outfile,
+                   long long seedOffset = 0) {
+    trainingCampaignStart();
+    for (auto &row : g_e2cCounts) for (auto &v : row) v = 0;
+    const bool append = seedOffset > 0;
+    std::cout << "e2cgen    seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
+              << "  sims " << sims << "  asc " << asc
+              << (append ? "  [append]" : "") << "  threads " << numThreads()
+              << "  -> " << outfile << "\n";
+    std::ofstream f(outfile, append ? std::ios::app : std::ios::out);
+    if (f.tellp() == 0) { f << e2cHeader(); f.flush(); }
+    auto t0 = std::chrono::steady_clock::now();
+    long long rowCount = 0; int done = 0;
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        runFullRunOOC((std::uint64_t)(seedOffset + s), sims, asc, false, true, /*e2cCapture=*/true);
+        std::string rows = std::move(t_e2cRows);
+        #pragma omp critical(e2c_write)
+        {
+            f << rows; f.flush();
+            rowCount += std::count(rows.begin(), rows.end(), '\n');
+            if (++done % 100 == 0 || done == nSeeds) {
+                const double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+                std::printf("  %d/%d runs, %lld rows, %.0fs (%.2fs/run)\n", done, nSeeds, rowCount, el, el / done);
+                std::fflush(stdout);
+            }
+        }
+    }
+    const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("wrote %lld E2c rows from %d runs in %.1fs\n", rowCount, nSeeds, wall);
+    std::printf("training integrity: requested=%d completed=%d invalid/quarantined=%d "
+                "branches=%d health_failures=%d rows=%lld output=%s\n",
+                nSeeds, nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
+                g_trainingInvalidBranches.load(), g_trainingHealthFailures.load(), rowCount, outfile.c_str());
+    for (int i = 0; i < 3; ++i)
+        std::printf("e2c accounting room=%s eligible=%lld raw=%lld post=%lld pairs=%lld raw_only=%lld post_only=%lld\n",
+                    i == 0 ? "MONSTER" : i == 1 ? "ELITE" : "BOSS",
+                    g_e2cCounts[i][0].load(), g_e2cCounts[i][1].load(), g_e2cCounts[i][2].load(),
+                    g_e2cCounts[i][3].load(), g_e2cCounts[i][4].load(), g_e2cCounts[i][5].load());
+    writeTrainingProvenance(outfile, "e2cgen", nSeeds,
+                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
+                            g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc);
+    std::ofstream schema(outfile + ".schema.json");
+    if (schema)
+        schema << "{\n  \"schema_version\": \"e2c-v2\",\n"
+               << "  \"raw_primary_retains_incomplete_pairs\": true,\n"
+               << "  \"matched_arms_require_complete_raw_post_pairs\": true\n}\n";
+}
+
 static std::string restCounterfactualHeader() {
     return "seed,restIdx," + richStateHeader()
          + ",restWon,restFloor,restHp,smithWon,smithFloor,smithHp";
@@ -7048,6 +7864,112 @@ static void particleLeafProbe(int nSeeds, int sims, int asc,
     std::cout << "particle leaf probe wrote " << outFile << " (K="
               << g_particleLeafProbeK << ", rate=" << g_particleLeafProbeRate
               << ", max_groups=" << g_particleLeafProbeMaxGroups << ")\n";
+}
+
+static std::string particlePosteriorProbeHeaderStr() {
+    return "rowType,seed,fightIdx,decIdx,sourceLeafId,obsHash,treeDepth,encounterName,turn,"
+           "curHp,maxHp,drawPileSize,rootParticleCount,positiveParticleCount,replayAttempted,"
+           "replayCompatibleParticles,uniqueCompatibleStates,compatibleMass,evaluatedWorldCount,"
+           "evaluatedMass,sourceParticleIndex,sourceParticleReplayOk,sourceParticleFallback,"
+           "groupEligible,invariantOk,replayFailure,semanticReplayFailures,actionIllegalFailures,"
+           "intermediateObservationMismatches,intermediateOutcomeMismatches,finalObservationMismatches,"
+           "drawPileMismatches,firstMismatchCheckpoint,expectedMismatchHash,actualMismatchHash,mismatchActionBits,"
+           "rootCarried,reuseGeneration,reuseSearchCount,candidateParticleIndex,"
+           "candidateWeight,candidateIsSource,dedupOrdinal,semanticBranchesCreated,extraSemanticBranches,maxSurvivingBranches,"
+           "branchesCollapsed,replayExplosion,rngSignature,drawOrder,terminal,target,"
+           "fullTarget,controlledTarget,controlledTargetStd,rolloutSteps";
+}
+
+static std::string particlePosteriorProbeSeedCsv() {
+    std::ostringstream o;
+    for (const auto &r : t_ld.particlePosteriorRows) {
+        o << r.rowType << ',' << r.seed << ',' << r.fightIdx << ',' << r.decIdx << ','
+          << r.sourceLeafId << ',' << r.obsHash << ',' << r.treeDepth << ',' << r.encounter << ','
+          << r.turn << ',' << r.curHp << ',' << r.maxHp << ',' << r.drawPileSize << ','
+          << r.rootParticleCount << ',' << r.positiveParticleCount << ',' << r.replayAttempted << ','
+          << r.replayCompatibleParticles << ',' << r.uniqueCompatibleStates << ','
+          << r.compatibleMass << ',' << r.evaluatedWorldCount << ',' << r.evaluatedMass << ','
+          << r.sourceParticleIndex << ',' << r.sourceParticleReplayOk << ','
+          << r.sourceParticleFallback << ',' << r.groupEligible << ',' << r.invariantOk << ','
+          << (r.replayFailure.empty() ? std::string("-") : r.replayFailure) << ','
+          << r.semanticReplayFailures << ',' << r.actionIllegalFailures << ','
+          << r.intermediateObservationMismatches << ',' << r.intermediateOutcomeMismatches << ','
+          << r.finalObservationMismatches << ',' << r.drawPileMismatches << ','
+          << r.firstMismatchCheckpoint << ',' << r.expectedMismatchHash << ','
+          << r.actualMismatchHash << ',' << r.mismatchActionBits << ','
+          << r.rootCarriedFlag << ',' << r.reuseGeneration << ',' << r.reuseSearchCount << ','
+          << r.candidateParticleIndex << ',' << r.candidateWeight << ','
+          << r.candidateIsSource << ',' << r.dedupOrdinal << ',' << r.semanticBranchesCreated << ','
+          << r.extraSemanticBranches << ','
+          << r.maxSurvivingBranches << ',' << r.branchesCollapsed << ',' << r.replayExplosion << ','
+          << r.rngSignature << ','
+          << '"' << r.drawOrder << '"' << ',' << r.terminal << ',' << r.target << ','
+          << r.target << ',' << r.controlledTarget << ',' << r.controlledTargetStd << ','
+          << r.rolloutSteps << '\n';
+    }
+    return o.str();
+}
+
+static void recordPosteriorSearchFingerprint(
+    const BattleContext &bc, const search::BattleScumSearcher3 &s3) {
+    int best = -1;
+    std::int64_t visits = -1;
+    for (int i = 0; i < (int)s3.root.edges.size(); ++i) {
+        const auto count = s3.root.edges[i].child.simulationCount;
+        if (count > visits) { visits = count; best = i; }
+    }
+    std::ostringstream row;
+    row << t_ld.seed << ':' << t_ld.decIdx++ << ':'
+        << sts::CombatObservation::fromBattleContext(bc).visibleHash() << ':'
+        << (best >= 0 ? s3.root.edges[best].action.bits : 0xffffffffu) << ':'
+        << visits << ';';
+    t_ld.actionFingerprint += row.str();
+}
+
+// Phase-1b driver. Identical run regime to particle_leaf_probe (forced
+// fair-Searcher3); additionally sets g_s3LeafTraceActions so step() records
+// per-action semantic checkpoints. Writes <out>.runs.csv (one row per seed,
+// game-independent of probe work) as the probe-OFF vs probe-ON determinism
+// comparator.
+static void particlePosteriorProbe(int nSeeds, int sims, int asc,
+                                   const std::string &outFile, long long seedOffset = 0) {
+    search::g_richCombatFeatures = true;
+    std::ofstream f(outFile);
+    if (!f) { std::cerr << "particle_posterior_probe: cannot open " << outFile << '\n'; return; }
+    std::ofstream runs(outFile + ".runs.csv");
+    if (!runs) { std::cerr << "particle_posterior_probe: cannot open " << outFile << ".runs.csv\n"; return; }
+    runs << "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,actionFingerprint\n";
+    f << particlePosteriorProbeHeaderStr() << '\n';
+    g_leafdiagActive = true;
+    const auto t0 = std::chrono::steady_clock::now();
+    long long rows = 0;
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        search::g_onS3LeafQuery = particlePosteriorProbeOnLeafQuery;
+        search::g_s3LeafTraceActions = true;
+        search::g_onSearchComplete3 = recordPosteriorSearchFingerprint;
+        t_ld.init((std::uint64_t)(seedOffset + s));
+        const RunResult r = runFullRunOOC((std::uint64_t)(seedOffset + s), sims, asc, false, false);
+        const std::string out = particlePosteriorProbeSeedCsv();
+        search::g_onS3LeafQuery = nullptr;
+        search::g_s3LeafTraceActions = false;
+        search::g_onSearchComplete3 = nullptr;
+        #pragma omp critical
+        {
+            f << out;
+            runs << (seedOffset + s) << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
+                 << r.act << ',' << r.hpEnd << ',' << r.maxHp << ',' << r.fightsLost << ','
+                 << r.deathCombat << ',' << r.deathEncounter << ',"'
+                 << t_ld.actionFingerprint << '"\n';
+            rows += std::count(out.begin(), out.end(), '\n');
+        }
+    }
+    g_leafdiagActive = false;
+    const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    std::printf("particle posterior probe wrote %s (%lld rows, K=%s, max_groups=%d) in %.1fs (%.2fs/seed)\n",
+                outFile.c_str(), rows,
+                g_particlePosteriorProbeK > 0 ? std::to_string(g_particlePosteriorProbeK).c_str() : "all",
+                g_particlePosteriorProbeMaxGroups, wall, wall / std::max(1, nSeeds));
 }
 
 // ---------------------------------------------------------------------------
@@ -11605,6 +12527,22 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_PARTICLE_LEAF_PROBE_MAX_GROUPS")) {
         const int n = std::atoi(d); if (n >= 0) g_particleLeafProbeMaxGroups = n;
     }
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_PROBE_FILE")) {
+        g_particlePosteriorProbeFile = d;
+    }
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_PROBE_K")) {
+        const int k = std::atoi(d); if (k >= 0) g_particlePosteriorProbeK = k;
+    }
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_PROBE_MAX_GROUPS")) {
+        const int n = std::atoi(d); if (n >= -1) g_particlePosteriorProbeMaxGroups = n;
+    }
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_REPLAY_DEBUG_FILE"))
+        g_particlePosteriorReplayDebugFile = d;
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_REPLAY_CEILING")) {
+        const int n = std::atoi(d); if (n >= 1) g_particlePosteriorReplayCeiling = n;
+    }
+    if (const char *d = std::getenv("STS_PARTICLE_POSTERIOR_REPLAY_TRACE_FILE"))
+        g_particlePosteriorReplayTraceFile = d;
     if (const char *d = std::getenv("STS_FRONTIERGEN_PER_STRATUM")) {   // frontiergen reservoir capacity per stratum per seed
         const int n = std::atoi(d);
         if (n >= 1) g_fgPerStratum = n;
@@ -11758,6 +12696,14 @@ int main(int argc, char **argv) {
         std::string out = argc > 6 ? argv[6] : "vrich.csv";
         long long seedOff = argc > 7 ? std::stoll(argv[7]) : 0;
         dataGen2(nSeeds, sims, asc, eps, out, seedOff);
+
+    } else if (mode == "e2cgen") {        // E2c matched RAW/POST combat-terminal dataset
+        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 8;
+        int sims      = argc > 3 ? std::stoi(argv[3]) : 1000;
+        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
+        std::string out = argc > 5 ? argv[5] : "build/e2c_raw_terminal.csv";
+        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
+        e2cGen(nSeeds, sims, asc, out, seedOff);
 
     } else if (mode == "datagen3") {      // RICH outcomes + paired rest/card counterfactuals
         int nSeeds       = argc > 2  ? std::stoi(argv[2])  : 2000;
@@ -12305,6 +13251,18 @@ int main(int argc, char **argv) {
         search::g_useSearcher3 = true;
         std::cout << "[particle_leaf_probe forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
         particleLeafProbe(nSeeds, sims, asc, out, seedOff);
+
+    } else if (mode == "particle_posterior_probe") {   // Phase-1b posterior-valid probe
+        int nSeeds = argc > 2 ? std::stoi(argv[2]) : 4;
+        int sims = argc > 3 ? std::stoi(argv[3]) : 300;
+        int asc = argc > 4 ? std::stoi(argv[4]) : 0;
+        std::string out = argc > 5 ? argv[5] : "build/particle_posterior_probe.csv";
+        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
+        if (g_particlePosteriorProbeFile.empty()) g_particlePosteriorProbeFile = out;
+        search::g_fairPlay = true;
+        search::g_useSearcher3 = true;
+        std::cout << "[particle_posterior_probe forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
+        particlePosteriorProbe(nSeeds, sims, asc, out, seedOff);
 
     } else if (mode == "leafref") {       // high-budget reference values for recorded leafdiag leaves
         if (argc < 5) {

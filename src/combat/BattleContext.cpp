@@ -8,6 +8,8 @@
 
 using namespace sts;
 
+thread_local std::function<void(const BattleContext &, GameContext &)> sts::g_onBattleExitPersistent;
+
 namespace sts {
     thread_local BattleContext *g_debug_bc;
 }
@@ -527,6 +529,7 @@ void BattleContext::exitBattle(GameContext &g) const {
     if (outcome == Outcome::PLAYER_LOSS) {
         g.outcome = GameOutcome::PLAYER_LOSS;
     } else if (outcome == Outcome::PLAYER_VICTORY) {
+        if (g_onBattleExitPersistent) g_onBattleExitPersistent(*this, g);
         // player victory
         g.regainControl();
     } else {

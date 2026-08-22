@@ -26,6 +26,32 @@ namespace sts::search {
 
 class BattleScumSearcher3;
 
+    struct S3LeafActionCheckpoint {
+        Action action;
+        CardId cardId = CardId::INVALID;
+        std::int8_t upgradeCount = 0;
+        std::int8_t costForTurn = 0;
+        bool freeToPlayOnce = false;
+        std::int16_t specialData = 0;
+        std::int32_t target = -1;
+        bool hasCardKey = false;
+        bool replayable = true;
+        std::int16_t sourceUniqueId = -1;
+        std::int8_t sourceCost = 0;
+        bool sourceRetain = false;
+        CombatObservation observation;
+        Outcome outcome = Outcome::UNDECIDED;
+        std::uint64_t hiddenFingerprint = 0;
+    };
+
+    struct S3SourceReplayDebug {
+        bool rawOk = false;
+        bool semanticOk = false;
+        int rawFirstMismatch = -1;
+        int semanticFirstMismatch = -1;
+        std::string detail;
+    };
+
     // Leaf-query diagnostic record (leafdiag / frontiergen modes,
     // apps/one_combat.cpp). Fired inside BattleScumSearcher3::step() at the
     // leaf-expansion blend site (where the learned leaf value is blended with
@@ -48,6 +74,16 @@ class BattleScumSearcher3;
         double blendedEval = std::numeric_limits<double>::quiet_NaN();    // evaluation backpropagated to the tree
         int rolloutSteps = 0;                  // multi-rollout actions executed (0 at the depth cap)
         int frontierType = 0;                  // 0=unexpanded leaf, 1=illegal-fallback, 2=depth-cap
+        size_t particleIndex = 0;
+        double particleWeight = 0.0;
+        bool particleAppliedExactly = false;
+        bool particleUsedFallback = false;
+        bool rootCarried = false;
+        int reuseGeneration = 0;
+        int reuseSearchCount = -1;
+        Outcome outcome = Outcome::UNDECIDED;
+        std::vector<S3LeafActionCheckpoint> actionCheckpoints;
+        S3SourceReplayDebug sourceReplayDebug;
     };
 
     struct RealBeliefFilterStats {
@@ -224,6 +260,15 @@ class BattleScumSearcher3;
         int obsMismatchCount = 0;        // visits where the current state's visibleHash != node.obsHash
         int parentChildViolations = 0;   // parent simCount < sum(child.simCount) invariants found
 
+        // The particle selected by the current step, and whether its stored
+        // draw order could be installed without the stale-particle fallback.
+        size_t diagnosticParticleIndex = 0;
+        double diagnosticParticleWeight = 0.0;
+        bool diagnosticParticleAppliedExactly = false;
+        bool diagnosticParticleUsedFallback = false;
+        bool diagnosticTraceActive = false;
+        std::vector<S3LeafActionCheckpoint> diagnosticActionCheckpoints;
+
         // Recursively zero simulationCount, evaluationSum, dist on every node
         // in the carried tree (STS_REUSE_STATS_MODE=recursive_reset).
         static void recursiveResetStats(Node &node);
@@ -322,6 +367,9 @@ class BattleScumSearcher3;
         void resetParticleUsage();
 
         void observeRngExposureAction(const Action &action, BattleContext &state);
+        void recordDiagnosticAction(const Action &action,
+                                    const BattleContext &preState,
+                                    const BattleContext &postState);
         void finishRngExposureSimulation();
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
@@ -601,6 +649,10 @@ class BattleScumSearcher3;
     // probe's history replay; never touches the searcher or live state.
     void applyHiddenState(BattleContext &state, const HiddenBattleState &particle,
                           std::mt19937_64 &fallbackRng);
+    // Exact variant for posterior-valid diagnostics. Returns false instead of
+    // shuffling when the stored draw order does not match the current pile.
+    bool applyHiddenStateExact(BattleContext &state,
+                               const HiddenBattleState &particle);
 
     extern int g_s3Particles;
     extern double g_riskLambda;
@@ -633,6 +685,11 @@ class BattleScumSearcher3;
     // leafdiag/leafref/rollouttrace see only the blend site, exactly as before
     // the frontiergen extension.
     extern thread_local bool g_s3LeafQueryAllSites;
+    // particle_posterior_probe: step() records per-action semantic checkpoints
+    // (with actual post-action observations) for the leaf-query callback. Only
+    // meaningful together with a registered g_onS3LeafQuery; default false so
+    // leafdiag/frontiergen keep their exact historical cost and behavior.
+    extern thread_local bool g_s3LeafTraceActions;
     extern bool g_s3RngExposureDiag;
     extern std::string g_s3RngExposureDiagFile;
     // Rollout-step trace hook (rollouttrace mode, apps/one_combat.cpp): fires
