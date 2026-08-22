@@ -3933,3 +3933,77 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
 - **No scientific verdict:** E2c SUPPORTED/PARTIAL/NEGATIVE is determined only
   from the human-controlled production dataset (2,000-seed command in the
   handoff), not from smoke.
+
+## E2c-v2 2,000-seed production closure — SUPPORTED (2026-08-22)
+
+- **Admissibility:** Production source SHA
+  `e029dffb4c72449e8fc5b874391c49a27b2f6a81`; dataset SHA-256
+  `da692d5979f9df3cad70ee6d76bd34fcf174ac74f557b942fb662e3d8c6a89e2`.
+  Schema/provenance are `e2c-v2` and match the accepted configuration: 2,000
+  requested, 1,980 valid, 20 quarantined, 1,000 simulations, ascension 0,
+  seed offset 2,000,000, fair/Searcher3/live-valid enabled, 64 particles,
+  accepted VNet/OOC models, and `STS_STOP_AFTER_ACT=3`. The provenance
+  `git_dirty=true` is a known exception: the repository-owned GCP launcher
+  creates untracked `logs/gcp_benchmark_*.log` before execution. Tracked
+  worktree and index were clean and HEAD matched the accepted SHA.
+- **Integrity:** 1,980 represented seeds (1,001 wins, 979 losses), 83,045
+  rows: 41,676 RAW, 41,369 POST, 41,369 complete pairs, 307 RAW-only, and
+  zero POST-only. Duplicate keys, invalid boundaries, seed-level outcome
+  inconsistencies, pair outcome/room/encounter mismatches, and rows from the
+  20 quarantined seeds were absent. Complete-pair rates were 28,249/28,249
+  Monster, 9,812/10,119 Elite, and 3,308/3,308 Boss.
+- **Quarantine:** The 20 missing seeds produced zero dataset rows and exactly
+  40 health failures: one `ACTION_SELECTION_FAILED` and one subsequent
+  `UNDECIDED_BATTLE_EXIT` per seed. All were Secret Technique/Secret Weapon
+  card-selection states across diverse floors/encounters. This is a real
+  implementation-selection-bias risk, not evidence that missing runs are
+  harmless; the result is admissible as offline analysis with this caveat.
+- **RAW-only elites:** All 307 are Elite reward-flow cases. Relic IDs were
+  94/95/96 in counts 124/106/77; pending-card counts were 1/0 in 229/78
+  cases; 299 seeds were represented. There were 172 wins and 135 losses.
+- **Analysis populations:** Grouped held-out validation contained 6,300 RAW
+  rows / 297 seeds and 6,249 complete-pair rows / 297 seeds (training: 35,376
+  RAW rows / 1,683 seeds and 35,120 paired rows / 1,683 seeds). CUDA was
+  unavailable (`torch 2.13.0+cpu`), so the unchanged analyzer ran with CPU
+  XGBoost; this changes execution device, not the comparison or data.
+
+| arm | n | pos/neg | AUC | log loss | Brier | ECE | best iter |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| B0 | 6300 | 3649/2651 | .500000 | .680607 | .243756 | .005427 | — |
+| B1-raw | 6300 | 3649/2651 | .645717 | .647090 | .228001 | .013847 | 63 |
+| B2-raw | 6300 | 3649/2651 | .649010 | .645190 | .227230 | .013919 | 60 |
+| T-raw | 6300 | 3649/2651 | .736364 | .588425 | .203898 | .034600 | 281 |
+| T-raw-no-counter | 6300 | 3649/2651 | .731079 | .589413 | .204367 | .022197 | 208 |
+| B1-raw-paired | 6249 | 3615/2634 | .645649 | .647313 | .228123 | .015326 | 62 |
+| B2-raw-paired | 6249 | 3615/2634 | .649680 | .645240 | .227221 | .016885 | 59 |
+| T-raw-paired | 6249 | 3615/2634 | .734307 | .588215 | .204016 | .029381 | 251 |
+| B2-post | 6249 | 3615/2634 | .648953 | .645526 | .227394 | .017249 | 47 |
+| T-post | 6249 | 3615/2634 | .732970 | .587599 | .204051 | .030007 | 230 |
+
+- **Primary:** T-raw minus B2-raw was log loss −0.056232 (95% CI
+  [−0.083476, −0.029182]), Brier −0.023096 ([−0.034291, −0.012251]), and
+  AUC +0.086514 ([+0.052512, +0.122204]). All primary support checks pass,
+  including ECE .034600 and raw retention .984418. `all_raw_gain=.056766`.
+- **Paired/POST:** paired raw gain `.057024`; POST gain `.057927`; raw
+  retention `.984418`; reward-information gap `.000617`. T-raw-paired−T-post
+  log-loss delta was +.000669, CI [−.006320, +.008053]. All-row and paired
+  gains are materially consistent.
+- **Counter diagnostic:** T-raw-no-counter minus T-raw log loss was +.000799,
+  CI [−.009929, +.010387], with AUC −.005003 and Brier +.000374; verdict
+  **NO EVIDENCE OF COUNTER SENSITIVITY** despite `relic_data_*` feature gain
+  111.154.
+- **Decision:** Analyzer verdict and independent reconstruction of current
+  `classify_verdict` both return **E2C SUPPORTED**. This is predictive/offline
+  evidence, not evidence that adding a critic to MCTS raises action-ranking
+  quality or win rate. Implementation success and scientific success are
+  separate. The decision is stable enough to stop at 2,000; another 3,000
+  seeds is not justified absent a new integrity question.
+- **Artifacts:** Remote output directory
+  `/home/philippherrmann/sts_sweep/build/e2c_raw_terminal_2000/` contains
+  `metrics.json`, `calibration_deciles.csv`,
+  `validation_predictions_raw.npz`, and `validation_predictions_paired.npz`.
+  SHA-256 hashes are respectively
+  `db33685da894aac094da806305fb4b3b91fc537b70aa41ec8572b1835cfc44e6`,
+  `e9dc812217a48c53fe02987a791d4e6b5bccb1257528bf8ca2e35398271a95ea`,
+  `26afcdb0271fccf4cfb5183dcf3058fa4a2ee028706049e6bb4943d7cbf9cc64`, and
+  `5e8a06ce4f5283eb4804c957e892c61d1be13983955ea30f8ef102175ad6e4bb`.

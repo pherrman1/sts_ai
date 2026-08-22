@@ -3408,11 +3408,20 @@ void BattleScumSearcher3::reconcileRoot(const BattleContext &liveRoot) {
     enumerateActionsForNode(fresh, liveRoot);
     if (fresh.edges.empty()) return;
 
+    // Draw-pile card-selection actions encode a raw draw-pile index, not a
+    // stable card identity. Root expansion may have used a particle with a
+    // different hidden draw order, so reconcile these actions by raw bits
+    // against the actual live root.
+    const bool rawIndexSensitive = isDrawPileIndexSensitiveCardSelect(liveRoot);
+
     // 2. Build a set of semantic card-action keys already present.
     std::set<CardActionKey> present;
     std::set<std::uint32_t> presentBits;  // for non-card actions (bits identity)
     for (const auto &e : root.edges) {
-        if (e.action.getActionType() == ActionType::CARD
+        if (rawIndexSensitive
+            && e.action.getActionType() == ActionType::SINGLE_CARD_SELECT) {
+            presentBits.insert(e.action.bits);
+        } else if (e.action.getActionType() == ActionType::CARD
             || e.action.getActionType() == ActionType::SINGLE_CARD_SELECT) {
             // Use stored cardKey when available (stable identity across
             // hand-index remapping); otherwise fall back to positional.
@@ -3428,7 +3437,15 @@ void BattleScumSearcher3::reconcileRoot(const BattleContext &liveRoot) {
     // 3. Add missing edges with zero prior and empty child.
     int added = 0;
     for (auto &fe : fresh.edges) {
-        if (fe.action.getActionType() == ActionType::CARD
+        if (rawIndexSensitive
+            && fe.action.getActionType() == ActionType::SINGLE_CARD_SELECT) {
+            if (!presentBits.count(fe.action.bits)) {
+                fe.prior = 0.f;
+                root.edges.push_back(std::move(fe));
+                presentBits.insert(root.edges.back().action.bits);
+                ++added;
+            }
+        } else if (fe.action.getActionType() == ActionType::CARD
             || fe.action.getActionType() == ActionType::SINGLE_CARD_SELECT) {
             auto key = cardActionKey(liveRoot, fe.action);
             if (key.id == CardId::INVALID) continue;  // unresolvable

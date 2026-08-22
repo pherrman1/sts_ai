@@ -567,6 +567,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                 t_baApplyExactOrder = 0;
                 t_baApplyFallbackShuffle = 0;
             }
+            if (search::isDrawPileIndexSensitiveCardSelect(bc))
+                s3.reconcileRoot(bc);
             bool have = false;
             search::Action bestAction = s3PickRootAction(s3, bc, have);
             if (!have) {
@@ -871,6 +873,8 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             writeS3RootRaceDiag(bc, bc.seed, decisionIdx);
+            if (search::isDrawPileIndexSensitiveCardSelect(bc))
+                s3.reconcileRoot(bc);
             bool have = false;
             search::Action bestAction = s3PickRootAction(s3, bc, have);
             if (!have) {
@@ -1362,4 +1366,3 @@ void search::ScumSearchAgent2::stepEventPolicy(GameContext &gc) {
             return;
     }
 }
-

@@ -2261,6 +2261,27 @@ int testS3DrawPileIndexReuseBoundary() {
             check(!s3.rootCarried && s3.reuseGeneration == 0,
                   "fresh sensitive boundary reported as carried");
         }
+
+        // Root expansion can observe a different particle draw order than
+        // the live state. Reconciliation must add the live raw-index action.
+        auto stale = cardSelectFixture(task, 1, false);
+        auto live = stale;
+        std::swap(live.cards.drawPile[0], live.cards.drawPile[1]);
+        search::BattleScumSearcher3 reconciler(stale, 0x4321, 0, 1);
+        for (const auto &action : search::Action::enumerateCardSelectActions(stale)) {
+            search::BattleScumSearcher3::Edge edge;
+            edge.action = action;
+            reconciler.root.edges.push_back(std::move(edge));
+        }
+        const auto liveActions = search::Action::enumerateCardSelectActions(live);
+        reconciler.reconcileRoot(live);
+        for (const auto &action : liveActions) {
+            bool found = false;
+            for (const auto &edge : reconciler.root.edges)
+                found = found || edge.action.bits == action.bits;
+            check(found, "reconciliation failed to add live draw-pile action");
+            check(action.isValidAction(live), "canonical live draw-pile action invalid");
+        }
     }
 
     auto ordinary = cardSelectFixture(CardSelectTask::HOLOGRAM, 1, false);

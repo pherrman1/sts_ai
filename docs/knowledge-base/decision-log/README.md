@@ -58,6 +58,8 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-22 | [`2026-08-22-ci-gate-follow-up.md`](2026-08-22-ci-gate-follow-up.md) | Reproduced the rejuvenation telemetry failure on current main, corrected the test fixture, and made CI install the locked analysis dependencies; local Debug CTest is 41/41. |
+| 2026-08-22 | [`2026-08-22-e2c-production-closure.md`](2026-08-22-e2c-production-closure.md) | Closed E2c-v2 as SUPPORTED with the `/logs/` provenance exception; fixed Secret Technique/Weapon live-root reconciliation and stopped further collection. |
 | 2026-08-22 | [`2026-08-22-phase1b-search-age.md`](2026-08-22-phase1b-search-age.md) | Preregistered the EARLY/LATE Searcher3 search-age diagnostic and paired-seed analysis. |
 | 2026-08-22 | [`2026-08-22-codex-workflow-v2.md`](2026-08-22-codex-workflow-v2.md) | Workflow-v2: repo-grounded ChatGPT/Sol handoffs are accepted design plans; Codex uses bounded preflight, evidence-packet PR handoffs, explicit session routing, and reviewed-SHA freeze before expensive science. |
 | 2026-08-22 | [`2026-08-22-codex-cli-migration.md`](2026-08-22-codex-cli-migration.md) | Codex CLI becomes the interactive agent with repository skills, conservative sandbox/MCP defaults, explicit Serena/RepoWise worktree routing, and no false reuse of Cline-specific hook enforcement. |
