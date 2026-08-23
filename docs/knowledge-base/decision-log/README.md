@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-23 | [`2026-08-23-s3-strategy-fusion-diagnostic.md`](2026-08-23-s3-strategy-fusion-diagnostic.md) | Implemented the off-by-default END_TURN strategy-fusion shadow probe; smoke found a draw-pile template-order fairness caveat, which the side-search template canonicalizes without changing normal Searcher3, and deferred the decision-bearing run pending independent review. |
 | 2026-08-22 | [`2026-08-22-cline-compatibility-retirement.md`](2026-08-22-cline-compatibility-retirement.md) | Draft retirement removes runtime Cline rollback files, retains the live evaluation fixture, removes misrouted repository RepoWise MCP startup, and leaves migration acceptance pending fresh independent review. |
 | 2026-08-22 | [`2026-08-22-ci-gate-follow-up.md`](2026-08-22-ci-gate-follow-up.md) | Reproduced the rejuvenation telemetry failure on current main, corrected the test fixture, and made CI install the locked analysis dependencies; local Debug CTest is 41/41. |
 | 2026-08-22 | [`2026-08-22-e2c-production-closure.md`](2026-08-22-e2c-production-closure.md) | Closed E2c-v2 as SUPPORTED with the `/logs/` provenance exception; fixed Secret Technique/Weapon live-root reconciliation and stopped further collection. |

@@ -586,6 +586,18 @@ class BattleScumSearcher3;
     extern int g_s3BucketValueDiagMaxTransitions;
     extern int g_s3BucketValueDiagSampleMembers;
 
+    // ── Strategy-fusion shadow diagnostic (STS_S3_STRATEGY_FUSION_DIAG) ──
+    // At mature shared END_TURN children, compare the existing child policy
+    // with fresh fair Searcher3 policies conditioned on sampled visible
+    // outcome buckets. The probe is read-only and off by default.
+    extern bool g_s3StrategyFusionDiag;
+    extern std::string g_s3StrategyFusionDiagFile;
+    extern int g_s3StrategyFusionDiagParticles;
+    extern int g_s3StrategyFusionDiagMaxTransitions;
+    extern int g_s3StrategyFusionDiagMinChildVisits;
+    extern int g_s3StrategyFusionDiagFreshSims;
+    extern int g_s3StrategyFusionDiagReferenceSims;
+
     // ── END_TURN marginalization (STS_S3_ENDTURN_MARGINALIZE) ──────────
     // Prototype: at eligible leaf-expansion END_TURN boundaries, evaluate
     // a bucketed expectation over N alternative draw outcomes. Off by default.
@@ -637,6 +649,18 @@ class BattleScumSearcher3;
     // hand. Caller must check hasCardKey before calling.
     std::optional<Action> resolveSemanticCardEdge(
         const BattleScumSearcher3::Edge &edge, const BattleContext &state);
+
+    // Exact current Searcher3 root/node action-choice semantics, factored so
+    // the shadow diagnostic cannot invent a max-Q policy. Returns nullopt when
+    // the current live-valid policy has no usable action.
+    std::optional<Action> pickSearchAction(
+        const BattleScumSearcher3::Node &node, const BattleContext &state);
+
+    // Stable semantic action identity for diagnostics and cross-state
+    // comparison. CARD identity includes the current card instance fields and
+    // target, so hand position is not the comparison key.
+    std::string semanticActionIdentity(const Action &action,
+                                       const BattleContext &state);
 
     // Resolve a CardActionKey to a live-hand index via position-independent
     // card identity scan. Shared by resolveSemanticCardEdge and the

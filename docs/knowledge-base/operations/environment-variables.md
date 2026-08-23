@@ -61,6 +61,13 @@ These control the default executing configuration; they are always parsed.
 | `STS_S3_AI_SENSITIVITY_ROOTS_PER_SEED` | Maximum selected roots per seed | `4` | `main` |
 | `STS_S3_AI_SENSITIVITY_ALTS` | Maximum novel AI alternatives per selected root | `4` | `main` |
 | `STS_S3_AI_SENSITIVITY_SIMS` | Mini-search simulations per fixed-hidden condition | `256` | `main` |
+| `STS_S3_STRATEGY_FUSION_DIAG` | Shadow-only END_TURN shared-child vs fresh conditioned/reference Searcher3 diagnostic | `0` (off) | `main` |
+| `STS_S3_STRATEGY_FUSION_DIAG_FILE` | Strategy-fusion diagnostic CSV path; an adjacent `.meta.json` records diagnostic configuration | `build/s3_strategy_fusion_diag.csv` | `main` |
+| `STS_S3_STRATEGY_FUSION_DIAG_PARTICLES` | Independent fair particles sampled per measured END_TURN transition | `64` | `main` |
+| `STS_S3_STRATEGY_FUSION_DIAG_MAX_TRANSITIONS` | Maximum measured mature shared END_TURN transitions per process | `100` | `main` |
+| `STS_S3_STRATEGY_FUSION_DIAG_MIN_CHILD_VISITS` | Minimum existing shared-child visits before measurement | `32` | `main` |
+| `STS_S3_STRATEGY_FUSION_DIAG_FRESH_SIMS` | Fresh conditioned Searcher3 simulations per visible outcome bucket | `500` | `main` |
+| `STS_S3_STRATEGY_FUSION_DIAG_REF_SIMS` | Deeper fresh Searcher3 reference simulations per bucket | `3000` | `main` |
 | `STS_RISK_LAMBDA` | Risk sensitivity for S3 PUCT | 0.5 | `main` ~L9845 |
 
 The probe CSV contains `target` from the isolated common-RNG rollout for every

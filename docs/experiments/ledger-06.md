@@ -4007,3 +4007,48 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `e9dc812217a48c53fe02987a791d4e6b5bccb1257528bf8ca2e35398271a95ea`,
   `26afcdb0271fccf4cfb5183dcf3058fa4a2ee028706049e6bb4943d7cbf9cc64`, and
   `5e8a06ce4f5283eb4804c957e892c61d1be13983955ea30f8ef102175ad6e4bb`.
+## 2026-08-23 — Searcher3 strategy-fusion shadow diagnostic implementation and smoke (non-decision-bearing)
+
+- **Question:** Does an existing shared Searcher3 child below stochastic
+  `END_TURN` encode a materially worse continuation policy than a fresh fair
+  Searcher3 conditioned on each observed visible outcome bucket? This task
+  does not implement chance nodes or state splitting.
+- **Baseline:** `f2879ad7d0444b4d3edad87ba62f6181580c48d8`; implementation branch
+  `exp/s3-strategy-fusion-diag`; worktree
+  `C:\Users\pherrman\projects\sts_ai-s3-strategy-fusion-diag`.
+- **Implementation:** Added off-by-default
+  `STS_S3_STRATEGY_FUSION_DIAG=1` with CSV and `.meta.json` configuration
+  output. The probe samples independent particles, uses full
+  `CombatObservation` bucket identity, preserves the live shared child, runs
+  fresh fair Searcher3 conditioned and deeper-reference searches, and compares
+  stable semantic action identities. It is guarded against recursive side
+  probes and does not consume the live searcher's RNG or mutate its tree,
+  belief, counters, or selected action. Existing root-action selection was
+  factored into a read-only helper without changing its visit/live-valid
+  semantics.
+- **Fairness correction in the diagnostic:** Local testing found that
+  `Belief::initial` uses the stored draw-pile vector order as a shuffle input
+  even though `CombatObservation` equality treats the pile as a multiset. The
+  diagnostic canonicalizes only copied side-search templates; normal
+  Searcher3 belief construction remains unchanged. This is recorded as an open
+  fairness limitation, not silently treated as resolved globally.
+- **Smoke configuration:** project-fair Searcher3, ascension 0, seeds
+  `12345..12346`, `searchdiag`, 64 simulations per searched decision,
+  `STS_S3_PARTICLES=16`; diagnostic particles 16, max transitions 1, minimum
+  shared-child visits 8, fresh 16 simulations, reference 32 simulations.
+  Commands were run through `tools/seed_guard.sh`. OFF and ON emitted 599
+  Searcher3 searchdiag rows each; root best-action comparison found 0 decision
+  differences. No invalid-action, crash, or simulator-health error appeared.
+- **Raw diagnostic output:** `build/s3sf_smoke_diag.csv` contains 4 rows from
+  1 measured transition and 4 distinct visible outcome buckets. All four rows
+  agreed between shared and conditioned actions. Probability-mass weighted
+  smoke summaries: shared/conditioned disagreement `0.000`; deeper reference
+  shared `0`, conditioned `0`, neither `1.000`; weighted reference
+  conditioned-minus-shared margin `0`. This is explicitly smoke-scale, noisy,
+  and **not a scientific conclusion**.
+- **Decision rule/status:** No 16–32-source-seed decision-bearing run was
+  performed. Independent implementation review is required before the
+  preregistered scientific gate. The smoke does not support or reject chance
+  nodes.
+- **Decision log:**
+  [`2026-08-23-s3-strategy-fusion-diagnostic.md`](../knowledge-base/decision-log/2026-08-23-s3-strategy-fusion-diagnostic.md).
