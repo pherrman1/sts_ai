@@ -10,11 +10,7 @@ enable_testing()
 file (GLOB_RECURSE sts_lightspeed_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
 set(CMAKE_CXX_STANDARD 17)
-option(STS_ENABLE_LTO "Enable link-time optimization for native targets" ON)
-set(CMAKE_CXX_FLAGS "-Wno-shift-count-overflow -O3 -fopenmp")
-if(STS_ENABLE_LTO)
-    string(APPEND CMAKE_CXX_FLAGS " -flto")
-endif()
+set(CMAKE_CXX_FLAGS  "-Wno-shift-count-overflow -O3 -fopenmp -flto")
 
 add_subdirectory(json)
 
