@@ -4020,12 +4020,20 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `STS_S3_STRATEGY_FUSION_DIAG=1` with CSV and `.meta.json` configuration
   output. The probe samples independent particles, uses full
   `CombatObservation` bucket identity, preserves the live shared child, runs
-  fresh fair Searcher3 conditioned and deeper-reference searches, and compares
-  stable semantic action identities. It is guarded against recursive side
-  probes and does not consume the live searcher's RNG or mutate its tree,
-  belief, counters, or selected action. Existing root-action selection was
-  factored into a read-only helper without changing its visit/live-valid
-  semantics.
+  fresh fair Searcher3 conditioned, matched-compute conditioned, and
+  deeper-reference searches, and compares stable semantic action identities.
+  The matched budget is `max(1, round(sharedChildVisits * bucketProbability))`;
+  the configured 500-simulation search is secondary. It is guarded against
+  recursive side probes and does not consume the live searcher's RNG or mutate
+  its tree, belief, counters, or selected action. Existing root-action
+  selection was factored into a read-only helper without changing its
+  visit/live-valid semantics.
+- **Review correction:** Independent review of the first implementation found
+  the compute-budget confound and transition-cap accounting issue. This commit
+  applies the matched-budget and cap corrections, adds the preregistered
+  source-seed analyzer at
+  `tools/analyze_s3_strategy_fusion_diag.py`, and requires another independent
+  implementation review before any decision-bearing run.
 - **Fairness correction in the diagnostic:** Local testing found that
   `Belief::initial` uses the stored draw-pile vector order as a shuffle input
   even though `CombatObservation` equality treats the pile as a multiset. The
@@ -4035,20 +4043,25 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
 - **Smoke configuration:** project-fair Searcher3, ascension 0, seeds
   `12345..12346`, `searchdiag`, 64 simulations per searched decision,
   `STS_S3_PARTICLES=16`; diagnostic particles 16, max transitions 1, minimum
-  shared-child visits 8, fresh 16 simulations, reference 32 simulations.
+  shared-child visits 8, secondary fresh 16 simulations, matched budgets from
+  the recorded formula, reference 32 simulations.
   Commands were run through `tools/seed_guard.sh`. OFF and ON emitted 599
   Searcher3 searchdiag rows each; root best-action comparison found 0 decision
   differences. No invalid-action, crash, or simulator-health error appeared.
 - **Raw diagnostic output:** `build/s3sf_smoke_diag.csv` contains 4 rows from
-  1 measured transition and 4 distinct visible outcome buckets. All four rows
-  agreed between shared and conditioned actions. Probability-mass weighted
-  smoke summaries: shared/conditioned disagreement `0.000`; deeper reference
-  shared `0`, conditioned `0`, neither `1.000`; weighted reference
-  conditioned-minus-shared margin `0`. This is explicitly smoke-scale, noisy,
-  and **not a scientific conclusion**.
+  1 measured transition and 4 distinct visible outcome buckets. The primary
+  matched-compute comparison disagreed on 2 rows with probability-mass
+  weighted disagreement `0.3125`; among those, the deeper reference preferred
+  matched-conditioned `0.600`, neither `0.400`, and shared `0.000`. The
+  weighted matched reference conditioned-minus-shared margin was
+  `-0.958249375`. The secondary 500-simulation comparison had disagreement
+  `0.000` and weighted margin `0`. The analyzer validated the 34-column CSV,
+  emitted source-seed bootstrap summaries, and passed its self-test. These are
+  explicitly smoke-scale, noisy, and **not a scientific conclusion**.
 - **Decision rule/status:** No 16–32-source-seed decision-bearing run was
-  performed. Independent implementation review is required before the
-  preregistered scientific gate. The smoke does not support or reject chance
-  nodes.
+  performed. This correction follows independent review of the first
+  implementation; another independent implementation review is required
+  before the preregistered scientific gate. The smoke does not support or
+  reject chance nodes.
 - **Decision log:**
   [`2026-08-23-s3-strategy-fusion-diagnostic.md`](../knowledge-base/decision-log/2026-08-23-s3-strategy-fusion-diagnostic.md).

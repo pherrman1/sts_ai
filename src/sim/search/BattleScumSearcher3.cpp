@@ -1040,20 +1040,26 @@ void writeStrategyFusionRow(
     int drawPileBefore, int discardBefore, int particleCount, int bucketCount,
     double bucketProbability, int distinctBucketCount,
     std::int64_t sharedChildVisits, const std::string &sharedAction,
-    const std::string &conditionedAction, const std::string &referenceAction,
-    int sharedConditionedAgree, int referenceSharedAgree,
-    int referenceConditionedAgree, int freshSims, int referenceSims,
+    const std::string &conditionedAction,
+    const std::string &matchedConditionedAction,
+    const std::string &referenceAction, int sharedConditionedAgree,
+    int sharedMatchedConditionedAgree, int referenceSharedAgree,
+    int referenceConditionedAgree, int referenceMatchedConditionedAgree,
+    int freshSims, int matchedSims, int referenceSims,
     double referenceValueShared, double referenceValueConditioned,
-    double referenceMargin, int sharedActionValid) {
+    double referenceValueMatched, double referenceMargin,
+    double referenceMarginMatched, int sharedActionValid) {
     constexpr const char *header =
         "sourceSeed,encounter,floor,turn,decisionIdx,searchSimulationIndex,"
         "preObsHash,sharedChildCachedObsHash,postObsHash,drawPileSizeBefore,"
         "discardPileSizeBefore,particleCount,bucketCount,bucketProbability,"
         "distinctBucketCount,sharedChildVisits,sharedAction,conditionedAction,"
-        "referenceAction,sharedConditionedAgree,referenceSharedAgree,"
-        "referenceConditionedAgree,freshSimBudget,referenceSimBudget,"
-        "referenceValueShared,referenceValueConditioned,referenceMargin,"
-        "sharedActionValid\n";
+        "matchedConditionedAction,referenceAction,sharedConditionedAgree,"
+        "sharedMatchedConditionedAgree,referenceSharedAgree,"
+        "referenceConditionedAgree,referenceMatchedConditionedAgree,"
+        "freshSimBudget,matchedSimBudget,referenceSimBudget,"
+        "referenceValueShared,referenceValueConditioned,referenceValueMatched,"
+        "referenceMargin,referenceMarginMatched,sharedActionValid\n";
     std::lock_guard<std::mutex> lock(g_strategyFusionOutputMutex);
     if (g_s3StrategyFusionDiagFile.empty()) {
         static bool stderrHeader = false;
@@ -1065,11 +1071,14 @@ void writeStrategyFusionRow(
             << drawPileBefore << ',' << discardBefore << ',' << particleCount << ','
             << bucketCount << ',' << bucketProbability << ',' << distinctBucketCount
             << ',' << sharedChildVisits << ',' << sharedAction << ','
-            << conditionedAction << ',' << referenceAction << ','
-            << sharedConditionedAgree << ',' << referenceSharedAgree << ','
-            << referenceConditionedAgree << ',' << freshSims << ',' << referenceSims
+            << conditionedAction << ',' << matchedConditionedAction << ','
+            << referenceAction << ',' << sharedConditionedAgree << ','
+            << sharedMatchedConditionedAgree << ',' << referenceSharedAgree << ','
+            << referenceConditionedAgree << ',' << referenceMatchedConditionedAgree
+            << ',' << freshSims << ',' << matchedSims << ',' << referenceSims
             << ',' << referenceValueShared << ',' << referenceValueConditioned << ','
-            << referenceMargin << ',' << sharedActionValid << '\n';
+            << referenceValueMatched << ',' << referenceMargin << ','
+            << referenceMarginMatched << ',' << sharedActionValid << '\n';
         return;
     }
     std::ifstream probe(g_s3StrategyFusionDiagFile);
@@ -1082,13 +1091,16 @@ void writeStrategyFusionRow(
         std::ofstream meta(g_s3StrategyFusionDiagFile + ".meta.json");
         if (meta) {
             meta << "{\n"
-                 << "  \"schema\": \"s3_strategy_fusion_diag_v1\",\n"
+                 << "  \"schema\": \"s3_strategy_fusion_diag_v2\",\n"
                  << "  \"diagnostic\": \"shadow-only; END_TURN shared-child strategy fusion\",\n"
                  << "  \"particleCount\": " << g_s3StrategyFusionDiagParticles << ",\n"
                  << "  \"maxTransitions\": " << g_s3StrategyFusionDiagMaxTransitions << ",\n"
                  << "  \"minChildVisits\": " << g_s3StrategyFusionDiagMinChildVisits << ",\n"
                  << "  \"freshSimBudget\": " << g_s3StrategyFusionDiagFreshSims << ",\n"
+                 << "  \"matchedSimFormula\": \"max(1, round(sharedChildVisits * bucketProbability))\",\n"
                  << "  \"referenceSimBudget\": " << g_s3StrategyFusionDiagReferenceSims << ",\n"
+                 << "  \"primaryComparison\": \"shared child vs matched-compute conditioned\",\n"
+                 << "  \"secondaryComparison\": \"shared child vs configured fresh conditioned\",\n"
                  << "  \"normalSearchParticles\": " << g_s3Particles << ",\n"
                  << "  \"liveValid\": " << (g_liveValid ? 1 : 0) << ",\n"
                  << "  \"semanticCardEdges\": " << (g_s3SemanticCardEdges ? 1 : 0) << ",\n"
@@ -1104,11 +1116,14 @@ void writeStrategyFusionRow(
         << drawPileBefore << ',' << discardBefore << ',' << particleCount << ','
         << bucketCount << ',' << bucketProbability << ',' << distinctBucketCount
         << ',' << sharedChildVisits << ',' << sharedAction << ','
-        << conditionedAction << ',' << referenceAction << ','
-        << sharedConditionedAgree << ',' << referenceSharedAgree << ','
-        << referenceConditionedAgree << ',' << freshSims << ',' << referenceSims
+        << conditionedAction << ',' << matchedConditionedAction << ','
+        << referenceAction << ',' << sharedConditionedAgree << ','
+        << sharedMatchedConditionedAgree << ',' << referenceSharedAgree << ','
+        << referenceConditionedAgree << ',' << referenceMatchedConditionedAgree
+        << ',' << freshSims << ',' << matchedSims << ',' << referenceSims
         << ',' << referenceValueShared << ',' << referenceValueConditioned << ','
-        << referenceMargin << ',' << sharedActionValid << '\n';
+        << referenceValueMatched << ',' << referenceMargin << ','
+        << referenceMarginMatched << ',' << sharedActionValid << '\n';
 }
 
 void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
@@ -1127,14 +1142,11 @@ void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
     const std::uint64_t seenKey = strategyFusionSeed(
         sourceSeed, preObs.visibleHash(), 0, decisionIndex, 0, 0,
         sharedEdge.action.bits);
-    if (!t_strategyFusionSeen.insert(seenKey).second) return;
-    const int transitionSlot = g_strategyFusionTransitions.fetch_add(1);
-    if (transitionSlot >= g_s3StrategyFusionDiagMaxTransitions) return;
 
     const int nParticles = std::max(1, g_s3StrategyFusionDiagParticles);
     std::mt19937_64 diagnosticRng(strategyFusionSeed(
         sourceSeed, preObs.visibleHash(), 0, decisionIndex, simulationIndex,
-        transitionSlot, 0x535446444941475FULL));
+        0, 0x535446444941475FULL));
     const auto particles = HiddenBattleState::sampleParticles(
         preObs, preState, diagnosticRng, nParticles);
     struct Bucket {
@@ -1159,6 +1171,14 @@ void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
         }
     }
     if (buckets.size() < 2) return;
+    if (!t_strategyFusionSeen.insert(seenKey).second) return;
+    int transitionSlot = g_strategyFusionTransitions.load();
+    for (;;) {
+        if (transitionSlot >= g_s3StrategyFusionDiagMaxTransitions) return;
+        if (g_strategyFusionTransitions.compare_exchange_weak(
+                transitionSlot, transitionSlot + 1))
+            break;
+    }
 
     std::vector<Bucket *> ordered;
     ordered.reserve(buckets.size());
@@ -1179,9 +1199,15 @@ void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
         const std::string sharedId = sharedAction
             ? semanticActionIdentity(*sharedAction, representative) : std::string();
         std::optional<Action> conditionedAction;
+        std::optional<Action> matchedConditionedAction;
         std::optional<Action> referenceAction;
         double valueShared = std::numeric_limits<double>::quiet_NaN();
         double valueConditioned = std::numeric_limits<double>::quiet_NaN();
+        double valueMatched = std::numeric_limits<double>::quiet_NaN();
+        const int matchedSims = std::max(
+            1, static_cast<int>(std::lround(
+                   static_cast<double>(sharedEdge.child.simulationCount)
+                   * static_cast<double>(bucket.states.size()) / nParticles)));
         const int sharedValid = sharedAction
             ? (sharedAction->isValidAction(representative) ? 1 : 0) : -1;
 
@@ -1194,6 +1220,10 @@ void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
                 sourceSeed, preObs.visibleHash(), postObsHash, decisionIndex,
                 simulationIndex, static_cast<int>(bucketIndex),
                 0x5245464552454E43ULL);
+            const std::uint64_t matchedSeed = strategyFusionSeed(
+                sourceSeed, preObs.visibleHash(), postObsHash, decisionIndex,
+                simulationIndex, static_cast<int>(bucketIndex),
+                0x4D41544348454400ULL);
             const bool previousSuppressed = t_strategyFusionSuppressed;
             t_strategyFusionSuppressed = true;
             // CombatObservation equality intentionally treats drawPileContents
@@ -1212,12 +1242,18 @@ void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
                 fairTemplate, freshSeed, decisionIndex, std::max(1, g_s3Particles));
             fresh.search(std::max(0, g_s3StrategyFusionDiagFreshSims));
             conditionedAction = pickSearchAction(fresh.root, fairTemplate);
+            BattleScumSearcher3 matched(
+                fairTemplate, matchedSeed, decisionIndex, std::max(1, g_s3Particles));
+            matched.search(matchedSims);
+            matchedConditionedAction = pickSearchAction(matched.root, fairTemplate);
             BattleScumSearcher3 reference(
                 fairTemplate, referenceSeed, decisionIndex, std::max(1, g_s3Particles));
             reference.search(std::max(0, g_s3StrategyFusionDiagReferenceSims));
             referenceAction = pickSearchAction(reference.root, fairTemplate);
             const std::string conditionedId = conditionedAction
                 ? semanticActionIdentity(*conditionedAction, fairTemplate) : std::string();
+            const std::string matchedId = matchedConditionedAction
+                ? semanticActionIdentity(*matchedConditionedAction, fairTemplate) : std::string();
             const std::string referenceId = referenceAction
                 ? semanticActionIdentity(*referenceAction, fairTemplate) : std::string();
             valueShared = sharedId.empty()
@@ -1226,20 +1262,33 @@ void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
             valueConditioned = conditionedId.empty()
                 ? std::numeric_limits<double>::quiet_NaN()
                 : actionRootValue(reference, fairTemplate, conditionedId);
+            valueMatched = matchedId.empty()
+                ? std::numeric_limits<double>::quiet_NaN()
+                : actionRootValue(reference, fairTemplate, matchedId);
             t_strategyFusionSuppressed = previousSuppressed;
             const int sharedConditionedAgree =
                 (!sharedId.empty() && !conditionedId.empty())
                     ? (sharedId == conditionedId ? 1 : 0) : -1;
+            const int sharedMatchedConditionedAgree =
+                (!sharedId.empty() && !matchedId.empty())
+                    ? (sharedId == matchedId ? 1 : 0) : -1;
             const int referenceSharedAgree =
                 (!referenceId.empty() && !sharedId.empty())
                     ? (referenceId == sharedId ? 1 : 0) : -1;
             const int referenceConditionedAgree =
                 (!referenceId.empty() && !conditionedId.empty())
                     ? (referenceId == conditionedId ? 1 : 0) : -1;
+            const int referenceMatchedConditionedAgree =
+                (!referenceId.empty() && !matchedId.empty())
+                    ? (referenceId == matchedId ? 1 : 0) : -1;
             const double margin = (std::isnan(valueShared)
                                    || std::isnan(valueConditioned))
                 ? std::numeric_limits<double>::quiet_NaN()
                 : valueConditioned - valueShared;
+            const double matchedMargin = (std::isnan(valueShared)
+                                          || std::isnan(valueMatched))
+                ? std::numeric_limits<double>::quiet_NaN()
+                : valueMatched - valueShared;
             writeStrategyFusionRow(
                 sourceSeed, encounter, floor, turn, decisionIndex, simulationIndex,
                 preObs.visibleHash(), sharedChildObsHash, postObsHash,
@@ -1248,11 +1297,13 @@ void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
                 static_cast<int>(bucket.states.size()),
                 static_cast<double>(bucket.states.size()) / nParticles,
                 static_cast<int>(buckets.size()), sharedEdge.child.simulationCount,
-                sharedId, conditionedId, referenceId, sharedConditionedAgree,
+                sharedId, conditionedId, matchedId, referenceId,
+                sharedConditionedAgree, sharedMatchedConditionedAgree,
                 referenceSharedAgree, referenceConditionedAgree,
+                referenceMatchedConditionedAgree,
                 g_s3StrategyFusionDiagFreshSims,
-                g_s3StrategyFusionDiagReferenceSims, valueShared,
-                valueConditioned, margin, sharedValid);
+                matchedSims, g_s3StrategyFusionDiagReferenceSims, valueShared,
+                valueConditioned, valueMatched, margin, matchedMargin, sharedValid);
         } else {
             writeStrategyFusionRow(
                 sourceSeed, encounter, floor, turn, decisionIndex, simulationIndex,
@@ -1262,9 +1313,11 @@ void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
                 static_cast<int>(bucket.states.size()),
                 static_cast<double>(bucket.states.size()) / nParticles,
                 static_cast<int>(buckets.size()), sharedEdge.child.simulationCount,
-                sharedId, "", "", -1, -1, -1,
+                sharedId, "", "", "", -1, -1, -1, -1, -1,
                 g_s3StrategyFusionDiagFreshSims,
-                g_s3StrategyFusionDiagReferenceSims,
+                matchedSims, g_s3StrategyFusionDiagReferenceSims,
+                std::numeric_limits<double>::quiet_NaN(),
+                std::numeric_limits<double>::quiet_NaN(),
                 std::numeric_limits<double>::quiet_NaN(),
                 std::numeric_limits<double>::quiet_NaN(),
                 std::numeric_limits<double>::quiet_NaN(), sharedValid);
