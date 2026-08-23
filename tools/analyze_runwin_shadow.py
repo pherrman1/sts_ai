@@ -15,7 +15,8 @@ import pandas as pd
 KEY = ["seed", "fightIdx", "decIdx", "rootObsHash", "rootActionBits", "leafObsHash", "replicate"]
 GROUP = ["seed", "fightIdx", "decIdx", "rootObsHash", "rootActionBits"]
 REQUIRED = set(KEY + ["treeDepth", "encounter", "act", "vnetPred", "rawRolloutEval", "blendedEval",
-                      "runwin_probability", "terminal", "survived", "projectionFailure", "inferenceFailure"])
+                      "leaf_curHp", "leaf_maxHp", "leaf_hpFrac", "runwin_probability", "terminal", "survived",
+                      "projectionFailure", "inferenceFailure"])
 
 
 def _rank(values):
@@ -49,7 +50,9 @@ def analyze(frame, reference=None, bootstrap=1000):
     group_sizes = frame.groupby(GROUP, dropna=False).size()
     coverage = {}
     frame = frame.copy()
-    frame["hp_band"] = pd.cut(frame.get("curHp", frame.runwin_probability), [-np.inf, .30, .70, np.inf], labels=["low", "mid", "high"])
+    if (~np.isfinite(frame.leaf_hpFrac) | (frame.leaf_hpFrac < 0) | (frame.leaf_hpFrac > 1)).any():
+        raise ValueError("leaf_hpFrac must be finite and within [0,1]")
+    frame["hp_band"] = pd.cut(frame.leaf_hpFrac, [-np.inf, .30, .70, np.inf], labels=["low", "mid", "high"])
     for col in ("act", "encounter", "treeDepth", "survived", "hp_band"):
         coverage[col] = frame.groupby(col, dropna=False).size().to_dict()
     per_root = frame.groupby(GROUP, dropna=False).agg(
@@ -88,14 +91,21 @@ def self_test():
         for leaf, value in ((10, .2), (11, .8)):
             rows.append(dict(seed=seed, fightIdx=0, decIdx=0, rootObsHash=5, rootActionBits=7, leafObsHash=leaf,
                              replicate=0, treeDepth=3, encounter=1, act=1, vnetPred=value, rawRolloutEval=value,
-                             blendedEval=value, runwin_probability=value, terminal=1, survived=1,
+                             blendedEval=value, leaf_curHp=20 if leaf == 10 else 80, leaf_maxHp=100,
+                             leaf_hpFrac=.2 if leaf == 10 else .8, runwin_probability=value, terminal=1, survived=1,
                              projectionFailure=0, inferenceFailure=0))
     report = analyze(pd.DataFrame(rows), bootstrap=32)
     assert report["rows"] == 4 and report["failure_counts"]["projection"] == 0
+    assert report["coverage"]["hp_band"].get("low") == 2
+    assert report["coverage"]["hp_band"].get("high") == 2
     bad = pd.DataFrame(rows); bad.loc[0, "survived"] = 0; bad.loc[0, "runwin_probability"] = .1
     try: analyze(bad, bootstrap=4)
     except ValueError: pass
     else: raise AssertionError("loss zero invariant not enforced")
+    missing_hp = pd.DataFrame(rows).drop(columns=["leaf_hpFrac"])
+    try: analyze(missing_hp, bootstrap=4)
+    except ValueError: pass
+    else: raise AssertionError("missing leaf_hpFrac was not rejected")
     print("runwin shadow analyzer self-test: PASS")
 
 
