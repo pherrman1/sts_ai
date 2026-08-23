@@ -4083,8 +4083,7 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `firstQExploitSimulation`, initialized to `-1`, reset on root promotion, and
   recorded only when the existing baseline gate first opens. Selection,
   rollout, VNet, rewards, priors, PUCT, LIVE_VALID, and RNG behavior were not
-  changed. The per-instance `alwaysQOverride` remains diagnostic-only and the
-  paired hard-state/common-reference hook was not enabled.
+  changed. The paired hard-state/common-reference hook was not enabled.
 - **Protocol:** guarded local `bestbench 1000 8 0 92000` with
   `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_PARTICLES=64 STS_S3_BELIEF=0
   STS_S3_CHAIN=0 STS_S3_ALWAYS_Q=0 STS_STOP_AFTER_ACT=3`, current default
@@ -4108,4 +4107,8 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
 - **Artifacts:** ignored local raw outputs
   `build/qgate_timing_8seeds.csv`, `build/qgate_8seed_results.csv`,
   `build/qgate_timing_smoke_v2.csv`, and `build/qgate_smoke_results_v2.csv`;
-  analyzer `tools/analyze_s3_q_gate_timing.py`.
+  analyzer `tools/analyze_s3_q_gate_timing.py`. The tracked compact metrics,
+  exact configuration, collection SHA, and raw CSV SHA-256 are in
+  `docs/experiments/evidence/s3_q_gate_timing_2026-08-23.json`; the raw timing
+  CSV SHA-256 is
+  `a5e7ec4d87cb737492635e41f6f7e10a4f5d2289cca7d79d1560af82d086e1bf`.

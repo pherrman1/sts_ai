@@ -54,17 +54,9 @@ These control the default executing configuration; they are always parsed.
 | `STS_S3_CHAIN` | Deterministic chain compression (ablation) | `1` (ON) | `main` ~L9736 |
 | `STS_S3_LIVE` | Live-valid root-edge filter (ablation) | `1` (ON) | `main` ~L9737 |
 | `STS_S3_CRN` | Root CRN warm start (opt-in) | `0` (off) | `main` ~L9738 |
-| `STS_S3_ALWAYS_Q` | Allow Searcher3 fresh-tree selection to exploit accumulated Q before `bestActionSequence` becomes non-empty | `0` (off) | `main` |
+| `STS_S3_ALWAYS_Q` | Retired Always-Q ablation flag; when explicitly enabled, allows fresh-tree selection to exploit accumulated Q before `bestActionSequence` becomes non-empty | `0` (off) | `main` |
 | `STS_S3_GATE_TIMING_DIAG` | Record actual baseline Q-gate activation timing after each real S3 combat search | `0` (off) | `main` |
 | `STS_S3_GATE_TIMING_DIAG_FILE` | CSV output path for Q-gate timing telemetry | unset | `main` |
-| `STS_S3_HARDSTATE_DIAG` | Enable the same-state paired late/no-win diagnostic; telemetry only and off by default | `0` (off) | `main` |
-| `STS_S3_HARDSTATE_DIAG_FILE` | CSV output path for the hard-state diagnostic | unset | `main` |
-| `STS_S3_HARDSTATE_MAX_STATES` | Per-seed cap on retained eligible hard-state roots | `4` | `main` |
-| `STS_S3_HARDSTATE_REFERENCE_SIMS` | Independent common baseline reference simulation budget | `8000` | `main` |
-| `STS_S3_HARDSTATE_VNET_ARTIFACT` | Provenance label written to hard-state CSV rows | `UNSET` | diagnostic caller |
-| `STS_S3_HARDSTATE_POLICY_ARTIFACT` | Provenance label written to hard-state CSV rows | `UNSET` | diagnostic caller |
-| `STS_S3_HARDSTATE_FLAGS` | Caller-supplied relevant configuration label written to hard-state CSV rows | `caller_environment` | diagnostic caller |
-| `STS_S3_HARDSTATE_IMPL_SHA` | Caller-supplied implementation SHA written to hard-state CSV rows | `UNSET` | diagnostic caller |
 | `STS_S3_POOL_REDIRECT` | Forced-move budget pool redirect (opt-in) | `0` (off) | `main` ~L9732 |
 | `STS_S3_PERSIST_FILTERED_BELIEF` | Transfer the exact filtered real-boundary posterior into the next fresh Searcher3 tree (experimental) | `0` (off) | `main` ~L10772 |
 | `STS_S3_AI_SENSITIVITY_SHADOW` | Conditional AI_RNG fixed-hidden Searcher3 sensitivity diagnostic; shadow-only | `0` | `main` |

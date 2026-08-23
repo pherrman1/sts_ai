@@ -1,6 +1,6 @@
 # Decision log
 
-| 2026-08-23 | [`2026-08-23-s3-always-q-hardstates.md`](2026-08-23-s3-always-q-hardstates.md) | Searcher3 Always-Q Experiment 1b implementation and correction: per-instance override, actual `bestActionSequence` Q-gate timing telemetry, same-state paired hard-state probes retained but not run, schema/analyzer, and review-before-collection boundary. |
+| 2026-08-23 | [`2026-08-23-s3-q-gate-timing.md`](2026-08-23-s3-q-gate-timing.md) | Corrected Searcher3 Q-gate timing result: `bestActionSequence` opens the baseline gate by simulation 10 in 99.91% of 3,449 searches; Always-Q line stopped. |
 
 Last verified: 2026-08-23 against the current working tree.
 

@@ -171,10 +171,6 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
                            "STS_S3_AI_REJUV_LIVE", "STS_S3_AI_REJUV_LIVE_FILE",
                           "STS_S3_RNG_EXPOSURE_DIAG", "STS_S3_RNG_EXPOSURE_DIAG_FILE",
                           "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_S3_ALWAYS_Q", "STS_REUSE_DIAG",
-                          "STS_S3_HARDSTATE_DIAG", "STS_S3_HARDSTATE_DIAG_FILE",
-                          "STS_S3_HARDSTATE_MAX_STATES", "STS_S3_HARDSTATE_REFERENCE_SIMS",
-                          "STS_S3_HARDSTATE_VNET_ARTIFACT", "STS_S3_HARDSTATE_POLICY_ARTIFACT",
-                          "STS_S3_HARDSTATE_FLAGS", "STS_S3_HARDSTATE_IMPL_SHA",
                           "STS_S3_GATE_TIMING_DIAG", "STS_S3_GATE_TIMING_DIAG_FILE",
                           "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
                           "STS_REUSE_CARRY_DIAG", "STS_REUSE_CPU_DIAG",
@@ -12351,22 +12347,6 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_ROOT_RACE_MAX_STATES")) {
         search::g_s3RootRaceDiagMaxStates = std::max(1, std::atoi(d));
         std::cout << "[S3 root-race max states = " << search::g_s3RootRaceDiagMaxStates << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_HARDSTATE_DIAG")) {
-        search::g_s3HardStateDiag = std::atoi(d) != 0;
-        std::cout << "[S3 hard-state diag = " << (search::g_s3HardStateDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_HARDSTATE_DIAG_FILE")) {
-        search::g_s3HardStateDiagFile = d;
-        std::cout << "[S3 hard-state diag file = " << search::g_s3HardStateDiagFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_HARDSTATE_MAX_STATES")) {
-        search::g_s3HardStateDiagMaxStates = std::max(1, std::atoi(d));
-        std::cout << "[S3 hard-state max states = " << search::g_s3HardStateDiagMaxStates << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_HARDSTATE_REFERENCE_SIMS")) {
-        search::g_s3HardStateDiagReferenceSims = std::max(3000, std::atoi(d));
-        std::cout << "[S3 hard-state reference sims = " << search::g_s3HardStateDiagReferenceSims << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_GATE_TIMING_DIAG")) {
         search::g_s3GateTimingDiag = std::atoi(d) != 0;

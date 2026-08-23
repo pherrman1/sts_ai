@@ -156,10 +156,6 @@ std::string g_s3BeliefAuditFile;
 bool g_s3RootRaceDiag = false;
 std::string g_s3RootRaceDiagFile;
 int g_s3RootRaceDiagMaxStates = 32;
-bool g_s3HardStateDiag = false;
-std::string g_s3HardStateDiagFile;
-int g_s3HardStateDiagMaxStates = 4;
-int g_s3HardStateDiagReferenceSims = 8000;
 bool g_s3GateTimingDiag = false;
 std::string g_s3GateTimingDiagFile;
 thread_local std::int64_t t_baUpdatesDuringSearch = 0;
@@ -2679,15 +2675,6 @@ bool s3ShouldExploitQ(bool hasExploitableSequence, int reuseSearchCount) {
     return g_s3AlwaysQ || (g_reuseAlwaysQ ? reuseSearchCount >= 0 : hasExploitableSequence);
 }
 
-bool BattleScumSearcher3::effectiveAlwaysQ() const {
-    return alwaysQOverride.has_value() ? *alwaysQOverride : g_s3AlwaysQ;
-}
-
-bool BattleScumSearcher3::shouldExploitQ(bool hasExploitableSequence) const {
-    return effectiveAlwaysQ()
-        || (g_reuseAlwaysQ ? reuseSearchCount >= 0 : hasExploitableSequence);
-}
-
 int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
     const int n = (int)node.edges.size();
     if (n == 1) return 0;
@@ -2698,7 +2685,7 @@ int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
     // STS_REUSE_ALWAYS_Q: on carried trees, always use Q from sim 1.
     // Otherwise (legacy): exploit only after bestActionSequence is non-empty.
-    const bool exploit = shouldExploitQ(!bestActionSequence.empty());
+    const bool exploit = s3ShouldExploitQ(!bestActionSequence.empty(), reuseSearchCount);
     const double evalRange = std::max(1.0, bestActionValue - minActionValue);
 
     int best = 0;
@@ -2732,7 +2719,7 @@ int BattleScumSearcher3::selectBestValidEdgePUCT(const Node &node, const BattleC
                        || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly);
     const double logParent  = usePuct ? 0.0 : std::log((double)(node.simulationCount + 1));
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
-    const bool exploit = shouldExploitQ(!bestActionSequence.empty());
+    const bool exploit = s3ShouldExploitQ(!bestActionSequence.empty(), reuseSearchCount);
     const double evalRange = std::max(1.0, bestActionValue - minActionValue);
 
     int best = -1;

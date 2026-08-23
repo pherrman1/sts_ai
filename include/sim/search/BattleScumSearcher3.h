@@ -236,11 +236,6 @@ class BattleScumSearcher3;
         // observed during this root search.
         int firstQExploitSimulation = -1;
 
-        // Diagnostic-only per-instance override.  When unset, the searcher
-        // uses g_s3AlwaysQ exactly as production does.  This avoids mutating
-        // the process-global flag while paired probes run concurrently.
-        std::optional<bool> alwaysQOverride;
-
         struct RngExposureAggregate {
             std::int64_t simulations = 0;
             std::int64_t aiExposed = 0, cardExposed = 0;
@@ -369,8 +364,6 @@ class BattleScumSearcher3;
 
         void search(int64_t simulations);
         void searchToTotal(int64_t targetSimulations);
-        [[nodiscard]] bool effectiveAlwaysQ() const;
-        [[nodiscard]] bool shouldExploitQ(bool hasWinningLine) const;
         void enableRngExposureDiagnostic(std::uint64_t seed, int encounter, int floor,
                                          int sourceFilterDecisionIndex, int searchDecisionIndex,
                                          int turn, std::uint64_t rootObservationHash,
@@ -632,12 +625,6 @@ class BattleScumSearcher3;
     extern bool g_s3RootRaceDiag;
     extern std::string g_s3RootRaceDiagFile;
     extern int g_s3RootRaceDiagMaxStates;
-    // Same-state paired late/no-win diagnostic (opt-in).  The hook is
-    // installed by ScumSearchAgent2 and never changes the live search path.
-    extern bool g_s3HardStateDiag;
-    extern std::string g_s3HardStateDiagFile;
-    extern int g_s3HardStateDiagMaxStates;
-    extern int g_s3HardStateDiagReferenceSims;
     // Opt-in per-real-combat timing diagnostic for the baseline Q gate.
     extern bool g_s3GateTimingDiag;
     extern std::string g_s3GateTimingDiagFile;

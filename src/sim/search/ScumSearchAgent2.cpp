@@ -14,9 +14,7 @@
 #include <chrono>
 #include <limits>
 #include <mutex>
-#include <set>
 #include <sstream>
-#include <unordered_map>
 #include <sim/search/ExpertKnowledge.h>
 #include <game/Game.h>
 #include "sim/PrintHelpers.h"
@@ -148,7 +146,7 @@ static double rootActionQ(const search::BattleScumSearcher3::Edge &edge) {
         : std::numeric_limits<double>::quiet_NaN();
 }
 
-static int s3HardStateAct(int floor) {
+static int s3GateTimingAct(int floor) {
     // GameContext::act uses the same boss-floor anchors as one_combat.cpp:
     // act 1 ends at floor 17, act 2 at 34, and act 3 at 50.
     if (floor <= 17) return 1;
@@ -157,7 +155,7 @@ static int s3HardStateAct(int floor) {
     return 4;
 }
 
-static bool s3HardStateElite(MonsterEncounter e) {
+static bool s3GateTimingElite(MonsterEncounter e) {
     switch (e) {
         case MonsterEncounter::GREMLIN_NOB:
         case MonsterEncounter::LAGAVULIN:
@@ -172,11 +170,6 @@ static bool s3HardStateElite(MonsterEncounter e) {
         default:
             return false;
     }
-}
-
-static const char *s3HardStateEnv(const char *name, const char *fallback) {
-    const char *value = std::getenv(name);
-    return value && *value ? value : fallback;
 }
 
 // Cheap opt-in telemetry for the actual baseline Q-gate timing. This is
@@ -199,146 +192,13 @@ static void writeS3GateTimingDiag(const BattleContext &bc,
                "total_search_simulations,search_simulations_this_call,boss,elite\n";
     }
     const bool boss = isBossEncounter(bc.encounter);
-    const bool elite = s3HardStateElite(bc.encounter);
-    out << seed << ',' << s3HardStateAct(bc.floorNum) << ',' << bc.floorNum << ','
+    const bool elite = s3GateTimingElite(bc.encounter);
+    out << seed << ',' << s3GateTimingAct(bc.floorNum) << ',' << bc.floorNum << ','
         << static_cast<int>(bc.encounter) << ',' << bc.turn << ',' << decisionIdx << ','
         << CombatObservation::fromBattleContext(bc).visibleHash() << ','
         << s3.firstQExploitSimulation << ',' << s3.root.simulationCount << ','
         << s3.lastSearchSimulations << ',' << (boss ? 1 : 0) << ','
         << (elite ? 1 : 0) << '\n';
-}
-
-// Same-state paired Searcher3 probe for Experiment 1b.  Every arm is built
-// from the one `bc` object passed to this function; the live battle trajectory
-// is not replayed and no global ALWAYS_Q flag is changed.  The two shallow
-// arms use the same constructor seed, hence the same belief/RNG stream, while
-// the common reference uses a separate salt.
-static void writeS3HardStateDiag(const BattleContext &bc,
-                                 std::uint64_t seed, int decisionIdx) {
-    if (!search::g_s3HardStateDiag || search::g_s3HardStateDiagFile.empty()) return;
-    if (bc.outcome != Outcome::UNDECIDED) return;
-    const bool elite = s3HardStateElite(bc.encounter);
-    const bool boss = isBossEncounter(bc.encounter);
-    if (s3HardStateAct(bc.floorNum) < 2 && !elite && !boss) return;
-
-    static thread_local std::uint64_t capturedSeed = std::numeric_limits<std::uint64_t>::max();
-    static thread_local int capturedStates = 0;
-    if (capturedSeed != seed) { capturedSeed = seed; capturedStates = 0; }
-    if (capturedStates >= search::g_s3HardStateDiagMaxStates) return;
-
-    search::BattleScumSearcher3::Node legalNode;
-    search::enumerateActionsForNode(legalNode, bc);
-    std::set<std::uint32_t> sourceActions;
-    for (const auto &edge : legalNode.edges) sourceActions.insert(edge.action.bits);
-    if (sourceActions.size() <= 1) return;  // forced / no meaningful choice
-    ++capturedStates;
-
-    constexpr std::array<int, 4> budgets = {250, 500, 1000, 3000};
-    constexpr std::uint64_t pairedSalt = 0x9e3779b97f4a7c15ULL;
-    constexpr std::uint64_t referenceSalt = 0xbf58476d1ce4e5b9ULL;
-    struct Probe {
-        std::array<std::uint64_t, 4> chosen{};
-        std::unordered_map<std::uint32_t, double> q;
-        int firstQExploit = -1;
-        double cpuMs = 0.0;
-        std::uint64_t stateHash = 0;
-    };
-    auto runProbe = [&](bool alwaysQ, std::uint64_t salt,
-                        const std::array<int, 4> &probeBudgets) {
-        Probe result;
-        result.chosen.fill(std::numeric_limits<std::uint64_t>::max());
-        search::BattleScumSearcher3 probe(
-            bc, bc.seed ^ salt, decisionIdx, search::g_s3Particles);
-        probe.alwaysQOverride = alwaysQ;
-        result.stateHash = CombatObservation::fromBattleContext(*probe.rootBc).visibleHash();
-        for (size_t i = 0; i < probeBudgets.size(); ++i) {
-            probe.searchToTotal(probeBudgets[i]);
-            result.cpuMs += probe.lastSearchCpuMs;
-            bool have = false;
-            const auto action = s3PickRootAction(probe, bc, have);
-            if (have) result.chosen[i] = action.bits;
-        }
-        result.firstQExploit = probe.firstQExploitSimulation;
-        for (const auto &edge : probe.root.edges)
-            result.q[edge.action.bits] = rootActionQ(edge);
-        return result;
-    };
-
-    // The reference gets the same requested budget shape but is only run once
-    // at the independent high budget.  Its Q table is the common comparison
-    // object, not an optimal-action oracle.
-    const Probe control = runProbe(false, pairedSalt, budgets);
-    const Probe treatment = runProbe(true, pairedSalt, budgets);
-    const int referenceBudget = std::max(3000, search::g_s3HardStateDiagReferenceSims);
-    const std::array<int, 4> referenceBudgets = {referenceBudget, referenceBudget,
-                                                  referenceBudget, referenceBudget};
-    const Probe reference = runProbe(false, referenceSalt, referenceBudgets);
-
-    const auto actionToken = [](std::uint64_t bits) -> long long {
-        return bits == std::numeric_limits<std::uint64_t>::max()
-            ? -1LL : static_cast<long long>(bits);
-    };
-    const auto findQ = [](const Probe &probe, std::uint32_t bits) {
-        const auto it = probe.q.find(bits);
-        return it == probe.q.end()
-            ? std::numeric_limits<double>::quiet_NaN() : it->second;
-    };
-    const auto csvText = [](const char *value) {
-        std::string out = "\"";
-        for (const char c : std::string(value)) {
-            if (c == '\"') out += "\"\"";
-            else out += c;
-        }
-        out += '\"';
-        return out;
-    };
-    double bestReferenceQ = std::numeric_limits<double>::quiet_NaN();
-    for (const auto bits : sourceActions) {
-        const double q = findQ(reference, bits);
-        if (!std::isnan(q) && (std::isnan(bestReferenceQ) || q > bestReferenceQ))
-            bestReferenceQ = q;
-    }
-    const std::uint64_t referenceBits = reference.chosen[3];
-    const std::uint64_t stateHash = CombatObservation::fromBattleContext(bc).visibleHash();
-
-    static std::mutex mutex;
-    static bool header = false;
-    std::lock_guard<std::mutex> lock(mutex);
-    std::ofstream out(search::g_s3HardStateDiagFile, std::ios::app);
-    if (!out) return;
-    if (!header) {
-        out << "seed,act,floor,encounter,turn,decision_index,visible_observation_hash,"
-               "source_context_hash,control_context_hash,treatment_context_hash,reference_context_hash,"
-               "n_legal_root_actions,action_bits,legal_now,"
-               "control_first_q_exploit_sim,control_chosen_250,control_chosen_500,control_chosen_1000,control_chosen_3000,control_cpu_ms,"
-               "treatment_first_q_exploit_sim,treatment_chosen_250,treatment_chosen_500,treatment_chosen_1000,treatment_chosen_3000,treatment_cpu_ms,"
-               "reference_budget,reference_chosen_action,reference_q,best_reference_q,"
-               "particle_count,vnet_artifact,policy_artifact,relevant_flags,implementation_sha,"
-               "paired_rng_salt,reference_rng_salt\n";
-        header = true;
-    }
-    for (const auto bits : sourceActions) {
-        out << seed << ',' << s3HardStateAct(bc.floorNum) << ',' << bc.floorNum << ','
-            << static_cast<int>(bc.encounter) << ',' << bc.turn << ',' << decisionIdx << ','
-            << stateHash << ',' << stateHash << ',' << control.stateHash << ','
-            << treatment.stateHash << ',' << reference.stateHash << ','
-            << sourceActions.size() << ',' << static_cast<std::uint64_t>(bits) << ','
-            << (search::Action(bits).isValidAction(bc) ? 1 : 0) << ','
-            << control.firstQExploit << ',' << actionToken(control.chosen[0]) << ','
-            << actionToken(control.chosen[1]) << ',' << actionToken(control.chosen[2]) << ','
-            << actionToken(control.chosen[3]) << ',' << control.cpuMs << ','
-            << treatment.firstQExploit << ',' << actionToken(treatment.chosen[0]) << ','
-            << actionToken(treatment.chosen[1]) << ',' << actionToken(treatment.chosen[2]) << ','
-            << actionToken(treatment.chosen[3]) << ',' << treatment.cpuMs << ','
-            << referenceBudget << ',' << actionToken(referenceBits) << ','
-            << findQ(reference, bits) << ',' << bestReferenceQ << ','
-            << search::g_s3Particles << ','
-            << csvText(s3HardStateEnv("STS_S3_HARDSTATE_VNET_ARTIFACT", "UNSET")) << ','
-            << csvText(s3HardStateEnv("STS_S3_HARDSTATE_POLICY_ARTIFACT", "UNSET")) << ','
-            << csvText(s3HardStateEnv("STS_S3_HARDSTATE_FLAGS", "caller_environment")) << ','
-            << csvText(s3HardStateEnv("STS_S3_HARDSTATE_IMPL_SHA", "UNSET")) << ','
-            << pairedSalt << ',' << referenceSalt << '\n';
-    }
 }
 
 static void writeS3BeliefBoundaryDiag(
@@ -728,7 +588,6 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             writeS3RootRaceDiag(bc, bc.seed, decisionIdx);
             writeS3GateTimingDiag(bc, s3, bc.seed, decisionIdx);
-            writeS3HardStateDiag(bc, bc.seed, decisionIdx);
             s3.clampRankCorrAtRoot();
             s3.rankCorrValues.clear();
             // Edge-availability and reuse diagnostics.
@@ -1072,7 +931,6 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             writeS3RootRaceDiag(bc, bc.seed, decisionIdx);
             writeS3GateTimingDiag(bc, s3, bc.seed, decisionIdx);
-            writeS3HardStateDiag(bc, bc.seed, decisionIdx);
             if (search::isDrawPileIndexSensitiveCardSelect(bc))
                 s3.reconcileRoot(bc);
             bool have = false;
