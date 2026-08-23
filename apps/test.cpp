@@ -677,6 +677,12 @@ int testS3StrategyFusionDiag(std::uint64_t seed) {
 
     check(!search::g_s3StrategyFusionDiag, "diagnostic is not off by default");
 
+    search::BattleScumSearcher3::Node stableParent;
+    stableParent.nodeObsVisits = 1;
+    check(stableParent.isObsStable(), "stable END_TURN parent was rejected");
+    stableParent.nodeObsMismatches = 1;
+    check(!stableParent.isObsStable(), "unstable END_TURN parent was accepted");
+
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
     BattleContext bc;
     bc.init(gc, MonsterEncounter::CULTIST);

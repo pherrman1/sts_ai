@@ -4024,6 +4024,9 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   deeper-reference searches, and compares stable semantic action identities.
   The matched budget is `max(1, round(sharedChildVisits * bucketProbability))`;
   the configured 500-simulation search is secondary. It is guarded against
+  pre-END_TURN parent fusion by collecting only when the tracked parent
+  observation has `nodeObsMismatches == 0`; parent visit/mismatch provenance is
+  emitted in each row. It is guarded against
   recursive side probes and does not consume the live searcher's RNG or mutate
   its tree, belief, counters, or selected action. Existing root-action
   selection was factored into a read-only helper without changing its
@@ -4033,7 +4036,8 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   applies the matched-budget and cap corrections, adds the preregistered
   source-seed analyzer at
   `tools/analyze_s3_strategy_fusion_diag.py`, and requires another independent
-  implementation review before any decision-bearing run.
+  implementation review before any decision-bearing run. The follow-up
+  correction also gates collection on END_TURN-parent observation stability.
 - **Fairness correction in the diagnostic:** Local testing found that
   `Belief::initial` uses the stored draw-pile vector order as a shuffle input
   even though `CombatObservation` equality treats the pile as a multiset. The
@@ -4056,8 +4060,9 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   weighted matched reference conditioned-minus-shared margin was
   `-0.958249375`. The secondary 500-simulation comparison had disagreement
   `0.000` and weighted margin `0`. The analyzer validated the 34-column CSV,
-  emitted source-seed bootstrap summaries, and passed its self-test. These are
-  explicitly smoke-scale, noisy, and **not a scientific conclusion**.
+  emitted source-seed bootstrap summaries, and passed its self-test. The
+  corrected 36-column schema recorded `parentObsMismatches=0` for all rows.
+  These are explicitly smoke-scale, noisy, and **not a scientific conclusion**.
 - **Decision rule/status:** No 16–32-source-seed decision-bearing run was
   performed. This correction follows independent review of the first
   implementation; another independent implementation review is required

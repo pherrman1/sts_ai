@@ -22,7 +22,11 @@ with `max(1, round(sharedChildVisits * bucketProbability))` simulations; the
 configured 500-simulation fresh search is secondary. The existing visit-based
 live-valid root-choice semantics are reused; candidate comparison uses stable
 semantic CARD identity rather than raw hand position. Reference values are
-deeper Searcher3 edge means, not ground truth.
+deeper Searcher3 edge means, not ground truth. Collection is gated to END_TURN
+parents whose tracked `CombatObservation` has remained stable
+(`nodeObsMismatches == 0`), so the shared-child visit count is attributable to
+one visible pre-END_TURN state. CSV rows record the parent visit and mismatch
+counts.
 
 The flag is off by default:
 `STS_S3_STRATEGY_FUSION_DIAG=1`. CSV rows include source/decision/bucket
@@ -66,10 +70,12 @@ fair-belief cleanup.
   comparison had 0 disagreement mass and weighted margin `0`. These numbers
   are too small/noisy to support a scientific conclusion.
 - The analyzer at
-  `tools/analyze_s3_strategy_fusion_diag.py` validated the 34-column CSV,
+  `tools/analyze_s3_strategy_fusion_diag.py` validated the 36-column CSV,
   reported the matched comparison as primary, and bootstrapped at source-seed
   level. With one qualifying source seed, its 95% smoke CIs collapse to the
-  observed values and have no scientific meaning.
+  observed values and have no scientific meaning. The corrected smoke schema
+  is 36 columns; all four rows had `parentObsMismatches=0` and
+  `parentObsVisits=9`.
 - Paired Searcher3 `searchdiag` root-action rows were identical ON versus OFF:
   599 rows per side and 0 decision differences. No invalid-action, crash, or
   simulator-health error appeared in either smoke log.

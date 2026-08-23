@@ -35,6 +35,8 @@ SCHEMA = [
     "bucketCount",
     "bucketProbability",
     "distinctBucketCount",
+    "parentObsVisits",
+    "parentObsMismatches",
     "sharedChildVisits",
     "sharedAction",
     "conditionedAction",
@@ -71,6 +73,8 @@ INT_FIELDS = {
     "particleCount",
     "bucketCount",
     "distinctBucketCount",
+    "parentObsVisits",
+    "parentObsMismatches",
     "sharedChildVisits",
     "freshSimBudget",
     "matchedSimBudget",
@@ -144,6 +148,8 @@ def validate_rows(fieldnames: list[str] | None, rows: Iterable[dict[str, str]]) 
             raise ValueError(f"invalid particle count on CSV line {line_number}")
         if row["distinctBucketCount"] < 2:
             raise ValueError(f"non-measured row on CSV line {line_number}")
+        if row["parentObsVisits"] <= 0 or row["parentObsMismatches"] != 0:
+            raise ValueError(f"unstable END_TURN parent on CSV line {line_number}")
         parsed.append(row)
 
     if not parsed:
@@ -367,6 +373,8 @@ def self_test() -> None:
             "particleCount": "8",
             "bucketCount": "4",
             "distinctBucketCount": "2",
+            "parentObsVisits": "1",
+            "parentObsMismatches": "0",
             "sharedAction": "CARD:1",
             "conditionedAction": "CARD:2",
             "matchedConditionedAction": "CARD:3",

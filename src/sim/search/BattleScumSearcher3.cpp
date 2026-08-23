@@ -1039,6 +1039,7 @@ void writeStrategyFusionRow(
     std::uint64_t sharedChildCachedObsHash, std::uint64_t postObsHash,
     int drawPileBefore, int discardBefore, int particleCount, int bucketCount,
     double bucketProbability, int distinctBucketCount,
+    std::int64_t parentObsVisits, std::int64_t parentObsMismatches,
     std::int64_t sharedChildVisits, const std::string &sharedAction,
     const std::string &conditionedAction,
     const std::string &matchedConditionedAction,
@@ -1053,7 +1054,8 @@ void writeStrategyFusionRow(
         "sourceSeed,encounter,floor,turn,decisionIdx,searchSimulationIndex,"
         "preObsHash,sharedChildCachedObsHash,postObsHash,drawPileSizeBefore,"
         "discardPileSizeBefore,particleCount,bucketCount,bucketProbability,"
-        "distinctBucketCount,sharedChildVisits,sharedAction,conditionedAction,"
+        "distinctBucketCount,parentObsVisits,parentObsMismatches,"
+        "sharedChildVisits,sharedAction,conditionedAction,"
         "matchedConditionedAction,referenceAction,sharedConditionedAgree,"
         "sharedMatchedConditionedAgree,referenceSharedAgree,"
         "referenceConditionedAgree,referenceMatchedConditionedAgree,"
@@ -1070,7 +1072,8 @@ void writeStrategyFusionRow(
             << sharedChildCachedObsHash << ',' << postObsHash << ','
             << drawPileBefore << ',' << discardBefore << ',' << particleCount << ','
             << bucketCount << ',' << bucketProbability << ',' << distinctBucketCount
-            << ',' << sharedChildVisits << ',' << sharedAction << ','
+            << ',' << parentObsVisits << ',' << parentObsMismatches << ','
+            << sharedChildVisits << ',' << sharedAction << ','
             << conditionedAction << ',' << matchedConditionedAction << ','
             << referenceAction << ',' << sharedConditionedAgree << ','
             << sharedMatchedConditionedAgree << ',' << referenceSharedAgree << ','
@@ -1091,7 +1094,7 @@ void writeStrategyFusionRow(
         std::ofstream meta(g_s3StrategyFusionDiagFile + ".meta.json");
         if (meta) {
             meta << "{\n"
-                 << "  \"schema\": \"s3_strategy_fusion_diag_v2\",\n"
+                 << "  \"schema\": \"s3_strategy_fusion_diag_v3\",\n"
                  << "  \"diagnostic\": \"shadow-only; END_TURN shared-child strategy fusion\",\n"
                  << "  \"particleCount\": " << g_s3StrategyFusionDiagParticles << ",\n"
                  << "  \"maxTransitions\": " << g_s3StrategyFusionDiagMaxTransitions << ",\n"
@@ -1101,6 +1104,7 @@ void writeStrategyFusionRow(
                  << "  \"referenceSimBudget\": " << g_s3StrategyFusionDiagReferenceSims << ",\n"
                  << "  \"primaryComparison\": \"shared child vs matched-compute conditioned\",\n"
                  << "  \"secondaryComparison\": \"shared child vs configured fresh conditioned\",\n"
+                 << "  \"parentObservationGate\": \"nodeObsMismatches == 0 at END_TURN parent\",\n"
                  << "  \"normalSearchParticles\": " << g_s3Particles << ",\n"
                  << "  \"liveValid\": " << (g_liveValid ? 1 : 0) << ",\n"
                  << "  \"semanticCardEdges\": " << (g_s3SemanticCardEdges ? 1 : 0) << ",\n"
@@ -1115,7 +1119,8 @@ void writeStrategyFusionRow(
         << sharedChildCachedObsHash << ',' << postObsHash << ','
         << drawPileBefore << ',' << discardBefore << ',' << particleCount << ','
         << bucketCount << ',' << bucketProbability << ',' << distinctBucketCount
-        << ',' << sharedChildVisits << ',' << sharedAction << ','
+        << ',' << parentObsVisits << ',' << parentObsMismatches << ','
+        << sharedChildVisits << ',' << sharedAction << ','
         << conditionedAction << ',' << matchedConditionedAction << ','
         << referenceAction << ',' << sharedConditionedAgree << ','
         << sharedMatchedConditionedAgree << ',' << referenceSharedAgree << ','
@@ -1126,14 +1131,14 @@ void writeStrategyFusionRow(
         << referenceMarginMatched << ',' << sharedActionValid << '\n';
 }
 
-void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
+void runStrategyFusionDiag(const BattleScumSearcher3::Node &parentNode,
                            const BattleContext &preState,
                            const BattleScumSearcher3::Edge &sharedEdge,
                            std::uint64_t sourceSeed, int encounter, int floor,
                            int turn, int decisionIndex, int simulationIndex) {
-    (void)liveSearcher;
     if (!g_s3StrategyFusionDiag || t_strategyFusionSuppressed
         || sharedEdge.action.getActionType() != ActionType::END_TURN
+        || !parentNode.isObsStable()
         || sharedEdge.child.simulationCount < g_s3StrategyFusionDiagMinChildVisits
         || g_strategyFusionTransitions.load() >= g_s3StrategyFusionDiagMaxTransitions)
         return;
@@ -1296,7 +1301,8 @@ void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
                 static_cast<int>(preState.cards.discardPile.size()), nParticles,
                 static_cast<int>(bucket.states.size()),
                 static_cast<double>(bucket.states.size()) / nParticles,
-                static_cast<int>(buckets.size()), sharedEdge.child.simulationCount,
+                static_cast<int>(buckets.size()), parentNode.nodeObsVisits,
+                parentNode.nodeObsMismatches, sharedEdge.child.simulationCount,
                 sharedId, conditionedId, matchedId, referenceId,
                 sharedConditionedAgree, sharedMatchedConditionedAgree,
                 referenceSharedAgree, referenceConditionedAgree,
@@ -1312,7 +1318,8 @@ void runStrategyFusionDiag(const BattleScumSearcher3 &liveSearcher,
                 static_cast<int>(preState.cards.discardPile.size()), nParticles,
                 static_cast<int>(bucket.states.size()),
                 static_cast<double>(bucket.states.size()) / nParticles,
-                static_cast<int>(buckets.size()), sharedEdge.child.simulationCount,
+                static_cast<int>(buckets.size()), parentNode.nodeObsVisits,
+                parentNode.nodeObsMismatches, sharedEdge.child.simulationCount,
                 sharedId, "", "", "", -1, -1, -1, -1, -1,
                 g_s3StrategyFusionDiagFreshSims,
                 matchedSims, g_s3StrategyFusionDiagReferenceSims,
@@ -2434,9 +2441,10 @@ void BattleScumSearcher3::step() {
         // Per-node observation-stability tracking.
         // Only immediate root children (depth==2) can be promoted via
         // advanceRoot, so only they need obs-stability for the reuse
-        // eligibility check. Union-expand and carry-diag still track
-        // at all depths (experimental/diagnostic, not in deployed candidate).
-        if (g_s3UnionExpand || g_reuseCarryDiag || (g_reuseObsStable && depth == 2))
+        // eligibility check. The strategy-fusion diagnostic tracks all
+        // depths so an END_TURN parent can be gated independently of reuse.
+        if (g_s3UnionExpand || g_reuseCarryDiag || (g_reuseObsStable && depth == 2)
+            || g_s3StrategyFusionDiag)
             trackNodeObservation(*cur, state);
         diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(depth));
 
@@ -2870,6 +2878,7 @@ void BattleScumSearcher3::step() {
                     }
                     std::optional<BattleContext> strategyPreState;
                     if (g_s3StrategyFusionDiag && !t_strategyFusionSuppressed
+                        && cur->isObsStable()
                         && execAction.getActionType() == ActionType::END_TURN
                         && validEdge.child.simulationCount >= g_s3StrategyFusionDiagMinChildVisits)
                         strategyPreState = state;
@@ -2878,7 +2887,7 @@ void BattleScumSearcher3::step() {
                         state.turn, decisionIndex);
                     observeRngExposureAction(execAction, state);
                     if (strategyPreState)
-                        runStrategyFusionDiag(*this, *strategyPreState, validEdge,
+                        runStrategyFusionDiag(*cur, *strategyPreState, validEdge,
                                               rootBc->seed, (int)rootBc->encounter,
                                               rootBc->floorNum, strategyPreState->turn,
                                               decisionIndex, searchSimulationOrdinal);
@@ -3035,6 +3044,7 @@ void BattleScumSearcher3::step() {
 
         std::optional<BattleContext> strategyPreState;
         if (g_s3StrategyFusionDiag && !t_strategyFusionSuppressed
+            && cur->isObsStable()
             && effectiveAction.getActionType() == ActionType::END_TURN
             && edge.child.simulationCount >= g_s3StrategyFusionDiagMinChildVisits)
             strategyPreState = state;
@@ -3043,7 +3053,7 @@ void BattleScumSearcher3::step() {
             state.turn, decisionIndex);
         observeRngExposureAction(effectiveAction, state);
         if (strategyPreState)
-            runStrategyFusionDiag(*this, *strategyPreState, edge,
+            runStrategyFusionDiag(*cur, *strategyPreState, edge,
                                   rootBc->seed, (int)rootBc->encounter,
                                   rootBc->floorNum, strategyPreState->turn,
                                   decisionIndex, searchSimulationOrdinal);
