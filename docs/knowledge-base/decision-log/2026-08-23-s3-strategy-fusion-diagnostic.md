@@ -80,15 +80,56 @@ fair-belief cleanup.
   599 rows per side and 0 decision differences. No invalid-action, crash, or
   simulator-health error appeared in either smoke log.
 
+## Decision-bearing frozen run
+
+The implementation was frozen at `1438ef72f6486adf3161e587b25fd1e0b83f18a6`
+after the parent-stability correction review. The run used 16 source seeds,
+`12345..12360`, with one seed-guarded process per seed so the process-local
+transition cap could not be shared across seeds. Normal Searcher3 used its
+documented 64 particles and 64 simulations per decision; the diagnostic used
+64 particles, a per-process cap of 4, minimum shared-child visits 32, the
+secondary 500-simulation search, and the 3000-simulation deeper reference.
+
+The run emitted 64 measured stable-parent transitions and 628 bucket rows. All
+rows had `parentObsMismatches=0`; each source seed contributed exactly four
+measured transitions. Paired OFF/ON traces contained 5,306 rows per side with
+zero actual search/game decision differences. The machine-readable analyzer
+artifact is `build/s3sf_decision_analysis.json`.
+
+Primary matched-compute results, aggregated at source-seed level before the
+10,000-resample bootstrap, were:
+
+- shared/matched-conditioned disagreement: `0.7012`, bootstrap 95% CI
+  `[0.6116, 0.7820]`;
+- among disagreement mass, deeper reference preferred matched-conditioned
+  `0.2481` (CI `[0.1780, 0.3210]`), shared `0.2648` (CI `[0.1765, 0.3659]`),
+  and neither `0.4871` (CI `[0.3532, 0.6212]`);
+- matched-conditioned minus shared reference margin: `-1.6781`, bootstrap
+  95% CI `[-2.7500, -0.6066]`.
+
+The secondary 500-simulation comparison had disagreement `0.7612`, reference
+conditioned preference `0.6132`, and margin `+3.5400`; it is explicitly
+secondary because its compute budget is not matched.
+
+Interpretation: the primary result provides strong smoke-to-run evidence that
+shared and matched-conditioned continuation policies often disagree, but the
+deeper reference does not prefer the matched-conditioned action more often than
+the shared action, and the matched reference margin is negative in this run.
+Therefore the preregistered harm requirement for proceeding toward persistent
+chance-node state splitting is not met. This run does not support proceeding
+with a chance-node prototype; the disagreement itself remains a real measured
+abstraction effect, not evidence of benefit. The reference is noisy and this
+is one 16-source-seed gate, so any replication would require an explicitly
+approved new run rather than silently extending this one.
+
 ## Verification and status
 
 The final `one_combat` and `unit-test` targets built successfully through the
 documented Linux GCC debug preset. The focused `s3_strategy_fusion_diag` and
 existing semantic-card tests passed; the broader focused Searcher3 CTest set
-and `git diff --check` passed. A release
-incremental LTO link was not completed within the command window after the
-final source correction. No 16–32-seed decision-bearing run was performed.
-This correction follows independent review of the earlier implementation;
-another independent implementation review is required before that run.
+and `git diff --check` passed. A release incremental LTO link was not
+completed within the command window after the final source correction. No
+production code changed during the decision-bearing run; the evidence commit
+updates this record without changing the frozen implementation SHA.
 
 Status: implementation/shadow smoke complete; scientific decision deferred.

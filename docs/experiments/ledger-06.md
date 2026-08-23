@@ -4063,10 +4063,37 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   emitted source-seed bootstrap summaries, and passed its self-test. The
   corrected 36-column schema recorded `parentObsMismatches=0` for all rows.
   These are explicitly smoke-scale, noisy, and **not a scientific conclusion**.
-- **Decision rule/status:** No 16–32-source-seed decision-bearing run was
-  performed. This correction follows independent review of the first
-  implementation; another independent implementation review is required
-  before the preregistered scientific gate. The smoke does not support or
-  reject chance nodes.
+- **Decision rule/status at the initial smoke checkpoint:** No
+  16–32-source-seed decision-bearing run had yet been performed. This
+  correction followed independent review of the first implementation; the
+  stability-gated follow-up run is recorded below. The initial smoke did not
+  support or reject chance nodes.
 - **Decision log:**
   [`2026-08-23-s3-strategy-fusion-diagnostic.md`](../knowledge-base/decision-log/2026-08-23-s3-strategy-fusion-diagnostic.md).
+
+### Follow-up: stability-gated 16-seed decision run
+
+- **Frozen implementation:** `1438ef72f6486adf3161e587b25fd1e0b83f18a6`.
+  Seeds were `12345..12360`, one seed-guarded process per seed, normal
+  Searcher3 particles 64, 64 normal simulations per decision, diagnostic
+  particles 64, per-process transition cap 4, minimum shared-child visits 32,
+  secondary fresh 500 simulations, and reference 3000 simulations.
+- **Output:** 64 stable-parent measured transitions and 628 bucket rows;
+  5,306 paired OFF/ON searchdiag rows per side; zero ON/OFF decision
+  differences; zero parent-observation mismatches; no log error matches.
+  Per-seed transition counts were exactly 4 for all 16 seeds. Analyzer output:
+  `build/s3sf_decision_analysis.json`.
+- **Primary matched-compute result:** disagreement `0.7012`, source-seed
+  bootstrap 95% CI `[0.6116, 0.7820]`; deeper reference preference among
+  disagreement mass matched-conditioned `0.2481`, shared `0.2648`, neither
+  `0.4871`; matched-minus-shared reference margin `-1.6781`, CI
+  `[-2.7500, -0.6066]`.
+- **Secondary 500-simulation result:** disagreement `0.7612`, deeper reference
+  conditioned preference `0.6132`, and margin `+3.5400`; this is secondary and
+  compute-confounded by design.
+- **Interpretation:** the primary comparison shows substantial policy
+  disagreement but no consistent deeper-reference harm from sharing. The
+  preregistered harm requirement for proceeding toward persistent chance-node
+  state splitting is not met. The run does not support a chance-node prototype;
+  disagreement remains an abstraction effect, not evidence of benefit. Any
+  replication requires an explicitly approved new run.
