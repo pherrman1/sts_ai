@@ -4097,3 +4097,51 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   state splitting is not met. The run does not support a chance-node prototype;
   disagreement remains an abstraction effect, not evidence of benefit. Any
   replication requires an explicitly approved new run.
+
+### Follow-up: realistic 1000-simulation budget run
+
+- **Frozen executable and configuration:** the executable remained frozen at
+  `1438ef72f6486adf3161e587b25fd1e0b83f18a6`. Seeds were `12345..12360`,
+  with one `tools/seed_guard.sh` process per seed for each OFF/ON pair.
+  Normal Searcher3 used `STS_SEARCHER3=1`, `STS_FAIR=1`,
+  `STS_S3_PARTICLES=64`, and 1,000 simulations per decision. The diagnostic
+  used 64 particles, a per-process cap of 4 stable-parent transitions,
+  minimum shared-child visits 32, secondary fresh 500 simulations, and
+  deeper reference 3,000 simulations. The primary matched budget remained
+  `max(1, round(sharedChildVisits * bucketProbability))`.
+- **Collection and correctness:** all 16 seeds completed, producing 64
+  qualifying transitions and 560 bucket rows. Every seed contributed four
+  transitions; all rows had `parentObsMismatches=0`; the formula matched every
+  row; bucket probabilities summed to one within every transition; and the
+  paired OFF/ON traces had zero actual gameplay/search decision differences.
+- **Primary matched-compute result:** probability-mass-weighted
+  shared-versus-matched disagreement was `0.7334`, with source-seed bootstrap
+  95% CI `[0.6709, 0.7969]`. The source-seed mean reference preferences among
+  disagreement mass were matched `0.3596`, shared `0.2149`, and neither
+  `0.4255`. The matched-minus-shared reference margin was `-0.7253`, with
+  source-seed bootstrap 95% CI `[-2.2000, +0.6504]`. The pooled mass-weighted
+  margin was `-0.4665`.
+- **Budget distribution:** across 560 bucket rows, matched budgets ranged from
+  1 to 671 simulations, with mean `33.645`, median `5`, and quartiles
+  `[2, 5, 28]` (p90 `102`, p95 `159`). The exact 102-value histogram is in
+  `build/s3sf_decision1000_results.json`.
+- **Secondary comparison:** the fresh 500-simulation arm had disagreement
+  `0.7542`, reference conditioned preference `0.5879`, and margin `+3.6488`
+  by source-seed mean. It remains secondary and compute-confounded; it is not
+  evidence against the matched-budget result.
+- **Comparison with the prior 64-simulation run:** matched disagreement rose
+  from `0.7012` (CI `[0.6116, 0.7820]`) to `0.7334` (CI `[0.6709,
+  0.7969]`). Matched reference preference rose from `0.2481` to `0.3596`,
+  while shared preference changed from `0.2648` to `0.2149` and neither from
+  `0.4871` to `0.4255`. The primary margin improved from `-1.6781` (CI
+  `[-2.7500, -0.6066]`) to `-0.7253` (CI `[-2.2000, +0.6504]`), but did not
+  become positive or support a positive-margin conclusion.
+- **Interpretation:** the realistic-budget run confirms frequent continuation
+  policy disagreement, but the deeper reference does not provide the required
+  positive matched-over-shared value evidence. The preregistered gate for
+  proceeding toward persistent chance nodes is not met. The raw CSV, metadata,
+  analyzer JSON, and result packet are committed as
+  `build/s3sf_decision1000_diag.csv`,
+  `build/s3sf_decision1000_diag.csv.meta.json`,
+  `build/s3sf_decision1000_analysis.json`, and
+  `build/s3sf_decision1000_results.json`.

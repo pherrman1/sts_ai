@@ -122,6 +122,69 @@ abstraction effect, not evidence of benefit. The reference is noisy and this
 is one 16-source-seed gate, so any replication would require an explicitly
 approved new run rather than silently extending this one.
 
+## Realistic-budget repeat
+
+The executable remained frozen at
+`1438ef72f6486adf3161e587b25fd1e0b83f18a6`; no executable source changed for
+this run. The run used the same 16 source seeds, `12345..12360`, with one
+guarded process per seed, `STS_SEARCHER3=1`, `STS_FAIR=1`,
+`STS_S3_PARTICLES=64`, 1,000 normal simulations per decision, diagnostic
+particles 64, per-process transition cap 4, minimum child visits 32,
+secondary fresh search 500, and deeper reference 3,000. The parent-observation
+stability gate and matched budget were unchanged:
+`max(1, round(sharedChildVisits * bucketProbability))`.
+
+All 32 guarded processes completed. The run produced 64 stable-parent measured
+transitions and 560 bucket rows, with four transitions from each seed. There
+were zero unstable-parent rows, zero matched-budget formula mismatches, zero
+bad within-transition probability sums, and zero actual gameplay/search
+decision differences between paired diagnostic OFF and ON traces. The full
+machine-readable validation and budget histogram are in
+`build/s3sf_decision1000_results.json`.
+
+The primary matched-compute comparison, aggregated by source seed before a
+10,000-resample bootstrap, was:
+
+- probability-mass-weighted shared-versus-matched disagreement: `0.7334`,
+  bootstrap 95% CI `[0.6709, 0.7969]`;
+- reference preference among disagreement mass: matched `0.3596`, shared
+  `0.2149`, neither `0.4255`;
+- matched-minus-shared reference margin: `-0.7253`, bootstrap 95% CI
+  `[-2.2000, +0.6504]`; pooled probability-weighted margin `-0.4665`.
+
+The matched budgets ranged from 1 to 671 simulations across bucket rows; the
+mean was `33.645`, median `5`, p25/p75 were `2/28`, p90 was `102`, and p95 was
+`159`. The configured fresh 500-simulation secondary comparison had
+disagreement `0.7542`, reference conditioned preference `0.5879`, and margin
+`+3.6488`; it is explicitly not decision evidence because its compute is not
+matched.
+
+Relative to the prior 64-simulation run, primary disagreement changed from
+`0.7012` (CI `[0.6116, 0.7820]`) to `0.7334` (CI `[0.6709, 0.7969]`). Matched
+reference preference changed from `0.2481` to `0.3596`, shared from `0.2648`
+to `0.2149`, and neither from `0.4871` to `0.4255`. The primary margin
+improved from `-1.6781` (CI `[-2.7500, -0.6066]`) to `-0.7253` (CI
+`[-2.2000, +0.6504]`), but remains non-positive in the observed mean and has
+no positive-margin bootstrap support.
+
+Interpretation: the realistic-budget run shows that shared and matched
+conditioned policies often disagree, but it does not show a reliable deeper
+reference advantage for the matched-conditioned arm. The preregistered
+proceed-toward-chance-nodes gate is therefore not met. This is not a claim that
+the shared abstraction is exact; it is a claim that this run did not establish
+the required regret. No larger follow-up or chance-node prototype was started.
+
+Committed artifacts and SHA-256 hashes:
+
+- `build/s3sf_decision1000_diag.csv` —
+  `2447949A7EFB6F4309826050D79986B7EE5D49E0BC98BCC6706DC9D87B99C091`;
+- `build/s3sf_decision1000_diag.csv.meta.json` —
+  `60B6E9CC651318BD7A218E2B076A35514B495971B63E76166F4DEE0D5B5221EA`;
+- `build/s3sf_decision1000_analysis.json` —
+  `0FAC6F0F87CE847DF9E4581B8FE2AC5E6B344848BCAFF91CB15BDF2BEC4A0283`;
+- `build/s3sf_decision1000_results.json` —
+  `E13549C72850CC0FF8DCDF4B3C14732532900EA38C379C76C8DB1C8FC770F802`.
+
 ## Verification and status
 
 The final `one_combat` and `unit-test` targets built successfully through the
@@ -132,4 +195,5 @@ completed within the command window after the final source correction. No
 production code changed during the decision-bearing run; the evidence commit
 updates this record without changing the frozen implementation SHA.
 
-Status: implementation/shadow smoke complete; scientific decision deferred.
+Status: implementation/shadow smoke complete; realistic-budget scientific gate
+complete; persistent chance-node work is not supported by this run.
