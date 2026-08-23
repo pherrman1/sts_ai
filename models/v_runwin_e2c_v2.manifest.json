@@ -1,0 +1,6796 @@
+{
+  "best_iteration": 225,
+  "dataset_sha256": "da692d5979f9df3cad70ee6d76bd34fcf174ac74f557b942fb662e3d8c6a89e2",
+  "exported_tree_count": 226,
+  "feature_family_manifest": [
+    {
+      "family": "metadata/control",
+      "feature": "seed"
+    },
+    {
+      "family": "metadata/control",
+      "feature": "fight_index"
+    },
+    {
+      "family": "metadata/control",
+      "feature": "boundary"
+    },
+    {
+      "family": "metadata/control",
+      "feature": "room_type"
+    },
+    {
+      "family": "metadata/control",
+      "feature": "encounter_id"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "ascension"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "act"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "floor"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "curHp"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "maxHp"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "gold"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "deckSize"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "potionChance"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "cardRarityFactor"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "blueKey"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "greenKey"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "redKey"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "potionCount"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "potionCapacity"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "bossId"
+    },
+    {
+      "family": "hidden_rng_or_true_future",
+      "feature": "nextEliteId"
+    },
+    {
+      "family": "hidden_rng_or_true_future",
+      "feature": "nextFight0"
+    },
+    {
+      "family": "hidden_rng_or_true_future",
+      "feature": "nextFight1"
+    },
+    {
+      "family": "hidden_rng_or_true_future",
+      "feature": "nextFight2"
+    },
+    {
+      "family": "hidden_rng_or_true_future",
+      "feature": "remElites"
+    },
+    {
+      "family": "hidden_rng_or_true_future",
+      "feature": "remFights"
+    },
+    {
+      "family": "hidden_rng_or_true_future",
+      "feature": "monOffset"
+    },
+    {
+      "family": "hidden_rng_or_true_future",
+      "feature": "eliteOffset"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pvShop"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pvRest"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pvEvent"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pvElite"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pvMonster"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pvTreasure"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "bottledAtkId"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "bottledSkillId"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "bottledPowId"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d0"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d1"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d2"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d3"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d4"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d5"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d6"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d7"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d8"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d9"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d10"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d11"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d12"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d13"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d14"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d15"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d16"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d17"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d18"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d19"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d20"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d21"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d22"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d23"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d24"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d25"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d26"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d27"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d28"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d29"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d30"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d31"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d32"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d33"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d34"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d35"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d36"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d37"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d38"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d39"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d40"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d41"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d42"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d43"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d44"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d45"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d46"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d47"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d48"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d49"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d50"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d51"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d52"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d53"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d54"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d55"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d56"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d57"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d58"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d59"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d60"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d61"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d62"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d63"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d64"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d65"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d66"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d67"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d68"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d69"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d70"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d71"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d72"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d73"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d74"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d75"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d76"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d77"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d78"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d79"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d80"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d81"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d82"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d83"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d84"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d85"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d86"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d87"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d88"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d89"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d90"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d91"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d92"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d93"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d94"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d95"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d96"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d97"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d98"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d99"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d100"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d101"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d102"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d103"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d104"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d105"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d106"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d107"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d108"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d109"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d110"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d111"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d112"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d113"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d114"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d115"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d116"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d117"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d118"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d119"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d120"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d121"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d122"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d123"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d124"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d125"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d126"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d127"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d128"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d129"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d130"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d131"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d132"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d133"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d134"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d135"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d136"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d137"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d138"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d139"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d140"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d141"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d142"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d143"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d144"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d145"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d146"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d147"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d148"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d149"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d150"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d151"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d152"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d153"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d154"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d155"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d156"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d157"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d158"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d159"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d160"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d161"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d162"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d163"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d164"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d165"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d166"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d167"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d168"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d169"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d170"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d171"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d172"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d173"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d174"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d175"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d176"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d177"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d178"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d179"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d180"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d181"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d182"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d183"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d184"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d185"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d186"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d187"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d188"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d189"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d190"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d191"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d192"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d193"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d194"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d195"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d196"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d197"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d198"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d199"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d200"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d201"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d202"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d203"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d204"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d205"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d206"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d207"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d208"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d209"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d210"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d211"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d212"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d213"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d214"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d215"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d216"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d217"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d218"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d219"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d220"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d221"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d222"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d223"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d224"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d225"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d226"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d227"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d228"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d229"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d230"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d231"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d232"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d233"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d234"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d235"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d236"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d237"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d238"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d239"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d240"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d241"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d242"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d243"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d244"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d245"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d246"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d247"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d248"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d249"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d250"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d251"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d252"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d253"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d254"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d255"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d256"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d257"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d258"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d259"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d260"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d261"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d262"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d263"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d264"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d265"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d266"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d267"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d268"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d269"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d270"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d271"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d272"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d273"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d274"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d275"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d276"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d277"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d278"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d279"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d280"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d281"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d282"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d283"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d284"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d285"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d286"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d287"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d288"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d289"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d290"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d291"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d292"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d293"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d294"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d295"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d296"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d297"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d298"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d299"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d300"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d301"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d302"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d303"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d304"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d305"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d306"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d307"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d308"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d309"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d310"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d311"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d312"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d313"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d314"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d315"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d316"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d317"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d318"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d319"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d320"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d321"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d322"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d323"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d324"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d325"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d326"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d327"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d328"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d329"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d330"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d331"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d332"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d333"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d334"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d335"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d336"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d337"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d338"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d339"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d340"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d341"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d342"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d343"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d344"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d345"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d346"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d347"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d348"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d349"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d350"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d351"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d352"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d353"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d354"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d355"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d356"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d357"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d358"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d359"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d360"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d361"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d362"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d363"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d364"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d365"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d366"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d367"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d368"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d369"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d370"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "d371"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u0"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u1"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u2"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u3"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u4"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u5"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u6"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u7"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u8"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u9"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u10"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u11"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u12"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u13"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u14"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u15"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u16"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u17"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u18"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u19"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u20"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u21"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u22"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u23"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u24"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u25"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u26"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u27"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u28"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u29"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u30"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u31"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u32"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u33"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u34"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u35"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u36"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u37"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u38"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u39"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u40"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u41"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u42"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u43"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u44"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u45"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u46"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u47"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u48"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u49"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u50"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u51"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u52"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u53"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u54"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u55"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u56"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u57"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u58"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u59"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u60"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u61"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u62"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u63"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u64"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u65"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u66"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u67"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u68"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u69"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u70"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u71"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u72"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u73"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u74"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u75"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u76"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u77"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u78"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u79"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u80"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u81"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u82"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u83"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u84"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u85"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u86"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u87"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u88"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u89"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u90"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u91"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u92"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u93"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u94"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u95"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u96"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u97"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u98"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u99"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u100"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u101"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u102"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u103"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u104"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u105"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u106"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u107"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u108"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u109"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u110"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u111"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u112"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u113"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u114"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u115"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u116"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u117"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u118"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u119"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u120"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u121"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u122"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u123"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u124"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u125"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u126"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u127"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u128"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u129"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u130"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u131"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u132"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u133"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u134"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u135"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u136"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u137"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u138"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u139"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u140"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u141"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u142"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u143"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u144"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u145"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u146"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u147"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u148"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u149"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u150"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u151"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u152"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u153"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u154"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u155"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u156"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u157"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u158"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u159"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u160"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u161"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u162"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u163"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u164"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u165"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u166"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u167"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u168"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u169"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u170"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u171"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u172"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u173"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u174"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u175"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u176"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u177"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u178"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u179"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u180"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u181"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u182"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u183"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u184"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u185"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u186"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u187"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u188"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u189"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u190"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u191"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u192"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u193"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u194"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u195"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u196"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u197"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u198"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u199"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u200"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u201"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u202"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u203"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u204"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u205"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u206"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u207"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u208"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u209"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u210"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u211"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u212"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u213"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u214"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u215"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u216"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u217"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u218"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u219"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u220"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u221"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u222"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u223"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u224"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u225"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u226"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u227"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u228"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u229"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u230"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u231"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u232"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u233"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u234"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u235"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u236"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u237"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u238"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u239"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u240"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u241"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u242"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u243"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u244"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u245"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u246"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u247"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u248"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u249"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u250"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u251"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u252"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u253"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u254"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u255"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u256"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u257"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u258"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u259"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u260"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u261"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u262"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u263"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u264"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u265"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u266"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u267"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u268"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u269"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u270"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u271"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u272"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u273"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u274"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u275"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u276"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u277"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u278"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u279"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u280"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u281"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u282"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u283"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u284"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u285"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u286"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u287"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u288"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u289"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u290"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u291"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u292"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u293"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u294"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u295"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u296"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u297"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u298"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u299"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u300"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u301"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u302"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u303"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u304"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u305"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u306"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u307"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u308"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u309"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u310"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u311"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u312"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u313"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u314"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u315"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u316"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u317"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u318"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u319"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u320"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u321"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u322"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u323"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u324"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u325"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u326"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u327"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u328"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u329"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u330"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u331"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u332"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u333"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u334"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u335"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u336"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u337"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u338"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u339"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u340"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u341"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u342"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u343"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u344"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u345"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u346"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u347"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u348"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u349"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u350"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u351"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u352"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u353"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u354"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u355"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u356"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u357"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u358"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u359"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u360"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u361"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u362"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u363"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u364"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u365"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u366"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u367"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u368"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u369"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u370"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "u371"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r0"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r1"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r2"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r3"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r4"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r5"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r6"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r7"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r8"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r9"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r10"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r11"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r12"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r13"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r14"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r15"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r16"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r17"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r18"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r19"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r20"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r21"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r22"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r23"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r24"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r25"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r26"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r27"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r28"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r29"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r30"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r31"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r32"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r33"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r34"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r35"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r36"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r37"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r38"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r39"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r40"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r41"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r42"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r43"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r44"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r45"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r46"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r47"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r48"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r49"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r50"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r51"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r52"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r53"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r54"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r55"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r56"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r57"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r58"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r59"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r60"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r61"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r62"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r63"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r64"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r65"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r66"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r67"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r68"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r69"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r70"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r71"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r72"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r73"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r74"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r75"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r76"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r77"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r78"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r79"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r80"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r81"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r82"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r83"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r84"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r85"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r86"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r87"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r88"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r89"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r90"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r91"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r92"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r93"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r94"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r95"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r96"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r97"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r98"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r99"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r100"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r101"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r102"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r103"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r104"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r105"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r106"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r107"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r108"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r109"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r110"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r111"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r112"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r113"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r114"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r115"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r116"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r117"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r118"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r119"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r120"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r121"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r122"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r123"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r124"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r125"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r126"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r127"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r128"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r129"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r130"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r131"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r132"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r133"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r134"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r135"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r136"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r137"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r138"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r139"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r140"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r141"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r142"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r143"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r144"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r145"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r146"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r147"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r148"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r149"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r150"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r151"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r152"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r153"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r154"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r155"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r156"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r157"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r158"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r159"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r160"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r161"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r162"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r163"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r164"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r165"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r166"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r167"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r168"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r169"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r170"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r171"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r172"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r173"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r174"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r175"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r176"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r177"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r178"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r179"
+    },
+    {
+      "family": "ambiguous",
+      "feature": "r180"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot0"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot1"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot2"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot3"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot4"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot5"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot6"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot7"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot8"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot9"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot10"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot11"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot12"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot13"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot14"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot15"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot16"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot17"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot18"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot19"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot20"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot21"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot22"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot23"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot24"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot25"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot26"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot27"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot28"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot29"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot30"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot31"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot32"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot33"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot34"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot35"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot36"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot37"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot38"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot39"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot40"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot41"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot42"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot43"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot44"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot45"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot46"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "pot47"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "fmDElite"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "fmDRest"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "fmDShop"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "fmDBoss"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "fmCElite"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "fmCRest"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "fmCShop"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "fmCEvent"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "fmCMonster"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "fmCTreasure"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "curMapX"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "curMapY"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_0"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_1"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_2"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_3"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_4"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_5"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_6"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_7"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_8"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_9"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_10"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_11"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_12"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_13"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_14"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_15"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_16"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_17"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_18"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_19"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_20"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_21"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_22"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_23"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_24"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_25"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_26"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_27"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_28"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_29"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_30"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_31"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_32"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_33"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_34"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_35"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_36"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_37"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_38"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_39"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_40"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_41"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_42"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_43"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_44"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_45"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_46"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_47"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_48"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_49"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_50"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_51"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_52"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_53"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_54"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_55"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_56"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_57"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_58"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_59"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_60"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_61"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_62"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_63"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_64"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_65"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_66"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_67"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_68"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_69"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_70"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_71"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_72"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_73"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_74"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_75"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_76"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_77"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_78"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_79"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_80"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_81"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_82"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_83"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_84"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_85"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_86"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_87"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_88"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_89"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_90"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_91"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_92"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_93"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_94"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_95"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_96"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_97"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_98"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_99"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_100"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_101"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_102"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_103"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_104"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_105"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_106"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_107"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_108"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_109"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_110"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_111"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_112"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_113"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_114"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_115"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_116"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_117"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_118"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_119"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_120"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_121"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_122"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_123"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_124"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_125"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_126"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_127"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_128"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_129"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_130"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_131"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_132"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_133"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_134"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_135"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_136"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_137"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_138"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_139"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_140"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_141"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_142"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_143"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_144"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_145"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_146"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_147"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_148"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_149"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_150"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_151"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_152"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_153"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_154"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_155"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_156"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_157"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_158"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_159"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_160"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_161"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_162"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_163"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_164"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_165"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_166"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_167"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_168"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_169"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_170"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_171"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_172"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_173"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_174"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_175"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_176"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_177"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_178"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_179"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_has_180"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_0"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_1"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_2"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_3"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_4"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_5"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_6"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_7"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_8"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_9"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_10"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_11"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_12"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_13"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_14"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_15"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_16"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_17"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_18"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_19"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_20"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_21"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_22"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_23"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_24"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_25"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_26"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_27"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_28"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_29"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_30"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_31"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_32"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_33"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_34"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_35"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_36"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_37"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_38"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_39"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_40"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_41"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_42"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_43"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_44"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_45"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_46"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_47"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_48"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_49"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_50"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_51"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_52"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_53"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_54"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_55"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_56"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_57"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_58"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_59"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_60"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_61"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_62"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_63"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_64"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_65"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_66"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_67"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_68"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_69"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_70"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_71"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_72"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_73"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_74"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_75"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_76"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_77"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_78"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_79"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_80"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_81"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_82"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_83"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_84"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_85"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_86"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_87"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_88"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_89"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_90"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_91"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_92"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_93"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_94"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_95"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_96"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_97"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_98"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_99"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_100"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_101"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_102"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_103"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_104"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_105"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_106"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_107"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_108"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_109"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_110"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_111"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_112"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_113"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_114"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_115"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_116"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_117"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_118"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_119"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_120"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_121"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_122"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_123"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_124"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_125"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_126"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_127"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_128"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_129"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_130"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_131"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_132"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_133"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_134"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_135"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_136"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_137"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_138"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_139"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_140"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_141"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_142"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_143"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_144"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_145"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_146"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_147"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_148"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_149"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_150"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_151"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_152"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_153"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_154"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_155"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_156"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_157"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_158"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_159"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_160"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_161"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_162"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_163"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_164"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_165"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_166"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_167"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_168"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_169"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_170"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_171"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_172"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_173"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_174"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_175"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_176"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_177"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_178"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_179"
+    },
+    {
+      "family": "observable_or_trackable",
+      "feature": "relic_data_180"
+    },
+    {
+      "family": "label",
+      "feature": "won"
+    },
+    {
+      "family": "label",
+      "feature": "finalFloor"
+    },
+    {
+      "family": "label",
+      "feature": "endHp"
+    }
+  ],
+  "files": {
+    "booster": "v_runwin_e2c_v2_ac2.booster.json",
+    "booster_sha256": "fa7dc698ec00cb36d9242020157a43244b244749a8b9cfc60c87abb2b19e4475",
+    "native_model": "v_runwin_e2c_v2.txt",
+    "native_model_sha256": "4272039d80e9bf7493fd6af71dcd7a67e915a56dce36ff0f207544c79af0c14e",
+    "parity_fixture": "v_runwin_e2c_v2_parity.csv",
+    "parity_fixture_sha256": "02da2896380cf7ab20cb6949f3d1b4df7971194b4a49cab46d9004517b7f151f"
+  },
+  "held_out_metrics": {
+    "auc": 0.7357093849908911,
+    "brier": 0.20358731804525068,
+    "ece": 0.0271840698715477,
+    "logloss": 0.5876621241286121,
+    "n": 6300,
+    "neg": 2651,
+    "pos": 3649,
+    "pos_rate": 0.5792063492063492
+  },
+  "ordered_features": [
+    "room_type",
+    "encounter_id",
+    "ascension",
+    "act",
+    "floor",
+    "curHp",
+    "maxHp",
+    "gold",
+    "deckSize",
+    "potionChance",
+    "cardRarityFactor",
+    "blueKey",
+    "greenKey",
+    "redKey",
+    "potionCount",
+    "potionCapacity",
+    "bossId",
+    "pvShop",
+    "pvRest",
+    "pvEvent",
+    "pvElite",
+    "pvMonster",
+    "pvTreasure",
+    "bottledAtkId",
+    "bottledSkillId",
+    "bottledPowId",
+    "d0",
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "d5",
+    "d6",
+    "d7",
+    "d8",
+    "d9",
+    "d10",
+    "d11",
+    "d12",
+    "d13",
+    "d14",
+    "d15",
+    "d16",
+    "d17",
+    "d18",
+    "d19",
+    "d20",
+    "d21",
+    "d22",
+    "d23",
+    "d24",
+    "d25",
+    "d26",
+    "d27",
+    "d28",
+    "d29",
+    "d30",
+    "d31",
+    "d32",
+    "d33",
+    "d34",
+    "d35",
+    "d36",
+    "d37",
+    "d38",
+    "d39",
+    "d40",
+    "d41",
+    "d42",
+    "d43",
+    "d44",
+    "d45",
+    "d46",
+    "d47",
+    "d48",
+    "d49",
+    "d50",
+    "d51",
+    "d52",
+    "d53",
+    "d54",
+    "d55",
+    "d56",
+    "d57",
+    "d58",
+    "d59",
+    "d60",
+    "d61",
+    "d62",
+    "d63",
+    "d64",
+    "d65",
+    "d66",
+    "d67",
+    "d68",
+    "d69",
+    "d70",
+    "d71",
+    "d72",
+    "d73",
+    "d74",
+    "d75",
+    "d76",
+    "d77",
+    "d78",
+    "d79",
+    "d80",
+    "d81",
+    "d82",
+    "d83",
+    "d84",
+    "d85",
+    "d86",
+    "d87",
+    "d88",
+    "d89",
+    "d90",
+    "d91",
+    "d92",
+    "d93",
+    "d94",
+    "d95",
+    "d96",
+    "d97",
+    "d98",
+    "d99",
+    "d100",
+    "d101",
+    "d102",
+    "d103",
+    "d104",
+    "d105",
+    "d106",
+    "d107",
+    "d108",
+    "d109",
+    "d110",
+    "d111",
+    "d112",
+    "d113",
+    "d114",
+    "d115",
+    "d116",
+    "d117",
+    "d118",
+    "d119",
+    "d120",
+    "d121",
+    "d122",
+    "d123",
+    "d124",
+    "d125",
+    "d126",
+    "d127",
+    "d128",
+    "d129",
+    "d130",
+    "d131",
+    "d132",
+    "d133",
+    "d134",
+    "d135",
+    "d136",
+    "d137",
+    "d138",
+    "d139",
+    "d140",
+    "d141",
+    "d142",
+    "d143",
+    "d144",
+    "d145",
+    "d146",
+    "d147",
+    "d148",
+    "d149",
+    "d150",
+    "d151",
+    "d152",
+    "d153",
+    "d154",
+    "d155",
+    "d156",
+    "d157",
+    "d158",
+    "d159",
+    "d160",
+    "d161",
+    "d162",
+    "d163",
+    "d164",
+    "d165",
+    "d166",
+    "d167",
+    "d168",
+    "d169",
+    "d170",
+    "d171",
+    "d172",
+    "d173",
+    "d174",
+    "d175",
+    "d176",
+    "d177",
+    "d178",
+    "d179",
+    "d180",
+    "d181",
+    "d182",
+    "d183",
+    "d184",
+    "d185",
+    "d186",
+    "d187",
+    "d188",
+    "d189",
+    "d190",
+    "d191",
+    "d192",
+    "d193",
+    "d194",
+    "d195",
+    "d196",
+    "d197",
+    "d198",
+    "d199",
+    "d200",
+    "d201",
+    "d202",
+    "d203",
+    "d204",
+    "d205",
+    "d206",
+    "d207",
+    "d208",
+    "d209",
+    "d210",
+    "d211",
+    "d212",
+    "d213",
+    "d214",
+    "d215",
+    "d216",
+    "d217",
+    "d218",
+    "d219",
+    "d220",
+    "d221",
+    "d222",
+    "d223",
+    "d224",
+    "d225",
+    "d226",
+    "d227",
+    "d228",
+    "d229",
+    "d230",
+    "d231",
+    "d232",
+    "d233",
+    "d234",
+    "d235",
+    "d236",
+    "d237",
+    "d238",
+    "d239",
+    "d240",
+    "d241",
+    "d242",
+    "d243",
+    "d244",
+    "d245",
+    "d246",
+    "d247",
+    "d248",
+    "d249",
+    "d250",
+    "d251",
+    "d252",
+    "d253",
+    "d254",
+    "d255",
+    "d256",
+    "d257",
+    "d258",
+    "d259",
+    "d260",
+    "d261",
+    "d262",
+    "d263",
+    "d264",
+    "d265",
+    "d266",
+    "d267",
+    "d268",
+    "d269",
+    "d270",
+    "d271",
+    "d272",
+    "d273",
+    "d274",
+    "d275",
+    "d276",
+    "d277",
+    "d278",
+    "d279",
+    "d280",
+    "d281",
+    "d282",
+    "d283",
+    "d284",
+    "d285",
+    "d286",
+    "d287",
+    "d288",
+    "d289",
+    "d290",
+    "d291",
+    "d292",
+    "d293",
+    "d294",
+    "d295",
+    "d296",
+    "d297",
+    "d298",
+    "d299",
+    "d300",
+    "d301",
+    "d302",
+    "d303",
+    "d304",
+    "d305",
+    "d306",
+    "d307",
+    "d308",
+    "d309",
+    "d310",
+    "d311",
+    "d312",
+    "d313",
+    "d314",
+    "d315",
+    "d316",
+    "d317",
+    "d318",
+    "d319",
+    "d320",
+    "d321",
+    "d322",
+    "d323",
+    "d324",
+    "d325",
+    "d326",
+    "d327",
+    "d328",
+    "d329",
+    "d330",
+    "d331",
+    "d332",
+    "d333",
+    "d334",
+    "d335",
+    "d336",
+    "d337",
+    "d338",
+    "d339",
+    "d340",
+    "d341",
+    "d342",
+    "d343",
+    "d344",
+    "d345",
+    "d346",
+    "d347",
+    "d348",
+    "d349",
+    "d350",
+    "d351",
+    "d352",
+    "d353",
+    "d354",
+    "d355",
+    "d356",
+    "d357",
+    "d358",
+    "d359",
+    "d360",
+    "d361",
+    "d362",
+    "d363",
+    "d364",
+    "d365",
+    "d366",
+    "d367",
+    "d368",
+    "d369",
+    "d370",
+    "d371",
+    "u0",
+    "u1",
+    "u2",
+    "u3",
+    "u4",
+    "u5",
+    "u6",
+    "u7",
+    "u8",
+    "u9",
+    "u10",
+    "u11",
+    "u12",
+    "u13",
+    "u14",
+    "u15",
+    "u16",
+    "u17",
+    "u18",
+    "u19",
+    "u20",
+    "u21",
+    "u22",
+    "u23",
+    "u24",
+    "u25",
+    "u26",
+    "u27",
+    "u28",
+    "u29",
+    "u30",
+    "u31",
+    "u32",
+    "u33",
+    "u34",
+    "u35",
+    "u36",
+    "u37",
+    "u38",
+    "u39",
+    "u40",
+    "u41",
+    "u42",
+    "u43",
+    "u44",
+    "u45",
+    "u46",
+    "u47",
+    "u48",
+    "u49",
+    "u50",
+    "u51",
+    "u52",
+    "u53",
+    "u54",
+    "u55",
+    "u56",
+    "u57",
+    "u58",
+    "u59",
+    "u60",
+    "u61",
+    "u62",
+    "u63",
+    "u64",
+    "u65",
+    "u66",
+    "u67",
+    "u68",
+    "u69",
+    "u70",
+    "u71",
+    "u72",
+    "u73",
+    "u74",
+    "u75",
+    "u76",
+    "u77",
+    "u78",
+    "u79",
+    "u80",
+    "u81",
+    "u82",
+    "u83",
+    "u84",
+    "u85",
+    "u86",
+    "u87",
+    "u88",
+    "u89",
+    "u90",
+    "u91",
+    "u92",
+    "u93",
+    "u94",
+    "u95",
+    "u96",
+    "u97",
+    "u98",
+    "u99",
+    "u100",
+    "u101",
+    "u102",
+    "u103",
+    "u104",
+    "u105",
+    "u106",
+    "u107",
+    "u108",
+    "u109",
+    "u110",
+    "u111",
+    "u112",
+    "u113",
+    "u114",
+    "u115",
+    "u116",
+    "u117",
+    "u118",
+    "u119",
+    "u120",
+    "u121",
+    "u122",
+    "u123",
+    "u124",
+    "u125",
+    "u126",
+    "u127",
+    "u128",
+    "u129",
+    "u130",
+    "u131",
+    "u132",
+    "u133",
+    "u134",
+    "u135",
+    "u136",
+    "u137",
+    "u138",
+    "u139",
+    "u140",
+    "u141",
+    "u142",
+    "u143",
+    "u144",
+    "u145",
+    "u146",
+    "u147",
+    "u148",
+    "u149",
+    "u150",
+    "u151",
+    "u152",
+    "u153",
+    "u154",
+    "u155",
+    "u156",
+    "u157",
+    "u158",
+    "u159",
+    "u160",
+    "u161",
+    "u162",
+    "u163",
+    "u164",
+    "u165",
+    "u166",
+    "u167",
+    "u168",
+    "u169",
+    "u170",
+    "u171",
+    "u172",
+    "u173",
+    "u174",
+    "u175",
+    "u176",
+    "u177",
+    "u178",
+    "u179",
+    "u180",
+    "u181",
+    "u182",
+    "u183",
+    "u184",
+    "u185",
+    "u186",
+    "u187",
+    "u188",
+    "u189",
+    "u190",
+    "u191",
+    "u192",
+    "u193",
+    "u194",
+    "u195",
+    "u196",
+    "u197",
+    "u198",
+    "u199",
+    "u200",
+    "u201",
+    "u202",
+    "u203",
+    "u204",
+    "u205",
+    "u206",
+    "u207",
+    "u208",
+    "u209",
+    "u210",
+    "u211",
+    "u212",
+    "u213",
+    "u214",
+    "u215",
+    "u216",
+    "u217",
+    "u218",
+    "u219",
+    "u220",
+    "u221",
+    "u222",
+    "u223",
+    "u224",
+    "u225",
+    "u226",
+    "u227",
+    "u228",
+    "u229",
+    "u230",
+    "u231",
+    "u232",
+    "u233",
+    "u234",
+    "u235",
+    "u236",
+    "u237",
+    "u238",
+    "u239",
+    "u240",
+    "u241",
+    "u242",
+    "u243",
+    "u244",
+    "u245",
+    "u246",
+    "u247",
+    "u248",
+    "u249",
+    "u250",
+    "u251",
+    "u252",
+    "u253",
+    "u254",
+    "u255",
+    "u256",
+    "u257",
+    "u258",
+    "u259",
+    "u260",
+    "u261",
+    "u262",
+    "u263",
+    "u264",
+    "u265",
+    "u266",
+    "u267",
+    "u268",
+    "u269",
+    "u270",
+    "u271",
+    "u272",
+    "u273",
+    "u274",
+    "u275",
+    "u276",
+    "u277",
+    "u278",
+    "u279",
+    "u280",
+    "u281",
+    "u282",
+    "u283",
+    "u284",
+    "u285",
+    "u286",
+    "u287",
+    "u288",
+    "u289",
+    "u290",
+    "u291",
+    "u292",
+    "u293",
+    "u294",
+    "u295",
+    "u296",
+    "u297",
+    "u298",
+    "u299",
+    "u300",
+    "u301",
+    "u302",
+    "u303",
+    "u304",
+    "u305",
+    "u306",
+    "u307",
+    "u308",
+    "u309",
+    "u310",
+    "u311",
+    "u312",
+    "u313",
+    "u314",
+    "u315",
+    "u316",
+    "u317",
+    "u318",
+    "u319",
+    "u320",
+    "u321",
+    "u322",
+    "u323",
+    "u324",
+    "u325",
+    "u326",
+    "u327",
+    "u328",
+    "u329",
+    "u330",
+    "u331",
+    "u332",
+    "u333",
+    "u334",
+    "u335",
+    "u336",
+    "u337",
+    "u338",
+    "u339",
+    "u340",
+    "u341",
+    "u342",
+    "u343",
+    "u344",
+    "u345",
+    "u346",
+    "u347",
+    "u348",
+    "u349",
+    "u350",
+    "u351",
+    "u352",
+    "u353",
+    "u354",
+    "u355",
+    "u356",
+    "u357",
+    "u358",
+    "u359",
+    "u360",
+    "u361",
+    "u362",
+    "u363",
+    "u364",
+    "u365",
+    "u366",
+    "u367",
+    "u368",
+    "u369",
+    "u370",
+    "u371",
+    "pot0",
+    "pot1",
+    "pot2",
+    "pot3",
+    "pot4",
+    "pot5",
+    "pot6",
+    "pot7",
+    "pot8",
+    "pot9",
+    "pot10",
+    "pot11",
+    "pot12",
+    "pot13",
+    "pot14",
+    "pot15",
+    "pot16",
+    "pot17",
+    "pot18",
+    "pot19",
+    "pot20",
+    "pot21",
+    "pot22",
+    "pot23",
+    "pot24",
+    "pot25",
+    "pot26",
+    "pot27",
+    "pot28",
+    "pot29",
+    "pot30",
+    "pot31",
+    "pot32",
+    "pot33",
+    "pot34",
+    "pot35",
+    "pot36",
+    "pot37",
+    "pot38",
+    "pot39",
+    "pot40",
+    "pot41",
+    "pot42",
+    "pot43",
+    "pot44",
+    "pot45",
+    "pot46",
+    "pot47",
+    "fmDElite",
+    "fmDRest",
+    "fmDShop",
+    "fmDBoss",
+    "fmCElite",
+    "fmCRest",
+    "fmCShop",
+    "fmCEvent",
+    "fmCMonster",
+    "fmCTreasure",
+    "curMapX",
+    "curMapY",
+    "relic_has_0",
+    "relic_has_1",
+    "relic_has_2",
+    "relic_has_3",
+    "relic_has_4",
+    "relic_has_5",
+    "relic_has_6",
+    "relic_has_7",
+    "relic_has_8",
+    "relic_has_9",
+    "relic_has_10",
+    "relic_has_11",
+    "relic_has_12",
+    "relic_has_13",
+    "relic_has_14",
+    "relic_has_15",
+    "relic_has_16",
+    "relic_has_17",
+    "relic_has_18",
+    "relic_has_19",
+    "relic_has_20",
+    "relic_has_21",
+    "relic_has_22",
+    "relic_has_23",
+    "relic_has_24",
+    "relic_has_25",
+    "relic_has_26",
+    "relic_has_27",
+    "relic_has_28",
+    "relic_has_29",
+    "relic_has_30",
+    "relic_has_31",
+    "relic_has_32",
+    "relic_has_33",
+    "relic_has_34",
+    "relic_has_35",
+    "relic_has_36",
+    "relic_has_37",
+    "relic_has_38",
+    "relic_has_39",
+    "relic_has_40",
+    "relic_has_41",
+    "relic_has_42",
+    "relic_has_43",
+    "relic_has_44",
+    "relic_has_45",
+    "relic_has_46",
+    "relic_has_47",
+    "relic_has_48",
+    "relic_has_49",
+    "relic_has_50",
+    "relic_has_51",
+    "relic_has_52",
+    "relic_has_53",
+    "relic_has_54",
+    "relic_has_55",
+    "relic_has_56",
+    "relic_has_57",
+    "relic_has_58",
+    "relic_has_59",
+    "relic_has_60",
+    "relic_has_61",
+    "relic_has_62",
+    "relic_has_63",
+    "relic_has_64",
+    "relic_has_65",
+    "relic_has_66",
+    "relic_has_67",
+    "relic_has_68",
+    "relic_has_69",
+    "relic_has_70",
+    "relic_has_71",
+    "relic_has_72",
+    "relic_has_73",
+    "relic_has_74",
+    "relic_has_75",
+    "relic_has_76",
+    "relic_has_77",
+    "relic_has_78",
+    "relic_has_79",
+    "relic_has_80",
+    "relic_has_81",
+    "relic_has_82",
+    "relic_has_83",
+    "relic_has_84",
+    "relic_has_85",
+    "relic_has_86",
+    "relic_has_87",
+    "relic_has_88",
+    "relic_has_89",
+    "relic_has_90",
+    "relic_has_91",
+    "relic_has_92",
+    "relic_has_93",
+    "relic_has_94",
+    "relic_has_95",
+    "relic_has_96",
+    "relic_has_97",
+    "relic_has_98",
+    "relic_has_99",
+    "relic_has_100",
+    "relic_has_101",
+    "relic_has_102",
+    "relic_has_103",
+    "relic_has_104",
+    "relic_has_105",
+    "relic_has_106",
+    "relic_has_107",
+    "relic_has_108",
+    "relic_has_109",
+    "relic_has_110",
+    "relic_has_111",
+    "relic_has_112",
+    "relic_has_113",
+    "relic_has_114",
+    "relic_has_115",
+    "relic_has_116",
+    "relic_has_117",
+    "relic_has_118",
+    "relic_has_119",
+    "relic_has_120",
+    "relic_has_121",
+    "relic_has_122",
+    "relic_has_123",
+    "relic_has_124",
+    "relic_has_125",
+    "relic_has_126",
+    "relic_has_127",
+    "relic_has_128",
+    "relic_has_129",
+    "relic_has_130",
+    "relic_has_131",
+    "relic_has_132",
+    "relic_has_133",
+    "relic_has_134",
+    "relic_has_135",
+    "relic_has_136",
+    "relic_has_137",
+    "relic_has_138",
+    "relic_has_139",
+    "relic_has_140",
+    "relic_has_141",
+    "relic_has_142",
+    "relic_has_143",
+    "relic_has_144",
+    "relic_has_145",
+    "relic_has_146",
+    "relic_has_147",
+    "relic_has_148",
+    "relic_has_149",
+    "relic_has_150",
+    "relic_has_151",
+    "relic_has_152",
+    "relic_has_153",
+    "relic_has_154",
+    "relic_has_155",
+    "relic_has_156",
+    "relic_has_157",
+    "relic_has_158",
+    "relic_has_159",
+    "relic_has_160",
+    "relic_has_161",
+    "relic_has_162",
+    "relic_has_163",
+    "relic_has_164",
+    "relic_has_165",
+    "relic_has_166",
+    "relic_has_167",
+    "relic_has_168",
+    "relic_has_169",
+    "relic_has_170",
+    "relic_has_171",
+    "relic_has_172",
+    "relic_has_173",
+    "relic_has_174",
+    "relic_has_175",
+    "relic_has_176",
+    "relic_has_177",
+    "relic_has_178",
+    "relic_has_179",
+    "relic_has_180",
+    "relic_data_0",
+    "relic_data_1",
+    "relic_data_2",
+    "relic_data_3",
+    "relic_data_4",
+    "relic_data_5",
+    "relic_data_6",
+    "relic_data_7",
+    "relic_data_8",
+    "relic_data_9",
+    "relic_data_10",
+    "relic_data_11",
+    "relic_data_12",
+    "relic_data_13",
+    "relic_data_14",
+    "relic_data_15",
+    "relic_data_16",
+    "relic_data_17",
+    "relic_data_18",
+    "relic_data_19",
+    "relic_data_20",
+    "relic_data_21",
+    "relic_data_22",
+    "relic_data_23",
+    "relic_data_24",
+    "relic_data_25",
+    "relic_data_26",
+    "relic_data_27",
+    "relic_data_28",
+    "relic_data_29",
+    "relic_data_30",
+    "relic_data_31",
+    "relic_data_32",
+    "relic_data_33",
+    "relic_data_34",
+    "relic_data_35",
+    "relic_data_36",
+    "relic_data_37",
+    "relic_data_38",
+    "relic_data_39",
+    "relic_data_40",
+    "relic_data_41",
+    "relic_data_42",
+    "relic_data_43",
+    "relic_data_44",
+    "relic_data_45",
+    "relic_data_46",
+    "relic_data_47",
+    "relic_data_48",
+    "relic_data_49",
+    "relic_data_50",
+    "relic_data_51",
+    "relic_data_52",
+    "relic_data_53",
+    "relic_data_54",
+    "relic_data_55",
+    "relic_data_56",
+    "relic_data_57",
+    "relic_data_58",
+    "relic_data_59",
+    "relic_data_60",
+    "relic_data_61",
+    "relic_data_62",
+    "relic_data_63",
+    "relic_data_64",
+    "relic_data_65",
+    "relic_data_66",
+    "relic_data_67",
+    "relic_data_68",
+    "relic_data_69",
+    "relic_data_70",
+    "relic_data_71",
+    "relic_data_72",
+    "relic_data_73",
+    "relic_data_74",
+    "relic_data_75",
+    "relic_data_76",
+    "relic_data_77",
+    "relic_data_78",
+    "relic_data_79",
+    "relic_data_80",
+    "relic_data_81",
+    "relic_data_82",
+    "relic_data_83",
+    "relic_data_84",
+    "relic_data_85",
+    "relic_data_86",
+    "relic_data_87",
+    "relic_data_88",
+    "relic_data_89",
+    "relic_data_90",
+    "relic_data_91",
+    "relic_data_92",
+    "relic_data_93",
+    "relic_data_94",
+    "relic_data_95",
+    "relic_data_96",
+    "relic_data_97",
+    "relic_data_98",
+    "relic_data_99",
+    "relic_data_100",
+    "relic_data_101",
+    "relic_data_102",
+    "relic_data_103",
+    "relic_data_104",
+    "relic_data_105",
+    "relic_data_106",
+    "relic_data_107",
+    "relic_data_108",
+    "relic_data_109",
+    "relic_data_110",
+    "relic_data_111",
+    "relic_data_112",
+    "relic_data_113",
+    "relic_data_114",
+    "relic_data_115",
+    "relic_data_116",
+    "relic_data_117",
+    "relic_data_118",
+    "relic_data_119",
+    "relic_data_120",
+    "relic_data_121",
+    "relic_data_122",
+    "relic_data_123",
+    "relic_data_124",
+    "relic_data_125",
+    "relic_data_126",
+    "relic_data_127",
+    "relic_data_128",
+    "relic_data_129",
+    "relic_data_130",
+    "relic_data_131",
+    "relic_data_132",
+    "relic_data_133",
+    "relic_data_134",
+    "relic_data_135",
+    "relic_data_136",
+    "relic_data_137",
+    "relic_data_138",
+    "relic_data_139",
+    "relic_data_140",
+    "relic_data_141",
+    "relic_data_142",
+    "relic_data_143",
+    "relic_data_144",
+    "relic_data_145",
+    "relic_data_146",
+    "relic_data_147",
+    "relic_data_148",
+    "relic_data_149",
+    "relic_data_150",
+    "relic_data_151",
+    "relic_data_152",
+    "relic_data_153",
+    "relic_data_154",
+    "relic_data_155",
+    "relic_data_156",
+    "relic_data_157",
+    "relic_data_158",
+    "relic_data_159",
+    "relic_data_160",
+    "relic_data_161",
+    "relic_data_162",
+    "relic_data_163",
+    "relic_data_164",
+    "relic_data_165",
+    "relic_data_166",
+    "relic_data_167",
+    "relic_data_168",
+    "relic_data_169",
+    "relic_data_170",
+    "relic_data_171",
+    "relic_data_172",
+    "relic_data_173",
+    "relic_data_174",
+    "relic_data_175",
+    "relic_data_176",
+    "relic_data_177",
+    "relic_data_178",
+    "relic_data_179",
+    "relic_data_180"
+  ],
+  "schema_version": "e2c-v2-runwin-native-1",
+  "semantic_boundary": "RAW: persistent combat transfer complete; before regainControl/rewards",
+  "split": {
+    "method": "GroupShuffleSplit",
+    "random_state": 0,
+    "test_size": 0.15
+  },
+  "training_code_sha": "ac2a5bf860ce5728a8ecb4843970795a111db0f5",
+  "versions": {
+    "numpy": "2.2.3",
+    "pandas": "3.0.5",
+    "python": "3.13.5",
+    "xgboost": "3.4.0"
+  },
+  "xgboost_parameters": {
+    "colsample_bytree": 0.7,
+    "eta": 0.05,
+    "eval_metric": [
+      "auc",
+      "logloss"
+    ],
+    "max_bin": 256,
+    "max_depth": 8,
+    "min_child_weight": 20,
+    "objective": "binary:logistic",
+    "random_state": 0,
+    "subsample": 0.8,
+    "tree_method": "hist"
+  }
+}

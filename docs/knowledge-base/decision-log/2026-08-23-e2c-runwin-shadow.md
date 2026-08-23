@@ -35,11 +35,27 @@ invalid tree indices.
 
 The designated production CSV SHA is
 `da692d5979f9df3cad70ee6d76bd34fcf174ac74f557b942fb662e3d8c6a89e2`, produced
-at `e029dffb4c72449e8fc5b874391c49a27b2f6a81`. It was not present in bounded
-local artifact locations for this implementation. Therefore no production
-`models/v_runwin_e2c_v2.*` artifact is committed and no dataset was
-regenerated. A tiny separately named synthetic compact model exists only for
-native-format/parity and smoke verification.
+at `e029dffb4c72449e8fc5b874391c49a27b2f6a81`. The existing CSV was retrieved
+read-only from the recorded `sts-test` location and re-hashed locally before
+training; it was not regenerated. The current production export was made at
+training-code SHA `ac2a5bf860ce5728a8ecb4843970795a111db0f5`:
+
+- `models/v_runwin_e2c_v2.txt`: SHA-256
+  `4272039d80e9bf7493fd6af71dcd7a67e915a56dce36ff0f207544c79af0c14e`;
+- `models/v_runwin_e2c_v2.manifest.json`: SHA-256
+  `b1f08c6a765d1f7bb5c38bf81c0eace6fea3beb010442e26d0000bf0daa692ac`;
+- `tests/data/v_runwin_e2c_v2_parity.csv`: SHA-256
+  `02da2896380cf7ab20cb6949f3d1b4df7971194b4a49cab46d9004517b7f151f`.
+
+The held-out all-RAW T-raw metrics are AUC `0.7357093849908911`, log loss
+`0.5876621241286121`, Brier `0.20358731804525068`, and ECE
+`0.0271840698715477` (`n=6300`). Its `best_iteration` is `225`; the compact
+artifact contains exactly `226` trees (`0..225`). The ignored trainer Booster
+SHA-256 is `fa7dc698ec00cb36d9242020157a43244b244749a8b9cfc60c87abb2b19e4475`.
+Python/native parity over the committed 256-row production fixture had maximum
+absolute error `2.255981821e-07` (threshold `1e-4`). The native CSV parser
+accepts CRLF fixtures, so this Windows-produced fixture is exercised unchanged
+by the Linux native path.
 
 ## Interfaces
 
@@ -51,14 +67,18 @@ native-format/parity and smoke verification.
   `STS_RUNWIN_SHADOW_PER_STRATUM` (default `1`), and
   `STS_RUNWIN_SHADOW_MAX_GROUPS` (default `16`) bound diagnostic work.
 - `tools/analyze_runwin_shadow.py` performs schema/range/duplicate/failure
-  checks, coverage, root variance, seed-level bootstrap summaries, and an
-  explicitly caveated optional reference join. It does not optimize a blend or
-  assert policy improvement.
+  checks, coverage, root variance, and an explicitly caveated optional
+  reference join. A reference requires the complete source-leaf/replicate
+  identity and explicit `--reference-target`; duplicate or many-to-many joins
+  fail. It reports tie-aware within-root pairwise accuracy, Spearman,
+  co-top-choice agreement, and source-seed bootstrap CIs for
+  runwin-minus-baseline ranking deltas. It does not optimize a blend or assert
+  policy improvement.
 
 ## Scope and evidence
 
-This is implementation support only. It makes no gameplay or scientific claim;
-within-root ranking remains a later preregistered question with an independent
-stronger reference. Missing production-artifact training/export evidence and
-any verification unavailable in the local environment must remain explicit in
-the draft PR evidence packet.
+This is implementation support only. Exact RAW projection parity passes at
+1,192 canonical features with maximum error zero. It makes no gameplay or
+scientific claim; within-root ranking remains a later preregistered question
+with an independent stronger reference. No gameplay-quality experiment or
+promotion is authorized by this record.

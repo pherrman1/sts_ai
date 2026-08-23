@@ -7265,7 +7265,10 @@ static std::string e2cRunRows(const E2cCapture &cap, bool won, int finalFloor, i
 // tools/analyze_postcombat_raw_terminal.py::{manifest,t_features}.
 static std::vector<std::string> splitCsvNames(const std::string &s) {
     std::vector<std::string> out; std::string cur;
-    for (char c : s) { if (c == ',') { out.push_back(cur); cur.clear(); } else cur += c; }
+    // std::getline removes '\n' but leaves the '\r' in a normal CRLF CSV.
+    // Ignore it here so production parity fixtures are portable between the
+    // Windows exporter and the Linux native test binary.
+    for (char c : s) { if (c == ',') { out.push_back(cur); cur.clear(); } else if (c != '\r') cur += c; }
     if (!cur.empty()) out.push_back(cur);
     return out;
 }
