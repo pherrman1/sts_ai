@@ -4059,7 +4059,7 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   matched-conditioned `0.600`, neither `0.400`, and shared `0.000`. The
   weighted matched reference conditioned-minus-shared margin was
   `-0.958249375`. The secondary 500-simulation comparison had disagreement
-  `0.000` and weighted margin `0`. The analyzer validated the 34-column CSV,
+  `0.000` and weighted margin `0`. The analyzer validated the 36-column CSV,
   emitted source-seed bootstrap summaries, and passed its self-test. The
   corrected 36-column schema recorded `parentObsMismatches=0` for all rows.
   These are explicitly smoke-scale, noisy, and **not a scientific conclusion**.
