@@ -4007,3 +4007,52 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `e9dc812217a48c53fe02987a791d4e6b5bccb1257528bf8ca2e35398271a95ea`,
   `26afcdb0271fccf4cfb5183dcf3058fa4a2ee028706049e6bb4943d7cbf9cc64`, and
   `5e8a06ce4f5283eb4804c957e892c61d1be13983955ea30f8ef102175ad6e4bb`.
+
+## §174 Searcher3 immediate-Q exploitation mechanism diagnostic — STOP (2026-08-23)
+
+- **Question / intervention:** Does `STS_S3_ALWAYS_Q=1` improve low-budget
+  Searcher3 root decisions before a winning rollout exists? The only code
+  variable changed was the fresh-tree Q-exploitation gate; the existing Q
+  formula, risk adjustment, priors, budgets, and LIVE_VALID path were unchanged.
+- **Implementation:** frozen implementation SHA
+  `96967bfb7276460f69dc1a5d11bd5bc345e9f5b8`; baseline
+  `f2879ad7d0444b4d3edad87ba62f6181580c48d8`. The new flag is default-off and
+  is applied through one shared predicate in both `selectBestEdgePUCT()` and
+  `selectBestValidEdgePUCT()`.
+- **Protocol:** paired project-fair Searcher3; seeds `93000–93007` (8), asc 0,
+  300 live-search simulations/decision, 64 particles, 8 OpenMP threads;
+  root-race probes at 250/500/1000/4000 simulations. Control omitted
+  `STS_S3_ALWAYS_Q`; treatment set `STS_S3_ALWAYS_Q=1`. Both used
+  `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`, fair-S3 default LIVE_VALID, automatic
+  `models/v_combat_7k_tuned.txt` at alpha 0.3, and automatic
+  `models/policy_trees_c.txt`; no OOC strategic model was enabled. The raw
+  diagnostic was run through `tools/seed_guard.sh`.
+- **Corpus:** 256 captured root states: 208 ordinary encounters and 48
+  Act-1 elite encounters (IDs 15/16); no boss state was captured by the
+  existing first-32-states-per-seed hook. This is therefore an ordinary-vs-elite
+  mechanism sample, not a boss sample.
+- **Root decision quality:** control and treatment both agreed with the
+  4000-simulation reference at 250/500/1000 in 235/256 (91.8%), 237/256
+  (92.6%), and 238/256 (93.0%) states, respectively. Each arm had 2/256
+  paired chosen-action changes at each budget. Control disagreement regret
+  (mean over shallow/reference disagreements) was 1.940 native units; treatment
+  was 2.004. In the elite subset, treatment regret was worse at all three
+  budgets (1.653 vs 1.496; 1.356 vs 1.292; 1.569 vs 1.505).
+- **CPU:** root-race diagnostic `simSeconds` summed to 304.03 seconds for
+  control and 416.26 seconds for treatment (+36.9%); this is a material
+  overhead for a policy-only gate change. The searchdiag run wall times were
+  67.3 seconds and 91.1 seconds, respectively.
+- **First-win telemetry:** not captured. The existing root-race diagnostic
+  records root Q/visits and deep regret but does not expose the first winning
+  simulation; no diagnostic-only telemetry was added after the negative quality
+  result.
+- **Raw artifacts:** `build/phase_a/control_8.csv`,
+  `build/phase_a/alwaysq_8.csv`, `build/phase_a/control_8_searchdiag.csv`,
+  and `build/phase_a/alwaysq_8_searchdiag.csv`, with corresponding
+  `.fights.csv` files. These are ignored local artifacts and are not claimed as
+  tracked evidence.
+- **Verdict:** **STOP / negative.** ALWAYS_Q showed no low-budget agreement
+  improvement, slightly higher disagreement regret in the hard subset, and
+  substantial CPU overhead. Phase B gameplay validation was not justified and
+  was not run. This result does not support retuning or reinterpretation of the
+  null; any follow-up would be a new experiment.
