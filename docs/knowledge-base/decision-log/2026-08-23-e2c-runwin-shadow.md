@@ -68,12 +68,18 @@ by the Linux native path.
   `STS_RUNWIN_SHADOW_MAX_GROUPS` (default `16`) bound diagnostic work.
 - `tools/analyze_runwin_shadow.py` performs schema/range/duplicate/failure
   checks, coverage, root variance, and an explicitly caveated optional
-  reference join. A reference requires the complete source-leaf/replicate
-  identity and explicit `--reference-target`; duplicate or many-to-many joins
-  fail. It reports tie-aware within-root pairwise accuracy, Spearman,
-  co-top-choice agreement, and source-seed bootstrap CIs for
-  runwin-minus-baseline ranking deltas. It does not optimize a blend or assert
-  policy improvement.
+  reference join. Its raw-row identity includes `replicate`, but it first
+  collapses exactly complete, failure-free source leaves using the identity
+  without `replicate`. The primary run-win score is the producer's verified
+  `runwin_mean = mean_r Z_r(s)`, never an individual
+  `runwin_probability` row. A reference requires that leaf identity and an
+  explicit `--reference-target`; duplicate or many-to-many joins fail.
+  Inconsistent source-leaf metadata/baseline/aggregate fields fail, while
+  incomplete or failed diagnostic leaves are recorded as exclusions from
+  primary ranking. It reports tie-aware within-root pairwise accuracy,
+  Spearman, co-top-choice agreement, and source-seed bootstrap CIs for
+  runwin-minus-baseline ranking deltas at the source-leaf level. It does not
+  optimize a blend or assert policy improvement.
 
 ## Scope and evidence
 
