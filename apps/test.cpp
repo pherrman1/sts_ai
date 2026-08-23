@@ -511,7 +511,7 @@ int testIssueFixes() {
         }
         search::g_s3AlwaysQ = true;
         if (!search::s3ShouldExploitQ(false, -1)
-            || !search::s3ShouldExploitQ(false, -1)) {
+            || !search::s3ShouldExploitQ(true, -1)) {
             return fail("S3 always-Q did not enable fresh-tree exploitation");
         }
         search::g_s3AlwaysQ = false;
