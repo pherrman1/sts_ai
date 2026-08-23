@@ -57,6 +57,7 @@ bool g_s3Crn = false;
 int g_reuseMaxSearches = 1;     // STS_REUSE_MAX_SEARCHES (0 = fresh every decision)
 int g_reuseStatsMode = 0;       // STS_REUSE_STATS_MODE: 0=keep, 1=recursive_reset
 bool g_reuseAlwaysQ = false;    // STS_REUSE_ALWAYS_Q: always use Q on carried trees
+bool g_s3AlwaysQ = false;       // STS_S3_ALWAYS_Q: use Q from the first fresh-tree simulation
 bool g_reuseDiag = false;       // STS_REUSE_DIAG: print reuse diagnostics
 bool g_reuseObsStable = true;   // STS_REUSE_OBS_STABLE: only promote obs-stable children
 bool g_reuseReconcileRoot = false; // STS_REUSE_RECONCILE_ROOT: add missing root edges
@@ -2664,6 +2665,10 @@ void BattleScumSearcher3::backpropagate(const std::vector<Node *> &path,
 }
 
 // ---- PUCT selection (AlphaZero formula: Q + c*P*sqrt(N)/(1+N_child)) -------
+bool s3ShouldExploitQ(bool hasWinningLine, int reuseSearchCount) {
+    return g_s3AlwaysQ || (g_reuseAlwaysQ ? reuseSearchCount >= 0 : hasWinningLine);
+}
+
 int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
     const int n = (int)node.edges.size();
     if (n == 1) return 0;
@@ -2674,8 +2679,7 @@ int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
     // STS_REUSE_ALWAYS_Q: on carried trees, always use Q from sim 1.
     // Otherwise (legacy): exploit only after finding a winning line.
-    const bool exploit = g_reuseAlwaysQ ? (reuseSearchCount >= 0)
-                                        : !bestActionSequence.empty();
+    const bool exploit = s3ShouldExploitQ(!bestActionSequence.empty(), reuseSearchCount);
     const double evalRange = std::max(1.0, bestActionValue - minActionValue);
 
     int best = 0;
@@ -2709,8 +2713,7 @@ int BattleScumSearcher3::selectBestValidEdgePUCT(const Node &node, const BattleC
                        || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly);
     const double logParent  = usePuct ? 0.0 : std::log((double)(node.simulationCount + 1));
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
-    const bool exploit = g_reuseAlwaysQ ? (reuseSearchCount >= 0)
-                                        : !bestActionSequence.empty();
+    const bool exploit = s3ShouldExploitQ(!bestActionSequence.empty(), reuseSearchCount);
     const double evalRange = std::max(1.0, bestActionValue - minActionValue);
 
     int best = -1;
