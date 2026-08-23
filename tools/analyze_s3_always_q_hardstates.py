@@ -24,9 +24,9 @@ REQUIRED = {
     "seed", "act", "floor", "encounter", "turn", "decision_index",
     "visible_observation_hash", "source_context_hash", "control_context_hash",
     "treatment_context_hash", "reference_context_hash", "n_legal_root_actions",
-    "action_bits", "legal_now", "control_first_win_sim",
+    "action_bits", "legal_now", "control_first_q_exploit_sim",
     "control_chosen_250", "control_chosen_500", "control_chosen_1000",
-    "control_chosen_3000", "control_cpu_ms", "treatment_first_win_sim",
+    "control_chosen_3000", "control_cpu_ms", "treatment_first_q_exploit_sim",
     "treatment_chosen_250", "treatment_chosen_500", "treatment_chosen_1000",
     "treatment_chosen_3000", "treatment_cpu_ms", "reference_budget",
     "reference_chosen_action", "reference_q", "best_reference_q",
@@ -109,8 +109,8 @@ def _state(key: tuple[str, ...], rows: list[dict[str, str]]) -> dict:
     # context hashes document that all probes came from one source object.
     for field in (
         "source_context_hash", "control_context_hash", "treatment_context_hash",
-        "reference_context_hash", "n_legal_root_actions", "control_first_win_sim",
-        "treatment_first_win_sim", "control_cpu_ms", "treatment_cpu_ms",
+        "reference_context_hash", "n_legal_root_actions", "control_first_q_exploit_sim",
+        "treatment_first_q_exploit_sim", "control_cpu_ms", "treatment_cpu_ms",
         "reference_budget", "reference_chosen_action", "best_reference_q",
         "particle_count", "vnet_artifact", "policy_artifact", "relevant_flags",
         "implementation_sha", "paired_rng_salt", "reference_rng_salt"):
@@ -139,8 +139,8 @@ def _state(key: tuple[str, ...], rows: list[dict[str, str]]) -> dict:
     if not finite(best_q):
         raise ValueError(f"{key}: common reference has no finite root Q")
 
-    control_first = as_int(first, "control_first_win_sim")
-    treatment_first = as_int(first, "treatment_first_win_sim")
+    control_first = as_int(first, "control_first_q_exploit_sim")
+    treatment_first = as_int(first, "treatment_first_q_exploit_sim")
     if control_first < -1 or treatment_first < -1:
         raise ValueError(f"{key}: first-win telemetry is below -1")
 
@@ -306,7 +306,7 @@ def synthetic_rows() -> list[dict[str, str]]:
                 "source_context_hash": "99", "control_context_hash": "99",
                 "treatment_context_hash": "99", "reference_context_hash": "99",
                 "n_legal_root_actions": "2", "action_bits": str(bits), "legal_now": "1",
-                "control_first_win_sim": str(first), "treatment_first_win_sim": "10",
+                "control_first_q_exploit_sim": str(first), "treatment_first_q_exploit_sim": "10",
                 "control_cpu_ms": "2.0", "treatment_cpu_ms": "3.0", "reference_budget": "8000",
                 "reference_chosen_action": "10", "reference_q": q, "best_reference_q": "10.0",
                 "particle_count": "64", "vnet_artifact": "v", "policy_artifact": "p",

@@ -179,6 +179,35 @@ static const char *s3HardStateEnv(const char *name, const char *fallback) {
     return value && *value ? value : fallback;
 }
 
+// Cheap opt-in telemetry for the actual baseline Q-gate timing. This is
+// attached to the live searcher after each real combat search; it does not
+// create a probe, mutate a flag, or participate in selection.
+static void writeS3GateTimingDiag(const BattleContext &bc,
+                                  const search::BattleScumSearcher3 &s3,
+                                  std::uint64_t seed, int decisionIdx) {
+    if (!search::g_s3GateTimingDiag || search::g_s3GateTimingDiagFile.empty()) return;
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+    std::ifstream probe(search::g_s3GateTimingDiagFile);
+    const bool empty = !probe.good()
+        || probe.peek() == std::ifstream::traits_type::eof();
+    std::ofstream out(search::g_s3GateTimingDiagFile, std::ios::app);
+    if (!out) return;
+    if (empty) {
+        out << "seed,act,floor,encounter,turn,decision_index,"
+               "visible_observation_hash,first_q_exploit_simulation,"
+               "total_search_simulations,search_simulations_this_call,boss,elite\n";
+    }
+    const bool boss = isBossEncounter(bc.encounter);
+    const bool elite = s3HardStateElite(bc.encounter);
+    out << seed << ',' << s3HardStateAct(bc.floorNum) << ',' << bc.floorNum << ','
+        << static_cast<int>(bc.encounter) << ',' << bc.turn << ',' << decisionIdx << ','
+        << CombatObservation::fromBattleContext(bc).visibleHash() << ','
+        << s3.firstQExploitSimulation << ',' << s3.root.simulationCount << ','
+        << s3.lastSearchSimulations << ',' << (boss ? 1 : 0) << ','
+        << (elite ? 1 : 0) << '\n';
+}
+
 // Same-state paired Searcher3 probe for Experiment 1b.  Every arm is built
 // from the one `bc` object passed to this function; the live battle trajectory
 // is not replayed and no global ALWAYS_Q flag is changed.  The two shallow
@@ -210,7 +239,7 @@ static void writeS3HardStateDiag(const BattleContext &bc,
     struct Probe {
         std::array<std::uint64_t, 4> chosen{};
         std::unordered_map<std::uint32_t, double> q;
-        int firstWin = -1;
+        int firstQExploit = -1;
         double cpuMs = 0.0;
         std::uint64_t stateHash = 0;
     };
@@ -229,7 +258,7 @@ static void writeS3HardStateDiag(const BattleContext &bc,
             const auto action = s3PickRootAction(probe, bc, have);
             if (have) result.chosen[i] = action.bits;
         }
-        result.firstWin = probe.firstWinningSimulation;
+        result.firstQExploit = probe.firstQExploitSimulation;
         for (const auto &edge : probe.root.edges)
             result.q[edge.action.bits] = rootActionQ(edge);
         return result;
@@ -281,8 +310,8 @@ static void writeS3HardStateDiag(const BattleContext &bc,
         out << "seed,act,floor,encounter,turn,decision_index,visible_observation_hash,"
                "source_context_hash,control_context_hash,treatment_context_hash,reference_context_hash,"
                "n_legal_root_actions,action_bits,legal_now,"
-               "control_first_win_sim,control_chosen_250,control_chosen_500,control_chosen_1000,control_chosen_3000,control_cpu_ms,"
-               "treatment_first_win_sim,treatment_chosen_250,treatment_chosen_500,treatment_chosen_1000,treatment_chosen_3000,treatment_cpu_ms,"
+               "control_first_q_exploit_sim,control_chosen_250,control_chosen_500,control_chosen_1000,control_chosen_3000,control_cpu_ms,"
+               "treatment_first_q_exploit_sim,treatment_chosen_250,treatment_chosen_500,treatment_chosen_1000,treatment_chosen_3000,treatment_cpu_ms,"
                "reference_budget,reference_chosen_action,reference_q,best_reference_q,"
                "particle_count,vnet_artifact,policy_artifact,relevant_flags,implementation_sha,"
                "paired_rng_salt,reference_rng_salt\n";
@@ -295,10 +324,10 @@ static void writeS3HardStateDiag(const BattleContext &bc,
             << treatment.stateHash << ',' << reference.stateHash << ','
             << sourceActions.size() << ',' << static_cast<std::uint64_t>(bits) << ','
             << (search::Action(bits).isValidAction(bc) ? 1 : 0) << ','
-            << control.firstWin << ',' << actionToken(control.chosen[0]) << ','
+            << control.firstQExploit << ',' << actionToken(control.chosen[0]) << ','
             << actionToken(control.chosen[1]) << ',' << actionToken(control.chosen[2]) << ','
             << actionToken(control.chosen[3]) << ',' << control.cpuMs << ','
-            << treatment.firstWin << ',' << actionToken(treatment.chosen[0]) << ','
+            << treatment.firstQExploit << ',' << actionToken(treatment.chosen[0]) << ','
             << actionToken(treatment.chosen[1]) << ',' << actionToken(treatment.chosen[2]) << ','
             << actionToken(treatment.chosen[3]) << ',' << treatment.cpuMs << ','
             << referenceBudget << ',' << actionToken(referenceBits) << ','
@@ -698,6 +727,7 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             agent.simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             writeS3RootRaceDiag(bc, bc.seed, decisionIdx);
+            writeS3GateTimingDiag(bc, s3, bc.seed, decisionIdx);
             writeS3HardStateDiag(bc, bc.seed, decisionIdx);
             s3.clampRankCorrAtRoot();
             s3.rankCorrValues.clear();
@@ -1041,6 +1071,7 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             writeS3RootRaceDiag(bc, bc.seed, decisionIdx);
+            writeS3GateTimingDiag(bc, s3, bc.seed, decisionIdx);
             writeS3HardStateDiag(bc, bc.seed, decisionIdx);
             if (search::isDrawPileIndexSensitiveCardSelect(bc))
                 s3.reconcileRoot(bc);

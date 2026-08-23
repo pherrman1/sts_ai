@@ -1112,12 +1112,13 @@ selection also requires `!g_pvnetValueOnly`, matching S2.
   was never written and the flag was inert; issue 72). Opt-in, default off,
   not yet benchmarked end-to-end.
 - Searcher3 exposes two diagnostic-only per-instance fields used by the
-  Searcher3 Always-Q Experiment 1b hook: `firstWinningSimulation` is `-1`
-  until the first backpropagation that populates the existing
-  `bestActionSequence`, then records that searcher's one-based cumulative
-  simulation index; `alwaysQOverride` is unset in production and therefore
-  falls back to `g_s3AlwaysQ`. When set, it affects both ordinary and
-  `LIVE_VALID` PUCT through the same effective exploit predicate. The
+  Searcher3 Always-Q hooks: `firstQExploitSimulation` is `-1` until the first
+  backpropagation that changes the existing `bestActionSequence` from empty to
+  non-empty, then records that search call's one-based simulation ordinal. This is
+  the actual baseline Q-gate activation condition; it is not terminal-win
+  telemetry. `alwaysQOverride` is unset in production and therefore falls back
+  to `g_s3AlwaysQ`. When set, it affects both ordinary and `LIVE_VALID` PUCT
+  through the same effective exploit predicate. The
   `STS_S3_HARDSTATE_DIAG` hook constructs control, treatment, and an
   independent common-reference searcher from one live `BattleContext` copy;
   it is off by default and does not mutate global ALWAYS_Q state.

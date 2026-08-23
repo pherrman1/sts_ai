@@ -229,10 +229,12 @@ class BattleScumSearcher3;
         double bestActionValue = std::numeric_limits<double>::min();
         double minActionValue = std::numeric_limits<double>::max();
         int outcomePlayerHp = 0;
-        // First simulation whose backpropagated value satisfies the existing
-        // winning-line criterion and populates bestActionSequence.  This is
-        // telemetry only; -1 means no such simulation was observed.
-        int firstWinningSimulation = -1;
+        // First one-based simulation ordinal in the current search call after
+        // whose backpropagation the existing baseline Q-exploitation gate
+        // becomes true, i.e. bestActionSequence changes from empty to
+        // non-empty. This is telemetry only; -1 means no such opening was
+        // observed during this root search.
+        int firstQExploitSimulation = -1;
 
         // Diagnostic-only per-instance override.  When unset, the searcher
         // uses g_s3AlwaysQ exactly as production does.  This avoids mutating
@@ -504,9 +506,9 @@ class BattleScumSearcher3;
     // from simulation 1 — no gate on bestActionSequence.
     extern bool g_reuseAlwaysQ;
     // STS_S3_ALWAYS_Q: fresh Searcher3 trees use existing Q immediately;
-    // default off preserves the legacy winning-line gate.
+    // default off preserves the legacy bestActionSequence gate.
     extern bool g_s3AlwaysQ;
-    bool s3ShouldExploitQ(bool hasWinningLine, int reuseSearchCount);
+    bool s3ShouldExploitQ(bool hasExploitableSequence, int reuseSearchCount);
     // STS_REUSE_DIAG: print reuse diagnostics after each search.
     extern bool g_reuseDiag;
     // STS_REUSE_OBS_STABLE: only promote children whose observation was
@@ -636,6 +638,9 @@ class BattleScumSearcher3;
     extern std::string g_s3HardStateDiagFile;
     extern int g_s3HardStateDiagMaxStates;
     extern int g_s3HardStateDiagReferenceSims;
+    // Opt-in per-real-combat timing diagnostic for the baseline Q gate.
+    extern bool g_s3GateTimingDiag;
+    extern std::string g_s3GateTimingDiagFile;
 
     // Belief audit counters (thread-local, reset per search).
     extern thread_local std::int64_t t_baUpdatesDuringSearch;

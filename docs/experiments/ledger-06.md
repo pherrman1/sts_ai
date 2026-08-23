@@ -4072,3 +4072,40 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   narrower late-first-win/no-win-yet hypothesis; that mechanism remains
   inconclusive because first-win telemetry and boss/hard-state targeting were
   absent. Any rescue or targeting experiment would be new work.
+
+## Searcher3 Q-gate timing correction before hard-state experiment (2026-08-23)
+
+- **Question:** Does the baseline Searcher3 Q-exploitation gate really wait
+  for a terminal winning line? The corrected implementation measures the first
+  simulation ordinal after backpropagation changes `bestActionSequence` from
+  empty to non-empty. This is not terminal-win telemetry.
+- **Implementation:** the corrected per-instance field is
+  `firstQExploitSimulation`, initialized to `-1`, reset on root promotion, and
+  recorded only when the existing baseline gate first opens. Selection,
+  rollout, VNet, rewards, priors, PUCT, LIVE_VALID, and RNG behavior were not
+  changed. The per-instance `alwaysQOverride` remains diagnostic-only and the
+  paired hard-state/common-reference hook was not enabled.
+- **Protocol:** guarded local `bestbench 1000 8 0 92000` with
+  `STS_FAIR=1 STS_SEARCHER3=1 STS_S3_PARTICLES=64 STS_S3_BELIEF=0
+  STS_S3_CHAIN=0 STS_S3_ALWAYS_Q=0 STS_STOP_AFTER_ACT=3`, current default
+  fair-S3 V_combat/policy artifacts, and the documented V4 strategic OOC token
+  model/gates. Four OpenMP threads; ascension 0. The run used
+  `tools/seed_guard.sh` and wrote one telemetry row after each real combat
+  search.
+- **Distribution:** 3,449 rows across 8 seeds: 3,380 at simulation 1
+  (98.00%), 66 at simulations 2–10 (1.91%), 1 at 11–100 (0.03%), 1 at 101+
+  (0.03%), and 1 never (0.03%). The gate opened by simulation 10 in 3,446
+  rows (99.91%). Act 1/2/3 were 1,011/1,152/1,286 rows; ordinary/elite/boss
+  were 1,539/943/967. Exact analyzer output is reproduced in the decision log
+  for this correction.
+- **Smoke:** corrected two-seed smoke (seeds 91000–91001) captured 803 rows;
+  799/803 (99.50%) opened by simulation 10. It also confirmed the timing CSV
+  parser and that the paired hard-state diagnostic was explicitly off.
+- **Decision:** **STOP_ALWAYS_Q_LINE** under the preregistered >=95% rule.
+  The baseline already exploits Q almost immediately, so the planned
+  16-seed late/no-win paired-reference experiment is not justified. This is a
+  timing conclusion, not a gameplay gate.
+- **Artifacts:** ignored local raw outputs
+  `build/qgate_timing_8seeds.csv`, `build/qgate_8seed_results.csv`,
+  `build/qgate_timing_smoke_v2.csv`, and `build/qgate_smoke_results_v2.csv`;
+  analyzer `tools/analyze_s3_q_gate_timing.py`.

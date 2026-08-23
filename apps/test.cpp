@@ -553,7 +553,7 @@ int testIssueFixes() {
         }
     }
 
-    // Searcher3 Experiment 1b plumbing: first-win telemetry and per-instance
+    // Searcher3 Experiment 1b plumbing: first-Q-gate telemetry and per-instance
     // ALWAYS_Q overrides must be isolated from the process-global flag.  The
     // two PUCT selectors are exercised against the same legal root actions.
     {
@@ -572,6 +572,9 @@ int testIssueFixes() {
             || legacy.shouldExploitQ(false) || forcedOff.shouldExploitQ(false)
             || !forcedOn.shouldExploitQ(false)) {
             return fail("per-instance ALWAYS_Q override semantics changed");
+        }
+        if (legacy.firstQExploitSimulation != -1) {
+            return fail("firstQExploitSimulation was not initially unset");
         }
         search::g_s3AlwaysQ = true;
         if (!legacy.effectiveAlwaysQ() || forcedOff.effectiveAlwaysQ()
@@ -599,13 +602,22 @@ int testIssueFixes() {
             return fail("ordinary/LIVE_VALID selectors did not share override");
         }
         std::vector<search::Action> winningLine{legal.edges[0].action};
+        // A positive nonterminal rollout/VNet-style evaluation opens the
+        // existing gate because it populates bestActionSequence; no terminal
+        // win is required by this mechanism.
+        legacy.backpropagate({}, -1.0, {});
+        if (legacy.shouldExploitQ(false) || legacy.firstQExploitSimulation != -1) {
+            return fail("negative/nonterminal pre-gate backprop opened Q gate");
+        }
+        legacy.searchSimulationOrdinal = 1;
         legacy.backpropagate({}, 1.0, winningLine);
-        if (legacy.firstWinningSimulation != 1) {
-            return fail("firstWinningSimulation did not record first winning line");
+        if (!legacy.shouldExploitQ(!legacy.bestActionSequence.empty())
+            || legacy.firstQExploitSimulation != 1) {
+            return fail("firstQExploitSimulation did not record first gate opening");
         }
         legacy.backpropagate({}, 2.0, winningLine);
-        if (legacy.firstWinningSimulation != 1) {
-            return fail("firstWinningSimulation was not first-only telemetry");
+        if (legacy.firstQExploitSimulation != 1) {
+            return fail("firstQExploitSimulation was not first-only telemetry");
         }
         search::g_s3AlwaysQ = false;
         search::g_reuseAlwaysQ = false;

@@ -160,6 +160,8 @@ bool g_s3HardStateDiag = false;
 std::string g_s3HardStateDiagFile;
 int g_s3HardStateDiagMaxStates = 4;
 int g_s3HardStateDiagReferenceSims = 8000;
+bool g_s3GateTimingDiag = false;
+std::string g_s3GateTimingDiagFile;
 thread_local std::int64_t t_baUpdatesDuringSearch = 0;
 thread_local std::int64_t t_baParticlesZeroed = 0;
 thread_local std::int64_t t_baAllZeroEvents = 0;
@@ -1909,7 +1911,7 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
 
     bestActionSequence.clear();
     bestActionValue = std::numeric_limits<double>::min();
-    firstWinningSimulation = -1;
+    firstQExploitSimulation = -1;
     outcomePlayerHp = 0;
     obsMismatchCount = 0;
     parentChildViolations = 0;
@@ -2656,8 +2658,8 @@ void BattleScumSearcher3::backpropagate(const std::vector<Node *> &path,
         const bool wasEmpty = bestActionSequence.empty();
         bestActionSequence = actionStack;
         bestActionValue = evaluation;
-        if (wasEmpty && !bestActionSequence.empty() && firstWinningSimulation < 0)
-            firstWinningSimulation = static_cast<int>(root.simulationCount + 1);
+        if (wasEmpty && !bestActionSequence.empty() && firstQExploitSimulation < 0)
+            firstQExploitSimulation = searchSimulationOrdinal;
     }
     if (evaluation < minActionValue) {
         minActionValue = evaluation;
@@ -2673,17 +2675,17 @@ void BattleScumSearcher3::backpropagate(const std::vector<Node *> &path,
 }
 
 // ---- PUCT selection (AlphaZero formula: Q + c*P*sqrt(N)/(1+N_child)) -------
-bool s3ShouldExploitQ(bool hasWinningLine, int reuseSearchCount) {
-    return g_s3AlwaysQ || (g_reuseAlwaysQ ? reuseSearchCount >= 0 : hasWinningLine);
+bool s3ShouldExploitQ(bool hasExploitableSequence, int reuseSearchCount) {
+    return g_s3AlwaysQ || (g_reuseAlwaysQ ? reuseSearchCount >= 0 : hasExploitableSequence);
 }
 
 bool BattleScumSearcher3::effectiveAlwaysQ() const {
     return alwaysQOverride.has_value() ? *alwaysQOverride : g_s3AlwaysQ;
 }
 
-bool BattleScumSearcher3::shouldExploitQ(bool hasWinningLine) const {
+bool BattleScumSearcher3::shouldExploitQ(bool hasExploitableSequence) const {
     return effectiveAlwaysQ()
-        || (g_reuseAlwaysQ ? reuseSearchCount >= 0 : hasWinningLine);
+        || (g_reuseAlwaysQ ? reuseSearchCount >= 0 : hasExploitableSequence);
 }
 
 int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
@@ -2695,7 +2697,7 @@ int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
     const double logParent  = usePuct ? 0.0 : std::log((double)(node.simulationCount + 1));
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
     // STS_REUSE_ALWAYS_Q: on carried trees, always use Q from sim 1.
-    // Otherwise (legacy): exploit only after finding a winning line.
+    // Otherwise (legacy): exploit only after bestActionSequence is non-empty.
     const bool exploit = shouldExploitQ(!bestActionSequence.empty());
     const double evalRange = std::max(1.0, bestActionValue - minActionValue);
 

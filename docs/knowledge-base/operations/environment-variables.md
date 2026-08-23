@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-08-11 against `apps/one_combat.cpp::main`.
+Last verified: 2026-08-23 against `apps/one_combat.cpp::main`.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -54,7 +54,9 @@ These control the default executing configuration; they are always parsed.
 | `STS_S3_CHAIN` | Deterministic chain compression (ablation) | `1` (ON) | `main` ~L9736 |
 | `STS_S3_LIVE` | Live-valid root-edge filter (ablation) | `1` (ON) | `main` ~L9737 |
 | `STS_S3_CRN` | Root CRN warm start (opt-in) | `0` (off) | `main` ~L9738 |
-| `STS_S3_ALWAYS_Q` | Allow Searcher3 fresh-tree selection to exploit accumulated Q before a winning line exists | `0` (off) | `main` |
+| `STS_S3_ALWAYS_Q` | Allow Searcher3 fresh-tree selection to exploit accumulated Q before `bestActionSequence` becomes non-empty | `0` (off) | `main` |
+| `STS_S3_GATE_TIMING_DIAG` | Record actual baseline Q-gate activation timing after each real S3 combat search | `0` (off) | `main` |
+| `STS_S3_GATE_TIMING_DIAG_FILE` | CSV output path for Q-gate timing telemetry | unset | `main` |
 | `STS_S3_HARDSTATE_DIAG` | Enable the same-state paired late/no-win diagnostic; telemetry only and off by default | `0` (off) | `main` |
 | `STS_S3_HARDSTATE_DIAG_FILE` | CSV output path for the hard-state diagnostic | unset | `main` |
 | `STS_S3_HARDSTATE_MAX_STATES` | Per-seed cap on retained eligible hard-state roots | `4` | `main` |
