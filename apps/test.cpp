@@ -553,6 +553,64 @@ int testIssueFixes() {
         }
     }
 
+    // Searcher3 Experiment 1b plumbing: first-win telemetry and per-instance
+    // ALWAYS_Q overrides must be isolated from the process-global flag.  The
+    // two PUCT selectors are exercised against the same legal root actions.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0x13579Bu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::g_s3AlwaysQ = false;
+        search::g_reuseAlwaysQ = false;
+        search::BattleScumSearcher3 legacy(bc, bc.seed, 0, 8);
+        search::BattleScumSearcher3 forcedOff(bc, bc.seed, 0, 8);
+        search::BattleScumSearcher3 forcedOn(bc, bc.seed, 0, 8);
+        forcedOff.alwaysQOverride = false;
+        forcedOn.alwaysQOverride = true;
+        if (legacy.effectiveAlwaysQ() || forcedOff.effectiveAlwaysQ()
+            || !forcedOn.effectiveAlwaysQ()
+            || legacy.shouldExploitQ(false) || forcedOff.shouldExploitQ(false)
+            || !forcedOn.shouldExploitQ(false)) {
+            return fail("per-instance ALWAYS_Q override semantics changed");
+        }
+        search::g_s3AlwaysQ = true;
+        if (!legacy.effectiveAlwaysQ() || forcedOff.effectiveAlwaysQ()
+            || !forcedOn.effectiveAlwaysQ()) {
+            return fail("override=false did not mask global ALWAYS_Q");
+        }
+        search::g_s3AlwaysQ = false;
+
+        search::BattleScumSearcher3::Node legal;
+        search::enumerateActionsForNode(legal, bc);
+        if (legal.edges.size() < 2) return fail("override selector fixture has <2 actions");
+        search::BattleScumSearcher3::Node node;
+        node.simulationCount = 100;
+        node.edges.resize(2);
+        node.edges[0].action = legal.edges[0].action;
+        node.edges[1].action = legal.edges[1].action;
+        node.edges[0].child.simulationCount = 10;
+        node.edges[1].child.simulationCount = 10;
+        node.edges[0].child.evaluationSum = 0.0;
+        node.edges[1].child.evaluationSum = 100.0;
+        if (forcedOff.selectBestEdgePUCT(node) != 0
+            || forcedOff.selectBestValidEdgePUCT(node, bc) != 0
+            || forcedOn.selectBestEdgePUCT(node) != 1
+            || forcedOn.selectBestValidEdgePUCT(node, bc) != 1) {
+            return fail("ordinary/LIVE_VALID selectors did not share override");
+        }
+        std::vector<search::Action> winningLine{legal.edges[0].action};
+        legacy.backpropagate({}, 1.0, winningLine);
+        if (legacy.firstWinningSimulation != 1) {
+            return fail("firstWinningSimulation did not record first winning line");
+        }
+        legacy.backpropagate({}, 2.0, winningLine);
+        if (legacy.firstWinningSimulation != 1) {
+            return fail("firstWinningSimulation was not first-only telemetry");
+        }
+        search::g_s3AlwaysQ = false;
+        search::g_reuseAlwaysQ = false;
+    }
+
     std::cout << "issue_fixes PASS\n";
     return 0;
 }

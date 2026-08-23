@@ -1,5 +1,7 @@
 # Decision log
 
+| 2026-08-23 | [`2026-08-23-s3-always-q-hardstates.md`](2026-08-23-s3-always-q-hardstates.md) | Searcher3 Always-Q Experiment 1b implementation: per-instance override, first-win telemetry, same-state paired hard-state probes, independent common reference, schema/analyzer, and review-before-collection boundary. |
+
 Last verified: 2026-08-22 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with

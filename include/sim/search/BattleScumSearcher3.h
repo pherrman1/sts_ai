@@ -229,6 +229,15 @@ class BattleScumSearcher3;
         double bestActionValue = std::numeric_limits<double>::min();
         double minActionValue = std::numeric_limits<double>::max();
         int outcomePlayerHp = 0;
+        // First simulation whose backpropagated value satisfies the existing
+        // winning-line criterion and populates bestActionSequence.  This is
+        // telemetry only; -1 means no such simulation was observed.
+        int firstWinningSimulation = -1;
+
+        // Diagnostic-only per-instance override.  When unset, the searcher
+        // uses g_s3AlwaysQ exactly as production does.  This avoids mutating
+        // the process-global flag while paired probes run concurrently.
+        std::optional<bool> alwaysQOverride;
 
         struct RngExposureAggregate {
             std::int64_t simulations = 0;
@@ -358,6 +367,8 @@ class BattleScumSearcher3;
 
         void search(int64_t simulations);
         void searchToTotal(int64_t targetSimulations);
+        [[nodiscard]] bool effectiveAlwaysQ() const;
+        [[nodiscard]] bool shouldExploitQ(bool hasWinningLine) const;
         void enableRngExposureDiagnostic(std::uint64_t seed, int encounter, int floor,
                                          int sourceFilterDecisionIndex, int searchDecisionIndex,
                                          int turn, std::uint64_t rootObservationHash,
@@ -619,6 +630,12 @@ class BattleScumSearcher3;
     extern bool g_s3RootRaceDiag;
     extern std::string g_s3RootRaceDiagFile;
     extern int g_s3RootRaceDiagMaxStates;
+    // Same-state paired late/no-win diagnostic (opt-in).  The hook is
+    // installed by ScumSearchAgent2 and never changes the live search path.
+    extern bool g_s3HardStateDiag;
+    extern std::string g_s3HardStateDiagFile;
+    extern int g_s3HardStateDiagMaxStates;
+    extern int g_s3HardStateDiagReferenceSims;
 
     // Belief audit counters (thread-local, reset per search).
     extern thread_local std::int64_t t_baUpdatesDuringSearch;
