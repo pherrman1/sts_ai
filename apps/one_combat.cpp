@@ -7358,6 +7358,10 @@ static int e2cRawProjectionParityTest() {
         std::cerr << "e2c_projection_parity FAIL: " << why << '\n'; return 1;
     };
     GameContext entry(CharacterClass::IRONCLAD, 0xE2C2026u, 0);
+    // The production run has a post-battle continuation installed.  The
+    // fixture intentionally stops at the RAW hook, so a no-op keeps the
+    // canonical exitBattle call valid without generating rewards.
+    entry.regainControlAction = [](GameContext &) {};
     entry.act = 2; entry.floorNum = 23; entry.curRoom = Room::ELITE;
     entry.curHp = 20; entry.maxHp = 91; entry.gold = 101; entry.potionChance = 37;
     entry.relics.add({RelicId::MEAT_ON_THE_BONE, 0});
@@ -7410,7 +7414,8 @@ static int e2cRawProjectionParityTest() {
     // potion slots/count/chance arrive from the terminal BattleContext.
     if (!require("curHp", 38) || !require("maxHp", 91) || !require("gold", 137) ||
         !require("potionCount", 2) || !require("potionCapacity", 5) || !require("potionChance", 37) ||
-        !require("pot0", (float)(int)Potion::STRENGTH_POTION) || !require("pot1", (float)(int)Potion::FIRE_POTION))
+        !require("pot" + std::to_string((int)Potion::STRENGTH_POTION), 1) ||
+        !require("pot" + std::to_string((int)Potion::FIRE_POTION), 1))
         return fail("HP, gold, or potion transfer");
     const int happy = (int)RelicId::HAPPY_FLOWER, lizard = (int)RelicId::LIZARD_TAIL, lament = (int)RelicId::NEOWS_LAMENT;
     if (!require("relic_has_" + std::to_string(happy), 1) || !require("relic_data_" + std::to_string(happy), 2) ||
