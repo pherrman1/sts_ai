@@ -43,16 +43,28 @@ def select(rows, target):
     for values in groups.values():
         values.sort(key=lambda r: (int(r['fightIdx']), int(r['decIdx']), int(r['obsHash'])))
     classes = ('boss', 'elite', 'ordinary')
+    seeds_by_class = {
+        cls: sorted({seed for group, seed in groups if group == cls})
+        for cls in classes
+    }
+    seed_cursor = {cls: 0 for cls in classes}
     chosen = []
     while len(chosen) < target:
         made_progress = False
         for cls in classes:
-            for seed in sorted({s for c, s in groups if c == cls}):
-                values = groups[(cls, seed)]
-                if values:
-                    chosen.append(values.pop(0)); made_progress = True
-                    if len(chosen) == target:
-                        break
+            seeds = seeds_by_class[cls]
+            if not seeds:
+                continue
+            skipped = 0
+            while skipped < len(seeds) and not groups[(cls, seeds[seed_cursor[cls]])]:
+                seed_cursor[cls] = (seed_cursor[cls] + 1) % len(seeds)
+                skipped += 1
+            if skipped == len(seeds):
+                continue
+            seed = seeds[seed_cursor[cls]]
+            chosen.append(groups[(cls, seed)].pop(0))
+            seed_cursor[cls] = (seed_cursor[cls] + 1) % len(seeds)
+            made_progress = True
             if len(chosen) == target:
                 break
         if not made_progress:
@@ -88,13 +100,19 @@ def self_test():
         assert encounter_class(row) == 'elite'
 
     rows = []
-    for seed, name, boss in ((0, 'CULTIST', '0'), (1, 'SLIME_BOSS', '1'), (2, 'GREMLIN_NOB', '0')):
+    for seed, name, boss in (
+        (0, 'SLIME_BOSS', '1'), (1, 'SLIME_BOSS', '1'),
+        (2, 'GREMLIN_NOB', '0'), (3, 'SLAVERS', '0'),
+        (4, 'CULTIST', '0'), (5, 'CULTIST', '0'),
+    ):
         rows.append({'seed': str(seed), 'fightIdx': '0', 'decIdx': '0', 'obsHash': str(seed + 10),
                      'frontierType': '-1', 'encounterName': name, 'isBoss': boss,
                      'floor': '1', 'act': '1', 'binaryOffset': '4', 'binarySize': '10'})
-    chosen = select(rows, 3)
-    assert [r['encounterName'] for r in chosen] == ['SLIME_BOSS', 'GREMLIN_NOB', 'CULTIST']
-    assert len({key(r) for r in chosen}) == 3
+    chosen = select(rows, 6)
+    assert [encounter_class(r) for r in chosen] == [
+        'boss', 'elite', 'ordinary', 'boss', 'elite', 'ordinary']
+    assert [int(r['seed']) for r in chosen] == [0, 2, 4, 1, 3, 5]
+    assert len({key(r) for r in chosen}) == 6
     print('select_s3_crn_states self-test PASS')
 
 

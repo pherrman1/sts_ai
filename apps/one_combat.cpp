@@ -443,8 +443,8 @@ static bool s3SiblingCrnDiagnostic(const std::string &inCsv,
         }
         ++stateOrdinal;
     }
-    if (!sts::search::s3SiblingCrnManifestSatisfied(selected.size(),
-                                                     static_cast<std::size_t>(stateOrdinal))) {
+    if (!selected.empty() && !sts::search::s3SiblingCrnManifestSatisfied(
+            selected.size(), static_cast<std::size_t>(stateOrdinal))) {
         std::cerr << "s3siblingcrn: selection manifest requested " << selected.size()
                   << " states but only " << stateOrdinal
                   << " were usable; refusing a partial formal diagnostic\n";
