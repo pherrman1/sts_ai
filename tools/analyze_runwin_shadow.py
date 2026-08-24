@@ -119,10 +119,16 @@ def _assert_primary_aggregate_contract(group, leaf):
     if not np.isclose(float(leaf["diagnostic_survival_rate"]), float(survived.mean()),
                       rtol=0, atol=1e-12):
         raise ValueError("diagnostic_survival_rate does not equal replicate survival rate")
-    conditional = float(probability[survived.astype(bool)].mean()) if survived.any() else 0.0
-    if not np.isclose(float(leaf["conditional_survival_critic_mean"]), conditional,
-                      rtol=0, atol=1e-12):
-        raise ValueError("conditional_survival_critic_mean disagrees with replicate rows")
+    survived_count = int(leaf["survivedCount"])
+    conditional = float(leaf["conditional_survival_critic_mean"])
+    if survived_count > 0:
+        expected_conditional = float(probability[survived.astype(bool)].mean())
+        if not np.isclose(conditional, expected_conditional, rtol=0, atol=1e-12):
+            raise ValueError("conditional_survival_critic_mean disagrees with replicate rows")
+    elif np.isfinite(conditional):
+        raise ValueError("zero-survivor leaf must have non-finite conditional survival mean")
+    if survived_count == 0 and not np.isclose(float(leaf["runwin_mean"]), 0.0, rtol=0, atol=0):
+        raise ValueError("all-loss leaf runwin_mean must be exactly zero")
 
 
 def _collapse_source_leaves(frame):
@@ -301,7 +307,7 @@ def _aggregate_rows(rows):
     probability = np.asarray([item["runwin_probability"] for item in rows], float)
     survived = np.asarray([item["survived"] for item in rows], int)
     mean = float(probability.mean())
-    conditional = float(probability[survived.astype(bool)].mean()) if survived.any() else 0.0
+    conditional = float(probability[survived.astype(bool)].mean()) if survived.any() else float("nan")
     for item in rows:
         item.update(replicates=len(rows), survivedCount=int(survived.sum()),
                     diagnostic_survival_rate=float(survived.mean()),
@@ -349,6 +355,25 @@ def self_test():
     delta = report["seed_bootstrap_comparison"]["deltas"]
     assert "runwin_probability_minus_vnetPred:tie_aware_accuracy" in delta
     assert report["coverage"]["hp_band"].get("low") == 8
+    # A complete all-loss R=4 leaf is valid: its run-win estimator is zero and
+    # its conditional-on-survival critic mean is undefined (producer NaN).
+    all_loss = shadow.iloc[:4].copy()
+    all_loss["leafObsHash"] = 99
+    all_loss["searchSimulation"] = 99
+    all_loss["runwin_probability"] = 0.0
+    all_loss["survived"] = 0
+    all_loss = pd.DataFrame(_aggregate_rows(all_loss.to_dict("records")))
+    all_shadow = pd.concat([shadow, all_loss], ignore_index=True)
+    all_means = all_shadow.groupby(LEAF_IDENTITY, as_index=False).runwin_mean.first()
+    all_report = analyze(all_shadow, all_means.assign(target=all_means.runwin_mean),
+                         "target", bootstrap=4)
+    _, all_primary, _ = _collapse_source_leaves(all_shadow)
+    all_leaf = all_primary[all_primary.leafObsHash.eq(99)].iloc[0]
+    assert all_report["primary_ranking_source_leaves"] == 7
+    assert bool(all_leaf["primary_ranking_eligible"])
+    assert all_leaf["runwin_mean"] == 0.0
+    assert int(all_leaf["survivedCount"]) == 0
+    assert not np.isfinite(all_leaf["conditional_survival_critic_mean"])
     # Incomplete R and any diagnostic failure are retained for accounting but
     # excluded from primary comparison rather than becoming partial leaves.
     incomplete = shadow.drop(index=0)

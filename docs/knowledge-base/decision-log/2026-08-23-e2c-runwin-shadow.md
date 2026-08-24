@@ -76,7 +76,9 @@ by the Linux native path.
   explicit `--reference-target`; duplicate or many-to-many joins fail.
   Inconsistent source-leaf metadata/baseline/aggregate fields fail, while
   incomplete or failed diagnostic leaves are recorded as exclusions from
-  primary ranking. It reports tie-aware within-root pairwise accuracy,
+  primary ranking. A complete all-loss leaf remains eligible with
+  `runwin_mean=0`; its producer-defined conditional-survival critic mean is
+  NaN because that conditional quantity is undefined. It reports tie-aware within-root pairwise accuracy,
   Spearman, co-top-choice agreement, and source-seed bootstrap CIs for
   runwin-minus-baseline ranking deltas at the source-leaf level. It does not
   optimize a blend or assert policy improvement.
