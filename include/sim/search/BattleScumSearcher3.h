@@ -183,7 +183,15 @@ class BattleScumSearcher3;
         };
 
         struct Edge {
+            struct OutcomeChild {
+                CombatObservation observation;
+                Node child;
+            };
+
             Action action;
+            // Aggregate action statistics remain on child. When persistent
+            // END_TURN chance handling is enabled, decision topology lives in
+            // observation-keyed outcomeChildren instead of child.edges.
             Node child;
             float prior = 0.f;
             // ── Per-edge particle availability ───────────────────────
@@ -195,6 +203,8 @@ class BattleScumSearcher3;
             // that means "play Bash on target 0" works across hand permutations.
             CardActionKey cardKey;
             bool hasCardKey = false;
+            bool persistentChanceContainer = false;
+            std::vector<OutcomeChild> outcomeChildren;
         };
 
         // A shadow-only strategy-fusion candidate recorded during step().
@@ -337,6 +347,18 @@ class BattleScumSearcher3;
         std::int64_t semanticRebinds = 0;             // successful resolution to a different hand index
         std::int64_t semanticResolutionFailures = 0;  // no matching card in current hand
 
+        // Experiment 4 treatment diagnostics. Parent action selection still
+        // reads Edge::child; outcomes are dispatched only by the sampled
+        // post-action observation.
+        std::int64_t eligibleEndTurnCount = 0;
+        std::int64_t ineligibleEndTurnCount = 0;
+        std::int64_t chanceContainersCreated = 0;
+        std::int64_t chanceContainerVisits = 0;
+        std::int64_t outcomeChildrenCreated = 0;
+        std::int64_t outcomeExistingHits = 0;
+        std::int64_t outcomeNewMisses = 0;
+        std::int64_t maxOutcomesPerContainer = 0;
+
         // ── Per-node observation tracking ───────────────────────────
         // Called once per node visit inside step(). Updates per-node
         // firstObsHash/nodeObsMismatches/nodeObsVisits.
@@ -419,6 +441,11 @@ class BattleScumSearcher3;
             std::uint64_t sourceSeed, int encounter, int floor, int turn,
             int simulationIndex);
         void finalizeStrategyFusionDiag();
+
+        static bool persistentEndTurnEligible(const BattleContext &preState,
+                                              const Action &action);
+        Node &dispatchPersistentEndTurnOutcome(
+            Edge &edge, const CombatObservation &postObservation);
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
         RealBeliefFilterStats filterRealTransition(
@@ -654,6 +681,14 @@ class BattleScumSearcher3;
     extern bool g_s3EndTurnMarginalize;
     extern int g_s3EndTurnMarginalizeParticles;
     extern int g_s3EndTurnMarginalizeMaxPile;
+
+    // Experiment 4: persistent visible-outcome continuations below eligible
+    // END_TURN actions. Default off and incompatible with the diagnostic that
+    // assumes one legacy shared continuation child.
+    extern bool g_s3PersistentEndTurnChance;
+    bool s3PersistentChanceFlagsCompatible(bool persistentChance,
+                                           bool strategyFusionDiag);
+    void printPersistentEndTurnChanceDiagnostics();
 
     // Marginalization diagnostics (thread-local).
     extern thread_local std::int64_t t_margEligible;

@@ -12741,6 +12741,22 @@ int main(int argc, char **argv) {
         std::cout << "[S3 strategy-fusion diag reference sims = "
                   << search::g_s3StrategyFusionDiagReferenceSims << "]\n";
     }
+    if (const char *d = std::getenv("STS_S3_PERSISTENT_ENDTURN_CHANCE")) {
+        search::g_s3PersistentEndTurnChance = std::atoi(d) != 0;
+        std::cout << "[S3 persistent END_TURN chance = "
+                  << (search::g_s3PersistentEndTurnChance ? "ON" : "off")
+                  << "]\n";
+    }
+    if (!search::s3PersistentChanceFlagsCompatible(
+            search::g_s3PersistentEndTurnChance,
+            search::g_s3StrategyFusionDiag)) {
+        std::cerr << "error: STS_S3_PERSISTENT_ENDTURN_CHANCE and "
+                     "STS_S3_STRATEGY_FUSION_DIAG are mutually exclusive; "
+                     "the diagnostic assumes the legacy shared-child topology\n";
+        return 2;
+    }
+    if (search::g_s3PersistentEndTurnChance)
+        std::atexit(search::printPersistentEndTurnChanceDiagnostics);
     if (const char *d = std::getenv("STS_S3_BUCKET_VALUE_DIAG")) {
         search::g_s3BucketValueDiag = std::atoi(d) != 0;
         std::cout << "[S3 bucket-value-diag = " << (search::g_s3BucketValueDiag ? "ON" : "off") << "]\n";

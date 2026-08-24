@@ -4335,3 +4335,46 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `docs/experiments/evidence/s3_q_gate_timing_2026-08-23.json`; the raw timing
   CSV SHA-256 is
   `a5e7ec4d87cb737492635e41f6f7e10a4f5d2289cca7d79d1560af82d086e1bf`.
+
+## §179 Experiment 4: persistent visible-outcome continuations below END_TURN (2026-08-25)
+
+- **Question:** given PR #48's demonstrated strategy-fusion regret below
+  stochastic END_TURN, can persistent visible-outcome-conditioned continuation
+  subtrees provide reusable policy conditioning at acceptable compute cost?
+- **Implementation:** default-off `STS_S3_PERSISTENT_ENDTURN_CHANCE=1` keeps one
+  aggregate `Edge::child` action value/visit stream for parent PUCT and routes
+  each normally sampled eligible END_TURN successor to a persistent child keyed
+  by exact full `CombatObservation` equality. No eager alternatives, widening,
+  hidden-state key, or other stochastic-action change. Eligibility: pre-state
+  `UNDECIDED`, END_TURN, draw pile <=8, and no empty-draw/nonempty-discard
+  immediate reshuffle. The PR #48 legacy diagnostic is mutually exclusive.
+- **Correctness:** focused Debug CTest passed treatment split/reuse/aggregate/
+  no-hidden-leak/observation-selection checks plus strategy-fusion, semantic
+  card, draw-pile reuse, and RNG propagation regressions. A two-seed fixed
+  configuration OFF comparison against the PR #48 tree (identical Git tree to
+  baseline merge `dcdd1671`) matched every non-timing output field; CSV bytes
+  differed only in `sec`.
+- **Paired smoke:** guarded local Release `bestbench 1000 8 0 92000`, seeds
+  92000–92007, ascension 0, Act-3 endpoint, `STS_FAIR=1 STS_SEARCHER3=1
+  STS_S3_PARTICLES=64 STS_S3_BELIEF=0 STS_S3_CHAIN=0`, current default combat
+  VNet/policy, V4 strategic token model with REST/EVENT/SHOP/TREASURE/BOSS_RELIC
+  gates and margin 1.0, four threads. Arms differed only by the new flag.
+- **Gameplay:** control 7/8, treatment 7/8. Two discordant pairs were opposite:
+  seed 92002 control-only win and seed 92004 treatment-only win. Mean floor was
+  50.25 vs 48.75; mean end HP 41.6 vs 46.4. Eight seeds are not decisive.
+- **Structure:** eligible/ineligible END_TURN visits 2,104,508/4,568,959;
+  containers 411,206; visits 2,104,508; outcome children/new misses 780,308;
+  existing hits 1,324,200; reuse rate 0.629221; maximum outcomes/container 685;
+  final container-count bins 1..7/8+ =
+  `[313266,43347,19432,12492,5093,3450,2338,11788]`. Identities and counters
+  were internally consistent (`hits + misses == visits`).
+- **Compute:** summed per-run seconds 605.2119 control vs 600.7984 treatment
+  (-0.73%); process wall 204.1 vs 197.6 seconds (-3.2%). Treat this ordered
+  small run as no measurable overhead, not a speedup. It is materially below
+  the old eager prototype's +56% and below the 20–25% engineering warning.
+- **Artifacts:** ignored local `build/exp4_pair_control.csv`,
+  `build/exp4_pair_treatment.csv`, and their `.meta.json` sidecars.
+- **Verdict:** **REVIEW FOR LARGER GATE.** Implementation passed and reuse is
+  substantial without an obvious compute/gameplay warning. Independently
+  review the frozen implementation and the surprising 685-outcome maximum
+  before designing any 32–64 seed equal-sim/equal-CPU gate.

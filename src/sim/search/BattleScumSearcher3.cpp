@@ -143,6 +143,17 @@ int g_s3StrategyFusionDiagReferenceSims = 3000;
 bool g_s3EndTurnMarginalize = false;
 int g_s3EndTurnMarginalizeParticles = 16;
 int g_s3EndTurnMarginalizeMaxPile = 8;
+bool g_s3PersistentEndTurnChance = false;
+
+static std::atomic<std::int64_t> g_pcEligible{0};
+static std::atomic<std::int64_t> g_pcIneligible{0};
+static std::atomic<std::int64_t> g_pcContainersCreated{0};
+static std::atomic<std::int64_t> g_pcContainerVisits{0};
+static std::atomic<std::int64_t> g_pcOutcomeChildrenCreated{0};
+static std::atomic<std::int64_t> g_pcOutcomeExistingHits{0};
+static std::atomic<std::int64_t> g_pcOutcomeNewMisses{0};
+static std::atomic<std::int64_t> g_pcMaxOutcomesPerContainer{0};
+static std::array<std::atomic<std::int64_t>, 9> g_pcOutcomeCountHistogram{};
 
 // ── Draw-probability diagnostic (STS_S3_DRAW_PROB_DIAG) ───────────────
 // Computes exact hypergeometric draw probabilities for tactical features
@@ -769,8 +780,11 @@ void BattleScumSearcher3::recursiveResetStats(Node &node) {
     node.dist.n = 0;
     node.dist.loQ20 = 0;
     node.dist.loQ05 = 0;
-    for (auto &edge : node.edges)
+    for (auto &edge : node.edges) {
         recursiveResetStats(edge.child);
+        for (auto &outcome : edge.outcomeChildren)
+            recursiveResetStats(outcome.child);
+    }
 }
 
 // ---- Semantic card-edge resolution -----------------------------------------
@@ -2392,8 +2406,21 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
         // available) to handle hand-index remapping across tree reuse.
         for (auto &edge : root.edges) {
             if (edge.action == action) {
-                root = std::move(edge.child);
-                reused = true;
+                if (g_s3PersistentEndTurnChance
+                    && edge.persistentChanceContainer) {
+                    const auto liveObservation =
+                        CombatObservation::fromBattleContext(newRootState);
+                    for (auto &outcome : edge.outcomeChildren) {
+                        if (outcome.observation == liveObservation) {
+                            root = std::move(outcome.child);
+                            reused = true;
+                            break;
+                        }
+                    }
+                } else {
+                    root = std::move(edge.child);
+                    reused = true;
+                }
                 break;
             }
         }
@@ -2419,7 +2446,11 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
         retainedNodeCount = 0;
         std::function<void(Node&)> countNodes = [&](Node &nd) {
             ++retainedNodeCount;
-            for (auto &e : nd.edges) countNodes(e.child);
+            for (auto &e : nd.edges) {
+                countNodes(e.child);
+                for (auto &outcome : e.outcomeChildren)
+                    countNodes(outcome.child);
+            }
         };
         countNodes(root);
 
@@ -2440,8 +2471,14 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
     if (reused) {
         std::function<int(const Node&)> maxDepth = [&](const Node &nd) -> int {
             int d = 0;
-            for (const auto &e : nd.edges)
-                d = std::max(d, 1 + maxDepth(e.child));
+            for (const auto &e : nd.edges) {
+                if (e.persistentChanceContainer) {
+                    for (const auto &outcome : e.outcomeChildren)
+                        d = std::max(d, 1 + maxDepth(outcome.child));
+                } else {
+                    d = std::max(d, 1 + maxDepth(e.child));
+                }
+            }
             return d;
         };
         reuseGenerationDepth = maxDepth(root);
@@ -2511,6 +2548,88 @@ static double alphaForRolloutSteps(int steps) {
     for (const auto &p : g_vnetAlphaLenTable)
         if (steps <= p.first) return p.second;
     return g_vnetAlphaLenTable.back().second;
+}
+
+bool s3PersistentChanceFlagsCompatible(bool persistentChance,
+                                       bool strategyFusionDiag) {
+    return !(persistentChance && strategyFusionDiag);
+}
+
+void printPersistentEndTurnChanceDiagnostics() {
+    const auto visits = g_pcContainerVisits.load();
+    const auto hits = g_pcOutcomeExistingHits.load();
+    std::cerr << "S3_PERSISTENT_ENDTURN_CHANCE_DIAG {"
+              << "\"eligible_endturn_count\":" << g_pcEligible.load() << ','
+              << "\"ineligible_endturn_count\":" << g_pcIneligible.load() << ','
+              << "\"chance_containers_created\":" << g_pcContainersCreated.load() << ','
+              << "\"chance_container_visits\":" << visits << ','
+              << "\"outcome_children_created\":" << g_pcOutcomeChildrenCreated.load() << ','
+              << "\"outcome_existing_hits\":" << hits << ','
+              << "\"outcome_new_misses\":" << g_pcOutcomeNewMisses.load() << ','
+              << "\"outcome_reuse_rate\":"
+              << (visits > 0 ? static_cast<double>(hits) / visits : 0.0) << ','
+              << "\"max_outcomes_per_container\":"
+              << g_pcMaxOutcomesPerContainer.load() << ','
+              << "\"distinct_outcomes_per_container\":[";
+    for (std::size_t i = 1; i < g_pcOutcomeCountHistogram.size(); ++i) {
+        if (i > 1) std::cerr << ',';
+        std::cerr << g_pcOutcomeCountHistogram[i].load();
+    }
+    std::cerr << "]}" << std::endl;
+}
+
+bool BattleScumSearcher3::persistentEndTurnEligible(
+    const BattleContext &preState, const Action &action) {
+    if (action.getActionType() != ActionType::END_TURN
+        || preState.outcome != Outcome::UNDECIDED)
+        return false;
+    const int drawSize = static_cast<int>(preState.cards.drawPile.size());
+    const int discardSize = static_cast<int>(preState.cards.discardPile.size());
+    const bool immediateReshuffle = drawSize == 0 && discardSize > 0;
+    return drawSize <= g_s3EndTurnMarginalizeMaxPile && !immediateReshuffle;
+}
+
+BattleScumSearcher3::Node &BattleScumSearcher3::dispatchPersistentEndTurnOutcome(
+    Edge &edge, const CombatObservation &postObservation) {
+    ++chanceContainerVisits;
+    ++g_pcContainerVisits;
+    if (!edge.persistentChanceContainer) {
+        edge.persistentChanceContainer = true;
+        ++chanceContainersCreated;
+        ++g_pcContainersCreated;
+    }
+    for (auto &outcome : edge.outcomeChildren) {
+        if (outcome.observation == postObservation) {
+            ++outcomeExistingHits;
+            ++g_pcOutcomeExistingHits;
+            return outcome.child;
+        }
+    }
+
+    const std::size_t oldSize = edge.outcomeChildren.size();
+    Edge::OutcomeChild outcome;
+    outcome.observation = postObservation;
+    outcome.child.obs = postObservation;
+    outcome.child.obsHash = postObservation.visibleHash();
+    outcome.child.obsCached = true;
+    edge.outcomeChildren.push_back(std::move(outcome));
+    ++outcomeChildrenCreated;
+    ++outcomeNewMisses;
+    ++g_pcOutcomeChildrenCreated;
+    ++g_pcOutcomeNewMisses;
+
+    const std::size_t newSize = edge.outcomeChildren.size();
+    const std::size_t oldBin = std::min<std::size_t>(oldSize, 8);
+    const std::size_t newBin = std::min<std::size_t>(newSize, 8);
+    if (oldBin > 0) --g_pcOutcomeCountHistogram[oldBin];
+    ++g_pcOutcomeCountHistogram[newBin];
+    maxOutcomesPerContainer = std::max<std::int64_t>(
+        maxOutcomesPerContainer, static_cast<std::int64_t>(newSize));
+    auto observedMax = g_pcMaxOutcomesPerContainer.load();
+    while (observedMax < static_cast<std::int64_t>(newSize)
+           && !g_pcMaxOutcomesPerContainer.compare_exchange_weak(
+               observedMax, static_cast<std::int64_t>(newSize))) {}
+    return edge.outcomeChildren.back().child;
 }
 
 // ---- ISMCTS step ------------------------------------------------------------
@@ -2601,6 +2720,18 @@ void BattleScumSearcher3::step() {
             // opt-in feature (STS_S3_END_TURN_MARGINALIZE) can consume it.
             std::optional<BattleContext> preExecState;
             if (g_s3EndTurnMarginalize) preExecState = state;
+            const bool persistentEndTurn = g_s3PersistentEndTurnChance
+                && persistentEndTurnEligible(state, edge.action);
+            if (g_s3PersistentEndTurnChance
+                && edge.action.getActionType() == ActionType::END_TURN) {
+                if (persistentEndTurn) {
+                    ++eligibleEndTurnCount;
+                    ++g_pcEligible;
+                } else {
+                    ++ineligibleEndTurnCount;
+                    ++g_pcIneligible;
+                }
+            }
             maybeOutcomeBucketDiag(state, edge.action,
                 agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                 state.turn, decisionIndex);
@@ -2615,6 +2746,12 @@ void BattleScumSearcher3::step() {
             ++diag.treeActions;
             actionStack.push_back(edge.action);
             path.push_back(&edge.child);
+            if (persistentEndTurn) {
+                const auto postObservation =
+                    CombatObservation::fromBattleContext(state);
+                path.push_back(&dispatchPersistentEndTurnOutcome(
+                    edge, postObservation));
+            }
             if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
 
             // ── END_TURN marginalization (leaf-expansion boundary only) ──
@@ -2995,10 +3132,27 @@ void BattleScumSearcher3::step() {
                     maybeOutcomeBucketDiag(state, execAction,
                         agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                         state.turn, decisionIndex);
+                    const bool persistentEndTurn = g_s3PersistentEndTurnChance
+                        && persistentEndTurnEligible(state, execAction);
+                    if (g_s3PersistentEndTurnChance
+                        && execAction.getActionType() == ActionType::END_TURN) {
+                        if (persistentEndTurn) {
+                            ++eligibleEndTurnCount;
+                            ++g_pcEligible;
+                        } else {
+                            ++ineligibleEndTurnCount;
+                            ++g_pcIneligible;
+                        }
+                    }
                     observeRngExposureAction(execAction, state);
                     ++diag.treeActions;
                     actionStack.push_back(execAction);
                     cur = &validEdge.child;
+                    if (persistentEndTurn) {
+                        path.push_back(cur);
+                        cur = &dispatchPersistentEndTurnOutcome(
+                            validEdge, CombatObservation::fromBattleContext(state));
+                    }
                     if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
                     continue;
                 }
@@ -3054,10 +3208,27 @@ void BattleScumSearcher3::step() {
                                 maybeOutcomeBucketDiag(state, newEdge.action,
                                     agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                                     state.turn, decisionIndex);
+                                const bool persistentEndTurn = g_s3PersistentEndTurnChance
+                                    && persistentEndTurnEligible(state, newEdge.action);
+                                if (g_s3PersistentEndTurnChance
+                                    && newEdge.action.getActionType() == ActionType::END_TURN) {
+                                    if (persistentEndTurn) {
+                                        ++eligibleEndTurnCount;
+                                        ++g_pcEligible;
+                                    } else {
+                                        ++ineligibleEndTurnCount;
+                                        ++g_pcIneligible;
+                                    }
+                                }
                                 observeRngExposureAction(newEdge.action, state);
                                 ++diag.treeActions;
                                 actionStack.push_back(newEdge.action);
                                 cur = &newEdge.child;
+                                if (persistentEndTurn) {
+                                    path.push_back(cur);
+                                    cur = &dispatchPersistentEndTurnOutcome(
+                                        newEdge, CombatObservation::fromBattleContext(state));
+                                }
                                 if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
                                 continue;
                             }
@@ -3096,10 +3267,27 @@ void BattleScumSearcher3::step() {
                                 maybeOutcomeBucketDiag(state, newEdge.action,
                                     agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                                     state.turn, decisionIndex);
+                                const bool persistentEndTurn = g_s3PersistentEndTurnChance
+                                    && persistentEndTurnEligible(state, newEdge.action);
+                                if (g_s3PersistentEndTurnChance
+                                    && newEdge.action.getActionType() == ActionType::END_TURN) {
+                                    if (persistentEndTurn) {
+                                        ++eligibleEndTurnCount;
+                                        ++g_pcEligible;
+                                    } else {
+                                        ++ineligibleEndTurnCount;
+                                        ++g_pcIneligible;
+                                    }
+                                }
                                 observeRngExposureAction(newEdge.action, state);
                                 ++diag.treeActions;
                                 actionStack.push_back(newEdge.action);
                                 cur = &newEdge.child;
+                                if (persistentEndTurn) {
+                                    path.push_back(cur);
+                                    cur = &dispatchPersistentEndTurnOutcome(
+                                        newEdge, CombatObservation::fromBattleContext(state));
+                                }
                                 if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
                                 continue;
                             }
@@ -3158,10 +3346,27 @@ void BattleScumSearcher3::step() {
         maybeOutcomeBucketDiag(state, effectiveAction,
             agentSeed, (int)rootBc->encounter, rootBc->floorNum,
             state.turn, decisionIndex);
+        const bool persistentEndTurn = g_s3PersistentEndTurnChance
+            && persistentEndTurnEligible(state, effectiveAction);
+        if (g_s3PersistentEndTurnChance
+            && effectiveAction.getActionType() == ActionType::END_TURN) {
+            if (persistentEndTurn) {
+                ++eligibleEndTurnCount;
+                ++g_pcEligible;
+            } else {
+                ++ineligibleEndTurnCount;
+                ++g_pcIneligible;
+            }
+        }
         observeRngExposureAction(effectiveAction, state);
         ++diag.treeActions;
         actionStack.push_back(effectiveAction);
         cur = &edge.child;
+        if (persistentEndTurn) {
+            path.push_back(cur);
+            cur = &dispatchPersistentEndTurnOutcome(
+                edge, CombatObservation::fromBattleContext(state));
+        }
         if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
 
         if (g_s3Prune && canPruneAsDead(state)) {
