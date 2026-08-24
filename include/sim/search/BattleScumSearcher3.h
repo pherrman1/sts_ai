@@ -21,6 +21,7 @@
 #include <map>
 #include <cstdint>
 #include <limits>
+#include <utility>
 
 namespace sts::search {
 
@@ -206,6 +207,32 @@ class BattleScumSearcher3;
             bool hasCardKey = false;
         };
 
+        // A shadow-only strategy-fusion candidate recorded during step().
+        // The tree is addressed by edge indices from root to the parent so
+        // vector reallocations during later search simulations cannot leave a
+        // dangling Node/Edge pointer. Side searches are deferred until the
+        // normal search invocation has completed.
+        struct StrategyFusionCandidate {
+            BattleContext preState;
+            Action action;
+            std::vector<int> parentEdgePath;
+            int edgeIndex = -1;
+            std::uint64_t sourceSeed = 0;
+            int encounter = 0;
+            int floor = 0;
+            int turn = 0;
+            int decisionIndex = 0;
+            int simulationIndex = 0;
+            std::uint64_t seenKey = 0;
+            std::int64_t thresholdSharedChildVisits = 0;
+        };
+
+        // Test-visible provenance for the lifecycle regression. Production
+        // policy does not consume this vector; it records threshold-time and
+        // final child visits for candidates finalized after search.
+        std::vector<std::pair<std::int64_t, std::int64_t>>
+            strategyFusionFinalVisitRecords;
+
         std::unique_ptr<const BattleContext> rootBc;
         CombatObservation rootObs;     // cached root observation
 
@@ -368,12 +395,18 @@ class BattleScumSearcher3;
         // constructor; per-searcher => per-thread, no locking needed.
         std::vector<double> rankCorrValues;
 
+        std::vector<StrategyFusionCandidate> strategyFusionCandidates;
+
         explicit BattleScumSearcher3(const BattleContext &bc, int particleCount = 128);
         BattleScumSearcher3(const BattleContext &bc, std::uint64_t agentSeed,
                             int decisionIndex, int particleCount = 128);
 
         void search(int64_t simulations);
         void searchToTotal(int64_t targetSimulations);
+        const std::vector<std::pair<std::int64_t, std::int64_t>> &
+        strategyFusionFinalVisitRecordsForTest() const {
+            return strategyFusionFinalVisitRecords;
+        }
         void enableRngExposureDiagnostic(std::uint64_t seed, int encounter, int floor,
                                          int sourceFilterDecisionIndex, int searchDecisionIndex,
                                          int turn, std::uint64_t rootObservationHash,
@@ -389,6 +422,13 @@ class BattleScumSearcher3;
                                     const BattleContext &preState,
                                     const BattleContext &postState);
         void finishRngExposureSimulation();
+
+        void recordStrategyFusionCandidate(
+            const Node &parentNode, const BattleContext &preState,
+            const Edge &sharedEdge, const std::vector<Node *> &path,
+            std::uint64_t sourceSeed, int encounter, int floor, int turn,
+            int simulationIndex);
+        void finalizeStrategyFusionDiag();
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
         ForcedActionDiagnosticResult evaluateForcedActionDiagnostic(
@@ -609,6 +649,18 @@ class BattleScumSearcher3;
     extern int g_s3BucketValueDiagMaxTransitions;
     extern int g_s3BucketValueDiagSampleMembers;
 
+    // ── Strategy-fusion shadow diagnostic (STS_S3_STRATEGY_FUSION_DIAG) ──
+    // At mature shared END_TURN children, compare the existing child policy
+    // with fresh fair Searcher3 policies conditioned on sampled visible
+    // outcome buckets. The probe is read-only and off by default.
+    extern bool g_s3StrategyFusionDiag;
+    extern std::string g_s3StrategyFusionDiagFile;
+    extern int g_s3StrategyFusionDiagParticles;
+    extern int g_s3StrategyFusionDiagMaxTransitions;
+    extern int g_s3StrategyFusionDiagMinChildVisits;
+    extern int g_s3StrategyFusionDiagFreshSims;
+    extern int g_s3StrategyFusionDiagReferenceSims;
+
     // ── END_TURN marginalization (STS_S3_ENDTURN_MARGINALIZE) ──────────
     // Prototype: at eligible leaf-expansion END_TURN boundaries, evaluate
     // a bucketed expectation over N alternative draw outcomes. Off by default.
@@ -663,6 +715,18 @@ class BattleScumSearcher3;
     // hand. Caller must check hasCardKey before calling.
     std::optional<Action> resolveSemanticCardEdge(
         const BattleScumSearcher3::Edge &edge, const BattleContext &state);
+
+    // Exact current Searcher3 root/node action-choice semantics, factored so
+    // the shadow diagnostic cannot invent a max-Q policy. Returns nullopt when
+    // the current live-valid policy has no usable action.
+    std::optional<Action> pickSearchAction(
+        const BattleScumSearcher3::Node &node, const BattleContext &state);
+
+    // Stable semantic action identity for diagnostics and cross-state
+    // comparison. CARD identity includes the current card instance fields and
+    // target, so hand position is not the comparison key.
+    std::string semanticActionIdentity(const Action &action,
+                                       const BattleContext &state);
 
     // Resolve a CardActionKey to a live-hand index via position-independent
     // card identity scan. Shared by resolveSemanticCardEdge and the

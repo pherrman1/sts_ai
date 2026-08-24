@@ -127,6 +127,15 @@ int g_s3BucketValueDiagRollouts = 4;     // K rollouts per bucket member
 int g_s3BucketValueDiagMaxTransitions = 1000; // cap on measured transitions
 int g_s3BucketValueDiagSampleMembers = 8;     // max members sampled per bucket
 
+// ── Strategy-fusion shadow diagnostic ──────────────────────────
+bool g_s3StrategyFusionDiag = false;
+std::string g_s3StrategyFusionDiagFile = "build/s3_strategy_fusion_diag.csv";
+int g_s3StrategyFusionDiagParticles = 64;
+int g_s3StrategyFusionDiagMaxTransitions = 100;
+int g_s3StrategyFusionDiagMinChildVisits = 32;
+int g_s3StrategyFusionDiagFreshSims = 500;
+int g_s3StrategyFusionDiagReferenceSims = 3000;
+
 // ── END_TURN marginalization (STS_S3_ENDTURN_MARGINALIZE) ──────────────
 // Prototype: at eligible leaf-expansion END_TURN boundaries, generate
 // N particles, bucket by visible outcome, evaluate one rep per bucket,
@@ -651,6 +660,8 @@ void BattleScumSearcher3::resetParticleUsage() {
     particleSampleCounts.assign(belief.particles.size(), 0);
     lastSearchSimulations = 0;
     lastSearchCpuMs = 0.0;
+    strategyFusionCandidates.clear();
+    strategyFusionFinalVisitRecords.clear();
 }
 
 void BattleScumSearcher3::enableRngExposureDiagnostic(
@@ -1017,7 +1028,453 @@ static void runOutcomeBucketDiag(
 }
 
 // ── Continuation-value evaluator (self-contained, no searcher needed) ───
-// Runs K weighted-random rollouts from a post-END_TURN state, evaluates each
+// This hook observes an existing shared
+// END_TURN child after one concrete particle transition, but only uses fresh
+// searchers and copied states for all measurements. It never mutates the live
+// tree, belief, RNG, or selected action.
+namespace {
+
+thread_local bool t_strategyFusionSuppressed = false;
+thread_local std::unordered_set<std::uint64_t> t_strategyFusionSeen;
+static std::atomic<int> g_strategyFusionTransitions{0};
+static std::mutex g_strategyFusionOutputMutex;
+
+std::uint64_t strategyFusionMix(std::uint64_t x) {
+    x += 0x9e3779b97f4a7c15ULL;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+    return x ^ (x >> 31);
+}
+
+std::uint64_t strategyFusionSeed(std::uint64_t sourceSeed,
+                                 std::uint64_t preObsHash,
+                                 std::uint64_t postObsHash,
+                                 int decisionIndex, int simulationIndex,
+                                 int bucketIndex, std::uint64_t slot) {
+    std::uint64_t seed = strategyFusionMix(sourceSeed ^ slot);
+    seed = strategyFusionMix(seed ^ preObsHash);
+    seed = strategyFusionMix(seed ^ postObsHash);
+    seed = strategyFusionMix(seed ^ static_cast<std::uint64_t>(decisionIndex));
+    seed = strategyFusionMix(seed ^ static_cast<std::uint64_t>(simulationIndex));
+    seed = strategyFusionMix(seed ^ static_cast<std::uint64_t>(bucketIndex));
+    return seed ? seed : 1;
+}
+
+double actionRootValue(const BattleScumSearcher3 &searcher,
+                       const BattleContext &state,
+                       const std::string &identity) {
+    for (const auto &edge : searcher.root.edges) {
+        if (semanticActionIdentity(edge.action, state) != identity) continue;
+        if (edge.child.simulationCount <= 0)
+            return std::numeric_limits<double>::quiet_NaN();
+        return edge.child.evaluationSum / edge.child.simulationCount;
+    }
+    return std::numeric_limits<double>::quiet_NaN();
+}
+
+void writeStrategyFusionRow(
+    std::uint64_t sourceSeed, int encounter, int floor, int turn,
+    int decisionIndex, int simulationIndex, std::uint64_t preObsHash,
+    std::uint64_t sharedChildCachedObsHash, std::uint64_t postObsHash,
+    int drawPileBefore, int discardBefore, int particleCount, int bucketCount,
+    double bucketProbability, int distinctBucketCount,
+    std::int64_t parentObsVisits, std::int64_t parentObsMismatches,
+    std::int64_t sharedChildVisits, const std::string &sharedAction,
+    const std::string &conditionedAction,
+    const std::string &matchedConditionedAction,
+    const std::string &referenceAction, int sharedConditionedAgree,
+    int sharedMatchedConditionedAgree, int referenceSharedAgree,
+    int referenceConditionedAgree, int referenceMatchedConditionedAgree,
+    int freshSims, int matchedSims, int referenceSims,
+    double referenceValueShared, double referenceValueConditioned,
+    double referenceValueMatched, double referenceMargin,
+    double referenceMarginMatched, int sharedActionValid) {
+    constexpr const char *header =
+        "sourceSeed,encounter,floor,turn,decisionIdx,searchSimulationIndex,"
+        "preObsHash,sharedChildCachedObsHash,postObsHash,drawPileSizeBefore,"
+        "discardPileSizeBefore,particleCount,bucketCount,bucketProbability,"
+        "distinctBucketCount,parentObsVisits,parentObsMismatches,"
+        "sharedChildVisits,sharedAction,conditionedAction,"
+        "matchedConditionedAction,referenceAction,sharedConditionedAgree,"
+        "sharedMatchedConditionedAgree,referenceSharedAgree,"
+        "referenceConditionedAgree,referenceMatchedConditionedAgree,"
+        "freshSimBudget,matchedSimBudget,referenceSimBudget,"
+        "referenceValueShared,referenceValueConditioned,referenceValueMatched,"
+        "referenceMargin,referenceMarginMatched,sharedActionValid\n";
+    std::lock_guard<std::mutex> lock(g_strategyFusionOutputMutex);
+    if (g_s3StrategyFusionDiagFile.empty()) {
+        static bool stderrHeader = false;
+        if (!stderrHeader) { std::cerr << header; stderrHeader = true; }
+        std::ostream &out = std::cerr;
+        out << sourceSeed << ',' << encounter << ',' << floor << ',' << turn << ','
+            << decisionIndex << ',' << simulationIndex << ',' << preObsHash << ','
+            << sharedChildCachedObsHash << ',' << postObsHash << ','
+            << drawPileBefore << ',' << discardBefore << ',' << particleCount << ','
+            << bucketCount << ',' << bucketProbability << ',' << distinctBucketCount
+            << ',' << parentObsVisits << ',' << parentObsMismatches << ','
+            << sharedChildVisits << ',' << sharedAction << ','
+            << conditionedAction << ',' << matchedConditionedAction << ','
+            << referenceAction << ',' << sharedConditionedAgree << ','
+            << sharedMatchedConditionedAgree << ',' << referenceSharedAgree << ','
+            << referenceConditionedAgree << ',' << referenceMatchedConditionedAgree
+            << ',' << freshSims << ',' << matchedSims << ',' << referenceSims
+            << ',' << referenceValueShared << ',' << referenceValueConditioned << ','
+            << referenceValueMatched << ',' << referenceMargin << ','
+            << referenceMarginMatched << ',' << sharedActionValid << '\n';
+        return;
+    }
+    std::ifstream probe(g_s3StrategyFusionDiagFile);
+    const bool empty = !probe.good()
+        || probe.peek() == std::ifstream::traits_type::eof();
+    std::ofstream out(g_s3StrategyFusionDiagFile, std::ios::app);
+    if (!out) return;
+    if (empty) {
+        out << header;
+        std::ofstream meta(g_s3StrategyFusionDiagFile + ".meta.json");
+        if (meta) {
+            meta << "{\n"
+                 << "  \"schema\": \"s3_strategy_fusion_diag_v3\",\n"
+                 << "  \"diagnostic\": \"shadow-only; END_TURN shared-child strategy fusion\",\n"
+                 << "  \"particleCount\": " << g_s3StrategyFusionDiagParticles << ",\n"
+                 << "  \"maxTransitions\": " << g_s3StrategyFusionDiagMaxTransitions << ",\n"
+                 << "  \"minChildVisits\": " << g_s3StrategyFusionDiagMinChildVisits << ",\n"
+                 << "  \"freshSimBudget\": " << g_s3StrategyFusionDiagFreshSims << ",\n"
+                 << "  \"matchedSimFormula\": \"max(1, round(sharedChildVisits * bucketProbability))\",\n"
+                 << "  \"referenceSimBudget\": " << g_s3StrategyFusionDiagReferenceSims << ",\n"
+                 << "  \"primaryComparison\": \"shared child vs matched-compute conditioned\",\n"
+                 << "  \"secondaryComparison\": \"shared child vs configured fresh conditioned\",\n"
+                 << "  \"parentObservationGate\": \"nodeObsMismatches == 0 at END_TURN parent\",\n"
+                 << "  \"sideSearchLifecycle\": \"candidates recorded during step; side searches after normal search with final child statistics\",\n"
+                 << "  \"normalSearchParticles\": " << g_s3Particles << ",\n"
+                 << "  \"liveValid\": " << (g_liveValid ? 1 : 0) << ",\n"
+                 << "  \"semanticCardEdges\": " << (g_s3SemanticCardEdges ? 1 : 0) << ",\n"
+                 << "  \"bucketIdentity\": \"CombatObservation equality and visibleHash\",\n"
+                 << "  \"freshBelief\": \"fresh Searcher3; canonicalized draw-pile multiset template\",\n"
+                 << "  \"referenceInterpretation\": \"deeper Searcher3 reference, not ground truth\"\n"
+                 << "}\n";
+        }
+    }
+    out << sourceSeed << ',' << encounter << ',' << floor << ',' << turn << ','
+        << decisionIndex << ',' << simulationIndex << ',' << preObsHash << ','
+        << sharedChildCachedObsHash << ',' << postObsHash << ','
+        << drawPileBefore << ',' << discardBefore << ',' << particleCount << ','
+        << bucketCount << ',' << bucketProbability << ',' << distinctBucketCount
+        << ',' << parentObsVisits << ',' << parentObsMismatches << ','
+        << sharedChildVisits << ',' << sharedAction << ','
+        << conditionedAction << ',' << matchedConditionedAction << ','
+        << referenceAction << ',' << sharedConditionedAgree << ','
+        << sharedMatchedConditionedAgree << ',' << referenceSharedAgree << ','
+        << referenceConditionedAgree << ',' << referenceMatchedConditionedAgree
+        << ',' << freshSims << ',' << matchedSims << ',' << referenceSims
+        << ',' << referenceValueShared << ',' << referenceValueConditioned << ','
+        << referenceValueMatched << ',' << referenceMargin << ','
+        << referenceMarginMatched << ',' << sharedActionValid << '\n';
+}
+
+void runStrategyFusionDiag(const BattleScumSearcher3::Node &parentNode,
+                           const BattleContext &preState,
+                           const BattleScumSearcher3::Edge &sharedEdge,
+                           std::uint64_t sourceSeed, int encounter, int floor,
+                           int turn, int decisionIndex, int simulationIndex) {
+    if (!g_s3StrategyFusionDiag || t_strategyFusionSuppressed
+        || sharedEdge.action.getActionType() != ActionType::END_TURN
+        || !parentNode.isObsStable()
+        || g_strategyFusionTransitions.load() >= g_s3StrategyFusionDiagMaxTransitions)
+        return;
+
+    const auto preObs = CombatObservation::fromBattleContext(preState);
+    const std::uint64_t seenKey = strategyFusionSeed(
+        sourceSeed, preObs.visibleHash(), 0, decisionIndex, 0, 0,
+        sharedEdge.action.bits);
+
+    const int nParticles = std::max(1, g_s3StrategyFusionDiagParticles);
+    std::mt19937_64 diagnosticRng(strategyFusionSeed(
+        sourceSeed, preObs.visibleHash(), 0, decisionIndex, simulationIndex,
+        0, 0x535446444941475FULL));
+    const auto particles = HiddenBattleState::sampleParticles(
+        preObs, preState, diagnosticRng, nParticles);
+    struct Bucket {
+        CombatObservation observation;
+        std::vector<BattleContext> states;
+    };
+    std::unordered_map<CombatObservation, Bucket> buckets;
+    for (const auto &particle : particles) {
+        BattleContext state = preState;
+        applyHiddenState(state, particle, diagnosticRng);
+        if (!sharedEdge.action.isValidAction(state)) continue;
+        sharedEdge.action.execute(state);
+        const auto observation = CombatObservation::fromBattleContext(state);
+        auto it = buckets.find(observation);
+        if (it == buckets.end()) {
+            Bucket bucket;
+            bucket.observation = observation;
+            bucket.states.push_back(std::move(state));
+            buckets.emplace(observation, std::move(bucket));
+        } else {
+            it->second.states.push_back(std::move(state));
+        }
+    }
+    if (buckets.size() < 2) return;
+    if (!t_strategyFusionSeen.insert(seenKey).second) return;
+    int transitionSlot = g_strategyFusionTransitions.load();
+    for (;;) {
+        if (transitionSlot >= g_s3StrategyFusionDiagMaxTransitions) return;
+        if (g_strategyFusionTransitions.compare_exchange_weak(
+                transitionSlot, transitionSlot + 1))
+            break;
+    }
+
+    std::vector<Bucket *> ordered;
+    ordered.reserve(buckets.size());
+    for (auto &entry : buckets) ordered.push_back(&entry.second);
+    std::sort(ordered.begin(), ordered.end(), [](const Bucket *a, const Bucket *b) {
+        return a->observation.visibleHash() < b->observation.visibleHash();
+    });
+
+    const std::uint64_t sharedChildObsHash = sharedEdge.child.obsCached
+        ? sharedEdge.child.obsHash : 0;
+
+    for (size_t bucketIndex = 0; bucketIndex < ordered.size(); ++bucketIndex) {
+        Bucket &bucket = *ordered[bucketIndex];
+        const BattleContext &representative = bucket.states.front();
+        const auto postObs = bucket.observation;
+        const std::uint64_t postObsHash = postObs.visibleHash();
+        const auto sharedAction = pickSearchAction(sharedEdge.child, representative);
+        const std::string sharedId = sharedAction
+            ? semanticActionIdentity(*sharedAction, representative) : std::string();
+        std::optional<Action> conditionedAction;
+        std::optional<Action> matchedConditionedAction;
+        std::optional<Action> referenceAction;
+        double valueShared = std::numeric_limits<double>::quiet_NaN();
+        double valueConditioned = std::numeric_limits<double>::quiet_NaN();
+        double valueMatched = std::numeric_limits<double>::quiet_NaN();
+        const int matchedSims = std::max(
+            1, static_cast<int>(std::lround(
+                   static_cast<double>(sharedEdge.child.simulationCount)
+                   * static_cast<double>(bucket.states.size()) / nParticles)));
+        const int sharedValid = sharedAction
+            ? (sharedAction->isValidAction(representative) ? 1 : 0) : -1;
+
+        if (representative.outcome == Outcome::UNDECIDED) {
+            const std::uint64_t freshSeed = strategyFusionSeed(
+                sourceSeed, preObs.visibleHash(), postObsHash, decisionIndex,
+                simulationIndex, static_cast<int>(bucketIndex),
+                0x465245534853494DULL);
+            const std::uint64_t referenceSeed = strategyFusionSeed(
+                sourceSeed, preObs.visibleHash(), postObsHash, decisionIndex,
+                simulationIndex, static_cast<int>(bucketIndex),
+                0x5245464552454E43ULL);
+            const std::uint64_t matchedSeed = strategyFusionSeed(
+                sourceSeed, preObs.visibleHash(), postObsHash, decisionIndex,
+                simulationIndex, static_cast<int>(bucketIndex),
+                0x4D41544348454400ULL);
+            const bool previousSuppressed = t_strategyFusionSuppressed;
+            t_strategyFusionSuppressed = true;
+            // CombatObservation equality intentionally treats drawPileContents
+            // as a multiset. The current Belief::initial implementation keeps
+            // that vector order as the input to std::shuffle, so make the
+            // copied fair template canonical before constructing side
+            // searchers. This removes representative hidden-order influence
+            // without changing normal Searcher3 belief construction.
+            BattleContext fairTemplate = representative;
+            std::sort(fairTemplate.cards.drawPile.begin(),
+                      fairTemplate.cards.drawPile.end(),
+                      [](const CardInstance &a, const CardInstance &b) {
+                          return FullHiddenCardId(a) < FullHiddenCardId(b);
+                      });
+            BattleScumSearcher3 fresh(
+                fairTemplate, freshSeed, decisionIndex, std::max(1, g_s3Particles));
+            fresh.search(std::max(0, g_s3StrategyFusionDiagFreshSims));
+            conditionedAction = pickSearchAction(fresh.root, fairTemplate);
+            BattleScumSearcher3 matched(
+                fairTemplate, matchedSeed, decisionIndex, std::max(1, g_s3Particles));
+            matched.search(matchedSims);
+            matchedConditionedAction = pickSearchAction(matched.root, fairTemplate);
+            BattleScumSearcher3 reference(
+                fairTemplate, referenceSeed, decisionIndex, std::max(1, g_s3Particles));
+            reference.search(std::max(0, g_s3StrategyFusionDiagReferenceSims));
+            referenceAction = pickSearchAction(reference.root, fairTemplate);
+            const std::string conditionedId = conditionedAction
+                ? semanticActionIdentity(*conditionedAction, fairTemplate) : std::string();
+            const std::string matchedId = matchedConditionedAction
+                ? semanticActionIdentity(*matchedConditionedAction, fairTemplate) : std::string();
+            const std::string referenceId = referenceAction
+                ? semanticActionIdentity(*referenceAction, fairTemplate) : std::string();
+            valueShared = sharedId.empty()
+                ? std::numeric_limits<double>::quiet_NaN()
+                : actionRootValue(reference, fairTemplate, sharedId);
+            valueConditioned = conditionedId.empty()
+                ? std::numeric_limits<double>::quiet_NaN()
+                : actionRootValue(reference, fairTemplate, conditionedId);
+            valueMatched = matchedId.empty()
+                ? std::numeric_limits<double>::quiet_NaN()
+                : actionRootValue(reference, fairTemplate, matchedId);
+            t_strategyFusionSuppressed = previousSuppressed;
+            const int sharedConditionedAgree =
+                (!sharedId.empty() && !conditionedId.empty())
+                    ? (sharedId == conditionedId ? 1 : 0) : -1;
+            const int sharedMatchedConditionedAgree =
+                (!sharedId.empty() && !matchedId.empty())
+                    ? (sharedId == matchedId ? 1 : 0) : -1;
+            const int referenceSharedAgree =
+                (!referenceId.empty() && !sharedId.empty())
+                    ? (referenceId == sharedId ? 1 : 0) : -1;
+            const int referenceConditionedAgree =
+                (!referenceId.empty() && !conditionedId.empty())
+                    ? (referenceId == conditionedId ? 1 : 0) : -1;
+            const int referenceMatchedConditionedAgree =
+                (!referenceId.empty() && !matchedId.empty())
+                    ? (referenceId == matchedId ? 1 : 0) : -1;
+            const double margin = (std::isnan(valueShared)
+                                   || std::isnan(valueConditioned))
+                ? std::numeric_limits<double>::quiet_NaN()
+                : valueConditioned - valueShared;
+            const double matchedMargin = (std::isnan(valueShared)
+                                          || std::isnan(valueMatched))
+                ? std::numeric_limits<double>::quiet_NaN()
+                : valueMatched - valueShared;
+            writeStrategyFusionRow(
+                sourceSeed, encounter, floor, turn, decisionIndex, simulationIndex,
+                preObs.visibleHash(), sharedChildObsHash, postObsHash,
+                static_cast<int>(preState.cards.drawPile.size()),
+                static_cast<int>(preState.cards.discardPile.size()), nParticles,
+                static_cast<int>(bucket.states.size()),
+                static_cast<double>(bucket.states.size()) / nParticles,
+                static_cast<int>(buckets.size()), parentNode.nodeObsVisits,
+                parentNode.nodeObsMismatches, sharedEdge.child.simulationCount,
+                sharedId, conditionedId, matchedId, referenceId,
+                sharedConditionedAgree, sharedMatchedConditionedAgree,
+                referenceSharedAgree, referenceConditionedAgree,
+                referenceMatchedConditionedAgree,
+                g_s3StrategyFusionDiagFreshSims,
+                matchedSims, g_s3StrategyFusionDiagReferenceSims, valueShared,
+                valueConditioned, valueMatched, margin, matchedMargin, sharedValid);
+        } else {
+            writeStrategyFusionRow(
+                sourceSeed, encounter, floor, turn, decisionIndex, simulationIndex,
+                preObs.visibleHash(), sharedChildObsHash, postObsHash,
+                static_cast<int>(preState.cards.drawPile.size()),
+                static_cast<int>(preState.cards.discardPile.size()), nParticles,
+                static_cast<int>(bucket.states.size()),
+                static_cast<double>(bucket.states.size()) / nParticles,
+                static_cast<int>(buckets.size()), parentNode.nodeObsVisits,
+                parentNode.nodeObsMismatches, sharedEdge.child.simulationCount,
+                sharedId, "", "", "", -1, -1, -1, -1, -1,
+                g_s3StrategyFusionDiagFreshSims,
+                matchedSims, g_s3StrategyFusionDiagReferenceSims,
+                std::numeric_limits<double>::quiet_NaN(),
+                std::numeric_limits<double>::quiet_NaN(),
+                std::numeric_limits<double>::quiet_NaN(),
+                std::numeric_limits<double>::quiet_NaN(),
+                std::numeric_limits<double>::quiet_NaN(), sharedValid);
+        }
+    }
+}
+
+} // namespace
+
+void BattleScumSearcher3::recordStrategyFusionCandidate(
+    const Node &parentNode, const BattleContext &preState,
+    const Edge &sharedEdge, const std::vector<Node *> &path,
+    std::uint64_t sourceSeed, int encounter, int floor, int turn,
+    int simulationIndex) {
+    if (!g_s3StrategyFusionDiag || t_strategyFusionSuppressed
+        || sharedEdge.action.getActionType() != ActionType::END_TURN
+        || !parentNode.isObsStable()
+        || sharedEdge.child.simulationCount < g_s3StrategyFusionDiagMinChildVisits
+        || g_strategyFusionTransitions.load() >= g_s3StrategyFusionDiagMaxTransitions)
+        return;
+
+    StrategyFusionCandidate candidate;
+    candidate.preState = preState;
+    candidate.action = sharedEdge.action;
+    candidate.sourceSeed = sourceSeed;
+    candidate.encounter = encounter;
+    candidate.floor = floor;
+    candidate.turn = turn;
+    candidate.decisionIndex = decisionIndex;
+    candidate.simulationIndex = simulationIndex;
+    candidate.seenKey = strategyFusionSeed(
+        sourceSeed, CombatObservation::fromBattleContext(preState).visibleHash(),
+        0, decisionIndex, 0, 0, sharedEdge.action.bits);
+    candidate.thresholdSharedChildVisits = sharedEdge.child.simulationCount;
+
+    for (const auto &existing : strategyFusionCandidates)
+        if (existing.seenKey == candidate.seenKey)
+            return;
+
+    for (size_t depth = 0; depth + 1 < path.size(); ++depth) {
+        const Node *from = path[depth];
+        const Node *to = path[depth + 1];
+        int childIndex = -1;
+        for (size_t edgeIndex = 0; edgeIndex < from->edges.size(); ++edgeIndex) {
+            if (&from->edges[edgeIndex].child == to) {
+                childIndex = static_cast<int>(edgeIndex);
+                break;
+            }
+        }
+        if (childIndex < 0)
+            return;
+        candidate.parentEdgePath.push_back(childIndex);
+    }
+
+    for (size_t edgeIndex = 0; edgeIndex < parentNode.edges.size(); ++edgeIndex) {
+        if (&parentNode.edges[edgeIndex] == &sharedEdge) {
+            candidate.edgeIndex = static_cast<int>(edgeIndex);
+            break;
+        }
+    }
+    if (candidate.edgeIndex < 0)
+        return;
+
+    strategyFusionCandidates.push_back(std::move(candidate));
+}
+
+void BattleScumSearcher3::finalizeStrategyFusionDiag() {
+    if (!g_s3StrategyFusionDiag || t_strategyFusionSuppressed)
+        return;
+
+    for (const auto &candidate : strategyFusionCandidates) {
+        if (g_strategyFusionTransitions.load()
+                >= g_s3StrategyFusionDiagMaxTransitions)
+            break;
+
+        Node *parent = &root;
+        bool pathValid = true;
+        for (int edgeIndex : candidate.parentEdgePath) {
+            if (edgeIndex < 0
+                || edgeIndex >= static_cast<int>(parent->edges.size())) {
+                pathValid = false;
+                break;
+            }
+            parent = &parent->edges[edgeIndex].child;
+        }
+        if (!pathValid || candidate.edgeIndex < 0
+            || candidate.edgeIndex >= static_cast<int>(parent->edges.size()))
+            continue;
+
+        Edge &sharedEdge = parent->edges[candidate.edgeIndex];
+        if (sharedEdge.action.bits != candidate.action.bits
+            || sharedEdge.action.getActionType() != ActionType::END_TURN
+            || !parent->isObsStable()
+            || sharedEdge.child.simulationCount < g_s3StrategyFusionDiagMinChildVisits)
+            continue;
+
+        // This snapshot is intentionally taken immediately before the side
+        // searches. It is the final post-search child count, not the count at
+        // which the candidate first crossed the eligibility threshold.
+        strategyFusionFinalVisitRecords.emplace_back(
+            candidate.thresholdSharedChildVisits,
+            sharedEdge.child.simulationCount);
+        runStrategyFusionDiag(
+            *parent, candidate.preState, sharedEdge,
+            candidate.sourceSeed, candidate.encounter, candidate.floor,
+            candidate.turn, candidate.decisionIndex, candidate.simulationIndex);
+    }
+}
+
+// Continuation-value evaluator (self-contained, no searcher needed): runs K
+// weighted-random rollouts from a post-END_TURN state, evaluates each
 // with the learned leaf (vnet) or terminal outcome. Returns mean value.
 // The rng is reseeded per rollout-slot for CRN pairing across members.
 static double evalContinuation(const BattleContext &startState,
@@ -1776,6 +2233,95 @@ BattleScumSearcher3::cardActionKey(const BattleContext &bc, const Action &a) {
     return k;
 }
 
+std::optional<Action> pickSearchAction(
+    const BattleScumSearcher3::Node &node, const BattleContext &bc) {
+    // This is the same policy used by the fair Searcher3 agent at the live
+    // root: most visits, optionally restricted to actions valid in the
+    // concrete state. Keep this visit-based choice; the diagnostic must not
+    // substitute a convenient max-Q policy.
+    if (g_s3Live) {
+        std::int64_t bestVisits = -1;
+        std::optional<Action> best;
+        for (const auto &edge : node.edges) {
+            if (edge.child.simulationCount > bestVisits
+                && edge.action.isValidAction(bc)) {
+                bestVisits = edge.child.simulationCount;
+                best = edge.action;
+            }
+        }
+        return best;
+    }
+
+    std::int64_t maxVisits = -1;
+    std::optional<Action> best;
+    for (const auto &edge : node.edges) {
+        if (edge.child.simulationCount > maxVisits) {
+            maxVisits = edge.child.simulationCount;
+            best = edge.action;
+        }
+    }
+    if (!best || !best->isValidAction(bc)) return std::nullopt;
+    return best;
+}
+
+std::string semanticActionIdentity(const Action &action,
+                                   const BattleContext &state) {
+    std::ostringstream out;
+    switch (action.getActionType()) {
+        case ActionType::CARD: {
+            const auto key = BattleScumSearcher3::cardActionKey(state, action);
+            if (key.id != CardId::INVALID) {
+                out << "CARD:" << static_cast<int>(key.id)
+                    << ':' << static_cast<int>(key.upgradeCount)
+                    << ':' << static_cast<int>(key.costForTurn)
+                    << ':' << (key.freeToPlayOnce ? 1 : 0)
+                    << ':' << key.specialData << ':' << key.target;
+                return out.str();
+            }
+            break;
+        }
+        case ActionType::POTION: {
+            const int index = action.getSourceIdx();
+            if (index >= 0 && index < 5) {
+                out << "POTION:" << static_cast<int>(state.potions[index])
+                    << ':' << action.getTargetIdx();
+                return out.str();
+            }
+            break;
+        }
+        case ActionType::SINGLE_CARD_SELECT: {
+            const int index = action.getSelectIdx();
+            if (index >= 0 && index < static_cast<int>(state.cardSelectInfo.cards.size())) {
+                out << "SINGLE_CARD_SELECT:"
+                    << static_cast<int>(state.cardSelectInfo.cardSelectTask)
+                    << ':' << static_cast<int>(state.cardSelectInfo.cards[index]);
+                return out.str();
+            }
+            break;
+        }
+        case ActionType::MULTI_CARD_SELECT: {
+            std::vector<int> ids;
+            for (const int index : action.getSelectedIdxs()) {
+                if (index >= 0 && index < static_cast<int>(state.cardSelectInfo.cards.size()))
+                    ids.push_back(static_cast<int>(state.cardSelectInfo.cards[index]));
+                else
+                    ids.push_back(-1);
+            }
+            std::sort(ids.begin(), ids.end());
+            out << "MULTI_CARD_SELECT:"
+                << static_cast<int>(state.cardSelectInfo.cardSelectTask);
+            for (const int id : ids) out << ':' << id;
+            return out.str();
+        }
+        case ActionType::END_TURN:
+            return "END_TURN";
+        default:
+            break;
+    }
+    out << "RAW:" << action.bits;
+    return out.str();
+}
+
 // ---- Per-node observation tracking -----------------------------------------
 void BattleScumSearcher3::trackNodeObservation(Node &node, const BattleContext &state) {
     std::uint64_t curHash = CombatObservation::fromBattleContext(state).visibleHash();
@@ -1849,6 +2395,7 @@ void BattleScumSearcher3::search(int64_t simulations) {
     lastSearchSimulations = static_cast<int>(simulations);
     lastSearchCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     diag.simSeconds += lastSearchCpuMs / 1000.0;
+    finalizeStrategyFusionDiag();
 }
 
 void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
@@ -1865,6 +2412,7 @@ void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
     lastSearchSimulations = static_cast<int>(root.simulationCount);
     lastSearchCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     diag.simSeconds += lastSearchCpuMs / 1000.0;
+    finalizeStrategyFusionDiag();
 }
 
 bool BattleScumSearcher3::advanceRoot(const Action &action,
@@ -2035,9 +2583,10 @@ void BattleScumSearcher3::step() {
         // Per-node observation-stability tracking.
         // Only immediate root children (depth==2) can be promoted via
         // advanceRoot, so only they need obs-stability for the reuse
-        // eligibility check. Union-expand and carry-diag still track
-        // at all depths (experimental/diagnostic, not in deployed candidate).
-        if (g_s3UnionExpand || g_reuseCarryDiag || (g_reuseObsStable && depth == 2))
+        // eligibility check. The strategy-fusion diagnostic tracks all
+        // depths so an END_TURN parent can be gated independently of reuse.
+        if (g_s3UnionExpand || g_reuseCarryDiag || (g_reuseObsStable && depth == 2)
+            || g_s3StrategyFusionDiag)
             trackNodeObservation(*cur, state);
         diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(depth));
 
@@ -2469,6 +3018,14 @@ void BattleScumSearcher3::step() {
                         auto resolved = resolveSemanticCardEdge(validEdge, state);
                         if (resolved) execAction = *resolved;
                     }
+                    if (g_s3StrategyFusionDiag && !t_strategyFusionSuppressed
+                        && cur->isObsStable()
+                        && execAction.getActionType() == ActionType::END_TURN
+                        && validEdge.child.simulationCount >= g_s3StrategyFusionDiagMinChildVisits)
+                        recordStrategyFusionCandidate(
+                            *cur, state, validEdge, path, rootBc->seed,
+                            (int)rootBc->encounter, rootBc->floorNum,
+                            state.turn, searchSimulationOrdinal);
                     maybeOutcomeBucketDiag(state, execAction,
                         agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                         state.turn, decisionIndex);
@@ -2624,6 +3181,14 @@ void BattleScumSearcher3::step() {
             return;
         }
 
+        if (g_s3StrategyFusionDiag && !t_strategyFusionSuppressed
+            && cur->isObsStable()
+            && effectiveAction.getActionType() == ActionType::END_TURN
+            && edge.child.simulationCount >= g_s3StrategyFusionDiagMinChildVisits)
+            recordStrategyFusionCandidate(
+                *cur, state, edge, path, rootBc->seed,
+                (int)rootBc->encounter, rootBc->floorNum,
+                state.turn, searchSimulationOrdinal);
         maybeOutcomeBucketDiag(state, effectiveAction,
             agentSeed, (int)rootBc->encounter, rootBc->floorNum,
             state.turn, decisionIndex);

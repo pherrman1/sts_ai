@@ -1,0 +1,756 @@
+{
+  "bootstrapSamples": 10000,
+  "primaryMatchedCompute": {
+    "comparison": "matched",
+    "pooledProbabilityWeighted": {
+      "comparableRows": 560,
+      "disagreementFraction": 0.7333984375,
+      "disagreementMass": 46.9375,
+      "probabilityMass": 64.0,
+      "referenceMargin": -0.46647714874664276,
+      "referenceMarginMass": 52.359375,
+      "referencePreferenceFraction": {
+        "conditioned": 0.349866844207723,
+        "neither": 0.4440745672436751,
+        "shared": 0.20605858854860187
+      },
+      "referencePreferenceMass": {
+        "conditioned": 16.421875,
+        "neither": 20.84375,
+        "shared": 9.671875
+      },
+      "rows": 560
+    },
+    "sourceSeedBootstrapCI95": {
+      "disagreementFraction": {
+        "high": 0.7968811035156249,
+        "low": 0.6708984375,
+        "samples": 10000
+      },
+      "referenceConditionedFraction": {
+        "high": 0.4623520397082472,
+        "low": 0.2612059072007887,
+        "samples": 10000
+      },
+      "referenceMargin": {
+        "high": 0.6503725126107422,
+        "low": -2.1999849163749694,
+        "samples": 10000
+      },
+      "referenceNeitherFraction": {
+        "high": 0.5316546071273344,
+        "low": 0.32181431346956657,
+        "samples": 10000
+      },
+      "referenceSharedFraction": {
+        "high": 0.2675552173393199,
+        "low": 0.16691158367171602,
+        "samples": 10000
+      }
+    },
+    "sourceSeedMean": {
+      "disagreementFraction": 0.7333984375,
+      "referenceConditionedFraction": 0.3596483333923112,
+      "referenceMargin": -0.7253341308576742,
+      "referenceNeitherFraction": 0.4254653608002305,
+      "referenceSharedFraction": 0.21488630580745827
+    },
+    "sourceSeeds": 16
+  },
+  "rows": 560,
+  "schema": "s3_strategy_fusion_diag_analyzer_v1",
+  "secondaryFreshSearch": {
+    "comparison": "fresh",
+    "pooledProbabilityWeighted": {
+      "comparableRows": 560,
+      "disagreementFraction": 0.754150390625,
+      "disagreementMass": 48.265625,
+      "probabilityMass": 64.0,
+      "referenceMargin": 4.1759702856525625,
+      "referenceMarginMass": 52.4375,
+      "referencePreferenceFraction": {
+        "conditioned": 0.5496924571058595,
+        "neither": 0.3554548397539657,
+        "shared": 0.09485270314017481
+      },
+      "referencePreferenceMass": {
+        "conditioned": 26.53125,
+        "neither": 17.15625,
+        "shared": 4.578125
+      },
+      "rows": 560
+    },
+    "sourceSeedBootstrapCI95": {
+      "disagreementFraction": {
+        "high": 0.822998046875,
+        "low": 0.676513671875,
+        "samples": 10000
+      },
+      "referenceConditionedFraction": {
+        "high": 0.7447332323221998,
+        "low": 0.4175538312458249,
+        "samples": 10000
+      },
+      "referenceMargin": {
+        "high": 5.534234528202771,
+        "low": 1.74181002253059,
+        "samples": 10000
+      },
+      "referenceNeitherFraction": {
+        "high": 0.47224977427603876,
+        "low": 0.17706583889451707,
+        "samples": 10000
+      },
+      "referenceSharedFraction": {
+        "high": 0.13181642630505358,
+        "low": 0.05850336932570979,
+        "samples": 10000
+      }
+    },
+    "sourceSeedMean": {
+      "disagreementFraction": 0.754150390625,
+      "referenceConditionedFraction": 0.5879456030636784,
+      "referenceMargin": 3.648770145284414,
+      "referenceNeitherFraction": 0.3183288149916857,
+      "referenceSharedFraction": 0.09372558194463596
+    },
+    "sourceSeeds": 16
+  },
+  "sourceSeeds": [
+    12345,
+    12346,
+    12347,
+    12348,
+    12349,
+    12350,
+    12351,
+    12352,
+    12353,
+    12354,
+    12355,
+    12356,
+    12357,
+    12358,
+    12359,
+    12360
+  ],
+  "strata": {
+    "distinctBucketCount": [
+      {
+        "comparableRows": 20,
+        "disagreementFraction": 0.7546875,
+        "disagreementMass": 7.546875,
+        "probabilityMass": 10.0,
+        "referenceMargin": -1.8421468876611418,
+        "referenceMarginMass": 8.484375,
+        "referencePreferenceFraction": {
+          "conditioned": 0.40372670807453415,
+          "neither": 0.4389233954451346,
+          "shared": 0.15734989648033126
+        },
+        "referencePreferenceMass": {
+          "conditioned": 3.046875,
+          "neither": 3.3125,
+          "shared": 1.1875
+        },
+        "rows": 20,
+        "sourceSeeds": 4,
+        "stratum": 2
+      },
+      {
+        "comparableRows": 6,
+        "disagreementFraction": 0.7578125,
+        "disagreementMass": 1.515625,
+        "probabilityMass": 2.0,
+        "referenceMargin": 10.23684375,
+        "referenceMarginMass": 1.25,
+        "referencePreferenceFraction": {
+          "conditioned": 1.0,
+          "neither": 0.0,
+          "shared": 0.0
+        },
+        "referencePreferenceMass": {
+          "conditioned": 1.515625,
+          "neither": 0,
+          "shared": 0
+        },
+        "rows": 6,
+        "sourceSeeds": 1,
+        "stratum": 3
+      },
+      {
+        "comparableRows": 72,
+        "disagreementFraction": 0.7039930555555556,
+        "disagreementMass": 12.671875,
+        "probabilityMass": 18.0,
+        "referenceMargin": -0.7068999944690264,
+        "referenceMarginMass": 14.125,
+        "referencePreferenceFraction": {
+          "conditioned": 0.35758323057953145,
+          "neither": 0.4278668310727497,
+          "shared": 0.21454993834771888
+        },
+        "referencePreferenceMass": {
+          "conditioned": 4.53125,
+          "neither": 5.421875,
+          "shared": 2.71875
+        },
+        "rows": 72,
+        "sourceSeeds": 6,
+        "stratum": 4
+      },
+      {
+        "comparableRows": 6,
+        "disagreementFraction": 0.265625,
+        "disagreementMass": 0.265625,
+        "probabilityMass": 1.0,
+        "referenceMargin": 0.706590625,
+        "referenceMarginMass": 1.0,
+        "referencePreferenceFraction": {
+          "conditioned": 0.0,
+          "neither": 0.5294117647058824,
+          "shared": 0.47058823529411764
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0,
+          "neither": 0.140625,
+          "shared": 0.125
+        },
+        "rows": 6,
+        "sourceSeeds": 1,
+        "stratum": 6
+      },
+      {
+        "comparableRows": 14,
+        "disagreementFraction": 0.8515625,
+        "disagreementMass": 1.703125,
+        "probabilityMass": 2.0,
+        "referenceMargin": 0.6844173913043479,
+        "referenceMarginMass": 0.71875,
+        "referencePreferenceFraction": {
+          "conditioned": 0.11009174311926606,
+          "neither": 0.4036697247706422,
+          "shared": 0.48623853211009177
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.1875,
+          "neither": 0.6875,
+          "shared": 0.828125
+        },
+        "rows": 14,
+        "sourceSeeds": 1,
+        "stratum": 7
+      },
+      {
+        "comparableRows": 56,
+        "disagreementFraction": 0.7611607142857143,
+        "disagreementMass": 5.328125,
+        "probabilityMass": 7.0,
+        "referenceMargin": -0.016720300943396174,
+        "referenceMarginMass": 6.625,
+        "referencePreferenceFraction": {
+          "conditioned": 0.34310850439882695,
+          "neither": 0.4252199413489736,
+          "shared": 0.2316715542521994
+        },
+        "referencePreferenceMass": {
+          "conditioned": 1.828125,
+          "neither": 2.265625,
+          "shared": 1.234375
+        },
+        "rows": 56,
+        "sourceSeeds": 2,
+        "stratum": 8
+      },
+      {
+        "comparableRows": 36,
+        "disagreementFraction": 0.5546875,
+        "disagreementMass": 2.21875,
+        "probabilityMass": 4.0,
+        "referenceMargin": -1.3805168157068062,
+        "referenceMarginMass": 2.984375,
+        "referencePreferenceFraction": {
+          "conditioned": 0.3732394366197183,
+          "neither": 0.24647887323943662,
+          "shared": 0.38028169014084506
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.828125,
+          "neither": 0.546875,
+          "shared": 0.84375
+        },
+        "rows": 36,
+        "sourceSeeds": 3,
+        "stratum": 9
+      },
+      {
+        "comparableRows": 10,
+        "disagreementFraction": 1.0,
+        "disagreementMass": 1.0,
+        "probabilityMass": 1.0,
+        "referenceMargin": -3.9550274335937496,
+        "referenceMarginMass": 1.0,
+        "referencePreferenceFraction": {
+          "conditioned": 0.0,
+          "neither": 0.703125,
+          "shared": 0.296875
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0,
+          "neither": 0.703125,
+          "shared": 0.296875
+        },
+        "rows": 10,
+        "sourceSeeds": 1,
+        "stratum": 10
+      },
+      {
+        "comparableRows": 11,
+        "disagreementFraction": 0.59375,
+        "disagreementMass": 0.59375,
+        "probabilityMass": 1.0,
+        "referenceMargin": -3.9575025000000004,
+        "referenceMarginMass": 1.0,
+        "referencePreferenceFraction": {
+          "conditioned": 0.0,
+          "neither": 0.47368421052631576,
+          "shared": 0.5263157894736842
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0,
+          "neither": 0.28125,
+          "shared": 0.3125
+        },
+        "rows": 11,
+        "sourceSeeds": 1,
+        "stratum": 11
+      },
+      {
+        "comparableRows": 78,
+        "disagreementFraction": 0.8072916666666666,
+        "disagreementMass": 4.84375,
+        "probabilityMass": 6.0,
+        "referenceMargin": 0.18101419039548033,
+        "referenceMarginMass": 5.53125,
+        "referencePreferenceFraction": {
+          "conditioned": 0.267741935483871,
+          "neither": 0.6064516129032258,
+          "shared": 0.12580645161290321
+        },
+        "referencePreferenceMass": {
+          "conditioned": 1.296875,
+          "neither": 2.9375,
+          "shared": 0.609375
+        },
+        "rows": 78,
+        "sourceSeeds": 3,
+        "stratum": 13
+      },
+      {
+        "comparableRows": 42,
+        "disagreementFraction": 0.7291666666666666,
+        "disagreementMass": 2.1875,
+        "probabilityMass": 3.0,
+        "referenceMargin": 1.053744348888889,
+        "referenceMarginMass": 2.109375,
+        "referencePreferenceFraction": {
+          "conditioned": 0.6,
+          "neither": 0.22142857142857142,
+          "shared": 0.17857142857142858
+        },
+        "referencePreferenceMass": {
+          "conditioned": 1.3125,
+          "neither": 0.484375,
+          "shared": 0.390625
+        },
+        "rows": 42,
+        "sourceSeeds": 3,
+        "stratum": 14
+      },
+      {
+        "comparableRows": 15,
+        "disagreementFraction": 0.421875,
+        "disagreementMass": 0.421875,
+        "probabilityMass": 1.0,
+        "referenceMargin": -1.7192931111111112,
+        "referenceMarginMass": 0.703125,
+        "referencePreferenceFraction": {
+          "conditioned": 0.037037037037037035,
+          "neither": 0.9259259259259259,
+          "shared": 0.037037037037037035
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.015625,
+          "neither": 0.390625,
+          "shared": 0.015625
+        },
+        "rows": 15,
+        "sourceSeeds": 1,
+        "stratum": 15
+      },
+      {
+        "comparableRows": 42,
+        "disagreementFraction": 0.8828125,
+        "disagreementMass": 1.765625,
+        "probabilityMass": 2.0,
+        "referenceMargin": -1.2946830859374998,
+        "referenceMarginMass": 2.0,
+        "referencePreferenceFraction": {
+          "conditioned": 0.22123893805309736,
+          "neither": 0.6460176991150443,
+          "shared": 0.13274336283185842
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.390625,
+          "neither": 1.140625,
+          "shared": 0.234375
+        },
+        "rows": 42,
+        "sourceSeeds": 2,
+        "stratum": 21
+      },
+      {
+        "comparableRows": 44,
+        "disagreementFraction": 0.6796875,
+        "disagreementMass": 1.359375,
+        "probabilityMass": 2.0,
+        "referenceMargin": 2.032829484375,
+        "referenceMarginMass": 2.0,
+        "referencePreferenceFraction": {
+          "conditioned": 0.6206896551724138,
+          "neither": 0.13793103448275862,
+          "shared": 0.2413793103448276
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.84375,
+          "neither": 0.1875,
+          "shared": 0.328125
+        },
+        "rows": 44,
+        "sourceSeeds": 1,
+        "stratum": 22
+      },
+      {
+        "comparableRows": 24,
+        "disagreementFraction": 0.84375,
+        "disagreementMass": 0.84375,
+        "probabilityMass": 1.0,
+        "referenceMargin": 1.1617194318181818,
+        "referenceMarginMass": 0.6875,
+        "referencePreferenceFraction": {
+          "conditioned": 0.12962962962962962,
+          "neither": 0.7592592592592593,
+          "shared": 0.1111111111111111
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.109375,
+          "neither": 0.640625,
+          "shared": 0.09375
+        },
+        "rows": 24,
+        "sourceSeeds": 1,
+        "stratum": 24
+      },
+      {
+        "comparableRows": 25,
+        "disagreementFraction": 0.875,
+        "disagreementMass": 0.875,
+        "probabilityMass": 1.0,
+        "referenceMargin": -2.867941125,
+        "referenceMarginMass": 1.0,
+        "referencePreferenceFraction": {
+          "conditioned": 0.017857142857142856,
+          "neither": 0.7857142857142857,
+          "shared": 0.19642857142857142
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.015625,
+          "neither": 0.6875,
+          "shared": 0.171875
+        },
+        "rows": 25,
+        "sourceSeeds": 1,
+        "stratum": 25
+      },
+      {
+        "comparableRows": 29,
+        "disagreementFraction": 0.953125,
+        "disagreementMass": 0.953125,
+        "probabilityMass": 1.0,
+        "referenceMargin": 1.0208941823529412,
+        "referenceMarginMass": 0.53125,
+        "referencePreferenceFraction": {
+          "conditioned": 0.26229508196721313,
+          "neither": 0.6557377049180327,
+          "shared": 0.08196721311475409
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.25,
+          "neither": 0.625,
+          "shared": 0.078125
+        },
+        "rows": 29,
+        "sourceSeeds": 1,
+        "stratum": 29
+      },
+      {
+        "comparableRows": 30,
+        "disagreementFraction": 0.84375,
+        "disagreementMass": 0.84375,
+        "probabilityMass": 1.0,
+        "referenceMargin": -4.308997948717949,
+        "referenceMarginMass": 0.609375,
+        "referencePreferenceFraction": {
+          "conditioned": 0.2962962962962963,
+          "neither": 0.46296296296296297,
+          "shared": 0.24074074074074073
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.25,
+          "neither": 0.390625,
+          "shared": 0.203125
+        },
+        "rows": 30,
+        "sourceSeeds": 1,
+        "stratum": 30
+      }
+    ],
+    "drawPileSizeBefore": [
+      {
+        "comparableRows": 195,
+        "disagreementFraction": 0.6875,
+        "disagreementMass": 8.9375,
+        "probabilityMass": 13.0,
+        "referenceMargin": 0.23055506026272585,
+        "referenceMarginMass": 9.515625,
+        "referencePreferenceFraction": {
+          "conditioned": 0.38986013986013984,
+          "neither": 0.34965034965034963,
+          "shared": 0.26048951048951047
+        },
+        "referencePreferenceMass": {
+          "conditioned": 3.484375,
+          "neither": 3.125,
+          "shared": 2.328125
+        },
+        "rows": 195,
+        "sourceSeeds": 6,
+        "stratum": 0
+      },
+      {
+        "comparableRows": 75,
+        "disagreementFraction": 0.6796875,
+        "disagreementMass": 2.71875,
+        "probabilityMass": 4.0,
+        "referenceMargin": -3.2811859065217392,
+        "referenceMarginMass": 2.875,
+        "referencePreferenceFraction": {
+          "conditioned": 0.1839080459770115,
+          "neither": 0.5402298850574713,
+          "shared": 0.27586206896551724
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.5,
+          "neither": 1.46875,
+          "shared": 0.75
+        },
+        "rows": 75,
+        "sourceSeeds": 2,
+        "stratum": 1
+      },
+      {
+        "comparableRows": 46,
+        "disagreementFraction": 0.875,
+        "disagreementMass": 1.75,
+        "probabilityMass": 2.0,
+        "referenceMargin": -2.533968921875,
+        "referenceMarginMass": 2.0,
+        "referencePreferenceFraction": {
+          "conditioned": 0.03571428571428571,
+          "neither": 0.8303571428571429,
+          "shared": 0.13392857142857142
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0.0625,
+          "neither": 1.453125,
+          "shared": 0.234375
+        },
+        "rows": 46,
+        "sourceSeeds": 1,
+        "stratum": 2
+      },
+      {
+        "comparableRows": 40,
+        "disagreementFraction": 0.70703125,
+        "disagreementMass": 8.484375,
+        "probabilityMass": 12.0,
+        "referenceMargin": -1.6016826939970714,
+        "referenceMarginMass": 10.671875,
+        "referencePreferenceFraction": {
+          "conditioned": 0.4953959484346225,
+          "neither": 0.289134438305709,
+          "shared": 0.2154696132596685
+        },
+        "referencePreferenceMass": {
+          "conditioned": 4.203125,
+          "neither": 2.453125,
+          "shared": 1.828125
+        },
+        "rows": 40,
+        "sourceSeeds": 3,
+        "stratum": 4
+      },
+      {
+        "comparableRows": 38,
+        "disagreementFraction": 0.7367788461538461,
+        "disagreementMass": 9.578125,
+        "probabilityMass": 13.0,
+        "referenceMargin": 0.019316172291296674,
+        "referenceMarginMass": 8.796875,
+        "referencePreferenceFraction": {
+          "conditioned": 0.38499184339314846,
+          "neither": 0.4893964110929853,
+          "shared": 0.12561174551386622
+        },
+        "referencePreferenceMass": {
+          "conditioned": 3.6875,
+          "neither": 4.6875,
+          "shared": 1.203125
+        },
+        "rows": 38,
+        "sourceSeeds": 6,
+        "stratum": 5
+      },
+      {
+        "comparableRows": 145,
+        "disagreementFraction": 0.7708333333333334,
+        "disagreementMass": 13.875,
+        "probabilityMass": 18.0,
+        "referenceMargin": 0.7708233545454546,
+        "referenceMarginMass": 16.5,
+        "referencePreferenceFraction": {
+          "conditioned": 0.32319819819819817,
+          "neither": 0.48085585585585583,
+          "shared": 0.19594594594594594
+        },
+        "referencePreferenceMass": {
+          "conditioned": 4.484375,
+          "neither": 6.671875,
+          "shared": 2.71875
+        },
+        "rows": 145,
+        "sourceSeeds": 7,
+        "stratum": 6
+      },
+      {
+        "comparableRows": 21,
+        "disagreementFraction": 0.796875,
+        "disagreementMass": 1.59375,
+        "probabilityMass": 2.0,
+        "referenceMargin": -3.956264966796875,
+        "referenceMarginMass": 2.0,
+        "referencePreferenceFraction": {
+          "conditioned": 0.0,
+          "neither": 0.6176470588235294,
+          "shared": 0.38235294117647056
+        },
+        "referencePreferenceMass": {
+          "conditioned": 0,
+          "neither": 0.984375,
+          "shared": 0.609375
+        },
+        "rows": 21,
+        "sourceSeeds": 2,
+        "stratum": 7
+      }
+    ],
+    "encounter": [
+      {
+        "comparableRows": 47,
+        "disagreementFraction": 0.7400568181818182,
+        "disagreementMass": 8.140625,
+        "probabilityMass": 11.0,
+        "referenceMargin": -0.6419256537067545,
+        "referenceMarginMass": 9.484375,
+        "referencePreferenceFraction": {
+          "conditioned": 0.3704414587332054,
+          "neither": 0.345489443378119,
+          "shared": 0.2840690978886756
+        },
+        "referencePreferenceMass": {
+          "conditioned": 3.015625,
+          "neither": 2.8125,
+          "shared": 2.3125
+        },
+        "rows": 47,
+        "sourceSeeds": 3,
+        "stratum": 1
+      },
+      {
+        "comparableRows": 152,
+        "disagreementFraction": 0.6231617647058824,
+        "disagreementMass": 10.59375,
+        "probabilityMass": 17.0,
+        "referenceMargin": 1.1165343381433825,
+        "referenceMarginMass": 17.0,
+        "referencePreferenceFraction": {
+          "conditioned": 0.4970501474926254,
+          "neither": 0.26253687315634217,
+          "shared": 0.24041297935103245
+        },
+        "referencePreferenceMass": {
+          "conditioned": 5.265625,
+          "neither": 2.78125,
+          "shared": 2.546875
+        },
+        "rows": 152,
+        "sourceSeeds": 5,
+        "stratum": 2
+      },
+      {
+        "comparableRows": 105,
+        "disagreementFraction": 0.7630208333333334,
+        "disagreementMass": 9.15625,
+        "probabilityMass": 12.0,
+        "referenceMargin": -1.2553024396396397,
+        "referenceMarginMass": 8.671875,
+        "referencePreferenceFraction": {
+          "conditioned": 0.20136518771331058,
+          "neither": 0.6791808873720137,
+          "shared": 0.11945392491467577
+        },
+        "referencePreferenceMass": {
+          "conditioned": 1.84375,
+          "neither": 6.21875,
+          "shared": 1.09375
+        },
+        "rows": 105,
+        "sourceSeeds": 4,
+        "stratum": 3
+      },
+      {
+        "comparableRows": 256,
+        "disagreementFraction": 0.7936197916666666,
+        "disagreementMass": 19.046875,
+        "probabilityMass": 24.0,
+        "referenceMargin": -1.5364328424613987,
+        "referenceMarginMass": 17.203125,
+        "referencePreferenceFraction": {
+          "conditioned": 0.3305988515176374,
+          "neither": 0.4741591468416735,
+          "shared": 0.19524200164068908
+        },
+        "referencePreferenceMass": {
+          "conditioned": 6.296875,
+          "neither": 9.03125,
+          "shared": 3.71875
+        },
+        "rows": 256,
+        "sourceSeeds": 7,
+        "stratum": 4
+      }
+    ]
+  },
+  "transitions": 64,
+  "warnings": []
+}

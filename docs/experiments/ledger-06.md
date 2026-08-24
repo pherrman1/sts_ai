@@ -4007,6 +4007,229 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `e9dc812217a48c53fe02987a791d4e6b5bccb1257528bf8ca2e35398271a95ea`,
   `26afcdb0271fccf4cfb5183dcf3058fa4a2ee028706049e6bb4943d7cbf9cc64`, and
   `5e8a06ce4f5283eb4804c957e892c61d1be13983955ea30f8ef102175ad6e4bb`.
+## 2026-08-23 — Searcher3 strategy-fusion shadow diagnostic implementation and smoke (non-decision-bearing)
+
+- **Question:** Does an existing shared Searcher3 child below stochastic
+  `END_TURN` encode a materially worse continuation policy than a fresh fair
+  Searcher3 conditioned on each observed visible outcome bucket? This task
+  does not implement chance nodes or state splitting.
+- **Baseline:** `f2879ad7d0444b4d3edad87ba62f6181580c48d8`; implementation branch
+  `exp/s3-strategy-fusion-diag`; worktree
+  `C:\Users\pherrman\projects\sts_ai-s3-strategy-fusion-diag`.
+- **Implementation:** Added off-by-default
+  `STS_S3_STRATEGY_FUSION_DIAG=1` with CSV and `.meta.json` configuration
+  output. The probe samples independent particles, uses full
+  `CombatObservation` bucket identity, preserves the live shared child, runs
+  fresh fair Searcher3 conditioned, matched-compute conditioned, and
+  deeper-reference searches, and compares stable semantic action identities.
+  The matched budget is `max(1, round(sharedChildVisits * bucketProbability))`;
+  the configured 500-simulation search is secondary. It is guarded against
+  pre-END_TURN parent fusion by collecting only when the tracked parent
+  observation has `nodeObsMismatches == 0`; parent visit/mismatch provenance is
+  emitted in each row. It is guarded against
+  recursive side probes and does not consume the live searcher's RNG or mutate
+  its tree, belief, counters, or selected action. Existing root-action
+  selection was factored into a read-only helper without changing its
+  visit/live-valid semantics.
+- **Review correction:** Independent review of the first implementation found
+  the compute-budget confound and transition-cap accounting issue. This commit
+  applies the matched-budget and cap corrections, adds the preregistered
+  source-seed analyzer at
+  `tools/analyze_s3_strategy_fusion_diag.py`, and requires another independent
+  implementation review before any decision-bearing run. The follow-up
+  correction also gates collection on END_TURN-parent observation stability.
+- **Fairness correction in the diagnostic:** Local testing found that
+  `Belief::initial` uses the stored draw-pile vector order as a shuffle input
+  even though `CombatObservation` equality treats the pile as a multiset. The
+  diagnostic canonicalizes only copied side-search templates; normal
+  Searcher3 belief construction remains unchanged. This is recorded as an open
+  fairness limitation, not silently treated as resolved globally.
+- **Smoke configuration:** project-fair Searcher3, ascension 0, seeds
+  `12345..12346`, `searchdiag`, 64 simulations per searched decision,
+  `STS_S3_PARTICLES=16`; diagnostic particles 16, max transitions 1, minimum
+  shared-child visits 8, secondary fresh 16 simulations, matched budgets from
+  the recorded formula, reference 32 simulations.
+  Commands were run through `tools/seed_guard.sh`. OFF and ON emitted 599
+  Searcher3 searchdiag rows each; root best-action comparison found 0 decision
+  differences. No invalid-action, crash, or simulator-health error appeared.
+- **Raw diagnostic output:** `build/s3sf_smoke_diag.csv` contains 4 rows from
+  1 measured transition and 4 distinct visible outcome buckets. The primary
+  matched-compute comparison disagreed on 2 rows with probability-mass
+  weighted disagreement `0.3125`; among those, the deeper reference preferred
+  matched-conditioned `0.600`, neither `0.400`, and shared `0.000`. The
+  weighted matched reference conditioned-minus-shared margin was
+  `-0.958249375`. The secondary 500-simulation comparison had disagreement
+  `0.000` and weighted margin `0`. The analyzer validated the 36-column CSV,
+  emitted source-seed bootstrap summaries, and passed its self-test. The
+  corrected 36-column schema recorded `parentObsMismatches=0` for all rows.
+  These are explicitly smoke-scale, noisy, and **not a scientific conclusion**.
+- **Decision rule/status at the initial smoke checkpoint:** No
+  16–32-source-seed decision-bearing run had yet been performed. This
+  correction followed independent review of the first implementation; the
+  stability-gated follow-up run is recorded below. The initial smoke did not
+  support or reject chance nodes.
+- **Decision log:**
+  [`2026-08-23-s3-strategy-fusion-diagnostic.md`](../knowledge-base/decision-log/2026-08-23-s3-strategy-fusion-diagnostic.md).
+
+### Historical early-tree 64-simulation run (not mature-tree evidence)
+
+- **Frozen implementation:** `1438ef72f6486adf3161e587b25fd1e0b83f18a6`.
+  Seeds were `12345..12360`, one seed-guarded process per seed, normal
+  Searcher3 particles 64, 64 normal simulations per decision, diagnostic
+  particles 64, per-process transition cap 4, minimum shared-child visits 32,
+  secondary fresh 500 simulations, and reference 3000 simulations.
+- **Output:** 64 stable-parent measured transitions and 628 bucket rows;
+  5,306 paired OFF/ON searchdiag rows per side; zero ON/OFF decision
+  differences; zero parent-observation mismatches; no log error matches.
+  Per-seed transition counts were exactly 4 for all 16 seeds. Analyzer output:
+  `build/s3sf_decision_analysis.json`.
+- **Validity classification:** the diagnostic side searches ran during
+  `step()` as soon as the shared child crossed the minimum visit threshold.
+  The recorded child counts therefore were threshold-time values rather than
+  final post-search values. These artifacts are retained as historical
+  **early-tree evidence**, not mature-tree evidence.
+- **Primary matched-compute result:** disagreement `0.7012`, source-seed
+  bootstrap 95% CI `[0.6116, 0.7820]`; deeper reference preference among
+  disagreement mass matched-conditioned `0.2481`, shared `0.2648`, neither
+  `0.4871`; matched-minus-shared reference margin `-1.6781`, CI
+  `[-2.7500, -0.6066]`.
+- **Secondary 500-simulation result:** disagreement `0.7612`, deeper reference
+  conditioned preference `0.6132`, and margin `+3.5400`; this is secondary and
+  compute-confounded by design.
+- **Interpretation:** these results are not valid for the mature-tree scientific
+  gate because the side searches used threshold-time child statistics. They
+  should not be interpreted as evidence for or against persistent chance-node
+  state splitting. A lifecycle correction and new review are required before
+  repeating the decision-bearing run.
+
+### Historical nominal 1000-simulation run (not mature-1000 evidence)
+
+- **Frozen executable and configuration:** the executable remained frozen at
+  `1438ef72f6486adf3161e587b25fd1e0b83f18a6`. Seeds were `12345..12360`,
+  with one `tools/seed_guard.sh` process per seed for each OFF/ON pair.
+  Normal Searcher3 used `STS_SEARCHER3=1`, `STS_FAIR=1`,
+  `STS_S3_PARTICLES=64`, and 1,000 simulations per decision. The diagnostic
+  used 64 particles, a per-process cap of 4 stable-parent transitions,
+  minimum shared-child visits 32, secondary fresh 500 simulations, and
+  deeper reference 3,000 simulations. The primary matched budget remained
+  `max(1, round(sharedChildVisits * bucketProbability))`.
+- **Validity classification:** despite the nominal 1,000 normal simulations,
+  the diagnostic still launched side searches during `step()` at the first
+  threshold crossing. The observed matched-budget median was only 5 sims, so
+  this is also **early-tree evidence**, not mature-1,000 evidence.
+- **Collection and correctness:** all 16 seeds completed, producing 64
+  qualifying transitions and 560 bucket rows. Every seed contributed four
+  transitions; all rows had `parentObsMismatches=0`; the formula matched every
+  row; bucket probabilities summed to one within every transition; and the
+  paired OFF/ON traces had zero actual gameplay/search decision differences.
+- **Primary matched-compute result:** probability-mass-weighted
+  shared-versus-matched disagreement was `0.7334`, with source-seed bootstrap
+  95% CI `[0.6709, 0.7969]`. The source-seed mean reference preferences among
+  disagreement mass were matched `0.3596`, shared `0.2149`, and neither
+  `0.4255`. The matched-minus-shared reference margin was `-0.7253`, with
+  source-seed bootstrap 95% CI `[-2.2000, +0.6504]`. The pooled mass-weighted
+  margin was `-0.4665`.
+- **Budget distribution:** across 560 bucket rows, matched budgets ranged from
+  1 to 671 simulations, with mean `33.645`, median `5`, and quartiles
+  `[2, 5, 28]` (p90 `102`, p95 `159`). The exact 102-value histogram is in
+  `build/s3sf_decision1000_results.json`.
+- **Secondary comparison:** the fresh 500-simulation arm had disagreement
+  `0.7542`, reference conditioned preference `0.5879`, and margin `+3.6488`
+  by source-seed mean. It remains secondary and compute-confounded; it is not
+  evidence against the matched-budget result.
+- **Comparison with the prior 64-simulation run:** matched disagreement rose
+  from `0.7012` (CI `[0.6116, 0.7820]`) to `0.7334` (CI `[0.6709,
+  0.7969]`). Matched reference preference rose from `0.2481` to `0.3596`,
+  while shared preference changed from `0.2648` to `0.2149` and neither from
+  `0.4871` to `0.4255`. The primary margin improved from `-1.6781` (CI
+  `[-2.7500, -0.6066]`) to `-0.7253` (CI `[-2.2000, +0.6504]`), but did not
+  become positive or support a positive-margin conclusion.
+- **Interpretation:** these results are invalid as a mature-1,000 scientific
+  gate because the side searches used threshold-time child statistics. They
+  are retained for debugging the compute confound, not as a chance-node
+  decision. The raw CSV, metadata, analyzer JSON, and result packet are
+  committed as
+  `build/s3sf_decision1000_diag.csv`,
+  `build/s3sf_decision1000_diag.csv.meta.json`,
+  `build/s3sf_decision1000_analysis.json`, and
+  `build/s3sf_decision1000_results.json`.
+
+### Correction: defer strategy-fusion side searches until search completion
+
+- **Implementation:** candidates are now recorded during `step()` without
+  particle sampling, bucket construction, or side searches. After the normal
+  `search()`/`searchToTotal()` loop completes, the candidate path is resolved
+  against the final tree, the parent stability gate is rechecked, final child
+  visits are captured, and only then are the existing matched, fresh, and
+  reference side searches run. The matched formula is unchanged.
+- **Regression:** `s3_strategy_fusion_diag` proves a finalized candidate's
+  final child visits exceed its threshold-time visits, demonstrating that the
+  recorded budget is post-search rather than threshold-time.
+- **Tiny smoke:** two guarded seeds (`12345..12346`), 64 normal simulations,
+  16 diagnostic particles, cap 1 per process, minimum visits 8, fresh 8, and
+  reference 16 produced 2 transitions and 8 bucket rows. Parent mismatches
+  and budget-formula mismatches were zero; paired OFF/ON traces had 599 rows
+  per side and zero actual decision differences; all four logs completed with
+  no error markers. This smoke is implementation-only and non-decision-bearing.
+- **Status at this correction checkpoint:** no 16-seed experiment had yet
+  been run. The resulting implementation was then frozen at the reviewed
+  executable SHA before the mature run recorded below.
+
+### Mature post-search 1000-simulation strategy-fusion run (decision-bearing, 2026-08-24)
+
+- **Frozen executable:** `a455dbae1e871e2671209bf006af1a9f733f1c29`.
+  No executable source changed during collection. The run used source seeds
+  `12345..12360`, one guarded OFF process and one guarded ON process per seed,
+  `STS_SEARCHER3=1`, `STS_FAIR=1`, `STS_S3_PARTICLES=64`, 1,000 normal
+  simulations per decision, diagnostic particles 64, cap 4, minimum child
+  visits 32, secondary fresh 500 simulations, reference 3,000 simulations,
+  and `OMP_NUM_THREADS=4`.
+- **Collection and validation:** the corrected diagnostic deferred all side
+  searches until normal search completion and used
+  `max(1, round(finalSharedChildVisits * bucketProbability))`. The run emitted
+  64 measured transitions and 560 bucket rows, exactly four transitions per
+  source seed. Every row had `parentObsMismatches=0`; matched-budget formula
+  mismatches were zero; probability sums were one for every transition; all
+  recorded child visits were at least the configured threshold; and no process
+  or health-marker failure occurred. Paired OFF/ON traces had zero actual
+  `bestAction` differences, zero fight-outcome differences, and zero missing
+  decision keys. Searchdiag timing/metric fields differed as expected from
+  diagnostic overhead, but these did not change actual decisions.
+- **Primary matched-compute result:** probability-mass-weighted shared versus
+  matched-conditioned disagreement was `0.7063`, with source-seed bootstrap
+  95% CI `[0.6304, 0.7800]`. Among disagreement mass, the pooled deeper
+  reference preferred matched-conditioned `0.5309`, shared `0.1303`, and
+  neither `0.3387`; source-seed means were matched `0.5646`, shared `0.1303`,
+  and neither `0.3051`. The matched-minus-shared reference margin was
+  `+2.4507` pooled and `+2.0325` by source-seed mean, with bootstrap 95% CI
+  `[+0.6162, +3.5639]`.
+- **Matched-budget distribution:** across 560 bucket rows, budgets ranged
+  from `1` to `1,406`; mean `119.825`, median `60`, p25 `28`, p75 `148`,
+  p90 `299.1`, and p95 `443`.
+- **Secondary compute-unmatched result:** the 500-simulation fresh arm had
+  disagreement `0.7222` (source-seed bootstrap CI `[0.6404, 0.7971]`), pooled
+  reference preference conditioned `0.5335`, shared `0.0859`, neither
+  `0.3807`, and source-seed mean margin `+3.7498` (CI `[+2.0394, +5.3921]`).
+  This remains secondary and is not used as the primary gate.
+- **Comparison with early-tree 64-simulation evidence:** primary disagreement
+  changed from `0.7012` to `0.7063`, while the matched-budget median rose from
+  `5` to `60`. The prior early-tree primary margin was `-1.6781` with CI
+  `[-2.7500, -0.6066]`; the mature post-search run is positive with CI wholly
+  above zero. The runs are not identical in executable SHA, so this is a
+  descriptive comparison rather than a clean single-variable budget test.
+- **Interpretation under the preregistered rule:** the run clears all three
+  requested evidence gates: substantial disagreement, deeper-reference
+  preference for matched conditioning, and a positive matched-minus-shared
+  margin with source-seed bootstrap support. This supports proceeding toward a
+  separately reviewed chance-node prototype; it does not establish a win-rate
+  improvement and does not authorize implementation in this branch.
+- **Evidence packet:**
+  `build/s3sf_a455dba_1000_diag.csv`,
+  `build/s3sf_a455dba_1000_diag.csv.meta.json`,
+  `build/s3sf_a455dba_1000_analysis.json`, and
+  `build/s3sf_a455dba_1000_results.json`. The compact result packet records
+  the exact configuration, frozen SHA, artifact hashes, validation counts,
+  and prior-64 comparison.
 
 ## §178 Searcher3 immediate-Q exploitation mechanism diagnostic — sampled-corpus negative (2026-08-23)
 

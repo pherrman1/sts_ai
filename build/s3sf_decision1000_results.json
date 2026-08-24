@@ -1,0 +1,803 @@
+﻿{
+    "schema":  "s3_strategy_fusion_diag_realistic_budget_results_v1",
+    "frozenExecutableSha":  "1438ef72f6486adf3161e587b25fd1e0b83f18a6",
+    "seeds":  [
+                  12345,
+                  12346,
+                  12347,
+                  12348,
+                  12349,
+                  12350,
+                  12351,
+                  12352,
+                  12353,
+                  12354,
+                  12355,
+                  12356,
+                  12357,
+                  12358,
+                  12359,
+                  12360
+              ],
+    "config":  {
+                   "normalSimulationsPerDecision":  1000,
+                   "normalParticles":  64,
+                   "diagnosticParticles":  64,
+                   "maxTransitionsPerProcess":  4,
+                   "minChildVisits":  32,
+                   "freshConditionedSims":  500,
+                   "matchedFormula":  "max(1, round(sharedChildVisits * bucketProbability))",
+                   "referenceSims":  3000,
+                   "guardedProcesses":  16,
+                   "fair":  1,
+                   "searcher3":  1
+               },
+    "validation":  {
+                       "rows":  560,
+                       "transitions":  64,
+                       "sourceSeeds":  16,
+                       "unstableParentRows":  0,
+                       "formulaMismatches":  0,
+                       "badBucketProbabilitySums":  0,
+                       "pairedActualDecisionDiffs":  0,
+                       "completedGuardedProcesses":  32
+                   },
+    "matchedBudgetDistribution":  [
+                                      {
+                                          "matchedSimBudget":  1,
+                                          "bucketRows":  107,
+                                          "probabilityMass":  2.453125
+                                      },
+                                      {
+                                          "matchedSimBudget":  2,
+                                          "bucketRows":  74,
+                                          "probabilityMass":  4.078125
+                                      },
+                                      {
+                                          "matchedSimBudget":  3,
+                                          "bucketRows":  46,
+                                          "probabilityMass":  3.90625
+                                      },
+                                      {
+                                          "matchedSimBudget":  4,
+                                          "bucketRows":  27,
+                                          "probabilityMass":  3.140625
+                                      },
+                                      {
+                                          "matchedSimBudget":  5,
+                                          "bucketRows":  27,
+                                          "probabilityMass":  3.921875
+                                      },
+                                      {
+                                          "matchedSimBudget":  6,
+                                          "bucketRows":  15,
+                                          "probabilityMass":  2.6875
+                                      },
+                                      {
+                                          "matchedSimBudget":  7,
+                                          "bucketRows":  13,
+                                          "probabilityMass":  2.765625
+                                      },
+                                      {
+                                          "matchedSimBudget":  8,
+                                          "bucketRows":  9,
+                                          "probabilityMass":  2.125
+                                      },
+                                      {
+                                          "matchedSimBudget":  9,
+                                          "bucketRows":  12,
+                                          "probabilityMass":  3.1875
+                                      },
+                                      {
+                                          "matchedSimBudget":  10,
+                                          "bucketRows":  3,
+                                          "probabilityMass":  0.921875
+                                      },
+                                      {
+                                          "matchedSimBudget":  11,
+                                          "bucketRows":  6,
+                                          "probabilityMass":  1.859375
+                                      },
+                                      {
+                                          "matchedSimBudget":  12,
+                                          "bucketRows":  3,
+                                          "probabilityMass":  1.078125
+                                      },
+                                      {
+                                          "matchedSimBudget":  13,
+                                          "bucketRows":  15,
+                                          "probabilityMass":  1.765625
+                                      },
+                                      {
+                                          "matchedSimBudget":  14,
+                                          "bucketRows":  23,
+                                          "probabilityMass":  1.203125
+                                      },
+                                      {
+                                          "matchedSimBudget":  15,
+                                          "bucketRows":  7,
+                                          "probabilityMass":  0.109375
+                                      },
+                                      {
+                                          "matchedSimBudget":  16,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.96875
+                                      },
+                                      {
+                                          "matchedSimBudget":  17,
+                                          "bucketRows":  3,
+                                          "probabilityMass":  1.5625
+                                      },
+                                      {
+                                          "matchedSimBudget":  18,
+                                          "bucketRows":  5,
+                                          "probabilityMass":  2.515625
+                                      },
+                                      {
+                                          "matchedSimBudget":  19,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.59375
+                                      },
+                                      {
+                                          "matchedSimBudget":  20,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.9375
+                                      },
+                                      {
+                                          "matchedSimBudget":  22,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.671875
+                                      },
+                                      {
+                                          "matchedSimBudget":  23,
+                                          "bucketRows":  3,
+                                          "probabilityMass":  2.15625
+                                      },
+                                      {
+                                          "matchedSimBudget":  26,
+                                          "bucketRows":  9,
+                                          "probabilityMass":  0.28125
+                                      },
+                                      {
+                                          "matchedSimBudget":  27,
+                                          "bucketRows":  5,
+                                          "probabilityMass":  0.15625
+                                      },
+                                      {
+                                          "matchedSimBudget":  28,
+                                          "bucketRows":  9,
+                                          "probabilityMass":  0.28125
+                                      },
+                                      {
+                                          "matchedSimBudget":  29,
+                                          "bucketRows":  3,
+                                          "probabilityMass":  0.09375
+                                      },
+                                      {
+                                          "matchedSimBudget":  39,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.046875
+                                      },
+                                      {
+                                          "matchedSimBudget":  40,
+                                          "bucketRows":  9,
+                                          "probabilityMass":  0.421875
+                                      },
+                                      {
+                                          "matchedSimBudget":  41,
+                                          "bucketRows":  5,
+                                          "probabilityMass":  0.234375
+                                      },
+                                      {
+                                          "matchedSimBudget":  42,
+                                          "bucketRows":  8,
+                                          "probabilityMass":  0.375
+                                      },
+                                      {
+                                          "matchedSimBudget":  43,
+                                          "bucketRows":  4,
+                                          "probabilityMass":  0.1875
+                                      },
+                                      {
+                                          "matchedSimBudget":  44,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.046875
+                                      },
+                                      {
+                                          "matchedSimBudget":  52,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.125
+                                      },
+                                      {
+                                          "matchedSimBudget":  53,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.125
+                                      },
+                                      {
+                                          "matchedSimBudget":  54,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.0625
+                                      },
+                                      {
+                                          "matchedSimBudget":  55,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.0625
+                                      },
+                                      {
+                                          "matchedSimBudget":  56,
+                                          "bucketRows":  5,
+                                          "probabilityMass":  0.3125
+                                      },
+                                      {
+                                          "matchedSimBudget":  57,
+                                          "bucketRows":  3,
+                                          "probabilityMass":  0.1875
+                                      },
+                                      {
+                                          "matchedSimBudget":  58,
+                                          "bucketRows":  4,
+                                          "probabilityMass":  0.25
+                                      },
+                                      {
+                                          "matchedSimBudget":  59,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.125
+                                      },
+                                      {
+                                          "matchedSimBudget":  65,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.078125
+                                      },
+                                      {
+                                          "matchedSimBudget":  66,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.078125
+                                      },
+                                      {
+                                          "matchedSimBudget":  68,
+                                          "bucketRows":  3,
+                                          "probabilityMass":  0.234375
+                                      },
+                                      {
+                                          "matchedSimBudget":  69,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.078125
+                                      },
+                                      {
+                                          "matchedSimBudget":  70,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.078125
+                                      },
+                                      {
+                                          "matchedSimBudget":  73,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.078125
+                                      },
+                                      {
+                                          "matchedSimBudget":  74,
+                                          "bucketRows":  3,
+                                          "probabilityMass":  0.234375
+                                      },
+                                      {
+                                          "matchedSimBudget":  77,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.125
+                                      },
+                                      {
+                                          "matchedSimBudget":  78,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.1875
+                                      },
+                                      {
+                                          "matchedSimBudget":  83,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.1875
+                                      },
+                                      {
+                                          "matchedSimBudget":  86,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.09375
+                                      },
+                                      {
+                                          "matchedSimBudget":  87,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.09375
+                                      },
+                                      {
+                                          "matchedSimBudget":  88,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.09375
+                                      },
+                                      {
+                                          "matchedSimBudget":  89,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.09375
+                                      },
+                                      {
+                                          "matchedSimBudget":  95,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.21875
+                                      },
+                                      {
+                                          "matchedSimBudget":  97,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.109375
+                                      },
+                                      {
+                                          "matchedSimBudget":  101,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.109375
+                                      },
+                                      {
+                                          "matchedSimBudget":  102,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.21875
+                                      },
+                                      {
+                                          "matchedSimBudget":  103,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.109375
+                                      },
+                                      {
+                                          "matchedSimBudget":  106,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.296875
+                                      },
+                                      {
+                                          "matchedSimBudget":  111,
+                                          "bucketRows":  3,
+                                          "probabilityMass":  0.375
+                                      },
+                                      {
+                                          "matchedSimBudget":  115,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.125
+                                      },
+                                      {
+                                          "matchedSimBudget":  118,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.125
+                                      },
+                                      {
+                                          "matchedSimBudget":  120,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.140625
+                                      },
+                                      {
+                                          "matchedSimBudget":  125,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.28125
+                                      },
+                                      {
+                                          "matchedSimBudget":  131,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.140625
+                                      },
+                                      {
+                                          "matchedSimBudget":  132,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.140625
+                                      },
+                                      {
+                                          "matchedSimBudget":  133,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.28125
+                                      },
+                                      {
+                                          "matchedSimBudget":  144,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.3125
+                                      },
+                                      {
+                                          "matchedSimBudget":  145,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.15625
+                                      },
+                                      {
+                                          "matchedSimBudget":  146,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.34375
+                                      },
+                                      {
+                                          "matchedSimBudget":  147,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.328125
+                                      },
+                                      {
+                                          "matchedSimBudget":  148,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.3125
+                                      },
+                                      {
+                                          "matchedSimBudget":  150,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.171875
+                                      },
+                                      {
+                                          "matchedSimBudget":  153,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.171875
+                                      },
+                                      {
+                                          "matchedSimBudget":  158,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.171875
+                                      },
+                                      {
+                                          "matchedSimBudget":  159,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.359375
+                                      },
+                                      {
+                                          "matchedSimBudget":  163,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.171875
+                                      },
+                                      {
+                                          "matchedSimBudget":  167,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.375
+                                      },
+                                      {
+                                          "matchedSimBudget":  181,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.203125
+                                      },
+                                      {
+                                          "matchedSimBudget":  193,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.3125
+                                      },
+                                      {
+                                          "matchedSimBudget":  199,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.234375
+                                      },
+                                      {
+                                          "matchedSimBudget":  205,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.234375
+                                      },
+                                      {
+                                          "matchedSimBudget":  209,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.25
+                                      },
+                                      {
+                                          "matchedSimBudget":  213,
+                                          "bucketRows":  2,
+                                          "probabilityMass":  0.5
+                                      },
+                                      {
+                                          "matchedSimBudget":  217,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.234375
+                                      },
+                                      {
+                                          "matchedSimBudget":  227,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.25
+                                      },
+                                      {
+                                          "matchedSimBudget":  242,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.390625
+                                      },
+                                      {
+                                          "matchedSimBudget":  261,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.3125
+                                      },
+                                      {
+                                          "matchedSimBudget":  269,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.296875
+                                      },
+                                      {
+                                          "matchedSimBudget":  281,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.328125
+                                      },
+                                      {
+                                          "matchedSimBudget":  286,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.328125
+                                      },
+                                      {
+                                          "matchedSimBudget":  289,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.3125
+                                      },
+                                      {
+                                          "matchedSimBudget":  342,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.390625
+                                      },
+                                      {
+                                          "matchedSimBudget":  344,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.40625
+                                      },
+                                      {
+                                          "matchedSimBudget":  349,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.484375
+                                      },
+                                      {
+                                          "matchedSimBudget":  371,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.515625
+                                      },
+                                      {
+                                          "matchedSimBudget":  382,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.4375
+                                      },
+                                      {
+                                          "matchedSimBudget":  411,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.453125
+                                      },
+                                      {
+                                          "matchedSimBudget":  414,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.484375
+                                      },
+                                      {
+                                          "matchedSimBudget":  533,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.609375
+                                      },
+                                      {
+                                          "matchedSimBudget":  671,
+                                          "bucketRows":  1,
+                                          "probabilityMass":  0.765625
+                                      }
+                                  ],
+    "realistic1000":  {
+                          "rows":  560,
+                          "transitions":  64,
+                          "unweightedBucketDisagreementFraction":  0.75357142857142856,
+                          "unweightedTransitionDisagreementFraction":  0.96875,
+                          "primary":  {
+                                          "comparison":  "matched",
+                                          "pooledProbabilityWeighted":  {
+                                                                            "comparableRows":  560,
+                                                                            "disagreementFraction":  0.7333984375,
+                                                                            "disagreementMass":  46.9375,
+                                                                            "probabilityMass":  64.0,
+                                                                            "referenceMargin":  -0.46647714874664276,
+                                                                            "referenceMarginMass":  52.359375,
+                                                                            "referencePreferenceFraction":  {
+                                                                                                                "conditioned":  0.349866844207723,
+                                                                                                                "neither":  0.4440745672436751,
+                                                                                                                "shared":  0.20605858854860187
+                                                                                                            },
+                                                                            "referencePreferenceMass":  {
+                                                                                                            "conditioned":  16.421875,
+                                                                                                            "neither":  20.84375,
+                                                                                                            "shared":  9.671875
+                                                                                                        },
+                                                                            "rows":  560
+                                                                        },
+                                          "sourceSeedBootstrapCI95":  {
+                                                                          "disagreementFraction":  {
+                                                                                                       "high":  0.7968811035156249,
+                                                                                                       "low":  0.6708984375,
+                                                                                                       "samples":  10000
+                                                                                                   },
+                                                                          "referenceConditionedFraction":  {
+                                                                                                               "high":  0.4623520397082472,
+                                                                                                               "low":  0.2612059072007887,
+                                                                                                               "samples":  10000
+                                                                                                           },
+                                                                          "referenceMargin":  {
+                                                                                                  "high":  0.6503725126107422,
+                                                                                                  "low":  -2.1999849163749694,
+                                                                                                  "samples":  10000
+                                                                                              },
+                                                                          "referenceNeitherFraction":  {
+                                                                                                           "high":  0.5316546071273344,
+                                                                                                           "low":  0.32181431346956657,
+                                                                                                           "samples":  10000
+                                                                                                       },
+                                                                          "referenceSharedFraction":  {
+                                                                                                          "high":  0.2675552173393199,
+                                                                                                          "low":  0.16691158367171602,
+                                                                                                          "samples":  10000
+                                                                                                      }
+                                                                      },
+                                          "sourceSeedMean":  {
+                                                                 "disagreementFraction":  0.7333984375,
+                                                                 "referenceConditionedFraction":  0.3596483333923112,
+                                                                 "referenceMargin":  -0.7253341308576742,
+                                                                 "referenceNeitherFraction":  0.4254653608002305,
+                                                                 "referenceSharedFraction":  0.21488630580745827
+                                                             },
+                                          "sourceSeeds":  16
+                                      },
+                          "secondary":  {
+                                            "comparison":  "fresh",
+                                            "pooledProbabilityWeighted":  {
+                                                                              "comparableRows":  560,
+                                                                              "disagreementFraction":  0.754150390625,
+                                                                              "disagreementMass":  48.265625,
+                                                                              "probabilityMass":  64.0,
+                                                                              "referenceMargin":  4.1759702856525625,
+                                                                              "referenceMarginMass":  52.4375,
+                                                                              "referencePreferenceFraction":  {
+                                                                                                                  "conditioned":  0.5496924571058595,
+                                                                                                                  "neither":  0.3554548397539657,
+                                                                                                                  "shared":  0.09485270314017481
+                                                                                                              },
+                                                                              "referencePreferenceMass":  {
+                                                                                                              "conditioned":  26.53125,
+                                                                                                              "neither":  17.15625,
+                                                                                                              "shared":  4.578125
+                                                                                                          },
+                                                                              "rows":  560
+                                                                          },
+                                            "sourceSeedBootstrapCI95":  {
+                                                                            "disagreementFraction":  {
+                                                                                                         "high":  0.822998046875,
+                                                                                                         "low":  0.676513671875,
+                                                                                                         "samples":  10000
+                                                                                                     },
+                                                                            "referenceConditionedFraction":  {
+                                                                                                                 "high":  0.7447332323221998,
+                                                                                                                 "low":  0.4175538312458249,
+                                                                                                                 "samples":  10000
+                                                                                                             },
+                                                                            "referenceMargin":  {
+                                                                                                    "high":  5.534234528202771,
+                                                                                                    "low":  1.74181002253059,
+                                                                                                    "samples":  10000
+                                                                                                },
+                                                                            "referenceNeitherFraction":  {
+                                                                                                             "high":  0.47224977427603876,
+                                                                                                             "low":  0.17706583889451707,
+                                                                                                             "samples":  10000
+                                                                                                         },
+                                                                            "referenceSharedFraction":  {
+                                                                                                            "high":  0.13181642630505358,
+                                                                                                            "low":  0.05850336932570979,
+                                                                                                            "samples":  10000
+                                                                                                        }
+                                                                        },
+                                            "sourceSeedMean":  {
+                                                                   "disagreementFraction":  0.754150390625,
+                                                                   "referenceConditionedFraction":  0.5879456030636784,
+                                                                   "referenceMargin":  3.648770145284414,
+                                                                   "referenceNeitherFraction":  0.3183288149916857,
+                                                                   "referenceSharedFraction":  0.09372558194463596
+                                                               },
+                                            "sourceSeeds":  16
+                                        }
+                      },
+    "prior64":  {
+                    "rows":  628,
+                    "transitions":  64,
+                    "unweightedBucketDisagreementFraction":  0.75477707006369432,
+                    "unweightedTransitionDisagreementFraction":  0.96875,
+                    "primary":  {
+                                    "comparison":  "matched",
+                                    "pooledProbabilityWeighted":  {
+                                                                      "comparableRows":  628,
+                                                                      "disagreementFraction":  0.701171875,
+                                                                      "disagreementMass":  44.875,
+                                                                      "probabilityMass":  64.0,
+                                                                      "referenceMargin":  -1.5501167171387742,
+                                                                      "referenceMarginMass":  49.203125,
+                                                                      "referencePreferenceFraction":  {
+                                                                                                          "conditioned":  0.23642061281337048,
+                                                                                                          "neither":  0.5376044568245125,
+                                                                                                          "shared":  0.225974930362117
+                                                                                                      },
+                                                                      "referencePreferenceMass":  {
+                                                                                                      "conditioned":  10.609375,
+                                                                                                      "neither":  24.125,
+                                                                                                      "shared":  10.140625
+                                                                                                  },
+                                                                      "rows":  628
+                                                                  },
+                                    "sourceSeedBootstrapCI95":  {
+                                                                    "disagreementFraction":  {
+                                                                                                 "high":  0.7819885253906249,
+                                                                                                 "low":  0.611572265625,
+                                                                                                 "samples":  10000
+                                                                                             },
+                                                                    "referenceConditionedFraction":  {
+                                                                                                         "high":  0.3209700830481981,
+                                                                                                         "low":  0.1779714907183329,
+                                                                                                         "samples":  10000
+                                                                                                     },
+                                                                    "referenceMargin":  {
+                                                                                            "high":  -0.6065762695603886,
+                                                                                            "low":  -2.750019975039264,
+                                                                                            "samples":  10000
+                                                                                        },
+                                                                    "referenceNeitherFraction":  {
+                                                                                                     "high":  0.6212385652864527,
+                                                                                                     "low":  0.3532207976461223,
+                                                                                                     "samples":  10000
+                                                                                                 },
+                                                                    "referenceSharedFraction":  {
+                                                                                                    "high":  0.36586541305686193,
+                                                                                                    "low":  0.176495779898697,
+                                                                                                    "samples":  10000
+                                                                                                }
+                                                                },
+                                    "sourceSeedMean":  {
+                                                           "disagreementFraction":  0.701171875,
+                                                           "referenceConditionedFraction":  0.24810720821269228,
+                                                           "referenceMargin":  -1.6781034032758115,
+                                                           "referenceNeitherFraction":  0.48713188057272844,
+                                                           "referenceSharedFraction":  0.2647609112145793
+                                                       },
+                                    "sourceSeeds":  16
+                                },
+                    "secondary":  {
+                                      "comparison":  "fresh",
+                                      "pooledProbabilityWeighted":  {
+                                                                        "comparableRows":  628,
+                                                                        "disagreementFraction":  0.76123046875,
+                                                                        "disagreementMass":  48.71875,
+                                                                        "probabilityMass":  64.0,
+                                                                        "referenceMargin":  3.7268221812456854,
+                                                                        "referenceMarginMass":  49.796875,
+                                                                        "referencePreferenceFraction":  {
+                                                                                                            "conditioned":  0.6007055805003207,
+                                                                                                            "neither":  0.29955099422706866,
+                                                                                                            "shared":  0.09974342527261065
+                                                                                                        },
+                                                                        "referencePreferenceMass":  {
+                                                                                                        "conditioned":  29.265625,
+                                                                                                        "neither":  14.59375,
+                                                                                                        "shared":  4.859375
+                                                                                                    },
+                                                                        "rows":  628
+                                                                    },
+                                      "sourceSeedBootstrapCI95":  {
+                                                                      "disagreementFraction":  {
+                                                                                                   "high":  0.827880859375,
+                                                                                                   "low":  0.68310546875,
+                                                                                                   "samples":  10000
+                                                                                               },
+                                                                      "referenceConditionedFraction":  {
+                                                                                                           "high":  0.7414199642513714,
+                                                                                                           "low":  0.4774515107372154,
+                                                                                                           "samples":  10000
+                                                                                                       },
+                                                                      "referenceMargin":  {
+                                                                                              "high":  6.061124685869794,
+                                                                                              "low":  1.1698791853253812,
+                                                                                              "samples":  10000
+                                                                                          },
+                                                                      "referenceNeitherFraction":  {
+                                                                                                       "high":  0.40511557807361226,
+                                                                                                       "low":  0.1583412359825405,
+                                                                                                       "samples":  10000
+                                                                                                   },
+                                                                      "referenceSharedFraction":  {
+                                                                                                      "high":  0.17244920237677208,
+                                                                                                      "low":  0.05824150287471344,
+                                                                                                      "samples":  10000
+                                                                                                  }
+                                                                  },
+                                      "sourceSeedMean":  {
+                                                             "disagreementFraction":  0.76123046875,
+                                                             "referenceConditionedFraction":  0.613210249273807,
+                                                             "referenceMargin":  3.5400095096408424,
+                                                             "referenceNeitherFraction":  0.2760165519846487,
+                                                             "referenceSharedFraction":  0.1107731987415444
+                                                         },
+                                      "sourceSeeds":  16
+                                  }
+                },
+    "analyzer":  {
+                     "realistic1000":  "build/s3sf_decision1000_analysis.json",
+                     "prior64":  "build/s3sf_decision_analysis.json",
+                     "bootstrapSamples":  10000,
+                     "bootstrapSeed":  20260823
+                 }
+}
