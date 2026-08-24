@@ -4,11 +4,24 @@ import argparse, csv, hashlib
 from collections import defaultdict
 
 
+ELITE_ENCOUNTERS = frozenset({
+    'GREMLIN_NOB',
+    'LAGAVULIN',
+    'THREE_SENTRIES',
+    'GREMLIN_LEADER',
+    'SLAVERS',
+    'BOOK_OF_STABBING',
+    'GIANT_HEAD',
+    'NEMESIS',
+    'REPTOMANCER',
+})
+
+
 def encounter_class(row):
     name = (row.get('encounterName') or row.get('encounter') or '').upper()
     if row.get('isBoss') == '1' or 'BOSS' in name:
         return 'boss'
-    if any(x in name for x in ('GREMLIN_NOB', 'LAGAVULIN', 'SENTRY', 'ELITE')):
+    if name in ELITE_ENCOUNTERS:
         return 'elite'
     return 'ordinary'
 
@@ -70,6 +83,10 @@ def write_manifest(rows, output, source_csv, target):
 
 
 def self_test():
+    for act, name in ((1, 'GREMLIN_NOB'), (2, 'SLAVERS'), (3, 'NEMESIS')):
+        row = {'encounterName': name, 'isBoss': '0', 'act': str(act)}
+        assert encounter_class(row) == 'elite'
+
     rows = []
     for seed, name, boss in ((0, 'CULTIST', '0'), (1, 'SLIME_BOSS', '1'), (2, 'GREMLIN_NOB', '0')):
         rows.append({'seed': str(seed), 'fightIdx': '0', 'decIdx': '0', 'obsHash': str(seed + 10),

@@ -1,6 +1,7 @@
 #ifndef STS_LIGHTSPEED_S3_SIBLING_CRN_DIAGNOSTIC_H
 #define STS_LIGHTSPEED_S3_SIBLING_CRN_DIAGNOSTIC_H
 
+#include <cstddef>
 #include <cstdint>
 
 namespace sts::search {
@@ -44,6 +45,11 @@ inline std::uint64_t s3SiblingCrnSeed(
         static_cast<std::uint32_t>(sample)));
     return s3SiblingCrnMix(x ^ static_cast<std::uint64_t>(
         static_cast<std::uint32_t>(action)));
+}
+
+inline bool s3SiblingCrnManifestSatisfied(std::size_t requested,
+                                          std::size_t evaluated) {
+    return requested == evaluated;
 }
 
 } // namespace sts::search

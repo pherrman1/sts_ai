@@ -280,7 +280,7 @@ static std::vector<std::uint8_t> readFgBlob(std::ifstream &f,
                                             std::uint64_t offset,
                                             std::uint32_t size);
 
-static void s3SiblingCrnDiagnostic(const std::string &inCsv,
+static bool s3SiblingCrnDiagnostic(const std::string &inCsv,
                                    const std::string &inBin,
                                    const std::string &outFile,
                                    const std::vector<int> &budgets,
@@ -307,7 +307,7 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
                   cObs = ci("obsHash"),
                   cType = ci("frontierType"), cOff = ci("binaryOffset"), cSize = ci("binarySize");
         if (cSeed < 0 || cFight < 0 || cDec < 0 || cObs < 0 || cType < 0 || cOff < 0 || cSize < 0) {
-            std::cerr << "s3siblingcrn: frontier CSV missing parent provenance columns\n"; return;
+            std::cerr << "s3siblingcrn: frontier CSV missing parent provenance columns\n"; return false;
         }
         while (std::getline(corpus, line)) {
             std::vector<std::string> f; std::stringstream ls(line);
@@ -328,7 +328,7 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
         std::string line;
         if (!manifest || !std::getline(manifest, line)) {
             std::cerr << "s3siblingcrn: cannot read selection manifest " << manifestFile << '\n';
-            return;
+            return false;
         }
         std::vector<std::string> cols; std::stringstream hs(line); std::string tok;
         while (std::getline(hs, tok, ',')) cols.push_back(tok);
@@ -340,7 +340,7 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
                   cDec = ci("decision_idx"), cState = ci("state_id");
         if (cSeed < 0 || cFight < 0 || cDec < 0 || cState < 0) {
             std::cerr << "s3siblingcrn: selection manifest missing composite identity columns\n";
-            return;
+            return false;
         }
         while (std::getline(manifest, line)) {
             std::vector<std::string> f; std::stringstream ls(line);
@@ -354,13 +354,13 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
         }
         if (selected.empty()) {
             std::cerr << "s3siblingcrn: selection manifest contains no states\n";
-            return;
+            return false;
         }
         maxStates = std::min(maxStates, static_cast<int>(selected.size()));
     }
     std::ifstream bin(inBin, std::ios::binary);
     std::ofstream out(outFile);
-    if (!bin || !out) { std::cerr << "s3siblingcrn: cannot open input/output artifact\n"; return; }
+    if (!bin || !out) { std::cerr << "s3siblingcrn: cannot open input/output artifact\n"; return false; }
     const std::uint64_t corpusHash = sts::search::s3SiblingCrnMix(
         s3CrnFileHash(inCsv) ^ s3CrnFileHash(inBin));
     out << "baseline_sha,diagnostic_sha,corpus_hash,state_id,source_seed,fight_idx,decision_idx,"
@@ -443,16 +443,22 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
         }
         ++stateOrdinal;
     }
-    if (!selected.empty() && stateOrdinal != static_cast<int>(selected.size())) {
+    if (!sts::search::s3SiblingCrnManifestSatisfied(selected.size(),
+                                                     static_cast<std::size_t>(stateOrdinal))) {
         std::cerr << "s3siblingcrn: selection manifest requested " << selected.size()
                   << " states but only " << stateOrdinal
                   << " were usable; refusing a partial formal diagnostic\n";
+        out.flush();
+        out.close();
+        std::remove(outFile.c_str());
+        return false;
     }
     out.flush();
     const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
     std::cout << "s3siblingcrn wrote " << attempts << " attempts across " << stateOrdinal
               << " states (invalid=" << invalid << ", " << (seconds > 0 ? attempts / seconds : 0.0)
               << " eval/s) -> " << outFile << '\n';
+    return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -14272,10 +14278,10 @@ int main(int argc, char **argv) {
         if (budgets.empty() || std::any_of(budgets.begin(), budgets.end(),
                                            [](int k) { return k <= 0; })) return 2;
         search::g_s3Crn = false;
-        s3SiblingCrnDiagnostic(argv[2], argv[3], argv[4], budgets,
-                               std::stoi(argv[6]), std::stoi(argv[7]),
-                               std::stoull(argv[8]), argv[9], argv[10],
-                               argc > 11 ? argv[11] : "");
+        return s3SiblingCrnDiagnostic(argv[2], argv[3], argv[4], budgets,
+                                      std::stoi(argv[6]), std::stoi(argv[7]),
+                                      std::stoull(argv[8]), argv[9], argv[10],
+                                      argc > 11 ? argv[11] : "") ? 0 : 1;
 
     } else if (mode == "fightrep") {  // isolated replay of captured Act-3 boss fights (fight-start snapshots)
         if (argc < 5) {

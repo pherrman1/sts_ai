@@ -1508,15 +1508,18 @@ int testS3SiblingCrnDiagnostic() {
     const bool identitySeedDiffers = particleSeedA != particleSeedB;
     const bool rolloutArmMatched = rolloutSeedCrn == rolloutSeedIndependent;
     const bool rolloutActionSpecific = rolloutSeedCrn != rolloutSeedSibling;
+    const bool incompleteManifestRejected = !search::s3SiblingCrnManifestSatisfied(2, 1);
     if (!matched || !independentDiffers || !legalityPreserved || !equalScheduledCount
-        || !identitySeedDiffers || !rolloutArmMatched || !rolloutActionSpecific) {
+        || !identitySeedDiffers || !rolloutArmMatched || !rolloutActionSpecific
+        || !incompleteManifestRejected) {
         std::cout << "s3_sibling_crn FAIL: matched=" << matched
                   << " independent=" << independentDiffers
                   << " legality=" << legalityPreserved
                   << " count=" << evaluations
                   << " identitySeed=" << identitySeedDiffers
                   << " rolloutArm=" << rolloutArmMatched
-                  << " rolloutAction=" << rolloutActionSpecific << '\n';
+                  << " rolloutAction=" << rolloutActionSpecific
+                  << " incompleteManifest=" << incompleteManifestRejected << '\n';
         return 1;
     }
     std::cout << "s3_sibling_crn PASS\n";
