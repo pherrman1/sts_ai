@@ -1,8 +1,10 @@
 # Decision log
 
+| 2026-08-24 | [`2026-08-24-s3-sibling-crn-diagnostic.md`](2026-08-24-s3-sibling-crn-diagnostic.md) | Added an offline fixed-action Searcher3 diagnostic for independent versus exactly matched sibling belief particles; historical root-Q CRN remains untouched and the formal experiment awaits review. |
+
 | 2026-08-23 | [`2026-08-23-s3-q-gate-timing.md`](2026-08-23-s3-q-gate-timing.md) | Corrected Searcher3 Q-gate timing result: `bestActionSequence` opens the baseline gate by simulation 10 in 99.91% of 3,449 searches; Always-Q line stopped. |
 
-Last verified: 2026-08-23 against the current working tree.
+Last verified: 2026-08-24 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one

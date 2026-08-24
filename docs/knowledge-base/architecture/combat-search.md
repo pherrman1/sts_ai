@@ -812,6 +812,34 @@ weight-row hoisting; per-output math bit-identical) — cpsi-eval measures
 seeds); benchmark at the 1k-sim operating point.
 Decision log: `2026-08-05-terminal-leaf-run-value-bonus.md`.
 
+### Offline sibling-particle CRN diagnostic (`s3siblingcrn`, 2026-08-24)
+
+`one_combat s3siblingcrn` reads parent decision snapshots from an existing
+`frontiergen` CSV/bin pair and compares fixed-action Monte Carlo estimators.
+It selects two or three legal root actions once, before evaluation (policy
+prior order when a policy model is loaded, otherwise enumeration order), then
+emits one raw row per attempted action evaluation for independent particles,
+matched sibling particles, and a separate 128-sample independent reference.
+
+The matched arm copies the same complete `HiddenBattleState` into every
+sibling at sample index k: ordered draw pile plus all six simulator RNG
+triples. Each action is validated by `Action::isValidAction` before normal
+execution. Simulator RNG then advances naturally; it is never reset after the
+root action. Rollout-policy randomness is separate and uses a deterministic
+seed derived from state, K, replicate, sample, and action, but not sampling
+arm, so siblings do not share artificial policy choices. The helper continues
+with Searcher3's current `playoutRandom` and `evaluateLeaf` semantics. It does
+not call tree search, allocate PUCT visits, warm root Q, or read `g_s3Crn`.
+
+Raw provenance includes both SHAs, corpus hash, semantic action description,
+particle and rollout seeds, particle ID, pre/root-post/final RNG counters,
+validity, value, and evaluation coordinates. `tools/analyze_s3_sibling_crn.py`
+reconstructs batch Q values and reports the preregistered variance, decision,
+bias, invalidity, and state/action-pair bootstrap metrics. Pairs with an
+independent delta variance at or below `1e-12` are reported as degenerate and
+excluded from ratios. Any incomplete or invalid K-sample action batch is
+excluded symmetrically rather than substituted. Default gameplay is unchanged.
+
 ## Important data flow
 
 1. `BattleContext::init` copies run state and initializes combat transients.

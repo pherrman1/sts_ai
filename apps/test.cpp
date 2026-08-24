@@ -1468,6 +1468,46 @@ int testBattleContextRoundtrip() {
     return 1;
 }
 
+int testS3SiblingCrnDiagnostic() {
+    GameContext gc(CharacterClass::IRONCLAD, 424242, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::JAW_WORM);
+    search::BattleScumSearcher3::Node node;
+    search::enumerateActionsForNode(node, bc);
+    if (node.edges.size() < 2) {
+        std::cout << "s3_sibling_crn FAIL: fixture has fewer than two actions\n";
+        return 1;
+    }
+    std::mt19937_64 pairedRng(11), independentRng(12);
+    HiddenBattleState paired = Belief::initial(bc, 1, pairedRng).particles.front();
+    HiddenBattleState independent = Belief::initial(bc, 1, independentRng).particles.front();
+    paired.id = 11; independent.id = 12;
+    search::BattleScumSearcher3 evaluator(bc, 0, 0, 1);
+    int evaluations = 0;
+    const auto a = evaluator.evaluateForcedActionDiagnostic(
+        bc, paired, node.edges[0].action, 101); ++evaluations;
+    const auto b = evaluator.evaluateForcedActionDiagnostic(
+        bc, paired, node.edges[1].action, 102); ++evaluations;
+    const auto c = evaluator.evaluateForcedActionDiagnostic(
+        bc, independent, node.edges[0].action, 101); ++evaluations;
+    const search::Action invalid;
+    const auto rejected = evaluator.evaluateForcedActionDiagnostic(bc, paired, invalid, 103);
+    const bool matched = a.particleId == b.particleId
+        && a.preActionRngCounters == b.preActionRngCounters;
+    const bool independentDiffers = c.particleId != a.particleId;
+    const bool legalityPreserved = a.valid && b.valid && c.valid && !rejected.valid;
+    const bool equalScheduledCount = evaluations == 3;
+    if (!matched || !independentDiffers || !legalityPreserved || !equalScheduledCount) {
+        std::cout << "s3_sibling_crn FAIL: matched=" << matched
+                  << " independent=" << independentDiffers
+                  << " legality=" << legalityPreserved
+                  << " count=" << evaluations << '\n';
+        return 1;
+    }
+    std::cout << "s3_sibling_crn PASS\n";
+    return 0;
+}
+
 // Simulator-health monitor: issue-87 regression. Empty-hand multi-select tasks
 // have one canonical legal action: MULTI_CARD_SELECT mask=0. Executing it must
 // resolve CARD_SELECT normally without producing a zero-progression diagnostic.
@@ -2776,6 +2816,8 @@ int main(int argc, const char* argv[]) {
         return testCardSelectCanonical();
     } else if (command == "battlecontext_roundtrip") {
         return testBattleContextRoundtrip();
+    } else if (command == "s3_sibling_crn") {
+        return testS3SiblingCrnDiagnostic();
     } else if (command == "designer_in_spire") {
         return testDesignerInSpireOptions();
     } else if (command == "cardqueue_overflow") {
