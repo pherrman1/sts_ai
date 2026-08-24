@@ -16,6 +16,7 @@ validation seed IDs reindexed contiguously.
 import hashlib
 import json
 import os
+import platform
 import subprocess
 import sys
 
@@ -27,6 +28,8 @@ from sklearn.model_selection import GroupShuffleSplit
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import train_postcombat_runwin as e2  # XGB recipe, ece/metrics/calibration/bootstrap helpers
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from export_win_model import export_booster
 
 B1_FEATURES = ["hpFrac", "curHp", "maxHp", "act", "floor"]
 SPLIT = {"method": "GroupShuffleSplit", "test_size": 0.15, "random_state": 0}
@@ -134,7 +137,61 @@ def arm_predictions(dfb, feats, val_pairs, dev):
     for name in feats:
         if name.startswith("relic_data_"):
             gain += float(b.get_score(importance_type="gain").get(name, 0.0))
-    return s.values, best, gain
+    return s.values, best, gain, b
+
+
+def _parse_cli(argv):
+    """Preserve the historical positional interface; deploy export is opt-in."""
+    positional, export_dir, booster_path = [], None, None
+    i = 0
+    while i < len(argv):
+        if argv[i] in ("--export-bundle", "--save-booster"):
+            opt = argv[i]; i += 1
+            if i == len(argv): raise SystemExit(f"{opt} needs a path")
+            if opt == "--export-bundle": export_dir = argv[i]
+            else: booster_path = argv[i]
+        else:
+            positional.append(argv[i])
+        i += 1
+    return positional, export_dir, booster_path
+
+
+def export_bundle(out_dir, booster_path, csv, header, features, booster, best_iteration,
+                  val_index, val_features, val_probabilities, result):
+    """Export precisely the model slice used by the reported T-raw metrics."""
+    os.makedirs(out_dir, exist_ok=True)
+    booster_path = booster_path or os.path.join(out_dir, "v_runwin_e2c_v2.booster.json")
+    booster.save_model(booster_path)
+    model_path = os.path.join(out_dir, "v_runwin_e2c_v2.txt")
+    info = export_booster(booster, model_path, best_iteration + 1)
+    parity_path = os.path.join(out_dir, "v_runwin_e2c_v2_parity.csv")
+    parity = pd.DataFrame(val_features, columns=features)
+    parity.insert(0, "fight_index", val_index.get_level_values("fight_index").to_numpy())
+    parity.insert(0, "seed", val_index.get_level_values("seed").to_numpy())
+    parity["python_probability"] = np.asarray(val_probabilities, float)
+    parity.sort_values(["seed", "fight_index"], kind="stable").head(256).to_csv(
+        parity_path, index=False, float_format="%.17g")
+    sha = e2.sha256
+    manifest_path = os.path.join(out_dir, "v_runwin_e2c_v2.manifest.json")
+    bundle_manifest = {
+        "schema_version": "e2c-v2-runwin-native-1",
+        "semantic_boundary": "RAW: persistent combat transfer complete; before regainControl/rewards",
+        "ordered_features": features, "feature_family_manifest": globals()["manifest"](header)[0],
+        "best_iteration": int(best_iteration), "exported_tree_count": int(info["tree_count"]),
+        "xgboost_parameters": e2.XGB_PARAMS, "split": SPLIT,
+        "dataset_sha256": sha(csv),
+        "training_code_sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+        "versions": {"python": platform.python_version(), "xgboost": xgb.__version__,
+                     "numpy": np.__version__, "pandas": pd.__version__},
+        "held_out_metrics": result["arms"]["T-raw"]["metrics"],
+        "files": {"booster": os.path.basename(booster_path), "native_model": os.path.basename(model_path),
+                  "parity_fixture": os.path.basename(parity_path), "booster_sha256": sha(booster_path),
+                  "native_model_sha256": sha(model_path), "parity_fixture_sha256": sha(parity_path)},
+    }
+    with open(manifest_path, "w", newline="\n") as f: json.dump(bundle_manifest, f, indent=2, sort_keys=True)
+    bundle_manifest["files"]["manifest_sha256"] = sha(manifest_path)
+    print(json.dumps({"export_bundle": out_dir, "best_iteration": best_iteration,
+                      "exported_tree_count": info["tree_count"], **bundle_manifest["files"]}, indent=2))
 
 
 def classify_verdict(checks, gain_post):
@@ -153,8 +210,9 @@ def classify_verdict(checks, gain_post):
 
 
 def main():
-    csv = sys.argv[1] if len(sys.argv) > 1 else "build/e2c_raw_terminal.csv"
-    out = sys.argv[2] if len(sys.argv) > 2 else "build/e2c_raw_terminal"
+    positional, export_dir, booster_path = _parse_cli(sys.argv[1:])
+    csv = positional[0] if len(positional) > 0 else "build/e2c_raw_terminal.csv"
+    out = positional[1] if len(positional) > 1 else "build/e2c_raw_terminal"
     os.makedirs(out, exist_ok=True)
     dev = e2.device()
     print(f"loading {csv} ...", flush=True)
@@ -211,11 +269,11 @@ def main():
     results = {}
     for name, (dfb, feats) in arms.items():
         target = val_pairs if name.endswith("paired") or name in ("B2-post", "T-post") else val_raw
-        p, best, gain = arm_predictions(dfb, feats, target, dev)
+        p, best, gain, booster = arm_predictions(dfb, feats, target, dev)
         ytgt = y_all.reindex(target).values
         results[name] = {"p": p, "best": best, "count_gain": gain,
                          "metrics": e2.metrics(ytgt, p), "feats": feats,
-                         "target": target, "y": ytgt}
+                         "target": target, "y": ytgt, "booster": booster}
 
     train_pairs = dfr.index[dfr.index.get_level_values("seed").isin(tr_seeds)]
     yt = y_all.reindex(train_pairs).values
@@ -354,6 +412,12 @@ def main():
                         p_T_raw_paired=results["T-raw-paired"]["p"],
                         p_B2_post=results["B2-post"]["p"],
                         p_T_post=results["T-post"]["p"])
+
+    if export_dir:
+        target = results["T-raw"]["target"]
+        export_bundle(export_dir, booster_path, csv, header, T, results["T-raw"]["booster"],
+                      results["T-raw"]["best"], target,
+                      dfr.loc[target, T].astype(float).values, results["T-raw"]["p"], result)
 
     print(json.dumps({"verdict": verdict, "checks": checks, "retention": result["retention"],
                       "comparisons": comparisons, "counter": result["counter"]}, indent=2))

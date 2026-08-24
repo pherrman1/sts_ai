@@ -251,3 +251,17 @@ enable flag:
 - `apps/one_combat.cpp::main` (~L9208–L9965) — single parse site for all env vars above
 - `EXPERIMENTS.md` — experiments that introduced each flag
 - `docs/knowledge-base/evaluation/current-baselines.md` — current recommended configuration
+
+# E2c run-win shadow producer
+
+The following variables are diagnostic-only and are read only by the explicit
+`one_combat runwinshadow` mode; ordinary `bestbench` neither loads nor invokes
+this critic.
+
+- `STS_RUNWIN_SHADOW_MODEL`: required compact E2c RAW logistic-tree model.
+- `STS_RUNWIN_SHADOW_R`: isolated continuations per reservoir-accepted leaf
+  (default `1`).
+- `STS_RUNWIN_SHADOW_PER_STRATUM`: reservoir capacity for each shadow stratum
+  per Searcher3 decision (default `1`).
+- `STS_RUNWIN_SHADOW_MAX_GROUPS`: cap accepted source-leaf groups per run
+  (default `16`; `0` gives an OFF callback comparison).

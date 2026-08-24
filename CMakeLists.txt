@@ -10,7 +10,14 @@ enable_testing()
 file (GLOB_RECURSE sts_lightspeed_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS  "-Wno-shift-count-overflow -O3 -fopenmp -flto")
+add_compile_options(
+    -Wno-shift-count-overflow
+    -fopenmp
+    $<$<CONFIG:Release>:-O3>
+    $<$<CONFIG:Release>:-flto>)
+add_link_options(
+    -fopenmp
+    $<$<CONFIG:Release>:-flto>)
 
 add_subdirectory(json)
 
@@ -24,7 +31,20 @@ target_include_directories(sts_core_objects PUBLIC json/include)
 find_package(Python COMPONENTS Interpreter Development.Module QUIET)
 if(Python_Development.Module_FOUND)
     add_subdirectory(pybind11)
-    pybind11_add_module(slaythespire bindings/slaythespire.cpp bindings/bindings-util.cpp ${sts_lightspeed_SOURCES})
+    # Keep native executables on non-PIC objects: Release throughput is
+    # materially slower when their LTO inputs are compiled with -fPIC. The
+    # shared Python module gets a dedicated hidden/PIC object collection.
+    add_library(sts_core_pic_objects OBJECT ${sts_lightspeed_SOURCES})
+    set_target_properties(sts_core_pic_objects PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON)
+    target_include_directories(sts_core_pic_objects PUBLIC include)
+    target_include_directories(sts_core_pic_objects PUBLIC json/include)
+    pybind11_add_module(slaythespire
+        bindings/slaythespire.cpp
+        bindings/bindings-util.cpp
+        $<TARGET_OBJECTS:sts_core_pic_objects>)
     target_include_directories(slaythespire PUBLIC include)
     target_include_directories(slaythespire PUBLIC json/single_include)
     target_include_directories(slaythespire PUBLIC bindings)
@@ -110,5 +130,15 @@ add_test(NAME live_rejuv_attempt_gate COMMAND $<TARGET_FILE:unit-test> live_reju
 add_test(NAME e2c_observer_scope COMMAND $<TARGET_FILE:unit-test> e2c_observer_scope)
 add_test(NAME py_compile_analyze_postcombat_raw_terminal COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_postcombat_raw_terminal.py)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
-set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest py_compile_winnettest_selftest check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope py_compile_analyze_postcombat_raw_terminal analyze_postcombat_raw_terminal_selftest
-    PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")
+add_test(NAME py_compile_analyze_runwin_shadow COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py)
+add_test(NAME analyze_runwin_shadow_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py --self-test)
+add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
+add_test(NAME runwin_e2c_native_parity COMMAND ${CMAKE_COMMAND} -E env
+    STS_NATIVE_OOC=0
+    STS_RUNWIN_SHADOW_MODEL=${CMAKE_SOURCE_DIR}/tools/runwin_e2c_synthetic.txt
+    $<TARGET_FILE:one_combat> runwinparity ${CMAKE_SOURCE_DIR}/tools/runwin_e2c_synthetic_parity.csv)
+add_test(NAME e2c_runwin_projection_parity COMMAND ${CMAKE_COMMAND} -E env
+    STS_NATIVE_OOC=0
+    $<TARGET_FILE:one_combat> e2cprojectiontest)
+set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest py_compile_winnettest_selftest check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope py_compile_analyze_postcombat_raw_terminal analyze_postcombat_raw_terminal_selftest py_compile_analyze_runwin_shadow analyze_runwin_shadow_selftest export_win_model_selftest runwin_e2c_native_parity
+    e2c_runwin_projection_parity PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")

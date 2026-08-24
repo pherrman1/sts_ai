@@ -40,7 +40,7 @@
       "name": "linux-gcc-debug-build",
       "displayName": "Build Linux/WSL GCC Debug",
       "configurePreset": "linux-gcc-debug",
-      "jobs": 1
+      "jobs": 0
     }
   ],
   "testPresets": [
