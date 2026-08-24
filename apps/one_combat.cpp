@@ -85,6 +85,13 @@
 
 extern bool g_collectKeys;              // env STS_COLLECT_KEYS=1: collect act-4 keys
 static std::vector<std::string> g_mainArgv;
+static std::string g_mainBinaryPath;
+// Resolved only after successful loading, so E3a provenance does not confuse
+// an unset/failed environment request with the policy actually exercised.
+static std::string g_effectiveVNetPath;
+static std::string g_effectivePolicyPath;
+static std::string g_effectiveOocStrategicPath;
+static std::string g_effectiveOocStrategicTokPath;
 
 static thread_local int t_trainingHealthFailures = 0;
 static thread_local int t_trainingBranchHealthFailures = 0;
@@ -8420,6 +8427,14 @@ static int runwinParity(const std::string &fixture) {
     return rows > 0 && maxError <= 1e-4 ? 0 : 1;
 }
 
+static void jsonPathAndHash(std::ostream &out, const std::string &path) {
+    if (path.empty()) { out << "{\"path\": \"disabled\", \"sha256\": null}"; return; }
+    out << "{\"path\": \"" << jsonEscape(path) << "\", \"sha256\": \""
+        << jsonEscape(fileSha256(path)) << "\"}";
+}
+
+static const char *jsonBool(bool value) { return value ? "true" : "false"; }
+
 // ---------------------------------------------------------------------------
 // E3a direct eventual-run reference.  This intentionally remains separate
 // from runwinshadow: its reference is an actual copied-run outcome, whereas
@@ -8559,6 +8574,9 @@ static void runwinRankReferenceRows(const RunwinRankRoot &root, const RunwinShad
         const std::uint64_t combatSeed = runwinRankCombatSeed(root, future);
         const std::uint64_t downstreamSeed = runwinRankDownstreamSeed(root, future);
         BattleContext continuation = candidate.leaf;
+        // SAME-WORLD CRN reference: evaluator RNG varies by root/future, never
+        // leaf; copied battle-entry environment hidden-future RNG is retained
+        // across sibling leaves and all M futures (not resampled per future).
         // The evaluator is freshly constructed only after the source run has
         // completed. diagnosticRollout uses the explicitly supplied local RNG.
         search::BattleScumSearcher3 evaluator(continuation, root.seed, root.decIdx, 1);
@@ -8656,20 +8674,41 @@ static void runwinRank(int nSeeds, int sims, int asc, const std::string &outFile
     g_runwinRankActive = false;
     const std::string manifest = g_runwinShadowModelPath.substr(0, g_runwinShadowModelPath.rfind(".txt")) + ".manifest.json";
     std::ofstream provenance(outFile + ".provenance.json");
-    if (provenance) provenance << "{\n  \"schema_version\": \"e3a-runwinrank-v1\",\n"
-        << "  \"semantic_boundary\": \"source leaf -> diagnostic combat CRN -> canonical exitBattle -> copied full-run counterfactual\",\n"
-        << "  \"git_sha\": \"" << jsonEscape(trainingGitValue("git rev-parse HEAD")) << "\",\n"
-        << "  \"model_path\": \"" << jsonEscape(g_runwinShadowModelPath) << "\",\n"
-        << "  \"model_sha256\": \"" << jsonEscape(fileSha256(g_runwinShadowModelPath)) << "\",\n"
-        << "  \"manifest_sha256\": \"" << jsonEscape(fileSha256(manifest)) << "\",\n"
-        << "  \"command\": \"one_combat runwinrank\",\n"
-        << "  \"seed_offset\": " << seedOffset << ", \"seeds\": " << nSeeds << ", \"sims\": " << sims << ", \"ascension\": " << asc << ",\n"
-        << "  \"runwin_replicates\": " << g_runwinShadowR << ", \"selected_roots\": " << g_runwinRankRoots
-        << ", \"max_leaves\": " << g_runwinRankMaxLeaves << ", \"min_rankable_leaves\": " << g_runwinRankMinLeaves
-        << ", \"reference_futures\": " << g_runwinRankReferenceFutures << ", \"reference_sims\": " << g_runwinRankReferenceSims << ",\n"
-        << "  \"crn\": \"combat and downstream seeds are root/future keyed and exclude leaf identity\",\n"
-        << "  \"environment\": {\"STS_S3_ALWAYS_Q\": \"" << jsonEscape(std::getenv("STS_S3_ALWAYS_Q") ? std::getenv("STS_S3_ALWAYS_Q") : "0")
-        << "\", \"STS_RUNWIN_SHADOW_MODEL\": \"" << jsonEscape(g_runwinShadowModelPath) << "\"}\n}\n";
+    if (provenance) {
+        provenance << "{\n  \"schema_version\": \"e3a-runwinrank-v2\",\n"
+          << "  \"semantic_boundary\": \"source leaf -> SAME-WORLD CRN diagnostic combat -> canonical exitBattle -> copied full-run counterfactual\",\n"
+          << "  \"reference_semantics\": \"M is paired realized-world CRN: copied GameContext/environment hidden-future RNG is preserved across sibling leaves and M; only diagnostic combat-policy and downstream-agent RNG vary by root/future. It is not a marginalization over resampled maps, rewards, or encounters; environment-world variation is across source seeds and the outer source-seed bootstrap.\",\n"
+          << "  \"git_sha\": \"" << jsonEscape(trainingGitValue("git rev-parse HEAD")) << "\",\n"
+          << "  \"git_dirty\": " << jsonBool(!trainingGitValue("git status --porcelain --untracked-files=all").empty()) << ",\n"
+          << "  \"binary\": "; jsonPathAndHash(provenance, g_mainBinaryPath); provenance << ",\n"
+          << "  \"build_configuration\": \"CMake one_combat C++17 target\",\n"
+          << "  \"command\": \"one_combat";
+        for (const auto &arg : g_mainArgv) provenance << ' ' << jsonEscape(arg);
+        provenance << "\",\n  \"seed_offset\": " << seedOffset << ", \"seeds\": " << nSeeds
+          << ", \"source_sims\": " << sims << ", \"ascension\": " << asc << ",\n"
+          << "  \"effective_source_policy\": {\"STS_FAIR\": " << jsonBool(search::g_fairPlay)
+          << ", \"STS_SEARCHER3\": " << jsonBool(search::g_useSearcher3)
+          << ", \"STS_S3_PARTICLES\": " << search::g_s3Particles
+          << ", \"STS_S3_BELIEF\": " << jsonBool(search::g_s3Belief)
+          << ", \"STS_S3_CHAIN\": " << jsonBool(search::g_s3Chain)
+          << ", \"STS_LIVE_VALID\": " << jsonBool(search::g_liveValid)
+          << ", \"STS_S3_ALWAYS_Q\": \"" << jsonEscape(std::getenv("STS_S3_ALWAYS_Q") ? std::getenv("STS_S3_ALWAYS_Q") : "0")
+          << "\", \"STS_STOP_AFTER_ACT\": " << g_stopAfterAct << ", \"STS_COLLECT_KEYS\": " << jsonBool(g_collectKeys) << "},\n"
+          << "  \"effective_models\": {\"vnet\": "; jsonPathAndHash(provenance, g_effectiveVNetPath);
+        provenance << ", \"vnet_alpha\": " << search::g_vnetAlpha << ", \"policy\": "; jsonPathAndHash(provenance, g_effectivePolicyPath);
+        provenance << ", \"ooc_strategic\": "; jsonPathAndHash(provenance, g_effectiveOocStrategicPath);
+        provenance << ", \"ooc_strategic_token\": "; jsonPathAndHash(provenance, g_effectiveOocStrategicTokPath);
+        provenance << ", \"e2c_raw\": "; jsonPathAndHash(provenance, g_runwinShadowModelPath);
+        provenance << ", \"e2c_manifest_sha256\": \"" << jsonEscape(fileSha256(manifest)) << "\"},\n"
+          << "  \"effective_ooc\": {\"strategic_margin\": " << g_oocStrategicMargin
+          << ", \"card\": " << jsonBool(g_oocActionNN) << ", \"rest\": " << jsonBool(g_oocStrategicRest)
+          << ", \"event\": " << jsonBool(g_oocStrategicEvent) << ", \"shop\": " << jsonBool(g_oocStrategicShop)
+          << ", \"treasure\": " << jsonBool(g_oocStrategicTreasure) << ", \"boss_relic\": " << jsonBool(g_oocStrategicBossRelic) << "},\n"
+          << "  \"runwin_replicates\": " << g_runwinShadowR << ", \"selected_roots\": " << g_runwinRankRoots
+          << ", \"max_leaves\": " << g_runwinRankMaxLeaves << ", \"min_rankable_leaves\": " << g_runwinRankMinLeaves
+          << ", \"reference_futures\": " << g_runwinRankReferenceFutures << ", \"reference_sims\": " << g_runwinRankReferenceSims << ",\n"
+          << "  \"crn\": \"combat and downstream seeds are root/future keyed and exclude leaf identity\"\n}\n";
+    }
     std::cout << "runwinrank wrote " << shadowWritten << " shadow rows and " << referenceWritten
               << " reference rows to " << outFile << " (R=" << g_runwinShadowR << ", M=" << g_runwinRankReferenceFutures << ")\n";
 }
@@ -12393,6 +12432,7 @@ static void exportCardCfMaps(const std::string &inputPath, const std::string &ou
 
 // ---------------------------------------------------------------------------
 int main(int argc, char **argv) {
+    g_mainBinaryPath = argc > 0 ? argv[0] : "one_combat";
     g_mainArgv.clear();
     for (int i = 1; i < argc; ++i) g_mainArgv.emplace_back(argv[i]);
     std::string mode = argc > 1 ? argv[1] : "bench";
@@ -12474,12 +12514,14 @@ int main(int argc, char **argv) {
     }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_NN")) {
         if (g_oocStrategicNet.load(d)) {
+            g_effectiveOocStrategicPath = d;
             std::cout << "[OOC one-ply strategic NN ON: card rewards gated at margin "
                       << g_oocStrategicMargin << "]\n";
         }
     }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_TOK_NN")) {
         if (g_oocStrategicTokNet.load(d)) {
+            g_effectiveOocStrategicTokPath = d;
             g_oocStrategicTok = 1;
             std::cout << "[OOC one-ply strategic TOK net ON: card rewards gated at margin "
                       << g_oocStrategicMargin << "]\n";
@@ -13281,6 +13323,7 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_VNET")) {           // learned V_combat leaf value
         std::string path = std::string(d) == "1" ? "build/v_combat_trees.txt" : d;
         if (search::g_combatVNet.load(path)) {
+            g_effectiveVNetPath = path;
             search::g_useVNet = true;
             if (const char *a = std::getenv("STS_VNET_ALPHA")) search::g_vnetAlpha = std::atof(a);
             if (const char *b = std::getenv("STS_COMBAT_WIN_BONUS"))
@@ -13310,6 +13353,7 @@ int main(int argc, char **argv) {
     if (!std::getenv("STS_VNET") && search::g_fairPlay && search::g_useSearcher3) {
         const char *vnetDefault = "models/v_combat_7k_tuned.txt";
         if (search::g_combatVNet.load(vnetDefault)) {
+            g_effectiveVNetPath = vnetDefault;
             search::g_useVNet = true;
             search::g_vnetAlpha = 0.3;
             std::cout << "[V_combat leaf default ON: " << vnetDefault << ", "
@@ -13537,6 +13581,7 @@ int main(int argc, char **argv) {
             else if (d)                          path = d;
             search::g_policyNet.isPolicy = true;
             if (search::g_policyNet.load(path)) {
+                g_effectivePolicyPath = path;
                 search::g_usePolicyNet = true;
                 std::cout << "[policy PUCT ON: " << path << ", "
                           << search::g_policyNet.description() << "]\n";

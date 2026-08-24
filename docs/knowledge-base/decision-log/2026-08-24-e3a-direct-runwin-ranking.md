@@ -34,6 +34,19 @@ provenance JSON.  The reference records combat and downstream seeds,
 combat-survival, actual run win, validity, terminal floor/HP, and health
 status.
 
+### SAME-WORLD CRN reference semantics
+
+The M direct-reference futures are **SAME-WORLD CRN continuations**. For a
+source root, the detached battle-entry `GameContext` retains environment and
+hidden-future RNG state across sibling leaves and all M futures. Future index
+changes only the explicitly root/future-keyed diagnostic combat-policy RNG and
+downstream agent RNG, neither of which contains leaf identity. `V_direct` is
+therefore a policy-conditional, paired realized-world reference; it is not an
+M-sample marginalization over newly sampled maps, rewards, or encounters.
+Independent source runs/seeds provide environment-world variation, and the
+outer bootstrap resamples source seeds. This is a design contract, not an E3a
+scientific result.
+
 `tools/analyze_runwin_rank.py` validates the E2c source-leaf identity and
 collapse contract, requires exact direct future coverage, excludes invalid
 complete references, reports root-equally-weighted ranking metrics, seed-level

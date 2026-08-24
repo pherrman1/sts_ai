@@ -27,6 +27,11 @@ PRIMARY_COMPARISONS = (
     ("diagnostic_survival_rate", "blendedEval"),
     ("runwin_mean", "diagnostic_survival_rate"),
 )
+ADEQUACY_THRESHOLDS = {
+    "min_source_seeds": 12, "min_qualifying_roots": 24,
+    "min_qualifying_pairs": 100, "max_invalid_future_rate": .01,
+    "min_split_half_pairwise_agreement": .65,
+}
 
 
 def _mean(values):
@@ -105,7 +110,13 @@ def _collapse_reference(reference, futures):
         leaf["even_reference_mean"] = float(group.loc[group.referenceFutureIdx % 2 == 0, "runWon"].mean())
         leaf["odd_reference_mean"] = float(group.loc[group.referenceFutureIdx % 2 == 1, "runWon"].mean())
         rows.append(leaf)
-    return pd.DataFrame(rows), exclusions
+    invalid_rows = int(reference.valid.ne(1).sum())
+    return pd.DataFrame(rows), exclusions, {
+        "total_reference_future_rows": int(len(reference)),
+        "invalid_reference_future_rows": invalid_rows,
+        "invalid_future_rate": float(invalid_rows / len(reference)) if len(reference) else None,
+        "reference_leaves_with_invalid_future": int(reference.groupby(LEAF_IDENTITY, dropna=False).valid.apply(lambda x: x.ne(1).any()).sum()),
+    }
 
 
 def _root_metric_rows(joined):
@@ -184,7 +195,15 @@ def analyze(shadow, reference, futures=8, bootstrap=1000):
     _validate_shadow(shadow)
     _validate_reference(reference, futures)
     all_source, primary_source, source_exclusions = _collapse_source_leaves(shadow.copy())
-    direct, reference_exclusions = _collapse_reference(reference.copy(), futures)
+    source_ids = pd.MultiIndex.from_frame(primary_source[LEAF_IDENTITY])
+    reference_ids = pd.MultiIndex.from_frame(reference[LEAF_IDENTITY].drop_duplicates())
+    missing = source_ids.difference(reference_ids)
+    extra = reference_ids.difference(source_ids)
+    if len(missing):
+        raise ValueError(f"missing complete reference group for {len(missing)} primary source leaf/leaves")
+    if len(extra):
+        raise ValueError(f"extra reference leaf identity/identities: {len(extra)}")
+    direct, reference_exclusions, reference_counts = _collapse_reference(reference.copy(), futures)
     joined = primary_source.merge(direct, on=LEAF_IDENTITY, how="inner", validate="one_to_one")
     if joined.empty:
         raise ValueError("no complete source leaves matched complete valid direct references")
@@ -195,14 +214,35 @@ def analyze(shadow, reference, futures=8, bootstrap=1000):
     ranking, split = _aggregate_roots(root_metrics)
     coverage = {column: {str(k): int(v) for k, v in joined.groupby(column, dropna=False).size().items()}
                 for column in ("act", "encounter", "hp_band", "treeDepth")}
+    qualifying_pairs = int(ranking["runwin_mean"]["pairs"])
+    invalid_rate = reference_counts["invalid_future_rate"]
+    adequacy_checks = {
+        "source_seeds": int(joined.seed.nunique()) >= ADEQUACY_THRESHOLDS["min_source_seeds"],
+        "qualifying_roots": int(len(root_metrics)) >= ADEQUACY_THRESHOLDS["min_qualifying_roots"],
+        "qualifying_pairs": qualifying_pairs >= ADEQUACY_THRESHOLDS["min_qualifying_pairs"],
+        "invalid_future_rate": invalid_rate is not None and invalid_rate <= ADEQUACY_THRESHOLDS["max_invalid_future_rate"],
+        "complete_valid_m_future_coverage": len(direct) == len(primary_source),
+        "split_half_pairwise_agreement": split["pairwise_agreement"] is not None and split["pairwise_agreement"] >= ADEQUACY_THRESHOLDS["min_split_half_pairwise_agreement"],
+    }
+    adequate = all(adequacy_checks.values())
     return {
         "reference_protocol": {"futures": futures, "future_indices": list(range(futures)),
                                "ranking_unit": "source_leaf", "comparison_unit": "root",
                                "bootstrap_unit": "source_seed"},
-        "source_leaves": int(len(all_source)), "complete_source_leaves": int(len(primary_source)),
+        "source_leaves": int(len(all_source)), "primary_source_leaves": int(len(primary_source)),
         "direct_reference_leaves": int(len(direct)), "qualifying_leaves": int(len(joined)),
         "qualifying_roots": int(len(root_metrics)),
         "source_exclusions": source_exclusions, "reference_exclusions": reference_exclusions,
+        "reference_coverage": {**reference_counts, "complete_valid_reference_leaves": int(len(direct)),
+                               "retained_reference_leaf_fraction": float(len(direct) / len(primary_source)) if len(primary_source) else None},
+        "reference_adequacy": {"status": "ADEQUATE" if adequate else "REFERENCE_INADEQUATE",
+                                "thresholds": ADEQUACY_THRESHOLDS, "checks": adequacy_checks,
+                                "source_seeds_represented": int(joined.seed.nunique()),
+                                "qualifying_roots": int(len(root_metrics)), "qualifying_within_root_pairs": qualifying_pairs,
+                                "invalid_future_rate": invalid_rate,
+                                "complete_m_future_coverage": len(direct) == len(primary_source),
+                                "even_odd_split_half_pairwise_agreement": split["pairwise_agreement"],
+                                "interpretation": "E3a GO/STOP must not be interpreted" if not adequate else "adequacy gate passed"},
         "coverage_descriptive": coverage, "ranking": ranking,
         "deltas": _deltas_from_roots(root_metrics), "seed_bootstrap": _seed_bootstrap(root_metrics, bootstrap),
         "split_half_reference_reliability": split,
@@ -251,6 +291,8 @@ def self_test():
     reference = _reference_rows(shadow)
     report = analyze(shadow, reference, futures=8, bootstrap=64)
     assert report["qualifying_roots"] == 4 and report["qualifying_leaves"] == 12
+    assert report["reference_adequacy"]["status"] == "REFERENCE_INADEQUATE"
+    assert report["reference_coverage"]["invalid_reference_future_rows"] == 0
     assert report["ranking"]["runwin_mean"]["tie_aware_accuracy"] == 1.0
     assert report["ranking"]["blendedEval"]["tie_aware_accuracy"] == 0.0
     assert report["deltas"]["runwin_mean_minus_blendedEval"]["tie_aware_accuracy"] == 1.0
@@ -273,6 +315,20 @@ def self_test():
         pass
     else:
         raise AssertionError("missing future was not rejected")
+    missing_leaf = reference[reference.leafObsHash.ne(20)]
+    try:
+        analyze(shadow, missing_leaf, futures=8, bootstrap=4)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("completely missing reference leaf was not rejected")
+    extra_leaf = reference.iloc[:8].copy(); extra_leaf["leafObsHash"] = 999
+    try:
+        analyze(shadow, pd.concat([reference, extra_leaf]), futures=8, bootstrap=4)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("extra reference leaf was not rejected")
     try:
         analyze(shadow, pd.concat([reference, reference.iloc[[0]]]), futures=8, bootstrap=4)
     except ValueError:
@@ -283,6 +339,17 @@ def self_test():
     invalid_report = analyze(shadow, invalid, futures=8, bootstrap=4)
     assert invalid_report["reference_exclusions"]["invalid_reference_future"] == 1
     assert invalid_report["qualifying_leaves"] == 11
+    assert invalid_report["reference_coverage"]["invalid_reference_future_rows"] == 1
+    assert invalid_report["reference_coverage"]["invalid_future_rate"] == 1 / 96
+    # The preregistered gate is exercised separately from the deliberately
+    # small synthetic corpus above: 18 source seeds x 2 roots x 3 leaves
+    # yields 36 equally weighted roots and 108 within-root pairs.
+    adequate_shadow = pd.concat([shadow.assign(seed=shadow.seed + 100 * k)
+                                 for k in range(9)], ignore_index=True)
+    adequate_reference = pd.concat([reference.assign(seed=reference.seed + 100 * k)
+                                    for k in range(9)], ignore_index=True)
+    adequate_report = analyze(adequate_shadow, adequate_reference, futures=8, bootstrap=4)
+    assert adequate_report["reference_adequacy"]["status"] == "ADEQUATE"
     # A direct combat loss is an accepted exact-zero outcome; only a nonzero
     # run win after such a loss is schema/semantic corruption.
     loss = reference.copy(); loss.loc[0, ["combatSurvived", "runWon"]] = [0, 0]
