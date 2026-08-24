@@ -156,6 +156,8 @@ std::string g_s3BeliefAuditFile;
 bool g_s3RootRaceDiag = false;
 std::string g_s3RootRaceDiagFile;
 int g_s3RootRaceDiagMaxStates = 32;
+bool g_s3GateTimingDiag = false;
+std::string g_s3GateTimingDiagFile;
 thread_local std::int64_t t_baUpdatesDuringSearch = 0;
 thread_local std::int64_t t_baParticlesZeroed = 0;
 thread_local std::int64_t t_baAllZeroEvents = 0;
@@ -1905,6 +1907,7 @@ bool BattleScumSearcher3::advanceRoot(const Action &action,
 
     bestActionSequence.clear();
     bestActionValue = std::numeric_limits<double>::min();
+    firstQExploitSimulation = -1;
     outcomePlayerHp = 0;
     obsMismatchCount = 0;
     parentChildViolations = 0;
@@ -2648,8 +2651,11 @@ void BattleScumSearcher3::backpropagate(const std::vector<Node *> &path,
                                         double evaluation,
                                         const std::vector<Action> &actionStack) {
     if (evaluation > bestActionValue) {
+        const bool wasEmpty = bestActionSequence.empty();
         bestActionSequence = actionStack;
         bestActionValue = evaluation;
+        if (wasEmpty && !bestActionSequence.empty() && firstQExploitSimulation < 0)
+            firstQExploitSimulation = searchSimulationOrdinal;
     }
     if (evaluation < minActionValue) {
         minActionValue = evaluation;
@@ -2665,8 +2671,8 @@ void BattleScumSearcher3::backpropagate(const std::vector<Node *> &path,
 }
 
 // ---- PUCT selection (AlphaZero formula: Q + c*P*sqrt(N)/(1+N_child)) -------
-bool s3ShouldExploitQ(bool hasWinningLine, int reuseSearchCount) {
-    return g_s3AlwaysQ || (g_reuseAlwaysQ ? reuseSearchCount >= 0 : hasWinningLine);
+bool s3ShouldExploitQ(bool hasExploitableSequence, int reuseSearchCount) {
+    return g_s3AlwaysQ || (g_reuseAlwaysQ ? reuseSearchCount >= 0 : hasExploitableSequence);
 }
 
 int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
@@ -2678,7 +2684,7 @@ int BattleScumSearcher3::selectBestEdgePUCT(const Node &node) {
     const double logParent  = usePuct ? 0.0 : std::log((double)(node.simulationCount + 1));
     const double sqrtParent = usePuct ? std::sqrt((double)(node.simulationCount + 1)) : 0.0;
     // STS_REUSE_ALWAYS_Q: on carried trees, always use Q from sim 1.
-    // Otherwise (legacy): exploit only after finding a winning line.
+    // Otherwise (legacy): exploit only after bestActionSequence is non-empty.
     const bool exploit = s3ShouldExploitQ(!bestActionSequence.empty(), reuseSearchCount);
     const double evalRange = std::max(1.0, bestActionValue - minActionValue);
 

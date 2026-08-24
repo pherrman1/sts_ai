@@ -14,6 +14,7 @@
 #include <chrono>
 #include <limits>
 #include <mutex>
+#include <sstream>
 #include <sim/search/ExpertKnowledge.h>
 #include <game/Game.h>
 #include "sim/PrintHelpers.h"
@@ -143,6 +144,61 @@ static double rootActionQ(const search::BattleScumSearcher3::Edge &edge) {
     return edge.child.simulationCount > 0
         ? edge.child.evaluationSum / edge.child.simulationCount
         : std::numeric_limits<double>::quiet_NaN();
+}
+
+static int s3GateTimingAct(int floor) {
+    // GameContext::act uses the same boss-floor anchors as one_combat.cpp:
+    // act 1 ends at floor 17, act 2 at 34, and act 3 at 50.
+    if (floor <= 17) return 1;
+    if (floor <= 34) return 2;
+    if (floor <= 50) return 3;
+    return 4;
+}
+
+static bool s3GateTimingElite(MonsterEncounter e) {
+    switch (e) {
+        case MonsterEncounter::GREMLIN_NOB:
+        case MonsterEncounter::LAGAVULIN:
+        case MonsterEncounter::THREE_SENTRIES:
+        case MonsterEncounter::GREMLIN_LEADER:
+        case MonsterEncounter::SLAVERS:
+        case MonsterEncounter::BOOK_OF_STABBING:
+        case MonsterEncounter::GIANT_HEAD:
+        case MonsterEncounter::NEMESIS:
+        case MonsterEncounter::REPTOMANCER:
+            return true;
+        default:
+            return false;
+    }
+}
+
+// Cheap opt-in telemetry for the actual baseline Q-gate timing. This is
+// attached to the live searcher after each real combat search; it does not
+// create a probe, mutate a flag, or participate in selection.
+static void writeS3GateTimingDiag(const BattleContext &bc,
+                                  const search::BattleScumSearcher3 &s3,
+                                  std::uint64_t seed, int decisionIdx) {
+    if (!search::g_s3GateTimingDiag || search::g_s3GateTimingDiagFile.empty()) return;
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+    std::ifstream probe(search::g_s3GateTimingDiagFile);
+    const bool empty = !probe.good()
+        || probe.peek() == std::ifstream::traits_type::eof();
+    std::ofstream out(search::g_s3GateTimingDiagFile, std::ios::app);
+    if (!out) return;
+    if (empty) {
+        out << "seed,act,floor,encounter,turn,decision_index,"
+               "visible_observation_hash,first_q_exploit_simulation,"
+               "total_search_simulations,search_simulations_this_call,boss,elite\n";
+    }
+    const bool boss = isBossEncounter(bc.encounter);
+    const bool elite = s3GateTimingElite(bc.encounter);
+    out << seed << ',' << s3GateTimingAct(bc.floorNum) << ',' << bc.floorNum << ','
+        << static_cast<int>(bc.encounter) << ',' << bc.turn << ',' << decisionIdx << ','
+        << CombatObservation::fromBattleContext(bc).visibleHash() << ','
+        << s3.firstQExploitSimulation << ',' << s3.root.simulationCount << ','
+        << s3.lastSearchSimulations << ',' << (boss ? 1 : 0) << ','
+        << (elite ? 1 : 0) << '\n';
 }
 
 static void writeS3BeliefBoundaryDiag(
@@ -531,6 +587,7 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             agent.simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             writeS3RootRaceDiag(bc, bc.seed, decisionIdx);
+            writeS3GateTimingDiag(bc, s3, bc.seed, decisionIdx);
             s3.clampRankCorrAtRoot();
             s3.rankCorrValues.clear();
             // Edge-availability and reuse diagnostics.
@@ -873,6 +930,7 @@ void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
             simulationCountTotal += s3.root.simulationCount - before;
             if (g_onSearchComplete3) g_onSearchComplete3(bc, s3);
             writeS3RootRaceDiag(bc, bc.seed, decisionIdx);
+            writeS3GateTimingDiag(bc, s3, bc.seed, decisionIdx);
             if (search::isDrawPileIndexSensitiveCardSelect(bc))
                 s3.reconcileRoot(bc);
             bool have = false;

@@ -1,0 +1,72 @@
+{
+  "experiment": "Searcher3 baseline Q-gate timing correction",
+  "decision": "STOP_ALWAYS_Q_LINE",
+  "decision_rule": "Stop if at least 95% of searches open the baseline Q gate by simulation 10",
+  "gate_definition": "First backpropagation after which bestActionSequence is non-empty; not terminal-win timing",
+  "collection_implementation_sha": "f36c1014d86d67fb37499640123f6fac9cc49b07",
+  "rows": 3449,
+  "seeds": {
+    "count": 8,
+    "first": 92000,
+    "last": 92007
+  },
+  "bins": {
+    "sim_1": 3380,
+    "sims_2_10": 66,
+    "sims_11_100": 1,
+    "sims_101_plus": 1,
+    "never": 1
+  },
+  "opened_by_sim_10": {
+    "count": 3446,
+    "fraction": 0.9991301826616409,
+    "percent": 99.91
+  },
+  "act_counts": {
+    "act_1": 1011,
+    "act_2": 1152,
+    "act_3": 1286
+  },
+  "category_counts": {
+    "ordinary": 1539,
+    "elite": 943,
+    "boss": 967
+  },
+  "configuration": {
+    "collection_command": "STS_FAIR=1 STS_SEARCHER3=1 STS_S3_PARTICLES=64 STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_S3_ALWAYS_Q=0 STS_S3_HARDSTATE_DIAG=0 STS_S3_GATE_TIMING_DIAG=1 STS_S3_GATE_TIMING_DIAG_FILE=build/qgate_timing_8seeds.csv STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native STS_OOC_STRATEGIC_MARGIN=1.0 STS_OOC_STRATEGIC_REST=1 STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1 STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1 STS_STOP_AFTER_ACT=3 OMP_NUM_THREADS=4 tools/seed_guard.sh build-wsl-qgate/one_combat bestbench 1000 8 0 92000 build/qgate_8seed_results.csv",
+    "mode": "bestbench",
+    "simulations_per_decision": 1000,
+    "ascension": 0,
+    "stop_after_act": 3,
+    "fair": true,
+    "searcher3": true,
+    "particles": 64,
+    "s3_belief": false,
+    "s3_chain": false,
+    "s3_always_q": false,
+    "ooc_strategic_margin": 1.0,
+    "ooc_strategic_rest": true,
+    "ooc_strategic_event": true,
+    "ooc_strategic_shop": true,
+    "ooc_strategic_treasure": true,
+    "ooc_strategic_boss_relic": true,
+    "vnet": "models/v_combat_7k_tuned.txt; alpha=0.3",
+    "policy": "models/policy_trees_c.txt",
+    "ooc_token_model": "selfplay/models/ooc_strategic_tok_final.native",
+    "openmp_threads": 4,
+    "seed_guard": "tools/seed_guard.sh"
+  },
+  "raw_artifact": {
+    "path": "build/qgate_timing_8seeds.csv",
+    "tracked": false,
+    "sha256": "a5e7ec4d87cb737492635e41f6f7e10a4f5d2289cca7d79d1560af82d086e1bf"
+  },
+  "smoke": {
+    "seeds": "91000-91001",
+    "rows": 803,
+    "opened_by_sim_10": 799,
+    "opened_by_sim_10_percent": 99.50,
+    "artifact": "build/qgate_timing_smoke_v2.csv"
+  },
+  "interpretation": "Timing evidence only; the Always-Q line is stopped. No gameplay win-rate, equal-CPU, optimal-action, or hard-state/common-reference conclusion is claimed."
+}
