@@ -52,6 +52,7 @@
 #include "sim/search/CombatPVNet.h"
 #include "sim/search/CombatCpsiNet.h"
 #include "sim/search/BattleScumSearcher3.h"
+#include "sim/search/S3SiblingCrnDiagnostic.h"
 #include "sim/search/S3RejuvenationProbe.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/ExpertKnowledge.h"
@@ -245,24 +246,6 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
 // Offline sibling common-random-numbers diagnostic. This intentionally does
 // not call search(), allocate PUCT visits, or touch the historical g_s3Crn
 // warm-start path. Each output row is one attempted forced-action evaluation.
-static std::uint64_t s3CrnMix(std::uint64_t x) {
-    x += 0x9e3779b97f4a7c15ULL;
-    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
-    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
-    return x ^ (x >> 31);
-}
-
-static std::uint64_t s3CrnSeed(std::uint64_t root, std::uint64_t state,
-                               int k, int rep, int sample, int action,
-                               std::uint64_t domain) {
-    std::uint64_t x = s3CrnMix(root ^ domain);
-    x = s3CrnMix(x ^ state);
-    x = s3CrnMix(x ^ (std::uint64_t)(std::uint32_t)k);
-    x = s3CrnMix(x ^ (std::uint64_t)(std::uint32_t)rep);
-    x = s3CrnMix(x ^ (std::uint64_t)(std::uint32_t)sample);
-    return s3CrnMix(x ^ (std::uint64_t)(std::uint32_t)action);
-}
-
 static std::string csvQuoted(const std::string &s) {
     std::string out = "\"";
     for (char c : s) { if (c == '\"') out.push_back('\"'); out.push_back(c); }
@@ -304,8 +287,10 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
                                    int replicates, int maxStates,
                                    std::uint64_t diagnosticSeed,
                                    const std::string &baselineSha,
-                                   const std::string &diagnosticSha) {
-    std::map<std::tuple<std::uint64_t, int, int>,
+                                   const std::string &diagnosticSha,
+                                   const std::string &manifestFile) {
+    using ParentKey = std::tuple<std::uint64_t, int, int, std::uint64_t>;
+    std::map<ParentKey,
              std::pair<std::uint64_t, std::uint32_t>> parents;
     {
         std::ifstream corpus(inCsv);
@@ -319,26 +304,65 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
             return -1;
         };
         const int cSeed = ci("seed"), cFight = ci("fightIdx"), cDec = ci("decIdx"),
+                  cObs = ci("obsHash"),
                   cType = ci("frontierType"), cOff = ci("binaryOffset"), cSize = ci("binarySize");
-        if (cSeed < 0 || cFight < 0 || cDec < 0 || cType < 0 || cOff < 0 || cSize < 0) {
+        if (cSeed < 0 || cFight < 0 || cDec < 0 || cObs < 0 || cType < 0 || cOff < 0 || cSize < 0) {
             std::cerr << "s3siblingcrn: frontier CSV missing parent provenance columns\n"; return;
         }
         while (std::getline(corpus, line)) {
             std::vector<std::string> f; std::stringstream ls(line);
             while (std::getline(ls, tok, ',')) f.push_back(tok);
-            const int need = std::max({cSeed, cFight, cDec, cType, cOff, cSize});
+            const int need = std::max({cSeed, cFight, cDec, cObs, cType, cOff, cSize});
             if ((int)f.size() <= need || std::atoi(f[(std::size_t)cType].c_str()) != -1) continue;
             parents[{std::strtoull(f[(std::size_t)cSeed].c_str(), nullptr, 10),
                      std::atoi(f[(std::size_t)cFight].c_str()),
-                     std::atoi(f[(std::size_t)cDec].c_str())}] = {
+                     std::atoi(f[(std::size_t)cDec].c_str()),
+                     std::strtoull(f[(std::size_t)cObs].c_str(), nullptr, 10)}] = {
                 std::strtoull(f[(std::size_t)cOff].c_str(), nullptr, 10),
                 (std::uint32_t)std::strtoul(f[(std::size_t)cSize].c_str(), nullptr, 10)};
         }
     }
+    std::set<std::tuple<std::uint64_t, int, int, std::uint64_t>> selected;
+    if (!manifestFile.empty()) {
+        std::ifstream manifest(manifestFile);
+        std::string line;
+        if (!manifest || !std::getline(manifest, line)) {
+            std::cerr << "s3siblingcrn: cannot read selection manifest " << manifestFile << '\n';
+            return;
+        }
+        std::vector<std::string> cols; std::stringstream hs(line); std::string tok;
+        while (std::getline(hs, tok, ',')) cols.push_back(tok);
+        auto ci = [&](const char *name) {
+            for (int i = 0; i < (int)cols.size(); ++i) if (cols[(std::size_t)i] == name) return i;
+            return -1;
+        };
+        const int cSeed = ci("source_seed"), cFight = ci("fight_idx"),
+                  cDec = ci("decision_idx"), cState = ci("state_id");
+        if (cSeed < 0 || cFight < 0 || cDec < 0 || cState < 0) {
+            std::cerr << "s3siblingcrn: selection manifest missing composite identity columns\n";
+            return;
+        }
+        while (std::getline(manifest, line)) {
+            std::vector<std::string> f; std::stringstream ls(line);
+            while (std::getline(ls, tok, ',')) f.push_back(tok);
+            const int need = std::max({cSeed, cFight, cDec, cState});
+            if ((int)f.size() <= need) continue;
+            selected.insert({std::strtoull(f[(std::size_t)cSeed].c_str(), nullptr, 10),
+                             std::atoi(f[(std::size_t)cFight].c_str()),
+                             std::atoi(f[(std::size_t)cDec].c_str()),
+                             std::strtoull(f[(std::size_t)cState].c_str(), nullptr, 10)});
+        }
+        if (selected.empty()) {
+            std::cerr << "s3siblingcrn: selection manifest contains no states\n";
+            return;
+        }
+        maxStates = std::min(maxStates, static_cast<int>(selected.size()));
+    }
     std::ifstream bin(inBin, std::ios::binary);
     std::ofstream out(outFile);
     if (!bin || !out) { std::cerr << "s3siblingcrn: cannot open input/output artifact\n"; return; }
-    const std::uint64_t corpusHash = s3CrnMix(s3CrnFileHash(inCsv) ^ s3CrnFileHash(inBin));
+    const std::uint64_t corpusHash = sts::search::s3SiblingCrnMix(
+        s3CrnFileHash(inCsv) ^ s3CrnFileHash(inBin));
     out << "baseline_sha,diagnostic_sha,corpus_hash,state_id,source_seed,fight_idx,decision_idx,"
            "encounter,floor,action_id,action_bits,action_desc,action_prior,K,replicate,"
            "sampling_mode,sample_index,value,valid,particle_id,particle_seed,rollout_seed,"
@@ -349,6 +373,7 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
     const auto started = std::chrono::steady_clock::now();
     for (const auto &entry : parents) {
         if (stateOrdinal >= maxStates) break;
+        if (!selected.empty() && selected.find(entry.first) == selected.end()) continue;
         const auto blob = readFgBlob(bin, entry.second.first, entry.second.second);
         if (blob.empty()) continue;
         const sts::BattleContext parent = sts::deserializeBattleContext(blob.data(), blob.size());
@@ -363,13 +388,20 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
         std::stable_sort(node.edges.begin(), node.edges.end(),
             [](const auto &a, const auto &b) { return a.prior > b.prior; });
         if (node.edges.size() > 3) node.edges.resize(3);
-        const auto [sourceSeed, fightIdx, decIdx] = entry.first;
-        const std::uint64_t stateId = sts::CombatObservation::fromBattleContext(parent).visibleHash();
+        const auto [sourceSeed, fightIdx, decIdx, stateId] = entry.first;
+        const sts::search::S3SiblingCrnStateIdentity identity{
+            sourceSeed, fightIdx, decIdx, stateId};
+        const std::uint64_t observedStateId = sts::CombatObservation::fromBattleContext(parent).visibleHash();
+        if (observedStateId != stateId) {
+            std::cerr << "s3siblingcrn: manifest/parent state hash mismatch for seed="
+                      << sourceSeed << " fight=" << fightIdx << " decision=" << decIdx << '\n';
+            continue;
+        }
         sts::search::BattleScumSearcher3 evaluator(parent, 0, 0, 1);
         auto emit = [&](const char *mode, int k, int rep, int sample, int ai,
                         std::uint64_t particleSeed, const sts::HiddenBattleState &particle) {
-            const std::uint64_t rolloutSeed = s3CrnSeed(diagnosticSeed, stateId, k, rep,
-                                                        sample, ai, 0x726f6c6c6f7574ULL);
+            const std::uint64_t rolloutSeed = sts::search::s3SiblingCrnSeed(
+                diagnosticSeed, identity, k, rep, sample, ai, 0x726f6c6c6f7574ULL);
             const auto &edge = node.edges[(std::size_t)ai];
             const auto result = evaluator.evaluateForcedActionDiagnostic(parent, particle,
                                                                            edge.action, rolloutSeed);
@@ -387,13 +419,15 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
         };
         for (int k : budgets) for (int rep = 0; rep < replicates; ++rep) {
             for (int sample = 0; sample < k; ++sample) {
-                const std::uint64_t ps = s3CrnSeed(diagnosticSeed, stateId, k, rep, sample, 0, 0x63726eULL);
+                const std::uint64_t ps = sts::search::s3SiblingCrnSeed(
+                    diagnosticSeed, identity, k, rep, sample, 0, 0x63726eULL);
                 std::mt19937_64 prng(ps);
                 sts::HiddenBattleState p = sts::Belief::initial(parent, 1, prng).particles.front(); p.id = ps;
                 for (int ai = 0; ai < (int)node.edges.size(); ++ai) emit("crn", k, rep, sample, ai, ps, p);
             }
             for (int ai = 0; ai < (int)node.edges.size(); ++ai) for (int sample = 0; sample < k; ++sample) {
-                const std::uint64_t ps = s3CrnSeed(diagnosticSeed, stateId, k, rep, sample, ai, 0x696e64ULL);
+                const std::uint64_t ps = sts::search::s3SiblingCrnSeed(
+                    diagnosticSeed, identity, k, rep, sample, ai, 0x696e64ULL);
                 std::mt19937_64 prng(ps);
                 sts::HiddenBattleState p = sts::Belief::initial(parent, 1, prng).particles.front(); p.id = ps;
                 emit("independent", k, rep, sample, ai, ps, p);
@@ -401,12 +435,18 @@ static void s3SiblingCrnDiagnostic(const std::string &inCsv,
         }
         constexpr int kReference = 128;
         for (int ai = 0; ai < (int)node.edges.size(); ++ai) for (int sample = 0; sample < kReference; ++sample) {
-            const std::uint64_t ps = s3CrnSeed(diagnosticSeed, stateId, kReference, 0, sample, ai, 0x726566ULL);
+            const std::uint64_t ps = sts::search::s3SiblingCrnSeed(
+                diagnosticSeed, identity, kReference, 0, sample, ai, 0x726566ULL);
             std::mt19937_64 prng(ps);
             sts::HiddenBattleState p = sts::Belief::initial(parent, 1, prng).particles.front(); p.id = ps;
             emit("reference", kReference, 0, sample, ai, ps, p);
         }
         ++stateOrdinal;
+    }
+    if (!selected.empty() && stateOrdinal != static_cast<int>(selected.size())) {
+        std::cerr << "s3siblingcrn: selection manifest requested " << selected.size()
+                  << " states but only " << stateOrdinal
+                  << " were usable; refusing a partial formal diagnostic\n";
     }
     out.flush();
     const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
@@ -9158,7 +9198,7 @@ static void rolloutTrace(const std::string &inFile, const std::string &outFile,
 // BattleContext (the pre-action decision state whose search produced the
 // leaves — captured by the search-complete hook) is ALSO serialized for the
 // leafrelabel sibling pass and indexed in the CSV by a marker row with
-// frontierType=-1 (obsHash 0); parent markers are NOT corpus-deduped (each
+// frontierType=-1 (obsHash is the captured root visible hash); parent markers are NOT corpus-deduped (each
 // decision needs its own parent for the sibling pass).
 //
 // Do NOT enable the probing OOC arms (STS_OOC_ACTION_NN, STS_BOSS_DRAFT,
@@ -9293,6 +9333,7 @@ static void frontierGenOnSearchComplete3(const BattleContext &bc,
     if (haveParent) {
         parentRow.seed = t_fg.seed; parentRow.fightIdx = t_ld.fightIdx; parentRow.decIdx = t_ld.decIdx;
         parentRow.frontierType = -1;                       // marker
+        parentRow.obsHash = sts::CombatObservation::fromBattleContext(bc).visibleHash();
         parentRow.turn = bc.turn; parentRow.floor = t_ld.floor; parentRow.act = t_ld.act;
         parentRow.encounter = t_ld.encounter;
         parentRow.curHp = bc.player.curHp; parentRow.maxHp = bc.player.maxHp;
@@ -14222,7 +14263,7 @@ int main(int argc, char **argv) {
     } else if (mode == "s3siblingcrn") {
         if (argc < 11) {
             std::cerr << "usage: one_combat s3siblingcrn IN_CSV IN_BIN OUT_CSV K_LIST "
-                         "REPLICATES MAX_STATES DIAGNOSTIC_SEED BASELINE_SHA DIAGNOSTIC_SHA\n";
+                         "REPLICATES MAX_STATES DIAGNOSTIC_SEED BASELINE_SHA DIAGNOSTIC_SHA [MANIFEST]\n";
             return 2;
         }
         std::vector<int> budgets;
@@ -14233,7 +14274,8 @@ int main(int argc, char **argv) {
         search::g_s3Crn = false;
         s3SiblingCrnDiagnostic(argv[2], argv[3], argv[4], budgets,
                                std::stoi(argv[6]), std::stoi(argv[7]),
-                               std::stoull(argv[8]), argv[9], argv[10]);
+                               std::stoull(argv[8]), argv[9], argv[10],
+                               argc > 11 ? argv[11] : "");
 
     } else if (mode == "fightrep") {  // isolated replay of captured Act-3 boss fights (fight-start snapshots)
         if (argc < 5) {

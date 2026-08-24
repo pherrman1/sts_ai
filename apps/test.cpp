@@ -35,6 +35,7 @@
 
 #include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/BattleScumSearcher3.h"
+#include "sim/search/S3SiblingCrnDiagnostic.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/SimHealth.h"
 #include "sim/search/TrainingIntegrity.h"
@@ -1492,16 +1493,30 @@ int testS3SiblingCrnDiagnostic() {
         bc, independent, node.edges[0].action, 101); ++evaluations;
     const search::Action invalid;
     const auto rejected = evaluator.evaluateForcedActionDiagnostic(bc, paired, invalid, 103);
+    const search::S3SiblingCrnStateIdentity identityA{1, 0, 0, 777};
+    const search::S3SiblingCrnStateIdentity identityB{2, 3, 4, 777};
+    const auto particleSeedA = search::s3SiblingCrnSeed(99, identityA, 4, 0, 0, 0, 0x63726eULL);
+    const auto particleSeedB = search::s3SiblingCrnSeed(99, identityB, 4, 0, 0, 0, 0x63726eULL);
+    const auto rolloutSeedCrn = search::s3SiblingCrnSeed(99, identityA, 4, 0, 0, 0, 0x726f6c6c6f7574ULL);
+    const auto rolloutSeedIndependent = search::s3SiblingCrnSeed(99, identityA, 4, 0, 0, 0, 0x726f6c6c6f7574ULL);
+    const auto rolloutSeedSibling = search::s3SiblingCrnSeed(99, identityA, 4, 0, 0, 1, 0x726f6c6c6f7574ULL);
     const bool matched = a.particleId == b.particleId
         && a.preActionRngCounters == b.preActionRngCounters;
     const bool independentDiffers = c.particleId != a.particleId;
     const bool legalityPreserved = a.valid && b.valid && c.valid && !rejected.valid;
     const bool equalScheduledCount = evaluations == 3;
-    if (!matched || !independentDiffers || !legalityPreserved || !equalScheduledCount) {
+    const bool identitySeedDiffers = particleSeedA != particleSeedB;
+    const bool rolloutArmMatched = rolloutSeedCrn == rolloutSeedIndependent;
+    const bool rolloutActionSpecific = rolloutSeedCrn != rolloutSeedSibling;
+    if (!matched || !independentDiffers || !legalityPreserved || !equalScheduledCount
+        || !identitySeedDiffers || !rolloutArmMatched || !rolloutActionSpecific) {
         std::cout << "s3_sibling_crn FAIL: matched=" << matched
                   << " independent=" << independentDiffers
                   << " legality=" << legalityPreserved
-                  << " count=" << evaluations << '\n';
+                  << " count=" << evaluations
+                  << " identitySeed=" << identitySeedDiffers
+                  << " rolloutArm=" << rolloutArmMatched
+                  << " rolloutAction=" << rolloutActionSpecific << '\n';
         return 1;
     }
     std::cout << "s3_sibling_crn PASS\n";

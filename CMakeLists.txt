@@ -114,6 +114,8 @@ add_test(NAME py_compile_analyze_runwin_shadow COMMAND python3 -m py_compile ${C
 add_test(NAME analyze_runwin_shadow_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py --self-test)
 add_test(NAME py_compile_analyze_s3_sibling_crn COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_s3_sibling_crn.py)
 add_test(NAME analyze_s3_sibling_crn_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_s3_sibling_crn.py --self-test)
+add_test(NAME py_compile_select_s3_crn_states COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/select_s3_crn_states.py)
+add_test(NAME select_s3_crn_states_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/select_s3_crn_states.py --self-test)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
 add_test(NAME runwin_e2c_native_parity COMMAND ${CMAKE_COMMAND} -E env
     STS_NATIVE_OOC=0
