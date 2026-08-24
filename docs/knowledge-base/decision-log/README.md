@@ -58,6 +58,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-23 | [`2026-08-23-s3-always-q.md`](2026-08-23-s3-always-q.md) | Searcher3 immediate-Q mechanism diagnostic: negative on the sampled ordinary/Act-1-elite corpus, late-first-win mechanism inconclusive, and no Phase B. |
 | 2026-08-22 | [`2026-08-22-cline-compatibility-retirement.md`](2026-08-22-cline-compatibility-retirement.md) | Draft retirement removes runtime Cline rollback files, retains the live evaluation fixture, removes misrouted repository RepoWise MCP startup, and leaves migration acceptance pending fresh independent review. |
 | 2026-08-22 | [`2026-08-22-ci-gate-follow-up.md`](2026-08-22-ci-gate-follow-up.md) | Reproduced the rejuvenation telemetry failure on current main, corrected the test fixture, and made CI install the locked analysis dependencies; local Debug CTest is 41/41. |
 | 2026-08-22 | [`2026-08-22-e2c-production-closure.md`](2026-08-22-e2c-production-closure.md) | Closed E2c-v2 as SUPPORTED with the `/logs/` provenance exception; fixed Secret Technique/Weapon live-root reconciliation and stopped further collection. |

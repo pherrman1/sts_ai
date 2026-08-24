@@ -501,6 +501,27 @@ int testIssueFixes() {
     // (always use Q on carried trees) is not dead: -1 on a fresh searcher,
     // 0 right after advanceRoot promotes the tree, then per-search counts.
     {
+        if (search::g_s3AlwaysQ) {
+            return fail("STS_S3_ALWAYS_Q default is not off");
+        }
+        search::g_reuseAlwaysQ = false;
+        if (search::s3ShouldExploitQ(false, -1)
+            || !search::s3ShouldExploitQ(true, -1)) {
+            return fail("legacy Q exploit gating changed");
+        }
+        search::g_s3AlwaysQ = true;
+        if (!search::s3ShouldExploitQ(false, -1)
+            || !search::s3ShouldExploitQ(true, -1)) {
+            return fail("S3 always-Q did not enable fresh-tree exploitation");
+        }
+        search::g_s3AlwaysQ = false;
+        search::g_reuseAlwaysQ = true;
+        if (search::s3ShouldExploitQ(false, -1)
+            || !search::s3ShouldExploitQ(false, 0)) {
+            return fail("reuse always-Q semantics changed");
+        }
+        search::g_reuseAlwaysQ = false;
+
         GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
         BattleContext bc;
         bc.init(gc, MonsterEncounter::CULTIST);

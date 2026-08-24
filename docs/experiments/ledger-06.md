@@ -4007,3 +4007,68 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `e9dc812217a48c53fe02987a791d4e6b5bccb1257528bf8ca2e35398271a95ea`,
   `26afcdb0271fccf4cfb5183dcf3058fa4a2ee028706049e6bb4943d7cbf9cc64`, and
   `5e8a06ce4f5283eb4804c957e892c61d1be13983955ea30f8ef102175ad6e4bb`.
+
+## §178 Searcher3 immediate-Q exploitation mechanism diagnostic — sampled-corpus negative (2026-08-23)
+
+- **Question / intervention:** Does `STS_S3_ALWAYS_Q=1` improve low-budget
+  Searcher3 root decisions before a winning rollout exists? The only code
+  variable changed was the fresh-tree Q-exploitation gate; the existing Q
+  formula, risk adjustment, priors, budgets, and LIVE_VALID path were unchanged.
+- **Implementation:** frozen implementation SHA
+  `96967bfb7276460f69dc1a5d11bd5bc345e9f5b8`; baseline
+  `f2879ad7d0444b4d3edad87ba62f6181580c48d8`. The new flag is default-off and
+  is applied through one shared predicate in both `selectBestEdgePUCT()` and
+  `selectBestValidEdgePUCT()`.
+- **Protocol:** paired project-fair Searcher3; seeds `93000–93007` (8), asc 0,
+  300 live-search simulations/decision, 64 particles, 8 OpenMP threads;
+  root-race probes at 250/500/1000/4000 simulations. Control omitted
+  `STS_S3_ALWAYS_Q`; treatment set `STS_S3_ALWAYS_Q=1`. Both used
+  `STS_S3_BELIEF=0`, `STS_S3_CHAIN=0`, fair-S3 default LIVE_VALID, automatic
+  `models/v_combat_7k_tuned.txt` at alpha 0.3, and automatic
+  `models/policy_trees_c.txt`; no OOC strategic model was enabled. The raw
+  diagnostic was run through `tools/seed_guard.sh`.
+- **Corpus:** 256 captured root states: 208 ordinary encounters and 48
+  Act-1 elite encounters (IDs 15/16); no boss state was captured by the
+  existing first-32-states-per-seed hook. This is therefore an ordinary-vs-elite
+  mechanism sample, not a boss or late-first-win sample. The root-race output
+  contains run/decision metadata but no full visible-state hash; exact equality
+  of control/treatment root states is unverified. The files are metadata-matched
+  by `(seed,floor,encounter,turn,decision_index)` only.
+- **Root decision quality:** each arm was compared with its own
+  arm-specific 4000-simulation probe, not with a shared treatment/control
+  teacher. Within-arm agreement at 250/500/1000 was 235/256 (91.8%), 237/256
+  (92.6%), and 238/256 (93.0%) for both arms. This shows that ALWAYS_Q did not
+  improve within-arm low-budget convergence on this corpus; it does not establish
+  equal accuracy relative to one fixed deep policy. The metadata-pairable rows
+  showed 2/256 chosen-action differences at each shallow budget. Control
+  disagreement regret (mean over shallow/reference disagreements) was 1.940
+  native units; treatment was 2.004. In the elite subset, treatment regret was
+  worse at all three budgets (1.653 vs 1.496; 1.356 vs 1.292; 1.569 vs 1.505).
+- **CPU:** root-race diagnostic `simSeconds` summed to 304.03 seconds for
+  control and 416.26 seconds for treatment (+36.9%); this is a material
+  overhead for a policy-only gate change. The searchdiag run wall times were
+  67.3 seconds and 91.1 seconds, respectively.
+- **Core-mechanism coverage:** first-win telemetry was not captured. The
+  existing root-race diagnostic records root Q/visits and deep regret but does
+  not expose the first winning simulation. Consequently the experiment did not
+  isolate no-win-yet roots, late-first-win roots, or boss/deep difficult roots.
+  The late-first-win/no-win-yet mechanism remains **inconclusive**, not falsified.
+- **Raw artifacts:** `build/phase_a/control_8.csv`,
+  `build/phase_a/alwaysq_8.csv`, `build/phase_a/control_8_searchdiag.csv`,
+  and `build/phase_a/alwaysq_8_searchdiag.csv`, with corresponding
+  `.fights.csv` files. These are ignored local artifacts and are not claimed as
+  tracked evidence.
+- **Reproducible analysis:** `tools/analyze_s3_always_q_phase_a.py` validates
+  the root-race schema, reconstructs the arm-specific agreement/regret/action-
+  difference metrics, reports metadata pairing, and labels exact state equality
+  as unverified. It was run with
+  `python tools/analyze_s3_always_q_phase_a.py
+  build/phase_a/control_8.csv build/phase_a/alwaysq_8.csv`.
+- **Verdict:** **PHASE A: NEGATIVE ON THE SAMPLED CORPUS / NO PHASE B.** Broad
+  immediate-Q exploitation produced almost no decision changes and no improvement
+  in within-arm low-budget convergence on the sampled ordinary and Act-1 elite
+  roots, while diagnostic runtime increased substantially. This is sufficient to
+  reject Phase B gameplay validation for this task. It does **not** falsify the
+  narrower late-first-win/no-win-yet hypothesis; that mechanism remains
+  inconclusive because first-win telemetry and boss/hard-state targeting were
+  absent. Any rescue or targeting experiment would be new work.

@@ -492,6 +492,10 @@ class BattleScumSearcher3;
     // STS_REUSE_ALWAYS_Q: on carried trees, PUCT always uses existing Q
     // from simulation 1 — no gate on bestActionSequence.
     extern bool g_reuseAlwaysQ;
+    // STS_S3_ALWAYS_Q: fresh Searcher3 trees use existing Q immediately;
+    // default off preserves the legacy winning-line gate.
+    extern bool g_s3AlwaysQ;
+    bool s3ShouldExploitQ(bool hasWinningLine, int reuseSearchCount);
     // STS_REUSE_DIAG: print reuse diagnostics after each search.
     extern bool g_reuseDiag;
     // STS_REUSE_OBS_STABLE: only promote children whose observation was
