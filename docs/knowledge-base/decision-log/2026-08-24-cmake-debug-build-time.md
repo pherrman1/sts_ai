@@ -40,6 +40,10 @@ the Python module no longer recompiles every core translation unit.
 
 ## Status and follow-up
 
-Adopted pending authoritative GitHub Actions timing. Compare its C++ build and
-total-job duration with the approximately 3m47s / 5m30s baseline and record the
-ccache statistics in the pull request.
+Adopted. The first authoritative GitHub Actions run passed 41/41 tests and
+reduced the C++ build from approximately 3m47s to 71 s (68.7%); the full Linux
+GCC job fell from approximately 5m30s to 2m58s (46.1%). The restored baseline
+cache produced only 1/48 ccache hits because the intentional PIC and flag
+changes altered compile commands, so this is conservative near-cold evidence.
+A following documentation-only run provides the warm-cache measurement in the
+pull request.
