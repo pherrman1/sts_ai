@@ -12,10 +12,12 @@ manual checks, model-load diagnostics, and tracing boundaries.
 `CMakeLists.txt` requires CMake 3.19 and C++17. All configurations retain
 `-Wno-shift-count-overflow` and `-fopenmp`; Release adds `-O3 -flto`, while
 Debug uses its normal assertion-enabled flags without forced optimization or
-LTO. It recursively gathers `src/*.cpp` into the position-independent
-`sts_core_objects` OBJECT library, which is reused by the native executables
-`main`, `one_combat`, `parity_test`, `unit-test`, and `small-test` and by the
-Python module. The resulting targets are:
+LTO. It recursively gathers `src/*.cpp` into the `sts_core_objects` OBJECT
+library, which is reused by the native executables `main`, `one_combat`,
+`parity_test`, `unit-test`, and `small-test`. When Python development headers
+are present, a separate hidden/PIC `sts_core_pic_objects` collection supplies
+the shared Python module; native Release executables therefore retain non-PIC
+LTO inputs. The resulting targets are:
 
 - pybind11 module `slaythespire` (only when CPython development headers are
   found; otherwise skipped with a warning);
@@ -158,10 +160,13 @@ reported pre-existing narrowing warnings in `apps/one_combat.cpp` and
 
 Phase 6 introduced `sts_core_objects` to compile each common `src/*.cpp`
 translation unit once and reuse its object files across the five native
-executables. On 2026-08-24 the object target was made position-independent and
-`slaythespire` was changed to reuse the same objects; only its two binding
-translation units remain module-specific. The original serial Debug
-measurement used
+executables. The 2026-08-24 follow-up initially reused PIC objects in
+`slaythespire`, but a matched Release throughput check measured an 8.8% CPU
+slowdown in the native executable. The accepted design keeps native objects
+non-PIC and gives `slaythespire` a separate hidden/PIC object collection; this
+preserves native Release throughput at the cost of one module-side core
+compilation when Python development headers are enabled. The original serial
+Debug measurement used
 `CCACHE_DISABLE=1` and `/usr/bin/time -p`:
 
 | Configuration | Build directory | Result | real | user | sys |

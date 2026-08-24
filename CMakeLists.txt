@@ -22,7 +22,6 @@ add_link_options(
 add_subdirectory(json)
 
 add_library(sts_core_objects OBJECT ${sts_lightspeed_SOURCES})
-set_target_properties(sts_core_objects PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(sts_core_objects PUBLIC include)
 target_include_directories(sts_core_objects PUBLIC json/include)
 
@@ -32,10 +31,20 @@ target_include_directories(sts_core_objects PUBLIC json/include)
 find_package(Python COMPONENTS Interpreter Development.Module QUIET)
 if(Python_Development.Module_FOUND)
     add_subdirectory(pybind11)
+    # Keep native executables on non-PIC objects: Release throughput is
+    # materially slower when their LTO inputs are compiled with -fPIC. The
+    # shared Python module gets a dedicated hidden/PIC object collection.
+    add_library(sts_core_pic_objects OBJECT ${sts_lightspeed_SOURCES})
+    set_target_properties(sts_core_pic_objects PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON)
+    target_include_directories(sts_core_pic_objects PUBLIC include)
+    target_include_directories(sts_core_pic_objects PUBLIC json/include)
     pybind11_add_module(slaythespire
         bindings/slaythespire.cpp
         bindings/bindings-util.cpp
-        $<TARGET_OBJECTS:sts_core_objects>)
+        $<TARGET_OBJECTS:sts_core_pic_objects>)
     target_include_directories(slaythespire PUBLIC include)
     target_include_directories(slaythespire PUBLIC json/single_include)
     target_include_directories(slaythespire PUBLIC bindings)
