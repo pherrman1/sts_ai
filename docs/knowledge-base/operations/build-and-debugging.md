@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-08-14 against the current working tree.
+Last verified: 2026-08-24 against the current working tree.
 
 ## Purpose
 
@@ -9,17 +9,17 @@ manual checks, model-load diagnostics, and tracing boundaries.
 
 ## Current implementation
 
-`CMakeLists.txt` requires CMake 3.19, C++17, and applies
-`-Wno-shift-count-overflow -O3 -fopenmp -flto` globally. It recursively gathers
-`src/*.cpp` into the `sts_core_objects` OBJECT library, which is reused by
-the native executables `main`, `one_combat`, `parity_test`, `unit-test`, and
-`small-test`. The Python module continues to compile `${sts_lightspeed_SOURCES}`
-independently because its pybind11/PIC/visibility requirements are kept
-separate from the native object target. The resulting targets are:
+`CMakeLists.txt` requires CMake 3.19 and C++17. All configurations retain
+`-Wno-shift-count-overflow` and `-fopenmp`; Release adds `-O3 -flto`, while
+Debug uses its normal assertion-enabled flags without forced optimization or
+LTO. It recursively gathers `src/*.cpp` into the position-independent
+`sts_core_objects` OBJECT library, which is reused by the native executables
+`main`, `one_combat`, `parity_test`, `unit-test`, and `small-test` and by the
+Python module. The resulting targets are:
 
 - pybind11 module `slaythespire` (only when CPython development headers are
   found; otherwise skipped with a warning);
-- executables `main`, `one_combat`, `test`, and `small-test`.
+- executables `main`, `one_combat`, `parity_test`, `test`, and `small-test`.
 
 `json` and `pybind11` are real gitlinks after the 2026-08-02 restoration
 (`json` at `2222d386`, `pybind11` at `63d627c5`); a fresh clone requires
@@ -54,8 +54,8 @@ ctest --preset linux-gcc-test
 environment. `linux-gcc-release` uses Unix Makefiles, `g++`, and a Release
 build in `build/linux-gcc-release`; `linux-gcc-build` selects that normal
 build. `linux-gcc-debug` and `linux-gcc-debug-build` create a separate Debug
-build in `build/linux-gcc-debug`; `linux-gcc-debug-build` is serialized to keep
-that all-target Debug build reliable on constrained Linux/WSL hosts.
+build in `build/linux-gcc-debug`; `linux-gcc-debug-build` uses the build tool's
+automatic parallelism (`jobs: 0`).
 `linux-gcc-test` runs the existing CTest suite there because `cardqueue_overflow`
 intentionally expects an assertion abort and therefore needs assertions enabled.
 The preset file requires CMake 3.21 or newer; the source graph itself still
@@ -154,12 +154,14 @@ doctor reported all checks passed; and `git diff --check` was clean. Both builds
 reported pre-existing narrowing warnings in `apps/one_combat.cpp` and
 `src/sim/search/BattleScumSearcher3.cpp`; no build errors occurred.
 
-### Phase 6 native core object reuse (2026-08-14)
+### Core object reuse (2026-08-14, extended 2026-08-24)
 
 Phase 6 introduced `sts_core_objects` to compile each common `src/*.cpp`
 translation unit once and reuse its object files across the five native
-executables. The deliberately separate `slaythespire` target still compiles
-the common source glob itself. The serial Debug measurement used
+executables. On 2026-08-24 the object target was made position-independent and
+`slaythespire` was changed to reuse the same objects; only its two binding
+translation units remain module-specific. The original serial Debug
+measurement used
 `CCACHE_DISABLE=1` and `/usr/bin/time -p`:
 
 | Configuration | Build directory | Result | real | user | sys |

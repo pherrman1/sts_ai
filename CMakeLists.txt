@@ -10,11 +10,19 @@ enable_testing()
 file (GLOB_RECURSE sts_lightspeed_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS  "-Wno-shift-count-overflow -O3 -fopenmp -flto")
+add_compile_options(
+    -Wno-shift-count-overflow
+    -fopenmp
+    $<$<CONFIG:Release>:-O3>
+    $<$<CONFIG:Release>:-flto>)
+add_link_options(
+    -fopenmp
+    $<$<CONFIG:Release>:-flto>)
 
 add_subdirectory(json)
 
 add_library(sts_core_objects OBJECT ${sts_lightspeed_SOURCES})
+set_target_properties(sts_core_objects PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(sts_core_objects PUBLIC include)
 target_include_directories(sts_core_objects PUBLIC json/include)
 
@@ -24,7 +32,10 @@ target_include_directories(sts_core_objects PUBLIC json/include)
 find_package(Python COMPONENTS Interpreter Development.Module QUIET)
 if(Python_Development.Module_FOUND)
     add_subdirectory(pybind11)
-    pybind11_add_module(slaythespire bindings/slaythespire.cpp bindings/bindings-util.cpp ${sts_lightspeed_SOURCES})
+    pybind11_add_module(slaythespire
+        bindings/slaythespire.cpp
+        bindings/bindings-util.cpp
+        $<TARGET_OBJECTS:sts_core_objects>)
     target_include_directories(slaythespire PUBLIC include)
     target_include_directories(slaythespire PUBLIC json/single_include)
     target_include_directories(slaythespire PUBLIC bindings)
