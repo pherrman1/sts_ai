@@ -749,6 +749,139 @@ int testObsIdentity(std::uint64_t seed) {
     return 0;
 }
 
+int testS3StrategyFusionDiag(std::uint64_t seed) {
+    int failures = 0;
+    auto check = [&](bool ok, const char *message) {
+        if (!ok) {
+            std::cout << "s3_strategy_fusion_diag FAIL: " << message << '\n';
+            ++failures;
+        }
+    };
+
+    check(!search::g_s3StrategyFusionDiag, "diagnostic is not off by default");
+
+    search::BattleScumSearcher3::Node stableParent;
+    stableParent.nodeObsVisits = 1;
+    check(stableParent.isObsStable(), "stable END_TURN parent was rejected");
+    stableParent.nodeObsMismatches = 1;
+    check(!stableParent.isObsStable(), "unstable END_TURN parent was accepted");
+
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    BattleContext bc;
+    bc.init(gc, MonsterEncounter::CULTIST);
+    CombatObservation visible = CombatObservation::fromBattleContext(bc);
+
+    // Hidden draw order/RNG may differ while the full visible observation
+    // remains equal; a visible change must not compare equal.
+    BattleContext hiddenVariant = bc;
+    std::reverse(hiddenVariant.cards.drawPile.begin(), hiddenVariant.cards.drawPile.end());
+    hiddenVariant.shuffleRng.counter += 11;
+    hiddenVariant.cardRandomRng.counter += 7;
+    CombatObservation sameVisible = CombatObservation::fromBattleContext(hiddenVariant);
+    check(visible == sameVisible && visible.visibleHash() == sameVisible.visibleHash(),
+          "bucket identity includes hidden order or RNG");
+    hiddenVariant.player.curHp -= 1;
+    check(visible != CombatObservation::fromBattleContext(hiddenVariant),
+          "bucket identity ignored a visible change");
+
+    // Recreate the equal-visible fixture and prove fresh beliefs are sampled
+    // from that observation rather than inheriting the hidden representative.
+    hiddenVariant.player.curHp = bc.player.curHp;
+    std::sort(hiddenVariant.cards.drawPile.begin(), hiddenVariant.cards.drawPile.end(),
+              [](const CardInstance &a, const CardInstance &b) {
+                  return FullHiddenCardId(a) < FullHiddenCardId(b);
+              });
+    BattleContext canonical = bc;
+    std::sort(canonical.cards.drawPile.begin(), canonical.cards.drawPile.end(),
+              [](const CardInstance &a, const CardInstance &b) {
+                  return FullHiddenCardId(a) < FullHiddenCardId(b);
+              });
+    search::BattleScumSearcher3 a(canonical, seed, 0, 8);
+    search::BattleScumSearcher3 b(hiddenVariant, seed, 0, 8);
+    check(a.rootObs == b.rootObs, "equal visible inputs got different observations");
+    check(a.belief.particles.size() == b.belief.particles.size(),
+          "equal visible inputs got different particle counts");
+    if (a.belief.particles.size() == b.belief.particles.size()) {
+        for (size_t i = 0; i < a.belief.particles.size(); ++i)
+            check(fullHiddenStateKey(a.belief.particles[i])
+                      == fullHiddenStateKey(b.belief.particles[i]),
+                  "fresh belief inherited hidden future state");
+    }
+
+    // Semantic CARD identity includes target, but never uses raw hand index
+    // as the comparison key.
+    if (bc.cards.cardsInHand > 0) {
+        const auto first = search::semanticActionIdentity(
+            search::Action(search::ActionType::CARD, 0, 0), bc);
+        const auto otherTarget = search::semanticActionIdentity(
+            search::Action(search::ActionType::CARD, 0, 1), bc);
+        check(first != otherTarget, "CARD target was omitted from identity");
+        if (bc.cards.cardsInHand > 1) {
+            BattleContext duplicateHand = bc;
+            duplicateHand.cards.hand[1] = duplicateHand.cards.hand[0];
+            const auto firstPosition = search::semanticActionIdentity(
+                search::Action(search::ActionType::CARD, 0, 0), duplicateHand);
+            const auto secondPosition = search::semanticActionIdentity(
+                search::Action(search::ActionType::CARD, 1, 0), duplicateHand);
+            check(firstPosition == secondPosition,
+                  "equivalent CARD instances were compared by hand position");
+        }
+    }
+
+    // Policy extraction is read-only: it cannot mutate the live shared node.
+    a.search(64);
+    const size_t edgeCount = a.root.edges.size();
+    std::vector<std::int64_t> visits;
+    for (const auto &edge : a.root.edges) visits.push_back(edge.child.simulationCount);
+    (void)search::pickSearchAction(a.root, bc);
+    check(a.root.edges.size() == edgeCount, "read-only extraction changed topology");
+    for (size_t i = 0; i < a.root.edges.size(); ++i)
+        check(a.root.edges[i].child.simulationCount == visits[i],
+              "read-only extraction changed visits");
+
+    // Regression: strategy-fusion candidates are only recorded during step(),
+    // but side searches must wait for the normal search to finish and use the
+    // final child statistics. Use one particle so no multi-bucket side probe
+    // is eligible; this test inspects only the lifecycle provenance.
+    const bool oldStrategyDiag = search::g_s3StrategyFusionDiag;
+    const std::string oldStrategyDiagFile = search::g_s3StrategyFusionDiagFile;
+    const int oldStrategyParticles = search::g_s3StrategyFusionDiagParticles;
+    const int oldStrategyMaxTransitions = search::g_s3StrategyFusionDiagMaxTransitions;
+    const int oldStrategyMinVisits = search::g_s3StrategyFusionDiagMinChildVisits;
+    const int oldStrategyFreshSims = search::g_s3StrategyFusionDiagFreshSims;
+    const int oldStrategyReferenceSims = search::g_s3StrategyFusionDiagReferenceSims;
+    search::g_s3StrategyFusionDiag = true;
+    search::g_s3StrategyFusionDiagFile.clear();
+    search::g_s3StrategyFusionDiagParticles = 1;
+    search::g_s3StrategyFusionDiagMaxTransitions = 1;
+    search::g_s3StrategyFusionDiagMinChildVisits = 8;
+    search::g_s3StrategyFusionDiagFreshSims = 0;
+    search::g_s3StrategyFusionDiagReferenceSims = 0;
+    search::BattleScumSearcher3 lifecycleProbe(canonical, seed, 0, 8);
+    lifecycleProbe.search(128);
+    const auto &visitRecords = lifecycleProbe.strategyFusionFinalVisitRecordsForTest();
+    check(!visitRecords.empty(),
+          "no stable-parent strategy-fusion candidate was finalized");
+    bool observedPostSearchGrowth = false;
+    for (const auto &record : visitRecords)
+        observedPostSearchGrowth = observedPostSearchGrowth || record.second > record.first;
+    check(observedPostSearchGrowth,
+          "strategy-fusion used threshold-time rather than final child visits");
+    search::g_s3StrategyFusionDiag = oldStrategyDiag;
+    search::g_s3StrategyFusionDiagFile = oldStrategyDiagFile;
+    search::g_s3StrategyFusionDiagParticles = oldStrategyParticles;
+    search::g_s3StrategyFusionDiagMaxTransitions = oldStrategyMaxTransitions;
+    search::g_s3StrategyFusionDiagMinChildVisits = oldStrategyMinVisits;
+    search::g_s3StrategyFusionDiagFreshSims = oldStrategyFreshSims;
+    search::g_s3StrategyFusionDiagReferenceSims = oldStrategyReferenceSims;
+
+    if (failures == 0) {
+        std::cout << "s3_strategy_fusion_diag PASS\n";
+        return 0;
+    }
+    return 1;
+}
+
 int testPrune(std::uint64_t seed) {
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
     BattleContext bc;
@@ -2759,6 +2892,8 @@ int main(int argc, const char* argv[]) {
 
     } else if (command == "obs_identity") {
         return testObsIdentity(std::stoull(argv[2]));
+    } else if (command == "s3_strategy_fusion_diag") {
+        return testS3StrategyFusionDiag(std::stoull(argv[2]));
 
     } else if (command == "prune") {
         return testPrune(std::stoull(argv[2]));
