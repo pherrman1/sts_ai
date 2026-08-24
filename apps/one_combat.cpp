@@ -189,7 +189,8 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_S3_REJUV_PROPOSALS", "STS_S3_REJUV_SHADOW_FILE",
                            "STS_S3_AI_REJUV_LIVE", "STS_S3_AI_REJUV_LIVE_FILE",
                           "STS_S3_RNG_EXPOSURE_DIAG", "STS_S3_RNG_EXPOSURE_DIAG_FILE",
-                          "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_REUSE_DIAG",
+                          "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_S3_ALWAYS_Q", "STS_REUSE_DIAG",
+                          "STS_S3_GATE_TIMING_DIAG", "STS_S3_GATE_TIMING_DIAG_FILE",
                           "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
                           "STS_REUSE_CARRY_DIAG", "STS_REUSE_CPU_DIAG",
                           "STS_REUSE_CPU_DIAG_FILE", "STS_LIVE_VALID", "STS_STOP_AFTER_ACT",
@@ -12663,6 +12664,10 @@ int main(int argc, char **argv) {
         search::g_reuseAlwaysQ = std::atoi(d) != 0;
         std::cout << "[reuse always-Q = " << (search::g_reuseAlwaysQ ? "ON" : "off") << "]\n";
     }
+    if (const char *d = std::getenv("STS_S3_ALWAYS_Q")) {
+        search::g_s3AlwaysQ = std::atoi(d) != 0;
+        std::cout << "[S3 always-Q = " << (search::g_s3AlwaysQ ? "ON" : "off") << "]\n";
+    }
     if (const char *d = std::getenv("STS_REUSE_DIAG")) {
         search::g_reuseDiag = std::atoi(d) != 0;
         std::cout << "[reuse diagnostics = " << (search::g_reuseDiag ? "ON" : "off") << "]\n";
@@ -12830,6 +12835,16 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_ROOT_RACE_MAX_STATES")) {
         search::g_s3RootRaceDiagMaxStates = std::max(1, std::atoi(d));
         std::cout << "[S3 root-race max states = " << search::g_s3RootRaceDiagMaxStates << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_GATE_TIMING_DIAG")) {
+        search::g_s3GateTimingDiag = std::atoi(d) != 0;
+        std::cout << "[S3 Q-gate timing diag = "
+                  << (search::g_s3GateTimingDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_GATE_TIMING_DIAG_FILE")) {
+        search::g_s3GateTimingDiagFile = d;
+        std::cout << "[S3 Q-gate timing diag file = "
+                  << search::g_s3GateTimingDiagFile << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_UNION_EXPAND")) {
         search::g_s3UnionExpand = std::atoi(d) != 0;

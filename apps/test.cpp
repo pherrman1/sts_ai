@@ -501,6 +501,27 @@ int testIssueFixes() {
     // (always use Q on carried trees) is not dead: -1 on a fresh searcher,
     // 0 right after advanceRoot promotes the tree, then per-search counts.
     {
+        if (search::g_s3AlwaysQ) {
+            return fail("STS_S3_ALWAYS_Q default is not off");
+        }
+        search::g_reuseAlwaysQ = false;
+        if (search::s3ShouldExploitQ(false, -1)
+            || !search::s3ShouldExploitQ(true, -1)) {
+            return fail("legacy Q exploit gating changed");
+        }
+        search::g_s3AlwaysQ = true;
+        if (!search::s3ShouldExploitQ(false, -1)
+            || !search::s3ShouldExploitQ(true, -1)) {
+            return fail("S3 always-Q did not enable fresh-tree exploitation");
+        }
+        search::g_s3AlwaysQ = false;
+        search::g_reuseAlwaysQ = true;
+        if (search::s3ShouldExploitQ(false, -1)
+            || !search::s3ShouldExploitQ(false, 0)) {
+            return fail("reuse always-Q semantics changed");
+        }
+        search::g_reuseAlwaysQ = false;
+
         GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
         BattleContext bc;
         bc.init(gc, MonsterEncounter::CULTIST);
@@ -530,6 +551,68 @@ int testIssueFixes() {
         if (s3.reuseSearchCount != 1) {
             return fail("reuseSearchCount not incremented after promoted search");
         }
+    }
+
+    // Searcher3 Q-gate timing: the default gate is initially closed, opens
+    // from a positive nonterminal backpropagation, and is recorded once.  The
+    // ordinary and LIVE_VALID selectors must use the same baseline predicate.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0x13579Bu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::g_s3AlwaysQ = false;
+        search::g_reuseAlwaysQ = false;
+        search::BattleScumSearcher3 legacy(bc, bc.seed, 0, 8);
+        if (legacy.firstQExploitSimulation != -1) {
+            return fail("firstQExploitSimulation was not initially unset");
+        }
+        search::g_s3AlwaysQ = true;
+        if (!search::s3ShouldExploitQ(false, -1)) {
+            return fail("ALWAYS_Q global predicate did not remain immediate");
+        }
+        search::g_s3AlwaysQ = false;
+
+        search::BattleScumSearcher3::Node legal;
+        search::enumerateActionsForNode(legal, bc);
+        if (legal.edges.size() < 2) return fail("Q-gate selector fixture has <2 actions");
+        search::BattleScumSearcher3::Node node;
+        node.simulationCount = 100;
+        node.edges.resize(2);
+        node.edges[0].action = legal.edges[0].action;
+        node.edges[1].action = legal.edges[1].action;
+        node.edges[0].child.simulationCount = 10;
+        node.edges[1].child.simulationCount = 10;
+        node.edges[0].child.evaluationSum = 0.0;
+        node.edges[1].child.evaluationSum = 100.0;
+        if (legacy.selectBestEdgePUCT(node) != 0
+            || legacy.selectBestValidEdgePUCT(node, bc) != 0) {
+            return fail("ordinary/LIVE_VALID selectors opened Q gate too early");
+        }
+        std::vector<search::Action> winningLine{legal.edges[0].action};
+        // A positive nonterminal rollout/VNet-style evaluation opens the
+        // existing gate because it populates bestActionSequence; no terminal
+        // win is required by this mechanism.
+        legacy.backpropagate({}, -1.0, {});
+        if (search::s3ShouldExploitQ(false, legacy.reuseSearchCount)
+            || legacy.firstQExploitSimulation != -1) {
+            return fail("negative/nonterminal pre-gate backprop opened Q gate");
+        }
+        legacy.searchSimulationOrdinal = 1;
+        legacy.backpropagate({}, 1.0, winningLine);
+        if (!search::s3ShouldExploitQ(!legacy.bestActionSequence.empty(), legacy.reuseSearchCount)
+            || legacy.firstQExploitSimulation != 1) {
+            return fail("firstQExploitSimulation did not record first gate opening");
+        }
+        if (legacy.selectBestEdgePUCT(node) != 1
+            || legacy.selectBestValidEdgePUCT(node, bc) != 1) {
+            return fail("ordinary/LIVE_VALID selectors did not open together");
+        }
+        legacy.backpropagate({}, 2.0, winningLine);
+        if (legacy.firstQExploitSimulation != 1) {
+            return fail("firstQExploitSimulation was not first-only telemetry");
+        }
+        search::g_s3AlwaysQ = false;
+        search::g_reuseAlwaysQ = false;
     }
 
     std::cout << "issue_fixes PASS\n";

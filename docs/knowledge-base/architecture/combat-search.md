@@ -1111,6 +1111,15 @@ selection also requires `!g_pvnetValueOnly`, matching S2.
   and Q is used from the first carried search onward (previously the counter
   was never written and the flag was inert; issue 72). Opt-in, default off,
   not yet benchmarked end-to-end.
+- Searcher3's Q-gate timing telemetry field `firstQExploitSimulation` is `-1`
+  until the first backpropagation that changes the existing
+  `bestActionSequence` from empty to non-empty, then records that search call's
+  one-based simulation ordinal. This is the actual baseline Q-gate activation
+  condition; it is not terminal-win telemetry. The opt-in
+  `STS_S3_GATE_TIMING_DIAG` writes this per-search result without changing
+  selection, rollout, or RNG. The Always-Q ablation line was stopped after the
+  retained timing result showed 99.91% of searches opening by simulation 10;
+  no gameplay conclusion is claimed.
 - Ablation evidence (§106, 128 seeds, V4 gate stack, fair, 3k sims): belief
   reweighting and chain compression are net-negative on the deployed package
   (removing them wins +8.6 / +4.7pp vs the control), while `canPruneAsDead`

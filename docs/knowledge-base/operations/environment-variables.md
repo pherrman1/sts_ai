@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-08-11 against `apps/one_combat.cpp::main`.
+Last verified: 2026-08-23 against `apps/one_combat.cpp::main`.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -54,6 +54,9 @@ These control the default executing configuration; they are always parsed.
 | `STS_S3_CHAIN` | Deterministic chain compression (ablation) | `1` (ON) | `main` ~L9736 |
 | `STS_S3_LIVE` | Live-valid root-edge filter (ablation) | `1` (ON) | `main` ~L9737 |
 | `STS_S3_CRN` | Root CRN warm start (opt-in) | `0` (off) | `main` ~L9738 |
+| `STS_S3_ALWAYS_Q` | Retired Always-Q ablation flag; when explicitly enabled, allows fresh-tree selection to exploit accumulated Q before `bestActionSequence` becomes non-empty | `0` (off) | `main` |
+| `STS_S3_GATE_TIMING_DIAG` | Record actual baseline Q-gate activation timing after each real S3 combat search | `0` (off) | `main` |
+| `STS_S3_GATE_TIMING_DIAG_FILE` | CSV output path for Q-gate timing telemetry | unset | `main` |
 | `STS_S3_POOL_REDIRECT` | Forced-move budget pool redirect (opt-in) | `0` (off) | `main` ~L9732 |
 | `STS_S3_PERSIST_FILTERED_BELIEF` | Transfer the exact filtered real-boundary posterior into the next fresh Searcher3 tree (experimental) | `0` (off) | `main` ~L10772 |
 | `STS_S3_AI_SENSITIVITY_SHADOW` | Conditional AI_RNG fixed-hidden Searcher3 sensitivity diagnostic; shadow-only | `0` | `main` |
