@@ -59,26 +59,9 @@ namespace {
 // battle exactly like the Searcher2 loop breaks out.
 search::Action s3PickRootAction(const search::BattleScumSearcher3 &s3,
                                 const BattleContext &bc, bool &have) {
-    have = false;
-    if (search::g_s3Live) {
-        std::int64_t bestVisits = -1;
-        search::Action bestAction;
-        for (const auto &e : s3.root.edges) {
-            if (e.child.simulationCount > bestVisits && e.action.isValidAction(bc)) {
-                bestVisits = e.child.simulationCount; bestAction = e.action; have = true;
-            }
-        }
-        return bestAction;
-    }
-    std::int64_t maxVisits = -1;
-    search::Action bestAction;
-    for (const auto &e : s3.root.edges) {
-        if (e.child.simulationCount > maxVisits) {
-            maxVisits = e.child.simulationCount; bestAction = e.action; have = true;
-        }
-    }
-    if (!have || !bestAction.isValidAction(bc)) { have = false; return {}; }
-    return bestAction;
+    const auto selected = search::pickSearchAction(s3.root, bc);
+    have = selected.has_value();
+    return selected.value_or(search::Action{});
 }
 } // namespace
 

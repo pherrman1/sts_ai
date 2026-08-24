@@ -194,6 +194,12 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
                           "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
                           "STS_REUSE_CARRY_DIAG", "STS_REUSE_CPU_DIAG",
                           "STS_REUSE_CPU_DIAG_FILE", "STS_LIVE_VALID", "STS_STOP_AFTER_ACT",
+                          "STS_S3_STRATEGY_FUSION_DIAG", "STS_S3_STRATEGY_FUSION_DIAG_FILE",
+                          "STS_S3_STRATEGY_FUSION_DIAG_PARTICLES",
+                          "STS_S3_STRATEGY_FUSION_DIAG_MAX_TRANSITIONS",
+                          "STS_S3_STRATEGY_FUSION_DIAG_MIN_CHILD_VISITS",
+                          "STS_S3_STRATEGY_FUSION_DIAG_FRESH_SIMS",
+                          "STS_S3_STRATEGY_FUSION_DIAG_REF_SIMS",
                           "STS_FORCED_MOVE",
                           "STS_VNET", "STS_VNET_ALPHA", "STS_OOC_STRATEGIC_TOK_NN",
                           "STS_OOC_STRATEGIC_MARGIN", "STS_OOC_STRATEGIC_CARD",
@@ -12699,6 +12705,41 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_S3_OUTCOME_BUCKET_DIAG_PARTICLES")) {
         search::g_s3OutcomeBucketDiagParticles = std::atoi(d);
         std::cout << "[S3 outcome-bucket-diag particles = " << search::g_s3OutcomeBucketDiagParticles << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG")) {
+        search::g_s3StrategyFusionDiag = std::atoi(d) != 0;
+        std::cout << "[S3 strategy-fusion diag = "
+                  << (search::g_s3StrategyFusionDiag ? "ON" : "off") << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_FILE")) {
+        search::g_s3StrategyFusionDiagFile = d;
+        std::cout << "[S3 strategy-fusion diag file = "
+                  << search::g_s3StrategyFusionDiagFile << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_PARTICLES")) {
+        search::g_s3StrategyFusionDiagParticles = std::max(1, std::atoi(d));
+        std::cout << "[S3 strategy-fusion diag particles = "
+                  << search::g_s3StrategyFusionDiagParticles << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_MAX_TRANSITIONS")) {
+        search::g_s3StrategyFusionDiagMaxTransitions = std::max(1, std::atoi(d));
+        std::cout << "[S3 strategy-fusion diag max transitions = "
+                  << search::g_s3StrategyFusionDiagMaxTransitions << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_MIN_CHILD_VISITS")) {
+        search::g_s3StrategyFusionDiagMinChildVisits = std::max(1, std::atoi(d));
+        std::cout << "[S3 strategy-fusion diag min child visits = "
+                  << search::g_s3StrategyFusionDiagMinChildVisits << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_FRESH_SIMS")) {
+        search::g_s3StrategyFusionDiagFreshSims = std::max(0, std::atoi(d));
+        std::cout << "[S3 strategy-fusion diag fresh sims = "
+                  << search::g_s3StrategyFusionDiagFreshSims << "]\n";
+    }
+    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_REF_SIMS")) {
+        search::g_s3StrategyFusionDiagReferenceSims = std::max(0, std::atoi(d));
+        std::cout << "[S3 strategy-fusion diag reference sims = "
+                  << search::g_s3StrategyFusionDiagReferenceSims << "]\n";
     }
     if (const char *d = std::getenv("STS_S3_BUCKET_VALUE_DIAG")) {
         search::g_s3BucketValueDiag = std::atoi(d) != 0;
