@@ -4171,9 +4171,65 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   and budget-formula mismatches were zero; paired OFF/ON traces had 599 rows
   per side and zero actual decision differences; all four logs completed with
   no error markers. This smoke is implementation-only and non-decision-bearing.
-- **Status:** no 16-seed experiment was run after this correction. The new
-  executable/implementation SHA is deferred to independent review of the
-  resulting commit.
+- **Status at this correction checkpoint:** no 16-seed experiment had yet
+  been run. The resulting implementation was then frozen at the reviewed
+  executable SHA before the mature run recorded below.
+
+### Mature post-search 1000-simulation strategy-fusion run (decision-bearing, 2026-08-24)
+
+- **Frozen executable:** `a455dbae1e871e2671209bf006af1a9f733f1c29`.
+  No executable source changed during collection. The run used source seeds
+  `12345..12360`, one guarded OFF process and one guarded ON process per seed,
+  `STS_SEARCHER3=1`, `STS_FAIR=1`, `STS_S3_PARTICLES=64`, 1,000 normal
+  simulations per decision, diagnostic particles 64, cap 4, minimum child
+  visits 32, secondary fresh 500 simulations, reference 3,000 simulations,
+  and `OMP_NUM_THREADS=4`.
+- **Collection and validation:** the corrected diagnostic deferred all side
+  searches until normal search completion and used
+  `max(1, round(finalSharedChildVisits * bucketProbability))`. The run emitted
+  64 measured transitions and 560 bucket rows, exactly four transitions per
+  source seed. Every row had `parentObsMismatches=0`; matched-budget formula
+  mismatches were zero; probability sums were one for every transition; all
+  recorded child visits were at least the configured threshold; and no process
+  or health-marker failure occurred. Paired OFF/ON traces had zero actual
+  `bestAction` differences, zero fight-outcome differences, and zero missing
+  decision keys. Searchdiag timing/metric fields differed as expected from
+  diagnostic overhead, but these did not change actual decisions.
+- **Primary matched-compute result:** probability-mass-weighted shared versus
+  matched-conditioned disagreement was `0.7063`, with source-seed bootstrap
+  95% CI `[0.6304, 0.7800]`. Among disagreement mass, the pooled deeper
+  reference preferred matched-conditioned `0.5309`, shared `0.1303`, and
+  neither `0.3387`; source-seed means were matched `0.5646`, shared `0.1303`,
+  and neither `0.3051`. The matched-minus-shared reference margin was
+  `+2.4507` pooled and `+2.0325` by source-seed mean, with bootstrap 95% CI
+  `[+0.6162, +3.5639]`.
+- **Matched-budget distribution:** across 560 bucket rows, budgets ranged
+  from `1` to `1,406`; mean `119.825`, median `60`, p25 `28`, p75 `148`,
+  p90 `299.1`, and p95 `443`.
+- **Secondary compute-unmatched result:** the 500-simulation fresh arm had
+  disagreement `0.7222` (source-seed bootstrap CI `[0.6404, 0.7971]`), pooled
+  reference preference conditioned `0.5335`, shared `0.0859`, neither
+  `0.3807`, and source-seed mean margin `+3.7498` (CI `[+2.0394, +5.3921]`).
+  This remains secondary and is not used as the primary gate.
+- **Comparison with early-tree 64-simulation evidence:** primary disagreement
+  changed from `0.7012` to `0.7063`, while the matched-budget median rose from
+  `5` to `60`. The prior early-tree primary margin was `-1.6781` with CI
+  `[-2.7500, -0.6066]`; the mature post-search run is positive with CI wholly
+  above zero. The runs are not identical in executable SHA, so this is a
+  descriptive comparison rather than a clean single-variable budget test.
+- **Interpretation under the preregistered rule:** the run clears all three
+  requested evidence gates: substantial disagreement, deeper-reference
+  preference for matched conditioning, and a positive matched-minus-shared
+  margin with source-seed bootstrap support. This supports proceeding toward a
+  separately reviewed chance-node prototype; it does not establish a win-rate
+  improvement and does not authorize implementation in this branch.
+- **Evidence packet:**
+  `build/s3sf_a455dba_1000_diag.csv`,
+  `build/s3sf_a455dba_1000_diag.csv.meta.json`,
+  `build/s3sf_a455dba_1000_analysis.json`, and
+  `build/s3sf_a455dba_1000_results.json`. The compact result packet records
+  the exact configuration, frozen SHA, artifact hashes, validation counts,
+  and prior-64 comparison.
 
 ## §178 Searcher3 immediate-Q exploitation mechanism diagnostic — sampled-corpus negative (2026-08-23)
 

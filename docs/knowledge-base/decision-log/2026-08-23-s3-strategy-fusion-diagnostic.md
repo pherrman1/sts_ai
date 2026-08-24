@@ -216,9 +216,72 @@ minimum visits 8, fresh 8, and reference 16. It emitted 2 transitions and 8
 rows. Parent mismatches and matched-budget formula mismatches were zero; all
 four logs completed without error markers; and paired OFF/ON traces contained
 599 rows per side with zero actual gameplay/search decision differences. This
-smoke is non-decision-bearing. No 16-seed experiment has been run after the
-correction; the resulting implementation commit requires independent review
-before freezing a new executable SHA.
+smoke is non-decision-bearing. At this correction checkpoint no 16-seed
+experiment had yet been run; the resulting implementation was subsequently
+reviewed and frozen before the mature run recorded below.
+
+## Decision-bearing mature post-search 1000-simulation run
+
+The reviewed executable was frozen at
+`a455dbae1e871e2671209bf006af1a9f733f1c29`; no executable source changed
+during collection. Seeds were `12345..12360`, with one guarded process per
+seed per arm, `STS_SEARCHER3=1`, `STS_FAIR=1`, `STS_S3_PARTICLES=64`, 1,000
+normal simulations per decision, diagnostic particles 64, cap 4, minimum
+child visits 32, fresh secondary 500, reference 3,000, and four OpenMP
+threads.
+
+The corrected post-search lifecycle emitted 64 measured transitions and 560
+bucket rows, four transitions per source seed. All measured parents had
+`parentObsMismatches=0`; matched-budget formula mismatches and bad probability
+sums were zero; all 32 guarded processes completed without invalid-action,
+simulator-health, assertion, or crash markers. Paired OFF/ON traces had zero
+actual `bestAction` differences, zero fight-outcome differences, and zero
+missing decision keys. Other searchdiag timing/metric fields differed in 6,696
+rows because the ON arm performs the shadow diagnostic; those fields are not
+gameplay decisions.
+
+The primary matched-compute result, analyzed with 10,000 source-seed bootstrap
+resamples, was:
+
+- probability-mass-weighted shared-versus-matched disagreement: `0.7063`, CI
+  `[0.6304, 0.7800]`;
+- pooled deeper-reference preference among disagreements: matched `0.5309`,
+  shared `0.1303`, neither `0.3387`;
+- source-seed mean preference: matched `0.5646`, shared `0.1303`, neither
+  `0.3051`;
+- matched-minus-shared reference margin: `+2.4507` pooled, `+2.0325` by
+  source-seed mean, CI `[+0.6162, +3.5639]`;
+- matched-budget distribution: min `1`, median `60`, mean `119.825`, p25
+  `28`, p75 `148`, p90 `299.1`, p95 `443`, max `1,406`.
+
+The secondary compute-unmatched 500-simulation arm had disagreement `0.7222`,
+pooled preference conditioned `0.5335`, shared `0.0859`, neither `0.3807`,
+and source-seed mean margin `+3.7498`, CI `[+2.0394, +5.3921]`. It remains
+secondary and is not the scientific gate.
+
+Compared with the historical early-tree 64-simulation result, disagreement
+was similar (`0.7012` versus `0.7063`) but the matched-budget median increased
+from `5` to `60`; the historical primary margin was negative
+(`-1.6781`, CI `[-2.7500, -0.6066]`), whereas this corrected mature post-search
+run has positive bootstrap-supported margin. The comparison is descriptive;
+the executable SHAs differ.
+
+Under the preregistered rule, this run provides evidence to proceed toward a
+separately reviewed chance-node prototype: disagreement is substantial, the
+deeper reference favors matched conditioning, and the matched-minus-shared
+margin is positive with a CI above zero. This is not a win-rate claim, not a
+claim of optimality, and no chance-node implementation is included in this
+branch.
+
+Evidence packet:
+
+- `build/s3sf_a455dba_1000_diag.csv`
+- `build/s3sf_a455dba_1000_diag.csv.meta.json`
+- `build/s3sf_a455dba_1000_analysis.json`
+- `build/s3sf_a455dba_1000_results.json`
+
+The compact result packet contains the exact configuration, frozen SHA,
+SHA-256 hashes, validation counts, and the prior-64 comparison.
 
 ## Verification and status
 
@@ -231,5 +294,6 @@ production code changed during the decision-bearing run; the evidence commit
 updates this record without changing the frozen implementation SHA.
 
 Status: lifecycle correction implemented; early-tree historical runs
-reclassified; corrected implementation awaiting independent review. No new
-scientific run has been performed.
+reclassified; mature post-search 1000-simulation run completed. The result
+supports a separately reviewed chance-node prototype, but no prototype is
+implemented here.
