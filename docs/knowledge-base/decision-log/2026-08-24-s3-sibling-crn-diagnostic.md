@@ -55,3 +55,16 @@ from both arms by the common-valid intersection.
 
 Implementation awaiting independent review. The preregistered 32-state formal
 experiment has not been run.
+
+## Frozen corpus preflight (2026-08-25)
+
+The selector was corrected to rotate encounter class, act within each class,
+and source seed within each act/class. The durable 32-state manifest is
+`docs/experiments/evidence/s3-sibling-crn-selection-32.csv`, SHA-256
+`4894615aeedd37ce619b11ca834abd562699d80d93863e9b49608ce62dc97dda`.
+Its composition is 2 unique source seeds; Act 1 has 5 ordinary, 9 elite, and
+6 boss states, while Act 2 has 5 ordinary, 2 elite, and 5 boss states. The
+captured corpus contains no Act 3 parent states, so Act 3 contributes zero;
+the manifest was accepted as the available-corpus composition rather than
+manufacturing unsupported coverage. No CRN evaluation was run for this
+manifest.

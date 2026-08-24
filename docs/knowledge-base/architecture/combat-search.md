@@ -839,8 +839,9 @@ for every aggregation; `state_id` alone is only visible-state provenance.
 The producer seed schedule includes the same full identity, so visible-hash
 collisions cannot reuse diagnostic streams. `tools/select_s3_crn_states.py`
 writes a deterministic manifest using round-robin boss/elite/ordinary encounter
-classes and source seeds, with sorted within-group provenance. Formal runs must
-pass that frozen manifest instead of taking the first N sorted decisions.
+classes, rotating acts within each class and source seeds within each act/class,
+with sorted within-group provenance. Formal runs must pass that frozen manifest
+instead of taking the first N sorted decisions.
 
 `tools/analyze_s3_sibling_crn.py` reconstructs batch Q values and reports the
 preregistered variance, decision, bias, invalidity, and state/action-pair

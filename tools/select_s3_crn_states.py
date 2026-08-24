@@ -39,31 +39,47 @@ def select(rows, target):
         unique[key(row)] = row
     groups = defaultdict(list)
     for row in unique.values():
-        groups[(encounter_class(row), int(row['seed']))].append(row)
+        groups[(encounter_class(row), int(row.get('act') or 0), int(row['seed']))].append(row)
     for values in groups.values():
         values.sort(key=lambda r: (int(r['fightIdx']), int(r['decIdx']), int(r['obsHash'])))
     classes = ('boss', 'elite', 'ordinary')
-    seeds_by_class = {
-        cls: sorted({seed for group, seed in groups if group == cls})
+    acts_by_class = {
+        cls: sorted({act for group, act, seed in groups if group == cls})
         for cls in classes
     }
-    seed_cursor = {cls: 0 for cls in classes}
+    act_cursor = {cls: 0 for cls in classes}
+    seeds_by_class_act = {
+        (cls, act): sorted({seed for group, group_act, seed in groups
+                            if group == cls and group_act == act})
+        for cls in classes for act in acts_by_class[cls]
+    }
+    seed_cursor = {(cls, act): 0 for cls in classes for act in acts_by_class[cls]}
     chosen = []
     while len(chosen) < target:
         made_progress = False
         for cls in classes:
-            seeds = seeds_by_class[cls]
-            if not seeds:
+            acts = acts_by_class[cls]
+            if not acts:
                 continue
-            skipped = 0
-            while skipped < len(seeds) and not groups[(cls, seeds[seed_cursor[cls]])]:
-                seed_cursor[cls] = (seed_cursor[cls] + 1) % len(seeds)
-                skipped += 1
-            if skipped == len(seeds):
+            skipped_acts = 0
+            while skipped_acts < len(acts):
+                act = acts[act_cursor[cls]]
+                seeds = seeds_by_class_act[(cls, act)]
+                skipped_seeds = 0
+                while skipped_seeds < len(seeds) and not groups[
+                        (cls, act, seeds[seed_cursor[(cls, act)]])]:
+                    seed_cursor[(cls, act)] = (seed_cursor[(cls, act)] + 1) % len(seeds)
+                    skipped_seeds += 1
+                if skipped_seeds < len(seeds):
+                    break
+                act_cursor[cls] = (act_cursor[cls] + 1) % len(acts)
+                skipped_acts += 1
+            if skipped_acts == len(acts):
                 continue
-            seed = seeds[seed_cursor[cls]]
-            chosen.append(groups[(cls, seed)].pop(0))
-            seed_cursor[cls] = (seed_cursor[cls] + 1) % len(seeds)
+            seed = seeds[seed_cursor[(cls, act)]]
+            chosen.append(groups[(cls, act, seed)].pop(0))
+            seed_cursor[(cls, act)] = (seed_cursor[(cls, act)] + 1) % len(seeds)
+            act_cursor[cls] = (act_cursor[cls] + 1) % len(acts)
             made_progress = True
             if len(chosen) == target:
                 break
@@ -73,7 +89,8 @@ def select(rows, target):
 
 
 def write_manifest(rows, output, source_csv, target):
-    rule = 'round_robin encounter_class(boss,elite,ordinary) then source_seed; sorted fightIdx,decIdx,obsHash'
+    rule = ('round_robin encounter_class(boss,elite,ordinary), act within class, '
+            'source_seed within act/class; sorted fightIdx,decIdx,obsHash')
     fields = ['source_seed', 'fight_idx', 'decision_idx', 'state_id', 'encounter',
               'floor', 'act', 'isBoss', 'binaryOffset', 'binarySize',
               'selection_rule', 'source_csv_sha256']
@@ -82,7 +99,7 @@ def write_manifest(rows, output, source_csv, target):
         for block in iter(lambda: f.read(1024 * 1024), b''):
             digest.update(block)
     with open(output, 'w', newline='') as f:
-        out = csv.DictWriter(f, fieldnames=fields)
+        out = csv.DictWriter(f, fieldnames=fields, lineterminator='\n')
         out.writeheader()
         for r in rows:
             out.writerow({
@@ -100,18 +117,19 @@ def self_test():
         assert encounter_class(row) == 'elite'
 
     rows = []
-    for seed, name, boss in (
-        (0, 'SLIME_BOSS', '1'), (1, 'SLIME_BOSS', '1'),
-        (2, 'GREMLIN_NOB', '0'), (3, 'SLAVERS', '0'),
-        (4, 'CULTIST', '0'), (5, 'CULTIST', '0'),
+    for seed, name, boss, act in (
+        (0, 'SLIME_BOSS', '1', 1), (1, 'SLIME_BOSS', '1', 2),
+        (2, 'GREMLIN_NOB', '0', 1), (3, 'SLAVERS', '0', 2),
+        (4, 'CULTIST', '0', 1), (5, 'CULTIST', '0', 2),
     ):
         rows.append({'seed': str(seed), 'fightIdx': '0', 'decIdx': '0', 'obsHash': str(seed + 10),
                      'frontierType': '-1', 'encounterName': name, 'isBoss': boss,
-                     'floor': '1', 'act': '1', 'binaryOffset': '4', 'binarySize': '10'})
+                     'floor': '1', 'act': str(act), 'binaryOffset': '4', 'binarySize': '10'})
     chosen = select(rows, 6)
     assert [encounter_class(r) for r in chosen] == [
         'boss', 'elite', 'ordinary', 'boss', 'elite', 'ordinary']
     assert [int(r['seed']) for r in chosen] == [0, 2, 4, 1, 3, 5]
+    assert [int(r['act']) for r in chosen] == [1, 1, 1, 2, 2, 2]
     assert len({key(r) for r in chosen}) == 6
     print('select_s3_crn_states self-test PASS')
 
