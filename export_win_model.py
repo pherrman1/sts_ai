@@ -1,25 +1,17 @@
 #!/usr/bin/env python3
-"""Export the XGBoost V_win model to a compact trees.txt for native C++ tree-walk
-inference (eliminates the v_server socket for OOC V_win decisions). Same tree format
-as export_combat_model.py, plus a `logistic 1` marker so C++ applies sigmoid.
-Usage: export_win_model.py [model.json] [out_trees.txt] [maxtrees]"""
-import sys, json, xgboost as xgb
+"""Export the shared compact XGBoost tree format used by native consumers.
 
-MODEL    = sys.argv[1] if len(sys.argv) > 1 else "models/v_win_xgb.json"
-OUT      = sys.argv[2] if len(sys.argv) > 2 else "build/v_win_trees.txt"
-MAXTREES = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+``export_booster`` is intentionally the only logistic-tree serializer.  The
+E2c trainer imports it so its truncation and node encoding cannot drift from
+the established V_win exporter.
+"""
+import json
+import sys
 
-bst = xgb.Booster(); bst.load_model(MODEL)
-feats = bst.feature_names
-cfg = json.loads(bst.save_config())
-base_score = float(str(cfg["learner"]["learner_model_param"]["base_score"]).strip("[]"))
-obj = cfg["learner"]["objective"]["name"]
-logistic = 1 if "logistic" in obj else 0
-dumps = bst.get_dump(dump_format="json")
-if MAXTREES > 0: dumps = dumps[:MAXTREES]
-fidx = {n: i for i, n in enumerate(feats)}
+import xgboost as xgb
 
-def flatten(tree):
+
+def _flatten(tree, fidx):
     byid = {}
     def walk(nd):
         byid[nd["nodeid"]] = nd
@@ -36,16 +28,51 @@ def flatten(tree):
             out.append(("S", fidx[nd["split"]], float(nd["split_condition"]), ci[nd["yes"]], ci[nd["no"]]))
     return out
 
-with open(OUT, "w") as f:
-    f.write(f"nfeat {len(feats)}\n")
-    for n in feats: f.write(f"feat {n}\n")
-    f.write(f"logistic {logistic}\n")
-    f.write(f"base_score {base_score}\n")
-    f.write(f"ntrees {len(dumps)}\n")
-    for t, d in enumerate(dumps):
-        nodes = flatten(json.loads(d))
-        f.write(f"tree {t} {len(nodes)}\n")
-        for nd in nodes:
-            if nd[0] == "L": f.write(f"L {nd[1]:.7g}\n")
-            else:            f.write(f"S {nd[1]} {nd[2]:.7g} {nd[3]} {nd[4]}\n")
-print(f"wrote {OUT}: {len(feats)} feats, {len(dumps)} trees, base_score {base_score}, logistic {logistic}")
+
+def export_booster(bst, out, tree_count=None):
+    """Write trees [0, tree_count) and return deterministic metadata.
+
+    ``tree_count`` is deliberately an exclusive count.  An early-stopped
+    caller passes ``best_iteration + 1``, matching XGBoost's prediction slice.
+    """
+    feats = bst.feature_names
+    if not feats or len(set(feats)) != len(feats):
+        raise ValueError("Booster must expose a unique ordered feature list")
+    cfg = json.loads(bst.save_config())
+    base_score = float(str(cfg["learner"]["learner_model_param"]["base_score"]).strip("[]"))
+    obj = cfg["learner"]["objective"]["name"]
+    logistic = int("logistic" in obj)
+    dumps = bst.get_dump(dump_format="json")
+    if tree_count is not None:
+        if not 1 <= tree_count <= len(dumps):
+            raise ValueError(f"invalid tree_count {tree_count}; Booster has {len(dumps)} trees")
+        dumps = dumps[:tree_count]
+    fidx = {name: i for i, name in enumerate(feats)}
+    with open(out, "w", newline="\n") as f:
+        f.write(f"nfeat {len(feats)}\n")
+        for name in feats: f.write(f"feat {name}\n")
+        f.write(f"logistic {logistic}\n")
+        f.write(f"base_score {base_score:.17g}\n")
+        f.write(f"ntrees {len(dumps)}\n")
+        for tree_idx, dump in enumerate(dumps):
+            nodes = _flatten(json.loads(dump), fidx)
+            f.write(f"tree {tree_idx} {len(nodes)}\n")
+            for node in nodes:
+                if node[0] == "L": f.write(f"L {node[1]:.17g}\n")
+                else: f.write(f"S {node[1]} {node[2]:.17g} {node[3]} {node[4]}\n")
+    return {"feature_names": list(feats), "tree_count": len(dumps),
+            "base_score": base_score, "logistic": bool(logistic), "objective": obj}
+
+
+def main():
+    model = sys.argv[1] if len(sys.argv) > 1 else "models/v_win_xgb.json"
+    out = sys.argv[2] if len(sys.argv) > 2 else "build/v_win_trees.txt"
+    max_trees = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+    bst = xgb.Booster(); bst.load_model(model)
+    info = export_booster(bst, out, max_trees or None)
+    print(f"wrote {out}: {len(info['feature_names'])} feats, {info['tree_count']} trees, "
+          f"base_score {info['base_score']}, logistic {int(info['logistic'])}")
+
+
+if __name__ == "__main__":
+    main()
