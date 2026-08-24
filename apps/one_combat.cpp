@@ -8339,6 +8339,10 @@ static std::string runwinShadowHeader() {
 }
 static std::string runwinShadowRowsCsv(const RunResult &result) {
     std::ostringstream out;
+    // The rank analyzer recomputes replicate aggregates from these serialized
+    // rows.  Preserve double precision so that an otherwise valid R=2/M=2
+    // smoke does not fail aggregate parity solely because of CSV rounding.
+    out << std::setprecision(17);
     for (const auto &r : t_runwinShadow.rows) out << r.seed << ',' << r.fightIdx << ',' << r.decIdx << ',' << r.floor << ',' << r.act << ',' << r.room << ',' << r.encounter << ',' << r.rootObsHash << ',' << r.rootActionBits << ',' << r.leafObsHash << ',' << r.leafCurHp << ',' << r.leafMaxHp << ',' << r.leafHpFrac << ',' << r.depth << ',' << r.searchSimulation << ',' << r.particleIndex << ',' << r.particleWeight << ',' << r.particleExact << ',' << r.particleFallback << ',' << r.rootCarried << ',' << r.reuseGeneration << ',' << r.reuseSearchCount << ',' << r.rolloutSteps << ',' << r.vnetPred << ',' << r.rawRolloutEval << ',' << r.blendedEval << ',' << r.replicate << ',' << r.terminal << ',' << r.survived << ',' << r.probability << ',' << r.replicates << ',' << r.survivedCount << ',' << (r.replicates ? (double)r.survivedCount / r.replicates : 0.0) << ',' << r.conditionalSurvivalMean << ',' << r.probabilityMean << ',' << r.probabilityStd << ',' << r.probabilityMin << ',' << r.probabilityMax << ',' << r.projectionFailure << ',' << r.inferenceFailure << '\n';
     return out.str();
 }
@@ -8466,7 +8470,12 @@ struct RunwinRankCtx {
     void beginFight(int fi, const GameContext &base, const PathHistory &p,
                     Room r, MonsterEncounter e) {
         fightIdx = fi; decIdx = 0; floor = base.floorNum; act = base.act;
-        room = r; encounter = e; battleEntry = base; path = p; leaves.clear();
+        // A GameContext ordinarily shares its Map.  Root records survive later
+        // act transitions, which regenerate that map in place, so source-root
+        // capture must own a detached exact battle-entry snapshot.  This also
+        // keeps diagnostics observational: no retained root can alias or
+        // mutate the live source run's environment map.
+        room = r; encounter = e; battleEntry = detachedCounterfactualCopy(base); path = p; leaves.clear();
     }
     void nextDecision() { leaves.clear(); ++decIdx; }
 };
@@ -8547,7 +8556,10 @@ static void runwinRankOnSearchComplete(const BattleContext &bc, const search::Ba
     root.floor = t_runwinRank.floor; root.act = t_runwinRank.act; root.room = (int)t_runwinRank.room;
     root.encounter = (int)t_runwinRank.encounter; root.rootObsHash = rootHash; root.rootActionBits = bits;
     root.rootVisits = bestVisits; root.sampleHash = runwinRankRootHash(root.seed, root.fightIdx, root.decIdx, rootHash, bits);
-    root.battleEntry = t_runwinRank.battleEntry; root.path = t_runwinRank.path; root.leaves = t_runwinRank.leaves;
+    // Retain an independently owned source snapshot per root.  Do not copy a
+    // shared Map pointer into the post-source reference reservoir.
+    root.battleEntry = detachedCounterfactualCopy(t_runwinRank.battleEntry);
+    root.path = t_runwinRank.path; root.leaves = t_runwinRank.leaves;
     t_runwinRank.roots.push_back(std::move(root));
     t_runwinRank.nextDecision();
 }
