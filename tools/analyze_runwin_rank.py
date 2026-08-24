@@ -283,6 +283,17 @@ def self_test():
     invalid_report = analyze(shadow, invalid, futures=8, bootstrap=4)
     assert invalid_report["reference_exclusions"]["invalid_reference_future"] == 1
     assert invalid_report["qualifying_leaves"] == 11
+    # A direct combat loss is an accepted exact-zero outcome; only a nonzero
+    # run win after such a loss is schema/semantic corruption.
+    loss = reference.copy(); loss.loc[0, ["combatSurvived", "runWon"]] = [0, 0]
+    analyze(shadow, loss, futures=8, bootstrap=4)
+    bad_loss = loss.copy(); bad_loss.loc[0, "runWon"] = 1
+    try:
+        analyze(shadow, bad_loss, futures=8, bootstrap=4)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("direct combat-loss zero invariant was not enforced")
     print("runwin rank analyzer self-test: PASS")
 
 
