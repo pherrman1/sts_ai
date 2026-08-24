@@ -756,6 +756,42 @@ int testS3StrategyFusionDiag(std::uint64_t seed) {
         check(a.root.edges[i].child.simulationCount == visits[i],
               "read-only extraction changed visits");
 
+    // Regression: strategy-fusion candidates are only recorded during step(),
+    // but side searches must wait for the normal search to finish and use the
+    // final child statistics. Use one particle so no multi-bucket side probe
+    // is eligible; this test inspects only the lifecycle provenance.
+    const bool oldStrategyDiag = search::g_s3StrategyFusionDiag;
+    const std::string oldStrategyDiagFile = search::g_s3StrategyFusionDiagFile;
+    const int oldStrategyParticles = search::g_s3StrategyFusionDiagParticles;
+    const int oldStrategyMaxTransitions = search::g_s3StrategyFusionDiagMaxTransitions;
+    const int oldStrategyMinVisits = search::g_s3StrategyFusionDiagMinChildVisits;
+    const int oldStrategyFreshSims = search::g_s3StrategyFusionDiagFreshSims;
+    const int oldStrategyReferenceSims = search::g_s3StrategyFusionDiagReferenceSims;
+    search::g_s3StrategyFusionDiag = true;
+    search::g_s3StrategyFusionDiagFile.clear();
+    search::g_s3StrategyFusionDiagParticles = 1;
+    search::g_s3StrategyFusionDiagMaxTransitions = 1;
+    search::g_s3StrategyFusionDiagMinChildVisits = 8;
+    search::g_s3StrategyFusionDiagFreshSims = 0;
+    search::g_s3StrategyFusionDiagReferenceSims = 0;
+    search::BattleScumSearcher3 lifecycleProbe(canonical, seed, 0, 8);
+    lifecycleProbe.search(128);
+    const auto &visitRecords = lifecycleProbe.strategyFusionFinalVisitRecordsForTest();
+    check(!visitRecords.empty(),
+          "no stable-parent strategy-fusion candidate was finalized");
+    bool observedPostSearchGrowth = false;
+    for (const auto &record : visitRecords)
+        observedPostSearchGrowth = observedPostSearchGrowth || record.second > record.first;
+    check(observedPostSearchGrowth,
+          "strategy-fusion used threshold-time rather than final child visits");
+    search::g_s3StrategyFusionDiag = oldStrategyDiag;
+    search::g_s3StrategyFusionDiagFile = oldStrategyDiagFile;
+    search::g_s3StrategyFusionDiagParticles = oldStrategyParticles;
+    search::g_s3StrategyFusionDiagMaxTransitions = oldStrategyMaxTransitions;
+    search::g_s3StrategyFusionDiagMinChildVisits = oldStrategyMinVisits;
+    search::g_s3StrategyFusionDiagFreshSims = oldStrategyFreshSims;
+    search::g_s3StrategyFusionDiagReferenceSims = oldStrategyReferenceSims;
+
     if (failures == 0) {
         std::cout << "s3_strategy_fusion_diag PASS\n";
         return 0;

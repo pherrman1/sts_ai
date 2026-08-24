@@ -21,6 +21,7 @@
 #include <map>
 #include <cstdint>
 #include <limits>
+#include <utility>
 
 namespace sts::search {
 
@@ -196,6 +197,32 @@ class BattleScumSearcher3;
             bool hasCardKey = false;
         };
 
+        // A shadow-only strategy-fusion candidate recorded during step().
+        // The tree is addressed by edge indices from root to the parent so
+        // vector reallocations during later search simulations cannot leave a
+        // dangling Node/Edge pointer. Side searches are deferred until the
+        // normal search invocation has completed.
+        struct StrategyFusionCandidate {
+            BattleContext preState;
+            Action action;
+            std::vector<int> parentEdgePath;
+            int edgeIndex = -1;
+            std::uint64_t sourceSeed = 0;
+            int encounter = 0;
+            int floor = 0;
+            int turn = 0;
+            int decisionIndex = 0;
+            int simulationIndex = 0;
+            std::uint64_t seenKey = 0;
+            std::int64_t thresholdSharedChildVisits = 0;
+        };
+
+        // Test-visible provenance for the lifecycle regression. Production
+        // policy does not consume this vector; it records threshold-time and
+        // final child visits for candidates finalized after search.
+        std::vector<std::pair<std::int64_t, std::int64_t>>
+            strategyFusionFinalVisitRecords;
+
         std::unique_ptr<const BattleContext> rootBc;
         CombatObservation rootObs;     // cached root observation
 
@@ -352,12 +379,18 @@ class BattleScumSearcher3;
         // constructor; per-searcher => per-thread, no locking needed.
         std::vector<double> rankCorrValues;
 
+        std::vector<StrategyFusionCandidate> strategyFusionCandidates;
+
         explicit BattleScumSearcher3(const BattleContext &bc, int particleCount = 128);
         BattleScumSearcher3(const BattleContext &bc, std::uint64_t agentSeed,
                             int decisionIndex, int particleCount = 128);
 
         void search(int64_t simulations);
         void searchToTotal(int64_t targetSimulations);
+        const std::vector<std::pair<std::int64_t, std::int64_t>> &
+        strategyFusionFinalVisitRecordsForTest() const {
+            return strategyFusionFinalVisitRecords;
+        }
         void enableRngExposureDiagnostic(std::uint64_t seed, int encounter, int floor,
                                          int sourceFilterDecisionIndex, int searchDecisionIndex,
                                          int turn, std::uint64_t rootObservationHash,
@@ -373,6 +406,13 @@ class BattleScumSearcher3;
                                     const BattleContext &preState,
                                     const BattleContext &postState);
         void finishRngExposureSimulation();
+
+        void recordStrategyFusionCandidate(
+            const Node &parentNode, const BattleContext &preState,
+            const Edge &sharedEdge, const std::vector<Node *> &path,
+            std::uint64_t sourceSeed, int encounter, int floor, int turn,
+            int simulationIndex);
+        void finalizeStrategyFusionDiag();
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
         RealBeliefFilterStats filterRealTransition(

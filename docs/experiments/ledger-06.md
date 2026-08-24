@@ -4071,7 +4071,7 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
 - **Decision log:**
   [`2026-08-23-s3-strategy-fusion-diagnostic.md`](../knowledge-base/decision-log/2026-08-23-s3-strategy-fusion-diagnostic.md).
 
-### Follow-up: stability-gated 16-seed decision run
+### Historical early-tree 64-simulation run (not mature-tree evidence)
 
 - **Frozen implementation:** `1438ef72f6486adf3161e587b25fd1e0b83f18a6`.
   Seeds were `12345..12360`, one seed-guarded process per seed, normal
@@ -4083,6 +4083,11 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   differences; zero parent-observation mismatches; no log error matches.
   Per-seed transition counts were exactly 4 for all 16 seeds. Analyzer output:
   `build/s3sf_decision_analysis.json`.
+- **Validity classification:** the diagnostic side searches ran during
+  `step()` as soon as the shared child crossed the minimum visit threshold.
+  The recorded child counts therefore were threshold-time values rather than
+  final post-search values. These artifacts are retained as historical
+  **early-tree evidence**, not mature-tree evidence.
 - **Primary matched-compute result:** disagreement `0.7012`, source-seed
   bootstrap 95% CI `[0.6116, 0.7820]`; deeper reference preference among
   disagreement mass matched-conditioned `0.2481`, shared `0.2648`, neither
@@ -4091,14 +4096,13 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
 - **Secondary 500-simulation result:** disagreement `0.7612`, deeper reference
   conditioned preference `0.6132`, and margin `+3.5400`; this is secondary and
   compute-confounded by design.
-- **Interpretation:** the primary comparison shows substantial policy
-  disagreement but no consistent deeper-reference harm from sharing. The
-  preregistered harm requirement for proceeding toward persistent chance-node
-  state splitting is not met. The run does not support a chance-node prototype;
-  disagreement remains an abstraction effect, not evidence of benefit. Any
-  replication requires an explicitly approved new run.
+- **Interpretation:** these results are not valid for the mature-tree scientific
+  gate because the side searches used threshold-time child statistics. They
+  should not be interpreted as evidence for or against persistent chance-node
+  state splitting. A lifecycle correction and new review are required before
+  repeating the decision-bearing run.
 
-### Follow-up: realistic 1000-simulation budget run
+### Historical nominal 1000-simulation run (not mature-1000 evidence)
 
 - **Frozen executable and configuration:** the executable remained frozen at
   `1438ef72f6486adf3161e587b25fd1e0b83f18a6`. Seeds were `12345..12360`,
@@ -4109,6 +4113,10 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   minimum shared-child visits 32, secondary fresh 500 simulations, and
   deeper reference 3,000 simulations. The primary matched budget remained
   `max(1, round(sharedChildVisits * bucketProbability))`.
+- **Validity classification:** despite the nominal 1,000 normal simulations,
+  the diagnostic still launched side searches during `step()` at the first
+  threshold crossing. The observed matched-budget median was only 5 sims, so
+  this is also **early-tree evidence**, not mature-1,000 evidence.
 - **Collection and correctness:** all 16 seeds completed, producing 64
   qualifying transitions and 560 bucket rows. Every seed contributed four
   transitions; all rows had `parentObsMismatches=0`; the formula matched every
@@ -4136,12 +4144,33 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `0.4871` to `0.4255`. The primary margin improved from `-1.6781` (CI
   `[-2.7500, -0.6066]`) to `-0.7253` (CI `[-2.2000, +0.6504]`), but did not
   become positive or support a positive-margin conclusion.
-- **Interpretation:** the realistic-budget run confirms frequent continuation
-  policy disagreement, but the deeper reference does not provide the required
-  positive matched-over-shared value evidence. The preregistered gate for
-  proceeding toward persistent chance nodes is not met. The raw CSV, metadata,
-  analyzer JSON, and result packet are committed as
+- **Interpretation:** these results are invalid as a mature-1,000 scientific
+  gate because the side searches used threshold-time child statistics. They
+  are retained for debugging the compute confound, not as a chance-node
+  decision. The raw CSV, metadata, analyzer JSON, and result packet are
+  committed as
   `build/s3sf_decision1000_diag.csv`,
   `build/s3sf_decision1000_diag.csv.meta.json`,
   `build/s3sf_decision1000_analysis.json`, and
   `build/s3sf_decision1000_results.json`.
+
+### Correction: defer strategy-fusion side searches until search completion
+
+- **Implementation:** candidates are now recorded during `step()` without
+  particle sampling, bucket construction, or side searches. After the normal
+  `search()`/`searchToTotal()` loop completes, the candidate path is resolved
+  against the final tree, the parent stability gate is rechecked, final child
+  visits are captured, and only then are the existing matched, fresh, and
+  reference side searches run. The matched formula is unchanged.
+- **Regression:** `s3_strategy_fusion_diag` proves a finalized candidate's
+  final child visits exceed its threshold-time visits, demonstrating that the
+  recorded budget is post-search rather than threshold-time.
+- **Tiny smoke:** two guarded seeds (`12345..12346`), 64 normal simulations,
+  16 diagnostic particles, cap 1 per process, minimum visits 8, fresh 8, and
+  reference 16 produced 2 transitions and 8 bucket rows. Parent mismatches
+  and budget-formula mismatches were zero; paired OFF/ON traces had 599 rows
+  per side and zero actual decision differences; all four logs completed with
+  no error markers. This smoke is implementation-only and non-decision-bearing.
+- **Status:** no 16-seed experiment was run after this correction. The new
+  executable/implementation SHA is deferred to independent review of the
+  resulting commit.

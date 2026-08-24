@@ -623,6 +623,8 @@ void BattleScumSearcher3::resetParticleUsage() {
     particleSampleCounts.assign(belief.particles.size(), 0);
     lastSearchSimulations = 0;
     lastSearchCpuMs = 0.0;
+    strategyFusionCandidates.clear();
+    strategyFusionFinalVisitRecords.clear();
 }
 
 void BattleScumSearcher3::enableRngExposureDiagnostic(
@@ -1105,6 +1107,7 @@ void writeStrategyFusionRow(
                  << "  \"primaryComparison\": \"shared child vs matched-compute conditioned\",\n"
                  << "  \"secondaryComparison\": \"shared child vs configured fresh conditioned\",\n"
                  << "  \"parentObservationGate\": \"nodeObsMismatches == 0 at END_TURN parent\",\n"
+                 << "  \"sideSearchLifecycle\": \"candidates recorded during step; side searches after normal search with final child statistics\",\n"
                  << "  \"normalSearchParticles\": " << g_s3Particles << ",\n"
                  << "  \"liveValid\": " << (g_liveValid ? 1 : 0) << ",\n"
                  << "  \"semanticCardEdges\": " << (g_s3SemanticCardEdges ? 1 : 0) << ",\n"
@@ -1139,7 +1142,6 @@ void runStrategyFusionDiag(const BattleScumSearcher3::Node &parentNode,
     if (!g_s3StrategyFusionDiag || t_strategyFusionSuppressed
         || sharedEdge.action.getActionType() != ActionType::END_TURN
         || !parentNode.isObsStable()
-        || sharedEdge.child.simulationCount < g_s3StrategyFusionDiagMinChildVisits
         || g_strategyFusionTransitions.load() >= g_s3StrategyFusionDiagMaxTransitions)
         return;
 
@@ -1333,6 +1335,106 @@ void runStrategyFusionDiag(const BattleScumSearcher3::Node &parentNode,
 }
 
 } // namespace
+
+void BattleScumSearcher3::recordStrategyFusionCandidate(
+    const Node &parentNode, const BattleContext &preState,
+    const Edge &sharedEdge, const std::vector<Node *> &path,
+    std::uint64_t sourceSeed, int encounter, int floor, int turn,
+    int simulationIndex) {
+    if (!g_s3StrategyFusionDiag || t_strategyFusionSuppressed
+        || sharedEdge.action.getActionType() != ActionType::END_TURN
+        || !parentNode.isObsStable()
+        || sharedEdge.child.simulationCount < g_s3StrategyFusionDiagMinChildVisits
+        || g_strategyFusionTransitions.load() >= g_s3StrategyFusionDiagMaxTransitions)
+        return;
+
+    StrategyFusionCandidate candidate;
+    candidate.preState = preState;
+    candidate.action = sharedEdge.action;
+    candidate.sourceSeed = sourceSeed;
+    candidate.encounter = encounter;
+    candidate.floor = floor;
+    candidate.turn = turn;
+    candidate.decisionIndex = decisionIndex;
+    candidate.simulationIndex = simulationIndex;
+    candidate.seenKey = strategyFusionSeed(
+        sourceSeed, CombatObservation::fromBattleContext(preState).visibleHash(),
+        0, decisionIndex, 0, 0, sharedEdge.action.bits);
+    candidate.thresholdSharedChildVisits = sharedEdge.child.simulationCount;
+
+    for (const auto &existing : strategyFusionCandidates)
+        if (existing.seenKey == candidate.seenKey)
+            return;
+
+    for (size_t depth = 0; depth + 1 < path.size(); ++depth) {
+        const Node *from = path[depth];
+        const Node *to = path[depth + 1];
+        int childIndex = -1;
+        for (size_t edgeIndex = 0; edgeIndex < from->edges.size(); ++edgeIndex) {
+            if (&from->edges[edgeIndex].child == to) {
+                childIndex = static_cast<int>(edgeIndex);
+                break;
+            }
+        }
+        if (childIndex < 0)
+            return;
+        candidate.parentEdgePath.push_back(childIndex);
+    }
+
+    for (size_t edgeIndex = 0; edgeIndex < parentNode.edges.size(); ++edgeIndex) {
+        if (&parentNode.edges[edgeIndex] == &sharedEdge) {
+            candidate.edgeIndex = static_cast<int>(edgeIndex);
+            break;
+        }
+    }
+    if (candidate.edgeIndex < 0)
+        return;
+
+    strategyFusionCandidates.push_back(std::move(candidate));
+}
+
+void BattleScumSearcher3::finalizeStrategyFusionDiag() {
+    if (!g_s3StrategyFusionDiag || t_strategyFusionSuppressed)
+        return;
+
+    for (const auto &candidate : strategyFusionCandidates) {
+        if (g_strategyFusionTransitions.load()
+                >= g_s3StrategyFusionDiagMaxTransitions)
+            break;
+
+        Node *parent = &root;
+        bool pathValid = true;
+        for (int edgeIndex : candidate.parentEdgePath) {
+            if (edgeIndex < 0
+                || edgeIndex >= static_cast<int>(parent->edges.size())) {
+                pathValid = false;
+                break;
+            }
+            parent = &parent->edges[edgeIndex].child;
+        }
+        if (!pathValid || candidate.edgeIndex < 0
+            || candidate.edgeIndex >= static_cast<int>(parent->edges.size()))
+            continue;
+
+        Edge &sharedEdge = parent->edges[candidate.edgeIndex];
+        if (sharedEdge.action.bits != candidate.action.bits
+            || sharedEdge.action.getActionType() != ActionType::END_TURN
+            || !parent->isObsStable()
+            || sharedEdge.child.simulationCount < g_s3StrategyFusionDiagMinChildVisits)
+            continue;
+
+        // This snapshot is intentionally taken immediately before the side
+        // searches. It is the final post-search child count, not the count at
+        // which the candidate first crossed the eligibility threshold.
+        strategyFusionFinalVisitRecords.emplace_back(
+            candidate.thresholdSharedChildVisits,
+            sharedEdge.child.simulationCount);
+        runStrategyFusionDiag(
+            *parent, candidate.preState, sharedEdge,
+            candidate.sourceSeed, candidate.encounter, candidate.floor,
+            candidate.turn, candidate.decisionIndex, candidate.simulationIndex);
+    }
+}
 
 // Continuation-value evaluator (self-contained, no searcher needed): runs K
 // weighted-random rollouts from a post-END_TURN state, evaluates each
@@ -2256,6 +2358,7 @@ void BattleScumSearcher3::search(int64_t simulations) {
     lastSearchSimulations = static_cast<int>(simulations);
     lastSearchCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     diag.simSeconds += lastSearchCpuMs / 1000.0;
+    finalizeStrategyFusionDiag();
 }
 
 void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
@@ -2272,6 +2375,7 @@ void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
     lastSearchSimulations = static_cast<int>(root.simulationCount);
     lastSearchCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     diag.simSeconds += lastSearchCpuMs / 1000.0;
+    finalizeStrategyFusionDiag();
 }
 
 bool BattleScumSearcher3::advanceRoot(const Action &action,
@@ -2876,21 +2980,18 @@ void BattleScumSearcher3::step() {
                         auto resolved = resolveSemanticCardEdge(validEdge, state);
                         if (resolved) execAction = *resolved;
                     }
-                    std::optional<BattleContext> strategyPreState;
                     if (g_s3StrategyFusionDiag && !t_strategyFusionSuppressed
                         && cur->isObsStable()
                         && execAction.getActionType() == ActionType::END_TURN
                         && validEdge.child.simulationCount >= g_s3StrategyFusionDiagMinChildVisits)
-                        strategyPreState = state;
+                        recordStrategyFusionCandidate(
+                            *cur, state, validEdge, path, rootBc->seed,
+                            (int)rootBc->encounter, rootBc->floorNum,
+                            state.turn, searchSimulationOrdinal);
                     maybeOutcomeBucketDiag(state, execAction,
                         agentSeed, (int)rootBc->encounter, rootBc->floorNum,
                         state.turn, decisionIndex);
                     observeRngExposureAction(execAction, state);
-                    if (strategyPreState)
-                        runStrategyFusionDiag(*cur, *strategyPreState, validEdge,
-                                              rootBc->seed, (int)rootBc->encounter,
-                                              rootBc->floorNum, strategyPreState->turn,
-                                              decisionIndex, searchSimulationOrdinal);
                     ++diag.treeActions;
                     actionStack.push_back(execAction);
                     cur = &validEdge.child;
@@ -3042,21 +3143,18 @@ void BattleScumSearcher3::step() {
             return;
         }
 
-        std::optional<BattleContext> strategyPreState;
         if (g_s3StrategyFusionDiag && !t_strategyFusionSuppressed
             && cur->isObsStable()
             && effectiveAction.getActionType() == ActionType::END_TURN
             && edge.child.simulationCount >= g_s3StrategyFusionDiagMinChildVisits)
-            strategyPreState = state;
+            recordStrategyFusionCandidate(
+                *cur, state, edge, path, rootBc->seed,
+                (int)rootBc->encounter, rootBc->floorNum,
+                state.turn, searchSimulationOrdinal);
         maybeOutcomeBucketDiag(state, effectiveAction,
             agentSeed, (int)rootBc->encounter, rootBc->floorNum,
             state.turn, decisionIndex);
         observeRngExposureAction(effectiveAction, state);
-        if (strategyPreState)
-            runStrategyFusionDiag(*cur, *strategyPreState, edge,
-                                  rootBc->seed, (int)rootBc->encounter,
-                                  rootBc->floorNum, strategyPreState->turn,
-                                  decisionIndex, searchSimulationOrdinal);
         ++diag.treeActions;
         actionStack.push_back(effectiveAction);
         cur = &edge.child;

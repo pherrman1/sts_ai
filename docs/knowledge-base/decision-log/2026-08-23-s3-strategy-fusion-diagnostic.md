@@ -80,7 +80,7 @@ fair-belief cleanup.
   599 rows per side and 0 decision differences. No invalid-action, crash, or
   simulator-health error appeared in either smoke log.
 
-## Decision-bearing frozen run
+## Historical early-tree 64-simulation run (not mature-tree evidence)
 
 The implementation was frozen at `1438ef72f6486adf3161e587b25fd1e0b83f18a6`
 after the parent-stability correction review. The run used 16 source seeds,
@@ -95,6 +95,13 @@ rows had `parentObsMismatches=0`; each source seed contributed exactly four
 measured transitions. Paired OFF/ON traces contained 5,306 rows per side with
 zero actual search/game decision differences. The machine-readable analyzer
 artifact is `build/s3sf_decision_analysis.json`.
+
+Validity classification: this implementation launched the strategy-fusion side
+searches from `step()` as soon as a shared child crossed the minimum visit
+threshold. Its recorded child statistics were therefore threshold-time values,
+not final post-search values. These artifacts are retained as historical
+**early-tree evidence**, not mature-tree evidence, and are not a valid
+decision-bearing mature-tree gate.
 
 Primary matched-compute results, aggregated at source-seed level before the
 10,000-resample bootstrap, were:
@@ -111,18 +118,13 @@ The secondary 500-simulation comparison had disagreement `0.7612`, reference
 conditioned preference `0.6132`, and margin `+3.5400`; it is explicitly
 secondary because its compute budget is not matched.
 
-Interpretation: the primary result provides strong smoke-to-run evidence that
-shared and matched-conditioned continuation policies often disagree, but the
-deeper reference does not prefer the matched-conditioned action more often than
-the shared action, and the matched reference margin is negative in this run.
-Therefore the preregistered harm requirement for proceeding toward persistent
-chance-node state splitting is not met. This run does not support proceeding
-with a chance-node prototype; the disagreement itself remains a real measured
-abstraction effect, not evidence of benefit. The reference is noisy and this
-is one 16-source-seed gate, so any replication would require an explicitly
-approved new run rather than silently extending this one.
+Interpretation: because the side searches used threshold-time child statistics,
+this run cannot establish mature-tree strategy-fusion regret or lack of regret.
+It should not be used to decide on persistent chance-node state splitting. A
+lifecycle correction and independent review are required before another
+decision-bearing run.
 
-## Realistic-budget repeat
+## Historical nominal 1000-simulation run (not mature-1000 evidence)
 
 The executable remained frozen at
 `1438ef72f6486adf3161e587b25fd1e0b83f18a6`; no executable source changed for
@@ -133,6 +135,11 @@ particles 64, per-process transition cap 4, minimum child visits 32,
 secondary fresh search 500, and deeper reference 3,000. The parent-observation
 stability gate and matched budget were unchanged:
 `max(1, round(sharedChildVisits * bucketProbability))`.
+
+Validity classification: although normal Searcher3 used 1,000 simulations per
+decision, the diagnostic still launched side searches during `step()` at the
+first threshold crossing. The observed matched-budget median was only 5
+simulations. This is **early-tree evidence**, not mature-1,000 evidence.
 
 All 32 guarded processes completed. The run produced 64 stable-parent measured
 transitions and 560 bucket rows, with four transitions from each seed. There
@@ -167,12 +174,11 @@ improved from `-1.6781` (CI `[-2.7500, -0.6066]`) to `-0.7253` (CI
 `[-2.2000, +0.6504]`), but remains non-positive in the observed mean and has
 no positive-margin bootstrap support.
 
-Interpretation: the realistic-budget run shows that shared and matched
-conditioned policies often disagree, but it does not show a reliable deeper
-reference advantage for the matched-conditioned arm. The preregistered
-proceed-toward-chance-nodes gate is therefore not met. This is not a claim that
-the shared abstraction is exact; it is a claim that this run did not establish
-the required regret. No larger follow-up or chance-node prototype was started.
+Interpretation: because the side searches used threshold-time child statistics,
+this run is invalid as a mature-1,000 scientific gate. Its raw disagreement
+and reference values are retained to document the compute confound, not as
+evidence for or against chance nodes. No larger follow-up or chance-node
+prototype was started from these results.
 
 Committed artifacts and SHA-256 hashes:
 
@@ -185,6 +191,35 @@ Committed artifacts and SHA-256 hashes:
 - `build/s3sf_decision1000_results.json` —
   `E13549C72850CC0FF8DCDF4B3C14732532900EA38C379C76C8DB1C8FC770F802`.
 
+## Post-search final-statistics correction
+
+The diagnostic lifecycle was corrected without changing the scientific
+hypothesis or normal Searcher3 policy. During `step()`, the diagnostic now
+records only an eligible stable-parent END_TURN candidate: copied pre-state,
+metadata, and an index path to the parent/edge. It performs no particle
+sampling, bucket construction, conditioned search, or reference search during
+`step()`. After `search()` or `searchToTotal()` completes, it resolves the path
+against the final tree, rechecks parent stability, captures final shared-child
+visits, and then invokes the existing side-search evaluator. The matched
+budget remains `max(1, round(finalSharedChildVisits * bucketProbability))`.
+
+The focused regression now proves that at least one finalized candidate has
+final child visits greater than its threshold-time visits. Focused CTest passed
+for `s3_strategy_fusion_diag`, `semantic_card_edges`,
+`s3_drawpile_reuse_boundary`, `scum_nonfair_empty_edges`,
+`scum_convroot_stale_outcome`, `rng_state_propagation`, and
+`s3_rand64_prior_sampler`; the analyzer self-test passed.
+
+The two-seed implementation smoke used seeds `12345..12346`, one guarded
+process per seed, 64 normal simulations, 16 diagnostic particles, cap 1,
+minimum visits 8, fresh 8, and reference 16. It emitted 2 transitions and 8
+rows. Parent mismatches and matched-budget formula mismatches were zero; all
+four logs completed without error markers; and paired OFF/ON traces contained
+599 rows per side with zero actual gameplay/search decision differences. This
+smoke is non-decision-bearing. No 16-seed experiment has been run after the
+correction; the resulting implementation commit requires independent review
+before freezing a new executable SHA.
+
 ## Verification and status
 
 The final `one_combat` and `unit-test` targets built successfully through the
@@ -195,5 +230,6 @@ completed within the command window after the final source correction. No
 production code changed during the decision-bearing run; the evidence commit
 updates this record without changing the frozen implementation SHA.
 
-Status: implementation/shadow smoke complete; realistic-budget scientific gate
-complete; persistent chance-node work is not supported by this run.
+Status: lifecycle correction implemented; early-tree historical runs
+reclassified; corrected implementation awaiting independent review. No new
+scientific run has been performed.
