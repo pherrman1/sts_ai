@@ -115,6 +115,7 @@ add_test(NAME s3_drawpile_reuse_boundary COMMAND $<TARGET_FILE:unit-test> s3_dra
 add_test(NAME s3_strategy_fusion_diag COMMAND $<TARGET_FILE:unit-test> s3_strategy_fusion_diag 12345)
 add_test(NAME s3_persistent_endturn_chance COMMAND $<TARGET_FILE:unit-test> s3_persistent_endturn_chance 12345)
 add_test(NAME s3_generic_chance_tree COMMAND $<TARGET_FILE:unit-test> s3_generic_chance_tree 12345)
+add_test(NAME s3_generic_cardselect_semantics COMMAND $<TARGET_FILE:unit-test> s3_generic_cardselect_semantics 12345)
 add_test(NAME thorns_retaliation COMMAND $<TARGET_FILE:unit-test> thorns_retaliation)
 add_test(NAME awakened_one_stage2 COMMAND $<TARGET_FILE:unit-test> awakened_one_stage2)
 add_test(NAME darkling_victory COMMAND $<TARGET_FILE:unit-test> darkling_victory)

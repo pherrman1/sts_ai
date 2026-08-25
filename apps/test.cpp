@@ -1257,6 +1257,140 @@ static BattleContext cardSelectFixture(CardSelectTask task, int pickCount, bool 
     return bc;
 }
 
+// G1 card-select semantic identity.  The simulator's select index is relative
+// to a task-specific zone, so this test covers every reachable CardSelectTask
+// and proves generic keys survive a source-zone permutation.  In particular,
+// upgraded/unupgraded copies must remain separate choices rather than being
+// collapsed to a CardId or an index into CardSelectInfo::cards.
+int testS3GenericCardSelectSemantics(std::uint64_t seed) {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &message) {
+        if (!ok) {
+            std::cout << "s3_generic_cardselect_semantics FAIL: " << message << '\n';
+            ++failures;
+        }
+    };
+    const bool savedGeneric = search::g_s3GenericChanceTree;
+    search::g_s3GenericChanceTree = true;
+
+    const auto makeFixture = [](CardSelectTask task) {
+        BattleContext bc = cardSelectFixture(task, /*pickCount=*/2, /*largeHand=*/false);
+        bc.cards.cardsInHand = 3;
+        bc.cards.hand[0] = CardInstance(CardId::BASH);
+        bc.cards.hand[1] = CardInstance(CardId::BASH, true);
+        bc.cards.hand[2] = CardInstance(CardId::DEFEND_RED);
+        bc.cards.discardPile = {
+            CardInstance(CardId::BASH), CardInstance(CardId::BASH, true),
+            CardInstance(CardId::DEFEND_RED)};
+        bc.cards.exhaustPile = {
+            CardInstance(CardId::BASH), CardInstance(CardId::BASH, true),
+            CardInstance(CardId::DEFEND_RED)};
+        bc.cards.drawPile = {
+            CardInstance(CardId::BASH), CardInstance(CardId::BASH, true),
+            CardInstance(CardId::DEFEND_RED)};
+        if (task == CardSelectTask::SECRET_TECHNIQUE) {
+            bc.cards.drawPile = {
+                CardInstance(CardId::DEFEND_RED), CardInstance(CardId::DEFEND_RED, true),
+                CardInstance(CardId::BASH)};
+        }
+        bc.cardSelectInfo.cards = {CardId::BASH, CardId::DEFEND_RED, CardId::STRIKE_RED};
+        return bc;
+    };
+
+    const auto permuteSource = [](BattleContext &bc) {
+        switch (bc.cardSelectInfo.cardSelectTask) {
+        case CardSelectTask::ARMAMENTS:
+        case CardSelectTask::DUAL_WIELD:
+        case CardSelectTask::EXHAUST_ONE:
+        case CardSelectTask::FORETHOUGHT:
+        case CardSelectTask::NIGHTMARE:
+        case CardSelectTask::RECYCLE:
+        case CardSelectTask::SETUP:
+        case CardSelectTask::WARCRY:
+        case CardSelectTask::EXHAUST_MANY:
+        case CardSelectTask::GAMBLE:
+            std::swap(bc.cards.hand[0], bc.cards.hand[1]);
+            break;
+        case CardSelectTask::HEADBUTT:
+        case CardSelectTask::HOLOGRAM:
+        case CardSelectTask::LIQUID_MEMORIES_POTION:
+        case CardSelectTask::MEDITATE:
+            std::swap(bc.cards.discardPile[0], bc.cards.discardPile[1]);
+            break;
+        case CardSelectTask::EXHUME:
+            std::swap(bc.cards.exhaustPile[0], bc.cards.exhaustPile[1]);
+            break;
+        case CardSelectTask::SECRET_TECHNIQUE:
+        case CardSelectTask::SECRET_WEAPON:
+        case CardSelectTask::SEEK:
+            std::swap(bc.cards.drawPile[0], bc.cards.drawPile[1]);
+            break;
+        case CardSelectTask::CODEX:
+        case CardSelectTask::DISCOVERY:
+            std::swap(bc.cardSelectInfo.cards[0], bc.cardSelectInfo.cards[1]);
+            break;
+        case CardSelectTask::INVALID:
+        default:
+            break;
+        }
+    };
+
+    for (int rawTask = static_cast<int>(CardSelectTask::ARMAMENTS);
+         rawTask <= static_cast<int>(CardSelectTask::WARCRY); ++rawTask) {
+        const auto task = static_cast<CardSelectTask>(rawTask);
+        const std::string label = cardSelectTaskStrings[rawTask];
+        const BattleContext original = makeFixture(task);
+        const auto concrete = search::Action::enumerateCardSelectActions(original);
+        check(!concrete.empty(), label + " fixture has no legal selection");
+
+        search::BattleScumSearcher3 searcher(original, seed + rawTask, 0, 1);
+        searcher.expandGenericDecision(searcher.genericRoot, original);
+        check(searcher.decisionNodes[searcher.genericRoot].actions.size() == concrete.size(),
+              label + " collapsed distinct semantic selections");
+
+        std::vector<search::BattleScumSearcher3::SemanticActionKey> keys;
+        keys.reserve(concrete.size());
+        for (const auto &action : concrete) {
+            const auto key = searcher.semanticActionKey(action, original);
+            keys.push_back(key);
+            const auto resolved = searcher.resolveGenericAction(key, original);
+            check(resolved && resolved->isValidAction(original),
+                  label + " did not resolve its own semantic selection");
+        }
+        for (std::size_t i = 0; i < keys.size(); ++i) {
+            for (std::size_t j = i + 1; j < keys.size(); ++j) {
+                check(!(keys[i] == keys[j]), label + " selection keys are not distinct");
+            }
+        }
+
+        BattleContext permuted = original;
+        permuteSource(permuted);
+        // Hand, discard, exhaust, and draw order are intentionally hidden;
+        // permutation cannot change the information state or semantic edge.
+        if (task != CardSelectTask::CODEX && task != CardSelectTask::DISCOVERY) {
+            check(CombatObservation::fromBattleContext(original)
+                      == CombatObservation::fromBattleContext(permuted),
+                  label + " source-zone permutation changed observation");
+        }
+        for (const auto &key : keys) {
+            const auto resolved = searcher.resolveGenericAction(key, permuted);
+            check(resolved && resolved->isValidAction(permuted),
+                  label + " did not resolve after source-zone permutation");
+            if (resolved) {
+                check(searcher.semanticActionKey(*resolved, permuted) == key,
+                      label + " resolved a different semantic selection after permutation");
+            }
+        }
+    }
+
+    search::g_s3GenericChanceTree = savedGeneric;
+    if (failures == 0) {
+        std::cout << "s3_generic_cardselect_semantics PASS\n";
+        return 0;
+    }
+    return 1;
+}
+
 static BattleContext playerNormalFixture(std::uint64_t seed, int energy) {
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
     BattleContext bc;
@@ -3193,6 +3327,8 @@ int main(int argc, const char* argv[]) {
         return testS3PersistentEndTurnChance(std::stoull(argv[2]));
     } else if (command == "s3_generic_chance_tree") {
         return testS3GenericChanceTree(std::stoull(argv[2]));
+    } else if (command == "s3_generic_cardselect_semantics") {
+        return testS3GenericCardSelectSemantics(std::stoull(argv[2]));
 
     } else if (command == "prune") {
         return testPrune(std::stoull(argv[2]));

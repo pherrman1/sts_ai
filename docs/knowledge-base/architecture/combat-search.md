@@ -1040,6 +1040,16 @@ actual post-action observation selects or creates the conditioned child. There
 is no local outcome sampling, chance policy, global observation transposition,
 or draw-pile-size eligibility boundary.
 
+Semantic CARD_SELECT keys use the simulator's actual task source: hand for
+Armaments/Dual Wield/Warcry and the multi-select tasks, discard for
+Headbutt/Hologram/Liquid Memories/Meditate, exhaust for Exhume, draw pile for
+Secret Technique/Secret Weapon/Seek, and the explicit offer array only for
+Codex/Discovery. Zone cards carry the full visible `CardActionKey` (including
+upgrade and per-turn modifiers), not merely `CardId` or a physical index.
+After an explicit generic-tree frontier expansion, the existing
+`STS_S3_CHAIN` compression remains a rollout-frontier operation; compressed
+continuations are not tree transitions.
+
 Outcome lookup linearly exact-compares the first eight outcomes and lazily
 uses a visible-hash multimap after that threshold, always confirming equality
 against the child node's stored observation. Generic mode validates the exact

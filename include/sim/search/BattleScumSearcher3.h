@@ -242,7 +242,11 @@ class BattleScumSearcher3;
             Potion potion = Potion::EMPTY_POTION_SLOT;
             std::int16_t cardSelectTask = -1;
             std::int16_t target = -1;
-            std::array<std::int16_t, 10> selectedCards{};
+            // Card-select actions are keyed by the selected visible card
+            // instance, not by the physical index in its source zone.  This
+            // preserves upgrades and other per-instance state across hand,
+            // discard, exhaust, and draw-pile permutations.
+            std::array<CardActionKey, 10> selectedCards{};
             std::uint8_t selectedCount = 0;
             bool operator==(const SemanticActionKey &o) const;
         };

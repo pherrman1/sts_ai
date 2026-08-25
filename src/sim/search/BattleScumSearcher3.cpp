@@ -2231,27 +2231,94 @@ bool BattleScumSearcher3::CardActionKey::operator<(const CardActionKey &o) const
     if (specialData != o.specialData) return specialData < o.specialData;
     return target < o.target;
 }
+
+namespace {
+BattleScumSearcher3::CardActionKey fullVisibleCardKey(const CardInstance &card,
+                                                       int target = -1) {
+    BattleScumSearcher3::CardActionKey key;
+    key.id = card.getId();
+    key.upgradeCount = card.getUpgradeCount();
+    key.costForTurn = card.costForTurn;
+    key.freeToPlayOnce = card.freeToPlayOnce;
+    key.specialData = card.specialData;
+    key.target = target;
+    return key;
+}
+
+// The simulator uses the Action select index in a task-specific source zone.
+// Keep this mapping beside semantic-key construction, rather than treating the
+// CardSelectInfo offer array as a generic selection source.  The latter only
+// represents CODEX/DISCOVERY offers; all other tasks select a CardInstance
+// from one of the visible card zones below.
+const CardInstance *cardSelectSourceCard(const BattleContext &bc, int index) {
+    if (index < 0) return nullptr;
+    const auto task = bc.cardSelectInfo.cardSelectTask;
+    switch (task) {
+    case CardSelectTask::ARMAMENTS:
+    case CardSelectTask::DUAL_WIELD:
+    case CardSelectTask::EXHAUST_ONE:
+    case CardSelectTask::FORETHOUGHT:
+    case CardSelectTask::NIGHTMARE:
+    case CardSelectTask::RECYCLE:
+    case CardSelectTask::SETUP:
+    case CardSelectTask::WARCRY:
+    case CardSelectTask::EXHAUST_MANY:
+    case CardSelectTask::GAMBLE:
+        return index < bc.cards.cardsInHand ? &bc.cards.hand[index] : nullptr;
+
+    case CardSelectTask::HEADBUTT:
+    case CardSelectTask::HOLOGRAM:
+    case CardSelectTask::LIQUID_MEMORIES_POTION:
+    case CardSelectTask::MEDITATE:
+        return index < static_cast<int>(bc.cards.discardPile.size())
+            ? &bc.cards.discardPile[index] : nullptr;
+
+    case CardSelectTask::EXHUME:
+        return index < static_cast<int>(bc.cards.exhaustPile.size())
+            ? &bc.cards.exhaustPile[index] : nullptr;
+
+    case CardSelectTask::SECRET_TECHNIQUE:
+    case CardSelectTask::SECRET_WEAPON:
+    case CardSelectTask::SEEK:
+        return index < static_cast<int>(bc.cards.drawPile.size())
+            ? &bc.cards.drawPile[index] : nullptr;
+
+    case CardSelectTask::CODEX:
+    case CardSelectTask::DISCOVERY:
+    case CardSelectTask::INVALID:
+    default:
+        return nullptr;
+    }
+}
+
+BattleScumSearcher3::CardActionKey cardSelectCardKey(const BattleContext &bc,
+                                                      int index) {
+    if (const auto *card = cardSelectSourceCard(bc, index))
+        return fullVisibleCardKey(*card);
+
+    // CODEX and DISCOVERY expose CardId offers rather than CardInstances.
+    // CODEX index 3 is its explicit skip action, represented canonically by
+    // INVALID; there is no card-instance state to preserve for either offer.
+    BattleScumSearcher3::CardActionKey key;
+    if ((bc.cardSelectInfo.cardSelectTask == CardSelectTask::CODEX
+         || bc.cardSelectInfo.cardSelectTask == CardSelectTask::DISCOVERY)
+        && index >= 0 && index < static_cast<int>(bc.cardSelectInfo.cards.size())) {
+        key.id = bc.cardSelectInfo.cards[index];
+    }
+    return key;
+}
+}
+
 BattleScumSearcher3::CardActionKey
 BattleScumSearcher3::cardActionKey(const BattleContext &bc, const Action &a) {
     CardActionKey k;
     if (a.getActionType() == ActionType::CARD) {
         int hi = a.getSourceIdx();
         if (hi >= 0 && hi < bc.cards.cardsInHand) {
-            const auto &c = bc.cards.hand[hi];
-            k.id = c.getId();
-            k.upgradeCount = c.getUpgradeCount();
-            k.costForTurn = c.costForTurn;
-            k.freeToPlayOnce = c.freeToPlayOnce;
-            k.specialData = c.specialData;
-            k.target = a.getTargetIdx();
+            k = fullVisibleCardKey(bc.cards.hand[hi], a.getTargetIdx());
         }
     } else if (a.getActionType() == ActionType::SINGLE_CARD_SELECT) {
-        int si = a.getSelectIdx();
-        if (si >= 0 && si < (int)bc.cardSelectInfo.cards.size()
-            && bc.cardSelectInfo.cards[si] != CardId::INVALID) {
-            k.id = bc.cardSelectInfo.cards[si];
-            k.target = -1;
-        }
+        k = cardSelectCardKey(bc, a.getSelectIdx());
     }
     return k;
 }
@@ -2313,27 +2380,32 @@ std::string semanticActionIdentity(const Action &action,
             break;
         }
         case ActionType::SINGLE_CARD_SELECT: {
-            const int index = action.getSelectIdx();
-            if (index >= 0 && index < static_cast<int>(state.cardSelectInfo.cards.size())) {
-                out << "SINGLE_CARD_SELECT:"
-                    << static_cast<int>(state.cardSelectInfo.cardSelectTask)
-                    << ':' << static_cast<int>(state.cardSelectInfo.cards[index]);
-                return out.str();
-            }
-            break;
+            const auto key = BattleScumSearcher3::cardActionKey(state, action);
+            out << "SINGLE_CARD_SELECT:"
+                << static_cast<int>(state.cardSelectInfo.cardSelectTask)
+                << ':' << static_cast<int>(key.id)
+                << ':' << static_cast<int>(key.upgradeCount)
+                << ':' << static_cast<int>(key.costForTurn)
+                << ':' << (key.freeToPlayOnce ? 1 : 0)
+                << ':' << key.specialData;
+            return out.str();
         }
         case ActionType::MULTI_CARD_SELECT: {
-            std::vector<int> ids;
+            std::vector<BattleScumSearcher3::CardActionKey> selected;
             for (const int index : action.getSelectedIdxs()) {
-                if (index >= 0 && index < static_cast<int>(state.cardSelectInfo.cards.size()))
-                    ids.push_back(static_cast<int>(state.cardSelectInfo.cards[index]));
-                else
-                    ids.push_back(-1);
+                Action selectedAction(ActionType::SINGLE_CARD_SELECT, index);
+                selected.push_back(BattleScumSearcher3::cardActionKey(state, selectedAction));
             }
-            std::sort(ids.begin(), ids.end());
+            std::sort(selected.begin(), selected.end());
             out << "MULTI_CARD_SELECT:"
                 << static_cast<int>(state.cardSelectInfo.cardSelectTask);
-            for (const int id : ids) out << ':' << id;
+            for (const auto &key : selected) {
+                out << ':' << static_cast<int>(key.id)
+                    << ':' << static_cast<int>(key.upgradeCount)
+                    << ':' << static_cast<int>(key.costForTurn)
+                    << ':' << (key.freeToPlayOnce ? 1 : 0)
+                    << ':' << key.specialData;
+            }
             return out.str();
         }
         case ActionType::END_TURN:
@@ -4384,10 +4456,7 @@ BattleScumSearcher3::semanticActionKey(const Action &action,
         key.cardSelectTask = static_cast<std::int16_t>(state.cardSelectInfo.cardSelectTask);
         const int index = action.getSelectIdx();
         key.selectedCount = 1;
-        if (index >= 0 && index < static_cast<int>(state.cardSelectInfo.cards.size()))
-            key.selectedCards[0] = static_cast<std::int16_t>(state.cardSelectInfo.cards[index]);
-        else
-            key.selectedCards[0] = static_cast<std::int16_t>(CardId::INVALID); // canonical CODEX skip
+        key.selectedCards[0] = cardSelectCardKey(state, index);
         break;
     }
     case ActionType::MULTI_CARD_SELECT: {
@@ -4395,10 +4464,7 @@ BattleScumSearcher3::semanticActionKey(const Action &action,
         const auto selected = action.getSelectedIdxs();
         for (const int index : selected) {
             if (key.selectedCount >= key.selectedCards.size()) break;
-            key.selectedCards[key.selectedCount++] =
-                (index >= 0 && index < static_cast<int>(state.cardSelectInfo.cards.size()))
-                ? static_cast<std::int16_t>(state.cardSelectInfo.cards[index])
-                : static_cast<std::int16_t>(CardId::INVALID);
+            key.selectedCards[key.selectedCount++] = cardSelectCardKey(state, index);
         }
         std::sort(key.selectedCards.begin(), key.selectedCards.begin() + key.selectedCount);
         break;
@@ -4604,7 +4670,6 @@ void BattleScumSearcher3::backpropagateGeneric(
         (void)edge.outcomes[outcomeIndex];
         updateNode(edge.outcomes[outcomeIndex].child);
     }
-    syncGenericRootCompatibilityView(*rootBc);
 }
 
 void BattleScumSearcher3::stepGeneric() {
@@ -4704,11 +4769,33 @@ void BattleScumSearcher3::stepGeneric() {
         if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(postObs);
         nodeId = child;
 
-        // Preserve current expansion/rollout semantics: after a newly
-        // expanded decision edge, evaluate one ordinary rollout.  Chain
-        // compression is intentionally not used in generic mode because each
-        // tree action must have an explicit action-observation transition.
+        // After the explicit generic-tree frontier, preserve the legacy
+        // rollout setup exactly: chain compression is a rollout/frontier
+        // optimization, not decision topology.  These compressed actions are
+        // deliberately not inserted into the action-observation tree.
         if (newlyExpanded) {
+            int compSteps = 0;
+            if (g_s3Chain) {
+                while (compSteps < 10 && state.inputState == InputState::PLAYER_NORMAL
+                       && state.outcome == Outcome::UNDECIDED && state.isCardPlayAllowed()) {
+                    const int handBefore = state.cards.cardsInHand;
+                    bool played = false;
+                    for (int hi = 0; hi < state.cards.cardsInHand && !played; ++hi) {
+                        const auto &card = state.cards.hand[hi];
+                        if (!card.canUseOnAnyTarget(state) || card.requiresTarget()) continue;
+                        const Action compressed(ActionType::CARD, hi);
+                        if (!compressed.isValidAction(state)) continue;
+                        observeRngExposureAction(compressed, state);
+                        actionStack.push_back(compressed);
+                        // A draw/exhaust/non-standard mutation is not a safe
+                        // chain step, matching the legacy frontier contract.
+                        if (state.cards.cardsInHand != handBefore - 1) break;
+                        played = true;
+                        ++compSteps;
+                    }
+                    if (!played) break;
+                }
+            }
             double vLeaf = std::numeric_limits<double>::quiet_NaN();
             if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha < 1.0
                 && state.outcome == Outcome::UNDECIDED && vnetCondAllowed(state)) {
