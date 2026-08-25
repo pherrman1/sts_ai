@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <limits>
 #include <utility>
+#include <tuple>
 
 namespace sts::search {
 
@@ -224,6 +225,80 @@ class BattleScumSearcher3;
             std::vector<OutcomeChild> outcomeChildren;
         };
 
+        // Generic action-observation tree (G1).  This is deliberately
+        // separate from Node/Edge above: the latter remains the legacy tree
+        // and the Experiment-4 compatibility representation.  A decision
+        // node owns player choices; an action edge owns aggregate sampled
+        // return statistics; outcomes only route to a conditioned decision
+        // node.  Arena IDs, rather than pointers, stay valid as the arena
+        // grows during a search.
+        using DecisionNodeId = std::uint32_t;
+        static constexpr DecisionNodeId kInvalidDecisionNode =
+            std::numeric_limits<DecisionNodeId>::max();
+
+        struct SemanticActionKey {
+            ActionType type = ActionType::END_TURN;
+            CardActionKey card;
+            Potion potion = Potion::EMPTY_POTION_SLOT;
+            std::int16_t cardSelectTask = -1;
+            std::int16_t target = -1;
+            std::array<std::int16_t, 10> selectedCards{};
+            std::uint8_t selectedCount = 0;
+            bool operator==(const SemanticActionKey &o) const;
+        };
+
+        struct GenericDistStats {
+            double loQ20 = 0;
+            double loQ05 = 0;
+            std::int64_t n = 0;
+        };
+
+        struct OutcomeEntry {
+            std::uint64_t obsHash = 0;
+            DecisionNodeId child = kInvalidDecisionNode;
+            std::int64_t visits = 0;
+        };
+
+        struct ActionEdge {
+            SemanticActionKey action;
+            float prior = 0.f;
+            std::int64_t availabilityCount = 0;
+            std::int64_t visits = 0;
+            double valueSum = 0;
+            GenericDistStats dist;
+            std::vector<OutcomeEntry> outcomes;
+            // Constructed lazily only once an edge has more than eight
+            // outcomes.  Values are outcome-vector indices; the hash is only
+            // a prefilter and lookup always exact-compares the child obs.
+            std::unordered_multimap<std::uint64_t, std::uint32_t> outcomeLookup;
+            bool hasOutcomeLookup = false;
+        };
+
+        struct DecisionNode {
+            CombatObservation obs;
+            std::uint64_t obsHash = 0;
+            std::int64_t visits = 0;
+            double valueSum = 0;
+            GenericDistStats dist;
+            bool expanded = false;
+            std::vector<ActionEdge> actions;
+        };
+
+        struct GenericChanceTreeDiagnostics {
+            std::int64_t simulations = 0, decisionNodesCreated = 0,
+                decisionNodeVisits = 0, decisionObservationMismatches = 0,
+                actionEdgesCreated = 0, semanticResolutionFailures = 0,
+                semanticActionSetMissing = 0, semanticActionSetExtra = 0,
+                chanceActionVisits = 0, outcomesCreated = 0, outcomeHits = 0,
+                outcomeMisses = 0, singleOutcomeActions = 0,
+                multiOutcomeActions = 0, maxOutcomesPerAction = 0,
+                linearLookupQueries = 0, hashedLookupQueries = 0,
+                hashCandidatesChecked = 0, treeDepthSum = 0, treeDepthMax = 0;
+            std::array<std::int64_t, 5> outcomesCreatedByType{};
+            std::array<std::int64_t, 5> outcomeHitsByType{};
+            double searchCpuMs = 0.0;
+        };
+
         // A shadow-only strategy-fusion candidate recorded during step().
         // The tree is addressed by edge indices from root to the parent so
         // vector reallocations during later search simulations cannot leave a
@@ -255,6 +330,12 @@ class BattleScumSearcher3;
 
         Belief belief;
         Node root;
+        // Authoritative tree when STS_S3_GENERIC_CHANCE_TREE=1.  `root` is
+        // retained only as a root-action compatibility view for legacy
+        // telemetry; generic traversal never uses its child nodes.
+        std::vector<DecisionNode> decisionNodes;
+        DecisionNodeId genericRoot = kInvalidDecisionNode;
+        GenericChanceTreeDiagnostics genericDiag;
         std::mt19937_64 rng;
         int maxParticles = 128;
         // RNG seeding: composite hash(agentSeed, visibleHash, decisionIdx)
@@ -446,6 +527,10 @@ class BattleScumSearcher3;
         void reseed();
         void resetParticleUsage();
 
+        [[nodiscard]] bool usingGenericChanceTree() const;
+        std::optional<Action> pickGenericRootAction(const BattleContext &bc) const;
+        void printGenericChanceTreeDiagnostics() const;
+
         void observeRngExposureAction(const Action &action, BattleContext &state);
         void recordDiagnosticAction(const Action &action,
                                     const BattleContext &preState,
@@ -497,6 +582,28 @@ class BattleScumSearcher3;
         // STS_LIVE_VALID (Phase 4): PUCT over edges valid in this
         // determinization (particle world); -1 when none are valid.
         int  selectBestValidEdgePUCT(const Node &node, const BattleContext &bc);
+
+        // G1 generic action-observation backend.
+        SemanticActionKey semanticActionKey(const Action &action,
+                                            const BattleContext &state) const;
+        std::vector<std::pair<Action, SemanticActionKey>>
+        genericConcreteActions(const BattleContext &state) const;
+        std::optional<Action> resolveGenericAction(const SemanticActionKey &key,
+                                                   const BattleContext &state) const;
+        void expandGenericDecision(DecisionNodeId nodeId, const BattleContext &state);
+        int selectGenericAction(const DecisionNode &node) const;
+        std::optional<std::uint32_t> findGenericOutcome(ActionEdge &edge,
+                                                        const CombatObservation &obs);
+        DecisionNodeId dispatchGenericOutcome(DecisionNodeId parentId,
+                                              std::uint32_t actionIndex,
+                                              const CombatObservation &obs);
+        void backpropagateGeneric(
+            const std::vector<std::tuple<DecisionNodeId, std::uint32_t,
+                                         std::uint32_t>> &path,
+            double evaluation, const std::vector<Action> &actionStack);
+        void stepGeneric();
+        void syncGenericRootCompatibilityView(const BattleContext &state);
+        void resetGenericTree(const BattleContext &state);
 
         // Per-search rollout-usage counters (searchdiag instrumentation, same
         // schema as Searcher2; Phase 4 fair-tree measurement).
@@ -667,6 +774,10 @@ class BattleScumSearcher3;
     // and are resolved to the correct hand index before every validity
     // check / execution. Default off (current deployed behavior).
     extern bool g_s3SemanticCardEdges;
+    // G1: every selected action routes through the concrete sampled post-action
+    // observation to a conditioned decision node.  Default off preserves the
+    // legacy Searcher3 topology exactly.
+    extern bool g_s3GenericChanceTree;
 
     // ── Outcome-bucket diagnostic (STS_S3_OUTCOME_BUCKET_DIAG) ────────
     // Measures visible-outcome redundancy across hidden particles at

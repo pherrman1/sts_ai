@@ -1003,6 +1003,123 @@ int testS3PersistentEndTurnChance(std::uint64_t seed) {
     return 1;
 }
 
+// G1 representation regression.  It deliberately exercises the generic
+// storage API directly, so a failure localizes to action->observation routing
+// rather than depending on a particular rollout/search budget.
+int testS3GenericChanceTree(std::uint64_t seed) {
+    int failures = 0;
+    auto check = [&](bool ok, const char *message) {
+        if (!ok) { std::cout << "s3_generic_chance_tree FAIL: " << message << '\n'; ++failures; }
+    };
+    const bool savedGeneric = search::g_s3GenericChanceTree;
+    search::g_s3GenericChanceTree = true;
+
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    BattleContext pre;
+    pre.init(gc, MonsterEncounter::CULTIST);
+    pre.cards.drawPile.push_back(CardInstance(CardId::BASH, false));
+    pre.cards.drawPile.push_back(CardInstance(CardId::ANGER, false));
+    const search::Action endTurn(search::ActionType::END_TURN);
+    BattleContext postA = pre, postB = pre;
+    std::reverse(postB.cards.drawPile.begin(), postB.cards.drawPile.end());
+    endTurn.execute(postA); endTurn.execute(postB);
+    const auto obsA = CombatObservation::fromBattleContext(postA);
+    const auto obsB = CombatObservation::fromBattleContext(postB);
+    check(obsA != obsB, "fixture did not create different observed outcomes");
+
+    search::BattleScumSearcher3 searcher(pre, seed, 0, 8);
+    searcher.expandGenericDecision(searcher.genericRoot, pre);
+    std::uint32_t endIndex = UINT32_MAX;
+    for (std::uint32_t i = 0; i < searcher.decisionNodes[searcher.genericRoot].actions.size(); ++i)
+        if (searcher.decisionNodes[searcher.genericRoot].actions[i].action.type
+            == search::ActionType::END_TURN) { endIndex = i; break; }
+    check(endIndex != UINT32_MAX, "root has no semantic END_TURN action");
+    if (endIndex != UINT32_MAX) {
+        const auto childA = searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsA);
+        const auto childB = searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsB);
+        check(childA != childB, "different observed outcomes share a decision node");
+        check(searcher.decisionNodes[childA].obs == obsA && searcher.decisionNodes[childB].obs == obsB,
+              "outcome child did not retain its exact observation");
+
+        const auto childAAgain = searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsA);
+        check(childAAgain == childA
+              && searcher.decisionNodes[searcher.genericRoot].actions[endIndex].outcomes.size() == 2,
+              "same observation did not reuse exactly one outcome child");
+
+        BattleContext hiddenRng = postA;
+        hiddenRng.shuffleRng.counter += 13;
+        hiddenRng.cardRandomRng.counter += 7;
+        const auto sameVisible = CombatObservation::fromBattleContext(hiddenRng);
+        check(sameVisible == obsA
+              && searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, sameVisible) == childA,
+              "hidden RNG changed generic outcome identity");
+
+        auto &edge = searcher.decisionNodes[searcher.genericRoot].actions[endIndex];
+        std::uint32_t indexA = UINT32_MAX, indexB = UINT32_MAX;
+        for (std::uint32_t i = 0; i < edge.outcomes.size(); ++i) {
+            if (edge.outcomes[i].child == childA) indexA = i;
+            if (edge.outcomes[i].child == childB) indexB = i;
+        }
+        searcher.backpropagateGeneric({{searcher.genericRoot, endIndex, indexA}}, 10.0, {endTurn});
+        searcher.backpropagateGeneric({{searcher.genericRoot, endIndex, indexB}}, 30.0, {endTurn});
+        check(edge.visits == 2 && edge.valueSum == 40.0,
+              "aggregate action backup is not the sampled-outcome sum");
+        check(searcher.decisionNodes[childA].visits == 1 && searcher.decisionNodes[childB].visits == 1,
+              "conditioned child statistics were not kept distinct");
+        searcher.decisionNodes[childA].valueSum = -1000.0;
+        check(searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsA) == childA,
+              "outcome dispatch was selected by child value rather than observation");
+
+        // Same visible successor reached below different parent histories must
+        // remain separate: G1 has no global observation transposition table.
+        search::BattleScumSearcher3::DecisionNode parent1, parent2;
+        parent1.obs = CombatObservation::fromBattleContext(pre); parent1.obsHash = parent1.obs.visibleHash();
+        parent2 = parent1;
+        parent1.actions.emplace_back(); parent1.actions[0].action.type = search::ActionType::END_TURN;
+        parent2.actions.emplace_back(); parent2.actions[0].action.type = search::ActionType::END_TURN;
+        const auto p1 = static_cast<search::BattleScumSearcher3::DecisionNodeId>(searcher.decisionNodes.size());
+        searcher.decisionNodes.push_back(parent1);
+        const auto p2 = static_cast<search::BattleScumSearcher3::DecisionNodeId>(searcher.decisionNodes.size());
+        searcher.decisionNodes.push_back(parent2);
+        check(searcher.dispatchGenericOutcome(p1, 0, obsA)
+              != searcher.dispatchGenericOutcome(p2, 0, obsA),
+              "equal observation was globally fused across histories");
+
+        // Real reroot must use the observed successor, not the highest-value
+        // outcome.  The exact obsA child remains available despite its bad Q.
+        check(searcher.advanceRoot(endTurn, postA), "real reroot did not find the exact observed child");
+        check(searcher.genericRoot == childA, "real reroot promoted a non-observed outcome");
+    }
+
+    // Hand order is observation-invariant, while a semantic Bash action must
+    // resolve to the correct physical index in each concrete realization.
+    auto makeHand = [](const std::vector<CardId> &hand) {
+        GameContext local(CharacterClass::IRONCLAD, 0x42, 0);
+        BattleContext bc; bc.init(local, MonsterEncounter::CULTIST);
+        bc.cards.cardsInHand = static_cast<int>(hand.size());
+        for (int i = 0; i < static_cast<int>(hand.size()); ++i) bc.cards.hand[i] = CardInstance(hand[i]);
+        bc.player.energy = 3;
+        return bc;
+    };
+    auto handA = makeHand({CardId::STRIKE_RED, CardId::BASH, CardId::STRIKE_RED});
+    auto handB = makeHand({CardId::BASH, CardId::STRIKE_RED, CardId::STRIKE_RED});
+    check(CombatObservation::fromBattleContext(handA) == CombatObservation::fromBattleContext(handB),
+          "hand-permutation fixture observations differ");
+    search::BattleScumSearcher3 handSearcher(handA, seed, 0, 1);
+    handSearcher.expandGenericDecision(handSearcher.genericRoot, handA);
+    const auto bashAction = search::Action(search::ActionType::CARD, 1, 0);
+    const auto bashKey = handSearcher.semanticActionKey(bashAction, handA);
+    const auto bashB = handSearcher.resolveGenericAction(bashKey, handB);
+    check(bashB && bashB->getSourceIdx() == 0 && bashB->isValidAction(handB),
+          "semantic Bash action did not resolve across hand permutation");
+
+    check(searcher.genericDiag.decisionObservationMismatches == 0,
+          "generic observation invariant counter is nonzero");
+    search::g_s3GenericChanceTree = savedGeneric;
+    if (failures == 0) { std::cout << "s3_generic_chance_tree PASS\n"; return 0; }
+    return 1;
+}
+
 int testPrune(std::uint64_t seed) {
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
     BattleContext bc;
@@ -3074,6 +3191,8 @@ int main(int argc, const char* argv[]) {
         return testS3StrategyFusionDiag(std::stoull(argv[2]));
     } else if (command == "s3_persistent_endturn_chance") {
         return testS3PersistentEndTurnChance(std::stoull(argv[2]));
+    } else if (command == "s3_generic_chance_tree") {
+        return testS3GenericChanceTree(std::stoull(argv[2]));
 
     } else if (command == "prune") {
         return testPrune(std::stoull(argv[2]));

@@ -80,6 +80,7 @@ bool g_s3Expand = false;
 int g_s3ExpandMaxNew = 32;
 bool g_s3ExpandSimple = false; // like g_s3Expand but picks deterministically with uniform prior
 bool g_s3SemanticCardEdges = false;
+bool g_s3GenericChanceTree = false;
 bool g_s3RngExposureDiag = false;
 std::string g_s3RngExposureDiagFile;
 
@@ -663,6 +664,8 @@ BattleScumSearcher3::BattleScumSearcher3(const BattleContext &bc,
     root.obs = rootObs;
     root.obsHash = rootObs.visibleHash();
     root.obsCached = true;
+    if (g_s3GenericChanceTree)
+        resetGenericTree(bc);
 
     reseed();
 
@@ -2415,6 +2418,10 @@ void BattleScumSearcher3::search(int64_t simulations) {
     lastSearchSimulations = static_cast<int>(simulations);
     lastSearchCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     diag.simSeconds += lastSearchCpuMs / 1000.0;
+    if (g_s3GenericChanceTree) {
+        genericDiag.searchCpuMs += lastSearchCpuMs;
+        syncGenericRootCompatibilityView(*rootBc);
+    }
     finalizeStrategyFusionDiag();
 }
 
@@ -2425,18 +2432,74 @@ void BattleScumSearcher3::searchToTotal(int64_t targetSimulations) {
     if (reuseSearchCount >= 0) ++reuseSearchCount;  // searches executed since last promotion
     auto t0 = std::chrono::steady_clock::now();
     int ordinal = 0;
-    while (root.simulationCount < targetSimulations) {
+    while ((g_s3GenericChanceTree ? decisionNodes[genericRoot].visits : root.simulationCount)
+           < targetSimulations) {
         searchSimulationOrdinal = ++ordinal;
         step();
     }
-    lastSearchSimulations = static_cast<int>(root.simulationCount);
+    lastSearchSimulations = static_cast<int>(g_s3GenericChanceTree
+        ? decisionNodes[genericRoot].visits : root.simulationCount);
     lastSearchCpuMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     diag.simSeconds += lastSearchCpuMs / 1000.0;
+    if (g_s3GenericChanceTree) {
+        genericDiag.searchCpuMs += lastSearchCpuMs;
+        syncGenericRootCompatibilityView(*rootBc);
+    }
     finalizeStrategyFusionDiag();
 }
 
 bool BattleScumSearcher3::advanceRoot(const Action &action,
                                        const BattleContext &newRootState) {
+    if (g_s3GenericChanceTree) {
+        bool reused = false;
+        const auto committed = semanticActionKey(action, *rootBc);
+        const auto realObs = CombatObservation::fromBattleContext(newRootState);
+        if (genericRoot != kInvalidDecisionNode) {
+            auto &oldRoot = decisionNodes[genericRoot];
+            for (auto &edge : oldRoot.actions) {
+                if (!(edge.action == committed)) continue;
+                if (const auto outcome = findGenericOutcome(edge, realObs)) {
+                    genericRoot = edge.outcomes[*outcome].child;
+                    reused = true;
+                }
+                break;
+            }
+        }
+        if (!reused) resetGenericTree(newRootState);
+        rootCarried = reused;
+        retainedNodeCount = 0;
+        reuseGeneration = reuseGeneration + (reused ? 1 : 0);
+        reuseSearchCount = reused ? 0 : -1;
+        reuseGenerationDepth = 0;
+        if (reused) {
+            std::function<void(DecisionNodeId, int)> visit = [&](DecisionNodeId id, int depth) {
+                ++retainedNodeCount;
+                reuseGenerationDepth = std::max(reuseGenerationDepth, depth);
+                auto &node = decisionNodes[id];
+                if (g_reuseStatsMode == 1) {
+                    node.visits = 0; node.valueSum = 0; node.dist = {};
+                }
+                for (auto &edge : node.actions) {
+                    if (g_reuseStatsMode == 1) { edge.visits = 0; edge.valueSum = 0; edge.dist = {}; }
+                    for (const auto &outcome : edge.outcomes) visit(outcome.child, depth + 1);
+                }
+            };
+            visit(genericRoot, 0);
+        }
+        rootBc = std::make_unique<const BattleContext>(newRootState);
+        rootObs = realObs;
+        bestActionSequence.clear();
+        bestActionValue = std::numeric_limits<double>::min();
+        minActionValue = std::numeric_limits<double>::max();
+        firstQExploitSimulation = -1;
+        outcomePlayerHp = 0;
+        obsMismatchCount = 0;
+        parentChildViolations = 0;
+        leafCache.clear();
+        edgeAvailability.clear();
+        syncGenericRootCompatibilityView(newRootState);
+        return reused;
+    }
     bool reused = false;
     // SINGLE_CARD_SELECT stores a physical draw-pile index.  The hidden
     // draw-pile order may differ even when the visible root observation is
@@ -2721,6 +2784,10 @@ BattleScumSearcher3::Node &BattleScumSearcher3::dispatchPersistentEndTurnOutcome
 
 // ---- ISMCTS step ------------------------------------------------------------
 void BattleScumSearcher3::step() {
+    if (g_s3GenericChanceTree) {
+        stepGeneric();
+        return;
+    }
     ++diag.simulations;
     const size_t particleIndex = belief.sampleIndex(rng);
     if (particleIndex < particleSampleCounts.size()) ++particleSampleCounts[particleIndex];
@@ -4281,6 +4348,490 @@ void computeEdgePriors(BattleScumSearcher3::Node &node, const BattleContext &bc)
     for (int i = 0; i < n; ++i) node.edges[i].prior = (float)(logits[i] * inv);
 }
 
+// ---- G1 generic action-observation tree ------------------------------------
+// This backend intentionally reuses the existing action enumerator, policy
+// feature code, particle sampler, rollout, and leaf evaluator.  It changes
+// only tree storage and routing: every selected action is resolved in the
+// current particle world, executed once, and then dispatched by the exact
+// observed successor.  No chance outcome is ever selected by PUCT.
+bool BattleScumSearcher3::SemanticActionKey::operator==(const SemanticActionKey &o) const {
+    return type == o.type && card == o.card && potion == o.potion
+        && cardSelectTask == o.cardSelectTask && target == o.target
+        && selectedCount == o.selectedCount && selectedCards == o.selectedCards;
+}
+
+bool BattleScumSearcher3::usingGenericChanceTree() const {
+    return g_s3GenericChanceTree;
+}
+
+BattleScumSearcher3::SemanticActionKey
+BattleScumSearcher3::semanticActionKey(const Action &action,
+                                       const BattleContext &state) const {
+    SemanticActionKey key;
+    key.type = action.getActionType();
+    key.target = static_cast<std::int16_t>(action.getTargetIdx());
+    switch (key.type) {
+    case ActionType::CARD:
+        key.card = cardActionKey(state, action);
+        break;
+    case ActionType::POTION: {
+        const int slot = action.getSourceIdx();
+        if (slot >= 0 && slot < state.potionCapacity)
+            key.potion = state.potions[slot];
+        break;
+    }
+    case ActionType::SINGLE_CARD_SELECT: {
+        key.cardSelectTask = static_cast<std::int16_t>(state.cardSelectInfo.cardSelectTask);
+        const int index = action.getSelectIdx();
+        key.selectedCount = 1;
+        if (index >= 0 && index < static_cast<int>(state.cardSelectInfo.cards.size()))
+            key.selectedCards[0] = static_cast<std::int16_t>(state.cardSelectInfo.cards[index]);
+        else
+            key.selectedCards[0] = static_cast<std::int16_t>(CardId::INVALID); // canonical CODEX skip
+        break;
+    }
+    case ActionType::MULTI_CARD_SELECT: {
+        key.cardSelectTask = static_cast<std::int16_t>(state.cardSelectInfo.cardSelectTask);
+        const auto selected = action.getSelectedIdxs();
+        for (const int index : selected) {
+            if (key.selectedCount >= key.selectedCards.size()) break;
+            key.selectedCards[key.selectedCount++] =
+                (index >= 0 && index < static_cast<int>(state.cardSelectInfo.cards.size()))
+                ? static_cast<std::int16_t>(state.cardSelectInfo.cards[index])
+                : static_cast<std::int16_t>(CardId::INVALID);
+        }
+        std::sort(key.selectedCards.begin(), key.selectedCards.begin() + key.selectedCount);
+        break;
+    }
+    case ActionType::END_TURN:
+        key.target = -1;
+        break;
+    }
+    return key;
+}
+
+std::vector<std::pair<Action, BattleScumSearcher3::SemanticActionKey>>
+BattleScumSearcher3::genericConcreteActions(const BattleContext &state) const {
+    Node concrete;
+    enumerateActionsForNode(concrete, state);
+    std::vector<std::pair<Action, SemanticActionKey>> result;
+    result.reserve(concrete.edges.size());
+    for (const auto &edge : concrete.edges)
+        if (edge.action.isValidAction(state))
+            result.emplace_back(edge.action, semanticActionKey(edge.action, state));
+    return result;
+}
+
+std::optional<Action> BattleScumSearcher3::resolveGenericAction(
+    const SemanticActionKey &key, const BattleContext &state) const {
+    for (const auto &[action, candidate] : genericConcreteActions(state))
+        if (candidate == key) return action;
+    return std::nullopt;
+}
+
+void BattleScumSearcher3::expandGenericDecision(DecisionNodeId nodeId,
+                                                  const BattleContext &state) {
+    // Compute priors on concrete legal actions first, then sum duplicate
+    // semantic-action mass into the one canonical generic edge.
+    Node concrete;
+    enumerateActionsForNode(concrete, state);
+    if ((g_usePolicyNet && g_policyNet.loaded())
+        || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly))
+        computeEdgePriors(concrete, state);
+
+    std::vector<ActionEdge> actions;
+    actions.reserve(concrete.edges.size());
+    for (const auto &edge : concrete.edges) {
+        if (!edge.action.isValidAction(state)) continue;
+        const auto key = semanticActionKey(edge.action, state);
+        auto existing = std::find_if(actions.begin(), actions.end(),
+            [&](const ActionEdge &candidate) { return candidate.action == key; });
+        if (existing == actions.end()) {
+            ActionEdge generic;
+            generic.action = key;
+            generic.prior = edge.prior;
+            actions.push_back(std::move(generic));
+        } else {
+            existing->prior += edge.prior;
+        }
+    }
+    if (!actions.empty()) {
+        float totalPrior = 0.f;
+        for (const auto &edge : actions) totalPrior += edge.prior;
+        if (totalPrior <= 0.f) {
+            const float uniform = 1.f / actions.size();
+            for (auto &edge : actions) edge.prior = uniform;
+        } else {
+            for (auto &edge : actions) edge.prior /= totalPrior;
+        }
+    }
+    auto &node = decisionNodes[nodeId];
+    node.actions = std::move(actions);
+    node.expanded = true;
+    genericDiag.actionEdgesCreated += static_cast<std::int64_t>(node.actions.size());
+}
+
+int BattleScumSearcher3::selectGenericAction(const DecisionNode &node) const {
+    const bool usePuct = (g_usePolicyNet && g_policyNet.loaded())
+        || (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly);
+    const double logParent = usePuct ? 0.0 : std::log(static_cast<double>(node.visits + 1));
+    const double sqrtParent = usePuct ? std::sqrt(static_cast<double>(node.visits + 1)) : 0.0;
+    const bool exploit = s3ShouldExploitQ(!bestActionSequence.empty(), reuseSearchCount);
+    const double evalRange = std::max(1.0, bestActionValue - minActionValue);
+    int best = 0;
+    double bestValue = -1e30;
+    for (int i = 0; i < static_cast<int>(node.actions.size()); ++i) {
+        const auto &edge = node.actions[i];
+        double q = 0.0;
+        if (exploit) {
+            double average = edge.valueSum / (edge.visits + 1);
+            if (edge.dist.n > 3)
+                average -= riskLambda * (average - edge.dist.loQ05);
+            q = average / evalRange;
+        }
+        const double explore = usePuct
+            ? g_cPuct * edge.prior * sqrtParent / (edge.visits + 1)
+            : 3.0 * std::sqrt(2.0) * std::sqrt(logParent / (edge.visits + 1));
+        if (i == 0 || q + explore > bestValue) {
+            best = i;
+            bestValue = q + explore;
+        }
+    }
+    return best;
+}
+
+std::optional<std::uint32_t> BattleScumSearcher3::findGenericOutcome(
+    ActionEdge &edge, const CombatObservation &obs) {
+    const auto hash = obs.visibleHash();
+    const auto exact = [&](std::uint32_t index) {
+        ++genericDiag.hashCandidatesChecked;
+        const auto &entry = edge.outcomes[index];
+        return entry.obsHash == hash && decisionNodes[entry.child].obs == obs;
+    };
+    if (!edge.hasOutcomeLookup) {
+        ++genericDiag.linearLookupQueries;
+        for (std::uint32_t i = 0; i < edge.outcomes.size(); ++i)
+            if (exact(i)) return i;
+        return std::nullopt;
+    }
+    ++genericDiag.hashedLookupQueries;
+    const auto [begin, end] = edge.outcomeLookup.equal_range(hash);
+    for (auto it = begin; it != end; ++it)
+        if (exact(it->second)) return it->second;
+    return std::nullopt;
+}
+
+namespace {
+int genericActionClass(ActionType type) {
+    switch (type) {
+    case ActionType::END_TURN: return 0;
+    case ActionType::CARD: return 1;
+    case ActionType::POTION: return 2;
+    case ActionType::SINGLE_CARD_SELECT:
+    case ActionType::MULTI_CARD_SELECT: return 3;
+    default: return 4;
+    }
+}
+}
+
+BattleScumSearcher3::DecisionNodeId BattleScumSearcher3::dispatchGenericOutcome(
+    DecisionNodeId parentId, std::uint32_t actionIndex, const CombatObservation &obs) {
+    auto &edge = decisionNodes[parentId].actions[actionIndex];
+    if (const auto hit = findGenericOutcome(edge, obs)) {
+        auto &entry = edge.outcomes[*hit];
+        ++entry.visits;
+        ++genericDiag.outcomeHits;
+        ++genericDiag.outcomeHitsByType[genericActionClass(edge.action.type)];
+        return entry.child;
+    }
+
+    const DecisionNodeId child = static_cast<DecisionNodeId>(decisionNodes.size());
+    DecisionNode created;
+    created.obs = obs;
+    created.obsHash = obs.visibleHash();
+    decisionNodes.push_back(std::move(created));
+    ++genericDiag.decisionNodesCreated;
+    ++genericDiag.outcomesCreated;
+    ++genericDiag.outcomeMisses;
+
+    // Reacquire after arena growth; no vector reference survives push_back.
+    auto &reacquired = decisionNodes[parentId].actions[actionIndex];
+    const std::uint32_t outcomeIndex = static_cast<std::uint32_t>(reacquired.outcomes.size());
+    reacquired.outcomes.push_back({obs.visibleHash(), child, 1});
+    ++genericDiag.outcomesCreatedByType[genericActionClass(reacquired.action.type)];
+    genericDiag.maxOutcomesPerAction = std::max<std::int64_t>(
+        genericDiag.maxOutcomesPerAction, reacquired.outcomes.size());
+    if (reacquired.outcomes.size() == 9) {
+        reacquired.hasOutcomeLookup = true;
+        reacquired.outcomeLookup.reserve(reacquired.outcomes.size() * 2);
+        for (std::uint32_t i = 0; i < reacquired.outcomes.size(); ++i)
+            reacquired.outcomeLookup.emplace(reacquired.outcomes[i].obsHash, i);
+    } else if (reacquired.hasOutcomeLookup) {
+        reacquired.outcomeLookup.emplace(obs.visibleHash(), outcomeIndex);
+    }
+    return child;
+}
+
+void BattleScumSearcher3::backpropagateGeneric(
+    const std::vector<std::tuple<DecisionNodeId, std::uint32_t, std::uint32_t>> &path,
+    double evaluation, const std::vector<Action> &actionStack) {
+    if (evaluation > bestActionValue) {
+        const bool wasEmpty = bestActionSequence.empty();
+        bestActionSequence = actionStack;
+        bestActionValue = evaluation;
+        if (wasEmpty && !bestActionSequence.empty() && firstQExploitSimulation < 0)
+            firstQExploitSimulation = searchSimulationOrdinal;
+    }
+    minActionValue = std::min(minActionValue, evaluation);
+    auto updateNode = [&](DecisionNodeId id) {
+        auto &node = decisionNodes[id];
+        ++node.visits;
+        node.valueSum += evaluation;
+        ++node.dist.n;
+        node.dist.loQ20 += (evaluation - node.dist.loQ20) * 0.02;
+        node.dist.loQ05 += (evaluation - node.dist.loQ05) * 0.01;
+    };
+    updateNode(genericRoot);
+    for (const auto &[parentId, actionIndex, outcomeIndex] : path) {
+        auto &edge = decisionNodes[parentId].actions[actionIndex];
+        ++edge.visits;
+        edge.valueSum += evaluation;
+        ++edge.dist.n;
+        edge.dist.loQ20 += (evaluation - edge.dist.loQ20) * 0.02;
+        edge.dist.loQ05 += (evaluation - edge.dist.loQ05) * 0.01;
+        // The traversal frequency is incremented at outcome dispatch.  It is
+        // deliberately not used as a value/selection statistic.
+        (void)edge.outcomes[outcomeIndex];
+        updateNode(edge.outcomes[outcomeIndex].child);
+    }
+    syncGenericRootCompatibilityView(*rootBc);
+}
+
+void BattleScumSearcher3::stepGeneric() {
+    ++diag.simulations;
+    ++genericDiag.simulations;
+    const size_t particleIndex = belief.sampleIndex(rng);
+    if (particleIndex < particleSampleCounts.size()) ++particleSampleCounts[particleIndex];
+    BattleContext state = *rootBc;
+    diagnosticParticleIndex = particleIndex;
+    diagnosticParticleWeight = belief.particles[particleIndex].weight;
+    diagnosticParticleAppliedExactly = diagnosticParticleUsedFallback = false;
+    applyParticle(state, belief.particles[particleIndex]);
+
+    std::vector<std::tuple<DecisionNodeId, std::uint32_t, std::uint32_t>> path;
+    std::vector<Action> actionStack;
+    DecisionNodeId nodeId = genericRoot;
+    int depth = 0;
+    while (++depth < maxSearchDepth) {
+        auto currentObs = CombatObservation::fromBattleContext(state);
+        auto &node = decisionNodes[nodeId];
+        ++genericDiag.decisionNodeVisits;
+        if (node.obsHash != currentObs.visibleHash() || !(node.obs == currentObs)) {
+            ++genericDiag.decisionObservationMismatches;
+            throw std::runtime_error("Searcher3 generic chance tree decision observation mismatch");
+        }
+        genericDiag.treeDepthMax = std::max<std::int64_t>(genericDiag.treeDepthMax, depth);
+        diag.maxTreeDepth = std::max(diag.maxTreeDepth, static_cast<std::int64_t>(depth));
+        if (isTerminal(state)) {
+            ++diag.terminalInsideTree;
+            genericDiag.treeDepthSum += depth;
+            backpropagateGeneric(path, evaluateTerminal(state), actionStack);
+            finishRngExposureSimulation();
+            return;
+        }
+        if (g_s3Prune && canPruneAsDead(state)) {
+            ++diag.leafDirectEval;
+            genericDiag.treeDepthSum += depth;
+            backpropagateGeneric(path, 0.0, actionStack);
+            finishRngExposureSimulation();
+            return;
+        }
+
+        const bool wasExpanded = node.expanded;
+        if (!wasExpanded) {
+            expandGenericDecision(nodeId, state);
+            if (decisionNodes[nodeId].actions.empty()) {
+                ++diag.leafDirectEval;
+                genericDiag.treeDepthSum += depth;
+                backpropagateGeneric(path, evaluateLeaf(state, currentObs.visibleHash()), actionStack);
+                finishRngExposureSimulation();
+                return;
+            }
+        } else {
+            // A visible information state must expose precisely the same
+            // semantic choice set in every compatible particle world.  Do not
+            // silently union-expand here: that would hide an observation or
+            // action-canonicalization defect.
+            const auto concrete = genericConcreteActions(state);
+            for (const auto &stored : node.actions) {
+                const bool found = std::any_of(concrete.begin(), concrete.end(),
+                    [&](const auto &candidate) { return candidate.second == stored.action; });
+                if (!found) ++genericDiag.semanticActionSetMissing;
+            }
+            for (const auto &[action, key] : concrete) {
+                const bool found = std::any_of(node.actions.begin(), node.actions.end(),
+                    [&](const auto &stored) { return stored.action == key; });
+                if (!found) ++genericDiag.semanticActionSetExtra;
+            }
+            if (genericDiag.semanticActionSetMissing || genericDiag.semanticActionSetExtra)
+                throw std::runtime_error("Searcher3 generic chance tree semantic action-set mismatch");
+        }
+
+        const bool newlyExpanded = !wasExpanded;
+        const int actionIndex = newlyExpanded
+            ? std::uniform_int_distribution<int>(0, static_cast<int>(decisionNodes[nodeId].actions.size()) - 1)(rng)
+            : selectGenericAction(decisionNodes[nodeId]);
+        const SemanticActionKey key = decisionNodes[nodeId].actions[actionIndex].action;
+        const auto resolved = resolveGenericAction(key, state);
+        if (!resolved || !resolved->isValidAction(state)) {
+            ++genericDiag.semanticResolutionFailures;
+            throw std::runtime_error("Searcher3 generic chance tree semantic action resolution failure");
+        }
+        observeRngExposureAction(*resolved, state);
+        ++diag.treeActions;
+        ++genericDiag.chanceActionVisits;
+        actionStack.push_back(*resolved);
+        // observeRngExposureAction is Searcher3's shared execution wrapper;
+        // it has already applied the concrete action exactly once above.
+        const auto postObs = CombatObservation::fromBattleContext(state);
+        const DecisionNodeId child = dispatchGenericOutcome(nodeId, actionIndex, postObs);
+        auto &edgeAfter = decisionNodes[nodeId].actions[actionIndex];
+        std::uint32_t outcomeIndex = 0;
+        for (; outcomeIndex < edgeAfter.outcomes.size(); ++outcomeIndex)
+            if (edgeAfter.outcomes[outcomeIndex].child == child && edgeAfter.outcomes[outcomeIndex].obsHash == postObs.visibleHash())
+                break;
+        path.emplace_back(nodeId, static_cast<std::uint32_t>(actionIndex), outcomeIndex);
+        if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(postObs);
+        nodeId = child;
+
+        // Preserve current expansion/rollout semantics: after a newly
+        // expanded decision edge, evaluate one ordinary rollout.  Chain
+        // compression is intentionally not used in generic mode because each
+        // tree action must have an explicit action-observation transition.
+        if (newlyExpanded) {
+            double vLeaf = std::numeric_limits<double>::quiet_NaN();
+            if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha < 1.0
+                && state.outcome == Outcome::UNDECIDED && vnetCondAllowed(state)) {
+                vLeaf = g_combatVNet.predict(state);
+            } else if (g_usePVNet && g_combatPVNet.loaded()
+                       && state.outcome == Outcome::UNDECIDED
+                       && pvnetCondAllowed(state, depth)) {
+                vLeaf = g_combatPVNet.leafValue(state, riskLambda);
+            }
+            double eval = 0.0;
+            const int rolloutSteps = multiRollout(state, actionStack, eval);
+            ++diag.rolloutCalls;
+            ++diag.rolloutLeafCalls;
+            diag.rolloutActions += rolloutSteps;
+            if (!std::isnan(vLeaf)) {
+                const double alpha = g_vnetAlphaLen ? alphaForRolloutSteps(rolloutSteps)
+                                                    : (g_usePVNet && g_combatPVNet.loaded()
+                                                       ? g_pvnetAlpha : g_vnetAlpha);
+                eval = alpha * vLeaf + (1.0 - alpha) * eval;
+            }
+            genericDiag.treeDepthSum += depth;
+            backpropagateGeneric(path, eval, actionStack);
+            finishRngExposureSimulation();
+            return;
+        }
+    }
+    ++diag.leafDirectEval;
+    genericDiag.treeDepthSum += depth;
+    backpropagateGeneric(path, evaluateLeaf(state, CombatObservation::fromBattleContext(state).visibleHash()), actionStack);
+    finishRngExposureSimulation();
+}
+
+void BattleScumSearcher3::resetGenericTree(const BattleContext &state) {
+    decisionNodes.clear();
+    DecisionNode rootNode;
+    rootNode.obs = CombatObservation::fromBattleContext(state);
+    rootNode.obsHash = rootNode.obs.visibleHash();
+    decisionNodes.push_back(std::move(rootNode));
+    genericRoot = 0;
+    genericDiag = {};
+    genericDiag.decisionNodesCreated = 1;
+    syncGenericRootCompatibilityView(state);
+}
+
+void BattleScumSearcher3::syncGenericRootCompatibilityView(const BattleContext &state) {
+    if (!usingGenericChanceTree() || genericRoot == kInvalidDecisionNode) return;
+    const auto &generic = decisionNodes[genericRoot];
+    root = Node{};
+    root.obs = generic.obs;
+    root.obsHash = generic.obsHash;
+    root.obsCached = true;
+    root.simulationCount = generic.visits;
+    root.evaluationSum = generic.valueSum;
+    root.edges.reserve(generic.actions.size());
+    for (const auto &genericEdge : generic.actions) {
+        const auto action = resolveGenericAction(genericEdge.action, state);
+        if (!action) continue;
+        Edge mirror;
+        mirror.action = *action;
+        mirror.prior = genericEdge.prior;
+        mirror.child.simulationCount = genericEdge.visits;
+        mirror.child.evaluationSum = genericEdge.valueSum;
+        mirror.child.dist = {genericEdge.dist.loQ20, genericEdge.dist.loQ05, genericEdge.dist.n};
+        root.edges.push_back(std::move(mirror));
+    }
+}
+
+std::optional<Action> BattleScumSearcher3::pickGenericRootAction(const BattleContext &bc) const {
+    if (!usingGenericChanceTree() || genericRoot == kInvalidDecisionNode) return std::nullopt;
+    const auto &node = decisionNodes[genericRoot];
+    std::int64_t bestVisits = -1;
+    const SemanticActionKey *best = nullptr;
+    for (const auto &edge : node.actions) {
+        const auto action = resolveGenericAction(edge.action, bc);
+        if (action && action->isValidAction(bc) && edge.visits > bestVisits) {
+            bestVisits = edge.visits;
+            best = &edge.action;
+        }
+    }
+    return best ? resolveGenericAction(*best, bc) : std::nullopt;
+}
+
+void BattleScumSearcher3::printGenericChanceTreeDiagnostics() const {
+    if (!usingGenericChanceTree()) return;
+    std::int64_t single = 0, multi = 0;
+    std::size_t actionCount = 0, outcomeCount = 0;
+    for (const auto &node : decisionNodes) for (const auto &edge : node.actions) {
+        ++actionCount;
+        outcomeCount += edge.outcomes.size();
+        if (edge.outcomes.size() == 1) ++single;
+        else if (edge.outcomes.size() > 1) ++multi;
+    }
+    const double reuse = genericDiag.outcomesCreated + genericDiag.outcomeHits > 0
+        ? static_cast<double>(genericDiag.outcomeHits) /
+          (genericDiag.outcomesCreated + genericDiag.outcomeHits) : 0.0;
+    const double sps = genericDiag.searchCpuMs > 0
+        ? genericDiag.simulations * 1000.0 / genericDiag.searchCpuMs : 0.0;
+    const std::size_t bytes = decisionNodes.capacity() * sizeof(DecisionNode)
+        + actionCount * sizeof(ActionEdge) + outcomeCount * sizeof(OutcomeEntry);
+    std::cerr << "[s3-generic-chance-tree] sims=" << genericDiag.simulations
+              << " decisionNodes=" << decisionNodes.size()
+              << " decisionVisits=" << genericDiag.decisionNodeVisits
+              << " obsMismatch=" << genericDiag.decisionObservationMismatches
+              << " actionEdges=" << actionCount
+              << " semResolveFail=" << genericDiag.semanticResolutionFailures
+              << " semSetMissing=" << genericDiag.semanticActionSetMissing
+              << " semSetExtra=" << genericDiag.semanticActionSetExtra
+              << " outcomesCreated=" << genericDiag.outcomesCreated
+              << " outcomeHits=" << genericDiag.outcomeHits
+              << " reuseRate=" << reuse
+              << " single=" << single << " multi=" << multi
+              << " maxOutcomes=" << genericDiag.maxOutcomesPerAction
+              << " linearLookup=" << genericDiag.linearLookupQueries
+              << " hashedLookup=" << genericDiag.hashedLookupQueries
+              << " hashCandidates=" << genericDiag.hashCandidatesChecked
+              << " depthMean=" << (genericDiag.simulations ?
+                    static_cast<double>(genericDiag.treeDepthSum) / genericDiag.simulations : 0.0)
+              << " depthMax=" << genericDiag.treeDepthMax
+              << " bytes~=" << bytes
+              << " cpuMs=" << genericDiag.searchCpuMs
+              << " simsPerSec=" << sps << "\n";
+}
+
 // ---- Root reconciliation (STS_REUSE_RECONCILE_ROOT) ------------------------
 void BattleScumSearcher3::reconcileRoot(const BattleContext &liveRoot) {
     // 1. Enumerate all legal actions from the actual live root.
@@ -4501,6 +5052,10 @@ void BattleScumSearcher3::computeEdgeAvailability(const BattleContext &bc) {
 }
 
 void BattleScumSearcher3::printReuseDiagnostics() const {
+    if (g_s3GenericChanceTree) {
+        printGenericChanceTreeDiagnostics();
+        return;
+    }
     std::cerr << "[reuse-diag] gen=" << reuseGeneration
               << " depth=" << reuseGenerationDepth
               << " searches=" << reuseSearchCount

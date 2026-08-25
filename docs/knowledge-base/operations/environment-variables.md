@@ -73,6 +73,7 @@ These control the default executing configuration; they are always parsed.
 | `STS_S3_STRATEGY_FUSION_DIAG_REF_SIMS` | Deeper fresh Searcher3 reference simulations per bucket | `3000` | `main` |
 | `STS_S3_PERSISTENT_ENDTURN_CHANCE` | Experiment 4: persist full-`CombatObservation`-keyed continuation children below eligible END_TURN edges while retaining one aggregate parent-action value/visit stream; incompatible with `STS_S3_STRATEGY_FUSION_DIAG` and eager `STS_S3_ENDTURN_MARGINALIZE` | `0` (off) | `main` |
 | `STS_S3_PERSISTENT_ENDTURN_MAX_PILE` | Independent maximum pre-END_TURN draw-pile size eligible for persistent chance splitting | `8` | `main` |
+| `STS_S3_GENERIC_CHANCE_TREE` | G1 generic Searcher3 action → actual observed outcome → conditioned decision-node arena. Uses semantic actions for every action class; no local chance resampling or draw-pile-size restriction. Rejects legacy persistent-END_TURN, strategy-fusion, END_TURN-marginalization, legacy expansion, and CRN modes; `STS_S3_SEMANTIC_CARD_EDGES` is redundant/no-op. | `0` (off) | `main` |
 | `STS_RISK_LAMBDA` | Risk sensitivity for S3 PUCT | 0.5 | `main` ~L9845 |
 
 The probe CSV contains `target` from the isolated common-RNG rollout for every

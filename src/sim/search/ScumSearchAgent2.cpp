@@ -59,6 +59,11 @@ namespace {
 // battle exactly like the Searcher2 loop breaks out.
 search::Action s3PickRootAction(const search::BattleScumSearcher3 &s3,
                                 const BattleContext &bc, bool &have) {
+    if (s3.usingGenericChanceTree()) {
+        const auto selected = s3.pickGenericRootAction(bc);
+        have = selected.has_value();
+        return selected.value_or(search::Action{});
+    }
     const auto selected = search::pickSearchAction(s3.root, bc);
     have = selected.has_value();
     return selected.value_or(search::Action{});
@@ -574,7 +579,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
             s3.clampRankCorrAtRoot();
             s3.rankCorrValues.clear();
             // Edge-availability and reuse diagnostics.
-            if (search::g_reuseDiag || search::g_s3SemanticCardEdges || search::g_s3BeliefAudit) {
+            if (search::g_reuseDiag || search::g_s3SemanticCardEdges || search::g_s3BeliefAudit
+                || search::g_s3GenericChanceTree) {
                 s3.computeEdgeAvailability(bc);
                 s3.printReuseDiagnostics();
             }
@@ -678,7 +684,14 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                          && promotedChild->firstObsHash == newHash;
             }
             bool reuseAllowed;
-            if (search::g_reuseObsStable) {
+            if (s3.usingGenericChanceTree()) {
+                // The generic backend's child observation is immutable and
+                // exact by construction.  Let advanceRoot perform the real
+                // action + observed-outcome lookup; a miss rebuilds fresh.
+                // The legacy root compatibility view has no child topology,
+                // so its obs-stability fields are intentionally not consulted.
+                reuseAllowed = true;
+            } else if (search::g_reuseObsStable) {
                 reuseAllowed = obsStable;
                 ++reuseAttempts;
                 if (!reuseAllowed) {
@@ -749,7 +762,8 @@ void playoutBattleFairSearcher3(search::ScumSearchAgent2 &agent, BattleContext &
                                    SimHealthMeta{decisionIdx});
         }
         // Print reuse diagnostics at end of battle.
-        if (search::g_reuseDiag || (search::g_reuseObsStable && combatDecisions > 0)) {
+        if (search::g_reuseDiag || (search::g_reuseObsStable && combatDecisions > 0)
+            || search::g_s3GenericChanceTree) {
             std::cerr << "[reuse-generation] fresh=" << (combatDecisions - reuseAttempts)
                       << " carriedSearchesSinceFresh=" << carriedSearchesSinceFresh
                       << " transferred_filtered_belief_searches=" << transferredBeliefSearches

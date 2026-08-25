@@ -13239,6 +13239,11 @@ int main(int argc, char **argv) {
         search::g_reuseCarryDiag = std::atoi(d) != 0;
         std::cout << "[reuse carry-diag = " << (search::g_reuseCarryDiag ? "ON" : "off") << "]\n";
     }
+    if (const char *d = std::getenv("STS_S3_GENERIC_CHANCE_TREE")) {
+        search::g_s3GenericChanceTree = std::atoi(d) != 0;
+        std::cout << "[S3 generic action-observation chance tree = "
+                  << (search::g_s3GenericChanceTree ? "ON" : "off") << "]\n";
+    }
     if (const char *d = std::getenv("STS_S3_SEMANTIC_CARD_EDGES")) {
         search::g_s3SemanticCardEdges = std::atoi(d) != 0;
         std::cout << "[S3 semantic-card-edges = " << (search::g_s3SemanticCardEdges ? "ON" : "off") << "]\n";
@@ -13339,6 +13344,18 @@ int main(int argc, char **argv) {
                          "persistent chance nodes must not run with eager marginalization\n";
         }
         return 2;
+    }
+    if (search::g_s3GenericChanceTree) {
+        if (search::g_s3PersistentEndTurnChance || search::g_s3StrategyFusionDiag
+            || search::g_s3EndTurnMarginalize || search::g_s3Expand
+            || search::g_s3ExpandSimple || search::g_s3UnionExpand || search::g_s3Crn) {
+            std::cerr << "error: STS_S3_GENERIC_CHANCE_TREE is incompatible with "
+                         "persistent-END_TURN, strategy-fusion, END_TURN marginalization, "
+                         "legacy tree expansion, or historical CRN modes\n";
+            return 2;
+        }
+        if (search::g_s3SemanticCardEdges)
+            std::cout << "[S3 semantic-card-edges ignored: generic tree uses semantic actions by construction]\n";
     }
     if (search::g_s3PersistentEndTurnChance)
         std::atexit(search::printPersistentEndTurnChanceDiagnostics);

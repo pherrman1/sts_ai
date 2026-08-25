@@ -1029,6 +1029,26 @@ selection also requires `!g_pvnetValueOnly`, matching S2.
   input is therefore not free of hand-authored features
   (`src/sim/search/CombatValueNet.cpp::combatFillActionFeatures`).
 
+### Generic action-observation chance tree (G1, opt-in)
+
+`STS_S3_GENERIC_CHANCE_TREE=1` changes only Searcher3's tree storage and
+routing. A stable-ID arena stores `DecisionNode`s (one exact
+`CombatObservation` per action-observation history), semantic `ActionEdge`s
+(the aggregate PUCT value/visit stream), and observation-keyed outcome entries.
+Each root-sampled particle executes the selected semantic action once; the
+actual post-action observation selects or creates the conditioned child. There
+is no local outcome sampling, chance policy, global observation transposition,
+or draw-pile-size eligibility boundary.
+
+Outcome lookup linearly exact-compares the first eight outcomes and lazily
+uses a visible-hash multimap after that threshold, always confirming equality
+against the child node's stored observation. Generic mode validates the exact
+decision observation on every visit and fail-fast checks that compatible
+particles expose the same semantic action set. It rejects the legacy persistent
+END_TURN, strategy-fusion, marginalization, legacy-union/expand, and CRN modes;
+the legacy semantic-CARD-edge flag is redundant because all generic actions are
+semantic by construction. The default remains off, preserving legacy Searcher3.
+
 ### Persistent END_TURN chance continuations (Experiment 4, opt-in)
 
 `STS_S3_PERSISTENT_ENDTURN_CHANCE=1` preserves `Edge::child` as the single
