@@ -132,6 +132,16 @@ class BattleScumSearcher3;
 
     struct BattleScumSearcher3 {
 
+        struct ForcedActionDiagnosticResult {
+            bool valid = false;
+            double value = std::numeric_limits<double>::quiet_NaN();
+            std::uint64_t particleId = 0;
+            std::array<std::int32_t, 6> preActionRngCounters{};
+            std::array<std::int32_t, 6> postActionRngCounters{};
+            std::array<std::int32_t, 6> finalRngCounters{};
+            int rolloutActions = 0;
+        };
+
         // Forward-declare (needed by Node for std::vector<Edge>)
         struct Edge;
 
@@ -456,6 +466,9 @@ class BattleScumSearcher3;
             const CombatObservation &postObservation);
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
+        ForcedActionDiagnosticResult evaluateForcedActionDiagnostic(
+            const BattleContext &preState, const HiddenBattleState &particle,
+            const Action &action, std::uint64_t rolloutSeed);
         RealBeliefFilterStats filterRealTransition(
             const BattleContext &preState, const Action &action,
             const BattleContext &realPostState);

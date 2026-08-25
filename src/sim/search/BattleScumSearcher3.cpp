@@ -358,6 +358,40 @@ void BattleScumSearcher3::applyParticle(BattleContext &state,
     diagnosticParticleUsedFallback = !exact;
 }
 
+BattleScumSearcher3::ForcedActionDiagnosticResult
+BattleScumSearcher3::evaluateForcedActionDiagnostic(
+    const BattleContext &preState, const HiddenBattleState &particle,
+    const Action &action, std::uint64_t rolloutSeed) {
+    ForcedActionDiagnosticResult result;
+    result.particleId = particle.id;
+    BattleContext state = preState;
+    applyParticle(state, particle);
+    result.preActionRngCounters = {
+        state.shuffleRng.counter, state.cardRandomRng.counter,
+        state.aiRng.counter, state.miscRng.counter,
+        state.monsterHpRng.counter, state.potionRng.counter};
+    if (!action.isValidAction(state)) return result;
+
+    result.valid = true;
+    action.execute(state);
+    result.postActionRngCounters = {
+        state.shuffleRng.counter, state.cardRandomRng.counter,
+        state.aiRng.counter, state.miscRng.counter,
+        state.monsterHpRng.counter, state.potionRng.counter};
+
+    // The particle owns simulator RNG. The separate Searcher3 RNG drives only
+    // stochastic rollout-policy choices and is action-specific in the caller.
+    rng.seed(rolloutSeed);
+    std::vector<Action> rollout;
+    result.rolloutActions = playoutRandom(state, rollout);
+    result.value = evaluateLeaf(state);
+    result.finalRngCounters = {
+        state.shuffleRng.counter, state.cardRandomRng.counter,
+        state.aiRng.counter, state.miscRng.counter,
+        state.monsterHpRng.counter, state.potionRng.counter};
+    return result;
+}
+
 void applyHiddenState(BattleContext &state, const HiddenBattleState &particle,
                       std::mt19937_64 &fallbackRng) {
     applyParticleImpl(state, particle, fallbackRng);

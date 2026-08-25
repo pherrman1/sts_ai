@@ -579,7 +579,7 @@ trajectory rows.
   entropy (-sum p_i log p_i over root edge visit shares) is computed at
   search-complete and attached to the decision's captured leaves. Parent
   snapshots are indexed in the CSV by marker rows with `frontierType=-1`
-  (obsHash 0). Same OOC-arm warning as leafdiag: do NOT enable the probing
+  (obsHash = captured root visible hash). Same OOC-arm warning as leafdiag: do NOT enable the probing
   OOC arms — their inner probe battles pollute the corpus.
 - `one_combat leafrelabel INFILE_CSV INFILE_BIN OUTFILE_LEAF OUTFILE_SIBLING
   HIGH_BUDGET_SIMS NLEAVES [PARTICLES] [SUBSAMPLE_BUDGET]` deserializes each
@@ -813,6 +813,46 @@ weight-row hoisting; per-output math bit-identical) — cpsi-eval measures
 ~9x the win-tree leaf end-to-end (19.2 vs 1.8 cpu-sec/run at 100 sims, 16
 seeds); benchmark at the 1k-sim operating point.
 Decision log: `2026-08-05-terminal-leaf-run-value-bonus.md`.
+
+### Offline sibling-particle CRN diagnostic (`s3siblingcrn`, 2026-08-24)
+
+`one_combat s3siblingcrn` reads parent decision snapshots from an existing
+`frontiergen` CSV/bin pair and compares fixed-action Monte Carlo estimators.
+It selects two or three legal root actions once, before evaluation (policy
+prior order when a policy model is loaded, otherwise enumeration order), then
+emits one raw row per attempted action evaluation for independent particles,
+matched sibling particles, and a separate 128-sample independent reference.
+
+The matched arm copies the same complete `HiddenBattleState` into every
+sibling at sample index k: ordered draw pile plus all six simulator RNG
+triples. Each action is validated by `Action::isValidAction` before normal
+execution. Simulator RNG then advances naturally; it is never reset after the
+root action. Rollout-policy randomness is separate and uses a deterministic
+seed derived from the composite captured-decision identity
+`(source_seed,fight_idx,decision_idx,state_id)`, K, replicate, sample, and
+action, but not sampling arm, so siblings do not share artificial policy choices. The helper continues
+with Searcher3's current `playoutRandom` and `evaluateLeaf` semantics. It does
+not call tree search, allocate PUCT visits, warm root Q, or read `g_s3Crn`.
+
+Raw provenance includes both SHAs, corpus hash, semantic action description,
+particle and rollout seeds, particle ID, pre/root-post/final RNG counters,
+validity, value, and evaluation coordinates. The composite identity is used
+for every aggregation; `state_id` alone is only visible-state provenance.
+The producer seed schedule includes the same full identity, so visible-hash
+collisions cannot reuse diagnostic streams. `tools/select_s3_crn_states.py`
+writes a deterministic manifest using round-robin boss/elite/ordinary encounter
+classes, rotating acts within each class and source seeds within each act/class,
+with sorted within-group provenance. Formal runs must pass that frozen manifest
+instead of taking the first N sorted decisions.
+
+`tools/analyze_s3_sibling_crn.py` reconstructs batch Q values and reports the
+preregistered variance, decision, bias, invalidity, and state/action-pair
+bootstrap metrics. For every state and K it first intersects the same
+replicate IDs that are complete in both arms and for every selected action;
+each batch must contain exactly K valid rows and no invalid/extra rows. All
+paired metrics use this common replicate set. Pairs with an independent delta
+variance at or below `1e-12` are reported as degenerate and excluded from
+ratios. Default gameplay is unchanged.
 
 ## Important data flow
 
