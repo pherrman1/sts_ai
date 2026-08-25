@@ -4402,3 +4402,41 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   substantial without an obvious compute/gameplay warning. Independently
   review the frozen implementation and the surprising 685-outcome maximum
   before designing any 32–64 seed equal-sim/equal-CPU gate.
+
+## E3c conditional E2c critic analysis (2026-08-25)
+
+- **Question:** among paired future events where both direct-reference leaves
+  survive current combat but eventual run outcomes differ, does the E2c
+  conditional post-combat critic rank the eventual winner beyond `blendedEval`?
+- **Data/protocol:** no new simulation or training. Frozen producer SHA
+  `a93b3c68fc4efaaf9e9858d7aca571baac1a68d4`; M=16 shadow SHA-256
+  `0aca56931c24575aca468d21e4da0848ea6b9296a36e724a93a6b8be5abf11ed`;
+  direct-reference SHA-256
+  `a6a18d314e0f4d040b03a84b0cd073146375f79babfe7c1994614114fdc68671`.
+  Conditional `c_r` values were reconstructed only from surviving R=4 shadow
+  replicates; zero-survivor values remained missing. Accuracy was tie-aware,
+  root-equal, and bootstrapped over source seeds with RNG seed 0 and 10,000
+  draws.
+- **Coverage:** 188 complete leaves, 463 sibling pairs, 32 roots, 16 source
+  seeds, 1,143 direct outcome-discordant events, 273 combat-driven events,
+  and 870 downstream-discordant events. At support `>=1/2/3/4`, leaves were
+  `153/142/131/117`, sibling pairs `355/319/284/253`, and downstream events
+  `846/774/713/620`.
+- **Result:** conditional-minus-blended root-equal deltas at those supports
+  were `-0.014904/+0.022183/+0.029394/+0.014489`; all bootstrap 95% CIs
+  included zero. At support `>=1`, the CI was `[-0.085624,+0.056238]` and
+  leave-one-source-seed-out estimates ranged `[-0.036925,+0.008089]`.
+  Predeclared conditional min, worst-half, mean-minus-0.5-std, and
+  mean-minus-1.0-std summaries had no robust downstream advantage.
+- **Verdict:** **E3C_INCONCLUSIVE**. The conditional mean is source-seed
+  unstable, so the result is not a useful promotion signal. R=4 tails are
+  coarse policy/combat-RNG summaries, not full information-set CVaR. No
+  gameplay promotion, threshold selection, continuous lambda search, M=32
+  extension, or distributional-model training is authorized.
+- **Artifacts:** `tools/analyze_e3c_conditional_runwin.py`,
+  `build/e3c_conditional_runwin_analysis.json`, and
+  `build/e3c_conditional_runwin_analysis.md`; repeated-output SHA-256 values
+  are JSON
+  `260ffb78119f3539a59a92c2c5a658f81c87947c2be1a2180196488399ad1872` and
+  Markdown
+  `86c8136477a5d3bc668d58c11aa03f5cb6156f70111bb6d20c48e276cce0dc1b`.
