@@ -1,6 +1,6 @@
 # 2026-08-25 — E3c conditional E2c critic
 
-Date: 2026-08-25  
+Date: 2026-08-25
 Task: Isolate the conditional post-combat E2c critic from combat-survival
 estimation using the frozen E3a M=16 shadow/reference artifacts.
 

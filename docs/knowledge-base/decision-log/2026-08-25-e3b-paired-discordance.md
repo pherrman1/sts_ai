@@ -1,6 +1,6 @@
 # 2026-08-25 — E3b paired-discordant-future leaf ranking
 
-Date: 2026-08-25  
+Date: 2026-08-25
 Task: Exploratory paired-discordant-future analysis of E2c leaf ranking on the frozen E3a M=16 artifacts.
 
 ## Decision
