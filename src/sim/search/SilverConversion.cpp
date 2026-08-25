@@ -75,6 +75,23 @@ silver_bridge::MonsterRollInputsWire toWire(const HiddenIntentRollInputs &in) {
             in.playerConstricted, in.asleep, in.halfDead};
 }
 
+silver_bridge::CardQueueItemWire toWire(const CardQueueItem &item) {
+    silver_bridge::CardQueueItemWire out;
+    out.card = toWire(item.card);
+    out.target = item.target;
+    out.isEndTurn = item.isEndTurn;
+    out.triggerOnUse = item.triggerOnUse;
+    out.ignoreEnergyTotal = item.ignoreEnergyTotal;
+    out.energyOnUse = item.energyOnUse;
+    out.freeToPlay = item.freeToPlay;
+    out.randomTarget = item.randomTarget;
+    out.autoplay = item.autoplay;
+    out.regretCardCount = item.regretCardCount;
+    out.purgeOnUse = item.purgeOnUse;
+    out.exhaustOnUse = item.exhaustOnUse;
+    return out;
+}
+
 } // namespace
 
 SilverDrawPileObservation makeSilverDrawPileObservation(
@@ -266,6 +283,7 @@ silver_bridge::BattleStateWire makeSilverBattleStateWire(
     // selected-bit state at a decision boundary; Discovery has its legacy true default.
     out.cardSelect.setCostToZero = true;
     out.cardSelect.selectedBits = 0;
+    out.curCardQueueItem = toWire(live.curCardQueueItem);
     return out;
 }
 

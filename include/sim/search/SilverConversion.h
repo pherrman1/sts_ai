@@ -54,8 +54,9 @@ bool sameSilverDrawPileObservation(const SilverDrawPileObservation &a,
                                    const SilverDrawPileObservation &b);
 
 // Complete value-only conversion protocol. It copies no live RNG state and
-// redacts materialized intent under Runic Dome. `isolatedSearchSeed` belongs
-// to the caller's independent Silver search contract, never BattleContext.
+// redacts materialized intent under Runic Dome. `isolatedSearchSeed` is a
+// stable public per-battle seed for the independent Silver model, never a
+// live BattleContext RNG state.
 silver_bridge::BattleStateWire makeSilverBattleStateWire(
     const BattleContext &live, const CombatKnowledgeState &knowledge,
     const SilverRunContext &runContext, std::uint64_t isolatedSearchSeed);

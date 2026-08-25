@@ -114,9 +114,28 @@ struct CardSelectWire {
     std::int16_t task = 0;
 };
 
+// The currently resolving/most recently resolved card item is included in
+// Silver equalForSearch. At a player decision it contains only player-visible
+// card/action metadata; omitting it would make an otherwise exact successor
+// fail the reference reroot comparison.
+struct CardQueueItemWire {
+    CardWire card {};
+    int target = 0;
+    bool isEndTurn = false;
+    bool triggerOnUse = true;
+    bool ignoreEnergyTotal = false;
+    int energyOnUse = 0;
+    bool freeToPlay = false;
+    bool randomTarget = false;
+    bool autoplay = false;
+    int regretCardCount = 0;
+    bool purgeOnUse = false;
+    bool exhaustOnUse = false;
+};
+
 struct BattleStateWire {
     // Version makes an incompatible protocol fail closed in the vendor bridge.
-    static constexpr std::uint32_t kVersion = 1;
+    static constexpr std::uint32_t kVersion = 2;
     std::uint32_t version = kVersion;
     bool valid = true;
     // Set only under Frozen Eye; otherwise all draw order travels via PileWire.
@@ -150,6 +169,7 @@ struct BattleStateWire {
         handBloodCardCount = 0, drawPileBloodCardCount = 0, discardPileBloodCardCount = 0;
     PileWire drawPile, discardPile, exhaustPile;
     CardSelectWire cardSelect;
+    CardQueueItemWire curCardQueueItem;
     std::uint32_t miscBits = 0;
 };
 
@@ -257,6 +277,12 @@ struct SelectionTransactionTrace {
 struct SilverDecisionResult {
     bool accepted = false;
     std::int64_t simulations = 0;
+    // Existing visits retained at this root before this decision's new search.
+    // Non-zero only after a successful exact session reroot.
+    std::int64_t inheritedVisits = 0;
+    // Private-model comparison summary for a reroot miss; no live state or
+    // hidden information is exposed here.
+    std::string rerootMissDiagnostic;
     SemanticAction action;
     SilverSearchTelemetry telemetry;
     int rerootExact = 0;

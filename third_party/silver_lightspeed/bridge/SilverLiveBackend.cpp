@@ -34,11 +34,12 @@ private:
     CombatKnowledgeObserver *previous_;
 };
 
-std::uint64_t isolatedSeed(const BattleContext &bc, int decision) {
-    // A deterministic, public root seed for Silver's *own* one-RNG model.
+std::uint64_t isolatedBattleSeed(const BattleContext &bc) {
+    // One deterministic, public seed for Silver's one-RNG *battle* model.
+    // It must stay constant through the battle: Silver equalForSearch includes
+    // BattleContext::seed and SearchAgent reroots into the selected child.
     // This is never a live RNG state or draw-pile order.
-    std::uint64_t x = bc.seed ^ (static_cast<std::uint64_t>(bc.floorNum) << 32)
-        ^ static_cast<std::uint64_t>(decision);
+    std::uint64_t x = bc.seed ^ (static_cast<std::uint64_t>(bc.floorNum) << 32);
     x ^= 0x9e3779b97f4a7c15ULL + (x << 6) + (x >> 2);
     return x;
 }
@@ -86,6 +87,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     // One opaque isolated Silver session per live battle. It owns the private
     // BattleSearcher and reroots across all subsequent real decisions.
     auto silverSession = silver_bridge::makeSilverSearchSession();
+    const std::uint64_t silverBattleSeed = isolatedBattleSeed(bc);
 
     int decision = 0;
     while (bc.outcome == Outcome::UNDECIDED) {
@@ -116,7 +118,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         const auto wire = makeSilverBattleStateWire(
-            bc, knowledge, makeSilverRunContext(gc), isolatedSeed(bc, decision));
+            bc, knowledge, makeSilverRunContext(gc), silverBattleSeed);
         if (!wire.valid) {
             ++g_silverLiveDiagnostics.conversionFailures;
             fail("conversion", "live observation cannot be represented without hidden information");

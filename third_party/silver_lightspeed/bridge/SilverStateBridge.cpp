@@ -144,6 +144,18 @@ sts::BattleContext materialize(const BattleStateWire &in, sts::GameContext *runC
     out.cardSelectInfo.pickCount = in.cardSelect.pickCount; out.cardSelectInfo.data0 = in.cardSelect.data0;
     out.cardSelectInfo.setCostToZero = in.cardSelect.setCostToZero; out.cardSelectInfo.selectedBits = in.cardSelect.selectedBits;
     out.cardSelectInfo.cardSelectTask = static_cast<sts::CardSelectTask>(in.cardSelect.task);
+    out.curCardQueueItem.card = card(in.curCardQueueItem.card);
+    out.curCardQueueItem.target = in.curCardQueueItem.target;
+    out.curCardQueueItem.isEndTurn = in.curCardQueueItem.isEndTurn;
+    out.curCardQueueItem.triggerOnUse = in.curCardQueueItem.triggerOnUse;
+    out.curCardQueueItem.ignoreEnergyTotal = in.curCardQueueItem.ignoreEnergyTotal;
+    out.curCardQueueItem.energyOnUse = in.curCardQueueItem.energyOnUse;
+    out.curCardQueueItem.freeToPlay = in.curCardQueueItem.freeToPlay;
+    out.curCardQueueItem.randomTarget = in.curCardQueueItem.randomTarget;
+    out.curCardQueueItem.autoplay = in.curCardQueueItem.autoplay;
+    out.curCardQueueItem.regretCardCount = in.curCardQueueItem.regretCardCount;
+    out.curCardQueueItem.purgeOnUse = in.curCardQueueItem.purgeOnUse;
+    out.curCardQueueItem.exhaustOnUse = in.curCardQueueItem.exhaustOnUse;
     return out;
 }
 
@@ -334,7 +346,12 @@ std::string selectionStateSummary(const sts::BattleContext &before, const sts::B
             && before.skipMonsterTurn == after.skipMonsterTurn && before.smokeBombUsed == after.smokeBombUsed)
         << '/' << (before.potionCount == after.potionCount && before.potionCapacity == after.potionCapacity
                     && before.potions == after.potions)
-        << '/' << (before.miscBits == after.miscBits);
+        << '/' << (before.miscBits == after.miscBits)
+        << " curCardQueueItem=" << (before.curCardQueueItem == after.curCardQueueItem);
+    out << " hand_uids ";
+    for (int i = 0; i < before.cards.cardsInHand; ++i) out << before.cards.hand[i].uniqueId << ',';
+    out << '>';
+    for (int i = 0; i < after.cards.cardsInHand; ++i) out << after.cards.hand[i].uniqueId << ',';
     return out.str();
 }
 
@@ -402,6 +419,8 @@ public:
     bool runContextInitialized = false;
     int rerootExact = 0;
     int rerootFallback = 0;
+    std::int64_t inheritedVisits = 0;
+    std::string rerootMissDiagnostic;
     sts::search::SearchStats searchStatsBefore {};
 
     void configure(const SilverSearchConfig &config) {
@@ -418,6 +437,8 @@ public:
     // deliberately forces setRoot so the open-addressed table stays sparse.
     void beginAt(const sts::BattleContext &state, const SilverSearchConfig &config) {
         constexpr std::size_t kReusePoolCap = 32 * 1024;
+        inheritedVisits = 0;
+        rerootMissDiagnostic.clear();
         if (!searcher) {
             searcher = std::make_unique<sts::search::BattleSearcher>(state);
             configure(config);
@@ -428,7 +449,20 @@ public:
                     candidate != nullptr && searcher->allNodes.size() < kReusePoolCap) {
                 searcher->rerootAt(candidate);
                 ++rerootExact;
+                inheritedVisits = searcher->root->simulationCount;
             } else {
+                if (previousBest->node != nullptr) {
+                    if (!previousBest->node->isRandomNode) {
+                        rerootMissDiagnostic = selectionStateSummary(previousBest->node->state, state);
+                    } else {
+                        std::ostringstream out;
+                        for (const auto &outcome : previousBest->node->edges) {
+                            if (outcome.node != nullptr)
+                                out << '[' << selectionStateSummary(outcome.node->state, state) << ']';
+                        }
+                        rerootMissDiagnostic = out.str();
+                    }
+                }
                 searcher->setRoot(state);
                 ++rerootFallback;
             }
@@ -647,6 +681,8 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
         sts::BattleContext state = session.materializeAndBegin(wire, config);
         result.rerootExact = session.rerootExact - rerootExactBefore;
         result.rerootFallback = session.rerootFallback - rerootFallbackBefore;
+        result.inheritedVisits = session.inheritedVisits;
+        result.rerootMissDiagnostic = session.rerootMissDiagnostic;
         const auto task = state.cardSelectInfo.cardSelectTask;
         if (state.inputState == sts::InputState::CARD_SELECT
                 && (task == sts::CardSelectTask::EXHAUST_MANY || task == sts::CardSelectTask::GAMBLE)) {

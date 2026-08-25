@@ -6,8 +6,10 @@
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
+#include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverConversion.h"
+#include "sim/search/SilverSemanticAction.h"
 
 using namespace sts;
 
@@ -61,6 +63,44 @@ int main() {
     check(reuse.accepted && reuse.rerootExact == 1 && reuse.rerootFallback == 0
               && reuse.inheritedVisits > 0,
           "private Silver session must exact-reroot and retain prior subtree visits");
+
+    // Cross the actual boundary once: Silver emits an index-free semantic
+    // action, the ordinary live simulator executes its resolved action, and
+    // the next wire is materialized with the same public battle seed. This
+    // catches an accidental per-decision root seed, which would make Silver
+    // equalForSearch reject every live successor before it reaches reroot.
+    auto boundaryKnowledge = firstKnowledge;
+    auto boundaryLive = first;
+    auto boundarySession = silver_bridge::makeSilverSearchSession();
+    const auto firstBoundaryDecision = silver_bridge::runSilverDecision(*boundarySession, firstWire, reuseConfig);
+    const auto firstBoundaryAction = search::resolveSilverSemanticAction(
+        boundaryLive, firstBoundaryDecision.action);
+    check(firstBoundaryDecision.accepted
+              && firstBoundaryDecision.action.type == silver_bridge::SemanticActionType::CARD
+              && firstBoundaryAction.ok,
+          "first real-boundary Silver decision must be a resolvable deterministic card action");
+    if (firstBoundaryDecision.accepted && firstBoundaryAction.ok) {
+        search::ScumSearchAgent2 executor;
+        executor.takeAction(boundaryLive, firstBoundaryAction.action);
+        const auto secondWire = convert(boundaryLive, gc, boundaryKnowledge);
+        const auto secondBoundaryDecision = silver_bridge::runSilverDecision(
+            *boundarySession, secondWire, reuseConfig);
+        if (!(secondBoundaryDecision.accepted && secondBoundaryDecision.rerootExact == 1
+                  && secondBoundaryDecision.rerootFallback == 0
+                  && secondBoundaryDecision.inheritedVisits > 0)) {
+            std::cerr << "  live-boundary reroot diagnostic: accepted=" << secondBoundaryDecision.accepted
+                      << " exact=" << secondBoundaryDecision.rerootExact
+                      << " fallback=" << secondBoundaryDecision.rerootFallback
+                      << " inherited=" << secondBoundaryDecision.inheritedVisits
+                      << " first_semantic=" << static_cast<int>(firstBoundaryDecision.action.type)
+                      << " first_live_bits=" << firstBoundaryAction.action.bits
+                      << " private_miss=" << secondBoundaryDecision.rerootMissDiagnostic << '\n';
+        }
+        check(secondBoundaryDecision.accepted && secondBoundaryDecision.rerootExact == 1
+                  && secondBoundaryDecision.rerootFallback == 0
+                  && secondBoundaryDecision.inheritedVisits > 0,
+              "live->wire successor must exact-reroot with inherited visits under a stable battle seed");
+    }
 
     BattleContext alteredRng = first;
     alteredRng.aiRng = Random(1); alteredRng.cardRandomRng = Random(2); alteredRng.miscRng = Random(3);
