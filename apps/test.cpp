@@ -1035,14 +1035,16 @@ int testS3GenericChanceTree(std::uint64_t seed) {
             == search::ActionType::END_TURN) { endIndex = i; break; }
     check(endIndex != UINT32_MAX, "root has no semantic END_TURN action");
     if (endIndex != UINT32_MAX) {
-        const auto childA = searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsA);
-        const auto childB = searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsB);
+        const auto outcomeA = searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsA);
+        const auto outcomeB = searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsB);
+        const auto childA = outcomeA.child;
+        const auto childB = outcomeB.child;
         check(childA != childB, "different observed outcomes share a decision node");
         check(searcher.decisionNodes[childA].obs == obsA && searcher.decisionNodes[childB].obs == obsB,
               "outcome child did not retain its exact observation");
 
-        const auto childAAgain = searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsA);
-        check(childAAgain == childA
+        const auto outcomeAAgain = searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsA);
+        check(outcomeAAgain.child == childA && outcomeAAgain.outcomeIndex == outcomeA.outcomeIndex
               && searcher.decisionNodes[searcher.genericRoot].actions[endIndex].outcomes.size() == 2,
               "same observation did not reuse exactly one outcome child");
 
@@ -1051,24 +1053,38 @@ int testS3GenericChanceTree(std::uint64_t seed) {
         hiddenRng.cardRandomRng.counter += 7;
         const auto sameVisible = CombatObservation::fromBattleContext(hiddenRng);
         check(sameVisible == obsA
-              && searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, sameVisible) == childA,
+              && searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, sameVisible).child == childA,
               "hidden RNG changed generic outcome identity");
 
         auto &edge = searcher.decisionNodes[searcher.genericRoot].actions[endIndex];
-        std::uint32_t indexA = UINT32_MAX, indexB = UINT32_MAX;
-        for (std::uint32_t i = 0; i < edge.outcomes.size(); ++i) {
-            if (edge.outcomes[i].child == childA) indexA = i;
-            if (edge.outcomes[i].child == childB) indexB = i;
-        }
-        searcher.backpropagateGeneric({{searcher.genericRoot, endIndex, indexA}}, 10.0, {endTurn});
-        searcher.backpropagateGeneric({{searcher.genericRoot, endIndex, indexB}}, 30.0, {endTurn});
+        searcher.backpropagateGeneric({{searcher.genericRoot, endIndex, outcomeA.outcomeIndex}}, 10.0, {endTurn});
+        searcher.backpropagateGeneric({{searcher.genericRoot, endIndex, outcomeB.outcomeIndex}}, 30.0, {endTurn});
         check(edge.visits == 2 && edge.valueSum == 40.0,
               "aggregate action backup is not the sampled-outcome sum");
         check(searcher.decisionNodes[childA].visits == 1 && searcher.decisionNodes[childB].visits == 1,
               "conditioned child statistics were not kept distinct");
         searcher.decisionNodes[childA].valueSum = -1000.0;
-        check(searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsA) == childA,
+        check(searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsA).child == childA,
               "outcome dispatch was selected by child value rather than observation");
+
+        // The ninth outcome lazily enables the hash lookup. Dispatch must
+        // return the exact existing outcome-vector index directly; traversal
+        // must not rescan the outcome table after the lookup has succeeded.
+        for (int i = 0; i < 7; ++i) {
+            BattleContext distinct = postA;
+            distinct.player.curHp -= i + 1;
+            const auto created = searcher.dispatchGenericOutcome(
+                searcher.genericRoot, endIndex,
+                CombatObservation::fromBattleContext(distinct));
+            check(created.outcomeIndex == static_cast<std::uint32_t>(i + 2),
+                  "outcome dispatch did not return its created vector index");
+        }
+        check(searcher.decisionNodes[searcher.genericRoot].actions[endIndex].hasOutcomeLookup,
+              "ninth generic outcome did not enable the hash lookup");
+        const auto hashedA = searcher.dispatchGenericOutcome(searcher.genericRoot, endIndex, obsA);
+        check(hashedA.child == childA && hashedA.outcomeIndex == outcomeA.outcomeIndex
+                  && searcher.genericDiag.hashedLookupQueries > 0,
+              "hashed outcome lookup did not return the existing indexed child");
 
         // Same visible successor reached below different parent histories must
         // remain separate: G1 has no global observation transposition table.
@@ -1081,8 +1097,8 @@ int testS3GenericChanceTree(std::uint64_t seed) {
         searcher.decisionNodes.push_back(parent1);
         const auto p2 = static_cast<search::BattleScumSearcher3::DecisionNodeId>(searcher.decisionNodes.size());
         searcher.decisionNodes.push_back(parent2);
-        check(searcher.dispatchGenericOutcome(p1, 0, obsA)
-              != searcher.dispatchGenericOutcome(p2, 0, obsA),
+        check(searcher.dispatchGenericOutcome(p1, 0, obsA).child
+              != searcher.dispatchGenericOutcome(p2, 0, obsA).child,
               "equal observation was globally fused across histories");
 
         // Real reroot must use the observed successor, not the highest-value

@@ -4600,7 +4600,7 @@ int genericActionClass(ActionType type) {
 }
 }
 
-BattleScumSearcher3::DecisionNodeId BattleScumSearcher3::dispatchGenericOutcome(
+BattleScumSearcher3::DispatchedOutcome BattleScumSearcher3::dispatchGenericOutcome(
     DecisionNodeId parentId, std::uint32_t actionIndex, const CombatObservation &obs) {
     auto &edge = decisionNodes[parentId].actions[actionIndex];
     if (const auto hit = findGenericOutcome(edge, obs)) {
@@ -4608,7 +4608,7 @@ BattleScumSearcher3::DecisionNodeId BattleScumSearcher3::dispatchGenericOutcome(
         ++entry.visits;
         ++genericDiag.outcomeHits;
         ++genericDiag.outcomeHitsByType[genericActionClass(edge.action.type)];
-        return entry.child;
+        return {entry.child, *hit};
     }
 
     const DecisionNodeId child = static_cast<DecisionNodeId>(decisionNodes.size());
@@ -4635,7 +4635,7 @@ BattleScumSearcher3::DecisionNodeId BattleScumSearcher3::dispatchGenericOutcome(
     } else if (reacquired.hasOutcomeLookup) {
         reacquired.outcomeLookup.emplace(obs.visibleHash(), outcomeIndex);
     }
-    return child;
+    return {child, outcomeIndex};
 }
 
 void BattleScumSearcher3::backpropagateGeneric(
@@ -4713,6 +4713,7 @@ void BattleScumSearcher3::stepGeneric() {
         }
 
         const bool wasExpanded = node.expanded;
+        std::vector<std::pair<Action, SemanticActionKey>> concreteActions;
         if (!wasExpanded) {
             expandGenericDecision(nodeId, state);
             if (decisionNodes[nodeId].actions.empty()) {
@@ -4727,13 +4728,13 @@ void BattleScumSearcher3::stepGeneric() {
             // semantic choice set in every compatible particle world.  Do not
             // silently union-expand here: that would hide an observation or
             // action-canonicalization defect.
-            const auto concrete = genericConcreteActions(state);
+            concreteActions = genericConcreteActions(state);
             for (const auto &stored : node.actions) {
-                const bool found = std::any_of(concrete.begin(), concrete.end(),
+                const bool found = std::any_of(concreteActions.begin(), concreteActions.end(),
                     [&](const auto &candidate) { return candidate.second == stored.action; });
                 if (!found) ++genericDiag.semanticActionSetMissing;
             }
-            for (const auto &[action, key] : concrete) {
+            for (const auto &[action, key] : concreteActions) {
                 const bool found = std::any_of(node.actions.begin(), node.actions.end(),
                     [&](const auto &stored) { return stored.action == key; });
                 if (!found) ++genericDiag.semanticActionSetExtra;
@@ -4747,7 +4748,14 @@ void BattleScumSearcher3::stepGeneric() {
             ? std::uniform_int_distribution<int>(0, static_cast<int>(decisionNodes[nodeId].actions.size()) - 1)(rng)
             : selectGenericAction(decisionNodes[nodeId]);
         const SemanticActionKey key = decisionNodes[nodeId].actions[actionIndex].action;
-        const auto resolved = resolveGenericAction(key, state);
+        const auto resolved = wasExpanded
+            ? [&]() -> std::optional<Action> {
+                const auto it = std::find_if(concreteActions.begin(), concreteActions.end(),
+                    [&](const auto &candidate) { return candidate.second == key; });
+                return it == concreteActions.end()
+                    ? std::nullopt : std::optional<Action>(it->first);
+            }()
+            : resolveGenericAction(key, state);
         if (!resolved || !resolved->isValidAction(state)) {
             ++genericDiag.semanticResolutionFailures;
             throw std::runtime_error("Searcher3 generic chance tree semantic action resolution failure");
@@ -4759,15 +4767,21 @@ void BattleScumSearcher3::stepGeneric() {
         // observeRngExposureAction is Searcher3's shared execution wrapper;
         // it has already applied the concrete action exactly once above.
         const auto postObs = CombatObservation::fromBattleContext(state);
-        const DecisionNodeId child = dispatchGenericOutcome(nodeId, actionIndex, postObs);
-        auto &edgeAfter = decisionNodes[nodeId].actions[actionIndex];
-        std::uint32_t outcomeIndex = 0;
-        for (; outcomeIndex < edgeAfter.outcomes.size(); ++outcomeIndex)
-            if (edgeAfter.outcomes[outcomeIndex].child == child && edgeAfter.outcomes[outcomeIndex].obsHash == postObs.visibleHash())
-                break;
-        path.emplace_back(nodeId, static_cast<std::uint32_t>(actionIndex), outcomeIndex);
+        const auto outcome = dispatchGenericOutcome(nodeId, actionIndex, postObs);
+        path.emplace_back(nodeId, static_cast<std::uint32_t>(actionIndex), outcome.outcomeIndex);
         if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(postObs);
-        nodeId = child;
+
+        // Match legacy Searcher3's post-action prune boundary. The outcome is
+        // already routed by the actual observation, but a forced-death state
+        // must evaluate directly before chain compression or rollout.
+        if (g_s3Prune && canPruneAsDead(state)) {
+            ++diag.leafDirectEval;
+            genericDiag.treeDepthSum += depth;
+            backpropagateGeneric(path, 0.0, actionStack);
+            finishRngExposureSimulation();
+            return;
+        }
+        nodeId = outcome.child;
 
         // After the explicit generic-tree frontier, preserve the legacy
         // rollout setup exactly: chain compression is a rollout/frontier

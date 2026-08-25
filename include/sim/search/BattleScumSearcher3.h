@@ -263,6 +263,14 @@ class BattleScumSearcher3;
             std::int64_t visits = 0;
         };
 
+        // Outcome dispatch needs both pieces of traversal state. Returning
+        // the vector index avoids a second scan after a successful hashed
+        // lookup merely to reconstruct the backpropagation path.
+        struct DispatchedOutcome {
+            DecisionNodeId child = kInvalidDecisionNode;
+            std::uint32_t outcomeIndex = 0;
+        };
+
         struct ActionEdge {
             SemanticActionKey action;
             float prior = 0.f;
@@ -598,9 +606,9 @@ class BattleScumSearcher3;
         int selectGenericAction(const DecisionNode &node) const;
         std::optional<std::uint32_t> findGenericOutcome(ActionEdge &edge,
                                                         const CombatObservation &obs);
-        DecisionNodeId dispatchGenericOutcome(DecisionNodeId parentId,
-                                              std::uint32_t actionIndex,
-                                              const CombatObservation &obs);
+        DispatchedOutcome dispatchGenericOutcome(DecisionNodeId parentId,
+                                                 std::uint32_t actionIndex,
+                                                 const CombatObservation &obs);
         void backpropagateGeneric(
             const std::vector<std::tuple<DecisionNodeId, std::uint32_t,
                                          std::uint32_t>> &path,
