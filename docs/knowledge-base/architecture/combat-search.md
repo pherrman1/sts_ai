@@ -2,6 +2,8 @@
 
 Last verified: 2026-08-11 against the current working tree (per-encounter combat value specialization implemented opt-in: `STS_VNET_PER_ENCOUNTER` dir overlay + `combat_mlp_meta_v1` in-file deltas with `predict(bc)` dispatch, `vnettest --encounter` parity mode — gate pending; covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default superseded by the §148 7k-tuned model, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending; experimental zero-mean ranking correction `STS_VNET_RANK_CORR` implemented opt-in (`tools/train_rank_correction.py`, additive on the vnet/PVNet leaf + fair-path search-complete clamp, off by default, byte-identical when unset).
 
+Experiment 4 persistent-END_TURN subsection last verified: 2026-08-25.
+
 ## Purpose
 
 Describe the combat state boundary, action/search flow, hidden-information
@@ -986,6 +988,34 @@ selection also requires `!g_pvnetValueOnly`, matching S2.
 - Two action features come from `Expert` play/obtain weights; the learned policy
   input is therefore not free of hand-authored features
   (`src/sim/search/CombatValueNet.cpp::combatFillActionFeatures`).
+
+### Persistent END_TURN chance continuations (Experiment 4, opt-in)
+
+`STS_S3_PERSISTENT_ENDTURN_CHANCE=1` preserves `Edge::child` as the single
+aggregate action-level value/visit stream used by parent PUCT, but dispatches
+eligible executed END_TURN transitions into persistent successor `Node`s keyed
+by the complete existing `CombatObservation` equality contract. The outcome is
+selected only by the concrete post-action observation produced by the current
+simulation particle; outcome Q, prior, and visit counts never select stochastic
+results. Backpropagation includes both the conditioned child and aggregate
+action container. The default is off, and the treatment is rejected when either
+the legacy-topology `STS_S3_STRATEGY_FUSION_DIAG` or the eager
+`STS_S3_ENDTURN_MARGINALIZE` treatment is also enabled.
+
+Eligibility uses its own `STS_S3_PERSISTENT_ENDTURN_MAX_PILE` boundary (default
+8), independent of the earlier marginalization prototype: pre-action outcome is
+`UNDECIDED`, action is END_TURN, draw pile size is at most the configured bound,
+and the boundary is not an empty-draw/nonempty-discard immediate reshuffle.
+Unlike the rejected eager marginalization prototype, each simulation executes
+exactly one normal sampled transition and creates or reuses only that observed
+outcome. There is no widening or outcome cap. Process-exit diagnostics report
+eligible/ineligible visits, containers, new/reused outcomes, reuse rate, maximum
+outcomes, and the final container-size histogram (bins 1 through 7 and 8+).
+They also compare each container's pre-action visible hash with its first visit,
+using the same hash semantics as existing node observation-stability tracking,
+to identify legacy edges that receive multiple visible pre-states. Outcome
+children remain keyed by exact full `CombatObservation` equality, not this
+diagnostic hash.
 
 ## Known limitations
 

@@ -61,6 +61,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-25 | [`2026-08-25-s3-persistent-endturn-chance.md`](2026-08-25-s3-persistent-endturn-chance.md) | Experiment 4 adds default-off observation-conditioned persistent END_TURN continuations with one aggregate action stream; the 8-seed smoke exercised 62.92% outcome reuse with no measured compute penalty and remains non-decisive for gameplay. |
 | 2026-08-23 | [`2026-08-23-s3-strategy-fusion-diagnostic.md`](2026-08-23-s3-strategy-fusion-diagnostic.md) | Implemented the off-by-default END_TURN strategy-fusion shadow probe; smoke found a draw-pile template-order fairness caveat, which the side-search template canonicalizes without changing normal Searcher3, and deferred the decision-bearing run pending independent review. |
 | 2026-08-24 | [`2026-08-24-cmake-debug-build-time.md`](2026-08-24-cmake-debug-build-time.md) | Debug builds use automatic parallelism without forced optimization/LTO; Release retains optimization/LTO/OpenMP; the Python module reuses PIC core objects; full CI target coverage stays intact. |
 | 2026-08-23 | [`2026-08-23-s3-always-q.md`](2026-08-23-s3-always-q.md) | Searcher3 immediate-Q mechanism diagnostic: negative on the sampled ordinary/Act-1-elite corpus, late-first-win mechanism inconclusive, and no Phase B. |
