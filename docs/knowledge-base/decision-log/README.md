@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-25 | [`2026-08-25-e3c-conditional-runwin.md`](2026-08-25-e3c-conditional-runwin.md) | E3c conditional E2c critic is `E3C_INCONCLUSIVE`; source-seed instability prevents promotion, and R=4 risk summaries do not justify CVaR or distributional-model integration. |
 | 2026-08-24 | [`2026-08-24-s3-sibling-crn-diagnostic.md`](2026-08-24-s3-sibling-crn-diagnostic.md) | Added an offline fixed-action Searcher3 diagnostic for independent versus exactly matched sibling belief particles; historical root-Q CRN remains untouched and the formal experiment awaits review. |
 | 2026-08-24 | [`2026-08-24-e3a-direct-runwin-ranking.md`](2026-08-24-e3a-direct-runwin-ranking.md) | E3a implementation: default-off, root/future-CRN direct eventual-run reference for exact source leaves; no scientific collection or gameplay integration. |
 | 2026-08-23 | [`2026-08-23-s3-q-gate-timing.md`](2026-08-23-s3-q-gate-timing.md) | Corrected Searcher3 Q-gate timing result: `bestActionSequence` opens the baseline gate by simulation 10 in 99.91% of 3,449 searches; Always-Q line stopped. |
@@ -62,6 +63,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-25 | [`2026-08-25-e3b-paired-discordance.md`](2026-08-25-e3b-paired-discordance.md) | E3b exploratory paired-discordant-future leaf ranking is `E3B_SURVIVAL_ONLY`; no E2c promotion or automatic extension. |
 | 2026-08-25 | [`2026-08-25-s3-persistent-endturn-chance.md`](2026-08-25-s3-persistent-endturn-chance.md) | Experiment 4 adds default-off observation-conditioned persistent END_TURN continuations with one aggregate action stream; the 8-seed smoke exercised 62.92% outcome reuse with no measured compute penalty and remains non-decisive for gameplay. |
 | 2026-08-23 | [`2026-08-23-s3-strategy-fusion-diagnostic.md`](2026-08-23-s3-strategy-fusion-diagnostic.md) | Implemented the off-by-default END_TURN strategy-fusion shadow probe; smoke found a draw-pile template-order fairness caveat, which the side-search template canonicalizes without changing normal Searcher3, and deferred the decision-bearing run pending independent review. |
 | 2026-08-24 | [`2026-08-24-cmake-debug-build-time.md`](2026-08-24-cmake-debug-build-time.md) | Debug builds use automatic parallelism without forced optimization/LTO; Release retains optimization/LTO/OpenMP; the Python module reuses PIC core objects; full CI target coverage stays intact. |
