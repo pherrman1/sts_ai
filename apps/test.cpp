@@ -1136,6 +1136,99 @@ int testS3GenericChanceTree(std::uint64_t seed) {
     return 1;
 }
 
+// G1 root-particle purity regression.  A stale carried particle can share
+// CardIds with the real draw pile while differing in player-visible instance
+// data such as upgrade state or temporary cost.  Generic roots must preserve
+// the exact CombatObservation and use the normal fallback shuffle instead of
+// installing that stale vector.
+int testS3GenericRootParticleObservation(std::uint64_t seed) {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const char *message) {
+        if (!ok) {
+            std::cout << "s3_generic_root_particle_observation FAIL: " << message << '\n';
+            ++failures;
+        }
+    };
+    const bool savedGeneric = search::g_s3GenericChanceTree;
+    search::g_s3GenericChanceTree = true;
+
+    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+    BattleContext root;
+    root.init(gc, MonsterEncounter::CULTIST);
+    root.cards.drawPile.clear();
+    const CardInstance bash = CardInstance(CardId::BASH);
+    const CardInstance bashUpgraded = CardInstance(CardId::BASH, true);
+    root.cards.drawPile = {bash, bashUpgraded};
+    const auto rootObs = CombatObservation::fromBattleContext(root);
+
+    search::BattleScumSearcher3 searcher(root, seed, 0, 1);
+    auto &stale = searcher.belief.particles.front();
+    stale.drawPileOrder = {bash, bash};  // same CardIds, wrong visible multiset
+
+    BattleContext applied = root;
+    searcher.applyParticle(applied, stale);
+    check(CombatObservation::fromBattleContext(applied) == rootObs,
+          "generic particle application changed the root observation");
+    check(!searcher.diagnosticParticleAppliedExactly
+              && searcher.diagnosticParticleUsedFallback,
+          "generic particle accepted a CardId-only stale draw order");
+
+    // The safeguard is deliberately generic-only.  Keep feature-OFF's
+    // historical particle-install predicate unchanged so this correction
+    // cannot alter the legacy Searcher3 experiment/control path.
+    search::g_s3GenericChanceTree = false;
+    BattleContext legacyApplied = root;
+    searcher.applyParticle(legacyApplied, stale);
+    check(CombatObservation::fromBattleContext(legacyApplied) != rootObs
+              && searcher.diagnosticParticleAppliedExactly
+              && !searcher.diagnosticParticleUsedFallback,
+          "feature-OFF particle application no longer uses its legacy predicate");
+    search::g_s3GenericChanceTree = true;
+
+    // Exercise the same stale particle through a promoted generic root.  This
+    // is the real-reuse boundary that previously surfaced the hard invariant
+    // during the paired smoke; the first generic search must not throw.
+    searcher.expandGenericDecision(searcher.genericRoot, root);
+    std::uint32_t endIndex = UINT32_MAX;
+    for (std::uint32_t i = 0;
+         i < searcher.decisionNodes[searcher.genericRoot].actions.size(); ++i) {
+        if (searcher.decisionNodes[searcher.genericRoot].actions[i].action.type
+            == search::ActionType::END_TURN) {
+            endIndex = i;
+            break;
+        }
+    }
+    check(endIndex != UINT32_MAX, "root has no END_TURN edge for reroot fixture");
+    if (endIndex != UINT32_MAX) {
+        BattleContext realPost = root;
+        ++realPost.player.block;  // distinct real observed successor
+        const auto realObs = CombatObservation::fromBattleContext(realPost);
+        const auto child = searcher.dispatchGenericOutcome(
+            searcher.genericRoot, endIndex, realObs);
+        check(searcher.advanceRoot(search::Action(search::ActionType::END_TURN), realPost),
+              "generic reroot did not promote the exact real observation child");
+        check(searcher.genericRoot == child.child,
+              "generic reroot promoted the wrong observed child");
+        searcher.belief.particles.front().drawPileOrder = {bash, bash};
+        try {
+            searcher.search(1);
+        } catch (const std::exception &e) {
+            std::cout << "s3_generic_root_particle_observation exception: "
+                      << e.what() << '\n';
+            ++failures;
+        }
+        check(searcher.genericDiag.decisionObservationMismatches == 0,
+              "carried generic root violated its observation invariant");
+    }
+
+    search::g_s3GenericChanceTree = savedGeneric;
+    if (failures == 0) {
+        std::cout << "s3_generic_root_particle_observation PASS\n";
+        return 0;
+    }
+    return 1;
+}
+
 int testPrune(std::uint64_t seed) {
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
     BattleContext bc;
@@ -3343,6 +3436,8 @@ int main(int argc, const char* argv[]) {
         return testS3PersistentEndTurnChance(std::stoull(argv[2]));
     } else if (command == "s3_generic_chance_tree") {
         return testS3GenericChanceTree(std::stoull(argv[2]));
+    } else if (command == "s3_generic_root_particle_observation") {
+        return testS3GenericRootParticleObservation(std::stoull(argv[2]));
     } else if (command == "s3_generic_cardselect_semantics") {
         return testS3GenericCardSelectSemantics(std::stoull(argv[2]));
 

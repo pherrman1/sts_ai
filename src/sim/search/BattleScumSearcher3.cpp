@@ -298,12 +298,13 @@ static bool sameCardMultiset(const std::vector<CardInstance> &a,
     return true;
 }
 
-// Diagnostic-only identity check. Gameplay particle application intentionally
-// retains the historical CardId-only predicate; posterior-valid diagnostics
-// must also distinguish upgrades, temporary cost, specialData, and
-// freeToPlayOnce.
-static bool sameDiagnosticCardMultiset(const std::vector<CardInstance> &a,
-                                       const std::vector<CardInstance> &b) {
+// Full visible card identity.  CombatObservation uses this same field set for
+// pile equality, so generic decision-node traversal must use it before it
+// installs a particle draw order at a root.  The legacy backend deliberately
+// retains its historical CardId-only predicate above for feature-OFF
+// equivalence.
+static bool sameVisibleCardMultiset(const std::vector<CardInstance> &a,
+                                    const std::vector<CardInstance> &b) {
     if (a.size() != b.size()) return false;
     std::vector<FullHiddenCardId> as, bs;
     as.reserve(a.size()); bs.reserve(b.size());
@@ -319,7 +320,8 @@ static bool sameDiagnosticCardMultiset(const std::vector<CardInstance> &a,
 // match the current state (stale particle after tree reuse).
 static void applyParticleImpl(BattleContext &state,
                               const HiddenBattleState &particle,
-                              std::mt19937_64 &fallbackRng) {
+                              std::mt19937_64 &fallbackRng,
+                              bool requireFullVisiblePileIdentity = false) {
     state.shuffleRng.seed0    = particle.shuffleRngSeed0;
     state.shuffleRng.seed1    = particle.shuffleRngSeed1;
     state.shuffleRng.counter  = particle.shuffleRngCounter;
@@ -340,8 +342,11 @@ static void applyParticleImpl(BattleContext &state,
     state.potionRng.counter = particle.potionRngCounter;
     // Install the sampled draw order when it still matches the copied pile;
     // stale particles (tree reuse across decisions) fall back to a shuffle.
+    const bool samePile = requireFullVisiblePileIdentity
+        ? sameVisibleCardMultiset(particle.drawPileOrder, state.cards.drawPile)
+        : sameCardMultiset(particle.drawPileOrder, state.cards.drawPile);
     if (particle.drawPileOrder.size() == (size_t)state.cards.drawPile.size()
-        && sameCardMultiset(particle.drawPileOrder, state.cards.drawPile)) {
+        && samePile) {
         std::copy(particle.drawPileOrder.begin(), particle.drawPileOrder.end(),
                   state.cards.drawPile.begin());
     } else {
@@ -352,9 +357,15 @@ static void applyParticleImpl(BattleContext &state,
 
 void BattleScumSearcher3::applyParticle(BattleContext &state,
                                         const HiddenBattleState &particle) {
+    // A generic DecisionNode is keyed by the exact CombatObservation.  Its
+    // root particle may change hidden order/RNG but must never replace a
+    // visible card instance with a same-CardId stale copy after real reroot.
+    const bool genericTree = g_s3GenericChanceTree;
     const bool exact = particle.drawPileOrder.size() == state.cards.drawPile.size()
-        && sameCardMultiset(particle.drawPileOrder, state.cards.drawPile);
-    applyParticleImpl(state, particle, rng);
+        && (genericTree
+            ? sameVisibleCardMultiset(particle.drawPileOrder, state.cards.drawPile)
+            : sameCardMultiset(particle.drawPileOrder, state.cards.drawPile));
+    applyParticleImpl(state, particle, rng, genericTree);
     diagnosticParticleAppliedExactly = exact;
     diagnosticParticleUsedFallback = !exact;
 }
@@ -401,7 +412,7 @@ void applyHiddenState(BattleContext &state, const HiddenBattleState &particle,
 bool applyHiddenStateExact(BattleContext &state,
                            const HiddenBattleState &particle) {
     if (particle.drawPileOrder.size() != state.cards.drawPile.size()
-        || !sameDiagnosticCardMultiset(particle.drawPileOrder, state.cards.drawPile))
+        || !sameVisibleCardMultiset(particle.drawPileOrder, state.cards.drawPile))
         return false;
     state.shuffleRng.seed0 = particle.shuffleRngSeed0;
     state.shuffleRng.seed1 = particle.shuffleRngSeed1;
@@ -4598,6 +4609,85 @@ int genericActionClass(ActionType type) {
     default: return 4;
     }
 }
+
+bool sameVisiblePlayerState(const PlayerVisibleState &a,
+                            const PlayerVisibleState &b) {
+    return a.curHp == b.curHp && a.maxHp == b.maxHp && a.block == b.block
+        && a.energy == b.energy && a.strength == b.strength
+        && a.dexterity == b.dexterity && a.focus == b.focus
+        && a.artifact == b.artifact && a.stance == b.stance && a.gold == b.gold
+        && a.cardsPlayedThisTurn == b.cardsPlayedThisTurn
+        && a.attacksPlayedThisTurn == b.attacksPlayedThisTurn
+        && a.skillsPlayedThisTurn == b.skillsPlayedThisTurn
+        && a.relicCounters == b.relicCounters && a.powers == b.powers;
+}
+
+bool sameVisibleMonsterState(const MonsterVisibleState &a,
+                             const MonsterVisibleState &b) {
+    return a.id == b.id && a.curHp == b.curHp && a.maxHp == b.maxHp
+        && a.block == b.block && a.strength == b.strength
+        && a.vulnerable == b.vulnerable && a.weak == b.weak
+        && a.poison == b.poison && a.artifact == b.artifact
+        && a.incomingDamage == b.incomingDamage && a.incomingHits == b.incomingHits
+        && a.lastMove == b.lastMove && a.isAttacking == b.isAttacking
+        && a.isTargetable == b.isTargetable;
+}
+
+bool sameVisibleMonsterList(const std::vector<MonsterVisibleState> &a,
+                            const std::vector<MonsterVisibleState> &b) {
+    if (a.size() != b.size()) return false;
+    for (std::size_t i = 0; i < a.size(); ++i)
+        if (!sameVisibleMonsterState(a[i], b[i])) return false;
+    return true;
+}
+
+std::string genericObservationDifference(const CombatObservation &stored,
+                                         const CombatObservation &current) {
+    std::ostringstream out;
+    const auto add = [&](const char *name) {
+        if (out.tellp() > 0) out << ',';
+        out << name;
+    };
+    if (stored.turn != current.turn) add("turn");
+    if (stored.ascension != current.ascension) add("ascension");
+    if (stored.encounter != current.encounter) add("encounter");
+    if (stored.potionCapacity != current.potionCapacity) add("potionCapacity");
+    if (stored.isCardPlayAllowed != current.isCardPlayAllowed) add("cardPlayAllowed");
+    if (stored.inputState != current.inputState) add("inputState");
+    if (stored.cardSelectTask != current.cardSelectTask) add("cardSelectTask");
+    if (stored.pickCount != current.pickCount) add("pickCount");
+    if (stored.canPickZero != current.canPickZero) add("canPickZero");
+    if (stored.canPickAnyNumber != current.canPickAnyNumber) add("canPickAnyNumber");
+    if (stored.cardSelectOffers != current.cardSelectOffers) add("cardSelectOffers");
+    if (!sameVisiblePlayerState(stored.player, current.player)) add("player");
+    if (!sameVisibleMonsterList(stored.monsters, current.monsters)) add("monsters");
+    if (!sameVisibleCardMultiset(stored.hand, current.hand)) add("hand");
+    if (!sameVisibleCardMultiset(stored.drawPileContents, current.drawPileContents)) add("drawPile");
+    if (!sameVisibleCardMultiset(stored.discardPile, current.discardPile)) add("discardPile");
+    if (!sameVisibleCardMultiset(stored.exhaustPile, current.exhaustPile)) add("exhaustPile");
+    if (stored.potions != current.potions) add("potions");
+    if (stored.relics != current.relics) add("relics");
+    return out.str();
+}
+
+void appendGenericSemanticAction(std::ostream &out,
+                                 const BattleScumSearcher3::SemanticActionKey &key) {
+    out << "type=" << static_cast<int>(key.type);
+    if (key.type == ActionType::CARD) {
+        out << ":card=" << static_cast<int>(key.card.id)
+            << ":up=" << static_cast<int>(key.card.upgradeCount)
+            << ":cost=" << static_cast<int>(key.card.costForTurn)
+            << ":free=" << key.card.freeToPlayOnce
+            << ":special=" << key.card.specialData
+            << ":target=" << key.card.target;
+    } else if (key.selectedCount > 0) {
+        out << ":selectTask=" << key.cardSelectTask
+            << ":selected=" << static_cast<int>(key.selectedCount);
+    } else if (key.type == ActionType::POTION) {
+        out << ":potion=" << static_cast<int>(key.potion)
+            << ":target=" << key.target;
+    }
+}
 }
 
 BattleScumSearcher3::DispatchedOutcome BattleScumSearcher3::dispatchGenericOutcome(
@@ -4693,6 +4783,31 @@ void BattleScumSearcher3::stepGeneric() {
         ++genericDiag.decisionNodeVisits;
         if (node.obsHash != currentObs.visibleHash() || !(node.obs == currentObs)) {
             ++genericDiag.decisionObservationMismatches;
+            // This is a hard information-state invariant.  Emit enough
+            // immutable routing and particle provenance to distinguish a
+            // corrupted action/outcome dispatch from a root-particle
+            // application that changed a visible field after real reroot.
+            std::ostringstream route;
+            for (const auto &[parentId, actionIndex, outcomeIndex] : path) {
+                if (route.tellp() > 0) route << " -> ";
+                route << "node=" << parentId << "/action=" << actionIndex << '(';
+                appendGenericSemanticAction(route,
+                    decisionNodes[parentId].actions[actionIndex].action);
+                route << ")/outcome=" << outcomeIndex;
+            }
+            std::cerr << "[s3-generic-observation-mismatch]"
+                      << " location=" << (nodeId == genericRoot ? "root" : "descendant")
+                      << " node=" << nodeId
+                      << " depth=" << depth
+                      << " decisionIndex=" << decisionIndex
+                      << " rootCarried=" << rootCarried
+                      << " particleIndex=" << diagnosticParticleIndex
+                      << " particleExact=" << diagnosticParticleAppliedExactly
+                      << " particleFallback=" << diagnosticParticleUsedFallback
+                      << " storedHash=" << node.obsHash
+                      << " currentHash=" << currentObs.visibleHash()
+                      << " differingFields=" << genericObservationDifference(node.obs, currentObs)
+                      << " route=[" << route.str() << "]\n";
             throw std::runtime_error("Searcher3 generic chance tree decision observation mismatch");
         }
         genericDiag.treeDepthMax = std::max<std::int64_t>(genericDiag.treeDepthMax, depth);
