@@ -1,0 +1,174 @@
+{
+  "budgets": {
+    "16": {
+      "best_action_agreement": {
+        "crn": 0.6044921875,
+        "difference_pp": 2.34375,
+        "independent": 0.5810546875
+      },
+      "best_action_stability": {
+        "crn": 0.666015625,
+        "independent": 0.6298828125
+      },
+      "degenerate_independent_pairs": 4,
+      "dropped_replicates": 0,
+      "invalid_attempts_crn": 0,
+      "invalid_attempts_independent": 0,
+      "sign_error": {
+        "crn": {
+          "errors": 1058,
+          "n": 2944,
+          "rate": 0.359375
+        },
+        "independent": {
+          "errors": 1097,
+          "n": 2944,
+          "rate": 0.3726222826086957
+        }
+      },
+      "standardized_mean_shift": 0.01635804040824743,
+      "states_with_any_invalid": 0,
+      "total_replicates": 1024,
+      "usable_common_replicates": 1024,
+      "usable_pairs": 92,
+      "variance_ratio": {
+        "bootstrap95": [
+          0.7634918664447188,
+          0.8796957952716362
+        ],
+        "fraction_below_1": 0.6931818181818182,
+        "median": 0.8230271521366668,
+        "q1": 0.6183993790869667,
+        "q3": 1.0892114302482347
+      }
+    },
+    "32": {
+      "best_action_agreement": {
+        "crn": 0.626953125,
+        "difference_pp": 1.171875,
+        "independent": 0.615234375
+      },
+      "best_action_stability": {
+        "crn": 0.6591796875,
+        "independent": 0.6435546875
+      },
+      "degenerate_independent_pairs": 4,
+      "dropped_replicates": 0,
+      "invalid_attempts_crn": 0,
+      "invalid_attempts_independent": 0,
+      "sign_error": {
+        "crn": {
+          "errors": 953,
+          "n": 2944,
+          "rate": 0.32370923913043476
+        },
+        "independent": {
+          "errors": 955,
+          "n": 2944,
+          "rate": 0.32438858695652173
+        }
+      },
+      "standardized_mean_shift": -0.004134067236501667,
+      "states_with_any_invalid": 0,
+      "total_replicates": 1024,
+      "usable_common_replicates": 1024,
+      "usable_pairs": 92,
+      "variance_ratio": {
+        "bootstrap95": [
+          0.825316944789933,
+          0.9856926286822595
+        ],
+        "fraction_below_1": 0.6136363636363636,
+        "median": 0.9203921522062772,
+        "q1": 0.6986371445088514,
+        "q3": 1.21005012469434
+      }
+    },
+    "4": {
+      "best_action_agreement": {
+        "crn": 0.591796875,
+        "difference_pp": 4.4921875,
+        "independent": 0.546875
+      },
+      "best_action_stability": {
+        "crn": 0.6533203125,
+        "independent": 0.638671875
+      },
+      "degenerate_independent_pairs": 12,
+      "dropped_replicates": 0,
+      "invalid_attempts_crn": 0,
+      "invalid_attempts_independent": 0,
+      "sign_error": {
+        "crn": {
+          "errors": 1243,
+          "n": 2944,
+          "rate": 0.42221467391304346
+        },
+        "independent": {
+          "errors": 1311,
+          "n": 2944,
+          "rate": 0.4453125
+        }
+      },
+      "standardized_mean_shift": 0.011333349940856444,
+      "states_with_any_invalid": 0,
+      "total_replicates": 1024,
+      "usable_common_replicates": 1024,
+      "usable_pairs": 92,
+      "variance_ratio": {
+        "bootstrap95": [
+          0.7886125651524021,
+          1.0195729720423392
+        ],
+        "fraction_below_1": 0.5625,
+        "median": 0.922234308370179,
+        "q1": 0.6969361237582247,
+        "q3": 1.161319205088836
+      }
+    },
+    "8": {
+      "best_action_agreement": {
+        "crn": 0.59765625,
+        "difference_pp": 2.9296875,
+        "independent": 0.568359375
+      },
+      "best_action_stability": {
+        "crn": 0.666015625,
+        "independent": 0.65234375
+      },
+      "degenerate_independent_pairs": 7,
+      "dropped_replicates": 0,
+      "invalid_attempts_crn": 0,
+      "invalid_attempts_independent": 0,
+      "sign_error": {
+        "crn": {
+          "errors": 1168,
+          "n": 2944,
+          "rate": 0.3967391304347826
+        },
+        "independent": {
+          "errors": 1206,
+          "n": 2944,
+          "rate": 0.40964673913043476
+        }
+      },
+      "standardized_mean_shift": 0.07649664322062363,
+      "states_with_any_invalid": 0,
+      "total_replicates": 1024,
+      "usable_common_replicates": 1024,
+      "usable_pairs": 92,
+      "variance_ratio": {
+        "bootstrap95": [
+          0.8680829232075689,
+          1.042451853385794
+        ],
+        "fraction_below_1": 0.5882352941176471,
+        "median": 0.9418592696508108,
+        "q1": 0.7206796611249124,
+        "q3": 1.2138150912960954
+      }
+    }
+  },
+  "invalid_attempts": 0,
+  "reference_actions": 94
+}
