@@ -25,6 +25,125 @@ add_library(sts_core_objects OBJECT ${sts_lightspeed_SOURCES})
 target_include_directories(sts_core_objects PUBLIC include)
 target_include_directories(sts_core_objects PUBLIC json/include)
 
+# Exact MIT-licensed Silver combat/search implementation, compiled under a
+# private namespace. This target deliberately has no dependency on live
+# sts_ai objects: it is the isolated combat model behind the future bridge.
+# The source list is the audited combat/search closure only; it excludes the
+# reference repository's apps, bindings, Python/OOC integration, training,
+# deployment, and console controllers.
+set(SILVER_MODEL_SOURCES
+    third_party/silver_lightspeed/src/combat/Actions.cpp
+    third_party/silver_lightspeed/src/combat/BattleContext.cpp
+    third_party/silver_lightspeed/src/combat/CardInstance.cpp
+    third_party/silver_lightspeed/src/combat/CardManager.cpp
+    third_party/silver_lightspeed/src/combat/CardQueue.cpp
+    third_party/silver_lightspeed/src/combat/Monster.cpp
+    third_party/silver_lightspeed/src/combat/MonsterGroup.cpp
+    third_party/silver_lightspeed/src/combat/MonsterMoveDamage.cpp
+    third_party/silver_lightspeed/src/combat/MonsterSpecific.cpp
+    third_party/silver_lightspeed/src/combat/Player.cpp
+    third_party/silver_lightspeed/src/game/Card.cpp
+    # Exact upstream RelicContainer helper block required by Silver combat
+    # evaluation/action resolution; excludes the full-game controller.
+    third_party/silver_lightspeed/bridge/SilverRelicContainer.cpp
+    third_party/silver_lightspeed/bridge/SilverCombatRandomHelpers.cpp
+    third_party/silver_lightspeed/src/sim/search/Action.cpp
+    third_party/silver_lightspeed/src/sim/search/BattleSearcher.cpp
+    third_party/silver_lightspeed/src/sim/search/ExpertKnowledge.cpp
+    third_party/silver_lightspeed/src/sim/search/SimpleAgent.cpp)
+add_library(silver_combat_model STATIC ${SILVER_MODEL_SOURCES})
+set_target_properties(silver_combat_model PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+target_include_directories(silver_combat_model PRIVATE third_party/silver_lightspeed/include)
+# The macro isolation is target-private. No live sts_ai translation unit sees
+# either renamed namespace or any Silver simulator definition.
+target_compile_definitions(silver_combat_model PRIVATE
+    sts=sts_silver
+    java=sts_silver_java
+    fixed_list=silver_fixed_list
+    rollWeightedIdx=silver_rollWeightedIdx
+    simulationIdx=silver_simulationIdx
+    initMaps=silver_initMaps
+    agentMtRunner=silver_agentMtRunner)
+target_compile_options(silver_combat_model PRIVATE -ffunction-sections -fdata-sections)
+
+add_library(silver_combat_bridge STATIC third_party/silver_lightspeed/bridge/SilverBridge.cpp)
+set_target_properties(silver_combat_bridge PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+target_include_directories(silver_combat_bridge PRIVATE third_party/silver_lightspeed/include include)
+target_compile_definitions(silver_combat_bridge PRIVATE
+    sts=sts_silver
+    java=sts_silver_java
+    fixed_list=silver_fixed_list
+    rollWeightedIdx=silver_rollWeightedIdx
+    simulationIdx=silver_simulationIdx
+    initMaps=silver_initMaps
+    agentMtRunner=silver_agentMtRunner)
+target_compile_options(silver_combat_bridge PRIVATE -ffunction-sections -fdata-sections)
+
+add_library(silver_combat_search_bridge STATIC
+    third_party/silver_lightspeed/bridge/SilverSearcherBridge.cpp
+    third_party/silver_lightspeed/bridge/SilverStateBridge.cpp)
+set_target_properties(silver_combat_search_bridge PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+target_include_directories(silver_combat_search_bridge PRIVATE third_party/silver_lightspeed/include include)
+target_compile_definitions(silver_combat_search_bridge PRIVATE
+    sts=sts_silver
+    java=sts_silver_java
+    fixed_list=silver_fixed_list
+    rollWeightedIdx=silver_rollWeightedIdx
+    simulationIdx=silver_simulationIdx
+    initMaps=silver_initMaps
+    agentMtRunner=silver_agentMtRunner)
+target_compile_options(silver_combat_search_bridge PRIVATE -ffunction-sections -fdata-sections)
+target_link_libraries(silver_combat_search_bridge PRIVATE silver_combat_model)
+
+# Normal-namespace live boundary. It is linked only by one_combat, while the
+# core agent reaches it through a default-null callback; this keeps ordinary
+# core/unit-test targets free of the full isolated Silver model.
+add_library(silver_live_backend STATIC third_party/silver_lightspeed/bridge/SilverLiveBackend.cpp)
+set_target_properties(silver_live_backend PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+target_include_directories(silver_live_backend PRIVATE include json/include)
+target_link_libraries(silver_live_backend PUBLIC silver_combat_search_bridge)
+
+add_executable(silver-native-test apps/silver_native_test.cpp)
+set_target_properties(silver-native-test PROPERTIES OUTPUT_NAME silver_native_test)
+target_include_directories(silver-native-test PRIVATE include)
+target_link_libraries(silver-native-test PRIVATE silver_combat_search_bridge)
+target_link_options(silver-native-test PRIVATE -Wl,--gc-sections)
+
+add_executable(silver-native-parity-runner third_party/silver_lightspeed/bridge/SilverNativeFixtureRunner.cpp)
+set_target_properties(silver-native-parity-runner PROPERTIES OUTPUT_NAME silver_native_parity_runner)
+set_target_properties(silver-native-parity-runner PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+target_include_directories(silver-native-parity-runner PRIVATE third_party/silver_lightspeed/include)
+target_compile_definitions(silver-native-parity-runner PRIVATE
+    sts=sts_silver java=sts_silver_java fixed_list=silver_fixed_list
+    rollWeightedIdx=silver_rollWeightedIdx simulationIdx=silver_simulationIdx
+    initMaps=silver_initMaps agentMtRunner=silver_agentMtRunner)
+target_link_libraries(silver-native-parity-runner PRIVATE silver_combat_model)
+target_link_options(silver-native-parity-runner PRIVATE -Wl,--gc-sections)
+
+# Full boundary test has its own executable: it needs both live fixture
+# construction and the isolated model, but must not bloat normal unit-test.
+add_executable(silver-bridge-test apps/silver_bridge_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(silver-bridge-test PROPERTIES OUTPUT_NAME silver_bridge_test)
+target_include_directories(silver-bridge-test PRIVATE include json/include)
+target_link_libraries(silver-bridge-test PRIVATE silver_combat_search_bridge)
+target_link_options(silver-bridge-test PRIVATE -Wl,--gc-sections)
+
+# One controlled real-combat bridge smoke. It deliberately runs no campaign
+# seeds and verifies only conversion -> Silver decision -> semantic lowering
+# -> ordinary live action execution.
+add_executable(silver-integration-test apps/silver_integration_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(silver-integration-test PROPERTIES OUTPUT_NAME silver_integration_test)
+target_include_directories(silver-integration-test PRIVATE include json/include)
+target_link_libraries(silver-integration-test PRIVATE silver_live_backend)
+target_link_options(silver-integration-test PRIVATE -Wl,--gc-sections)
+
+# Default-off observer neutrality: live combat core only, deliberately no
+# isolated Silver model linkage.
+add_executable(combat-knowledge-neutrality-test apps/combat_knowledge_neutrality_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(combat-knowledge-neutrality-test PROPERTIES OUTPUT_NAME combat_knowledge_neutrality_test)
+target_include_directories(combat-knowledge-neutrality-test PRIVATE include json/include)
+target_link_options(combat-knowledge-neutrality-test PRIVATE -Wl,--gc-sections)
+
 # The pybind11 module needs CPython development headers (python3-dev). Core
 # targets (main, one_combat, test, small-test) must not depend on them, so the
 # module is skipped with a warning when headers are absent.
@@ -61,6 +180,12 @@ target_include_directories(main PUBLIC json/include)
 add_executable(one_combat apps/one_combat.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
 target_include_directories(one_combat PUBLIC json/include)
+target_link_libraries(one_combat PRIVATE silver_live_backend)
+# The isolated model objects contain upstream full-game methods adjacent to
+# the combat methods used by Silver rollout. Their sections are compiled with
+# -ffunction-sections; discard the unreachable OOC closure instead of vendoring
+# it into the integration executable.
+target_link_options(one_combat PRIVATE -Wl,--gc-sections)
 
 add_executable(parity_test apps/parity_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(parity_test PUBLIC include)
@@ -70,6 +195,7 @@ target_include_directories(parity_test PUBLIC json/include)
 # with OUTPUT_NAME "test" to keep the build/test binary path stable.
 add_executable(unit-test apps/test.cpp apps/test_belief.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(unit-test PROPERTIES OUTPUT_NAME test)
+target_link_libraries(unit-test PRIVATE silver_combat_bridge)
 target_include_directories(unit-test PUBLIC include)
 target_link_directories(unit-test PUBLIC json::nlohmann_json)
 target_include_directories(unit-test PUBLIC json/include)
@@ -130,6 +256,11 @@ add_test(NAME s3_rand64_prior_sampler COMMAND $<TARGET_FILE:unit-test> s3_rand64
 add_test(NAME rejuv_conditional_blocks COMMAND $<TARGET_FILE:unit-test> rejuv_conditional_blocks)
 add_test(NAME live_rejuv_attempt_gate COMMAND $<TARGET_FILE:unit-test> live_rejuv_attempt_gate)
 add_test(NAME e2c_observer_scope COMMAND $<TARGET_FILE:unit-test> e2c_observer_scope)
+add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge)
+add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_random_bridge)
+add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
+add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
+add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
 add_test(NAME py_compile_analyze_postcombat_raw_terminal COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_postcombat_raw_terminal.py)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME py_compile_analyze_runwin_shadow COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py)

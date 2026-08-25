@@ -39,6 +39,8 @@ namespace sts::search {
     thread_local std::function<void(const BattleContext&)> g_onCombatDecision = nullptr;
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher2&)> g_onSearchComplete = nullptr;
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher3&)> g_onSearchComplete3 = nullptr;
+    thread_local std::function<void(ScumSearchAgent2&, GameContext&, BattleContext&)>
+        g_externalCombatBackend = nullptr;
 
     bool installTransferredBelief(BattleScumSearcher3 &searcher,
                                   const Belief *pendingBelief) {
@@ -98,6 +100,11 @@ void search::ScumSearchAgent2::playout(GameContext &gc) {
     while (gc.outcome == GameOutcome::UNDECIDED && !paused) {
         if (gc.screenState == ScreenState::BATTLE) {
             bc = BattleContext();
+            if (g_externalCombatBackend) {
+                g_externalCombatBackend(*this, gc, bc);
+                bc.exitBattle(gc);
+                continue;
+            }
             bc.init(gc);
 
             playoutBattle(bc);

@@ -9,6 +9,7 @@
 #include "game/Card.h"
 
 #include "sim/search/BattleScumSearcher2.h"
+#include "sim/search/CombatKnowledge.h"
 
 using namespace sts;
 
@@ -98,6 +99,7 @@ void CardManager::createTempCardInDrawPile(int idx, CardInstance c) {
     notifyAddCardToCombat(c);
     notifyAddToDrawPile(c);
     drawPile.insert(drawPile.begin()+idx, c);
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, c);
 }
 
 void CardManager::createTempCardInDiscard(CardInstance c) {
@@ -133,14 +135,17 @@ void CardManager::createTempCardInHand(CardInstance c) {
 // **************** START Remove Methods ****************
 
 void CardManager::removeFromDrawPileAtIdx(int idx) {
-    notifyRemoveFromDrawPile(drawPile[idx]);
+    const CardInstance c = drawPile[idx];
+    notifyRemoveFromDrawPile(c);
     drawPile.erase(drawPile.begin()+idx);
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::DRAW_PILE_CARD_REMOVED, c);
 }
 
 CardInstance CardManager::popFromDrawPile() {
     auto c = drawPile.back();
     notifyRemoveFromDrawPile(c);
     drawPile.pop_back();
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::DRAW_OCCURRED, c);
     return c;
 }
 
@@ -197,6 +202,7 @@ void CardManager::insertToDrawPile(int drawPileIdx, const CardInstance &c) {
 #endif
     notifyAddToDrawPile(c);
     drawPile.insert(drawPile.begin()+drawPileIdx, c);
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, c);
 }
 
 void CardManager::moveToDrawPileTop(const CardInstance &c) {
@@ -210,11 +216,28 @@ void CardManager::moveToDrawPileTop(const CardInstance &c) {
 #endif
     notifyAddToDrawPile(c);
     drawPile.push_back(c);
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_TOP_PLACED, c);
+}
+
+void CardManager::moveToDrawPileBottom(const CardInstance &c) {
+#ifdef sts_asserts
+    if (c.getId() == CardId::INVALID) {
+        std::cerr << *g_debug_bc << '\n';
+        search::g_debug_scum_search->printSearchStack(std::cerr, true);
+        std::cerr << "attempted to move invalid card to draw pile bottom" << std::endl;
+        assert(false);
+    }
+#endif
+    notifyAddToDrawPile(c);
+    drawPile.insert(drawPile.begin(), c);
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_BOTTOM_PLACED, c);
 }
 
 void CardManager::shuffleIntoDrawPile(Random &cardRandomRng, const CardInstance &c) {
     if (drawPile.empty()) {
-        moveToDrawPileTop(c);
+        notifyAddToDrawPile(c);
+        drawPile.push_back(c);
+        search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, c);
     } else {
         int idx = cardRandomRng.random(static_cast<int>(drawPile.size()-1));
         insertToDrawPile(idx, c);
@@ -248,6 +271,11 @@ void CardManager::moveDiscardPileIntoToDrawPile() {
 
     discardPileBloodCardCount = 0;
     discardPile.clear();
+    // A discard->draw transfer changes the observable draw-pile cardinality
+    // but must not disclose its shuffled order to the epistemic tracker.
+    search::CombatKnowledgeEvent event {search::CombatKnowledgeEventType::RESHUFFLE_OCCURRED};
+    event.drawPileSize = static_cast<int>(drawPile.size());
+    search::emitCombatKnowledgeEvent(event);
 }
 
 // **************** END Move Methods ****************

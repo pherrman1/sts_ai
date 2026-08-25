@@ -7,6 +7,7 @@
 #include "game/Random.h"
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
+#include "sim/search/CombatKnowledge.h"
 
 using namespace sts;
 
@@ -629,6 +630,27 @@ bool Monster::eitherLastTwo(MonsterMoveId moveId) const {
 }
 
 void Monster::rollMove(BattleContext &bc) {
+    // Runic Dome hides the result, not the public state in which the roll is
+    // made.  Record Silver's roll-time inputs before the live aiRng resolves
+    // the move so the isolated model can represent a pending chance event.
+    // The observer receives neither moveHistory nor any RNG state.
+    if (bc.player.hasRelic<RelicId::RUNIC_DOME>()) {
+        search::HiddenIntentRollInputs inputs;
+        inputs.curHp = static_cast<std::int16_t>(curHp);
+        inputs.maxHp = static_cast<std::int16_t>(maxHp);
+        inputs.miscInfo = miscInfo;
+        const auto &knight = bc.monsters.arr[0];
+        inputs.knightCurHp = static_cast<std::int16_t>(knight.curHp);
+        inputs.knightMaxHp = static_cast<std::int16_t>(knight.maxHp);
+        inputs.knightAlive = knight.isAlive();
+        inputs.monsterTurnNumber = static_cast<std::int16_t>(bc.getMonsterTurnNumber());
+        inputs.aliveCount = static_cast<std::int8_t>(bc.monsters.getAliveCount());
+        inputs.monstersAlive = static_cast<std::int8_t>(bc.monsters.monstersAlive);
+        inputs.playerConstricted = bc.player.hasStatus<PS::CONSTRICTED>();
+        inputs.asleep = hasStatus<MS::ASLEEP>();
+        inputs.halfDead = halfDead;
+        search::emitHiddenMonsterIntentRolled(idx, inputs);
+    }
     auto miscInfoCopy = miscInfo;
 
     const auto move = getMoveForRoll(bc, miscInfoCopy, bc.aiRng.random(99));

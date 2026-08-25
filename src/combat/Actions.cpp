@@ -3,6 +3,7 @@
 //
 
 #include "combat/Actions.h"
+#include "sim/search/CombatKnowledge.h"
 #include "combat/BattleContext.h"
 #include "game/Game.h"
 
@@ -199,6 +200,7 @@ Action Actions::ShuffleDrawPile() {
                 bc.cards.drawPile.end(),
                 java::Random(bc.shuffleRng.randomLong())
         );
+        search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::SHUFFLE_OCCURRED);
     }};
 }
 

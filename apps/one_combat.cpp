@@ -52,6 +52,7 @@
 #include "sim/search/CombatPVNet.h"
 #include "sim/search/CombatCpsiNet.h"
 #include "sim/search/BattleScumSearcher3.h"
+#include "sim/search/SilverLiveBackend.h"
 #include "sim/search/S3SiblingCrnDiagnostic.h"
 #include "sim/search/S3RejuvenationProbe.h"
 #include "sim/search/GameAction.h"
@@ -13190,6 +13191,15 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_SEARCHER3")) {      // use enhanced BattleScumSearcher3 engine
         search::g_useSearcher3 = std::atoi(d) != 0;
         if (search::g_useSearcher3) std::cout << "[Searcher3 engine ON: belief/prune/chain/live (CRN opt-in)]\n";
+    }
+    if (const char *d = std::getenv("STS_SILVER_SEARCH")) {
+        if (std::atoi(d) != 0) {
+            // The external callback takes precedence before ScumSearchAgent2
+            // enters either Searcher2 or Searcher3. It owns local Silver
+            // randomness and therefore never constructs an S3 Belief.
+            search::installSilverLiveBackend();
+            std::cout << "[isolated Silver combat backend ON: local Silver RNG/chance search; Searcher3 particles bypassed]\n";
+        }
     }
     // STS_LIVE_VALID (Phase 4, fair-tree structural fix): env opt-in as
     // recorded in §122, or default ON for the Searcher3 fair-play regime
