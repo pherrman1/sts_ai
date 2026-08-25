@@ -142,6 +142,43 @@ void emitReuseTrace(sts::BattleContext &bc, int simulations) {
               << " total_nodes=" << searcher.stats.nodesCreated << '\n';
 }
 
+void emitTransactionTrace(sts::BattleContext &bc, int simulations) {
+    sts::search::BattleSearcher searcher(bc);
+    const sts::search::BattleSearcher::Edge *previousBest = nullptr;
+    int exact = 0, fallback = 0, decisions = 0;
+    std::cout << "transaction=" << static_cast<int>(bc.cardSelectInfo.cardSelectTask);
+    for (int step = 0; step <= bc.cards.cardsInHand; ++step) {
+        if (previousBest != nullptr) {
+            if (auto *candidate = exactRerootCandidate(previousBest, bc);
+                    candidate != nullptr && searcher.allNodes.size() < 32 * 1024) {
+                searcher.rerootAt(candidate); ++exact;
+                std::cout << " reroot=exact:" << searcher.root->simulationCount;
+            } else {
+                searcher.setRoot(bc); ++fallback;
+                std::cout << " reroot=fallback";
+            }
+            previousBest = nullptr;
+        }
+        searcher.search(simulations); ++decisions;
+        const auto *best = bestEdge(searcher);
+        if (best == nullptr) { std::cout << " action=none\n"; return; }
+        std::cout << " action=" << best->action.bits;
+        if (best->action.getActionType() == sts::search::ActionType::MULTI_CARD_SELECT) {
+            std::cout << " final_bits=" << bc.cardSelectInfo.selectedBits
+                      << " decisions=" << decisions << " exact=" << exact
+                      << " fallback=" << fallback << '\n';
+            return;
+        }
+        if (best->action.getActionType() != sts::search::ActionType::SINGLE_CARD_SELECT) {
+            std::cout << " invalid_protocol\n"; return;
+        }
+        best->action.execute(bc);
+        std::cout << " selected=" << bc.cardSelectInfo.selectedBits;
+        previousBest = best;
+    }
+    std::cout << " unterminated\n";
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -160,8 +197,10 @@ int main(int argc, char **argv) {
     gc.map = std::make_shared<sts::Map>();
     seedDeck(gc);
     sts::BattleContext bc;
+    const bool transaction = fixture == "tx_gamble" || fixture == "tx_exhaust_many";
     bc.init(gc, encounterFor(fixture));
-    setup(bc, fixture);
+    setup(bc, fixture == "tx_gamble" ? "gamble" : fixture == "tx_exhaust_many" ? "exhaust_many" : fixture);
+    if (transaction) { emitTransactionTrace(bc, simulations); return 0; }
     if (fixture == "reuse_det") {
         emitReuseTrace(bc, simulations);
         return 0;
