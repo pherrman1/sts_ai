@@ -31,6 +31,11 @@ void seedDeck(sts::GameContext &gc) {
     gc.deck.cards.push_back(sts::Card(sts::CardId::BASH));
 }
 
+sts::MonsterEncounter encounterFor(const std::string &fixture) {
+    if (fixture == "random_monster") return sts::MonsterEncounter::LOOTER;
+    return sts::MonsterEncounter::CULTIST;
+}
+
 void setup(sts::BattleContext &bc, const std::string &fixture) {
     // BattleContext::init has already performed the upstream opening draw and
     // established the corresponding CardManager counters. Do not overwrite
@@ -39,6 +44,42 @@ void setup(sts::BattleContext &bc, const std::string &fixture) {
         auto top = sts::CardInstance(sts::CardId::BASH);
         top.uniqueId = 102;
         bc.cards.drawPile.addToTop(top);
+    }
+    if (fixture == "reshuffle") {
+        bc.cards.drawPile.clear();
+        bc.cards.discardPile.clear();
+        auto first = sts::CardInstance(sts::CardId::STRIKE_RED); first.uniqueId = 201;
+        auto second = sts::CardInstance(sts::CardId::DEFEND_RED); second.uniqueId = 202;
+        bc.cards.discardPile.addToTop(first);
+        bc.cards.discardPile.addToTop(second);
+    }
+    if (fixture == "ordinary_select") {
+        bc.inputState = sts::InputState::CARD_SELECT;
+        bc.cardSelectInfo.cardSelectTask = sts::CardSelectTask::EXHAUST_ONE;
+    }
+    if (fixture == "gamble") {
+        bc.inputState = sts::InputState::CARD_SELECT;
+        bc.cardSelectInfo.cardSelectTask = sts::CardSelectTask::GAMBLE;
+        bc.cardSelectInfo.canPickAnyNumber = true;
+        bc.cardSelectInfo.selectedBits = 0;
+    }
+    if (fixture == "exhaust_many") {
+        bc.inputState = sts::InputState::CARD_SELECT;
+        bc.cardSelectInfo.cardSelectTask = sts::CardSelectTask::EXHAUST_MANY;
+        bc.cardSelectInfo.canPickZero = true;
+        bc.cardSelectInfo.pickCount = 1;
+        bc.cardSelectInfo.selectedBits = 0;
+    }
+    if (fixture == "duplicates") {
+        bc.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED); bc.cards.hand[0].uniqueId = 301;
+        bc.cards.hand[1] = sts::CardInstance(sts::CardId::STRIKE_RED); bc.cards.hand[1].uniqueId = 302;
+        bc.cards.cardsInHand = std::max(2, bc.cards.cardsInHand);
+        bc.cards.strikeCount = 2;
+    }
+    if (fixture == "random_potion") {
+        bc.potionCapacity = 3;
+        bc.potionCount = 1;
+        bc.potions[0] = sts::Potion::ENTROPIC_BREW;
     }
 }
 
@@ -119,7 +160,7 @@ int main(int argc, char **argv) {
     gc.map = std::make_shared<sts::Map>();
     seedDeck(gc);
     sts::BattleContext bc;
-    bc.init(gc, sts::MonsterEncounter::CULTIST);
+    bc.init(gc, encounterFor(fixture));
     setup(bc, fixture);
     if (fixture == "reuse_det") {
         emitReuseTrace(bc, simulations);
