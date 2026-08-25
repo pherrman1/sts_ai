@@ -4440,3 +4440,53 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `260ffb78119f3539a59a92c2c5a658f81c87947c2be1a2180196488399ad1872` and
   Markdown
   `86c8136477a5d3bc668d58c11aa03f5cb6156f70111bb6d20c48e276cce0dc1b`.
+
+## G1 Searcher3 generic action-observation chance tree (2026-08-25)
+
+- **Question:** can the frozen generic action -> observed `CombatObservation`
+  -> conditioned `DecisionNode` architecture execute correctly, and does
+  normal N=1 tree reuse improve the generic architecture when isolated from
+  legacy topology?
+- **Implementation/provenance:** frozen source SHA
+  `d3e250d84672e264b8515f02b1b6bbbc40c4dc66`; remote Release executable SHA-256
+  `a103e0dd7e682a6bb06a641d1b2057df69a893249271e31551af0a0f6f1d641e`;
+  model hashes and complete machine-readable provenance are in
+  `docs/experiments/evidence/s3_generic_chance_tree_g1_2026-08-25.json`.
+  The source branch was PR #54, draft/open, and was not merged.
+- **Common protocol:** guarded GCP `sts-test`, project-fair Searcher3,
+  ascension 0, Act-3/full-run endpoint, 24 threads, 1,000 simulations per
+  decision, 64 particles, seeds `930000..930015`, generic tree on for the
+  treatment arms, persistent END_TURN chance/CRN/strategy-fusion diagnostic/
+  END_TURN marginalization/union expansion/legacy expansion/legacy semantic
+  card edges all off. Raw outputs are ignored local `build/g1_*` files; their
+  hashes are recorded in the evidence manifest.
+- **Fresh-tree smoke:** control generic-off won 7/16 (mean floor 44.625,
+  mean end HP 15.625, 23.563 CPU sec/run); generic fresh-tree won 4/16 (mean
+  floor 41.3125, mean end HP 14.0, 31.986 CPU sec/run), approximately +35.8%
+  runtime. Treatment hard counters were all zero:
+  `decisionObservationMismatches=0`, `semanticResolutionFailures=0`,
+  `semanticActionSetMissing=0`, `semanticActionSetExtra=0`. Discordant seeds
+  were `930003, 930007, 930009`. This is architecture/runtime evidence, not a
+  win-rate gate.
+- **Reuse isolation:** both arms generic-on and differed only by
+  `STS_REUSE_MAX_SEARCHES=0|1`. Reuse 0 won 4/16 (mean floor 41.3125, mean HP
+  14.0, 31.883 CPU sec/run); reuse 1 won 5/16 (mean floor 42.0, mean HP 11.625,
+  34.756 CPU sec/run), approximately +9.0% runtime. Discordant seeds were
+  reuse-0-only `930000,930005,930010` and reuse-1-only
+  `930002,930003,930009,930015`. Verdict: operationally correct, mixed and
+  underpowered gameplay evidence, with no compute benefit.
+- **Particle boundary audit:** a separate guarded 4-seed (`930000..930003`)
+  `STS_S3_BELIEF_AUDIT` run split fresh and carried boundaries. Reuse 0 had
+  8.33% fallback on carried boundaries and 94.75% on fresh boundaries; reuse 1
+  had 12.36% and 94.71%, respectively. Overall fallback was 26.40% versus
+  29.03%. Thus reuse 1 carried fallback is moderately higher, but reuse 0 is
+  not near zero and fresh-boundary fallback dominates both arms. The existing
+  audit is boundary telemetry, not every internal `applyParticle()` call, and
+  uses its legacy CardId multiset fallback predicate. It does not associate a
+  fallback count with the max-outcome action/node.
+- **Verdict:** **G1_CORRECTNESS_PASS; REUSE_MIXED_SLOWER; PARTICLE_CAUSE_OPEN.**
+  Do not add deterministic fast paths, local chance resampling, progressive
+  widening, transpositions, CRN gameplay, or other G2+ features from these
+  results. If resumed, isolate reuse=1 with a fresh 64-particle belief rebuilt
+  at the real boundary. Close PR #54 without merging; preserve the tracked
+  manifest before deleting local raw artifacts.
