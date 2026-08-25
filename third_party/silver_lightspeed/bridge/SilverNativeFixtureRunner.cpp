@@ -42,6 +42,65 @@ void setup(sts::BattleContext &bc, const std::string &fixture) {
     }
 }
 
+const sts::search::BattleSearcher::Edge *bestEdge(const sts::search::BattleSearcher &searcher) {
+    if (searcher.root == nullptr || searcher.root->edges.empty()) return nullptr;
+    const sts::search::BattleSearcher::Edge *result = nullptr;
+    std::int32_t visits = -1;
+    for (const auto &edge : searcher.root->edges) {
+        if (edge.visitCount > visits) {
+            visits = edge.visitCount;
+            result = &edge;
+        }
+    }
+    return result;
+}
+
+sts::search::BattleSearcher::Node *exactRerootCandidate(
+        const sts::search::BattleSearcher::Edge *previousBest,
+        const sts::BattleContext &bc) {
+    using Node = sts::search::BattleSearcher::Node;
+    const auto exactMatch = [&bc](const Node *node) {
+        return node != nullptr && node->state.equalForSearch(bc)
+            && std::equal(node->state.cards.hand.begin(),
+                          node->state.cards.hand.begin() + node->state.cards.cardsInHand,
+                          bc.cards.hand.begin());
+    };
+    if (previousBest == nullptr || previousBest->node == nullptr) return nullptr;
+    if (!previousBest->node->isRandomNode)
+        return exactMatch(previousBest->node) ? previousBest->node : nullptr;
+    for (const auto &outcome : previousBest->node->edges)
+        if (exactMatch(outcome.node)) return outcome.node;
+    return nullptr;
+}
+
+void emitReuseTrace(sts::BattleContext &bc, int simulations) {
+    sts::search::BattleSearcher searcher(bc);
+    constexpr std::size_t kReusePoolCap = 32 * 1024;
+    searcher.search(simulations);
+    const auto *first = bestEdge(searcher);
+    if (first == nullptr || !first->action.isValidAction(bc)) {
+        std::cout << "reuse_trace=unavailable\n";
+        return;
+    }
+    const auto firstBits = first->action.bits;
+    const auto firstVisits = first->visitCount;
+    first->action.execute(bc);
+    auto *candidate = exactRerootCandidate(first, bc);
+    const bool exact = candidate != nullptr && searcher.allNodes.size() < kReusePoolCap;
+    const auto inheritedBeforeSearch = exact ? candidate->simulationCount : 0;
+    if (exact) searcher.rerootAt(candidate);
+    else searcher.setRoot(bc);
+    searcher.search(simulations);
+    const auto *second = bestEdge(searcher);
+    std::cout << "reuse_first=" << firstBits << ",visits=" << firstVisits
+              << " reroot=" << (exact ? "exact" : "fallback")
+              << " inherited=" << inheritedBeforeSearch
+              << " reuse_second=" << (second == nullptr ? 0 : second->action.bits)
+              << ",visits=" << (second == nullptr ? 0 : second->visitCount)
+              << " total_steps=" << searcher.stats.steps
+              << " total_nodes=" << searcher.stats.nodesCreated << '\n';
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -62,6 +121,10 @@ int main(int argc, char **argv) {
     sts::BattleContext bc;
     bc.init(gc, sts::MonsterEncounter::CULTIST);
     setup(bc, fixture);
+    if (fixture == "reuse_det") {
+        emitReuseTrace(bc, simulations);
+        return 0;
+    }
     const sts::search::Action probe(sts::search::ActionType::CARD, 0, 0);
     std::cerr << "fixture_input=" << static_cast<int>(bc.inputState)
               << " card0_valid=" << probe.isValidAction(bc)

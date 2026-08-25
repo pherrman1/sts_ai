@@ -40,18 +40,24 @@ int main() {
             || g_silverLiveDiagnostics.conversionFailures != 0
             || g_silverLiveDiagnostics.semanticResolutionFailures != 0
             || g_silverLiveDiagnostics.transactionFailures != 0
-            || g_silverLiveDiagnostics.knowledgeConsistencyFailures != 0) {
+            || g_silverLiveDiagnostics.knowledgeConsistencyFailures != 0
+            || (g_silverLiveDiagnostics.decisions > 1
+                && g_silverLiveDiagnostics.rerootExact + g_silverLiveDiagnostics.rerootFallback == 0)) {
         std::cerr << "silver_integration FAIL: outcome=" << static_cast<int>(live.outcome)
                   << " decisions=" << g_silverLiveDiagnostics.decisions
                   << " simulations=" << g_silverLiveDiagnostics.simulations
                   << " conversion_failures=" << g_silverLiveDiagnostics.conversionFailures
                   << " resolution_failures=" << g_silverLiveDiagnostics.semanticResolutionFailures
                   << " transaction_failures=" << g_silverLiveDiagnostics.transactionFailures
-                  << " knowledge_failures=" << g_silverLiveDiagnostics.knowledgeConsistencyFailures << '\n';
+                  << " knowledge_failures=" << g_silverLiveDiagnostics.knowledgeConsistencyFailures
+                  << " reroot_exact=" << g_silverLiveDiagnostics.rerootExact
+                  << " reroot_fallback=" << g_silverLiveDiagnostics.rerootFallback << '\n';
         return 1;
     }
     std::cout << "silver_integration PASS outcome=" << static_cast<int>(live.outcome)
               << " decisions=" << g_silverLiveDiagnostics.decisions
-              << " simulations=" << g_silverLiveDiagnostics.simulations << '\n';
+              << " simulations=" << g_silverLiveDiagnostics.simulations
+              << " reroot_exact=" << g_silverLiveDiagnostics.rerootExact
+              << " reroot_fallback=" << g_silverLiveDiagnostics.rerootFallback << '\n';
     return 0;
 }

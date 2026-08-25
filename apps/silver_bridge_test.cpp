@@ -52,6 +52,16 @@ int main() {
     check(silver_bridge::convertedStatesEqualForSearch(firstWire, permutedWire),
           "hidden live draw-order permutations must materialize equivalent Silver roots");
 
+    // The bridge session must retain the exact private child selected at one
+    // Silver decision and reroot into it at the next. This is an entirely
+    // native/private action execution: no live BattleContext is touched.
+    silver_bridge::SilverSearchConfig reuseConfig;
+    reuseConfig.simulationsPerDecision = 32;
+    const auto reuse = silver_bridge::probeSilverSearchSessionReuse(firstWire, reuseConfig);
+    check(reuse.accepted && reuse.rerootExact == 1 && reuse.rerootFallback == 0
+              && reuse.inheritedVisits > 0,
+          "private Silver session must exact-reroot and retain prior subtree visits");
+
     BattleContext alteredRng = first;
     alteredRng.aiRng = Random(1); alteredRng.cardRandomRng = Random(2); alteredRng.miscRng = Random(3);
     alteredRng.monsterHpRng = Random(4); alteredRng.potionRng = Random(5); alteredRng.shuffleRng = Random(6);

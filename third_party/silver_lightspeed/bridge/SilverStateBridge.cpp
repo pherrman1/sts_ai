@@ -355,6 +355,25 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     return out;
 }
 
+SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
+                                    const sts::search::SearchStats &before) {
+    SilverSearchTelemetry result = telemetry(after);
+    const SilverSearchTelemetry prior = telemetry(before);
+    result.nodesCreated -= prior.nodesCreated;
+    result.detTranspositions -= prior.detTranspositions;
+    result.chanceOutcomesSampled -= prior.chanceOutcomesSampled;
+    result.chanceSiblingReuse -= prior.chanceSiblingReuse;
+    result.chanceTranspositions -= prior.chanceTranspositions;
+    result.depthSum -= prior.depthSum;
+    result.chanceDepthSum -= prior.chanceDepthSum;
+    for (std::size_t i = 0; i < result.wideningSampled.size(); ++i) {
+        result.wideningSampled[i] -= prior.wideningSampled[i];
+        result.wideningSiblingReuse[i] -= prior.wideningSiblingReuse[i];
+        result.wideningCapped[i] -= prior.wideningCapped[i];
+    }
+    return result;
+}
+
 sts::search::BattleSearcher::Node *exactRerootCandidate(
         const sts::search::BattleSearcher::Edge *bestEdge,
         const sts::BattleContext &state) {
@@ -374,6 +393,114 @@ sts::search::BattleSearcher::Node *exactRerootCandidate(
 }
 
 } // namespace
+
+class SilverSearchSession {
+public:
+    sts::GameContext runContext;
+    std::unique_ptr<sts::search::BattleSearcher> searcher;
+    const sts::search::BattleSearcher::Edge *previousBest = nullptr;
+    bool runContextInitialized = false;
+    int rerootExact = 0;
+    int rerootFallback = 0;
+    sts::search::SearchStats searchStatsBefore {};
+
+    void configure(const SilverSearchConfig &config) {
+        searcher->explorationParameter = config.explorationParameter;
+        searcher->explorationParameterChance = config.explorationParameterChance;
+        searcher->chanceWideningC = config.chanceWideningC;
+        searcher->chanceWideningAlpha = config.chanceWideningAlpha;
+        searcher->endTurnWideningC = config.endTurnWideningC;
+        searcher->endTurnWideningAlpha = config.endTurnWideningAlpha;
+    }
+
+    // Exact pinned-SearchAgent boundary: state equality plus exact hand order;
+    // hand permutations are counted as misses and never reused. The 32k cap
+    // deliberately forces setRoot so the open-addressed table stays sparse.
+    void beginAt(const sts::BattleContext &state, const SilverSearchConfig &config) {
+        constexpr std::size_t kReusePoolCap = 32 * 1024;
+        if (!searcher) {
+            searcher = std::make_unique<sts::search::BattleSearcher>(state);
+            configure(config);
+            return;
+        }
+        if (previousBest != nullptr) {
+            if (auto *candidate = exactRerootCandidate(previousBest, state);
+                    candidate != nullptr && searcher->allNodes.size() < kReusePoolCap) {
+                searcher->rerootAt(candidate);
+                ++rerootExact;
+            } else {
+                searcher->setRoot(state);
+                ++rerootFallback;
+            }
+            previousBest = nullptr;
+        } else {
+            // A session state without a predecessor is a new root (e.g. an
+            // externally supplied first decision), not permission to compare
+            // only equalForSearch against a stale root.
+            searcher->setRoot(state);
+            ++rerootFallback;
+        }
+        configure(config);
+    }
+
+    sts::BattleContext materializeAndBegin(const BattleStateWire &wire, const SilverSearchConfig &config) {
+        if (!runContextInitialized) {
+            initializeRunContext(runContext, wire);
+            runContextInitialized = true;
+        }
+        auto state = materialize(wire, &runContext);
+        beginAt(state, config);
+        return state;
+    }
+
+    const sts::search::BattleSearcher::Edge *searchAndChoose(const SilverSearchConfig &config,
+                                                               std::int64_t &simulations) {
+        searchStatsBefore = searcher->stats;
+        const auto before = searchStatsBefore.steps;
+        searcher->search(config.simulationsPerDecision);
+        simulations = searcher->stats.steps - before;
+        if (searcher->root == nullptr || searcher->root->edges.empty()) return nullptr;
+        const sts::search::BattleSearcher::Edge *best = nullptr;
+        std::int32_t visits = -1;
+        for (const auto &edge : searcher->root->edges) {
+            if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
+        }
+        previousBest = best;
+        return best;
+    }
+};
+
+std::shared_ptr<SilverSearchSession> makeSilverSearchSession() {
+    return std::make_shared<SilverSearchSession>();
+}
+
+SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
+                                                const SilverSearchConfig &config) {
+    SessionReuseProbe result;
+    if (config.simulationsPerDecision <= 0) return result;
+    try {
+        SilverSearchSession session;
+        sts::BattleContext state = session.materializeAndBegin(wire, config);
+        std::int64_t simulations = 0;
+        const auto *best = session.searchAndChoose(config, simulations);
+        if (best == nullptr || !best->action.isValidAction(state)) return result;
+
+        // This is deliberately private: it reproduces SearchAgent's action
+        // boundary so the next materialized decision can be matched against
+        // the edge selected above. The focused caller supplies a deterministic
+        // fixture, making exact child reuse the required outcome.
+        best->action.execute(state);
+        session.beginAt(state, config);
+        result.accepted = true;
+        result.rerootExact = session.rerootExact;
+        result.rerootFallback = session.rerootFallback;
+        result.inheritedVisits = session.searcher->root == nullptr
+            ? 0 : session.searcher->root->simulationCount;
+    } catch (const std::exception &) {
+        return {};
+    }
+    return result;
+}
 
 ConvertedStateDigest inspectConvertedBattleState(const BattleStateWire &state) {
     try {
@@ -435,14 +562,12 @@ bool convertedStatesEqualForSearch(const BattleStateWire &a, const BattleStateWi
 }
 
 SelectionTransactionTrace runSequentialSelectionTransaction(
-        const BattleStateWire &wire, const SilverSearchConfig &config) {
+        SilverSearchSession &session, const BattleStateWire &wire, const SilverSearchConfig &config) {
     SelectionTransactionTrace trace;
     trace.simulationsPerSubdecision = config.simulationsPerDecision;
     if (config.simulationsPerDecision <= 0) return trace;
     try {
-        sts::GameContext runContext;
-        initializeRunContext(runContext, wire);
-        sts::BattleContext state = materialize(wire, &runContext);
+        sts::BattleContext state = session.materializeAndBegin(wire, config);
         const auto task = state.cardSelectInfo.cardSelectTask;
         if (state.inputState != sts::InputState::CARD_SELECT
                 || (task != sts::CardSelectTask::EXHAUST_MANY && task != sts::CardSelectTask::GAMBLE)) {
@@ -450,53 +575,31 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
             return trace;
         }
 
-        sts::search::BattleSearcher searcher(state);
-        searcher.explorationParameter = config.explorationParameter;
-        searcher.explorationParameterChance = config.explorationParameterChance;
-        searcher.chanceWideningC = config.chanceWideningC;
-        searcher.chanceWideningAlpha = config.chanceWideningAlpha;
-        searcher.endTurnWideningC = config.endTurnWideningC;
-        searcher.endTurnWideningAlpha = config.endTurnWideningAlpha;
-
-        constexpr std::size_t kReusePoolCap = 32 * 1024;
-        const sts::search::BattleSearcher::Edge *previousBest = nullptr;
+        auto &searcher = *session.searcher;
+        const int rerootExactBefore = session.rerootExact;
+        const int rerootFallbackBefore = session.rerootFallback;
         // At most one selection per card plus the final confirmation. A larger
         // loop means the upstream UI state stopped making progress.
         const int maxSubdecisions = state.cards.cardsInHand + 1;
         for (int step = 0; step < maxSubdecisions; ++step) {
-            if (previousBest != nullptr) {
-                if (auto *candidate = exactRerootCandidate(previousBest, state);
-                        candidate != nullptr && searcher.allNodes.size() < kReusePoolCap) {
-                    searcher.rerootAt(candidate);
-                    ++trace.rerootExact;
-                } else {
-                    searcher.setRoot(state);
-                    ++trace.rerootFallback;
-                }
-                previousBest = nullptr;
-            }
+            if (step > 0) session.beginAt(state, config);
 
-            const auto beforeSteps = searcher.stats.steps;
-            searcher.search(config.simulationsPerDecision);
-            trace.totalSimulations += searcher.stats.steps - beforeSteps;
+            std::int64_t subdecisionSimulations = 0;
+            const auto *best = session.searchAndChoose(config, subdecisionSimulations);
+            trace.totalSimulations += subdecisionSimulations;
             ++trace.searchDecisions;
-            trace.telemetry = telemetry(searcher.stats);
-            if (searcher.root == nullptr || searcher.root->edges.empty()) {
+            trace.telemetry.add(telemetryDelta(searcher.stats, session.searchStatsBefore));
+            if (best == nullptr) {
                 trace.failure = "Silver search returned no root edge";
                 return trace;
             }
-
-            const sts::search::BattleSearcher::Edge *best = nullptr;
-            std::int32_t visits = -1;
-            for (const auto &edge : searcher.root->edges) {
-                if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
-            }
-            if (best == nullptr) { trace.failure = "Silver search had no best edge"; return trace; }
             const auto action = best->action;
             if (action.getActionType() == sts::search::ActionType::MULTI_CARD_SELECT) {
                 trace.finalAction = confirmedSelection(state, action);
                 trace.finalConfirmation = true;
                 trace.accepted = true;
+                trace.rerootExact = session.rerootExact - rerootExactBefore;
+                trace.rerootFallback = session.rerootFallback - rerootFallbackBefore;
                 return trace; // Never execute confirmation in the private state.
             }
             if (action.getActionType() != sts::search::ActionType::SINGLE_CARD_SELECT
@@ -516,9 +619,10 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
                 throw std::runtime_error("Silver sequential selection mutated non-selection state: "
                                          + selectionStateSummary(before, state));
             }
-            previousBest = best;
             trace.selectedBitsAfterEachIntermediate.push_back(state.cardSelectInfo.selectedBits);
         }
+        trace.rerootExact = session.rerootExact - rerootExactBefore;
+        trace.rerootFallback = session.rerootFallback - rerootFallbackBefore;
     } catch (const std::exception &e) {
         trace.failure = e.what();
         return trace;
@@ -527,35 +631,29 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
     return trace;
 }
 
-SilverDecisionResult runSilverDecision(const BattleStateWire &wire, const SilverSearchConfig &config) {
+SelectionTransactionTrace runSequentialSelectionTransaction(
+        const BattleStateWire &wire, const SilverSearchConfig &config) {
+    auto session = makeSilverSearchSession();
+    return runSequentialSelectionTransaction(*session, wire, config);
+}
+
+SilverDecisionResult runSilverDecision(SilverSearchSession &session,
+                                       const BattleStateWire &wire, const SilverSearchConfig &config) {
     SilverDecisionResult result;
     if (config.simulationsPerDecision <= 0) return result;
     try {
-        sts::GameContext runContext;
-        initializeRunContext(runContext, wire);
-        sts::BattleContext state = materialize(wire, &runContext);
+        const int rerootExactBefore = session.rerootExact;
+        const int rerootFallbackBefore = session.rerootFallback;
+        sts::BattleContext state = session.materializeAndBegin(wire, config);
+        result.rerootExact = session.rerootExact - rerootExactBefore;
+        result.rerootFallback = session.rerootFallback - rerootFallbackBefore;
         const auto task = state.cardSelectInfo.cardSelectTask;
         if (state.inputState == sts::InputState::CARD_SELECT
                 && (task == sts::CardSelectTask::EXHAUST_MANY || task == sts::CardSelectTask::GAMBLE)) {
             return result; // must use the transactional API
         }
-        sts::search::BattleSearcher searcher(state);
-        searcher.explorationParameter = config.explorationParameter;
-        searcher.explorationParameterChance = config.explorationParameterChance;
-        searcher.chanceWideningC = config.chanceWideningC;
-        searcher.chanceWideningAlpha = config.chanceWideningAlpha;
-        searcher.endTurnWideningC = config.endTurnWideningC;
-        searcher.endTurnWideningAlpha = config.endTurnWideningAlpha;
-        const auto before = searcher.stats.steps;
-        searcher.search(config.simulationsPerDecision);
-        result.simulations = searcher.stats.steps - before;
-        result.telemetry = telemetry(searcher.stats);
-        if (searcher.root == nullptr || searcher.root->edges.empty()) return result;
-        const sts::search::BattleSearcher::Edge *best = nullptr;
-        std::int32_t visits = -1;
-        for (const auto &edge : searcher.root->edges) {
-            if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
-        }
+        const auto *best = session.searchAndChoose(config, result.simulations);
+        result.telemetry = telemetryDelta(session.searcher->stats, session.searchStatsBefore);
         if (best == nullptr) return result;
         result.action = semanticFromAction(state, best->action);
         result.accepted = true;
@@ -563,6 +661,11 @@ SilverDecisionResult runSilverDecision(const BattleStateWire &wire, const Silver
         return {};
     }
     return result;
+}
+
+SilverDecisionResult runSilverDecision(const BattleStateWire &wire, const SilverSearchConfig &config) {
+    auto session = makeSilverSearchSession();
+    return runSilverDecision(*session, wire, config);
 }
 
 } // namespace silver_bridge

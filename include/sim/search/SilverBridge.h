@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -258,7 +259,15 @@ struct SilverDecisionResult {
     std::int64_t simulations = 0;
     SemanticAction action;
     SilverSearchTelemetry telemetry;
+    int rerootExact = 0;
+    int rerootFallback = 0;
 };
+
+// Opaque battle-lifetime isolated Silver state. It owns the private run
+// context, BattleSearcher, previous best edge, and exact-reroot diagnostics.
+// No live sts_ai type can enter this object.
+class SilverSearchSession;
+std::shared_ptr<SilverSearchSession> makeSilverSearchSession();
 
 struct RandomProbe {
     std::int32_t firstRange = 0;
@@ -278,9 +287,20 @@ struct SearcherConstructionProbe {
     bool rootIsChanceNode = false;
 };
 
+struct SessionReuseProbe {
+    bool accepted = false;
+    int rerootExact = 0;
+    int rerootFallback = 0;
+    std::int64_t inheritedVisits = 0;
+};
+
 // Forces a real constructor/reset path through the upstream BattleSearcher.
 // It is a link-closure probe, not a live-game integration API.
 SearcherConstructionProbe constructReferenceSearcherProbe();
+// Native-only persistence probe: chooses and executes one private action,
+// then begins the next private decision through the exact reroot protocol.
+SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &state,
+                                                const SilverSearchConfig &config);
 
 // Validates and materializes a private sts_silver::BattleContext. The opaque
 // result allows focused leakage/equality tests without exposing vendor types.
@@ -295,11 +315,17 @@ bool convertedStatesEqualForSearch(const BattleStateWire &a, const BattleStateWi
 // it to a validated live atomic subset action. No live types are accepted.
 SelectionTransactionTrace runSequentialSelectionTransaction(
     const BattleStateWire &state, const SilverSearchConfig &config);
+SelectionTransactionTrace runSequentialSelectionTransaction(
+    SilverSearchSession &session, const BattleStateWire &state,
+    const SilverSearchConfig &config);
 
 // One ordinary Silver decision (used for card plays, potions, END_TURN, and
 // non-sequential card selects). Sequential multi-select callers must use the
 // transaction API above instead.
 SilverDecisionResult runSilverDecision(const BattleStateWire &state,
+                                       const SilverSearchConfig &config);
+SilverDecisionResult runSilverDecision(SilverSearchSession &session,
+                                       const BattleStateWire &state,
                                        const SilverSearchConfig &config);
 
 } // namespace silver_bridge

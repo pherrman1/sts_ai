@@ -83,6 +83,9 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     bc.init(gc);
     // Runic Dome roll-input events emitted by init are preserved by this sync.
     knowledge.synchronizeAfterCombatInitialization(bc);
+    // One opaque isolated Silver session per live battle. It owns the private
+    // BattleSearcher and reroots across all subsequent real decisions.
+    auto silverSession = silver_bridge::makeSilverSearchSession();
 
     int decision = 0;
     while (bc.outcome == Outcome::UNDECIDED) {
@@ -124,7 +127,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         if (bc.inputState == InputState::CARD_SELECT
                 && (bc.cardSelectInfo.cardSelectTask == CardSelectTask::EXHAUST_MANY
                     || bc.cardSelectInfo.cardSelectTask == CardSelectTask::GAMBLE)) {
-            const auto transaction = silver_bridge::runSequentialSelectionTransaction(wire, config);
+            const auto transaction = silver_bridge::runSequentialSelectionTransaction(*silverSession, wire, config);
             if (!transaction.accepted || !transaction.finalConfirmation) {
                 ++g_silverLiveDiagnostics.transactionFailures;
                 fail("selection transaction", transaction.failure.empty()
@@ -133,15 +136,19 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             semantic = transaction.finalAction;
             g_silverLiveDiagnostics.simulations += transaction.totalSimulations;
             g_silverLiveDiagnostics.transactionSubdecisions += transaction.searchDecisions;
+            g_silverLiveDiagnostics.rerootExact += transaction.rerootExact;
+            g_silverLiveDiagnostics.rerootFallback += transaction.rerootFallback;
             addTelemetry(transaction.telemetry);
         } else {
-            const auto result = silver_bridge::runSilverDecision(wire, config);
+            const auto result = silver_bridge::runSilverDecision(*silverSession, wire, config);
             if (!result.accepted) {
                 ++g_silverLiveDiagnostics.conversionFailures;
                 fail("search", "Silver returned no semantic decision");
             }
             semantic = result.action;
             g_silverLiveDiagnostics.simulations += result.simulations;
+            g_silverLiveDiagnostics.rerootExact += result.rerootExact;
+            g_silverLiveDiagnostics.rerootFallback += result.rerootFallback;
             addTelemetry(result.telemetry);
         }
 
