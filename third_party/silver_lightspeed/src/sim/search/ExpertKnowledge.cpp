@@ -418,9 +418,3 @@ int search::Expert::getObtainWeight(CardId id, bool upgraded) {
         return getObtainWeight(id);
     }
 }
-
-
-
-
-
-
