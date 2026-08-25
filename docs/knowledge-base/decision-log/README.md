@@ -63,6 +63,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-25 | [`2026-08-25-s3-generic-chance-tree-g1.md`](2026-08-25-s3-generic-chance-tree-g1.md) | G1 generic action-observation tree passed correctness; reuse isolation was mixed and slower; evidence and raw-artifact provenance are recorded before closing PR #54. |
 | 2026-08-25 | [`2026-08-25-e3b-paired-discordance.md`](2026-08-25-e3b-paired-discordance.md) | E3b exploratory paired-discordant-future leaf ranking is `E3B_SURVIVAL_ONLY`; no E2c promotion or automatic extension. |
 | 2026-08-25 | [`2026-08-25-s3-persistent-endturn-chance.md`](2026-08-25-s3-persistent-endturn-chance.md) | Experiment 4 adds default-off observation-conditioned persistent END_TURN continuations with one aggregate action stream; the 8-seed smoke exercised 62.92% outcome reuse with no measured compute penalty and remains non-decisive for gameplay. |
 | 2026-08-23 | [`2026-08-23-s3-strategy-fusion-diagnostic.md`](2026-08-23-s3-strategy-fusion-diagnostic.md) | Implemented the off-by-default END_TURN strategy-fusion shadow probe; smoke found a draw-pile template-order fairness caveat, which the side-search template canonicalizes without changing normal Searcher3, and deferred the decision-bearing run pending independent review. |
