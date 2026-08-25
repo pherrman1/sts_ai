@@ -204,6 +204,13 @@ class BattleScumSearcher3;
             CardActionKey cardKey;
             bool hasCardKey = false;
             bool persistentChanceContainer = false;
+            // Cheap Experiment-4 diagnostic: use the same visible hash as
+            // Node observation-stability tracking to detect when one legacy
+            // pre-action edge is reached from multiple visible pre-states.
+            bool persistentPreObservationCached = false;
+            std::uint64_t persistentFirstPreObservationHash = 0;
+            std::int64_t persistentPreObservationVisits = 0;
+            std::int64_t persistentPreObservationMismatches = 0;
             std::vector<OutcomeChild> outcomeChildren;
         };
 
@@ -445,7 +452,8 @@ class BattleScumSearcher3;
         static bool persistentEndTurnEligible(const BattleContext &preState,
                                               const Action &action);
         Node &dispatchPersistentEndTurnOutcome(
-            Edge &edge, const CombatObservation &postObservation);
+            Edge &edge, std::uint64_t preObservationHash,
+            const CombatObservation &postObservation);
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
         RealBeliefFilterStats filterRealTransition(
@@ -686,8 +694,10 @@ class BattleScumSearcher3;
     // END_TURN actions. Default off and incompatible with the diagnostic that
     // assumes one legacy shared continuation child.
     extern bool g_s3PersistentEndTurnChance;
+    extern int g_s3PersistentEndTurnMaxPile;
     bool s3PersistentChanceFlagsCompatible(bool persistentChance,
-                                           bool strategyFusionDiag);
+                                           bool strategyFusionDiag,
+                                           bool eagerMarginalization);
     void printPersistentEndTurnChanceDiagnostics();
 
     // Marginalization diagnostics (thread-local).

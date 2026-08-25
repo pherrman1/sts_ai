@@ -4374,6 +4374,30 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   the old eager prototype's +56% and below the 20–25% engineering warning.
 - **Artifacts:** ignored local `build/exp4_pair_control.csv`,
   `build/exp4_pair_treatment.csv`, and their `.meta.json` sidecars.
+
+### Experiment-4 isolation correction and large-container probe (2026-08-25)
+
+- Persistent chance eligibility now uses independent
+  `STS_S3_PERSISTENT_ENDTURN_MAX_PILE` configuration (default 8), not the eager
+  marginalization prototype's max-pile setting. Persistent chance and eager
+  marginalization are rejected together at startup, as is the existing
+  strategy-fusion diagnostic conflict.
+- A minimal diagnostic compares each chance container's pre-END_TURN visible
+  hash with its first visit. This uses the existing observation-stability hash
+  only for telemetry; post-END_TURN outcome identity remains exact full
+  `CombatObservation` equality.
+- Guarded Debug treatment smoke: `bestbench 64 1 0 126701`, fair Searcher3, 64
+  particles, belief/chain off, one thread, Act-3 endpoint, and the same V4 OOC
+  strategic gates as the paired smoke. It completed normally with 4,598
+  eligible visits, 1,601 containers, 2,873 new outcomes, 1,725 reuse hits
+  (37.5163%), and maximum 59 outcomes/container.
+- Of those containers, 241 received a pre-observation hash mismatch. Mixed
+  containers reached at most 15 outcomes. The 59-outcome maximum container had
+  205 visits and zero pre-observation hash mismatches. Thus the cheap probe does
+  not support visible pre-state mixing as the sole cause of large containers;
+  it cannot retrospectively classify the prior 685-outcome container without
+  rerunning the larger smoke, which was intentionally not done.
+
 - **Verdict:** **REVIEW FOR LARGER GATE.** Implementation passed and reuse is
   substantial without an obvious compute/gameplay warning. Independently
   review the frozen implementation and the surprising 685-outcome maximum

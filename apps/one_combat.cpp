@@ -12747,16 +12747,11 @@ int main(int argc, char **argv) {
                   << (search::g_s3PersistentEndTurnChance ? "ON" : "off")
                   << "]\n";
     }
-    if (!search::s3PersistentChanceFlagsCompatible(
-            search::g_s3PersistentEndTurnChance,
-            search::g_s3StrategyFusionDiag)) {
-        std::cerr << "error: STS_S3_PERSISTENT_ENDTURN_CHANCE and "
-                     "STS_S3_STRATEGY_FUSION_DIAG are mutually exclusive; "
-                     "the diagnostic assumes the legacy shared-child topology\n";
-        return 2;
+    if (const char *d = std::getenv("STS_S3_PERSISTENT_ENDTURN_MAX_PILE")) {
+        search::g_s3PersistentEndTurnMaxPile = std::max(0, std::atoi(d));
+        std::cout << "[S3 persistent END_TURN max-pile = "
+                  << search::g_s3PersistentEndTurnMaxPile << "]\n";
     }
-    if (search::g_s3PersistentEndTurnChance)
-        std::atexit(search::printPersistentEndTurnChanceDiagnostics);
     if (const char *d = std::getenv("STS_S3_BUCKET_VALUE_DIAG")) {
         search::g_s3BucketValueDiag = std::atoi(d) != 0;
         std::cout << "[S3 bucket-value-diag = " << (search::g_s3BucketValueDiag ? "ON" : "off") << "]\n";
@@ -12781,6 +12776,23 @@ int main(int argc, char **argv) {
         search::g_s3EndTurnMarginalizeMaxPile = std::atoi(d);
         std::cout << "[S3 END_TURN marg max-pile = " << search::g_s3EndTurnMarginalizeMaxPile << "]\n";
     }
+    if (!search::s3PersistentChanceFlagsCompatible(
+            search::g_s3PersistentEndTurnChance,
+            search::g_s3StrategyFusionDiag,
+            search::g_s3EndTurnMarginalize)) {
+        if (search::g_s3StrategyFusionDiag) {
+            std::cerr << "error: STS_S3_PERSISTENT_ENDTURN_CHANCE and "
+                         "STS_S3_STRATEGY_FUSION_DIAG are mutually exclusive; "
+                         "the diagnostic assumes the legacy shared-child topology\n";
+        } else {
+            std::cerr << "error: STS_S3_PERSISTENT_ENDTURN_CHANCE and "
+                         "STS_S3_ENDTURN_MARGINALIZE are mutually exclusive; "
+                         "persistent chance nodes must not run with eager marginalization\n";
+        }
+        return 2;
+    }
+    if (search::g_s3PersistentEndTurnChance)
+        std::atexit(search::printPersistentEndTurnChanceDiagnostics);
     if (const char *d = std::getenv("STS_S3_DRAW_PROB_DIAG")) {
         search::g_s3DrawProbDiag = std::atoi(d) != 0;
         std::cout << "[S3 draw-prob diag = " << (search::g_s3DrawProbDiag ? "ON" : "off") << "]\n";

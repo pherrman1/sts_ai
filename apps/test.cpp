@@ -893,10 +893,14 @@ int testS3PersistentEndTurnChance(std::uint64_t seed) {
 
     check(!search::g_s3PersistentEndTurnChance,
           "treatment is not off by default");
-    check(search::s3PersistentChanceFlagsCompatible(false, false)
-              && search::s3PersistentChanceFlagsCompatible(true, false)
-              && search::s3PersistentChanceFlagsCompatible(false, true)
-              && !search::s3PersistentChanceFlagsCompatible(true, true),
+    check(search::g_s3PersistentEndTurnMaxPile == 8,
+          "persistent chance max-pile default is not 8");
+    check(search::s3PersistentChanceFlagsCompatible(false, false, false)
+              && search::s3PersistentChanceFlagsCompatible(true, false, false)
+              && search::s3PersistentChanceFlagsCompatible(false, true, true)
+              && !search::s3PersistentChanceFlagsCompatible(true, true, false)
+              && !search::s3PersistentChanceFlagsCompatible(true, false, true)
+              && !search::s3PersistentChanceFlagsCompatible(true, true, true),
           "flag-conflict contract is wrong");
 
     GameContext gc(CharacterClass::IRONCLAD, seed, 0);
@@ -908,8 +912,16 @@ int testS3PersistentEndTurnChance(std::uint64_t seed) {
     // five from opposite orders leaves different visible hands/remainders.
     pre.cards.drawPile.push_back(CardInstance(CardId::BASH, false));
     pre.cards.drawPile.push_back(CardInstance(CardId::ANGER, false));
+    const int savedMarginalMaxPile = search::g_s3EndTurnMarginalizeMaxPile;
+    const int savedPersistentMaxPile = search::g_s3PersistentEndTurnMaxPile;
+    search::g_s3EndTurnMarginalizeMaxPile = 0;
     check(search::BattleScumSearcher3::persistentEndTurnEligible(pre, endTurn),
-          "narrow <=8/no-reshuffle END_TURN boundary was rejected");
+          "chance eligibility still depends on marginalization max-pile");
+    search::g_s3PersistentEndTurnMaxPile = 6;
+    check(!search::BattleScumSearcher3::persistentEndTurnEligible(pre, endTurn),
+          "independent persistent chance max-pile was ignored");
+    search::g_s3PersistentEndTurnMaxPile = savedPersistentMaxPile;
+    search::g_s3EndTurnMarginalizeMaxPile = savedMarginalMaxPile;
     BattleContext reshuffle = pre;
     reshuffle.cards.drawPile.clear();
     reshuffle.cards.discardPile.push_back(CardInstance(CardId::STRIKE_RED, false));
@@ -924,17 +936,21 @@ int testS3PersistentEndTurnChance(std::uint64_t seed) {
     endTurn.execute(postB);
     const auto obsA = CombatObservation::fromBattleContext(postA);
     const auto obsB = CombatObservation::fromBattleContext(postB);
+    const auto preObservationHash =
+        CombatObservation::fromBattleContext(pre).visibleHash();
     check(obsA != obsB, "opposite hidden orders did not produce split observations");
 
     search::BattleScumSearcher3 searcher(pre, seed, 0, 8);
     search::BattleScumSearcher3::Edge edge{endTurn};
-    searcher.dispatchPersistentEndTurnOutcome(edge, obsA);
-    searcher.dispatchPersistentEndTurnOutcome(edge, obsB);
+    searcher.dispatchPersistentEndTurnOutcome(edge, preObservationHash, obsA);
+    searcher.dispatchPersistentEndTurnOutcome(edge, preObservationHash, obsB);
     check(edge.persistentChanceContainer && edge.outcomeChildren.size() == 2,
           "different observations did not create two persistent children");
 
-    auto &childA = searcher.dispatchPersistentEndTurnOutcome(edge, obsA);
-    auto &childB = searcher.dispatchPersistentEndTurnOutcome(edge, obsB);
+    auto &childA = searcher.dispatchPersistentEndTurnOutcome(
+        edge, preObservationHash, obsA);
+    auto &childB = searcher.dispatchPersistentEndTurnOutcome(
+        edge, preObservationHash, obsB);
     check(&childA != &childB,
           "sampled observations dispatched to the same decision child");
     check(searcher.outcomeExistingHits == 2
@@ -948,7 +964,8 @@ int testS3PersistentEndTurnChance(std::uint64_t seed) {
     const auto sameVisible = CombatObservation::fromBattleContext(hiddenVariant);
     check(sameVisible == obsA,
           "fixture unexpectedly exposed hidden RNG through observation identity");
-    auto &sameChild = searcher.dispatchPersistentEndTurnOutcome(edge, sameVisible);
+    auto &sameChild = searcher.dispatchPersistentEndTurnOutcome(
+        edge, preObservationHash, sameVisible);
     check(&sameChild == &childA && edge.outcomeChildren.size() == 2,
           "same visible outcome did not reuse its persistent child");
 
@@ -957,7 +974,8 @@ int testS3PersistentEndTurnChance(std::uint64_t seed) {
     searcher.backpropagate({&edge.child, &childA}, 10.0, {endTurn});
     searcher.backpropagate({&edge.child, &childB}, 30.0, {endTurn});
     childA.evaluationSum = -1000.0; // must not redirect obsA to childB
-    auto &stillA = searcher.dispatchPersistentEndTurnOutcome(edge, obsA);
+    auto &stillA = searcher.dispatchPersistentEndTurnOutcome(
+        edge, preObservationHash, obsA);
     check(&stillA == &childA,
           "outcome dispatch selected by Q rather than sampled observation");
     check(edge.child.simulationCount == 2 && edge.child.evaluationSum == 40.0,
@@ -966,6 +984,16 @@ int testS3PersistentEndTurnChance(std::uint64_t seed) {
           "conditioned child visits did not accumulate independently");
     check(edge.child.edges.empty(),
           "aggregate chance container became a policy decision node");
+
+    BattleContext differentVisiblePre = pre;
+    ++differentVisiblePre.player.block;
+    const auto differentPreHash =
+        CombatObservation::fromBattleContext(differentVisiblePre).visibleHash();
+    check(differentPreHash != preObservationHash,
+          "pre-observation mismatch fixture did not change the visible hash");
+    searcher.dispatchPersistentEndTurnOutcome(edge, differentPreHash, obsA);
+    check(edge.persistentPreObservationMismatches == 1,
+          "legacy-container pre-observation mixing was not diagnosed");
 
     if (failures == 0) {
         std::cout << "s3_persistent_endturn_chance PASS\n";

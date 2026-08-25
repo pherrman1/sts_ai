@@ -11,7 +11,9 @@ action-statistics container and store exact full-`CombatObservation` outcome
 children alongside it. A normal particle executes END_TURN once, and its actual
 post-action observation selects or creates the only continuation visited by
 that simulation. The PR #48 strategy-fusion diagnostic remains unchanged for
-control use and is mutually exclusive with the treatment.
+control use and is mutually exclusive with the treatment. Eager END_TURN
+marginalization is also mutually exclusive, and chance eligibility has an
+independent `STS_S3_PERSISTENT_ENDTURN_MAX_PILE` bound (default 8).
 
 ## Rationale and alternatives
 
@@ -47,6 +49,10 @@ The lack of measurable overhead and nontrivial reuse support independent review
 for a separately designed larger gate after the implementation SHA is frozen.
 
 **Open question:** one container reached 685 distinct visible outcomes. This is
-consistent with legacy upstream information-state sharing plus full visible
-post-turn variation, but its distribution and memory impact need review before
-a larger gate.
+not explained solely by legacy visible pre-state mixing in the cheap follow-up.
+A guarded one-seed/64-simulation treatment smoke found 241 containers with at
+least one pre-observation hash mismatch, but its largest container had 59
+outcomes over 205 visits and zero mismatches; containers known to mix visible
+pre-state hashes reached at most 15 outcomes. This is evidence against the
+simple explanation, not a retrospective classification of the earlier 685
+container. Its distribution and memory impact remain open before a larger gate.

@@ -998,18 +998,24 @@ by the complete existing `CombatObservation` equality contract. The outcome is
 selected only by the concrete post-action observation produced by the current
 simulation particle; outcome Q, prior, and visit counts never select stochastic
 results. Backpropagation includes both the conditioned child and aggregate
-action container. The default is off, and the treatment is rejected when the
-legacy-topology `STS_S3_STRATEGY_FUSION_DIAG` is also enabled.
+action container. The default is off, and the treatment is rejected when either
+the legacy-topology `STS_S3_STRATEGY_FUSION_DIAG` or the eager
+`STS_S3_ENDTURN_MARGINALIZE` treatment is also enabled.
 
-Eligibility intentionally reuses the earlier conservative marginalization
-boundary: pre-action outcome is `UNDECIDED`, action is END_TURN, draw pile size
-is at most 8, and the boundary is not an empty-draw/nonempty-discard immediate
-reshuffle. Unlike the rejected eager marginalization prototype, each simulation
-executes exactly one normal sampled transition and creates or reuses only that
-observed outcome. There is no widening or outcome cap. Process-exit diagnostics
-report eligible/ineligible visits, containers, new/reused outcomes, reuse rate,
-maximum outcomes, and the final container-size histogram (bins 1 through 7 and
-8+).
+Eligibility uses its own `STS_S3_PERSISTENT_ENDTURN_MAX_PILE` boundary (default
+8), independent of the earlier marginalization prototype: pre-action outcome is
+`UNDECIDED`, action is END_TURN, draw pile size is at most the configured bound,
+and the boundary is not an empty-draw/nonempty-discard immediate reshuffle.
+Unlike the rejected eager marginalization prototype, each simulation executes
+exactly one normal sampled transition and creates or reuses only that observed
+outcome. There is no widening or outcome cap. Process-exit diagnostics report
+eligible/ineligible visits, containers, new/reused outcomes, reuse rate, maximum
+outcomes, and the final container-size histogram (bins 1 through 7 and 8+).
+They also compare each container's pre-action visible hash with its first visit,
+using the same hash semantics as existing node observation-stability tracking,
+to identify legacy edges that receive multiple visible pre-states. Outcome
+children remain keyed by exact full `CombatObservation` equality, not this
+diagnostic hash.
 
 ## Known limitations
 

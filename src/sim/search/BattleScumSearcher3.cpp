@@ -144,6 +144,7 @@ bool g_s3EndTurnMarginalize = false;
 int g_s3EndTurnMarginalizeParticles = 16;
 int g_s3EndTurnMarginalizeMaxPile = 8;
 bool g_s3PersistentEndTurnChance = false;
+int g_s3PersistentEndTurnMaxPile = 8;
 
 static std::atomic<std::int64_t> g_pcEligible{0};
 static std::atomic<std::int64_t> g_pcIneligible{0};
@@ -153,6 +154,11 @@ static std::atomic<std::int64_t> g_pcOutcomeChildrenCreated{0};
 static std::atomic<std::int64_t> g_pcOutcomeExistingHits{0};
 static std::atomic<std::int64_t> g_pcOutcomeNewMisses{0};
 static std::atomic<std::int64_t> g_pcMaxOutcomesPerContainer{0};
+static std::atomic<std::int64_t> g_pcContainersWithPreObservationMismatch{0};
+static std::atomic<std::int64_t> g_pcMaxOutcomesAfterPreObservationMismatch{0};
+static std::atomic<std::int64_t> g_pcMaxContainerPreObservationVisits{0};
+static std::atomic<std::int64_t> g_pcMaxContainerPreObservationMismatches{0};
+static std::mutex g_pcMaxContainerMutex;
 static std::array<std::atomic<std::int64_t>, 9> g_pcOutcomeCountHistogram{};
 
 // ── Draw-probability diagnostic (STS_S3_DRAW_PROB_DIAG) ───────────────
@@ -2551,8 +2557,10 @@ static double alphaForRolloutSteps(int steps) {
 }
 
 bool s3PersistentChanceFlagsCompatible(bool persistentChance,
-                                       bool strategyFusionDiag) {
-    return !(persistentChance && strategyFusionDiag);
+                                       bool strategyFusionDiag,
+                                       bool eagerMarginalization) {
+    return !(persistentChance
+             && (strategyFusionDiag || eagerMarginalization));
 }
 
 void printPersistentEndTurnChanceDiagnostics() {
@@ -2570,6 +2578,14 @@ void printPersistentEndTurnChanceDiagnostics() {
               << (visits > 0 ? static_cast<double>(hits) / visits : 0.0) << ','
               << "\"max_outcomes_per_container\":"
               << g_pcMaxOutcomesPerContainer.load() << ','
+              << "\"containers_with_pre_observation_hash_mismatch\":"
+              << g_pcContainersWithPreObservationMismatch.load() << ','
+              << "\"max_outcomes_after_pre_observation_hash_mismatch\":"
+              << g_pcMaxOutcomesAfterPreObservationMismatch.load() << ','
+              << "\"max_outcome_container_pre_observation_visits\":"
+              << g_pcMaxContainerPreObservationVisits.load() << ','
+              << "\"max_outcome_container_pre_observation_hash_mismatches\":"
+              << g_pcMaxContainerPreObservationMismatches.load() << ','
               << "\"distinct_outcomes_per_container\":[";
     for (std::size_t i = 1; i < g_pcOutcomeCountHistogram.size(); ++i) {
         if (i > 1) std::cerr << ',';
@@ -2586,17 +2602,41 @@ bool BattleScumSearcher3::persistentEndTurnEligible(
     const int drawSize = static_cast<int>(preState.cards.drawPile.size());
     const int discardSize = static_cast<int>(preState.cards.discardPile.size());
     const bool immediateReshuffle = drawSize == 0 && discardSize > 0;
-    return drawSize <= g_s3EndTurnMarginalizeMaxPile && !immediateReshuffle;
+    return drawSize <= g_s3PersistentEndTurnMaxPile && !immediateReshuffle;
 }
 
 BattleScumSearcher3::Node &BattleScumSearcher3::dispatchPersistentEndTurnOutcome(
-    Edge &edge, const CombatObservation &postObservation) {
+    Edge &edge, std::uint64_t preObservationHash,
+    const CombatObservation &postObservation) {
     ++chanceContainerVisits;
     ++g_pcContainerVisits;
     if (!edge.persistentChanceContainer) {
         edge.persistentChanceContainer = true;
         ++chanceContainersCreated;
         ++g_pcContainersCreated;
+    }
+    ++edge.persistentPreObservationVisits;
+    if (!edge.persistentPreObservationCached) {
+        edge.persistentPreObservationCached = true;
+        edge.persistentFirstPreObservationHash = preObservationHash;
+    } else if (edge.persistentFirstPreObservationHash != preObservationHash) {
+        ++edge.persistentPreObservationMismatches;
+        if (edge.persistentPreObservationMismatches == 1) {
+            ++g_pcContainersWithPreObservationMismatch;
+            auto mixedMax = g_pcMaxOutcomesAfterPreObservationMismatch.load();
+            while (mixedMax < static_cast<std::int64_t>(edge.outcomeChildren.size())
+                   && !g_pcMaxOutcomesAfterPreObservationMismatch.compare_exchange_weak(
+                       mixedMax,
+                       static_cast<std::int64_t>(edge.outcomeChildren.size()))) {}
+            std::lock_guard<std::mutex> lock(g_pcMaxContainerMutex);
+            if (static_cast<std::int64_t>(edge.outcomeChildren.size())
+                == g_pcMaxOutcomesPerContainer.load()) {
+                g_pcMaxContainerPreObservationVisits.store(
+                    edge.persistentPreObservationVisits);
+                g_pcMaxContainerPreObservationMismatches.store(
+                    edge.persistentPreObservationMismatches);
+            }
+        }
     }
     for (auto &outcome : edge.outcomeChildren) {
         if (outcome.observation == postObservation) {
@@ -2625,10 +2665,23 @@ BattleScumSearcher3::Node &BattleScumSearcher3::dispatchPersistentEndTurnOutcome
     ++g_pcOutcomeCountHistogram[newBin];
     maxOutcomesPerContainer = std::max<std::int64_t>(
         maxOutcomesPerContainer, static_cast<std::int64_t>(newSize));
-    auto observedMax = g_pcMaxOutcomesPerContainer.load();
-    while (observedMax < static_cast<std::int64_t>(newSize)
-           && !g_pcMaxOutcomesPerContainer.compare_exchange_weak(
-               observedMax, static_cast<std::int64_t>(newSize))) {}
+    if (edge.persistentPreObservationMismatches > 0) {
+        auto mixedMax = g_pcMaxOutcomesAfterPreObservationMismatch.load();
+        while (mixedMax < static_cast<std::int64_t>(newSize)
+               && !g_pcMaxOutcomesAfterPreObservationMismatch.compare_exchange_weak(
+                   mixedMax, static_cast<std::int64_t>(newSize))) {}
+    }
+    {
+        std::lock_guard<std::mutex> lock(g_pcMaxContainerMutex);
+        if (static_cast<std::int64_t>(newSize)
+            > g_pcMaxOutcomesPerContainer.load()) {
+            g_pcMaxOutcomesPerContainer.store(static_cast<std::int64_t>(newSize));
+            g_pcMaxContainerPreObservationVisits.store(
+                edge.persistentPreObservationVisits);
+            g_pcMaxContainerPreObservationMismatches.store(
+                edge.persistentPreObservationMismatches);
+        }
+    }
     return edge.outcomeChildren.back().child;
 }
 
@@ -2722,6 +2775,8 @@ void BattleScumSearcher3::step() {
             if (g_s3EndTurnMarginalize) preExecState = state;
             const bool persistentEndTurn = g_s3PersistentEndTurnChance
                 && persistentEndTurnEligible(state, edge.action);
+            const auto persistentPreObservationHash = persistentEndTurn
+                ? CombatObservation::fromBattleContext(state).visibleHash() : 0;
             if (g_s3PersistentEndTurnChance
                 && edge.action.getActionType() == ActionType::END_TURN) {
                 if (persistentEndTurn) {
@@ -2750,7 +2805,7 @@ void BattleScumSearcher3::step() {
                 const auto postObservation =
                     CombatObservation::fromBattleContext(state);
                 path.push_back(&dispatchPersistentEndTurnOutcome(
-                    edge, postObservation));
+                    edge, persistentPreObservationHash, postObservation));
             }
             if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
 
@@ -3134,6 +3189,8 @@ void BattleScumSearcher3::step() {
                         state.turn, decisionIndex);
                     const bool persistentEndTurn = g_s3PersistentEndTurnChance
                         && persistentEndTurnEligible(state, execAction);
+                    const auto persistentPreObservationHash = persistentEndTurn
+                        ? CombatObservation::fromBattleContext(state).visibleHash() : 0;
                     if (g_s3PersistentEndTurnChance
                         && execAction.getActionType() == ActionType::END_TURN) {
                         if (persistentEndTurn) {
@@ -3151,7 +3208,8 @@ void BattleScumSearcher3::step() {
                     if (persistentEndTurn) {
                         path.push_back(cur);
                         cur = &dispatchPersistentEndTurnOutcome(
-                            validEdge, CombatObservation::fromBattleContext(state));
+                            validEdge, persistentPreObservationHash,
+                            CombatObservation::fromBattleContext(state));
                     }
                     if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
                     continue;
@@ -3210,6 +3268,8 @@ void BattleScumSearcher3::step() {
                                     state.turn, decisionIndex);
                                 const bool persistentEndTurn = g_s3PersistentEndTurnChance
                                     && persistentEndTurnEligible(state, newEdge.action);
+                                const auto persistentPreObservationHash = persistentEndTurn
+                                    ? CombatObservation::fromBattleContext(state).visibleHash() : 0;
                                 if (g_s3PersistentEndTurnChance
                                     && newEdge.action.getActionType() == ActionType::END_TURN) {
                                     if (persistentEndTurn) {
@@ -3227,7 +3287,8 @@ void BattleScumSearcher3::step() {
                                 if (persistentEndTurn) {
                                     path.push_back(cur);
                                     cur = &dispatchPersistentEndTurnOutcome(
-                                        newEdge, CombatObservation::fromBattleContext(state));
+                                        newEdge, persistentPreObservationHash,
+                                        CombatObservation::fromBattleContext(state));
                                 }
                                 if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
                                 continue;
@@ -3269,6 +3330,8 @@ void BattleScumSearcher3::step() {
                                     state.turn, decisionIndex);
                                 const bool persistentEndTurn = g_s3PersistentEndTurnChance
                                     && persistentEndTurnEligible(state, newEdge.action);
+                                const auto persistentPreObservationHash = persistentEndTurn
+                                    ? CombatObservation::fromBattleContext(state).visibleHash() : 0;
                                 if (g_s3PersistentEndTurnChance
                                     && newEdge.action.getActionType() == ActionType::END_TURN) {
                                     if (persistentEndTurn) {
@@ -3286,7 +3349,8 @@ void BattleScumSearcher3::step() {
                                 if (persistentEndTurn) {
                                     path.push_back(cur);
                                     cur = &dispatchPersistentEndTurnOutcome(
-                                        newEdge, CombatObservation::fromBattleContext(state));
+                                        newEdge, persistentPreObservationHash,
+                                        CombatObservation::fromBattleContext(state));
                                 }
                                 if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
                                 continue;
@@ -3348,6 +3412,8 @@ void BattleScumSearcher3::step() {
             state.turn, decisionIndex);
         const bool persistentEndTurn = g_s3PersistentEndTurnChance
             && persistentEndTurnEligible(state, effectiveAction);
+        const auto persistentPreObservationHash = persistentEndTurn
+            ? CombatObservation::fromBattleContext(state).visibleHash() : 0;
         if (g_s3PersistentEndTurnChance
             && effectiveAction.getActionType() == ActionType::END_TURN) {
             if (persistentEndTurn) {
@@ -3365,7 +3431,8 @@ void BattleScumSearcher3::step() {
         if (persistentEndTurn) {
             path.push_back(cur);
             cur = &dispatchPersistentEndTurnOutcome(
-                edge, CombatObservation::fromBattleContext(state));
+                edge, persistentPreObservationHash,
+                CombatObservation::fromBattleContext(state));
         }
         if (g_s3Belief && g_s3InternalBeliefUpdate) belief.update(CombatObservation::fromBattleContext(state));
 
