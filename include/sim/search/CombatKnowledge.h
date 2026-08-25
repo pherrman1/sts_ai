@@ -25,10 +25,13 @@ enum class CombatKnowledgeEventType : std::uint8_t {
     RANDOM_UNKNOWN_INSERT,
     FULL_ORDER_BECAME_VISIBLE,
     FULL_ORDER_NO_LONGER_VISIBLE,
-    // The live simulator has already rolled this intent, but Runic Dome makes
-    // the result unavailable to the player.  This event records only the
-    // public inputs at roll time, never the rolled move or an RNG value.
-    HIDDEN_MONSTER_INTENT_ROLLED,
+    // A possible hidden intent roll has begun. The observer decides whether
+    // this is epistemically hidden from its pre-combat GameContext setup;
+    // Monster::rollMove must not infer that from Player during init.
+    HIDDEN_MONSTER_INTENT_ROLL_STARTED,
+    // The deferred intent has become public (monster turn or intent-query).
+    // It consumes the pending chain and records the now-observable state.
+    HIDDEN_MONSTER_INTENT_MATERIALIZED,
 };
 
 // Type-free representation of exactly the mutable values Silver captures at
@@ -58,6 +61,12 @@ struct CombatKnowledgeEvent {
     bool hasCard = false;
     int monsterIdx = -1;
     HiddenIntentRollInputs hiddenIntentInputs {};
+    // These fields are snapshots of the public monster state *before* a
+    // hidden roll, or immediately after a pending move becomes public. They
+    // deliberately never carry a newly rolled hidden move at a decision root.
+    std::array<std::int16_t, 2> publicMoveHistory {};
+    std::int32_t publicMonsterMiscInfo = 0;
+    bool hasPublicMonsterState = false;
     // Public cardinality for operations such as discard->draw reshuffle that
     // replace the entire draw region without exposing an ordering.
     int drawPileSize = -1;
@@ -75,7 +84,13 @@ extern thread_local CombatKnowledgeObserver *g_combatKnowledgeObserver;
 void emitCombatKnowledgeEvent(const CombatKnowledgeEvent &event);
 void emitCombatKnowledgeEvent(CombatKnowledgeEventType type);
 void emitCombatKnowledgeEvent(CombatKnowledgeEventType type, const CardInstance &card);
-void emitHiddenMonsterIntentRolled(int monsterIdx, const HiddenIntentRollInputs &inputs);
+void emitHiddenMonsterIntentRollStarted(
+    int monsterIdx, const HiddenIntentRollInputs &inputs,
+    std::int16_t publicMove, std::int16_t publicPreviousMove,
+    std::int32_t publicMiscInfo);
+void emitHiddenMonsterIntentMaterialized(
+    int monsterIdx, std::int16_t publicMove, std::int16_t publicPreviousMove,
+    std::int32_t publicMiscInfo);
 
 // The top and bottom vectors use the live pile convention: knownTop.back() is
 // the next card to draw, and knownBottom[0] is the card drawn last. Outside
@@ -91,18 +106,26 @@ struct CombatKnowledgeState final : CombatKnowledgeObserver {
     std::uint64_t consistencyFailureCount = 0;
     // Last semantic observer event, retained only for fail-closed diagnostics.
     CombatKnowledgeEventType lastEvent = CombatKnowledgeEventType::SHUFFLE_OCCURRED;
-    std::array<std::uint32_t, 11> eventCounts {};
+    std::array<std::uint32_t, 12> eventCounts {};
     CardInstance lastExpectedKnownDraw {};
     CardInstance lastObservedDraw {};
     bool hasDrawMismatch = false;
     int lastObservedDrawPileSize = 0;
     std::array<std::uint8_t, 5> pendingHiddenIntentRolls {};
     std::array<HiddenIntentRollInputs, 5> pendingHiddenIntentInputs {};
+    // Configured from GameContext before BattleContext::init. This is a
+    // knowledge-policy fact, not a property read from the already-initialized
+    // Player, whose relic list is unavailable during monster initialization.
+    bool hiddenMonsterIntents = false;
+    std::array<std::array<std::int16_t, 2>, 5> publicMonsterMoveHistory {};
+    std::array<std::int32_t, 5> publicMonsterMiscInfo {};
+    std::array<bool, 5> hasPublicMonsterState {};
     bool initializationInProgress = false;
 
     // Establishes visibility at a live decision boundary. It reads a concrete
     // draw order only when Frozen Eye makes that order legitimately observable.
     void initializeFromLiveBattle(const BattleContext &bc);
+    void configureHiddenMonsterIntents(bool intentsHidden);
     // Begins the pre-init observer phase: pile events are intentionally
     // ignored until the post-init public pile can be synchronized, while
     // Runic-Dome public intent-roll inputs remain recorded.

@@ -379,8 +379,14 @@ ConvertedStateDigest inspectConvertedBattleState(const BattleStateWire &state) {
         const sts::BattleContext native = materialize(state);
         int pending = 0;
         for (const auto &m : native.monsters.arr) pending += m.pendingMoveRolls;
-        return {true, true, digest(native), native.cards.drawPile.size(), native.cards.drawPile.knownCount(),
-                native.cards.drawPile.knownBottom(), pending};
+        ConvertedStateDigest result {true, true, digest(native), native.cards.drawPile.size(),
+                                     native.cards.drawPile.knownCount(), native.cards.drawPile.knownBottom(), pending};
+        for (std::size_t i = 0; i < result.monsterMoveHistory.size(); ++i) {
+            result.monsterMoveHistory[i] = {static_cast<std::int16_t>(native.monsters.arr[i].moveHistory[0]),
+                                            static_cast<std::int16_t>(native.monsters.arr[i].moveHistory[1])};
+            result.monsterMiscInfo[i] = native.monsters.arr[i].miscInfo;
+        }
+        return result;
     } catch (const std::exception &) {
         return {};
     }

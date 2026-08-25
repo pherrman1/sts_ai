@@ -111,14 +111,24 @@ int main() {
     BattleContext dome;
     dome.init(domeGc, MonsterEncounter::CULTIST);
     search::CombatKnowledgeState domeKnowledge;
+    domeKnowledge.configureHiddenMonsterIntents(true);
     domeKnowledge.initializeFromLiveBattle(dome);
     for (int i = 0; i < dome.monsters.monsterCount; ++i) {
         search::HiddenIntentRollInputs inputs;
         inputs.curHp = static_cast<std::int16_t>(dome.monsters.arr[i].curHp);
         inputs.maxHp = static_cast<std::int16_t>(dome.monsters.arr[i].maxHp);
         inputs.monsterTurnNumber = static_cast<std::int16_t>(dome.getMonsterTurnNumber());
-        domeKnowledge.observeCombatKnowledgeEvent(
-            {search::CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_ROLLED, {}, false, i, inputs});
+        search::CombatKnowledgeEvent event {search::CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_ROLL_STARTED};
+        event.monsterIdx = i;
+        event.hiddenIntentInputs = inputs;
+        // This legacy bridge-only redaction check supplies an explicitly
+        // public pre-roll state; real lifecycle coverage is in the dedicated
+        // runic_dome_lifecycle_test executable.
+        event.publicMoveHistory = {static_cast<std::int16_t>(MonsterMoveId::INVALID),
+                                   static_cast<std::int16_t>(MonsterMoveId::INVALID)};
+        event.publicMonsterMiscInfo = dome.monsters.arr[i].miscInfo;
+        event.hasPublicMonsterState = true;
+        domeKnowledge.observeCombatKnowledgeEvent(event);
     }
     BattleContext domeDifferentIntent = dome;
     domeDifferentIntent.monsters.arr[0].moveHistory[0] = MonsterMoveId::CULTIST_INCANTATION;

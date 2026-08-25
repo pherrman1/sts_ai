@@ -128,6 +128,14 @@ target_include_directories(silver-bridge-test PRIVATE include json/include)
 target_link_libraries(silver-bridge-test PRIVATE silver_combat_search_bridge)
 target_link_options(silver-bridge-test PRIVATE -Wl,--gc-sections)
 
+# Real live Runic-Dome lifecycle coverage: the observer is configured before
+# battle init and exercises monster turns, chained rerolls, and intent query.
+add_executable(runic-dome-lifecycle-test apps/runic_dome_lifecycle_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(runic-dome-lifecycle-test PROPERTIES OUTPUT_NAME runic_dome_lifecycle_test)
+target_include_directories(runic-dome-lifecycle-test PRIVATE include json/include)
+target_link_libraries(runic-dome-lifecycle-test PRIVATE silver_combat_search_bridge)
+target_link_options(runic-dome-lifecycle-test PRIVATE -Wl,--gc-sections)
+
 # One controlled real-combat bridge smoke. It deliberately runs no campaign
 # seeds and verifies only conversion -> Silver decision -> semantic lowering
 # -> ordinary live action execution.
@@ -261,6 +269,7 @@ add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_rando
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
+add_test(NAME runic_dome_lifecycle COMMAND $<TARGET_FILE:runic-dome-lifecycle-test>)
 add_test(NAME py_compile_analyze_postcombat_raw_terminal COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_postcombat_raw_terminal.py)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME py_compile_analyze_runwin_shadow COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py)

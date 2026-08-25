@@ -24,10 +24,27 @@ void emitCombatKnowledgeEvent(CombatKnowledgeEventType type, const CardInstance 
     emitCombatKnowledgeEvent(CombatKnowledgeEvent{type, card, true});
 }
 
-void emitHiddenMonsterIntentRolled(int monsterIdx, const HiddenIntentRollInputs &inputs) {
-    CombatKnowledgeEvent event {CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_ROLLED};
+void emitHiddenMonsterIntentRollStarted(
+        int monsterIdx, const HiddenIntentRollInputs &inputs,
+        std::int16_t publicMove, std::int16_t publicPreviousMove,
+        std::int32_t publicMiscInfo) {
+    CombatKnowledgeEvent event {CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_ROLL_STARTED};
     event.monsterIdx = monsterIdx;
     event.hiddenIntentInputs = inputs;
+    event.publicMoveHistory = {publicMove, publicPreviousMove};
+    event.publicMonsterMiscInfo = publicMiscInfo;
+    event.hasPublicMonsterState = true;
+    emitCombatKnowledgeEvent(event);
+}
+
+void emitHiddenMonsterIntentMaterialized(
+        int monsterIdx, std::int16_t publicMove, std::int16_t publicPreviousMove,
+        std::int32_t publicMiscInfo) {
+    CombatKnowledgeEvent event {CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_MATERIALIZED};
+    event.monsterIdx = monsterIdx;
+    event.publicMoveHistory = {publicMove, publicPreviousMove};
+    event.publicMonsterMiscInfo = publicMiscInfo;
+    event.hasPublicMonsterState = true;
     emitCombatKnowledgeEvent(event);
 }
 
@@ -57,12 +74,19 @@ void CombatKnowledgeState::clearPositionalKnowledge() {
     ++invalidationCount;
 }
 
+void CombatKnowledgeState::configureHiddenMonsterIntents(bool intentsHidden) {
+    hiddenMonsterIntents = intentsHidden;
+}
+
 void CombatKnowledgeState::initializeFromLiveBattle(const BattleContext &bc) {
     knownTop.clear();
     knownBottom.clear();
     fullDrawPileOrderObserved = bc.player.hasRelic<RelicId::FROZEN_EYE>();
     pendingHiddenIntentRolls.fill(0);
     pendingHiddenIntentInputs.fill({});
+    publicMonsterMoveHistory.fill({});
+    publicMonsterMiscInfo.fill(0);
+    hasPublicMonsterState.fill(false);
     eventCounts.fill(0);
     hasDrawMismatch = false;
     initializationInProgress = false;
@@ -78,6 +102,9 @@ void CombatKnowledgeState::beginCombatInitialization() {
     knownBottom.clear();
     pendingHiddenIntentRolls.fill(0);
     pendingHiddenIntentInputs.fill({});
+    publicMonsterMoveHistory.fill({});
+    publicMonsterMiscInfo.fill(0);
+    hasPublicMonsterState.fill(false);
     eventCounts.fill(0);
     consistencyFailureCount = 0;
     hasDrawMismatch = false;
@@ -164,7 +191,7 @@ bool CombatKnowledgeState::removeObservedPileCard(const CardInstance &card) {
 void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEvent &event) {
     lastEvent = event.type;
     ++eventCounts[static_cast<std::size_t>(event.type)];
-    if (initializationInProgress && event.type != CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_ROLLED) {
+    if (initializationInProgress && event.type != CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_ROLL_STARTED) {
         return;
     }
     switch (event.type) {
@@ -212,15 +239,42 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
         fullDrawPileOrderObserved = false;
         clearPositionalKnowledge();
         return;
-    case CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_ROLLED:
+    case CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_ROLL_STARTED:
+        if (!hiddenMonsterIntents) return;
         if (event.monsterIdx < 0 || event.monsterIdx >= static_cast<int>(pendingHiddenIntentRolls.size())) {
             ++consistencyFailureCount;
             return;
+        }
+        // Capture only at the beginning of a deferred chain. A chained live
+        // reroll can contain an already-hidden move in its concrete history;
+        // retaining that second snapshot would leak it into the Silver root.
+        if (pendingHiddenIntentRolls[event.monsterIdx] == 0) {
+            if (!event.hasPublicMonsterState) {
+                ++consistencyFailureCount;
+                return;
+            }
+            publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
+            publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
+            hasPublicMonsterState[event.monsterIdx] = true;
         }
         if (pendingHiddenIntentRolls[event.monsterIdx] < 255) {
             ++pendingHiddenIntentRolls[event.monsterIdx];
         }
         pendingHiddenIntentInputs[event.monsterIdx] = event.hiddenIntentInputs;
+        ++generation;
+        return;
+    case CombatKnowledgeEventType::HIDDEN_MONSTER_INTENT_MATERIALIZED:
+        if (!hiddenMonsterIntents) return;
+        if (event.monsterIdx < 0 || event.monsterIdx >= static_cast<int>(pendingHiddenIntentRolls.size())
+                || !event.hasPublicMonsterState) {
+            ++consistencyFailureCount;
+            return;
+        }
+        pendingHiddenIntentRolls[event.monsterIdx] = 0;
+        pendingHiddenIntentInputs[event.monsterIdx] = {};
+        publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
+        publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
+        hasPublicMonsterState[event.monsterIdx] = true;
         ++generation;
         return;
     }

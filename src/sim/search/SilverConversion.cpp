@@ -140,7 +140,12 @@ silver_bridge::BattleStateWire makeSilverBattleStateWire(
     silver_bridge::BattleStateWire out;
     out.valid = knowledge.consistencyFailureCount == 0;
     out.fullDrawOrderObserved = knowledge.fullDrawPileOrderObserved;
-    out.intentsHidden = !liveMonsterIntentIsObservable(live);
+    // This is observer configuration captured from GameContext before live
+    // monster initialization. Reading Player's initialized relic state here
+    // cannot repair a missing pre-init configuration: that would conceal a
+    // lifecycle error and could leak the materialized live move.
+    out.intentsHidden = knowledge.hiddenMonsterIntents;
+    if (out.intentsHidden != !liveMonsterIntentIsObservable(live)) out.valid = false;
     out.isolatedSearchSeed = isolatedSearchSeed;
     out.observedGeneration = knowledge.generation;
     out.floorNum = live.floorNum;
@@ -197,19 +202,26 @@ silver_bridge::BattleStateWire makeSilverBattleStateWire(
         wm.idx = m.idx; wm.id = static_cast<std::int16_t>(m.id); wm.curHp = m.curHp;
         wm.maxHp = m.maxHp; wm.block = m.block; wm.isEscapingB = m.isEscapingB;
         wm.halfDead = m.halfDead; wm.escapeNext = m.escapeNext;
-        // The concrete materialized intent is not observable under Runic Dome.
         if (!out.intentsHidden) {
             wm.moveHistory = {static_cast<std::int16_t>(m.moveHistory[0]), static_cast<std::int16_t>(m.moveHistory[1])};
+            wm.miscInfo = m.miscInfo;
+        } else if (m.idx >= 0 && knowledge.hasPublicMonsterState[i]) {
+            // Do not read the concrete immediate live roll under Runic Dome.
+            // For a deferred chain this is the public pre-roll snapshot; once
+            // materialized (e.g. Spot Weakness) it is the public result.
+            wm.moveHistory = knowledge.publicMonsterMoveHistory[i];
+            wm.miscInfo = knowledge.publicMonsterMiscInfo[i];
+        } else if (m.idx >= 0) {
+            out.valid = false;
         }
         wm.statusBits = m.statusBits;
         wm.smallPowers = {m.artifact, m.blockReturn, m.choked, m.corpseExplosion, m.lockOn,
                           m.mark, m.metallicize, m.platedArmor, m.poison, m.regen, m.shackled};
         wm.strength = m.strength; wm.vulnerable = m.vulnerable; wm.weak = m.weak;
-        wm.uniquePower0 = m.uniquePower0; wm.uniquePower1 = m.uniquePower1; wm.miscInfo = m.miscInfo;
+        wm.uniquePower0 = m.uniquePower0; wm.uniquePower1 = m.uniquePower1;
         if (out.intentsHidden) {
             wm.pendingMoveRolls = knowledge.pendingHiddenIntentRolls[i];
             wm.pendingRollInputs = toWire(knowledge.pendingHiddenIntentInputs[i]);
-            if (m.idx >= 0 && wm.pendingMoveRolls == 0) out.valid = false;
         }
     }
 

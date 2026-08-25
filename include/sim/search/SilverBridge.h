@@ -157,6 +157,8 @@ struct ConvertedStateDigest {
     int knownTop = 0;
     int knownBottom = 0;
     int pendingIntentRolls = 0;
+    std::array<std::array<std::int16_t, 2>, 5> monsterMoveHistory {};
+    std::array<std::int32_t, 5> monsterMiscInfo {};
 };
 
 enum class SemanticActionType : std::uint8_t {

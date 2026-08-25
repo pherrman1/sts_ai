@@ -73,6 +73,10 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     CombatKnowledgeState knowledge;
     // Clear per-combat diagnostics before the observer sees initialization.
     g_silverLiveDiagnostics = {};
+    // Monster initialization rolls before BattleContext initializes Player
+    // relics. Capture Runic Dome visibility from GameContext up front rather
+    // than asking Monster::rollMove to inspect an uninitialized Player.
+    knowledge.configureHiddenMonsterIntents(gc.relics.has(RelicId::RUNIC_DOME));
     knowledge.initializeFromLiveBattle(bc);
     knowledge.beginCombatInitialization();
     KnowledgeObserverScope observer(knowledge);
