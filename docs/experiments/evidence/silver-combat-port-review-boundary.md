@@ -96,7 +96,7 @@ All commands used the temporary Linux build directory
 | `silver_native_test` | `silver_searcher_link_closure PASS` |
 | vendored native runner, `det 16` | root edges/visits/Q/nodes/chance/transposition report exactly equals clean upstream runner |
 | vendored native runner, `known_top 16` | root edges/visits/Q/nodes/chance/transposition report exactly equals clean upstream runner |
-| `git diff --check` | pass before final documentation addition; rerun required immediately before commit |
+| CRLF-aware `git diff --check` | initial vendored import exposed inherited trailing whitespace/blank EOF lines; normalized mechanically in follow-up `b69bade`, then working-tree check passed |
 
 Direct upstream comparison used a clean detached worktree at the pinned Silver
 SHA. The same untracked fixture runner and minimal helper blocks were compiled
