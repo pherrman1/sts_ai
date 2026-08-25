@@ -113,6 +113,7 @@ add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
 add_test(NAME semantic_card_edges COMMAND $<TARGET_FILE:unit-test> semantic_card_edges)
 add_test(NAME s3_drawpile_reuse_boundary COMMAND $<TARGET_FILE:unit-test> s3_drawpile_reuse_boundary)
 add_test(NAME s3_strategy_fusion_diag COMMAND $<TARGET_FILE:unit-test> s3_strategy_fusion_diag 12345)
+add_test(NAME s3_persistent_endturn_chance COMMAND $<TARGET_FILE:unit-test> s3_persistent_endturn_chance 12345)
 add_test(NAME thorns_retaliation COMMAND $<TARGET_FILE:unit-test> thorns_retaliation)
 add_test(NAME awakened_one_stage2 COMMAND $<TARGET_FILE:unit-test> awakened_one_stage2)
 add_test(NAME darkling_victory COMMAND $<TARGET_FILE:unit-test> darkling_victory)
@@ -137,13 +138,19 @@ add_test(NAME py_compile_analyze_s3_sibling_crn COMMAND python3 -m py_compile ${
 add_test(NAME analyze_s3_sibling_crn_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_s3_sibling_crn.py --self-test)
 add_test(NAME py_compile_select_s3_crn_states COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/select_s3_crn_states.py)
 add_test(NAME select_s3_crn_states_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/select_s3_crn_states.py --self-test)
+add_test(NAME py_compile_analyze_runwin_rank COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_rank.py)
+add_test(NAME analyze_runwin_rank_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_rank.py --self-test)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
 add_test(NAME runwin_e2c_native_parity COMMAND ${CMAKE_COMMAND} -E env
     STS_NATIVE_OOC=0
     STS_RUNWIN_SHADOW_MODEL=${CMAKE_SOURCE_DIR}/tools/runwin_e2c_synthetic.txt
     $<TARGET_FILE:one_combat> runwinparity ${CMAKE_SOURCE_DIR}/tools/runwin_e2c_synthetic_parity.csv)
+add_test(NAME runwin_e2c_production_native_parity COMMAND ${CMAKE_COMMAND} -E env
+    STS_NATIVE_OOC=0
+    STS_RUNWIN_SHADOW_MODEL=${CMAKE_SOURCE_DIR}/models/v_runwin_e2c_v2.txt
+    $<TARGET_FILE:one_combat> runwinparity ${CMAKE_SOURCE_DIR}/tests/data/v_runwin_e2c_v2_parity.csv)
 add_test(NAME e2c_runwin_projection_parity COMMAND ${CMAKE_COMMAND} -E env
     STS_NATIVE_OOC=0
     $<TARGET_FILE:one_combat> e2cprojectiontest)
-set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest py_compile_winnettest_selftest check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip s3_sibling_crn designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope py_compile_analyze_postcombat_raw_terminal analyze_postcombat_raw_terminal_selftest py_compile_analyze_runwin_shadow analyze_runwin_shadow_selftest export_win_model_selftest runwin_e2c_native_parity
-    e2c_runwin_projection_parity PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")
+set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest py_compile_winnettest_selftest check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope py_compile_analyze_postcombat_raw_terminal analyze_postcombat_raw_terminal_selftest py_compile_analyze_runwin_shadow analyze_runwin_shadow_selftest py_compile_analyze_runwin_rank analyze_runwin_rank_selftest export_win_model_selftest runwin_e2c_native_parity
+    runwin_e2c_production_native_parity e2c_runwin_projection_parity PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")

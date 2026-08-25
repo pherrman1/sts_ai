@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-08-23 against `apps/one_combat.cpp::main`.
+Last verified: 2026-08-25 against `apps/one_combat.cpp::main`.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -71,6 +71,8 @@ These control the default executing configuration; they are always parsed.
 | `STS_S3_STRATEGY_FUSION_DIAG_MIN_CHILD_VISITS` | Minimum existing shared-child visits before measurement | `32` | `main` |
 | `STS_S3_STRATEGY_FUSION_DIAG_FRESH_SIMS` | Fresh conditioned Searcher3 simulations per visible outcome bucket | `500` | `main` |
 | `STS_S3_STRATEGY_FUSION_DIAG_REF_SIMS` | Deeper fresh Searcher3 reference simulations per bucket | `3000` | `main` |
+| `STS_S3_PERSISTENT_ENDTURN_CHANCE` | Experiment 4: persist full-`CombatObservation`-keyed continuation children below eligible END_TURN edges while retaining one aggregate parent-action value/visit stream; incompatible with `STS_S3_STRATEGY_FUSION_DIAG` and eager `STS_S3_ENDTURN_MARGINALIZE` | `0` (off) | `main` |
+| `STS_S3_PERSISTENT_ENDTURN_MAX_PILE` | Independent maximum pre-END_TURN draw-pile size eligible for persistent chance splitting | `8` | `main` |
 | `STS_RISK_LAMBDA` | Risk sensitivity for S3 PUCT | 0.5 | `main` ~L9845 |
 
 The probe CSV contains `target` from the isolated common-RNG rollout for every
