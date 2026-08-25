@@ -195,8 +195,31 @@ void testPostTurnDeterministicAndDirectRandomTransitions() {
     random.bc.monsters.arr[0].takeTurn(random.bc);
     check(random.knowledge.hasUnrepresentableHiddenIntent[0],
           "Looter direct post-turn RNG must be marked hidden, never published from live setMove");
-    check(!random.wire().valid,
-          "unrepresented direct post-turn RNG must fail conversion rather than leak its live result");
+    const auto randomRoot = silver_bridge::inspectConvertedBattleState(random.wire());
+    check(randomRoot.accepted && randomRoot.pendingIntentRolls == 0
+              && randomRoot.pendingDirectMoveChoices == 1
+              && randomRoot.monsterMoveHistory[0][0]
+                    == static_cast<std::int16_t>(MonsterMoveId::LOOTER_MUG),
+          "Looter direct post-turn RNG must materialize as a private deferred 50/50 choice, never its live result");
+    const auto materializedChoice = silver_bridge::materializeDeferredMonsterIntentsForTest(random.wire());
+    const auto selected = materializedChoice.monsterMoveHistory[0][0];
+    check(materializedChoice.accepted && materializedChoice.pendingDirectMoveChoices == 0
+              && (selected == static_cast<std::int16_t>(MonsterMoveId::LOOTER_SMOKE_BOMB)
+                  || selected == static_cast<std::int16_t>(MonsterMoveId::LOOTER_LUNGE)),
+          "deferred Looter choice must sample only its two upstream outcomes inside the isolated model");
+    bool sawSmokeBomb = false;
+    bool sawLunge = false;
+    for (std::uint64_t seed = 1; seed <= 32; ++seed) {
+        auto alternative = random.wire();
+        alternative.isolatedSearchSeed = seed;
+        const auto sampled = silver_bridge::materializeDeferredMonsterIntentsForTest(alternative);
+        sawSmokeBomb |= sampled.monsterMoveHistory[0][0]
+            == static_cast<std::int16_t>(MonsterMoveId::LOOTER_SMOKE_BOMB);
+        sawLunge |= sampled.monsterMoveHistory[0][0]
+            == static_cast<std::int16_t>(MonsterMoveId::LOOTER_LUNGE);
+    }
+    check(sawSmokeBomb && sawLunge,
+          "the deferred direct choice must remain stochastic across isolated Silver RNG realizations");
 }
 
 } // namespace

@@ -827,6 +827,21 @@ void Monster::materializePendingMove(BattleContext &bc) {
     }
 }
 
+void Monster::materializePendingDirectMoveChoice(BattleContext &bc) {
+    const auto choice = pendingDirectMoveChoice;
+    pendingDirectMoveChoice = DeferredDirectMoveChoice::NONE;
+    switch (choice) {
+    case DeferredDirectMoveChoice::LOOTER_AFTER_MUG:
+        setMove(bc.rng.randomBoolean(0.5f) ? MMID::LOOTER_SMOKE_BOMB : MMID::LOOTER_LUNGE);
+        return;
+    case DeferredDirectMoveChoice::MUGGER_AFTER_MUG:
+        setMove(bc.rng.randomBoolean(0.5f) ? MMID::MUGGER_SMOKE_BOMB : MMID::MUGGER_LUNGE);
+        return;
+    case DeferredDirectMoveChoice::NONE:
+        return;
+    }
+}
+
 void Monster::cancelPendingMove() {
     // A forced move override (stun, slime split, Guardian mode shift, rebirth/regrow) discards
     // any deferred roll rather than evaluating it. This matches the real game exactly because
@@ -839,6 +854,7 @@ void Monster::cancelPendingMove() {
     // check or a roll-time miscInfo write.
     pendingMoveRolls = 0;
     rollInputs = MonsterRollInputs{};
+    pendingDirectMoveChoice = DeferredDirectMoveChoice::NONE;
 }
 
 MonsterRollInputs Monster::captureRollInputs(const Monster &m, const BattleContext &bc) {
@@ -894,6 +910,7 @@ bool Monster::operator==(const Monster &rhs) const {
            moveHistory[1] == rhs.moveHistory[1] &&
            pendingMoveRolls == rhs.pendingMoveRolls &&
            rollInputs == rhs.rollInputs &&
+           pendingDirectMoveChoice == rhs.pendingDirectMoveChoice &&
            miscInfo == rhs.miscInfo;
 }
 

@@ -49,6 +49,16 @@ namespace sts {
         bool operator==(const MonsterRollInputs &rhs) const = default;
     };
 
+    // Bridge-only information-state closure for live sts_ai's Looter/Mugger
+    // post-turn 50/50 branch. Upstream Silver samples this directly inside
+    // takeTurn; an externally converted Runic-Dome root reaches the next
+    // player decision before that concrete result may be observed.
+    enum class DeferredDirectMoveChoice : std::uint8_t {
+        NONE = 0,
+        LOOTER_AFTER_MUG,
+        MUGGER_AFTER_MUG,
+    };
+
     struct Monster {
 
         /*
@@ -112,6 +122,7 @@ namespace sts {
         // the latest snapshot is exact. Both stay zeroed when nothing is pending.
         std::uint8_t pendingMoveRolls = 0;
         MonsterRollInputs rollInputs;
+        DeferredDirectMoveChoice pendingDirectMoveChoice = DeferredDirectMoveChoice::NONE;
 
         Monster() = default;
         Monster(const Monster& rhs) = default;
@@ -189,6 +200,7 @@ namespace sts {
         void rollMove(BattleContext &bc);
         void rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in);  // immediate roll: draws rng now
         void materializePendingMove(BattleContext &bc);  // evaluate deferred rolls; no-op when none pending
+        void materializePendingDirectMoveChoice(BattleContext &bc);
         void cancelPendingMove();  // discard deferred rolls at a forced move override (see impl comment)
         [[nodiscard]] static MonsterRollInputs captureRollInputs(const Monster &m, const BattleContext &bc);
 

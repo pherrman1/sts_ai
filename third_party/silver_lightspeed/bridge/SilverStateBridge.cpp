@@ -83,6 +83,7 @@ void monster(sts::Monster &out, const MonsterWire &in, bool intentsHidden) {
     out.uniquePower1 = in.uniquePower1; out.miscInfo = in.miscInfo;
     if (intentsHidden) {
         out.pendingMoveRolls = in.pendingMoveRolls;
+        out.pendingDirectMoveChoice = static_cast<sts::DeferredDirectMoveChoice>(in.pendingDirectMoveChoice);
         const auto &r = in.pendingRollInputs;
         out.rollInputs = {r.curHp, r.maxHp, r.knightCurHp, r.knightMaxHp, r.monsterTurnNumber,
                           r.miscInfo, r.aliveCount, r.monstersAlive, r.knightAlive,
@@ -154,7 +155,7 @@ std::uint64_t digest(const sts::BattleContext &state) {
     add(state.seed); add(static_cast<std::uint64_t>(state.turn)); add(state.player.curHp);
     add(state.player.energy); add(static_cast<std::uint64_t>(state.cards.drawPile.size()));
     for (const auto &c : state.cards.drawPile) { add(static_cast<std::uint64_t>(c.id)); add(c.uniqueId); }
-    for (const auto &m : state.monsters.arr) { add(static_cast<std::uint64_t>(m.id)); add(m.curHp); add(m.pendingMoveRolls); }
+    for (const auto &m : state.monsters.arr) { add(static_cast<std::uint64_t>(m.id)); add(m.curHp); add(m.pendingMoveRolls); add(static_cast<std::uint8_t>(m.pendingDirectMoveChoice)); }
     return h;
 }
 
@@ -378,9 +379,40 @@ ConvertedStateDigest inspectConvertedBattleState(const BattleStateWire &state) {
     try {
         const sts::BattleContext native = materialize(state);
         int pending = 0;
-        for (const auto &m : native.monsters.arr) pending += m.pendingMoveRolls;
+        int directChoices = 0;
+        for (const auto &m : native.monsters.arr) {
+            pending += m.pendingMoveRolls;
+            directChoices += m.pendingDirectMoveChoice != sts::DeferredDirectMoveChoice::NONE;
+        }
         ConvertedStateDigest result {true, true, digest(native), native.cards.drawPile.size(),
-                                     native.cards.drawPile.knownCount(), native.cards.drawPile.knownBottom(), pending};
+                                     native.cards.drawPile.knownCount(), native.cards.drawPile.knownBottom(), pending, directChoices};
+        for (std::size_t i = 0; i < result.monsterMoveHistory.size(); ++i) {
+            result.monsterMoveHistory[i] = {static_cast<std::int16_t>(native.monsters.arr[i].moveHistory[0]),
+                                            static_cast<std::int16_t>(native.monsters.arr[i].moveHistory[1])};
+            result.monsterMiscInfo[i] = native.monsters.arr[i].miscInfo;
+        }
+        return result;
+    } catch (const std::exception &) {
+        return {};
+    }
+}
+
+ConvertedStateDigest materializeDeferredMonsterIntentsForTest(const BattleStateWire &state) {
+    try {
+        sts::BattleContext native = materialize(state);
+        for (int i = 0; i < native.monsters.monsterCount; ++i) {
+            auto &monster = native.monsters.arr[i];
+            monster.materializePendingMove(native);
+            monster.materializePendingDirectMoveChoice(native);
+        }
+        int pending = 0;
+        int directChoices = 0;
+        for (const auto &monster : native.monsters.arr) {
+            pending += monster.pendingMoveRolls;
+            directChoices += monster.pendingDirectMoveChoice != sts::DeferredDirectMoveChoice::NONE;
+        }
+        ConvertedStateDigest result {true, true, digest(native), native.cards.drawPile.size(),
+                                     native.cards.drawPile.knownCount(), native.cards.drawPile.knownBottom(), pending, directChoices};
         for (std::size_t i = 0; i < result.monsterMoveHistory.size(); ++i) {
             result.monsterMoveHistory[i] = {static_cast<std::int16_t>(native.monsters.arr[i].moveHistory[0]),
                                             static_cast<std::int16_t>(native.monsters.arr[i].moveHistory[1])};

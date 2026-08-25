@@ -95,6 +95,9 @@ struct MonsterWire {
     std::int16_t uniquePower1 = 0;
     int miscInfo = 0;
     std::uint8_t pendingMoveRolls = 0;
+    // 0 none, 1 Looter-after-Mug, 2 Mugger-after-Mug. This carries only
+    // which public direct-choice rule is pending, never its live outcome.
+    std::uint8_t pendingDirectMoveChoice = 0;
     MonsterRollInputsWire pendingRollInputs {};
 };
 
@@ -157,6 +160,7 @@ struct ConvertedStateDigest {
     int knownTop = 0;
     int knownBottom = 0;
     int pendingIntentRolls = 0;
+    int pendingDirectMoveChoices = 0;
     std::array<std::array<std::int16_t, 2>, 5> monsterMoveHistory {};
     std::array<std::int32_t, 5> monsterMiscInfo {};
 };
@@ -281,6 +285,9 @@ SearcherConstructionProbe constructReferenceSearcherProbe();
 // Validates and materializes a private sts_silver::BattleContext. The opaque
 // result allows focused leakage/equality tests without exposing vendor types.
 ConvertedStateDigest inspectConvertedBattleState(const BattleStateWire &state);
+// Test-only materialization probe for deferred hidden monster choices. It
+// executes strictly inside the isolated Silver context, never live combat.
+ConvertedStateDigest materializeDeferredMonsterIntentsForTest(const BattleStateWire &state);
 bool convertedStatesEqualForSearch(const BattleStateWire &a, const BattleStateWire &b);
 
 // Runs Silver's sequential EXHAUST_MANY/GAMBLE interaction wholly in the

@@ -222,11 +222,22 @@ silver_bridge::BattleStateWire makeSilverBattleStateWire(
         if (out.intentsHidden) {
             wm.pendingMoveRolls = knowledge.pendingHiddenIntentRolls[i];
             wm.pendingRollInputs = toWire(knowledge.pendingHiddenIntentInputs[i]);
-            // Looter/Mugger have a direct post-turn random setMove that is
-            // sampled inside upstream Silver's takeTurn, not via rollMove.
-            // Until the bridge has a faithful deferred representation, reject
-            // this root rather than import the live realization.
-            if (knowledge.hasUnrepresentableHiddenIntent[i]) out.valid = false;
+            // Looter/Mugger sample their next move directly inside takeTurn,
+            // rather than through rollMove. At a post-turn Runic root the
+            // live concrete result is hidden, so carry only the public rule
+            // into the isolated model's deferred direct-choice state.
+            if (knowledge.hasUnrepresentableHiddenIntent[i]) {
+                const auto publicMove = knowledge.publicMonsterMoveHistory[i][0];
+                if (m.id == MonsterId::LOOTER
+                        && publicMove == static_cast<std::int16_t>(MonsterMoveId::LOOTER_MUG)) {
+                    wm.pendingDirectMoveChoice = 1;
+                } else if (m.id == MonsterId::MUGGER
+                        && publicMove == static_cast<std::int16_t>(MonsterMoveId::MUGGER_MUG)) {
+                    wm.pendingDirectMoveChoice = 2;
+                } else {
+                    out.valid = false;
+                }
+            }
         }
     }
 

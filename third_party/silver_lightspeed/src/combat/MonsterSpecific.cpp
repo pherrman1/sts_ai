@@ -339,6 +339,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
     // A roll deferred by Runic Dome materializes here, the moment before the move is acted on.
     // This runs inside the end-turn action, so the search sees the intent resolve as chance.
     materializePendingMove(bc);
+    materializePendingDirectMoveChoice(bc);
 
     const int asc = bc.ascension;
 
