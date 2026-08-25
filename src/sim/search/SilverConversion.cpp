@@ -222,6 +222,11 @@ silver_bridge::BattleStateWire makeSilverBattleStateWire(
         if (out.intentsHidden) {
             wm.pendingMoveRolls = knowledge.pendingHiddenIntentRolls[i];
             wm.pendingRollInputs = toWire(knowledge.pendingHiddenIntentInputs[i]);
+            // Looter/Mugger have a direct post-turn random setMove that is
+            // sampled inside upstream Silver's takeTurn, not via rollMove.
+            // Until the bridge has a faithful deferred representation, reject
+            // this root rather than import the live realization.
+            if (knowledge.hasUnrepresentableHiddenIntent[i]) out.valid = false;
         }
     }
 

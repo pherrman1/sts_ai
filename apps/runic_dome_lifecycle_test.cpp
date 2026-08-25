@@ -170,6 +170,35 @@ void testReactiveChainAndIntentQuery() {
           "post-query Silver root must contain public intent, not a fabricated pending roll");
 }
 
+void testPostTurnDeterministicAndDirectRandomTransitions() {
+    LiveFixture deterministic(MonsterEncounter::CULTIST, 0xD006u);
+    // A constructed public fixture state: LICK is the public current move.
+    // takeTurn itself performs the real deterministic LICK -> TACKLE update.
+    deterministic.bc.monsters.arr[0].id = MonsterId::ACID_SLIME_S;
+    deterministic.bc.monsters.arr[0].setMove(MonsterMoveId::ACID_SLIME_S_LICK);
+    deterministic.bc.monsters.arr[0].takeTurn(deterministic.bc);
+    check(deterministic.knowledge.pendingHiddenIntentRolls[0] == 0
+              && deterministic.knowledge.publicMonsterMoveHistory[0][0]
+                    == static_cast<std::int16_t>(MonsterMoveId::ACID_SLIME_S_TACKLE),
+          "Acid Slime S deterministic LICK -> TACKLE must become known after its real turn");
+    const auto deterministicRoot = silver_bridge::inspectConvertedBattleState(deterministic.wire());
+    check(deterministicRoot.accepted && deterministicRoot.pendingIntentRolls == 0
+              && deterministicRoot.monsterMoveHistory[0][0]
+                    == static_cast<std::int16_t>(MonsterMoveId::ACID_SLIME_S_TACKLE),
+          "materialized Silver root must carry deterministic next intent, not stale LICK");
+
+    LiveFixture random(MonsterEncounter::LOOTER, 0xD007u);
+    // getMonsterTurnNumber() is turn+1; turn=1 selects the Looter direct
+    // post-turn 50/50 branch rather than the first-turn deterministic Mug.
+    random.bc.turn = 1;
+    random.bc.monsters.arr[0].setMove(MonsterMoveId::LOOTER_MUG);
+    random.bc.monsters.arr[0].takeTurn(random.bc);
+    check(random.knowledge.hasUnrepresentableHiddenIntent[0],
+          "Looter direct post-turn RNG must be marked hidden, never published from live setMove");
+    check(!random.wire().valid,
+          "unrepresented direct post-turn RNG must fail conversion rather than leak its live result");
+}
+
 } // namespace
 
 int main() {
@@ -177,6 +206,7 @@ int main() {
     testHiddenMoveAndLiveRngRedaction();
     testRestrictedHistoryAndPreRollMiscInfo();
     testReactiveChainAndIntentQuery();
+    testPostTurnDeterministicAndDirectRandomTransitions();
     std::cout << "runic_dome_lifecycle PASS\n";
     return 0;
 }

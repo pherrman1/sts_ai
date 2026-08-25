@@ -675,12 +675,22 @@ void Monster::rollMove(BattleContext &bc) {
     const auto move = getMoveForRoll(bc, miscInfoCopy, bc.aiRng.random(99));
 
     miscInfo = miscInfoCopy;
+    // Suppress the generic deterministic setMove publication below: this
+    // concrete live result is hidden under Runic Dome and is represented by
+    // the preceding deferred-roll observer event instead.
+    search::CombatKnowledgeMoveRollScope rollScope;
     setMove(move);
 }
 
 void Monster::setMove(MMID moveId) {
     moveHistory[1] = moveHistory[0];
     moveHistory[0] = moveId;
+    // Direct setMove transitions after a monster action are deterministic or
+    // otherwise inferable from public state. `rollMove` scopes its own call
+    // so random materialized results cannot arrive here as known information.
+    search::emitKnownMonsterIntentSet(
+        idx, static_cast<std::int16_t>(moveHistory[0]),
+        static_cast<std::int16_t>(moveHistory[1]), miscInfo);
 }
 
 namespace sts {

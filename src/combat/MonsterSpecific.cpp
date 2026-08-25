@@ -934,8 +934,15 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             } else {
                 const auto nextMove = bc.aiRng.randomBoolean(0.5f) ?
                                       MMID::LOOTER_SMOKE_BOMB : MMID::LOOTER_LUNGE;
-
-                setMove(nextMove);
+                // This direct RNG transition is not an upstream deferred
+                // roll. Do not publish the live outcome as knowledge; the
+                // bridge currently fails closed until it can represent this
+                // particular post-turn choice as an isolated chance state.
+                {
+                    search::CombatKnowledgeMoveRollScope hiddenChoice;
+                    setMove(nextMove);
+                }
+                search::emitUnrepresentableHiddenMonsterIntent(idx);
             }
             break;
         }
@@ -979,8 +986,11 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             if (bc.getMonsterTurnNumber() == 2) {
                 const auto nextMove = bc.aiRng.randomBoolean(0.5f) ?
                         MMID::MUGGER_SMOKE_BOMB : MMID::MUGGER_LUNGE;
-
-                setMove(nextMove);
+                {
+                    search::CombatKnowledgeMoveRollScope hiddenChoice;
+                    setMove(nextMove);
+                }
+                search::emitUnrepresentableHiddenMonsterIntent(idx);
 
             } else {
                 setMove(MMID::MUGGER_MUG);

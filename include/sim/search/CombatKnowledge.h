@@ -32,6 +32,14 @@ enum class CombatKnowledgeEventType : std::uint8_t {
     // The deferred intent has become public (monster turn or intent-query).
     // It consumes the pending chain and records the now-observable state.
     HIDDEN_MONSTER_INTENT_MATERIALIZED,
+    // A deterministic setMove after a public monster action. This publishes
+    // an inferable next intent; rollMove suppresses this while it resolves a
+    // hidden random result.
+    KNOWN_MONSTER_INTENT_SET,
+    // A live post-turn direct RNG transition whose upstream Silver semantics
+    // are not yet representable as a deferred root choice. Fail closed rather
+    // than copying its concrete result.
+    UNREPRESENTABLE_HIDDEN_MONSTER_INTENT,
 };
 
 // Type-free representation of exactly the mutable values Silver captures at
@@ -91,6 +99,18 @@ void emitHiddenMonsterIntentRollStarted(
 void emitHiddenMonsterIntentMaterialized(
     int monsterIdx, std::int16_t publicMove, std::int16_t publicPreviousMove,
     std::int32_t publicMiscInfo);
+void emitKnownMonsterIntentSet(
+    int monsterIdx, std::int16_t publicMove, std::int16_t publicPreviousMove,
+    std::int32_t publicMiscInfo);
+void emitUnrepresentableHiddenMonsterIntent(int monsterIdx);
+
+class CombatKnowledgeMoveRollScope {
+public:
+    CombatKnowledgeMoveRollScope();
+    ~CombatKnowledgeMoveRollScope();
+    CombatKnowledgeMoveRollScope(const CombatKnowledgeMoveRollScope &) = delete;
+    CombatKnowledgeMoveRollScope &operator=(const CombatKnowledgeMoveRollScope &) = delete;
+};
 
 // The top and bottom vectors use the live pile convention: knownTop.back() is
 // the next card to draw, and knownBottom[0] is the card drawn last. Outside
@@ -106,7 +126,7 @@ struct CombatKnowledgeState final : CombatKnowledgeObserver {
     std::uint64_t consistencyFailureCount = 0;
     // Last semantic observer event, retained only for fail-closed diagnostics.
     CombatKnowledgeEventType lastEvent = CombatKnowledgeEventType::SHUFFLE_OCCURRED;
-    std::array<std::uint32_t, 12> eventCounts {};
+    std::array<std::uint32_t, 14> eventCounts {};
     CardInstance lastExpectedKnownDraw {};
     CardInstance lastObservedDraw {};
     bool hasDrawMismatch = false;
@@ -120,6 +140,7 @@ struct CombatKnowledgeState final : CombatKnowledgeObserver {
     std::array<std::array<std::int16_t, 2>, 5> publicMonsterMoveHistory {};
     std::array<std::int32_t, 5> publicMonsterMiscInfo {};
     std::array<bool, 5> hasPublicMonsterState {};
+    std::array<bool, 5> hasUnrepresentableHiddenIntent {};
     bool initializationInProgress = false;
 
     // Establishes visibility at a live decision boundary. It reads a concrete

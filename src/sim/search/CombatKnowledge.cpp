@@ -9,6 +9,10 @@
 namespace sts::search {
 
 thread_local CombatKnowledgeObserver *g_combatKnowledgeObserver = nullptr;
+namespace { thread_local int g_moveRollScopeDepth = 0; }
+
+CombatKnowledgeMoveRollScope::CombatKnowledgeMoveRollScope() { ++g_moveRollScopeDepth; }
+CombatKnowledgeMoveRollScope::~CombatKnowledgeMoveRollScope() { --g_moveRollScopeDepth; }
 
 void emitCombatKnowledgeEvent(const CombatKnowledgeEvent &event) {
     if (g_combatKnowledgeObserver != nullptr) {
@@ -45,6 +49,24 @@ void emitHiddenMonsterIntentMaterialized(
     event.publicMoveHistory = {publicMove, publicPreviousMove};
     event.publicMonsterMiscInfo = publicMiscInfo;
     event.hasPublicMonsterState = true;
+    emitCombatKnowledgeEvent(event);
+}
+
+void emitKnownMonsterIntentSet(
+        int monsterIdx, std::int16_t publicMove, std::int16_t publicPreviousMove,
+        std::int32_t publicMiscInfo) {
+    if (g_moveRollScopeDepth != 0) return;
+    CombatKnowledgeEvent event {CombatKnowledgeEventType::KNOWN_MONSTER_INTENT_SET};
+    event.monsterIdx = monsterIdx;
+    event.publicMoveHistory = {publicMove, publicPreviousMove};
+    event.publicMonsterMiscInfo = publicMiscInfo;
+    event.hasPublicMonsterState = true;
+    emitCombatKnowledgeEvent(event);
+}
+
+void emitUnrepresentableHiddenMonsterIntent(int monsterIdx) {
+    CombatKnowledgeEvent event {CombatKnowledgeEventType::UNREPRESENTABLE_HIDDEN_MONSTER_INTENT};
+    event.monsterIdx = monsterIdx;
     emitCombatKnowledgeEvent(event);
 }
 
@@ -87,6 +109,7 @@ void CombatKnowledgeState::initializeFromLiveBattle(const BattleContext &bc) {
     publicMonsterMoveHistory.fill({});
     publicMonsterMiscInfo.fill(0);
     hasPublicMonsterState.fill(false);
+    hasUnrepresentableHiddenIntent.fill(false);
     eventCounts.fill(0);
     hasDrawMismatch = false;
     initializationInProgress = false;
@@ -105,6 +128,7 @@ void CombatKnowledgeState::beginCombatInitialization() {
     publicMonsterMoveHistory.fill({});
     publicMonsterMiscInfo.fill(0);
     hasPublicMonsterState.fill(false);
+    hasUnrepresentableHiddenIntent.fill(false);
     eventCounts.fill(0);
     consistencyFailureCount = 0;
     hasDrawMismatch = false;
@@ -275,6 +299,30 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
         publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
         publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
         hasPublicMonsterState[event.monsterIdx] = true;
+        ++generation;
+        return;
+    case CombatKnowledgeEventType::KNOWN_MONSTER_INTENT_SET:
+        if (!hiddenMonsterIntents) return;
+        if (event.monsterIdx < 0 || event.monsterIdx >= static_cast<int>(pendingHiddenIntentRolls.size())
+                || !event.hasPublicMonsterState) {
+            ++consistencyFailureCount;
+            return;
+        }
+        pendingHiddenIntentRolls[event.monsterIdx] = 0;
+        pendingHiddenIntentInputs[event.monsterIdx] = {};
+        publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
+        publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
+        hasPublicMonsterState[event.monsterIdx] = true;
+        hasUnrepresentableHiddenIntent[event.monsterIdx] = false;
+        ++generation;
+        return;
+    case CombatKnowledgeEventType::UNREPRESENTABLE_HIDDEN_MONSTER_INTENT:
+        if (!hiddenMonsterIntents) return;
+        if (event.monsterIdx < 0 || event.monsterIdx >= static_cast<int>(hasUnrepresentableHiddenIntent.size())) {
+            ++consistencyFailureCount;
+            return;
+        }
+        hasUnrepresentableHiddenIntent[event.monsterIdx] = true;
         ++generation;
         return;
     }
