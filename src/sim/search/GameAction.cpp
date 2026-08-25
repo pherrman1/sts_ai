@@ -417,7 +417,16 @@ void search::GameAction::execute(GameContext &gc) const {
 #ifdef sts_asserts
     if (!isValidAction(gc)) {
         std::cerr << "invalid game action taken: " << bits
-        << " seed: " << gc << std::endl;
+        << " screen=" << static_cast<int>(gc.screenState);
+        if (gc.screenState == ScreenState::MAP_SCREEN && gc.map) {
+            std::cerr << " mapPos=" << gc.curMapNodeX << ',' << gc.curMapNodeY;
+            if (gc.curMapNodeY >= 0 && gc.curMapNodeY < 15
+                && gc.curMapNodeX >= 0 && gc.curMapNodeX < 7) {
+                const auto &node = gc.map->getNode(gc.curMapNodeX, gc.curMapNodeY);
+                std::cerr << " edgeCount=" << node.edgeCount;
+            }
+        }
+        std::cerr << " seed: " << gc << std::endl;
         assert(false);
     }
 #endif
