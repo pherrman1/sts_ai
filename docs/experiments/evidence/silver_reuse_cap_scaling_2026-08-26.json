@@ -145,23 +145,62 @@
       "D1": "7bfdc77862b29d6b4d52cc0cb3d9c2c811fddcd7da5a2ebbdfd0412f2a258b13",
       "T1": "47ee073caffad8bc790ac6311618ab67448721a9cebc88a86c8aa7709c7421d5",
       "D1_diagnostics_off": "99c3cccce287d0be15a8667f4953e80983d8456710edb1bce18cbeafe62e7256",
-      "T1_diagnostics_off": "5db5b35da4b93354591ba665ff29f622a0aac8da97a72d4879b5074a4c633d69"
+      "T1_diagnostics_off": "5db5b35da4b93354591ba665ff29f622a0aac8da97a72d4879b5074a4c633d69",
+      "X1_active_10000_exploratory": "b8659acd2b8fee3e38ce7867523a7aed69da261485ce14c5e89b9eb5e9946e0d"
     },
     "diagnostics_sha256": {
       "D0": "5f16a9267e9e5cca2f96c00a09ee9ea9669e7fbaefbddf6f0589cee73a413b17",
       "D1": "4d32579a52cdd905ec308ab46c4ffc040bc88ce6acd199d41c18828c436ac9f9",
-      "T1": "d33f293c7e1a045b1ae8d217b6e6868c13635b23140e069f45536767f1c96742"
+      "T1": "d33f293c7e1a045b1ae8d217b6e6868c13635b23140e069f45536767f1c96742",
+      "X1_active_10000_exploratory": "46c9e11e9e73a0fd45045126ba2a16e5f81eafe9aea4f3cc60549d96b6c2d93b"
     },
     "analysis_sha256": {
       "d0_d1_t1_analysis.json": "112d23b76b20cddd5b32421901a605f85b5efdc16376d502364294eca9524632",
-      "d0_d1_t1_analysis.md": "fa959b9224ca4c53d6292a7352b248904053c3f539f8a9a7f873b8df13651329"
+      "d0_d1_t1_analysis.md": "fa959b9224ca4c53d6292a7352b248904053c3f539f8a9a7f873b8df13651329",
+      "d0_d1_t1_x1_analysis.json": "0933c7ef0f229eb1a7ec081e320d28cf8ccc08a706dda8df6f1981b751ec5168",
+      "d0_d1_t1_x1_analysis.md": "2903593ee1592bd610af45abfc58dbd678af97b59177cbcd079c5752c4c41310"
     },
     "archives_sha256": {
       "D0": "606d0026236d031a0b965f8261a832b2f249859dfe9b3e2abb6508ccaa77b9fb",
       "D1": "1ff86d2688f9d6b72acaf5eee1cd6c9c3c491845cbc1396072a584aaa874eca2",
       "T1": "a1c813601b8ab10118395a35b264529333455a984f00f5d8bce04c43689220e8",
-      "diagnostics_off_pair": "97f633c14ae6218567aad6f0975bec40cb17878eed618641fa489b0d8f7717a1"
+      "diagnostics_off_pair": "97f633c14ae6218567aad6f0975bec40cb17878eed618641fa489b0d8f7717a1",
+      "X1_active_10000_exploratory": "13587de062e12385dabbf444c1b609bb1e5bd787ceba6f91911400d362e7b9f0"
     }
+  },
+  "exploratory_follow_up_X1_active_10000": {
+    "pre_registered": false,
+    "purpose": "User-requested descriptive same-seed probe after the formal experiment; it is not a clean treatment comparison, promotion gate, or revision of the formal verdict.",
+    "configuration": "active reuse-cap mode, 10000 base simulations, same 32 seeds and all other formal-run settings, scaling diagnostic enabled",
+    "reroot_attempts": 13749,
+    "candidate_found_rate": 0.7053603898465343,
+    "exact_reroot_rate": 0.4694159575241836,
+    "candidate_missing_fallback_rate": 0.2946396101534657,
+    "active_cap_fallback_rate": 0.2359444323223507,
+    "sticky_eligible_rate": 0.3540621136082624,
+    "sticky_eligible_rows": 4868,
+    "sticky_eligible_exact_reroot_rows": 4868,
+    "allocated_cap_fallback_rows": 0,
+    "inherited_visits": {
+      "sum": 61703732,
+      "mean": 4246.059179741261,
+      "median": 0.0
+    },
+    "nodes_per_simulation": 0.8520471478081678,
+    "wins": 23,
+    "win_rate": 0.71875,
+    "floor_mean": 47.28125,
+    "hp_mean": 37.90625,
+    "runtime_mean_seconds_with_diagnostics": 115.238609375,
+    "same_seed_descriptive_comparison_to_T1_active_3700": {
+      "wins": "23 versus 20",
+      "X1_only_wins": 5,
+      "T1_only_wins": 2,
+      "floor_delta_mean": 1.3125,
+      "hp_delta_mean": 6.78125,
+      "runtime_delta_mean_seconds": 73.24434125
+    },
+    "interpretation": "At 10000 simulations the retained-allocation sticky predicate remains absent, but the fixed active-pool cap itself becomes common. The one 32-seed same-block outcome is descriptive only and does not support a strength or runtime conclusion."
   },
   "decision": "Keep allocated as the production default. Active is experimental infrastructure only, not a gameplay promotion. Do not optimize the runtime regression until a new, state-targeted decision-quality experiment establishes whether the recovered visits reduce reference regret."
 }

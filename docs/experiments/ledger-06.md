@@ -4538,3 +4538,33 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   gate yet. The next justified task is a new, state-targeted decision-quality
   experiment comparing allocated/fresh, active/reused, and a high-budget
   fresh-root reference on cap-fallback states.
+
+### Exploratory active/10k same-seed follow-up (2026-08-26; not preregistered)
+
+- **Scope:** a user-requested descriptive run, not a formal treatment,
+  efficiency gate, or gameplay promotion. It reused the frozen binary, exact
+  GCP host/configuration, 24 threads, and seeds `940000..940031`, changing only
+  the active-mode base budget to 10,000 simulations. It was collected after
+  the formal conclusion and cannot revise it.
+- **Result:** X1 active/10k won 23/32 (71.88%), mean floor 47.28125, mean end
+  HP 37.90625, and 115.239 diagnostic-enabled seconds/run. Against T1
+  active/3700 on the same seeds, X1 had 5 X1-only wins and 2 T1-only wins,
+  +1.3125 mean floor, +6.78125 mean HP, and +73.244 seconds/run. This is an
+  unequal-budget, one-block descriptive comparison, not evidence that active
+  reuse is promotable or that the 10k budget is better.
+- **Structure:** X1 candidate-found rate was 70.54%; exact reroot 46.94%;
+  candidate-missing fallback 29.46%; and active-cap fallback 23.59%. It had
+  4,868 sticky-eligible rows, all of which exact-rerooted, and zero
+  `allocated_cap` failures. Thus active mode still removes the original sticky
+  allocation-cap rejection, but the unchanged 32k **active pool** cap is now
+  the dominant reroot limiter. Nodes/simulation was 0.8520 and inherited visits
+  averaged 4,246; neither quantity establishes decision quality.
+- **Artifacts:** raw result SHA-256
+  `b8659acd2b8fee3e38ce7867523a7aed69da261485ce14c5e89b9eb5e9946e0d`;
+  diagnostic SHA-256
+  `46c9e11e9e73a0fd45045126ba2a16e5f81eafe9aea4f3cc60549d96b6c2d93b`;
+  archive SHA-256
+  `13587de062e12385dabbf444c1b609bb1e5bd787ceba6f91911400d362e7b9f0`.
+  The combined analyzer report is ignored local
+  `build/gcp_formal_36065ae/d0_d1_t1_x1_analysis.{json,md}` and its hashes are
+  recorded in the evidence manifest.
