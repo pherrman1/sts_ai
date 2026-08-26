@@ -4490,3 +4490,51 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   results. If resumed, isolate reuse=1 with a fresh 64-particle belief rebuilt
   at the real boundary. Close PR #54 without merging; preserve the tracked
   manifest before deleting local raw artifacts.
+
+## Silver reuse-cap scaling experiment (2026-08-26)
+
+- **Question:** does Silver's retained-allocation 32k reuse-cap predicate cause
+  a sticky exact-reroot cutoff after `setRoot()` resets the active pool, and is
+  replacing that predicate with active-pool usage a useful full-run change?
+- **Frozen implementation:** source SHA
+  `36065aefbc49063d16000a9549cad5c1346bbcc6` (PR #59); baseline SHA
+  `1e9b8011c2f487ca479f66399d9901fe2e6b1b4c`; GCP Release binary SHA-256
+  `3890e2156fd2d4f64f4bec8d13aec02b094bd403e2d841e23468b1495964f7f9`.
+  `allocated` remained the default and production cap remained 32768. The
+  active treatment changed only the metric used at that cap.
+- **Protocol:** guarded GCP `sts-test`, 24 OpenMP threads, ascension 0,
+  Act-3 endpoint, project-fair Searcher3 with current native OOC stack, Silver
+  combat backend, 32 paired seeds `940000..940031`. D0 was allocated/1000;
+  D1 allocated/3700; T1 active/3700, conditional on the D0/D1 mechanism gate.
+  A same-seed diagnostics-off D1/T1 pair measured runtime. Complete flags,
+  model hashes, raw-artifact hashes, and analysis hashes are tracked in
+  `docs/experiments/evidence/silver_reuse_cap_scaling_2026-08-26.json`.
+- **D0/D1 mechanism gate:** allocated exact reroot fell from 67.16% at 1000 to
+  53.54% at 3700 while sticky-eligible rate rose from 0.22% to 16.23%.
+  `deltaFallbackRate=0.136249`, `deltaStickyRate=0.160091`, and the numerical
+  ratio was 1.174989. That ratio is **not** a causal share of failures: the
+  candidate-missing fallback rate improved as sticky-cap fallback grew. The
+  gate passed under both preregistered conditions.
+- **Direct causal result:** at 3700, active exact reroot was 66.87% versus
+  allocated 53.54% (+13.33pp); candidate-missing fallback changed only
+  +0.207pp. All 1,852 active sticky-eligible rows exact-rerooted, and active
+  mode produced zero `allocated_cap` failures. The sticky 32k retained-
+  allocation mechanism is therefore **causally confirmed**.
+- **Agent and efficiency result:** D1/T1 wins were 21/32 versus 20/32;
+  paired mean floor delta was -0.5625 with bootstrap 95% interval
+  [-1.75, +0.09375]. Nodes/simulation was 0.88% lower in active mode. The
+  diagnostics-off paired runtime was 39.289s allocated versus 41.604s active:
+  +2.315s / +5.89%, bootstrap 95% interval [+1.271s, +3.455s]. This fails the
+  preregistered no-more-than-5%-slower criterion. The 32-seed gameplay result
+  is **inconclusive**, not a promotion signal.
+- **Post-hoc limit:** the collected CSVs support the paired runtime bootstrap
+  and exploratory seed-level associations with inherited visits, sticky cases,
+  and active-pool occupancy. They do not contain depth, chance-depth,
+  transposition, or widening counters, and `STS_SILVER_TELEMETRY` was not
+  enabled; those structural rates cannot be reconstructed from these artifacts.
+- **Verdict:** **IMPLEMENTATION PASS; STICKY-CAP MECHANISM CONFIRMED;
+  EFFICIENCY NOT MET; GAMEPLAY INCONCLUSIVE.** Keep `allocated` as production
+  default. Do not optimize the runtime cost or run an active-mode promotion
+  gate yet. The next justified task is a new, state-targeted decision-quality
+  experiment comparing allocated/fresh, active/reused, and a high-budget
+  fresh-root reference on cap-fallback states.
