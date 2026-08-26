@@ -4180,8 +4180,15 @@ void enumerateActionsForNode(BattleScumSearcher3::Node &node,
             }
             for (int p = 0; p < bc.potionCapacity; ++p) {
                 if (bc.potions[p] == Potion::EMPTY_POTION_SLOT
-                    || bc.potions[p] == Potion::FAIRY_POTION
-                    || bc.potions[p] == Potion::SMOKE_BOMB) continue;
+                    || bc.potions[p] == Potion::FAIRY_POTION) continue;
+                if (bc.potions[p] == Potion::SMOKE_BOMB) {
+                    if (!bc.smokeBombEscapeBlocked()) {
+                        node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::POTION, p)});
+                    } else {
+                        node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::POTION, p, -1)});
+                    }
+                    continue;
+                }
                 if (!potionRequiresTarget(bc.potions[p])) {
                     node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::POTION, p)});
                 } else {

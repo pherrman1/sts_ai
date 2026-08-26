@@ -75,6 +75,7 @@ void GameContext::initFromSave(const SaveFile &s) {
     seed = s.seed;
 
     outcome = GameOutcome::UNDECIDED;
+    smokeBombUsed = false;
     ascension = s.ascension_level;
     act = s.act_num;
     floorNum = s.floor_num;
@@ -1124,6 +1125,13 @@ void GameContext::enterBattle(MonsterEncounter encounter) {
 void GameContext::afterBattle() {
     if (hasRelic(RelicId::FACE_OF_CLERIC)) {
         playerIncreaseMaxHp(1);
+    }
+
+    if (smokeBombUsed) {
+        smokeBombUsed = false;
+        regainControlAction = returnToMapAction;
+        regainControl();
+        return;
     }
 
     switch (curRoom) {
