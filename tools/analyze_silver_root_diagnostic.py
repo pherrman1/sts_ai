@@ -223,7 +223,7 @@ def analyze(rows):
 
     def rollout_totals(prefix, calls_key=None, wins_key=None, losses_key=None,
                        actions_key=None, turns_key=None, utility_key=None,
-                       stored_means=False):
+                       stored_means=False, source_rows=None):
         fields = ("rollout_calls", "terminal_wins", "terminal_losses",
                   "rollout_actions", "rollout_turns", "utility_sum")
         keys = {
@@ -235,8 +235,9 @@ def analyze(rows):
             "utility_sum": utility_key or f"{prefix}_utility_sum",
         }
         totals = {field: 0 for field in fields}
-        for root in root_groups.values():
-            row = root[0]
+        rows_to_sum = (source_rows if source_rows is not None
+                       else [root[0] for root in root_groups.values()])
+        for row in rows_to_sum:
             calls = float(row[keys["rollout_calls"]])
             for field in fields:
                 value = float(row[keys[field]])
@@ -292,7 +293,8 @@ def analyze(rows):
                     losses_key="reference_terminal_losses",
                     actions_key="reference_rollout_actions",
                     turns_key="reference_rollout_turns",
-                    utility_key="reference_utility_sum", stored_means=True),
+                    utility_key="reference_utility_sum", stored_means=True,
+                    source_rows=rows),
             },
             "current_1k": rollout_totals("current_1k"),
             "current_3.7k": rollout_totals("current_37k"),
