@@ -42,6 +42,36 @@ int main() {
     BattleContext first;
     first.init(gc, MonsterEncounter::CULTIST);
     installPile(first);
+
+    // Smoke Bomb is a shared live-simulator rule. Silver communicates the
+    // visible potion identity/slot semantically; lowering must accept its use
+    // on an eligible hallway fight and reject use (while retaining discard)
+    // when the live combat blocks escape. There is intentionally no
+    // Silver-specific Smoke Bomb adaptation here.
+    BattleContext smoke = first;
+    smoke.potions[0] = Potion::SMOKE_BOMB;
+    smoke.potionCount = 1;
+    silver_bridge::SemanticAction smokeUse;
+    smokeUse.type = silver_bridge::SemanticActionType::POTION;
+    smokeUse.potionId = static_cast<std::int16_t>(Potion::SMOKE_BOMB);
+    smokeUse.potionSlot = 0;
+    smokeUse.target = 0;
+    const auto resolvedSmoke = search::resolveSilverSemanticAction(smoke, smokeUse);
+    check(resolvedSmoke.ok
+              && resolvedSmoke.action == search::Action(search::ActionType::POTION, 0),
+          "eligible Silver Smoke Bomb use must resolve to the live use action");
+
+    BattleContext blockedSmoke = smoke;
+    blockedSmoke.encounter = MonsterEncounter::HEXAGHOST;
+    const auto blockedUse = search::resolveSilverSemanticAction(blockedSmoke, smokeUse);
+    check(!blockedUse.ok,
+          "blocked Silver Smoke Bomb use must fail live semantic resolution");
+    smokeUse.discardPotion = true;
+    const auto blockedDiscard = search::resolveSilverSemanticAction(blockedSmoke, smokeUse);
+    check(blockedDiscard.ok
+              && blockedDiscard.action == search::Action(search::ActionType::POTION, 0, 6),
+          "blocked Silver Smoke Bomb must retain a valid discard resolution");
+
     BattleContext permuted = first;
     std::swap(permuted.cards.drawPile[0], permuted.cards.drawPile[2]);
     search::CombatKnowledgeState firstKnowledge, permutedKnowledge;
