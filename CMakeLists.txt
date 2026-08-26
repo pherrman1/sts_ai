@@ -274,6 +274,8 @@ add_test(NAME py_compile_analyze_silver_reuse_scaling COMMAND python3 -m py_comp
 add_test(NAME analyze_silver_reuse_scaling_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py --self-test)
 add_test(NAME py_compile_check_benchmark_canary COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/agent/check_benchmark_canary.py)
 add_test(NAME check_benchmark_canary_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/agent/check_benchmark_canary.py --self-test)
+add_test(NAME py_compile_analyze_silver_sticky_quality COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py)
+add_test(NAME analyze_silver_sticky_quality_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py --self-test)
 add_test(NAME py_compile_analyze_postcombat_raw_terminal COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_postcombat_raw_terminal.py)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME py_compile_analyze_runwin_shadow COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py)

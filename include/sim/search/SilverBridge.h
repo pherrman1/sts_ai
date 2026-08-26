@@ -230,6 +230,11 @@ struct SemanticAction {
     std::int16_t cardSelectTask = 0;
 };
 
+// Stable, index-free rendering of the existing semantic action value.  This
+// is diagnostic identity only: it deliberately contains no Silver hand/pile
+// index and can therefore cross the isolated-search/live-action boundary.
+std::string semanticActionFingerprint(const SemanticAction &action);
+
 struct SilverSearchConfig {
     // Values copied from upstream SearchAgent defaults at the pinned SHA.
     std::int64_t simulationsPerDecision = 50000;
@@ -246,6 +251,22 @@ struct SilverSearchConfig {
     // Default-off collection avoids per-decision diagnostic work unless the
     // scaling CSV (or a focused bridge fixture) explicitly requests it.
     bool collectDecisionDiagnostics = false;
+    // Captures the exact root-edge quantities already used by BattleSearcher:
+    // final action rank is edge visits, while UCB selection reads the child
+    // evaluation mean.  This is default-off diagnostic observation only.
+    bool collectRootActionSummaries = false;
+};
+
+struct SilverRootActionSummary {
+    SemanticAction action;
+    std::int64_t edgeVisits = 0;
+    std::int64_t childSimulations = 0;
+    double childEvaluationSum = 0.0;
+    // `BattleSearcher::evaluateEdge` uses this exact child mean as Q for a
+    // visited root edge.  It is false for unvisited/no-child edges, whose
+    // existing selection behavior is +infinity rather than a scalar Q.
+    bool selectionQValid = false;
+    double selectionQ = 0.0;
 };
 
 // Value-only accounting of one actual private Silver search invocation.  The
@@ -333,6 +354,7 @@ struct SilverDecisionResult {
     SilverSearchDecisionDiagnostic diagnostic;
     SemanticAction action;
     SilverSearchTelemetry telemetry;
+    std::vector<SilverRootActionSummary> rootActionSummaries;
     int rerootExact = 0;
     int rerootFallback = 0;
 };
