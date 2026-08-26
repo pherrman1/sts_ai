@@ -52,7 +52,7 @@ StickyQualityTestBudgets g_stickyQualityTestBudgets;
 constexpr const char *kScalingDiagnosticHeader =
     "run_seed,floor,encounter,combat_decision_ordinal,transaction_subdecision_ordinal,turn,input_state,configured_simulations,had_predecessor,reroot_attempted,exact_candidate_found,exact_reroot,fallback,fallback_reason,configured_cap_mode,configured_cap,allocated_nodes_before_root,active_nodes_before_root,allocated_nodes_after_search,active_nodes_after_search,inherited_visits,simulations_added,nodes_created,root_visits_after_search,chosen_edge_visits";
 constexpr const char *kStickyQualityHeader =
-    "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,allocated_nodes_before_root,active_nodes_before_root,inherited_visits,configured_cap,active_simulations_added,active_nodes_created,fresh_budget,ref25_budget,ref50_budget,active_action_fingerprint,fresh3700_action_fingerprint,ref25_action_fingerprint,ref50_action_fingerprint,ref25_ref50_agree,fresh_ref50_agree,active_ref50_agree,fresh_active_disagree,fresh_wall_ms,ref25_wall_ms,ref50_wall_ms,fresh_nodes_created,fresh_simulations_added,ref25_nodes_created,ref25_simulations_added,ref50_nodes_created,ref50_simulations_added,ref25_root_action_summaries,ref50_root_action_summaries,regret_available,ref50_best_selection_q,active_ref50_q,fresh_ref50_q,active_regret,fresh_regret,regret_active_minus_fresh";
+    "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,allocated_nodes_before_root,active_nodes_before_root,inherited_visits,configured_cap,active_simulations_added,active_nodes_created,fresh_budget,ref25_budget,ref50_budget,active_action_fingerprint,fresh_action_fingerprint,ref25_action_fingerprint,ref50_action_fingerprint,ref25_ref50_agree,fresh_ref50_agree,active_ref50_agree,fresh_active_disagree,fresh_wall_ms,ref25_wall_ms,ref50_wall_ms,fresh_nodes_created,fresh_simulations_added,ref25_nodes_created,ref25_simulations_added,ref50_nodes_created,ref50_simulations_added,ref25_root_action_summaries,ref50_root_action_summaries,q_diagnostic_available,ref50_chosen_selection_q,active_ref50_selection_q,fresh_ref50_selection_q,ref50_q_gap_active,ref50_q_gap_fresh,ref50_q_gap_active_minus_fresh";
 constexpr const char *kStickyQualitySummaryHeader =
     "run_seed,floor,encounter,sticky_eligible_ordinary_decisions,selected_evaluated_decisions,excluded_transaction_subdecisions";
 
@@ -223,8 +223,9 @@ struct StickyQualityRow {
     std::int64_t freshNodes = 0, freshSims = 0, ref25Nodes = 0, ref25Sims = 0, ref50Nodes = 0, ref50Sims = 0;
     double freshMs = 0, ref25Ms = 0, ref50Ms = 0;
     std::string ref25Summaries, ref50Summaries;
-    bool regretAvailable = false;
-    double ref50BestQ = 0, activeQ = 0, freshQ = 0, activeRegret = 0, freshRegret = 0;
+    bool qDiagnosticAvailable = false;
+    double ref50ChosenQ = 0, activeQ = 0, freshQ = 0;
+    double ref50QGapActive = 0, ref50QGapFresh = 0, ref50QGapActiveMinusFresh = 0;
 };
 
 struct StickyQualityCounters {
@@ -242,6 +243,7 @@ StickyQualityRow evaluateStickyQuality(const silver_bridge::BattleStateWire &wir
     row.encounter = wire.encounter; row.ordinal = ordinal; row.turn = wire.turn;
     row.inputState = wire.inputState; row.roomType = roomType; row.activeDiagnostic = active.diagnostic;
     row.budgets = stickyQualityBudgets();
+    row.budgets.fresh = activeConfig.simulationsPerDecision;
     row.activeAction = silver_bridge::semanticActionFingerprint(active.action);
 
     const auto runFresh = [&wire, &activeConfig](std::int64_t budget, bool summaries,
@@ -279,11 +281,12 @@ StickyQualityRow evaluateStickyQuality(const silver_bridge::BattleStateWire &wir
     const auto *freshAtRef = findRootAction(ref50.rootActionSummaries, row.freshAction);
     if (best != nullptr && activeAtRef != nullptr && freshAtRef != nullptr
             && best->selectionQValid && activeAtRef->selectionQValid && freshAtRef->selectionQValid) {
-        row.regretAvailable = true;
-        row.ref50BestQ = best->selectionQ; row.activeQ = activeAtRef->selectionQ;
+        row.qDiagnosticAvailable = true;
+        row.ref50ChosenQ = best->selectionQ; row.activeQ = activeAtRef->selectionQ;
         row.freshQ = freshAtRef->selectionQ;
-        row.activeRegret = row.ref50BestQ - row.activeQ;
-        row.freshRegret = row.ref50BestQ - row.freshQ;
+        row.ref50QGapActive = row.ref50ChosenQ - row.activeQ;
+        row.ref50QGapFresh = row.ref50ChosenQ - row.freshQ;
+        row.ref50QGapActiveMinusFresh = row.ref50QGapActive - row.ref50QGapFresh;
     }
     return row;
 }
@@ -326,10 +329,10 @@ void writeStickyQuality(const std::vector<StickyQualityRow> &rows, std::uint64_t
                 << row.freshMs << ',' << row.ref25Ms << ',' << row.ref50Ms << ','
                 << row.freshNodes << ',' << row.freshSims << ',' << row.ref25Nodes << ',' << row.ref25Sims << ','
                 << row.ref50Nodes << ',' << row.ref50Sims << ',' << csvField(row.ref25Summaries) << ','
-                << csvField(row.ref50Summaries) << ',' << (row.regretAvailable ? 1 : 0) << ',';
-            if (row.regretAvailable) out << row.ref50BestQ << ',' << row.activeQ << ',' << row.freshQ << ','
-                                         << row.activeRegret << ',' << row.freshRegret << ','
-                                         << (row.activeRegret - row.freshRegret);
+                << csvField(row.ref50Summaries) << ',' << (row.qDiagnosticAvailable ? 1 : 0) << ',';
+            if (row.qDiagnosticAvailable) out << row.ref50ChosenQ << ',' << row.activeQ << ',' << row.freshQ << ','
+                                         << row.ref50QGapActive << ',' << row.ref50QGapFresh << ','
+                                         << row.ref50QGapActiveMinusFresh;
             else out << "NA,NA,NA,NA,NA,NA";
             out << '\n';
         }

@@ -17,7 +17,9 @@ subdecisions are counted as excluded rather than evaluated.
 general serializer is unnecessary. `BattleSearcher::getBestAction()` selects
 the maximum-root-edge-visits action; its existing UCB edge statistic is the
 child `evaluationSum / simulationCount`, which the CSV records verbatim for
-reference-root actions and uses for regret only when all needed values exist.
+reference-root actions and retains Silver's root-Q values as descriptive
+diagnostics only.  Because final action selection is by root-edge visits, Q
+gaps are not treated as regret and do not enter the scientific decision gate.
 
 **Open question:** the formal 16-seed collection and independent review must
 decide whether inherited visits improve decisions; this implementation makes no

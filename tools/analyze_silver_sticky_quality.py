@@ -24,25 +24,25 @@ STATE_COLUMNS = {
     "run_seed", "act", "floor", "encounter", "room_type", "combat_decision_ordinal", "turn",
     "input_state", "allocated_nodes_before_root", "active_nodes_before_root", "inherited_visits",
     "configured_cap", "active_simulations_added", "active_nodes_created", "fresh_budget",
-    "ref25_budget", "ref50_budget", "active_action_fingerprint", "fresh3700_action_fingerprint",
+    "ref25_budget", "ref50_budget", "active_action_fingerprint", "fresh_action_fingerprint",
     "ref25_action_fingerprint", "ref50_action_fingerprint", "ref25_ref50_agree",
     "fresh_ref50_agree", "active_ref50_agree", "fresh_active_disagree", "fresh_wall_ms",
     "ref25_wall_ms", "ref50_wall_ms", "fresh_nodes_created", "fresh_simulations_added",
     "ref25_nodes_created", "ref25_simulations_added", "ref50_nodes_created", "ref50_simulations_added",
-    "ref25_root_action_summaries", "ref50_root_action_summaries", "regret_available",
-    "ref50_best_selection_q", "active_ref50_q", "fresh_ref50_q", "active_regret", "fresh_regret",
-    "regret_active_minus_fresh",
+    "ref25_root_action_summaries", "ref50_root_action_summaries", "q_diagnostic_available",
+    "ref50_chosen_selection_q", "active_ref50_selection_q", "fresh_ref50_selection_q",
+    "ref50_q_gap_active", "ref50_q_gap_fresh", "ref50_q_gap_active_minus_fresh",
 }
 SUMMARY_COLUMNS = {"run_seed", "floor", "encounter", "sticky_eligible_ordinary_decisions",
                    "selected_evaluated_decisions", "excluded_transaction_subdecisions"}
-ACTION_COLUMNS = ("active_action_fingerprint", "fresh3700_action_fingerprint",
+ACTION_COLUMNS = ("active_action_fingerprint", "fresh_action_fingerprint",
                   "ref25_action_fingerprint", "ref50_action_fingerprint")
 INTEGER_COLUMNS = STATE_COLUMNS - {"room_type", *ACTION_COLUMNS, "ref25_root_action_summaries",
     "ref50_root_action_summaries", "fresh_wall_ms", "ref25_wall_ms", "ref50_wall_ms",
-    "ref50_best_selection_q", "active_ref50_q", "fresh_ref50_q", "active_regret", "fresh_regret",
-    "regret_active_minus_fresh"}
+    "ref50_chosen_selection_q", "active_ref50_selection_q", "fresh_ref50_selection_q",
+    "ref50_q_gap_active", "ref50_q_gap_fresh", "ref50_q_gap_active_minus_fresh"}
 BOOL_COLUMNS = {"ref25_ref50_agree", "fresh_ref50_agree", "active_ref50_agree",
-                "fresh_active_disagree", "regret_available"}
+                "fresh_active_disagree", "q_diagnostic_available"}
 
 
 class ValidationError(ValueError):
@@ -122,8 +122,11 @@ def read_states(paths: list[Path]) -> list[dict[str, Any]]:
 
 
 def validate_state(row: dict[str, Any], path: Path) -> None:
-    if (row["fresh_budget"], row["ref25_budget"], row["ref50_budget"]) != (3700, 25000, 50000):
-        raise ValidationError(f"{path}: shadow budgets must be exactly 3700/25000/50000")
+    expected_fresh = 11100 if row["room_type"] == "boss" else 3700
+    if row["fresh_budget"] != expected_fresh or row["fresh_budget"] != row["active_simulations_added"]:
+        raise ValidationError(f"{path}: FRESH budget must match ACTIVE simulations (3700 normal, 11100 boss)")
+    if (row["ref25_budget"], row["ref50_budget"]) != (25000, 50000):
+        raise ValidationError(f"{path}: reference budgets must be exactly 25000/50000")
     if row["configured_cap"] <= 0 or row["active_simulations_added"] <= 0:
         raise ValidationError(f"{path}: nonpositive cap or ACTIVE search budget")
     if not (row["allocated_nodes_before_root"] >= row["configured_cap"]
@@ -134,27 +137,27 @@ def validate_state(row: dict[str, Any], path: Path) -> None:
         if row[field] < 0: raise ValidationError(f"{path}: negative {field}")
     expected = {
         "ref25_ref50_agree": row["ref25_action_fingerprint"] == row["ref50_action_fingerprint"],
-        "fresh_ref50_agree": row["fresh3700_action_fingerprint"] == row["ref50_action_fingerprint"],
+        "fresh_ref50_agree": row["fresh_action_fingerprint"] == row["ref50_action_fingerprint"],
         "active_ref50_agree": row["active_action_fingerprint"] == row["ref50_action_fingerprint"],
-        "fresh_active_disagree": row["fresh3700_action_fingerprint"] != row["active_action_fingerprint"],
+        "fresh_active_disagree": row["fresh_action_fingerprint"] != row["active_action_fingerprint"],
     }
     if any(row[field] != value for field, value in expected.items()):
         raise ValidationError(f"{path}: action-agreement fields are internally inconsistent")
     for field, action in (("ref25_root_action_summaries", row["ref25_action_fingerprint"]),
                           ("ref50_root_action_summaries", row["ref50_action_fingerprint"])):
         if action not in row[field]: raise ValidationError(f"{path}: chosen action absent from {field}")
-    q_fields = ("ref50_best_selection_q", "active_ref50_q", "fresh_ref50_q", "active_regret",
-                "fresh_regret", "regret_active_minus_fresh")
-    if row["regret_available"]:
+    q_fields = ("ref50_chosen_selection_q", "active_ref50_selection_q", "fresh_ref50_selection_q",
+                "ref50_q_gap_active", "ref50_q_gap_fresh", "ref50_q_gap_active_minus_fresh")
+    if row["q_diagnostic_available"]:
         for field in q_fields: row[field] = number(row[field], field, path)
-        if not math.isclose(row["active_regret"], row["ref50_best_selection_q"]-row["active_ref50_q"], rel_tol=1e-10, abs_tol=1e-10):
-            raise ValidationError(f"{path}: invalid ACTIVE regret")
-        if not math.isclose(row["fresh_regret"], row["ref50_best_selection_q"]-row["fresh_ref50_q"], rel_tol=1e-10, abs_tol=1e-10):
-            raise ValidationError(f"{path}: invalid FRESH regret")
-        if not math.isclose(row["regret_active_minus_fresh"], row["active_regret"]-row["fresh_regret"], rel_tol=1e-10, abs_tol=1e-10):
-            raise ValidationError(f"{path}: invalid paired regret delta")
+        if not math.isclose(row["ref50_q_gap_active"], row["ref50_chosen_selection_q"]-row["active_ref50_selection_q"], rel_tol=1e-10, abs_tol=1e-10):
+            raise ValidationError(f"{path}: invalid ACTIVE Q diagnostic gap")
+        if not math.isclose(row["ref50_q_gap_fresh"], row["ref50_chosen_selection_q"]-row["fresh_ref50_selection_q"], rel_tol=1e-10, abs_tol=1e-10):
+            raise ValidationError(f"{path}: invalid FRESH Q diagnostic gap")
+        if not math.isclose(row["ref50_q_gap_active_minus_fresh"], row["ref50_q_gap_active"]-row["ref50_q_gap_fresh"], rel_tol=1e-10, abs_tol=1e-10):
+            raise ValidationError(f"{path}: invalid paired Q diagnostic delta")
     elif any(row[field] != "NA" for field in q_fields):
-        raise ValidationError(f"{path}: unavailable regret must be NA")
+        raise ValidationError(f"{path}: unavailable Q diagnostics must be NA")
 
 
 def read_summaries(paths: list[Path]) -> list[dict[str, int]]:
@@ -204,9 +207,7 @@ def describe(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for r in stable:
         if not r["fresh_active_disagree"] and r["active_ref50_agree"] == r["fresh_ref50_agree"]:
             breakdown["ties_degenerate"] += 1
-    valid_regret = [r for r in stable if r["regret_available"]]
-    regret_seed: dict[int, list[float]] = defaultdict(list)
-    for r in valid_regret: regret_seed[r["run_seed"]].append(r["regret_active_minus_fresh"])
+    seed_means = [statistics.mean(values) for values in seed_delta.values() if values]
     result: dict[str, Any] = {
         "sampled_states": len(rows), "stable_reference_states": len(stable),
         "stable_reference_rate": rate(len(stable), len(rows)),
@@ -214,22 +215,11 @@ def describe(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "stable_active_fresh_disagreements": len(disagreement),
         "active_reference_agreement": rate(sum(r["active_ref50_agree"] for r in stable), len(stable)),
         "fresh_reference_agreement": rate(sum(r["fresh_ref50_agree"] for r in stable), len(stable)),
-        "agreement_delta_active_minus_fresh": statistics.mean(v for vs in seed_delta.values() for v in vs) if seed_delta else None,
+        "agreement_delta_active_minus_fresh": statistics.mean(seed_means) if seed_means else None,
         "agreement_delta_seed_bootstrap_95": bootstrap_seed_means(seed_delta),
         "disagreement_subset": breakdown,
-        "regret_available_states": len(valid_regret),
+        "q_diagnostic_states": sum(r["q_diagnostic_available"] for r in stable),
     }
-    if valid_regret:
-        active = [r["active_regret"] for r in valid_regret]; fresh = [r["fresh_regret"] for r in valid_regret]
-        delta = [r["regret_active_minus_fresh"] for r in valid_regret]
-        result["regret"] = {
-            "active_mean": statistics.mean(active), "active_median": statistics.median(active),
-            "fresh_mean": statistics.mean(fresh), "fresh_median": statistics.median(fresh),
-            "paired_mean_delta_active_minus_fresh": statistics.mean(delta),
-            "paired_seed_bootstrap_95": bootstrap_seed_means(regret_seed),
-            "active_lower": sum(v < 0 for v in delta), "equal": sum(v == 0 for v in delta),
-            "active_higher": sum(v > 0 for v in delta),
-        }
     return result
 
 
@@ -278,14 +268,9 @@ def analyze(states: list[dict[str, Any]], summaries: list[dict[str, int]], expec
 def decision(report: dict[str, Any]) -> str:
     if report["sampled_states"] < 100 or (report["stable_reference_rate"] or 0) < .8 or report["stable_active_fresh_disagreements"] < 50:
         return "INCONCLUSIVE: minimum sample, reference-stability, or disagreement threshold not met"
-    if "regret" in report:
-        lo, hi = report["regret"]["paired_seed_bootstrap_95"]
-        if report["active_reference_agreement"] > report["fresh_reference_agreement"] and hi < 0: return "USEFUL_REUSE_SUPPORTED"
-        if report["active_reference_agreement"] < report["fresh_reference_agreement"] and lo > 0: return "HARMFUL_REUSE_SUPPORTED"
-    else:
-        lo, hi = report["agreement_delta_seed_bootstrap_95"]
-        if lo > 0: return "USEFUL_REUSE_SUPPORTED"
-        if hi < 0: return "HARMFUL_REUSE_SUPPORTED"
+    lo, hi = report["agreement_delta_seed_bootstrap_95"]
+    if lo > 0: return "USEFUL_REUSE_SUPPORTED"
+    if hi < 0: return "HARMFUL_REUSE_SUPPORTED"
     return "INCONCLUSIVE"
 
 
@@ -308,16 +293,16 @@ def self_test() -> None:
             for ordinal in (1, 2):
                 active, fresh, ref = fp(1), fp(2), fp(1 if ordinal == 1 else 3)
                 row = {name: "0" for name in header}; row.update({"run_seed": str(seed), "act": "1", "floor": str(10+ordinal),
-                    "encounter": "2", "room_type": "hallway", "combat_decision_ordinal": str(ordinal), "turn": "1", "input_state": "0",
+                    "encounter": "2", "room_type": "boss" if ordinal == 2 else "hallway", "combat_decision_ordinal": str(ordinal), "turn": "1", "input_state": "0",
                     "allocated_nodes_before_root": "8", "active_nodes_before_root": "3", "inherited_visits": "5", "configured_cap": "4",
-                    "active_simulations_added": "3700", "fresh_budget": "3700", "ref25_budget": "25000", "ref50_budget": "50000",
-                    "active_action_fingerprint": active, "fresh3700_action_fingerprint": fresh, "ref25_action_fingerprint": ref,
+                    "active_simulations_added": "11100" if ordinal == 2 else "3700", "fresh_budget": "11100" if ordinal == 2 else "3700", "ref25_budget": "25000", "ref50_budget": "50000",
+                    "active_action_fingerprint": active, "fresh_action_fingerprint": fresh, "ref25_action_fingerprint": ref,
                     "ref50_action_fingerprint": ref, "ref25_ref50_agree": "1", "fresh_ref50_agree": "0",
                     "active_ref50_agree": "1" if ordinal == 1 else "0", "fresh_active_disagree": "1", "fresh_wall_ms": "1",
                     "ref25_wall_ms": "2", "ref50_wall_ms": "3", "ref25_root_action_summaries": roots(ref, fresh),
-                    "ref50_root_action_summaries": roots(ref, fresh), "regret_available": "1", "ref50_best_selection_q": "0.5",
-                    "active_ref50_q": "0.5" if ordinal == 1 else "0.2", "fresh_ref50_q": "0.2", "active_regret": "0" if ordinal == 1 else "0.3",
-                    "fresh_regret": "0.3", "regret_active_minus_fresh": "-0.3" if ordinal == 1 else "0"})
+                    "ref50_root_action_summaries": roots(ref, fresh), "q_diagnostic_available": "1", "ref50_chosen_selection_q": "0.5",
+                    "active_ref50_selection_q": "0.5" if ordinal == 1 else "0.2", "fresh_ref50_selection_q": "0.2", "ref50_q_gap_active": "0" if ordinal == 1 else "0.3",
+                    "ref50_q_gap_fresh": "0.3", "ref50_q_gap_active_minus_fresh": "-0.3" if ordinal == 1 else "0"})
                 rows.append(row)
         with data.open("w", newline="", encoding="utf-8") as stream:
             writer = csv.DictWriter(stream, fieldnames=header); writer.writeheader(); writer.writerows(rows)
