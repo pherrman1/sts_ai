@@ -122,9 +122,12 @@ def read_states(paths: list[Path]) -> list[dict[str, Any]]:
 
 
 def validate_state(row: dict[str, Any], path: Path) -> None:
-    expected_fresh = 11100 if row["room_type"] == "boss" else 3700
-    if row["fresh_budget"] != expected_fresh or row["fresh_budget"] != row["active_simulations_added"]:
-        raise ValidationError(f"{path}: FRESH budget must match ACTIVE simulations (3700 normal, 11100 boss)")
+    if row["fresh_budget"] not in (3700, 11100) or row["fresh_budget"] != row["active_simulations_added"]:
+        raise ValidationError(f"{path}: FRESH budget must match ACTIVE simulations (3700 or 11100)")
+    if row["room_type"] in ("hallway", "elite") and row["fresh_budget"] != 3700:
+        raise ValidationError(f"{path}: hallway/elite FRESH budget must be 3700")
+    if row["room_type"] == "boss" and row["fresh_budget"] != 11100:
+        raise ValidationError(f"{path}: boss FRESH budget must be 11100")
     if (row["ref25_budget"], row["ref50_budget"]) != (25000, 50000):
         raise ValidationError(f"{path}: reference budgets must be exactly 25000/50000")
     if row["configured_cap"] <= 0 or row["active_simulations_added"] <= 0:
