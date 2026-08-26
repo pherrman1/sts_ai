@@ -415,6 +415,7 @@ const char *silverReuseCapModeName(SilverReuseCapMode mode) {
     switch (mode) {
         case SilverReuseCapMode::ALLOCATED: return "allocated";
         case SilverReuseCapMode::ACTIVE: return "active";
+        case SilverReuseCapMode::NONE: return "none";
     }
     return "invalid";
 }
@@ -426,6 +427,7 @@ const char *silverRerootFallbackReasonName(SilverRerootFallbackReason reason) {
         case SilverRerootFallbackReason::CANDIDATE_MISSING: return "candidate_missing";
         case SilverRerootFallbackReason::ALLOCATED_CAP: return "allocated_cap";
         case SilverRerootFallbackReason::ACTIVE_CAP: return "active_cap";
+        case SilverRerootFallbackReason::REUSE_DISABLED: return "reuse_disabled";
     }
     return "invalid";
 }
@@ -468,6 +470,25 @@ public:
                 decisionDiagnostic.allocatedNodesBeforeRoot = static_cast<std::int64_t>(searcher->allNodes.size());
                 decisionDiagnostic.activeNodesBeforeRoot = static_cast<std::int64_t>(searcher->poolUsed);
             }
+        }
+
+        // NONE is a deliberate fresh-statistics treatment. Keep the existing
+        // BattleSearcher allocation pool, but reset its root and dedup state
+        // without inspecting the predecessor or matching a candidate.
+        if (config.reuseCapMode == SilverReuseCapMode::NONE) {
+            const bool hadPredecessor = previousBest != nullptr;
+            if (!searcher)
+                searcher = std::make_unique<sts::search::BattleSearcher>(state);
+            searcher->setRoot(state);
+            configure(config);
+            previousBest = nullptr;
+            ++rerootFallback;
+            if (collectDecisionDiagnostics) {
+                decisionDiagnostic.hadPredecessor = hadPredecessor;
+                decisionDiagnostic.fallback = true;
+                decisionDiagnostic.fallbackReason = SilverRerootFallbackReason::REUSE_DISABLED;
+            }
+            return;
         }
         if (!searcher) {
             searcher = std::make_unique<sts::search::BattleSearcher>(state);
@@ -694,6 +715,24 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
             result.handPermutationRejected = !permutedDiag.exactCandidateFound
                 && permutedDiag.fallbackReason == SilverRerootFallbackReason::CANDIDATE_MISSING;
         }
+
+        SilverSearchSession none;
+        arrangeCandidate(none, false, false);
+        const auto noneDiag = run(none, true, SilverReuseCapMode::NONE);
+        result.noneDiagnostic = noneDiag;
+        result.noneDisablesReuse = !noneDiag.exactReroot && noneDiag.inheritedVisits == 0
+            && noneDiag.fallback && noneDiag.fallbackReason == SilverRerootFallbackReason::REUSE_DISABLED
+            && !noneDiag.exactCandidateFound;
+
+        SilverSearchConfig noneConfig;
+        noneConfig.simulationsPerDecision = 7;
+        noneConfig.reuseCapMode = SilverReuseCapMode::NONE;
+        noneConfig.collectDecisionDiagnostics = true;
+        const auto noneSearch = runSilverDecision(none, wire, noneConfig);
+        result.noneFreshRootBudget = noneSearch.accepted && noneSearch.simulations == 7
+            && noneSearch.inheritedVisits == 0 && noneSearch.rerootExact == 0;
+        result.noneReportsDisabled = noneSearch.diagnostic.fallbackReason
+            == SilverRerootFallbackReason::REUSE_DISABLED;
     } catch (const std::exception &) {
         return {};
     }

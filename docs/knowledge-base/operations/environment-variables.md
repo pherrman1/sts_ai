@@ -42,7 +42,7 @@ changes its size.
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_SILVER_SEARCH` | Enable isolated Silver combat search | unset/off | `main`; `SilverLiveBackend` |
-| `STS_SILVER_REUSE_CAP_MODE` | Exact-reroot cap metric: `allocated` (`allNodes.size()`) or experimental `active` (`poolUsed`); any other value fails before gameplay | `allocated` | `SilverLiveBackend::installSilverLiveBackend` |
+| `STS_SILVER_REUSE_CAP_MODE` | Exact-reroot mode: `allocated` (`allNodes.size()` cap), experimental `active` (`poolUsed` cap), or experimental `none` (fresh root every decision); any other value fails before gameplay | `allocated` | `SilverLiveBackend::installSilverLiveBackend` |
 | `STS_SILVER_SCALING_DIAG_FILE` | Default-off per-search CSV for the reuse-cap experiment, including sequential GAMBLE/EXHAUST_MANY private subdecisions | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_TELEMETRY` | Per-combat Silver aggregate telemetry line | unset/off | `SilverLiveBackend` |
 

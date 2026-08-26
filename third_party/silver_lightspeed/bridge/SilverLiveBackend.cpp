@@ -47,8 +47,10 @@ void parseSilverLiveOptions() {
             options.reuseCapMode = silver_bridge::SilverReuseCapMode::ALLOCATED;
         } else if (mode == "active") {
             options.reuseCapMode = silver_bridge::SilverReuseCapMode::ACTIVE;
+        } else if (mode == "none") {
+            options.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
         } else {
-            throw std::invalid_argument("STS_SILVER_REUSE_CAP_MODE must be 'allocated' or 'active' (got '"
+            throw std::invalid_argument("STS_SILVER_REUSE_CAP_MODE must be 'allocated', 'active', or 'none' (got '"
                                         + mode + "')");
         }
     }

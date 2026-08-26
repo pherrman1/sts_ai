@@ -197,15 +197,16 @@ enum class SemanticActionType : std::uint8_t {
 
 enum class CardSource : std::uint8_t { NONE = 0, HAND, DRAW, DISCARD, EXHAUST, CARD_SELECT_OPTION };
 
-// The production cap is deliberately fixed.  This enum changes only which
-// already-existing pool measurement is compared against it.
-enum class SilverReuseCapMode : std::uint8_t { ALLOCATED = 0, ACTIVE };
+// The production cap is deliberately fixed.  The allocated/active modes
+// select the existing pool measurement; NONE disables statistical reuse.
+enum class SilverReuseCapMode : std::uint8_t { ALLOCATED = 0, ACTIVE, NONE };
 enum class SilverRerootFallbackReason : std::uint8_t {
     NONE = 0,
     NO_PREDECESSOR,
     CANDIDATE_MISSING,
     ALLOCATED_CAP,
     ACTIVE_CAP,
+    REUSE_DISABLED,
 };
 
 constexpr std::int64_t kSilverProductionReuseCap = 32 * 1024;
@@ -382,9 +383,13 @@ struct ReuseCapFixtureProbe {
     bool candidateMissingUnchanged = false;
     bool handOrderMandatory = false;
     bool handPermutationRejected = false;
+    bool noneDisablesReuse = false;
+    bool noneReportsDisabled = false;
+    bool noneFreshRootBudget = false;
     SilverSearchDecisionDiagnostic allocatedDiagnostic;
     SilverSearchDecisionDiagnostic activeDiagnostic;
     SilverSearchDecisionDiagnostic activeCapDiagnostic;
+    SilverSearchDecisionDiagnostic noneDiagnostic;
 };
 
 // Forces a real constructor/reset path through the upstream BattleSearcher.
