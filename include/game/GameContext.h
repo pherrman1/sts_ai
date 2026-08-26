@@ -241,6 +241,7 @@ namespace sts {
         bool redKey = false;
 
         GameContextAction regainControlAction = nullptr;
+        bool smokeBombUsed = false;
 
         GameContext() = default;
         GameContext(CharacterClass cc, std::uint64_t seed, int ascensionLevel);

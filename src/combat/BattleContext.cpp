@@ -54,6 +54,7 @@ void BattleContext::init(const GameContext &gc, MonsterEncounter encounterToInit
 
     ascension = gc.ascension;
     outcome = Outcome::UNDECIDED;
+    smokeBombUsed = false;
     inputState = InputState::EXECUTING_ACTIONS;
     miscBits.reset();
 
@@ -497,6 +498,8 @@ void BattleContext::exitBattle(GameContext &g) const {
     g.monsterHpRng = monsterHpRng;
     g.potionRng = potionRng;
     g.shuffleRng = shuffleRng;
+
+    g.smokeBombUsed = smokeBombUsed;
 
     g.curHp = player.curHp;
     g.maxHp = player.maxHp;
@@ -2279,11 +2282,13 @@ void BattleContext::drinkPotion(int idx, int target) {
     const bool hasBark = player.hasRelic<R::SACRED_BARK>();
     const Potion p = potions[idx];
 
-    // The real game forbids using Smoke Bomb in combat. Refuse to consume the
-    // potion instead of silently wasting it (previously `// todo break;`).
     if (p == Potion::SMOKE_BOMB) {
-        std::cerr << seed << " Smoke Bomb cannot be used in combat; potion slot "
-                  << idx << " not consumed" << std::endl;
+        if (smokeBombEscapeBlocked()) {
+            return;
+        }
+        discardPotion(idx);
+        smokeBombUsed = true;
+        outcome = Outcome::PLAYER_VICTORY;
         return;
     }
 
@@ -2444,7 +2449,7 @@ void BattleContext::drinkPotion(int idx, int target) {
             break;
 
         case Potion::SMOKE_BOMB:
-            // unreachable: guarded before consumption above
+            // handled before ordinary potion effects above
             break;
 
         case Potion::SNECKO_OIL:

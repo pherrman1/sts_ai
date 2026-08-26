@@ -70,6 +70,7 @@ namespace sts {
 
         int ascension = 0;
         Outcome outcome = Outcome::UNDECIDED;
+        bool smokeBombUsed = false;
         InputState inputState = InputState::EXECUTING_ACTIONS;
         CardSelectInfo cardSelectInfo;
 
@@ -111,6 +112,10 @@ namespace sts {
         void exitBattle(GameContext &g) const;
         void updateRelicsOnExit(GameContext &g) const;
         void updateCardsOnExit(Deck &d) const; // for cards like ritual dagger, and eventually lesson learned results
+
+        [[nodiscard]] bool smokeBombEscapeBlocked() const {
+            return isBossEncounter(encounter) || player.hasStatus<PS::SURROUNDED>();
+        }
 
 // ****************************************
 
