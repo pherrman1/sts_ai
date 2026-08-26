@@ -72,6 +72,15 @@ def sha256(path: Path) -> str:
 
 
 def validate(args: argparse.Namespace) -> str:
+    require(args.expect_asc is not None, "expected ascension is required")
+    require(args.expect_threads is not None, "expected thread count is required")
+    require(args.expect_fair is not None, "expected fairPlay value is required")
+    require(args.expect_searcher3 is not None, "expected searcher3 value is required")
+    binary_given = args.binary is not None
+    binary_hash_given = args.expect_binary_sha256 is not None
+    require(binary_given == binary_hash_given,
+            "--binary and --expect-binary-sha256 must be supplied together")
+
     meta = read_single_meta(args.meta)
     rows = read_results(args.results)
     config = meta.get("config", {})
@@ -80,14 +89,11 @@ def validate(args: argparse.Namespace) -> str:
     require(meta.get("objective") == "bestbench", "metadata objective is not bestbench")
     require(meta.get("nSeeds") == args.expect_seeds, "metadata nSeeds does not match the canary")
     require(meta.get("sims") == args.expect_sims, "metadata simulation budget does not match")
-    if args.expect_asc is not None:
-        require(meta.get("asc") == args.expect_asc, "metadata ascension does not match")
-    if args.expect_threads is not None:
-        require(meta.get("threads") == args.expect_threads, "metadata thread count does not match")
-    if args.expect_fair:
-        require(config.get("fairPlay") is True, "project-fair mode was not effective")
-    if args.expect_searcher3:
-        require(config.get("searcher3") is True, "Searcher3 configuration was not effective")
+    require(meta.get("asc") == args.expect_asc, "metadata ascension does not match")
+    require(meta.get("threads") == args.expect_threads, "metadata thread count does not match")
+    require(config.get("fairPlay") is args.expect_fair, "metadata fairPlay value does not match")
+    require(config.get("searcher3") is args.expect_searcher3,
+            "metadata searcher3 value does not match")
     require(seed_block.get("lo") == args.expect_seed_lo, "metadata seed-block start does not match")
     require(seed_block.get("hi") == args.expect_seed_lo + args.expect_seeds - 1,
             "metadata seed-block end does not match")
@@ -102,8 +108,7 @@ def validate(args: argparse.Namespace) -> str:
     if args.expect_executable_sha:
         require(config.get("executableGitSha") == args.expect_executable_sha,
                 "executable SHA does not match the frozen SHA")
-    if args.expect_binary_sha256:
-        require(args.binary is not None, "--expect-binary-sha256 requires --binary")
+    if binary_hash_given:
         require(sha256(args.binary) == args.expect_binary_sha256.lower(),
                 "binary SHA-256 does not match the frozen executable")
 
@@ -113,9 +118,10 @@ def validate(args: argparse.Namespace) -> str:
         require(config.get("silverSearchEnabled") is True,
                 "Silver live backend was not installed")
         require(bool(config.get("silverUpstreamSha")), "Silver upstream SHA is missing")
-        if args.expect_silver_reuse_cap_mode:
-            require(config.get("silverReuseCapMode") == args.expect_silver_reuse_cap_mode,
-                    "effective Silver reuse-cap mode does not match")
+        require(args.expect_silver_reuse_cap_mode is not None,
+                "Silver canary requires an expected reuse-cap mode")
+        require(config.get("silverReuseCapMode") == args.expect_silver_reuse_cap_mode,
+                "effective Silver reuse-cap mode does not match")
         require(args.log is not None, "Silver canary requires --log for mechanism/failure telemetry")
         telemetry = parse_silver_telemetry(args.log)
         require(telemetry, "no [silver-combat] telemetry found; treatment activation is unproved")
@@ -155,6 +161,39 @@ def self_test() -> int:
                                   binary=binary, expect_binary_sha256=sha256(binary), expect_asc=0,
                                   expect_threads=24, expect_fair=True, expect_searcher3=True)
         validate(args)
+
+        def expect_failure(label: str, needle: str, **changes: object) -> None:
+            candidate = argparse.Namespace(**vars(args))
+            candidate_record = json.loads(json.dumps(record))
+            for key, value in changes.items():
+                if key.startswith("meta."):
+                    candidate_record["config"][key[5:]] = value
+                else:
+                    setattr(candidate, key, value)
+            meta.write_text(json.dumps(candidate_record) + "\n", encoding="utf-8")
+            try:
+                validate(candidate)
+            except ValueError as exc:
+                require(needle in str(exc), f"{label}: wrong failure: {exc}")
+            else:
+                raise AssertionError(f"{label}: invalid canary was accepted")
+
+        # Provenance is mandatory and must be correct.
+        expect_failure("missing binary", "supplied together", binary=None)
+        expect_failure("missing binary hash", "supplied together", expect_binary_sha256=None)
+        expect_failure("wrong binary hash", "SHA-256", expect_binary_sha256="0" * 64)
+
+        # Configuration expectations are explicit, including false values.
+        expect_failure("omitted ascension", "expected ascension", expect_asc=None)
+        expect_failure("omitted threads", "expected thread count", expect_threads=None)
+        expect_failure("omitted fairPlay", "expected fairPlay", expect_fair=None)
+        expect_failure("omitted searcher3", "expected searcher3", expect_searcher3=None)
+        expect_failure("fairPlay true/false mismatch", "fairPlay value", **{"meta.fairPlay": False})
+        expect_failure("searcher3 true/false mismatch", "searcher3 value", **{"meta.searcher3": False})
+        expect_failure("omitted Silver reuse cap", "expected reuse-cap mode", expect_silver_reuse_cap_mode=None)
+
+        # Restore the valid fixture before testing a bypassed treatment.
+        meta.write_text(json.dumps(record) + "\n", encoding="utf-8")
         record["config"]["effectiveCombatBackend"] = "native_searcher"
         meta.write_text(json.dumps(record) + "\n", encoding="utf-8")
         try:
@@ -179,8 +218,13 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--expect-seed-lo", type=int)
     p.add_argument("--expect-asc", type=int)
     p.add_argument("--expect-threads", type=int)
-    p.add_argument("--expect-fair", action="store_true")
-    p.add_argument("--expect-searcher3", action="store_true")
+    fair = p.add_mutually_exclusive_group()
+    fair.add_argument("--expect-fair", dest="expect_fair", action="store_true")
+    fair.add_argument("--no-expect-fair", dest="expect_fair", action="store_false")
+    searcher3 = p.add_mutually_exclusive_group()
+    searcher3.add_argument("--expect-searcher3", dest="expect_searcher3", action="store_true")
+    searcher3.add_argument("--no-expect-searcher3", dest="expect_searcher3", action="store_false")
+    p.set_defaults(expect_fair=None, expect_searcher3=None)
     p.add_argument("--expect-executable-sha")
     p.add_argument("--binary", type=Path)
     p.add_argument("--expect-binary-sha256")
@@ -192,7 +236,8 @@ def main() -> int:
     args = parser().parse_args()
     if args.self_test:
         return self_test()
-    missing = [name for name in ("results", "meta", "expect_backend", "expect_sims", "expect_seed_lo")
+    missing = [name for name in ("results", "meta", "expect_backend", "expect_sims", "expect_seed_lo",
+                                 "expect_asc", "expect_threads", "expect_fair", "expect_searcher3")
                if getattr(args, name) is None]
     if missing:
         raise SystemExit("missing required canary arguments: " + ", ".join(missing))

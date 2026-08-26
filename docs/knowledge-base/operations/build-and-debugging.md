@@ -75,15 +75,15 @@ cmake --preset linux-gcc-release-ccache
 cmake --build --preset linux-gcc-release-ccache-build
 ```
 
-They keep ordinary presets unchanged, store a bounded 1 GiB cache under
-`$HOME/.cache/sts_ai/ccache`, and set `CCACHE_BASEDIR` to the common parent of
-the current source worktree so sibling paths can share entries. Verify actual
-reuse rather than assuming it:
+They keep ordinary presets unchanged and configure a bounded 1 GiB cache under
+`$HOME/.cache/sts_ai/ccache`. `CCACHE_BASEDIR` is set to the common parent of
+the current source worktree; whether that produces cross-worktree reuse depends
+on the compiler's debug-path handling and must be measured rather than assumed:
 
 ```bash
-ccache --zero-stats
+ccache --dir "$HOME/.cache/sts_ai/ccache" --zero-stats
 cmake --build --preset linux-gcc-debug-ccache-build --target one_combat
-ccache --show-stats
+ccache --dir "$HOME/.cache/sts_ai/ccache" --show-stats
 ```
 
 During iteration, build only affected focused targets; perform the required
