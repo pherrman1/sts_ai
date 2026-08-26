@@ -247,9 +247,13 @@ int main() {
     // wire value, never the live BattleContext, and returns only its final
     // confirmation subset.
     BattleContext transactionLive = first;
-    transactionLive.cards.cardsInHand = 2;
-    transactionLive.cards.hand[0] = card(CardId::STRIKE_RED, 81);
-    transactionLive.cards.hand[1] = card(CardId::DEFEND_RED, 82);
+    // A status-heavy hand makes at least one discard attractive. This must
+    // exercise the actual select -> exact reroot -> search -> confirm path;
+    // immediate empty confirmation is not evidence of multi-step parity.
+    transactionLive.cards.cardsInHand = 5;
+    for (int i = 0; i < transactionLive.cards.cardsInHand; ++i) {
+        transactionLive.cards.hand[i] = card(CardId::REGRET, static_cast<std::int16_t>(81 + i));
+    }
     transactionLive.inputState = InputState::CARD_SELECT;
     transactionLive.cardSelectInfo.cardSelectTask = CardSelectTask::GAMBLE;
     transactionLive.cardSelectInfo.canPickAnyNumber = true;
@@ -267,20 +271,26 @@ int main() {
                   << " sims=" << transaction.totalSimulations << '\n';
     }
     check(transaction.accepted && transaction.finalConfirmation && transaction.privateStateOnly
-          && transaction.searchDecisions >= 1 && transaction.totalSimulations >= transaction.searchDecisions,
-          "GAMBLE transaction must return a private final confirmation after full-budget subdecisions");
+          && transaction.searchDecisions >= 2 && !transaction.intermediateSelections.empty()
+          && transaction.rerootExact >= 1 && transaction.rerootFallback == 0
+          && transaction.totalSimulations >= transaction.searchDecisions,
+          "GAMBLE transaction must select, exact-reroot with inherited state, and then confirm");
     check(transaction.finalAction.type == silver_bridge::SemanticActionType::MULTI_CARD_SELECT
           && transaction.intermediateSelections.size() == transaction.selectedBitsAfterEachIntermediate.size()
-          && (transaction.selectedBitsAfterEachIntermediate.empty()
-              || transaction.selectedBitsAfterEachIntermediate.front() != 0),
+          && !transaction.selectedBitsAfterEachIntermediate.empty()
+          && transaction.selectedBitsAfterEachIntermediate.front() != 0,
           "GAMBLE transaction must retain private selectedBits and return only a final semantic subset");
     check(transaction.searchDiagnostics.size() == static_cast<std::size_t>(transaction.searchDecisions),
           "GAMBLE diagnostics must contain every private search subdecision");
+    check(transaction.searchDiagnostics.size() >= 2
+              && transaction.searchDiagnostics[1].exactReroot
+              && transaction.searchDiagnostics[1].inheritedVisits > 0,
+          "GAMBLE second subdecision must prove exact reroot with inherited visits");
     check(transactionLive.inputState == transactionBefore.inputState
           && transactionLive.cardSelectInfo.cardSelectTask == transactionBefore.cardSelectInfo.cardSelectTask
           && transactionLive.cards.cardsInHand == transactionBefore.cards.cardsInHand
           && transactionLive.cards.hand[0].uniqueId == transactionBefore.cards.hand[0].uniqueId
-          && transactionLive.cards.hand[1].uniqueId == transactionBefore.cards.hand[1].uniqueId
+          && transactionLive.cards.hand[4].uniqueId == transactionBefore.cards.hand[4].uniqueId
           && transactionLive.aiRng.counter == transactionBefore.aiRng.counter
           && transactionLive.cardRandomRng.counter == transactionBefore.cardRandomRng.counter
           && transactionLive.shuffleRng.counter == transactionBefore.shuffleRng.counter,

@@ -1,6 +1,6 @@
 # Important invariants
 
-Last verified: 2026-08-11 against commit `abba840` and the current working tree.
+Last verified: 2026-08-26 against the current working tree.
 
 ## Purpose
 
@@ -57,6 +57,13 @@ See
   the fight immediately (`src/combat/Monster.cpp::die`/`suicideAction`,
   `src/combat/MonsterSpecific.cpp` LOOTER/MUGGER escape,
   `src/combat/Player.cpp::wouldDie`, `src/combat/BattleContext.cpp::executeActions`).
+- Smoke Bomb is a successful combat escape, not a normal rewarded victory. Use
+  is valid only outside boss encounters and without `SURROUNDED`; successful
+  use consumes the potion, finishes combat bookkeeping, returns to the map,
+  grants no combat rewards, and skips event-specific post-victory continuations.
+  Blocked direct use preserves the potion, while the independent discard action
+  remains legal (`BattleContext::smokeBombEscapeBlocked`, `drinkPotion`,
+  `exitBattle`; `GameContext::afterBattle`; CTest `issue_fixes`).
 - Victory is only granted when `monstersAlive == 0` and no monster is a
   half-dead Awakened One stage 1 awaiting its mandatory rebirth
   (`MonsterGroup::anyHalfDead`, `src/combat/Monster.cpp::die`). Darklings are

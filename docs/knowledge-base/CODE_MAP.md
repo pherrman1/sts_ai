@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-08-14 against the current working tree.
+Last verified: 2026-08-26 against the current working tree.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -14,6 +14,7 @@ before broad repository search.
 | Combat actions | `include/sim/search/Action.h`, `src/sim/search/Action.cpp` | `Action`, `execute`, `isValidAction`, `enumerateCardSelectActions` | [combat-search.md](architecture/combat-search.md) |
 | Searcher2 (default) | `include/sim/search/BattleScumSearcher2.h`, `src/sim/search/BattleScumSearcher2.cpp` | `BattleScumSearcher2` — known-RNG determinize, tree reuse | [combat-search.md](architecture/combat-search.md) |
 | Searcher3 (opt-in) | `include/sim/search/BattleScumSearcher3.h`, `src/sim/search/BattleScumSearcher3.cpp` | `BattleScumSearcher3`, `HiddenBattleState`, `Belief`, `CombatObservation`, `S3LeafDiagnostic` — particle ISMCTS, `STS_SEARCHER3=1` | [combat-search.md](architecture/combat-search.md) |
+| Silver (opt-in override) | `include/sim/search/SilverLiveBackend.h`, `third_party/silver_lightspeed/bridge/SilverLiveBackend.cpp`, `src/sim/search/SilverConversion.cpp` | isolated pinned Silver chance-tree backend, `STS_SILVER_SEARCH=1`, stable per-battle seed, semantic action lowering, transactional multi-select, exact reroot telemetry | [combat-search.md](architecture/combat-search.md), [environment-variables.md](operations/environment-variables.md) |
 | Combat agent dispatch | `include/sim/search/ScumSearchAgent2.h`, `src/sim/search/ScumSearchAgent2.cpp` | `ScumSearchAgent2`, `playoutBattle`, `playoutBattleFair`, `stepOutOfCombatPolicy` | [combat-search.md](architecture/combat-search.md), [out-of-combat.md](architecture/out-of-combat.md) |
 | Expert heuristics | `include/sim/search/ExpertKnowledge.h`, `src/sim/search/ExpertKnowledge.cpp` | `ExpertKnowledge` — play/obtain weights, encoded as policy features | [combat-search.md](architecture/combat-search.md) |
 | Combat value nets | `include/sim/search/CombatValueNet.h`, `src/sim/search/CombatValueNet.cpp` | `CombatValueNet` — compact tree (default `STS_VNET`) | [training-and-inference.md](architecture/training-and-inference.md) |
@@ -104,6 +105,7 @@ before broad repository search.
 | Agent contract and routing | `AGENTS.md`, `.agents/skills/`, `.codex/config.toml` | Universal contract, progressive-disclosure skills, Codex sandbox/MCP defaults, context/commit procedure | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
 | Safety guard | `tools/seed_guard.sh` | Local 128-seed cap; explicit unbounded `--gcp-research` mode on the designated host | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md), [build-and-debugging.md](operations/build-and-debugging.md) |
 | GCP benchmark launcher | `tools/agent/gcp_benchmark.py` | Probe/status/start/run through `gcloud compute ssh`; detached guarded research runs | [build-and-debugging.md](operations/build-and-debugging.md) |
+| Benchmark treatment canary | `tools/agent/check_benchmark_canary.py` | Validates a fresh one-seed result/sidecar/log and frozen binary before a larger cohort; does not drive seeds | [benchmark-protocol.md](evaluation/benchmark-protocol.md) |
 | Artifact inspector | `tools/ai_inspect.py` | Read-only CSV/JSON inspection | (inline) |
 | Coding-agent evaluation harness | `tools/agent/eval.py`, `evals/coding_agent/` | Isolated candidate preparation, hidden grading, deterministic self-tests | [coding-agent-evals.md](evaluation/coding-agent-evals.md) |
 

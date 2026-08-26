@@ -1,6 +1,6 @@
 # Agent context and workflow
 
-Last verified: 2026-08-22 against the current working tree.
+Last verified: 2026-08-26 against the current working tree.
 
 ## Purpose
 
@@ -243,6 +243,12 @@ Before completion, run the cheapest relevant tests plus `git diff --check`,
 inspect the complete diff and untracked files, and report checks that were not
 run. C++/CMake changes require focused build/test verification; GitHub Actions
 Linux GCC remains the authoritative repository check.
+
+Do not hold the session inside an unbounded foreground CI watcher such as
+`gh run watch` or `gh pr checks --watch`. Query once with `gh run view` or
+`gh pr checks`, continue independent local work when possible, and poll again
+at a bounded interval. A pending or queued run is status, not a reason to make
+the agent unresponsive; report the latest conclusion after each poll.
 
 ### Legacy command-policy evaluation fixture
 
