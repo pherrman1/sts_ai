@@ -78,8 +78,8 @@ def validate(args: argparse.Namespace) -> str:
     require(args.expect_searcher3 is not None, "expected searcher3 value is required")
     binary_given = args.binary is not None
     binary_hash_given = args.expect_binary_sha256 is not None
-    require(binary_given == binary_hash_given,
-            "--binary and --expect-binary-sha256 must be supplied together")
+    require(binary_given and binary_hash_given,
+            "--binary and --expect-binary-sha256 are required")
 
     meta = read_single_meta(args.meta)
     rows = read_results(args.results)
@@ -179,8 +179,10 @@ def self_test() -> int:
                 raise AssertionError(f"{label}: invalid canary was accepted")
 
         # Provenance is mandatory and must be correct.
-        expect_failure("missing binary", "supplied together", binary=None)
-        expect_failure("missing binary hash", "supplied together", expect_binary_sha256=None)
+        expect_failure("missing all binary provenance", "are required",
+                       binary=None, expect_binary_sha256=None)
+        expect_failure("missing binary", "are required", binary=None)
+        expect_failure("missing binary hash", "are required", expect_binary_sha256=None)
         expect_failure("wrong binary hash", "SHA-256", expect_binary_sha256="0" * 64)
 
         # Configuration expectations are explicit, including false values.
@@ -239,7 +241,8 @@ def main() -> int:
     if args.self_test:
         return self_test()
     missing = [name for name in ("results", "meta", "expect_backend", "expect_sims", "expect_seed_lo",
-                                 "expect_asc", "expect_threads", "expect_fair", "expect_searcher3")
+                                 "expect_asc", "expect_threads", "expect_fair", "expect_searcher3",
+                                 "binary", "expect_binary_sha256")
                if getattr(args, name) is None]
     if missing:
         raise SystemExit("missing required canary arguments: " + ", ".join(missing))

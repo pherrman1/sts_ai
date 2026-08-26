@@ -18,5 +18,6 @@ the benchmark canary require complete treatment and binary provenance.
 
 ## Status
 
-Implemented on `chore/session-efficiency`; the remaining integration proof is a
-single guarded Silver bestbench seed validated against the built executable.
+Implemented on `chore/session-efficiency`; the guarded one-seed Silver
+bestbench integration check passed against the built executable and its actual
+SHA-256.
