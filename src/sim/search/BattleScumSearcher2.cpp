@@ -931,9 +931,16 @@ void search::BattleScumSearcher2::enumeratePotionActions(search::BattleScumSearc
         // it away for zero benefit (drinkPotion's Fairy case is a no-op assert compiled
         // out under NDEBUG), forfeiting the revive. Never offer an action for it.
         // (Matches SimpleAgent canDrink and isValidPotionAction, which already exclude it.)
-        // Smoke Bomb is likewise forbidden in combat (real-game rule): drinkPotion
-        // refuses to consume it, so a "use" action is a no-op that stalls the search.
-        if (p == Potion::FAIRY_POTION || p == Potion::SMOKE_BOMB) {
+        if (p == Potion::FAIRY_POTION) {
+            continue;
+        }
+
+        if (p == Potion::SMOKE_BOMB) {
+            if (!bc.smokeBombEscapeBlocked()) {
+                node.edges.push_back({Action(ActionType::POTION, pIdx)});
+            } else {
+                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
+            }
             continue;
         }
 

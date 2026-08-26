@@ -293,8 +293,9 @@ bool search::SimpleAgent::playPotion(BattleContext &bc) {
     for (; i < bc.potionCapacity; ++i) {
         auto p = bc.potions[i];
 
-        bool canDrink = !(p == sts::Potion::FAIRY_POTION || p == sts::Potion::SMOKE_BOMB
-                          || p == sts::Potion::EMPTY_POTION_SLOT);
+        bool canDrink = p != sts::Potion::FAIRY_POTION
+                     && p != sts::Potion::EMPTY_POTION_SLOT
+                     && (p != sts::Potion::SMOKE_BOMB || !bc.smokeBombEscapeBlocked());
 
         if (canDrink) {
             int target = 0;

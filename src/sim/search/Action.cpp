@@ -87,14 +87,13 @@ bool isValidPotionAction(const BattleContext &bc, const search::Action &a) {
 
     } else {
 
-        // Fairy in a Bottle is NOT usable in combat (auto-procs on lethal) and
-        // Smoke Bomb is forbidden in combat by the real game. Offering either a
-        // "use" action makes the search throw the potion away for zero benefit:
-        // drinkPotion's Fairy case is a no-op assert compiled out under NDEBUG,
-        // and the Smoke Bomb case refuses to consume the potion, so the action
-        // is a pure no-op. Never offer them.
-        if (p == sts::Potion::FAIRY_POTION || p == sts::Potion::SMOKE_BOMB) {
+        // Fairy in a Bottle is NOT usable in combat (auto-procs on lethal).
+        if (p == sts::Potion::FAIRY_POTION) {
             return false;
+        }
+
+        if (p == sts::Potion::SMOKE_BOMB) {
+            return !bc.smokeBombEscapeBlocked();
         }
 
         // Gambler's Brew is unusable when the hand is empty. Allowing it would

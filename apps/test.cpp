@@ -284,8 +284,8 @@ int testHappyFlowerCounter(std::uint64_t seed) {
 }
 
 // Regression tests for issues #56 (Liquid Memories zero-cost), #66 (Omamori
-// counter underflow), #69 (Smoke Bomb drink no-op), and #68 (stale multi-select
-// validation outside CARD_SELECT input state).
+// counter underflow), #68 (stale multi-select validation outside CARD_SELECT
+// input state), and Smoke Bomb combat semantics.
 static BattleContext cardSelectFixture(CardSelectTask task, int pickCount, bool largeHand);
 int testIssueFixes() {
     auto fail = [&](const char *msg) {
@@ -349,7 +349,8 @@ int testIssueFixes() {
         }
     }
 
-    // #69: drinking a Smoke Bomb must be refused without consuming it.
+    // An eligible hallway Smoke Bomb is a legal action, is enumerated by both
+    // searchers, and exits through normal bookkeeping without rewards.
     {
         GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
         BattleContext bc;
@@ -357,9 +358,135 @@ int testIssueFixes() {
         bc.potionCapacity = 3;
         bc.potions[0] = Potion::SMOKE_BOMB;
         bc.potionCount = 1;
-        bc.drinkPotion(0);
-        if (bc.potions[0] != Potion::SMOKE_BOMB || bc.potionCount != 1) {
-            return fail("smoke bomb consumed despite combat-use guard");
+        gc.curRoom = Room::MONSTER;
+        gc.screenState = ScreenState::BATTLE;
+        gc.info.encounter = MonsterEncounter::CULTIST;
+        gc.regainControlAction = [](GameContext &g) { g.afterBattle(); };
+        const search::Action useSmoke(search::ActionType::POTION, 0);
+        if (!useSmoke.isValidAction(bc)) {
+            return fail("eligible smoke bomb use was invalid");
+        }
+        search::BattleScumSearcher2 s2(bc);
+        s2.enumerateActionsForNode(s2.root, bc);
+        if (std::none_of(s2.root.edges.begin(), s2.root.edges.end(),
+                         [](const auto &e) { return e.action == search::Action(search::ActionType::POTION, 0); })) {
+            return fail("Searcher2 omitted eligible smoke bomb");
+        }
+        search::BattleScumSearcher3 s3(bc, 1);
+        search::enumerateActionsForNode(s3.root, bc);
+        if (std::none_of(s3.root.edges.begin(), s3.root.edges.end(),
+                         [](const auto &e) { return e.action == search::Action(search::ActionType::POTION, 0); })) {
+            return fail("Searcher3 omitted eligible smoke bomb");
+        }
+        useSmoke.execute(bc);
+        if (bc.potions[0] != Potion::EMPTY_POTION_SLOT || bc.potionCount != 0
+            || bc.outcome != Outcome::PLAYER_VICTORY) {
+            return fail("eligible smoke bomb did not consume and terminate");
+        }
+        bc.exitBattle(gc);
+        if (gc.screenState != ScreenState::MAP_SCREEN || gc.smokeBombUsed
+            || gc.outcome != GameOutcome::UNDECIDED) {
+            return fail("smoke bomb did not return to map without reward");
+        }
+    }
+    // Face of Cleric still runs on a Smoke Bomb exit, while the reward screen
+    // and event-specific continuation are skipped.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        gc.curRoom = Room::MONSTER;
+        gc.screenState = ScreenState::BATTLE;
+        gc.relics.add({RelicId::FACE_OF_CLERIC, 0});
+        gc.curHp = 50;
+        gc.maxHp = 80;
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        bc.potions[0] = Potion::SMOKE_BOMB;
+        bc.potionCount = 1;
+        gc.regainControlAction = [](GameContext &g) { g.afterBattle(); };
+        search::Action(search::ActionType::POTION, 0).execute(bc);
+        const int maxHpBeforeExit = gc.maxHp;
+        const int curHpBeforeExit = bc.player.curHp;
+        bc.exitBattle(gc);
+        if (gc.maxHp != maxHpBeforeExit + 1 || gc.curHp != curHpBeforeExit + 7
+            || gc.screenState != ScreenState::MAP_SCREEN) {
+            return fail("Smoke Bomb skipped normal combat-exit bookkeeping");
+        }
+    }
+    // Boss and SURROUNDED fights reject use, preserve the potion on direct
+    // execution, and still expose the independent discard action.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        BattleContext boss;
+        boss.init(gc, MonsterEncounter::HEXAGHOST);
+        boss.potions[0] = Potion::SMOKE_BOMB;
+        boss.potionCount = 1;
+        const search::Action useSmoke(search::ActionType::POTION, 0);
+        const search::Action discardSmoke(search::ActionType::POTION, 0, -1);
+        if (!boss.smokeBombEscapeBlocked() || useSmoke.isValidAction(boss)
+            || !discardSmoke.isValidAction(boss)) {
+            return fail("boss Smoke Bomb legality was incorrect");
+        }
+        boss.drinkPotion(0); // defensive direct call must not consume it
+        if (boss.potions[0] != Potion::SMOKE_BOMB || boss.potionCount != 1) {
+            return fail("boss Smoke Bomb was consumed by direct execution");
+        }
+        search::BattleScumSearcher2 s2(boss);
+        s2.enumerateActionsForNode(s2.root, boss);
+        if (std::any_of(s2.root.edges.begin(), s2.root.edges.end(),
+                        [](const auto &e) { return e.action == search::Action(search::ActionType::POTION, 0); })) {
+            return fail("Searcher2 exposed blocked Smoke Bomb use");
+        }
+        search::BattleScumSearcher3 s3(boss, 1);
+        search::enumerateActionsForNode(s3.root, boss);
+        if (std::any_of(s3.root.edges.begin(), s3.root.edges.end(),
+                        [](const auto &e) { return e.action == search::Action(search::ActionType::POTION, 0); })) {
+            return fail("Searcher3 exposed blocked Smoke Bomb use");
+        }
+        discardSmoke.execute(boss);
+        if (boss.potions[0] != Potion::EMPTY_POTION_SLOT || boss.potionCount != 0) {
+            return fail("blocked Smoke Bomb discard did not consume only the discard");
+        }
+    }
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        BattleContext surrounded;
+        surrounded.init(gc, MonsterEncounter::CULTIST);
+        surrounded.player.buff<PS::SURROUNDED>();
+        surrounded.potions[0] = Potion::SMOKE_BOMB;
+        surrounded.potionCount = 1;
+        const search::Action useSmoke(search::ActionType::POTION, 0);
+        if (!surrounded.smokeBombEscapeBlocked() || useSmoke.isValidAction(surrounded)) {
+            return fail("SURROUNDED Smoke Bomb use was valid");
+        }
+        surrounded.drinkPotion(0);
+        if (surrounded.potions[0] != Potion::SMOKE_BOMB || surrounded.potionCount != 1) {
+            return fail("SURROUNDED Smoke Bomb was consumed by direct use");
+        }
+    }
+    // SimpleAgent must use the same live eligibility contract; an ordinary
+    // potion remains a normal combat action.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        bc.potions[0] = Potion::BLOCK_POTION;
+        bc.potionCount = 1;
+        const int oldBlock = bc.player.block;
+        search::SimpleAgent agent;
+        if (agent.playPotion(bc) || bc.player.block <= oldBlock || bc.potionCount != 0) {
+            return fail("ordinary potion path changed");
+        }
+    }
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        bc.potions[0] = Potion::SMOKE_BOMB;
+        bc.potionCount = 1;
+        search::SimpleAgent agent;
+        agent.playPotion(bc);
+        if (bc.outcome != Outcome::PLAYER_VICTORY || bc.potionCount != 0) {
+            return fail("SimpleAgent did not use eligible Smoke Bomb");
         }
     }
 
