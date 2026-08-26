@@ -190,6 +190,8 @@ def self_test() -> int:
         expect_failure("omitted searcher3", "expected searcher3", expect_searcher3=None)
         expect_failure("fairPlay true/false mismatch", "fairPlay value", **{"meta.fairPlay": False})
         expect_failure("searcher3 true/false mismatch", "searcher3 value", **{"meta.searcher3": False})
+        expect_failure("fairPlay false/true mismatch", "fairPlay value", expect_fair=False)
+        expect_failure("searcher3 false/true mismatch", "searcher3 value", expect_searcher3=False)
         expect_failure("omitted Silver reuse cap", "expected reuse-cap mode", expect_silver_reuse_cap_mode=None)
 
         # Restore the valid fixture before testing a bypassed treatment.

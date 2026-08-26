@@ -77,8 +77,10 @@ cmake --build --preset linux-gcc-release-ccache-build
 
 They keep ordinary presets unchanged and configure a bounded 1 GiB cache under
 `$HOME/.cache/sts_ai/ccache`. `CCACHE_BASEDIR` is set to the common parent of
-the current source worktree; whether that produces cross-worktree reuse depends
-on the compiler's debug-path handling and must be measured rather than assumed:
+the current source worktree, which has been verified to share Debug entries
+across sibling worktrees: at the same SHA, the first 61-call build had 61
+misses and the second had 59 direct hits (96.72%) and 2 misses. Verify the
+active cache explicitly when diagnosing a different toolchain or path layout:
 
 ```bash
 ccache --dir "$HOME/.cache/sts_ai/ccache" --zero-stats

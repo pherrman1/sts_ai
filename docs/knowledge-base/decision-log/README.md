@@ -1,6 +1,7 @@
 # Decision log
 
 | 2026-08-26 | [`2026-08-26-session-efficiency-guardrails.md`](2026-08-26-session-efficiency-guardrails.md) | Added nonblocking CI guidance, opt-in cross-worktree ccache presets, a fail-fast bestbench treatment/provenance canary, and mechanism-level Silver GAMBLE assertions. |
+| 2026-08-27 | [`2026-08-27-session-efficiency-correction.md`](2026-08-27-session-efficiency-correction.md) | Tightened canary provenance/configuration expectations and verified Debug ccache reuse across sibling worktrees (59/61 direct hits). |
 | 2026-08-26 | [`2026-08-26-smoke-bomb-rule-correction.md`](2026-08-26-smoke-bomb-rule-correction.md) | Superseded the false 2026-08-10 premise that Smoke Bomb is universally forbidden in combat; eligible non-boss, non-Surrounded escape is the maintained no-reward contract implemented by `e53f994`. |
 | 2026-08-25 | [`2026-08-25-e3c-conditional-runwin.md`](2026-08-25-e3c-conditional-runwin.md) | E3c conditional E2c critic is `E3C_INCONCLUSIVE`; source-seed instability prevents promotion, and R=4 risk summaries do not justify CVaR or distributional-model integration. |
 | 2026-08-24 | [`2026-08-24-s3-sibling-crn-diagnostic.md`](2026-08-24-s3-sibling-crn-diagnostic.md) | Added an offline fixed-action Searcher3 diagnostic for independent versus exactly matched sibling belief particles; historical root-Q CRN remains untouched and the formal experiment awaits review. |
