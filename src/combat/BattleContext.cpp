@@ -3084,7 +3084,7 @@ void BattleContext::chooseForethoughtCard(int handIdx) {
         cards.hand[handIdx].freeToPlayOnce = true;
     }
 
-    cards.insertToDrawPile(0, cards.hand[handIdx]);
+    cards.moveToDrawPileBottom(cards.hand[handIdx]);
     cards.removeFromHandAtIdx(handIdx);
 }
 

@@ -1,0 +1,1584 @@
+//
+// Created by keega on 9/27/2021.
+//
+
+#include <sim/search/SimpleAgent.h>
+#include <game/Game.h>
+#include "sim/PrintHelpers.h"
+
+#include <algorithm>
+#include <cstdlib>
+#include <fstream>
+#include <map>
+#include <array>
+#include <bitset>
+#include <thread>
+#include <mutex>
+
+using namespace sts;
+
+// Rollout-policy knobs, read once from env so we can sweep without recompiling.
+// STS_BLOCK_OFFSET: "we have enough block" check (default 4 = original).
+// STS_AOE_MIN: minimum alive monsters to prefer AoE over single-target attack (default 2).
+// STS_PRIO_MODE: category priority order in chooseBattleCardPlay (default 0):
+//   0 = zeroCostNonAttacks -> nonZero -> zeroCostAttacks  (original)
+//   1 = nonZero -> zeroCostNonAttacks -> zeroCostAttacks   (energy-first)
+//   2 = zeroCostNonAttacks -> zeroCostAttacks -> nonZero   (cheap-first)
+// STS_DEFENSIVE_HP: if 0 < curHp <= this, force defensive mode (skip block-sufficient short-circuit).
+//   Default 0 = disabled.
+// STS_TARGET_MODE: attack target selection (default 0):
+//   0 = lowest-HP monster (original); 1 = highest-HP; 2 = randomize.
+static int policyEnvInt(const char *name, int def) {
+    if (const char *v = std::getenv(name)) return std::atoi(v);
+    return def;
+}
+static const int rolloutBlockOffset   = policyEnvInt("STS_BLOCK_OFFSET", 4);
+static const int rolloutAoeMin        = policyEnvInt("STS_AOE_MIN", 2);
+static const int rolloutPrioMode      = policyEnvInt("STS_PRIO_MODE", 0);
+static const int rolloutDefensiveHp   = policyEnvInt("STS_DEFENSIVE_HP", 0);
+static const int rolloutTargetMode    = policyEnvInt("STS_TARGET_MODE", 0);
+// STS_RANDOM_POLICY=1: ignore all heuristics and just pick uniform-random over playable cards.
+// Baseline to gauge whether the structured policy is doing anything useful under MCTS averaging.
+static const int rolloutRandomPolicy  = policyEnvInt("STS_RANDOM_POLICY", 0);
+// STS_END_TURN_ALWAYS=1: degenerate baseline that always ends the turn (zero card plays per rollout).
+static const int rolloutEndTurnAlways = policyEnvInt("STS_END_TURN_ALWAYS", 0);
+// STS_ROLLOUT_POTION_MODE: if/when MCTS rollouts (BattleSearcher::rolloutToEnd) drink the
+// player's potions. The search tree always enumerates potion plays as actions; this only
+// shapes the value estimates rollouts feed back.
+//   0 = never (default): potions left to the search tree;
+//   1 = dump all potions at the start of the rollout in boss fights only;
+//   2 = always dump at the start of the rollout;
+//   3 = heuristic opportune timing (block/intangible vs a big unblocked hit, fire/explosive as
+//       kill-confirm, weak vs a big attack, fear/poison on a tanky target, blood when wounded;
+//       buffs/utility drink immediately).
+static const int rolloutPotionMode    = policyEnvInt("STS_ROLLOUT_POTION_MODE", 0);
+
+static bool haveInitMaps = false;
+static int cardPriorityMap[372] {};
+static int cardPlayMap[372] {};
+static int bossRelicPriorityMap[200] {};
+static std::bitset<372> isAoeCard;
+static std::bitset<372> isDefensiveCard;
+static std::map<CardId, int> *maxCopies;
+
+static constexpr int mapWeights[3][6] = {
+        {100,1000,100,10,1,0},
+        {10,1000,10,100,1,0},
+        {100,1000,100,1,10,0},
+};
+
+
+void initMaps();
+
+bool shouldSkip(CardId id) {
+    return cardPriorityMap[static_cast<int>(id)] > cardPriorityMap[static_cast<int>(CardId::ANGER)];
+}
+
+int getHighHpMonster(const BattleContext &bc, bool randomize, std::default_random_engine &rng) {
+    int highHp = -1;
+    fixed_list<int, 5> highIdxs;
+
+    for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+        if (bc.monsters.arr[i].isTargetable()) {
+            if (bc.monsters.arr[i].curHp > highHp) {
+                highHp = bc.monsters.arr[i].curHp;
+                highIdxs.clear();
+                highIdxs.push_back(i);
+            } else if (randomize && bc.monsters.arr[i].curHp == highHp) {
+                highIdxs.push_back(i);
+            }
+        }
+    }
+
+    if (randomize && highIdxs.size() > 1) {
+        std::uniform_int_distribution<int> dist(0, highIdxs.size() - 1);
+        return highIdxs[dist(rng)];
+    }
+    return highIdxs.empty() ? -1 : highIdxs[0];
+}
+
+int getLowHpMonster(const BattleContext &bc, bool randomize, std::default_random_engine &rng) {
+    int lowHp = 10000;
+    fixed_list<int, 5> lowIdxs;
+
+    for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+        if (bc.monsters.arr[i].isTargetable()) {
+            if (bc.monsters.arr[i].curHp < lowHp) {
+                lowHp = bc.monsters.arr[i].curHp;
+                lowIdxs.clear();
+                lowIdxs.push_back(i);
+            } else if (randomize && bc.monsters.arr[i].curHp == lowHp) {
+                lowIdxs.push_back(i);
+            }
+        }
+    }
+
+    if (randomize && lowIdxs.size() > 1) {
+        std::uniform_int_distribution<int> dist(0, lowIdxs.size() - 1);
+        return lowIdxs[dist(rng)];
+    }
+    return lowIdxs.empty() ? -1 : lowIdxs[0];
+}
+
+// Feed only grants its permanent max-HP on a kill, so the greedy rollout should play it only when it
+// would be lethal -- otherwise it's just a weak 1-cost attack that wastes the card. Tests the lowest-HP
+// targetable monster (the default attack target); cheap -- one scan + one damage calc.
+bool feedWouldKill(const BattleContext &bc, const CardInstance &feed) {
+    int lowHp = 10000, tgt = -1;
+    for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+        const auto &m = bc.monsters.arr[i];
+        if (m.isTargetable() && m.curHp < lowHp) {
+            lowHp = m.curHp;
+            tgt = i;
+        }
+    }
+    if (tgt < 0) {
+        return false;
+    }
+    const int dmg = bc.calculateCardDamage(feed, tgt, feed.isUpgraded() ? 12 : 10);
+    return dmg >= bc.monsters.arr[tgt].curHp + bc.monsters.arr[tgt].block;
+}
+
+int getBestCardToPlay(const BattleContext &bc, fixed_list<int,10> handIdxs, bool randomize, std::default_random_engine &rng) {
+    int bestPriority = 10000;
+    fixed_list<int,10> bestHandIdxs;
+
+    for (int i = 0; i < handIdxs.size(); ++i) {
+        const auto c = bc.cards.hand[handIdxs[i]];
+        const int priority = 2 * cardPlayMap[static_cast<int>(c.getId())] + (c.isUpgraded() ? -1 : 0);
+        if (priority < bestPriority) {
+            bestPriority = priority;
+            bestHandIdxs.clear();
+            bestHandIdxs.push_back(handIdxs[i]);
+        } else if (randomize && priority == bestPriority) {
+            bestHandIdxs.push_back(handIdxs[i]);
+        }
+    }
+
+    if (randomize && bestHandIdxs.size() > 1) {
+        std::uniform_int_distribution<int> dist(0, bestHandIdxs.size() - 1);
+        return bestHandIdxs[dist(rng)];
+    }
+    return bestHandIdxs[0];
+}
+
+void sortCardOptions(const GameContext &gc, fixed_list<int,96> &sortedCardIdxs) {
+    sortedCardIdxs.clear();
+    for (int i = 0; i < gc.info.toSelectCards.size(); ++i) {
+        sortedCardIdxs.push_back(i);
+    }
+
+    if (gc.info.selectScreenType == sts::CardSelectScreenType::UPGRADE ||
+        gc.info.selectScreenType == sts::CardSelectScreenType::DUPLICATE)
+    {
+        std::sort(sortedCardIdxs.begin(), sortedCardIdxs.end(), [&](int a, int b) {
+            auto ca = gc.info.toSelectCards[a].card;
+            auto cb = gc.info.toSelectCards[b].card;
+            auto pa = 2 * cardPriorityMap[static_cast<int>(ca.id)] + (ca.isUpgraded() ? -1 : 0);
+            auto pb = 2 * cardPriorityMap[static_cast<int>(cb.id)] + (cb.isUpgraded() ? -1 : 0);
+            return pa < pb;
+        });
+
+    } else {
+        std::sort(sortedCardIdxs.begin(), sortedCardIdxs.end(), [&](int a, int b) {
+            auto ca = gc.info.toSelectCards[a].card;
+            auto cb = gc.info.toSelectCards[b].card;
+            auto pa = 2 * cardPriorityMap[static_cast<int>(ca.id)] + (ca.isUpgraded() ? -1 : 0);
+            auto pb = 2 * cardPriorityMap[static_cast<int>(cb.id)] + (cb.isUpgraded() ? -1 : 0);
+            if (gc.info.selectScreenType == sts::CardSelectScreenType::TRANSFORM ||
+                gc.info.selectScreenType == sts::CardSelectScreenType::TRANSFORM_UPGRADE) {
+                if (ca.getType() == sts::CardType::CURSE) {
+                    pa -= 1000;
+                }
+                if (cb.getType() == sts::CardType::CURSE) {
+                    pb -= 1000;
+                }
+            }
+            return  pa > pb;
+        });
+    }
+}
+
+//void sortCardOptions(const GameContext &gc, fixed_list<int,96> &sortedCardIdxs) {
+//    sortedCardIdxs.clear();
+//    for (int i = 0; i < gc.info.toSelectCards.size(); ++i) {
+//        sortedCardIdxs.push_back(i);
+//    }
+//
+//    if (gc.info.selectScreenType == sts::CardSelectScreenType::UPGRADE ||
+//        gc.info.selectScreenType == sts::CardSelectScreenType::DUPLICATE)
+//    {
+//        std::sort(sortedCardIdxs.begin(), sortedCardIdxs.end(), [&](int a, int b) {
+//            auto ca = gc.info.toSelectCards[a].card;
+//            auto cb = gc.info.toSelectCards[b].card;
+//            return cardPriorityMap[static_cast<int>(ca.id)] < cardPriorityMap[static_cast<int>(cb.id)];
+//        });
+//
+//    } else {
+//        std::sort(sortedCardIdxs.begin(), sortedCardIdxs.end(), [&](int a, int b) {
+//            auto ca = gc.info.toSelectCards[a].card;
+//            auto cb = gc.info.toSelectCards[b].card;
+//            auto pa = cardPriorityMap[static_cast<int>(ca.id)];
+//            auto pb = cardPriorityMap[static_cast<int>(cb.id)];
+//            if (gc.info.selectScreenType == sts::CardSelectScreenType::TRANSFORM ||
+//                gc.info.selectScreenType == sts::CardSelectScreenType::TRANSFORM_UPGRADE) {
+//                if (ca.getType() == sts::CardType::CURSE) {
+//                    pa -= 1000;
+//                }
+//                if (cb.getType() == sts::CardType::CURSE) {
+//                    pb -= 1000;
+//                }
+//            }
+//            return  pa > pb;
+//        });
+//    }
+//}
+
+int search::SimpleAgent::getIncomingDamage(const BattleContext &bc) const {
+    int incomingDamage = 0;
+    for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+        const auto &m = bc.monsters.arr[i];
+        if (m.isDeadOrEscaped() || m.isHalfDead()) {
+            continue;
+        }
+
+        DamageInfo dInfo;
+        // Only fall back to a flat estimate while the move is genuinely unresolved (a deferred Runic
+        // Dome roll not yet materialized). The rollout materializes pending moves before deciding, so
+        // we normally read the real move here; keying on the per-monster pending state (not the
+        // global intentsHidden flag) lets a sampled/materialized intent be read for real.
+        if (m.pendingMoveRolls > 0) {
+            dInfo = {5*bc.gameContext->act, 1};
+
+        } else {
+            dInfo = m.getMoveBaseDamage(bc);
+            dInfo.damage = m.calculateDamageToPlayer(bc, dInfo.damage);
+        }
+
+        incomingDamage += dInfo.damage * dInfo.attackCount;
+    }
+    return incomingDamage;
+}
+
+struct Path {
+    fixed_list<int,16> route;
+    int weight= 0;
+};
+
+// weights length of 6 corresponding to room enum (shop, rest, event, elite, monster, treasure)
+fixed_list<int,16> search::SimpleAgent::getBestMapPathForWeights(const Map &m, const int *weights) {
+    Path paths1[7];
+    Path paths2[7];
+
+    for (int x = 0; x < 7; ++x) {
+        const auto &node = m.getNode(x, 0);
+        paths1[x] = Path();
+        paths2[x] = Path();
+
+        if (node.edgeCount > 0) {
+            paths1[x].route.push_back(x);
+            paths1[x].weight = weights[static_cast<int>(node.room)];
+        }
+    }
+
+    Path *lastPaths = paths1;
+    Path *nextPaths = paths2;
+
+    for (int y = 0; y < 14; ++y) {
+
+        for (int x = 0; x < 7; ++x) {
+            const auto &node = m.getNode(x, y);
+            if (node.edgeCount <= 0) {
+                continue;
+            }
+            const auto &curPath = lastPaths[x];
+
+            for (int i = 0; i < node.edgeCount; ++i) {
+                const auto edge = node.edges[i];
+                const int roomWeight = weights[static_cast<int>(m.getNode(edge, y+1).room)];
+                auto &path = nextPaths[edge];
+
+                if (path.route.size() < curPath.route.size() + 1 || path.weight < curPath.weight + roomWeight) {
+                    // path is better
+                    path = curPath;
+                    path.weight += roomWeight;
+                    path.route.push_back(edge);
+                }
+            }
+        }
+
+        std::swap(lastPaths, nextPaths);
+    }
+
+    int bestPathX;
+    int bestPathWeight = 0;
+
+    for (int x = 0; x < 7; ++x) {
+        const auto &path = paths1[x];
+        if (path.weight > bestPathWeight) {
+            bestPathWeight = path.weight;
+            bestPathX = x;
+        }
+    }
+
+    paths1[bestPathX].route.push_back(0);
+    return paths1[bestPathX].route;
+}
+
+static void printHelper(const BattleContext &bc, const search::Action &a) {
+    std::cout << bc << std::endl;
+    a.printDesc(std::cout, bc) << " ";
+    std::cout
+            << " turn: " << bc.turn
+            << " energy: " << bc.player.energy
+            << " cardsPlayedThisTurn: " << bc.player.cardsPlayedThisTurn
+            << " state: " << (bc.inputState == InputState::PLAYER_NORMAL ? "normal" : " probably card select")
+            << std::endl;
+}
+
+search::SimpleAgent::SimpleAgent() {
+    initMaps();
+}
+
+search::SimpleAgent::SimpleAgent(bool randomizeMode, std::uint64_t seed) : randomize(randomizeMode) {
+    initMaps();
+    if (randomize) {
+        rng.seed(seed);
+    }
+}
+
+void search::SimpleAgent::takeAction(GameContext &gc, GameAction a) {
+    actionHistory.emplace_back(a.bits);
+    if (print) {
+        std::cout << gc << '\n';
+    }
+    a.execute(gc);
+}
+
+void search::SimpleAgent::takeAction(BattleContext &bc, search::Action a) {
+    actionHistory.emplace_back(a.bits);
+    if (print) {
+        printHelper(bc, a);
+    }
+    a.execute(bc);
+}
+
+void search::SimpleAgent::playout(GameContext &gc) {
+    BattleContext bc;
+    const auto seedStr = std::string(SeedHelper::getString(gc.seed));
+
+    while (gc.outcome == GameOutcome::UNDECIDED) {
+        if (gc.screenState == ScreenState::BATTLE) {
+            bc = BattleContext();
+            bc.init(gc);
+
+            playoutBattle(bc);
+            bc.exitBattle(gc);
+            continue;
+        }
+
+        stepOutOfCombat(gc);
+    }
+}
+
+// returns whether all potions have been tried
+bool search::SimpleAgent::playPotion(BattleContext &bc) {
+    bool usedAll = true;
+    int i = 0;
+    for (; i < bc.potionCapacity; ++i) {
+        auto p = bc.potions[i];
+
+        // An escape-blocked Smoke Bomb is an invalid action; drinking it here would trip the
+        // isValidAction assert in Action::execute.
+        bool canDrink = !(p == sts::Potion::FAIRY_POTION || p == sts::Potion::EMPTY_POTION_SLOT
+                          || (p == sts::Potion::SMOKE_BOMB && bc.smokeBombEscapeBlocked()));
+
+        if (canDrink) {
+            int target = 0;
+            if (potionRequiresTarget(bc.potions[i]) ) {
+                if (bc.monsters.getTargetableCount() <= 0) {
+                    continue;
+                }
+                target = getHighHpMonster(bc, randomize, rng);
+
+            } else {
+
+            }
+            takeAction(bc, search::Action(search::ActionType::POTION, i, target));
+            break;
+        }
+    }
+    return i == bc.potionCapacity;
+}
+
+// "Dump" rollout potion policy: pick the first drinkable potion (high-HP target if one is
+// required). Returns false when no potion can be drunk.
+static bool chooseDumpPotionAction(const BattleContext &bc, bool randomize,
+                                   std::default_random_engine &rng, search::Action &outAction) {
+    for (int i = 0; i < bc.potionCapacity; ++i) {
+        const Potion p = bc.potions[i];
+        if (p == Potion::EMPTY_POTION_SLOT || p == Potion::FAIRY_POTION || p == Potion::INVALID
+                || (p == Potion::SMOKE_BOMB && bc.smokeBombEscapeBlocked())) {
+            // A rollout drinking an escape-blocked Smoke Bomb would falsely score the escape as
+            // a survival.
+            continue;
+        }
+        int target = 0;
+        if (potionRequiresTarget(p)) {
+            if (bc.monsters.getTargetableCount() <= 0) {
+                continue;
+            }
+            target = getHighHpMonster(bc, randomize, rng);
+        }
+        outAction = search::Action(search::ActionType::POTION, i, target);
+        return true;
+    }
+    return false;
+}
+
+// Heuristic "opportune moment" rollout potion policy (STS_ROLLOUT_POTION_MODE=3). Picks at most
+// one held potion whose moment has arrived; consulted before every card-play decision, so
+// block / incoming damage / monster HP are re-evaluated as the turn unfolds (e.g. Fire Potion
+// fires only once attacks have brought a monster into kill range).
+bool search::SimpleAgent::chooseOpportunePotionAction(const BattleContext &bc, Action &outAction) {
+    const bool hasBark = bc.player.hasRelic<R::SACRED_BARK>();
+    const int incoming = getIncomingDamage(bc);
+    const int unblocked = std::max(0, incoming - bc.player.block);
+
+    for (int i = 0; i < bc.potionCapacity; ++i) {
+        const Potion p = bc.potions[i];
+        if (p == Potion::EMPTY_POTION_SLOT || p == Potion::FAIRY_POTION || p == Potion::INVALID) {
+            continue;
+        }
+
+        bool drink = false;
+        int target = 0;
+
+        switch (p) {
+            // --- defensive: spend against a big unblocked hit ---
+            case Potion::BLOCK_POTION:
+                drink = unblocked >= (hasBark ? 24 : 12);   // fully converts to prevented damage
+                break;
+            case Potion::GHOST_IN_A_JAR:
+                drink = incoming >= 18;                      // intangible negates a big turn
+                break;
+            case Potion::WEAK_POTION:
+                if (incoming >= 14) {
+                    target = getHighHpMonster(bc, randomize, rng);
+                    drink = target >= 0;
+                }
+                break;
+
+            // --- offensive: kill-confirm / amplify a sustained target ---
+            case Potion::FIRE_POTION: {
+                const int dmg = hasBark ? 40 : 20;
+                for (int m = 0; m < bc.monsters.monsterCount; ++m) {
+                    const auto &mon = bc.monsters.arr[m];
+                    if (mon.isTargetable() && mon.curHp > 0 && mon.curHp <= dmg) {
+                        target = m;
+                        drink = true;
+                        break;
+                    }
+                }
+                break;
+            }
+            case Potion::EXPLOSIVE_POTION: {
+                const int dmg = hasBark ? 20 : 10;
+                int kills = 0, alive = 0;
+                for (int m = 0; m < bc.monsters.monsterCount; ++m) {
+                    const auto &mon = bc.monsters.arr[m];
+                    if (!mon.isTargetable() || mon.curHp <= 0) continue;
+                    ++alive;
+                    if (mon.curHp <= dmg) ++kills;
+                }
+                drink = kills >= 2 || (kills >= 1 && kills == alive);  // clears the board / finishes it
+                break;
+            }
+            case Potion::FEAR_POTION:
+                target = getHighHpMonster(bc, randomize, rng);
+                drink = target >= 0 && bc.monsters.arr[target].curHp >= 40;  // worth amplifying
+                break;
+            case Potion::POISON_POTION:
+                target = getHighHpMonster(bc, randomize, rng);
+                drink = target >= 0 && bc.monsters.arr[target].curHp >= 30;  // ramp pays off; drink early
+                break;
+
+            // --- heal only when it won't overheal ---
+            case Potion::BLOOD_POTION: {
+                const int heal = static_cast<int>(bc.player.maxHp * (hasBark ? 40 : 20) / 100.0f);
+                drink = (bc.player.maxHp - bc.player.curHp) >= static_cast<int>(heal * 0.8);
+                break;
+            }
+
+            // --- no opportune moment: take it now (earlier = more value) ---
+            default:
+                if (potionRequiresTarget(p)) {
+                    target = getHighHpMonster(bc, randomize, rng);
+                    drink = target >= 0;
+                } else {
+                    drink = true;
+                }
+                break;
+        }
+
+        if (drink) {
+            outAction = search::Action(search::ActionType::POTION, i, target);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool search::SimpleAgent::choosePotionAction(const BattleContext &bc, Action &outAction) {
+    switch (rolloutPotionMode) {
+        case 1:
+            return isBossEncounter(bc.encounter)
+                   && chooseDumpPotionAction(bc, randomize, rng, outAction);
+        case 2:
+            return chooseDumpPotionAction(bc, randomize, rng, outAction);
+        case 3:
+            return chooseOpportunePotionAction(bc, outAction);
+        default:
+            return false;   // never: potions are left to the search tree
+    }
+}
+
+void search::SimpleAgent::playoutBattle(BattleContext &bc) {
+    // usedPotions starts false when this standalone playout should dump potions before playing
+    // cards (boss fights). The MCTS rollout's potion policy lives in choosePotionAction instead.
+    bool usedPotions = !isBossEncounter(bc.encounter);
+    while (bc.outcome == Outcome::UNDECIDED) {
+        if (bc.inputState == InputState::CARD_SELECT) {
+            Action action = chooseBattleCardSelect(bc);
+            takeAction(bc, action);
+        } else if (bc.inputState == InputState::PLAYER_NORMAL) {
+            if (usedPotions) {
+                Action action = chooseBattleCardPlay(bc);
+                takeAction(bc, action);
+            } else {
+                usedPotions = playPotion(bc);
+            }
+        } else {
+            assert(false);
+        }
+    }
+}
+
+sts::search::Action search::SimpleAgent::chooseBattleCardPlay(BattleContext &bc) {
+    if (rolloutEndTurnAlways) {
+        return Action(ActionType::END_TURN);
+    }
+    if (!bc.isCardPlayAllowed() || bc.player.cardsPlayedThisTurn > 1000) {
+        return Action(ActionType::END_TURN);
+    }
+
+    // One pass over the hand: skip unplayable cards, categorize the rest.
+    fixed_list<int,10> playableCardsIdxs;
+    fixed_list<int,10> zeroCostAttacks;
+    fixed_list<int,10> zeroCostNonAttacks;
+    fixed_list<int,10> nonZeroCostCards;
+    fixed_list<int,10> aoeCards;
+
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+        const auto &c = bc.cards.hand[i];
+        if (!c.canUseOnAnyTarget(bc)) {
+            continue;
+        }
+        playableCardsIdxs.push_back(i);
+        // Greedy policy plays Feed only when it's lethal; exploration (randomize / the random policy)
+        // is exempt -- it still reaches Feed via playableCardsIdxs. Leaving Feed out of the candidate
+        // lists below means a non-lethal Feed is never the greedy pick (and won't block END_TURN).
+        if (c.getId() == CardId::FEED && !randomize && !feedWouldKill(bc, c)) {
+            continue;
+        }
+        if (isAoeCard.test(static_cast<int>(c.getId()))) {
+            aoeCards.push_back(i);
+        }
+        if (c.cost == 0 || c.costForTurn == 0) {
+            if (c.getType() == CardType::ATTACK) {
+                zeroCostAttacks.push_back(i);
+            } else {
+                zeroCostNonAttacks.push_back(i);
+            }
+        } else {
+            nonZeroCostCards.push_back(i);
+        }
+    }
+
+    if (playableCardsIdxs.empty()) {
+        return Action(ActionType::END_TURN);
+    }
+
+    if (rolloutRandomPolicy) {
+        // Baseline: skip all heuristics, pick a uniform-random playable card + random target.
+        std::uniform_int_distribution<int> pickDist(0, playableCardsIdxs.size() - 1);
+        const int handIdx = playableCardsIdxs[pickDist(rng)];
+        const auto &c = bc.cards.hand[handIdx];
+        if (!c.requiresTarget()) {
+            return Action(ActionType::CARD, handIdx);
+        }
+        fixed_list<int,5> alive;
+        for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+            if (bc.monsters.arr[i].isTargetable()) alive.push_back(i);
+        }
+        const int tgt = alive.empty() ? 0
+            : alive[std::uniform_int_distribution<int>(0, alive.size()-1)(rng)];
+        return Action(ActionType::CARD, handIdx, tgt);
+    }
+
+    const int incomingDamage = getIncomingDamage(bc);
+    const bool forceDefensive = rolloutDefensiveHp > 0 && bc.player.curHp <= rolloutDefensiveHp;
+    if (!forceDefensive && bc.player.block > (incomingDamage - bc.gameContext->act - rolloutBlockOffset)) {
+        fixed_list<int,10> offensiveCards;
+        for (auto handIdx : nonZeroCostCards) {
+            const auto &c = bc.cards.hand[handIdx];
+            const bool isDefensive = isDefensiveCard.test(static_cast<int>(c.getId()));
+            if (!isDefensive) {
+                offensiveCards.push_back(handIdx);
+            }
+        }
+
+        if (offensiveCards.empty()) {
+            for (int i = nonZeroCostCards.size()-1; i >= 0; --i) {
+                const auto &c = bc.cards.hand[nonZeroCostCards[i]];
+                if (c.doesExhaust()) {
+                    nonZeroCostCards.remove(i);
+                }
+            }
+        } else {
+            nonZeroCostCards = offensiveCards;
+        }
+    }
+
+    // Try the three categories in the configured priority order; AoE override only fires when
+    // the chosen card came from nonZeroCostCards (the original behavior).
+    const fixed_list<int,10> *priority[3] = {&zeroCostNonAttacks, &nonZeroCostCards, &zeroCostAttacks};
+    if (rolloutPrioMode == 1) {
+        priority[0] = &nonZeroCostCards;
+        priority[1] = &zeroCostNonAttacks;
+    } else if (rolloutPrioMode == 2) {
+        priority[1] = &zeroCostAttacks;
+        priority[2] = &nonZeroCostCards;
+    }
+
+    int bestCardIdx = -1;
+    const fixed_list<int,10> *chosen = nullptr;
+    for (int p = 0; p < 3; ++p) {
+        if (!priority[p]->empty()) {
+            bestCardIdx = getBestCardToPlay(bc, *priority[p], randomize, rng);
+            chosen = priority[p];
+            break;
+        }
+    }
+    if (bestCardIdx < 0) {
+        return Action(ActionType::END_TURN);
+    }
+    if (chosen == &nonZeroCostCards && !aoeCards.empty() &&
+        bc.monsters.monstersAlive >= rolloutAoeMin &&
+        bc.cards.hand[bestCardIdx].getType() == CardType::ATTACK) {
+        bestCardIdx = getBestCardToPlay(bc, aoeCards, randomize, rng);
+    }
+
+    const auto &c = bc.cards.hand[bestCardIdx];
+    if (!c.requiresTarget()) {
+        return Action(ActionType::CARD, bestCardIdx);
+    }
+
+    int targetIdx;
+    if (rolloutTargetMode == 1) {
+        targetIdx = getHighHpMonster(bc, randomize, rng);
+    } else if (rolloutTargetMode == 2) {
+        // mode 2: randomize across alive monsters
+        fixed_list<int,5> alive;
+        for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+            if (bc.monsters.arr[i].isTargetable()) alive.push_back(i);
+        }
+        if (alive.empty()) targetIdx = 0;
+        else {
+            std::uniform_int_distribution<int> dist(0, alive.size() - 1);
+            targetIdx = alive[dist(rng)];
+        }
+    } else {
+        targetIdx = (c.getType() == CardType::ATTACK)
+                ? getLowHpMonster(bc, randomize, rng)
+                : getHighHpMonster(bc, randomize, rng);
+    }
+    return Action(ActionType::CARD, bestCardIdx, targetIdx);
+}
+
+template <typename ForwardIt>
+void setupCardOptionsHelper(std::vector<std::pair<search::Action,CardInstance>> &actions, const ForwardIt begin, const ForwardIt end, const std::function<bool(const CardInstance &)> &p= nullptr) {
+    for (int i = 0; begin+i != end; ++i) {
+        const auto &c = begin[i];
+        if (!p || (p(c))) {
+            actions.emplace_back(std::make_pair(search::Action(search::ActionType::SINGLE_CARD_SELECT, i), c));
+        }
+    }
+}
+
+
+
+
+
+search::Action search::SimpleAgent::chooseBattleCardSelect(BattleContext &bc) {
+
+    std::vector<std::pair<search::Action,CardInstance>> actions;
+    switch (bc.cardSelectInfo.cardSelectTask) {
+        case CardSelectTask::ARMAMENTS:
+            setupCardOptionsHelper( actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand,
+                                    [] (const CardInstance &c) { return c.canUpgrade(); });
+            break;
+
+        case CardSelectTask::CODEX:
+            for (int i = 0; i < 3; ++i) { // i -> 3 action means skip
+                actions.emplace_back(search::Action(search::ActionType::SINGLE_CARD_SELECT, i), bc.cardSelectInfo.codexCards()[i]);
+            }
+            break;
+
+        case CardSelectTask::DISCOVERY:
+            for (int i = 0; i < 3; ++i) {
+                actions.emplace_back(search::Action(search::ActionType::SINGLE_CARD_SELECT, i), bc.cardSelectInfo.codexCards()[i]);
+            }
+            break;
+
+        case CardSelectTask::DUAL_WIELD:
+            setupCardOptionsHelper( actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand,
+                                    [] (const CardInstance &c) {
+                                        return c.getType() == CardType::POWER || c.getType() == CardType::ATTACK;
+                                    });
+            break;
+
+        case CardSelectTask::EXHUME:
+            setupCardOptionsHelper(actions, bc.cards.exhaustPile.begin(), bc.cards.exhaustPile.end(),
+                                   [](const auto &c) { return c.getId() != CardId::EXHUME; });
+            break;
+
+        case CardSelectTask::EXHAUST_ONE:
+            setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
+            break;
+
+        case CardSelectTask::FORETHOUGHT:
+        case CardSelectTask::WARCRY:
+            setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
+            break;
+
+        case CardSelectTask::HEADBUTT:
+        case CardSelectTask::LIQUID_MEMORIES_POTION:
+            setupCardOptionsHelper(actions, bc.cards.discardPile.begin(), bc.cards.discardPile.end());
+            break;
+
+        case CardSelectTask::SECRET_TECHNIQUE:
+            setupCardOptionsHelper(actions, bc.cards.drawPile.begin(), bc.cards.drawPile.end(),
+                                   [] (const CardInstance &c) {
+                                       return c.getType() == CardType::SKILL;
+                                   });
+            break;
+
+        case CardSelectTask::SECRET_WEAPON:
+            setupCardOptionsHelper(actions, bc.cards.drawPile.begin(), bc.cards.drawPile.end(),
+                                   [] (const CardInstance &c) {
+                                       return c.getType() == CardType::ATTACK;
+                                   });
+            break;
+
+        case CardSelectTask::EXHAUST_MANY:
+        case CardSelectTask::GAMBLE:
+            // Rollout policy: stop and confirm whatever has been picked so far (the tree policy
+            // may have already selected some cards via SINGLE_CARD_SELECT).
+            return search::Action(search::ActionType::MULTI_CARD_SELECT, bc.cardSelectInfo.selectedBits);
+
+        default:
+#ifdef sts_asserts
+            assert(false);
+#endif
+            break;
+    }
+
+    std::sort(actions.begin(), actions.end(), [](std::pair<search::Action,CardInstance> a, std::pair<search::Action,CardInstance> b) {
+        auto pa = 2 * cardPriorityMap[static_cast<int>(a.second.id)] + (a.second.isUpgraded() ? -1 : 0);
+        auto pb = 2 * cardPriorityMap[static_cast<int>(b.second.id)] + (b.second.isUpgraded() ? -1 : 0);
+        return pa < pb;
+    });
+
+    switch (bc.cardSelectInfo.cardSelectTask) {
+        case CardSelectTask::ARMAMENTS:
+        case CardSelectTask::DUAL_WIELD:
+        case CardSelectTask::CODEX:
+        case CardSelectTask::DISCOVERY:
+        case CardSelectTask::EXHUME:
+        case CardSelectTask::FORETHOUGHT:
+        case CardSelectTask::HEADBUTT:
+        case CardSelectTask::HOLOGRAM:
+        case CardSelectTask::LIQUID_MEMORIES_POTION:
+        case CardSelectTask::NIGHTMARE:
+        case CardSelectTask::MEDITATE:
+        case CardSelectTask::SECRET_TECHNIQUE:
+        case CardSelectTask::SECRET_WEAPON:
+        case CardSelectTask::SETUP:
+        case CardSelectTask::SEEK:
+        case CardSelectTask::WARCRY:
+            if (randomize && !actions.empty()) {
+                // Find all cards with the same priority as the best card
+                auto bestPriority = 2 * cardPriorityMap[static_cast<int>(actions[0].second.id)] + (actions[0].second.isUpgraded() ? -1 : 0);
+                int count = 1;
+                for (int i = 1; i < actions.size(); ++i) {
+                    auto priority = 2 * cardPriorityMap[static_cast<int>(actions[i].second.id)] + (actions[i].second.isUpgraded() ? -1 : 0);
+                    if (priority == bestPriority) {
+                        count++;
+                    } else {
+                        break;
+                    }
+                }
+                if (count > 1) {
+                    std::uniform_int_distribution<int> dist(0, count - 1);
+                    return actions[dist(rng)].first;
+                }
+            }
+            return actions.front().first;
+
+        case CardSelectTask::EXHAUST_ONE:
+        case CardSelectTask::RECYCLE:
+            if (randomize && !actions.empty()) {
+                // Find all cards with the same priority as the worst card
+                auto worstPriority = 2 * cardPriorityMap[static_cast<int>(actions.back().second.id)] + (actions.back().second.isUpgraded() ? -1 : 0);
+                int count = 1;
+                for (int i = actions.size() - 2; i >= 0; --i) {
+                    auto priority = 2 * cardPriorityMap[static_cast<int>(actions[i].second.id)] + (actions[i].second.isUpgraded() ? -1 : 0);
+                    if (priority == worstPriority) {
+                        count++;
+                    } else {
+                        break;
+                    }
+                }
+                if (count > 1) {
+                    std::uniform_int_distribution<int> dist(0, count - 1);
+                    return actions[actions.size() - 1 - dist(rng)].first;
+                }
+            }
+            return actions.back().first;
+
+        case CardSelectTask::EXHAUST_MANY:
+        case CardSelectTask::INVALID:
+        case CardSelectTask::GAMBLE:
+        default:
+#ifdef sts_asserts
+            assert(false);
+#endif
+            break;
+    }
+}
+
+void search::SimpleAgent::stepOutOfCombat(GameContext &gc) {
+    switch (gc.screenState) {
+
+        case ScreenState::EVENT_SCREEN:
+            stepEventScreen(gc);
+            break;
+
+        case ScreenState::REWARDS:
+            stepRewardsScreen(gc);
+            break;
+
+        case ScreenState::BOSS_RELIC_REWARDS: {
+            int bestIdx;
+            int bestPriority = 1000;
+            fixed_list<int, 3> bestIdxs;
+
+            for (int i = 0; i < 3; ++i) {
+                const auto priority = bossRelicPriorityMap[static_cast<int>(gc.info.bossRelics[i])];
+                if (priority < bestPriority) {
+                    bestPriority = priority;
+                    bestIdxs.clear();
+                    bestIdxs.push_back(i);
+                    bestIdx = i;
+                } else if (randomize && priority == bestPriority) {
+                    bestIdxs.push_back(i);
+                }
+            }
+
+            if (randomize && bestIdxs.size() > 1) {
+                std::uniform_int_distribution<int> dist(0, bestIdxs.size() - 1);
+                bestIdx = bestIdxs[dist(rng)];
+            }
+
+            takeAction(gc, {GameAction::RewardsActionType::RELIC, bestIdx});
+            break;
+        }
+
+        case ScreenState::CARD_SELECT: {
+            fixed_list<int,96> sortedCardIdxs;
+            sortCardOptions(gc, sortedCardIdxs);
+            takeAction(gc, sortedCardIdxs[0]);
+            break;
+        }
+
+        case ScreenState::MAP_SCREEN: {
+            if (gc.act == 4) {
+                takeAction(gc, 3);
+            }
+
+            if (gc.curMapNodeY < 0) {
+                mapPath = getBestMapPathForWeights(*gc.map, mapWeights[gc.act-1]);
+            }
+
+            takeAction(gc, mapPath[gc.curMapNodeY+1]);
+            break;
+        }
+
+        case ScreenState::TREASURE_ROOM:
+            takeAction(gc, 0);
+            break;
+
+        case ScreenState::REST_ROOM:
+            stepRestScreen(gc);
+            break;
+
+        case ScreenState::SHOP_ROOM:
+            stepShopScreen(gc);
+            break;
+
+        case ScreenState::BATTLE:
+        case ScreenState::INVALID:
+        default:
+#ifdef sts_asserts
+            assert(false);
+#endif
+            break;
+    }
+}
+
+void search::SimpleAgent::stepEventScreen(GameContext &gc) {
+    switch (gc.curEvent) {
+        case Event::THE_SSSSSERPENT:
+        case Event::GHOSTS:
+        case Event::GOLDEN_IDOL:
+        case Event::MASKED_BANDITS:
+        case Event::THE_LIBRARY:
+            takeAction(gc, 1);
+            break;
+
+        case Event::AUGMENTER:
+        case Event::VAMPIRES:
+            takeAction(gc, 2);
+            break;
+
+        case Event::KNOWING_SKULL:
+            takeAction(gc, 3);
+            break;
+
+        case Event::NEOW:
+            takeAction(gc, 0);
+            break;
+
+        default: {
+            auto actions = GameAction::getAllActionsInState(gc);
+            takeAction(gc, actions[0]);
+        }
+    }
+}
+
+void search::SimpleAgent::stepRestScreen(GameContext &gc) {
+    auto vec = GameAction::getAllActionsInState(gc);
+    const bool canRest = !gc.hasRelic(RelicId::COFFEE_DRIPPER);
+    const bool canSmith = !gc.relics.has(RelicId::FUSION_HAMMER) && gc.deck.getUpgradeableCount() > 0;
+    const bool canLift = gc.relics.has(RelicId::GIRYA) && gc.relics.getRelicValue(RelicId::GIRYA) != 3;
+    const bool canDig = gc.relics.has(RelicId::SHOVEL);
+    const bool canRemove = gc.relics.has(RelicId::PEACE_PIPE);
+    const bool canTakeKey = !gc.hasKey(Key::RUBY_KEY);
+
+    if (canRest &&
+        (gc.curHp < gc.maxHp / 2 || (gc.act != 1 && gc.floorNum % 17 == 15 && gc.curHp < gc.maxHp * 0.9))) {
+        takeAction(gc, 0);
+    } else if (canSmith) {
+        takeAction(gc, 1);
+    } else if (canLift) {
+        takeAction(gc, 3);
+    } else if (canDig) {
+        takeAction(gc, 5);
+    } else if (canRemove){
+        takeAction(gc, 4);
+    } else if (canRest) {
+        takeAction(gc, 0);
+    } else if (canTakeKey) {
+        takeAction(gc, 2);
+    } else {
+        takeAction(gc, 6);
+    }
+}
+
+void search::SimpleAgent::stepRewardsScreen(GameContext &gc) {
+    auto &r = gc.info.rewardsContainer;
+
+    if (r.potionCount > 0 && gc.potionCount < gc.potionCapacity) {
+        takeAction(gc, {GameAction::RewardsActionType::POTION, 0});
+    } else if (r.relicCount > 0) {
+        takeAction(gc, {GameAction::RewardsActionType::RELIC, 0});
+    } else if (r.sapphireKey || r.emeraldKey) {
+        takeAction(gc, {GameAction::RewardsActionType::KEY});
+    } if (r.cardRewardCount > 0) {
+        stepCardReward(gc);
+    } else {
+        takeAction(gc, {GameAction::RewardsActionType::SKIP});
+    }
+}
+
+void search::SimpleAgent::stepCardReward(GameContext &gc) {
+    // assume card reward count > 0 here
+    const int lastRewardIdx = gc.info.rewardsContainer.cardRewardCount-1;
+    auto lastCardReward = gc.info.rewardsContainer.cardRewards[lastRewardIdx];
+
+    std::unordered_map<CardId, int> deckCounts;
+    for (auto c : lastCardReward) {
+        if (deckCounts.find(c.id) == deckCounts.end()) {
+            deckCounts.insert({c.id, 1});
+        } else {
+            deckCounts[c.id] += 1;
+        }
+    }
+
+    std::vector<Card> pickableCards;
+    for (auto c : lastCardReward) {
+        if (maxCopies->find(c.id) == maxCopies->end() || deckCounts.at(c.id) < maxCopies->at(c.id)) {
+            pickableCards.emplace_back(c);
+        }
+    }
+
+    if (pickableCards.empty()) {
+        takeAction(gc, GameAction(GameAction::RewardsActionType::CARD, lastRewardIdx, 5) );
+        return;
+    }
+
+    int bestIdx = 10000;
+    Card bestCard;
+    for (auto c : pickableCards) {
+        int pickIdx = 2*cardPriorityMap[static_cast<int>(c.id)] + (c.isUpgraded() ? -1 : 0);
+        if (pickIdx < bestIdx) {
+            bestCard = c;
+            bestIdx = pickIdx;
+        }
+    }
+
+    for (int i = 0; i < lastCardReward.size(); ++i) {
+        if (bestCard == lastCardReward[i]) {
+            takeAction(gc, GameAction(GameAction::RewardsActionType::CARD, lastRewardIdx, i));
+            break;
+        }
+    }
+}
+
+void search::SimpleAgent::stepShopScreen(GameContext &gc) {
+    auto &s = gc.info.shop;
+
+    if (s.removeCost != -1 && gc.gold >= s.removeCost) {
+        takeAction(gc, {GameAction::RewardsActionType::CARD_REMOVE});
+        return;
+    }
+
+    for (int i = 0; i < 7; ++i) {
+        if (s.cardPrice(i) == -1 ||
+            gc.gold < s.cardPrice(i) ||
+            shouldSkip(s.cards[i].getId()))
+        {
+            continue;
+        }
+        takeAction(gc, GameAction(GameAction::RewardsActionType::CARD, i));
+        return;
+    }
+
+    for (int i = 0; i < 3; ++i) {
+        if (s.relicPrice(i) == -1 ||
+            gc.gold < s.relicPrice(i))
+        {
+            continue;
+        }
+        takeAction(gc, GameAction(GameAction::RewardsActionType::RELIC, i));
+        return;
+    }
+
+    takeAction(gc, GameAction(GameAction::RewardsActionType::SKIP));
+}
+
+constexpr std::array<CardId,133> cardsPriorities = {
+        CardId::APOTHEOSIS,
+        CardId::GHOSTLY_ARMOR,
+        CardId::PERFECTED_STRIKE,
+        CardId::WHIRLWIND,
+        CardId::BATTLE_TRANCE,
+        CardId::DEMON_FORM,
+        CardId::RAGE,
+        CardId::OFFERING,
+        CardId::IMPERVIOUS,
+        CardId::IMMOLATE,
+        CardId::LIMIT_BREAK,
+        CardId::FLAME_BARRIER,
+        CardId::MASTER_OF_STRATEGY,
+        CardId::INFLAME,
+        CardId::DISARM,
+        CardId::SHRUG_IT_OFF,
+        CardId::DOUBLE_TAP,
+        CardId::THUNDERCLAP,
+        CardId::METALLICIZE,
+        CardId::POMMEL_STRIKE,
+        CardId::SHOCKWAVE,
+        CardId::UPPERCUT,
+        CardId::JAX,
+        CardId::PANIC_BUTTON,
+        CardId::FLASH_OF_STEEL,
+        CardId::FLEX,
+        CardId::ANGER,
+        CardId::SECRET_WEAPON,
+        CardId::FINESSE,
+        CardId::MAYHEM,
+        CardId::PANACHE,
+        CardId::SECRET_TECHNIQUE,
+        CardId::METAMORPHOSIS,
+        CardId::THINKING_AHEAD,
+        CardId::MADNESS,
+        CardId::DISCOVERY,
+        CardId::CHRYSALIS,
+        CardId::DEEP_BREATH,
+        CardId::TRIP,
+        CardId::ENLIGHTENMENT,
+        CardId::HEAVY_BLADE,
+        CardId::FEED,
+        CardId::FIEND_FIRE,
+        CardId::TWIN_STRIKE,
+        CardId::HEADBUTT,
+        CardId::SEEING_RED,
+        CardId::COMBUST,
+        CardId::CLASH,
+        CardId::DARK_SHACKLES,
+        CardId::SWORD_BOOMERANG,
+        CardId::DRAMATIC_ENTRANCE,
+        CardId::BLUDGEON,
+        CardId::HAND_OF_GREED,
+        CardId::EVOLVE,
+        CardId::VIOLENCE,
+        CardId::BITE,
+        CardId::CARNAGE,
+        CardId::CLOTHESLINE,
+        CardId::BASH,
+        CardId::BANDAGE_UP,
+        CardId::PANACEA,
+        CardId::RECKLESS_CHARGE,
+        CardId::INFERNAL_BLADE,
+        CardId::SPOT_WEAKNESS,
+        CardId::STRIKE_RED,
+        CardId::SHIV,
+        CardId::HAVOC,
+        CardId::RITUAL_DAGGER,
+        CardId::DROPKICK,
+        CardId::FEEL_NO_PAIN,
+        CardId::SWIFT_STRIKE,
+        CardId::CORRUPTION,
+        CardId::MAGNETISM,
+        CardId::BLOODLETTING,
+        CardId::IRON_WAVE,
+        CardId::ARMAMENTS,
+        CardId::MIND_BLAST,
+        CardId::ASCENDERS_BANE,
+        CardId::DAZED,
+        CardId::VOID,
+        CardId::RAMPAGE,
+        CardId::GHOSTLY_ARMOR,
+        CardId::TRUE_GRIT,
+        CardId::BLIND,
+        CardId::GOOD_INSTINCTS,
+        CardId::PUMMEL,
+        CardId::HEMOKINESIS,
+        CardId::EXHUME,
+        CardId::REAPER,
+        CardId::CLEAVE,
+        CardId::WARCRY,
+        CardId::PURITY,
+        CardId::DUAL_WIELD,
+        CardId::WILD_STRIKE,
+        CardId::DEFEND_RED,
+        CardId::BODY_SLAM,
+        CardId::SEVER_SOUL,
+        CardId::BURNING_PACT,
+        CardId::BRUTALITY,
+        CardId::BARRICADE,
+        CardId::INTIMIDATE,
+        CardId::JUGGERNAUT,
+        CardId::SADISTIC_NATURE,
+        CardId::DARK_EMBRACE,
+        CardId::POWER_THROUGH,
+        CardId::TRANSMUTATION,
+        CardId::SENTINEL,
+        CardId::RUPTURE,
+        CardId::SLIMED,
+        CardId::FIRE_BREATHING,
+        CardId::SECOND_WIND,
+        CardId::IMPATIENCE,
+        CardId::THE_BOMB,
+        CardId::JACK_OF_ALL_TRADES,
+        CardId::SEARING_BLOW,
+        CardId::BLOOD_FOR_BLOOD,
+        CardId::BERSERK,
+        CardId::ENTRENCH,
+        CardId::FORETHOUGHT,
+        CardId::CLUMSY,
+        CardId::PARASITE,
+        CardId::SHAME,
+        CardId::INJURY,
+        CardId::WOUND,
+        CardId::WRITHE,
+        CardId::DOUBT,
+        CardId::BURN,
+        CardId::DECAY,
+        CardId::REGRET,
+        CardId::NECRONOMICURSE,
+        CardId::PAIN,
+        CardId::NORMALITY,
+        CardId::PRIDE,
+};
+
+constexpr std::array<CardId,133> cardPlayPriorities = {
+        CardId::APOTHEOSIS,
+        CardId::OFFERING,
+        CardId::DEMON_FORM,
+        CardId::INFLAME,
+        CardId::METALLICIZE,
+        CardId::DISARM,
+        CardId::SHOCKWAVE,
+        CardId::GHOSTLY_ARMOR,
+        CardId::LIMIT_BREAK,
+        CardId::DOUBLE_TAP,
+        CardId::THUNDERCLAP,
+        CardId::IMMOLATE,
+        CardId::UPPERCUT,
+        CardId::FLAME_BARRIER,
+        CardId::SHRUG_IT_OFF,
+        CardId::IMPERVIOUS,
+        CardId::MADNESS,
+        CardId::PERFECTED_STRIKE,
+        CardId::BATTLE_TRANCE,
+        CardId::RAGE,
+        CardId::MASTER_OF_STRATEGY,
+        CardId::POMMEL_STRIKE,
+        CardId::JAX,
+        CardId::FLASH_OF_STEEL,
+        CardId::FLEX,
+        CardId::ANGER,
+        CardId::DEFEND_RED,
+        CardId::BASH,
+        CardId::WHIRLWIND,
+        CardId::PANIC_BUTTON,
+        CardId::SECRET_WEAPON,
+        CardId::FINESSE,
+        CardId::MAYHEM,
+        CardId::PANACHE,
+        CardId::SECRET_TECHNIQUE,
+        CardId::METAMORPHOSIS,
+        CardId::THINKING_AHEAD,
+        CardId::DISCOVERY,
+        CardId::CHRYSALIS,
+        CardId::DEEP_BREATH,
+        CardId::TRIP,
+        CardId::ENLIGHTENMENT,
+        CardId::HEAVY_BLADE,
+        CardId::FEED,
+        CardId::FIEND_FIRE,
+        CardId::TWIN_STRIKE,
+        CardId::HEADBUTT,
+        CardId::SEEING_RED,
+        CardId::COMBUST,
+        CardId::CLASH,
+        CardId::DARK_SHACKLES,
+        CardId::SWORD_BOOMERANG,
+        CardId::DRAMATIC_ENTRANCE,
+        CardId::BLUDGEON,
+        CardId::HAND_OF_GREED,
+        CardId::EVOLVE,
+        CardId::VIOLENCE,
+        CardId::BITE,
+        CardId::CARNAGE,
+        CardId::CLOTHESLINE,
+        CardId::BANDAGE_UP,
+        CardId::PANACEA,
+        CardId::RECKLESS_CHARGE,
+        CardId::INFERNAL_BLADE,
+        CardId::STRIKE_RED,
+        CardId::SPOT_WEAKNESS,
+        CardId::SHIV,
+        CardId::HAVOC,
+        CardId::RITUAL_DAGGER,
+        CardId::DROPKICK,
+        CardId::FEEL_NO_PAIN,
+        CardId::SWIFT_STRIKE,
+        CardId::CORRUPTION,
+        CardId::MAGNETISM,
+        CardId::BLOODLETTING,
+        CardId::IRON_WAVE,
+        CardId::ARMAMENTS,
+        CardId::MIND_BLAST,
+        CardId::ASCENDERS_BANE,
+        CardId::DAZED,
+        CardId::VOID,
+        CardId::RAMPAGE,
+        CardId::GHOSTLY_ARMOR,
+        CardId::TRUE_GRIT,
+        CardId::BLIND,
+        CardId::GOOD_INSTINCTS,
+        CardId::PUMMEL,
+        CardId::HEMOKINESIS,
+        CardId::EXHUME,
+        CardId::REAPER,
+        CardId::CLEAVE,
+        CardId::WARCRY,
+        CardId::PURITY,
+        CardId::DUAL_WIELD,
+        CardId::WILD_STRIKE,
+        CardId::BODY_SLAM,
+        CardId::SEVER_SOUL,
+        CardId::BURNING_PACT,
+        CardId::BRUTALITY,
+        CardId::BARRICADE,
+        CardId::INTIMIDATE,
+        CardId::JUGGERNAUT,
+        CardId::SADISTIC_NATURE,
+        CardId::DARK_EMBRACE,
+        CardId::POWER_THROUGH,
+        CardId::TRANSMUTATION,
+        CardId::SENTINEL,
+        CardId::RUPTURE,
+        CardId::SLIMED,
+        CardId::FIRE_BREATHING,
+        CardId::SECOND_WIND,
+        CardId::IMPATIENCE,
+        CardId::THE_BOMB,
+        CardId::JACK_OF_ALL_TRADES,
+        CardId::SEARING_BLOW,
+        CardId::BLOOD_FOR_BLOOD,
+        CardId::BERSERK,
+        CardId::ENTRENCH,
+        CardId::FORETHOUGHT,
+        CardId::CLUMSY,
+        CardId::PARASITE,
+        CardId::SHAME,
+        CardId::INJURY,
+        CardId::WOUND,
+        CardId::WRITHE,
+        CardId::DOUBT,
+        CardId::BURN,
+        CardId::DECAY,
+        CardId::REGRET,
+        CardId::NECRONOMICURSE,
+        CardId::PAIN,
+        CardId::NORMALITY,
+        CardId::PRIDE,
+};
+
+constexpr std::array<CardId,13>  defensiveCards = {
+        CardId::POWER_THROUGH,
+        CardId::TRUE_GRIT,
+        CardId::IMPERVIOUS,
+        CardId::SHRUG_IT_OFF,
+        CardId::FLAME_BARRIER,
+        CardId::ENTRENCH,
+        CardId::DEFEND_RED,
+        CardId::SENTINEL,
+        CardId::SECOND_WIND,
+        CardId::GHOSTLY_ARMOR,
+        CardId::DARK_SHACKLES,
+        CardId::PANIC_BUTTON,
+        CardId::RAGE,
+};
+
+constexpr std::array<RelicId,24> bossRelicPriorities = {
+        R::SOZU,
+        R::SNECKO_EYE,
+        R::PHILOSOPHERS_STONE,
+        R::RUNIC_DOME,
+        R::CURSED_KEY,
+        R::FUSION_HAMMER,
+        R::VELVET_CHOKER,
+        R::ECTOPLASM,
+        R::MARK_OF_PAIN,
+        R::BUSTED_CROWN,
+        R::EMPTY_CAGE,
+        R::ASTROLABE,
+        R::RUNIC_PYRAMID,
+        R::LIZARD_TAIL,
+        R::ETERNAL_FEATHER,
+        R::COFFEE_DRIPPER,
+        R::BLACK_BLOOD,
+        R::TINY_HOUSE,
+        R::BLACK_STAR,
+        R::ORRERY,
+        R::RUNIC_CUBE,
+        R::PANDORAS_BOX,
+        R::WHITE_BEAST_STATUE,
+        R::CALLING_BELL,
+};
+
+
+void initMaps() {
+    // there are synchronization issues with this if multiple threads start at once
+    if (haveInitMaps) {
+        return;
+    }
+    haveInitMaps = true;
+    for (int i = 0; i < cardPlayPriorities.size(); ++i) {
+        CardId c = cardPlayPriorities[i];
+        cardPlayMap[static_cast<int>(c)] = i + 1;
+    }
+
+    for (int i = 0; i < cardsPriorities.size(); ++i) {
+        CardId c = cardsPriorities[i];
+        cardPriorityMap[static_cast<int>(c)] = i + 1;
+    }
+
+    // STS_DUMP_CARDPLAY=path: dump the default cardPlayMap (after the priorities-array init, before
+    // any user override) so an external tuner can see the starting point.
+    if (const char *path = std::getenv("STS_DUMP_CARDPLAY")) {
+        std::ofstream f(path);
+        for (int i = 0; i < 372; ++i) {
+            f << i << " " << cardPlayMap[i] << "\n";
+        }
+    }
+
+    // STS_CARDPLAY_OVERRIDE=path: optional per-card cardPlayMap overrides. File format is
+    // whitespace-separated "<int_card_id> <int_priority>" pairs (lower priority = play first).
+    // Lines with unrecognized id (>=372) are ignored. Lets us autotune without recompiling.
+    if (const char *path = std::getenv("STS_CARDPLAY_OVERRIDE")) {
+        std::ifstream f(path);
+        int id, prio;
+        while (f >> id >> prio) {
+            if (id >= 0 && id < 372) cardPlayMap[id] = prio;
+        }
+    }
+
+    for (int i = 0; i < bossRelicPriorities.size(); ++i) {
+        RelicId r = bossRelicPriorities[i];
+        bossRelicPriorityMap[static_cast<int>(r)] = i + 1;
+    }
+
+    maxCopies = new std::map<CardId, int>({
+        {CardId::OFFERING, 1},
+        {CardId::IMPERVIOUS, 99},
+        {CardId::APOTHEOSIS, 1},
+        {CardId::GHOSTLY_ARMOR, 99},
+        {CardId::PERFECTED_STRIKE, 99},
+        {CardId::WHIRLWIND, 2},
+        {CardId::BATTLE_TRANCE, 2},
+        {CardId::DEMON_FORM, 1},
+        {CardId::IMMOLATE, 1},
+        {CardId::RAGE, 2},
+        {CardId::LIMIT_BREAK, 3},
+        {CardId::FLAME_BARRIER, 2},
+        {CardId::MASTER_OF_STRATEGY, 99},
+        {CardId::INFLAME, 1},
+        {CardId::DISARM, 2},
+        {CardId::SHRUG_IT_OFF, 3},
+        {CardId::DOUBLE_TAP, 1},
+        {CardId::THUNDERCLAP, 1},
+        {CardId::METALLICIZE, 1},
+        {CardId::POMMEL_STRIKE, 1},
+        {CardId::SHOCKWAVE, 1},
+        {CardId::UPPERCUT, 1},
+        {CardId::JAX, 1},
+        {CardId::PANIC_BUTTON, 1},
+        {CardId::FLASH_OF_STEEL, 99},
+        {CardId::FLEX, 1}
+    });
+
+    for (auto c : defensiveCards) {
+        isDefensiveCard.set(static_cast<int>(c));
+    }
+
+    isAoeCard.set(static_cast<int>(CardId::CLEAVE));
+    isAoeCard.set(static_cast<int>(CardId::IMMOLATE));
+    isAoeCard.set(static_cast<int>(CardId::THUNDERCLAP));
+    isAoeCard.set(static_cast<int>(CardId::WHIRLWIND));
+}
+
+struct SimpleAgentInfo {
+    bool shouldPrint;
+    std::uint64_t seedStart;
+    std::uint64_t seedEnd;
+
+    std::mutex m;
+    std::uint64_t curSeed;
+    std::int64_t winCount = 0;
+    std::int64_t lossCount = 0;
+    std::int64_t floorSum = 0;
+};
+
+void agentMtRunner(SimpleAgentInfo *info) {
+    std::uint64_t seed;
+    {
+        std::scoped_lock lock(info->m);
+        seed = info->curSeed++;
+    }
+
+    while(true) {
+        if (seed >= info->seedEnd) {
+            break;
+        }
+
+        GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+
+//        gc.obtainRelic(sts::RelicId::NEOWS_LAMENT);
+//        gc.playerIncreaseMaxHp(100);
+
+        search::SimpleAgent agent;
+        agent.print = info->shouldPrint;
+        agent.playout(gc);
+
+
+//        printOutcome(std::cout, gc);
+        {
+            std::scoped_lock lock(info->m);
+            info->floorSum += gc.floorNum;
+            if (gc.outcome == sts::GameOutcome::PLAYER_VICTORY) {
+                ++info->winCount;
+
+            } else {
+                ++info->lossCount;
+            }
+            seed = info->curSeed++;
+        }
+    }
+}
+
+void search::SimpleAgent::runAgentsMt(int threadCount, std::uint64_t startSeed, int playoutCount, bool print) {
+    auto startTime = std::chrono::high_resolution_clock::now();
+
+    std::vector<std::unique_ptr<std::thread>> threads;
+
+    SimpleAgentInfo info;
+    info.curSeed = startSeed;
+    info.seedStart = startSeed;
+    info.seedEnd = startSeed + playoutCount;
+    info.shouldPrint = print;
+
+
+    if (threadCount == 1) { // doing this for more consistency when benchmarking
+        agentMtRunner(&info);
+
+    } else {
+        for (int tid = 0; tid < threadCount; ++tid) {
+            threads.emplace_back(new std::thread(agentMtRunner, &info));
+        }
+    }
+
+    for (int tid = 0; tid < threadCount; ++tid) {
+        if (threadCount > 1) {
+            threads[tid]->join();
+        }
+    }
+
+    auto endTime = std::chrono::high_resolution_clock::now();
+    double duration = std::chrono::duration<double>(endTime-startTime).count();
+
+    std::cout << "w/l: (" << info.winCount  << ", " << info.lossCount << ")"
+              << " percentWin: " << static_cast<double>(info.winCount) / playoutCount * 100 << "%"
+              << " avgFloorReached: " << static_cast<double>(info.floorSum) / playoutCount << '\n';
+
+    std::cout << "threads: " << threadCount
+              << " playoutCount: " << playoutCount
+              << " elapsed: " << duration
+              << std::endl;
+}

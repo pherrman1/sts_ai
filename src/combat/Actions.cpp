@@ -3,6 +3,7 @@
 //
 
 #include "combat/Actions.h"
+#include "sim/search/CombatKnowledge.h"
 #include "combat/BattleContext.h"
 #include "game/Game.h"
 
@@ -199,6 +200,7 @@ Action Actions::ShuffleDrawPile() {
                 bc.cards.drawPile.end(),
                 java::Random(bc.shuffleRng.randomLong())
         );
+        search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::SHUFFLE_OCCURRED);
     }};
 }
 
@@ -1239,6 +1241,14 @@ Action Actions::SwordBoomerangAction(int baseDamage) { // pretty hacky until I c
 
 Action Actions::SpotWeaknessAction(int target, int strength) {
     return {[=](BattleContext &bc) {
+        // Spot Weakness queries the current intent. Under Runic Dome this is
+        // an epistemic materialization point just like the monster acting.
+        // The observer captures the now-public move before isAttacking reads
+        // it; no simulator decision or RNG stream is affected.
+        const auto &monster = bc.monsters.arr[target];
+        search::emitHiddenMonsterIntentMaterialized(
+            monster.idx, static_cast<std::int16_t>(monster.moveHistory[0]),
+            static_cast<std::int16_t>(monster.moveHistory[1]), monster.miscInfo);
         if (bc.monsters.arr[target].isAttacking()) {
             bc.player.buff<PS::STRENGTH>(strength);
         }

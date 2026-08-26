@@ -39,6 +39,10 @@
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/SimHealth.h"
 #include "sim/search/TrainingIntegrity.h"
+#include "sim/search/CombatKnowledge.h"
+#include "sim/search/SilverConversion.h"
+#include "sim/search/SilverBridge.h"
+#include "sim/search/SilverSemanticAction.h"
 #include "combat/BattleContextBinary.h"
 #include "constants/MonsterMoves.h"
 #include "test_belief.h"
@@ -1331,6 +1335,302 @@ int testE2cObserverScope() {
 
     if (failures == 0) { std::cout << "e2c_observer_scope PASS\n"; return 0; }
     std::cout << "e2c_observer_scope FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
+// The live draw vector is simulator-private. This test exercises the explicit
+// observer metadata plus the converter boundary; it never gives that boundary
+// a draw-pile index or any combat RNG state.
+int testCombatKnowledgeBoundary() {
+    using search::CombatKnowledgeEventType;
+    int failures = 0;
+    const auto check = [&failures](bool ok, const char *msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    const auto makeCards = [](BattleContext &bc) {
+        CardInstance strike(CardId::STRIKE_RED), defend(CardId::DEFEND_RED), bash(CardId::BASH);
+        strike.uniqueId = 11; defend.uniqueId = 12; bash.uniqueId = 13;
+        bc.cards.drawPile = {strike, defend, bash}; // concrete order is intentionally secret
+    };
+
+    GameContext gc(CharacterClass::IRONCLAD, 0x51A7u, 0);
+    BattleContext first;
+    first.init(gc, MonsterEncounter::CULTIST);
+    makeCards(first);
+    BattleContext permuted = first;
+    std::swap(permuted.cards.drawPile[0], permuted.cards.drawPile[2]);
+
+    search::CombatKnowledgeState firstKnowledge, permutedKnowledge;
+    firstKnowledge.initializeFromLiveBattle(first);
+    permutedKnowledge.initializeFromLiveBattle(permuted);
+    const auto firstView = search::makeSilverDrawPileObservation(first, firstKnowledge);
+    const auto permutedView = search::makeSilverDrawPileObservation(permuted, permutedKnowledge);
+    check(search::sameSilverDrawPileObservation(firstView, permutedView),
+          "unobserved concrete draw permutations must produce the same Silver pile observation");
+    check(firstView.knownTop.empty() && firstView.knownBottom.empty() && firstView.unknown.size() == 3,
+          "normal conversion must keep every unpositioned card unknown");
+    check(search::makeSilverCardPile(first, firstKnowledge)
+          == search::makeSilverCardPile(permuted, permutedKnowledge),
+          "unobserved concrete draw permutations must construct the same Silver CardPile");
+    auto sampledUnknown = search::makeSilverCardPile(first, firstKnowledge);
+    silver::Random silverRng(0x9001u);
+    (void)sampledUnknown.drawTop(silverRng);
+    check(silverRng.counter == 1,
+          "Silver unknown draw must consume its isolated single-model RNG exactly once");
+
+    // The six live RNG fields are deliberately not an input to conversion.
+    BattleContext alteredRng = first;
+    alteredRng.aiRng = Random(1); alteredRng.cardRandomRng = Random(2);
+    alteredRng.miscRng = Random(3); alteredRng.monsterHpRng = Random(4);
+    alteredRng.potionRng = Random(5); alteredRng.shuffleRng = Random(6);
+    search::CombatKnowledgeState alteredRngKnowledge;
+    alteredRngKnowledge.initializeFromLiveBattle(alteredRng);
+    check(search::sameSilverDrawPileObservation(firstView,
+          search::makeSilverDrawPileObservation(alteredRng, alteredRngKnowledge)),
+          "live combat RNG changes must not change the Silver pile observation");
+
+    // Known top: later placement is the next draw (back of knownTop).
+    auto topKnowledge = firstKnowledge;
+    const CardInstance topA = first.cards.drawPile[0];
+    const CardInstance topB = first.cards.drawPile[1];
+    topKnowledge.observeCombatKnowledgeEvent({CombatKnowledgeEventType::KNOWN_TOP_PLACED, topA, true});
+    topKnowledge.observeCombatKnowledgeEvent({CombatKnowledgeEventType::KNOWN_TOP_PLACED, topB, true});
+    BattleContext topLive = first;
+    topLive.cards.drawPile = {first.cards.drawPile[2], topA, topB};
+    const auto topView = search::makeSilverDrawPileObservation(topLive, topKnowledge);
+    check(topView.knownTop.size() == 2 && topView.knownTop[0].uniqueId == topA.uniqueId
+          && topView.knownTop[1].uniqueId == topB.uniqueId,
+          "multiple known top placements must retain actual stack order");
+    auto deterministicTop = search::makeSilverCardPile(topLive, topKnowledge);
+    silver::Random knownTopRng(0x9002u);
+    const CardInstance poppedTop = deterministicTop.drawTop(knownTopRng);
+    check(poppedTop.uniqueId == topB.uniqueId && knownTopRng.counter == 0,
+          "Silver known-top draw must be deterministic and consume no model RNG");
+    topKnowledge.observeCombatKnowledgeEvent({CombatKnowledgeEventType::DRAW_OCCURRED, topB, true});
+    check(topKnowledge.knownTop.size() == 1 && topKnowledge.knownTop.back().uniqueId == topA.uniqueId,
+          "drawing a known top card must pop only that card");
+
+    // Known bottom: later placement is lower/deader-last (front of knownBottom).
+    auto bottomKnowledge = firstKnowledge;
+    bottomKnowledge.observeCombatKnowledgeEvent({CombatKnowledgeEventType::KNOWN_BOTTOM_PLACED, topA, true});
+    bottomKnowledge.observeCombatKnowledgeEvent({CombatKnowledgeEventType::KNOWN_BOTTOM_PLACED, topB, true});
+    check(bottomKnowledge.knownBottom.size() == 2 && bottomKnowledge.knownBottom[0].uniqueId == topB.uniqueId
+          && bottomKnowledge.knownBottom[1].uniqueId == topA.uniqueId,
+          "multiple known bottom placements must retain actual stack order");
+    // There is one unknown card above the two known-bottom cards. Its draw
+    // must not erase a bottom fact; only the later deterministic draw may.
+    bottomKnowledge.observedDrawPileSize = 3;
+    bottomKnowledge.observeCombatKnowledgeEvent(
+        {CombatKnowledgeEventType::DRAW_OCCURRED, first.cards.drawPile[2], true});
+    check(bottomKnowledge.knownBottom.size() == 2,
+          "unknown-region draw must not consume known-bottom knowledge");
+    bottomKnowledge.observeCombatKnowledgeEvent({CombatKnowledgeEventType::DRAW_OCCURRED, topA, true});
+    check(bottomKnowledge.knownBottom.size() == 1 && bottomKnowledge.knownBottom.back().uniqueId == topB.uniqueId,
+          "known bottom must become deterministic only after unknown cards are gone");
+
+    bottomKnowledge.observeCombatKnowledgeEvent({CombatKnowledgeEventType::SHUFFLE_OCCURRED});
+    check(bottomKnowledge.knownTop.empty() && bottomKnowledge.knownBottom.empty()
+          && !bottomKnowledge.fullDrawPileOrderObserved,
+          "ordinary shuffle must invalidate positional knowledge");
+    topKnowledge.observeCombatKnowledgeEvent({CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, topA, true});
+    check(topKnowledge.knownTop.empty() && topKnowledge.knownBottom.empty(),
+          "unknown insertion must conservatively erase position knowledge");
+
+    // The default-null callback is behavior-neutral. Compare one actual live
+    // top placement with and without an installed observer.
+    BattleContext noObserver = first, withObserver = first;
+    CardInstance moved = noObserver.cards.drawPile[0];
+    search::g_combatKnowledgeObserver = nullptr;
+    noObserver.cards.moveToDrawPileTop(moved);
+    search::CombatKnowledgeState observed;
+    observed.initializeFromLiveBattle(withObserver);
+    search::g_combatKnowledgeObserver = &observed;
+    withObserver.cards.moveToDrawPileTop(moved);
+    search::g_combatKnowledgeObserver = nullptr;
+    const bool sameLiveResult = noObserver.cards.drawPile.size() == withObserver.cards.drawPile.size()
+        && noObserver.cards.cardsInHand == withObserver.cards.cardsInHand
+        && noObserver.cards.drawPileBloodCardCount == withObserver.cards.drawPileBloodCardCount
+        && std::equal(noObserver.cards.drawPile.begin(), noObserver.cards.drawPile.end(),
+                      withObserver.cards.drawPile.begin(), [](const CardInstance &a, const CardInstance &b) {
+                          return a.id == b.id && a.uniqueId == b.uniqueId && a.specialData == b.specialData
+                              && a.cost == b.cost && a.costForTurn == b.costForTurn
+                              && a.upgraded == b.upgraded && a.freeToPlayOnce == b.freeToPlayOnce
+                              && a.retain == b.retain;
+                      });
+    check(sameLiveResult, "observer callback must not change live BattleContext behavior");
+    check(observed.knownTop.size() == 1 && observed.knownTop.back().uniqueId == moved.uniqueId,
+          "live top-placement hook must emit the selected card only");
+
+    // Frozen Eye makes the concrete order observable; without it the preceding
+    // permutations compared equal, while with it their order must be retained.
+    GameContext eyeGc(CharacterClass::IRONCLAD, 0x51A8u, 0);
+    eyeGc.obtainRelic(RelicId::FROZEN_EYE);
+    BattleContext eyeA, eyeB;
+    eyeA.init(eyeGc, MonsterEncounter::CULTIST);
+    makeCards(eyeA);
+    eyeB = eyeA;
+    std::swap(eyeB.cards.drawPile[0], eyeB.cards.drawPile[2]);
+    search::CombatKnowledgeState eyeAKnowledge, eyeBKnowledge;
+    eyeAKnowledge.initializeFromLiveBattle(eyeA);
+    eyeBKnowledge.initializeFromLiveBattle(eyeB);
+    const auto eyeAView = search::makeSilverDrawPileObservation(eyeA, eyeAKnowledge);
+    const auto eyeBView = search::makeSilverDrawPileObservation(eyeB, eyeBKnowledge);
+    check(eyeAView.fullOrderObserved && eyeBView.fullOrderObserved,
+          "Frozen Eye must explicitly mark full draw-order visibility");
+    check(!search::sameSilverDrawPileObservation(eyeAView, eyeBView),
+          "Frozen Eye conversion must preserve legitimately visible concrete order");
+    check(!(search::makeSilverCardPile(eyeA, eyeAKnowledge)
+          == search::makeSilverCardPile(eyeB, eyeBKnowledge)),
+          "Frozen Eye must retain the actual visible order in Silver CardPile state");
+
+    GameContext domeGc(CharacterClass::IRONCLAD, 0x51A9u, 0);
+    domeGc.obtainRelic(RelicId::RUNIC_DOME);
+    BattleContext dome;
+    dome.init(domeGc, MonsterEncounter::CULTIST);
+    check(!search::liveMonsterIntentIsObservable(dome),
+          "Runic Dome must prohibit copying live monster intent into Silver");
+    check(search::liveMonsterIntentIsObservable(first),
+          "visible-intent combat must permit an intent conversion");
+
+    if (failures == 0) { std::cout << "combat_knowledge PASS\n"; return 0; }
+    std::cout << "combat_knowledge FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
+int testSilverRandomBridge() {
+    const auto fromBridge = silver_bridge::probeReferenceRandom(0x51A9u);
+    Random reference(0x51A9u);
+    const auto first = reference.random(999);
+    const auto second = reference.random(-3, 7);
+    const auto third = reference.randomLong();
+    const bool equal = fromBridge.firstRange == first && fromBridge.secondRange == second
+        && fromBridge.randomLong == third && fromBridge.counter == reference.counter
+        && fromBridge.seed0 == reference.seed0 && fromBridge.seed1 == reference.seed1;
+    if (!equal) {
+        std::cout << "silver_random_bridge FAIL\n";
+        return 1;
+    }
+    std::cout << "silver_random_bridge PASS\n";
+    return 0;
+}
+
+int testSilverSemanticActionResolution() {
+    int failures = 0;
+    const auto check = [&failures](bool ok, const char *msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    BattleContext bc = playerNormalFixture(0x5151u, 3);
+    CardInstance strike(CardId::STRIKE_RED), defend(CardId::DEFEND_RED);
+    strike.uniqueId = 71; defend.uniqueId = 72;
+    bc.cards.cardsInHand = 2;
+    bc.cards.hand[0] = strike;
+    bc.cards.hand[1] = defend;
+    bc.inputState = InputState::CARD_SELECT;
+    bc.cardSelectInfo.cardSelectTask = CardSelectTask::GAMBLE;
+    bc.cardSelectInfo.canPickAnyNumber = true;
+
+    const auto wire = [](const CardInstance &c) {
+        return silver_bridge::CardWire{static_cast<std::int16_t>(c.id), c.uniqueId, c.specialData,
+                                       c.cost, c.costForTurn, c.upgraded, c.freeToPlayOnce, c.retain};
+    };
+    // Ordinary player actions: identities are values, never Silver indices.
+    BattleContext normal = playerNormalFixture(0x5152u, 3);
+    for (int i = 0; i < normal.cards.cardsInHand; ++i) normal.cards.hand[i].uniqueId = static_cast<std::int16_t>(100 + i);
+    silver_bridge::SemanticAction cardPlay;
+    cardPlay.type = silver_bridge::SemanticActionType::CARD;
+    cardPlay.source = silver_bridge::CardSource::HAND;
+    cardPlay.card = wire(normal.cards.hand[0]);
+    cardPlay.target = 0;
+    auto normalResolved = search::resolveSilverSemanticAction(normal, cardPlay);
+    check(normalResolved.ok && normalResolved.action.getActionType() == search::ActionType::CARD
+          && normalResolved.action.getSourceIdx() == 0 && normalResolved.action.getTargetIdx() == 0,
+          "targeted semantic card play must lower to the matching legal live action");
+    silver_bridge::SemanticAction end; end.type = silver_bridge::SemanticActionType::END_TURN;
+    check(search::resolveSilverSemanticAction(normal, end).ok,
+          "semantic END_TURN must lower to a legal live action");
+    silver_bridge::SemanticAction fire;
+    fire.type = silver_bridge::SemanticActionType::POTION; fire.potionSlot = 0;
+    fire.potionId = static_cast<std::int16_t>(normal.potions[0]); fire.target = 0;
+    check(search::resolveSilverSemanticAction(normal, fire).ok,
+          "targeted semantic potion must lower to a legal live action");
+    fire.discardPotion = true;
+    check(search::resolveSilverSemanticAction(normal, fire).ok,
+          "semantic potion discard must lower to a legal live action");
+
+    const auto selectCase = [&](CardSelectTask task, silver_bridge::CardSource source, const CardInstance &chosen,
+                                const char *message) {
+        BattleContext select = cardSelectFixture(task, 1, false);
+        for (int i = 0; i < select.cards.cardsInHand; ++i) select.cards.hand[i].uniqueId = static_cast<std::int16_t>(200 + i);
+        for (int i = 0; i < static_cast<int>(select.cards.drawPile.size()); ++i) select.cards.drawPile[i].uniqueId = static_cast<std::int16_t>(300 + i);
+        for (int i = 0; i < static_cast<int>(select.cards.discardPile.size()); ++i) select.cards.discardPile[i].uniqueId = static_cast<std::int16_t>(400 + i);
+        for (int i = 0; i < static_cast<int>(select.cards.exhaustPile.size()); ++i) select.cards.exhaustPile[i].uniqueId = static_cast<std::int16_t>(500 + i);
+        CardInstance actual = chosen;
+        if (source == silver_bridge::CardSource::HAND) actual = select.cards.hand[0];
+        if (source == silver_bridge::CardSource::DRAW) actual = select.cards.drawPile[0];
+        if (source == silver_bridge::CardSource::DISCARD) actual = select.cards.discardPile[0];
+        if (source == silver_bridge::CardSource::EXHAUST) actual = select.cards.exhaustPile[1];
+        silver_bridge::SemanticAction semantic;
+        semantic.type = silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
+        semantic.source = source; semantic.card = wire(actual);
+        semantic.cardSelectTask = static_cast<std::int16_t>(task);
+        check(search::resolveSilverSemanticAction(select, semantic).ok, message);
+    };
+    selectCase(CardSelectTask::EXHAUST_ONE, silver_bridge::CardSource::HAND, {},
+               "hand single-card-select must lower by visible instance identity");
+    selectCase(CardSelectTask::HEADBUTT, silver_bridge::CardSource::DISCARD, {},
+               "discard single-card-select must lower by visible instance identity");
+    selectCase(CardSelectTask::EXHUME, silver_bridge::CardSource::EXHAUST, {},
+               "exhaust single-card-select must lower by visible instance identity");
+    selectCase(CardSelectTask::SEEK, silver_bridge::CardSource::DRAW, {},
+               "draw-pile single-card-select must lower by visible instance identity");
+
+    BattleContext discovery = cardSelectFixture(CardSelectTask::DISCOVERY, 1, false);
+    discovery.cardSelectInfo.cards = {CardId::STRIKE_RED, CardId::DEFEND_RED, CardId::BASH};
+    silver_bridge::SemanticAction offer;
+    offer.type = silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
+    offer.source = silver_bridge::CardSource::CARD_SELECT_OPTION;
+    offer.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::DISCOVERY);
+    offer.optionCardId = static_cast<std::int16_t>(CardId::DEFEND_RED);
+    check(search::resolveSilverSemanticAction(discovery, offer).ok,
+          "Discovery offer must lower by offered card identity");
+    BattleContext codex = cardSelectFixture(CardSelectTask::CODEX, 1, false);
+    silver_bridge::SemanticAction skip;
+    skip.type = silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
+    skip.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::CODEX);
+    skip.skipCardSelect = true;
+    check(search::resolveSilverSemanticAction(codex, skip).ok,
+          "Codex skip must lower to its live-valid explicit skip action");
+    silver_bridge::SemanticAction selection;
+    selection.type = silver_bridge::SemanticActionType::MULTI_CARD_SELECT;
+    selection.source = silver_bridge::CardSource::HAND;
+    selection.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::GAMBLE);
+    selection.selectedCards = {wire(defend)};
+    auto resolved = search::resolveSilverSemanticAction(bc, selection);
+    check(resolved.ok && resolved.action.getActionType() == search::ActionType::MULTI_CARD_SELECT
+          && resolved.action.getSelectedIdxs().size() == 1 && resolved.action.getSelectedIdxs()[0] == 1,
+          "semantic multi-select must resolve its visible card identity to a legal live subset");
+
+    std::swap(bc.cards.hand[0], bc.cards.hand[1]);
+    resolved = search::resolveSilverSemanticAction(bc, selection);
+    check(resolved.ok && resolved.action.getSelectedIdxs().size() == 1
+          && resolved.action.getSelectedIdxs()[0] == 0,
+          "hand-vector permutation must not change semantic selected-card identity");
+
+    // A malformed duplicate visible identity must fail loudly instead of using
+    // the first hidden vector index. Real card instances have distinct uids.
+    bc.cards.hand[1] = bc.cards.hand[0];
+    selection.selectedCards = {wire(bc.cards.hand[0])};
+    resolved = search::resolveSilverSemanticAction(bc, selection);
+    check(!resolved.ok && !resolved.error.empty(),
+          "ambiguous semantic card identity must fail closed");
+
+    selection.selectedCards = {wire(strike)};
+    resolved = search::resolveSilverSemanticAction(bc, selection);
+    check(!resolved.ok && !resolved.error.empty(),
+          "missing semantic card identity must fail closed");
+
+    if (failures == 0) { std::cout << "silver_semantic_action PASS\n"; return 0; }
+    std::cout << "silver_semantic_action FAIL (" << failures << " cases)\n";
     return 1;
 }
 
@@ -3280,6 +3580,12 @@ int main(int argc, const char* argv[]) {
         return testTrainingIntegrity();
     } else if (command == "e2c_observer_scope") {
         return testE2cObserverScope();
+    } else if (command == "combat_knowledge") {
+        return testCombatKnowledgeBoundary();
+    } else if (command == "silver_random_bridge") {
+        return testSilverRandomBridge();
+    } else if (command == "silver_semantic_action") {
+        return testSilverSemanticActionResolution();
     } else if (command == "simhealth_load") {
         if (argc < 3) {
             std::cout << "usage: test simhealth_load <capture.bin>\n";

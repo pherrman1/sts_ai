@@ -7,6 +7,7 @@
 #include "game/Random.h"
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
+#include "sim/search/CombatKnowledge.h"
 
 using namespace sts;
 
@@ -288,6 +289,8 @@ void Monster::die(BattleContext &bc) {
         removeDebuffs();
         removeStatus<MS::CURIOSITY>();
         setMove(MonsterMoveId::AWAKENED_ONE_REBIRTH);
+        search::emitHiddenMonsterIntentMaterialized(
+            idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
         bc.cardQueue.clear();
 
     } else if ((bc.monsters.monstersAlive == 0 && !bc.monsters.anyHalfDead()) || hasStatus<MS::MINION_LEADER>()) {
@@ -305,6 +308,8 @@ void Monster::die(BattleContext &bc) {
     } else if (hasStatus<MS::REGROW>()) {
         resetAllStatusEffects();
         setMove(MMID::DARKLING_REGROW);
+        search::emitHiddenMonsterIntentMaterialized(
+            idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
         halfDead = true;
 
     } else if (hasStatus<MS::STASIS>()) {
@@ -355,6 +360,8 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
         decrementStatus<MS::PLATED_ARMOR>();
         if(!hasStatus<MS::PLATED_ARMOR>() && id == MonsterId::SHELLED_PARASITE) {
             setMove(MMID::SHELLED_PARASITE_STUNNED);
+            search::emitHiddenMonsterIntentMaterialized(
+                idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
         }
 
     } else if (hasStatus<MS::CURL_UP>()) {
@@ -365,6 +372,8 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
         auto flight = getStatus<MS::FLIGHT>();
         if (flight == 1) {
             setMove(MMID::BYRD_STUNNED);
+            search::emitHiddenMonsterIntentMaterialized(
+                idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
         }
         setStatus<MS::FLIGHT>(flight-1);
 
@@ -504,18 +513,24 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
         case MonsterId::ACID_SLIME_L:
             if (atOrBelowHalf) {
                 moveHistory[0] = MMID::ACID_SLIME_L_SPLIT;
+                search::emitHiddenMonsterIntentMaterialized(
+                    idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
             }
             break;
 
         case MonsterId::SLIME_BOSS:
             if (atOrBelowHalf) {
                 moveHistory[0] = MMID::SLIME_BOSS_SPLIT;
+                search::emitHiddenMonsterIntentMaterialized(
+                    idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
             }
             break;
 
         case MonsterId::SPIKE_SLIME_L:
             if (atOrBelowHalf) {
                 moveHistory[0] = MMID::SPIKE_SLIME_L_SPLIT;
+                search::emitHiddenMonsterIntentMaterialized(
+                    idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
             }
             break;
 
@@ -525,6 +540,8 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
                 if (newModeShiftAmount <= 0) {
                     removeStatus<MS::MODE_SHIFT>();
                     setMove(MMID::THE_GUARDIAN_DEFENSIVE_MODE);
+                    search::emitHiddenMonsterIntentMaterialized(
+                        idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
                     bc.addToBot( Actions::MonsterGainBlock(idx, 20) );
                 } else {
                     setStatus<MS::MODE_SHIFT>(newModeShiftAmount);
@@ -629,17 +646,51 @@ bool Monster::eitherLastTwo(MonsterMoveId moveId) const {
 }
 
 void Monster::rollMove(BattleContext &bc) {
+    // Runic Dome hides the result, not the public state in which the roll is
+    // made.  Record Silver's roll-time inputs before the live aiRng resolves
+    // the move so the isolated model can represent a pending chance event.
+    // Always offer the public pre-roll snapshot to the default-null observer.
+    // The observer is configured from GameContext before BattleContext::init,
+    // so this remains correct when Player relic initialization has not yet run.
+    // It records neither the rolled move nor an RNG value.
+    search::HiddenIntentRollInputs inputs;
+    inputs.curHp = static_cast<std::int16_t>(curHp);
+    inputs.maxHp = static_cast<std::int16_t>(maxHp);
+    inputs.miscInfo = miscInfo;
+    const auto &knight = bc.monsters.arr[0];
+    inputs.knightCurHp = static_cast<std::int16_t>(knight.curHp);
+    inputs.knightMaxHp = static_cast<std::int16_t>(knight.maxHp);
+    inputs.knightAlive = knight.isAlive();
+    inputs.monsterTurnNumber = static_cast<std::int16_t>(bc.getMonsterTurnNumber());
+    inputs.aliveCount = static_cast<std::int8_t>(bc.monsters.getAliveCount());
+    inputs.monstersAlive = static_cast<std::int8_t>(bc.monsters.monstersAlive);
+    inputs.playerConstricted = bc.player.hasStatus<PS::CONSTRICTED>();
+    inputs.asleep = hasStatus<MS::ASLEEP>();
+    inputs.halfDead = halfDead;
+    search::emitHiddenMonsterIntentRollStarted(
+        idx, inputs, static_cast<std::int16_t>(moveHistory[0]),
+        static_cast<std::int16_t>(moveHistory[1]), miscInfo);
     auto miscInfoCopy = miscInfo;
 
     const auto move = getMoveForRoll(bc, miscInfoCopy, bc.aiRng.random(99));
 
     miscInfo = miscInfoCopy;
+    // Suppress the generic deterministic setMove publication below: this
+    // concrete live result is hidden under Runic Dome and is represented by
+    // the preceding deferred-roll observer event instead.
+    search::CombatKnowledgeMoveRollScope rollScope;
     setMove(move);
 }
 
 void Monster::setMove(MMID moveId) {
     moveHistory[1] = moveHistory[0];
     moveHistory[0] = moveId;
+    // Direct setMove transitions after a monster action are deterministic or
+    // otherwise inferable from public state. `rollMove` scopes its own call
+    // so random materialized results cannot arrive here as known information.
+    search::emitKnownMonsterIntentSet(
+        idx, static_cast<std::int16_t>(moveHistory[0]),
+        static_cast<std::int16_t>(moveHistory[1]), miscInfo);
 }
 
 namespace sts {

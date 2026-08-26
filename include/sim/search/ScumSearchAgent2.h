@@ -36,6 +36,20 @@ namespace sts::search {
     struct BattleScumSearcher3;
     extern thread_local std::function<void(const BattleContext&, const BattleScumSearcher3&)> g_onSearchComplete3;
 
+    struct ScumSearchAgent2;
+    // Optional executable-installed combat backend. The core agent only calls
+    // this value; it has no dependency on the isolated Silver model. Keeping
+    // the hook default-null preserves ordinary Searcher2/Searcher3 linkage and
+    // behavior, including unit-test targets that intentionally do not link
+    // the vendored model.
+    // Process-wide, immutable after executable startup.  The callback must not
+    // be thread-local: bestbench runs independent whole runs in OpenMP workers
+    // and an opt-in combat backend selected at process startup must be visible
+    // to each worker.  Backend-owned per-combat state remains local to the
+    // callback implementation.
+    extern std::function<void(ScumSearchAgent2&, GameContext&, BattleContext&)>
+        g_externalCombatBackend;
+
     struct ScumSearchAgent2 {
         std::int64_t simulationCountTotal;
         std::vector<int> gameActionHistory;
@@ -58,12 +72,24 @@ namespace sts::search {
         // public interface
         void playout(GameContext &gc);
 
+        // Initializes and plays a battle through the executable-installed
+        // backend when one is active, otherwise through the ordinary live
+        // simulator/search path.  Direct whole-run callers must use this
+        // overload rather than pre-initializing BattleContext themselves so
+        // an observational backend can install pre-init hooks (notably the
+        // Runic-Dome intent observer) before BattleContext::init.
+        void playoutBattle(GameContext &gc, BattleContext &bc);
+
+        // A backend installed through g_externalCombatBackend commits validated
+        // live actions through this same method, preserving health checks and
+        // optional action logging without exposing a raw Silver action index.
+        void takeAction(BattleContext &bc, Action a);
+
         // private methods
         void playoutBattle(BattleContext &bc);
         void playoutBattleFair(BattleContext &bc);   // determinized: commit one move per search
 
         void takeAction(GameContext &gc, GameAction a);
-        void takeAction(BattleContext &bc, Action a);
 
         // Return true when at least one action was committed this call; false
         // when the tree/line could not supply an action at an unresolved

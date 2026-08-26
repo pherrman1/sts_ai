@@ -52,6 +52,7 @@
 #include "sim/search/CombatPVNet.h"
 #include "sim/search/CombatCpsiNet.h"
 #include "sim/search/BattleScumSearcher3.h"
+#include "sim/search/SilverLiveBackend.h"
 #include "sim/search/S3SiblingCrnDiagnostic.h"
 #include "sim/search/S3RejuvenationProbe.h"
 #include "sim/search/GameAction.h"
@@ -4171,7 +4172,31 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             search::g_potionKeepValue = potionKeepValue(gc);           // dynamic potion-saving
             if (search::g_useSearcher3 && g_termWin && g_winNet.ok)
                 termWinArmForBattle(gc);   // terminal-leaf run-value bonus (cross-combat setup)
-            BattleContext bc{}; bc.init(gc);
+            BattleContext bc{};
+            // The isolated Silver backend must enter before BattleContext::init
+            // so its observational Runic-Dome hooks see the initial hidden
+            // intent lifecycle.  The normal bestbench path deliberately
+            // remains byte-for-byte below this opt-in branch.
+            if (search::g_externalCombatBackend) {
+                agent.playoutBattle(gc, bc);
+                ++fightsTotal;
+                if (bc.outcome == Outcome::PLAYER_LOSS) {
+                    ++fightsLost;
+                    if (deathCombat < 0) {
+                        deathCombat = fightsTotal;
+                        deathEncounter = (int)bc.encounter;
+                    }
+                }
+                bc.exitBattle(gc);
+                if (g_cpsiCtrProbe) cpsiCounterProbeAtState(gc);
+                stallLogRow(gc, bc, seed);
+                if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
+                    clearedStopActBoss = bc.outcome == Outcome::PLAYER_VICTORY;
+                    break;
+                }
+                continue;
+            }
+            bc.init(gc);
             if (t_e2c) e2cBeginFight(fightsTotal, gc, bc);
             if (g_runwinShadowActive)
                 runwinShadowBeginFight(fightsTotal, gc, path, battleRoom, bc.encounter);
@@ -13190,6 +13215,15 @@ int main(int argc, char **argv) {
     if (const char *d = std::getenv("STS_SEARCHER3")) {      // use enhanced BattleScumSearcher3 engine
         search::g_useSearcher3 = std::atoi(d) != 0;
         if (search::g_useSearcher3) std::cout << "[Searcher3 engine ON: belief/prune/chain/live (CRN opt-in)]\n";
+    }
+    if (const char *d = std::getenv("STS_SILVER_SEARCH")) {
+        if (std::atoi(d) != 0) {
+            // The external callback takes precedence before ScumSearchAgent2
+            // enters either Searcher2 or Searcher3. It owns local Silver
+            // randomness and therefore never constructs an S3 Belief.
+            search::installSilverLiveBackend();
+            std::cout << "[isolated Silver combat backend ON: local Silver RNG/chance search; Searcher3 particles bypassed]\n";
+        }
     }
     // STS_LIVE_VALID (Phase 4, fair-tree structural fix): env opt-in as
     // recorded in §122, or default ON for the Searcher3 fair-play regime

@@ -1,0 +1,96 @@
+//
+// Created by gamerpuppy on 8/24/2021.
+//
+
+#ifndef STS_LIGHTSPEED_CARDSELECTINFO_H
+#define STS_LIGHTSPEED_CARDSELECTINFO_H
+
+#include <array>
+
+#include "constants/Cards.h"
+
+namespace sts {
+
+    enum class CardSelectTask {
+        INVALID=0,
+        ARMAMENTS,
+        CODEX,
+        DISCOVERY,
+        DUAL_WIELD,
+        EXHAUST_ONE,
+        EXHAUST_MANY,
+        EXHUME,
+        FORETHOUGHT,
+        GAMBLE,
+        HEADBUTT,
+        HOLOGRAM,
+        LIQUID_MEMORIES_POTION,
+        MEDITATE,
+        NIGHTMARE,
+        RECYCLE,
+        SECRET_TECHNIQUE,
+        SECRET_WEAPON,
+        SEEK,
+        SETUP,
+        WARCRY,
+    };
+
+    static constexpr const char* cardSelectTaskStrings[] = {
+            "INVALID",
+            "ARMAMENTS",
+            "CODEX",
+            "DISCOVERY",
+            "DUAL_WIELD",
+            "EXHAUST_ONE",
+            "EXHAUST_MANY",
+            "EXHUME",
+            "FORETHOUGHT",
+            "GAMBLE",
+            "HEADBUTT",
+            "HOLOGRAM",
+            "LIQUID_MEMORIES_POTION",
+            "MEDITATE",
+            "NIGHTMARE",
+            "RECYCLE",
+            "SECRET_TECHNIQUE",
+            "SECRET_WEAPON",
+            "SEEK",
+            "SETUP",
+            "WARCRY",
+    };
+
+    struct CardSelectInfo {
+        std::array<CardId, 3> cards;
+        bool canPickZero = false;
+        bool canPickAnyNumber = false;
+        int pickCount = 0;
+        int data0 = 0;
+        bool setCostToZero = true;
+
+        // For the sequential multi-select tasks (EXHAUST_MANY, GAMBLE): the cards picked so far,
+        // as a bitmask over hand indices. Each SINGLE_CARD_SELECT sets a bit and re-opens the
+        // screen; a MULTI_CARD_SELECT(selectedBits) confirms and applies the whole set at once.
+        int selectedBits = 0;
+
+        CardSelectTask cardSelectTask;
+
+        std::array<CardId, 3>& discovery_Cards() { return cards; }
+        int& discovery_CopyCount() { return data0; }
+        int& dualWield_CopyCount() { return data0; }
+        std::array<CardId, 3>& codexCards() { return cards; }
+
+        bool operator==(const CardSelectInfo &rhs) const {
+            return cards == rhs.cards &&
+                   canPickZero == rhs.canPickZero &&
+                   canPickAnyNumber == rhs.canPickAnyNumber &&
+                   pickCount == rhs.pickCount &&
+                   data0 == rhs.data0 &&
+                   setCostToZero == rhs.setCostToZero &&
+                   selectedBits == rhs.selectedBits &&
+                   cardSelectTask == rhs.cardSelectTask;
+        }
+    };
+
+}
+
+#endif //STS_LIGHTSPEED_CARDSELECTINFO_H
