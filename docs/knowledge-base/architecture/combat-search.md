@@ -3,6 +3,7 @@
 Last verified: 2026-08-11 against the current working tree (per-encounter combat value specialization implemented opt-in: `STS_VNET_PER_ENCOUNTER` dir overlay + `combat_mlp_meta_v1` in-file deltas with `predict(bc)` dispatch, `vnettest --encounter` parity mode — gate pending; covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default superseded by the §148 7k-tuned model, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending; experimental zero-mean ranking correction `STS_VNET_RANK_CORR` implemented opt-in (`tools/train_rank_correction.py`, additive on the vnet/PVNet leaf + fair-path search-complete clamp, off by default, byte-identical when unset).
 
 Experiment 4 persistent-END_TURN subsection last verified: 2026-08-25.
+Isolated Silver backend subsection last verified: 2026-08-26.
 
 ## Purpose
 
@@ -23,6 +24,8 @@ selection, and end-turn choices (`src/combat/BattleContext.cpp::executeActions`;
 
 - Searcher2 is the default (`src/sim/search/BattleScumSearcher3.cpp::g_useSearcher3`).
 - `STS_SEARCHER3=1` selects `BattleScumSearcher3`.
+- `STS_SILVER_SEARCH=1` installs the isolated Silver backend and overrides the
+  native Searcher2/3 combat decision after normal flag parsing.
 - `STS_FAIR=1` selects the project-fair commit/research loop independently of
   the searcher (`src/sim/search/ScumSearchAgent2.cpp::playoutBattle`).
 
@@ -40,6 +43,45 @@ Searcher3 particle sampling on. Searcher3 caches a `CombatObservation` per
 node, expands legal edges, uses PUCT or UCB-like selection, performs
 deterministic chain continuation and a rollout/leaf evaluation, then backpropagates
 (`src/sim/search/BattleScumSearcher3.cpp::step`, `selectBestEdgePUCT`).
+
+### Isolated Silver backend
+
+The opt-in Silver backend vendors the pinned combat/search model at upstream
+SHA `84ab3ead9d88c01c4be09a6773fb9a947f57d5ff`; it does not share live combat
+RNG or mutable `BattleContext` state. `SilverConversion` materializes only the
+allowed knowledge boundary, Silver searches privately, and
+`SilverSemanticAction` is resolved and revalidated against the live battle
+before execution. One stable seed derived from the run's battle identity is
+reused for the entire combat; it is not derived from the decision ordinal.
+
+Silver keeps one private search session per battle and attempts an exact child
+reroot between decisions. The production cap is 32,768 nodes. The default
+`STS_SILVER_REUSE_CAP_MODE=allocated` applies the cap to retained allocation;
+experimental `active` applies it to active pool usage. Both modes and every
+fallback are recorded in the bestbench sidecar and Silver telemetry. The
+completed scaling experiment confirmed that `active` restores cap-blocked
+reroots but did not establish a gameplay improvement, so `allocated` remains
+the default.
+
+Live sts_ai exposes atomic `GAMBLE`/`EXHAUST_MANY` subsets while Silver uses a
+sequential private selection UI. The bridge therefore runs every private
+subdecision, including exact reroots, and returns only the final identity-based
+subset for live validation. Focused coverage requires a real intermediate
+selection, nonzero `selectedBits`, an exact reroot, and inherited visits; an
+immediate empty confirmation is not multi-step evidence.
+
+Runic Dome hides future monster intents from materialization. Looter and
+Mugger are the concrete cases that require `DeferredDirectMoveChoice`: their
+escape-versus-attack continuation is chosen directly rather than through the
+ordinary rolled move interface, so the private Silver model defers that choice
+until it has the allowed public input. This is a project-fair adaptation, not
+literal pinned-upstream behavior. `assignInformationState` is the other
+vendored-model adaptation.
+
+Focused targets are `silver-native-test`, `silver-bridge-test`,
+`silver-integration-test`, `runic-dome-lifecycle-test`, and
+`combat-knowledge-neutrality-test`. The bridge test asserts live-boundary and
+transaction reroot mechanisms, not only final action equality.
 
 CARD_SELECT action enumeration (both searchers) delegates to the canonical
 `search::Action::enumerateCardSelectActions`, which implements the full

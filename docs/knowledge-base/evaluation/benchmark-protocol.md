@@ -62,6 +62,42 @@ current executable Git SHA, and any scaling-diagnostic output path.  Native
 Searcher2/3 fields still describe configuration, not the effective combat
 backend in that override regime.
 
+### Treatment canary before a larger cohort
+
+Before an experimental arm grows beyond its smallest smoke, run one fresh
+guarded seed using the exact frozen executable, flags, budget, thread regime,
+and output schema intended for the cohort. Use new result, sidecar, and log
+paths, then validate the artifacts with:
+
+```bash
+python3 tools/agent/check_benchmark_canary.py \
+  --results <canary.csv> \
+  --meta <canary.csv.meta.json> \
+  --log <canary.log> \
+  --expect-backend silver \
+  --expect-seeds 1 \
+  --expect-sims <budget> \
+  --expect-seed-lo <seed> \
+  --expect-asc 0 \
+  --expect-threads 24 \
+  --expect-fair \
+  --expect-searcher3 \
+  --binary <one_combat> \
+  --expect-binary-sha256 <frozen-binary-sha256> \
+  --expect-silver-reuse-cap-mode allocated
+```
+
+The validator does not drive seeds. It requires one non-appended metadata
+record, the exact seed block and completed row count, the requested simulation
+budget, ascension, thread/fair/searcher configuration, and binary hash, the
+effective treatment backend, actual Silver
+decision/simulation telemetry, and zero conversion, semantic-resolution,
+transaction, and knowledge failures. A failed canary blocks the remaining
+cohort; fix or explain the provenance/mechanism failure before spending more
+seeds. `--expect-executable-sha` is also available for a Git-backed execution
+tree; do not rely on that sidecar field alone on the documented non-Git GCP
+rsync checkout. CTest runs the validator's synthetic pass/fail self-test.
+
 ## Invariants and assumptions
 
 Every recorded benchmark states, where applicable:

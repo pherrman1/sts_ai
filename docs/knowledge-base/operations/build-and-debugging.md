@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-08-24 against the current working tree.
+Last verified: 2026-08-26 against the current working tree.
 
 ## Purpose
 
@@ -63,6 +63,35 @@ intentionally expects an assertion abort and therefore needs assertions enabled.
 The preset file requires CMake 3.21 or newer; the source graph itself still
 requires CMake 3.19. Native PowerShell/MSVC remains unverified and has no preset.
 
+For repeated local builds across sibling Git worktrees, install `ccache` in the
+WSL/Linux environment and use the opt-in cache presets:
+
+```bash
+cmake --preset linux-gcc-debug-ccache
+cmake --build --preset linux-gcc-debug-ccache-build
+ctest --preset linux-gcc-ccache-test
+
+cmake --preset linux-gcc-release-ccache
+cmake --build --preset linux-gcc-release-ccache-build
+```
+
+They keep ordinary presets unchanged and configure a bounded 1 GiB cache under
+`$HOME/.cache/sts_ai/ccache`. `CCACHE_BASEDIR` is set to the common parent of
+the current source worktree, which has been verified to share Debug entries
+across sibling worktrees: at the same SHA, the first 61-call build had 61
+misses and the second had 59 direct hits (96.72%) and 2 misses. Verify the
+active cache explicitly when diagnosing a different toolchain or path layout:
+
+```bash
+ccache --dir "$HOME/.cache/sts_ai/ccache" --zero-stats
+cmake --build --preset linux-gcc-debug-ccache-build --target one_combat
+ccache --dir "$HOME/.cache/sts_ai/ccache" --show-stats
+```
+
+During iteration, build only affected focused targets; perform the required
+complete build/test pass once before handoff. Never share one CMake binary
+directory between worktrees.
+
 ### Authoritative GitHub Actions verification
 
 `.github/workflows/ci.yml` is the authoritative repository verification check.
@@ -83,14 +112,20 @@ doctor; trained-model parity remains outside CI because it requires a produced
 checkpoint (see [Known limitations](#known-limitations)).
 
 The CI job enables ccache (v4+) as a C++ compiler launcher to reduce repeated
-compilation time. ccache is installed from Ubuntu packages, activated via
+compilation time; local builds gain the same behavior only through the opt-in
+`*-ccache` presets above. In CI, ccache is installed from Ubuntu packages and
+activated via
 `CMAKE_CXX_COMPILER_LAUNCHER=ccache` and `CCACHE_COMPILERCHECK=content` at the
-job level only; local and release builds outside CI are **not** affected. The
+job level. The
 `${{ github.workspace }}/.ccache` directory is cached by `actions/cache@v4`
 with a per-commit key `ccache-${{ runner.os }}-${{ runner.arch }}-gcc-${{ github.sha }}`
 and a restore-key prefix `ccache-${{ runner.os }}-${{ runner.arch }}-gcc-`; the
 cache is bounded to 1 GiB via `CCACHE_MAXSIZE`. Statistics are zeroed before
 the build and printed after the build (with `if: always`) for measurement.
+
+After pushing, inspect CI with a nonblocking `gh run view` or `gh pr checks`
+query. Do not use an unbounded foreground `--watch`; poll at a bounded interval
+so the session remains responsive while a run is queued or executing.
 
 `selfplay/loop.sh` still defaults to `build/one_combat` (overridable via
 `ONE_COMBAT_BIN`/`STS_BIN`). Set either variable to

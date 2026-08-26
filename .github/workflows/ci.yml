@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    # Ccache: CI-only compiler cache. Does NOT alter local development builds.
+    # CI cache settings; local builds use ccache only through the opt-in presets.
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_COMPILERCHECK: content
