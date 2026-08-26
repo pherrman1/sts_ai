@@ -132,13 +132,14 @@ std::uint64_t isolatedBattleSeed(const BattleContext &bc) {
     return x;
 }
 
-silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const BattleContext &bc) {
+silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const BattleContext &bc,
+                                            bool collectDecisionDiagnostics) {
     silver_bridge::SilverSearchConfig result;
     result.simulationsPerDecision = isBossEncounter(bc.encounter)
         ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
         : agent.simulationCountBase;
     result.reuseCapMode = g_silverLiveOptions.reuseCapMode;
-    result.collectDecisionDiagnostics = !g_silverLiveOptions.scalingDiagnosticFile.empty();
+    result.collectDecisionDiagnostics = collectDecisionDiagnostics;
     return result;
 }
 
@@ -189,6 +190,13 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     auto silverSession = silver_bridge::makeSilverSearchSession();
     const std::uint64_t silverBattleSeed = isolatedBattleSeed(bc);
     const bool collectScalingDiagnostics = !g_silverLiveOptions.scalingDiagnosticFile.empty();
+    const bool emitTelemetry = std::getenv("STS_SILVER_TELEMETRY")
+        && std::atoi(std::getenv("STS_SILVER_TELEMETRY")) != 0;
+    // Aggregate reroot-cause counters are advertised by STS_SILVER_TELEMETRY,
+    // so populate their value-only records even when the authoritative CSV is
+    // disabled. Both options are opt-in; default gameplay retains the cheap
+    // no-diagnostic path.
+    const bool collectDecisionDiagnostics = collectScalingDiagnostics || emitTelemetry;
     std::vector<ScalingDiagnosticRow> scalingDiagnostics;
 
     int decision = 0;
@@ -226,7 +234,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             fail("conversion", "live observation cannot be represented without hidden information");
         }
 
-        const auto config = configFor(agent, bc);
+        const auto config = configFor(agent, bc, collectDecisionDiagnostics);
         silver_bridge::SemanticAction semantic;
         if (bc.inputState == InputState::CARD_SELECT
                 && (bc.cardSelectInfo.cardSelectTask == CardSelectTask::EXHAUST_MANY
@@ -243,16 +251,18 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             g_silverLiveDiagnostics.rerootExact += transaction.rerootExact;
             g_silverLiveDiagnostics.rerootFallback += transaction.rerootFallback;
             addTelemetry(transaction.telemetry);
-            if (collectScalingDiagnostics) {
+            if (collectDecisionDiagnostics) {
                 if (transaction.searchDiagnostics.size()
                         != static_cast<std::size_t>(transaction.searchDecisions)) {
                     fail("scaling diagnostics", "transaction omitted a private search diagnostic");
                 }
                 for (std::size_t i = 0; i < transaction.searchDiagnostics.size(); ++i) {
                     addDecisionDiagnostic(transaction.searchDiagnostics[i]);
-                    scalingDiagnostics.push_back({gc.seed, bc.floorNum, static_cast<int>(bc.encounter), decision,
-                                                  static_cast<int>(i), wire.turn, wire.inputState,
-                                                  config.simulationsPerDecision, transaction.searchDiagnostics[i]});
+                    if (collectScalingDiagnostics) {
+                        scalingDiagnostics.push_back({gc.seed, bc.floorNum, static_cast<int>(bc.encounter), decision,
+                                                      static_cast<int>(i), wire.turn, wire.inputState,
+                                                      config.simulationsPerDecision, transaction.searchDiagnostics[i]});
+                    }
                 }
             }
         } else {
@@ -266,11 +276,13 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             g_silverLiveDiagnostics.rerootExact += result.rerootExact;
             g_silverLiveDiagnostics.rerootFallback += result.rerootFallback;
             addTelemetry(result.telemetry);
-            if (collectScalingDiagnostics) {
+            if (collectDecisionDiagnostics) {
                 addDecisionDiagnostic(result.diagnostic);
-                scalingDiagnostics.push_back({gc.seed, bc.floorNum, static_cast<int>(bc.encounter), decision,
-                                              -1, wire.turn, wire.inputState, config.simulationsPerDecision,
-                                              result.diagnostic});
+                if (collectScalingDiagnostics) {
+                    scalingDiagnostics.push_back({gc.seed, bc.floorNum, static_cast<int>(bc.encounter), decision,
+                                                  -1, wire.turn, wire.inputState, config.simulationsPerDecision,
+                                                  result.diagnostic});
+                }
             }
         }
 
@@ -284,7 +296,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     }
     agent.simulationCountTotal += static_cast<std::int64_t>(g_silverLiveDiagnostics.simulations);
     if (collectScalingDiagnostics) writeScalingDiagnostics(scalingDiagnostics);
-    if (const char *raw = std::getenv("STS_SILVER_TELEMETRY"); raw && std::atoi(raw) != 0) {
+    if (emitTelemetry) {
         const auto &d = g_silverLiveDiagnostics;
         std::cout << "[silver-combat] decisions=" << d.decisions
                   << " simulations=" << d.simulations
