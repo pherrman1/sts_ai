@@ -136,6 +136,36 @@ def breakdown(summaries, field):
     return out
 
 
+def margin_breakdown(summaries):
+    buckets = {
+        "<0.1": [x for x in summaries if x["reference_margin"] is not None
+                 and x["reference_margin"] < 0.1],
+        "0.1-0.5": [x for x in summaries if x["reference_margin"] is not None
+                     and 0.1 <= x["reference_margin"] < 0.5],
+        "0.5-1.0": [x for x in summaries if x["reference_margin"] is not None
+                    and 0.5 <= x["reference_margin"] < 1.0],
+        ">=1.0": [x for x in summaries if x["reference_margin"] is not None
+                  and x["reference_margin"] >= 1.0],
+    }
+    out = {}
+    for key, items in buckets.items():
+        def avg(field):
+            values = [x[field] for x in items if x[field] is not None]
+            return statistics.mean(values) if values else None
+        out[key] = {
+            "roots": len(items),
+            "mean_regret_1k": avg("regret_1k"),
+            "mean_regret_3.7k": avg("regret_37k"),
+            "disagreement_rate_1k": (
+                sum(not x["top_agree_1k"] for x in items) / len(items)
+                if items else None),
+            "disagreement_rate_3.7k": (
+                sum(not x["top_agree_37k"] for x in items) / len(items)
+                if items else None),
+        }
+    return out
+
+
 def analyze(rows):
     root_groups = groups(rows)
     summaries = []
@@ -191,6 +221,37 @@ def analyze(rows):
     examples.sort(key=lambda x: float(x["reference_best"]["reference_value"])
                   - float(x["chosen_1k"]["reference_value"]), reverse=True)
 
+    def rollout_totals(prefix, calls_key=None, wins_key=None, losses_key=None,
+                       actions_key=None, turns_key=None, utility_key=None,
+                       stored_means=False):
+        fields = ("rollout_calls", "terminal_wins", "terminal_losses",
+                  "rollout_actions", "rollout_turns", "utility_sum")
+        keys = {
+            "rollout_calls": calls_key or f"{prefix}_rollout_calls",
+            "terminal_wins": wins_key or f"{prefix}_terminal_wins",
+            "terminal_losses": losses_key or f"{prefix}_terminal_losses",
+            "rollout_actions": actions_key or f"{prefix}_rollout_actions",
+            "rollout_turns": turns_key or f"{prefix}_rollout_turns",
+            "utility_sum": utility_key or f"{prefix}_utility_sum",
+        }
+        totals = {field: 0 for field in fields}
+        for root in root_groups.values():
+            row = root[0]
+            calls = float(row[keys["rollout_calls"]])
+            for field in fields:
+                value = float(row[keys[field]])
+                totals[field] += value * calls if stored_means and field in (
+                    "rollout_actions", "rollout_turns", "utility_sum") else value
+        calls = totals["rollout_calls"]
+        return {
+            "calls": int(totals["rollout_calls"]),
+            "terminal_wins": int(totals["terminal_wins"]),
+            "terminal_losses": int(totals["terminal_losses"]),
+            "mean_actions": totals["rollout_actions"] / calls if calls else None,
+            "mean_turns": totals["rollout_turns"] / calls if calls else None,
+            "mean_utility": totals["utility_sum"] / calls if calls else None,
+        }
+
     return {
         "roots": len(summaries),
         "action_rows": len(rows),
@@ -221,6 +282,20 @@ def analyze(rows):
             "stochastic_1k": breakdown(summaries, "stochastic_1k"),
             "reroot": breakdown(summaries, "reroot"),
             "fallback": breakdown(summaries, "fallback"),
+        },
+        "regret_by_reference_margin": margin_breakdown(summaries),
+        "rollout_aggregates": {
+            "reference": {
+                **rollout_totals(
+                    "reference", calls_key="reference_rollout_calls",
+                    wins_key="reference_terminal_wins",
+                    losses_key="reference_terminal_losses",
+                    actions_key="reference_rollout_actions",
+                    turns_key="reference_rollout_turns",
+                    utility_key="reference_utility_sum", stored_means=True),
+            },
+            "current_1k": rollout_totals("current_1k"),
+            "current_3.7k": rollout_totals("current_37k"),
         },
         "reference_stability": {
             "max_replicate_value_stddev_mean": mean("reference_stddev_max"),
@@ -254,6 +329,12 @@ def self_test():
                     "reference_utility_sum": value, "action_type": typ, "stochastic": "0",
                     "chosen_1k_visits": visits1, "chosen_37k_visits": visits37,
                     "chosen_1k_q": "1", "chosen_37k_q": "2"})
+        row.update({"current_1k_rollout_calls": "10", "current_1k_terminal_wins": "10",
+                    "current_1k_terminal_losses": "0", "current_1k_rollout_actions": "20",
+                    "current_1k_rollout_turns": "5", "current_1k_utility_sum": "30",
+                    "current_37k_rollout_calls": "10", "current_37k_terminal_wins": "10",
+                    "current_37k_terminal_losses": "0", "current_37k_rollout_actions": "20",
+                    "current_37k_rollout_turns": "5", "current_37k_utility_sum": "30"})
         rows.append(row)
     result = analyze(rows)
     assert result["roots"] == 1
