@@ -68,6 +68,28 @@ namespace sts::search {
         std::int64_t wSampled[3] = {};
         std::int64_t wSibReuse[3] = {};
         std::int64_t wCapped[3] = {};
+        // Rollout-only terminal diagnostics. These are observation fields and
+        // are never read by search selection or backpropagation.
+        std::int64_t rolloutCalls = 0;
+        std::int64_t rolloutTerminalWins = 0;
+        std::int64_t rolloutTerminalLosses = 0;
+        std::int64_t rolloutNonTerminalStops = 0;
+        std::int64_t rolloutActionCount = 0;
+        std::int64_t rolloutTurnDelta = 0;
+        double rolloutUtilitySum = 0.0;
+        double rolloutWinBonusSum = 0.0;
+        double rolloutHpSum = 0.0;
+        double rolloutPotionSum = 0.0;
+        double rolloutTurnPenaltySum = 0.0;
+        double rolloutDeathSaveSum = 0.0;
+        double rolloutGoldSum = 0.0;
+        double rolloutMaxHpSum = 0.0;
+        double rolloutParasitePenaltySum = 0.0;
+        double rolloutMonsterDamageSum = 0.0;
+        double rolloutAliveSum = 0.0;
+        double rolloutEnergyWasteSum = 0.0;
+        double rolloutDrawSum = 0.0;
+        double rolloutSurvivalSum = 0.0;
         void add(const SearchStats &o) {
             steps += o.steps; nodesCreated += o.nodesCreated; detTranspositions += o.detTranspositions;
             chanceOutcomesSampled += o.chanceOutcomesSampled; chanceSiblingReuse += o.chanceSiblingReuse;
@@ -76,6 +98,26 @@ namespace sts::search {
             for (int i = 0; i < 3; ++i) {
                 wSampled[i] += o.wSampled[i]; wSibReuse[i] += o.wSibReuse[i]; wCapped[i] += o.wCapped[i];
             }
+            rolloutCalls += o.rolloutCalls;
+            rolloutTerminalWins += o.rolloutTerminalWins;
+            rolloutTerminalLosses += o.rolloutTerminalLosses;
+            rolloutNonTerminalStops += o.rolloutNonTerminalStops;
+            rolloutActionCount += o.rolloutActionCount;
+            rolloutTurnDelta += o.rolloutTurnDelta;
+            rolloutUtilitySum += o.rolloutUtilitySum;
+            rolloutWinBonusSum += o.rolloutWinBonusSum;
+            rolloutHpSum += o.rolloutHpSum;
+            rolloutPotionSum += o.rolloutPotionSum;
+            rolloutTurnPenaltySum += o.rolloutTurnPenaltySum;
+            rolloutDeathSaveSum += o.rolloutDeathSaveSum;
+            rolloutGoldSum += o.rolloutGoldSum;
+            rolloutMaxHpSum += o.rolloutMaxHpSum;
+            rolloutParasitePenaltySum += o.rolloutParasitePenaltySum;
+            rolloutMonsterDamageSum += o.rolloutMonsterDamageSum;
+            rolloutAliveSum += o.rolloutAliveSum;
+            rolloutEnergyWasteSum += o.rolloutEnergyWasteSum;
+            rolloutDrawSum += o.rolloutDrawSum;
+            rolloutSurvivalSum += o.rolloutSurvivalSum;
         }
     };
 
@@ -138,6 +180,10 @@ namespace sts::search {
         double endTurnWideningC = 4.6;       // END_TURN pair; set equal to general for the joint behavior
         double endTurnWideningAlpha = 0.37;
 
+        // Default-off rollout/terminal decomposition collection. This is
+        // diagnostic accounting only; it is never consulted by selection.
+        bool collectRolloutDiagnostics = false;
+
         std::default_random_engine randGen;
 
         std::vector<Node*> searchStack;        // descent path; doubles as the cycle-guard set (linear scan, depth is small)
@@ -187,6 +233,8 @@ namespace sts::search {
         void enumerateCardSelectActions(Node &node, const BattleContext &bc);
         Edge* selectChanceOutcome(Node &chance);
         double evaluateEndState(const BattleContext &bc) const;
+        void recordRolloutDiagnostic(const BattleContext &bc, std::int64_t actionCount,
+                                     std::int64_t turnDelta);
 
         void printSearchTree(std::ostream &os, int levels);
         void printSearchStack(std::ostream &os, bool skipLast=false);

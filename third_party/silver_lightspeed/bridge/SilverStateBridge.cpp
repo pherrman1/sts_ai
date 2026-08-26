@@ -8,6 +8,7 @@
 #include "sim/search/SilverBridge.h"
 
 #include <algorithm>
+#include <cmath>
 #include <sstream>
 #include <stdexcept>
 
@@ -376,6 +377,26 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
         out.wideningSiblingReuse[i] = stats.wSibReuse[i];
         out.wideningCapped[i] = stats.wCapped[i];
     }
+    out.rolloutCalls = stats.rolloutCalls;
+    out.rolloutTerminalWins = stats.rolloutTerminalWins;
+    out.rolloutTerminalLosses = stats.rolloutTerminalLosses;
+    out.rolloutNonTerminalStops = stats.rolloutNonTerminalStops;
+    out.rolloutActionCount = stats.rolloutActionCount;
+    out.rolloutTurnDelta = stats.rolloutTurnDelta;
+    out.rolloutUtilitySum = stats.rolloutUtilitySum;
+    out.rolloutWinBonusSum = stats.rolloutWinBonusSum;
+    out.rolloutHpSum = stats.rolloutHpSum;
+    out.rolloutPotionSum = stats.rolloutPotionSum;
+    out.rolloutTurnPenaltySum = stats.rolloutTurnPenaltySum;
+    out.rolloutDeathSaveSum = stats.rolloutDeathSaveSum;
+    out.rolloutGoldSum = stats.rolloutGoldSum;
+    out.rolloutMaxHpSum = stats.rolloutMaxHpSum;
+    out.rolloutParasitePenaltySum = stats.rolloutParasitePenaltySum;
+    out.rolloutMonsterDamageSum = stats.rolloutMonsterDamageSum;
+    out.rolloutAliveSum = stats.rolloutAliveSum;
+    out.rolloutEnergyWasteSum = stats.rolloutEnergyWasteSum;
+    out.rolloutDrawSum = stats.rolloutDrawSum;
+    out.rolloutSurvivalSum = stats.rolloutSurvivalSum;
     return out;
 }
 
@@ -395,6 +416,26 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
         result.wideningSiblingReuse[i] -= prior.wideningSiblingReuse[i];
         result.wideningCapped[i] -= prior.wideningCapped[i];
     }
+    result.rolloutCalls -= prior.rolloutCalls;
+    result.rolloutTerminalWins -= prior.rolloutTerminalWins;
+    result.rolloutTerminalLosses -= prior.rolloutTerminalLosses;
+    result.rolloutNonTerminalStops -= prior.rolloutNonTerminalStops;
+    result.rolloutActionCount -= prior.rolloutActionCount;
+    result.rolloutTurnDelta -= prior.rolloutTurnDelta;
+    result.rolloutUtilitySum -= prior.rolloutUtilitySum;
+    result.rolloutWinBonusSum -= prior.rolloutWinBonusSum;
+    result.rolloutHpSum -= prior.rolloutHpSum;
+    result.rolloutPotionSum -= prior.rolloutPotionSum;
+    result.rolloutTurnPenaltySum -= prior.rolloutTurnPenaltySum;
+    result.rolloutDeathSaveSum -= prior.rolloutDeathSaveSum;
+    result.rolloutGoldSum -= prior.rolloutGoldSum;
+    result.rolloutMaxHpSum -= prior.rolloutMaxHpSum;
+    result.rolloutParasitePenaltySum -= prior.rolloutParasitePenaltySum;
+    result.rolloutMonsterDamageSum -= prior.rolloutMonsterDamageSum;
+    result.rolloutAliveSum -= prior.rolloutAliveSum;
+    result.rolloutEnergyWasteSum -= prior.rolloutEnergyWasteSum;
+    result.rolloutDrawSum -= prior.rolloutDrawSum;
+    result.rolloutSurvivalSum -= prior.rolloutSurvivalSum;
     return result;
 }
 
@@ -483,6 +524,7 @@ public:
         searcher->chanceWideningAlpha = config.chanceWideningAlpha;
         searcher->endTurnWideningC = config.endTurnWideningC;
         searcher->endTurnWideningAlpha = config.endTurnWideningAlpha;
+        searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
     }
 
     // Exact pinned-SearchAgent boundary: state equality plus exact hand order;
@@ -954,6 +996,125 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
 SilverDecisionResult runSilverDecision(const BattleStateWire &wire, const SilverSearchConfig &config) {
     auto session = makeSilverSearchSession();
     return runSilverDecision(*session, wire, config);
+}
+
+namespace {
+
+std::uint64_t diagnosticSeed(std::uint64_t base, int replicate) {
+    std::uint64_t x = base ^ (static_cast<std::uint64_t>(replicate + 1)
+                              * 0x9e3779b97f4a7c15ULL);
+    x ^= x >> 30; x *= 0xbf58476d1ce4e5b9ULL;
+    x ^= x >> 27; x *= 0x94d049bb133111ebULL;
+    x ^= x >> 31;
+    return x == 0 ? 1 : x;
+}
+
+bool sameSemantic(const SemanticAction &lhs, const SemanticAction &rhs) {
+    return semanticActionFingerprint(lhs) == semanticActionFingerprint(rhs);
+}
+
+bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction &wanted,
+                          sts::search::Action &raw) {
+    sts::search::BattleSearcher enumerator(state);
+    enumerator.search(1);
+    if (enumerator.root == nullptr) return false;
+    for (const auto &edge : enumerator.root->edges) {
+        if (sameSemantic(semanticFromAction(enumerator.root->state, edge.action), wanted)) {
+            raw = edge.action;
+            return true;
+        }
+    }
+    return false;
+}
+
+} // namespace
+
+std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
+        const BattleStateWire &wire, const SilverSearchConfig &config,
+        std::int64_t continuationBudget, int replicates) {
+    std::vector<SilverForcedActionReference> output;
+    if (continuationBudget <= 0 || replicates <= 0) return output;
+
+    auto rootConfig = config;
+    rootConfig.simulationsPerDecision = 1;
+    rootConfig.collectRootActionSummaries = true;
+    rootConfig.collectDecisionDiagnostics = false;
+    rootConfig.collectRolloutDiagnostics = false;
+    const auto root = runSilverDecision(wire, rootConfig);
+    if (!root.accepted) return output;
+
+    for (const auto &rootSummary : root.rootActionSummaries) {
+        SilverForcedActionReference result;
+        result.action = rootSummary.action;
+        SilverSearchTelemetry totalTelemetry;
+        double valueSum = 0.0;
+        double valueSumSq = 0.0;
+        double rolloutActions = 0.0;
+        double rolloutTurns = 0.0;
+        double winRate = 0.0;
+        int accepted = 0;
+
+        for (int replicate = 0; replicate < replicates; ++replicate) {
+            auto replicateWire = wire;
+            // The same replicate seed is intentionally used for every sibling
+            // action, providing CRN pairing for the private continuation while
+            // still making replicate searches independent.
+            replicateWire.isolatedSearchSeed = diagnosticSeed(wire.isolatedSearchSeed, replicate);
+            sts::GameContext runContext;
+            initializeRunContext(runContext, replicateWire);
+            auto state = materialize(replicateWire, &runContext);
+            sts::search::Action rawAction;
+            if (!rawActionForSemantic(state, rootSummary.action, rawAction)
+                    || !rawAction.isValidAction(state)) {
+                continue;
+            }
+            const auto preActionRng = state.rng;
+            rawAction.execute(state);
+            const bool stochastic = state.rng.counter != preActionRng.counter;
+
+            sts::search::BattleSearcher continuation(state);
+            auto continuationConfig = config;
+            continuationConfig.simulationsPerDecision = continuationBudget;
+            continuationConfig.collectRolloutDiagnostics = true;
+            continuation.collectRolloutDiagnostics = true;
+            continuation.explorationParameter = continuationConfig.explorationParameter;
+            continuation.explorationParameterChance = continuationConfig.explorationParameterChance;
+            continuation.chanceWideningC = continuationConfig.chanceWideningC;
+            continuation.chanceWideningAlpha = continuationConfig.chanceWideningAlpha;
+            continuation.endTurnWideningC = continuationConfig.endTurnWideningC;
+            continuation.endTurnWideningAlpha = continuationConfig.endTurnWideningAlpha;
+            continuation.search(continuationBudget);
+            if (continuation.root == nullptr || continuation.root->simulationCount <= 0) continue;
+
+            ++accepted;
+            valueSum += continuation.root->evaluationSum
+                / continuation.root->simulationCount;
+            const double value = continuation.root->evaluationSum
+                / continuation.root->simulationCount;
+            valueSumSq += value * value;
+            result.stochastic = result.stochastic || stochastic;
+            const auto t = telemetry(continuation.stats);
+            totalTelemetry.add(t);
+            if (t.rolloutCalls > 0) {
+                rolloutActions += static_cast<double>(t.rolloutActionCount) / t.rolloutCalls;
+                rolloutTurns += static_cast<double>(t.rolloutTurnDelta) / t.rolloutCalls;
+                winRate += static_cast<double>(t.rolloutTerminalWins) / t.rolloutCalls;
+            }
+        }
+
+        if (accepted != replicates) continue;
+        result.accepted = true;
+        result.simulations = static_cast<std::int64_t>(accepted) * continuationBudget;
+        result.meanValue = valueSum / accepted;
+        const double variance = valueSumSq / accepted - result.meanValue * result.meanValue;
+        result.valueStddev = std::sqrt(std::max(0.0, variance));
+        result.meanRolloutActions = rolloutActions / accepted;
+        result.meanRolloutTurns = rolloutTurns / accepted;
+        result.rolloutWinRate = winRate / accepted;
+        result.telemetry = std::move(totalTelemetry);
+        output.push_back(std::move(result));
+    }
+    return output;
 }
 
 } // namespace silver_bridge

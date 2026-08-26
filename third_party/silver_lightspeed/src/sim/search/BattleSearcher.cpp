@@ -524,6 +524,7 @@ static int rolloutMaxTurnsEnv() {
 void search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Action> &actionStack) {
     const int maxTurns = rolloutMaxTurnsEnv();
     const int startTurn = bc.turn;
+    const std::size_t actionStackStart = actionStack.size();
     while (!isTerminalState(bc)) {
         if (maxTurns > 0 && bc.turn - startTurn >= maxTurns) break;
         ++simulationIdx;
@@ -564,6 +565,9 @@ void search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Action>
         actionStack.push_back(action);
         action.execute(bc);
     }
+    recordRolloutDiagnostic(bc,
+                            static_cast<std::int64_t>(actionStack.size() - actionStackStart),
+                            static_cast<std::int64_t>(bc.turn - startTurn));
 }
 
 search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search::BattleSearcher::Node &chance) {
@@ -880,6 +884,90 @@ double search::BattleSearcher::evaluateEndState(const BattleContext &bc) const {
 
         return (1 - getNonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight + aliveScore + energyPenalty + drawBonus + potionScore / 2 + survivalScore + deathSaveValue;
     }
+}
+
+void search::BattleSearcher::recordRolloutDiagnostic(const BattleContext &bc,
+                                                      std::int64_t actionCount,
+                                                      std::int64_t turnDelta) {
+    if (!collectRolloutDiagnostics) return;
+
+    ++stats.rolloutCalls;
+    if (bc.outcome == Outcome::PLAYER_VICTORY) ++stats.rolloutTerminalWins;
+    else if (bc.outcome == Outcome::PLAYER_LOSS) ++stats.rolloutTerminalLosses;
+    else ++stats.rolloutNonTerminalStops;
+    stats.rolloutActionCount += actionCount;
+    stats.rolloutTurnDelta += turnDelta;
+
+    // Keep the exact linear terms used by evaluateEndState separate. This is
+    // intentionally a diagnostic mirror of that function, not a second value
+    // path: the scalar used by search remains evaluateEndState(bc) above.
+    const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+    const double potionScore = bc.potionCount * evalWeights.potionWeight;
+    double deathSaveValue = 0.0;
+    if (!bc.player.hasRelic<RelicId::MARK_OF_THE_BLOOM>()) {
+        bool hasFairy = false;
+        for (int i = 0; i < bc.potionCapacity; ++i) {
+            if (bc.potions[i] == Potion::FAIRY_POTION) { hasFairy = true; break; }
+        }
+        if (hasFairy) {
+            deathSaveValue += bc.player.maxHp
+                * (bc.player.hasRelic<RelicId::SACRED_BARK>() ? 0.6 : 0.3);
+        }
+        if (bc.player.hasRelic<RelicId::LIZARD_TAIL>()) {
+            deathSaveValue += 0.5 * bc.player.maxHp;
+        }
+    }
+
+    double winBonus = 0.0, hp = 0.0, potion = 0.0, turnPenalty = 0.0;
+    double gold = 0.0, maxHp = 0.0, parasite = 0.0;
+    double monsterDamage = 0.0, alive = 0.0, energyWaste = 0.0;
+    double draw = 0.0, survival = 0.0;
+    if (won) {
+        winBonus = evalWeights.winBonus;
+        hp = bc.postBattleHealedHp();
+        potion = potionScore;
+        turnPenalty = -(bc.turn * evalWeights.victoryTurnPenalty);
+        if (evalWeights.goldWeight != 0) {
+            gold = evalWeights.goldWeight * (effectiveGold(bc) - effectiveGold(*rootState));
+        }
+        if (evalWeights.maxHpWeight != 0) {
+            maxHp = evalWeights.maxHpWeight * (bc.player.maxHp - rootState->player.maxHp);
+        }
+        if (evalWeights.parasitePenalty != 0) {
+            const auto &wm = bc.monsters.arr[0];
+            if (wm.id == MonsterId::WRITHING_MASS && wm.miscInfo
+                && (!bc.player.hasRelic<RelicId::OMAMORI>()
+                    || bc.gameContext->relics.getRelicValue(RelicId::OMAMORI) == 0)) {
+                parasite = -evalWeights.parasitePenalty;
+            }
+        }
+    } else {
+        const bool couldHaveSpikers = bc.encounter == MonsterEncounter::THREE_SHAPES
+            || bc.encounter == MonsterEncounter::FOUR_SHAPES;
+        monsterDamage = (1 - getNonMinionMonsterCurHpRatio(bc)) * evalWeights.monsterDamageWeight;
+        alive = bc.monsters.monstersAlive * -evalWeights.aliveWeight;
+        energyWaste = bc.energyWasted * -evalWeights.energyWasteWeight
+            * (couldHaveSpikers ? 0 : 1);
+        draw = bc.cardsDrawn * evalWeights.drawWeight;
+        survival = (bc.turn > 100 ? 0 : bc.turn * evalWeights.turnSurvivalWeight);
+        potion = potionScore / 2;
+    }
+    const double total = winBonus + hp + potion + turnPenalty + deathSaveValue
+        + gold + maxHp + parasite + monsterDamage + alive + energyWaste + draw + survival;
+    stats.rolloutUtilitySum += total;
+    stats.rolloutWinBonusSum += winBonus;
+    stats.rolloutHpSum += hp;
+    stats.rolloutPotionSum += potion;
+    stats.rolloutTurnPenaltySum += turnPenalty;
+    stats.rolloutDeathSaveSum += deathSaveValue;
+    stats.rolloutGoldSum += gold;
+    stats.rolloutMaxHpSum += maxHp;
+    stats.rolloutParasitePenaltySum += parasite;
+    stats.rolloutMonsterDamageSum += monsterDamage;
+    stats.rolloutAliveSum += alive;
+    stats.rolloutEnergyWasteSum += energyWaste;
+    stats.rolloutDrawSum += draw;
+    stats.rolloutSurvivalSum += survival;
 }
 
 search::Action search::BattleSearcher::getBestAction() const {

@@ -35,6 +35,10 @@ struct SilverLiveOptions {
     silver_bridge::SilverReuseCapMode reuseCapMode = silver_bridge::SilverReuseCapMode::ALLOCATED;
     std::string scalingDiagnosticFile;
     std::string stickyQualityFile;
+    std::string rootDiagnosticFile;
+    int rootDiagnosticMaxPerSeed = 8;
+    std::int64_t rootDiagnosticReferenceBudget = 25000;
+    int rootDiagnosticReplicates = 2;
     bool installed = false;
 };
 
@@ -44,9 +48,12 @@ bool g_scalingDiagnosticHeaderWritten = false;
 std::mutex g_stickyQualityMutex;
 bool g_stickyQualityHeaderWritten = false;
 bool g_stickyQualitySummaryHeaderWritten = false;
+std::mutex g_rootDiagnosticMutex;
+bool g_rootDiagnosticHeaderWritten = false;
 bool g_stickyQualityActionTraceForTest = false;
 std::mutex g_stickyQualitySelectionMutex;
 std::unordered_map<std::uint64_t, int> g_stickyQualitySelectionsByRunSeed;
+std::unordered_map<std::uint64_t, int> g_rootDiagnosticSelectionsByRunSeed;
 struct StickyQualityTestBudgets { std::int64_t fresh = 0, ref25 = 0, ref50 = 0; };
 StickyQualityTestBudgets g_stickyQualityTestBudgets;
 constexpr const char *kScalingDiagnosticHeader =
@@ -55,6 +62,8 @@ constexpr const char *kStickyQualityHeader =
     "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,allocated_nodes_before_root,active_nodes_before_root,inherited_visits,configured_cap,active_simulations_added,active_nodes_created,fresh_budget,ref25_budget,ref50_budget,active_action_fingerprint,fresh_action_fingerprint,ref25_action_fingerprint,ref50_action_fingerprint,ref25_ref50_agree,fresh_ref50_agree,active_ref50_agree,fresh_active_disagree,fresh_wall_ms,ref25_wall_ms,ref50_wall_ms,fresh_nodes_created,fresh_simulations_added,ref25_nodes_created,ref25_simulations_added,ref50_nodes_created,ref50_simulations_added,ref25_root_action_summaries,ref50_root_action_summaries,q_diagnostic_available,ref50_chosen_selection_q,active_ref50_selection_q,fresh_ref50_selection_q,ref50_q_gap_active,ref50_q_gap_fresh,ref50_q_gap_active_minus_fresh";
 constexpr const char *kStickyQualitySummaryHeader =
     "run_seed,floor,encounter,sticky_eligible_ordinary_decisions,selected_evaluated_decisions,excluded_transaction_subdecisions";
+constexpr const char *kRootDiagnosticHeader =
+    "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,cur_hp,max_hp,potion_count,action_type,stochastic,action_fingerprint,chosen_1k,chosen_1k_visits,chosen_1k_q,chosen_37k,chosen_37k_visits,chosen_37k_q,active_reroot_exact,active_fallback_reason,active_inherited_visits,reference_budget,reference_replicates,reference_value,reference_value_stddev,reference_rollout_win_rate,reference_rollout_actions,reference_rollout_turns,reference_rollout_calls,reference_terminal_wins,reference_terminal_losses,reference_utility_sum,reference_win_bonus,reference_hp,reference_potion,reference_turn_penalty,reference_death_save,reference_gold,reference_max_hp,reference_parasite_penalty,reference_monster_damage,reference_alive,reference_energy_waste,reference_draw,reference_survival,current_1k_rollout_calls,current_1k_terminal_wins,current_1k_terminal_losses,current_1k_rollout_actions,current_1k_rollout_turns,current_1k_utility_sum,current_37k_rollout_calls,current_37k_terminal_wins,current_37k_terminal_losses,current_37k_rollout_actions,current_37k_rollout_turns,current_37k_utility_sum";
 
 void parseSilverLiveOptions() {
     SilverLiveOptions options;
@@ -75,6 +84,21 @@ void parseSilverLiveOptions() {
         options.scalingDiagnosticFile = raw;
     if (const char *raw = std::getenv("STS_SILVER_STICKY_QUALITY_FILE"))
         options.stickyQualityFile = raw;
+    if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_FILE"))
+        options.rootDiagnosticFile = raw;
+    if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_MAX_PER_SEED"))
+        options.rootDiagnosticMaxPerSeed = std::atoi(raw);
+    if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_REF_BUDGET"))
+        options.rootDiagnosticReferenceBudget = std::atoll(raw);
+    if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_REPLICATES"))
+        options.rootDiagnosticReplicates = std::atoi(raw);
+    if (!options.rootDiagnosticFile.empty()
+            && (options.rootDiagnosticMaxPerSeed <= 0
+                || options.rootDiagnosticReferenceBudget <= 0
+                || options.rootDiagnosticReplicates <= 0)) {
+        throw std::invalid_argument(
+            "STS_SILVER_ROOT_DIAG_MAX_PER_SEED, _REF_BUDGET, and _REPLICATES must be positive");
+    }
     if (!options.stickyQualityFile.empty()
             && options.reuseCapMode != silver_bridge::SilverReuseCapMode::ACTIVE) {
         throw std::invalid_argument(
@@ -182,6 +206,14 @@ bool reserveStickyQualitySample(std::uint64_t runSeed) {
     return true;
 }
 
+bool reserveRootDiagnosticSample(std::uint64_t runSeed) {
+    std::lock_guard<std::mutex> lock(g_stickyQualitySelectionMutex);
+    int &selected = g_rootDiagnosticSelectionsByRunSeed[runSeed];
+    if (selected >= g_silverLiveOptions.rootDiagnosticMaxPerSeed) return false;
+    ++selected;
+    return true;
+}
+
 std::string csvField(const std::string &value) {
     if (value.find_first_of(",\"\n\r") == std::string::npos) return value;
     std::string out = "\"";
@@ -213,6 +245,99 @@ const silver_bridge::SilverRootActionSummary *findRootAction(
         if (silver_bridge::semanticActionFingerprint(summary.action) == fingerprint) return &summary;
     }
     return nullptr;
+}
+
+double componentMean(double sum, std::int64_t count) {
+    return count > 0 ? sum / static_cast<double>(count) : 0.0;
+}
+
+std::string optionalDouble(double value, bool valid) {
+    if (!valid) return "NA";
+    std::ostringstream out;
+    out << std::setprecision(17) << value;
+    return out.str();
+}
+
+void writeRootDiagnostics(const silver_bridge::BattleStateWire &wire,
+                          std::uint64_t runSeed, int ordinal,
+                          const std::string &roomType,
+                          const silver_bridge::SilverDecisionResult &low,
+                          const silver_bridge::SilverDecisionResult &high,
+                          const std::vector<silver_bridge::SilverForcedActionReference> &references) {
+    if (references.empty()) return;
+    std::lock_guard<std::mutex> lock(g_rootDiagnosticMutex);
+    bool empty = false;
+    if (!g_rootDiagnosticHeaderWritten) {
+        std::ifstream existing(g_silverLiveOptions.rootDiagnosticFile, std::ios::binary);
+        empty = !existing || existing.peek() == std::ifstream::traits_type::eof();
+        if (!empty) {
+            std::string header;
+            std::getline(existing, header);
+            if (header != kRootDiagnosticHeader)
+                throw std::runtime_error("STS_SILVER_ROOT_DIAG_FILE has an incompatible existing header: "
+                                         + g_silverLiveOptions.rootDiagnosticFile);
+        }
+    }
+    std::ofstream out(g_silverLiveOptions.rootDiagnosticFile, std::ios::app);
+    if (!out) throw std::runtime_error("cannot open STS_SILVER_ROOT_DIAG_FILE: "
+                                      + g_silverLiveOptions.rootDiagnosticFile);
+    if (!g_rootDiagnosticHeaderWritten && empty) out << kRootDiagnosticHeader << '\n';
+    out << std::setprecision(17);
+    const auto lowChosen = silver_bridge::semanticActionFingerprint(low.action);
+    const auto highChosen = silver_bridge::semanticActionFingerprint(high.action);
+    for (const auto &reference : references) {
+        if (!reference.accepted) continue;
+        const auto actionFp = silver_bridge::semanticActionFingerprint(reference.action);
+        const auto *lowSummary = findRootAction(low.rootActionSummaries, actionFp);
+        const auto *highSummary = findRootAction(high.rootActionSummaries, actionFp);
+        const auto &t = reference.telemetry;
+        out << runSeed << ',' << wire.act << ',' << wire.floorNum << ',' << wire.encounter << ','
+            << roomType << ',' << ordinal << ',' << wire.turn << ',' << wire.inputState << ','
+            << wire.player.curHp << ',' << wire.player.maxHp << ',' << wire.potionCount << ','
+            << static_cast<int>(reference.action.type) << ',' << (reference.stochastic ? 1 : 0) << ','
+            << csvField(actionFp) << ','
+            << csvField(lowChosen) << ','
+            << (lowSummary == nullptr ? 0 : lowSummary->edgeVisits) << ','
+            << optionalDouble(lowSummary == nullptr ? 0.0 : lowSummary->selectionQ,
+                              lowSummary != nullptr && lowSummary->selectionQValid) << ','
+            << csvField(highChosen) << ','
+            << (highSummary == nullptr ? 0 : highSummary->edgeVisits) << ','
+            << optionalDouble(highSummary == nullptr ? 0.0 : highSummary->selectionQ,
+                              highSummary != nullptr && highSummary->selectionQValid) << ','
+            << (low.diagnostic.exactReroot ? 1 : 0) << ','
+            << silver_bridge::silverRerootFallbackReasonName(low.diagnostic.fallbackReason) << ','
+            << low.diagnostic.inheritedVisits << ','
+            << g_silverLiveOptions.rootDiagnosticReferenceBudget << ','
+            << g_silverLiveOptions.rootDiagnosticReplicates << ',' << reference.meanValue << ','
+            << reference.valueStddev << ','
+            << reference.rolloutWinRate << ',' << reference.meanRolloutActions << ','
+            << reference.meanRolloutTurns << ',' << t.rolloutCalls << ','
+            << t.rolloutTerminalWins << ',' << t.rolloutTerminalLosses << ','
+            << componentMean(t.rolloutUtilitySum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutWinBonusSum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutHpSum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutPotionSum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutTurnPenaltySum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutDeathSaveSum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutGoldSum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutMaxHpSum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutParasitePenaltySum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutMonsterDamageSum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutAliveSum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutEnergyWasteSum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutDrawSum, t.rolloutCalls) << ','
+            << componentMean(t.rolloutSurvivalSum, t.rolloutCalls) << ','
+            << low.telemetry.rolloutCalls << ',' << low.telemetry.rolloutTerminalWins << ','
+            << low.telemetry.rolloutTerminalLosses << ',' << low.telemetry.rolloutActionCount << ','
+            << low.telemetry.rolloutTurnDelta << ',' << low.telemetry.rolloutUtilitySum << ','
+            << high.telemetry.rolloutCalls << ',' << high.telemetry.rolloutTerminalWins << ','
+            << high.telemetry.rolloutTerminalLosses << ',' << high.telemetry.rolloutActionCount << ','
+            << high.telemetry.rolloutTurnDelta << ',' << high.telemetry.rolloutUtilitySum << '\n';
+    }
+    out.flush();
+    if (!out) throw std::runtime_error("cannot write STS_SILVER_ROOT_DIAG_FILE: "
+                                      + g_silverLiveOptions.rootDiagnosticFile);
+    g_rootDiagnosticHeaderWritten = true;
 }
 
 struct StickyQualityRow {
@@ -437,13 +562,15 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     const std::uint64_t silverBattleSeed = isolatedBattleSeed(bc);
     const bool collectScalingDiagnostics = !g_silverLiveOptions.scalingDiagnosticFile.empty();
     const bool collectStickyQuality = !g_silverLiveOptions.stickyQualityFile.empty();
+    const bool collectRootDiagnostics = !g_silverLiveOptions.rootDiagnosticFile.empty();
     const bool emitTelemetry = std::getenv("STS_SILVER_TELEMETRY")
         && std::atoi(std::getenv("STS_SILVER_TELEMETRY")) != 0;
     // Aggregate reroot-cause counters are advertised by STS_SILVER_TELEMETRY,
     // so populate their value-only records even when the authoritative CSV is
     // disabled. Both options are opt-in; default gameplay retains the cheap
     // no-diagnostic path.
-    const bool collectDecisionDiagnostics = collectScalingDiagnostics || collectStickyQuality || emitTelemetry;
+    const bool collectDecisionDiagnostics = collectScalingDiagnostics || collectStickyQuality
+        || collectRootDiagnostics || emitTelemetry;
     std::vector<ScalingDiagnosticRow> scalingDiagnostics;
     std::vector<StickyQualityRow> stickyQualityRows;
     StickyQualityCounters stickyQualityCounters;
@@ -483,7 +610,9 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             fail("conversion", "live observation cannot be represented without hidden information");
         }
 
-        const auto config = configFor(agent, bc, collectDecisionDiagnostics);
+        auto config = configFor(agent, bc, collectDecisionDiagnostics);
+        config.collectRootActionSummaries = collectRootDiagnostics;
+        config.collectRolloutDiagnostics = collectRootDiagnostics;
         silver_bridge::SemanticAction semantic;
         if (bc.inputState == InputState::CARD_SELECT
                 && (bc.cardSelectInfo.cardSelectTask == CardSelectTask::EXHAUST_MANY
@@ -547,6 +676,31 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                         wire, gc.seed, decision, roomType, result, config));
                     ++stickyQualityCounters.selected;
                 }
+            }
+            if (collectRootDiagnostics && reserveRootDiagnosticSample(gc.seed)) {
+                auto low = result;
+                if (low.simulations != 1000) {
+                    auto lowConfig = config;
+                    lowConfig.simulationsPerDecision = 1000;
+                    lowConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
+                    lowConfig.collectDecisionDiagnostics = false;
+                    low = silver_bridge::runSilverDecision(wire, lowConfig);
+                }
+                auto highConfig = config;
+                highConfig.simulationsPerDecision = 3700;
+                highConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
+                highConfig.collectDecisionDiagnostics = false;
+                const auto high = silver_bridge::runSilverDecision(wire, highConfig);
+                if (!low.accepted || !high.accepted) {
+                    fail("root diagnostic", "fresh 1k/3.7k comparison returned no semantic decision");
+                }
+                const auto references = silver_bridge::runSilverForcedActionReferences(
+                    wire, config, g_silverLiveOptions.rootDiagnosticReferenceBudget,
+                    g_silverLiveOptions.rootDiagnosticReplicates);
+                const std::string roomType = gc.curRoom == Room::MONSTER ? "hallway"
+                    : gc.curRoom == Room::ELITE ? "elite"
+                    : gc.curRoom == Room::BOSS ? "boss" : "other";
+                writeRootDiagnostics(wire, gc.seed, decision, roomType, low, high, references);
             }
         }
 
