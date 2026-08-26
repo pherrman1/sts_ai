@@ -60,6 +60,7 @@ struct BenchConfigSidecar {
     std::string silverUpstreamSha;
     std::string executableGitSha;
     std::string silverScalingDiagnosticFile;
+    std::string silverStickyQualityFile;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -149,6 +150,8 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"executableGitSha\":\"" << detail::jsonEscape(c.executableGitSha) << '\"';
     o << ",\"silverScalingDiagnosticFile\":\""
       << detail::jsonEscape(c.silverScalingDiagnosticFile) << '\"';
+    o << ",\"silverStickyQualityFile\":\""
+      << detail::jsonEscape(c.silverStickyQualityFile) << '\"';
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';

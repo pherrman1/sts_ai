@@ -26,6 +26,16 @@ int main() {
         std::cerr << "silver_integration FAIL: backend was not installed\n";
         return 1;
     }
+    const bool sampleA = silverStickyQualitySampled(0x510E42u, 7, 3, 11);
+    const bool sampleB = silverStickyQualitySampled(0x510E42u, 7, 3, 11);
+    bool sawOtherBucket = false;
+    for (int ordinal = 12; ordinal < 76; ++ordinal)
+        sawOtherBucket = sawOtherBucket || silverStickyQualitySampled(0x510E42u, 7, 3, ordinal) != sampleA;
+    if (sampleA != sampleB || !sawOtherBucket) {
+        std::cerr << "silver_integration FAIL: sticky sampler is not deterministic or does not partition identities\n";
+        uninstallSilverLiveBackend();
+        return 1;
+    }
     try {
         g_externalCombatBackend(agent, gc, live);
     } catch (const std::exception &e) {
