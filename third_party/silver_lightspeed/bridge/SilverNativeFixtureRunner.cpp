@@ -63,6 +63,19 @@ void setup(sts::BattleContext &bc, const std::string &fixture) {
         bc.cardSelectInfo.canPickAnyNumber = true;
         bc.cardSelectInfo.selectedBits = 0;
     }
+    if (fixture == "gamble_select") {
+        bc.inputState = sts::InputState::CARD_SELECT;
+        bc.cardSelectInfo.cardSelectTask = sts::CardSelectTask::GAMBLE;
+        bc.cardSelectInfo.canPickAnyNumber = true;
+        bc.cardSelectInfo.selectedBits = 0;
+        // A legitimate status-heavy hand makes discarding attractive while
+        // retaining an ordinary unknown draw pile for GAMBLE's resolution.
+        bc.cards.cardsInHand = 5;
+        for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+            bc.cards.hand[i] = sts::CardInstance(sts::CardId::REGRET);
+            bc.cards.hand[i].uniqueId = static_cast<std::int16_t>(401 + i);
+        }
+    }
     if (fixture == "exhaust_many") {
         bc.inputState = sts::InputState::CARD_SELECT;
         bc.cardSelectInfo.cardSelectTask = sts::CardSelectTask::EXHAUST_MANY;
@@ -197,9 +210,9 @@ int main(int argc, char **argv) {
     gc.map = std::make_shared<sts::Map>();
     seedDeck(gc);
     sts::BattleContext bc;
-    const bool transaction = fixture == "tx_gamble" || fixture == "tx_exhaust_many";
+    const bool transaction = fixture == "tx_gamble" || fixture == "tx_gamble_select" || fixture == "tx_exhaust_many";
     bc.init(gc, encounterFor(fixture));
-    setup(bc, fixture == "tx_gamble" ? "gamble" : fixture == "tx_exhaust_many" ? "exhaust_many" : fixture);
+    setup(bc, fixture == "tx_gamble" ? "gamble" : fixture == "tx_gamble_select" ? "gamble_select" : fixture == "tx_exhaust_many" ? "exhaust_many" : fixture);
     if (transaction) { emitTransactionTrace(bc, simulations); return 0; }
     if (fixture == "reuse_det") {
         emitReuseTrace(bc, simulations);
