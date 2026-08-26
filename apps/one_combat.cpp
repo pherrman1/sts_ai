@@ -4172,7 +4172,31 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             search::g_potionKeepValue = potionKeepValue(gc);           // dynamic potion-saving
             if (search::g_useSearcher3 && g_termWin && g_winNet.ok)
                 termWinArmForBattle(gc);   // terminal-leaf run-value bonus (cross-combat setup)
-            BattleContext bc{}; bc.init(gc);
+            BattleContext bc{};
+            // The isolated Silver backend must enter before BattleContext::init
+            // so its observational Runic-Dome hooks see the initial hidden
+            // intent lifecycle.  The normal bestbench path deliberately
+            // remains byte-for-byte below this opt-in branch.
+            if (search::g_externalCombatBackend) {
+                agent.playoutBattle(gc, bc);
+                ++fightsTotal;
+                if (bc.outcome == Outcome::PLAYER_LOSS) {
+                    ++fightsLost;
+                    if (deathCombat < 0) {
+                        deathCombat = fightsTotal;
+                        deathEncounter = (int)bc.encounter;
+                    }
+                }
+                bc.exitBattle(gc);
+                if (g_cpsiCtrProbe) cpsiCounterProbeAtState(gc);
+                stallLogRow(gc, bc, seed);
+                if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
+                    clearedStopActBoss = bc.outcome == Outcome::PLAYER_VICTORY;
+                    break;
+                }
+                continue;
+            }
+            bc.init(gc);
             if (t_e2c) e2cBeginFight(fightsTotal, gc, bc);
             if (g_runwinShadowActive)
                 runwinShadowBeginFight(fightsTotal, gc, path, battleRoom, bc.encounter);

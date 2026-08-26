@@ -6,6 +6,7 @@
 #include "sim/search/SilverLiveBackend.h"
 
 #include <cstdlib>
+#include <iostream>
 #include <stdexcept>
 
 #include "combat/BattleContext.h"
@@ -163,6 +164,28 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         agent.takeAction(bc, resolved.action);
     }
     agent.simulationCountTotal += static_cast<std::int64_t>(g_silverLiveDiagnostics.simulations);
+    if (const char *raw = std::getenv("STS_SILVER_TELEMETRY"); raw && std::atoi(raw) != 0) {
+        const auto &d = g_silverLiveDiagnostics;
+        std::cout << "[silver-combat] decisions=" << d.decisions
+                  << " simulations=" << d.simulations
+                  << " transaction_subdecisions=" << d.transactionSubdecisions
+                  << " reroot_exact=" << d.rerootExact
+                  << " reroot_fallback=" << d.rerootFallback
+                  << " nodes=" << d.nodesCreated
+                  << " chance_outcomes=" << d.chanceOutcomes
+                  << " chance_sibling_reuse=" << d.chanceSiblingReuse
+                  << " det_transpositions=" << d.deterministicTranspositions
+                  << " chance_transpositions=" << d.chanceTranspositions
+                  << " widening_sampled=" << d.wideningSampled
+                  << " widening_capped=" << d.wideningCapped
+                  << " depth_sum=" << d.depthSum
+                  << " chance_depth_sum=" << d.chanceDepthSum
+                  << " conversion_failures=" << d.conversionFailures
+                  << " semantic_resolution_failures=" << d.semanticResolutionFailures
+                  << " transaction_failures=" << d.transactionFailures
+                  << " knowledge_failures=" << d.knowledgeConsistencyFailures
+                  << '\n';
+    }
 }
 
 } // namespace

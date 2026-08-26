@@ -42,7 +42,12 @@ namespace sts::search {
     // the hook default-null preserves ordinary Searcher2/Searcher3 linkage and
     // behavior, including unit-test targets that intentionally do not link
     // the vendored model.
-    extern thread_local std::function<void(ScumSearchAgent2&, GameContext&, BattleContext&)>
+    // Process-wide, immutable after executable startup.  The callback must not
+    // be thread-local: bestbench runs independent whole runs in OpenMP workers
+    // and an opt-in combat backend selected at process startup must be visible
+    // to each worker.  Backend-owned per-combat state remains local to the
+    // callback implementation.
+    extern std::function<void(ScumSearchAgent2&, GameContext&, BattleContext&)>
         g_externalCombatBackend;
 
     struct ScumSearchAgent2 {
@@ -66,6 +71,14 @@ namespace sts::search {
 
         // public interface
         void playout(GameContext &gc);
+
+        // Initializes and plays a battle through the executable-installed
+        // backend when one is active, otherwise through the ordinary live
+        // simulator/search path.  Direct whole-run callers must use this
+        // overload rather than pre-initializing BattleContext themselves so
+        // an observational backend can install pre-init hooks (notably the
+        // Runic-Dome intent observer) before BattleContext::init.
+        void playoutBattle(GameContext &gc, BattleContext &bc);
 
         // A backend installed through g_externalCombatBackend commits validated
         // live actions through this same method, preserving health checks and

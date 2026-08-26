@@ -39,7 +39,7 @@ namespace sts::search {
     thread_local std::function<void(const BattleContext&)> g_onCombatDecision = nullptr;
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher2&)> g_onSearchComplete = nullptr;
     thread_local std::function<void(const BattleContext&, const BattleScumSearcher3&)> g_onSearchComplete3 = nullptr;
-    thread_local std::function<void(ScumSearchAgent2&, GameContext&, BattleContext&)>
+    std::function<void(ScumSearchAgent2&, GameContext&, BattleContext&)>
         g_externalCombatBackend = nullptr;
 
     bool installTransferredBelief(BattleScumSearcher3 &searcher,
@@ -100,14 +100,7 @@ void search::ScumSearchAgent2::playout(GameContext &gc) {
     while (gc.outcome == GameOutcome::UNDECIDED && !paused) {
         if (gc.screenState == ScreenState::BATTLE) {
             bc = BattleContext();
-            if (g_externalCombatBackend) {
-                g_externalCombatBackend(*this, gc, bc);
-                bc.exitBattle(gc);
-                continue;
-            }
-            bc.init(gc);
-
-            playoutBattle(bc);
+            playoutBattle(gc, bc);
             bc.exitBattle(gc);
             continue;
         }
@@ -117,6 +110,15 @@ void search::ScumSearchAgent2::playout(GameContext &gc) {
         }
         stepOutOfCombatPolicy(gc);
     }
+}
+
+void search::ScumSearchAgent2::playoutBattle(GameContext &gc, BattleContext &bc) {
+    if (g_externalCombatBackend) {
+        g_externalCombatBackend(*this, gc, bc);
+        return;
+    }
+    bc.init(gc);
+    playoutBattle(bc);
 }
 
 static void printHelper(const BattleContext &bc, const search::Action &a) {
