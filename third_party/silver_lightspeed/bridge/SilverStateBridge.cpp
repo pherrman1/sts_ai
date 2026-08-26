@@ -411,6 +411,25 @@ sts::search::BattleSearcher::Node *exactRerootCandidate(
 
 } // namespace
 
+const char *silverReuseCapModeName(SilverReuseCapMode mode) {
+    switch (mode) {
+        case SilverReuseCapMode::ALLOCATED: return "allocated";
+        case SilverReuseCapMode::ACTIVE: return "active";
+    }
+    return "invalid";
+}
+
+const char *silverRerootFallbackReasonName(SilverRerootFallbackReason reason) {
+    switch (reason) {
+        case SilverRerootFallbackReason::NONE: return "none";
+        case SilverRerootFallbackReason::NO_PREDECESSOR: return "no_predecessor";
+        case SilverRerootFallbackReason::CANDIDATE_MISSING: return "candidate_missing";
+        case SilverRerootFallbackReason::ALLOCATED_CAP: return "allocated_cap";
+        case SilverRerootFallbackReason::ACTIVE_CAP: return "active_cap";
+    }
+    return "invalid";
+}
+
 class SilverSearchSession {
 public:
     sts::GameContext runContext;
@@ -422,6 +441,8 @@ public:
     std::int64_t inheritedVisits = 0;
     std::string rerootMissDiagnostic;
     sts::search::SearchStats searchStatsBefore {};
+    SilverSearchDecisionDiagnostic decisionDiagnostic {};
+    bool collectDecisionDiagnostics = false;
 
     void configure(const SilverSearchConfig &config) {
         searcher->explorationParameter = config.explorationParameter;
@@ -436,21 +457,55 @@ public:
     // hand permutations are counted as misses and never reused. The 32k cap
     // deliberately forces setRoot so the open-addressed table stays sparse.
     void beginAt(const sts::BattleContext &state, const SilverSearchConfig &config) {
-        constexpr std::size_t kReusePoolCap = 32 * 1024;
         inheritedVisits = 0;
         rerootMissDiagnostic.clear();
+        collectDecisionDiagnostics = config.collectDecisionDiagnostics;
+        if (collectDecisionDiagnostics) {
+            decisionDiagnostic = {};
+            decisionDiagnostic.configuredCapMode = config.reuseCapMode;
+            decisionDiagnostic.configuredCap = config.reuseCap;
+            if (searcher) {
+                decisionDiagnostic.allocatedNodesBeforeRoot = static_cast<std::int64_t>(searcher->allNodes.size());
+                decisionDiagnostic.activeNodesBeforeRoot = static_cast<std::int64_t>(searcher->poolUsed);
+            }
+        }
         if (!searcher) {
             searcher = std::make_unique<sts::search::BattleSearcher>(state);
             configure(config);
+            if (collectDecisionDiagnostics) {
+                decisionDiagnostic.fallback = true;
+                decisionDiagnostic.fallbackReason = SilverRerootFallbackReason::NO_PREDECESSOR;
+            }
             return;
         }
         if (previousBest != nullptr) {
-            if (auto *candidate = exactRerootCandidate(previousBest, state);
-                    candidate != nullptr && searcher->allNodes.size() < kReusePoolCap) {
+            auto *candidate = exactRerootCandidate(previousBest, state);
+            const std::size_t capMetric = config.reuseCapMode == SilverReuseCapMode::ALLOCATED
+                ? searcher->allNodes.size() : searcher->poolUsed;
+            const bool capBlocked = candidate != nullptr
+                && capMetric >= static_cast<std::size_t>(config.reuseCap);
+            if (collectDecisionDiagnostics) {
+                decisionDiagnostic.hadPredecessor = true;
+                decisionDiagnostic.rerootAttempted = true;
+                decisionDiagnostic.exactCandidateFound = candidate != nullptr;
+            }
+            if (candidate != nullptr && !capBlocked) {
                 searcher->rerootAt(candidate);
                 ++rerootExact;
                 inheritedVisits = searcher->root->simulationCount;
+                if (collectDecisionDiagnostics) {
+                    decisionDiagnostic.exactReroot = true;
+                    decisionDiagnostic.inheritedVisits = inheritedVisits;
+                }
             } else {
+                if (collectDecisionDiagnostics) {
+                    decisionDiagnostic.fallback = true;
+                    decisionDiagnostic.fallbackReason = candidate == nullptr
+                        ? SilverRerootFallbackReason::CANDIDATE_MISSING
+                        : (config.reuseCapMode == SilverReuseCapMode::ALLOCATED
+                            ? SilverRerootFallbackReason::ALLOCATED_CAP
+                            : SilverRerootFallbackReason::ACTIVE_CAP);
+                }
                 if (previousBest->node != nullptr) {
                     if (!previousBest->node->isRandomNode) {
                         rerootMissDiagnostic = selectionStateSummary(previousBest->node->state, state);
@@ -473,6 +528,10 @@ public:
             // only equalForSearch against a stale root.
             searcher->setRoot(state);
             ++rerootFallback;
+            if (collectDecisionDiagnostics) {
+                decisionDiagnostic.fallback = true;
+                decisionDiagnostic.fallbackReason = SilverRerootFallbackReason::NO_PREDECESSOR;
+            }
         }
         configure(config);
     }
@@ -493,13 +552,30 @@ public:
         const auto before = searchStatsBefore.steps;
         searcher->search(config.simulationsPerDecision);
         simulations = searcher->stats.steps - before;
-        if (searcher->root == nullptr || searcher->root->edges.empty()) return nullptr;
+        if (searcher->root == nullptr || searcher->root->edges.empty()) {
+            if (collectDecisionDiagnostics) {
+                decisionDiagnostic.allocatedNodesAfterSearch = static_cast<std::int64_t>(searcher->allNodes.size());
+                decisionDiagnostic.activeNodesAfterSearch = static_cast<std::int64_t>(searcher->poolUsed);
+                decisionDiagnostic.simulationsAdded = simulations;
+                decisionDiagnostic.nodesCreated = searcher->stats.nodesCreated - searchStatsBefore.nodesCreated;
+                decisionDiagnostic.rootVisitsAfterSearch = searcher->root == nullptr ? 0 : searcher->root->simulationCount;
+            }
+            return nullptr;
+        }
         const sts::search::BattleSearcher::Edge *best = nullptr;
         std::int32_t visits = -1;
         for (const auto &edge : searcher->root->edges) {
             if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
         }
         previousBest = best;
+        if (collectDecisionDiagnostics) {
+            decisionDiagnostic.allocatedNodesAfterSearch = static_cast<std::int64_t>(searcher->allNodes.size());
+            decisionDiagnostic.activeNodesAfterSearch = static_cast<std::int64_t>(searcher->poolUsed);
+            decisionDiagnostic.simulationsAdded = simulations;
+            decisionDiagnostic.nodesCreated = searcher->stats.nodesCreated - searchStatsBefore.nodesCreated;
+            decisionDiagnostic.rootVisitsAfterSearch = searcher->root == nullptr ? 0 : searcher->root->simulationCount;
+            decisionDiagnostic.chosenEdgeVisits = best == nullptr ? 0 : best->visitCount;
+        }
         return best;
     }
 };
@@ -530,6 +606,94 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         result.rerootFallback = session.rerootFallback;
         result.inheritedVisits = session.searcher->root == nullptr
             ? 0 : session.searcher->root->simulationCount;
+    } catch (const std::exception &) {
+        return {};
+    }
+    return result;
+}
+
+ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
+    ReuseCapFixtureProbe result;
+    try {
+        const sts::BattleContext state = materialize(wire);
+        constexpr std::int64_t cap = 4;
+        const auto arrangeCandidate = [&state, cap](SilverSearchSession &session, bool fillActiveToCap,
+                                                bool permuteHand) {
+            session.searcher = std::make_unique<sts::search::BattleSearcher>(state);
+            // Grow retained capacity above the deliberately tiny cap, then
+            // reset.  resetForSearch recycles this pool and leaves one active
+            // root, mirroring the production sticky-cutoff sequence.
+            while (static_cast<std::int64_t>(session.searcher->allNodes.size()) <= cap + 1)
+                session.searcher->allocNode();
+            session.searcher->setRoot(state);
+            while (fillActiveToCap && static_cast<std::int64_t>(session.searcher->poolUsed) < cap)
+                session.searcher->allocNode();
+            auto *candidate = session.searcher->allocNode();
+            candidate->state = state;
+            candidate->simulationCount = 17;
+            if (permuteHand && candidate->state.cards.cardsInHand >= 2)
+                std::swap(candidate->state.cards.hand[0], candidate->state.cards.hand[1]);
+            session.searcher->root->edges.clear();
+            session.searcher->root->edges.push_back({sts::search::Action{}, candidate, 0, 0});
+            session.previousBest = &session.searcher->root->edges.front();
+        };
+        const auto run = [&state, cap](SilverSearchSession &session, bool explicitMode,
+                                       SilverReuseCapMode mode = SilverReuseCapMode::ALLOCATED) {
+            SilverSearchConfig config;
+            config.reuseCap = cap;
+            if (explicitMode) config.reuseCapMode = mode;
+            config.collectDecisionDiagnostics = true;
+            session.beginAt(state, config);
+            return session.decisionDiagnostic;
+        };
+
+        SilverSearchSession defaultAllocated, explicitAllocated;
+        arrangeCandidate(defaultAllocated, false, false);
+        arrangeCandidate(explicitAllocated, false, false);
+        const auto defaultDiag = run(defaultAllocated, false);
+        const auto explicitDiag = run(explicitAllocated, true, SilverReuseCapMode::ALLOCATED);
+        result.defaultEqualsExplicitAllocated = defaultDiag.fallback == explicitDiag.fallback
+            && defaultDiag.fallbackReason == explicitDiag.fallbackReason
+            && defaultDiag.allocatedNodesBeforeRoot == explicitDiag.allocatedNodesBeforeRoot
+            && defaultDiag.activeNodesBeforeRoot == explicitDiag.activeNodesBeforeRoot;
+        result.retainedAllocationAboveCapAfterReset = defaultDiag.allocatedNodesBeforeRoot >= cap;
+        result.activeBelowCapAfterReset = defaultDiag.activeNodesBeforeRoot < cap;
+        result.allocatedDiagnostic = defaultDiag;
+        result.allocatedCapBlocked = defaultDiag.exactCandidateFound && defaultDiag.fallback
+            && defaultDiag.fallbackReason == SilverRerootFallbackReason::ALLOCATED_CAP;
+
+        SilverSearchSession active;
+        arrangeCandidate(active, false, false);
+        result.activeDiagnostic = run(active, true, SilverReuseCapMode::ACTIVE);
+        result.activeExactReroot = result.activeDiagnostic.exactReroot;
+        result.activeInheritsVisits = result.activeDiagnostic.inheritedVisits == 17;
+
+        SilverSearchSession activeAtCap;
+        arrangeCandidate(activeAtCap, true, false);
+        result.activeCapDiagnostic = run(activeAtCap, true, SilverReuseCapMode::ACTIVE);
+        result.activeCapBlocked = result.activeCapDiagnostic.exactCandidateFound
+            && result.activeCapDiagnostic.fallbackReason == SilverRerootFallbackReason::ACTIVE_CAP;
+
+        SilverSearchSession missing;
+        arrangeCandidate(missing, false, false);
+        missing.searcher->root->edges.front().node->state.player.curHp -= 1;
+        const auto missingAllocated = run(missing, true, SilverReuseCapMode::ALLOCATED);
+        arrangeCandidate(missing, false, false);
+        missing.searcher->root->edges.front().node->state.player.curHp -= 1;
+        const auto missingActive = run(missing, true, SilverReuseCapMode::ACTIVE);
+        result.candidateMissingUnchanged = !missingAllocated.exactCandidateFound
+            && !missingActive.exactCandidateFound
+            && missingAllocated.fallbackReason == SilverRerootFallbackReason::CANDIDATE_MISSING
+            && missingActive.fallbackReason == SilverRerootFallbackReason::CANDIDATE_MISSING;
+
+        if (state.cards.cardsInHand >= 2) {
+            SilverSearchSession permuted;
+            arrangeCandidate(permuted, false, true);
+            const auto permutedDiag = run(permuted, true, SilverReuseCapMode::ACTIVE);
+            result.handOrderMandatory = true;
+            result.handPermutationRejected = !permutedDiag.exactCandidateFound
+                && permutedDiag.fallbackReason == SilverRerootFallbackReason::CANDIDATE_MISSING;
+        }
     } catch (const std::exception &) {
         return {};
     }
@@ -623,6 +787,8 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
             trace.totalSimulations += subdecisionSimulations;
             ++trace.searchDecisions;
             trace.telemetry.add(telemetryDelta(searcher.stats, session.searchStatsBefore));
+            if (config.collectDecisionDiagnostics)
+                trace.searchDiagnostics.push_back(session.decisionDiagnostic);
             if (best == nullptr) {
                 trace.failure = "Silver search returned no root edge";
                 return trace;
@@ -690,6 +856,7 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
         }
         const auto *best = session.searchAndChoose(config, result.simulations);
         result.telemetry = telemetryDelta(session.searcher->stats, session.searchStatsBefore);
+        if (config.collectDecisionDiagnostics) result.diagnostic = session.decisionDiagnostic;
         if (best == nullptr) return result;
         result.action = semanticFromAction(state, best->action);
         result.accepted = true;

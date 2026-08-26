@@ -270,6 +270,8 @@ add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_sem
 add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
 add_test(NAME runic_dome_lifecycle COMMAND $<TARGET_FILE:runic-dome-lifecycle-test>)
+add_test(NAME py_compile_analyze_silver_reuse_scaling COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py)
+add_test(NAME analyze_silver_reuse_scaling_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py --self-test)
 add_test(NAME py_compile_analyze_postcombat_raw_terminal COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_postcombat_raw_terminal.py)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME py_compile_analyze_runwin_shadow COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py)

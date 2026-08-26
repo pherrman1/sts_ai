@@ -4836,6 +4836,16 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.s3RolloutTurnStop = search::g_s3RolloutTurnStop != 0;
         meta.s3TurnRollout = search::g_s3TurnRollout;
         meta.s3SemanticCardEdges = search::g_s3SemanticCardEdges;
+        meta.silverSearchEnabled = search::silverLiveBackendInstalled();
+        meta.stsSilverSearchEffective = meta.silverSearchEnabled;
+        meta.effectiveCombatBackend = meta.silverSearchEnabled ? "silver" : "native_searcher";
+        meta.silverReuseCapMode = meta.silverSearchEnabled ? search::silverLiveReuseCapMode() : "";
+        meta.silverReuseCap = meta.silverSearchEnabled ? search::silverLiveReuseCap() : 0;
+        meta.silverUpstreamSha = meta.silverSearchEnabled
+            ? "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff" : "";
+        meta.executableGitSha = trainingGitValue("git rev-parse HEAD");
+        meta.silverScalingDiagnosticFile = meta.silverSearchEnabled
+            ? search::silverLiveScalingDiagnosticFile() : "";
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = search::g_useVNet ? "ON" : "off";
@@ -13222,7 +13232,9 @@ int main(int argc, char **argv) {
             // enters either Searcher2 or Searcher3. It owns local Silver
             // randomness and therefore never constructs an S3 Belief.
             search::installSilverLiveBackend();
-            std::cout << "[isolated Silver combat backend ON: local Silver RNG/chance search; Searcher3 particles bypassed]\n";
+            std::cout << "[isolated Silver combat backend ON: local Silver RNG/chance search; Searcher3 particles bypassed; reuse-cap="
+                      << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
+                      << "]\n";
         }
     }
     // STS_LIVE_VALID (Phase 4, fair-tree structural fix): env opt-in as

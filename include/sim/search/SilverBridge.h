@@ -197,6 +197,22 @@ enum class SemanticActionType : std::uint8_t {
 
 enum class CardSource : std::uint8_t { NONE = 0, HAND, DRAW, DISCARD, EXHAUST, CARD_SELECT_OPTION };
 
+// The production cap is deliberately fixed.  This enum changes only which
+// already-existing pool measurement is compared against it.
+enum class SilverReuseCapMode : std::uint8_t { ALLOCATED = 0, ACTIVE };
+enum class SilverRerootFallbackReason : std::uint8_t {
+    NONE = 0,
+    NO_PREDECESSOR,
+    CANDIDATE_MISSING,
+    ALLOCATED_CAP,
+    ACTIVE_CAP,
+};
+
+constexpr std::int64_t kSilverProductionReuseCap = 32 * 1024;
+
+const char *silverReuseCapModeName(SilverReuseCapMode mode);
+const char *silverRerootFallbackReasonName(SilverRerootFallbackReason reason);
+
 // Index-free player action identity. `card` includes the visible unique card
 // instance state; source slot is deliberately absent.  Potion slots are
 // player-visible and therefore represented explicitly.
@@ -223,6 +239,36 @@ struct SilverSearchConfig {
     double chanceWideningAlpha = 0.52389;
     double endTurnWideningC = 3.7028;
     double endTurnWideningAlpha = 0.52389;
+    // Test-only overrides may use a smaller value.  No gameplay environment
+    // controls this value; production continues to use exactly 32 * 1024.
+    std::int64_t reuseCap = kSilverProductionReuseCap;
+    SilverReuseCapMode reuseCapMode = SilverReuseCapMode::ALLOCATED;
+    // Default-off collection avoids per-decision diagnostic work unless the
+    // scaling CSV (or a focused bridge fixture) explicitly requests it.
+    bool collectDecisionDiagnostics = false;
+};
+
+// Value-only accounting of one actual private Silver search invocation.  The
+// record is emitted for ordinary decisions and every sequential-selection
+// subdecision when collection is enabled.
+struct SilverSearchDecisionDiagnostic {
+    bool hadPredecessor = false;
+    bool rerootAttempted = false;
+    bool exactCandidateFound = false;
+    bool exactReroot = false;
+    bool fallback = false;
+    SilverRerootFallbackReason fallbackReason = SilverRerootFallbackReason::NONE;
+    SilverReuseCapMode configuredCapMode = SilverReuseCapMode::ALLOCATED;
+    std::int64_t configuredCap = kSilverProductionReuseCap;
+    std::int64_t allocatedNodesBeforeRoot = 0;
+    std::int64_t activeNodesBeforeRoot = 0;
+    std::int64_t allocatedNodesAfterSearch = 0;
+    std::int64_t activeNodesAfterSearch = 0;
+    std::int64_t inheritedVisits = 0;
+    std::int64_t simulationsAdded = 0;
+    std::int64_t nodesCreated = 0;
+    std::int64_t rootVisitsAfterSearch = 0;
+    std::int64_t chosenEdgeVisits = 0;
 };
 
 // Value-only copy of Silver BattleSearcher's deterministic telemetry. This is
@@ -270,6 +316,7 @@ struct SelectionTransactionTrace {
     // Upstream selectedBits after each private SINGLE_CARD_SELECT. This is a
     // parity/debug trace only; final live lowering remains identity based.
     std::vector<int> selectedBitsAfterEachIntermediate;
+    std::vector<SilverSearchDecisionDiagnostic> searchDiagnostics;
     SemanticAction finalAction;
     SilverSearchTelemetry telemetry;
 };
@@ -283,6 +330,7 @@ struct SilverDecisionResult {
     // Private-model comparison summary for a reroot miss; no live state or
     // hidden information is exposed here.
     std::string rerootMissDiagnostic;
+    SilverSearchDecisionDiagnostic diagnostic;
     SemanticAction action;
     SilverSearchTelemetry telemetry;
     int rerootExact = 0;
@@ -320,6 +368,25 @@ struct SessionReuseProbe {
     std::int64_t inheritedVisits = 0;
 };
 
+// Small-cap, bridge-private fixture.  It exercises retained allocation versus
+// active pool usage without allocating the 32k production pool or touching a
+// live BattleContext/RNG.
+struct ReuseCapFixtureProbe {
+    bool defaultEqualsExplicitAllocated = false;
+    bool retainedAllocationAboveCapAfterReset = false;
+    bool activeBelowCapAfterReset = false;
+    bool allocatedCapBlocked = false;
+    bool activeExactReroot = false;
+    bool activeInheritsVisits = false;
+    bool activeCapBlocked = false;
+    bool candidateMissingUnchanged = false;
+    bool handOrderMandatory = false;
+    bool handPermutationRejected = false;
+    SilverSearchDecisionDiagnostic allocatedDiagnostic;
+    SilverSearchDecisionDiagnostic activeDiagnostic;
+    SilverSearchDecisionDiagnostic activeCapDiagnostic;
+};
+
 // Forces a real constructor/reset path through the upstream BattleSearcher.
 // It is a link-closure probe, not a live-game integration API.
 SearcherConstructionProbe constructReferenceSearcherProbe();
@@ -327,6 +394,7 @@ SearcherConstructionProbe constructReferenceSearcherProbe();
 // then begins the next private decision through the exact reroot protocol.
 SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &state,
                                                 const SilverSearchConfig &config);
+ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &state);
 
 // Validates and materializes a private sts_silver::BattleContext. The opaque
 // result allows focused leakage/equality tests without exposing vendor types.

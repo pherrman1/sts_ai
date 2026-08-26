@@ -3,6 +3,7 @@
 #define STS_SILVER_LIVE_BACKEND_H
 
 #include <cstdint>
+#include <string>
 
 namespace sts::search {
 
@@ -16,6 +17,10 @@ struct SilverLiveDiagnostics {
     std::uint64_t transactionSubdecisions = 0;
     std::uint64_t rerootExact = 0;
     std::uint64_t rerootFallback = 0;
+    std::uint64_t rerootCandidateFound = 0;
+    std::uint64_t rerootCandidateMissing = 0;
+    std::uint64_t rerootAllocatedCapBlocked = 0;
+    std::uint64_t rerootActiveCapBlocked = 0;
     std::uint64_t nodesCreated = 0;
     std::uint64_t deterministicTranspositions = 0;
     std::uint64_t chanceOutcomes = 0;
@@ -34,6 +39,14 @@ extern thread_local SilverLiveDiagnostics g_silverLiveDiagnostics;
 // dependency. Calling it is idempotent for the current thread.
 void installSilverLiveBackend();
 void uninstallSilverLiveBackend();
+
+// Effective process-level options parsed by installSilverLiveBackend().  They
+// are exposed to one_combat provenance only; no live combat object crosses
+// this boundary.
+bool silverLiveBackendInstalled();
+std::string silverLiveReuseCapMode();
+std::int64_t silverLiveReuseCap();
+std::string silverLiveScalingDiagnosticFile();
 
 } // namespace sts::search
 

@@ -49,6 +49,20 @@ artifact.
 
 ## Parked lines
 
+- Silver reuse-cap scaling (PR #59, frozen source SHA
+  `36065aefbc49063d16000a9549cad5c1346bbcc6`): a paired 32-seed GCP experiment
+  causally confirmed the 32k retained-allocation sticky-cap mechanism. At 3700
+  simulations, switching only the cap metric from allocated nodes to active
+  pool usage restored exact reroot from 53.54% to 66.87%; every one of 1,852
+  sticky-eligible active cases exact-rerooted and none failed the allocated cap.
+  It did **not** establish agent value: active was 5.89% slower in the
+  diagnostics-off paired runtime comparison (above the 5% limit), wins were
+  20/32 versus allocated 21/32, and floor was directionally lower. Allocated
+  remains the production default. Do not run an active-mode 64-seed promotion
+  gate or optimize its runtime yet. The next narrow question is decision
+  quality on cap-fallback states against a high-budget fresh-root reference.
+  See [the experiment evidence](../../experiments/evidence/silver_reuse_cap_scaling_2026-08-26.json)
+  and [ledger-06](../../experiments/ledger-06.md).
 - Infinite-combo-aware search steering: investigation completed, but no active
   implementation or gate is scheduled.
 - Self-play strategic relabeling: the 2026-08-07 handoff predates later

@@ -49,6 +49,17 @@ struct BenchConfigSidecar {
     bool s3RolloutTurnStop = false, s3TurnRollout = false;
     bool s3SemanticCardEdges = false;
     bool fairPlay = false;
+    // Combat-backend override provenance.  The existing Searcher2/3 fields
+    // remain intact because they describe configured native settings; these
+    // fields state which combat backend actually handled decisions.
+    std::string effectiveCombatBackend = "native_searcher";
+    bool stsSilverSearchEffective = false;
+    bool silverSearchEnabled = false;
+    std::string silverReuseCapMode;
+    std::int64_t silverReuseCap = 0;
+    std::string silverUpstreamSha;
+    std::string executableGitSha;
+    std::string silverScalingDiagnosticFile;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -129,6 +140,15 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"s3TurnRollout\":" << (c.s3TurnRollout ? "true" : "false");
     o << ",\"s3SemanticCardEdges\":" << (c.s3SemanticCardEdges ? "true" : "false");
     o << ",\"fairPlay\":" << (c.fairPlay ? "true" : "false");
+    o << ",\"effectiveCombatBackend\":\"" << detail::jsonEscape(c.effectiveCombatBackend) << '\"';
+    o << ",\"stsSilverSearchEffective\":" << (c.stsSilverSearchEffective ? "true" : "false");
+    o << ",\"silverSearchEnabled\":" << (c.silverSearchEnabled ? "true" : "false");
+    o << ",\"silverReuseCapMode\":\"" << detail::jsonEscape(c.silverReuseCapMode) << '\"';
+    o << ",\"silverReuseCap\":" << c.silverReuseCap;
+    o << ",\"silverUpstreamSha\":\"" << detail::jsonEscape(c.silverUpstreamSha) << '\"';
+    o << ",\"executableGitSha\":\"" << detail::jsonEscape(c.executableGitSha) << '\"';
+    o << ",\"silverScalingDiagnosticFile\":\""
+      << detail::jsonEscape(c.silverScalingDiagnosticFile) << '\"';
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';

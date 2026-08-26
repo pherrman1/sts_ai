@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-08-25 against `apps/one_combat.cpp::main`.
+Last verified: 2026-08-26 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -31,6 +31,26 @@ These control the default executing configuration; they are always parsed.
 | `STS_SIMS_ELITE` | Per-fight sim budget, elites | unset | `main` ~L9530 |
 | `STS_SIMS_BOSS` | Per-fight sim budget, bosses | unset | `main` ~L9530 |
 | `STS_SKIP_THR` | Card-reward skip threshold (marginal V) | `-0.5` | `main` ~L9665 |
+
+## Isolated Silver combat backend
+
+`STS_SILVER_SEARCH=1` installs the isolated Silver combat callback before the
+native Searcher2/3 dispatch.  It does not make Silver the executable default.
+The production reuse cap remains fixed at `32 * 1024`; no environment variable
+changes its size.
+
+| Variable | Effect | Default | Parse site |
+|----------|--------|---------|------------|
+| `STS_SILVER_SEARCH` | Enable isolated Silver combat search | unset/off | `main`; `SilverLiveBackend` |
+| `STS_SILVER_REUSE_CAP_MODE` | Exact-reroot cap metric: `allocated` (`allNodes.size()`) or experimental `active` (`poolUsed`); any other value fails before gameplay | `allocated` | `SilverLiveBackend::installSilverLiveBackend` |
+| `STS_SILVER_SCALING_DIAG_FILE` | Default-off per-search CSV for the reuse-cap experiment, including sequential GAMBLE/EXHAUST_MANY private subdecisions | unset/off | `SilverLiveBackend` |
+| `STS_SILVER_TELEMETRY` | Per-combat Silver aggregate telemetry line | unset/off | `SilverLiveBackend` |
+
+When Silver is enabled, `bestbench` metadata records the effective combat
+backend, reuse-cap mode and production cap, Silver upstream SHA, executable
+Git SHA, and diagnostic path.  The existing Searcher2/3 metadata remains the
+configured native setting and must not be interpreted as the active combat
+backend when this override is on.
 
 ## Searcher3 particle / ISMCTS
 
