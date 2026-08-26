@@ -4639,3 +4639,125 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   is positive but imprecise. Do not automatically expand to 64 seeds. Keep
   `allocated` as production default unless a separately authorized follow-up
   revisits the question.
+
+## Silver root-action rollout / terminal-utility diagnostic (2026-08-27)
+
+- **Question:** does the Silver-1k to Silver-3.7k scaling pattern primarily
+  reflect noisy root estimates, a systematic `SimpleAgent` rollout-policy
+  bias, or a misweighted Silver terminal utility? No policy, utility term, or
+  search parameter was changed in this experiment.
+- **Frozen implementation:** current-main baseline was
+  `3f6565113229310e7821e3d42377eee3050d4619` (already newer than the requested
+  minimum `0dd84ded8b76e788b778337eea084c312dadb9b0`). The diagnostic branch
+  ended at `e559d71377986949eca1eb17398030ea2100cf15`. The implementation adds
+  default-off root/action summaries, rollout terminal counters and exact
+  terminal-utility component accounting at the isolated Silver boundary,
+  fresh forced-action continuation references, and a stdlib analyzer. The
+  diagnostic is behavior-neutral when unset; a same-seed check matched all
+  outcome/floor/HP/death fields, with only timing differing.
+- **Selection and protocol:** 16 guarded fair-play seeds `102000..102015`,
+  one OpenMP thread, ascension 0, `STS_STOP_AFTER_ACT=1`, native OOC enabled,
+  Searcher3 flags retained but Silver combat enabled (therefore Silver's
+  isolated backend bypassed S3 combat particles), 1,000 production
+  simulations, fresh 3,700-simulation comparison, and the default model/OOC
+  stack. The diagnostic accepted the first four ordinary Silver decisions per
+  seed, producing 64 roots and 286 legal root-action rows. This is a bounded
+  early-Act-1 corpus, not a stratified boss/low-HP corpus: all roots were high
+  HP; only four had potions. Root selection was deterministic by encounter
+  order and per-seed cap, not tuned after inspecting outcomes.
+- **Reference:** for every accepted legal root action, execute that semantic
+  action in a fresh private materialized state, then run a fresh Silver
+  continuation for 5,000 simulations, repeated twice. Replicate seeds are
+  independent across replicates and shared across sibling actions (CRN
+  pairing). The forced-action reference therefore uses the same pinned
+  `SimpleAgent` and terminal utility as Silver, but removes the current root's
+  action-selection budget as the cause of the comparison. Reference values
+  aggregate the continuation root value; action order uses the maximum value,
+  with exact ties treated as co-best.
+- **Headline reference quality:** Silver-1k top-action agreement was
+  `40/64 = 62.50%`; Silver-3.7k was `46/64 = 71.875%`. Pairwise action-order
+  agreement was 1k visits `558/704 = 79.26%`, 3.7k visits
+  `578/704 = 82.10%`, 1k child-Q `564/704 = 80.11%`, and 3.7k child-Q
+  `577/704 = 81.96%`. Mean regret was `0.12845` at 1k versus `0.05659` at
+  3.7k (55.9% lower); median regret was `0` for both. The 1k and 3.7k
+  selected actions disagreed on `13/64 = 20.31%` of roots, and the mean
+  regret change was `-0.07186` (3.7k minus 1k).
+- **Margin conditioning:** reference-margin bins (mean regret 1k -> 3.7k;
+  top-action disagreement rate 1k -> 3.7k) were `<0.1`: `0.1824 -> 0.0568`,
+  `65.0% -> 60.0%` (`n=20`); `0.1..0.5`: `0.0889 -> 0.0410`,
+  `46.67% -> 26.67%` (`n=15`); `0.5..1.0`: `0.4261 -> 0.1523`,
+  `60.0% -> 20.0%` (`n=5`); and `>=1.0`: `0.0693 -> 0.0693`,
+  `6.25% -> 6.25%` (`n=16`). Thus high-margin decisions did not show a
+  broad 1k-specific failure; most residual disagreement is near the action
+  boundary, and 3.7k materially reduces it.
+- **Breakdowns:** encounter codes 1/2/3/4 had 20/20/12/12 roots and 35.0%,
+  35.0%, 41.67%, and 41.67% 1k disagreement respectively. Action types were
+  52 roots with card-selected 1k actions and 12 with END_TURN-selected 1k
+  actions; their disagreement rates were 42.31% and 16.67%. Potion-bearing
+  roots were only 4/64 (50.0% disagreement, mean regret 0.0424) versus
+  60/64 without potions (36.67%, mean regret 0.1342). Stochastic selected
+  actions were 13/64 (23.08% disagreement, mean regret 0.1974) versus 51/64
+  deterministic (41.18%, mean regret 0.1109). Fresh/no-predecessor roots had
+  16 roots and 75.0% disagreement; exact-reroot roots had 42 and 21.43%.
+  These reroot figures are descriptive only because the selection procedure
+  was early-decision biased.
+- **Rollout observations:** current 1k had 57,494 rollout calls, 57,486 wins
+  and 8 losses, mean 7.968 rollout actions and 1.757 turns; current 3.7k had
+  207,017 calls, 206,991 wins and 26 losses, mean 7.542 actions and 1.644
+  turns. Across the 2,468,974 forced-action reference rollouts there were
+  2,467,594 wins and 1,380 losses, mean 7.016 actions and 1.518 turns. The
+  current rollout terminal-loss rates were therefore 0.014% (1k) and 0.013%
+  (3.7k); the reference loss rate was 0.056%. This early corpus contains no
+  repeated rollout-policy loss mechanism.
+- **Utility decomposition:** in the forced-action references, representative
+  high-regret failures were explained by terminal HP and turn cost rather than
+  hidden utility terms. For seed 102011 / encounter 4 / decision 2, END_TURN
+  was the 1k choice at value 125.8778 while a card action was best at 128.2077:
+  the best action gained `+0.622` HP value and `+0.217` turn-penalty value.
+  For seed 102009 / encounter 1 / decision 1, the chosen card was 122.0249
+  versus reference-best 123.1335, with `+1.503` HP and `-0.124` turn-penalty
+  difference. Across the 26 raw 1k-vs-single-best disagreements, mean
+  best-minus-chosen component deltas were HP `+0.1553`, turn penalty `+0.0286`,
+  potion `+0.0252` (only 2 nonzero roots), and approximately zero for
+  death-save, gold, max-HP, parasite, monster-damage, alive, energy-waste,
+  draw, and survival terms. The latter are not a basis for a utility-term
+  change. Current rollout component totals reconstruct their scalar utility
+  sums to under `1.5e-8` absolute per recorded root, validating the
+  decomposition mirror.
+- **Offline intervention screen:** no rollout-policy or terminal-utility
+  candidate was selected. Consequently there is no before/after held-out
+  intervention metric, no candidate runtime comparison, and no gameplay gate.
+  The available evidence supports sampling/noisy root estimates as a material
+  component of the 1k weakness, but it does not isolate a narrow recurring
+  `SimpleAgent` failure or prove that any terminal-utility weight is wrong.
+  The reference itself uses the current utility, so utility correctness
+  remains an open external-validity question.
+- **Runtime:** the bounded diagnostic run took 44.1 seconds wall time for 16
+  seeds at one thread (`2.76` CPU seconds/run average) including the 5,000 x 2
+  forced-action references. It is intentionally opt-in and not a production
+  runtime change. A one-seed disabled/enabled behavior-neutral check measured
+  1.99s versus 1.97s, but its diagnostic reference budget was only 200 and is
+  not a production overhead estimate.
+- **Artifacts:** raw root-action CSV
+  `build/silver-root-corpus-full.csv`, SHA-256
+  `62ede35a7ce2bdb47baf331b19e6ed49b1773d6e5de000f442d757da0b086c3d`;
+  analyzer JSON `build/silver-root-corpus-full.json`, SHA-256
+  `8db0a25be6e5ec1e545744fdcce2f26337becac287eabe81ceacdf11e513f162`;
+  guarded run log `build/silver-root-corpus-full.log`; behavior-neutral
+  outputs `build/silver-neutral-off.csv` (SHA-256
+  `63724f511da48f31282490fe8b9341ff7522d78406b79c3dd73c879749d86d93`),
+  `build/silver-neutral-on.csv` (SHA-256
+  `1550707fc417dbd01bd133cfa4c02fafe8fb8663b37e73b2d33888a402699231`), and
+  `build/silver-neutral-root.csv` (SHA-256
+  `29aea05b469e95aa74e8a4a02e6acc733c0ac6deecdb91213afac0f7162e4f7d`).
+  The analyzer is `tools/analyze_silver_root_diagnostic.py` and can regenerate
+  the JSON from the raw CSV.
+- **Verdict:** **NO_SIMPLE_ROLLOUT_FIX.** Implementation success and
+  diagnostic/reference-quality evidence are positive. The 3.7k improvement
+  and margin dependence indicate sampling noise is real, while the observed
+  terminal traces do not identify one repeated rollout-policy or utility-term
+  mechanism that meets the prescribed offline screening rule. Do not stack a
+  heuristic, alter utility weights, introduce a VNet, or run a gameplay gate
+  from this result; a future follow-up needs a more stratified corpus and an
+  externally justified outcome reference if it is to distinguish utility
+  correctness from search-noise effects.
