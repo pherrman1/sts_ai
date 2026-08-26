@@ -7,9 +7,10 @@ Session/task: Remove repeated review, evidence, and Windows/WSL workflow costs.
 
 Add three narrow operating checks to the maintained workflow: enumerate small
 input-contract truth tables before publication, order final evidence around one
-candidate SHA without copying volatile CI state into the PR description, and
-make the Windows-Git/WSL-build boundary, per-worktree submodule initialization,
-and link-completion check explicit.
+candidate SHA without unnecessary base synchronization or copying volatile CI
+state into the PR description, and make the Windows-Git/WSL-build boundary,
+per-worktree submodule initialization, and provenance-appropriate
+link-completion check explicit.
 
 ## Rationale
 

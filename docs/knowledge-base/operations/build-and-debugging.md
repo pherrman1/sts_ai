@@ -27,16 +27,19 @@ LTO inputs. The resulting targets are:
 (`json` at `2222d386`, `pybind11` at `63d627c5`). Every fresh clone and every
 new linked worktree needs its own submodule checkout before the first configure.
 For a worktree created by Windows Git, run this from that worktree in
-PowerShell, then confirm neither entry begins with `-`:
+PowerShell:
 
 ```powershell
 git submodule update --init
 git submodule status -- json pybind11
 ```
 
-Do this before entering WSL; otherwise CMake may be the first place the missing
-headers surface, after avoidable configure work. The pybind11 module guard in
-`CMakeLists.txt` means a machine without `python3-dev` still builds the core executables;
+Each status line must begin with a space, meaning the checkout is at the commit
+pinned by the superproject. Reject `-` (uninitialized), `+` (different commit),
+or `U` (conflict). Do this before entering WSL; otherwise CMake may be the first
+place the missing headers surface, after avoidable configure work. The pybind11
+module guard in `CMakeLists.txt` means a machine without `python3-dev` still
+builds the core executables;
 check `find_package(Python)` results to know whether `slaythespire` exists.
 
 There is no reusable `sts`/`libsts.a` target; `sts_core_objects` is an internal
@@ -111,9 +114,10 @@ environment.
 
 A build line such as `Linking CXX executable one_combat` is progress, not proof
 of completion. Retain the running command/session, poll until it exits, and
-record the exit status. Before executing a newly linked binary or using it as
-provenance evidence, verify the produced path and format with `file` and record
-its digest with `sha256sum` in the same WSL/Linux environment.
+record the exit status. For ordinary compile-and-smoke-test iteration, that exit
+status and the expected executable path are sufficient; use `file` when the
+path or binary format is uncertain. Record `sha256sum` only when freezing a
+binary for benchmark or other reproducibility/provenance evidence.
 
 ### Authoritative GitHub Actions verification
 

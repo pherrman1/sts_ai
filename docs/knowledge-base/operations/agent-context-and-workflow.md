@@ -144,12 +144,20 @@ Long-run details are in [build and debugging](build-and-debugging.md).
    generated artifacts. Stage only task-scoped files. For coupled command-line
    inputs, booleans that may be explicitly false, or backend-specific required
    fields, enumerate the small truth table before publication: all present,
-   each independently omitted, all omitted, and each meaningful mismatch.
-   Exercise those states with focused negative tests instead of relying only on
-   the successful path.
+   each independently omitted, all omitted, and each meaningful mismatch. For
+   an expected boolean, cover both successful values (expected/actual true and
+   expected/actual false), omission, and both mismatch directions. Exercise
+   those states with focused tests instead of relying only on one successful
+   path.
 5. A changed handoff normally creates one focused commit. Before publishing,
    compare the committed range with the recorded baseline and confirm that
-   only task-scoped commits would be sent. If the current task created a new,
+   only task-scoped commits would be sent. Re-sync a moving base before final
+   verification only when its movement affects relevant paths or behavior,
+   mergeability, or the task decision; unrelated movement alone does not
+   justify rebuilding or repeating evidence. Tie final evidence to one
+   candidate SHA. If a later review correction changes evidence-relevant
+   behavior, repeat only the affected evidence on the corrected candidate. If
+   the current task created a new,
    non-`main` branch with no upstream, the agent may establish exactly
    `origin/<current-branch>` with `git push --set-upstream origin HEAD` only
    after all of the following are true: implementation and focused
@@ -166,15 +174,9 @@ Long-run details are in [build and debugging](build-and-debugging.md).
    the repository's PR workflow supports it. Keep the existing PR-centered
    workflow-v2 semantics: `main` receives changes through a pull request after
    the authoritative CI check passes; do not merge, approve, or bypass that
-   review path automatically.
-
-7. Order final evidence around one candidate SHA. Sync the intended baseline
-   before the final build or integration run, commit the candidate, run an
-   independent implementation review when the change has a reviewable behavior
-   contract, apply any narrow corrections, then repeat affected evidence on the
-   corrected SHA. Record exact commands and artifact paths in the PR body; for
-   long or quote-sensitive bodies, write a UTF-8 body file and pass it to the
-   GitHub CLI rather than constructing a shell-escaped inline string.
+   review path automatically. Record exact commands and artifact paths in the
+   PR body; for long or quote-sensitive bodies, write a UTF-8 body file and pass
+   it to the GitHub CLI rather than constructing a shell-escaped inline string.
 
 ### Recording and documentation
 
