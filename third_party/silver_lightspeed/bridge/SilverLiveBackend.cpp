@@ -63,7 +63,7 @@ constexpr const char *kStickyQualityHeader =
 constexpr const char *kStickyQualitySummaryHeader =
     "run_seed,floor,encounter,sticky_eligible_ordinary_decisions,selected_evaluated_decisions,excluded_transaction_subdecisions";
 constexpr const char *kRootDiagnosticHeader =
-    "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,cur_hp,max_hp,potion_count,action_type,stochastic,action_fingerprint,chosen_1k,chosen_1k_visits,chosen_1k_q,chosen_37k,chosen_37k_visits,chosen_37k_q,active_reroot_exact,active_fallback_reason,active_inherited_visits,reference_budget,reference_replicates,reference_value,reference_value_stddev,reference_rollout_win_rate,reference_rollout_actions,reference_rollout_turns,reference_rollout_calls,reference_terminal_wins,reference_terminal_losses,reference_utility_sum,reference_win_bonus,reference_hp,reference_potion,reference_turn_penalty,reference_death_save,reference_gold,reference_max_hp,reference_parasite_penalty,reference_monster_damage,reference_alive,reference_energy_waste,reference_draw,reference_survival,current_1k_rollout_calls,current_1k_terminal_wins,current_1k_terminal_losses,current_1k_rollout_actions,current_1k_rollout_turns,current_1k_utility_sum,current_37k_rollout_calls,current_37k_terminal_wins,current_37k_terminal_losses,current_37k_rollout_actions,current_37k_rollout_turns,current_37k_utility_sum";
+    "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,cur_hp,max_hp,potion_count,action_type,stochastic,action_fingerprint,chosen_1k,chosen_1k_visits,chosen_1k_q,chosen_37k,chosen_37k_visits,chosen_37k_q,active_reroot_exact,active_fallback_reason,active_inherited_visits,reference_budget,reference_replicates,reference_value,reference_value_stddev,reference_rollout_win_rate,reference_rollout_actions,reference_rollout_turns,reference_rollout_calls,reference_terminal_wins,reference_terminal_losses,reference_utility_sum,reference_win_bonus,reference_hp,reference_potion,reference_turn_penalty,reference_death_save,reference_gold,reference_max_hp,reference_parasite_penalty,reference_monster_damage,reference_alive,reference_energy_waste,reference_draw,reference_survival,current_1k_rollout_calls,current_1k_terminal_wins,current_1k_terminal_losses,current_1k_rollout_actions,current_1k_rollout_turns,current_1k_utility_sum,current_1k_win_bonus_sum,current_1k_hp_sum,current_1k_potion_sum,current_1k_turn_penalty_sum,current_1k_death_save_sum,current_1k_gold_sum,current_1k_max_hp_sum,current_1k_parasite_penalty_sum,current_1k_monster_damage_sum,current_1k_alive_sum,current_1k_energy_waste_sum,current_1k_draw_sum,current_1k_survival_sum,current_37k_rollout_calls,current_37k_terminal_wins,current_37k_terminal_losses,current_37k_rollout_actions,current_37k_rollout_turns,current_37k_utility_sum,current_37k_win_bonus_sum,current_37k_hp_sum,current_37k_potion_sum,current_37k_turn_penalty_sum,current_37k_death_save_sum,current_37k_gold_sum,current_37k_max_hp_sum,current_37k_parasite_penalty_sum,current_37k_monster_damage_sum,current_37k_alive_sum,current_37k_energy_waste_sum,current_37k_draw_sum,current_37k_survival_sum";
 
 void parseSilverLiveOptions() {
     SilverLiveOptions options;
@@ -330,9 +330,23 @@ void writeRootDiagnostics(const silver_bridge::BattleStateWire &wire,
             << low.telemetry.rolloutCalls << ',' << low.telemetry.rolloutTerminalWins << ','
             << low.telemetry.rolloutTerminalLosses << ',' << low.telemetry.rolloutActionCount << ','
             << low.telemetry.rolloutTurnDelta << ',' << low.telemetry.rolloutUtilitySum << ','
+            << low.telemetry.rolloutWinBonusSum << ',' << low.telemetry.rolloutHpSum << ','
+            << low.telemetry.rolloutPotionSum << ',' << low.telemetry.rolloutTurnPenaltySum << ','
+            << low.telemetry.rolloutDeathSaveSum << ',' << low.telemetry.rolloutGoldSum << ','
+            << low.telemetry.rolloutMaxHpSum << ',' << low.telemetry.rolloutParasitePenaltySum << ','
+            << low.telemetry.rolloutMonsterDamageSum << ',' << low.telemetry.rolloutAliveSum << ','
+            << low.telemetry.rolloutEnergyWasteSum << ',' << low.telemetry.rolloutDrawSum << ','
+            << low.telemetry.rolloutSurvivalSum << ','
             << high.telemetry.rolloutCalls << ',' << high.telemetry.rolloutTerminalWins << ','
             << high.telemetry.rolloutTerminalLosses << ',' << high.telemetry.rolloutActionCount << ','
-            << high.telemetry.rolloutTurnDelta << ',' << high.telemetry.rolloutUtilitySum << '\n';
+            << high.telemetry.rolloutTurnDelta << ',' << high.telemetry.rolloutUtilitySum << ','
+            << high.telemetry.rolloutWinBonusSum << ',' << high.telemetry.rolloutHpSum << ','
+            << high.telemetry.rolloutPotionSum << ',' << high.telemetry.rolloutTurnPenaltySum << ','
+            << high.telemetry.rolloutDeathSaveSum << ',' << high.telemetry.rolloutGoldSum << ','
+            << high.telemetry.rolloutMaxHpSum << ',' << high.telemetry.rolloutParasitePenaltySum << ','
+            << high.telemetry.rolloutMonsterDamageSum << ',' << high.telemetry.rolloutAliveSum << ','
+            << high.telemetry.rolloutEnergyWasteSum << ',' << high.telemetry.rolloutDrawSum << ','
+            << high.telemetry.rolloutSurvivalSum << '\n';
     }
     out.flush();
     if (!out) throw std::runtime_error("cannot write STS_SILVER_ROOT_DIAG_FILE: "
