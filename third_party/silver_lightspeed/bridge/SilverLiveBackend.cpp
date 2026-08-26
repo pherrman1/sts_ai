@@ -6,14 +6,19 @@
 #include "sim/search/SilverLiveBackend.h"
 
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <mutex>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SilverConversion.h"
+#include "sim/search/SilverBridge.h"
 #include "sim/search/SilverSemanticAction.h"
 
 namespace sts::search {
@@ -21,6 +26,88 @@ namespace sts::search {
 thread_local SilverLiveDiagnostics g_silverLiveDiagnostics {};
 
 namespace {
+
+struct SilverLiveOptions {
+    silver_bridge::SilverReuseCapMode reuseCapMode = silver_bridge::SilverReuseCapMode::ALLOCATED;
+    std::string scalingDiagnosticFile;
+    bool installed = false;
+};
+
+SilverLiveOptions g_silverLiveOptions;
+std::mutex g_scalingDiagnosticMutex;
+bool g_scalingDiagnosticHeaderWritten = false;
+constexpr const char *kScalingDiagnosticHeader =
+    "run_seed,floor,encounter,combat_decision_ordinal,transaction_subdecision_ordinal,turn,input_state,configured_simulations,had_predecessor,reroot_attempted,exact_candidate_found,exact_reroot,fallback,fallback_reason,configured_cap_mode,configured_cap,allocated_nodes_before_root,active_nodes_before_root,allocated_nodes_after_search,active_nodes_after_search,inherited_visits,simulations_added,nodes_created,root_visits_after_search,chosen_edge_visits";
+
+void parseSilverLiveOptions() {
+    SilverLiveOptions options;
+    if (const char *raw = std::getenv("STS_SILVER_REUSE_CAP_MODE")) {
+        const std::string mode(raw);
+        if (mode.empty() || mode == "allocated") {
+            options.reuseCapMode = silver_bridge::SilverReuseCapMode::ALLOCATED;
+        } else if (mode == "active") {
+            options.reuseCapMode = silver_bridge::SilverReuseCapMode::ACTIVE;
+        } else {
+            throw std::invalid_argument("STS_SILVER_REUSE_CAP_MODE must be 'allocated' or 'active' (got '"
+                                        + mode + "')");
+        }
+    }
+    if (const char *raw = std::getenv("STS_SILVER_SCALING_DIAG_FILE"))
+        options.scalingDiagnosticFile = raw;
+    options.installed = true;
+    g_silverLiveOptions = std::move(options);
+}
+
+struct ScalingDiagnosticRow {
+    std::uint64_t runSeed = 0;
+    int floor = 0, encounter = 0, combatDecisionOrdinal = 0, transactionSubdecisionOrdinal = -1;
+    int turn = 0, inputState = 0;
+    std::int64_t configuredSimulations = 0;
+    silver_bridge::SilverSearchDecisionDiagnostic diagnostic;
+};
+
+void writeScalingDiagnostics(const std::vector<ScalingDiagnosticRow> &rows) {
+    if (rows.empty()) return;
+    std::lock_guard<std::mutex> lock(g_scalingDiagnosticMutex);
+    bool empty = false;
+    if (!g_scalingDiagnosticHeaderWritten) {
+        std::ifstream existing(g_silverLiveOptions.scalingDiagnosticFile, std::ios::binary);
+        empty = !existing || existing.peek() == std::ifstream::traits_type::eof();
+        if (!empty) {
+            std::string header;
+            std::getline(existing, header);
+            if (header != kScalingDiagnosticHeader) {
+                throw std::runtime_error("STS_SILVER_SCALING_DIAG_FILE has an incompatible existing header: "
+                                         + g_silverLiveOptions.scalingDiagnosticFile);
+            }
+        }
+    }
+    std::ofstream out(g_silverLiveOptions.scalingDiagnosticFile, std::ios::app);
+    if (!out) throw std::runtime_error("cannot open STS_SILVER_SCALING_DIAG_FILE: "
+                                       + g_silverLiveOptions.scalingDiagnosticFile);
+    if (!g_scalingDiagnosticHeaderWritten && empty) {
+        out << kScalingDiagnosticHeader << '\n';
+    }
+    for (const auto &row : rows) {
+        const auto &d = row.diagnostic;
+        out << row.runSeed << ',' << row.floor << ',' << row.encounter << ','
+            << row.combatDecisionOrdinal << ',' << row.transactionSubdecisionOrdinal << ','
+            << row.turn << ',' << row.inputState << ',' << row.configuredSimulations << ','
+            << (d.hadPredecessor ? 1 : 0) << ',' << (d.rerootAttempted ? 1 : 0) << ','
+            << (d.exactCandidateFound ? 1 : 0) << ',' << (d.exactReroot ? 1 : 0) << ','
+            << (d.fallback ? 1 : 0) << ','
+            << silver_bridge::silverRerootFallbackReasonName(d.fallbackReason) << ','
+            << silver_bridge::silverReuseCapModeName(d.configuredCapMode) << ','
+            << d.configuredCap << ',' << d.allocatedNodesBeforeRoot << ',' << d.activeNodesBeforeRoot << ','
+            << d.allocatedNodesAfterSearch << ',' << d.activeNodesAfterSearch << ','
+            << d.inheritedVisits << ',' << d.simulationsAdded << ',' << d.nodesCreated << ',' << d.rootVisitsAfterSearch << ','
+            << d.chosenEdgeVisits << '\n';
+    }
+    out.flush();
+    if (!out) throw std::runtime_error("cannot write STS_SILVER_SCALING_DIAG_FILE: "
+                                       + g_silverLiveOptions.scalingDiagnosticFile);
+    g_scalingDiagnosticHeaderWritten = true;
+}
 
 class KnowledgeObserverScope {
 public:
@@ -50,6 +137,8 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
     result.simulationsPerDecision = isBossEncounter(bc.encounter)
         ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
         : agent.simulationCountBase;
+    result.reuseCapMode = g_silverLiveOptions.reuseCapMode;
+    result.collectDecisionDiagnostics = !g_silverLiveOptions.scalingDiagnosticFile.empty();
     return result;
 }
 
@@ -71,6 +160,16 @@ void addTelemetry(const silver_bridge::SilverSearchTelemetry &telemetry) {
     }
 }
 
+void addDecisionDiagnostic(const silver_bridge::SilverSearchDecisionDiagnostic &diagnostic) {
+    if (diagnostic.exactCandidateFound) ++g_silverLiveDiagnostics.rerootCandidateFound;
+    if (diagnostic.fallbackReason == silver_bridge::SilverRerootFallbackReason::CANDIDATE_MISSING)
+        ++g_silverLiveDiagnostics.rerootCandidateMissing;
+    if (diagnostic.fallbackReason == silver_bridge::SilverRerootFallbackReason::ALLOCATED_CAP)
+        ++g_silverLiveDiagnostics.rerootAllocatedCapBlocked;
+    if (diagnostic.fallbackReason == silver_bridge::SilverRerootFallbackReason::ACTIVE_CAP)
+        ++g_silverLiveDiagnostics.rerootActiveCapBlocked;
+}
+
 void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc) {
     CombatKnowledgeState knowledge;
     // Clear per-combat diagnostics before the observer sees initialization.
@@ -89,6 +188,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     // BattleSearcher and reroots across all subsequent real decisions.
     auto silverSession = silver_bridge::makeSilverSearchSession();
     const std::uint64_t silverBattleSeed = isolatedBattleSeed(bc);
+    const bool collectScalingDiagnostics = !g_silverLiveOptions.scalingDiagnosticFile.empty();
+    std::vector<ScalingDiagnosticRow> scalingDiagnostics;
 
     int decision = 0;
     while (bc.outcome == Outcome::UNDECIDED) {
@@ -142,6 +243,18 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             g_silverLiveDiagnostics.rerootExact += transaction.rerootExact;
             g_silverLiveDiagnostics.rerootFallback += transaction.rerootFallback;
             addTelemetry(transaction.telemetry);
+            if (collectScalingDiagnostics) {
+                if (transaction.searchDiagnostics.size()
+                        != static_cast<std::size_t>(transaction.searchDecisions)) {
+                    fail("scaling diagnostics", "transaction omitted a private search diagnostic");
+                }
+                for (std::size_t i = 0; i < transaction.searchDiagnostics.size(); ++i) {
+                    addDecisionDiagnostic(transaction.searchDiagnostics[i]);
+                    scalingDiagnostics.push_back({gc.seed, bc.floorNum, static_cast<int>(bc.encounter), decision,
+                                                  static_cast<int>(i), wire.turn, wire.inputState,
+                                                  config.simulationsPerDecision, transaction.searchDiagnostics[i]});
+                }
+            }
         } else {
             const auto result = silver_bridge::runSilverDecision(*silverSession, wire, config);
             if (!result.accepted) {
@@ -153,6 +266,12 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             g_silverLiveDiagnostics.rerootExact += result.rerootExact;
             g_silverLiveDiagnostics.rerootFallback += result.rerootFallback;
             addTelemetry(result.telemetry);
+            if (collectScalingDiagnostics) {
+                addDecisionDiagnostic(result.diagnostic);
+                scalingDiagnostics.push_back({gc.seed, bc.floorNum, static_cast<int>(bc.encounter), decision,
+                                              -1, wire.turn, wire.inputState, config.simulationsPerDecision,
+                                              result.diagnostic});
+            }
         }
 
         const auto resolved = resolveSilverSemanticAction(bc, semantic);
@@ -164,6 +283,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         agent.takeAction(bc, resolved.action);
     }
     agent.simulationCountTotal += static_cast<std::int64_t>(g_silverLiveDiagnostics.simulations);
+    if (collectScalingDiagnostics) writeScalingDiagnostics(scalingDiagnostics);
     if (const char *raw = std::getenv("STS_SILVER_TELEMETRY"); raw && std::atoi(raw) != 0) {
         const auto &d = g_silverLiveDiagnostics;
         std::cout << "[silver-combat] decisions=" << d.decisions
@@ -171,6 +291,10 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " transaction_subdecisions=" << d.transactionSubdecisions
                   << " reroot_exact=" << d.rerootExact
                   << " reroot_fallback=" << d.rerootFallback
+                  << " reroot_candidate_found=" << d.rerootCandidateFound
+                  << " reroot_candidate_missing=" << d.rerootCandidateMissing
+                  << " reroot_allocated_cap=" << d.rerootAllocatedCapBlocked
+                  << " reroot_active_cap=" << d.rerootActiveCapBlocked
                   << " nodes=" << d.nodesCreated
                   << " chance_outcomes=" << d.chanceOutcomes
                   << " chance_sibling_reuse=" << d.chanceSiblingReuse
@@ -190,7 +314,16 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
 
 } // namespace
 
-void installSilverLiveBackend() { g_externalCombatBackend = runSilverCombat; }
-void uninstallSilverLiveBackend() { g_externalCombatBackend = nullptr; }
+void installSilverLiveBackend() {
+    parseSilverLiveOptions(); // validates before the first live combat begins
+    g_externalCombatBackend = runSilverCombat;
+}
+void uninstallSilverLiveBackend() { g_externalCombatBackend = nullptr; g_silverLiveOptions.installed = false; }
+bool silverLiveBackendInstalled() { return g_silverLiveOptions.installed; }
+std::string silverLiveReuseCapMode() {
+    return silver_bridge::silverReuseCapModeName(g_silverLiveOptions.reuseCapMode);
+}
+std::int64_t silverLiveReuseCap() { return silver_bridge::kSilverProductionReuseCap; }
+std::string silverLiveScalingDiagnosticFile() { return g_silverLiveOptions.scalingDiagnosticFile; }
 
 } // namespace sts::search

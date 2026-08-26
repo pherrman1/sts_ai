@@ -94,6 +94,29 @@ int main() {
               && reuse.inheritedVisits > 0,
           "private Silver session must exact-reroot and retain prior subtree visits");
 
+    const auto capFixture = silver_bridge::probeSilverReuseCapFixture(firstWire);
+    check(capFixture.defaultEqualsExplicitAllocated,
+          "unset/default and explicit allocated reuse-cap modes must agree");
+    check(capFixture.retainedAllocationAboveCapAfterReset && capFixture.activeBelowCapAfterReset,
+          "setRoot must retain allocation while resetting active pool usage");
+    check(capFixture.allocatedCapBlocked
+              && capFixture.allocatedDiagnostic.exactCandidateFound
+              && capFixture.allocatedDiagnostic.fallbackReason
+                  == silver_bridge::SilverRerootFallbackReason::ALLOCATED_CAP,
+          "allocated mode must cap-block an exact candidate after retained allocation growth");
+    check(capFixture.activeExactReroot && capFixture.activeInheritsVisits
+              && capFixture.activeDiagnostic.fallbackReason
+                  == silver_bridge::SilverRerootFallbackReason::NONE,
+          "active mode must exact-reroot and inherit visits below the active cap");
+    check(capFixture.activeCapBlocked
+              && capFixture.activeCapDiagnostic.fallbackReason
+                  == silver_bridge::SilverRerootFallbackReason::ACTIVE_CAP,
+          "active mode must still cap-block when active pool usage reaches the cap");
+    check(capFixture.candidateMissingUnchanged,
+          "candidate-missing fallback must remain identical in both cap modes");
+    check(capFixture.handOrderMandatory && capFixture.handPermutationRejected,
+          "exact hand order must remain mandatory and reject a hand-permuted candidate");
+
     // Cross the actual boundary once: Silver emits an index-free semantic
     // action, the ordinary live simulator executes its resolved action, and
     // the next wire is materialized with the same public battle seed. This
@@ -235,6 +258,7 @@ int main() {
     const BattleContext transactionBefore = transactionLive;
     silver_bridge::SilverSearchConfig transactionConfig;
     transactionConfig.simulationsPerDecision = 16;
+    transactionConfig.collectDecisionDiagnostics = true;
     const auto transaction = silver_bridge::runSequentialSelectionTransaction(
         convert(transactionLive, gc, transactionKnowledge), transactionConfig);
     if (!transaction.accepted) {
@@ -250,6 +274,8 @@ int main() {
           && (transaction.selectedBitsAfterEachIntermediate.empty()
               || transaction.selectedBitsAfterEachIntermediate.front() != 0),
           "GAMBLE transaction must retain private selectedBits and return only a final semantic subset");
+    check(transaction.searchDiagnostics.size() == static_cast<std::size_t>(transaction.searchDecisions),
+          "GAMBLE diagnostics must contain every private search subdecision");
     check(transactionLive.inputState == transactionBefore.inputState
           && transactionLive.cardSelectInfo.cardSelectTask == transactionBefore.cardSelectInfo.cardSelectTask
           && transactionLive.cards.cardsInHand == transactionBefore.cards.cardsInHand
@@ -279,6 +305,9 @@ int main() {
           && exhaustTransaction.intermediateSelections.size()
               == exhaustTransaction.selectedBitsAfterEachIntermediate.size(),
           "EXHAUST_MANY transaction must retain the upstream private selection protocol");
+    check(exhaustTransaction.searchDiagnostics.size()
+              == static_cast<std::size_t>(exhaustTransaction.searchDecisions),
+          "EXHAUST_MANY diagnostics must contain every private search subdecision");
     check(exhaustLive.cards.cardsInHand == exhaustBefore.cards.cardsInHand
           && exhaustLive.cards.hand[0].uniqueId == exhaustBefore.cards.hand[0].uniqueId
           && exhaustLive.cards.hand[1].uniqueId == exhaustBefore.cards.hand[1].uniqueId

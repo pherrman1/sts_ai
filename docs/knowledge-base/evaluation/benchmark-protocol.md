@@ -1,6 +1,6 @@
 # Benchmark protocol
 
-Last verified: 2026-08-09 against the current working tree
+Last verified: 2026-08-26 against the current working tree
 tree (strict deterministic paired analysis + asserting vnettest, §134 audit).
 
 ## Purpose
@@ -55,7 +55,12 @@ The `bestBench` banner and adjacent source comment are now emitted from the
 parsed configuration (skip threshold, rest/win layer, shop-V, path mode, native
 OOC, searcher, threads, model paths). The `.meta.json` JSON-lines sidecar is
 machine-readable provenance; use it plus observed load messages rather than the
-banner alone.
+banner alone.  When `STS_SILVER_SEARCH=1` overrides combat selection, the
+sidecar explicitly records `config.effectiveCombatBackend="silver"`, the
+effective Silver reuse-cap mode and fixed production cap, pinned Silver SHA,
+current executable Git SHA, and any scaling-diagnostic output path.  Native
+Searcher2/3 fields still describe configuration, not the effective combat
+backend in that override regime.
 
 ## Invariants and assumptions
 
