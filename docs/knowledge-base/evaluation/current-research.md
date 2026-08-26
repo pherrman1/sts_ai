@@ -60,7 +60,10 @@ artifact.
   20/32 versus allocated 21/32, and floor was directionally lower. Allocated
   remains the production default. Do not run an active-mode 64-seed promotion
   gate or optimize its runtime yet. The next narrow question is decision
-  quality on cap-fallback states against a high-budget fresh-root reference.
+  quality on cap-fallback states against a high-budget fresh-root reference. A
+  default-off implementation now records deterministically sampled ordinary
+  sticky states and isolated fresh 3,700/25,000/50,000-search comparisons; it
+  awaits independent review before the specified 16-seed collection.
   See [the experiment evidence](../../experiments/evidence/silver_reuse_cap_scaling_2026-08-26.json)
   and [ledger-06](../../experiments/ledger-06.md).
 - Infinite-combo-aware search steering: investigation completed, but no active
