@@ -278,6 +278,13 @@ SemanticAction semanticFromAction(const sts::BattleContext &state, const sts::se
     }
 }
 
+std::string cardFingerprint(const CardWire &card) {
+    return std::to_string(card.id) + "_" + std::to_string(card.uniqueId) + "_"
+        + std::to_string(card.specialData) + "_" + std::to_string(card.cost) + "_"
+        + std::to_string(card.costForTurn) + "_" + std::to_string(card.upgraded ? 1 : 0) + "_"
+        + std::to_string(card.freeToPlayOnce ? 1 : 0) + "_" + std::to_string(card.retain ? 1 : 0);
+}
+
 bool sameOutsideSequentialSelection(const sts::BattleContext &before, const sts::BattleContext &after) {
     // The only allowed state change is the private selection UI state.  This
     // catches accidental card movement, combat effects, chance consumption,
@@ -430,6 +437,28 @@ const char *silverRerootFallbackReasonName(SilverRerootFallbackReason reason) {
     return "invalid";
 }
 
+std::string semanticActionFingerprint(const SemanticAction &action) {
+    // Delimiters are deliberately restricted to characters that do not occur
+    // in a numeric field.  The CSV root-summary encoding can consequently use
+    // '@' and ';' without a second action abstraction or lossy escaping.
+    std::ostringstream out;
+    out << "sa/t=" << static_cast<unsigned>(action.type)
+        << "/s=" << static_cast<unsigned>(action.source)
+        << "/c=" << cardFingerprint(action.card)
+        << "/o=" << action.optionCardId
+        << "/p=" << action.potionId << '_' << action.potionSlot
+        << "/x=" << action.target
+        << "/d=" << (action.discardPotion ? 1 : 0)
+        << "/k=" << (action.skipCardSelect ? 1 : 0)
+        << "/task=" << action.cardSelectTask
+        << "/sel=";
+    for (std::size_t i = 0; i < action.selectedCards.size(); ++i) {
+        if (i != 0) out << '+';
+        out << cardFingerprint(action.selectedCards[i]);
+    }
+    return out.str();
+}
+
 class SilverSearchSession {
 public:
     sts::GameContext runContext;
@@ -443,6 +472,7 @@ public:
     sts::search::SearchStats searchStatsBefore {};
     SilverSearchDecisionDiagnostic decisionDiagnostic {};
     bool collectDecisionDiagnostics = false;
+    std::vector<SilverRootActionSummary> rootActionSummaries;
 
     void configure(const SilverSearchConfig &config) {
         searcher->explorationParameter = config.explorationParameter;
@@ -548,6 +578,7 @@ public:
 
     const sts::search::BattleSearcher::Edge *searchAndChoose(const SilverSearchConfig &config,
                                                                std::int64_t &simulations) {
+        rootActionSummaries.clear();
         searchStatsBefore = searcher->stats;
         const auto before = searchStatsBefore.steps;
         searcher->search(config.simulationsPerDecision);
@@ -566,6 +597,20 @@ public:
         std::int32_t visits = -1;
         for (const auto &edge : searcher->root->edges) {
             if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
+            if (config.collectRootActionSummaries) {
+                SilverRootActionSummary summary;
+                summary.action = semanticFromAction(searcher->root->state, edge.action);
+                summary.edgeVisits = edge.visitCount;
+                if (edge.node != nullptr) {
+                    summary.childSimulations = edge.node->simulationCount;
+                    summary.childEvaluationSum = edge.node->evaluationSum;
+                    if (edge.node->simulationCount > 0) {
+                        summary.selectionQValid = true;
+                        summary.selectionQ = edge.node->evaluationSum / edge.node->simulationCount;
+                    }
+                }
+                rootActionSummaries.push_back(std::move(summary));
+            }
         }
         previousBest = best;
         if (collectDecisionDiagnostics) {
@@ -856,6 +901,7 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
         }
         const auto *best = session.searchAndChoose(config, result.simulations);
         result.telemetry = telemetryDelta(session.searcher->stats, session.searchStatsBefore);
+        if (config.collectRootActionSummaries) result.rootActionSummaries = session.rootActionSummaries;
         if (config.collectDecisionDiagnostics) result.diagnostic = session.decisionDiagnostic;
         if (best == nullptr) return result;
         result.action = semanticFromAction(state, best->action);

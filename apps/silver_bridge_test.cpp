@@ -117,6 +117,47 @@ int main() {
     check(capFixture.handOrderMandatory && capFixture.handPermutationRejected,
           "exact hand order must remain mandatory and reject a hand-permuted candidate");
 
+    // The quality probe compares existing index-free values, never private
+    // Silver indices.  A root summary exposes the exact visit rank and UCB
+    // child-Q statistic without changing the searcher's selection algorithm.
+    silver_bridge::SilverSearchConfig qualityConfig;
+    qualityConfig.simulationsPerDecision = 16;
+    qualityConfig.collectDecisionDiagnostics = true;
+    qualityConfig.collectRootActionSummaries = true;
+    const auto qualityFresh = silver_bridge::runSilverDecision(firstWire, qualityConfig);
+    const auto qualityFingerprint = silver_bridge::semanticActionFingerprint(qualityFresh.action);
+    bool chosenInSummary = false;
+    for (const auto &summary : qualityFresh.rootActionSummaries) {
+        chosenInSummary = chosenInSummary || silver_bridge::semanticActionFingerprint(summary.action) == qualityFingerprint;
+    }
+    check(qualityFresh.accepted && qualityFresh.inheritedVisits == 0
+              && qualityFresh.simulations == 16 && !qualityFingerprint.empty() && chosenInSummary,
+          "fresh quality search must have zero inherited visits and describe its chosen semantic root action");
+
+    silver_bridge::SemanticAction fingerprintCard = qualityFresh.action;
+    fingerprintCard.type = silver_bridge::SemanticActionType::CARD;
+    fingerprintCard.card.uniqueId += 1;
+    silver_bridge::SemanticAction fingerprintTarget = fingerprintCard;
+    fingerprintTarget.card.uniqueId -= 1;
+    fingerprintTarget.target += 1;
+    silver_bridge::SemanticAction fingerprintPotion;
+    fingerprintPotion.type = silver_bridge::SemanticActionType::POTION;
+    fingerprintPotion.potionId = static_cast<std::int16_t>(Potion::FIRE_POTION);
+    fingerprintPotion.potionSlot = 0; fingerprintPotion.target = 1;
+    auto fingerprintDiscard = fingerprintPotion; fingerprintDiscard.discardPotion = true;
+    silver_bridge::SemanticAction fingerprintSelect;
+    fingerprintSelect.type = silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
+    fingerprintSelect.source = silver_bridge::CardSource::CARD_SELECT_OPTION;
+    fingerprintSelect.optionCardId = static_cast<std::int16_t>(CardId::BASH);
+    fingerprintSelect.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::DISCOVERY);
+    check(silver_bridge::semanticActionFingerprint(fingerprintCard)
+                  != silver_bridge::semanticActionFingerprint(fingerprintTarget)
+              && silver_bridge::semanticActionFingerprint(fingerprintPotion)
+                  != silver_bridge::semanticActionFingerprint(fingerprintDiscard)
+              && silver_bridge::semanticActionFingerprint(fingerprintPotion)
+                  != silver_bridge::semanticActionFingerprint(fingerprintSelect),
+          "semantic fingerprints must distinguish card UID/target, potion discard, and card-select semantics");
+
     // Cross the actual boundary once: Silver emits an index-free semantic
     // action, the ordinary live simulator executes its resolved action, and
     // the next wire is materialized with the same public battle seed. This
@@ -126,12 +167,29 @@ int main() {
     auto boundaryLive = first;
     auto boundarySession = silver_bridge::makeSilverSearchSession();
     const auto firstBoundaryDecision = silver_bridge::runSilverDecision(*boundarySession, firstWire, reuseConfig);
+    const auto activeFingerprintBeforeShadows = silver_bridge::semanticActionFingerprint(firstBoundaryDecision.action);
+    silver_bridge::SilverSearchConfig tinyShadow = reuseConfig;
+    tinyShadow.collectDecisionDiagnostics = true;
+    tinyShadow.simulationsPerDecision = 4;
+    const auto tinyFresh = silver_bridge::runSilverDecision(firstWire, tinyShadow);
+    tinyShadow.simulationsPerDecision = 6;
+    const auto tinyRef25 = silver_bridge::runSilverDecision(firstWire, tinyShadow);
+    tinyShadow.simulationsPerDecision = 8;
+    tinyShadow.collectRootActionSummaries = true;
+    const auto tinyRef50 = silver_bridge::runSilverDecision(firstWire, tinyShadow);
     const auto firstBoundaryAction = search::resolveSilverSemanticAction(
         boundaryLive, firstBoundaryDecision.action);
     check(firstBoundaryDecision.accepted
               && firstBoundaryDecision.action.type == silver_bridge::SemanticActionType::CARD
               && firstBoundaryAction.ok,
           "first real-boundary Silver decision must be a resolvable deterministic card action");
+    check(tinyFresh.accepted && tinyRef25.accepted && tinyRef50.accepted
+              && tinyFresh.inheritedVisits == 0 && tinyRef25.inheritedVisits == 0 && tinyRef50.inheritedVisits == 0
+              && tinyFresh.simulations == 4 && tinyRef25.simulations == 6 && tinyRef50.simulations == 8
+              && !tinyRef50.rootActionSummaries.empty()
+              && activeFingerprintBeforeShadows
+                  == silver_bridge::semanticActionFingerprint(firstBoundaryDecision.action),
+          "fresh shadow searches must use requested budgets, retain no visits, and leave the ACTIVE result value unchanged");
     if (firstBoundaryDecision.accepted && firstBoundaryAction.ok) {
         search::ScumSearchAgent2 executor;
         executor.takeAction(boundaryLive, firstBoundaryAction.action);

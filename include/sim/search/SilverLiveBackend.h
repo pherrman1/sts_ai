@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace sts::search {
 
@@ -30,6 +31,8 @@ struct SilverLiveDiagnostics {
     std::uint64_t wideningCapped = 0;
     std::uint64_t depthSum = 0;
     std::uint64_t chanceDepthSum = 0;
+    // Default-off test trace.  It is never populated in production runs.
+    std::vector<std::string> actionFingerprints;
 };
 
 extern thread_local SilverLiveDiagnostics g_silverLiveDiagnostics;
@@ -47,6 +50,19 @@ bool silverLiveBackendInstalled();
 std::string silverLiveReuseCapMode();
 std::int64_t silverLiveReuseCap();
 std::string silverLiveScalingDiagnosticFile();
+std::string silverLiveStickyQualityFile();
+
+// Stable deterministic sampler used only by STS_SILVER_STICKY_QUALITY_FILE.
+// It hashes the documented public decision identity and consumes no RNG.
+bool silverStickyQualitySampled(std::uint64_t runSeed, int floor, int encounter,
+                                int combatDecisionOrdinal);
+
+// Focused-test-only controls.  They have no environment variable and are
+// ignored unless a test explicitly sets all three positive budgets.
+void setSilverStickyQualityTestBudgetsForTest(std::int64_t fresh,
+                                              std::int64_t ref25,
+                                              std::int64_t ref50);
+void setSilverLiveActionTraceForTest(bool enabled);
 
 } // namespace sts::search
 

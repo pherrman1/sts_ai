@@ -4846,6 +4846,8 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.executableGitSha = trainingGitValue("git rev-parse HEAD");
         meta.silverScalingDiagnosticFile = meta.silverSearchEnabled
             ? search::silverLiveScalingDiagnosticFile() : "";
+        meta.silverStickyQualityFile = meta.silverSearchEnabled
+            ? search::silverLiveStickyQualityFile() : "";
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = search::g_useVNet ? "ON" : "off";
@@ -13226,8 +13228,15 @@ int main(int argc, char **argv) {
         search::g_useSearcher3 = std::atoi(d) != 0;
         if (search::g_useSearcher3) std::cout << "[Searcher3 engine ON: belief/prune/chain/live (CRN opt-in)]\n";
     }
-    if (const char *d = std::getenv("STS_SILVER_SEARCH")) {
-        if (std::atoi(d) != 0) {
+    const char *silverSearchEnv = std::getenv("STS_SILVER_SEARCH");
+    const bool silverSearchRequested = silverSearchEnv && std::atoi(silverSearchEnv) != 0;
+    if (const char *qualityFile = std::getenv("STS_SILVER_STICKY_QUALITY_FILE")) {
+        if (*qualityFile != '\0' && !silverSearchRequested) {
+            throw std::invalid_argument(
+                "STS_SILVER_STICKY_QUALITY_FILE requires STS_SILVER_SEARCH=1");
+        }
+    }
+    if (silverSearchRequested) {
             // The external callback takes precedence before ScumSearchAgent2
             // enters either Searcher2 or Searcher3. It owns local Silver
             // randomness and therefore never constructs an S3 Belief.
@@ -13235,7 +13244,6 @@ int main(int argc, char **argv) {
             std::cout << "[isolated Silver combat backend ON: local Silver RNG/chance search; Searcher3 particles bypassed; reuse-cap="
                       << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
                       << "]\n";
-        }
     }
     // STS_LIVE_VALID (Phase 4, fair-tree structural fix): env opt-in as
     // recorded in §122, or default ON for the Searcher3 fair-play regime
