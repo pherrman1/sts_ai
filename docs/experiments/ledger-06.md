@@ -4568,3 +4568,74 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   The combined analyzer report is ignored local
   `build/gcp_formal_36065ae/d0_d1_t1_x1_analysis.{json,md}` and its hashes are
   recorded in the evidence manifest.
+
+## Silver no-tree-reuse screening experiment (2026-08-27)
+
+- **Question:** is Silver stronger and/or more efficient when the prior search
+  tree is discarded after every live decision? The control was the production
+  `allocated` reuse mode; the treatment was `none`, which fresh-resets the
+  existing `BattleSearcher` root and statistics at every decision.
+- **Hypothesis and decision rule:** no reuse was hypothesized to avoid stale or
+  misaligned inherited statistics. Recommend a fresh 64-seed promotion gate
+  only if `none` is no more than 5% slower and is directionally nonnegative
+  (`wins >= allocated` and mean floor delta >= 0). Stop as harmful only for a
+  clear gameplay regression, especially a negative floor delta whose 95%
+  bootstrap interval is entirely below zero. Otherwise report
+  **INCONCLUSIVE** and do not automatically expand.
+- **Frozen implementation:** reviewed source SHA
+  `6e908b5800d04af663e62d61d713ddfb5813f2e4` (PR #64), merged current-main
+  baseline `5a84fc542d1a4d1f3b55caf68b44fce8738e1d87`; source archive SHA-256
+  `5acc352b220cbe0d231fe86d6fcad30830920e46b08fc60fde90d13d3f6e70d3`;
+  remote Release `one_combat` SHA-256
+  `8ee7b69b446c9424efe82278d78b498dcad3b04421e46d0b1a3f616682c1b760`.
+- **Protocol:** designated GCP `sts-test` host class, 24 OpenMP threads,
+  `OMP_DYNAMIC=FALSE`, ascension 0, Act-3 endpoint, fair-play Searcher3,
+  isolated Silver combat backend, 64 Searcher3 particles, base Silver budget
+  3700 simulations per decision, `STS_COLLECT_KEYS=0`, same default boss/OOC
+  stack, same binary and models, and no telemetry or scaling diagnostics.
+  The exact common environment was
+  `STS_FAIR=1 STS_SEARCHER3=1 STS_SILVER_SEARCH=1 STS_COLLECT_KEYS=0
+  OMP_NUM_THREADS=24 OMP_DYNAMIC=FALSE`, with only
+  `STS_SILVER_REUSE_CAP_MODE=allocated|none` changed between arms. Seeds were
+  paired as `944000..944031` (32 runs per arm). The pinned submodules were
+  `json=2222d386c905e6a6ebf73c61571a8a2cf196e843` and
+  `pybind11=63d627c5747befad7720a43ebbe5614fd5d83247`; model hashes were
+  `v_rich_trees.txt=c866b62512bb7cf8abdebc6175415508cb667fe2d628198ac107fd35591a9447`,
+  `v_win_trees.txt=724a75ccc4bc2394306181db229aa2295433450f9596f1bc1479083dda337e35`,
+  and `policy_trees_c.txt=43c9dbddbebe52b4dce961b9376fcb76c1ac72a735caf161b646be0fa34f1a55`.
+- **Results:** allocated won 19/32 (59.4%); none won 17/32 (53.1%). There
+  were 5 allocated-only wins and 3 none-only wins, with 14 both wins and 10
+  both losses. The exact two-sided McNemar/binomial test on the 8 discordant
+  pairs was `p=0.7265625`. Mean paired floor delta (none - allocated) was
+  `-0.21875`, seed-bootstrap 95% CI `[-2.875, +2.6875]`. Mean paired final-HP
+  delta was `+3.03125`, seed-bootstrap 95% CI `[-5.9375, +12.5625]`.
+- **Efficiency:** mean runtime was 49.219534 seconds/run for allocated and
+  56.202050 seconds/run for none, a paired delta of `+6.982516` seconds/run
+  and relative change of `+14.19%`. The seed-bootstrap 95% CI for the runtime
+  delta was `[+1.735219, +12.480201]` seconds/run. Thus none failed the
+  preregistered no-more-than-5%-slower screening criterion.
+- **Artifacts and analysis:** raw control CSV SHA-256
+  `fb10e450af72762925539a2d7ef2f1a4d3c083fd98c228420ed8c023a6a7c340`;
+  treatment CSV SHA-256
+  `265b9fed4516a54172c951410535f0f3156dad0989c6d8910ce960b8277643fa`;
+  control sidecar SHA-256
+  `223a1a3436e59a314fac4ba3c10fe08cbb9d55f19f1ba80a0736d2ba05bd8190`;
+  treatment sidecar SHA-256
+  `bcc460b559a66a77cd28f7f5ddf420f0e3fdfcb196d234a8115fdca1826b8595`.
+  Local ignored copies are under `build/silver-no-reuse-6e908b5/`; the remote
+  raw files and logs are under
+  `/home/philippherrmann/silver-no-reuse-6e908b5/`.
+- **Provenance caveat:** the sidecars correctly record the effective backend,
+  Silver mode, Silver upstream SHA, models, flags, budget, threads, and seed
+  block. Their `executableGitSha` is the pre-existing remote dirty-checkout
+  SHA `a93b3c68fc4efaaf9e9858d7aca571baac1a68d4`, because the guarded launcher
+  starts commands from the host staging checkout while the frozen binary was
+  built from the isolated archive. The frozen source archive hash and remote
+  binary hash above are the authoritative executable provenance for this run;
+  do not treat the sidecar executable-SHA field as an independent check.
+- **Verdict:** **IMPLEMENTATION PASS; NONE SLOWER; GAMEPLAY INCONCLUSIVE;
+  SCREENING INCONCLUSIVE.** The lower win count and slower runtime do not meet
+  the promotion rule, but the floor interval includes zero and the HP result
+  is positive but imprecise. Do not automatically expand to 64 seeds. Keep
+  `allocated` as production default unless a separately authorized follow-up
+  revisits the question.

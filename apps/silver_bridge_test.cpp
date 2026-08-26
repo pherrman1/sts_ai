@@ -116,6 +116,12 @@ int main() {
           "candidate-missing fallback must remain identical in both cap modes");
     check(capFixture.handOrderMandatory && capFixture.handPermutationRejected,
           "exact hand order must remain mandatory and reject a hand-permuted candidate");
+    check(capFixture.noneDisablesReuse,
+          "none mode must reset through the fresh-root path without candidate matching");
+    check(capFixture.noneReportsDisabled,
+          "none mode must report reuse_disabled rather than candidate-missing or cap-blocked");
+    check(capFixture.noneFreshRootBudget,
+          "none mode must execute the exact requested fresh-search simulation budget");
 
     // The quality probe compares existing index-free values, never private
     // Silver indices.  A root summary exposes the exact visit rank and UCB
@@ -343,6 +349,24 @@ int main() {
           && transactionLive.cardRandomRng.counter == transactionBefore.cardRandomRng.counter
           && transactionLive.shuffleRng.counter == transactionBefore.shuffleRng.counter,
           "private sequential selection transaction must not mutate live state or live RNG");
+
+    auto noneTransactionConfig = transactionConfig;
+    noneTransactionConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
+    const auto noneTransaction = silver_bridge::runSequentialSelectionTransaction(
+        convert(transactionLive, gc, transactionKnowledge), noneTransactionConfig);
+    const bool nonePrivateFresh = noneTransaction.accepted && noneTransaction.finalConfirmation
+        && noneTransaction.totalSimulations
+            == noneTransaction.searchDecisions * noneTransactionConfig.simulationsPerDecision
+        && std::all_of(noneTransaction.searchDiagnostics.begin(), noneTransaction.searchDiagnostics.end(),
+                       [](const auto &diagnostic) {
+                           return diagnostic.inheritedVisits == 0
+                               && !diagnostic.exactReroot
+                               && diagnostic.fallback
+                               && diagnostic.fallbackReason
+                                   == silver_bridge::SilverRerootFallbackReason::REUSE_DISABLED;
+                       });
+    check(nonePrivateFresh,
+          "NONE sequential private selections must fresh-reset every subdecision at full budget");
 
     BattleContext exhaustLive = first;
     exhaustLive.cards.cardsInHand = 2;
