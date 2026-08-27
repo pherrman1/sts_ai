@@ -6,6 +6,9 @@ Baseline: PR #66 merge `9f2d67d71f095425457fdb2a91eb1a0a8660a85b`
 
 Reviewed implementation SHA before gameplay: `3729624a683e66aba62f9f04c86c0fa80d10c08e`
 
+Corrected implementation SHA after the narrow semantic-bridge fix and CI:
+`eefddd62829c192d3d67eb774f38cba9bac123fd`
+
 ## Decision
 
 Test a single default-off two-tier Silver allocation rule: search to 1,000
@@ -79,6 +82,45 @@ The unsupported card-select task is therefore recorded as a separate live
 integration blocker, not as evidence against the uncertainty signal or its
 allocation rule.
 
+## Correctness fix and budget-comparable rerun
+
+The failed seeds were reproduced through `tools/seed_guard.sh` using the
+pre-fix release binary. Seeds `102026`, `102028`, `102035`, and `102039`
+aborted with `unsupported Silver card-select task=6`; `CardSelectTask::6` is
+`EXHAUST_MANY`. The corresponding live action surface is the sequential
+hand-card single-pick step. `selectSource()` had mapped the other hand tasks
+but omitted `EXHAUST_MANY` and `GAMBLE`, so adaptive root-action summaries
+could throw while serializing an otherwise valid visible hand selection.
+
+The fix adds only those two task cases to the existing `CardSource::HAND`
+mapping. It carries visible card identity across the existing semantic bridge
+and does not expose hidden pile/order state or broaden CardSelectTask support.
+The existing adaptive sequential transaction test exercises the corrected
+summary path, exact continuation accounting, inherited reroot state, and
+private confirmation behavior.
+
+Authoritative CI passed at corrected SHA `eefddd62829c192d3d67eb774f38cba9bac123fd`
+(`Linux GCC`, 72/72 tests). The release binary then reran the originally
+planned paired gate on seeds `102024--102039` with
+`STS_SILVER_EXACT_ROOT_BUDGETS=1` in both arms, fair play, Searcher3,
+ordinary Silver, 8 threads, and the same model/configuration.
+
+| Arm | Wins | Mean floor | Median floor | Mean ending HP | Median HP | Mean sec/run |
+|---|---:|---:|---:|---:|---:|---:|
+| fixed 1k | 7/16 (43.8%) | 45.63 | 50 | 22.31 | 0 | 18.76 |
+| adaptive 1k->3.7k | 7/16 (43.8%) | 44.56 | 49 | 19.31 | 0 | 25.94 |
+
+The arms had six discordant win/loss pairs, but zero net win-rate change;
+paired mean deltas were `-1.06` floors and `-3.00` ending HP for adaptive
+minus control. Telemetry totals were 7,083,000 control simulations over
+7,134 root/private decisions (992.9 per root decision) and 12,526,100
+adaptive simulations over 6,798 root/private decisions (1,842.6 per root
+decision). Adaptive escalated 2,143 of those root/private decisions (31.5%).
+All completed telemetry reported zero conversion, semantic-resolution,
+transaction, and knowledge failures. This small gate validates that the
+correctness crash is fixed, but it does not establish a gameplay benefit or
+promotion case; the verdict remains `INCONCLUSIVE`.
+
 ## Checks and artifacts
 
 Focused checks passed:
@@ -90,9 +132,13 @@ analyze_silver_adaptive_selftest PASS
 git diff --check PASS (only existing LF/CRLF conversion warnings)
 ```
 
-The 16-seed control passed with zero conversion, semantic-resolution,
-transaction, and knowledge failures. The adaptive treatment had no valid
-result and therefore no win-rate comparison.
+The first 16-seed control/treatment attempt had no valid adaptive result. The
+corrected exact-budget rerun completed both arms with zero conversion,
+semantic-resolution, transaction, and knowledge failures. The local paired
+CSV summary was checked by seed against the strict ten-column schema. The
+repository paired analyzer could not run in this WSL checkout because the
+newly created local NumPy installation lacked its runtime `random` module;
+authoritative CI passed the analyzer self-tests.
 
 Raw artifacts are retained under the ignored `build-adaptive-release/`:
 
@@ -117,12 +163,25 @@ Raw artifacts are retained under the ignored `build-adaptive-release/`:
 - `silver-adaptive-gate16-treatment2-20260827.log` —
   `2EC9CD8E2DA16E37BEB343C44B0FA2CEE1862352EE5133AF74F5F8D2AE2A2782`
 
+Additional raw artifacts from the corrected exact-budget rerun are retained
+under the ignored `build-adaptive-release/`:
+
+- `silver-adaptive-gate16-control-exact-20260827-results.csv`:
+  `274D9AB53C232547580D0DE2ADE9293A95F4514310C2C260D7B2B5EA081C7F24`
+- `silver-adaptive-gate16-control-exact-20260827.log`:
+  `2014D5C3F22F45C1F0D6AFD944EF7491465A5A709C2BA2CA49165436D7549B33`
+- `silver-adaptive-gate16-treatment-exact-20260827-results.csv`:
+  `2468D6BA52547B76214449CE57C4370E30480B8336BFB3909D8A4E7588072109`
+- `silver-adaptive-gate16-treatment-exact-20260827.log`:
+  `8248EEEF32AD7F24A1468C86D6F8060020CC7F385D7FB2D758F44207C58AC7A4`
+
 ## Verdict
 
 **INCONCLUSIVE.** The single signal and rule pass the bounded offline screen,
 but the paired live gate is invalid: the treatment aborted on an unsupported
 card-select task and the attempted arms were not budget-comparable at bosses.
-The rule is not promoted. Do not add a convergence controller or run a larger
-gameplay sweep from this result. A future gate requires the separate
-card-select bridge work, explicit exact root budgets for both arms, and the
-focused reuse/sequential checks recorded by the review correction.
+The exact-budget 16-seed rerun completed after the narrow
+`EXHAUST_MANY`/`GAMBLE` semantic mapping, but showed no net win-rate
+improvement and slightly worse mean floor/ending HP for adaptive at this noisy
+sample. The rule is not promoted. Do not add a convergence controller or run a
+larger gameplay sweep from this result without review.

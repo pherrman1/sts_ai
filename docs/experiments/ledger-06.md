@@ -4825,6 +4825,18 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   the arms were not budget-comparable. A future gate must set
   `STS_SILVER_EXACT_ROOT_BUDGETS=1` identically for both arms. A narrow
   fallback attempt was reverted after reproducing the failure.
+- **Bridge correction and rerun:** the failed seeds were reproduced as
+  `CardSelectTask::EXHAUST_MANY` (enum value 6). The narrow fix maps the two
+  sequential hand-pick tasks, `EXHAUST_MANY` and `GAMBLE`, to the existing
+  visible `HAND` semantic source; no broader CardSelectTask support was added.
+  CI passed at `eefddd62829c192d3d67eb774f38cba9bac123fd`. With
+  `STS_SILVER_EXACT_ROOT_BUDGETS=1` in both arms, the corrected 16-seed rerun
+  completed: fixed 1k and adaptive both won 7/16; mean floor was 45.63 versus
+  44.56, mean ending HP 22.31 versus 19.31, and mean runtime 18.76 versus
+  25.94 seconds/run. Control/adaptive telemetry was 7,083,000/12,526,100
+  simulations, or 992.9/1,842.6 per root/private decision; adaptive escalated
+  31.5%. The result validates the crash fix but does not show a gameplay
+  benefit, so the verdict remains `INCONCLUSIVE`.
 - **Artifacts:** see
   `docs/knowledge-base/decision-log/2026-08-27-silver-adaptive-search.md`
   for raw artifact paths and SHA-256 hashes.
