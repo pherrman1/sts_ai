@@ -1,6 +1,7 @@
 // Focused live->wire->isolated-Silver boundary tests.  This executable has a
 // separate link closure so ordinary unit-test never links the full vendor model.
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 
 #include "combat/BattleContext.h"
@@ -139,6 +140,55 @@ int main() {
     check(qualityFresh.accepted && qualityFresh.inheritedVisits == 0
               && qualityFresh.simulations == 16 && !qualityFingerprint.empty() && chosenInSummary,
           "fresh quality search must have zero inherited visits and describe its chosen semantic root action");
+
+    // The adaptive API must be a strict two-tier continuation of the same
+    // private root.  A zero threshold is the no-escalation boundary; the
+    // threshold equal to the observed share is also non-escalating because
+    // the policy deliberately escalates only below the threshold.
+    silver_bridge::SilverSearchConfig adaptiveConfig;
+    adaptiveConfig.simulationsPerDecision = 16;
+    adaptiveConfig.adaptiveEnabled = true;
+    adaptiveConfig.adaptiveInitialSimulations = 16;
+    adaptiveConfig.adaptiveTotalSimulations = 32;
+    adaptiveConfig.adaptiveTopTwoVisitGapThreshold = 0.0;
+    adaptiveConfig.collectRootActionSummaries = true;
+    adaptiveConfig.collectDecisionDiagnostics = true;
+    const auto noEscalation = silver_bridge::runSilverDecision(firstWire, adaptiveConfig);
+    check(noEscalation.accepted && noEscalation.simulations == 16
+              && !noEscalation.adaptiveEscalated
+              && noEscalation.initialActionFingerprint
+                  == silver_bridge::semanticActionFingerprint(noEscalation.action)
+              && noEscalation.diagnostic.adaptiveEnabled
+              && !noEscalation.diagnostic.adaptiveEscalated,
+          "adaptive confidence path must return the exact initial-budget action without continuation");
+    if (noEscalation.rootUncertainty.valid) {
+        auto boundaryConfig = adaptiveConfig;
+        boundaryConfig.adaptiveTopTwoVisitGapThreshold = noEscalation.rootUncertainty.topTwoVisitGapShare;
+        const auto boundary = silver_bridge::runSilverDecision(firstWire, boundaryConfig);
+        check(boundary.accepted && boundary.simulations == 16 && !boundary.adaptiveEscalated,
+              "adaptive threshold equality must remain on the confidence side of the boundary");
+    }
+
+    auto escalationConfig = adaptiveConfig;
+    escalationConfig.adaptiveTopTwoVisitGapThreshold = 1.0;
+    const auto escalated = silver_bridge::runSilverDecision(firstWire, escalationConfig);
+    check(escalated.accepted && escalated.adaptiveEscalated
+              && escalated.simulations == 32
+              && escalated.diagnostic.simulationsAdded == 32
+              && escalated.diagnostic.rootVisitsAfterSearch == 32,
+          "adaptive uncertainty path must continue the existing root to exactly the total budget");
+
+    auto disabledConfig = adaptiveConfig;
+    disabledConfig.adaptiveEnabled = false;
+    disabledConfig.collectRootActionSummaries = false;
+    disabledConfig.collectDecisionDiagnostics = false;
+    const auto disabled = silver_bridge::runSilverDecision(firstWire, disabledConfig);
+    auto legacyConfig = disabledConfig;
+    const auto legacy = silver_bridge::runSilverDecision(firstWire, legacyConfig);
+    check(disabled.accepted && legacy.accepted && disabled.simulations == 16
+              && silver_bridge::semanticActionFingerprint(disabled.action)
+                  == silver_bridge::semanticActionFingerprint(legacy.action),
+          "disabled adaptive configuration must preserve the existing production decision");
 
     silver_bridge::SemanticAction fingerprintCard = qualityFresh.action;
     fingerprintCard.type = silver_bridge::SemanticActionType::CARD;

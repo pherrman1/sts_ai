@@ -39,6 +39,8 @@ struct SilverLiveOptions {
     int rootDiagnosticMaxPerSeed = 8;
     std::int64_t rootDiagnosticReferenceBudget = 25000;
     int rootDiagnosticReplicates = 2;
+    bool adaptiveEnabled = false;
+    double adaptiveTopTwoVisitGapThreshold = 0.094;
     bool installed = false;
 };
 
@@ -63,7 +65,7 @@ constexpr const char *kStickyQualityHeader =
 constexpr const char *kStickyQualitySummaryHeader =
     "run_seed,floor,encounter,sticky_eligible_ordinary_decisions,selected_evaluated_decisions,excluded_transaction_subdecisions";
 constexpr const char *kRootDiagnosticHeader =
-    "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,cur_hp,max_hp,potion_count,action_type,stochastic,action_fingerprint,chosen_1k,chosen_1k_visits,chosen_1k_q,chosen_37k,chosen_37k_visits,chosen_37k_q,active_reroot_exact,active_fallback_reason,active_inherited_visits,reference_budget,reference_replicates,reference_value,reference_value_stddev,reference_rollout_win_rate,reference_rollout_actions,reference_rollout_turns,reference_rollout_calls,reference_terminal_wins,reference_terminal_losses,reference_utility_sum,reference_win_bonus,reference_hp,reference_potion,reference_turn_penalty,reference_death_save,reference_gold,reference_max_hp,reference_parasite_penalty,reference_monster_damage,reference_alive,reference_energy_waste,reference_draw,reference_survival,current_1k_rollout_calls,current_1k_terminal_wins,current_1k_terminal_losses,current_1k_rollout_actions,current_1k_rollout_turns,current_1k_utility_sum,current_1k_win_bonus_sum,current_1k_hp_sum,current_1k_potion_sum,current_1k_turn_penalty_sum,current_1k_death_save_sum,current_1k_gold_sum,current_1k_max_hp_sum,current_1k_parasite_penalty_sum,current_1k_monster_damage_sum,current_1k_alive_sum,current_1k_energy_waste_sum,current_1k_draw_sum,current_1k_survival_sum,current_37k_rollout_calls,current_37k_terminal_wins,current_37k_terminal_losses,current_37k_rollout_actions,current_37k_rollout_turns,current_37k_utility_sum,current_37k_win_bonus_sum,current_37k_hp_sum,current_37k_potion_sum,current_37k_turn_penalty_sum,current_37k_death_save_sum,current_37k_gold_sum,current_37k_max_hp_sum,current_37k_parasite_penalty_sum,current_37k_monster_damage_sum,current_37k_alive_sum,current_37k_energy_waste_sum,current_37k_draw_sum,current_37k_survival_sum";
+    "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,cur_hp,max_hp,potion_count,action_type,stochastic,action_fingerprint,chosen_1k,chosen_1k_visits,chosen_1k_q,chosen_37k,chosen_37k_visits,chosen_37k_q,active_reroot_exact,active_fallback_reason,active_inherited_visits,reference_budget,reference_replicates,reference_value,reference_value_stddev,reference_rollout_win_rate,reference_rollout_actions,reference_rollout_turns,reference_rollout_calls,reference_terminal_wins,reference_terminal_losses,reference_utility_sum,reference_win_bonus,reference_hp,reference_potion,reference_turn_penalty,reference_death_save,reference_gold,reference_max_hp,reference_parasite_penalty,reference_monster_damage,reference_alive,reference_energy_waste,reference_draw,reference_survival,current_1k_rollout_calls,current_1k_terminal_wins,current_1k_terminal_losses,current_1k_rollout_actions,current_1k_rollout_turns,current_1k_utility_sum,current_1k_win_bonus_sum,current_1k_hp_sum,current_1k_potion_sum,current_1k_turn_penalty_sum,current_1k_death_save_sum,current_1k_gold_sum,current_1k_max_hp_sum,current_1k_parasite_penalty_sum,current_1k_monster_damage_sum,current_1k_alive_sum,current_1k_energy_waste_sum,current_1k_draw_sum,current_1k_survival_sum,current_37k_rollout_calls,current_37k_terminal_wins,current_37k_terminal_losses,current_37k_rollout_actions,current_37k_rollout_turns,current_37k_utility_sum,current_37k_win_bonus_sum,current_37k_hp_sum,current_37k_potion_sum,current_37k_turn_penalty_sum,current_37k_death_save_sum,current_37k_gold_sum,current_37k_max_hp_sum,current_37k_parasite_penalty_sum,current_37k_monster_damage_sum,current_37k_alive_sum,current_37k_energy_waste_sum,current_37k_draw_sum,current_37k_survival_sum,low_root_action_summaries,low_root_visit_share,low_top_two_visit_gap_share,low_top_q_gap,low_visit_entropy,low_legal_actions,adaptive_action,adaptive_simulations,adaptive_escalated,adaptive_top_visit_share,adaptive_threshold";
 
 void parseSilverLiveOptions() {
     SilverLiveOptions options;
@@ -92,6 +94,10 @@ void parseSilverLiveOptions() {
         options.rootDiagnosticReferenceBudget = std::atoll(raw);
     if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_REPLICATES"))
         options.rootDiagnosticReplicates = std::atoi(raw);
+    if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE"))
+        options.adaptiveEnabled = std::atoi(raw) != 0;
+    if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
+        options.adaptiveTopTwoVisitGapThreshold = std::atof(raw);
     if (!options.rootDiagnosticFile.empty()
             && (options.rootDiagnosticMaxPerSeed <= 0
                 || options.rootDiagnosticReferenceBudget <= 0
@@ -103,6 +109,11 @@ void parseSilverLiveOptions() {
             && options.reuseCapMode != silver_bridge::SilverReuseCapMode::ACTIVE) {
         throw std::invalid_argument(
             "STS_SILVER_STICKY_QUALITY_FILE requires STS_SILVER_REUSE_CAP_MODE=active");
+    }
+    if (options.adaptiveEnabled
+            && (options.adaptiveTopTwoVisitGapThreshold < 0.0
+                || options.adaptiveTopTwoVisitGapThreshold > 1.0)) {
+        throw std::invalid_argument("STS_SILVER_ADAPTIVE_TOP_GAP must be in [0,1]");
     }
     options.installed = true;
     g_silverLiveOptions = std::move(options);
@@ -263,6 +274,7 @@ void writeRootDiagnostics(const silver_bridge::BattleStateWire &wire,
                           const std::string &roomType,
                           const silver_bridge::SilverDecisionResult &low,
                           const silver_bridge::SilverDecisionResult &high,
+                          const silver_bridge::SilverDecisionResult &adaptive,
                           const std::vector<silver_bridge::SilverForcedActionReference> &references) {
     if (references.empty()) return;
     std::lock_guard<std::mutex> lock(g_rootDiagnosticMutex);
@@ -346,7 +358,17 @@ void writeRootDiagnostics(const silver_bridge::BattleStateWire &wire,
             << high.telemetry.rolloutMaxHpSum << ',' << high.telemetry.rolloutParasitePenaltySum << ','
             << high.telemetry.rolloutMonsterDamageSum << ',' << high.telemetry.rolloutAliveSum << ','
             << high.telemetry.rolloutEnergyWasteSum << ',' << high.telemetry.rolloutDrawSum << ','
-            << high.telemetry.rolloutSurvivalSum << '\n';
+            << high.telemetry.rolloutSurvivalSum << ','
+            << csvField(rootActionSummaries(low.rootActionSummaries)) << ','
+            << optionalDouble(low.rootUncertainty.topVisitShare, low.rootUncertainty.valid) << ','
+            << optionalDouble(low.rootUncertainty.topTwoVisitGapShare, low.rootUncertainty.valid) << ','
+            << optionalDouble(low.rootUncertainty.topQGap, low.rootUncertainty.topQGapValid) << ','
+            << optionalDouble(low.rootUncertainty.visitEntropy, low.rootUncertainty.valid) << ','
+            << (low.rootUncertainty.valid ? low.rootUncertainty.legalActions : 0) << ','
+            << csvField(silver_bridge::semanticActionFingerprint(adaptive.action)) << ','
+            << adaptive.simulations << ',' << (adaptive.adaptiveEscalated ? 1 : 0) << ','
+            << optionalDouble(adaptive.rootUncertainty.topVisitShare, adaptive.rootUncertainty.valid) << ','
+            << adaptive.adaptiveThreshold << '\n';
     }
     out.flush();
     if (!out) throw std::runtime_error("cannot write STS_SILVER_ROOT_DIAG_FILE: "
@@ -525,6 +547,15 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
         : agent.simulationCountBase;
     result.reuseCapMode = g_silverLiveOptions.reuseCapMode;
     result.collectDecisionDiagnostics = collectDecisionDiagnostics;
+    result.adaptiveEnabled = g_silverLiveOptions.adaptiveEnabled;
+    if (result.adaptiveEnabled) {
+        result.adaptiveInitialSimulations = 1000;
+        result.adaptiveTotalSimulations = 3700;
+        result.adaptiveTopTwoVisitGapThreshold = g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;
+        // Adaptive Silver has an explicit two-tier budget, including bosses;
+        // the ordinary Silver boss multiplier is not part of this treatment.
+        result.simulationsPerDecision = result.adaptiveInitialSimulations;
+    }
     return result;
 }
 
@@ -625,7 +656,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
-        config.collectRootActionSummaries = collectRootDiagnostics;
+        config.collectRootActionSummaries = collectRootDiagnostics || config.adaptiveEnabled;
         config.collectRolloutDiagnostics = collectRootDiagnostics;
         silver_bridge::SemanticAction semantic;
         if (bc.inputState == InputState::CARD_SELECT
@@ -650,6 +681,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                 }
                 for (std::size_t i = 0; i < transaction.searchDiagnostics.size(); ++i) {
                     addDecisionDiagnostic(transaction.searchDiagnostics[i]);
+                    if (transaction.searchDiagnostics[i].adaptiveEscalated)
+                        ++g_silverLiveDiagnostics.adaptiveEscalations;
                     if (collectStickyQuality && stickyEligible(transaction.searchDiagnostics[i])) {
                         ++stickyQualityCounters.excludedTransactionSubdecisions;
                     }
@@ -671,6 +704,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             g_silverLiveDiagnostics.rerootExact += result.rerootExact;
             g_silverLiveDiagnostics.rerootFallback += result.rerootFallback;
             addTelemetry(result.telemetry);
+            if (result.adaptiveEscalated) ++g_silverLiveDiagnostics.adaptiveEscalations;
             if (collectDecisionDiagnostics) {
                 addDecisionDiagnostic(result.diagnostic);
                 if (collectScalingDiagnostics) {
@@ -696,12 +730,14 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                 if (low.simulations != 1000) {
                     auto lowConfig = config;
                     lowConfig.simulationsPerDecision = 1000;
+                    lowConfig.adaptiveEnabled = false;
                     lowConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
                     lowConfig.collectDecisionDiagnostics = false;
                     low = silver_bridge::runSilverDecision(wire, lowConfig);
                 }
                 auto highConfig = config;
                 highConfig.simulationsPerDecision = 3700;
+                highConfig.adaptiveEnabled = false;
                 highConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
                 highConfig.collectDecisionDiagnostics = false;
                 const auto high = silver_bridge::runSilverDecision(wire, highConfig);
@@ -714,7 +750,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                 const std::string roomType = gc.curRoom == Room::MONSTER ? "hallway"
                     : gc.curRoom == Room::ELITE ? "elite"
                     : gc.curRoom == Room::BOSS ? "boss" : "other";
-                writeRootDiagnostics(wire, gc.seed, decision, roomType, low, high, references);
+                writeRootDiagnostics(wire, gc.seed, decision, roomType, low, high, result, references);
             }
         }
 
@@ -739,6 +775,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         std::cout << "[silver-combat] decisions=" << d.decisions
                   << " simulations=" << d.simulations
                   << " transaction_subdecisions=" << d.transactionSubdecisions
+                  << " adaptive_escalations=" << d.adaptiveEscalations
                   << " reroot_exact=" << d.rerootExact
                   << " reroot_fallback=" << d.rerootFallback
                   << " reroot_candidate_found=" << d.rerootCandidateFound
@@ -776,6 +813,10 @@ std::string silverLiveReuseCapMode() {
 std::int64_t silverLiveReuseCap() { return silver_bridge::kSilverProductionReuseCap; }
 std::string silverLiveScalingDiagnosticFile() { return g_silverLiveOptions.scalingDiagnosticFile; }
 std::string silverLiveStickyQualityFile() { return g_silverLiveOptions.stickyQualityFile; }
+bool silverLiveAdaptiveEnabled() { return g_silverLiveOptions.adaptiveEnabled; }
+double silverLiveAdaptiveTopTwoVisitGapThreshold() {
+    return g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;
+}
 bool silverStickyQualitySampled(std::uint64_t runSeed, int floor, int encounter,
                                 int combatDecisionOrdinal) {
     return sampledStickyDecision(runSeed, floor, encounter, combatDecisionOrdinal);

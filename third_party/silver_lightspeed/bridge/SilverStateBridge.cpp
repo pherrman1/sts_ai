@@ -692,6 +692,164 @@ std::shared_ptr<SilverSearchSession> makeSilverSearchSession() {
     return std::make_shared<SilverSearchSession>();
 }
 
+SilverRootUncertainty summarizeSilverRoot(
+        const std::vector<SilverRootActionSummary> &summaries) {
+    SilverRootUncertainty result;
+    result.legalActions = static_cast<int>(summaries.size());
+    if (summaries.empty()) return result;
+
+    std::vector<const SilverRootActionSummary *> ranked;
+    ranked.reserve(summaries.size());
+    for (const auto &summary : summaries) ranked.push_back(&summary);
+    std::sort(ranked.begin(), ranked.end(), [](const auto *lhs, const auto *rhs) {
+        return lhs->edgeVisits > rhs->edgeVisits;
+    });
+    result.topVisits = ranked[0]->edgeVisits;
+    result.secondVisits = ranked.size() > 1 ? ranked[1]->edgeVisits : 0;
+    result.rootVisits = 0;
+    for (const auto *summary : ranked) result.rootVisits += summary->edgeVisits;
+    if (result.rootVisits <= 0) return result;
+
+    result.valid = true;
+    const double total = static_cast<double>(result.rootVisits);
+    result.topVisitShare = static_cast<double>(result.topVisits) / total;
+    result.topTwoVisitGapShare = static_cast<double>(result.topVisits - result.secondVisits) / total;
+    for (const auto *summary : ranked) {
+        if (summary->edgeVisits <= 0) continue;
+        const double share = static_cast<double>(summary->edgeVisits) / total;
+        result.visitEntropy -= share * std::log(share);
+    }
+    if (ranked.size() > 1 && ranked[0]->selectionQValid && ranked[1]->selectionQValid) {
+        result.topQGapValid = true;
+        result.topQGap = ranked[0]->selectionQ - ranked[1]->selectionQ;
+    }
+    return result;
+}
+
+SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
+                                             const SilverSearchConfig &config,
+                                             bool convertSemanticAction = true) {
+    SilverDecisionResult result;
+    result.inheritedVisits = session.inheritedVisits;
+    result.rerootMissDiagnostic = session.rerootMissDiagnostic;
+    const auto *best = session.searchAndChoose(config, result.simulations);
+    result.telemetry = telemetryDelta(session.searcher->stats, session.searchStatsBefore);
+    if (config.collectRootActionSummaries) {
+        result.rootActionSummaries = session.rootActionSummaries;
+        result.rootUncertainty = summarizeSilverRoot(result.rootActionSummaries);
+    }
+    if (config.collectDecisionDiagnostics) {
+        result.diagnostic = session.decisionDiagnostic;
+        result.diagnostic.rootUncertainty = result.rootUncertainty;
+    }
+    if (best == nullptr) return result;
+    result.accepted = true;
+    if (convertSemanticAction
+            && best->action.getActionType() != sts::search::ActionType::MULTI_CARD_SELECT) {
+        result.action = semanticFromAction(session.searcher->root->state, best->action);
+        result.initialActionFingerprint = semanticActionFingerprint(result.action);
+    }
+    result.initialSimulations = result.simulations;
+    return result;
+}
+
+SilverDecisionResult continueSilverDecision(
+        SilverSearchSession &session, std::int64_t additionalSimulations,
+        const SilverSearchConfig &config, bool convertSemanticAction);
+
+SilverDecisionResult applyAdaptiveContinuation(SilverSearchSession &session,
+                                               const SilverSearchConfig &config,
+                                               SilverDecisionResult result,
+                                               bool convertSemanticAction = true) {
+    result.initialSimulations = result.simulations;
+    result.adaptiveThreshold = config.adaptiveTopTwoVisitGapThreshold;
+    if (result.accepted) {
+        result.initialActionFingerprint = semanticActionFingerprint(result.action);
+    }
+    if (config.collectDecisionDiagnostics) {
+        result.diagnostic.adaptiveEnabled = config.adaptiveEnabled;
+        result.diagnostic.adaptiveInitialSimulations = config.adaptiveInitialSimulations;
+        result.diagnostic.adaptiveTotalSimulations = config.adaptiveTotalSimulations;
+        result.diagnostic.rootUncertainty = result.rootUncertainty;
+    }
+    if (!result.accepted || !config.adaptiveEnabled
+            || result.simulations != config.adaptiveInitialSimulations
+            || config.adaptiveInitialSimulations <= 0
+            || config.adaptiveTotalSimulations <= result.simulations
+            || !result.rootUncertainty.valid
+            || result.rootUncertainty.topTwoVisitGapShare >= config.adaptiveTopTwoVisitGapThreshold) {
+        return result;
+    }
+
+    const auto initialDiagnostic = result.diagnostic;
+    auto continuationConfig = config;
+    continuationConfig.adaptiveEnabled = false;
+    continuationConfig.simulationsPerDecision = config.adaptiveTotalSimulations - result.simulations;
+    const auto continuation = continueSilverDecision(
+        session, continuationConfig.simulationsPerDecision, continuationConfig,
+        convertSemanticAction);
+    if (!continuation.accepted || continuation.simulations != continuationConfig.simulationsPerDecision) {
+        // A partial continuation would have mutated the root without producing
+        // a trustworthy result. Fail the enclosing live decision rather than
+        // silently returning an action against an unreported search state.
+        result.accepted = false;
+        return result;
+    }
+
+    result.action = continuation.action;
+    result.accepted = true;
+    result.simulations += continuation.simulations;
+    result.telemetry.add(continuation.telemetry);
+    result.rootActionSummaries = std::move(continuation.rootActionSummaries);
+    result.adaptiveEscalated = true;
+    if (config.collectDecisionDiagnostics) {
+        result.diagnostic = initialDiagnostic;
+        result.diagnostic.adaptiveEscalated = true;
+        result.diagnostic.simulationsAdded += continuation.diagnostic.simulationsAdded;
+        result.diagnostic.nodesCreated += continuation.diagnostic.nodesCreated;
+        result.diagnostic.allocatedNodesAfterSearch = continuation.diagnostic.allocatedNodesAfterSearch;
+        result.diagnostic.activeNodesAfterSearch = continuation.diagnostic.activeNodesAfterSearch;
+        result.diagnostic.rootVisitsAfterSearch = continuation.diagnostic.rootVisitsAfterSearch;
+        result.diagnostic.chosenEdgeVisits = continuation.diagnostic.chosenEdgeVisits;
+    }
+    return result;
+}
+
+SilverDecisionResult continueSilverDecision(
+        SilverSearchSession &session, std::int64_t additionalSimulations,
+        const SilverSearchConfig &config, bool convertSemanticAction) {
+    SilverDecisionResult result;
+    if (additionalSimulations <= 0 || session.searcher == nullptr) return result;
+    try {
+        const auto *best = session.searchAndChoose(config, result.simulations);
+        result.inheritedVisits = session.inheritedVisits;
+        result.rerootMissDiagnostic = session.rerootMissDiagnostic;
+        result.telemetry = telemetryDelta(session.searcher->stats, session.searchStatsBefore);
+        if (config.collectRootActionSummaries) {
+            result.rootActionSummaries = session.rootActionSummaries;
+            result.rootUncertainty = summarizeSilverRoot(result.rootActionSummaries);
+        }
+        if (config.collectDecisionDiagnostics) {
+            result.diagnostic = session.decisionDiagnostic;
+            result.diagnostic.rootUncertainty = result.rootUncertainty;
+        }
+        if (best == nullptr || result.simulations != additionalSimulations) return {};
+        result.accepted = true;
+        if (convertSemanticAction
+                && best->action.getActionType() != sts::search::ActionType::MULTI_CARD_SELECT)
+            result.action = semanticFromAction(session.searcher->root->state, best->action);
+    } catch (const std::exception &) {
+        return {};
+    }
+    return result;
+}
+
+SilverDecisionResult continueSilverDecision(
+        SilverSearchSession &session, std::int64_t additionalSimulations,
+        const SilverSearchConfig &config) {
+    return continueSilverDecision(session, additionalSimulations, config, true);
+}
+
 SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
                                                 const SilverSearchConfig &config) {
     SessionReuseProbe result;
@@ -899,7 +1057,6 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
             return trace;
         }
 
-        auto &searcher = *session.searcher;
         const int rerootExactBefore = session.rerootExact;
         const int rerootFallbackBefore = session.rerootFallback;
         // At most one selection per card plus the final confirmation. A larger
@@ -908,18 +1065,24 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
         for (int step = 0; step < maxSubdecisions; ++step) {
             if (step > 0) session.beginAt(state, config);
 
-            std::int64_t subdecisionSimulations = 0;
-            const auto *best = session.searchAndChoose(config, subdecisionSimulations);
-            trace.totalSimulations += subdecisionSimulations;
+            auto decision = runCurrentRootDecision(session, config, false);
+            decision = applyAdaptiveContinuation(session, config, std::move(decision), false);
+            trace.totalSimulations += decision.simulations;
             ++trace.searchDecisions;
-            trace.telemetry.add(telemetryDelta(searcher.stats, session.searchStatsBefore));
+            trace.telemetry.add(decision.telemetry);
             if (config.collectDecisionDiagnostics)
-                trace.searchDiagnostics.push_back(session.decisionDiagnostic);
-            if (best == nullptr) {
+                trace.searchDiagnostics.push_back(decision.diagnostic);
+            if (!decision.accepted) {
                 trace.failure = "Silver search returned no root edge";
                 return trace;
             }
-            const auto action = best->action;
+            sts::search::Action action;
+            const auto *best = session.previousBest;
+            if (best == nullptr) {
+                trace.failure = "Silver search lost its selected root edge";
+                return trace;
+            }
+            action = best->action;
             if (action.getActionType() == sts::search::ActionType::MULTI_CARD_SELECT) {
                 trace.finalAction = confirmedSelection(state, action);
                 trace.finalConfirmation = true;
@@ -980,13 +1143,14 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
                 && (task == sts::CardSelectTask::EXHAUST_MANY || task == sts::CardSelectTask::GAMBLE)) {
             return result; // must use the transactional API
         }
-        const auto *best = session.searchAndChoose(config, result.simulations);
-        result.telemetry = telemetryDelta(session.searcher->stats, session.searchStatsBefore);
-        if (config.collectRootActionSummaries) result.rootActionSummaries = session.rootActionSummaries;
-        if (config.collectDecisionDiagnostics) result.diagnostic = session.decisionDiagnostic;
-        if (best == nullptr) return result;
-        result.action = semanticFromAction(state, best->action);
-        result.accepted = true;
+        result = runCurrentRootDecision(session, config);
+        result = applyAdaptiveContinuation(session, config, std::move(result));
+        result.rerootExact = session.rerootExact - rerootExactBefore;
+        result.rerootFallback = session.rerootFallback - rerootFallbackBefore;
+        if (!result.accepted) return result;
+        // The private root state is unchanged by a continuation; this check
+        // keeps the ordinary API tied to the materialized decision state.
+        if (session.searcher == nullptr || session.searcher->root == nullptr) return {};
     } catch (const std::exception &) {
         return {};
     }

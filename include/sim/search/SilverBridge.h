@@ -257,6 +257,13 @@ struct SilverSearchConfig {
     // evaluation mean.  This is default-off diagnostic observation only.
     bool collectRootActionSummaries = false;
     bool collectRolloutDiagnostics = false;
+    // Default-off two-tier allocation.  When enabled, the caller searches to
+    // adaptiveInitialSimulations, inspects the top-two visit-share gap, and
+    // may continue the same private search to adaptiveTotalSimulations.
+    bool adaptiveEnabled = false;
+    std::int64_t adaptiveInitialSimulations = 1000;
+    std::int64_t adaptiveTotalSimulations = 3700;
+    double adaptiveTopTwoVisitGapThreshold = 0.094;
 };
 
 struct SilverRootActionSummary {
@@ -270,6 +277,22 @@ struct SilverRootActionSummary {
     bool selectionQValid = false;
     double selectionQ = 0.0;
 };
+
+struct SilverRootUncertainty {
+    bool valid = false;
+    std::int64_t rootVisits = 0;
+    std::int64_t topVisits = 0;
+    std::int64_t secondVisits = 0;
+    int legalActions = 0;
+    double topVisitShare = 0.0;
+    double topTwoVisitGapShare = 0.0;
+    double topQGap = 0.0;
+    double visitEntropy = 0.0;
+    bool topQGapValid = false;
+};
+
+SilverRootUncertainty summarizeSilverRoot(
+    const std::vector<SilverRootActionSummary> &summaries);
 
 // Value-only accounting of one actual private Silver search invocation.  The
 // record is emitted for ordinary decisions and every sequential-selection
@@ -292,6 +315,11 @@ struct SilverSearchDecisionDiagnostic {
     std::int64_t nodesCreated = 0;
     std::int64_t rootVisitsAfterSearch = 0;
     std::int64_t chosenEdgeVisits = 0;
+    bool adaptiveEnabled = false;
+    bool adaptiveEscalated = false;
+    std::int64_t adaptiveInitialSimulations = 0;
+    std::int64_t adaptiveTotalSimulations = 0;
+    SilverRootUncertainty rootUncertainty;
 };
 
 // Value-only copy of Silver BattleSearcher's deterministic telemetry. This is
@@ -397,6 +425,11 @@ struct SilverDecisionResult {
     SemanticAction action;
     SilverSearchTelemetry telemetry;
     std::vector<SilverRootActionSummary> rootActionSummaries;
+    SilverRootUncertainty rootUncertainty;
+    std::string initialActionFingerprint;
+    std::int64_t initialSimulations = 0;
+    bool adaptiveEscalated = false;
+    double adaptiveThreshold = 0.0;
     int rerootExact = 0;
     int rerootFallback = 0;
 };
@@ -514,6 +547,12 @@ SilverDecisionResult runSilverDecision(const BattleStateWire &state,
 SilverDecisionResult runSilverDecision(SilverSearchSession &session,
                                        const BattleStateWire &state,
                                        const SilverSearchConfig &config);
+// Continue the current private root without materializing or rerooting it.
+// `additionalSimulations` is an increment, so the resulting root has the
+// previous visits plus exactly this many new search steps.
+SilverDecisionResult continueSilverDecision(
+    SilverSearchSession &session, std::int64_t additionalSimulations,
+    const SilverSearchConfig &config);
 
 } // namespace silver_bridge
 

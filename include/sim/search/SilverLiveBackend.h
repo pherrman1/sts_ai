@@ -16,6 +16,7 @@ struct SilverLiveDiagnostics {
     std::uint64_t decisions = 0;
     std::uint64_t simulations = 0;
     std::uint64_t transactionSubdecisions = 0;
+    std::uint64_t adaptiveEscalations = 0;
     std::uint64_t rerootExact = 0;
     std::uint64_t rerootFallback = 0;
     std::uint64_t rerootCandidateFound = 0;
@@ -51,6 +52,8 @@ std::string silverLiveReuseCapMode();
 std::int64_t silverLiveReuseCap();
 std::string silverLiveScalingDiagnosticFile();
 std::string silverLiveStickyQualityFile();
+bool silverLiveAdaptiveEnabled();
+double silverLiveAdaptiveTopTwoVisitGapThreshold();
 
 // Stable deterministic sampler used only by STS_SILVER_STICKY_QUALITY_FILE.
 // It hashes the documented public decision identity and consumes no RNG.
