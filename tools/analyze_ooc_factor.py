@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Aggregate the OOC survival x continuation-value diagnostic.
 
-Only ``regime=fixed`` rows are used: sibling actions share each continuation
-seed, matching the existing Tier-B counterfactual contract.  The script fails
-loudly on incomplete action/replicate groups or on the factorization identity.
+The fixed and marginal encounter-resampling regimes are analyzed separately;
+sibling actions share continuation seeds within either regime.  The script
+fails loudly on incomplete action/replicate groups or on the factorization
+identity.
 """
 
 import argparse
@@ -15,6 +16,8 @@ from pathlib import Path
 
 
 DECISION = ("seed", "decIdx", "act", "floor", "screen")
+SCREEN_NAMES = {1: "event", 2: "rewards", 3: "boss_relic", 4: "card_select",
+                5: "map", 6: "treasure", 7: "rest", 8: "shop", 9: "battle"}
 
 
 def main() -> None:
@@ -24,6 +27,7 @@ def main() -> None:
     ap.add_argument("--raw-extra", action="append", default=[],
                     help="additional disjoint producer CSV (repeatable)")
     ap.add_argument("--replicates", type=int, required=True)
+    ap.add_argument("--regime", choices=("fixed", "marg"), default="fixed")
     ap.add_argument("--max-discordant", type=int, default=32)
     ap.add_argument("--min-survival-delta", type=float,
                     help="minimum |p_survive difference| for adjudication; "
@@ -45,7 +49,7 @@ def main() -> None:
             if missing:
                 raise SystemExit(f"missing columns in {raw_path}: {sorted(missing)}")
             for row in reader:
-                if row["regime"] != "fixed":
+                if row["regime"] != args.regime:
                     continue
                 key = tuple(int(row[x]) for x in DECISION) + (int(row["actionIdx"]),)
                 grouped[key].append(row)
@@ -81,8 +85,25 @@ def main() -> None:
 
     discordant = []
     action_count = 0
+    coverage = []
     for dkey, actions in sorted(decisions.items()):
         action_count += len(actions)
+        min_p = min(a["pSurvive"] for a in actions)
+        max_p = max(a["pSurvive"] for a in actions)
+        # A genuine safety-vs-strength tradeoff requires an action pair whose
+        # survival and conditional-survivor-value orderings oppose each other.
+        tradeoff = any(
+            (a["pSurvive"] - b["pSurvive"]) * (a["vAlive"] - b["vAlive"]) < -1e-12
+            for i, a in enumerate(actions) for b in actions[i + 1:]
+        )
+        coverage.append({**dict(zip(DECISION, dkey)),
+                         "screenName": SCREEN_NAMES.get(dkey[-1], "unknown"),
+                         "actions": len(actions),
+                         "actionsPSurviveUnderOne": sum(a["pSurvive"] < 1.0 - 1e-12
+                                                        for a in actions),
+                         "minPSurvive": min_p, "maxPSurvive": max_p,
+                         "survivalDifference": max_p - min_p,
+                         "safetyStrengthTradeoff": int(tradeoff)})
         current = max(actions, key=lambda a: (a["currentScore"], -a["actionIdx"]))
         factor = max(actions, key=lambda a: (a["qFactor"], -a["actionIdx"]))
         if current["actionIdx"] != factor["actionIdx"]:
@@ -136,8 +157,12 @@ def main() -> None:
                 if future_key in adj[key][role]:
                     raise SystemExit(f"duplicate adjudication replicate: {key} {role} {future_key}")
                 adj[key][role][future_key] = row
-        current_wins = factor_wins = ties = 0
-        current_regrets, factor_regrets = [], []
+        utility_metrics = {
+            "terminalWin": {"currentWins": 0, "factorWins": 0, "ties": 0,
+                            "currentRegrets": [], "factorRegrets": []},
+            "denseTerminal": {"currentWins": 0, "factorWins": 0, "ties": 0,
+                              "currentRegrets": [], "factorRegrets": []},
+        }
         for row in selected:
             roles = adj.get((row["seed"], row["decIdx"]))
             if (not roles or set(roles["C"]) != set(roles["F"])
@@ -149,30 +174,44 @@ def main() -> None:
                     if ((int(ar["act"]), int(ar["floor"]), int(ar["screen"])) != expected_meta
                             or int(ar["actionBits"]) != expected_bits):
                         raise SystemExit(f"adjudication identity mismatch: {ar}")
-            cval = sum(float(r["adjudicatedValue"]) for r in roles["C"].values()) / len(roles["C"])
-            fval = sum(float(r["adjudicatedValue"]) for r in roles["F"].values()) / len(roles["F"])
-            best = max(cval, fval)
-            current_regrets.append(best - cval)
-            factor_regrets.append(best - fval)
-            if cval > fval: current_wins += 1; winner = "current"
-            elif fval > cval: factor_wins += 1; winner = "factor"
-            else: ties += 1; winner = "tie"
-            row.update({"currentAdjudicated": cval, "factorAdjudicated": fval,
-                        "adjudicatedWinner": winner,
-                        "currentRegret": best - cval, "factorRegret": best - fval})
+            values = {
+                "terminalWin": (
+                    sum(int(r["won"]) for r in roles["C"].values()) / len(roles["C"]),
+                    sum(int(r["won"]) for r in roles["F"].values()) / len(roles["F"])),
+                "denseTerminal": (
+                    sum(float(r["adjudicatedValue"]) for r in roles["C"].values()) / len(roles["C"]),
+                    sum(float(r["adjudicatedValue"]) for r in roles["F"].values()) / len(roles["F"])),
+            }
+            for name, (cval, fval) in values.items():
+                metrics = utility_metrics[name]
+                best = max(cval, fval)
+                metrics["currentRegrets"].append(best - cval)
+                metrics["factorRegrets"].append(best - fval)
+                if cval > fval: metrics["currentWins"] += 1; winner = "current"
+                elif fval > cval: metrics["factorWins"] += 1; winner = "factor"
+                else: metrics["ties"] += 1; winner = "tie"
+                prefix = "win" if name == "terminalWin" else "dense"
+                row.update({f"{prefix}CurrentAdjudicated": cval,
+                            f"{prefix}FactorAdjudicated": fval,
+                            f"{prefix}AdjudicatedWinner": winner,
+                            f"{prefix}CurrentRegret": best - cval,
+                            f"{prefix}FactorRegret": best - fval})
         def median(xs):
             ys = sorted(xs); n = len(ys)
             return (ys[n // 2] if n % 2 else (ys[n // 2 - 1] + ys[n // 2]) / 2)
-        adjud_summary = {
-            "decisions": len(selected), "replicatesPerAction": args.replicates,
-            "currentWins": current_wins, "factorWins": factor_wins, "ties": ties,
-            "factorWinFractionExcludingTies": (factor_wins / (current_wins + factor_wins)
-                                                if current_wins + factor_wins else 0.0),
-            "currentMeanRegret": sum(current_regrets) / len(current_regrets) if current_regrets else 0.0,
-            "factorMeanRegret": sum(factor_regrets) / len(factor_regrets) if factor_regrets else 0.0,
-            "currentMedianRegret": median(current_regrets) if current_regrets else 0.0,
-            "factorMedianRegret": median(factor_regrets) if factor_regrets else 0.0,
-        }
+        adjud_summary = {"decisions": len(selected),
+                         "replicatesPerAction": args.replicates}
+        for name, metrics in utility_metrics.items():
+            cw, fw = metrics["currentWins"], metrics["factorWins"]
+            cr, fr = metrics["currentRegrets"], metrics["factorRegrets"]
+            adjud_summary[name] = {
+                "currentWins": cw, "factorWins": fw, "ties": metrics["ties"],
+                "factorWinFractionExcludingTies": fw / (cw + fw) if cw + fw else 0.0,
+                "currentMeanRegret": sum(cr) / len(cr) if cr else 0.0,
+                "factorMeanRegret": sum(fr) / len(fr) if fr else 0.0,
+                "currentMedianRegret": median(cr) if cr else 0.0,
+                "factorMedianRegret": median(fr) if fr else 0.0,
+            }
     all_fields = list(discordant[0]) if discordant else list(DECISION) + ["currentBits", "factorBits"]
     with open(out_dir / "all_discordant.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, all_fields); w.writeheader(); w.writerows(discordant)
@@ -183,8 +222,35 @@ def main() -> None:
     with open(out_dir / "manifest.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, manifest_fields); w.writeheader()
         w.writerows({k: r[k] for k in manifest_fields} for r in selected)
-    summary = {"rawCsv": [str(Path(p)) for p in raw_paths], "replicates": args.replicates,
+    coverage_fields = list(coverage[0]) if coverage else list(DECISION)
+    with open(out_dir / "survival_coverage.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, coverage_fields); w.writeheader(); w.writerows(coverage)
+    positive_differences = [r["survivalDifference"] for r in coverage
+                            if r["survivalDifference"] > 1e-12]
+    screen_breakdown = {}
+    for screen in sorted({r["screen"] for r in coverage}):
+        rows = [r for r in coverage if r["screen"] == screen]
+        screen_breakdown[f"{screen}:{SCREEN_NAMES.get(screen, 'unknown')}"] = {
+            "decisions": len(rows),
+            "actions": sum(r["actions"] for r in rows),
+            "actionsPSurviveUnderOne": sum(r["actionsPSurviveUnderOne"] for r in rows),
+            "decisionsWithSurvivalSpread": sum(r["survivalDifference"] > 1e-12 for r in rows),
+            "safetyStrengthTradeoffs": sum(r["safetyStrengthTradeoff"] for r in rows),
+            "maxSurvivalDifference": max((r["survivalDifference"] for r in rows), default=0.0),
+        }
+    summary = {"rawCsv": [str(Path(p)) for p in raw_paths], "regime": args.regime,
+               "replicates": args.replicates,
                "decisions": len(decisions), "actions": action_count,
+               "actionsPSurviveUnderOne": sum(r["actionsPSurviveUnderOne"] for r in coverage),
+               "decisionsWithAnyPSurviveUnderOne": sum(r["actionsPSurviveUnderOne"] > 0
+                                                       for r in coverage),
+               "decisionsWithSurvivalSpread": len(positive_differences),
+               "minPositiveSurvivalDifference": min(positive_differences)
+                                                if positive_differences else 0.0,
+               "maxSurvivalDifference": max(positive_differences)
+                                        if positive_differences else 0.0,
+               "safetyStrengthTradeoffs": sum(r["safetyStrengthTradeoff"] for r in coverage),
+               "screenBreakdown": screen_breakdown,
                "discordantTotal": len(discordant),
                "survivalDiscordantTotal": len(survival_discordant),
                "minSurvivalDelta": min_survival_delta,
