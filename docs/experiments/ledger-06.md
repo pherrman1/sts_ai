@@ -4820,12 +4820,16 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
 - **Gameplay gate:** fixed control on 16 paired seeds completed 9/16 wins,
   mean floor 47.5, mean ending HP 25.8, 18.94 CPU seconds/run. The adaptive
   treatment aborted twice with `unsupported Silver card-select task`; no
-  treatment win-rate result is valid. A narrow fallback attempt was reverted
-  after reproducing the failure.
+  treatment win-rate result is valid. The attempted control also retained the
+  native 3x boss multiplier while adaptive used exact 1k/3.7k root budgets, so
+  the arms were not budget-comparable. A future gate must set
+  `STS_SILVER_EXACT_ROOT_BUDGETS=1` identically for both arms. A narrow
+  fallback attempt was reverted after reproducing the failure.
 - **Artifacts:** see
   `docs/knowledge-base/decision-log/2026-08-27-silver-adaptive-search.md`
   for raw artifact paths and SHA-256 hashes.
-- **Verdict:** **NO_SIMPLE_ADAPTIVE_RULE.** Offline quality is promising, but
-  live correctness was not established. Do not promote or expand this rule
-  into a dynamic search controller; a separate semantic card-select bridge
-  investigation would be required.
+- **Verdict:** **INCONCLUSIVE.** Offline quality is promising, but the live
+  gate was invalidated by a card-select integration failure and non-comparable
+  boss budgets. Do not promote or expand this rule into a dynamic search
+  controller; a separate semantic card-select bridge investigation and a
+  budget-comparable rerun would be required.

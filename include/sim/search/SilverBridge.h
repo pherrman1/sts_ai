@@ -425,6 +425,9 @@ struct SilverDecisionResult {
     SemanticAction action;
     SilverSearchTelemetry telemetry;
     std::vector<SilverRootActionSummary> rootActionSummaries;
+    // With adaptive mode enabled this is the initial-budget root summary used
+    // as the escalation trigger. It remains the initial summary after a
+    // continuation; rootActionSummaries hold the final-budget observations.
     SilverRootUncertainty rootUncertainty;
     std::string initialActionFingerprint;
     std::int64_t initialSimulations = 0;
@@ -488,6 +491,11 @@ struct SessionReuseProbe {
     int rerootExact = 0;
     int rerootFallback = 0;
     std::int64_t inheritedVisits = 0;
+    std::int64_t firstSimulations = 0;
+    std::int64_t secondSimulations = 0;
+    std::int64_t secondRootVisitsAfterSearch = 0;
+    bool firstAdaptiveEscalated = false;
+    bool secondAdaptiveEscalated = false;
 };
 
 // Small-cap, bridge-private fixture.  It exercises retained allocation versus

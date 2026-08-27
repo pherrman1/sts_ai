@@ -53,6 +53,7 @@ std::int64_t silverLiveReuseCap();
 std::string silverLiveScalingDiagnosticFile();
 std::string silverLiveStickyQualityFile();
 bool silverLiveAdaptiveEnabled();
+bool silverLiveExactRootBudgets();
 double silverLiveAdaptiveTopTwoVisitGapThreshold();
 
 // Stable deterministic sampler used only by STS_SILVER_STICKY_QUALITY_FILE.

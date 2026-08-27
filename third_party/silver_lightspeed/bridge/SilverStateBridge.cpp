@@ -268,7 +268,8 @@ SemanticAction semanticFromAction(const sts::BattleContext &state, const sts::se
         if (source == CardSource::DRAW) chosen = &state.cards.drawPile[idx];
         else if (source == CardSource::DISCARD) chosen = &state.cards.discardPile[idx];
         else if (source == CardSource::EXHAUST) chosen = &state.cards.exhaustPile[idx];
-        else throw std::runtime_error("unsupported Silver card-select task");
+        else throw std::runtime_error("unsupported Silver card-select task="
+                                      + std::to_string(static_cast<int>(state.cardSelectInfo.cardSelectTask)));
         out.card = {static_cast<std::int16_t>(chosen->id), chosen->uniqueId, chosen->specialData,
                     chosen->cost, chosen->costForTurn, chosen->upgraded,
                     chosen->freeToPlayOnce, chosen->retain};
@@ -857,8 +858,11 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
     try {
         SilverSearchSession session;
         sts::BattleContext state = session.materializeAndBegin(wire, config);
-        std::int64_t simulations = 0;
-        const auto *best = session.searchAndChoose(config, simulations);
+        auto firstDecision = runCurrentRootDecision(session, config, false);
+        firstDecision = applyAdaptiveContinuation(session, config, std::move(firstDecision), false);
+        result.firstSimulations = firstDecision.simulations;
+        result.firstAdaptiveEscalated = firstDecision.adaptiveEscalated;
+        const auto *best = session.previousBest;
         if (best == nullptr || !best->action.isValidAction(state)) return result;
 
         // This is deliberately private: it reproduces SearchAgent's action
@@ -867,11 +871,18 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         // fixture, making exact child reuse the required outcome.
         best->action.execute(state);
         session.beginAt(state, config);
+        result.inheritedVisits = session.searcher->root == nullptr
+            ? 0 : session.searcher->root->simulationCount;
+        auto secondDecision = runCurrentRootDecision(session, config, false);
+        secondDecision = applyAdaptiveContinuation(session, config, std::move(secondDecision), false);
+        result.secondSimulations = secondDecision.simulations;
+        result.secondAdaptiveEscalated = secondDecision.adaptiveEscalated;
+        result.secondRootVisitsAfterSearch = session.searcher->root == nullptr
+            ? 0 : session.searcher->root->simulationCount;
+        if (!secondDecision.accepted) return result;
         result.accepted = true;
         result.rerootExact = session.rerootExact;
         result.rerootFallback = session.rerootFallback;
-        result.inheritedVisits = session.searcher->root == nullptr
-            ? 0 : session.searcher->root->simulationCount;
     } catch (const std::exception &) {
         return {};
     }

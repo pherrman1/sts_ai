@@ -68,7 +68,16 @@ and reverted after the same failure, so it is not part of the final tree.
 This is a correctness failure for the live gate. It prevents attributing any
 gameplay outcome to the allocation rule and means the rule is not promoted.
 Supporting the encountered card-select surface would require a separate
-semantic-bridge investigation, outside this bounded experiment.
+semantic-bridge investigation, outside this bounded experiment. The prior
+control also retained the native 3x boss multiplier while the adaptive arm
+used exact 1k/3.7k budgets at every root, so that attempted gate was not a
+budget-comparable fixed-budget comparison. A future paired gate must set
+`STS_SILVER_EXACT_ROOT_BUDGETS=1` for both arms (with the same base `sims`
+argument) to neutralize that unrelated multiplier.
+
+The unsupported card-select task is therefore recorded as a separate live
+integration blocker, not as evidence against the uncertainty signal or its
+allocation rule.
 
 ## Checks and artifacts
 
@@ -110,7 +119,10 @@ Raw artifacts are retained under the ignored `build-adaptive-release/`:
 
 ## Verdict
 
-**NO_SIMPLE_ADAPTIVE_RULE.** The single signal and rule are promising in the
-bounded offline shadow, but the paired live gate fails correctness and cannot
-be promoted without a separate card-select bridge design and review. Do not
-add a convergence controller or run a larger gameplay sweep from this result.
+**INCONCLUSIVE.** The single signal and rule pass the bounded offline screen,
+but the paired live gate is invalid: the treatment aborted on an unsupported
+card-select task and the attempted arms were not budget-comparable at bosses.
+The rule is not promoted. Do not add a convergence controller or run a larger
+gameplay sweep from this result. A future gate requires the separate
+card-select bridge work, explicit exact root budgets for both arms, and the
+focused reuse/sequential checks recorded by the review correction.

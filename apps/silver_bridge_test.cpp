@@ -190,6 +190,21 @@ int main() {
                   == silver_bridge::semanticActionFingerprint(legacy.action),
           "disabled adaptive configuration must preserve the existing production decision");
 
+    auto adaptiveReuseConfig = adaptiveConfig;
+    adaptiveReuseConfig.adaptiveTopTwoVisitGapThreshold = 1.0;
+    const auto adaptiveReuse = silver_bridge::probeSilverSearchSessionReuse(
+        firstWire, adaptiveReuseConfig);
+    check(adaptiveReuse.accepted && adaptiveReuse.rerootExact == 1
+              && adaptiveReuse.rerootFallback == 0
+              && adaptiveReuse.inheritedVisits > 0
+              && adaptiveReuse.firstAdaptiveEscalated
+              && adaptiveReuse.firstSimulations == 32
+              && (adaptiveReuse.secondSimulations == 16
+                  || adaptiveReuse.secondSimulations == 32)
+              && adaptiveReuse.secondRootVisitsAfterSearch
+                  == adaptiveReuse.inheritedVisits + adaptiveReuse.secondSimulations,
+          "adaptive exact-reroot path must account for each decision's added simulations separately");
+
     silver_bridge::SemanticAction fingerprintCard = qualityFresh.action;
     fingerprintCard.type = silver_bridge::SemanticActionType::CARD;
     fingerprintCard.card.uniqueId += 1;
@@ -409,6 +424,32 @@ int main() {
           && transactionLive.cardRandomRng.counter == transactionBefore.cardRandomRng.counter
           && transactionLive.shuffleRng.counter == transactionBefore.shuffleRng.counter,
           "private sequential selection transaction must not mutate live state or live RNG");
+
+    auto adaptiveTransactionConfig = transactionConfig;
+    adaptiveTransactionConfig.adaptiveEnabled = true;
+    adaptiveTransactionConfig.adaptiveInitialSimulations = 16;
+    adaptiveTransactionConfig.adaptiveTotalSimulations = 32;
+    adaptiveTransactionConfig.adaptiveTopTwoVisitGapThreshold = 1.0;
+    adaptiveTransactionConfig.collectRootActionSummaries = true;
+    const auto adaptiveTransaction = silver_bridge::runSequentialSelectionTransaction(
+        convert(transactionLive, gc, transactionKnowledge), adaptiveTransactionConfig);
+    bool adaptiveTransactionEscalated = false;
+    bool adaptiveTransactionBudgetsExact = true;
+    std::int64_t adaptiveTransactionDiagnosticSimulations = 0;
+    for (const auto &diagnostic : adaptiveTransaction.searchDiagnostics) {
+        adaptiveTransactionEscalated = adaptiveTransactionEscalated || diagnostic.adaptiveEscalated;
+        adaptiveTransactionBudgetsExact = adaptiveTransactionBudgetsExact
+            && (diagnostic.simulationsAdded == 16 || diagnostic.simulationsAdded == 32)
+            && diagnostic.rootVisitsAfterSearch
+                == diagnostic.inheritedVisits + diagnostic.simulationsAdded;
+        adaptiveTransactionDiagnosticSimulations += diagnostic.simulationsAdded;
+    }
+    check(adaptiveTransaction.accepted && adaptiveTransaction.finalConfirmation
+              && adaptiveTransaction.searchDecisions >= 2
+              && adaptiveTransactionEscalated
+              && adaptiveTransactionBudgetsExact
+              && adaptiveTransaction.totalSimulations == adaptiveTransactionDiagnosticSimulations,
+          "adaptive sequential selection must preserve confirmation and exact 1k-to-3.7k subdecision budgets");
 
     auto noneTransactionConfig = transactionConfig;
     noneTransactionConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
