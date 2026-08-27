@@ -4982,19 +4982,22 @@ model training was changed.
   canonical rich 1,766-feature CombatValueNet representation. Both arms used
   uniform weights and the same tuned XGBoost recipe; only the 10k-A versus
   25k-A target changed. M10/M25 best iterations were 500/412.
-- **Independent-anchor result:** M10/M25 strict sibling concordance
-  `58.14% / 59.10%` (delta +0.958pp; 90% paired whole-group interval
-  `[-1.34pp,+2.95pp]`; P(delta>0)=75.6%), top-leaf agreement
+- **Independent-anchor result:** after the final review correction, both models
+  use the same 5,187 non-tied independent-25k-B sibling pairs; model prediction
+  ties receive half credit rather than leaving the denominator. M10/M25 had
+  161/212 prediction ties and strict sibling concordance `57.89% / 58.72%`
+  (delta +0.839pp; 90% paired whole-group interval `[-1.33pp,+2.50pp]`;
+  P(delta>0)=74.68%). Top-leaf agreement remained
   `30.86% / 32.10%`, and mean regret `3.902 / 3.569`. The regret delta interval
   was `[-0.705,-0.018]` for M25−M10 (P(M25 lower)=95.94%). M25 also modestly
   improved global RMSE `11.757→11.458` and centered RMSE `5.475→5.390`, but
   subgroup pair-order effects were mixed (for example high-HP and long-rollout
   improved, low-HP, medium-rollout, and hallway declined).
-- **Decision:** **`USE_10K_TEACHER`.** The pairwise gain missed the ~1pp rule
-  and had only 75.6% probability positive, below the required 90%. Efficiency
-  therefore decides the near-tie. The lower M25 regret is useful descriptive
-  evidence but does not satisfy the preregistered promotion rule. No gameplay
-  improvement is claimed.
+- **Decision:** **`USE_10K_TEACHER`.** The corrected pairwise gain missed the
+  ~1pp rule and had only 74.68% probability positive, below the required 90%.
+  Efficiency therefore decides the near-tie. The lower M25 regret is useful
+  descriptive evidence but does not satisfy the preregistered promotion rule.
+  No gameplay improvement is claimed.
 - **Artifacts:** durable compact evidence is
   `docs/experiments/evidence/silver_teacher_model_comparison_2026-08-27.json`;
   full GCP outputs remain under
