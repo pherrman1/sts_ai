@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shlex
 import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 PROJECT = "sts-ai-502709"
 ZONE = "europe-west3-c"
@@ -92,6 +93,53 @@ def ssh_command(args: argparse.Namespace, remote: str) -> int:
         remote,
     ]
     return subprocess.run(command, check=False).returncode
+
+
+def designated_remote_path(args: argparse.Namespace, relative: str, action: str) -> str:
+    require_designated_target(args, action)
+    components = relative.split("/")
+    if any(
+        component in {"", ".", ".."}
+        or re.fullmatch(r"[A-Za-z0-9._-]+", component) is None
+        for component in components
+    ):
+        raise ValueError(
+            f"{action} remote path components may contain only ASCII letters, digits, '.', '_', and '-'"
+        )
+    path = PurePosixPath(relative)
+    if path.is_absolute():
+        raise ValueError(
+            f"{action} remote path must be relative to the designated remote root"
+        )
+    return str(PurePosixPath(args.remote_root) / path)
+
+
+def copy_to(args: argparse.Namespace) -> int:
+    remote = designated_remote_path(args, args.remote_path, "copy-to")
+    local = Path(args.local_path)
+    if not local.is_file():
+        raise ValueError(f"copy-to local source is not a file: {local}")
+    return run_gcloud(
+        args, "compute", "scp", str(local), f"{args.user}@{args.instance}:{remote}"
+    ).returncode
+
+
+def copy_from(args: argparse.Namespace) -> int:
+    remote = designated_remote_path(args, args.remote_path, "copy-from")
+    return run_gcloud(
+        args, "compute", "scp", f"{args.user}@{args.instance}:{remote}", args.local_path
+    ).returncode
+
+
+def job_status(args: argparse.Namespace) -> int:
+    require_designated_target(args, "job-status")
+    if args.pid <= 0:
+        raise ValueError("job-status PID must be positive")
+    remote = (
+        f"if ps -p {args.pid} -o pid=,etime=,stat=,args=; then "
+        "echo job_status=running; else echo job_status=not_running_or_unknown; fi"
+    )
+    return ssh_command(args, remote)
 
 
 def status(args: argparse.Namespace) -> int:
@@ -205,6 +253,18 @@ def parser() -> argparse.ArgumentParser:
     sub.add_parser("probe", help="SSH and report hostname, uptime, and remote root")
     sub.add_parser("status", help="report the existing instance state")
     sub.add_parser("start-instance", help="start sts-test when it is stopped")
+    copy_to_parser = sub.add_parser(
+        "copy-to", help="copy one local file beneath the designated remote root"
+    )
+    copy_to_parser.add_argument("local_path")
+    copy_to_parser.add_argument("remote_path")
+    copy_from_parser = sub.add_parser(
+        "copy-from", help="copy one file from beneath the designated remote root"
+    )
+    copy_from_parser.add_argument("remote_path")
+    copy_from_parser.add_argument("local_path")
+    job = sub.add_parser("job-status", help="report whether a detached remote PID is running")
+    job.add_argument("pid", type=int)
     run = sub.add_parser("run", help="guard and launch a detached remote benchmark")
     run.add_argument("--foreground", action="store_true")
     run.add_argument("--guard-only", action="store_true")
@@ -223,6 +283,12 @@ def main(argv: list[str] | None = None) -> int:
             return status(args)
         if args.action == "start-instance":
             return start_instance(args)
+        if args.action == "copy-to":
+            return copy_to(args)
+        if args.action == "copy-from":
+            return copy_from(args)
+        if args.action == "job-status":
+            return job_status(args)
         return remote_run(args)
     except (OSError, RuntimeError, ValueError) as exc:
         print(f"gcp_benchmark: {exc}", file=sys.stderr)
