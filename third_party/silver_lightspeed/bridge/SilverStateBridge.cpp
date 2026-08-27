@@ -591,16 +591,35 @@ sts::search::BattleSearcher::Node *exactRerootCandidate(
 } // namespace
 
 SilverLeafObservation makeSilverLeafObservation(
-        const sts::BattleContext &state, std::uint64_t rootStateHash,
+        const sts::BattleContext &state, const sts::BattleContext &originalRoot,
+        const sts::BattleContext &parentState,
+        const std::vector<sts::search::Action> &parentLegalActions,
+        const sts::search::Action *incomingAction, std::uint64_t rootStateHash,
         std::uint64_t parentStateHash, int depth, int actionCountBeforeRollout) {
     SilverLeafObservation out;
     out.state = leafStateWire(state);
+    out.originalRootState = leafStateWire(originalRoot);
+    out.parentState = leafStateWire(parentState);
+    out.parentLegalActionFingerprints.reserve(parentLegalActions.size());
+    for (const auto &action : parentLegalActions) {
+        out.parentLegalActionFingerprints.push_back(
+            semanticActionFingerprint(semanticFromAction(parentState, action)));
+    }
+    if (incomingAction != nullptr) {
+        out.incomingActionFingerprint =
+            semanticActionFingerprint(semanticFromAction(parentState, *incomingAction));
+    }
     out.rootStateHash = rootStateHash;
     out.parentStateHash = parentStateHash;
     out.leafStateHash = static_cast<std::uint64_t>(sts::search::hashBattleState(state));
     out.depth = depth;
     out.actionCountBeforeRollout = actionCountBeforeRollout;
     return out;
+}
+
+std::string silverActionFingerprint(const sts::BattleContext &state,
+                                    const sts::search::Action &action) {
+    return semanticActionFingerprint(semanticFromAction(state, action));
 }
 
 const char *silverReuseCapModeName(SilverReuseCapMode mode) {
@@ -646,6 +665,42 @@ std::string semanticActionFingerprint(const SemanticAction &action) {
     return out.str();
 }
 
+double silverVictoryBaselineCorrection(const BattleStateWire &originalRoot,
+                                       const BattleStateWire &leaf,
+                                       double goldWeight, double maxHpWeight) {
+    sts::GameContext originalContext, leafContext;
+    initializeRunContext(originalContext, originalRoot);
+    initializeRunContext(leafContext, leaf);
+    const auto original = materialize(originalRoot, &originalContext);
+    const auto leafState = materialize(leaf, &leafContext);
+    const auto effectiveGold = [](const sts::BattleContext &bc) {
+        double gold = bc.player.gold;
+        if (bc.requiresStolenGoldCheck() && !bc.player.hasRelic<sts::RelicId::ECTOPLASM>()) {
+            for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+                const auto &m = bc.monsters.arr[i];
+                const bool thief = m.id == sts::MonsterId::LOOTER || m.id == sts::MonsterId::MUGGER;
+                const bool escaped = m.curHp > 0
+                    && (m.moveHistory[0] == sts::MonsterMoveId::LOOTER_ESCAPE
+                        || m.moveHistory[0] == sts::MonsterMoveId::MUGGER_ESCAPE);
+                if (thief && !escaped) gold += m.miscInfo;
+            }
+        }
+        return gold;
+    };
+    return goldWeight * (effectiveGold(leafState) - effectiveGold(original))
+        + maxHpWeight * (leafState.player.maxHp - original.player.maxHp);
+}
+
+double silverTerminalLeafRootValue(const BattleStateWire &wire) {
+    sts::GameContext runContext;
+    initializeRunContext(runContext, wire);
+    const auto state = materialize(wire, &runContext);
+    sts::search::BattleSearcher searcher(state);
+    if (searcher.root == nullptr || searcher.root->simulationCount != 1)
+        throw std::invalid_argument("Silver snapshot is not terminal");
+    return searcher.root->evaluationSum;
+}
+
 class SilverSearchSession {
 public:
     sts::GameContext runContext;
@@ -669,6 +724,7 @@ public:
         searcher->endTurnWideningC = config.endTurnWideningC;
         searcher->endTurnWideningAlpha = config.endTurnWideningAlpha;
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
+        searcher->collectVictoryCounts = config.collectRootActionSummaries;
         searcher->leafObserver = config.leafObserver;
     }
 
@@ -811,6 +867,7 @@ public:
                 summary.edgeVisits = edge.visitCount;
                 if (edge.node != nullptr) {
                     summary.childSimulations = edge.node->simulationCount;
+                    summary.childVictoryCount = edge.node->victoryCount;
                     summary.childEvaluationSum = edge.node->evaluationSum;
                     if (edge.node->simulationCount > 0) {
                         summary.selectionQValid = true;

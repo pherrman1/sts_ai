@@ -184,20 +184,35 @@ enum class SilverLeafObservationPhase : std::uint8_t { START = 0, END = 1 };
 struct SilverLeafObservation {
     SilverLeafObservationPhase phase = SilverLeafObservationPhase::START;
     BattleStateWire state;
+    // Exact provenance states for offline reconstruction. `originalRootState`
+    // pins production evaluateEndState baselines; `parentState` is the nearest
+    // non-random decision parent defining the complete sibling/action group.
+    BattleStateWire originalRootState;
+    BattleStateWire parentState;
     std::uint64_t rootStateHash = 0;
     std::uint64_t parentStateHash = 0;
     std::uint64_t leafStateHash = 0;
+    std::vector<std::string> parentLegalActionFingerprints;
+    std::string incomingActionFingerprint;
     int depth = 0;
     int actionCountBeforeRollout = 0;
     bool collectResult = false;
+    bool corpusSelected = false;
+    bool vnetCollected = false;
     bool skipRollout = false;
     double vnetRawPrediction = 0.0;
     double directValue = 0.0;
     int terminalOutcome = 0;
     double rolloutUtility = 0.0;
     std::int64_t rolloutActionCount = 0;
+    std::vector<std::string> rolloutActionFingerprints;
     std::int64_t rolloutTurnDelta = 0;
     std::int64_t rolloutWallMicros = 0;
+    int terminalHp = 0;
+    int terminalMaxHp = 0;
+    int terminalTurn = 0;
+    int terminalPotionCount = 0;
+    double terminalEffectiveGold = 0.0;
 };
 
 using SilverLeafObserver = std::function<void(SilverLeafObservation &)>;
@@ -265,6 +280,17 @@ struct SemanticAction {
 // index and can therefore cross the isolated-search/live-action boundary.
 std::string semanticActionFingerprint(const SemanticAction &action);
 
+// Difference needed to translate a victorious continuation evaluated with
+// `leaf` as BattleSearcher::rootState back to `originalRoot` semantics.
+// Loss evaluations contain neither root-relative term and therefore use zero.
+double silverVictoryBaselineCorrection(const BattleStateWire &originalRoot,
+                                       const BattleStateWire &leaf,
+                                       double goldWeight = 0.25,
+                                       double maxHpWeight = 2.0);
+// Exact evaluateEndState value with `state` as the fresh Silver root. Valid
+// for terminal snapshots; nonterminal callers should run a normal search.
+double silverTerminalLeafRootValue(const BattleStateWire &state);
+
 struct SilverSearchConfig {
     // Values copied from upstream SearchAgent defaults at the pinned SHA.
     std::int64_t simulationsPerDecision = 50000;
@@ -304,6 +330,9 @@ struct SilverRootActionSummary {
     std::int64_t edgeVisits = 0;
     std::int64_t childSimulations = 0;
     double childEvaluationSum = 0.0;
+    // Sufficient statistic for translating leaf-root victory-only baseline
+    // terms back to an earlier production root without changing search.
+    std::int64_t childVictoryCount = 0;
     // `BattleSearcher::evaluateEdge` uses this exact child mean as Q for a
     // visited root edge.  It is false for unvisited/no-child edges, whose
     // existing selection behavior is +infinity rather than a scalar Q.

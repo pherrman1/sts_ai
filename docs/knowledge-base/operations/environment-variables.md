@@ -59,6 +59,10 @@ changes its size.
 | `STS_SILVER_VNET_LEAF_MAX_PER_COMBAT` | Maximum logged leaves per live combat | `5000` | `SilverLiveBackend` |
 | `STS_SILVER_VNET_LEAF_DIRECT` | Skip nonterminal Silver rollouts and backpropagate the affine VNet estimate; terminal states remain exact | `0` (off) | `SilverLiveBackend` |
 | `STS_SILVER_VNET_LEAF_A` / `_B` | Optional affine map applied only by direct mode: `a * raw_prediction + b` | `1` / `0` | `SilverLiveBackend` |
+| `STS_SILVER_LEAF_CORPUS` | Default-off JSONL output for exact, versioned Silver rollout-start snapshots. Groups are sampled by nearest non-random parent and emitted only when retained leaves cover every semantic legal parent action. | unset/off | `SilverLiveBackend`; `SilverWireJson.h` |
+| `STS_SILVER_LEAF_CORPUS_GROUP_MODULUS` | Deterministic whole-group FNV sampling modulus (`1` selects every group); individual leaves are never sampled independently. | `1` when corpus output is enabled | `SilverLiveBackend` |
+| `STS_SILVER_LEAF_CORPUS_MAX_PER_GROUP` | Defensive cap on unique exact leaf snapshots retained for one selected parent group. An incomplete capped group is not emitted. | `256` | `SilverLiveBackend` |
+| `STS_EXECUTABLE_GIT_SHA` | Exact executable Git SHA recorded in every corpus row; required when `STS_SILVER_LEAF_CORPUS` is enabled. | unset | `SilverLiveBackend` |
 
 The root-action diagnostic is a shadow measurement layered around the ordinary
 Silver decision. It is intended for bounded fair-play experiments, not for

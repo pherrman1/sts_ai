@@ -196,6 +196,7 @@ search::BattleSearcher::Node* search::BattleSearcher::allocNode() {
         Node* n = allNodes[poolUsed++].get();
         n->edges.clear();
         n->simulationCount = 0;
+        n->victoryCount = 0;
         n->evaluationSum = 0;
         n->isRandomNode = false;
         n->parent = nullptr;
@@ -290,12 +291,12 @@ void search::BattleSearcher::step() {
     auto onPath = [&](Node* n) {
         return std::find(searchStack.begin(), searchStack.end(), n) != searchStack.end();
     };
-    auto parentStateHashFor = [&](Node *leaf) {
+    auto parentStateFor = [&](Node *leaf) -> Node * {
         for (auto it = searchStack.rbegin(); it != searchStack.rend(); ++it) {
             if (*it == leaf) continue;
-            if (!(*it)->isRandomNode) return static_cast<std::uint64_t>(hashBattleState((*it)->state));
+            if (!(*it)->isRandomNode) return *it;
         }
-        return static_cast<std::uint64_t>(hashBattleState(leaf->state));
+        return leaf;
     };
 
     Node* cur = root;
@@ -329,7 +330,7 @@ void search::BattleSearcher::step() {
                 // Outcome reproduces a state already on the path -> cycle. Roll out instead.
                 BattleContext &rollout = (rolloutScratch = child->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
-                    hashBattleState(root->state), parentStateHashFor(child), depth);
+                    hashBattleState(root->state), parentStateFor(child), depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
@@ -339,7 +340,7 @@ void search::BattleSearcher::step() {
             if (child->simulationCount == 0) {
                 BattleContext &rollout = (rolloutScratch = child->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
-                    hashBattleState(root->state), parentStateHashFor(child), depth);
+                    hashBattleState(root->state), parentStateFor(child), depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
@@ -372,7 +373,7 @@ void search::BattleSearcher::step() {
                 // Descending would revisit an on-path node -> cycle. Roll out instead.
                 BattleContext &rollout = (rolloutScratch = edge.node->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
-                    hashBattleState(root->state), parentStateHashFor(edge.node), depth);
+                    hashBattleState(root->state), parentStateFor(edge.node), depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
@@ -436,7 +437,7 @@ void search::BattleSearcher::step() {
             // Deterministic action cycled back to an on-path node. Roll out instead.
             BattleContext &rollout = (rolloutScratch = next);  // next == child->state
             const auto evaluation = rolloutToEnd(rollout, actionStack,
-                hashBattleState(root->state), parentStateHashFor(child), depth);
+                hashBattleState(root->state), parentStateFor(child), depth);
             updateFromPlayout(searchStack, actionStack, rollout, evaluation);
             return;
         }
@@ -448,7 +449,7 @@ void search::BattleSearcher::step() {
             // child->state, which now holds exactly what next did (rng included).
             BattleContext &rollout = (rolloutScratch = child->state);
             const auto evaluation = rolloutToEnd(rollout, actionStack,
-                hashBattleState(root->state), parentStateHashFor(child), depth);
+                hashBattleState(root->state), parentStateFor(child), depth);
             updateFromPlayout(searchStack, actionStack, rollout, evaluation);
             return;
         }
@@ -476,6 +477,7 @@ void search::BattleSearcher::updateFromPlayout(const std::vector<Node *> &stack,
     for (auto it = stack.rbegin(); it != stack.rend(); ++it) {
         auto &node = *(*it);
         ++node.simulationCount;
+        if (collectVictoryCounts && endState.outcome == Outcome::PLAYER_VICTORY) ++node.victoryCount;
         node.evaluationSum += evaluation;
     }
 }
@@ -540,17 +542,26 @@ static int rolloutMaxTurnsEnv() {
     return v;
 }
 
+static double effectiveGold(const BattleContext &bc);
+
 double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Action> &actionStack,
                                              std::uint64_t rootStateHash,
-                                             std::uint64_t parentStateHash,
+                                             const Node *parent,
                                              int depth) {
     const int maxTurns = rolloutMaxTurnsEnv();
     const int startTurn = bc.turn;
     const std::size_t actionStackStart = actionStack.size();
     std::optional<silver_bridge::SilverLeafObservation> leafObservation;
     if (leafObserver) {
+        if (parent == nullptr || parent->isRandomNode)
+            throw std::runtime_error("Silver leaf observer received invalid decision parent");
+        std::vector<Action> parentLegalActions;
+        parentLegalActions.reserve(parent->edges.size());
+        for (const auto &edge : parent->edges) parentLegalActions.push_back(edge.action);
+        const Action *incoming = actionStack.empty() ? nullptr : &actionStack.back();
         leafObservation = silver_bridge::makeSilverLeafObservation(
-            bc, rootStateHash, parentStateHash, depth,
+            bc, root->state, parent->state, parentLegalActions, incoming,
+            rootStateHash, static_cast<std::uint64_t>(hashBattleState(parent->state)), depth,
             static_cast<int>(actionStackStart));
         leafObserver(*leafObservation);
         if (leafObservation->skipRollout) {
@@ -597,6 +608,10 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         }
 
         actionStack.push_back(action);
+        if (leafObservation && leafObservation->collectResult) {
+            leafObservation->rolloutActionFingerprints.push_back(
+                silver_bridge::silverActionFingerprint(bc, action));
+        }
         action.execute(bc);
     }
     const auto actionCount = static_cast<std::int64_t>(actionStack.size() - actionStackStart);
@@ -611,6 +626,11 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         leafObservation->rolloutTurnDelta = turnDelta;
         leafObservation->rolloutWallMicros = std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now() - rolloutStart).count();
+        leafObservation->terminalHp = bc.player.curHp;
+        leafObservation->terminalMaxHp = bc.player.maxHp;
+        leafObservation->terminalTurn = bc.turn;
+        leafObservation->terminalPotionCount = bc.potionCount;
+        leafObservation->terminalEffectiveGold = effectiveGold(bc);
         leafObserver(*leafObservation);
     }
     return evaluation;
