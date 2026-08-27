@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-08-26 against the current working tree.
+Last verified: 2026-08-27 against the current working tree.
 
 ## Purpose
 
@@ -24,9 +24,22 @@ LTO inputs. The resulting targets are:
 - executables `main`, `one_combat`, `parity_test`, `test`, and `small-test`.
 
 `json` and `pybind11` are real gitlinks after the 2026-08-02 restoration
-(`json` at `2222d386`, `pybind11` at `63d627c5`); a fresh clone requires
-`git submodule update --init`. The pybind11 module guard in `CMakeLists.txt`
-means a machine without `python3-dev` still builds the core executables;
+(`json` at `2222d386`, `pybind11` at `63d627c5`). Every fresh clone and every
+new linked worktree needs its own submodule checkout before the first configure.
+For a worktree created by Windows Git, run this from that worktree in
+PowerShell:
+
+```powershell
+git submodule update --init
+git submodule status -- json pybind11
+```
+
+Each status line must begin with a space, meaning the checkout is at the commit
+pinned by the superproject. Reject `-` (uninitialized), `+` (different commit),
+or `U` (conflict). Do this before entering WSL; otherwise CMake may be the first
+place the missing headers surface, after avoidable configure work. The pybind11
+module guard in `CMakeLists.txt` means a machine without `python3-dev` still
+builds the core executables;
 check `find_package(Python)` results to know whether `slaythespire` exists.
 
 There is no reusable `sts`/`libsts.a` target; `sts_core_objects` is an internal
@@ -91,6 +104,20 @@ ccache --dir "$HOME/.cache/sts_ai/ccache" --show-stats
 During iteration, build only affected focused targets; perform the required
 complete build/test pass once before handoff. Never share one CMake binary
 directory between worktrees.
+
+On this Windows-hosted repository, use Windows Git for Git operations in linked
+worktrees created by Windows Git. Their `.git` files contain Windows paths that
+WSL Git may not resolve. Use WSL for the checked-in Linux/GCC CMake presets,
+compiler, CTest, and Bash/Python checks; do not assume the two Git clients are
+interchangeable until `git rev-parse --show-toplevel` succeeds in the chosen
+environment.
+
+A build line such as `Linking CXX executable one_combat` is progress, not proof
+of completion. Retain the running command/session, poll until it exits, and
+record the exit status. For ordinary compile-and-smoke-test iteration, that exit
+status and the expected executable path are sufficient; use `file` when the
+path or binary format is uncertain. Record `sha256sum` only when freezing a
+binary for benchmark or other reproducibility/provenance evidence.
 
 ### Authoritative GitHub Actions verification
 
