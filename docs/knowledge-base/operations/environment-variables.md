@@ -53,6 +53,12 @@ changes its size.
 | `STS_SILVER_ADAPTIVE_TOP_GAP` | Strict uncertainty threshold for `STS_SILVER_ADAPTIVE`; escalation occurs only when the 1k top-vs-second visit-share gap is `<` this value | `0.094` | `SilverLiveBackend` |
 | `STS_SILVER_EXACT_ROOT_BUDGETS` | Experiment-only budget control: use the agent's base simulations at every Silver root, including bosses, instead of applying the native boss multiplier. Set identically for paired fixed-1k and adaptive arms. | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_TELEMETRY` | Per-combat Silver aggregate telemetry line | unset/off | `SilverLiveBackend` |
+| `STS_SILVER_VNET_LEAF_LOG` | Default-off CSV for sampled Silver rollout-start leaves and their actual one-sample rollout references | unset/off | `SilverLiveBackend` |
+| `STS_SILVER_VNET_LEAF_MODEL` | Combat VNet loaded lazily for the leaf observer/direct evaluator | `models/v_combat_7k_tuned.txt` | `SilverLiveBackend` |
+| `STS_SILVER_VNET_LEAF_SAMPLE` | Deterministic FNV-1a sampling modulus for leaf logging (`1` logs every eligible leaf) | `16` | `SilverLiveBackend` |
+| `STS_SILVER_VNET_LEAF_MAX_PER_COMBAT` | Maximum logged leaves per live combat | `5000` | `SilverLiveBackend` |
+| `STS_SILVER_VNET_LEAF_DIRECT` | Skip nonterminal Silver rollouts and backpropagate the affine VNet estimate; terminal states remain exact | `0` (off) | `SilverLiveBackend` |
+| `STS_SILVER_VNET_LEAF_A` / `_B` | Optional affine map applied only by direct mode: `a * raw_prediction + b` | `1` / `0` | `SilverLiveBackend` |
 
 The root-action diagnostic is a shadow measurement layered around the ordinary
 Silver decision. It is intended for bounded fair-play experiments, not for
@@ -62,6 +68,13 @@ actions multiplied by `STS_SILVER_ROOT_DIAG_REF_BUDGET` and
 regret, replicate stability, rollout length/outcomes, and the terminal-utility
 component sums emitted by the isolated vendor search.
 
+The leaf CSV schema is:
+`run_seed,act,floor,encounter,combat_decision_ordinal,isolated_search_seed,root_state_hash,parent_state_hash,leaf_state_hash,depth,action_count_before_rollout,leaf_turn,leaf_input_state,leaf_cur_hp,leaf_max_hp,vnet_raw_prediction,rollout_terminal_outcome,rollout_utility,rollout_action_count,rollout_turn_delta,rollout_wall_micros`.
+Rows are emitted only after a sampled shadow rollout completes, so the VNet
+prediction and actual terminal utility refer to the same isolated leaf.
+When enabled, the leaf model is loaded once during Silver backend installation
+into a dedicated `CombatValueNet`; leaf inference uses the canonical feature
+extractor but does not emit the ordinary global VNet trace hook.
 In the root-diagnostic CSV, `adaptive_initial_top_visit_share` is the initial
 1k trigger-side statistic retained after an adaptive continuation; it is not a
 final-search concentration measurement. The benchmark sidecar records whether

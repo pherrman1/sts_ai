@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "sim/search/SilverBridge.h"
+
 namespace sts::search {
 
 struct SilverLiveDiagnostics {
@@ -32,6 +34,7 @@ struct SilverLiveDiagnostics {
     std::uint64_t wideningCapped = 0;
     std::uint64_t depthSum = 0;
     std::uint64_t chanceDepthSum = 0;
+    std::uint64_t rolloutSkippedVNet = 0;
     // Default-off test trace.  It is never populated in production runs.
     std::vector<std::string> actionFingerprints;
 };
@@ -67,6 +70,11 @@ void setSilverStickyQualityTestBudgetsForTest(std::int64_t fresh,
                                               std::int64_t ref25,
                                               std::int64_t ref50);
 void setSilverLiveActionTraceForTest(bool enabled);
+
+// Focused parity-test seam: project one public Silver wire state back into a
+// live BattleContext and run the canonical combat VNet feature extractor.
+double silverLiveLeafVNetPredictionForTest(
+    const silver_bridge::BattleStateWire &wire, const std::string &modelPath);
 
 } // namespace sts::search
 

@@ -20,6 +20,7 @@
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
+#include "sim/search/CombatValueNet.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverBridge.h"
@@ -42,12 +43,21 @@ struct SilverLiveOptions {
     int rootDiagnosticMaxPerSeed = 8;
     std::int64_t rootDiagnosticReferenceBudget = 25000;
     int rootDiagnosticReplicates = 2;
+    std::string leafVNetLogFile;
+    std::string leafVNetModel = "models/v_combat_7k_tuned.txt";
+    int leafVNetSample = 16;
+    int leafVNetMaxPerCombat = 5000;
+    bool leafVNetDirect = false;
+    double leafVNetAffineA = 1.0;
+    double leafVNetAffineB = 0.0;
     bool adaptiveEnabled = false;
     double adaptiveTopTwoVisitGapThreshold = 0.094;
     bool installed = false;
 };
 
 SilverLiveOptions g_silverLiveOptions;
+CombatValueNet g_silverLeafVNet;
+std::string g_silverLeafVNetLoadedPath;
 std::mutex g_scalingDiagnosticMutex;
 bool g_scalingDiagnosticHeaderWritten = false;
 std::mutex g_stickyQualityMutex;
@@ -55,6 +65,8 @@ bool g_stickyQualityHeaderWritten = false;
 bool g_stickyQualitySummaryHeaderWritten = false;
 std::mutex g_rootDiagnosticMutex;
 bool g_rootDiagnosticHeaderWritten = false;
+std::mutex g_leafVNetLogMutex;
+bool g_leafVNetLogHeaderWritten = false;
 bool g_stickyQualityActionTraceForTest = false;
 std::mutex g_stickyQualitySelectionMutex;
 std::unordered_map<std::uint64_t, int> g_stickyQualitySelectionsByRunSeed;
@@ -69,6 +81,8 @@ constexpr const char *kStickyQualitySummaryHeader =
     "run_seed,floor,encounter,sticky_eligible_ordinary_decisions,selected_evaluated_decisions,excluded_transaction_subdecisions";
 constexpr const char *kRootDiagnosticHeader =
     "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,cur_hp,max_hp,potion_count,action_type,stochastic,action_fingerprint,chosen_1k,chosen_1k_visits,chosen_1k_q,chosen_37k,chosen_37k_visits,chosen_37k_q,active_reroot_exact,active_fallback_reason,active_inherited_visits,reference_budget,reference_replicates,reference_value,reference_value_stddev,reference_rollout_win_rate,reference_rollout_actions,reference_rollout_turns,reference_rollout_calls,reference_terminal_wins,reference_terminal_losses,reference_utility_sum,reference_win_bonus,reference_hp,reference_potion,reference_turn_penalty,reference_death_save,reference_gold,reference_max_hp,reference_parasite_penalty,reference_monster_damage,reference_alive,reference_energy_waste,reference_draw,reference_survival,current_1k_rollout_calls,current_1k_terminal_wins,current_1k_terminal_losses,current_1k_rollout_actions,current_1k_rollout_turns,current_1k_utility_sum,current_1k_win_bonus_sum,current_1k_hp_sum,current_1k_potion_sum,current_1k_turn_penalty_sum,current_1k_death_save_sum,current_1k_gold_sum,current_1k_max_hp_sum,current_1k_parasite_penalty_sum,current_1k_monster_damage_sum,current_1k_alive_sum,current_1k_energy_waste_sum,current_1k_draw_sum,current_1k_survival_sum,current_37k_rollout_calls,current_37k_terminal_wins,current_37k_terminal_losses,current_37k_rollout_actions,current_37k_rollout_turns,current_37k_utility_sum,current_37k_win_bonus_sum,current_37k_hp_sum,current_37k_potion_sum,current_37k_turn_penalty_sum,current_37k_death_save_sum,current_37k_gold_sum,current_37k_max_hp_sum,current_37k_parasite_penalty_sum,current_37k_monster_damage_sum,current_37k_alive_sum,current_37k_energy_waste_sum,current_37k_draw_sum,current_37k_survival_sum,low_root_action_summaries,low_root_visit_share,low_top_two_visit_gap_share,low_top_q_gap,low_visit_entropy,low_legal_actions,adaptive_action,adaptive_simulations,adaptive_escalated,adaptive_initial_top_visit_share,adaptive_threshold";
+constexpr const char *kLeafVNetHeader =
+    "run_seed,act,floor,encounter,combat_decision_ordinal,isolated_search_seed,root_state_hash,parent_state_hash,leaf_state_hash,depth,action_count_before_rollout,leaf_turn,leaf_input_state,leaf_cur_hp,leaf_max_hp,vnet_raw_prediction,rollout_terminal_outcome,rollout_utility,rollout_action_count,rollout_turn_delta,rollout_wall_micros";
 
 void parseSilverLiveOptions() {
     SilverLiveOptions options;
@@ -99,6 +113,13 @@ void parseSilverLiveOptions() {
         options.rootDiagnosticReferenceBudget = std::atoll(raw);
     if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_REPLICATES"))
         options.rootDiagnosticReplicates = std::atoi(raw);
+    if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_LOG")) options.leafVNetLogFile = raw;
+    if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_MODEL")) options.leafVNetModel = raw;
+    if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_SAMPLE")) options.leafVNetSample = std::atoi(raw);
+    if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_MAX_PER_COMBAT")) options.leafVNetMaxPerCombat = std::atoi(raw);
+    if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_DIRECT")) options.leafVNetDirect = std::atoi(raw) != 0;
+    if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_A")) options.leafVNetAffineA = std::atof(raw);
+    if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_B")) options.leafVNetAffineB = std::atof(raw);
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE"))
         options.adaptiveEnabled = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
@@ -109,6 +130,10 @@ void parseSilverLiveOptions() {
                 || options.rootDiagnosticReplicates <= 0)) {
         throw std::invalid_argument(
             "STS_SILVER_ROOT_DIAG_MAX_PER_SEED, _REF_BUDGET, and _REPLICATES must be positive");
+    }
+    if (!options.leafVNetLogFile.empty() || options.leafVNetDirect) {
+        if (options.leafVNetSample <= 0 || options.leafVNetMaxPerCombat <= 0)
+            throw std::invalid_argument("STS_SILVER_VNET_LEAF_SAMPLE and _MAX_PER_COMBAT must be positive");
     }
     if (!options.stickyQualityFile.empty()
             && options.reuseCapMode != silver_bridge::SilverReuseCapMode::ACTIVE) {
@@ -238,6 +263,166 @@ std::string csvField(const std::string &value) {
         else out += ch;
     }
     return out + "\"";
+}
+
+CardInstance liveLeafCard(const silver_bridge::CardWire &in) {
+    CardInstance out;
+    out.id = static_cast<CardId>(in.id);
+    out.uniqueId = in.uniqueId; out.specialData = in.specialData;
+    out.cost = static_cast<std::int8_t>(in.cost);
+    out.costForTurn = static_cast<std::int8_t>(in.costForTurn);
+    out.upgraded = in.upgraded; out.freeToPlayOnce = in.freeToPlayOnce; out.retain = in.retain;
+    return out;
+}
+
+template <typename Pile>
+void loadLiveLeafPile(Pile &out, const silver_bridge::PileWire &in) {
+    out.clear();
+    for (const auto &card : in.knownBottom) out.push_back(liveLeafCard(card));
+    for (const auto &card : in.unknown) out.push_back(liveLeafCard(card));
+    for (const auto &card : in.knownTop) out.push_back(liveLeafCard(card));
+}
+
+// Rebuild only the existing live BattleContext input expected by
+// CombatValueNet::predict(). This is a wire-to-live adapter, not a second
+// feature extractor or VNet implementation; the authoritative 751-feature
+// path remains CombatValueNet::predict(BattleContext).
+BattleContext liveLeafBattleContext(const silver_bridge::BattleStateWire &in) {
+    BattleContext out;
+    out.seed = in.isolatedSearchSeed;
+    out.floorNum = in.floorNum; out.encounter = static_cast<MonsterEncounter>(in.encounter);
+    out.loopCount = in.loopCount; out.energyWasted = in.energyWasted; out.cardsDrawn = in.cardsDrawn;
+    out.ascension = in.ascension;
+    out.outcome = static_cast<Outcome>(in.outcome); out.inputState = static_cast<InputState>(in.inputState);
+    out.monsterTurnIdx = in.monsterTurnIdx; out.endTurnQueued = in.endTurnQueued;
+    out.turnHasEnded = in.turnHasEnded; out.skipMonsterTurn = in.skipMonsterTurn;
+    out.potionCount = in.potionCount; out.potionCapacity = in.potionCapacity; out.turn = in.turn;
+    out.miscBits = std::bitset<32>(in.miscBits);
+    for (std::size_t i = 0; i < out.potions.size(); ++i)
+        out.potions[i] = static_cast<Potion>(in.potions[i]);
+
+    const auto &wp = in.player;
+    auto &p = out.player;
+    p.cc = static_cast<CharacterClass>(wp.characterClass); p.gold = wp.gold;
+    p.curHp = wp.curHp; p.maxHp = wp.maxHp; p.energy = wp.energy;
+    p.energyPerTurn = wp.energyPerTurn; p.cardDrawPerTurn = wp.cardDrawPerTurn;
+    p.stance = static_cast<Stance>(wp.stance); p.orbSlots = wp.orbSlots;
+    p.lastTargetedMonster = wp.lastTargetedMonster; p.block = wp.block; p.artifact = wp.artifact;
+    p.dexterity = wp.dexterity; p.focus = wp.focus; p.strength = wp.strength;
+    p.justAppliedBits = wp.justAppliedBits; p.statusBits0 = wp.statusBits0; p.statusBits1 = wp.statusBits1;
+    for (const auto &[status, amount] : wp.statusMap)
+        p.statusMap.emplace(static_cast<PlayerStatus>(status), amount);
+    p.relicBits0 = wp.relicBits0; p.relicBits1 = wp.relicBits1;
+    p.happyFlowerCounter = wp.relicCounters[0]; p.incenseBurnerCounter = wp.relicCounters[1];
+    p.inkBottleCounter = wp.relicCounters[2]; p.inserterCounter = wp.relicCounters[3];
+    p.nunchakuCounter = wp.relicCounters[4]; p.penNibCounter = wp.relicCounters[5];
+    p.sundialCounter = wp.relicCounters[6]; p.haveUsedNecronomiconThisTurn = wp.haveUsedNecronomiconThisTurn;
+    p.combustHpLoss = wp.combustHpLoss; p.devaFormEnergyPerTurn = wp.devaFormEnergyPerTurn;
+    p.echoFormCardsDoubled = wp.echoFormCardsDoubled; p.panacheCounter = wp.panacheCounter;
+    p.cardsPlayedThisTurn = wp.cardsPlayedThisTurn; p.attacksPlayedThisTurn = wp.attacksPlayedThisTurn;
+    p.skillsPlayedThisTurn = wp.skillsPlayedThisTurn; p.cardsDiscardedThisTurn = wp.cardsDiscardedThisTurn;
+    p.orangePelletsCardTypesPlayed = std::bitset<3>(wp.orangePelletsCardTypesPlayed);
+    p.lastAttackUnblockedDamage = wp.lastAttackUnblockedDamage; p.timesDamagedThisCombat = wp.timesDamagedThisCombat;
+    p.bomb1 = wp.bombs[0]; p.bomb2 = wp.bombs[1]; p.bomb3 = wp.bombs[2];
+
+    out.monsters.monsterCount = in.monsterCount; out.monsters.monstersAlive = in.monstersAlive;
+    out.monsters.extraRollMoveOnTurn = std::bitset<5>(in.extraRollMoveOnTurn);
+    out.monsters.skipTurn = std::bitset<5>(in.skipMonsterTurnBits);
+    for (std::size_t i = 0; i < out.monsters.arr.size(); ++i) {
+        const auto &wm = in.monsters[i];
+        auto &m = out.monsters.arr[i];
+        m.idx = wm.idx; m.id = static_cast<MonsterId>(wm.id); m.curHp = wm.curHp;
+        m.maxHp = wm.maxHp; m.block = wm.block; m.isEscapingB = wm.isEscapingB;
+        m.halfDead = wm.halfDead; m.escapeNext = wm.escapeNext;
+        m.moveHistory[0] = static_cast<MMID>(wm.moveHistory[0]);
+        m.moveHistory[1] = static_cast<MMID>(wm.moveHistory[1]); m.statusBits = wm.statusBits;
+        m.artifact = static_cast<std::int8_t>(wm.smallPowers[0]);
+        m.blockReturn = static_cast<std::int8_t>(wm.smallPowers[1]); m.choked = static_cast<std::int8_t>(wm.smallPowers[2]);
+        m.corpseExplosion = static_cast<std::int8_t>(wm.smallPowers[3]); m.lockOn = static_cast<std::int8_t>(wm.smallPowers[4]);
+        m.mark = wm.smallPowers[5]; m.metallicize = static_cast<std::int8_t>(wm.smallPowers[6]);
+        m.platedArmor = static_cast<std::int8_t>(wm.smallPowers[7]); m.poison = static_cast<std::int8_t>(wm.smallPowers[8]);
+        m.regen = static_cast<std::int8_t>(wm.smallPowers[9]); m.shackled = static_cast<std::int8_t>(wm.smallPowers[10]);
+        m.strength = wm.strength; m.vulnerable = wm.vulnerable; m.weak = wm.weak;
+        m.uniquePower0 = wm.uniquePower0; m.uniquePower1 = wm.uniquePower1; m.miscInfo = wm.miscInfo;
+    }
+
+    out.cards.nextUniqueCardId = in.nextUniqueCardId; out.cards.cardsInHand = static_cast<int>(in.hand.size());
+    for (int i = 0; i < out.cards.cardsInHand; ++i) out.cards.hand[i] = liveLeafCard(in.hand[i]);
+    for (std::size_t i = 0; i < out.cards.limbo.size() && i < in.limbo.size(); ++i)
+        out.cards.limbo[i] = liveLeafCard(in.limbo[i]);
+    for (std::size_t i = 0; i < out.cards.stasisCards.size(); ++i)
+        out.cards.stasisCards[i] = liveLeafCard(in.stasisCards[i]);
+    out.cards.handNormalityCount = in.handNormalityCount; out.cards.handPainCount = in.handPainCount;
+    out.cards.strikeCount = in.strikeCount; out.cards.handBloodCardCount = in.handBloodCardCount;
+    out.cards.drawPileBloodCardCount = in.drawPileBloodCardCount;
+    out.cards.discardPileBloodCardCount = in.discardPileBloodCardCount;
+    loadLiveLeafPile(out.cards.drawPile, in.drawPile);
+    loadLiveLeafPile(out.cards.discardPile, in.discardPile);
+    loadLiveLeafPile(out.cards.exhaustPile, in.exhaustPile);
+    return out;
+}
+
+bool sampledLeaf(const silver_bridge::SilverLeafObservation &observation, int modulus) {
+    std::uint64_t h = 1469598103934665603ULL;
+    const auto mix = [&h](std::uint64_t value) {
+        for (int i = 0; i < 8; ++i) { h ^= static_cast<std::uint8_t>(value); h *= 1099511628211ULL; value >>= 8; }
+    };
+    mix(observation.state.isolatedSearchSeed); mix(observation.rootStateHash);
+    mix(observation.parentStateHash); mix(observation.leafStateHash);
+    mix(static_cast<std::uint32_t>(observation.depth));
+    return h % static_cast<std::uint64_t>(modulus) == 0;
+}
+
+void ensureSilverLeafVNetLoaded() {
+    if (g_silverLeafVNetLoadedPath == g_silverLiveOptions.leafVNetModel
+            && g_silverLeafVNet.loaded()) return;
+    if (!g_silverLeafVNet.load(g_silverLiveOptions.leafVNetModel))
+        throw std::runtime_error("cannot load Silver leaf VNet: " + g_silverLiveOptions.leafVNetModel);
+    g_silverLeafVNetLoadedPath = g_silverLiveOptions.leafVNetModel;
+    std::cout << "[Silver leaf VNet ON: " << g_silverLeafVNetLoadedPath << ", "
+              << g_silverLeafVNet.description() << ", affine a="
+              << g_silverLiveOptions.leafVNetAffineA << " b="
+              << g_silverLiveOptions.leafVNetAffineB << "]\n";
+}
+
+double silverLiveLeafVNetPredictionForTestImpl(
+        const silver_bridge::BattleStateWire &wire, const std::string &modelPath) {
+    CombatValueNet model;
+    if (!model.load(modelPath))
+        throw std::runtime_error("cannot load Silver leaf VNet parity-test model: " + modelPath);
+    return model.predict(liveLeafBattleContext(wire), false);
+}
+
+void writeLeafVNetObservation(std::uint64_t runSeed, int decision,
+                              const silver_bridge::SilverLeafObservation &observation) {
+    std::lock_guard<std::mutex> lock(g_leafVNetLogMutex);
+    bool empty = false;
+    if (!g_leafVNetLogHeaderWritten) {
+        std::ifstream existing(g_silverLiveOptions.leafVNetLogFile, std::ios::binary);
+        empty = !existing || existing.peek() == std::ifstream::traits_type::eof();
+        if (!empty) {
+            std::string header; std::getline(existing, header);
+            if (header != kLeafVNetHeader)
+                throw std::runtime_error("STS_SILVER_VNET_LEAF_LOG has an incompatible existing header: "
+                                         + g_silverLiveOptions.leafVNetLogFile);
+        }
+    }
+    std::ofstream out(g_silverLiveOptions.leafVNetLogFile, std::ios::app);
+    if (!out) throw std::runtime_error("cannot open STS_SILVER_VNET_LEAF_LOG: "
+                                      + g_silverLiveOptions.leafVNetLogFile);
+    if (!g_leafVNetLogHeaderWritten && empty) out << kLeafVNetHeader << '\n';
+    const auto &s = observation.state;
+    out << std::setprecision(17)
+        << runSeed << ',' << s.act << ',' << s.floorNum << ',' << s.encounter << ',' << decision << ','
+        << s.isolatedSearchSeed << ',' << observation.rootStateHash << ',' << observation.parentStateHash << ','
+        << observation.leafStateHash << ',' << observation.depth << ',' << observation.actionCountBeforeRollout << ','
+        << s.turn << ',' << s.inputState << ',' << s.player.curHp << ',' << s.player.maxHp << ','
+        << observation.vnetRawPrediction << ',' << observation.terminalOutcome << ',' << observation.rolloutUtility << ','
+        << observation.rolloutActionCount << ',' << observation.rolloutTurnDelta << ',' << observation.rolloutWallMicros << '\n';
+    out.flush();
+    if (!out) throw std::runtime_error("cannot write STS_SILVER_VNET_LEAF_LOG: "
+                                      + g_silverLiveOptions.leafVNetLogFile);
+    g_leafVNetLogHeaderWritten = true;
 }
 
 std::string rootActionSummaries(const std::vector<silver_bridge::SilverRootActionSummary> &summaries) {
@@ -578,6 +763,7 @@ void addTelemetry(const silver_bridge::SilverSearchTelemetry &telemetry) {
     g_silverLiveDiagnostics.chanceTranspositions += telemetry.chanceTranspositions;
     g_silverLiveDiagnostics.depthSum += telemetry.depthSum;
     g_silverLiveDiagnostics.chanceDepthSum += telemetry.chanceDepthSum;
+    g_silverLiveDiagnostics.rolloutSkippedVNet += telemetry.rolloutSkippedVNet;
     for (std::size_t i = 0; i < telemetry.wideningSampled.size(); ++i) {
         g_silverLiveDiagnostics.wideningSampled += telemetry.wideningSampled[i];
         g_silverLiveDiagnostics.wideningCapped += telemetry.wideningCapped[i];
@@ -615,6 +801,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     const bool collectScalingDiagnostics = !g_silverLiveOptions.scalingDiagnosticFile.empty();
     const bool collectStickyQuality = !g_silverLiveOptions.stickyQualityFile.empty();
     const bool collectRootDiagnostics = !g_silverLiveOptions.rootDiagnosticFile.empty();
+    const bool collectLeafVNet = !g_silverLiveOptions.leafVNetLogFile.empty();
+    const bool directLeafVNet = g_silverLiveOptions.leafVNetDirect;
     const bool emitTelemetry = std::getenv("STS_SILVER_TELEMETRY")
         && std::atoi(std::getenv("STS_SILVER_TELEMETRY")) != 0;
     // Aggregate reroot-cause counters are advertised by STS_SILVER_TELEMETRY,
@@ -628,6 +816,33 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     StickyQualityCounters stickyQualityCounters;
 
     int decision = 0;
+    int sampledLeafCount = 0;
+    silver_bridge::SilverLeafObserver leafObserver;
+    if (collectLeafVNet || directLeafVNet) {
+        leafObserver = [&, runSeed = gc.seed](silver_bridge::SilverLeafObservation &observation) {
+            if (observation.phase == silver_bridge::SilverLeafObservationPhase::START) {
+                const bool logThisLeaf = collectLeafVNet
+                    && sampledLeafCount < g_silverLiveOptions.leafVNetMaxPerCombat
+                    && sampledLeaf(observation, g_silverLiveOptions.leafVNetSample);
+                if (!logThisLeaf && !directLeafVNet) return;
+                const BattleContext projected = liveLeafBattleContext(observation.state);
+                if (!g_silverLeafVNet.loaded())
+                    throw std::runtime_error("Silver leaf VNet was not loaded before search");
+                observation.vnetRawPrediction = g_silverLeafVNet.predict(projected, false);
+                if (logThisLeaf) {
+                    observation.collectResult = true;
+                    ++sampledLeafCount;
+                }
+                if (directLeafVNet) {
+                    observation.directValue = g_silverLiveOptions.leafVNetAffineA
+                        * observation.vnetRawPrediction + g_silverLiveOptions.leafVNetAffineB;
+                    observation.skipRollout = true;
+                }
+            } else if (observation.collectResult) {
+                writeLeafVNetObservation(runSeed, decision, observation);
+            }
+        };
+    }
     while (bc.outcome == Outcome::UNDECIDED) {
         if (++decision > 1000) fail("stall", "exceeded 1000 decisions");
         if (g_onCombatDecision) g_onCombatDecision(bc);
@@ -665,6 +880,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
         config.collectRootActionSummaries = collectRootDiagnostics || config.adaptiveEnabled;
         config.collectRolloutDiagnostics = collectRootDiagnostics;
+        config.leafObserver = leafObserver;
         silver_bridge::SemanticAction semantic;
         if (bc.inputState == InputState::CARD_SELECT
                 && (bc.cardSelectInfo.cardSelectTask == CardSelectTask::EXHAUST_MANY
@@ -798,6 +1014,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " widening_capped=" << d.wideningCapped
                   << " depth_sum=" << d.depthSum
                   << " chance_depth_sum=" << d.chanceDepthSum
+                  << " rollout_skipped_vnet=" << d.rolloutSkippedVNet
                   << " conversion_failures=" << d.conversionFailures
                   << " semantic_resolution_failures=" << d.semanticResolutionFailures
                   << " transaction_failures=" << d.transactionFailures
@@ -808,8 +1025,15 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
 
 } // namespace
 
+double silverLiveLeafVNetPredictionForTest(
+        const silver_bridge::BattleStateWire &wire, const std::string &modelPath) {
+    return silverLiveLeafVNetPredictionForTestImpl(wire, modelPath);
+}
+
 void installSilverLiveBackend() {
     parseSilverLiveOptions(); // validates before the first live combat begins
+    if (!g_silverLiveOptions.leafVNetLogFile.empty() || g_silverLiveOptions.leafVNetDirect)
+        ensureSilverLeafVNetLoaded();
     g_externalCombatBackend = runSilverCombat;
 }
 void uninstallSilverLiveBackend() { g_externalCombatBackend = nullptr; g_silverLiveOptions.installed = false; }

@@ -16,8 +16,17 @@
 #include <unordered_set>
 
 #include "sim/search/SimpleAgent.h"
+#include "sim/search/SilverBridge.h"
+
+namespace silver_bridge {
+SilverLeafObservation makeSilverLeafObservation(
+    const sts::BattleContext &state, std::uint64_t rootStateHash,
+    std::uint64_t parentStateHash, int depth, int actionCountBeforeRollout);
+}
 
 namespace sts::search {
+
+    std::size_t hashBattleState(const BattleContext &bc);
 
     typedef std::function<double (const BattleContext&)> EvalFnc;
 
@@ -76,6 +85,7 @@ namespace sts::search {
         std::int64_t rolloutNonTerminalStops = 0;
         std::int64_t rolloutActionCount = 0;
         std::int64_t rolloutTurnDelta = 0;
+        std::int64_t rolloutSkippedVNet = 0;
         double rolloutUtilitySum = 0.0;
         double rolloutWinBonusSum = 0.0;
         double rolloutHpSum = 0.0;
@@ -104,6 +114,7 @@ namespace sts::search {
             rolloutNonTerminalStops += o.rolloutNonTerminalStops;
             rolloutActionCount += o.rolloutActionCount;
             rolloutTurnDelta += o.rolloutTurnDelta;
+            rolloutSkippedVNet += o.rolloutSkippedVNet;
             rolloutUtilitySum += o.rolloutUtilitySum;
             rolloutWinBonusSum += o.rolloutWinBonusSum;
             rolloutHpSum += o.rolloutHpSum;
@@ -183,6 +194,7 @@ namespace sts::search {
         // Default-off rollout/terminal decomposition collection. This is
         // diagnostic accounting only; it is never consulted by selection.
         bool collectRolloutDiagnostics = false;
+        silver_bridge::SilverLeafObserver leafObserver;
 
         std::default_random_engine randGen;
 
@@ -212,6 +224,8 @@ namespace sts::search {
         // private helpers
         bool resetForSearch();   // reset node pool/root for a fresh search; returns false if the root is already terminal
         void updateFromPlayout(const std::vector<Node*> &stack, const std::vector<Action> &actionStack, const BattleContext &endState);
+        void updateFromPlayout(const std::vector<Node*> &stack, const std::vector<Action> &actionStack,
+                               const BattleContext &endState, double evaluation);
         [[nodiscard]] bool isTerminalState(const BattleContext &bc) const;
 
         Node* allocNode();   // claim a node from the pool (recycling a reset one, or growing the pool)
@@ -225,7 +239,9 @@ namespace sts::search {
         double evaluateEdge(const Node &parent, int edgeIdx, double logParentVisits);
         int selectBestEdgeToSearch(const Node &cur);
 
-        void rolloutToEnd(BattleContext &state, std::vector<Action> &actionStack);
+        double rolloutToEnd(BattleContext &state, std::vector<Action> &actionStack,
+                            std::uint64_t rootStateHash, std::uint64_t parentStateHash,
+                            int depth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);
         void enumerateCardActions(Node &node, const BattleContext &bc);

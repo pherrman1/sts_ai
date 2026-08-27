@@ -1,10 +1,15 @@
 // Controlled end-to-end smoke for the default-off isolated Silver callback.
 #include <cstdlib>
+#include <cmath>
 #include <iostream>
+#include <stdexcept>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
+#include "sim/search/CombatKnowledge.h"
+#include "sim/search/CombatValueNet.h"
 #include "sim/search/ScumSearchAgent2.h"
+#include "sim/search/SilverConversion.h"
 #include "sim/search/SilverLiveBackend.h"
 
 int main() {
@@ -31,6 +36,39 @@ int main() {
         && std::atoi(std::getenv("STS_SILVER_EXACT_ROOT_BUDGETS")) != 0;
     if (silverLiveExactRootBudgets() != expectedExactRootBudgets) {
         std::cerr << "silver_integration FAIL: exact-root-budget option was not parsed\n";
+        uninstallSilverLiveBackend();
+        return 1;
+    }
+    try {
+        BattleContext parityLive;
+        parityLive.init(gc, MonsterEncounter::CULTIST);
+        CombatKnowledgeState parityKnowledge;
+        parityKnowledge.initializeFromLiveBattle(parityLive);
+        const auto parityWire = makeSilverBattleStateWire(
+            parityLive, parityKnowledge, makeSilverRunContext(gc), 0x510E42u);
+        if (!parityWire.valid) throw std::runtime_error("parity fixture wire is invalid");
+
+        const std::string modelPath = "models/v_combat_7k_tuned.txt";
+        CombatValueNet expectedModel;
+        if (!expectedModel.load(modelPath)) throw std::runtime_error("parity fixture model did not load");
+        const auto previousTrace = g_onVNetQuery;
+        int traceCalls = 0;
+        g_onVNetQuery = [&](const BattleContext &, double) { ++traceCalls; };
+        const double expectedPrediction = expectedModel.predict(parityLive, false);
+        const double projectedPrediction = silverLiveLeafVNetPredictionForTest(parityWire, modelPath);
+        g_onVNetQuery = previousTrace;
+        if (traceCalls != 0 || !std::isfinite(expectedPrediction)
+                || !std::isfinite(projectedPrediction)
+                || std::abs(expectedPrediction - projectedPrediction) > 1e-9) {
+            std::cerr << "silver_integration FAIL: Silver wire/live VNet parity mismatch"
+                      << " expected=" << expectedPrediction
+                      << " projected=" << projectedPrediction
+                      << " trace_calls=" << traceCalls << '\n';
+            uninstallSilverLiveBackend();
+            return 1;
+        }
+    } catch (const std::exception &e) {
+        std::cerr << "silver_integration FAIL: parity fixture: " << e.what() << '\n';
         uninstallSilverLiveBackend();
         return 1;
     }

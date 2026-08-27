@@ -141,6 +141,48 @@ int main() {
               && qualityFresh.simulations == 16 && !qualityFingerprint.empty() && chosenInSummary,
           "fresh quality search must have zero inherited visits and describe its chosen semantic root action");
 
+    // The leaf observer is the narrow, type-free seam used by live Silver
+    // instrumentation.  A shadow observer must see the same leaf at START
+    // and END without changing the search result; a direct observer may
+    // replace only the nonterminal rollout value.
+    silver_bridge::SilverSearchConfig observerConfig;
+    observerConfig.simulationsPerDecision = 12;
+    int observedStarts = 0;
+    int observedEnds = 0;
+    bool observedRolloutFields = true;
+    observerConfig.leafObserver = [&](silver_bridge::SilverLeafObservation &observation) {
+        if (observation.phase == silver_bridge::SilverLeafObservationPhase::START) {
+            ++observedStarts;
+            observation.collectResult = true;
+        } else {
+            ++observedEnds;
+            observedRolloutFields = observedRolloutFields
+                && observation.terminalOutcome != static_cast<int>(Outcome::UNDECIDED)
+                && observation.rolloutActionCount >= 0
+                && observation.rolloutTurnDelta >= 0
+                && observation.rolloutWallMicros >= 0
+                && observation.rolloutUtility == observation.rolloutUtility;
+        }
+    };
+    const auto observed = silver_bridge::runSilverDecision(firstWire, observerConfig);
+    check(observed.accepted && observedStarts > 0 && observedEnds == observedStarts
+              && observedRolloutFields && observed.telemetry.rolloutSkippedVNet == 0,
+          "leaf observer must report every sampled rollout start and completed terminal result");
+
+    auto directConfig = observerConfig;
+    int directStarts = 0;
+    directConfig.leafObserver = [&](silver_bridge::SilverLeafObservation &observation) {
+        if (observation.phase == silver_bridge::SilverLeafObservationPhase::START) {
+            ++directStarts;
+            observation.skipRollout = true;
+            observation.directValue = 17.25;
+        }
+    };
+    const auto direct = silver_bridge::runSilverDecision(firstWire, directConfig);
+    check(direct.accepted && directStarts > 0
+              && direct.telemetry.rolloutCalls == 0
+              && direct.telemetry.rolloutSkippedVNet > 0,
+          "direct leaf observer must replace nonterminal rollouts with its supplied value");
     // The adaptive API must be a strict two-tier continuation of the same
     // private root.  A zero threshold is the no-escalation boundary; the
     // threshold equal to the observed share is also non-escalating because

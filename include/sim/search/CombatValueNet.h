@@ -127,7 +127,7 @@ namespace sts::search {
         [[nodiscard]] std::string description() const;
         [[nodiscard]] float winBonus() const { return isEntity ? entityWinBonus : 0.f; }
         void setWinBonus(float value) { if (isEntity) entityWinBonus = value; }
-        [[nodiscard]] double predict(const BattleContext &bc) const;
+        [[nodiscard]] double predict(const BattleContext &bc, bool emitTrace = true) const;
         [[nodiscard]] double predictVec(const float *canonFeatures) const;  // canonical vector
         // Quantile model (combat_quantile_v1): EV = mean over quantiles of R.
         [[nodiscard]] double predictQuantileEV(const float *canonFeatures) const;

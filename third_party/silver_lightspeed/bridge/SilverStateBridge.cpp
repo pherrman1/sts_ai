@@ -103,6 +103,132 @@ void initializeRunContext(sts::GameContext &out, const BattleStateWire &in) {
     if (in.omamoriOwned) out.relics.add({sts::RelicId::OMAMORI, in.omamoriValue});
 }
 
+CardWire leafCard(const sts::CardInstance &in) {
+    return {static_cast<std::int16_t>(in.id), in.uniqueId, in.specialData, in.cost,
+            in.costForTurn, in.upgraded, in.freeToPlayOnce, in.retain};
+}
+
+template <typename Pile>
+PileWire leafPile(const Pile &in) {
+    PileWire out;
+    out.valid = true;
+    if (in.isOrderObserved()) {
+        out.fullOrderObserved = true;
+        for (const auto &c : in) out.knownTop.push_back(leafCard(c));
+        return out;
+    }
+    const int bottom = in.knownBottom();
+    const int top = in.knownCount();
+    for (int i = 0; i < bottom; ++i) out.knownBottom.push_back(leafCard(in[i]));
+    for (int i = bottom; i < in.size() - top; ++i) out.unknown.push_back(leafCard(in[i]));
+    for (int i = in.size() - top; i < in.size(); ++i) out.knownTop.push_back(leafCard(in[i]));
+    return out;
+}
+
+BattleStateWire leafStateWire(const sts::BattleContext &state) {
+    BattleStateWire out;
+    out.isolatedSearchSeed = state.seed;
+    out.floorNum = state.floorNum;
+    out.encounter = static_cast<int>(state.encounter);
+    out.loopCount = state.loopCount;
+    out.energyWasted = state.energyWasted;
+    out.cardsDrawn = state.cardsDrawn;
+    out.act = state.gameContext == nullptr ? 1 : state.gameContext->act;
+    if (state.gameContext != nullptr) {
+        out.omamoriOwned = state.gameContext->relics.has(sts::RelicId::OMAMORI);
+        out.omamoriValue = state.gameContext->relics.getRelicValue(sts::RelicId::OMAMORI);
+    }
+    out.ascension = state.ascension;
+    out.outcome = static_cast<int>(state.outcome);
+    out.inputState = static_cast<int>(state.inputState);
+    out.monsterTurnIdx = state.monsterTurnIdx;
+    out.endTurnQueued = state.endTurnQueued;
+    out.turnHasEnded = state.turnHasEnded;
+    out.skipMonsterTurn = state.skipMonsterTurn;
+    out.potionCount = state.potionCount;
+    out.potionCapacity = state.potionCapacity;
+    for (std::size_t i = 0; i < out.potions.size(); ++i)
+        out.potions[i] = static_cast<std::int16_t>(state.potions[i]);
+    out.turn = state.turn;
+    out.intentsHidden = state.intentsHidden;
+    out.miscBits = static_cast<std::uint32_t>(state.miscBits.to_ulong());
+
+    const auto &p = state.player;
+    auto &wp = out.player;
+    wp.characterClass = static_cast<std::int16_t>(p.cc);
+    wp.gold = p.gold; wp.curHp = p.curHp; wp.maxHp = p.maxHp; wp.energy = p.energy;
+    wp.energyPerTurn = p.energyPerTurn; wp.cardDrawPerTurn = p.cardDrawPerTurn;
+    wp.stance = static_cast<std::int16_t>(p.stance); wp.orbSlots = p.orbSlots;
+    wp.lastTargetedMonster = p.lastTargetedMonster; wp.block = p.block; wp.artifact = p.artifact;
+    wp.dexterity = p.dexterity; wp.focus = p.focus; wp.strength = p.strength;
+    wp.justAppliedBits = p.justAppliedBits; wp.statusBits0 = p.statusBits0; wp.statusBits1 = p.statusBits1;
+    for (const auto &[status, amount] : p.statusMap)
+        wp.statusMap.emplace_back(static_cast<std::int16_t>(status), amount);
+    wp.relicBits0 = p.relicBits0; wp.relicBits1 = p.relicBits1;
+    wp.relicCounters = {p.happyFlowerCounter, p.incenseBurnerCounter, p.inkBottleCounter,
+                        p.inserterCounter, p.nunchakuCounter, p.penNibCounter, p.sundialCounter};
+    wp.haveUsedNecronomiconThisTurn = p.haveUsedNecronomiconThisTurn;
+    wp.combustHpLoss = p.combustHpLoss; wp.devaFormEnergyPerTurn = p.devaFormEnergyPerTurn;
+    wp.echoFormCardsDoubled = p.echoFormCardsDoubled; wp.panacheCounter = p.panacheCounter;
+    wp.cardsPlayedThisTurn = p.cardsPlayedThisTurn; wp.attacksPlayedThisTurn = p.attacksPlayedThisTurn;
+    wp.skillsPlayedThisTurn = p.skillsPlayedThisTurn; wp.cardsDiscardedThisTurn = p.cardsDiscardedThisTurn;
+    wp.orangePelletsCardTypesPlayed = static_cast<std::uint8_t>(p.orangePelletsCardTypesPlayed.to_ulong());
+    wp.lastAttackUnblockedDamage = p.lastAttackUnblockedDamage;
+    wp.timesDamagedThisCombat = p.timesDamagedThisCombat;
+    wp.bombs = {p.bomb1, p.bomb2, p.bomb3};
+
+    out.monsterCount = state.monsters.monsterCount;
+    out.monstersAlive = state.monsters.monstersAlive;
+    out.extraRollMoveOnTurn = static_cast<std::uint8_t>(state.monsters.extraRollMoveOnTurn.to_ulong());
+    out.skipMonsterTurnBits = static_cast<std::uint8_t>(state.monsters.skipTurn.to_ulong());
+    for (std::size_t i = 0; i < out.monsters.size(); ++i) {
+        const auto &m = state.monsters.arr[i];
+        auto &wm = out.monsters[i];
+        wm.idx = m.idx; wm.id = static_cast<std::int16_t>(m.id); wm.curHp = m.curHp;
+        wm.maxHp = m.maxHp; wm.block = m.block; wm.isEscapingB = m.isEscapingB;
+        wm.halfDead = m.halfDead; wm.escapeNext = m.escapeNext;
+        wm.moveHistory = {static_cast<std::int16_t>(m.moveHistory[0]), static_cast<std::int16_t>(m.moveHistory[1])};
+        wm.statusBits = m.statusBits;
+        wm.smallPowers = {m.artifact, m.blockReturn, m.choked, m.corpseExplosion, m.lockOn,
+                          m.mark, m.metallicize, m.platedArmor, m.poison, m.regen, m.shackled};
+        wm.strength = m.strength; wm.vulnerable = m.vulnerable; wm.weak = m.weak;
+        wm.uniquePower0 = m.uniquePower0; wm.uniquePower1 = m.uniquePower1; wm.miscInfo = m.miscInfo;
+        wm.pendingMoveRolls = m.pendingMoveRolls;
+        wm.pendingDirectMoveChoice = static_cast<std::uint8_t>(m.pendingDirectMoveChoice);
+        wm.pendingRollInputs = {m.rollInputs.curHp, m.rollInputs.maxHp, m.rollInputs.knightCurHp,
+                                m.rollInputs.knightMaxHp, m.rollInputs.monsterTurnNumber, m.rollInputs.miscInfo,
+                                m.rollInputs.aliveCount, m.rollInputs.monstersAlive, m.rollInputs.knightAlive,
+                                m.rollInputs.playerConstricted, m.rollInputs.asleep, m.rollInputs.halfDead};
+    }
+
+    out.nextUniqueCardId = state.cards.nextUniqueCardId;
+    out.handNormalityCount = state.cards.handNormalityCount; out.handPainCount = state.cards.handPainCount;
+    out.strikeCount = state.cards.strikeCount; out.handBloodCardCount = state.cards.handBloodCardCount;
+    out.drawPileBloodCardCount = state.cards.drawPileBloodCardCount;
+    out.discardPileBloodCardCount = state.cards.discardPileBloodCardCount;
+    for (int i = 0; i < state.cards.cardsInHand; ++i) out.hand.push_back(leafCard(state.cards.hand[i]));
+    for (const auto &card : state.cards.limbo) out.limbo.push_back(leafCard(card));
+    for (std::size_t i = 0; i < out.stasisCards.size(); ++i) out.stasisCards[i] = leafCard(state.cards.stasisCards[i]);
+    out.drawPile = leafPile(state.cards.drawPile);
+    out.discardPile = leafPile(state.cards.discardPile);
+    out.exhaustPile = leafPile(state.cards.exhaustPile);
+    const auto &select = state.cardSelectInfo;
+    for (std::size_t i = 0; i < out.cardSelect.cards.size(); ++i)
+        out.cardSelect.cards[i] = static_cast<std::int16_t>(select.cards[i]);
+    out.cardSelect.canPickZero = select.canPickZero; out.cardSelect.canPickAnyNumber = select.canPickAnyNumber;
+    out.cardSelect.pickCount = select.pickCount; out.cardSelect.data0 = select.data0;
+    out.cardSelect.setCostToZero = select.setCostToZero; out.cardSelect.selectedBits = select.selectedBits;
+    out.cardSelect.task = static_cast<std::int16_t>(select.cardSelectTask);
+    const auto &q = state.curCardQueueItem;
+    out.curCardQueueItem.card = leafCard(q.card); out.curCardQueueItem.target = q.target;
+    out.curCardQueueItem.isEndTurn = q.isEndTurn; out.curCardQueueItem.triggerOnUse = q.triggerOnUse;
+    out.curCardQueueItem.ignoreEnergyTotal = q.ignoreEnergyTotal; out.curCardQueueItem.energyOnUse = q.energyOnUse;
+    out.curCardQueueItem.freeToPlay = q.freeToPlay; out.curCardQueueItem.randomTarget = q.randomTarget;
+    out.curCardQueueItem.autoplay = q.autoplay; out.curCardQueueItem.regretCardCount = q.regretCardCount;
+    out.curCardQueueItem.purgeOnUse = q.purgeOnUse; out.curCardQueueItem.exhaustOnUse = q.exhaustOnUse;
+    return out;
+}
+
 sts::BattleContext materialize(const BattleStateWire &in, sts::GameContext *runContext = nullptr) {
     if (in.version != BattleStateWire::kVersion || !in.valid) {
         throw std::invalid_argument("invalid or incompatible Silver state wire");
@@ -386,6 +512,7 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     out.rolloutNonTerminalStops = stats.rolloutNonTerminalStops;
     out.rolloutActionCount = stats.rolloutActionCount;
     out.rolloutTurnDelta = stats.rolloutTurnDelta;
+    out.rolloutSkippedVNet = stats.rolloutSkippedVNet;
     out.rolloutUtilitySum = stats.rolloutUtilitySum;
     out.rolloutWinBonusSum = stats.rolloutWinBonusSum;
     out.rolloutHpSum = stats.rolloutHpSum;
@@ -425,6 +552,7 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     result.rolloutNonTerminalStops -= prior.rolloutNonTerminalStops;
     result.rolloutActionCount -= prior.rolloutActionCount;
     result.rolloutTurnDelta -= prior.rolloutTurnDelta;
+    result.rolloutSkippedVNet -= prior.rolloutSkippedVNet;
     result.rolloutUtilitySum -= prior.rolloutUtilitySum;
     result.rolloutWinBonusSum -= prior.rolloutWinBonusSum;
     result.rolloutHpSum -= prior.rolloutHpSum;
@@ -461,6 +589,19 @@ sts::search::BattleSearcher::Node *exactRerootCandidate(
 }
 
 } // namespace
+
+SilverLeafObservation makeSilverLeafObservation(
+        const sts::BattleContext &state, std::uint64_t rootStateHash,
+        std::uint64_t parentStateHash, int depth, int actionCountBeforeRollout) {
+    SilverLeafObservation out;
+    out.state = leafStateWire(state);
+    out.rootStateHash = rootStateHash;
+    out.parentStateHash = parentStateHash;
+    out.leafStateHash = static_cast<std::uint64_t>(sts::search::hashBattleState(state));
+    out.depth = depth;
+    out.actionCountBeforeRollout = actionCountBeforeRollout;
+    return out;
+}
 
 const char *silverReuseCapModeName(SilverReuseCapMode mode) {
     switch (mode) {
@@ -528,6 +669,7 @@ public:
         searcher->endTurnWideningC = config.endTurnWideningC;
         searcher->endTurnWideningAlpha = config.endTurnWideningAlpha;
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
+        searcher->leafObserver = config.leafObserver;
     }
 
     // Exact pinned-SearchAgent boundary: state equality plus exact hand order;
