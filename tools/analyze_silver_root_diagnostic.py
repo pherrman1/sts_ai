@@ -308,15 +308,15 @@ def _analyze_rows(rows):
 
 
 def analyze(rows):
-    """Return deterministic-reference headlines plus mixed-action descriptives.
+    """Return paired deterministic headlines plus descriptive side views.
 
     A stochastic forced root action is sampled once before its continuation
     search, so its reference value is not a 5k-simulation estimate of the
     root action's chance expectation.  The full mixed-action analysis remains
     available under ``all_roots_descriptive``.  Headline action-quality
-    metrics use only rows marked deterministic; a selected stochastic action
-    also excludes that root from the corresponding budget's top-action and
-    regret denominator.
+    metrics use the joint roots where both budget-selected actions are
+    deterministic.  Per-budget deterministic scopes are retained as
+    descriptive side views.
     """
     all_results = _analyze_rows(rows)
     root_groups = groups(rows)
@@ -349,8 +349,6 @@ def analyze(rows):
     three_seven_k = (_analyze_rows(three_seven_k_rows)
                      if three_seven_k_rows else None)
     joint = _analyze_rows(joint_rows) if joint_rows else None
-    deterministic_actions = (_analyze_rows(deterministic_action_rows)
-                             if deterministic_action_rows else None)
 
     def metric(scope, name, key):
         return scope[name][key] if scope is not None else None
@@ -383,37 +381,52 @@ def analyze(rows):
             (r["run_seed"], r["floor"], r["encounter"],
              r["combat_decision_ordinal"])
             for r in three_seven_k_rows}),
-        "top_action_agreement": {
-            "silver_1k": metric(one_k, "top_action_agreement", "silver_1k"),
-            "silver_3.7k": metric(three_seven_k, "top_action_agreement", "silver_3.7k"),
-        },
-        "mean_regret": {
-            "silver_1k": metric(one_k, "mean_regret", "silver_1k"),
-            "silver_3.7k": metric(three_seven_k, "mean_regret", "silver_3.7k"),
-        },
-        "median_regret": {
-            "silver_1k": metric(one_k, "median_regret", "silver_1k"),
-            "silver_3.7k": metric(three_seven_k, "median_regret", "silver_3.7k"),
+        "headline_comparison_roots": len({
+            (r["run_seed"], r["floor"], r["encounter"],
+             r["combat_decision_ordinal"])
+            for r in joint_rows}),
+        "top_action_agreement": (
+            joint["top_action_agreement"] if joint is not None else None),
+        "mean_regret": joint["mean_regret"] if joint is not None else None,
+        "median_regret": (joint["median_regret"]
+                           if joint is not None else None),
+        "per_budget_descriptive": {
+            "silver_1k": {
+                "roots": len({
+                    (r["run_seed"], r["floor"], r["encounter"],
+                     r["combat_decision_ordinal"])
+                    for r in one_k_rows}),
+                "top_action_agreement": (metric(
+                    one_k, "top_action_agreement", "silver_1k")),
+                "mean_regret": metric(one_k, "mean_regret", "silver_1k"),
+                "median_regret": metric(one_k, "median_regret", "silver_1k"),
+            },
+            "silver_3.7k": {
+                "roots": len({
+                    (r["run_seed"], r["floor"], r["encounter"],
+                     r["combat_decision_ordinal"])
+                    for r in three_seven_k_rows}),
+                "top_action_agreement": (metric(
+                    three_seven_k, "top_action_agreement", "silver_3.7k")),
+                "mean_regret": metric(
+                    three_seven_k, "mean_regret", "silver_3.7k"),
+                "median_regret": metric(
+                    three_seven_k, "median_regret", "silver_3.7k"),
+            },
         },
         "pairwise_ordering_agreement": (
-            deterministic_actions["pairwise_ordering_agreement"]
-            if deterministic_actions is not None else None),
+            joint["pairwise_ordering_agreement"] if joint is not None else None),
         "reference_margin": {
-            "silver_1k_mean": metric(one_k, "reference_margin", "mean"),
-            "silver_1k_median": metric(one_k, "reference_margin", "median"),
-            "silver_3.7k_mean": metric(three_seven_k, "reference_margin", "mean"),
-            "silver_3.7k_median": metric(three_seven_k, "reference_margin", "median"),
+            "joint_mean": metric(joint, "reference_margin", "mean"),
+            "joint_median": metric(joint, "reference_margin", "median"),
         },
         "budget_change": (
             joint["budget_change"] if joint is not None else None),
         "regret_by_reference_margin": (
             joint["regret_by_reference_margin"] if joint is not None else None),
         "breakdowns": joint["breakdowns"] if joint is not None else None,
-        "reference_stability": {
-            "silver_1k": one_k["reference_stability"] if one_k is not None else None,
-            "silver_3.7k": (three_seven_k["reference_stability"]
-                             if three_seven_k is not None else None),
-        },
+        "reference_stability": (
+            joint["reference_stability"] if joint is not None else None),
     }
     all_results["all_roots_descriptive"] = all_results.copy()
     all_results.update(headline)
@@ -454,6 +467,7 @@ def self_test():
         rows.append(row)
     result = analyze(rows)
     assert result["roots"] == 1
+    assert result["headline_comparison_roots"] == 1
     assert result["top_action_agreement"]["silver_1k"] == 0.0
     assert result["top_action_agreement"]["silver_3.7k"] == 1.0
     assert result["mean_regret"]["silver_1k"] == 3.0

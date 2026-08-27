@@ -4679,24 +4679,30 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   sampled once before the continuation search; two replicates therefore do not
   estimate its immediate chance expectation. The corrected analysis retains
   all rows for descriptive mixed-action reporting but restricts headline
-  action-quality metrics to `stochastic=0` rows. A root is included in a
-  budget's top-action/regret denominator only when that budget's selected
-  action is deterministic; sibling ordering uses only deterministic action
-  pairs. No corpus rerun or nested stochastic sampler was added.
+  action-quality metrics to the joint 50-root subset in which both budget
+  selected actions are deterministic. The per-budget deterministic subsets
+  remain descriptive because they have different root composition; sibling
+  ordering in the headline also uses only deterministic pairs from the joint
+  subset. No corpus rerun or nested stochastic sampler was added.
 - **Corrected headline reference quality (deterministic forced-action scope):**
   the corpus has 64 roots and 286 legal-action rows, of which 221 rows are
-  deterministic; 56 roots have deterministic candidates. The 1k top-action
-  and regret denominator is 51 roots, the 3.7k denominator is 53, and the
-  joint budget comparison is 50. Silver-1k top-action agreement is
-  `32/51 = 62.75%`; Silver-3.7k is `40/53 = 75.47%`. On the 478 comparable
-  deterministic sibling pairs, pairwise ordering agreement is 1k visits
-  `356/478 = 74.48%`, 3.7k visits `373/478 = 78.03%`, 1k child-Q
-  `361/478 = 75.52%`, and 3.7k child-Q `372/478 = 77.82%`. Mean regret is
-  `0.09336` at 1k versus `0.04667` at 3.7k; median regret is `0` for both.
-  On the 50-root joint subset, the selected actions disagree on `9/50 =
-  18.0%` and the mean regret change is `-0.04554` (3.7k minus 1k). These
-  are deterministic-action comparisons, not claims about the unresolved
-  chance distribution of stochastic candidates.
+  deterministic; 56 roots have deterministic candidates. The direct budget
+  comparison uses exactly the 50-root joint subset. On those same roots,
+  Silver-1k top-action agreement is `32/50 = 64.0%`; Silver-3.7k is
+  `37/50 = 74.0%`. Mean regret is `0.09501` at 1k versus `0.04947` at
+  3.7k; median regret is `0` for both. On the 438 comparable deterministic
+  sibling pairs from those roots, pairwise ordering agreement is 1k visits
+  `332/438 = 75.80%`, 3.7k visits `342/438 = 78.08%`, 1k child-Q
+  `336/438 = 76.71%`, and 3.7k child-Q `341/438 = 77.85%`. The selected
+  actions disagree on `9/50 = 18.0%` and the mean regret change is `-0.04554`
+  (3.7k minus 1k). These are deterministic-action comparisons, not claims
+  about the unresolved chance distribution of stochastic candidates.
+- **Per-budget deterministic results (descriptive, unpaired):** the 1k
+  budget has a 51-root denominator, top-action agreement `32/51 = 62.75%`,
+  and mean regret `0.09336`; the 3.7k budget has a 53-root denominator,
+  top-action agreement `40/53 = 75.47%`, and mean regret `0.04667`. These
+  values are retained to show coverage but are not used for the direct
+  1k-versus-3.7k improvement claim because their root sets differ.
 - **Descriptive mixed-action results (not headline reference quality):** the
   unfiltered analysis remains available in the corrected JSON under
   `all_roots_descriptive`. Its prior values were 1k top-action agreement
@@ -4769,7 +4775,7 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   SHA-256 `ff1a03e3a5e74030171148794747baabeea9c8141a854e19b5eb6653b0fcd730`;
   corrected deterministic-scope analyzer JSON
   `build/silver-root-corpus-corrected.json`, SHA-256
-  `BA430703526A28B522EC113E38155BC22530E91763F7C5EA3983B0FFDFF4368F`;
+  `9B291DB376292E42C9B2B7655DAE8D896342FB6B11A91A2642608885428D4274`;
   guarded run log `build/silver-root-corpus-full.log`; behavior-neutral
   outputs `build/silver-neutral-off.csv` (SHA-256
   `63724f511da48f31282490fe8b9341ff7522d78406b79c3dd73c879749d86d93`),
