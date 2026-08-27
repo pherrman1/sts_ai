@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-27 | [`2026-08-27-silver-leaf-evaluator-10k.md`](2026-08-27-silver-leaf-evaluator-10k.md) | The exact 10k Silver M10 direct leaf evaluator is `M10_DIRECT_REJECTED`: stronger offline ranking did not transfer, and the 8-seed gate lost quality catastrophically without a throughput benefit. |
 | 2026-08-27 | [`2026-08-27-ooc-targeted-survival-tradeoffs.md`](2026-08-27-ooc-targeted-survival-tradeoffs.md) | Prespecified comparison of combined `p_survive*v_alive` against survival-only, strength-only, and dense K=3 on 15 targeted marginal tradeoffs; terminal win primary. |
 | 2026-08-27 | [`2026-08-27-ooc-survival-continuation.md`](2026-08-27-ooc-survival-continuation.md) | Pure K=3 QWin is `REJECT` on the discordant selected-action pairs; terminal-win reanalysis is 3/3/15 and explicit survival-vs-strength modeling remains `INCONCLUSIVE`. |
 | 2026-08-27 | [`2026-08-27-silver-vnet-leaf-transfer.md`](2026-08-27-silver-vnet-leaf-transfer.md) | Current combat VNet direct Silver transfer is `CURRENT_VNET_DIRECT_SILVER_TRANSFER_REJECTED`: weak positive leaf ranking did not justify replacing tactical rollouts. |

@@ -5038,6 +5038,53 @@ model training was changed.
   `docs/experiments/evidence/silver_teacher_model_comparison_2026-08-27.json`;
   full GCP outputs remain under
   `/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/results/`.
+
+## §182 Silver 10k leaf evaluator deployment gate (2026-08-27)
+
+- **Question and frozen implementation:** can the exact selected M10 Silver
+  leaf model replace SimpleAgent terminal rollouts without the old generic
+  combat-VNet quality/runtime failure? PR #76 implementation review and Linux
+  GCC passed at frozen SHA `0f0840b5b3010e3d0f98e9563674ce0506d628a8`.
+  The designated `sts-test` Release binary SHA-256 was
+  `3cf3c44fb909aa3082cd7f53f5581ad0762ee892fdaa262c886924035f22adf0`.
+- **Model/parity:** the exact preserved XGBoost M10 was
+  `cfb7bf8b041e6748a6a63f280eb8c43ad2bbefc223e69d0d9807567ebcbe5613`.
+  Existing export machinery retained trees 0--500 (`best_iteration + 1`) in
+  the native 1,766-feature `CombatValueNet` format. The runtime artifact hash
+  was `344c83efebb4e2772971495e1e57e6202192386476e2c0c1b038a84f355f9959`;
+  641 independent-anchor rows passed Python/native parity with max/mean
+  absolute error `0.000127 / 0.000023` at tolerance `0.001`.
+- **Offline control:** on all 93 untouched independent 25k-B groups (641
+  leaves; 5,187 non-tied sibling pairs), current combat VNet versus M10 was
+  `52.79% / 57.89%` pairwise concordance, `27.16% / 30.86%` top-leaf
+  agreement, `4.834 / 3.902` mean regret, `3.772 / 3.761` centered MAE, and
+  `5.599 / 5.475` centered RMSE. This passed the preregistered offline stop.
+- **Release cost canary:** paired fresh seed `973600`, fair ordinary allocated-
+  cap Silver, one thread, 1,000 base simulations, current OOC/search settings.
+  A/B were floor `50/33`, CPU seconds `4.85/4.79`, with zero failure counters.
+  The absence of a catastrophic runtime regression authorized the 8-seed gate.
+- **Gameplay gate:** fresh paired seeds `973600--973607`, same configuration;
+  A was ordinary SimpleAgent-rollout Silver and B changed only to M10 direct
+  leaves with affine `a=1,b=0`. A/B won `4/8` versus `1/8`, mean floor was
+  `50.25 / 31.00`, mean ending HP `39.25 / 1.125`, and mean CPU seconds/run
+  `5.531 / 5.748` (summed wall/CPU `44.249 / 45.984` seconds). Paired win
+  delta was `-37.5pp`, 95% CI `[-75.0pp,-12.5pp]`; floor delta was `-19.2`,
+  95% CI `[-28.2,-9.9]`. Discordance was three A-only wins and zero B-only.
+- **Mechanism/health:** A/B executed `5,513,000 / 3,505,000` Silver
+  simulations. B skipped `3,041,875` rollouts and made `3,041,875` M10 calls
+  taking `17,603,210` microseconds total (about `5.79 us/call`). Every arm had
+  zero conversion, semantic-resolution, transaction, and knowledge failures.
+  B had no compensating throughput benefit: it was slightly slower per run and
+  achieved about `76.2k` simulations/second versus A's `124.6k`, with the
+  caveat that catastrophic policy differences shortened B's runs.
+- **Stop/verdict:** **`M10_DIRECT_REJECTED`.** The catastrophic quality loss
+  and absent throughput benefit triggered the immediate 8-seed stop. Seeds
+  `973608--973615`, equal-runtime work, feature optimization, policy-prior work,
+  and all larger gates were not run.
+- **Artifacts:** compact metrics/hashes are in
+  `docs/experiments/evidence/silver_leaf_evaluator_10k_2026-08-27.json`; raw GCP
+  CSV/sidecar/log artifacts remain under
+  `/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/results/`.
 ## OOC survival × continuation-value action diagnostic (2026-08-27)
 
 - **Question and baseline:** On baseline

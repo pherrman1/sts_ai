@@ -998,7 +998,13 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                     const BattleContext projected = liveLeafBattleContext(observation.state);
                     if (!g_silverLeafVNet.loaded())
                         throw std::runtime_error("Silver leaf VNet was not loaded before search");
+                    const auto inferenceStart = std::chrono::steady_clock::now();
                     observation.vnetRawPrediction = g_silverLeafVNet.predict(projected, false);
+                    const auto inferenceEnd = std::chrono::steady_clock::now();
+                    ++g_silverLiveDiagnostics.leafVNetInferenceCalls;
+                    g_silverLiveDiagnostics.leafVNetInferenceMicros +=
+                        std::chrono::duration_cast<std::chrono::microseconds>(
+                            inferenceEnd - inferenceStart).count();
                 }
                 if (logThisLeaf) {
                     observation.collectResult = true;
@@ -1215,6 +1221,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " depth_sum=" << d.depthSum
                   << " chance_depth_sum=" << d.chanceDepthSum
                   << " rollout_skipped_vnet=" << d.rolloutSkippedVNet
+                  << " leaf_vnet_inference_calls=" << d.leafVNetInferenceCalls
+                  << " leaf_vnet_inference_micros=" << d.leafVNetInferenceMicros
                   << " conversion_failures=" << d.conversionFailures
                   << " semantic_resolution_failures=" << d.semanticResolutionFailures
                   << " transaction_failures=" << d.transactionFailures

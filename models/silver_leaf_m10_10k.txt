@@ -1,0 +1,12871 @@
+nfeat 1766
+feat ascension
+feat encounter
+feat turn
+feat curHp
+feat maxHp
+feat block
+feat energy
+feat strength
+feat dexterity
+feat focus
+feat artifact
+feat monAlive
+feat monSumHp
+feat monMaxHp
+feat monSumBlock
+feat monSumStr
+feat monSumArt
+feat hand
+feat draw
+feat discard
+feat exhaust
+feat nAtkAvail
+feat nSklAvail
+feat nPowAvail
+feat nOtherAvail
+feat potions
+feat pDemonForm
+feat pMetallicize
+feat pFeelNoPain
+feat pBarricade
+feat pPlatedArmor
+feat pRupture
+feat pCombust
+feat pDarkEmbrace
+feat pBrutality
+feat pFireBreath
+feat pJuggernaut
+feat pCorruption
+feat pVigor
+feat pMayhem
+feat pPanache
+feat pNoxious
+feat pFlameBarrier
+feat pThorns
+feat pRegen
+feat pBuffer
+feat pIntangible
+feat pVulnerable
+feat pWeak
+feat pFrail
+feat r0
+feat r1
+feat r2
+feat r3
+feat r4
+feat r5
+feat r6
+feat r7
+feat r8
+feat r9
+feat r10
+feat r11
+feat r12
+feat r13
+feat r14
+feat r15
+feat r16
+feat r17
+feat r18
+feat r19
+feat r20
+feat r21
+feat r22
+feat r23
+feat r24
+feat r25
+feat r26
+feat r27
+feat r28
+feat r29
+feat r30
+feat r31
+feat r32
+feat r33
+feat r34
+feat r35
+feat r36
+feat r37
+feat r38
+feat r39
+feat r40
+feat r41
+feat r42
+feat r43
+feat r44
+feat r45
+feat r46
+feat r47
+feat r48
+feat r49
+feat r50
+feat r51
+feat r52
+feat r53
+feat r54
+feat r55
+feat r56
+feat r57
+feat r58
+feat r59
+feat r60
+feat r61
+feat r62
+feat r63
+feat r64
+feat r65
+feat r66
+feat r67
+feat r68
+feat r69
+feat r70
+feat r71
+feat r72
+feat r73
+feat r74
+feat r75
+feat r76
+feat r77
+feat r78
+feat r79
+feat r80
+feat r81
+feat r82
+feat r83
+feat r84
+feat r85
+feat r86
+feat r87
+feat r88
+feat r89
+feat r90
+feat r91
+feat r92
+feat r93
+feat r94
+feat r95
+feat r96
+feat r97
+feat r98
+feat r99
+feat r100
+feat r101
+feat r102
+feat r103
+feat r104
+feat r105
+feat r106
+feat r107
+feat r108
+feat r109
+feat r110
+feat r111
+feat r112
+feat r113
+feat r114
+feat r115
+feat r116
+feat r117
+feat r118
+feat r119
+feat r120
+feat r121
+feat r122
+feat r123
+feat r124
+feat r125
+feat r126
+feat r127
+feat hd0
+feat hd1
+feat hd2
+feat hd3
+feat hd4
+feat hd5
+feat hd6
+feat hd7
+feat hd8
+feat hd9
+feat hd10
+feat hd11
+feat hd12
+feat hd13
+feat hd14
+feat hd15
+feat hd16
+feat hd17
+feat hd18
+feat hd19
+feat hd20
+feat hd21
+feat hd22
+feat hd23
+feat hd24
+feat hd25
+feat hd26
+feat hd27
+feat hd28
+feat hd29
+feat hd30
+feat hd31
+feat hd32
+feat hd33
+feat hd34
+feat hd35
+feat hd36
+feat hd37
+feat hd38
+feat hd39
+feat hd40
+feat hd41
+feat hd42
+feat hd43
+feat hd44
+feat hd45
+feat hd46
+feat hd47
+feat hd48
+feat hd49
+feat hd50
+feat hd51
+feat hd52
+feat hd53
+feat hd54
+feat hd55
+feat hd56
+feat hd57
+feat hd58
+feat hd59
+feat hd60
+feat hd61
+feat hd62
+feat hd63
+feat hd64
+feat hd65
+feat hd66
+feat hd67
+feat hd68
+feat hd69
+feat hd70
+feat hd71
+feat hd72
+feat hd73
+feat hd74
+feat hd75
+feat hd76
+feat hd77
+feat hd78
+feat hd79
+feat hd80
+feat hd81
+feat hd82
+feat hd83
+feat hd84
+feat hd85
+feat hd86
+feat hd87
+feat hd88
+feat hd89
+feat hd90
+feat hd91
+feat hd92
+feat hd93
+feat hd94
+feat hd95
+feat hd96
+feat hd97
+feat hd98
+feat hd99
+feat hd100
+feat hd101
+feat hd102
+feat hd103
+feat hd104
+feat hd105
+feat hd106
+feat hd107
+feat hd108
+feat hd109
+feat hd110
+feat hd111
+feat hd112
+feat hd113
+feat hd114
+feat hd115
+feat hd116
+feat hd117
+feat hd118
+feat hd119
+feat hd120
+feat hd121
+feat hd122
+feat hd123
+feat hd124
+feat hd125
+feat hd126
+feat hd127
+feat hd128
+feat hd129
+feat hd130
+feat hd131
+feat hd132
+feat hd133
+feat hd134
+feat hd135
+feat hd136
+feat hd137
+feat hd138
+feat hd139
+feat hd140
+feat hd141
+feat hd142
+feat hd143
+feat hd144
+feat hd145
+feat hd146
+feat hd147
+feat hd148
+feat hd149
+feat hd150
+feat hd151
+feat hd152
+feat hd153
+feat hd154
+feat hd155
+feat hd156
+feat hd157
+feat hd158
+feat hd159
+feat hd160
+feat hd161
+feat hd162
+feat hd163
+feat hd164
+feat hd165
+feat hd166
+feat hd167
+feat hd168
+feat hd169
+feat hd170
+feat hd171
+feat hd172
+feat hd173
+feat hd174
+feat hd175
+feat hd176
+feat hd177
+feat hd178
+feat hd179
+feat hd180
+feat hd181
+feat hd182
+feat hd183
+feat hd184
+feat hd185
+feat hd186
+feat hd187
+feat hd188
+feat hd189
+feat hd190
+feat hd191
+feat hd192
+feat hd193
+feat hd194
+feat hd195
+feat hd196
+feat hd197
+feat hd198
+feat hd199
+feat hd200
+feat hd201
+feat hd202
+feat hd203
+feat hd204
+feat hd205
+feat hd206
+feat hd207
+feat hd208
+feat hd209
+feat hd210
+feat hd211
+feat hd212
+feat hd213
+feat hd214
+feat hd215
+feat hd216
+feat hd217
+feat hd218
+feat hd219
+feat hd220
+feat hd221
+feat hd222
+feat hd223
+feat hd224
+feat hd225
+feat hd226
+feat hd227
+feat hd228
+feat hd229
+feat hd230
+feat hd231
+feat hd232
+feat hd233
+feat hd234
+feat hd235
+feat hd236
+feat hd237
+feat hd238
+feat hd239
+feat hd240
+feat hd241
+feat hd242
+feat hd243
+feat hd244
+feat hd245
+feat hd246
+feat hd247
+feat hd248
+feat hd249
+feat hd250
+feat hd251
+feat hd252
+feat hd253
+feat hd254
+feat hd255
+feat hd256
+feat hd257
+feat hd258
+feat hd259
+feat hd260
+feat hd261
+feat hd262
+feat hd263
+feat hd264
+feat hd265
+feat hd266
+feat hd267
+feat hd268
+feat hd269
+feat hd270
+feat hd271
+feat hd272
+feat hd273
+feat hd274
+feat hd275
+feat hd276
+feat hd277
+feat hd278
+feat hd279
+feat hd280
+feat hd281
+feat hd282
+feat hd283
+feat hd284
+feat hd285
+feat hd286
+feat hd287
+feat hd288
+feat hd289
+feat hd290
+feat hd291
+feat hd292
+feat hd293
+feat hd294
+feat hd295
+feat hd296
+feat hd297
+feat hd298
+feat hd299
+feat hd300
+feat hd301
+feat hd302
+feat hd303
+feat hd304
+feat hd305
+feat hd306
+feat hd307
+feat hd308
+feat hd309
+feat hd310
+feat hd311
+feat hd312
+feat hd313
+feat hd314
+feat hd315
+feat hd316
+feat hd317
+feat hd318
+feat hd319
+feat hd320
+feat hd321
+feat hd322
+feat hd323
+feat hd324
+feat hd325
+feat hd326
+feat hd327
+feat hd328
+feat hd329
+feat hd330
+feat hd331
+feat hd332
+feat hd333
+feat hd334
+feat hd335
+feat hd336
+feat hd337
+feat hd338
+feat hd339
+feat hd340
+feat hd341
+feat hd342
+feat hd343
+feat hd344
+feat hd345
+feat hd346
+feat hd347
+feat hd348
+feat hd349
+feat hd350
+feat hd351
+feat hd352
+feat hd353
+feat hd354
+feat hd355
+feat hd356
+feat hd357
+feat hd358
+feat hd359
+feat hd360
+feat hd361
+feat hd362
+feat hd363
+feat hd364
+feat hd365
+feat hd366
+feat hd367
+feat hd368
+feat hd369
+feat hd370
+feat dr0
+feat dr1
+feat dr2
+feat dr3
+feat dr4
+feat dr5
+feat dr6
+feat dr7
+feat dr8
+feat dr9
+feat dr10
+feat dr11
+feat dr12
+feat dr13
+feat dr14
+feat dr15
+feat dr16
+feat dr17
+feat dr18
+feat dr19
+feat dr20
+feat dr21
+feat dr22
+feat dr23
+feat dr24
+feat dr25
+feat dr26
+feat dr27
+feat dr28
+feat dr29
+feat dr30
+feat dr31
+feat dr32
+feat dr33
+feat dr34
+feat dr35
+feat dr36
+feat dr37
+feat dr38
+feat dr39
+feat dr40
+feat dr41
+feat dr42
+feat dr43
+feat dr44
+feat dr45
+feat dr46
+feat dr47
+feat dr48
+feat dr49
+feat dr50
+feat dr51
+feat dr52
+feat dr53
+feat dr54
+feat dr55
+feat dr56
+feat dr57
+feat dr58
+feat dr59
+feat dr60
+feat dr61
+feat dr62
+feat dr63
+feat dr64
+feat dr65
+feat dr66
+feat dr67
+feat dr68
+feat dr69
+feat dr70
+feat dr71
+feat dr72
+feat dr73
+feat dr74
+feat dr75
+feat dr76
+feat dr77
+feat dr78
+feat dr79
+feat dr80
+feat dr81
+feat dr82
+feat dr83
+feat dr84
+feat dr85
+feat dr86
+feat dr87
+feat dr88
+feat dr89
+feat dr90
+feat dr91
+feat dr92
+feat dr93
+feat dr94
+feat dr95
+feat dr96
+feat dr97
+feat dr98
+feat dr99
+feat dr100
+feat dr101
+feat dr102
+feat dr103
+feat dr104
+feat dr105
+feat dr106
+feat dr107
+feat dr108
+feat dr109
+feat dr110
+feat dr111
+feat dr112
+feat dr113
+feat dr114
+feat dr115
+feat dr116
+feat dr117
+feat dr118
+feat dr119
+feat dr120
+feat dr121
+feat dr122
+feat dr123
+feat dr124
+feat dr125
+feat dr126
+feat dr127
+feat dr128
+feat dr129
+feat dr130
+feat dr131
+feat dr132
+feat dr133
+feat dr134
+feat dr135
+feat dr136
+feat dr137
+feat dr138
+feat dr139
+feat dr140
+feat dr141
+feat dr142
+feat dr143
+feat dr144
+feat dr145
+feat dr146
+feat dr147
+feat dr148
+feat dr149
+feat dr150
+feat dr151
+feat dr152
+feat dr153
+feat dr154
+feat dr155
+feat dr156
+feat dr157
+feat dr158
+feat dr159
+feat dr160
+feat dr161
+feat dr162
+feat dr163
+feat dr164
+feat dr165
+feat dr166
+feat dr167
+feat dr168
+feat dr169
+feat dr170
+feat dr171
+feat dr172
+feat dr173
+feat dr174
+feat dr175
+feat dr176
+feat dr177
+feat dr178
+feat dr179
+feat dr180
+feat dr181
+feat dr182
+feat dr183
+feat dr184
+feat dr185
+feat dr186
+feat dr187
+feat dr188
+feat dr189
+feat dr190
+feat dr191
+feat dr192
+feat dr193
+feat dr194
+feat dr195
+feat dr196
+feat dr197
+feat dr198
+feat dr199
+feat dr200
+feat dr201
+feat dr202
+feat dr203
+feat dr204
+feat dr205
+feat dr206
+feat dr207
+feat dr208
+feat dr209
+feat dr210
+feat dr211
+feat dr212
+feat dr213
+feat dr214
+feat dr215
+feat dr216
+feat dr217
+feat dr218
+feat dr219
+feat dr220
+feat dr221
+feat dr222
+feat dr223
+feat dr224
+feat dr225
+feat dr226
+feat dr227
+feat dr228
+feat dr229
+feat dr230
+feat dr231
+feat dr232
+feat dr233
+feat dr234
+feat dr235
+feat dr236
+feat dr237
+feat dr238
+feat dr239
+feat dr240
+feat dr241
+feat dr242
+feat dr243
+feat dr244
+feat dr245
+feat dr246
+feat dr247
+feat dr248
+feat dr249
+feat dr250
+feat dr251
+feat dr252
+feat dr253
+feat dr254
+feat dr255
+feat dr256
+feat dr257
+feat dr258
+feat dr259
+feat dr260
+feat dr261
+feat dr262
+feat dr263
+feat dr264
+feat dr265
+feat dr266
+feat dr267
+feat dr268
+feat dr269
+feat dr270
+feat dr271
+feat dr272
+feat dr273
+feat dr274
+feat dr275
+feat dr276
+feat dr277
+feat dr278
+feat dr279
+feat dr280
+feat dr281
+feat dr282
+feat dr283
+feat dr284
+feat dr285
+feat dr286
+feat dr287
+feat dr288
+feat dr289
+feat dr290
+feat dr291
+feat dr292
+feat dr293
+feat dr294
+feat dr295
+feat dr296
+feat dr297
+feat dr298
+feat dr299
+feat dr300
+feat dr301
+feat dr302
+feat dr303
+feat dr304
+feat dr305
+feat dr306
+feat dr307
+feat dr308
+feat dr309
+feat dr310
+feat dr311
+feat dr312
+feat dr313
+feat dr314
+feat dr315
+feat dr316
+feat dr317
+feat dr318
+feat dr319
+feat dr320
+feat dr321
+feat dr322
+feat dr323
+feat dr324
+feat dr325
+feat dr326
+feat dr327
+feat dr328
+feat dr329
+feat dr330
+feat dr331
+feat dr332
+feat dr333
+feat dr334
+feat dr335
+feat dr336
+feat dr337
+feat dr338
+feat dr339
+feat dr340
+feat dr341
+feat dr342
+feat dr343
+feat dr344
+feat dr345
+feat dr346
+feat dr347
+feat dr348
+feat dr349
+feat dr350
+feat dr351
+feat dr352
+feat dr353
+feat dr354
+feat dr355
+feat dr356
+feat dr357
+feat dr358
+feat dr359
+feat dr360
+feat dr361
+feat dr362
+feat dr363
+feat dr364
+feat dr365
+feat dr366
+feat dr367
+feat dr368
+feat dr369
+feat dr370
+feat ds0
+feat ds1
+feat ds2
+feat ds3
+feat ds4
+feat ds5
+feat ds6
+feat ds7
+feat ds8
+feat ds9
+feat ds10
+feat ds11
+feat ds12
+feat ds13
+feat ds14
+feat ds15
+feat ds16
+feat ds17
+feat ds18
+feat ds19
+feat ds20
+feat ds21
+feat ds22
+feat ds23
+feat ds24
+feat ds25
+feat ds26
+feat ds27
+feat ds28
+feat ds29
+feat ds30
+feat ds31
+feat ds32
+feat ds33
+feat ds34
+feat ds35
+feat ds36
+feat ds37
+feat ds38
+feat ds39
+feat ds40
+feat ds41
+feat ds42
+feat ds43
+feat ds44
+feat ds45
+feat ds46
+feat ds47
+feat ds48
+feat ds49
+feat ds50
+feat ds51
+feat ds52
+feat ds53
+feat ds54
+feat ds55
+feat ds56
+feat ds57
+feat ds58
+feat ds59
+feat ds60
+feat ds61
+feat ds62
+feat ds63
+feat ds64
+feat ds65
+feat ds66
+feat ds67
+feat ds68
+feat ds69
+feat ds70
+feat ds71
+feat ds72
+feat ds73
+feat ds74
+feat ds75
+feat ds76
+feat ds77
+feat ds78
+feat ds79
+feat ds80
+feat ds81
+feat ds82
+feat ds83
+feat ds84
+feat ds85
+feat ds86
+feat ds87
+feat ds88
+feat ds89
+feat ds90
+feat ds91
+feat ds92
+feat ds93
+feat ds94
+feat ds95
+feat ds96
+feat ds97
+feat ds98
+feat ds99
+feat ds100
+feat ds101
+feat ds102
+feat ds103
+feat ds104
+feat ds105
+feat ds106
+feat ds107
+feat ds108
+feat ds109
+feat ds110
+feat ds111
+feat ds112
+feat ds113
+feat ds114
+feat ds115
+feat ds116
+feat ds117
+feat ds118
+feat ds119
+feat ds120
+feat ds121
+feat ds122
+feat ds123
+feat ds124
+feat ds125
+feat ds126
+feat ds127
+feat ds128
+feat ds129
+feat ds130
+feat ds131
+feat ds132
+feat ds133
+feat ds134
+feat ds135
+feat ds136
+feat ds137
+feat ds138
+feat ds139
+feat ds140
+feat ds141
+feat ds142
+feat ds143
+feat ds144
+feat ds145
+feat ds146
+feat ds147
+feat ds148
+feat ds149
+feat ds150
+feat ds151
+feat ds152
+feat ds153
+feat ds154
+feat ds155
+feat ds156
+feat ds157
+feat ds158
+feat ds159
+feat ds160
+feat ds161
+feat ds162
+feat ds163
+feat ds164
+feat ds165
+feat ds166
+feat ds167
+feat ds168
+feat ds169
+feat ds170
+feat ds171
+feat ds172
+feat ds173
+feat ds174
+feat ds175
+feat ds176
+feat ds177
+feat ds178
+feat ds179
+feat ds180
+feat ds181
+feat ds182
+feat ds183
+feat ds184
+feat ds185
+feat ds186
+feat ds187
+feat ds188
+feat ds189
+feat ds190
+feat ds191
+feat ds192
+feat ds193
+feat ds194
+feat ds195
+feat ds196
+feat ds197
+feat ds198
+feat ds199
+feat ds200
+feat ds201
+feat ds202
+feat ds203
+feat ds204
+feat ds205
+feat ds206
+feat ds207
+feat ds208
+feat ds209
+feat ds210
+feat ds211
+feat ds212
+feat ds213
+feat ds214
+feat ds215
+feat ds216
+feat ds217
+feat ds218
+feat ds219
+feat ds220
+feat ds221
+feat ds222
+feat ds223
+feat ds224
+feat ds225
+feat ds226
+feat ds227
+feat ds228
+feat ds229
+feat ds230
+feat ds231
+feat ds232
+feat ds233
+feat ds234
+feat ds235
+feat ds236
+feat ds237
+feat ds238
+feat ds239
+feat ds240
+feat ds241
+feat ds242
+feat ds243
+feat ds244
+feat ds245
+feat ds246
+feat ds247
+feat ds248
+feat ds249
+feat ds250
+feat ds251
+feat ds252
+feat ds253
+feat ds254
+feat ds255
+feat ds256
+feat ds257
+feat ds258
+feat ds259
+feat ds260
+feat ds261
+feat ds262
+feat ds263
+feat ds264
+feat ds265
+feat ds266
+feat ds267
+feat ds268
+feat ds269
+feat ds270
+feat ds271
+feat ds272
+feat ds273
+feat ds274
+feat ds275
+feat ds276
+feat ds277
+feat ds278
+feat ds279
+feat ds280
+feat ds281
+feat ds282
+feat ds283
+feat ds284
+feat ds285
+feat ds286
+feat ds287
+feat ds288
+feat ds289
+feat ds290
+feat ds291
+feat ds292
+feat ds293
+feat ds294
+feat ds295
+feat ds296
+feat ds297
+feat ds298
+feat ds299
+feat ds300
+feat ds301
+feat ds302
+feat ds303
+feat ds304
+feat ds305
+feat ds306
+feat ds307
+feat ds308
+feat ds309
+feat ds310
+feat ds311
+feat ds312
+feat ds313
+feat ds314
+feat ds315
+feat ds316
+feat ds317
+feat ds318
+feat ds319
+feat ds320
+feat ds321
+feat ds322
+feat ds323
+feat ds324
+feat ds325
+feat ds326
+feat ds327
+feat ds328
+feat ds329
+feat ds330
+feat ds331
+feat ds332
+feat ds333
+feat ds334
+feat ds335
+feat ds336
+feat ds337
+feat ds338
+feat ds339
+feat ds340
+feat ds341
+feat ds342
+feat ds343
+feat ds344
+feat ds345
+feat ds346
+feat ds347
+feat ds348
+feat ds349
+feat ds350
+feat ds351
+feat ds352
+feat ds353
+feat ds354
+feat ds355
+feat ds356
+feat ds357
+feat ds358
+feat ds359
+feat ds360
+feat ds361
+feat ds362
+feat ds363
+feat ds364
+feat ds365
+feat ds366
+feat ds367
+feat ds368
+feat ds369
+feat ds370
+feat ex0
+feat ex1
+feat ex2
+feat ex3
+feat ex4
+feat ex5
+feat ex6
+feat ex7
+feat ex8
+feat ex9
+feat ex10
+feat ex11
+feat ex12
+feat ex13
+feat ex14
+feat ex15
+feat ex16
+feat ex17
+feat ex18
+feat ex19
+feat ex20
+feat ex21
+feat ex22
+feat ex23
+feat ex24
+feat ex25
+feat ex26
+feat ex27
+feat ex28
+feat ex29
+feat ex30
+feat ex31
+feat ex32
+feat ex33
+feat ex34
+feat ex35
+feat ex36
+feat ex37
+feat ex38
+feat ex39
+feat ex40
+feat ex41
+feat ex42
+feat ex43
+feat ex44
+feat ex45
+feat ex46
+feat ex47
+feat ex48
+feat ex49
+feat ex50
+feat ex51
+feat ex52
+feat ex53
+feat ex54
+feat ex55
+feat ex56
+feat ex57
+feat ex58
+feat ex59
+feat ex60
+feat ex61
+feat ex62
+feat ex63
+feat ex64
+feat ex65
+feat ex66
+feat ex67
+feat ex68
+feat ex69
+feat ex70
+feat ex71
+feat ex72
+feat ex73
+feat ex74
+feat ex75
+feat ex76
+feat ex77
+feat ex78
+feat ex79
+feat ex80
+feat ex81
+feat ex82
+feat ex83
+feat ex84
+feat ex85
+feat ex86
+feat ex87
+feat ex88
+feat ex89
+feat ex90
+feat ex91
+feat ex92
+feat ex93
+feat ex94
+feat ex95
+feat ex96
+feat ex97
+feat ex98
+feat ex99
+feat ex100
+feat ex101
+feat ex102
+feat ex103
+feat ex104
+feat ex105
+feat ex106
+feat ex107
+feat ex108
+feat ex109
+feat ex110
+feat ex111
+feat ex112
+feat ex113
+feat ex114
+feat ex115
+feat ex116
+feat ex117
+feat ex118
+feat ex119
+feat ex120
+feat ex121
+feat ex122
+feat ex123
+feat ex124
+feat ex125
+feat ex126
+feat ex127
+feat ex128
+feat ex129
+feat ex130
+feat ex131
+feat ex132
+feat ex133
+feat ex134
+feat ex135
+feat ex136
+feat ex137
+feat ex138
+feat ex139
+feat ex140
+feat ex141
+feat ex142
+feat ex143
+feat ex144
+feat ex145
+feat ex146
+feat ex147
+feat ex148
+feat ex149
+feat ex150
+feat ex151
+feat ex152
+feat ex153
+feat ex154
+feat ex155
+feat ex156
+feat ex157
+feat ex158
+feat ex159
+feat ex160
+feat ex161
+feat ex162
+feat ex163
+feat ex164
+feat ex165
+feat ex166
+feat ex167
+feat ex168
+feat ex169
+feat ex170
+feat ex171
+feat ex172
+feat ex173
+feat ex174
+feat ex175
+feat ex176
+feat ex177
+feat ex178
+feat ex179
+feat ex180
+feat ex181
+feat ex182
+feat ex183
+feat ex184
+feat ex185
+feat ex186
+feat ex187
+feat ex188
+feat ex189
+feat ex190
+feat ex191
+feat ex192
+feat ex193
+feat ex194
+feat ex195
+feat ex196
+feat ex197
+feat ex198
+feat ex199
+feat ex200
+feat ex201
+feat ex202
+feat ex203
+feat ex204
+feat ex205
+feat ex206
+feat ex207
+feat ex208
+feat ex209
+feat ex210
+feat ex211
+feat ex212
+feat ex213
+feat ex214
+feat ex215
+feat ex216
+feat ex217
+feat ex218
+feat ex219
+feat ex220
+feat ex221
+feat ex222
+feat ex223
+feat ex224
+feat ex225
+feat ex226
+feat ex227
+feat ex228
+feat ex229
+feat ex230
+feat ex231
+feat ex232
+feat ex233
+feat ex234
+feat ex235
+feat ex236
+feat ex237
+feat ex238
+feat ex239
+feat ex240
+feat ex241
+feat ex242
+feat ex243
+feat ex244
+feat ex245
+feat ex246
+feat ex247
+feat ex248
+feat ex249
+feat ex250
+feat ex251
+feat ex252
+feat ex253
+feat ex254
+feat ex255
+feat ex256
+feat ex257
+feat ex258
+feat ex259
+feat ex260
+feat ex261
+feat ex262
+feat ex263
+feat ex264
+feat ex265
+feat ex266
+feat ex267
+feat ex268
+feat ex269
+feat ex270
+feat ex271
+feat ex272
+feat ex273
+feat ex274
+feat ex275
+feat ex276
+feat ex277
+feat ex278
+feat ex279
+feat ex280
+feat ex281
+feat ex282
+feat ex283
+feat ex284
+feat ex285
+feat ex286
+feat ex287
+feat ex288
+feat ex289
+feat ex290
+feat ex291
+feat ex292
+feat ex293
+feat ex294
+feat ex295
+feat ex296
+feat ex297
+feat ex298
+feat ex299
+feat ex300
+feat ex301
+feat ex302
+feat ex303
+feat ex304
+feat ex305
+feat ex306
+feat ex307
+feat ex308
+feat ex309
+feat ex310
+feat ex311
+feat ex312
+feat ex313
+feat ex314
+feat ex315
+feat ex316
+feat ex317
+feat ex318
+feat ex319
+feat ex320
+feat ex321
+feat ex322
+feat ex323
+feat ex324
+feat ex325
+feat ex326
+feat ex327
+feat ex328
+feat ex329
+feat ex330
+feat ex331
+feat ex332
+feat ex333
+feat ex334
+feat ex335
+feat ex336
+feat ex337
+feat ex338
+feat ex339
+feat ex340
+feat ex341
+feat ex342
+feat ex343
+feat ex344
+feat ex345
+feat ex346
+feat ex347
+feat ex348
+feat ex349
+feat ex350
+feat ex351
+feat ex352
+feat ex353
+feat ex354
+feat ex355
+feat ex356
+feat ex357
+feat ex358
+feat ex359
+feat ex360
+feat ex361
+feat ex362
+feat ex363
+feat ex364
+feat ex365
+feat ex366
+feat ex367
+feat ex368
+feat ex369
+feat ex370
+feat incomingDmg
+feat nAttacking
+feat m0Id
+feat m0Hp
+feat m0Block
+feat m0Str
+feat m0Intent
+feat m0Atk
+feat m0Vuln
+feat m0Weak
+feat m0Poison
+feat m1Id
+feat m1Hp
+feat m1Block
+feat m1Str
+feat m1Intent
+feat m1Atk
+feat m1Vuln
+feat m1Weak
+feat m1Poison
+feat m2Id
+feat m2Hp
+feat m2Block
+feat m2Str
+feat m2Intent
+feat m2Atk
+feat m2Vuln
+feat m2Weak
+feat m2Poison
+feat m3Id
+feat m3Hp
+feat m3Block
+feat m3Str
+feat m3Intent
+feat m3Atk
+feat m3Vuln
+feat m3Weak
+feat m3Poison
+feat m4Id
+feat m4Hp
+feat m4Block
+feat m4Str
+feat m4Intent
+feat m4Atk
+feat m4Vuln
+feat m4Weak
+feat m4Poison
+feat pot0
+feat pot1
+feat pot2
+feat pot3
+feat pot4
+feat pot5
+feat pot6
+feat pot7
+feat pot8
+feat pot9
+feat pot10
+feat pot11
+feat pot12
+feat pot13
+feat pot14
+feat pot15
+feat pot16
+feat pot17
+feat pot18
+feat pot19
+feat pot20
+feat pot21
+feat pot22
+feat pot23
+feat pot24
+feat pot25
+feat pot26
+feat pot27
+feat pot28
+feat pot29
+feat pot30
+feat pot31
+feat pot32
+feat pot33
+feat pot34
+feat pot35
+feat pot36
+feat pot37
+feat pot38
+feat pot39
+feat pot40
+feat pot41
+feat pot42
+feat pot43
+feat gold
+feat potionCap
+feat cardsPlayed
+feat attacksPlayed
+feat skillsPlayed
+feat happyFlowerCtr
+feat incenseBurnerCtr
+feat inkBottleCtr
+feat inserterCtr
+feat nunchakuCtr
+feat penNibCtr
+feat sundialCtr
+feat panacheCtr
+base_score 60.372597
+ntrees 501
+tree 0 21
+S 4 103 1 2
+S 23 4 3 4
+L 1.383649
+S 12 29 5 6
+S 1668 17 7 8
+L 1.073464
+S 15 3 9 10
+L -0.3966507
+S 7 4 11 12
+S 13 183 13 14
+L -0.5384867
+L -1.308913
+L -0.9847247
+S 2 3 15 16
+L -0.2338288
+S 13 34 17 18
+L -0.08674758
+L 0.03157151
+S 4 57 19 20
+L 0.1909972
+L 0.5524892
+tree 1 19
+S 1662 32 1 2
+S 4 100 3 4
+S 21 18 5 6
+S 12 29 7 8
+L 1.315479
+L -0.4730281
+L -1.246849
+L 1.052362
+S 1 20 9 10
+L 0.412076
+S 163 1 11 12
+S 15 4 13 14
+L 0.2457896
+S 1753 166 15 16
+L -0.767994
+L -0.00646958
+S 1664 23 17 18
+L -0.1319053
+L -0.7143201
+tree 2 21
+S 3 55 1 2
+S 18 21 3 4
+S 3 74 5 6
+S 3 28 7 8
+S 1753 221 9 10
+L 0.6901517
+L 1.429706
+S 3 20 11 12
+S 1 26 13 14
+L -0.4091474
+S 1677 21 15 16
+L -0.6908373
+S 985 1 17 18
+L 0.4812036
+S 1 41 19 20
+L -1.263109
+L -1.058014
+L -0.4000696
+L -0.02177001
+L -0.3775407
+L 0.2799581
+tree 3 19
+S 3 37 1 2
+S 1753 169 3 4
+S 11 2 5 6
+S 15 2 7 8
+S 20 2 9 10
+S 3 74 11 12
+S 22 7 13 14
+S 3 28 15 16
+L -0.6038333
+S 158 1 17 18
+L -0.4986478
+L 0.7689296
+L 1.484259
+L 0.5814819
+L -0.1279056
+L -0.1158133
+L 0.2207247
+L -0.8281736
+L -1.207129
+tree 4 21
+S 3 46 1 2
+S 1662 25 3 4
+S 11 2 5 6
+S 3 20 7 8
+S 7 4 9 10
+S 3 74 11 12
+S 1677 6 13 14
+L -0.6496086
+S 1753 169 15 16
+L -1.216314
+L -0.8464442
+L 0.830023
+L 1.489694
+L 0.2562914
+L 0.1659215
+S 1241 2 17 18
+L -0.3072992
+L -0.2297258
+S 3 28 19 20
+L 0.05651128
+L 0.2581503
+tree 5 23
+S 3 60 1 2
+S 23 4 3 4
+S 3 74 5 6
+S 3 20 7 8
+S 25 1 9 10
+L 0.640148
+L 1.345055
+L -0.6847602
+S 12 39 11 12
+S 12 59 13 14
+L -0.4213447
+L 0.5733095
+S 1525 1 15 16
+L -0.9327263
+L -1.137639
+S 13 47 17 18
+S 5 9 19 20
+L 0.02716525
+S 21 16 21 22
+L 0.2793508
+L 0.1440976
+L -0.592558
+L 0.007407134
+tree 6 23
+S 3 55 1 2
+S 23 4 3 4
+S 1683 10 5 6
+S 3 28 7 8
+S 25 1 9 10
+S 1670 1 11 12
+L 0.1982993
+S 15 2 13 14
+S 1 23 15 16
+S 1755 2 17 18
+L -0.4166258
+L 0.9571161
+L 1.533572
+S 19 11 19 20
+L -0.7015515
+L 0.6916506
+S 19 15 21 22
+L -1.231045
+L -0.8658598
+L -0.3722225
+L 0.0449616
+L -0.2250311
+L 0.2139459
+tree 7 19
+S 3 55 1 2
+S 23 4 3 4
+S 3 74 5 6
+S 15 3 7 8
+S 1662 33 9 10
+L 0.552255
+L 1.271213
+S 12 37 11 12
+L -0.5162977
+L -0.5280011
+L -1.040736
+L 0.4013009
+S 1662 8 13 14
+L -0.370334
+S 3 28 15 16
+L -0.1099497
+S 19 16 17 18
+L 0.061588
+L 0.2236599
+tree 8 19
+S 3 55 1 2
+S 23 4 3 4
+S 3 74 5 6
+S 3 28 7 8
+S 560 1 9 10
+L 0.6131754
+L 1.190258
+S 15 2 11 12
+S 1 26 13 14
+L -0.4896391
+L -0.980409
+S 19 11 15 16
+L -0.7141558
+L 0.4781008
+S 19 15 17 18
+L -0.4057322
+L 0.007879945
+L -0.3523263
+L 0.2098165
+tree 9 23
+S 3 36 1 2
+S 23 3 3 4
+S 11 2 5 6
+S 21 17 7 8
+S 1668 8 9 10
+S 3 68 11 12
+S 22 7 13 14
+S 12 89 15 16
+S 376 1 17 18
+L -0.5161307
+S 1673 20 19 20
+L 0.6100107
+S 728 1 21 22
+L 0.4892214
+L -0.1451452
+L 0.07207806
+L -0.7338927
+L -0.001764251
+L 0.1817422
+L -1.116346
+L -0.8614299
+L 1.403002
+L 1.141946
+tree 10 21
+S 3 55 1 2
+S 23 4 3 4
+S 1683 10 5 6
+S 3 20 7 8
+S 1662 33 9 10
+S 1670 1 11 12
+L 0.1938211
+L -0.6164559
+S 12 40 13 14
+L -0.526834
+L -0.9903669
+L 0.8625134
+L 1.372491
+L 0.4401456
+S 1525 1 15 16
+S 1024 3 17 18
+L 0.1989532
+S 12 107 19 20
+L -0.004253285
+L -0.1519474
+L -0.52521
+tree 11 21
+S 3 44 1 2
+S 1753 169 3 4
+S 11 2 5 6
+S 1753 39 7 8
+S 23 3 9 10
+S 3 68 11 12
+S 1682 16 13 14
+L -0.5393416
+S 4 76 15 16
+L -0.4237097
+S 7 4 17 18
+L 0.6182412
+L 1.147643
+L -0.1021154
+L 0.4109124
+S 3 27 19 20
+L -0.1010751
+L -1.060281
+L -0.6777906
+L 0.1033358
+L 0.1791203
+tree 12 23
+S 3 45 1 2
+S 1753 221 3 4
+S 80 1 5 6
+S 15 2 7 8
+S 158 1 9 10
+S 1670 1 11 12
+L -0.177221
+S 3 23 13 14
+L -0.4862089
+L -0.5449973
+L -0.9148175
+S 13 119 15 16
+L 1.204793
+L -0.2509167
+S 13 183 17 18
+S 1674 11 19 20
+L 0.2557774
+S 6 3 21 22
+L -0.07103006
+L 0.925081
+L 0.5587789
+L 0.1400941
+L 0.1852536
+tree 13 21
+S 3 57 1 2
+S 1753 169 3 4
+S 1682 4 5 6
+S 1753 39 7 8
+S 23 3 9 10
+S 1670 1 11 12
+L 0.3172189
+L -0.3524291
+S 4 82 13 14
+S 12 135 15 16
+S 12 236 17 18
+L 0.7722986
+L 1.224736
+S 896 1 19 20
+L -0.08566566
+L 0.06968439
+L -0.5147933
+L -0.6848613
+L -0.9984227
+L 0.237945
+L 0.07108039
+tree 14 23
+S 3 55 1 2
+S 23 4 3 4
+S 11 2 5 6
+S 12 41 7 8
+S 25 1 9 10
+S 1670 1 11 12
+L 0.1911595
+L 0.4134222
+S 15 3 13 14
+S 12 183 15 16
+L -0.3040139
+L 0.6843343
+L 1.2247
+S 19 15 17 18
+L -0.5011103
+L -0.6784776
+L -1.000114
+S 12 107 19 20
+S 376 1 21 22
+L -0.01822038
+L -0.4424096
+L 0.09860197
+L 0.1740896
+tree 15 23
+S 3 44 1 2
+S 1753 221 3 4
+S 11 2 5 6
+S 3 20 7 8
+S 1753 271 9 10
+S 3 74 11 12
+S 80 1 13 14
+L -0.5271429
+S 15 2 15 16
+L -1.077053
+S 653 4 17 18
+L 0.590316
+L 1.082589
+L 0.3904891
+L -0.1552477
+S 1525 1 19 20
+L -0.3670162
+L -0.4197093
+L -0.7057717
+S 18 9 21 22
+L 0.1806746
+L 0.09153444
+L -0.2167976
+tree 16 21
+S 3 44 1 2
+S 1753 169 3 4
+S 80 1 5 6
+S 15 2 7 8
+S 98 1 9 10
+S 1670 1 11 12
+L -0.2355862
+S 1673 42 13 14
+L -0.3943065
+S 1755 1 15 16
+L -0.2463461
+S 1 20 17 18
+L 1.099445
+S 21 19 19 20
+L -0.1724427
+L -0.9201761
+L -0.5837941
+L 0.802505
+L 0.348984
+L 0.2278731
+L 0.09865233
+tree 17 19
+S 3 36 1 2
+S 1753 169 3 4
+S 11 2 5 6
+S 15 2 7 8
+S 98 1 9 10
+S 3 74 11 12
+S 1662 22 13 14
+S 1525 1 15 16
+L -0.3957453
+S 1755 1 17 18
+L -0.2813884
+L 0.5012205
+L 1.024028
+L 0.282865
+L -0.1823606
+L -0.1000691
+L 0.1371334
+L -0.9232271
+L -0.5828112
+tree 18 21
+S 1662 24 1 2
+S 48 1 3 4
+S 653 2 5 6
+S 1 20 7 8
+L 0.8540277
+L -0.0352579
+S 1667 2 9 10
+S 16 2 11 12
+S 142 1 13 14
+L -0.9150222
+L -0.6116799
+L 0.7014461
+L 0.2381645
+S 15 4 15 16
+S 21 22 17 18
+S 1665 108 19 20
+L -0.5211436
+L 0.3564507
+L 0.1909615
+L 0.07570111
+L -0.3255735
+tree 19 21
+S 1753 198 1 2
+S 1020 1 3 4
+S 23 3 5 6
+S 13 64 7 8
+L 0.868691
+S 13 96 9 10
+S 573 1 11 12
+S 24 3 13 14
+S 1665 33 15 16
+L 0.2618422
+L -0.4176005
+L -0.484066
+L -0.7474366
+L 0.7449827
+S 1753 78 17 18
+L -0.4465578
+S 22 10 19 20
+L 0.2570412
+L 0.002147353
+L -0.1242349
+L 0.1944062
+tree 20 21
+S 1662 31 1 2
+S 4 100 3 4
+S 21 18 5 6
+S 12 31 7 8
+L 0.7954323
+L -0.297269
+L -0.7572897
+L 0.6628073
+S 1753 169 9 10
+S 1241 1 11 12
+S 13 100 13 14
+L -0.1662165
+S 4 79 15 16
+L 0.1052023
+S 150 1 17 18
+S 1670 4 19 20
+L 0.2516589
+L -0.6117317
+L -0.2409122
+L -0.1044337
+L 0.1236591
+tree 21 21
+S 3 45 1 2
+S 23 3 3 4
+S 80 1 5 6
+S 21 17 7 8
+S 21 18 9 10
+S 1670 1 11 12
+L -0.1522301
+S 13 57 13 14
+S 376 1 15 16
+L -0.2008828
+S 7 4 17 18
+S 12 148 19 20
+L 0.958339
+L 0.1099061
+L -0.5563089
+L 0.02877335
+L 0.1380389
+L -0.9126955
+L -0.5130637
+L 0.6668416
+L 0.1703974
+tree 22 19
+S 3 44 1 2
+S 1662 25 3 4
+S 1674 13 5 6
+S 3 20 7 8
+S 12 184 9 10
+S 1670 1 11 12
+L 0.1040732
+L -0.4305125
+S 1098 1 13 14
+L -0.4941744
+L -0.8608038
+L 0.4496129
+L 0.9558072
+S 13 52 15 16
+S 20 6 17 18
+L 0.1084868
+L -0.3926219
+L 0.04733064
+L 0.1541592
+tree 23 21
+S 3 37 1 2
+S 1753 221 3 4
+S 11 2 5 6
+S 1280 1 7 8
+S 1753 271 9 10
+S 1670 1 11 12
+S 1 26 13 14
+S 12 80 15 16
+S 1670 4 17 18
+L -0.9190374
+L -0.4533885
+S 21 13 19 20
+L 0.9632483
+L 0.298114
+L -0.187362
+L 0.03137336
+L -0.4363233
+L -0.05293012
+L 0.1350507
+L 0.8794944
+L 0.3125232
+tree 24 21
+S 3 34 1 2
+S 20 2 3 4
+S 11 2 5 6
+S 1662 21 7 8
+S 15 2 9 10
+S 1670 1 11 12
+S 13 45 13 14
+L -0.3469935
+L -0.6639018
+S 1664 35 15 16
+L -0.3695249
+S 1 31 17 18
+L 0.9311903
+L 0.2470698
+L -0.3524556
+S 21 22 19 20
+L -0.09821387
+L 0.8447433
+L 0.2208257
+L 0.07622805
+L 0.1540197
+tree 25 23
+S 3 34 1 2
+S 23 3 3 4
+S 11 2 5 6
+S 21 17 7 8
+S 1668 8 9 10
+S 3 68 11 12
+S 1 26 13 14
+S 12 72 15 16
+S 1670 4 17 18
+L -0.2702902
+S 276 1 19 20
+L 0.4563561
+S 18 23 21 22
+L 0.3236721
+L -0.1881722
+L 0.06692632
+L -0.4807899
+L -0.001584111
+L 0.1258334
+L -0.8294159
+L -0.4949195
+L 1.00917
+L 0.6520193
+tree 26 21
+S 3 34 1 2
+S 1662 29 3 4
+S 1674 16 5 6
+S 3 20 7 8
+S 12 61 9 10
+S 3 68 11 12
+S 1662 21 13 14
+L -0.3765317
+S 20 3 15 16
+L -0.4617708
+L -0.773567
+L 0.3564343
+S 870 2 17 18
+L 0.2288563
+L -0.1786913
+L -0.2380407
+S 22 9 19 20
+L 0.9097911
+L 0.6219903
+L -0.01698932
+L 0.1283433
+tree 27 19
+S 3 34 1 2
+S 20 2 3 4
+S 1674 12 5 6
+S 1662 21 7 8
+S 15 2 9 10
+S 3 74 11 12
+S 21 11 13 14
+L -0.3711584
+L -0.6359938
+S 3 23 15 16
+L -0.3343744
+L 0.4178225
+L 0.7815325
+L 0.2655937
+L -0.2016058
+L -0.1024683
+S 6 3 17 18
+L 0.06148544
+L 0.1313877
+tree 28 19
+S 3 57 1 2
+S 18 18 3 4
+S 3 74 5 6
+S 3 21 7 8
+S 1753 218 9 10
+L 0.2952205
+L 0.7593328
+L -0.3905477
+S 12 49 11 12
+L -0.1982137
+S 7 4 13 14
+L 0.3763986
+S 1525 1 15 16
+L -0.7194699
+L -0.4223179
+S 5 4 17 18
+L 0.1436131
+L -0.2200556
+L 0.01276879
+tree 29 19
+S 3 74 1 2
+S 1662 32 3 4
+L 0.7335631
+S 3 20 5 6
+S 13 252 7 8
+L -0.374345
+S 13 24 9 10
+L -0.3478855
+L -0.7812195
+L 0.4155233
+S 3 55 11 12
+S 20 3 13 14
+L 0.2560722
+S 13 45 15 16
+S 7 3 17 18
+L 0.1325672
+L -0.2836439
+L 0.004749663
+L 0.1382529
+tree 30 25
+S 3 44 1 2
+S 1753 221 3 4
+S 80 1 5 6
+S 3 20 7 8
+S 1753 271 9 10
+S 3 68 11 12
+L -0.1589656
+L -0.3460727
+S 1673 12 13 14
+L -0.7521906
+S 653 4 15 16
+S 1 23 17 18
+S 870 2 19 20
+S 1664 28 21 22
+L -0.2339008
+L -0.2810804
+L -0.4659757
+L 0.4970658
+L 0.1101262
+L 0.8595034
+L 0.4675255
+L -0.05207736
+S 21 20 23 24
+L 0.2153111
+L 0.08911859
+tree 31 23
+S 1662 26 1 2
+S 13 20 3 4
+S 7 1 5 6
+L 0.7938772
+S 142 1 7 8
+L -0.7188203
+S 15 9 9 10
+S 1 31 11 12
+S 22 12 13 14
+L -0.008480248
+L -0.4533726
+S 1753 74 15 16
+S 27 3 17 18
+L 0.7378283
+L 0.06345193
+L 0.243398
+S 22 7 19 20
+S 1 40 21 22
+L 0.01349543
+L -0.1795266
+L 0.1285989
+L -0.4740365
+L -0.104288
+tree 32 17
+S 1662 31 1 2
+S 58 1 3 4
+S 12 271 5 6
+S 13 42 7 8
+L 0.48316
+L -0.3230118
+L -0.7256879
+S 24 3 9 10
+S 142 1 11 12
+L 0.5536907
+L 0.07628231
+S 1753 169 13 14
+L 0.1019239
+S 1664 28 15 16
+L -0.3314707
+L -0.2177705
+L 0.04195315
+tree 33 23
+S 1662 31 1 2
+S 48 1 3 4
+S 13 243 5 6
+S 13 81 7 8
+S 49 4 9 10
+L -0.2850809
+L -0.687022
+S 24 3 11 12
+S 1753 156 13 14
+L 0.2696671
+L 0.6118001
+L 0.4997247
+S 1664 34 15 16
+S 618 1 17 18
+S 21 19 19 20
+L 0.1843734
+L -0.07873064
+L -0.2008842
+S 21 22 21 22
+L -0.4321491
+L -0.1753861
+L 0.2345013
+L 0.09579901
+tree 34 21
+S 3 34 1 2
+S 20 2 3 4
+S 3 74 5 6
+S 23 3 7 8
+S 4 85 9 10
+S 12 116 11 12
+L 0.6188157
+L -0.211735
+S 7 4 13 14
+S 21 18 15 16
+L -0.3684064
+S 22 9 17 18
+L -0.1931941
+L -0.6799611
+L -0.3690301
+L -0.1015794
+S 20 8 19 20
+L 0.5115645
+L 0.1156133
+L 0.1400192
+L 0.05378121
+tree 35 21
+S 3 55 1 2
+S 23 3 3 4
+S 1662 11 5 6
+S 3 21 7 8
+S 1753 156 9 10
+L 0.6346298
+L 0.2121917
+L -0.3512433
+S 1 18 11 12
+L -0.08623353
+S 1280 1 13 14
+L 0.305958
+S 21 17 15 16
+L -0.5854596
+L -0.3725105
+S 12 89 17 18
+S 6 3 19 20
+L 0.0342051
+L -0.3386126
+L 0.01404405
+L 0.1296759
+tree 36 21
+S 1662 31 1 2
+S 12 28 3 4
+S 12 184 5 6
+L 0.596617
+S 4 100 7 8
+L -0.2846755
+L -0.6398224
+S 163 1 9 10
+L 0.490878
+S 1 28 11 12
+S 6 3 13 14
+S 1664 26 15 16
+S 1673 2 17 18
+L 0.05770586
+L 0.2257863
+L 0.2378845
+L -0.0369329
+S 22 9 19 20
+L -0.4885384
+L -0.3129026
+L -0.003331987
+tree 37 23
+S 3 34 1 2
+S 20 2 3 4
+S 11 2 5 6
+S 12 227 7 8
+S 4 85 9 10
+S 12 95 11 12
+S 1 26 13 14
+S 1676 1 15 16
+L -0.5893816
+S 3 22 17 18
+L -0.3448067
+L 0.7129598
+S 1671 1 19 20
+L 0.2156842
+L -0.2104868
+L -0.2700251
+L -0.3731355
+L -0.1548098
+S 376 1 21 22
+L 0.1658488
+L 0.5381373
+L -0.002824583
+L 0.07925828
+tree 38 21
+S 3 44 1 2
+S 18 23 3 4
+S 11 2 5 6
+S 12 63 7 8
+S 870 3 9 10
+S 1664 49 11 12
+S 21 11 13 14
+L 0.1642705
+S 1303 1 15 16
+L -0.5720519
+L -0.3287198
+L 0.6991535
+L 0.3561928
+L 0.1755323
+L -0.02573198
+S 4 79 17 18
+S 6 3 19 20
+L -0.4247129
+L -0.09699235
+L 0.02130852
+L 0.0822046
+tree 39 21
+S 3 74 1 2
+S 1662 26 3 4
+L 0.5720922
+S 3 31 5 6
+S 7 1 7 8
+S 1763 1 9 10
+S 1 18 11 12
+L -0.6753681
+S 21 19 13 14
+S 25 1 15 16
+L 0.05318524
+L 0.4439991
+S 11 2 17 18
+L -0.08771233
+L -0.3600231
+S 13 64 19 20
+L -0.05735819
+L 0.183155
+L -0.1078379
+L -0.1352044
+L -0.419758
+tree 40 21
+S 1662 32 1 2
+S 3 60 3 4
+S 12 284 5 6
+S 3 20 7 8
+S 1670 1 9 10
+L -0.2716912
+L -0.6703256
+L -0.2835459
+S 12 45 11 12
+S 12 114 13 14
+L 0.6411621
+L 0.2969632
+S 1098 1 15 16
+L 0.4244625
+L 0.1884594
+S 12 107 17 18
+S 1662 14 19 20
+L 0.01002042
+L -0.3082521
+L 0.1681447
+L 0.04583661
+tree 41 23
+S 3 34 1 2
+S 20 3 3 4
+S 80 1 5 6
+S 1662 24 7 8
+S 4 80 9 10
+S 1670 1 11 12
+L -0.1466909
+S 4 79 13 14
+L -0.4631889
+S 23 1 15 16
+L -0.2281178
+S 1 20 17 18
+L 0.5752138
+L -0.358421
+L -0.05752336
+L 0.1202905
+S 5 1 19 20
+L 0.5030927
+S 1753 115 21 22
+L 0.02481619
+L -0.03893257
+L -0.1038279
+L 0.2182754
+tree 42 19
+S 3 57 1 2
+S 18 23 3 4
+S 3 74 5 6
+S 13 57 7 8
+S 870 3 9 10
+L 0.2092388
+L 0.5396709
+S 1664 42 11 12
+S 1 41 13 14
+L -0.4922503
+L -0.2275405
+L 0.2284041
+L -0.112583
+S 2 4 15 16
+S 21 22 17 18
+L -0.4660558
+L -0.04972757
+L 0.1002507
+L 0.01901764
+tree 43 21
+S 3 34 1 2
+S 20 3 3 4
+S 11 2 5 6
+S 1664 34 7 8
+S 4 80 9 10
+S 1664 49 11 12
+S 1 26 13 14
+L -0.1700195
+S 7 4 15 16
+S 4 57 17 18
+L -0.2176271
+L 0.5535054
+S 24 1 19 20
+L 0.1931493
+L -0.196166
+L -0.4776942
+L -0.2813128
+L 0.009403162
+L 0.1248851
+L 0.385215
+L 0.1590787
+tree 44 19
+S 3 74 1 2
+S 13 24 3 4
+L 0.4902062
+L 0.3109357
+S 12 316 5 6
+S 3 23 7 8
+L -0.3974602
+S 3 9 9 10
+S 653 3 11 12
+L -0.3685548
+S 1753 169 13 14
+S 25 1 15 16
+L -0.1858285
+L -0.07905212
+L -0.2573287
+S 1665 34 17 18
+L 0.1665754
+L -0.08330597
+L 0.06087114
+tree 45 21
+S 3 44 1 2
+S 18 19 3 4
+S 1674 13 5 6
+S 3 20 7 8
+S 13 244 9 10
+S 12 151 11 12
+S 614 1 13 14
+L -0.2254824
+S 1525 1 15 16
+S 783 1 17 18
+L -0.4624101
+L 0.5547619
+L 0.2507429
+L 0.1308959
+L -0.201981
+S 5 4 19 20
+L 0.09054624
+L -0.07310016
+L -0.3079081
+L -0.1380746
+L 0.07095692
+tree 46 23
+S 15 7 1 2
+S 12 301 3 4
+S 1674 17 5 6
+S 48 1 7 8
+S 18 19 9 10
+L -0.2148837
+L -0.4255176
+S 12 25 11 12
+L 0.4093876
+L -0.1227544
+L -0.3765617
+L 0.3719258
+S 618 1 13 14
+S 1662 8 15 16
+S 166 1 17 18
+L -0.1834298
+S 1682 39 19 20
+L 0.3541381
+L -0.009693605
+S 1682 4 21 22
+L 0.1561085
+L -0.02745374
+L 0.01759975
+tree 47 21
+S 3 74 1 2
+S 1676 2 3 4
+L 0.4520361
+S 23 5 5 6
+S 13 64 7 8
+S 3 31 9 10
+L -0.306055
+L -0.2556451
+L -0.4086798
+S 1280 1 11 12
+S 18 14 13 14
+S 12 97 15 16
+S 24 3 17 18
+S 16 1 19 20
+L -0.007913168
+L -0.0110387
+L -0.3239307
+L 0.1484125
+L 0.000678478
+L 0.459899
+L 0.09803308
+tree 48 21
+S 3 74 1 2
+S 1662 34 3 4
+L 0.4390817
+S 3 20 5 6
+S 7 4 7 8
+L -0.2878752
+S 13 45 9 10
+L -0.4962804
+L -0.1822251
+S 1665 13 11 12
+S 20 3 13 14
+L 0.351618
+S 16 1 15 16
+S 1665 169 17 18
+S 1753 40 19 20
+L 0.1706433
+L -0.02004777
+L -0.2948561
+L -0.09804865
+L 0.02425193
+L 0.1873104
+tree 49 19
+S 3 74 1 2
+S 1 31 3 4
+L 0.4175557
+S 3 26 5 6
+S 1098 1 7 8
+L -0.08965366
+S 22 9 9 10
+S 13 262 11 12
+S 1 40 13 14
+L 0.32963
+L 0.00154744
+S 1678 1 15 16
+L -0.484879
+L -0.1700865
+S 1755 3 17 18
+L -0.0607888
+L -0.3252676
+L 0.01096119
+L 0.1597263
+tree 50 21
+S 1662 26 1 2
+S 22 5 3 4
+S 653 2 5 6
+L 0.4134264
+S 48 1 7 8
+L 0.04140775
+S 12 149 9 10
+S 1 20 11 12
+L 0.2742517
+L -0.206709
+L -0.4878617
+L 0.1983927
+S 1 40 13 14
+S 13 97 15 16
+S 1 51 17 18
+L 0.05728522
+L -0.3172157
+L 0.2642547
+S 1671 9 19 20
+L -0.08739956
+L 0.04950178
+tree 51 21
+S 3 74 1 2
+S 18 19 3 4
+L 0.4301696
+S 13 95 5 6
+S 1753 218 7 8
+S 1673 8 9 10
+S 19 11 11 12
+L -0.08813468
+S 7 4 13 14
+L 0.3486009
+S 21 10 15 16
+L -0.3839213
+S 618 1 17 18
+L -0.4427807
+L -0.2353258
+L 0.1766101
+S 12 70 19 20
+L -0.08946565
+L 0.09646524
+L 0.0107387
+L -0.05089574
+tree 52 23
+S 3 55 1 2
+S 1664 35 3 4
+S 870 2 5 6
+S 1 18 7 8
+S 25 1 9 10
+L 0.4792063
+S 12 158 11 12
+L 0.3125633
+S 19 11 13 14
+S 12 70 15 16
+L -0.03331768
+L 0.2756632
+L 0.04034732
+S 13 110 17 18
+S 1591 1 19 20
+L -0.1920388
+L -0.461498
+L -0.05909321
+L -0.2858931
+L 0.1277963
+S 335 1 21 22
+L -0.02211487
+L 0.04034315
+tree 53 23
+S 3 34 1 2
+S 20 2 3 4
+S 11 2 5 6
+S 2 2 7 8
+S 1674 17 9 10
+S 1664 49 11 12
+S 12 118 13 14
+L -0.4180091
+S 783 1 15 16
+S 1664 35 17 18
+L -0.2375004
+L 0.5400767
+S 1670 1 19 20
+L 0.1189218
+L -0.1949069
+L -0.1386682
+L -0.2508488
+S 126 1 21 22
+L -0.1391278
+L -0.02178071
+L 0.4269509
+L 0.1244129
+L 0.001762781
+tree 54 21
+S 13 20 1 2
+L 0.5778787
+S 3 75 3 4
+S 1662 34 5 6
+L 0.348071
+S 3 21 7 8
+S 1753 267 9 10
+L -0.2219293
+S 653 3 11 12
+L -0.4319432
+L -0.2304292
+S 945 1 13 14
+L -0.09531398
+S 1280 1 15 16
+L -0.08797238
+S 18 14 17 18
+S 1077 1 19 20
+L 0.2367333
+L 0.02251691
+L -0.003251181
+L 0.07246824
+tree 55 21
+S 3 34 1 2
+S 1763 1 3 4
+S 14 10 5 6
+S 12 300 7 8
+L 0.0622725
+S 12 69 9 10
+L -0.1782223
+S 27 3 11 12
+L -0.393021
+L 0.547071
+S 1665 34 13 14
+S 15 3 15 16
+L 0.04933727
+L -0.01864563
+S 18 24 17 18
+L -0.09647437
+S 1662 47 19 20
+L 0.3843912
+L 0.155846
+L -0.3019102
+L -0.2142462
+tree 56 21
+S 3 34 1 2
+S 20 3 3 4
+S 1663 2 5 6
+S 150 1 7 8
+S 4 82 9 10
+S 22 7 11 12
+L -0.05692511
+S 13 51 13 14
+L -0.0372362
+S 22 10 15 16
+L -0.2026795
+L 0.4820368
+S 1671 1 17 18
+L -0.211402
+L -0.3965244
+L 0.1349937
+L -0.01490656
+S 653 2 19 20
+L 0.3922092
+L 0.1620817
+L -0.01809664
+tree 57 21
+S 1662 24 1 2
+S 48 2 3 4
+S 653 2 5 6
+S 13 81 7 8
+L 0.3231779
+L -0.02202762
+S 12 152 9 10
+S 1664 34 11 12
+S 1 40 13 14
+L -0.170306
+L -0.5196554
+L 0.2862594
+L -0.03244865
+S 1753 124 15 16
+S 1755 3 17 18
+L -0.0474127
+L -0.3577819
+S 1668 13 19 20
+L 0.1607086
+L -0.05736469
+L 0.0276249
+tree 58 19
+S 3 74 1 2
+S 1662 27 3 4
+L 0.3325292
+S 3 20 5 6
+S 7 2 7 8
+L -0.170055
+S 25 1 9 10
+L -0.4758507
+L -0.1223967
+S 12 34 11 12
+S 12 116 13 14
+L 0.138154
+S 1525 1 15 16
+L 0.3939342
+L 0.01068336
+S 850 1 17 18
+L 0.06007037
+L -0.1536289
+L -0.02122714
+tree 59 21
+S 3 34 1 2
+S 1753 169 3 4
+S 11 2 5 6
+S 17 6 7 8
+S 98 1 9 10
+S 1664 49 11 12
+S 13 45 13 14
+S 13 53 15 16
+S 6 3 17 18
+S 12 131 19 20
+L -0.0242271
+L 0.5032498
+L 0.1320969
+L 0.1013279
+L -0.2083367
+L 0.02989015
+L -0.17935
+L 0.0152422
+L 0.08447183
+L -0.1796872
+L -0.3854748
+tree 60 19
+S 3 74 1 2
+S 1662 24 3 4
+L 0.3349744
+S 3 14 5 6
+S 1024 2 7 8
+L -0.185756
+S 25 1 9 10
+S 12 73 11 12
+L 0.01454029
+S 1664 42 13 14
+L 0.2654465
+L -0.1763121
+L -0.4071179
+S 13 57 15 16
+L -0.1016382
+L 0.181923
+S 145 1 17 18
+L -0.2031521
+L 0.07933196
+tree 61 21
+S 12 301 1 2
+S 58 1 3 4
+S 1098 1 5 6
+S 12 28 7 8
+L 0.2687414
+L -0.3848702
+L -0.1152747
+L 0.2685267
+S 15 9 9 10
+S 27 3 11 12
+L -0.2004654
+S 1668 8 13 14
+L 0.2065978
+S 24 5 15 16
+S 12 150 17 18
+S 1664 17 19 20
+L -0.01859653
+L 0.1120154
+L 0.005871196
+L -0.2285703
+L -0.09727488
+tree 62 21
+S 3 74 1 2
+S 1662 24 3 4
+L 0.3041988
+S 3 20 5 6
+S 653 2 7 8
+S 1664 28 9 10
+S 25 1 11 12
+L -0.01053788
+S 1753 267 13 14
+L -0.1002433
+L -0.2263162
+S 1664 42 15 16
+L 0.255618
+L -0.4624333
+L -0.1740966
+S 13 62 17 18
+L -0.09877689
+L 0.1781652
+S 1664 28 19 20
+L -0.04414439
+L 0.03651119
+tree 63 21
+S 13 19 1 2
+L 0.4690899
+S 3 74 3 4
+S 18 16 5 6
+L 0.2601297
+S 38 8 7 8
+S 1662 17 9 10
+S 3 50 11 12
+L -0.1385656
+L -0.03330632
+S 614 1 13 14
+S 22 8 15 16
+L 0.2051694
+L -0.1825708
+L -0.4297517
+L -0.1366792
+S 19 17 17 18
+L 0.1213658
+S 21 22 19 20
+L -0.03131481
+L 0.07389795
+tree 64 21
+S 13 24 1 2
+L 0.3209155
+S 1676 2 3 4
+S 1461 1 5 6
+S 600 1 7 8
+S 13 88 9 10
+L 0.2424707
+L -0.3009619
+L -0.1450166
+S 24 7 11 12
+S 1 46 13 14
+L 0.1829255
+L -0.04900422
+S 614 1 15 16
+S 1 51 17 18
+L -0.09620066
+L -0.364298
+L 0.1371393
+S 847 1 19 20
+L -0.1383573
+L 0.03099564
+tree 65 21
+S 3 55 1 2
+S 1662 18 3 4
+S 12 95 5 6
+S 3 20 7 8
+S 653 2 9 10
+L 0.4553135
+S 1662 4 11 12
+L -0.148591
+S 1 18 13 14
+L -0.03278143
+S 12 122 15 16
+L 0.3001554
+L -0.01123844
+L 0.1737796
+S 21 15 17 18
+L -0.1425958
+L -0.3268258
+L -0.129064
+S 17 7 19 20
+L 0.1653893
+L 0.04847296
+tree 66 23
+S 12 301 1 2
+S 3 57 3 4
+S 22 11 5 6
+S 3 9 7 8
+S 12 100 9 10
+L -0.3423316
+L -0.08409363
+L -0.2600903
+S 25 1 11 12
+L 0.4091729
+S 1665 245 13 14
+S 3 28 15 16
+L 0.1398459
+L 0.06487639
+L 0.1933433
+S 1664 23 17 18
+S 1674 11 19 20
+L -0.01437995
+L -0.1555793
+S 6 3 21 22
+L -0.0558403
+L 0.01051221
+L 0.09962711
+tree 67 21
+S 3 74 1 2
+S 1676 2 3 4
+L 0.2817548
+S 13 93 5 6
+S 7 4 7 8
+S 24 3 9 10
+S 1 46 11 12
+L -0.34752
+L -0.1252322
+L 0.2078065
+S 3 26 13 14
+S 27 3 15 16
+S 1 52 17 18
+L -0.08618245
+L 0.0908985
+L -0.3512398
+L 0.01601767
+S 562 3 19 20
+L -0.07150919
+L 0.1299409
+L 0.03166465
+tree 68 23
+S 13 18 1 2
+L 0.4408277
+S 3 74 3 4
+S 1676 2 5 6
+L 0.2406856
+S 18 18 7 8
+S 1668 22 9 10
+S 25 1 11 12
+S 1662 14 13 14
+L -0.2948513
+L -0.1345278
+S 1664 42 15 16
+S 4 82 17 18
+L -0.01185803
+L -0.2520773
+S 12 97 19 20
+L -0.1417896
+L 0.1835504
+L 0.03362564
+L 0.09784877
+S 1757 2 21 22
+L -0.1074756
+L 0.0417448
+tree 69 23
+S 3 44 1 2
+S 20 3 3 4
+S 14 1 5 6
+S 1 27 7 8
+S 1673 2 9 10
+S 870 2 11 12
+L -0.08454625
+L -0.03008699
+S 1280 1 13 14
+S 7 2 15 16
+L -0.1361591
+L 0.3479877
+S 1306 1 17 18
+L -0.2998048
+S 1674 9 19 20
+L 0.09237131
+S 21 22 21 22
+L 0.01760237
+L 0.2282314
+L -0.06191048
+L -0.1841208
+L -0.02890845
+L 0.03193875
+tree 70 21
+S 3 67 1 2
+S 13 24 3 4
+S 870 2 5 6
+L 0.1693815
+S 888 1 7 8
+L 0.4358355
+L 0.1151809
+S 3 19 9 10
+S 7 4 11 12
+L -0.2098344
+S 4 85 13 14
+L -0.2576733
+L -0.1140314
+S 25 1 15 16
+L -0.09299728
+S 574 1 17 18
+L 0.1265073
+S 102 1 19 20
+L -0.09347133
+L 0.01167702
+L 0.05632991
+tree 71 21
+S 3 34 1 2
+S 3 9 3 4
+S 11 2 5 6
+L -0.2978978
+S 20 2 7 8
+S 614 1 9 10
+S 1662 22 11 12
+S 24 2 13 14
+S 24 4 15 16
+L 0.3892274
+L 0.1279959
+L 0.08568434
+L -0.09742289
+L -0.2617925
+L -0.09511181
+S 2 4 17 18
+L -0.106589
+S 1670 4 19 20
+L 0.1088928
+L -0.06841497
+L 0.04711179
+tree 72 21
+S 3 74 1 2
+S 1676 2 3 4
+L 0.2477491
+S 1 18 5 6
+S 7 5 7 8
+S 1665 13 9 10
+S 20 2 11 12
+L -0.3126335
+L -0.07722869
+L 0.2372854
+L 0.02464858
+S 3 44 13 14
+S 1753 52 15 16
+L -0.2149129
+L -0.02729536
+S 1670 4 17 18
+S 1664 58 19 20
+L -0.1827407
+L 0.02717909
+L 0.2244171
+L -0.01006917
+tree 73 21
+S 1662 24 1 2
+S 22 5 3 4
+S 653 2 5 6
+L 0.2787508
+S 58 1 7 8
+L 0.002346098
+S 12 149 9 10
+S 13 64 11 12
+L 0.2016164
+L -0.1299903
+L -0.3493818
+S 1664 34 13 14
+S 21 16 15 16
+L 0.1419363
+L 0.01637635
+L -0.148243
+S 1241 2 17 18
+L 0.1379528
+S 300 1 19 20
+L -0.07978622
+L 0.03646479
+tree 74 19
+S 3 34 1 2
+S 1674 23 3 4
+S 14 10 5 6
+S 1664 35 7 8
+L -0.2091732
+S 870 2 9 10
+L -0.1311916
+S 22 8 11 12
+S 959 1 13 14
+L 0.3403307
+S 1306 1 15 16
+L -0.10146
+S 21 21 17 18
+L -0.1899216
+L -0.02178081
+L -0.02028942
+L 0.2317476
+L 0.1447763
+L 0.0151976
+tree 75 23
+S 3 55 1 2
+S 3 9 3 4
+S 574 1 5 6
+L -0.2429487
+S 12 301 7 8
+L 0.3723873
+S 1303 1 9 10
+S 25 1 11 12
+S 19 11 13 14
+L -0.08117878
+L 0.2077133
+S 1306 1 15 16
+L 0.1355196
+L -0.2257627
+L -0.03166785
+S 12 59 17 18
+S 1755 1 19 20
+L -0.06358294
+L -0.1577578
+L -0.0604668
+S 896 1 21 22
+L 0.08542751
+L 0.02345867
+tree 76 21
+S 3 74 1 2
+S 1676 2 3 4
+L 0.204652
+S 48 1 5 6
+S 642 1 7 8
+S 1664 49 9 10
+L 0.1851446
+L -0.3442331
+L -0.0780089
+S 13 31 11 12
+S 13 248 13 14
+L 0.1117223
+S 653 3 15 16
+L -0.1000701
+L -0.1837997
+S 3 26 17 18
+L -0.141399
+L -0.08589285
+S 915 1 19 20
+L 0.1187637
+L -0.01000831
+tree 77 21
+S 3 65 1 2
+S 1662 17 3 4
+S 12 161 5 6
+S 3 29 7 8
+S 21 14 9 10
+L 0.3133352
+L 0.05658147
+S 21 16 11 12
+L 0.1092712
+L 0.009904241
+S 614 1 13 14
+L -0.125121
+S 896 1 15 16
+S 12 60 17 18
+L -0.2916011
+L 0.1387087
+S 6 3 19 20
+L -0.1391346
+L -0.0894975
+L -0.01740631
+L -0.001429691
+tree 78 19
+S 3 34 1 2
+S 20 3 3 4
+S 11 2 5 6
+S 19 11 7 8
+S 4 80 9 10
+S 614 1 11 12
+S 1664 15 13 14
+L -0.2095032
+S 107 1 15 16
+S 22 10 17 18
+L -0.1056959
+L 0.3441947
+L 0.1103754
+L -0.1025568
+L 0.08201126
+L -0.03301347
+L -0.1340316
+L 0.1175259
+L -0.009805651
+tree 79 21
+S 3 34 1 2
+S 1662 16 3 4
+S 1674 13 5 6
+S 21 18 7 8
+S 27 3 9 10
+S 1664 49 11 12
+S 653 2 13 14
+S 12 97 15 16
+S 126 1 17 18
+S 1753 245 19 20
+L -0.02479533
+L 0.359841
+L 0.09052321
+L 0.06807882
+L -0.1082621
+L -0.01000748
+L -0.1693157
+L 0.1078209
+L -0.01731064
+L -0.2577532
+L -0.1014079
+tree 80 19
+S 1662 24 1 2
+S 3 60 3 4
+S 12 316 5 6
+S 4 85 7 8
+S 898 1 9 10
+S 1665 46 11 12
+L -0.2913371
+S 25 1 13 14
+L -0.1112345
+L 0.2889068
+L 0.09576245
+L -0.1494332
+L -0.05304737
+S 1753 207 15 16
+L 0.2119949
+S 3 28 17 18
+L 0.1101397
+L -0.1231143
+L 0.01572483
+tree 81 19
+S 12 301 1 2
+S 1676 2 3 4
+S 1 40 5 6
+S 48 1 7 8
+L -0.1206324
+L -0.2999545
+L -0.06015572
+S 22 5 9 10
+L 0.2278881
+L 0.2092816
+S 888 1 11 12
+S 14 6 13 14
+L -0.07757584
+S 23 2 15 16
+L -0.08622194
+S 21 10 17 18
+L 0.14357
+L 0.1027741
+L -0.01798864
+tree 82 21
+S 3 74 1 2
+S 12 301 3 4
+L 0.2073285
+S 3 10 5 6
+S 22 11 7 8
+L -0.1902438
+S 25 1 9 10
+L -0.2627331
+L -0.02586475
+S 13 30 11 12
+S 11 2 13 14
+L 0.1023751
+S 1306 1 15 16
+L 0.2393863
+L 0.06473222
+S 12 73 17 18
+S 1757 1 19 20
+L -0.05626846
+L -0.1776481
+L -0.05430178
+L 0.02573217
+tree 83 23
+S 3 34 1 2
+S 29 1 3 4
+S 870 2 5 6
+S 371 1 7 8
+L 0.1225053
+S 1664 35 9 10
+S 17 5 11 12
+S 3 22 13 14
+S 5 8 15 16
+L 0.3770556
+L 0.1077305
+L -0.06533407
+S 1753 159 17 18
+L -0.2167947
+S 4 82 19 20
+L 0.04887325
+L 0.01587294
+L 0.2030554
+L -0.02492412
+S 898 1 21 22
+L -0.1590421
+L 0.03239958
+L -0.08639745
+tree 84 21
+S 3 74 1 2
+S 15 6 3 4
+L 0.1648327
+S 13 96 5 6
+S 12 64 7 8
+S 56 1 9 10
+S 1 46 11 12
+L -0.06632352
+L -0.249902
+S 3 50 13 14
+L -0.09927007
+S 2 4 15 16
+S 1753 52 17 18
+S 1665 11 19 20
+L 0.2844259
+L -0.2584714
+L 0.01249663
+L -0.009388549
+L 0.07497339
+L 0.1196394
+L -0.03849771
+tree 85 23
+S 12 301 1 2
+S 3 23 3 4
+S 13 345 5 6
+S 3 9 7 8
+S 1 20 9 10
+L -0.2826338
+L -0.06891363
+L -0.1986266
+S 1665 31 11 12
+S 1682 38 13 14
+S 20 3 15 16
+L 0.02930428
+L -0.08616617
+L 0.3090841
+L 0.07903633
+S 1665 41 17 18
+S 1762 1 19 20
+L -0.1443963
+L 0.02840514
+L 0.2612463
+S 17 7 21 22
+L 0.003774933
+L 0.02229531
+tree 86 23
+S 3 74 1 2
+S 12 28 3 4
+L 0.2027948
+L 0.1602168
+S 560 1 5 6
+S 25 1 7 8
+S 12 116 9 10
+S 1670 4 11 12
+S 1662 11 13 14
+S 1662 43 15 16
+S 798 1 17 18
+S 12 108 19 20
+L 0.03763047
+L 0.1899821
+L -0.008172067
+L -0.00153268
+L -0.07063045
+L -0.2762069
+L -0.08993363
+S 3 31 21 22
+L -0.1425129
+L -0.07855964
+L 0.02750055
+tree 87 21
+S 3 74 1 2
+S 1662 17 3 4
+L 0.1612493
+S 25 1 5 6
+S 7 1 7 8
+S 1664 42 9 10
+L 0.1521791
+S 614 1 11 12
+S 19 16 13 14
+S 166 1 15 16
+L -0.1877671
+L -0.05161329
+L -0.2813872
+L 0.03760867
+L -0.1100522
+S 13 81 17 18
+S 17 7 19 20
+L 0.1582322
+L 0.05593598
+L -0.05252845
+L 0.01919661
+tree 88 19
+S 3 34 1 2
+S 3 9 3 4
+S 870 2 5 6
+L -0.205327
+S 1482 1 7 8
+S 1664 46 9 10
+S 13 81 11 12
+S 4 85 13 14
+L 0.110872
+L 0.3695272
+L 0.03590421
+L 0.07447887
+L -0.1086273
+S 1673 14 15 16
+L -0.1666713
+S 166 1 17 18
+L -0.1021532
+L 0.06520194
+L -0.06171692
+tree 89 21
+S 3 74 1 2
+S 12 301 3 4
+L 0.1725601
+S 25 1 5 6
+S 1755 2 7 8
+S 2 2 9 10
+S 80 1 11 12
+L -0.2655525
+L -0.04771851
+L -0.1258383
+S 3 26 13 14
+L 0.1780328
+L -0.04951916
+S 870 4 15 16
+S 13 62 17 18
+L -0.03174236
+L -0.1071552
+L 0.1124995
+S 17 7 19 20
+L -0.004460236
+L 0.01446509
+tree 90 21
+S 13 19 1 2
+L 0.3017853
+S 3 74 3 4
+S 1674 42 5 6
+L 0.1427058
+S 3 14 7 8
+L -0.2318809
+L -0.1789802
+S 25 1 9 10
+S 1306 1 11 12
+S 7 1 13 14
+S 1 49 15 16
+S 1 22 17 18
+L 0.05177743
+L 0.1836917
+L -0.1768097
+L -0.02891721
+L -0.02569656
+S 847 1 19 20
+L 0.08172619
+L 0.01792726
+tree 91 21
+S 13 19 1 2
+L 0.3148237
+S 3 75 3 4
+S 1676 2 5 6
+L 0.1504253
+S 25 1 7 8
+S 7 5 9 10
+S 1664 35 11 12
+S 6 3 13 14
+L -0.2584856
+L -0.05043883
+S 20 2 15 16
+S 3 34 17 18
+L -0.05431134
+L 0.1233357
+L -0.08935407
+S 1753 40 19 20
+L -0.2017264
+L -0.008937259
+L -0.02832213
+L 0.1328576
+tree 92 21
+S 1676 2 1 2
+S 3 57 3 4
+S 23 5 5 6
+S 1664 35 7 8
+S 653 3 9 10
+L -0.2501607
+L -0.0419638
+S 12 73 11 12
+S 12 301 13 14
+S 1753 114 15 16
+L -0.0009367383
+L 0.1233262
+S 20 2 17 18
+L -0.01870244
+L -0.1745098
+L 0.1308679
+L 0.3164753
+L -0.09467881
+S 896 1 19 20
+L 0.1295747
+L -0.003463892
+tree 93 21
+S 3 74 1 2
+S 1662 16 3 4
+L 0.1654888
+S 25 1 5 6
+S 12 316 7 8
+S 1664 42 9 10
+L 0.1334479
+S 21 16 11 12
+L -0.2292962
+S 12 73 13 14
+L -0.1184413
+S 1674 24 15 16
+S 15 13 17 18
+L 0.12338
+S 1 39 19 20
+L 0.07065266
+L -0.06837576
+L -0.135278
+L -0.06199118
+L -0.1113548
+L 0.04764614
+tree 94 23
+S 1662 21 1 2
+S 25 1 3 4
+S 1674 28 5 6
+S 17 4 7 8
+S 13 117 9 10
+S 21 15 11 12
+L -0.2442499
+L -0.1210515
+S 58 1 13 14
+L 0.3062338
+L 0.04956207
+L 0.04535133
+S 20 3 15 16
+S 1664 42 17 18
+L 0.2003231
+L -0.1230593
+L -0.01269715
+S 13 64 19 20
+L -0.1021657
+L 0.1487511
+S 1763 3 21 22
+L -0.1200348
+L 0.04081864
+tree 95 21
+S 11 2 1 2
+S 3 34 3 4
+S 13 102 5 6
+S 23 3 7 8
+S 888 1 9 10
+S 1683 8 11 12
+L -0.2734037
+S 22 8 13 14
+L -0.09926964
+L 0.2060332
+L 0.05473104
+S 1169 1 15 16
+S 1668 8 17 18
+L -0.06462048
+S 1668 14 19 20
+L -0.0875476
+L -0.04771083
+L 0.09447553
+L -0.01018989
+L 0.1509836
+L 0.01179442
+tree 96 21
+S 3 74 1 2
+S 12 316 3 4
+S 653 3 5 6
+S 3 9 7 8
+L -0.1454909
+L 0.241404
+L 0.03232493
+L -0.1494362
+S 7 6 9 10
+S 1 18 11 12
+L 0.135054
+S 1664 42 13 14
+S 1665 12 15 16
+L 0.179368
+L -0.02045418
+L -0.1247244
+S 5 2 17 18
+S 896 1 19 20
+L 0.05395991
+L -0.06619084
+L 0.04341215
+tree 97 19
+S 3 8 1 2
+L -0.2010655
+S 14 8 3 4
+S 12 37 5 6
+L -0.140003
+L 0.2288308
+S 27 3 7 8
+S 1670 1 9 10
+L 0.1364174
+S 7 1 11 12
+S 1241 2 13 14
+S 1753 106 15 16
+S 3 44 17 18
+L 0.1740247
+L -0.005320331
+L -0.1941445
+L -0.05950515
+L -0.05945823
+L 0.09988308
+tree 98 19
+S 13 19 1 2
+L 0.2846444
+S 3 75 3 4
+S 163 1 5 6
+L 0.1165406
+S 1674 42 7 8
+L 0.05468626
+S 27 4 9 10
+L -0.2254091
+S 13 100 11 12
+L 0.1166013
+S 1664 34 13 14
+S 1 40 15 16
+L 0.04884781
+S 13 38 17 18
+L -0.2444009
+L -0.003888068
+L -0.1177655
+L -0.02836755
+tree 99 21
+S 15 6 1 2
+S 3 65 3 4
+S 12 97 5 6
+S 1662 16 7 8
+S 12 151 9 10
+L -0.0296896
+L -0.2146429
+S 3 29 11 12
+S 18 15 13 14
+L 0.2796711
+L 0.06092248
+S 22 9 15 16
+L 0.1132512
+S 1662 23 17 18
+L -0.1589306
+L -0.07753536
+S 60 1 19 20
+L -0.04491271
+L 0.03831094
+L 0.1055131
+L -0.005850213
+tree 100 25
+S 1662 24 1 2
+S 3 67 3 4
+S 7 1 5 6
+S 4 85 7 8
+S 12 161 9 10
+L -0.1634384
+S 740 1 11 12
+S 25 1 13 14
+S 1221 1 15 16
+L 0.2369957
+L 0.03343184
+L 0.05355856
+L -0.1004557
+S 1664 42 17 18
+L 0.1959963
+L -0.1412838
+L -0.008105421
+S 4 78 19 20
+L -0.1137461
+S 3 26 21 22
+L 0.1189116
+L -0.08195989
+S 17 7 23 24
+L 0.03277202
+L 0.01864418
+tree 101 23
+S 1676 2 1 2
+S 3 65 3 4
+S 642 1 5 6
+S 25 1 7 8
+S 728 1 9 10
+L -0.220683
+L -0.02822401
+S 23 3 11 12
+S 850 1 13 14
+L 0.2809507
+L 0.02192433
+S 1664 26 15 16
+L -0.1330912
+L 0.1090975
+L -0.03251958
+S 4 82 17 18
+S 3 28 19 20
+L 0.01141516
+L 0.1328629
+L -0.1238079
+S 7 4 21 22
+L -0.04864313
+L 0.02151758
+tree 102 23
+S 14 27 1 2
+S 13 24 3 4
+L -0.2082767
+L 0.1820537
+S 17 3 5 6
+L -0.1717077
+S 11 2 7 8
+S 98 1 9 10
+S 13 84 11 12
+S 25 1 13 14
+S 1 49 15 16
+S 1682 4 17 18
+L -0.218893
+S 12 194 19 20
+L 0.1916361
+L 0.1804497
+L 0.05277018
+L -0.05978821
+L 0.05022665
+S 371 1 21 22
+L -0.1278657
+L -0.03840841
+L 0.01485226
+tree 103 23
+S 13 20 1 2
+L 0.2551441
+S 793 1 3 4
+S 1753 166 5 6
+S 124 1 7 8
+S 1461 1 9 10
+S 7 1 11 12
+L 0.2500832
+L -0.05328841
+S 17 4 13 14
+L 0.1080362
+L -0.1749947
+S 1757 1 15 16
+L -0.1516563
+S 7 1 17 18
+L -0.09572607
+L -0.01686591
+S 1664 43 19 20
+S 4 57 21 22
+L -0.1053824
+L 0.01396805
+L -0.01779988
+L 0.1028878
+tree 104 21
+S 11 2 1 2
+S 3 36 3 4
+S 13 105 5 6
+S 23 3 7 8
+S 1664 49 9 10
+S 1665 14 11 12
+L -0.3087899
+S 166 1 13 14
+L -0.08248414
+L 0.2249991
+L 0.0328198
+L 0.06555199
+S 25 1 15 16
+L 0.07309633
+S 6 3 17 18
+S 43 3 19 20
+L 0.03043217
+L -0.0121635
+L -0.05450689
+L -0.117764
+L -0.04998973
+tree 105 21
+S 13 20 1 2
+L 0.2162312
+S 17 3 3 4
+L -0.1656159
+S 3 67 5 6
+S 193 1 7 8
+S 1662 4 9 10
+S 1753 221 11 12
+L -0.1216343
+L 0.1903033
+L 0.01572079
+S 25 1 13 14
+S 1753 299 15 16
+S 1664 35 17 18
+L 0.09717093
+L -0.1100504
+L -0.01714559
+S 1753 154 19 20
+L -0.07080993
+L -0.006081517
+L 0.07019245
+tree 106 21
+S 14 18 1 2
+S 12 36 3 4
+L -0.1460655
+L 0.1915887
+S 17 5 5 6
+S 21 13 7 8
+S 1663 1 9 10
+L 0.03137714
+S 985 1 11 12
+L 0.1135149
+S 20 3 13 14
+L -0.1721262
+L -0.02266962
+S 19 6 15 16
+S 19 13 17 18
+L -0.1034421
+L 0.00287538
+L 0.1236621
+S 369 1 19 20
+L 0.007785266
+L -0.01402665
+tree 107 21
+S 588 1 1 2
+S 17 3 3 4
+L 0.1942806
+L -0.1659058
+S 12 301 5 6
+S 870 3 7 8
+S 13 340 9 10
+S 618 1 11 12
+S 4 76 13 14
+L -0.1640802
+L -0.03887255
+S 13 62 15 16
+L 0.1646481
+S 23 2 17 18
+L -0.06279664
+L 0.07081039
+S 21 16 19 20
+L 0.02373879
+L -0.01902681
+L -0.06505605
+L 0.01873577
+tree 108 17
+S 606 1 1 2
+S 3 74 3 4
+L -0.1428324
+S 7 6 5 6
+L 0.1676449
+S 3 14 7 8
+L 0.1020881
+L -0.1514909
+S 12 301 9 10
+S 25 1 11 12
+L -0.1225365
+S 16 1 13 14
+L 0.1015965
+S 18 14 15 16
+L -0.07093769
+L 0.04278
+L -0.03091248
+tree 109 21
+S 22 5 1 2
+L 0.1683623
+S 17 3 3 4
+L -0.1523244
+S 3 84 5 6
+S 588 1 7 8
+L 0.1384561
+S 1674 16 9 10
+L 0.1091173
+S 20 2 11 12
+S 21 11 13 14
+S 22 10 15 16
+S 1753 169 17 18
+L 0.0001990682
+L -0.1342514
+L -0.1588423
+L 0.01231654
+S 27 3 19 20
+L 0.1051287
+L -0.005918983
+L 0.06969893
+tree 110 23
+S 13 20 1 2
+L 0.1987955
+S 14 24 3 4
+S 11 2 5 6
+L -0.1680207
+S 793 1 7 8
+S 13 89 9 10
+S 20 2 11 12
+L 0.1393231
+S 4 79 13 14
+L -0.172024
+S 564 1 15 16
+S 94 1 17 18
+L -0.05867716
+L 0.02197823
+L 0.008066667
+L -0.1331367
+S 24 2 19 20
+S 17 7 21 22
+L 0.03688505
+L 0.1393795
+L 0
+L -0.01337734
+tree 111 21
+S 22 5 1 2
+L 0.1740708
+S 17 4 3 4
+S 12 108 5 6
+S 1753 221 7 8
+L -0.00665169
+L -0.2078659
+S 1662 4 9 10
+S 1674 12 11 12
+S 18 17 13 14
+S 898 1 15 16
+L -0.005070849
+L -0.1192977
+L 0.01814073
+L 0.194043
+S 1306 1 17 18
+L -0.05701167
+L 0.0989133
+S 1753 44 19 20
+L 0.04101781
+L -0.03464958
+tree 112 21
+S 13 93 1 2
+S 3 57 3 4
+S 1665 52 5 6
+S 1664 6 7 8
+L 0.1826931
+L -0.19564
+S 22 9 9 10
+L 0.1037624
+S 24 4 11 12
+L -0.1209845
+S 606 1 13 14
+L 0.0274673
+L -0.08081746
+S 21 21 15 16
+L -0.08668441
+S 1662 4 17 18
+S 23 2 19 20
+L 0.1726558
+L 0.05999833
+L 0.006924296
+L -0.01190742
+tree 113 23
+S 13 19 1 2
+L 0.1989177
+S 3 75 3 4
+S 3 9 5 6
+L 0.1136321
+L -0.1550527
+S 14 17 7 8
+S 25 1 9 10
+L -0.1426501
+S 19 11 11 12
+S 11 2 13 14
+S 2 3 15 16
+S 1664 35 17 18
+L 0.1688788
+L 0.007160245
+S 1 40 19 20
+L 0.001751253
+S 1753 40 21 22
+L -0.05113231
+L -0.177447
+L -0.03247574
+L 0.00126352
+L 0.1140013
+tree 114 21
+S 422 1 1 2
+S 17 3 3 4
+L 0.1510931
+L -0.1116812
+S 3 74 5 6
+S 1753 218 7 8
+L 0.1084581
+S 1753 99 9 10
+S 1753 271 11 12
+S 1678 1 13 14
+S 3 26 15 16
+L -0.1493487
+S 1662 40 17 18
+S 896 1 19 20
+L -0.1086199
+L -0.005490799
+L 0.1159145
+L 0.06097855
+L -0.04393266
+L 0.04598463
+L -0.02003118
+tree 115 17
+S 22 5 1 2
+L 0.1663623
+S 3 9 3 4
+L -0.1323456
+S 150 1 5 6
+S 20 1 7 8
+L 0.1192977
+L -0.1335363
+S 12 301 9 10
+S 25 1 11 12
+L -0.08580477
+S 144 1 13 14
+L 0.1155571
+S 23 3 15 16
+L 0.07979406
+L 0.003752882
+L -0.06431855
+tree 116 23
+S 422 1 1 2
+S 17 3 3 4
+L 0.1657482
+L -0.1202912
+S 3 57 5 6
+S 7 8 7 8
+S 1662 5 9 10
+S 793 1 11 12
+L 0.08998715
+L 0.1533885
+L 0.01312985
+S 12 103 13 14
+L 0.0462106
+S 1677 14 15 16
+S 376 1 17 18
+S 1664 12 19 20
+L -0.04497499
+S 798 1 21 22
+L 0.01971268
+L 0.07374093
+L 6.793337e-05
+L -0.1438366
+L -0.06006324
+tree 117 21
+S 3 45 1 2
+S 7 8 3 4
+S 14 1 5 6
+S 1674 12 7 8
+L 0.0826067
+S 560 1 9 10
+L -0.09503848
+S 1280 1 11 12
+S 13 51 13 14
+L 0.2186749
+S 1671 1 15 16
+S 12 100 17 18
+S 1077 1 19 20
+L -0.07188389
+L -0.1910117
+L -0.03679137
+L 0.09320723
+L -0.01855077
+L -0.1233128
+L 0.03380739
+L -0.04348172
+tree 118 19
+S 3 9 1 2
+L -0.1483492
+S 793 1 3 4
+S 12 301 5 6
+L 0.1186628
+S 931 2 7 8
+L -0.1323979
+S 17 8 9 10
+L 0.1070971
+S 12 36 11 12
+L -0.1078225
+L 0.09531678
+S 7 1 13 14
+S 1665 37 15 16
+S 1753 86 17 18
+L -0.1214944
+L -0.0239185
+L 0.06252345
+L -0.01512841
+tree 119 21
+S 13 20 1 2
+L 0.1829323
+S 150 1 3 4
+S 20 1 5 6
+L 0.0897406
+L -0.1528521
+S 3 74 7 8
+S 7 2 9 10
+L 0.1081128
+S 614 1 11 12
+S 3 44 13 14
+S 5 1 15 16
+L -0.1460297
+S 13 182 17 18
+L 0.148333
+L -0.07881905
+L 0.04127567
+S 1662 43 19 20
+L -0.06016123
+L 0.04186707
+L -0.01275549
+tree 120 23
+S 793 1 1 2
+S 12 282 3 4
+S 124 1 5 6
+S 25 1 7 8
+S 1668 11 9 10
+L 0.1916617
+L -0.02866039
+S 3 21 11 12
+S 1753 165 13 14
+L -0.1886073
+L -0.05119066
+L -0.114193
+S 1671 1 15 16
+L 0.1481859
+L 0.0150146
+S 12 108 17 18
+S 6 3 19 20
+S 22 9 21 22
+L -0.1006411
+L 0.004397669
+L 0.0543451
+L 0.06223441
+L -0.0553782
+tree 121 23
+S 14 27 1 2
+S 3 64 3 4
+L -0.143941
+S 589 1 5 6
+S 898 2 7 8
+S 11 2 9 10
+L -0.1598839
+L 0.2312626
+L -0.02083003
+S 25 1 11 12
+S 12 85 13 14
+S 23 3 15 16
+L 0.1260752
+S 1668 7 17 18
+L -0.1358869
+S 1753 198 19 20
+L -0.06717025
+L 0.08370922
+L -0.05241798
+S 1671 9 21 22
+L 0.06082389
+L -0.04856274
+L 0.01606981
+tree 122 23
+S 12 301 1 2
+S 3 9 3 4
+S 1 40 5 6
+L -0.116654
+S 931 1 7 8
+L -0.204054
+L -0.03298424
+S 22 6 9 10
+S 21 16 11 12
+L 0.09142861
+S 850 2 13 14
+L 0.1697155
+L 0.09826863
+S 1753 99 15 16
+S 6 3 17 18
+L -0.137826
+S 1668 4 19 20
+L -0.01617194
+L 0.09165281
+L 0.04764308
+S 727 1 21 22
+L -0.07861609
+L -0.00116521
+tree 123 19
+S 22 5 1 2
+L 0.1412839
+S 7 6 3 4
+S 3 84 5 6
+L 0.08387399
+S 1674 42 7 8
+L 0.07335573
+S 499 2 9 10
+L -0.1385515
+S 19 19 11 12
+L -0.09528785
+S 13 102 13 14
+L -0.1045002
+S 22 9 15 16
+S 22 9 17 18
+L 0.07342912
+L 0.00456759
+L -0.108898
+L 0.01764961
+tree 124 21
+S 422 1 1 2
+S 56 1 3 4
+L 0.1649907
+S 3 64 5 6
+L -0.1002199
+S 27 3 7 8
+S 844 1 9 10
+S 11 3 11 12
+L 0.08029879
+L 0.1851885
+L 0.003679449
+S 371 1 13 14
+L -0.1197245
+S 13 57 15 16
+L 0.03925303
+S 21 15 17 18
+S 618 1 19 20
+L 0.0473038
+L -0.04530288
+L -0.1385666
+L -0.02189626
+tree 125 21
+S 606 1 1 2
+S 3 74 3 4
+L -0.1153773
+S 5 10 5 6
+L 0.1182204
+S 12 302 7 8
+L 0.08803567
+S 20 3 9 10
+L -0.1609104
+S 1 18 11 12
+S 24 3 13 14
+L 0.04524171
+S 7 1 15 16
+L 0.1201401
+S 20 8 17 18
+L -0.1499805
+S 560 1 19 20
+L 0.05378311
+L -0.04094991
+L 0.01514291
+L -0.05538267
+tree 126 21
+S 25 1 1 2
+S 606 1 3 4
+S 1662 21 5 6
+S 3 52 7 8
+L -0.126349
+S 13 89 9 10
+L -0.04846745
+S 22 7 11 12
+S 1665 34 13 14
+L 0.2316944
+L 0.04388395
+S 19 8 15 16
+S 564 1 17 18
+L 0.00425121
+L 0.0961226
+L -0.06028423
+L -0.1240733
+S 1249 1 19 20
+L -0.05177717
+L 0.1059554
+L -0.01570817
+tree 127 21
+S 606 1 1 2
+S 58 1 3 4
+L -0.1059691
+S 22 5 5 6
+L 0.1216992
+L 0.1037204
+S 7 6 7 8
+S 13 64 9 10
+L 0.07935926
+S 1664 26 11 12
+S 21 17 13 14
+L 0.04647545
+S 1668 11 15 16
+S 13 155 17 18
+S 1668 14 19 20
+L 0.001729738
+L -0.05494794
+L -0.1000404
+L -0.1610464
+L 0.05724467
+L -0.02749878
+tree 128 17
+S 13 20 1 2
+L 0.1655506
+S 3 9 3 4
+L -0.115134
+S 150 1 5 6
+S 20 1 7 8
+L 0.1171155
+L -0.1417331
+S 12 301 9 10
+S 25 1 11 12
+L -0.08915426
+S 4 96 13 14
+L 0.1078435
+S 19 10 15 16
+L 0.08531097
+L -0.06096177
+L -0.002045792
+tree 129 19
+S 3 9 1 2
+L -0.1446494
+S 606 1 3 4
+S 12 301 5 6
+L -0.1127454
+S 870 3 7 8
+L -0.1009492
+S 25 1 9 10
+S 2 2 11 12
+S 1668 10 13 14
+L 0.1825004
+L -0.06606212
+S 1673 14 15 16
+S 3 57 17 18
+L -0.03951409
+L -0.005228212
+L 0.04192444
+L 0.01300738
+L 0.1338474
+tree 130 21
+S 25 1 1 2
+S 606 1 3 4
+S 1662 21 5 6
+S 3 52 7 8
+L -0.1315871
+S 24 3 9 10
+L -0.02933332
+S 1664 35 11 12
+S 870 2 13 14
+L 0.1877152
+L 0.0703619
+S 19 11 15 16
+S 276 1 17 18
+L 0.1330756
+L 0.04646364
+L -0.05377397
+S 896 1 19 20
+L -0.1528552
+L -0.01453206
+L 0.05491769
+L 0.000191966
+tree 131 23
+S 422 1 1 2
+S 7 6 3 4
+L 0.1308991
+S 3 16 5 6
+L 0.09351809
+L -0.1385298
+S 14 15 7 8
+S 3 57 9 10
+L -0.1292914
+S 21 17 11 12
+S 12 161 13 14
+S 1 28 15 16
+S 1662 16 17 18
+L 0.167153
+L -0.01227822
+S 1753 166 19 20
+L -0.1332798
+L 0.07675792
+S 251 1 21 22
+L 0.02362622
+L -0.0525831
+L -0.06770815
+L 0.01174964
+tree 132 23
+S 422 1 1 2
+S 3 14 3 4
+L 0.1556949
+L -0.1066661
+S 1753 226 5 6
+S 25 1 7 8
+S 4 84 9 10
+S 606 1 11 12
+S 1755 2 13 14
+L -0.008977261
+L -0.1355978
+S 3 51 15 16
+L -0.08762069
+L 0.1228341
+L -0.004172734
+S 1757 2 17 18
+S 13 146 19 20
+S 1753 76 21 22
+L 0.01911649
+L 0.08580619
+L 0.01048139
+L -0.02115932
+L -0.06349594
+tree 133 19
+S 11 2 1 2
+S 747 1 3 4
+S 13 102 5 6
+S 1670 1 7 8
+L 0.1382756
+S 1668 8 9 10
+L -0.1994749
+S 4 84 11 12
+S 4 57 13 14
+L 0.03597995
+S 1662 43 15 16
+L 0.04572175
+S 2 3 17 18
+L -0.007828187
+L 0.09905992
+L -0.06294319
+L -0.006637711
+L -0.124018
+L -0.001625059
+tree 134 21
+S 99 1 1 2
+S 12 316 3 4
+L 0.1195859
+S 17 4 5 6
+L -0.1425013
+S 12 59 7 8
+S 1677 14 9 10
+L -0.007808882
+L -0.1485219
+S 25 1 11 12
+L -0.06164978
+S 3 24 13 14
+S 123 1 15 16
+L -0.06033603
+S 12 108 17 18
+L 0.1577846
+L 0.01475888
+L 0.06005076
+S 1646 1 19 20
+L -0.05773095
+L 0.04062271
+tree 135 21
+S 13 19 1 2
+L 0.1521353
+S 1665 46 3 4
+S 13 97 5 6
+S 3 34 7 8
+S 1665 14 9 10
+L -0.1350326
+S 1280 1 11 12
+S 21 19 13 14
+L 0.03061176
+S 7 1 15 16
+L -0.08345368
+S 7 1 17 18
+L 0.2681813
+L -0.01811782
+L -0.09183492
+L -0.02152535
+L 0.0701478
+S 21 22 19 20
+L -0.04812833
+L 0.02086377
+tree 136 21
+S 13 19 1 2
+L 0.158986
+S 99 1 3 4
+S 20 1 5 6
+L 0.1100615
+L -0.1193183
+S 1221 1 7 8
+S 25 1 9 10
+S 2 3 11 12
+S 243 1 13 14
+S 4 82 15 16
+L -0.1472726
+L -0.04468652
+S 17 4 17 18
+L -0.06797343
+L 0.17233
+L -0.009554585
+L -0.0512343
+S 719 1 19 20
+L -0.003332239
+L 0.07811063
+tree 137 23
+S 356 1 1 2
+S 3 14 3 4
+L 0.1242711
+L -0.0899217
+S 793 1 5 6
+S 18 14 7 8
+L 0.1199521
+S 3 31 9 10
+S 1 40 11 12
+S 1668 1 13 14
+S 18 6 15 16
+L -0.1048823
+S 904 1 17 18
+L 0.01312878
+L -0.01357984
+L 0.01703341
+L 0.138733
+S 1241 1 19 20
+L -0.05892664
+L 0.05189635
+S 1674 8 21 22
+L -0.01741992
+L 0.008819244
+tree 138 17
+S 3 25 1 2
+S 27 3 3 4
+S 870 2 5 6
+S 1280 1 7 8
+L 0.03219698
+S 7 1 9 10
+S 1756 1 11 12
+L -0.1039236
+L -0.02030391
+L 0.02765727
+L 0.2156505
+S 1662 11 13 14
+L -0.06803486
+L 0.08754933
+S 3 33 15 16
+L 0.02520731
+L -0.02098756
+tree 139 25
+S 11 2 1 2
+S 12 95 3 4
+S 13 119 5 6
+S 21 10 7 8
+S 727 1 9 10
+S 3 52 11 12
+L -0.2110338
+L 0.03114999
+L 0.1811652
+S 20 3 13 14
+L 0.09966322
+S 4 82 15 16
+L 0.04342294
+S 17 7 17 18
+S 1461 1 19 20
+S 17 4 21 22
+L -0.07545429
+L -0.1301765
+L 0.02384867
+S 21 22 23 24
+L 0.0725618
+L -0.06484314
+L 0.0357279
+L -0.02649645
+L 0.03021708
+tree 140 21
+S 870 1 1 2
+S 3 31 3 4
+S 1753 230 5 6
+L -0.008664561
+L 0.1751181
+S 150 1 7 8
+S 4 76 9 10
+S 13 42 11 12
+L 0.110511
+L -0.0115223
+L -0.1429098
+L 0.06517458
+S 1664 7 13 14
+L -0.1519496
+S 17 6 15 16
+S 1303 1 17 18
+S 102 1 19 20
+L -0.07310382
+L 0.003557776
+L 0.07078892
+L -0.0133349
+tree 141 21
+S 14 23 1 2
+S 11 2 3 4
+L -0.1314002
+S 25 1 5 6
+S 13 96 7 8
+S 1664 58 9 10
+L 0.1368253
+S 574 1 11 12
+L -0.1865716
+S 3 32 13 14
+S 17 7 15 16
+L 0.02193255
+S 18 21 17 18
+S 618 1 19 20
+L 0.1010187
+L -0.1061185
+L 0.02711706
+L -0.07791711
+L 0.001030983
+L -0.04601912
+L 0.01760747
+tree 142 21
+S 606 1 1 2
+S 3 34 3 4
+L -0.1083333
+S 371 1 5 6
+S 870 1 7 8
+S 27 3 9 10
+S 6 3 11 12
+L 0.2221923
+S 1 20 13 14
+S 22 7 15 16
+L 0.01728686
+L 0.007209839
+L 0.03831542
+L 0.1161705
+S 1 40 17 18
+L -0.1133303
+S 1077 1 19 20
+L -0.07879289
+L 0.04398495
+L -0.006924757
+L -0.06280463
+tree 143 21
+S 13 95 1 2
+S 3 65 3 4
+S 11 2 5 6
+S 25 1 7 8
+L 0.1722508
+S 27 3 9 10
+L -0.1388288
+S 24 4 11 12
+L 0.07609342
+S 1 46 13 14
+L 0.05469107
+L 0.02944982
+S 1757 1 15 16
+L -0.0944286
+S 793 1 17 18
+L -0.09002665
+L -0.01336148
+S 22 12 19 20
+L 0.05949418
+L 0.02693437
+L -0.06206852
+tree 144 19
+S 3 74 1 2
+S 909 1 3 4
+L 0.08456602
+S 1757 2 5 6
+L -0.1080772
+S 17 4 7 8
+S 1762 7 9 10
+L -0.08982657
+S 13 228 11 12
+L 0.1235411
+L 0.006160482
+S 19 11 13 14
+S 2 3 15 16
+S 19 5 17 18
+L 0.07952405
+L -0.01985126
+L -0.07718733
+L 0.04240964
+L -0.05561605
+tree 145 21
+S 17 3 1 2
+L -0.1239343
+S 3 74 3 4
+S 193 1 5 6
+L 0.1005958
+S 742 1 7 8
+L -0.08431096
+S 1665 19 9 10
+L 0.09867602
+S 13 45 11 12
+S 1 40 13 14
+L 0.09004324
+L -0.00364294
+S 1753 166 15 16
+S 573 1 17 18
+L -0.01564708
+L -0.1280615
+S 21 22 19 20
+L -0.01222559
+L 0.05453961
+L 0.03473983
+tree 146 23
+S 13 255 1 2
+S 870 2 3 4
+S 21 17 5 6
+S 19 9 7 8
+S 18 25 9 10
+L -0.1631505
+S 606 1 11 12
+L 0.2255363
+L 0.02163223
+S 1755 3 13 14
+L 0.0478218
+S 1662 18 15 16
+L -0.09557833
+S 1677 14 17 18
+L -0.07209992
+L 0.08597303
+L -0.02209855
+S 1664 14 19 20
+L -0.04504574
+L 0.05091558
+S 203 1 21 22
+L -0.04299797
+L 0.004948789
+tree 147 21
+S 17 3 1 2
+L -0.1245722
+S 499 1 3 4
+S 1662 4 5 6
+S 13 64 7 8
+L 0.1067289
+S 13 244 9 10
+S 1665 20 11 12
+S 1664 22 13 14
+S 870 3 15 16
+L -0.04230561
+L 0.0876258
+L -0.00640684
+L -0.1839814
+S 4 76 17 18
+L 0.1203751
+S 1664 35 19 20
+L -0.0630841
+L 0.01260106
+L 0.02260172
+L -0.007181331
+tree 148 21
+S 12 302 1 2
+S 793 1 3 4
+S 12 435 5 6
+S 27 3 7 8
+L 0.108294
+L -0.1521588
+L 0.02008428
+S 12 70 9 10
+L 0.05866082
+S 24 11 11 12
+S 1670 1 13 14
+S 1674 13 15 16
+L -0.04612713
+S 1674 30 17 18
+S 4 76 19 20
+L 0.1310109
+L 0.007870361
+L -0.1304889
+L -0.008657869
+L -0.006008838
+L 0.04254787
+tree 149 21
+S 588 1 1 2
+S 574 1 3 4
+L 0.1441636
+S 13 97 5 6
+S 1682 4 7 8
+S 24 3 9 10
+S 1757 1 11 12
+S 17 4 13 14
+L -0.1529044
+L 0.12071
+L 0.001534149
+L -0.0599875
+S 166 1 15 16
+L -0.09199045
+S 24 2 17 18
+L 0.06503659
+L -0.01175932
+S 1024 1 19 20
+L 0.03894117
+L -0.03097897
+L -0.01228402
+tree 150 23
+S 12 166 1 2
+S 3 67 3 4
+S 1 40 5 6
+S 25 1 7 8
+L 0.1770864
+S 19 13 9 10
+S 18 28 11 12
+S 2 2 13 14
+L 0.08170759
+L -0.1560174
+L -0.03223231
+S 22 14 15 16
+L -0.09572504
+L -0.0479675
+S 1664 28 17 18
+S 573 1 19 20
+L -0.03210239
+L 0.05886846
+S 276 1 21 22
+L 0.0814338
+L -0.01215181
+L -0.04077611
+L 0.01144702
+tree 151 19
+S 3 9 1 2
+L -0.1100544
+S 13 97 3 4
+S 3 67 5 6
+S 1664 15 7 8
+S 19 9 9 10
+L 0.1885448
+L -0.1320031
+S 17 6 11 12
+L 0.04637142
+S 7 3 13 14
+S 1670 1 15 16
+S 19 17 17 18
+L -0.02960246
+L 0.02907787
+L -0.09641143
+L 0.03290461
+L 0.09926581
+L -0.019995
+tree 152 23
+S 12 301 1 2
+S 25 1 3 4
+S 1 40 5 6
+S 27 3 7 8
+S 80 1 9 10
+L -0.1509896
+L 0.001350123
+S 3 21 11 12
+L 0.05955649
+L 0.1175439
+L 0.002803319
+L -0.1081854
+S 696 1 13 14
+S 3 55 15 16
+L -0.06891271
+S 1665 40 17 18
+L 0.1251442
+S 574 1 19 20
+S 21 20 21 22
+L -0.06397361
+L -0.000511724
+L 0.03556006
+L -0.008861995
+tree 153 21
+S 17 3 1 2
+L -0.1152624
+S 3 68 3 4
+S 742 1 5 6
+S 13 258 7 8
+S 11 3 9 10
+L 0.07942541
+L 0.1505354
+L -0.03256463
+S 1664 49 11 12
+L -0.08593968
+S 1753 169 13 14
+L -0.06962061
+S 653 2 15 16
+S 171 1 17 18
+L -0.08258061
+S 20 6 19 20
+L 0.08009192
+L -0.01884541
+L 0.05246907
+L -0.01672888
+tree 154 21
+S 422 1 1 2
+S 22 14 3 4
+L 0.1078914
+S 7 1 5 6
+L -0.08841562
+S 17 6 7 8
+S 1241 1 9 10
+S 12 272 11 12
+L 0.04474702
+L 0.1106263
+S 15 9 13 14
+S 49 1 15 16
+L -0.09791349
+S 18 8 17 18
+L -0.03279432
+S 21 10 19 20
+L 0.04548623
+L 0.05695839
+L 0.002245183
+L 0
+L -0.08730805
+tree 155 23
+S 25 1 1 2
+S 1664 49 3 4
+S 80 1 5 6
+S 1665 47 7 8
+S 1303 1 9 10
+S 1664 35 11 12
+L -0.04915692
+S 12 97 13 14
+S 1 51 15 16
+L -0.1760479
+L -0.02219172
+L 0.2349425
+L 0.06084332
+S 1665 10 17 18
+L -0.1503491
+L 0.1097799
+S 17 7 19 20
+L 0.03435258
+S 23 2 21 22
+L 0.01917329
+L -0.03572525
+L -0.09269704
+L 0.007898226
+tree 156 17
+S 742 1 1 2
+S 150 1 3 4
+L 0.1175253
+S 653 1 5 6
+L 0.1016336
+L 0.05565631
+S 17 4 7 8
+L -0.0791803
+S 703 1 9 10
+S 3 62 11 12
+L 0.05088338
+S 1674 15 13 14
+L -0.1078735
+S 22 9 15 16
+L 0.03017374
+L -0.05581282
+L 0.01153615
+tree 157 19
+S 19 1 1 2
+L 0.08133526
+S 606 1 3 4
+S 1757 2 5 6
+L -0.09570806
+S 12 302 7 8
+S 4 75 9 10
+S 931 2 11 12
+L -0.1252145
+L 0.005614394
+L 0.1177956
+S 1249 1 13 14
+L 0.05299707
+S 1665 22 15 16
+L -0.07635117
+L 0.04221274
+S 7 1 17 18
+L -0.05846577
+L -0.005865823
+tree 158 21
+S 3 74 1 2
+S 11 3 3 4
+L 0.07460164
+S 1757 2 5 6
+S 1677 8 7 8
+S 2 2 9 10
+S 62 1 11 12
+L -0.1559642
+L -0.05076648
+L -0.08878223
+S 25 1 13 14
+L 0.1277991
+L 0.002904862
+S 20 5 15 16
+L 0.05793475
+S 1662 12 17 18
+L -0.08476275
+L 0.02108429
+S 7 4 19 20
+L -0.06783915
+L 0.00956777
+tree 159 21
+S 589 1 1 2
+S 793 1 3 4
+L -0.09956945
+S 12 78 5 6
+L 0.1081428
+S 1664 34 7 8
+S 17 4 9 10
+L 0.1058203
+S 6 4 11 12
+L -0.1051274
+S 12 308 13 14
+L -0.04231948
+L 0.03446379
+S 18 18 15 16
+L -0.06411003
+S 23 1 17 18
+L 0.05603418
+L 0.05032666
+S 126 1 19 20
+L -0.07628394
+L -0.0001849021
+tree 160 23
+S 422 1 1 2
+S 14 26 3 4
+L 0.1041773
+S 27 3 5 6
+L -0.1132688
+S 17 4 7 8
+S 1668 4 9 10
+S 12 61 11 12
+S 3 51 13 14
+L 0.1163596
+L 0.0170305
+L -0.006382146
+L -0.1708871
+S 23 4 15 16
+S 21 18 17 18
+S 870 3 19 20
+L 0.02054957
+L 0.1054828
+L -0.02024956
+L -0.1139464
+S 915 1 21 22
+L -0.04912949
+L 0.001204289
+tree 161 21
+S 799 1 1 2
+S 18 14 3 4
+L 0.1210677
+S 1241 2 5 6
+S 17 4 7 8
+L 0.09894929
+S 931 2 9 10
+L -0.09184752
+S 1461 1 11 12
+S 1683 8 13 14
+L 0.05144181
+S 1755 1 15 16
+L 0.05714751
+L -0.04033252
+L 0.04043002
+L -0.05096183
+S 1662 14 17 18
+L 0.03183865
+S 23 2 19 20
+L -0.000510042
+L -0.04970904
+tree 162 21
+S 7 7 1 2
+S 12 152 3 4
+L 0.08826181
+S 870 2 5 6
+S 1 39 7 8
+L 0.07922444
+S 1753 108 9 10
+L -0.1558847
+S 17 6 11 12
+L -0.04178788
+S 1753 208 13 14
+S 12 297 15 16
+S 158 1 17 18
+L 0.04663128
+S 1668 24 19 20
+L 0.004036563
+L -0.1212107
+L -0.0241319
+L 0.04806065
+L -0.03190852
+L 0.01343696
+tree 163 21
+S 25 1 1 2
+S 150 1 3 4
+S 1662 21 5 6
+S 1662 30 7 8
+L 0.05114711
+S 13 108 9 10
+L -0.02643757
+S 1591 1 11 12
+L 0.0214562
+L 0.1681183
+L 0.03746655
+S 1670 1 13 14
+S 21 21 15 16
+S 13 143 17 18
+L -0.0005339631
+L 0.0342785
+L -0.01564409
+S 1665 10 19 20
+L -0.1939722
+L -0.0009407373
+L -0.07541128
+tree 164 23
+S 25 1 1 2
+S 2 1 3 4
+S 12 107 5 6
+L -0.09764825
+S 3 54 7 8
+L 0.1623488
+S 1665 52 9 10
+S 1664 42 11 12
+S 614 1 13 14
+L -0.09438241
+L 0.0536369
+S 3 30 15 16
+L -0.08168234
+L 0.09311578
+L 0.01333952
+S 24 3 17 18
+L -0.0603319
+L 0.05063418
+S 371 1 19 20
+S 15 12 21 22
+L 0.006645315
+L -0.04838506
+L -0.002798564
+tree 165 21
+S 99 1 1 2
+S 606 1 3 4
+L 0.1146315
+S 618 1 5 6
+L -0.1211238
+S 13 97 7 8
+S 3 34 9 10
+S 1664 34 11 12
+S 3 25 13 14
+S 21 22 15 16
+L 0.1316902
+S 1 23 17 18
+S 1 24 19 20
+L -0.01779175
+L -0.1566772
+L -0.03899305
+L 0.0245732
+L 0.1171044
+L 0.006532417
+L -0.1068539
+L 0.01276075
+tree 166 19
+S 1682 20 1 2
+S 56 1 3 4
+L -0.07466807
+S 25 1 5 6
+L -0.07257334
+S 13 262 7 8
+S 80 1 9 10
+S 3 53 11 12
+S 13 411 13 14
+L 0.1355014
+L -0.01187928
+S 22 7 15 16
+L 0.1128865
+L -0.1105719
+L 0.02481475
+L -0.03582598
+S 1480 1 17 18
+L 0.04053422
+L -0.01076531
+tree 167 21
+S 1075 1 1 2
+S 19 3 3 4
+L -0.1060609
+S 614 1 5 6
+S 19 11 7 8
+L 0.1204444
+L -0.01478965
+S 1753 212 9 10
+S 3 29 11 12
+S 13 43 13 14
+L -0.1260005
+S 24 4 15 16
+L 0.1094152
+L 0.04053051
+L -0.06586226
+S 3 25 17 18
+S 15 12 19 20
+L 0.06562588
+L -0.007196011
+L -0.06981242
+L -0.009574636
+tree 168 23
+S 422 1 1 2
+S 1557 1 3 4
+L 0.1055054
+S 11 3 5 6
+L 0.05761866
+S 18 27 7 8
+L -0.08643416
+S 1665 52 9 10
+L -0.0850505
+S 850 1 11 12
+S 1241 1 13 14
+S 4 76 15 16
+L -0.1142153
+L 0.05352983
+S 25 1 17 18
+S 7 4 19 20
+L 0.03235634
+S 1757 2 21 22
+L 0.03292482
+L -0.04544985
+L 0
+L -0.06840987
+L 0.005620004
+tree 169 21
+S 25 1 1 2
+S 3 19 3 4
+S 1662 21 5 6
+L -0.09730054
+S 606 1 7 8
+S 22 10 9 10
+L -0.02215584
+S 3 68 11 12
+L -0.08568945
+L 0.1785086
+L 0.03264064
+S 1662 30 13 14
+L 0.05035494
+S 1525 1 15 16
+L 0.03821178
+S 12 107 17 18
+L 0.01805455
+S 3 39 19 20
+L -0.09237697
+L -0.05814334
+L 0.01557026
+tree 170 23
+S 1075 1 1 2
+S 13 31 3 4
+L -0.1079516
+S 1306 1 5 6
+S 6 5 7 8
+L 0.1169973
+L 0.01574953
+S 19 3 9 10
+L 0.0724717
+S 4 87 11 12
+S 19 11 13 14
+L 0.09492334
+L -0.0005107417
+S 13 108 15 16
+S 870 1 17 18
+L -0.02575232
+L -0.09766127
+L -0.06196939
+S 19 17 19 20
+L 0.04124107
+S 6 4 21 22
+L 0.0007242676
+L -0.03980938
+tree 171 19
+S 606 1 1 2
+S 19 4 3 4
+L -0.07998419
+S 3 32 5 6
+S 7 6 7 8
+L 0.00321213
+L 0.1257804
+S 1664 10 9 10
+L 0.07724258
+L -0.06783432
+S 48 2 11 12
+S 1664 48 13 14
+L 0.04777114
+S 1673 37 15 16
+L -0.08912523
+S 17 6 17 18
+L -0.04801535
+L 0.02549883
+L -0.03270964
+tree 172 23
+S 422 1 1 2
+S 606 1 3 4
+L 0.1237701
+S 12 302 5 6
+L -0.07961863
+S 25 1 7 8
+L -0.06243631
+S 1665 47 9 10
+S 1668 1 11 12
+S 1665 15 13 14
+S 19 13 15 16
+L 0.1164081
+L 0
+S 18 9 17 18
+S 1662 21 19 20
+L 0.05147128
+S 376 1 21 22
+L 0.0265435
+L -0.03471509
+L -0.09912182
+L -0.01992521
+L -0.02749413
+L 0.004577668
+tree 173 21
+S 742 1 1 2
+S 19 1 3 4
+L 0.06855758
+L 0.062285
+S 931 1 5 6
+S 23 3 7 8
+S 1 36 9 10
+S 1098 1 11 12
+S 7 1 13 14
+L 0.1048191
+L -0.01146833
+S 1665 19 15 16
+S 1480 1 17 18
+L -0.152035
+S 276 1 19 20
+L 0.009715317
+L -0.0664015
+L 0.09889293
+L -0.009482513
+L -0.03621916
+L -0.01372326
+tree 174 23
+S 3 9 1 2
+L -0.1104205
+S 150 1 3 4
+S 588 1 5 6
+L 0.09884439
+S 142 1 7 8
+L 0.07789144
+S 13 102 9 10
+S 3 34 11 12
+S 3 54 13 14
+S 19 12 15 16
+L -0.02008938
+S 18 24 17 18
+S 22 7 19 20
+L 0.03979563
+L -0.200625
+L -0.03254615
+L 0.1009347
+L 0.01657659
+L -0.06572314
+S 1169 1 21 22
+L 0.04016295
+L -0.03696238
+tree 175 21
+S 3 9 1 2
+L -0.08847397
+S 25 1 3 4
+S 2 1 5 6
+S 1662 21 7 8
+L -0.08681929
+S 3 49 9 10
+L 0.1620881
+L -0.01012082
+S 101 1 11 12
+S 21 17 13 14
+S 18 10 15 16
+L 0.04128696
+L 0.07993919
+L -0.0090588
+L -0.06408367
+S 1668 14 17 18
+L -0.03987002
+S 1098 1 19 20
+L 0.02235334
+L -0.005380518
+tree 176 21
+S 849 1 1 2
+S 17 4 3 4
+L 0.0864241
+S 1753 185 5 6
+S 1662 21 7 8
+L -0.1501783
+L -0.002321526
+S 3 68 9 10
+S 13 58 11 12
+S 18 20 13 14
+L 0.1091856
+L 0
+L -0.0819502
+S 24 2 15 16
+L 0.06406225
+L -0.04623338
+S 1665 26 17 18
+L 0.06322515
+S 21 22 19 20
+L -0.03485592
+L 0.02671392
+tree 177 21
+S 56 1 1 2
+S 25 1 3 4
+L -0.08599546
+S 22 8 5 6
+S 12 104 7 8
+S 12 71 9 10
+S 573 1 11 12
+L 0.1803547
+S 1662 16 13 14
+L -0.008410118
+L -0.1268536
+S 1664 23 15 16
+S 1169 1 17 18
+L 0.04856705
+L -0.05744212
+L 0.1017135
+S 19 18 19 20
+L 0.01227508
+L -0.05987679
+L 0.01815988
+L -0.02540843
+tree 178 19
+S 14 27 1 2
+S 653 1 3 4
+L -0.1029888
+L 0.07229871
+S 101 1 5 6
+S 527 1 7 8
+L 0.05149274
+S 614 1 9 10
+L 0.05081013
+S 21 12 11 12
+S 1303 1 13 14
+L 0.03643386
+S 499 1 15 16
+L -0.113614
+L 0.008114026
+S 21 22 17 18
+L -0.08463227
+L -0.02190175
+L 0.02297742
+tree 179 21
+S 3 9 1 2
+L -0.09826434
+S 163 1 3 4
+S 931 1 5 6
+S 17 7 7 8
+S 7 2 9 10
+S 1664 46 11 12
+L 0.1074861
+L 0.01765426
+S 1674 12 13 14
+S 1306 1 15 16
+L 0.1090282
+L -0.008170683
+S 17 6 17 18
+L -0.09684525
+L -0.002302159
+L 0.07060485
+S 1664 28 19 20
+L 0.03958191
+L 0.00439739
+L -0.1153092
+tree 180 21
+S 18 4 1 2
+L -0.0976036
+S 653 1 3 4
+L 0.09373395
+S 3 11 5 6
+L -0.0755798
+S 150 1 7 8
+S 13 93 9 10
+L 0.07752508
+S 1753 89 11 12
+S 614 2 13 14
+L 0.09297495
+S 4 76 15 16
+S 4 76 17 18
+L 0.03028901
+L -0.01637207
+L 0.04617261
+S 1757 2 19 20
+L -0.1133304
+L -0.03925364
+L 0.01120186
+tree 181 23
+S 17 3 1 2
+L -0.09605344
+S 499 1 3 4
+S 793 1 5 6
+S 14 8 7 8
+S 23 1 9 10
+L 0.1588373
+S 1662 12 11 12
+L -0.1129141
+L -0.0488462
+S 12 78 13 14
+S 13 74 15 16
+S 898 1 17 18
+L 0.04386791
+S 18 20 19 20
+L 0.08405809
+L -6.546262e-05
+L -0.01022958
+L -0.0720208
+S 6 3 21 22
+L 0.02895698
+L -0.03382642
+L 0.006723422
+tree 182 23
+S 163 1 1 2
+S 589 1 3 4
+S 17 7 5 6
+S 17 3 7 8
+L -0.1349005
+L 0.1189422
+L 0.01459836
+L -0.0813072
+S 1753 226 9 10
+S 1662 4 11 12
+S 4 76 13 14
+S 23 3 15 16
+S 20 4 17 18
+L 0.00517993
+L -0.08867304
+L 0.03477959
+L 0.1038323
+S 564 1 19 20
+L -0.04516545
+S 24 3 21 22
+L 0.05546138
+L -0.02213623
+L 0.03492225
+tree 183 25
+S 870 1 1 2
+S 3 31 3 4
+S 3 15 5 6
+L -0.008427395
+L 0.1679808
+L -0.08218618
+S 828 1 7 8
+S 1753 226 9 10
+S 1668 8 11 12
+S 18 22 13 14
+S 1668 25 15 16
+L -0.09803417
+L -0.01213411
+S 18 9 17 18
+L 0.1048147
+L -0.09026273
+L 0.02635731
+L 0.064137
+S 850 2 19 20
+S 13 112 21 22
+S 6 3 23 24
+L -0.004752727
+L -0.07873354
+L -0.006963362
+L 0.04377285
+tree 184 19
+S 588 1 1 2
+S 14 25 3 4
+L 0.09577081
+S 17 3 5 6
+L -0.09777499
+L -0.0903094
+S 1686 1 7 8
+S 101 1 9 10
+L -0.06403407
+S 13 95 11 12
+L 0.08132987
+S 1 18 13 14
+S 21 18 15 16
+L -0.02155879
+L 0.09452913
+L -0.1041175
+S 282 1 17 18
+L 0.02658384
+L -0.03975458
+tree 185 21
+S 616 1 1 2
+S 12 284 3 4
+L 0.1274249
+S 27 3 5 6
+S 19 13 7 8
+S 931 1 9 10
+L 0.06959127
+L -0.09003323
+L 0.02076827
+S 1753 99 11 12
+L 0.05005439
+S 203 1 13 14
+S 21 11 15 16
+L -0.1107983
+L 0
+L 0.05257118
+S 7 2 17 18
+L -0.06593177
+S 13 47 19 20
+L -0.01417615
+L 0.02958947
+tree 186 19
+S 163 1 1 2
+S 1662 12 3 4
+S 17 7 5 6
+S 896 1 7 8
+S 1668 7 9 10
+L 0.1207065
+L 0.01598537
+S 25 1 11 12
+L -0.03872051
+L -0.1032444
+S 574 1 13 14
+S 1306 1 15 16
+L 0.1398141
+L 0.01330252
+S 1662 25 17 18
+L 0.05958875
+L -0.01257612
+L -0.06481465
+L -0.008573707
+tree 187 19
+S 28 3 1 2
+S 3 9 3 4
+L 0.159212
+L -0.1135802
+S 12 301 5 6
+S 727 1 7 8
+L -0.05761561
+S 931 2 9 10
+S 1753 385 11 12
+S 696 1 13 14
+L 0.07063664
+L 0.1374873
+L -0.01275778
+S 21 9 15 16
+L -0.09807252
+L 0.02467749
+S 2 2 17 18
+L -0.07933832
+L -0.005146919
+tree 188 19
+S 422 1 1 2
+S 1662 18 3 4
+L 0.1175822
+S 25 1 5 6
+S 618 1 7 8
+S 850 2 9 10
+L 0.09534665
+S 727 1 11 12
+L -0.09098539
+S 653 3 13 14
+L 0.04694604
+S 22 9 15 16
+L 0.01602498
+S 1 26 17 18
+L 0.02438371
+L 0.008033265
+L -0.07897624
+L -0.01777601
+L -0.08806424
+tree 189 19
+S 422 1 1 2
+S 56 1 3 4
+L 0.1191911
+S 27 3 5 6
+L -0.07507186
+S 3 60 7 8
+L 0.0687784
+S 1753 154 9 10
+S 574 1 11 12
+S 371 1 13 14
+S 19 5 15 16
+L 0.1203045
+L -0.01660393
+L -0.1007223
+L -0.008583801
+L 0.01720539
+S 1280 1 17 18
+L -0.06118334
+L -0.003375556
+tree 190 21
+S 588 1 1 2
+S 99 1 3 4
+L 0.1218395
+S 17 4 5 6
+L 0.07826981
+S 12 66 7 8
+S 703 1 9 10
+L 0.01165333
+L -0.1168685
+S 7 2 11 12
+L 0.04669629
+S 1665 20 13 14
+S 1 37 15 16
+L 6.168243e-05
+S 1665 45 17 18
+L 0.07646193
+S 23 3 19 20
+L -0.1089267
+L -0.03496797
+L -0.02284617
+L 0.0174333
+tree 191 23
+S 22 5 1 2
+L 0.09339169
+S 1665 46 3 4
+S 12 153 5 6
+S 18 28 7 8
+S 2 3 9 10
+L -0.1459221
+S 3 34 11 12
+L -0.07397662
+S 1663 2 13 14
+L 0.06213607
+S 1280 1 15 16
+L 0.1084608
+L -0.108284
+S 574 1 17 18
+L -0.03389033
+S 12 236 19 20
+L 0.03440489
+L -0.03171741
+S 21 22 21 22
+L 0.06976555
+L -0.007873756
+L 0.01445955
+tree 192 19
+S 3 15 1 2
+L -0.07013794
+S 742 1 3 4
+S 2 1 5 6
+L 0.101471
+L -0.07461408
+S 3 54 7 8
+S 3 35 9 10
+S 282 1 11 12
+S 1664 23 13 14
+L -0.0837865
+L 0.1021388
+L 0.006074706
+L 0.0501187
+S 12 303 15 16
+S 13 43 17 18
+L -0.0726293
+L -0.02874202
+L 0.01148706
+tree 193 21
+S 25 1 1 2
+S 17 3 3 4
+S 80 1 5 6
+L -0.09401991
+S 282 2 7 8
+S 123 1 9 10
+L -0.02308055
+S 1664 7 11 12
+L -0.0629957
+L 0.1482758
+L 0.03086698
+L -0.04345861
+S 98 1 13 14
+S 1098 1 15 16
+L 0.05005251
+S 4 84 17 18
+S 17 7 19 20
+L -0.006242531
+L 0.05514636
+L -0.05515018
+L -0.002759952
+tree 194 23
+S 422 1 1 2
+S 1665 34 3 4
+L 0.1246779
+S 13 129 5 6
+S 653 2 7 8
+S 23 1 9 10
+L -0.1340793
+S 2 3 11 12
+S 606 1 13 14
+L -0.07411871
+S 80 1 15 16
+L 0.1183735
+L 0.001445716
+S 1662 9 17 18
+L -0.05298204
+L 0.05710519
+L -0.05115461
+L 0.05364269
+S 7 2 19 20
+L -0.04827689
+S 21 20 21 22
+L 0.03068666
+L 0.0003129687
+tree 195 17
+S 589 1 1 2
+S 3 74 3 4
+L -0.1202933
+S 1674 42 5 6
+L 0.05980897
+S 18 4 7 8
+L -0.09335599
+L -0.08464182
+S 1756 2 9 10
+S 3 22 11 12
+L -0.04869645
+L -0.04956565
+S 1686 7 13 14
+S 25 1 15 16
+L -0.02885691
+L 0.01531567
+L 0.07921283
+tree 196 23
+S 849 1 1 2
+S 12 96 3 4
+L 0.07969411
+S 870 2 5 6
+S 20 1 7 8
+L 0.09879055
+S 13 42 9 10
+L -0.1015323
+S 527 1 11 12
+S 1677 11 13 14
+L 0.05698634
+S 1 40 15 16
+L 0.05873153
+L -0.02323681
+L 0.009714475
+S 32 5 17 18
+S 1753 115 19 20
+L -0.09861729
+L -0.01222169
+S 12 209 21 22
+L 0.05421556
+L -0.03107001
+L 0.01645662
+tree 197 21
+S 25 1 1 2
+S 499 2 3 4
+S 12 95 5 6
+S 17 4 7 8
+L -0.1030734
+L 0.1175692
+S 1 40 9 10
+S 888 1 11 12
+S 22 8 13 14
+L -0.03111855
+L 0.05355053
+L -0.02435404
+L -0.08542275
+L -0.04847089
+S 21 17 15 16
+L 0.08667821
+S 573 1 17 18
+L 0.03370658
+S 703 1 19 20
+L -0.07132363
+L -0.0001643575
+tree 198 17
+S 589 1 1 2
+S 799 1 3 4
+L -0.08419239
+S 20 1 5 6
+L 0.09771059
+L -0.06643908
+S 1686 10 7 8
+S 1762 7 9 10
+L -0.06219276
+S 3 58 11 12
+L -0.03864411
+S 126 1 13 14
+L 0.06289134
+S 727 1 15 16
+L 0.05995609
+L -0.02410317
+L 0.03488304
+tree 199 21
+S 422 1 1 2
+S 7 8 3 4
+L 0.1051745
+S 3 19 5 6
+L 0.06124387
+L -0.07610761
+S 6 1 7 8
+L -0.09440261
+S 1668 14 9 10
+S 5 4 11 12
+S 915 1 13 14
+S 3 60 15 16
+L 0.08476929
+S 1668 25 17 18
+L 0.02521949
+S 1665 26 19 20
+L 0.0494702
+L -0.07468723
+L -0.01137668
+L 0.01280756
+L -0.05873251
+tree 200 25
+S 16 3 1 2
+S 793 1 3 4
+L -0.1019158
+S 27 3 5 6
+S 618 1 7 8
+S 12 76 9 10
+S 19 12 11 12
+L 0.007023725
+L 0.1365916
+S 3 31 13 14
+S 22 9 15 16
+L -0.005557833
+L 0.0930687
+S 12 53 17 18
+L 0.07187309
+L -0.1205005
+S 1668 1 19 20
+L -0.03987322
+L 0.00815293
+L -0.06456826
+S 653 3 21 22
+S 1755 1 23 24
+L 0.03118887
+L -0.04628807
+L 0.001547767
+tree 201 21
+S 28 3 1 2
+S 17 3 3 4
+L 0.1158618
+L -0.09166106
+S 150 1 5 6
+S 18 22 7 8
+L 0.07103141
+S 1664 49 9 10
+S 1758 2 11 12
+S 3 57 13 14
+L -0.06630479
+S 17 5 15 16
+L -0.004067554
+S 2 4 17 18
+L 0.06259742
+L 0.00527272
+L 0.1071148
+S 1669 1 19 20
+L 0.02736967
+L -0.08309202
+L -0.002658436
+tree 202 21
+S 19 1 1 2
+L 0.0553464
+S 606 1 3 4
+S 1686 10 5 6
+L -0.0808726
+S 56 1 7 8
+L -0.07189205
+S 25 1 9 10
+L -0.05856453
+S 18 21 11 12
+S 1169 1 13 14
+S 4 82 15 16
+S 107 1 17 18
+L 0.1120137
+L 0.008575664
+S 1665 21 19 20
+L -0.06578091
+L 0.05960632
+L -0.01374863
+L 0.02860096
+L -0.01923239
+tree 203 25
+S 653 1 1 2
+S 18 6 3 4
+S 27 3 5 6
+L -0.02849834
+L 0.165035
+S 1665 2 7 8
+S 14 1 9 10
+L -0.06805115
+S 1674 13 11 12
+L 0.08070096
+L -0.01767896
+S 1 37 13 14
+S 1756 1 15 16
+L 0.05062868
+S 1753 198 17 18
+L -0.005555906
+L -0.06755698
+S 757 1 19 20
+S 7 4 21 22
+S 21 22 23 24
+L 0.01776604
+L 0.04135568
+L 0.00111372
+L -0.08364864
+L -0.001537398
+tree 204 23
+S 614 1 1 2
+S 1280 1 3 4
+S 22 9 5 6
+S 870 2 7 8
+S 1665 35 9 10
+L -0.1388555
+S 17 6 11 12
+S 18 7 13 14
+S 21 10 15 16
+L -0.06114439
+S 369 1 17 18
+S 573 1 19 20
+L 0.04261909
+L 0.03988759
+L 0.163059
+L 0.03471916
+L -0.03736421
+S 19 18 21 22
+L -0.01239301
+L 0.004356716
+L -0.1077637
+L 0.0502545
+L -0.0009948168
+tree 205 23
+S 799 1 1 2
+S 3 60 3 4
+L 0.1011972
+S 22 6 5 6
+S 898 1 7 8
+L -0.07243975
+S 3 40 9 10
+L 0.1384382
+S 1670 1 11 12
+S 3 15 13 14
+L -0.05968545
+L -0.06902257
+L 0.03474941
+L -0.03495454
+S 12 213 15 16
+S 870 3 17 18
+S 1280 1 19 20
+L 0.05807744
+S 1077 1 21 22
+L -0.04500902
+L 0.01097603
+L 0.01582701
+L -0.00822794
+tree 206 23
+S 28 3 1 2
+S 588 1 3 4
+L 0.127766
+S 3 67 5 6
+L 0.07192873
+S 2 2 7 8
+S 1020 1 9 10
+S 1668 8 11 12
+S 985 1 13 14
+L 0.06962459
+L 0.002090653
+L -0.1704025
+L -0.03703741
+S 3 24 15 16
+S 24 5 17 18
+L -0.06417499
+S 18 12 19 20
+L 0.05560053
+L -0.005019743
+L -0.04233049
+S 6 3 21 22
+L -0.005412236
+L 0.05177716
+tree 207 21
+S 588 1 1 2
+S 12 282 3 4
+L 0.101895
+S 931 2 5 6
+S 1303 1 7 8
+S 747 1 9 10
+L 0.0640325
+L -0.1121256
+L -0.01229425
+S 24 2 11 12
+L 0.04590204
+S 499 1 13 14
+S 3 43 15 16
+L -0.01154852
+L -0.09700841
+S 1757 1 17 18
+L 0.06092585
+L -0.05039592
+S 21 22 19 20
+L -0.008345287
+L 0.02144683
+tree 208 23
+S 99 1 1 2
+S 12 96 3 4
+L 0.1228555
+S 25 1 5 6
+S 1665 34 7 8
+S 12 50 9 10
+L 0.1096085
+L -0.09504628
+S 24 4 11 12
+S 1678 1 13 14
+S 13 43 15 16
+S 931 2 17 18
+L 0.05988879
+L -0.04415128
+L 0.005685759
+L 0.01418425
+L 0.06909959
+S 17 6 19 20
+L 0.03618164
+L -0.06988661
+S 1099 1 21 22
+L 0.03300152
+L -0.01389476
+tree 209 23
+S 793 1 1 2
+S 12 282 3 4
+S 3 25 5 6
+S 12 58 7 8
+S 17 6 9 10
+L -0.01766722
+L 0.12687
+S 1280 1 11 12
+S 574 1 13 14
+L -0.1556739
+L 0.01921669
+L 0.07262081
+L -0.0192544
+S 19 16 15 16
+S 1665 34 17 18
+S 1664 12 19 20
+L -0.023394
+L -0.09099317
+S 1662 11 21 22
+L 0.003640905
+L 0.05407824
+L 0.01961972
+L -0.02629979
+tree 210 21
+S 99 1 1 2
+S 931 2 3 4
+L 0.08775353
+S 12 289 5 6
+S 19 15 7 8
+S 282 1 9 10
+L -0.06246444
+L 0.08709919
+L -0.008852382
+S 6 3 11 12
+S 499 1 13 14
+S 19 17 15 16
+S 1280 1 17 18
+L 0.01321167
+S 1 18 19 20
+L -0.03323699
+L -0.0001601096
+L 0.06288697
+L -0.00117652
+L -0.004713113
+L -0.09339527
+tree 211 23
+S 16 3 1 2
+S 1753 58 3 4
+L -0.08559022
+S 1662 16 5 6
+S 653 1 7 8
+S 934 1 9 10
+L -0.09713398
+L 0.07886191
+S 13 31 11 12
+L 0.01666469
+L -0.03578747
+L 0.05256238
+S 400 1 13 14
+S 1753 135 15 16
+L 0.05131726
+L -0.04902625
+S 11 2 17 18
+S 1241 1 19 20
+S 898 1 21 22
+L 0.06125886
+L 0.01284436
+L -0.07232777
+L -0.006633677
+tree 212 21
+S 588 1 1 2
+S 527 1 3 4
+L 0.08305882
+S 12 289 5 6
+L 0.04520393
+S 499 2 7 8
+S 5 1 9 10
+S 870 2 11 12
+L -0.04996404
+L -0.1116189
+L -0.01173539
+S 1241 3 13 14
+S 1753 154 15 16
+L 0.1069028
+L -0.001064609
+S 13 182 17 18
+S 15 1 19 20
+L -0.05826029
+L 0.001394251
+L 0.04636477
+L -0.01416628
+tree 213 21
+S 193 1 1 2
+S 18 28 3 4
+L -0.09092252
+S 1241 1 5 6
+L -0.0809155
+S 7 2 7 8
+S 1664 48 9 10
+S 19 5 11 12
+L 0.1250966
+S 1674 23 13 14
+L -0.07098487
+L 0.05783507
+L -0.01524908
+S 3 36 15 16
+L -0.04023066
+S 1753 169 17 18
+L 0.08861314
+S 6 3 19 20
+L 0.0205234
+L -0.03506619
+L 0.005648957
+tree 214 21
+S 614 1 1 2
+S 3 43 3 4
+S 7 2 5 6
+S 1755 2 7 8
+S 16 1 9 10
+S 13 299 11 12
+L 0.02545707
+S 2 4 13 14
+S 747 1 15 16
+L 0.1360364
+L 0.01539803
+S 1671 1 17 18
+L 0.02671737
+L -0.07815403
+L 0.01245832
+S 915 1 19 20
+L -0.01017493
+L -0.1202752
+L -0.01221247
+L 0.05447395
+L -0.0001267482
+tree 215 21
+S 588 1 1 2
+S 99 1 3 4
+L 0.09213521
+S 527 1 5 6
+L 0.07424559
+S 12 282 7 8
+L 0.04439146
+S 1753 154 9 10
+L -0.08708938
+S 1662 19 11 12
+S 20 2 13 14
+S 21 11 15 16
+L -0.07264481
+S 1753 230 17 18
+L 0.05655774
+L -0.0364885
+S 20 7 19 20
+L 0.03414002
+L -0.02588826
+L 0.03375707
+L -0.01663374
+tree 216 21
+S 16 3 1 2
+S 25 1 3 4
+L -0.09286705
+S 150 1 5 6
+S 38 8 7 8
+S 20 1 9 10
+L 0.07677674
+S 1662 15 11 12
+L -0.02148629
+L -0.07507595
+S 1241 1 13 14
+L 0.1481158
+L 0.04326493
+S 653 3 15 16
+S 1662 11 17 18
+L -0.006206707
+L 0.04951982
+L -0.06345917
+S 574 1 19 20
+L 0.0106083
+L -0.02525213
+tree 217 23
+S 12 316 1 2
+S 727 1 3 4
+L -0.06406065
+S 1753 255 5 6
+S 1662 9 7 8
+S 17 4 9 10
+L 0.07518169
+L 0.1260036
+S 15 3 11 12
+L -0.08161134
+S 56 1 13 14
+L 0.05423194
+L -0.006936471
+S 870 3 15 16
+L -0.06763013
+S 12 139 17 18
+S 17 7 19 20
+L 0.06300756
+S 282 1 21 22
+L -0.03572672
+L -0.01327827
+L 0.03577417
+L -0.03504342
+tree 218 21
+S 1286 1 1 2
+S 614 1 3 4
+L 0.0662126
+S 1221 1 5 6
+S 1 40 7 8
+S 24 3 9 10
+L -0.04637422
+L -0.1287844
+S 13 292 11 12
+S 13 95 13 14
+S 1169 1 15 16
+L -0.02095057
+L 0.03228648
+L 0.1024299
+L -0.003348483
+S 22 7 17 18
+L -0.05418813
+L -0.02746203
+S 17 7 19 20
+L 0.05309192
+L -0.008476797
+tree 219 21
+S 588 1 1 2
+S 793 1 3 4
+L 0.08202579
+S 13 108 5 6
+S 870 2 7 8
+S 1664 42 9 10
+S 17 6 11 12
+L 0.09082236
+L -0.0002239651
+S 1674 14 13 14
+L -0.03551288
+S 1668 1 15 16
+S 6 3 17 18
+S 1753 181 19 20
+L -0.006256796
+L -0.1299978
+L -0.03476751
+L -0.03072011
+L 0.02822305
+L 0.01955096
+L 0.06194269
+tree 220 23
+S 3 67 1 2
+S 11 3 3 4
+S 13 146 5 6
+S 5 6 7 8
+L -0.08257884
+L 0.1251698
+L -0.007268869
+S 19 19 9 10
+S 1762 3 11 12
+S 3 40 13 14
+L -0.08928595
+L 0.08867238
+L -0.006158549
+S 32 5 15 16
+L -0.0483558
+S 1668 13 17 18
+L 0.05510131
+S 12 103 19 20
+S 1753 226 21 22
+L -0.001225168
+L -0.06588065
+L 0.04903406
+L 0.002717206
+tree 221 19
+S 16 2 1 2
+S 13 95 3 4
+L -0.0686568
+S 3 54 5 6
+S 17 5 7 8
+S 1753 142 9 10
+L 0.1270474
+L -0.07264674
+S 13 289 11 12
+L 0.07644461
+S 1662 30 13 14
+S 499 1 15 16
+L 0.0490117
+L -0.03027757
+L 0.009170255
+S 1662 11 17 18
+L -0.04682406
+L 0.050113
+L -0.002522476
+tree 222 21
+S 16 3 1 2
+S 793 1 3 4
+L -0.07846704
+S 6 2 5 6
+L 0.0695885
+L -0.05550062
+S 653 1 7 8
+L 0.05194105
+S 12 139 9 10
+S 1662 13 11 12
+S 17 6 13 14
+L 0.05835604
+S 19 18 15 16
+S 1670 1 17 18
+S 1306 1 19 20
+L 0.00216115
+L -0.0202434
+L -0.107725
+L 0.006853464
+L 0.05163518
+L -0.009718074
+tree 223 23
+S 5 5 1 2
+S 1662 16 3 4
+S 870 2 5 6
+S 25 1 7 8
+S 12 126 9 10
+L 0.1310025
+S 19 11 11 12
+S 18 22 13 14
+L 0.0967057
+S 1665 38 15 16
+S 4 96 17 18
+L -0.0223849
+L 0.02284155
+S 6 4 19 20
+L 0.04871459
+L -0.04224915
+L 0.04108018
+L -0.1562203
+L -0.03849112
+S 1753 78 21 22
+L -0.0836669
+L 0.03551371
+L -0.03613291
+tree 224 21
+S 3 9 1 2
+L -0.07506171
+S 793 1 3 4
+S 931 2 5 6
+L 0.07767331
+S 1664 48 7 8
+S 18 8 9 10
+S 499 2 11 12
+S 17 7 13 14
+L 0.07961972
+L 0.02241767
+S 6 4 15 16
+L -0.04372698
+L -0.09990686
+L -0.002107325
+S 12 75 17 18
+L 0.05120174
+L 0.03767027
+S 21 16 19 20
+L -0.04418597
+L 0.01386625
+tree 225 23
+S 28 3 1 2
+S 589 1 3 4
+L 0.09425343
+S 150 1 5 6
+L -0.07111517
+S 18 22 7 8
+L 0.06602412
+S 614 1 9 10
+S 1 46 11 12
+S 1664 48 13 14
+L -0.08491849
+L 0.05446425
+S 564 1 15 16
+S 24 3 17 18
+L -0.04759271
+L 0.03489957
+L -0.02176761
+S 1662 9 19 20
+S 653 2 21 22
+L 0.0586414
+L 0.01404002
+L -0.04237784
+L 0.007599914
+tree 226 23
+S 25 1 1 2
+S 606 1 3 4
+S 38 8 5 6
+S 58 1 7 8
+L -0.07820898
+S 499 1 9 10
+L -0.04277461
+S 1674 20 11 12
+L 0.04518436
+L 0.1232741
+L 0.01992749
+S 1664 38 13 14
+S 1677 18 15 16
+S 1664 12 17 18
+L -0.06557247
+L 0.04659729
+L -0.002067844
+L -0.03663512
+S 1077 1 19 20
+S 1101 1 21 22
+L -0.02002723
+L 0.04474235
+L -0.002440793
+tree 227 21
+S 20 1 1 2
+L -0.05560493
+S 282 1 3 4
+S 1662 4 5 6
+S 3 34 7 8
+L 0.09352822
+S 1756 2 9 10
+S 1306 1 11 12
+S 13 45 13 14
+S 564 1 15 16
+L -0.04276615
+L 0.03833697
+L -0.01303935
+L -0.007802501
+L -0.09537937
+S 21 22 17 18
+S 888 1 19 20
+L -0.02405563
+L 0.02711838
+L 0.1096192
+L -0.01066719
+tree 228 23
+S 614 1 1 2
+S 3 60 3 4
+S 1753 226 5 6
+S 19 19 7 8
+L 0.07786936
+S 17 6 9 10
+L -0.08942653
+S 1662 30 11 12
+L -0.0359005
+S 888 1 13 14
+L 0.04352675
+S 931 2 15 16
+L 0.0707002
+L 0.009365245
+L -0.08551262
+S 653 2 17 18
+L 0.04648682
+L -0.06189847
+S 13 139 19 20
+L 0.04482111
+S 21 22 21 22
+L -0.02157661
+L 0.00666461
+tree 229 21
+S 1674 12 1 2
+S 793 1 3 4
+S 13 119 5 6
+S 931 2 7 8
+L 0.08149527
+S 1677 15 9 10
+L -0.1238369
+S 1668 24 11 12
+L 0.07249443
+S 1677 2 13 14
+L -0.03901803
+S 564 1 15 16
+L 0.0343539
+L -0.007317875
+L 0.05201919
+S 653 3 17 18
+L -0.06716326
+S 1668 11 19 20
+L 0.0364847
+L -0.05805926
+L -0.004981752
+tree 230 23
+S 614 1 1 2
+S 3 60 3 4
+S 1673 12 5 6
+S 1674 30 7 8
+L 0.07856933
+S 3 46 9 10
+L -0.1030935
+S 19 19 11 12
+L 0.05073254
+L 0.01161526
+S 757 1 13 14
+S 653 2 15 16
+L -0.04852753
+L -0.08957219
+L 0.001064731
+S 3 25 17 18
+S 19 12 19 20
+L 0.005589284
+L -0.05667144
+L 0.04251915
+S 20 2 21 22
+L 0.01079321
+L -0.01072113
+tree 231 23
+S 16 3 1 2
+S 799 1 3 4
+L -0.0924686
+S 12 95 5 6
+L 0.08515259
+S 3 50 7 8
+S 1665 41 9 10
+S 1753 142 11 12
+L 0.1274116
+L -0.08326714
+S 243 1 13 14
+L 0.05142807
+S 1665 28 15 16
+S 1077 1 17 18
+L -0.06066419
+L -0.03046081
+L 0.009131745
+S 696 1 19 20
+L -0.02677987
+S 870 3 21 22
+L -0.020148
+L 0.04289
+L 0
+tree 232 21
+S 16 3 1 2
+S 25 1 3 4
+L -0.08941418
+S 150 1 5 6
+S 898 1 7 8
+S 12 302 9 10
+L 0.07281809
+S 1674 24 11 12
+L -0.01910472
+S 1669 1 13 14
+L -0.07936609
+L 0.1601837
+L -0.01675391
+S 12 69 15 16
+S 3 29 17 18
+L 0.01339239
+L -0.0512359
+S 20 2 19 20
+L 0.03560606
+L 0.01400029
+L -0.009115829
+tree 233 25
+S 799 1 1 2
+S 20 3 3 4
+L 0.06714789
+S 22 12 5 6
+S 19 8 7 8
+S 703 1 9 10
+L -0.09420923
+S 12 150 11 12
+S 1753 108 13 14
+S 7 1 15 16
+L 0.05192578
+L 0.1082359
+L 0.01156032
+S 335 1 17 18
+L 0.02153262
+S 12 71 19 20
+S 22 8 21 22
+L -0.04974215
+L 0.01065546
+L -0.02538444
+L -0.1173448
+L 0.04150762
+S 1668 16 23 24
+L -0.04383205
+L 0.008660359
+tree 234 19
+S 799 1 1 2
+S 2 1 3 4
+L 0.07116512
+L -0.09242427
+S 1670 1 5 6
+S 2 4 7 8
+S 4 76 9 10
+S 1668 6 11 12
+S 27 3 13 14
+L -0.01046978
+L 0.07812743
+L -0.08161397
+S 1024 2 15 16
+L -0.02115188
+L 0.05645652
+S 23 5 17 18
+L -0.05653551
+L 0.03855804
+L -0.0167632
+tree 235 19
+S 120 1 1 2
+S 14 13 3 4
+L -0.07799818
+S 25 1 5 6
+L -0.06378859
+S 3 19 7 8
+S 1753 115 9 10
+L -0.06069982
+S 1756 1 11 12
+L 0.007439605
+L 0.1085935
+S 18 17 13 14
+S 12 147 15 16
+S 7 1 17 18
+L 0.05486023
+L 0.003588092
+L -0.07318397
+L -0.02466038
+L 0.01697566
+tree 236 21
+S 25 1 1 2
+S 1664 48 3 4
+S 13 102 5 6
+S 3 49 7 8
+S 888 1 9 10
+L 0.08752441
+S 1665 234 11 12
+S 1683 29 13 14
+L 0.03230916
+L -0.1470597
+L -0.0044243
+L -0.03090867
+L 0.05963372
+S 21 11 15 16
+L -0.07093214
+L -0.0442826
+S 171 1 17 18
+S 4 57 19 20
+L -0.02167446
+L -0.01211971
+L 0.04293592
+tree 237 19
+S 588 1 1 2
+S 1664 49 3 4
+L 0.09347352
+S 653 1 5 6
+S 17 6 7 8
+L 0.07313374
+S 1664 22 9 10
+L -0.07897432
+L 0.008240922
+S 13 100 11 12
+S 1306 1 13 14
+L -0.003978276
+L -0.07710452
+S 123 1 15 16
+S 1670 1 17 18
+L 0.08856288
+L 0.005102805
+L -0.03064714
+L 0.01045021
+tree 238 21
+S 3 9 1 2
+L -0.0751241
+S 742 1 3 4
+S 243 1 5 6
+L 0.09145813
+S 870 1 7 8
+L -0.05628095
+L 0.05790634
+S 3 34 9 10
+S 19 5 11 12
+S 1664 12 13 14
+L 0.06720505
+S 126 1 15 16
+L -0.08323026
+S 19 6 17 18
+S 898 1 19 20
+L -0.01590833
+L -0.03364932
+L 0.03709927
+L 0.0617826
+L -0.0002037149
+tree 239 19
+S 99 1 1 2
+S 1753 39 3 4
+L 0.07682262
+L -0.05606592
+S 653 3 5 6
+S 1753 286 7 8
+S 898 1 9 10
+S 371 1 11 12
+L 0.04225699
+L 0.1091795
+S 1755 2 13 14
+S 1665 20 15 16
+L 0.01415154
+L 0.0391921
+L -0.01901073
+L 0.0001267451
+S 17 6 17 18
+L -0.08565646
+L -0.006666124
+tree 240 23
+S 1753 39 1 2
+L -0.06559654
+S 5 6 3 4
+S 703 1 5 6
+S 1762 5 7 8
+S 1482 1 9 10
+S 1665 260 11 12
+L 0.08859905
+L -0.0215426
+S 1249 1 13 14
+L 0.03092751
+L 0.06125557
+L 0
+S 18 13 15 16
+L -0.08552939
+S 1665 65 17 18
+S 1668 3 19 20
+L 0.03199556
+L -0.03047909
+L -0.09117445
+S 1662 40 21 22
+L 0.01730237
+L -0.03025546
+tree 241 21
+S 163 1 1 2
+S 18 28 3 4
+S 22 14 5 6
+S 1662 4 7 8
+L -0.08429148
+L 0.0952822
+L 0.0004594248
+S 22 9 9 10
+S 7 2 11 12
+L -0.009045669
+L 0.06345639
+S 1664 22 13 14
+S 1683 30 15 16
+L -0.07772278
+S 1306 1 17 18
+S 23 5 19 20
+L -0.02998472
+L 0.02238975
+L -0.05066773
+L 0.07368463
+L 0.005096806
+tree 242 19
+S 12 442 1 2
+S 12 308 3 4
+L 0.07543244
+S 25 1 5 6
+L -0.09485332
+S 12 26 7 8
+S 13 112 9 10
+L -0.06069925
+S 27 3 11 12
+L 0.08064013
+L 0.0007634083
+S 1682 4 13 14
+L 0.05748172
+S 1 44 15 16
+L -0.05644283
+L 0.03658791
+S 22 12 17 18
+L 0.0125464
+L -0.01834521
+tree 243 21
+S 25 1 1 2
+S 727 1 3 4
+S 727 1 5 6
+S 243 1 7 8
+S 1280 1 9 10
+S 13 89 11 12
+L 0.1139249
+S 18 21 13 14
+L -0.04027716
+L -0.06343897
+L -0.001778862
+L 0.06092912
+L -0.02015811
+S 1753 154 15 16
+L 0.05376196
+S 7 1 17 18
+L 0.0230349
+L -0.03665694
+S 6 3 19 20
+L -0.0153883
+L 0.01400361
+tree 244 19
+S 799 1 1 2
+S 1753 39 3 4
+L 0.08169197
+L -0.06975419
+S 828 1 5 6
+S 3 60 7 8
+S 1303 1 9 10
+S 1662 33 11 12
+L 0.1027142
+L -0.07573237
+L -0.002536237
+S 1753 212 13 14
+L 0.04427779
+S 985 1 15 16
+L -0.0567794
+S 19 9 17 18
+L 0.03879221
+L -0.05575724
+L 0.002309945
+tree 245 21
+S 5 6 1 2
+S 12 302 3 4
+S 1753 154 5 6
+S 17 4 7 8
+L -0.09049402
+L -0.01245964
+L 0.1219994
+L -0.0435854
+S 499 1 9 10
+S 653 2 11 12
+S 24 5 13 14
+L 0.07274047
+S 653 3 15 16
+S 1673 2 17 18
+L 0.04312518
+L -0.005012102
+L 0.05038805
+S 1 29 19 20
+L -0.07673699
+L 0
+L -0.03121041
+tree 246 21
+S 193 1 1 2
+S 7 1 3 4
+L -0.0598774
+S 1668 10 5 6
+S 3 49 7 8
+S 985 1 9 10
+S 1303 1 11 12
+S 19 16 13 14
+L 0.1146882
+S 13 58 15 16
+L 0.03997586
+L -0.1072426
+L 0.0044373
+S 850 1 17 18
+S 22 13 19 20
+L 0.04075843
+L -0.06545994
+L 0.07755247
+L 0.002622043
+L 0.01388741
+L -0.02792121
+tree 247 23
+S 28 3 1 2
+S 16 3 3 4
+L 0.08958188
+S 150 1 5 6
+L -0.08996733
+S 12 71 7 8
+L 0.05702261
+S 1306 1 9 10
+S 1673 16 11 12
+S 573 1 13 14
+L -0.01587782
+S 564 1 15 16
+L -0.08752023
+L 0.08863699
+L 0.007991715
+S 18 22 17 18
+S 1303 1 19 20
+S 1665 168 21 22
+L 0.04709112
+L -0.07895114
+L 0.004276194
+L 0.01973623
+L -0.02096125
+tree 248 21
+S 589 1 1 2
+S 18 4 3 4
+L -0.09960482
+L -0.06149613
+S 12 57 5 6
+S 24 4 7 8
+S 6 2 9 10
+L 0.1066705
+L 0.00843173
+L -0.04240709
+S 282 1 11 12
+S 21 17 13 14
+S 1668 6 15 16
+L 0.05966549
+S 564 1 17 18
+L -0.05991836
+S 1665 141 19 20
+L 0.03120865
+L -0.02761442
+L -0.0090532
+L 0.02221279
+tree 249 21
+S 3 8 1 2
+L -0.06835358
+S 5 6 3 4
+S 14 8 5 6
+S 3 30 7 8
+S 1756 1 9 10
+L -0.06362469
+L -0.002445254
+L 0.0970988
+S 15 2 11 12
+S 2 2 13 14
+S 12 151 15 16
+L -0.04199798
+L -0.06292307
+S 783 1 17 18
+L 0.0743981
+S 12 256 19 20
+L 0.02453627
+L -0.01628657
+L -0.01701453
+L 0.04143542
+tree 250 21
+S 16 3 1 2
+S 588 1 3 4
+L -0.08323316
+S 1682 4 5 6
+L 0.07952627
+S 101 1 7 8
+S 1674 22 9 10
+S 573 1 11 12
+L 0.06073027
+L -0.07822668
+L 0.008879047
+S 3 52 13 14
+S 728 1 15 16
+S 1169 1 17 18
+L 0.1132851
+L 0.0006352573
+L -0.04654712
+S 1668 15 19 20
+L 0.04075512
+L -0.04780095
+L 0.01258133
+tree 251 21
+S 589 1 1 2
+S 19 1 3 4
+L -0.06668405
+L 0.07072832
+S 1753 221 5 6
+S 1753 185 7 8
+S 19 14 9 10
+S 19 17 11 12
+L 0.07548928
+L -0.09880157
+L 0.01023968
+S 4 82 13 14
+S 870 3 15 16
+S 15 1 17 18
+S 614 1 19 20
+L -0.09026057
+L 0
+L 0.01334929
+L 0.09238421
+L 0.01536278
+L -0.04710903
+tree 252 21
+S 150 1 1 2
+S 193 1 3 4
+L 0.0524915
+S 22 12 5 6
+L -0.05661627
+S 7 2 7 8
+S 21 22 9 10
+S 1668 9 11 12
+S 1241 1 13 14
+L -0.07558785
+L 0.006312966
+S 798 1 15 16
+L -0.04433432
+L 0.1078816
+S 7 3 17 18
+S 1673 14 19 20
+L 0.05630761
+L -0.02708155
+L 0.02800507
+L -0.04391676
+L 0.01975346
+tree 253 23
+S 1662 21 1 2
+S 25 1 3 4
+S 798 1 5 6
+S 3 50 7 8
+S 282 1 9 10
+L -0.0742221
+S 23 4 11 12
+S 13 47 13 14
+S 1665 153 15 16
+L 0.1262663
+L 0.03514657
+L -0.0471303
+S 3 23 17 18
+L -0.06304631
+S 23 2 19 20
+L 0.05912655
+L -0.001564156
+L -0.008465877
+L 0.04663764
+S 1664 28 21 22
+L -0.03864941
+L 0.0572613
+L -0.007528054
+tree 254 21
+S 589 1 1 2
+S 799 1 3 4
+L -0.07983045
+S 527 1 5 6
+L 0.07075122
+S 12 282 7 8
+L 0.04609691
+S 931 2 9 10
+L -0.0696637
+S 20 3 11 12
+L 0.05308783
+S 850 1 13 14
+S 1664 17 15 16
+S 1753 124 17 18
+L -0.06305501
+L 0.06299697
+S 21 22 19 20
+L -0.03903128
+L 0.001600581
+L -0.02397143
+L 0.02123627
+tree 255 19
+S 25 1 1 2
+S 499 2 3 4
+S 80 1 5 6
+S 614 1 7 8
+L -0.06870732
+S 1024 2 9 10
+L -0.02302944
+S 870 2 11 12
+S 719 1 13 14
+L 0.1119539
+L 0.02411378
+L 0.08259273
+S 6 4 15 16
+L -0.08130252
+L 0.007716166
+S 20 2 17 18
+L -0.01731752
+L 0.02653585
+L -0.00134276
+tree 256 21
+S 799 1 1 2
+S 3 8 3 4
+L 0.0840898
+L -0.06532376
+S 931 2 5 6
+S 14 1 7 8
+S 1662 13 9 10
+S 3 64 11 12
+L -0.08967696
+L 0.1174251
+L -0.01774642
+S 2 2 13 14
+L 0.04978838
+S 1683 24 15 16
+S 653 3 17 18
+L -0.07958252
+L 0.004463762
+S 18 10 19 20
+L 0.05029396
+L -0.04922254
+L 0.008144233
+tree 257 19
+S 606 1 1 2
+S 793 1 3 4
+L -0.06335759
+S 7 6 5 6
+L 0.05566679
+S 653 3 7 8
+L 0.05365896
+S 1753 201 9 10
+S 1668 12 11 12
+S 1753 115 13 14
+L -0.06052381
+L 0.05051347
+L -0.01454788
+S 1665 37 15 16
+L 0.0246813
+L -0.04447282
+S 21 20 17 18
+L 0.01338689
+L -0.01779417
+tree 258 21
+S 989 1 1 2
+S 1676 1 3 4
+L 0.0589406
+S 1753 285 5 6
+S 1024 1 7 8
+S 1753 218 9 10
+L 0.06315362
+L -0.005971754
+L -0.0895151
+S 6 2 11 12
+L -0.07017609
+L -0.04817365
+S 12 166 13 14
+S 21 10 15 16
+S 1646 1 17 18
+L -0.01606852
+L 0.09133387
+S 653 2 19 20
+L 0.01498841
+L 0.004162023
+L -0.06111776
+tree 259 21
+S 589 1 1 2
+S 7 1 3 4
+L -0.08007742
+S 17 6 5 6
+S 3 29 7 8
+S 21 12 9 10
+L 0.02792345
+S 1673 2 11 12
+S 1753 99 13 14
+S 126 1 15 16
+S 931 1 17 18
+S 17 7 19 20
+L 0.02464956
+L 0.001291795
+L 0.09905546
+L 0.02540166
+L -0.03738365
+L -0.09978965
+L -0.005309452
+L -0.04625362
+L -0.004945108
+tree 260 19
+S 28 3 1 2
+S 588 1 3 4
+L 0.1087496
+S 17 3 5 6
+L 0.08392181
+L -0.07014813
+S 1674 25 7 8
+S 101 1 9 10
+L -0.04809099
+S 1755 3 11 12
+L 0.07855172
+S 17 6 13 14
+L -0.05451151
+S 1753 169 15 16
+S 52 1 17 18
+L -0.03310889
+L 0.02164962
+L 0.06045958
+L -0.01081
+tree 261 25
+S 16 3 1 2
+S 22 5 3 4
+L -0.0923356
+L 0.07640506
+S 1664 15 5 6
+S 3 35 7 8
+S 3 29 9 10
+S 13 96 11 12
+L -0.09223906
+S 1280 1 13 14
+S 771 2 15 16
+L 0.02548692
+L -0.01582604
+L -0.05012599
+S 573 1 17 18
+S 1 46 19 20
+L -0.02971193
+S 2 3 21 22
+L -0.02373157
+L 0.02629135
+L 0.1132302
+S 21 22 23 24
+L -0.0223904
+L 0.03246443
+L 0.01846921
+tree 262 21
+S 3 9 1 2
+L -0.06263921
+S 828 1 3 4
+S 3 60 5 6
+S 499 1 7 8
+S 25 1 9 10
+L 0.06998524
+L 4.009713e-06
+L -0.09378498
+S 499 2 11 12
+L 0.04497235
+S 94 1 13 14
+L -0.04364175
+S 12 141 15 16
+S 1 51 17 18
+S 12 53 19 20
+L -0.05400902
+L 0.06467339
+L 0.005908635
+L -0.04357918
+L 0.02706383
+tree 263 21
+S 422 1 1 2
+S 798 1 3 4
+L 0.07123867
+S 193 1 5 6
+S 573 1 7 8
+S 3 45 9 10
+L -0.06855205
+S 1664 15 11 12
+S 13 146 13 14
+S 564 1 15 16
+S 21 10 17 18
+L 0.005828408
+L 0.08234353
+L 0.02845135
+L -0.03621682
+S 21 13 19 20
+L -0.06713694
+L -0.01740135
+L 0.0664101
+L -0.03240375
+L 0.02306693
+tree 264 19
+S 614 1 1 2
+S 3 60 3 4
+S 11 2 5 6
+S 653 2 7 8
+L 0.1098361
+S 4 85 9 10
+L -0.07952392
+S 19 11 11 12
+S 1664 34 13 14
+L 0.06814856
+S 1671 1 15 16
+L -0.08048594
+L 0.01649813
+L 0.05592206
+S 1674 8 17 18
+L -0.0595865
+L 0.01791956
+L -0.005050296
+L 0.01454856
+tree 265 23
+S 588 1 1 2
+S 1665 39 3 4
+L 0.08337436
+S 499 2 5 6
+S 1 37 7 8
+S 1753 113 9 10
+L -0.09453741
+L 0.07333253
+S 1 40 11 12
+L -0.05985787
+S 4 76 13 14
+L -0.07051589
+S 653 2 15 16
+L -0.02173288
+L 0.04881846
+L 0.06790207
+S 573 1 17 18
+S 20 8 19 20
+S 1662 41 21 22
+L 0.03524452
+L 0.003145524
+L -0.05482987
+L 0.01139869
+tree 266 21
+S 7 2 1 2
+S 703 1 3 4
+S 3 52 5 6
+S 614 1 7 8
+L 0.03077832
+S 740 1 9 10
+L 0.1039886
+S 19 7 11 12
+S 1306 1 13 14
+S 727 1 15 16
+L -0.0327014
+L 0.02308809
+S 1753 159 17 18
+L -0.1008274
+L -0.01807992
+S 1099 1 19 20
+L 0.09505253
+L 0.01136239
+L -0.06323754
+L -0.02490794
+L 0.01968271
+tree 267 19
+S 793 1 1 2
+S 7 6 3 4
+S 499 1 5 6
+S 12 325 7 8
+L 0.03693034
+L 0.09096143
+L -0.01789651
+S 1753 58 9 10
+L -0.07258084
+S 2 2 11 12
+S 1665 20 13 14
+L -0.09413172
+L -0.003228108
+L 0.0377411
+S 13 41 15 16
+L -0.03700104
+S 564 1 17 18
+L 0.02872883
+L -0.01833615
+tree 268 21
+S 1753 114 1 2
+S 888 1 3 4
+S 3 35 5 6
+S 24 2 7 8
+L -0.07320372
+S 573 1 9 10
+S 126 1 11 12
+L 0.04344802
+S 376 1 13 14
+S 21 18 15 16
+L -0.03920628
+S 614 1 17 18
+L -0.03566876
+S 282 1 19 20
+L 0.01514716
+L -0.01315351
+L 0.04933201
+L 0.1433485
+L 0.02698357
+L -0.07209817
+L -0.0142728
+tree 269 21
+S 12 161 1 2
+S 1169 1 3 4
+S 1664 22 5 6
+S 13 44 7 8
+L -0.03389813
+L -0.08576984
+S 2 3 9 10
+S 25 1 11 12
+S 1673 2 13 14
+S 574 1 15 16
+L -0.0346135
+S 7 1 17 18
+L 0.06228209
+L 0.1083444
+L 0.06611416
+L 0.02556538
+S 1758 2 19 20
+L -0.0316891
+L 0.01845843
+L -0.03261168
+L -0.002619207
+tree 270 21
+S 589 1 1 2
+S 1686 8 3 4
+L -0.05274683
+S 1667 1 5 6
+L -0.03692398
+S 1 20 7 8
+S 1674 11 9 10
+L 0.06299046
+S 171 1 11 12
+L 0.0980491
+L 0.03680004
+S 19 8 13 14
+L -0.07475546
+S 1664 23 15 16
+S 618 1 17 18
+L 0.09565968
+S 19 4 19 20
+L -0.0356494
+L 0.01950153
+L -0.01298684
+L 0.03264826
+tree 271 21
+S 3 67 1 2
+S 1668 25 3 4
+S 13 146 5 6
+S 12 316 7 8
+L 0.05035987
+L 0.1072722
+L 0.01254556
+S 193 1 9 10
+L -0.07884182
+S 19 7 11 12
+L -0.05498076
+S 18 18 13 14
+S 19 11 15 16
+L 0.01146409
+L 0.06006467
+L -0.03740703
+S 1753 165 17 18
+S 1756 1 19 20
+L 0.04216691
+L 0.0001166257
+L -0.03438241
+tree 272 19
+S 14 27 1 2
+S 3 68 3 4
+L -0.08947901
+S 11 3 5 6
+S 844 1 7 8
+S 931 2 9 10
+L -0.06247439
+L 0.1019127
+L 0.01019301
+S 5 6 11 12
+L 0.04646091
+S 1169 1 13 14
+L 0.03030682
+S 18 10 15 16
+L -0.05333535
+L -0.04395514
+S 1 51 17 18
+L 0.03399989
+L -0.01662138
+tree 273 23
+S 14 23 1 2
+S 12 166 3 4
+L -0.07105855
+S 1665 46 5 6
+S 5 4 7 8
+S 12 96 9 10
+L 0.07311224
+S 1662 16 11 12
+S 369 1 13 14
+S 1665 19 15 16
+L -0.03932172
+S 1662 2 17 18
+L -0.07621261
+L 0.05963483
+L -0.03938572
+S 1024 2 19 20
+S 1673 12 21 22
+L -0.04520476
+L 0.01538938
+L 0.06771726
+L 0.02700954
+L 0.01342872
+L -0.02406452
+tree 274 23
+S 849 1 1 2
+S 588 1 3 4
+L -0.06191781
+S 3 67 5 6
+L 0.06356961
+S 909 1 7 8
+S 728 1 9 10
+S 1665 39 11 12
+L -0.06078827
+L 0.08494804
+L -0.0003991231
+S 19 9 13 14
+S 898 1 15 16
+L -0.07135598
+S 3 25 17 18
+S 166 1 19 20
+S 1662 47 21 22
+L -0.04282941
+L 0.01919488
+L 0.05677178
+L 0.003853111
+L -0.03527661
+L 0.02013669
+tree 275 21
+S 989 1 1 2
+S 614 1 3 4
+L 0.06826582
+S 499 2 5 6
+S 11 2 7 8
+S 3 50 9 10
+L -0.050453
+S 17 7 11 12
+L -0.08056141
+S 22 10 13 14
+L 0.0932672
+S 573 1 15 16
+L 0.03982691
+S 1756 1 17 18
+S 1756 1 19 20
+L 0.009035804
+L -0.06060031
+L 0.05814038
+L -0.00401392
+L -0.0226286
+L 0.00609429
+tree 276 17
+S 282 2 1 2
+S 12 302 3 4
+L -0.06323742
+S 1075 1 5 6
+L -0.04699849
+S 931 1 7 8
+L -0.06304036
+S 12 209 9 10
+L 0.07287454
+S 14 1 11 12
+L 0.07537672
+S 3 52 13 14
+L -0.04639179
+S 653 3 15 16
+L 0.0635268
+L -0.02608889
+L 0.02545065
+tree 277 21
+S 16 2 1 2
+S 793 1 3 4
+L -0.0772438
+S 931 2 5 6
+L 0.0580414
+S 614 2 7 8
+S 22 9 9 10
+S 12 100 11 12
+L 0.01944294
+L 0.07890653
+L -0.007878092
+S 3 47 13 14
+S 1755 1 15 16
+S 13 41 17 18
+L 0.02394942
+L -0.1338006
+S 19 13 19 20
+L -0.03221621
+L -0.009975944
+L -0.07467566
+L 0
+tree 278 23
+S 16 2 1 2
+S 870 2 3 4
+L -0.04605201
+S 3 33 5 6
+S 1683 5 7 8
+S 931 1 9 10
+S 1668 7 11 12
+S 614 2 13 14
+L -0.05655374
+L -0.02956187
+L 0.02735815
+L 0.04726946
+L 0.1409863
+S 19 10 15 16
+L 0.03979224
+S 282 1 17 18
+S 142 1 19 20
+L -0.05537587
+L 0
+S 653 4 21 22
+L -0.00969331
+L 0.04117697
+L 0.01291529
+tree 279 23
+S 422 1 1 2
+S 22 8 3 4
+L 0.0732825
+S 1 23 5 6
+S 870 1 7 8
+S 20 2 9 10
+L -0.09337827
+L 0.04547255
+S 6 3 11 12
+L 0.01464014
+L -0.03973411
+S 1306 1 13 14
+S 1677 14 15 16
+L -0.07011241
+L -0.005746043
+S 870 2 17 18
+L -0.02830683
+L -0.03131857
+S 22 10 19 20
+L 0.07424182
+S 21 20 21 22
+L 0.03819225
+L 0.0006182198
+tree 280 23
+S 799 1 1 2
+S 703 1 3 4
+L 0.07545637
+S 27 3 5 6
+S 898 2 7 8
+S 1669 1 9 10
+S 1664 35 11 12
+L 0.07397287
+L 0.0005401325
+S 1682 10 13 14
+S 3 53 15 16
+L 0.07920293
+L -0.02406052
+S 3 23 17 18
+L -0.1012915
+S 1280 1 19 20
+L 0.04529377
+L 0
+L -0.05671782
+L -0.03146129
+S 20 8 21 22
+L 0.01575716
+L -0.009215881
+tree 281 23
+S 5 5 1 2
+S 1753 30 3 4
+S 1753 154 5 6
+L 0.05903514
+S 1 40 7 8
+L -0.006325869
+L 0.08436937
+S 25 1 9 10
+S 1669 1 11 12
+S 12 71 13 14
+L 0.01841228
+L -0.04975199
+S 3 34 15 16
+S 12 32 17 18
+L -0.1373186
+S 1763 1 19 20
+L 0.06907103
+L -0.04607004
+L -0.005281652
+S 251 1 21 22
+L 0.03077347
+L -0.04298135
+L 0.008997675
+tree 282 23
+S 5 6 1 2
+S 4 85 3 4
+S 3 29 5 6
+S 1753 86 7 8
+S 1670 1 9 10
+L -0.00770638
+L 0.1069736
+S 12 151 11 12
+S 29 1 13 14
+S 19 1 15 16
+L 0.0248578
+L 0.0949007
+L -0.01110777
+S 977 1 17 18
+L 0.03800603
+L -0.005961949
+S 80 1 19 20
+S 1665 20 21 22
+L 0.002817611
+L -0.1798494
+L -0.03956091
+L -0.01748068
+L -0.07429359
+tree 283 21
+S 18 4 1 2
+L -0.06768127
+S 22 14 3 4
+S 653 1 5 6
+L -0.04882037
+L 0.1019429
+S 145 1 7 8
+S 12 147 9 10
+L 0.05400138
+S 1677 9 11 12
+S 13 257 13 14
+S 23 1 15 16
+S 15 4 17 18
+L -0.05817672
+S 1662 4 19 20
+L 0.006170251
+L 0.08049446
+L -0.03768197
+L 0.01220344
+L 0.03319605
+L -0.03442595
+tree 284 21
+S 1662 17 1 2
+S 931 2 3 4
+S 5 5 5 6
+S 101 1 7 8
+L 0.07901513
+S 12 108 9 10
+L 0.04566528
+S 19 5 11 12
+L 0.0784143
+S 1662 40 13 14
+S 1303 1 15 16
+S 13 108 17 18
+S 1280 1 19 20
+L 0.02987828
+L -0.0327959
+L -0.1355889
+L 0.001309314
+L 0.0600624
+L -0.01456317
+L -0.05078303
+L 0.00487566
+tree 285 21
+S 3 9 1 2
+L -0.06742521
+S 12 161 3 4
+S 3 67 5 6
+S 5 5 7 8
+S 13 41 9 10
+L 0.08631893
+S 1303 1 11 12
+L 0.03014927
+S 1753 196 13 14
+S 1306 1 15 16
+L -0.06747412
+S 1662 16 17 18
+S 1665 12 19 20
+L -0.05395328
+L 0.0007625415
+L 0.07725678
+L 0.008363326
+L -0.0198698
+L -0.001961384
+L 0.02687835
+tree 286 21
+S 7 1 1 2
+S 614 1 3 4
+S 1024 3 5 6
+S 19 8 7 8
+S 1303 1 9 10
+S 1683 29 11 12
+L 0.0686141
+L 0.02885787
+S 12 137 13 14
+S 23 2 15 16
+L 0.002537411
+S 21 19 17 18
+L -0.03361142
+L -0.06019588
+L -0.004791426
+L 0.001815414
+L -0.1578253
+L 0.06458035
+S 1756 1 19 20
+L -0.004884015
+L 0.01381929
+tree 287 23
+S 989 1 1 2
+S 3 65 3 4
+L 0.06027956
+S 11 3 5 6
+S 728 1 7 8
+S 560 1 9 10
+L -0.05894661
+L 0.0805922
+L -0.01007204
+S 15 4 11 12
+S 3 24 13 14
+S 1306 1 15 16
+L -0.07087993
+L -0.006390753
+L 0.05237239
+S 985 1 17 18
+S 19 14 19 20
+L 0.06630014
+L -0.003259403
+L -0.05561079
+S 21 22 21 22
+L -0.02383274
+L 0.01915134
+tree 288 23
+S 1662 4 1 2
+S 4 76 3 4
+S 7 1 5 6
+L 0.08250537
+S 618 1 7 8
+S 4 87 9 10
+S 2 3 11 12
+L -0.02050713
+L 0.04260895
+S 1662 14 13 14
+L 0.0068214
+S 1683 29 15 16
+L 0.06774593
+S 11 2 17 18
+L -0.0875947
+S 574 1 19 20
+L -0.03574757
+L 0.00301459
+L -0.03876176
+S 17 7 21 22
+L -0.0170959
+L 0.04099742
+L 0.009510711
+tree 289 21
+S 56 1 1 2
+S 589 1 3 4
+L -0.06310797
+S 793 1 5 6
+L -0.05345079
+S 13 102 7 8
+L 0.06209252
+S 1677 13 9 10
+S 17 6 11 12
+S 25 1 13 14
+L -0.02055954
+S 1668 1 15 16
+S 20 4 17 18
+S 13 33 19 20
+L 0.09795936
+L -0.1068438
+L -0.02175908
+L 0.06061389
+L -0.01384245
+L -0.01161544
+L 0.05243698
+tree 290 21
+S 499 2 1 2
+S 479 1 3 4
+S 1662 11 5 6
+S 3 63 7 8
+L 0.06304592
+L 0.001048176
+L -0.1035343
+S 2 2 9 10
+S 1020 1 11 12
+S 1665 26 13 14
+S 20 5 15 16
+L 0.1070453
+L -0.02215783
+L -0.07657094
+L -0.01851288
+S 1753 112 17 18
+L -0.02256962
+L 0.05915856
+S 3 21 19 20
+L 0.0266453
+L -0.01184778
+tree 291 21
+S 870 1 1 2
+S 1753 207 3 4
+S 6 2 5 6
+L -0.01878496
+L 0.1007875
+L -0.0429074
+S 1753 212 7 8
+S 564 1 9 10
+S 15 2 11 12
+S 18 21 13 14
+L 0.04554271
+L -0.06998342
+S 13 49 15 16
+S 1665 12 17 18
+L 0.04411517
+L 0.005866906
+L -0.01759403
+L -0.03776694
+S 4 75 19 20
+L -0.01223192
+L 0.01509376
+tree 292 23
+S 799 1 1 2
+S 898 1 3 4
+L 0.07006884
+S 25 1 5 6
+S 499 1 7 8
+S 1674 21 9 10
+S 1674 24 11 12
+S 1755 2 13 14
+L -0.06486622
+S 94 1 15 16
+L 0.03370417
+L 0.08840176
+L 0.02432221
+L 0.01902171
+S 15 12 17 18
+S 499 1 19 20
+S 17 7 21 22
+L -0.07080825
+L -0.003087436
+L -0.05038789
+L -0.004820999
+L 0.02992484
+L -0.009532052
+tree 293 21
+S 16 3 1 2
+S 123 1 3 4
+L -0.08213651
+S 870 2 5 6
+S 1753 115 7 8
+S 1306 1 9 10
+S 6 4 11 12
+S 1662 6 13 14
+S 1667 1 15 16
+L 0.1056578
+L 0.01829356
+S 1756 1 17 18
+L 0.04797006
+L 0.005618317
+L -0.09111768
+L 0.04583759
+L -0.02321147
+S 18 15 19 20
+L -0.04563595
+L -0.02184896
+L 0.01610013
+tree 294 23
+S 793 1 1 2
+S 12 69 3 4
+S 1241 1 5 6
+S 1662 13 7 8
+S 798 1 9 10
+L 0.1185447
+L 0.006022557
+L 0.06071628
+S 661 1 11 12
+S 614 1 13 14
+S 771 2 15 16
+L -0.02413241
+L 0.01352325
+S 1669 1 17 18
+L -0.1094489
+S 18 15 19 20
+L -0.05298576
+L -0.04984333
+S 1282 1 21 22
+L -0.01735665
+L 0.06456245
+L 0.02103044
+L -0.01923531
+tree 295 21
+S 14 30 1 2
+S 588 1 3 4
+L -0.07435951
+S 479 1 5 6
+L 0.0720936
+S 49 1 7 8
+L 0.06327058
+S 1665 44 9 10
+L -0.04844123
+S 653 2 11 12
+S 653 2 13 14
+L -0.05206942
+S 564 1 15 16
+L 0.06695854
+S 1662 28 17 18
+L -0.03193779
+L 0.03362469
+S 17 6 19 20
+L 0.04144375
+L -0.03999724
+L 0.009059373
+tree 296 23
+S 1665 39 1 2
+S 888 1 3 4
+S 1 37 5 6
+S 798 1 7 8
+L -0.07474637
+L 0.1007359
+S 1 40 9 10
+S 1665 20 11 12
+L 0.05626414
+L -0.05255862
+S 1 51 13 14
+S 18 9 15 16
+L -0.06559309
+S 898 2 17 18
+S 17 5 19 20
+L 0.03055426
+L -0.0519038
+L 0.09390049
+L 0.00633586
+L 0.04101049
+S 20 9 21 22
+L -0.05031759
+L -0.004997912
+tree 297 21
+S 422 1 1 2
+S 742 1 3 4
+L 0.06374539
+S 12 282 5 6
+L 0.04248603
+S 98 1 7 8
+S 17 6 9 10
+S 21 11 11 12
+L 0.02946766
+L -0.1001458
+L 0.003648847
+S 3 50 13 14
+S 12 147 15 16
+L -0.06685991
+L -0.004260841
+S 24 3 17 18
+S 6 3 19 20
+L 0.05724213
+L -0.005890806
+L -0.02802503
+L -0.009658114
+tree 298 19
+S 588 1 1 2
+S 1664 12 3 4
+L 0.07731629
+S 18 13 5 6
+S 1664 23 7 8
+L 0.003416716
+L -0.09226814
+L 0.07277027
+S 3 68 9 10
+S 5 6 11 12
+L 0.04049189
+S 47 1 13 14
+L 0.03329644
+S 1762 2 15 16
+L -0.05449087
+S 499 1 17 18
+L -0.03627083
+L -0.01841098
+L 0.03917663
+tree 299 17
+S 1286 1 1 2
+S 16 2 3 4
+L 0.05885119
+S 150 1 5 6
+L -0.05022121
+S 12 302 7 8
+L 0.05700207
+S 1664 7 9 10
+L -0.06042101
+L -0.03621859
+S 22 9 11 12
+L 0.04704142
+S 757 1 13 14
+S 798 1 15 16
+L 0.02654759
+L 0.005519832
+L -0.03047136
+tree 300 21
+S 527 1 1 2
+S 614 1 3 4
+L 0.04313217
+S 727 1 5 6
+S 1665 256 7 8
+S 5 6 9 10
+S 898 1 11 12
+S 18 20 13 14
+L 0.005184819
+S 1753 207 15 16
+L 0.02375801
+L 0.07748642
+L 0.005351578
+L -0.02109452
+L -0.1045745
+S 653 2 17 18
+L -0.05978235
+S 18 6 19 20
+L 0.01806582
+L -0.007852689
+L -0.04256513
+tree 301 21
+S 589 1 1 2
+S 25 1 3 4
+L -0.07429358
+S 18 21 5 6
+S 1662 22 7 8
+S 1682 16 9 10
+S 1756 1 11 12
+L 0.08075584
+L -0.01709691
+S 850 2 13 14
+L 0.03409605
+L 0.04183351
+S 18 25 15 16
+S 1664 34 17 18
+L 0.009513374
+L 0.01000028
+L -0.02820746
+S 12 105 19 20
+L -0.09282576
+L -0.03284435
+L 0.007842041
+tree 302 23
+S 1170 1 1 2
+S 18 4 3 4
+L -0.06561758
+L -0.06896933
+S 589 1 5 6
+S 653 1 7 8
+L -0.06182355
+L 0.0966929
+S 1662 14 9 10
+S 17 6 11 12
+S 7 1 13 14
+S 1753 102 15 16
+L 0.07489251
+L -0.04795792
+S 1 41 17 18
+L 0.04490538
+S 282 1 19 20
+L 0.0424986
+S 1662 47 21 22
+L -0.0002945348
+L -0.04013357
+L -0.01252795
+L 0.000849486
+tree 303 23
+S 4 84 1 2
+S 3 52 3 4
+S 1670 1 5 6
+S 1673 37 7 8
+L 0.06136079
+S 17 6 9 10
+S 13 271 11 12
+S 25 1 13 14
+L -0.03142525
+S 574 1 15 16
+L 0.005183394
+L 0.04984326
+L -0.0133804
+S 12 131 17 18
+L 0.05740062
+L -0.01902744
+L -0.09505804
+S 783 1 19 20
+S 371 1 21 22
+L 0.04169605
+L 0.003201158
+L -0.03682771
+L 0.01055249
+tree 304 17
+S 3 8 1 2
+L -0.06310976
+S 282 2 3 4
+S 1753 154 5 6
+L -0.03822711
+S 1753 33 7 8
+S 19 5 9 10
+L 0.04717773
+S 1668 1 11 12
+L 0.07032817
+S 18 14 13 14
+L -0.05054676
+S 3 29 15 16
+L 0.03187028
+L -0.005039773
+L -0.0177865
+L 0.04795641
+tree 305 23
+S 19 5 1 2
+S 6 3 3 4
+S 19 6 5 6
+L -0.008085688
+S 560 1 7 8
+L -0.07451842
+S 1668 1 9 10
+L 0.1133634
+L 0.02013679
+S 17 5 11 12
+S 3 29 13 14
+L -0.08640099
+S 1665 19 15 16
+S 12 183 17 18
+S 1755 1 19 20
+L 0.02026478
+L -0.04301859
+S 19 18 21 22
+L -0.05326132
+L 0.03046079
+L 0.07390203
+L 0.01201315
+L -0.01073371
+tree 306 21
+S 120 1 1 2
+S 931 2 3 4
+L -0.06601764
+S 1664 7 5 6
+S 1662 16 7 8
+S 2 3 9 10
+S 1762 3 11 12
+L 0.09055449
+L -0.01456858
+L -0.1096902
+L 0.0183544
+S 22 11 13 14
+L -0.02911966
+S 19 6 15 16
+S 740 1 17 18
+S 142 1 19 20
+L 0.02526219
+L 0.1051285
+L 0.006981751
+L -0.05024122
+L 0.00990274
+tree 307 23
+S 27 3 1 2
+S 614 1 3 4
+S 14 1 5 6
+S 564 1 7 8
+S 560 1 9 10
+L 0.06594837
+L -0.008218035
+S 17 5 11 12
+S 740 1 13 14
+L -0.07907861
+S 573 1 15 16
+L -0.04723372
+S 1674 3 17 18
+L 0.06489423
+L 0.002386946
+L 0.04267709
+S 17 6 19 20
+S 17 7 21 22
+L -0.02442457
+L -0.06373107
+L -0.006717217
+L 0.04153199
+L -0.01189006
+tree 308 21
+S 828 1 1 2
+S 1668 25 3 4
+S 1303 1 5 6
+S 1753 286 7 8
+L 0.06026999
+L -0.08551874
+L 0.005555204
+S 1753 221 9 10
+L 0.05396579
+S 898 1 11 12
+L -0.09640772
+S 20 2 13 14
+L -0.03672289
+S 21 10 15 16
+S 22 7 17 18
+L 0.01831128
+L 0.09507065
+L -0.06155368
+S 1753 58 19 20
+L -0.007456217
+L 0.05741099
+tree 309 23
+S 18 4 1 2
+L -0.0753615
+S 799 1 3 4
+S 574 1 5 6
+L 0.0484792
+S 3 49 7 8
+S 1303 1 9 10
+S 18 9 11 12
+L 0.07011067
+S 13 127 13 14
+L 0.01411569
+L 0.04259758
+S 1757 1 15 16
+S 1662 38 17 18
+L -0.1108098
+L -0.03962329
+S 5 8 19 20
+S 24 4 21 22
+L -0.03146048
+L 0.01222765
+L -0.01059662
+L 0.03635575
+L -0.01730219
+tree 310 21
+S 588 1 1 2
+S 1753 30 3 4
+L 0.0575067
+L 0.05039911
+S 1671 1 5 6
+S 24 1 7 8
+S 3 54 9 10
+L -0.07304171
+S 17 6 11 12
+L -0.002713997
+L 0.04348215
+S 1753 113 13 14
+L 0.02790627
+L -0.06442904
+S 1668 10 15 16
+S 499 1 17 18
+S 12 61 19 20
+L 0.05159909
+L 0.005969532
+L 0.006515256
+L -0.07424229
+tree 311 23
+S 589 1 1 2
+S 1756 2 3 4
+L -0.05848163
+S 799 1 5 6
+S 3 23 7 8
+S 12 91 9 10
+L 0.06943936
+L -0.00225071
+L -0.06551132
+S 1668 21 11 12
+S 243 1 13 14
+S 1668 9 15 16
+L -0.007411993
+S 3 25 17 18
+L -0.04892324
+L 0.02062058
+L 0.08575638
+L -0.03745747
+S 22 11 19 20
+L -0.007565673
+S 21 22 21 22
+L 0.04710153
+L 0.01826467
+tree 312 23
+S 13 102 1 2
+S 13 51 3 4
+S 1664 22 5 6
+S 1665 20 7 8
+L 0.08207048
+L -0.07081731
+S 727 1 9 10
+S 24 4 11 12
+S 1677 1 13 14
+S 771 2 15 16
+L 0.05326237
+L 0.05642883
+L 0.004062146
+L -0.04590391
+S 1757 1 17 18
+S 3 31 19 20
+L -0.04415358
+L 0.01657381
+L -0.00572856
+S 1755 2 21 22
+L 0.02694217
+L -0.03894958
+L 0.001930193
+tree 313 21
+S 6 1 1 2
+L -0.04756617
+S 25 1 3 4
+S 3 19 5 6
+S 898 1 7 8
+L -0.05062367
+S 12 31 9 10
+S 1674 24 11 12
+L -0.01807005
+L -0.043974
+S 1 20 13 14
+L 0.1572747
+L -0.002284965
+L 0.07375439
+S 1668 3 15 16
+L -0.03364162
+S 1664 28 17 18
+L 0.05098043
+S 622 1 19 20
+L 0.01595249
+L -0.01400572
+tree 314 19
+S 828 1 1 2
+S 3 68 3 4
+S 3 92 5 6
+S 99 1 7 8
+L 0.09124628
+L -0.07385445
+L 0.0001367787
+S 1665 241 9 10
+L -0.05268168
+S 17 4 11 12
+L 0.0648967
+L -0.03375993
+S 653 3 13 14
+S 1024 2 15 16
+L 0.04280312
+S 1665 30 17 18
+L 0.02903569
+L -0.05462839
+L 0
+tree 315 19
+S 727 1 1 2
+S 11 3 3 4
+S 25 1 5 6
+S 19 1 7 8
+L -0.05107686
+S 3 23 9 10
+L 0.09271325
+L 0.03985625
+S 5 6 11 12
+L 0.02394132
+L -0.02650929
+S 12 263 13 14
+L 0.02666062
+S 17 5 15 16
+L -0.04608501
+L -0.03353287
+S 94 1 17 18
+L 0.03323496
+L -0.02181964
+tree 316 23
+S 16 3 1 2
+S 799 1 3 4
+L -0.06731003
+S 27 3 5 6
+L 0.0750861
+S 12 68 7 8
+S 1668 1 9 10
+S 24 9 11 12
+S 17 6 13 14
+L 0.08318091
+L 0
+L 0.05497123
+L -0.004986325
+S 574 1 15 16
+S 12 243 17 18
+L -0.001741705
+S 1758 1 19 20
+S 335 1 21 22
+L 0.05052003
+L -0.1019126
+L -0.03136026
+L -0.009209271
+L 0
+tree 317 21
+S 653 1 1 2
+S 1665 36 3 4
+S 1 21 5 6
+L -0.01396743
+L 0.1142592
+S 499 1 7 8
+S 20 1 9 10
+L -0.02056305
+L 0.04842195
+L -0.09141287
+S 1673 20 11 12
+S 870 2 13 14
+L -0.04391793
+S 1755 1 15 16
+S 1665 241 17 18
+L -0.06072189
+L -0.001972342
+S 4 85 19 20
+L 0.05000151
+L 0.01440591
+L -0.02215723
+tree 318 21
+S 422 1 1 2
+S 282 2 3 4
+L 0.06200248
+S 573 1 5 6
+L -0.03415912
+S 4 87 7 8
+S 653 4 9 10
+S 1686 8 11 12
+L 0.07475017
+L -0.04609919
+L 0.01592769
+S 13 95 13 14
+L -0.03329806
+S 12 51 15 16
+S 15 3 17 18
+L 0.007171327
+L 0.07512618
+S 21 19 19 20
+L -0.03634056
+L 0.02869103
+L -0.001686511
+tree 319 21
+S 282 2 1 2
+S 614 1 3 4
+L -0.05434723
+S 3 60 5 6
+S 1303 1 7 8
+S 32 5 9 10
+L 0.1070743
+S 618 1 11 12
+L 0.01261443
+S 1663 2 13 14
+L 0.03413644
+L -0.006962544
+L -0.08430328
+S 1668 14 15 16
+L 0.02535872
+S 24 4 17 18
+S 335 1 19 20
+L -0.05788634
+L -0.01474428
+L 0.009167572
+L -0.005751946
+tree 320 23
+S 193 1 1 2
+S 849 1 3 4
+S 1665 74 5 6
+S 1664 9 7 8
+L 0.06568182
+L -0.0586834
+L -0.002193067
+S 6 3 9 10
+S 203 1 11 12
+L -0.005477755
+L 0.07999494
+S 22 8 13 14
+S 22 10 15 16
+L -0.05959137
+S 1024 1 17 18
+L 0.05219589
+L 0
+S 1662 47 19 20
+S 499 1 21 22
+L -0.03897806
+L 0.01003131
+L 0.04192536
+L -0.002476075
+tree 321 19
+S 12 325 1 2
+S 1665 39 3 4
+L -0.05139077
+S 140 1 5 6
+S 21 18 7 8
+S 12 71 9 10
+L 0.02802036
+L 0.09299848
+S 20 2 11 12
+S 19 9 13 14
+S 574 1 15 16
+L 0.01689815
+S 19 17 17 18
+L 0.01530817
+L -0.02246943
+L -0.009499259
+L -0.1220649
+L -0.04304759
+L 0
+tree 322 17
+S 3 14 1 2
+L -0.05422702
+S 742 1 3 4
+S 931 2 5 6
+L 0.07896242
+S 19 1 7 8
+L 0.04383703
+L 0.0488686
+S 499 2 9 10
+S 728 1 11 12
+L -0.05877002
+S 4 85 13 14
+L -0.03396665
+S 19 9 15 16
+L 0.05029797
+L -0.03218604
+L 0.006567249
+tree 323 21
+S 120 1 1 2
+S 150 1 3 4
+L -0.05828457
+S 588 1 5 6
+L 0.05094093
+S 1753 413 7 8
+L 0.04636454
+S 703 1 9 10
+L 0.02564226
+S 614 1 11 12
+S 1758 2 13 14
+S 653 2 15 16
+L -0.07243694
+L 0.03384573
+L -0.003673343
+S 931 2 17 18
+S 6 3 19 20
+L -0.06634746
+L 0.01757324
+L -0.02131988
+L 0.03124919
+tree 324 21
+S 742 1 1 2
+S 16 2 3 4
+L 0.05288093
+S 12 154 5 6
+L -0.04317681
+S 3 57 7 8
+S 22 9 9 10
+S 3 37 11 12
+L 0.08066317
+L -0.06211974
+S 20 2 13 14
+S 24 11 15 16
+L -0.03057532
+L 0.03540335
+S 1662 16 17 18
+L 0.0412669
+L -0.01592406
+S 1099 1 19 20
+L -0.0493924
+L 0.02073994
+L -0.01650268
+tree 325 21
+S 589 1 1 2
+S 1668 14 3 4
+L -0.05110937
+S 931 2 5 6
+S 1755 1 7 8
+S 22 7 9 10
+L 0.06876451
+L -0.07543955
+S 747 1 11 12
+S 653 2 13 14
+S 1673 14 15 16
+L 0.03585379
+L -0.014556
+L -0.03836562
+L 0.01194177
+S 3 28 17 18
+L 0.063274
+L 0.043379
+S 1753 115 19 20
+L -0.01918913
+L 0.02321559
+tree 326 21
+S 11 3 1 2
+S 25 1 3 4
+S 1753 130 5 6
+S 22 14 7 8
+S 3 25 9 10
+L -0.06967054
+L -0.01039131
+S 243 1 11 12
+L -0.04958405
+L -0.005834451
+L 0.09449483
+S 1024 2 13 14
+L -0.03653382
+S 4 76 15 16
+L -0.02991464
+S 1753 169 17 18
+S 573 1 19 20
+L -0.02160718
+L 0.009673345
+L 0.05987898
+L 0.007288387
+tree 327 23
+S 742 1 1 2
+S 12 154 3 4
+L 0.06468935
+S 13 37 5 6
+S 58 1 7 8
+S 1 26 9 10
+S 740 1 11 12
+S 1665 188 13 14
+L -0.05066484
+S 1668 7 15 16
+L 0.0212565
+S 21 11 17 18
+L -0.01385143
+S 21 22 19 20
+S 18 12 21 22
+L -0.04065485
+L -0.01540963
+L 0.02701474
+L 0.08915855
+L -0.04712974
+L 0.003876535
+L -0.008138577
+L 0.04090594
+tree 328 23
+S 13 300 1 2
+S 17 8 3 4
+S 20 2 5 6
+S 20 3 7 8
+L -0.07005778
+L 0.08787445
+L 0.0125075
+S 13 151 9 10
+S 27 3 11 12
+S 19 8 13 14
+L -0.08251836
+S 3 51 15 16
+L 0.05376907
+S 1677 3 17 18
+S 1169 1 19 20
+S 1 39 21 22
+L 0.03201285
+L 0.04743061
+L 0.006345628
+L -0.006302007
+L -0.05383638
+L -0.03604159
+L 0.009158905
+tree 329 21
+S 16 3 1 2
+S 1075 1 3 4
+L -0.0714068
+S 19 4 5 6
+L -0.04372592
+S 1664 23 7 8
+S 11 3 9 10
+L 0.07519494
+L 0.01609493
+S 19 19 11 12
+L -0.03269675
+S 6 3 13 14
+L -0.03347985
+S 1753 74 15 16
+S 7 4 17 18
+L 0
+L -0.03109288
+S 20 2 19 20
+L 0.0516362
+L 0.04239865
+L -0.0148036
+tree 330 21
+S 56 1 1 2
+S 3 64 3 4
+L -0.04956715
+S 17 4 5 6
+S 1020 1 7 8
+S 21 18 9 10
+S 1665 22 11 12
+L 0.09043769
+L -0.01983084
+L -0.06437276
+L 0.001942844
+L 0.05195705
+S 1673 12 13 14
+S 150 1 15 16
+L -0.04196951
+S 18 11 17 18
+L 0.04588287
+L -0.03081924
+S 1164 1 19 20
+L 0.02686018
+L -0.009014566
+tree 331 21
+S 1016 2 1 2
+S 12 161 3 4
+L -0.04035874
+S 80 1 5 6
+S 243 1 7 8
+S 1753 89 9 10
+L -0.03435276
+S 17 5 11 12
+L -0.0545397
+L 0.09344718
+S 13 51 13 14
+L -0.03739041
+S 18 19 15 16
+S 1 26 17 18
+L 0.06552123
+S 1241 3 19 20
+L 0.03112973
+L -0.02530032
+L 0.01762768
+L -0.02389058
+L 0.0210964
+tree 332 21
+S 193 1 1 2
+S 25 1 3 4
+L -0.0600298
+S 18 26 5 6
+S 898 1 7 8
+S 22 8 9 10
+L -0.04699197
+S 19 8 11 12
+L -0.01567544
+S 1665 7 13 14
+S 1280 1 15 16
+L 0.1135827
+L 0.01694332
+L 0
+L -0.04534259
+S 1665 184 17 18
+S 203 1 19 20
+L 0.08457174
+L 0.006716219
+L 0.01261241
+L -0.01922863
+tree 333 23
+S 1665 39 1 2
+S 12 135 3 4
+S 727 1 5 6
+S 614 1 7 8
+L -0.0925714
+S 13 168 9 10
+L 0.05661248
+S 564 1 11 12
+L -0.03659564
+L 0.03707267
+S 17 6 13 14
+S 19 7 15 16
+L 0.04276561
+S 1169 1 17 18
+S 888 1 19 20
+L 0.01900464
+L -0.0249064
+L -0.05327811
+L -0.01046924
+S 21 22 21 22
+L 0.05560403
+L -0.01922388
+L 0.01514814
+tree 334 19
+S 22 5 1 2
+L 0.05573695
+S 499 2 3 4
+S 20 1 5 6
+L -0.04930827
+L -0.03063559
+S 614 2 7 8
+S 1674 29 9 10
+L 0.03334865
+S 2 2 11 12
+L 0.0294646
+L -0.03249678
+S 20 4 13 14
+S 1753 194 15 16
+S 20 8 17 18
+L 0.05683204
+L -0.00510732
+L -0.06107392
+L 0.001171468
+tree 335 21
+S 849 1 1 2
+S 12 325 3 4
+L -0.0663987
+S 17 4 5 6
+L -0.04727834
+S 560 1 7 8
+S 1662 12 9 10
+L -0.06726559
+L -0.005279407
+S 12 89 11 12
+S 7 1 13 14
+L 0.05930324
+S 18 18 15 16
+L -0.03428349
+S 19 13 17 18
+L -0.02397025
+L 0.03758524
+L 0.03541318
+S 19 18 19 20
+L 0.002873015
+L -0.011267
+tree 336 21
+S 622 1 1 2
+S 1664 49 3 4
+S 1662 4 5 6
+S 24 3 7 8
+S 1664 61 9 10
+L 0.02084846
+L -0.06444348
+S 727 1 11 12
+S 3 25 13 14
+L -0.05478136
+L 0.006823937
+S 12 96 15 16
+L 0.08354207
+S 971 1 17 18
+S 6 3 19 20
+L 0.04915612
+L -0.008144033
+L -0.03396489
+L 0.01029542
+L -0.01085627
+L 0.04271017
+tree 337 21
+S 727 1 1 2
+S 6 3 3 4
+S 21 18 5 6
+S 20 2 7 8
+S 7 2 9 10
+L 0.07688017
+L 0.005822089
+L 0.004590837
+S 126 1 11 12
+S 17 6 13 14
+S 1753 40 15 16
+L -0.06061523
+L -0.009194316
+S 870 2 17 18
+L 0.05073149
+L 0.01056718
+L 0.07802466
+L -0.05359309
+S 18 15 19 20
+L -0.01249203
+L 0.014219
+tree 338 23
+S 5 5 1 2
+S 1662 18 3 4
+S 574 1 5 6
+S 24 1 7 8
+S 13 58 9 10
+S 4 76 11 12
+L -0.02524198
+L -0.03732952
+S 19 8 13 14
+S 1668 15 15 16
+S 4 87 17 18
+L 0.008156636
+L 0.08400118
+S 22 8 19 20
+S 653 2 21 22
+L 0.01925882
+L -0.02242385
+L -0.1169658
+L -0.01879894
+L 0.01306997
+L 0.06637552
+L 0.02219581
+L -0.02063578
+tree 339 21
+S 18 28 1 2
+S 1665 44 3 4
+L -0.05317135
+S 2 2 5 6
+S 3 29 7 8
+S 564 1 9 10
+S 1665 20 11 12
+S 1755 2 13 14
+S 560 2 15 16
+L -0.08699048
+L -0.000138337
+S 18 9 17 18
+L -0.03979788
+L -0.02607153
+S 3 24 19 20
+L 0.09235896
+L 0
+L 0.05028696
+L -0.004632885
+L 0.03416664
+L -0.00946281
+tree 340 17
+S 614 1 1 2
+S 1665 39 3 4
+S 1664 22 5 6
+S 850 1 7 8
+S 21 17 9 10
+L -0.06219339
+S 3 46 11 12
+S 870 2 13 14
+L -0.03436764
+L 0.07296307
+S 1646 1 15 16
+L 0.03282212
+L -0.03045128
+L 0.04746751
+L -0.005625676
+L 0.02545171
+L -0.001834999
+tree 341 21
+S 6 1 1 2
+L -0.04914089
+S 3 65 3 4
+S 3 8 5 6
+S 12 161 7 8
+L -0.05207746
+S 727 1 9 10
+L 0.1113309
+L -0.000890223
+S 11 3 11 12
+S 898 1 13 14
+S 24 4 15 16
+L -0.04798705
+L 0.06293487
+L -0.0004331646
+S 2 3 17 18
+L 0.03786305
+S 870 3 19 20
+L -0.0306107
+L 0.02490843
+L -0.01112122
+tree 342 23
+S 12 92 1 2
+S 24 3 3 4
+S 1664 10 5 6
+S 1 22 7 8
+S 22 7 9 10
+L -0.05359298
+S 1755 1 11 12
+L 0.01489522
+L 0.09271271
+L -0.03133637
+S 12 58 13 14
+S 1662 22 15 16
+S 771 1 17 18
+L 0.006085915
+L 0.02748249
+S 18 16 19 20
+L -0.06689961
+S 1668 14 21 22
+L 0.06910837
+L -0.02191071
+L 0.01720521
+L 0.02198382
+L -0.02102855
+tree 343 23
+S 22 14 1 2
+S 799 1 3 4
+L -0.05175787
+S 17 8 5 6
+L 0.06417173
+S 574 1 7 8
+L -0.03808618
+S 1663 2 9 10
+S 12 69 11 12
+S 1 26 13 14
+L 0.06310886
+S 1663 2 15 16
+S 560 2 17 18
+L -0.02625264
+S 1753 115 19 20
+L 0.05394551
+L -0.0135288
+S 1753 198 21 22
+L 0.02233513
+L 0.01315533
+L 0.05228982
+L -0.07401709
+L -0.02008225
+tree 344 21
+S 28 3 1 2
+S 614 1 3 4
+L 0.07631495
+S 22 7 5 6
+S 1662 14 7 8
+S 1753 73 9 10
+S 1753 112 11 12
+S 573 1 13 14
+S 1758 1 15 16
+L 0.008783746
+L -0.03592953
+S 18 15 17 18
+S 1662 22 19 20
+L 0.02902716
+L -0.02451186
+L -0.0967885
+L -0.004249698
+L -0.02735147
+L 0.02149369
+L 0.05517594
+L 0.01106191
+tree 345 21
+S 589 1 1 2
+S 727 1 3 4
+L -0.04971848
+S 653 2 5 6
+S 898 1 7 8
+S 850 1 9 10
+S 573 1 11 12
+L 0.07354832
+L -0.001239059
+S 1664 23 13 14
+L -0.08319889
+S 166 1 15 16
+L -0.02138022
+L 0.01948292
+S 2 4 17 18
+S 1753 130 19 20
+L -0.008304485
+L -0.04581467
+L 0.01016822
+L 0.08360262
+L 0.004096415
+tree 346 21
+S 3 67 1 2
+S 27 3 3 4
+S 728 1 5 6
+S 15 1 7 8
+S 7 1 9 10
+L 0.05774962
+L 0
+S 499 1 11 12
+S 18 20 13 14
+L -0.004226849
+L 0.06365313
+S 1673 14 15 16
+S 12 141 17 18
+L -0.07818113
+L -0.003601689
+S 6 3 19 20
+L -0.06234751
+L 0.04759482
+L -0.006872654
+L -0.01830399
+L 0.02324102
+tree 347 21
+S 16 2 1 2
+S 18 25 3 4
+L -0.05621943
+S 828 1 5 6
+S 21 19 7 8
+S 32 5 9 10
+L -0.07516551
+L 0.06614292
+L 0.005941839
+S 150 1 11 12
+L 0.03062359
+S 1668 3 13 14
+L 0.03402892
+S 12 65 15 16
+S 15 1 17 18
+L -0.0118076
+L -0.09986604
+S 6 3 19 20
+L -0.0348567
+L -0.005851942
+L 0.0331372
+tree 348 21
+S 28 3 1 2
+S 4 84 3 4
+L 0.04801397
+S 17 4 5 6
+S 896 1 7 8
+L -0.02517361
+S 898 1 9 10
+S 1759 1 11 12
+S 622 1 13 14
+S 166 1 15 16
+L -0.02160401
+L -0.09199146
+L -0.006937332
+L 0.02494339
+L -0.02104036
+S 1664 30 17 18
+S 1671 9 19 20
+L -0.001917244
+L 0.08783294
+L -0.006639326
+L 0.01149694
+tree 349 19
+S 588 1 1 2
+S 243 1 3 4
+L 0.05348613
+S 17 6 5 6
+L -0.04310049
+S 1753 154 7 8
+S 1164 1 9 10
+S 564 1 11 12
+S 1668 22 13 14
+L 0.04372723
+L 0.001910646
+S 3 50 15 16
+L -0.0867839
+S 653 2 17 18
+L -0.03014913
+L -0.03078828
+L 0.01344085
+L 0.06147183
+L -0.001642351
+tree 350 21
+S 606 1 1 2
+S 1757 1 3 4
+L -0.04433555
+S 17 5 5 6
+S 1665 183 7 8
+L -0.04990579
+S 12 161 9 10
+S 1753 169 11 12
+L 0.08903187
+S 22 6 13 14
+S 985 1 15 16
+S 850 2 17 18
+L 0.03032391
+L -0.02008135
+S 850 1 19 20
+L -0.04876193
+L 0.01570036
+L -0.03452752
+L 0.01070343
+L 0.08303569
+L 0.01526241
+tree 351 23
+S 1682 20 1 2
+S 1280 1 3 4
+S 1686 6 5 6
+S 870 2 7 8
+S 22 10 9 10
+L -0.08963518
+L 0.006943661
+S 1306 1 11 12
+S 653 3 13 14
+L -0.05064019
+S 4 76 15 16
+L 0.1057512
+L 0.01610356
+S 564 1 17 18
+S 1665 150 19 20
+S 21 22 21 22
+L 0.02561397
+L -0.02839097
+L 0.005594847
+L 0.05507635
+L -0.004500253
+L -0.01089028
+L 0.01054871
+tree 352 21
+S 742 1 1 2
+S 606 1 3 4
+L 0.05002104
+S 23 1 5 6
+L -0.035471
+S 1664 28 7 8
+S 19 19 9 10
+L 0.004826385
+L -0.0467031
+S 870 3 11 12
+L -0.04111161
+S 22 10 13 14
+S 1 35 15 16
+S 1668 4 17 18
+L 0.06904209
+L -0.03306711
+S 7 5 19 20
+L -0.01340795
+L 0.04085055
+L 0.01670484
+L -0.0008679393
+tree 353 21
+S 870 1 1 2
+S 3 33 3 4
+S 931 1 5 6
+L -0.004249559
+L 0.09527829
+S 1686 6 7 8
+L 0.03131614
+S 2 2 9 10
+L 0.02912768
+S 1664 22 11 12
+S 1662 18 13 14
+L -0.1210979
+S 17 6 15 16
+S 1753 40 17 18
+S 1757 1 19 20
+L -0.05413047
+L 0.006346782
+L -0.01283315
+L 0.02132327
+L -0.05760156
+L 0.001506138
+tree 354 19
+S 589 1 1 2
+S 19 5 3 4
+L -0.06181652
+S 3 43 5 6
+S 189 1 7 8
+L 0.01854327
+L 0.06066173
+S 1664 12 9 10
+L -0.04179266
+L -0.02878161
+S 1762 4 11 12
+S 25 1 13 14
+L -0.005516113
+S 1757 1 15 16
+L 0.06110036
+S 12 154 17 18
+L 0.03550487
+L 0.01664963
+L -0.01642213
+tree 355 21
+S 588 1 1 2
+S 243 1 3 4
+L 0.06813026
+S 870 1 5 6
+L -0.04453987
+S 1753 169 7 8
+S 17 3 9 10
+L 0.006298511
+L 0.08451788
+L -0.04499364
+S 24 4 11 12
+S 1664 12 13 14
+S 3 25 15 16
+L -0.04867732
+S 798 1 17 18
+L 0.003615874
+L 0.05858843
+S 1665 172 19 20
+L 0.03497254
+L 0.01469254
+L -0.01465874
+tree 356 21
+S 1674 13 1 2
+S 25 1 3 4
+S 614 1 5 6
+S 2 3 7 8
+S 19 15 9 10
+S 1686 5 11 12
+L -0.06208206
+S 622 1 13 14
+L -0.02555511
+L 0.09075823
+L 0.00781439
+S 870 3 15 16
+L 0.03744886
+S 4 82 17 18
+L -0.01907458
+L -0.04001974
+L 0.01782721
+S 6 3 19 20
+L 0.07194485
+L -0.003038825
+L 0.01300529
+tree 357 23
+S 3 67 1 2
+S 193 1 3 4
+S 1020 1 5 6
+S 19 5 7 8
+L -0.06724988
+L 0.06559484
+L -0.01581158
+S 898 1 9 10
+S 19 11 11 12
+L 0.04918031
+L 0.003404821
+S 13 45 13 14
+S 1665 19 15 16
+L -0.004375497
+L -0.07167864
+L 0.03129955
+S 1280 1 17 18
+L -0.04749865
+S 747 1 19 20
+S 21 22 21 22
+L -0.01465993
+L 0.01957527
+L 0.00137852
+tree 358 23
+S 3 8 1 2
+L -0.04990859
+S 150 1 3 4
+S 931 2 5 6
+L 0.05347361
+S 20 1 7 8
+S 123 1 9 10
+L -0.04450279
+S 24 1 11 12
+L 0.07140192
+L 0.01119805
+L -0.0338206
+S 19 9 13 14
+S 7 1 15 16
+S 1668 15 17 18
+S 719 1 19 20
+L 0.06051907
+L -0.03346765
+S 24 4 21 22
+L -0.03213263
+L 0.04617557
+L 0.02497762
+L -0.01421727
+tree 359 19
+S 614 1 1 2
+S 3 60 3 4
+S 11 2 5 6
+S 32 5 7 8
+L 0.06072435
+S 3 46 9 10
+L -0.07416228
+S 1663 2 11 12
+L 0.04050682
+L 0.02123679
+L -0.02844918
+S 15 1 13 14
+L 0.02466696
+S 945 1 15 16
+L -0.05635212
+S 6 3 17 18
+L -0.02813665
+L -0.007789657
+L 0.02102013
+tree 360 23
+S 1075 1 1 2
+S 19 5 3 4
+L -0.05705957
+S 898 2 5 6
+S 189 1 7 8
+S 1 35 9 10
+L -0.0187813
+S 19 11 11 12
+L -0.0520174
+S 19 2 13 14
+L 0.1043895
+S 653 2 15 16
+S 19 15 17 18
+L 0.0004977741
+L 0.04752431
+L -0.03873005
+L 0.01536086
+L 0.05485181
+S 1757 1 19 20
+L -0.0161058
+S 21 20 21 22
+L 0.03048615
+L 0.005280903
+tree 361 19
+S 799 1 1 2
+S 1691 24 3 4
+L 0.05913682
+S 3 15 5 6
+L -0.0662877
+L -0.05619837
+S 13 32 7 8
+S 1665 20 9 10
+S 1664 16 11 12
+L 0
+L -0.06546862
+L 0.06090321
+S 527 1 13 14
+S 12 289 15 16
+L 0.04226207
+S 898 1 17 18
+L -0.04656086
+L 0.01496165
+L -0.00635622
+tree 362 23
+S 989 1 1 2
+S 849 1 3 4
+L 0.04902739
+S 614 1 5 6
+L -0.09483559
+S 1664 23 7 8
+S 1662 14 9 10
+S 1674 11 11 12
+S 2 3 13 14
+S 18 21 15 16
+S 618 1 17 18
+L -0.003345696
+L 0.050869
+S 727 1 19 20
+L -0.04078078
+L -0.02851897
+L 0.01782883
+L -0.02586767
+L -0.1046338
+S 1 24 21 22
+L 0.01821551
+L -0.03560207
+L 0.004404181
+tree 363 21
+S 742 1 1 2
+S 29 1 3 4
+L 0.04552338
+S 12 327 5 6
+L 0.0447401
+S 19 4 7 8
+L -0.05627784
+S 888 1 9 10
+S 931 2 11 12
+L 0.06413167
+L -0.0203778
+S 985 1 13 14
+L 0.03025646
+S 1665 20 15 16
+S 1665 41 17 18
+L 0.007256513
+S 562 2 19 20
+L -0.01018449
+L 0.02723546
+L -0.05635361
+L -0.010649
+tree 364 17
+S 12 21 1 2
+L -0.0695844
+S 243 1 3 4
+S 3 63 5 6
+L -0.04078765
+S 8 1 7 8
+L 0.04711352
+S 1662 47 9 10
+L 0.02782103
+S 1662 4 11 12
+L 0.02419647
+L 0.01495678
+S 1591 1 13 14
+S 1673 12 15 16
+L -0.003118478
+L -0.006904699
+L -0.06369253
+tree 365 21
+S 799 1 1 2
+S 2 1 3 4
+L 0.06094218
+L -0.0642792
+S 931 2 5 6
+S 18 6 7 8
+S 22 9 9 10
+L -0.04207958
+S 3 50 11 12
+L 0.0617675
+L -0.002943469
+S 1668 11 13 14
+L 0.04588991
+S 13 89 15 16
+S 3 29 17 18
+L 0
+L -0.0528299
+S 985 1 19 20
+L 0.0278084
+L -0.01669142
+L 0.01433139
+tree 366 19
+S 1662 30 1 2
+S 1662 22 3 4
+S 3 23 5 6
+S 18 23 7 8
+L -0.04873051
+L -0.01375245
+L 0.05474939
+S 614 1 9 10
+L 0.03077095
+S 12 69 11 12
+L -0.05061829
+S 13 21 13 14
+S 3 28 15 16
+L -0.007976318
+L 0.05865958
+L -0.04038169
+S 163 1 17 18
+L -0.01474287
+L 0.01434129
+tree 367 23
+S 727 1 1 2
+S 1677 9 3 4
+S 1753 156 5 6
+S 15 1 7 8
+S 1676 1 9 10
+L 0.1032522
+S 1662 36 11 12
+S 870 3 13 14
+L 0.04356593
+L -0.007468509
+L -0.04896168
+L 0.0339236
+L -0.02233645
+S 771 2 15 16
+S 21 22 17 18
+S 1024 2 19 20
+L -0.02024748
+L -0.03242759
+L -0.004390453
+S 1662 11 21 22
+L -0.007730434
+L 0.008631805
+L 0.07766712
+tree 368 21
+S 25 1 1 2
+S 193 1 3 4
+S 1674 12 5 6
+S 573 1 7 8
+L -0.05947862
+S 1662 10 9 10
+L -0.02054993
+S 282 2 11 12
+S 622 1 13 14
+L 0.05325498
+L 0.08604782
+S 3 43 15 16
+L -0.04676717
+L -0.004828595
+L -0.0537814
+S 499 1 17 18
+L 0.0781132
+S 21 18 19 20
+L 0.02221162
+L -0.0578736
+L 0.01200729
+tree 369 21
+S 12 337 1 2
+S 12 26 3 4
+L -0.05360143
+L -0.04151242
+S 1662 4 5 6
+S 898 2 7 8
+S 7 1 9 10
+S 21 16 11 12
+L -0.0004185853
+S 22 8 13 14
+S 22 9 15 16
+L 0.03741487
+L 0.07076978
+L -0.06120117
+L 0.002715559
+L 0.03717111
+S 1674 23 17 18
+S 1098 1 19 20
+L -0.03390701
+L 0.04812327
+L -0.007339386
+tree 370 21
+S 1683 13 1 2
+S 870 1 3 4
+S 18 8 5 6
+S 3 25 7 8
+S 1169 1 9 10
+L 0.02423969
+S 1682 16 11 12
+L 0.008894369
+L 0.06239808
+S 564 1 13 14
+S 20 2 15 16
+L -0.01400219
+L -0.08751553
+S 18 17 17 18
+L 0.04214287
+L -0.05865595
+L 0.002587039
+S 1665 44 19 20
+L 0.04108905
+L -0.03209382
+L 0.006980454
+tree 371 21
+S 25 1 1 2
+S 22 8 3 4
+S 898 1 5 6
+S 20 2 7 8
+S 499 1 9 10
+S 6 3 11 12
+L -0.01996733
+L 0.007791322
+L -0.07312005
+S 3 63 13 14
+S 94 1 15 16
+L 0.004728725
+L 0.07828373
+S 23 2 17 18
+L 0.04600842
+L 0.005412356
+L -0.03988907
+L 0.02307159
+S 1662 27 19 20
+L -0.03580287
+L 0.0174018
+tree 372 21
+S 16 3 1 2
+S 19 6 3 4
+L -0.04826326
+S 19 5 5 6
+S 13 32 7 8
+S 614 2 9 10
+L -0.05959044
+L 0.07080612
+S 5 6 11 12
+S 614 1 13 14
+L 0.03531699
+S 13 263 15 16
+L 0.03907627
+L 0.006521177
+L -0.0495444
+S 1753 99 17 18
+L -0.03177837
+L -0.008331912
+S 573 1 19 20
+L 0.04012026
+L 0.005443448
+tree 373 19
+S 3 68 1 2
+S 3 46 3 4
+S 1020 1 5 6
+S 3 8 7 8
+S 1674 17 9 10
+L 0.06979598
+L -0.02077462
+L -0.04254368
+S 25 1 11 12
+L -0.06718437
+L -0.01080872
+S 573 1 13 14
+L 0.04586761
+S 727 1 15 16
+L -0.02444775
+S 3 28 17 18
+L 0.05462556
+L 0.01055565
+L -0.02341448
+tree 374 19
+S 589 1 1 2
+S 14 26 3 4
+L -0.05922825
+S 1686 8 5 6
+L -0.05344949
+S 19 8 7 8
+L -0.03290353
+S 13 81 9 10
+S 13 255 11 12
+L 0.05747872
+S 1755 1 13 14
+S 1674 18 15 16
+L -0.0235687
+L 0.02972266
+L -0.0142922
+S 896 1 17 18
+L -0.01451433
+L 0.03011886
+L -0.003916383
+tree 375 23
+S 989 1 1 2
+S 3 68 3 4
+L 0.05159663
+S 719 1 5 6
+S 13 152 7 8
+S 614 1 9 10
+L 0.02699351
+L 0.06327549
+L -0.001102884
+S 564 1 11 12
+S 3 28 13 14
+S 4 84 15 16
+S 1677 2 17 18
+L -0.01610763
+L -0.1082095
+S 12 108 19 20
+L -0.05314367
+L 0.05557308
+L -0.01746446
+L 0.01053143
+S 17 7 21 22
+L -0.02890043
+L -0.009021155
+tree 376 23
+S 2 1 1 2
+L -0.04639828
+S 282 2 3 4
+S 2 2 5 6
+L -0.04135706
+S 614 1 7 8
+S 499 2 9 10
+L 0.0684154
+S 1668 13 11 12
+S 20 5 13 14
+L -0.05033024
+L 0.02826142
+L -0.009891598
+S 19 15 15 16
+S 21 21 17 18
+S 13 116 19 20
+S 5 4 21 22
+L -0.05173827
+L -0.004565211
+L 0.05895215
+L 0.01756847
+L -0.0228568
+L 0.02670297
+tree 377 19
+S 19 8 1 2
+S 614 1 3 4
+S 1757 1 5 6
+S 1665 14 7 8
+S 282 1 9 10
+S 17 5 11 12
+S 653 2 13 14
+L 0.01094783
+L 0.1142737
+L 0.02702363
+L -0.0225464
+L -0.09563672
+S 1662 19 15 16
+L 0.03897395
+S 1668 20 17 18
+L 0.01817068
+L -0.04036187
+L -0.00824997
+L 0.01090698
+tree 378 21
+S 3 9 1 2
+L -0.0647876
+S 282 2 3 4
+S 1662 14 5 6
+L -0.04509367
+S 727 1 7 8
+S 1591 1 9 10
+S 1755 2 11 12
+L 0.08157693
+S 1673 23 13 14
+S 17 7 15 16
+S 20 2 17 18
+L -0.03132204
+S 1303 1 19 20
+L 0.01375756
+L 0.0364279
+L 0.008328981
+L 0.05535417
+L 0.00269928
+L -0.05814853
+L -0.0009634892
+tree 379 21
+S 32 5 1 2
+S 574 1 3 4
+S 1662 12 5 6
+S 25 1 7 8
+S 17 6 9 10
+L 0.06602255
+L -0.004380438
+S 850 2 11 12
+L 0.04234829
+S 12 70 13 14
+L 0.03296619
+S 1662 17 15 16
+L -0.01910206
+L -0.003320436
+S 18 15 17 18
+S 1662 7 19 20
+L 0.04469139
+L -0.09989294
+L -0.03164868
+L 0.007366337
+L -0.02185027
+tree 380 23
+S 588 1 1 2
+S 589 1 3 4
+L 0.05781592
+S 17 6 5 6
+L -0.05966255
+S 5 6 7 8
+S 798 1 9 10
+S 12 279 11 12
+L 0.03430164
+S 20 9 13 14
+L 0.06401377
+S 18 18 15 16
+L -0.08231299
+L -0.02516635
+L 0.009761916
+S 18 11 17 18
+S 783 1 19 20
+S 22 6 21 22
+L -0.06342879
+L 0.03497561
+L -0.02014959
+L -0.03679194
+L 0.01518517
+tree 381 25
+S 12 108 1 2
+S 19 7 3 4
+S 1677 2 5 6
+S 653 2 7 8
+S 7 4 9 10
+S 47 1 11 12
+L -0.06886258
+L 0.02733409
+L 0.0749603
+S 13 37 13 14
+L 0.03828754
+S 22 9 15 16
+L -0.05663871
+L -0.04719575
+L 0.00700086
+L -0.03678493
+S 5 15 17 18
+S 17 6 19 20
+L -0.02019821
+S 985 1 21 22
+S 1671 2 23 24
+L -0.02886577
+L 0.02726996
+L 0.05745757
+L 0.01748106
+tree 382 21
+S 3 8 1 2
+L -0.061715
+S 588 1 3 4
+S 56 1 5 6
+L 0.06928362
+S 19 1 7 8
+L -0.04405738
+L 0.05121715
+S 101 1 9 10
+S 13 127 11 12
+L 0.04026923
+S 3 51 13 14
+S 1669 1 15 16
+S 1665 22 17 18
+L 0.038766
+L -0.08382347
+S 13 263 19 20
+L 0.01959674
+L -0.02556418
+L 0.01019291
+L -0.03512038
+tree 383 21
+S 849 1 1 2
+S 27 3 3 4
+L -0.05258812
+S 1682 9 5 6
+S 1662 12 7 8
+S 12 370 9 10
+S 1674 30 11 12
+L 0.073731
+L -0.008032711
+S 793 1 13 14
+L -0.04071753
+L -0.06015731
+L -0.0009594449
+S 2 3 15 16
+L 0.04556136
+S 5 5 17 18
+L -0.03796238
+S 573 1 19 20
+L -0.02476936
+L 0.03436964
+L 0.002040744
+tree 384 19
+S 589 1 1 2
+S 815 1 3 4
+L -0.04932987
+S 24 1 5 6
+L 0.05684547
+S 560 1 7 8
+S 1686 8 9 10
+L -0.05402887
+L -0.007605527
+S 1756 2 11 12
+L -0.03951742
+S 931 1 13 14
+L -0.02400269
+S 4 86 15 16
+L 0.0726511
+S 19 5 17 18
+L 0.05588813
+L 0.04082802
+L -0.005822472
+tree 385 19
+S 12 284 1 2
+S 931 2 3 4
+S 1665 300 5 6
+S 3 68 7 8
+L 0.04144669
+L -0.07409001
+L -0.005548419
+S 11 3 9 10
+L 0.0320227
+S 614 1 11 12
+L -0.04798587
+S 24 4 13 14
+L 0.04666569
+S 371 1 15 16
+S 6 4 17 18
+L -0.04430678
+L 0.002517555
+L 0.01958388
+L -0.01031278
+tree 386 19
+S 6 1 1 2
+L -0.04926367
+S 850 2 3 4
+S 850 1 5 6
+S 1670 1 7 8
+S 13 303 9 10
+L -0.04386223
+L 0.09596611
+L 0.007075038
+S 653 3 11 12
+L -0.03193775
+S 18 11 13 14
+S 19 8 15 16
+S 7 2 17 18
+L -0.03222164
+L 0.06345849
+L -0.007766314
+L -0.001451046
+L 0.05165289
+tree 387 21
+S 193 1 1 2
+S 6 5 3 4
+L -0.03458891
+S 13 143 5 6
+L 0.04198103
+S 19 8 7 8
+S 1303 1 9 10
+S 1 18 11 12
+S 13 40 13 14
+S 5 1 15 16
+S 1077 1 17 18
+L 0
+L 0.07536891
+L -0.0183387
+L 0.01456664
+L -0.07321672
+L 0.01183833
+S 573 1 19 20
+L -0.01032999
+L 0.03541685
+L 0.001787344
+tree 388 23
+S 849 1 1 2
+S 12 69 3 4
+L -0.05515121
+S 4 84 5 6
+S 1673 18 7 8
+S 19 6 9 10
+L 0.05123847
+S 793 1 11 12
+L -0.05357411
+L -0.03446202
+S 1665 35 13 14
+S 1662 28 15 16
+L 0.03930612
+L 0.04633599
+L -0.001446205
+S 1303 1 17 18
+L 0.03023789
+S 3 28 19 20
+S 5 1 21 22
+L -0.005601481
+L -0.08060358
+L 0.01098902
+L -0.01887554
+tree 389 25
+S 99 1 1 2
+S 1755 1 3 4
+L 0.05703039
+S 23 2 5 6
+S 25 1 7 8
+S 1665 20 9 10
+S 573 1 11 12
+S 13 34 13 14
+S 1662 15 15 16
+L -0.002513574
+L -0.06861614
+S 19 9 17 18
+L -0.04796232
+L -0.03025236
+S 15 12 19 20
+L 0.05146854
+L 0.01958613
+L 0.03093145
+L -0.0004406976
+S 3 46 21 22
+L 0.03296233
+S 21 22 23 24
+L 0.02158675
+L -0.0256098
+L 0.01131621
+tree 390 21
+S 3 8 1 2
+L -0.05165541
+S 931 2 3 4
+S 19 3 5 6
+S 1169 1 7 8
+S 12 161 9 10
+S 1662 45 11 12
+L 0.07809156
+L 0.01152349
+L 0.05949976
+L -0.01749003
+S 1169 1 13 14
+L 0.03080565
+S 18 17 15 16
+L -0.0453665
+S 850 2 17 18
+L 0.02810335
+S 21 11 19 20
+L 0
+L -0.01084148
+L -0.0511269
+tree 391 21
+S 1662 14 1 2
+S 18 23 3 4
+S 16 1 5 6
+S 1241 1 7 8
+L 0.06518148
+S 3 34 9 10
+L -0.06740977
+L -0.02673123
+S 20 3 11 12
+S 1662 31 13 14
+L -0.03299705
+S 18 11 15 16
+L -0.01483283
+S 1662 18 17 18
+S 661 1 19 20
+L 0.06638307
+L 0.005246262
+L 0.003822687
+L -0.02709971
+L 0.04776569
+L 0
+tree 392 21
+S 878 1 1 2
+S 1668 14 3 4
+L -0.05627203
+S 282 2 5 6
+S 1757 1 7 8
+S 20 2 9 10
+L -0.02793609
+S 282 1 11 12
+S 898 1 13 14
+S 23 2 15 16
+S 985 1 17 18
+L -0.05973048
+L -0.009144965
+L 0.02360889
+L -0.01281031
+L 0.07544655
+L 0.02207192
+S 12 110 19 20
+L 0.03924963
+L 0.01566847
+L -0.04960585
+tree 393 23
+S 870 1 1 2
+S 1753 207 3 4
+S 6 5 5 6
+L 0.002390684
+L 0.07536811
+S 1662 22 7 8
+L -0.05834209
+S 18 19 9 10
+S 1662 29 11 12
+S 13 70 13 14
+S 1664 46 15 16
+L -0.05749133
+S 1756 1 17 18
+S 1669 1 19 20
+S 499 1 21 22
+L 0.04609108
+L 0.02205055
+L 0.02291693
+L -0.011063
+L -0.004212486
+L 0.04388863
+L 0.0001263501
+L -0.05108629
+tree 394 21
+S 12 361 1 2
+S 828 1 3 4
+L -0.05589911
+S 3 60 5 6
+S 1665 150 7 8
+S 17 5 9 10
+L 0.04419387
+L -0.04836742
+L -0.006987738
+S 1753 169 11 12
+S 1665 22 13 14
+L -0.03385549
+S 7 5 15 16
+L 0.04361386
+S 1665 182 17 18
+L 0.01370311
+L -0.003950446
+L -0.02676112
+S 21 21 19 20
+L 0.03938293
+L -0.005824768
+tree 395 23
+S 282 2 1 2
+S 3 69 3 4
+L -0.03344146
+S 589 1 5 6
+S 1020 1 7 8
+S 3 16 9 10
+L -0.04899092
+L 0.07932842
+L 0.00798235
+L -0.03400334
+S 1753 230 11 12
+S 1662 25 13 14
+S 15 12 15 16
+S 1662 12 17 18
+L 0.06714167
+L -0.03796048
+L 0.004882107
+S 13 96 19 20
+S 1670 1 21 22
+L 0.0529141
+L 0.01084562
+L -0.02673254
+L 0.0069153
+tree 396 19
+S 878 1 1 2
+S 193 1 3 4
+L -0.05938017
+S 18 5 5 6
+L -0.03740064
+L -0.0296239
+S 21 20 7 8
+S 1662 14 9 10
+S 870 3 11 12
+S 18 18 13 14
+S 7 1 15 16
+L -0.0367859
+L 0.001177254
+L 0.02472143
+L 0.0860742
+L -0.01617504
+S 19 18 17 18
+L 0.04788274
+L -0.01847993
+tree 397 19
+S 6 1 1 2
+L -0.04163933
+S 479 1 3 4
+S 1674 33 5 6
+L 0.05512628
+S 32 5 7 8
+L 0.05474275
+S 17 6 9 10
+L 0.06019475
+S 771 1 11 12
+S 371 1 13 14
+S 22 9 15 16
+L -0.06602336
+L 0.04418109
+L 0.003130931
+S 1664 26 17 18
+L 0.01863697
+L -0.009203392
+L -0.05618492
+tree 398 23
+S 29 1 1 2
+S 1667 1 3 4
+L 0.04880752
+S 3 84 5 6
+S 1677 13 7 8
+S 2 2 9 10
+L 0.02875689
+L 0.05906589
+L -0.02140388
+S 1668 1 11 12
+S 1665 20 13 14
+L -0.08028357
+S 19 6 15 16
+S 1 18 17 18
+S 23 1 19 20
+L -0.0387626
+L 0.0096218
+L -0.007810976
+L 0.03060085
+L -0.05436574
+S 21 22 21 22
+L -0.01252371
+L 0.004260047
+tree 399 21
+S 618 2 1 2
+S 727 1 3 4
+L -0.05878
+S 19 1 5 6
+S 1753 218 7 8
+L 0.02674888
+S 1662 21 9 10
+L 0.07290477
+L -0.007207404
+S 17 4 11 12
+S 1755 1 13 14
+L -0.06031583
+S 1674 13 15 16
+L -0.0746685
+L -0.009088129
+S 1755 1 17 18
+L 0.04265546
+L -0.02710943
+S 1753 58 19 20
+L -0.0006797381
+L 0.02822886
+tree 400 23
+S 574 1 1 2
+S 1 26 3 4
+S 1 20 5 6
+S 13 33 7 8
+S 3 33 9 10
+L 0.02046097
+S 798 1 11 12
+L -0.04201883
+L 0.002510725
+S 22 14 13 14
+L 0.07334321
+S 21 14 15 16
+S 17 6 17 18
+S 3 24 19 20
+L -0.04069607
+L -0.03237304
+L -0.06094894
+S 573 1 21 22
+L 0.03151608
+L 0.0425955
+L -0.01316928
+L 0.01749589
+L -0.0423423
+tree 401 21
+S 727 1 1 2
+S 574 1 3 4
+S 614 1 5 6
+S 3 60 7 8
+S 850 1 9 10
+S 971 1 11 12
+L -0.0172555
+S 1757 1 13 14
+L 0.04801889
+S 20 2 15 16
+L -0.05815551
+L 0.07861274
+L 0.007133258
+S 1662 11 17 18
+S 20 9 19 20
+L 0.01318317
+L -0.0362617
+L 0.008795887
+L -0.03740194
+L 0.03897217
+L -0.003424332
+tree 402 23
+S 1664 12 1 2
+S 1306 1 3 4
+S 1664 23 5 6
+S 1 26 7 8
+S 19 7 9 10
+L 0.0617558
+S 1662 12 11 12
+L -0.02244537
+L -0.1085306
+L 0.03400155
+L -0.02929881
+S 18 17 13 14
+S 19 6 15 16
+S 23 1 17 18
+L 0.04785581
+L -0.04924933
+S 653 2 19 20
+L -0.01326233
+L 0.01486441
+L -0.03616691
+S 19 18 21 22
+L 0.01758724
+L -0.01341049
+tree 403 21
+S 7 1 1 2
+S 574 1 3 4
+S 3 51 5 6
+S 1753 169 7 8
+S 757 1 9 10
+S 727 1 11 12
+L 0.04943769
+L -0.02215418
+L 0.03550477
+S 1665 20 13 14
+L 0.003380472
+S 7 4 15 16
+S 1753 228 17 18
+L -0.01891997
+L -0.07969432
+L -0.04175892
+S 19 18 19 20
+L 0.06512062
+L 0.003620949
+L 0.01884695
+L -0.01318585
+tree 404 21
+S 589 1 1 2
+S 25 1 3 4
+L -0.06566871
+S 13 258 5 6
+S 1665 52 7 8
+S 12 26 9 10
+S 1753 185 11 12
+L 0.001045593
+L 0.06455056
+L -0.03726461
+S 24 2 13 14
+L -0.06474593
+L 0.002599204
+L 0.03869863
+S 653 2 15 16
+L 0.02723094
+S 1674 13 17 18
+S 17 5 19 20
+L 0.0136687
+L 0.0003995546
+L -0.03065915
+tree 405 21
+S 16 3 1 2
+S 850 2 3 4
+L -0.05995904
+S 12 79 5 6
+S 1525 1 7 8
+S 1673 31 9 10
+S 1753 76 11 12
+L 0.08111987
+L 0.008835854
+L 0.05333669
+S 12 51 13 14
+L -0.05761709
+S 573 1 15 16
+L -0.02656215
+L 0.02038057
+S 1241 2 17 18
+S 564 1 19 20
+L 0.04638969
+L 0.0003304846
+L 0.0001659953
+L -0.04548919
+tree 406 23
+S 1016 4 1 2
+S 742 1 3 4
+L -0.04740115
+S 6 4 5 6
+L 0.05579163
+S 1664 43 7 8
+S 21 19 9 10
+S 17 4 11 12
+L -0.04844675
+S 282 1 13 14
+S 1169 1 15 16
+L 0.03197888
+S 1662 12 17 18
+L 0.08326444
+L 0.02403305
+L 0.02972786
+L -0.02115482
+S 1755 1 19 20
+S 1674 12 21 22
+L 0.04424458
+L -0.007856473
+L -0.002345108
+L -0.03337976
+tree 407 21
+S 422 1 1 2
+S 1683 16 3 4
+L 0.06291442
+S 6 2 5 6
+S 1674 35 7 8
+L -0.02914141
+S 828 1 9 10
+L -0.04995637
+L -0.002562349
+S 2 2 11 12
+L -0.02626052
+L 0.07511132
+S 1753 89 13 14
+S 896 1 15 16
+S 1753 163 17 18
+L 0.0520247
+L -0.001540565
+L -0.04001911
+S 971 1 19 20
+L 0.0317894
+L -0.01864236
+tree 408 19
+S 14 18 1 2
+S 742 1 3 4
+L -0.07062402
+S 29 1 5 6
+L 0.04208179
+S 12 327 7 8
+L 0.0387225
+S 828 1 9 10
+L -0.06388978
+S 3 14 11 12
+L -0.02767683
+L -0.029297
+S 1024 1 13 14
+S 15 6 15 16
+S 16 1 17 18
+L 0.06450486
+L -0.003516066
+L -0.01082215
+L 0.02048741
+tree 409 19
+S 1683 29 1 2
+S 931 2 3 4
+L -0.03407343
+S 1664 48 5 6
+L 0.02998062
+S 747 1 7 8
+S 719 1 9 10
+S 1664 10 11 12
+L 0.03148629
+L -0.06219921
+L 0.006809622
+L -0.04118272
+S 25 1 13 14
+S 1674 3 15 16
+L -0.02337495
+S 1762 7 17 18
+L 0.05056052
+L 0.01896258
+L -0.0107944
+tree 410 21
+S 742 1 1 2
+S 12 26 3 4
+L 0.04195043
+L -0.06158931
+S 27 3 5 6
+S 1668 12 7 8
+L 0.02425313
+S 1670 1 9 10
+S 1756 1 11 12
+S 12 147 13 14
+L 0.01806939
+S 1024 1 15 16
+L -0.01438351
+S 3 41 17 18
+L -0.08293053
+L 0.04845984
+S 21 22 19 20
+L -0.03871084
+L 0.006864135
+L -0.01462612
+L 0.004046342
+tree 411 21
+S 798 1 1 2
+S 18 14 3 4
+S 783 1 5 6
+S 5 4 7 8
+S 653 3 9 10
+S 12 184 11 12
+L -0.01729971
+S 1664 34 13 14
+L 0.05058845
+S 145 1 15 16
+L -0.06659184
+L 0.06183048
+S 2 2 17 18
+S 13 44 19 20
+L -0.02254095
+L -0.02646057
+L 0
+L 0.03156134
+L -0.01777672
+L -0.00551363
+L 0.03704287
+tree 412 21
+S 588 1 1 2
+S 1665 39 3 4
+L 0.04799894
+S 1753 39 5 6
+S 757 1 7 8
+L -0.05667005
+S 1753 230 9 10
+S 12 327 11 12
+L 0.03047826
+S 1753 154 13 14
+L -0.03288112
+S 1668 6 15 16
+L -0.0434757
+L -0.01965604
+L 0.03517522
+L 0.03065097
+S 7 1 17 18
+L -0.04638386
+S 203 1 19 20
+L 0.03032562
+L -0.002441343
+tree 413 21
+S 18 4 1 2
+L -0.0489532
+S 12 365 3 4
+S 13 284 5 6
+L -0.03778651
+S 13 95 7 8
+L 0.05161105
+S 1674 1 9 10
+S 560 1 11 12
+L 0.06279167
+S 13 41 13 14
+S 24 3 15 16
+L -0.03867632
+S 727 1 17 18
+L 0.0236493
+L -0.02955837
+S 1280 2 19 20
+L -0.02070034
+L 0.01791866
+L 0.03467507
+L -0.008895957
+tree 414 23
+S 588 1 1 2
+S 3 65 3 4
+L 0.04921437
+S 22 10 5 6
+S 12 260 7 8
+S 4 84 9 10
+S 22 13 11 12
+L 0.04632103
+L -0.001917754
+S 1674 13 13 14
+L -0.09378331
+S 18 16 15 16
+S 23 2 17 18
+S 1665 44 19 20
+L 0.01373333
+L 0.04717792
+S 1757 1 21 22
+L 0.005665949
+L -0.04637302
+L -0.05062929
+L -0.003515511
+L -0.0144026
+L 0.01628871
+tree 415 21
+S 589 1 1 2
+S 13 96 3 4
+L -0.08600837
+S 13 46 5 6
+S 1671 1 7 8
+S 870 4 9 10
+L 0.05480571
+S 574 1 11 12
+S 18 16 13 14
+S 574 1 15 16
+L -0.01407551
+S 1662 14 17 18
+S 18 23 19 20
+L -0.01059669
+L 0.03015047
+L -0.003164355
+L 0.04135852
+L 0.02169358
+L -0.0308985
+L -0.0790863
+L -0.01382334
+tree 416 21
+S 849 1 1 2
+S 13 89 3 4
+L -0.05120117
+S 3 59 5 6
+S 13 150 7 8
+S 20 2 9 10
+L 0.05969201
+L -0.06613318
+S 12 365 11 12
+S 1677 13 13 14
+L -0.02070562
+S 282 1 15 16
+L -0.03962219
+L 0.06237406
+L -0.01159653
+S 1662 4 17 18
+L -0.02296262
+L 0.05926136
+S 142 1 19 20
+L -0.01653729
+L 0.01063492
+tree 417 19
+S 727 1 1 2
+S 243 1 3 4
+S 3 29 5 6
+S 3 30 7 8
+L -0.04990358
+S 15 5 9 10
+L 0.05971207
+S 1668 1 11 12
+S 20 2 13 14
+L -0.01867236
+L 0.02203325
+L 0.03289763
+S 21 19 15 16
+S 1 18 17 18
+L 0.01330827
+L -0.02300476
+L 0.008553484
+L -0.006679226
+L -0.05400253
+tree 418 21
+S 1662 22 1 2
+S 653 1 3 4
+S 18 16 5 6
+L 0.06391375
+S 1664 12 7 8
+L -0.04529729
+S 142 1 9 10
+S 3 30 11 12
+S 1 20 13 14
+L -0.02109967
+L 0.02600985
+L 0.01618518
+L -0.06787532
+L 0.04252347
+S 24 4 15 16
+S 1670 1 17 18
+L 0.03356852
+L -0.02990349
+S 163 1 19 20
+L 0.02675022
+L -0.004682355
+tree 419 21
+S 742 1 1 2
+S 3 34 3 4
+L 0.04819774
+S 1664 9 5 6
+S 3 50 7 8
+L 0.0481794
+S 20 2 9 10
+L -0.07033335
+S 7 2 11 12
+S 1753 226 13 14
+S 1 40 15 16
+S 1670 1 17 18
+L 0.03874603
+L 0.04925575
+L -0.00925089
+L -0.03539679
+S 5 1 19 20
+L -0.04690001
+L 0.006860068
+L 0.01239459
+L -0.003518687
+tree 420 23
+S 1665 28 1 2
+S 2 2 3 4
+S 3 39 5 6
+S 1668 7 7 8
+S 11 2 9 10
+S 2 3 11 12
+S 898 1 13 14
+L -0.107159
+L -0.005890291
+L -0.03263976
+L 0.02851789
+S 1753 230 15 16
+S 282 1 17 18
+L 0.07268742
+S 1662 4 19 20
+S 4 79 21 22
+L -0.02225847
+L -0.006209661
+L -0.03334064
+L 0.03907603
+L -0.04054288
+L 0.0004439581
+L 0.03555045
+tree 421 19
+S 3 8 1 2
+L -0.05919619
+S 1753 30 3 4
+L 0.0477217
+S 6 2 5 6
+L -0.04221515
+S 931 2 7 8
+S 5 6 9 10
+L 0.03580619
+S 14 4 11 12
+L 0.02945414
+S 4 85 13 14
+L -0.04309747
+S 888 1 15 16
+S 3 49 17 18
+L 0.0245792
+L -0.02444552
+L -0.06336412
+L 0.01107062
+tree 422 21
+S 99 1 1 2
+S 4 84 3 4
+L 0.06890181
+S 19 4 5 6
+S 870 3 7 8
+L 0.04959714
+S 32 5 9 10
+S 14 3 11 12
+L -0.06119872
+S 17 4 13 14
+L 0.03750451
+S 898 2 15 16
+L -0.03385769
+L -0.03166875
+S 24 4 17 18
+L 0.01945229
+L -0.01640979
+S 18 11 19 20
+L 0.02903897
+L -0.04242817
+L 0.009117655
+tree 423 21
+S 282 2 1 2
+S 13 57 3 4
+L -0.03342748
+S 1753 73 5 6
+S 1665 21 7 8
+L 0.07596266
+S 12 51 9 10
+L -0.03524314
+S 3 29 11 12
+S 19 10 13 14
+L 0.03503886
+S 564 1 15 16
+S 560 2 17 18
+L 0.01265789
+L -0.03178084
+S 1249 1 19 20
+L -0.04141476
+L 0.04886015
+L 0.001853318
+L 0.02866014
+L -0.008001429
+tree 424 19
+S 20 3 1 2
+S 1664 22 3 4
+S 22 7 5 6
+S 12 78 7 8
+S 24 8 9 10
+L -0.02426949
+S 21 20 11 12
+L 0.007312948
+L -0.06603704
+S 653 2 13 14
+L -0.03608014
+S 13 244 15 16
+L -0.001738274
+L -0.02042586
+S 21 18 17 18
+L 0.08264376
+L 0.01490987
+L 0.06514338
+L 0
+tree 425 21
+S 588 1 1 2
+S 849 1 3 4
+L 0.05750098
+S 614 1 5 6
+L -0.04307786
+S 4 84 7 8
+S 11 2 9 10
+S 727 1 11 12
+L 0.04231896
+S 573 1 13 14
+L -0.05061107
+S 12 52 15 16
+L 0.02262816
+L 0.02240084
+L -0.0212694
+L -0.03380553
+S 1664 35 17 18
+S 17 7 19 20
+L -0.0159804
+L 0.01858885
+L -0.00475148
+tree 426 21
+S 588 1 1 2
+S 243 1 3 4
+L 0.05987073
+S 6 2 5 6
+L -0.03275111
+L -0.0275162
+S 15 1 7 8
+S 13 300 9 10
+S 1755 1 11 12
+S 1665 178 13 14
+L 0.05699641
+L -0.05915767
+S 661 1 15 16
+S 19 9 17 18
+S 21 22 19 20
+L 0.03378275
+L -0.0003954177
+L 0.04932936
+L -0.00746278
+L -0.03644735
+L 0.01681099
+tree 427 21
+S 12 364 1 2
+S 614 2 3 4
+L -0.05228522
+S 13 96 5 6
+L 0.04419456
+S 945 1 7 8
+S 17 5 9 10
+S 870 2 11 12
+L -0.01830296
+L -0.04798706
+S 7 1 13 14
+L 0.05838268
+S 17 5 15 16
+L -0.01852755
+S 1480 1 17 18
+S 1662 47 19 20
+L 0.0328054
+L 0.0453316
+L -0.003248402
+L -0.02075815
+L 0.001501597
+tree 428 23
+S 16 3 1 2
+S 653 1 3 4
+L -0.07486942
+L 0.04331332
+S 171 1 5 6
+S 13 299 7 8
+S 1077 1 9 10
+S 728 1 11 12
+L 0.03107532
+L 0.0676908
+L -0.0006449202
+S 23 2 13 14
+S 1306 1 15 16
+S 1662 14 17 18
+S 21 19 19 20
+L -0.06358933
+L -0.0103942
+S 21 10 21 22
+L 0.007656212
+L 0.05033974
+L -0.002884287
+L -0.005248278
+L -0.05394914
+tree 429 21
+S 799 1 1 2
+S 3 67 3 4
+L 0.04198265
+S 1682 20 5 6
+S 1020 1 7 8
+S 3 40 9 10
+L -0.05110263
+L 0.04092043
+L -0.01190386
+S 1755 1 11 12
+L -0.03648738
+S 282 1 13 14
+S 19 15 15 16
+L -0.0670606
+L 0.003702795
+L 0.03559043
+S 21 22 17 18
+S 560 1 19 20
+L 0.01638594
+L -0.02926753
+L 0.01353139
+tree 430 21
+S 1666 7 1 2
+S 3 15 3 4
+L 0.04587198
+L -0.04262992
+S 6 3 5 6
+S 3 36 7 8
+S 48 1 9 10
+S 1664 28 11 12
+L -0.04491654
+S 1662 14 13 14
+L -0.03073059
+L 0.01896806
+L -0.01926821
+S 22 8 15 16
+S 1753 159 17 18
+L 0.01797221
+L 0.07411607
+L 0.02881866
+S 1663 2 19 20
+L -0.03897531
+L 0.009337507
+tree 431 19
+S 400 1 1 2
+S 849 1 3 4
+L 0.04993658
+S 1686 1 5 6
+L -0.04121988
+S 1662 22 7 8
+L 0.0331043
+S 101 1 9 10
+S 1662 31 11 12
+S 1753 198 13 14
+L 0.03987402
+L -0.04808803
+L -0.003833615
+S 17 5 15 16
+L 0.02144419
+L -0.04904513
+S 18 14 17 18
+L -0.02655166
+L 0.01100924
+tree 432 21
+S 931 2 1 2
+S 560 2 3 4
+S 19 13 5 6
+S 1686 8 7 8
+L -0.04353089
+L 0.07763684
+L -0.0006891069
+S 564 1 9 10
+L -0.0423331
+S 1241 1 11 12
+S 3 24 13 14
+L -0.03231629
+S 1221 1 15 16
+L -0.006017193
+L 0.05314272
+S 1753 72 17 18
+L 0.02516636
+S 5 6 19 20
+L -0.0213906
+L 0.01278641
+L -0.006495415
+tree 433 25
+S 588 1 1 2
+S 1753 34 3 4
+L 0.0536552
+L 0.03127487
+S 703 1 5 6
+S 11 3 7 8
+S 58 1 9 10
+S 22 14 11 12
+L -0.05269623
+L 0.05381106
+L 0.001067169
+S 22 10 13 14
+L -0.04111337
+S 574 1 15 16
+S 653 3 17 18
+S 1 22 19 20
+L -0.0405608
+S 17 7 21 22
+S 1677 2 23 24
+L -0.02621071
+L 0.01519855
+L 0.05489537
+L 0.01061328
+L -0.02297641
+L 0.0127823
+tree 434 21
+S 589 1 1 2
+S 527 1 3 4
+L -0.0515447
+S 4 82 5 6
+L 0.04660895
+S 19 16 7 8
+S 614 2 9 10
+S 6 3 11 12
+S 376 1 13 14
+S 1591 1 15 16
+L 0.01836286
+L 0.007128165
+L 0.05111215
+S 1662 43 17 18
+L 0.01503286
+S 1674 3 19 20
+L 0.01925408
+L -0.04400942
+L 0.003382089
+L -0.07091705
+L -0.02006737
+tree 435 21
+S 589 1 1 2
+S 282 2 3 4
+L -0.07376115
+S 18 27 5 6
+L -0.03488405
+S 719 1 7 8
+L -0.04018821
+S 850 1 9 10
+L 0.03628396
+S 25 1 11 12
+S 1664 22 13 14
+S 1674 11 15 16
+L 0.05718569
+L -0.04612046
+S 17 7 17 18
+S 870 3 19 20
+L 0.02793911
+L 0.00853835
+L -0.001718609
+L -0.02947449
+L 0.007244457
+tree 436 23
+S 13 300 1 2
+S 12 95 3 4
+S 3 31 5 6
+S 12 26 7 8
+S 499 1 9 10
+L -0.004534188
+L 0.05697592
+L -0.02049537
+S 1665 20 11 12
+S 19 10 13 14
+S 1755 1 15 16
+L 0.04263216
+S 1662 30 17 18
+S 573 1 19 20
+S 1763 1 21 22
+L -0.06103615
+L -0.001329079
+L -0.008587311
+L 0.0212573
+L 0.03762858
+L -0.01450276
+L -0.05102495
+L -0.003542765
+tree 437 21
+S 727 1 1 2
+S 22 5 3 4
+S 3 28 5 6
+L 0.03856635
+S 499 2 7 8
+S 1 51 9 10
+L 0.07655426
+S 1 22 11 12
+L -0.06891213
+L 0.03757921
+L -0.0207697
+L -0.04019897
+S 12 78 13 14
+L 0.04441801
+S 15 5 15 16
+S 21 19 17 18
+L -0.04502969
+L 0.02977652
+S 1646 1 19 20
+L -0.03153889
+L 0.01245169
+tree 438 21
+S 589 1 1 2
+S 1753 226 3 4
+L -0.06765258
+S 727 1 5 6
+S 1753 271 7 8
+S 17 5 9 10
+L 0.04253497
+L -0.07239683
+S 1662 40 11 12
+S 13 89 13 14
+S 11 2 15 16
+L 0.03925496
+L -0.027158
+L -0.003615771
+L -0.05919658
+S 1757 1 17 18
+L 0.03343149
+S 19 8 19 20
+L 0.01688999
+L 0.002814207
+L -0.03256363
+tree 439 21
+S 6 4 1 2
+S 3 38 3 4
+S 3 39 5 6
+S 564 1 7 8
+S 3 68 9 10
+S 870 2 11 12
+L 0.06530153
+S 499 1 13 14
+L 0.03965416
+S 1662 17 15 16
+L 0.01349426
+L -0.04121163
+S 12 66 17 18
+S 1762 1 19 20
+L 0.01748499
+L -0.01091658
+L -0.07054023
+L 0.03714373
+L 0.001659255
+L -0.0464506
+L 0.007389479
+tree 440 21
+S 589 1 1 2
+S 527 1 3 4
+L -0.05568561
+S 1686 10 5 6
+L 0.03556039
+S 2 3 7 8
+L -0.04485717
+S 18 9 9 10
+S 1665 3 11 12
+L 0.05046261
+S 1241 1 13 14
+L 0.0183874
+L -0.0385725
+S 1668 1 15 16
+S 20 3 17 18
+L -0.01251163
+L 0.05138263
+S 781 1 19 20
+L 0.005242489
+L -0.04733475
+L -0.000856792
+tree 441 23
+S 828 1 1 2
+S 742 1 3 4
+S 3 92 5 6
+S 7 1 7 8
+L 0.05144332
+L -0.05456395
+L 0.007010867
+S 1673 10 9 10
+S 1664 26 11 12
+S 22 10 13 14
+L -0.03654981
+L 0.05198024
+S 1674 19 15 16
+S 3 32 17 18
+L 0.03466396
+S 21 22 19 20
+L 0.03403015
+L 0.01172999
+L -0.04069901
+S 1662 16 21 22
+L 0.01482407
+L -0.02517956
+L 0.00479466
+tree 442 23
+S 653 1 1 2
+S 3 34 3 4
+S 101 1 5 6
+L -0.001366688
+L 0.0795385
+S 1682 10 7 8
+S 1662 14 9 10
+S 3 46 11 12
+S 499 1 13 14
+L 0.05419159
+L 0
+S 25 1 15 16
+S 1670 1 17 18
+L -0.009531805
+L -0.06383026
+S 1098 1 19 20
+L 0.04057055
+L -0.06100447
+L 0.02734349
+S 17 5 21 22
+L -0.01998595
+L -0.004571757
+L 0.03466585
+tree 443 21
+S 799 1 1 2
+S 27 3 3 4
+L 0.04314271
+S 11 3 5 6
+S 21 13 7 8
+S 1753 169 9 10
+L -0.04501422
+L 0.004140028
+L 0.05391184
+S 17 5 11 12
+S 573 1 13 14
+L -0.04597241
+S 870 2 15 16
+S 12 214 17 18
+L -0.01052616
+L -0.02623619
+S 20 9 19 20
+L 0.0526356
+L 0.00874082
+L 0.01966247
+L -0.01067844
+tree 444 23
+S 1665 37 1 2
+S 12 100 3 4
+S 6 2 5 6
+S 1664 42 7 8
+L -0.04922757
+L -0.02566698
+S 793 1 9 10
+S 1753 86 11 12
+L -0.04436231
+S 19 2 13 14
+L 0.06699162
+L 0.04459625
+S 1663 2 15 16
+L 0.05186665
+S 985 1 17 18
+L -0.03065483
+L 0.02996409
+S 1753 76 19 20
+S 747 1 21 22
+L 0.003933371
+L -0.03960903
+L 0.03258726
+L -1.937848e-05
+tree 445 19
+S 11 3 1 2
+S 22 14 3 4
+S 3 48 5 6
+S 870 1 7 8
+L -0.03520869
+L -0.07541466
+L -0.006607539
+L 0.04280805
+S 614 2 9 10
+S 1755 1 11 12
+L 0.04084769
+S 2 3 13 14
+S 2 2 15 16
+L -0.04441523
+L 0.01426801
+L 0.04246885
+S 653 3 17 18
+L -0.01365594
+L 0.0117096
+tree 446 21
+S 5 5 1 2
+S 12 301 3 4
+S 21 18 5 6
+S 17 4 7 8
+L -0.03587695
+S 1665 15 9 10
+L -0.005552671
+L -0.03309042
+S 1762 2 11 12
+L 0.01397056
+L 0.08531376
+S 22 11 13 14
+L -0.02712808
+S 573 1 15 16
+L 0.05996596
+S 1686 8 17 18
+L -0.03309342
+S 1665 12 19 20
+L -0.02092558
+L -0.007119332
+L 0.04393049
+tree 447 23
+S 2 1 1 2
+L -0.04758918
+S 3 9 3 4
+L -0.03739835
+S 1753 221 5 6
+S 1662 23 7 8
+S 1662 30 9 10
+S 5 1 11 12
+L 0.04889482
+L -0.04523126
+S 1 63 13 14
+S 653 3 15 16
+S 19 16 17 18
+L -0.002302268
+L 0.00838637
+S 3 44 19 20
+L 0.04269095
+L -0.03889823
+L 0.006795248
+S 1755 2 21 22
+L -0.02144754
+L 0.03732752
+L -0.01199148
+tree 448 23
+S 13 382 1 2
+S 1665 28 3 4
+L -0.03855182
+S 2 2 5 6
+S 19 17 7 8
+S 1673 14 9 10
+S 13 21 11 12
+S 15 1 13 14
+S 1753 112 15 16
+L -0.07414366
+L -0.01949562
+L -0.01809126
+S 18 11 17 18
+S 13 155 19 20
+L 0.07545891
+L -0.02306074
+L 0.008234657
+L 0.04439472
+L 0.006572733
+L 0.04606194
+S 1303 1 21 22
+L -0.02443961
+L 0.01961398
+tree 449 19
+S 12 21 1 2
+L -0.06359011
+S 1075 1 3 4
+S 80 1 5 6
+L -0.04790806
+S 3 16 7 8
+S 24 3 9 10
+L -0.03444836
+S 1755 4 11 12
+L -0.04918627
+L 0.004088967
+S 915 1 13 14
+L -0.0263635
+S 1662 4 15 16
+L -0.01150336
+L 0.06479567
+S 24 3 17 18
+L -0.00187958
+L 0.03802675
+tree 450 23
+S 849 1 1 2
+S 3 9 3 4
+L -0.0628304
+L -0.03748443
+S 13 47 5 6
+S 2 2 7 8
+S 13 299 9 10
+L 0.05765658
+S 17 5 11 12
+S 2 2 13 14
+S 19 8 15 16
+L -0.01783406
+L 0.0232415
+S 1671 1 17 18
+S 17 5 19 20
+L 0.04708874
+L -0.006014474
+L -0.07492159
+L 0.004838495
+L 0.01982444
+S 1670 4 21 22
+L -0.02192884
+L 0.01084692
+tree 451 21
+S 1674 40 1 2
+S 1755 2 3 4
+L -0.04906533
+S 1221 1 5 6
+S 898 1 7 8
+S 19 15 9 10
+L -0.04353439
+S 126 1 11 12
+S 12 151 13 14
+S 7 1 15 16
+L -0.04024231
+L 0.07119959
+L -0.0004923247
+L 0.01345005
+L -0.03659476
+S 719 1 17 18
+L 0.03414629
+S 1241 1 19 20
+L 0.01592833
+L -0.04974571
+L -0.002553654
+tree 452 19
+S 20 1 1 2
+L -0.04142365
+S 3 69 3 4
+S 1662 29 5 6
+L 0.04513315
+S 898 1 7 8
+S 19 18 9 10
+S 21 14 11 12
+L -0.04956111
+L 0.06785484
+L -0.01855217
+S 1673 12 13 14
+S 850 2 15 16
+L -0.03085418
+S 3 40 17 18
+L 0.05994949
+L -0.0008679672
+L -0.02114807
+L 0.03286938
+tree 453 21
+S 18 9 1 2
+S 22 6 3 4
+S 18 22 5 6
+L -0.007163492
+S 12 135 7 8
+S 771 1 9 10
+S 888 1 11 12
+L 0.05462471
+L 0.006455516
+S 21 16 13 14
+L -0.05763009
+L 0.04298847
+S 696 1 15 16
+S 1683 23 17 18
+S 21 22 19 20
+L 0.009091046
+L -0.01525256
+L -0.03954283
+L 0.008091058
+L 0.01499306
+L -0.003519396
+tree 454 21
+S 860 1 1 2
+S 12 154 3 4
+L -0.02797534
+S 12 74 5 6
+S 22 9 7 8
+S 1753 102 9 10
+S 1753 58 11 12
+L -0.05468541
+S 5 5 13 14
+L 0.02681522
+S 1 26 15 16
+L 0.01355384
+L 0.1070596
+S 17 6 17 18
+L 0.02560968
+L -0.04028946
+L 0.009460602
+L -0.03707336
+S 1670 2 19 20
+L 0.03469208
+L -0.01488422
+tree 455 23
+S 870 2 1 2
+S 13 247 3 4
+S 1683 12 5 6
+S 19 14 7 8
+S 5 1 9 10
+S 23 1 11 12
+S 12 100 13 14
+S 1664 15 15 16
+L 0
+L -0.04686556
+L 0.01480723
+L -0.02228905
+S 22 10 17 18
+L -0.007980605
+L -0.06449984
+L 0.01869836
+L 0.08340131
+L 0.03300326
+S 573 1 19 20
+S 1670 3 21 22
+L -0.01544327
+L 0.02873783
+L -0.006436097
+tree 456 21
+S 32 5 1 2
+S 3 11 3 4
+S 18 9 5 6
+L -0.05308132
+S 12 333 7 8
+L 0.06871682
+L 0.009600871
+S 3 60 9 10
+L -0.03775204
+S 1756 2 11 12
+S 622 1 13 14
+S 4 84 15 16
+L -0.03700976
+L 0.04670952
+L -0.006996238
+S 19 15 17 18
+L -0.02299327
+L 0.02365418
+S 376 1 19 20
+L -0.01222428
+L 0.01046419
+tree 457 23
+S 589 1 1 2
+S 150 1 3 4
+L -0.05198208
+S 400 1 5 6
+L 0.04161264
+S 25 1 7 8
+L 0.03701104
+S 1674 17 9 10
+S 850 1 11 12
+S 1668 1 13 14
+S 17 5 15 16
+L 0.04140132
+L -0.01158564
+S 20 3 17 18
+S 573 1 19 20
+L -0.01221816
+L 0.05098481
+L -0.01998455
+L -0.05472814
+S 1 40 21 22
+L -0.04252692
+L -0.01060294
+L 0.02131028
+tree 458 23
+S 793 2 1 2
+S 849 1 3 4
+L 0.05352985
+S 18 7 5 6
+L -0.05391264
+S 1755 1 7 8
+S 3 67 9 10
+L 0.04898541
+L 0.001550819
+S 828 1 11 12
+S 1020 1 13 14
+S 653 3 15 16
+L -0.04772798
+L 0.03538569
+L -0.0006802304
+S 1280 1 17 18
+S 790 1 19 20
+L -0.03799516
+S 17 7 21 22
+L 0.04002704
+L -0.0218319
+L 0.009094377
+L -0.00973251
+tree 459 23
+S 16 3 1 2
+S 799 1 3 4
+L -0.05357905
+S 13 129 5 6
+L 0.05447301
+S 24 6 7 8
+S 243 1 9 10
+S 850 1 11 12
+S 22 7 13 14
+S 1665 182 15 16
+L -0.06062577
+S 13 34 17 18
+L 0.006439355
+L -0.04421007
+L 0.003838003
+L -0.03549483
+S 560 1 19 20
+L 0.03521806
+L 0.08171377
+S 21 22 21 22
+L 0.02367887
+L -0.01630349
+L 0.01200925
+tree 460 23
+S 499 2 1 2
+S 614 2 3 4
+S 282 1 5 6
+S 18 14 7 8
+L 0.03646597
+L 0.01137779
+L -0.06451073
+S 22 8 9 10
+S 13 246 11 12
+S 1668 5 13 14
+S 25 1 15 16
+S 7 1 17 18
+L -0.04468369
+L -0.01648152
+L 0.02146167
+L 0.06639954
+L 0.01997256
+L -0.02409798
+S 7 5 19 20
+S 1525 1 21 22
+L -0.01001998
+L 0.05116079
+L 0.0008071529
+tree 461 21
+S 193 1 1 2
+S 653 1 3 4
+L -0.03414808
+L 0.05063053
+S 32 5 5 6
+S 19 1 7 8
+L 0.02913608
+L 0.03658465
+S 1668 1 9 10
+S 12 67 11 12
+S 1755 2 13 14
+L -0.01225391
+L -0.05200875
+S 573 1 15 16
+S 12 75 17 18
+L 0.04901421
+L -0.01540179
+L 0.005364679
+S 1755 3 19 20
+L -0.003591424
+L -0.02426927
+tree 462 19
+S 16 2 1 2
+S 793 1 3 4
+L -0.04009468
+S 12 78 5 6
+S 3 25 7 8
+S 18 14 9 10
+S 20 3 11 12
+L 0.01292313
+L 0.05376211
+L 0.02977927
+L -0.004584196
+S 1753 185 13 14
+S 282 1 15 16
+L -0.07365696
+L -0.008824666
+S 1753 40 17 18
+L -0.03545719
+L -0.005020012
+L 0.02458318
+tree 463 21
+S 120 1 1 2
+S 150 1 3 4
+L -0.05472906
+S 1682 10 5 6
+L 0.03557815
+S 25 1 7 8
+S 13 45 9 10
+S 20 2 11 12
+L 0.02761627
+L -0.003492814
+L -0.06236865
+S 3 39 13 14
+S 1591 1 15 16
+S 783 1 17 18
+L -0.01525549
+L -0.03978951
+S 1757 2 19 20
+L 0.03203369
+L 0.003428967
+L 0.01071267
+L -0.008233696
+tree 464 23
+S 3 67 1 2
+S 898 1 3 4
+S 573 1 5 6
+S 727 1 7 8
+S 4 84 9 10
+L 0.05615381
+L 0.003857658
+S 20 3 11 12
+S 3 28 13 14
+S 1665 45 15 16
+L -0.07326658
+S 22 9 17 18
+S 1762 2 19 20
+L 0.01436162
+L 0.07561773
+L 0.009724302
+L -0.02379496
+S 12 85 21 22
+L -0.06389161
+L 0.02609588
+L -0.008075662
+L 0.01022949
+L -0.02179457
+tree 465 21
+S 987 1 1 2
+S 588 1 3 4
+L 0.04870027
+S 703 1 5 6
+L 0.0386297
+S 1757 1 7 8
+S 18 26 9 10
+S 12 69 11 12
+S 798 1 13 14
+L 0.03529056
+L 0.01246439
+S 1669 1 15 16
+S 1753 159 17 18
+S 203 1 19 20
+L 0.01666215
+L 0.01151279
+L -0.0218118
+L -0.07232142
+L -0.01141372
+L -0.04179423
+L 0.001438117
+tree 466 21
+S 614 1 1 2
+S 2 2 3 4
+S 1662 4 5 6
+L 0.04319175
+S 1 33 7 8
+L 0.0188142
+S 573 1 9 10
+S 1024 2 11 12
+S 1077 1 13 14
+S 1683 4 15 16
+L -0.06108558
+L 0.004471844
+L -0.04083735
+S 12 181 17 18
+S 17 5 19 20
+L 0.0171745
+L -0.0457798
+L 0.05667425
+L 0.01635645
+L 0.01184391
+L -0.01971056
+tree 467 21
+S 12 21 1 2
+L -0.06326859
+S 1664 12 3 4
+S 2 2 5 6
+S 1664 23 7 8
+L -0.06217108
+L 0.01124694
+L 0.05817746
+S 20 2 9 10
+S 1753 170 11 12
+S 19 6 13 14
+L 0.04278691
+S 783 1 15 16
+L -0.04469561
+S 21 22 17 18
+L 0.003684827
+L -0.00768078
+S 1662 15 19 20
+L 0.02105682
+L -0.02904482
+L 0.005595616
+tree 468 23
+S 49 1 1 2
+S 14 11 3 4
+S 870 2 5 6
+S 23 3 7 8
+L 0.064133
+L -0.06637894
+L 0.005425104
+S 727 1 9 10
+S 1757 1 11 12
+S 3 50 13 14
+L 0.04880985
+L -0.04182626
+S 870 3 15 16
+S 7 1 17 18
+L 0.03094836
+L 0.03004865
+L -0.03079536
+S 282 1 19 20
+S 20 9 21 22
+L -0.007795309
+L 0.02792602
+L -0.05305436
+L -0.00012759
+tree 469 21
+S 13 95 1 2
+S 19 8 3 4
+S 1665 6 5 6
+S 870 3 7 8
+S 1756 1 9 10
+L -0.05332263
+S 1755 3 11 12
+L 0.05933104
+L 0.01394567
+L 0.01503938
+S 1674 12 13 14
+S 1024 1 15 16
+L 0.03152467
+L 0.00563528
+L -0.03283603
+S 17 7 17 18
+S 23 2 19 20
+L -0.08331875
+L 0.02122005
+L -0.013061
+L 0.02558738
+tree 470 23
+S 3 8 1 2
+L -0.04925207
+S 7 2 3 4
+S 499 2 5 6
+S 1686 10 7 8
+S 573 1 9 10
+L -0.04775571
+S 25 1 11 12
+L -0.02218599
+S 1762 1 13 14
+S 564 1 15 16
+S 896 1 17 18
+L 0.09089629
+S 19 7 19 20
+L 0.04867335
+L -0.008383937
+L -0.04697447
+S 1753 221 21 22
+L -0.01809344
+L 0.02243034
+L -0.02465169
+L 0.0466972
+L 0.002943937
+tree 471 21
+S 16 3 1 2
+S 1682 39 3 4
+L -0.06133597
+S 742 1 5 6
+L -0.02978595
+S 909 1 7 8
+L 0.03499793
+S 1668 3 9 10
+L 0.03558732
+S 3 38 11 12
+S 203 1 13 14
+L 0
+L -0.04676967
+S 499 1 15 16
+S 1757 2 17 18
+S 24 4 19 20
+L -0.006531009
+L -0.01910966
+L -0.0039476
+L 0.04773181
+L -0.001791244
+tree 472 17
+S 17 3 1 2
+L 0.0505173
+S 6 1 3 4
+L -0.03609236
+S 16 2 5 6
+S 150 1 7 8
+L 0.0412254
+S 12 339 9 10
+L 0.04689981
+S 783 1 11 12
+L -0.04238468
+S 653 3 13 14
+L -0.02427368
+S 1753 166 15 16
+L 0.03317856
+L -0.01436112
+L 0.01558469
+tree 473 21
+S 1666 5 1 2
+S 931 2 3 4
+L 0.04166092
+S 1683 33 5 6
+S 499 1 7 8
+S 193 1 9 10
+L 0.02820136
+L -0.0001320514
+L 0.05222378
+S 13 263 11 12
+L -0.04926103
+S 22 8 13 14
+L -0.02947435
+S 282 1 15 16
+S 19 16 17 18
+L -0.03806584
+L 0.005676684
+L 0.04637193
+S 6 4 19 20
+L 0.00627165
+L -0.01921972
+tree 474 19
+S 150 1 1 2
+S 1482 1 3 4
+L 0.02382402
+S 1646 1 5 6
+L 0.02394652
+S 771 1 7 8
+L 0.01533817
+S 1024 2 9 10
+S 1303 1 11 12
+S 653 4 13 14
+S 3 48 15 16
+L -0.07015246
+L -0.01302431
+S 19 6 17 18
+L -0.02747586
+L -0.04257394
+L -0.0009306746
+L -0.004658176
+L 0.02975972
+tree 475 21
+S 588 1 1 2
+S 703 1 3 4
+L 0.05395067
+S 589 1 5 6
+S 898 2 7 8
+S 661 1 9 10
+L -0.05528305
+L 0.04830543
+L 0.01271476
+S 1753 234 11 12
+L 0.03205754
+S 1664 58 13 14
+L -0.05512858
+S 24 3 15 16
+L -0.02928656
+S 1 33 17 18
+S 499 1 19 20
+L 0.001199054
+L 0.04974617
+L -0.01531702
+L 0.01772351
+tree 476 21
+S 18 25 1 2
+S 1668 1 3 4
+S 1 49 5 6
+S 18 13 7 8
+S 1665 23 9 10
+L 0.05597536
+L 0.009561526
+S 3 26 11 12
+L -0.05562478
+L 0.04895366
+S 12 266 13 14
+L 0.02323476
+L -0.01402743
+S 1 24 15 16
+L -0.01465953
+L -0.01177045
+S 3 33 17 18
+S 6 3 19 20
+L 0.03942715
+L 0.01640816
+L 0.0006540529
+tree 477 21
+S 878 1 1 2
+S 14 7 3 4
+L -0.05129373
+S 860 1 5 6
+S 3 33 7 8
+S 25 1 9 10
+L -0.03645773
+L -0.003195116
+L -0.05754596
+S 1673 23 11 12
+L 0.04962071
+S 1662 23 13 14
+S 985 1 15 16
+S 48 1 17 18
+L -0.034246
+L 0.05171932
+L 0
+S 20 2 19 20
+L -0.03396044
+L 0.02487682
+L -0.00998412
+tree 478 23
+S 742 1 1 2
+S 614 1 3 4
+L 0.05325735
+S 560 1 5 6
+S 614 2 7 8
+S 1662 21 9 10
+S 1665 37 11 12
+S 1674 3 13 14
+S 19 3 15 16
+S 3 50 17 18
+L -0.02678125
+L 0.01694788
+L 0.03310134
+L -0.07141518
+L -0.01627025
+L -0.0174406
+L 0.01176945
+S 1753 102 19 20
+L 0.03171419
+S 1670 4 21 22
+L 0.02165016
+L -0.04006011
+L 0.001628411
+tree 479 21
+S 18 25 1 2
+S 12 327 3 4
+S 21 19 5 6
+S 1677 3 7 8
+L -0.06082517
+L 0.05512686
+L -6.593244e-05
+S 870 1 9 10
+S 1024 2 11 12
+L 0.04170224
+S 850 1 13 14
+L -0.04691032
+L 0.005209132
+S 1665 23 15 16
+S 145 1 17 18
+L 0.05604856
+S 2 2 19 20
+L -0.05854063
+L 0.00577648
+L 0.01953727
+L -0.02318819
+tree 480 23
+S 606 1 1 2
+S 282 2 3 4
+L -0.02512269
+S 3 19 5 6
+L -0.02226618
+L -0.01986303
+S 18 18 7 8
+S 13 95 9 10
+S 888 1 11 12
+S 1674 12 13 14
+S 19 16 15 16
+L 0.07870885
+S 1241 1 17 18
+L 0.05874301
+S 1686 5 19 20
+L -0.06367768
+S 369 1 21 22
+L 0.0241626
+L -0.002300438
+L -0.01042578
+L 0.03022628
+L 0.009720534
+L -0.000613723
+tree 481 19
+S 904 1 1 2
+S 499 2 3 4
+L -0.0383605
+S 12 345 5 6
+L -0.03410273
+S 19 5 7 8
+L -0.0338408
+S 1 33 9 10
+S 1665 5 11 12
+L -4.390733e-06
+L 0.05629429
+L -0.03523747
+S 12 48 13 14
+L 0.03341208
+S 18 9 15 16
+L 0.01583858
+S 499 1 17 18
+L 0.00350009
+L -0.02880045
+tree 482 21
+S 282 2 1 2
+S 20 2 3 4
+L -0.03316343
+S 1169 1 5 6
+S 3 14 7 8
+S 1668 14 9 10
+L -0.0265742
+L -0.05243772
+S 1677 6 11 12
+S 560 1 13 14
+L -0.001458782
+S 1024 1 15 16
+L 0.02737053
+L 0.08088541
+L 0.008050642
+L -0.0479322
+S 1662 6 17 18
+L 0.02860776
+S 7 4 19 20
+L -0.02395942
+L 0.007860888
+tree 483 21
+S 849 1 1 2
+S 19 9 3 4
+L -0.04365855
+S 1668 14 5 6
+S 1664 48 7 8
+S 20 1 9 10
+L -0.02481829
+S 1665 19 11 12
+L -0.03753566
+L -0.02104852
+S 22 8 13 14
+L 0.01872808
+S 1665 39 15 16
+L 0.003256045
+S 282 1 17 18
+L -0.04440301
+S 4 57 19 20
+L 0.08841566
+L 0.02024855
+L -0.01060405
+L 0.01985017
+tree 484 19
+S 7 3 1 2
+S 1303 1 3 4
+S 18 13 5 6
+S 574 1 7 8
+S 622 1 9 10
+L 0.05235691
+S 1 52 11 12
+S 12 74 13 14
+S 12 70 15 16
+L 0.02754813
+L -0.01013007
+L 0.01979954
+L -0.009389235
+L -0.03300297
+L 0.01131555
+L -0.002968814
+S 1665 40 17 18
+L -0.08330419
+L -0.03619727
+tree 485 25
+S 989 1 1 2
+S 14 21 3 4
+L 0.02917182
+S 19 19 5 6
+L -0.04860243
+S 614 1 7 8
+L -0.04164942
+S 3 60 9 10
+S 15 1 11 12
+S 20 2 13 14
+L 0.05221307
+S 4 87 15 16
+L 0.01437892
+S 888 1 17 18
+S 17 6 19 20
+L -0.05467607
+S 1662 6 21 22
+L 0.05032562
+L -0.0006265673
+L -0.03055318
+S 369 1 23 24
+L -0.01806982
+L 0.002295607
+L 0.008365928
+L -0.0029628
+tree 486 23
+S 828 1 1 2
+S 719 1 3 4
+S 719 1 5 6
+S 18 25 7 8
+L -0.02516323
+L -0.06026258
+L 0.001996095
+S 1241 3 9 10
+L 0.05741698
+S 1665 22 11 12
+S 19 17 13 14
+S 19 6 15 16
+S 7 2 17 18
+L 0.0528653
+L 0.00920099
+L 0.007369217
+L 0.04166589
+L -0.0325067
+S 1024 1 19 20
+L 0.02676776
+S 21 22 21 22
+L -0.01623178
+L 0.01563833
+tree 487 23
+S 3 8 1 2
+L -0.03069585
+S 727 1 3 4
+S 12 78 5 6
+S 7 5 7 8
+S 12 40 9 10
+S 1249 1 11 12
+S 18 18 13 14
+L -0.009048506
+L 0
+L 0.04967682
+S 1758 1 15 16
+S 6 3 17 18
+L 0.01913574
+L 0.0769507
+S 3 25 19 20
+S 1668 4 21 22
+L -0.001772154
+L 0.03607718
+L 0.001248925
+L -0.05953394
+L 0.02722113
+L 0.003397237
+tree 488 21
+S 1662 18 1 2
+S 32 5 3 4
+S 5 5 5 6
+S 150 1 7 8
+L 0.05705805
+S 618 1 9 10
+L 0.03273835
+S 4 84 11 12
+L 0.0390015
+S 1662 23 13 14
+L -0.07258328
+S 3 38 15 16
+L -0.02357123
+L -0.04791675
+S 1662 40 17 18
+S 5 3 19 20
+L 0.03494281
+L 0.05399765
+L -0.03018455
+L 0.00377672
+L -0.01755135
+tree 489 17
+S 588 1 1 2
+S 19 1 3 4
+L 0.06167303
+L 0.03600913
+S 1674 42 5 6
+S 479 1 7 8
+L -0.04524069
+S 1762 1 9 10
+L 0.04533193
+S 12 260 11 12
+L 0.02017594
+S 1665 50 13 14
+L -0.03331402
+S 564 1 15 16
+L 0.02000571
+L -0.03056887
+L 0.005263298
+tree 490 19
+S 1686 8 1 2
+S 1249 1 3 4
+L -0.03045671
+S 1674 25 5 6
+S 20 9 7 8
+S 1753 89 9 10
+L 0.05520803
+L -0.0362901
+L -0.001971398
+L 0.03450236
+S 1665 24 11 12
+L -0.03304
+S 870 3 13 14
+S 17 7 15 16
+L 0.03362905
+S 573 1 17 18
+L 0.03278099
+L 0.007605876
+L -0.05030676
+tree 491 23
+S 828 1 1 2
+S 3 70 3 4
+S 1303 1 5 6
+S 32 5 7 8
+L 0.04516697
+L -0.04915383
+L 0.002151818
+S 479 1 9 10
+L 0.02955991
+S 1280 1 11 12
+L 0.04181372
+S 12 108 13 14
+S 20 9 15 16
+S 7 2 17 18
+S 1662 11 19 20
+S 12 65 21 22
+L -0.005097321
+L -0.01119215
+L 0.02963072
+L -0.02585626
+L -0.07454238
+L 0.009485712
+L 0.04087725
+tree 492 19
+S 849 1 1 2
+S 27 3 3 4
+L -0.06428632
+S 49 3 5 6
+L 0.04041983
+S 560 2 7 8
+L 0.03731147
+S 20 5 9 10
+L -0.03560963
+S 1664 45 11 12
+S 21 22 13 14
+S 6 3 15 16
+L 0.03795287
+L -0.03479267
+L 0.0003817283
+L 0.02045002
+S 2 2 17 18
+L -0.03828945
+L 0.007604537
+tree 493 21
+S 860 1 1 2
+S 3 43 3 4
+L -0.02613099
+S 32 5 5 6
+S 282 1 7 8
+S 1280 1 9 10
+L 0.03272749
+S 123 1 11 12
+S 12 75 13 14
+S 1753 89 15 16
+S 1753 58 17 18
+L 0.07568296
+L 0.03259773
+L 0.02624853
+L -0.01232754
+L 0.00922418
+S 3 29 19 20
+L -0.001979852
+L 0.01890021
+L -0.05891872
+L 0.003977987
+tree 494 21
+S 6 1 1 2
+L -0.03753638
+S 1665 300 3 4
+S 860 1 5 6
+L 0.05001734
+S 499 1 7 8
+L -0.03209694
+S 4 84 9 10
+S 14 1 11 12
+S 1757 1 13 14
+L 0.02077446
+S 12 63 15 16
+L -0.0303993
+L -0.04387257
+S 1662 27 17 18
+L 0.07443088
+S 7 1 19 20
+L -0.01353819
+L 0.009727736
+L -0.004452683
+L 0.0563976
+tree 495 21
+S 574 1 1 2
+S 1683 10 3 4
+S 645 1 5 6
+S 1303 1 7 8
+L -0.02276313
+S 19 9 9 10
+L 0.006384566
+S 1753 103 11 12
+S 1077 1 13 14
+S 1 40 15 16
+L -0.05596062
+L 0.05681859
+S 19 11 17 18
+L -0.0007345421
+L -0.01526987
+L -0.0402451
+S 17 6 19 20
+L -0.003919673
+L 0.03619847
+L -0.02024784
+L 0.01507315
+tree 496 17
+S 243 1 1 2
+S 1753 299 3 4
+L -0.03906702
+S 499 2 5 6
+L 0.03090741
+S 1664 7 7 8
+L -0.04234835
+L -0.02470675
+S 1664 23 9 10
+L 0.05040204
+S 3 68 11 12
+S 1757 2 13 14
+L 0.0338284
+S 282 1 15 16
+L 0.011307
+L -0.04558929
+L 0.005261888
+tree 497 21
+S 742 1 1 2
+S 19 8 3 4
+L 0.05897461
+S 614 1 5 6
+S 3 34 7 8
+S 3 43 9 10
+S 282 1 11 12
+S 20 2 13 14
+L -0.04145813
+L 0.01337622
+L 0.06124173
+L 0.02327102
+L -0.0190841
+S 1077 1 15 16
+S 1757 1 17 18
+L 0.04647411
+L 0.003023553
+L -0.03118549
+S 52 1 19 20
+L 0.007964044
+L -0.01006808
+tree 498 21
+S 989 1 1 2
+S 49 1 3 4
+L 0.04900175
+S 18 25 5 6
+L -0.03787215
+S 4 85 7 8
+S 1755 2 9 10
+S 13 192 11 12
+S 850 1 13 14
+L 0.05064116
+L 0
+S 499 1 15 16
+L -0.02913672
+L 0.003754338
+L -0.06076409
+S 24 7 17 18
+L 0.03492024
+S 13 182 19 20
+L -0.02844167
+L 0.02860027
+L 0.003466554
+tree 499 21
+S 849 1 1 2
+S 12 75 3 4
+L -0.04438482
+S 1673 26 5 6
+S 1662 18 7 8
+L 0.05140161
+S 12 51 9 10
+S 793 1 11 12
+S 618 1 13 14
+L -0.01928751
+L 0.01977433
+S 1662 2 15 16
+L 0.03397973
+S 20 2 17 18
+L -0.05293873
+L -0.02127391
+S 1241 2 19 20
+L 0.001754792
+L -0.02479712
+L 0.02062322
+L -0.008092023
+tree 500 21
+S 20 2 1 2
+S 17 7 3 4
+S 985 1 5 6
+S 888 1 7 8
+L 0.06323288
+S 1591 1 9 10
+S 1303 1 11 12
+S 4 78 13 14
+L -0.01862671
+S 850 1 15 16
+S 1664 22 17 18
+L 0.03382469
+L -0.002013139
+L 0.06072174
+S 1 21 19 20
+L -0.07042419
+L -0.01446571
+L 0.01860302
+L -0.01559779
+L 0.01953292
+L -0.02253514

@@ -52,9 +52,9 @@ changes its size.
 | `STS_SILVER_ADAPTIVE` | Enable the default-off two-tier Silver treatment: search to 1,000 simulations, then continue the same root to 3,700 only when the top-vs-second visit-share gap is below the configured threshold | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_ADAPTIVE_TOP_GAP` | Strict uncertainty threshold for `STS_SILVER_ADAPTIVE`; escalation occurs only when the 1k top-vs-second visit-share gap is `<` this value | `0.094` | `SilverLiveBackend` |
 | `STS_SILVER_EXACT_ROOT_BUDGETS` | Experiment-only budget control: use the agent's base simulations at every Silver root, including bosses, instead of applying the native boss multiplier. Set identically for paired fixed-1k and adaptive arms. | unset/off | `SilverLiveBackend` |
-| `STS_SILVER_TELEMETRY` | Per-combat Silver aggregate telemetry line | unset/off | `SilverLiveBackend` |
+| `STS_SILVER_TELEMETRY` | Per-combat Silver aggregate telemetry line, including skipped VNet rollouts and leaf-VNet inference calls/microseconds when enabled | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_VNET_LEAF_LOG` | Default-off CSV for sampled Silver rollout-start leaves and their actual one-sample rollout references | unset/off | `SilverLiveBackend` |
-| `STS_SILVER_VNET_LEAF_MODEL` | Combat VNet loaded lazily for the leaf observer/direct evaluator | `models/v_combat_7k_tuned.txt` | `SilverLiveBackend` |
+| `STS_SILVER_VNET_LEAF_MODEL` | Compact CombatValueNet loaded lazily for the leaf observer/direct evaluator; `models/silver_leaf_m10_10k.txt` is the default-off Silver-trained experiment artifact | `models/v_combat_7k_tuned.txt` | `SilverLiveBackend` |
 | `STS_SILVER_VNET_LEAF_SAMPLE` | Deterministic FNV-1a sampling modulus for leaf logging (`1` logs every eligible leaf) | `16` | `SilverLiveBackend` |
 | `STS_SILVER_VNET_LEAF_MAX_PER_COMBAT` | Maximum logged leaves per live combat | `5000` | `SilverLiveBackend` |
 | `STS_SILVER_VNET_LEAF_DIRECT` | Skip nonterminal Silver rollouts and backpropagate the affine VNet estimate; terminal states remain exact | `0` (off) | `SilverLiveBackend` |
