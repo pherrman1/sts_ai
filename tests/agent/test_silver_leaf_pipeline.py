@@ -80,6 +80,30 @@ class SilverLeafPipelineTest(unittest.TestCase):
             for path in paths:
                 path.unlink(missing_ok=True)
 
+    def test_selector_preserves_rollout_diversity(self):
+        tmp = TEST_TMP
+        paths = [tmp / "selector_diverse_corpus.jsonl", tmp / "selector_diverse.json"]
+        try:
+            rows = []
+            for index, turns in enumerate((1, 1, 4, 4, 8, 8)):
+                group = f"g{index}"
+                for leaf, incoming in ((f"{group}a", "x"), (f"{group}b", "y")):
+                    rows.append({"corpus_schema": "silver_leaf_corpus_v1", "group_id": group,
+                        "leaf_snapshot_id": leaf, "act": 1, "cur_hp": 20, "max_hp": 80,
+                        "encounter_category": "hallway", "aux_rollout": {"turn_delta": turns},
+                        "parent_legal_action_fingerprints": ["x", "y"],
+                        "incoming_action_fingerprint": incoming})
+            paths[0].write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+            subprocess.run([sys.executable, ROOT / "tools/select_silver_leaf_corpus.py",
+                            paths[0], paths[1], "--target-groups", "3"],
+                           check=True, capture_output=True, text=True)
+            manifest = json.loads(paths[1].read_text())
+            self.assertEqual(manifest["groups_by_rollout_length_band"],
+                             {"long": 1, "medium": 1, "short": 1})
+        finally:
+            for path in paths:
+                path.unlink(missing_ok=True)
+
 
 if __name__ == "__main__":
     unittest.main()

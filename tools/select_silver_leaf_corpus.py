@@ -69,37 +69,70 @@ def main() -> int:
     for group_id, group in groups.items():
         if not set(group["legal"]) <= group["mapped"]:
             raise SystemExit(f"{args.corpus}: group {group_id} is incomplete")
-    by_act: dict[int, list[str]] = defaultdict(list)
+    rollout_order = {"long": 0, "medium": 1, "short": 2}
+    hp_order = {"low": 0, "mid": 1, "high": 2}
+    category_order = {"boss": 0, "elite": 1, "hallway": 2}
+    rollout_weight = {"long": 2, "medium": 1, "short": 1}
+    hp_weight = {"low": 2, "mid": 1, "high": 1}
+    buckets: dict[int, dict[tuple[str, str, str], list[str]]] = defaultdict(
+        lambda: defaultdict(list))
     for group_id, group in groups.items():
-        by_act[group["act"]].append(group_id)
-    for act, ids in by_act.items():
-        ids.sort(key=lambda gid: (
-            rollout_band(groups[gid]) != "long",
-            hp_band(groups[gid]) != "low",
-            groups[gid]["encounter_category"] == "hallway",
-            stable(gid),
-        ))
+        key = (rollout_band(group), hp_band(group), group["encounter_category"])
+        buckets[group["act"]][key].append(group_id)
+    for act_buckets in buckets.values():
+        for ids in act_buckets.values():
+            ids.sort(key=stable, reverse=True)
 
     selected: list[str] = []
     selected_set: set[str] = set()
-    # Act 4 is rare and is retained before balancing the remaining acts.
-    for gid in by_act.get(4, []):
+    rollout_counts: dict[int, Counter] = defaultdict(Counter)
+    hp_counts: dict[int, Counter] = defaultdict(Counter)
+    category_counts: dict[int, Counter] = defaultdict(Counter)
+
+    def retain(gid: str) -> None:
         selected.append(gid)
         selected_set.add(gid)
-    acts = sorted(act for act in by_act if act != 4)
-    cursors = {act: 0 for act in acts}
+        group = groups[gid]
+        rollout_counts[group["act"]][rollout_band(group)] += 1
+        hp_counts[group["act"]][hp_band(group)] += 1
+        category_counts[group["act"]][group["encounter_category"]] += 1
+
+    def choose_for_act(act: int) -> str | None:
+        candidates = []
+        for (rollout, hp, category), ids in buckets[act].items():
+            while ids and ids[-1] in selected_set:
+                ids.pop()
+            if not ids:
+                continue
+            candidates.append((
+                rollout_counts[act][rollout] / rollout_weight.get(rollout, 1),
+                hp_counts[act][hp] / hp_weight.get(hp, 1),
+                category_counts[act][category],
+                rollout_order.get(rollout, 99), hp_order.get(hp, 99),
+                category_order.get(category, 99), stable(ids[-1]), ids[-1],
+            ))
+        if not candidates:
+            return None
+        gid = min(candidates)[-1]
+        key = (rollout_band(groups[gid]), hp_band(groups[gid]),
+               groups[gid]["encounter_category"])
+        popped = buckets[act][key].pop()
+        assert popped == gid
+        return gid
+
+    # Act 4 is rare and is retained before balancing the remaining acts.
+    act4 = sorted((gid for gid, group in groups.items() if group["act"] == 4), key=stable)
+    for gid in act4:
+        retain(gid)
+    acts = sorted(act for act in buckets if act != 4)
     while len(selected) < target:
         progressed = False
         for act in acts:
-            ids = by_act[act]
-            while cursors[act] < len(ids) and ids[cursors[act]] in selected_set:
-                cursors[act] += 1
-            if cursors[act] < len(ids) and len(selected) < target:
-                gid = ids[cursors[act]]
-                cursors[act] += 1
-                selected.append(gid)
-                selected_set.add(gid)
-                progressed = True
+            if len(selected) < target:
+                gid = choose_for_act(act)
+                if gid is not None:
+                    retain(gid)
+                    progressed = True
         if not progressed:
             break
 
