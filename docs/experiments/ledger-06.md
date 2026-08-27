@@ -5152,3 +5152,52 @@ model training was changed.
   head test would be a statistical-learning decomposition test and should keep
   the V4 model family fixed; it is not authorized by this correction. The
   diagnostic remains offline-only and production gameplay is unchanged.
+
+## Targeted marginal OOC survival tradeoffs (2026-08-27)
+
+- **Question and frozen implementation:** On the 15 genuine opposing-order
+  `regime=marg` contexts discovered above, does the action selected by
+  `p_survive * v_alive` predict fresh terminal run wins better than always
+  selecting higher survival or always selecting higher survivor value? Dense
+  K=3 was a secondary baseline. Reviewed experiment SHA was
+  `7baf98a7b464a7cfbc91f9ee163a691e4cd3dc2b`; no executable change occurred
+  after review and CI passed on that SHA.
+- **Targeting and adjudication:** deterministic selection from the frozen PR
+  #71 raw corpus, not uniform new OOC collection. Fifteen contexts, two actions
+  per context, and 16 fresh matched futures per action produced 480/480 valid
+  full-run branches. Each sibling pair shared its resampled remaining-act
+  hidden encounters and continuation/search seed. The unbootstrapped
+  adjudicator used 1,000 combat simulations; terminal run win was primary and
+  final HP diagnostic. The run was Ironclad, ascension 0, known-RNG Searcher2,
+  with the frozen combat VNet (alpha 0.5) and native win/rich/policy trees.
+- **Outcomes:** safe/strength/tied contexts were `4/5/6`. Survival-only,
+  strength-only, combined-product, and dense-K3 correct non-tied choices were
+  `4/9`, `5/9`, `6/9`, and `5/9`. Mean chosen terminal-win rates were
+  `0.5917`, `0.6250`, `0.6458`, and `0.6042`; mean two-choice regrets were
+  `0.0917`, `0.0583`, `0.0375`, and `0.0792` (all median regrets 0).
+  Combined-minus-survival chosen-win difference was `0.05417`, with paired
+  source-seed-cluster bootstrap 95% interval `[-0.00735, 0.14338]`;
+  combined-minus-strength was `0.02083`, interval `[-0.06250, 0.11029]`.
+  Combined-minus-dense was `0.04167`, interval `[0, 0.13021]`, but dense was
+  not part of the primary decision rule.
+- **Artifacts and provenance:** target manifest
+  `build/ooc_targeted_e1/targets_rules_reviewed.csv` SHA-256
+  `6CCA74E13D8ED653083671E42530A3F36C55954616A2AE86D020534B9B6954D5`;
+  raw adjudication `build/ooc_targeted_e1/adjudication_7baf98a.csv`
+  `1F8CABA2A8DFC5DFC9A460F57CDBAA15A79594D13EFBB9A9DD0250305D991642`;
+  run log `build/ooc_targeted_e1/gcp_ooc_targeted_e1_7baf98a.log`
+  `232552386519D648D1B9BF86F79003CB8AC605EF329CA47326395627B7627888`;
+  decisions `build/ooc_targeted_e1/final/decisions.csv`
+  `0E727A46ED075C5BF36D543DFAD732243959495B0B223D909A2265997186832`;
+  summary `build/ooc_targeted_e1/final/summary.json`
+  `5DC020CECD2A2B7BBDF1E65E74A5534CCC5767C8FD624E65BE12A86FBD146818`.
+  Frozen executable SHA-256 was
+  `D628CB493B3EC21FC68D2E803C532AE0F8F6FE447C3DA4DCA47C964215545299`;
+  exact combat/win/rich/policy model hashes are recorded in the corresponding
+  decision log. An independent post-run audit reproduced all pairing, metrics,
+  bootstrap intervals, and the verdict.
+- **Verdict:** **INCONCLUSIVE.** Combined product has the best point accuracy,
+  selected win rate, and regret, but both primary confidence intervals include
+  zero. This targeted exploratory result does not authorize production OOC
+  changes, model training, or an auxiliary-head claim. Production gameplay is
+  unchanged.
