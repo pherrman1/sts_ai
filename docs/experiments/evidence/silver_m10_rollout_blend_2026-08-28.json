@@ -1,0 +1,36 @@
+{
+  "schema": "silver-m10-rollout-blend-evidence-v1",
+  "date": "2026-08-28",
+  "verdict": "M10_BLEND_OFFLINE_REJECTED",
+  "baseline_sha": "29edcfddf78a82c2a79a0b2234084f3cadda9bd6",
+  "inputs_sha256": {
+    "selected_corpus": "bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7",
+    "manifest": "db67ff9df6a1578a46e4e09038b5f2548772fc9c70fc54a00b1576f659883cd7",
+    "relabels": "abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c",
+    "features": "c23e5974a916ae59e34dacfbb1e9dcd6eea803cb77ff42a0e1390a87856a9987",
+    "xgboost_m10": "cfb7bf8b041e6748a6a63f280eb8c43ad2bbefc223e69d0d9807567ebcbe5613",
+    "native_m10": "344c83efebb4e2772971495e1e57e6202192386476e2c0c1b038a84f355f9959"
+  },
+  "selection": {
+    "reference": "corrected 25k-A teacher utility",
+    "anchor_groups_excluded": 93,
+    "anchor_rows_inspected_for_metrics": 0,
+    "complete_sibling_groups": 329,
+    "rows": 2445,
+    "reference_pairs": 31797,
+    "bootstrap_replicates": 5000,
+    "bootstrap_seed": 20260827,
+    "pre_metric_depth_edges": [4, 5],
+    "arms": {
+      "alpha_0": {"pairwise": 0.628785734503255, "top_leaf": 0.40425531914893614, "mean_regret": 2.4721923558900523, "centered_mae": 8.90843424701993, "centered_rmse": 13.601430306957282, "prediction_ties": 1303},
+      "alpha_0.1": {"pairwise": 0.6342736736170079, "top_leaf": 0.364741641337386, "mean_regret": 2.5075669693182734, "centered_mae": 8.071125810549406, "centered_rmse": 12.30003517175126, "prediction_ties": 102, "pairwise_delta_95pct": [0.0025907554651947023, 0.0071863174168947195], "top_leaf_delta_95pct": [-0.07294832826747716, -0.009118541033434624], "regret_delta_95pct": [-0.10284273807947723, 0.15959290985183539]},
+      "alpha_0.25": {"pairwise": 0.6382992106173538, "top_leaf": 0.3677811550151976, "mean_regret": 2.4629306329103664, "centered_mae": 6.860918331505655, "centered_rmse": 10.40178906668139, "prediction_ties": 102, "pairwise_delta_95pct": [0.0046531684178300284, 0.013057074987993597], "top_leaf_delta_95pct": [-0.06990881458966564, -0.003039513677811523], "regret_delta_95pct": [-0.15739106667917166, 0.12702250709953197]},
+      "alpha_0.5": {"pairwise": 0.6487404472120011, "top_leaf": 0.3586626139817629, "mean_regret": 2.4284046877097096, "centered_mae": 5.040582311524891, "centered_rmse": 7.502681713582164, "prediction_ties": 102, "pairwise_delta_95pct": [0.005021681269258094, 0.030470013027434864], "top_leaf_delta_95pct": [-0.08510638297872342, -0.006079027355623101], "regret_delta_95pct": [-0.23401994983186683, 0.1286243914401923]},
+      "alpha_0.75": {"pairwise": 0.6605969116583326, "top_leaf": 0.331306990881459, "mean_regret": 2.5382618454269488, "centered_mae": 3.6633132347035677, "centered_rmse": 5.410910987789315, "prediction_ties": 102},
+      "alpha_1": {"pairwise": 0.6690253797528068, "top_leaf": 0.3799392097264438, "mean_regret": 2.663528854735176, "centered_mae": 3.3140557625794544, "centered_rmse": 5.211563129725025, "prediction_ties": 2038}
+    }
+  },
+  "decision": "Every sensible nonzero blend had a material primary counter-metric conflict. Alpha 0.1 improved pairwise concordance by 0.549 percentage points, but top-leaf agreement fell by 3.951 points with a wholly negative 95% whole-group interval, and regret worsened. No candidate was locked.",
+  "raw_selection": {"local_path": "build/silver_m10_rollout_blend/selection.json", "sha256": "162b5de871eed0fd3284d7fe60b5fcfb733b43ddf25356489db4c34b5094537d", "bytes": 46179},
+  "omitted_by_stop_rule": ["depth-schedule selection", "candidate lock", "25k-B evaluation", "native implementation", "native performance gate", "gameplay gate"]
+}

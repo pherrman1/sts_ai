@@ -5201,3 +5201,36 @@ model training was changed.
   zero. This targeted exploratory result does not authorize production OOC
   changes, model training, or an auxiliary-head claim. Production gameplay is
   unchanged.
+
+## Â§183 Silver M10 rollout blend: OFFLINE REJECTED before anchor (2026-08-28)
+
+- **Question:** Can a low-weight affine correction of the actual auxiliary
+  SimpleAgent rollout by the exact M10 prediction improve sibling ranking and
+  selected-leaf regret without losing the rollout's tactical continuation
+  signal?
+- **Baseline and inputs:** branch baseline `29edcfd` (PR #76 merged). Reused the
+  immutable 3,207-row selected corpus, 500-group manifest, 17,030-row relabels,
+  canonical 1,766-feature rows, and exact M10. All six recorded input/runtime
+  hashes matched; see the compact evidence manifest. No leaves were collected,
+  teachers rerun, or model retrained.
+- **Leakage boundary:** all 93 groups containing an independent 25k-B row were
+  excluded before metric inspection. Selection used corrected 25k-A only and
+  retained 329 complete sibling groups / 2,445 leaves / 31,797 non-tied
+  reference pairs. The 25k-B anchor was not evaluated.
+- **Fixed-grid result:** alpha 0/0.1/0.25/0.5/0.75/1 pairwise concordance was
+  `62.879/63.427/63.830/64.874/66.060/66.903%`; top-leaf agreement was
+  `40.426/36.474/36.778/35.866/33.131/37.994%`; mean regret was
+  `2.472/2.508/2.463/2.428/2.538/2.664`. Alpha 0.1's pairwise delta 95%
+  whole-group bootstrap interval was `[+0.259,+0.719]pp`, but its top-leaf
+  delta interval was `[-7.295,-0.912]pp`; regret also worsened.
+  Alpha 0.25 kept the same material top-leaf conflict. Lower centered RMSE at
+  larger weights did not override ranking/regret metrics.
+- **Depth interaction:** empirical depth tercile edges 4/5 were established
+  before subgroup inspection and subgroup metrics were emitted. Phase 1's
+  candidate rule already failed, so no schedule was selected or optimized.
+- **Verdict/stop:** **`M10_BLEND_OFFLINE_REJECTED`**. No candidate lock, 25k-B
+  evaluation, native implementation, performance gate, or gameplay gate was
+  run. Full ignored selection report SHA-256:
+  `162b5de871eed0fd3284d7fe60b5fcfb733b43ddf25356489db4c34b5094537d`.
+  Compact evidence:
+  `docs/experiments/evidence/silver_m10_rollout_blend_2026-08-28.json`.
