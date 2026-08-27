@@ -68,6 +68,14 @@ class SilverLeafPipelineTest(unittest.TestCase):
             self.assertEqual(report["independent_reference"], "25k replicate B")
             self.assertEqual(report["state_value_and_action"]["1000"]["top_action_agreement"], 1.0)
             self.assertEqual(report["sibling_value"]["1000"]["strict_pairwise_concordance"], 1.0)
+            bootstrap = report["group_bootstrap_uncertainty"]
+            self.assertEqual(bootstrap["method"], "paired sibling-group bootstrap with replacement")
+            self.assertEqual(bootstrap["anchor_groups"], 1)
+            self.assertEqual(bootstrap["replicates"], 2000)
+            self.assertEqual(bootstrap["candidates"]["1000"]
+                             ["top_action_agreement_margin_vs_25k_ceiling"],
+                             {"p025": 0.0, "p975": 0.0})
+            self.assertEqual(bootstrap["candidates"]["1000"]["global_bar_pass_probability"], 1.0)
         finally:
             for path in paths:
                 path.unlink(missing_ok=True)

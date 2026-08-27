@@ -12,6 +12,12 @@ policy-prior target transformation in this task.
 
 Fresh teacher searches reuse a stable group/replicate seed across budgets and
 sibling leaves; a separate replicate B supplies the independent 25k reference.
+The analyzer retains the preregistered point-estimate decision rule and also
+reports a deterministic paired sibling-group bootstrap. Candidate and 25k-A
+ceiling metrics share each resampled group draw against the independent 25k-B
+reference; 95% percentile intervals cover the three agreement margins and
+regret excess/ratio, with a global-bar pass probability reported separately
+from the required manual subgroup-pathology review.
 
 ## Corrected utility fact
 
@@ -32,6 +38,7 @@ records child victory counts and retains all raw quantities.
 
 ## Status and follow-up
 
-Implementation validation and a tiny GCP smoke are required before the draft
-PR review checkpoint. The decision-bearing ~500-group pilot remains prohibited
-until independent review accepts the frozen SHA.
+Implementation validation and the tiny GCP smoke passed at `7870059`. Independent
+review accepted the corpus/relabel design and requested the group-bootstrap
+uncertainty report before freezing the SHA used for the decision-bearing
+~500-group GCP pilot. Model training remains a separate later experiment.

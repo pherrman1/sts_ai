@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import random
 import statistics
 from collections import defaultdict
 from pathlib import Path
@@ -176,11 +177,90 @@ def subgroup_report(pairs):
     return report
 
 
+def interval(values):
+    return {"p025": quantile(values, 0.025), "p975": quantile(values, 0.975)}
+
+
+def bootstrap_uncertainty(pair_sets, replicates, seed):
+    """Paired group bootstrap against the independent 25k-B ceiling.
+
+    Whole sibling groups are sampled with replacement. Candidate and 25k-A
+    ceiling metrics use the same group draw, preserving their paired
+    dependence on the common independent 25k-B reference.
+    """
+    by_budget = {}
+    for budget, pairs in pair_sets.items():
+        grouped = defaultdict(list)
+        for pair in pairs:
+            grouped[pair[0]["group_id"]].append(pair)
+        by_budget[budget] = grouped
+    common_groups = sorted(set(by_budget[25000]).intersection(
+        *(set(by_budget[budget]) for budget in (1000, 3700, 10000))))
+    output = {"method": "paired sibling-group bootstrap with replacement",
+              "confidence_level": 0.95, "replicates": replicates, "seed": seed,
+              "anchor_groups": len(common_groups), "candidates": {}}
+    if not common_groups or replicates <= 0:
+        return output
+
+    rng = random.Random(seed)
+    samples = {budget: {"top": [], "pair": [], "sibling": [], "regret": [],
+                        "regret_ratio": [], "joint_pass": []}
+               for budget in (1000, 3700, 10000)}
+    for _ in range(replicates):
+        drawn = [rng.choice(common_groups) for _ in common_groups]
+        resampled = {}
+        for budget in BUDGETS:
+            pairs = []
+            for occurrence, group_id in enumerate(drawn):
+                for candidate, reference in by_budget[budget][group_id]:
+                    candidate_copy = dict(candidate)
+                    candidate_copy["group_id"] = f"{group_id}#bootstrap-{occurrence}"
+                    pairs.append((candidate_copy, reference))
+            resampled[budget] = (aggregate_state(pairs), sibling_metrics(pairs))
+        ceiling, sibling_ceiling = resampled[25000]
+        for budget in (1000, 3700, 10000):
+            metric, sibling = resampled[budget]
+            top = metric["top_action_agreement"] - ceiling["top_action_agreement"]
+            pair = (metric["legal_action_pairwise_agreement"]
+                    - ceiling["legal_action_pairwise_agreement"])
+            sibling_margin = (sibling["strict_pairwise_concordance"]
+                              - sibling_ceiling["strict_pairwise_concordance"])
+            regret_floor = ceiling["mean_regret"] or 0.0
+            regret = metric["mean_regret"] - regret_floor
+            regret_tolerance = max(0.25, abs(regret_floor))
+            values = samples[budget]
+            values["top"].append(top)
+            values["pair"].append(pair)
+            values["sibling"].append(sibling_margin)
+            values["regret"].append(regret)
+            if abs(regret_floor) >= 1e-9:
+                values["regret_ratio"].append(metric["mean_regret"] / regret_floor)
+            values["joint_pass"].append(
+                top >= -0.02 and pair >= -0.02 and sibling_margin >= -0.02
+                and regret <= regret_tolerance)
+
+    for budget, values in samples.items():
+        output["candidates"][str(budget)] = {
+            "top_action_agreement_margin_vs_25k_ceiling": interval(values["top"]),
+            "legal_action_pairwise_margin_vs_25k_ceiling": interval(values["pair"]),
+            "sibling_concordance_margin_vs_25k_ceiling": interval(values["sibling"]),
+            "mean_regret_excess_vs_25k_noise": interval(values["regret"]),
+            "mean_regret_ratio_to_25k_noise": interval(values["regret_ratio"]),
+            "global_bar_pass_probability": mean(values["joint_pass"]),
+            "note": "Global bootstrap excludes the separately reported manual subgroup-pathology review.",
+        }
+    return output
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("relabels", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--bootstrap-replicates", type=int, default=2000)
+    parser.add_argument("--bootstrap-seed", type=int, default=20260827)
     args = parser.parse_args()
+    if args.bootstrap_replicates < 0:
+        raise SystemExit("--bootstrap-replicates must be nonnegative")
     rows = {}
     with args.relabels.open(encoding="utf-8") as stream:
         for number, line in enumerate(stream, 1):
@@ -252,12 +332,16 @@ def main() -> int:
         if passes and chosen is None:
             chosen = {1000: "TEACHER_1K", 3700: "TEACHER_3P7K", 10000: "TEACHER_10K"}[budget]
     verdict = chosen or "TEACHER_BUDGET_UNRESOLVED_OR_25K_REQUIRED"
+    bootstrap = bootstrap_uncertainty(
+        pair_sets, args.bootstrap_replicates, args.bootstrap_seed)
     report = {"analyzer_schema": "silver_leaf_teacher_analysis_v1",
               "independent_reference": "25k replicate B", "state_value_and_action": comparisons,
               "sibling_value": siblings, "replicate_ceiling_25kA_vs_25kB": {
                   "state": ceiling, "sibling": sibling_ceiling},
               "subgroups": subgroups,
-              "candidate_decisions": decisions, "verdict": verdict,
+              "candidate_decisions": decisions,
+              "group_bootstrap_uncertainty": bootstrap,
+              "verdict": verdict, "point_estimate_verdict": verdict,
               "warning": "Subgroup reversal/pathology must be reviewed before accepting a passing global verdict."}
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2, sort_keys=True))
