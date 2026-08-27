@@ -14,6 +14,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -25,6 +26,7 @@
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverSemanticAction.h"
+#include "sim/search/SilverWireJson.h"
 
 namespace sts::search {
 
@@ -50,6 +52,10 @@ struct SilverLiveOptions {
     bool leafVNetDirect = false;
     double leafVNetAffineA = 1.0;
     double leafVNetAffineB = 0.0;
+    std::string leafCorpusFile;
+    std::string executableGitSha;
+    int leafCorpusGroupModulus = 1;
+    int leafCorpusMaxLeavesPerGroup = 256;
     bool adaptiveEnabled = false;
     double adaptiveTopTwoVisitGapThreshold = 0.094;
     bool installed = false;
@@ -66,6 +72,7 @@ bool g_stickyQualitySummaryHeaderWritten = false;
 std::mutex g_rootDiagnosticMutex;
 bool g_rootDiagnosticHeaderWritten = false;
 std::mutex g_leafVNetLogMutex;
+std::mutex g_leafCorpusMutex;
 bool g_leafVNetLogHeaderWritten = false;
 bool g_stickyQualityActionTraceForTest = false;
 std::mutex g_stickyQualitySelectionMutex;
@@ -120,6 +127,12 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_DIRECT")) options.leafVNetDirect = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_A")) options.leafVNetAffineA = std::atof(raw);
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_B")) options.leafVNetAffineB = std::atof(raw);
+    if (const char *raw = std::getenv("STS_SILVER_LEAF_CORPUS")) options.leafCorpusFile = raw;
+    if (const char *raw = std::getenv("STS_SILVER_LEAF_CORPUS_GROUP_MODULUS"))
+        options.leafCorpusGroupModulus = std::atoi(raw);
+    if (const char *raw = std::getenv("STS_SILVER_LEAF_CORPUS_MAX_PER_GROUP"))
+        options.leafCorpusMaxLeavesPerGroup = std::atoi(raw);
+    if (const char *raw = std::getenv("STS_EXECUTABLE_GIT_SHA")) options.executableGitSha = raw;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE"))
         options.adaptiveEnabled = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
@@ -134,6 +147,37 @@ void parseSilverLiveOptions() {
     if (!options.leafVNetLogFile.empty() || options.leafVNetDirect) {
         if (options.leafVNetSample <= 0 || options.leafVNetMaxPerCombat <= 0)
             throw std::invalid_argument("STS_SILVER_VNET_LEAF_SAMPLE and _MAX_PER_COMBAT must be positive");
+    }
+    if (!options.leafCorpusFile.empty()
+            && (options.leafCorpusGroupModulus <= 0
+                || options.leafCorpusMaxLeavesPerGroup <= 0
+                || options.executableGitSha.empty())) {
+        throw std::invalid_argument("STS_SILVER_LEAF_CORPUS requires positive group modulus/max and STS_EXECUTABLE_GIT_SHA");
+    }
+    if (!options.leafCorpusFile.empty()) {
+        std::ifstream existing(options.leafCorpusFile);
+        std::string firstLine;
+        if (existing && std::getline(existing, firstLine) && !firstLine.empty()) {
+            try {
+                const auto row = nlohmann::json::parse(firstLine);
+                if (row.value("corpus_schema", std::string{}) != "silver_leaf_corpus_v1")
+                    throw std::runtime_error("schema mismatch");
+                if (row.value("executable_git_sha", std::string{}) != options.executableGitSha
+                        || row.value("silver_upstream_sha", std::string{})
+                            != "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff"
+                        || row.value("sampling_modulus", 0) != options.leafCorpusGroupModulus
+                        || row.value("sampling_max_leaves_per_group", 0)
+                            != options.leafCorpusMaxLeavesPerGroup) {
+                    throw std::runtime_error("provenance or sampling configuration mismatch");
+                }
+                (void)silver_bridge::battleStateWireFromEnvelope(row.at("leaf_state"));
+                (void)silver_bridge::battleStateWireFromEnvelope(row.at("parent_state"));
+                (void)silver_bridge::battleStateWireFromEnvelope(row.at("original_root_state"));
+            } catch (const std::exception &e) {
+                throw std::invalid_argument("STS_SILVER_LEAF_CORPUS has incompatible existing data: "
+                    + options.leafCorpusFile + " (" + e.what() + ")");
+            }
+        }
     }
     if (!options.stickyQualityFile.empty()
             && options.reuseCapMode != silver_bridge::SilverReuseCapMode::ACTIVE) {
@@ -371,6 +415,101 @@ bool sampledLeaf(const silver_bridge::SilverLeafObservation &observation, int mo
     mix(observation.parentStateHash); mix(observation.leafStateHash);
     mix(static_cast<std::uint32_t>(observation.depth));
     return h % static_cast<std::uint64_t>(modulus) == 0;
+}
+
+std::uint64_t fnvString(const std::string &value) {
+    std::uint64_t h = 1469598103934665603ULL;
+    for (const unsigned char c : value) { h ^= c; h *= 1099511628211ULL; }
+    return h;
+}
+
+std::string hexId(std::uint64_t value) {
+    std::ostringstream out;
+    out << std::hex << std::setw(16) << std::setfill('0') << value;
+    return out.str();
+}
+
+std::string corpusGroupId(std::uint64_t runSeed, int decision,
+                          const silver_bridge::SilverLeafObservation &observation) {
+    std::ostringstream identity;
+    identity << runSeed << '/' << observation.state.floorNum << '/'
+             << observation.state.encounter << '/' << decision << '/'
+             << observation.rootStateHash << '/' << observation.parentStateHash << '/'
+             << fnvString(silver_bridge::battleStateWireEnvelope(
+                    observation.originalRootState).dump()) << '/'
+             << fnvString(silver_bridge::battleStateWireEnvelope(
+                    observation.parentState).dump());
+    return hexId(fnvString(identity.str()));
+}
+
+bool sampledCorpusGroup(const std::string &groupId) {
+    return fnvString(groupId) % static_cast<std::uint64_t>(
+        g_silverLiveOptions.leafCorpusGroupModulus) == 0;
+}
+
+std::string corpusLeafId(const std::string &groupId, const std::string &stateDump) {
+    return hexId(fnvString(groupId + "/" + stateDump))
+        + hexId(fnvString("silver_leaf_snapshot/" + groupId + "/" + stateDump));
+}
+
+void writeLeafCorpusObservation(std::uint64_t runSeed, int decision,
+                                const std::string &roomType, const std::string &groupId,
+                                const std::string &leafId,
+                                const silver_bridge::SilverSearchConfig &config,
+                                const silver_bridge::SilverLeafObservation &o) {
+    nlohmann::json row = {
+        {"corpus_schema", "silver_leaf_corpus_v1"},
+        {"executable_git_sha", g_silverLiveOptions.executableGitSha},
+        {"silver_upstream_sha", "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff"},
+        {"run_seed", runSeed}, {"isolated_search_seed", o.state.isolatedSearchSeed},
+        {"act", o.state.act}, {"floor", o.state.floorNum},
+        {"encounter", o.state.encounter}, {"encounter_category", roomType},
+        {"combat_decision_ordinal", decision}, {"root_state_hash", o.rootStateHash},
+        {"parent_state_hash", o.parentStateHash}, {"leaf_state_hash", o.leafStateHash},
+        {"search_depth", o.depth}, {"input_state", o.state.inputState},
+        {"cur_hp", o.state.player.curHp}, {"max_hp", o.state.player.maxHp},
+        {"turn", o.state.turn}, {"potion_count", o.state.potionCount},
+        {"group_id", groupId}, {"leaf_snapshot_id", leafId},
+        {"sampling_modulus", g_silverLiveOptions.leafCorpusGroupModulus},
+        {"sampling_max_leaves_per_group", g_silverLiveOptions.leafCorpusMaxLeavesPerGroup},
+        {"sampling_probability", 1.0 / g_silverLiveOptions.leafCorpusGroupModulus},
+        {"incoming_action_fingerprint", o.incomingActionFingerprint},
+        {"parent_legal_action_fingerprints", o.parentLegalActionFingerprints},
+        {"leaf_state", silver_bridge::battleStateWireEnvelope(o.state)},
+        {"parent_state", silver_bridge::battleStateWireEnvelope(o.parentState)},
+        {"original_root_state", silver_bridge::battleStateWireEnvelope(o.originalRootState)},
+        {"eval_weights", {{"win_bonus", 53.0}, {"potion_weight", 11.0},
+            {"victory_turn_penalty", 0.4}, {"monster_damage_weight", 37.0},
+            {"alive_weight", 3.4}, {"energy_waste_weight", 1.75},
+            {"draw_weight", 0.03}, {"turn_survival_weight", 1.5},
+            {"gold_weight", 0.25}, {"max_hp_weight", 2.0},
+            {"parasite_penalty", 12.0}}},
+        {"silver_config", {{"simulations_per_decision", config.simulationsPerDecision},
+            {"exploration_parameter", config.explorationParameter},
+            {"exploration_parameter_chance", config.explorationParameterChance},
+            {"chance_widening_c", config.chanceWideningC},
+            {"chance_widening_alpha", config.chanceWideningAlpha},
+            {"end_turn_widening_c", config.endTurnWideningC},
+            {"end_turn_widening_alpha", config.endTurnWideningAlpha},
+            {"reuse_cap", config.reuseCap},
+            {"reuse_cap_mode", silver_bridge::silverReuseCapModeName(config.reuseCapMode)}}},
+        {"aux_rollout", {{"terminal_outcome", o.terminalOutcome},
+            {"utility_original_root", o.rolloutUtility},
+            {"action_fingerprints", o.rolloutActionFingerprints},
+            {"action_count", o.rolloutActionCount}, {"turn_delta", o.rolloutTurnDelta},
+            {"wall_micros", o.rolloutWallMicros}, {"terminal_hp", o.terminalHp},
+            {"terminal_max_hp", o.terminalMaxHp}, {"terminal_turn", o.terminalTurn},
+            {"terminal_potion_count", o.terminalPotionCount},
+            {"terminal_effective_gold", o.terminalEffectiveGold}}}
+    };
+    std::lock_guard<std::mutex> lock(g_leafCorpusMutex);
+    std::ofstream out(g_silverLiveOptions.leafCorpusFile, std::ios::app);
+    if (!out) throw std::runtime_error("cannot open STS_SILVER_LEAF_CORPUS: "
+                                      + g_silverLiveOptions.leafCorpusFile);
+    out << row.dump() << '\n';
+    out.flush();
+    if (!out) throw std::runtime_error("cannot write STS_SILVER_LEAF_CORPUS: "
+                                      + g_silverLiveOptions.leafCorpusFile);
 }
 
 void ensureSilverLeafVNetLoaded() {
@@ -802,6 +941,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     const bool collectStickyQuality = !g_silverLiveOptions.stickyQualityFile.empty();
     const bool collectRootDiagnostics = !g_silverLiveOptions.rootDiagnosticFile.empty();
     const bool collectLeafVNet = !g_silverLiveOptions.leafVNetLogFile.empty();
+    const bool collectLeafCorpus = !g_silverLiveOptions.leafCorpusFile.empty();
     const bool directLeafVNet = g_silverLiveOptions.leafVNetDirect;
     const bool emitTelemetry = std::getenv("STS_SILVER_TELEMETRY")
         && std::atoi(std::getenv("STS_SILVER_TELEMETRY")) != 0;
@@ -817,20 +957,44 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
 
     int decision = 0;
     int sampledLeafCount = 0;
+    std::unordered_map<std::string, std::unordered_set<std::string>> corpusLeavesByGroup;
+    struct PendingCorpusLeaf {
+        std::string leafId;
+        std::string roomType;
+        int decisionOrdinal = 0;
+        silver_bridge::SilverSearchConfig config;
+        silver_bridge::SilverLeafObservation observation;
+    };
+    std::unordered_map<std::string, std::vector<PendingCorpusLeaf>> pendingCorpusGroups;
+    silver_bridge::SilverSearchConfig currentCorpusConfig;
     silver_bridge::SilverLeafObserver leafObserver;
-    if (collectLeafVNet || directLeafVNet) {
+    if (collectLeafVNet || directLeafVNet || collectLeafCorpus) {
         leafObserver = [&, runSeed = gc.seed](silver_bridge::SilverLeafObservation &observation) {
             if (observation.phase == silver_bridge::SilverLeafObservationPhase::START) {
                 const bool logThisLeaf = collectLeafVNet
                     && sampledLeafCount < g_silverLiveOptions.leafVNetMaxPerCombat
                     && sampledLeaf(observation, g_silverLiveOptions.leafVNetSample);
-                if (!logThisLeaf && !directLeafVNet) return;
-                const BattleContext projected = liveLeafBattleContext(observation.state);
-                if (!g_silverLeafVNet.loaded())
-                    throw std::runtime_error("Silver leaf VNet was not loaded before search");
-                observation.vnetRawPrediction = g_silverLeafVNet.predict(projected, false);
+                if (collectLeafCorpus) {
+                    const auto groupId = corpusGroupId(runSeed, decision, observation);
+                    if (sampledCorpusGroup(groupId)) {
+                        const auto stateDump = silver_bridge::battleStateWireEnvelope(observation.state).dump();
+                        auto &seen = corpusLeavesByGroup[groupId];
+                        if (static_cast<int>(seen.size()) < g_silverLiveOptions.leafCorpusMaxLeavesPerGroup
+                                && seen.insert(stateDump).second) {
+                            observation.corpusSelected = true;
+                            observation.collectResult = true;
+                        }
+                    }
+                }
+                if (logThisLeaf || directLeafVNet) {
+                    const BattleContext projected = liveLeafBattleContext(observation.state);
+                    if (!g_silverLeafVNet.loaded())
+                        throw std::runtime_error("Silver leaf VNet was not loaded before search");
+                    observation.vnetRawPrediction = g_silverLeafVNet.predict(projected, false);
+                }
                 if (logThisLeaf) {
                     observation.collectResult = true;
+                    observation.vnetCollected = true;
                     ++sampledLeafCount;
                 }
                 if (directLeafVNet) {
@@ -839,7 +1003,18 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                     observation.skipRollout = true;
                 }
             } else if (observation.collectResult) {
-                writeLeafVNetObservation(runSeed, decision, observation);
+                if (observation.vnetCollected)
+                    writeLeafVNetObservation(runSeed, decision, observation);
+                if (observation.corpusSelected) {
+                    const auto groupId = corpusGroupId(runSeed, decision, observation);
+                    const auto stateDump = silver_bridge::battleStateWireEnvelope(observation.state).dump();
+                    const auto leafId = corpusLeafId(groupId, stateDump);
+                    const std::string roomType = gc.curRoom == Room::MONSTER ? "hallway"
+                        : gc.curRoom == Room::ELITE ? "elite"
+                        : gc.curRoom == Room::BOSS ? "boss" : "other";
+                    pendingCorpusGroups[groupId].push_back(
+                        {leafId, roomType, decision, currentCorpusConfig, observation});
+                }
             }
         };
     }
@@ -881,6 +1056,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         config.collectRootActionSummaries = collectRootDiagnostics || config.adaptiveEnabled;
         config.collectRolloutDiagnostics = collectRootDiagnostics;
         config.leafObserver = leafObserver;
+        currentCorpusConfig = config;
+        currentCorpusConfig.leafObserver = {};
         silver_bridge::SemanticAction semantic;
         if (bc.inputState == InputState::CARD_SELECT
                 && (bc.cardSelectInfo.cardSelectTask == CardSelectTask::EXHAUST_MANY
@@ -988,6 +1165,21 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
         ++g_silverLiveDiagnostics.decisions;
         agent.takeAction(bc, resolved.action);
+    }
+    for (const auto &[groupId, leaves] : pendingCorpusGroups) {
+        if (leaves.empty()) continue;
+        std::unordered_set<std::string> legal(
+            leaves.front().observation.parentLegalActionFingerprints.begin(),
+            leaves.front().observation.parentLegalActionFingerprints.end());
+        std::unordered_set<std::string> mapped;
+        for (const auto &leaf : leaves) mapped.insert(leaf.observation.incomingActionFingerprint);
+        const bool complete = std::all_of(legal.begin(), legal.end(),
+            [&](const auto &fingerprint) { return mapped.count(fingerprint) != 0; });
+        if (!complete) continue;
+        for (const auto &leaf : leaves) {
+            writeLeafCorpusObservation(gc.seed, leaf.decisionOrdinal, leaf.roomType, groupId,
+                                       leaf.leafId, leaf.config, leaf.observation);
+        }
     }
     agent.simulationCountTotal += static_cast<std::int64_t>(g_silverLiveDiagnostics.simulations);
     if (collectScalingDiagnostics) writeScalingDiagnostics(scalingDiagnostics);

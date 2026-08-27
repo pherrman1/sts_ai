@@ -99,6 +99,40 @@ seed/root/parent/leaf/depth and consumes no gameplay RNG. The CSV analyzer is
 reports sibling ranking, centered error, top-leaf agreement, regret, and an
 optional seed-held-out affine calibration.
 
+The separate default-off Silver leaf corpus extends the same rollout-start
+observer without changing rollout or selection. It stores JSONL
+`silver_leaf_corpus_v1` records whose source of truth is an embedded,
+fail-closed `silver_leaf_wire_v1` envelope around `BattleStateWire::kVersion`.
+Each record contains the exact leaf, original search root, and nearest
+non-random parent decision state; the complete semantic parent action set; and
+the incoming-action-to-leaf mapping. Sampling hashes run/combat/decision,
+original-root, and parent identity. A selected group buffers all unique leaves
+up to a defensive cap and is emitted only if every legal parent action has a
+retained mapping. The existing one-sample `SimpleAgent` terminal rollout is
+stored as auxiliary raw data.
+
+`silver_leaf_relabel` reloads a selected manifest and runs fresh isolated
+Silver searches at 1k/3.7k/10k/25k-A, plus independent 3.7k/10k/25k-B on a
+stable 20% group anchor. Sibling leaves share replicate seed identity, and the
+same replicate seed is reused across budgets so A budgets are matched prefixes;
+25k-B is the independent reference. It emits raw semantic actions, visits,
+Qs, child simulations and victories, selection flags, telemetry, and timing
+for every leaf and once per parent group. No policy-target transformation is
+defined.
+
+Only victorious Silver evaluations contain root-relative effective-gold and
+max-HP terms. Changing from the original root to leaf-as-root is therefore not
+an unconditional scalar offset when a Q mixes wins and losses. For a fixed
+leaf the per-victory correction is
+`goldWeight*(effectiveGold(leaf)-effectiveGold(originalRoot)) +
+maxHpWeight*(leaf.maxHp-originalRoot.maxHp)`; losses receive zero. Root-action
+victory counts are collected with summaries so each corrected action Q adds
+this constant multiplied by its empirical victory fraction. The correction is
+observational and does not alter search selection. The selector is
+`tools/select_silver_leaf_corpus.py`; `tools/analyze_silver_leaf_teacher.py`
+compares every A budget with independent 25k-B and applies the preregistered
+smallest-passing budget rule.
+
 Runic Dome hides future monster intents from materialization. Looter and
 Mugger are the concrete cases that require `DeferredDirectMoveChoice`: their
 escape-versus-attack continuation is chosen directly rather than through the
