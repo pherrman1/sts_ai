@@ -112,12 +112,12 @@ target_link_options(silver-native-test PRIVATE -Wl,--gc-sections)
 add_executable(silver-native-parity-runner third_party/silver_lightspeed/bridge/SilverNativeFixtureRunner.cpp)
 set_target_properties(silver-native-parity-runner PROPERTIES OUTPUT_NAME silver_native_parity_runner)
 set_target_properties(silver-native-parity-runner PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
-target_include_directories(silver-native-parity-runner PRIVATE third_party/silver_lightspeed/include)
+target_include_directories(silver-native-parity-runner PRIVATE third_party/silver_lightspeed/include include)
 target_compile_definitions(silver-native-parity-runner PRIVATE
     sts=sts_silver java=sts_silver_java fixed_list=silver_fixed_list
     rollWeightedIdx=silver_rollWeightedIdx simulationIdx=silver_simulationIdx
     initMaps=silver_initMaps agentMtRunner=silver_agentMtRunner)
-target_link_libraries(silver-native-parity-runner PRIVATE silver_combat_model)
+target_link_libraries(silver-native-parity-runner PRIVATE silver_combat_model silver_combat_search_bridge)
 target_link_options(silver-native-parity-runner PRIVATE -Wl,--gc-sections)
 
 # Full boundary test has its own executable: it needs both live fixture
