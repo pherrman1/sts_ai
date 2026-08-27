@@ -203,7 +203,9 @@ CardSource selectSource(sts::CardSelectTask task) {
     case sts::CardSelectTask::ARMAMENTS:
     case sts::CardSelectTask::DUAL_WIELD:
     case sts::CardSelectTask::EXHAUST_ONE:
+    case sts::CardSelectTask::EXHAUST_MANY:
     case sts::CardSelectTask::FORETHOUGHT:
+    case sts::CardSelectTask::GAMBLE:
     case sts::CardSelectTask::NIGHTMARE:
     case sts::CardSelectTask::RECYCLE:
     case sts::CardSelectTask::SETUP:
