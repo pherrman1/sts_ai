@@ -3,7 +3,7 @@
 Last verified: 2026-08-11 against the current working tree (per-encounter combat value specialization implemented opt-in: `STS_VNET_PER_ENCOUNTER` dir overlay + `combat_mlp_meta_v1` in-file deltas with `predict(bc)` dispatch, `vnettest --encounter` parity mode — gate pending; covariate-shift mixture retrain `tools/train_value_mixture.py` — mixture = all combatgen + leafdiag train-seed states with separate on-policy/search-leaf holdouts, §137: mixture does NOT improve held-out search-leaf ranking, branch closed, deployed vnet unchanged; frontiergen/leafrelabel frontier-leaf corpus: `BattleContextBinary.h` binary snapshots, 3-site `g_onS3LeafQuery` frontier hook gated to frontiergen via `g_s3LeafQueryAllSites` with `S3LeafDiagnostic::frontierType`/`rolloutSteps`, per-stratum reservoirs + corpus-wide obsHash dedup, terminal-outcome relabeling with the virtual `evaluateTerminal` (+ self-documenting `nonTerminal` column), CRN sibling evals via the searcher's own action enumeration; leafdiag/leafref/rollouttrace unchanged — the extra hook sites fire only under `g_s3LeafQueryAllSites`; §126 vnet default superseded by the §148 7k-tuned model, §133/§134 candidates stay rejected; B1 tactical turn-beam rollout `STS_S3_TURN_ROLLOUT` implemented opt-in, gate pending; S3 forced-move budget pool redirect `STS_S3_POOL_REDIRECT` implemented opt-in, §143 gate pending; multi-select mask canonicalization `STS_MULTISELECT_CANONICAL` implemented opt-in, `cardselect_canonical` test added, gate pending; experimental zero-mean ranking correction `STS_VNET_RANK_CORR` implemented opt-in (`tools/train_rank_correction.py`, additive on the vnet/PVNet leaf + fair-path search-complete clamp, off by default, byte-identical when unset).
 
 Experiment 4 persistent-END_TURN subsection last verified: 2026-08-25.
-Isolated Silver backend subsection last verified: 2026-08-26.
+Isolated Silver backend subsection last verified: 2026-08-27.
 
 ## Purpose
 
@@ -69,6 +69,23 @@ subdecision, including exact reroots, and returns only the final identity-based
 subset for live validation. Focused coverage requires a real intermediate
 selection, nonzero `selectedBits`, an exact reroot, and inherited visits; an
 immediate empty confirmation is not multi-step evidence.
+
+The default-off Silver leaf observer is a type-free callback in
+`SilverBridge.h`. At the exact point where `BattleSearcher` would begin its
+`SimpleAgent` rollout, it can receive a wire snapshot plus root, nearest
+non-random-parent, and leaf state hashes, search depth, and actions already
+applied. The live bridge projects that wire snapshot into a normal live
+`BattleContext` and calls the existing `CombatValueNet::predict` path (the
+current model format has 751 features); feature extraction and VNet inference
+are not duplicated in the isolated namespace. A shadow callback records the
+terminal outcome, exact Silver `evaluateEndState()` utility, rollout action and
+turn counts, and steady-clock rollout microseconds. A direct callback may skip
+only nonterminal rollouts and supply a value; terminal tree states continue to
+use exact terminal evaluation. Sampling is deterministic FNV-1a over isolated
+seed/root/parent/leaf/depth and consumes no gameplay RNG. The CSV analyzer is
+`tools/analyze_silver_vnet_leaf.py`; it keeps complete run seeds together and
+reports sibling ranking, centered error, top-leaf agreement, regret, and an
+optional seed-held-out affine calibration.
 
 Runic Dome hides future monster intents from materialization. Looter and
 Mugger are the concrete cases that require `DeferredDirectMoveChoice`: their

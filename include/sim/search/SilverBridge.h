@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -173,6 +174,34 @@ struct BattleStateWire {
     std::uint32_t miscBits = 0;
 };
 
+enum class SilverLeafObservationPhase : std::uint8_t { START = 0, END = 1 };
+
+// Type-free observation/control value for the isolated Silver rollout boundary.
+// The state is materialized by the isolated bridge and must not be interpreted
+// as a live BattleContext inside the vendor namespace. A START callback may
+// set skipRollout/directValue; an END callback is emitted only when
+// collectResult was set at START.
+struct SilverLeafObservation {
+    SilverLeafObservationPhase phase = SilverLeafObservationPhase::START;
+    BattleStateWire state;
+    std::uint64_t rootStateHash = 0;
+    std::uint64_t parentStateHash = 0;
+    std::uint64_t leafStateHash = 0;
+    int depth = 0;
+    int actionCountBeforeRollout = 0;
+    bool collectResult = false;
+    bool skipRollout = false;
+    double vnetRawPrediction = 0.0;
+    double directValue = 0.0;
+    int terminalOutcome = 0;
+    double rolloutUtility = 0.0;
+    std::int64_t rolloutActionCount = 0;
+    std::int64_t rolloutTurnDelta = 0;
+    std::int64_t rolloutWallMicros = 0;
+};
+
+using SilverLeafObserver = std::function<void(SilverLeafObservation &)>;
+
 struct ConvertedStateDigest {
     bool accepted = false;
     bool equalForSearch = false;
@@ -257,6 +286,10 @@ struct SilverSearchConfig {
     // evaluation mean.  This is default-off diagnostic observation only.
     bool collectRootActionSummaries = false;
     bool collectRolloutDiagnostics = false;
+    // Optional type-free leaf callback. It is invoked at the exact point a
+    // SimpleAgent rollout would begin and is behavior-neutral unless the
+    // callback explicitly sets skipRollout/directValue.
+    SilverLeafObserver leafObserver;
 };
 
 struct SilverRootActionSummary {
@@ -313,6 +346,7 @@ struct SilverSearchTelemetry {
     std::int64_t rolloutNonTerminalStops = 0;
     std::int64_t rolloutActionCount = 0;
     std::int64_t rolloutTurnDelta = 0;
+    std::int64_t rolloutSkippedVNet = 0;
     double rolloutUtilitySum = 0.0;
     double rolloutWinBonusSum = 0.0;
     double rolloutHpSum = 0.0;
@@ -346,6 +380,7 @@ struct SilverSearchTelemetry {
         rolloutNonTerminalStops += other.rolloutNonTerminalStops;
         rolloutActionCount += other.rolloutActionCount;
         rolloutTurnDelta += other.rolloutTurnDelta;
+        rolloutSkippedVNet += other.rolloutSkippedVNet;
         rolloutUtilitySum += other.rolloutUtilitySum;
         rolloutWinBonusSum += other.rolloutWinBonusSum;
         rolloutHpSum += other.rolloutHpSum;

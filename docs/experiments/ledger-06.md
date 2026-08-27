@@ -4796,3 +4796,86 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   result; a future follow-up needs a more stratified corpus and an externally
   justified outcome reference if it is to distinguish utility correctness
   from search-noise effects.
+
+## §180 Silver leaf VNet transfer (2026-08-27)
+
+**Question.** Does the existing combat VNet rank actual isolated Silver
+rollout-start leaves well enough to replace the `SimpleAgent` rollout, and can
+the saved work become more search per unit time?
+
+**Implementation.** Added a default-off, type-free `SilverLeafObserver` at
+`BattleSearcher::rolloutToEnd`. The observer receives a `BattleStateWire` plus
+run/combat identity, root/nearest non-random-parent/leaf hashes, depth, and
+pre-rollout action count. The live bridge projects the wire into a normal live
+`BattleContext` and invokes the existing `CombatValueNet::predict` path; no
+second 751-feature extractor or VNet implementation was added. Shadow rows are
+deterministically FNV-1a sampled and capped per combat. Direct mode skips only
+nonterminal rollouts; exact terminal states retain `evaluateEndState()`.
+
+**Phase 1.** Guarded fair-play `bestbench 1000 8 0 123450`, one thread,
+ordinary Silver allocated-cap settings, sampled with modulus 32 and a maximum
+of 500 leaves per combat. The corpus contains 66,310 completed rows from seeds
+123450–123457 and took 581.90s wall (`real`), with 5,461,485 direct-arm
+nonterminal leaf skips observed later. The candidate model is
+`models/v_combat_7k_tuned.txt`, SHA-256
+`E26FFFDBE21392CC08DB841859D46C13188ACD16B180323868B04DCA55E15EA2`.
+
+**Phase 2.** Whole-seed/combat sibling groups (no random leaf split) produced:
+
+| metric | value |
+| --- | ---: |
+| rows / seeds / sibling groups | 66,310 / 8 / 10,348 |
+| global Pearson / Spearman | 0.775965 / 0.793090 |
+| strict pairwise concordance | 0.557776 (14,042 / 25,175 strict pairs) |
+| both exact ties / VNet-only ties / utility-only ties | 17,135 / 25,747 / 3,859 |
+| centered RMSE / MAE | 7.072633 / 3.331102 |
+| top-leaf agreement / mean regret / median regret | 0.747584 / 2.588172 / 0 |
+
+Act concordance was 0.617894 / 0.551690 / 0.544943 for Acts 1 / 2 / 3;
+low/high HP was 0.570493 / 0.556329; and short/medium/long rollout was
+0.583607 / 0.590266 / 0.541969. The global result is only just above the
+predeclared target and the Act-3/long-rollout strata are borderline, so this
+was treated as sufficient to permit the smallest gameplay gate but not as
+strong evidence.
+
+An OLS affine map fit on four whole training seeds and evaluated on four held
+out seeds was `silver_score = 1.511044821751927 * vnet + 51.61250607390761`.
+Train RMSE/MAE were 25.769349/21.022450 and held-out RMSE/MAE were
+23.239677/19.174299; held-out Pearson was 0.807286. This map was used in the
+direct arm.
+
+**Phase 3.** Paired fair-play, one-thread, 1000-simulation runs used the same
+seeds 123450–123457. Current Silver A had 2/8 wins, mean floor 42.5, mean
+end HP 17.5, and 37.48s/run (297.56s wall). Direct-VNet B had 0/8 wins, mean
+floor 29.8, mean end HP 0, and 195.95s/run (1562.13s wall). B skipped
+5,461,485 rollouts across 6,485,000 simulations, with zero conversion,
+semantic-resolution, transaction, or knowledge failures. Paired analysis had
+2 discordant seeds, both A-only wins; floor delta was -12.8 with 95% CI
+[-23.8, -1.4], and mean time increased by 158.48s/run. The equal-runtime
+follow-up was not allowed because B was neither approximately neutral nor
+materially faster.
+
+**Neutrality.** On the one-seed smoke at 100 simulations, disabled and
+shadow-enabled outputs matched exactly on seed, win, floor, act, HP, max HP,
+fights lost, death combat, and death encounter; only timing differed (1.85525s
+versus 3.02792s). The shadow corpus path is opt-in and behavior-neutral when
+disabled.
+
+**Artifacts.** Raw Phase-1 CSV `build/silver_vnet_phase1.csv`, SHA-256
+`7B7E6E55497D0B85FCD8159CCCE8489E5AA645DF4521C2963E32A29795D550A0`;
+analysis `build/silver_vnet_phase1_analysis.txt`, SHA-256
+`B860C27567ADBD72B917231664B875A0C9AEDFFE6529280A74EB9E508AA902AC`;
+current A CSV SHA-256
+`4081CE8C07D9F0FCB96EDBEEA829935C6926328CDACF0274177A061B9E689336`;
+direct B CSV SHA-256
+`9022881BD6DD655687A66B40DA9D2ECD41B76995629463509E0EE9896334F438`;
+paired analysis SHA-256
+`A97E27A2DDE3065851AC7FC64FACF86390FF088E03B1C4DAE4A659DEBED70EA5`;
+direct telemetry log SHA-256
+`508D4A66473A756AE0929372726AC0BB3B4CC7DC39A5FCDD4BA417746A27789D`.
+
+**Verdict: `DIRECT_VNET_REJECTED`.** The diagnostic seam is retained for
+future work, but this simplest direct replacement is closed by both fixed-sim
+quality loss and substantially worse throughput. No production default,
+selection/exploration logic, tree reuse, rollout policy, or model training was
+changed.

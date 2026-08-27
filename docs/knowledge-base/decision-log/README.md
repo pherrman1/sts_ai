@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-27 | [`2026-08-27-silver-vnet-leaf-transfer.md`](2026-08-27-silver-vnet-leaf-transfer.md) | Silver leaf VNet transfer is `DIRECT_VNET_REJECTED`: borderline-positive offline ranking did not survive the fixed-simulation gameplay/throughput gate. |
 | 2026-08-26 | [`2026-08-26-session-efficiency-guardrails.md`](2026-08-26-session-efficiency-guardrails.md) | Added nonblocking CI guidance, opt-in cross-worktree ccache presets, a fail-fast bestbench treatment/provenance canary, and mechanism-level Silver GAMBLE assertions. |
 | 2026-08-27 | [`2026-08-27-session-efficiency-correction.md`](2026-08-27-session-efficiency-correction.md) | Tightened canary provenance/configuration expectations and verified Debug ccache reuse across sibling worktrees (59/61 direct hits). |
 | 2026-08-27 | [`2026-08-27-workflow-retrospective-corrections.md`](2026-08-27-workflow-retrospective-corrections.md) | Added narrow pre-publication truth-table review, final-SHA evidence ordering, and Windows-Git/WSL-build/submodule guidance. |

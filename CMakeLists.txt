@@ -53,7 +53,7 @@ set(SILVER_MODEL_SOURCES
     third_party/silver_lightspeed/src/sim/search/SimpleAgent.cpp)
 add_library(silver_combat_model STATIC ${SILVER_MODEL_SOURCES})
 set_target_properties(silver_combat_model PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
-target_include_directories(silver_combat_model PRIVATE third_party/silver_lightspeed/include)
+target_include_directories(silver_combat_model PRIVATE third_party/silver_lightspeed/include include)
 # The macro isolation is target-private. No live sts_ai translation unit sees
 # either renamed namespace or any Silver simulator definition.
 target_compile_definitions(silver_combat_model PRIVATE
@@ -272,6 +272,8 @@ add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
 add_test(NAME runic_dome_lifecycle COMMAND $<TARGET_FILE:runic-dome-lifecycle-test>)
 add_test(NAME py_compile_analyze_silver_reuse_scaling COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py)
 add_test(NAME analyze_silver_reuse_scaling_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py --self-test)
+add_test(NAME py_compile_analyze_silver_vnet_leaf COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_vnet_leaf.py)
+add_test(NAME analyze_silver_vnet_leaf_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_vnet_leaf.py --self-test)
 add_test(NAME py_compile_check_benchmark_canary COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/agent/check_benchmark_canary.py)
 add_test(NAME check_benchmark_canary_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/agent/check_benchmark_canary.py --self-test)
 add_test(NAME py_compile_analyze_silver_sticky_quality COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py)
