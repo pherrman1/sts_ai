@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-08-26 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
+Last verified: 2026-08-27 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -45,7 +45,19 @@ changes its size.
 | `STS_SILVER_REUSE_CAP_MODE` | Exact-reroot mode: `allocated` (`allNodes.size()` cap), experimental `active` (`poolUsed` cap), or experimental `none` (fresh root every decision); any other value fails before gameplay | `allocated` | `SilverLiveBackend::installSilverLiveBackend` |
 | `STS_SILVER_SCALING_DIAG_FILE` | Default-off per-search CSV for the reuse-cap experiment, including sequential GAMBLE/EXHAUST_MANY private subdecisions | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_STICKY_QUALITY_FILE` | Default-off sticky-cap decision-quality CSV. Valid only with `STS_SILVER_SEARCH=1` and `STS_SILVER_REUSE_CAP_MODE=active`; serializes `(seed,floor,encounter,decision ordinal)` as four fixed-width little-endian values into FNV-1a and selects when `hash & 3 == 0` (one deterministic bucket in four, maximum 16 sampled states per run seed). It then runs isolated fresh 3700/25000/50000 Silver shadows. `<path>.summary.csv` records eligible, selected, and excluded sequential-subdecision counts. | unset/off | `SilverLiveBackend`; `tools/analyze_silver_sticky_quality.py` |
+| `STS_SILVER_ROOT_DIAG_FILE` | Default-off root-action diagnostic CSV: samples ordinary fair Silver combat roots, records fresh 1k/3.7k root visits/Qs, and evaluates every accepted legal root action with fresh forced-action Silver continuations. Diagnostic only; it does not alter the live action. | unset/off | `SilverLiveBackend`; `tools/analyze_silver_root_diagnostic.py` |
+| `STS_SILVER_ROOT_DIAG_MAX_PER_SEED` | Maximum captured root decisions per run seed for the root-action diagnostic | `8` when the file option is set | `SilverLiveBackend` |
+| `STS_SILVER_ROOT_DIAG_REF_BUDGET` | Silver simulations per forced-action continuation replicate | `25000` when the file option is set | `SilverLiveBackend` |
+| `STS_SILVER_ROOT_DIAG_REPLICATES` | Independent continuation replicates; sibling actions use the same replicate seeds for common-random-number pairing | `2` when the file option is set | `SilverLiveBackend` |
 | `STS_SILVER_TELEMETRY` | Per-combat Silver aggregate telemetry line | unset/off | `SilverLiveBackend` |
+
+The root-action diagnostic is a shadow measurement layered around the ordinary
+Silver decision. It is intended for bounded fair-play experiments, not for
+production runs: continuation cost is approximately the number of legal root
+actions multiplied by `STS_SILVER_ROOT_DIAG_REF_BUDGET` and
+`STS_SILVER_ROOT_DIAG_REPLICATES`. The analyzer reports action-order agreement,
+regret, replicate stability, rollout length/outcomes, and the terminal-utility
+component sums emitted by the isolated vendor search.
 
 When Silver is enabled, `bestbench` metadata records the effective combat
 backend, reuse-cap mode and production cap, Silver upstream SHA, executable

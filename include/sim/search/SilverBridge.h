@@ -256,6 +256,7 @@ struct SilverSearchConfig {
     // final action rank is edge visits, while UCB selection reads the child
     // evaluation mean.  This is default-off diagnostic observation only.
     bool collectRootActionSummaries = false;
+    bool collectRolloutDiagnostics = false;
 };
 
 struct SilverRootActionSummary {
@@ -306,6 +307,26 @@ struct SilverSearchTelemetry {
     std::array<std::int64_t, 3> wideningSampled {};
     std::array<std::int64_t, 3> wideningSiblingReuse {};
     std::array<std::int64_t, 3> wideningCapped {};
+    std::int64_t rolloutCalls = 0;
+    std::int64_t rolloutTerminalWins = 0;
+    std::int64_t rolloutTerminalLosses = 0;
+    std::int64_t rolloutNonTerminalStops = 0;
+    std::int64_t rolloutActionCount = 0;
+    std::int64_t rolloutTurnDelta = 0;
+    double rolloutUtilitySum = 0.0;
+    double rolloutWinBonusSum = 0.0;
+    double rolloutHpSum = 0.0;
+    double rolloutPotionSum = 0.0;
+    double rolloutTurnPenaltySum = 0.0;
+    double rolloutDeathSaveSum = 0.0;
+    double rolloutGoldSum = 0.0;
+    double rolloutMaxHpSum = 0.0;
+    double rolloutParasitePenaltySum = 0.0;
+    double rolloutMonsterDamageSum = 0.0;
+    double rolloutAliveSum = 0.0;
+    double rolloutEnergyWasteSum = 0.0;
+    double rolloutDrawSum = 0.0;
+    double rolloutSurvivalSum = 0.0;
     void add(const SilverSearchTelemetry &other) {
         nodesCreated += other.nodesCreated;
         detTranspositions += other.detTranspositions;
@@ -319,6 +340,26 @@ struct SilverSearchTelemetry {
             wideningSiblingReuse[i] += other.wideningSiblingReuse[i];
             wideningCapped[i] += other.wideningCapped[i];
         }
+        rolloutCalls += other.rolloutCalls;
+        rolloutTerminalWins += other.rolloutTerminalWins;
+        rolloutTerminalLosses += other.rolloutTerminalLosses;
+        rolloutNonTerminalStops += other.rolloutNonTerminalStops;
+        rolloutActionCount += other.rolloutActionCount;
+        rolloutTurnDelta += other.rolloutTurnDelta;
+        rolloutUtilitySum += other.rolloutUtilitySum;
+        rolloutWinBonusSum += other.rolloutWinBonusSum;
+        rolloutHpSum += other.rolloutHpSum;
+        rolloutPotionSum += other.rolloutPotionSum;
+        rolloutTurnPenaltySum += other.rolloutTurnPenaltySum;
+        rolloutDeathSaveSum += other.rolloutDeathSaveSum;
+        rolloutGoldSum += other.rolloutGoldSum;
+        rolloutMaxHpSum += other.rolloutMaxHpSum;
+        rolloutParasitePenaltySum += other.rolloutParasitePenaltySum;
+        rolloutMonsterDamageSum += other.rolloutMonsterDamageSum;
+        rolloutAliveSum += other.rolloutAliveSum;
+        rolloutEnergyWasteSum += other.rolloutEnergyWasteSum;
+        rolloutDrawSum += other.rolloutDrawSum;
+        rolloutSurvivalSum += other.rolloutSurvivalSum;
     }
 };
 
@@ -359,6 +400,31 @@ struct SilverDecisionResult {
     int rerootExact = 0;
     int rerootFallback = 0;
 };
+
+// Fresh forced-action continuation used by the bounded Silver root diagnostic.
+// Each replicate materializes a new private state and searches only after the
+// specified legal root action has been executed. The action identity is
+// semantic so no vendor index crosses this API.
+struct SilverForcedActionReference {
+    SemanticAction action;
+    bool accepted = false;
+    bool stochastic = false;
+    std::int64_t simulations = 0;
+    double meanValue = 0.0;
+    double valueStddev = 0.0;
+    double meanRolloutActions = 0.0;
+    double meanRolloutTurns = 0.0;
+    double rolloutWinRate = 0.0;
+    SilverSearchTelemetry telemetry;
+};
+
+// Enumerates the legal ordinary root actions and evaluates every one with a
+// fresh high-budget Silver continuation. `replicates` are independent private
+// seeds; callers should use the same replicate seed for sibling actions when
+// applying common-random-number pairing.
+std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
+    const BattleStateWire &state, const SilverSearchConfig &config,
+    std::int64_t continuationBudget, int replicates);
 
 // Opaque battle-lifetime isolated Silver state. It owns the private run
 // context, BattleSearcher, previous best edge, and exact-reroot diagnostics.
