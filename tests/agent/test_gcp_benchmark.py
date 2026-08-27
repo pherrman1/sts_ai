@@ -63,6 +63,74 @@ class GcpBenchmarkTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "designated GCP target"):
                 module.start_instance(args)
 
+    def test_copy_to_uses_designated_relative_remote_path(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "artifact.json"
+            source.write_text("{}")
+            args = module.parser().parse_args(
+                ["copy-to", str(source), "pilot-artifacts/run/artifact.json"]
+            )
+            with mock.patch.object(module, "run_gcloud") as run:
+                run.return_value.returncode = 0
+                self.assertEqual(module.copy_to(args), 0)
+            command = run.call_args.args
+            self.assertEqual(command[:3], (args, "compute", "scp"))
+            self.assertEqual(command[3], str(source))
+            self.assertEqual(
+                command[4],
+                "philippherrmann@sts-test:/home/philippherrmann/sts_sweep/"
+                "pilot-artifacts/run/artifact.json",
+            )
+
+    def test_copy_paths_fail_closed_before_gcloud(self):
+        module = load_module()
+        cases = [
+            ["copy-from", "../outside", "local.json"],
+            ["copy-from", "/tmp/outside", "local.json"],
+            ["copy-from", "logs/*", "local.json"],
+            ["copy-from", "logs/x;touch", "local.json"],
+            ["copy-from", "logs/x\nname", "local.json"],
+            ["copy-from", "logs/`id`", "local.json"],
+            ["copy-from", "logs//empty", "local.json"],
+            ["--zone", "wrong-zone", "copy-from", "artifact.json", "local.json"],
+        ]
+        for argv in cases:
+            with self.subTest(argv=argv):
+                args = module.parser().parse_args(argv)
+                with mock.patch.object(
+                    module, "gcloud_path", side_effect=AssertionError("gcloud must not be resolved")
+                ):
+                    with self.assertRaisesRegex(ValueError, "designated|relative|components"):
+                        module.copy_from(args)
+
+    def test_copy_from_uses_designated_relative_remote_path(self):
+        module = load_module()
+        args = module.parser().parse_args(
+            ["copy-from", "logs/run.log", "local-run.log"]
+        )
+        with mock.patch.object(module, "run_gcloud") as run:
+            run.return_value.returncode = 0
+            self.assertEqual(module.copy_from(args), 0)
+        self.assertEqual(
+            run.call_args.args[3:],
+            (
+                "philippherrmann@sts-test:/home/philippherrmann/sts_sweep/logs/run.log",
+                "local-run.log",
+            ),
+        )
+
+    def test_job_status_validates_pid_and_uses_designated_ssh(self):
+        module = load_module()
+        args = module.parser().parse_args(["job-status", "1234"])
+        with mock.patch.object(module, "ssh_command", return_value=0) as ssh:
+            self.assertEqual(module.job_status(args), 0)
+        self.assertIn("ps -p 1234", ssh.call_args.args[1])
+        self.assertIn("job_status=not_running_or_unknown", ssh.call_args.args[1])
+        invalid = module.parser().parse_args(["job-status", "0"])
+        with self.assertRaisesRegex(ValueError, "positive"):
+            module.job_status(invalid)
+
     def test_explicit_gcloud_override_is_used(self):
         module = load_module()
         with tempfile.TemporaryDirectory() as directory:

@@ -28,7 +28,9 @@ adjusted to preserve repo-root CWD after the move.
 The designated GCP benchmark workflow is centralized in
 `tools/agent/gcp_benchmark.py`. It uses the existing user's gcloud
 authentication and `gcloud compute ssh`; it does not store credentials or
-manage arbitrary cloud resources.
+manage arbitrary cloud resources. Its designated-target-only `copy-to`,
+`copy-from`, and `job-status` commands keep artifact transfer and detached-run
+inspection on the same pinned project/zone/instance/user/root contract.
 
 Existing tools that predate this reorganization (e.g., `tools/analyze_*.py`,
 `tools/train_*.py`, `tools/tune_*.py`) remain in the flat `tools/` directory.
