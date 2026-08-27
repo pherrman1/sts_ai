@@ -538,6 +538,12 @@ int main() {
     silver_bridge::SilverSearchConfig transactionConfig;
     transactionConfig.simulationsPerDecision = 16;
     transactionConfig.collectDecisionDiagnostics = true;
+    const auto ordinaryTransactionDecision = silver_bridge::runSilverDecision(
+        convert(transactionLive, gc, transactionKnowledge), transactionConfig);
+    check(!ordinaryTransactionDecision.accepted
+              && ordinaryTransactionDecision.simulations == 0
+              && ordinaryTransactionDecision.failureReason == "transactional_selection_required",
+          "ordinary decision API must explain a zero-simulation transactional-state rejection");
     const auto transaction = silver_bridge::runSequentialSelectionTransaction(
         convert(transactionLive, gc, transactionKnowledge), transactionConfig);
     if (!transaction.accepted) {

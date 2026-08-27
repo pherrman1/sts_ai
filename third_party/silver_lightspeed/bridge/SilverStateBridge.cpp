@@ -944,7 +944,10 @@ SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
         result.diagnostic = session.decisionDiagnostic;
         result.diagnostic.rootUncertainty = result.rootUncertainty;
     }
-    if (best == nullptr) return result;
+    if (best == nullptr) {
+        result.failureReason = "no_selected_action";
+        return result;
+    }
     result.accepted = true;
     if (convertSemanticAction
             && best->action.getActionType() != sts::search::ActionType::MULTI_CARD_SELECT) {
@@ -1349,7 +1352,10 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
 SilverDecisionResult runSilverDecision(SilverSearchSession &session,
                                        const BattleStateWire &wire, const SilverSearchConfig &config) {
     SilverDecisionResult result;
-    if (config.simulationsPerDecision <= 0) return result;
+    if (config.simulationsPerDecision <= 0) {
+        result.failureReason = "invalid_simulation_budget";
+        return result;
+    }
     try {
         const int rerootExactBefore = session.rerootExact;
         const int rerootFallbackBefore = session.rerootFallback;
@@ -1361,6 +1367,7 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
         const auto task = state.cardSelectInfo.cardSelectTask;
         if (state.inputState == sts::InputState::CARD_SELECT
                 && (task == sts::CardSelectTask::EXHAUST_MANY || task == sts::CardSelectTask::GAMBLE)) {
+            result.failureReason = "transactional_selection_required";
             return result; // must use the transactional API
         }
         result = runCurrentRootDecision(session, config);
@@ -1370,9 +1377,15 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
         if (!result.accepted) return result;
         // The private root state is unchanged by a continuation; this check
         // keeps the ordinary API tied to the materialized decision state.
-        if (session.searcher == nullptr || session.searcher->root == nullptr) return {};
-    } catch (const std::exception &) {
-        return {};
+        if (session.searcher == nullptr || session.searcher->root == nullptr) {
+            result.accepted = false;
+            result.failureReason = "search_session_unavailable";
+            return result;
+        }
+    } catch (const std::exception &e) {
+        result.accepted = false;
+        result.failureReason = std::string("search_exception: ") + e.what();
+        return result;
     }
     return result;
 }
