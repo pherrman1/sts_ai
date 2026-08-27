@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-27 | [`2026-08-27-ooc-survival-continuation.md`](2026-08-27-ooc-survival-continuation.md) | Pure K=3 QWin is `REJECT` on the discordant selected-action pairs; terminal-win reanalysis is 3/3/15 and explicit survival-vs-strength modeling remains `INCONCLUSIVE`. |
 | 2026-08-27 | [`2026-08-27-silver-vnet-leaf-transfer.md`](2026-08-27-silver-vnet-leaf-transfer.md) | Current combat VNet direct Silver transfer is `CURRENT_VNET_DIRECT_SILVER_TRANSFER_REJECTED`: weak positive leaf ranking did not justify replacing tactical rollouts. |
 | 2026-08-27 | [`2026-08-27-silver-adaptive-search.md`](2026-08-27-silver-adaptive-search.md) | Single top-two visit-gap adaptive 1k→3.7k rule passed the bounded offline quality screen, but the paired gameplay gate was invalidated by an unsupported card-select task and non-comparable boss budgets; not promoted (`INCONCLUSIVE`). |
 | 2026-08-26 | [`2026-08-26-session-efficiency-guardrails.md`](2026-08-26-session-efficiency-guardrails.md) | Added nonblocking CI guidance, opt-in cross-worktree ccache presets, a fail-fast bestbench treatment/provenance canary, and mechanism-level Silver GAMBLE assertions. |

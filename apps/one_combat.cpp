@@ -6185,6 +6185,7 @@ struct OocCounterfactualResult {
     double hp;
     int bootstrapped = 0;   // 1 when floor/won came from the native models, 0 on terminal
     bool valid = true;
+    bool survivedH = false; // alive at the requested bounded horizon (diagnostic only)
 };
 
 // Direct near-term survival supervision for out-of-combat action values.  These
@@ -6333,6 +6334,7 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
         if (std::isfinite(vw) && vw >= 0 && vw <= 1) won = vw;
         bootstrapped = 1;
     }
+    const bool survivedH = gc.outcome != GameOutcome::PLAYER_LOSS;
     const bool valid = search::isValidTrainingTerminal(
         gc.outcome != GameOutcome::UNDECIDED, healthBefore,
         search::g_simHealthFailureCount,
@@ -6345,7 +6347,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
     if (probe) probe->completed = valid && gc.outcome != GameOutcome::UNDECIDED;
     t_curPath = nullptr;
     return {valid ? won : 0.0, valid ? floor : 0.0,
-            valid ? (double)gc.curHp : 0.0, valid ? bootstrapped : -1, valid};
+            valid ? (double)gc.curHp : 0.0, valid ? bootstrapped : -1, valid,
+            valid && survivedH};
 }
 
 // GameContext normally shares its Map through a shared_ptr. A counterfactual may
@@ -11106,13 +11109,13 @@ static void phase13aEvaluate(const std::string &manifestFile,
 //   Regime M: encounter-marginalized (resample hidden encounters per sample)
 // All actions in a sample share the same hidden world (CRN pairing).
 
-struct MargResult { double won, hp, floor, boot; };
+struct MargResult { double won, hp, floor, boot; int survivedH; };
 
 static MargResult finishMargCf(GameContext gc, std::uint64_t branchSeed,
                                 const PathHistory &path) {
     OocCounterfactualResult r = evaluateStrategicBranch(
         std::move(gc), branchSeed, path);
-    return {r.won, r.hp, r.floor, (double)r.bootstrapped};
+    return {r.won, r.hp, r.floor, (double)r.bootstrapped, r.survivedH ? 1 : 0};
 }
 
 static void strategicMargGen(int nSeeds, int outerSims,
@@ -11121,6 +11124,7 @@ static void strategicMargGen(int nSeeds, int outerSims,
     std::ofstream out(outFile);
     out << "seed,decIdx,act,floor,screen,gateKind,actionIdx,nCand,hiddenIdx,regime,"
            "continuationSeed,hiddenSeed,labelWon,labelHp,labelFloor,labelBootstrap,utility,"
+           "survivedH,continuationValue,qSample,"
            "fallbackIdx,fallbackExact,chosenIdx,chosenExact,"
            "v4ModelIdx,v4Margin,v4Threshold,v4Fired,v4ExecutedIdx,v4Override,"
            "richState,actionBits,actionType,c1,c2,c3,cand1,cand2,cand3,hiddenChanged,"
@@ -11310,7 +11314,8 @@ static void strategicMargGen(int nSeeds, int outerSims,
                       << ',' << screen << ',' << gateKind << ',' << ai << ',' \
                       << actions.size() << ',' << h << ',' << regimeStr << ',' << contSeed << ',' << hiddenSeedVal << ',' \
                       << r.won << ',' << r.hp << ',' << r.floor << ',' << r.boot << ',' \
-                      << (10.0*r.won+r.hp) << ',' << fallbackIdx << ',' << fallbackExact << ',' \
+                      << (10.0*r.won+r.hp) << ',' << r.survivedH << ',' << r.won << ',' \
+                      << (r.survivedH * r.won) << ',' << fallbackIdx << ',' << fallbackExact << ',' \
                       << chosenIdx << ',' << chosenExact << ',' \
                       << v4BestIdx << ',' << v4Margin << ',' << v4Threshold << ',' \
                       << (v4Fired?1:0) << ',' << v4ExecutedIdx << ',' << v4Override << ',' \
@@ -11391,6 +11396,133 @@ static void strategicMargGen(int nSeeds, int outerSims,
     }
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     std::printf("wrote %d decisions to %s in %.1fs\n", totalDecisions, outFile.c_str(), wall);
+}
+
+// Strong, bounded full-run adjudication for decisions selected offline by
+// tools/analyze_ooc_factor.py.  This is a diagnostic mode only: it replays the
+// frozen source trajectory, evaluates exactly the two manifest actions, and
+// never feeds a result back into live gameplay.
+struct OocFactorManifestRow {
+    std::uint64_t seed;
+    int decIdx, act, floor, screen;
+    std::uint32_t currentBits, factorBits;
+};
+
+struct OocFactorResolvedDecision {
+    OocFactorManifestRow manifest;
+    GameContext pre;
+    PathHistory prePath;
+    std::vector<search::GameAction> actions;
+    int currentIdx, factorIdx;
+};
+
+static void oocFactorEvaluate(const std::string &manifestFile,
+                              const std::string &outFile, int referenceSims,
+                              int futures, int futureStart, int expectedDecisions) {
+    std::ifstream in(manifestFile);
+    if (!in) throw std::runtime_error("oocfactoreval: cannot open manifest");
+    std::string line;
+    std::getline(in, line);
+    if (line.empty()) throw std::runtime_error("oocfactoreval: manifest header is missing");
+    std::vector<OocFactorManifestRow> manifest;
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+        std::stringstream ss(line); std::string cell;
+        std::vector<std::string> c;
+        while (std::getline(ss, cell, ',')) {
+            if (!cell.empty() && cell.back() == '\r') cell.pop_back();
+            if (cell.size() >= 2 && cell.front() == '"' && cell.back() == '"')
+                cell = cell.substr(1, cell.size() - 2);
+            c.push_back(cell);
+        }
+        if (c.size() != 7)
+            throw std::runtime_error("oocfactoreval: malformed manifest row");
+        manifest.push_back({std::stoull(c[0]), std::stoi(c[1]), std::stoi(c[2]),
+                            std::stoi(c[3]), std::stoi(c[4]),
+                            (std::uint32_t)std::stoull(c[5]),
+                            (std::uint32_t)std::stoull(c[6])});
+    }
+    if ((int)manifest.size() != expectedDecisions)
+        throw std::runtime_error("oocfactoreval: guarded decision count does not match manifest");
+
+    // Resolve the complete manifest before opening the output or starting any
+    // expensive full-run continuation.  A producer/evaluator indexing drift
+    // therefore fails atomically instead of leaving a partial adjudication.
+    std::vector<OocFactorResolvedDecision> resolved;
+    resolved.reserve(manifest.size());
+    for (const auto &m : manifest) {
+        GameContext gc(CharacterClass::IRONCLAD, m.seed, 0);
+        vDisconnect();
+        search::ScumSearchAgent2 agent;
+        agent.simulationCountBase = 1000;
+        agent.rng = std::default_random_engine(m.seed);
+        PathHistory path; t_curPath = &path;
+        int decIdx = 0; bool found = false;
+        while (gc.outcome == GameOutcome::UNDECIDED) {
+            path.update(gc);
+            const int screen = (int)gc.screenState;
+            bool eligible = screen == 1 || screen == 3 || screen == 6
+                         || screen == 7 || screen == 8;
+            if (screen == 2)
+                eligible = gc.info.rewardsContainer.cardRewardCount > 0;
+            if (screen == 4)
+                eligible = gc.info.selectScreenType == CardSelectScreenType::UPGRADE;
+            if (eligible) {
+                const auto actions = search::GameAction::getAllActionsInState(gc);
+                if (actions.size() >= 2) {
+                    if (decIdx == m.decIdx && gc.act == m.act
+                        && gc.floorNum == m.floor && screen == m.screen) {
+                        int ci = -1, fi = -1;
+                        for (int i = 0; i < (int)actions.size(); ++i) {
+                            if (actions[i].bits == m.currentBits && ci < 0) ci = i;
+                            if (actions[i].bits == m.factorBits && fi < 0) fi = i;
+                        }
+                        if (ci >= 0 && fi >= 0) {
+                            found = true;
+                            resolved.push_back({m, detachedCounterfactualCopy(gc), path,
+                                                actions, ci, fi});
+                        }
+                    }
+                }
+                ++decIdx;
+            }
+            if (found) break;
+            stepFrozenV4Ooc(gc, agent);
+        }
+        t_curPath = nullptr;
+        if (!found)
+            throw std::runtime_error("oocfactoreval: manifest decision/action did not replay");
+    }
+    std::cout << "oocfactoreval preflight resolved " << resolved.size() << '/'
+              << manifest.size() << " decisions\n";
+
+    std::ofstream out(outFile);
+    if (!out) throw std::runtime_error("oocfactoreval: cannot open output");
+    out << "seed,decIdx,act,floor,screen,role,actionBits,future,continuationSeed,"
+           "won,floorEnd,hpEnd,adjudicatedValue,valid\n";
+    for (const auto &d : resolved) {
+        const auto &m = d.manifest;
+        for (int j = 0; j < futures; ++j) {
+            const int future = futureStart + j;
+            std::uint64_t contSeed = m.seed
+                ^ ((std::uint64_t)(m.decIdx + 1) * 0x9e3779b97f4a7c15ULL)
+                ^ ((std::uint64_t)(future + 1) * 0xbf58476d1ce4e5b9ULL);
+            if (!contSeed) contSeed = 1;
+            for (const auto roleIdx : {std::pair<char,int>{'C', d.currentIdx},
+                                      std::pair<char,int>{'F', d.factorIdx}}) {
+                GameContext branch = detachedCounterfactualCopy(d.pre);
+                d.actions[roleIdx.second].execute(branch);
+                const OocCounterfactualResult r = finishOocCounterfactual(
+                    std::move(branch), referenceSims, contSeed, d.prePath,
+                    -1, false, nullptr, 0, nullptr, false);
+                out << m.seed << ',' << m.decIdx << ',' << m.act << ',' << m.floor
+                    << ',' << m.screen << ',' << roleIdx.first << ','
+                    << d.actions[roleIdx.second].bits << ',' << future << ','
+                    << contSeed << ',' << r.won << ',' << r.floor << ',' << r.hp
+                    << ',' << (10.0 * r.won + r.hp) << ',' << (r.valid ? 1 : 0) << '\n';
+            }
+        }
+    }
 }
 
 
@@ -13976,6 +14108,20 @@ int main(int argc, char **argv) {
                   << " (Tier-B branch: K=3, 150/100/50, bootstrap=true)"
                   << " -> " << out << '\n';
         strategicMargGen(nSeeds, outerSims, H, maxPerRun, out, seedOff);
+
+    } else if (mode == "oocfactoreval") {
+        // nDecisions is explicit for tools/seed_guard.sh and checked against
+        // the manifest by the offline workflow.
+        int nDecisions = argc > 2 ? std::stoi(argv[2]) : 0;
+        std::string manifest = argc > 3 ? argv[3] : "build/ooc_factor/manifest.csv";
+        std::string out = argc > 4 ? argv[4] : "build/ooc_factor/adjudication.csv";
+        int referenceSims = argc > 5 ? std::stoi(argv[5]) : 1000;
+        int futures = argc > 6 ? std::stoi(argv[6]) : 16;
+        int futureStart = argc > 7 ? std::stoi(argv[7]) : 0;
+        std::cout << "oocfactoreval decisions=" << nDecisions
+                  << " referenceSims=" << referenceSims << " futures=" << futures
+                  << " futureStart=" << futureStart << " -> " << out << '\n';
+        oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart, nDecisions);
 
     } else if (mode == "mcts") {
         int sims          = argc > 2 ? std::stoi(argv[2]) : 2000;

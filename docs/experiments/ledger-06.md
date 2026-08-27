@@ -4988,3 +4988,71 @@ model training was changed.
   boss budgets. Do not promote or expand this rule into a dynamic search
   controller; a separate semantic card-select bridge investigation and a
   budget-comparable rerun would be required.
+
+## OOC survival × continuation-value action diagnostic (2026-08-27)
+
+- **Question and baseline:** On baseline
+  `cad5ee95d0cabafd918dff44a36a57f9d1902666`, does ranking OOC actions by
+  `P(alive at K=3) * E[V_win at K=3 | alive]` beat the existing dense Tier-B
+  action utility `10*labelWon + labelHp` on their discordant decisions? This
+  was action-level OOC counterfactual evaluation, not the E3c combat-leaf
+  conditional-survival experiment.
+- **Producer:** known-RNG Searcher2, ascension 0, seeds `410100..410115`,
+  1,000 source-run simulations, at most four existing eligible OOC decisions
+  sampled per run, K=3 continuation fights at 150/100/50 simulations, native
+  floor/win bootstrap, and 16 matched continuation seeds per legal sibling
+  action. `models/v_combat_7k_tuned.txt` loaded with the existing alpha 0.5;
+  native `models/v_rich_trees.txt`, `models/v_win_trees.txt`, and
+  `models/policy_trees_c.txt` also reported loaded. The corpus contains 64 OOC
+  decisions, 367 actions, and 16 replicates/action. The maximum absolute error
+  between `p_survive * v_alive` and `mean(I*V)` was exactly 0.0.
+- **Discordance and adjudication:** 21 decisions disagreed. All were evaluated
+  by an unbootstrapped full-run continuation at 1,000 combat simulations with
+  16 action-paired common continuation seeds (672/672 valid rows). The dense
+  ranking won 14 decisions, the factorized ranking won 6, and 1 tied; the
+  factorized win fraction excluding ties was 30%. Dense versus factorized mean
+  two-choice comparative regret was `3.9792` versus `6.8929`; median
+  comparative regret was `0.0` versus `2.0`, in the existing terminal
+  `10*won + HP` adjudication units. The adjudicator evaluated the two rankers'
+  choices, not every legal action, so these are not all-action oracle regrets.
+- **Interpretation:** Every selected action on both sides survived all 16 K=3
+  producer replicates (`p_survive=1`). Thus these discordances were driven by
+  survivor continuation value versus the dense HP term, not by different
+  measured danger. This limits diagnosis of rare safety tradeoffs, but it does
+  not rescue the proposed ranking: on the observed discordant set it failed
+  both preregistered promotion conditions.
+- **Artifacts:** `build/ooc_factor_e4/raw.csv` (SHA-256
+  `F08E317DC8D07181F84B56B4DF84AA1F19F40A96C20D689E5F4739170A166591`),
+  `raw_block2.csv` (`00C4CC53A45E1E40A6945954F8AD03EEFB9F0FE1089320865F4F2B964E09A5BC`),
+  `adjudication_all.csv`
+  (`57301483685CB82A96F9A95DCB8C7C38F59C30F4C46FD689B9777514A7BAF18E`),
+  and `final/summary.json`
+  (`33DE69E32556EF03C692495B777374E8BCA1930A883461EEE944AEB415A79301`).
+  The frozen Release executable SHA-256 was
+  `71CC739F65015C048FD6C87276251D5FA6E9B83E00DE520EBE807E98F39B2E3B`.
+- **Zero-simulation correction:** Since dead branches have `labelWon=0`,
+  `P(S)E[V_win|S]=E[V_win]`; on the 21 all-surviving adjudicated choices the
+  factorized score was pure QWin. The 14/6/1 headline used shaped terminal
+  utility `10*won+HP`. Recomputing the same paired rows on terminal win alone
+  gives current/factor/tie `3/3/15`, mean win-probability regret
+  `0.03571/0.03274`, and median `0/0`. Fixed-regime coverage is 46/367 actions
+  below unit survival, 15/64 decisions with sibling survival spread, and 3
+  opposing-order safety-strength tradeoffs. Encounter-marginalized coverage is
+  88/367, 25/64, and 15; however, only 2/22 marginal dense-vs-QWin ranking
+  disagreements have survival-different selected actions. Screen-level counts
+  and per-decision min/max/delta are in `corrected_fixed/` and
+  `corrected_marg/` under the raw artifact directory. Corrected fixed summary
+  SHA-256 is `C34E787791A8ECD8BD1733EBFB42EBADD32F609C88EB2617190B034E0AAC3F1B`
+  and coverage CSV is
+  `28E0CC1FABFA924146247198DBC3B230C43FDF67AC5A6B8910DF3CCA8921D5B0`;
+  marginal summary is
+  `5AC1967497B575C056CB15E28E95467DFBED365894B00356A8BC14D1503C6107`
+  and coverage CSV is
+  `02C6C8F99E1404D054493BFCF36338F1F1E6CC8B568045B79A74BF1163184C07`.
+- **Corrected verdict:** **REJECT pure K=3 QWin on the observed discordant
+  selected-action pairs; INCONCLUSIVE on explicit
+  survival-vs-strength modeling.** Do not promote or train from this result.
+  If continued, use a targeted survival-sensitive corpus. A later auxiliary-
+  head test would be a statistical-learning decomposition test and should keep
+  the V4 model family fixed; it is not authorized by this correction. The
+  diagnostic remains offline-only and production gameplay is unchanged.
