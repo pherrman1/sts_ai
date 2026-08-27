@@ -1,4 +1,5 @@
 import json
+import runpy
 import subprocess
 import sys
 import unittest
@@ -10,6 +11,18 @@ TEST_TMP.mkdir(exist_ok=True)
 
 
 class SilverLeafPipelineTest(unittest.TestCase):
+    def test_model_pairwise_uses_reference_pairs_and_half_credit_for_prediction_ties(self):
+        metrics = runpy.run_path(ROOT / "tools/train_silver_leaf_models.py")["metrics"]
+        rows = [
+            {"group_id": "g", "reference": 1.0},
+            {"group_id": "g", "reference": 2.0},
+            {"group_id": "g", "reference": 2.0},
+        ]
+        result = metrics(rows, [0.5, 0.5, 0.5])
+        self.assertEqual(result["reference_sibling_pair_count"], 2)
+        self.assertEqual(result["prediction_tie_count"], 2)
+        self.assertEqual(result["strict_sibling_pairwise_concordance"], 0.5)
+
     def test_selector_keeps_complete_groups_and_is_deterministic(self):
         tmp = TEST_TMP
         paths = [tmp / name for name in ("selector_test_corpus.jsonl", "selector_test_a.json", "selector_test_b.json")]

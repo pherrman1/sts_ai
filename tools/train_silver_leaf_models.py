@@ -57,7 +57,7 @@ def metrics(rows, predictions):
     by_group = defaultdict(list)
     for row, prediction in zip(rows, predictions):
         by_group[row["group_id"]].append((row, float(prediction)))
-    concordant = pair_total = top = evaluable_groups = 0
+    concordant = pair_total = prediction_ties = top = evaluable_groups = 0
     regrets, centered = [], []
     for group_rows in by_group.values():
         if len(group_rows) < 2:
@@ -68,10 +68,14 @@ def metrics(rows, predictions):
         for left in range(len(values)):
             for right in range(left + 1, len(values)):
                 vd, pd = values[left] - values[right], preds[left] - preds[right]
-                if vd == 0 or pd == 0:
+                if vd == 0:
                     continue
                 pair_total += 1
-                concordant += (vd > 0) == (pd > 0)
+                if pd == 0:
+                    prediction_ties += 1
+                    concordant += 0.5
+                else:
+                    concordant += (vd > 0) == (pd > 0)
         vi, pi = int(np.argmax(values)), int(np.argmax(preds))
         top += vi == pi
         regrets.append(float(values[vi] - values[pi]))
@@ -83,6 +87,8 @@ def metrics(rows, predictions):
         "rows": len(rows), "groups": len(by_group), "groups_with_two_plus_leaves": evaluable_groups,
         "strict_sibling_pairwise_concordance": concordant / pair_total if pair_total else 0.0,
         "strict_sibling_pairs": pair_total,
+        "reference_sibling_pair_count": pair_total,
+        "prediction_tie_count": prediction_ties,
         "top_leaf_agreement": top / evaluable_groups if evaluable_groups else None,
         "mean_regret": statistics.fmean(regrets) if regrets else None,
         "median_regret": statistics.median(regrets) if regrets else None,
@@ -250,6 +256,8 @@ def main():
         "paired_whole_group_bootstrap": {"replicates": args.bootstrap_replicates,
              "seed": args.bootstrap_seed, "confidence_level": .90, "metrics": paired},
         "decision_diagnostics": {"pairwise_delta": delta, "probability_pairwise_positive": positive,
+                                 "reference_pair_count": heldout["M10"]["reference_sibling_pair_count"],
+                                 "prediction_tie_counts": {arm: heldout[arm]["prediction_tie_count"] for arm in ARMS},
                                  "top_materially_worse": top_worse, "regret_materially_worse": regret_worse,
                                  "strong_metric_conflict": conflict},
         "warning": "Offline teacher/model comparison only; no gameplay improvement is established.",
