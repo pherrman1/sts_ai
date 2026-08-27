@@ -1,6 +1,7 @@
 # Training and inference
 
-Last verified: 2026-08-09 against the current working tree (per-encounter combat value specialization: `train_value_combat_per_encounter.py` per-boss XGBoost fine-tuning + `train_value_combat_meta.py` Reptile MLP meta-learner, `combat_mlp_meta_v1` native format with per-encounter deltas, `CombatValueNet::loadEncounterModels` + `STS_VNET_PER_ENCOUNTER` dispatch, `vnettest --encounter` parity mode — experimental, gate pending; V4 tok trainer convergence measurement, PATIENCE default change, vectorized row-index construction; leafdiag/leafref/rollouttrace leaf-state diagnostic producers + `STS_DIAG_VNET2`; VCOMBAT_TARGET, asserting `vnettest`, §134 direct-R ablation unchanged; `.venv` training-environment note; system-`python3` torch provisioning note; experimental zero-mean ranking-correction trainer `tools/train_rank_correction.py` + `STS_VNET_RANK_CORR` runtime load, off by default).
+Last verified: 2026-08-27 against the current working tree (including the
+default-off Silver M10 compact-tree export and independent-anchor analyzer).
 
 ## Purpose
 
@@ -134,6 +135,16 @@ deterministically into train and validation. Both XGBoost arms share the exact
 feature columns, rows, split, uniform weighting, recipe, and evaluation; only
 the A-replicate target budget differs. The output is an offline model/teacher
 comparison and does not establish gameplay improvement.
+
+The selected M10 booster from that comparison is deployed experimentally as
+`models/silver_leaf_m10_10k.txt`. The export retains rounds 0 through 500
+(`best_iteration + 1`) from the exact preserved XGBoost artifact and uses the
+ordinary `CombatValueNet` compact-tree loader; it does not add XGBoost to the
+runtime. `tools/analyze_silver_leaf_deployment.py` compares M10 and the current
+combat VNet on the untouched 25k-B groups and writes strict native-parity rows.
+The model remains default-off behind `STS_SILVER_VNET_LEAF_MODEL` plus
+`STS_SILVER_VNET_LEAF_DIRECT`; its small gameplay gate does not authorize
+promotion.
 
 ### Combat schema
 
