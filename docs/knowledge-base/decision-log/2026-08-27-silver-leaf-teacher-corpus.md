@@ -28,6 +28,13 @@ losses, not one unconditional constant across a mixed-outcome Q. Corrected Qs
 therefore require the action's empirical victory fraction. The implementation
 records child victory counts and retains all raw quantities.
 
+If a fully restored nonterminal snapshot has no Silver-selected root action,
+the offline relabeler records a fail-closed `teacher_valid=false` row with the
+stable identity, requested/actual simulation count, telemetry, and explicit
+failure reason. It does not substitute a rollout or heuristic value. The
+analyzer reports these rows as coverage failures and excludes them from paired
+value/action metrics rather than silently dropping or fabricating labels.
+
 ## Evidence
 
 - `include/sim/search/SilverBridge.h`; `SilverWireJson.h`

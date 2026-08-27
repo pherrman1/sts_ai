@@ -60,6 +60,14 @@ class SilverLeafPipelineTest(unittest.TestCase):
                 for budget in (1000, 3700, 10000, 25000):
                     rows.append(row(leaf, "g", budget, "A", "left", q))
                 rows.append(row(leaf, "g", 25000, "B", "left", q))
+            invalid = row("invalid", "bad", 1000, "A", "", 0.0)
+            invalid.update({"teacher_valid": False,
+                            "teacher_failure_reason": "no_selected_action"})
+            rows.append(invalid)
+            invalid_b = row("invalid", "bad", 25000, "B", "", 0.0)
+            invalid_b.update({"teacher_valid": False,
+                              "teacher_failure_reason": "no_selected_action"})
+            rows.append(invalid_b)
             relabels.write_text("".join(json.dumps(value) + "\n" for value in rows), encoding="utf-8")
             output = paths[1]
             subprocess.run([sys.executable, ROOT / "tools/analyze_silver_leaf_teacher.py",
@@ -76,6 +84,9 @@ class SilverLeafPipelineTest(unittest.TestCase):
                              ["top_action_agreement_margin_vs_25k_ceiling"],
                              {"p025": 0.0, "p975": 0.0})
             self.assertEqual(bootstrap["candidates"]["1000"]["global_bar_pass_probability"], 1.0)
+            self.assertEqual(report["teacher_coverage"]["1000"]["candidate_A_rows"], 3)
+            self.assertEqual(report["teacher_coverage"]["1000"]["paired_valid_leaves"], 2)
+            self.assertEqual(report["teacher_failures"][0]["reason"], "no_selected_action")
         finally:
             for path in paths:
                 path.unlink(missing_ok=True)

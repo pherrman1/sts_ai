@@ -478,6 +478,9 @@ struct SelectionTransactionTrace {
 
 struct SilverDecisionResult {
     bool accepted = false;
+    // Populated for diagnostic/offline callers when no action can be returned.
+    // Live callers continue to gate exclusively on `accepted`.
+    std::string failureReason;
     std::int64_t simulations = 0;
     // Existing visits retained at this root before this decision's new search.
     // Non-zero only after a successful exact session reroot.

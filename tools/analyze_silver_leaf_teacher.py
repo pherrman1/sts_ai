@@ -8,7 +8,7 @@ import json
 import math
 import random
 import statistics
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 BUDGETS = (1000, 3700, 10000, 25000)
@@ -262,6 +262,7 @@ def main() -> int:
     if args.bootstrap_replicates < 0:
         raise SystemExit("--bootstrap-replicates must be nonnegative")
     rows = {}
+    teacher_failures = Counter()
     with args.relabels.open(encoding="utf-8") as stream:
         for number, line in enumerate(stream, 1):
             if not line.strip():
@@ -273,6 +274,9 @@ def main() -> int:
             if key in rows:
                 raise SystemExit(f"{args.relabels}:{number}: duplicate relabel identity {key}")
             rows[key] = row
+            if not row.get("teacher_valid", True):
+                teacher_failures[(row["state_kind"], str(row["budget"]), row["replicate"],
+                                  row.get("teacher_failure_reason", "unspecified"))] += 1
 
     comparisons, siblings = {}, {}
     pair_sets = {}
@@ -282,7 +286,8 @@ def main() -> int:
             if kind != "leaf" or b != budget or replicate != "A":
                 continue
             reference = rows.get(("leaf", leaf, 25000, "B"))
-            if reference:
+            if (candidate.get("teacher_valid", True) and reference
+                    and reference.get("teacher_valid", True)):
                 pairs.append((candidate, reference))
         pair_sets[budget] = pairs
         comparisons[str(budget)] = aggregate_state(pairs)
@@ -334,6 +339,22 @@ def main() -> int:
     verdict = chosen or "TEACHER_BUDGET_UNRESOLVED_OR_25K_REQUIRED"
     bootstrap = bootstrap_uncertainty(
         pair_sets, args.bootstrap_replicates, args.bootstrap_seed)
+    coverage = {}
+    independent_b = [row for (kind, _, budget, replicate), row in rows.items()
+                     if kind == "leaf" and budget == 25000 and replicate == "B"]
+    for budget in BUDGETS:
+        candidates = [row for (kind, _, row_budget, replicate), row in rows.items()
+                      if kind == "leaf" and row_budget == budget and replicate == "A"]
+        coverage[str(budget)] = {
+            "candidate_A_rows": len(candidates),
+            "candidate_A_valid": sum(row.get("teacher_valid", True) for row in candidates),
+            "independent_25k_B_rows": len(independent_b),
+            "independent_25k_B_valid": sum(row.get("teacher_valid", True) for row in independent_b),
+            "paired_valid_leaves": len(pair_sets[budget]),
+        }
+    failure_report = [{"state_kind": key[0], "budget": int(key[1]), "replicate": key[2],
+                       "reason": key[3], "rows": count}
+                      for key, count in sorted(teacher_failures.items())]
     report = {"analyzer_schema": "silver_leaf_teacher_analysis_v1",
               "independent_reference": "25k replicate B", "state_value_and_action": comparisons,
               "sibling_value": siblings, "replicate_ceiling_25kA_vs_25kB": {
@@ -341,6 +362,7 @@ def main() -> int:
               "subgroups": subgroups,
               "candidate_decisions": decisions,
               "group_bootstrap_uncertainty": bootstrap,
+              "teacher_coverage": coverage, "teacher_failures": failure_report,
               "verdict": verdict, "point_estimate_verdict": verdict,
               "warning": "Subgroup reversal/pathology must be reviewed before accepting a passing global verdict."}
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

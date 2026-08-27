@@ -86,10 +86,31 @@ json relabelOne(const Entry &entry, const silver_bridge::BattleStateWire &input,
     const double victoryCorrection = silver_bridge::silverVictoryBaselineCorrection(
         entry.originalRoot, input);
     if (!result.accepted) {
-        if (input.outcome == 0) throw std::runtime_error("nonterminal Silver teacher returned no action");
+        if (input.outcome == 0) {
+            return {{"relabel_schema", "silver_leaf_teacher_v1"},
+                {"teacher_valid", false}, {"teacher_failure_reason", result.failureReason},
+                {"group_id", entry.groupId}, {"leaf_snapshot_id", entry.leafId},
+                {"state_kind", stateKind}, {"budget", budget}, {"act", entry.act},
+                {"hp_fraction", entry.hpFraction}, {"rollout_turn_delta", entry.rolloutTurnDelta},
+                {"encounter_category", entry.encounterCategory},
+                {"executable_git_sha", entry.executableGitSha},
+                {"silver_upstream_sha", entry.silverUpstreamSha},
+                {"replicate", replicate}, {"relabel_seed", relabelSeed},
+                {"teacher_rng_identity", state.isolatedSearchSeed},
+                {"terminal_snapshot", false}, {"selected_action_fingerprint", ""},
+                {"selected_q_valid", false},
+                {"uncorrected_leaf_root_teacher_value", nullptr},
+                {"original_root_corrected_teacher_value", nullptr},
+                {"victory_baseline_correction", victoryCorrection},
+                {"simulations_performed", result.simulations},
+                {"root_action_count", result.rootActionSummaries.size()},
+                {"root_actions", json::array()}, {"telemetry", telemetryJson(result.telemetry)},
+                {"silver_config", configJson(config)}, {"wall_micros", wallMicros}};
+        }
         const double leafRootValue = silver_bridge::silverTerminalLeafRootValue(input);
         const double applied = input.outcome == 1 ? victoryCorrection : 0.0;
-        return {{"relabel_schema", "silver_leaf_teacher_v1"}, {"group_id", entry.groupId},
+        return {{"relabel_schema", "silver_leaf_teacher_v1"}, {"teacher_valid", true},
+            {"group_id", entry.groupId},
             {"leaf_snapshot_id", entry.leafId}, {"state_kind", stateKind}, {"budget", budget},
             {"act", entry.act}, {"hp_fraction", entry.hpFraction},
             {"rollout_turn_delta", entry.rolloutTurnDelta},
@@ -132,7 +153,8 @@ json relabelOne(const Entry &entry, const silver_bridge::BattleStateWire &input,
             selectedCorrectedQ = correctedQ;
         }
     }
-    return {{"relabel_schema", "silver_leaf_teacher_v1"}, {"group_id", entry.groupId},
+    return {{"relabel_schema", "silver_leaf_teacher_v1"}, {"teacher_valid", true},
+        {"group_id", entry.groupId},
         {"leaf_snapshot_id", entry.leafId}, {"state_kind", stateKind}, {"budget", budget},
         {"act", entry.act}, {"hp_fraction", entry.hpFraction},
         {"rollout_turn_delta", entry.rolloutTurnDelta},

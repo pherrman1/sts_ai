@@ -1035,13 +1035,21 @@ SilverDecisionResult continueSilverDecision(
             result.diagnostic = session.decisionDiagnostic;
             result.diagnostic.rootUncertainty = result.rootUncertainty;
         }
-        if (best == nullptr || result.simulations != additionalSimulations) return {};
+        if (best == nullptr) {
+            result.failureReason = "no_selected_action";
+            return result;
+        }
+        if (result.simulations != additionalSimulations) {
+            result.failureReason = "simulation_count_mismatch";
+            return result;
+        }
         result.accepted = true;
         if (convertSemanticAction
                 && best->action.getActionType() != sts::search::ActionType::MULTI_CARD_SELECT)
             result.action = semanticFromAction(session.searcher->root->state, best->action);
-    } catch (const std::exception &) {
-        return {};
+    } catch (const std::exception &e) {
+        result.failureReason = std::string("search_exception: ") + e.what();
+        return result;
     }
     return result;
 }
