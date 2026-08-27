@@ -544,6 +544,12 @@ int main() {
               && ordinaryTransactionDecision.simulations == 0
               && ordinaryTransactionDecision.failureReason == "transactional_selection_required",
           "ordinary decision API must explain a zero-simulation transactional-state rejection");
+    auto unavailableSession = silver_bridge::makeSilverSearchSession();
+    const auto unavailableContinuation = silver_bridge::continueSilverDecision(
+        *unavailableSession, 1, transactionConfig);
+    check(!unavailableContinuation.accepted
+              && unavailableContinuation.failureReason == "search_session_unavailable",
+          "continuation rejection must retain a non-empty failure reason");
     const auto transaction = silver_bridge::runSequentialSelectionTransaction(
         convert(transactionLive, gc, transactionKnowledge), transactionConfig);
     if (!transaction.accepted) {

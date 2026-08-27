@@ -998,6 +998,8 @@ SilverDecisionResult applyAdaptiveContinuation(SilverSearchSession &session,
         // a trustworthy result. Fail the enclosing live decision rather than
         // silently returning an action against an unreported search state.
         result.accepted = false;
+        result.failureReason = !continuation.failureReason.empty()
+            ? continuation.failureReason : "adaptive_continuation_simulation_count_mismatch";
         return result;
     }
 
@@ -1024,7 +1026,14 @@ SilverDecisionResult continueSilverDecision(
         SilverSearchSession &session, std::int64_t additionalSimulations,
         const SilverSearchConfig &config, bool convertSemanticAction) {
     SilverDecisionResult result;
-    if (additionalSimulations <= 0 || session.searcher == nullptr) return result;
+    if (additionalSimulations <= 0) {
+        result.failureReason = "invalid_simulation_budget";
+        return result;
+    }
+    if (session.searcher == nullptr) {
+        result.failureReason = "search_session_unavailable";
+        return result;
+    }
     try {
         const auto *best = session.searchAndChoose(config, result.simulations);
         result.inheritedVisits = session.inheritedVisits;
