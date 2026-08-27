@@ -60,6 +60,13 @@ class SilverLeafPipelineTest(unittest.TestCase):
                 for budget in (1000, 3700, 10000, 25000):
                     rows.append(row(leaf, "g", budget, "A", "left", q))
                 rows.append(row(leaf, "g", 25000, "B", "left", q))
+            for budget in (1000, 3700, 10000, 25000):
+                parent = row("parent", "g", budget, "A", "left", 5.0)
+                parent["state_kind"] = "parent"; parent["wall_micros"] = budget
+                rows.append(parent)
+            parent_b = row("parent", "g", 25000, "B", "left", 5.0)
+            parent_b["state_kind"] = "parent"; parent_b["wall_micros"] = 25000
+            rows.append(parent_b)
             invalid = row("invalid", "bad", 1000, "A", "", 0.0)
             invalid.update({"teacher_valid": False,
                             "teacher_failure_reason": "no_selected_action"})
@@ -87,6 +94,11 @@ class SilverLeafPipelineTest(unittest.TestCase):
             self.assertEqual(report["teacher_coverage"]["1000"]["candidate_A_rows"], 3)
             self.assertEqual(report["teacher_coverage"]["1000"]["paired_valid_leaves"], 2)
             self.assertEqual(report["teacher_failures"][0]["reason"], "no_selected_action")
+            parent = report["parent_state_policy_teacher"]
+            self.assertEqual(parent["verdict"], "POLICY_TEACHER_10K_PLAUSIBLE")
+            self.assertEqual(parent["comparisons_against_25k_B"]["10000"]["candidate_cost"]
+                             ["total_wall_micros"], 10000)
+            self.assertEqual(parent["action_ambiguity_25k_A"]["roots"], 1)
         finally:
             for path in paths:
                 path.unlink(missing_ok=True)
@@ -114,6 +126,52 @@ class SilverLeafPipelineTest(unittest.TestCase):
         finally:
             for path in paths:
                 path.unlink(missing_ok=True)
+
+    def test_matched_trainer_keeps_anchor_test_only(self):
+        tmp = TEST_TMP
+        features = tmp / "silver_model_features.jsonl"
+        relabels = tmp / "silver_model_relabels.jsonl"
+        output = tmp / "silver_model_output"
+        try:
+            feature_rows = [{"feature_schema": "silver_leaf_combat_features_v1",
+                             "feature_names": ["x", "y"]}]
+            label_rows = []
+            for group_index in range(30):
+                group = f"g{group_index}"
+                anchor = group_index < 3
+                for leaf_index in range(3):
+                    leaf = f"{group}-{leaf_index}"
+                    feature_rows.append({"feature_schema": "silver_leaf_combat_features_v1",
+                        "leaf_snapshot_id": leaf, "group_id": group, "act": group_index % 3 + 1,
+                        "hp_fraction": .5, "rollout_turn_delta": 3,
+                        "encounter_category": "hallway", "features": [group_index, leaf_index]})
+                    for budget, replicate, offset in ((10000, "A", .1), (25000, "A", 0.0)):
+                        label_rows.append({"relabel_schema": "silver_leaf_teacher_v1", "state_kind": "leaf",
+                            "leaf_snapshot_id": leaf, "group_id": group, "budget": budget,
+                            "replicate": replicate, "teacher_valid": True,
+                            "original_root_corrected_teacher_value": group_index + leaf_index + offset})
+                    if anchor:
+                        label_rows.append({"relabel_schema": "silver_leaf_teacher_v1", "state_kind": "leaf",
+                            "leaf_snapshot_id": leaf, "group_id": group, "budget": 25000,
+                            "replicate": "B", "teacher_valid": True,
+                            "original_root_corrected_teacher_value": group_index + leaf_index})
+            features.write_text("".join(json.dumps(row) + "\n" for row in feature_rows), encoding="utf-8")
+            relabels.write_text("".join(json.dumps(row) + "\n" for row in label_rows), encoding="utf-8")
+            trained = subprocess.run([sys.executable, ROOT / "tools/train_silver_leaf_models.py",
+                            features, relabels, output, "--smoke-rounds", "2",
+                            "--bootstrap-replicates", "5"], capture_output=True, text=True)
+            self.assertEqual(trained.returncode, 0, trained.stderr + trained.stdout)
+            report = json.loads((output / "comparison.json").read_text())
+            self.assertEqual(report["groups"]["anchor"], 3)
+            self.assertEqual(report["groups"]["test"], 3)
+            self.assertFalse(report["groups"]["anchor_leakage"])
+            self.assertEqual(report["rows"]["test"], 9)
+            self.assertEqual(report["feature_count"], 2)
+        finally:
+            features.unlink(missing_ok=True); relabels.unlink(missing_ok=True)
+            if output.exists():
+                for path in output.iterdir(): path.unlink()
+                output.rmdir()
 
 
 if __name__ == "__main__":

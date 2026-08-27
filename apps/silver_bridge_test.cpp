@@ -7,9 +7,11 @@
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
+#include "sim/search/CombatValueNet.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverConversion.h"
+#include "sim/search/SilverLiveBackend.h"
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/SilverWireJson.h"
 
@@ -91,6 +93,12 @@ int main() {
         nlohmann::json::parse(serializedWire));
     check(silver_bridge::convertedStatesEqualForSearch(firstWire, reloadedWire),
           "BattleStateWire JSON round-trip must preserve the exact Silver search state");
+    search::g_richCombatFeatures = true;
+    std::vector<float> directFeatures(search::combatFeatureCount());
+    search::combatExtractFeatures(first, directFeatures.data());
+    const auto wireFeatures = search::silverLiveLeafCanonicalFeatures(reloadedWire);
+    check(wireFeatures == directFeatures,
+          "stored Silver wire must reproduce canonical rich combat features exactly");
     auto incompatibleEnvelope = silver_bridge::battleStateWireEnvelope(firstWire);
     incompatibleEnvelope["wire_version"] = 999;
     bool incompatibleRejected = false;

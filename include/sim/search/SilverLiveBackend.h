@@ -76,6 +76,11 @@ void setSilverLiveActionTraceForTest(bool enabled);
 double silverLiveLeafVNetPredictionForTest(
     const silver_bridge::BattleStateWire &wire, const std::string &modelPath);
 
+// Project a stored Silver wire through the same live-state adapter and
+// canonical rich CombatValueNet feature extractor used by deployment.
+std::vector<float> silverLiveLeafCanonicalFeatures(
+    const silver_bridge::BattleStateWire &wire);
+
 } // namespace sts::search
 
 #endif

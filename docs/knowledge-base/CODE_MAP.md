@@ -54,6 +54,7 @@ before broad repository search.
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
 | Combat value | `train_value_combat.py` | `VCOMBAT_TARGET` (default `endhp`), deployed §126 objective | [training-and-inference.md](architecture/training-and-inference.md) |
+| Silver leaf teacher comparison | `apps/silver_leaf_features.cpp`, `tools/train_silver_leaf_models.py` | stored `BattleStateWire` → canonical combat features; anchor-exclusive matched 10k-A/25k-A XGBoost audit | [training-and-inference.md](architecture/training-and-inference.md) |
 | VNet mixture | `tools/train_value_mixture.py` | Covariate-shift mixture retrain, §137 closed (no improvement) | [training-and-inference.md](architecture/training-and-inference.md) |
 | Strategic (joint policy+value) | `train_strategic.py`, `export_strategic.py` | Tier-A `chosen` labels, CUDA default | [training-and-inference.md](architecture/training-and-inference.md) |
 | Strategic token | `train_strategic_tok.py`, `export_strategic_tok.py` | Token-based, experimental | [training-and-inference.md](architecture/training-and-inference.md) |
