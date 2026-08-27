@@ -4796,3 +4796,36 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   result; a future follow-up needs a more stratified corpus and an externally
   justified outcome reference if it is to distinguish utility correctness
   from search-noise effects.
+
+## Silver adaptive compute allocation (2026-08-27)
+
+- **Question:** Can a cheap root uncertainty signal recover the PR #66
+  1k→3.7k decision-quality improvement at lower average simulation cost?
+- **Implementation:** default-off continuation of the same Silver root. After
+  1,000 simulations, continue to exactly 3,700 only when the top-vs-second
+  root visit-share gap is `< 0.094`; no evaluator, widening, reuse, OOC, or
+  hidden-information changes. Baseline was the verified PR #66 merge
+  `9f2d67d71f095425457fdb2a91eb1a0a8660a85b`; reviewed implementation was
+  `3729624a683e66aba62f9f04c86c0fa80d10c08e`.
+- **Phase 1:** on 50 clean deterministic roots, top-two visit gap was the
+  strongest beneficial-escalation signal (AUROC 0.775; action-change AUROC
+  0.852). The selected coarse threshold escalated 40%, captured 83.3% of
+  beneficial roots, and modeled 2,080 mean simulations.
+- **Offline shadow:** 25 clean roots, fixed 1k / adaptive / fixed 3.7k mean
+  regret `0.07236 / 0.04649 / 0.04562`; top-action agreement with 3.7k
+  `84% / 88% / 100%`; adaptive root cost 1,590.6 and full-combat telemetry
+  cost 1,730.5 simulations/decision. Adaptive runtime was 16.11 CPU
+  seconds/run versus 5.91 nominal fixed-1k and 24.42 nominal fixed-3.7k
+  controls; nominal controls retain the unchanged boss multiplier.
+- **Gameplay gate:** fixed control on 16 paired seeds completed 9/16 wins,
+  mean floor 47.5, mean ending HP 25.8, 18.94 CPU seconds/run. The adaptive
+  treatment aborted twice with `unsupported Silver card-select task`; no
+  treatment win-rate result is valid. A narrow fallback attempt was reverted
+  after reproducing the failure.
+- **Artifacts:** see
+  `docs/knowledge-base/decision-log/2026-08-27-silver-adaptive-search.md`
+  for raw artifact paths and SHA-256 hashes.
+- **Verdict:** **NO_SIMPLE_ADAPTIVE_RULE.** Offline quality is promising, but
+  live correctness was not established. Do not promote or expand this rule
+  into a dynamic search controller; a separate semantic card-select bridge
+  investigation would be required.
