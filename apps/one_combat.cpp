@@ -11418,12 +11418,18 @@ struct OocFactorResolvedDecision {
 
 static void oocFactorEvaluate(const std::string &manifestFile,
                               const std::string &outFile, int referenceSims,
-                              int futures, int futureStart, int expectedDecisions) {
+                              int futures, int futureStart, int expectedDecisions,
+                              bool marginalTradeoff = false) {
     std::ifstream in(manifestFile);
     if (!in) throw std::runtime_error("oocfactoreval: cannot open manifest");
     std::string line;
     std::getline(in, line);
     if (line.empty()) throw std::runtime_error("oocfactoreval: manifest header is missing");
+    const std::string marginalHeader =
+        "seed,decIdx,act,floor,screen,safeBits,strengthBits";
+    if (marginalTradeoff && line != marginalHeader
+            && line.rfind(marginalHeader + ',', 0) != 0)
+        throw std::runtime_error("oocfactoreval: marginal manifest header mismatch");
     std::vector<OocFactorManifestRow> manifest;
     while (std::getline(in, line)) {
         if (line.empty()) continue;
@@ -11435,7 +11441,8 @@ static void oocFactorEvaluate(const std::string &manifestFile,
                 cell = cell.substr(1, cell.size() - 2);
             c.push_back(cell);
         }
-        if (c.size() != 7)
+        if ((!marginalTradeoff && c.size() != 7)
+                || (marginalTradeoff && c.size() < 7))
             throw std::runtime_error("oocfactoreval: malformed manifest row");
         manifest.push_back({std::stoull(c[0]), std::stoi(c[1]), std::stoi(c[2]),
                             std::stoi(c[3]), std::stoi(c[4]),
@@ -11498,8 +11505,13 @@ static void oocFactorEvaluate(const std::string &manifestFile,
 
     std::ofstream out(outFile);
     if (!out) throw std::runtime_error("oocfactoreval: cannot open output");
-    out << "seed,decIdx,act,floor,screen,role,actionBits,future,continuationSeed,"
-           "won,floorEnd,hpEnd,adjudicatedValue,valid\n";
+    if (marginalTradeoff) {
+        out << "seed,decIdx,act,floor,screen,role,actionBits,future,continuationSeed,"
+               "hiddenSeed,won,floorEnd,hpEnd,adjudicatedValue,valid\n";
+    } else {
+        out << "seed,decIdx,act,floor,screen,role,actionBits,future,continuationSeed,"
+               "won,floorEnd,hpEnd,adjudicatedValue,valid\n";
+    }
     for (const auto &d : resolved) {
         const auto &m = d.manifest;
         for (int j = 0; j < futures; ++j) {
@@ -11508,9 +11520,16 @@ static void oocFactorEvaluate(const std::string &manifestFile,
                 ^ ((std::uint64_t)(m.decIdx + 1) * 0x9e3779b97f4a7c15ULL)
                 ^ ((std::uint64_t)(future + 1) * 0xbf58476d1ce4e5b9ULL);
             if (!contSeed) contSeed = 1;
-            for (const auto roleIdx : {std::pair<char,int>{'C', d.currentIdx},
-                                      std::pair<char,int>{'F', d.factorIdx}}) {
-                GameContext branch = detachedCounterfactualCopy(d.pre);
+            std::uint64_t hiddenSeed = contSeed ^ 0x94d049bb133111ebULL;
+            if (!hiddenSeed) hiddenSeed = 1;
+            GameContext siblingBase = detachedCounterfactualCopy(d.pre);
+            if (marginalTradeoff)
+                resampleRemainingActEncounters(siblingBase, hiddenSeed);
+            const char firstRole = marginalTradeoff ? 'S' : 'C';
+            const char secondRole = marginalTradeoff ? 'V' : 'F';
+            for (const auto roleIdx : {std::pair<char,int>{firstRole, d.currentIdx},
+                                      std::pair<char,int>{secondRole, d.factorIdx}}) {
+                GameContext branch = detachedCounterfactualCopy(siblingBase);
                 d.actions[roleIdx.second].execute(branch);
                 const OocCounterfactualResult r = finishOocCounterfactual(
                     std::move(branch), referenceSims, contSeed, d.prePath,
@@ -11518,7 +11537,9 @@ static void oocFactorEvaluate(const std::string &manifestFile,
                 out << m.seed << ',' << m.decIdx << ',' << m.act << ',' << m.floor
                     << ',' << m.screen << ',' << roleIdx.first << ','
                     << d.actions[roleIdx.second].bits << ',' << future << ','
-                    << contSeed << ',' << r.won << ',' << r.floor << ',' << r.hp
+                    << contSeed << ',';
+                if (marginalTradeoff) out << hiddenSeed << ',';
+                out << r.won << ',' << r.floor << ',' << r.hp
                     << ',' << (10.0 * r.won + r.hp) << ',' << (r.valid ? 1 : 0) << '\n';
             }
         }
@@ -14122,6 +14143,21 @@ int main(int argc, char **argv) {
                   << " referenceSims=" << referenceSims << " futures=" << futures
                   << " futureStart=" << futureStart << " -> " << out << '\n';
         oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart, nDecisions);
+
+    } else if (mode == "oocmargtradeoffeval") {
+        // Each replicate resamples the remaining encounters once, shared by
+        // the safe/strength sibling actions.
+        int nDecisions = argc > 2 ? std::stoi(argv[2]) : 0;
+        std::string manifest = argc > 3 ? argv[3] : "build/ooc_targeted/targets.csv";
+        std::string out = argc > 4 ? argv[4] : "build/ooc_targeted/adjudication.csv";
+        int referenceSims = argc > 5 ? std::stoi(argv[5]) : 1000;
+        int futures = argc > 6 ? std::stoi(argv[6]) : 16;
+        int futureStart = argc > 7 ? std::stoi(argv[7]) : 0;
+        std::cout << "oocmargtradeoffeval decisions=" << nDecisions
+                  << " referenceSims=" << referenceSims << " futures=" << futures
+                  << " futureStart=" << futureStart << " -> " << out << '\n';
+        oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
+                          nDecisions, true);
 
     } else if (mode == "mcts") {
         int sims          = argc > 2 ? std::stoi(argv[2]) : 2000;
