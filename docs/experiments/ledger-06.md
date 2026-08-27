@@ -4952,3 +4952,50 @@ model training was changed.
   boss budgets. Do not promote or expand this rule into a dynamic search
   controller; a separate semantic card-select bridge investigation and a
   budget-comparable rerun would be required.
+
+## OOC survival × continuation-value action diagnostic (2026-08-27)
+
+- **Question and baseline:** On baseline
+  `cad5ee95d0cabafd918dff44a36a57f9d1902666`, does ranking OOC actions by
+  `P(alive at K=3) * E[V_win at K=3 | alive]` beat the existing dense Tier-B
+  action utility `10*labelWon + labelHp` on their discordant decisions? This
+  was action-level OOC counterfactual evaluation, not the E3c combat-leaf
+  conditional-survival experiment.
+- **Producer:** known-RNG Searcher2, ascension 0, seeds `410100..410115`,
+  1,000 source-run simulations, at most four existing eligible OOC decisions
+  sampled per run, K=3 continuation fights at 150/100/50 simulations, native
+  floor/win bootstrap, and 16 matched continuation seeds per legal sibling
+  action. `models/v_combat_7k_tuned.txt` loaded with the existing alpha 0.5;
+  native `models/v_rich_trees.txt`, `models/v_win_trees.txt`, and
+  `models/policy_trees_c.txt` also reported loaded. The corpus contains 64 OOC
+  decisions, 367 actions, and 16 replicates/action. The maximum absolute error
+  between `p_survive * v_alive` and `mean(I*V)` was exactly 0.0.
+- **Discordance and adjudication:** 21 decisions disagreed. All were evaluated
+  by an unbootstrapped full-run continuation at 1,000 combat simulations with
+  16 action-paired common continuation seeds (672/672 valid rows). The dense
+  ranking won 14 decisions, the factorized ranking won 6, and 1 tied; the
+  factorized win fraction excluding ties was 30%. Dense versus factorized mean
+  two-choice comparative regret was `3.9792` versus `6.8929`; median
+  comparative regret was `0.0` versus `2.0`, in the existing terminal
+  `10*won + HP` adjudication units. The adjudicator evaluated the two rankers'
+  choices, not every legal action, so these are not all-action oracle regrets.
+- **Interpretation:** Every selected action on both sides survived all 16 K=3
+  producer replicates (`p_survive=1`). Thus these discordances were driven by
+  survivor continuation value versus the dense HP term, not by different
+  measured danger. This limits diagnosis of rare safety tradeoffs, but it does
+  not rescue the proposed ranking: on the observed discordant set it failed
+  both preregistered promotion conditions.
+- **Artifacts:** `build/ooc_factor_e4/raw.csv` (SHA-256
+  `F08E317DC8D07181F84B56B4DF84AA1F19F40A96C20D689E5F4739170A166591`),
+  `raw_block2.csv` (`00C4CC53A45E1E40A6945954F8AD03EEFB9F0FE1089320865F4F2B964E09A5BC`),
+  `adjudication_all.csv`
+  (`57301483685CB82A96F9A95DCB8C7C38F59C30F4C46FD689B9777514A7BAF18E`),
+  and `final/summary.json`
+  (`33DE69E32556EF03C692495B777374E8BCA1930A883461EEE944AEB415A79301`).
+  The frozen Release executable SHA-256 was
+  `71CC739F65015C048FD6C87276251D5FA6E9B83E00DE520EBE807E98F39B2E3B`.
+- **Verdict: `REJECT` on the observed all-surviving discordant set.** Do not
+  proceed to an NN, GBM, or production OOC integration. Differential-survival
+  decisions remain untested rather than disproven. The added producer fields,
+  analyzer, and adjudicator remain diagnostic-only; default gameplay behavior
+  is unchanged.
