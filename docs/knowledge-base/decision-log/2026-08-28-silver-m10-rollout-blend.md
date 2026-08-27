@@ -41,3 +41,25 @@ ignored selection report is retained at
 This rejects the preregistered affine blend grid on the non-anchor corpus. It
 does not establish that M10 has no information in other uses, but the explicit
 stop rule forbids using 25k-B to rescue or revise this experiment.
+
+## Explicit exploratory override and final gameplay decision
+
+The user subsequently and explicitly overrode the stop, required the same
+branch, and requested 16 common seeds for every fixed alpha in the original
+grid. That authorization did not make the offline gate pass and did not permit
+inspection of 25k-B. After independent implementation review and Linux GCC,
+the frozen SHA `6532d8f30ea2af365b48c998e8562cda2c325796` ran alphas
+`0/0.1/0.25/0.5/0.75/1.0` on fair seeds `974100--974115` at 1,000 base
+simulations, one thread, and ordinary allocated reuse.
+
+Pure rollout won 13/16 at mean floor 49.563. The nonzero arms won
+12/11/9/8/1 with mean floors 48.438/47.313/47.938/44.000/27.875. Alpha 0.1
+also increased mean CPU/run from 5.172 to 13.922 seconds. All Silver failure
+counters were zero, and actual M10 calls exactly matched blend invocations.
+
+Final exploratory verdict: `M10_BLEND_REJECTED`. Keep the path default-off and
+do not extend the sweep, run an equal-runtime follow-up, promote a blend, or
+start policy-prior work in this session. This does not revise the prior
+`M10_BLEND_OFFLINE_REJECTED` decision; it adds direct evidence that none of the
+user-requested fixed weights transferred positively on the bounded gameplay
+block.

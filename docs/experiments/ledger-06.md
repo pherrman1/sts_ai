@@ -5234,3 +5234,47 @@ model training was changed.
   `162b5de871eed0fd3284d7fe60b5fcfb733b43ddf25356489db4c34b5094537d`.
   Compact evidence:
   `docs/experiments/evidence/silver_m10_rollout_blend_2026-08-28.json`.
+
+## §184 Silver M10 fixed-blend gameplay sweep: REJECTED (2026-08-28)
+
+- **Authorization boundary:** after the preregistered offline rejection above,
+  the user explicitly overrode that stop, required this same branch, and
+  requested all six fixed alphas on 16 common seeds. This is an exploratory
+  gameplay sweep, not a passed offline gate; 25k-B remained untouched and the
+  earlier `M10_BLEND_OFFLINE_REJECTED` verdict is unchanged.
+- **Frozen implementation/provenance:** independently reviewed commit
+  `6532d8f30ea2af365b48c998e8562cda2c325796`; draft PR #77 Linux GCC passed.
+  The designated-GCP Release executable SHA-256 was
+  `e52a6120e723f14f0c0468a4e84fe9ce2afc872536471ae5f7e6f7d6a3cebb91`;
+  exact native M10 SHA-256 was
+  `344c83efebb4e2772971495e1e57e6202192386476e2c0c1b038a84f355f9959`
+  (501 trees). A logged alpha-0.25 canary passed
+  `check_benchmark_canary.py` before expansion.
+- **Protocol:** designated `sts-test`, Release, fair play, one thread, ordinary
+  allocated reuse cap, 1,000 base simulations, depth threshold zero, common
+  fresh seeds `974100--974115`. Arms were run sequentially in order
+  alpha `0/0.1/0.25/0.5/0.75/1.0`; each produced 16 flushed rows plus a
+  sidecar and telemetry log.
+- **Outcomes:** wins were `13/12/11/9/8/1`; mean floors were
+  `49.563/48.438/47.313/47.938/44.000/27.875`; mean ending HP was
+  `34.563/35.313/28.750/21.813/18.625/2.000`; mean CPU seconds/run was
+  `5.172/13.922/13.744/13.886/11.712/7.027`. Lower runtime at large alpha
+  reflects much shorter losing runs, not an efficiency gain.
+- **Paired uncertainty versus alpha zero:** alpha 0.1 had win delta `-6.25pp`
+  (95% paired seed bootstrap `[-31.25,+18.75]pp`) and floor delta `-1.125`
+  (`[-5.000,+2.375]`). Alpha 0.25 was `-12.5pp` wins
+  (`[-43.75,+18.75]`) and `-2.250` floor (`[-5.875,+1.063]`). Alpha 0.5 was
+  `-25pp` wins (`[-50,0]`); alpha 0.75 was `-31.25pp` (`[-56.25,0]`);
+  alpha 1.0 was `-75pp` (`[-93.75,-50]`) and `-21.688` floor
+  (`[-29.375,-14.063]`). Bootstrap used 100,000 deterministic paired-seed
+  resamples with seed 6532.
+- **Mechanism/health:** alpha-zero made zero M10 calls. Positive arms made
+  `9,569,248 / 9,324,039 / 9,319,674 / 8,075,852 / 5,104,801` calls, exactly
+  equal to blend invocations, taking `66.924 / 63.667 / 65.219 / 57.629 /
+  36.501` million microseconds. Depth-zero avoided no eligible calls. All arms
+  recorded zero conversion, semantic, transaction, and knowledge failures.
+- **Verdict:** **`M10_BLEND_REJECTED`.** No tested nonzero weight improved the
+  paired gameplay control; even alpha 0.1 had worse win/floor point estimates
+  and about 2.7x CPU/run. Keep the implementation default-off. Do not promote,
+  extend beyond 16 seeds, run equal-runtime follow-up, start Task B, or begin
+  policy-prior integration from this experiment.

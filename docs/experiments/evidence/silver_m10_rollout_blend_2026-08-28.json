@@ -32,5 +32,27 @@
   },
   "decision": "Every sensible nonzero blend had a material primary counter-metric conflict. Alpha 0.1 improved pairwise concordance by 0.549 percentage points, but top-leaf agreement fell by 3.951 points with a wholly negative 95% whole-group interval, and regret worsened. No candidate was locked.",
   "raw_selection": {"local_path": "build/silver_m10_rollout_blend/selection.json", "sha256": "162b5de871eed0fd3284d7fe60b5fcfb733b43ddf25356489db4c34b5094537d", "bytes": 46179},
-  "omitted_by_stop_rule": ["depth-schedule selection", "candidate lock", "25k-B evaluation", "native implementation", "native performance gate", "gameplay gate"]
+  "omitted_by_original_stop_rule": ["depth-schedule selection", "candidate lock", "25k-B evaluation"],
+  "exploratory_gameplay_override": {
+    "authorization": "User explicitly required the same branch, all six fixed alphas, and 16 common seeds after being told this overrode the offline stop.",
+    "verdict": "M10_BLEND_REJECTED",
+    "offline_verdict_revised": false,
+    "anchor_25k_b_inspected": false,
+    "frozen_sha": "6532d8f30ea2af365b48c998e8562cda2c325796",
+    "linux_gcc": "pass",
+    "executable_sha256": "e52a6120e723f14f0c0468a4e84fe9ce2afc872536471ae5f7e6f7d6a3cebb91",
+    "native_m10_sha256": "344c83efebb4e2772971495e1e57e6202192386476e2c0c1b038a84f355f9959",
+    "protocol": {"host": "sts-test", "release": true, "fair": true, "threads": 1, "base_simulations": 1000, "reuse_cap": "allocated", "seed_lo": 974100, "seed_hi": 974115, "depth_threshold": 0},
+    "arms": {
+      "0": {"wins": 13, "mean_floor": 49.5625, "mean_hp_end": 34.5625, "mean_cpu_sec": 5.171758125, "m10_calls": 0},
+      "0.1": {"wins": 12, "mean_floor": 48.4375, "mean_hp_end": 35.3125, "mean_cpu_sec": 13.92206, "m10_calls": 9569248, "m10_micros": 66923921, "win_delta_pp": -6.25, "win_delta_95pct_pp": [-31.25, 18.75], "floor_delta": -1.125, "floor_delta_95pct": [-5.0, 2.375]},
+      "0.25": {"wins": 11, "mean_floor": 47.3125, "mean_hp_end": 28.75, "mean_cpu_sec": 13.7440975, "m10_calls": 9324039, "m10_micros": 63667233, "win_delta_pp": -12.5, "win_delta_95pct_pp": [-43.75, 18.75], "floor_delta": -2.25, "floor_delta_95pct": [-5.875, 1.0625]},
+      "0.5": {"wins": 9, "mean_floor": 47.9375, "mean_hp_end": 21.8125, "mean_cpu_sec": 13.8861175, "m10_calls": 9319674, "m10_micros": 65219445, "win_delta_pp": -25.0, "win_delta_95pct_pp": [-50.0, 0.0]},
+      "0.75": {"wins": 8, "mean_floor": 44.0, "mean_hp_end": 18.625, "mean_cpu_sec": 11.711754375, "m10_calls": 8075852, "m10_micros": 57629342, "win_delta_pp": -31.25, "win_delta_95pct_pp": [-56.25, 0.0]},
+      "1.0": {"wins": 1, "mean_floor": 27.875, "mean_hp_end": 2.0, "mean_cpu_sec": 7.0272490625, "m10_calls": 5104801, "m10_micros": 36500633, "win_delta_pp": -75.0, "win_delta_95pct_pp": [-93.75, -50.0], "floor_delta": -21.6875, "floor_delta_95pct": [-29.375, -14.0625]}
+    },
+    "bootstrap": {"unit": "paired seed", "replicates": 100000, "seed": 6532},
+    "all_failure_counters_zero": true,
+    "raw_artifacts": "Ignored local build/silver_m10_rollout_blend/alpha_*.csv, alpha_*.csv.meta.json, and alpha_*.log; remote root silver_m10_blend_alpha_*"
+  }
 }
