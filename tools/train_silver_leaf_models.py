@@ -255,8 +255,13 @@ def main():
         "warning": "Offline teacher/model comparison only; no gameplay improvement is established.",
     }
     output = args.output_dir / "comparison.json"
-    output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps(report, indent=2, sort_keys=True))
+    def json_scalar(value):
+        if isinstance(value, np.generic):
+            return value.item()
+        raise TypeError(f"not JSON serializable: {type(value).__name__}")
+    rendered = json.dumps(report, indent=2, sort_keys=True, default=json_scalar) + "\n"
+    output.write_text(rendered, encoding="utf-8")
+    print(rendered, end="")
 
 
 if __name__ == "__main__":
