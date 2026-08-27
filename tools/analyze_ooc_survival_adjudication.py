@@ -4,6 +4,7 @@
 import argparse
 import csv
 import json
+import math
 import random
 from collections import defaultdict
 from pathlib import Path
@@ -23,7 +24,11 @@ def main() -> None:
     with open(args.targets_csv, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         required_targets = {"seed", "decIdx", "act", "floor", "screen",
-                            "safeBits", "strengthBits"}
+                            "safeBits", "strengthBits", "safePSurvive",
+                            "safeActionIdx", "strengthActionIdx",
+                            "strengthPSurvive", "safeVAlive", "strengthVAlive",
+                            "safeQProduct", "strengthQProduct",
+                            "safeDenseScore", "strengthDenseScore"}
         missing = required_targets - set(reader.fieldnames or ())
         if missing:
             raise SystemExit(f"missing target columns: {sorted(missing)}")
@@ -69,6 +74,26 @@ def main() -> None:
                 or len(roles["S"]) != args.replicates):
             raise SystemExit(f"missing/unpaired adjudication: {key}")
         expected_meta = tuple(int(target[x]) for x in ("act", "floor", "screen"))
+        numeric_names = ("safePSurvive", "strengthPSurvive", "safeVAlive",
+                         "strengthVAlive", "safeQProduct", "strengthQProduct",
+                         "safeDenseScore", "strengthDenseScore")
+        numeric = {name: float(target[name]) for name in numeric_names}
+        if not all(math.isfinite(value) for value in numeric.values()):
+            raise SystemExit(f"non-finite target score: {key}")
+        if not (0 <= numeric["strengthPSurvive"] < numeric["safePSurvive"] <= 1):
+            raise SystemExit(f"invalid safe/strength survival ordering: {key}")
+        if not (0 <= numeric["safeVAlive"] < numeric["strengthVAlive"] <= 1):
+            raise SystemExit(f"invalid safe/strength survivor-value ordering: {key}")
+        safe_idx = int(target["safeActionIdx"])
+        strength_idx = int(target["strengthActionIdx"])
+        if safe_idx < 0 or strength_idx < 0 or safe_idx == strength_idx:
+            raise SystemExit(f"invalid safe/strength action indices: {key}")
+        safe_q = numeric["safePSurvive"] * numeric["safeVAlive"]
+        strength_q = numeric["strengthPSurvive"] * numeric["strengthVAlive"]
+        if (not math.isclose(numeric["safeQProduct"], safe_q, rel_tol=1e-12, abs_tol=1e-12)
+                or not math.isclose(numeric["strengthQProduct"], strength_q,
+                                    rel_tol=1e-12, abs_tol=1e-12)):
+            raise SystemExit(f"Q product mismatch: {key}")
         for role, bits in (("S", target["safeBits"]),
                            ("V", target["strengthBits"])):
             for row in roles[role].values():
@@ -82,6 +107,18 @@ def main() -> None:
         if safe_win > strength_win: winner = "safe"
         elif strength_win > safe_win: winner = "strength"
         else: winner = "tie"
+        def score_choice(safe_score, strength_score):
+            if safe_score > strength_score: return "S"
+            if strength_score > safe_score: return "V"
+            return "S" if safe_idx < strength_idx else "V"
+
+        rule_choices = {
+            "survivalOnly": "S",
+            "strengthOnly": "V",
+            "combinedProduct": score_choice(safe_q, strength_q),
+            "denseK3": score_choice(numeric["safeDenseScore"],
+                                     numeric["strengthDenseScore"]),
+        }
         result = dict(target)
         result.update({"safeAdjudicatedWin": safe_win,
                        "strengthAdjudicatedWin": strength_win,
@@ -90,13 +127,20 @@ def main() -> None:
                        "strengthMeanFinalHp": strength_hp,
                        "safeRegret": max(safe_win, strength_win) - safe_win,
                        "strengthRegret": max(safe_win, strength_win) - strength_win})
+        for name, role in rule_choices.items():
+            chosen_win = safe_win if role == "S" else strength_win
+            result.update({f"{name}Choice": role,
+                           f"{name}AdjudicatedWin": chosen_win,
+                           f"{name}Regret": max(safe_win, strength_win) - chosen_win,
+                           f"{name}CorrectNonTied": int(
+                               winner != "tie"
+                               and ((winner == "safe" and role == "S")
+                                    or (winner == "strength" and role == "V")))})
         results.append(result)
 
     safe_wins = sum(r["terminalWinWinner"] == "safe" for r in results)
     strength_wins = sum(r["terminalWinWinner"] == "strength" for r in results)
     ties = sum(r["terminalWinWinner"] == "tie" for r in results)
-    safe_regrets = [r["safeRegret"] for r in results]
-    strength_regrets = [r["strengthRegret"] for r in results]
     replicate_outcomes = {"safeOnly": 0, "strengthOnly": 0,
                           "bothWin": 0, "neitherWin": 0}
     for key in target_keys:
@@ -107,58 +151,86 @@ def main() -> None:
                      else "strengthOnly" if vw else "neitherWin")
             replicate_outcomes[label] += 1
 
-    # Hierarchical paired bootstrap: source trajectories are the outer
-    # independent clusters; paired futures are resampled within each decision.
-    decision_rep_deltas = {}
+    rule_names = ("survivalOnly", "strengthOnly", "combinedProduct", "denseK3")
+    non_tied = safe_wins + strength_wins
+    rule_metrics = {}
+    for name in rule_names:
+        regrets = [r[f"{name}Regret"] for r in results]
+        rule_metrics[name] = {
+            "safeChoices": sum(r[f"{name}Choice"] == "S" for r in results),
+            "strengthChoices": sum(r[f"{name}Choice"] == "V" for r in results),
+            "correctNonTied": sum(r[f"{name}CorrectNonTied"] for r in results),
+            "accuracyNonTied": (sum(r[f"{name}CorrectNonTied"] for r in results)
+                                 / non_tied if non_tied else 0.0),
+            "meanAdjudicatedWin": (sum(r[f"{name}AdjudicatedWin"] for r in results)
+                                    / len(results)),
+            "meanRegret": sum(regrets) / len(regrets),
+            "medianRegret": median(regrets),
+        }
+
+    # Hierarchical paired bootstrap of combined-minus-baseline chosen wins:
+    # source trajectories are outer clusters and paired futures are resampled
+    # within decisions.
+    rule_rep_wins = {}
     seed_decisions = defaultdict(list)
+    result_by_key = {(int(r["seed"]), int(r["decIdx"])): r for r in results}
     for key in target_keys:
-        decision_rep_deltas[key] = [
-            int(rows_by_key[key]["S"][rep]["won"])
-            - int(rows_by_key[key]["V"][rep]["won"])
-            for rep in rows_by_key[key]["S"]
-        ]
+        rule_rep_wins[key] = {}
+        for name in rule_names:
+            role = result_by_key[key][f"{name}Choice"]
+            rule_rep_wins[key][name] = [int(rows_by_key[key][role][rep]["won"])
+                                        for rep in rows_by_key[key]["S"]]
         seed_decisions[key[0]].append(key)
     unique_seeds = sorted(seed_decisions)
-    rng = random.Random(0)
-    bootstrap = []
-    for _ in range(10000):
-        sampled_decisions = []
-        for _ in unique_seeds:
-            seed = unique_seeds[rng.randrange(len(unique_seeds))]
-            for key in seed_decisions[seed]:
-                deltas = decision_rep_deltas[key]
-                paired_sample = [deltas[rng.randrange(len(deltas))]
-                                 for _ in deltas]
-                sampled_decisions.append(sum(paired_sample) / len(paired_sample))
-        bootstrap.append(sum(sampled_decisions) / len(sampled_decisions))
-    bootstrap.sort()
-    lo = bootstrap[int(0.025 * len(bootstrap))]
-    hi = bootstrap[int(0.975 * len(bootstrap))]
-    mean_delta = sum(r["safeAdjudicatedWin"] - r["strengthAdjudicatedWin"]
-                     for r in results) / len(results)
-    if safe_wins > strength_wins and sum(safe_regrets) < sum(strength_regrets) and lo > 0:
-        verdict = "SUPPORT_SAFETY"
-    elif (strength_wins > safe_wins and sum(strength_regrets) < sum(safe_regrets)
-          and hi < 0):
-        verdict = "REJECT_SAFETY"
-    else:
-        verdict = "INCONCLUSIVE"
+    comparisons = {}
+    for baseline_idx, baseline in enumerate(("survivalOnly", "strengthOnly", "denseK3")):
+        rng = random.Random(baseline_idx)
+        bootstrap = []
+        for _ in range(10000):
+            sampled_decisions = []
+            for _ in unique_seeds:
+                seed = unique_seeds[rng.randrange(len(unique_seeds))]
+                for key in seed_decisions[seed]:
+                    n = len(rule_rep_wins[key][baseline])
+                    deltas = [rule_rep_wins[key]["combinedProduct"][i]
+                              - rule_rep_wins[key][baseline][i] for i in range(n)]
+                    paired_sample = [deltas[rng.randrange(n)] for _ in range(n)]
+                    sampled_decisions.append(sum(paired_sample) / n)
+            bootstrap.append(sum(sampled_decisions) / len(sampled_decisions))
+        bootstrap.sort()
+        comparisons[f"combinedMinus{baseline[0].upper() + baseline[1:]}"] = {
+            "meanWinRateDifference": (rule_metrics["combinedProduct"]["meanAdjudicatedWin"]
+                                      - rule_metrics[baseline]["meanAdjudicatedWin"]),
+            "sourceSeedClusterPairedBootstrap95": [
+                bootstrap[int(0.025 * len(bootstrap))],
+                bootstrap[int(0.975 * len(bootstrap))]],
+        }
+
+    primary_baselines = ("survivalOnly", "strengthOnly")
+    support = all(
+        rule_metrics["combinedProduct"]["accuracyNonTied"] > rule_metrics[b]["accuracyNonTied"]
+        and rule_metrics["combinedProduct"]["meanRegret"] < rule_metrics[b]["meanRegret"]
+        and comparisons[f"combinedMinus{b[0].upper() + b[1:]}"]["sourceSeedClusterPairedBootstrap95"][0] > 0
+        for b in primary_baselines)
+    reject = all(
+        rule_metrics["combinedProduct"]["accuracyNonTied"] < rule_metrics[b]["accuracyNonTied"]
+        and rule_metrics["combinedProduct"]["meanRegret"] > rule_metrics[b]["meanRegret"]
+        and comparisons[f"combinedMinus{b[0].upper() + b[1:]}"]["sourceSeedClusterPairedBootstrap95"][1] < 0
+        for b in primary_baselines)
+    verdict = "SUPPORT_COMBINED" if support else "REJECT_COMBINED" if reject else "INCONCLUSIVE"
 
     summary = {"decisions": len(results), "replicatesPerAction": args.replicates,
                "primaryUtility": "terminal win",
                "safeWins": safe_wins, "strengthWins": strength_wins, "ties": ties,
-               "safeMeanRegret": sum(safe_regrets) / len(safe_regrets),
-               "strengthMeanRegret": sum(strength_regrets) / len(strength_regrets),
-               "safeMedianRegret": median(safe_regrets),
-               "strengthMedianRegret": median(strength_regrets),
-               "safeMinusStrengthMeanWinRate": mean_delta,
-               "sourceSeedClusterPairedBootstrap95": [lo, hi],
+               "rules": rule_metrics,
+               "comparisons": comparisons,
                "pairedReplicateOutcomesDiagnostic": replicate_outcomes,
                "verdict": verdict,
-               "decisionRule": ("SUPPORT safer action only if safe wins > strength wins, "
-                                "safe mean regret is lower, and the clustered 95% interval "
-                                "for safe-minus-strength win rate excludes zero; otherwise "
-                                "INCONCLUSIVE or REJECT if directionally adverse")}
+               "decisionRule": ("SUPPORT_COMBINED only if combined product has higher "
+                                "non-tied accuracy, lower mean regret, and clustered paired "
+                                "win-difference intervals above zero versus both survival-only "
+                                "and strength-only; REJECT_COMBINED symmetrically; otherwise "
+                                "INCONCLUSIVE. Dense K=3 is a reported secondary baseline.")}
     fields = list(results[0])
     with open(out / "decisions.csv", "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fields); writer.writeheader(); writer.writerows(results)

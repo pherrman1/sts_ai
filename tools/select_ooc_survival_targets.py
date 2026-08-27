@@ -25,7 +25,7 @@ def main() -> None:
             reader = csv.DictReader(f)
             required = set(DECISION) | {"regime", "actionIdx", "actionBits",
                                         "survivedH", "continuationValue",
-                                        "continuationSeed", "hiddenSeed"}
+                                        "continuationSeed", "hiddenSeed", "utility"}
             missing = required - set(reader.fieldnames or ())
             if missing:
                 raise SystemExit(f"missing columns in {raw_path}: {sorted(missing)}")
@@ -50,8 +50,9 @@ def main() -> None:
         if any(i not in (0, 1) for i in alive):
             raise SystemExit(f"non-binary survivedH in {key}")
         values = [float(r["continuationValue"]) for r in rows]
-        if not all(math.isfinite(v) for v in values):
-            raise SystemExit(f"non-finite continuationValue in {key}")
+        utilities = [float(r["utility"]) for r in rows]
+        if not all(math.isfinite(v) for v in values + utilities):
+            raise SystemExit(f"non-finite value in {key}")
         n_alive = sum(alive)
         decisions[key[:-1]].append({
             "actionIdx": key[-1],
@@ -60,6 +61,7 @@ def main() -> None:
             "pSurvive": n_alive / len(rows),
             "vAlive": (sum(v for i, v in zip(alive, values) if i) / n_alive
                        if n_alive else 0.0),
+            "denseScore": sum(utilities) / len(utilities),
         })
 
     selected = []
@@ -85,10 +87,16 @@ def main() -> None:
         row = dict(zip(DECISION, dkey))
         row.update({"safeBits": safe["actionBits"],
                     "strengthBits": strength["actionBits"],
+                    "safeActionIdx": safe["actionIdx"],
+                    "strengthActionIdx": strength["actionIdx"],
                     "safePSurvive": safe["pSurvive"],
                     "strengthPSurvive": strength["pSurvive"],
                     "safeVAlive": safe["vAlive"],
                     "strengthVAlive": strength["vAlive"],
+                    "safeQProduct": safe["pSurvive"] * safe["vAlive"],
+                    "strengthQProduct": strength["pSurvive"] * strength["vAlive"],
+                    "safeDenseScore": safe["denseScore"],
+                    "strengthDenseScore": strength["denseScore"],
                     "survivalDifference": safe["pSurvive"] - strength["pSurvive"],
                     "survivorValueDifference": strength["vAlive"] - safe["vAlive"]})
         selected.append(row)
