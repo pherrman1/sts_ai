@@ -166,7 +166,7 @@ def margin_breakdown(summaries):
     return out
 
 
-def analyze(rows):
+def _analyze_rows(rows):
     root_groups = groups(rows)
     summaries = []
     pair_visits_1k = {"agree_pairs": 0, "comparable_pairs": 0}
@@ -307,6 +307,120 @@ def analyze(rows):
     }
 
 
+def analyze(rows):
+    """Return deterministic-reference headlines plus mixed-action descriptives.
+
+    A stochastic forced root action is sampled once before its continuation
+    search, so its reference value is not a 5k-simulation estimate of the
+    root action's chance expectation.  The full mixed-action analysis remains
+    available under ``all_roots_descriptive``.  Headline action-quality
+    metrics use only rows marked deterministic; a selected stochastic action
+    also excludes that root from the corresponding budget's top-action and
+    regret denominator.
+    """
+    all_results = _analyze_rows(rows)
+    root_groups = groups(rows)
+
+    def selected_is_deterministic(root, chosen_key):
+        chosen = root[0][chosen_key]
+        return any(r["action_fingerprint"] == chosen and r["stochastic"] == "0"
+                   for r in root)
+
+    def deterministic_rows(chosen_key):
+        selected = []
+        for root in root_groups.values():
+            if selected_is_deterministic(root, chosen_key):
+                selected.extend(r for r in root if r["stochastic"] == "0")
+        return selected
+
+    def all_deterministic_rows():
+        return [r for root in root_groups.values() for r in root
+                if r["stochastic"] == "0"]
+
+    one_k_rows = deterministic_rows("chosen_1k")
+    three_seven_k_rows = deterministic_rows("chosen_37k")
+    joint_rows = [r for root in root_groups.values()
+                  if selected_is_deterministic(root, "chosen_1k")
+                  and selected_is_deterministic(root, "chosen_37k")
+                  for r in root if r["stochastic"] == "0"]
+    deterministic_action_rows = all_deterministic_rows()
+
+    one_k = _analyze_rows(one_k_rows) if one_k_rows else None
+    three_seven_k = (_analyze_rows(three_seven_k_rows)
+                     if three_seven_k_rows else None)
+    joint = _analyze_rows(joint_rows) if joint_rows else None
+    deterministic_actions = (_analyze_rows(deterministic_action_rows)
+                             if deterministic_action_rows else None)
+
+    def metric(scope, name, key):
+        return scope[name][key] if scope is not None else None
+
+    headline = {
+        "roots": len(root_groups),
+        "deterministic_action_rows": len(deterministic_action_rows),
+        "roots_with_deterministic_candidates": len({
+            (r["run_seed"], r["floor"], r["encounter"],
+             r["combat_decision_ordinal"])
+            for r in deterministic_action_rows}),
+        "roots_for_1k_top_and_regret": len({
+            (r["run_seed"], r["floor"], r["encounter"],
+             r["combat_decision_ordinal"])
+            for r in one_k_rows}),
+        "roots_for_3.7k_top_and_regret": len({
+            (r["run_seed"], r["floor"], r["encounter"],
+             r["combat_decision_ordinal"])
+            for r in three_seven_k_rows}),
+        "roots_for_joint_budget_comparison": len({
+            (r["run_seed"], r["floor"], r["encounter"],
+             r["combat_decision_ordinal"])
+            for r in joint_rows}),
+        "excluded_stochastic_candidate_rows": len(rows) - len(deterministic_action_rows),
+        "excluded_stochastic_selected_roots_1k": len(root_groups) - len({
+            (r["run_seed"], r["floor"], r["encounter"],
+             r["combat_decision_ordinal"])
+            for r in one_k_rows}),
+        "excluded_stochastic_selected_roots_3.7k": len(root_groups) - len({
+            (r["run_seed"], r["floor"], r["encounter"],
+             r["combat_decision_ordinal"])
+            for r in three_seven_k_rows}),
+        "top_action_agreement": {
+            "silver_1k": metric(one_k, "top_action_agreement", "silver_1k"),
+            "silver_3.7k": metric(three_seven_k, "top_action_agreement", "silver_3.7k"),
+        },
+        "mean_regret": {
+            "silver_1k": metric(one_k, "mean_regret", "silver_1k"),
+            "silver_3.7k": metric(three_seven_k, "mean_regret", "silver_3.7k"),
+        },
+        "median_regret": {
+            "silver_1k": metric(one_k, "median_regret", "silver_1k"),
+            "silver_3.7k": metric(three_seven_k, "median_regret", "silver_3.7k"),
+        },
+        "pairwise_ordering_agreement": (
+            deterministic_actions["pairwise_ordering_agreement"]
+            if deterministic_actions is not None else None),
+        "reference_margin": {
+            "silver_1k_mean": metric(one_k, "reference_margin", "mean"),
+            "silver_1k_median": metric(one_k, "reference_margin", "median"),
+            "silver_3.7k_mean": metric(three_seven_k, "reference_margin", "mean"),
+            "silver_3.7k_median": metric(three_seven_k, "reference_margin", "median"),
+        },
+        "budget_change": (
+            joint["budget_change"] if joint is not None else None),
+        "regret_by_reference_margin": (
+            joint["regret_by_reference_margin"] if joint is not None else None),
+        "breakdowns": joint["breakdowns"] if joint is not None else None,
+        "reference_stability": {
+            "silver_1k": one_k["reference_stability"] if one_k is not None else None,
+            "silver_3.7k": (three_seven_k["reference_stability"]
+                             if three_seven_k is not None else None),
+        },
+    }
+    all_results["all_roots_descriptive"] = all_results.copy()
+    all_results.update(headline)
+    all_results["reference_scope"] = headline
+    return all_results
+
+
 def self_test():
     base = {
         "run_seed": "1", "floor": "10", "encounter": "2", "combat_decision_ordinal": "3",
@@ -344,6 +458,8 @@ def self_test():
     assert result["top_action_agreement"]["silver_3.7k"] == 1.0
     assert result["mean_regret"]["silver_1k"] == 3.0
     assert result["pairwise_ordering_agreement"]["visits_3.7k"]["rate"] == 1.0
+    assert result["reference_scope"]["deterministic_action_rows"] == 3
+    assert result["reference_scope"]["roots_for_joint_budget_comparison"] == 1
     print("analyze_silver_root_diagnostic self-test PASS")
 
 
