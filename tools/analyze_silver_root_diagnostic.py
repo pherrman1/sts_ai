@@ -465,14 +465,43 @@ def self_test():
                     "current_37k_terminal_losses": "0", "current_37k_rollout_actions": "20",
                     "current_37k_rollout_turns": "5", "current_37k_utility_sum": "30"})
         rows.append(row)
+    scoped_base = dict(base)
+    scoped_base.update({"run_seed": "2", "chosen_1k": "d", "chosen_37k": "e"})
+    for fp, value, visits1, visits37, stochastic in (("d", "10", "20", "5", "1"),
+                                                       ("e", "2", "5", "20", "0"),
+                                                       ("f", "9", "4", "10", "0")):
+        row = dict(scoped_base)
+        row.update({"action_fingerprint": fp, "reference_value": value,
+                    "reference_win_bonus": "0", "reference_hp": value,
+                    "reference_potion": "0", "reference_turn_penalty": "0",
+                    "reference_monster_damage": "0", "reference_alive": "0",
+                    "reference_energy_waste": "0", "reference_draw": "0",
+                    "reference_survival": "0", "reference_rollout_win_rate": "0",
+                    "reference_rollout_actions": "1", "reference_rollout_turns": "1",
+                    "reference_terminal_wins": "0", "reference_terminal_losses": "1",
+                    "reference_utility_sum": value, "action_type": "1",
+                    "stochastic": stochastic, "chosen_1k_visits": visits1,
+                    "chosen_37k_visits": visits37, "chosen_1k_q": "1",
+                    "chosen_37k_q": "2"})
+        row.update({"current_1k_rollout_calls": "10", "current_1k_terminal_wins": "10",
+                    "current_1k_terminal_losses": "0", "current_1k_rollout_actions": "20",
+                    "current_1k_rollout_turns": "5", "current_1k_utility_sum": "30",
+                    "current_37k_rollout_calls": "10", "current_37k_terminal_wins": "10",
+                    "current_37k_terminal_losses": "0", "current_37k_rollout_actions": "20",
+                    "current_37k_rollout_turns": "5", "current_37k_utility_sum": "30"})
+        rows.append(row)
     result = analyze(rows)
-    assert result["roots"] == 1
+    assert result["roots"] == 2
     assert result["headline_comparison_roots"] == 1
     assert result["top_action_agreement"]["silver_1k"] == 0.0
     assert result["top_action_agreement"]["silver_3.7k"] == 1.0
     assert result["mean_regret"]["silver_1k"] == 3.0
+    assert result["mean_regret"]["silver_3.7k"] == 0.0
+    assert result["per_budget_descriptive"]["silver_3.7k"]["roots"] == 2
+    assert result["per_budget_descriptive"]["silver_3.7k"]["top_action_agreement"] == 0.5
+    assert result["per_budget_descriptive"]["silver_3.7k"]["mean_regret"] == 3.5
     assert result["pairwise_ordering_agreement"]["visits_3.7k"]["rate"] == 1.0
-    assert result["reference_scope"]["deterministic_action_rows"] == 3
+    assert result["reference_scope"]["deterministic_action_rows"] == 5
     assert result["reference_scope"]["roots_for_joint_budget_comparison"] == 1
     print("analyze_silver_root_diagnostic self-test PASS")
 
