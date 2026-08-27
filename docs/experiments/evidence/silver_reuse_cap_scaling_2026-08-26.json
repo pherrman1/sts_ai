@@ -146,26 +146,31 @@
       "T1": "47ee073caffad8bc790ac6311618ab67448721a9cebc88a86c8aa7709c7421d5",
       "D1_diagnostics_off": "99c3cccce287d0be15a8667f4953e80983d8456710edb1bce18cbeafe62e7256",
       "T1_diagnostics_off": "5db5b35da4b93354591ba665ff29f622a0aac8da97a72d4879b5074a4c633d69",
-      "X1_active_10000_exploratory": "b8659acd2b8fee3e38ce7867523a7aed69da261485ce14c5e89b9eb5e9946e0d"
+      "X1_active_10000_exploratory": "b8659acd2b8fee3e38ce7867523a7aed69da261485ce14c5e89b9eb5e9946e0d",
+      "X2_allocated_10000_exploratory": "24c80c5b5b960ef668a21f75386fd153ccdd991d566e4254a0b4ca60371e0dfd"
     },
     "diagnostics_sha256": {
       "D0": "5f16a9267e9e5cca2f96c00a09ee9ea9669e7fbaefbddf6f0589cee73a413b17",
       "D1": "4d32579a52cdd905ec308ab46c4ffc040bc88ce6acd199d41c18828c436ac9f9",
       "T1": "d33f293c7e1a045b1ae8d217b6e6868c13635b23140e069f45536767f1c96742",
-      "X1_active_10000_exploratory": "46c9e11e9e73a0fd45045126ba2a16e5f81eafe9aea4f3cc60549d96b6c2d93b"
+      "X1_active_10000_exploratory": "46c9e11e9e73a0fd45045126ba2a16e5f81eafe9aea4f3cc60549d96b6c2d93b",
+      "X2_allocated_10000_exploratory": "ac3cd9132ba47fb22649a079f19fc7491769deaf9a932e3c9d405ace2ac50c5e"
     },
     "analysis_sha256": {
       "d0_d1_t1_analysis.json": "112d23b76b20cddd5b32421901a605f85b5efdc16376d502364294eca9524632",
       "d0_d1_t1_analysis.md": "fa959b9224ca4c53d6292a7352b248904053c3f539f8a9a7f873b8df13651329",
       "d0_d1_t1_x1_analysis.json": "0933c7ef0f229eb1a7ec081e320d28cf8ccc08a706dda8df6f1981b751ec5168",
-      "d0_d1_t1_x1_analysis.md": "2903593ee1592bd610af45abfc58dbd678af97b59177cbcd079c5752c4c41310"
+      "d0_d1_t1_x1_analysis.md": "2903593ee1592bd610af45abfc58dbd678af97b59177cbcd079c5752c4c41310",
+      "x1_x2_analysis.json": "caca43a43722a1e5fc95113aa55539b6dc1f122f72c6d753837b6f4556dff729",
+      "x1_x2_analysis.md": "5e2c463204d29892586c9b5920cc1f714abad6401c4437ca37efc0117318f329"
     },
     "archives_sha256": {
       "D0": "606d0026236d031a0b965f8261a832b2f249859dfe9b3e2abb6508ccaa77b9fb",
       "D1": "1ff86d2688f9d6b72acaf5eee1cd6c9c3c491845cbc1396072a584aaa874eca2",
       "T1": "a1c813601b8ab10118395a35b264529333455a984f00f5d8bce04c43689220e8",
       "diagnostics_off_pair": "97f633c14ae6218567aad6f0975bec40cb17878eed618641fa489b0d8f7717a1",
-      "X1_active_10000_exploratory": "13587de062e12385dabbf444c1b609bb1e5bd787ceba6f91911400d362e7b9f0"
+      "X1_active_10000_exploratory": "13587de062e12385dabbf444c1b609bb1e5bd787ceba6f91911400d362e7b9f0",
+      "X2_allocated_10000_exploratory": "5036f0b44b6b52ce3b777a9d97d1becc67742963b1e119f62371edcab337d80d"
     }
   },
   "exploratory_follow_up_X1_active_10000": {
@@ -201,6 +206,57 @@
       "runtime_delta_mean_seconds": 73.24434125
     },
     "interpretation": "At 10000 simulations the retained-allocation sticky predicate remains absent, but the fixed active-pool cap itself becomes common. The one 32-seed same-block outcome is descriptive only and does not support a strength or runtime conclusion."
+  },
+  "exploratory_follow_up_X2_allocated_10000": {
+    "pre_registered": false,
+    "purpose": "User-requested same-seed allocated counterpart to X1 after the formal experiment; it is a descriptive structural comparison, not a promotion gate.",
+    "configuration": "allocated reuse-cap mode, 10000 base simulations, same 32 seeds and all other X1/formal-run settings, scaling diagnostic enabled",
+    "reroot_attempts": 14084,
+    "candidate_found_rate": 0.7056234024424879,
+    "exact_reroot_rate": 0.11317807441067879,
+    "candidate_missing_fallback_rate": 0.29437659755751205,
+    "allocated_cap_fallback_rate": 0.5924453280318092,
+    "sticky_eligible_rate": 0.41458392502130076,
+    "sticky_eligible_rows": 5839,
+    "sticky_eligible_exact_reroot_rows": 0,
+    "inherited_visits": {
+      "sum": 14325110,
+      "mean": 962.5149499428878,
+      "median": 0.0
+    },
+    "nodes_per_simulation": 0.8680549050849001,
+    "wins": 23,
+    "win_rate": 0.71875,
+    "floor_mean": 48.625,
+    "hp_mean": 35.9375,
+    "runtime_mean_seconds_with_diagnostics": 111.0630625
+  },
+  "exploratory_X1_active_vs_X2_allocated_10000": {
+    "warning": "Same paired seed block and frozen binary, but post-hoc and 32 seeds; no gameplay or runtime promotion inference is authorized.",
+    "exact_reroot_rate_change_active_minus_allocated": 0.3562378831135048,
+    "cap_blocked_fallback_rate_change_active_minus_allocated": -0.3565008957094585,
+    "candidate_missing_fallback_rate_change_active_minus_allocated": 0.00026301259595365,
+    "inherited_visits_mean_change": 3283.544229798373,
+    "nodes_per_simulation_change": -0.0160077572767323,
+    "paired_wins": {
+      "allocated": 23,
+      "active": 23,
+      "active_only_wins": 1,
+      "allocated_only_wins": 1
+    },
+    "paired_floor_delta_active_minus_allocated": {
+      "mean": -1.34375,
+      "bootstrap_95": [-4.09375, 0.53125]
+    },
+    "paired_hp_delta_active_minus_allocated": {
+      "mean": 1.96875,
+      "bootstrap_95": [-4.40625, 8.96875]
+    },
+    "paired_diagnostic_runtime_delta_active_minus_allocated_seconds": {
+      "mean": 4.175546875000001,
+      "bootstrap_95": [-3.1439656250000008, 9.624431250000004]
+    },
+    "interpretation": "The direct same-budget pair reconfirms the causal reroot mechanism without showing a gameplay difference on this seed block. Active removes sticky allocated-cap rejection, while its remaining cap fallbacks are active-pool cap fallbacks."
   },
   "decision": "Keep allocated as the production default. Active is experimental infrastructure only, not a gameplay promotion. Do not optimize the runtime regression until a new, state-targeted decision-quality experiment establishes whether the recovered visits reduce reference regret."
 }

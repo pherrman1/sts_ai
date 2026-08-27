@@ -4569,6 +4569,42 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `build/gcp_formal_36065ae/d0_d1_t1_x1_analysis.{json,md}` and its hashes are
   recorded in the evidence manifest.
 
+### Exploratory allocated/10k counterpart (2026-08-26; not preregistered)
+
+- **Scope:** this user-requested X2 arm completes a same-seed, same-budget
+  descriptive comparison to X1. It used the same frozen executable, GCP host,
+  models, Act-3/project-fair configuration, 24 threads, seeds
+  `940000..940031`, and 10,000 simulations; only the cap metric changed from
+  X1's `active` to `allocated`. It is not a preregistered promotion or runtime
+  gate and does not alter the formal experiment verdict.
+- **Direct structural comparison:** allocated X2 exact reroot was 11.32% versus
+  active X1 46.94% (+35.62pp active); cap-blocked fallback was 59.24% versus
+  23.59% (-35.65pp active); and candidate-missing fallback was effectively
+  unchanged at 29.44% versus 29.46%. X2 had 5,839 sticky-eligible candidates,
+  all rejected with `allocated_cap`; X1 had 4,868, all exact-rerooted and zero
+  `allocated_cap` failures. This re-confirms the retained-allocation sticky-cap
+  cause at 10k. X1 still had 3,244 `active_cap` fallbacks, so active pool usage
+  rather than retained allocation is its remaining cap limiter.
+- **Visits and nodes:** active inherited 4,246 visits per reroot attempt versus
+  allocated 963 (+3,284); nodes/simulation was 0.8520 versus 0.8681. These are
+  structural observations only, not evidence that the inherited visits improve
+  decision quality.
+- **Same-seed outcomes:** both arms won 23/32, with one X1-only and one
+  X2-only win. Active-minus-allocated mean floor was -1.34375 (bootstrap 95%
+  [-4.09375, +0.53125]); mean end-HP delta was +1.96875 (95%
+  [-4.40625, +8.96875]); and diagnostic-enabled runtime delta was +4.176s
+  (95% [-3.144s, +9.624s]). This paired block gives no gameplay or runtime
+  promotion evidence.
+- **Artifacts:** X2 result SHA-256
+  `24c80c5b5b960ef668a21f75386fd153ccdd991d566e4254a0b4ca60371e0dfd`;
+  diagnostic SHA-256
+  `ac3cd9132ba47fb22649a079f19fc7491769deaf9a932e3c9d405ace2ac50c5e`;
+  archive SHA-256
+  `5036f0b44b6b52ce3b777a9d97d1becc67742963b1e119f62371edcab337d80d`.
+  The strict two-arm analyzer artifacts are ignored local
+  `build/gcp_formal_36065ae/x1_x2_analysis.{json,md}`; their hashes are in the
+  evidence manifest.
+
 ## Silver no-tree-reuse screening experiment (2026-08-27)
 
 - **Question:** is Silver stronger and/or more efficient when the prior search
