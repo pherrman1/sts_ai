@@ -35,6 +35,10 @@ struct SilverLiveDiagnostics {
     std::uint64_t depthSum = 0;
     std::uint64_t chanceDepthSum = 0;
     std::uint64_t rolloutSkippedVNet = 0;
+    std::uint64_t rolloutCalls = 0;
+    std::uint64_t blendEligibleLeaves = 0;
+    std::uint64_t blendInvocations = 0;
+    std::uint64_t blendDepthAvoided = 0;
     std::uint64_t leafVNetInferenceCalls = 0;
     std::uint64_t leafVNetInferenceMicros = 0;
     // Default-off test trace.  It is never populated in production runs.

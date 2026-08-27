@@ -200,10 +200,13 @@ struct SilverLeafObservation {
     bool corpusSelected = false;
     bool vnetCollected = false;
     bool skipRollout = false;
+    bool blendRollout = false;
+    double blendAlpha = 0.0;
     double vnetRawPrediction = 0.0;
     double directValue = 0.0;
     int terminalOutcome = 0;
     double rolloutUtility = 0.0;
+    double backpropagatedUtility = 0.0;
     std::int64_t rolloutActionCount = 0;
     std::vector<std::string> rolloutActionFingerprints;
     std::int64_t rolloutTurnDelta = 0;
@@ -216,6 +219,15 @@ struct SilverLeafObservation {
 };
 
 using SilverLeafObserver = std::function<void(SilverLeafObservation &)>;
+
+inline double silverBlendRolloutUtility(double rolloutUtility, double modelPrediction,
+                                        double alpha) {
+    return (1.0 - alpha) * rolloutUtility + alpha * modelPrediction;
+}
+
+inline bool silverBlendInvokesModel(double alpha, int minimumDepth, int depth, bool terminal) {
+    return !terminal && alpha > 0.0 && depth >= minimumDepth;
+}
 
 struct ConvertedStateDigest {
     bool accepted = false;

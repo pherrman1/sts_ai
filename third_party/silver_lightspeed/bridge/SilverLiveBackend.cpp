@@ -6,10 +6,13 @@
 #include "sim/search/SilverLiveBackend.h"
 
 #include <chrono>
+#include <cerrno>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <mutex>
 #include <sstream>
 #include <stdexcept>
@@ -52,6 +55,9 @@ struct SilverLiveOptions {
     bool leafVNetDirect = false;
     double leafVNetAffineA = 1.0;
     double leafVNetAffineB = 0.0;
+    bool leafVNetBlendEnabled = false;
+    double leafVNetBlend = 0.0;
+    int leafVNetBlendMinDepth = 0;
     std::string leafCorpusFile;
     std::string executableGitSha;
     int leafCorpusGroupModulus = 1;
@@ -91,6 +97,25 @@ constexpr const char *kRootDiagnosticHeader =
 constexpr const char *kLeafVNetHeader =
     "run_seed,act,floor,encounter,combat_decision_ordinal,isolated_search_seed,root_state_hash,parent_state_hash,leaf_state_hash,depth,action_count_before_rollout,leaf_turn,leaf_input_state,leaf_cur_hp,leaf_max_hp,vnet_raw_prediction,rollout_terminal_outcome,rollout_utility,rollout_action_count,rollout_turn_delta,rollout_wall_micros";
 
+double parseFiniteDouble(const char *name, const char *raw) {
+    errno = 0;
+    char *end = nullptr;
+    const double value = std::strtod(raw, &end);
+    if (raw == end || *end != '\0' || errno == ERANGE || !std::isfinite(value))
+        throw std::invalid_argument(std::string(name) + " must be a finite number");
+    return value;
+}
+
+int parseNonnegativeInt(const char *name, const char *raw) {
+    errno = 0;
+    char *end = nullptr;
+    const long value = std::strtol(raw, &end, 10);
+    if (raw == end || *end != '\0' || errno == ERANGE || value < 0
+            || value > std::numeric_limits<int>::max())
+        throw std::invalid_argument(std::string(name) + " must be a nonnegative integer");
+    return static_cast<int>(value);
+}
+
 void parseSilverLiveOptions() {
     SilverLiveOptions options;
     if (const char *raw = std::getenv("STS_SILVER_REUSE_CAP_MODE")) {
@@ -127,6 +152,13 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_DIRECT")) options.leafVNetDirect = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_A")) options.leafVNetAffineA = std::atof(raw);
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_B")) options.leafVNetAffineB = std::atof(raw);
+    if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_BLEND")) {
+        options.leafVNetBlendEnabled = true;
+        options.leafVNetBlend = parseFiniteDouble("STS_SILVER_VNET_LEAF_BLEND", raw);
+    }
+    if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_BLEND_MIN_DEPTH"))
+        options.leafVNetBlendMinDepth = parseNonnegativeInt(
+            "STS_SILVER_VNET_LEAF_BLEND_MIN_DEPTH", raw);
     if (const char *raw = std::getenv("STS_SILVER_LEAF_CORPUS")) options.leafCorpusFile = raw;
     if (const char *raw = std::getenv("STS_SILVER_LEAF_CORPUS_GROUP_MODULUS"))
         options.leafCorpusGroupModulus = std::atoi(raw);
@@ -148,6 +180,12 @@ void parseSilverLiveOptions() {
         if (options.leafVNetSample <= 0 || options.leafVNetMaxPerCombat <= 0)
             throw std::invalid_argument("STS_SILVER_VNET_LEAF_SAMPLE and _MAX_PER_COMBAT must be positive");
     }
+    if (options.leafVNetBlend < 0.0 || options.leafVNetBlend > 1.0)
+        throw std::invalid_argument("STS_SILVER_VNET_LEAF_BLEND must be in [0,1]");
+    if (options.leafVNetBlendMinDepth < 0)
+        throw std::invalid_argument("STS_SILVER_VNET_LEAF_BLEND_MIN_DEPTH must be nonnegative");
+    if (options.leafVNetDirect && options.leafVNetBlendEnabled)
+        throw std::invalid_argument("STS_SILVER_VNET_LEAF_DIRECT and STS_SILVER_VNET_LEAF_BLEND are incompatible");
     if (!options.leafCorpusFile.empty()
             && (options.leafCorpusGroupModulus <= 0
                 || options.leafCorpusMaxLeavesPerGroup <= 0
@@ -911,6 +949,7 @@ void addTelemetry(const silver_bridge::SilverSearchTelemetry &telemetry) {
     g_silverLiveDiagnostics.depthSum += telemetry.depthSum;
     g_silverLiveDiagnostics.chanceDepthSum += telemetry.chanceDepthSum;
     g_silverLiveDiagnostics.rolloutSkippedVNet += telemetry.rolloutSkippedVNet;
+    g_silverLiveDiagnostics.rolloutCalls += telemetry.rolloutCalls;
     for (std::size_t i = 0; i < telemetry.wideningSampled.size(); ++i) {
         g_silverLiveDiagnostics.wideningSampled += telemetry.wideningSampled[i];
         g_silverLiveDiagnostics.wideningCapped += telemetry.wideningCapped[i];
@@ -951,6 +990,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     const bool collectLeafVNet = !g_silverLiveOptions.leafVNetLogFile.empty();
     const bool collectLeafCorpus = !g_silverLiveOptions.leafCorpusFile.empty();
     const bool directLeafVNet = g_silverLiveOptions.leafVNetDirect;
+    const bool blendLeafVNet = g_silverLiveOptions.leafVNetBlendEnabled
+        && g_silverLiveOptions.leafVNetBlend > 0.0;
     const bool emitTelemetry = std::getenv("STS_SILVER_TELEMETRY")
         && std::atoi(std::getenv("STS_SILVER_TELEMETRY")) != 0;
     // Aggregate reroot-cause counters are advertised by STS_SILVER_TELEMETRY,
@@ -976,9 +1017,10 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     std::unordered_map<std::string, std::vector<PendingCorpusLeaf>> pendingCorpusGroups;
     silver_bridge::SilverSearchConfig currentCorpusConfig;
     silver_bridge::SilverLeafObserver leafObserver;
-    if (collectLeafVNet || directLeafVNet || collectLeafCorpus) {
+    if (collectLeafVNet || directLeafVNet || blendLeafVNet || collectLeafCorpus) {
         leafObserver = [&, runSeed = gc.seed](silver_bridge::SilverLeafObservation &observation) {
             if (observation.phase == silver_bridge::SilverLeafObservationPhase::START) {
+                if (blendLeafVNet) ++g_silverLiveDiagnostics.blendEligibleLeaves;
                 const bool logThisLeaf = collectLeafVNet
                     && sampledLeafCount < g_silverLiveOptions.leafVNetMaxPerCombat
                     && sampledLeaf(observation, g_silverLiveOptions.leafVNetSample);
@@ -994,7 +1036,13 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                         }
                     }
                 }
-                if (logThisLeaf || directLeafVNet) {
+                const bool blendThisLeaf = blendLeafVNet
+                    && silver_bridge::silverBlendInvokesModel(g_silverLiveOptions.leafVNetBlend,
+                        g_silverLiveOptions.leafVNetBlendMinDepth, observation.depth,
+                        observation.state.outcome != static_cast<int>(Outcome::UNDECIDED));
+                if (blendThisLeaf) ++g_silverLiveDiagnostics.blendInvocations;
+                else if (blendLeafVNet) ++g_silverLiveDiagnostics.blendDepthAvoided;
+                if (logThisLeaf || directLeafVNet || blendThisLeaf) {
                     const BattleContext projected = liveLeafBattleContext(observation.state);
                     if (!g_silverLeafVNet.loaded())
                         throw std::runtime_error("Silver leaf VNet was not loaded before search");
@@ -1015,6 +1063,10 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                     observation.directValue = g_silverLiveOptions.leafVNetAffineA
                         * observation.vnetRawPrediction + g_silverLiveOptions.leafVNetAffineB;
                     observation.skipRollout = true;
+                }
+                if (blendThisLeaf) {
+                    observation.blendRollout = true;
+                    observation.blendAlpha = g_silverLiveOptions.leafVNetBlend;
                 }
             } else if (observation.collectResult) {
                 if (observation.vnetCollected)
@@ -1068,7 +1120,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
         config.collectRootActionSummaries = collectRootDiagnostics || config.adaptiveEnabled;
-        config.collectRolloutDiagnostics = collectRootDiagnostics;
+        config.collectRolloutDiagnostics = collectRootDiagnostics || emitTelemetry;
         config.leafObserver = leafObserver;
         currentCorpusConfig = config;
         currentCorpusConfig.leafObserver = {};
@@ -1221,6 +1273,10 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " depth_sum=" << d.depthSum
                   << " chance_depth_sum=" << d.chanceDepthSum
                   << " rollout_skipped_vnet=" << d.rolloutSkippedVNet
+                  << " rollout_calls=" << d.rolloutCalls
+                  << " blend_eligible_leaves=" << d.blendEligibleLeaves
+                  << " blend_invocations=" << d.blendInvocations
+                  << " blend_depth_avoided=" << d.blendDepthAvoided
                   << " leaf_vnet_inference_calls=" << d.leafVNetInferenceCalls
                   << " leaf_vnet_inference_micros=" << d.leafVNetInferenceMicros
                   << " conversion_failures=" << d.conversionFailures
@@ -1246,7 +1302,8 @@ std::vector<float> silverLiveLeafCanonicalFeatures(
 
 void installSilverLiveBackend() {
     parseSilverLiveOptions(); // validates before the first live combat begins
-    if (!g_silverLiveOptions.leafVNetLogFile.empty() || g_silverLiveOptions.leafVNetDirect)
+    if (!g_silverLiveOptions.leafVNetLogFile.empty() || g_silverLiveOptions.leafVNetDirect
+            || (g_silverLiveOptions.leafVNetBlendEnabled && g_silverLiveOptions.leafVNetBlend > 0.0))
         ensureSilverLeafVNetLoaded();
     g_externalCombatBackend = runSilverCombat;
 }

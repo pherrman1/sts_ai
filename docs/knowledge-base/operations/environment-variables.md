@@ -59,6 +59,8 @@ changes its size.
 | `STS_SILVER_VNET_LEAF_MAX_PER_COMBAT` | Maximum logged leaves per live combat | `5000` | `SilverLiveBackend` |
 | `STS_SILVER_VNET_LEAF_DIRECT` | Skip nonterminal Silver rollouts and backpropagate the affine VNet estimate; terminal states remain exact | `0` (off) | `SilverLiveBackend` |
 | `STS_SILVER_VNET_LEAF_A` / `_B` | Optional affine map applied only by direct mode: `a * raw_prediction + b` | `1` / `0` | `SilverLiveBackend` |
+| `STS_SILVER_VNET_LEAF_BLEND` | Default-off post-rollout affine blend `(1-alpha)*rollout + alpha*M10`; alpha zero preserves ordinary rollout and does not load/invoke M10; incompatible with direct mode | unset/off | `SilverLiveBackend` |
+| `STS_SILVER_VNET_LEAF_BLEND_MIN_DEPTH` | Minimum stored Silver search depth at which an enabled positive blend invokes M10 | `0` | `SilverLiveBackend` |
 | `STS_SILVER_LEAF_CORPUS` | Default-off JSONL output for exact, versioned Silver rollout-start snapshots. Groups are sampled by nearest non-random parent and emitted only when retained leaves cover every semantic legal parent action. | unset/off | `SilverLiveBackend`; `SilverWireJson.h` |
 | `STS_SILVER_LEAF_CORPUS_GROUP_MODULUS` | Deterministic whole-group FNV sampling modulus (`1` selects every group); individual leaves are never sampled independently. | `1` when corpus output is enabled | `SilverLiveBackend` |
 | `STS_SILVER_LEAF_CORPUS_MAX_PER_GROUP` | Defensive cap on unique exact leaf snapshots retained for one selected parent group. An incomplete capped group is not emitted. | `256` | `SilverLiveBackend` |

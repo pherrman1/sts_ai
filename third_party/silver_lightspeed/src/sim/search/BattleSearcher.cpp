@@ -545,6 +545,11 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
     const int maxTurns = rolloutMaxTurnsEnv();
     const int startTurn = bc.turn;
     const std::size_t actionStackStart = actionStack.size();
+    if (isTerminalState(bc)) {
+        const double evaluation = evaluateEndState(bc);
+        recordRolloutDiagnostic(bc, 0, 0);
+        return evaluation;
+    }
     std::optional<silver_bridge::SilverLeafObservation> leafObservation;
     if (leafObserver) {
         if (parent == nullptr || parent->isRandomNode)
@@ -610,11 +615,16 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
     const auto actionCount = static_cast<std::int64_t>(actionStack.size() - actionStackStart);
     const auto turnDelta = static_cast<std::int64_t>(bc.turn - startTurn);
     const double evaluation = evaluateEndState(bc);
+    const double backpropagatedUtility = leafObservation && leafObservation->blendRollout
+        ? silver_bridge::silverBlendRolloutUtility(
+            evaluation, leafObservation->vnetRawPrediction, leafObservation->blendAlpha)
+        : evaluation;
     recordRolloutDiagnostic(bc, actionCount, turnDelta);
     if (leafObservation && leafObservation->collectResult) {
         leafObservation->phase = silver_bridge::SilverLeafObservationPhase::END;
         leafObservation->terminalOutcome = static_cast<int>(bc.outcome);
         leafObservation->rolloutUtility = evaluation;
+        leafObservation->backpropagatedUtility = backpropagatedUtility;
         leafObservation->rolloutActionCount = actionCount;
         leafObservation->rolloutTurnDelta = turnDelta;
         leafObservation->rolloutWallMicros = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -626,7 +636,7 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         leafObservation->terminalEffectiveGold = effectiveGold(bc);
         leafObserver(*leafObservation);
     }
-    return evaluation;
+    return backpropagatedUtility;
 }
 
 search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search::BattleSearcher::Node &chance) {

@@ -295,6 +295,49 @@ int main() {
               && direct.telemetry.rolloutCalls == 0
               && direct.telemetry.rolloutSkippedVNet > 0,
           "direct leaf observer must replace nonterminal rollouts with its supplied value");
+    check(silver_bridge::silverBlendRolloutUtility(10.0, 30.0, 0.0) == 10.0
+              && silver_bridge::silverBlendRolloutUtility(10.0, 30.0, 1.0) == 30.0
+              && silver_bridge::silverBlendRolloutUtility(10.0, 30.0, 0.25) == 15.0,
+          "leaf blend arithmetic must be the exact affine combination");
+    auto blendConfig = observerConfig;
+    blendConfig.collectRolloutDiagnostics = true;
+    int blendStarts = 0, blendEnds = 0;
+    bool blendBackpropagatedExact = true;
+    blendConfig.leafObserver = [&](silver_bridge::SilverLeafObservation &observation) {
+        if (observation.phase == silver_bridge::SilverLeafObservationPhase::START) {
+            ++blendStarts;
+            observation.blendRollout = true;
+            observation.blendAlpha = 1.0;
+            observation.vnetRawPrediction = 17.25;
+            observation.collectResult = true;
+        } else {
+            ++blendEnds;
+            blendBackpropagatedExact = blendBackpropagatedExact
+                && observation.backpropagatedUtility == 17.25;
+        }
+    };
+    const auto blended = silver_bridge::runSilverDecision(firstWire, blendConfig);
+    check(blended.accepted && blendStarts > 0 && blendEnds == blendStarts
+              && blended.telemetry.rolloutCalls > 0
+              && blended.telemetry.rolloutSkippedVNet == 0
+              && blendBackpropagatedExact,
+          "alpha-one blending must still perform ordinary nonterminal rollouts");
+    check(!silver_bridge::silverBlendInvokesModel(0.0, 0, 10, false)
+              && !silver_bridge::silverBlendInvokesModel(0.25, 5, 4, false)
+              && silver_bridge::silverBlendInvokesModel(0.25, 5, 5, false)
+              && silver_bridge::silverBlendInvokesModel(0.25, 5, 6, false)
+              && !silver_bridge::silverBlendInvokesModel(1.0, 0, 10, true),
+          "leaf blend model invocation must honor alpha zero, terminal exactness, and the inclusive depth boundary");
+    auto terminalWire = firstWire;
+    terminalWire.outcome = static_cast<int>(Outcome::PLAYER_VICTORY);
+    int terminalObserverCalls = 0;
+    auto terminalConfig = observerConfig;
+    terminalConfig.leafObserver = [&](silver_bridge::SilverLeafObservation &) {
+        ++terminalObserverCalls;
+    };
+    const auto terminalDecision = silver_bridge::runSilverDecision(terminalWire, terminalConfig);
+    check(terminalObserverCalls == 0 && terminalDecision.telemetry.rolloutCalls == 0,
+          "terminal roots must remain exact without rollout or leaf-model observation");
     // The adaptive API must be a strict two-tier continuation of the same
     // private root.  A zero threshold is the no-escalation boundary; the
     // threshold equal to the observed share is also non-escalating because
