@@ -61,6 +61,9 @@ struct BenchConfigSidecar {
     std::string executableGitSha;
     std::string silverScalingDiagnosticFile;
     std::string silverStickyQualityFile;
+    bool silverAdaptiveEnabled = false;
+    double silverAdaptiveTopShare = 0.0;
+    bool silverExactRootBudgets = false;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -152,6 +155,9 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
       << detail::jsonEscape(c.silverScalingDiagnosticFile) << '\"';
     o << ",\"silverStickyQualityFile\":\""
       << detail::jsonEscape(c.silverStickyQualityFile) << '\"';
+    o << ",\"silverAdaptiveEnabled\":" << (c.silverAdaptiveEnabled ? "true" : "false");
+    o << ",\"silverAdaptiveTopShare\":" << c.silverAdaptiveTopShare;
+    o << ",\"silverExactRootBudgets\":" << (c.silverExactRootBudgets ? "true" : "false");
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';

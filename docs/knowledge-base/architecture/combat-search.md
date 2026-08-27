@@ -63,6 +63,16 @@ completed scaling experiment confirmed that `active` restores cap-blocked
 reroots but did not establish a gameplay improvement, so `allocated` remains
 the default.
 
+The default-off `STS_SILVER_ADAPTIVE=1` experiment performs an initial 1,000
+simulation search, computes the root's top-vs-second visit-share gap, and, when
+that gap is strictly below `STS_SILVER_ADAPTIVE_TOP_GAP`, continues the same
+private root with 2,700 additional simulations. The returned search count is
+therefore 1,000 or exactly 3,700 total; no first search is discarded. The
+feature applies at ordinary roots and at each private sequential-selection
+subdecision, and is otherwise behavior-neutral when unset. The visit-share
+signal and the other recorded root statistics are observation fields only;
+they do not alter Silver selection, widening, reuse, evaluator, or OOC policy.
+
 Live sts_ai exposes atomic `GAMBLE`/`EXHAUST_MANY` subsets while Silver uses a
 sequential private selection UI. The bridge therefore runs every private
 subdecision, including exact reroots, and returns only the final identity-based

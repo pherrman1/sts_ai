@@ -49,6 +49,9 @@ changes its size.
 | `STS_SILVER_ROOT_DIAG_MAX_PER_SEED` | Maximum captured root decisions per run seed for the root-action diagnostic | `8` when the file option is set | `SilverLiveBackend` |
 | `STS_SILVER_ROOT_DIAG_REF_BUDGET` | Silver simulations per forced-action continuation replicate | `25000` when the file option is set | `SilverLiveBackend` |
 | `STS_SILVER_ROOT_DIAG_REPLICATES` | Independent continuation replicates; sibling actions use the same replicate seeds for common-random-number pairing | `2` when the file option is set | `SilverLiveBackend` |
+| `STS_SILVER_ADAPTIVE` | Enable the default-off two-tier Silver treatment: search to 1,000 simulations, then continue the same root to 3,700 only when the top-vs-second visit-share gap is below the configured threshold | unset/off | `SilverLiveBackend` |
+| `STS_SILVER_ADAPTIVE_TOP_GAP` | Strict uncertainty threshold for `STS_SILVER_ADAPTIVE`; escalation occurs only when the 1k top-vs-second visit-share gap is `<` this value | `0.094` | `SilverLiveBackend` |
+| `STS_SILVER_EXACT_ROOT_BUDGETS` | Experiment-only budget control: use the agent's base simulations at every Silver root, including bosses, instead of applying the native boss multiplier. Set identically for paired fixed-1k and adaptive arms. | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_TELEMETRY` | Per-combat Silver aggregate telemetry line | unset/off | `SilverLiveBackend` |
 
 The root-action diagnostic is a shadow measurement layered around the ordinary
@@ -58,6 +61,19 @@ actions multiplied by `STS_SILVER_ROOT_DIAG_REF_BUDGET` and
 `STS_SILVER_ROOT_DIAG_REPLICATES`. The analyzer reports action-order agreement,
 regret, replicate stability, rollout length/outcomes, and the terminal-utility
 component sums emitted by the isolated vendor search.
+
+In the root-diagnostic CSV, `adaptive_initial_top_visit_share` is the initial
+1k trigger-side statistic retained after an adaptive continuation; it is not a
+final-search concentration measurement. The benchmark sidecar records whether
+`STS_SILVER_EXACT_ROOT_BUDGETS` was enabled.
+
+Adaptive Silver is a bounded experiment flag, not a production default. Its
+initial search collects root summaries only while the flag is enabled (or the
+root diagnostic is enabled), and continuation calls `BattleSearcher::search`
+with the increment `3700 - 1000` on the existing root. The adaptive flag also
+applies independently to each private subdecision of sequential
+`GAMBLE`/`EXHAUST_MANY`; the live atomic action bridge and transaction protocol
+are unchanged.
 
 When Silver is enabled, `bestbench` metadata records the effective combat
 backend, reuse-cap mode and production cap, Silver upstream SHA, executable

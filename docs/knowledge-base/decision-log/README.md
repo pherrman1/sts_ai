@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-27 | [`2026-08-27-silver-adaptive-search.md`](2026-08-27-silver-adaptive-search.md) | Single top-two visit-gap adaptive 1k→3.7k rule passed the bounded offline quality screen, but the paired gameplay gate was invalidated by an unsupported card-select task and non-comparable boss budgets; not promoted (`INCONCLUSIVE`). |
 | 2026-08-26 | [`2026-08-26-session-efficiency-guardrails.md`](2026-08-26-session-efficiency-guardrails.md) | Added nonblocking CI guidance, opt-in cross-worktree ccache presets, a fail-fast bestbench treatment/provenance canary, and mechanism-level Silver GAMBLE assertions. |
 | 2026-08-27 | [`2026-08-27-session-efficiency-correction.md`](2026-08-27-session-efficiency-correction.md) | Tightened canary provenance/configuration expectations and verified Debug ccache reuse across sibling worktrees (59/61 direct hits). |
 | 2026-08-27 | [`2026-08-27-workflow-retrospective-corrections.md`](2026-08-27-workflow-retrospective-corrections.md) | Added narrow pre-publication truth-table review, final-SHA evidence ordering, and Windows-Git/WSL-build/submodule guidance. |

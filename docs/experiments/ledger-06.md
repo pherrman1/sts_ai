@@ -4796,3 +4796,52 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   result; a future follow-up needs a more stratified corpus and an externally
   justified outcome reference if it is to distinguish utility correctness
   from search-noise effects.
+
+## Silver adaptive compute allocation (2026-08-27)
+
+- **Question:** Can a cheap root uncertainty signal recover the PR #66
+  1k→3.7k decision-quality improvement at lower average simulation cost?
+- **Implementation:** default-off continuation of the same Silver root. After
+  1,000 simulations, continue to exactly 3,700 only when the top-vs-second
+  root visit-share gap is `< 0.094`; no evaluator, widening, reuse, OOC, or
+  hidden-information changes. Baseline was the verified PR #66 merge
+  `9f2d67d71f095425457fdb2a91eb1a0a8660a85b`; reviewed implementation was
+  `3729624a683e66aba62f9f04c86c0fa80d10c08e`.
+- **Phase 1:** on 50 clean deterministic roots, top-two visit gap was the
+  strongest beneficial-escalation signal (AUROC 0.775; action-change AUROC
+  0.852). The selected coarse threshold escalated 40%, captured 83.3% of
+  beneficial roots, and modeled 2,080 mean simulations.
+- **Offline shadow:** 25 clean roots, fixed 1k / adaptive / fixed 3.7k mean
+  regret `0.07236 / 0.04649 / 0.04562`; top-action agreement with 3.7k
+  `84% / 88% / 100%`; adaptive root cost 1,590.6 and full-combat telemetry
+  cost 1,730.5 simulations/decision. Adaptive runtime was 16.11 CPU
+  seconds/run versus 5.91 nominal fixed-1k and 24.42 nominal fixed-3.7k
+  controls; nominal controls retain the unchanged boss multiplier.
+- **Gameplay gate:** fixed control on 16 paired seeds completed 9/16 wins,
+  mean floor 47.5, mean ending HP 25.8, 18.94 CPU seconds/run. The adaptive
+  treatment aborted twice with `unsupported Silver card-select task`; no
+  treatment win-rate result is valid. The attempted control also retained the
+  native 3x boss multiplier while adaptive used exact 1k/3.7k root budgets, so
+  the arms were not budget-comparable. A future gate must set
+  `STS_SILVER_EXACT_ROOT_BUDGETS=1` identically for both arms. A narrow
+  fallback attempt was reverted after reproducing the failure.
+- **Bridge correction and rerun:** the failed seeds were reproduced as
+  `CardSelectTask::EXHAUST_MANY` (enum value 6). The narrow fix maps the two
+  sequential hand-pick tasks, `EXHAUST_MANY` and `GAMBLE`, to the existing
+  visible `HAND` semantic source; no broader CardSelectTask support was added.
+  CI passed at `eefddd62829c192d3d67eb774f38cba9bac123fd`. With
+  `STS_SILVER_EXACT_ROOT_BUDGETS=1` in both arms, the corrected 16-seed rerun
+  completed: fixed 1k and adaptive both won 7/16; mean floor was 45.63 versus
+  44.56, mean ending HP 22.31 versus 19.31, and mean runtime 18.76 versus
+  25.94 seconds/run. Control/adaptive telemetry was 7,083,000/12,526,100
+  simulations, or 992.9/1,842.6 per root/private decision; adaptive escalated
+  31.5%. The result validates the crash fix but does not show a gameplay
+  benefit, so the verdict remains `INCONCLUSIVE`.
+- **Artifacts:** see
+  `docs/knowledge-base/decision-log/2026-08-27-silver-adaptive-search.md`
+  for raw artifact paths and SHA-256 hashes.
+- **Verdict:** **INCONCLUSIVE.** Offline quality is promising, but the live
+  gate was invalidated by a card-select integration failure and non-comparable
+  boss budgets. Do not promote or expand this rule into a dynamic search
+  controller; a separate semantic card-select bridge investigation and a
+  budget-comparable rerun would be required.

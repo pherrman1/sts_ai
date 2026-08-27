@@ -1,4 +1,5 @@
 // Controlled end-to-end smoke for the default-off isolated Silver callback.
+#include <cstdlib>
 #include <iostream>
 
 #include "combat/BattleContext.h"
@@ -24,6 +25,13 @@ int main() {
     installSilverLiveBackend();
     if (!g_externalCombatBackend) {
         std::cerr << "silver_integration FAIL: backend was not installed\n";
+        return 1;
+    }
+    const bool expectedExactRootBudgets = std::getenv("STS_SILVER_EXACT_ROOT_BUDGETS")
+        && std::atoi(std::getenv("STS_SILVER_EXACT_ROOT_BUDGETS")) != 0;
+    if (silverLiveExactRootBudgets() != expectedExactRootBudgets) {
+        std::cerr << "silver_integration FAIL: exact-root-budget option was not parsed\n";
+        uninstallSilverLiveBackend();
         return 1;
     }
     const bool sampleA = silverStickyQualitySampled(0x510E42u, 7, 3, 11);
@@ -67,6 +75,7 @@ int main() {
     std::cout << "silver_integration PASS outcome=" << static_cast<int>(live.outcome)
               << " decisions=" << g_silverLiveDiagnostics.decisions
               << " simulations=" << g_silverLiveDiagnostics.simulations
+              << " exact_root_budgets=" << (silverLiveExactRootBudgets() ? 1 : 0)
               << " reroot_exact=" << g_silverLiveDiagnostics.rerootExact
               << " reroot_fallback=" << g_silverLiveDiagnostics.rerootFallback << '\n';
     return 0;
