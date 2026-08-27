@@ -5,8 +5,9 @@ Session/task: Observe `models/v_combat_7k_tuned.txt` on isolated Silver rollout 
 
 ## Decision
 
-Keep the direct Silver leaf VNet evaluator rejected and default-off. Retain the
-observer, bounded CSV, and analysis tool as diagnostic infrastructure only.
+Keep the current combat VNet direct Silver transfer rejected and default-off.
+Retain the observer, bounded CSV, and analysis tool as diagnostic infrastructure
+only.
 
 ## Rationale
 
@@ -14,8 +15,12 @@ The 8-seed corpus had positive but borderline sibling ranking: strict
 concordance 0.5578, with lower Act-3 and long-rollout strata at 0.5449 and
 0.5420. The direct 1000-simulation arm then reduced win rate from 25% to 0%,
 reduced mean floor from 42.5 to 29.8, and increased mean per-run time from
-37.48s to 195.95s. This fails the preregistered fixed-simulation criterion;
-the equal-runtime follow-up was therefore not run.
+37.48s to 195.95s in the original Debug measurement. This fails the
+preregistered fixed-simulation criterion; the equal-runtime follow-up was
+therefore not run. A one-seed Release sanity pair on the same seed/configuration
+measured 17.64 versus 59.19 CPU seconds/run (A versus B), so the earlier
+throughput concern is now checked under the appropriate build type without
+claiming a new gameplay estimate.
 
 ## Alternatives considered
 
@@ -35,6 +40,9 @@ the equal-runtime follow-up was therefore not run.
   `SilverStateBridge.cpp` implement the opt-in observer/direct bridge.
 - `apps/silver_bridge_test.cpp`, `silver_bridge_boundary`, and
   `tools/analyze_silver_vnet_leaf.py --self-test` pass.
+- `silver_integration_test` passes a state-to-wire-to-live-BattleContext VNet
+  prediction-parity check on `models/v_combat_7k_tuned.txt`; the ordinary VNet
+  trace hook receives zero calls from the isolated prediction.
 - Phase-1 raw CSV: `build/silver_vnet_phase1.csv`, 66,310 rows / 8 seeds,
   SHA-256 `7B7E6E55497D0B85FCD8159CCCE8489E5AA645DF4521C2963E32A29795D550A0`.
 - Phase-1 analysis: `build/silver_vnet_phase1_analysis.txt`, SHA-256
@@ -45,9 +53,17 @@ the equal-runtime follow-up was therefore not run.
 - Direct telemetry: `build/silver_vnet_phase3_B.log`; 5,461,485 rollouts
   skipped, 6,485,000 simulations, and zero conversion, semantic-resolution,
   transaction, or knowledge failures.
+- Release sanity artifacts: `build/silver_vnet_release_A.csv` and
+  `build/silver_vnet_release_B.csv`; both are one-seed 1,000-simulation runs
+  at seed 123450. A ended at floor 50 and B at floor 33; B skipped 125,325
+  rollouts with zero conversion, semantic-resolution, transaction, or
+  knowledge failures.
 
 ## Status and follow-up
 
-Implemented, measured, and closed as `DIRECT_VNET_REJECTED`. The observer is
+Implemented, measured, and closed as
+`CURRENT_VNET_DIRECT_SILVER_TRANSFER_REJECTED`. The observer is
 diagnostic-only; revisit only with a separately justified lower-cost inference
-path and a new experiment, not by weakening this result.
+path or Silver-specific model and a new experiment, not by weakening this
+result. Short rollout followed by VNet remains an open follow-up, not a result
+of this task.

@@ -112,6 +112,40 @@ compiler, CTest, and Bash/Python checks; do not assume the two Git clients are
 interchangeable until `git rev-parse --show-toplevel` succeeds in the chosen
 environment.
 
+Use this boundary when working from PowerShell; replace the WSL path with the
+absolute `/mnt/<drive>/...` path for the active worktree:
+
+```powershell
+# Windows Git: checkout, submodules, status, and publication.
+git status --short --branch
+git rev-parse --show-toplevel
+git submodule update --init
+
+# WSL: one explicit Linux build/test command; do not run Git here.
+wsl.exe -e bash -lc 'cd /mnt/c/path/to/worktree && cmake --preset linux-gcc-debug && cmake --build --preset linux-gcc-debug-build && ctest --preset linux-gcc-test --output-on-failure'
+
+# Windows Git again: final review before staging or publication.
+git diff --check
+git status --short --branch
+```
+
+For initial repository searches, prefer tracked and scoped paths so generated
+build trees, ignored experiment data, and model artifacts do not consume the
+context budget:
+
+```bash
+git grep -n "pattern" -- src include apps tools docs/knowledge-base
+```
+
+Before trusting an analyzer result, verify the locked Python environment and
+run the analyzer's self-test. Add the dependency group required by the script;
+for `paired_analysis.py`, use:
+
+```bash
+uv sync --locked --extra analysis
+uv run --locked --extra analysis python paired_analysis.py --self-test
+```
+
 A build line such as `Linking CXX executable one_combat` is progress, not proof
 of completion. Retain the running command/session, poll until it exits, and
 record the exit status. For ordinary compile-and-smoke-test iteration, that exit

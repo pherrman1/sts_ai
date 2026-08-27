@@ -1151,7 +1151,7 @@ std::string CombatValueNet::description() const {
     return base;
 }
 
-double CombatValueNet::predict(const BattleContext &bc) const {
+double CombatValueNet::predict(const BattleContext &bc, bool emitTrace) const {
     thread_local std::vector<float> feat(combatFeatureCount());
     combatExtractFeatures(bc, feat.data());
     // Per-encounter dispatch: a specialized model for this encounter overrides
@@ -1163,12 +1163,12 @@ double CombatValueNet::predict(const BattleContext &bc) const {
         auto it = encounterModels.find((int)bc.encounter);
         if (it != encounterModels.end()) {
             v = it->second.predictVec(feat.data());
-            if (g_onVNetQuery) g_onVNetQuery(bc, v);
+            if (emitTrace && g_onVNetQuery) g_onVNetQuery(bc, v);
             return v;
         }
     }
     v = predictVec(feat.data());
-    if (g_onVNetQuery) g_onVNetQuery(bc, v);
+    if (emitTrace && g_onVNetQuery) g_onVNetQuery(bc, v);
     return v;
 }
 

@@ -280,6 +280,8 @@ add_test(NAME py_compile_analyze_silver_sticky_quality COMMAND python3 -m py_com
 add_test(NAME analyze_silver_sticky_quality_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py --self-test)
 add_test(NAME py_compile_analyze_silver_root_diagnostic COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_root_diagnostic.py)
 add_test(NAME analyze_silver_root_diagnostic_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_root_diagnostic.py --self-test)
+add_test(NAME py_compile_analyze_silver_adaptive COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py)
+add_test(NAME analyze_silver_adaptive_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py --self-test)
 add_test(NAME py_compile_analyze_postcombat_raw_terminal COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_postcombat_raw_terminal.py)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME py_compile_analyze_runwin_shadow COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py)

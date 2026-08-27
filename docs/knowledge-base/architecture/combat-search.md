@@ -63,6 +63,16 @@ completed scaling experiment confirmed that `active` restores cap-blocked
 reroots but did not establish a gameplay improvement, so `allocated` remains
 the default.
 
+The default-off `STS_SILVER_ADAPTIVE=1` experiment performs an initial 1,000
+simulation search, computes the root's top-vs-second visit-share gap, and, when
+that gap is strictly below `STS_SILVER_ADAPTIVE_TOP_GAP`, continues the same
+private root with 2,700 additional simulations. The returned search count is
+therefore 1,000 or exactly 3,700 total; no first search is discarded. The
+feature applies at ordinary roots and at each private sequential-selection
+subdecision, and is otherwise behavior-neutral when unset. The visit-share
+signal and the other recorded root statistics are observation fields only;
+they do not alter Silver selection, widening, reuse, evaluator, or OOC policy.
+
 Live sts_ai exposes atomic `GAMBLE`/`EXHAUST_MANY` subsets while Silver uses a
 sequential private selection UI. The bridge therefore runs every private
 subdecision, including exact reroots, and returns only the final identity-based
@@ -77,7 +87,9 @@ non-random-parent, and leaf state hashes, search depth, and actions already
 applied. The live bridge projects that wire snapshot into a normal live
 `BattleContext` and calls the existing `CombatValueNet::predict` path (the
 current model format has 751 features); feature extraction and VNet inference
-are not duplicated in the isolated namespace. A shadow callback records the
+are not duplicated in the isolated namespace. The optional leaf model is a
+dedicated instance loaded once before search, and its inference does not emit
+the ordinary global VNet trace hook. A shadow callback records the
 terminal outcome, exact Silver `evaluateEndState()` utility, rollout action and
 turn counts, and steady-clock rollout microseconds. A direct callback may skip
 only nonterminal rollouts and supply a value; terminal tree states continue to
