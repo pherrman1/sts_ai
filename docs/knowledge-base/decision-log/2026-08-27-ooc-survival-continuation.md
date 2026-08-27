@@ -36,3 +36,11 @@ the observed discordant set.
 `REJECT`. The diagnostic code is offline-only. No learned model, production
 gate, expanded screen support, combat-leaf E3c repeat, or gameplay benchmark
 is authorized by this result.
+
+Follow-up workflow correction: the analyzer now requires a measurable
+`p_survive` contrast by default before emitting an adjudication manifest
+(one replicate, `1/R`), while `--min-survival-delta 0` is an explicit escape
+for a continuation-only audit. `oocfactoreval` resolves every manifest state
+and both action bits before opening its output or running a full continuation,
+so replay drift fails atomically instead of producing a partial expensive
+artifact.

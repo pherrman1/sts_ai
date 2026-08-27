@@ -25,6 +25,9 @@ def main() -> None:
                     help="additional disjoint producer CSV (repeatable)")
     ap.add_argument("--replicates", type=int, required=True)
     ap.add_argument("--max-discordant", type=int, default=32)
+    ap.add_argument("--min-survival-delta", type=float,
+                    help="minimum |p_survive difference| for adjudication; "
+                         "default is one replicate (use 0 only for an explicit continuation-only audit)")
     ap.add_argument("--adjudication", help="optional oocfactoreval CSV")
     args = ap.parse_args()
     out_dir = Path(args.out_dir)
@@ -94,10 +97,29 @@ def main() -> None:
                         "factorQFactor": factor["qFactor"]})
             discordant.append(row)
 
+    # Gate expensive adjudication on actually observing the mechanism under
+    # test.  With R replicates the smallest measurable nonzero delta is 1/R.
+    min_survival_delta = (args.min_survival_delta if args.min_survival_delta is not None
+                          else 1.0 / args.replicates)
+    if min_survival_delta < 0 or min_survival_delta > 1:
+        raise SystemExit("--min-survival-delta must be in [0,1]")
+    survival_discordant = [
+        r for r in discordant
+        if abs(r["factorPSurvive"] - r["currentPSurvive"]) > 1e-12
+    ]
+    eligible = [
+        r for r in discordant
+        if (min_survival_delta == 0
+            or abs(r["factorPSurvive"] - r["currentPSurvive"])
+               >= min_survival_delta - 1e-12)
+    ]
+
     # Prefer the clearest safety-vs-strength disagreements, deterministically.
     discordant.sort(key=lambda r: (-abs(r["factorPSurvive"] - r["currentPSurvive"]),
                                    r["seed"], r["decIdx"]))
-    selected = discordant[:args.max_discordant]
+    eligible.sort(key=lambda r: (-abs(r["factorPSurvive"] - r["currentPSurvive"]),
+                                 r["seed"], r["decIdx"]))
+    selected = eligible[:args.max_discordant]
 
     adjud_summary = None
     if args.adjudication:
@@ -151,7 +173,10 @@ def main() -> None:
             "currentMedianRegret": median(current_regrets) if current_regrets else 0.0,
             "factorMedianRegret": median(factor_regrets) if factor_regrets else 0.0,
         }
-    fields = list(selected[0]) if selected else list(DECISION) + ["currentBits", "factorBits"]
+    all_fields = list(discordant[0]) if discordant else list(DECISION) + ["currentBits", "factorBits"]
+    with open(out_dir / "all_discordant.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, all_fields); w.writeheader(); w.writerows(discordant)
+    fields = list(selected[0]) if selected else all_fields
     with open(out_dir / "discordant.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fields); w.writeheader(); w.writerows(selected)
     manifest_fields = list(DECISION) + ["currentBits", "factorBits"]
@@ -160,12 +185,23 @@ def main() -> None:
         w.writerows({k: r[k] for k in manifest_fields} for r in selected)
     summary = {"rawCsv": [str(Path(p)) for p in raw_paths], "replicates": args.replicates,
                "decisions": len(decisions), "actions": action_count,
-               "discordantTotal": len(discordant), "discordantSelected": len(selected),
+               "discordantTotal": len(discordant),
+               "survivalDiscordantTotal": len(survival_discordant),
+               "minSurvivalDelta": min_survival_delta,
+               "adjudicationEligible": len(eligible),
+               "discordantSelected": len(selected),
+               "adjudicationAuthorized": bool(selected),
                "maxFactorizationAbsError": max_error}
     if adjud_summary is not None:
         summary["adjudication"] = adjud_summary
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2))
+    if discordant and not selected:
+        raise SystemExit(
+            "no ranking discordance meets the survival-delta gate; "
+            "do not launch adjudication (use --min-survival-delta 0 only for "
+            "an explicitly scoped continuation-only audit)"
+        )
 
 
 if __name__ == "__main__":

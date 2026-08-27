@@ -34,6 +34,15 @@ git submodule update --init
 git submodule status -- json pybind11
 ```
 
+Both tracked public submodules use HTTPS URLs. After pulling a change to
+`.gitmodules`, synchronize an existing clone before updating so a stale local
+SSH URL cannot require developer-specific GitHub keys:
+
+```powershell
+git submodule sync --recursive
+git submodule update --init
+```
+
 Each status line must begin with a space, meaning the checkout is at the commit
 pinned by the superproject. Reject `-` (uninitialized), `+` (different commit),
 or `U` (conflict). Do this before entering WSL; otherwise CMake may be the first
