@@ -99,6 +99,7 @@ def aggregate_state(pairs):
     ys = [r["original_root_corrected_teacher_value"] for _, r in pairs]
     differences = [x-y for x, y in zip(xs, ys)]
     top_agreement = mean([d["top_agree"] for d in details if d["action_eligible"]])
+    wall = [c.get("wall_micros") for c, _ in pairs if c.get("wall_micros") is not None]
     return {
         "leaves": len(pairs),
         "action_eligible_leaves": sum(d["action_eligible"] for d in details),
@@ -116,7 +117,32 @@ def aggregate_state(pairs):
             "p75": quantile(differences, 0.75), "p95": quantile(differences, 0.95),
             "mean_abs": mean([abs(value) for value in differences]),
         },
+        "candidate_cost": {"total_wall_micros": sum(wall), "mean_wall_micros": mean(wall)},
     }
+
+
+def action_ambiguity(pairs):
+    margins = []
+    for candidate, _ in pairs:
+        values = sorted((action["original_root_corrected_q"] for action in candidate["root_actions"]
+                         if action["leaf_root_q_valid"]), reverse=True)
+        if len(values) >= 2:
+            margins.append(values[0] - values[1])
+    bins = {"lt_0p1": 0, "0p1_to_0p25": 0, "0p25_to_0p5": 0,
+            "0p5_to_1": 0, "gte_1": 0}
+    for value in margins:
+        key = "lt_0p1" if value < .1 else "0p1_to_0p25" if value < .25 else \
+              "0p25_to_0p5" if value < .5 else "0p5_to_1" if value < 1 else "gte_1"
+        bins[key] += 1
+    return {"roots": len(margins), "top_two_q_margin": {
+        "min": min(margins) if margins else None, "p10": quantile(margins, .1),
+        "p25": quantile(margins, .25), "median": median(margins),
+        "p75": quantile(margins, .75), "p90": quantile(margins, .9),
+        "max": max(margins) if margins else None},
+        "descriptive_bins": {key: {"roots": count, "fraction": count / len(margins) if margins else None}
+                             for key, count in bins.items()},
+        "nearly_tied_fraction_lt_0p25": (sum(value < .25 for value in margins) / len(margins)
+                                         if margins else None)}
 
 
 def sibling_metrics(pairs):
@@ -223,7 +249,9 @@ def bootstrap_uncertainty(pair_sets, replicates, seed):
             top = metric["top_action_agreement"] - ceiling["top_action_agreement"]
             pair = (metric["legal_action_pairwise_agreement"]
                     - ceiling["legal_action_pairwise_agreement"])
-            sibling_margin = (sibling["strict_pairwise_concordance"]
+            sibling_margin = (None if sibling["strict_pairwise_concordance"] is None
+                              or sibling_ceiling["strict_pairwise_concordance"] is None else
+                              sibling["strict_pairwise_concordance"]
                               - sibling_ceiling["strict_pairwise_concordance"])
             regret_floor = ceiling["mean_regret"] or 0.0
             regret = metric["mean_regret"] - regret_floor
@@ -231,12 +259,13 @@ def bootstrap_uncertainty(pair_sets, replicates, seed):
             values = samples[budget]
             values["top"].append(top)
             values["pair"].append(pair)
-            values["sibling"].append(sibling_margin)
+            if sibling_margin is not None: values["sibling"].append(sibling_margin)
             values["regret"].append(regret)
             if abs(regret_floor) >= 1e-9:
                 values["regret_ratio"].append(metric["mean_regret"] / regret_floor)
             values["joint_pass"].append(
-                top >= -0.02 and pair >= -0.02 and sibling_margin >= -0.02
+                top >= -0.02 and pair >= -0.02
+                and (sibling_margin is None or sibling_margin >= -0.02)
                 and regret <= regret_tolerance)
 
     for budget, values in samples.items():
@@ -278,20 +307,22 @@ def main() -> int:
                 teacher_failures[(row["state_kind"], str(row["budget"]), row["replicate"],
                                   row.get("teacher_failure_reason", "unspecified"))] += 1
 
-    comparisons, siblings = {}, {}
-    pair_sets = {}
-    for budget in BUDGETS:
-        pairs = []
-        for (kind, leaf, b, replicate), candidate in rows.items():
-            if kind != "leaf" or b != budget or replicate != "A":
-                continue
-            reference = rows.get(("leaf", leaf, 25000, "B"))
-            if (candidate.get("teacher_valid", True) and reference
-                    and reference.get("teacher_valid", True)):
-                pairs.append((candidate, reference))
-        pair_sets[budget] = pairs
-        comparisons[str(budget)] = aggregate_state(pairs)
-        siblings[str(budget)] = sibling_metrics(pairs)
+    def build_pairs(state_kind):
+        result = {}
+        for budget in BUDGETS:
+            pairs = []
+            for (kind, leaf, b, replicate), candidate in rows.items():
+                if kind != state_kind or b != budget or replicate != "A": continue
+                reference = rows.get((state_kind, leaf, 25000, "B"))
+                if (candidate.get("teacher_valid", True) and reference
+                        and reference.get("teacher_valid", True)):
+                    pairs.append((candidate, reference))
+            result[budget] = pairs
+        return result
+
+    pair_sets = build_pairs("leaf")
+    comparisons = {str(budget): aggregate_state(pair_sets[budget]) for budget in BUDGETS}
+    siblings = {str(budget): sibling_metrics(pair_sets[budget]) for budget in BUDGETS}
 
     ceiling = comparisons["25000"]
     sibling_ceiling = siblings["25000"]
@@ -339,19 +370,39 @@ def main() -> int:
     verdict = chosen or "TEACHER_BUDGET_UNRESOLVED_OR_25K_REQUIRED"
     bootstrap = bootstrap_uncertainty(
         pair_sets, args.bootstrap_replicates, args.bootstrap_seed)
-    coverage = {}
-    independent_b = [row for (kind, _, budget, replicate), row in rows.items()
-                     if kind == "leaf" and budget == 25000 and replicate == "B"]
-    for budget in BUDGETS:
-        candidates = [row for (kind, _, row_budget, replicate), row in rows.items()
-                      if kind == "leaf" and row_budget == budget and replicate == "A"]
-        coverage[str(budget)] = {
-            "candidate_A_rows": len(candidates),
-            "candidate_A_valid": sum(row.get("teacher_valid", True) for row in candidates),
-            "independent_25k_B_rows": len(independent_b),
-            "independent_25k_B_valid": sum(row.get("teacher_valid", True) for row in independent_b),
-            "paired_valid_leaves": len(pair_sets[budget]),
-        }
+    parent_pairs = build_pairs("parent")
+    parent_comparisons = {str(budget): aggregate_state(parent_pairs[budget]) for budget in BUDGETS}
+    parent_bootstrap = bootstrap_uncertainty(parent_pairs, args.bootstrap_replicates, args.bootstrap_seed)
+    parent_ceiling = parent_comparisons["25000"]
+    parent_10k = parent_comparisons["10000"]
+    if not parent_10k["leaves"]:
+        policy_verdict = "POLICY_TEACHER_UNRESOLVED"
+    elif (parent_10k["top_action_agreement"] + .02 >= parent_ceiling["top_action_agreement"]
+          and parent_10k["legal_action_pairwise_agreement"] + .02 >= parent_ceiling["legal_action_pairwise_agreement"]
+          and parent_10k["mean_regret"] <= parent_ceiling["mean_regret"] + max(.25, abs(parent_ceiling["mean_regret"] or 0))):
+        policy_verdict = "POLICY_TEACHER_10K_PLAUSIBLE"
+    else:
+        policy_verdict = "POLICY_TEACHER_25K_MATERIALLY_BETTER"
+    def coverage_for(state_kind, state_pairs):
+        coverage = {}
+        independent_b = [row for (kind, _, budget, replicate), row in rows.items()
+                         if kind == state_kind and budget == 25000 and replicate == "B"]
+        for budget in BUDGETS:
+            candidates = [row for (kind, _, row_budget, replicate), row in rows.items()
+                          if kind == state_kind and row_budget == budget and replicate == "A"]
+            wall = [row["wall_micros"] for row in candidates if row.get("wall_micros") is not None]
+            coverage[str(budget)] = {
+                "candidate_A_rows": len(candidates),
+                "candidate_A_valid": sum(row.get("teacher_valid", True) for row in candidates),
+                "independent_25k_B_rows": len(independent_b),
+                "independent_25k_B_valid": sum(row.get("teacher_valid", True) for row in independent_b),
+                "paired_valid_states": len(state_pairs[budget]),
+                "artifact_cost": {"total_wall_micros": sum(wall), "mean_wall_micros": mean(wall)},
+            }
+        return coverage
+    coverage = coverage_for("leaf", pair_sets)
+    for item in coverage.values(): item["paired_valid_leaves"] = item["paired_valid_states"]
+    parent_coverage = coverage_for("parent", parent_pairs)
     failure_report = [{"state_kind": key[0], "budget": int(key[1]), "replicate": key[2],
                        "reason": key[3], "rows": count}
                       for key, count in sorted(teacher_failures.items())]
@@ -362,6 +413,14 @@ def main() -> int:
               "subgroups": subgroups,
               "candidate_decisions": decisions,
               "group_bootstrap_uncertainty": bootstrap,
+              "parent_state_policy_teacher": {
+                  "comparisons_against_25k_B": parent_comparisons,
+                  "replicate_ceiling_25kA_vs_25kB": parent_ceiling,
+                  "paired_whole_group_bootstrap": parent_bootstrap,
+                  "coverage": parent_coverage,
+                  "action_ambiguity_25k_A": action_ambiguity(parent_pairs[25000]),
+                  "verdict": policy_verdict,
+                  "note": "Descriptive guidance only; raw root Q and visit labels remain authoritative."},
               "teacher_coverage": coverage, "teacher_failures": failure_report,
               "verdict": verdict, "point_estimate_verdict": verdict,
               "warning": "Subgroup reversal/pathology must be reviewed before accepting a passing global verdict."}

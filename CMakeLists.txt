@@ -115,6 +115,12 @@ target_include_directories(silver-leaf-relabel PRIVATE include json/include)
 target_link_libraries(silver-leaf-relabel PRIVATE silver_combat_search_bridge)
 target_link_options(silver-leaf-relabel PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-leaf-features apps/silver_leaf_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(silver-leaf-features PROPERTIES OUTPUT_NAME silver_leaf_features)
+target_include_directories(silver-leaf-features PRIVATE include json/include)
+target_link_libraries(silver-leaf-features PRIVATE silver_live_backend)
+target_link_options(silver-leaf-features PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-native-parity-runner third_party/silver_lightspeed/bridge/SilverNativeFixtureRunner.cpp)
 set_target_properties(silver-native-parity-runner PROPERTIES OUTPUT_NAME silver_native_parity_runner)
 set_target_properties(silver-native-parity-runner PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
@@ -131,7 +137,7 @@ target_link_options(silver-native-parity-runner PRIVATE -Wl,--gc-sections)
 add_executable(silver-bridge-test apps/silver_bridge_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(silver-bridge-test PROPERTIES OUTPUT_NAME silver_bridge_test)
 target_include_directories(silver-bridge-test PRIVATE include json/include)
-target_link_libraries(silver-bridge-test PRIVATE silver_combat_search_bridge)
+target_link_libraries(silver-bridge-test PRIVATE silver_live_backend)
 target_link_options(silver-bridge-test PRIVATE -Wl,--gc-sections)
 
 # Real live Runic-Dome lifecycle coverage: the observer is configured before

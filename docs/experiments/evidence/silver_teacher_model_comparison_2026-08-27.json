@@ -1,0 +1,131 @@
+{
+  "schema": "silver-teacher-model-comparison-evidence-v1",
+  "date": "2026-08-27",
+  "baseline_sha": "0b2fa30151e2e70e450351abdb0700eb8a052c68",
+  "gcp_frozen_sha": "3de104ea769110c1ef1cd52af16a06aa7e0fad7d",
+  "gcp": {
+    "host": "sts-test",
+    "run_directory": "/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97",
+    "python": "3.12.3",
+    "uv": "0.12.3",
+    "numpy": "2.5.2",
+    "xgboost": "3.4.0",
+    "feature_seconds": 1.050,
+    "teacher_analysis_seconds": 163.228,
+    "matched_trainer_total_seconds": 64.000,
+    "m10_training_seconds": 2.977958531002514,
+    "m25_training_seconds": 2.600373371009482
+  },
+  "inputs": {
+    "selected_corpus_sha256": "bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7",
+    "manifest_sha256": "db67ff9df6a1578a46e4e09038b5f2548772fc9c70fc54a00b1576f659883cd7",
+    "relabel_sha256": "abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c",
+    "selected_corpus_rows": 3207,
+    "relabel_rows": 17030
+  },
+  "outputs": {
+    "features_sha256": "c23e5974a916ae59e34dacfbb1e9dcd6eea803cb77ff42a0e1390a87856a9987",
+    "teacher_analysis_sha256": "a123861b5b7852344eb95c53af66336eb9e426c5655ec208828d33730b1cd811",
+    "m10_model_sha256": "cfb7bf8b041e6748a6a63f280eb8c43ad2bbefc223e69d0d9807567ebcbe5613",
+    "m25_model_sha256": "a71ddc0d91e5f5ee05b73fc3b71fac0819cb358f6741afed2b1dc7a9fda26734",
+    "comparison_sha256": "adfc7ba822d4001b763ce839436f19ddff255bca5d00f9f83d3372388024568f"
+  },
+  "dataset": {
+    "anchor_groups": 93,
+    "anchor_rows": 641,
+    "train_groups": 341,
+    "train_rows": 2244,
+    "validation_groups": 66,
+    "validation_rows": 314,
+    "test_groups": 93,
+    "test_rows": 641,
+    "anchor_leakage": false,
+    "feature_schema": "canonical rich CombatValueNet features from stored leaf BattleStateWire",
+    "feature_count": 1766
+  },
+  "recipe": {
+    "objective": "reg:squarederror",
+    "tree_method": "hist",
+    "device": "cpu",
+    "max_depth": 8,
+    "eta": 0.03,
+    "subsample": 0.54,
+    "colsample_bytree": 0.81,
+    "min_child_weight": 82,
+    "max_bin": 256,
+    "reg_alpha": 1.8,
+    "gamma": 4.4,
+    "num_boost_round": 2000,
+    "early_stopping_rounds": 40,
+    "sample_weighting": "uniform",
+    "m10_best_iteration": 500,
+    "m25_best_iteration": 412
+  },
+  "parent_teacher": {
+    "verdict": "POLICY_TEACHER_25K_MATERIALLY_BETTER",
+    "coverage": {
+      "candidate_rows_per_budget": 500,
+      "candidate_valid_per_budget": 496,
+      "independent_25k_b_rows": 93,
+      "independent_25k_b_valid": 93,
+      "paired_valid_roots": 93
+    },
+    "budgets": {
+      "1000": {"top_agreement": 0.7311827956989247, "pairwise_q_order": 0.7298387096774194, "mean_regret": 2.5544605633029995, "selected_q_mae": 3.023456072686741, "pearson": 0.995316882055607, "spearman": 0.9923903312444047, "paired_wall_micros": 1175180, "all_candidate_wall_micros": 6255999},
+      "3700": {"top_agreement": 0.7741935483870968, "pairwise_q_order": 0.7580645161290323, "mean_regret": 2.396795413190262, "selected_q_mae": 2.695728102061023, "pearson": 0.9974748473568501, "spearman": 0.9953297523127425, "paired_wall_micros": 4372428, "all_candidate_wall_micros": 23336778},
+      "10000": {"top_agreement": 0.7741935483870968, "pairwise_q_order": 0.7661290322580645, "mean_regret": 2.407240416423797, "selected_q_mae": 2.6893285850467645, "pearson": 0.9983410388614711, "spearman": 0.996478663085646, "paired_wall_micros": 12457638, "all_candidate_wall_micros": 66539022},
+      "25000": {"top_agreement": 0.8064516129032258, "pairwise_q_order": 0.7752016129032258, "mean_regret": 2.328163130749024, "selected_q_mae": 2.723958199736757, "pearson": 0.9990408417024331, "spearman": 0.9970754998507908, "paired_wall_micros": 33280102, "all_candidate_wall_micros": 179234076}
+    },
+    "bootstrap_10k_vs_25k_replicate_ceiling": {
+      "replicates": 5000,
+      "top_agreement_margin_95pct": [-0.08602150537634401, 0.010752688172043001],
+      "pairwise_q_order_margin_95pct": [-0.022277415059921826, 0.0],
+      "mean_regret_excess_95pct": [0.0009821195950671642, 0.2327877757564236],
+      "global_bar_pass_probability": 0.2348
+    },
+    "ambiguity_25k_a": {
+      "action_eligible_roots": 63,
+      "top_two_margin_median": 2.099802480553663,
+      "top_two_margin_p10": 0.18618239153611837,
+      "top_two_margin_p90": 12.925280657529024,
+      "fraction_margin_lt_0p1": 0.07936507936507936,
+      "fraction_margin_lt_0p25": 0.14285714285714285
+    }
+  },
+  "models": {
+    "verdict": "USE_10K_TEACHER",
+    "pairwise_definition": "all sibling pairs with non-tied independent 25k-B values; prediction ties receive 0.5 concordance",
+    "reference_sibling_pair_count": 5187,
+    "m10": {"pairwise": 0.5788509735878157, "prediction_tie_count": 161, "top_leaf": 0.30864197530864196, "mean_regret": 3.902424168542608, "median_regret": 0.37927909070205246, "centered_mae": 3.7609905956568674, "centered_rmse": 5.4746655861565365, "global_mae": 7.933144960530314, "global_rmse": 11.756771874135827, "pearson": 0.9017502151205039, "spearman": 0.9012784397245022},
+    "m25": {"pairwise": 0.5872373240794293, "prediction_tie_count": 212, "top_leaf": 0.32098765432098764, "mean_regret": 3.5690100235274764, "median_regret": 0.34077194438896186, "centered_mae": 3.7107974725622404, "centered_rmse": 5.390380902563492, "global_mae": 7.687621912182475, "global_rmse": 11.458210367925219, "pearson": 0.9045423647027372, "spearman": 0.9036935026897358},
+    "paired_bootstrap_m25_minus_m10": {
+      "replicates": 5000,
+      "pairwise_90pct": [-0.013315980439339247, 0.0249876976847775],
+      "pairwise_probability_positive": 0.7468,
+      "top_leaf_90pct": [-0.0357142857142857, 0.05882352941176472],
+      "top_leaf_probability_positive": 0.5876,
+      "mean_regret_90pct": [-0.704580327321238, -0.017969134380015666],
+      "mean_regret_probability_m25_lower": 0.9594
+    },
+    "subgroups": {
+      "act_1": {"rows": 189, "pairwise_m10": 0.6273408239700374, "pairwise_m25": 0.6310861423220974, "regret_m10": 1.9102836093869897, "regret_m25": 1.7445437951455092},
+      "act_2": {"rows": 220, "pairwise_m10": 0.5447630193095377, "pairwise_m25": 0.5637799882972498, "regret_m10": 6.978988493141437, "regret_m25": 5.938623323179643},
+      "act_3": {"rows": 232, "pairwise_m10": 0.5861038475905864, "pairwise_m25": 0.5890922674635787, "regret_m10": 2.966607120600899, "regret_m25": 3.127961536933075},
+      "hp_high": {"rows": 175, "pairwise_m10": 0.5559094125973106, "pairwise_m25": 0.5937721160651097, "regret_m10": 2.1947644776583366, "regret_m25": 1.932103294064421},
+      "hp_mid": {"rows": 143, "pairwise_m10": 0.5512820512820513, "pairwise_m25": 0.5532544378698225, "regret_m10": 4.511698692987519, "regret_m25": 3.219769461911953},
+      "hp_low": {"rows": 323, "pairwise_m10": 0.5802489354733049, "pairwise_m25": 0.5773010153946937, "regret_m10": 4.421018564120339, "regret_m25": 4.39841433643165},
+      "rollout_short": {"rows": 233, "pairwise_m10": 0.6085726718885988, "pairwise_m25": 0.6168407310704961, "regret_m10": 1.5803383494244394, "regret_m25": 1.4718179720324567},
+      "rollout_medium": {"rows": 218, "pairwise_m10": 0.5919732441471572, "pairwise_m25": 0.5780379041248607, "regret_m10": 3.573507629491066, "regret_m25": 3.5424853978086963},
+      "rollout_long": {"rows": 190, "pairwise_m10": 0.5943238731218697, "pairwise_m25": 0.6202003338898163, "regret_m10": 3.160438197183279, "regret_m25": 2.555885738111204},
+      "encounter_boss": {"rows": 247, "pairwise_m10": 0.5760204081632653, "pairwise_m25": 0.5784013605442176, "regret_m10": 3.5907644547344613, "regret_m25": 3.3750059362066054},
+      "encounter_elite": {"rows": 170, "pairwise_m10": 0.5474963181148749, "pairwise_m25": 0.5714285714285714, "regret_m10": 6.499777913930583, "regret_m25": 6.674907456394505},
+      "encounter_hallway": {"rows": 99, "pairwise_m10": 0.6055194805194806, "pairwise_m25": 0.5925324675324676, "regret_m10": 3.5384989773129, "regret_m25": 2.0513537819730074},
+      "encounter_other": {"rows": 125, "pairwise_m10": 0.6523235800344234, "pairwise_m25": 0.6660929432013769, "regret_m10": 0.8724738129421716, "regret_m25": 0.8629181182492734}
+    }
+  },
+  "limitations": [
+    "Offline independent-teacher evaluation only; no gameplay improvement is claimed.",
+    "Only 81 of 93 anchor groups retained at least two valid matched leaves for sibling metrics; global metrics use all 641 valid anchor rows.",
+    "Parent ambiguity margins exist for 63 of 93 valid roots with at least two valid legal-action Q values."
+  ]
+}

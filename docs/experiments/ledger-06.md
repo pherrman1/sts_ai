@@ -4989,6 +4989,55 @@ model training was changed.
   controller; a separate semantic card-select bridge investigation and a
   budget-comparable rerun would be required.
 
+## §181 Silver parent-teacher and matched 10k/25k leaf-model audit (2026-08-27)
+
+- **Question:** On the already collected PR #70 corpus, are parent-state labels
+  stable enough to guide a future policy prior, and does paying 2.5× for 25k-A
+  leaf labels materially improve a learned scalar Silver evaluator over 10k-A?
+- **Provenance:** PR #70 merge baseline
+  `0b2fa30151e2e70e450351abdb0700eb8a052c68`; frozen GCP code
+  `de04b394cc364c2c84f2e1993724168f37e8c8b9`; designated `sts-test` clean
+  run clone. Input SHA-256 values exactly matched the preregistered corpus,
+  manifest, and relabel hashes. No leaves were collected or relabeled, and no
+  gameplay was run.
+- **Parent audit:** 500 A roots/budget (496 valid) and 93/93 valid independent
+  25k-B anchors. Against B, top-action agreement at 1k/3.7k/10k/25k-A was
+  `73.12% / 77.42% / 77.42% / 80.65%`; legal-Q pair ordering was
+  `72.98% / 75.81% / 76.61% / 77.52%`; mean regret was
+  `2.554 / 2.397 / 2.407 / 2.328`. For 10k versus the 25k replicate ceiling,
+  the 95% whole-root bootstrap margin was `[-8.60pp,+1.08pp]` for top action,
+  `[-2.23pp,0]` for pair ordering, and `[+0.001,+0.233]` excess regret; global
+  bar pass probability was 23.48%. Of 63 action-eligible 25k-A roots with two
+  valid Qs, 14.29% had a top-two margin below 0.25 (median 2.100).
+  **Verdict: `POLICY_TEACHER_25K_MATERIALLY_BETTER`.** This is descriptive
+  guidance only; raw Q/visit labels remain authoritative and no prior target
+  was chosen.
+- **Matched models:** all 93 B groups were excluded before preprocessing and
+  splitting. Counts were train 341 groups/2,244 leaves, validation 66/314,
+  test 93/641, with zero anchor leakage. Stored wires produced the current
+  canonical rich 1,766-feature CombatValueNet representation. Both arms used
+  uniform weights and the same tuned XGBoost recipe; only the 10k-A versus
+  25k-A target changed. M10/M25 best iterations were 500/412.
+- **Independent-anchor result:** after the final review correction, both models
+  use the same 5,187 non-tied independent-25k-B sibling pairs; model prediction
+  ties receive half credit rather than leaving the denominator. M10/M25 had
+  161/212 prediction ties and strict sibling concordance `57.89% / 58.72%`
+  (delta +0.839pp; 90% paired whole-group interval `[-1.33pp,+2.50pp]`;
+  P(delta>0)=74.68%). Top-leaf agreement remained
+  `30.86% / 32.10%`, and mean regret `3.902 / 3.569`. The regret delta interval
+  was `[-0.705,-0.018]` for M25−M10 (P(M25 lower)=95.94%). M25 also modestly
+  improved global RMSE `11.757→11.458` and centered RMSE `5.475→5.390`, but
+  subgroup pair-order effects were mixed (for example high-HP and long-rollout
+  improved, low-HP, medium-rollout, and hallway declined).
+- **Decision:** **`USE_10K_TEACHER`.** The corrected pairwise gain missed the
+  ~1pp rule and had only 74.68% probability positive, below the required 90%.
+  Efficiency therefore decides the near-tie. The lower M25 regret is useful
+  descriptive evidence but does not satisfy the preregistered promotion rule.
+  No gameplay improvement is claimed.
+- **Artifacts:** durable compact evidence is
+  `docs/experiments/evidence/silver_teacher_model_comparison_2026-08-27.json`;
+  full GCP outputs remain under
+  `/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/results/`.
 ## OOC survival × continuation-value action diagnostic (2026-08-27)
 
 - **Question and baseline:** On baseline

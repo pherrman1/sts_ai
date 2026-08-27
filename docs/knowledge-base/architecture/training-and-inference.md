@@ -122,6 +122,19 @@ Runtime interfaces and their default/experimental status are summarized in
 
 ## Important data flow
 
+### Silver leaf teacher comparison
+
+`silver_leaf_features` reads only manifest-selected rows from the preserved
+`silver_leaf_corpus_v1` JSONL and projects each stored leaf `BattleStateWire`
+through the live Silver adapter into the canonical rich CombatValueNet feature
+vector. `tools/train_silver_leaf_models.py` then joins those features to
+existing valid 10k-A and 25k-A relabel rows. Every sibling group with a 25k-B
+row is reserved as test-only before the remaining complete groups are split
+deterministically into train and validation. Both XGBoost arms share the exact
+feature columns, rows, split, uniform weighting, recipe, and evaluation; only
+the A-replicate target budget differs. The output is an offline model/teacher
+comparison and does not establish gameplay improvement.
+
 ### Combat schema
 
 `src/sim/search/CombatValueNet.cpp` is the canonical producer:

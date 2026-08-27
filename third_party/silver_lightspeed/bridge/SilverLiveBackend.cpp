@@ -532,6 +532,14 @@ double silverLiveLeafVNetPredictionForTestImpl(
     return model.predict(liveLeafBattleContext(wire), false);
 }
 
+std::vector<float> silverLiveLeafCanonicalFeaturesImpl(
+        const silver_bridge::BattleStateWire &wire) {
+    g_richCombatFeatures = true;
+    std::vector<float> features(combatFeatureCount());
+    combatExtractFeatures(liveLeafBattleContext(wire), features.data());
+    return features;
+}
+
 void writeLeafVNetObservation(std::uint64_t runSeed, int decision,
                               const silver_bridge::SilverLeafObservation &observation) {
     std::lock_guard<std::mutex> lock(g_leafVNetLogMutex);
@@ -1220,6 +1228,12 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
 double silverLiveLeafVNetPredictionForTest(
         const silver_bridge::BattleStateWire &wire, const std::string &modelPath) {
     return silverLiveLeafVNetPredictionForTestImpl(wire, modelPath);
+}
+
+
+std::vector<float> silverLiveLeafCanonicalFeatures(
+        const silver_bridge::BattleStateWire &wire) {
+    return silverLiveLeafCanonicalFeaturesImpl(wire);
 }
 
 void installSilverLiveBackend() {
