@@ -422,13 +422,24 @@ python3 tools/agent/gcp_benchmark.py run --foreground --guard-only -- \
 `run` changes to the remote root and invokes
 `bash tools/seed_guard.sh --gcp-research ...`, so the GCP path retains argument
 validation but has no numeric seed ceiling. Detached runs use `nohup`, print
-`remote_pid` and `remote_log`, and survive SSH disconnects. Retrieve output with
-the printed log path through the same launcher/SSH route, for example:
+`remote_pid` and `remote_log`, and survive SSH disconnects. Inspect the PID and
+retrieve or upload one file through the same designated-target launcher. Remote
+paths are relative to the designated root; absolute and parent-traversing paths
+are rejected. Each path component is limited to ASCII letters, digits, `.`,
+`_`, and `-`, so SCP glob, control, and remote-shell syntax is rejected:
 
 ```bash
-gcloud compute ssh philippherrmann@sts-test --project=sts-ai-502709 \
-  --zone=europe-west3-c --command 'tail -n 50 /home/philippherrmann/sts_sweep/logs/<log>'
+python3 tools/agent/gcp_benchmark.py job-status <remote-pid>
+python3 tools/agent/gcp_benchmark.py copy-from logs/<log> ./local-run.log
+python3 tools/agent/gcp_benchmark.py copy-from pilot-artifacts/<run>/summary.json ./summary.json
+python3 tools/agent/gcp_benchmark.py copy-to ./runner.sh pilot-artifacts/<run>/runner.sh
 ```
+
+`job-status` reports `running` only while the operating-system PID exists;
+`not_running_or_unknown` means the process is absent, not that it necessarily
+succeeded. Use the fetched log and validated output artifacts for completion.
+Transfer confinement is lexical and assumes the maintained designated checkout
+does not place escaping symlinks in paths supplied to these commands.
 
 There is no repository credential: the helper uses the user's existing local
 gcloud authentication. If gcloud is absent or unauthenticated, report that

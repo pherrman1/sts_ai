@@ -11,6 +11,7 @@
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverSemanticAction.h"
+#include "sim/search/SilverWireJson.h"
 
 using namespace sts;
 
@@ -84,6 +85,103 @@ int main() {
           "ordinary wire must materialize a private Silver root");
     check(silver_bridge::convertedStatesEqualForSearch(firstWire, permutedWire),
           "hidden live draw-order permutations must materialize equivalent Silver roots");
+
+    const auto serializedWire = silver_bridge::battleStateWireEnvelope(firstWire).dump();
+    const auto reloadedWire = silver_bridge::battleStateWireFromEnvelope(
+        nlohmann::json::parse(serializedWire));
+    check(silver_bridge::convertedStatesEqualForSearch(firstWire, reloadedWire),
+          "BattleStateWire JSON round-trip must preserve the exact Silver search state");
+    auto incompatibleEnvelope = silver_bridge::battleStateWireEnvelope(firstWire);
+    incompatibleEnvelope["wire_version"] = 999;
+    bool incompatibleRejected = false;
+    try { (void)silver_bridge::battleStateWireFromEnvelope(incompatibleEnvelope); }
+    catch (const std::invalid_argument &) { incompatibleRejected = true; }
+    check(incompatibleRejected, "incompatible BattleStateWire schema must fail closed");
+
+    silver_bridge::SilverSearchConfig serializedSearchConfig;
+    serializedSearchConfig.simulationsPerDecision = 12;
+    serializedSearchConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
+    serializedSearchConfig.collectRootActionSummaries = true;
+    const auto inMemorySearch = silver_bridge::runSilverDecision(firstWire, serializedSearchConfig);
+    const auto reloadedSearch = silver_bridge::runSilverDecision(reloadedWire, serializedSearchConfig);
+    check(inMemorySearch.accepted && reloadedSearch.accepted
+          && silver_bridge::semanticActionFingerprint(inMemorySearch.action)
+              == silver_bridge::semanticActionFingerprint(reloadedSearch.action)
+          && inMemorySearch.rootActionSummaries.size() == reloadedSearch.rootActionSummaries.size(),
+          "serialized/reloaded leaf must reproduce an identical deterministic small-budget search");
+
+    silver_bridge::SilverLeafObservation capturedLeaf;
+    bool capturedLeafStart = false;
+    auto parentObserverConfig = serializedSearchConfig;
+    parentObserverConfig.simulationsPerDecision = 16;
+    parentObserverConfig.leafObserver = [&](silver_bridge::SilverLeafObservation &o) {
+        if (!capturedLeafStart && o.phase == silver_bridge::SilverLeafObservationPhase::START) {
+            capturedLeaf = o;
+            capturedLeafStart = true;
+        }
+    };
+    (void)silver_bridge::runSilverDecision(firstWire, parentObserverConfig);
+    check(capturedLeafStart && capturedLeaf.parentState.valid
+          && capturedLeaf.originalRootState.valid
+          && !capturedLeaf.parentLegalActionFingerprints.empty()
+          && !capturedLeaf.incomingActionFingerprint.empty(),
+          "leaf observer must retain exact root/parent states and complete parent action identity");
+    if (capturedLeafStart) {
+        const auto parentReloaded = silver_bridge::battleStateWireFromEnvelope(
+            nlohmann::json::parse(
+                silver_bridge::battleStateWireEnvelope(capturedLeaf.parentState).dump()));
+        auto parentConfig = serializedSearchConfig;
+        parentConfig.simulationsPerDecision = 1;
+        const auto parentDecision = silver_bridge::runSilverDecision(parentReloaded, parentConfig);
+        std::vector<std::string> parentFingerprints;
+        for (const auto &summary : parentDecision.rootActionSummaries)
+            parentFingerprints.push_back(silver_bridge::semanticActionFingerprint(summary.action));
+        std::sort(parentFingerprints.begin(), parentFingerprints.end());
+        auto observedFingerprints = capturedLeaf.parentLegalActionFingerprints;
+        std::sort(observedFingerprints.begin(), observedFingerprints.end());
+        check(parentDecision.accepted && parentFingerprints == observedFingerprints,
+              "parent round-trip must preserve its complete legal action fingerprint set");
+    }
+
+    // Entropic Brew can replace itself in a one-slot belt. Silver deduplicates
+    // that stochastic outcome back to the decision node already on the path,
+    // so provenance must describe the traversed parent/action rather than try
+    // to infer them from the aliased leaf node.
+    auto cycleWire = firstWire;
+    cycleWire.potionCapacity = 1;
+    cycleWire.potionCount = 1;
+    cycleWire.potions.fill(static_cast<std::int16_t>(Potion::EMPTY_POTION_SLOT));
+    cycleWire.potions[0] = static_cast<std::int16_t>(Potion::ENTROPIC_BREW);
+    silver_bridge::SemanticAction entropicAction;
+    entropicAction.type = silver_bridge::SemanticActionType::POTION;
+    entropicAction.potionId = static_cast<std::int16_t>(Potion::ENTROPIC_BREW);
+    entropicAction.potionSlot = 0;
+    entropicAction.target = 0;
+    const auto entropicFingerprint = silver_bridge::semanticActionFingerprint(entropicAction);
+    bool observedCycleIdentity = false;
+    auto cycleConfig = serializedSearchConfig;
+    cycleConfig.simulationsPerDecision = 512;
+    cycleConfig.leafObserver = [&](silver_bridge::SilverLeafObservation &o) {
+        if (o.phase != silver_bridge::SilverLeafObservationPhase::START) return;
+        if (o.incomingActionFingerprint == entropicFingerprint
+                && silver_bridge::convertedStatesEqualForSearch(o.state, o.parentState)) {
+            observedCycleIdentity = std::find(o.parentLegalActionFingerprints.begin(),
+                                              o.parentLegalActionFingerprints.end(),
+                                              entropicFingerprint)
+                != o.parentLegalActionFingerprints.end();
+        }
+        o.skipRollout = true;
+        o.directValue = 0.0;
+    };
+    (void)silver_bridge::runSilverDecision(cycleWire, cycleConfig);
+    check(observedCycleIdentity,
+          "self-loop rollout must retain the explicit decision parent and incoming action identity");
+
+    auto advancedLeaf = firstWire;
+    advancedLeaf.player.gold += 5;
+    advancedLeaf.player.maxHp += 2;
+    check(std::abs(silver_bridge::silverVictoryBaselineCorrection(firstWire, advancedLeaf) - 5.25) < 1e-12,
+          "original-root victory correction must exactly reconstruct gold and max-HP baselines");
 
     // The bridge session must retain the exact private child selected at one
     // Silver decision and reroot into it at the next. This is an entirely
@@ -164,9 +262,15 @@ int main() {
                 && observation.rolloutUtility == observation.rolloutUtility;
         }
     };
+    auto noObserverConfig = observerConfig;
+    noObserverConfig.leafObserver = {};
+    const auto noObserver = silver_bridge::runSilverDecision(firstWire, noObserverConfig);
     const auto observed = silver_bridge::runSilverDecision(firstWire, observerConfig);
     check(observed.accepted && observedStarts > 0 && observedEnds == observedStarts
-              && observedRolloutFields && observed.telemetry.rolloutSkippedVNet == 0,
+              && observedRolloutFields && observed.telemetry.rolloutSkippedVNet == 0
+              && noObserver.accepted
+              && silver_bridge::semanticActionFingerprint(noObserver.action)
+                  == silver_bridge::semanticActionFingerprint(observed.action),
           "leaf observer must report every sampled rollout start and completed terminal result");
 
     auto directConfig = observerConfig;
@@ -434,6 +538,18 @@ int main() {
     silver_bridge::SilverSearchConfig transactionConfig;
     transactionConfig.simulationsPerDecision = 16;
     transactionConfig.collectDecisionDiagnostics = true;
+    const auto ordinaryTransactionDecision = silver_bridge::runSilverDecision(
+        convert(transactionLive, gc, transactionKnowledge), transactionConfig);
+    check(!ordinaryTransactionDecision.accepted
+              && ordinaryTransactionDecision.simulations == 0
+              && ordinaryTransactionDecision.failureReason == "transactional_selection_required",
+          "ordinary decision API must explain a zero-simulation transactional-state rejection");
+    auto unavailableSession = silver_bridge::makeSilverSearchSession();
+    const auto unavailableContinuation = silver_bridge::continueSilverDecision(
+        *unavailableSession, 1, transactionConfig);
+    check(!unavailableContinuation.accepted
+              && unavailableContinuation.failureReason == "search_session_unavailable",
+          "continuation rejection must retain a non-empty failure reason");
     const auto transaction = silver_bridge::runSequentialSelectionTransaction(
         convert(transactionLive, gc, transactionKnowledge), transactionConfig);
     if (!transaction.accepted) {

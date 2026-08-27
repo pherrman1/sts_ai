@@ -20,8 +20,13 @@
 
 namespace silver_bridge {
 SilverLeafObservation makeSilverLeafObservation(
-    const sts::BattleContext &state, std::uint64_t rootStateHash,
+    const sts::BattleContext &state, const sts::BattleContext &originalRoot,
+    const sts::BattleContext &parentState,
+    const std::vector<sts::search::Action> &parentLegalActions,
+    const sts::search::Action *incomingAction, std::uint64_t rootStateHash,
     std::uint64_t parentStateHash, int depth, int actionCountBeforeRollout);
+std::string silverActionFingerprint(const sts::BattleContext &state,
+                                    const sts::search::Action &action);
 }
 
 namespace sts::search {
@@ -137,6 +142,7 @@ namespace sts::search {
         class Edge;
         struct Node {
             std::int64_t simulationCount = 0;
+            std::int64_t victoryCount = 0;
             double evaluationSum = 0;
             std::vector<Edge> edges;
             BattleContext state;                // game state at this node (decision nodes; chance nodes read parent->state)
@@ -194,6 +200,7 @@ namespace sts::search {
         // Default-off rollout/terminal decomposition collection. This is
         // diagnostic accounting only; it is never consulted by selection.
         bool collectRolloutDiagnostics = false;
+        bool collectVictoryCounts = false;
         silver_bridge::SilverLeafObserver leafObserver;
 
         std::default_random_engine randGen;
@@ -240,8 +247,8 @@ namespace sts::search {
         int selectBestEdgeToSearch(const Node &cur);
 
         double rolloutToEnd(BattleContext &state, std::vector<Action> &actionStack,
-                            std::uint64_t rootStateHash, std::uint64_t parentStateHash,
-                            int depth);
+                            std::uint64_t rootStateHash, const Node *parentState,
+                            const Action *incomingAction, int depth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);
         void enumerateCardActions(Node &node, const BattleContext &bc);
