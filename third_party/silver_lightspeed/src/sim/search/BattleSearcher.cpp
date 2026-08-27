@@ -291,14 +291,6 @@ void search::BattleSearcher::step() {
     auto onPath = [&](Node* n) {
         return std::find(searchStack.begin(), searchStack.end(), n) != searchStack.end();
     };
-    auto parentStateFor = [&](Node *leaf) -> Node * {
-        for (auto it = searchStack.rbegin(); it != searchStack.rend(); ++it) {
-            if (*it == leaf) continue;
-            if (!(*it)->isRandomNode) return *it;
-        }
-        return leaf;
-    };
-
     Node* cur = root;
     Edge* stagedOutcomeEdge = nullptr;  // outcome 0 of a chance node created this iteration, already executed
     int depth = 0;
@@ -330,7 +322,7 @@ void search::BattleSearcher::step() {
                 // Outcome reproduces a state already on the path -> cycle. Roll out instead.
                 BattleContext &rollout = (rolloutScratch = child->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
-                    hashBattleState(root->state), parentStateFor(child), depth);
+                    hashBattleState(root->state), cur->parent, &cur->stochasticAction, depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
@@ -340,7 +332,7 @@ void search::BattleSearcher::step() {
             if (child->simulationCount == 0) {
                 BattleContext &rollout = (rolloutScratch = child->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
-                    hashBattleState(root->state), parentStateFor(child), depth);
+                    hashBattleState(root->state), cur->parent, &cur->stochasticAction, depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
@@ -371,9 +363,10 @@ void search::BattleSearcher::step() {
             // Already expanded: descend (transposition or revisit).
             if (onPath(edge.node)) {
                 // Descending would revisit an on-path node -> cycle. Roll out instead.
+                actionStack.push_back(edge.action);
                 BattleContext &rollout = (rolloutScratch = edge.node->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
-                    hashBattleState(root->state), parentStateFor(edge.node), depth);
+                    hashBattleState(root->state), cur, &edge.action, depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
@@ -437,7 +430,7 @@ void search::BattleSearcher::step() {
             // Deterministic action cycled back to an on-path node. Roll out instead.
             BattleContext &rollout = (rolloutScratch = next);  // next == child->state
             const auto evaluation = rolloutToEnd(rollout, actionStack,
-                hashBattleState(root->state), parentStateFor(child), depth);
+                hashBattleState(root->state), cur, &edge.action, depth);
             updateFromPlayout(searchStack, actionStack, rollout, evaluation);
             return;
         }
@@ -449,7 +442,7 @@ void search::BattleSearcher::step() {
             // child->state, which now holds exactly what next did (rng included).
             BattleContext &rollout = (rolloutScratch = child->state);
             const auto evaluation = rolloutToEnd(rollout, actionStack,
-                hashBattleState(root->state), parentStateFor(child), depth);
+                hashBattleState(root->state), cur, &edge.action, depth);
             updateFromPlayout(searchStack, actionStack, rollout, evaluation);
             return;
         }
@@ -547,6 +540,7 @@ static double effectiveGold(const BattleContext &bc);
 double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Action> &actionStack,
                                              std::uint64_t rootStateHash,
                                              const Node *parent,
+                                             const Action *incomingAction,
                                              int depth) {
     const int maxTurns = rolloutMaxTurnsEnv();
     const int startTurn = bc.turn;
@@ -558,9 +552,8 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         std::vector<Action> parentLegalActions;
         parentLegalActions.reserve(parent->edges.size());
         for (const auto &edge : parent->edges) parentLegalActions.push_back(edge.action);
-        const Action *incoming = actionStack.empty() ? nullptr : &actionStack.back();
         leafObservation = silver_bridge::makeSilverLeafObservation(
-            bc, root->state, parent->state, parentLegalActions, incoming,
+            bc, root->state, parent->state, parentLegalActions, incomingAction,
             rootStateHash, static_cast<std::uint64_t>(hashBattleState(parent->state)), depth,
             static_cast<int>(actionStackStart));
         leafObserver(*leafObservation);

@@ -248,7 +248,7 @@ namespace sts::search {
 
         double rolloutToEnd(BattleContext &state, std::vector<Action> &actionStack,
                             std::uint64_t rootStateHash, const Node *parentState,
-                            int depth);
+                            const Action *incomingAction, int depth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);
         void enumerateCardActions(Node &node, const BattleContext &bc);

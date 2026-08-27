@@ -143,6 +143,40 @@ int main() {
               "parent round-trip must preserve its complete legal action fingerprint set");
     }
 
+    // Entropic Brew can replace itself in a one-slot belt. Silver deduplicates
+    // that stochastic outcome back to the decision node already on the path,
+    // so provenance must describe the traversed parent/action rather than try
+    // to infer them from the aliased leaf node.
+    auto cycleWire = firstWire;
+    cycleWire.potionCapacity = 1;
+    cycleWire.potionCount = 1;
+    cycleWire.potions.fill(static_cast<std::int16_t>(Potion::EMPTY_POTION_SLOT));
+    cycleWire.potions[0] = static_cast<std::int16_t>(Potion::ENTROPIC_BREW);
+    silver_bridge::SemanticAction entropicAction;
+    entropicAction.type = silver_bridge::SemanticActionType::POTION;
+    entropicAction.potionId = static_cast<std::int16_t>(Potion::ENTROPIC_BREW);
+    entropicAction.potionSlot = 0;
+    entropicAction.target = 0;
+    const auto entropicFingerprint = silver_bridge::semanticActionFingerprint(entropicAction);
+    bool observedCycleIdentity = false;
+    auto cycleConfig = serializedSearchConfig;
+    cycleConfig.simulationsPerDecision = 512;
+    cycleConfig.leafObserver = [&](silver_bridge::SilverLeafObservation &o) {
+        if (o.phase != silver_bridge::SilverLeafObservationPhase::START) return;
+        if (o.incomingActionFingerprint == entropicFingerprint
+                && silver_bridge::convertedStatesEqualForSearch(o.state, o.parentState)) {
+            observedCycleIdentity = std::find(o.parentLegalActionFingerprints.begin(),
+                                              o.parentLegalActionFingerprints.end(),
+                                              entropicFingerprint)
+                != o.parentLegalActionFingerprints.end();
+        }
+        o.skipRollout = true;
+        o.directValue = 0.0;
+    };
+    (void)silver_bridge::runSilverDecision(cycleWire, cycleConfig);
+    check(observedCycleIdentity,
+          "self-loop rollout must retain the explicit decision parent and incoming action identity");
+
     auto advancedLeaf = firstWire;
     advancedLeaf.player.gold += 5;
     advancedLeaf.player.maxHp += 2;
