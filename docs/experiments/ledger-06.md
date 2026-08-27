@@ -4646,15 +4646,21 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   reflect noisy root estimates, a systematic `SimpleAgent` rollout-policy
   bias, or a misweighted Silver terminal utility? No policy, utility term, or
   search parameter was changed in this experiment.
-- **Frozen implementation:** current-main baseline was
+- **Frozen implementation and provenance:** current-main baseline was
   `3f6565113229310e7821e3d42377eee3050d4619` (already newer than the requested
-  minimum `0dd84ded8b76e788b778337eea084c312dadb9b0`). The diagnostic branch
-  ended at `e559d71377986949eca1eb17398030ea2100cf15`. The implementation adds
-  default-off root/action summaries, rollout terminal counters and exact
-  terminal-utility component accounting at the isolated Silver boundary,
-  fresh forced-action continuation references, and a stdlib analyzer. The
-  diagnostic is behavior-neutral when unset; a same-seed check matched all
-  outcome/floor/HP/death fields, with only timing differing.
+  minimum `0dd84ded8b76e788b778337eea084c312dadb9b0`). The corpus-producing
+  executable/source was frozen at `7bce607a52cf626831b20fe9f2ea43711fe006c4`;
+  this is the last commit that changed the diagnostic C++ bridge before the
+  run. The original aggregate-weighting analyzer correction was
+  `e559d71377986949eca1eb17398030ea2100cf15`; the present correction is the
+  analyzer-only commit `5e69dd7657a094f9812db699d3be9181b8eb0a77`. The later
+  PR-head changes are analyzer/ledger provenance only and did not change the
+  executable used for the corpus. The implementation adds default-off
+  root/action summaries, rollout terminal counters and exact terminal-utility
+  component accounting at the isolated Silver boundary, fresh forced-action
+  continuation references, and a stdlib analyzer. The diagnostic is
+  behavior-neutral when unset; a same-seed check matched all outcome/floor/HP/
+  death fields, with only timing differing.
 - **Selection and protocol:** 16 guarded fair-play seeds `102000..102015`,
   one OpenMP thread, ascension 0, `STS_STOP_AFTER_ACT=1`, native OOC enabled,
   Searcher3 flags retained but Silver combat enabled (therefore Silver's
@@ -4669,39 +4675,57 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   action in a fresh private materialized state, then run a fresh Silver
   continuation for 5,000 simulations, repeated twice. Replicate seeds are
   independent across replicates and shared across sibling actions (CRN
-  pairing). The forced-action reference therefore uses the same pinned
-  `SimpleAgent` and terminal utility as Silver, but removes the current root's
-  action-selection budget as the cause of the comparison. Reference values
-  aggregate the continuation root value; action order uses the maximum value,
-  with exact ties treated as co-best.
-- **Headline reference quality:** Silver-1k top-action agreement was
-  `40/64 = 62.50%`; Silver-3.7k was `46/64 = 71.875%`. Pairwise action-order
-  agreement was 1k visits `558/704 = 79.26%`, 3.7k visits
-  `578/704 = 82.10%`, 1k child-Q `564/704 = 80.11%`, and 3.7k child-Q
-  `577/704 = 81.96%`. Mean regret was `0.12845` at 1k versus `0.05659` at
-  3.7k (55.9% lower); median regret was `0` for both. The 1k and 3.7k
-  selected actions disagreed on `13/64 = 20.31%` of roots, and the mean
-  regret change was `-0.07186` (3.7k minus 1k).
-- **Margin conditioning:** reference-margin bins (mean regret 1k -> 3.7k;
-  top-action disagreement rate 1k -> 3.7k) were `<0.1`: `0.1824 -> 0.0568`,
-  `65.0% -> 60.0%` (`n=20`); `0.1..0.5`: `0.0889 -> 0.0410`,
-  `46.67% -> 26.67%` (`n=15`); `0.5..1.0`: `0.4261 -> 0.1523`,
-  `60.0% -> 20.0%` (`n=5`); and `>=1.0`: `0.0693 -> 0.0693`,
-  `6.25% -> 6.25%` (`n=16`). Thus high-margin decisions did not show a
-  broad 1k-specific failure; most residual disagreement is near the action
-  boundary, and 3.7k materially reduces it.
-- **Breakdowns:** encounter codes 1/2/3/4 had 20/20/12/12 roots and 35.0%,
-  35.0%, 41.67%, and 41.67% 1k disagreement respectively. Action types were
-  52 roots with card-selected 1k actions and 12 with END_TURN-selected 1k
-  actions; their disagreement rates were 42.31% and 16.67%. Potion-bearing
-  roots were only 4/64 (50.0% disagreement, mean regret 0.0424) versus
-  60/64 without potions (36.67%, mean regret 0.1342). Stochastic selected
-  actions were 13/64 (23.08% disagreement, mean regret 0.1974) versus 51/64
-  deterministic (41.18%, mean regret 0.1109). Fresh/no-predecessor roots had
-  16 roots and 75.0% disagreement; exact-reroot roots had 42 and 21.43%.
-  These reroot figures are descriptive only because the selection procedure
-  was early-decision biased.
-- **Rollout observations:** current 1k had 57,494 rollout calls, 57,486 wins
+  pairing). For a stochastic root action, however, the forced transition is
+  sampled once before the continuation search; two replicates therefore do not
+  estimate its immediate chance expectation. The corrected analysis retains
+  all rows for descriptive mixed-action reporting but restricts headline
+  action-quality metrics to `stochastic=0` rows. A root is included in a
+  budget's top-action/regret denominator only when that budget's selected
+  action is deterministic; sibling ordering uses only deterministic action
+  pairs. No corpus rerun or nested stochastic sampler was added.
+- **Corrected headline reference quality (deterministic forced-action scope):**
+  the corpus has 64 roots and 286 legal-action rows, of which 221 rows are
+  deterministic; 56 roots have deterministic candidates. The 1k top-action
+  and regret denominator is 51 roots, the 3.7k denominator is 53, and the
+  joint budget comparison is 50. Silver-1k top-action agreement is
+  `32/51 = 62.75%`; Silver-3.7k is `40/53 = 75.47%`. On the 478 comparable
+  deterministic sibling pairs, pairwise ordering agreement is 1k visits
+  `356/478 = 74.48%`, 3.7k visits `373/478 = 78.03%`, 1k child-Q
+  `361/478 = 75.52%`, and 3.7k child-Q `372/478 = 77.82%`. Mean regret is
+  `0.09336` at 1k versus `0.04667` at 3.7k; median regret is `0` for both.
+  On the 50-root joint subset, the selected actions disagree on `9/50 =
+  18.0%` and the mean regret change is `-0.04554` (3.7k minus 1k). These
+  are deterministic-action comparisons, not claims about the unresolved
+  chance distribution of stochastic candidates.
+- **Descriptive mixed-action results (not headline reference quality):** the
+  unfiltered analysis remains available in the corrected JSON under
+  `all_roots_descriptive`. Its prior values were 1k top-action agreement
+  `40/64 = 62.50%`, 3.7k `46/64 = 71.875%`, mean regret `0.12845` versus
+  `0.05659`, and 13/64 (20.31%) selected-action disagreement. It also reports
+  the prior mixed pairwise values and margin bins, but these are demoted
+  because 65/286 legal rows are stochastic and the worst mixed reference
+  replicate standard deviation was `3.14014`. Among the corrected
+  deterministic scope the corresponding maximum was `1.20631`.
+- **Margin conditioning in the corrected scope:** 1k -> 3.7k mean regret and
+  top-action disagreement were `<0.1`: `0.0763 -> 0.0551`, `62.5% -> 56.25%`
+  (`n=16`); `0.1..0.5`: `0.0810 -> 0.0372`, `38.46% -> 23.08%` (`n=13`);
+  `0.5..1.0`: `0.4563 -> 0`, `66.67% -> 0%` (`n=3`); and `>=1.0`:
+  `0.0924 -> 0.0924`, `8.33% -> 8.33%` (`n=12`). The high-margin bin
+  remains stable; the clean evidence is consistent with budget-sensitive
+  near-boundary decisions but is not precise enough to assign the cause to a
+  rollout-policy or utility bias.
+- **Corrected-scope breakdowns:** all accepted roots are high-HP Act-1 roots;
+  the deterministic headline subset has encounter-code 1/2/3/4 counts
+  14/16/12/8 and 35.71%, 31.25%, 41.67%, and 37.50% 1k disagreement. The
+  potion-bearing clean subset is only 3 roots (33.33% disagreement, mean
+  regret 0.0127) versus 47 without potions (36.17%, mean regret 0.1003).
+  Fresh/no-predecessor clean roots are 16 and 75.0% disagreement; exact-reroot
+  clean roots are 29 and 13.79%. These strata are descriptive only because
+  selection was early-decision biased. The clean action-type breakdown has
+  only type `1` (50 roots, 36.0% disagreement), so it does not support an
+  action-class conclusion. The excluded stochastic-selected roots are 13 for
+  1k and 11 for 3.7k.
+- **Rollout observations (descriptive across the captured rows):** current 1k had 57,494 rollout calls, 57,486 wins
   and 8 losses, mean 7.968 rollout actions and 1.757 turns; current 3.7k had
   207,017 calls, 206,991 wins and 26 losses, mean 7.542 actions and 1.644
   turns. Across the 2,468,974 forced-action reference rollouts there were
@@ -4727,11 +4751,11 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
 - **Offline intervention screen:** no rollout-policy or terminal-utility
   candidate was selected. Consequently there is no before/after held-out
   intervention metric, no candidate runtime comparison, and no gameplay gate.
-  The available evidence supports sampling/noisy root estimates as a material
-  component of the 1k weakness, but it does not isolate a narrow recurring
-  `SimpleAgent` failure or prove that any terminal-utility weight is wrong.
-  The reference itself uses the current utility, so utility correctness
-  remains an open external-validity question.
+  The corrected deterministic analysis still supports budget-sensitive root
+  estimates as a material component of the 1k weakness, but it does not
+  isolate a narrow recurring `SimpleAgent` failure or prove that any
+  terminal-utility weight is wrong. The reference itself uses the current
+  utility, so utility correctness remains an open external-validity question.
 - **Runtime:** the bounded diagnostic run took 44.1 seconds wall time for 16
   seeds at one thread (`2.76` CPU seconds/run average) including the 5,000 x 2
   forced-action references. It is intentionally opt-in and not a production
@@ -4741,8 +4765,11 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
 - **Artifacts:** raw root-action CSV
   `build/silver-root-corpus-full.csv`, SHA-256
   `62ede35a7ce2bdb47baf331b19e6ed49b1773d6e5de000f442d757da0b086c3d`;
-  analyzer JSON `build/silver-root-corpus-full.json`, SHA-256
-  `ff1a03e3a5e74030171148794747baabeea9c8141a854e19b5eb6653b0fcd730`;
+  original mixed-action analyzer JSON `build/silver-root-corpus-full.json`,
+  SHA-256 `ff1a03e3a5e74030171148794747baabeea9c8141a854e19b5eb6653b0fcd730`;
+  corrected deterministic-scope analyzer JSON
+  `build/silver-root-corpus-corrected.json`, SHA-256
+  `BA430703526A28B522EC113E38155BC22530E91763F7C5EA3983B0FFDFF4368F`;
   guarded run log `build/silver-root-corpus-full.log`; behavior-neutral
   outputs `build/silver-neutral-off.csv` (SHA-256
   `63724f511da48f31282490fe8b9341ff7522d78406b79c3dd73c879749d86d93`),
@@ -4752,12 +4779,14 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   `29aea05b469e95aa74e8a4a02e6acc733c0ac6deecdb91213afac0f7162e4f7d`).
   The analyzer is `tools/analyze_silver_root_diagnostic.py` and can regenerate
   the JSON from the raw CSV.
-- **Verdict:** **NO_SIMPLE_ROLLOUT_FIX.** Implementation success and
-  diagnostic/reference-quality evidence are positive. The 3.7k improvement
-  and margin dependence indicate sampling noise is real, while the observed
-  terminal traces do not identify one repeated rollout-policy or utility-term
-  mechanism that meets the prescribed offline screening rule. Do not stack a
-  heuristic, alter utility weights, introduce a VNet, or run a gameplay gate
-  from this result; a future follow-up needs a more stratified corpus and an
-  externally justified outcome reference if it is to distinguish utility
-  correctness from search-noise effects.
+- **Verdict:** **NO_SIMPLE_ROLLOUT_FIX.** Implementation success and the
+  corrected deterministic-scope diagnostic are positive. The clean 3.7k
+  improvement and margin dependence indicate budget-sensitive root estimates
+  are real, while the observed terminal traces do not identify one repeated
+  rollout-policy or utility-term mechanism that meets the prescribed offline
+  screening rule. The mixed stochastic-reference metrics are descriptive only
+  and are not used to claim a 56% regret reduction. Do not stack a heuristic,
+  alter utility weights, introduce a VNet, or run a gameplay gate from this
+  result; a future follow-up needs a more stratified corpus and an externally
+  justified outcome reference if it is to distinguish utility correctness
+  from search-noise effects.
