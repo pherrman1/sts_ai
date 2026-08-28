@@ -146,6 +146,24 @@ The model remains default-off behind `STS_SILVER_VNET_LEAF_MODEL` plus
 `STS_SILVER_VNET_LEAF_DIRECT`; its small gameplay gate does not authorize
 promotion.
 
+### Silver parent-action policy experiment
+
+`silver_parent_policy_features` restores each complete valid 25k-A parent from
+the preserved `BattleStateWire`, enumerates the pinned Silver root actions
+without running a simulation, lowers each semantic identity through the live
+bridge, and emits `combatPolicyFeatureNames` /
+`combatExtractPolicyFeatures` rows. Teacher, restored, and emitted fingerprint
+sets must match exactly; duplicate, missing, extra, incompatible, or partially
+labelled action sets fail closed.
+
+`tools/train_silver_parent_policy.py` reserves every parent with an independent
+25k-B row before splitting or matrix construction. It trains one deterministic
+XGBoost squared-error model on
+`Q_25kA(s,a) - mean_b Q_25kA(s,b)`, retaining raw corrected Q and visits only
+as diagnostics. The untouched 25k-B parents compare the model with the exact
+current Silver root-edge ordering and the 1k-A, 10k-A, and 25k-A teachers. This
+pipeline is offline-only and does not install scores into Silver selection.
+
 ### Combat schema
 
 `src/sim/search/CombatValueNet.cpp` is the canonical producer:

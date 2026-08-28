@@ -441,6 +441,26 @@ BattleContext liveLeafBattleContext(const silver_bridge::BattleStateWire &in) {
     loadLiveLeafPile(out.cards.drawPile, in.drawPile);
     loadLiveLeafPile(out.cards.discardPile, in.discardPile);
     loadLiveLeafPile(out.cards.exhaustPile, in.exhaustPile);
+    for (std::size_t i = 0; i < out.cardSelectInfo.cards.size(); ++i)
+        out.cardSelectInfo.cards[i] = static_cast<CardId>(in.cardSelect.cards[i]);
+    out.cardSelectInfo.canPickZero = in.cardSelect.canPickZero;
+    out.cardSelectInfo.canPickAnyNumber = in.cardSelect.canPickAnyNumber;
+    out.cardSelectInfo.pickCount = in.cardSelect.pickCount;
+    out.cardSelectInfo.data0 = in.cardSelect.data0;
+    out.cardSelectInfo.cardSelectTask = static_cast<CardSelectTask>(in.cardSelect.task);
+    const auto &queue = in.curCardQueueItem;
+    out.curCardQueueItem.card = liveLeafCard(queue.card);
+    out.curCardQueueItem.target = queue.target;
+    out.curCardQueueItem.isEndTurn = queue.isEndTurn;
+    out.curCardQueueItem.triggerOnUse = queue.triggerOnUse;
+    out.curCardQueueItem.ignoreEnergyTotal = queue.ignoreEnergyTotal;
+    out.curCardQueueItem.energyOnUse = queue.energyOnUse;
+    out.curCardQueueItem.freeToPlay = queue.freeToPlay;
+    out.curCardQueueItem.randomTarget = queue.randomTarget;
+    out.curCardQueueItem.autoplay = queue.autoplay;
+    out.curCardQueueItem.regretCardCount = queue.regretCardCount;
+    out.curCardQueueItem.purgeOnUse = queue.purgeOnUse;
+    out.curCardQueueItem.exhaustOnUse = queue.exhaustOnUse;
     return out;
 }
 
@@ -576,6 +596,32 @@ std::vector<float> silverLiveLeafCanonicalFeaturesImpl(
     std::vector<float> features(combatFeatureCount());
     combatExtractFeatures(liveLeafBattleContext(wire), features.data());
     return features;
+}
+
+std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
+        const silver_bridge::BattleStateWire &wire) {
+    g_richCombatFeatures = true;
+    auto live = liveLeafBattleContext(wire);
+    const auto semantics = silver_bridge::enumerateSilverLegalActions(wire);
+    if (semantics.empty()) throw std::runtime_error("restored Silver parent has no legal actions");
+    std::unordered_set<std::string> fingerprints;
+    std::vector<SilverPolicyFeatureRow> rows;
+    rows.reserve(semantics.size());
+    for (std::size_t i = 0; i < semantics.size(); ++i) {
+        const auto fingerprint = silver_bridge::semanticActionFingerprint(semantics[i]);
+        if (!fingerprints.insert(fingerprint).second)
+            throw std::runtime_error("duplicate restored Silver action fingerprint: " + fingerprint);
+        const auto resolved = resolveSilverSemanticAction(live, semantics[i]);
+        if (!resolved.ok)
+            throw std::runtime_error("cannot lower restored Silver action " + fingerprint + ": " + resolved.error);
+        SilverPolicyFeatureRow row;
+        row.actionFingerprint = fingerprint;
+        row.silverOrder = static_cast<int>(i);
+        row.features.resize(combatPolicyFeatureCount());
+        combatExtractPolicyFeatures(live, resolved.action, row.features.data());
+        rows.push_back(std::move(row));
+    }
+    return rows;
 }
 
 void writeLeafVNetObservation(std::uint64_t runSeed, int decision,
@@ -1298,6 +1344,11 @@ double silverLiveLeafVNetPredictionForTest(
 std::vector<float> silverLiveLeafCanonicalFeatures(
         const silver_bridge::BattleStateWire &wire) {
     return silverLiveLeafCanonicalFeaturesImpl(wire);
+}
+
+std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(
+        const silver_bridge::BattleStateWire &wire) {
+    return silverLiveParentPolicyFeaturesImpl(wire);
 }
 
 void installSilverLiveBackend() {
