@@ -11406,6 +11406,7 @@ struct OocFactorManifestRow {
     std::uint64_t seed;
     int decIdx, act, floor, screen;
     std::uint32_t currentBits, factorBits;
+    std::array<int,7> currentDescriptor, factorDescriptor;
 };
 
 struct OocFactorResolvedDecision {
@@ -11419,17 +11420,40 @@ struct OocFactorResolvedDecision {
 static void oocFactorEvaluate(const std::string &manifestFile,
                               const std::string &outFile, int referenceSims,
                               int futures, int futureStart, int expectedDecisions,
-                              bool marginalTradeoff = false) {
+                              bool marginalTradeoff = false,
+                              bool boundedK3 = false) {
     std::ifstream in(manifestFile);
     if (!in) throw std::runtime_error("oocfactoreval: cannot open manifest");
     std::string line;
     std::getline(in, line);
     if (line.empty()) throw std::runtime_error("oocfactoreval: manifest header is missing");
-    const std::string marginalHeader =
-        "seed,decIdx,act,floor,screen,safeBits,strengthBits";
-    if (marginalTradeoff && line != marginalHeader
-            && line.rfind(marginalHeader + ',', 0) != 0)
+    std::vector<std::string> header;
+    { std::stringstream hs(line); std::string h;
+      while (std::getline(hs, h, ',')) {
+          if (!h.empty() && h.back() == '\r') h.pop_back();
+          if (h.size() >= 2 && h.front() == '"' && h.back() == '"')
+              h = h.substr(1, h.size() - 2);
+          header.push_back(h);
+      } }
+    std::unordered_map<std::string,int> col;
+    for (int i = 0; i < (int)header.size(); ++i) col[header[i]] = i;
+    for (const char *name : {"seed","decIdx","act","floor","screen"})
+        if (!col.count(name)) throw std::runtime_error("oocfactoreval: manifest header mismatch");
+    const char *safeBitsCol = col.count("safeActionBits") ? "safeActionBits" : "safeBits";
+    const char *strengthBitsCol = col.count("strengthActionBits") ? "strengthActionBits" : "strengthBits";
+    if (marginalTradeoff && (!col.count(safeBitsCol) || !col.count(strengthBitsCol)))
         throw std::runtime_error("oocfactoreval: marginal manifest header mismatch");
+    const char *safeDescriptorNames[] = {
+        "safeActionType","safeC1","safeC2","safeC3","safeCand1","safeCand2","safeCand3"};
+    const char *strengthDescriptorNames[] = {
+        "strengthActionType","strengthC1","strengthC2","strengthC3",
+        "strengthCand1","strengthCand2","strengthCand3"};
+    if (boundedK3) {
+        for (const char *name : safeDescriptorNames)
+            if (!col.count(name)) throw std::runtime_error("oocfactoreval: missing semantic column " + std::string(name));
+        for (const char *name : strengthDescriptorNames)
+            if (!col.count(name)) throw std::runtime_error("oocfactoreval: missing semantic column " + std::string(name));
+    }
     std::vector<OocFactorManifestRow> manifest;
     while (std::getline(in, line)) {
         if (line.empty()) continue;
@@ -11444,10 +11468,22 @@ static void oocFactorEvaluate(const std::string &manifestFile,
         if ((!marginalTradeoff && c.size() != 7)
                 || (marginalTradeoff && c.size() < 7))
             throw std::runtime_error("oocfactoreval: malformed manifest row");
-        manifest.push_back({std::stoull(c[0]), std::stoi(c[1]), std::stoi(c[2]),
-                            std::stoi(c[3]), std::stoi(c[4]),
-                            (std::uint32_t)std::stoull(c[5]),
-                            (std::uint32_t)std::stoull(c[6])});
+        auto at = [&](const char *name) -> const std::string& { return c.at(col.at(name)); };
+        std::array<int,7> safeDescriptor{}, strengthDescriptor{};
+        if (boundedK3) {
+            for (int i = 0; i < 7; ++i) {
+                safeDescriptor[i] = std::stoi(at(safeDescriptorNames[i]));
+                strengthDescriptor[i] = std::stoi(at(strengthDescriptorNames[i]));
+            }
+            if (safeDescriptor == strengthDescriptor)
+                throw std::runtime_error("oocfactoreval: safe and strength descriptors are identical");
+        }
+        manifest.push_back({std::stoull(at("seed")), std::stoi(at("decIdx")),
+                            std::stoi(at("act")), std::stoi(at("floor")),
+                            std::stoi(at("screen")),
+                            (std::uint32_t)std::stoull(at(marginalTradeoff ? safeBitsCol : "currentBits")),
+                            (std::uint32_t)std::stoull(at(marginalTradeoff ? strengthBitsCol : "factorBits")),
+                            safeDescriptor, strengthDescriptor});
     }
     if ((int)manifest.size() != expectedDecisions)
         throw std::runtime_error("oocfactoreval: guarded decision count does not match manifest");
@@ -11457,6 +11493,13 @@ static void oocFactorEvaluate(const std::string &manifestFile,
     // therefore fails atomically instead of leaving a partial adjudication.
     std::vector<OocFactorResolvedDecision> resolved;
     resolved.reserve(manifest.size());
+    std::ofstream preflight;
+    if (futures == 0) {
+        preflight.open(outFile);
+        if (!preflight) throw std::runtime_error("oocfactoreval: cannot open preflight output");
+        preflight << "seed,decIdx,act,floor,screen,replayValid,matchedDecision,"
+                     "safeMatchCount,strengthMatchCount\n";
+    }
     for (const auto &m : manifest) {
         GameContext gc(CharacterClass::IRONCLAD, m.seed, 0);
         vDisconnect();
@@ -11464,7 +11507,8 @@ static void oocFactorEvaluate(const std::string &manifestFile,
         agent.simulationCountBase = 1000;
         agent.rng = std::default_random_engine(m.seed);
         PathHistory path; t_curPath = &path;
-        int decIdx = 0; bool found = false;
+        int decIdx = 0, safeMatchCount = 0, strengthMatchCount = 0;
+        bool found = false, matchedDecision = false;
         while (gc.outcome == GameOutcome::UNDECIDED) {
             path.update(gc);
             const int screen = (int)gc.screenState;
@@ -11479,11 +11523,22 @@ static void oocFactorEvaluate(const std::string &manifestFile,
                 if (actions.size() >= 2) {
                     if (decIdx == m.decIdx && gc.act == m.act
                         && gc.floorNum == m.floor && screen == m.screen) {
+                        matchedDecision = true;
                         int ci = -1, fi = -1;
                         for (int i = 0; i < (int)actions.size(); ++i) {
-                            if (actions[i].bits == m.currentBits && ci < 0) ci = i;
-                            if (actions[i].bits == m.factorBits && fi < 0) fi = i;
+                            if (boundedK3) {
+                                int at,c1,c2,c3,ca1,ca2,ca3;
+                                strategicCands(gc, actions[i], at,c1,c2,c3,ca1,ca2,ca3);
+                                const std::array<int,7> descriptor{at,c1,c2,c3,ca1,ca2,ca3};
+                                if (descriptor == m.currentDescriptor) { ci = i; ++safeMatchCount; }
+                                if (descriptor == m.factorDescriptor) { fi = i; ++strengthMatchCount; }
+                            } else {
+                                if (actions[i].bits == m.currentBits && ci < 0) ci = i;
+                                if (actions[i].bits == m.factorBits && fi < 0) fi = i;
+                            }
                         }
+                        if (boundedK3 && safeMatchCount != 1) ci = -1;
+                        if (boundedK3 && strengthMatchCount != 1) fi = -1;
                         if (ci >= 0 && fi >= 0) {
                             found = true;
                             resolved.push_back({m, detachedCounterfactualCopy(gc), path,
@@ -11497,15 +11552,26 @@ static void oocFactorEvaluate(const std::string &manifestFile,
             stepFrozenV4Ooc(gc, agent);
         }
         t_curPath = nullptr;
-        if (!found)
+        if (futures == 0) {
+            preflight << m.seed << ',' << m.decIdx << ',' << m.act << ',' << m.floor
+                      << ',' << m.screen << ',' << (found ? 1 : 0) << ','
+                      << (matchedDecision ? 1 : 0) << ',' << safeMatchCount << ','
+                      << strengthMatchCount << '\n';
+        } else if (!found) {
             throw std::runtime_error("oocfactoreval: manifest decision/action did not replay");
+        }
     }
     std::cout << "oocfactoreval preflight resolved " << resolved.size() << '/'
               << manifest.size() << " decisions\n";
+    if (futures == 0) return;
 
     std::ofstream out(outFile);
     if (!out) throw std::runtime_error("oocfactoreval: cannot open output");
-    if (marginalTradeoff) {
+    if (boundedK3) {
+        out << "seed,decIdx,act,floor,screen,role,actionBits,future,continuationSeed,"
+               "hiddenSeed,labelWon,labelHp,labelFloor,labelBootstrap,survivedH,"
+               "continuationValue,qProduct,denseK3,valid\n";
+    } else if (marginalTradeoff) {
         out << "seed,decIdx,act,floor,screen,role,actionBits,future,continuationSeed,"
                "hiddenSeed,won,floorEnd,hpEnd,adjudicatedValue,valid\n";
     } else {
@@ -11531,16 +11597,25 @@ static void oocFactorEvaluate(const std::string &manifestFile,
                                       std::pair<char,int>{secondRole, d.factorIdx}}) {
                 GameContext branch = detachedCounterfactualCopy(siblingBase);
                 d.actions[roleIdx.second].execute(branch);
-                const OocCounterfactualResult r = finishOocCounterfactual(
-                    std::move(branch), referenceSims, contSeed, d.prePath,
-                    -1, false, nullptr, 0, nullptr, false);
+                const OocCounterfactualResult r = boundedK3
+                    ? evaluateStrategicBranch(std::move(branch), contSeed, d.prePath)
+                    : finishOocCounterfactual(
+                        std::move(branch), referenceSims, contSeed, d.prePath,
+                        -1, false, nullptr, 0, nullptr, false);
                 out << m.seed << ',' << m.decIdx << ',' << m.act << ',' << m.floor
                     << ',' << m.screen << ',' << roleIdx.first << ','
                     << d.actions[roleIdx.second].bits << ',' << future << ','
                     << contSeed << ',';
                 if (marginalTradeoff) out << hiddenSeed << ',';
-                out << r.won << ',' << r.floor << ',' << r.hp
-                    << ',' << (10.0 * r.won + r.hp) << ',' << (r.valid ? 1 : 0) << '\n';
+                if (boundedK3) {
+                    out << r.won << ',' << r.hp << ',' << r.floor << ','
+                        << r.bootstrapped << ',' << (r.survivedH ? 1 : 0) << ','
+                        << r.won << ',' << (r.survivedH ? r.won : 0.0) << ','
+                        << (10.0 * r.won + r.hp) << ',' << (r.valid ? 1 : 0) << '\n';
+                } else {
+                    out << r.won << ',' << r.floor << ',' << r.hp
+                        << ',' << (10.0 * r.won + r.hp) << ',' << (r.valid ? 1 : 0) << '\n';
+                }
             }
         }
     }
@@ -14158,6 +14233,20 @@ int main(int argc, char **argv) {
                   << " futureStart=" << futureStart << " -> " << out << '\n';
         oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
                           nDecisions, true);
+
+    } else if (mode == "oock3tradeoffeval") {
+        // Resolve the frozen semantic pair before evaluating sibling-shared
+        // marginal futures under the strategic K=3+bootstrap contract.
+        int nDecisions = argc > 2 ? std::stoi(argv[2]) : 0;
+        std::string manifest = argc > 3 ? argv[3] : "build/ooc_targeted/k3_targets.csv";
+        std::string out = argc > 4 ? argv[4] : "build/ooc_targeted/k3_validation.csv";
+        int futures = argc > 5 ? std::stoi(argv[5]) : 16;
+        int futureStart = argc > 6 ? std::stoi(argv[6]) : 1000;
+        std::cout << "oock3tradeoffeval decisions=" << nDecisions
+                  << " futures=" << futures << " futureStart=" << futureStart
+                  << " contract=K3+bootstrap -> " << out << '\n';
+        oocFactorEvaluate(manifest, out, 0, futures, futureStart,
+                          nDecisions, true, true);
 
     } else if (mode == "mcts") {
         int sims          = argc > 2 ? std::stoi(argv[2]) : 2000;
