@@ -40,6 +40,23 @@ Evidence:
 - `apps/one_combat.cpp::strategicMargGen`
 - `tools/convert_marg_to_trainer.py`, `tools/reconstruct_marg_csv.py`
 
+### Silver root action-pruning ladder
+
+Phase 1 is complete: a frozen, tie-safe candidate-retention audit evaluated
+current Silver order, frozen parent-Q scores, and 1k/10k/25k-A teacher Q and
+visit rankings against all 93 independent 25k-B anchors. Its primary population
+was the 63 multi-action parents; the 30 single-action parents were reported
+separately and do not inflate retention claims. Frozen-model top-3-plus-ties
+retained 95.24% of the B-best actions, but still had two `>=3` regret
+exclusions, so it provides no hard-pruning permission. The Phase 1 decision is
+`PHASE_1_COMPLETE_PHASE_2_AUTHORIZED`: implement and independently gate
+root-only Sequential Halving next, with adaptive allocation disabled. The
+previous rejection of learned ordinary ordering/PUCT remains unchanged.
+
+Evidence: `docs/experiments/evidence/silver_action_pruning_retention_2026-08-28.json`
+(SHA-256 `838f7c23fe985c00d8b609a87f1858a6f231ac7f3245e29da4e8bc077baac0e6`)
+and [ledger-06 Â§188](../../../docs/experiments/ledger-06.md).
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable

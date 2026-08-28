@@ -5389,3 +5389,35 @@ model training was changed.
   pipeline and durable evidence. Complete hashes, contrasts, factorial effects,
   and all 32 paired rows are in
   `docs/experiments/evidence/silver_policy_online_methods_2026-08-28.json`.
+
+## 188. Silver root action-pruning ladder Phase 1: candidate-retention audit (2026-08-28)
+
+- **Hypothesis/method:** Before changing search, can root candidate sets ranked
+  by current Silver order, the frozen parent-Q model, or existing 1k/10k/25k-A
+  teacher Q/visit signals retain the independent 25k-B best action? The
+  analyzer evaluates top-1, top-2, top-3, and top-half (`ceil(K/2)`) candidate
+  rules, always retaining the full exact score tie at the boundary. It uses a
+  deterministic 5,000-replicate parent bootstrap (seed `20260828`) and reports
+  the 30 single-action anchors only as a secondary integrity population.
+- **Inputs/population:** hash-matched relabel / selected corpus / manifest /
+  features / frozen model SHA-256s were respectively
+  `abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c`,
+  `bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7`,
+  `db67ff9df6a1578a46e4e09038b5f2548772fc9c70fc54a00b1576f659883cd7`,
+  `0377aaef862362cdf1fa3925579a73b66381cbd646762a0453b6a939149923bd`,
+  and `3de211d354c2e03de2516c5ab68d35ec8aba40a4c02cb61937c02925221d1f20`.
+  The primary population is 63 independent 25k-B multi-action parents / 340
+  actions; the secondary integrity population is 30 single-action parents.
+- **Results:** current Silver top-2 retained the B-best action on 76.19% of
+  primary parents with mean best-retained regret 1.274; frozen-model top-2 was
+  87.30% / 0.974. Frozen-model top-3 was 95.24% / 0.549 but still excluded a
+  B-best action with regret at least 3 on 2/63 parents (3.17%). The audit found
+  17 feature-identical action groups and 26 exact model-tied groups; no tie is
+  silently resolved by stable ordering. Max-Q / max-visit agreement was
+  96.83%/98.41%/100% at 1k/10k/25k-A respectively.
+- **Verdict/authorization:** **`PHASE_1_COMPLETE_PHASE_2_AUTHORIZED`**. This
+  is descriptive offline evidence, not an authorization for permanent hard
+  pruning or learned runtime ordering. Sequential Halving does not depend on
+  the model and remains the next gated implementation phase. Full report:
+  `docs/experiments/evidence/silver_action_pruning_retention_2026-08-28.json`
+  (SHA-256 `838f7c23fe985c00d8b609a87f1858a6f231ac7f3245e29da4e8bc077baac0e6`).
