@@ -129,6 +129,14 @@ target_include_directories(silver-parent-policy-features PRIVATE include json/in
 target_link_libraries(silver-parent-policy-features PRIVATE silver_live_backend)
 target_link_options(silver-parent-policy-features PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-action-pruning-replay
+    apps/silver_action_pruning_replay.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(silver-action-pruning-replay PROPERTIES
+    OUTPUT_NAME silver_action_pruning_replay)
+target_include_directories(silver-action-pruning-replay PRIVATE include json/include)
+target_link_libraries(silver-action-pruning-replay PRIVATE silver_live_backend)
+target_link_options(silver-action-pruning-replay PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-native-parity-runner third_party/silver_lightspeed/bridge/SilverNativeFixtureRunner.cpp)
 set_target_properties(silver-native-parity-runner PROPERTIES OUTPUT_NAME silver_native_parity_runner)
 set_target_properties(silver-native-parity-runner PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)

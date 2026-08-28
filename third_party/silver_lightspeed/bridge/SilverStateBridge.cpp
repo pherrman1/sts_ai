@@ -631,6 +631,14 @@ const char *silverReuseCapModeName(SilverReuseCapMode mode) {
     return "invalid";
 }
 
+const char *silverRootActionModeName(SilverRootActionMode mode) {
+    switch (mode) {
+        case SilverRootActionMode::ORDINARY: return "ordinary";
+        case SilverRootActionMode::SEQUENTIAL_HALVING: return "sequential_halving";
+    }
+    return "invalid";
+}
+
 const char *silverRerootFallbackReasonName(SilverRerootFallbackReason reason) {
     switch (reason) {
         case SilverRerootFallbackReason::NONE: return "none";
@@ -715,6 +723,7 @@ public:
     SilverSearchDecisionDiagnostic decisionDiagnostic {};
     bool collectDecisionDiagnostics = false;
     std::vector<SilverRootActionSummary> rootActionSummaries;
+    SilverRootActionPruningTelemetry rootPruning;
 
     void configure(const SilverSearchConfig &config) {
         searcher->explorationParameter = config.explorationParameter;
@@ -843,10 +852,75 @@ public:
     const sts::search::BattleSearcher::Edge *searchAndChoose(const SilverSearchConfig &config,
                                                                std::int64_t &simulations) {
         rootActionSummaries.clear();
+        rootPruning = {};
+        rootPruning.mode = config.rootActionMode;
         searchStatsBefore = searcher->stats;
         const auto before = searchStatsBefore.steps;
-        searcher->search(config.simulationsPerDecision);
+        const sts::search::BattleSearcher::Edge *best = nullptr;
+        if (config.rootActionMode == SilverRootActionMode::SEQUENTIAL_HALVING) {
+            searcher->ensureRootActions();
+            if (searcher->root != nullptr) {
+                auto &edges = searcher->root->edges;
+                rootPruning.initialLegalActions = static_cast<int>(edges.size());
+                rootPruning.initialActiveActions = static_cast<int>(edges.size());
+                std::vector<int> active;
+                active.reserve(edges.size());
+                for (int index = 0; index < static_cast<int>(edges.size()); ++index)
+                    active.push_back(index);
+                std::int64_t remaining = config.simulationsPerDecision;
+                auto roundsRemaining = [](std::size_t count) {
+                    int rounds = 0;
+                    while (count > 1) { ++rounds; count = (count + 1) / 2; }
+                    return rounds;
+                };
+                while (active.size() > 1) {
+                    std::int64_t minimumFuture = 0;
+                    for (std::size_t count = (active.size() + 1) / 2; count > 1;
+                            count = (count + 1) / 2) minimumFuture += static_cast<std::int64_t>(count);
+                    const int remainingRounds = roundsRemaining(active.size());
+                    const bool everyEdgeFeasible = remaining
+                        >= static_cast<std::int64_t>(active.size()) + minimumFuture;
+                    const std::int64_t roundBudget = everyEdgeFeasible
+                        ? std::max<std::int64_t>(active.size(), remaining / remainingRounds)
+                        : std::min<std::int64_t>(remaining, active.size());
+                    for (std::int64_t pull = 0; pull < roundBudget; ++pull)
+                        searcher->stepRootEdge(active[static_cast<std::size_t>(pull) % active.size()]);
+                    remaining -= roundBudget;
+                    std::sort(active.begin(), active.end(), [&edges](int lhs, int rhs) {
+                        const auto q = [&edges](int index) {
+                            const auto &edge = edges[index];
+                            return edge.node != nullptr && edge.node->simulationCount > 0
+                                ? std::pair<bool, double>{true, edge.node->evaluationSum / edge.node->simulationCount}
+                                : std::pair<bool, double>{false, 0.0};
+                        };
+                        const auto left = q(lhs), right = q(rhs);
+                        if (left.first != right.first) return left.first;
+                        if (left.first && left.second != right.second) return left.second > right.second;
+                        return lhs < rhs; // pinned Silver edge order is the exact-Q tie break.
+                    });
+                    const std::size_t survivors = (active.size() + 1) / 2;
+                    for (std::size_t index = survivors; index < active.size(); ++index) {
+                        rootPruning.eliminatedActionFingerprints.push_back(semanticActionFingerprint(
+                            semanticFromAction(searcher->root->state, edges[active[index]].action)));
+                    }
+                    active.resize(survivors);
+                    ++rootPruning.eliminationRounds;
+                    rootPruning.activeCountsAfterElimination.push_back(static_cast<int>(active.size()));
+                }
+                if (!active.empty()) {
+                    // A non-feasible tiny budget may leave remainder after its final elimination.
+                    // Spend every requested simulation on the sole legal survivor.
+                    while (remaining-- > 0) searcher->stepRootEdge(active.front());
+                    best = &edges[active.front()];
+                    rootPruning.finalCandidateFingerprint = semanticActionFingerprint(
+                        semanticFromAction(searcher->root->state, best->action));
+                }
+            }
+        } else {
+            searcher->search(config.simulationsPerDecision);
+        }
         simulations = searcher->stats.steps - before;
+        rootPruning.simulationsAdded = simulations;
         if (searcher->root == nullptr || searcher->root->edges.empty()) {
             if (collectDecisionDiagnostics) {
                 decisionDiagnostic.allocatedNodesAfterSearch = static_cast<std::int64_t>(searcher->allNodes.size());
@@ -857,10 +931,10 @@ public:
             }
             return nullptr;
         }
-        const sts::search::BattleSearcher::Edge *best = nullptr;
         std::int32_t visits = -1;
         for (const auto &edge : searcher->root->edges) {
-            if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
+            if (config.rootActionMode == SilverRootActionMode::ORDINARY
+                    && edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
             if (config.collectRootActionSummaries) {
                 SilverRootActionSummary summary;
                 summary.action = semanticFromAction(searcher->root->state, edge.action);
@@ -936,6 +1010,7 @@ SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
     result.rerootMissDiagnostic = session.rerootMissDiagnostic;
     const auto *best = session.searchAndChoose(config, result.simulations);
     result.telemetry = telemetryDelta(session.searcher->stats, session.searchStatsBefore);
+    result.rootPruning = session.rootPruning;
     if (config.collectRootActionSummaries) {
         result.rootActionSummaries = session.rootActionSummaries;
         result.rootUncertainty = summarizeSilverRoot(result.rootActionSummaries);
@@ -943,6 +1018,7 @@ SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
     if (config.collectDecisionDiagnostics) {
         result.diagnostic = session.decisionDiagnostic;
         result.diagnostic.rootUncertainty = result.rootUncertainty;
+        result.diagnostic.rootPruning = result.rootPruning;
     }
     if (best == nullptr) {
         result.failureReason = "no_selected_action";
@@ -1363,6 +1439,10 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
     SilverDecisionResult result;
     if (config.simulationsPerDecision <= 0) {
         result.failureReason = "invalid_simulation_budget";
+        return result;
+    }
+    if (config.rootActionMode != SilverRootActionMode::ORDINARY && config.adaptiveEnabled) {
+        result.failureReason = "root_action_mode_adaptive_conflict";
         return result;
     }
     try {

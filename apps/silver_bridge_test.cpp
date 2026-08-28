@@ -274,6 +274,44 @@ int main() {
               && qualityFresh.simulations == 16 && !qualityFingerprint.empty() && chosenInSummary,
           "fresh quality search must have zero inherited visits and describe its chosen semantic root action");
 
+    // Root Sequential Halving is opt-in. The ordinary/default path remains
+    // visit-ranked UCT; the treatment consumes the same exact new budget and
+    // returns the final survivor, never an action eliminated by an earlier Q
+    // round. NONE makes this an isolated fresh-root accounting fixture.
+    auto ordinaryRootConfig = qualityConfig;
+    ordinaryRootConfig.simulationsPerDecision = 64;
+    ordinaryRootConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
+    const auto ordinaryDefault = silver_bridge::runSilverDecision(firstWire, ordinaryRootConfig);
+    ordinaryRootConfig.rootActionMode = silver_bridge::SilverRootActionMode::ORDINARY;
+    const auto ordinaryExplicit = silver_bridge::runSilverDecision(firstWire, ordinaryRootConfig);
+    auto halvingConfig = ordinaryRootConfig;
+    halvingConfig.rootActionMode = silver_bridge::SilverRootActionMode::SEQUENTIAL_HALVING;
+    const auto halving = silver_bridge::runSilverDecision(firstWire, halvingConfig);
+    std::set<std::string> eliminatedHalving(halving.rootPruning.eliminatedActionFingerprints.begin(),
+                                             halving.rootPruning.eliminatedActionFingerprints.end());
+    const auto halvingFingerprint = silver_bridge::semanticActionFingerprint(halving.action);
+    check(ordinaryDefault.accepted && ordinaryExplicit.accepted
+              && ordinaryDefault.simulations == 64 && ordinaryExplicit.simulations == 64
+              && silver_bridge::semanticActionFingerprint(ordinaryDefault.action)
+                  == silver_bridge::semanticActionFingerprint(ordinaryExplicit.action),
+          "default/off root mode must retain ordinary UCT behavior exactly");
+    check(halving.accepted && halving.simulations == 64
+              && halving.rootPruning.mode == silver_bridge::SilverRootActionMode::SEQUENTIAL_HALVING
+              && halving.rootPruning.simulationsAdded == 64
+              && halving.rootPruning.initialLegalActions >= 2
+              && halving.rootPruning.initialActiveActions == halving.rootPruning.initialLegalActions
+              && halving.rootPruning.eliminationRounds > 0
+              && !halvingFingerprint.empty()
+              && halvingFingerprint == halving.rootPruning.finalCandidateFingerprint
+              && !eliminatedHalving.count(halvingFingerprint),
+          "root Sequential Halving must spend its exact budget and return a non-eliminated final candidate");
+    auto forbiddenAdaptiveHalving = halvingConfig;
+    forbiddenAdaptiveHalving.adaptiveEnabled = true;
+    const auto adaptiveHalving = silver_bridge::runSilverDecision(firstWire, forbiddenAdaptiveHalving);
+    check(!adaptiveHalving.accepted
+              && adaptiveHalving.failureReason == "root_action_mode_adaptive_conflict",
+          "root pruning experiments must fail closed when adaptive allocation is enabled");
+
     // The leaf observer is the narrow, type-free seam used by live Silver
     // instrumentation.  A shadow observer must see the same leaf at START
     // and END without changing the search result; a direct observer may
