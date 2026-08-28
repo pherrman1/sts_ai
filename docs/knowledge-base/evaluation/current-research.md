@@ -131,6 +131,12 @@ artifact.
 
 ## Closed lines
 
+- Silver 25k parent-Q action scoring is closed after the preregistered offline
+  gate rejected it (`POLICY_MODEL_OFFLINE_REJECTED`, ledger §186). The model
+  improved exact-order top-action agreement but achieved only +2.497pp
+  pairwise concordance with 82.2% bootstrap probability positive and 65.58%
+  probability of lower mean regret, missing the registered bars. Do not start
+  an online learned ordering or PUCT prior experiment from this artifact.
 - Raw deep-search utility as the combat leaf target, repeated DAgger, residual
   correction, and the sampled terminal-endHP relabeling did not improve the
   recorded online gate (`EXPERIMENTS.md` §166).

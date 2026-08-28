@@ -33,9 +33,18 @@ points worse top-action agreement. The only verdicts are
   independent 25k-B anchors; all 93 anchors valid. The four invalid A parents
   have the preserved empty failure reason and zero simulations.
 
-The decision-bearing result, exact frozen/GCP SHA, model hash, costs, metrics,
-bootstrap, diagnostics, and final verdict remain pending the draft-PR review,
-authoritative CI, and frozen-SHA GCP run.
+The definitive reviewed and CI-passed experiment SHA was
+`85599a3d2c6e55f32236ea59c814bdd1250d73bb`. On 93 untouched 25k-B parents,
+the model improved exact-order pairwise concordance by 2.497pp and top-action
+agreement by 8.602pp, while reducing mean regret by 0.181. However, the
+5,000-parent bootstrap probabilities were only 82.20% for positive pairwise
+improvement and 65.58% for lower mean regret. Both missed the registered 90%
+bar, and pairwise point improvement missed 3pp.
+
+Final verdict: **`POLICY_MODEL_OFFLINE_REJECTED`**. No compact native export,
+native model parity, online prior integration, PUCT, or gameplay run is
+authorized. Exact metrics, hashes, costs, and descriptive subgroups are in
+`docs/experiments/evidence/silver_parent_policy_25k_2026-08-28.json`.
 
 The first frozen feature attempt emitted no dataset and failed closed on a
 WARCRY parent because the pre-existing wire-to-live feature adapter did not
