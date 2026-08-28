@@ -208,6 +208,7 @@ namespace sts::search {
         std::vector<Node*> searchStack;        // descent path; doubles as the cycle-guard set (linear scan, depth is small)
         std::vector<Action> actionStack;
         int forcedRootEdge = -1;
+        const std::vector<int> *activeRootEdges = nullptr;
 
         SimpleAgent rolloutAgent;
         BattleContext rolloutScratch;   // reused playout buffer: copy-assigning into it keeps the card-pile vector capacity, avoiding a fresh allocation per rollout
@@ -229,6 +230,10 @@ namespace sts::search {
         // Experimental root-only primitive. It preserves ordinary selection
         // below the first root edge and never changes the root edge vector.
         void stepRootEdge(int rootEdgeIdx);
+        // Experimental root-only masked-UCT primitive.  The listed indices
+        // are selected with the existing UCT score; all descendant nodes use
+        // ordinary selection.
+        void stepRootActiveEdges(const std::vector<int> &rootEdgeIndices);
         void ensureRootActions();
         Action getBestAction() const;
         const std::vector<Edge>& getRootEdges() const { return root->edges; }
@@ -250,6 +255,7 @@ namespace sts::search {
 
         double evaluateEdge(const Node &parent, int edgeIdx, double logParentVisits);
         int selectBestEdgeToSearch(const Node &cur);
+        int selectBestEdgeToSearch(const Node &cur, const std::vector<int> &edgeIndices);
 
         double rolloutToEnd(BattleContext &state, std::vector<Action> &actionStack,
                             std::uint64_t rootStateHash, const Node *parentState,

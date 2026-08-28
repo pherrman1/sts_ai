@@ -283,6 +283,22 @@ void search::BattleSearcher::stepRootEdge(int rootEdgeIdx) {
     step();
 }
 
+void search::BattleSearcher::stepRootActiveEdges(const std::vector<int> &rootEdgeIndices) {
+    ensureRootActions();
+    if (root == nullptr || rootEdgeIndices.empty())
+        throw std::out_of_range("BattleSearcher::stepRootActiveEdges empty root mask");
+    for (const auto index : rootEdgeIndices) {
+        if (index < 0 || index >= static_cast<int>(root->edges.size()))
+            throw std::out_of_range("BattleSearcher::stepRootActiveEdges invalid root edge");
+    }
+    struct ResetActiveRootEdges {
+        const std::vector<int> *&value;
+        ~ResetActiveRootEdges() { value = nullptr; }
+    } reset {activeRootEdges};
+    activeRootEdges = &rootEdgeIndices;
+    step();
+}
+
 void search::BattleSearcher::searchForMicros(int64_t maxMicros) {
     g_debug_scum_search = this;
     if (isTerminalState(root->state)) return;
@@ -375,8 +391,9 @@ void search::BattleSearcher::step() {
             }
         }
 
-        const int selectIdx = cur == root && forcedRootEdge >= 0
-            ? forcedRootEdge : selectBestEdgeToSearch(*cur);
+        const int selectIdx = cur == root && forcedRootEdge >= 0 ? forcedRootEdge
+            : (cur == root && activeRootEdges != nullptr
+                ? selectBestEdgeToSearch(*cur, *activeRootEdges) : selectBestEdgeToSearch(*cur));
         Edge &edge = cur->edges[selectIdx];
         ++edge.visitCount;
 
@@ -542,6 +559,26 @@ int search::BattleSearcher::selectBestEdgeToSearch(const search::BattleSearcher:
         }
     }
     //std::cout << "\n";
+    return bestEdge;
+}
+
+int search::BattleSearcher::selectBestEdgeToSearch(
+        const search::BattleSearcher::Node &cur, const std::vector<int> &edgeIndices) {
+    if (edgeIndices.empty())
+        throw std::invalid_argument("BattleSearcher::selectBestEdgeToSearch empty edge mask");
+    const double logParentVisits = std::log(cur.simulationCount + 1);
+    int bestEdge = edgeIndices.front();
+    double bestEdgeValue = evaluateEdge(cur, bestEdge, logParentVisits);
+    for (std::size_t index = 1; index < edgeIndices.size(); ++index) {
+        const int edge = edgeIndices[index];
+        const auto value = evaluateEdge(cur, edge, logParentVisits);
+        // Strictly greater retains the supplied (current Silver) edge order
+        // for exact UCT ties.
+        if (value > bestEdgeValue) {
+            bestEdge = edge;
+            bestEdgeValue = value;
+        }
+    }
     return bestEdge;
 }
 

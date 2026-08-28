@@ -312,6 +312,52 @@ int main() {
               && adaptiveHalving.failureReason == "root_action_mode_adaptive_conflict",
           "root pruning experiments must fail closed when adaptive allocation is enabled");
 
+    // Progressive unpruning is a separate root-only mask: eligible roots
+    // begin with the first three pinned Silver edges, unlock one edge after
+    // 16/32/64/128 new simulations, and never select the still-hidden tail.
+    BattleContext progressiveLive = first;
+    progressiveLive.cards.cardsInHand = 7;
+    progressiveLive.cards.hand[0] = card(CardId::STRIKE_RED, 201);
+    progressiveLive.cards.hand[1] = card(CardId::DEFEND_RED, 202);
+    progressiveLive.cards.hand[2] = card(CardId::BASH, 203);
+    progressiveLive.cards.hand[3] = card(CardId::FLEX, 204);
+    progressiveLive.cards.hand[4] = card(CardId::INFLAME, 205);
+    progressiveLive.cards.hand[5] = card(CardId::SHRUG_IT_OFF, 206);
+    progressiveLive.cards.hand[6] = card(CardId::ARMAMENTS, 207);
+    search::CombatKnowledgeState progressiveKnowledge;
+    progressiveKnowledge.initializeFromLiveBattle(progressiveLive);
+    const auto progressiveWire = convert(progressiveLive, gc, progressiveKnowledge);
+    const auto progressiveLegal = silver_bridge::enumerateSilverLegalActions(progressiveWire);
+    auto progressiveConfig = ordinaryRootConfig;
+    progressiveConfig.simulationsPerDecision = 128;
+    progressiveConfig.rootActionMode = silver_bridge::SilverRootActionMode::PROGRESSIVE_UNPRUNING_CURRENT_ORDER;
+    const auto progressive = silver_bridge::runSilverDecision(progressiveWire, progressiveConfig);
+    const auto progressiveFingerprint = silver_bridge::semanticActionFingerprint(progressive.action);
+    const auto &progressiveTelemetry = progressive.rootPruning;
+    const bool inactiveTailUnvisited = progressive.rootActionSummaries.size() > 7
+        && progressive.rootActionSummaries.back().edgeVisits == 0;
+    check(progressiveLegal.size() >= 8 && progressive.accepted && progressive.simulations == 128
+              && progressiveTelemetry.initialLegalActions == static_cast<int>(progressiveLegal.size())
+              && progressiveTelemetry.initialActiveActions == 3
+              && progressiveTelemetry.activationSimulationThresholds
+                  == std::vector<std::int64_t>({16, 32, 64, 128})
+              && progressiveTelemetry.activatedActionFingerprints.size() == 4
+              && progressiveTelemetry.activeCountsDuringSearch
+                  == std::vector<int>({3, 4, 5, 6, 7})
+              && progressiveTelemetry.simulationsAtActiveCounts
+                  == std::vector<std::int64_t>({16, 16, 32, 64, 0})
+              && progressiveTelemetry.simulationsAdded == 128
+              && !progressiveFingerprint.empty()
+              && progressiveFingerprint == progressiveTelemetry.finalCandidateFingerprint
+              && inactiveTailUnvisited,
+          "eligible progressive unpruning must use exact new-simulation thresholds and never select an inactive root edge");
+    auto forbiddenAdaptiveProgressive = progressiveConfig;
+    forbiddenAdaptiveProgressive.adaptiveEnabled = true;
+    const auto adaptiveProgressive = silver_bridge::runSilverDecision(progressiveWire, forbiddenAdaptiveProgressive);
+    check(!adaptiveProgressive.accepted
+              && adaptiveProgressive.failureReason == "root_action_mode_adaptive_conflict",
+          "progressive unpruning must fail closed when adaptive allocation is enabled");
+
     // The leaf observer is the narrow, type-free seam used by live Silver
     // instrumentation.  A shadow observer must see the same leaf at START
     // and END without changing the search result; a direct observer may

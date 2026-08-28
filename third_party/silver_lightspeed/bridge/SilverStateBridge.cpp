@@ -635,6 +635,8 @@ const char *silverRootActionModeName(SilverRootActionMode mode) {
     switch (mode) {
         case SilverRootActionMode::ORDINARY: return "ordinary";
         case SilverRootActionMode::SEQUENTIAL_HALVING: return "sequential_halving";
+        case SilverRootActionMode::PROGRESSIVE_UNPRUNING_CURRENT_ORDER:
+            return "progressive_unpruning_current_order";
     }
     return "invalid";
 }
@@ -913,6 +915,60 @@ public:
                     while (remaining-- > 0) searcher->stepRootEdge(active.front());
                     best = &edges[active.front()];
                     rootPruning.finalCandidateFingerprint = semanticActionFingerprint(
+                        semanticFromAction(searcher->root->state, best->action));
+                }
+            }
+        } else if (config.rootActionMode == SilverRootActionMode::PROGRESSIVE_UNPRUNING_CURRENT_ORDER) {
+            searcher->ensureRootActions();
+            if (searcher->root != nullptr) {
+                auto &edges = searcher->root->edges;
+                rootPruning.initialLegalActions = static_cast<int>(edges.size());
+                // Roots below the eligibility boundary deliberately retain the
+                // ordinary all-action UCT path.
+                if (edges.size() < 6) {
+                    rootPruning.initialActiveActions = static_cast<int>(edges.size());
+                    if (!edges.empty()) {
+                        rootPruning.activeCountsDuringSearch.push_back(static_cast<int>(edges.size()));
+                        rootPruning.simulationsAtActiveCounts.push_back(config.simulationsPerDecision);
+                    }
+                    searcher->search(config.simulationsPerDecision);
+                    std::int32_t visits = -1;
+                    for (const auto &edge : edges) {
+                        if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
+                    }
+                    if (best != nullptr) rootPruning.finalCandidateFingerprint = semanticActionFingerprint(
+                        semanticFromAction(searcher->root->state, best->action));
+                } else {
+                    std::vector<int> active {0, 1, 2};
+                    std::size_t next = active.size();
+                    std::int64_t nextThreshold = 16;
+                    rootPruning.initialActiveActions = static_cast<int>(active.size());
+                    rootPruning.activeCountsDuringSearch.push_back(static_cast<int>(active.size()));
+                    rootPruning.simulationsAtActiveCounts.push_back(0);
+                    for (std::int64_t added = 0; added < config.simulationsPerDecision; ++added) {
+                        searcher->stepRootActiveEdges(active);
+                        ++rootPruning.simulationsAtActiveCounts.back();
+                        // Activations happen *after* the threshold simulation,
+                        // so the next selection sees the newly available edge.
+                        if (added + 1 >= nextThreshold && next < edges.size()) {
+                            const auto &edge = edges[next++];
+                            rootPruning.activationSimulationThresholds.push_back(nextThreshold);
+                            rootPruning.activatedActionFingerprints.push_back(semanticActionFingerprint(
+                                semanticFromAction(searcher->root->state, edge.action)));
+                            active.push_back(static_cast<int>(next - 1));
+                            rootPruning.activeCountsDuringSearch.push_back(static_cast<int>(active.size()));
+                            rootPruning.simulationsAtActiveCounts.push_back(0);
+                            nextThreshold *= 2;
+                        }
+                    }
+                    // The returned candidate must be within the final mask;
+                    // inherited visits on inactive edges never change it.
+                    std::int32_t visits = -1;
+                    for (const auto index : active) {
+                        const auto &edge = edges[index];
+                        if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
+                    }
+                    if (best != nullptr) rootPruning.finalCandidateFingerprint = semanticActionFingerprint(
                         semanticFromAction(searcher->root->state, best->action));
                 }
             }

@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <vector>
 
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverWireJson.h"
@@ -43,6 +44,10 @@ json pruningJson(const silver_bridge::SilverRootActionPruningTelemetry &telemetr
         {"elimination_rounds", telemetry.eliminationRounds},
         {"active_counts_after_elimination", telemetry.activeCountsAfterElimination},
         {"eliminated_action_fingerprints", telemetry.eliminatedActionFingerprints},
+        {"activation_simulation_thresholds", telemetry.activationSimulationThresholds},
+        {"activated_action_fingerprints", telemetry.activatedActionFingerprints},
+        {"active_counts_during_search", telemetry.activeCountsDuringSearch},
+        {"simulations_at_active_counts", telemetry.simulationsAtActiveCounts},
         {"final_candidate_fingerprint", telemetry.finalCandidateFingerprint},
         {"simulations_added", telemetry.simulationsAdded},
     };
@@ -52,8 +57,9 @@ json pruningJson(const silver_bridge::SilverRootActionPruningTelemetry &telemetr
 
 int main(int argc, char **argv) {
     try {
-        if (argc != 4) {
-            std::cerr << "usage: silver_action_pruning_replay CORPUS.jsonl RELABEL.jsonl OUTPUT.jsonl\n";
+        const bool progressiveCurrent = argc == 5 && std::string(argv[4]) == "--progressive-current";
+        if (argc != 4 && !progressiveCurrent) {
+            std::cerr << "usage: silver_action_pruning_replay CORPUS.jsonl RELABEL.jsonl OUTPUT.jsonl [--progressive-current]\n";
             return 2;
         }
         std::map<std::string, Parent> parents;
@@ -92,12 +98,18 @@ int main(int argc, char **argv) {
         if (anchors.size() != 93) throw std::runtime_error("expected 93 independent 25k-B anchors");
         std::ofstream output(argv[3]);
         if (!output) throw std::runtime_error("cannot open output");
-        constexpr std::int64_t budgets[] = {64, 128, 256, 1000};
+        const std::vector<std::int64_t> budgets = progressiveCurrent
+            ? std::vector<std::int64_t>{128, 256, 1000}
+            : std::vector<std::int64_t>{64, 128, 256, 1000};
+        const std::vector<silver_bridge::SilverRootActionMode> modes = progressiveCurrent
+            ? std::vector<silver_bridge::SilverRootActionMode>{silver_bridge::SilverRootActionMode::ORDINARY,
+                silver_bridge::SilverRootActionMode::PROGRESSIVE_UNPRUNING_CURRENT_ORDER}
+            : std::vector<silver_bridge::SilverRootActionMode>{silver_bridge::SilverRootActionMode::ORDINARY,
+                silver_bridge::SilverRootActionMode::SEQUENTIAL_HALVING};
         for (const auto &group : anchors) {
             const auto parent = parents.find(group);
             if (parent == parents.end()) throw std::runtime_error("anchor missing from corpus: " + group);
-            for (const auto mode : {silver_bridge::SilverRootActionMode::ORDINARY,
-                                    silver_bridge::SilverRootActionMode::SEQUENTIAL_HALVING}) {
+            for (const auto mode : modes) {
                 for (const auto budget : budgets) {
                     silver_bridge::SilverSearchConfig config;
                     config.simulationsPerDecision = budget;

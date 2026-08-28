@@ -258,7 +258,14 @@ enum class CardSource : std::uint8_t { NONE = 0, HAND, DRAW, DISCARD, EXHAUST, C
 enum class SilverReuseCapMode : std::uint8_t { ALLOCATED = 0, ACTIVE, NONE };
 // Experimental root-only action allocation. Default ordinary UCT keeps its
 // existing code path when this is ORDINARY.
-enum class SilverRootActionMode : std::uint8_t { ORDINARY = 0, SEQUENTIAL_HALVING };
+enum class SilverRootActionMode : std::uint8_t {
+    ORDINARY = 0,
+    SEQUENTIAL_HALVING,
+    // Root-only, default-off.  The initial/current-order mask is grown from
+    // simulations added in this decision; internal decision and chance nodes
+    // retain their pinned ordinary Silver behavior.
+    PROGRESSIVE_UNPRUNING_CURRENT_ORDER,
+};
 const char *silverRootActionModeName(SilverRootActionMode mode);
 enum class SilverRerootFallbackReason : std::uint8_t {
     NONE = 0,
@@ -387,6 +394,12 @@ struct SilverRootActionPruningTelemetry {
     int eliminationRounds = 0;
     std::vector<int> activeCountsAfterElimination;
     std::vector<std::string> eliminatedActionFingerprints;
+    // Progressive-unpruning-only observation.  Each threshold unlocks the
+    // next stored root edge in the selected rank order; no edge is erased.
+    std::vector<std::int64_t> activationSimulationThresholds;
+    std::vector<std::string> activatedActionFingerprints;
+    std::vector<int> activeCountsDuringSearch;
+    std::vector<std::int64_t> simulationsAtActiveCounts;
     std::string finalCandidateFingerprint;
     std::int64_t simulationsAdded = 0;
 };
