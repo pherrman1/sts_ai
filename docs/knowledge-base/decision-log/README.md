@@ -1,5 +1,7 @@
 # Decision log
 
+| 2026-08-28 | [`2026-08-28-silver-policy-online-methods.md`](2026-08-28-silver-policy-online-methods.md) | The explicit online override is `ONLINE_POLICY_METHODS_REJECTED`: ordering tied baseline wins at 1.491x CPU, PUCT arms regressed, and the rejected runtime machinery/model were removed while preserving offline and online evidence. |
+| 2026-08-28 | [`2026-08-28-silver-parent-policy-25k.md`](2026-08-28-silver-parent-policy-25k.md) | The 25k parent-Q action scorer is `POLICY_MODEL_OFFLINE_REJECTED`: +2.497pp pairwise and lower regret point estimates missed the preregistered bootstrap bars; the leakage-safe offline pipeline remains reusable. |
 | 2026-08-28 | [`2026-08-28-silver-m10-rollout-blend.md`](2026-08-28-silver-m10-rollout-blend.md) | The preregistered M10 rollout blend is `M10_BLEND_OFFLINE_REJECTED`: alpha 0.1 improved sibling pairwise concordance but materially reduced top-leaf agreement, so no candidate was locked and 25k-B remained untouched. |
 | 2026-08-27 | [`2026-08-27-silver-leaf-evaluator-10k.md`](2026-08-27-silver-leaf-evaluator-10k.md) | The exact 10k Silver M10 direct leaf evaluator is `M10_DIRECT_REJECTED`: stronger offline ranking did not transfer, and the 8-seed gate lost quality catastrophically without a throughput benefit. |
 | 2026-08-27 | [`2026-08-27-ooc-targeted-survival-tradeoffs.md`](2026-08-27-ooc-targeted-survival-tradeoffs.md) | Prespecified comparison of combined `p_survive*v_alive` against survival-only, strength-only, and dense K=3 on 15 targeted marginal tradeoffs; terminal win primary. |
@@ -16,7 +18,7 @@
 | 2026-08-24 | [`2026-08-24-e3a-direct-runwin-ranking.md`](2026-08-24-e3a-direct-runwin-ranking.md) | E3a implementation: default-off, root/future-CRN direct eventual-run reference for exact source leaves; no scientific collection or gameplay integration. |
 | 2026-08-23 | [`2026-08-23-s3-q-gate-timing.md`](2026-08-23-s3-q-gate-timing.md) | Corrected Searcher3 Q-gate timing result: `bestActionSequence` opens the baseline gate by simulation 10 in 99.91% of 3,449 searches; Always-Q line stopped. |
 
-Last verified: 2026-08-27 against the current working tree.
+Last verified: 2026-08-28 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one

@@ -105,10 +105,6 @@ namespace sts::search {
         double rolloutEnergyWasteSum = 0.0;
         double rolloutDrawSum = 0.0;
         double rolloutSurvivalSum = 0.0;
-        std::int64_t policyScoredDecisionNodes = 0;
-        std::int64_t policyLegalActions = 0;
-        std::int64_t policyPuctSelections = 0;
-        std::int64_t policyFirstExpandedLearnedTop = 0;
         void add(const SearchStats &o) {
             steps += o.steps; nodesCreated += o.nodesCreated; detTranspositions += o.detTranspositions;
             chanceOutcomesSampled += o.chanceOutcomesSampled; chanceSiblingReuse += o.chanceSiblingReuse;
@@ -138,10 +134,6 @@ namespace sts::search {
             rolloutEnergyWasteSum += o.rolloutEnergyWasteSum;
             rolloutDrawSum += o.rolloutDrawSum;
             rolloutSurvivalSum += o.rolloutSurvivalSum;
-            policyScoredDecisionNodes += o.policyScoredDecisionNodes;
-            policyLegalActions += o.policyLegalActions;
-            policyPuctSelections += o.policyPuctSelections;
-            policyFirstExpandedLearnedTop += o.policyFirstExpandedLearnedTop;
         }
     };
 
@@ -166,8 +158,6 @@ namespace sts::search {
             Node* node = nullptr;               // child (shared across paths via transposition)
             int rngAdvanceSteps = 0;            // chance outcome edge: the N used for Random(base + N)
             std::int32_t visitCount = 0;        // times this edge was traversed (UCB / DPW reselection)
-            double policyPrior = 0.0;           // decision-node rank prior; zero when disabled
-            bool learnedTop = false;             // telemetry only
         };
 
         std::unique_ptr<BattleContext> rootState;
@@ -212,10 +202,6 @@ namespace sts::search {
         bool collectRolloutDiagnostics = false;
         bool collectVictoryCounts = false;
         silver_bridge::SilverLeafObserver leafObserver;
-        silver_bridge::SilverSearchConfig::NodePolicyScorer nodePolicyScorer;
-        bool learnedActionOrdering = false;
-        bool learnedPuct = false;
-        double learnedCpuct = 2.5;
 
         std::default_random_engine randGen;
 

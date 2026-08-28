@@ -64,18 +64,12 @@ struct SilverLiveOptions {
     int leafCorpusMaxLeavesPerGroup = 256;
     bool adaptiveEnabled = false;
     double adaptiveTopTwoVisitGapThreshold = 0.094;
-    bool policyOrdering = false;
-    bool policyPuct = false;
-    double policyCpuct = 2.5;
-    std::string policyModel = "models/silver_parent_policy_25k.txt";
     bool installed = false;
 };
 
 SilverLiveOptions g_silverLiveOptions;
 CombatValueNet g_silverLeafVNet;
-CombatValueNet g_silverPolicyNet;
 std::string g_silverLeafVNetLoadedPath;
-std::string g_silverPolicyNetLoadedPath;
 std::mutex g_scalingDiagnosticMutex;
 bool g_scalingDiagnosticHeaderWritten = false;
 std::mutex g_stickyQualityMutex;
@@ -175,12 +169,6 @@ void parseSilverLiveOptions() {
         options.adaptiveEnabled = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
         options.adaptiveTopTwoVisitGapThreshold = std::atof(raw);
-    if (const char *raw = std::getenv("STS_SILVER_POLICY_ORDERING"))
-        options.policyOrdering = std::atoi(raw) != 0;
-    if (const char *raw = std::getenv("STS_SILVER_POLICY_PUCT"))
-        options.policyPuct = std::atoi(raw) != 0;
-    if (const char *raw = std::getenv("STS_SILVER_POLICY_MODEL"))
-        options.policyModel = raw;
     if (!options.rootDiagnosticFile.empty()
             && (options.rootDiagnosticMaxPerSeed <= 0
                 || options.rootDiagnosticReferenceBudget <= 0
@@ -610,21 +598,6 @@ std::vector<float> silverLiveLeafCanonicalFeaturesImpl(
     return features;
 }
 
-void ensureSilverPolicyNetLoaded() {
-    if (g_silverPolicyNetLoadedPath == g_silverLiveOptions.policyModel
-            && g_silverPolicyNet.loaded()) return;
-    g_silverPolicyNet.isPolicy = true;
-    if (!g_silverPolicyNet.load(g_silverLiveOptions.policyModel))
-        throw std::runtime_error("cannot load Silver policy model: "
-                                 + g_silverLiveOptions.policyModel);
-    g_silverPolicyNetLoadedPath = g_silverLiveOptions.policyModel;
-    std::cout << "[Silver decision policy ON: " << g_silverPolicyNetLoadedPath
-              << ", " << g_silverPolicyNet.description() << ", ordering="
-              << g_silverLiveOptions.policyOrdering << " puct="
-              << g_silverLiveOptions.policyPuct << " cpuct="
-              << g_silverLiveOptions.policyCpuct << "]\n";
-}
-
 std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         const silver_bridge::BattleStateWire &wire) {
     g_richCombatFeatures = true;
@@ -646,31 +619,6 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         row.silverOrder = static_cast<int>(i);
         row.features.resize(combatPolicyFeatureCount());
         combatExtractPolicyFeatures(live, resolved.action, row.features.data());
-        rows.push_back(std::move(row));
-    }
-    return rows;
-}
-
-std::vector<SilverPolicyFeatureRow> silverLivePolicyFeaturesForActionBitsImpl(
-        const silver_bridge::BattleStateWire &wire,
-        const std::vector<std::uint32_t> &actionBits) {
-    if (actionBits.empty())
-        throw std::runtime_error("Silver internal policy node has no action bits");
-    g_richCombatFeatures = true;
-    auto restored = liveLeafBattleContext(wire);
-    std::unordered_set<std::uint32_t> uniqueBits;
-    std::vector<SilverPolicyFeatureRow> rows;
-    rows.reserve(actionBits.size());
-    for (std::size_t i = 0; i < actionBits.size(); ++i) {
-        if (!uniqueBits.insert(actionBits[i]).second)
-            throw std::runtime_error("duplicate Silver internal action bits: "
-                                     + std::to_string(actionBits[i]));
-        const Action action(actionBits[i]);
-        SilverPolicyFeatureRow row;
-        row.actionFingerprint = "bits:" + std::to_string(actionBits[i]);
-        row.silverOrder = static_cast<int>(i);
-        row.features.resize(combatPolicyFeatureCount());
-        combatExtractPolicyFeatures(restored, action, row.features.data());
         rows.push_back(std::move(row));
     }
     return rows;
@@ -1023,31 +971,6 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
     result.reuseCapMode = g_silverLiveOptions.reuseCapMode;
     result.collectDecisionDiagnostics = collectDecisionDiagnostics;
     result.adaptiveEnabled = g_silverLiveOptions.adaptiveEnabled;
-    result.learnedActionOrdering = g_silverLiveOptions.policyOrdering;
-    result.learnedPuct = g_silverLiveOptions.policyPuct;
-    result.learnedCpuct = g_silverLiveOptions.policyCpuct;
-    if (result.learnedActionOrdering || result.learnedPuct) {
-        result.nodePolicyScorer = [](const silver_bridge::BattleStateWire &wire,
-                                     const std::vector<std::uint32_t> &actionBits) {
-            const auto start = std::chrono::steady_clock::now();
-            std::vector<SilverPolicyFeatureRow> rows;
-            try {
-                rows = silverLivePolicyFeaturesForActionBitsImpl(wire, actionBits);
-            } catch (...) {
-                ++g_silverLiveDiagnostics.policyActionAlignmentFailures;
-                throw;
-            }
-            std::vector<double> scores;
-            scores.reserve(rows.size());
-            for (const auto &row : rows)
-                scores.push_back(g_silverPolicyNet.predictVec(row.features.data()));
-            const auto end = std::chrono::steady_clock::now();
-            ++g_silverLiveDiagnostics.policyModelInferenceCalls;
-            g_silverLiveDiagnostics.policyModelInferenceMicros +=
-                std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-            return scores;
-        };
-    }
     if (result.adaptiveEnabled) {
         result.adaptiveInitialSimulations = 1000;
         result.adaptiveTotalSimulations = 3700;
@@ -1073,11 +996,6 @@ void addTelemetry(const silver_bridge::SilverSearchTelemetry &telemetry) {
     g_silverLiveDiagnostics.chanceDepthSum += telemetry.chanceDepthSum;
     g_silverLiveDiagnostics.rolloutSkippedVNet += telemetry.rolloutSkippedVNet;
     g_silverLiveDiagnostics.rolloutCalls += telemetry.rolloutCalls;
-    g_silverLiveDiagnostics.policyScoredDecisionNodes += telemetry.policyScoredDecisionNodes;
-    g_silverLiveDiagnostics.policyLegalActions += telemetry.policyLegalActions;
-    g_silverLiveDiagnostics.policyPuctSelections += telemetry.policyPuctSelections;
-    g_silverLiveDiagnostics.policyFirstExpandedLearnedTop +=
-        telemetry.policyFirstExpandedLearnedTop;
     for (std::size_t i = 0; i < telemetry.wideningSampled.size(); ++i) {
         g_silverLiveDiagnostics.wideningSampled += telemetry.wideningSampled[i];
         g_silverLiveDiagnostics.wideningCapped += telemetry.wideningCapped[i];
@@ -1291,13 +1209,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             const auto result = silver_bridge::runSilverDecision(*silverSession, wire, config);
             if (!result.accepted) {
                 ++g_silverLiveDiagnostics.conversionFailures;
-                fail("search", "Silver returned no semantic decision: reason="
-                    + (result.failureReason.empty() ? std::string("unspecified") : result.failureReason)
-                    + " input=" + std::to_string(wire.inputState)
-                    + " turn=" + std::to_string(wire.turn)
-                    + " floor=" + std::to_string(bc.floorNum)
-                    + " encounter=" + std::to_string(static_cast<int>(bc.encounter))
-                    + " decision=" + std::to_string(decision));
+                fail("search", "Silver returned no semantic decision");
             }
             semantic = result.action;
             g_silverLiveDiagnostics.simulations += result.simulations;
@@ -1413,13 +1325,6 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " blend_depth_avoided=" << d.blendDepthAvoided
                   << " leaf_vnet_inference_calls=" << d.leafVNetInferenceCalls
                   << " leaf_vnet_inference_micros=" << d.leafVNetInferenceMicros
-                  << " policy_inference_calls=" << d.policyModelInferenceCalls
-                  << " policy_inference_micros=" << d.policyModelInferenceMicros
-                  << " policy_scored_decision_nodes=" << d.policyScoredDecisionNodes
-                  << " policy_legal_actions=" << d.policyLegalActions
-                  << " policy_puct_selections=" << d.policyPuctSelections
-                  << " policy_first_expanded_top=" << d.policyFirstExpandedLearnedTop
-                  << " policy_action_alignment_failures=" << d.policyActionAlignmentFailures
                   << " conversion_failures=" << d.conversionFailures
                   << " semantic_resolution_failures=" << d.semanticResolutionFailures
                   << " transaction_failures=" << d.transactionFailures
@@ -1446,19 +1351,11 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(
     return silverLiveParentPolicyFeaturesImpl(wire);
 }
 
-std::vector<SilverPolicyFeatureRow> silverLivePolicyFeaturesForActionBits(
-        const silver_bridge::BattleStateWire &wire,
-        const std::vector<std::uint32_t> &actionBits) {
-    return silverLivePolicyFeaturesForActionBitsImpl(wire, actionBits);
-}
-
 void installSilverLiveBackend() {
     parseSilverLiveOptions(); // validates before the first live combat begins
     if (!g_silverLiveOptions.leafVNetLogFile.empty() || g_silverLiveOptions.leafVNetDirect
             || (g_silverLiveOptions.leafVNetBlendEnabled && g_silverLiveOptions.leafVNetBlend > 0.0))
         ensureSilverLeafVNetLoaded();
-    if (g_silverLiveOptions.policyOrdering || g_silverLiveOptions.policyPuct)
-        ensureSilverPolicyNetLoaded();
     g_externalCombatBackend = runSilverCombat;
 }
 void uninstallSilverLiveBackend() { g_externalCombatBackend = nullptr; g_silverLiveOptions.installed = false; }
@@ -1474,10 +1371,6 @@ bool silverLiveExactRootBudgets() { return g_silverLiveOptions.exactRootBudgets;
 double silverLiveAdaptiveTopTwoVisitGapThreshold() {
     return g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;
 }
-bool silverLivePolicyOrderingEnabled() { return g_silverLiveOptions.policyOrdering; }
-bool silverLivePolicyPuctEnabled() { return g_silverLiveOptions.policyPuct; }
-double silverLivePolicyCpuct() { return g_silverLiveOptions.policyCpuct; }
-std::string silverLivePolicyModelPath() { return g_silverLiveOptions.policyModel; }
 bool silverStickyQualitySampled(std::uint64_t runSeed, int floor, int encounter,
                                 int combatDecisionOrdinal) {
     return sampledStickyDecision(runSeed, floor, encounter, combatDecisionOrdinal);

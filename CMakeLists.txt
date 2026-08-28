@@ -129,13 +129,6 @@ target_include_directories(silver-parent-policy-features PRIVATE include json/in
 target_link_libraries(silver-parent-policy-features PRIVATE silver_live_backend)
 target_link_options(silver-parent-policy-features PRIVATE -Wl,--gc-sections)
 
-add_executable(silver-policy-native-predict
-    apps/silver_policy_native_predict.cpp $<TARGET_OBJECTS:sts_core_objects>)
-set_target_properties(silver-policy-native-predict PROPERTIES
-    OUTPUT_NAME silver_policy_native_predict)
-target_include_directories(silver-policy-native-predict PRIVATE include json/include)
-target_link_options(silver-policy-native-predict PRIVATE -Wl,--gc-sections)
-
 add_executable(silver-native-parity-runner third_party/silver_lightspeed/bridge/SilverNativeFixtureRunner.cpp)
 set_target_properties(silver-native-parity-runner PROPERTIES OUTPUT_NAME silver_native_parity_runner)
 set_target_properties(silver-native-parity-runner PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)

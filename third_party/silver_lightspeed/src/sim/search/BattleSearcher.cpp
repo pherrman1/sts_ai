@@ -12,7 +12,6 @@
 #include <utility>
 #include <string>
 #include <memory>
-#include <numeric>
 #include <optional>
 #include <unordered_set>
 
@@ -493,15 +492,6 @@ double search::BattleSearcher::evaluateEdge(const search::BattleSearcher::Node &
     // term uses this edge's own visit count rather than the child's simulationCount. With node
     // sharing the two diverge, and using edge visits keeps UCB well-formed (Childs et al. 2008).
     const double qualityValue = edge.node->evaluationSum / edge.node->simulationCount;
-    // This function is used only for legal-action selection at decision
-    // nodes. Stochastic actions may lead to a random child, but they are still
-    // decision edges and receive the same learned prior. Chance outcomes are
-    // selected separately by selectChanceOutcome and never enter this path.
-    if (learnedPuct) {
-        return qualityValue + learnedCpuct * edge.policyPrior
-            * std::sqrt(static_cast<double>(parent.simulationCount))
-            / (1.0 + edge.visitCount);
-    }
     const double exploration = edge.node->isRandomNode ? explorationParameterChance
                                                        : explorationParameter;
     const double explorationValue = exploration *
@@ -531,12 +521,6 @@ int search::BattleSearcher::selectBestEdgeToSearch(const search::BattleSearcher:
         }
     }
     //std::cout << "\n";
-    if (learnedPuct && cur.edges[bestEdge].visitCount > 0
-            && cur.edges[bestEdge].node != nullptr) {
-        ++stats.policyPuctSelections;
-    }
-    if (cur.edges[bestEdge].visitCount == 0 && cur.edges[bestEdge].learnedTop)
-        ++stats.policyFirstExpandedLearnedTop;
     return bestEdge;
 }
 
@@ -739,40 +723,6 @@ void search::BattleSearcher::enumerateActionsForNode(search::BattleSearcher::Nod
             assert(false);
 #endif
             break;
-    }
-
-    if (nodePolicyScorer && !node.edges.empty()) {
-        std::vector<Action> actions;
-        actions.reserve(node.edges.size());
-        for (const auto &edge : node.edges) actions.push_back(edge.action);
-        const auto observation = silver_bridge::makeSilverLeafObservation(
-            bc, bc, bc, actions, nullptr, 0, 0, 0, 0);
-        std::vector<std::uint32_t> actionBits;
-        actionBits.reserve(actions.size());
-        for (const auto &action : actions) actionBits.push_back(action.bits);
-        const auto scores = nodePolicyScorer(observation.state, actionBits);
-        if (scores.size() != node.edges.size())
-            throw std::runtime_error("Silver node policy score/action mismatch");
-        for (double score : scores)
-            if (!std::isfinite(score)) throw std::runtime_error("Silver node policy non-finite score");
-        std::vector<std::size_t> rank(node.edges.size());
-        std::iota(rank.begin(), rank.end(), 0);
-        std::stable_sort(rank.begin(), rank.end(), [&](std::size_t a, std::size_t b) {
-            return scores[a] > scores[b];
-        });
-        const double denom = node.edges.size() * (node.edges.size() + 1.0) / 2.0;
-        for (std::size_t position = 0; position < rank.size(); ++position) {
-            node.edges[rank[position]].policyPrior = (node.edges.size() - position) / denom;
-            node.edges[rank[position]].learnedTop = position == 0;
-        }
-        if (learnedActionOrdering) {
-            std::vector<Edge> ordered;
-            ordered.reserve(node.edges.size());
-            for (auto idx : rank) ordered.push_back(std::move(node.edges[idx]));
-            node.edges = std::move(ordered);
-        }
-        ++stats.policyScoredDecisionNodes;
-        stats.policyLegalActions += static_cast<std::int64_t>(node.edges.size());
     }
 
 #ifdef sts_print_debug

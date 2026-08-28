@@ -5350,3 +5350,42 @@ model training was changed.
   Top improved, so evidence did not conflict. No native export, online prior,
   PUCT, or gameplay run was performed. Exact diagnostics are in
   `docs/experiments/evidence/silver_parent_policy_25k_2026-08-28.json`.
+
+## 187. Silver 25k parent-Q online policy methods rejected (2026-08-28)
+
+- **Authorization/status:** this was an explicit exploratory override of the
+  offline `POLICY_MODEL_OFFLINE_REJECTED` gate because offline top-action
+  agreement improved. The offline verdict remains unchanged. Attempts 1 and 2
+  stopped on correctness failures and their partial arms are not evidence.
+- **Final provenance:** corrected attempt-3 SHA
+  `a805d1404e10cc6eaa4fc2d4268f450937b25f0e`; designated `sts-test`, Release,
+  fair mode, one thread, ordinary Silver, 1,000 base simulations, allocated
+  reuse cap, and common seeds `975000--975031`. Exact executable SHA-256 was
+  `351c781a3b4478418019368d6b1f235f99c853d6d78abeca6dff252299315433`;
+  source-model JSON SHA-256 was
+  `3de211d354c2e03de2516c5ab68d35ec8aba40a4c02cb61937c02925221d1f20`;
+  compact 97-tree SHA-256 was
+  `4e2925bd17154ab60fcef52018ade3a85f82f246b1dc149be0da5cd21249386d`.
+- **Correctness:** the attempt-3 exact-action repair cleared both former crash
+  canaries (B seed 975000 and C seed 975024) and completed all 128 registered
+  runs. A/B/C/D crossed current/learned initial ordering with ordinary
+  UCT/fixed rank-prior PUCT (`c_puct=2.5`).
+- **Outcomes:** A/B/C/D wins were `20/20/17/15`; mean floors were
+  `47.750/46.594/45.500/44.750`; mean ending HP was
+  `30.313/29.656/22.688/19.750`; mean CPU seconds/run was
+  `4.932/7.355/6.843/6.766`. B/C/D cost `1.491x/1.388x/1.372x` A.
+- **Paired effects versus A:** B had 0 wins and -1.156 mean floors; C had -3
+  wins and -2.250 floors; D had -5 wins and -3.000 floors. The 10,000 shared
+  whole-seed bootstrap 95% win-delta intervals were respectively
+  `[-18.75,+15.625]pp`, `[-25,+6.25]pp`, and `[-37.5,+6.25]pp`.
+- **Telemetry limitation:** `STS_SILVER_TELEMETRY=1` was absent from the final
+  cohort. Simulation, inference-call/time, scored-node, legal-action,
+  PUCT-selection, and aggregate failure-counter fields are unavailable and
+  recorded as `null`, never zero.
+- **Verdict/cleanup:** **`ONLINE_POLICY_METHODS_REJECTED`**. No arm gained the
+  required three wins and every arm exceeded the 1.25x runtime limit. No
+  mechanism was promoted. PR #79 removes the rejected runtime ordering/PUCT
+  machinery and active compact model while retaining the reusable offline
+  pipeline and durable evidence. Complete hashes, contrasts, factorial effects,
+  and all 32 paired rows are in
+  `docs/experiments/evidence/silver_policy_online_methods_2026-08-28.json`.
