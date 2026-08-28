@@ -11563,7 +11563,12 @@ static void oocFactorEvaluate(const std::string &manifestFile,
     }
     std::cout << "oocfactoreval preflight resolved " << resolved.size() << '/'
               << manifest.size() << " decisions\n";
-    if (futures == 0) return;
+    if (futures == 0) {
+        preflight.close();
+        if (resolved.size() != manifest.size())
+            throw std::runtime_error("oocfactoreval: preflight did not resolve complete manifest");
+        return;
+    }
 
     std::ofstream out(outFile);
     if (!out) throw std::runtime_error("oocfactoreval: cannot open output");
@@ -14242,6 +14247,7 @@ int main(int argc, char **argv) {
         std::string out = argc > 4 ? argv[4] : "build/ooc_targeted/k3_validation.csv";
         int futures = argc > 5 ? std::stoi(argv[5]) : 16;
         int futureStart = argc > 6 ? std::stoi(argv[6]) : 1000;
+        if (futures < 0) throw std::runtime_error("oock3tradeoffeval: futures must be nonnegative");
         std::cout << "oock3tradeoffeval decisions=" << nDecisions
                   << " futures=" << futures << " futureStart=" << futureStart
                   << " contract=K3+bootstrap -> " << out << '\n';
