@@ -5201,3 +5201,114 @@ model training was changed.
   zero. This targeted exploratory result does not authorize production OOC
   changes, model training, or an auxiliary-head claim. Production gameplay is
   unchanged.
+
+## Â§183 Silver M10 rollout blend: OFFLINE REJECTED before anchor (2026-08-28)
+
+- **Question:** Can a low-weight affine correction of the actual auxiliary
+  SimpleAgent rollout by the exact M10 prediction improve sibling ranking and
+  selected-leaf regret without losing the rollout's tactical continuation
+  signal?
+- **Baseline and inputs:** branch baseline `29edcfd` (PR #76 merged). Reused the
+  immutable 3,207-row selected corpus, 500-group manifest, 17,030-row relabels,
+  canonical 1,766-feature rows, and exact M10. All six recorded input/runtime
+  hashes matched; see the compact evidence manifest. No leaves were collected,
+  teachers rerun, or model retrained.
+- **Leakage boundary:** all 93 groups containing an independent 25k-B row were
+  excluded before metric inspection. Selection used corrected 25k-A only and
+  retained 329 complete sibling groups / 2,445 leaves / 31,797 non-tied
+  reference pairs. The 25k-B anchor was not evaluated.
+- **Fixed-grid result:** alpha 0/0.1/0.25/0.5/0.75/1 pairwise concordance was
+  `62.879/63.427/63.830/64.874/66.060/66.903%`; top-leaf agreement was
+  `40.426/36.474/36.778/35.866/33.131/37.994%`; mean regret was
+  `2.472/2.508/2.463/2.428/2.538/2.664`. Alpha 0.1's pairwise delta 95%
+  whole-group bootstrap interval was `[+0.259,+0.719]pp`, but its top-leaf
+  delta interval was `[-7.295,-0.912]pp`; regret also worsened.
+  Alpha 0.25 kept the same material top-leaf conflict. Lower centered RMSE at
+  larger weights did not override ranking/regret metrics.
+- **Depth interaction:** empirical depth tercile edges 4/5 were established
+  before subgroup inspection and subgroup metrics were emitted. Phase 1's
+  candidate rule already failed, so no schedule was selected or optimized.
+- **Verdict/stop:** **`M10_BLEND_OFFLINE_REJECTED`**. No candidate lock, 25k-B
+  evaluation, native implementation, performance gate, or gameplay gate was
+  run. Full ignored selection report SHA-256:
+  `162b5de871eed0fd3284d7fe60b5fcfb733b43ddf25356489db4c34b5094537d`.
+  Compact evidence:
+  `docs/experiments/evidence/silver_m10_rollout_blend_2026-08-28.json`.
+
+## §184 Silver M10 fixed-blend gameplay sweep: REJECTED (2026-08-28)
+
+- **Authorization boundary:** after the preregistered offline rejection above,
+  the user explicitly overrode that stop, required this same branch, and
+  requested all six fixed alphas on 16 common seeds. This is an exploratory
+  gameplay sweep, not a passed offline gate; 25k-B remained untouched and the
+  earlier `M10_BLEND_OFFLINE_REJECTED` verdict is unchanged.
+- **Frozen implementation/provenance:** independently reviewed commit
+  `6532d8f30ea2af365b48c998e8562cda2c325796`; draft PR #77 Linux GCC passed.
+  The designated-GCP Release executable SHA-256 was
+  `e52a6120e723f14f0c0468a4e84fe9ce2afc872536471ae5f7e6f7d6a3cebb91`;
+  exact native M10 SHA-256 was
+  `344c83efebb4e2772971495e1e57e6202192386476e2c0c1b038a84f355f9959`
+  (501 trees). A logged alpha-0.25 canary passed
+  `check_benchmark_canary.py` before expansion.
+- **Protocol:** designated `sts-test`, Release, fair play, one thread, ordinary
+  allocated reuse cap, 1,000 base simulations, depth threshold zero, common
+  fresh seeds `974100--974115`. Arms were run sequentially in order
+  alpha `0/0.1/0.25/0.5/0.75/1.0`; each produced 16 flushed rows plus a
+  sidecar and telemetry log.
+- **Outcomes:** wins were `13/12/11/9/8/1`; mean floors were
+  `49.563/48.438/47.313/47.938/44.000/27.875`; mean ending HP was
+  `34.563/35.313/28.750/21.813/18.625/2.000`; mean CPU seconds/run was
+  `5.172/13.922/13.744/13.886/11.712/7.027`. Lower runtime at large alpha
+  reflects much shorter losing runs, not an efficiency gain.
+- **Paired uncertainty versus alpha zero:** alpha 0.1 had win delta `-6.25pp`
+  (95% paired seed bootstrap `[-31.25,+18.75]pp`) and floor delta `-1.125`
+  (`[-5.000,+2.375]`). Alpha 0.25 was `-12.5pp` wins
+  (`[-43.75,+18.75]`) and `-2.250` floor (`[-5.875,+1.063]`). Alpha 0.5 was
+  `-25pp` wins (`[-50,0]`); alpha 0.75 was `-31.25pp` (`[-56.25,0]`);
+  alpha 1.0 was `-75pp` (`[-93.75,-50]`) and `-21.688` floor
+  (`[-29.375,-14.063]`). Bootstrap used 100,000 deterministic paired-seed
+  resamples with seed 6532.
+- **Mechanism/health:** alpha-zero made zero M10 calls. Positive arms made
+  `9,569,248 / 9,324,039 / 9,319,674 / 8,075,852 / 5,104,801` calls, exactly
+  equal to blend invocations, taking `66.924 / 63.667 / 65.219 / 57.629 /
+  36.501` million microseconds. Depth-zero avoided no eligible calls. All arms
+  recorded zero conversion, semantic, transaction, and knowledge failures.
+- **Verdict:** **`M10_BLEND_REJECTED`.** No tested nonzero weight improved the
+  paired gameplay control; even alpha 0.1 had worse win/floor point estimates
+  and about 2.7x CPU/run. Keep the implementation default-off. Do not promote,
+  extend beyond 16 seeds, run equal-runtime follow-up, start Task B, or begin
+  policy-prior integration from this experiment.
+
+## §185 Silver M10 depth-gated blend follow-up: REJECTED (2026-08-28)
+
+- **Question/design:** can alpha 0.1 recover useful deep-leaf correction while
+  preserving shallow rollout values and avoiding enough M10 calls to improve
+  runtime? Before new gameplay, thresholds 4 and 5 were locked from the
+  original offline empirical depth-tercile edges. No threshold was selected
+  from the preceding fixed-alpha gameplay outcomes.
+- **Protocol/provenance:** same reviewed and CI-passed scientific SHA
+  `6532d8f30ea2af365b48c998e8562cda2c325796`, GCP Release executable
+  `e52a6120e723f14f0c0468a4e84fe9ce2afc872536471ae5f7e6f7d6a3cebb91`,
+  and exact native M10
+  `344c83efebb4e2772971495e1e57e6202192386476e2c0c1b038a84f355f9959`.
+  Designated `sts-test`, fair, one thread, 1,000 base simulations, allocated
+  reuse, and fresh paired seeds `974200--974215`. Arms were pure rollout,
+  alpha 0.1 for `d>=4`, and alpha 0.1 for `d>=5`.
+- **Outcomes:** control/d4/d5 wins were `10/10/11`; mean floors were
+  `46.063/47.125/45.000`; ending HP was `36.813/36.938/31.625`; mean CPU
+  seconds/run was `4.721/12.043/11.079`. Against control, d4 had win delta
+  `0pp` (100,000-resample paired-seed 95% interval `[-25,+25]pp`) and floor
+  delta `+1.063` (`[-4.000,+7.875]`). D5 had win delta `+6.25pp`
+  (`[-12.5,+25]pp`) but floor delta `-1.063` (`[-4.438,+1.250]`) and ending-HP
+  delta `-5.188` (`[-19.313,+8.813]`).
+- **Coverage/cost:** d4 invoked M10 on `7,118,695/8,829,895` eligible leaves
+  (`80.62%`) and avoided `1,711,200`; d5 invoked `4,952,622/8,798,554`
+  (`56.29%`) and avoided `3,845,932`. Inference consumed 52.449/39.868 million
+  microseconds. All conversion, semantic, transaction, and knowledge failures
+  were zero.
+- **Verdict:** **`M10_BLEND_REJECTED` for these depth schedules.** D4 tied wins
+  with a weak positive floor point estimate but cost 2.55x CPU; d5 gained one
+  win while regressing floor/HP and cost 2.35x CPU. The mixed effects and wide
+  intervals do not establish a clear stable depth interaction. Do not tune
+  additional thresholds or weights against this seed block, extend N, or
+  promote a gate.
