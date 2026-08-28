@@ -1,0 +1,2931 @@
+nfeat 1788
+feat ascension
+feat encounter
+feat turn
+feat curHp
+feat maxHp
+feat block
+feat energy
+feat strength
+feat dexterity
+feat focus
+feat artifact
+feat monAlive
+feat monSumHp
+feat monMaxHp
+feat monSumBlock
+feat monSumStr
+feat monSumArt
+feat hand
+feat draw
+feat discard
+feat exhaust
+feat nAtkAvail
+feat nSklAvail
+feat nPowAvail
+feat nOtherAvail
+feat potions
+feat pDemonForm
+feat pMetallicize
+feat pFeelNoPain
+feat pBarricade
+feat pPlatedArmor
+feat pRupture
+feat pCombust
+feat pDarkEmbrace
+feat pBrutality
+feat pFireBreath
+feat pJuggernaut
+feat pCorruption
+feat pVigor
+feat pMayhem
+feat pPanache
+feat pNoxious
+feat pFlameBarrier
+feat pThorns
+feat pRegen
+feat pBuffer
+feat pIntangible
+feat pVulnerable
+feat pWeak
+feat pFrail
+feat r0
+feat r1
+feat r2
+feat r3
+feat r4
+feat r5
+feat r6
+feat r7
+feat r8
+feat r9
+feat r10
+feat r11
+feat r12
+feat r13
+feat r14
+feat r15
+feat r16
+feat r17
+feat r18
+feat r19
+feat r20
+feat r21
+feat r22
+feat r23
+feat r24
+feat r25
+feat r26
+feat r27
+feat r28
+feat r29
+feat r30
+feat r31
+feat r32
+feat r33
+feat r34
+feat r35
+feat r36
+feat r37
+feat r38
+feat r39
+feat r40
+feat r41
+feat r42
+feat r43
+feat r44
+feat r45
+feat r46
+feat r47
+feat r48
+feat r49
+feat r50
+feat r51
+feat r52
+feat r53
+feat r54
+feat r55
+feat r56
+feat r57
+feat r58
+feat r59
+feat r60
+feat r61
+feat r62
+feat r63
+feat r64
+feat r65
+feat r66
+feat r67
+feat r68
+feat r69
+feat r70
+feat r71
+feat r72
+feat r73
+feat r74
+feat r75
+feat r76
+feat r77
+feat r78
+feat r79
+feat r80
+feat r81
+feat r82
+feat r83
+feat r84
+feat r85
+feat r86
+feat r87
+feat r88
+feat r89
+feat r90
+feat r91
+feat r92
+feat r93
+feat r94
+feat r95
+feat r96
+feat r97
+feat r98
+feat r99
+feat r100
+feat r101
+feat r102
+feat r103
+feat r104
+feat r105
+feat r106
+feat r107
+feat r108
+feat r109
+feat r110
+feat r111
+feat r112
+feat r113
+feat r114
+feat r115
+feat r116
+feat r117
+feat r118
+feat r119
+feat r120
+feat r121
+feat r122
+feat r123
+feat r124
+feat r125
+feat r126
+feat r127
+feat hd0
+feat hd1
+feat hd2
+feat hd3
+feat hd4
+feat hd5
+feat hd6
+feat hd7
+feat hd8
+feat hd9
+feat hd10
+feat hd11
+feat hd12
+feat hd13
+feat hd14
+feat hd15
+feat hd16
+feat hd17
+feat hd18
+feat hd19
+feat hd20
+feat hd21
+feat hd22
+feat hd23
+feat hd24
+feat hd25
+feat hd26
+feat hd27
+feat hd28
+feat hd29
+feat hd30
+feat hd31
+feat hd32
+feat hd33
+feat hd34
+feat hd35
+feat hd36
+feat hd37
+feat hd38
+feat hd39
+feat hd40
+feat hd41
+feat hd42
+feat hd43
+feat hd44
+feat hd45
+feat hd46
+feat hd47
+feat hd48
+feat hd49
+feat hd50
+feat hd51
+feat hd52
+feat hd53
+feat hd54
+feat hd55
+feat hd56
+feat hd57
+feat hd58
+feat hd59
+feat hd60
+feat hd61
+feat hd62
+feat hd63
+feat hd64
+feat hd65
+feat hd66
+feat hd67
+feat hd68
+feat hd69
+feat hd70
+feat hd71
+feat hd72
+feat hd73
+feat hd74
+feat hd75
+feat hd76
+feat hd77
+feat hd78
+feat hd79
+feat hd80
+feat hd81
+feat hd82
+feat hd83
+feat hd84
+feat hd85
+feat hd86
+feat hd87
+feat hd88
+feat hd89
+feat hd90
+feat hd91
+feat hd92
+feat hd93
+feat hd94
+feat hd95
+feat hd96
+feat hd97
+feat hd98
+feat hd99
+feat hd100
+feat hd101
+feat hd102
+feat hd103
+feat hd104
+feat hd105
+feat hd106
+feat hd107
+feat hd108
+feat hd109
+feat hd110
+feat hd111
+feat hd112
+feat hd113
+feat hd114
+feat hd115
+feat hd116
+feat hd117
+feat hd118
+feat hd119
+feat hd120
+feat hd121
+feat hd122
+feat hd123
+feat hd124
+feat hd125
+feat hd126
+feat hd127
+feat hd128
+feat hd129
+feat hd130
+feat hd131
+feat hd132
+feat hd133
+feat hd134
+feat hd135
+feat hd136
+feat hd137
+feat hd138
+feat hd139
+feat hd140
+feat hd141
+feat hd142
+feat hd143
+feat hd144
+feat hd145
+feat hd146
+feat hd147
+feat hd148
+feat hd149
+feat hd150
+feat hd151
+feat hd152
+feat hd153
+feat hd154
+feat hd155
+feat hd156
+feat hd157
+feat hd158
+feat hd159
+feat hd160
+feat hd161
+feat hd162
+feat hd163
+feat hd164
+feat hd165
+feat hd166
+feat hd167
+feat hd168
+feat hd169
+feat hd170
+feat hd171
+feat hd172
+feat hd173
+feat hd174
+feat hd175
+feat hd176
+feat hd177
+feat hd178
+feat hd179
+feat hd180
+feat hd181
+feat hd182
+feat hd183
+feat hd184
+feat hd185
+feat hd186
+feat hd187
+feat hd188
+feat hd189
+feat hd190
+feat hd191
+feat hd192
+feat hd193
+feat hd194
+feat hd195
+feat hd196
+feat hd197
+feat hd198
+feat hd199
+feat hd200
+feat hd201
+feat hd202
+feat hd203
+feat hd204
+feat hd205
+feat hd206
+feat hd207
+feat hd208
+feat hd209
+feat hd210
+feat hd211
+feat hd212
+feat hd213
+feat hd214
+feat hd215
+feat hd216
+feat hd217
+feat hd218
+feat hd219
+feat hd220
+feat hd221
+feat hd222
+feat hd223
+feat hd224
+feat hd225
+feat hd226
+feat hd227
+feat hd228
+feat hd229
+feat hd230
+feat hd231
+feat hd232
+feat hd233
+feat hd234
+feat hd235
+feat hd236
+feat hd237
+feat hd238
+feat hd239
+feat hd240
+feat hd241
+feat hd242
+feat hd243
+feat hd244
+feat hd245
+feat hd246
+feat hd247
+feat hd248
+feat hd249
+feat hd250
+feat hd251
+feat hd252
+feat hd253
+feat hd254
+feat hd255
+feat hd256
+feat hd257
+feat hd258
+feat hd259
+feat hd260
+feat hd261
+feat hd262
+feat hd263
+feat hd264
+feat hd265
+feat hd266
+feat hd267
+feat hd268
+feat hd269
+feat hd270
+feat hd271
+feat hd272
+feat hd273
+feat hd274
+feat hd275
+feat hd276
+feat hd277
+feat hd278
+feat hd279
+feat hd280
+feat hd281
+feat hd282
+feat hd283
+feat hd284
+feat hd285
+feat hd286
+feat hd287
+feat hd288
+feat hd289
+feat hd290
+feat hd291
+feat hd292
+feat hd293
+feat hd294
+feat hd295
+feat hd296
+feat hd297
+feat hd298
+feat hd299
+feat hd300
+feat hd301
+feat hd302
+feat hd303
+feat hd304
+feat hd305
+feat hd306
+feat hd307
+feat hd308
+feat hd309
+feat hd310
+feat hd311
+feat hd312
+feat hd313
+feat hd314
+feat hd315
+feat hd316
+feat hd317
+feat hd318
+feat hd319
+feat hd320
+feat hd321
+feat hd322
+feat hd323
+feat hd324
+feat hd325
+feat hd326
+feat hd327
+feat hd328
+feat hd329
+feat hd330
+feat hd331
+feat hd332
+feat hd333
+feat hd334
+feat hd335
+feat hd336
+feat hd337
+feat hd338
+feat hd339
+feat hd340
+feat hd341
+feat hd342
+feat hd343
+feat hd344
+feat hd345
+feat hd346
+feat hd347
+feat hd348
+feat hd349
+feat hd350
+feat hd351
+feat hd352
+feat hd353
+feat hd354
+feat hd355
+feat hd356
+feat hd357
+feat hd358
+feat hd359
+feat hd360
+feat hd361
+feat hd362
+feat hd363
+feat hd364
+feat hd365
+feat hd366
+feat hd367
+feat hd368
+feat hd369
+feat hd370
+feat dr0
+feat dr1
+feat dr2
+feat dr3
+feat dr4
+feat dr5
+feat dr6
+feat dr7
+feat dr8
+feat dr9
+feat dr10
+feat dr11
+feat dr12
+feat dr13
+feat dr14
+feat dr15
+feat dr16
+feat dr17
+feat dr18
+feat dr19
+feat dr20
+feat dr21
+feat dr22
+feat dr23
+feat dr24
+feat dr25
+feat dr26
+feat dr27
+feat dr28
+feat dr29
+feat dr30
+feat dr31
+feat dr32
+feat dr33
+feat dr34
+feat dr35
+feat dr36
+feat dr37
+feat dr38
+feat dr39
+feat dr40
+feat dr41
+feat dr42
+feat dr43
+feat dr44
+feat dr45
+feat dr46
+feat dr47
+feat dr48
+feat dr49
+feat dr50
+feat dr51
+feat dr52
+feat dr53
+feat dr54
+feat dr55
+feat dr56
+feat dr57
+feat dr58
+feat dr59
+feat dr60
+feat dr61
+feat dr62
+feat dr63
+feat dr64
+feat dr65
+feat dr66
+feat dr67
+feat dr68
+feat dr69
+feat dr70
+feat dr71
+feat dr72
+feat dr73
+feat dr74
+feat dr75
+feat dr76
+feat dr77
+feat dr78
+feat dr79
+feat dr80
+feat dr81
+feat dr82
+feat dr83
+feat dr84
+feat dr85
+feat dr86
+feat dr87
+feat dr88
+feat dr89
+feat dr90
+feat dr91
+feat dr92
+feat dr93
+feat dr94
+feat dr95
+feat dr96
+feat dr97
+feat dr98
+feat dr99
+feat dr100
+feat dr101
+feat dr102
+feat dr103
+feat dr104
+feat dr105
+feat dr106
+feat dr107
+feat dr108
+feat dr109
+feat dr110
+feat dr111
+feat dr112
+feat dr113
+feat dr114
+feat dr115
+feat dr116
+feat dr117
+feat dr118
+feat dr119
+feat dr120
+feat dr121
+feat dr122
+feat dr123
+feat dr124
+feat dr125
+feat dr126
+feat dr127
+feat dr128
+feat dr129
+feat dr130
+feat dr131
+feat dr132
+feat dr133
+feat dr134
+feat dr135
+feat dr136
+feat dr137
+feat dr138
+feat dr139
+feat dr140
+feat dr141
+feat dr142
+feat dr143
+feat dr144
+feat dr145
+feat dr146
+feat dr147
+feat dr148
+feat dr149
+feat dr150
+feat dr151
+feat dr152
+feat dr153
+feat dr154
+feat dr155
+feat dr156
+feat dr157
+feat dr158
+feat dr159
+feat dr160
+feat dr161
+feat dr162
+feat dr163
+feat dr164
+feat dr165
+feat dr166
+feat dr167
+feat dr168
+feat dr169
+feat dr170
+feat dr171
+feat dr172
+feat dr173
+feat dr174
+feat dr175
+feat dr176
+feat dr177
+feat dr178
+feat dr179
+feat dr180
+feat dr181
+feat dr182
+feat dr183
+feat dr184
+feat dr185
+feat dr186
+feat dr187
+feat dr188
+feat dr189
+feat dr190
+feat dr191
+feat dr192
+feat dr193
+feat dr194
+feat dr195
+feat dr196
+feat dr197
+feat dr198
+feat dr199
+feat dr200
+feat dr201
+feat dr202
+feat dr203
+feat dr204
+feat dr205
+feat dr206
+feat dr207
+feat dr208
+feat dr209
+feat dr210
+feat dr211
+feat dr212
+feat dr213
+feat dr214
+feat dr215
+feat dr216
+feat dr217
+feat dr218
+feat dr219
+feat dr220
+feat dr221
+feat dr222
+feat dr223
+feat dr224
+feat dr225
+feat dr226
+feat dr227
+feat dr228
+feat dr229
+feat dr230
+feat dr231
+feat dr232
+feat dr233
+feat dr234
+feat dr235
+feat dr236
+feat dr237
+feat dr238
+feat dr239
+feat dr240
+feat dr241
+feat dr242
+feat dr243
+feat dr244
+feat dr245
+feat dr246
+feat dr247
+feat dr248
+feat dr249
+feat dr250
+feat dr251
+feat dr252
+feat dr253
+feat dr254
+feat dr255
+feat dr256
+feat dr257
+feat dr258
+feat dr259
+feat dr260
+feat dr261
+feat dr262
+feat dr263
+feat dr264
+feat dr265
+feat dr266
+feat dr267
+feat dr268
+feat dr269
+feat dr270
+feat dr271
+feat dr272
+feat dr273
+feat dr274
+feat dr275
+feat dr276
+feat dr277
+feat dr278
+feat dr279
+feat dr280
+feat dr281
+feat dr282
+feat dr283
+feat dr284
+feat dr285
+feat dr286
+feat dr287
+feat dr288
+feat dr289
+feat dr290
+feat dr291
+feat dr292
+feat dr293
+feat dr294
+feat dr295
+feat dr296
+feat dr297
+feat dr298
+feat dr299
+feat dr300
+feat dr301
+feat dr302
+feat dr303
+feat dr304
+feat dr305
+feat dr306
+feat dr307
+feat dr308
+feat dr309
+feat dr310
+feat dr311
+feat dr312
+feat dr313
+feat dr314
+feat dr315
+feat dr316
+feat dr317
+feat dr318
+feat dr319
+feat dr320
+feat dr321
+feat dr322
+feat dr323
+feat dr324
+feat dr325
+feat dr326
+feat dr327
+feat dr328
+feat dr329
+feat dr330
+feat dr331
+feat dr332
+feat dr333
+feat dr334
+feat dr335
+feat dr336
+feat dr337
+feat dr338
+feat dr339
+feat dr340
+feat dr341
+feat dr342
+feat dr343
+feat dr344
+feat dr345
+feat dr346
+feat dr347
+feat dr348
+feat dr349
+feat dr350
+feat dr351
+feat dr352
+feat dr353
+feat dr354
+feat dr355
+feat dr356
+feat dr357
+feat dr358
+feat dr359
+feat dr360
+feat dr361
+feat dr362
+feat dr363
+feat dr364
+feat dr365
+feat dr366
+feat dr367
+feat dr368
+feat dr369
+feat dr370
+feat ds0
+feat ds1
+feat ds2
+feat ds3
+feat ds4
+feat ds5
+feat ds6
+feat ds7
+feat ds8
+feat ds9
+feat ds10
+feat ds11
+feat ds12
+feat ds13
+feat ds14
+feat ds15
+feat ds16
+feat ds17
+feat ds18
+feat ds19
+feat ds20
+feat ds21
+feat ds22
+feat ds23
+feat ds24
+feat ds25
+feat ds26
+feat ds27
+feat ds28
+feat ds29
+feat ds30
+feat ds31
+feat ds32
+feat ds33
+feat ds34
+feat ds35
+feat ds36
+feat ds37
+feat ds38
+feat ds39
+feat ds40
+feat ds41
+feat ds42
+feat ds43
+feat ds44
+feat ds45
+feat ds46
+feat ds47
+feat ds48
+feat ds49
+feat ds50
+feat ds51
+feat ds52
+feat ds53
+feat ds54
+feat ds55
+feat ds56
+feat ds57
+feat ds58
+feat ds59
+feat ds60
+feat ds61
+feat ds62
+feat ds63
+feat ds64
+feat ds65
+feat ds66
+feat ds67
+feat ds68
+feat ds69
+feat ds70
+feat ds71
+feat ds72
+feat ds73
+feat ds74
+feat ds75
+feat ds76
+feat ds77
+feat ds78
+feat ds79
+feat ds80
+feat ds81
+feat ds82
+feat ds83
+feat ds84
+feat ds85
+feat ds86
+feat ds87
+feat ds88
+feat ds89
+feat ds90
+feat ds91
+feat ds92
+feat ds93
+feat ds94
+feat ds95
+feat ds96
+feat ds97
+feat ds98
+feat ds99
+feat ds100
+feat ds101
+feat ds102
+feat ds103
+feat ds104
+feat ds105
+feat ds106
+feat ds107
+feat ds108
+feat ds109
+feat ds110
+feat ds111
+feat ds112
+feat ds113
+feat ds114
+feat ds115
+feat ds116
+feat ds117
+feat ds118
+feat ds119
+feat ds120
+feat ds121
+feat ds122
+feat ds123
+feat ds124
+feat ds125
+feat ds126
+feat ds127
+feat ds128
+feat ds129
+feat ds130
+feat ds131
+feat ds132
+feat ds133
+feat ds134
+feat ds135
+feat ds136
+feat ds137
+feat ds138
+feat ds139
+feat ds140
+feat ds141
+feat ds142
+feat ds143
+feat ds144
+feat ds145
+feat ds146
+feat ds147
+feat ds148
+feat ds149
+feat ds150
+feat ds151
+feat ds152
+feat ds153
+feat ds154
+feat ds155
+feat ds156
+feat ds157
+feat ds158
+feat ds159
+feat ds160
+feat ds161
+feat ds162
+feat ds163
+feat ds164
+feat ds165
+feat ds166
+feat ds167
+feat ds168
+feat ds169
+feat ds170
+feat ds171
+feat ds172
+feat ds173
+feat ds174
+feat ds175
+feat ds176
+feat ds177
+feat ds178
+feat ds179
+feat ds180
+feat ds181
+feat ds182
+feat ds183
+feat ds184
+feat ds185
+feat ds186
+feat ds187
+feat ds188
+feat ds189
+feat ds190
+feat ds191
+feat ds192
+feat ds193
+feat ds194
+feat ds195
+feat ds196
+feat ds197
+feat ds198
+feat ds199
+feat ds200
+feat ds201
+feat ds202
+feat ds203
+feat ds204
+feat ds205
+feat ds206
+feat ds207
+feat ds208
+feat ds209
+feat ds210
+feat ds211
+feat ds212
+feat ds213
+feat ds214
+feat ds215
+feat ds216
+feat ds217
+feat ds218
+feat ds219
+feat ds220
+feat ds221
+feat ds222
+feat ds223
+feat ds224
+feat ds225
+feat ds226
+feat ds227
+feat ds228
+feat ds229
+feat ds230
+feat ds231
+feat ds232
+feat ds233
+feat ds234
+feat ds235
+feat ds236
+feat ds237
+feat ds238
+feat ds239
+feat ds240
+feat ds241
+feat ds242
+feat ds243
+feat ds244
+feat ds245
+feat ds246
+feat ds247
+feat ds248
+feat ds249
+feat ds250
+feat ds251
+feat ds252
+feat ds253
+feat ds254
+feat ds255
+feat ds256
+feat ds257
+feat ds258
+feat ds259
+feat ds260
+feat ds261
+feat ds262
+feat ds263
+feat ds264
+feat ds265
+feat ds266
+feat ds267
+feat ds268
+feat ds269
+feat ds270
+feat ds271
+feat ds272
+feat ds273
+feat ds274
+feat ds275
+feat ds276
+feat ds277
+feat ds278
+feat ds279
+feat ds280
+feat ds281
+feat ds282
+feat ds283
+feat ds284
+feat ds285
+feat ds286
+feat ds287
+feat ds288
+feat ds289
+feat ds290
+feat ds291
+feat ds292
+feat ds293
+feat ds294
+feat ds295
+feat ds296
+feat ds297
+feat ds298
+feat ds299
+feat ds300
+feat ds301
+feat ds302
+feat ds303
+feat ds304
+feat ds305
+feat ds306
+feat ds307
+feat ds308
+feat ds309
+feat ds310
+feat ds311
+feat ds312
+feat ds313
+feat ds314
+feat ds315
+feat ds316
+feat ds317
+feat ds318
+feat ds319
+feat ds320
+feat ds321
+feat ds322
+feat ds323
+feat ds324
+feat ds325
+feat ds326
+feat ds327
+feat ds328
+feat ds329
+feat ds330
+feat ds331
+feat ds332
+feat ds333
+feat ds334
+feat ds335
+feat ds336
+feat ds337
+feat ds338
+feat ds339
+feat ds340
+feat ds341
+feat ds342
+feat ds343
+feat ds344
+feat ds345
+feat ds346
+feat ds347
+feat ds348
+feat ds349
+feat ds350
+feat ds351
+feat ds352
+feat ds353
+feat ds354
+feat ds355
+feat ds356
+feat ds357
+feat ds358
+feat ds359
+feat ds360
+feat ds361
+feat ds362
+feat ds363
+feat ds364
+feat ds365
+feat ds366
+feat ds367
+feat ds368
+feat ds369
+feat ds370
+feat ex0
+feat ex1
+feat ex2
+feat ex3
+feat ex4
+feat ex5
+feat ex6
+feat ex7
+feat ex8
+feat ex9
+feat ex10
+feat ex11
+feat ex12
+feat ex13
+feat ex14
+feat ex15
+feat ex16
+feat ex17
+feat ex18
+feat ex19
+feat ex20
+feat ex21
+feat ex22
+feat ex23
+feat ex24
+feat ex25
+feat ex26
+feat ex27
+feat ex28
+feat ex29
+feat ex30
+feat ex31
+feat ex32
+feat ex33
+feat ex34
+feat ex35
+feat ex36
+feat ex37
+feat ex38
+feat ex39
+feat ex40
+feat ex41
+feat ex42
+feat ex43
+feat ex44
+feat ex45
+feat ex46
+feat ex47
+feat ex48
+feat ex49
+feat ex50
+feat ex51
+feat ex52
+feat ex53
+feat ex54
+feat ex55
+feat ex56
+feat ex57
+feat ex58
+feat ex59
+feat ex60
+feat ex61
+feat ex62
+feat ex63
+feat ex64
+feat ex65
+feat ex66
+feat ex67
+feat ex68
+feat ex69
+feat ex70
+feat ex71
+feat ex72
+feat ex73
+feat ex74
+feat ex75
+feat ex76
+feat ex77
+feat ex78
+feat ex79
+feat ex80
+feat ex81
+feat ex82
+feat ex83
+feat ex84
+feat ex85
+feat ex86
+feat ex87
+feat ex88
+feat ex89
+feat ex90
+feat ex91
+feat ex92
+feat ex93
+feat ex94
+feat ex95
+feat ex96
+feat ex97
+feat ex98
+feat ex99
+feat ex100
+feat ex101
+feat ex102
+feat ex103
+feat ex104
+feat ex105
+feat ex106
+feat ex107
+feat ex108
+feat ex109
+feat ex110
+feat ex111
+feat ex112
+feat ex113
+feat ex114
+feat ex115
+feat ex116
+feat ex117
+feat ex118
+feat ex119
+feat ex120
+feat ex121
+feat ex122
+feat ex123
+feat ex124
+feat ex125
+feat ex126
+feat ex127
+feat ex128
+feat ex129
+feat ex130
+feat ex131
+feat ex132
+feat ex133
+feat ex134
+feat ex135
+feat ex136
+feat ex137
+feat ex138
+feat ex139
+feat ex140
+feat ex141
+feat ex142
+feat ex143
+feat ex144
+feat ex145
+feat ex146
+feat ex147
+feat ex148
+feat ex149
+feat ex150
+feat ex151
+feat ex152
+feat ex153
+feat ex154
+feat ex155
+feat ex156
+feat ex157
+feat ex158
+feat ex159
+feat ex160
+feat ex161
+feat ex162
+feat ex163
+feat ex164
+feat ex165
+feat ex166
+feat ex167
+feat ex168
+feat ex169
+feat ex170
+feat ex171
+feat ex172
+feat ex173
+feat ex174
+feat ex175
+feat ex176
+feat ex177
+feat ex178
+feat ex179
+feat ex180
+feat ex181
+feat ex182
+feat ex183
+feat ex184
+feat ex185
+feat ex186
+feat ex187
+feat ex188
+feat ex189
+feat ex190
+feat ex191
+feat ex192
+feat ex193
+feat ex194
+feat ex195
+feat ex196
+feat ex197
+feat ex198
+feat ex199
+feat ex200
+feat ex201
+feat ex202
+feat ex203
+feat ex204
+feat ex205
+feat ex206
+feat ex207
+feat ex208
+feat ex209
+feat ex210
+feat ex211
+feat ex212
+feat ex213
+feat ex214
+feat ex215
+feat ex216
+feat ex217
+feat ex218
+feat ex219
+feat ex220
+feat ex221
+feat ex222
+feat ex223
+feat ex224
+feat ex225
+feat ex226
+feat ex227
+feat ex228
+feat ex229
+feat ex230
+feat ex231
+feat ex232
+feat ex233
+feat ex234
+feat ex235
+feat ex236
+feat ex237
+feat ex238
+feat ex239
+feat ex240
+feat ex241
+feat ex242
+feat ex243
+feat ex244
+feat ex245
+feat ex246
+feat ex247
+feat ex248
+feat ex249
+feat ex250
+feat ex251
+feat ex252
+feat ex253
+feat ex254
+feat ex255
+feat ex256
+feat ex257
+feat ex258
+feat ex259
+feat ex260
+feat ex261
+feat ex262
+feat ex263
+feat ex264
+feat ex265
+feat ex266
+feat ex267
+feat ex268
+feat ex269
+feat ex270
+feat ex271
+feat ex272
+feat ex273
+feat ex274
+feat ex275
+feat ex276
+feat ex277
+feat ex278
+feat ex279
+feat ex280
+feat ex281
+feat ex282
+feat ex283
+feat ex284
+feat ex285
+feat ex286
+feat ex287
+feat ex288
+feat ex289
+feat ex290
+feat ex291
+feat ex292
+feat ex293
+feat ex294
+feat ex295
+feat ex296
+feat ex297
+feat ex298
+feat ex299
+feat ex300
+feat ex301
+feat ex302
+feat ex303
+feat ex304
+feat ex305
+feat ex306
+feat ex307
+feat ex308
+feat ex309
+feat ex310
+feat ex311
+feat ex312
+feat ex313
+feat ex314
+feat ex315
+feat ex316
+feat ex317
+feat ex318
+feat ex319
+feat ex320
+feat ex321
+feat ex322
+feat ex323
+feat ex324
+feat ex325
+feat ex326
+feat ex327
+feat ex328
+feat ex329
+feat ex330
+feat ex331
+feat ex332
+feat ex333
+feat ex334
+feat ex335
+feat ex336
+feat ex337
+feat ex338
+feat ex339
+feat ex340
+feat ex341
+feat ex342
+feat ex343
+feat ex344
+feat ex345
+feat ex346
+feat ex347
+feat ex348
+feat ex349
+feat ex350
+feat ex351
+feat ex352
+feat ex353
+feat ex354
+feat ex355
+feat ex356
+feat ex357
+feat ex358
+feat ex359
+feat ex360
+feat ex361
+feat ex362
+feat ex363
+feat ex364
+feat ex365
+feat ex366
+feat ex367
+feat ex368
+feat ex369
+feat ex370
+feat incomingDmg
+feat nAttacking
+feat m0Id
+feat m0Hp
+feat m0Block
+feat m0Str
+feat m0Intent
+feat m0Atk
+feat m0Vuln
+feat m0Weak
+feat m0Poison
+feat m1Id
+feat m1Hp
+feat m1Block
+feat m1Str
+feat m1Intent
+feat m1Atk
+feat m1Vuln
+feat m1Weak
+feat m1Poison
+feat m2Id
+feat m2Hp
+feat m2Block
+feat m2Str
+feat m2Intent
+feat m2Atk
+feat m2Vuln
+feat m2Weak
+feat m2Poison
+feat m3Id
+feat m3Hp
+feat m3Block
+feat m3Str
+feat m3Intent
+feat m3Atk
+feat m3Vuln
+feat m3Weak
+feat m3Poison
+feat m4Id
+feat m4Hp
+feat m4Block
+feat m4Str
+feat m4Intent
+feat m4Atk
+feat m4Vuln
+feat m4Weak
+feat m4Poison
+feat pot0
+feat pot1
+feat pot2
+feat pot3
+feat pot4
+feat pot5
+feat pot6
+feat pot7
+feat pot8
+feat pot9
+feat pot10
+feat pot11
+feat pot12
+feat pot13
+feat pot14
+feat pot15
+feat pot16
+feat pot17
+feat pot18
+feat pot19
+feat pot20
+feat pot21
+feat pot22
+feat pot23
+feat pot24
+feat pot25
+feat pot26
+feat pot27
+feat pot28
+feat pot29
+feat pot30
+feat pot31
+feat pot32
+feat pot33
+feat pot34
+feat pot35
+feat pot36
+feat pot37
+feat pot38
+feat pot39
+feat pot40
+feat pot41
+feat pot42
+feat pot43
+feat gold
+feat potionCap
+feat cardsPlayed
+feat attacksPlayed
+feat skillsPlayed
+feat happyFlowerCtr
+feat incenseBurnerCtr
+feat inkBottleCtr
+feat inserterCtr
+feat nunchakuCtr
+feat penNibCtr
+feat sundialCtr
+feat panacheCtr
+feat aIsCard
+feat aIsPotion
+feat aIsEndTurn
+feat aIsSelect
+feat aCardId
+feat aCardCost
+feat aCardUpg
+feat aCardAtk
+feat aCardSkl
+feat aCardPow
+feat aTargetsEnemy
+feat aTargetHp
+feat aPlayOrder
+feat aObtainWeight
+feat aSelectSize
+feat aSelTotalCost
+feat aSelAtk
+feat aSelSkl
+feat aSelPow
+feat aSelUpgraded
+feat aSelPlayOrder
+feat aSelObtainWeight
+base_score 1.040563e-09
+ntrees 97
+tree 0 11
+S 1768 1 1 2
+S 1770 13 3 4
+S 6 2 5 6
+L -0.03282921
+S 1757 1 7 8
+L -0.03317528
+L -0.3187613
+S 1778 35 9 10
+L 0.01451195
+L 0.143268
+L 0.06371867
+tree 1 9
+S 1766 1 1 2
+S 6 3 3 4
+S 158 1 5 6
+L -0.04852159
+L -0.2012303
+S 1777 28 7 8
+L 0.156814
+L 0.08991696
+L 0.02191852
+tree 2 11
+S 1766 1 1 2
+S 6 3 3 4
+S 1778 22 5 6
+L -0.04635064
+L -0.2409033
+L 0.1407557
+S 1777 28 7 8
+L 0.1039045
+S 6 4 9 10
+L -0.01074896
+L 0.07650218
+tree 3 11
+S 1766 1 1 2
+S 6 3 3 4
+S 5 2 5 6
+L -0.04624771
+L -0.2052359
+S 870 2 7 8
+L 0.03099666
+L 0.1232945
+S 1673 10 9 10
+L 0.04082893
+L 0.09144146
+tree 4 9
+S 1766 1 1 2
+S 1755 2 3 4
+S 1779 15 5 6
+L -0.2576202
+L -0.06121463
+S 18 17 7 8
+L 0.1171222
+L 0.0113327
+L 0.08715697
+tree 5 11
+S 1766 1 1 2
+S 1755 2 3 4
+S 21 16 5 6
+L -0.2084919
+L -0.04373951
+S 1777 24 7 8
+S 985 1 9 10
+L 0.07109422
+L -0.001509969
+L 0.1389854
+L 0.05659692
+tree 6 11
+S 1766 1 1 2
+S 17 4 3 4
+S 1778 22 5 6
+L 0.0030926
+L -0.1645907
+L 0.1130136
+S 1777 28 7 8
+L 0.09499966
+S 21 16 9 10
+L -0.01901519
+L 0.05554128
+tree 7 11
+S 1770 11 1 2
+S 6 3 3 4
+S 4 86 5 6
+L -0.02388301
+L -0.1936434
+S 1777 24 7 8
+L 0.1274433
+L 0.07414366
+S 1779 5 9 10
+L 0.0544237
+L 0.0209842
+tree 8 9
+S 1770 11 1 2
+S 6 3 3 4
+S 5 2 5 6
+L -0.03745707
+L -0.2223608
+S 21 15 7 8
+L 0.0219388
+L 0.05729219
+L 0.1255155
+tree 9 11
+S 1766 1 1 2
+S 6 3 3 4
+S 1779 15 5 6
+L -0.05197677
+L -0.2019879
+S 6 3 7 8
+L 0.09891088
+L 0
+S 22 10 9 10
+L 0.0750699
+L 0.03729945
+tree 10 9
+S 1766 1 1 2
+S 1757 1 3 4
+S 1778 30 5 6
+L -0.1733643
+L -0.04077717
+L 0.09648112
+S 11 2 7 8
+L 0.06303481
+L -0.004288535
+tree 11 11
+S 1768 1 1 2
+S 5 3 3 4
+S 6 2 5 6
+S 1662 11 7 8
+L -0.02603811
+L 0.004682267
+L -0.2428649
+S 1778 35 9 10
+L 0.08152189
+L -0.001419433
+L 0.04919417
+tree 12 11
+S 1766 1 1 2
+S 6 3 3 4
+S 4 87 5 6
+L -0.02627669
+L -0.1538747
+S 850 1 7 8
+L 0.1467885
+S 1 21 9 10
+L 0.004789135
+L 0.03924286
+L 0.08575764
+tree 13 11
+S 1768 1 1 2
+S 1779 15 3 4
+S 1757 1 5 6
+S 1757 1 7 8
+L 0.1220759
+L -0.1704948
+L -0.04350201
+S 13 88 9 10
+L -0.01615898
+L 0.0336598
+L 0.108203
+tree 14 9
+S 1766 1 1 2
+S 6 2 3 4
+S 1755 1 5 6
+L -0.02896479
+L -0.1554787
+L 0.09924275
+S 1777 28 7 8
+L 0.09165057
+L -0.00123952
+tree 15 9
+S 1766 1 1 2
+S 5 2 3 4
+S 1779 15 5 6
+L -0.1180967
+L 0.002003105
+S 653 2 7 8
+L 0.1067346
+L -0.002967002
+L 0.0653632
+tree 16 11
+S 1766 1 1 2
+S 17 4 3 4
+S 1778 22 5 6
+L 0.005141976
+L -0.121967
+L 0.1153836
+S 1777 24 7 8
+L 0.06996226
+S 1 36 9 10
+L -0.03713165
+L 0.04936224
+tree 17 11
+S 1768 1 1 2
+S 1771 1 3 4
+S 6 2 5 6
+L -0.01108603
+S 1770 249 7 8
+L -0.009515658
+L -0.1757853
+S 1662 16 9 10
+L 0.008123176
+L 0.02678296
+L 0.08469648
+tree 18 11
+S 1766 1 1 2
+S 17 5 3 4
+S 896 1 5 6
+L -0.01773376
+L -0.14716
+S 1777 24 7 8
+L 0.1091234
+L 0.05982024
+S 1 36 9 10
+L -0.01381902
+L 0.03319091
+tree 19 9
+S 1766 1 1 2
+S 6 3 3 4
+S 1668 10 5 6
+L -0.01074377
+L -0.1211093
+S 1 35 7 8
+L 0.08741873
+L 0.006135699
+L 0.04985114
+tree 20 11
+S 1768 1 1 2
+S 22 12 3 4
+S 17 4 5 6
+S 1777 31 7 8
+L 0.1332984
+L -0.004804214
+L -0.165192
+S 1753 115 9 10
+L 0.01340296
+L 0.08545573
+L 0.02244228
+tree 21 11
+S 1779 1 1 2
+S 1674 7 3 4
+S 870 2 5 6
+S 1306 1 7 8
+L -0.06963316
+L 0.1219093
+S 1777 41 9 10
+L 0.01933555
+L -0.04367845
+L 0.06565783
+L 0.01495129
+tree 22 9
+S 1768 1 1 2
+S 3 56 3 4
+L -0.09323174
+S 1777 4 5 6
+L 0.1093446
+L -0.02416801
+S 1777 33 7 8
+L 0.06864104
+L 0.01534155
+tree 23 9
+S 1766 1 1 2
+S 6 3 3 4
+S 7 3 5 6
+L -0.009888863
+L -0.1563402
+S 1778 40 7 8
+L 0.0135148
+L 0.1097943
+L 0.02322432
+tree 24 11
+S 1768 1 1 2
+S 5 4 3 4
+S 6 2 5 6
+S 1668 14 7 8
+L -0.005162173
+L -0.0009786537
+L -0.1469868
+S 1777 30 9 10
+L 0.1178463
+L 0.06341544
+L 0.01556369
+tree 25 11
+S 1768 1 1 2
+S 719 1 3 4
+S 6 2 5 6
+S 5 2 7 8
+L 0.06617381
+L 0.01353374
+L -0.1682914
+S 1753 199 9 10
+L -0.02594023
+L 0.007776032
+L 0.05394698
+tree 26 11
+S 1768 1 1 2
+S 1779 15 3 4
+S 1757 1 5 6
+S 5 2 7 8
+L 0.06713873
+L -0.1397528
+L -0.02270522
+S 3 46 9 10
+L -0.03544041
+L 0.006727299
+L 0.0501621
+tree 27 11
+S 1766 1 1 2
+S 6 2 3 4
+S 19 8 5 6
+L 0.0003465315
+L -0.09142663
+S 1665 20 7 8
+S 1662 21 9 10
+L 0.02754806
+L 0.09996811
+L 0.02643353
+L 0.004659608
+tree 28 9
+S 1768 1 1 2
+S 1755 3 3 4
+L -0.07451517
+S 1306 1 5 6
+L -0.01320325
+S 653 3 7 8
+L 0.003941596
+L 0.07647573
+L 0.02778217
+tree 29 11
+S 1770 13 1 2
+S 17 4 3 4
+S 771 1 5 6
+L 0.01388725
+L -0.04224435
+S 1753 108 7 8
+L 0.1116389
+L 0.04789584
+S 1778 50 9 10
+L 0.005850067
+L 0.02696729
+tree 30 13
+S 1768 1 1 2
+S 1755 2 3 4
+S 17 4 5 6
+S 18 17 7 8
+S 1 38 9 10
+L 0.01010881
+L -0.1646755
+S 1777 24 11 12
+L 0.07524111
+L -0.02356834
+L 0.01162828
+L 0.03563622
+L 0.005403892
+tree 31 9
+S 1770 13 1 2
+S 6 3 3 4
+S 1770 269 5 6
+L -0.009205475
+L -0.1048316
+S 1024 1 7 8
+L 0.003505935
+L 0.03323794
+L 0.08393618
+tree 32 11
+S 1768 1 1 2
+S 5 2 3 4
+S 1 36 5 6
+S 985 1 7 8
+L -0.01409529
+L 0.002712504
+L -0.1296549
+S 12 150 9 10
+L 0.009000835
+L 0.0339302
+L 0.08478398
+tree 33 11
+S 1768 1 1 2
+S 142 1 3 4
+S 21 14 5 6
+S 614 1 7 8
+L 0.1140046
+L 0.002226579
+L -0.08899606
+S 25 1 9 10
+L -0.01561278
+L 0.02394585
+L -0.008528628
+tree 34 11
+S 1768 1 1 2
+S 6 3 3 4
+S 6 2 5 6
+L -0.03786509
+S 282 1 7 8
+L 0.02266098
+L -0.1364221
+S 15 4 9 10
+L 0.01114875
+L 0.1124713
+L 0.03143116
+tree 35 11
+S 1771 1 1 2
+S 7 1 3 4
+S 3 45 5 6
+S 17 5 7 8
+L -0.06095748
+S 1773 1 9 10
+L 0.07081295
+L 0.01205546
+L -0.01093775
+L 0.05265875
+L -0.00174932
+tree 36 11
+S 1768 1 1 2
+S 76 1 3 4
+S 6 2 5 6
+S 1778 35 7 8
+L 0.06228004
+L 0.01459643
+L -0.160127
+L -0.02116482
+S 3 34 9 10
+L 0.002486647
+L 0.0523429
+tree 37 9
+S 1766 1 1 2
+S 1757 1 3 4
+S 5 2 5 6
+L -0.1232395
+L 0.0009602365
+S 1777 44 7 8
+L -0.02684297
+L 0.05489517
+L 0.01852873
+tree 38 11
+S 1766 1 1 2
+S 17 5 3 4
+S 719 1 5 6
+L 0.005111529
+L -0.08849727
+S 1779 12 7 8
+L 0.07053449
+S 1673 14 9 10
+L -0.004935546
+L 0.06841669
+L 0.02142637
+tree 39 11
+S 1768 1 1 2
+S 1770 179 3 4
+S 6 2 5 6
+S 13 150 7 8
+S 1779 7 9 10
+L 0.01665456
+L -0.1479416
+L 0.01891008
+L -0.05751153
+L 0.009262221
+L 0.07954641
+tree 40 11
+S 1768 1 1 2
+S 142 1 3 4
+S 21 14 5 6
+S 1664 12 7 8
+L 0.09426079
+L 0.01775816
+L -0.1060489
+L -0.006923327
+S 1664 35 9 10
+L 0.05593149
+L 0.01006839
+tree 41 9
+S 20 5 1 2
+S 1768 1 3 4
+L -0.09180597
+S 4 88 5 6
+L -0.03037377
+S 1777 24 7 8
+L 0.06956045
+L 0.03638791
+L -0.00329875
+tree 42 11
+S 1768 1 1 2
+S 1779 18 3 4
+S 6 2 5 6
+S 1771 1 7 8
+L 0.05219901
+L -0.008545169
+L -0.1621267
+L -0.04325797
+S 1664 30 9 10
+L -0.015312
+L 0.06105293
+tree 43 11
+S 1768 1 1 2
+S 1777 28 3 4
+S 1757 1 5 6
+S 1683 8 7 8
+S 1757 1 9 10
+L -0.08617707
+L -0.002000951
+L 0.007951791
+L 0.08091368
+L 0.02085064
+L -0.05056754
+tree 44 9
+S 1770 11 1 2
+S 6 3 3 4
+S 1770 301 5 6
+L -0.01254765
+L -0.1016654
+S 1024 1 7 8
+L 0.06871387
+L -0.0162891
+L 0.05095477
+tree 45 11
+S 1768 1 1 2
+S 896 1 3 4
+S 1757 1 5 6
+S 25 1 7 8
+L 0.04972414
+L -0.1291465
+L 0.01959773
+S 1778 40 9 10
+L -0.03120414
+L 0.03854793
+L -0.009849769
+tree 46 11
+S 1771 1 1 2
+S 6 4 3 4
+S 1665 52 5 6
+S 2 2 7 8
+L -0.1078943
+S 3 38 9 10
+L 0.06382552
+L -0.01671042
+L 0.03915801
+L 0.03166915
+L -0.008315474
+tree 47 11
+S 1770 187 1 2
+S 850 1 3 4
+S 3 40 5 6
+S 12 175 7 8
+L -0.06954435
+L -0.01416858
+L 0.07305628
+S 1770 11 9 10
+L 0.03744419
+L -0.04223348
+L 0.004608462
+tree 48 11
+S 1768 1 1 2
+S 1770 187 3 4
+S 6 2 5 6
+S 1770 57 7 8
+S 3 41 9 10
+L 0.007244448
+L -0.120261
+L 0.04439947
+L -0.02339374
+L 0.007225873
+L 0.1030986
+tree 49 9
+S 1779 15 1 2
+S 1768 1 3 4
+L 0.07205332
+S 18 18 5 6
+L -0.03447901
+S 1778 55 7 8
+L 0.04253365
+L -0.04071699
+L 0.01492972
+tree 50 13
+S 1768 1 1 2
+S 142 1 3 4
+S 21 12 5 6
+S 1770 40 7 8
+L 0.06311381
+L 0.004223509
+L -0.1041697
+L -0.02653385
+S 19 6 9 10
+L 0.04782978
+S 1770 241 11 12
+L 0.009461542
+L -0.0196231
+tree 51 11
+S 1768 1 1 2
+S 1770 36 3 4
+S 1668 1 5 6
+L 0.03858415
+S 1770 187 7 8
+L 0.00466984
+L -0.119314
+L -0.04417182
+S 3 41 9 10
+L -0.005148732
+L 0.07138487
+tree 52 11
+S 1766 1 1 2
+S 6 3 3 4
+S 5 2 5 6
+L 0.01823995
+L -0.0826314
+S 618 1 7 8
+L -2.523856e-05
+S 1779 3 9 10
+L 0.09490219
+L 0.04786958
+L 0.01109321
+tree 53 11
+S 1766 1 1 2
+S 17 5 3 4
+S 1770 321 5 6
+L -0.000735888
+L -0.1031531
+S 771 1 7 8
+L -0.03858592
+S 1662 8 9 10
+L 0.09114788
+L -0.01663219
+L 0.02639099
+tree 54 11
+S 1770 300 1 2
+S 1779 18 3 4
+L 0.05695956
+S 1753 212 5 6
+L 0.05041156
+S 1665 7 7 8
+L -0.04301361
+L -0.01745682
+S 1024 1 9 10
+L 0.06026967
+L 0.00752978
+tree 55 11
+S 728 1 1 2
+S 1770 193 3 4
+L -0.05992083
+S 564 1 5 6
+S 3 26 7 8
+S 22 8 9 10
+L -0.04311198
+L 0.002926179
+L 0.06546256
+L -0.005247507
+L 0.03706891
+tree 56 11
+S 1770 13 1 2
+S 23 2 3 4
+S 1778 22 5 6
+L 0.008126129
+L -0.07188074
+L 0.05718479
+S 727 1 7 8
+S 1778 55 9 10
+L 0.04095118
+L -0.02526563
+L 0.01516138
+tree 57 11
+S 1778 3 1 2
+S 17 5 3 4
+S 1665 183 5 6
+L 0.01547532
+L -0.08419559
+S 1662 8 7 8
+L 0.09007731
+L -0.01924672
+S 1677 7 9 10
+L 0.05332487
+L 0.005007578
+tree 58 11
+S 1766 1 1 2
+S 17 4 3 4
+S 1778 40 5 6
+L 0.009379373
+L -0.08658029
+S 4 84 7 8
+S 13 100 9 10
+L 0.01562835
+L 0.09239756
+L -0.02184221
+L 0.03672177
+tree 59 11
+S 1768 1 1 2
+S 6 3 3 4
+S 6 2 5 6
+L -0.01368794
+S 17 5 7 8
+L 0.02485199
+L -0.1454057
+L 0.08722529
+S 1777 95 9 10
+L 0.04255641
+L -0.0320594
+tree 60 11
+S 1770 193 1 2
+S 3 62 3 4
+S 1673 2 5 6
+S 1755 1 7 8
+L -0.08640632
+L 0.06781042
+L 0.0005404981
+L -0.03563805
+S 1677 1 9 10
+L 0.04536281
+L -0.007194142
+tree 61 11
+S 1768 1 1 2
+S 1 51 3 4
+S 574 1 5 6
+S 898 1 7 8
+L 0.0577544
+L -0.07816017
+L 0
+S 21 11 9 10
+L -0.03109039
+L -0.0006224727
+L 0.0247919
+tree 62 11
+S 142 1 1 2
+S 1777 31 3 4
+L -0.03747213
+S 25 1 5 6
+S 1770 197 7 8
+S 1241 2 9 10
+L 0.05375851
+L 0.01391046
+L -0.03810272
+L 0.003061218
+L 0.03556374
+tree 63 11
+S 850 2 1 2
+S 1773 1 3 4
+L 0.07349932
+S 12 72 5 6
+S 2 2 7 8
+L 0.01818439
+S 6 2 9 10
+L 0.05588625
+L 0.006154971
+L -0.0005632802
+L -0.04826747
+tree 64 11
+S 696 1 1 2
+S 1662 2 3 4
+L -0.09428904
+L 0.02840078
+S 1768 1 5 6
+S 6 4 7 8
+L -0.05167064
+S 1777 24 9 10
+L 0.03873057
+L 0.01748582
+L -0.03052285
+tree 65 9
+S 771 1 1 2
+S 1777 36 3 4
+L -0.06600323
+S 6 4 5 6
+L -0.01934032
+S 1683 10 7 8
+L -0.02892665
+L 0.02077079
+L 0.06109993
+tree 66 13
+S 23 5 1 2
+S 1779 9 3 4
+S 24 4 5 6
+S 1756 1 7 8
+L 0.06001607
+L -0.07336313
+L -0.001055565
+S 1777 7 9 10
+S 1770 11 11 12
+L -0.05973385
+L 0
+L 0.0343166
+L -0.008828416
+tree 67 11
+S 653 1 1 2
+L -0.04985357
+S 1686 6 3 4
+S 282 1 5 6
+L -0.03505573
+S 1753 165 7 8
+S 1756 1 9 10
+L 0.05716381
+L 0.005826898
+L -0.0151467
+L 0.01761826
+tree 68 11
+S 1768 1 1 2
+S 142 1 3 4
+S 1757 1 5 6
+S 1674 17 7 8
+L 0.0735115
+L -0.09817301
+L 0.02916891
+S 1665 29 9 10
+L 0.02957308
+L -0.05009207
+L 0.01112214
+tree 69 11
+S 19 4 1 2
+S 6 3 3 4
+S 1241 1 5 6
+L 0.0007141707
+L 0.04393687
+L -0.1064575
+S 1683 29 7 8
+S 1779 1 9 10
+L -0.04528119
+L 0.02053965
+L -0.009072465
+tree 70 11
+S 696 1 1 2
+S 1770 40 3 4
+L -0.08179462
+S 1755 2 5 6
+S 1778 35 7 8
+L -0.04352018
+L 0.01742244
+L 0.04002868
+S 21 15 9 10
+L -0.01691539
+L 0.03098068
+tree 71 11
+S 1777 175 1 2
+S 12 160 3 4
+L 0.0638995
+S 1777 8 5 6
+L -0.05703821
+S 12 55 7 8
+S 1770 179 9 10
+L 0.009300129
+L -0.04354675
+L 0.03667779
+L 0.001154463
+tree 72 9
+S 1098 1 1 2
+S 17 4 3 4
+L 0.06234116
+L 0.02925279
+S 1771 0 5 6
+L -0.05041081
+S 1665 20 7 8
+L -0.02907965
+L 0.01889432
+tree 73 13
+S 1768 1 1 2
+S 870 1 3 4
+S 6 2 5 6
+L 0.06662006
+S 1777 28 7 8
+L 0.01400332
+L -0.08072598
+S 11 2 9 10
+S 21 17 11 12
+L -0.008169403
+L 0.04894326
+L -0.06747053
+L 0.003787767
+tree 74 11
+S 850 2 1 2
+S 7 2 3 4
+L -0.02526046
+S 282 1 5 6
+S 1777 24 7 8
+L 0.06896216
+S 1777 7 9 10
+L 0.02087172
+L -0.0148911
+L 0.001390839
+L 0.01929028
+tree 75 11
+S 1770 65 1 2
+S 564 1 3 4
+S 771 1 5 6
+S 1664 23 7 8
+L -0.06764136
+S 19 6 9 10
+L 0.08071733
+L 0.006404211
+L 0.02664713
+L 0.03949041
+L 0
+tree 76 11
+S 1768 1 1 2
+S 4 88 3 4
+S 6 2 5 6
+S 1771 1 7 8
+L 0.07105824
+L 0.0193576
+L -0.09714893
+L -0.02939137
+S 1756 1 9 10
+L 0.003733937
+L 0.06038139
+tree 77 11
+S 1664 38 1 2
+S 771 1 3 4
+S 1778 5 5 6
+S 13 123 7 8
+L -0.06385823
+L 0.05423625
+L 0.009935105
+S 1753 181 9 10
+L -0.01708908
+L 0.03087111
+L -0.002407131
+tree 78 11
+S 1768 1 1 2
+S 1668 10 3 4
+S 1662 14 5 6
+S 1770 73 7 8
+L 0.0561582
+L 0.01994441
+L -0.0734488
+L -0.02767217
+S 1777 28 9 10
+L 0.03784243
+L -0.005537015
+tree 79 11
+S 4 98 1 2
+S 6 1 3 4
+L -0.08349521
+L 0.03275871
+S 1682 16 5 6
+S 653 2 7 8
+L -0.03770993
+L -0.01772054
+S 1674 9 9 10
+L 0.03287634
+L 0
+tree 80 11
+S 1665 257 1 2
+S 17 6 3 4
+L 0.07399079
+S 1770 57 5 6
+L -0.03134726
+S 3 34 7 8
+S 23 3 9 10
+L 0.008281313
+L 0.05890858
+L 0.008572835
+L -0.02417819
+tree 81 11
+S 1779 15 1 2
+S 771 1 3 4
+L 0.04566578
+S 1777 7 5 6
+L -0.06679973
+S 24 3 7 8
+S 1753 177 9 10
+L -0.03967106
+L 0.007864797
+L 0.04319138
+L 0.009526478
+tree 82 11
+S 22 13 1 2
+S 1682 16 3 4
+L -0.07861432
+S 1757 1 5 6
+L -0.03781765
+S 1776 1 7 8
+S 1753 157 9 10
+L -0.03690892
+L 0.01436399
+L 0.05121381
+L 0.00827574
+tree 83 11
+S 1753 348 1 2
+S 23 3 3 4
+L -0.04207511
+S 1777 39 5 6
+S 653 3 7 8
+S 499 1 9 10
+L -0.05080592
+L 0.04978244
+L 0.0005771546
+L 0.0286279
+L -0.01265405
+tree 84 13
+S 1779 1 1 2
+S 1683 29 3 4
+S 3 53 5 6
+S 1755 1 7 8
+L -0.05694524
+S 7 3 9 10
+L 0.09934836
+L -0.04146531
+S 4 84 11 12
+L 0.0214229
+L -0.01318157
+L 0.0355397
+L 0.005675428
+tree 85 11
+S 849 1 1 2
+S 828 1 3 4
+L -0.05802409
+S 3 56 5 6
+L 0.03364986
+S 1770 57 7 8
+L -0.02721381
+L 0.02129342
+S 1665 35 9 10
+L 0.005253713
+L -0.01843867
+tree 86 11
+S 1770 193 1 2
+S 1668 20 3 4
+S 3 33 5 6
+S 1682 16 7 8
+L -0.07936621
+L -0.002664051
+L 0.05252536
+S 499 1 9 10
+L -0.04043074
+L 0.02230309
+L -0.01298979
+tree 87 11
+S 696 1 1 2
+S 12 173 3 4
+L -0.04716068
+S 12 107 5 6
+S 3 30 7 8
+S 1777 14 9 10
+L -0.02210618
+L 0.007287212
+L 0.06332944
+L 0.02470982
+L -0.001307803
+tree 88 11
+S 904 1 1 2
+S 1777 175 3 4
+L -0.03331037
+S 6 4 5 6
+L 0.04316948
+S 564 1 7 8
+L -0.02579151
+S 1768 1 9 10
+L 0.03984198
+L -0.00951095
+L 0.02853461
+tree 89 13
+S 696 1 1 2
+S 815 1 3 4
+L -0.1020209
+S 653 3 5 6
+L 0.0531888
+S 1770 121 7 8
+S 2 2 9 10
+S 1768 1 11 12
+L 0.03320451
+L -0.03832045
+L -0.0007138006
+L -0.01963051
+L 0.01595524
+tree 90 11
+S 1770 191 1 2
+S 1 21 3 4
+S 574 1 5 6
+L 0.01877532
+S 1280 1 7 8
+L 0.04710297
+L -0.005954122
+S 1768 1 9 10
+L 0.0002497147
+L -0.02589407
+L -0.1087586
+tree 91 11
+S 1776 1 1 2
+S 1755 3 3 4
+S 1779 12 5 6
+S 1665 27 7 8
+L 0.03155411
+S 1024 1 9 10
+L -0.02201942
+L -0.005966034
+L -0.1001394
+L 0.06334909
+L 0.0004701338
+tree 92 11
+S 1665 264 1 2
+S 1777 31 3 4
+L -0.0546281
+S 1683 22 5 6
+S 23 4 7 8
+S 574 1 9 10
+L 0.05371607
+L -0.06253159
+L 0.0207471
+L -0.01697981
+L 0.02155221
+tree 93 11
+S 1664 35 1 2
+S 1768 1 3 4
+S 1771 1 5 6
+S 23 3 7 8
+L -0.02019317
+L -0.04667533
+L 0.004801704
+S 1770 193 9 10
+L 0.08044416
+L -0.02122255
+L 0.01963292
+tree 94 9
+S 1664 61 1 2
+S 24 5 3 4
+L 0.0656837
+S 1770 149 5 6
+L 0.02555167
+S 6 3 7 8
+L 0.01881398
+L -0.007954651
+L -0.07518388
+tree 95 11
+S 3 62 1 2
+S 1778 52 3 4
+L -0.04761328
+S 564 1 5 6
+L -0.02969701
+S 13 105 7 8
+S 1766 1 9 10
+L 0.045409
+L 0.01876384
+L -0.0472104
+L 0.02359097
+tree 96 11
+S 985 1 1 2
+S 1770 36 3 4
+S 13 51 5 6
+S 1665 26 7 8
+S 6 3 9 10
+L 0.00627094
+L -0.03921274
+L 0.009823294
+L 0.07379431
+L -0.0313697
+L 0.02315116

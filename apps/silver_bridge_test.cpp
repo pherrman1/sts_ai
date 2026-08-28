@@ -145,6 +145,70 @@ int main() {
           && inMemorySearch.rootActionSummaries.size() == reloadedSearch.rootActionSummaries.size(),
           "serialized/reloaded leaf must reproduce an identical deterministic small-budget search");
 
+    // Default-off 2x2 node-policy contract. Deliberately rank the current last
+    // action first so ordering changes are visible without loading a model.
+    const auto reverseScorer = [](const silver_bridge::BattleStateWire &wire) {
+        const auto actions = silver_bridge::enumerateSilverLegalActions(wire);
+        std::vector<double> scores(actions.size());
+        for (std::size_t i = 0; i < scores.size(); ++i) scores[i] = static_cast<double>(i);
+        return scores;
+    };
+    auto policyBase = serializedSearchConfig;
+    policyBase.simulationsPerDecision = 1;
+    const auto armA = silver_bridge::runSilverDecision(firstWire, policyBase);
+    auto scoredOffConfig = policyBase;
+    scoredOffConfig.nodePolicyScorer = reverseScorer;
+    const auto scoredOff = silver_bridge::runSilverDecision(firstWire, scoredOffConfig);
+    check(armA.accepted && scoredOff.accepted
+          && silver_bridge::semanticActionFingerprint(armA.action)
+              == silver_bridge::semanticActionFingerprint(scoredOff.action),
+          "policy scorer with both mechanisms OFF must preserve legacy selection exactly");
+    auto armBConfig = scoredOffConfig;
+    armBConfig.learnedActionOrdering = true;
+    const auto armB = silver_bridge::runSilverDecision(firstWire, armBConfig);
+    auto armCConfig = scoredOffConfig;
+    armCConfig.learnedPuct = true;
+    armCConfig.learnedCpuct = 2.5;
+    const auto armC = silver_bridge::runSilverDecision(firstWire, armCConfig);
+    auto armDConfig = armCConfig;
+    armDConfig.learnedActionOrdering = true;
+    const auto armD = silver_bridge::runSilverDecision(firstWire, armDConfig);
+    check(armB.rootActionSummaries.size() == armA.rootActionSummaries.size()
+          && !armB.rootActionSummaries.empty()
+          && silver_bridge::semanticActionFingerprint(armB.rootActionSummaries.front().action)
+              == silver_bridge::semanticActionFingerprint(armA.rootActionSummaries.back().action),
+          "B must stably reorder edges by learned score");
+    check(armC.rootActionSummaries.size() == armA.rootActionSummaries.size()
+          && std::equal(armC.rootActionSummaries.begin(), armC.rootActionSummaries.end(),
+              armA.rootActionSummaries.begin(), [](const auto &lhs, const auto &rhs) {
+                  return silver_bridge::semanticActionFingerprint(lhs.action)
+                      == silver_bridge::semanticActionFingerprint(rhs.action);
+              }), "C must preserve current Silver edge order");
+    check(!armD.rootActionSummaries.empty()
+          && silver_bridge::semanticActionFingerprint(armD.rootActionSummaries.front().action)
+              == silver_bridge::semanticActionFingerprint(armB.rootActionSummaries.front().action),
+          "B and D must use identical learned ranking");
+    const auto legalCount = static_cast<std::int64_t>(teacherActions.size());
+    armBConfig.simulationsPerDecision = legalCount + 2;
+    const auto armBVisited = silver_bridge::runSilverDecision(firstWire, armBConfig);
+    check(armBVisited.telemetry.policyPuctSelections == 0,
+          "B must return to ordinary UCT after learned initial ordering");
+    armCConfig.simulationsPerDecision = legalCount;
+    const auto armCFirstVisits = silver_bridge::runSilverDecision(firstWire, armCConfig);
+    check(armCFirstVisits.telemetry.policyPuctSelections == 0
+          && std::all_of(armCFirstVisits.rootActionSummaries.begin(),
+                         armCFirstVisits.rootActionSummaries.end(),
+                         [](const auto &row) { return row.edgeVisits > 0; }),
+          "C must force one visit to every legal action before learned PUCT");
+    armCConfig.simulationsPerDecision = legalCount + 2;
+    const auto armCPuct = silver_bridge::runSilverDecision(firstWire, armCConfig);
+    check(armCPuct.telemetry.policyPuctSelections > 0,
+          "C must use persistent learned PUCT after first visits");
+    check(armCPuct.telemetry.policyScoredDecisionNodes > 0
+          && armCPuct.telemetry.policyLegalActions >= legalCount
+          && armCPuct.telemetry.chanceOutcomesSampled > 0,
+          "policy telemetry must coexist with chance expansion without scoring chance nodes");
+
     silver_bridge::SilverLeafObservation capturedLeaf;
     bool capturedLeafStart = false;
     auto parentObserverConfig = serializedSearchConfig;

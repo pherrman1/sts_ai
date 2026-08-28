@@ -73,6 +73,16 @@ subdecision, and is otherwise behavior-neutral when unset. The visit-share
 signal and the other recorded root statistics are observation fields only;
 they do not alter Silver selection, widening, reuse, evaluator, or OOC policy.
 
+The default-off Silver decision-policy experiment loads
+`STS_SILVER_POLICY_MODEL` (default `models/silver_parent_policy_25k.txt`) when
+either `STS_SILVER_POLICY_ORDERING=1` or `STS_SILVER_POLICY_PUCT=1`. Ordering
+stably sorts newly enumerated decision edges by predicted centered Q and then
+uses ordinary UCT. PUCT preserves enumeration order, retains positive infinity
+for unvisited actions, and uses fixed `c_puct=2.5` with normalized rank weights
+only after visits begin. Both flags may be enabled together. Chance outcome
+selection/widening and SimpleAgent rollouts never read this policy callback;
+all flags unset preserves production Silver behavior.
+
 Live sts_ai exposes atomic `GAMBLE`/`EXHAUST_MANY` subsets while Silver uses a
 sequential private selection UI. The bridge therefore runs every private
 subdecision, including exact reroots, and returns only the final identity-based

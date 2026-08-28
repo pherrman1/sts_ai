@@ -333,6 +333,14 @@ struct SilverSearchConfig {
     // SimpleAgent rollout would begin and is behavior-neutral unless the
     // callback explicitly sets skipRollout/directValue.
     SilverLeafObserver leafObserver;
+    // Default-off decision-node policy scorer. The callback receives the exact
+    // isolated state and returns one score in current Silver action order.
+    // Chance nodes never invoke it.
+    using NodePolicyScorer = std::function<std::vector<double>(const BattleStateWire &)>;
+    NodePolicyScorer nodePolicyScorer;
+    bool learnedActionOrdering = false;
+    bool learnedPuct = false;
+    double learnedCpuct = 2.5;
     // Default-off two-tier allocation.  When enabled, the caller searches to
     // adaptiveInitialSimulations, inspects the top-two visit-share gap, and
     // may continue the same private search to adaptiveTotalSimulations.
@@ -435,6 +443,10 @@ struct SilverSearchTelemetry {
     double rolloutEnergyWasteSum = 0.0;
     double rolloutDrawSum = 0.0;
     double rolloutSurvivalSum = 0.0;
+    std::int64_t policyScoredDecisionNodes = 0;
+    std::int64_t policyLegalActions = 0;
+    std::int64_t policyPuctSelections = 0;
+    std::int64_t policyFirstExpandedLearnedTop = 0;
     void add(const SilverSearchTelemetry &other) {
         nodesCreated += other.nodesCreated;
         detTranspositions += other.detTranspositions;
@@ -469,6 +481,10 @@ struct SilverSearchTelemetry {
         rolloutEnergyWasteSum += other.rolloutEnergyWasteSum;
         rolloutDrawSum += other.rolloutDrawSum;
         rolloutSurvivalSum += other.rolloutSurvivalSum;
+        policyScoredDecisionNodes += other.policyScoredDecisionNodes;
+        policyLegalActions += other.policyLegalActions;
+        policyPuctSelections += other.policyPuctSelections;
+        policyFirstExpandedLearnedTop += other.policyFirstExpandedLearnedTop;
     }
 };
 

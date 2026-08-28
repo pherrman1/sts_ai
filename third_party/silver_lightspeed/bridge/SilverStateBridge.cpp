@@ -527,6 +527,10 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     out.rolloutEnergyWasteSum = stats.rolloutEnergyWasteSum;
     out.rolloutDrawSum = stats.rolloutDrawSum;
     out.rolloutSurvivalSum = stats.rolloutSurvivalSum;
+    out.policyScoredDecisionNodes = stats.policyScoredDecisionNodes;
+    out.policyLegalActions = stats.policyLegalActions;
+    out.policyPuctSelections = stats.policyPuctSelections;
+    out.policyFirstExpandedLearnedTop = stats.policyFirstExpandedLearnedTop;
     return out;
 }
 
@@ -567,6 +571,10 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     result.rolloutEnergyWasteSum -= prior.rolloutEnergyWasteSum;
     result.rolloutDrawSum -= prior.rolloutDrawSum;
     result.rolloutSurvivalSum -= prior.rolloutSurvivalSum;
+    result.policyScoredDecisionNodes -= prior.policyScoredDecisionNodes;
+    result.policyLegalActions -= prior.policyLegalActions;
+    result.policyPuctSelections -= prior.policyPuctSelections;
+    result.policyFirstExpandedLearnedTop -= prior.policyFirstExpandedLearnedTop;
     return result;
 }
 
@@ -726,6 +734,10 @@ public:
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
         searcher->collectVictoryCounts = config.collectRootActionSummaries;
         searcher->leafObserver = config.leafObserver;
+        searcher->nodePolicyScorer = config.nodePolicyScorer;
+        searcher->learnedActionOrdering = config.learnedActionOrdering;
+        searcher->learnedPuct = config.learnedPuct;
+        searcher->learnedCpuct = config.learnedCpuct;
     }
 
     // Exact pinned-SearchAgent boundary: state equality plus exact hand order;

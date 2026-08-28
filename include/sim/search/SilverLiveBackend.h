@@ -41,6 +41,13 @@ struct SilverLiveDiagnostics {
     std::uint64_t blendDepthAvoided = 0;
     std::uint64_t leafVNetInferenceCalls = 0;
     std::uint64_t leafVNetInferenceMicros = 0;
+    std::uint64_t policyModelInferenceCalls = 0;
+    std::uint64_t policyModelInferenceMicros = 0;
+    std::uint64_t policyScoredDecisionNodes = 0;
+    std::uint64_t policyLegalActions = 0;
+    std::uint64_t policyPuctSelections = 0;
+    std::uint64_t policyFirstExpandedLearnedTop = 0;
+    std::uint64_t policyActionAlignmentFailures = 0;
     // Default-off test trace.  It is never populated in production runs.
     std::vector<std::string> actionFingerprints;
 };
@@ -64,6 +71,10 @@ std::string silverLiveStickyQualityFile();
 bool silverLiveAdaptiveEnabled();
 bool silverLiveExactRootBudgets();
 double silverLiveAdaptiveTopTwoVisitGapThreshold();
+bool silverLivePolicyOrderingEnabled();
+bool silverLivePolicyPuctEnabled();
+double silverLivePolicyCpuct();
+std::string silverLivePolicyModelPath();
 
 // Stable deterministic sampler used only by STS_SILVER_STICKY_QUALITY_FILE.
 // It hashes the documented public decision identity and consumes no RNG.

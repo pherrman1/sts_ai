@@ -64,6 +64,10 @@ struct BenchConfigSidecar {
     bool silverAdaptiveEnabled = false;
     double silverAdaptiveTopShare = 0.0;
     bool silverExactRootBudgets = false;
+    bool silverPolicyOrdering = false;
+    bool silverPolicyPuct = false;
+    double silverPolicyCpuct = 0.0;
+    std::string silverPolicyModel;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -158,6 +162,10 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"silverAdaptiveEnabled\":" << (c.silverAdaptiveEnabled ? "true" : "false");
     o << ",\"silverAdaptiveTopShare\":" << c.silverAdaptiveTopShare;
     o << ",\"silverExactRootBudgets\":" << (c.silverExactRootBudgets ? "true" : "false");
+    o << ",\"silverPolicyOrdering\":" << (c.silverPolicyOrdering ? "true" : "false");
+    o << ",\"silverPolicyPuct\":" << (c.silverPolicyPuct ? "true" : "false");
+    o << ",\"silverPolicyCpuct\":" << detail::jsonNumber(c.silverPolicyCpuct);
+    o << ",\"silverPolicyModel\":\"" << detail::jsonEscape(c.silverPolicyModel) << '"';
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';
