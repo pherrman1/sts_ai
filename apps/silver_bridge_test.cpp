@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <set>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -99,6 +100,24 @@ int main() {
     const auto wireFeatures = search::silverLiveLeafCanonicalFeatures(reloadedWire);
     check(wireFeatures == directFeatures,
           "stored Silver wire must reproduce canonical rich combat features exactly");
+    const auto teacherActions = silver_bridge::enumerateSilverLegalActions(reloadedWire);
+    const auto policyRows = search::silverLiveParentPolicyFeatures(reloadedWire);
+    check(!policyRows.empty(), "restored parent must emit policy feature rows");
+    check(policyRows.size() == teacherActions.size(),
+          "teacher/restored/emitted policy action counts must match");
+    std::set<std::string> teacherSet, restoredSet, emittedSet;
+    for (const auto &action : teacherActions)
+        teacherSet.insert(silver_bridge::semanticActionFingerprint(action));
+    for (const auto &row : policyRows) {
+        restoredSet.insert(row.actionFingerprint);
+        emittedSet.insert(row.actionFingerprint);
+        check(row.features.size() == static_cast<std::size_t>(search::combatPolicyFeatureCount()),
+              "policy row must use current canonical feature count");
+    }
+    check(teacherSet.size() == teacherActions.size(),
+          "restored legal semantic fingerprints must be unique");
+    check(teacherSet == restoredSet && restoredSet == emittedSet,
+          "teacher action fingerprints == restored legal fingerprints == emitted feature rows");
     auto incompatibleEnvelope = silver_bridge::battleStateWireEnvelope(firstWire);
     incompatibleEnvelope["wire_version"] = 999;
     bool incompatibleRejected = false;

@@ -292,6 +292,11 @@ struct SemanticAction {
 // index and can therefore cross the isolated-search/live-action boundary.
 std::string semanticActionFingerprint(const SemanticAction &action);
 
+// Enumerate the exact legal root actions in the order used by the pinned
+// Silver BattleSearcher. This performs no search simulation or rollout.
+// Invalid, terminal, or actionless states fail closed with an empty vector.
+std::vector<SemanticAction> enumerateSilverLegalActions(const BattleStateWire &state);
+
 // Difference needed to translate a victorious continuation evaluated with
 // `leaf` as BattleSearcher::rootState back to `originalRoot` semantics.
 // Loss evaluations contain neither root-relative term and therefore use zero.

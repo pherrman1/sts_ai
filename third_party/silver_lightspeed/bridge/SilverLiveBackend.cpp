@@ -578,6 +578,32 @@ std::vector<float> silverLiveLeafCanonicalFeaturesImpl(
     return features;
 }
 
+std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
+        const silver_bridge::BattleStateWire &wire) {
+    g_richCombatFeatures = true;
+    auto live = liveLeafBattleContext(wire);
+    const auto semantics = silver_bridge::enumerateSilverLegalActions(wire);
+    if (semantics.empty()) throw std::runtime_error("restored Silver parent has no legal actions");
+    std::unordered_set<std::string> fingerprints;
+    std::vector<SilverPolicyFeatureRow> rows;
+    rows.reserve(semantics.size());
+    for (std::size_t i = 0; i < semantics.size(); ++i) {
+        const auto fingerprint = silver_bridge::semanticActionFingerprint(semantics[i]);
+        if (!fingerprints.insert(fingerprint).second)
+            throw std::runtime_error("duplicate restored Silver action fingerprint: " + fingerprint);
+        const auto resolved = resolveSilverSemanticAction(live, semantics[i]);
+        if (!resolved.ok)
+            throw std::runtime_error("cannot lower restored Silver action " + fingerprint + ": " + resolved.error);
+        SilverPolicyFeatureRow row;
+        row.actionFingerprint = fingerprint;
+        row.silverOrder = static_cast<int>(i);
+        row.features.resize(combatPolicyFeatureCount());
+        combatExtractPolicyFeatures(live, resolved.action, row.features.data());
+        rows.push_back(std::move(row));
+    }
+    return rows;
+}
+
 void writeLeafVNetObservation(std::uint64_t runSeed, int decision,
                               const silver_bridge::SilverLeafObservation &observation) {
     std::lock_guard<std::mutex> lock(g_leafVNetLogMutex);
@@ -1298,6 +1324,11 @@ double silverLiveLeafVNetPredictionForTest(
 std::vector<float> silverLiveLeafCanonicalFeatures(
         const silver_bridge::BattleStateWire &wire) {
     return silverLiveLeafCanonicalFeaturesImpl(wire);
+}
+
+std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(
+        const silver_bridge::BattleStateWire &wire) {
+    return silverLiveParentPolicyFeaturesImpl(wire);
 }
 
 void installSilverLiveBackend() {

@@ -121,6 +121,14 @@ target_include_directories(silver-leaf-features PRIVATE include json/include)
 target_link_libraries(silver-leaf-features PRIVATE silver_live_backend)
 target_link_options(silver-leaf-features PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-parent-policy-features
+    apps/silver_parent_policy_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(silver-parent-policy-features PROPERTIES
+    OUTPUT_NAME silver_parent_policy_features)
+target_include_directories(silver-parent-policy-features PRIVATE include json/include)
+target_link_libraries(silver-parent-policy-features PRIVATE silver_live_backend)
+target_link_options(silver-parent-policy-features PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-native-parity-runner third_party/silver_lightspeed/bridge/SilverNativeFixtureRunner.cpp)
 set_target_properties(silver-native-parity-runner PROPERTIES OUTPUT_NAME silver_native_parity_runner)
 set_target_properties(silver-native-parity-runner PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
@@ -284,6 +292,10 @@ add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-t
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
 add_test(NAME silver_leaf_pipeline_tools COMMAND python3 -m unittest tests.agent.test_silver_leaf_pipeline)
 set_tests_properties(silver_leaf_pipeline_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME silver_parent_policy_tools COMMAND python3 -m unittest tests.agent.test_silver_parent_policy)
+set_tests_properties(silver_parent_policy_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME py_compile_silver_parent_policy COMMAND python3 -m py_compile
+    ${CMAKE_SOURCE_DIR}/tools/train_silver_parent_policy.py)
 add_test(NAME runic_dome_lifecycle COMMAND $<TARGET_FILE:runic-dome-lifecycle-test>)
 add_test(NAME py_compile_analyze_silver_reuse_scaling COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py)
 add_test(NAME analyze_silver_reuse_scaling_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py --self-test)
