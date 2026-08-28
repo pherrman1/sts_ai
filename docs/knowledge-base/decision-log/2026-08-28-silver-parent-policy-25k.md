@@ -36,3 +36,9 @@ points worse top-action agreement. The only verdicts are
 The decision-bearing result, exact frozen/GCP SHA, model hash, costs, metrics,
 bootstrap, diagnostics, and final verdict remain pending the draft-PR review,
 authoritative CI, and frozen-SHA GCP run.
+
+The first frozen feature attempt emitted no dataset and failed closed on a
+WARCRY parent because the pre-existing wire-to-live feature adapter did not
+restore `CardSelectInfo`. The same-session implementation correction restores
+the complete wire card-select/current-queue fields and adds focused parity
+coverage. No modeling or 25k-B metric was produced by the failed attempt.

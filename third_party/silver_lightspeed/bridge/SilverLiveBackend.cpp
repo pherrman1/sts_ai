@@ -441,6 +441,26 @@ BattleContext liveLeafBattleContext(const silver_bridge::BattleStateWire &in) {
     loadLiveLeafPile(out.cards.drawPile, in.drawPile);
     loadLiveLeafPile(out.cards.discardPile, in.discardPile);
     loadLiveLeafPile(out.cards.exhaustPile, in.exhaustPile);
+    for (std::size_t i = 0; i < out.cardSelectInfo.cards.size(); ++i)
+        out.cardSelectInfo.cards[i] = static_cast<CardId>(in.cardSelect.cards[i]);
+    out.cardSelectInfo.canPickZero = in.cardSelect.canPickZero;
+    out.cardSelectInfo.canPickAnyNumber = in.cardSelect.canPickAnyNumber;
+    out.cardSelectInfo.pickCount = in.cardSelect.pickCount;
+    out.cardSelectInfo.data0 = in.cardSelect.data0;
+    out.cardSelectInfo.cardSelectTask = static_cast<CardSelectTask>(in.cardSelect.task);
+    const auto &queue = in.curCardQueueItem;
+    out.curCardQueueItem.card = liveLeafCard(queue.card);
+    out.curCardQueueItem.target = queue.target;
+    out.curCardQueueItem.isEndTurn = queue.isEndTurn;
+    out.curCardQueueItem.triggerOnUse = queue.triggerOnUse;
+    out.curCardQueueItem.ignoreEnergyTotal = queue.ignoreEnergyTotal;
+    out.curCardQueueItem.energyOnUse = queue.energyOnUse;
+    out.curCardQueueItem.freeToPlay = queue.freeToPlay;
+    out.curCardQueueItem.randomTarget = queue.randomTarget;
+    out.curCardQueueItem.autoplay = queue.autoplay;
+    out.curCardQueueItem.regretCardCount = queue.regretCardCount;
+    out.curCardQueueItem.purgeOnUse = queue.purgeOnUse;
+    out.curCardQueueItem.exhaustOnUse = queue.exhaustOnUse;
     return out;
 }
 

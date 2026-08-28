@@ -118,6 +118,14 @@ int main() {
           "restored legal semantic fingerprints must be unique");
     check(teacherSet == restoredSet && restoredSet == emittedSet,
           "teacher action fingerprints == restored legal fingerprints == emitted feature rows");
+    auto cardSelectWire = reloadedWire;
+    cardSelectWire.inputState = static_cast<int>(InputState::CARD_SELECT);
+    cardSelectWire.cardSelect.task = static_cast<std::int16_t>(CardSelectTask::WARCRY);
+    cardSelectWire.cardSelect.pickCount = 1;
+    const auto cardSelectActions = silver_bridge::enumerateSilverLegalActions(cardSelectWire);
+    const auto cardSelectRows = search::silverLiveParentPolicyFeatures(cardSelectWire);
+    check(!cardSelectRows.empty() && cardSelectRows.size() == cardSelectActions.size(),
+          "stored card-select wire must lower every Silver action to a canonical policy row");
     auto incompatibleEnvelope = silver_bridge::battleStateWireEnvelope(firstWire);
     incompatibleEnvelope["wire_version"] = 999;
     bool incompatibleRejected = false;
