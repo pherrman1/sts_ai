@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -108,13 +109,28 @@ int main(int argc, char **argv) {
         for (const auto &[group, teacher] : teachers) {
             const auto parentIt = parents.find(group);
             if (parentIt == parents.end()) throw std::runtime_error("teacher parent missing from corpus: " + group);
-            const auto rows = sts::search::silverLiveParentPolicyFeatures(parentIt->second.wire);
+            std::vector<sts::search::SilverPolicyFeatureRow> rows;
+            try {
+                rows = sts::search::silverLiveParentPolicyFeatures(parentIt->second.wire);
+            } catch (const std::exception &e) {
+                const std::string message = e.what();
+                const std::string reason = message.find("cannot lower restored Silver action") == 0
+                    ? "semantic_resolution_failure"
+                    : message.find("duplicate restored Silver action fingerprint") == 0
+                        ? "duplicate_restored_fingerprint"
+                        : message.find("no legal actions") != std::string::npos
+                            ? "restored_action_set_empty" : "incompatible_restored_state";
+                ++exclusions[reason];
+                continue;
+            }
             std::set<std::string> restored;
             for (const auto &row : rows) restored.insert(row.actionFingerprint);
             std::set<std::string> labelled;
             for (const auto &[fingerprint, ignored] : teacher.actions) labelled.insert(fingerprint);
-            if (restored != labelled)
-                throw std::runtime_error("teacher/restored complete action-set mismatch: " + group);
+            if (restored != labelled) {
+                ++exclusions["teacher_restored_action_set_mismatch"];
+                continue;
+            }
             double meanQ = 0.0;
             for (const auto &[ignored, action] : teacher.actions) meanQ += action.q;
             meanQ /= static_cast<double>(teacher.actions.size());
@@ -139,7 +155,13 @@ int main(int argc, char **argv) {
             {"feature_names", sts::search::combatPolicyFeatureNames()},
             {"feature_count", sts::search::combatPolicyFeatureCount()},
             {"target", "original_root_corrected_q_25k_A - parent_mean(original_root_corrected_q_25k_A)"},
-            {"candidate_25k_a_parents", candidateRows}, {"valid_complete_parents", teachers.size()},
+            {"candidate_25k_a_parents", candidateRows},
+            {"teacher_valid_25k_a_parents", teachers.size()},
+            {"valid_complete_parents", teachers.size() -
+                std::accumulate(exclusions.begin(), exclusions.end(), std::size_t{0},
+                    [](std::size_t total, const auto &entry) {
+                        return total + (entry.first.rfind("teacher_invalid:", 0) == 0 ? 0 : entry.second);
+                    })},
             {"action_rows", actionRows}, {"exclusions", exclusions}}.dump() << '\n';
         for (const auto &row : emitted) output << row.dump() << '\n';
     } catch (const std::exception &e) {

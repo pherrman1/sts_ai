@@ -42,3 +42,10 @@ WARCRY parent because the pre-existing wire-to-live feature adapter did not
 restore `CardSelectInfo`. The same-session implementation correction restores
 the complete wire card-select/current-queue fields and adds focused parity
 coverage. No modeling or 25k-B metric was produced by the failed attempt.
+
+The corrected frozen attempt then found a pinned-Silver/current-live legality
+incompatibility (Gambler's Brew with an empty hand). The feature producer was
+corrected to exclude an entire incompatible parent atomically and record a
+stable exclusion category; it still never emits a partial action set, and
+schema, duplicate teacher, missing corpus, and feature-width failures remain
+fatal.
