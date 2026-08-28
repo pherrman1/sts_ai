@@ -1,4 +1,6 @@
 import importlib.util
+import hashlib
+import json
 import subprocess
 import tempfile
 import unittest
@@ -18,7 +20,146 @@ def load_module():
     return module
 
 
+def valid_manifest():
+    sha = "a" * 40
+    digest = "b" * 64
+    return {
+        "schema_version": 1,
+        "experiment_id": "policy-2x2",
+        "frozen_sha": sha,
+        "checkout": "checkouts/policy-2x2",
+        "build_dir": "checkouts/policy-2x2/build/linux-gcc-release",
+        "binary": {"remote_path": "checkouts/policy-2x2/build/linux-gcc-release/one_combat", "sha256": digest},
+        "artifacts": [{"remote_path": "artifacts/policy-model.txt", "sha256": "c" * 64}],
+        "common_env": {
+            "OMP_NUM_THREADS": "1",
+            "STS_EXECUTABLE_GIT_SHA": sha,
+            "STS_SILVER_TELEMETRY": "1",
+        },
+        "required_env": ["OMP_NUM_THREADS", "STS_EXECUTABLE_GIT_SHA", "STS_SILVER_TELEMETRY"],
+        "expect_silver_telemetry": True,
+        "command": [
+            "checkouts/policy-2x2/build/linux-gcc-release/one_combat",
+            "bestbench", "1000", "32", "1", "975000", "{results}",
+        ],
+        "arms": [
+            {"name": "A", "results": "results/policy-A.csv", "log": "logs/policy-A.log", "env": {"STS_POLICY_ARM": "A"}},
+            {"name": "B", "results": "results/policy-B.csv", "log": "logs/policy-B.log", "env": {"STS_POLICY_ARM": "B"}},
+        ],
+    }
+
+
+def write_manifest(directory, payload):
+    path = Path(directory) / "manifest.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
 class GcpBenchmarkTests(unittest.TestCase):
+    def test_manifest_validates_and_renders_shared_configuration(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = module.load_run_manifest(write_manifest(directory, valid_manifest()))
+        command, log, fresh = module.manifest_arm(manifest, "B")
+        self.assertEqual(log, "logs/policy-B.log")
+        self.assertEqual(fresh, ["results/policy-B.csv", "results/policy-B.csv.meta.json", "logs/policy-B.log"])
+        self.assertEqual(command[0], "env")
+        self.assertIn("STS_SILVER_TELEMETRY=1", command)
+        self.assertIn("STS_POLICY_ARM=B", command)
+        self.assertEqual(command[-2:], ["975000", "results/policy-B.csv"])
+
+    def test_manifest_fails_closed_on_missing_telemetry(self):
+        module = load_module()
+        payload = valid_manifest()
+        payload["common_env"]["STS_SILVER_TELEMETRY"] = "0"
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "must be nonzero"):
+                module.load_run_manifest(write_manifest(directory, payload))
+
+    def test_manifest_fails_closed_on_reused_output(self):
+        module = load_module()
+        payload = valid_manifest()
+        payload["arms"][1]["results"] = payload["arms"][0]["results"]
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "paths must be unique"):
+                module.load_run_manifest(write_manifest(directory, payload))
+
+    def test_manifest_fails_closed_on_common_configuration_override(self):
+        module = load_module()
+        payload = valid_manifest()
+        payload["arms"][0]["env"]["OMP_NUM_THREADS"] = "8"
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "overrides common_env"):
+                module.load_run_manifest(write_manifest(directory, payload))
+
+    def test_manifest_requires_thread_and_sha_provenance(self):
+        module = load_module()
+        payload = valid_manifest()
+        payload["required_env"].remove("OMP_NUM_THREADS")
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "must include OMP_NUM_THREADS"):
+                module.load_run_manifest(write_manifest(directory, payload))
+
+    def test_manifest_reserves_implicit_sidecar_paths(self):
+        module = load_module()
+        payload = valid_manifest()
+        payload["arms"][1]["log"] = payload["arms"][0]["results"] + ".meta.json"
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "sidecar paths must be unique"):
+                module.load_run_manifest(write_manifest(directory, payload))
+
+    def test_run_manifest_adds_env_and_refuses_existing_outputs(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as directory:
+            path = write_manifest(directory, valid_manifest())
+            args = module.parser().parse_args(["run-manifest", str(path), "A", "--foreground"])
+            captured = {}
+            with mock.patch.object(module, "ssh_command", side_effect=lambda _args, remote: captured.setdefault("remote", remote) and 0):
+                self.assertEqual(module.manifest_run(args), 0)
+        remote = captured["remote"]
+        self.assertIn("STS_SILVER_TELEMETRY=1", remote)
+        self.assertIn("STS_POLICY_ARM=A", remote)
+        self.assertIn("refusing existing output", remote)
+        self.assertIn("policy-A.csv.meta.json", remote)
+
+    def test_copy_to_verifies_local_and_remote_hash(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "artifact.json"
+            source.write_text("{}", encoding="utf-8")
+            digest = hashlib.sha256(b"{}").hexdigest()
+            args = module.parser().parse_args(["copy-to", str(source), "artifacts/a.json", "--expect-sha256", digest])
+            with mock.patch.object(module, "run_gcloud") as copy:
+                copy.return_value.returncode = 0
+                with mock.patch.object(module, "ssh_command", return_value=0) as ssh:
+                    self.assertEqual(module.copy_to(args), 0)
+        self.assertIn(digest, ssh.call_args.args[1])
+        self.assertIn("sha256sum", ssh.call_args.args[1])
+
+    def test_copy_to_rejects_wrong_local_hash_before_transfer(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "artifact.json"
+            source.write_text("{}", encoding="utf-8")
+            args = module.parser().parse_args(["copy-to", str(source), "artifacts/a.json", "--expect-sha256", "0" * 64])
+            with mock.patch.object(module, "run_gcloud", side_effect=AssertionError("must not transfer")):
+                with self.assertRaisesRegex(ValueError, "local SHA-256 mismatch"):
+                    module.copy_to(args)
+
+    def test_exact_sha_preflight_checks_checkout_binding_and_hashes(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as directory:
+            path = write_manifest(directory, valid_manifest())
+            args = module.parser().parse_args(["exact-sha-preflight", str(path)])
+            with mock.patch.object(module, "ssh_command", return_value=0) as ssh:
+                self.assertEqual(module.exact_sha_preflight(args), 0)
+        remote = ssh.call_args.args[1]
+        self.assertIn("rev-parse HEAD", remote)
+        self.assertIn("status --porcelain --untracked-files=no", remote)
+        self.assertIn("CMAKE_HOME_DIRECTORY:INTERNAL=", remote)
+        self.assertIn("b" * 64, remote)
+        self.assertIn("c" * 64, remote)
+
     def test_local_seed_guard_rejects_gcp_mode(self):
         result = subprocess.run(
             [str(SEED_GUARD), "--gcp-research", "guard-only", "./build/one_combat", "bestbench", "1000", "2000", "0"],
