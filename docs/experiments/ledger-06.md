@@ -5312,3 +5312,80 @@ model training was changed.
   intervals do not establish a clear stable depth interaction. Do not tune
   additional thresholds or weights against this seed block, extend N, or
   promote a gate.
+
+## 186. Silver 25k parent-Q policy scorer misses the offline gate (2026-08-28)
+
+- **Frozen run:** baseline `effbc1bc8c84482c998829f0b29bdb1425b45ff1`;
+  decision-bearing, CI-passed SHA
+  `85599a3d2c6e55f32236ea59c814bdd1250d73bb`; designated GCP host `sts-test`,
+  root `/home/philippherrmann/sts_sweep/task-b-85599a3`, Python 3.12.3,
+  XGBoost 3.3.0, NumPy 2.5.1, and GNU 13.3.0.
+- **Input/coverage:** `relabel.jsonl` SHA-256
+  `abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c`;
+  500 A rows/budget, 496 valid 25k-A parents, and 93/93 valid B anchors.
+  Feature generation retained 495 complete parents and 1,727 actions. Four
+  invalid zero-simulation teacher rows and one whole-parent semantic-resolution
+  incompatibility were excluded; no partial action set was emitted.
+- **Split/model:** test-only anchors had zero leakage. Train/validation/test
+  were 327/75/93 parents and 1,152/205/370 actions. Canonical feature width was
+  1,788; target was `Q_25kA(s,a) - mean_b Q_25kA(s,b)`. One fixed XGBoost
+  squared-error/hist recipe used validation early stopping (best iteration 96).
+- **Current order / model:** pairwise 0.66361/0.68858; top agreement
+  0.55914/0.64516; mean regret 2.86224/2.68121; median regret 0/0;
+  centered-Q MAE 4.95394/4.50694; RMSE 7.81372/7.22796; Spearman
+  0.42638/0.50630. The model had 81 prediction ties over 981 pairs.
+- **Teacher references:** 1k/10k/25k pairwise 0.73649/0.77166/0.78084; top
+  0.74194/0.77419/0.81720; mean regret 2.53940/2.33202/2.32816.
+- **Bootstrap:** 5,000 parent replicates. Pairwise delta p05/p50/p95 was
+  -0.01789/0.02468/0.07421, probability positive 0.822. Regret reduction was
+  -0.51773/0.16755/0.89064, probability positive 0.6558. Top delta was
+  +8.602pp, probability positive 0.9756.
+- **Cost/artifacts:** feature generation 1.518 s; training 0.577 s; Python
+  prediction 17.273 microseconds/action. Model SHA-256
+  `3de211d354c2e03de2516c5ab68d35ec8aba40a4c02cb61937c02925221d1f20`;
+  report SHA-256
+  `c2ac2e2cb5fa367860f5dd9981756c613adbc69b698ce1d0bb017c8a078a09fe`.
+- **Verdict:** **`POLICY_MODEL_OFFLINE_REJECTED`**. The +2.497pp pairwise
+  point change missed 3pp and both ranking/regret probabilities missed 90%.
+  Top improved, so evidence did not conflict. No native export, online prior,
+  PUCT, or gameplay run was performed. Exact diagnostics are in
+  `docs/experiments/evidence/silver_parent_policy_25k_2026-08-28.json`.
+
+## 187. Silver 25k parent-Q online policy methods rejected (2026-08-28)
+
+- **Authorization/status:** this was an explicit exploratory override of the
+  offline `POLICY_MODEL_OFFLINE_REJECTED` gate because offline top-action
+  agreement improved. The offline verdict remains unchanged. Attempts 1 and 2
+  stopped on correctness failures and their partial arms are not evidence.
+- **Final provenance:** corrected attempt-3 SHA
+  `a805d1404e10cc6eaa4fc2d4268f450937b25f0e`; designated `sts-test`, Release,
+  fair mode, one thread, ordinary Silver, 1,000 base simulations, allocated
+  reuse cap, and common seeds `975000--975031`. Exact executable SHA-256 was
+  `351c781a3b4478418019368d6b1f235f99c853d6d78abeca6dff252299315433`;
+  source-model JSON SHA-256 was
+  `3de211d354c2e03de2516c5ab68d35ec8aba40a4c02cb61937c02925221d1f20`;
+  compact 97-tree SHA-256 was
+  `4e2925bd17154ab60fcef52018ade3a85f82f246b1dc149be0da5cd21249386d`.
+- **Correctness:** the attempt-3 exact-action repair cleared both former crash
+  canaries (B seed 975000 and C seed 975024) and completed all 128 registered
+  runs. A/B/C/D crossed current/learned initial ordering with ordinary
+  UCT/fixed rank-prior PUCT (`c_puct=2.5`).
+- **Outcomes:** A/B/C/D wins were `20/20/17/15`; mean floors were
+  `47.750/46.594/45.500/44.750`; mean ending HP was
+  `30.313/29.656/22.688/19.750`; mean CPU seconds/run was
+  `4.932/7.355/6.843/6.766`. B/C/D cost `1.491x/1.388x/1.372x` A.
+- **Paired effects versus A:** B had 0 wins and -1.156 mean floors; C had -3
+  wins and -2.250 floors; D had -5 wins and -3.000 floors. The 10,000 shared
+  whole-seed bootstrap 95% win-delta intervals were respectively
+  `[-18.75,+15.625]pp`, `[-25,+6.25]pp`, and `[-37.5,+6.25]pp`.
+- **Telemetry limitation:** `STS_SILVER_TELEMETRY=1` was absent from the final
+  cohort. Simulation, inference-call/time, scored-node, legal-action,
+  PUCT-selection, and aggregate failure-counter fields are unavailable and
+  recorded as `null`, never zero.
+- **Verdict/cleanup:** **`ONLINE_POLICY_METHODS_REJECTED`**. No arm gained the
+  required three wins and every arm exceeded the 1.25x runtime limit. No
+  mechanism was promoted. PR #79 removes the rejected runtime ordering/PUCT
+  machinery and active compact model while retaining the reusable offline
+  pipeline and durable evidence. Complete hashes, contrasts, factorial effects,
+  and all 32 paired rows are in
+  `docs/experiments/evidence/silver_policy_online_methods_2026-08-28.json`.
