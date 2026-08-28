@@ -63,3 +63,18 @@ start policy-prior work in this session. This does not revise the prior
 `M10_BLEND_OFFLINE_REJECTED` decision; it adds direct evidence that none of the
 user-requested fixed weights transferred positively on the bounded gameplay
 block.
+
+## Depth-gated follow-up
+
+A subsequent user-authorized bounded follow-up tested alpha 0.1 only at the
+pre-existing offline depth edges 4 and 5, using fresh fair seeds
+`974200--974215`. Pure rollout, d4, and d5 won `10/10/11` with mean floors
+`46.063/47.125/45.000` and CPU seconds/run `4.721/12.043/11.079`. D4 invoked
+M10 on 80.62% of eligible leaves; d5 invoked it on 56.29%.
+
+D4 tied wins and had a weak positive floor point estimate. D5 gained one win
+but lost floor and ending HP. Every paired confidence interval included zero,
+both gates remained more than twice as slow, and every correctness failure
+counter was zero. The evidence therefore does not support a stable beneficial
+depth interaction. Final decision remains `M10_BLEND_REJECTED`; do not tune
+more thresholds against this block or promote either gate.

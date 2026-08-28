@@ -54,5 +54,19 @@
     "bootstrap": {"unit": "paired seed", "replicates": 100000, "seed": 6532},
     "all_failure_counters_zero": true,
     "raw_artifacts": "Ignored local build/silver_m10_rollout_blend/alpha_*.csv, alpha_*.csv.meta.json, and alpha_*.log; remote root silver_m10_blend_alpha_*"
+  },
+  "depth_gate_followup": {
+    "verdict": "M10_BLEND_REJECTED",
+    "threshold_source": "Pre-existing offline empirical depth-tercile edges 4 and 5; locked before fresh gameplay.",
+    "protocol": {"seed_lo": 974200, "seed_hi": 974215, "alpha_deep": 0.1, "thresholds": [4, 5], "threads": 1, "base_simulations": 1000, "fair": true, "reuse_cap": "allocated"},
+    "arms": {
+      "control": {"wins": 10, "mean_floor": 46.0625, "mean_hp_end": 36.8125, "mean_cpu_sec": 4.72057375, "rollout_calls": 9287902},
+      "d4": {"wins": 10, "mean_floor": 47.125, "mean_hp_end": 36.9375, "mean_cpu_sec": 12.043160625, "eligible_leaves": 8829895, "m10_calls": 7118695, "calls_avoided": 1711200, "call_coverage": 0.8062038110305955, "m10_micros": 52449139, "win_delta_pp": 0.0, "win_delta_95pct_pp": [-25.0, 25.0], "floor_delta": 1.0625, "floor_delta_95pct": [-4.0, 7.875]},
+      "d5": {"wins": 11, "mean_floor": 45.0, "mean_hp_end": 31.625, "mean_cpu_sec": 11.0790206875, "eligible_leaves": 8798554, "m10_calls": 4952622, "calls_avoided": 3845932, "call_coverage": 0.5628904476803802, "m10_micros": 39868369, "win_delta_pp": 6.25, "win_delta_95pct_pp": [-12.5, 25.0], "floor_delta": -1.0625, "floor_delta_95pct": [-4.4375, 1.25]}
+    },
+    "bootstrap": {"unit": "paired seed", "replicates": 100000, "seed": 6532},
+    "all_failure_counters_zero": true,
+    "decision": "D4 tied wins with weak positive floor but cost 2.55x CPU; d5 gained one win while losing floor/HP and cost 2.35x CPU. Mixed effects and wide intervals do not justify a depth gate or further tuning on this block.",
+    "raw_artifacts": "Ignored local build/silver_m10_rollout_blend/depth_*.csv, depth_*.csv.meta.json, and depth_*.log; remote root silver_m10_depth_*"
   }
 }

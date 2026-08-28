@@ -5278,3 +5278,37 @@ model training was changed.
   and about 2.7x CPU/run. Keep the implementation default-off. Do not promote,
   extend beyond 16 seeds, run equal-runtime follow-up, start Task B, or begin
   policy-prior integration from this experiment.
+
+## §185 Silver M10 depth-gated blend follow-up: REJECTED (2026-08-28)
+
+- **Question/design:** can alpha 0.1 recover useful deep-leaf correction while
+  preserving shallow rollout values and avoiding enough M10 calls to improve
+  runtime? Before new gameplay, thresholds 4 and 5 were locked from the
+  original offline empirical depth-tercile edges. No threshold was selected
+  from the preceding fixed-alpha gameplay outcomes.
+- **Protocol/provenance:** same reviewed and CI-passed scientific SHA
+  `6532d8f30ea2af365b48c998e8562cda2c325796`, GCP Release executable
+  `e52a6120e723f14f0c0468a4e84fe9ce2afc872536471ae5f7e6f7d6a3cebb91`,
+  and exact native M10
+  `344c83efebb4e2772971495e1e57e6202192386476e2c0c1b038a84f355f9959`.
+  Designated `sts-test`, fair, one thread, 1,000 base simulations, allocated
+  reuse, and fresh paired seeds `974200--974215`. Arms were pure rollout,
+  alpha 0.1 for `d>=4`, and alpha 0.1 for `d>=5`.
+- **Outcomes:** control/d4/d5 wins were `10/10/11`; mean floors were
+  `46.063/47.125/45.000`; ending HP was `36.813/36.938/31.625`; mean CPU
+  seconds/run was `4.721/12.043/11.079`. Against control, d4 had win delta
+  `0pp` (100,000-resample paired-seed 95% interval `[-25,+25]pp`) and floor
+  delta `+1.063` (`[-4.000,+7.875]`). D5 had win delta `+6.25pp`
+  (`[-12.5,+25]pp`) but floor delta `-1.063` (`[-4.438,+1.250]`) and ending-HP
+  delta `-5.188` (`[-19.313,+8.813]`).
+- **Coverage/cost:** d4 invoked M10 on `7,118,695/8,829,895` eligible leaves
+  (`80.62%`) and avoided `1,711,200`; d5 invoked `4,952,622/8,798,554`
+  (`56.29%`) and avoided `3,845,932`. Inference consumed 52.449/39.868 million
+  microseconds. All conversion, semantic, transaction, and knowledge failures
+  were zero.
+- **Verdict:** **`M10_BLEND_REJECTED` for these depth schedules.** D4 tied wins
+  with a weak positive floor point estimate but cost 2.55x CPU; d5 gained one
+  win while regressing floor/HP and cost 2.35x CPU. The mixed effects and wide
+  intervals do not establish a clear stable depth interaction. Do not tune
+  additional thresholds or weights against this seed block, extend N, or
+  promote a gate.
