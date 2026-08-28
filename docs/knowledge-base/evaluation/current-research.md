@@ -49,13 +49,16 @@ was the 63 multi-action parents; the 30 single-action parents were reported
 separately and do not inflate retention claims. Frozen-model top-3-plus-ties
 retained 95.24% of the B-best actions, but still had two `>=3` regret
 exclusions, so it provides no hard-pruning permission. The Phase 1 decision is
-`PHASE_1_COMPLETE_PHASE_2_AUTHORIZED`: implement and independently gate
-root-only Sequential Halving next, with adaptive allocation disabled. The
-previous rejection of learned ordinary ordering/PUCT remains unchanged.
+`SEQUENTIAL_HALVING_REJECTED`: the fresh-session 63-parent gate regressed mean
+regret at 64/128/256/1000, lost five best-action matches at 1000, and introduced
+new >=3-regret exclusions despite a 0.998x replay CPU ratio. Per the ladder
+stop rule, progressive unpruning, learned ranked unpruning, hard pruning, and
+gameplay smoke are not authorized. The previous rejection of learned ordinary
+ordering/PUCT remains unchanged.
 
 Evidence: `docs/experiments/evidence/silver_action_pruning_retention_2026-08-28.json`
 (SHA-256 `838f7c23fe985c00d8b609a87f1858a6f231ac7f3245e29da4e8bc077baac0e6`)
-and [ledger-06 Â§188](../../../docs/experiments/ledger-06.md).
+and [ledger-06 Â§188â€“189](../../../docs/experiments/ledger-06.md).
 
 ## Current baseline
 

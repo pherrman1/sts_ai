@@ -5421,3 +5421,35 @@ model training was changed.
   the model and remains the next gated implementation phase. Full report:
   `docs/experiments/evidence/silver_action_pruning_retention_2026-08-28.json`
   (SHA-256 `838f7c23fe985c00d8b609a87f1858a6f231ac7f3245e29da4e8bc077baac0e6`).
+
+## 189. Silver root action-pruning ladder Phase 2: Sequential Halving rejected (2026-08-28)
+
+- **Implementation/protocol:** reviewed implementation SHA
+  `fae0a852441c4c54b23a82ba5c95137b95954676` adds a default-off
+  root-action mode only. Every legal root edge remains stored; forced-edge
+  pulls are root-only, internal nodes retain UCT, chance widening is untouched,
+  and adaptive allocation conflicts fail closed. The replay restored all 93
+  stored parent wires into fresh `reuseCapMode=NONE` sessions with adaptive
+  disabled, paired the same wire/search seed for ordinary UCT and Sequential
+  Halving, and emitted 744 rows (2 methods x 4 budgets x 93 anchors). Primary
+  analysis is the 63 multi-action 25k-B parents; bootstrap used 5,000
+  deterministic parent resamples, seed `20260828`.
+- **Inputs/artifacts:** relabel SHA-256 was
+  `abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c`.
+  Raw replay JSONL is ignored at
+  `build/silver_action_pruning_replay_20260828.jsonl`, SHA-256
+  `63b051b741d4ebf6648ac3e79c1353da23639e48e8ea23ceef2faf603887b0fa`.
+  The durable analysis is
+  `docs/experiments/evidence/silver_action_pruning_sequential_halving_2026-08-28.json`,
+  SHA-256 `fb85783d0f1733fdfab6eeadb264ad1dd1a7fee7f1f9c8e5689c8b86e507d98d`.
+- **Results:** ordinary versus Sequential-Halving best-action matches / mean
+  regret were `27/3.110` versus `27/3.738` at 64, `30/3.161` versus `32/3.192`
+  at 128, `31/2.536` versus `31/3.055` at 256, and `40/2.274` versus
+  `35/2.612` at 1000. Sequential Halving added >=3-regret exclusions at
+  64 (19 vs 16), 256 (14 vs 13), and 1000 (12 vs 9). Aggregate replay CPU was
+  0.998x ordinary, so runtime was not the rejection cause.
+- **Gate/stop:** **`SEQUENTIAL_HALVING_REJECTED`**. It was non-worse on neither
+  two small budgets nor mean regret, had no preregistered useful effect with
+  bootstrap probability >=0.90, failed the 1000 no-harm condition, and created
+  new catastrophic exclusions. Do not implement progressive unpruning,
+  learned-ranked unpruning, hard pruning, or gameplay smoke under this ladder.
