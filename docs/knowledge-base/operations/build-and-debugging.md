@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-08-27 against the current working tree.
+Last verified: 2026-08-28 against the current working tree.
 
 ## Purpose
 
@@ -389,6 +389,83 @@ overridden for troubleshooting. Expensive or mutating `run` and
 `start-instance` operations reject any project, zone, instance, user, or remote
 root other than this designated target. It never creates, deletes, resizes, or
 reconfigures cloud resources.
+
+### Exact-SHA remote worktree and runtime provenance
+
+Do not treat a binary built after copying a few files into the designated
+remote root as frozen-SHA evidence. The root may have an older surrounding
+source/link graph, and a copied CMake cache can retain an absolute source path
+to a different preserved run tree. `bestbench` also obtains
+`executableGitSha` at runtime with `git rev-parse HEAD`; because the launcher
+executes from `/home/philippherrmann/sts_sweep`, an otherwise correct binary
+can emit the root checkout's unrelated SHA in its sidecar.
+
+For a reviewed scientific run, create a clean, uniquely named remote worktree
+at the exact reviewed commit and configure a new cache inside it. Prefer a
+normal fetch when the remote clone can reach the task branch. Some preserved
+run clones intentionally use an offline bundle as `origin`; if the branch is
+absent there, create a local Git bundle for the reviewed branch and upload it
+with `copy-to`, then fetch that bundle into the preserved clone. Example
+placeholders below must be replaced with the recorded task values:
+
+```bash
+# Local: bundle only when the preserved remote clone cannot fetch the branch.
+git bundle create build/<experiment>/<sha>.bundle <task-branch>
+python3 tools/agent/gcp_benchmark.py copy-to \
+  build/<experiment>/<sha>.bundle runs/<sha>.bundle
+
+# Remote through `gcp_benchmark.py run --foreground --`:
+git -C runs/<preserved-clone> fetch \
+  /home/philippherrmann/sts_sweep/runs/<sha>.bundle \
+  <task-branch>:refs/remotes/bundle/<experiment>
+git -C runs/<preserved-clone> worktree add --detach \
+  ../<experiment>-<sha> <full-reviewed-sha>
+cmake -S runs/<experiment>-<sha> \
+  -B runs/<experiment>-<sha>/build-release \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build runs/<experiment>-<sha>/build-release \
+  --target one_combat <focused-test-target> -j 24
+```
+
+Initialize the new worktree's pinned submodules before configuring. If the
+preserved offline clone cannot update them normally, copying their contents
+from the verified baseline clone is a mechanical fallback only after checking
+that the gitlink SHAs match; never use dependency presence as proof of the
+expected revision.
+
+The launcher must still start from the designated root so
+`tools/seed_guard.sh --gcp-research` can verify its host/root context. Supply
+the exact worktree's Git metadata to the benchmark process so runtime sidecars
+resolve the reviewed SHA rather than the designated root's SHA. Obtain the
+absolute git directory from the worktree's `.git` pointer or with
+`git -C runs/<experiment>-<sha> rev-parse --absolute-git-dir`, then include:
+
+```bash
+/usr/bin/env \
+  GIT_DIR=/absolute/path/to/the/worktree/gitdir \
+  GIT_WORK_TREE=/home/philippherrmann/sts_sweep/runs/<experiment>-<sha> \
+  STS_EXECUTABLE_GIT_SHA=<full-reviewed-sha> \
+  runs/<experiment>-<sha>/build-release/one_combat \
+  bestbench <sims> <nSeeds> <asc> <seedOffset> <results.csv>
+```
+
+`STS_EXECUTABLE_GIT_SHA` supplies provenance to Silver-specific artifacts; it
+does not override the general `bestbench` sidecar, which is why `GIT_DIR` and
+`GIT_WORK_TREE` are also required. Before a cohort:
+
+1. run the focused executable test from the exact-SHA build;
+2. hash the exact binary and every model/config artifact;
+3. run one fresh treatment canary through the guarded launcher;
+4. retrieve its CSV, `.meta.json`, and persisted launcher log; and
+5. run `tools/agent/check_benchmark_canary.py` with the expected full Git SHA,
+   binary SHA-256, backend, seed, simulations, thread count, fair regime, and
+   reuse-cap mode.
+
+The canary is invalid if its sidecar names another Git SHA even when the binary
+hash is recorded. Use a fresh output filename for every corrected canary;
+`bestbench` deliberately refuses overlapping rows in an existing result file.
+Keep invalid canary attempts in the evidence record rather than silently
+replacing them.
 
 For a research command, first state the hypothesis/question, baseline and
 treatment, seed regime, simulation/particle budget, fair-vs-known-RNG regime,
