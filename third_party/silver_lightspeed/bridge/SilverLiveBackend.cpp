@@ -638,7 +638,7 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         const auto fingerprint = silver_bridge::semanticActionFingerprint(semantics[i]);
         if (!fingerprints.insert(fingerprint).second)
             throw std::runtime_error("duplicate restored Silver action fingerprint: " + fingerprint);
-        const auto resolved = resolveSilverSemanticAction(live, semantics[i]);
+        const auto resolved = resolveSilverSemanticActionForPolicyFeatures(live, semantics[i]);
         if (!resolved.ok)
             throw std::runtime_error("cannot lower restored Silver action " + fingerprint + ": " + resolved.error);
         SilverPolicyFeatureRow row;
@@ -1265,7 +1265,13 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             const auto result = silver_bridge::runSilverDecision(*silverSession, wire, config);
             if (!result.accepted) {
                 ++g_silverLiveDiagnostics.conversionFailures;
-                fail("search", "Silver returned no semantic decision");
+                fail("search", "Silver returned no semantic decision: reason="
+                    + (result.failureReason.empty() ? std::string("unspecified") : result.failureReason)
+                    + " input=" + std::to_string(wire.inputState)
+                    + " turn=" + std::to_string(wire.turn)
+                    + " floor=" + std::to_string(bc.floorNum)
+                    + " encounter=" + std::to_string(static_cast<int>(bc.encounter))
+                    + " decision=" + std::to_string(decision));
             }
             semantic = result.action;
             g_silverLiveDiagnostics.simulations += result.simulations;

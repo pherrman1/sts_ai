@@ -38,9 +38,10 @@ int uniqueHandIndex(const BattleContext &live, const silver_bridge::CardWire &ca
     return found;
 }
 
-SemanticActionResolution finalise(const BattleContext &live, Action action) {
+SemanticActionResolution finalise(const BattleContext &live, Action action,
+                                  bool requireLiveLegality = true) {
     SemanticActionResolution result;
-    if (!action.isValidAction(live)) {
+    if (requireLiveLegality && !action.isValidAction(live)) {
         result.error = "resolved semantic action is not legal on live BattleContext";
         return result;
     }
@@ -51,19 +52,21 @@ SemanticActionResolution finalise(const BattleContext &live, Action action) {
 
 } // namespace
 
-SemanticActionResolution resolveSilverSemanticAction(
-        const BattleContext &live, const silver_bridge::SemanticAction &semantic) {
+SemanticActionResolution resolveSilverSemanticActionImpl(
+        const BattleContext &live, const silver_bridge::SemanticAction &semantic,
+        bool policyFeatureEncoding) {
     using SAT = silver_bridge::SemanticActionType;
     using CS = silver_bridge::CardSource;
     switch (semantic.type) {
     case SAT::END_TURN:
-        return finalise(live, Action(ActionType::END_TURN));
+        return finalise(live, Action(ActionType::END_TURN), !policyFeatureEncoding);
     case SAT::CARD: {
         if (semantic.source != CS::HAND) return {false, {}, "card play must identify a hand card"};
         std::string error;
         const int idx = uniqueHandIndex(live, semantic.card, error);
         if (idx < 0) return {false, {}, error};
-        return finalise(live, Action(ActionType::CARD, idx, semantic.target));
+        return finalise(live, Action(ActionType::CARD, idx, semantic.target),
+                        !policyFeatureEncoding);
     }
     case SAT::POTION: {
         if (semantic.potionSlot < 0 || semantic.potionSlot >= live.potionCapacity)
@@ -72,7 +75,8 @@ SemanticActionResolution resolveSilverSemanticAction(
             return {false, {}, "semantic potion identity does not match live slot"};
         // Current action encoding uses any target >5 to denote discarding.
         return finalise(live, Action(ActionType::POTION, semantic.potionSlot,
-                                    semantic.discardPotion ? 6 : semantic.target));
+                                    semantic.discardPotion ? 6 : semantic.target),
+                        !policyFeatureEncoding);
     }
     case SAT::SINGLE_CARD_SELECT: {
         if (live.inputState != InputState::CARD_SELECT
@@ -82,7 +86,8 @@ SemanticActionResolution resolveSilverSemanticAction(
         if (semantic.skipCardSelect) {
             if (live.cardSelectInfo.cardSelectTask != CardSelectTask::CODEX)
                 return {false, {}, "semantic skip is only valid for CODEX"};
-            return finalise(live, Action(ActionType::SINGLE_CARD_SELECT, 3));
+            return finalise(live, Action(ActionType::SINGLE_CARD_SELECT, 3),
+                            !policyFeatureEncoding);
         }
         std::string error;
         int idx = -1;
@@ -102,7 +107,8 @@ SemanticActionResolution resolveSilverSemanticAction(
         default: return {false, {}, "semantic card-select source is unsupported"};
         }
         if (idx < 0) return {false, {}, error};
-        return finalise(live, Action(ActionType::SINGLE_CARD_SELECT, idx));
+        return finalise(live, Action(ActionType::SINGLE_CARD_SELECT, idx),
+                        !policyFeatureEncoding);
     }
     case SAT::MULTI_CARD_SELECT: {
         if (live.inputState != InputState::CARD_SELECT
@@ -119,11 +125,22 @@ SemanticActionResolution resolveSilverSemanticAction(
             if ((selectedBits & bit) != 0) return {false, {}, "semantic multi-select contains duplicate card identity"};
             selectedBits |= bit;
         }
-        return finalise(live, Action(ActionType::MULTI_CARD_SELECT, static_cast<int>(selectedBits)));
+        return finalise(live, Action(ActionType::MULTI_CARD_SELECT, static_cast<int>(selectedBits)),
+                        !policyFeatureEncoding);
     }
     default:
         return {false, {}, "invalid Silver semantic action"};
     }
+}
+
+SemanticActionResolution resolveSilverSemanticAction(
+        const BattleContext &live, const silver_bridge::SemanticAction &semantic) {
+    return resolveSilverSemanticActionImpl(live, semantic, false);
+}
+
+SemanticActionResolution resolveSilverSemanticActionForPolicyFeatures(
+        const BattleContext &restored, const silver_bridge::SemanticAction &semantic) {
+    return resolveSilverSemanticActionImpl(restored, semantic, true);
 }
 
 } // namespace sts::search

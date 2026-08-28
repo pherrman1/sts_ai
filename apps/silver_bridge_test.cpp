@@ -725,6 +725,32 @@ int main() {
           && transactionLive.shuffleRng.counter == transactionBefore.shuffleRng.counter,
           "private sequential selection transaction must not mutate live state or live RNG");
 
+    const auto transactionWire = convert(transactionLive, gc, transactionKnowledge);
+    const auto transactionActions = silver_bridge::enumerateSilverLegalActions(transactionWire);
+    const auto transactionPolicyRows = search::silverLiveParentPolicyFeatures(transactionWire);
+    check(!transactionActions.empty()
+              && transactionPolicyRows.size() == transactionActions.size(),
+          "policy features must cover every private GAMBLE selection action");
+    const auto privateSelection = std::find_if(
+        transactionActions.begin(), transactionActions.end(), [](const auto &action) {
+            return action.type == silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
+        });
+    check(privateSelection != transactionActions.end()
+              && !search::resolveSilverSemanticAction(transactionLive, *privateSelection).ok
+              && search::resolveSilverSemanticActionForPolicyFeatures(
+                     transactionLive, *privateSelection).ok,
+          "policy-only lowering must encode private selection without weakening live legality");
+    auto transactionPolicyConfig = transactionConfig;
+    transactionPolicyConfig.learnedActionOrdering = true;
+    transactionPolicyConfig.nodePolicyScorer = [](const silver_bridge::BattleStateWire &wire) {
+        const auto rows = search::silverLiveParentPolicyFeatures(wire);
+        return std::vector<double>(rows.size(), 0.0);
+    };
+    const auto policyTransaction = silver_bridge::runSequentialSelectionTransaction(
+        transactionWire, transactionPolicyConfig);
+    check(policyTransaction.accepted && policyTransaction.finalConfirmation,
+          "learned ordering must score private GAMBLE subdecisions without live lowering");
+
     auto adaptiveTransactionConfig = transactionConfig;
     adaptiveTransactionConfig.adaptiveEnabled = true;
     adaptiveTransactionConfig.adaptiveInitialSimulations = 16;
