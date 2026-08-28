@@ -334,9 +334,12 @@ struct SilverSearchConfig {
     // callback explicitly sets skipRollout/directValue.
     SilverLeafObserver leafObserver;
     // Default-off decision-node policy scorer. The callback receives the exact
-    // isolated state and returns one score in current Silver action order.
-    // Chance nodes never invoke it.
-    using NodePolicyScorer = std::function<std::vector<double>(const BattleStateWire &)>;
+    // isolated state plus the exact already-enumerated Silver Action bit
+    // encodings, and returns one score in that same order. Chance nodes never
+    // invoke it. Carrying bits avoids re-enumeration/semantic round-tripping at
+    // private internal nodes.
+    using NodePolicyScorer = std::function<std::vector<double>(
+        const BattleStateWire &, const std::vector<std::uint32_t> &)>;
     NodePolicyScorer nodePolicyScorer;
     bool learnedActionOrdering = false;
     bool learnedPuct = false;

@@ -118,6 +118,20 @@ int main() {
           "restored legal semantic fingerprints must be unique");
     check(teacherSet == restoredSet && restoredSet == emittedSet,
           "teacher action fingerprints == restored legal fingerprints == emitted feature rows");
+    std::vector<std::uint32_t> rootActionBits;
+    for (const auto &semantic : teacherActions) {
+        const auto resolved = search::resolveSilverSemanticAction(first, semantic);
+        check(resolved.ok, "ordinary root semantic action must lower for action-bit parity");
+        if (resolved.ok) rootActionBits.push_back(resolved.action.bits);
+    }
+    const auto bitPolicyRows = search::silverLivePolicyFeaturesForActionBits(
+        reloadedWire, rootActionBits);
+    check(bitPolicyRows.size() == policyRows.size()
+              && std::equal(bitPolicyRows.begin(), bitPolicyRows.end(), policyRows.begin(),
+                  [](const auto &lhs, const auto &rhs) {
+                      return lhs.features == rhs.features && lhs.silverOrder == rhs.silverOrder;
+                  }),
+          "exact Silver action bits must reproduce ordinary semantic policy features exactly");
     auto cardSelectWire = reloadedWire;
     cardSelectWire.inputState = static_cast<int>(InputState::CARD_SELECT);
     cardSelectWire.cardSelect.task = static_cast<std::int16_t>(CardSelectTask::WARCRY);
@@ -147,9 +161,9 @@ int main() {
 
     // Default-off 2x2 node-policy contract. Deliberately rank the current last
     // action first so ordering changes are visible without loading a model.
-    const auto reverseScorer = [](const silver_bridge::BattleStateWire &wire) {
-        const auto actions = silver_bridge::enumerateSilverLegalActions(wire);
-        std::vector<double> scores(actions.size());
+    const auto reverseScorer = [](const silver_bridge::BattleStateWire &,
+                                  const std::vector<std::uint32_t> &actionBits) {
+        std::vector<double> scores(actionBits.size());
         for (std::size_t i = 0; i < scores.size(); ++i) scores[i] = static_cast<double>(i);
         return scores;
     };
@@ -727,23 +741,33 @@ int main() {
 
     const auto transactionWire = convert(transactionLive, gc, transactionKnowledge);
     const auto transactionActions = silver_bridge::enumerateSilverLegalActions(transactionWire);
-    const auto transactionPolicyRows = search::silverLiveParentPolicyFeatures(transactionWire);
-    check(!transactionActions.empty()
-              && transactionPolicyRows.size() == transactionActions.size(),
-          "policy features must cover every private GAMBLE selection action");
+    check(!transactionActions.empty(), "GAMBLE fixture must expose private Silver actions");
     const auto privateSelection = std::find_if(
         transactionActions.begin(), transactionActions.end(), [](const auto &action) {
             return action.type == silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
         });
     check(privateSelection != transactionActions.end()
-              && !search::resolveSilverSemanticAction(transactionLive, *privateSelection).ok
-              && search::resolveSilverSemanticActionForPolicyFeatures(
-                     transactionLive, *privateSelection).ok,
-          "policy-only lowering must encode private selection without weakening live legality");
+              && !search::resolveSilverSemanticAction(transactionLive, *privateSelection).ok,
+          "live lowering must continue rejecting private intermediate selection");
+    BattleContext duplicateIdentity = transactionLive;
+    duplicateIdentity.cards.hand[1].uniqueId = duplicateIdentity.cards.hand[0].uniqueId;
+    search::CombatKnowledgeState duplicateKnowledge;
+    duplicateKnowledge.initializeFromLiveBattle(duplicateIdentity);
+    const auto duplicateWire = convert(duplicateIdentity, gc, duplicateKnowledge);
+    const std::vector<std::uint32_t> duplicateBits{
+        search::Action(search::ActionType::SINGLE_CARD_SELECT, 0).bits,
+        search::Action(search::ActionType::SINGLE_CARD_SELECT, 1).bits};
+    const auto duplicateRows = search::silverLivePolicyFeaturesForActionBits(
+        duplicateWire, duplicateBits);
+    check(duplicateRows.size() == duplicateBits.size()
+              && duplicateRows[0].actionFingerprint != duplicateRows[1].actionFingerprint,
+          "action-bit policy features must preserve duplicate-identity hand indices");
     auto transactionPolicyConfig = transactionConfig;
     transactionPolicyConfig.learnedActionOrdering = true;
-    transactionPolicyConfig.nodePolicyScorer = [](const silver_bridge::BattleStateWire &wire) {
-        const auto rows = search::silverLiveParentPolicyFeatures(wire);
+    transactionPolicyConfig.nodePolicyScorer = [](
+            const silver_bridge::BattleStateWire &wire,
+            const std::vector<std::uint32_t> &actionBits) {
+        const auto rows = search::silverLivePolicyFeaturesForActionBits(wire, actionBits);
         return std::vector<double>(rows.size(), 0.0);
     };
     const auto policyTransaction = silver_bridge::runSequentialSelectionTransaction(

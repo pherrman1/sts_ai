@@ -747,7 +747,10 @@ void search::BattleSearcher::enumerateActionsForNode(search::BattleSearcher::Nod
         for (const auto &edge : node.edges) actions.push_back(edge.action);
         const auto observation = silver_bridge::makeSilverLeafObservation(
             bc, bc, bc, actions, nullptr, 0, 0, 0, 0);
-        const auto scores = nodePolicyScorer(observation.state);
+        std::vector<std::uint32_t> actionBits;
+        actionBits.reserve(actions.size());
+        for (const auto &action : actions) actionBits.push_back(action.bits);
+        const auto scores = nodePolicyScorer(observation.state, actionBits);
         if (scores.size() != node.edges.size())
             throw std::runtime_error("Silver node policy score/action mismatch");
         for (double score : scores)

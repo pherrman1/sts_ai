@@ -113,6 +113,13 @@ struct SilverPolicyFeatureRow {
 std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(
     const silver_bridge::BattleStateWire &wire);
 
+// Internal-node deployment seam: extract canonical features for the exact
+// Silver actions already enumerated at `wire`, preserving vector order and
+// indices without semantic re-enumeration or live legality resolution.
+std::vector<SilverPolicyFeatureRow> silverLivePolicyFeaturesForActionBits(
+    const silver_bridge::BattleStateWire &wire,
+    const std::vector<std::uint32_t> &actionBits);
+
 } // namespace sts::search
 
 #endif

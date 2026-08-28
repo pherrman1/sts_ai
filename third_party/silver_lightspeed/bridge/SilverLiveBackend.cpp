@@ -638,7 +638,7 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         const auto fingerprint = silver_bridge::semanticActionFingerprint(semantics[i]);
         if (!fingerprints.insert(fingerprint).second)
             throw std::runtime_error("duplicate restored Silver action fingerprint: " + fingerprint);
-        const auto resolved = resolveSilverSemanticActionForPolicyFeatures(live, semantics[i]);
+        const auto resolved = resolveSilverSemanticAction(live, semantics[i]);
         if (!resolved.ok)
             throw std::runtime_error("cannot lower restored Silver action " + fingerprint + ": " + resolved.error);
         SilverPolicyFeatureRow row;
@@ -646,6 +646,31 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         row.silverOrder = static_cast<int>(i);
         row.features.resize(combatPolicyFeatureCount());
         combatExtractPolicyFeatures(live, resolved.action, row.features.data());
+        rows.push_back(std::move(row));
+    }
+    return rows;
+}
+
+std::vector<SilverPolicyFeatureRow> silverLivePolicyFeaturesForActionBitsImpl(
+        const silver_bridge::BattleStateWire &wire,
+        const std::vector<std::uint32_t> &actionBits) {
+    if (actionBits.empty())
+        throw std::runtime_error("Silver internal policy node has no action bits");
+    g_richCombatFeatures = true;
+    auto restored = liveLeafBattleContext(wire);
+    std::unordered_set<std::uint32_t> uniqueBits;
+    std::vector<SilverPolicyFeatureRow> rows;
+    rows.reserve(actionBits.size());
+    for (std::size_t i = 0; i < actionBits.size(); ++i) {
+        if (!uniqueBits.insert(actionBits[i]).second)
+            throw std::runtime_error("duplicate Silver internal action bits: "
+                                     + std::to_string(actionBits[i]));
+        const Action action(actionBits[i]);
+        SilverPolicyFeatureRow row;
+        row.actionFingerprint = "bits:" + std::to_string(actionBits[i]);
+        row.silverOrder = static_cast<int>(i);
+        row.features.resize(combatPolicyFeatureCount());
+        combatExtractPolicyFeatures(restored, action, row.features.data());
         rows.push_back(std::move(row));
     }
     return rows;
@@ -1002,11 +1027,12 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
     result.learnedPuct = g_silverLiveOptions.policyPuct;
     result.learnedCpuct = g_silverLiveOptions.policyCpuct;
     if (result.learnedActionOrdering || result.learnedPuct) {
-        result.nodePolicyScorer = [](const silver_bridge::BattleStateWire &wire) {
+        result.nodePolicyScorer = [](const silver_bridge::BattleStateWire &wire,
+                                     const std::vector<std::uint32_t> &actionBits) {
             const auto start = std::chrono::steady_clock::now();
             std::vector<SilverPolicyFeatureRow> rows;
             try {
-                rows = silverLiveParentPolicyFeaturesImpl(wire);
+                rows = silverLivePolicyFeaturesForActionBitsImpl(wire, actionBits);
             } catch (...) {
                 ++g_silverLiveDiagnostics.policyActionAlignmentFailures;
                 throw;
@@ -1418,6 +1444,12 @@ std::vector<float> silverLiveLeafCanonicalFeatures(
 std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(
         const silver_bridge::BattleStateWire &wire) {
     return silverLiveParentPolicyFeaturesImpl(wire);
+}
+
+std::vector<SilverPolicyFeatureRow> silverLivePolicyFeaturesForActionBits(
+        const silver_bridge::BattleStateWire &wire,
+        const std::vector<std::uint32_t> &actionBits) {
+    return silverLivePolicyFeaturesForActionBitsImpl(wire, actionBits);
 }
 
 void installSilverLiveBackend() {
