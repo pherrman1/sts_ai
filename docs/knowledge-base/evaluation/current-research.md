@@ -48,17 +48,24 @@ visit rankings against all 93 independent 25k-B anchors. Its primary population
 was the 63 multi-action parents; the 30 single-action parents were reported
 separately and do not inflate retention claims. Frozen-model top-3-plus-ties
 retained 95.24% of the B-best actions, but still had two `>=3` regret
-exclusions, so it provides no hard-pruning permission. The Phase 1 decision is
+exclusions, so it provides no hard-pruning permission. The Phase 2 decision is
 `SEQUENTIAL_HALVING_REJECTED`: the fresh-session 63-parent gate regressed mean
 regret at 64/128/256/1000, lost five best-action matches at 1000, and introduced
-new >=3-regret exclusions despite a 0.998x replay CPU ratio. Per the ladder
-stop rule, progressive unpruning, learned ranked unpruning, hard pruning, and
-gameplay smoke are not authorized. The previous rejection of learned ordinary
-ordering/PUCT remains unchanged.
+new >=3-regret exclusions despite a 0.998x replay CPU ratio. A subsequent user-
+requested, narrower progressive-unpruning experiment was evaluated separately:
+only roots with at least six actions began with the current-Silver-order top 3,
+then recovered one stored edge after 16/32/64/128 new simulations. It is
+`PROGRESSIVE_CURRENT_ORDER_HARMFUL`: its 128 and 256 results increased mean
+regret (the latter also added a >=3-regret failure), even though its 1000 result
+improved and replay CPU was 1.007x ordinary. The cached frozen-model ordering,
+runtime scorer, hard pruning, and gameplay smoke remain unauthorized. The
+previous rejection of learned ordinary ordering/PUCT remains unchanged.
 
 Evidence: `docs/experiments/evidence/silver_action_pruning_retention_2026-08-28.json`
 (SHA-256 `838f7c23fe985c00d8b609a87f1858a6f231ac7f3245e29da4e8bc077baac0e6`)
-and [ledger-06 Â§188â€“189](../../../docs/experiments/ledger-06.md).
+and `docs/experiments/evidence/silver_action_pruning_progressive_current_2026-08-28.json`
+(SHA-256 `1231530b9381009d36622fd32b2a496d5d18d5eb4a0958ba26abd07c8019e243`).
+See [ledger-06 §188–190](../../../docs/experiments/ledger-06.md).
 
 ## Current baseline
 

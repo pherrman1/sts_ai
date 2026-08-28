@@ -5453,3 +5453,45 @@ model training was changed.
   bootstrap probability >=0.90, failed the 1000 no-harm condition, and created
   new catastrophic exclusions. Do not implement progressive unpruning,
   learned-ranked unpruning, hard pruning, or gameplay smoke under this ladder.
+
+## 190. Narrowed Silver progressive unpruning: current-order treatment rejected (2026-08-28)
+
+- **Implementation/protocol:** User-requested follow-up to the Phase 2 stop,
+  deliberately recorded as a separate and smaller hypothesis test rather than
+  a revision of `SEQUENTIAL_HALVING_REJECTED`. Implementation SHA
+  `40556914bf42678313931a70e68575b354a35b23` added a default-off root mode.
+  Roots with fewer than six legal actions remained ordinary UCT. Eligible roots
+  retained every edge but activated current-Silver-order indices 0--2 first,
+  then one additional edge after 16, 32, 64, and 128 newly added root
+  simulations. Root selection used ordinary UCT only over that temporary mask;
+  all internal decision nodes and chance widening were unchanged. Replay used
+  fresh `reuseCapMode=NONE` sessions, `adaptiveEnabled=false`, the 93 stored
+  parent wires, and only ordinary UCT versus this treatment at 128/256/1000.
+  The independent reference remains the 25k-B labels; primary analysis is the
+  original 63 multi-action parents, with all 93 retained as an integrity view.
+- **Inputs/artifacts:** selected-corpus SHA-256
+  `bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7` and
+  relabel SHA-256
+  `abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c`;
+  the frozen policy model was not consumed. Raw replay JSONL is ignored at
+  `build/silver_action_pruning_progressive_current_20260828.jsonl`, SHA-256
+  `0c330adbfd29ef7d1244170aff783ccf900b955ec569d5ea0fb7eff26074534b`.
+  Durable analysis is
+  `docs/experiments/evidence/silver_action_pruning_progressive_current_2026-08-28.json`,
+  SHA-256 `1231530b9381009d36622fd32b2a496d5d18d5eb4a0958ba26abd07c8019e243`.
+- **Gate:** strict no-harm was preregistered as non-worse best-action matches
+  and non-increased mean regret at both 128 and 256; the 1000 condition allowed
+  at most one fewer match and +0.10 mean regret; no budget could add a
+  >=3-regret failure; aggregate replay CPU had to remain <=1.10x. Bootstrap
+  used 5,000 deterministic parent resamples, seed `20260828`.
+- **Results:** ordinary versus progressive best-action matches / mean regret /
+  >=3-regret counts were `30 / 3.161 / 18` versus `31 / 3.331 / 16` at 128,
+  `31 / 2.536 / 13` versus `30 / 3.026 / 14` at 256, and `40 / 2.274 / 9`
+  versus `42 / 1.761 / 8` at 1000. The treatment's 128 mean-regret bootstrap
+  improvement probability was 0.368; at 256 it was 0.000. Aggregate replay
+  CPU was 1.007x ordinary.
+- **Gate/stop:** **`PROGRESSIVE_CURRENT_ORDER_HARMFUL`**. The treatment failed
+  strict 128/256 no-harm and introduced one 256 >=3-regret failure. The 1000
+  recovery and CPU result do not override that lower-budget/tail evidence.
+  Therefore cached frozen-model ranking is not authorized, no runtime policy
+  scorer was built, and hard pruning/gameplay smoke remain out of scope.

@@ -122,6 +122,8 @@ def main():
     parser.add_argument("relabels", type=Path)
     parser.add_argument("replay", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--corpus", type=Path, required=True,
+                        help="stored parent-wire corpus consumed by the replay")
     parser.add_argument("--implementation-sha", required=True,
                         help="full Git SHA containing the replay implementation")
     args = parser.parse_args()
@@ -135,7 +137,8 @@ def main():
                      "activation_after_new_root_simulations": [16, 32, 64, 128],
                      "internal_nodes": "ordinary Silver UCT", "adaptive_enabled": False,
                      "reuse_cap_mode": "none", "rank_source": "current Silver order"},
-        "inputs": {"relabels_sha256": digest(args.relabels), "replay_sha256": digest(args.replay)},
+        "inputs": {"corpus_sha256": digest(args.corpus), "relabels_sha256": digest(args.relabels),
+                   "replay_sha256": digest(args.replay), "frozen_model_used": False},
         "implementation_sha": args.implementation_sha,
         "budgets": list(BUDGETS), "primary_population": {"parents": len(populations["primary_multi_action"])},
         "results": {}, "gate": {},
