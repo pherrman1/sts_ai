@@ -76,6 +76,19 @@ intentionally expects an assertion abort and therefore needs assertions enabled.
 The preset file requires CMake 3.21 or newer; the source graph itself still
 requires CMake 3.19. Native PowerShell/MSVC remains unverified and has no preset.
 
+For a host-independent entry point, use the small build wrapper. It prefers a
+native `cmake` executable and, when Windows has no native CMake, maps the active
+worktree path and runs the complete Linux preset sequence through one WSL
+shell. This removes the need to rediscover or hand-convert the worktree path:
+
+```powershell
+python tools/agent/build.py --target one_combat
+python tools/agent/build.py --no-configure --target one_combat --target test
+```
+
+Override `--configure-preset` and `--build-preset` together for Debug or ccache
+presets. The wrapper does not initialize submodules or hide build failures.
+
 For repeated local builds across sibling Git worktrees, install `ccache` in the
 WSL/Linux environment and use the opt-in cache presets:
 
@@ -187,6 +200,37 @@ the build and printed after the build (with `if: always`) for measurement.
 After pushing, inspect CI with a nonblocking `gh run view` or `gh pr checks`
 query. Do not use an unbounded foreground `--watch`; poll at a bounded interval
 so the session remains responsive while a run is queued or executing.
+
+### Decision-bearing GCP run preflight
+
+For a multi-arm research run, copy
+`tools/agent/research_run_manifest.example.json` to a task-scoped file and fill
+in the frozen full Git SHA, remote checkout/build paths, executable and artifact
+SHA-256 hashes, exact `bestbench` seed block, required environment, and every
+arm's unique result/log path. Keep parameters shared across arms in
+`common_env` and `command`; arm-local `env` should contain only the intended
+treatment. If Silver telemetry is expected, retain both
+`expect_silver_telemetry: true` and `STS_SILVER_TELEMETRY` in `required_env`.
+The validator rejects an absent, empty, or zero telemetry setting before a
+seed can run.
+
+Use this sequence after CI and before gameplay:
+
+```bash
+python tools/agent/gcp_benchmark.py manifest-check path/to/run-manifest.json
+python tools/agent/gcp_benchmark.py copy-to local/model.txt artifacts/model.txt --expect-sha256 <sha256>
+python tools/agent/gcp_benchmark.py exact-sha-preflight path/to/run-manifest.json
+python tools/agent/gcp_benchmark.py run-manifest path/to/run-manifest.json A --foreground --guard-only
+python tools/agent/gcp_benchmark.py run-manifest path/to/run-manifest.json A
+```
+
+The exact-SHA preflight fails unless the designated checkout has the frozen
+HEAD, no tracked modifications, a CMake cache bound to that checkout, and the
+declared binary/artifact hashes. The manifest launcher routes through the
+existing seed guard and refuses any arm whose result, metadata sidecar, or log
+already exists. It does not replace the experiment-specific post-run canary:
+validate completed results with `tools/agent/check_benchmark_canary.py` and the
+required scientific analyzer before interpreting them.
 
 `selfplay/loop.sh` still defaults to `build/one_combat` (overridable via
 `ONE_COMBAT_BIN`/`STS_BIN`). Set either variable to

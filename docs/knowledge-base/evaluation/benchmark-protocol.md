@@ -64,6 +64,16 @@ backend in that override regime.
 
 ### Treatment canary before a larger cohort
 
+Before launching a decision-bearing multi-arm GCP cohort, encode its frozen
+SHA, executable/artifact hashes, common seed/configuration, required
+environment, telemetry expectation, and unique outputs in the strict manifest
+described in
+[`operations/build-and-debugging.md`](../operations/build-and-debugging.md#decision-bearing-gcp-run-preflight).
+Run `manifest-check`, hash-verified transfer where needed, and
+`exact-sha-preflight`. Launch each arm with `run-manifest`; this makes a missing
+required setting or reused output a pre-seed failure rather than a post-run
+discovery.
+
 Before an experimental arm grows beyond its smallest smoke, run one fresh
 guarded seed using the exact frozen executable, flags, budget, thread regime,
 and output schema intended for the cohort. Use new result, sidecar, and log
