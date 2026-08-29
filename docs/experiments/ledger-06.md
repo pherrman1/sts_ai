@@ -5561,3 +5561,19 @@ model training was changed.
   with no production PUCT change or gameplay gate yet. Full tables and hashes
   are in
   [the root replay evidence report](evidence/silver_root_oracle_replay_2026-08-29.md).
+
+## Paired analysis of Silver root-oracle replay (2026-08-29)
+
+- **Scope:** reanalyzed the existing 1,260 replay rows by budget and root;
+  no replay, gameplay, training, or prior implementation change was made.
+  Paired root bootstrap used 10,000 resamples with seed `20260829`.
+- **Result:** point estimates remain favorable in several oracle-order and
+  visit-prior cells, but top-choice and regret intervals are broad, with
+  substantial positive-harm ranges and large opposing root outliers. The
+  arms share each root's initial A seed, but treatment-dependent paths do not
+  share identical subsequent search/chance RNG draws; the result is not a
+  fully matched-stochastic comparison.
+- **Decision:** do not change prior integration yet. Repeat offline with four
+  common RNG replicates per root/arm and analyze root×replicate pairs before
+  any integration or gameplay experiment. See
+  [the paired analysis report](evidence/silver_root_oracle_paired_analysis_2026-08-29.md).
