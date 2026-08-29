@@ -52,38 +52,49 @@ def cross_entropy(target, prediction):
     return float(-np.sum(target * np.log(np.maximum(prediction, EPSILON))))
 
 
-def validation_objective(groups, raw_scores, alpha):
+def objective_inputs(target, prediction, ranked):
+    if ranked:
+        return np.sort(target)[::-1], np.sort(prediction)[::-1]
+    return target, prediction
+
+
+def validation_objective(groups, raw_scores, alpha, ranked=False):
     return statistics.fmean(
-        cross_entropy(target_shares(groups[group], raw_scores[group]["label"]),
-                      calibrated(raw_scores[group]["values"], alpha))
+        cross_entropy(*objective_inputs(
+            target_shares(groups[group], raw_scores[group]["label"]),
+            calibrated(raw_scores[group]["values"], alpha), ranked))
         for group in sorted(groups)
     )
 
 
-def derivative(groups, raw_scores, alpha):
+def derivative(groups, raw_scores, alpha, ranked=False):
     values = []
     for group in sorted(groups):
         target = target_shares(groups[group], raw_scores[group]["label"])
         z = np.maximum(raw_scores[group]["values"], 0.0) + EPSILON
         log_z = np.log(z)
         prediction = calibrated(raw_scores[group]["values"], alpha)
+        if ranked:
+            target = np.sort(target)[::-1]
+            prediction = np.sort(prediction)[::-1]
+            log_z = np.sort(log_z)[::-1]
         values.append(float(np.sum(prediction * log_z) - np.sum(target * log_z)))
     return statistics.fmean(values)
 
 
-def fit_alpha(groups, raw_scores):
+def fit_alpha(groups, raw_scores, ranked=False):
     lower = 1e-9
-    lower_derivative = derivative(groups, raw_scores, lower)
+    lower_derivative = derivative(groups, raw_scores, lower, ranked)
     if lower_derivative >= 0.0:
         return lower, "lower_boundary"
     upper = 1.0
-    while derivative(groups, raw_scores, upper) < 0.0 and upper < 1e6:
+    while derivative(groups, raw_scores, upper, ranked) < 0.0 and upper < 1e6:
         upper *= 2.0
-    if upper >= 1e6 and derivative(groups, raw_scores, upper) < 0.0:
+    if upper >= 1e6 and derivative(groups, raw_scores, upper, ranked) < 0.0:
         raise ValueError("validation cross-entropy has no bounded minimum")
     for _ in range(100):
         midpoint = (lower + upper) / 2.0
-        if derivative(groups, raw_scores, midpoint) < 0.0:
+        if derivative(groups, raw_scores, midpoint, ranked) < 0.0:
             lower = midpoint
         else:
             upper = midpoint
@@ -117,6 +128,15 @@ def prediction_summary(groups, scores):
     }
 
 
+def mean_kl(groups, scores, labels, ranked=False):
+    values = []
+    for group in sorted(groups):
+        target = target_shares(groups[group], labels[(group, 25000, "A")])
+        target, prediction = objective_inputs(target, scores[group], ranked)
+        values.append(cross_entropy(target, prediction) - cross_entropy(target, target))
+    return statistics.fmean(values)
+
+
 def json_safe(metrics):
     return {
         key: None if isinstance(value, float) and not math.isfinite(value) else value
@@ -147,6 +167,8 @@ def main():
     parser.add_argument("model", type=Path)
     parser.add_argument("raw_anchor_predictions", type=Path)
     parser.add_argument("output_dir", type=Path)
+    parser.add_argument("--objective", choices=("action_aligned", "ranked_shape"),
+                        default="action_aligned")
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -185,7 +207,8 @@ def main():
         }
         offset += count
 
-    alpha, optimizer = fit_alpha(validation, validation_raw)
+    ranked_objective = args.objective == "ranked_shape"
+    alpha, optimizer = fit_alpha(validation, validation_raw, ranked_objective)
     validation_before = {
         group: raw_normalized(validation_raw[group]["values"])
         for group in validation
@@ -198,16 +221,10 @@ def main():
         group: target_shares(validation[group], labels[(group, 25000, "A")])
         for group in validation
     }
-    validation_kl_before = statistics.fmean(
-        cross_entropy(validation_teacher[group], validation_before[group])
-        - cross_entropy(validation_teacher[group], validation_teacher[group])
-        for group in validation
-    )
-    validation_kl_after = statistics.fmean(
-        cross_entropy(validation_teacher[group], validation_after[group])
-        - cross_entropy(validation_teacher[group], validation_teacher[group])
-        for group in validation
-    )
+    validation_kl_before = mean_kl(validation, validation_before, labels, ranked_objective)
+    validation_kl_after = mean_kl(validation, validation_after, labels, ranked_objective)
+    validation_action_kl_before = mean_kl(validation, validation_before, labels, False)
+    validation_action_kl_after = mean_kl(validation, validation_after, labels, False)
     validation_entropy = {
         "teacher": prediction_summary(validation, validation_teacher),
         "before": prediction_summary(validation, validation_before),
@@ -305,6 +322,7 @@ def main():
         "fit": {
             "alpha": alpha,
             "optimizer": optimizer,
+            "objective": args.objective,
             "epsilon": EPSILON,
             "best_iteration": best_iteration,
             "uses_25k_b_for_alpha": False,
@@ -314,6 +332,8 @@ def main():
             "mean_kl_before": validation_kl_before,
             "mean_kl_after": validation_kl_after,
             "mean_kl_reduction": validation_kl_before - validation_kl_after,
+            "action_aligned_mean_kl_before": validation_action_kl_before,
+            "action_aligned_mean_kl_after": validation_action_kl_after,
             "entropy_and_top1_mass": validation_entropy,
         },
         "multi_action_anchor_mass": {
@@ -330,6 +350,11 @@ def main():
                 - cross_entropy(teacher_multi[group], teacher_multi[group])
                 for group in multi
             ),
+            "ranked_shape_kl_a_to_prior": {
+                "raw_learned": mean_kl(multi, raw_multi, labels, True),
+                "calibrated": mean_kl(multi, calibrated_multi, labels, True),
+                "teacher": mean_kl(multi, teacher_multi, labels, True),
+            },
         },
         "multi_action_anchor_ranking": {
             "raw_learned": raw_metrics,
