@@ -5725,3 +5725,33 @@ model training was changed.
   PUCT, expand budgets, run gameplay, or change features. Full provenance and
   the no-replay rationale are in
   [the calibration evidence report](evidence/silver_visit_prior_calibration_2026-08-29.md).
+
+## Silver rank-shape visit-prior calibration replay (2026-08-29)
+
+- **Question/protocol:** fit one global rank-preserving power exponent against
+  sorted 25k-A visit shares on the 75 non-anchor validation parents, avoiding
+  action-identity ranking error in the calibration objective. No model was
+  trained and no 25k-B label or anchor was used to fit alpha. The fitted
+  `alpha=1.909489799286817` improved validation ranked-shape KL from `0.345811`
+  to `0.289327`; on 63 multi-action anchors it improved ranked KL from
+  `0.752276` to `0.615388`, with entropy/top-1 mass moving toward oracle. The
+  learned ranking was unchanged (`79/981` ties, `68.858%` B-Q pairwise,
+  `0/63` ranking changes).
+- **Replay:** at 32 simulations with the same 63 roots and four common
+  replicate seeds, current UCT was `41.2698% / 4.051736`, oracle visit-PUCT
+  `51.1905% / 3.505948`, raw learned visit-PUCT `43.2540% / 4.038843`, and
+  rank-shape-calibrated learned visit-PUCT `42.4603% / 4.027018` for B-best /
+  mean frozen-B regret. Calibrated minus current was `+1.1905 pp` B-best
+  (bootstrap CI `[-4.7619,+7.1429]`) and `-0.024718` regret (CI
+  `[-0.500070,+0.467129]`), with `15/17/31` roots improved/worsened/tied.
+  Calibrated minus raw learned was `-0.7937 pp` and `-0.011825` regret (CI
+  `[-0.040729,+0.005426]`).
+- **Decision:** **`LEARNED_PRIOR_RANKSHAPE_CALIBRATION_REJECTED`**. Ranked
+  mass-shape calibration improved offline fit but did not produce a credible
+  search gain or close the oracle gap; it recovered `4.53%` of the oracle
+  regret reduction. Close this current learned-prior calibration/model line
+  before gameplay, further budgets, PUCT tuning, feature changes, or another
+  model. The oracle positive control means this does not implicate PUCT
+  integration itself. Full provenance, hashes, RNG qualification, tables,
+  and commands are in the
+  [rank-shape calibration evidence report](evidence/silver_rankshape_visit_prior_calibration_2026-08-29.md).
