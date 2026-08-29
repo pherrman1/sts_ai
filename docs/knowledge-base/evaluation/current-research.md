@@ -120,6 +120,23 @@ Sequential Halving machinery is restored. See the [24-thread c=35 evidence
 packet](../../../docs/experiments/evidence/silver-root-exploration-c35-128-gcp-2026-08-29.json)
 and ledger-06 section 195.
 
+A subsequent fully online Sequential-Halving tuner varied four root reduction
+shapes, three round-allocation schedules, and exact budgets 1000/3000/6000.
+The 16-seed broad screen promoted three schedules to a fresh 64-seed narrow
+screen. Its frozen gate selected half/finalist-heavy at budget 3000, but the
+fresh 128-seed confirmation aborted after 78 rows on a Silver live-backend
+hidden-information conversion error. Partial analysis was prohibited, so this
+line is **SEQUENTIAL_HALVING_ONLINE_TUNING_REJECTED** for promotion. The same
+confirmation's valid c=35 arm scored 90/128 versus c=25's 84/128 (+4.7pp,
+95% CI [-3.9,+13.3]), floor +0.5 ([-0.8,+1.7]), at 0.975x runtime. It remains
+`ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE`: it missed the frozen +5pp bar and
+the interval includes zero. Do not combine c=35 with this halving path:
+Sequential Halving forces root pulls and does not consult root UCT c while
+active, so that label would be behaviorally inert rather than an interaction
+test. The earlier pruning and offline Sequential-Halving rejections remain
+unchanged. See the [online tuning evidence packet](../../../docs/experiments/evidence/silver-sh-online-tuning-2026-08-30.json)
+and ledger-06 section 196.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable

@@ -5712,3 +5712,50 @@ model training was changed.
 - **Verdict:** **ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE**. Keep ordinary c=25
   as default. This does not promote c=35 or restore Sequential Halving; a
   future three-way confirmation must be newly preregistered.
+
+## §196 Silver Sequential-Halving online hyperparameter tuning: rejected (2026-08-30)
+
+- **Question and mechanism:** Can online tuning of only root
+  Sequential-Halving reduction shape, per-round allocation, and exact total
+  simulation budget recover the earlier exploratory gameplay signal? The
+  default-off implementation retained every legal root edge and ranked
+  survivors by Silver's existing child mean Q. Shapes were `half`, `gentle`,
+  `aggressive`, and `screen_two`; allocations were `finalist_heavy`,
+  `balanced`, and `cautious`. Internal deterministic search, chance search and
+  widening, final selection, and reroot identity remained ordinary.
+- **Protocol:** Frozen source/executable SHA
+  `ce6ea5a160b5fe88be520de052b832a1aace1ade`, executable SHA-256
+  `c9dfa6f893303fa38f059ae9bc5f38e3aa192dafa60451863c223c445aeb36f2`,
+  fair Silver, ascension 0, exact root budgets, reuse-cap `none`, adaptive off,
+  leaf VNet and policy net off, and one process using all 24 GCP cores. The
+  broad screen used 16 paired seeds 933000–933015 at budget 3000. Its frozen
+  ranking promoted half/finalist-heavy, aggressive/finalist-heavy, and
+  screen-two/cautious. The narrow screen used 64 fresh paired seeds
+  933100–933163 at budgets 1000, 3000, and 6000 and selected
+  half/finalist-heavy at 3000 for fresh seeds 933300–933427.
+- **Narrow result:** Aggressive/finalist-heavy at 1000 had the strongest valid
+  point estimate, 43/64 versus 32/64 control (+17.2pp, 95% CI
+  [+3.1,+31.2]), floor +2.8 ([+0.6,+5.1]), but 1.1067x runtime exceeded the
+  frozen 1.10x limit. Selected half/finalist-heavy at 3000 was 43/64 versus
+  42/64 (+1.6pp, [-10.9,+15.6]), floor +0.2 ([-1.6,+2.0]), and 1.0014x
+  runtime. Other cells failed floor or operational gates; a conversion failure
+  in the 6000 control invalidated every 6000 paired comparison.
+- **Confirmation:** c=25 passed with 84/128 wins and mean floor 47.4. c=35
+  passed with 90/128 and 47.8: paired win delta +4.7pp (95% CI
+  [-3.9,+13.3]), floor +0.5 ([-0.8,+1.7]), and 0.975x runtime. This is
+  **ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE** because it missed the +5pp bar
+  and the win interval includes zero. The selected Sequential-Halving arm
+  aborted after 78/128 rows with `Silver live backend conversion: live
+  observation cannot be represented without hidden information`; strict
+  partial analysis was prohibited.
+- **Artifacts:** The machine-readable report
+  `docs/experiments/evidence/silver-sh-online-tuning-2026-08-30.json` records
+  exclusions, raw paths, and hashes. Broad, narrow, and confirmation archive
+  SHA-256 values are `a90026d2af2f351a7c8d2f7a66b904fd14626225e6e95ff5caebb45239b4ae50`,
+  `34682d5a370247a4578843c65c7694f01b14fe5397cfadfc45901a62df03bc94`,
+  and `ca30dbf499c12a98eafd520ed2eea490dece7440a80f0332032623212390f627`.
+- **Verdict:** **SEQUENTIAL_HALVING_ONLINE_TUNING_REJECTED** for promotion
+  because confirmation had a severe operational failure. Preserve the prior
+  pruning and offline Sequential-Halving rejections; do not change defaults.
+  Combining c=35 with this path is not a useful treatment because Sequential
+  Halving forces root pulls directly and does not consult root UCT c.
