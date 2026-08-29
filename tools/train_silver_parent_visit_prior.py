@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Train and evaluate a scalar Silver parent-action visit-share prior.
+"""Train and evaluate a scalar Silver parent-action visit prior.
 
 This is an offline diagnostic companion to train_silver_parent_policy.py.  It
 uses the same canonical features, non-anchor split, XGBoost recipe, and model
-capacity; only the target changes from centered Q to the normalized 25k-A
-root-visit share.  The output JSONL is an offline replay artifact, not a
-runtime model integration.
+capacity.  The target can be the normalized 25k-A root-visit share or the raw
+25k-A root-visit count; the output JSONL always contains normalized priors for
+replay and is not a runtime model integration.
 """
 
 from __future__ import annotations
@@ -36,6 +36,17 @@ def visit_shares(rows, label):
     if total <= 0:
         raise ValueError("non-positive 25k-A visit total")
     return np.asarray([label_visits[fp] / total for fp in fingerprints], dtype=float)
+
+
+def visit_counts(rows, label):
+    label_visits = {
+        action["action_fingerprint"]: int(action["visits"])
+        for action in label["root_actions"]
+    }
+    fingerprints = [row["action_fingerprint"] for row in rows]
+    if set(fingerprints) != set(label_visits) or len(fingerprints) != len(label_visits):
+        raise ValueError("feature/visit action surface mismatch")
+    return np.asarray([label_visits[fp] for fp in fingerprints], dtype=float)
 
 
 def normalize_predictions(raw):
@@ -74,10 +85,19 @@ def distribution_metrics(test, raw_scores, normalized_scores):
     truth_flat = np.asarray(truth_flat)
     pred_flat = np.asarray(pred_flat)
     error = pred_flat - truth_flat
+    within_parent = []
+    for group in sorted(test):
+        truth = visit_shares(test[group], raw_scores[group]["label"])
+        value = parent.spearman(truth, normalized_scores[group])
+        if value is not None and math.isfinite(value):
+            within_parent.append(value)
     return {
         "action_rows": len(truth_flat),
         "pearson": pearson(truth_flat, pred_flat),
         "spearman": parent.spearman(truth_flat, pred_flat),
+        "within_parent_spearman_coverage": len(within_parent),
+        "within_parent_spearman_mean": (statistics.fmean(within_parent)
+                                         if within_parent else None),
         "mae": float(np.mean(np.abs(error))),
         "rmse": float(np.sqrt(np.mean(error * error))),
         "mean_parent_kl_a_to_prediction": statistics.fmean(per_parent_kl),
@@ -111,6 +131,8 @@ def main():
     parser.add_argument("output_dir", type=Path)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--smoke-rounds", type=int, default=0)
+    parser.add_argument("--target", choices=("normalized_share", "raw_visits"),
+                        default="normalized_share")
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -136,12 +158,13 @@ def main():
         label = labels.get((group, 25000, "A"))
         if label is None or not label.get("teacher_valid", False):
             raise SystemExit(f"missing valid 25k-A label for feature group {group}")
-        target = visit_shares(groups[group], label)
+        target = (visit_counts(groups[group], label) if args.target == "raw_visits"
+                  else visit_shares(groups[group], label))
         target_cache[group] = target
-        for row, share in zip(groups[group], target):
+        expected_visits = visit_counts(groups[group], label)
+        for row, visits in zip(groups[group], expected_visits):
             expected = row.get("visits_25k_a")
-            if expected is None or int(expected) != round(share * sum(
-                    int(action["visits"]) for action in label["root_actions"])):
+            if expected is None or int(expected) != int(visits):
                 metadata_mismatches += 1
 
     train_rows = parent.flatten(groups, train)
@@ -189,14 +212,15 @@ def main():
             "visit_prior_schema": "silver_parent_visit_prior_predictions_v1",
             "feature_schema": header["feature_schema"],
             "feature_count": len(names),
-            "target": "normalized_visits_25k_A",
+            "target": ("raw_visits_25k_A" if args.target == "raw_visits"
+                       else "normalized_visits_25k_A"),
             "model": str(model_path),
         }, sort_keys=True) + "\n")
         for group in sorted(test):
             rows = test[group]
             raw = raw_scores[group]["values"]
             normalized = normalized_scores[group]
-            actual = target_cache[group]
+            actual = visit_shares(rows, labels[(group, 25000, "A")])
             for row, raw_value, normalized_value, actual_value in zip(
                     rows, raw, normalized, actual):
                 stream.write(json.dumps({
@@ -254,7 +278,9 @@ def main():
             "test_action_rows": len(test_rows),
         },
         "feature_schema": {"name": header["feature_schema"], "count": len(names)},
-        "target": "normalized 25k-A root visit fraction within each legal sibling group",
+        "target": ("raw 25k-A root visit count per legal action"
+                   if args.target == "raw_visits"
+                   else "normalized 25k-A root visit fraction within each legal sibling group"),
         "recipe": {
             "params": params, "num_boost_round": rounds,
             "early_stopping_rounds": None if args.smoke_rounds else 40,
@@ -281,6 +307,28 @@ def main():
             "all_held_out_25k_b_anchors": model_metrics,
             "multi_action_held_out_25k_b_anchors": multi_metrics,
             "current_ordering_multi_action_reference": multi_current_metrics,
+        },
+        "raw_prediction_summary": {
+            "all_held_out_25k_b_anchors": {
+                "minimum": float(np.min(raw_flat)),
+                "maximum": float(np.max(raw_flat)),
+                "mean": float(np.mean(raw_flat)),
+                "variance": float(np.var(raw_flat)),
+            },
+            "multi_action_held_out_25k_b_anchors": {
+                "minimum": float(np.min(np.concatenate([
+                    raw_scores[group]["values"] for group in sorted(multi)
+                ]))),
+                "maximum": float(np.max(np.concatenate([
+                    raw_scores[group]["values"] for group in sorted(multi)
+                ]))),
+                "mean": float(np.mean(np.concatenate([
+                    raw_scores[group]["values"] for group in sorted(multi)
+                ]))),
+                "variance": float(np.var(np.concatenate([
+                    raw_scores[group]["values"] for group in sorted(multi)
+                ]))),
+            },
         },
         "clipping_and_fallback": clipping,
         "replay_contract": {
