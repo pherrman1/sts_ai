@@ -1,5 +1,7 @@
 # Decision log
 
+| 2026-08-29 | [`2026-08-29-silver-root-exploration-online.md`](2026-08-29-silver-root-exploration-online.md) | Fresh GCP broad and 32-seed narrow online root-only c follow-up is `ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE`; positive point estimates at c=18.5/21 have paired win intervals including zero, so c=25 remains default and Sequential Halving stays unrestored. |
+
 | 2026-08-29 | [`2026-08-29-silver-root-exploration.md`](2026-08-29-silver-root-exploration.md) | Root-only deterministic UCT reduction is `ROOT_EXPLORATION_REDUCTION_REJECTED`: all lower-c candidates introduced new >=3-regret selections at 128 and 256 on the 25k-A primary population, so no 25k-B or gameplay gate is authorized. |
 | 2026-08-29 | [`2026-08-29-phase12-semantic-fullrun.md`](2026-08-29-phase12-semantic-fullrun.md) | The 37-context semantic full-run adjudication leaves combined `p_survive*v_alive` directionally best but `INCONCLUSIVE`; all source-seed-clustered paired intervals include zero, so no OOC promotion or training is authorized. |
 | 2026-08-28 | [`2026-08-28-silver-policy-online-methods.md`](2026-08-28-silver-policy-online-methods.md) | The explicit online override is `ONLINE_POLICY_METHODS_REJECTED`: ordering tied baseline wins at 1.491x CPU, PUCT arms regressed, and the rejected runtime machinery/model were removed while preserving offline and online evidence. |

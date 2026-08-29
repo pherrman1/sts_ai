@@ -95,6 +95,20 @@ the prior Sequential-Halving rejection is unchanged; the historical 931000–
 Evidence: [root-only exploration sweep report](../../../docs/experiments/evidence/silver-root-exploration-sweep-2026-08-29.json).
 The ignored raw replay files and their hashes are recorded in that report.
 
+At the user's direction, an exploratory online follow-up was subsequently run
+on GCP rather than treating the offline rejection as evidence about gameplay.
+A broad fresh 8-seed-per-arm screen over c={0, 5, 9.9, 12.5, 18.5, 25, 35,
+50} selected a narrow online screen around the only promising lower-c region.
+The fresh 32-seed-per-arm narrow block 932100–932131 produced point win
+deltas of -6.2pp (c=12.5), -6.2pp (c=15), +6.2pp (c=18.5), and +6.2pp
+(c=21) against unset c=25; every paired 95% win interval included zero.
+All complete arms passed the recorded operational integrity checks, but this
+is **ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE**, not a promotion or a reversal
+of the offline `ROOT_EXPLORATION_REDUCTION_REJECTED` decision. The default
+remains ordinary c=25, and Sequential Halving/root pruning remains unrestored.
+See the [online GCP evidence packet](../../../docs/experiments/evidence/silver-root-exploration-online-gcp-2026-08-29.json)
+and [ledger-06 §194](../../../docs/experiments/ledger-06.md).
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable

@@ -5625,3 +5625,59 @@ model training was changed.
   frozen, no fresh gameplay cohort was authorized, and no conclusion was drawn
   about restoring Sequential Halving. The historical 931000–931063 gameplay
   smoke remains exploratory only.
+
+## §194 Silver root-only online GCP follow-up: ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE (2026-08-29)
+
+- **Why this follow-up exists:** The prior §193 record stopped after the
+  preregistered 25k-A offline selection rule rejected every lower-root
+  candidate. At the user's direction, an explicitly exploratory online check
+  was then run to test whether a small broad gameplay screen would identify a
+  useful region before spending more seeds. This does not reverse §193, waive
+  its offline gate, or reuse the historical 931000–931063 block.
+- **Online protocol:** The GCP run used the frozen implementation SHA
+  `1a96164ed7f6bb3d5ceb66e087d16f3845bc40e4`, baseline origin/main SHA
+  `034830df6510f1ab37ad4f053c07333fca0970c7`, Silver, fair play, one thread,
+  exact 3,000 simulations per combat root, internal deterministic c=25.0,
+  chance c=25.0, unchanged chance widening, adaptive off, reuse-cap mode
+  `none`, leaf VNet off, and no experiment-specific learned scorer or action
+  pruning. The broad screen used eight fresh paired seeds per arm over
+  c={0, 5, 9.9, 12.5, 18.5, 25, 35, 50} on 932010–932017. The c=0 arm
+  stopped after six rows on a semantic card-identity failure and is incomplete.
+  The other seven arms completed.
+- **Broad screen:** c=5 and c=9.9 were clearly below control on the small
+  block (paired win deltas -50.0pp and -37.5pp). c=12.5 was -12.5pp, c=18.5
+  tied wins with +1.88 mean floor, c=35 was +12.5pp but approximately 13%
+  slower, and c=50 tied control. This exploratory screen selected the narrow
+  follow-up grid c={12.5, 15, 18.5, 21, 25-control}; c=15 and c=21 were added
+  to resolve the apparent region around 18.5, not selected from offline labels.
+- **Narrow screen:** On fresh paired seeds 932100–932131 (32 per arm), the
+  control was 18/32 wins, mean floor 45.94, and 49.48 s/run. c=12.5 was
+  16/32, -6.2pp win delta (95% CI [-25.0,+9.4]), -0.4 floor delta; c=15 was
+  16/32, -6.2pp ([-25.0,+12.5]), -0.7 floor; c=18.5 was 20/32, +6.2pp
+  ([-9.4,+21.9]), approximately 0.0 floor; and c=21 was 20/32, +6.2pp
+  ([-9.4,+25.0]), +0.3 floor. All four win intervals include zero. Mean
+  runtimes were 49.35, 48.33, 50.48, and 49.24 s/run respectively, versus
+  49.48 s/run for control.
+- **Integrity:** Every narrow arm had exactly 32 unique seeds, matching
+  sidecars, one BEST line, Silver backend provenance, exact root-budget
+  multiples, and zero conversion, semantic-resolution, transaction, or
+  knowledge failures. Leaf-VNet inference calls and blend invocations were
+  zero. The repository canary validator was omitted because it rejects the
+  required `reuse-cap=none`; equivalent manual checks were recorded. The
+  sidecar's embedded `executableGitSha` remained `0189bb40...`; it was not
+  trusted as provenance because the isolated GCP executable was independently
+  SHA-256 verified as `e9629516ff9dc5e959801d96eb866f9b285ce2632da95cb71c5e08b8580bc617`.
+  Temporary remote model replacements were restored and their original hashes
+  verified.
+- **Artifacts:** The complete evidence packet, raw paths, and SHA-256 values
+  are in
+  `docs/experiments/evidence/silver-root-exploration-online-gcp-2026-08-29.json`.
+  The raw files are retained under
+  `C:/Users/pherrman/projects/sts_ai/build/gcp_root_sweep/root_sweep/`.
+- **Verdict:** **ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE** for the online
+  follow-up. c=18.5 and c=21.0 are directionally positive in the 32-seed
+  screen, but neither has a paired win interval above zero; c=12.5 and c=15.0
+  are directionally negative. Keep ordinary c=25.0 as the default. Do not
+  promote a lower root coefficient, restore Sequential Halving, or claim that
+  the offline and online results agree. Any future three-way comparison must
+  be a new preregistered confirmation.

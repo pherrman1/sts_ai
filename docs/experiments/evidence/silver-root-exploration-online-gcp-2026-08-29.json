@@ -1,0 +1,167 @@
+{
+  "evidence_schema": "silver_root_exploration_online_gcp_v1",
+  "date": "2026-08-29",
+  "implementation_sha": "1a96164ed7f6bb3d5ceb66e087d16f3845bc40e4",
+  "baseline_origin_main_sha": "034830df6510f1ab37ad4f053c07333fca0970c7",
+  "branch": "exp/silver-root-exploration-sweep",
+  "question": "Does a lower deterministic UCT coefficient at only the current Silver decision root improve online fixed-budget gameplay without action masking, elimination, or other search changes?",
+  "scope": {
+    "root_candidates_broad": [0.0, 5.0, 9.9, 12.5, 18.5, 25.0, 35.0, 50.0],
+    "root_candidates_narrow": [12.5, 15.0, 18.5, 21.0, 25.0],
+    "internal_deterministic_c": 25.0,
+    "chance_c": 25.0,
+    "chance_widening": "unchanged",
+    "adaptive": false,
+    "reuse_cap_mode": "none",
+    "exact_root_budget": 3000,
+    "action_masking_or_pruning": false,
+    "fair_play": true,
+    "threads": 1,
+    "leaf_vnet": "off",
+    "learned_policy_scorer_added_by_experiment": false,
+    "ooc_strategic_model": "existing default artifact; no experiment-specific policy scorer",
+    "gcp_target": "sts-test / europe-west3-c / sts-ai-502709"
+  },
+  "configuration_environment": {
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_REUSE_CAP_MODE": "none",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_FAIR": "1",
+    "OMP_NUM_THREADS": "1",
+    "STS_NATIVE_OOC": "1",
+    "STS_VNET": "unset",
+    "STS_OOC_STRATEGIC_TOK_NN": "unset",
+    "STS_SEARCHER3": "unset/false"
+  },
+  "canaries": {
+    "paired_seed": 932001,
+    "manual_validation": "all completed canaries had one CSV row, exact 3000-simulation root multiples, Silver telemetry, and zero conversion/semantic/transaction/knowledge failures",
+    "official_validator": "omitted: check_benchmark_canary.py does not accept the required reuse-cap=none configuration",
+    "excluded_failed_initial_control": {
+      "path": "C:/Users/pherrman/projects/sts_ai/build/gcp_root_sweep/root_sweep/canary_control.csv",
+      "status": "incomplete; header only; no BEST row; excluded"
+    },
+    "artifacts": {
+      "canary_control2.csv": "B7D9D0E830D5D82C23ECD2CBE0770812CA55179FE6CD7B4389004E4F3EB3C883",
+      "canary_control2.csv.meta.json": "D1556C87FBC9A1198AAE9348F9F1D050217FD4355EB6E616BF4F83B6B34E3FB7",
+      "canary_control2.log": "69E683C7E82A856DB57E6D60B06042729520789DB6C957E09A6031823CE55B8B",
+      "canary_paired_c18_5.csv": "FA9AB0B2F4C781DFB8792D1040FA16935DEC4F1957EEA59572A9BB99E4FE218A",
+      "canary_paired_c18_5.csv.meta.json": "F5E7154B325864BC4DC09D4F4E0983D7F6145E98F904C86A8829FFAB92C79214",
+      "canary_paired_c18_5.log": "65F02A6A14984BB0BBD4611A5209CE70FE34F0AEB477E8A1658481A078440122",
+      "canary_c12_5_paired.csv": "194033DC12543C99B8D7B208FCF48470E3BBBBE2B6B421EF16477FA995A23220",
+      "canary_c12_5_paired.csv.meta.json": "E054D310137DCF7358BF6B8AC7E15DF202D703D75B98999448FCC67716FBCFD2",
+      "canary_c12_5_paired.log": "3093386A9CAAE4E3C2F61D886EBE442DC164CC22A18CD6AAF9AF37B0618A51B1",
+      "canary_c15_0_paired.csv": "831A7F74ADB866151D412502128E1E7EF7CC8FCB6ECA02FC848FC6F52C4AA6E7",
+      "canary_c15_0_paired.csv.meta.json": "11E6509CA2414173FAB1B03456110473E1B063278A5B2382F20E5A909809C8AE",
+      "canary_c15_0_paired.log": "EC9D9CB0225ACFA97036D45A8886A03E783B00EFBB5FFE09BB0CB3F908171DF5",
+      "canary_c21_0_paired.csv": "3E90771B32A853D9B51B13582AB2E037E459259F96B66FCABFF07F378205A496",
+      "canary_c21_0_paired.csv.meta.json": "5FFB71592B7C8A97E9B105812ABD16B9FFEDB6E7F8CE87007E96268ED70960CF",
+      "canary_c21_0_paired.log": "6E91A95310D0015BB7BA47006CDC2E2D42D7515A2376DD5D9EBC814509B7D30D"
+    }
+  },
+  "broad_screen": {
+    "seed_block": "932010-932017",
+    "seeds_per_arm": 8,
+    "control": "c=25.0 unset",
+    "results": {
+      "c=0.0": {"rows": 6, "wins": 1, "mean_floor": 36.17, "mean_hp_end": 9.33, "mean_sec": 38.36, "status": "FAILED semantic action resolution on seed 932016; incomplete and excluded from candidate selection"},
+      "c=5.0": {"rows": 8, "wins": 2, "mean_floor": 38.50, "mean_hp_end": 3.62, "mean_sec": 43.68, "paired_win_delta_pp": -50.0, "paired_floor_delta": -10.12, "status": "complete"},
+      "c=9.9": {"rows": 8, "wins": 3, "mean_floor": 45.38, "mean_hp_end": 9.62, "mean_sec": 54.45, "paired_win_delta_pp": -37.5, "paired_floor_delta": -3.25, "status": "complete"},
+      "c=12.5": {"rows": 8, "wins": 5, "mean_floor": 48.50, "mean_hp_end": 24.62, "mean_sec": 57.49, "paired_win_delta_pp": -12.5, "paired_floor_delta": -0.12, "status": "complete"},
+      "c=18.5": {"rows": 8, "wins": 6, "mean_floor": 50.50, "mean_hp_end": 40.75, "mean_sec": 57.35, "paired_win_delta_pp": 0.0, "paired_floor_delta": 1.88, "status": "complete"},
+      "c=25.0": {"rows": 8, "wins": 6, "mean_floor": 48.62, "mean_hp_end": 39.75, "mean_sec": 55.43, "status": "complete control"},
+      "c=35.0": {"rows": 8, "wins": 7, "mean_floor": 50.88, "mean_hp_end": 36.88, "mean_sec": 62.61, "paired_win_delta_pp": 12.5, "paired_floor_delta": 2.25, "status": "complete; approximately 13% slower and not carried into narrow grid"},
+      "c=50.0": {"rows": 8, "wins": 6, "mean_floor": 48.62, "mean_hp_end": 29.50, "mean_sec": 56.63, "paired_win_delta_pp": 0.0, "paired_floor_delta": 0.0, "status": "complete"}
+    },
+    "selection_for_narrow_screen": "Exploratory online screen selected 12.5, 15.0, 18.5, and 21.0 for a larger fresh block; c=18.5 was the strongest lower candidate in the broad screen, c=35 exceeded the intended CPU envelope, and c=0.0 failed semantic resolution.",
+    "artifact_root": "C:/Users/pherrman/projects/sts_ai/build/gcp_root_sweep/root_sweep"
+  },
+  "narrow_screen": {
+    "seed_block": "932100-932131",
+    "seeds_per_arm": 32,
+    "strict_pairing": true,
+    "results": {
+      "c=12.5": {"wins": "16/32", "win_rate": 0.500, "mean_floor": 45.53, "mean_hp_end": 23.66, "mean_sec": 49.35, "paired_win_delta_pp": -6.2, "paired_win_ci_pp": [-25.0, 9.4], "paired_floor_delta": -0.4, "paired_floor_ci": [-2.6, 1.8]},
+      "c=15.0": {"wins": "16/32", "win_rate": 0.500, "mean_floor": 45.22, "mean_hp_end": 24.72, "mean_sec": 48.33, "paired_win_delta_pp": -6.2, "paired_win_ci_pp": [-25.0, 12.5], "paired_floor_delta": -0.7, "paired_floor_ci": [-3.2, 1.8]},
+      "c=18.5": {"wins": "20/32", "win_rate": 0.625, "mean_floor": 45.91, "mean_hp_end": 28.22, "mean_sec": 50.48, "paired_win_delta_pp": 6.2, "paired_win_ci_pp": [-9.4, 21.9], "paired_floor_delta": -0.0, "paired_floor_ci": [-2.2, 1.9]},
+      "c=21.0": {"wins": "20/32", "win_rate": 0.625, "mean_floor": 46.25, "mean_hp_end": 28.31, "mean_sec": 49.24, "paired_win_delta_pp": 6.2, "paired_win_ci_pp": [-9.4, 25.0], "paired_floor_delta": 0.3, "paired_floor_ci": [-1.8, 2.1]},
+      "c=25.0 unset control": {"wins": "18/32", "win_rate": 0.5625, "mean_floor": 45.94, "mean_hp_end": 26.56, "mean_sec": 49.48}
+    },
+    "integrity": {
+      "all_arms_exact_rows": true,
+      "all_arms_exact_seed_set": true,
+      "all_arms_unique_seed_set": true,
+      "all_sidecars_backend": "silver",
+      "all_sidecars_threads": 1,
+      "all_sidecars_root_simulations": 3000,
+      "all_sidecars_fair_play": true,
+      "all_sidecars_reuse_cap_mode": "none",
+      "all_sidecars_root_parameter": {"12.5": "12.500000", "15.0": "15.000000", "18.5": "18.500000", "21.0": "21.000000", "25.0": "default(25)"},
+      "best_lines_per_arm": 1,
+      "telemetry_failure_counters": 0,
+      "telemetry_totals_divisible_by_3000": true,
+      "leaf_vnet_inference_calls": 0,
+      "blend_invocations": 0,
+      "paired_analysis": "paired_analysis.py, strict mode, no --allow-partial"
+    }
+  },
+  "raw_artifacts": {
+    "narrow": {
+      "narrow_c12_5.csv": "B5208EE29036C957E9CE3FFFEF281CCE9C075E2FABDAFF9A90736E5A0C6CB68C",
+      "narrow_c12_5.csv.meta.json": "F82C22F371A330FC01B34F48DEA882D9133B49E95490000F885DE8A518020CE1",
+      "narrow_c12_5.log": "4F9D87287738BF32713991ECD09F6E89F0FA4EF084DADF75A0B229C002072107",
+      "narrow_c15_0.csv": "CDDC64380960B143AD92166DE431F395411382E4902C4E97AA312964D4E3E72E",
+      "narrow_c15_0.csv.meta.json": "A1546E4AAEA8E3EC1E4178D07E840B96FAF55EB6760B32D167FE935D005D7326",
+      "narrow_c15_0.log": "B2A357C3C00F38450CE7C2DCACE348D10980D59E0F624BA7C3CEE4EC2EA4A64E",
+      "narrow_c18_5.csv": "6917DF70BE3F6BCA5B7750B440ABB58B6210E9ABFDB4B7637F9195AE7A18867D",
+      "narrow_c18_5.csv.meta.json": "07BF482CE67D77EB6AEE5B6E25C5649DF9AFB396A7F661D16F6F5F4D2B02B969",
+      "narrow_c18_5.log": "C68FEF474C8E85D50FD03029D4223E651D76220ED457761F176B00FB0C38BBD0",
+      "narrow_c21_0.csv": "A1C7F329796CE76EF99E80005F22075DF24E1D4B773EFB6BCD03309CE68AE61D",
+      "narrow_c21_0.csv.meta.json": "78D36B7EFDE39B51212729D19E4654550AAE5227D2B8EA356E53B46F3C309027",
+      "narrow_c21_0.log": "3C9F372AF109B77964738733B5E738F86CE0C83F988E6A592AC6E3EAB80F23FB",
+      "narrow_c25.csv": "41A8FD0F940E9A5438939637DA8573304DAD38AFDC136BAD3C231389F87FADF2",
+      "narrow_c25.csv.meta.json": "D575E061710B29AC47F50FB6AC45532899624D6568A29BDF831AF473B7F044E7",
+      "narrow_c25.log": "A6761879CB879922810BE0FC60D801868D9459CBF2450402AA95FBDD24476604"
+    },
+    "broad": {
+      "broad_c0.csv": "C5330673B1C90CE8265BF5DC0A019258557EC82171EC2B7858261B3F8D2B17AB",
+      "broad_c0.csv.meta.json": "3D6802897CAE67EC25839929FABE4E58BA739E0BAC73F05C19F8E473A5C886CC",
+      "broad_c0.log": "C72574FD552B73C29A265760B05738DEF4EBA1A7A697A2DE6BAF14089EE99DA0",
+      "broad_c5.csv": "8FD8037571226B26BE8031189FC0817DC881B0B9C82EDBE8D4CAD1FC40D019B5",
+      "broad_c9_9.csv": "D23D7EDA536D79A3231C0552ED989295766D5E88C34CC8C465CC8A1BE0C50AA1",
+      "broad_c12_5.csv": "BA50A3C16ADE07A2C974A7F27FE5FF74DF24583F2AD7DA9A008A0B468776481B",
+      "broad_c18_5.csv": "B0230ABB030C201663FAC00BBFABB30EFF8C084A8B573CF5E11867B5745EA508",
+      "broad_c25.csv": "BC15A50ED467F30A4BA40FAF066B37D0D7D191EB01162D2537D3A6A67C362266",
+      "broad_c35.csv": "A0B73662B8FD1FC2B47C58CBE8FE1509C7C08EE231DAE880362D35F150F41A1D",
+      "broad_c50.csv": "01EF6414BC06037756FA9768A2C469331DDE9AB739B4DA3367E7BB91E4D3BF47",
+      "broad_c5.log": "525F04F02BA135845EB3D45D39960E786BA116F2B9EE35D527FDD39CA8B23687",
+      "broad_c9_9.log": "1ED9790665311EE4B5FC19143E4CDB012F844484435A42C03836F5F7D7AB3305",
+      "broad_c12_5.log": "B0FBEC53D6EE7E4128613FCDA2A85C4340FBD5E6C1281747835978A1C66ADD51",
+      "broad_c18_5.log": "45270FDEF70B2CAE01E2168E6FAAB14853D68ECA3030FE9E80A6A79304D0E73D",
+      "broad_c25.log": "1E931345E4AB427926E25ABE42321A0746A17A612F786275754BEFE557A3D19F",
+      "broad_c35.log": "4F04BEAFF3A1ABE70EFD80D96066DD645E3CB84627902925DFD72D08DE8B84D4",
+      "broad_c50.log": "D8044D5EA265EE99E06B20B38D47ECD2D6F16789BF3597D81D55DE88B5CA4E07"
+    }
+  },
+  "provenance_hashes": {
+    "remote_isolated_executable_sha256": "e9629516ff9dc5e959801d96eb866f9b285ce2632da95cb71c5e08b8580bc617",
+    "floor_model_sha256": "c866b62512bb7cf8abdebc6175415508cb667fe2d628198ac107fd35591a9447",
+    "win_model_sha256": "724a75ccc4bc2394306181db229aa2295433450f9596f1bc1479083dda337e35",
+    "combat_model_sha256": "e26fffdbe21392cc08db841859d46c13188acd16b180323868b04dca55e15ea2",
+    "ooc_model_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "sidecar_executableGitSha_warning": "0189bb40e1712f2b9b3597483c66cc4d267e206e; this embedded/sidecar field was not trusted as provenance; the isolated executable SHA-256 above was verified directly on GCP"
+  },
+  "checks_not_run_or_limited": {
+    "official_canary_validator": "omitted because it rejects required reuse-cap=none; manual equivalent checks recorded",
+    "offline_25k_B_gate": "not run; prior A-only rule rejected all lower candidates before freezing",
+    "full_64_seed_gameplay_confirmation": "not run; this was the requested broad exploratory screen plus 32-seed narrow screen",
+    "historical_931000_931063_block": "not reused"
+  },
+  "verdict": {
+    "offline_status_preserved": "ROOT_EXPLORATION_REDUCTION_REJECTED",
+    "online_status": "ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE",
+    "reason": "The broad screen found the only clearly positive lower candidate in this small screen near c=18.5; the larger narrow screen gave c=18.5 and c=21.0 +6.2pp point win deltas, but both paired 95% win intervals included zero. c=12.5 and c=15.0 were negative point estimates. No lower-root candidate satisfies a clean online promotion claim.",
+    "production_action": "Keep default ordinary Silver c=25.0. Do not change defaults, promote root-only reduction, restore Sequential Halving, or infer that offline and online conclusions agree. A fresh three-way comparison would require a new preregistered gate."
+  }
+}
