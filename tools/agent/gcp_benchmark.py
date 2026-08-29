@@ -313,7 +313,8 @@ def copy_to(args: argparse.Namespace) -> int:
         return result
     verify = (
         f"test -f {shlex.quote(remote)}; "
-        f"test \"$(sha256sum {shlex.quote(remote)} | cut -d' ' -f1)\" = {args.expect_sha256.lower()}; "
+        f"actual=$(sha256sum {shlex.quote(remote)}); "
+        f"test \"${{actual%% *}}\" = {args.expect_sha256.lower()}; "
         f"echo copy_sha256_verified={args.expect_sha256.lower()}"
     )
     return ssh_command(args, verify)
@@ -426,7 +427,7 @@ def remote_run(args: argparse.Namespace) -> int:
         remote = (
             "set -euo pipefail; "
             f"cd {shlex.quote(args.remote_root)}; "
-            "test -f tools/seed_guard.sh; command -v bash >/dev/null; "
+            "test -f tools/seed_guard.sh; command -v bash >/dev/null; mkdir -p logs results; "
             f"{check}; exec {guard}"
         )
         return ssh_command(args, remote)
@@ -437,7 +438,7 @@ def remote_run(args: argparse.Namespace) -> int:
         "set -euo pipefail; "
         f"cd {shlex.quote(args.remote_root)}; "
         "test -f tools/seed_guard.sh; command -v bash >/dev/null; "
-        "command -v nohup >/dev/null; mkdir -p logs; "
+        "command -v nohup >/dev/null; mkdir -p logs results; "
         f"{check}; "
         f"nohup {guard} >{shlex.quote(log)} 2>&1 < /dev/null & pid=$!; "
         f"echo remote_pid=$pid; echo remote_log={shlex.quote(log)}"
@@ -493,7 +494,8 @@ def exact_sha_preflight(args: argparse.Namespace) -> int:
     ]:
         commands.extend([
             f"test -f {shlex.quote(path)}",
-            f"test \"$(sha256sum {shlex.quote(path)} | cut -d' ' -f1)\" = {item['sha256']}",
+            f"actual=$(sha256sum {shlex.quote(path)}); "
+            f"test \"${{actual%% *}}\" = {item['sha256']}",
         ])
     commands.append(
         f"echo exact_sha_preflight=PASS experiment={manifest['experiment_id']} "

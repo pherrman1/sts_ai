@@ -143,6 +143,7 @@ class GcpBenchmarkTests(unittest.TestCase):
         self.assertIn("STS_POLICY_ARM=A", remote)
         self.assertIn("refusing existing output", remote)
         self.assertIn("policy-A.csv.meta.json", remote)
+        self.assertIn("mkdir -p logs results", remote)
 
     def test_copy_to_verifies_local_and_remote_hash(self):
         module = load_module()
@@ -181,6 +182,8 @@ class GcpBenchmarkTests(unittest.TestCase):
         self.assertIn("CMAKE_HOME_DIRECTORY:INTERNAL=", remote)
         self.assertIn("b" * 64, remote)
         self.assertIn("c" * 64, remote)
+        self.assertNotIn("| cut", remote)
+        self.assertIn("${actual%% *}", remote)
 
     def test_local_seed_guard_rejects_gcp_mode(self):
         result = subprocess.run(
