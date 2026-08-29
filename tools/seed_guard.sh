@@ -23,6 +23,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["strategicgen"]=2        ["strategicgen2"]=2
   ["strategicmarggen"]=2    ["phase13a_collect"]=2
   ["oocfactoreval"]=2      ["oocmargtradeoffeval"]=2 ["oock3tradeoffeval"]=2
+  ["oocsemanticfullruneval"]=2
 )
 
 declare -A PYTHON_SEED_INDEX=(

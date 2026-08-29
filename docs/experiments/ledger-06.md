@@ -5518,3 +5518,62 @@ model training was changed.
   runtime policy scorer. A subsequent Silver investigation must state a new,
   independently testable hypothesis and preserve these negative results as its
   boundary condition.
+
+## §192 Phase-12 semantic survival-tradeoff full-run adjudication: INCONCLUSIVE (2026-08-29)
+
+- **Question and prospective freeze:** Does the combined
+  `p_survive * v_alive` rule select higher terminal-win actions than the
+  survival-only and strength-only rules on the union of 18 original and 19
+  augmentation contexts that independently retained their frozen Phase-12
+  tradeoff under fresh 16-future K=3 confirmation? No contexts or action pairs
+  were reselected from terminal outcomes. The 37-row semantic manifest had 36
+  unique source seeds; seed `810008` contributed two distinct decisions.
+  Frozen combined choices were safe/strength `26/11`; dense-K3 choices were
+  `34/3`.
+- **Implementation and protocol:** PR #83 reused PR #80's seven-field semantic
+  sibling identity, fail-closed uniqueness, and atomic whole-manifest
+  preflight, then invoked the existing unbootstrapped terminal
+  `finishOocCounterfactual` continuation. Reviewed and Linux-GCC-passed
+  scientific SHA was
+  `4794647faf989cc0710c4239302d4cb27b27b053`; exact GCP Release executable
+  SHA-256 was
+  `B9E592991AAFC77454485E5B8182CB682E8AE92AA1425987D95AC12F1059026F`.
+  The 37/37 no-futures semantic preflight passed before 37 contexts x 2 frozen
+  actions x 16 fresh matched futures produced 1,184/1,184 valid branches.
+  Future identities `1000000--1000015` were disjoint from historical and fresh
+  K3 runs. Siblings shared hidden-encounter and continuation/search seeds.
+  Configuration was Ironclad ascension 0, project-fair Searcher3, one thread,
+  belief/chain off, 64 particles, 1,000 reference combat simulations, combat
+  VNet alpha 0.3, and the frozen strategic-token OOC gate stack. Terminal run
+  win was primary; final floor/HP were diagnostics. Wall time was 16,647 s
+  (4h37m27s).
+- **Terminal truth:** safe/strength/tied contexts were `17/12/8`. Survival,
+  strength, combined-product, and dense-K3 correct non-tied choices were
+  `17/29`, `12/29`, `19/29`, and `16/29`. Mean selected terminal-win rates
+  were `0.3649`, `0.3530`, `0.3851`, and `0.3649`; mean two-action regrets
+  were `0.0676`, `0.0794`, `0.0473`, and `0.0676` (all median regrets zero).
+  Combined had the best point accuracy, selected win, and regret.
+- **Paired uncertainty:** combined-minus-survival selected-win difference was
+  `+0.02027`, with deterministic 10,000-resample source-seed-clustered paired
+  bootstrap 95% interval `[-0.02404,+0.06771]`; combined-minus-strength was
+  `+0.03209`, interval `[-0.03125,+0.09539]`; combined-minus-dense was
+  `+0.02027`, interval `[-0.02431,+0.06908]`. Every interval includes zero.
+  Act and screen results are descriptive only because cells are small.
+- **Artifacts:** frozen manifest
+  `build/phase12_semantic_fullrun_37.csv`
+  `6E7B8EDB608B61C45FB9CBC6A1375FD1770759BCA0287F4F6C77EF3C040C5988`;
+  raw adjudication `build/phase12-fullrun/fullrun_16.csv`
+  `F1F842FE773C17E9EF7A1999A3189C03540DD80E6E383E4ED68422D467828F9A`;
+  raw log `build/phase12-fullrun/fullrun.log`
+  `0DC750CEF3A22D4E89C35ABF944D2F462CE37D907895E2BB0492D782CAAF64DD`;
+  decisions `build/phase12-fullrun/analysis/decisions.csv`
+  `390269EAABF5B60DC2EF21660368BA026A225BF80E31CEC64CF308C5E5F74B95`;
+  summary `build/phase12-fullrun/analysis/summary.json`
+  `49F35D5009B50AFBE4A87E825BB8E05651CCB39862AA256C32C70144CCA09C09`.
+  Exact model and preflight hashes are preserved in
+  `build/phase12-fullrun/provenance.txt` and the PR evidence packet.
+- **Verdict:** **INCONCLUSIVE** under the existing PR #75 decision rule.
+  Combined product remains directionally promising but is not established
+  against either primary baseline. This result does not authorize a production
+  OOC policy change, K-horizon tuning, model training, new trajectory
+  collection, or outcome-driven candidate expansion.
