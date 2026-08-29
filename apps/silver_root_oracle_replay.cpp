@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
             return 2;
         }
         const auto budgets = splitBudgets(argc >= 5 ? argv[4] : "16,32,64,128,1000");
-        const int replicates = argc == 6 ? std::stoi(argv[5]) : 1;
+        const int replicates = argc >= 6 ? std::stoi(argv[5]) : 1;
         if (replicates <= 0) throw std::runtime_error("replicates must be positive");
         std::vector<silver_bridge::SilverRootGuidanceMode> modes = {
             silver_bridge::SilverRootGuidanceMode::NONE,
