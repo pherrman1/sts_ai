@@ -104,7 +104,7 @@ Local generated artifacts under `build/silver_grouped_linear_policy_20260829/`:
 - machine report `aggregate_report.json`:
   `fea2d03d88ea17b19822700f9461533861e502330a2f860e035cd1b2430844b8`;
 - manifest `manifest.json`:
-  `db384f675605c0dbc1b8eae1bd7edea501f9884ec1fd690d7b9b81602d691c16`.
+  `c61330079b304246c50b6d1468a12c3b97547ab223eff7e79e72ddeca1a2a784`.
 
 Checks passed: Python compile, five focused unit tests, strict frozen baseline
 reproduction, `git diff --check`, and a second full run whose 340 probability
