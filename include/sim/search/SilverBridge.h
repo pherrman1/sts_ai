@@ -256,17 +256,6 @@ enum class CardSource : std::uint8_t { NONE = 0, HAND, DRAW, DISCARD, EXHAUST, C
 // The production cap is deliberately fixed.  The allocated/active modes
 // select the existing pool measurement; NONE disables statistical reuse.
 enum class SilverReuseCapMode : std::uint8_t { ALLOCATED = 0, ACTIVE, NONE };
-// Experimental root-only action allocation. Default ordinary UCT keeps its
-// existing code path when this is ORDINARY.
-enum class SilverRootActionMode : std::uint8_t {
-    ORDINARY = 0,
-    SEQUENTIAL_HALVING,
-    // Root-only, default-off.  The initial/current-order mask is grown from
-    // simulations added in this decision; internal decision and chance nodes
-    // retain their pinned ordinary Silver behavior.
-    PROGRESSIVE_UNPRUNING_CURRENT_ORDER,
-};
-const char *silverRootActionModeName(SilverRootActionMode mode);
 enum class SilverRerootFallbackReason : std::uint8_t {
     NONE = 0,
     NO_PREDECESSOR,
@@ -332,7 +321,6 @@ struct SilverSearchConfig {
     // controls this value; production continues to use exactly 32 * 1024.
     std::int64_t reuseCap = kSilverProductionReuseCap;
     SilverReuseCapMode reuseCapMode = SilverReuseCapMode::ALLOCATED;
-    SilverRootActionMode rootActionMode = SilverRootActionMode::ORDINARY;
     // Default-off collection avoids per-decision diagnostic work unless the
     // scaling CSV (or a focused bridge fixture) explicitly requests it.
     bool collectDecisionDiagnostics = false;
@@ -385,25 +373,6 @@ struct SilverRootUncertainty {
 SilverRootUncertainty summarizeSilverRoot(
     const std::vector<SilverRootActionSummary> &summaries);
 
-// Decision-only record for experimental root allocation. Root edges always
-// remain stored; these identities describe a mask/ranking, never erasure.
-struct SilverRootActionPruningTelemetry {
-    SilverRootActionMode mode = SilverRootActionMode::ORDINARY;
-    int initialLegalActions = 0;
-    int initialActiveActions = 0;
-    int eliminationRounds = 0;
-    std::vector<int> activeCountsAfterElimination;
-    std::vector<std::string> eliminatedActionFingerprints;
-    // Progressive-unpruning-only observation.  Each threshold unlocks the
-    // next stored root edge in the selected rank order; no edge is erased.
-    std::vector<std::int64_t> activationSimulationThresholds;
-    std::vector<std::string> activatedActionFingerprints;
-    std::vector<int> activeCountsDuringSearch;
-    std::vector<std::int64_t> simulationsAtActiveCounts;
-    std::string finalCandidateFingerprint;
-    std::int64_t simulationsAdded = 0;
-};
-
 // Value-only accounting of one actual private Silver search invocation.  The
 // record is emitted for ordinary decisions and every sequential-selection
 // subdecision when collection is enabled.
@@ -430,7 +399,6 @@ struct SilverSearchDecisionDiagnostic {
     std::int64_t adaptiveInitialSimulations = 0;
     std::int64_t adaptiveTotalSimulations = 0;
     SilverRootUncertainty rootUncertainty;
-    SilverRootActionPruningTelemetry rootPruning;
 };
 
 // Value-only copy of Silver BattleSearcher's deterministic telemetry. This is
@@ -545,7 +513,6 @@ struct SilverDecisionResult {
     // as the escalation trigger. It remains the initial summary after a
     // continuation; rootActionSummaries hold the final-budget observations.
     SilverRootUncertainty rootUncertainty;
-    SilverRootActionPruningTelemetry rootPruning;
     std::string initialActionFingerprint;
     std::int64_t initialSimulations = 0;
     bool adaptiveEscalated = false;
