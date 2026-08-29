@@ -5755,3 +5755,81 @@ model training was changed.
   integration itself. Full provenance, hashes, RNG qualification, tables,
   and commands are in the
   [rank-shape calibration evidence report](evidence/silver_rankshape_visit_prior_calibration_2026-08-29.md).
+
+## Grouped linear Silver visit-policy offline test (2026-08-29)
+
+- **Question/protocol:** test whether one direct parent-macro linear softmax
+  fit of the exact normalized 25k-A sibling visit distribution improves mass
+  allocation over frozen raw-count and rank-shape scalar priors. It used
+  immutable 1,788-wide features, fixed `1e-4` L2, train-only scaling, a
+  327/75 parent train/validation split, and 93 fully excluded B anchors. The
+  raw and rank-shape frozen mass metrics reproduced exactly before fitting.
+  No gameplay, feature regeneration, tuning, or MLP was run. The initial
+  offline pass did not replay; its decision was later corrected so that these
+  metrics are diagnostic only rather than a replay gate.
+- **Results:** on 63 multi-action anchors, grouped linear KL was `0.899012`
+  versus raw `1.234718` and rank-shape `1.199533`, but entropy MAE was
+  `0.845315` versus `0.910402`/`0.822918` and max-mass MAE was `0.423552`
+  versus `0.480429`/`0.420425`. A-top agreement was `42.86%`, down from
+  `50.79%`; legacy parent-macro B-Q pairwise concordance was `71.81%` versus
+  `73.41%`. Linear
+  minus rank-shape KL had a 95% paired root-bootstrap CI
+  `[-1.002904,+0.118613]`, and neither shape-error CI excluded zero.
+- **Offline decision correction:** **`REPLAY_PENDING`**. The frozen offline
+  metrics remain diagnostic and do not block a cheap compatible frozen replay;
+  only integrity/provenance failures can do that. Full preflight, hashes,
+  metrics, underfit evidence, and artifact locations are in the
+  [grouped-linear evidence report](evidence/silver_grouped_linear_visit_policy_2026-08-29.md).
+
+## Grouped linear Silver visit-policy frozen replay (2026-08-29)
+
+- **Protocol:** reuse the verified archived `silver_root_oracle_replay`
+  executable (source `581b68bb`, executable SHA
+  `d8d08392343ab442ec093e5fa07b64b326755560ff374dfba61bbce9c1a18006`) for
+  63 frozen multi-action roots, 32 simulations, four common replicate seeds,
+  and concurrent `current_uct`, `oracle_visit_puct`, and
+  `learned_visit_puct` arms. The grouped model and its 340 probabilities were
+  unchanged; frozen 25k-B alone judged search quality. No gameplay or model
+  training occurred.
+- **Controls/results:** the 756-row replay exactly reproduced current
+  `41.2698% / 4.051736` and oracle `51.1905% / 3.505948` B-best/regret means.
+  Learned was `43.6508% / 3.769684`: versus current, `+2.3810 pp` B-best
+  (95% paired-root CI `[-3.9683,+8.7302]`) and `-0.282052` regret (CI
+  `[-0.740037,+0.177162]`), with `20/16/27` improved/worsened/tied roots. It
+  recovered `24.00%` of oracle B-best gain and `51.68%` of oracle regret gain.
+- **Decision:** **`GROUPED_LINEAR_VISIT_POLICY_REPLAY_INCONCLUSIVE`**. Both
+  point estimates improve, but B-best recovery is below 25% and neither
+  learned-vs-current interval excludes zero; the negative rule also does not
+  apply. This is evidence about the additive linear grouped policy only, not
+  direct grouped policy learning in general. Full hashes, command, raw output,
+  analysis, and stability are in [the replay evidence report](evidence/silver_grouped_linear_visit_policy_replay_2026-08-29.md).
+
+## Grouped linear Silver replay final alignment and cross-prior check (2026-08-29)
+
+- **Correctness:** the replay analyzer now fails closed for duplicate/missing
+  arms, per-root replicate seed/budget mismatch, or frozen-B reference mismatch.
+  Its negative decision condition is corrected to require both neutral/harmful
+  point estimates and both intervals ruling out 25% recovery. The frozen
+  grouped-linear result remains **INCONCLUSIVE**.
+- **Cross-prior provenance:** the raw-count replay hash
+  `bd988d807239634a0b4de49f427820b1c92c84fa5af8dd916602992f1f2a2a5c`
+  records source/executable `cb27a6e...` / `6f3ef9...`, unlike grouped linear
+  and rank-shape (`581b68b...` / `d8d083...`). Although roots, replicate
+  seeds, snapshots/relabels, and current/oracle rows match exactly, the
+  grouped-linear-minus-raw comparison is rejected fail-closed.
+- **Compatible rank-shape comparison:** grouped linear minus rank-shape is
+  `+1.190476 pp` B-best (95% CI `[-1.587302,+4.365079]`) and `-0.257334`
+  frozen-B regret (CI `[-0.625440,+0.019940]`), with `7/6/50`
+  improved/worsened/tied roots. This is a repeatedly examined frozen
+  search-level diagnostic, not gameplay or playing-strength confirmation.
+
+## Grouped linear Silver frozen feature-layout correction (2026-08-29)
+
+- **Provenance correction:** the immutable 1,788-wide feature header and its
+  generator layout are 1,766 state fields followed by 22 ordered action fields
+  (`aIsCard` through `aSelObtainWeight`), not an inferred 1,768/20 split. The
+  trainer now checks that exact ordered suffix and rejects reordered, missing,
+  or truncated layouts.
+- **Scope:** this is header-only provenance work. Model, probability, replay
+  JSONL, replay-analysis hashes, metrics, and the `INCONCLUSIVE` replay
+  decision are unchanged; no fit, replay, or gameplay was run.

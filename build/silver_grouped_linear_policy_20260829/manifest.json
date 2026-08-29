@@ -1,0 +1,40 @@
+{
+  "command": "tools/train_silver_parent_visit_policy.py C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-policy-prior-25k\\build\\silver_parent_policy_features.jsonl C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-policy-prior-25k\\build\\silver_parent_policy_relabel.jsonl C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-root-oracle-replay\\build\\silver_parent_visit_prior_raw_20260829\\silver_parent_visit_prior_predictions.jsonl C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-root-oracle-replay\\build\\silver_visit_prior_rankshape_calibration_20260829\\silver_parent_visit_prior_calibrated_predictions.jsonl build\\silver_grouped_linear_policy_20260829 --corpus C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-root-oracle-replay\\build\\pilot-selected_corpus.jsonl",
+  "dimensions": {
+    "active_train_scaled_features": 555,
+    "bias": false,
+    "frozen_feature_count": 1788
+  },
+  "fixed_l2": 0.0001,
+  "head": "fcb018eafa824efcb0a31e693cb1c086a126647f",
+  "inputs": {
+    "corpus": "C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-root-oracle-replay\\build\\pilot-selected_corpus.jsonl",
+    "corpus_sha256": "bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7",
+    "features": "C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-policy-prior-25k\\build\\silver_parent_policy_features.jsonl",
+    "features_sha256": "0377aaef862362cdf1fa3925579a73b66381cbd646762a0453b6a939149923bd",
+    "rankshape_predictions": "C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-root-oracle-replay\\build\\silver_visit_prior_rankshape_calibration_20260829\\silver_parent_visit_prior_calibrated_predictions.jsonl",
+    "rankshape_predictions_sha256": "4fc1617aa8880cd0d4e95c8f3db34f37fd0e75b01f3cfd607358f53232224558",
+    "raw_count_predictions": "C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-root-oracle-replay\\build\\silver_parent_visit_prior_raw_20260829\\silver_parent_visit_prior_predictions.jsonl",
+    "raw_count_predictions_sha256": "f21d1c0e1e1b62434dab6582fd2b53efbba8c8895bd0d6d29d566195ec8112c7",
+    "relabels": "C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-policy-prior-25k\\build\\silver_parent_policy_relabel.jsonl",
+    "relabels_sha256": "abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c"
+  },
+  "outputs": {
+    "aggregate_report": "fea2d03d88ea17b19822700f9461533861e502330a2f860e035cd1b2430844b8",
+    "anchor_probabilities": "51534736ce59c62d92841867ceac0f4f06e03023997aaba7404f75f6412e9b2a",
+    "human_report": "dda0e1af31b3136cd90d2df374e5a2242e402a1540a605f1059ef5ba15d83701",
+    "model": "a9276d735669f9ff28b83d95c5bcd57d1dcb135b97eb55d1cd774aa2c4782eab"
+  },
+  "seed": 20260829,
+  "split": {
+    "anchor_action_rows": 340,
+    "anchor_excluded_from_training_scaling_validation_and_tuning": true,
+    "anchor_parents": 93,
+    "multi_action_anchors": 63,
+    "salt": "silver-parent-policy-val-v1/",
+    "train_action_rows": 1152,
+    "train_parents": 327,
+    "validation_action_rows": 205,
+    "validation_parents": 75
+  }
+}

@@ -14,6 +14,12 @@ from pathlib import Path
 ARMS = ("current_uct", "oracle_visit_puct", "learned_visit_puct")
 BOOTSTRAPS = 10_000
 BOOTSTRAP_SEED = 20260830
+EXPECTED_CONTROL_MEANS = {
+    "current_uct": {"mean_b_best_probability": 0.4126984126984127, "mean_b_regret": 4.051735730742333},
+    "oracle_visit_puct": {"mean_b_best_probability": 0.5119047619047619, "mean_b_regret": 3.5059477286470115},
+}
+CONTROL_TOLERANCE = 1e-9
+REPLAY_JUDGMENT = "frozen_25k_B_top_choice_and_regret"
 
 
 def percentile(values, fraction):
@@ -32,6 +38,40 @@ def bootstrap_mean(values, rng):
     return [percentile(means, 0.025), percentile(means, 0.975)]
 
 
+def validate_arm_alignment(header, rows):
+    """Fail closed unless each root/replicate has one aligned row per arm."""
+    if header.get("judgment") != REPLAY_JUDGMENT:
+        raise ValueError("unexpected frozen-B judgment reference")
+    by_root_replicate = defaultdict(list)
+    required = ("group_id", "replicate", "arm", "budget", "search_seed",
+                "frozen_b_best_action_fingerprint", "frozen_b_best_q")
+    for number, row in enumerate(rows, 2):
+        missing = [key for key in required if key not in row]
+        if missing:
+            raise ValueError(f"missing replay identity fields at line {number}: {missing}")
+        if not isinstance(row["group_id"], str) or not row["group_id"]:
+            raise ValueError(f"invalid replay group identity at line {number}")
+        if row["replicate"] not in {0, 1, 2, 3}:
+            raise ValueError(f"invalid replay replicate identity at line {number}")
+        if row["arm"] not in ARMS:
+            raise ValueError(f"unexpected replay arm at line {number}: {row['arm']}")
+        if row["budget"] != 32:
+            raise ValueError(f"replay budget mismatch at line {number}")
+        by_root_replicate[(row["group_id"], row["replicate"])].append(row)
+    for key, bucket in by_root_replicate.items():
+        arms = [row["arm"] for row in bucket]
+        if len(bucket) != len(ARMS) or set(arms) != set(ARMS) or len(set(arms)) != len(ARMS):
+            raise ValueError(f"duplicate/missing arm row at {key}")
+        if len({row["search_seed"] for row in bucket}) != 1:
+            raise ValueError(f"search-seed mismatch across arms at {key}")
+        if len({row["budget"] for row in bucket}) != 1:
+            raise ValueError(f"budget mismatch across arms at {key}")
+        if len({row["frozen_b_best_action_fingerprint"] for row in bucket}) != 1:
+            raise ValueError(f"frozen-B best-action mismatch across arms at {key}")
+        if len({row["frozen_b_best_q"] for row in bucket}) != 1:
+            raise ValueError(f"frozen-B judgment mismatch across arms at {key}")
+
+
 def load(path):
     with path.open(encoding="utf-8") as stream:
         header = json.loads(next(stream))
@@ -46,6 +86,7 @@ def load(path):
         raise ValueError("replay arm set mismatch")
     if {row["replicate"] for row in rows} != {0, 1, 2, 3}:
         raise ValueError("replay replicate set mismatch")
+    validate_arm_alignment(header, rows)
     return header, rows
 
 
@@ -142,6 +183,56 @@ def arm_means(groups, root):
     }
 
 
+def validate_controls(means):
+    result = {}
+    for arm, expected in EXPECTED_CONTROL_MEANS.items():
+        observed = means[arm]
+        matches = {key: abs(observed[key] - value) <= CONTROL_TOLERANCE
+                   for key, value in expected.items()}
+        result[arm] = {"expected": expected, "observed": observed,
+                       "matches": matches, "pass": all(matches.values())}
+    if not all(row["pass"] for row in result.values()):
+        raise ValueError("concurrent current/oracle controls did not reproduce established means")
+    return result
+
+
+def replay_decision(means, comparisons):
+    by_pair = {(item["treatment"], item["control"]): item for item in comparisons}
+    learned = by_pair[("learned_visit_puct", "current_uct")]
+    oracle = by_pair[("oracle_visit_puct", "current_uct")]
+    oracle_top_gain = oracle["mean_top_probability_delta"]
+    oracle_regret_reduction = -oracle["mean_regret_delta"]
+    learned_top_gain = learned["mean_top_probability_delta"]
+    learned_regret_reduction = -learned["mean_regret_delta"]
+    top_ci = learned["top_probability_delta_ci95"]
+    regret_ci = learned["mean_regret_delta_ci95"]
+    recovers_top = learned_top_gain / oracle_top_gain if oracle_top_gain else None
+    recovers_regret = learned_regret_reduction / oracle_regret_reduction if oracle_regret_reduction else None
+    at_least_one_ci_excludes_zero = top_ci[0] > 0.0 or regret_ci[1] < 0.0
+    other_metric_has_ci_supported_harm = top_ci[1] < 0.0 or regret_ci[0] > 0.0
+    both_recover_25 = recovers_top is not None and recovers_regret is not None and recovers_top >= .25 and recovers_regret >= .25
+    positive = (learned_top_gain > 0.0 and learned_regret_reduction > 0.0 and both_recover_25
+                and at_least_one_ci_excludes_zero and not other_metric_has_ci_supported_harm)
+    target_top = .25 * oracle_top_gain
+    target_regret_delta = -.25 * oracle_regret_reduction
+    intervals_rule_out_top_25 = top_ci[1] < target_top
+    intervals_rule_out_regret_25 = regret_ci[0] > target_regret_delta
+    point_estimates_neutral_or_harmful = learned_top_gain <= 0.0 or learned_regret_reduction <= 0.0
+    intervals_rule_out_both = intervals_rule_out_top_25 and intervals_rule_out_regret_25
+    negative = point_estimates_neutral_or_harmful and intervals_rule_out_both
+    return {
+        "classification": "POSITIVE" if positive else "NEGATIVE_LINEAR_MODEL" if negative else "INCONCLUSIVE",
+        "positive_conditions": {"both_primary_point_estimates_improve": learned_top_gain > 0.0 and learned_regret_reduction > 0.0,
+                                "recovers_at_least_25_percent_of_oracle_gain_on_both": both_recover_25,
+                                "at_least_one_paired_ci_excludes_zero": at_least_one_ci_excludes_zero,
+                                "no_other_ci_supported_harm": not other_metric_has_ci_supported_harm},
+        "negative_conditions": {"top_or_regret_point_neutral_or_harmful": point_estimates_neutral_or_harmful,
+                                "both_intervals_rule_out_25_percent_recovery": intervals_rule_out_both},
+        "recovery": {"top_probability": recovers_top, "regret_reduction": recovers_regret,
+                     "top_25_percent_target": target_top, "regret_delta_25_percent_target": target_regret_delta},
+    }
+
+
 def render(means, comparisons, stability_data):
     lines = [
         "| Arm | Mean B-best probability | Mean B regret | Roots with action change | Mean within-root regret SD | Median within-root regret range | Max within-root regret range |",
@@ -193,6 +284,7 @@ def main():
         comparison(groups, root, "learned_visit_puct", "oracle_visit_puct", rng),
     ]
     means = arm_means(groups, root)
+    controls = validate_controls(means)
     oracle_top = means["oracle_visit_puct"]["mean_b_best_probability"] - means["current_uct"]["mean_b_best_probability"]
     learned_top = means["learned_visit_puct"]["mean_b_best_probability"] - means["current_uct"]["mean_b_best_probability"]
     oracle_regret = means["current_uct"]["mean_b_regret"] - means["oracle_visit_puct"]["mean_b_regret"]
@@ -206,6 +298,7 @@ def main():
         "bootstrap_replicates": BOOTSTRAPS,
         "bootstrap_seed": BOOTSTRAP_SEED,
         "arm_means": means,
+        "concurrent_control_reproduction": controls,
         "comparisons": comparisons,
         "learned_vs_oracle_fraction_of_control_improvement": {
             "top_probability": learned_top / oracle_top if oracle_top else None,
@@ -219,12 +312,9 @@ def main():
             "qualification": "arms share initial wire state and per-root replicate seed, but treatment-dependent choices can consume different later RNG draws",
         },
         "root_details": root,
-        "decision": {
-            "positive_learned_top_effect": learned_top > 0,
-            "negative_learned_regret_effect": learned_regret > 0,
-            "no_model_training_beyond_one_fixed_recipe": True,
-            "no_gameplay": True,
-        },
+        "decision": {**replay_decision(means, comparisons),
+                     "no_model_training_beyond_one_fixed_recipe": True,
+                     "no_gameplay": True},
     }
     if args.json_output:
         args.json_output.parent.mkdir(parents=True, exist_ok=True)
