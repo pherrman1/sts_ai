@@ -5722,7 +5722,8 @@ model training was changed.
   survivors by Silver's existing child mean Q. Shapes were `half`, `gentle`,
   `aggressive`, and `screen_two`; allocations were `finalist_heavy`,
   `balanced`, and `cautious`. Internal deterministic search, chance search and
-  widening, final selection, and reroot identity remained ordinary.
+  widening, action execution/lowering, and reroot identity remained ordinary;
+  the selected root action was the sole Q-ranked Sequential-Halving survivor.
 - **Protocol:** Frozen source/executable SHA
   `ce6ea5a160b5fe88be520de052b832a1aace1ade`, executable SHA-256
   `c9dfa6f893303fa38f059ae9bc5f38e3aa192dafa60451863c223c445aeb36f2`,
