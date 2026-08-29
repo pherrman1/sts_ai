@@ -36,7 +36,7 @@ MANIFEST_KEYS_V1 = {
     "binary", "artifacts", "common_env", "required_env",
     "expect_silver_telemetry", "command", "arms",
 }
-MANIFEST_KEYS_V2 = MANIFEST_KEYS_V1 | {"clear_env"}
+MANIFEST_KEYS_V2 = MANIFEST_KEYS_V1 | {"clear_env", "working_dir"}
 
 
 def gcloud_path() -> str:
@@ -162,6 +162,10 @@ def load_run_manifest(path: Path) -> dict:
     if schema_version == 2:
         _require(isinstance(payload["clear_env"], bool),
                  "manifest clear_env must be boolean")
+        _require(isinstance(payload["working_dir"], str) and payload["working_dir"],
+                 "manifest working_dir must be a non-empty remote path")
+        _require(payload["working_dir"] == payload["checkout"],
+                 "manifest working_dir must equal checkout")
     _require(isinstance(payload["experiment_id"], str)
              and re.fullmatch(r"[A-Za-z0-9._-]+", payload["experiment_id"]) is not None,
              "manifest experiment_id must be a safe non-empty identifier")
@@ -274,11 +278,17 @@ def manifest_arm(manifest: dict, name: str) -> tuple[list[str], str, list[str]]:
     if arm is None:
         raise ValueError(f"manifest has no arm named {name!r}")
     env = {**manifest["common_env"], **arm["env"]}
-    command = [arm["results"] if token == "{results}" else token
+    command = [(str(PurePosixPath(REMOTE_ROOT) / arm["results"])
+                if manifest.get("working_dir") else arm["results"])
+               if token == "{results}" else token
                for token in manifest["command"]]
     rendered = ["env"]
+    if manifest.get("working_dir"):
+        rendered.extend(["-C", str(PurePosixPath(REMOTE_ROOT) / manifest["working_dir"])])
     if manifest.get("clear_env", False):
         rendered.append("-i")
+    if manifest.get("working_dir"):
+        command[0] = str(PurePosixPath(REMOTE_ROOT) / command[0])
     rendered.extend([*(f"{key}={env[key]}" for key in sorted(env)), *command])
     fresh = [arm["results"], arm["results"] + ".meta.json", arm["log"]]
     return rendered, arm["log"], fresh

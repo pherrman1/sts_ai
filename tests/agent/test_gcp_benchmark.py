@@ -81,10 +81,13 @@ class GcpBenchmarkTests(unittest.TestCase):
         payload = valid_manifest()
         payload["schema_version"] = 2
         payload["clear_env"] = True
+        payload["working_dir"] = payload["checkout"]
         with tempfile.TemporaryDirectory() as directory:
             manifest = module.load_run_manifest(write_manifest(directory, payload))
         command, _log, _fresh = module.manifest_arm(manifest, "A")
-        self.assertEqual(command[:2], ["env", "-i"])
+        self.assertEqual(command[:4], ["env", "-C", f"{module.REMOTE_ROOT}/checkouts/policy-2x2", "-i"])
+        self.assertEqual(command[-1], f"{module.REMOTE_ROOT}/results/policy-A.csv")
+        self.assertEqual(command[-7], f"{module.REMOTE_ROOT}/checkouts/policy-2x2/build/linux-gcc-release/one_combat")
 
     def test_manifest_fails_closed_on_reused_output(self):
         module = load_module()

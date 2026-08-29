@@ -11,11 +11,11 @@ SHAPES = ("half", "gentle", "aggressive", "screen_two")
 ALLOCATIONS = ("finalist_heavy", "balanced", "cautious")
 SHA_RE = re.compile(r"[0-9a-f]{40}")
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
-REQUIRED_ARTIFACTS = {
+MODEL_PATHS = (
     "models/v_rich_trees.txt",
     "models/v_win_trees.txt",
     "models/v_combat_7k_tuned.txt",
-}
+)
 
 
 def schedule(value: str) -> tuple[str, str]:
@@ -55,9 +55,11 @@ def manifest(args: argparse.Namespace, experiment_id: str, budget: int,
         "clear_env": True,
         "experiment_id": experiment_id,
         "frozen_sha": args.frozen_sha,
-        "checkout": f"checkouts/{experiment_id}",
-        "build_dir": f"checkouts/{experiment_id}/build/linux-gcc-release",
-        "binary": {"remote_path": args.binary_remote, "sha256": args.binary_sha256},
+        "checkout": args.checkout,
+        "working_dir": args.checkout,
+        "build_dir": f"{args.checkout}/build/linux-gcc-release",
+        "binary": {"remote_path": f"{args.checkout}/build/linux-gcc-release/one_combat",
+                   "sha256": args.binary_sha256},
         "artifacts": args.artifact,
         "common_env": {
             "OMP_NUM_THREADS": "24",
@@ -79,7 +81,8 @@ def manifest(args: argparse.Namespace, experiment_id: str, budget: int,
         ],
         "expect_silver_telemetry": True,
         "command": [
-            args.binary_remote, "bestbench", str(budget), str(seeds), "0",
+            f"{args.checkout}/build/linux-gcc-release/one_combat",
+            "bestbench", str(budget), str(seeds), "0",
             str(seed_lo), "{results}",
         ],
         "arms": arms,
@@ -95,7 +98,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("stage", choices=("broad", "narrow", "confirm"))
     parser.add_argument("--frozen-sha", required=True)
-    parser.add_argument("--binary-remote", required=True)
+    parser.add_argument("--checkout", required=True)
     parser.add_argument("--binary-sha256", required=True)
     parser.add_argument("--artifact", action="append", type=artifact, default=[])
     parser.add_argument("--schedule", action="append", type=schedule, default=[])
@@ -106,10 +109,11 @@ def main() -> int:
         parser.error("--frozen-sha must be a lowercase full Git SHA")
     if SHA256_RE.fullmatch(args.binary_sha256) is None:
         parser.error("--binary-sha256 must be lowercase SHA-256")
+    required_artifacts = {f"{args.checkout}/{path}" for path in MODEL_PATHS}
     artifact_paths = {item["remote_path"] for item in args.artifact}
-    if artifact_paths != REQUIRED_ARTIFACTS:
+    if artifact_paths != required_artifacts:
         parser.error("--artifact must provide exactly the three pinned runtime models: "
-                     + ", ".join(sorted(REQUIRED_ARTIFACTS)))
+                     + ", ".join(sorted(required_artifacts)))
 
     if args.stage == "broad":
         if args.schedule or args.budget is not None:
