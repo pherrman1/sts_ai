@@ -169,17 +169,43 @@ const char *modeName(silver_bridge::SilverRootGuidanceMode mode) {
     return "unknown";
 }
 
+silver_bridge::SilverRootGuidanceMode parseMode(const std::string &name) {
+    for (const auto mode : {
+            silver_bridge::SilverRootGuidanceMode::NONE,
+            silver_bridge::SilverRootGuidanceMode::ORDER_ONLY,
+            silver_bridge::SilverRootGuidanceMode::RANK_PUCT,
+            silver_bridge::SilverRootGuidanceMode::VISIT_PUCT}) {
+        if (name == modeName(mode)) return mode;
+    }
+    throw std::runtime_error("unknown replay arm: " + name);
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
     try {
-        if (argc < 4 || argc > 6) {
-            std::cerr << "usage: silver_root_oracle_replay SNAPSHOTS.jsonl RELABEL.jsonl OUTPUT.jsonl [BUDGETS] [REPLICATES]\n";
+        if (argc < 4 || argc > 7) {
+            std::cerr << "usage: silver_root_oracle_replay SNAPSHOTS.jsonl RELABEL.jsonl OUTPUT.jsonl [BUDGETS] [REPLICATES] [ARMS]\n";
             return 2;
         }
-        const auto budgets = splitBudgets(argc == 5 ? argv[4] : "16,32,64,128,1000");
+        const auto budgets = splitBudgets(argc >= 5 ? argv[4] : "16,32,64,128,1000");
         const int replicates = argc == 6 ? std::stoi(argv[5]) : 1;
         if (replicates <= 0) throw std::runtime_error("replicates must be positive");
+        std::vector<silver_bridge::SilverRootGuidanceMode> modes = {
+            silver_bridge::SilverRootGuidanceMode::NONE,
+            silver_bridge::SilverRootGuidanceMode::ORDER_ONLY,
+            silver_bridge::SilverRootGuidanceMode::RANK_PUCT,
+            silver_bridge::SilverRootGuidanceMode::VISIT_PUCT};
+        if (argc == 7) {
+            modes.clear();
+            for (const auto &name : splitBudgets(argv[6])) {
+                const auto mode = parseMode(name);
+                if (std::find(modes.begin(), modes.end(), mode) != modes.end())
+                    throw std::runtime_error("duplicate replay arm: " + name);
+                modes.push_back(mode);
+            }
+            if (modes.empty()) throw std::runtime_error("replay arm list is empty");
+        }
         const auto a = loadLabels(argv[2], "A");
         const auto b = loadLabels(argv[2], "B");
         const auto anchors = loadAnchors(argv[1], a, b);
@@ -191,11 +217,6 @@ int main(int argc, char **argv) {
                        {"oracle", "frozen_25k_A_q_and_visits"},
                        {"anchors", anchors.size()}}.dump() << '\n';
 
-        const std::vector<silver_bridge::SilverRootGuidanceMode> modes = {
-            silver_bridge::SilverRootGuidanceMode::NONE,
-            silver_bridge::SilverRootGuidanceMode::ORDER_ONLY,
-            silver_bridge::SilverRootGuidanceMode::RANK_PUCT,
-            silver_bridge::SilverRootGuidanceMode::VISIT_PUCT};
         for (const auto &anchor : anchors) {
             const auto order = oracleOrder(anchor);
             const auto priors = normalizedVisits(anchor, order);
