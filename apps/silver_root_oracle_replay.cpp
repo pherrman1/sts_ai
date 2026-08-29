@@ -264,7 +264,9 @@ int main(int argc, char **argv) {
         if (argc >= 7) {
             arms.clear();
             for (const auto &name : splitBudgets(argv[6])) {
-                if (name == "learned_visit_puct") {
+                if (name == "learned_visit_puct"
+                        || name == "learned_order_oracle_mass_puct"
+                        || name == "oracle_order_learned_mass_puct") {
                     arms.push_back({name, silver_bridge::SilverRootGuidanceMode::VISIT_PUCT, true});
                     continue;
                 }
