@@ -294,8 +294,12 @@ add_test(NAME silver_leaf_pipeline_tools COMMAND python3 -m unittest tests.agent
 set_tests_properties(silver_leaf_pipeline_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME silver_parent_policy_tools COMMAND python3 -m unittest tests.agent.test_silver_parent_policy)
 set_tests_properties(silver_parent_policy_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME silver_action_pruning_tools COMMAND python3 -m unittest tests.agent.test_silver_action_pruning)
+set_tests_properties(silver_action_pruning_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME py_compile_silver_parent_policy COMMAND python3 -m py_compile
     ${CMAKE_SOURCE_DIR}/tools/train_silver_parent_policy.py)
+add_test(NAME py_compile_silver_action_pruning COMMAND python3 -m py_compile
+    ${CMAKE_SOURCE_DIR}/tools/analyze_silver_action_pruning.py)
 add_test(NAME runic_dome_lifecycle COMMAND $<TARGET_FILE:runic-dome-lifecycle-test>)
 add_test(NAME py_compile_analyze_silver_reuse_scaling COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py)
 add_test(NAME analyze_silver_reuse_scaling_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py --self-test)

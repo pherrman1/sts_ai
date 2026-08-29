@@ -1,0 +1,5967 @@
+{
+  "budgets": [
+    128,
+    256,
+    1000
+  ],
+  "gate": {
+    "cached_model_ranking_authorized": false,
+    "comparisons": [
+      {
+        "bootstrap": {
+          "control_minus_treatment_mean_regret": {
+            "p05": -0.9619697112747955,
+            "p50": -0.10345384408127423,
+            "p95": 0.4157559506700721,
+            "probability_positive": 0.3678
+          },
+          "replicates": 5000,
+          "seed": 20260828,
+          "treatment_minus_control_top": {
+            "p05": 0.0,
+            "p50": 0.015873015873015872,
+            "p95": 0.047619047619047616,
+            "probability_positive": 0.6394
+          }
+        },
+        "budget": 128,
+        "mean_regret_delta": 0.1699770895227135,
+        "new_ge_3": false,
+        "non_worse": false,
+        "top_match_delta": 1
+      },
+      {
+        "bootstrap": {
+          "control_minus_treatment_mean_regret": {
+            "p05": -1.251454303182426,
+            "p50": -0.4902053474597803,
+            "p95": 0.0,
+            "probability_positive": 0.0
+          },
+          "replicates": 5000,
+          "seed": 20260828,
+          "treatment_minus_control_top": {
+            "p05": -0.047619047619047616,
+            "p50": -0.015873015873015872,
+            "p95": 0.0,
+            "probability_positive": 0.0
+          }
+        },
+        "budget": 256,
+        "mean_regret_delta": 0.49020534745978095,
+        "new_ge_3": true,
+        "non_worse": false,
+        "top_match_delta": -1
+      },
+      {
+        "bootstrap": {
+          "control_minus_treatment_mean_regret": {
+            "p05": 0.022254770913714573,
+            "p50": 0.4902053474597805,
+            "p95": 1.2639906547620867,
+            "probability_positive": 0.9868
+          },
+          "replicates": 5000,
+          "seed": 20260828,
+          "treatment_minus_control_top": {
+            "p05": 0.0,
+            "p50": 0.031746031746031744,
+            "p95": 0.0793650793650793,
+            "probability_positive": 0.8678
+          }
+        },
+        "budget": 1000,
+        "mean_regret_delta": -0.5125943056232865,
+        "new_ge_3": false,
+        "non_worse": true,
+        "top_match_delta": 2
+      }
+    ],
+    "conditions": {
+      "1000_no_harm": true,
+      "128_and_256_strict_non_harm": false,
+      "cpu_ratio_at_most_1_10": true,
+      "no_new_ge_3_regret": false
+    },
+    "cpu_ratio": 1.0073753281469977,
+    "verdict": "PROGRESSIVE_CURRENT_ORDER_HARMFUL"
+  },
+  "hypothesis": "A current-Silver-order top-3 root mask with progressive recovery can be non-harmful versus ordinary UCT.",
+  "implementation_sha": "40556914bf42678313931a70e68575b354a35b23",
+  "inputs": {
+    "corpus_sha256": "bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7",
+    "frozen_model_used": false,
+    "relabels_sha256": "abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c",
+    "replay_sha256": "0c330adbfd29ef7d1244170aff783ccf900b955ec569d5ea0fb7eff26074534b"
+  },
+  "primary_population": {
+    "parents": 63
+  },
+  "protocol": {
+    "activation_after_new_root_simulations": [
+      16,
+      32,
+      64,
+      128
+    ],
+    "adaptive_enabled": false,
+    "eligible_roots": "legal root action count >= 6",
+    "initial_active_actions": 3,
+    "internal_nodes": "ordinary Silver UCT",
+    "rank_source": "current Silver order",
+    "reuse_cap_mode": "none"
+  },
+  "results": {
+    "1000": {
+      "bootstrap": {
+        "control_minus_treatment_mean_regret": {
+          "p05": 0.022254770913714573,
+          "p50": 0.4902053474597805,
+          "p95": 1.2639906547620867,
+          "probability_positive": 0.9868
+        },
+        "replicates": 5000,
+        "seed": 20260828,
+        "treatment_minus_control_top": {
+          "p05": 0.0,
+          "p50": 0.031746031746031744,
+          "p95": 0.0793650793650793,
+          "probability_positive": 0.8678
+        }
+      },
+      "ordinary": {
+        "all_anchors_integrity": {
+          "best_matches": 70,
+          "max_regret": 52.45756472622603,
+          "mean_regret": 1.540172104596066,
+          "mean_wall_micros": 52928.95698924731,
+          "median_regret": 0.0,
+          "p95_regret": 6.923851117476126,
+          "parent_rows": [
+            {
+              "cpu_micros": 81157,
+              "group": "024c62342092a085",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 66762,
+              "group": "03e0443ad96cec05",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 23219,
+              "group": "03fcc4fd6776965d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 34348,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 63694,
+              "group": "0ea5e453de436f8c",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 58756,
+              "group": "10873136d10b4a17",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 89188,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 71951,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 95941,
+              "group": "228eb64487cab54d",
+              "regret": 2.8178231687146678,
+              "top": false
+            },
+            {
+              "cpu_micros": 83079,
+              "group": "290b22bee3a9d79e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 39390,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9790,
+              "group": "2b63ebccd4295c0d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9105,
+              "group": "2b6708a54f60eca1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 37291,
+              "group": "2f2c239a64fdb7d6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6651,
+              "group": "308d833abc783284",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 71323,
+              "group": "31d18f0e405c431c",
+              "regret": 1.508739965713552,
+              "top": false
+            },
+            {
+              "cpu_micros": 76174,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 71763,
+              "group": "3aed6018379b40e3",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 54751,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12942,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 71435,
+              "group": "43bb003bef271df8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 16549,
+              "group": "4642ca7fef733152",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 40056,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 81133,
+              "group": "487b75069c104cd0",
+              "regret": 6.903594784702854,
+              "top": false
+            },
+            {
+              "cpu_micros": 43823,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4880,
+              "group": "51d68568e18deda8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 47693,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 38392,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 21735,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 66903,
+              "group": "5b370489b2fa8934",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 85452,
+              "group": "61891a075939ba2e",
+              "regret": 2.9645902654692264,
+              "top": false
+            },
+            {
+              "cpu_micros": 51551,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 44612,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 66490,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 80722,
+              "group": "673eba96408a51c4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 48034,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 69442,
+              "group": "6f92cd19917632eb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 41762,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 36041,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 25563,
+              "group": "83960680d13f3e7f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 43295,
+              "group": "859e075dfa13a5f9",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 34611,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 56361,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 36010,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9379,
+              "group": "8f80bc67a343acf6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 58590,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 77875,
+              "group": "9180acceadcce801",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 45461,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 71035,
+              "group": "96eab7480e5ef1c6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 52473,
+              "group": "989d92519bbd48d5",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 67030,
+              "group": "9adda5d0ede6c52e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 87291,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 29908,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 26980,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.007842622904536967,
+              "top": false
+            },
+            {
+              "cpu_micros": 52006,
+              "group": "a34cdecbee1c3c8d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9704,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 45429,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.7897901495186233,
+              "top": false
+            },
+            {
+              "cpu_micros": 6968,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 61089,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 70731,
+              "group": "b31a6f974c73b5ac",
+              "regret": 3.524804098049117,
+              "top": false
+            },
+            {
+              "cpu_micros": 32918,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 19045,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 69428,
+              "group": "b9371b6514ea132a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 69089,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 59035,
+              "group": "ba1e68421c80bd64",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 50352,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 59158,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.4401713391768194,
+              "top": false
+            },
+            {
+              "cpu_micros": 43025,
+              "group": "c14900f9f8ea65b6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 25473,
+              "group": "c1cba5c1cd331a12",
+              "regret": 7.003739638580683,
+              "top": false
+            },
+            {
+              "cpu_micros": 31457,
+              "group": "c8319c3b69e47738",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 78207,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 79778,
+              "group": "ca5c62640afca729",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 83210,
+              "group": "cb6e0b212caef5dd",
+              "regret": 2.9090730879151927,
+              "top": false
+            },
+            {
+              "cpu_micros": 82676,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.9542356166360335,
+              "top": false
+            },
+            {
+              "cpu_micros": 39878,
+              "group": "cdd4e73b9000e64a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 72614,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 25453,
+              "group": "d0b6bef005e2cb36",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 56311,
+              "group": "d1f6c30852d1af2e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 44752,
+              "group": "d4f6b582e4602fd1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 70744,
+              "group": "d5641b1dc723de8f",
+              "regret": 3.092725074787566,
+              "top": false
+            },
+            {
+              "cpu_micros": 60932,
+              "group": "d57f03f5296931a0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 83238,
+              "group": "d5d8b587f0fff134",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 65860,
+              "group": "d8e296a7f99f20ab",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 60225,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 46238,
+              "group": "e1c81e66f5695c66",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 31304,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 77802,
+              "group": "e5901e8aa84dc405",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 40934,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 65057,
+              "group": "e8baedda4491fd9d",
+              "regret": 52.45756472622603,
+              "top": false
+            },
+            {
+              "cpu_micros": 34930,
+              "group": "f47c1d6977c181fd",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 89948,
+              "group": "f763390235ffde60",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 102816,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 32.3788185113675,
+              "top": false
+            },
+            {
+              "cpu_micros": 88737,
+              "group": "fe5cb7f9110a89cc",
+              "regret": 0.0,
+              "top": true
+            }
+          ],
+          "parents": 93,
+          "regret_ge_3": 9,
+          "top_agreement": 0.7526881720430108,
+          "total_wall_micros": 4922393
+        },
+        "primary_multi_action": {
+          "best_matches": 40,
+          "max_regret": 52.45756472622603,
+          "mean_regret": 2.2735873924989547,
+          "mean_wall_micros": 52158.666666666664,
+          "median_regret": 0.0,
+          "p95_regret": 6.998789236386218,
+          "parent_rows": [
+            {
+              "cpu_micros": 34348,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 89188,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 71951,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 95941,
+              "group": "228eb64487cab54d",
+              "regret": 2.8178231687146678,
+              "top": false
+            },
+            {
+              "cpu_micros": 39390,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 71323,
+              "group": "31d18f0e405c431c",
+              "regret": 1.508739965713552,
+              "top": false
+            },
+            {
+              "cpu_micros": 76174,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 71763,
+              "group": "3aed6018379b40e3",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 54751,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12942,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 71435,
+              "group": "43bb003bef271df8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 16549,
+              "group": "4642ca7fef733152",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 40056,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 81133,
+              "group": "487b75069c104cd0",
+              "regret": 6.903594784702854,
+              "top": false
+            },
+            {
+              "cpu_micros": 43823,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4880,
+              "group": "51d68568e18deda8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 47693,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 38392,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 21735,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 85452,
+              "group": "61891a075939ba2e",
+              "regret": 2.9645902654692264,
+              "top": false
+            },
+            {
+              "cpu_micros": 51551,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 44612,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 66490,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 48034,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 41762,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 36041,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 25563,
+              "group": "83960680d13f3e7f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 34611,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 56361,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 36010,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 58590,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 45461,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 87291,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 29908,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 26980,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.007842622904536967,
+              "top": false
+            },
+            {
+              "cpu_micros": 9704,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 45429,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.7897901495186233,
+              "top": false
+            },
+            {
+              "cpu_micros": 6968,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 61089,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 70731,
+              "group": "b31a6f974c73b5ac",
+              "regret": 3.524804098049117,
+              "top": false
+            },
+            {
+              "cpu_micros": 32918,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 19045,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 69089,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 50352,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 59158,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.4401713391768194,
+              "top": false
+            },
+            {
+              "cpu_micros": 25473,
+              "group": "c1cba5c1cd331a12",
+              "regret": 7.003739638580683,
+              "top": false
+            },
+            {
+              "cpu_micros": 78207,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 79778,
+              "group": "ca5c62640afca729",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 83210,
+              "group": "cb6e0b212caef5dd",
+              "regret": 2.9090730879151927,
+              "top": false
+            },
+            {
+              "cpu_micros": 82676,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.9542356166360335,
+              "top": false
+            },
+            {
+              "cpu_micros": 39878,
+              "group": "cdd4e73b9000e64a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 72614,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 25453,
+              "group": "d0b6bef005e2cb36",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 70744,
+              "group": "d5641b1dc723de8f",
+              "regret": 3.092725074787566,
+              "top": false
+            },
+            {
+              "cpu_micros": 60932,
+              "group": "d57f03f5296931a0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 83238,
+              "group": "d5d8b587f0fff134",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 65860,
+              "group": "d8e296a7f99f20ab",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 60225,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 31304,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 40934,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 65057,
+              "group": "e8baedda4491fd9d",
+              "regret": 52.45756472622603,
+              "top": false
+            },
+            {
+              "cpu_micros": 34930,
+              "group": "f47c1d6977c181fd",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 102816,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 32.3788185113675,
+              "top": false
+            }
+          ],
+          "parents": 63,
+          "regret_ge_3": 9,
+          "top_agreement": 0.6349206349206349,
+          "total_wall_micros": 3285996
+        }
+      },
+      "progressive_unpruning_current_order": {
+        "all_anchors_integrity": {
+          "best_matches": 72,
+          "max_regret": 52.45756472622603,
+          "mean_regret": 1.192930800786743,
+          "mean_wall_micros": 53525.30107526882,
+          "median_regret": 0.0,
+          "p95_regret": 5.665355539426913,
+          "parent_rows": [
+            {
+              "cpu_micros": 79217,
+              "group": "024c62342092a085",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 64317,
+              "group": "03e0443ad96cec05",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 24363,
+              "group": "03fcc4fd6776965d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 33810,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 55422,
+              "group": "0ea5e453de436f8c",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 63987,
+              "group": "10873136d10b4a17",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 86154,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 69574,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 96008,
+              "group": "228eb64487cab54d",
+              "regret": 2.8178231687146678,
+              "top": false
+            },
+            {
+              "cpu_micros": 80242,
+              "group": "290b22bee3a9d79e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 40043,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9174,
+              "group": "2b63ebccd4295c0d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9244,
+              "group": "2b6708a54f60eca1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 40563,
+              "group": "2f2c239a64fdb7d6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7241,
+              "group": "308d833abc783284",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 75292,
+              "group": "31d18f0e405c431c",
+              "regret": 1.508739965713552,
+              "top": false
+            },
+            {
+              "cpu_micros": 74739,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 80561,
+              "group": "3aed6018379b40e3",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 59678,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 13211,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 80170,
+              "group": "43bb003bef271df8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 16546,
+              "group": "4642ca7fef733152",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 37026,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 82089,
+              "group": "487b75069c104cd0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 40769,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5014,
+              "group": "51d68568e18deda8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 50564,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 39822,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 19749,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 71231,
+              "group": "5b370489b2fa8934",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 81496,
+              "group": "61891a075939ba2e",
+              "regret": 2.9645902654692264,
+              "top": false
+            },
+            {
+              "cpu_micros": 52136,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 42485,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 65963,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 80943,
+              "group": "673eba96408a51c4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 51433,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 73636,
+              "group": "6f92cd19917632eb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 40569,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 37116,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 22514,
+              "group": "83960680d13f3e7f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 46736,
+              "group": "859e075dfa13a5f9",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 34383,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 53769,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 35942,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8829,
+              "group": "8f80bc67a343acf6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 62403,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 73088,
+              "group": "9180acceadcce801",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 45285,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 73302,
+              "group": "96eab7480e5ef1c6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 54837,
+              "group": "989d92519bbd48d5",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 70586,
+              "group": "9adda5d0ede6c52e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 91419,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 27486,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 28419,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.007842622904536967,
+              "top": false
+            },
+            {
+              "cpu_micros": 51991,
+              "group": "a34cdecbee1c3c8d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10417,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 39470,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6292,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 63909,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 75600,
+              "group": "b31a6f974c73b5ac",
+              "regret": 3.524804098049117,
+              "top": false
+            },
+            {
+              "cpu_micros": 33807,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 20189,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 70641,
+              "group": "b9371b6514ea132a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 69053,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 63481,
+              "group": "ba1e68421c80bd64",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 44607,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 62407,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.4401713391768194,
+              "top": false
+            },
+            {
+              "cpu_micros": 43363,
+              "group": "c14900f9f8ea65b6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 25223,
+              "group": "c1cba5c1cd331a12",
+              "regret": 7.003739638580683,
+              "top": false
+            },
+            {
+              "cpu_micros": 32798,
+              "group": "c8319c3b69e47738",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 78546,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 72886,
+              "group": "ca5c62640afca729",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 85670,
+              "group": "cb6e0b212caef5dd",
+              "regret": 2.9090730879151927,
+              "top": false
+            },
+            {
+              "cpu_micros": 83154,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.333521401853794,
+              "top": false
+            },
+            {
+              "cpu_micros": 41579,
+              "group": "cdd4e73b9000e64a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 70026,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 25682,
+              "group": "d0b6bef005e2cb36",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 49367,
+              "group": "d1f6c30852d1af2e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 49307,
+              "group": "d4f6b582e4602fd1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 78219,
+              "group": "d5641b1dc723de8f",
+              "regret": 3.092725074787566,
+              "top": false
+            },
+            {
+              "cpu_micros": 64928,
+              "group": "d57f03f5296931a0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 81983,
+              "group": "d5d8b587f0fff134",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 67128,
+              "group": "d8e296a7f99f20ab",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 62793,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 45075,
+              "group": "e1c81e66f5695c66",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 30816,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 70934,
+              "group": "e5901e8aa84dc405",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 40567,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 64291,
+              "group": "e8baedda4491fd9d",
+              "regret": 52.45756472622603,
+              "top": false
+            },
+            {
+              "cpu_micros": 37442,
+              "group": "f47c1d6977c181fd",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 94800,
+              "group": "f763390235ffde60",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 100861,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 8.39947640610417,
+              "top": false
+            },
+            {
+              "cpu_micros": 107956,
+              "group": "fe5cb7f9110a89cc",
+              "regret": 0.0,
+              "top": true
+            }
+          ],
+          "parents": 93,
+          "regret_ge_3": 8,
+          "top_agreement": 0.7741935483870968,
+          "total_wall_micros": 4977853
+        },
+        "primary_multi_action": {
+          "best_matches": 42,
+          "max_regret": 52.45756472622603,
+          "mean_regret": 1.7609930868756682,
+          "mean_wall_micros": 52558.444444444445,
+          "median_regret": 0.0,
+          "p95_regret": 6.936717814907993,
+          "parent_rows": [
+            {
+              "cpu_micros": 33810,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 86154,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 69574,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 96008,
+              "group": "228eb64487cab54d",
+              "regret": 2.8178231687146678,
+              "top": false
+            },
+            {
+              "cpu_micros": 40043,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 75292,
+              "group": "31d18f0e405c431c",
+              "regret": 1.508739965713552,
+              "top": false
+            },
+            {
+              "cpu_micros": 74739,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 80561,
+              "group": "3aed6018379b40e3",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 59678,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 13211,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 80170,
+              "group": "43bb003bef271df8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 16546,
+              "group": "4642ca7fef733152",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 37026,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 82089,
+              "group": "487b75069c104cd0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 40769,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5014,
+              "group": "51d68568e18deda8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 50564,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 39822,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 19749,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 81496,
+              "group": "61891a075939ba2e",
+              "regret": 2.9645902654692264,
+              "top": false
+            },
+            {
+              "cpu_micros": 52136,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 42485,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 65963,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 51433,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 40569,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 37116,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 22514,
+              "group": "83960680d13f3e7f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 34383,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 53769,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 35942,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 62403,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 45285,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 91419,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 27486,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 28419,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.007842622904536967,
+              "top": false
+            },
+            {
+              "cpu_micros": 10417,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 39470,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6292,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 63909,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 75600,
+              "group": "b31a6f974c73b5ac",
+              "regret": 3.524804098049117,
+              "top": false
+            },
+            {
+              "cpu_micros": 33807,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 20189,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 69053,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 44607,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 62407,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.4401713391768194,
+              "top": false
+            },
+            {
+              "cpu_micros": 25223,
+              "group": "c1cba5c1cd331a12",
+              "regret": 7.003739638580683,
+              "top": false
+            },
+            {
+              "cpu_micros": 78546,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 72886,
+              "group": "ca5c62640afca729",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 85670,
+              "group": "cb6e0b212caef5dd",
+              "regret": 2.9090730879151927,
+              "top": false
+            },
+            {
+              "cpu_micros": 83154,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.333521401853794,
+              "top": false
+            },
+            {
+              "cpu_micros": 41579,
+              "group": "cdd4e73b9000e64a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 70026,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 25682,
+              "group": "d0b6bef005e2cb36",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 78219,
+              "group": "d5641b1dc723de8f",
+              "regret": 3.092725074787566,
+              "top": false
+            },
+            {
+              "cpu_micros": 64928,
+              "group": "d57f03f5296931a0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 81983,
+              "group": "d5d8b587f0fff134",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 67128,
+              "group": "d8e296a7f99f20ab",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 62793,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 30816,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 40567,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 64291,
+              "group": "e8baedda4491fd9d",
+              "regret": 52.45756472622603,
+              "top": false
+            },
+            {
+              "cpu_micros": 37442,
+              "group": "f47c1d6977c181fd",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 100861,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 8.39947640610417,
+              "top": false
+            }
+          ],
+          "parents": 63,
+          "regret_ge_3": 8,
+          "top_agreement": 0.6666666666666666,
+          "total_wall_micros": 3311182
+        }
+      }
+    },
+    "128": {
+      "bootstrap": {
+        "control_minus_treatment_mean_regret": {
+          "p05": -0.9619697112747955,
+          "p50": -0.10345384408127423,
+          "p95": 0.4157559506700721,
+          "probability_positive": 0.3678
+        },
+        "replicates": 5000,
+        "seed": 20260828,
+        "treatment_minus_control_top": {
+          "p05": 0.0,
+          "p50": 0.015873015873015872,
+          "p95": 0.047619047619047616,
+          "probability_positive": 0.6394
+        }
+      },
+      "ordinary": {
+        "all_anchors_integrity": {
+          "best_matches": 60,
+          "max_regret": 35.19513486296185,
+          "mean_regret": 2.141294779765407,
+          "mean_wall_micros": 7138.666666666667,
+          "median_regret": 0.0,
+          "p95_regret": 11.194742094306834,
+          "parent_rows": [
+            {
+              "cpu_micros": 16238,
+              "group": "024c62342092a085",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8892,
+              "group": "03e0443ad96cec05",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3314,
+              "group": "03fcc4fd6776965d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5230,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7103,
+              "group": "0ea5e453de436f8c",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7973,
+              "group": "10873136d10b4a17",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12508,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 8679,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14302,
+              "group": "228eb64487cab54d",
+              "regret": 4.52426073994846,
+              "top": false
+            },
+            {
+              "cpu_micros": 10251,
+              "group": "290b22bee3a9d79e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4343,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1363,
+              "group": "2b63ebccd4295c0d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1782,
+              "group": "2b6708a54f60eca1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4919,
+              "group": "2f2c239a64fdb7d6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2208,
+              "group": "308d833abc783284",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8345,
+              "group": "31d18f0e405c431c",
+              "regret": 0.2885259409847052,
+              "top": false
+            },
+            {
+              "cpu_micros": 10846,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 9051,
+              "group": "3aed6018379b40e3",
+              "regret": 10.747945713652626,
+              "top": false
+            },
+            {
+              "cpu_micros": 7409,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1847,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 9690,
+              "group": "43bb003bef271df8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3068,
+              "group": "4642ca7fef733152",
+              "regret": 4.385169668786755,
+              "top": false
+            },
+            {
+              "cpu_micros": 5115,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 10790,
+              "group": "487b75069c104cd0",
+              "regret": 6.903594784702854,
+              "top": false
+            },
+            {
+              "cpu_micros": 5269,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1777,
+              "group": "51d68568e18deda8",
+              "regret": 0.05507858065605831,
+              "top": false
+            },
+            {
+              "cpu_micros": 6089,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4643,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2738,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.1883823112983407,
+              "top": false
+            },
+            {
+              "cpu_micros": 8799,
+              "group": "5b370489b2fa8934",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9537,
+              "group": "61891a075939ba2e",
+              "regret": 11.86493666528817,
+              "top": false
+            },
+            {
+              "cpu_micros": 6199,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6358,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9331,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10428,
+              "group": "673eba96408a51c4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6992,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9603,
+              "group": "6f92cd19917632eb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4945,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 4525,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2533,
+              "group": "83960680d13f3e7f",
+              "regret": 3.8170052862262054,
+              "top": false
+            },
+            {
+              "cpu_micros": 5545,
+              "group": "859e075dfa13a5f9",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3839,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7472,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4673,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1736,
+              "group": "8f80bc67a343acf6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12769,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9306,
+              "group": "9180acceadcce801",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5425,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9820,
+              "group": "96eab7480e5ef1c6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7231,
+              "group": "989d92519bbd48d5",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8178,
+              "group": "9adda5d0ede6c52e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12710,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 4860,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 3310,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.2994585478485803,
+              "top": false
+            },
+            {
+              "cpu_micros": 6105,
+              "group": "a34cdecbee1c3c8d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1422,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.04807001710472747,
+              "top": false
+            },
+            {
+              "cpu_micros": 7061,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.7897901495186233,
+              "top": false
+            },
+            {
+              "cpu_micros": 1842,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7715,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9589,
+              "group": "b31a6f974c73b5ac",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4281,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3040,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10716,
+              "group": "b9371b6514ea132a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8957,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 7.737612255383951,
+              "top": false
+            },
+            {
+              "cpu_micros": 9474,
+              "group": "ba1e68421c80bd64",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5829,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7593,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.5432757133224264,
+              "top": false
+            },
+            {
+              "cpu_micros": 5696,
+              "group": "c14900f9f8ea65b6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3140,
+              "group": "c1cba5c1cd331a12",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3935,
+              "group": "c8319c3b69e47738",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9599,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 10995,
+              "group": "ca5c62640afca729",
+              "regret": 17.598335643544132,
+              "top": false
+            },
+            {
+              "cpu_micros": 10417,
+              "group": "cb6e0b212caef5dd",
+              "regret": 3.4139192705766277,
+              "top": false
+            },
+            {
+              "cpu_micros": 9741,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.9542356166360335,
+              "top": false
+            },
+            {
+              "cpu_micros": 4897,
+              "group": "cdd4e73b9000e64a",
+              "regret": 0.8080999439989425,
+              "top": false
+            },
+            {
+              "cpu_micros": 8621,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3042,
+              "group": "d0b6bef005e2cb36",
+              "regret": 4.539910501260863,
+              "top": false
+            },
+            {
+              "cpu_micros": 5417,
+              "group": "d1f6c30852d1af2e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5647,
+              "group": "d4f6b582e4602fd1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10376,
+              "group": "d5641b1dc723de8f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11530,
+              "group": "d57f03f5296931a0",
+              "regret": 14.749161783769253,
+              "top": false
+            },
+            {
+              "cpu_micros": 11769,
+              "group": "d5d8b587f0fff134",
+              "regret": 9.461989056389754,
+              "top": false
+            },
+            {
+              "cpu_micros": 7896,
+              "group": "d8e296a7f99f20ab",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11957,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6584,
+              "group": "e1c81e66f5695c66",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4463,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 9421,
+              "group": "e5901e8aa84dc405",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5319,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5320,
+              "group": "e8baedda4491fd9d",
+              "regret": 26.344552380547015,
+              "top": false
+            },
+            {
+              "cpu_micros": 4394,
+              "group": "f47c1d6977c181fd",
+              "regret": 35.19513486296185,
+              "top": false
+            },
+            {
+              "cpu_micros": 12789,
+              "group": "f763390235ffde60",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 13868,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 8.39947640610417,
+              "top": false
+            },
+            {
+              "cpu_micros": 11533,
+              "group": "fe5cb7f9110a89cc",
+              "regret": 0.0,
+              "top": true
+            }
+          ],
+          "parents": 93,
+          "regret_ge_3": 18,
+          "top_agreement": 0.6451612903225806,
+          "total_wall_micros": 663896
+        },
+        "primary_multi_action": {
+          "best_matches": 30,
+          "max_regret": 35.19513486296185,
+          "mean_regret": 3.1609589606060773,
+          "mean_wall_micros": 7014.126984126984,
+          "median_regret": 0.05507858065605831,
+          "p95_regret": 14.46073927192114,
+          "parent_rows": [
+            {
+              "cpu_micros": 5230,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12508,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 8679,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14302,
+              "group": "228eb64487cab54d",
+              "regret": 4.52426073994846,
+              "top": false
+            },
+            {
+              "cpu_micros": 4343,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8345,
+              "group": "31d18f0e405c431c",
+              "regret": 0.2885259409847052,
+              "top": false
+            },
+            {
+              "cpu_micros": 10846,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 9051,
+              "group": "3aed6018379b40e3",
+              "regret": 10.747945713652626,
+              "top": false
+            },
+            {
+              "cpu_micros": 7409,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1847,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 9690,
+              "group": "43bb003bef271df8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3068,
+              "group": "4642ca7fef733152",
+              "regret": 4.385169668786755,
+              "top": false
+            },
+            {
+              "cpu_micros": 5115,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 10790,
+              "group": "487b75069c104cd0",
+              "regret": 6.903594784702854,
+              "top": false
+            },
+            {
+              "cpu_micros": 5269,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1777,
+              "group": "51d68568e18deda8",
+              "regret": 0.05507858065605831,
+              "top": false
+            },
+            {
+              "cpu_micros": 6089,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4643,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2738,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.1883823112983407,
+              "top": false
+            },
+            {
+              "cpu_micros": 9537,
+              "group": "61891a075939ba2e",
+              "regret": 11.86493666528817,
+              "top": false
+            },
+            {
+              "cpu_micros": 6199,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6358,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9331,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6992,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4945,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 4525,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2533,
+              "group": "83960680d13f3e7f",
+              "regret": 3.8170052862262054,
+              "top": false
+            },
+            {
+              "cpu_micros": 3839,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7472,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4673,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12769,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5425,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12710,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 4860,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 3310,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.2994585478485803,
+              "top": false
+            },
+            {
+              "cpu_micros": 1422,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.04807001710472747,
+              "top": false
+            },
+            {
+              "cpu_micros": 7061,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.7897901495186233,
+              "top": false
+            },
+            {
+              "cpu_micros": 1842,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7715,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9589,
+              "group": "b31a6f974c73b5ac",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4281,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3040,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8957,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 7.737612255383951,
+              "top": false
+            },
+            {
+              "cpu_micros": 5829,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7593,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.5432757133224264,
+              "top": false
+            },
+            {
+              "cpu_micros": 3140,
+              "group": "c1cba5c1cd331a12",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9599,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 10995,
+              "group": "ca5c62640afca729",
+              "regret": 17.598335643544132,
+              "top": false
+            },
+            {
+              "cpu_micros": 10417,
+              "group": "cb6e0b212caef5dd",
+              "regret": 3.4139192705766277,
+              "top": false
+            },
+            {
+              "cpu_micros": 9741,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.9542356166360335,
+              "top": false
+            },
+            {
+              "cpu_micros": 4897,
+              "group": "cdd4e73b9000e64a",
+              "regret": 0.8080999439989425,
+              "top": false
+            },
+            {
+              "cpu_micros": 8621,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3042,
+              "group": "d0b6bef005e2cb36",
+              "regret": 4.539910501260863,
+              "top": false
+            },
+            {
+              "cpu_micros": 10376,
+              "group": "d5641b1dc723de8f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11530,
+              "group": "d57f03f5296931a0",
+              "regret": 14.749161783769253,
+              "top": false
+            },
+            {
+              "cpu_micros": 11769,
+              "group": "d5d8b587f0fff134",
+              "regret": 9.461989056389754,
+              "top": false
+            },
+            {
+              "cpu_micros": 7896,
+              "group": "d8e296a7f99f20ab",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11957,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4463,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 5319,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5320,
+              "group": "e8baedda4491fd9d",
+              "regret": 26.344552380547015,
+              "top": false
+            },
+            {
+              "cpu_micros": 4394,
+              "group": "f47c1d6977c181fd",
+              "regret": 35.19513486296185,
+              "top": false
+            },
+            {
+              "cpu_micros": 13868,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 8.39947640610417,
+              "top": false
+            }
+          ],
+          "parents": 63,
+          "regret_ge_3": 18,
+          "top_agreement": 0.47619047619047616,
+          "total_wall_micros": 441890
+        }
+      },
+      "progressive_unpruning_current_order": {
+        "all_anchors_integrity": {
+          "best_matches": 61,
+          "max_regret": 35.19513486296185,
+          "mean_regret": 2.256440550087245,
+          "mean_wall_micros": 7016.365591397849,
+          "median_regret": 0.0,
+          "p95_regret": 12.348432141699243,
+          "parent_rows": [
+            {
+              "cpu_micros": 9232,
+              "group": "024c62342092a085",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8828,
+              "group": "03e0443ad96cec05",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2757,
+              "group": "03fcc4fd6776965d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5245,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7739,
+              "group": "0ea5e453de436f8c",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8072,
+              "group": "10873136d10b4a17",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11179,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 9400,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14348,
+              "group": "228eb64487cab54d",
+              "regret": 4.52426073994846,
+              "top": false
+            },
+            {
+              "cpu_micros": 11208,
+              "group": "290b22bee3a9d79e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4530,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1339,
+              "group": "2b63ebccd4295c0d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1330,
+              "group": "2b6708a54f60eca1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5104,
+              "group": "2f2c239a64fdb7d6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1025,
+              "group": "308d833abc783284",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9225,
+              "group": "31d18f0e405c431c",
+              "regret": 0.2885259409847052,
+              "top": false
+            },
+            {
+              "cpu_micros": 9084,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 9389,
+              "group": "3aed6018379b40e3",
+              "regret": 10.747945713652626,
+              "top": false
+            },
+            {
+              "cpu_micros": 7757,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2347,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 10284,
+              "group": "43bb003bef271df8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2736,
+              "group": "4642ca7fef733152",
+              "regret": 4.385169668786755,
+              "top": false
+            },
+            {
+              "cpu_micros": 5677,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 11341,
+              "group": "487b75069c104cd0",
+              "regret": 6.903594784702854,
+              "top": false
+            },
+            {
+              "cpu_micros": 5156,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1263,
+              "group": "51d68568e18deda8",
+              "regret": 0.05507858065605831,
+              "top": false
+            },
+            {
+              "cpu_micros": 7839,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5226,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2643,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.1883823112983407,
+              "top": false
+            },
+            {
+              "cpu_micros": 8825,
+              "group": "5b370489b2fa8934",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10716,
+              "group": "61891a075939ba2e",
+              "regret": 2.9645902654692264,
+              "top": false
+            },
+            {
+              "cpu_micros": 6477,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6128,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8152,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10552,
+              "group": "673eba96408a51c4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6514,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10622,
+              "group": "6f92cd19917632eb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4926,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 4520,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3406,
+              "group": "83960680d13f3e7f",
+              "regret": 3.8170052862262054,
+              "top": false
+            },
+            {
+              "cpu_micros": 5391,
+              "group": "859e075dfa13a5f9",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3525,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7951,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5192,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1355,
+              "group": "8f80bc67a343acf6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7360,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8866,
+              "group": "9180acceadcce801",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6069,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8604,
+              "group": "96eab7480e5ef1c6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6528,
+              "group": "989d92519bbd48d5",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8722,
+              "group": "9adda5d0ede6c52e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12087,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 4358,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 2930,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.2994585478485803,
+              "top": false
+            },
+            {
+              "cpu_micros": 5813,
+              "group": "a34cdecbee1c3c8d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1540,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.04807001710472747,
+              "top": false
+            },
+            {
+              "cpu_micros": 6266,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.7897901495186233,
+              "top": false
+            },
+            {
+              "cpu_micros": 1864,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8680,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8730,
+              "group": "b31a6f974c73b5ac",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4167,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2263,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10698,
+              "group": "b9371b6514ea132a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7908,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 7.737612255383951,
+              "top": false
+            },
+            {
+              "cpu_micros": 7455,
+              "group": "ba1e68421c80bd64",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6244,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7176,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.5432757133224264,
+              "top": false
+            },
+            {
+              "cpu_micros": 5488,
+              "group": "c14900f9f8ea65b6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3993,
+              "group": "c1cba5c1cd331a12",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4478,
+              "group": "c8319c3b69e47738",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9928,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 9079,
+              "group": "ca5c62640afca729",
+              "regret": 17.598335643544132,
+              "top": false
+            },
+            {
+              "cpu_micros": 11829,
+              "group": "cb6e0b212caef5dd",
+              "regret": 3.4139192705766277,
+              "top": false
+            },
+            {
+              "cpu_micros": 9786,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.9542356166360335,
+              "top": false
+            },
+            {
+              "cpu_micros": 5355,
+              "group": "cdd4e73b9000e64a",
+              "regret": 0.9775713797463714,
+              "top": false
+            },
+            {
+              "cpu_micros": 8636,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4097,
+              "group": "d0b6bef005e2cb36",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5506,
+              "group": "d1f6c30852d1af2e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8890,
+              "group": "d4f6b582e4602fd1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9937,
+              "group": "d5641b1dc723de8f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9126,
+              "group": "d57f03f5296931a0",
+              "regret": 14.749161783769253,
+              "top": false
+            },
+            {
+              "cpu_micros": 12932,
+              "group": "d5d8b587f0fff134",
+              "regret": 9.461989056389754,
+              "top": false
+            },
+            {
+              "cpu_micros": 8377,
+              "group": "d8e296a7f99f20ab",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7899,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5942,
+              "group": "e1c81e66f5695c66",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4727,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 10286,
+              "group": "e5901e8aa84dc405",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5849,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6782,
+              "group": "e8baedda4491fd9d",
+              "regret": 26.344552380547015,
+              "top": false
+            },
+            {
+              "cpu_micros": 4546,
+              "group": "f47c1d6977c181fd",
+              "regret": 35.19513486296185,
+              "top": false
+            },
+            {
+              "cpu_micros": 12738,
+              "group": "f763390235ffde60",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 13851,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 32.3788185113675,
+              "top": false
+            },
+            {
+              "cpu_micros": 12582,
+              "group": "fe5cb7f9110a89cc",
+              "regret": 0.0,
+              "top": true
+            }
+          ],
+          "parents": 93,
+          "regret_ge_3": 16,
+          "top_agreement": 0.6559139784946236,
+          "total_wall_micros": 652522
+        },
+        "primary_multi_action": {
+          "best_matches": 31,
+          "max_regret": 35.19513486296185,
+          "mean_regret": 3.330936050128791,
+          "mean_wall_micros": 6929.31746031746,
+          "median_regret": 0.04807001710472747,
+          "p95_regret": 17.31341825756664,
+          "parent_rows": [
+            {
+              "cpu_micros": 5245,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11179,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 9400,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14348,
+              "group": "228eb64487cab54d",
+              "regret": 4.52426073994846,
+              "top": false
+            },
+            {
+              "cpu_micros": 4530,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9225,
+              "group": "31d18f0e405c431c",
+              "regret": 0.2885259409847052,
+              "top": false
+            },
+            {
+              "cpu_micros": 9084,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 9389,
+              "group": "3aed6018379b40e3",
+              "regret": 10.747945713652626,
+              "top": false
+            },
+            {
+              "cpu_micros": 7757,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2347,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 10284,
+              "group": "43bb003bef271df8",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2736,
+              "group": "4642ca7fef733152",
+              "regret": 4.385169668786755,
+              "top": false
+            },
+            {
+              "cpu_micros": 5677,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 11341,
+              "group": "487b75069c104cd0",
+              "regret": 6.903594784702854,
+              "top": false
+            },
+            {
+              "cpu_micros": 5156,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1263,
+              "group": "51d68568e18deda8",
+              "regret": 0.05507858065605831,
+              "top": false
+            },
+            {
+              "cpu_micros": 7839,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5226,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2643,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.1883823112983407,
+              "top": false
+            },
+            {
+              "cpu_micros": 10716,
+              "group": "61891a075939ba2e",
+              "regret": 2.9645902654692264,
+              "top": false
+            },
+            {
+              "cpu_micros": 6477,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6128,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8152,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6514,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4926,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 4520,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3406,
+              "group": "83960680d13f3e7f",
+              "regret": 3.8170052862262054,
+              "top": false
+            },
+            {
+              "cpu_micros": 3525,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7951,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5192,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7360,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6069,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12087,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 4358,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 2930,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.2994585478485803,
+              "top": false
+            },
+            {
+              "cpu_micros": 1540,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.04807001710472747,
+              "top": false
+            },
+            {
+              "cpu_micros": 6266,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.7897901495186233,
+              "top": false
+            },
+            {
+              "cpu_micros": 1864,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8680,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8730,
+              "group": "b31a6f974c73b5ac",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4167,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2263,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7908,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 7.737612255383951,
+              "top": false
+            },
+            {
+              "cpu_micros": 6244,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7176,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.5432757133224264,
+              "top": false
+            },
+            {
+              "cpu_micros": 3993,
+              "group": "c1cba5c1cd331a12",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9928,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 9079,
+              "group": "ca5c62640afca729",
+              "regret": 17.598335643544132,
+              "top": false
+            },
+            {
+              "cpu_micros": 11829,
+              "group": "cb6e0b212caef5dd",
+              "regret": 3.4139192705766277,
+              "top": false
+            },
+            {
+              "cpu_micros": 9786,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.9542356166360335,
+              "top": false
+            },
+            {
+              "cpu_micros": 5355,
+              "group": "cdd4e73b9000e64a",
+              "regret": 0.9775713797463714,
+              "top": false
+            },
+            {
+              "cpu_micros": 8636,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4097,
+              "group": "d0b6bef005e2cb36",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9937,
+              "group": "d5641b1dc723de8f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9126,
+              "group": "d57f03f5296931a0",
+              "regret": 14.749161783769253,
+              "top": false
+            },
+            {
+              "cpu_micros": 12932,
+              "group": "d5d8b587f0fff134",
+              "regret": 9.461989056389754,
+              "top": false
+            },
+            {
+              "cpu_micros": 8377,
+              "group": "d8e296a7f99f20ab",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7899,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4727,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 5849,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6782,
+              "group": "e8baedda4491fd9d",
+              "regret": 26.344552380547015,
+              "top": false
+            },
+            {
+              "cpu_micros": 4546,
+              "group": "f47c1d6977c181fd",
+              "regret": 35.19513486296185,
+              "top": false
+            },
+            {
+              "cpu_micros": 13851,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 32.3788185113675,
+              "top": false
+            }
+          ],
+          "parents": 63,
+          "regret_ge_3": 16,
+          "top_agreement": 0.49206349206349204,
+          "total_wall_micros": 436547
+        }
+      }
+    },
+    "256": {
+      "bootstrap": {
+        "control_minus_treatment_mean_regret": {
+          "p05": -1.251454303182426,
+          "p50": -0.4902053474597803,
+          "p95": 0.0,
+          "probability_positive": 0.0
+        },
+        "replicates": 5000,
+        "seed": 20260828,
+        "treatment_minus_control_top": {
+          "p05": -0.047619047619047616,
+          "p50": -0.015873015873015872,
+          "p95": 0.0,
+          "probability_positive": 0.0
+        }
+      },
+      "ordinary": {
+        "all_anchors_integrity": {
+          "best_matches": 61,
+          "max_regret": 52.45756472622603,
+          "mean_regret": 1.717947135943499,
+          "mean_wall_micros": 13962.268817204302,
+          "median_regret": 0.0,
+          "p95_regret": 8.824481466218394,
+          "parent_rows": [
+            {
+              "cpu_micros": 25434,
+              "group": "024c62342092a085",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 17962,
+              "group": "03e0443ad96cec05",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5001,
+              "group": "03fcc4fd6776965d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9692,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 16311,
+              "group": "0ea5e453de436f8c",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 16917,
+              "group": "10873136d10b4a17",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 22252,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 20063,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 24143,
+              "group": "228eb64487cab54d",
+              "regret": 2.8178231687146678,
+              "top": false
+            },
+            {
+              "cpu_micros": 21964,
+              "group": "290b22bee3a9d79e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8767,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2348,
+              "group": "2b63ebccd4295c0d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2628,
+              "group": "2b6708a54f60eca1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11313,
+              "group": "2f2c239a64fdb7d6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1840,
+              "group": "308d833abc783284",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18225,
+              "group": "31d18f0e405c431c",
+              "regret": 0.2885259409847052,
+              "top": false
+            },
+            {
+              "cpu_micros": 18091,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 20449,
+              "group": "3aed6018379b40e3",
+              "regret": 10.747945713652626,
+              "top": false
+            },
+            {
+              "cpu_micros": 14804,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3093,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 17873,
+              "group": "43bb003bef271df8",
+              "regret": 2.0405667028197314,
+              "top": false
+            },
+            {
+              "cpu_micros": 5234,
+              "group": "4642ca7fef733152",
+              "regret": 4.385169668786755,
+              "top": false
+            },
+            {
+              "cpu_micros": 8574,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 21430,
+              "group": "487b75069c104cd0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12338,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3030,
+              "group": "51d68568e18deda8",
+              "regret": 0.05507858065605831,
+              "top": false
+            },
+            {
+              "cpu_micros": 12664,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9199,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5602,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.1883823112983407,
+              "top": false
+            },
+            {
+              "cpu_micros": 16614,
+              "group": "5b370489b2fa8934",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 20084,
+              "group": "61891a075939ba2e",
+              "regret": 2.9645902654692264,
+              "top": false
+            },
+            {
+              "cpu_micros": 12806,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12228,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18394,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 21068,
+              "group": "673eba96408a51c4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10762,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18444,
+              "group": "6f92cd19917632eb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10369,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 8496,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5374,
+              "group": "83960680d13f3e7f",
+              "regret": 3.8170052862262054,
+              "top": false
+            },
+            {
+              "cpu_micros": 10407,
+              "group": "859e075dfa13a5f9",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8447,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14626,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11740,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2478,
+              "group": "8f80bc67a343acf6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15725,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18511,
+              "group": "9180acceadcce801",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11544,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 17757,
+              "group": "96eab7480e5ef1c6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 13163,
+              "group": "989d92519bbd48d5",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 17108,
+              "group": "9adda5d0ede6c52e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 28290,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 7114,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 5872,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.2994585478485803,
+              "top": false
+            },
+            {
+              "cpu_micros": 12150,
+              "group": "a34cdecbee1c3c8d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2507,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.04807001710472747,
+              "top": false
+            },
+            {
+              "cpu_micros": 10956,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.7897901495186233,
+              "top": false
+            },
+            {
+              "cpu_micros": 2604,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15403,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18264,
+              "group": "b31a6f974c73b5ac",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8685,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4545,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18495,
+              "group": "b9371b6514ea132a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 17911,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 7.737612255383951,
+              "top": false
+            },
+            {
+              "cpu_micros": 21921,
+              "group": "ba1e68421c80bd64",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14956,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15077,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.5432757133224264,
+              "top": false
+            },
+            {
+              "cpu_micros": 10878,
+              "group": "c14900f9f8ea65b6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6021,
+              "group": "c1cba5c1cd331a12",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8789,
+              "group": "c8319c3b69e47738",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 20469,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 18610,
+              "group": "ca5c62640afca729",
+              "regret": 17.598335643544132,
+              "top": false
+            },
+            {
+              "cpu_micros": 19956,
+              "group": "cb6e0b212caef5dd",
+              "regret": 3.4139192705766277,
+              "top": false
+            },
+            {
+              "cpu_micros": 18420,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.9542356166360335,
+              "top": false
+            },
+            {
+              "cpu_micros": 11534,
+              "group": "cdd4e73b9000e64a",
+              "regret": 1.1188844566947722,
+              "top": false
+            },
+            {
+              "cpu_micros": 18959,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7659,
+              "group": "d0b6bef005e2cb36",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12956,
+              "group": "d1f6c30852d1af2e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12035,
+              "group": "d4f6b582e4602fd1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18638,
+              "group": "d5641b1dc723de8f",
+              "regret": 3.092725074787566,
+              "top": false
+            },
+            {
+              "cpu_micros": 18948,
+              "group": "d57f03f5296931a0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 22235,
+              "group": "d5d8b587f0fff134",
+              "regret": 9.461989056389754,
+              "top": false
+            },
+            {
+              "cpu_micros": 17729,
+              "group": "d8e296a7f99f20ab",
+              "regret": 1.0661663923279576,
+              "top": false
+            },
+            {
+              "cpu_micros": 18057,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14660,
+              "group": "e1c81e66f5695c66",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7806,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 25031,
+              "group": "e5901e8aa84dc405",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10467,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14894,
+              "group": "e8baedda4491fd9d",
+              "regret": 52.45756472622603,
+              "top": false
+            },
+            {
+              "cpu_micros": 9017,
+              "group": "f47c1d6977c181fd",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 28151,
+              "group": "f763390235ffde60",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 26562,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 8.39947640610417,
+              "top": false
+            },
+            {
+              "cpu_micros": 21874,
+              "group": "fe5cb7f9110a89cc",
+              "regret": 0.0,
+              "top": true
+            }
+          ],
+          "parents": 93,
+          "regret_ge_3": 13,
+          "top_agreement": 0.6559139784946236,
+          "total_wall_micros": 1298491
+        },
+        "primary_multi_action": {
+          "best_matches": 31,
+          "max_regret": 52.45756472622603,
+          "mean_regret": 2.5360172006784985,
+          "mean_wall_micros": 13560.047619047618,
+          "median_regret": 0.04807001710472747,
+          "p95_regret": 9.86125844968499,
+          "parent_rows": [
+            {
+              "cpu_micros": 9692,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 22252,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 20063,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 24143,
+              "group": "228eb64487cab54d",
+              "regret": 2.8178231687146678,
+              "top": false
+            },
+            {
+              "cpu_micros": 8767,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18225,
+              "group": "31d18f0e405c431c",
+              "regret": 0.2885259409847052,
+              "top": false
+            },
+            {
+              "cpu_micros": 18091,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 20449,
+              "group": "3aed6018379b40e3",
+              "regret": 10.747945713652626,
+              "top": false
+            },
+            {
+              "cpu_micros": 14804,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3093,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 17873,
+              "group": "43bb003bef271df8",
+              "regret": 2.0405667028197314,
+              "top": false
+            },
+            {
+              "cpu_micros": 5234,
+              "group": "4642ca7fef733152",
+              "regret": 4.385169668786755,
+              "top": false
+            },
+            {
+              "cpu_micros": 8574,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 21430,
+              "group": "487b75069c104cd0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12338,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3030,
+              "group": "51d68568e18deda8",
+              "regret": 0.05507858065605831,
+              "top": false
+            },
+            {
+              "cpu_micros": 12664,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9199,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5602,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.1883823112983407,
+              "top": false
+            },
+            {
+              "cpu_micros": 20084,
+              "group": "61891a075939ba2e",
+              "regret": 2.9645902654692264,
+              "top": false
+            },
+            {
+              "cpu_micros": 12806,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12228,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18394,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10762,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10369,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 8496,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5374,
+              "group": "83960680d13f3e7f",
+              "regret": 3.8170052862262054,
+              "top": false
+            },
+            {
+              "cpu_micros": 8447,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14626,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11740,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15725,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11544,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 28290,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 7114,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 5872,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.2994585478485803,
+              "top": false
+            },
+            {
+              "cpu_micros": 2507,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.04807001710472747,
+              "top": false
+            },
+            {
+              "cpu_micros": 10956,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.7897901495186233,
+              "top": false
+            },
+            {
+              "cpu_micros": 2604,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15403,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18264,
+              "group": "b31a6f974c73b5ac",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8685,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4545,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 17911,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 7.737612255383951,
+              "top": false
+            },
+            {
+              "cpu_micros": 14956,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15077,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.5432757133224264,
+              "top": false
+            },
+            {
+              "cpu_micros": 6021,
+              "group": "c1cba5c1cd331a12",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 20469,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 18610,
+              "group": "ca5c62640afca729",
+              "regret": 17.598335643544132,
+              "top": false
+            },
+            {
+              "cpu_micros": 19956,
+              "group": "cb6e0b212caef5dd",
+              "regret": 3.4139192705766277,
+              "top": false
+            },
+            {
+              "cpu_micros": 18420,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.9542356166360335,
+              "top": false
+            },
+            {
+              "cpu_micros": 11534,
+              "group": "cdd4e73b9000e64a",
+              "regret": 1.1188844566947722,
+              "top": false
+            },
+            {
+              "cpu_micros": 18959,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7659,
+              "group": "d0b6bef005e2cb36",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18638,
+              "group": "d5641b1dc723de8f",
+              "regret": 3.092725074787566,
+              "top": false
+            },
+            {
+              "cpu_micros": 18948,
+              "group": "d57f03f5296931a0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 22235,
+              "group": "d5d8b587f0fff134",
+              "regret": 9.461989056389754,
+              "top": false
+            },
+            {
+              "cpu_micros": 17729,
+              "group": "d8e296a7f99f20ab",
+              "regret": 1.0661663923279576,
+              "top": false
+            },
+            {
+              "cpu_micros": 18057,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7806,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 10467,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14894,
+              "group": "e8baedda4491fd9d",
+              "regret": 52.45756472622603,
+              "top": false
+            },
+            {
+              "cpu_micros": 9017,
+              "group": "f47c1d6977c181fd",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 26562,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 8.39947640610417,
+              "top": false
+            }
+          ],
+          "parents": 63,
+          "regret_ge_3": 13,
+          "top_agreement": 0.49206349206349204,
+          "total_wall_micros": 854283
+        }
+      },
+      "progressive_unpruning_current_order": {
+        "all_anchors_integrity": {
+          "best_matches": 60,
+          "max_regret": 52.45756472622603,
+          "mean_regret": 2.0500217261581892,
+          "mean_wall_micros": 13891.258064516129,
+          "median_regret": 0.0,
+          "p95_regret": 9.639442120076522,
+          "parent_rows": [
+            {
+              "cpu_micros": 21403,
+              "group": "024c62342092a085",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 16250,
+              "group": "03e0443ad96cec05",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6072,
+              "group": "03fcc4fd6776965d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9718,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14585,
+              "group": "0ea5e453de436f8c",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15711,
+              "group": "10873136d10b4a17",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 27263,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 18045,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 24625,
+              "group": "228eb64487cab54d",
+              "regret": 2.8178231687146678,
+              "top": false
+            },
+            {
+              "cpu_micros": 20028,
+              "group": "290b22bee3a9d79e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9128,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2417,
+              "group": "2b63ebccd4295c0d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2947,
+              "group": "2b6708a54f60eca1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10070,
+              "group": "2f2c239a64fdb7d6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 1812,
+              "group": "308d833abc783284",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 17221,
+              "group": "31d18f0e405c431c",
+              "regret": 0.2885259409847052,
+              "top": false
+            },
+            {
+              "cpu_micros": 18905,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 20322,
+              "group": "3aed6018379b40e3",
+              "regret": 10.747945713652626,
+              "top": false
+            },
+            {
+              "cpu_micros": 14403,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3133,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 19051,
+              "group": "43bb003bef271df8",
+              "regret": 2.0405667028197314,
+              "top": false
+            },
+            {
+              "cpu_micros": 4701,
+              "group": "4642ca7fef733152",
+              "regret": 4.385169668786755,
+              "top": false
+            },
+            {
+              "cpu_micros": 9143,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 20920,
+              "group": "487b75069c104cd0",
+              "regret": 6.903594784702854,
+              "top": false
+            },
+            {
+              "cpu_micros": 10773,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2182,
+              "group": "51d68568e18deda8",
+              "regret": 0.05507858065605831,
+              "top": false
+            },
+            {
+              "cpu_micros": 13712,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10160,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5206,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.1883823112983407,
+              "top": false
+            },
+            {
+              "cpu_micros": 16563,
+              "group": "5b370489b2fa8934",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 19730,
+              "group": "61891a075939ba2e",
+              "regret": 2.9645902654692264,
+              "top": false
+            },
+            {
+              "cpu_micros": 13138,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11628,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 23856,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 21018,
+              "group": "673eba96408a51c4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11469,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18090,
+              "group": "6f92cd19917632eb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10476,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 8581,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6051,
+              "group": "83960680d13f3e7f",
+              "regret": 3.8170052862262054,
+              "top": false
+            },
+            {
+              "cpu_micros": 10090,
+              "group": "859e075dfa13a5f9",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7711,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14688,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10186,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2369,
+              "group": "8f80bc67a343acf6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15791,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 17702,
+              "group": "9180acceadcce801",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12072,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 17852,
+              "group": "96eab7480e5ef1c6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 13425,
+              "group": "989d92519bbd48d5",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 16276,
+              "group": "9adda5d0ede6c52e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 24074,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 7960,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 6765,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.2994585478485803,
+              "top": false
+            },
+            {
+              "cpu_micros": 12328,
+              "group": "a34cdecbee1c3c8d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2472,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.04807001710472747,
+              "top": false
+            },
+            {
+              "cpu_micros": 10413,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.7897901495186233,
+              "top": false
+            },
+            {
+              "cpu_micros": 2834,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15683,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 20396,
+              "group": "b31a6f974c73b5ac",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9536,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4569,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 19811,
+              "group": "b9371b6514ea132a",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 16971,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 7.737612255383951,
+              "top": false
+            },
+            {
+              "cpu_micros": 15769,
+              "group": "ba1e68421c80bd64",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 13433,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 13740,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.5432757133224264,
+              "top": false
+            },
+            {
+              "cpu_micros": 11117,
+              "group": "c14900f9f8ea65b6",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 8279,
+              "group": "c1cba5c1cd331a12",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9383,
+              "group": "c8319c3b69e47738",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 21106,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 18817,
+              "group": "ca5c62640afca729",
+              "regret": 17.598335643544132,
+              "top": false
+            },
+            {
+              "cpu_micros": 22017,
+              "group": "cb6e0b212caef5dd",
+              "regret": 3.4139192705766277,
+              "top": false
+            },
+            {
+              "cpu_micros": 18532,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.9542356166360335,
+              "top": false
+            },
+            {
+              "cpu_micros": 10775,
+              "group": "cdd4e73b9000e64a",
+              "regret": 1.1188844566947722,
+              "top": false
+            },
+            {
+              "cpu_micros": 20053,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6642,
+              "group": "d0b6bef005e2cb36",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11612,
+              "group": "d1f6c30852d1af2e",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11901,
+              "group": "d4f6b582e4602fd1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18579,
+              "group": "d5641b1dc723de8f",
+              "regret": 3.092725074787566,
+              "top": false
+            },
+            {
+              "cpu_micros": 19136,
+              "group": "d57f03f5296931a0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 24228,
+              "group": "d5d8b587f0fff134",
+              "regret": 9.461989056389754,
+              "top": false
+            },
+            {
+              "cpu_micros": 16823,
+              "group": "d8e296a7f99f20ab",
+              "regret": 1.0661663923279576,
+              "top": false
+            },
+            {
+              "cpu_micros": 16723,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 13138,
+              "group": "e1c81e66f5695c66",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7575,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 21825,
+              "group": "e5901e8aa84dc405",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9743,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15834,
+              "group": "e8baedda4491fd9d",
+              "regret": 52.45756472622603,
+              "top": false
+            },
+            {
+              "cpu_micros": 9235,
+              "group": "f47c1d6977c181fd",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 25713,
+              "group": "f763390235ffde60",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 31304,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 32.3788185113675,
+              "top": false
+            },
+            {
+              "cpu_micros": 26375,
+              "group": "fe5cb7f9110a89cc",
+              "regret": 0.0,
+              "top": true
+            }
+          ],
+          "parents": 93,
+          "regret_ge_3": 14,
+          "top_agreement": 0.6451612903225806,
+          "total_wall_micros": 1291887
+        },
+        "primary_multi_action": {
+          "best_matches": 30,
+          "max_regret": 52.45756472622603,
+          "mean_regret": 3.0262225481382794,
+          "mean_wall_micros": 13781.507936507936,
+          "median_regret": 0.05507858065605831,
+          "p95_regret": 10.663713313848032,
+          "parent_rows": [
+            {
+              "cpu_micros": 9718,
+              "group": "07424d8f44b8ec48",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 27263,
+              "group": "13e14ff372043d1e",
+              "regret": 0.3425410058875684,
+              "top": false
+            },
+            {
+              "cpu_micros": 18045,
+              "group": "2226fbc7526a9899",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 24625,
+              "group": "228eb64487cab54d",
+              "regret": 2.8178231687146678,
+              "top": false
+            },
+            {
+              "cpu_micros": 9128,
+              "group": "2b63441daceb23cf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 17221,
+              "group": "31d18f0e405c431c",
+              "regret": 0.2885259409847052,
+              "top": false
+            },
+            {
+              "cpu_micros": 18905,
+              "group": "333aa6d79b4a18fd",
+              "regret": 1.7905098357204707,
+              "top": false
+            },
+            {
+              "cpu_micros": 20322,
+              "group": "3aed6018379b40e3",
+              "regret": 10.747945713652626,
+              "top": false
+            },
+            {
+              "cpu_micros": 14403,
+              "group": "4023fe25560021f4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 3133,
+              "group": "436c4850ca5e3973",
+              "regret": 0.09133712234124403,
+              "top": false
+            },
+            {
+              "cpu_micros": 19051,
+              "group": "43bb003bef271df8",
+              "regret": 2.0405667028197314,
+              "top": false
+            },
+            {
+              "cpu_micros": 4701,
+              "group": "4642ca7fef733152",
+              "regret": 4.385169668786755,
+              "top": false
+            },
+            {
+              "cpu_micros": 9143,
+              "group": "46ba096754fe2e47",
+              "regret": 0.815146574758387,
+              "top": false
+            },
+            {
+              "cpu_micros": 20920,
+              "group": "487b75069c104cd0",
+              "regret": 6.903594784702854,
+              "top": false
+            },
+            {
+              "cpu_micros": 10773,
+              "group": "48ef37a18f8e41db",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 2182,
+              "group": "51d68568e18deda8",
+              "regret": 0.05507858065605831,
+              "top": false
+            },
+            {
+              "cpu_micros": 13712,
+              "group": "520055f8de6adbc1",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10160,
+              "group": "520b1e5da1103cd4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 5206,
+              "group": "57cdec8db5483d9a",
+              "regret": 0.1883823112983407,
+              "top": false
+            },
+            {
+              "cpu_micros": 19730,
+              "group": "61891a075939ba2e",
+              "regret": 2.9645902654692264,
+              "top": false
+            },
+            {
+              "cpu_micros": 13138,
+              "group": "622380c78a60289d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11628,
+              "group": "655f4967063b2949",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 23856,
+              "group": "65860f2702aaac43",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 11469,
+              "group": "6b3abe9c8c99762b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10476,
+              "group": "70992875591160e9",
+              "regret": 0.13958663821333062,
+              "top": false
+            },
+            {
+              "cpu_micros": 8581,
+              "group": "74af8077a7a8a1b4",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6051,
+              "group": "83960680d13f3e7f",
+              "regret": 3.8170052862262054,
+              "top": false
+            },
+            {
+              "cpu_micros": 7711,
+              "group": "8a2d468fb2cd9db2",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 14688,
+              "group": "8d0e086a6911aa39",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 10186,
+              "group": "8eb7e303065f5121",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15791,
+              "group": "90c3d685c89cf8bb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 12072,
+              "group": "918ae788b47e1a46",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 24074,
+              "group": "9b0feff1a2845158",
+              "regret": 9.905621715606685,
+              "top": false
+            },
+            {
+              "cpu_micros": 7960,
+              "group": "9c5221df78226837",
+              "regret": 0.8795962393150178,
+              "top": false
+            },
+            {
+              "cpu_micros": 6765,
+              "group": "a1b54395c6b28a7b",
+              "regret": 0.2994585478485803,
+              "top": false
+            },
+            {
+              "cpu_micros": 2472,
+              "group": "a690644bd3d9cad1",
+              "regret": 0.04807001710472747,
+              "top": false
+            },
+            {
+              "cpu_micros": 10413,
+              "group": "a8093fc34f6791cb",
+              "regret": 0.7897901495186233,
+              "top": false
+            },
+            {
+              "cpu_micros": 2834,
+              "group": "a96e1dcdd112d59d",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15683,
+              "group": "b2a808b395864c6f",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 20396,
+              "group": "b31a6f974c73b5ac",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 9536,
+              "group": "b43ac0e76e2bdbcf",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 4569,
+              "group": "b4e2acccf79d4d55",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 16971,
+              "group": "b9a1e083f6f9ba66",
+              "regret": 7.737612255383951,
+              "top": false
+            },
+            {
+              "cpu_micros": 13433,
+              "group": "bc5b15a498ac120b",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 13740,
+              "group": "bdb957066aecfa8f",
+              "regret": 0.5432757133224264,
+              "top": false
+            },
+            {
+              "cpu_micros": 8279,
+              "group": "c1cba5c1cd331a12",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 21106,
+              "group": "c94784789b14cc3b",
+              "regret": 5.219911631142342,
+              "top": false
+            },
+            {
+              "cpu_micros": 18817,
+              "group": "ca5c62640afca729",
+              "regret": 17.598335643544132,
+              "top": false
+            },
+            {
+              "cpu_micros": 22017,
+              "group": "cb6e0b212caef5dd",
+              "regret": 3.4139192705766277,
+              "top": false
+            },
+            {
+              "cpu_micros": 18532,
+              "group": "cbda52b79d033fbb",
+              "regret": 6.9542356166360335,
+              "top": false
+            },
+            {
+              "cpu_micros": 10775,
+              "group": "cdd4e73b9000e64a",
+              "regret": 1.1188844566947722,
+              "top": false
+            },
+            {
+              "cpu_micros": 20053,
+              "group": "cf5f18ab9ef849fb",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 6642,
+              "group": "d0b6bef005e2cb36",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 18579,
+              "group": "d5641b1dc723de8f",
+              "regret": 3.092725074787566,
+              "top": false
+            },
+            {
+              "cpu_micros": 19136,
+              "group": "d57f03f5296931a0",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 24228,
+              "group": "d5d8b587f0fff134",
+              "regret": 9.461989056389754,
+              "top": false
+            },
+            {
+              "cpu_micros": 16823,
+              "group": "d8e296a7f99f20ab",
+              "regret": 1.0661663923279576,
+              "top": false
+            },
+            {
+              "cpu_micros": 16723,
+              "group": "d9998e96ca26a122",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 7575,
+              "group": "e3d36f3260ed9c1c",
+              "regret": 0.2982419146866988,
+              "top": false
+            },
+            {
+              "cpu_micros": 9743,
+              "group": "e77d01fe5fb65974",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 15834,
+              "group": "e8baedda4491fd9d",
+              "regret": 52.45756472622603,
+              "top": false
+            },
+            {
+              "cpu_micros": 9235,
+              "group": "f47c1d6977c181fd",
+              "regret": 0.0,
+              "top": true
+            },
+            {
+              "cpu_micros": 31304,
+              "group": "fcff37fbf3dfd4f3",
+              "regret": 32.3788185113675,
+              "top": false
+            }
+          ],
+          "parents": 63,
+          "regret_ge_3": 14,
+          "top_agreement": 0.47619047619047616,
+          "total_wall_micros": 868235
+        }
+      }
+    }
+  },
+  "schema": "silver_progressive_unpruning_analysis_v1"
+}

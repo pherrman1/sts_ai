@@ -5389,3 +5389,132 @@ model training was changed.
   pipeline and durable evidence. Complete hashes, contrasts, factorial effects,
   and all 32 paired rows are in
   `docs/experiments/evidence/silver_policy_online_methods_2026-08-28.json`.
+
+## 188. Silver root action-pruning ladder Phase 1: candidate-retention audit (2026-08-28)
+
+- **Hypothesis/method:** Before changing search, can root candidate sets ranked
+  by current Silver order, the frozen parent-Q model, or existing 1k/10k/25k-A
+  teacher Q/visit signals retain the independent 25k-B best action? The
+  analyzer evaluates top-1, top-2, top-3, and top-half (`ceil(K/2)`) candidate
+  rules, always retaining the full exact score tie at the boundary. It uses a
+  deterministic 5,000-replicate parent bootstrap (seed `20260828`) and reports
+  the 30 single-action anchors only as a secondary integrity population.
+- **Inputs/population:** hash-matched relabel / selected corpus / manifest /
+  features / frozen model SHA-256s were respectively
+  `abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c`,
+  `bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7`,
+  `db67ff9df6a1578a46e4e09038b5f2548772fc9c70fc54a00b1576f659883cd7`,
+  `0377aaef862362cdf1fa3925579a73b66381cbd646762a0453b6a939149923bd`,
+  and `3de211d354c2e03de2516c5ab68d35ec8aba40a4c02cb61937c02925221d1f20`.
+  The primary population is 63 independent 25k-B multi-action parents / 340
+  actions; the secondary integrity population is 30 single-action parents.
+- **Results:** current Silver top-2 retained the B-best action on 76.19% of
+  primary parents with mean best-retained regret 1.274; frozen-model top-2 was
+  87.30% / 0.974. Frozen-model top-3 was 95.24% / 0.549 but still excluded a
+  B-best action with regret at least 3 on 2/63 parents (3.17%). The audit found
+  17 feature-identical action groups and 26 exact model-tied groups; no tie is
+  silently resolved by stable ordering. Max-Q / max-visit agreement was
+  96.83%/98.41%/100% at 1k/10k/25k-A respectively.
+- **Verdict/authorization:** **`PHASE_1_COMPLETE_PHASE_2_AUTHORIZED`**. This
+  is descriptive offline evidence, not an authorization for permanent hard
+  pruning or learned runtime ordering. Sequential Halving does not depend on
+  the model and remains the next gated implementation phase. Full report:
+  `docs/experiments/evidence/silver_action_pruning_retention_2026-08-28.json`
+  (SHA-256 `838f7c23fe985c00d8b609a87f1858a6f231ac7f3245e29da4e8bc077baac0e6`).
+
+## 189. Silver root action-pruning ladder Phase 2: Sequential Halving rejected (2026-08-28)
+
+- **Implementation/protocol:** reviewed implementation SHA
+  `fae0a852441c4c54b23a82ba5c95137b95954676` adds a default-off
+  root-action mode only. Every legal root edge remains stored; forced-edge
+  pulls are root-only, internal nodes retain UCT, chance widening is untouched,
+  and adaptive allocation conflicts fail closed. The replay restored all 93
+  stored parent wires into fresh `reuseCapMode=NONE` sessions with adaptive
+  disabled, paired the same wire/search seed for ordinary UCT and Sequential
+  Halving, and emitted 744 rows (2 methods x 4 budgets x 93 anchors). Primary
+  analysis is the 63 multi-action 25k-B parents; bootstrap used 5,000
+  deterministic parent resamples, seed `20260828`.
+- **Inputs/artifacts:** relabel SHA-256 was
+  `abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c`.
+  Raw replay JSONL is ignored at
+  `build/silver_action_pruning_replay_20260828.jsonl`, SHA-256
+  `63b051b741d4ebf6648ac3e79c1353da23639e48e8ea23ceef2faf603887b0fa`.
+  The durable analysis is
+  `docs/experiments/evidence/silver_action_pruning_sequential_halving_2026-08-28.json`,
+  SHA-256 `fb85783d0f1733fdfab6eeadb264ad1dd1a7fee7f1f9c8e5689c8b86e507d98d`.
+- **Results:** ordinary versus Sequential-Halving best-action matches / mean
+  regret were `27/3.110` versus `27/3.738` at 64, `30/3.161` versus `32/3.192`
+  at 128, `31/2.536` versus `31/3.055` at 256, and `40/2.274` versus
+  `35/2.612` at 1000. Sequential Halving added >=3-regret exclusions at
+  64 (19 vs 16), 256 (14 vs 13), and 1000 (12 vs 9). Aggregate replay CPU was
+  0.998x ordinary, so runtime was not the rejection cause.
+- **Gate/stop:** **`SEQUENTIAL_HALVING_REJECTED`**. It was non-worse on neither
+  two small budgets nor mean regret, had no preregistered useful effect with
+  bootstrap probability >=0.90, failed the 1000 no-harm condition, and created
+  new catastrophic exclusions. Do not implement progressive unpruning,
+  learned-ranked unpruning, hard pruning, or gameplay smoke under this ladder.
+
+## 190. Narrowed Silver progressive unpruning: current-order treatment rejected (2026-08-28)
+
+- **Implementation/protocol:** User-requested follow-up to the Phase 2 stop,
+  deliberately recorded as a separate and smaller hypothesis test rather than
+  a revision of `SEQUENTIAL_HALVING_REJECTED`. Implementation SHA
+  `40556914bf42678313931a70e68575b354a35b23` added a default-off root mode.
+  Roots with fewer than six legal actions remained ordinary UCT. Eligible roots
+  retained every edge but activated current-Silver-order indices 0--2 first,
+  then one additional edge after 16, 32, 64, and 128 newly added root
+  simulations. Root selection used ordinary UCT only over that temporary mask;
+  all internal decision nodes and chance widening were unchanged. Replay used
+  fresh `reuseCapMode=NONE` sessions, `adaptiveEnabled=false`, the 93 stored
+  parent wires, and only ordinary UCT versus this treatment at 128/256/1000.
+  The independent reference remains the 25k-B labels; primary analysis is the
+  original 63 multi-action parents, with all 93 retained as an integrity view.
+- **Inputs/artifacts:** selected-corpus SHA-256
+  `bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7` and
+  relabel SHA-256
+  `abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c`;
+  the frozen policy model was not consumed. Raw replay JSONL is ignored at
+  `build/silver_action_pruning_progressive_current_20260828.jsonl`, SHA-256
+  `0c330adbfd29ef7d1244170aff783ccf900b955ec569d5ea0fb7eff26074534b`.
+  Durable analysis is
+  `docs/experiments/evidence/silver_action_pruning_progressive_current_2026-08-28.json`,
+  SHA-256 `1231530b9381009d36622fd32b2a496d5d18d5eb4a0958ba26abd07c8019e243`.
+- **Gate:** strict no-harm was preregistered as non-worse best-action matches
+  and non-increased mean regret at both 128 and 256; the 1000 condition allowed
+  at most one fewer match and +0.10 mean regret; no budget could add a
+  >=3-regret failure; aggregate replay CPU had to remain <=1.10x. Bootstrap
+  used 5,000 deterministic parent resamples, seed `20260828`.
+- **Results:** ordinary versus progressive best-action matches / mean regret /
+  >=3-regret counts were `30 / 3.161 / 18` versus `31 / 3.331 / 16` at 128,
+  `31 / 2.536 / 13` versus `30 / 3.026 / 14` at 256, and `40 / 2.274 / 9`
+  versus `42 / 1.761 / 8` at 1000. The treatment's 128 mean-regret bootstrap
+  improvement probability was 0.368; at 256 it was 0.000. Aggregate replay
+  CPU was 1.007x ordinary.
+- **Gate/stop:** **`PROGRESSIVE_CURRENT_ORDER_HARMFUL`**. The treatment failed
+  strict 128/256 no-harm and introduced one 256 >=3-regret failure. The 1000
+  recovery and CPU result do not override that lower-budget/tail evidence.
+  Therefore cached frozen-model ranking is not authorized, no runtime policy
+  scorer was built, and hard pruning/gameplay smoke remain out of scope.
+
+## 191. Silver action-pruning post-gate cleanup (2026-08-29)
+
+- **Decision:** Merge the negative-result package without retaining rejected
+  runtime mechanisms. This is maintenance following the Phase 2 and narrowed
+  progressive-unpruning gate failures, not a reinterpretation of either
+  result. Cleanup implementation SHA:
+  `65a833e87b9a79356837642157d1f43f04c9d424`.
+- **Removed from production/build graph:** the default-off root-action mode
+  configuration, Sequential-Halving and progressive-unpruning root selection,
+  pruning telemetry, forced/masked root-edge search primitives, their focused
+  bridge fixtures, and the `silver_action_pruning_replay` executable/target.
+  Ordinary Silver UCT is consequently the only shipped root-action selection
+  path again.
+- **Retained:** the Phase 1 candidate-retention analyzer and tests, the two
+  historical replay-analysis scripts, all three durable evidence reports and
+  their input/raw hashes, plus the current-research and ledger conclusions.
+  The analyzer sources remain reproducible analysis records; they do not imply
+  that the removed runtime treatments remain supported.
+- **Follow-up authorization:** none for action pruning, learned ranking, or a
+  runtime policy scorer. A subsequent Silver investigation must state a new,
+  independently testable hypothesis and preserve these negative results as its
+  boundary condition.
