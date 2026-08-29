@@ -24,7 +24,7 @@ struct ActionLabel {
 };
 
 struct ParentLabel {
-    std::string teacherSeed;
+    std::uint64_t teacherSeed = 0;
     std::map<std::string, ActionLabel> actions;
 };
 
@@ -55,7 +55,7 @@ Labels loadLabels(const std::string &path, const std::string &replicate) {
         const auto group = row.at("group_id").get<std::string>();
         if (labels.count(group)) throw std::runtime_error("duplicate parent label: " + group);
         ParentLabel label;
-        label.teacherSeed = std::to_string(row.at("teacher_rng_identity").get<std::uint64_t>());
+        label.teacherSeed = row.at("teacher_rng_identity").get<std::uint64_t>();
         for (const auto &action : row.at("root_actions")) {
             const auto fp = action.at("action_fingerprint").get<std::string>();
             if (!action.value("leaf_root_q_valid", false))
@@ -140,6 +140,16 @@ std::vector<double> normalizedVisits(const Anchor &anchor, const std::vector<std
     return priors;
 }
 
+std::uint64_t replicateSeed(std::uint64_t base, int replicate) {
+    if (replicate == 0) return base;
+    std::uint64_t x = base ^ (static_cast<std::uint64_t>(replicate + 1)
+                              * 0x9e3779b97f4a7c15ULL);
+    x ^= x >> 30; x *= 0xbf58476d1ce4e5b9ULL;
+    x ^= x >> 27; x *= 0x94d049bb133111ebULL;
+    x ^= x >> 31;
+    return x == 0 ? 1 : x;
+}
+
 std::string selectedFingerprint(const silver_bridge::SilverDecisionResult &result) {
     if (!result.initialActionFingerprint.empty()) return result.initialActionFingerprint;
     const silver_bridge::SilverRootActionSummary *best = nullptr;
@@ -163,11 +173,13 @@ const char *modeName(silver_bridge::SilverRootGuidanceMode mode) {
 
 int main(int argc, char **argv) {
     try {
-        if (argc != 4 && argc != 5) {
-            std::cerr << "usage: silver_root_oracle_replay SNAPSHOTS.jsonl RELABEL.jsonl OUTPUT.jsonl [BUDGETS]\n";
+        if (argc < 4 || argc > 6) {
+            std::cerr << "usage: silver_root_oracle_replay SNAPSHOTS.jsonl RELABEL.jsonl OUTPUT.jsonl [BUDGETS] [REPLICATES]\n";
             return 2;
         }
         const auto budgets = splitBudgets(argc == 5 ? argv[4] : "16,32,64,128,1000");
+        const int replicates = argc == 6 ? std::stoi(argv[5]) : 1;
+        if (replicates <= 0) throw std::runtime_error("replicates must be positive");
         const auto a = loadLabels(argv[2], "A");
         const auto b = loadLabels(argv[2], "B");
         const auto anchors = loadAnchors(argv[1], a, b);
@@ -194,7 +206,9 @@ int main(int argc, char **argv) {
             for (const auto budgetText : budgets) {
                 const auto budget = std::stoll(budgetText);
                 if (budget <= 0) throw std::runtime_error("simulation budget must be positive");
-                for (const auto mode : modes) {
+                for (int replicate = 0; replicate < replicates; ++replicate) {
+                    const auto searchSeed = replicateSeed(anchor.a.teacherSeed, replicate);
+                    for (const auto mode : modes) {
                     silver_bridge::SilverSearchConfig config;
                     config.simulationsPerDecision = budget;
                     config.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
@@ -206,7 +220,7 @@ int main(int argc, char **argv) {
                             config.rootActionPriors = priors;
                     }
                     auto state = anchor.state;
-                    state.isolatedSearchSeed = std::stoull(anchor.a.teacherSeed);
+                    state.isolatedSearchSeed = searchSeed;
                     const auto result = silver_bridge::runSilverDecision(state, config);
                     const auto selected = selectedFingerprint(result);
                     const auto selectedIt = anchor.b.actions.find(selected);
@@ -221,7 +235,9 @@ int main(int argc, char **argv) {
                         {"frozen_b_top_choice", selected == *bestB},
                         {"frozen_b_selected_q", selectedQ}, {"frozen_b_best_q", bestQ},
                         {"frozen_b_regret", bestQ - selectedQ},
-                        {"simulations", result.simulations}}.dump() << '\n';
+                        {"simulations", result.simulations}, {"replicate", replicate},
+                        {"search_seed", searchSeed}}.dump() << '\n';
+                    }
                 }
             }
         }
