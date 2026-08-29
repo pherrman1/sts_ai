@@ -60,12 +60,16 @@ regret (the latter also added a >=3-regret failure), even though its 1000 result
 improved and replay CPU was 1.007x ordinary. The cached frozen-model ordering,
 runtime scorer, hard pruning, and gameplay smoke remain unauthorized. The
 previous rejection of learned ordinary ordering/PUCT remains unchanged.
+The rejected runtime root-action modes and their replay executable were removed
+from the merge package on 2026-08-29; the tie-safe offline analyzers, tests,
+durable reports, input hashes, and ledger evidence remain available for future
+independent hypotheses.
 
 Evidence: `docs/experiments/evidence/silver_action_pruning_retention_2026-08-28.json`
 (SHA-256 `838f7c23fe985c00d8b609a87f1858a6f231ac7f3245e29da4e8bc077baac0e6`)
 and `docs/experiments/evidence/silver_action_pruning_progressive_current_2026-08-28.json`
 (SHA-256 `1231530b9381009d36622fd32b2a496d5d18d5eb4a0958ba26abd07c8019e243`).
-See [ledger-06 §188–190](../../../docs/experiments/ledger-06.md).
+See [ledger-06 §188–191](../../../docs/experiments/ledger-06.md).
 
 ## Current baseline
 

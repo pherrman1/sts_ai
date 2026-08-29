@@ -5495,3 +5495,26 @@ model training was changed.
   recovery and CPU result do not override that lower-budget/tail evidence.
   Therefore cached frozen-model ranking is not authorized, no runtime policy
   scorer was built, and hard pruning/gameplay smoke remain out of scope.
+
+## 191. Silver action-pruning post-gate cleanup (2026-08-29)
+
+- **Decision:** Merge the negative-result package without retaining rejected
+  runtime mechanisms. This is maintenance following the Phase 2 and narrowed
+  progressive-unpruning gate failures, not a reinterpretation of either
+  result. Cleanup implementation SHA:
+  `65a833e87b9a79356837642157d1f43f04c9d424`.
+- **Removed from production/build graph:** the default-off root-action mode
+  configuration, Sequential-Halving and progressive-unpruning root selection,
+  pruning telemetry, forced/masked root-edge search primitives, their focused
+  bridge fixtures, and the `silver_action_pruning_replay` executable/target.
+  Ordinary Silver UCT is consequently the only shipped root-action selection
+  path again.
+- **Retained:** the Phase 1 candidate-retention analyzer and tests, the two
+  historical replay-analysis scripts, all three durable evidence reports and
+  their input/raw hashes, plus the current-research and ledger conclusions.
+  The analyzer sources remain reproducible analysis records; they do not imply
+  that the removed runtime treatments remain supported.
+- **Follow-up authorization:** none for action pruning, learned ranking, or a
+  runtime policy scorer. A subsequent Silver investigation must state a new,
+  independently testable hypothesis and preserve these negative results as its
+  boundary condition.
