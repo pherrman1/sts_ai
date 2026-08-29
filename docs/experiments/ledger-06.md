@@ -5822,3 +5822,14 @@ model training was changed.
   frozen-B regret (CI `[-0.625440,+0.019940]`), with `7/6/50`
   improved/worsened/tied roots. This is a repeatedly examined frozen
   search-level diagnostic, not gameplay or playing-strength confirmation.
+
+## Grouped linear Silver frozen feature-layout correction (2026-08-29)
+
+- **Provenance correction:** the immutable 1,788-wide feature header and its
+  generator layout are 1,766 state fields followed by 22 ordered action fields
+  (`aIsCard` through `aSelObtainWeight`), not an inferred 1,768/20 split. The
+  trainer now checks that exact ordered suffix and rejects reordered, missing,
+  or truncated layouts.
+- **Scope:** this is header-only provenance work. Model, probability, replay
+  JSONL, replay-analysis hashes, metrics, and the `INCONCLUSIVE` replay
+  decision are unchanged; no fit, replay, or gameplay was run.

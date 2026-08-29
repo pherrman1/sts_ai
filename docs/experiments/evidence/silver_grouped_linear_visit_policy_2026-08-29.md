@@ -37,8 +37,19 @@ anchors / 370 rows. The untouched primary slice contains 63 multi-action roots
 / 340 rows. Every sibling remains in its parent split; no duplicate legal
 actions, malformed anchors, or conflicting duplicate corpus parent IDs exist.
 
-The frozen artifact is exactly `silver_parent_policy_features_v1` with 1,788
-columns: a 1,768 state prefix and 20 action columns. It has no explicit
+The immutable `silver_parent_policy_features_v1` header is exactly 1,788
+columns: a 1,766-field state prefix followed by this ordered 22-field action
+suffix from the generator:
+
+```text
+aIsCard, aIsPotion, aIsEndTurn, aIsSelect,
+aCardId, aCardCost, aCardUpg, aCardAtk, aCardSkl, aCardPow,
+aTargetsEnemy, aTargetHp, aPlayOrder, aObtainWeight,
+aSelectSize, aSelTotalCost, aSelAtk, aSelSkl, aSelPow,
+aSelUpgraded, aSelPlayOrder, aSelObtainWeight
+```
+
+The representation concatenates state and action fields and has no explicit
 state-action interaction columns. Per parent, 0--13 columns vary (median 9,
 mean 6.293); 555 columns have non-zero train-only scale. There is no exact
 canonical-state duplicate across splits, but there are exact full feature-row
@@ -50,10 +61,16 @@ The archived raw-count and rank-shape mass metrics reproduced before fitting:
 raw KL/entropy/max mass = `1.2347181776` / `1.4032573457` / `0.3413307750`;
 rank-shape = `1.1995325096` / `1.2949953404` / `0.4108398801`.
 
-**Provenance caveat.** The frozen artifact is 1,788-wide as required. The
-archive checkout's current C++ `combatPolicyFeatureCount()` documents a
-different 1,780-wide extraction layout, so this experiment consumes the
-immutable artifact and does not attempt feature regeneration.
+The trainer validates the full ordered suffix rather than inferring a partition
+from the total width. It consumes the immutable artifact and does not attempt
+feature regeneration.
+
+**Feature-layout correction.** This header-only audit corrects an earlier
+`1,768 + 20` arithmetic inference. It changes neither the frozen model,
+probabilities, replay JSONL, replay analysis, nor any scientific metric or
+decision. The machine-readable corrected layout is
+`build/silver_grouped_linear_policy_20260829/feature_layout_audit.json`
+(SHA-256 `a892fc7a60203821e5bbd84cdfba38caa444c57251f24c5091716920583eee63`).
 
 ## Frozen 63-root metrics
 
@@ -114,6 +131,10 @@ Local generated artifacts under `build/silver_grouped_linear_policy_20260829/`:
   `fea2d03d88ea17b19822700f9461533861e502330a2f860e035cd1b2430844b8`;
 - manifest `manifest.json`:
   `c61330079b304246c50b6d1468a12c3b97547ab223eff7e79e72ddeca1a2a784`.
+
+The feature-layout correction does not change the model SHA, probability SHA,
+replay JSONL SHA, or replay-analysis SHA recorded above and in the companion
+replay evidence.
 
 Checks passed: Python compile, five focused unit tests, strict frozen baseline
 reproduction, `git diff --check`, and a second full run whose 340 probability

@@ -84,6 +84,20 @@ class SilverParentVisitPolicyTest(unittest.TestCase):
         self.assertAlmostEqual(result["b_pairwise_concordance"], 3.5 / 5)
         self.assertAlmostEqual(result["b_pairwise_concordance_parent_macro"], (.5 + .75) / 2)
 
+    def test_frozen_action_suffix_rejects_reordered_missing_or_truncated_layout(self):
+        names = [f"state_{i}" for i in range(MODULE.FROZEN_STATE_PREFIX_WIDTH)] + list(MODULE.FROZEN_ACTION_SUFFIX)
+        MODULE.validate_frozen_feature_layout(names)
+        reordered = names.copy()
+        reordered[-1], reordered[-2] = reordered[-2], reordered[-1]
+        with self.assertRaisesRegex(ValueError, "suffix"):
+            MODULE.validate_frozen_feature_layout(reordered)
+        with self.assertRaisesRegex(ValueError, "schema"):
+            MODULE.validate_frozen_feature_layout(names[:-1])
+        missing = names.copy()
+        missing[-3] = "not_a_generator_action"
+        with self.assertRaisesRegex(ValueError, "suffix"):
+            MODULE.validate_frozen_feature_layout(missing)
+
 
 if __name__ == "__main__":
     unittest.main()

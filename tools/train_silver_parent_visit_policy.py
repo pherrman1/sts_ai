@@ -27,7 +27,15 @@ L2 = 1.0e-4
 MAXITER = 500
 EPSILON = 1.0e-12
 BOOTSTRAP_REPLICATES = 10_000
-FROZEN_ACTION_SUFFIX_WIDTH = 20
+FROZEN_STATE_PREFIX_WIDTH = 1766
+FROZEN_ACTION_SUFFIX = (
+    "aIsCard", "aIsPotion", "aIsEndTurn", "aIsSelect",
+    "aCardId", "aCardCost", "aCardUpg", "aCardAtk", "aCardSkl", "aCardPow",
+    "aTargetsEnemy", "aTargetHp", "aPlayOrder", "aObtainWeight",
+    "aSelectSize", "aSelTotalCost", "aSelAtk", "aSelSkl", "aSelPow",
+    "aSelUpgraded", "aSelPlayOrder", "aSelObtainWeight",
+)
+FROZEN_ACTION_SUFFIX_WIDTH = len(FROZEN_ACTION_SUFFIX)
 ARCHIVED_MULTI_ACTION_METRICS = {
     "raw_count_xgboost": {"kl": 1.2347181775827583, "entropy": 1.4032573456696695,
                           "max_mass": 0.3413307749719532},
@@ -42,6 +50,14 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def validate_frozen_feature_layout(names: list[str]) -> None:
+    """Check the immutable generator's ordered state ++ action schema exactly."""
+    if len(names) != FROZEN_STATE_PREFIX_WIDTH + FROZEN_ACTION_SUFFIX_WIDTH:
+        raise ValueError(f"expected frozen 1788-feature schema, got {len(names)}")
+    if names[-FROZEN_ACTION_SUFFIX_WIDTH:] != list(FROZEN_ACTION_SUFFIX):
+        raise ValueError("frozen action suffix is missing, truncated, or out of generator order")
 
 
 def git_head() -> str:
@@ -99,8 +115,7 @@ def load_features(path: Path) -> tuple[dict, list[str], dict[str, list[dict]]]:
         names = header.get("feature_names")
         if not isinstance(names, list) or header.get("feature_count") != len(names):
             raise ValueError("invalid feature header width")
-        if len(names) != 1788:
-            raise ValueError(f"expected frozen 1788-feature schema, got {len(names)}")
+        validate_frozen_feature_layout(names)
         for line_number, line in enumerate(stream, 2):
             if not line.strip():
                 continue
@@ -194,8 +209,7 @@ def cross_split_duplicates(values: dict[str, set[str]]) -> dict[str, int]:
 
 def preflight_audit(corpus: Path, names: list[str], groups: dict[str, list[dict]],
                     train: set[str], validation: set[str], anchors: set[str]) -> dict:
-    if len(names) != 1788 or len(names) - FROZEN_ACTION_SUFFIX_WIDTH != 1768:
-        raise ValueError("unexpected frozen state/action schema partition")
+    validate_frozen_feature_layout(names)
     relevant = set(groups)
     corpus_parent: dict[str, str] = {}
     corpus_seed: dict[str, int] = {}
@@ -236,8 +250,9 @@ def preflight_audit(corpus: Path, names: list[str], groups: dict[str, list[dict]
     return {"corpus": {"path": str(corpus), "sha256": sha256(corpus), "schema": "silver_leaf_corpus_v1",
                          "parents_found": len(corpus_parent), "duplicate_parent_ids_with_conflicting_state_or_seed": 0},
             "schema": {"feature_schema": "silver_parent_policy_features_v1", "feature_count": len(names),
-                       "state_prefix_features": len(names) - FROZEN_ACTION_SUFFIX_WIDTH,
+                       "state_prefix_features": FROZEN_STATE_PREFIX_WIDTH,
                        "action_suffix_features": FROZEN_ACTION_SUFFIX_WIDTH,
+                       "action_suffix": list(FROZEN_ACTION_SUFFIX),
                        "parent_key": "group_id", "explicit_state_action_interaction_features": False},
             "group_assignment": {"all_siblings_assigned_by_parent": True, "parent_counts": {
                 "all": len(groups), "train": len(train), "validation": len(validation), "anchors": len(anchors)}},
@@ -607,7 +622,8 @@ def main() -> None:
     human_path.write_text(report_markdown(report), encoding="utf-8")
     manifest_path = args.output_dir / "manifest.json"
     manifest_path.write_text(json.dumps({"head": report["head"], "command": " ".join(map(str, __import__('sys').argv)),
-                                         "seed": SEED, "fixed_l2": L2, "dimensions": report["dimensions"], "split": report["split"],
+                                         "seed": SEED, "fixed_l2": L2, "dimensions": report["dimensions"],
+                                         "feature_layout": report["preflight"]["schema"], "split": report["split"],
                                          "inputs": report["inputs"], "outputs": {"aggregate_report": sha256(report_path), "human_report": sha256(human_path),
                                          "model": sha256(model_path), "anchor_probabilities": sha256(prediction_path)}}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2, sort_keys=True))
