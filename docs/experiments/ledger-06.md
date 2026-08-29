@@ -5700,3 +5700,28 @@ model training was changed.
   temperature, expand budgets, run gameplay, or change features yet. Full
   provenance, hashes, RNG qualification, tables, and commands are in
   [the hybrid evidence report](evidence/silver_hybrid_visit_prior_2026-08-29.md).
+
+## Silver raw-visit prior power calibration (2026-08-29)
+
+- **Question/protocol:** fit exactly one rank-preserving global exponent
+  `p_i(alpha) = (max(raw_i,0)+1e-12)^alpha / sum_j(...)^alpha` using only the
+  75 non-anchor validation parents and frozen 25k-A normalized visit shares.
+  No model was trained and no 25k-B or anchor was used to select alpha. The
+  fitted alpha was `0.1087189188290533`, using deterministic derivative-sign
+  bisection.
+- **Validation:** mean KL reduced from `0.467111` to `0.442620` (absolute
+  `0.024492`, about 5.2%). Mean entropy increased `0.654695` to `0.699980`
+  while mean top-1 prior mass decreased `0.668077` to `0.622511`, both away
+  from the teacher's `0.257361` entropy / `0.898029` top mass.
+- **Anchors:** on 63 multi-action parents, KL improved from `1.234718` to
+  `1.027233`, but entropy increased `1.403257` to `1.494374` and top-1 mass
+  decreased `0.341331` to `0.261998`, versus oracle A values `0.493356` and
+  `0.821262`. Ranking was unchanged for `63/63` roots: pairwise concordance
+  remained `68.858%`, A-top `50.79%`, B-top `53.97%`, and exact ties `79/981`.
+- **Decision:** **`LEARNED_PRIOR_CALIBRATION_UNRESOLVED_NO_REPLAY`**. The
+  validation gain was not material enough and anchor entropy/top-mass did not
+  move toward oracle, so the predefined replay gate was not met. Keep the
+  learned-prior line open but do not train another model, tune calibration or
+  PUCT, expand budgets, run gameplay, or change features. Full provenance and
+  the no-replay rationale are in
+  [the calibration evidence report](evidence/silver_visit_prior_calibration_2026-08-29.md).
