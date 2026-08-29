@@ -5595,3 +5595,40 @@ model training was changed.
   formula, expanding budgets, or running gameplay yet. Full stability,
   outlier, RNG, and provenance details are in
   [the confirmatory report](evidence/silver_root_oracle_confirm32_r4_2026-08-29.md).
+
+## Learned Silver visit prior replay (2026-08-29)
+
+- **Scope/protocol:** one scalar XGBoost model predicted normalized 25k-A
+  root visit shares from the existing 1,788-value parent state+action
+  features. It reused the prior policy model's non-anchor split, capacity,
+  hyperparameters, and early stopping; no feature, architecture, PUCT,
+  gameplay, or sweep change was made. Replay used the same 63 multi-action
+  roots at 32 simulations with four common replicate seeds per root for
+  current UCT, oracle normalized A-visit PUCT, and learned normalized
+  visit-PUCT. Replicates were aggregated within root before analysis, and
+  frozen 25k-B remained the only judgment source. Replay source commit was
+  `cb27a6e7f216b2e11ebbf1873f6f09c91a892a7c`.
+- **Offline fit:** 327/75 non-anchor train/validation parents and 93 held-out
+  B anchors were used with no anchor leakage. On 63 multi-action held-out
+  anchors, A-share Pearson was 0.3097, top prior agreement was 25.40% against
+  A visit maxima and 34.92% against B Q maxima, mean KL(A||prediction) was
+  1.0669, and all 981 B-Q reference pairs were exact prediction ties. There
+  were no negative/zero raw predictions or all-zero fallbacks.
+- **Replay:** current UCT was 41.2698% B-best / 4.051736 mean regret; oracle
+  visit-PUCT was 51.1905% / 3.505948; learned visit-PUCT was 44.0476% /
+  4.215918. Learned minus current was +2.7778 pp B-best (root bootstrap CI
+  [-2.7778, +8.7302] pp) and +0.164182 regret (CI [-0.417163, +0.787370]),
+  with 18/16/29 regret roots improved/worsened/tied. Learned minus oracle was
+  -7.1429 pp / +0.709970 regret, with 2/22/39 roots improved/worsened/tied.
+  The largest learned regret harm was +10.477885 Q at
+  `228eb64487cab54d`; removing it changed the learned-minus-current mean from
+  +0.164182 to -0.002168, while removing the largest improvement left
+  +0.283939.
+- **Decision:** **`LEARNED_VISIT_PRIOR_REJECTED`**. The existing features and
+  fixed parent-policy recipe did not recover a meaningful fraction of the
+  positive oracle visit-prior effect and showed no robust regret benefit.
+  Stop before gameplay, additional budgets, PUCT tuning, or architecture
+  changes. This does not disprove PUCT integration: the oracle positive
+  control remained positive under the same replay. Full provenance, hashes,
+  RNG qualification, tables, and commands are in
+  [the learned-prior evidence report](evidence/silver_learned_visit_prior_2026-08-29.md).

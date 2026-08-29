@@ -52,6 +52,14 @@ def pearson(truth, prediction):
     return float(np.corrcoef(truth, prediction)[0, 1])
 
 
+def json_safe_metrics(metrics):
+    """Convert undefined correlations from tied groups to strict JSON null."""
+    return {
+        key: None if isinstance(value, float) and not math.isfinite(value) else value
+        for key, value in metrics.items()
+    }
+
+
 def distribution_metrics(test, raw_scores, normalized_scores):
     truth_flat = []
     pred_flat = []
@@ -212,6 +220,10 @@ def main():
     multi_current = {group: current_scores[group] for group in multi}
     multi_metrics, _ = parent.group_metrics(multi, multi_model)
     multi_current_metrics, _ = parent.group_metrics(multi, multi_current)
+    model_metrics = json_safe_metrics(model_metrics)
+    current_metrics = json_safe_metrics(current_metrics)
+    multi_metrics = json_safe_metrics(multi_metrics)
+    multi_current_metrics = json_safe_metrics(multi_current_metrics)
 
     raw_flat = np.concatenate([raw_scores[group]["values"] for group in sorted(test)])
     clipped_flat = np.maximum(raw_flat, 0.0)
