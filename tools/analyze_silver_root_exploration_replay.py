@@ -63,13 +63,15 @@ def metric(rows, field):
     }
 
 
-def summary(rows):
+def summary(rows, label_prefix="b"):
+    top_field = f"{label_prefix}_top_action"
+    regret_field = f"{label_prefix}_regret"
     return {
         "n": len(rows),
-        "top_action_agreement": statistics.fmean(row["b_top_action"] for row in rows),
-        "selected_regret": metric(rows, "b_regret"),
-        "regret_ge_1": sum(row["b_regret"] >= 1.0 for row in rows),
-        "regret_ge_3": sum(row["b_regret"] >= 3.0 for row in rows),
+        "top_action_agreement": statistics.fmean(row[top_field] for row in rows),
+        "selected_regret": metric(rows, regret_field),
+        "regret_ge_1": sum(row[regret_field] >= 1.0 for row in rows),
+        "regret_ge_3": sum(row[regret_field] >= 3.0 for row in rows),
         "root_action_set_failures": sum(not row["root_action_set_equal"] for row in rows),
         "accounting_failures": sum(not row["exact_budget_accounting"] for row in rows),
         "mean_wall_micros": statistics.fmean(row["wall_micros"] for row in rows),
@@ -103,14 +105,13 @@ def row_map(rows, candidate, budget, label_prefix):
 
 
 def evaluate_population(rows, label_prefix):
-    by = grouped(rows)
     result = {}
     for candidate in (CONTROL,) + CANDIDATES:
         for budget in BUDGETS:
             selected = [row for row in rows
                         if row["candidate"] == candidate and row["budget"] == budget]
-            result[f"{candidate}/{budget}"] = summary(selected)
-    return result, by
+            result[f"{candidate}/{budget}"] = summary(selected, label_prefix)
+    return result
 
 
 def selection_analysis(rows):
@@ -267,8 +268,11 @@ def main():
     if len(multi_rows) != 63 * 4 * 4 or len(all_rows) != 93 * 4 * 4:
         raise RuntimeError(f"unexpected replay row counts: multi={len(multi_rows)} all={len(all_rows)}")
     selected, selection = selection_analysis(multi_rows)
-    population_summary, _ = evaluate_population(multi_rows, "A/B")
-    secondary_summary, _ = evaluate_population(all_rows, "B")
+    population_summary = evaluate_population(multi_rows, "a")
+    secondary_summary = (evaluate_population(all_rows, "b")
+                         if selected is not None else {
+                             "not_run": "selection_rule_rejected_all_lower_root_candidates",
+                         })
     gate = offline_gate(all_rows, selected) if selected is not None else {
         "passes": False,
         "not_run": "selection_rule_rejected_all_lower_root_candidates",

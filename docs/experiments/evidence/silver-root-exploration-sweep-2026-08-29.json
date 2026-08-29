@@ -38,224 +38,224 @@
         "accounting_failures": 0,
         "mean_wall_micros": 59099.19047619047,
         "n": 63,
-        "regret_ge_1": 22,
-        "regret_ge_3": 15,
+        "regret_ge_1": 24,
+        "regret_ge_3": 17,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.2498252663734233,
+          "max": 21.537145132239605,
+          "mean": 2.1944240599627234,
           "median": 0.0,
-          "p95": 13.930477729941543
+          "p95": 9.50854815461684
         },
-        "top_action_agreement": 0.5238095238095238
+        "top_action_agreement": 0.5079365079365079
       },
       "c12_5/128": {
         "accounting_failures": 0,
         "mean_wall_micros": 7828.809523809524,
         "n": 63,
-        "regret_ge_1": 26,
+        "regret_ge_1": 24,
         "regret_ge_3": 16,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.832777742817398,
-          "median": 0.11952416861863924,
-          "p95": 20.211318511367494
+          "max": 21.537145132239605,
+          "mean": 2.2842005631978393,
+          "median": 0.04807001710472747,
+          "p95": 11.486199301276216
         },
-        "top_action_agreement": 0.42857142857142855
+        "top_action_agreement": 0.49206349206349204
       },
       "c12_5/256": {
         "accounting_failures": 0,
         "mean_wall_micros": 14960.42857142857,
         "n": 63,
-        "regret_ge_1": 23,
+        "regret_ge_1": 25,
         "regret_ge_3": 17,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.6882860661653276,
-          "median": 0.05507858065605831,
-          "p95": 20.211318511367494
+          "max": 21.537145132239605,
+          "mean": 2.3642189683624357,
+          "median": 0.0496823328011331,
+          "p95": 11.486199301276216
         },
-        "top_action_agreement": 0.47619047619047616
+        "top_action_agreement": 0.4603174603174603
       },
       "c12_5/64": {
         "accounting_failures": 0,
         "mean_wall_micros": 3895.8253968253966,
         "n": 63,
-        "regret_ge_1": 29,
-        "regret_ge_3": 19,
+        "regret_ge_1": 31,
+        "regret_ge_3": 22,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 4.294226629617066,
-          "median": 0.7897901495186233,
-          "p95": 20.211318511367494
+          "max": 21.537145132239605,
+          "mean": 3.315950401663888,
+          "median": 0.8638157091909733,
+          "p95": 14.283064192421307
         },
-        "top_action_agreement": 0.3968253968253968
+        "top_action_agreement": 0.38095238095238093
       },
       "c18_5/1000": {
         "accounting_failures": 0,
         "mean_wall_micros": 58801.19047619047,
         "n": 63,
         "regret_ge_1": 17,
-        "regret_ge_3": 15,
+        "regret_ge_3": 12,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.079916558149687,
+          "max": 21.537145132239605,
+          "mean": 1.6689306434895732,
           "median": 0.0,
-          "p95": 11.512102859799057
+          "p95": 6.949872778824755
         },
-        "top_action_agreement": 0.5555555555555556
+        "top_action_agreement": 0.5873015873015873
       },
       "c18_5/128": {
         "accounting_failures": 0,
         "mean_wall_micros": 7601.888888888889,
         "n": 63,
-        "regret_ge_1": 24,
-        "regret_ge_3": 15,
+        "regret_ge_1": 20,
+        "regret_ge_3": 13,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.8122683480229385,
-          "median": 0.09133712234124403,
-          "p95": 22.009984827693323
+          "max": 21.537145132239605,
+          "mean": 1.9136679187146035,
+          "median": 0.0,
+          "p95": 9.50854815461684
         },
-        "top_action_agreement": 0.4603174603174603
+        "top_action_agreement": 0.5396825396825397
       },
       "c18_5/256": {
         "accounting_failures": 0,
         "mean_wall_micros": 14948.904761904761,
         "n": 63,
-        "regret_ge_1": 22,
-        "regret_ge_3": 16,
+        "regret_ge_1": 20,
+        "regret_ge_3": 13,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.720304193445923,
-          "median": 0.04807001710472747,
-          "p95": 22.009984827693323
+          "max": 21.537145132239605,
+          "mean": 1.900015791586926,
+          "median": 0.0,
+          "p95": 9.50854815461684
         },
-        "top_action_agreement": 0.47619047619047616
+        "top_action_agreement": 0.5238095238095238
       },
       "c18_5/64": {
         "accounting_failures": 0,
         "mean_wall_micros": 4056.4126984126983,
         "n": 63,
-        "regret_ge_1": 26,
+        "regret_ge_1": 25,
         "regret_ge_3": 18,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 4.149947066088519,
-          "median": 0.11952416861863924,
-          "p95": 22.009984827693323
+          "max": 21.537145132239605,
+          "mean": 2.7523349166904967,
+          "median": 0.0496823328011331,
+          "p95": 14.283064192421307
         },
-        "top_action_agreement": 0.4444444444444444
+        "top_action_agreement": 0.4603174603174603
       },
       "c25_control/1000": {
         "accounting_failures": 0,
         "mean_wall_micros": 59073.079365079364,
         "n": 63,
-        "regret_ge_1": 15,
-        "regret_ge_3": 14,
+        "regret_ge_1": 12,
+        "regret_ge_3": 8,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.7709948414298973,
+          "max": 6.949872778824755,
+          "mean": 0.7608349892189569,
           "median": 0.0,
-          "p95": 27.06313669318567
+          "p95": 4.675838735618768
         },
-        "top_action_agreement": 0.6031746031746031
+        "top_action_agreement": 0.6984126984126984
       },
       "c25_control/128": {
         "accounting_failures": 0,
         "mean_wall_micros": 7951.476190476191,
         "n": 63,
-        "regret_ge_1": 22,
-        "regret_ge_3": 17,
+        "regret_ge_1": 18,
+        "regret_ge_3": 12,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.707522316111496,
-          "median": 0.13958663821333062,
-          "p95": 13.930477729941543
+          "max": 16.65678753657039,
+          "mean": 1.6273385797431312,
+          "median": 0.0,
+          "p95": 9.336732583499
         },
-        "top_action_agreement": 0.42857142857142855
+        "top_action_agreement": 0.5238095238095238
       },
       "c25_control/256": {
         "accounting_failures": 0,
         "mean_wall_micros": 15098.333333333334,
         "n": 63,
-        "regret_ge_1": 19,
-        "regret_ge_3": 16,
+        "regret_ge_1": 18,
+        "regret_ge_3": 12,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.876620628208444,
-          "median": 0.007842622904536967,
-          "p95": 22.009984827693323
+          "max": 14.369157316926575,
+          "mean": 1.3769869890163913,
+          "median": 0.0,
+          "p95": 6.308976093792921
         },
-        "top_action_agreement": 0.49206349206349204
+        "top_action_agreement": 0.5555555555555556
       },
       "c25_control/64": {
         "accounting_failures": 0,
         "mean_wall_micros": 4270.555555555556,
         "n": 63,
-        "regret_ge_1": 22,
-        "regret_ge_3": 15,
+        "regret_ge_1": 24,
+        "regret_ge_3": 17,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.2285243247634945,
-          "median": 0.04807001710472747,
-          "p95": 13.930477729941543
+          "max": 18.9302111966703,
+          "mean": 2.313864063730131,
+          "median": 0.09937051201904978,
+          "p95": 11.486199301276216
         },
-        "top_action_agreement": 0.47619047619047616
+        "top_action_agreement": 0.4444444444444444
       },
       "c9_9/1000": {
         "accounting_failures": 0,
         "mean_wall_micros": 59189.63492063492,
         "n": 63,
-        "regret_ge_1": 22,
+        "regret_ge_1": 21,
         "regret_ge_3": 16,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.4976478810542027,
+          "max": 21.537145132239605,
+          "mean": 2.2275892734529026,
           "median": 0.0,
-          "p95": 20.211318511367494
+          "p95": 11.486199301276216
         },
-        "top_action_agreement": 0.5238095238095238
+        "top_action_agreement": 0.5396825396825397
       },
       "c9_9/128": {
         "accounting_failures": 0,
         "mean_wall_micros": 7605.809523809524,
         "n": 63,
-        "regret_ge_1": 27,
-        "regret_ge_3": 16,
+        "regret_ge_1": 25,
+        "regret_ge_3": 17,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.845080830032522,
-          "median": 0.11952416861863924,
-          "p95": 20.211318511367494
+          "max": 21.537145132239605,
+          "mean": 2.5073150982386783,
+          "median": 0.0488965904728218,
+          "p95": 14.056215707572832
         },
-        "top_action_agreement": 0.42857142857142855
+        "top_action_agreement": 0.47619047619047616
       },
       "c9_9/256": {
         "accounting_failures": 0,
         "mean_wall_micros": 14821.539682539682,
         "n": 63,
-        "regret_ge_1": 25,
-        "regret_ge_3": 17,
+        "regret_ge_1": 26,
+        "regret_ge_3": 18,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 3.7451021270318288,
-          "median": 0.11952416861863924,
-          "p95": 20.211318511367494
+          "max": 21.537145132239605,
+          "mean": 2.535458110178612,
+          "median": 0.09937051201904978,
+          "p95": 14.056215707572832
         },
         "top_action_agreement": 0.4444444444444444
       },
@@ -263,16 +263,16 @@
         "accounting_failures": 0,
         "mean_wall_micros": 3823.6031746031745,
         "n": 63,
-        "regret_ge_1": 31,
-        "regret_ge_3": 21,
+        "regret_ge_1": 33,
+        "regret_ge_3": 24,
         "root_action_set_failures": 0,
         "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 4.423108994015633,
-          "median": 0.815146574758387,
-          "p95": 20.211318511367494
+          "max": 21.537145132239605,
+          "mean": 3.4555885780721067,
+          "median": 1.205960212381072,
+          "p95": 14.283064192421307
         },
-        "top_action_agreement": 0.38095238095238093
+        "top_action_agreement": 0.36507936507936506
       }
     },
     "row_count": 1008
@@ -317,246 +317,7 @@
   },
   "secondary_all_93": {
     "population_summary": {
-      "c12_5/1000": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 71939.84946236559,
-        "n": 93,
-        "regret_ge_1": 22,
-        "regret_ge_3": 15,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.201494535285222,
-          "median": 0.0,
-          "p95": 11.512102859799057
-        },
-        "top_action_agreement": 0.6774193548387096
-      },
-      "c12_5/128": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 9216.516129032258,
-        "n": 93,
-        "regret_ge_1": 26,
-        "regret_ge_3": 16,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.5963978257795275,
-          "median": 0.0,
-          "p95": 13.930477729941543
-        },
-        "top_action_agreement": 0.6129032258064516
-      },
-      "c12_5/256": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 18180.225806451614,
-        "n": 93,
-        "regret_ge_1": 23,
-        "regret_ge_3": 17,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.4985163674023187,
-          "median": 0.0,
-          "p95": 13.930477729941543
-        },
-        "top_action_agreement": 0.6451612903225806
-      },
-      "c12_5/64": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 4903.935483870968,
-        "n": 93,
-        "regret_ge_1": 29,
-        "regret_ge_3": 19,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.9089922329663995,
-          "median": 0.0,
-          "p95": 13.930477729941543
-        },
-        "top_action_agreement": 0.5913978494623656
-      },
-      "c18_5/1000": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 70667.13978494624,
-        "n": 93,
-        "regret_ge_1": 17,
-        "regret_ge_3": 15,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.08639508777882,
-          "median": 0.0,
-          "p95": 10.747945713652626
-        },
-        "top_action_agreement": 0.6989247311827957
-      },
-      "c18_5/128": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 9522.860215053763,
-        "n": 93,
-        "regret_ge_1": 24,
-        "regret_ge_3": 15,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.5825043647897323,
-          "median": 0.0,
-          "p95": 13.930477729941543
-        },
-        "top_action_agreement": 0.6344086021505376
-      },
-      "c18_5/256": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 18313.25806451613,
-        "n": 93,
-        "regret_ge_1": 22,
-        "regret_ge_3": 16,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.520206066527883,
-          "median": 0.0,
-          "p95": 13.930477729941543
-        },
-        "top_action_agreement": 0.6451612903225806
-      },
-      "c18_5/64": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 4880.010752688172,
-        "n": 93,
-        "regret_ge_1": 26,
-        "regret_ge_3": 18,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.81125446412448,
-          "median": 0.0,
-          "p95": 13.930477729941543
-        },
-        "top_action_agreement": 0.6236559139784946
-      },
-      "c25_control/1000": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 70686.09677419355,
-        "n": 93,
-        "regret_ge_1": 15,
-        "regret_ge_3": 14,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.5545448925815433,
-          "median": 0.0,
-          "p95": 22.009984827693323
-        },
-        "top_action_agreement": 0.7311827956989247
-      },
-      "c25_control/128": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 9423.989247311827,
-        "n": 93,
-        "regret_ge_1": 22,
-        "regret_ge_3": 17,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.5115473754303683,
-          "median": 0.0,
-          "p95": 11.57385479831349
-        },
-        "top_action_agreement": 0.6129032258064516
-      },
-      "c25_control/256": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 17491.774193548386,
-        "n": 93,
-        "regret_ge_1": 19,
-        "regret_ge_3": 16,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.6260978449153973,
-          "median": 0.0,
-          "p95": 20.211318511367494
-        },
-        "top_action_agreement": 0.6559139784946236
-      },
-      "c25_control/64": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 4633.419354838709,
-        "n": 93,
-        "regret_ge_1": 22,
-        "regret_ge_3": 15,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.187064865162367,
-          "median": 0.0,
-          "p95": 11.57385479831349
-        },
-        "top_action_agreement": 0.6451612903225806
-      },
-      "c9_9/1000": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 72018.44086021505,
-        "n": 93,
-        "regret_ge_1": 22,
-        "regret_ge_3": 16,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.369374371036718,
-          "median": 0.0,
-          "p95": 13.930477729941543
-        },
-        "top_action_agreement": 0.6774193548387096
-      },
-      "c9_9/128": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 9266.559139784946,
-        "n": 93,
-        "regret_ge_1": 27,
-        "regret_ge_3": 16,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.6047321751833215,
-          "median": 0.0,
-          "p95": 13.930477729941543
-        },
-        "top_action_agreement": 0.6129032258064516
-      },
-      "c9_9/256": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 18175.290322580644,
-        "n": 93,
-        "regret_ge_1": 25,
-        "regret_ge_3": 17,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.537004666698981,
-          "median": 0.0,
-          "p95": 13.930477729941543
-        },
-        "top_action_agreement": 0.6236559139784946
-      },
-      "c9_9/64": {
-        "accounting_failures": 0,
-        "mean_wall_micros": 4636.043010752688,
-        "n": 93,
-        "regret_ge_1": 31,
-        "regret_ge_3": 21,
-        "root_action_set_failures": 0,
-        "selected_regret": {
-          "max": 52.45756472622603,
-          "mean": 2.9962996411073646,
-          "median": 0.0,
-          "p95": 13.930477729941543
-        },
-        "top_action_agreement": 0.5806451612903226
-      }
+      "not_run": "selection_rule_rejected_all_lower_root_candidates"
     },
     "row_count": 1488
   },

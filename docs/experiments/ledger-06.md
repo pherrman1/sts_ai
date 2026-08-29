@@ -5614,7 +5614,7 @@ model training was changed.
   `.git` indirection for that check.
 - **Artifacts and provenance:** Evidence report
   `docs/experiments/evidence/silver-root-exploration-sweep-2026-08-29.json`
-  (SHA-256 `7E05483FA1614587377FD971CC0D507534695A160594600AFA2622A8AEE86248`) records the raw paths and hashes. Primary raw
+  (SHA-256 `A4DA3BFA1F9CB58CBE2782FDD4B816AB95036A60C997F8B0DE70EC022135A9A8`) records the raw paths and hashes. Primary raw
   replay `build/silver_root_exploration_multi.jsonl` has SHA-256
   `A5B8FA45A3CCAD75DF5206CA417840ECCFFFADF7309D6AC7618E9044A7421D75`; secondary raw replay `build/silver_root_exploration_all.jsonl`
   has SHA-256 `EA6FEEFCA8E0A5A96948F0D518E6363E06F853EB268BC210B31499D3504442B9`. The replay executable has SHA-256
