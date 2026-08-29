@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-08-28 against the current working tree.
+Last verified: 2026-08-29 against the current working tree.
 
 ## Purpose
 
@@ -70,6 +70,30 @@ Evidence: `docs/experiments/evidence/silver_action_pruning_retention_2026-08-28.
 and `docs/experiments/evidence/silver_action_pruning_progressive_current_2026-08-28.json`
 (SHA-256 `1231530b9381009d36622fd32b2a496d5d18d5eb4a0958ba26abd07c8019e243`).
 See [ledger-06 §188–191](../../../docs/experiments/ledger-06.md).
+
+### Silver root-only exploration control
+
+The preregistered control for the pruning result was implemented on the fresh
+`exp/silver-root-exploration-sweep` branch from baseline
+`034830df6510f1ab37ad4f053c07333fca0970c7`. It changes only deterministic UCT
+selection at the current root through the default-off
+`STS_SILVER_ROOT_EXPLORATION` setting; internal deterministic c, chance c,
+widening, reuse, final action selection, and legal root-edge storage remain
+unchanged. The four declared candidates were 25.0 (unset control), 18.5,
+12.5, and 9.9. The retained 93-anchor wires were replayed at 64/128/256/1000
+simulations, with 63 multi-action anchors as primary and all 93 as secondary.
+
+The 25k-A selection rule rejected every lower-root candidate: each candidate
+introduced a new >=3-regret selection at both 128 and 256 simulations. The
+CPU ratios were within the 1.05 limit, but that does not waive the catastrophe
+criterion. Therefore the independent 25k-B offline gate was not run, no
+candidate was frozen, and the preregistered result is
+`ROOT_EXPLORATION_REDUCTION_REJECTED`. No gameplay cohort was authorized, and
+the prior Sequential-Halving rejection is unchanged; the historical 931000–
+931063 smoke is not confirmation evidence.
+
+Evidence: [root-only exploration sweep report](../../../docs/experiments/evidence/silver-root-exploration-sweep-2026-08-29.json).
+The ignored raw replay files and their hashes are recorded in that report.
 
 ## Current baseline
 

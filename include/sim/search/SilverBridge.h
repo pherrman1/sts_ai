@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -313,6 +314,10 @@ struct SilverSearchConfig {
     std::int64_t simulationsPerDecision = 50000;
     double explorationParameter = 25.0;
     double explorationParameterChance = 25.0;
+    // When set, replace deterministic UCT c only at the current decision
+    // root. Internal deterministic nodes keep explorationParameter and
+    // chance nodes keep explorationParameterChance.
+    std::optional<double> rootExplorationParameter;
     double chanceWideningC = 3.7028;
     double chanceWideningAlpha = 0.52389;
     double endTurnWideningC = 3.7028;
@@ -570,6 +575,13 @@ struct SearcherConstructionProbe {
     bool rootIsChanceNode = false;
 };
 
+struct RootExplorationScopeProbe {
+    bool reducedRootScore = false;
+    bool internalScoreUnchanged = false;
+    bool chanceScoreUnchanged = false;
+    bool equalRootScore = false;
+};
+
 struct SessionReuseProbe {
     bool accepted = false;
     int rerootExact = 0;
@@ -608,6 +620,8 @@ struct ReuseCapFixtureProbe {
 // Forces a real constructor/reset path through the upstream BattleSearcher.
 // It is a link-closure probe, not a live-game integration API.
 SearcherConstructionProbe constructReferenceSearcherProbe();
+// Test-only score probe; it does not expose the namespace-isolated searcher.
+RootExplorationScopeProbe probeRootExplorationScope();
 // Native-only persistence probe: chooses and executes one private action,
 // then begins the next private decision through the exact reroot protocol.
 SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &state,

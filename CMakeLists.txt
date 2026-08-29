@@ -129,6 +129,15 @@ target_include_directories(silver-parent-policy-features PRIVATE include json/in
 target_link_libraries(silver-parent-policy-features PRIVATE silver_live_backend)
 target_link_options(silver-parent-policy-features PRIVATE -Wl,--gc-sections)
 
+# Fixed-budget root-only exploration replay. It consumes retained 25k-A/B
+# wires and labels and does not expose root pruning or ranking machinery.
+add_executable(silver-root-exploration-replay apps/silver_root_exploration_replay.cpp)
+set_target_properties(silver-root-exploration-replay PROPERTIES
+    OUTPUT_NAME silver_root_exploration_replay)
+target_include_directories(silver-root-exploration-replay PRIVATE include json/include)
+target_link_libraries(silver-root-exploration-replay PRIVATE silver_combat_search_bridge)
+target_link_options(silver-root-exploration-replay PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-native-parity-runner third_party/silver_lightspeed/bridge/SilverNativeFixtureRunner.cpp)
 set_target_properties(silver-native-parity-runner PROPERTIES OUTPUT_NAME silver_native_parity_runner)
 set_target_properties(silver-native-parity-runner PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
@@ -316,6 +325,7 @@ add_test(NAME py_compile_analyze_silver_root_diagnostic COMMAND python3 -m py_co
 add_test(NAME analyze_silver_root_diagnostic_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_root_diagnostic.py --self-test)
 add_test(NAME py_compile_analyze_silver_adaptive COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py)
 add_test(NAME analyze_silver_adaptive_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py --self-test)
+add_test(NAME py_compile_analyze_silver_root_exploration COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_root_exploration_replay.py)
 add_test(NAME py_compile_analyze_postcombat_raw_terminal COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_postcombat_raw_terminal.py)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME py_compile_analyze_runwin_shadow COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py)

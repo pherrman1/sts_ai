@@ -5577,3 +5577,51 @@ model training was changed.
   against either primary baseline. This result does not authorize a production
   OOC policy change, K-horizon tuning, model training, new trajectory
   collection, or outcome-driven candidate expansion.
+
+## §193 Silver root-only exploration control: ROOT_EXPLORATION_REDUCTION_REJECTED (2026-08-29)
+
+- **Question and implementation:** Can a lower deterministic UCT coefficient at
+  only the current Silver decision root explain the earlier Sequential-Halving
+  gameplay signal without action masking, elimination, or a changed final
+  action rule? A default-off `std::optional<double>` root override was added to
+  `SilverSearchConfig`, copied into the namespace-isolated `BattleSearcher`,
+  and selected only when `evaluateEdge` receives the current `root`. Internal
+  deterministic edges still use c=25.0; chance edges still use c=25.0 and
+  the existing widening. Unvisited root edges retain their existing mandatory
+  first-try behavior, all legal root edges remain stored, and rerooting,
+  sequential selection, and exact simulation accounting are unchanged.
+- **Protocol:** The predeclared grid was c=25.0 (unset control), 18.5, 12.5,
+  and 9.9. Fixed configs were internal c=25.0, chance c=25.0,
+  `adaptiveEnabled=false`, and `reuseCapMode=none`; replay budgets were 64,
+  128, 256, and 1000. The primary population was 63 multi-action anchors and
+  the secondary integrity population was all 93 anchors. Selection used only
+  the 25k-A labels and the declared 128/256 new-`>=3`-regret and 1.05x CPU
+  rejection rules. No 25k-B metric was used to select a candidate.
+- **Results:** Every lower-root candidate introduced new `>=3`-regret
+  selections at both 128 and 256 simulations on the primary 63-anchor
+  population, so all three were rejected before candidate freezing. Their
+  1000-simulation CPU ratios versus control were 0.976x (18.5), 1.003x
+  (12.5), and 0.993x (9.9); the CPU criterion therefore did not drive the
+  rejection. The all-93 replay completed with 1,488 valid rows and no action
+  surface, accounting, or execution failures, but the independent 25k-B gate
+  was not run because the A-only selection stage had no eligible candidate.
+- **Focused verification:** `silver_bridge_boundary`,
+  `silver_searcher_link_closure`, explicit root c=25 equivalence, reduced-root
+  scope, malformed/negative/nonfinite live values, serialized wires, exact
+  root budgets, reroot reuse, chance widening, and sequential card-select
+  transaction fixtures passed. `git diff --check --ignore-submodules=all`
+  passed from PowerShell; WSL cannot consume the linked worktree's Windows
+  `.git` indirection for that check.
+- **Artifacts and provenance:** Evidence report
+  `docs/experiments/evidence/silver-root-exploration-sweep-2026-08-29.json`
+  (SHA-256 `7E05483FA1614587377FD971CC0D507534695A160594600AFA2622A8AEE86248`) records the raw paths and hashes. Primary raw
+  replay `build/silver_root_exploration_multi.jsonl` has SHA-256
+  `A5B8FA45A3CCAD75DF5206CA417840ECCFFFADF7309D6AC7618E9044A7421D75`; secondary raw replay `build/silver_root_exploration_all.jsonl`
+  has SHA-256 `EA6FEEFCA8E0A5A96948F0D518E6363E06F853EB268BC210B31499D3504442B9`. The replay executable has SHA-256
+  `2EE0360F3304210A413AB0F67EF09AE90DF95FDD3B8E5DD11326CB241247623E`. Baseline full origin/main SHA was
+  `034830df6510f1ab37ad4f053c07333fca0970c7`; the dedicated branch was
+  `exp/silver-root-exploration-sweep`.
+- **Verdict:** **ROOT_EXPLORATION_REDUCTION_REJECTED**. No candidate was
+  frozen, no fresh gameplay cohort was authorized, and no conclusion was drawn
+  about restoring Sequential Halving. The historical 931000–931063 gameplay
+  smoke remains exploratory only.

@@ -3,6 +3,7 @@
 #define STS_SILVER_LIVE_BACKEND_H
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -64,6 +65,7 @@ std::string silverLiveStickyQualityFile();
 bool silverLiveAdaptiveEnabled();
 bool silverLiveExactRootBudgets();
 double silverLiveAdaptiveTopTwoVisitGapThreshold();
+std::optional<double> silverLiveRootExplorationParameter();
 
 // Stable deterministic sampler used only by STS_SILVER_STICKY_QUALITY_FILE.
 // It hashes the documented public decision identity and consumes no RNG.

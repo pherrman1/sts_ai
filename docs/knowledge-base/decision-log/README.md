@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-29 | [`2026-08-29-silver-root-exploration.md`](2026-08-29-silver-root-exploration.md) | Root-only deterministic UCT reduction is `ROOT_EXPLORATION_REDUCTION_REJECTED`: all lower-c candidates introduced new >=3-regret selections at 128 and 256 on the 25k-A primary population, so no 25k-B or gameplay gate is authorized. |
 | 2026-08-29 | [`2026-08-29-phase12-semantic-fullrun.md`](2026-08-29-phase12-semantic-fullrun.md) | The 37-context semantic full-run adjudication leaves combined `p_survive*v_alive` directionally best but `INCONCLUSIVE`; all source-seed-clustered paired intervals include zero, so no OOC promotion or training is authorized. |
 | 2026-08-28 | [`2026-08-28-silver-policy-online-methods.md`](2026-08-28-silver-policy-online-methods.md) | The explicit online override is `ONLINE_POLICY_METHODS_REJECTED`: ordering tied baseline wins at 1.491x CPU, PUCT arms regressed, and the rejected runtime machinery/model were removed while preserving offline and online evidence. |
 | 2026-08-28 | [`2026-08-28-silver-parent-policy-25k.md`](2026-08-28-silver-parent-policy-25k.md) | The 25k parent-Q action scorer is `POLICY_MODEL_OFFLINE_REJECTED`: +2.497pp pairwise and lower regret point estimates missed the preregistered bootstrap bars; the leakage-safe offline pipeline remains reusable. |
@@ -19,7 +20,7 @@
 | 2026-08-24 | [`2026-08-24-e3a-direct-runwin-ranking.md`](2026-08-24-e3a-direct-runwin-ranking.md) | E3a implementation: default-off, root/future-CRN direct eventual-run reference for exact source leaves; no scientific collection or gameplay integration. |
 | 2026-08-23 | [`2026-08-23-s3-q-gate-timing.md`](2026-08-23-s3-q-gate-timing.md) | Corrected Searcher3 Q-gate timing result: `bestActionSequence` opens the baseline gate by simulation 10 in 99.91% of 3,449 searches; Always-Q line stopped. |
 
-Last verified: 2026-08-28 against the current working tree.
+Last verified: 2026-08-29 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one

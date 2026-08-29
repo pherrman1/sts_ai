@@ -717,8 +717,15 @@ public:
     std::vector<SilverRootActionSummary> rootActionSummaries;
 
     void configure(const SilverSearchConfig &config) {
+        if (config.rootExplorationParameter.has_value()
+                && (!std::isfinite(*config.rootExplorationParameter)
+                    || *config.rootExplorationParameter < 0.0)) {
+            throw std::invalid_argument(
+                "Silver root exploration parameter must be a finite nonnegative value");
+        }
         searcher->explorationParameter = config.explorationParameter;
         searcher->explorationParameterChance = config.explorationParameterChance;
+        searcher->rootExplorationParameter = config.rootExplorationParameter;
         searcher->chanceWideningC = config.chanceWideningC;
         searcher->chanceWideningAlpha = config.chanceWideningAlpha;
         searcher->endTurnWideningC = config.endTurnWideningC;
@@ -1500,6 +1507,7 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
             continuation.collectRolloutDiagnostics = true;
             continuation.explorationParameter = continuationConfig.explorationParameter;
             continuation.explorationParameterChance = continuationConfig.explorationParameterChance;
+            continuation.rootExplorationParameter = continuationConfig.rootExplorationParameter;
             continuation.chanceWideningC = continuationConfig.chanceWideningC;
             continuation.chanceWideningAlpha = continuationConfig.chanceWideningAlpha;
             continuation.endTurnWideningC = continuationConfig.endTurnWideningC;

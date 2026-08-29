@@ -12,6 +12,7 @@
 #include <random>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -186,6 +187,9 @@ namespace sts::search {
         // outcome variance on top of policy variance and may need a different exploration level).
         double explorationParameter = 9.9;         // deterministic edges; tuned default
         double explorationParameterChance = 9.9;   // stochastic (chance-node) edges
+        // Optional root-only deterministic UCT c. An unset value preserves
+        // ordinary UCT; internal deterministic and all chance nodes ignore it.
+        std::optional<double> rootExplorationParameter;
 
         // Double Progressive Widening for chance nodes: after n visits a chance node may
         // hold at most ceil(chanceWideningC * (n+1)^chanceWideningAlpha) distinct outcomes.

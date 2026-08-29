@@ -493,7 +493,8 @@ double search::BattleSearcher::evaluateEdge(const search::BattleSearcher::Node &
     // sharing the two diverge, and using edge visits keeps UCB well-formed (Childs et al. 2008).
     const double qualityValue = edge.node->evaluationSum / edge.node->simulationCount;
     const double exploration = edge.node->isRandomNode ? explorationParameterChance
-                                                       : explorationParameter;
+        : ((&parent == root && rootExplorationParameter.has_value())
+            ? *rootExplorationParameter : explorationParameter);
     const double explorationValue = exploration *
             std::sqrt(logParentVisits / (edge.visitCount + 1));
 

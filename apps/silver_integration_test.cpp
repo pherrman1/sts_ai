@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -11,6 +12,26 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverLiveBackend.h"
+
+namespace {
+
+void setEnvironment(const char *name, const char *value) {
+#if defined(_WIN32)
+    _putenv_s(name, value);
+#else
+    setenv(name, value, 1);
+#endif
+}
+
+void unsetEnvironment(const char *name) {
+#if defined(_WIN32)
+    _putenv_s(name, "");
+#else
+    unsetenv(name);
+#endif
+}
+
+}
 
 int main() {
     using namespace sts;
@@ -27,6 +48,27 @@ int main() {
     agent.bossSimulationMultiplier = 1;
     BattleContext live;
 
+    const char *savedRootExploration = std::getenv("STS_SILVER_ROOT_EXPLORATION");
+    const std::string savedRootExplorationValue = savedRootExploration
+        ? savedRootExploration : "";
+    const bool hadRootExploration = savedRootExploration != nullptr;
+    for (const char *invalid : {"", "bogus", "nan", "inf", "-1"}) {
+        setEnvironment("STS_SILVER_ROOT_EXPLORATION", invalid);
+        bool rejected = false;
+        try { installSilverLiveBackend(); }
+        catch (const std::invalid_argument &) { rejected = true; }
+        catch (...) { rejected = true; }
+        if (!rejected) {
+            std::cerr << "silver_integration FAIL: invalid root exploration value was accepted: "
+                      << invalid << '\n';
+            uninstallSilverLiveBackend();
+            return 1;
+        }
+        uninstallSilverLiveBackend();
+    }
+    if (hadRootExploration) setEnvironment("STS_SILVER_ROOT_EXPLORATION", savedRootExplorationValue.c_str());
+    else unsetEnvironment("STS_SILVER_ROOT_EXPLORATION");
+
     installSilverLiveBackend();
     if (!g_externalCombatBackend) {
         std::cerr << "silver_integration FAIL: backend was not installed\n";
@@ -36,6 +78,19 @@ int main() {
         && std::atoi(std::getenv("STS_SILVER_EXACT_ROOT_BUDGETS")) != 0;
     if (silverLiveExactRootBudgets() != expectedExactRootBudgets) {
         std::cerr << "silver_integration FAIL: exact-root-budget option was not parsed\n";
+        uninstallSilverLiveBackend();
+        return 1;
+    }
+    const char *activeRootExploration = std::getenv("STS_SILVER_ROOT_EXPLORATION");
+    const auto parsedRootExploration = silverLiveRootExplorationParameter();
+    if ((activeRootExploration == nullptr) != !parsedRootExploration.has_value()) {
+        std::cerr << "silver_integration FAIL: root exploration presence was not parsed\n";
+        uninstallSilverLiveBackend();
+        return 1;
+    }
+    if (activeRootExploration != nullptr
+            && std::stod(activeRootExploration) != *parsedRootExploration) {
+        std::cerr << "silver_integration FAIL: root exploration value was not parsed\n";
         uninstallSilverLiveBackend();
         return 1;
     }

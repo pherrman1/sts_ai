@@ -63,6 +63,19 @@ completed scaling experiment confirmed that `active` restores cap-blocked
 reroots but did not establish a gameplay improvement, so `allocated` remains
 the default.
 
+The default-off `STS_SILVER_ROOT_EXPLORATION` setting is a narrow control
+experiment. When unset, the bridge leaves ordinary Silver UCT unchanged. When
+set, `SilverSearchConfig::rootExplorationParameter` is copied into the private
+searcher and is consulted only when `evaluateEdge` is selecting from the
+searcher's current `root`; internal deterministic nodes continue using
+`explorationParameter`, and chance nodes continue using
+`explorationParameterChance` and the existing widening rules. All legal root
+edges remain stored and selectable, including unvisited edges, and final
+most-visited action selection and exact-reroot identity are unchanged. The
+active value is printed at backend installation and recorded in the bestbench
+sidecar. This is an experimental root-only coefficient, not action masking,
+pruning, Sequential Halving, or a global UCT setting.
+
 The default-off `STS_SILVER_ADAPTIVE=1` experiment performs an initial 1,000
 simulation search, computes the root's top-vs-second visit-share gap, and, when
 that gap is strictly below `STS_SILVER_ADAPTIVE_TOP_GAP`, continues the same

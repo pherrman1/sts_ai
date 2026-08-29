@@ -39,6 +39,7 @@ namespace {
 
 struct SilverLiveOptions {
     silver_bridge::SilverReuseCapMode reuseCapMode = silver_bridge::SilverReuseCapMode::ALLOCATED;
+    std::optional<double> rootExplorationParameter;
     // Experiment-only override: use the agent's base budget at every root,
     // including bosses, so paired fixed-budget arms are actually comparable.
     bool exactRootBudgets = false;
@@ -133,6 +134,13 @@ void parseSilverLiveOptions() {
     }
     if (const char *raw = std::getenv("STS_SILVER_EXACT_ROOT_BUDGETS"))
         options.exactRootBudgets = std::atoi(raw) != 0;
+    if (const char *raw = std::getenv("STS_SILVER_ROOT_EXPLORATION")) {
+        const double value = parseFiniteDouble("STS_SILVER_ROOT_EXPLORATION", raw);
+        if (value < 0.0)
+            throw std::invalid_argument(
+                "STS_SILVER_ROOT_EXPLORATION must be nonnegative");
+        options.rootExplorationParameter = value;
+    }
     if (const char *raw = std::getenv("STS_SILVER_SCALING_DIAG_FILE"))
         options.scalingDiagnosticFile = raw;
     if (const char *raw = std::getenv("STS_SILVER_STICKY_QUALITY_FILE"))
@@ -969,6 +977,7 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
         ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
         : agent.simulationCountBase);
     result.reuseCapMode = g_silverLiveOptions.reuseCapMode;
+    result.rootExplorationParameter = g_silverLiveOptions.rootExplorationParameter;
     result.collectDecisionDiagnostics = collectDecisionDiagnostics;
     result.adaptiveEnabled = g_silverLiveOptions.adaptiveEnabled;
     if (result.adaptiveEnabled) {
@@ -1357,6 +1366,12 @@ void installSilverLiveBackend() {
             || (g_silverLiveOptions.leafVNetBlendEnabled && g_silverLiveOptions.leafVNetBlend > 0.0))
         ensureSilverLeafVNetLoaded();
     g_externalCombatBackend = runSilverCombat;
+    std::cout << "[Silver root deterministic exploration c=";
+    if (g_silverLiveOptions.rootExplorationParameter.has_value())
+        std::cout << std::setprecision(17) << *g_silverLiveOptions.rootExplorationParameter;
+    else
+        std::cout << "default(25)";
+    std::cout << "]\n";
 }
 void uninstallSilverLiveBackend() { g_externalCombatBackend = nullptr; g_silverLiveOptions.installed = false; }
 bool silverLiveBackendInstalled() { return g_silverLiveOptions.installed; }
@@ -1370,6 +1385,9 @@ bool silverLiveAdaptiveEnabled() { return g_silverLiveOptions.adaptiveEnabled; }
 bool silverLiveExactRootBudgets() { return g_silverLiveOptions.exactRootBudgets; }
 double silverLiveAdaptiveTopTwoVisitGapThreshold() {
     return g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;
+}
+std::optional<double> silverLiveRootExplorationParameter() {
+    return g_silverLiveOptions.rootExplorationParameter;
 }
 bool silverStickyQualitySampled(std::uint64_t runSeed, int floor, int encounter,
                                 int combatDecisionOrdinal) {

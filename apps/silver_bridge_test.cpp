@@ -2,6 +2,7 @@
 // separate link closure so ordinary unit-test never links the full vendor model.
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <set>
 
@@ -94,6 +95,11 @@ int main() {
         nlohmann::json::parse(serializedWire));
     check(silver_bridge::convertedStatesEqualForSearch(firstWire, reloadedWire),
           "BattleStateWire JSON round-trip must preserve the exact Silver search state");
+
+    const auto rootScope = silver_bridge::probeRootExplorationScope();
+    check(rootScope.reducedRootScore && rootScope.internalScoreUnchanged
+              && rootScope.chanceScoreUnchanged && rootScope.equalRootScore,
+          "root exploration override must affect only root deterministic UCT scores");
     search::g_richCombatFeatures = true;
     std::vector<float> directFeatures(search::combatFeatureCount());
     search::combatExtractFeatures(first, directFeatures.data());
@@ -144,6 +150,41 @@ int main() {
               == silver_bridge::semanticActionFingerprint(reloadedSearch.action)
           && inMemorySearch.rootActionSummaries.size() == reloadedSearch.rootActionSummaries.size(),
           "serialized/reloaded leaf must reproduce an identical deterministic small-budget search");
+
+    auto explicitDefaultConfig = serializedSearchConfig;
+    explicitDefaultConfig.rootExplorationParameter = 25.0;
+    explicitDefaultConfig.collectDecisionDiagnostics = true;
+    const auto explicitDefault = silver_bridge::runSilverDecision(
+        firstWire, explicitDefaultConfig);
+    auto reducedRootConfig = explicitDefaultConfig;
+    reducedRootConfig.rootExplorationParameter = 9.9;
+    const auto reducedRoot = silver_bridge::runSilverDecision(firstWire, reducedRootConfig);
+    std::set<std::string> ordinaryRootActions, reducedRootActions;
+    std::int64_t ordinaryRootVisits = 0, reducedRootVisits = 0;
+    for (const auto &summary : inMemorySearch.rootActionSummaries) {
+        ordinaryRootActions.insert(silver_bridge::semanticActionFingerprint(summary.action));
+        ordinaryRootVisits += summary.edgeVisits;
+    }
+    for (const auto &summary : reducedRoot.rootActionSummaries) {
+        reducedRootActions.insert(silver_bridge::semanticActionFingerprint(summary.action));
+        reducedRootVisits += summary.edgeVisits;
+    }
+    check(explicitDefault.accepted && inMemorySearch.accepted
+              && explicitDefault.simulations == inMemorySearch.simulations
+              && explicitDefault.diagnostic.rootVisitsAfterSearch
+                  == explicitDefault.simulations
+              && silver_bridge::semanticActionFingerprint(explicitDefault.action)
+                  == silver_bridge::semanticActionFingerprint(inMemorySearch.action)
+              && explicitDefault.rootActionSummaries.size()
+                  == inMemorySearch.rootActionSummaries.size()
+              && ordinaryRootActions.size() == inMemorySearch.rootActionSummaries.size(),
+          "explicit root c=25 must preserve ordinary action choice, root set, and budget");
+    check(reducedRoot.accepted && reducedRoot.simulations == inMemorySearch.simulations
+              && reducedRoot.diagnostic.rootVisitsAfterSearch == reducedRoot.simulations
+              && reducedRoot.rootActionSummaries.size() == inMemorySearch.rootActionSummaries.size()
+              && reducedRootActions == ordinaryRootActions
+              && reducedRootVisits == ordinaryRootVisits,
+          "reduced root c must retain every legal root action and exact simulation accounting");
 
     silver_bridge::SilverLeafObservation capturedLeaf;
     bool capturedLeafStart = false;
