@@ -11421,7 +11421,8 @@ static void oocFactorEvaluate(const std::string &manifestFile,
                               const std::string &outFile, int referenceSims,
                               int futures, int futureStart, int expectedDecisions,
                               bool marginalTradeoff = false,
-                              bool boundedK3 = false) {
+                              bool boundedK3 = false,
+                              bool semanticFullRun = false) {
     std::ifstream in(manifestFile);
     if (!in) throw std::runtime_error("oocfactoreval: cannot open manifest");
     std::string line;
@@ -11448,7 +11449,8 @@ static void oocFactorEvaluate(const std::string &manifestFile,
     const char *strengthDescriptorNames[] = {
         "strengthActionType","strengthC1","strengthC2","strengthC3",
         "strengthCand1","strengthCand2","strengthCand3"};
-    if (boundedK3) {
+    const bool semanticResolution = boundedK3 || semanticFullRun;
+    if (semanticResolution) {
         for (const char *name : safeDescriptorNames)
             if (!col.count(name)) throw std::runtime_error("oocfactoreval: missing semantic column " + std::string(name));
         for (const char *name : strengthDescriptorNames)
@@ -11470,7 +11472,7 @@ static void oocFactorEvaluate(const std::string &manifestFile,
             throw std::runtime_error("oocfactoreval: malformed manifest row");
         auto at = [&](const char *name) -> const std::string& { return c.at(col.at(name)); };
         std::array<int,7> safeDescriptor{}, strengthDescriptor{};
-        if (boundedK3) {
+        if (semanticResolution) {
             for (int i = 0; i < 7; ++i) {
                 safeDescriptor[i] = std::stoi(at(safeDescriptorNames[i]));
                 strengthDescriptor[i] = std::stoi(at(strengthDescriptorNames[i]));
@@ -11526,7 +11528,7 @@ static void oocFactorEvaluate(const std::string &manifestFile,
                         matchedDecision = true;
                         int ci = -1, fi = -1;
                         for (int i = 0; i < (int)actions.size(); ++i) {
-                            if (boundedK3) {
+                            if (semanticResolution) {
                                 int at,c1,c2,c3,ca1,ca2,ca3;
                                 strategicCands(gc, actions[i], at,c1,c2,c3,ca1,ca2,ca3);
                                 const std::array<int,7> descriptor{at,c1,c2,c3,ca1,ca2,ca3};
@@ -11537,8 +11539,8 @@ static void oocFactorEvaluate(const std::string &manifestFile,
                                 if (actions[i].bits == m.factorBits && fi < 0) fi = i;
                             }
                         }
-                        if (boundedK3 && safeMatchCount != 1) ci = -1;
-                        if (boundedK3 && strengthMatchCount != 1) fi = -1;
+                        if (semanticResolution && safeMatchCount != 1) ci = -1;
+                        if (semanticResolution && strengthMatchCount != 1) fi = -1;
                         if (ci >= 0 && fi >= 0) {
                             found = true;
                             resolved.push_back({m, detachedCounterfactualCopy(gc), path,
@@ -14253,6 +14255,22 @@ int main(int argc, char **argv) {
                   << " contract=K3+bootstrap -> " << out << '\n';
         oocFactorEvaluate(manifest, out, 0, futures, futureStart,
                           nDecisions, true, true);
+
+    } else if (mode == "oocsemanticfullruneval") {
+        // Resolve the frozen semantic pair exactly as oock3tradeoffeval does,
+        // then continue both siblings to terminal run outcome.
+        int nDecisions = argc > 2 ? std::stoi(argv[2]) : 0;
+        std::string manifest = argc > 3 ? argv[3] : "build/ooc_targeted/fullrun_targets.csv";
+        std::string out = argc > 4 ? argv[4] : "build/ooc_targeted/fullrun_adjudication.csv";
+        int referenceSims = argc > 5 ? std::stoi(argv[5]) : 1000;
+        int futures = argc > 6 ? std::stoi(argv[6]) : 16;
+        int futureStart = argc > 7 ? std::stoi(argv[7]) : 0;
+        if (futures < 0) throw std::runtime_error("oocsemanticfullruneval: futures must be nonnegative");
+        std::cout << "oocsemanticfullruneval decisions=" << nDecisions
+                  << " referenceSims=" << referenceSims << " futures=" << futures
+                  << " futureStart=" << futureStart << " -> " << out << '\n';
+        oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
+                          nDecisions, true, false, true);
 
     } else if (mode == "mcts") {
         int sims          = argc > 2 ? std::stoi(argv[2]) : 2000;
