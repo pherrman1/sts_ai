@@ -5681,3 +5681,34 @@ model training was changed.
   promote a lower root coefficient, restore Sequential Halving, or claim that
   the offline and online results agree. Any future three-way comparison must
   be a new preregistered confirmation.
+
+## §195 Silver root-only c=35 128-seed online rerun: ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE (2026-08-29)
+
+- **Reason for rerun:** The first 128-seed block was launched with
+  `OMP_NUM_THREADS=1`. At the user's direction, both partial jobs were
+  explicitly aborted and excluded. A fresh paired block was rerun with
+  `OMP_NUM_THREADS=24`, using all 24 server cores per arm. Treatment and
+  control ran sequentially with identical settings to avoid oversubscribing
+  the 24-core server; same-seed pairing was retained.
+- **Protocol:** The fresh block was seeds 932401–932528, 128 seeds per arm.
+  Treatment used root deterministic c=35; control left the root override
+  unset (ordinary c=25). Both used fair Silver, exact 3,000 simulations per
+  root, internal deterministic c=25, chance c=25, unchanged widening,
+  adaptive off, reuse-cap `none`, one process using 24 threads, leaf VNet off,
+  and no action pruning. Both 24-thread canaries on seed 932400 passed first.
+- **Results:** c=35 finished 84/128 wins, mean floor 48.20, and 76.67 s/run;
+  control finished 79/128, 47.32 floor, and 72.62 s/run. Strict paired deltas
+  were +3.9pp wins (95% CI [-3.9,+11.7]), +0.9 floor ([-0.5,+2.3]), and
+  +4.05 s/run (1.056x runtime). The c=35 point estimate is promising, but
+  both gameplay intervals include zero.
+- **Integrity and provenance:** Each arm had exactly 128 unique matching
+  seeds, sidecar `threads=24`, one BEST line, exact 3,000-simulation
+  multiples, and zero conversion, semantic-resolution, transaction, or
+  knowledge failures. Direct executable SHA-256 was
+  `e9629516ff9dc5e959801d96eb866f9b285ce2632da95cb71c5e08b8580bc617`;
+  the sidecar embedded executableGitSha remained `0189bb40...` and is recorded
+  as a warning. Raw paths and hashes are in
+  `docs/experiments/evidence/silver-root-exploration-c35-128-gcp-2026-08-29.json`.
+- **Verdict:** **ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE**. Keep ordinary c=25
+  as default. This does not promote c=35 or restore Sequential Halving; a
+  future three-way confirmation must be newly preregistered.

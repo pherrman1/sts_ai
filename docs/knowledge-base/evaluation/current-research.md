@@ -109,6 +109,17 @@ remains ordinary c=25, and Sequential Halving/root pruning remains unrestored.
 See the [online GCP evidence packet](../../../docs/experiments/evidence/silver-root-exploration-online-gcp-2026-08-29.json)
 and [ledger-06 §194](../../../docs/experiments/ledger-06.md).
 
+The broad screen's c=35 arm was then rerun at the user's direction using all
+24 GCP cores rather than one core. On fresh paired seeds 932401-932528,
+c=35 scored 84/128 wins versus 79/128 for unset c=25: +3.9pp paired win
+delta (95% CI [-3.9,+11.7]) and +0.9 paired floor delta ([-0.5,+2.3]), at
+1.056x runtime. Both arms passed exact seed, budget, Silver telemetry, and
+zero-failure checks. This remains
+`ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE`; the default remains c=25 and no
+Sequential Halving machinery is restored. See the [24-thread c=35 evidence
+packet](../../../docs/experiments/evidence/silver-root-exploration-c35-128-gcp-2026-08-29.json)
+and ledger-06 section 195.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable

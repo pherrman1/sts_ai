@@ -1,5 +1,7 @@
 # Decision log
 
+| 2026-08-29 | [`2026-08-29-silver-root-exploration-c35-128.md`](2026-08-29-silver-root-exploration-c35-128.md) | Fresh 24-thread, 128-seed c=35 versus c=25 online rerun is `ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE`: +3.9pp wins with CI including zero; c=25 remains default. |
+
 | 2026-08-29 | [`2026-08-29-silver-root-exploration-online.md`](2026-08-29-silver-root-exploration-online.md) | Fresh GCP broad and 32-seed narrow online root-only c follow-up is `ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE`; positive point estimates at c=18.5/21 have paired win intervals including zero, so c=25 remains default and Sequential Halving stays unrestored. |
 
 | 2026-08-29 | [`2026-08-29-silver-root-exploration.md`](2026-08-29-silver-root-exploration.md) | Root-only deterministic UCT reduction is `ROOT_EXPLORATION_REDUCTION_REJECTED`: all lower-c candidates introduced new >=3-regret selections at 128 and 256 on the 25k-A primary population, so no 25k-B or gameplay gate is authorized. |
