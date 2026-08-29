@@ -5577,3 +5577,21 @@ model training was changed.
   common RNG replicates per root/arm and analyze root×replicate pairs before
   any integration or gameplay experiment. See
   [the paired analysis report](evidence/silver_root_oracle_paired_analysis_2026-08-29.md).
+
+## Silver normalized-visit prior confirmation at 32 simulations (2026-08-29)
+
+- **Scope:** the existing 63 roots were replayed only at budget 32 with
+  current UCT and normalized 25k-A visit-PUCT, using four common replicate
+  seeds per root/arm. Replicates were aggregated within root before paired
+  bootstrap; no gameplay, training, new formula, or budget expansion was run.
+- **Result:** visit-PUCT raised mean frozen-B-best selection probability from
+  41.270% to 51.190% (+9.921 pp, root-bootstrap 95% CI [+3.175,
+  +17.063] pp) and reduced mean frozen-B regret from 4.051736 to 3.505948
+  (-0.545788 Q, CI [-1.004520, -0.116493]). It improved 24 root means,
+  worsened 9, and tied 30. Removing either largest root outlier left the
+  regret delta negative.
+- **Decision:** authorize one small integration-focused follow-up for the
+  normalized visit-prior path at 32 simulations, without changing prior
+  formula, expanding budgets, or running gameplay yet. Full stability,
+  outlier, RNG, and provenance details are in
+  [the confirmatory report](evidence/silver_root_oracle_confirm32_r4_2026-08-29.md).
