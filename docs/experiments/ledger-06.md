@@ -5577,3 +5577,24 @@ model training was changed.
   against either primary baseline. This result does not authorize a production
   OOC policy change, K-horizon tuning, model training, new trajectory
   collection, or outcome-driven candidate expansion.
+
+## Learned Silver guidance diagnostic (2026-08-29)
+
+- **Scope:** Bounded offline review from frozen policy A/B artifacts and
+  existing leaf evidence. No model training, gameplay seeds, or broad replay
+  was run. Baseline checkout SHA was
+  `60e00eb58f636c7fad11403dc9b01f44733f4280`.
+- **Result:** On 93 independent 25k-B policy parents (63 multi-action), exact
+  feature aliases affected 19 action pairs, 17 with different B values. The
+  unavoidable pairwise floor was only 0.866 percentage points. On 981
+  non-tied B pairs, current ordering / learned policy / 25k-A teacher scored
+  66.361% / 68.858% / 78.084% pairwise, with top-action agreement 34.921% /
+  47.619% / 73.016% and mean regret 4.225 / 3.958 / 3.437.
+- **Interpretation:** Exact aliasing is real but too small to explain the
+  regression. The tested rank-PUCT integration was harmful relative to
+  ordinary UCT, while direct M10 leaf replacement was harmful online; neither
+  result was an oracle replay.
+- **Decision:** The historical next step was faithful parent snapshots and a
+  small root-only replay. Subsequent experiments recorded below completed that
+  line. See [the diagnostic report](evidence/silver-learned-guidance-diagnostic-2026-08-29.md)
+  and [the read-only analyzer](../../tools/analyze_silver_guidance_alias.py).
