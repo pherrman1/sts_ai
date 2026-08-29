@@ -5755,3 +5755,24 @@ model training was changed.
   integration itself. Full provenance, hashes, RNG qualification, tables,
   and commands are in the
   [rank-shape calibration evidence report](evidence/silver_rankshape_visit_prior_calibration_2026-08-29.md).
+
+## Grouped linear Silver visit-policy offline test (2026-08-29)
+
+- **Question/protocol:** test whether one direct parent-macro linear softmax
+  fit of the exact normalized 25k-A sibling visit distribution improves mass
+  allocation over frozen raw-count and rank-shape scalar priors. It used
+  immutable 1,788-wide features, fixed `1e-4` L2, train-only scaling, a
+  327/75 parent train/validation split, and 93 fully excluded B anchors. The
+  raw and rank-shape frozen mass metrics reproduced exactly before fitting.
+  No replay, gameplay, feature regeneration, tuning, or MLP was run.
+- **Results:** on 63 multi-action anchors, grouped linear KL was `0.899012`
+  versus raw `1.234718` and rank-shape `1.199533`, but entropy MAE was
+  `0.845315` versus `0.910402`/`0.822918` and max-mass MAE was `0.423552`
+  versus `0.480429`/`0.420425`. A-top agreement was `42.86%`, down from
+  `50.79%`; B-Q pairwise concordance was `71.81%` versus `73.41%`. Linear
+  minus rank-shape KL had a 95% paired root-bootstrap CI
+  `[-1.002904,+0.118613]`, and neither shape-error CI excluded zero.
+- **Decision:** **`GROUPED_LINEAR_VISIT_POLICY_OFFLINE_REJECTED`**. The
+  frozen offline gate fails, so replay is not commissioned. Full preflight,
+  hashes, metrics, underfit evidence, and artifact locations are in the
+  [grouped-linear evidence report](evidence/silver_grouped_linear_visit_policy_2026-08-29.md).
