@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-08-14 against the current working tree.
+Last verified: 2026-08-28 against the current working tree.
 
 ## Purpose
 
@@ -39,6 +39,37 @@ Evidence:
 - `docs/experiments/ledger-06.md` §168 (2,000-seed null result) and §169 (corrective Act-3 gate + V4 calibration)
 - `apps/one_combat.cpp::strategicMargGen`
 - `tools/convert_marg_to_trainer.py`, `tools/reconstruct_marg_csv.py`
+
+### Silver root action-pruning ladder
+
+Phase 1 is complete: a frozen, tie-safe candidate-retention audit evaluated
+current Silver order, frozen parent-Q scores, and 1k/10k/25k-A teacher Q and
+visit rankings against all 93 independent 25k-B anchors. Its primary population
+was the 63 multi-action parents; the 30 single-action parents were reported
+separately and do not inflate retention claims. Frozen-model top-3-plus-ties
+retained 95.24% of the B-best actions, but still had two `>=3` regret
+exclusions, so it provides no hard-pruning permission. The Phase 2 decision is
+`SEQUENTIAL_HALVING_REJECTED`: the fresh-session 63-parent gate regressed mean
+regret at 64/128/256/1000, lost five best-action matches at 1000, and introduced
+new >=3-regret exclusions despite a 0.998x replay CPU ratio. A subsequent user-
+requested, narrower progressive-unpruning experiment was evaluated separately:
+only roots with at least six actions began with the current-Silver-order top 3,
+then recovered one stored edge after 16/32/64/128 new simulations. It is
+`PROGRESSIVE_CURRENT_ORDER_HARMFUL`: its 128 and 256 results increased mean
+regret (the latter also added a >=3-regret failure), even though its 1000 result
+improved and replay CPU was 1.007x ordinary. The cached frozen-model ordering,
+runtime scorer, hard pruning, and gameplay smoke remain unauthorized. The
+previous rejection of learned ordinary ordering/PUCT remains unchanged.
+The rejected runtime root-action modes and their replay executable were removed
+from the merge package on 2026-08-29; the tie-safe offline analyzers, tests,
+durable reports, input hashes, and ledger evidence remain available for future
+independent hypotheses.
+
+Evidence: `docs/experiments/evidence/silver_action_pruning_retention_2026-08-28.json`
+(SHA-256 `838f7c23fe985c00d8b609a87f1858a6f231ac7f3245e29da4e8bc077baac0e6`)
+and `docs/experiments/evidence/silver_action_pruning_progressive_current_2026-08-28.json`
+(SHA-256 `1231530b9381009d36622fd32b2a496d5d18d5eb4a0958ba26abd07c8019e243`).
+See [ledger-06 §188–191](../../../docs/experiments/ledger-06.md).
 
 ## Current baseline
 
@@ -131,6 +162,17 @@ artifact.
 
 ## Closed lines
 
+- Silver 25k parent-Q action scoring is closed after the preregistered offline
+  gate rejected it (`POLICY_MODEL_OFFLINE_REJECTED`, ledger §186). The model
+  improved exact-order top-action agreement but achieved only +2.497pp
+  pairwise concordance with 82.2% bootstrap probability positive and 65.58%
+  probability of lower mean regret, missing the registered bars. An explicitly
+  authorized exploratory online override also rejected every method
+  (`ONLINE_POLICY_METHODS_REJECTED`, ledger §187): A/B/C/D won 20/20/17/15 of
+  32 and every learned arm cost at least 1.372x baseline CPU. The rejected
+  runtime mechanisms and compact model were removed; the reusable offline
+  pipeline and durable evidence remain. Do not restart learned ordering or
+  PUCT from this artifact.
 - Raw deep-search utility as the combat leaf target, repeated DAgger, residual
   correction, and the sampled terminal-endHP relabeling did not improve the
   recorded online gate (`EXPERIMENTS.md` §166).

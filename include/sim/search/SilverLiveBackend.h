@@ -87,6 +87,21 @@ double silverLiveLeafVNetPredictionForTest(
 std::vector<float> silverLiveLeafCanonicalFeatures(
     const silver_bridge::BattleStateWire &wire);
 
+struct SilverPolicyFeatureRow {
+    std::string actionFingerprint;
+    std::vector<float> features;
+    // Zero-based position in the exact current Silver root-edge ordering.
+    int silverOrder = -1;
+};
+
+// Restore one parent through the live-state bridge, enumerate the exact
+// pinned-Silver legal actions, lower each semantic identity to the live
+// action, and extract the canonical state+action policy feature vector.
+// Any duplicate or unresolvable identity throws; partial rows are never
+// returned.
+std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(
+    const silver_bridge::BattleStateWire &wire);
+
 } // namespace sts::search
 
 #endif

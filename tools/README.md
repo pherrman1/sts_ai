@@ -31,6 +31,17 @@ authentication and `gcloud compute ssh`; it does not store credentials or
 manage arbitrary cloud resources. Its designated-target-only `copy-to`,
 `copy-from`, and `job-status` commands keep artifact transfer and detached-run
 inspection on the same pinned project/zone/instance/user/root contract.
+Decision-bearing multi-arm runs should use its strict JSON manifest interface;
+`tools/agent/research_run_manifest.example.json` is the maintained template.
+`manifest-check` validates common seeds/configuration, required environment
+variables, telemetry expectations, unique output paths, and frozen hashes;
+`exact-sha-preflight` verifies the remote checkout, CMake source binding,
+executable, and artifacts; `run-manifest` launches one arm and refuses to
+overwrite an existing result, sidecar, or log.
+
+`tools/agent/build.py` is the environment-aware entry point for checked-in
+Linux CMake presets. It invokes CMake directly when available and otherwise,
+on Windows, runs the complete configure/build sequence through one WSL shell.
 
 Existing tools that predate this reorganization (e.g., `tools/analyze_*.py`,
 `tools/train_*.py`, `tools/tune_*.py`) remain in the flat `tools/` directory.

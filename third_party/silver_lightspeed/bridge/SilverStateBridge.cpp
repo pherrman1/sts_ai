@@ -1404,6 +1404,21 @@ SilverDecisionResult runSilverDecision(const BattleStateWire &wire, const Silver
     return runSilverDecision(*session, wire, config);
 }
 
+std::vector<SemanticAction> enumerateSilverLegalActions(const BattleStateWire &wire) {
+    std::vector<SemanticAction> result;
+    if (!wire.valid || wire.version != BattleStateWire::kVersion || wire.outcome != 0) return result;
+    sts::GameContext runContext;
+    initializeRunContext(runContext, wire);
+    auto state = materialize(wire, &runContext);
+    sts::search::BattleSearcher enumerator(state);
+    if (enumerator.root == nullptr) return result;
+    enumerator.enumerateActionsForNode(*enumerator.root, enumerator.root->state);
+    result.reserve(enumerator.root->edges.size());
+    for (const auto &edge : enumerator.root->edges)
+        result.push_back(semanticFromAction(enumerator.root->state, edge.action));
+    return result;
+}
+
 namespace {
 
 std::uint64_t diagnosticSeed(std::uint64_t base, int replicate) {
