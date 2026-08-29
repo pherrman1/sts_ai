@@ -16,11 +16,11 @@ class SilverShManifestTest(unittest.TestCase):
         subprocess.run([
             sys.executable, str(SCRIPT), *extra,
             "--frozen-sha", "1" * 40,
-            "--binary-remote", "checkouts/x/build/linux-gcc-release/one_combat",
+            "--checkout", "checkouts/x",
             "--binary-sha256", "2" * 64,
-            "--artifact", "models/v_rich_trees.txt:" + "3" * 64,
-            "--artifact", "models/v_win_trees.txt:" + "4" * 64,
-            "--artifact", "models/v_combat_7k_tuned.txt:" + "5" * 64,
+            "--artifact", "checkouts/x/models/v_rich_trees.txt:" + "3" * 64,
+            "--artifact", "checkouts/x/models/v_win_trees.txt:" + "4" * 64,
+            "--artifact", "checkouts/x/models/v_combat_7k_tuned.txt:" + "5" * 64,
             "--output", str(output),
         ], check=True, cwd=ROOT)
         return output
