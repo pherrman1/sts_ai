@@ -5543,3 +5543,21 @@ model training was changed.
   root-only A/B replay against frozen B. See
   [the diagnostic report](evidence/silver-learned-guidance-diagnostic-2026-08-29.md)
   and [the read-only analyzer](../../tools/analyze_silver_guidance_alias.py).
+
+## Silver root-only oracle-prior replay (2026-08-29)
+
+- **Scope:** from the exact `298f017f38ef3a01333bcdd87586c413f73de4ff`
+  baseline, the existing selected exact-state corpus was filtered to the 63
+  valid multi-action 25k-B anchors. Complete parent `BattleStateWire`
+  envelopes were saved by a diagnostic-only extractor; no gameplay or new
+  teacher labels were run. Frozen 25k-A supplied ordering/priors and frozen
+  25k-B supplied top-choice/regret judgment.
+- **Result:** oracle Q ordering improved top-choice agreement over current UCT
+  at 16 (+7.94 pp), 32 (+3.17 pp), 128 (+4.76 pp), and 1000 (+3.17 pp), but
+  not 64. The effect was modest and not monotone. Rank-PUCT did not reliably
+  preserve the ordering gain; normalized 25k-A visit PUCT had lower mean B
+  regret at every tested budget.
+- **Decision:** retain **fix prior integration** as the single next direction,
+  with no production PUCT change or gameplay gate yet. Full tables and hashes
+  are in
+  [the root replay evidence report](evidence/silver_root_oracle_replay_2026-08-29.md).

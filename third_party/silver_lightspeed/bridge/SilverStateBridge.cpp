@@ -723,6 +723,10 @@ public:
         searcher->chanceWideningAlpha = config.chanceWideningAlpha;
         searcher->endTurnWideningC = config.endTurnWideningC;
         searcher->endTurnWideningAlpha = config.endTurnWideningAlpha;
+        searcher->rootGuidanceMode = config.rootGuidanceMode;
+        searcher->rootActionOrder = config.rootActionOrder;
+        searcher->rootActionPriors = config.rootActionPriors;
+        searcher->rootPuctExploration = config.rootPuctExploration;
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
         searcher->collectVictoryCounts = config.collectRootActionSummaries;
         searcher->leafObserver = config.leafObserver;
