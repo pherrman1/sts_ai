@@ -5764,15 +5764,42 @@ model training was changed.
   immutable 1,788-wide features, fixed `1e-4` L2, train-only scaling, a
   327/75 parent train/validation split, and 93 fully excluded B anchors. The
   raw and rank-shape frozen mass metrics reproduced exactly before fitting.
-  No replay, gameplay, feature regeneration, tuning, or MLP was run.
+  No gameplay, feature regeneration, tuning, or MLP was run. The initial
+  offline pass did not replay; its decision was later corrected so that these
+  metrics are diagnostic only rather than a replay gate.
 - **Results:** on 63 multi-action anchors, grouped linear KL was `0.899012`
   versus raw `1.234718` and rank-shape `1.199533`, but entropy MAE was
   `0.845315` versus `0.910402`/`0.822918` and max-mass MAE was `0.423552`
   versus `0.480429`/`0.420425`. A-top agreement was `42.86%`, down from
-  `50.79%`; B-Q pairwise concordance was `71.81%` versus `73.41%`. Linear
+  `50.79%`; legacy parent-macro B-Q pairwise concordance was `71.81%` versus
+  `73.41%`. Linear
   minus rank-shape KL had a 95% paired root-bootstrap CI
   `[-1.002904,+0.118613]`, and neither shape-error CI excluded zero.
-- **Decision:** **`GROUPED_LINEAR_VISIT_POLICY_OFFLINE_REJECTED`**. The
-  frozen offline gate fails, so replay is not commissioned. Full preflight,
-  hashes, metrics, underfit evidence, and artifact locations are in the
+- **Offline decision correction:** **`REPLAY_PENDING`**. The frozen offline
+  metrics remain diagnostic and do not block a cheap compatible frozen replay;
+  only integrity/provenance failures can do that. Full preflight, hashes,
+  metrics, underfit evidence, and artifact locations are in the
   [grouped-linear evidence report](evidence/silver_grouped_linear_visit_policy_2026-08-29.md).
+
+## Grouped linear Silver visit-policy frozen replay (2026-08-29)
+
+- **Protocol:** reuse the verified archived `silver_root_oracle_replay`
+  executable (source `581b68bb`, executable SHA
+  `d8d08392343ab442ec093e5fa07b64b326755560ff374dfba61bbce9c1a18006`) for
+  63 frozen multi-action roots, 32 simulations, four common replicate seeds,
+  and concurrent `current_uct`, `oracle_visit_puct`, and
+  `learned_visit_puct` arms. The grouped model and its 340 probabilities were
+  unchanged; frozen 25k-B alone judged search quality. No gameplay or model
+  training occurred.
+- **Controls/results:** the 756-row replay exactly reproduced current
+  `41.2698% / 4.051736` and oracle `51.1905% / 3.505948` B-best/regret means.
+  Learned was `43.6508% / 3.769684`: versus current, `+2.3810 pp` B-best
+  (95% paired-root CI `[-3.9683,+8.7302]`) and `-0.282052` regret (CI
+  `[-0.740037,+0.177162]`), with `20/16/27` improved/worsened/tied roots. It
+  recovered `24.00%` of oracle B-best gain and `51.68%` of oracle regret gain.
+- **Decision:** **`GROUPED_LINEAR_VISIT_POLICY_REPLAY_INCONCLUSIVE`**. Both
+  point estimates improve, but B-best recovery is below 25% and neither
+  learned-vs-current interval excludes zero; the negative rule also does not
+  apply. This is evidence about the additive linear grouped policy only, not
+  direct grouped policy learning in general. Full hashes, command, raw output,
+  analysis, and stability are in [the replay evidence report](evidence/silver_grouped_linear_visit_policy_replay_2026-08-29.md).

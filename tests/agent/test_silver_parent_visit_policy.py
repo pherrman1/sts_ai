@@ -64,6 +64,26 @@ class SilverParentVisitPolicyTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             MODULE.parent_metric(target, np.asarray([.6, .3]), np.asarray([1.0, 0.0]))
 
+    def test_b_q_concordance_primary_is_pooled_not_parent_macro(self):
+        def metric(concordance, credit, pairs):
+            row = {key: 0.0 for key in MODULE.METRIC_KEYS}
+            row.update({
+                "b_pairwise_concordance": concordance,
+                "b_pairwise_concordant_credit": credit,
+                "b_q_pairs": pairs,
+                "legal_actions": 2,
+                "prediction_ties": 0,
+                "b_q_ties": 0,
+            })
+            return row
+
+        result = MODULE.aggregate({
+            "one_pair": metric(.5, .5, 1),
+            "four_pairs": metric(.75, 3.0, 4),
+        })
+        self.assertAlmostEqual(result["b_pairwise_concordance"], 3.5 / 5)
+        self.assertAlmostEqual(result["b_pairwise_concordance_parent_macro"], (.5 + .75) / 2)
+
 
 if __name__ == "__main__":
     unittest.main()

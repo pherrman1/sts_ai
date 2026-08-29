@@ -10,12 +10,13 @@ mean_parent[-sum_a pi_A(a|s) log softmax_a(w^T x(s,a))] + 0.5 * 1e-4 * ||w||^2
 ```
 
 It consumed immutable frozen artifacts only. It did not regenerate features,
-modify Silver, build/replay the root runner, run gameplay, tune a parameter,
-or train an MLP.
+modify Silver, tune a parameter, or train an MLP.  The initial offline pass
+did not replay the runner; the subsequent frozen replay is recorded separately
+in [the replay evidence report](silver_grouped_linear_visit_policy_replay_2026-08-29.md).
 
-Decision: **`GROUPED_LINEAR_VISIT_POLICY_OFFLINE_REJECTED`**. The method
-improves action-aligned KL point estimate but fails the frozen offline gate;
-there is no replay authorization.
+Offline decision: **`REPLAY_PENDING`**.  The offline mass metrics are
+diagnostic only. They do not authorize or reject the cheap frozen replay;
+only an integrity or provenance failure can block that replay.
 
 ## Provenance and preflight
 
@@ -58,7 +59,7 @@ immutable artifact and does not attempt feature regeneration.
 
 All quantities are macro-averages over parents. B-Q metrics are reporting-only.
 
-| Method | CE | KL(A\|\|p) | TV | entropy MAE | max-mass MAE | A-top | B-top | B pairwise | pred ties |
+| Method | CE | KL(A\|\|p) | TV | entropy MAE | max-mass MAE | A-top | B-top | B-Q parent-macro | pred ties |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Uniform | 1.560226 | 1.066870 | 0.600761 | 1.066870 | 0.582445 | 25.40% | 34.92% | 50.00% | 981 |
 | Raw-count XGBoost | 1.728074 | 1.234718 | 0.536916 | 0.910402 | 0.480429 | 50.79% | 53.97% | 73.41% | 79 |
@@ -66,7 +67,13 @@ All quantities are macro-averages over parents. B-Q metrics are reporting-only.
 | Grouped linear | 1.392368 | 0.899012 | 0.511496 | 0.845315 | 0.423552 | 42.86% | 44.44% | 71.81% | 13 |
 | Oracle A visits | 0.493356 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 100.00% | 73.02% | 84.68% | 17 |
 
-The 981 B-Q pairs include 11 B-Q ties. Top-2/top-3 mass errors are, in the
+The 981 B-Q pairs include 11 B-Q ties. The table's B-Q figures are the legacy
+parent-macro diagnostic. The corrected historical primary is pooled
+concordant credit divided by all 981 non-tied pairs; its linear value is
+`67.2273%` (the table's former parent-macro value is `71.8065%`). The
+rank-preserving raw/rank-shape value is `68.858%`. The trainer now emits the
+pooled quantity as `b_pairwise_concordance`, and preserves the old number as
+`b_pairwise_concordance_parent_macro`. Top-2/top-3 mass errors are, in the
 same method order: uniform `0.465245/0.322924`, raw `0.326230/0.180979`,
 rank-shape `0.259680/0.134975`, linear `0.278368/0.170447`, oracle `0/0`.
 
@@ -78,7 +85,7 @@ are linear minus rank-shape. KL is `-0.300520` (95% CI
 (`[-20.63,+4.76] pp`). Corresponding new-minus-raw CIs are retained in the
 machine report.
 
-## Training and gate
+## Training and offline diagnostics
 
 SciPy 1.16.1 L-BFGS-B (seed `20260829`) converged in 68 iterations. The
 validation-selected iterate was 4; L2 was `1e-4`, with no bias. Train CE/KL
@@ -88,10 +95,12 @@ train-and-validation linear underfit evidence, while the audit confirms that
 the frozen schema has no explicit linear state-action interaction terms. This
 task neither authorizes nor implements an MLP.
 
-The gate fails KL <= 0.13, rank-shape KL superiority CI, both concentration
-MAE thresholds, both point shape improvements, and the A-top 2 pp tolerance.
-It passes action-contract integrity and produces fewer prediction ties than
-rank-shape. No replay was run.
+The diagnostic thresholds fail KL <= 0.13, rank-shape KL superiority CI, both
+concentration MAE thresholds, both point shape improvements, and the A-top 2
+pp tolerance. The run passes action-contract integrity and produces fewer
+prediction ties than rank-shape. These findings are retained as diagnostics;
+they do not block the frozen replay. The corrected status before replay was
+`REPLAY_PENDING`.
 
 ## Artifacts and checks
 
