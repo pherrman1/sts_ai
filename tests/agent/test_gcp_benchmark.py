@@ -76,6 +76,16 @@ class GcpBenchmarkTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "must be nonzero"):
                 module.load_run_manifest(write_manifest(directory, payload))
 
+    def test_v2_manifest_clears_ambient_environment(self):
+        module = load_module()
+        payload = valid_manifest()
+        payload["schema_version"] = 2
+        payload["clear_env"] = True
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = module.load_run_manifest(write_manifest(directory, payload))
+        command, _log, _fresh = module.manifest_arm(manifest, "A")
+        self.assertEqual(command[:2], ["env", "-i"])
+
     def test_manifest_fails_closed_on_reused_output(self):
         module = load_module()
         payload = valid_manifest()
@@ -98,6 +108,15 @@ class GcpBenchmarkTests(unittest.TestCase):
         payload["required_env"].remove("OMP_NUM_THREADS")
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(ValueError, "must include OMP_NUM_THREADS"):
+                module.load_run_manifest(write_manifest(directory, payload))
+
+    def test_manifest_binary_must_belong_to_declared_build(self):
+        module = load_module()
+        payload = valid_manifest()
+        payload["binary"]["remote_path"] = "checkouts/other/build/one_combat"
+        payload["command"][0] = payload["binary"]["remote_path"]
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, "build_dir/one_combat"):
                 module.load_run_manifest(write_manifest(directory, payload))
 
     def test_manifest_reserves_implicit_sidecar_paths(self):

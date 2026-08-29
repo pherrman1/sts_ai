@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -52,6 +53,14 @@ int main() {
     const std::string savedRootExplorationValue = savedRootExploration
         ? savedRootExploration : "";
     const bool hadRootExploration = savedRootExploration != nullptr;
+    const char *savedShape = std::getenv("STS_SILVER_SH_SHAPE");
+    const char *savedAllocation = std::getenv("STS_SILVER_SH_ALLOCATION");
+    const std::string savedShapeValue = savedShape ? savedShape : "";
+    const std::string savedAllocationValue = savedAllocation ? savedAllocation : "";
+    const bool hadShape = savedShape != nullptr;
+    const bool hadAllocation = savedAllocation != nullptr;
+    unsetEnvironment("STS_SILVER_SH_SHAPE");
+    unsetEnvironment("STS_SILVER_SH_ALLOCATION");
     for (const char *invalid : {"", "bogus", "nan", "inf", "-1"}) {
         setEnvironment("STS_SILVER_ROOT_EXPLORATION", invalid);
         bool rejected = false;
@@ -66,6 +75,30 @@ int main() {
         }
         uninstallSilverLiveBackend();
     }
+    if (hadRootExploration) setEnvironment("STS_SILVER_ROOT_EXPLORATION", savedRootExplorationValue.c_str());
+    else unsetEnvironment("STS_SILVER_ROOT_EXPLORATION");
+
+    unsetEnvironment("STS_SILVER_ROOT_EXPLORATION");
+    for (const auto &values : {std::pair<const char *, const char *>{"bogus", "balanced"},
+                               {"half", "bogus"}, {"half", nullptr}, {nullptr, "balanced"}}) {
+        if (values.first) setEnvironment("STS_SILVER_SH_SHAPE", values.first);
+        else unsetEnvironment("STS_SILVER_SH_SHAPE");
+        if (values.second) setEnvironment("STS_SILVER_SH_ALLOCATION", values.second);
+        else unsetEnvironment("STS_SILVER_SH_ALLOCATION");
+        bool rejected = false;
+        try { installSilverLiveBackend(); }
+        catch (...) { rejected = true; }
+        if (!rejected) {
+            std::cerr << "silver_integration FAIL: invalid Sequential Halving environment was accepted\n";
+            uninstallSilverLiveBackend();
+            return 1;
+        }
+        uninstallSilverLiveBackend();
+    }
+    if (hadShape) setEnvironment("STS_SILVER_SH_SHAPE", savedShapeValue.c_str());
+    else unsetEnvironment("STS_SILVER_SH_SHAPE");
+    if (hadAllocation) setEnvironment("STS_SILVER_SH_ALLOCATION", savedAllocationValue.c_str());
+    else unsetEnvironment("STS_SILVER_SH_ALLOCATION");
     if (hadRootExploration) setEnvironment("STS_SILVER_ROOT_EXPLORATION", savedRootExplorationValue.c_str());
     else unsetEnvironment("STS_SILVER_ROOT_EXPLORATION");
 

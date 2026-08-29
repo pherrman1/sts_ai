@@ -263,6 +263,26 @@ void search::BattleSearcher::search(int64_t simulations) {
     }
 }
 
+void search::BattleSearcher::ensureRootActions() {
+    if (root != nullptr && !isTerminalState(root->state) && root->edges.empty()) {
+        enumerateActionsForNode(*root, root->state);
+    }
+}
+
+void search::BattleSearcher::stepRootEdge(int rootEdgeIdx) {
+    ensureRootActions();
+    if (root == nullptr || rootEdgeIdx < 0
+            || rootEdgeIdx >= static_cast<int>(root->edges.size())) {
+        throw std::out_of_range("BattleSearcher::stepRootEdge invalid root edge");
+    }
+    struct ResetForcedRootEdge {
+        int &value;
+        ~ResetForcedRootEdge() { value = -1; }
+    } reset {forcedRootEdge};
+    forcedRootEdge = rootEdgeIdx;
+    step();
+}
+
 void search::BattleSearcher::searchForMicros(int64_t maxMicros) {
     g_debug_scum_search = this;
     if (isTerminalState(root->state)) return;
@@ -355,7 +375,8 @@ void search::BattleSearcher::step() {
             }
         }
 
-        const int selectIdx = selectBestEdgeToSearch(*cur);
+        const int selectIdx = cur == root && forcedRootEdge >= 0
+            ? forcedRootEdge : selectBestEdgeToSearch(*cur);
         Edge &edge = cur->edges[selectIdx];
         ++edge.visitCount;
 

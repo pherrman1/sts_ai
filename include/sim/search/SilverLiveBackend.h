@@ -66,6 +66,8 @@ bool silverLiveAdaptiveEnabled();
 bool silverLiveExactRootBudgets();
 double silverLiveAdaptiveTopTwoVisitGapThreshold();
 std::optional<double> silverLiveRootExplorationParameter();
+std::string silverLiveSequentialHalvingShape();
+std::string silverLiveSequentialHalvingAllocation();
 
 // Stable deterministic sampler used only by STS_SILVER_STICKY_QUALITY_FILE.
 // It hashes the documented public decision identity and consumes no RNG.

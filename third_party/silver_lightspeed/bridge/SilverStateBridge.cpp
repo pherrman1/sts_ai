@@ -631,6 +631,26 @@ const char *silverReuseCapModeName(SilverReuseCapMode mode) {
     return "invalid";
 }
 
+const char *silverSequentialHalvingShapeName(SilverSequentialHalvingShape shape) {
+    switch (shape) {
+        case SilverSequentialHalvingShape::HALF: return "half";
+        case SilverSequentialHalvingShape::GENTLE: return "gentle";
+        case SilverSequentialHalvingShape::AGGRESSIVE: return "aggressive";
+        case SilverSequentialHalvingShape::SCREEN_TWO: return "screen_two";
+    }
+    return "invalid";
+}
+
+const char *silverSequentialHalvingAllocationName(
+        SilverSequentialHalvingAllocation allocation) {
+    switch (allocation) {
+        case SilverSequentialHalvingAllocation::FINALIST_HEAVY: return "finalist_heavy";
+        case SilverSequentialHalvingAllocation::BALANCED: return "balanced";
+        case SilverSequentialHalvingAllocation::CAUTIOUS: return "cautious";
+    }
+    return "invalid";
+}
+
 const char *silverRerootFallbackReasonName(SilverRerootFallbackReason reason) {
     switch (reason) {
         case SilverRerootFallbackReason::NONE: return "none";
@@ -715,6 +735,7 @@ public:
     SilverSearchDecisionDiagnostic decisionDiagnostic {};
     bool collectDecisionDiagnostics = false;
     std::vector<SilverRootActionSummary> rootActionSummaries;
+    SilverSequentialHalvingTelemetry sequentialHalving;
 
     void configure(const SilverSearchConfig &config) {
         if (config.rootExplorationParameter.has_value()
@@ -850,10 +871,125 @@ public:
     const sts::search::BattleSearcher::Edge *searchAndChoose(const SilverSearchConfig &config,
                                                                std::int64_t &simulations) {
         rootActionSummaries.clear();
+        sequentialHalving = {};
         searchStatsBefore = searcher->stats;
         const auto before = searchStatsBefore.steps;
-        searcher->search(config.simulationsPerDecision);
+        const sts::search::BattleSearcher::Edge *best = nullptr;
+        if (config.sequentialHalving.has_value()) {
+            const auto treatment = *config.sequentialHalving;
+            sequentialHalving.enabled = true;
+            sequentialHalving.shape = treatment.shape;
+            sequentialHalving.allocation = treatment.allocation;
+            searcher->ensureRootActions();
+            if (searcher->root != nullptr) {
+                auto &edges = searcher->root->edges;
+                sequentialHalving.initialLegalActions = static_cast<int>(edges.size());
+                std::vector<int> active;
+                active.reserve(edges.size());
+                for (int index = 0; index < static_cast<int>(edges.size()); ++index)
+                    active.push_back(index);
+
+                const auto survivorCount = [treatment](int count, int round) {
+                    if (count <= 1) return count;
+                    switch (treatment.shape) {
+                        case SilverSequentialHalvingShape::HALF:
+                            return (count + 1) / 2;
+                        case SilverSequentialHalvingShape::GENTLE:
+                            if (count <= 3) return 1;
+                            return round == 0 ? (3 * count + 3) / 4 : (count + 1) / 2;
+                        case SilverSequentialHalvingShape::AGGRESSIVE:
+                            return round == 0 ? std::max(1, (3 * count + 7) / 8) : 1;
+                        case SilverSequentialHalvingShape::SCREEN_TWO:
+                            return round == 0 ? std::min(2, count - 1) : 1;
+                    }
+                    throw std::invalid_argument("invalid Silver Sequential Halving shape");
+                };
+                std::vector<int> activeCounts;
+                for (int count = static_cast<int>(active.size()), round = 0; count > 1; ++round) {
+                    activeCounts.push_back(count);
+                    const int next = survivorCount(count, round);
+                    if (next <= 0 || next >= count)
+                        throw std::invalid_argument("Silver Sequential Halving shape did not reduce candidates");
+                    count = next;
+                }
+                std::int64_t minimumBudget = 0;
+                for (const int count : activeCounts) minimumBudget += count;
+                if (config.simulationsPerDecision < minimumBudget) {
+                    throw std::invalid_argument(
+                        "Silver Sequential Halving budget cannot audition every active action once per round");
+                }
+                const auto roundWeight = [treatment, rounds = activeCounts.size()](std::size_t round) {
+                    switch (treatment.allocation) {
+                        case SilverSequentialHalvingAllocation::FINALIST_HEAVY:
+                            if (round + 1 == rounds) return std::int64_t{20};
+                            if (round + 2 == rounds) return std::int64_t{4};
+                            return std::int64_t{1};
+                        case SilverSequentialHalvingAllocation::BALANCED:
+                            return std::int64_t{1} << std::min<std::size_t>(round, 10);
+                        case SilverSequentialHalvingAllocation::CAUTIOUS:
+                            return static_cast<std::int64_t>(round + 1);
+                    }
+                    throw std::invalid_argument("invalid Silver Sequential Halving allocation");
+                };
+                std::int64_t weightedCost = 0;
+                for (std::size_t round = 0; round < activeCounts.size(); ++round)
+                    weightedCost += activeCounts[round] * roundWeight(round);
+                std::vector<std::int64_t> pullsPerAction;
+                std::int64_t scheduled = 0;
+                for (std::size_t round = 0; round < activeCounts.size(); ++round) {
+                    const auto pulls = std::max<std::int64_t>(1,
+                        config.simulationsPerDecision * roundWeight(round) / weightedCost);
+                    pullsPerAction.push_back(pulls);
+                    scheduled += activeCounts[round] * pulls;
+                }
+                if (scheduled > config.simulationsPerDecision)
+                    throw std::logic_error("Silver Sequential Halving schedule exceeded its budget");
+
+                for (std::size_t round = 0; active.size() > 1; ++round) {
+                    sequentialHalving.activeCountsBeforeRound.push_back(static_cast<int>(active.size()));
+                    sequentialHalving.pullsPerAction.push_back(pullsPerAction[round]);
+                    for (const int edgeIndex : active) {
+                        for (std::int64_t pull = 0; pull < pullsPerAction[round]; ++pull)
+                            searcher->stepRootEdge(edgeIndex);
+                    }
+                    std::sort(active.begin(), active.end(), [&edges](int lhs, int rhs) {
+                        const auto q = [&edges](int index) {
+                            const auto &edge = edges[index];
+                            return edge.node != nullptr && edge.node->simulationCount > 0
+                                ? std::pair<bool, double>{true,
+                                    edge.node->evaluationSum / edge.node->simulationCount}
+                                : std::pair<bool, double>{false, 0.0};
+                        };
+                        const auto left = q(lhs), right = q(rhs);
+                        if (left.first != right.first) return left.first;
+                        if (left.first && left.second != right.second) return left.second > right.second;
+                        return lhs < rhs;
+                    });
+                    const int survivors = survivorCount(static_cast<int>(active.size()),
+                                                        static_cast<int>(round));
+                    for (int index = survivors; index < static_cast<int>(active.size()); ++index) {
+                        sequentialHalving.eliminatedActionFingerprints.push_back(
+                            semanticActionFingerprint(semanticFromAction(
+                                searcher->root->state, edges[active[index]].action)));
+                    }
+                    active.resize(static_cast<std::size_t>(survivors));
+                    sequentialHalving.activeCountsAfterRound.push_back(survivors);
+                }
+                if (!active.empty()) {
+                    const std::int64_t remainder = config.simulationsPerDecision - scheduled;
+                    for (std::int64_t pull = 0; pull < remainder; ++pull)
+                        searcher->stepRootEdge(active.front());
+                    sequentialHalving.finalCandidateExtraPulls = remainder;
+                    best = &edges[active.front()];
+                    sequentialHalving.finalCandidateFingerprint = semanticActionFingerprint(
+                        semanticFromAction(searcher->root->state, best->action));
+                }
+            }
+        } else {
+            searcher->search(config.simulationsPerDecision);
+        }
         simulations = searcher->stats.steps - before;
+        sequentialHalving.simulationsAdded = simulations;
         if (searcher->root == nullptr || searcher->root->edges.empty()) {
             if (collectDecisionDiagnostics) {
                 decisionDiagnostic.allocatedNodesAfterSearch = static_cast<std::int64_t>(searcher->allNodes.size());
@@ -864,10 +1000,12 @@ public:
             }
             return nullptr;
         }
-        const sts::search::BattleSearcher::Edge *best = nullptr;
         std::int32_t visits = -1;
         for (const auto &edge : searcher->root->edges) {
-            if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
+            if (!config.sequentialHalving.has_value() && edge.visitCount > visits) {
+                visits = edge.visitCount;
+                best = &edge;
+            }
             if (config.collectRootActionSummaries) {
                 SilverRootActionSummary summary;
                 summary.action = semanticFromAction(searcher->root->state, edge.action);
@@ -943,6 +1081,7 @@ SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
     result.rerootMissDiagnostic = session.rerootMissDiagnostic;
     const auto *best = session.searchAndChoose(config, result.simulations);
     result.telemetry = telemetryDelta(session.searcher->stats, session.searchStatsBefore);
+    result.sequentialHalving = session.sequentialHalving;
     if (config.collectRootActionSummaries) {
         result.rootActionSummaries = session.rootActionSummaries;
         result.rootUncertainty = summarizeSilverRoot(result.rootActionSummaries);
@@ -950,6 +1089,7 @@ SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
     if (config.collectDecisionDiagnostics) {
         result.diagnostic = session.decisionDiagnostic;
         result.diagnostic.rootUncertainty = result.rootUncertainty;
+        result.diagnostic.sequentialHalving = result.sequentialHalving;
     }
     if (best == nullptr) {
         result.failureReason = "no_selected_action";
@@ -1287,6 +1427,14 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
     SelectionTransactionTrace trace;
     trace.simulationsPerSubdecision = config.simulationsPerDecision;
     if (config.simulationsPerDecision <= 0) return trace;
+    if (config.sequentialHalving.has_value() && config.adaptiveEnabled) {
+        trace.failure = "sequential_halving_adaptive_conflict";
+        return trace;
+    }
+    if (config.sequentialHalving.has_value() && config.rootExplorationParameter.has_value()) {
+        trace.failure = "sequential_halving_root_exploration_conflict";
+        return trace;
+    }
     try {
         sts::BattleContext state = session.materializeAndBegin(wire, config);
         const auto task = state.cardSelectInfo.cardSelectTask;
@@ -1370,6 +1518,14 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
     SilverDecisionResult result;
     if (config.simulationsPerDecision <= 0) {
         result.failureReason = "invalid_simulation_budget";
+        return result;
+    }
+    if (config.sequentialHalving.has_value() && config.adaptiveEnabled) {
+        result.failureReason = "sequential_halving_adaptive_conflict";
+        return result;
+    }
+    if (config.sequentialHalving.has_value() && config.rootExplorationParameter.has_value()) {
+        result.failureReason = "sequential_halving_root_exploration_conflict";
         return result;
     }
     try {

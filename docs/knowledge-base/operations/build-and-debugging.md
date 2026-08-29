@@ -214,6 +214,12 @@ treatment. If Silver telemetry is expected, retain both
 The validator rejects an absent, empty, or zero telemetry setting before a
 seed can run.
 
+Manifest schema 2 adds `clear_env: true`. Use it for decision-bearing policy
+experiments so the executable starts under `env -i` with only `common_env` and
+the selected arm's `env`; this prevents an old shell-level treatment variable
+from contaminating a nominal control. Schema-1 manifests remain supported for
+recorded workflows that deliberately inherit their launch environment.
+
 Use this sequence after CI and before gameplay:
 
 ```bash

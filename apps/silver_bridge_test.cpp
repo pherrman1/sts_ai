@@ -315,6 +315,81 @@ int main() {
               && qualityFresh.simulations == 16 && !qualityFingerprint.empty() && chosenInSummary,
           "fresh quality search must have zero inherited visits and describe its chosen semantic root action");
 
+    // The tournament allocator is default-off and acts only by forcing the
+    // current root edge. Every legal edge receives an audition, eliminated
+    // edges remain stored, and the exact requested budget is consumed.
+    auto halvingConfig = qualityConfig;
+    halvingConfig.simulationsPerDecision = 128;
+    halvingConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
+    halvingConfig.sequentialHalving = silver_bridge::SilverSequentialHalvingConfig{};
+    const auto halving = silver_bridge::runSilverDecision(firstWire, halvingConfig);
+    std::set<std::string> halvingActions, eliminatedActions;
+    std::int64_t halvingRootVisits = 0;
+    bool everyRootActionAuditioned = true;
+    for (const auto &summary : halving.rootActionSummaries) {
+        halvingActions.insert(silver_bridge::semanticActionFingerprint(summary.action));
+        halvingRootVisits += summary.edgeVisits;
+        everyRootActionAuditioned = everyRootActionAuditioned && summary.edgeVisits > 0;
+    }
+    eliminatedActions.insert(halving.sequentialHalving.eliminatedActionFingerprints.begin(),
+                             halving.sequentialHalving.eliminatedActionFingerprints.end());
+    const auto halvingFingerprint = silver_bridge::semanticActionFingerprint(halving.action);
+    check(halving.accepted && halving.simulations == 128 && halvingRootVisits == 128
+              && halving.sequentialHalving.enabled
+              && halving.sequentialHalving.simulationsAdded == 128
+              && halving.sequentialHalving.initialLegalActions
+                  == static_cast<int>(halving.rootActionSummaries.size())
+              && everyRootActionAuditioned && halvingActions == ordinaryRootActions
+              && !eliminatedActions.count(halvingFingerprint)
+              && halvingFingerprint == halving.sequentialHalving.finalCandidateFingerprint,
+          "Sequential Halving must preserve, audition, and exactly account for every legal root edge");
+
+    std::set<std::vector<int>> observedShapes;
+    std::set<std::vector<std::int64_t>> observedAllocations;
+    for (const auto shape : {silver_bridge::SilverSequentialHalvingShape::HALF,
+                             silver_bridge::SilverSequentialHalvingShape::GENTLE,
+                             silver_bridge::SilverSequentialHalvingShape::AGGRESSIVE,
+                             silver_bridge::SilverSequentialHalvingShape::SCREEN_TWO}) {
+        for (const auto allocation : {
+                 silver_bridge::SilverSequentialHalvingAllocation::FINALIST_HEAVY,
+                 silver_bridge::SilverSequentialHalvingAllocation::BALANCED,
+                 silver_bridge::SilverSequentialHalvingAllocation::CAUTIOUS}) {
+            auto candidateConfig = halvingConfig;
+            candidateConfig.sequentialHalving =
+                silver_bridge::SilverSequentialHalvingConfig{shape, allocation};
+            const auto candidate = silver_bridge::runSilverDecision(firstWire, candidateConfig);
+            check(candidate.accepted && candidate.simulations == 128
+                      && candidate.sequentialHalving.activeCountsBeforeRound.size()
+                          == candidate.sequentialHalving.activeCountsAfterRound.size()
+                      && candidate.sequentialHalving.activeCountsBeforeRound.size()
+                          == candidate.sequentialHalving.pullsPerAction.size(),
+                  "every predeclared online tuning schedule must be feasible and exactly budgeted");
+            observedShapes.insert(candidate.sequentialHalving.activeCountsAfterRound);
+            observedAllocations.insert(candidate.sequentialHalving.pullsPerAction);
+        }
+    }
+    check(observedShapes.size() >= 2 && observedAllocations.size() >= 3,
+          "shape and allocation knobs must produce distinct root schedules");
+
+    auto forbiddenAdaptiveHalving = halvingConfig;
+    forbiddenAdaptiveHalving.adaptiveEnabled = true;
+    const auto adaptiveHalving = silver_bridge::runSilverDecision(firstWire, forbiddenAdaptiveHalving);
+    auto forbiddenRootCHalving = halvingConfig;
+    forbiddenRootCHalving.rootExplorationParameter = 35.0;
+    const auto rootCHalving = silver_bridge::runSilverDecision(firstWire, forbiddenRootCHalving);
+    check(!adaptiveHalving.accepted
+              && adaptiveHalving.failureReason == "sequential_halving_adaptive_conflict"
+              && !rootCHalving.accepted
+              && rootCHalving.failureReason == "sequential_halving_root_exploration_conflict",
+          "Sequential Halving must reject adaptive allocation and an inert root-c combination");
+
+    auto halvingReuseConfig = halvingConfig;
+    halvingReuseConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::ALLOCATED;
+    const auto halvingReuse = silver_bridge::probeSilverSearchSessionReuse(firstWire, halvingReuseConfig);
+    check(halvingReuse.accepted && halvingReuse.rerootExact == 1
+              && halvingReuse.inheritedVisits > 0,
+          "Sequential Halving must preserve exact reroot identity and inherited visits");
+
     // The leaf observer is the narrow, type-free seam used by live Silver
     // instrumentation.  A shadow observer must see the same leaf at START
     // and END without changing the search result; a direct observer may
@@ -692,6 +767,19 @@ int main() {
               && transaction.searchDiagnostics[1].exactReroot
               && transaction.searchDiagnostics[1].inheritedVisits > 0,
           "GAMBLE second subdecision must prove exact reroot with inherited visits");
+    auto halvingTransactionConfig = transactionConfig;
+    halvingTransactionConfig.simulationsPerDecision = 64;
+    halvingTransactionConfig.sequentialHalving =
+        silver_bridge::SilverSequentialHalvingConfig{
+            silver_bridge::SilverSequentialHalvingShape::GENTLE,
+            silver_bridge::SilverSequentialHalvingAllocation::CAUTIOUS};
+    const auto halvingTransaction = silver_bridge::runSequentialSelectionTransaction(
+        convert(transactionLive, gc, transactionKnowledge), halvingTransactionConfig);
+    check(halvingTransaction.accepted && halvingTransaction.finalConfirmation
+              && halvingTransaction.rerootExact >= 1
+              && halvingTransaction.totalSimulations
+                  == halvingTransaction.searchDecisions * 64,
+          "Sequential Halving must preserve multi-select transaction and per-root accounting semantics");
     check(transactionLive.inputState == transactionBefore.inputState
           && transactionLive.cardSelectInfo.cardSelectTask == transactionBefore.cardSelectInfo.cardSelectTask
           && transactionLive.cards.cardsInHand == transactionBefore.cards.cardsInHand

@@ -318,6 +318,9 @@ add_test(NAME py_compile_check_benchmark_canary COMMAND python3 -m py_compile ${
 add_test(NAME check_benchmark_canary_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/agent/check_benchmark_canary.py --self-test)
 add_test(NAME agent_workflow_tools COMMAND python3 -m unittest
     tests.agent.test_gcp_benchmark tests.agent.test_build)
+add_test(NAME silver_sh_online_tuning_tools COMMAND python3 -m unittest
+    tests.agent.test_prepare_silver_sh_online_tuning)
+set_tests_properties(silver_sh_online_tuning_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(agent_workflow_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME py_compile_analyze_silver_sticky_quality COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py)
 add_test(NAME analyze_silver_sticky_quality_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py --self-test)

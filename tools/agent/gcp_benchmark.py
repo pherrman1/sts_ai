@@ -31,11 +31,12 @@ WINDOWS_GCLOUD = (
 )
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 SHA_RE = re.compile(r"[0-9a-f]{40}")
-MANIFEST_KEYS = {
+MANIFEST_KEYS_V1 = {
     "schema_version", "experiment_id", "frozen_sha", "checkout", "build_dir",
     "binary", "artifacts", "common_env", "required_env",
     "expect_silver_telemetry", "command", "arms",
 }
+MANIFEST_KEYS_V2 = MANIFEST_KEYS_V1 | {"clear_env"}
 
 
 def gcloud_path() -> str:
@@ -152,9 +153,15 @@ def load_run_manifest(path: Path) -> dict:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"cannot read run manifest {path}: {exc}") from exc
-    _require(isinstance(payload, dict) and set(payload) == MANIFEST_KEYS,
+    _require(isinstance(payload, dict), "run manifest must be an object")
+    schema_version = payload.get("schema_version")
+    _require(schema_version in (1, 2), "unsupported run manifest schema_version")
+    expected_keys = MANIFEST_KEYS_V1 if schema_version == 1 else MANIFEST_KEYS_V2
+    _require(set(payload) == expected_keys,
              "run manifest has unknown or missing top-level fields")
-    _require(payload["schema_version"] == 1, "unsupported run manifest schema_version")
+    if schema_version == 2:
+        _require(isinstance(payload["clear_env"], bool),
+                 "manifest clear_env must be boolean")
     _require(isinstance(payload["experiment_id"], str)
              and re.fullmatch(r"[A-Za-z0-9._-]+", payload["experiment_id"]) is not None,
              "manifest experiment_id must be a safe non-empty identifier")
@@ -165,6 +172,8 @@ def load_run_manifest(path: Path) -> dict:
         _require(isinstance(payload[key], str) and payload[key],
                  f"manifest {key} must be a non-empty remote path")
     payload["binary"] = _remote_file(payload["binary"], "binary")
+    _require(payload["binary"]["remote_path"] == payload["build_dir"].rstrip("/") + "/one_combat",
+             "manifest binary.remote_path must be build_dir/one_combat")
     _require(isinstance(payload["artifacts"], list), "manifest artifacts must be a list")
     payload["artifacts"] = [
         _remote_file(item, f"artifacts[{index}]")
@@ -267,7 +276,10 @@ def manifest_arm(manifest: dict, name: str) -> tuple[list[str], str, list[str]]:
     env = {**manifest["common_env"], **arm["env"]}
     command = [arm["results"] if token == "{results}" else token
                for token in manifest["command"]]
-    rendered = ["env", *(f"{key}={env[key]}" for key in sorted(env)), *command]
+    rendered = ["env"]
+    if manifest.get("clear_env", False):
+        rendered.append("-i")
+    rendered.extend([*(f"{key}={env[key]}" for key in sorted(env)), *command])
     fresh = [arm["results"], arm["results"] + ".meta.json", arm["log"]]
     return rendered, arm["log"], fresh
 

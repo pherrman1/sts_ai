@@ -40,6 +40,7 @@ namespace {
 struct SilverLiveOptions {
     silver_bridge::SilverReuseCapMode reuseCapMode = silver_bridge::SilverReuseCapMode::ALLOCATED;
     std::optional<double> rootExplorationParameter;
+    std::optional<silver_bridge::SilverSequentialHalvingConfig> sequentialHalving;
     // Experiment-only override: use the agent's base budget at every root,
     // including bosses, so paired fixed-budget arms are actually comparable.
     bool exactRootBudgets = false;
@@ -141,6 +142,41 @@ void parseSilverLiveOptions() {
                 "STS_SILVER_ROOT_EXPLORATION must be nonnegative");
         options.rootExplorationParameter = value;
     }
+    const char *shapeRaw = std::getenv("STS_SILVER_SH_SHAPE");
+    const char *allocationRaw = std::getenv("STS_SILVER_SH_ALLOCATION");
+    if ((shapeRaw == nullptr) != (allocationRaw == nullptr)) {
+        throw std::invalid_argument(
+            "STS_SILVER_SH_SHAPE and STS_SILVER_SH_ALLOCATION must be set together");
+    }
+    if (shapeRaw != nullptr) {
+        silver_bridge::SilverSequentialHalvingConfig treatment;
+        const std::string shape(shapeRaw);
+        if (shape == "half")
+            treatment.shape = silver_bridge::SilverSequentialHalvingShape::HALF;
+        else if (shape == "gentle")
+            treatment.shape = silver_bridge::SilverSequentialHalvingShape::GENTLE;
+        else if (shape == "aggressive")
+            treatment.shape = silver_bridge::SilverSequentialHalvingShape::AGGRESSIVE;
+        else if (shape == "screen_two")
+            treatment.shape = silver_bridge::SilverSequentialHalvingShape::SCREEN_TWO;
+        else
+            throw std::invalid_argument(
+                "STS_SILVER_SH_SHAPE must be 'half', 'gentle', 'aggressive', or 'screen_two'");
+        const std::string allocation(allocationRaw);
+        if (allocation == "finalist_heavy")
+            treatment.allocation =
+                silver_bridge::SilverSequentialHalvingAllocation::FINALIST_HEAVY;
+        else if (allocation == "balanced")
+            treatment.allocation =
+                silver_bridge::SilverSequentialHalvingAllocation::BALANCED;
+        else if (allocation == "cautious")
+            treatment.allocation =
+                silver_bridge::SilverSequentialHalvingAllocation::CAUTIOUS;
+        else
+            throw std::invalid_argument(
+                "STS_SILVER_SH_ALLOCATION must be 'finalist_heavy', 'balanced', or 'cautious'");
+        options.sequentialHalving = treatment;
+    }
     if (const char *raw = std::getenv("STS_SILVER_SCALING_DIAG_FILE"))
         options.scalingDiagnosticFile = raw;
     if (const char *raw = std::getenv("STS_SILVER_STICKY_QUALITY_FILE"))
@@ -235,6 +271,11 @@ void parseSilverLiveOptions() {
                 || options.adaptiveTopTwoVisitGapThreshold > 1.0)) {
         throw std::invalid_argument("STS_SILVER_ADAPTIVE_TOP_GAP must be in [0,1]");
     }
+    if (options.sequentialHalving.has_value() && options.adaptiveEnabled)
+        throw std::invalid_argument("Silver Sequential Halving is incompatible with STS_SILVER_ADAPTIVE");
+    if (options.sequentialHalving.has_value() && options.rootExplorationParameter.has_value())
+        throw std::invalid_argument(
+            "Silver Sequential Halving forces root allocation; STS_SILVER_ROOT_EXPLORATION would be inert");
     options.installed = true;
     g_silverLiveOptions = std::move(options);
 }
@@ -978,6 +1019,7 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
         : agent.simulationCountBase);
     result.reuseCapMode = g_silverLiveOptions.reuseCapMode;
     result.rootExplorationParameter = g_silverLiveOptions.rootExplorationParameter;
+    result.sequentialHalving = g_silverLiveOptions.sequentialHalving;
     result.collectDecisionDiagnostics = collectDecisionDiagnostics;
     result.adaptiveEnabled = g_silverLiveOptions.adaptiveEnabled;
     if (result.adaptiveEnabled) {
@@ -1372,6 +1414,18 @@ void installSilverLiveBackend() {
     else
         std::cout << "default(25)";
     std::cout << "]\n";
+    std::cout << "[Silver root allocation=";
+    if (g_silverLiveOptions.sequentialHalving.has_value()) {
+        std::cout << "sequential_halving shape="
+                  << silver_bridge::silverSequentialHalvingShapeName(
+                         g_silverLiveOptions.sequentialHalving->shape)
+                  << " allocation="
+                  << silver_bridge::silverSequentialHalvingAllocationName(
+                         g_silverLiveOptions.sequentialHalving->allocation);
+    } else {
+        std::cout << "ordinary_uct";
+    }
+    std::cout << "]\n";
 }
 void uninstallSilverLiveBackend() { g_externalCombatBackend = nullptr; g_silverLiveOptions.installed = false; }
 bool silverLiveBackendInstalled() { return g_silverLiveOptions.installed; }
@@ -1388,6 +1442,18 @@ double silverLiveAdaptiveTopTwoVisitGapThreshold() {
 }
 std::optional<double> silverLiveRootExplorationParameter() {
     return g_silverLiveOptions.rootExplorationParameter;
+}
+std::string silverLiveSequentialHalvingShape() {
+    return g_silverLiveOptions.sequentialHalving.has_value()
+        ? silver_bridge::silverSequentialHalvingShapeName(
+              g_silverLiveOptions.sequentialHalving->shape)
+        : "off";
+}
+std::string silverLiveSequentialHalvingAllocation() {
+    return g_silverLiveOptions.sequentialHalving.has_value()
+        ? silver_bridge::silverSequentialHalvingAllocationName(
+              g_silverLiveOptions.sequentialHalving->allocation)
+        : "off";
 }
 bool silverStickyQualitySampled(std::uint64_t runSeed, int floor, int encounter,
                                 int combatDecisionOrdinal) {

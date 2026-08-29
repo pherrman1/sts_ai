@@ -4858,6 +4858,10 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             ? search::silverLiveRootExplorationParameter() : std::optional<double>{};
         meta.silverRootExplorationParameter = !meta.silverSearchEnabled
             ? "" : (rootExploration.has_value() ? std::to_string(*rootExploration) : "default(25)");
+        meta.silverSequentialHalvingShape = meta.silverSearchEnabled
+            ? search::silverLiveSequentialHalvingShape() : "";
+        meta.silverSequentialHalvingAllocation = meta.silverSearchEnabled
+            ? search::silverLiveSequentialHalvingAllocation() : "";
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = search::g_useVNet ? "ON" : "off";

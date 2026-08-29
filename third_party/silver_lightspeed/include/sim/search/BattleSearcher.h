@@ -211,6 +211,7 @@ namespace sts::search {
 
         std::vector<Node*> searchStack;        // descent path; doubles as the cycle-guard set (linear scan, depth is small)
         std::vector<Action> actionStack;
+        int forcedRootEdge = -1;
 
         SimpleAgent rolloutAgent;
         BattleContext rolloutScratch;   // reused playout buffer: copy-assigning into it keeps the card-pile vector capacity, avoiding a fresh allocation per rollout
@@ -229,6 +230,8 @@ namespace sts::search {
         void search(int64_t simulations);
         void searchForMicros(int64_t maxMicros);   // run steps until the wall-clock budget (microseconds) is spent
         void step();
+        void stepRootEdge(int rootEdgeIdx);
+        void ensureRootActions();
         Action getBestAction() const;
         const std::vector<Edge>& getRootEdges() const { return root->edges; }
 

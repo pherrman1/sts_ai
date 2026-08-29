@@ -257,6 +257,25 @@ enum class CardSource : std::uint8_t { NONE = 0, HAND, DRAW, DISCARD, EXHAUST, C
 // The production cap is deliberately fixed.  The allocated/active modes
 // select the existing pool measurement; NONE disables statistical reuse.
 enum class SilverReuseCapMode : std::uint8_t { ALLOCATED = 0, ACTIVE, NONE };
+enum class SilverSequentialHalvingShape : std::uint8_t {
+    HALF = 0,
+    GENTLE,
+    AGGRESSIVE,
+    SCREEN_TWO,
+};
+enum class SilverSequentialHalvingAllocation : std::uint8_t {
+    FINALIST_HEAVY = 0,
+    BALANCED,
+    CAUTIOUS,
+};
+const char *silverSequentialHalvingShapeName(SilverSequentialHalvingShape shape);
+const char *silverSequentialHalvingAllocationName(SilverSequentialHalvingAllocation allocation);
+
+struct SilverSequentialHalvingConfig {
+    SilverSequentialHalvingShape shape = SilverSequentialHalvingShape::HALF;
+    SilverSequentialHalvingAllocation allocation =
+        SilverSequentialHalvingAllocation::BALANCED;
+};
 enum class SilverRerootFallbackReason : std::uint8_t {
     NONE = 0,
     NO_PREDECESSOR,
@@ -318,6 +337,10 @@ struct SilverSearchConfig {
     // root. Internal deterministic nodes keep explorationParameter and
     // chance nodes keep explorationParameterChance.
     std::optional<double> rootExplorationParameter;
+    // Default-off root-only tournament allocation. Survivor ranking remains
+    // the existing child mean Q; internal deterministic and chance selection
+    // remain ordinary Silver.
+    std::optional<SilverSequentialHalvingConfig> sequentialHalving;
     double chanceWideningC = 3.7028;
     double chanceWideningAlpha = 0.52389;
     double endTurnWideningC = 3.7028;
@@ -378,6 +401,21 @@ struct SilverRootUncertainty {
 SilverRootUncertainty summarizeSilverRoot(
     const std::vector<SilverRootActionSummary> &summaries);
 
+struct SilverSequentialHalvingTelemetry {
+    bool enabled = false;
+    SilverSequentialHalvingShape shape = SilverSequentialHalvingShape::HALF;
+    SilverSequentialHalvingAllocation allocation =
+        SilverSequentialHalvingAllocation::BALANCED;
+    int initialLegalActions = 0;
+    std::vector<int> activeCountsBeforeRound;
+    std::vector<int> activeCountsAfterRound;
+    std::vector<std::int64_t> pullsPerAction;
+    std::vector<std::string> eliminatedActionFingerprints;
+    std::string finalCandidateFingerprint;
+    std::int64_t finalCandidateExtraPulls = 0;
+    std::int64_t simulationsAdded = 0;
+};
+
 // Value-only accounting of one actual private Silver search invocation.  The
 // record is emitted for ordinary decisions and every sequential-selection
 // subdecision when collection is enabled.
@@ -404,6 +442,7 @@ struct SilverSearchDecisionDiagnostic {
     std::int64_t adaptiveInitialSimulations = 0;
     std::int64_t adaptiveTotalSimulations = 0;
     SilverRootUncertainty rootUncertainty;
+    SilverSequentialHalvingTelemetry sequentialHalving;
 };
 
 // Value-only copy of Silver BattleSearcher's deterministic telemetry. This is
@@ -518,6 +557,7 @@ struct SilverDecisionResult {
     // as the escalation trigger. It remains the initial summary after a
     // continuation; rootActionSummaries hold the final-budget observations.
     SilverRootUncertainty rootUncertainty;
+    SilverSequentialHalvingTelemetry sequentialHalving;
     std::string initialActionFingerprint;
     std::int64_t initialSimulations = 0;
     bool adaptiveEscalated = false;

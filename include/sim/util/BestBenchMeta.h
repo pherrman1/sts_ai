@@ -67,6 +67,8 @@ struct BenchConfigSidecar {
     // "default(25)" means ordinary Silver root c=25; otherwise this is the
     // active deterministic root-only exploration coefficient.
     std::string silverRootExplorationParameter;
+    std::string silverSequentialHalvingShape;
+    std::string silverSequentialHalvingAllocation;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -163,6 +165,10 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"silverExactRootBudgets\":" << (c.silverExactRootBudgets ? "true" : "false");
     o << ",\"silverRootExplorationParameter\":\""
       << detail::jsonEscape(c.silverRootExplorationParameter) << '"';
+    o << ",\"silverSequentialHalvingShape\":\""
+      << detail::jsonEscape(c.silverSequentialHalvingShape) << '"';
+    o << ",\"silverSequentialHalvingAllocation\":\""
+      << detail::jsonEscape(c.silverSequentialHalvingAllocation) << '"';
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';

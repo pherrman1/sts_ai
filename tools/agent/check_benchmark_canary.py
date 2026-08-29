@@ -84,6 +84,7 @@ def validate(args: argparse.Namespace) -> str:
     meta = read_single_meta(args.meta)
     rows = read_results(args.results)
     config = meta.get("config", {})
+    models = meta.get("models", {})
     seed_block = meta.get("seedBlock", {})
 
     require(meta.get("objective") == "bestbench", "metadata objective is not bestbench")
@@ -122,11 +123,43 @@ def validate(args: argparse.Namespace) -> str:
                 "Silver canary requires an expected reuse-cap mode")
         require(config.get("silverReuseCapMode") == args.expect_silver_reuse_cap_mode,
                 "effective Silver reuse-cap mode does not match")
+        required_expectations = {
+            "Sequential Halving shape": args.expect_silver_sh_shape,
+            "Sequential Halving allocation": args.expect_silver_sh_allocation,
+            "root exploration": args.expect_silver_root_exploration,
+            "exact-root-budget state": args.expect_silver_exact_root_budgets,
+            "adaptive state": args.expect_silver_adaptive,
+            "floor model": args.expect_floor_model,
+            "win model": args.expect_win_model,
+            "combat VNet": args.expect_combat_vnet,
+            "policy net": args.expect_policy_net,
+        }
+        require(all(value is not None for value in required_expectations.values()),
+                "Silver canary requires explicit search and model expectations")
+        require(config.get("silverSequentialHalvingShape") == args.expect_silver_sh_shape,
+                "effective Sequential Halving shape does not match")
+        require(config.get("silverSequentialHalvingAllocation") == args.expect_silver_sh_allocation,
+                "effective Sequential Halving allocation does not match")
+        require(config.get("silverRootExplorationParameter") == args.expect_silver_root_exploration,
+                "effective Silver root exploration does not match")
+        require(config.get("silverExactRootBudgets") is args.expect_silver_exact_root_budgets,
+                "effective exact-root-budget state does not match")
+        require(config.get("silverAdaptiveEnabled") is args.expect_silver_adaptive,
+                "effective Silver adaptive state does not match")
+        require(models.get("floor") == args.expect_floor_model, "effective floor model does not match")
+        require(models.get("win") == args.expect_win_model, "effective win model does not match")
+        require(models.get("combatVNet") == args.expect_combat_vnet,
+                "effective combat VNet does not match")
+        require(models.get("policyNet") == args.expect_policy_net,
+                "effective policy net does not match")
         require(args.log is not None, "Silver canary requires --log for mechanism/failure telemetry")
         telemetry = parse_silver_telemetry(args.log)
         require(telemetry, "no [silver-combat] telemetry found; treatment activation is unproved")
         require(any(row.get("decisions", 0) > 0 and row.get("simulations", 0) > 0 for row in telemetry),
                 "Silver telemetry contains no actual decisions/simulations")
+        require(all(row.get("simulations", 0) > 0
+                    and row["simulations"] % args.expect_sims == 0 for row in telemetry),
+                "Silver telemetry simulation totals are not positive exact-root-budget multiples")
         for field in FAILURE_FIELDS:
             require(all(row.get(field) == 0 for row in telemetry),
                     f"Silver telemetry reports nonzero or missing {field}")
@@ -150,7 +183,13 @@ def self_test() -> int:
             "config": {"effectiveCombatBackend": "silver", "stsSilverSearchEffective": True,
                        "silverSearchEnabled": True, "silverReuseCapMode": "active",
                        "silverUpstreamSha": "84ab3e", "executableGitSha": "deadbeef",
+                       "silverSequentialHalvingShape": "gentle",
+                       "silverSequentialHalvingAllocation": "cautious",
+                       "silverRootExplorationParameter": "default(25)",
+                       "silverExactRootBudgets": True, "silverAdaptiveEnabled": False,
                        "fairPlay": True, "searcher3": True},
+            "models": {"floor": "models/v_rich_trees.txt", "win": "models/v_win_trees.txt",
+                       "combatVNet": "off", "policyNet": "off"},
         }
         meta.write_text(json.dumps(record) + "\n", encoding="utf-8")
         log.write_text("[silver-combat] decisions=2 simulations=128 conversion_failures=0 semantic_resolution_failures=0 transaction_failures=0 knowledge_failures=0\n", encoding="utf-8")
@@ -159,7 +198,15 @@ def self_test() -> int:
                                   expect_seeds=1, expect_sims=64, expect_seed_lo=942000,
                                   expect_executable_sha="deadbeef", expect_silver_reuse_cap_mode="active",
                                   binary=binary, expect_binary_sha256=sha256(binary), expect_asc=0,
-                                  expect_threads=24, expect_fair=True, expect_searcher3=True)
+                                  expect_threads=24, expect_fair=True, expect_searcher3=True,
+                                  expect_silver_sh_shape="gentle",
+                                  expect_silver_sh_allocation="cautious",
+                                  expect_silver_root_exploration="default(25)",
+                                  expect_silver_exact_root_budgets=True,
+                                  expect_silver_adaptive=False,
+                                  expect_floor_model="models/v_rich_trees.txt",
+                                  expect_win_model="models/v_win_trees.txt",
+                                  expect_combat_vnet="off", expect_policy_net="off")
         validate(args)
 
         def expect_failure(label: str, needle: str, **changes: object) -> None:
@@ -195,6 +242,21 @@ def self_test() -> int:
         expect_failure("fairPlay false/true mismatch", "fairPlay value", expect_fair=False)
         expect_failure("searcher3 false/true mismatch", "searcher3 value", expect_searcher3=False)
         expect_failure("omitted Silver reuse cap", "expected reuse-cap mode", expect_silver_reuse_cap_mode=None)
+        log.write_text("[silver-combat] decisions=2 simulations=65 conversion_failures=0 semantic_resolution_failures=0 transaction_failures=0 knowledge_failures=0\n", encoding="utf-8")
+        try:
+            validate(args)
+        except ValueError as exc:
+            require("exact-root-budget multiples" in str(exc), "wrong failure for non-divisible simulations")
+        else:
+            raise AssertionError("non-divisible Silver simulation total was accepted")
+        log.write_text("[silver-combat] decisions=2 simulations=0 conversion_failures=0 semantic_resolution_failures=0 transaction_failures=0 knowledge_failures=0\n", encoding="utf-8")
+        try:
+            validate(args)
+        except ValueError as exc:
+            require("actual decisions/simulations" in str(exc), "wrong failure for zero simulations")
+        else:
+            raise AssertionError("zero Silver simulation total was accepted")
+        log.write_text("[silver-combat] decisions=2 simulations=128 conversion_failures=0 semantic_resolution_failures=0 transaction_failures=0 knowledge_failures=0\n", encoding="utf-8")
 
         # Restore the valid fixture before testing a bypassed treatment.
         meta.write_text(json.dumps(record) + "\n", encoding="utf-8")
@@ -232,7 +294,25 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--expect-executable-sha")
     p.add_argument("--binary", type=Path)
     p.add_argument("--expect-binary-sha256")
-    p.add_argument("--expect-silver-reuse-cap-mode", choices=("allocated", "active"))
+    p.add_argument("--expect-silver-reuse-cap-mode", choices=("allocated", "active", "none"))
+    p.add_argument("--expect-silver-sh-shape",
+                   choices=("off", "half", "gentle", "aggressive", "screen_two"))
+    p.add_argument("--expect-silver-sh-allocation",
+                   choices=("off", "finalist_heavy", "balanced", "cautious"))
+    p.add_argument("--expect-silver-root-exploration")
+    exact = p.add_mutually_exclusive_group()
+    exact.add_argument("--expect-silver-exact-root-budgets", dest="expect_silver_exact_root_budgets",
+                       action="store_true")
+    exact.add_argument("--no-expect-silver-exact-root-budgets", dest="expect_silver_exact_root_budgets",
+                       action="store_false")
+    adaptive = p.add_mutually_exclusive_group()
+    adaptive.add_argument("--expect-silver-adaptive", dest="expect_silver_adaptive", action="store_true")
+    adaptive.add_argument("--no-expect-silver-adaptive", dest="expect_silver_adaptive", action="store_false")
+    p.set_defaults(expect_silver_exact_root_budgets=None, expect_silver_adaptive=None)
+    p.add_argument("--expect-floor-model")
+    p.add_argument("--expect-win-model")
+    p.add_argument("--expect-combat-vnet")
+    p.add_argument("--expect-policy-net")
     return p
 
 
