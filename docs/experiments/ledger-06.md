@@ -5803,3 +5803,22 @@ model training was changed.
   apply. This is evidence about the additive linear grouped policy only, not
   direct grouped policy learning in general. Full hashes, command, raw output,
   analysis, and stability are in [the replay evidence report](evidence/silver_grouped_linear_visit_policy_replay_2026-08-29.md).
+
+## Grouped linear Silver replay final alignment and cross-prior check (2026-08-29)
+
+- **Correctness:** the replay analyzer now fails closed for duplicate/missing
+  arms, per-root replicate seed/budget mismatch, or frozen-B reference mismatch.
+  Its negative decision condition is corrected to require both neutral/harmful
+  point estimates and both intervals ruling out 25% recovery. The frozen
+  grouped-linear result remains **INCONCLUSIVE**.
+- **Cross-prior provenance:** the raw-count replay hash
+  `bd988d807239634a0b4de49f427820b1c92c84fa5af8dd916602992f1f2a2a5c`
+  records source/executable `cb27a6e...` / `6f3ef9...`, unlike grouped linear
+  and rank-shape (`581b68b...` / `d8d083...`). Although roots, replicate
+  seeds, snapshots/relabels, and current/oracle rows match exactly, the
+  grouped-linear-minus-raw comparison is rejected fail-closed.
+- **Compatible rank-shape comparison:** grouped linear minus rank-shape is
+  `+1.190476 pp` B-best (95% CI `[-1.587302,+4.365079]`) and `-0.257334`
+  frozen-B regret (CI `[-0.625440,+0.019940]`), with `7/6/50`
+  improved/worsened/tied roots. This is a repeatedly examined frozen
+  search-level diagnostic, not gameplay or playing-strength confirmation.

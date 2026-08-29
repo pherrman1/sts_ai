@@ -19,6 +19,7 @@ EXPECTED_CONTROL_MEANS = {
     "oracle_visit_puct": {"mean_b_best_probability": 0.5119047619047619, "mean_b_regret": 3.5059477286470115},
 }
 CONTROL_TOLERANCE = 1e-9
+REPLAY_JUDGMENT = "frozen_25k_B_top_choice_and_regret"
 
 
 def percentile(values, fraction):
@@ -37,6 +38,40 @@ def bootstrap_mean(values, rng):
     return [percentile(means, 0.025), percentile(means, 0.975)]
 
 
+def validate_arm_alignment(header, rows):
+    """Fail closed unless each root/replicate has one aligned row per arm."""
+    if header.get("judgment") != REPLAY_JUDGMENT:
+        raise ValueError("unexpected frozen-B judgment reference")
+    by_root_replicate = defaultdict(list)
+    required = ("group_id", "replicate", "arm", "budget", "search_seed",
+                "frozen_b_best_action_fingerprint", "frozen_b_best_q")
+    for number, row in enumerate(rows, 2):
+        missing = [key for key in required if key not in row]
+        if missing:
+            raise ValueError(f"missing replay identity fields at line {number}: {missing}")
+        if not isinstance(row["group_id"], str) or not row["group_id"]:
+            raise ValueError(f"invalid replay group identity at line {number}")
+        if row["replicate"] not in {0, 1, 2, 3}:
+            raise ValueError(f"invalid replay replicate identity at line {number}")
+        if row["arm"] not in ARMS:
+            raise ValueError(f"unexpected replay arm at line {number}: {row['arm']}")
+        if row["budget"] != 32:
+            raise ValueError(f"replay budget mismatch at line {number}")
+        by_root_replicate[(row["group_id"], row["replicate"])].append(row)
+    for key, bucket in by_root_replicate.items():
+        arms = [row["arm"] for row in bucket]
+        if len(bucket) != len(ARMS) or set(arms) != set(ARMS) or len(set(arms)) != len(ARMS):
+            raise ValueError(f"duplicate/missing arm row at {key}")
+        if len({row["search_seed"] for row in bucket}) != 1:
+            raise ValueError(f"search-seed mismatch across arms at {key}")
+        if len({row["budget"] for row in bucket}) != 1:
+            raise ValueError(f"budget mismatch across arms at {key}")
+        if len({row["frozen_b_best_action_fingerprint"] for row in bucket}) != 1:
+            raise ValueError(f"frozen-B best-action mismatch across arms at {key}")
+        if len({row["frozen_b_best_q"] for row in bucket}) != 1:
+            raise ValueError(f"frozen-B judgment mismatch across arms at {key}")
+
+
 def load(path):
     with path.open(encoding="utf-8") as stream:
         header = json.loads(next(stream))
@@ -51,6 +86,7 @@ def load(path):
         raise ValueError("replay arm set mismatch")
     if {row["replicate"] for row in rows} != {0, 1, 2, 3}:
         raise ValueError("replay replicate set mismatch")
+    validate_arm_alignment(header, rows)
     return header, rows
 
 
@@ -181,16 +217,17 @@ def replay_decision(means, comparisons):
     target_regret_delta = -.25 * oracle_regret_reduction
     intervals_rule_out_top_25 = top_ci[1] < target_top
     intervals_rule_out_regret_25 = regret_ci[0] > target_regret_delta
-    negative = (learned_top_gain <= 0.0 or learned_regret_reduction <= 0.0
-                or (intervals_rule_out_top_25 and intervals_rule_out_regret_25))
+    point_estimates_neutral_or_harmful = learned_top_gain <= 0.0 or learned_regret_reduction <= 0.0
+    intervals_rule_out_both = intervals_rule_out_top_25 and intervals_rule_out_regret_25
+    negative = point_estimates_neutral_or_harmful and intervals_rule_out_both
     return {
         "classification": "POSITIVE" if positive else "NEGATIVE_LINEAR_MODEL" if negative else "INCONCLUSIVE",
         "positive_conditions": {"both_primary_point_estimates_improve": learned_top_gain > 0.0 and learned_regret_reduction > 0.0,
                                 "recovers_at_least_25_percent_of_oracle_gain_on_both": both_recover_25,
                                 "at_least_one_paired_ci_excludes_zero": at_least_one_ci_excludes_zero,
                                 "no_other_ci_supported_harm": not other_metric_has_ci_supported_harm},
-        "negative_conditions": {"top_or_regret_point_neutral_or_harmful": learned_top_gain <= 0.0 or learned_regret_reduction <= 0.0,
-                                "both_intervals_rule_out_25_percent_recovery": intervals_rule_out_top_25 and intervals_rule_out_regret_25},
+        "negative_conditions": {"top_or_regret_point_neutral_or_harmful": point_estimates_neutral_or_harmful,
+                                "both_intervals_rule_out_25_percent_recovery": intervals_rule_out_both},
         "recovery": {"top_probability": recovers_top, "regret_reduction": recovers_regret,
                      "top_25_percent_target": target_top, "regret_delta_25_percent_target": target_regret_delta},
     }

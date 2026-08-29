@@ -1,0 +1,79 @@
+{
+  "comparisons": {
+    "rankshape": {
+      "comparison": {
+        "b_best_probability_delta_ci95": [
+          -0.015873015873015872,
+          0.04365079365079365
+        ],
+        "bootstrap_replicates": 10000,
+        "bootstrap_seed": 20260932,
+        "largest_negative_regret_delta": {
+          "delta": -8.798783715740463,
+          "group_id": "f47c1d6977c181fd"
+        },
+        "largest_positive_regret_delta": {
+          "delta": 0.7333524398492592,
+          "group_id": "2b63441daceb23cf"
+        },
+        "mean_b_best_probability_delta": 0.011904761904761904,
+        "mean_b_best_probability_delta_pp": 1.1904761904761905,
+        "mean_frozen_b_regret_delta": -0.25733438415095133,
+        "mean_frozen_b_regret_delta_ci95": [
+          -0.6254404089205987,
+          0.01993972445994689
+        ],
+        "median_frozen_b_regret_delta": 0.0,
+        "regret_improved": 7,
+        "regret_tied": 50,
+        "regret_worsened": 6,
+        "replicates_per_root": 4,
+        "roots": 63
+      },
+      "preconditions": {
+        "checks": {
+          "exact_current_oracle_controls": true,
+          "same_executable_hash": true,
+          "same_group_replicate_keys": true,
+          "same_header_contract": true,
+          "same_per_root_replicate_seed": true,
+          "same_relabel_hash": true,
+          "same_snapshot_hash": true,
+          "same_source_commit": true
+        },
+        "failures": [],
+        "pass": true
+      }
+    },
+    "raw_count": {
+      "comparison": null,
+      "preconditions": {
+        "checks": {
+          "exact_current_oracle_controls": true,
+          "same_executable_hash": false,
+          "same_group_replicate_keys": true,
+          "same_header_contract": true,
+          "same_per_root_replicate_seed": true,
+          "same_relabel_hash": true,
+          "same_snapshot_hash": true,
+          "same_source_commit": false
+        },
+        "failures": [
+          "same_executable_hash",
+          "same_source_commit"
+        ],
+        "pass": false
+      },
+      "status": "REJECTED_INCOMPATIBLE_PROVENANCE_OR_CONTROLS"
+    }
+  },
+  "grouped_linear": {
+    "executable_sha256": "d8d08392343ab442ec093e5fa07b64b326755560ff374dfba61bbce9c1a18006",
+    "relabels_sha256": "abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c",
+    "replay_sha256": "9cdfeaea20f88fdde7e1ace8738ced893408164164f04d3d69b9869e0f1add7f",
+    "snapshots_sha256": "7cfc9371f1d1cfe3e48f7cbda3f6b0e7dc55d417be9d1612303d8e50ab67cc51",
+    "source_commit": "581b68bb31a8b62bb94e88c5b783e042880746b1"
+  },
+  "interpretation": "Repeated diagnostic roots only; this is search-level evidence, not gameplay or playing-strength confirmation.",
+  "schema": "silver_cross_prior_replay_analysis_v1"
+}

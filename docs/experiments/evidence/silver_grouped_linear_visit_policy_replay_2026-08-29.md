@@ -16,6 +16,12 @@ features cancel in an action softmax with no state-action interaction capacity;
 it does not reject direct grouped policy learning or the frozen representation
 under a nonlinear interaction model. No MLP was trained here.
 
+The decision implementation was then corrected to require **both** neutral or
+harmful point estimates **and** intervals ruling out 25% recovery on both
+metrics before classifying a linear model negative. The corrected rule leaves
+this replay **INCONCLUSIVE**: its point estimates are favorable, so the
+negative condition is false regardless of the recovery intervals.
+
 ## Scope and immutable provenance
 
 The initial offline result is corrected to **`REPLAY_PENDING`**: its metrics
@@ -113,3 +119,52 @@ the rebuild-only bridge test is intentionally omitted. GitHub Actions Linux
 GCC is not run for this Python/evidence continuation. The raw JSONL and
 machine analysis remain under
 `build/silver_grouped_linear_policy_20260829/` for independent review.
+
+## Final alignment checks and cross-prior comparison
+
+The replay analyzer now fails closed before aggregation unless every
+`(group_id, replicate)` has exactly one current/oracle/learned row, identical
+`search_seed` and budget across arms, and an identical frozen-B best-action
+identity/Q reference. It also rejects duplicate or missing arm rows and an
+unexpected frozen-B judgment reference. Focused tests cover seed mismatch,
+duplicate/missing rows, the positive boundary, the corrected negative boundary
+(which requires both conditions), and the present inconclusive boundary.
+
+The archived raw-count and rank-shape JSONLs were located and their recorded
+SHA-256 values verified:
+
+| Learned-prior replay | SHA-256 | recorded source / executable |
+| --- | --- | --- |
+| raw-count | `bd988d807239634a0b4de49f427820b1c92c84fa5af8dd916602992f1f2a2a5c` | `cb27a6e7f216b2e11ebbf1873f6f09c91a892a7c` / `6f3ef9cfd150b5f9455f90c2932664d5b1f5b9249af07b06baa6feb4becde266` |
+| rank-shape | `ff513e017be7e90ce91f49ad872be286637935d9cb2e50d229c2baf3d35eb50d` | `581b68bb31a8b62bb94e88c5b783e042880746b1` / `d8d08392343ab442ec093e5fa07b64b326755560ff374dfba61bbce9c1a18006` |
+
+All three files contain the identical 63 root IDs, replicate IDs `0..3`, and
+per-root replicate seeds. Snapshot and relabel hashes are the frozen values
+above, and current/oracle rows are exactly equal action-by-action for selected
+action, frozen-B top outcome, and frozen-B regret. The raw-count comparison is
+nevertheless **rejected fail-closed**: its recorded executable/source differs
+from grouped linear's verified `d8d083...` / `581b68...` provenance. No
+grouped-linear-minus-raw effect is reported.
+
+Rank-shape meets every prerequisite, including exact control equality and
+matching executable/source provenance. Pairing `(group_id, replicate)`, then
+averaging the four differences within each root and bootstrapping 63 roots
+(10,000 resamples, seed `20260932`) gives:
+
+| Comparison: grouped linear − rank-shape | Result |
+| --- | ---: |
+| B-best probability delta, 95% CI | +1.190476 pp [-1.587302, +4.365079] |
+| mean frozen-B regret delta, 95% CI | -0.257334 [-0.625440, +0.019940] |
+| median regret delta | 0.000000 |
+| improved / worsened / tied roots | 7 / 6 / 50 |
+| largest regret improvement | -8.798784 at `f47c1d6977c181fd` |
+| largest regret harm | +0.733352 at `2b63441daceb23cf` |
+
+This is a repeatedly examined 63-root diagnostic comparison, not fresh
+confirmation. Root replay is search-level evidence only; it is neither a
+gameplay evaluation nor a playing-strength claim.
+
+The generated cross-prior provenance manifest and analysis are respectively
+`cross_prior_replay_provenance.json` and `cross_prior_replay_analysis.json` in
+`build/silver_grouped_linear_policy_20260829/`; the latter SHA-256 is
+`ac302aa0d0be4ae2c7a9cdc69aa672fccb1867524afa97c956be62a9e8e0602f`.
