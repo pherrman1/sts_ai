@@ -5632,3 +5632,40 @@ model training was changed.
   control remained positive under the same replay. Full provenance, hashes,
   RNG qualification, tables, and commands are in
   [the learned-prior evidence report](evidence/silver_learned_visit_prior_2026-08-29.md).
+
+## Learned Silver raw visit-count target replay (2026-08-29)
+
+- **Question/protocol:** the normalized-share model had reused the centered-Q
+  recipe on a [0,1] target and produced 981 exact ties among 981 decision-
+  relevant B-Q pairs. This follow-up changed exactly one thing: the scalar
+  XGBoost target became raw 25k-A root visit counts. Canonical 1,788 features,
+  anchor exclusion, train/validation split, architecture, hyperparameters,
+  teacher A, frozen judgment B, and PUCT settings remained unchanged. Raw
+  predictions were clamped and sibling-normalized at inference. The raw-target
+  trainer was frozen at `8ed97b9574f88d54423b2ce0e4624582801bfe83` before the
+  prescribed 32-simulation replay.
+- **Offline gate:** on 63 multi-action anchors, raw counts reduced exact ties
+  from 981 to 79, increased pairwise B-Q concordance from 50.000% to 68.858%,
+  increased A-max-visit agreement from 25.40% to 50.79%, and increased B-max-Q
+  agreement from 34.92% to 53.97%. Finite within-parent Spearman coverage was
+  61/63 with mean 0.5638. Raw predictions ranged from -4015.7383 to
+  20246.7930 with variance 19207529.8596; 27 negative outputs were clamped,
+  with no all-zero fallback.
+- **Replay:** current UCT was 41.2698% B-best / 4.051736 regret; oracle
+  normalized A-visit PUCT was 51.1905% / 3.505948; raw-count learned
+  normalized visit-PUCT was 43.2540% / 4.038843. Learned minus current was
+  +1.9841 pp B-best (bootstrap CI [-3.9683, +8.3333] pp) and -0.012892 regret
+  (CI [-0.514962, +0.478084]), with 16/17/30 roots improved/worsened/tied.
+  Learned minus oracle was -7.9365 pp / +0.532896 regret, with 2/21/40 roots
+  improved/worsened/tied. The point estimates recover about 20.0% of the
+  oracle top-choice improvement and 2.36% of the oracle regret reduction, but
+  neither learned-versus-current interval excludes zero.
+- **Decision:** **`LEARNED_VISIT_PRIOR_TARGET_SCALE_UNRESOLVED`**. The result
+  answers the confound question: centered-Q regularization was inappropriate
+  for normalized-share scale, and raw counts recover offline ranking signal.
+  However, the 32-simulation replay is nearly neutral and uncertain, so do not
+  run gameplay, another budget, PUCT tuning, a hyperparameter sweep, or a new
+  architecture. Keep the learned-prior line open for review rather than
+  closing it or claiming an integration gain. Full hashes, tree inspection,
+  RNG qualification, tables, and commands are in
+  [the raw-count evidence report](evidence/silver_raw_visit_count_prior_2026-08-29.md).
