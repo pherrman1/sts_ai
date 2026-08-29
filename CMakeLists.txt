@@ -129,15 +129,6 @@ target_include_directories(silver-parent-policy-features PRIVATE include json/in
 target_link_libraries(silver-parent-policy-features PRIVATE silver_live_backend)
 target_link_options(silver-parent-policy-features PRIVATE -Wl,--gc-sections)
 
-# Offline root-only oracle replay. This diagnostic target consumes frozen
-# BattleStateWire snapshots and never runs campaign gameplay.
-add_executable(silver-root-oracle-replay apps/silver_root_oracle_replay.cpp)
-set_target_properties(silver-root-oracle-replay PROPERTIES
-    OUTPUT_NAME silver_root_oracle_replay)
-target_include_directories(silver-root-oracle-replay PRIVATE include json/include)
-target_link_libraries(silver-root-oracle-replay PRIVATE silver_combat_search_bridge)
-target_link_options(silver-root-oracle-replay PRIVATE -Wl,--gc-sections)
-
 add_executable(silver-native-parity-runner third_party/silver_lightspeed/bridge/SilverNativeFixtureRunner.cpp)
 set_target_properties(silver-native-parity-runner PROPERTIES OUTPUT_NAME silver_native_parity_runner)
 set_target_properties(silver-native-parity-runner PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)

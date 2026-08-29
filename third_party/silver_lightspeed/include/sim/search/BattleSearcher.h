@@ -158,7 +158,6 @@ namespace sts::search {
             Node* node = nullptr;               // child (shared across paths via transposition)
             int rngAdvanceSteps = 0;            // chance outcome edge: the N used for Random(base + N)
             std::int32_t visitCount = 0;        // times this edge was traversed (UCB / DPW reselection)
-            double rootPrior = 0.0;             // diagnostic-only root prior; unused by ordinary UCT
         };
 
         std::unique_ptr<BattleContext> rootState;
@@ -197,11 +196,6 @@ namespace sts::search {
         double chanceWideningAlpha = 0.37;   // tuned default
         double endTurnWideningC = 4.6;       // END_TURN pair; set equal to general for the joint behavior
         double endTurnWideningAlpha = 0.37;
-        silver_bridge::SilverRootGuidanceMode rootGuidanceMode =
-            silver_bridge::SilverRootGuidanceMode::NONE;
-        std::vector<std::string> rootActionOrder;
-        std::vector<double> rootActionPriors;
-        double rootPuctExploration = 2.5;
 
         // Default-off rollout/terminal decomposition collection. This is
         // diagnostic accounting only; it is never consulted by selection.
@@ -257,7 +251,6 @@ namespace sts::search {
                             const Action *incomingAction, int depth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);
-        void applyRootGuidance(Node &node, const BattleContext &bc);
         void enumerateCardActions(Node &node, const BattleContext &bc);
         void enumeratePotionActions(Node &node, const BattleContext &bc);
         void enumerateCardSelectActions(Node &node, const BattleContext &bc);

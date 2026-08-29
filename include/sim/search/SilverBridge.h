@@ -256,14 +256,6 @@ enum class CardSource : std::uint8_t { NONE = 0, HAND, DRAW, DISCARD, EXHAUST, C
 // The production cap is deliberately fixed.  The allocated/active modes
 // select the existing pool measurement; NONE disables statistical reuse.
 enum class SilverReuseCapMode : std::uint8_t { ALLOCATED = 0, ACTIVE, NONE };
-// Root-only diagnostic treatments. These fields are intentionally value-based
-// and default off; they are not a production policy interface.
-enum class SilverRootGuidanceMode : std::uint8_t {
-    NONE = 0,
-    ORDER_ONLY,
-    RANK_PUCT,
-    VISIT_PUCT,
-};
 enum class SilverRerootFallbackReason : std::uint8_t {
     NONE = 0,
     NO_PREDECESSOR,
@@ -329,12 +321,6 @@ struct SilverSearchConfig {
     // controls this value; production continues to use exactly 32 * 1024.
     std::int64_t reuseCap = kSilverProductionReuseCap;
     SilverReuseCapMode reuseCapMode = SilverReuseCapMode::ALLOCATED;
-    SilverRootGuidanceMode rootGuidanceMode = SilverRootGuidanceMode::NONE;
-    // Fingerprints define the diagnostic root order. For VISIT_PUCT,
-    // rootActionPriors is aligned with rootActionOrder.
-    std::vector<std::string> rootActionOrder;
-    std::vector<double> rootActionPriors;
-    double rootPuctExploration = 2.5;
     // Default-off collection avoids per-decision diagnostic work unless the
     // scaling CSV (or a focused bridge fixture) explicitly requests it.
     bool collectDecisionDiagnostics = false;

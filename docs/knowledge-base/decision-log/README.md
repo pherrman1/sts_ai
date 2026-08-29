@@ -76,6 +76,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-29 | [`2026-08-29-silver-learned-visit-prior.md`](2026-08-29-silver-learned-visit-prior.md) | The current learned Silver visit-prior line is rejected: oracle guidance works, but learned ranking plus global rank-shape calibration does not recover the oracle search benefit; preserve evidence and remove temporary replay runtime. |
 | 2026-08-28 | [`2026-08-28-research-run-preflight.md`](2026-08-28-research-run-preflight.md) | Strict multi-arm GCP manifests, exact-SHA/artifact preflight, and an environment-aware native/WSL build entry point move common workflow failures before seed execution. |
 | 2026-08-27 | [`2026-08-27-silver-leaf-teacher-corpus.md`](2026-08-27-silver-leaf-teacher-corpus.md) | Exact complete-group Silver leaf/parent corpus and fresh-teacher relabel pipeline; victory-only original-root correction uses per-action victory fractions. |
 | 2026-08-25 | [`2026-08-25-s3-generic-chance-tree-g1.md`](2026-08-25-s3-generic-chance-tree-g1.md) | G1 generic action-observation tree passed correctness; reuse isolation was mixed and slower; evidence and raw-artifact provenance are recorded before closing PR #54. |

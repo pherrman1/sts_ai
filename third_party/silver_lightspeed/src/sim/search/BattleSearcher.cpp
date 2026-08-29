@@ -494,15 +494,6 @@ double search::BattleSearcher::evaluateEdge(const search::BattleSearcher::Node &
     const double qualityValue = edge.node->evaluationSum / edge.node->simulationCount;
     const double exploration = edge.node->isRandomNode ? explorationParameterChance
                                                        : explorationParameter;
-    if (&parent == root
-            && rootGuidanceMode != silver_bridge::SilverRootGuidanceMode::NONE
-            && rootGuidanceMode != silver_bridge::SilverRootGuidanceMode::ORDER_ONLY) {
-        const double explorationValue = rootPuctExploration * edge.rootPrior
-            * std::sqrt(static_cast<double>(parent.simulationCount))
-            / (edge.visitCount + 1);
-        return qualityValue + explorationValue;
-    }
-
     const double explorationValue = exploration *
             std::sqrt(logParentVisits / (edge.visitCount + 1));
 
@@ -734,8 +725,6 @@ void search::BattleSearcher::enumerateActionsForNode(search::BattleSearcher::Nod
             break;
     }
 
-    if (&node == root) applyRootGuidance(node, bc);
-
 #ifdef sts_print_debug
     std::cout << "{ (" << node.edges.size() << ") ";
     for (int i = 0; i < node.edges.size(); ++i) {
@@ -743,48 +732,6 @@ void search::BattleSearcher::enumerateActionsForNode(search::BattleSearcher::Nod
     }
     std::cout << " }" << std::endl;
 #endif
-}
-
-void search::BattleSearcher::applyRootGuidance(search::BattleSearcher::Node &node,
-                                                const BattleContext &bc) {
-    if (rootGuidanceMode == silver_bridge::SilverRootGuidanceMode::NONE
-            || rootActionOrder.empty()) {
-        return;
-    }
-    if (rootActionOrder.size() != node.edges.size()) {
-        throw std::runtime_error("root diagnostic action count mismatch");
-    }
-    std::unordered_map<std::string, std::size_t> order;
-    for (std::size_t i = 0; i < rootActionOrder.size(); ++i) {
-        if (!order.emplace(rootActionOrder[i], i).second)
-            throw std::runtime_error("duplicate root diagnostic action fingerprint");
-    }
-    std::vector<std::pair<std::size_t, Edge>> ranked;
-    ranked.reserve(node.edges.size());
-    for (auto &edge : node.edges) {
-        const auto fingerprint = silver_bridge::silverActionFingerprint(bc, edge.action);
-        const auto it = order.find(fingerprint);
-        if (it == order.end())
-            throw std::runtime_error("root diagnostic action fingerprint mismatch");
-        ranked.emplace_back(it->second, std::move(edge));
-    }
-    std::stable_sort(ranked.begin(), ranked.end(),
-        [](const auto &lhs, const auto &rhs) { return lhs.first < rhs.first; });
-    node.edges.clear();
-    node.edges.reserve(ranked.size());
-    for (auto &entry : ranked) node.edges.push_back(std::move(entry.second));
-
-    if (rootGuidanceMode == silver_bridge::SilverRootGuidanceMode::RANK_PUCT) {
-        const double denominator = static_cast<double>(node.edges.size())
-            * static_cast<double>(node.edges.size() + 1) / 2.0;
-        for (std::size_t i = 0; i < node.edges.size(); ++i)
-            node.edges[i].rootPrior = static_cast<double>(node.edges.size() - i) / denominator;
-    } else if (rootGuidanceMode == silver_bridge::SilverRootGuidanceMode::VISIT_PUCT) {
-        if (rootActionPriors.size() != rootActionOrder.size())
-            throw std::runtime_error("root diagnostic prior count mismatch");
-        for (std::size_t i = 0; i < node.edges.size(); ++i)
-            node.edges[i].rootPrior = rootActionPriors[i];
-    }
 }
 
 void search::BattleSearcher::enumerateCardActions(search::BattleSearcher::Node &node,

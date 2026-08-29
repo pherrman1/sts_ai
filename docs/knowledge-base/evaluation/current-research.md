@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-08-28 against the current working tree.
+Last verified: 2026-08-29 against the current working tree.
 
 ## Purpose
 
@@ -162,6 +162,23 @@ artifact.
 
 ## Closed lines
 
+- Silver learned visit-prior guidance is closed after the root-only oracle
+  replay and calibration sequence (`CURRENT_LEARNED_VISIT_PRIOR_LINE_REJECTED`,
+  dated entries in the current `ledger-06.md`). Oracle normalized 25k-A
+  visit-PUCT was positive at 32 simulations, and learned action ranking
+  retained useful signal. However,
+  learned-order plus exact oracle mass nearly recovered the oracle regret gain,
+  while a raw-count model and a validation-fitted rank-preserving global
+  concentration calibration did not: the calibrated arm recovered only 4.53%
+  of the oracle regret reduction, with a root-bootstrap regret CI spanning
+  useful improvement and harm. This rejects the hypothesis that ranking plus
+  globally sharpened probabilities is sufficient; it does not reject strong
+  policy priors or implicate PUCT itself. The root replay executable and
+  root-guidance runtime hooks were removed; the frozen snapshots, offline
+  analyzers, model artifacts, and negative-result evidence remain in the
+  experiment branch. Do not continue with another temperature, calibration
+  parameter, target, model, `c_puct` tuning, budget, or gameplay promotion
+  without a new hypothesis and review.
 - Silver 25k parent-Q action scoring is closed after the preregistered offline
   gate rejected it (`POLICY_MODEL_OFFLINE_REJECTED`, ledger §186). The model
   improved exact-order top-action agreement but achieved only +2.497pp
