@@ -5669,3 +5669,34 @@ model training was changed.
   closing it or claiming an integration gain. Full hashes, tree inspection,
   RNG qualification, tables, and commands are in
   [the raw-count evidence report](evidence/silver_raw_visit_count_prior_2026-08-29.md).
+
+## Learned Silver prior ranking versus mass-shape replay (2026-08-29)
+
+- **Question/protocol:** use the frozen raw-count predictions and frozen
+  25k-A visits to separate learned action ranking from prior-mass shape. No
+  model was trained, no feature/search setting changed, and 25k-B was used
+  only for judgment. The two hybrids replayed the same 63 roots at 32
+  simulations with four replicate seeds: learned order + exact A mass shape,
+  and exact A order + learned mass shape. Existing current/oracle/raw-learned
+  rows were reused because the replay search path was unchanged.
+- **Results:** learned order + oracle mass gave 45.2381% B-best / 3.500677
+  regret, versus current 41.2698% / 4.051736 and oracle 51.1905% / 3.505948.
+  Its regret deltas were -0.551058 versus current (95% CI
+  [-1.032028,-0.131197]), -0.538166 versus raw learned (CI
+  [-1.040641,-0.112970]), and -0.005270 versus oracle (CI included zero).
+  Oracle order + learned mass gave 43.2540% / 4.113176; versus current its
+  regret delta was +0.061440 (CI [-0.515609,+0.696255]) and versus oracle
+  +0.607228 (CI [+0.162659,+1.175803]). Top-choice deltas for the two hybrids
+  versus current were both +1.9841 or +3.9683 pp with intervals including
+  zero; learned order + oracle mass remained 5.9524 pp below oracle.
+- **Interpretation:** oracle mass shape nearly recovers the oracle regret gain
+  even with learned ordering, while oracle ordering does not rescue learned
+  mass. Therefore mass/calibration is the dominant bottleneck; learned ranking
+  remains a secondary limitation for exact top choice. The first hybrid's
+  regret effect was not driven by one root (leave-one-extreme means remained
+  -0.442838 and -0.616448 Q); the second hybrid was not robustly positive.
+- **Decision:** **`LEARNED_PRIOR_MASS_CALIBRATION_BOTTLENECK_UNRESOLVED`**.
+  Keep the line open for review, but do not train another model, tune PUCT or
+  temperature, expand budgets, run gameplay, or change features yet. Full
+  provenance, hashes, RNG qualification, tables, and commands are in
+  [the hybrid evidence report](evidence/silver_hybrid_visit_prior_2026-08-29.md).
