@@ -5833,3 +5833,30 @@ model training was changed.
 - **Scope:** this is header-only provenance work. Model, probability, replay
   JSONL, replay-analysis hashes, metrics, and the `INCONCLUSIVE` replay
   decision are unchanged; no fit, replay, or gameplay was run.
+
+## Rank-4 residual state×action grouped Silver visit policy (2026-08-30)
+
+- **Question/protocol:** test exactly one minimal rank-4 bilinear residual over
+  the frozen grouped-linear policy, with the 1,766/22 state/action partition,
+  fixed grouped logits, exact normalized 25k-A target, parent-macro loss,
+  train-only scaler/mask, and 93 anchors excluded from all fitting. CPU
+  float64 PyTorch L-BFGS was fixed at seed `20260830`, `max_iter=500`,
+  history `50`, strong-Wolfe line search, L2 `1e-4`, `U~N(0,1e-3)`, and `V=0`.
+  It passed exact zero-interaction parity (`2.22e-16` max error) and a
+  byte-identical deterministic rerun. No rank sweep, MLP, calibration,
+  feature change, gameplay, or runtime integration occurred.
+- **Replay:** the verified archived `581b68b...` / `d8d083...` executable
+  produced 756 rows for 63 roots, 4 common replicates, 32 simulations, and
+  current/oracle/interaction arms. Concurrent UCT and oracle controls exactly
+  reproduced `41.2698% / 4.051736` and `51.1905% / 3.505948`; interaction was
+  `44.4444% / 3.914213` (B-best / frozen-B regret).
+- **Primary result:** interaction minus grouped linear was `+0.793651 pp`
+  B-best (95% paired-root CI `[-3.968254,+5.555556]`) and `+0.144530` regret
+  (CI `[-0.209479,+0.626566]`), with 12/8/43 improved/worsened/tied roots.
+  It therefore misses both predeclared support and rejection rules.
+- **Decision:** **`RANK4_INTERACTION_VISIT_POLICY_REPLAY_INCONCLUSIVE`**.
+  This is repeated-root frozen search evidence only, not gameplay confirmation,
+  and does not authorize another rank, MLP, temperature, or PUCT experiment.
+  The complete provenance, historical grouped-JSONL SHA discrepancy, offline
+  diagnostics, raw replay, and machine analysis are in the
+  [rank-4 interaction evidence report](evidence/silver_rank4_interaction_visit_policy_2026-08-30.md).

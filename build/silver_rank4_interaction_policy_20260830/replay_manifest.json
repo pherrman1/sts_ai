@@ -1,0 +1,43 @@
+{
+  "schema": "silver_rank4_interaction_replay_manifest_v1",
+  "baseline_merge_sha": "2f9e48c41cfb19b1879ef8055ef280d6962b2b10",
+  "required_pr85_head": "510fb3e4b912470d5c1de4155d62298ebc688cd6",
+  "source_commit": "581b68bb31a8b62bb94e88c5b783e042880746b1",
+  "executable_sha256": "d8d08392343ab442ec093e5fa07b64b326755560ff374dfba61bbce9c1a18006",
+  "model": {
+    "equation": "z_grouped_linear(s,a) + sum_{k=1}^{4} (u_k^T s) * (v_k^T a)",
+    "rank": 4,
+    "seed": 20260830,
+    "optimizer": "torch.optim.LBFGS CPU float64, max_iter=500, history_size=50, strong_wolfe",
+    "l2": 0.0001,
+    "initialization": "U~Normal(0,1e-3), V=0"
+  },
+  "frozen_inputs": {
+    "features_sha256": "0377aaef862362cdf1fa3925579a73b66381cbd646762a0453b6a939149923bd",
+    "corpus_sha256": "bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7",
+    "relabels_sha256": "abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c",
+    "grouped_model_sha256": "a9276d735669f9ff28b83d95c5bcd57d1dcb135b97eb55d1cd774aa2c4782eab",
+    "grouped_probability_sha256": "51534736ce59c62d92841867ceac0f4f06e03023997aaba7404f75f6412e9b2a",
+    "snapshots_sha256": "7cfc9371f1d1cfe3e48f7cbda3f6b0e7dc55d417be9d1612303d8e50ab67cc51"
+  },
+  "replay": {
+    "command": "tools/seed_guard.sh silver_root_oracle_replay SNAPSHOTS RELABEL OUTPUT 32 4 current_uct,oracle_visit_puct,learned_visit_puct INTERACTION_PRIORS",
+    "roots": 63,
+    "replicates": 4,
+    "budget": 32,
+    "arms": ["current_uct", "oracle_visit_puct", "learned_visit_puct"],
+    "rows": 756,
+    "bootstrap_replicates": 10000,
+    "historical_grouped_replay_declared_sha256": "9cdfeaea20f88fdde7e1ace8738ced893408164164f04d3d69b9869e0f1add7f",
+    "historical_grouped_replay_observed_sha256": "a5455e1918cf507887ada2408900ecd89a54d25d148760eae9b2d1e85ea13e5c",
+    "rankshape_replay_sha256": "ff513e017be7e90ce91f49ad872be286637935d9cb2e50d229c2baf3d35eb50d"
+  },
+  "outputs": {
+    "model_sha256": "a9f4ba81b200ec7ac7510970e7279ba7b46b1a0f53af521e5bebb98eba3986cf",
+    "anchor_probabilities_sha256": "8611c1c5f29a91255cc8b8306e3d7bfc8995ef5d5eaed96e2a310090a109b4c0",
+    "replay_priors_sha256": "d2366e72681dda52cc9169f2f61ec61ebe5688a7f3da7a9414e5de6fb92cec6d",
+    "replay_jsonl_sha256": "36008e524da68230abedf738a173c4e92cc49723e5adec743b8f6791304b7634",
+    "offline_report_sha256": "22ea9c6b97949db8edaffd741428d587fae66706f21802609600cfa5a8e809c8",
+    "replay_analysis_sha256": "4c4e9dcb5b8007d79d68c5150be1ab5f7c05d6d6eb40ce4c44dfa2e88df58fac"
+  }
+}

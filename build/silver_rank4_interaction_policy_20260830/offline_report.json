@@ -1,0 +1,331 @@
+{
+  "anchor_metrics": {
+    "grouped_linear": {
+      "a_max_visit_agreement": 0.42857142857142855,
+      "b_max_q_agreement": 0.4444444444444444,
+      "b_pairwise_concordance": 0.6722731906218145,
+      "b_pairwise_concordance_parent_macro": 0.7180645032267076,
+      "b_pairwise_concordance_pooled": 0.6722731906218145,
+      "b_q_pairs": 981,
+      "b_q_ties": 11,
+      "cross_entropy": 1.3923684149102664,
+      "entropy": 1.3017987153271708,
+      "entropy_mae": 0.8453154709668653,
+      "kl": 0.8990123580865246,
+      "legal_action_counts": {
+        "2": 8,
+        "3": 11,
+        "4": 7,
+        "5": 8,
+        "6": 12,
+        "7": 7,
+        "8": 3,
+        "9": 2,
+        "10": 1,
+        "11": 3,
+        "17": 1
+      },
+      "malformed_or_missing_rows": 0,
+      "max_mass": 0.43197374047095033,
+      "max_mass_mae": 0.4235524321402785,
+      "parents": 63,
+      "prediction_ties": 13,
+      "top2_mass_error": 0.2783680211675536,
+      "top3_mass_error": 0.1704474659794096,
+      "total_variation": 0.511496258624033
+    },
+    "interaction_rank4": {
+      "a_max_visit_agreement": 0.4126984126984127,
+      "b_max_q_agreement": 0.36507936507936506,
+      "b_pairwise_concordance": 0.5968399592252803,
+      "b_pairwise_concordance_parent_macro": 0.6337090791214303,
+      "b_pairwise_concordance_pooled": 0.5968399592252803,
+      "b_q_pairs": 981,
+      "b_q_ties": 11,
+      "cross_entropy": 5.7250528517924,
+      "entropy": 0.46657423933386033,
+      "entropy_mae": 0.40893490092130985,
+      "kl": 5.23169679496866,
+      "legal_action_counts": {
+        "2": 8,
+        "3": 11,
+        "4": 7,
+        "5": 8,
+        "6": 12,
+        "7": 7,
+        "8": 3,
+        "9": 2,
+        "10": 1,
+        "11": 3,
+        "17": 1
+      },
+      "malformed_or_missing_rows": 0,
+      "max_mass": 0.7951622316024367,
+      "max_mass_mae": 0.18582931372961192,
+      "parents": 63,
+      "prediction_ties": 15,
+      "top2_mass_error": 0.06711038496451519,
+      "top3_mass_error": 0.02948588575539216,
+      "total_variation": 0.5648583911042369
+    },
+    "oracle_a_visit": {
+      "a_max_visit_agreement": 1.0,
+      "b_max_q_agreement": 0.7301587301587301,
+      "b_pairwise_concordance": 0.77420998980632,
+      "b_pairwise_concordance_parent_macro": 0.8467953433037141,
+      "b_pairwise_concordance_pooled": 0.77420998980632,
+      "b_q_pairs": 981,
+      "b_q_ties": 11,
+      "cross_entropy": 0.49335605682374223,
+      "entropy": 0.49335605682374223,
+      "entropy_mae": 0.0,
+      "kl": 1.5419764230904951e-18,
+      "legal_action_counts": {
+        "2": 8,
+        "3": 11,
+        "4": 7,
+        "5": 8,
+        "6": 12,
+        "7": 7,
+        "8": 3,
+        "9": 2,
+        "10": 1,
+        "11": 3,
+        "17": 1
+      },
+      "malformed_or_missing_rows": 0,
+      "max_mass": 0.8212615873015872,
+      "max_mass_mae": 0.0,
+      "parents": 63,
+      "prediction_ties": 17,
+      "top2_mass_error": 0.0,
+      "top3_mass_error": 0.0,
+      "total_variation": 0.0
+    },
+    "rankshape_calibrated": {
+      "a_max_visit_agreement": 0.5079365079365079,
+      "b_max_q_agreement": 0.5396825396825397,
+      "b_pairwise_concordance": 0.6885830784913354,
+      "b_pairwise_concordance_parent_macro": 0.7341252756681719,
+      "b_pairwise_concordance_pooled": 0.6885830784913354,
+      "b_q_pairs": 981,
+      "b_q_ties": 11,
+      "cross_entropy": 1.6928885663892996,
+      "entropy": 1.294995340352022,
+      "entropy_mae": 0.8229180066488929,
+      "kl": 1.1995325095655578,
+      "legal_action_counts": {
+        "2": 8,
+        "3": 11,
+        "4": 7,
+        "5": 8,
+        "6": 12,
+        "7": 7,
+        "8": 3,
+        "9": 2,
+        "10": 1,
+        "11": 3,
+        "17": 1
+      },
+      "malformed_or_missing_rows": 0,
+      "max_mass": 0.4108398801463228,
+      "max_mass_mae": 0.42042546675769116,
+      "parents": 63,
+      "prediction_ties": 79,
+      "top2_mass_error": 0.2596796988052889,
+      "top3_mass_error": 0.1349753477934464,
+      "total_variation": 0.5177246838473266
+    }
+  },
+  "artifacts": {
+    "anchor_probabilities": {
+      "path": "build\\silver_rank4_interaction_policy_20260830\\rank4_interaction_anchor_probabilities.jsonl",
+      "sha256": "8611c1c5f29a91255cc8b8306e3d7bfc8995ef5d5eaed96e2a310090a109b4c0"
+    },
+    "model": {
+      "path": "build\\silver_rank4_interaction_policy_20260830\\rank4_interaction_policy_model.npz",
+      "sha256": "a9f4ba81b200ec7ac7510970e7279ba7b46b1a0f53af521e5bebb98eba3986cf"
+    }
+  },
+  "coverage": {
+    "1000-A-rows": 500,
+    "1000-A-valid": 496,
+    "10000-A-rows": 500,
+    "10000-A-valid": 496,
+    "10000-B-rows": 93,
+    "10000-B-valid": 93,
+    "25000-A-rows": 500,
+    "25000-A-valid": 496,
+    "25000-B-rows": 93,
+    "25000-B-valid": 93,
+    "3700-A-rows": 500,
+    "3700-A-valid": 496,
+    "3700-B-rows": 93,
+    "3700-B-valid": 93
+  },
+  "deterministic_rerun": {
+    "anchor_predictions_byte_equal": true,
+    "model_arrays_byte_equal": true
+  },
+  "dimensions": {
+    "action": 22,
+    "active_features": 555,
+    "state": 1766,
+    "total": 1788
+  },
+  "head": "2f9e48c41cfb19b1879ef8055ef280d6962b2b10",
+  "inputs": {
+    "corpus": "bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7",
+    "features": "0377aaef862362cdf1fa3925579a73b66381cbd646762a0453b6a939149923bd",
+    "grouped_model": "a9276d735669f9ff28b83d95c5bcd57d1dcb135b97eb55d1cd774aa2c4782eab",
+    "grouped_probabilities": "51534736ce59c62d92841867ceac0f4f06e03023997aaba7404f75f6412e9b2a",
+    "rankshape_predictions": "C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-root-oracle-replay\\build\\silver_visit_prior_rankshape_calibration_20260829\\silver_parent_visit_prior_calibrated_predictions.jsonl",
+    "raw_count_predictions": "C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-root-oracle-replay\\build\\silver_parent_visit_prior_raw_20260829\\silver_parent_visit_prior_predictions.jsonl",
+    "relabels": "abce8e1c59def61f4b1206ae0515486bf0faf5a23586cd7a59fced83a961865c"
+  },
+  "model": {
+    "bias": false,
+    "equation": "z_linear(s,a) + sum_k (u_k^T s)(v_k^T a)",
+    "linear_model_frozen": true,
+    "rank": 4,
+    "temperature_or_calibration": false
+  },
+  "objective": {
+    "l2": 0.0001,
+    "parent_macro": true,
+    "target": "exact normalized 25k-A visits"
+  },
+  "offline_diagnostics": {
+    "max_total_variation_from_grouped_linear": 0.9892448118019933,
+    "mean_total_variation_from_grouped_linear": 0.5419727706173731,
+    "offline_metrics_are_diagnostic_only": true,
+    "prior_argmax_differs_from_grouped_linear": 34,
+    "replay_status": "REPLAY_REQUIRED"
+  },
+  "optimizer": {
+    "closure_calls": 532,
+    "deterministic_algorithms": true,
+    "device": "cpu",
+    "dtype": "float64",
+    "final_penalized_objective": 0.3503692825241033,
+    "history_size": 50,
+    "initial_penalized_objective": 0.7756896654272861,
+    "iterations": 500,
+    "line_search_fn": "strong_wolfe",
+    "max_iter": 500,
+    "method": "torch.optim.LBFGS"
+  },
+  "preflight": {
+    "corpus": {
+      "duplicate_parent_ids_with_conflicting_state_or_seed": 0,
+      "parents_found": 495,
+      "path": "C:\\Users\\pherrman\\projects\\sts_ai\\.worktrees\\silver-root-oracle-replay\\build\\pilot-selected_corpus.jsonl",
+      "schema": "silver_leaf_corpus_v1",
+      "sha256": "bdac7173f789cd1439438eca5079a167e15de7f9aaf8c4fc242635a38790a2c7"
+    },
+    "exact_duplicates_across_splits": {
+      "canonical_state": {
+        "train__anchor": 0,
+        "train__validation": 0,
+        "validation__anchor": 0
+      },
+      "full_feature_row": {
+        "train__anchor": 9,
+        "train__validation": 4,
+        "validation__anchor": 1
+      }
+    },
+    "group_assignment": {
+      "all_siblings_assigned_by_parent": true,
+      "parent_counts": {
+        "all": 495,
+        "anchors": 93,
+        "train": 327,
+        "validation": 75
+      }
+    },
+    "schema": {
+      "action_suffix": [
+        "aIsCard",
+        "aIsPotion",
+        "aIsEndTurn",
+        "aIsSelect",
+        "aCardId",
+        "aCardCost",
+        "aCardUpg",
+        "aCardAtk",
+        "aCardSkl",
+        "aCardPow",
+        "aTargetsEnemy",
+        "aTargetHp",
+        "aPlayOrder",
+        "aObtainWeight",
+        "aSelectSize",
+        "aSelTotalCost",
+        "aSelAtk",
+        "aSelSkl",
+        "aSelPow",
+        "aSelUpgraded",
+        "aSelPlayOrder",
+        "aSelObtainWeight"
+      ],
+      "action_suffix_features": 22,
+      "explicit_state_action_interaction_features": false,
+      "feature_count": 1788,
+      "feature_schema": "silver_parent_policy_features_v1",
+      "parent_key": "group_id",
+      "state_prefix_features": 1766
+    },
+    "seed_overlap": {
+      "train_anchor": 23,
+      "train_validation": 20,
+      "unique_seeds": {
+        "anchor": 24,
+        "train": 27,
+        "validation": 21
+      },
+      "validation_anchor": 20
+    },
+    "within_parent_varying_features": {
+      "histogram": {
+        "0": 165,
+        "2": 26,
+        "6": 7,
+        "7": 14,
+        "8": 21,
+        "9": 59,
+        "10": 76,
+        "11": 70,
+        "12": 47,
+        "13": 10
+      },
+      "maximum": 13,
+      "mean": 6.292929292929293,
+      "median": 9.0,
+      "minimum": 0
+    }
+  },
+  "schema": "silver_rank4_interaction_policy_report_v1",
+  "seed": 20260830,
+  "split": {
+    "anchor_parents": 93,
+    "anchors_excluded_from_fitting_and_preprocessing": true,
+    "multi_action_anchors": 63,
+    "train_parents": 327,
+    "validation_parents": 75
+  },
+  "train_metrics": {
+    "cross_entropy": 0.3464074931911235,
+    "kl": 0.03286166516177646
+  },
+  "validation_metrics": {
+    "cross_entropy": 3.1871448586610724,
+    "kl": 2.929784132471371
+  },
+  "zero_interaction_parity": {
+    "legal_action_order_and_fingerprints": "validated by shared feature rows",
+    "max_absolute_probability_error": 2.220446049250313e-16,
+    "parents": 63,
+    "tolerance": 1e-12
+  }
+}

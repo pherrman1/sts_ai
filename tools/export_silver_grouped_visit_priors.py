@@ -12,6 +12,8 @@ from pathlib import Path
 
 
 EXPECTED_INPUT_SCHEMA = "silver_grouped_linear_policy_predictions_v1"
+EXPECTED_INPUT_SCHEMAS = {EXPECTED_INPUT_SCHEMA,
+                          "silver_rank4_interaction_policy_predictions_v1"}
 OUTPUT_SCHEMA = "silver_parent_visit_prior_predictions_v1"
 
 
@@ -24,7 +26,7 @@ def sha256(path: Path) -> str:
 
 
 def validate_probabilities(header: dict, rows: list[dict]) -> None:
-    if header.get("schema") != EXPECTED_INPUT_SCHEMA:
+    if header.get("schema") not in EXPECTED_INPUT_SCHEMAS:
         raise ValueError("unexpected grouped policy prediction schema")
     if header.get("feature_count") != 1788 or header.get("parent_key") != "group_id":
         raise ValueError("unexpected grouped policy feature/parent contract")
