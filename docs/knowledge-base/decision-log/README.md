@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-29 | [`2026-08-29-phase12-semantic-fullrun.md`](2026-08-29-phase12-semantic-fullrun.md) | The 37-context semantic full-run adjudication leaves combined `p_survive*v_alive` directionally best but `INCONCLUSIVE`; all source-seed-clustered paired intervals include zero, so no OOC promotion or training is authorized. |
 | 2026-08-28 | [`2026-08-28-silver-m10-rollout-blend.md`](2026-08-28-silver-m10-rollout-blend.md) | The preregistered M10 rollout blend is `M10_BLEND_OFFLINE_REJECTED`: alpha 0.1 improved sibling pairwise concordance but materially reduced top-leaf agreement, so no candidate was locked and 25k-B remained untouched. |
 | 2026-08-27 | [`2026-08-27-silver-leaf-evaluator-10k.md`](2026-08-27-silver-leaf-evaluator-10k.md) | The exact 10k Silver M10 direct leaf evaluator is `M10_DIRECT_REJECTED`: stronger offline ranking did not transfer, and the 8-seed gate lost quality catastrophically without a throughput benefit. |
 | 2026-08-27 | [`2026-08-27-ooc-targeted-survival-tradeoffs.md`](2026-08-27-ooc-targeted-survival-tradeoffs.md) | Prespecified comparison of combined `p_survive*v_alive` against survival-only, strength-only, and dense K=3 on 15 targeted marginal tradeoffs; terminal win primary. |
