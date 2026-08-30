@@ -1,0 +1,23 @@
+{
+  "transcript_source": "codex",
+  "projects": "invoked",
+  "backend": "codex",
+  "gate_mode": "on",
+  "gate_no_regression": true,
+  "val_fraction": 0.34,
+  "test_fraction": 0.17,
+  "edit_budget": 1,
+  "max_tasks_per_night": 6,
+  "max_tokens_per_night": 100000,
+  "evolve_memory": false,
+  "evolve_skill": true,
+  "target_skill_path": "/ABSOLUTE/PATH/TO/sts_ai/.agents/skills/codex-implementation/SKILL.md",
+  "target_task_filter": true,
+  "auto_adopt": false,
+  "dream_rollouts": 1,
+  "dream_factor": 0,
+  "recall_k": 0,
+  "redact_secrets": true,
+  "evidence_log": true,
+  "preferences": "Only propose one general evidence-backed edit inside the target skill's ## Learned guidance section. Do not modify the fixed workflow, AGENTS.md, the KB, or other skills. Do not store transient repository state. Prefer no edit over a speculative rule."
+}

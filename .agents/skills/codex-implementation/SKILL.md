@@ -1,0 +1,29 @@
+---
+name: codex-implementation
+description: Use for ordinary implementation, debugging, build, test, Git, and draft-PR tasks in sts_ai when no specialized research or review skill applies.
+---
+
+# Codex implementation workflow
+
+1. Verify the worktree, branch, HEAD, status, upstream, origin, and requested
+   scope before editing.
+2. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`, and the maintained page
+   routed for the affected subsystem.
+3. Search existing scripts, presets, tests, and known solutions before creating
+   new machinery.
+4. Make the smallest conceptual change that satisfies the request.
+5. Run the cheapest check that proves the required behavior.
+6. Inspect the complete diff, changed paths, status, and untracked files.
+7. Classify durable knowledge impact and update the authoritative destination
+   required by `AGENTS.md`.
+8. Commit, push, and create or update the draft PR only under the existing
+   workflow rules.
+
+`AGENTS.md` remains authoritative for universal project policy.
+
+## Learned guidance
+
+<!-- SkillOpt-Sleep may propose changes only within this section. Keep at most
+12 short, stable, evidence-backed rules. Consolidate or replace old rules rather
+than growing the section indefinitely. Never store branch names, current SHAs,
+line numbers, transient failures, or duplicated KB facts here. -->

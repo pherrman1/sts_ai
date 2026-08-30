@@ -7,10 +7,8 @@ The chronological log records decisions and discoveries when they happen;
 these ADRs distill only the small set of decisions whose current rationale is
 directly supported by repository evidence.
 
-Git-tracked Markdown is authoritative. RepoWise may index these ADRs to supply
-structural and rationale context, but its generated index is derived local
-state and never replaces an ADR, source code, tests, curated knowledge-base
-pages, or raw evidence.
+Git-tracked Markdown is authoritative. Derived local indexes never replace an
+ADR, source code, tests, curated knowledge-base pages, or raw evidence.
 
 ## What belongs here
 
@@ -32,9 +30,13 @@ the replacement.
 
 ## Current routing ADRs
 
-- [ADR-0010](0010-codex-chatgpt-agent-workflow.md) defines the ChatGPT/Sol
-  handoff, bounded Codex preflight, evidence-packet review boundary, session
-  continuation rules, optional Serena/RepoWise routing, and reviewed-SHA freeze.
+- [ADR-0011](0011-mcp-free-codex-skillopt-pilot.md) defines the MCP-free Codex
+  path, authoritative tracked KB, bounded SkillOpt proposal pilot, and
+  independent evaluator gate. It supersedes only ADR-0010's active tool routing.
+- [ADR-0010](0010-codex-chatgpt-agent-workflow.md) remains authoritative for
+  the ChatGPT/Sol handoff, bounded Codex preflight, evidence-packet review
+  boundary, session continuation rules, and reviewed-SHA freeze. Its tool
+  routing is historical and superseded by ADR-0011.
 - [ADR-0008](0008-guarded-cline-serena-repowise-routing.md) is retained as the
   historical Cline-era routing decision and is superseded by ADR-0010 for
   harness/routing policy.

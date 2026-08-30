@@ -1,6 +1,8 @@
+import hashlib
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -30,6 +32,44 @@ class AgentEvalTests(unittest.TestCase):
             self.assertEqual(subprocess.run(["git", "status", "--short"], cwd=workspace, text=True, capture_output=True).stdout, "")
         self.assertTrue(Path(first["workspace"]).exists())
         self.assertTrue(Path(second["workspace"]).exists())
+
+    def test_prepare_overlays_skill_into_clean_candidate_baseline(self):
+        content = b"---\nname: pilot-skill\ndescription: Test skill.\n---\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            skill_file = Path(tmp) / "SKILL.md"
+            skill_file.write_bytes(content)
+            result = cli("prepare", "guardrail-command-policy", "--skill-file", str(skill_file), "--skill-name", "pilot-skill")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        prepared = json.loads(result.stdout)
+        workspace = Path(prepared["workspace"])
+        target = workspace / ".agents" / "skills" / "pilot-skill" / "SKILL.md"
+        self.assertEqual(target.read_bytes(), content)
+        self.assertEqual(prepared["skill_name"], "pilot-skill")
+        self.assertEqual(prepared["skill_sha256"], hashlib.sha256(content).hexdigest())
+        self.assertIn("Use the $pilot-skill skill", prepared["prompt"])
+        self.assertFalse((workspace / "evals").exists())
+        self.assertEqual(subprocess.run(["git", "status", "--short"], cwd=workspace, text=True, capture_output=True).stdout, "")
+        self.assertEqual(subprocess.run(["git", "diff", "--name-only", "HEAD"], cwd=workspace, text=True, capture_output=True).stdout, "")
+        self.assertEqual(subprocess.run(["git", "show", "HEAD:.agents/skills/pilot-skill/SKILL.md"], cwd=workspace, capture_output=True).stdout, content)
+
+    def test_prepare_skill_options_fail_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_file = root / "SKILL.md"
+            skill_file.write_text("test", encoding="utf-8")
+            cases = [
+                ("--skill-file", str(skill_file)),
+                ("--skill-name", "pilot-skill"),
+                ("--skill-file", str(root / "missing.md"), "--skill-name", "pilot-skill"),
+                ("--skill-file", str(root), "--skill-name", "pilot-skill"),
+                ("--skill-file", str(skill_file), "--skill-name", "../unsafe"),
+                ("--skill-file", str(skill_file), "--skill-name", "Uppercase"),
+            ]
+            for args in cases:
+                with self.subTest(args=args):
+                    result = cli("prepare", "guardrail-command-policy", *args)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertIn("INFRA_ERROR", result.stderr)
 
     def test_traversal_workspace_is_infra_error(self):
         result = cli("grade", "guardrail-command-policy", str(ROOT / ".agent-eval" / "work" / ".."))

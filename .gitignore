@@ -50,15 +50,11 @@ build/pilot_pol.csv
 /compile_commands.json
 *.bak
 
-# Serena project configuration is versioned; caches, memories, and local
-# machine-specific configuration are not.
-/.serena/cache/
-/.serena/memories/
-/.serena/project.local.yml
-
-# RepoWise is a derived local index. Its configuration, wiki, caches, and
-# databases are intentionally never versioned.
+# Retired repository-tool state and local SkillOpt transcript-derived staging.
+/.serena/
 /.repowise/
+/.skillopt-sleep/
+/.skillopt-sleep-handoff/
 
 # CatBoost trainer output.
 /catboost_info/

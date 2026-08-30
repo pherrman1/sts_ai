@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -27,6 +28,9 @@ REQUIRED = {
 
 class EvalError(Exception):
     pass
+
+
+SAFE_SKILL_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def safe_rel(value: str, label: str) -> Path:
@@ -106,7 +110,18 @@ def git(cwd: Path, *args: str, check: bool = True) -> subprocess.CompletedProces
     return run(["git", *args], cwd, 30, check=check)
 
 
-def prepare(task_id: str) -> dict:
+def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str | None = None) -> dict:
+    if (skill_file_value is None) != (skill_name is None):
+        raise EvalError("--skill-file and --skill-name must be provided together")
+    skill_file = None
+    skill_sha256 = None
+    if skill_file_value is not None:
+        skill_file = Path(skill_file_value).expanduser().resolve()
+        if not skill_file.is_file() or skill_file.is_symlink():
+            raise EvalError(f"skill source must be an existing regular file: {skill_file_value}")
+        if not SAFE_SKILL_NAME.fullmatch(skill_name or ""):
+            raise EvalError(f"unsafe skill name: {skill_name!r}")
+        skill_sha256 = hashlib.sha256(skill_file.read_bytes()).hexdigest()
     manifest = load_tasks()[task_id]
     source = task_dir(task_id)
     RUNTIME.joinpath("work").mkdir(parents=True, exist_ok=True)
@@ -124,13 +139,24 @@ def prepare(task_id: str) -> dict:
     if not git(workspace, "diff", "--quiet", check=False).returncode:
         raise EvalError(f"setup patch made no repository change for {task_id}")
     shutil.rmtree(workspace / "evals", ignore_errors=True)
+    if skill_file is not None:
+        target = workspace / ".agents" / "skills" / skill_name / "SKILL.md"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(skill_file, target)
     git(workspace, "add", "-A")
     git(workspace, "commit", "--amend", "-qm", f"candidate baseline: {task_id}")
     status = git(workspace, "status", "--short").stdout
     if status:
         raise EvalError(f"prepared candidate is not clean: {status}")
     prompt = (source / safe_rel(manifest["prompt_file"], "prompt_file")).read_text(encoding="utf-8")
-    return {"task_id": task_id, "workspace": str(workspace), "prompt": prompt, "baseline_commit": git(workspace, "rev-parse", "HEAD").stdout.strip()}
+    prepared = {"task_id": task_id, "workspace": str(workspace), "prompt": prompt, "baseline_commit": git(workspace, "rev-parse", "HEAD").stdout.strip()}
+    if skill_file is not None:
+        prepared.update({
+            "prompt": f"Use the ${skill_name} skill at .agents/skills/{skill_name}/SKILL.md for this task.\n\n{prompt}",
+            "skill_name": skill_name,
+            "skill_sha256": skill_sha256,
+        })
+    return prepared
 
 
 def changed_files(workspace: Path) -> list[str]:
@@ -206,7 +232,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("list")
-    p = sub.add_parser("prepare"); p.add_argument("task_id")
+    p = sub.add_parser("prepare"); p.add_argument("task_id"); p.add_argument("--skill-file"); p.add_argument("--skill-name")
     p = sub.add_parser("grade"); p.add_argument("task_id"); p.add_argument("workspace"); p.add_argument("--agent", default=""); p.add_argument("--model", default=""); p.add_argument("--configuration", default="")
     sub.add_parser("self-test")
     args = parser.parse_args()
@@ -215,7 +241,7 @@ def main() -> int:
             for task_id, manifest in load_tasks().items(): print(json.dumps({"id": task_id, "title": manifest["title"], "version": manifest["version"]}, sort_keys=True))
             return 0
         if args.command == "prepare":
-            print(json.dumps(prepare(args.task_id), indent=2, sort_keys=True)); return 0
+            print(json.dumps(prepare(args.task_id, args.skill_file, args.skill_name), indent=2, sort_keys=True)); return 0
         if args.command == "self-test": return self_test()
         code, record = grade(args.task_id, args.workspace, {"agent": args.agent, "model": args.model, "configuration": args.configuration})
         print(json.dumps(record, indent=2, sort_keys=True))

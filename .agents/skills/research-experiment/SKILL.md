@@ -54,5 +54,13 @@ missing rather than expanding the search indefinitely.
    ELI5 conclusion. After implementation review passes, freeze the reviewed
    commit SHA before any expensive scientific run.
 
+Route durable outputs without duplication:
+
+- raw evidence → experiment ledger and evidence artifact;
+- current research status → `evaluation/current-research.md`;
+- qualified new default → `evaluation/current-baselines.md`;
+- stable implementation fact → relevant architecture, behavior, or operations
+  KB page.
+
 `AGENTS.md` remains authoritative for project policy; this skill is a reusable
 procedure, not a replacement for that file.

@@ -47,15 +47,16 @@ routing.
 - State the success criterion and cheapest proving check. Make the smallest
   scoped change that satisfies the request; do not bundle cleanup, refactors,
   gameplay, model, or research changes.
+- Use the [codex-implementation skill](.agents/skills/codex-implementation/SKILL.md)
+  for ordinary implementation, debugging, build, test, and PR tasks when no
+  specialized research or review skill applies.
 - Use the repo-grounded ChatGPT/Sol handoff as the accepted design plan when it
   includes the baseline, goal/hypothesis, verified repo facts, required
   behavior, non-goals, and verification criteria. Codex performs a bounded
   local preflight and does not restart broad research or planning unless local
-  evidence materially contradicts the handoff. Use Serena optionally for
-  high-leverage semantic navigation/refactoring after verifying it is attached
-  to this Git worktree. Use RepoWise only for broad architecture, dead-code,
-  history, or risk work, not routine tasks. If an MCP server is unavailable or
-  misrouted, continue with Git, `rg`, and focused reads.
+  evidence materially contradicts the handoff. Use Git, `rg`, focused file
+  reads, compiler diagnostics, and focused tests. No repository MCP server is
+  required.
 - Use the cheapest focused verification that proves the change. Every command
   that drives game seeds must go through the repository seed-run guard. Local
   automated execution is capped at 128 seeds. Large research sweeps run
@@ -67,6 +68,10 @@ routing.
   repository verification check. Changes should reach `main` through a pull
   request only after the `Linux GCC` check passes. Branch-protection enforcement
   is not currently available for this private repository on its GitHub plan.
+- Before completion, classify the task's durable knowledge impact and update
+  its authoritative destination in the same change. Record
+  `Knowledge impact: none` with a brief reason when no maintained knowledge
+  change is warranted.
 
 ## Workflow-v2 handoff boundary
 
@@ -86,9 +91,6 @@ passes, freeze the reviewed SHA before any expensive scientific run.
   known-RNG invariants; route to the relevant page from `CODE_MAP.md`.
 - Never treat a model file as proof it loaded or was used. Do not delete ignored
   self-play data casually. Do not use broad `pkill -f v_server.py`.
-- Do not create Serena memories, commit `.repowise/`, or use paid RepoWise
-  generation without explicit authorization. RepoWise dead-code results are
-  hypotheses, not deletion authority.
 - For linked-worktree lifecycle operations, use only
   `python tools/agent/worktree.py create|check|repair|remove`. Do not use raw
   `git worktree add`, `git worktree remove`, `git submodule deinit`, or manual

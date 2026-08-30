@@ -1,6 +1,6 @@
 # Coding-agent evaluation harness
 
-Last verified: 2026-08-14 against the current working tree.
+Last verified: 2026-08-30 against the current working tree.
 
 ## Purpose
 
@@ -28,6 +28,8 @@ invokes a paid model API.
 ```bash
 python3 tools/agent/eval.py list
 python3 tools/agent/eval.py prepare <task-id>
+python3 tools/agent/eval.py prepare <task-id> \
+  --skill-file <path-to-SKILL.md> --skill-name <safe-slug>
 # Work on the printed workspace with Codex or another agent.
 python3 tools/agent/eval.py grade <task-id> <workspace> --agent codex --model <label>
 python3 tools/agent/eval.py self-test
@@ -39,6 +41,14 @@ initializes a fresh Git repository, and commits a clean candidate baseline.
 Runtime workspaces and result records live below `.agent-eval/`, which is
 ignored. A human can point Codex at the printed workspace, give it the printed
 public prompt, and grade the workspace afterward.
+
+When both skill options are supplied, `prepare` validates the regular source
+file and lowercase hyphenated slug, copies the skill to
+`.agents/skills/<skill-name>/SKILL.md`, and includes that overlay in the clean
+candidate baseline. The returned JSON includes `skill_name`, the source-byte
+`skill_sha256`, and a public-prompt prefix explicitly invoking the skill. The
+overlay therefore is not an agent-produced diff. Omitting both options
+preserves ordinary preparation behavior; supplying only one fails closed.
 
 ## Manifest schema
 
@@ -102,3 +112,17 @@ Phase 7 has no agent orchestration, LLM-as-judge, token/cost accounting,
 leaderboard, Docker isolation, stochastic gameplay benchmarks, or formal OS
 sandbox. The disposable workspace is a repository boundary, not a security
 sandbox; agents should still be run under the normal host safety policy.
+
+The four tasks are a no-regression smoke, not proof that a skill improves all
+implementation work. Compare a staged proposal as follows:
+
+1. Prepare, run, and grade arm A with the current `codex-implementation` skill.
+2. Prepare, run, and grade arm B with the staged SkillOpt candidate.
+3. Keep task, model, reasoning effort, host, and configuration identical.
+4. Run each task once initially; repeat only discordant tasks twice.
+5. Reject a majority regression, scope violation, infrastructure error, or
+   clearly higher cost without compensating benefit.
+
+Adoption requires all four conditions: SkillOpt internal validation accepted,
+the `sts_ai` evaluator did not regress, human diff review passed, and the edit
+enters through the normal branch, draft-PR, and CI workflow.
