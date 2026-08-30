@@ -43,6 +43,15 @@ candidate fields, a `chosen` flag, and terminal run labels
 flag is detected by successor-fingerprint matching against the executed policy
 action.
 
+The prepared next-generation OOC workflow is documented in
+[`operations/ooc-label-pipeline.md`](../operations/ooc-label-pipeline.md).
+`tools/ooc_pipeline_contract.py` validates a fail-closed frozen-combat-teacher
+and corpus manifest and parses arbitrary per-fight budget schedules/H plans;
+`tools/train_whole_combat_surrogate.py` fits seed-grouped XGBoost survival and
+winning-only conditional-HP models from a future one-row-per-fight corpus.
+These tools do not freeze a teacher, generate data, or authorize runtime
+surrogate use.
+
 Representative model families:
 
 - run values: `train_value_rich.py`, `train_winrate.py`;

@@ -1,0 +1,15 @@
+{
+  "teacher_id": "REPLACE_AFTER_COMBAT_FREEZE",
+  "git_sha": "0000000000000000000000000000000000000000",
+  "combat_backend": "REPLACE_WITH_SEARCHER_AND_BACKEND",
+  "rng_regime": "REPLACE_WITH_FAIR_OR_KNOWN_RNG",
+  "search_configuration": {
+    "simulation_budgets": ["REPLACE"],
+    "particles": "REPLACE_OR_NOT_APPLICABLE",
+    "tree_reuse": "REPLACE",
+    "environment": {}
+  },
+  "model_artifacts": [
+    {"role": "combat_value_or_leaf", "path": "REPLACE", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": "ooc_pipeline_v1",
+  "producer_git_sha": "3333333333333333333333333333333333333333",
+  "combat_teacher": {
+    "teacher_id": "synthetic-teacher",
+    "git_sha": "1111111111111111111111111111111111111111",
+    "combat_backend": "synthetic",
+    "rng_regime": "synthetic",
+    "search_configuration": {"simulation_budgets": [1], "particles": "n/a", "tree_reuse": false},
+    "model_artifacts": [{"role": "synthetic", "sha256": "2222222222222222222222222222222222222222222222222222222222222222"}]
+  },
+  "seed_spec": {"list": [1,2,3,4,5,6,7,8,9,10,11,12]},
+  "csv": {"path": "tests/data/ooc_surrogate_synthetic.csv", "sha256": "c51b9858b4d878ccae4849685975085285d75fd79fb1b8c2690194bc6e10e3fc"},
+  "collection_timestamp": "2026-08-31T00:00:00Z",
+  "integrity": {"requested_runs": 12, "completed_runs": 12, "quarantined_runs": 0, "rows": 24, "summary": "synthetic fixture only"}
+}

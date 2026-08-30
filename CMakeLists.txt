@@ -310,6 +310,11 @@ add_test(NAME check_benchmark_canary_selftest COMMAND python3 ${CMAKE_SOURCE_DIR
 add_test(NAME agent_workflow_tools COMMAND python3 -m unittest
     tests.agent.test_gcp_benchmark tests.agent.test_build)
 set_tests_properties(agent_workflow_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME ooc_pipeline_tools COMMAND python3 -m unittest tests.agent.test_ooc_pipeline)
+set_tests_properties(ooc_pipeline_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME py_compile_ooc_pipeline COMMAND python3 -m py_compile
+    ${CMAKE_SOURCE_DIR}/tools/ooc_pipeline_contract.py
+    ${CMAKE_SOURCE_DIR}/tools/train_whole_combat_surrogate.py)
 add_test(NAME py_compile_analyze_silver_sticky_quality COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py)
 add_test(NAME analyze_silver_sticky_quality_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py --self-test)
 add_test(NAME py_compile_analyze_silver_root_diagnostic COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_root_diagnostic.py)
