@@ -1,0 +1,25 @@
+{
+  "schema": "silver_visit_prior_rank4_balanced_wave_manifest_v1",
+  "experiment_id": "silver-visit-prior-rank4-screen-976064-976095",
+  "implementation_sha": "0a8ec2087d5af7e9fec53323e84e5dc36a003f44",
+  "evidence_parent_sha": "424cecfb4a4d971763bf7464e58fca574c94a0ca",
+  "executable": {"path": "checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/build/linux-gcc-release/one_combat", "sha256": "45305dfc93cf3261ff3d0ccc60ef2c87521a7b02253db93ee923d1938e4439ba"},
+  "runtime_model": {"path": "checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/models/silver_rank4_visit_policy_runtime_v1.bin", "sha256": "bf16ecf38cd90c1deed494df1c8d16647e61cad7e57a13e7ef44d4bfe205c984", "source_npz_sha256": "a9f4ba81b200ec7ac7510970e7279ba7b46b1a0f53af521e5bebb98eba3986cf"},
+  "runner": {"path": "artifacts/silver-visit-prior-rank4-screen-976064-976095-runner.sh", "sha256": "e10fa72a1ec9d971b89e75d01d9b69f1929b501ba8c6b9f17c88e3584e767e24"},
+  "ooc_models": {
+    "floor": {"path": "models/v_rich_trees.txt", "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"},
+    "win": {"path": "models/v_win_trees.txt", "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"}
+  },
+  "seed_block": {"lo": 976064, "hi": 976095, "count": 32, "freshness": "PASS: committed evidence, scoped local artifacts, and structured GCP path/manifest inventory"},
+  "waves": [
+    {"wave": 1, "start_seed": 976064, "pair_count": 12, "process_count": 24},
+    {"wave": 2, "start_seed": 976076, "pair_count": 12, "process_count": 24},
+    {"wave": 3, "start_seed": 976088, "pair_count": 8, "process_count": 16}
+  ],
+  "arms": {"A": {"selector": "off"}, "B": {"selector": "rank4", "model_path_explicit": true}},
+  "protocol": {"ascension": 0, "stop_after_act": 3, "fair_rng": true, "silver_simulations_per_decision": 1000, "exact_root_budget_mode": true, "reuse_cap_mode": "allocated", "reuse_cap": 32768, "threads_per_process": 1, "maximum_concurrent_processes": 24, "environment_threads": {"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "OMP_DYNAMIC": "FALSE"}},
+  "outputs": {"results_directory": "results/silver-visit-prior-rank4-screen-976064-976095", "logs_directory": "logs/silver-visit-prior-rank4-screen-976064-976095"},
+  "analysis": {"pairing_unit": "whole seed", "bootstrap_seed": 20260830, "bootstrap_resamples": 10000, "shared_paired_resamples": true, "normalized_cpu_ratio": "(B_total_cpu_seconds/B_total_silver_simulations)/(A_total_cpu_seconds/A_total_silver_simulations)"},
+  "decision_rule": {"positive": "net_wins >= 3 AND mean_floor_delta >= 0 AND normalized_cpu_ratio <= 1.50 AND all_correctness_counters_zero", "negative": "valid_block AND net_wins <= -3", "otherwise": "RANK4_VISIT_POLICY_ONLINE_SCREEN_INCONCLUSIVE"},
+  "fail_closed": "Any process failure, incomplete or duplicate row, provenance mismatch, missing model load, selector mismatch, or nonzero correctness counter invalidates the block."
+}

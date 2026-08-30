@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed paired analysis for the frozen Silver grouped-policy screen."""
+"""Fail-closed paired analysis for frozen Silver visit-policy screens."""
 
 from __future__ import annotations
 
@@ -80,14 +80,14 @@ def load_arm(results: Path, logs: Path, mode: str, seeds: list[int]) -> list[dic
                 raise ValueError(f"{mode}/{seed}: config {key}={cfg.get(key)!r}, expected {value!r}")
         if meta.get("seedBlock") != {"lo": seed, "hi": seed}:
             raise ValueError(f"{mode}/{seed}: wrong sidecar seed block")
-        if mode == "grouped":
+        if mode != "off":
             if cfg.get("silverVisitPolicySourceNpzSha256") != EXPECTED_SOURCE:
                 raise ValueError(f"{mode}/{seed}: source NPZ provenance mismatch")
             if not cfg.get("silverVisitPolicyRuntimeModelPath", "").endswith(EXPECTED_MODEL_SUFFIX):
                 raise ValueError(f"{mode}/{seed}: runtime model path mismatch")
         text = log_path.read_text(encoding="utf-8", errors="strict")
-        load_marker = f"[Silver visit policy loaded: mode=grouped source_npz_sha256={EXPECTED_SOURCE}]"
-        if mode == "grouped" and text.count(load_marker) != 1:
+        load_marker = f"[Silver visit policy loaded: mode={mode} source_npz_sha256={EXPECTED_SOURCE}]"
+        if mode != "off" and text.count(load_marker) != 1:
             raise ValueError(f"{mode}/{seed}: missing or duplicate model-load marker")
         if mode == "off" and "Silver visit policy loaded:" in text:
             raise ValueError(f"{mode}/{seed}: treatment model unexpectedly loaded")
@@ -112,7 +112,7 @@ def load_arm(results: Path, logs: Path, mode: str, seeds: list[int]) -> list[dic
             "visit_policy_inference_micros",
         )):
             raise ValueError(f"{mode}/{seed}: off arm unexpectedly scored visit policy")
-        if mode == "grouped" and telemetry["visit_policy_scored_roots"] <= 0:
+        if mode != "off" and telemetry["visit_policy_scored_roots"] <= 0:
             raise ValueError(f"{mode}/{seed}: treatment scored no roots")
         timing = {}
         for line in time_path.read_text(encoding="utf-8").splitlines():
@@ -160,20 +160,23 @@ def main() -> None:
     parser.add_argument("--results", type=Path, required=True)
     parser.add_argument("--logs", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--treatment", choices=("grouped", "rank4"), default="grouped")
+    parser.add_argument("--seed-first", type=int, default=976032)
+    parser.add_argument("--seed-count", type=int, default=32)
     args = parser.parse_args()
-    seeds = list(range(976032, 976064))
+    seeds = list(range(args.seed_first, args.seed_first + args.seed_count))
     off = load_arm(args.results, args.logs, "off", seeds)
-    grouped = load_arm(args.results, args.logs, "grouped", seeds)
-    if len({row["seed"] for row in off + grouped}) != 32:
+    treatment = load_arm(args.results, args.logs, args.treatment, seeds)
+    if len({row["seed"] for row in off + treatment}) != args.seed_count:
         raise ValueError("seed set is incomplete or unexpected")
     paired = []
-    for a, b in zip(off, grouped, strict=True):
+    for a, b in zip(off, treatment, strict=True):
         if a["seed"] != b["seed"]:
             raise ValueError("arm pairing mismatch")
         paired.append({
             "seed": a["seed"],
             "A_off": a,
-            "B_grouped": b,
+            f"B_{args.treatment}": b,
             "B_minus_A": {
                 "won": b["won"] - a["won"],
                 "floor": b["floor"] - a["floor"],
@@ -181,7 +184,7 @@ def main() -> None:
                 "cpu_seconds": b["cpu_seconds"] - a["cpu_seconds"],
             },
         })
-    a_agg, b_agg = aggregate(off), aggregate(grouped)
+    a_agg, b_agg = aggregate(off), aggregate(treatment)
     diffs = np.array([[p["B_minus_A"][key] for key in ("won", "floor", "ending_hp", "cpu_seconds")] for p in paired])
     rng = np.random.default_rng(20260830)
     indices = rng.integers(0, len(seeds), size=(10000, len(seeds)))
@@ -196,23 +199,24 @@ def main() -> None:
     net_wins = b_agg["wins"] - a_agg["wins"]
     all_zero = all(a_agg["telemetry"][key] == 0 and b_agg["telemetry"][key] == 0 for key in FAILURE_KEYS)
     if net_wins >= 3 and bootstrap["mean_floor"]["point_estimate"] >= 0 and normalized_ratio <= 1.50 and all_zero:
-        decision = "ADVANCE_GROUPED_TO_FRESH_128_SEED_CONFIRMATION"
+        decision = f"ADVANCE_{args.treatment.upper()}_VISIT_POLICY"
     elif net_wins <= -3:
-        decision = "GROUPED_VISIT_POLICY_ONLINE_SCREEN_NEGATIVE"
+        decision = f"{args.treatment.upper()}_VISIT_POLICY_ONLINE_SCREEN_NEGATIVE"
     else:
-        decision = "GROUPED_VISIT_POLICY_ONLINE_SCREEN_INCONCLUSIVE"
+        decision = f"{args.treatment.upper()}_VISIT_POLICY_ONLINE_SCREEN_INCONCLUSIVE"
     report = {
         "schema": "silver_visit_policy_online_paired_analysis_v1",
         "valid": True,
         "provenance": {
             "implementation_sha": EXPECTED_HEAD,
             "source_npz_sha256": EXPECTED_SOURCE,
-            "seed_block": [976032, 976063],
+            "seed_block": [seeds[0], seeds[-1]],
+            "treatment": args.treatment,
             "bootstrap_seed": 20260830,
             "bootstrap_resamples": 10000,
         },
         "A_off": a_agg,
-        "B_grouped": b_agg,
+        f"B_{args.treatment}": b_agg,
         "B_minus_A": {
             "net_wins": net_wins,
             "normalized_cpu_ratio": normalized_ratio,
@@ -223,7 +227,7 @@ def main() -> None:
         "paired_rows": paired,
     }
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({key: report[key] for key in ("A_off", "B_grouped", "B_minus_A", "decision")}, indent=2))
+    print(json.dumps({key: report[key] for key in ("A_off", f"B_{args.treatment}", "B_minus_A", "decision")}, indent=2))
 
 
 if __name__ == "__main__":
