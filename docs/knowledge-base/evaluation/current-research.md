@@ -165,6 +165,17 @@ and do not combine it with c=35. The earlier pruning and offline rejections
 remain unchanged. See the [confirmation evidence packet](../../../docs/experiments/evidence/silver-sh-aggressive-128-confirmation-2026-08-30.json)
 and ledger-06 section 198.
 
+A subsequent 16-seed online budget-response curve compared ordinary UCT c=25
+with the same aggressive/finalist-heavy Sequential-Halving schedule at exact
+budgets 100, 200, ..., 1,000. Halving led on wins only at 200/600/900, tied at
+800/1000, and trailed at 100/300/400/500/700. Its win deltas in budget order
+were -18.8pp, +12.5pp, -12.5pp, -18.8pp, -18.8pp, +12.5pp, -12.5pp, 0.0pp,
++12.5pp, and 0.0pp; no win interval excluded zero. All 20 arms passed strict
+integrity checks. This exploratory curve shows no monotonic response or stable
+Sequential-Halving advantage and does not authorize selecting the isolated
+600/900 positives. See the [budget-curve evidence packet](../../../docs/experiments/evidence/silver-sh-budget-curve-2026-08-30.json)
+and ledger-06 section 199.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable

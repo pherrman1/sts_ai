@@ -5827,3 +5827,33 @@ model training was changed.
   c=35. This preserves the prior pruning/offline rejections and does not
   reinterpret the aborted confirmation. Paths and hashes are in
   `docs/experiments/evidence/silver-sh-aggressive-128-confirmation-2026-08-30.json`.
+
+## Section 199 Sequential-Halving online simulation-budget curve (2026-08-30)
+
+- **Question:** How does gameplay change between ordinary UCT c=25 and the
+  aggressive/finalist-heavy Sequential-Halving schedule as exact root budget
+  rises from 100 through 1,000 simulations? This was a preregistered
+  exploratory curve, not a promotion gate.
+- **Protocol:** Frozen implementation SHA `79ca93f`, executable SHA-256
+  `d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba`,
+  fresh paired seeds 934400-934415, budgets 100/200/300/400/500/600/700/800/
+  900/1000, fair Silver, exact root budgets, 24 threads per sequential arm,
+  reuse `none`, adaptive off, and VNet/policy off. The same 16 seeds were
+  intentionally reused across budgets to show within-population trajectories.
+- **Win curve:** Treatment-minus-control win deltas were -18.8pp, +12.5pp,
+  -12.5pp, -18.8pp, -18.8pp, +12.5pp, -12.5pp, 0.0pp, +12.5pp, and 0.0pp
+  from budget 100 through 1,000. Halving led at 200/600/900, tied at 800/1000,
+  and trailed at the other five budgets. Every 16-seed win interval included
+  zero or touched zero. The descriptive repeated-cell totals were 68 UCT wins
+  versus 61 halving wins, but these are not 160 independent samples.
+- **Floor curve:** Halving floor deltas were -3.4, +2.8, -4.8, -2.0, +0.6,
+  +2.0, +0.6, +1.4, +5.6, and +1.6. Only the isolated budget-900 floor
+  interval excluded zero. Neither arm showed a monotonic gameplay response.
+- **Integrity:** All 20 arms completed with exactly 16 matching unique seeds,
+  exact-budget telemetry, the frozen binary hash, and zero conversion,
+  semantic-resolution, transaction, knowledge, or seed-boundary failures.
+- **Verdict:** **EXPLORATORY_BUDGET_CURVE_COMPLETE_NO_STABLE_SH_ADVANTAGE**.
+  There is no contiguous budget region where aggressive Sequential Halving
+  consistently beats ordinary UCT. Do not select 600 or 900 from this noisy
+  block and do not promote the schedule. Full cells, paths, and hashes are in
+  `docs/experiments/evidence/silver-sh-budget-curve-2026-08-30.json`.
