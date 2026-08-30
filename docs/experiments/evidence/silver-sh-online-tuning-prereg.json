@@ -1,0 +1,90 @@
+{
+  "schema": "silver_sh_online_tuning_prereg_v1",
+  "status": "preregistered_before_gameplay",
+  "baseline_sha": "1ca4abd510a5483c8b280c6774214a4944955801",
+  "scientific_question": "Can an online-selected root-only Sequential Halving schedule improve Silver gameplay without changing survivor scoring, internal search, chance search, or the leaf evaluator?",
+  "hypotheses": {
+    "h0": "No schedule improves independent paired gameplay over ordinary UCT at the same total root budget.",
+    "h1": "A gentler reduction shape or more cautious early allocation preserves the exploratory gameplay benefit while reducing premature elimination.",
+    "h2": "Any apparent screening gain disappears on fresh confirmation seeds.",
+    "fixed": {
+      "survivor_score": "existing Silver child mean Q",
+      "internal_deterministic_c": 25.0,
+      "chance_c": 25.0,
+      "chance_widening": "unchanged",
+      "adaptive": false,
+      "reuse_cap_mode": "none",
+      "exact_root_budgets": true,
+      "fair_play": true,
+      "ascension": 0,
+      "threads": 24,
+      "leaf_vnet_treatment": false,
+      "policy_scorer": false
+    }
+  },
+  "axes": {
+    "shape": {
+      "half": "ceil(K/2) repeatedly",
+      "gentle": "ceil(3K/4) first, then ceil(K/2), with 3->1",
+      "aggressive": "ceil(3K/8) first, then 1",
+      "screen_two": "min(2,K-1) first, then 1"
+    },
+    "allocation": {
+      "finalist_heavy": "per-action round weights end in 1:4:20",
+      "balanced": "per-action round weights 1,2,4,...",
+      "cautious": "per-action round weights 1,2,3,..."
+    },
+    "total_root_budget": [1000, 3000, 6000]
+  },
+  "stages": [
+    {
+      "id": "broad_schedule_screen",
+      "seed_lo": 933000,
+      "seed_hi": 933015,
+      "seeds": 16,
+      "budget": 3000,
+      "arms": "ordinary c=25 plus all 4x3 shape/allocation treatments",
+      "selection": "Reject operational failures or runtime above 1.15x control; rank by paired win delta, then paired mean-floor delta, then lower runtime; promote up to the best three surviving schedules. Stop if none survive.",
+      "claim_limit": "screening only; no efficacy claim"
+    },
+    {
+      "id": "narrow_schedule_budget_screen",
+      "seed_lo": 933100,
+      "seed_hi": 933163,
+      "seeds": 64,
+      "budgets": [1000, 3000, 6000],
+      "arms": "ordinary c=25 control and each of the three promoted schedules at every budget",
+      "selection": "Within each budget compare to its paired control. Reject operational failures, runtime above 1.10x, or paired mean-floor 95% lower bound below -2.0. Rank remaining schedule-budget pairs by paired win delta, then floor delta, then proximity to 3000 simulations.",
+      "claim_limit": "selection only; no confirmation claim"
+    },
+    {
+      "id": "independent_confirmation",
+      "seed_lo": 933300,
+      "seed_hi": 933427,
+      "seeds": 128,
+      "budget": "single frozen Stage-2 budget",
+      "arms": [
+        "ordinary UCT c=25",
+        "ordinary UCT c=35",
+        "single frozen Sequential Halving schedule at c=25 internals"
+      ],
+      "gate": "No operational failures; exact simulation divisibility; SH CPU <=1.10x c25; SH paired win delta >=5pp with 95% lower bound >0; paired mean-floor 95% lower bound >=-1.0.",
+      "claim_limit": "SH is promising only if the full gate passes"
+    }
+  ],
+  "root_c_interaction": {
+    "combined_arm": "forbidden",
+    "reason": "Sequential Halving forces every root pull, so root UCT c is not consulted and c=35+SH would be an identical mislabeled arm.",
+    "comparison": "ordinary c=35 remains a distinct independent-confirmation arm"
+  },
+  "stopping_rules": [
+    "Stop before Stage 2 if no Stage-1 treatment survives operational/runtime checks.",
+    "Stop before Stage 3 if no Stage-2 schedule-budget pair survives safety/runtime checks.",
+    "Do not change defaults or restore general pruning when the independent gate fails."
+  ],
+  "seed_exclusions": [
+    "930000-930007",
+    "931000-931063",
+    "932000-932999"
+  ]
+}

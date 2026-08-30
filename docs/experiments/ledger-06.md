@@ -5598,3 +5598,132 @@ model training was changed.
   small root-only replay. Subsequent experiments recorded below completed that
   line. See [the diagnostic report](evidence/silver-learned-guidance-diagnostic-2026-08-29.md)
   and [the read-only analyzer](../../tools/analyze_silver_guidance_alias.py).
+
+## §193 Silver root-only exploration control rejected offline (2026-08-29)
+
+- **Question:** Could lowering only deterministic root UCT exploration explain
+  the earlier action-pruning signal without masking actions or changing
+  internal/chance search?
+- **Protocol:** Root c values 25.0/control, 18.5, 12.5, and 9.9 were replayed
+  at 64/128/256/1000 simulations on 63 multi-action 25k-A anchors, with all 93
+  anchors as an integrity view. Adaptive search was off and reuse was `none`.
+- **Result:** Every reduced-c candidate introduced new `>=3`-regret choices at
+  both 128 and 256. CPU stayed within the gate, so tail harm—not cost—rejected
+  all candidates before the independent 25k-B gate.
+- **Decision:** **ROOT_EXPLORATION_REDUCTION_REJECTED**. The experimental
+  runtime override is not retained. Evidence and raw hashes are in
+  `docs/experiments/evidence/silver-root-exploration-sweep-2026-08-29.json`.
+
+## §194 Silver root-c exploratory online screen inconclusive (2026-08-29)
+
+- **Protocol:** Fair Silver, exact 3,000 simulations/root, reuse `none`, one
+  thread, adaptive/VNet/pruning off. An 8-seed broad c grid selected a fresh
+  32-seed narrow screen over c=12.5/15/18.5/21 versus c=25.
+- **Result:** c=18.5 and c=21 were each +6.2pp wins, but both paired intervals
+  included zero; c=12.5 and c=15 were directionally negative. Integrity and
+  exact-budget checks passed for complete arms.
+- **Decision:** **ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE**. Keep c=25. See
+  `docs/experiments/evidence/silver-root-exploration-online-gcp-2026-08-29.json`.
+
+## §195 Silver root c=35 128-seed rerun inconclusive (2026-08-29)
+
+- **Protocol:** Fresh paired seeds 932401–932528, 24 threads per sequential
+  arm, exact 3,000 simulations/root, c=35 versus ordinary c=25.
+- **Result:** c=35 won 84/128 versus 79/128, +3.9pp with 95% CI
+  `[-3.9,+11.7]`; floor was +0.9 `[-0.5,+2.3]`; runtime was 1.056x.
+- **Decision:** **ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE**. Keep c=25. See
+  `docs/experiments/evidence/silver-root-exploration-c35-128-gcp-2026-08-29.json`.
+
+## §196 Silver Sequential-Halving online tuning rejected (2026-08-30)
+
+- **Protocol:** Root-only shapes `half`, `gentle`, `aggressive`, and
+  `screen_two` crossed with three round-allocation schedules at exact budgets
+  1,000/3,000/6,000. Internal and chance search remained ordinary.
+- **Result:** Aggressive/finalist-heavy at 1,000 had a positive 64-seed point
+  estimate but exceeded the frozen 1.10x runtime gate. Selected
+  half/finalist-heavy at 3,000 was +1/64 win with intervals including zero.
+  The fresh confirmation arm aborted at 78/128 on a live conversion failure,
+  so partial analysis was prohibited.
+- **Decision:** **SEQUENTIAL_HALVING_ONLINE_TUNING_REJECTED**. The runtime
+  scheduler and experiment-specific orchestration are not retained. See
+  `docs/experiments/evidence/silver-sh-online-tuning-2026-08-30.json`.
+
+## §198 Aggressive Sequential-Halving confirmation inconclusive (2026-08-30)
+
+- **Protocol:** Fresh paired seeds 934000–934127, exact 1,000/root, 24 threads,
+  ordinary c=25 versus aggressive/finalist-heavy halving after operational
+  repairs.
+- **Result:** 84/128 versus 83/128 wins, +0.8pp with 95% CI
+  `[-7.8,+9.4]`; floor +1.1 `[-0.2,+2.4]`; runtime 1.055x. All integrity
+  checks passed.
+- **Decision:** **SEQUENTIAL_HALVING_GAMEPLAY_INCONCLUSIVE**; do not promote.
+  See `docs/experiments/evidence/silver-sh-aggressive-128-confirmation-2026-08-30.json`.
+
+## §199 Sequential-Halving budget curve found no stable advantage (2026-08-30)
+
+- **Protocol:** Sixteen paired seeds at exact budgets 100 through 1,000.
+- **Result:** Halving led at 200/600/900, tied at 800/1,000, and trailed at the
+  other five budgets. No contiguous region was favorable and every win
+  interval included or touched zero.
+- **Decision:** **EXPLORATORY_BUDGET_CURVE_COMPLETE_NO_STABLE_SH_ADVANTAGE**.
+  See `docs/experiments/evidence/silver-sh-budget-curve-2026-08-30.json`.
+
+## §200 Root c=35 budget curve found no stable interaction (2026-08-30)
+
+- **Protocol:** Sixteen paired seeds at exact budgets 100/200/500/1,000/2,000/
+  3,000/5,000/7,500/10,000.
+- **Result:** c=35 led in noisy cells through 2,000, reversed at 3,000, and
+  tied at 5,000–10,000. Every win interval included or touched zero.
+- **Decision:** **EXPLORATORY_C35_BUDGET_CURVE_COMPLETE_NO_STABLE_INTERACTION**.
+  See `docs/experiments/evidence/silver-c35-budget-curve-2026-08-30.json`.
+
+## §201 Root c=35 final 512-seed promotion gate rejected (2026-08-30)
+
+- **Protocol:** Fresh seeds 935000–935511 at exact 3,000/root, c=35 versus
+  ordinary c=25. Promotion required complete zero-failure paired integrity and
+  a positive paired win lower bound.
+- **Result:** Each arm omitted one different seed on equivalent-duplicate hand
+  ambiguity, so strict pairing rejected the unequal 511-row sets. The
+  diagnostic-only 510-seed intersection was +2.4pp wins with CI
+  `[-1.6,+6.3]`, which also missed the statistical gate.
+- **Decision:** **ROOT_C35_PROMOTION_REJECTED_OPERATIONAL_AND_STATISTICAL**.
+  Keep c=25; do not rerun for significance. See
+  `docs/experiments/evidence/silver-c35-512-confirmation-2026-08-30.json`.
+
+## Silver grouped and rank-4 visit-prior offline replay (2026-08-29–30)
+
+- **Grouped replay:** At 32 simulations on 63 roots, grouped-linear prior
+  selection improved B-best probability by +1.190476pp and regret by
+  -0.257334 versus current UCT, but both paired intervals included zero and
+  B-best recovery missed the frozen support bar. Decision:
+  **GROUPED_LINEAR_VISIT_POLICY_REPLAY_INCONCLUSIVE**.
+- **Rank-4 interaction:** Versus grouped linear, rank-4 changed B-best by
+  +0.793651pp but worsened regret by +0.144530; both root-bootstrap intervals
+  included zero and the finite L-BFGS run showed severe train/validation/anchor
+  divergence. Decision: **RANK4_INTERACTION_VISIT_POLICY_REPLAY_INCONCLUSIVE**.
+- **Artifacts:** Reproducible analyzers, trainers, focused tests, reports, and
+  raw/model hashes are retained. Runtime PUCT/native inference is not.
+
+## §203 Initial grouped visit-policy online screen invalid (2026-08-30)
+
+- An initial 32-seed screen was invalidated by pile-selection action-identity
+  failures and is retained only as diagnostic evidence. See
+  `docs/experiments/evidence/silver_grouped_visit_policy_online_screen_2026-08-30.json`.
+
+## §204 Repaired grouped visit-policy online screen negative (2026-08-30)
+
+- **Protocol:** Fresh paired seeds 976032–976063, ordinary off versus grouped
+  normalized visit-PUCT, exact 1,000 simulations/root, one thread.
+- **Result:** Off won 17/32; grouped won 11/32, -18.75pp with paired 95% CI
+  `[-34.375,-6.25]`. Normalized CPU ratio was 1.002x and integrity passed.
+- **Decision:** **GROUPED_VISIT_POLICY_ONLINE_SCREEN_NEGATIVE**. No 128-seed
+  confirmation or tuning was authorized.
+
+## §205 Rank-4 visit-policy online screen inconclusive (2026-08-30)
+
+- **Protocol:** Fresh paired seeds 976064–976095 under the same runtime and
+  budget controls.
+- **Result:** Off won 19/32; rank-4 won 17/32, -6.25pp with CI
+  `[-18.75,+6.25]`; normalized CPU ratio was 0.991x.
+- **Decision:** **RANK4_VISIT_POLICY_ONLINE_SCREEN_INCONCLUSIVE**. No tuning
+  or follow-up was authorized. The runtime scorer/model is not retained.

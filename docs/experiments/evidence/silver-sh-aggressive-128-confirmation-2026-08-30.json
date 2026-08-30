@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "experiment_id": "silver-sh-aggressive-1000-confirm-934000",
+  "status": "SEQUENTIAL_HALVING_GAMEPLAY_INCONCLUSIVE",
+  "date": "2026-08-30",
+  "preregistration": "docs/experiments/evidence/silver-sh-aggressive-128-prereg-2026-08-30.json",
+  "source": {
+    "implementation_sha": "79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e",
+    "parent_documentation_sha": "cbafa5e142b0761accb9e46728c7a86faae9307a",
+    "baseline_origin_main_sha": "034830df6510f1ab37ad4f053c07333fca0970c7",
+    "executable_sha256": "d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba"
+  },
+  "configuration": {
+    "canary_seed": 933999,
+    "confirmation_seeds": [934000, 934127],
+    "paired_seed_count": 128,
+    "ascension": 0,
+    "fair_play": true,
+    "threads_per_arm": 24,
+    "arms_run_sequentially": true,
+    "exact_root_simulations": 1000,
+    "control": "ordinary UCT, root and internal deterministic c=25",
+    "treatment": "Sequential Halving shape=aggressive allocation=finalist_heavy, deterministic c=25",
+    "chance_c": 25.0,
+    "chance_widening": "unchanged",
+    "reuse_cap_mode": "none",
+    "adaptive": false,
+    "leaf_vnet": false,
+    "policy_net": false,
+    "floor_model_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "win_model_sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "combat_artifact_sha256": "ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c"
+  },
+  "canary": {
+    "purpose": "integrity only; excluded from efficacy analysis",
+    "control": {"wins": 1, "mean_floor": 51.0, "mean_sec": 2.34},
+    "treatment": {"wins": 0, "mean_floor": 50.0, "mean_sec": 2.52},
+    "integrity_pass": true
+  },
+  "results": {
+    "control": {"wins": 83, "win_rate": 0.6484375, "mean_floor": 47.3, "mean_hp_end": 32.4, "mean_sec": 9.85},
+    "treatment": {"wins": 84, "win_rate": 0.65625, "mean_floor": 48.4, "mean_hp_end": 32.0, "mean_sec": 10.39},
+    "paired": {
+      "win_delta_pp": 0.8,
+      "win_delta_95ci_pp": [-7.8, 9.4],
+      "floor_delta": 1.1,
+      "floor_delta_95ci": [-0.2, 2.4],
+      "hp_end_delta": -0.4,
+      "discordant_pairs": 33,
+      "control_only_wins": 16,
+      "treatment_only_wins": 17,
+      "both_win": 67,
+      "both_lose": 28,
+      "runtime_ratio": 1.055
+    }
+  },
+  "integrity": {
+    "strict_seed_set_equality": true,
+    "unique_rows_per_arm": 128,
+    "paired_analysis_allow_partial": false,
+    "telemetry_structurally_parseable": true,
+    "all_simulation_totals_positive_multiples_of_1000": true,
+    "conversion_failures": 0,
+    "semantic_resolution_failures": 0,
+    "transaction_failures": 0,
+    "knowledge_failures": 0,
+    "bestbench_seed_failures": 0,
+    "validator": "tools/agent/check_benchmark_canary.py PASS for both 128-seed arms"
+  },
+  "decision": {
+    "confirmed_promising_gate_pass": false,
+    "reason": "The +0.8pp win point estimate is below +5pp and its paired 95% interval includes zero. The floor non-harm and integrity conditions pass.",
+    "verdict": "SEQUENTIAL_HALVING_GAMEPLAY_INCONCLUSIVE",
+    "default_change_authorized": false,
+    "combination_with_c35_authorized": false
+  },
+  "remote_artifacts": {
+    "control_csv": "results/silver-sh-aggressive-1000-confirm-934000-uct-c25.csv",
+    "control_meta": "results/silver-sh-aggressive-1000-confirm-934000-uct-c25.csv.meta.json",
+    "control_log": "logs/silver-sh-aggressive-1000-confirm-934000-uct-c25.log",
+    "treatment_csv": "results/silver-sh-aggressive-1000-confirm-934000-sh-aggressive-finalist_heavy.csv",
+    "treatment_meta": "results/silver-sh-aggressive-1000-confirm-934000-sh-aggressive-finalist_heavy.csv.meta.json",
+    "treatment_log": "logs/silver-sh-aggressive-1000-confirm-934000-sh-aggressive-finalist_heavy.log"
+  },
+  "local_raw_directory": "build/gcp-sh-aggressive-128-final/",
+  "artifact_sha256": {
+    "canary-control.csv": "5dc2ab4dc1c2ca6a252198ea2275f2364f2b31738cc4e9135e20c372ed6d913d",
+    "canary-control.log": "1196969c11acb4a8d006c26c7869b097b007df5e037c91e99df14948faf4ca0d",
+    "canary-control.meta.json": "1cbd6786e88c8ac4a69936524654e95a5a4e27bdfcaffbe5756a0893596395de",
+    "canary-treatment.csv": "de3ccb8e9e006ba97544a5bc62162c5b484300decd130d5f11e301bb3d2fa984",
+    "canary-treatment.log": "850c3f6d841a93cddb1a270899801eb04dff6cc3810d0568df453b8e56f078b5",
+    "canary-treatment.meta.json": "9c8543c0bdf678631608c9dda5b8af9fb05794076b74cbac7793fb8374549771",
+    "control.csv": "e474178f5d81e7c5a16e8a2459415d755d33d262415682902a26d9387c517e7c",
+    "control.log": "24e48c68041fcf2d3a7715a0d66ef129e1525e4e8f4a65a0718f645cecb9c2df",
+    "control.meta.json": "4e21c2325f968f93af12669b8ac71b5d5f4efbcd0c19ca9ce648bca6cd84016c",
+    "treatment.csv": "8b72295b8af2fd868735a98c61991e6fbd471998944734c18eaeaf075e62c39e",
+    "treatment.log": "a04c68854385fe3e39ee4ed2b7a755fef215281fc78dfc18c0c5633f0b9ea204",
+    "treatment.meta.json": "2364aa7e1c402486d2859f11ec8db9de3dd4e3df6173f9a3df9cb785e5b5882f"
+  }
+}

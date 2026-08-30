@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "experiment_id": "silver-sh-budget-curve-934400",
+  "status": "preregistered_before_any_seed_run",
+  "date": "2026-08-30",
+  "question": "How do ordinary Silver UCT and aggressive finalist-heavy Sequential Halving gameplay outcomes change as the exact per-root simulation budget rises from 100 to 1000?",
+  "classification": "exploratory online budget-response curve; not a promotion gate",
+  "source": {
+    "implementation_sha": "79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e",
+    "experiment_parent_sha": "d211d61c4981085cfdb9e81d0cef7a36b7d0d468",
+    "baseline_origin_main_sha": "034830df6510f1ab37ad4f053c07333fca0970c7",
+    "executable_sha256": "d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba"
+  },
+  "population": {
+    "seed_lo": 934400,
+    "seed_hi": 934415,
+    "paired_seeds_per_cell": 16,
+    "same_seed_block_at_every_budget": true,
+    "freshness": "No exact 934400-934415 experiment block was found in maintained experiment evidence before preregistration."
+  },
+  "budget_grid": [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
+  "arms": {
+    "control": {
+      "name": "ordinary-uct-c25",
+      "root_selection": "ordinary UCT",
+      "root_deterministic_c": 25.0
+    },
+    "treatment": {
+      "name": "sh-aggressive-finalist-heavy",
+      "root_selection": "Sequential Halving",
+      "shape": "aggressive",
+      "allocation": "finalist_heavy",
+      "deterministic_c": 25.0
+    }
+  },
+  "common_configuration": {
+    "ascension": 0,
+    "fair_play": true,
+    "threads_per_arm": 24,
+    "arms_run_sequentially": true,
+    "exact_root_budgets": true,
+    "internal_deterministic_c": 25.0,
+    "chance_c": 25.0,
+    "chance_widening": "unchanged",
+    "reuse_cap_mode": "none",
+    "adaptive": false,
+    "leaf_vnet": false,
+    "policy_net": false
+  },
+  "metrics": [
+    "win rate by arm and budget",
+    "paired win-rate difference by budget",
+    "mean floor by arm and budget",
+    "paired mean-floor difference by budget",
+    "mean runtime and treatment/control runtime ratio by budget"
+  ],
+  "analysis_rules": [
+    "Use paired_analysis.py without --allow-partial for every budget.",
+    "Report all ten predeclared budget cells even if individual cells look unfavorable.",
+    "Treat the 16-seed curves as noisy exploratory estimates; do not select or promote a default from this block alone.",
+    "Do not pool the repeated budget cells as independent gameplay samples because every budget reuses the same 16 seeds.",
+    "No early stopping or grid modification after results begin."
+  ],
+  "integrity_gate": [
+    "Every arm has exactly the same 16 unique seeds 934400-934415.",
+    "Every Silver simulation total is a positive multiple of that cell's exact root budget.",
+    "No conversion, semantic-resolution, transaction, knowledge, or seed-boundary failure occurs.",
+    "Telemetry is structurally parseable and the frozen executable hash matches."
+  ],
+  "non_goals": [
+    "No c=35 arm.",
+    "No Sequential-Halving schedule tuning.",
+    "No chance, widening, adaptive, evaluator, policy, or reuse intervention.",
+    "No promotion decision from sixteen seeds."
+  ]
+}

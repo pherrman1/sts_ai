@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "experiment_id": "silver-c35-3000-confirm-935000",
+  "status": "preregistered_before_canary_or_cohort",
+  "date": "2026-08-30",
+  "question": "Does root-only deterministic exploration c=35 independently improve paired online gameplay over ordinary c=25 at the established exact 3000-simulation root budget?",
+  "classification": "final standalone promotion gate",
+  "source": {
+    "implementation_sha": "79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e",
+    "experiment_parent_sha": "615f76d",
+    "baseline_origin_main_sha": "034830df6510f1ab37ad4f053c07333fca0970c7",
+    "executable_sha256": "d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba"
+  },
+  "population": {
+    "canary_seed": 934999,
+    "confirmation_seed_lo": 935000,
+    "confirmation_seed_hi": 935511,
+    "paired_seed_count": 512,
+    "freshness": "No exact 934999 or 935000-935511 experiment block was found in maintained evidence before preregistration."
+  },
+  "arms": {
+    "control": {"name": "root-c25", "root_exploration": "unset/default(25)"},
+    "treatment": {"name": "root-c35", "root_exploration": 35.0}
+  },
+  "common_configuration": {
+    "exact_root_simulations": 3000,
+    "ascension": 0,
+    "fair_play": true,
+    "threads_per_arm": 24,
+    "arms_run_sequentially": true,
+    "internal_deterministic_c": 25.0,
+    "chance_c": 25.0,
+    "chance_widening": "unchanged",
+    "reuse_cap_mode": "none",
+    "adaptive": false,
+    "sequential_halving": false,
+    "leaf_vnet": false,
+    "policy_net": false
+  },
+  "primary_metric": "paired win-rate difference treatment minus control",
+  "secondary_metrics": ["paired mean-floor difference", "paired mean-end-HP difference", "mean runtime ratio"],
+  "promotion_rule": {
+    "all_required": [
+      "fresh treatment win-rate point estimate is positive",
+      "fresh paired 95% win-difference lower bound is above zero",
+      "fresh paired mean-floor 95% lower bound is at least -1.0",
+      "treatment mean runtime is at most 1.10 times control",
+      "all integrity gates pass"
+    ],
+    "pass": "ROOT_C35_PROMOTION_AUTHORIZED",
+    "positive_but_win_ci_includes_zero": "ROOT_C35_GAMEPLAY_INCONCLUSIVE; do not promote or add more seeds",
+    "nonpositive_or_floor_harm": "ROOT_C35_PROMOTION_REJECTED",
+    "historical_evidence": "Existing c=35 blocks may be summarized after the fresh verdict but cannot rescue a failed standalone gate."
+  },
+  "integrity_gate": [
+    "The paired canary passes before either cohort arm starts.",
+    "Both cohort arms exit zero and contain exactly the same 512 unique seeds 935000-935511.",
+    "Every telemetry simulation total is a positive multiple of 3000.",
+    "No conversion, semantic-resolution, transaction, knowledge, or seed-boundary failure occurs.",
+    "Telemetry parses structurally and frozen executable/model hashes match."
+  ],
+  "analysis": {
+    "script": "paired_analysis.py",
+    "allow_partial": false,
+    "early_stopping": false,
+    "historical_blocks_counted_as_fresh_confirmation": []
+  },
+  "non_goals": [
+    "No budget selection or sweep.",
+    "No Sequential Halving, pruning, adaptive search, VNet, policy, or c-by-budget interaction.",
+    "No retrospective threshold change after results begin."
+  ]
+}
