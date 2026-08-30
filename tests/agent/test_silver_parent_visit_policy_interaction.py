@@ -8,13 +8,18 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SPEC = importlib.util.spec_from_file_location(
-    "silver_rank4_interaction", ROOT / "tools" / "train_silver_parent_visit_policy_interaction.py")
-MODULE = importlib.util.module_from_spec(SPEC)
-sys.modules[SPEC.name] = MODULE
-SPEC.loader.exec_module(MODULE)
+TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
+MODULE = None
+if TORCH_AVAILABLE:
+    SPEC = importlib.util.spec_from_file_location(
+        "silver_rank4_interaction",
+        ROOT / "tools" / "train_silver_parent_visit_policy_interaction.py")
+    MODULE = importlib.util.module_from_spec(SPEC)
+    sys.modules[SPEC.name] = MODULE
+    SPEC.loader.exec_module(MODULE)
 
 
+@unittest.skipUnless(TORCH_AVAILABLE, "optional research dependency torch is not installed")
 class Rank4InteractionPolicyTest(unittest.TestCase):
     def parents(self):
         # Two legal siblings, with the frozen state/action split retained.
