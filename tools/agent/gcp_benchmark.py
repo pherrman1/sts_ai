@@ -424,11 +424,17 @@ def remote_run(args: argparse.Namespace) -> int:
         check = clauses + " " + check
 
     if args.foreground:
+        log = args.log
+        capture = f"exec {guard}"
+        log_preflight = ""
+        if log:
+            capture = f"{guard} 2>&1 | tee {shlex.quote(log)}"
+            log_preflight = "command -v tee >/dev/null; "
         remote = (
             "set -euo pipefail; "
             f"cd {shlex.quote(args.remote_root)}; "
             "test -f tools/seed_guard.sh; command -v bash >/dev/null; mkdir -p logs results; "
-            f"{check}; exec {guard}"
+            f"{log_preflight}{check}; {capture}"
         )
         return ssh_command(args, remote)
 

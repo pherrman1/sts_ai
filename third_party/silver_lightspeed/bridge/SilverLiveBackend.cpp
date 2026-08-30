@@ -1208,11 +1208,20 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             fail("knowledge", detail);
         }
 
-        const auto wire = makeSilverBattleStateWire(
+        const auto conversion = makeSilverBattleStateConversion(
             bc, knowledge, makeSilverRunContext(gc), silverBattleSeed);
+        const auto &wire = conversion.wire;
         if (!wire.valid) {
             ++g_silverLiveDiagnostics.conversionFailures;
-            fail("conversion", "live observation cannot be represented without hidden information");
+            fail("conversion", "live observation cannot be represented without hidden information"
+                " seed=" + std::to_string(gc.seed)
+                + " floor=" + std::to_string(bc.floorNum)
+                + " encounter=" + std::to_string(static_cast<int>(bc.encounter))
+                + " decision=" + std::to_string(decision)
+                + " turn=" + std::to_string(bc.turn)
+                + " input=" + std::to_string(static_cast<int>(bc.inputState))
+                + " reason=" + (conversion.failureReason.empty()
+                    ? std::string("unspecified") : conversion.failureReason));
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
@@ -1320,7 +1329,14 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         const auto resolved = resolveSilverSemanticAction(bc, semantic);
         if (!resolved.ok) {
             ++g_silverLiveDiagnostics.semanticResolutionFailures;
-            fail("semantic action resolution", resolved.error);
+            fail("semantic action resolution", resolved.error
+                + " seed=" + std::to_string(gc.seed)
+                + " floor=" + std::to_string(bc.floorNum)
+                + " encounter=" + std::to_string(static_cast<int>(bc.encounter))
+                + " decision=" + std::to_string(decision)
+                + " turn=" + std::to_string(bc.turn)
+                + " input=" + std::to_string(static_cast<int>(bc.inputState))
+                + " semantic=" + silver_bridge::semanticActionFingerprint(semantic));
         }
         if (g_stickyQualityActionTraceForTest) {
             g_silverLiveDiagnostics.actionFingerprints.push_back(

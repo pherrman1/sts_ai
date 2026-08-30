@@ -151,18 +151,29 @@ SilverRunContext makeSilverRunContext(const GameContext &live) {
     return out;
 }
 
-silver_bridge::BattleStateWire makeSilverBattleStateWire(
+SilverBattleStateConversion makeSilverBattleStateConversion(
         const BattleContext &live, const CombatKnowledgeState &knowledge,
         const SilverRunContext &runContext, std::uint64_t isolatedSearchSeed) {
-    silver_bridge::BattleStateWire out;
-    out.valid = knowledge.consistencyFailureCount == 0;
+    SilverBattleStateConversion conversion;
+    auto &out = conversion.wire;
+    const auto invalidate = [&](std::string reason) {
+        out.valid = false;
+        if (conversion.failureReason.empty()) conversion.failureReason = std::move(reason);
+    };
+    if (knowledge.consistencyFailureCount != 0) {
+        invalidate("knowledge_consistency_failure count="
+                   + std::to_string(knowledge.consistencyFailureCount));
+    }
     out.fullDrawOrderObserved = knowledge.fullDrawPileOrderObserved;
     // This is observer configuration captured from GameContext before live
     // monster initialization. Reading Player's initialized relic state here
     // cannot repair a missing pre-init configuration: that would conceal a
     // lifecycle error and could leak the materialized live move.
     out.intentsHidden = knowledge.hiddenMonsterIntents;
-    if (out.intentsHidden != !liveMonsterIntentIsObservable(live)) out.valid = false;
+    if (out.intentsHidden != !liveMonsterIntentIsObservable(live)) {
+        invalidate("monster_intent_visibility_lifecycle_mismatch configured_hidden="
+                   + std::to_string(out.intentsHidden ? 1 : 0));
+    }
     out.isolatedSearchSeed = isolatedSearchSeed;
     out.observedGeneration = knowledge.generation;
     out.floorNum = live.floorNum;
@@ -229,7 +240,9 @@ silver_bridge::BattleStateWire makeSilverBattleStateWire(
             wm.moveHistory = knowledge.publicMonsterMoveHistory[i];
             wm.miscInfo = knowledge.publicMonsterMiscInfo[i];
         } else if (m.idx >= 0) {
-            out.valid = false;
+            invalidate("missing_public_hidden_intent_state monster_index="
+                       + std::to_string(i) + " monster_id="
+                       + std::to_string(static_cast<int>(m.id)));
         }
         wm.statusBits = m.statusBits;
         wm.smallPowers = {m.artifact, m.blockReturn, m.choked, m.corpseExplosion, m.lockOn,
@@ -252,7 +265,10 @@ silver_bridge::BattleStateWire makeSilverBattleStateWire(
                         && publicMove == static_cast<std::int16_t>(MonsterMoveId::MUGGER_MUG)) {
                     wm.pendingDirectMoveChoice = 2;
                 } else {
-                    out.valid = false;
+                    invalidate("unsupported_deferred_hidden_intent monster_index="
+                               + std::to_string(i) + " monster_id="
+                               + std::to_string(static_cast<int>(m.id))
+                               + " public_move=" + std::to_string(publicMove));
                 }
             }
         }
@@ -270,7 +286,12 @@ silver_bridge::BattleStateWire makeSilverBattleStateWire(
     // A stale positional fact is a boundary failure. Propagate the draw-pile
     // observation's fail-closed validity into the complete protocol so the
     // private materializer can never rebuild it from a hidden live position.
-    out.valid = out.valid && out.drawPile.valid;
+    if (!out.drawPile.valid) {
+        invalidate("stale_draw_pile_positional_knowledge known_bottom="
+                   + std::to_string(knowledge.knownBottom.size())
+                   + " known_top=" + std::to_string(knowledge.knownTop.size())
+                   + " live_size=" + std::to_string(live.cards.drawPile.size()));
+    }
     out.discardPile.unknown = canonicalPileWire(live.cards.discardPile);
     out.exhaustPile.unknown = canonicalPileWire(live.cards.exhaustPile);
 
@@ -284,7 +305,14 @@ silver_bridge::BattleStateWire makeSilverBattleStateWire(
     out.cardSelect.setCostToZero = true;
     out.cardSelect.selectedBits = 0;
     out.curCardQueueItem = toWire(live.curCardQueueItem);
-    return out;
+    return conversion;
+}
+
+silver_bridge::BattleStateWire makeSilverBattleStateWire(
+        const BattleContext &live, const CombatKnowledgeState &knowledge,
+        const SilverRunContext &runContext, std::uint64_t isolatedSearchSeed) {
+    return makeSilverBattleStateConversion(
+        live, knowledge, runContext, isolatedSearchSeed).wire;
 }
 
 } // namespace sts::search
