@@ -34,4 +34,30 @@ There is no gameplay estimate for the grouped prior. This failure does not suppo
 
 Do not rerun seed `976004`, tune the policy, or begin a 128-seed confirmation. A repair would change the frozen executable and must receive independent implementation review before a new scientific run is authorized.
 
+## Post-screen implementation correction
+
+The failure was reproduced as a `SECRET_TECHNIQUE` selection: Silver returned
+state-local action bits for canonical draw-pile index 1, while the live pile at
+that index was not a legal skill. Commit
+`fb6af48b1c8d783abf7a4021a35ab29993b0d963` adds an explicit boundary rule for
+draw/discard/exhaust selections: translate the selected card identity from the
+canonical isolated pile to the live pile index, then retain strict live legality
+validation. All other treatment actions continue to use the exact selected
+vendor bits, including duplicate-identity private multi-select confirmations.
+
+The repaired Release executable SHA-256 is
+`45305dfc93cf3261ff3d0ccc60ef2c87521a7b02253db93ee923d1938e4439ba`;
+the runtime model remains byte-identical at
+`bf16ecf38cd90c1deed494df1c8d16647e61cad7e57a13e7ef44d4bfe205c984`.
+The focused boundary fixture, 63-root grouped/rank-4 probability parity, both
+252-selection replay checks, exact-root-budget canaries for off/grouped/rank4
+at seeds 975000 and 975024, default-off selector parity, and the formerly
+failing 976004/grouped diagnostic all passed with zero treatment failure
+counters. These are implementation checks, not new gameplay evidence.
+
+The invalid screen remains invalid. The repaired executable must receive
+independent review before a new, fresh 32-seed block is frozen or launched.
+Machine-readable correction evidence is in
+`silver_grouped_visit_policy_pile_selection_repair_2026-08-30.json`.
+
 Machine-readable evidence and raw artifact hashes are in `silver_grouped_visit_policy_online_screen_2026-08-30.json`.

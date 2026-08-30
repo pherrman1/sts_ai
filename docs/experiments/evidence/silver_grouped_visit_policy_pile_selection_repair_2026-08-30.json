@@ -1,0 +1,35 @@
+{
+  "schema": "silver_grouped_visit_policy_pile_selection_repair_v1",
+  "date": "2026-08-30",
+  "implementation_commit": "fb6af48b1c8d783abf7a4021a35ab29993b0d963",
+  "base": "034830df6510f1ab37ad4f053c07333fca0970c7",
+  "cause": "A SECRET_TECHNIQUE edge encoded an index in Silver's canonicalized draw pile; that state-local index did not identify the same card in the live draw-pile vector.",
+  "correction": "Translate selected draw/discard/exhaust card identities to live pile indices before strict legality validation. Preserve exact selected vendor bits for every other action surface.",
+  "executable_sha256": "45305dfc93cf3261ff3d0ccc60ef2c87521a7b02253db93ee923d1938e4439ba",
+  "runtime_model_sha256": "bf16ecf38cd90c1deed494df1c8d16647e61cad7e57a13e7ef44d4bfe205c984",
+  "checks": {
+    "silver_bridge_boundary": "PASS",
+    "grouped_probability_max_abs_error": 2.220446049250313e-16,
+    "rank4_probability_max_abs_error": 2.831068712794149e-15,
+    "probability_roots": 63,
+    "grouped_replay_selected_actions": 252,
+    "rank4_replay_selected_actions": 252,
+    "replay_selection_parity": "PASS",
+    "default_off_parity_seed": 975000,
+    "default_off_parity": "PASS",
+    "previous_failure_seed": 976004,
+    "previous_failure_mode": "grouped",
+    "previous_failure_diagnostic": "PASS",
+    "all_failure_counters_zero": true
+  },
+  "exact_root_budget_canaries": [
+    {"mode": "off", "seed": 975000, "won": 0, "floor": 50, "ending_hp": 0, "cpu_seconds": 3.47124},
+    {"mode": "off", "seed": 975024, "won": 1, "floor": 51, "ending_hp": 40, "cpu_seconds": 5.98934},
+    {"mode": "grouped", "seed": 975000, "won": 0, "floor": 50, "ending_hp": 0, "cpu_seconds": 3.08484},
+    {"mode": "grouped", "seed": 975024, "won": 1, "floor": 51, "ending_hp": 31, "cpu_seconds": 5.32836},
+    {"mode": "rank4", "seed": 975000, "won": 0, "floor": 50, "ending_hp": 0, "cpu_seconds": 3.81604},
+    {"mode": "rank4", "seed": 975024, "won": 1, "floor": 51, "ending_hp": 48, "cpu_seconds": 7.86667}
+  ],
+  "scientific_status": "ORIGINAL_SCREEN_REMAINS_INVALID",
+  "next_step": "Independent implementation and executable review before freezing a fresh 32-seed block."
+}

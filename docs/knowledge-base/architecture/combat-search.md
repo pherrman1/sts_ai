@@ -80,6 +80,15 @@ subset for live validation. Focused coverage requires a real intermediate
 selection, nonzero `selectedBits`, an exact reroot, and inherited visits; an
 immediate empty confirmation is not multi-step evidence.
 
+Silver visit-prior scoring uses the exact packed action bits from each already
+enumerated vendor root edge; those state-local bits remain the correspondence
+token for priors, sorting, rerooting, and private sequential selections. For a
+live draw/discard/exhaust selection only, the isolated pile has deliberately
+been canonicalized to hide its live vector order, so the selected card identity
+is translated back to the live pile index before strict legality validation and
+execution. This boundary rule is selected by the pile action surface, not by a
+failed legality check; a coincidentally legal wrong index is never accepted.
+
 The default-off Silver leaf observer is a type-free callback in
 `SilverBridge.h`. At the exact point where `BattleSearcher` would begin its
 `SimpleAgent` rollout, it can receive a wire snapshot plus root, nearest
