@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "experiment_id": "silver-sh-aggressive-1000-confirm-934000",
+  "status": "preregistered_before_canary_or_cohort",
+  "preregistered_at": "2026-08-30",
+  "question": "Does aggressive finalist-heavy root Sequential Halving at an exact 1000 simulations per root confirm its exploratory online advantage over ordinary UCT c=25?",
+  "hypotheses": {
+    "null": "The historical 43/64 versus 32/64 result was sampling noise or configuration-specific and will not produce a positive paired confirmation.",
+    "treatment": "Aggressive early screening plus finalist-heavy allocation improves fixed-budget online decisions enough to increase paired wins without material floor harm."
+  },
+  "source": {
+    "implementation_sha": "79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e",
+    "parent_documentation_sha": "cbafa5e142b0761accb9e46728c7a86faae9307a",
+    "baseline_origin_main_sha": "034830df6510f1ab37ad4f053c07333fca0970c7"
+  },
+  "population": {
+    "canary_seed": 933999,
+    "confirmation_seeds": [934000, 934127],
+    "paired_seed_count": 128,
+    "freshness": "No exact 933999 or 934000-934127 experiment block was found in maintained experiment evidence before preregistration."
+  },
+  "common_configuration": {
+    "ascension": 0,
+    "fair_play": true,
+    "threads": 24,
+    "root_simulations_exact": 1000,
+    "internal_deterministic_c": 25.0,
+    "chance_c": 25.0,
+    "chance_widening": "unchanged",
+    "reuse_cap_mode": "none",
+    "adaptive": false,
+    "leaf_vnet": false,
+    "policy_net": false,
+    "arms_run_sequentially": true
+  },
+  "arms": {
+    "control": {"name": "uct-c25", "root_selection": "ordinary UCT", "root_c": 25.0},
+    "treatment": {"name": "sh-aggressive-finalist_heavy", "root_selection": "sequential_halving", "shape": "aggressive", "allocation": "finalist_heavy"}
+  },
+  "primary_metric": "paired win-rate difference treatment minus control",
+  "secondary_metrics": ["paired mean-floor difference", "paired hp-end difference", "mean per-run runtime ratio"],
+  "integrity_gate": [
+    "Both arms exit zero and contain exactly the same 128 unique seeds.",
+    "No conversion, semantic-resolution, transaction, knowledge, or bestbench seed failure occurs.",
+    "Every Silver simulation total is divisible by 1000.",
+    "Every Silver telemetry record is structurally parseable.",
+    "The canary passes these checks before either cohort arm starts."
+  ],
+  "decision_rule": {
+    "confirmed_promising": [
+      "paired win improvement is at least 5 percentage points",
+      "paired 95% win-difference lower bound is above zero",
+      "paired mean-floor 95% lower bound is at least -1.0",
+      "all integrity gates pass"
+    ],
+    "inconclusive": "The win interval includes zero or the floor non-harm bound fails, despite operational validity.",
+    "rejected": "The treatment is directionally nonpositive on wins or has a severe operational failure.",
+    "runtime": "Descriptive, not an exclusion at the historical approximately 1.107x ratio; flag as severe operational regression only above 1.25x control."
+  },
+  "analysis": {
+    "script": "paired_analysis.py",
+    "allow_partial": false,
+    "historical_blocks_used_for_selection_only": ["933100-933163 aggressive/finalist-heavy at 1000"],
+    "historical_blocks_counted_as_confirmation": []
+  },
+  "non_goals": [
+    "No c=35 arm.",
+    "No combination of root c with Sequential Halving.",
+    "No additional hyperparameter selection from this block.",
+    "No default change or promotion before interpreting the frozen gate."
+  ]
+}
