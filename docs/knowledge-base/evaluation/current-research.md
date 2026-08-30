@@ -200,6 +200,17 @@ and diagnose the two semantic failures separately before future large Silver
 cohorts. See the [final gate evidence](../../../docs/experiments/evidence/silver-c35-512-confirmation-2026-08-30.json)
 and ledger-06 section 201.
 
+The two Section-201 semantic failures were then repaired at reviewed SHA
+`6aae003`. Ordinary card play now deterministically lowers to the first fully
+equivalent matching live hand entry; strict ambiguity rejection remains for
+single- and multi-card selection. Focused semantic and bridge-boundary tests
+passed, independent review found no blocker, and original seeds 935505/c=25
+and 935456/c=35 both completed their exact-3,000 GCP configurations with zero
+failure counters. This is **SILVER_DUPLICATE_HAND_PLAY_FAILURES_FIXED**, not a
+new efficacy result: the invalid c=35 promotion gate remains rejected and c=25
+remains default. See the [repair evidence](../../../docs/experiments/evidence/silver-semantic-duplicate-hand-fix-2026-08-30.json)
+and ledger-06 section 202.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable

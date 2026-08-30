@@ -5917,3 +5917,27 @@ model training was changed.
   implementation diagnosis before relying on future large Silver cohorts.
   Full contexts, paths, and hashes are in
   `docs/experiments/evidence/silver-c35-512-confirmation-2026-08-30.json`.
+
+## Section 202 Silver equivalent-duplicate hand-play failures repaired (2026-08-30)
+
+- **Scope:** Correctness repair for the two semantic failures in Section 201;
+  no gameplay verdict or default was changed. Real hands can contain two cards
+  identical across every serialized `CardWire` field, including `uniqueId`.
+  Ordinary card-play lowering incorrectly required exactly one match.
+- **Fix:** Reviewed SHA `6aae003f2ad255c7d9d30ba79149fb298472fb65`
+  deterministically selects the first fully equivalent live hand entry only
+  for ordinary `CARD` play, then retains normal live action validation.
+  Single- and multi-card-select paths still require unique identity and fail
+  closed on ambiguity. An independent implementation review passed with no
+  blocking or correctness findings.
+- **Verification:** `silver_semantic_action` and `silver_bridge_boundary`
+  passed. Exact fixed Linux binary SHA-256 was
+  `b1da69a6db136046b2b4067f3710425c4037698dba1bd3bcd17b7e7e65267ed3`.
+  Original seed 935505/c=25 and seed 935456/c=35 each completed 1/1 on GCP at
+  exact 3,000 simulations/root, won floor 51, emitted exact-budget telemetry,
+  and had zero conversion, semantic, transaction, or knowledge failures.
+- **Verdict:** **SILVER_DUPLICATE_HAND_PLAY_FAILURES_FIXED**. This removes the
+  two known operational defects but does not rehabilitate the invalid Section
+  201 efficacy block or promote c=35. Paths, hashes, and the embedded-sidecar
+  SHA caveat are in
+  `docs/experiments/evidence/silver-semantic-duplicate-hand-fix-2026-08-30.json`.
