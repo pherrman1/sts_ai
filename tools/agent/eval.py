@@ -197,18 +197,18 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
 
 
 def changed_files(workspace: Path, baseline_commit: str) -> list[str]:
-    names = git(workspace, "log", "--format=", "--name-only", f"{baseline_commit}..HEAD", check=False).stdout.splitlines()
-    names += git(workspace, "diff", "--cached", "--name-only", "HEAD", check=False).stdout.splitlines()
-    names += git(workspace, "diff", "--name-only", check=False).stdout.splitlines()
+    names = git(workspace, "log", "--no-renames", "--format=", "--name-only", f"{baseline_commit}..HEAD", check=False).stdout.splitlines()
+    names += git(workspace, "diff", "--no-renames", "--cached", "--name-only", "HEAD", check=False).stdout.splitlines()
+    names += git(workspace, "diff", "--no-renames", "--name-only", check=False).stdout.splitlines()
     names += git(workspace, "ls-files", "--others", "--exclude-standard", check=False).stdout.splitlines()
     return sorted({name for name in names if not name.startswith(".agent-eval-build/")})
 
 
 def candidate_diff(workspace: Path, baseline_commit: str, files: list[str]) -> bytes:
     parts = [
-        git(workspace, "log", "--format=commit %H", "-p", "--binary", f"{baseline_commit}..HEAD", check=False).stdout.encode(),
-        git(workspace, "diff", "--cached", "--binary", "HEAD", check=False).stdout.encode(),
-        git(workspace, "diff", "--binary", check=False).stdout.encode(),
+        git(workspace, "log", "--no-renames", "--format=commit %H", "-p", "--binary", f"{baseline_commit}..HEAD", check=False).stdout.encode(),
+        git(workspace, "diff", "--no-renames", "--cached", "--binary", "HEAD", check=False).stdout.encode(),
+        git(workspace, "diff", "--no-renames", "--binary", check=False).stdout.encode(),
     ]
     untracked = set(git(workspace, "ls-files", "--others", "--exclude-standard", check=False).stdout.splitlines())
     for name in files:
@@ -264,8 +264,8 @@ def grade(task_id: str, workspace_value: str, labels: dict[str, str]) -> tuple[i
         raise EvalError("grader returned no JSON")
     passed = result.returncode == 0 and all(check.get("passed", False) for check in checks)
     diff = candidate_diff(workspace, baseline, files)
-    committed_numstat = git(workspace, "log", "--format=", "--numstat", f"{baseline}..HEAD", check=False).stdout.splitlines()
-    worktree_numstat = git(workspace, "diff", "--numstat", "HEAD", check=False).stdout.splitlines()
+    committed_numstat = git(workspace, "log", "--no-renames", "--format=", "--numstat", f"{baseline}..HEAD", check=False).stdout.splitlines()
+    worktree_numstat = git(workspace, "diff", "--no-renames", "--numstat", "HEAD", check=False).stdout.splitlines()
     record = {"schema_version": 1, "task_id": task_id, "task_version": manifest["version"], "result": "PASS" if passed else "FAIL", "checks": checks, "changed_files": files, "changed_line_count": len([line for line in committed_numstat + worktree_numstat if line]), "duration_seconds": round(time.monotonic() - started, 3), "baseline_commit": baseline, "candidate_commit": candidate, "diff_hash": hashlib.sha256(diff).hexdigest(), "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(), "environment": environment(), "labels": {k: v for k, v in labels.items() if v}}
     return (0 if passed else 1), record
 

@@ -25,10 +25,16 @@ Create the reproducible pilot setup from the repository root:
 git clone https://github.com/microsoft/SkillOpt.git .skillopt-sleep/SkillOpt
 git -C .skillopt-sleep/SkillOpt checkout --detach db46cd9ae7ce12f1dbd73c945185816aa738751d
 mkdir -p ~/.skillopt-sleep
+if [ -f ~/.skillopt-sleep/config.json ]; then
+  cp ~/.skillopt-sleep/config.json ~/.skillopt-sleep/config.json.bak
+fi
 cp tools/agent/skillopt_sleep_config.example.json ~/.skillopt-sleep/config.json
 # Edit target_skill_path in ~/.skillopt-sleep/config.json to the absolute path
 # of this worktree's .agents/skills/codex-implementation/SKILL.md.
 ```
+
+Before deleting the pilot worktree, repoint `target_skill_path` to a surviving
+checkout.
 
 Run the source-pinned engine from its checkout, using the Python module
 entrypoint so Windows does not depend on shell-runner Python discovery:

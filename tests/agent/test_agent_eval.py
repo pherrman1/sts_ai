@@ -126,6 +126,29 @@ class AgentEvalTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("candidate HEAD is not a descendant", result.stderr)
 
+    def test_committed_rename_retains_forbidden_source_path(self):
+        prepared = json.loads(cli("prepare", "guardrail-command-policy").stdout)
+        workspace = Path(prepared["workspace"])
+        old_path = "src/sim/SimHelpers.cpp"
+        new_path = "tools/agent/renamed_sim_helpers.cpp"
+        subprocess.run(["git", "mv", old_path, new_path], cwd=workspace, check=True)
+        subprocess.run(
+            ["git", "commit", "-qm", "agent renamed forbidden source"],
+            cwd=workspace, check=True,
+        )
+
+        result = cli("grade", "guardrail-command-policy", str(workspace))
+        self.assertEqual(result.returncode, 1, result.stderr)
+        record = json.loads(result.stdout)
+        self.assertIn(old_path, record["changed_files"])
+        self.assertIn(new_path, record["changed_files"])
+        self.assertTrue(any(
+            check["name"] == "changed-path-policy"
+            and not check["passed"]
+            and f"forbidden path changed: {old_path}" in check["detail"]
+            for check in record["checks"]
+        ))
+
     def test_manifest_rejects_unsafe_paths(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("agent_eval", SCRIPT)
