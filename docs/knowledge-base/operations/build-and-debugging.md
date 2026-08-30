@@ -43,8 +43,13 @@ python tools/agent/worktree.py remove .worktrees/my-task
 
 `create` performs `git worktree add`, synchronizes the declared HTTPS URLs,
 initializes both pinned dependencies, and verifies their revisions and metadata
-roots. `remove` refuses a dirty worktree, uses Git's required forced worktree
-removal for the clean submodule checkout, then rechecks the managing checkout.
+roots. When the managing repository already has the pinned objects, sibling
+worktrees seed from those local repositories and then restore their `origin`
+URLs to HTTPS; this avoids an unnecessary network clone without sharing a
+mutable checkout. A failed create attempts to remove its incomplete worktree
+and newly created branch. `remove` refuses a dirty worktree, uses Git's required
+forced worktree removal for the clean submodule checkout, then rechecks the
+managing checkout.
 It deliberately does **not** run `git submodule deinit`: submodule activation
 configuration is shared by linked worktrees, so deinitializing one can make
 healthy siblings appear uninitialized. It intentionally does not delete the

@@ -34,7 +34,7 @@ done
 
 if submodule_status="$(git -C "$repo_root" submodule status --recursive 2>/dev/null)"; then
     if printf '%s\n' "$submodule_status" | grep -Eq '^[+U-]'; then
-        fail "submodules are not at the revisions recorded by this checkout; run: git submodule update --init --recursive"
+        fail "submodules are not at the revisions recorded by this checkout; run: python tools/agent/worktree.py repair ."
     else
         pass "submodules initialized and at recorded revisions"
     fi
