@@ -84,6 +84,7 @@ std::mutex g_leafCorpusMutex;
 bool g_leafVNetLogHeaderWritten = false;
 bool g_stickyQualityActionTraceForTest = false;
 std::mutex g_stickyQualitySelectionMutex;
+std::mutex g_combatTelemetryMutex;
 std::unordered_map<std::uint64_t, int> g_stickyQualitySelectionsByRunSeed;
 std::unordered_map<std::uint64_t, int> g_rootDiagnosticSelectionsByRunSeed;
 struct StickyQualityTestBudgets { std::int64_t fresh = 0, ref25 = 0, ref50 = 0; };
@@ -1366,7 +1367,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                                                  static_cast<int>(bc.encounter), stickyQualityCounters);
     if (emitTelemetry) {
         const auto &d = g_silverLiveDiagnostics;
-        std::cout << "[silver-combat] decisions=" << d.decisions
+        std::ostringstream line;
+        line << "[silver-combat] decisions=" << d.decisions
                   << " simulations=" << d.simulations
                   << " transaction_subdecisions=" << d.transactionSubdecisions
                   << " adaptive_escalations=" << d.adaptiveEscalations
@@ -1397,6 +1399,11 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " transaction_failures=" << d.transactionFailures
                   << " knowledge_failures=" << d.knowledgeConsistencyFailures
                   << '\n';
+        // Multiple bestbench seeds finish combats concurrently. Serialize the
+        // complete record so parsers never interpret interleaved counter
+        // digits from two otherwise-valid telemetry lines as a failure.
+        const std::lock_guard<std::mutex> lock(g_combatTelemetryMutex);
+        std::cout << line.str();
     }
 }
 
