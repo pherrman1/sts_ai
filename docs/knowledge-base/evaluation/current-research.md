@@ -176,6 +176,17 @@ Sequential-Halving advantage and does not authorize selecting the isolated
 600/900 positives. See the [budget-curve evidence packet](../../../docs/experiments/evidence/silver-sh-budget-curve-2026-08-30.json)
 and ledger-06 section 199.
 
+A fresh 16-seed root-c interaction curve then compared c=25 with root-only
+c=35 at exact budgets 100/200/500/1000/2000/3000/5000/7500/10000. c=35 win
+deltas were +18.8pp, +12.5pp, +18.8pp, +6.2pp, +12.5pp, -12.5pp, 0.0pp,
+0.0pp, and 0.0pp. Thus the noisy low-budget positive pattern reversed at the
+established 3,000 reference and disappeared at 5,000-10,000; every win
+interval included or touched zero. All 18 arms passed strict integrity checks.
+This is **EXPLORATORY_C35_BUDGET_CURVE_COMPLETE_NO_STABLE_INTERACTION** and
+does not authorize choosing a new budget or promoting c=35 from sixteen
+seeds. See the [c=35 budget-curve evidence](../../../docs/experiments/evidence/silver-c35-budget-curve-2026-08-30.json)
+and ledger-06 section 200.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable

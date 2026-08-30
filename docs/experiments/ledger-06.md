@@ -5857,3 +5857,32 @@ model training was changed.
   consistently beats ordinary UCT. Do not select 600 or 900 from this noisy
   block and do not promote the schedule. Full cells, paths, and hashes are in
   `docs/experiments/evidence/silver-sh-budget-curve-2026-08-30.json`.
+
+## Section 200 Root c=35 online simulation-budget curve (2026-08-30)
+
+- **Question:** Does the gameplay difference between ordinary root c=25 and
+  root-only c=35 vary coherently as exact root budget rises from 100 to
+  10,000? This was a preregistered exploratory interaction curve, not a
+  promotion gate.
+- **Protocol:** Frozen implementation SHA `79ca93f`, executable SHA-256
+  `d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba`,
+  fresh paired seeds 934500-934515, budgets 100/200/500/1000/2000/3000/5000/
+  7500/10000, fair Silver, exact root budgets, 24 threads per sequential arm,
+  internal and chance c=25, reuse `none`, adaptive/Sequential Halving/VNet/
+  policy off. Treatment changed only root deterministic c to 35.
+- **Results:** c=35 win deltas by increasing budget were +18.8pp, +12.5pp,
+  +18.8pp, +6.2pp, +12.5pp, -12.5pp, 0.0pp, 0.0pp, and 0.0pp. It led in
+  the five cells through 2,000, reversed at the established 3,000 reference,
+  and tied at every 5,000-10,000 cell. Every win interval included or touched
+  zero. Floor deltas were +2.4, +4.0, +1.9, -2.9, +1.7, -1.9, +0.8, -0.6,
+  and -2.5; no floor interval excluded zero.
+- **Integrity:** All 18 arms completed with exactly 16 matching unique seeds,
+  exact-budget telemetry, frozen executable/root-c telemetry, and zero
+  conversion, semantic-resolution, transaction, knowledge, or seed failures.
+- **Verdict:** **EXPLORATORY_C35_BUDGET_CURVE_COMPLETE_NO_STABLE_INTERACTION**.
+  The low-budget positive pattern is noisy, disappears at high budget, and
+  conflicts with the 3,000 cell. Do not select a promotion budget from this
+  block and do not promote c=35 from sixteen seeds. The previously proposed
+  independent 3,000-budget promotion test remains the clean comparator to the
+  existing 128-seed evidence. Full paths and hashes are in
+  `docs/experiments/evidence/silver-c35-budget-curve-2026-08-30.json`.
