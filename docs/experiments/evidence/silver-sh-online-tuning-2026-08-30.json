@@ -1,0 +1,92 @@
+{
+  "experiment": "silver-sh-online-tuning",
+  "date": "2026-08-30",
+  "verdicts": {
+    "sequential_halving": "SEQUENTIAL_HALVING_ONLINE_TUNING_REJECTED",
+    "root_c35": "ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE",
+    "combine_c35_and_sequential_halving": "REJECTED_AS_INERT"
+  },
+  "provenance": {
+    "origin_main_at_preflight": "034830df6510f1ab37ad4f053c07333fca0970c7",
+    "implementation_baseline": "1ca4abd510a5483c8b280c6774214a4944955801",
+    "frozen_source_and_executable_sha": "ce6ea5a160b5fe88be520de052b832a1aace1ade",
+    "final_orchestration_sha": "bac856582743ee36fcdb05ce909f6de18d753098",
+    "remote_checkout": "/home/philippherrmann/sts_sweep/checkouts/silver-sh-online-ce6ea5a",
+    "binary_sha256": "c9dfa6f893303fa38f059ae9bc5f38e3aa192dafa60451863c223c445aeb36f2",
+    "preregistration": {
+      "path": "docs/experiments/evidence/silver-sh-online-tuning-prereg.json",
+      "sha256": "cc80c72a2fa32673c21285302a6319810ee5b836f5f8ed144338f3bbcc12a158"
+    },
+    "model_sha256": {
+      "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+      "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+      "models/v_combat_7k_tuned.txt": "ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c"
+    }
+  },
+  "fixed_configuration": {
+    "fair": true,
+    "ascension": 0,
+    "threads": 24,
+    "exact_root_budgets": true,
+    "internal_deterministic_c": 25.0,
+    "chance_c": 25.0,
+    "chance_widening": "unchanged",
+    "reuse_cap_mode": "none",
+    "adaptive": false,
+    "leaf_vnet": false,
+    "policy_net": false
+  },
+  "broad_stage": {
+    "seeds": [933000, 933015],
+    "count": 16,
+    "budget": 3000,
+    "control": {"wins": 11, "mean_floor": 49.25, "mean_sec": 19.48},
+    "promoted": [
+      {"shape": "half", "allocation": "finalist_heavy", "wins": 12, "win_delta_pp": 6.25, "floor_delta": 0.625, "runtime_ratio": 0.893},
+      {"shape": "aggressive", "allocation": "finalist_heavy", "wins": 12, "win_delta_pp": 6.25, "floor_delta": -0.375, "runtime_ratio": 0.972},
+      {"shape": "screen_two", "allocation": "cautious", "wins": 12, "win_delta_pp": 6.25, "floor_delta": -0.625, "runtime_ratio": 0.874}
+    ],
+    "integrity": "PASS for all 13 counted arms",
+    "excluded": [
+      "artifact-less canary seed 933099",
+      "three foreground half-schedule runs without durable logs; replaced by rerun1 artifacts"
+    ]
+  },
+  "narrow_stage": {
+    "seeds": [933100, 933163],
+    "count": 64,
+    "budgets": [1000, 3000, 6000],
+    "valid_pairs": [
+      {"budget": 1000, "shape": "half", "allocation": "finalist_heavy", "control_wins": 32, "treatment_wins": 37, "win_delta_pp": 7.8125, "win_ci95_pp": [-6.2, 21.9], "floor_delta": 0.28125, "floor_ci95": [-2.4, 2.8], "runtime_ratio": 1.047623, "gate": "REJECT_FLOOR_NONHARM"},
+      {"budget": 1000, "shape": "aggressive", "allocation": "finalist_heavy", "control_wins": 32, "treatment_wins": 43, "win_delta_pp": 17.1875, "win_ci95_pp": [3.1, 31.2], "floor_delta": 2.75, "floor_ci95": [0.6, 5.1], "runtime_ratio": 1.106697, "gate": "REJECT_RUNTIME"},
+      {"budget": 3000, "shape": "half", "allocation": "finalist_heavy", "control_wins": 42, "treatment_wins": 43, "win_delta_pp": 1.5625, "win_ci95_pp": [-10.9, 15.6], "floor_delta": 0.171875, "floor_ci95": [-1.6, 2.0], "runtime_ratio": 1.001397, "gate": "PASS_AND_SELECT"},
+      {"budget": 3000, "shape": "screen_two", "allocation": "cautious", "control_wins": 42, "treatment_wins": 41, "win_delta_pp": -1.5625, "win_ci95_pp": [-15.6, 14.1], "floor_delta": -0.34375, "floor_ci95": [-2.5, 1.7], "runtime_ratio": 0.9918, "gate": "REJECT_FLOOR_NONHARM"}
+    ],
+    "invalid_pairs": [
+      {"budget": 1000, "shape": "screen_two", "allocation": "cautious", "reason": "conversion failure"},
+      {"budget": 3000, "shape": "aggressive", "allocation": "finalist_heavy", "reason": "semantic-resolution failure"},
+      {"budget": 6000, "shape": "all", "allocation": "all", "reason": "control conversion failure invalidated every pair"}
+    ],
+    "selected": {"budget": 3000, "shape": "half", "allocation": "finalist_heavy"}
+  },
+  "confirmation_stage": {
+    "seeds": [933300, 933427],
+    "count": 128,
+    "budget": 3000,
+    "c25": {"wins": 84, "win_rate": 0.65625, "mean_floor": 47.4, "mean_sec": 24.02, "integrity": "PASS"},
+    "c35": {"wins": 90, "win_rate": 0.703125, "mean_floor": 47.8, "mean_sec": 23.42, "win_delta_pp": 4.6875, "win_ci95_pp": [-3.9, 13.3], "floor_delta": 0.45, "floor_ci95": [-0.8, 1.7], "runtime_ratio": 0.975, "integrity": "PASS", "gate": "INCONCLUSIVE"},
+    "sequential_halving": {"completed_rows": 78, "expected_rows": 128, "integrity": "FAIL", "failure": "Silver live backend conversion: live observation cannot be represented without hidden information", "gate": "REJECT_OPERATIONAL_FAILURE"},
+    "partial_analysis_permitted": false
+  },
+  "artifacts": [
+    {"stage": "broad", "remote_path": "/home/philippherrmann/sts_sweep/artifacts/silver-sh-online-broad-valid-ce6.tar.gz", "local_path": "build/gcp-sh-online/silver-sh-online-broad-valid-ce6.tar.gz", "sha256": "a90026d2af2f351a7c8d2f7a66b904fd14626225e6e95ff5caebb45239b4ae50", "files": 39},
+    {"stage": "narrow", "remote_path": "/home/philippherrmann/sts_sweep/artifacts/silver-sh-online-narrow-valid-ce6.tar.gz", "local_path": "build/gcp-sh-online/silver-sh-online-narrow-valid-ce6.tar.gz", "sha256": "34682d5a370247a4578843c65c7694f01b14fe5397cfadfc45901a62df03bc94", "files": 36},
+    {"stage": "confirmation", "remote_path": "/home/philippherrmann/sts_sweep/artifacts/silver-sh-online-confirm-valid-ce6.tar.gz", "local_path": "build/gcp-sh-online/silver-sh-online-confirm-valid-ce6.tar.gz", "sha256": "ca30dbf499c12a98eafd520ed2eea490dece7440a80f0332032623212390f627", "files": 9}
+  ],
+  "interpretation": [
+    "c=35 missed the registered +5pp bar and its paired 95% win interval includes zero",
+    "Sequential Halving aborted after 78 rows and partial analysis is prohibited",
+    "Sequential Halving forces root pulls, so root UCT c is not consulted while it is active",
+    "prior pruning and offline Sequential-Halving rejections remain unchanged"
+  ]
+}

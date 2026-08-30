@@ -1,0 +1,31 @@
+{
+  "evidence_schema": "silver_root_exploration_c35_128_gcp_v1",
+  "date": "2026-08-29",
+  "baseline_origin_main_sha": "034830df6510f1ab37ad4f053c07333fca0970c7",
+  "reviewed_source_sha": "1a9c6c3b26958b3638883e15e5f85539c451eca6",
+  "question": "Does root-only deterministic c=35 improve online Silver gameplay over ordinary root c=25 at 128 fresh paired seeds?",
+  "server": {"project": "sts-ai-502709", "zone": "europe-west3-c", "instance": "sts-test", "cores": 24, "execution": "each arm sequentially used OMP_NUM_THREADS=24 to avoid 48-thread oversubscription"},
+  "configuration": {"treatment_root_c": 35.0, "control_root_c": "unset (ordinary 25)", "internal_deterministic_c": 25.0, "chance_c": 25.0, "chance_widening": "unchanged", "adaptive": false, "reuse_cap_mode": "none", "exact_root_budget": 3000, "fair_play": true, "leaf_vnet": "off", "action_pruning": false, "threads": 24},
+  "seed_block": {"lo": 932401, "hi": 932528, "n_seeds_per_arm": 128, "pairing": "strict identical seed sets; paired_analysis.py without --allow-partial"},
+  "canaries": {"seed": 932400, "treatment": "passed; threads=24, one row, BEST, exact budget multiples, zero failure counters", "control": "passed; threads=24, one row, BEST, exact budget multiples, zero failure counters", "validator_note": "Official canary helper omitted because it rejects required reuse-cap=none; equivalent manual checks performed."},
+  "results": {
+    "control_c25": {"wins": "79/128", "win_rate": 0.617, "mean_floor": 47.32, "mean_hp_end": 34.5, "mean_sec_per_run": 72.62},
+    "treatment_c35": {"wins": "84/128", "win_rate": 0.656, "mean_floor": 48.20, "mean_hp_end": 33.8, "mean_sec_per_run": 76.67},
+    "paired_treatment_minus_control": {"win_rate_pp": 3.9, "win_rate_95_ci_pp": [-3.9, 11.7], "mean_floor": 0.9, "mean_floor_95_ci": [-0.5, 2.3], "mean_hp_end": -0.7, "mean_sec_per_run": 4.05, "runtime_ratio": 1.056, "discordant_pairs": "27/128", "control_only_wins": 11, "treatment_only_wins": 16}
+  },
+  "integrity": {"all_rows_present": true, "all_seed_sets_equal": true, "all_seed_sets_unique": true, "sidecar_backend": "silver", "sidecar_threads": 24, "sidecar_sims": 3000, "sidecar_treatment_root": "35.000000", "sidecar_control_root": "default(25)", "best_lines_per_arm": 1, "telemetry_totals_divisible_by_3000": true, "conversion_failures": 0, "semantic_resolution_failures": 0, "transaction_failures": 0, "knowledge_failures": 0, "leaf_vnet_inference_calls": 0, "blend_invocations": 0},
+  "raw_artifacts": {
+    "root": "C:/Users/pherrman/projects/sts_ai/build/gcp_root_sweep/root_sweep",
+    "treatment_csv": {"path": "online128_mt24_c35_932401.csv", "sha256": "FA0815F58786CE2A705539FF606144EC3DFBEEA85DBABBD6474B0DC521F3FF80"},
+    "treatment_meta": {"path": "online128_mt24_c35_932401.csv.meta.json", "sha256": "6D3B62BBC1EAA0425DBE427646A70B79EB873E02D0D7A81DC67C60094F3991DE"},
+    "treatment_log": {"path": "online128_mt24_c35_932401.log", "sha256": "9EB785D7DBC96A121FCA40919FF4BBC4D86D90C6F016F24CB88C9B08186B9DED"},
+    "control_csv": {"path": "online128_mt24_c25_932401.csv", "sha256": "A7E6C4BAAE5B34706F22F0AABAC0A410C2B0AA0AFED4A2F45A85FB72CC36296A"},
+    "control_meta": {"path": "online128_mt24_c25_932401.csv.meta.json", "sha256": "6188015F8B7F540279B748EF534A52E29D489935E55DC6806415B7BD00D983B5"},
+    "control_log": {"path": "online128_mt24_c25_932401.log", "sha256": "CEAD8F20C1D3799F414728C92E4FB7FF7635A749701BB9A49C1361910249901C"},
+    "canary_treatment_csv_sha256": "0F09BD6ACA05EC53798A7DF492D17C2D5876FE09DC2E0306ECBD3A6BF3D2084A",
+    "canary_control_csv_sha256": "8639303A44E441CFA470EF1B733D1FE2C074B006F7E7C92E1F53A3941C66B51B"
+  },
+  "provenance": {"isolated_executable_sha256": "e9629516ff9dc5e959801d96eb866f9b285ce2632da95cb71c5e08b8580bc617", "floor_model_sha256": "c866b62512bb7cf8abdebc6175415508cb667fe2d628198ac107fd35591a9447", "win_model_sha256": "724a75ccc4bc2394306181db229aa2295433450f9596f1bc1479083dda337e35", "combat_model_sha256": "e26fffdbe21392cc08db841859d46c13188acd16b180323868b04dca55e15ea2", "sidecar_executableGitSha_warning": "Sidecars retain embedded executableGitSha=0189bb40...; direct executable SHA-256 was verified and is trusted provenance."},
+  "excluded_interrupted_run": {"treatment": "online128_c35_932201.csv; 11 partial rows; one-thread; excluded", "control": "online128_c25_932201.csv; 11 partial rows; one-thread; excluded", "reason": "User-directed correction from one core to 24 cores"},
+  "verdict": {"status": "ROOT_EXPLORATION_GAMEPLAY_INCONCLUSIVE", "interpretation": "c=35 is directionally better by +3.9pp wins and +0.9 floor, but both paired intervals include zero; runtime is 1.056x control.", "action": "Keep c=25 default. Do not promote c=35 or restore Sequential Halving; any future three-way comparison requires a new preregistered gate."}
+}

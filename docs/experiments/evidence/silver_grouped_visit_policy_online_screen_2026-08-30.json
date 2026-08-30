@@ -1,0 +1,149 @@
+{
+  "schema": "silver_grouped_visit_policy_online_screen_v1",
+  "date": "2026-08-30",
+  "valid": false,
+  "classification": "INVALID_GROUPED_VISIT_POLICY_ONLINE_SCREEN",
+  "scientific_decision": null,
+  "reason": "The grouped arm aborted after four completed rows during seed 976004 because selected root action bits were not live-legal. An incomplete treatment arm cannot be paired, bootstrapped, or classified by the predeclared decision rule.",
+  "frozen_implementation": {
+    "git_sha": "eb4fcc157f542c6d31c81ddd5339aec39fa44600",
+    "base_sha": "034830df6510f1ab37ad4f053c07333fca0970c7",
+    "executable_sha256": "b306623381227b376aaaa2015aee0ea68d657b5556b2dc95ad22d0601ad438ba",
+    "runtime_model_path": "models/silver_rank4_visit_policy_runtime_v1.bin",
+    "runtime_model_sha256": "bf16ecf38cd90c1deed494df1c8d16647e61cad7e57a13e7ef44d4bfe205c984",
+    "source_npz_sha256": "a9f4ba81b200ec7ac7510970e7279ba7b46b1a0f53af521e5bebb98eba3986cf",
+    "linux_gcc_ci": "PASS"
+  },
+  "manifest": {
+    "path": "build/silver_visit_prior_online_screen_20260830/run_manifest.json",
+    "sha256": "b1ee50b9f1b0567c123076e374aeb87f88b762556b86a9877aa3ddf20a6c0f8f",
+    "validation": "PASS",
+    "exact_sha_preflight": "PASS",
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": 20260830,
+    "bootstrap_executed": false
+  },
+  "protocol": {
+    "seed_first": 976000,
+    "seed_last": 976031,
+    "paired_seeds_requested": 32,
+    "ascension": 0,
+    "act_horizon": 3,
+    "fair_rng": true,
+    "silver_simulations_per_decision": 1000,
+    "exact_root_budget": true,
+    "reuse_cap_mode": "allocated",
+    "reuse_cap": 32768,
+    "threads": 1,
+    "arms_concurrent": false,
+    "ooc_floor_model_sha256_linux": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "ooc_win_model_sha256_linux": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+  },
+  "attempts": [
+    {
+      "arm": "A_off",
+      "attempt": 1,
+      "seeds_completed": 0,
+      "valid": false,
+      "reason": "SCP stripped the executable permission; process failed before seed execution.",
+      "log_sha256": "fbea8816b21a5cfac566c74fd5ac0d422a5588b3a6dd291a06f4ec6af1b75a79"
+    },
+    {
+      "arm": "A_off",
+      "attempt": 2,
+      "seeds_completed": 32,
+      "valid": false,
+      "reason": "Sidecar executableGitSha resolved the designated root checkout instead of the exact reviewed worktree. Outcomes were not used.",
+      "observed_executable_git_sha": "0189bb40e1712f2b9b3597483c66cc4d267e206e",
+      "csv_sha256": "a93c45aebb5f70a2766e2c979b045e3047c1487e134d5f46435590d255ea5edc",
+      "meta_sha256": "c8bf8be52a87be8c99c25007d5649998507cf34bb07b2c763cb866ae49f976f4",
+      "log_sha256": "a2be4b6ebe43050f7f2b6c6671baef48466e721617d4cbac30ad0322e1c8ecc2"
+    },
+    {
+      "arm": "A_off",
+      "attempt": 3,
+      "seeds_completed": 32,
+      "valid": true,
+      "reason": null
+    },
+    {
+      "arm": "B_grouped",
+      "attempt": 1,
+      "seeds_completed": 4,
+      "valid": false,
+      "reason": "Runtime aborted during seed 976004: Silver live backend exact Silver action-bit legality: selected root action bits are not live-legal."
+    }
+  ],
+  "arms": {
+    "A_off": {
+      "valid": true,
+      "rows": 32,
+      "wins": 20,
+      "win_rate": 0.625,
+      "mean_floor": 49.4375,
+      "median_floor": 51.0,
+      "mean_ending_hp": 26.34375,
+      "mean_cpu_seconds": 2.970065625,
+      "cpu_seconds_sum": 95.0421,
+      "wall_seconds": 95.0,
+      "telemetry": {
+        "combat_records": 817,
+        "policy_scored_roots": 0,
+        "policy_scored_actions": 0,
+        "fresh_prior_applications": 0,
+        "reused_prior_applications": 0,
+        "inference_microseconds": 0,
+        "feature_failures": 0,
+        "semantic_failures": 0,
+        "nonfinite_failures": 0,
+        "normalization_failures": 0,
+        "conversion_failures": 0,
+        "semantic_resolution_failures": 0,
+        "transaction_failures": 0,
+        "knowledge_failures": 0
+      }
+    },
+    "B_grouped": {
+      "valid": false,
+      "rows": 4,
+      "requested_rows": 32,
+      "failure_seed": 976004,
+      "outcome_metrics_reported": false,
+      "wall_seconds": null,
+      "telemetry_before_abort": {
+        "combat_records": 114,
+        "policy_scored_roots": 2193,
+        "policy_scored_actions": 13309,
+        "fresh_prior_applications": 840,
+        "reused_prior_applications": 1353,
+        "inference_microseconds": 41462,
+        "printed_feature_failures": 0,
+        "printed_semantic_failures": 0,
+        "printed_nonfinite_failures": 0,
+        "printed_normalization_failures": 0,
+        "printed_conversion_failures": 0,
+        "printed_semantic_resolution_failures": 0,
+        "printed_transaction_failures": 0,
+        "printed_knowledge_failures": 0,
+        "terminal_exact_action_live_legality_failures": 1
+      }
+    }
+  },
+  "paired_analysis": {
+    "valid_pairs": null,
+    "all_32_rows_available": false,
+    "net_wins": null,
+    "cpu_ratio": null,
+    "bootstrap": null,
+    "decision_rule_applied": false
+  },
+  "raw_artifacts": {
+    "A_csv": {"path": "build/silver_visit_prior_online_screen_20260830/A_off.csv", "sha256": "bb18945014c190ce603f4a77443052f61a64a2176d139ca3d04a48d5896cd59f"},
+    "A_meta": {"path": "build/silver_visit_prior_online_screen_20260830/A_off.csv.meta.json", "sha256": "c208e0f17e976c15ffcae9176b0a84d150564e24c134765d715e9250f2c119cb"},
+    "A_log": {"path": "build/silver_visit_prior_online_screen_20260830/A_off.log", "sha256": "ed7b26cb9c9a7c616b39ed7bf8209f329d64b675ccb977dadfbc1dd02a23e05a"},
+    "B_partial_csv": {"path": "build/silver_visit_prior_online_screen_20260830/B_grouped.csv", "sha256": "d324000744f3155433b2f8aa8526a1a2bd7ae4eb5480eeebc03f1534f64c11c2"},
+    "B_meta": {"path": "build/silver_visit_prior_online_screen_20260830/B_grouped.csv.meta.json", "sha256": "35253a6a5874f1b81acc009c85d91c657dd2de8b22b3c79c3e8e78c678dfd854"},
+    "B_log": {"path": "build/silver_visit_prior_online_screen_20260830/B_grouped.log", "sha256": "0346519f7d5436fb0f4dab4b92fffb0c485a08da174af8779925527bb11826a2"}
+  },
+  "interpretation": "No online treatment estimate exists. The failure is a runtime exact-action legality defect exposed by grouped-policy gameplay, not evidence that the grouped prior helps or harms gameplay. Any repair changes the reviewed executable and requires new implementation review before another scientific block."
+}

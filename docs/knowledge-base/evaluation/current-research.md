@@ -71,6 +71,29 @@ and `docs/experiments/evidence/silver_action_pruning_progressive_current_2026-08
 (SHA-256 `1231530b9381009d36622fd32b2a496d5d18d5eb4a0958ba26abd07c8019e243`).
 See [ledger-06 §188–191](../../../docs/experiments/ledger-06.md).
 
+### Finished Silver root-allocation and learned-prior line
+
+The subsequent root-allocation line is complete and does not authorize a
+default change. Lower root exploration coefficients failed the offline
+tail-regret gate. Online c=35 screens were directionally positive but
+inconclusive; the final 512-seed gate was invalidated by two different
+semantic failures and its diagnostic intersection also missed the statistical
+gate. Sequential-Halving tuning, a clean 128-seed confirmation, and a
+100–1,000 simulation budget curve found no stable promotable advantage.
+Ordinary root c=25 remains the default.
+
+The learned visit-prior line is also closed. Grouped-linear and rank-4 offline
+replays were inconclusive. After repairing an action-identity defect, the
+fresh grouped online screen lost six of 32 paired wins with an interval below
+zero; the fresh rank-4 screen lost two of 32 and was inconclusive. These
+results do not prove that every learned prior is harmful, but they reject the
+frozen grouped/rank-4 normalized visit-PUCT treatments tested here.
+
+Durable evidence, analyzers, trainers, tests, hashes, and decision records are
+retained under `docs/experiments/evidence/` and `tools/`. Rejected root-c,
+Sequential-Halving, visit-PUCT, native runtime inference, and model-loading
+paths are intentionally absent from `main`. See ledger-06 sections 193–205.
+
 The known live-bridge and telemetry blockers discovered during later Silver
 search experiments were repaired without changing any scientific verdict.
 A stale Looter post-Mug marker is now consumed when intent becomes public;
