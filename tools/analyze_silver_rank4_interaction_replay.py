@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from analyze_silver_cross_prior_replay import compatible, indexed
+from analyze_silver_cross_prior_replay import CONTROL_ARMS, CONTROL_FIELDS, HEADER_FIELDS, indexed
 from analyze_silver_learned_visit_replay import ARMS, BOOTSTRAPS, bootstrap_mean, load, validate_controls
 
 
@@ -31,12 +31,114 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def provenance(path: Path, expected: str, name: str) -> dict:
-    observed = sha256(path)
-    if observed != expected:
-        raise ValueError(f"{name} frozen hash mismatch: {observed} != {expected}")
-    return {"source_commit": SOURCE_COMMIT, "executable_sha256": EXECUTABLE_HASH,
-            "snapshots_sha256": SNAPSHOTS_HASH, "relabels_sha256": RELABELS_HASH}
+def sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def parse_jsonl_bytes(value: bytes) -> list[dict]:
+    return [json.loads(line) for line in value.decode("utf-8").splitlines() if line.strip()]
+
+
+def canonical_jsonl_hash(rows: list[dict]) -> str:
+    canonical = b"".join(json.dumps(row, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n"
+                           for row in rows)
+    return sha256_bytes(canonical)
+
+
+def newline_hashes_bytes(observed: bytes) -> dict:
+    lf = observed.replace(b"\r\n", b"\n")
+    crlf = lf.replace(b"\n", b"\r\n")
+    observed_rows, lf_rows, crlf_rows = map(parse_jsonl_bytes, (observed, lf, crlf))
+    return {"observed_sha256": sha256_bytes(observed), "lf_sha256": sha256_bytes(lf),
+            "crlf_sha256": sha256_bytes(crlf), "observed_newlines": {"lf": observed.count(b"\n"),
+            "crlf": observed.count(b"\r\n")}, "parsed_rows_identical": observed_rows == lf_rows == crlf_rows,
+            "canonical_semantic_sha256": canonical_jsonl_hash(observed_rows),
+            "lf_canonical_semantic_sha256": canonical_jsonl_hash(lf_rows),
+            "crlf_canonical_semantic_sha256": canonical_jsonl_hash(crlf_rows)}
+
+
+def newline_hashes(path: Path) -> dict:
+    return newline_hashes_bytes(path.read_bytes())
+
+
+def byte_hash_acceptance(newline: dict, expected: str) -> tuple[bool, bool]:
+    byte_match = newline["observed_sha256"] == expected
+    canonical_equivalence = (not byte_match and newline["lf_sha256"] == expected
+                             and newline["parsed_rows_identical"]
+                             and newline["canonical_semantic_sha256"] == newline["lf_canonical_semantic_sha256"])
+    return byte_match, canonical_equivalence
+
+
+def interaction_recorded(manifest: dict) -> dict:
+    return {"recorded_provenance_id": "interaction_replay_manifest",
+            "replay_sha256": manifest["outputs"]["replay_jsonl_sha256"],
+            "source_commit": manifest["source_commit"], "executable_sha256": manifest["executable_sha256"],
+            "snapshots_sha256": manifest["frozen_inputs"]["snapshots_sha256"],
+            "relabels_sha256": manifest["frozen_inputs"]["relabels_sha256"]}
+
+
+def historical_recorded(manifest: dict, name: str) -> dict:
+    if name == "grouped_linear":
+        return {"recorded_provenance_id": "grouped_linear_replay_manifest",
+                "replay_sha256": manifest["outputs"]["replay_jsonl_sha256"],
+                "source_commit": manifest["replay_source_commit"], "executable_sha256": manifest["replay_executable_sha256"],
+                "snapshots_sha256": manifest["inputs"]["snapshots_sha256"], "relabels_sha256": manifest["inputs"]["relabels_sha256"]}
+    return {"recorded_provenance_id": "rankshape_cross_prior_provenance", **manifest["replays"][name]}
+
+
+def verify_recorded_replay(name: str, path: Path, recorded: dict) -> dict:
+    newline = newline_hashes(path)
+    byte_match, canonical_equivalence = byte_hash_acceptance(newline, recorded["replay_sha256"])
+    if not byte_match and not canonical_equivalence:
+        raise ValueError(f"{name} replay byte hash mismatch without canonical-equivalence proof")
+    return {"name": name, "recorded": recorded, "observed": newline,
+            "byte_hash_match": byte_match, "canonical_equivalence_proved": canonical_equivalence,
+            "acceptance": "exact_byte_hash" if byte_match else "LF_CRLF_canonical_equivalence"}
+
+
+def verify_frozen_inputs(snapshots: Path, relabels: Path) -> dict:
+    observed = {"snapshots_sha256": sha256(snapshots), "relabels_sha256": sha256(relabels)}
+    if observed != {"snapshots_sha256": SNAPSHOTS_HASH, "relabels_sha256": RELABELS_HASH}:
+        raise ValueError("frozen snapshot/relabel hashes do not match the experiment contract")
+    return observed
+
+
+def exact_controls(rows: list[dict]) -> dict:
+    return {(row["group_id"], row["replicate"], row["arm"]):
+            {field: row[field] for field in CONTROL_FIELDS}
+            for row in rows if row["arm"] in CONTROL_ARMS}
+
+
+def independently_verified(name: str, path: Path, recorded: dict, snapshots: Path, relabels: Path) -> tuple[dict, dict, list[dict]]:
+    proof = verify_recorded_replay(name, path, recorded)
+    header, rows = load(path)
+    frozen = verify_frozen_inputs(snapshots, relabels)
+    if recorded["source_commit"] != SOURCE_COMMIT or recorded["executable_sha256"] != EXECUTABLE_HASH:
+        raise ValueError(f"{name} recorded source/executable provenance mismatch")
+    if recorded["snapshots_sha256"] != frozen["snapshots_sha256"] or recorded["relabels_sha256"] != frozen["relabels_sha256"]:
+        raise ValueError(f"{name} recorded snapshot/relabel provenance mismatch")
+    proof.update({"root_replicate_set": sorted({(row["group_id"], row["replicate"]) for row in rows}),
+                  "search_seeds": sorted((row["group_id"], row["replicate"], row["search_seed"])
+                                         for row in rows if row["arm"] == "current_uct"),
+                  "control_means": validate_controls(arm_means(rows)), "header": {key: header.get(key) for key in HEADER_FIELDS}})
+    return proof, header, rows
+
+
+def cross_provenance(reference: tuple[dict, dict, list[dict]], candidate: tuple[dict, dict, list[dict]]) -> dict:
+    reference_proof, reference_header, reference_rows = reference
+    candidate_proof, candidate_header, candidate_rows = candidate
+    checks = {"independent_recorded_provenance": (reference_proof["recorded"] is not candidate_proof["recorded"]
+                                                   and reference_proof["recorded"]["recorded_provenance_id"]
+                                                   != candidate_proof["recorded"]["recorded_provenance_id"]),
+              "same_header_contract": all(reference_header.get(k) == candidate_header.get(k) for k in HEADER_FIELDS),
+              "same_root_replicate_set": reference_proof["root_replicate_set"] == candidate_proof["root_replicate_set"],
+              "same_per_root_search_seeds": reference_proof["search_seeds"] == candidate_proof["search_seeds"],
+              "same_source_commit": reference_proof["recorded"]["source_commit"] == candidate_proof["recorded"]["source_commit"],
+              "same_executable_sha256": reference_proof["recorded"]["executable_sha256"] == candidate_proof["recorded"]["executable_sha256"],
+              "same_snapshots_sha256": reference_proof["recorded"]["snapshots_sha256"] == candidate_proof["recorded"]["snapshots_sha256"],
+              "same_relabels_sha256": reference_proof["recorded"]["relabels_sha256"] == candidate_proof["recorded"]["relabels_sha256"],
+              "exact_uct_oracle_control_rows": exact_controls(reference_rows) == exact_controls(candidate_rows)}
+    return {"pass": all(checks.values()), "checks": checks, "failures": [key for key, value in checks.items() if not value]}
 
 
 def root_deltas(treatment_rows, control_rows, treatment_arm="learned_visit_puct", control_arm="learned_visit_puct"):
@@ -109,18 +211,22 @@ def main() -> None:
     parser.add_argument("rankshape", type=Path)
     parser.add_argument("snapshots", type=Path)
     parser.add_argument("relabels", type=Path)
+    parser.add_argument("--interaction-manifest", required=True, type=Path)
+    parser.add_argument("--grouped-manifest", required=True, type=Path)
+    parser.add_argument("--rankshape-provenance", required=True, type=Path)
     parser.add_argument("--json-output", required=True, type=Path)
     args = parser.parse_args()
-    common = provenance(args.snapshots, SNAPSHOTS_HASH, "snapshots")
-    provenance(args.relabels, RELABELS_HASH, "relabels")
-    loaded = {name: load(path) for name, path in (("interaction", args.interaction),
-                                                   ("grouped_linear", args.grouped_linear),
-                                                   ("rankshape", args.rankshape))}
-    interaction_header, interaction_rows = loaded["interaction"]
+    interaction_manifest = json.loads(args.interaction_manifest.read_text(encoding="utf-8"))
+    grouped_manifest = json.loads(args.grouped_manifest.read_text(encoding="utf-8"))
+    rankshape_manifest = json.loads(args.rankshape_provenance.read_text(encoding="utf-8"))
+    interaction = independently_verified("interaction", args.interaction, interaction_recorded(interaction_manifest), args.snapshots, args.relabels)
+    grouped = independently_verified("grouped_linear", args.grouped_linear, historical_recorded(grouped_manifest, "grouped_linear"), args.snapshots, args.relabels)
+    rankshape = independently_verified("rankshape", args.rankshape, historical_recorded(rankshape_manifest, "rankshape"), args.snapshots, args.relabels)
+    _, interaction_header, interaction_rows = interaction
     comparisons = {}
-    for number, name in enumerate(("grouped_linear", "rankshape"), 1):
-        header, rows = loaded[name]
-        gate = compatible(interaction_header, interaction_rows, common, header, rows, common)
+    for number, (name, candidate) in enumerate((("grouped_linear", grouped), ("rankshape", rankshape)), 1):
+        _, _, rows = candidate
+        gate = cross_provenance(interaction, candidate)
         if not gate["pass"]:
             raise ValueError(f"replay alignment failure for {name}: {gate['failures']}")
         comparisons[f"interaction_minus_{name}"] = comparison(
@@ -136,10 +242,8 @@ def main() -> None:
     oracle_regret = means["current_uct"]["mean_b_regret"] - means["oracle_visit_puct"]["mean_b_regret"]
     interaction_best = means["learned_visit_puct"]["mean_b_best_probability"] - means["current_uct"]["mean_b_best_probability"]
     interaction_regret = means["current_uct"]["mean_b_regret"] - means["learned_visit_puct"]["mean_b_regret"]
-    payload = {"schema": "silver_rank4_interaction_replay_analysis_v1", "replay_provenance": common,
-        "replay_hashes": {name: sha256(path) for name, path in (("interaction", args.interaction),
-                                                                  ("grouped_linear", args.grouped_linear),
-                                                                  ("rankshape", args.rankshape))}, "controls": controls,
+    payload = {"schema": "silver_rank4_interaction_replay_analysis_v2", "independent_replay_provenance": {
+        "interaction": interaction[0], "grouped_linear": grouped[0], "rankshape": rankshape[0]}, "controls": controls,
         "arm_means": means, "comparisons": comparisons,
         "fraction_of_concurrent_oracle_gain_recovered": {"best_probability": interaction_best / oracle_best,
                                                             "regret_reduction": interaction_regret / oracle_regret},

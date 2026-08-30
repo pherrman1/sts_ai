@@ -22,8 +22,13 @@ was performed after seeing these values.
 - PyTorch CPU float64 was deterministic (`seed=20260830`, deterministic
   algorithms enabled); `U~Normal(0,1e-3)`, `V=0`; full-batch L-BFGS used
   `max_iter=500`, `history_size=50`, strong-Wolfe line search, and fixed L2
-  `1e-4`. The final penalized objective was `0.3503692825`, below the exact
-  linear initialization `0.7756896654`.
+  `1e-4`. It reached the fixed `max_iter=500`; convergence was **not**
+  demonstrated. The bounded deterministic run remained finite and reduced the
+  penalized training objective from `0.7756896654` to `0.3503692825`.
+- The 555 active standardized fields allow up to 2,220 active rank-4 factor
+  coefficients for only 327 training parents. Train/validation/anchor CE
+  `0.346407/3.187145/5.725053` shows severe divergence and is reported as
+  overfit, not as optimizer convergence or validation success.
 - Zero residual reproduced all 63 frozen grouped-linear distributions with
   maximum absolute probability error `2.22e-16` (requirement `<=1e-12`).
   The independently repeated fit produced byte-identical U/V arrays and anchor
@@ -67,13 +72,16 @@ comparison misses both support conditions (regret point estimate is harmful;
 no favorable interval excludes zero) and rejection conditions (both point
 estimates are not neutral/worse; both intervals do not rule out 20% recovery).
 
-The inherited grouped replay's manifest declares SHA-256 `9cdfe…add7f`, but
-the committed JSONL available to this worktree hashes `a545…3e5c`. This
-discrepancy is retained in the manifest rather than rewritten. The comparison
-was limited to artifacts whose source/executable, 63 root/replicate keys,
-search seeds, snapshot/relabel hashes, headers, and every current/oracle
-control row align exactly; those compatibility checks passed. No numerical
-comparison was made with the incompatible raw-count replay.
+The inherited grouped replay's manifest declares LF SHA-256 `9cdfe…add7f`,
+while the committed Windows-worktree JSONL has CRLF SHA-256 `a545…3e5c`.
+Normalizing its 757 CRLF line endings to LF produces exactly `9cdfe…add7f`;
+the parsed 757 JSON objects are identical for observed/LF/CRLF forms and their
+canonical semantic JSONL SHA-256 is `9cdfe…add7f`. This is an explicit
+canonical-equivalence proof, not a silently ignored byte mismatch. Each
+interaction/grouped/rank-shape replay now independently validates its recorded
+file hash, source/executable, snapshot/relabel hashes, 63×4 root/replicate set,
+per-root seeds, and exact UCT/oracle control rows before numerical comparison.
+No numerical comparison was made with the incompatible raw-count replay.
 
 ## 4. Scientific interpretation
 
@@ -91,5 +99,5 @@ Machine artifacts and the full commands/settings are in
 `build/silver_rank4_interaction_policy_20260830/`: model
 `a9f4ba81…98cf`, anchor probabilities `8611c1c5…b4c0`, replay priors
 `d2366e72…cec6d`, raw replay `36008e52…b7634`, offline report
-`22ea9c6b…09c8`, replay analysis `4c4e9dcb…58fac`, and
+`e778b4d0…7d1e`, replay analysis `4a27dcc8…8621`, and
 `replay_manifest.json` for the complete SHA inventory.

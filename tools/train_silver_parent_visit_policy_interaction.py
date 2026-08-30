@@ -205,7 +205,8 @@ def fit_interaction(train, baseline_weights):
         "deterministic_algorithms": True, "max_iter": MAX_ITER, "history_size": HISTORY_SIZE,
         "line_search_fn": "strong_wolfe", "closure_calls": calls,
         "iterations": int(state.get("n_iter", 0)), "initial_penalized_objective": initial,
-        "final_penalized_objective": final,
+        "final_penalized_objective": final, "max_iter_reached": int(state.get("n_iter", 0)) == MAX_ITER,
+        "convergence_demonstrated": False,
     }
 
 
@@ -308,11 +309,18 @@ def main() -> None:
                   "bias": False, "temperature_or_calibration": False, "linear_model_frozen": True},
         "optimizer": optimizer, "inputs": {**hashes, "raw_count_predictions": str(args.raw_count_predictions),
                   "rankshape_predictions": str(args.rankshape_predictions)}, "dimensions": {"state": 1766, "action": 22,
-                  "total": 1788, "active_features": int(active.sum())}, "split": {"train_parents": len(train),
+                  "total": 1788, "active_features": int(active.sum()),
+                  "max_active_interaction_factor_coefficients": int(active.sum()) * RANK}, "split": {"train_parents": len(train),
                   "validation_parents": len(validation), "anchor_parents": len(anchors), "multi_action_anchors": len(anchor),
                   "anchors_excluded_from_fitting_and_preprocessing": True}, "preflight": preflight, "coverage": coverage,
         "zero_interaction_parity": parity, "deterministic_rerun": deterministic,
         "objective": {"parent_macro": True, "target": "exact normalized 25k-A visits", "l2": L2},
+        "optimization_interpretation": {"max_iter_reached": optimizer["max_iter_reached"],
+                  "convergence_demonstrated": False,
+                  "bounded_run_validity": "finite deterministic run reduced the penalized training objective",
+                  "generalization_warning": "severe train/validation/anchor divergence indicates overfit",
+                  "capacity_note": (f"{int(active.sum())} active features at rank four permit up to "
+                                    f"{int(active.sum()) * RANK} active factor coefficients for {len(train)} training parents")},
         "train_metrics": a_metrics(train, interaction_probabilities(train, weights, u, v)),
         "validation_metrics": a_metrics(validation, interaction_probabilities(validation, weights, u, v)),
         "anchor_metrics": metrics, "offline_diagnostics": {"offline_metrics_are_diagnostic_only": True,

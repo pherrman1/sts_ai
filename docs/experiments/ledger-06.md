@@ -5842,7 +5842,11 @@ model training was changed.
   train-only scaler/mask, and 93 anchors excluded from all fitting. CPU
   float64 PyTorch L-BFGS was fixed at seed `20260830`, `max_iter=500`,
   history `50`, strong-Wolfe line search, L2 `1e-4`, `U~N(0,1e-3)`, and `V=0`.
-  It passed exact zero-interaction parity (`2.22e-16` max error) and a
+  It reached the fixed 500-iteration bound without demonstrated convergence;
+  the finite deterministic objective nonetheless fell from `0.775690` to
+  `0.350369`. The 555 active fields permit up to 2,220 rank-4 factor
+  coefficients for 327 training parents, and the `0.346407/3.187145/5.725053`
+  train/validation/anchor CE divergence is severe overfit. It passed exact zero-interaction parity (`2.22e-16` max error) and a
   byte-identical deterministic rerun. No rank sweep, MLP, calibration,
   feature change, gameplay, or runtime integration occurred.
 - **Replay:** the verified archived `581b68b...` / `d8d083...` executable

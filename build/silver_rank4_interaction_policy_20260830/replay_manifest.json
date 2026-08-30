@@ -30,6 +30,13 @@
     "bootstrap_replicates": 10000,
     "historical_grouped_replay_declared_sha256": "9cdfeaea20f88fdde7e1ace8738ced893408164164f04d3d69b9869e0f1add7f",
     "historical_grouped_replay_observed_sha256": "a5455e1918cf507887ada2408900ecd89a54d25d148760eae9b2d1e85ea13e5c",
+    "historical_grouped_replay_canonical_equivalence": {
+      "accepted_representation": "LF",
+      "canonical_semantic_sha256": "9cdfeaea20f88fdde7e1ace8738ced893408164164f04d3d69b9869e0f1add7f",
+      "normalized_lf_sha256": "9cdfeaea20f88fdde7e1ace8738ced893408164164f04d3d69b9869e0f1add7f",
+      "parsed_rows_identical": true,
+      "proof": "the 757 observed CRLF line endings normalize to the declared LF bytes; no parsed JSONL value changes"
+    },
     "rankshape_replay_sha256": "ff513e017be7e90ce91f49ad872be286637935d9cb2e50d229c2baf3d35eb50d"
   },
   "outputs": {
@@ -37,7 +44,7 @@
     "anchor_probabilities_sha256": "8611c1c5f29a91255cc8b8306e3d7bfc8995ef5d5eaed96e2a310090a109b4c0",
     "replay_priors_sha256": "d2366e72681dda52cc9169f2f61ec61ebe5688a7f3da7a9414e5de6fb92cec6d",
     "replay_jsonl_sha256": "36008e524da68230abedf738a173c4e92cc49723e5adec743b8f6791304b7634",
-    "offline_report_sha256": "22ea9c6b97949db8edaffd741428d587fae66706f21802609600cfa5a8e809c8",
-    "replay_analysis_sha256": "4c4e9dcb5b8007d79d68c5150be1ab5f7c05d6d6eb40ce4c44dfa2e88df58fac"
+    "offline_report_sha256": "e778b4d09d840661ea962fa7042c970ae2f918046e77b59129cbf38725cb7d1e",
+    "replay_analysis_sha256": "4a27dcc8b3ba6d6320d70baeb89a1622555a59eba8043c0311260bd5a3e98621"
   }
 }

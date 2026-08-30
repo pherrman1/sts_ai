@@ -170,6 +170,7 @@
   "dimensions": {
     "action": 22,
     "active_features": 555,
+    "max_active_interaction_factor_coefficients": 2220,
     "state": 1766,
     "total": 1788
   },
@@ -204,6 +205,7 @@
   },
   "optimizer": {
     "closure_calls": 532,
+    "convergence_demonstrated": false,
     "deterministic_algorithms": true,
     "device": "cpu",
     "dtype": "float64",
@@ -213,7 +215,15 @@
     "iterations": 500,
     "line_search_fn": "strong_wolfe",
     "max_iter": 500,
+    "max_iter_reached": true,
     "method": "torch.optim.LBFGS"
+  },
+  "optimization_interpretation": {
+    "bounded_run_validity": "finite deterministic run reduced the penalized training objective",
+    "capacity_note": "555 active features at rank four permit up to 2220 active factor coefficients for 327 training parents",
+    "convergence_demonstrated": false,
+    "generalization_warning": "severe train/validation/anchor divergence indicates overfit",
+    "max_iter_reached": true
   },
   "preflight": {
     "corpus": {

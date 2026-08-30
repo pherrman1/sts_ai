@@ -21,12 +21,14 @@
     "iterations": 500,
     "line_search_fn": "strong_wolfe",
     "max_iter": 500,
-    "method": "torch.optim.LBFGS"
+    "method": "torch.optim.LBFGS",
+    "max_iter_reached": true,
+    "convergence_demonstrated": false
   },
   "outputs": {
     "anchor_probabilities": "8611c1c5f29a91255cc8b8306e3d7bfc8995ef5d5eaed96e2a310090a109b4c0",
     "model": "a9f4ba81b200ec7ac7510970e7279ba7b46b1a0f53af521e5bebb98eba3986cf",
-    "offline_report": "22ea9c6b97949db8edaffd741428d587fae66706f21802609600cfa5a8e809c8"
+    "offline_report": "e778b4d09d840661ea962fa7042c970ae2f918046e77b59129cbf38725cb7d1e"
   },
   "rank": 4,
   "seed": 20260830
