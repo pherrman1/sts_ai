@@ -19,5 +19,5 @@
   "recall_k": 0,
   "redact_secrets": true,
   "evidence_log": true,
-  "preferences": "Only propose one general evidence-backed edit inside the target skill's ## Learned guidance section. Do not modify the fixed workflow, AGENTS.md, the KB, or other skills. Do not store transient repository state. Prefer no edit over a speculative rule."
+  "preferences": "Propose at most one general evidence-backed edit inside the target skill's ## Learned guidance section. A staged diff outside that section must be rejected during review. Do not modify AGENTS.md, the KB, or other skills. Do not store transient repository state. Prefer no edit over a speculative rule."
 }

@@ -21,12 +21,13 @@ local implementation, build/test, Git, and draft-PR harness. The normal Codex
 path is MCP-free and uses Git, `rg`, focused reads, compiler diagnostics, and
 focused tests. The tracked KB remains authoritative project truth.
 
-The deliberately small, on-demand SkillOpt-Sleep pilot may propose bounded
-procedural edits only within the implementation skill's `Learned guidance`
-section. Its internal validation is followed by independent `sts_ai` evaluator
-comparison and human review. SkillOpt may not automatically edit the KB or
-adopt a skill proposal; accepted edits use the normal branch, draft PR, and CI
-workflow.
+The deliberately small, on-demand SkillOpt-Sleep pilot is configured to prefer
+one bounded procedural edit within the implementation skill's `Learned
+guidance` section. This preference is not mechanical isolation: human review
+rejects any staged diff outside that section. Internal validation is followed
+by independent `sts_ai` evaluator comparison and human review. SkillOpt may
+not automatically edit the KB or adopt a skill proposal; accepted edits use
+the normal branch, draft PR, and CI workflow.
 
 ## Rationale
 

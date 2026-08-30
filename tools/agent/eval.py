@@ -110,6 +110,41 @@ def git(cwd: Path, *args: str, check: bool = True) -> subprocess.CompletedProces
     return run(["git", *args], cwd, 30, check=check)
 
 
+def prepared_record_path(workspace: Path) -> Path:
+    return RUNTIME / "prepared" / f"{workspace.name}.json"
+
+
+def record_prepared_baseline(task_id: str, workspace: Path, baseline_commit: str) -> None:
+    path = prepared_record_path(workspace)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        raise EvalError(f"prepared baseline record already exists: {path}")
+    path.write_text(json.dumps({
+        "task_id": task_id,
+        "workspace": str(workspace.resolve()),
+        "baseline_commit": baseline_commit,
+    }, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def load_prepared_baseline(task_id: str, workspace: Path) -> str:
+    path = prepared_record_path(workspace)
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise EvalError(f"missing or invalid prepared baseline record: {path}") from exc
+    expected = {"task_id", "workspace", "baseline_commit"}
+    if not isinstance(record, dict) or set(record) != expected:
+        raise EvalError(f"invalid prepared baseline record schema: {path}")
+    if record["task_id"] != task_id or record["workspace"] != str(workspace):
+        raise EvalError("prepared baseline record does not match task/workspace")
+    baseline = record["baseline_commit"]
+    if not isinstance(baseline, str) or not re.fullmatch(r"[0-9a-f]{40}", baseline):
+        raise EvalError("prepared baseline record has invalid commit SHA")
+    if git(workspace, "cat-file", "-e", f"{baseline}^{{commit}}", check=False).returncode:
+        raise EvalError("prepared baseline commit is missing from candidate repository")
+    return baseline
+
+
 def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str | None = None) -> dict:
     if (skill_file_value is None) != (skill_name is None):
         raise EvalError("--skill-file and --skill-name must be provided together")
@@ -148,8 +183,10 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
     status = git(workspace, "status", "--short").stdout
     if status:
         raise EvalError(f"prepared candidate is not clean: {status}")
+    baseline_commit = git(workspace, "rev-parse", "HEAD").stdout.strip()
+    record_prepared_baseline(task_id, workspace, baseline_commit)
     prompt = (source / safe_rel(manifest["prompt_file"], "prompt_file")).read_text(encoding="utf-8")
-    prepared = {"task_id": task_id, "workspace": str(workspace), "prompt": prompt, "baseline_commit": git(workspace, "rev-parse", "HEAD").stdout.strip()}
+    prepared = {"task_id": task_id, "workspace": str(workspace), "prompt": prompt, "baseline_commit": baseline_commit}
     if skill_file is not None:
         prepared.update({
             "prompt": f"Use the ${skill_name} skill at .agents/skills/{skill_name}/SKILL.md for this task.\n\n{prompt}",
@@ -159,10 +196,29 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
     return prepared
 
 
-def changed_files(workspace: Path) -> list[str]:
-    names = git(workspace, "diff", "--name-only", "HEAD", check=False).stdout.splitlines()
+def changed_files(workspace: Path, baseline_commit: str) -> list[str]:
+    names = git(workspace, "log", "--format=", "--name-only", f"{baseline_commit}..HEAD", check=False).stdout.splitlines()
+    names += git(workspace, "diff", "--cached", "--name-only", "HEAD", check=False).stdout.splitlines()
+    names += git(workspace, "diff", "--name-only", check=False).stdout.splitlines()
     names += git(workspace, "ls-files", "--others", "--exclude-standard", check=False).stdout.splitlines()
     return sorted({name for name in names if not name.startswith(".agent-eval-build/")})
+
+
+def candidate_diff(workspace: Path, baseline_commit: str, files: list[str]) -> bytes:
+    parts = [
+        git(workspace, "log", "--format=commit %H", "-p", "--binary", f"{baseline_commit}..HEAD", check=False).stdout.encode(),
+        git(workspace, "diff", "--cached", "--binary", "HEAD", check=False).stdout.encode(),
+        git(workspace, "diff", "--binary", check=False).stdout.encode(),
+    ]
+    untracked = set(git(workspace, "ls-files", "--others", "--exclude-standard", check=False).stdout.splitlines())
+    for name in files:
+        parts.append(name.encode() + b"\0")
+        if name in untracked:
+            try:
+                parts.append((workspace / name).read_bytes())
+            except OSError as exc:
+                raise EvalError(f"cannot read untracked candidate file: {name}") from exc
+    return b"\0".join(parts)
 
 
 def in_scope(path: str, patterns: list[str]) -> bool:
@@ -184,8 +240,11 @@ def grade(task_id: str, workspace_value: str, labels: dict[str, str]) -> tuple[i
     runtime_root = (RUNTIME / "work").resolve()
     if runtime_root not in workspace.parents or not (workspace / ".git").exists():
         raise EvalError("workspace must be a prepared child of .agent-eval/work")
-    baseline = git(workspace, "rev-parse", "HEAD").stdout.strip()
-    files = changed_files(workspace)
+    baseline = load_prepared_baseline(task_id, workspace)
+    candidate = git(workspace, "rev-parse", "HEAD").stdout.strip()
+    if git(workspace, "merge-base", "--is-ancestor", baseline, candidate, check=False).returncode:
+        raise EvalError("candidate HEAD is not a descendant of the prepared baseline")
+    files = changed_files(workspace, baseline)
     checks: list[dict] = []
     for path in files:
         if in_scope(path, manifest["forbidden_changed_paths"]):
@@ -204,8 +263,10 @@ def grade(task_id: str, workspace_value: str, labels: dict[str, str]) -> tuple[i
     elif result.returncode == 0:
         raise EvalError("grader returned no JSON")
     passed = result.returncode == 0 and all(check.get("passed", False) for check in checks)
-    diff = git(workspace, "diff", "HEAD", check=False).stdout.encode() + "\0".join(files).encode()
-    record = {"schema_version": 1, "task_id": task_id, "task_version": manifest["version"], "result": "PASS" if passed else "FAIL", "checks": checks, "changed_files": files, "changed_line_count": len(git(workspace, "diff", "--numstat", "HEAD", check=False).stdout.splitlines()), "duration_seconds": round(time.monotonic() - started, 3), "baseline_commit": baseline, "candidate_commit": baseline, "diff_hash": hashlib.sha256(diff).hexdigest(), "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(), "environment": environment(), "labels": {k: v for k, v in labels.items() if v}}
+    diff = candidate_diff(workspace, baseline, files)
+    committed_numstat = git(workspace, "log", "--format=", "--numstat", f"{baseline}..HEAD", check=False).stdout.splitlines()
+    worktree_numstat = git(workspace, "diff", "--numstat", "HEAD", check=False).stdout.splitlines()
+    record = {"schema_version": 1, "task_id": task_id, "task_version": manifest["version"], "result": "PASS" if passed else "FAIL", "checks": checks, "changed_files": files, "changed_line_count": len([line for line in committed_numstat + worktree_numstat if line]), "duration_seconds": round(time.monotonic() - started, 3), "baseline_commit": baseline, "candidate_commit": candidate, "diff_hash": hashlib.sha256(diff).hexdigest(), "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(), "environment": environment(), "labels": {k: v for k, v in labels.items() if v}}
     return (0 if passed else 1), record
 
 

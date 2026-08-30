@@ -23,7 +23,8 @@ description: Use for ordinary implementation, debugging, build, test, Git, and d
 
 ## Learned guidance
 
-<!-- SkillOpt-Sleep may propose changes only within this section. Keep at most
+<!-- The pilot preference targets this section; reject any staged SkillOpt-Sleep
+diff that changes content outside it. Keep at most
 12 short, stable, evidence-backed rules. Consolidate or replace old rules rather
 than growing the section indefinitely. Never store branch names, current SHAs,
 line numbers, transient failures, or duplicated KB facts here. -->

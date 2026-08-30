@@ -85,6 +85,47 @@ class AgentEvalTests(unittest.TestCase):
         after = subprocess.run(["git", "status", "--porcelain=v1"], cwd=second["workspace"], text=True, capture_output=True).stdout
         self.assertEqual(before, after)
 
+    def test_committed_forbidden_path_is_still_scoped_against_prepared_baseline(self):
+        prepared = json.loads(cli("prepare", "guardrail-command-policy").stdout)
+        workspace = Path(prepared["workspace"])
+        allowed = workspace / "tools" / "agent" / "committed_allowed.txt"
+        forbidden = workspace / "src" / "committed_forbidden.txt"
+        allowed.write_text("allowed\n", encoding="utf-8")
+        forbidden.write_text("forbidden\n", encoding="utf-8")
+        subprocess.run(["git", "add", str(allowed), str(forbidden)], cwd=workspace, check=True)
+        subprocess.run(["git", "commit", "-qm", "agent committed changes"], cwd=workspace, check=True)
+
+        result = cli("grade", "guardrail-command-policy", str(workspace))
+        self.assertEqual(result.returncode, 1, result.stderr)
+        record = json.loads(result.stdout)
+        self.assertEqual(record["baseline_commit"], prepared["baseline_commit"])
+        self.assertNotEqual(record["candidate_commit"], record["baseline_commit"])
+        self.assertIn("tools/agent/committed_allowed.txt", record["changed_files"])
+        self.assertIn("src/committed_forbidden.txt", record["changed_files"])
+        self.assertTrue(any(
+            check["name"] == "changed-path-policy"
+            and not check["passed"]
+            and "forbidden path changed: src/committed_forbidden.txt" in check["detail"]
+            for check in record["checks"]
+        ))
+
+    def test_rewritten_non_descendant_history_fails_closed(self):
+        prepared = json.loads(cli("prepare", "guardrail-command-policy").stdout)
+        workspace = Path(prepared["workspace"])
+        tree = subprocess.run(
+            ["git", "rev-parse", "HEAD^{tree}"], cwd=workspace,
+            text=True, capture_output=True, check=True,
+        ).stdout.strip()
+        rewritten = subprocess.run(
+            ["git", "commit-tree", tree], cwd=workspace, input="rewritten history\n",
+            text=True, capture_output=True, check=True,
+        ).stdout.strip()
+        subprocess.run(["git", "update-ref", "HEAD", rewritten], cwd=workspace, check=True)
+
+        result = cli("grade", "guardrail-command-policy", str(workspace))
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("candidate HEAD is not a descendant", result.stderr)
+
     def test_manifest_rejects_unsafe_paths(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("agent_eval", SCRIPT)

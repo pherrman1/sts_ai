@@ -1,6 +1,6 @@
 # SkillOpt-Sleep pilot
 
-Last verified: 2026-08-30 against the current working tree.
+Last verified: 2026-08-31 against the current working tree.
 
 ## Purpose
 
@@ -16,6 +16,58 @@ Use `microsoft/SkillOpt` pinned at commit
 it as a submodule. The example configuration is
 `tools/agent/skillopt_sleep_config.example.json`; replace its absolute target
 path only in a local ignored copy.
+
+At this pin, `skillopt_sleep.config.load_config()` reads user configuration
+from `~/.skillopt-sleep/config.json` (with YAML fallbacks when JSON is absent).
+Create the reproducible pilot setup from the repository root:
+
+```bash
+git clone https://github.com/microsoft/SkillOpt.git .skillopt-sleep/SkillOpt
+git -C .skillopt-sleep/SkillOpt checkout --detach db46cd9ae7ce12f1dbd73c945185816aa738751d
+mkdir -p ~/.skillopt-sleep
+cp tools/agent/skillopt_sleep_config.example.json ~/.skillopt-sleep/config.json
+# Edit target_skill_path in ~/.skillopt-sleep/config.json to the absolute path
+# of this worktree's .agents/skills/codex-implementation/SKILL.md.
+```
+
+Run the source-pinned engine from its checkout, using the Python module
+entrypoint so Windows does not depend on shell-runner Python discovery:
+
+```bash
+cd .skillopt-sleep/SkillOpt
+python -m skillopt_sleep status --project /ABSOLUTE/PATH/TO/sts_ai --json
+python -m skillopt_sleep dry-run --project /ABSOLUTE/PATH/TO/sts_ai \
+  --source codex --scope invoked --backend mock --max-sessions 5 --max-tasks 6 \
+  --target-skill-path /ABSOLUTE/PATH/TO/sts_ai/.agents/skills/codex-implementation/SKILL.md \
+  --json
+```
+
+Verify that the pin loaded the intended effective user configuration before a
+run:
+
+```bash
+python - <<'PY'
+from pathlib import Path
+from skillopt_sleep.config import load_config
+
+cfg = load_config()
+target = Path("/ABSOLUTE/PATH/TO/sts_ai/.agents/skills/codex-implementation/SKILL.md").resolve()
+assert cfg.transcript_source == "codex"
+assert cfg.backend == "codex"
+assert cfg.gate_mode == "on" and cfg.gate_no_regression is True
+assert cfg.evolve_memory is False and cfg.evolve_skill is True
+assert cfg.edit_budget == 1 and cfg.auto_adopt is False
+assert cfg.recall_k == 0 and cfg.dream_factor == 0
+assert Path(cfg.managed_skill_path()).resolve() == target
+assert "staged diff outside that section must be rejected" in cfg.preferences
+print("SkillOpt effective config: pilot constraints loaded")
+PY
+```
+
+The pinned `plugins/run-sleep.sh` did not discover this host's Windows Python
+3.13 installation when invoked through Git Bash (`need Python >= 3.10 (found
+none)`). The `python -m skillopt_sleep` commands above work and are the
+documented Windows path for this pilot.
 
 The pilot is on demand:
 
@@ -54,9 +106,11 @@ task-file route or defer the real run.
 - `recall_k=0` avoids retrieval complexity initially.
 - `dream_factor=0` leaves dream augmentation disabled.
 
-Skill evolution targets only the bounded `## Learned guidance` section. The
-tracked KB remains authoritative project truth; SkillOpt may not edit it,
-`AGENTS.md`, fixed skill workflow text, or other skills.
+The configuration preference asks SkillOpt to propose at most one edit inside
+`## Learned guidance`; it is not a mechanical output sandbox. Human review
+must reject any staged diff that changes content outside that section. The
+tracked KB remains authoritative project truth, and staged changes to
+`AGENTS.md`, the KB, or other skills are rejected.
 
 ## Independent evaluation
 

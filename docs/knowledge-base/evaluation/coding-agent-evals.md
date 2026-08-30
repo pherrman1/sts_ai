@@ -1,6 +1,6 @@
 # Coding-agent evaluation harness
 
-Last verified: 2026-08-30 against the current working tree.
+Last verified: 2026-08-31 against the current working tree.
 
 ## Purpose
 
@@ -49,6 +49,14 @@ candidate baseline. The returned JSON includes `skill_name`, the source-byte
 `skill_sha256`, and a public-prompt prefix explicitly invoking the skill. The
 overlay therefore is not an agent-produced diff. Omitting both options
 preserves ordinary preparation behavior; supplying only one fails closed.
+
+Preparation also records the exact baseline commit in evaluator-owned runtime
+metadata outside the candidate repository. Grading requires candidate `HEAD`
+to descend from that commit and evaluates the union of committed-history,
+staged, unstaged, and untracked paths. `baseline_commit` is the recorded
+prepared SHA; `candidate_commit` is the graded `HEAD`. Missing metadata,
+missing baseline objects, and rewritten or non-descendant history are
+infrastructure errors rather than silently changing the comparison baseline.
 
 ## Manifest schema
 
