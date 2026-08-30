@@ -1,0 +1,8 @@
+wave=3
+start_seed=976056
+pair_count=8
+process_count=16
+start_ns=1788111127205910178
+end_ns=1788111134621409457
+wall_seconds=7
+failed=0
