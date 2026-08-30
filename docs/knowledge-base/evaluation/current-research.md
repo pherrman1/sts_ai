@@ -83,6 +83,16 @@ not evidence for c=35, Sequential Halving, pruning, or learned policy priors.
 See [the operational evidence](../../../docs/experiments/evidence/silver-live-bridge-failure-hardening-2026-08-30.json)
 and ledger-06 section 197.
 
+Two later semantic failures were repaired at reviewed historical SHA
+`6aae003`. Ordinary card play now deterministically lowers to the first fully
+equivalent matching live hand entry; strict ambiguity rejection remains for
+card-selection transactions. Focused semantic and bridge-boundary tests
+passed, and original seeds 935505/c=25 and 935456/c=35 both completed their
+exact-3,000 configurations with zero failure counters. This is an operational
+repair, not a new efficacy result: c=25 remains the default. See the
+[repair evidence](../../../docs/experiments/evidence/silver-semantic-duplicate-hand-fix-2026-08-30.json)
+and ledger-06 section 202.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable
