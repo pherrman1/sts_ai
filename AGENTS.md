@@ -1,6 +1,6 @@
 # StS AI agent contract
 
-Last verified: 2026-08-22 against the current working tree.
+Last verified: 2026-08-30 against the current working tree.
 
 ## Purpose and authority
 
@@ -41,6 +41,9 @@ routing.
 
 - Inspect `git status` before editing; preserve unrelated and ignored local
   data.
+- Validate the checkout with `python tools/agent/worktree.py check .` during
+  preflight. If validation fails, use `repair .` before configuring or
+  building.
 - State the success criterion and cheapest proving check. Make the smallest
   scoped change that satisfies the request; do not bundle cleanup, refactors,
   gameplay, model, or research changes.
@@ -86,6 +89,11 @@ passes, freeze the reviewed SHA before any expensive scientific run.
 - Do not create Serena memories, commit `.repowise/`, or use paid RepoWise
   generation without explicit authorization. RepoWise dead-code results are
   hypotheses, not deletion authority.
+- For linked-worktree lifecycle operations, use only
+  `python tools/agent/worktree.py create|check|repair|remove`. Do not use raw
+  `git worktree add`, `git worktree remove`, `git submodule deinit`, or manual
+  submodule initialization in linked worktrees. If the lifecycle tool cannot
+  complete the operation, stop and report the failure instead of bypassing it.
 - Stage only task-scoped changes. Never rewrite history, force-push, delete
   branches, or push from `main`. After successful verification and commit,
   follow the controlled task-branch first-push and PR procedure in the
