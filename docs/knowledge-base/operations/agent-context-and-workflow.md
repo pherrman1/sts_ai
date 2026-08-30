@@ -1,6 +1,6 @@
 # Agent context and workflow
 
-Last verified: 2026-08-27 against the current working tree.
+Last verified: 2026-08-30 against the current working tree.
 
 ## Purpose
 
@@ -14,9 +14,10 @@ implementation, review, experiment, documentation, or Git procedure.
 `AGENTS.md` contains the project purpose, authority hierarchy, CODE_MAP-first
 navigation, minimal-change principle, bounded Codex handoff boundary,
 seed-guard rule, critical safety/Git rules, and links here. Repository skills
-under `.agents/skills/` provide progressive disclosure for external research,
-Codex-originated research, and implementation review. `.codex/config.toml`
-contains conservative repository-scoped Codex sandbox and MCP defaults.
+under `.agents/skills/` provide progressive disclosure for ordinary
+implementation, research, and implementation review. `.codex/config.toml`
+contains conservative repository-scoped Codex sandbox defaults. The normal
+Codex path is MCP-free.
 
 ### Workflow-v2 operating boundary
 
@@ -52,7 +53,7 @@ are authoritative, and a short SHA-tied comment may record a later transition.
 | Purpose and required reading | `AGENTS.md`, KB index, this page | Condensed universal contract; detailed reading routes remain linked. |
 | Authoritative sources | `AGENTS.md` | Kept as the universal source hierarchy. |
 | Repository map | `CODE_MAP.md`; [architecture overview](../architecture/overview.md); [self-play loop](selfplay-loop.md); [tools README](../../../tools/README.md) | Existing subsystem maps remain authoritative; artifact handling is below. Legacy `.opencode/`/`opencode.json` rollback configuration remains documented in `CODE_MAP.md`. |
-| Agent workflow / ChatGPT, Codex, Serena, and RepoWise routing | `AGENTS.md`; [ADR-0010](../../../decisions/0010-codex-chatgpt-agent-workflow.md); this page | Concise routing stays universal; operating limits are retained below. ADR-0008 remains the historical Cline-era record. |
+| Agent workflow and tool routing | `AGENTS.md`; [ADR-0011](../../../decisions/0011-mcp-free-codex-skillopt-pilot.md); this page | Concise routing stays universal; operating limits are retained below. ADR-0010 and ADR-0008 remain historical records. |
 | Agent context and large-file navigation | This page | Retained below as focused-reading guidance. |
 | Build and focused checks | [build and debugging](build-and-debugging.md); this page | Commands, target graph, GCP details, and caveats remain on the build page. |
 | Build and focused checks / Automated agent verification limits | [build and debugging](build-and-debugging.md); `AGENTS.md`; [ADR-0006](../../../decisions/0006-automated-game-seed-limit.md); research skill | Commands, target graph, GCP details, guard rule, and sample guidance remain reachable. |
@@ -72,11 +73,8 @@ are authoritative, and a short SHA-tied comment may record a later transition.
 - Do not inspect generated `build/` artifacts, ignored self-play data,
   `.ai/`, or `docs/archive/` unless the task requires them. Reviewers may expand
   scope when necessary to prove semantics.
-- Use Serena for C++/Python definitions, implementations, references,
-  diagnostics, and approved semantic edits. Use ordinary targeted reads for
-  Markdown, config, logs, git history, and experiment output. RepoWise is
-  advisory only: do not create Serena memories; do not let RepoWise replace
-  tracked documentation; do not use paid generation without explicit approval.
+- Use Git, `rg`, focused file reads, compiler diagnostics, and focused tests.
+  No repository MCP server is required.
 
 ### Artifact and local-data handling
 
@@ -93,9 +91,9 @@ does not prove runtime loading or branch use. See
 
 1. Read `AGENTS.md` for universal constraints.
 2. Route through `CODE_MAP.md` and the relevant maintained page.
-3. Use a task-specific skill when reviewing or conducting research. The
-   research skill distinguishes an external-handoff path from a
-   Codex-originated-research path.
+3. Use the ordinary implementation skill unless a specialized research or
+   review skill applies. The research skill distinguishes an external-handoff
+   path from a Codex-originated-research path.
 4. Inspect status, state the success criterion, make the smallest change, and
    run the cheapest proving check.
 5. Inspect the complete diff and record documentation, decisions, or experiment
@@ -183,6 +181,21 @@ Long-run details are in [build and debugging](build-and-debugging.md).
 
 ### Recording and documentation
 
+Classify durable knowledge impact before completion and update the single
+authoritative destination in the same change. If no maintained knowledge
+change is warranted, record `Knowledge impact: none` with a brief reason.
+
+| Learned information | Destination |
+| --- | --- |
+| Stable current architecture, behavior, invariant, interface, schema, environment, build, or operational fact | Relevant maintained KB page |
+| Changed navigation path or important symbol | `CODE_MAP.md` |
+| Benchmarked result, including null, negative, inconclusive, or invalid | Experiment ledger plus evidence |
+| Active, parked, or closed research status | `evaluation/current-research.md` |
+| Qualified production default or headline baseline | `evaluation/current-baselines.md` |
+| Durable architecture or workflow decision | Decision log or ADR |
+| Reproducible unresolved diagnosis | Investigation page |
+| Temporary task detail | Do not preserve |
+
 Update the relevant KB page when code changes architecture, model interfaces,
 environment variables, training/self-play pipelines, benchmark protocols,
 deployed configuration, build commands, invariants, schemas, artifact formats,
@@ -242,19 +255,8 @@ relocation audit rather than silently deleting an instruction.
 
 Repository-scoped Codex defaults live in `.codex/config.toml`. They select the
 `workspace-write` sandbox, retain approval-on-request, disable sandboxed network
-access, and configure Serena over local stdio. Serena detects the active project
-from the process working directory. Codex must be launched with this Git
-worktree as its root so project configuration, skills, and worktree-relative
-tool routing agree.
-
-Repository-scoped RepoWise MCP is intentionally not configured. RepoWise 0.42.0
-detects an ancestor `.repowise-workspace.yaml` even when started with an exact
-repository path; an unregistered linked worktree then falls back to the
-workspace's primary alias. RepoWise therefore remains an opt-in, manually
-routed advisory tool. Before relying on it, verify that its reported absolute
-repository path exactly matches `git rev-parse --show-toplevel`. If exact
-routing cannot be established, or the worktree's ignored index is absent or
-stale, skip RepoWise and use Git, `rg`, and focused reads.
+access, and configure no repository MCP server. Codex must be launched with
+this Git worktree as its root so project configuration, skills, and paths agree.
 
 No repository Codex hook adapter is configured. The mechanical execution
 boundary for seeded game commands is `tools/seed_guard.sh`, while sandboxing,
@@ -287,7 +289,9 @@ the dated decision records.
 - `AGENTS.md`
 - `.agents/skills/implementation-review/SKILL.md`
 - `.agents/skills/research-experiment/SKILL.md`
+- `.agents/skills/codex-implementation/SKILL.md`
 - `.codex/config.toml`
+- `docs/knowledge-base/operations/skillopt-sleep.md`
 - `tools/seed_guard.sh`
 - `tools/agent/eval.py`; `tools/agent/cline_guardrails.py`
 - `.gitignore`

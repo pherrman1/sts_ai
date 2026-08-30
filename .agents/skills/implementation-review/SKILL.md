@@ -15,10 +15,8 @@ self-review.
    task. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`,
    `docs/knowledge-base/operations/agent-context-and-workflow.md`, the relevant
    maintained page, implementation, and tests before editing.
-2. Use Serena for semantic code structure when it is configured and attached to
-   the active Git worktree: symbol overviews, definitions, implementations,
-   references, and targeted refactoring. Otherwise use targeted repository
-   search and focused file reads. Avoid whole-file reads when symbol-level
+2. Use Git, `rg`, focused file reads, compiler diagnostics, and focused tests.
+   No repository MCP server is required. Avoid whole-file reads when focused
    inspection proves the property.
 3. Keep the change minimal and domain-aligned. Do not mix harness migration,
    gameplay, model, or research changes unless explicitly requested.
@@ -32,7 +30,12 @@ self-review.
    the same Codex session; conceptual redesigns or new hypotheses require a
    new session. After repeated failures or conceptual ambiguity, stop and
    report the blocker.
-7. Before completion, stage only task-scoped files when the user requested a
+7. Treat missing knowledge-impact classification as a defect. Also report a
+   defect when a durable fact appears only in a chronological ledger although
+   a canonical KB page needs updating, `Knowledge impact: none` contradicts the
+   diff, or new documentation duplicates a canonical fact instead of updating
+   its authoritative location.
+8. Before completion, stage only task-scoped files when the user requested a
    commit. Follow `AGENTS.md` for commit/push provenance and never use
    destructive Git commands or unrestricted auto-approval. Freeze the reviewed
    SHA before expensive scientific runs.

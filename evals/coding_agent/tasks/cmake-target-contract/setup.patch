@@ -1,7 +1,7 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -41,3 +41,0 @@
--add_executable(parity_test apps/parity_test.cpp ${sts_lightspeed_SOURCES})
+@@ -218,3 +218,0 @@
+-add_executable(parity_test apps/parity_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 -target_include_directories(parity_test PUBLIC include)
 -target_include_directories(parity_test PUBLIC json/include)

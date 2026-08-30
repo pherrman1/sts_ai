@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-08-26 against the current working tree.
+Last verified: 2026-08-31 against the current working tree.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -103,13 +103,14 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Agent contract and routing | `AGENTS.md`, `.agents/skills/`, `.codex/config.toml` | Universal contract, progressive-disclosure skills, Codex sandbox/MCP defaults, context/commit procedure | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
+| Agent contract and routing | `AGENTS.md`, `.agents/skills/`, `.codex/config.toml` | Universal contract, progressive-disclosure skills, MCP-free Codex sandbox defaults, context/commit procedure | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
+| SkillOpt-Sleep pilot | `.agents/skills/codex-implementation/SKILL.md`, `tools/agent/skillopt_sleep_config.example.json` | on-demand proposals configured for `Learned guidance`; reject staged scope violations | [skillopt-sleep.md](operations/skillopt-sleep.md) |
 | Worktree lifecycle | `tools/agent/worktree.py` | create/check/repair/remove linked worktrees with pinned `json` and `pybind11` submodules | [build-and-debugging.md](operations/build-and-debugging.md) |
 | Safety guard | `tools/seed_guard.sh` | Local 128-seed cap; explicit unbounded `--gcp-research` mode on the designated host | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md), [build-and-debugging.md](operations/build-and-debugging.md) |
 | GCP benchmark launcher | `tools/agent/gcp_benchmark.py` | Probe/status/start/run through `gcloud compute ssh`; detached guarded research runs | [build-and-debugging.md](operations/build-and-debugging.md) |
 | Benchmark treatment canary | `tools/agent/check_benchmark_canary.py` | Validates a fresh one-seed result/sidecar/log and frozen binary before a larger cohort; does not drive seeds | [benchmark-protocol.md](evaluation/benchmark-protocol.md) |
 | Artifact inspector | `tools/ai_inspect.py` | Read-only CSV/JSON inspection | (inline) |
-| Coding-agent evaluation harness | `tools/agent/eval.py`, `evals/coding_agent/` | Isolated candidate preparation, hidden grading, deterministic self-tests | [coding-agent-evals.md](evaluation/coding-agent-evals.md) |
+| Coding-agent evaluation harness | `tools/agent/eval.py`, `evals/coding_agent/` | Isolated candidate preparation, optional skill overlay, hidden grading, deterministic self-tests | [coding-agent-evals.md](evaluation/coding-agent-evals.md) |
 
 ## Legend
 

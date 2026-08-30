@@ -15,6 +15,9 @@
 - Checks run and exact outcomes:
 - Checks not run and why:
 - Remaining uncertainty or blockers:
+- Knowledge impact:
+  - `NONE — <reason>`, or
+  - exact KB / ledger / decision / investigation paths updated:
 
 ## Review boundary
 
