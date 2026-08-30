@@ -5760,3 +5760,40 @@ model training was changed.
   pruning and offline Sequential-Halving rejections; do not change defaults.
   Combining c=35 with this path is not a useful treatment because Sequential
   Halving forces root pulls directly and does not consult root UCT c.
+
+## §197 Silver live-bridge failure hardening: known operational failures repaired (2026-08-30)
+
+- **Scope:** Implementation and telemetry diagnostic only, not a gameplay
+  comparison. This preserves §196's rejection, the earlier pruning rejection,
+  all historical win rates, and the ordinary c=25 default.
+- **Conversion root cause:** The aborted confirmation's deterministic failing
+  seed was 933396. A public Looter intent query refreshed move history from Mug
+  to Lunge but left the private post-Mug direct-choice marker set. Conversion
+  then failed closed on the contradictory state. Intent materialization now
+  consumes that marker; a focused Runic Dome fixture proves the choice remains
+  private before materialization and is public afterward.
+- **Harness hardening:** Conversion and semantic failures now include seed and
+  public-safe decision context. `bestbench` catches exceptions at each OpenMP
+  seed boundary, omits failed rows, names failures, and exits nonzero.
+  Foreground GCP manifest runs preserve their declared logs through `tee` with
+  `pipefail`.
+- **Telemetry root cause:** Replaying the old 933100–933163 diagnostic block
+  exposed an interleaved stdout record beginning
+  `[silver-combat] decisions=[silver-combat] decisions=`. Concatenated counter
+  digits could be parsed as a nonzero semantic or conversion failure. Complete
+  combat telemetry records are now formatted thread-locally and emitted under
+  one process-wide mutex.
+- **Final validation:** Frozen SHA
+  `79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e`, executable SHA-256
+  `d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba`.
+  Seed 933396 passed its original half/finalist-heavy exact-3000 configuration
+  with 25/25 zero-failure telemetry records. A final 24-thread diagnostic over
+  933100–933163 produced 64/64 unique rows and 1,608 structurally valid
+  records, with zero failure counters, zero seed failures, and every simulation
+  total divisible by 3,000.
+- **Verdict:** **KNOWN_OPERATIONAL_FAILURES_REPAIRED**. This removes the known
+  implementation blocker to designing a fresh confirmation; it does not make
+  the aborted confirmation valid and does not promote c=35 or Sequential
+  Halving. Any efficacy run requires a fresh preregistered seed block after PR
+  CI. Paths and hashes are in
+  `docs/experiments/evidence/silver-live-bridge-failure-hardening-2026-08-30.json`.

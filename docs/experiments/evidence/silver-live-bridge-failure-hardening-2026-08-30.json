@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "experiment_id": "silver-live-bridge-failure-hardening-2026-08-30",
+  "classification": "operational_diagnostic_not_efficacy_evidence",
+  "baseline_sha": "0147c229c6dbadb58416028f2a6345352a936dba",
+  "final_sha": "79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e",
+  "gcp_binary": {"path": "checkouts/silver-live-bridge-failures-ad61357/build/linux-gcc-release/one_combat", "sha256": "d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba"},
+  "models": {
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_combat_7k_tuned.txt": "ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c"
+  },
+  "diagnosis": {
+    "conversion_failure_seed": 933396,
+    "public_context": "floor=18 encounter=25 decision=11 turn=2 input=1 monster_id=30 public_move=94",
+    "cause": "HIDDEN_MONSTER_INTENT_MATERIALIZED refreshed the now-public Looter intent but did not clear the deferred direct-choice marker",
+    "semantic_failure_reclassification": "telemetry_record_interleaving_artifact",
+    "interleaved_example_prefix": "[silver-combat] decisions=[silver-combat] decisions=",
+    "historical_scientific_verdict_changed": false
+  },
+  "final_seed_regression": {
+    "seed": 933396, "budget": 3000, "shape": "half", "allocation": "finalist_heavy", "threads": 24,
+    "result": {"won": 1, "floor": 51, "hp_end": 42},
+    "telemetry_records": 25, "all_failure_counters_zero": true, "all_simulation_totals_divisible_by_3000": true,
+    "remote_paths": {"csv": "results/silver-lifecycle-final-79ca93f-933396.csv", "meta": "results/silver-lifecycle-final-79ca93f-933396.csv.meta.json", "log": "logs/silver-lifecycle-final-79ca93f-933396.log"},
+    "sha256": {"csv": "324e46498bcc1f020e513e7cf2e7a4ed63d9d656bc0340e1f0a9f383eb0ec51f", "meta": "89d2670bc7d04cfd74a042f6f5e945c90f5e50820efdad8dfa4bcff9de2aa0c0", "log": "f6a593c08b53fa99d86d10bd651129cdaa51a9f95b572da92f343302109c0e72"}
+  },
+  "final_concurrency_validation": {
+    "seeds": [933100, 933163], "seed_count": 64, "budget": 3000, "shape": "aggressive", "allocation": "finalist_heavy", "threads": 24,
+    "unique_result_rows": 64, "telemetry_records": 1608, "malformed_telemetry_records": 0, "nonzero_failure_records": 0, "nonexact_budget_records": 0, "seed_failure_records": 0,
+    "remote_paths": {"csv": "results/silver-telemetry-final-79ca93f-933100-64.csv", "meta": "results/silver-telemetry-final-79ca93f-933100-64.csv.meta.json", "log": "logs/silver-telemetry-final-79ca93f-933100-64.log"},
+    "sha256": {"csv": "8a2fef92be83b74721bf79bee23ee32d98f9aff41d12ab6d23b4442c37f6f876", "meta": "369115e8ed26579252dba2243a32b933ac02da82b6173477a72517f9635dcdee", "log": "3f603a5ddf4e9e13abf0829661cda5eaad383a8892ae7db05f82b9e7e53a39c4"}
+  },
+  "local_retrieval_path": "build/gcp-silver-failure-final/",
+  "checks": ["silver_bridge_boundary PASS locally and on GCP", "runic_dome_lifecycle PASS locally and on GCP", "26 GCP launcher unit tests passed", "git diff --check passed", "independent implementation review passed"],
+  "verdict": "KNOWN_OPERATIONAL_FAILURES_REPAIRED",
+  "limitations": ["The 64-seed block reused old diagnostic seeds and is not efficacy evidence.", "The aborted 933300-933427 confirmation remains invalid.", "No root-c or Sequential-Halving default is changed.", "Future efficacy requires a fresh preregistered seed block after PR CI."]
+}

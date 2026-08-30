@@ -137,6 +137,22 @@ test. The earlier pruning and offline Sequential-Halving rejections remain
 unchanged. See the [online tuning evidence packet](../../../docs/experiments/evidence/silver-sh-online-tuning-2026-08-30.json)
 and ledger-06 section 196.
 
+The known operational blockers from that tuning run were subsequently
+diagnosed and repaired without revising its scientific verdict. Seed 933396
+was a stale Runic Dome Looter direct-choice marker after public intent
+materialization. The reported narrow-run semantic failure was a separate
+24-thread stdout interleaving artifact: two valid `[silver-combat]` records
+could concatenate counter digits. The lifecycle marker is now consumed on
+materialization, telemetry records are emitted atomically, failures carry
+seed/public context, and `bestbench` fails the cohort nonzero while naming any
+failed seeds. On final SHA `79ca93f`, seed 933396 passed and a diagnostic-only
+64-seed concurrency replay produced 64 unique rows plus 1,608 parseable,
+zero-failure, exact-budget telemetry records. This authorizes only the design
+of a fresh preregistered confirmation after PR CI; it does not rehabilitate
+the aborted block, change defaults, or promote c=35/Sequential Halving. See
+[the operational evidence](../../../docs/experiments/evidence/silver-live-bridge-failure-hardening-2026-08-30.json)
+and ledger-06 section 197.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable
