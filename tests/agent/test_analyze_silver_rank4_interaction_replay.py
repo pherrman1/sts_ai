@@ -37,6 +37,9 @@ class Rank4ReplayDecisionTest(unittest.TestCase):
         changed = MODULE.newline_hashes_bytes(b'{"value":2}\r\n')
         self.assertNotEqual(original["canonical_semantic_sha256"], changed["canonical_semantic_sha256"])
         self.assertEqual(MODULE.byte_hash_acceptance(changed, original["observed_sha256"]), (False, False))
+        with self.assertRaisesRegex(ValueError, "without canonical-equivalence proof"):
+            MODULE.verify_recorded_replay_bytes("changed", b'{"value":2}\r\n',
+                                                {"replay_sha256": original["observed_sha256"]})
 
     def test_shared_provenance_fails_but_independent_matching_metadata_passes(self):
         record = {"recorded_provenance_id": "interaction", "source_commit": "a", "executable_sha256": "b", "snapshots_sha256": "c", "relabels_sha256": "d"}

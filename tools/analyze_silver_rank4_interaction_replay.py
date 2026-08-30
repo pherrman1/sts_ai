@@ -86,14 +86,18 @@ def historical_recorded(manifest: dict, name: str) -> dict:
     return {"recorded_provenance_id": "rankshape_cross_prior_provenance", **manifest["replays"][name]}
 
 
-def verify_recorded_replay(name: str, path: Path, recorded: dict) -> dict:
-    newline = newline_hashes(path)
+def verify_recorded_replay_bytes(name: str, observed: bytes, recorded: dict) -> dict:
+    newline = newline_hashes_bytes(observed)
     byte_match, canonical_equivalence = byte_hash_acceptance(newline, recorded["replay_sha256"])
     if not byte_match and not canonical_equivalence:
         raise ValueError(f"{name} replay byte hash mismatch without canonical-equivalence proof")
     return {"name": name, "recorded": recorded, "observed": newline,
             "byte_hash_match": byte_match, "canonical_equivalence_proved": canonical_equivalence,
             "acceptance": "exact_byte_hash" if byte_match else "LF_CRLF_canonical_equivalence"}
+
+
+def verify_recorded_replay(name: str, path: Path, recorded: dict) -> dict:
+    return verify_recorded_replay_bytes(name, path.read_bytes(), recorded)
 
 
 def verify_frozen_inputs(snapshots: Path, relabels: Path) -> dict:
