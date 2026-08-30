@@ -5,8 +5,12 @@
 
 #include "sim/search/SilverLiveBackend.h"
 
+#include <algorithm>
+#include <array>
 #include <chrono>
 #include <cerrno>
+#include <cstdint>
+#include <cstring>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
@@ -64,8 +68,101 @@ struct SilverLiveOptions {
     int leafCorpusMaxLeavesPerGroup = 256;
     bool adaptiveEnabled = false;
     double adaptiveTopTwoVisitGapThreshold = 0.094;
+    silver_bridge::SilverRootVisitPriorMode visitPolicyMode = silver_bridge::SilverRootVisitPriorMode::OFF;
+    bool visitPolicyRank4 = false;
+    std::string visitPolicyModel = "models/silver_rank4_visit_policy_runtime_v1.bin";
     bool installed = false;
 };
+
+constexpr std::size_t kVisitPolicyStateWidth = 1766;
+constexpr std::size_t kVisitPolicyActionWidth = 22;
+constexpr std::size_t kVisitPolicyWidth = kVisitPolicyStateWidth + kVisitPolicyActionWidth;
+constexpr std::size_t kVisitPolicyRank = 4;
+
+class FrozenSilverVisitPolicy {
+public:
+    void load(const std::string &path) {
+        std::ifstream in(path, std::ios::binary);
+        if (!in) throw std::runtime_error("cannot open Silver visit-policy runtime artifact: " + path);
+        char magic[8]{}; read(in, magic, sizeof(magic));
+        if (std::memcmp(magic, "SVPRV001", sizeof(magic)) != 0) throw std::runtime_error("Silver visit-policy artifact magic mismatch");
+        const auto version = readScalar<std::uint32_t>(in);
+        const auto state = readScalar<std::uint32_t>(in), action = readScalar<std::uint32_t>(in), rank = readScalar<std::uint32_t>(in);
+        if (version != 1 || state != kVisitPolicyStateWidth || action != kVisitPolicyActionWidth || rank != kVisitPolicyRank)
+            throw std::runtime_error("Silver visit-policy artifact version/shape mismatch");
+        sourceNpzSha256_ = readString(in); sourceCommit_ = readString(in);
+        if (sourceNpzSha256_ != "a9f4ba81b200ec7ac7510970e7279ba7b46b1a0f53af521e5bebb98eba3986cf"
+                || sourceCommit_ != "acf249170563461140f043461fbcbd308b818460")
+            throw std::runtime_error("Silver visit-policy artifact source provenance mismatch");
+        names_.resize(kVisitPolicyWidth);
+        for (auto &name : names_) name = readString(in);
+        if (names_ != combatPolicyFeatureNames())
+            throw std::runtime_error("Silver visit-policy artifact feature order mismatch");
+        baseline_.resize(kVisitPolicyWidth); mean_.resize(kVisitPolicyWidth); scale_.resize(kVisitPolicyWidth); active_.resize(kVisitPolicyWidth);
+        read(in, baseline_.data(), baseline_.size() * sizeof(double));
+        read(in, mean_.data(), mean_.size() * sizeof(double));
+        read(in, scale_.data(), scale_.size() * sizeof(double));
+        read(in, active_.data(), active_.size());
+        u_.resize(kVisitPolicyStateWidth * kVisitPolicyRank); v_.resize(kVisitPolicyActionWidth * kVisitPolicyRank);
+        read(in, u_.data(), u_.size() * sizeof(double)); read(in, v_.data(), v_.size() * sizeof(double));
+        char trailing;
+        if (in.read(&trailing, 1)) throw std::runtime_error("Silver visit-policy artifact has trailing bytes");
+        for (std::size_t i = 0; i < kVisitPolicyWidth; ++i) {
+            if (!std::isfinite(baseline_[i]) || !std::isfinite(mean_[i]) || !std::isfinite(scale_[i]) || scale_[i] <= 0.0 || active_[i] > 1)
+                throw std::runtime_error("Silver visit-policy artifact numeric/scaler mismatch");
+            if (!active_[i] && baseline_[i] != 0.0)
+                throw std::runtime_error("Silver visit-policy inactive grouped coefficient mismatch");
+        }
+        for (const double value : u_) if (!std::isfinite(value)) throw std::runtime_error("Silver visit-policy nonfinite U");
+        for (const double value : v_) if (!std::isfinite(value)) throw std::runtime_error("Silver visit-policy nonfinite V");
+        loaded_ = true;
+    }
+
+    std::vector<double> probabilities(const std::vector<SilverPolicyFeatureRow> &rows, bool rank4) const {
+        if (!loaded_) throw std::runtime_error("Silver visit-policy used before load");
+        if (rows.empty()) throw std::runtime_error("Silver visit-policy has no legal root actions");
+        std::unordered_set<std::uint32_t> actionBits;
+        std::vector<double> logits; logits.reserve(rows.size());
+        for (const auto &row : rows) {
+            if (!actionBits.insert(row.actionBits).second || row.features.size() != kVisitPolicyWidth)
+                throw std::runtime_error("Silver visit-policy action-bit/feature surface mismatch");
+            std::array<double, kVisitPolicyRank> stateDot{}, actionDot{};
+            double logit = 0.0;
+            for (std::size_t i = 0; i < kVisitPolicyWidth; ++i) {
+                const double x = (static_cast<double>(row.features[i]) - mean_[i]) / scale_[i] * active_[i];
+                if (!std::isfinite(x)) throw std::runtime_error("Silver visit-policy nonfinite standardized feature");
+                logit += x * baseline_[i];
+                if (rank4) {
+                    if (i < kVisitPolicyStateWidth) for (std::size_t k = 0; k < kVisitPolicyRank; ++k) stateDot[k] += x * u_[i * kVisitPolicyRank + k];
+                    else for (std::size_t k = 0; k < kVisitPolicyRank; ++k) actionDot[k] += x * v_[(i - kVisitPolicyStateWidth) * kVisitPolicyRank + k];
+                }
+            }
+            if (rank4) for (std::size_t k = 0; k < kVisitPolicyRank; ++k) logit += stateDot[k] * actionDot[k];
+            if (!std::isfinite(logit)) throw std::runtime_error("Silver visit-policy nonfinite logit");
+            logits.push_back(logit);
+        }
+        const double maximum = *std::max_element(logits.begin(), logits.end());
+        double total = 0.0; for (double &value : logits) { value = std::exp(value - maximum); total += value; }
+        if (!std::isfinite(total) || total <= 0.0) throw std::runtime_error("Silver visit-policy normalization failure");
+        for (double &value : logits) value /= total;
+        double check = 0.0; for (double value : logits) { if (!std::isfinite(value) || value < 0.0) throw std::runtime_error("Silver visit-policy invalid probability"); check += value; }
+        if (std::abs(check - 1.0) > 1e-12) throw std::runtime_error("Silver visit-policy probability normalization mismatch");
+        return logits;
+    }
+
+    const std::string &sourceNpzSha256() const { return sourceNpzSha256_; }
+private:
+    template <typename T> static T readScalar(std::ifstream &in) { T value{}; read(in, &value, sizeof(value)); return value; }
+    static void read(std::ifstream &in, void *data, std::size_t size) { in.read(static_cast<char *>(data), static_cast<std::streamsize>(size)); if (!in) throw std::runtime_error("truncated Silver visit-policy artifact"); }
+    static std::string readString(std::ifstream &in) { const auto size = readScalar<std::uint16_t>(in); std::string value(size, '\0'); if (size) read(in, value.data(), size); return value; }
+    bool loaded_ = false;
+    std::string sourceNpzSha256_, sourceCommit_;
+    std::vector<std::string> names_;
+    std::vector<double> baseline_, mean_, scale_, u_, v_;
+    std::vector<std::uint8_t> active_;
+};
+
+FrozenSilverVisitPolicy g_silverVisitPolicy;
 
 SilverLiveOptions g_silverLiveOptions;
 CombatValueNet g_silverLeafVNet;
@@ -169,6 +266,17 @@ void parseSilverLiveOptions() {
         options.adaptiveEnabled = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
         options.adaptiveTopTwoVisitGapThreshold = std::atof(raw);
+    if (const char *raw = std::getenv("STS_SILVER_VISIT_POLICY")) {
+        const std::string mode(raw);
+        if (mode.empty() || mode == "off") options.visitPolicyMode = silver_bridge::SilverRootVisitPriorMode::OFF;
+        else if (mode == "grouped") options.visitPolicyMode = silver_bridge::SilverRootVisitPriorMode::VISIT_PUCT;
+        else if (mode == "rank4") {
+            options.visitPolicyMode = silver_bridge::SilverRootVisitPriorMode::VISIT_PUCT;
+            options.visitPolicyRank4 = true;
+        }
+        else throw std::invalid_argument("STS_SILVER_VISIT_POLICY must be 'off', 'grouped', or 'rank4'");
+    }
+    if (const char *raw = std::getenv("STS_SILVER_VISIT_POLICY_MODEL")) options.visitPolicyModel = raw;
     if (!options.rootDiagnosticFile.empty()
             && (options.rootDiagnosticMaxPerSeed <= 0
                 || options.rootDiagnosticReferenceBudget <= 0
@@ -226,6 +334,13 @@ void parseSilverLiveOptions() {
             && (options.adaptiveTopTwoVisitGapThreshold < 0.0
                 || options.adaptiveTopTwoVisitGapThreshold > 1.0)) {
         throw std::invalid_argument("STS_SILVER_ADAPTIVE_TOP_GAP must be in [0,1]");
+    }
+    if (options.visitPolicyMode != silver_bridge::SilverRootVisitPriorMode::OFF) {
+        if (options.visitPolicyModel.empty()) throw std::invalid_argument("STS_SILVER_VISIT_POLICY_MODEL must not be empty");
+        g_silverVisitPolicy.load(options.visitPolicyModel);
+        std::cout << "[Silver visit policy loaded: mode="
+                  << (std::getenv("STS_SILVER_VISIT_POLICY") ? std::getenv("STS_SILVER_VISIT_POLICY") : "off")
+                  << " source_npz_sha256=" << g_silverVisitPolicy.sourceNpzSha256() << "]\n";
     }
     options.installed = true;
     g_silverLiveOptions = std::move(options);
@@ -615,6 +730,7 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         if (!resolved.ok)
             throw std::runtime_error("cannot lower restored Silver action " + fingerprint + ": " + resolved.error);
         SilverPolicyFeatureRow row;
+        row.actionBits = resolved.action.bits;
         row.actionFingerprint = fingerprint;
         row.silverOrder = static_cast<int>(i);
         row.features.resize(combatPolicyFeatureCount());
@@ -622,6 +738,55 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         rows.push_back(std::move(row));
     }
     return rows;
+}
+
+std::vector<SilverPolicyFeatureRow> silverLivePolicyFeaturesForActionBitsImpl(
+        const silver_bridge::BattleStateWire &wire,
+        const std::vector<std::uint32_t> &actionBits) {
+    if (actionBits.empty())
+        throw std::runtime_error("Silver visit-policy decision root has no action bits");
+    g_richCombatFeatures = true;
+    auto live = liveLeafBattleContext(wire);
+    std::unordered_set<std::uint32_t> uniqueBits;
+    std::vector<SilverPolicyFeatureRow> rows;
+    rows.reserve(actionBits.size());
+    for (std::size_t i = 0; i < actionBits.size(); ++i) {
+        if (!uniqueBits.insert(actionBits[i]).second)
+            throw std::runtime_error("duplicate Silver visit-policy action bits: "
+                + std::to_string(actionBits[i]));
+        SilverPolicyFeatureRow row;
+        row.actionBits = actionBits[i];
+        row.silverOrder = static_cast<int>(i);
+        row.features.resize(combatPolicyFeatureCount());
+        // This is feature-only: Action(bits) is never executed and no live
+        // legality/semantic resolver participates in the correspondence.
+        combatExtractPolicyFeatures(live, Action(actionBits[i]), row.features.data());
+        rows.push_back(std::move(row));
+    }
+    return rows;
+}
+
+void scoreSilverVisitPolicyRoot(const silver_bridge::BattleStateWire &wire,
+                                const std::vector<std::uint32_t> &actionBits,
+                                std::vector<double> &probabilities) {
+    const auto start = std::chrono::steady_clock::now();
+    try {
+        const auto rows = silverLivePolicyFeaturesForActionBitsImpl(wire, actionBits);
+        probabilities = g_silverVisitPolicy.probabilities(rows, g_silverLiveOptions.visitPolicyRank4);
+        if (rows.size() != probabilities.size())
+            throw std::runtime_error("Silver visit-policy feature width mismatch");
+        ++g_silverLiveDiagnostics.visitPolicyScoredRoots;
+        g_silverLiveDiagnostics.visitPolicyScoredActions += rows.size();
+    } catch (const std::exception &e) {
+        const std::string message(e.what());
+        if (message.find("semantic") != std::string::npos) ++g_silverLiveDiagnostics.visitPolicySemanticFailures;
+        else if (message.find("nonfinite") != std::string::npos) ++g_silverLiveDiagnostics.visitPolicyNonfiniteFailures;
+        else if (message.find("normalization") != std::string::npos) ++g_silverLiveDiagnostics.visitPolicyNormalizationFailures;
+        else ++g_silverLiveDiagnostics.visitPolicyFeatureFailures;
+        throw;
+    }
+    g_silverLiveDiagnostics.visitPolicyInferenceMicros += std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - start).count();
 }
 
 void writeLeafVNetObservation(std::uint64_t runSeed, int decision,
@@ -1165,12 +1330,18 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
+        if (g_silverLiveOptions.visitPolicyMode != silver_bridge::SilverRootVisitPriorMode::OFF) {
+            config.rootVisitPriorMode = silver_bridge::SilverRootVisitPriorMode::VISIT_PUCT;
+            config.rootVisitPriorProvider = scoreSilverVisitPolicyRoot;
+        }
         config.collectRootActionSummaries = collectRootDiagnostics || config.adaptiveEnabled;
         config.collectRolloutDiagnostics = collectRootDiagnostics || emitTelemetry;
         config.leafObserver = leafObserver;
         currentCorpusConfig = config;
         currentCorpusConfig.leafObserver = {};
         silver_bridge::SemanticAction semantic;
+        bool selectedActionBitsValid = false;
+        std::uint32_t selectedActionBits = 0;
         if (bc.inputState == InputState::CARD_SELECT
                 && (bc.cardSelectInfo.cardSelectTask == CardSelectTask::EXHAUST_MANY
                     || bc.cardSelectInfo.cardSelectTask == CardSelectTask::GAMBLE)) {
@@ -1181,10 +1352,17 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                     ? "no final Silver confirmation" : transaction.failure);
             }
             semantic = transaction.finalAction;
+            selectedActionBits = transaction.finalActionBits;
+            selectedActionBitsValid = transaction.finalActionBitsValid;
             g_silverLiveDiagnostics.simulations += transaction.totalSimulations;
             g_silverLiveDiagnostics.transactionSubdecisions += transaction.searchDecisions;
             g_silverLiveDiagnostics.rerootExact += transaction.rerootExact;
             g_silverLiveDiagnostics.rerootFallback += transaction.rerootFallback;
+            if (g_silverLiveOptions.visitPolicyMode != silver_bridge::SilverRootVisitPriorMode::OFF) {
+                g_silverLiveDiagnostics.visitPolicyReusedRootApplications += transaction.rerootExact;
+                g_silverLiveDiagnostics.visitPolicyFreshRootApplications +=
+                    transaction.searchDecisions - transaction.rerootExact;
+            }
             addTelemetry(transaction.telemetry);
             if (collectDecisionDiagnostics) {
                 if (transaction.searchDiagnostics.size()
@@ -1209,12 +1387,18 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             const auto result = silver_bridge::runSilverDecision(*silverSession, wire, config);
             if (!result.accepted) {
                 ++g_silverLiveDiagnostics.conversionFailures;
-                fail("search", "Silver returned no semantic decision");
+                fail("search", "Silver returned no semantic decision: " + result.failureReason);
             }
             semantic = result.action;
+            selectedActionBits = result.actionBits;
+            selectedActionBitsValid = result.actionBitsValid;
             g_silverLiveDiagnostics.simulations += result.simulations;
             g_silverLiveDiagnostics.rerootExact += result.rerootExact;
             g_silverLiveDiagnostics.rerootFallback += result.rerootFallback;
+            if (g_silverLiveOptions.visitPolicyMode != silver_bridge::SilverRootVisitPriorMode::OFF) {
+                if (result.rerootExact) ++g_silverLiveDiagnostics.visitPolicyReusedRootApplications;
+                else ++g_silverLiveDiagnostics.visitPolicyFreshRootApplications;
+            }
             addTelemetry(result.telemetry);
             if (result.adaptiveEscalated) ++g_silverLiveDiagnostics.adaptiveEscalations;
             if (collectDecisionDiagnostics) {
@@ -1266,17 +1450,31 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             }
         }
 
-        const auto resolved = resolveSilverSemanticAction(bc, semantic);
-        if (!resolved.ok) {
-            ++g_silverLiveDiagnostics.semanticResolutionFailures;
-            fail("semantic action resolution", resolved.error);
+        Action resolvedAction;
+        if (g_silverLiveOptions.visitPolicyMode != silver_bridge::SilverRootVisitPriorMode::OFF
+                && selectedActionBitsValid) {
+            // This token came from the selected edge on this exact root. It
+            // avoids collapsing duplicate visible private-card identities,
+            // while the real executor still rejects any non-live-legal action.
+            resolvedAction = Action(selectedActionBits);
+            if (!resolvedAction.isValidAction(bc)) {
+                ++g_silverLiveDiagnostics.semanticResolutionFailures;
+                fail("exact Silver action-bit legality", "selected root action bits are not live-legal");
+            }
+        } else {
+            const auto resolved = resolveSilverSemanticAction(bc, semantic);
+            if (!resolved.ok) {
+                ++g_silverLiveDiagnostics.semanticResolutionFailures;
+                fail("semantic action resolution", resolved.error);
+            }
+            resolvedAction = resolved.action;
         }
         if (g_stickyQualityActionTraceForTest) {
             g_silverLiveDiagnostics.actionFingerprints.push_back(
                 silver_bridge::semanticActionFingerprint(semantic));
         }
         ++g_silverLiveDiagnostics.decisions;
-        agent.takeAction(bc, resolved.action);
+        agent.takeAction(bc, resolvedAction);
     }
     for (const auto &[groupId, leaves] : pendingCorpusGroups) {
         if (leaves.empty()) continue;
@@ -1325,6 +1523,15 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " blend_depth_avoided=" << d.blendDepthAvoided
                   << " leaf_vnet_inference_calls=" << d.leafVNetInferenceCalls
                   << " leaf_vnet_inference_micros=" << d.leafVNetInferenceMicros
+                  << " visit_policy_scored_roots=" << d.visitPolicyScoredRoots
+                  << " visit_policy_scored_actions=" << d.visitPolicyScoredActions
+                  << " visit_policy_fresh_roots=" << d.visitPolicyFreshRootApplications
+                  << " visit_policy_reused_roots=" << d.visitPolicyReusedRootApplications
+                  << " visit_policy_inference_micros=" << d.visitPolicyInferenceMicros
+                  << " visit_policy_feature_failures=" << d.visitPolicyFeatureFailures
+                  << " visit_policy_semantic_failures=" << d.visitPolicySemanticFailures
+                  << " visit_policy_nonfinite_failures=" << d.visitPolicyNonfiniteFailures
+                  << " visit_policy_normalization_failures=" << d.visitPolicyNormalizationFailures
                   << " conversion_failures=" << d.conversionFailures
                   << " semantic_resolution_failures=" << d.semanticResolutionFailures
                   << " transaction_failures=" << d.transactionFailures
@@ -1351,6 +1558,21 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(
     return silverLiveParentPolicyFeaturesImpl(wire);
 }
 
+std::vector<SilverPolicyFeatureRow> silverLivePolicyFeaturesForActionBits(
+        const silver_bridge::BattleStateWire &wire,
+        const std::vector<std::uint32_t> &actionBits) {
+    return silverLivePolicyFeaturesForActionBitsImpl(wire, actionBits);
+}
+
+std::vector<double> silverLiveVisitPolicyProbabilitiesForTest(
+        const silver_bridge::BattleStateWire &wire,
+        const std::vector<std::uint32_t> &actionBits,
+        const std::string &modelPath, bool rank4) {
+    FrozenSilverVisitPolicy model;
+    model.load(modelPath);
+    return model.probabilities(silverLivePolicyFeaturesForActionBitsImpl(wire, actionBits), rank4);
+}
+
 void installSilverLiveBackend() {
     parseSilverLiveOptions(); // validates before the first live combat begins
     if (!g_silverLiveOptions.leafVNetLogFile.empty() || g_silverLiveOptions.leafVNetDirect
@@ -1366,6 +1588,14 @@ std::string silverLiveReuseCapMode() {
 std::int64_t silverLiveReuseCap() { return silver_bridge::kSilverProductionReuseCap; }
 std::string silverLiveScalingDiagnosticFile() { return g_silverLiveOptions.scalingDiagnosticFile; }
 std::string silverLiveStickyQualityFile() { return g_silverLiveOptions.stickyQualityFile; }
+std::string silverLiveVisitPolicyMode() {
+    if (g_silverLiveOptions.visitPolicyMode == silver_bridge::SilverRootVisitPriorMode::OFF) return "off";
+    return g_silverLiveOptions.visitPolicyRank4 ? "rank4" : "grouped";
+}
+std::string silverLiveVisitPolicyModelSha256() {
+    return g_silverLiveOptions.visitPolicyMode == silver_bridge::SilverRootVisitPriorMode::OFF
+        ? std::string{} : g_silverVisitPolicy.sourceNpzSha256();
+}
 bool silverLiveAdaptiveEnabled() { return g_silverLiveOptions.adaptiveEnabled; }
 bool silverLiveExactRootBudgets() { return g_silverLiveOptions.exactRootBudgets; }
 double silverLiveAdaptiveTopTwoVisitGapThreshold() {

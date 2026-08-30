@@ -11,6 +11,7 @@
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_set>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -723,6 +724,9 @@ public:
         searcher->chanceWideningAlpha = config.chanceWideningAlpha;
         searcher->endTurnWideningC = config.endTurnWideningC;
         searcher->endTurnWideningAlpha = config.endTurnWideningAlpha;
+        searcher->rootVisitPriorMode = config.rootVisitPriorMode;
+        searcher->rootVisitPriorActionBitsProvider = config.rootVisitPriorActionBitsProvider;
+        searcher->rootVisitPuctExploration = config.rootVisitPuctExploration;
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
         searcher->collectVictoryCounts = config.collectRootActionSummaries;
         searcher->leafObserver = config.leafObserver;
@@ -828,6 +832,10 @@ public:
             }
         }
         configure(config);
+        // The configured model must update an already-expanded exact-reroot
+        // root before its next simulation. Fresh roots have no edges yet and
+        // receive the same validation/order at enumeration time.
+        searcher->applyRootVisitPriors(inheritedVisits > 0);
     }
 
     sts::BattleContext materializeAndBegin(const BattleStateWire &wire, const SilverSearchConfig &config) {
@@ -835,8 +843,18 @@ public:
             initializeRunContext(runContext, wire);
             runContextInitialized = true;
         }
+        auto effectiveConfig = config;
+        if (effectiveConfig.rootVisitPriorMode == SilverRootVisitPriorMode::VISIT_PUCT) {
+            if (!effectiveConfig.rootVisitPriorProvider)
+                throw std::runtime_error("visit-PUCT root prior provider missing");
+            const auto provider = effectiveConfig.rootVisitPriorProvider;
+            effectiveConfig.rootVisitPriorActionBitsProvider = [wire, provider](
+                    const std::vector<std::uint32_t> &actionBits, std::vector<double> &priors) {
+                provider(wire, actionBits, priors);
+            };
+        }
         auto state = materialize(wire, &runContext);
-        beginAt(state, config);
+        beginAt(state, effectiveConfig);
         return state;
     }
 
@@ -949,6 +967,8 @@ SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
         return result;
     }
     result.accepted = true;
+    result.actionBits = best->action.bits;
+    result.actionBitsValid = true;
     if (convertSemanticAction
             && best->action.getActionType() != sts::search::ActionType::MULTI_CARD_SELECT) {
         result.action = semanticFromAction(session.searcher->root->state, best->action);
@@ -1004,6 +1024,8 @@ SilverDecisionResult applyAdaptiveContinuation(SilverSearchSession &session,
     }
 
     result.action = continuation.action;
+    result.actionBits = continuation.actionBits;
+    result.actionBitsValid = continuation.actionBitsValid;
     result.accepted = true;
     result.simulations += continuation.simulations;
     result.telemetry.add(continuation.telemetry);
@@ -1056,6 +1078,8 @@ SilverDecisionResult continueSilverDecision(
             return result;
         }
         result.accepted = true;
+        result.actionBits = best->action.bits;
+        result.actionBitsValid = true;
         if (convertSemanticAction
                 && best->action.getActionType() != sts::search::ActionType::MULTI_CARD_SELECT)
             result.action = semanticFromAction(session.searcher->root->state, best->action);
@@ -1085,6 +1109,7 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         result.firstAdaptiveEscalated = firstDecision.adaptiveEscalated;
         const auto *best = session.previousBest;
         if (best == nullptr || !best->action.isValidAction(state)) return result;
+        result.firstChosenActionFingerprint = silverActionFingerprint(session.searcher->root->state, best->action);
 
         // This is deliberately private: it reproduces SearchAgent's action
         // boundary so the next materialized decision can be matched against
@@ -1101,6 +1126,9 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         result.secondRootVisitsAfterSearch = session.searcher->root == nullptr
             ? 0 : session.searcher->root->simulationCount;
         if (!secondDecision.accepted) return result;
+        if (session.previousBest == nullptr) return result;
+        result.secondChosenActionFingerprint = silverActionFingerprint(
+            session.searcher->root->state, session.previousBest->action);
         result.accepted = true;
         result.rerootExact = session.rerootExact;
         result.rerootFallback = session.rerootFallback;
@@ -1281,6 +1309,12 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
     trace.simulationsPerSubdecision = config.simulationsPerDecision;
     if (config.simulationsPerDecision <= 0) return trace;
     try {
+        // A multi-select transition is private but is constrained below to
+        // change only selectedBits. Keep the original wire as the canonical
+        // live feature source and advance that public selection state before
+        // every exact reroot, so its freshly scored root surface cannot reuse
+        // priors from the preceding private subdecision.
+        BattleStateWire rootWire = wire;
         sts::BattleContext state = session.materializeAndBegin(wire, config);
         const auto task = state.cardSelectInfo.cardSelectTask;
         if (state.inputState != sts::InputState::CARD_SELECT
@@ -1295,7 +1329,19 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
         // loop means the upstream UI state stopped making progress.
         const int maxSubdecisions = state.cards.cardsInHand + 1;
         for (int step = 0; step < maxSubdecisions; ++step) {
-            if (step > 0) session.beginAt(state, config);
+            if (step > 0) {
+                auto effectiveConfig = config;
+                if (effectiveConfig.rootVisitPriorMode == SilverRootVisitPriorMode::VISIT_PUCT) {
+                    if (!effectiveConfig.rootVisitPriorProvider)
+                        throw std::runtime_error("visit-PUCT root prior provider missing");
+                    const auto provider = effectiveConfig.rootVisitPriorProvider;
+                    effectiveConfig.rootVisitPriorActionBitsProvider = [rootWire, provider](
+                            const std::vector<std::uint32_t> &actionBits, std::vector<double> &priors) {
+                        provider(rootWire, actionBits, priors);
+                    };
+                }
+                session.beginAt(state, effectiveConfig);
+            }
 
             auto decision = runCurrentRootDecision(session, config, false);
             decision = applyAdaptiveContinuation(session, config, std::move(decision), false);
@@ -1317,6 +1363,8 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
             action = best->action;
             if (action.getActionType() == sts::search::ActionType::MULTI_CARD_SELECT) {
                 trace.finalAction = confirmedSelection(state, action);
+                trace.finalActionBits = action.bits;
+                trace.finalActionBitsValid = true;
                 trace.finalConfirmation = true;
                 trace.accepted = true;
                 trace.rerootExact = session.rerootExact - rerootExactBefore;
@@ -1341,6 +1389,7 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
                                          + selectionStateSummary(before, state));
             }
             trace.selectedBitsAfterEachIntermediate.push_back(state.cardSelectInfo.selectedBits);
+            rootWire.cardSelect.selectedBits = state.cardSelectInfo.selectedBits;
         }
         trace.rerootExact = session.rerootExact - rerootExactBefore;
         trace.rerootFallback = session.rerootFallback - rerootFallbackBefore;
@@ -1416,6 +1465,25 @@ std::vector<SemanticAction> enumerateSilverLegalActions(const BattleStateWire &w
     result.reserve(enumerator.root->edges.size());
     for (const auto &edge : enumerator.root->edges)
         result.push_back(semanticFromAction(enumerator.root->state, edge.action));
+    return result;
+}
+
+std::vector<std::uint32_t> enumerateSilverRootActionBits(const BattleStateWire &wire) {
+    std::vector<std::uint32_t> result;
+    if (!wire.valid || wire.version != BattleStateWire::kVersion || wire.outcome != 0) return result;
+    sts::GameContext runContext;
+    initializeRunContext(runContext, wire);
+    auto state = materialize(wire, &runContext);
+    sts::search::BattleSearcher enumerator(state);
+    if (enumerator.root == nullptr) return result;
+    enumerator.enumerateActionsForNode(*enumerator.root, enumerator.root->state);
+    result.reserve(enumerator.root->edges.size());
+    std::unordered_set<std::uint32_t> uniqueBits;
+    for (const auto &edge : enumerator.root->edges) {
+        if (!uniqueBits.insert(edge.action.bits).second)
+            throw std::runtime_error("duplicate enumerated Silver root action bits");
+        result.push_back(edge.action.bits);
+    }
     return result;
 }
 

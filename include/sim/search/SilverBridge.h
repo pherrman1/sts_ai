@@ -256,6 +256,9 @@ enum class CardSource : std::uint8_t { NONE = 0, HAND, DRAW, DISCARD, EXHAUST, C
 // The production cap is deliberately fixed.  The allocated/active modes
 // select the existing pool measurement; NONE disables statistical reuse.
 enum class SilverReuseCapMode : std::uint8_t { ALLOCATED = 0, ACTIVE, NONE };
+// Default-off root-only normalized visit-PUCT.  This deliberately exposes no
+// generic policy callback, all-node policy, rank prior, or scorer surface.
+enum class SilverRootVisitPriorMode : std::uint8_t { OFF = 0, VISIT_PUCT };
 enum class SilverRerootFallbackReason : std::uint8_t {
     NONE = 0,
     NO_PREDECESSOR,
@@ -297,6 +300,11 @@ std::string semanticActionFingerprint(const SemanticAction &action);
 // Invalid, terminal, or actionless states fail closed with an empty vector.
 std::vector<SemanticAction> enumerateSilverLegalActions(const BattleStateWire &state);
 
+// Focused parity/fixture seam: return exact Action.bits from the vendor's
+// already-enumerated root edges in vector order. These tokens are valid only
+// for this restored state and are never persisted as model identities.
+std::vector<std::uint32_t> enumerateSilverRootActionBits(const BattleStateWire &state);
+
 // Difference needed to translate a victorious continuation evaluated with
 // `leaf` as BattleSearcher::rootState back to `originalRoot` semantics.
 // Loss evaluations contain neither root-relative term and therefore use zero.
@@ -321,6 +329,20 @@ struct SilverSearchConfig {
     // controls this value; production continues to use exactly 32 * 1024.
     std::int64_t reuseCap = kSilverProductionReuseCap;
     SilverReuseCapMode reuseCapMode = SilverReuseCapMode::ALLOCATED;
+    SilverRootVisitPriorMode rootVisitPriorMode = SilverRootVisitPriorMode::OFF;
+    double rootVisitPuctExploration = 2.5;
+    // Narrow root-only provider for the live frozen visit-policy integration.
+    // The supplied action bits are copied from the already-enumerated vendor
+    // root edges, in their current vector order. They are state-local opaque
+    // identity tokens, not training labels. The provider returns one prior per
+    // token in exactly that order; semantic fingerprints are diagnostics only.
+    std::function<void(const BattleStateWire &, const std::vector<std::uint32_t> &,
+                       std::vector<double> &)> rootVisitPriorProvider;
+    // Bridge-private adapter installed after a BattleStateWire is materialized.
+    // It remains root-only and lets BattleSearcher provide actual edge bits
+    // without either semantic re-enumeration or vendor-action reconstruction.
+    std::function<void(const std::vector<std::uint32_t> &, std::vector<double> &)>
+        rootVisitPriorActionBitsProvider;
     // Default-off collection avoids per-decision diagnostic work unless the
     // scaling CSV (or a focused bridge fixture) explicitly requests it.
     bool collectDecisionDiagnostics = false;
@@ -490,6 +512,10 @@ struct SelectionTransactionTrace {
     std::vector<int> selectedBitsAfterEachIntermediate;
     std::vector<SilverSearchDecisionDiagnostic> searchDiagnostics;
     SemanticAction finalAction;
+    // Exact state-local vendor token for the final confirmation. It is used
+    // only to lower this same live decision after strict legality validation.
+    std::uint32_t finalActionBits = 0;
+    bool finalActionBitsValid = false;
     SilverSearchTelemetry telemetry;
 };
 
@@ -507,6 +533,10 @@ struct SilverDecisionResult {
     std::string rerootMissDiagnostic;
     SilverSearchDecisionDiagnostic diagnostic;
     SemanticAction action;
+    // Collision-safe selected-edge token. It is never serialized, trained on,
+    // or reused across states; live execution must still validate it strictly.
+    std::uint32_t actionBits = 0;
+    bool actionBitsValid = false;
     SilverSearchTelemetry telemetry;
     std::vector<SilverRootActionSummary> rootActionSummaries;
     // With adaptive mode enabled this is the initial-budget root summary used
@@ -580,6 +610,8 @@ struct SessionReuseProbe {
     std::int64_t secondRootVisitsAfterSearch = 0;
     bool firstAdaptiveEscalated = false;
     bool secondAdaptiveEscalated = false;
+    std::string firstChosenActionFingerprint;
+    std::string secondChosenActionFingerprint;
 };
 
 // Small-cap, bridge-private fixture.  It exercises retained allocation versus

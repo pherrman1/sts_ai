@@ -492,6 +492,11 @@ double search::BattleSearcher::evaluateEdge(const search::BattleSearcher::Node &
     // term uses this edge's own visit count rather than the child's simulationCount. With node
     // sharing the two diverge, and using edge visits keeps UCB well-formed (Childs et al. 2008).
     const double qualityValue = edge.node->evaluationSum / edge.node->simulationCount;
+    if (&parent == root
+            && rootVisitPriorMode == silver_bridge::SilverRootVisitPriorMode::VISIT_PUCT) {
+        return qualityValue + rootVisitPuctExploration * edge.rootVisitPrior
+            * std::sqrt(static_cast<double>(parent.simulationCount)) / (edge.visitCount + 1);
+    }
     const double exploration = edge.node->isRandomNode ? explorationParameterChance
                                                        : explorationParameter;
     const double explorationValue = exploration *
@@ -725,6 +730,8 @@ void search::BattleSearcher::enumerateActionsForNode(search::BattleSearcher::Nod
             break;
     }
 
+    if (&node == root) applyRootVisitPriors(false);
+
 #ifdef sts_print_debug
     std::cout << "{ (" << node.edges.size() << ") ";
     for (int i = 0; i < node.edges.size(); ++i) {
@@ -732,6 +739,54 @@ void search::BattleSearcher::enumerateActionsForNode(search::BattleSearcher::Nod
     }
     std::cout << " }" << std::endl;
 #endif
+}
+
+void search::BattleSearcher::applyRootVisitPriors(bool reusedRoot) {
+    if (rootVisitPriorMode == silver_bridge::SilverRootVisitPriorMode::OFF || root == nullptr
+            || root->edges.empty()) return;
+    if (!rootVisitPriorActionBitsProvider)
+        throw std::runtime_error("root visit-PUCT action-bit provider missing");
+    std::vector<std::uint32_t> actionBits;
+    actionBits.reserve(root->edges.size());
+    std::unordered_set<std::uint32_t> uniqueBits;
+    for (const auto &edge : root->edges) {
+        if (!uniqueBits.insert(edge.action.bits).second)
+            throw std::runtime_error("duplicate observed root visit-PUCT action bits");
+        actionBits.push_back(edge.action.bits);
+    }
+    std::vector<double> priors;
+    rootVisitPriorActionBitsProvider(actionBits, priors);
+    if (priors.size() != root->edges.size())
+        throw std::runtime_error("root visit-PUCT action/prior count mismatch");
+    double total = 0.0;
+    for (const double prior : priors) {
+        if (!std::isfinite(prior) || prior < 0.0)
+            throw std::runtime_error("nonfinite/negative root visit-PUCT prior");
+        total += prior;
+    }
+    if (!std::isfinite(total) || std::abs(total - 1.0) > 1e-12)
+        throw std::runtime_error("root visit-PUCT priors do not normalize exactly");
+    struct RankedEdge { std::size_t index; Edge edge; };
+    std::vector<RankedEdge> ranked;
+    ranked.reserve(root->edges.size());
+    for (std::size_t i = 0; i < root->edges.size(); ++i) {
+        auto &edge = root->edges[i];
+        // The provider receives this exact vector, so index is the only
+        // correspondence. Do not reconstruct an Action from semantics.
+        if (edge.action.bits != actionBits[i])
+            throw std::runtime_error("root visit-PUCT action-bit order changed during scoring");
+        edge.rootVisitPrior = priors[i];
+        ranked.push_back({i, std::move(edge)});
+    }
+    std::sort(ranked.begin(), ranked.end(), [&](const RankedEdge &left, const RankedEdge &right) {
+        const double lp = priors[left.index], rp = priors[right.index];
+        return lp != rp ? lp > rp : left.index < right.index;
+    });
+    root->edges.clear();
+    root->edges.reserve(ranked.size());
+    for (auto &entry : ranked) root->edges.push_back(std::move(entry.edge));
+    if (reusedRoot) ++rootVisitPriorReusedApplications;
+    else ++rootVisitPriorFreshApplications;
 }
 
 void search::BattleSearcher::enumerateCardActions(search::BattleSearcher::Node &node,

@@ -129,6 +129,20 @@ target_include_directories(silver-parent-policy-features PRIVATE include json/in
 target_link_libraries(silver-parent-policy-features PRIVATE silver_live_backend)
 target_link_options(silver-parent-policy-features PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-visit-policy-parity
+    apps/silver_visit_policy_parity.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(silver-visit-policy-parity PROPERTIES OUTPUT_NAME silver_visit_policy_parity)
+target_include_directories(silver-visit-policy-parity PRIVATE include json/include)
+target_link_libraries(silver-visit-policy-parity PRIVATE silver_live_backend)
+target_link_options(silver-visit-policy-parity PRIVATE -Wl,--gc-sections)
+
+add_executable(silver-visit-policy-replay
+    apps/silver_visit_policy_replay.cpp $<TARGET_OBJECTS:sts_core_objects>)
+set_target_properties(silver-visit-policy-replay PROPERTIES OUTPUT_NAME silver_visit_policy_replay)
+target_include_directories(silver-visit-policy-replay PRIVATE include json/include)
+target_link_libraries(silver-visit-policy-replay PRIVATE silver_live_backend)
+target_link_options(silver-visit-policy-replay PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-native-parity-runner third_party/silver_lightspeed/bridge/SilverNativeFixtureRunner.cpp)
 set_target_properties(silver-native-parity-runner PROPERTIES OUTPUT_NAME silver_native_parity_runner)
 set_target_properties(silver-native-parity-runner PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)

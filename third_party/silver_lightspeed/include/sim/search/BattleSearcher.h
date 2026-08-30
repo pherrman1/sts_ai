@@ -158,6 +158,7 @@ namespace sts::search {
             Node* node = nullptr;               // child (shared across paths via transposition)
             int rngAdvanceSteps = 0;            // chance outcome edge: the N used for Random(base + N)
             std::int32_t visitCount = 0;        // times this edge was traversed (UCB / DPW reselection)
+            double rootVisitPrior = 0.0;        // default-off live visit-PUCT root prior
         };
 
         std::unique_ptr<BattleContext> rootState;
@@ -196,6 +197,15 @@ namespace sts::search {
         double chanceWideningAlpha = 0.37;   // tuned default
         double endTurnWideningC = 4.6;       // END_TURN pair; set equal to general for the joint behavior
         double endTurnWideningAlpha = 0.37;
+        silver_bridge::SilverRootVisitPriorMode rootVisitPriorMode =
+            silver_bridge::SilverRootVisitPriorMode::OFF;
+        // Supplied only through the bridge adapter after actual root-edge
+        // enumeration. This avoids semantic identity reconstruction.
+        std::function<void(const std::vector<std::uint32_t> &, std::vector<double> &)>
+            rootVisitPriorActionBitsProvider;
+        double rootVisitPuctExploration = 2.5;
+        std::uint64_t rootVisitPriorFreshApplications = 0;
+        std::uint64_t rootVisitPriorReusedApplications = 0;
 
         // Default-off rollout/terminal decomposition collection. This is
         // diagnostic accounting only; it is never consulted by selection.
@@ -227,6 +237,9 @@ namespace sts::search {
         void step();
         Action getBestAction() const;
         const std::vector<Edge>& getRootEdges() const { return root->edges; }
+        // Reapply priors from exact action bits after session setRoot/rerootAt.
+        // A fresh unexpanded root is handled when it enumerates its edges.
+        void applyRootVisitPriors(bool reusedRoot);
 
         // private helpers
         bool resetForSearch();   // reset node pool/root for a fresh search; returns false if the root is already terminal

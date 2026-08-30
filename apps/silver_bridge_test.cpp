@@ -2,6 +2,7 @@
 // separate link closure so ordinary unit-test never links the full vendor model.
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 #include <iostream>
 #include <set>
 
@@ -118,6 +119,44 @@ int main() {
           "restored legal semantic fingerprints must be unique");
     check(teacherSet == restoredSet && restoredSet == emittedSet,
           "teacher action fingerprints == restored legal fingerprints == emitted feature rows");
+    const auto rootActionBits = silver_bridge::enumerateSilverRootActionBits(reloadedWire);
+    const auto bitPolicyRows = search::silverLivePolicyFeaturesForActionBits(reloadedWire, rootActionBits);
+    check(rootActionBits.size() == policyRows.size() && bitPolicyRows.size() == policyRows.size()
+              && std::equal(bitPolicyRows.begin(), bitPolicyRows.end(), rootActionBits.begin(),
+                  [](const auto &row, std::uint32_t bits) { return row.actionBits == bits; }),
+          "exact vendor action bits must preserve the root feature surface order");
+    const std::string visitModel = "models/silver_rank4_visit_policy_runtime_v1.bin";
+    const auto groupedProbabilities = search::silverLiveVisitPolicyProbabilitiesForTest(
+        reloadedWire, rootActionBits, visitModel, false);
+    const auto rank4Probabilities = search::silverLiveVisitPolicyProbabilitiesForTest(
+        reloadedWire, rootActionBits, visitModel, true);
+    const double groupedSum = std::accumulate(groupedProbabilities.begin(), groupedProbabilities.end(), 0.0);
+    const double rank4Sum = std::accumulate(rank4Probabilities.begin(), rank4Probabilities.end(), 0.0);
+    double maxVisitPolicyDifference = 0.0;
+    for (std::size_t i = 0; i < groupedProbabilities.size() && i < rank4Probabilities.size(); ++i)
+        maxVisitPolicyDifference = std::max(maxVisitPolicyDifference,
+                                            std::abs(groupedProbabilities[i] - rank4Probabilities[i]));
+    check(groupedProbabilities.size() == policyRows.size() && rank4Probabilities.size() == policyRows.size()
+              && std::abs(groupedSum - 1.0) <= 1e-12 && std::abs(rank4Sum - 1.0) <= 1e-12
+              && maxVisitPolicyDifference > 1e-12,
+          "frozen grouped/rank4 visit policies must score the canonical root surface and normalize");
+    const auto oneHotRootPrior = [](const silver_bridge::BattleStateWire &,
+                                    const std::vector<std::uint32_t> &actionBits,
+                                    std::vector<double> &priors) {
+        priors.assign(actionBits.size(), 0.0);
+        if (priors.empty()) throw std::runtime_error("one-hot root prior received no legal actions");
+        priors.front() = 1.0;
+    };
+    silver_bridge::SilverSearchConfig guidedRootConfig;
+    guidedRootConfig.simulationsPerDecision = 1;
+    guidedRootConfig.rootVisitPriorMode = silver_bridge::SilverRootVisitPriorMode::VISIT_PUCT;
+    guidedRootConfig.rootVisitPriorProvider = oneHotRootPrior;
+    const auto freshGuided = silver_bridge::runSilverDecision(firstWire, guidedRootConfig);
+    const auto canonicalFirstActions = silver_bridge::enumerateSilverLegalActions(firstWire);
+    check(freshGuided.accepted
+              && silver_bridge::semanticActionFingerprint(freshGuided.action)
+                  == silver_bridge::semanticActionFingerprint(canonicalFirstActions.front()),
+          "fresh root must install normalized visit priors before its first guided selection");
     auto cardSelectWire = reloadedWire;
     cardSelectWire.inputState = static_cast<int>(InputState::CARD_SELECT);
     cardSelectWire.cardSelect.task = static_cast<std::int16_t>(CardSelectTask::WARCRY);
@@ -126,6 +165,34 @@ int main() {
     const auto cardSelectRows = search::silverLiveParentPolicyFeatures(cardSelectWire);
     check(!cardSelectRows.empty() && cardSelectRows.size() == cardSelectActions.size(),
           "stored card-select wire must lower every Silver action to a canonical policy row");
+    BattleContext oneActionLive = first;
+    oneActionLive.cards.cardsInHand = 1;
+    oneActionLive.cards.hand[0] = card(CardId::STRIKE_RED, 301);
+    oneActionLive.inputState = InputState::CARD_SELECT;
+    oneActionLive.cardSelectInfo.cardSelectTask = CardSelectTask::WARCRY;
+    oneActionLive.cardSelectInfo.pickCount = 1;
+    search::CombatKnowledgeState oneActionKnowledge;
+    oneActionKnowledge.initializeFromLiveBattle(oneActionLive);
+    const auto oneActionWire = convert(oneActionLive, gc, oneActionKnowledge);
+    const auto oneActionRows = search::silverLiveParentPolicyFeatures(oneActionWire);
+    const auto oneActionBits = silver_bridge::enumerateSilverRootActionBits(oneActionWire);
+    const auto oneActionGrouped = search::silverLiveVisitPolicyProbabilitiesForTest(
+        oneActionWire, oneActionBits, visitModel, false);
+    const auto oneActionRank4 = search::silverLiveVisitPolicyProbabilitiesForTest(
+        oneActionWire, oneActionBits, visitModel, true);
+    silver_bridge::SilverSearchConfig offOneAction;
+    offOneAction.simulationsPerDecision = 1;
+    const auto offOne = silver_bridge::runSilverDecision(oneActionWire, offOneAction);
+    const auto groupedOne = silver_bridge::runSilverDecision(oneActionWire, guidedRootConfig);
+    const auto rank4One = silver_bridge::runSilverDecision(oneActionWire, guidedRootConfig);
+    check(oneActionRows.size() == 1 && oneActionGrouped.size() == 1 && oneActionRank4.size() == 1
+              && oneActionGrouped[0] == 1.0 && oneActionRank4[0] == 1.0
+              && offOne.accepted && groupedOne.accepted && rank4One.accepted
+              && silver_bridge::semanticActionFingerprint(offOne.action)
+                  == silver_bridge::semanticActionFingerprint(groupedOne.action)
+              && silver_bridge::semanticActionFingerprint(offOne.action)
+                  == silver_bridge::semanticActionFingerprint(rank4One.action),
+          "one legal action must bypass ordering/PUCT choice with exact normalized prior one");
     auto incompatibleEnvelope = silver_bridge::battleStateWireEnvelope(firstWire);
     incompatibleEnvelope["wire_version"] = 999;
     bool incompatibleRejected = false;
@@ -612,6 +679,22 @@ int main() {
     transactionLive.cardSelectInfo.canPickAnyNumber = true;
     search::CombatKnowledgeState transactionKnowledge;
     transactionKnowledge.initializeFromLiveBattle(transactionLive);
+    BattleContext duplicatePrivateLive = transactionLive;
+    duplicatePrivateLive.cards.hand[1] = duplicatePrivateLive.cards.hand[0];
+    search::CombatKnowledgeState duplicatePrivateKnowledge;
+    duplicatePrivateKnowledge.initializeFromLiveBattle(duplicatePrivateLive);
+    const auto duplicatePrivateWire = convert(duplicatePrivateLive, gc, duplicatePrivateKnowledge);
+    const std::vector<std::uint32_t> duplicatePrivateBits{
+        search::Action(search::ActionType::SINGLE_CARD_SELECT, 0).bits,
+        search::Action(search::ActionType::SINGLE_CARD_SELECT, 1).bits};
+    const auto duplicatePrivateRows = search::silverLivePolicyFeaturesForActionBits(
+        duplicatePrivateWire, duplicatePrivateBits);
+    check(duplicatePrivateRows.size() == 2
+              && duplicatePrivateRows[0].actionBits == duplicatePrivateBits[0]
+              && duplicatePrivateRows[1].actionBits == duplicatePrivateBits[1]
+              && duplicatePrivateRows[0].silverOrder == 0
+              && duplicatePrivateRows[1].silverOrder == 1,
+          "duplicate visible private-card identities must remain distinct exact action-bit rows");
     const BattleContext transactionBefore = transactionLive;
     silver_bridge::SilverSearchConfig transactionConfig;
     transactionConfig.simulationsPerDecision = 16;
@@ -651,6 +734,27 @@ int main() {
               && transaction.searchDiagnostics[1].exactReroot
               && transaction.searchDiagnostics[1].inheritedVisits > 0,
           "GAMBLE second subdecision must prove exact reroot with inherited visits");
+    int guidedPrivateRootCalls = 0;
+    bool guidedPrivateSurfaceValid = true;
+    auto guidedTransactionConfig = transactionConfig;
+    guidedTransactionConfig.rootVisitPriorMode = silver_bridge::SilverRootVisitPriorMode::VISIT_PUCT;
+    guidedTransactionConfig.rootVisitPriorProvider = [&guidedPrivateRootCalls, &guidedPrivateSurfaceValid](
+            const silver_bridge::BattleStateWire &, const std::vector<std::uint32_t> &actionBits,
+            std::vector<double> &priors) {
+        priors.assign(actionBits.size(), 0.0);
+        std::set<std::uint32_t> unique(actionBits.begin(), actionBits.end());
+        guidedPrivateSurfaceValid = guidedPrivateSurfaceValid && unique.size() == actionBits.size();
+        guidedPrivateSurfaceValid = guidedPrivateSurfaceValid && !priors.empty();
+        if (!priors.empty()) priors.front() = 1.0;
+        ++guidedPrivateRootCalls;
+    };
+    const auto guidedTransaction = silver_bridge::runSequentialSelectionTransaction(
+        convert(transactionLive, gc, transactionKnowledge), guidedTransactionConfig);
+    check(guidedTransaction.accepted && guidedTransaction.finalConfirmation
+              && guidedTransaction.rerootExact >= 1
+              && guidedPrivateSurfaceValid
+              && guidedPrivateRootCalls == guidedTransaction.searchDecisions,
+          "private sequential roots must preserve exact action identity and receive fresh/reused visit priors");
     check(transactionLive.inputState == transactionBefore.inputState
           && transactionLive.cardSelectInfo.cardSelectTask == transactionBefore.cardSelectInfo.cardSelectTask
           && transactionLive.cards.cardsInHand == transactionBefore.cards.cardsInHand

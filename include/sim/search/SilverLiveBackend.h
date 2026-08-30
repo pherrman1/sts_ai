@@ -41,6 +41,15 @@ struct SilverLiveDiagnostics {
     std::uint64_t blendDepthAvoided = 0;
     std::uint64_t leafVNetInferenceCalls = 0;
     std::uint64_t leafVNetInferenceMicros = 0;
+    std::uint64_t visitPolicyScoredRoots = 0;
+    std::uint64_t visitPolicyScoredActions = 0;
+    std::uint64_t visitPolicyFreshRootApplications = 0;
+    std::uint64_t visitPolicyReusedRootApplications = 0;
+    std::uint64_t visitPolicyInferenceMicros = 0;
+    std::uint64_t visitPolicyFeatureFailures = 0;
+    std::uint64_t visitPolicySemanticFailures = 0;
+    std::uint64_t visitPolicyNonfiniteFailures = 0;
+    std::uint64_t visitPolicyNormalizationFailures = 0;
     // Default-off test trace.  It is never populated in production runs.
     std::vector<std::string> actionFingerprints;
 };
@@ -61,6 +70,8 @@ std::string silverLiveReuseCapMode();
 std::int64_t silverLiveReuseCap();
 std::string silverLiveScalingDiagnosticFile();
 std::string silverLiveStickyQualityFile();
+std::string silverLiveVisitPolicyMode();
+std::string silverLiveVisitPolicyModelSha256();
 bool silverLiveAdaptiveEnabled();
 bool silverLiveExactRootBudgets();
 double silverLiveAdaptiveTopTwoVisitGapThreshold();
@@ -88,6 +99,9 @@ std::vector<float> silverLiveLeafCanonicalFeatures(
     const silver_bridge::BattleStateWire &wire);
 
 struct SilverPolicyFeatureRow {
+    // State-local, collision-safe vendor action token. It is the source of
+    // truth for runtime alignment; actionFingerprint is diagnostic only.
+    std::uint32_t actionBits = 0;
     std::string actionFingerprint;
     std::vector<float> features;
     // Zero-based position in the exact current Silver root-edge ordering.
@@ -101,6 +115,22 @@ struct SilverPolicyFeatureRow {
 // returned.
 std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(
     const silver_bridge::BattleStateWire &wire);
+
+// Read-only exact-action projection seam used by root visit-PUCT. It
+// materializes `wire`, constructs Action(actionBits[i]) directly, and emits
+// canonical 1,788-feature rows in exactly the supplied order. It does not
+// execute actions or consult semantic/live-legality reconstruction.
+std::vector<SilverPolicyFeatureRow> silverLivePolicyFeaturesForActionBits(
+    const silver_bridge::BattleStateWire &wire,
+    const std::vector<std::uint32_t> &actionBits);
+
+// Focused native/Python parity seam. It uses the same frozen runtime reader,
+// feature projection, standardization, and stable sibling softmax as live
+// Silver visit-PUCT, returning rows in canonical Silver legal-action order.
+std::vector<double> silverLiveVisitPolicyProbabilitiesForTest(
+    const silver_bridge::BattleStateWire &wire,
+    const std::vector<std::uint32_t> &actionBits,
+    const std::string &modelPath, bool rank4);
 
 } // namespace sts::search
 
