@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "experiment_id": "silver-visit-prior-grouped-screen-976000-976031",
+  "frozen_sha": "eb4fcc157f542c6d31c81ddd5339aec39fa44600",
+  "checkout": "checkouts/silver-visit-prior-grouped-screen-976000-976031",
+  "build_dir": "checkouts/silver-visit-prior-grouped-screen-976000-976031/build/linux-gcc-release",
+  "binary": {
+    "remote_path": "checkouts/silver-visit-prior-grouped-screen-976000-976031/build/linux-gcc-release/one_combat",
+    "sha256": "b306623381227b376aaaa2015aee0ea68d657b5556b2dc95ad22d0601ad438ba"
+  },
+  "artifacts": [
+    {
+      "remote_path": "checkouts/silver-visit-prior-grouped-screen-976000-976031/models/silver_rank4_visit_policy_runtime_v1.bin",
+      "sha256": "bf16ecf38cd90c1deed494df1c8d16647e61cad7e57a13e7ef44d4bfe205c984"
+    },
+    {
+      "remote_path": "checkouts/silver-visit-prior-grouped-screen-976000-976031/models/v_rich_trees.txt",
+      "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+    },
+    {
+      "remote_path": "checkouts/silver-visit-prior-grouped-screen-976000-976031/models/v_win_trees.txt",
+      "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+    },
+    {
+      "remote_path": "artifacts/silver-visit-prior-grouped-screen-976000-976031-source.npz",
+      "sha256": "a9f4ba81b200ec7ac7510970e7279ba7b46b1a0f53af521e5bebb98eba3986cf"
+    }
+  ],
+  "common_env": {
+    "OMP_NUM_THREADS": "1",
+    "OMP_DYNAMIC": "FALSE",
+    "GIT_DIR": "/home/philippherrmann/sts_sweep/.git/worktrees/silver-visit-prior-grouped-screen-976000-976031",
+    "GIT_WORK_TREE": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-screen-976000-976031",
+    "STS_EXECUTABLE_GIT_SHA": "eb4fcc157f542c6d31c81ddd5339aec39fa44600",
+    "STS_FAIR": "1",
+    "STS_COLLECT_KEYS": "0",
+    "STS_STOP_AFTER_ACT": "3",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_TELEMETRY": "1",
+    "STS_EXPERIMENT_BOOTSTRAP_SEED": "20260830",
+    "STS_EXPERIMENT_BOOTSTRAP_RESAMPLES": "10000",
+    "STS_EXPERIMENT_DECISION_RULE": "advance_if_net_wins_ge_3_floor_delta_ge_0_cpu_ratio_le_1.25_and_zero_failures;negative_if_net_wins_le_minus_3;otherwise_inconclusive",
+    "STS_EXPERIMENT_OOC_FLOOR_MODEL": "models/v_rich_trees.txt",
+    "STS_EXPERIMENT_OOC_WIN_MODEL": "models/v_win_trees.txt",
+    "STS_EXPERIMENT_SOURCE_NPZ_SHA256": "a9f4ba81b200ec7ac7510970e7279ba7b46b1a0f53af521e5bebb98eba3986cf"
+  },
+  "required_env": [
+    "OMP_NUM_THREADS",
+    "OMP_DYNAMIC",
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "STS_EXECUTABLE_GIT_SHA",
+    "STS_FAIR",
+    "STS_COLLECT_KEYS",
+    "STS_STOP_AFTER_ACT",
+    "STS_SILVER_SEARCH",
+    "STS_SILVER_REUSE_CAP_MODE",
+    "STS_SILVER_EXACT_ROOT_BUDGETS",
+    "STS_SILVER_TELEMETRY",
+    "STS_EXPERIMENT_BOOTSTRAP_SEED",
+    "STS_EXPERIMENT_BOOTSTRAP_RESAMPLES",
+    "STS_EXPERIMENT_DECISION_RULE",
+    "STS_EXPERIMENT_OOC_FLOOR_MODEL",
+    "STS_EXPERIMENT_OOC_WIN_MODEL",
+    "STS_EXPERIMENT_SOURCE_NPZ_SHA256"
+  ],
+  "expect_silver_telemetry": true,
+  "command": [
+    "checkouts/silver-visit-prior-grouped-screen-976000-976031/build/linux-gcc-release/one_combat",
+    "bestbench",
+    "1000",
+    "32",
+    "0",
+    "976000",
+    "{results}"
+  ],
+  "arms": [
+    {
+      "name": "A_off",
+      "results": "results/silver-visit-prior-grouped-screen-976000-976031-A-off-attempt3.csv",
+      "log": "logs/silver-visit-prior-grouped-screen-976000-976031-A-off-attempt3.log",
+      "env": {
+        "STS_EXPERIMENT_ARM": "A_off",
+        "STS_SILVER_VISIT_POLICY": "off"
+      }
+    },
+    {
+      "name": "B_grouped",
+      "results": "results/silver-visit-prior-grouped-screen-976000-976031-B-grouped.csv",
+      "log": "logs/silver-visit-prior-grouped-screen-976000-976031-B-grouped.log",
+      "env": {
+        "STS_EXPERIMENT_ARM": "B_grouped",
+        "STS_SILVER_VISIT_POLICY": "grouped",
+        "STS_SILVER_VISIT_POLICY_MODEL": "checkouts/silver-visit-prior-grouped-screen-976000-976031/models/silver_rank4_visit_policy_runtime_v1.bin"
+      }
+    }
+  ]
+}
