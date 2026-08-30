@@ -24,6 +24,15 @@ struct SemanticActionResolution {
 SemanticActionResolution resolveSilverSemanticAction(
     const BattleContext &live, const silver_bridge::SemanticAction &semantic);
 
+// Lowers a selected Silver root edge for live execution. Most action surfaces
+// preserve their packed Action bits exactly. Pile-selection roots are the one
+// exception: Silver deliberately canonicalizes hidden pile order, so their
+// state-local index is translated by the selected card identity. This is an
+// explicit boundary rule, not a legality-triggered fallback.
+SemanticActionResolution resolveSilverSelectedAction(
+    const BattleContext &live, const silver_bridge::SemanticAction &semantic,
+    std::uint32_t selectedActionBits);
+
 } // namespace search
 } // namespace sts
 

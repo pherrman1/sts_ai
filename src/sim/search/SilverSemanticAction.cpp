@@ -126,4 +126,44 @@ SemanticActionResolution resolveSilverSemanticAction(
     }
 }
 
+SemanticActionResolution resolveSilverSelectedAction(
+        const BattleContext &live, const silver_bridge::SemanticAction &semantic,
+        std::uint32_t selectedActionBits) {
+    using SAT = silver_bridge::SemanticActionType;
+    using CS = silver_bridge::CardSource;
+    const Action exact(selectedActionBits);
+
+    // Draw, discard, and exhaust piles are canonicalized before isolated
+    // search so their private vector indices intentionally need not equal the
+    // live indices. At these visible card-choice screens, translate the chosen
+    // card identity to the live pile. Decide this from the action surface, not
+    // from exact-bit validity: a coincidentally legal wrong index must never be
+    // accepted.
+    if (semantic.type == SAT::SINGLE_CARD_SELECT
+            && (semantic.source == CS::DRAW
+                || semantic.source == CS::DISCARD
+                || semantic.source == CS::EXHAUST)) {
+        auto translated = resolveSilverSemanticAction(live, semantic);
+        if (!translated.ok)
+            translated.error = "cannot translate canonical Silver pile selection: " + translated.error;
+        return translated;
+    }
+
+    const auto expectedType = [&]() -> ActionType {
+        switch (semantic.type) {
+        case SAT::CARD: return ActionType::CARD;
+        case SAT::POTION: return ActionType::POTION;
+        case SAT::SINGLE_CARD_SELECT: return ActionType::SINGLE_CARD_SELECT;
+        case SAT::MULTI_CARD_SELECT: return ActionType::MULTI_CARD_SELECT;
+        case SAT::END_TURN: return ActionType::END_TURN;
+        default: return static_cast<ActionType>(-1);
+        }
+    }();
+    if (exact.getActionType() != expectedType)
+        return {false, {}, "selected Silver action bits disagree with semantic action type"};
+    if (!exact.isValidAction(live))
+        return {false, {}, "selected root action bits are not live-legal"};
+    return {true, exact, {}};
+}
+
 } // namespace sts::search

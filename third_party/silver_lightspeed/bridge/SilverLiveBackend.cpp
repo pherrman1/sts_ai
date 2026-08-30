@@ -1457,14 +1457,21 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                 fail("exact Silver action-bit identity",
                      "enabled visit-policy decision omitted selected root edge bits");
             }
-            // This token came from the selected edge on this exact root. It
-            // avoids collapsing duplicate visible private-card identities,
-            // while the real executor still rejects any non-live-legal action.
-            resolvedAction = Action(selectedActionBits);
-            if (!resolvedAction.isValidAction(bc)) {
+            const auto resolved = resolveSilverSelectedAction(bc, semantic, selectedActionBits);
+            if (!resolved.ok) {
                 ++g_silverLiveDiagnostics.semanticResolutionFailures;
-                fail("exact Silver action-bit legality", "selected root action bits are not live-legal");
+                fail("exact Silver action-bit legality",
+                     resolved.error + ": bits="
+                         + std::to_string(selectedActionBits)
+                         + " type=" + std::to_string(static_cast<int>(Action(selectedActionBits).getActionType()))
+                         + " source=" + std::to_string(Action(selectedActionBits).getSourceIdx())
+                         + " target=" + std::to_string(Action(selectedActionBits).getTargetIdx())
+                         + " input=" + std::to_string(static_cast<int>(bc.inputState))
+                         + " task=" + std::to_string(static_cast<int>(bc.cardSelectInfo.cardSelectTask))
+                         + " hand=" + std::to_string(bc.cards.cardsInHand)
+                         + " pick_count=" + std::to_string(bc.cardSelectInfo.pickCount));
             }
+            resolvedAction = resolved.action;
         } else {
             const auto resolved = resolveSilverSemanticAction(bc, semantic);
             if (!resolved.ok) {

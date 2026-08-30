@@ -78,6 +78,27 @@ int main() {
               && blockedDiscard.action == search::Action(search::ActionType::POTION, 0, 6),
           "blocked Silver Smoke Bomb must retain a valid discard resolution");
 
+    BattleContext canonicalPileSelection = first;
+    canonicalPileSelection.inputState = InputState::CARD_SELECT;
+    canonicalPileSelection.cardSelectInfo.cardSelectTask = CardSelectTask::SECRET_TECHNIQUE;
+    canonicalPileSelection.cards.drawPile = {
+        card(CardId::DEFEND_RED, 401), card(CardId::SHRUG_IT_OFF, 402)};
+    silver_bridge::SemanticAction selectDefend;
+    selectDefend.type = silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
+    selectDefend.source = silver_bridge::CardSource::DRAW;
+    selectDefend.card = {static_cast<std::int16_t>(CardId::SHRUG_IT_OFF), 402, 0, 1, 1,
+                         false, false, false};
+    selectDefend.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::SECRET_TECHNIQUE);
+    const auto privatePileBits = search::Action(search::ActionType::SINGLE_CARD_SELECT, 0).bits;
+    check(search::Action(privatePileBits).isValidAction(canonicalPileSelection),
+          "SECRET_TECHNIQUE fixture must make the wrong isolated index coincidentally live-legal");
+    const auto translatedPileSelection = search::resolveSilverSelectedAction(
+        canonicalPileSelection, selectDefend, privatePileBits);
+    check(translatedPileSelection.ok
+              && translatedPileSelection.action
+                  == search::Action(search::ActionType::SINGLE_CARD_SELECT, 1),
+          "canonical Silver pile selection must translate to the selected live card index");
+
     BattleContext permuted = first;
     std::swap(permuted.cards.drawPile[0], permuted.cards.drawPile[2]);
     search::CombatKnowledgeState firstKnowledge, permutedKnowledge;
@@ -695,6 +716,22 @@ int main() {
               && duplicatePrivateRows[0].silverOrder == 0
               && duplicatePrivateRows[1].silverOrder == 1,
           "duplicate visible private-card identities must remain distinct exact action-bit rows");
+    silver_bridge::SemanticAction duplicatePrivateConfirmation;
+    duplicatePrivateConfirmation.type = silver_bridge::SemanticActionType::MULTI_CARD_SELECT;
+    duplicatePrivateConfirmation.source = silver_bridge::CardSource::HAND;
+    duplicatePrivateConfirmation.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::GAMBLE);
+    duplicatePrivateConfirmation.selectedCards = {
+        {static_cast<std::int16_t>(duplicatePrivateLive.cards.hand[0].id),
+         duplicatePrivateLive.cards.hand[0].uniqueId},
+        {static_cast<std::int16_t>(duplicatePrivateLive.cards.hand[1].id),
+         duplicatePrivateLive.cards.hand[1].uniqueId}};
+    const auto duplicateConfirmationBits = search::Action(
+        search::ActionType::MULTI_CARD_SELECT, 0b11).bits;
+    const auto exactDuplicateConfirmation = search::resolveSilverSelectedAction(
+        duplicatePrivateLive, duplicatePrivateConfirmation, duplicateConfirmationBits);
+    check(exactDuplicateConfirmation.ok
+              && exactDuplicateConfirmation.action.bits == duplicateConfirmationBits,
+          "duplicate private-card confirmation must retain exact action bits without semantic collapse");
     const BattleContext transactionBefore = transactionLive;
     silver_bridge::SilverSearchConfig transactionConfig;
     transactionConfig.simulationsPerDecision = 16;
