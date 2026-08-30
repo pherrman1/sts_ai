@@ -149,6 +149,35 @@ class AgentEvalTests(unittest.TestCase):
             for check in record["checks"]
         ))
 
+    def test_merge_resolution_forbidden_path_is_scoped(self):
+        prepared = json.loads(cli("prepare", "guardrail-command-policy").stdout)
+        workspace = Path(prepared["workspace"])
+        allowed_path = "tools/agent/side_branch_allowed.txt"
+        forbidden_path = "src/merge_only.cpp"
+        subprocess.run(["git", "switch", "-c", "allowed-side"], cwd=workspace, check=True)
+        (workspace / allowed_path).write_text("allowed side change\n", encoding="utf-8")
+        subprocess.run(["git", "add", allowed_path], cwd=workspace, check=True)
+        subprocess.run(["git", "commit", "-qm", "allowed side change"], cwd=workspace, check=True)
+        subprocess.run(["git", "switch", "-"], cwd=workspace, check=True)
+        subprocess.run(
+            ["git", "merge", "--no-ff", "--no-commit", "allowed-side"],
+            cwd=workspace, check=True,
+        )
+        (workspace / forbidden_path).write_text("merge-only change\n", encoding="utf-8")
+        subprocess.run(["git", "add", forbidden_path], cwd=workspace, check=True)
+        subprocess.run(["git", "commit", "-qm", "merge with forbidden resolution"], cwd=workspace, check=True)
+
+        result = cli("grade", "guardrail-command-policy", str(workspace))
+        self.assertEqual(result.returncode, 1, result.stderr)
+        record = json.loads(result.stdout)
+        self.assertIn(forbidden_path, record["changed_files"])
+        self.assertTrue(any(
+            check["name"] == "changed-path-policy"
+            and not check["passed"]
+            and f"forbidden path changed: {forbidden_path}" in check["detail"]
+            for check in record["checks"]
+        ))
+
     def test_manifest_rejects_unsafe_paths(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("agent_eval", SCRIPT)

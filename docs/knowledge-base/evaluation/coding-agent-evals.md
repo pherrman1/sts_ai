@@ -106,9 +106,10 @@ Preparation applies the patch before `git init`, then removes the complete
 not contain the hidden grader or oracle mutation. The grader executes from the
 reference checkout and receives only the candidate workspace path.
 
-Grading disables Git rename detection when enumerating paths, constructing the
-candidate patch, and counting changed lines. A rename therefore remains an old
-path deletion plus a new path addition, independent of host Git configuration.
+Grading disables Git rename detection and expands merge diffs when enumerating
+paths, constructing the candidate patch, and counting changed lines. A rename
+therefore remains an old-path deletion plus a new-path addition, and merge-only
+changes remain visible, independent of host Git configuration.
 
 ## Adding a task
 
