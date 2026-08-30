@@ -5886,3 +5886,34 @@ model training was changed.
   independent 3,000-budget promotion test remains the clean comparator to the
   existing 128-seed evidence. Full paths and hashes are in
   `docs/experiments/evidence/silver-c35-budget-curve-2026-08-30.json`.
+
+## Section 201 Root c=35 final 512-seed promotion gate: rejected (2026-08-30)
+
+- **Question and frozen gate:** Does root-only c=35 independently beat
+  ordinary c=25 on fresh seeds at the established exact 3,000 root budget?
+  Promotion required a positive point estimate, paired win 95% lower bound
+  above zero, paired floor lower bound at least -1.0, runtime at most 1.10x,
+  and complete zero-failure integrity. Historical blocks could not rescue a
+  failed standalone gate. A paired seed-934999 canary passed first.
+- **Protocol:** Frozen implementation SHA `79ca93f`, executable SHA-256
+  `d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba`,
+  requested fresh seeds 935000-935511, fair Silver, 24 threads per sequential
+  arm, exact 3,000 simulations/root, internal/chance c=25, reuse `none`, and
+  adaptive/Sequential Halving/VNet/policy off.
+- **Operational result:** Both arms failed exactly one different seed on the
+  same failure class. Control completed 511/512 and omitted seed 935505 at
+  floor 41 on ambiguous semantic hand-card identity. c=35 completed 511/512
+  and omitted seed 935456 at floor 45 on the same ambiguity. The strict paired
+  analysis correctly rejected the unequal seed sets, so no valid 512-seed
+  efficacy result exists.
+- **Diagnostic only:** On the 510-seed intersection, c=25 won 66.3% and c=35
+  won 68.6%: +2.4pp, 95% CI [-1.6,+6.3]. Floor delta was +0.4
+  ([-0.2,+1.1]) and runtime was 1.026x. This used `--allow-partial`, cannot
+  authorize promotion, and independently misses the positive win-lower-bound
+  requirement.
+- **Verdict:** **ROOT_C35_PROMOTION_REJECTED_OPERATIONAL_AND_STATISTICAL**.
+  Keep ordinary c=25 as default. Do not append replacement seeds or rerun the
+  gate to seek significance. The two semantic failures require a separate
+  implementation diagnosis before relying on future large Silver cohorts.
+  Full contexts, paths, and hashes are in
+  `docs/experiments/evidence/silver-c35-512-confirmation-2026-08-30.json`.

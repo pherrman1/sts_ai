@@ -187,6 +187,19 @@ does not authorize choosing a new budget or promoting c=35 from sixteen
 seeds. See the [c=35 budget-curve evidence](../../../docs/experiments/evidence/silver-c35-budget-curve-2026-08-30.json)
 and ledger-06 section 200.
 
+The final fresh 512-seed root-c=35 promotion gate at exact budget 3,000 did
+not produce a valid complete pair. Control omitted seed 935505 and c=35
+omitted seed 935456; both were deterministic Silver semantic hand-card identity
+ambiguities, leaving unequal 511-row sets. Strict paired analysis therefore
+failed as required. On the diagnostic-only 510-seed intersection, c=35 was
++2.4pp wins (95% CI [-1.6,+6.3]), +0.4 floor ([-0.2,+1.1]), and 1.026x
+runtime. Besides being operationally invalid, the win interval includes zero.
+The verdict is **ROOT_C35_PROMOTION_REJECTED_OPERATIONAL_AND_STATISTICAL**:
+keep c=25 as default, do not add replacement seeds or rerun for significance,
+and diagnose the two semantic failures separately before future large Silver
+cohorts. See the [final gate evidence](../../../docs/experiments/evidence/silver-c35-512-confirmation-2026-08-30.json)
+and ledger-06 section 201.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable
