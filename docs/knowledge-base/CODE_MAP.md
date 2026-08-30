@@ -104,6 +104,7 @@ before broad repository search.
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
 | Agent contract and routing | `AGENTS.md`, `.agents/skills/`, `.codex/config.toml` | Universal contract, progressive-disclosure skills, Codex sandbox/MCP defaults, context/commit procedure | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md) |
+| Worktree lifecycle | `tools/agent/worktree.py` | create/check/repair/remove linked worktrees with pinned `json` and `pybind11` submodules | [build-and-debugging.md](operations/build-and-debugging.md) |
 | Safety guard | `tools/seed_guard.sh` | Local 128-seed cap; explicit unbounded `--gcp-research` mode on the designated host | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md), [build-and-debugging.md](operations/build-and-debugging.md) |
 | GCP benchmark launcher | `tools/agent/gcp_benchmark.py` | Probe/status/start/run through `gcloud compute ssh`; detached guarded research runs | [build-and-debugging.md](operations/build-and-debugging.md) |
 | Benchmark treatment canary | `tools/agent/check_benchmark_canary.py` | Validates a fresh one-seed result/sidecar/log and frozen binary before a larger cohort; does not drive seeds | [benchmark-protocol.md](evaluation/benchmark-protocol.md) |

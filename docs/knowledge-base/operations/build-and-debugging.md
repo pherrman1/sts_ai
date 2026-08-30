@@ -24,23 +24,42 @@ LTO inputs. The resulting targets are:
 - executables `main`, `one_combat`, `parity_test`, `test`, and `small-test`.
 
 `json` and `pybind11` are real gitlinks after the 2026-08-02 restoration
-(`json` at `2222d386`, `pybind11` at `63d627c5`). Every fresh clone and every
-new linked worktree needs its own submodule checkout before the first configure.
-For a worktree created by Windows Git, run this from that worktree in
-PowerShell:
+(`json` at `2222d386`, `pybind11` at `63d627c5`). `json` is the header-only
+Nlohmann JSON library used by native configuration, wire formats, and evidence
+tools. `pybind11` builds the optional `slaythespire` Python extension; native
+executables still use the repository without that extension when Python
+development headers are unavailable.
+
+Submodule checkouts are per worktree. Raw `git worktree add` therefore creates
+a checkout whose dependency directories are initially empty, and raw removal
+of a worktree containing initialized submodules is fragile on Windows Git. Use
+the repository-owned lifecycle command for linked worktrees:
 
 ```powershell
-git submodule update --init
-git submodule status -- json pybind11
+python tools/agent/worktree.py create .worktrees/my-task --branch fix/my-task --start-point main
+python tools/agent/worktree.py check .worktrees/my-task
+python tools/agent/worktree.py remove .worktrees/my-task
 ```
 
-Each status line must begin with a space, meaning the checkout is at the commit
-pinned by the superproject. Reject `-` (uninitialized), `+` (different commit),
-or `U` (conflict). Do this before entering WSL; otherwise CMake may be the first
-place the missing headers surface, after avoidable configure work. The pybind11
-module guard in `CMakeLists.txt` means a machine without `python3-dev` still
-builds the core executables;
-check `find_package(Python)` results to know whether `slaythespire` exists.
+`create` performs `git worktree add`, synchronizes the declared HTTPS URLs,
+initializes both pinned dependencies, and verifies their revisions and metadata
+roots. `remove` refuses a dirty worktree, deinitializes its submodules, and only
+then removes the registered worktree. It intentionally does not delete the Git
+branch. `repair` is the idempotent setup command for an existing checkout:
+
+```powershell
+python tools/agent/worktree.py repair .
+```
+
+The checker rejects `-` (uninitialized), `+` (different commit), `U`
+(conflict), a revision different from the superproject gitlink, or a dependency
+whose `.git` metadata resolves to another checkout. Run these Git operations
+with Windows Git before entering WSL. If lifecycle tooling itself is being
+repaired, the equivalent fallback is `git submodule sync --recursive` followed
+by `git submodule update --init --recursive`; verify with the lifecycle checker
+before configuring. The pybind11 module guard in `CMakeLists.txt` means a
+machine without `python3-dev` still builds the core executables; check
+`find_package(Python)` results to know whether `slaythespire` exists.
 
 There is no reusable `sts`/`libsts.a` target; `sts_core_objects` is an internal
 native build object collection rather than a library. CTest is registered:
@@ -132,7 +151,7 @@ absolute `/mnt/<drive>/...` path for the active worktree:
 # Windows Git: checkout, submodules, status, and publication.
 git status --short --branch
 git rev-parse --show-toplevel
-git submodule update --init
+python tools/agent/worktree.py repair .
 
 # WSL: one explicit Linux build/test command; do not run Git here.
 wsl.exe -e bash -lc 'cd /mnt/c/path/to/worktree && cmake --preset linux-gcc-debug && cmake --build --preset linux-gcc-debug-build && ctest --preset linux-gcc-test --output-on-failure'

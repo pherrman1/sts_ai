@@ -134,8 +134,10 @@ Long-run details are in [build and debugging](build-and-debugging.md).
    `git log --oneline @{upstream}..HEAD`.
 2. Read the routed KB page, implementation, and focused tests. State the
    behavioral success criterion and cheapest proving check. Ask when a material
-   interpretation is genuinely ambiguous. Before configuring a fresh clone or
-   linked worktree, initialize and verify its submodules as documented in
+   interpretation is genuinely ambiguous. Create and remove linked worktrees
+   through `python tools/agent/worktree.py`; it initializes, verifies, and
+   deinitializes the checkout-specific submodules. For a fresh clone or an
+   existing checkout, run its `repair` command before configuring. See
    [build and debugging](build-and-debugging.md).
 3. Make the smallest scoped change; do not improve adjacent code, comments, or
    formatting. For a feasible bug fix, add a reproducing test first. Rebuild all
