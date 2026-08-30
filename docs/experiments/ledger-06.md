@@ -5577,3 +5577,32 @@ model training was changed.
   against either primary baseline. This result does not authorize a production
   OOC policy change, K-horizon tuning, model training, new trajectory
   collection, or outcome-driven candidate expansion.
+
+## §197 Silver live-bridge failure hardening: known operational failures repaired (2026-08-30)
+
+- **Scope:** Implementation and telemetry diagnostics only, not a gameplay
+  comparison. This preserves the prior Sequential-Halving and pruning
+  rejections, all historical win rates, and the ordinary c=25 default.
+- **Conversion root cause:** Deterministic seed 933396 retained a private
+  post-Mug direct-choice marker after a public Looter intent query refreshed
+  move history from Mug to Lunge. Intent materialization now consumes that
+  marker; a focused Runic Dome fixture verifies the private/public boundary.
+- **Harness hardening:** Conversion and semantic failures now include seed and
+  public-safe decision context. `bestbench` catches exceptions at each OpenMP
+  seed boundary, omits failed rows, names failures, and exits nonzero.
+  Foreground GCP manifest runs preserve declared logs through `tee` with
+  `pipefail`.
+- **Telemetry root cause:** Parallel workers could interleave complete
+  `[silver-combat]` records and create parser-visible counter corruption.
+  Records are now formatted thread-locally and emitted under one process-wide
+  mutex.
+- **Historical validation:** Reviewed source SHA
+  `79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e`, executable SHA-256
+  `d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba`.
+  Seed 933396 passed its original exact-3000 configuration. A 24-thread
+  diagnostic over seeds 933100–933163 produced 64/64 unique rows and 1,608
+  valid, zero-failure, exact-budget telemetry records.
+- **Verdict:** **KNOWN_OPERATIONAL_FAILURES_REPAIRED**. This does not make an
+  aborted cohort valid or promote c=35 or Sequential Halving. The original
+  paths and hashes are in
+  `docs/experiments/evidence/silver-live-bridge-failure-hardening-2026-08-30.json`.

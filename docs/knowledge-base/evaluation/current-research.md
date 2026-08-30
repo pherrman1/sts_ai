@@ -71,6 +71,18 @@ and `docs/experiments/evidence/silver_action_pruning_progressive_current_2026-08
 (SHA-256 `1231530b9381009d36622fd32b2a496d5d18d5eb4a0958ba26abd07c8019e243`).
 See [ledger-06 §188–191](../../../docs/experiments/ledger-06.md).
 
+The known live-bridge and telemetry blockers discovered during later Silver
+search experiments were repaired without changing any scientific verdict.
+A stale Looter post-Mug marker is now consumed when intent becomes public;
+parallel `[silver-combat]` telemetry records are emitted atomically; failures
+carry public-safe seed context; and `bestbench` fails incomplete cohorts
+nonzero. Historical validation used reviewed SHA `79ca93f`: failing seed
+933396 passed, and a diagnostic 64-seed concurrency replay produced 1,608
+parseable, zero-failure, exact-budget records. This is an operational repair,
+not evidence for c=35, Sequential Halving, pruning, or learned policy priors.
+See [the operational evidence](../../../docs/experiments/evidence/silver-live-bridge-failure-hardening-2026-08-30.json)
+and ledger-06 section 197.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable
