@@ -1545,6 +1545,12 @@ int testSilverSemanticActionResolution() {
     check(normalResolved.ok && normalResolved.action.getActionType() == search::ActionType::CARD
           && normalResolved.action.getSourceIdx() == 0 && normalResolved.action.getTargetIdx() == 0,
           "targeted semantic card play must lower to the matching legal live action");
+    normal.cards.hand[1] = normal.cards.hand[0];
+    normal.cards.cardsInHand = 2;
+    normalResolved = search::resolveSilverSemanticAction(normal, cardPlay);
+    check(normalResolved.ok && normalResolved.action.getActionType() == search::ActionType::CARD
+          && normalResolved.action.getSourceIdx() == 0,
+          "indistinguishable duplicate hand cards must lower deterministically for ordinary play");
     silver_bridge::SemanticAction end; end.type = silver_bridge::SemanticActionType::END_TURN;
     check(search::resolveSilverSemanticAction(normal, end).ok,
           "semantic END_TURN must lower to a legal live action");

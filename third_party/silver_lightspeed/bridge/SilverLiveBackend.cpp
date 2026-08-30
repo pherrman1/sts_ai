@@ -82,6 +82,7 @@ std::mutex g_leafCorpusMutex;
 bool g_leafVNetLogHeaderWritten = false;
 bool g_stickyQualityActionTraceForTest = false;
 std::mutex g_stickyQualitySelectionMutex;
+std::mutex g_combatTelemetryMutex;
 std::unordered_map<std::uint64_t, int> g_stickyQualitySelectionsByRunSeed;
 std::unordered_map<std::uint64_t, int> g_rootDiagnosticSelectionsByRunSeed;
 struct StickyQualityTestBudgets { std::int64_t fresh = 0, ref25 = 0, ref50 = 0; };
@@ -1157,11 +1158,20 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             fail("knowledge", detail);
         }
 
-        const auto wire = makeSilverBattleStateWire(
+        const auto conversion = makeSilverBattleStateConversion(
             bc, knowledge, makeSilverRunContext(gc), silverBattleSeed);
+        const auto &wire = conversion.wire;
         if (!wire.valid) {
             ++g_silverLiveDiagnostics.conversionFailures;
-            fail("conversion", "live observation cannot be represented without hidden information");
+            fail("conversion", "live observation cannot be represented without hidden information"
+                " seed=" + std::to_string(gc.seed)
+                + " floor=" + std::to_string(bc.floorNum)
+                + " encounter=" + std::to_string(static_cast<int>(bc.encounter))
+                + " decision=" + std::to_string(decision)
+                + " turn=" + std::to_string(bc.turn)
+                + " input=" + std::to_string(static_cast<int>(bc.inputState))
+                + " reason=" + (conversion.failureReason.empty()
+                    ? std::string("unspecified") : conversion.failureReason));
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
@@ -1269,7 +1279,14 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         const auto resolved = resolveSilverSemanticAction(bc, semantic);
         if (!resolved.ok) {
             ++g_silverLiveDiagnostics.semanticResolutionFailures;
-            fail("semantic action resolution", resolved.error);
+            fail("semantic action resolution", resolved.error
+                + " seed=" + std::to_string(gc.seed)
+                + " floor=" + std::to_string(bc.floorNum)
+                + " encounter=" + std::to_string(static_cast<int>(bc.encounter))
+                + " decision=" + std::to_string(decision)
+                + " turn=" + std::to_string(bc.turn)
+                + " input=" + std::to_string(static_cast<int>(bc.inputState))
+                + " semantic=" + silver_bridge::semanticActionFingerprint(semantic));
         }
         if (g_stickyQualityActionTraceForTest) {
             g_silverLiveDiagnostics.actionFingerprints.push_back(
@@ -1299,7 +1316,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                                                  static_cast<int>(bc.encounter), stickyQualityCounters);
     if (emitTelemetry) {
         const auto &d = g_silverLiveDiagnostics;
-        std::cout << "[silver-combat] decisions=" << d.decisions
+        std::ostringstream line;
+        line << "[silver-combat] decisions=" << d.decisions
                   << " simulations=" << d.simulations
                   << " transaction_subdecisions=" << d.transactionSubdecisions
                   << " adaptive_escalations=" << d.adaptiveEscalations
@@ -1330,6 +1348,11 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " transaction_failures=" << d.transactionFailures
                   << " knowledge_failures=" << d.knowledgeConsistencyFailures
                   << '\n';
+        // Multiple bestbench seeds finish combats concurrently. Serialize the
+        // complete record so parsers never interpret interleaved counter
+        // digits from two otherwise-valid telemetry lines as a failure.
+        const std::lock_guard<std::mutex> lock(g_combatTelemetryMutex);
+        std::cout << line.str();
     }
 }
 

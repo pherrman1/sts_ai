@@ -4774,7 +4774,7 @@ static std::string benchTimestampUtc() {
     return buf;
 }
 
-static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 0,
+static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 0,
                       const std::string &resultsFile = "", const std::string &objective = "bestbench") {
     const bool restV = std::getenv("STS_REST_V") && std::atoi(std::getenv("STS_REST_V")) != 0;
     std::cout << "BEST stack config: skip@" << g_cardSkipThresh
@@ -4864,7 +4864,8 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         if (!sidecar) std::cerr << "[bestbench] warning: cannot open " << resultsFile << ".meta.json\n";
         else sidecar << sts::benchConfigSidecarLine(meta) << '\n';
     }
-    int wins = 0; long long floor = 0, hp = 0; double sec = 0;
+    int wins = 0, completed = 0; long long floor = 0, hp = 0; double sec = 0;
+    std::vector<std::pair<std::uint64_t, std::string>> failures;
     BenchProgress prog(nSeeds, "BEST");
     auto wall0 = std::chrono::steady_clock::now();
     // Do not create a one-iteration outer OpenMP team when the all-OOC oracle
@@ -4872,22 +4873,9 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
     // nested region. Multi-seed benches keep the proven outer parallelism.
     if (nSeeds == 1 && g_actFightProbeParallelBranches) {
         const std::uint64_t seed = seedOffset;
-        RunResult r = runFullRunOOC(seed, sims, asc, restV, true);
-        wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec;
-        if (results.is_open()) {
-            results << seed << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
-                    << r.act << ',' << r.hpEnd << ',' << r.maxHp << ','
-                    << r.fightsLost << ',' << r.deathCombat << ',' << r.deathEncounter << ',' << r.sec << '\n';
-            results.flush();
-        }
-        prog.tick(r.won, r.floor, r.hpEnd);
-    } else {
-        #pragma omp parallel for reduction(+:wins,floor,hp,sec) schedule(dynamic)
-        for (int s = 0; s < nSeeds; ++s) {
-            const std::uint64_t seed = seedOffset + (std::uint64_t)s;
+        try {
             RunResult r = runFullRunOOC(seed, sims, asc, restV, true);
-            wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec;
-            #pragma omp critical(bestbench_results)
+            wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec; ++completed;
             if (results.is_open()) {
                 results << seed << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
                         << r.act << ',' << r.hpEnd << ',' << r.maxHp << ','
@@ -4895,12 +4883,52 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
                 results.flush();
             }
             prog.tick(r.won, r.floor, r.hpEnd);
+        } catch (const std::exception &e) {
+            failures.emplace_back(seed, e.what());
+        } catch (...) {
+            failures.emplace_back(seed, "unknown non-standard exception");
+        }
+    } else {
+        #pragma omp parallel for reduction(+:wins,floor,hp,sec,completed) schedule(dynamic)
+        for (int s = 0; s < nSeeds; ++s) {
+            const std::uint64_t seed = seedOffset + (std::uint64_t)s;
+            try {
+                RunResult r = runFullRunOOC(seed, sims, asc, restV, true);
+                wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec; ++completed;
+                #pragma omp critical(bestbench_results)
+                if (results.is_open()) {
+                    results << seed << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
+                            << r.act << ',' << r.hpEnd << ',' << r.maxHp << ','
+                            << r.fightsLost << ',' << r.deathCombat << ',' << r.deathEncounter << ',' << r.sec << '\n';
+                    results.flush();
+                }
+                prog.tick(r.won, r.floor, r.hpEnd);
+            } catch (const std::exception &e) {
+                #pragma omp critical(bestbench_failures)
+                failures.emplace_back(seed, e.what());
+            } catch (...) {
+                #pragma omp critical(bestbench_failures)
+                failures.emplace_back(seed, "unknown non-standard exception");
+            }
         }
     }
     prog.done();
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
-    std::printf("BEST                    win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
-                100.0 * wins / nSeeds, (double)floor / nSeeds, (double)hp / nSeeds, sec / nSeeds, wall);
+    if (completed > 0) {
+        std::printf("BEST                    win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
+                    100.0 * wins / completed, (double)floor / completed,
+                    (double)hp / completed, sec / completed, wall);
+    }
+    if (!failures.empty()) {
+        std::sort(failures.begin(), failures.end());
+        for (const auto &[seed, message] : failures) {
+            std::cerr << "[bestbench-seed-failure] seed=" << seed << " error=" << message << '\n';
+        }
+        std::cerr << "bestbench: FAILED requested=" << nSeeds << " completed=" << completed
+                  << " failed=" << failures.size() << '\n';
+        return false;
+    }
+    return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -15308,7 +15336,7 @@ int main(int argc, char **argv) {
                 }
             }
         }
-        bestBench(sims, nSeeds, asc, seedOffset, resultsFile);
+        if (!bestBench(sims, nSeeds, asc, seedOffset, resultsFile)) return 1;
 
     } else if (mode == "cpsictr") {       // C_psi counter-sensitivity probe (needs STS_CPSI_NN)
         if (!g_cpsiNet.loaded()) {
@@ -15332,7 +15360,9 @@ int main(int argc, char **argv) {
         std::uint64_t seed = argc > 5 ? std::stoull(argv[5]) : 0;
         std::string resultsFile = argc > 6 ? argv[6] : "";
         std::cout << "[reprobench: seed " << seed << ", repeats " << repeats << "]\n";
-        for (int i = 0; i < repeats; ++i) bestBench(sims, 1, asc, seed, resultsFile, "reprobench");
+        for (int i = 0; i < repeats; ++i) {
+            if (!bestBench(sims, 1, asc, seed, resultsFile, "reprobench")) return 1;
+        }
 
     } else if (mode == "runtrace") {      // per-node human-readable trace of ONE seed (STS_FAIR for fair-play)
         std::uint64_t seed = argc > 2 ? std::stoull(argv[2]) : 0;

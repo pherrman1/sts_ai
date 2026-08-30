@@ -220,6 +220,15 @@ void testPostTurnDeterministicAndDirectRandomTransitions() {
     }
     check(sawSmokeBomb && sawLunge,
           "the deferred direct choice must remain stochastic across isolated Silver RNG realizations");
+
+    Actions::SpotWeaknessAction(0, 3).actFunc(random.bc);
+    check(!random.knowledge.hasUnrepresentableHiddenIntent[0],
+          "a public intent query must consume the deferred Looter choice marker");
+    const auto queriedDirectChoice = silver_bridge::inspectConvertedBattleState(random.wire());
+    check(queriedDirectChoice.accepted && queriedDirectChoice.pendingDirectMoveChoices == 0
+              && queriedDirectChoice.monsterMoveHistory[0][0]
+                    == static_cast<std::int16_t>(random.bc.monsters.arr[0].moveHistory[0]),
+          "post-query Silver root must carry the public Looter choice without a stale deferred marker");
 }
 
 } // namespace

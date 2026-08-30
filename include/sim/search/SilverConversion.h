@@ -2,6 +2,7 @@
 #ifndef STS_SILVER_CONVERSION_H
 #define STS_SILVER_CONVERSION_H
 
+#include <string>
 #include <vector>
 
 #include "combat/CardInstance.h"
@@ -35,6 +36,14 @@ struct SilverRunContext {
     int omamoriValue = 0;
 };
 
+// Fail-closed conversion result for diagnostics at the live boundary. The
+// reason names only public observer state and never includes live RNG values,
+// draw-pile positions, or a materialized hidden monster move.
+struct SilverBattleStateConversion {
+    silver_bridge::BattleStateWire wire;
+    std::string failureReason;
+};
+
 SilverRunContext makeSilverRunContext(const GameContext &live);
 
 SilverDrawPileObservation makeSilverDrawPileObservation(
@@ -58,6 +67,10 @@ bool sameSilverDrawPileObservation(const SilverDrawPileObservation &a,
 // stable public per-battle seed for the independent Silver model, never a
 // live BattleContext RNG state.
 silver_bridge::BattleStateWire makeSilverBattleStateWire(
+    const BattleContext &live, const CombatKnowledgeState &knowledge,
+    const SilverRunContext &runContext, std::uint64_t isolatedSearchSeed);
+
+SilverBattleStateConversion makeSilverBattleStateConversion(
     const BattleContext &live, const CombatKnowledgeState &knowledge,
     const SilverRunContext &runContext, std::uint64_t isolatedSearchSeed);
 

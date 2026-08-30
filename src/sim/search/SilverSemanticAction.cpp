@@ -38,6 +38,15 @@ int uniqueHandIndex(const BattleContext &live, const silver_bridge::CardWire &ca
     return found;
 }
 
+int firstEquivalentHandIndex(const BattleContext &live, const silver_bridge::CardWire &card,
+                             std::string &error) {
+    for (int i = 0; i < live.cards.cardsInHand; ++i) {
+        if (matches(live.cards.hand[i], card)) return i;
+    }
+    error = "semantic hand card identity is absent";
+    return -1;
+}
+
 SemanticActionResolution finalise(const BattleContext &live, Action action) {
     SemanticActionResolution result;
     if (!action.isValidAction(live)) {
@@ -61,7 +70,13 @@ SemanticActionResolution resolveSilverSemanticAction(
     case SAT::CARD: {
         if (semantic.source != CS::HAND) return {false, {}, "card play must identify a hand card"};
         std::string error;
-        const int idx = uniqueHandIndex(live, semantic.card, error);
+        // Two live hand entries can occasionally carry the same serialized
+        // instance identity. For an ordinary play they are interchangeable:
+        // the wire includes every gameplay-relevant per-card field and the
+        // semantic action fixes the target. Resolve deterministically instead
+        // of rejecting a legal action. Card-select paths retain strict unique
+        // matching because selecting a subset can require distinct entries.
+        const int idx = firstEquivalentHandIndex(live, semantic.card, error);
         if (idx < 0) return {false, {}, error};
         return finalise(live, Action(ActionType::CARD, idx, semantic.target));
     }
