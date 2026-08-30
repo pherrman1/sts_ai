@@ -94,6 +94,28 @@ retained under `docs/experiments/evidence/` and `tools/`. Rejected root-c,
 Sequential-Halving, visit-PUCT, native runtime inference, and model-loading
 paths are intentionally absent from `main`. See ledger-06 sections 193–205.
 
+The known live-bridge and telemetry blockers discovered during later Silver
+search experiments were repaired without changing any scientific verdict.
+A stale Looter post-Mug marker is now consumed when intent becomes public;
+parallel `[silver-combat]` telemetry records are emitted atomically; failures
+carry public-safe seed context; and `bestbench` fails incomplete cohorts
+nonzero. Historical validation used reviewed SHA `79ca93f`: failing seed
+933396 passed, and a diagnostic 64-seed concurrency replay produced 1,608
+parseable, zero-failure, exact-budget records. This is an operational repair,
+not evidence for c=35, Sequential Halving, pruning, or learned policy priors.
+See [the operational evidence](../../../docs/experiments/evidence/silver-live-bridge-failure-hardening-2026-08-30.json)
+and ledger-06 section 197.
+
+Two later semantic failures were repaired at reviewed historical SHA
+`6aae003`. Ordinary card play now deterministically lowers to the first fully
+equivalent matching live hand entry; strict ambiguity rejection remains for
+card-selection transactions. Focused semantic and bridge-boundary tests
+passed, and original seeds 935505/c=25 and 935456/c=35 both completed their
+exact-3,000 configurations with zero failure counters. This is an operational
+repair, not a new efficacy result: c=25 remains the default. See the
+[repair evidence](../../../docs/experiments/evidence/silver-semantic-duplicate-hand-fix-2026-08-30.json)
+and ledger-06 section 202.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable

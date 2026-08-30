@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "status": "SILVER_DUPLICATE_HAND_PLAY_FAILURES_FIXED",
+  "date": "2026-08-30",
+  "failed_gate_evidence": "docs/experiments/evidence/silver-c35-512-confirmation-2026-08-30.json",
+  "implementation": {
+    "parent_sha": "59a539e366e3cf58d2ce4fbf11d958a74794aac2",
+    "reviewed_sha": "6aae003f2ad255c7d9d30ba79149fb298472fb65",
+    "changed_paths": ["src/sim/search/SilverSemanticAction.cpp", "apps/test.cpp"],
+    "behavior": "Ordinary CARD play resolves the first fully equivalent matching live hand entry deterministically. All card-select paths retain strict ambiguity rejection.",
+    "linux_executable_sha256": "b1da69a6db136046b2b4067f3710425c4037698dba1bd3bcd17b7e7e65267ed3"
+  },
+  "root_cause": {
+    "summary": "Real live hands can contain two entries identical across every CardWire field, including uniqueId. Ordinary CARD lowering incorrectly assumed such identity was unique and failed closed before legal action execution.",
+    "safety_reasoning": "For ordinary play, fully matching entries serialize every CardInstance field and use the same semantic target; they are gameplay-equivalent. The deterministic first match still passes live Action::isValidAction. Single- and multi-card selection remain strict because positional subset identity can matter."
+  },
+  "focused_checks": [
+    {"command": "ctest --test-dir build-wsl-semantic-fix -R '^(silver_semantic_action|silver_bridge_boundary)$' --output-on-failure", "result": "PASS 2/2"},
+    {"command": "git diff --check --ignore-submodules=all", "result": "PASS"},
+    {"check": "independent implementation review of 6aae003", "result": "PASS, no blocking or correctness findings"}
+  ],
+  "gcp_regressions": [
+    {
+      "seed": 935505,
+      "configuration": "root c=25, exact 3000 simulations/root, fair Silver, 24 threads, reuse none, adaptive off",
+      "previous_failure": "semantic hand card identity is ambiguous at floor 41 encounter 50 decision 23 turn 3",
+      "fixed_result": "PASS, 1/1 row, win floor 51, all failure counters zero, exact-budget telemetry",
+      "csv_sha256": "496db2bcd39a8441eaa850737a2d84b60257903784c1dae1776b64db9b58596e",
+      "meta_sha256": "566d6902e2b9e3b68abb0e3543c6218f441d2b9f37ecf63b64347a5c1e4665d4",
+      "log_sha256": "6cde8dd7195ff61ea42e25d9313cf14e8e3997f0f25e93745e14398a0d63271a"
+    },
+    {
+      "seed": 935456,
+      "configuration": "root c=35, exact 3000 simulations/root, fair Silver, 24 threads, reuse none, adaptive off",
+      "previous_failure": "semantic hand card identity is ambiguous at floor 45 encounter 43 decision 24 turn 4",
+      "fixed_result": "PASS, 1/1 row, win floor 51, all failure counters zero, exact-budget telemetry",
+      "csv_sha256": "07217c6920060c9d37f414daa172c571e38d9037073da7ece219b091a88fe0dd",
+      "meta_sha256": "115e8e36a642806a2e38fc88cb5909d40e370666c754c8bb58330c8172d9d635",
+      "log_sha256": "a710ee97e63e8555daaa15c22ac9029ff5cb0a6eb45d2b541da5fe6d3ac1b559"
+    }
+  ],
+  "provenance_caveat": "The WSL build directory retained the prior embedded executableGitSha 79ca93f in sidecars. Exact fixed-binary provenance is established by reviewed source SHA 6aae003 and direct local/upload SHA-256 b1da69a6...; the sidecar field is not treated as an independent source-SHA check.",
+  "artifacts": {
+    "local": "build/gcp-semantic-fix/",
+    "remote_results": ["results/silver-semantic-fix-935505-c25.csv", "results/silver-semantic-fix-935456-c35.csv"],
+    "remote_logs": ["logs/silver-semantic-fix-935505-c25.log", "logs/silver-semantic-fix-935456-c35.log"]
+  },
+  "scientific_effect": "None. The invalid c=35 promotion gate remains rejected and is not rehabilitated by fixing its operational failures."
+}

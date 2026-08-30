@@ -299,6 +299,11 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
         publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
         publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
         hasPublicMonsterState[event.monsterIdx] = true;
+        // Materialization resolves every kind of hidden current intent,
+        // including the Looter/Mugger direct post-Mug choice represented by
+        // hasUnrepresentableHiddenIntent. Leaving that marker set makes a
+        // later public query look like a second unresolved private choice.
+        hasUnrepresentableHiddenIntent[event.monsterIdx] = false;
         ++generation;
         return;
     case CombatKnowledgeEventType::KNOWN_MONSTER_INTENT_SET:

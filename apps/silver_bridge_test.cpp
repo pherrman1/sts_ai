@@ -547,9 +547,13 @@ int main() {
 
     auto stale = firstKnowledge;
     stale.knownTop.push_back(card(CardId::INFLAME, 999));
-    const auto staleWire = convert(first, gc, stale);
+    const auto staleConversion = search::makeSilverBattleStateConversion(
+        first, stale, search::makeSilverRunContext(gc), 0xA11CEu);
+    const auto &staleWire = staleConversion.wire;
     check(!staleWire.valid && !silver_bridge::inspectConvertedBattleState(staleWire).accepted,
           "stale positional knowledge must fail closed rather than inspect hidden pile positions");
+    check(staleConversion.failureReason.find("stale_draw_pile_positional_knowledge") == 0,
+          "failed Silver conversion must identify the public fail-closed reason");
 
     GameContext eyeGc(CharacterClass::IRONCLAD, 0x5152u, 0);
     eyeGc.obtainRelic(RelicId::FROZEN_EYE);

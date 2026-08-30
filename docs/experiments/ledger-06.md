@@ -5648,6 +5648,35 @@ model training was changed.
   scheduler and experiment-specific orchestration are not retained. See
   `docs/experiments/evidence/silver-sh-online-tuning-2026-08-30.json`.
 
+## §197 Silver live-bridge failure hardening: known operational failures repaired (2026-08-30)
+
+- **Scope:** Implementation and telemetry diagnostics only, not a gameplay
+  comparison. This preserves the prior Sequential-Halving and pruning
+  rejections, all historical win rates, and the ordinary c=25 default.
+- **Conversion root cause:** Deterministic seed 933396 retained a private
+  post-Mug direct-choice marker after a public Looter intent query refreshed
+  move history from Mug to Lunge. Intent materialization now consumes that
+  marker; a focused Runic Dome fixture verifies the private/public boundary.
+- **Harness hardening:** Conversion and semantic failures now include seed and
+  public-safe decision context. `bestbench` catches exceptions at each OpenMP
+  seed boundary, omits failed rows, names failures, and exits nonzero.
+  Foreground GCP manifest runs preserve declared logs through `tee` with
+  `pipefail`.
+- **Telemetry root cause:** Parallel workers could interleave complete
+  `[silver-combat]` records and create parser-visible counter corruption.
+  Records are now formatted thread-locally and emitted under one process-wide
+  mutex.
+- **Historical validation:** Reviewed source SHA
+  `79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e`, executable SHA-256
+  `d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba`.
+  Seed 933396 passed its original exact-3000 configuration. A 24-thread
+  diagnostic over seeds 933100–933163 produced 64/64 unique rows and 1,608
+  valid, zero-failure, exact-budget telemetry records.
+- **Verdict:** **KNOWN_OPERATIONAL_FAILURES_REPAIRED**. This does not make an
+  aborted cohort valid or promote c=35 or Sequential Halving. The original
+  paths and hashes are in
+  `docs/experiments/evidence/silver-live-bridge-failure-hardening-2026-08-30.json`.
+
 ## §198 Aggressive Sequential-Halving confirmation inconclusive (2026-08-30)
 
 - **Protocol:** Fresh paired seeds 934000–934127, exact 1,000/root, 24 threads,
@@ -5689,6 +5718,28 @@ model training was changed.
 - **Decision:** **ROOT_C35_PROMOTION_REJECTED_OPERATIONAL_AND_STATISTICAL**.
   Keep c=25; do not rerun for significance. See
   `docs/experiments/evidence/silver-c35-512-confirmation-2026-08-30.json`.
+
+## §202 Silver equivalent-duplicate hand-play failures repaired (2026-08-30)
+
+- **Scope:** Correctness repair for two observed semantic failures; no gameplay
+  verdict or default changed. Real hands can contain cards identical across
+  every serialized `CardWire` field, including `uniqueId`. Ordinary card-play
+  lowering incorrectly required exactly one match.
+- **Fix:** Reviewed historical SHA
+  `6aae003f2ad255c7d9d30ba79149fb298472fb65` deterministically selects the
+  first fully equivalent live hand entry only for ordinary `CARD` play, then
+  retains normal live action validation. Card-selection transactions still
+  require unique identity and fail closed on ambiguity.
+- **Verification:** `silver_semantic_action` and `silver_bridge_boundary`
+  passed. Exact Linux binary SHA-256 was
+  `b1da69a6db136046b2b4067f3710425c4037698dba1bd3bcd17b7e7e65267ed3`.
+  Original seeds 935505/c=25 and 935456/c=35 each completed at exact 3,000
+  simulations/root with zero conversion, semantic, transaction, or knowledge
+  failures.
+- **Verdict:** **SILVER_DUPLICATE_HAND_PLAY_FAILURES_FIXED**. This does not
+  rehabilitate the invalid c=35 promotion cohort or promote c=35. Paths,
+  hashes, and the historical sidecar caveat are in
+  `docs/experiments/evidence/silver-semantic-duplicate-hand-fix-2026-08-30.json`.
 
 ## Silver grouped and rank-4 visit-prior offline replay (2026-08-29–30)
 
