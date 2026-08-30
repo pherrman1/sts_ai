@@ -4856,8 +4856,10 @@ static void bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             && search::silverLiveExactRootBudgets();
         meta.silverVisitPolicyMode = meta.silverSearchEnabled
             ? search::silverLiveVisitPolicyMode() : "off";
-        meta.silverVisitPolicyModelSha256 = meta.silverSearchEnabled
-            ? search::silverLiveVisitPolicyModelSha256() : "";
+        meta.silverVisitPolicySourceNpzSha256 = meta.silverSearchEnabled
+            ? search::silverLiveVisitPolicySourceNpzSha256() : "";
+        meta.silverVisitPolicyRuntimeModelPath = meta.silverSearchEnabled
+            ? search::silverLiveVisitPolicyRuntimeModelPath() : "";
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
         meta.combatVNet = search::g_useVNet ? "ON" : "off";

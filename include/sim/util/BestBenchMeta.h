@@ -65,7 +65,8 @@ struct BenchConfigSidecar {
     double silverAdaptiveTopShare = 0.0;
     bool silverExactRootBudgets = false;
     std::string silverVisitPolicyMode;
-    std::string silverVisitPolicyModelSha256;
+    std::string silverVisitPolicySourceNpzSha256;
+    std::string silverVisitPolicyRuntimeModelPath;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -161,7 +162,10 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"silverAdaptiveTopShare\":" << c.silverAdaptiveTopShare;
     o << ",\"silverExactRootBudgets\":" << (c.silverExactRootBudgets ? "true" : "false");
     o << ",\"silverVisitPolicyMode\":\"" << detail::jsonEscape(c.silverVisitPolicyMode) << '\"';
-    o << ",\"silverVisitPolicyModelSha256\":\"" << detail::jsonEscape(c.silverVisitPolicyModelSha256) << '\"';
+    o << ",\"silverVisitPolicySourceNpzSha256\":\""
+      << detail::jsonEscape(c.silverVisitPolicySourceNpzSha256) << '\"';
+    o << ",\"silverVisitPolicyRuntimeModelPath\":\""
+      << detail::jsonEscape(c.silverVisitPolicyRuntimeModelPath) << '\"';
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';

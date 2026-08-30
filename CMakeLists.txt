@@ -304,6 +304,7 @@ add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_rando
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
+set_tests_properties(silver_bridge_boundary PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME silver_leaf_pipeline_tools COMMAND python3 -m unittest tests.agent.test_silver_leaf_pipeline)
 set_tests_properties(silver_leaf_pipeline_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME silver_parent_policy_tools COMMAND python3 -m unittest tests.agent.test_silver_parent_policy)

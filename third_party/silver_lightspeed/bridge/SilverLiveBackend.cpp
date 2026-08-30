@@ -1451,8 +1451,12 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         Action resolvedAction;
-        if (g_silverLiveOptions.visitPolicyMode != silver_bridge::SilverRootVisitPriorMode::OFF
-                && selectedActionBitsValid) {
+        if (g_silverLiveOptions.visitPolicyMode != silver_bridge::SilverRootVisitPriorMode::OFF) {
+            if (!selectedActionBitsValid) {
+                ++g_silverLiveDiagnostics.semanticResolutionFailures;
+                fail("exact Silver action-bit identity",
+                     "enabled visit-policy decision omitted selected root edge bits");
+            }
             // This token came from the selected edge on this exact root. It
             // avoids collapsing duplicate visible private-card identities,
             // while the real executor still rejects any non-live-legal action.
@@ -1592,9 +1596,13 @@ std::string silverLiveVisitPolicyMode() {
     if (g_silverLiveOptions.visitPolicyMode == silver_bridge::SilverRootVisitPriorMode::OFF) return "off";
     return g_silverLiveOptions.visitPolicyRank4 ? "rank4" : "grouped";
 }
-std::string silverLiveVisitPolicyModelSha256() {
+std::string silverLiveVisitPolicySourceNpzSha256() {
     return g_silverLiveOptions.visitPolicyMode == silver_bridge::SilverRootVisitPriorMode::OFF
         ? std::string{} : g_silverVisitPolicy.sourceNpzSha256();
+}
+std::string silverLiveVisitPolicyRuntimeModelPath() {
+    return g_silverLiveOptions.visitPolicyMode == silver_bridge::SilverRootVisitPriorMode::OFF
+        ? std::string{} : g_silverLiveOptions.visitPolicyModel;
 }
 bool silverLiveAdaptiveEnabled() { return g_silverLiveOptions.adaptiveEnabled; }
 bool silverLiveExactRootBudgets() { return g_silverLiveOptions.exactRootBudgets; }

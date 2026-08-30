@@ -11,10 +11,14 @@ using json = nlohmann::json;
 
 int main(int argc, char **argv) {
     try {
-        if (argc != 5) {
-            std::cerr << "usage: silver_visit_policy_replay SNAPSHOTS.jsonl HISTORICAL_REPLAY.jsonl MODEL.bin OUTPUT.json\n";
+        if (argc != 6) {
+            std::cerr << "usage: silver_visit_policy_replay SNAPSHOTS.jsonl HISTORICAL_REPLAY.jsonl MODEL.bin grouped|rank4 OUTPUT.json\n";
             return 2;
         }
+        const std::string mode(argv[4]);
+        if (mode != "grouped" && mode != "rank4")
+            throw std::runtime_error("replay mode must be grouped or rank4");
+        const bool rank4 = mode == "rank4";
         std::map<std::pair<std::string, int>, json> expected;
         std::ifstream historical(argv[2]);
         if (!historical) throw std::runtime_error("cannot open historical replay");
@@ -50,12 +54,12 @@ int main(int argc, char **argv) {
                 config.simulationsPerDecision = old.at("simulations").get<std::int64_t>();
                 config.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
                 config.rootVisitPriorMode = silver_bridge::SilverRootVisitPriorMode::VISIT_PUCT;
-                config.rootVisitPriorProvider = [model = std::string(argv[3])](
+                config.rootVisitPriorProvider = [model = std::string(argv[3]), rank4](
                         const silver_bridge::BattleStateWire &root,
                         const std::vector<std::uint32_t> &actionBits,
                         std::vector<double> &probabilities) {
                     probabilities = sts::search::silverLiveVisitPolicyProbabilitiesForTest(
-                        root, actionBits, model, true);
+                        root, actionBits, model, rank4);
                 };
                 const auto result = silver_bridge::runSilverDecision(wire, config);
                 if (!result.accepted || result.simulations != config.simulationsPerDecision)
@@ -68,10 +72,10 @@ int main(int argc, char **argv) {
             }
         }
         if (checked != 252) throw std::runtime_error("new runtime replay checked row count mismatch");
-        std::ofstream output(argv[4]);
+        std::ofstream output(argv[5]);
         if (!output) throw std::runtime_error("cannot write replay verification");
         output << json{{"schema", "silver_visit_policy_runtime_replay_parity_v1"},
-            {"historical_rows", checked}, {"mode", "rank4"}, {"budget", 32}, {"replicates", 4},
+            {"historical_rows", checked}, {"mode", mode}, {"budget", 32}, {"replicates", 4},
             {"root_selections_exact", true}, {"passed", true}}.dump() << '\n';
     } catch (const std::exception &e) {
         std::cerr << "silver_visit_policy_replay: " << e.what() << '\n';
