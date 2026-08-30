@@ -5797,3 +5797,33 @@ model training was changed.
   Halving. Any efficacy run requires a fresh preregistered seed block after PR
   CI. Paths and hashes are in
   `docs/experiments/evidence/silver-live-bridge-failure-hardening-2026-08-30.json`.
+
+## Section 198 Aggressive Sequential-Halving 128-seed confirmation: inconclusive (2026-08-30)
+
+- **Question:** After repairing the known lifecycle and concurrent-telemetry
+  failures, does the strongest serious narrow-screen candidate confirm online
+  against ordinary UCT? The fresh preregistered comparison used ordinary UCT
+  c=25 versus aggressive/finalist-heavy Sequential Halving at an exact 1,000
+  simulations per root. It did not combine Sequential Halving with c=35.
+- **Protocol:** Frozen implementation SHA
+  `79ca93fbf62e6a5ede9f6dfd7ac20f095ab25f8e`, executable SHA-256
+  `d1766cfebd2d3e566d99c7f7fd0a74498df33914f6b94ef7851a04348cd876ba`,
+  fair Silver, ascension 0, reuse-cap `none`, adaptive off, leaf VNet and
+  policy net off, and 24 threads per arm. A paired integrity canary used seed
+  933999. The sequential 128-seed arms used fresh seeds 934000-934127.
+- **Results:** Control won 83/128 (64.8%), mean floor 47.3, and 9.85 s/run.
+  Treatment won 84/128 (65.6%), mean floor 48.4, and 10.39 s/run. Strict
+  paired deltas were +0.8pp wins (95% CI [-7.8,+9.4]), +1.1 floor
+  ([-0.2,+2.4]), and -0.4 end HP. Runtime was 1.055x control. There were 16
+  control-only wins and 17 treatment-only wins.
+- **Integrity:** Both arms passed the repository validator with 128 unique,
+  exactly matching seeds, parseable telemetry, positive exact-1,000 budget
+  multiples, the frozen executable hash, and zero conversion,
+  semantic-resolution, transaction, knowledge, or seed-boundary failures.
+- **Verdict:** **SEQUENTIAL_HALVING_GAMEPLAY_INCONCLUSIVE**. The win point
+  estimate missed the preregistered +5pp bar and the paired win interval
+  includes zero. The floor non-harm and operational conditions passed. Keep
+  ordinary c=25 as default; do not promote this schedule or combine it with
+  c=35. This preserves the prior pruning/offline rejections and does not
+  reinterpret the aborted confirmation. Paths and hashes are in
+  `docs/experiments/evidence/silver-sh-aggressive-128-confirmation-2026-08-30.json`.

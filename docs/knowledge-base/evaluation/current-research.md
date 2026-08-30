@@ -153,6 +153,18 @@ the aborted block, change defaults, or promote c=35/Sequential Halving. See
 [the operational evidence](../../../docs/experiments/evidence/silver-live-bridge-failure-hardening-2026-08-30.json)
 and ledger-06 section 197.
 
+The repaired implementation then completed a fresh preregistered 128-seed
+confirmation on 934000-934127. Aggressive/finalist-heavy Sequential Halving
+at exact budget 1,000 won 84/128 versus ordinary c=25's 83/128: +0.8pp paired
+wins (95% CI [-7.8,+9.4]) and +1.1 floor ([-0.2,+2.4]), at 1.055x runtime.
+Both arms passed strict seed, executable, exact-budget, telemetry, and
+zero-failure checks. This is **SEQUENTIAL_HALVING_GAMEPLAY_INCONCLUSIVE**:
+the point estimate missed the preregistered +5pp bar and the win interval
+includes zero. Keep ordinary c=25 as default, do not promote this schedule,
+and do not combine it with c=35. The earlier pruning and offline rejections
+remain unchanged. See the [confirmation evidence packet](../../../docs/experiments/evidence/silver-sh-aggressive-128-confirmation-2026-08-30.json)
+and ledger-06 section 198.
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) for the recommended executable
