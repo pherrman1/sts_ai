@@ -43,9 +43,12 @@ python tools/agent/worktree.py remove .worktrees/my-task
 
 `create` performs `git worktree add`, synchronizes the declared HTTPS URLs,
 initializes both pinned dependencies, and verifies their revisions and metadata
-roots. `remove` refuses a dirty worktree, deinitializes its submodules, and only
-then removes the registered worktree. It intentionally does not delete the Git
-branch. `repair` is the idempotent setup command for an existing checkout:
+roots. `remove` refuses a dirty worktree, uses Git's required forced worktree
+removal for the clean submodule checkout, then rechecks the managing checkout.
+It deliberately does **not** run `git submodule deinit`: submodule activation
+configuration is shared by linked worktrees, so deinitializing one can make
+healthy siblings appear uninitialized. It intentionally does not delete the
+Git branch. `repair` is the idempotent setup command for an existing checkout:
 
 ```powershell
 python tools/agent/worktree.py repair .

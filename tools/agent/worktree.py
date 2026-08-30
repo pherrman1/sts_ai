@@ -68,6 +68,37 @@ def status_records(worktree: Path) -> dict[str, tuple[str, str]]:
     return records
 
 
+def declared_url(worktree: Path, name: str) -> str:
+    return git(
+        worktree,
+        "config",
+        "-f",
+        ".gitmodules",
+        "--get",
+        f"submodule.{name}.url",
+        capture=True,
+    )
+
+
+def local_seed_repo(worktree: Path, name: str, revision: str) -> Path | None:
+    git_dir = Path(git(worktree, "rev-parse", "--git-dir", capture=True))
+    common = Path(git(worktree, "rev-parse", "--git-common-dir", capture=True))
+    if not git_dir.is_absolute():
+        git_dir = (worktree / git_dir).resolve()
+    if not common.is_absolute():
+        common = (worktree / common).resolve()
+    if resolved(git_dir) == resolved(common):
+        return None
+    candidate = common / "modules" / name
+    if not candidate.is_dir():
+        return None
+    try:
+        git(candidate, "cat-file", "-e", f"{revision}^{{commit}}")
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return candidate
+
+
 def check(worktree: Path) -> None:
     worktree = require_checkout(worktree)
     pinned = pinned_revisions(worktree)
@@ -104,8 +135,23 @@ def check(worktree: Path) -> None:
 def initialize(worktree: Path) -> None:
     worktree = require_checkout(worktree)
     git(worktree, "submodule", "sync", "--recursive")
-    for name in SUBMODULES:
-        git(worktree, "submodule", "update", "--init", "--recursive", "--", name)
+    pinned = pinned_revisions(worktree)
+    for name, revision in pinned.items():
+        command: list[str] = []
+        seed = local_seed_repo(worktree, name, revision)
+        if seed is not None and not (worktree / name / ".git").exists():
+            command.extend(
+                ["-c", "protocol.file.allow=always", "-c", f"submodule.{name}.url={seed}"]
+            )
+            source = "local"
+        else:
+            source = "declared"
+        command.extend(["submodule", "update", "--init", "--recursive", "--", name])
+        git(worktree, *command)
+        url = declared_url(worktree, name)
+        git(worktree, "config", f"submodule.{name}.url", url)
+        git(worktree / name, "remote", "set-url", "origin", url)
+        print(f"submodule_initialized name={name} source={source}")
     check(worktree)
 
 
@@ -128,10 +174,15 @@ def create(args: argparse.Namespace) -> None:
     try:
         initialize(target)
     except Exception as exc:
+        try:
+            git(ROOT, "worktree", "remove", "--force", str(target))
+            if args.branch:
+                git(ROOT, "branch", "-D", args.branch)
+            disposition = "creation was rolled back"
+        except Exception:
+            disposition = "cleanup also failed; inspect the registered worktree before retrying"
         raise WorktreeError(
-            f"worktree was created but dependency setup failed: {target}; "
-            f"fix the cause, then run: {Path(sys.executable).name} "
-            f"tools/agent/worktree.py repair {target}"
+            f"dependency setup failed for {target}; {disposition}"
         ) from exc
     print(f"worktree_created path={target}")
 
@@ -145,7 +196,7 @@ def remove(path: Path) -> None:
     target = require_checkout(path)
     registered = {resolved(item) for item in registered_worktrees()}
     if resolved(target) == resolved(ROOT):
-        raise WorktreeError("refusing to remove the primary checkout")
+        raise WorktreeError("refusing to remove the checkout running this lifecycle tool")
     if resolved(target) not in registered:
         raise WorktreeError(f"not a registered linked worktree: {target}")
     dirty = git(
@@ -158,8 +209,12 @@ def remove(path: Path) -> None:
     )
     if dirty:
         raise WorktreeError(f"refusing to remove dirty worktree {target}:\n{dirty}")
-    git(target, "submodule", "deinit", "-f", "--all")
-    git(ROOT, "worktree", "remove", str(target))
+    # `git submodule deinit` edits shared superproject configuration and can
+    # mark sibling worktrees' dependencies uninitialized. A clean, forced
+    # worktree removal lets Git discard only the target's checkout and its
+    # worktree-specific module repositories.
+    git(ROOT, "worktree", "remove", "--force", str(target))
+    check(ROOT)
     print(f"worktree_removed path={target}")
 
 

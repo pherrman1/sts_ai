@@ -36,9 +36,9 @@ Decision-bearing multi-arm runs should use its strict JSON manifest interface;
 
 `tools/agent/worktree.py` is the supported linked-worktree lifecycle entry
 point. Its `create` and `repair` commands initialize and verify the pinned
-`json`/`pybind11` dependencies; `remove` refuses dirty state and deinitializes
-those submodules before removing the worktree. Prefer it to raw
-`git worktree add`/`remove` on Windows.
+`json`/`pybind11` dependencies; `remove` refuses dirty state and removes the
+clean checkout without globally deinitializing shared submodule configuration.
+Prefer it to raw `git worktree add`/`remove` on Windows.
 `manifest-check` validates common seeds/configuration, required environment
 variables, telemetry expectations, unique output paths, and frozen hashes;
 `exact-sha-preflight` verifies the remote checkout, CMake source binding,
