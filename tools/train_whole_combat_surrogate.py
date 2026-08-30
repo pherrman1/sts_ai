@@ -10,7 +10,7 @@ META = {"sourceSeed", "fightIdx", "decisionIdx", "act", "floor", "encounter", "r
         "teacherId", "won", "endHp", "startHp", "startMaxHp", "endMaxHp", "endHpFrac",
         "startPotionIds", "endPotionIds", "startPotionCount", "endPotionCount", "goldDelta",
         "smokeBombUsed", "changedRelicCounters", "ritualDaggerChanges", "deckStructureChanged",
-        "persistentMutationSummary"}
+        "parasiteAdded", "persistentMutationSummary"}
 
 def digest(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def split_seeds(values, split_seed=20260831):
@@ -66,15 +66,16 @@ def train(args):
     hp=xgb.train({**params,"objective":"reg:squarederror","eval_metric":"rmse"},xgb.DMatrix(df.loc[win_train,features],label=df.loc[win_train,"endHpFrac"]),num_boost_round=args.rounds)
     test=df.loc[sets["test"]]; y=test.won.to_numpy(); ps=surv.predict(xgb.DMatrix(test[features])); base=np.full(len(y),df.loc[sets["train"],"won"].mean())
     wt=test.won.eq(1); hp_y=test.loc[wt,"endHpFrac"].to_numpy(); hp_p=hp.predict(xgb.DMatrix(test.loc[wt,features])); hp_base=np.full(len(hp_y),df.loc[win_train,"endHpFrac"].mean())
-    start=time.perf_counter()
-    for _ in range(args.timing_repeats): surv.predict(xgb.DMatrix(test.iloc[:1][features]))
+    batch1=xgb.DMatrix(test.iloc[:1][features]); start=time.perf_counter()
+    for _ in range(args.timing_repeats):
+        surv.predict(batch1); hp.predict(batch1)
     batch1_ms=(time.perf_counter()-start)*1000/args.timing_repeats
-    report={"counts":{"fights":len(df),"wins":int(df.won.sum()),"losses":int((1-df.won).sum()),"base_rate":float(df.won.mean())},
+    report={"counts":{"fights":len(df),"source_seeds":int(df.sourceSeed.nunique()),"wins":int(df.won.sum()),"losses":int((1-df.won).sum()),"base_rate":float(df.won.mean())},
       "split":{"key":"sourceSeed","seed":args.split_seed,"train_seeds":sorted(map(int,train_s)),"validation_seeds":sorted(map(int,val_s)),"test_seeds":sorted(map(int,test_s))},
       "survival":{"model":metrics_binary(y,ps),"constant_baseline":metrics_binary(y,base),"calibration":calibration(y,ps)},
       "conditional_hp":{"model":regression(hp_y,hp_p),"conditional_mean_baseline":regression(hp_y,hp_base),"absolute_hp_mae":float(np.abs((hp_p-hp_y)*test.loc[wt,"startMaxHp"].to_numpy()).mean())},
       "slices":slice_reports(test,ps,hp,features,args.minimum_slice),
-      "batch1_inference_ms":batch1_ms,"feature_contract":{"source":"canonical battle-start rich combat features","count":len(features),"names":features,"variance_filter":"fit on TRAIN only"},
+      "batch1_classifier_plus_regressor_cpu_ms":batch1_ms,"feature_contract":{"source":"canonical battle-start rich combat features","count":len(features),"names":features,"variance_filter":"fit on TRAIN only"},
       "training_parameters":params|{"rounds":args.rounds},"data_sha256":digest(manifest["csv"]["path"]),"teacher_id":manifest["combat_teacher"]["teacher_id"]}
     out=Path(args.output); out.mkdir(parents=True,exist_ok=True); surv.save_model(out/"survival.json"); hp.save_model(out/"conditional_hp.json")
     (out/"manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
