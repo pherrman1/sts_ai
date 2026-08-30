@@ -4,13 +4,15 @@ Last verified: 2026-08-31 against the current working tree.
 
 ## Purpose
 
-Prepare a fail-closed, policy-conditioned OOC label workflow without freezing a combat teacher or collecting scientific data. OOC labels remain expected run-win values; survival/conditional-value decomposition is a representational hypothesis, not a changed objective.
+Prepare a fail-closed, policy-conditioned OOC label workflow. The broad OOC reference teacher is frozen to ordinary project-fair Silver UCT with exactly 10,000 simulations at every private root decision. OOC labels remain expected run-win values; survival/conditional-value decomposition is a representational hypothesis, not a changed objective.
 
 ## Boundaries and contracts
 
 The whole-combat input is the canonical 1,766-value rich combat feature vector captured at `decisionIdx=0`, before a committed player action. Initial targets stop at the RAW `BattleContext::exitBattle` persistent-transfer boundary: potions, HP/max HP, gold, smoke-bomb state, exit-updated relic counters/healing, card persistence (including Ritual Dagger), the Writhing Mass Parasite/Omamori path, and stolen gold. RNG streams are transferred there but are deliberately neither exposed as model features nor learned. Reward generation, navigation, and act transition happen after RAW and are not surrogate targets.
 
-Every corpus must have an `ooc_pipeline_v1` sidecar validated by `tools/ooc_pipeline_contract.py`. It binds the CSV hash to producer SHA, optional executable hash, seeds, timestamp, quarantine accounting, and a combat teacher. A teacher is invalid without a stable identifier, full git SHA, backend/searcher, fair/known-RNG regime, simulation budgets, particle/reuse settings in the search configuration, and hashes for all model artifacts. `tools/ooc_teacher.example.json` is intentionally unusable until combat development supplies final values.
+Every corpus must have an `ooc_pipeline_v1` sidecar validated by `tools/ooc_pipeline_contract.py`. It binds the CSV hash to producer SHA, required executable hash, seeds, timestamp, quarantine accounting, and a combat teacher. A teacher is invalid without a stable identifier, full git SHA, backend/searcher, project-fair regime, exact 10k budget, deterministic/chance exploration 25, widening 3.7028/0.52389, allocated-node reuse cap 32,768, explicit experimental-feature disablement, exact environment, and path/hash for every loaded artifact. Producer and teacher SHA/executable identities must match.
+
+`wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call and before reward handling. The mode is registered in `tools/seed_guard.sh`; the exact-SHA GCP research manifest accepts its CLI and reserves its `.provenance.json` sidecar.
 
 Whole-combat training uses source-seed groups for train/validation/test, performs variance filtering on TRAIN only, and fits XGBoost survival and winning-only conditional ending-HP models. Its output records the data hash, exact split, retained canonical feature names, parameters, and batch-1 timing. Offline scores do not authorize runtime integration.
 
@@ -18,17 +20,18 @@ Future branch rows must carry `sourceSeed`, `decisionIdx`, action identity, `fut
 
 Direct-Q and factorized training must consume identical rows, split, representation, and comparable capacity. Survival BCE applies to every valid branch; conditional-value loss only to survived horizons. No placeholder-card sharing or action-subsampling policy is frozen.
 
-## Prepared commands — DO NOT RUN YET
+## Producer and validation commands
 
 ```text
 python tools/ooc_pipeline_contract.py check build/ooc/whole_combat.manifest.json
 
-# Required future CLI shape; runtime producer is deliberately deferred.
 tools/seed_guard.sh build/one_combat wholecombatgen N_SEEDS SIMS ASC build/ooc/whole_combat.csv SEED_OFFSET build/ooc/teacher.json
 
 python tools/ooc_pipeline_contract.py make-manifest --teacher build/ooc/teacher.json --csv build/ooc/whole_combat.csv --output build/ooc/whole_combat.manifest.json --producer-sha PRODUCER_SHA --executable-sha256 EXECUTABLE_SHA256 --seed-spec "{\"start\":SEED_OFFSET,\"count\":N_SEEDS}" --requested N_SEEDS --completed COMPLETED --quarantined QUARANTINED --rows ROWS
 
-STS_XGB_DEVICE=cuda python tools/train_whole_combat_surrogate.py build/ooc/whole_combat.manifest.json build/ooc/surrogate
+python tools/ooc_pipeline_contract.py validate-corpus build/ooc/whole_combat.manifest.json
+
+STS_XGB_DEVICE=cpu python tools/train_whole_combat_surrogate.py build/ooc/whole_combat.manifest.json build/ooc/surrogate
 
 python tools/ooc_pipeline_contract.py budgets 1000
 python tools/ooc_pipeline_contract.py budgets 1000,1000
@@ -45,7 +48,7 @@ The semantic evaluator will later accept the parsed list and emit one row per va
 ## Schema examples
 
 ```text
-sourceSeed,fightIdx,act,floor,encounter,roomClass,decisionIdx,teacherId,<1766 canonical features>,won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac,startPotionIds,endPotionIds,startPotionCount,endPotionCount,goldDelta,smokeBombUsed,changedRelicCounters,ritualDaggerChanges,deckStructureChanged,persistentMutationSummary
+sourceSeed,fightIdx,act,floor,encounter,roomClass,decisionIdx,teacherId,<1766 canonical features>,won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac,startPotionIds,endPotionIds,startPotionCount,endPotionCount,goldDelta,smokeBombUsed,changedRelicCounters,ritualDaggerChanges,deckStructureChanged,parasiteAdded,persistentMutationSummary
 
 sourceSeed,decisionIdx,actionBits,futureIdx,H,budgetSchedule,prefixFight,budgetSpent,survivedPrefix,conditionalAliveValue,qProduct,denseReferenceValue,runtimeMs,valid,quarantineReason,teacherId,<shared state/action features>
 ```
@@ -76,8 +79,8 @@ Old terminal outcomes are not truth for a materially changed teacher.
 
 ## Known limitations and deferred work
 
-- The active combat work must supply final teacher SHA, executable, backend, RNG regime, budgets, particles/reuse, environment, and value/leaf/policy hashes.
-- Runtime whole-combat capture and semantic prefix emission are deferred so they can be instrumented and compiled against the final combat integration branch. This prep defines fail-closed schemas, trainer, parsers, leakage controls, and run order; it does not claim unexecuted producer behavior.
+- The scientific run supplies the exact frozen producer SHA, server-built executable hash, and loaded-artifact hashes after the implementation commit.
+- Semantic K-prefix emission remains deferred; it is outside this Phase-1 pilot.
 - Trainer act/room/encounter slices use a configurable minimum population
   (`--minimum-slice`, default 20); the pilot should preregister any override.
 - No runtime integration, scientific seeds, GCP work, real-data training, OOC regeneration, K/H experiment, or gameplay benchmark was run.

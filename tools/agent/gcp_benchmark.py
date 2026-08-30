@@ -203,18 +203,24 @@ def load_run_manifest(path: Path) -> dict:
     command = payload["command"]
     _require(isinstance(command, list) and all(isinstance(v, str) and v for v in command),
              "manifest command must be a list of non-empty strings")
-    _require(command.count("{results}") == 1 and command[-1] == "{results}",
-             "manifest command must end with exactly one {results} placeholder")
+    _require(command.count("{results}") == 1,
+             "manifest command must contain exactly one {results} placeholder")
     _require(command[0] == payload["binary"]["remote_path"],
              "manifest command executable must equal binary.remote_path")
-    _require("bestbench" in command, "manifest command must invoke bestbench")
-    mode = command.index("bestbench")
-    _require(mode == len(command) - 6,
-             "manifest bestbench command must be: executable bestbench sims nSeeds asc seed results")
+    _require(len(command) >= 2 and command[1] in {"bestbench", "wholecombatgen"},
+             "manifest command must invoke bestbench or wholecombatgen")
+    mode = command[1]
     try:
-        sims, seeds, _asc, _seed = map(int, command[mode + 1:mode + 5])
+        if mode == "bestbench":
+            _require(len(command) == 7 and command[-1] == "{results}",
+                     "manifest bestbench command must be: executable bestbench sims nSeeds asc seed results")
+            sims, seeds, _asc, _seed = map(int, command[2:6])
+        else:
+            _require(len(command) == 8 and command[5] == "{results}",
+                     "manifest wholecombatgen command must be: executable wholecombatgen nSeeds sims asc results seed teacher")
+            seeds, sims, _asc, _seed = map(int, command[2:5] + command[6:7])
     except ValueError as exc:
-        raise ValueError("manifest bestbench numeric arguments must be integers") from exc
+        raise ValueError(f"manifest {mode} numeric arguments must be integers") from exc
     _require(sims > 0 and seeds > 0, "manifest simulations and seed count must be positive")
 
     arms = payload["arms"]
@@ -248,11 +254,9 @@ def load_run_manifest(path: Path) -> dict:
             _require(telemetry != 0, "STS_SILVER_TELEMETRY must be nonzero for every arm")
         names.append(arm["name"])
     _require(len(names) == len(set(names)), "manifest arm names must be unique")
-    expanded_outputs = [
-        path
-        for arm in arms
-        for path in (arm["results"], arm["results"] + ".meta.json", arm["log"])
-    ]
+    sidecar = ".meta.json" if mode == "bestbench" else ".provenance.json"
+    expanded_outputs = [path for arm in arms
+                        for path in (arm["results"], arm["results"] + sidecar, arm["log"])]
     _require(len(expanded_outputs) == len(set(expanded_outputs)),
              "manifest result/log/sidecar paths must be unique across arms")
     _require(not (set(expanded_outputs) & set(file_paths)),
@@ -268,7 +272,8 @@ def manifest_arm(manifest: dict, name: str) -> tuple[list[str], str, list[str]]:
     command = [arm["results"] if token == "{results}" else token
                for token in manifest["command"]]
     rendered = ["env", *(f"{key}={env[key]}" for key in sorted(env)), *command]
-    fresh = [arm["results"], arm["results"] + ".meta.json", arm["log"]]
+    suffix = ".meta.json" if manifest["command"][1] == "bestbench" else ".provenance.json"
+    fresh = [arm["results"], arm["results"] + suffix, arm["log"]]
     return rendered, arm["log"], fresh
 
 

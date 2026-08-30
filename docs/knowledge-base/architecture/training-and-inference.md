@@ -52,6 +52,12 @@ winning-only conditional-HP models from a future one-row-per-fight corpus.
 These tools do not freeze a teacher, generate data, or authorize runtime
 surrogate use.
 
+`wholecombatgen` emits one canonical 1,766-feature row per completed fight. It
+captures the first `g_onCombatDecision` callback and labels the row only after
+the existing RAW `BattleContext::exitBattle` persistent transfer. Its teacher
+JSON is checked against the checkout, executable, exact ordinary Silver 10k
+configuration, environment, and loaded-artifact hashes before CSV creation.
+
 Representative model families:
 
 - run values: `train_value_rich.py`, `train_winrate.py`;
