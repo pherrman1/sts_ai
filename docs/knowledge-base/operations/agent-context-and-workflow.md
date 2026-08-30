@@ -136,8 +136,9 @@ Long-run details are in [build and debugging](build-and-debugging.md).
    behavioral success criterion and cheapest proving check. Ask when a material
    interpretation is genuinely ambiguous. Create and remove linked worktrees
    through `python tools/agent/worktree.py`; it initializes, verifies, and
-   deinitializes the checkout-specific submodules. For a fresh clone or an
-   existing checkout, run its `repair` command before configuring. See
+   safely discards checkout-specific submodules without globally deinitializing
+   sibling worktrees. For a fresh clone or an existing checkout, run its
+   `repair` command before configuring. See
    [build and debugging](build-and-debugging.md).
 3. Make the smallest scoped change; do not improve adjacent code, comments, or
    formatting. For a feasible bug fix, add a reproducing test first. Rebuild all
