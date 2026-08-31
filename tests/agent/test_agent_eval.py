@@ -142,7 +142,7 @@ class AgentEvalTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             runtime = Path(tmp) / "runtime"
-            identity = {"version": 1, "head": "a" * 40, "submodules": {"json": "b" * 40, "pybind11": "c" * 40}}
+            identity = {"version": self.eval_module.CACHE_VERSION, "head": "a" * 40, "submodules": {"json": "b" * 40, "pybind11": "c" * 40}}
 
             def identity_git(cwd, *args, **kwargs):
                 if args == ("rev-parse", "HEAD"):
