@@ -5800,3 +5800,52 @@ model training was changed.
   failure-tail estimates imprecise. It does not authorize a transition
   surrogate, K/H experiments, retraining, or combat replacement. See
   `docs/experiments/evidence/ooc-counterfactual-surrogate-audit-2026-08-31.json`.
+
+## §207 OOC K/combat-budget selection chooses K1 exact-10k (2026-08-31)
+
+- **Scope and assumption:** Reused the exact PR-100 cohort of 32 OOC decisions,
+  157 complete legal sibling actions, and source seeds 982100–982131. The user
+  explicitly accepted the mixed-SHA Stage-A A cohort as clean and authorized
+  Stage B from K2's practical point-estimate improvement despite the clustered
+  intervals crossing zero. This assumption is part of the result and is not a
+  general mixed-producer precedent.
+- **Protocol:** Ordinary project-fair Silver UCT, c=25, exact root budgets,
+  allocated reuse cap 32,768, and no Sequential Halving, pruning, learned
+  prior/PUCT, learned leaf, or adaptive budget. Stage A used A futures 0–3 and
+  independent terminal B futures 100–103. Stage B reused that B truth and used
+  fresh matched A futures 10–13 for `[10000]`, `[5000,5000]`,
+  `[3333,3333,3334]`, and diagnostic-only historical `[150,100,50]`.
+- **Integrity:** The amended hash-bound analyzer accepted 11,304 rows with
+  exact action/future coverage, zero invalid rows, duplicates, missing
+  identities, or unknown schedules. Stage B contributed 8,164 rows from 107
+  CSVs. One extreme K1 source shard was recovered through the frozen 12-way
+  `(action,future)` partition: 12/12 PASS files supplied exactly 184 data rows;
+  the redundant original partial was terminated with rc=143, preserved for
+  audit, and excluded. All 227 packaged payload hashes verified.
+- **Stage A:** K1/K2/K3 selected terminal wins were
+  0.28125/0.3046875/0.2421875 and regrets were
+  0.125/0.1015625/0.1640625. K2−K1 was +0.0234375 selected win and
+  −0.0234375 regret, but both 95% paired intervals crossed zero. Authorized
+  classification: **HORIZON_INCONCLUSIVE_K2_PROMISING**; K3 was rejected.
+- **Frozen Stage-B rule:** Relative to high-quality K2, require selected win
+  loss no greater than 0.01 and regret increase no greater than 0.01, then
+  choose the least actual Silver compute among eligible non-historical arms.
+- **Result:** K1 `[10000]` scored 0.296875 selected win and 0.109375 regret,
+  losses of exactly 0.0078125 on both margins, so it passed. K2
+  `[5000,5000]` scored 0.2890625/0.1171875 and missed both margins by
+  0.015625. K3 `[3333,3333,3334]` scored 0.25/0.15625 and failed widely.
+  Diagnostic `[150,100,50]` scored 0.3125/0.09375 but was preregistered as
+  diagnostic-only and remains ineligible.
+- **Compute:** Selected K1 used 148.81M Silver simulations, 11,732 combat
+  decisions, and 2,276.13 logical CPU seconds, versus 283.07M simulations,
+  22,426 decisions, and 3,213.50 CPU seconds for high-quality K2—a 47.43%
+  simulation reduction. The first Stage-B launch failed at the seed guard
+  before creating any output; the corrected 24-worker queue completed with the
+  explicitly recorded K1 recovery race.
+- **Decision:** **K1_10000_SELECTED** for future clean OOC labels. Do not tune
+  intermediate budgets or promote the historical low-compute schedule from
+  this diagnostic. Four A/B futures, broad intervals, a 75% B-truth tie rate,
+  and the unexpectedly strong historical diagnostic remain explicit
+  uncertainty. No H experiment, datagen, transition surrogate, or OOC training
+  is authorized here. See
+  `docs/experiments/evidence/ooc-k-combat-budget-stage-b-2026-08-31.json`.

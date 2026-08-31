@@ -1,0 +1,186 @@
+{
+  "schema": "ooc_k_combat_budget_result_v1",
+  "date": "2026-08-31",
+  "scope": "Stage A horizon interpretation and Stage B combat-search budget allocation for the frozen PR-100 OOC counterfactual cohort",
+  "clean_a_assumption": {
+    "accepted_by_user": true,
+    "statement": "All Stage-A A rows are treated as scientifically clean; intervening changes are treated as bug fixes that do not invalidate successful original A rows.",
+    "effect": "The user explicitly authorized Stage B from the K2 point-estimate improvement despite Stage-A uncertainty."
+  },
+  "provenance": {
+    "baseline_sha": "38392ddd6528659285ce4ae91d368ec981077e14",
+    "experiment_source_sha": "1d42903cba0b9e22583e590a2157e4c9f14620db",
+    "result_sha_before_evidence_commit": "80ec0a9148b8bbd8ec7d528ab52352388215a6ed",
+    "executable_sha256": "5446c984b502de1b41935ea3fccf819bd2a4270c76dc59149329ecb078599291",
+    "experiment_spec_sha256": "8c90fb03aa8c18a3c4b162e3d711797ba019cc95640d132f85e4e81ee9229c4b",
+    "manifest_sha256": "da5a34d54910b954e6b8d1669796ca3c4e6d245e80b16548da1e07e762841665",
+    "floor_model_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "win_model_sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "analysis_amendment_sha256": "4aed674185b45b9420bb419b3e801ed8aad39eb679453b4b477435265988bc78",
+    "authorization_sha256": "8ede4ecf39be2fc123d208f210972b8a89cfc9936172b1c730cb71e2652bd845",
+    "stage_a_report_sha256": "f6cd4d5b99343390ce5ce9232a80e5e13a5f8792a6e01f4c8b26161825e008d8",
+    "stage_b_report_sha256": "0fabba6d83c222a7b78706942e66adfb50cb48a1e57d332f44e9907cf5960f24",
+    "stage_a_archive_sha256": "bd07405044fa2599236a296a7451935b01c414d60a0898ce3632260b7ae558d6",
+    "stage_b_archive_sha256": "30a869d87fec9ea9f1de4ad61581e4ebe3ee681dfddf493b1763dd32002fdb7f",
+    "b_reference_file_hash_list_sha256": "232ced884fae3e988c8876d9cb6091be4bd33d4424bd592d8492bd8b0df55bb9"
+  },
+  "configuration": {
+    "source_seeds": "982100..982131",
+    "decisions": 32,
+    "actions": 157,
+    "stage_a_futures": [0, 1, 2, 3],
+    "stage_b_futures": [10, 11, 12, 13],
+    "b_reference_futures": [100, 101, 102, 103],
+    "silver": {
+      "backend": "ordinary project-fair Silver UCT",
+      "exploration": 25,
+      "reuse_cap": 32768,
+      "reuse_cap_mode": "allocated",
+      "sequential_halving": false,
+      "pruning": false,
+      "learned_prior_puct": false,
+      "learned_leaf": false,
+      "adaptive_budget": false
+    },
+    "stage_b_schedules": {
+      "K1": [10000],
+      "K2": [5000, 5000],
+      "K3": [3333, 3333, 3334],
+      "historical_diagnostic_only": [150, 100, 50]
+    }
+  },
+  "integrity": {
+    "combined_analyzer_rows": 11304,
+    "stage_b_rows": 8164,
+    "stage_b_analysis_csvs": 107,
+    "ordinary_k1_shards": 23,
+    "k1_shard21_recovery_partitions": 12,
+    "k1_recovery_data_rows": 184,
+    "k2_shards": 24,
+    "k3_shards": 24,
+    "historical_shards": 24,
+    "packaged_payload_files": 227,
+    "packaged_payload_hash_mismatches": 0,
+    "invalid_rows": 0,
+    "duplicate_identities": 0,
+    "missing_identities": 0,
+    "unknown_schedules": 0,
+    "aborted_original_k1_shard21_excluded": true,
+    "aborted_original_k1_exit_code": 143,
+    "recovery_partition_passes": 12,
+    "recovery_partition_failures": 0
+  },
+  "stage_a": {
+    "verdict": "HORIZON_INCONCLUSIVE_K2_PROMISING",
+    "authorized_interpretation": "K2 satisfied every practical point-estimate condition, and the user accepted its uncertainty for the purpose of running Stage B.",
+    "K1": {
+      "selected_terminal_win": 0.28125,
+      "terminal_regret": 0.125
+    },
+    "K2": {
+      "selected_terminal_win": 0.3046875,
+      "terminal_regret": 0.1015625
+    },
+    "K3": {
+      "selected_terminal_win": 0.2421875,
+      "terminal_regret": 0.1640625
+    },
+    "K2_minus_K1": {
+      "selected_terminal_win": 0.0234375,
+      "selected_terminal_win_ci95": [-0.0234375, 0.0859375],
+      "terminal_regret": -0.0234375,
+      "terminal_regret_ci95": [-0.0859375, 0.0234375]
+    },
+    "K3_minus_K2": {
+      "selected_terminal_win": -0.0625,
+      "selected_terminal_win_ci95": [-0.140625, 0.0],
+      "terminal_regret": 0.0625,
+      "terminal_regret_ci95": [0.0, 0.140625]
+    }
+  },
+  "preservation_rule": {
+    "reference": "Stage-A high-quality K2 [10000,10000] checkpoint",
+    "reference_selected_terminal_win": 0.3046875,
+    "reference_terminal_regret": 0.1015625,
+    "maximum_selected_terminal_win_loss": 0.01,
+    "maximum_terminal_regret_increase": 0.01,
+    "historical_schedule_eligible": false
+  },
+  "stage_b_results": {
+    "K1_10000": {
+      "selected_terminal_win": 0.296875,
+      "terminal_regret": 0.109375,
+      "top_agreement": 0.71875,
+      "pairwise_concordance": 0.45315862498584214,
+      "score_tie": 0.3125,
+      "silver_simulations": 148810000,
+      "combat_decisions": 11732,
+      "cpu_seconds": 2276.132400000001,
+      "wall_seconds_sum": 2277.557616600004,
+      "selected_win_loss_from_reference": 0.0078125,
+      "regret_increase_from_reference": 0.0078125,
+      "eligible": true
+    },
+    "K2_5000_5000": {
+      "selected_terminal_win": 0.2890625,
+      "terminal_regret": 0.1171875,
+      "top_agreement": 0.6875,
+      "pairwise_concordance": 0.5426405271588758,
+      "score_tie": 0.34375,
+      "silver_simulations": 139575000,
+      "combat_decisions": 22556,
+      "cpu_seconds": 2056.1841509999995,
+      "wall_seconds_sum": 2057.262129999998,
+      "selected_win_loss_from_reference": 0.015625,
+      "regret_increase_from_reference": 0.015625,
+      "eligible": false
+    },
+    "K3_3333_3333_3334": {
+      "selected_terminal_win": 0.25,
+      "terminal_regret": 0.15625,
+      "top_agreement": 0.59375,
+      "pairwise_concordance": 0.4375989029658755,
+      "score_tie": 0.40625,
+      "silver_simulations": 138950086,
+      "combat_decisions": 30593,
+      "cpu_seconds": 1978.9546870000001,
+      "wall_seconds_sum": 1980.0724920000002,
+      "selected_win_loss_from_reference": 0.0546875,
+      "regret_increase_from_reference": 0.0546875,
+      "eligible": false
+    },
+    "historical_150_100_50_K3": {
+      "selected_terminal_win": 0.3125,
+      "terminal_regret": 0.09375,
+      "top_agreement": 0.71875,
+      "pairwise_concordance": 0.5858605164797824,
+      "score_tie": 0.4375,
+      "silver_simulations": 4302000,
+      "combat_decisions": 29547,
+      "cpu_seconds": 82.6176489999999,
+      "wall_seconds_sum": 82.65651730999991,
+      "eligible": false,
+      "exclusion": "Frozen as a low-compute diagnostic only; cannot be selected."
+    }
+  },
+  "decision": {
+    "verdict": "K1_10000_SELECTED",
+    "recommended_K": 1,
+    "recommended_schedule": [10000],
+    "reason": "K1 [10000] is the only eligible non-historical candidate within both 0.01 quality-preservation margins.",
+    "silver_simulation_reduction_vs_high_quality_K2_fraction": 0.4742996431977956,
+    "stage_b_followup_tuning_authorized": false
+  },
+  "remaining_uncertainty": [
+    "Stage A was horizon-inconclusive; Stage B was explicitly authorized from K2's practical point estimate under the user-enforced clean-A assumption.",
+    "Only four A futures and four B futures per action were used, and the B reference has a 0.75 action-truth tie rate.",
+    "The historical [150,100,50] diagnostic scored unusually well at very low compute but was preregistered as diagnostic-only and cannot be promoted from this experiment.",
+    "No intermediate budget tuning, extra futures, H experiment, datagen, surrogate transition modeling, or OOC training is authorized by this result."
+  ],
+  "artifact_locations": {
+    "remote_stage_a_archive": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/stageA-mixed-evidence-20260831.tar.gz",
+    "remote_stage_b_archive": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/stageB-evidence-8ede4ecf.tar.gz",
+    "local_stage_a_report": "build/ooc_k_budget/recovery/stageA_final/stageA-report.json",
+    "local_stage_b_report": "build/ooc_k_budget/recovery/stageB_final/stageB-report.json"
+  }
+}
