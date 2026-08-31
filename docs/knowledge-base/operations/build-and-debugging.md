@@ -101,12 +101,45 @@ parity boundaries; `tooling` covers maintained operational utilities; and
 more than one label. The unfiltered `linux-gcc-test` preset remains the full
 CTest suite.
 
-The Linux CI job owns `python3 -m unittest discover -s tests/agent -p
-'test_*.py'` as a separate pre-build gate. Those modules are not registered
+The Linux CI job owns the following complete `tests/agent` discovery as a
+separate pre-build gate:
+
+```bash
+python3 -m unittest discover -s tests/agent -p 'test_*.py' --durations 20
+```
+
+Python 3.12's standard-library duration reporter prints the 20 slowest
+individual test cases on successful and failed runs without changing discovery
+or exit semantics. Those modules are not registered
 again in CTest, and scripts exercised by a behavioral self-test are not given
 a redundant `py_compile` process: executing or importing a Python module
 already parses it. Standalone `py_compile` entries remain only where they
 provide the script's sole automated coverage.
+
+Evaluator tests that mutate Git state share one class-owned, immutable prepared
+`guardrail-command-policy` baseline. Each mutable case derives an independent
+shared-object clone with a sparse working tree containing the grader, its
+public tests, and every path that the case creates or renames. The commit still
+contains the complete candidate tree, so ancestry, rename, merge, scope, and
+rewritten-history assertions use real Git. Do not add a mutable shared working
+tree, make tests order-dependent, or replace those semantics with mocks. Tests
+whose contract is candidate preparation itself continue to run the complete
+export-and-initialize path.
+
+The PR #105 Linux GCC reference run 33389737148 at `d9c6d7c6` reported a
+114-second agent-test step (12:02:28--12:04:22 UTC), an 18.09-second CTest run,
+and a 188-second job interval (12:02:01--12:05:09 UTC). PR #106 run
+33395000182 at implementation SHA `8bdbb9e` reported 118 agent tests in
+59.670 seconds, a 65-second agent-test step (13:05:22--13:06:27 UTC), a
+17.42-second CTest run, and a 147-second job interval
+(13:04:50--13:07:17 UTC). The observed step reduction was 49 seconds (43.0%)
+and the observed job-interval reduction was 41 seconds (21.8%). Both runs had
+warm ccache restores: the reference build recorded 119/121 hits and the
+implementation run 120/121 hits. These are single hosted-runner samples, not a
+stable performance distribution; the focused WSL-native ext4 comparison
+supports the direction (193.113 seconds at `67a8a8c` versus 118.392 seconds at
+`8bdbb9e`, with the same 118 discovered tests), while `/mnt/c` timings are not
+representative.
 
 Normal configured commands are:
 
