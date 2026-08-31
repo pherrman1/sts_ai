@@ -45,7 +45,10 @@ def main():
     for path,expected in [(a.survival_model,SURVIVAL_SHA),(a.hp_model,HP_SHA),(a.training_manifest,MANIFEST_SHA)]:
         actual=sha256(path)
         if actual!=expected: raise SystemExit(f"frozen artifact hash mismatch: {path}: {actual}")
-    from tools.verify.vnettest_selftest import canonical_names
+    try:
+        from tools.verify.vnettest_selftest import canonical_names
+    except ModuleNotFoundError:
+        from verify.vnettest_selftest import canonical_names
     raw_header=Path(a.csv).read_text(encoding="utf-8").splitlines()[0].split(",")
     prefix=["sourceSeed","decisionIdx","actionIdx","actionBits","action","chosen","screen","decisionAct","decisionFloor","battleAct","battleFloor","battleEncounter","roomClass","teacherId","valid","quarantineReason"]
     suffix=["won","endHp","startHp","startMaxHp","endMaxHp","endHpFrac"]
