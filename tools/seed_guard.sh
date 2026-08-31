@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Seed-sweep argument positions verified against apps/one_combat.cpp mode dispatch
-# (2026-08-10).  Modes that parse nSeeds from argc/argv are listed; modes not in
+# (2026-08-31).  Modes that parse nSeeds from argc/argv are listed; modes not in
 # this table are passed through without seed checking.
 
 MAX_AUTOMATED_SEEDS=128
@@ -23,7 +23,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["strategicgen"]=2        ["strategicgen2"]=2
   ["strategicmarggen"]=2    ["phase13a_collect"]=2
   ["oocfactoreval"]=2      ["oocmargtradeoffeval"]=2 ["oock3tradeoffeval"]=2
-  ["oocsemanticfullruneval"]=2
+  ["oocsemanticfullruneval"]=2 ["oockbudgeteval"]=2
 )
 
 declare -A PYTHON_SEED_INDEX=(

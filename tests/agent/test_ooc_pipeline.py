@@ -2,8 +2,51 @@ import csv, json, unittest
 from pathlib import Path
 from tools.ooc_pipeline_contract import parse_budgets, h_plan, validate_corpus, validate_manifest, sha256, SCHEMA_VERSION
 from tools.verify.vnettest_selftest import canonical_names
+from tools.analyze_ooc_k_budget import self_test as k_budget_analysis_self_test
 
 class TestOocPipeline(unittest.TestCase):
+    def test_k_budget_evaluator_is_observational_and_fail_closed(self):
+        source=Path("apps/one_combat.cpp").read_text(encoding="utf-8")
+        begin=source.index("static void oocBudgetEvaluate")
+        end=source.index("static void strategicGen",begin)
+        evaluator=source[begin:end]
+        self.assertIn('const std::string partialFile=outFile+".partial"',evaluator)
+        self.assertIn("OocPrefixObserver observer",evaluator)
+        self.assertIn("observational checkpoint equivalence failed",evaluator)
+        self.assertIn("legal sibling set differs from manifest",evaluator)
+        self.assertIn("invalid/non-finite prefix target",evaluator)
+        self.assertIn('{"STS_NATIVE_OOC","1"}',evaluator)
+        self.assertIn("modelPaths[\"floor\"]!=g_floorNet.path",evaluator)
+        self.assertIn("modelPaths[\"win\"]!=g_winNet.path",evaluator)
+        self.assertIn('spec.at("execution").at("shardCount")',evaluator)
+        self.assertIn('d.seed%(std::uint64_t)shardCount',evaluator)
+        self.assertIn('spec.at("execution").at("recoveryWorkCount")',evaluator)
+        self.assertIn('at("recoveryPartition")',evaluator)
+        self.assertIn('workOrdinal%workCount!=workIndex',evaluator)
+        self.assertIn('(shardIndex<0&&futures!=0)',evaluator)
+        self.assertIn('output filename does not bind frozen shard assignment',evaluator)
+        self.assertIn('std::filesystem::create_directory(claimDir)',evaluator)
+
+    def test_k_budget_freezer_locks_process_sharding(self):
+        source=Path("tools/freeze_ooc_k_budget_experiment.py").read_text(encoding="utf-8")
+        self.assertIn('"mode":"source_seed_modulo_process_shards"',source)
+        self.assertIn('"shardCount":24',source)
+        self.assertIn('"recoveryWorkCount":12',source)
+        self.assertIn('"mergeRequiresAllShards":True',source)
+
+    def test_k_budget_recovery_partition_is_disjoint_and_complete(self):
+        for action_count in (2, 5, 23):
+            branches={(future,action) for future in range(4)
+                      for action in range(action_count)}
+            workers=[{(future,action) for future,action in branches
+                      if (future*action_count+action)%12==worker}
+                     for worker in range(12)]
+            self.assertEqual(set().union(*workers),branches)
+            self.assertEqual(sum(map(len,workers)),len(branches))
+
+    def test_k_budget_analyzer_self_test(self):
+        k_budget_analysis_self_test()
+
     def test_counterfactual_audit_uses_external_combat_backend_overload(self):
         source=Path("apps/one_combat.cpp").read_text(encoding="utf-8")
         begin=source.index("runCounterfactualSurrogateAuditSeed")
