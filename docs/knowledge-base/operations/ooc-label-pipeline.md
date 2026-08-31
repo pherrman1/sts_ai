@@ -48,11 +48,15 @@ python tools/make_ooc_k_budget_manifest.py PR100_AUDIT.csv build/ooc_k_budget/ma
 
 python tools/freeze_ooc_k_budget_experiment.py --manifest build/ooc_k_budget/manifest.json --executable build/one_combat --model floor=models/v_rich_trees.txt --model win=models/v_win_trees.txt --output build/ooc_k_budget/experiment.json
 
-tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json A.csv 10000,10000,10000 4 0 A build/ooc_k_budget/experiment.json
+tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json preflight.csv 10000,10000,10000 0 0 A build/ooc_k_budget/experiment.json -1 24
 
-tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json B.csv 10000 4 100 B build/ooc_k_budget/experiment.json
+tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json stageA_A.shard-00-of-24.csv 10000,10000,10000 4 0 A build/ooc_k_budget/experiment.json 0 24
 
-python tools/analyze_ooc_k_budget.py A.csv B.csv --spec build/ooc_k_budget/experiment.json --output analysis.json
+tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json stageA_B.shard-00-of-24.csv 10000 4 100 B build/ooc_k_budget/experiment.json 0 24
+
+# Launch one command of each arm per index 0..23 (concurrently on the GCP host),
+# substituting the same zero-padded index in the filename and numeric argument.
+python tools/analyze_ooc_k_budget.py stageA_A.shard-*-of-24.csv stageA_B.shard-*-of-24.csv --spec build/ooc_k_budget/experiment.json --output analysis.json
 ```
 
 `oockbudgeteval` consumes an `ooc_k_budget_manifest_v1` JSON manifest frozen by
@@ -75,6 +79,21 @@ B futures emit terminal truth only. A/B future identities are explicit and
 rows, duplicates, or mismatched action coverage before source-seed-clustered
 analysis. The evaluator writes to an exclusive `.partial` path and renames it
 only after every branch succeeds.
+
+Expensive K-budget arms use the frozen 24-process source-seed modulo sharding
+recorded in the experiment spec. Pass `SHARD_INDEX SHARD_COUNT` after the spec
+argument (indices `0..23`, count `24`). Each output filename must end in its
+`.shard-II-of-24.csv` assignment, and an atomic `.claim` directory prevents
+duplicate processes from racing on one partial output. The zero-future atomic replay uses shard index `-1` with
+count `24`. Analyze all 24 completed CSVs together; exact cohort checks fail
+closed if any source-seed shard is absent. Process sharding is used because
+simulator globals make in-process threading unsafe.
+
+If and only if Stage A authorizes Stage B, launch the same 24 indices with A
+future start `10` for each frozen schedule (`10000`; `5000,5000`;
+`3333,3333,3334`; `150,100,50`) and distinct schedule-prefixed shard files.
+Analyze those 96 files together with the unchanged 24 Stage-A A files and 24
+Stage-A B reference files.
 
 ## Schema examples
 

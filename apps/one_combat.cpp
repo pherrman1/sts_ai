@@ -11850,7 +11850,8 @@ static void oocBudgetEvaluate(const std::string &manifestFile,
                               const std::vector<int> &schedule,
                               int futures, int futureStart,
                               const std::string &side,
-                              const std::string &specFile) {
+                              const std::string &specFile,
+                              int shardIndex, int shardCount) {
     if (side != "A" && side != "B")
         throw std::runtime_error("oockbudgeteval: side must be A or B");
     const std::map<std::string,std::string> frozenEnv={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},
@@ -11871,6 +11872,10 @@ static void oocBudgetEvaluate(const std::string &manifestFile,
         ||spec.at("manifest").at("sha256").get<std::string>()!=fileSha256(manifestFile)
         ||spec.at("analysis").at("sha256").get<std::string>()!=fileSha256(spec.at("analysis").at("path").get<std::string>()))
         throw std::runtime_error("oockbudgeteval: frozen spec hash/source mismatch");
+    const int frozenShardCount=spec.at("execution").at("shardCount").get<int>();
+    if(shardCount!=frozenShardCount||shardCount<=0||shardIndex < -1
+        ||(shardIndex<0&&futures!=0)||shardIndex>=shardCount)
+        throw std::runtime_error("oockbudgeteval: invalid or unfrozen shard assignment");
     std::map<std::string,std::string> modelPaths;
     for(const auto &model:spec.at("oocModels")){
         const std::string role=model.at("role").get<std::string>(),path=model.at("path").get<std::string>();
@@ -11914,7 +11919,8 @@ static void oocBudgetEvaluate(const std::string &manifestFile,
                                  a.at("semantic").get<std::string>(),
                                  a.at("chosen").get<bool>()});
         if (d.actions.size() < 2) throw std::runtime_error("oockbudgeteval: incomplete sibling set");
-        manifest.push_back(std::move(d));
+        if(shardIndex<0||(int)(d.seed%(std::uint64_t)shardCount)==shardIndex)
+            manifest.push_back(std::move(d));
     }
 
     std::vector<OocBudgetResolved> resolved;
@@ -11961,12 +11967,24 @@ static void oocBudgetEvaluate(const std::string &manifestFile,
         if(!found) throw std::runtime_error("oockbudgeteval: frozen decision did not replay seed="+std::to_string(m.seed));
     }
     if(resolved.size()!=manifest.size()) throw std::runtime_error("oockbudgeteval: incomplete atomic replay");
-    std::cout<<"oockbudgeteval preflight resolved "<<resolved.size()<<'/'<<manifest.size()<<" decisions\n";
+    std::cout<<"oockbudgeteval preflight resolved "<<resolved.size()<<'/'<<manifest.size()
+             <<" decisions shard="<<shardIndex<<'/'<<shardCount<<"\n";
     if(futures==0) return;
 
+    std::ostringstream shardSuffix;
+    shardSuffix<<".shard-"<<std::setw(2)<<std::setfill('0')<<shardIndex
+               <<"-of-"<<shardCount<<".csv";
+    if(outFile.size()<shardSuffix.str().size()
+        ||outFile.substr(outFile.size()-shardSuffix.str().size())!=shardSuffix.str())
+        throw std::runtime_error("oockbudgeteval: output filename does not bind frozen shard assignment");
     const std::string partialFile=outFile+".partial";
     if(std::filesystem::exists(outFile)||std::filesystem::exists(partialFile))
         throw std::runtime_error("oockbudgeteval: output or partial file already exists");
+    const std::string claimDir=outFile+".claim";
+    if(!std::filesystem::create_directory(claimDir))
+        throw std::runtime_error("oockbudgeteval: shard output claim already exists");
+    if(std::filesystem::exists(outFile)||std::filesystem::exists(partialFile))
+        throw std::runtime_error("oockbudgeteval: output appeared after shard claim");
     std::ofstream out(partialFile); if(!out)throw std::runtime_error("oockbudgeteval: cannot open partial output");
     out<<"sourceSeed,decisionIdx,act,floor,screen,actionIdx,actionBits,chosen,side,futureIdentity,"
           "continuationSeed,hiddenSeed,schedule,prefixFight,rowKind,survivedPrefix,continuationValue,"
@@ -14687,6 +14705,8 @@ int main(int argc, char **argv) {
         int futureStart = argc > 7 ? std::stoi(argv[7]) : 0;
         std::string side = argc > 8 ? argv[8] : "A";
         std::string spec = argc > 9 ? argv[9] : "build/ooc_k_budget/experiment.json";
+        int shardIndex = argc > 10 ? std::stoi(argv[10]) : -1;
+        int shardCount = argc > 11 ? std::stoi(argv[11]) : 24;
         std::vector<int> schedule; std::stringstream bs(budgetText); std::string cell;
         while(std::getline(bs,cell,','))schedule.push_back(std::stoi(cell));
         nlohmann::json manifestDoc; {std::ifstream mf(manifest);if(!mf)throw std::runtime_error("oockbudgeteval: cannot open manifest");mf>>manifestDoc;}
@@ -14694,8 +14714,9 @@ int main(int argc, char **argv) {
             throw std::runtime_error("oockbudgeteval: guarded decision count does not match manifest");
         std::cout<<"oockbudgeteval decisions="<<nDecisions<<" schedule="<<budgetText
                  <<" futures="<<futures<<" futureStart="<<futureStart<<" side="<<side
+                 <<" shard="<<shardIndex<<'/'<<shardCount
                  <<" -> "<<out<<'\n';
-        oocBudgetEvaluate(manifest,out,schedule,futures,futureStart,side,spec);
+        oocBudgetEvaluate(manifest,out,schedule,futures,futureStart,side,spec,shardIndex,shardCount);
 
     } else if (mode == "mcts") {
         int sims          = argc > 2 ? std::stoi(argv[2]) : 2000;

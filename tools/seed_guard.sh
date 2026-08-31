@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Seed-sweep argument positions verified against apps/one_combat.cpp mode dispatch
-# (2026-08-10).  Modes that parse nSeeds from argc/argv are listed; modes not in
+# (2026-08-31).  Modes that parse nSeeds from argc/argv are listed; modes not in
 # this table are passed through without seed checking.
 
 MAX_AUTOMATED_SEEDS=128

@@ -18,6 +18,17 @@ class TestOocPipeline(unittest.TestCase):
         self.assertIn('{"STS_NATIVE_OOC","1"}',evaluator)
         self.assertIn("modelPaths[\"floor\"]!=g_floorNet.path",evaluator)
         self.assertIn("modelPaths[\"win\"]!=g_winNet.path",evaluator)
+        self.assertIn('spec.at("execution").at("shardCount")',evaluator)
+        self.assertIn('d.seed%(std::uint64_t)shardCount',evaluator)
+        self.assertIn('(shardIndex<0&&futures!=0)',evaluator)
+        self.assertIn('output filename does not bind frozen shard assignment',evaluator)
+        self.assertIn('std::filesystem::create_directory(claimDir)',evaluator)
+
+    def test_k_budget_freezer_locks_process_sharding(self):
+        source=Path("tools/freeze_ooc_k_budget_experiment.py").read_text(encoding="utf-8")
+        self.assertIn('"mode":"source_seed_modulo_process_shards"',source)
+        self.assertIn('"shardCount":24',source)
+        self.assertIn('"mergeRequiresAllShards":True',source)
 
     def test_k_budget_analyzer_self_test(self):
         k_budget_analysis_self_test()
