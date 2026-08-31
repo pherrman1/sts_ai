@@ -80,6 +80,14 @@ rows, duplicates, or mismatched action coverage before source-seed-clustered
 analysis. The evaluator writes to an exclusive `.partial` path and renames it
 only after every branch succeeds.
 
+Checkpoint bootstrap validity mirrors `finishOocCounterfactual`: initialize
+from the current discrete floor and zero run-win value, then accept each model
+estimate independently only when finite and within its established domain. In
+particular, a finite floor estimate slightly below the already-reached integer
+floor falls back to that integer floor; it does not invalidate an otherwise
+finite run-win target. Simulator-health failures still invalidate the complete
+branch.
+
 Expensive K-budget arms use the frozen 24-process source-seed modulo sharding
 recorded in the experiment spec. Pass `SHARD_INDEX SHARD_COUNT` after the spec
 argument (indices `0..23`, count `24`). Each output filename must end in its

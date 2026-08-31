@@ -12009,11 +12009,29 @@ static void oocBudgetEvaluate(const std::string &manifestFile,
                 const bool survived=snapshot.outcome!=GameOutcome::PLAYER_LOSS;
                 double value=snapshot.outcome==GameOutcome::PLAYER_VICTORY?1.0:0.0;
                 double floor=snapshot.floorNum;
+                double rawFloor=std::numeric_limits<double>::quiet_NaN();
+                double rawWin=std::numeric_limits<double>::quiet_NaN();
                 bool valid=true;
                 if(snapshot.outcome==GameOutcome::UNDECIDED){
-                    const double vf=vStateRaw(snapshot),vw=vStateWin(snapshot);
-                    valid=std::isfinite(vf)&&vf>=snapshot.floorNum&&vf<=60&&std::isfinite(vw)&&vw>=0&&vw<=1;
-                    if(valid){floor=vf;value=vw;}
+                    rawFloor=vStateRaw(snapshot);rawWin=vStateWin(snapshot);
+                    // Mirror finishOocCounterfactual's established bootstrap
+                    // contract: each optional model estimate falls back to
+                    // the initialized finite value when outside its domain.
+                    if(std::isfinite(rawFloor)&&rawFloor>=snapshot.floorNum&&rawFloor<=60)
+                        floor=rawFloor;
+                    if(std::isfinite(rawWin)&&rawWin>=0&&rawWin<=1)
+                        value=rawWin;
+                    valid=std::isfinite(floor)&&std::isfinite(value);
+                }
+                if(!valid){
+                    std::ostringstream error;
+                    error<<"oockbudgeteval: invalid checkpoint bootstrap sourceSeed="<<d.manifest.seed
+                         <<" decisionIdx="<<d.manifest.decIdx<<" actionIdx="<<ai
+                         <<" futureIdentity="<<future<<" prefixFight="<<fight
+                         <<" stateFloor="<<snapshot.floorNum<<" hp="<<snapshot.curHp
+                         <<" outcome="<<(int)snapshot.outcome<<" rawFloor="<<rawFloor
+                         <<" rawWin="<<rawWin;
+                    throw std::runtime_error(error.str());
                 }
                 prefixes.push_back({fight,survived,value,floor,(double)snapshot.curHp,
                     survived?value:0.0,10.0*value+snapshot.curHp,cost.silverSimulations,
@@ -12041,7 +12059,19 @@ static void oocBudgetEvaluate(const std::string &manifestFile,
                 std::sort(prefixes.begin(),prefixes.end(),[](const auto&a,const auto&b){return a.prefixFight<b.prefixFight;});
             }
             if(std::any_of(prefixes.begin(),prefixes.end(),[](const auto&p){return !p.valid||!std::isfinite(p.continuationValue)||!std::isfinite(p.qProduct)||!std::isfinite(p.denseValue);}))
-                throw std::runtime_error("oockbudgeteval: invalid/non-finite prefix target");
+                throw std::runtime_error([&]{
+                    const auto &p=*std::find_if(prefixes.begin(),prefixes.end(),[](const auto &x){
+                        return !x.valid||!std::isfinite(x.continuationValue)
+                            ||!std::isfinite(x.qProduct)||!std::isfinite(x.denseValue);});
+                    std::ostringstream error;
+                    error<<"oockbudgeteval: invalid/non-finite prefix target sourceSeed="<<d.manifest.seed
+                         <<" decisionIdx="<<d.manifest.decIdx<<" actionIdx="<<ai
+                         <<" futureIdentity="<<future<<" prefixFight="<<p.prefixFight
+                         <<" survived="<<p.survived<<" continuationValue="<<p.continuationValue
+                         <<" qProduct="<<p.qProduct<<" denseValue="<<p.denseValue
+                         <<" valid="<<p.valid;
+                    return error.str();
+                }());
             for(const auto&p:prefixes)out<<d.manifest.seed<<','<<d.manifest.decIdx<<','<<d.manifest.act<<','<<d.manifest.floor<<','<<d.manifest.screen<<','<<ai<<','<<d.actions[ai].bits<<','<<(d.manifest.actions[ai].chosen?1:0)<<','<<side<<','<<future<<','<<contSeed<<','<<hiddenSeed<<','<<scheduleText.str()<<','<<p.prefixFight<<",prefix,"<<(p.survived?1:0)<<','<<p.continuationValue<<','<<p.qProduct<<','<<p.denseValue<<",,"<<p.silverSimulations<<','<<p.combatDecisions<<','<<p.cpuMs<<','<<p.wallMs<<','<<(p.valid?1:0)<<",\n";
             // Terminal truth is emitted for provenance on both sides. Analysis
             // accepts it as reference only when side=B.

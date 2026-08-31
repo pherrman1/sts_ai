@@ -846,16 +846,17 @@ std::int64_t fightPool = 0;   // STS_CONV_ROOT: per-fight sim credit pool (budge
         for (const auto &e : searcher.root.edges) {
             if (e.node.simulationCount > maxSim) { maxSim = e.node.simulationCount; best = e.action; have = true; }
         }
+        // These tasks encode raw draw-pile indices. A fair tree is first
+        // expanded in a determinized draw order, so reconcile only these
+        // sensitive roots against canonical actions on the live state.
+        if (search::isDrawPileIndexSensitiveCardSelect(bc))
+            have = searcher.mostVisitedLiveRootAction(bc, best);
         if (!have) {
             if (std::getenv("STS_DEBUG_BATTLE_BREAKS"))
                 std::cerr << "[battle-break:s2] state=" << (int)bc.inputState
                           << " task=" << (int)bc.cardSelectInfo.cardSelectTask
                           << " pickCount=" << bc.cardSelectInfo.pickCount << "\n";
-            // Simulator health: the fair-S2 root is enumerated on the live
-            // visible state (determinization changes only hidden draw order /
-            // RNG, never the visible state that action legality depends on),
-            // so an empty search root is equivalent to zero canonical live
-            // legal actions; classify via the canonical check for uniformity.
+            // Classify against the canonical live action set for uniformity.
             reportSimHealthFailure(bc, classifySelectionFailure(bc));
             break;   // no legal move (shouldn't happen pre-terminal)
         }
