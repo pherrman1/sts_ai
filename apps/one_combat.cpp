@@ -11851,7 +11851,8 @@ static void oocBudgetEvaluate(const std::string &manifestFile,
                               int futures, int futureStart,
                               const std::string &side,
                               const std::string &specFile,
-                              int shardIndex, int shardCount) {
+                              int shardIndex, int shardCount,
+                              int workIndex, int workCount) {
     if (side != "A" && side != "B")
         throw std::runtime_error("oockbudgeteval: side must be A or B");
     const std::map<std::string,std::string> frozenEnv={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},
@@ -11873,9 +11874,15 @@ static void oocBudgetEvaluate(const std::string &manifestFile,
         ||spec.at("analysis").at("sha256").get<std::string>()!=fileSha256(spec.at("analysis").at("path").get<std::string>()))
         throw std::runtime_error("oockbudgeteval: frozen spec hash/source mismatch");
     const int frozenShardCount=spec.at("execution").at("shardCount").get<int>();
+    const int frozenWorkCount=spec.at("execution").at("recoveryWorkCount").get<int>();
+    if(spec.at("execution").at("recoveryPartition").get<std::string>()!="action_future_modulo")
+        throw std::runtime_error("oockbudgeteval: unsupported recovery partition");
     if(shardCount!=frozenShardCount||shardCount<=0||shardIndex < -1
         ||(shardIndex<0&&futures!=0)||shardIndex>=shardCount)
         throw std::runtime_error("oockbudgeteval: invalid or unfrozen shard assignment");
+    if(workIndex < -1 || workIndex >= workCount || workCount != frozenWorkCount
+        || (workIndex >= 0 && futures == 0))
+        throw std::runtime_error("oockbudgeteval: invalid or unfrozen recovery work assignment");
     std::map<std::string,std::string> modelPaths;
     for(const auto &model:spec.at("oocModels")){
         const std::string role=model.at("role").get<std::string>(),path=model.at("path").get<std::string>();
@@ -11973,7 +11980,11 @@ static void oocBudgetEvaluate(const std::string &manifestFile,
 
     std::ostringstream shardSuffix;
     shardSuffix<<".shard-"<<std::setw(2)<<std::setfill('0')<<shardIndex
-               <<"-of-"<<shardCount<<".csv";
+               <<"-of-"<<shardCount;
+    if(workIndex>=0)
+        shardSuffix<<".work-"<<std::setw(2)<<std::setfill('0')<<workIndex
+                   <<"-of-"<<workCount;
+    shardSuffix<<".csv";
     if(outFile.size()<shardSuffix.str().size()
         ||outFile.substr(outFile.size()-shardSuffix.str().size())!=shardSuffix.str())
         throw std::runtime_error("oockbudgeteval: output filename does not bind frozen shard assignment");
@@ -11998,6 +12009,8 @@ static void oocBudgetEvaluate(const std::string &manifestFile,
         if(!contSeed)contSeed=1;std::uint64_t hiddenSeed=contSeed^0x94d049bb133111ebULL;if(!hiddenSeed)hiddenSeed=1;
         GameContext siblingBase=detachedCounterfactualCopy(d.pre);resampleRemainingActEncounters(siblingBase,hiddenSeed);
         for(int ai=0;ai<(int)d.actions.size();++ai){
+            const int workOrdinal=j*(int)d.actions.size()+ai;
+            if(workIndex>=0&&workOrdinal%workCount!=workIndex)continue;
             GameContext branch=detachedCounterfactualCopy(siblingBase);d.actions[ai].execute(branch);
             std::optional<GameContext> equivalenceBranch;
             const bool checkEquivalence=side=="A"&&std::getenv("STS_OOC_K_CHECKPOINT_EQUIV");
@@ -14737,6 +14750,8 @@ int main(int argc, char **argv) {
         std::string spec = argc > 9 ? argv[9] : "build/ooc_k_budget/experiment.json";
         int shardIndex = argc > 10 ? std::stoi(argv[10]) : -1;
         int shardCount = argc > 11 ? std::stoi(argv[11]) : 24;
+        int workIndex = argc > 12 ? std::stoi(argv[12]) : -1;
+        int workCount = argc > 13 ? std::stoi(argv[13]) : 12;
         std::vector<int> schedule; std::stringstream bs(budgetText); std::string cell;
         while(std::getline(bs,cell,','))schedule.push_back(std::stoi(cell));
         nlohmann::json manifestDoc; {std::ifstream mf(manifest);if(!mf)throw std::runtime_error("oockbudgeteval: cannot open manifest");mf>>manifestDoc;}
@@ -14745,8 +14760,10 @@ int main(int argc, char **argv) {
         std::cout<<"oockbudgeteval decisions="<<nDecisions<<" schedule="<<budgetText
                  <<" futures="<<futures<<" futureStart="<<futureStart<<" side="<<side
                  <<" shard="<<shardIndex<<'/'<<shardCount
+                 <<" work="<<workIndex<<'/'<<workCount
                  <<" -> "<<out<<'\n';
-        oocBudgetEvaluate(manifest,out,schedule,futures,futureStart,side,spec,shardIndex,shardCount);
+        oocBudgetEvaluate(manifest,out,schedule,futures,futureStart,side,spec,
+                          shardIndex,shardCount,workIndex,workCount);
 
     } else if (mode == "mcts") {
         int sims          = argc > 2 ? std::stoi(argv[2]) : 2000;

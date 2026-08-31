@@ -20,6 +20,9 @@ class TestOocPipeline(unittest.TestCase):
         self.assertIn("modelPaths[\"win\"]!=g_winNet.path",evaluator)
         self.assertIn('spec.at("execution").at("shardCount")',evaluator)
         self.assertIn('d.seed%(std::uint64_t)shardCount',evaluator)
+        self.assertIn('spec.at("execution").at("recoveryWorkCount")',evaluator)
+        self.assertIn('at("recoveryPartition")',evaluator)
+        self.assertIn('workOrdinal%workCount!=workIndex',evaluator)
         self.assertIn('(shardIndex<0&&futures!=0)',evaluator)
         self.assertIn('output filename does not bind frozen shard assignment',evaluator)
         self.assertIn('std::filesystem::create_directory(claimDir)',evaluator)
@@ -28,7 +31,18 @@ class TestOocPipeline(unittest.TestCase):
         source=Path("tools/freeze_ooc_k_budget_experiment.py").read_text(encoding="utf-8")
         self.assertIn('"mode":"source_seed_modulo_process_shards"',source)
         self.assertIn('"shardCount":24',source)
+        self.assertIn('"recoveryWorkCount":12',source)
         self.assertIn('"mergeRequiresAllShards":True',source)
+
+    def test_k_budget_recovery_partition_is_disjoint_and_complete(self):
+        for action_count in (2, 5, 23):
+            branches={(future,action) for future in range(4)
+                      for action in range(action_count)}
+            workers=[{(future,action) for future,action in branches
+                      if (future*action_count+action)%12==worker}
+                     for worker in range(12)]
+            self.assertEqual(set().union(*workers),branches)
+            self.assertEqual(sum(map(len,workers)),len(branches))
 
     def test_k_budget_analyzer_self_test(self):
         k_budget_analysis_self_test()

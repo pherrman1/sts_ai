@@ -97,6 +97,17 @@ count `24`. Analyze all 24 completed CSVs together; exact cohort checks fail
 closed if any source-seed shard is absent. Process sharding is used because
 simulator globals make in-process threading unsafe.
 
+Failure recovery may use the separately frozen 12-way
+`(actionIdx, futureIdentity)` modulo partition within one source shard. Pass
+`WORK_INDEX WORK_COUNT` after the source-shard arguments (indices `0..11`,
+count `12`) and bind both assignments in the output filename. Every worker
+still replays the complete frozen decision and sibling set before evaluating
+only its assigned branches. Merged analysis remains fail closed on duplicates
+or incomplete action/future coverage. When a decision has fewer than three
+actions, `4 * actionCount` is less than 12 and some valid workers intentionally
+produce a header-only CSV; those files are still part of the complete recovery
+worker set.
+
 If and only if Stage A authorizes Stage B, launch the same 24 indices with A
 future start `10` for each frozen schedule (`10000`; `5000,5000`;
 `3333,3333,3334`; `150,100,50`) and distinct schedule-prefixed shard files.

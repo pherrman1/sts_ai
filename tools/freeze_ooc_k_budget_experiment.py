@@ -28,7 +28,8 @@ def main()->None:
         "bootstrapClusters":"sourceSeed","replicates":10000,"seed":20260831},
       "decisionRule":{"minimumPracticalDelta":0.01,"longerRequiresLowerRegret":True,"noSelectedWinDeterioration":True,
         "uncertaintyVerdict":"HORIZON_INCONCLUSIVE","automaticReplicateIncrease":False},
-      "execution":{"mode":"source_seed_modulo_process_shards","shardCount":24,"mergeRequiresAllShards":True}}
+      "execution":{"mode":"source_seed_modulo_process_shards","shardCount":24,"mergeRequiresAllShards":True,
+        "recoveryWorkCount":12,"recoveryPartition":"action_future_modulo"}}
     identity_sets=[set(spec["A"][stage]["futureIdentities"]) for stage in ("stageA","stageB")]+[set(spec["B"]["futureIdentities"])]
     if any(len(s)!=4 for s in identity_sets) or any(identity_sets[i]&identity_sets[j] for i in range(3) for j in range(i+1,3)):
         raise ValueError("Stage-A A, Stage-B A, and B must contain four mutually disjoint identities")
