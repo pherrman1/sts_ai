@@ -126,6 +126,43 @@ class AgentEvalTests(unittest.TestCase):
         self.assertTrue(Path(first["workspace"]).exists())
         self.assertTrue(Path(second["workspace"]).exists())
 
+        cache = self.eval_module.cache_path(self.eval_module.export_identity()) / "tree"
+        cached_readme = (cache / "json" / "README.md").read_bytes()
+        first_readme = Path(first["workspace"]) / "json" / "README.md"
+        second_readme = Path(second["workspace"]) / "json" / "README.md"
+        second_before = second_readme.read_bytes()
+        first_readme.write_bytes(b"candidate A mutation\n")
+        self.assertEqual(second_readme.read_bytes(), second_before)
+        self.assertEqual((cache / "json" / "README.md").read_bytes(), cached_readme)
+
+        shutil_target = Path(first["workspace"]) / "source-cleanup-proof.txt"
+        shutil_target.write_text("independent\n", encoding="utf-8")
+        self.assertEqual(shutil_target.read_text(encoding="utf-8"), "independent\n")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp) / "runtime"
+            identity = {"version": 1, "head": "a" * 40, "submodules": {"json": "b" * 40, "pybind11": "c" * 40}}
+
+            def minimal_export(destination):
+                (destination / "public.txt").write_text("public\n", encoding="utf-8")
+
+            with (
+                mock.patch.object(self.eval_module, "RUNTIME", runtime),
+                mock.patch.object(self.eval_module, "export_identity", return_value=identity),
+                mock.patch.object(self.eval_module, "build_public_export", side_effect=minimal_export) as build,
+            ):
+                destinations = [Path(tmp) / name for name in ("first", "second")]
+                for destination in destinations:
+                    destination.mkdir()
+                    self.eval_module.tracked_export(destination)
+                self.assertEqual(build.call_count, 1)
+                self.assertEqual([path for path in self.eval_module.cache_path(identity).parent.iterdir() if path.name.startswith(".tmp-")], [])
+                entry = self.eval_module.cache_path(identity)
+                (entry / "manifest.json").write_text("{}\n", encoding="utf-8")
+                third = Path(tmp) / "third"; third.mkdir()
+                with self.assertRaisesRegex(self.eval_module.EvalError, "identity/content mismatch"):
+                    self.eval_module.tracked_export(third)
+
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             target = root / "target.txt"

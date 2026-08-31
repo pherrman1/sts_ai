@@ -20,6 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TASKS = ROOT / "evals" / "coding_agent" / "tasks"
 RUNTIME = ROOT / ".agent-eval"
+CACHE_VERSION = 2
 REQUIRED = {
     "schema_version", "id", "version", "title", "prompt_file", "setup_patch",
     "timeout_seconds", "allowed_changed_paths", "forbidden_changed_paths", "grader",
@@ -90,7 +91,27 @@ def run(cmd: list[str], cwd: Path, timeout: float, *, check: bool = False) -> su
     return result
 
 
-def tracked_export(destination: Path) -> None:
+def export_identity() -> dict[str, object]:
+    head = git(ROOT, "rev-parse", "HEAD").stdout.strip()
+    submodules: dict[str, str] = {}
+    for name in ("json", "pybind11"):
+        entry = git(ROOT, "ls-tree", "HEAD", "--", name).stdout.split()
+        if len(entry) != 4 or entry[0] != "160000" or entry[1] != "commit":
+            raise EvalError(f"missing or invalid submodule gitlink: {name}")
+        revision = entry[2]
+        source = ROOT / name
+        if not source.is_dir() or git(source, "rev-parse", "HEAD").stdout.strip() != revision:
+            raise EvalError(f"submodule is not checked out at pinned revision: {name}={revision}")
+        submodules[name] = revision
+    return {"version": CACHE_VERSION, "head": head, "submodules": submodules}
+
+
+def cache_path(identity: dict[str, object]) -> Path:
+    encoded = json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+    return RUNTIME / "cache" / hashlib.sha256(encoded).hexdigest()[:24]
+
+
+def build_public_export(destination: Path) -> None:
     if not destination.is_dir() or any(destination.iterdir()):
         raise EvalError(f"export destination is not empty: {destination}")
     archive = subprocess.run(["git", "archive", "HEAD"], cwd=ROOT, capture_output=True, check=True).stdout
@@ -104,6 +125,72 @@ def tracked_export(destination: Path) -> None:
             if target.exists() and target.is_dir():
                 shutil.rmtree(target)
             shutil.copytree(source, target, ignore=shutil.ignore_patterns(".git"))
+    remove_hidden_data(destination)
+
+
+def tree_sha256(root: Path) -> str:
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
+        relative = path.relative_to(root).as_posix().encode()
+        if path.is_symlink():
+            digest.update(b"L\0" + relative + b"\0" + os.fsencode(os.readlink(path)) + b"\0")
+        elif path.is_file():
+            digest.update(b"F\0" + relative + b"\0")
+            with path.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _tracked_export(destination: Path) -> None:
+    if not destination.is_dir() or any(destination.iterdir()):
+        raise EvalError(f"export destination is not empty: {destination}")
+    identity = export_identity()
+    entry = cache_path(identity)
+    tree = entry / "tree"
+    manifest = entry / "manifest.json"
+    if entry.exists():
+        try:
+            recorded = json.loads(manifest.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise EvalError(f"invalid tracked-export cache entry: {entry}: {exc}") from exc
+        expected = {"identity": identity, "tree_sha256": tree_sha256(tree)} if tree.is_dir() else None
+        if recorded != expected or (tree / "evals").exists():
+            raise EvalError(f"tracked-export cache identity/content mismatch: {entry}")
+    else:
+        entry.parent.mkdir(parents=True, exist_ok=True)
+        temporary = entry.parent / f".tmp-{uuid.uuid4().hex[:12]}"
+        try:
+            temporary.mkdir()
+            temporary_tree = temporary / "tree"
+            temporary_tree.mkdir()
+            build_public_export(temporary_tree)
+            record = {"identity": identity, "tree_sha256": tree_sha256(temporary_tree)}
+            (temporary / "manifest.json").write_text(
+                json.dumps(record, sort_keys=True) + "\n", encoding="utf-8",
+            )
+            try:
+                temporary.rename(entry)
+            except FileExistsError:
+                shutil.rmtree(temporary)
+                return tracked_export(destination)
+        except Exception:
+            shutil.rmtree(temporary, ignore_errors=True)
+            raise
+    archive = subprocess.run(
+        ["tar", "-cf", "-", "-C", str(tree), "."], capture_output=True, check=True,
+    ).stdout
+    subprocess.run(["tar", "-xf", "-", "-C", str(destination)], input=archive, check=True)
+
+
+def tracked_export(destination: Path) -> None:
+    try:
+        _tracked_export(destination)
+    except EvalError:
+        raise
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise EvalError(f"tracked export failed: {exc}") from exc
 
 
 def git(cwd: Path, *args: str, check: bool = True, timeout: float = 30) -> subprocess.CompletedProcess[str]:
@@ -153,10 +240,11 @@ def apply_setup_patch(workspace: Path, patch: Path, task_id: str) -> None:
 
 def remove_hidden_data(workspace: Path) -> None:
     hidden = workspace / "evals"
-    try:
-        shutil.rmtree(hidden)
-    except OSError as exc:
-        raise EvalError(f"failed to remove hidden evaluator data: {exc}") from exc
+    if hidden.exists():
+        try:
+            shutil.rmtree(hidden)
+        except OSError as exc:
+            raise EvalError(f"failed to remove hidden evaluator data: {exc}") from exc
     if hidden.exists():
         raise EvalError(f"hidden evaluator data remains after removal: {hidden}")
 
@@ -168,7 +256,9 @@ def prepared_record_path(workspace: Path) -> Path:
 def create_workspace(prefix: str) -> Path:
     parent = RUNTIME / "work"
     parent.mkdir(parents=True, exist_ok=True)
-    workspace = parent / f"{prefix}{uuid.uuid4().hex}"
+    unique = uuid.uuid4().hex
+    name = f"{prefix}{unique}" if os.name != "nt" else f"{prefix[:8]}{unique[:12]}"
+    workspace = parent / name
     workspace.mkdir()
     return workspace
 
@@ -205,6 +295,15 @@ def load_prepared_baseline(task_id: str, workspace: Path) -> str:
 
 
 def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str | None = None) -> dict:
+    phase_started = time.monotonic()
+    phases: dict[str, float] = {}
+
+    def phase(name: str) -> None:
+        nonlocal phase_started
+        now = time.monotonic()
+        phases[name] = round(now - phase_started, 6)
+        phase_started = now
+
     if (skill_file_value is None) != (skill_name is None):
         raise EvalError("--skill-file and --skill-name must be provided together")
     skill_file = None
@@ -220,6 +319,7 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
     source = task_dir(task_id)
     workspace = create_workspace(f"{task_id}-")
     tracked_export(workspace)
+    phase("tracked_export")
     git(workspace, "init", "-q")
     git(workspace, "config", "user.email", "agent-eval@example.invalid")
     git(workspace, "config", "user.name", "agent-eval")
@@ -230,12 +330,14 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
         target = workspace / ".agents" / "skills" / skill_name / "SKILL.md"
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(skill_file, target)
+    phase("mutation_and_overlay")
     # Stage only after hidden evaluator data is gone. Even staging the original
     # export would write recoverable private blobs into .git/objects. The empty
     # repository is initialized earlier only to isolate patch application from
     # the evaluator source checkout.
     git(workspace, "add", "-A", timeout=120)
     git(workspace, "commit", "-qm", f"candidate baseline: {task_id}")
+    phase("stage_and_commit")
     status = git(workspace, "status", "--short").stdout
     if status:
         raise EvalError(f"prepared candidate is not clean: {status}")
@@ -249,6 +351,8 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
             "skill_name": skill_name,
             "skill_sha256": skill_sha256,
         })
+    if os.environ.get("STS_AGENT_EVAL_TIMINGS") == "1":
+        print(json.dumps({"prepare_phases_seconds": phases}, sort_keys=True), file=sys.stderr)
     return prepared
 
 

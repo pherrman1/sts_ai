@@ -41,8 +41,14 @@ normalized to LF before Git applies them. Hidden graders run through WSL, which
 must provide `python3`, CMake, and the C++ toolchain; evaluator preparation and
 result recording still run under the invoking Windows Python.
 
-`prepare` exports tracked content using `git archive`, materializes checked-out
-submodule contents when present, initializes an empty candidate Git repository,
+`prepare` uses an atomically published public-export cache keyed by source HEAD
+and the exact `json` and `pybind11` gitlink revisions. Cache hits validate a
+manifest and full tree digest before use. Each candidate receives a normal file
+copy of that export, with no hardlinks, alternates, shared object store, or
+dependency on cache lifetime. Cache construction uses `git archive`,
+materializes checked-out submodule contents without nested Git metadata, and
+removes `evals/` before publication. Preparation then initializes an empty
+candidate Git repository,
 applies the setup mutation, removes `evals/`, installs any requested skill
 overlay, and only then stages files and creates the single clean candidate
 baseline commit. Delaying the first staging pass is security-significant:
@@ -50,6 +56,9 @@ private evaluator blobs are never written into the candidate object database.
 Runtime workspaces and result records live below `.agent-eval/`, which is
 ignored. A human can point Codex at the printed workspace, give it the printed
 public prompt, and grade the workspace afterward.
+
+Set `STS_AGENT_EVAL_TIMINGS=1` to emit preparation phase durations as one JSON
+object on stderr. Normal stdout remains the prepared-candidate record.
 
 When both skill options are supplied, `prepare` validates the regular source
 file and lowercase hyphenated slug, copies the skill to
