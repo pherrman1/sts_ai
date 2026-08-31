@@ -4,6 +4,15 @@ from tools.ooc_pipeline_contract import parse_budgets, h_plan, validate_corpus, 
 from tools.verify.vnettest_selftest import canonical_names
 
 class TestOocPipeline(unittest.TestCase):
+    def test_counterfactual_audit_uses_external_combat_backend_overload(self):
+        source=Path("apps/one_combat.cpp").read_text(encoding="utf-8")
+        begin=source.index("runCounterfactualSurrogateAuditSeed")
+        end=source.index("counterfactualSurrogateAuditGen",begin)
+        audit=source[begin:end]
+        self.assertIn("agent.playoutBattle(gc,bc)",audit)
+        self.assertIn("fight.playoutBattle(branch,bc)",audit)
+        self.assertNotIn("fight.playoutBattle(bc)",audit)
+
     def test_budget_prefixes_and_h_plan(self):
         self.assertEqual(parse_budgets("333,333,334"), [333,333,334])
         self.assertEqual(h_plan(12,[1,2,4]), [{"H":1,"distinct_state_actions":12,"expensive_branches":12},{"H":2,"distinct_state_actions":6,"expensive_branches":12},{"H":4,"distinct_state_actions":3,"expensive_branches":12}])
