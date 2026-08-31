@@ -110,6 +110,57 @@ def git(cwd: Path, *args: str, check: bool = True, timeout: float = 30) -> subpr
     return run(["git", *args], cwd, timeout, check=check)
 
 
+def apply_setup_patch(workspace: Path, patch: Path, task_id: str) -> None:
+    patch_bytes = patch.read_bytes().replace(b"\r\n", b"\n")
+    stats = subprocess.run(
+        ["git", "apply", "--numstat", "-z", "-"],
+        cwd=workspace, input=patch_bytes, capture_output=True,
+    )
+    entries = [entry for entry in stats.stdout.split(b"\0") if entry]
+    if stats.returncode or not entries:
+        raise EvalError(f"setup patch made no repository change for {task_id}")
+    targets: list[Path] = []
+    for entry in entries:
+        parts = entry.split(b"\t", 2)
+        if len(parts) != 3:
+            raise EvalError(f"invalid setup patch statistics for {task_id}")
+        targets.append(workspace / safe_rel(os.fsdecode(parts[2]), "setup patch path"))
+
+    def state(path: Path) -> tuple[str, bytes | str] | None:
+        try:
+            if path.is_symlink():
+                return ("symlink", os.readlink(path))
+            if path.is_file():
+                return ("file", hashlib.sha256(path.read_bytes()).digest())
+            if not path.exists():
+                return None
+        except OSError as exc:
+            raise EvalError(
+                f"failed to inspect setup patch target for {task_id}: {path}: {exc}"
+            ) from exc
+        raise EvalError(f"setup patch target is not a file: {path}")
+
+    before = [state(target) for target in targets]
+    applied = subprocess.run(
+        ["git", "apply", "--unidiff-zero", "--whitespace=nowarn", "-"],
+        cwd=workspace, input=patch_bytes, capture_output=True,
+    )
+    if applied.returncode:
+        raise EvalError(f"setup patch failed for {task_id}: {applied.stderr.decode(errors='replace')}")
+    if before == [state(target) for target in targets]:
+        raise EvalError(f"setup patch made no repository change for {task_id}")
+
+
+def remove_hidden_data(workspace: Path) -> None:
+    hidden = workspace / "evals"
+    try:
+        shutil.rmtree(hidden)
+    except OSError as exc:
+        raise EvalError(f"failed to remove hidden evaluator data: {exc}") from exc
+    if hidden.exists():
+        raise EvalError(f"hidden evaluator data remains after removal: {hidden}")
+
+
 def prepared_record_path(workspace: Path) -> Path:
     return RUNTIME / "prepared" / f"{workspace.name}.json"
 
@@ -173,20 +224,8 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
     git(workspace, "config", "user.email", "agent-eval@example.invalid")
     git(workspace, "config", "user.name", "agent-eval")
     patch = source / safe_rel(manifest["setup_patch"], "setup_patch")
-    patch_bytes = patch.read_bytes().replace(b"\r\n", b"\n")
-    patch_changes = subprocess.run(
-        ["git", "apply", "--numstat", "-"],
-        cwd=workspace, input=patch_bytes, capture_output=True,
-    )
-    if patch_changes.returncode or not patch_changes.stdout.strip():
-        raise EvalError(f"setup patch made no repository change for {task_id}")
-    applied = subprocess.run(
-        ["git", "apply", "--unidiff-zero", "--whitespace=nowarn", "-"],
-        cwd=workspace, input=patch_bytes, capture_output=True,
-    )
-    if applied.returncode:
-        raise EvalError(f"setup patch failed for {task_id}: {applied.stderr.decode(errors='replace')}")
-    shutil.rmtree(workspace / "evals", ignore_errors=True)
+    apply_setup_patch(workspace, patch, task_id)
+    remove_hidden_data(workspace)
     if skill_file is not None:
         target = workspace / ".agents" / "skills" / skill_name / "SKILL.md"
         target.parent.mkdir(parents=True, exist_ok=True)
