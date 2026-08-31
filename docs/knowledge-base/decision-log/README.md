@@ -81,6 +81,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-31 | [`2026-08-31-native-codex-delegation.md`](2026-08-31-native-codex-delegation.md) | One coordinating Codex session may delegate independent execution work under an accepted design; same-change subtasks may share its worktree. |
 | 2026-08-31 | [`2026-08-31-skillopt-evaluator-corrections.md`](2026-08-31-skillopt-evaluator-corrections.md) | Evaluator grading is anchored to external prepared-baseline metadata; SkillOpt scope is a preference plus mandatory staged-diff rejection. |
 | 2026-08-30 | [`2026-08-30-mcp-free-skillopt-pilot.md`](2026-08-30-mcp-free-skillopt-pilot.md) | The normal Codex path is MCP-free; SkillOpt-Sleep may stage one bounded procedural proposal for independent evaluator and human review. |
 | 2026-08-28 | [`2026-08-28-research-run-preflight.md`](2026-08-28-research-run-preflight.md) | Strict multi-arm GCP manifests, exact-SHA/artifact preflight, and an environment-aware native/WSL build entry point move common workflow failures before seed execution. |
