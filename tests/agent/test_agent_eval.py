@@ -1,5 +1,6 @@
 import hashlib
 import importlib.util
+import io
 import json
 import subprocess
 import sys
@@ -120,6 +121,30 @@ class AgentEvalTests(unittest.TestCase):
             ):
                 with self.assertRaisesRegex(self.eval_module.EvalError, "made no repository change"):
                     self.eval_module.apply_setup_patch(root, patch, "noop")
+
+            with (
+                mock.patch.object(self.eval_module.subprocess, "run", return_value=stats),
+                mock.patch.object(Path, "read_bytes", side_effect=OSError("denied")),
+            ):
+                with self.assertRaisesRegex(self.eval_module.EvalError, "failed to inspect setup patch target"):
+                    self.eval_module.apply_setup_patch(root, patch, "unreadable")
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with (
+                mock.patch.object(
+                    self.eval_module, "prepare",
+                    side_effect=self.eval_module.EvalError("failed to inspect setup patch target"),
+                ),
+                mock.patch.object(sys, "argv", [str(SCRIPT), "prepare", "guardrail-command-policy"]),
+                mock.patch.object(sys, "stdout", stdout),
+                mock.patch.object(sys, "stderr", stderr),
+            ):
+                self.assertEqual(self.eval_module.main(), 2)
+            self.assertEqual(stdout.getvalue(), "")
+            infra_error = json.loads(stderr.getvalue())
+            self.assertEqual(infra_error["result"], "INFRA_ERROR")
+            self.assertIn("failed to inspect setup patch target", infra_error["error"])
 
             hidden = root / "evals"
             hidden.mkdir()

@@ -126,12 +126,17 @@ def apply_setup_patch(workspace: Path, patch: Path, task_id: str) -> None:
         targets.append(workspace / safe_rel(os.fsdecode(parts[2]), "setup patch path"))
 
     def state(path: Path) -> tuple[str, bytes | str] | None:
-        if path.is_symlink():
-            return ("symlink", os.readlink(path))
-        if path.is_file():
-            return ("file", hashlib.sha256(path.read_bytes()).digest())
-        if not path.exists():
-            return None
+        try:
+            if path.is_symlink():
+                return ("symlink", os.readlink(path))
+            if path.is_file():
+                return ("file", hashlib.sha256(path.read_bytes()).digest())
+            if not path.exists():
+                return None
+        except OSError as exc:
+            raise EvalError(
+                f"failed to inspect setup patch target for {task_id}: {path}: {exc}"
+            ) from exc
         raise EvalError(f"setup patch target is not a file: {path}")
 
     before = [state(target) for target in targets]
