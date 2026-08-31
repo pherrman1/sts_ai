@@ -10,9 +10,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "tools/agent/eval.py"
 GUARDRAIL_FIXTURE_PATHS = (
+    "src/committed_forbidden.txt",
+    "src/merge_only.cpp",
     "src/sim/SimHelpers.cpp",
     "tests/agent/test_cline_guardrails.py",
+    "tools/agent/committed_allowed.txt",
     "tools/agent/cline_guardrails.py",
+    "tools/agent/renamed_sim_helpers.cpp",
+    "tools/agent/side_branch_allowed.txt",
 )
 
 
