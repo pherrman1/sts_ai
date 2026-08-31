@@ -277,7 +277,7 @@ def manifest_arm(manifest: dict, name: str) -> tuple[list[str], str, list[str]]:
     mode = manifest["command"][1]
     suffixes = [".meta.json"] if mode == "bestbench" else [".provenance.json"]
     if mode == "ooccleanpilot":
-        suffixes += [".manifest.json", ".failure.json"]
+        suffixes += [".partial", ".manifest.json", ".failure.json", ".failure.json.partial"]
     fresh = [arm["results"], *(arm["results"] + suffix for suffix in suffixes), arm["log"]]
     return rendered, arm["log"], fresh
 

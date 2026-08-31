@@ -58,6 +58,8 @@ class TestOocPipeline(unittest.TestCase):
         end=source.index("static void cleanOocPilotGen",begin)
         producer=source[begin:end]
         self.assertIn("actions.size()>=2",producer)
+        self.assertIn("actionBits.insert(a.bits).second",producer)
+        self.assertIn("source action missing from legal siblings",producer)
         self.assertIn("resampleRemainingActEncounters(siblingBase,hiddenSeed)",producer)
         self.assertIn("combatFeatureRow(bc)",producer)
         self.assertIn("bc.exitBattle(branch)",producer)
@@ -65,6 +67,8 @@ class TestOocPipeline(unittest.TestCase):
         self.assertIn("combat semantic/conversion/transaction/knowledge health failure",producer)
         wrapper=source[end:source.index("// Play one full run",end)]
         self.assertIn('const std::string partial=outfile+".partial"',wrapper)
+        self.assertIn('failurePartial=failurePath+".partial"',wrapper)
+        self.assertIn("std::filesystem::rename(failurePartial,failurePath)",wrapper)
         self.assertIn("std::filesystem::rename(partial,outfile)",wrapper)
 
     def test_clean_pilot_schema_fails_closed(self):

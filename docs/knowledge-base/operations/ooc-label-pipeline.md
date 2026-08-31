@@ -36,6 +36,11 @@ complete `GameContext`, and RNG transition remain unrepresented. The producer
 writes a `.partial` file and publishes only by atomic rename after every source
 and branch succeeds; any health, reachability, finiteness, or source-action
 failure aborts rather than appending replacement seeds.
+Legal siblings are canonicalized by encoded action bits before eligibility and
+coverage accounting, matching the existing OOC generators' treatment of
+repeated reward identities such as gold piles. A failure retains the data
+partial and atomically publishes a flushed `.failure.json` through its own
+reserved partial path.
 
 Direct-Q and factorized training must consume identical rows, split, representation, and comparable capacity. Survival BCE applies to every valid branch; conditional-value loss only to survived horizons. No placeholder-card sharing or action-subsampling policy is frozen.
 

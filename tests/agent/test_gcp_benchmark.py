@@ -83,8 +83,10 @@ class GcpBenchmarkTests(unittest.TestCase):
         self.assertIn("ooccleanpilot", command)
         self.assertEqual(command[-3:], ["results/policy-A.csv", "983000", "artifacts/policy-model.txt"])
         self.assertIn("results/policy-A.csv.provenance.json", fresh)
+        self.assertIn("results/policy-A.csv.partial", fresh)
         self.assertIn("results/policy-A.csv.manifest.json", fresh)
         self.assertIn("results/policy-A.csv.failure.json", fresh)
+        self.assertIn("results/policy-A.csv.failure.json.partial", fresh)
 
     def test_manifest_validates_and_renders_shared_configuration(self):
         module = load_module()
