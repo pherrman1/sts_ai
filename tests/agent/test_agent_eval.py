@@ -82,7 +82,7 @@ class AgentEvalTests(unittest.TestCase):
                 b"@@ -1 +1 @@\r\n-before\r\n+after\r\n"
             )
             self.eval_module.apply_setup_patch(root, patch, "crlf")
-            self.assertEqual(target.read_bytes(), b"after\n")
+            self.assertEqual(target.read_text(encoding="utf-8").splitlines(), ["after"])
 
         result = cli("prepare", "doctor-submodule-validation")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -143,9 +143,16 @@ class AgentEvalTests(unittest.TestCase):
                 with self.assertRaisesRegex(self.eval_module.EvalError, "made no repository change"):
                     self.eval_module.apply_setup_patch(root, patch, "noop")
 
+            original_read_bytes = Path.read_bytes
+
+            def unreadable_target(path):
+                if path == target:
+                    raise OSError("denied")
+                return original_read_bytes(path)
+
             with (
                 mock.patch.object(self.eval_module.subprocess, "run", return_value=stats),
-                mock.patch.object(Path, "read_bytes", side_effect=OSError("denied")),
+                mock.patch.object(Path, "read_bytes", unreadable_target),
             ):
                 with self.assertRaisesRegex(self.eval_module.EvalError, "failed to inspect setup patch target"):
                     self.eval_module.apply_setup_patch(root, patch, "unreadable")
