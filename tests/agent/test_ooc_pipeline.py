@@ -2,8 +2,26 @@ import csv, json, unittest
 from pathlib import Path
 from tools.ooc_pipeline_contract import parse_budgets, h_plan, validate_corpus, validate_manifest, sha256, SCHEMA_VERSION
 from tools.verify.vnettest_selftest import canonical_names
+from tools.analyze_ooc_k_budget import self_test as k_budget_analysis_self_test
 
 class TestOocPipeline(unittest.TestCase):
+    def test_k_budget_evaluator_is_observational_and_fail_closed(self):
+        source=Path("apps/one_combat.cpp").read_text(encoding="utf-8")
+        begin=source.index("static void oocBudgetEvaluate")
+        end=source.index("static void strategicGen",begin)
+        evaluator=source[begin:end]
+        self.assertIn('const std::string partialFile=outFile+".partial"',evaluator)
+        self.assertIn("OocPrefixObserver observer",evaluator)
+        self.assertIn("observational checkpoint equivalence failed",evaluator)
+        self.assertIn("legal sibling set differs from manifest",evaluator)
+        self.assertIn("invalid/non-finite prefix target",evaluator)
+        self.assertIn('{"STS_NATIVE_OOC","1"}',evaluator)
+        self.assertIn("modelPaths[\"floor\"]!=g_floorNet.path",evaluator)
+        self.assertIn("modelPaths[\"win\"]!=g_winNet.path",evaluator)
+
+    def test_k_budget_analyzer_self_test(self):
+        k_budget_analysis_self_test()
+
     def test_counterfactual_audit_uses_external_combat_backend_overload(self):
         source=Path("apps/one_combat.cpp").read_text(encoding="utf-8")
         begin=source.index("runCounterfactualSurrogateAuditSeed")

@@ -43,9 +43,38 @@ python tools/ooc_pipeline_contract.py budgets 333,333,334
 python tools/ooc_pipeline_contract.py budgets 150,100,50
 
 python tools/ooc_pipeline_contract.py h-plan TOTAL_BRANCHES --futures 1,2,4
+
+python tools/make_ooc_k_budget_manifest.py PR100_AUDIT.csv build/ooc_k_budget/manifest.json
+
+python tools/freeze_ooc_k_budget_experiment.py --manifest build/ooc_k_budget/manifest.json --executable build/one_combat --model floor=models/v_rich_trees.txt --model win=models/v_win_trees.txt --output build/ooc_k_budget/experiment.json
+
+tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json A.csv 10000,10000,10000 4 0 A build/ooc_k_budget/experiment.json
+
+tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json B.csv 10000 4 100 B build/ooc_k_budget/experiment.json
+
+python tools/analyze_ooc_k_budget.py A.csv B.csv --spec build/ooc_k_budget/experiment.json --output analysis.json
 ```
 
-The semantic evaluator will later accept the parsed list and emit one row per valid prefix. Its gameplay command is intentionally deferred until the final teacher branch supplies the exact evaluator mode/config and provenance fields, preventing accidental use of the historical teacher.
+`oockbudgeteval` consumes an `ooc_k_budget_manifest_v1` JSON manifest frozen by
+`tools/make_ooc_k_budget_manifest.py` from the complete PR-100 audit CSV. Before
+opening an output, it replays every source decision under the exact-10k Silver
+source policy and requires a one-to-one match for every frozen action bit plus
+semantic description and for the complete legal sibling set. It refuses a
+non-fair, non-Silver, non-exact-budget, non-allocated-32768, or adaptive
+environment.
+
+For A futures, `finishOocCounterfactual` exposes const observational callbacks
+after each completed fight's normal OOC continuation reaches the next battle.
+The callback bootstraps a detached copy through the existing `vStateRaw` and
+`vStateWin` contract, so checkpoint calculation cannot consume the continuing
+branch's RNG. The same branch continues to terminal. Optional
+`STS_OOC_K_CHECKPOINT_EQUIV=1` reruns the identical continuation without the
+callback and fails unless terminal outcomes and search counts are identical.
+B futures emit terminal truth only. A/B future identities are explicit and
+`tools/analyze_ooc_k_budget.py` rejects overlap, incomplete coverage, invalid
+rows, duplicates, or mismatched action coverage before source-seed-clustered
+analysis. The evaluator writes to an exclusive `.partial` path and renames it
+only after every branch succeeds.
 
 ## Schema examples
 
