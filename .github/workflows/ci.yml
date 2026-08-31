@@ -60,7 +60,7 @@ jobs:
         run: tools/agent/doctor.sh
 
       - name: Test coding-agent evaluator
-        run: python3 -m unittest discover -s tests/agent -p 'test_*.py'
+        run: python3 -m unittest discover -s tests/agent -p 'test_*.py' --durations 20
 
       - name: Restore ccache
         uses: actions/cache@v4

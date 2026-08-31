@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-31 | [`2026-08-31-agent-test-duration-and-fixture-ownership.md`](2026-08-31-agent-test-duration-and-fixture-ownership.md) | Added standard-library slow-test reporting and class-owned immutable evaluator setup with isolated sparse real-Git clones. |
 | 2026-08-31 | [`2026-08-31-test-suite-tiering.md`](2026-08-31-test-suite-tiering.md) | Removed duplicate Python test processes without dropping behavioral coverage, added focused CTest tiers, retained evidence-bearing research analyzers, and made unknown native test commands fail closed. |
 | 2026-08-29 | [`2026-08-29-silver-learned-visit-prior.md`](2026-08-29-silver-learned-visit-prior.md) | Frozen grouped and rank-4 visit-prior experiments are retained as offline/online evidence; their runtime PUCT and native inference paths are retired after negative or inconclusive gates. |
 | 2026-08-29 | [`2026-08-29-silver-root-exploration-c35-128.md`](2026-08-29-silver-root-exploration-c35-128.md) | A fresh paired 128-seed c=35 rerun was directionally positive but inconclusive; ordinary c=25 remains default. |
@@ -24,7 +25,7 @@
 | 2026-08-24 | [`2026-08-24-e3a-direct-runwin-ranking.md`](2026-08-24-e3a-direct-runwin-ranking.md) | E3a implementation: default-off, root/future-CRN direct eventual-run reference for exact source leaves; no scientific collection or gameplay integration. |
 | 2026-08-23 | [`2026-08-23-s3-q-gate-timing.md`](2026-08-23-s3-q-gate-timing.md) | Corrected Searcher3 Q-gate timing result: `bestActionSequence` opens the baseline gate by simulation 10 in 99.91% of 3,449 searches; Always-Q line stopped. |
 
-Last verified: 2026-08-30 against the current working tree.
+Last verified: 2026-08-31 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one
