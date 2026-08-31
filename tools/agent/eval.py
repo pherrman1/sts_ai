@@ -13,8 +13,8 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import time
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -106,12 +106,20 @@ def tracked_export(destination: Path) -> None:
             shutil.copytree(source, target, ignore=shutil.ignore_patterns(".git"))
 
 
-def git(cwd: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return run(["git", *args], cwd, 30, check=check)
+def git(cwd: Path, *args: str, check: bool = True, timeout: float = 30) -> subprocess.CompletedProcess[str]:
+    return run(["git", *args], cwd, timeout, check=check)
 
 
 def prepared_record_path(workspace: Path) -> Path:
     return RUNTIME / "prepared" / f"{workspace.name}.json"
+
+
+def create_workspace(prefix: str) -> Path:
+    parent = RUNTIME / "work"
+    parent.mkdir(parents=True, exist_ok=True)
+    workspace = parent / f"{prefix}{uuid.uuid4().hex}"
+    workspace.mkdir()
+    return workspace
 
 
 def record_prepared_baseline(task_id: str, workspace: Path, baseline_commit: str) -> None:
@@ -159,22 +167,25 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
         skill_sha256 = hashlib.sha256(skill_file.read_bytes()).hexdigest()
     manifest = load_tasks()[task_id]
     source = task_dir(task_id)
-    RUNTIME.joinpath("work").mkdir(parents=True, exist_ok=True)
-    workspace = Path(tempfile.mkdtemp(prefix=f"{task_id}-", dir=RUNTIME / "work"))
+    workspace = create_workspace(f"{task_id}-")
     tracked_export(workspace)
     git(workspace, "init", "-q")
     git(workspace, "config", "user.email", "agent-eval@example.invalid")
     git(workspace, "config", "user.name", "agent-eval")
     patch = source / safe_rel(manifest["setup_patch"], "setup_patch")
+    patch_bytes = patch.read_bytes().replace(b"\r\n", b"\n")
     patch_changes = subprocess.run(
-        ["git", "apply", "--numstat", str(patch)],
-        cwd=workspace, text=True, capture_output=True,
+        ["git", "apply", "--numstat", "-"],
+        cwd=workspace, input=patch_bytes, capture_output=True,
     )
     if patch_changes.returncode or not patch_changes.stdout.strip():
         raise EvalError(f"setup patch made no repository change for {task_id}")
-    applied = subprocess.run(["git", "apply", "--unidiff-zero", "--whitespace=nowarn", str(patch)], cwd=workspace, text=True, capture_output=True)
+    applied = subprocess.run(
+        ["git", "apply", "--unidiff-zero", "--whitespace=nowarn", "-"],
+        cwd=workspace, input=patch_bytes, capture_output=True,
+    )
     if applied.returncode:
-        raise EvalError(f"setup patch failed for {task_id}: {applied.stderr}")
+        raise EvalError(f"setup patch failed for {task_id}: {applied.stderr.decode(errors='replace')}")
     shutil.rmtree(workspace / "evals", ignore_errors=True)
     if skill_file is not None:
         target = workspace / ".agents" / "skills" / skill_name / "SKILL.md"
@@ -184,7 +195,7 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
     # export would write recoverable private blobs into .git/objects. The empty
     # repository is initialized earlier only to isolate patch application from
     # the evaluator source checkout.
-    git(workspace, "add", "-A")
+    git(workspace, "add", "-A", timeout=120)
     git(workspace, "commit", "-qm", f"candidate baseline: {task_id}")
     status = git(workspace, "status", "--short").stdout
     if status:
@@ -239,6 +250,13 @@ def environment() -> dict[str, object]:
     return {"OS": platform.system(), "architecture": platform.machine(), "CPU_count": os.cpu_count(), "Python": platform.python_version(), "compiler": compiler_version}
 
 
+def grader_command(grader: Path, workspace: Path) -> list[str]:
+    if os.name != "nt":
+        return [sys.executable, str(grader), str(workspace)]
+    command = 'python3 "$(wslpath -a "$1")" "$(wslpath -a "$2")"'
+    return ["wsl", "-e", "bash", "-lc", command, "_", str(grader), str(workspace)]
+
+
 def grade(task_id: str, workspace_value: str, labels: dict[str, str]) -> tuple[int, dict]:
     started = time.monotonic()
     manifest = load_tasks()[task_id]
@@ -260,7 +278,7 @@ def grade(task_id: str, workspace_value: str, labels: dict[str, str]) -> tuple[i
     if not files:
         checks.append({"name": "changed-path-policy", "passed": True, "detail": "no agent changes"})
     grader = task_dir(task_id) / safe_rel(manifest["grader"], "grader")
-    result = run([sys.executable, str(grader), str(workspace)], workspace, float(manifest["timeout_seconds"]))
+    result = run(grader_command(grader, workspace), workspace, float(manifest["timeout_seconds"]))
     if result.stdout.strip():
         try:
             checks.extend(json.loads(result.stdout).get("checks", []))
@@ -284,7 +302,11 @@ def self_test() -> int:
             raise EvalError(f"broken fixture unexpectedly passed: {task_id}")
         workspace = Path(prepared["workspace"])
         patch = task_dir(task_id) / "setup.patch"
-        subprocess.run(["git", "apply", "--unidiff-zero", "-R", str(patch)], cwd=workspace, check=True)
+        patch_bytes = patch.read_bytes().replace(b"\r\n", b"\n")
+        subprocess.run(
+            ["git", "apply", "--unidiff-zero", "-R", "-"],
+            cwd=workspace, input=patch_bytes, check=True,
+        )
         code, restored = grade(task_id, str(workspace), {})
         if code != 0:
             raise EvalError(f"restored oracle failed: {task_id}: {json.dumps(restored)}")

@@ -43,10 +43,7 @@ class AgentEvalTests(unittest.TestCase):
 
     def clone_fixture(self):
         source = Path(self.fixture["workspace"])
-        workspace = Path(tempfile.mkdtemp(
-            prefix="guardrail-command-policy-test-",
-            dir=self.eval_module.RUNTIME / "work",
-        ))
+        workspace = self.eval_module.create_workspace("guardrail-command-policy-test-")
         subprocess.run(
             ["git", "clone", "--shared", "--quiet", "--no-checkout", str(source), str(workspace)],
             check=True,
@@ -71,6 +68,20 @@ class AgentEvalTests(unittest.TestCase):
         result = cli("list")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(result.stdout.splitlines()), 4)
+
+    def test_prepare_normalizes_crlf_setup_patch(self):
+        patch = ROOT / "evals/coding_agent/tasks/doctor-submodule-validation/setup.patch"
+        self.assertIn(b"\r\n", patch.read_bytes())
+        result = cli("prepare", "doctor-submodule-validation")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        workspace = Path(json.loads(result.stdout)["workspace"])
+        self.assertEqual(
+            subprocess.run(
+                ["git", "status", "--short"], cwd=workspace,
+                text=True, capture_output=True, check=True,
+            ).stdout,
+            "",
+        )
 
     def test_prepare_isolated_and_hides_reference_data(self):
         first = json.loads(cli("prepare", "guardrail-command-policy").stdout)

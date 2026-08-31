@@ -35,6 +35,12 @@ python3 tools/agent/eval.py grade <task-id> <workspace> --agent codex --model <l
 python3 tools/agent/eval.py self-test
 ```
 
+On Windows, candidate directories are created with inherited ACLs so a Codex
+sandbox can access workspaces prepared by the host process. Setup patches are
+normalized to LF before Git applies them. Hidden graders run through WSL, which
+must provide `python3`, CMake, and the C++ toolchain; evaluator preparation and
+result recording still run under the invoking Windows Python.
+
 `prepare` exports tracked content using `git archive`, materializes checked-out
 submodule contents when present, initializes an empty candidate Git repository,
 applies the setup mutation, removes `evals/`, installs any requested skill
