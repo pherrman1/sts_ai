@@ -1,11 +1,13 @@
 import hashlib
 import importlib.util
+import io
 import json
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "tools/agent/eval.py"
@@ -82,8 +84,94 @@ class AgentEvalTests(unittest.TestCase):
             self.assertFalse((workspace / "setup.patch").exists())
             self.assertEqual(list((workspace / ".git").rglob("*private*")), [])
             self.assertEqual(subprocess.run(["git", "status", "--short"], cwd=workspace, text=True, capture_output=True).stdout, "")
+            fsck = subprocess.run(
+                ["git", "fsck", "--full", "--no-reflogs", "--unreachable"],
+                cwd=workspace, text=True, capture_output=True, check=True,
+            )
+            self.assertEqual(fsck.stdout, "")
+            self.assertFalse((workspace / ".git" / "objects" / "info" / "alternates").exists())
+            self.assertFalse((workspace / ".git" / "modules").exists())
+            hidden_root = ROOT / "evals" / "coding_agent" / "tasks" / "guardrail-command-policy"
+            for hidden in ("private/grader.py", "setup.patch", "task.json"):
+                object_id = subprocess.run(
+                    ["git", "hash-object", str(hidden_root / hidden)], cwd=ROOT,
+                    text=True, capture_output=True, check=True,
+                ).stdout.strip()
+                present = subprocess.run(
+                    ["git", "cat-file", "-e", object_id], cwd=workspace,
+                    text=True, capture_output=True,
+                )
+                self.assertNotEqual(present.returncode, 0, hidden)
         self.assertTrue(Path(first["workspace"]).exists())
         self.assertTrue(Path(second["workspace"]).exists())
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target = root / "target.txt"
+            target.write_text("same\n", encoding="utf-8")
+            patch = root / "noop.patch"
+            patch.write_text(
+                "--- a/target.txt\n+++ b/target.txt\n@@ -1 +1 @@\n-same\n+same\n",
+                encoding="utf-8",
+            )
+            stats = subprocess.CompletedProcess([], 0, b"1\t1\ttarget.txt\0", b"")
+            applied = subprocess.CompletedProcess([], 0, "", "")
+            with mock.patch.object(
+                self.eval_module.subprocess, "run", side_effect=(stats, applied),
+            ):
+                with self.assertRaisesRegex(self.eval_module.EvalError, "made no repository change"):
+                    self.eval_module.apply_setup_patch(root, patch, "noop")
+
+            with (
+                mock.patch.object(self.eval_module.subprocess, "run", return_value=stats),
+                mock.patch.object(Path, "read_bytes", side_effect=OSError("denied")),
+            ):
+                with self.assertRaisesRegex(self.eval_module.EvalError, "failed to inspect setup patch target"):
+                    self.eval_module.apply_setup_patch(root, patch, "unreadable")
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with (
+                mock.patch.object(
+                    self.eval_module, "prepare",
+                    side_effect=self.eval_module.EvalError("failed to inspect setup patch target"),
+                ),
+                mock.patch.object(sys, "argv", [str(SCRIPT), "prepare", "guardrail-command-policy"]),
+                mock.patch.object(sys, "stdout", stdout),
+                mock.patch.object(sys, "stderr", stderr),
+            ):
+                self.assertEqual(self.eval_module.main(), 2)
+            self.assertEqual(stdout.getvalue(), "")
+            infra_error = json.loads(stderr.getvalue())
+            self.assertEqual(infra_error["result"], "INFRA_ERROR")
+            self.assertIn("failed to inspect setup patch target", infra_error["error"])
+
+            hidden = root / "evals"
+            hidden.mkdir()
+            (hidden / "private.txt").write_text("secret", encoding="utf-8")
+            with mock.patch.object(
+                self.eval_module.shutil, "rmtree", side_effect=OSError("denied"),
+            ):
+                with self.assertRaisesRegex(self.eval_module.EvalError, "failed to remove"):
+                    self.eval_module.remove_hidden_data(root)
+            self.assertTrue(hidden.exists())
+
+            def minimal_export(workspace):
+                (workspace / "evals").mkdir()
+
+            git_result = subprocess.CompletedProcess([], 0, "", "")
+            with (
+                mock.patch.object(self.eval_module, "tracked_export", side_effect=minimal_export),
+                mock.patch.object(self.eval_module, "apply_setup_patch"),
+                mock.patch.object(
+                    self.eval_module, "remove_hidden_data",
+                    side_effect=self.eval_module.EvalError("failed to remove hidden evaluator data"),
+                ),
+                mock.patch.object(self.eval_module, "git", return_value=git_result) as git_mock,
+            ):
+                with self.assertRaisesRegex(self.eval_module.EvalError, "failed to remove"):
+                    self.eval_module.prepare("guardrail-command-policy")
+            self.assertFalse(any(call.args[1:2] in (("add",), ("commit",)) for call in git_mock.call_args_list))
 
     def test_prepare_overlays_skill_into_clean_candidate_baseline(self):
         content = b"---\nname: pilot-skill\ndescription: Test skill.\n---\n"
