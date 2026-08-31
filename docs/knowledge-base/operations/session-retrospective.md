@@ -43,7 +43,8 @@ python tools/agent/recent_codex_sessions.py --project . --limit 5 --json
 ```
 
 The helper reads only the first `session_meta` record, searches both locations,
-prefers sessions whose recorded working directory belongs to this checkout,
+asks Git for the checkout's common directory and registered worktrees, accepts
+sessions whose recorded working directory belongs to any of those worktrees,
 deduplicates session IDs, sorts newest first, and emits selection metadata—not
 transcript bodies. It performs no network access. Review only the requested
 small set and avoid secrets or unnecessary transcript excerpts in reports.

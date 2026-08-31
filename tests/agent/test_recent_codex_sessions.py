@@ -5,6 +5,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +28,11 @@ class RecentCodexSessionsTests(unittest.TestCase):
         self.project.mkdir()
         self.codex_home = self.root / ".codex"
         self.module = load_module()
+        roots = mock.patch.object(
+            self.module, "_registered_worktree_roots", return_value=[self.project]
+        )
+        roots.start()
+        self.addCleanup(roots.stop)
 
     def write_session(self, bucket, session_id, timestamp, cwd=None, body="SECRET BODY"):
         directory = self.codex_home / bucket / "2026" / "08"
@@ -50,9 +56,25 @@ class RecentCodexSessionsTests(unittest.TestCase):
         result = self.module.discover(self.project, self.codex_home, 5)
         self.assertEqual([item["path"] for item in result], [str(newer.resolve()), str(older.resolve())])
 
-    def test_filters_other_projects_and_accepts_linked_worktree(self):
+    def test_accepts_all_registered_sibling_worktrees_and_excludes_other_repo(self):
+        task_a = self.root / "sts_ai-task-a"
+        task_b = self.root / "sts_ai-task-b"
+        task_a.mkdir()
+        task_b.mkdir()
+        self.module._registered_worktree_roots.return_value = [self.project, task_a, task_b]
+        self.write_session("sessions", "main", "2026-08-31T09:00:00Z", self.project)
+        self.write_session("sessions", "task-a", "2026-08-31T10:00:00Z", task_a)
+        self.write_session("sessions", "task-b", "2026-08-31T11:00:00Z", task_b)
+        self.write_session("sessions", "other", "2026-08-31T11:00:00Z", self.root / "other")
+        result = self.module.discover(task_b, self.codex_home, 5)
+        self.assertEqual(
+            [Path(item["path"]).stem for item in result], ["task-b", "task-a", "main"]
+        )
+
+    def test_accepts_registered_nested_worktree(self):
         linked = self.project / ".worktrees" / "task"
         linked.mkdir(parents=True)
+        self.module._registered_worktree_roots.return_value = [self.project, linked]
         self.write_session("sessions", "match", "2026-08-31T10:00:00Z", self.project)
         self.write_session("sessions", "other", "2026-08-31T11:00:00Z", self.root / "other")
         result = self.module.discover(linked, self.codex_home, 5)

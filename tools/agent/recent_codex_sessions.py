@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -33,12 +34,40 @@ def _timestamp(value: object) -> datetime | None:
         return None
 
 
-def _project_roots(project: Path) -> list[Path]:
-    resolved = project.resolve()
-    roots = [resolved]
-    parts = resolved.parts
-    if ".worktrees" in parts:
-        roots.append(Path(*parts[: parts.index(".worktrees")]))
+def _registered_worktree_roots(project: Path) -> list[Path]:
+    try:
+        common = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(project.resolve()),
+                "rev-parse",
+                "--path-format=absolute",
+                "--git-common-dir",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        listing = subprocess.run(
+            ["git", f"--git-dir={common}", "worktree", "list", "--porcelain"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise SessionDiscoveryError(
+            f"cannot discover registered Git worktrees for {project.resolve()}"
+        ) from exc
+    roots = [
+        Path(line.removeprefix("worktree ")).resolve()
+        for line in listing.splitlines()
+        if line.startswith("worktree ")
+    ]
+    if not roots:
+        raise SessionDiscoveryError(
+            f"Git reported no registered worktrees for {project.resolve()}"
+        )
     return roots
 
 
@@ -86,7 +115,7 @@ def _read_metadata(path: Path, bucket: str) -> dict[str, object] | None:
 def discover(project: Path, codex_home: Path, limit: int) -> list[dict[str, object]]:
     if limit < 1:
         raise SessionDiscoveryError("--limit must be at least 1")
-    roots = _project_roots(project)
+    roots = _registered_worktree_roots(project)
     by_id: dict[str, dict[str, object]] = {}
     for bucket in ("active", "archived"):
         location = codex_home / ("sessions" if bucket == "active" else "archived_sessions")
