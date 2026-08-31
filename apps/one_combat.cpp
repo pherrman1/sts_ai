@@ -8237,6 +8237,7 @@ static void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile
 // to its next real battle, and uses the unchanged external combat action path.
 static std::string runCounterfactualSurrogateAuditSeed(std::uint64_t seed, int sims, int asc,
                                                         const WholeCombatTeacher &teacher) {
+    trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent; agent.simulationCountBase=sims; agent.rng=std::default_random_engine(seed);
     std::default_random_engine reservoir(seed*2862933555777941757ULL+97);
@@ -8244,7 +8245,7 @@ static std::string runCounterfactualSurrogateAuditSeed(std::uint64_t seed, int s
     std::unique_ptr<GameContext> sampled; std::vector<search::GameAction> sampledActions;
     int sampledDecision=-1, eligible=0, decisionIdx=0; std::uint32_t sampledChosen=UINT32_MAX;
     using RT=search::GameAction::RewardsActionType;
-    while(gc.outcome==GameOutcome::UNDECIDED){path.update(gc);if(gc.screenState==ScreenState::BATTLE){agent.simulationCountBase=fightSims(gc,sims);BattleContext bc{};bc.init(gc);agent.playoutBattle(bc);bc.exitBattle(gc);continue;}
+    while(gc.outcome==GameOutcome::UNDECIDED){path.update(gc);if(gc.screenState==ScreenState::BATTLE){agent.simulationCountBase=fightSims(gc,sims);BattleContext bc{};bc.init(gc);agent.playoutBattle(bc);if(!trainingRunValid(bc.outcome!=Outcome::UNDECIDED)){search::g_onGameActionExecute={};t_curPath=nullptr;return{};}bc.exitBattle(gc);continue;}
         const auto actions=search::GameAction::getAllActionsInState(gc);bool replace=false;
         if(actions.size()>=2){++eligible;replace=std::uniform_int_distribution<int>(1,eligible)(reservoir)==1;if(replace){sampled=std::make_unique<GameContext>(detachedCounterfactualCopy(gc));sampledPath=path;sampledActions=actions;sampledDecision=decisionIdx;}++decisionIdx;}
         std::uint32_t executed=UINT32_MAX;search::g_onGameActionExecute=[&](std::uint32_t bits,const GameContext *target){if(target==&gc&&executed==UINT32_MAX)executed=bits;};
@@ -8253,18 +8254,18 @@ static std::string runCounterfactualSurrogateAuditSeed(std::uint64_t seed, int s
         else agent.stepOutOfCombatPolicy(gc);
         search::g_onGameActionExecute={};if(replace){sampledChosen=executed;if(executed!=UINT32_MAX&&std::none_of(sampledActions.begin(),sampledActions.end(),[&](const auto&a){return a.bits==executed;})){search::GameAction chosen(executed);if(chosen.isValidAction(*sampled))sampledActions.push_back(chosen);}}
     }
-    std::ostringstream out;if(sampled){const std::string legal=joinLegalActions(sampledActions,*sampled);for(int a=0;a<(int)sampledActions.size();++a){GameContext branch=detachedCounterfactualCopy(*sampled);sampledActions[a].execute(branch);const std::uint64_t branchSeed=seed^(0x9e3779b97f4a7c15ULL*(std::uint64_t)(sampledDecision+31));bool reached=advanceOocToNextBattle(branch,sims,branchSeed,sampledPath);std::string feature;int won=0,endHp=0,startHp=0,startMax=0,endMax=0;std::string encounter="INVALID",room="INVALID";
-            int battleAct=0,battleFloor=0;if(reached){battleAct=branch.act;battleFloor=branch.floorNum;BattleContext bc{};bc.init(branch);feature=combatFeatureRow(bc);startHp=bc.player.curHp;startMax=bc.player.maxHp;encounter=monsterEncounterStrings[(int)bc.encounter];room=roomStrings[(int)branch.curRoom];search::ScumSearchAgent2 fight;fight.simulationCountBase=sims;fight.rng=std::default_random_engine(branchSeed);fight.playoutBattle(bc);won=bc.outcome==Outcome::PLAYER_VICTORY;bc.exitBattle(branch);endHp=won?branch.curHp:0;endMax=branch.maxHp;}
-            out<<seed<<','<<sampledDecision<<','<<a<<','<<sampledActions[a].bits<<','<<csvQuote(actionDescription(sampledActions[a],*sampled))<<','<<(sampledActions[a].bits==sampledChosen)<<','<<(int)sampled->screenState<<','<<sampled->act<<','<<sampled->floorNum<<','<<battleAct<<','<<battleFloor<<','<<csvQuote(encounter)<<','<<csvQuote(room)<<','<<teacher.id<<','<<reached<<','<<csvQuote(reached?"":"no_next_combat");
-            if(reached)out<<','<<feature;else for(int i=0;i<1766;++i)out<<",0";out<<','<<won<<','<<endHp<<','<<startHp<<','<<startMax<<','<<endMax<<','<<(startMax>0?(double)endHp/startMax:0.0)<<'\n';}}
+    std::ostringstream out;if(sampled){const std::string legal=joinLegalActions(sampledActions,*sampled);for(int a=0;a<(int)sampledActions.size();++a){GameContext branch=detachedCounterfactualCopy(*sampled);sampledActions[a].execute(branch);const std::uint64_t branchSeed=seed^(0x9e3779b97f4a7c15ULL*(std::uint64_t)(sampledDecision+31));bool reached=advanceOocToNextBattle(branch,sims,branchSeed,sampledPath),valid=reached;std::string reason=reached?"":"no_next_combat",feature;int won=0,endHp=0,startHp=0,startMax=0,endMax=0;std::string encounter="INVALID",room="INVALID";
+            int battleAct=0,battleFloor=0;if(reached){battleAct=branch.act;battleFloor=branch.floorNum;BattleContext bc{};bc.init(branch);feature=combatFeatureRow(bc);startHp=bc.player.curHp;startMax=bc.player.maxHp;encounter=monsterEncounterStrings[(int)bc.encounter];room=roomStrings[(int)branch.curRoom];search::ScumSearchAgent2 fight;fight.simulationCountBase=sims;fight.rng=std::default_random_engine(branchSeed);const int healthBefore=search::g_simHealthFailureCount;fight.playoutBattle(bc);valid=search::isValidTrainingTerminal(bc.outcome!=Outcome::UNDECIDED,healthBefore,search::g_simHealthFailureCount,false);if(valid){won=bc.outcome==Outcome::PLAYER_VICTORY;bc.exitBattle(branch);endHp=won?branch.curHp:0;endMax=branch.maxHp;}else reason="combat_health_failure";}
+            out<<seed<<','<<sampledDecision<<','<<a<<','<<sampledActions[a].bits<<','<<csvQuote(actionDescription(sampledActions[a],*sampled))<<','<<(sampledActions[a].bits==sampledChosen)<<','<<(int)sampled->screenState<<','<<sampled->act<<','<<sampled->floorNum<<','<<battleAct<<','<<battleFloor<<','<<csvQuote(encounter)<<','<<csvQuote(room)<<','<<teacher.id<<','<<valid<<','<<csvQuote(reason);
+            if(valid)out<<','<<feature;else for(int i=0;i<1766;++i)out<<",0";out<<','<<won<<','<<endHp<<','<<startHp<<','<<startMax<<','<<endMax<<','<<(startMax>0?(double)endHp/startMax:0.0)<<'\n';}}
     t_curPath=nullptr;return out.str();
 }
 
 static void counterfactualSurrogateAuditGen(int nSeeds,int sims,int asc,const std::string&outfile,
                                             std::uint64_t seedOffset,const std::string&teacherPath){
-    trainingCampaignStart();search::g_richCombatFeatures=true;const auto teacher=loadWholeCombatTeacher(teacherPath,sims);std::ofstream f(outfile);if(!f)throw std::runtime_error("counterfactual surrogate audit: cannot open output");f<<"sourceSeed,decisionIdx,actionIdx,actionBits,action,chosen,screen,decisionAct,decisionFloor,battleAct,battleFloor,battleEncounter,roomClass,teacherId,valid,quarantineReason,"<<combatHeaderStr()<<",won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac\n";long long rows=0;
-    for(int s=0;s<nSeeds;++s){const auto r=runCounterfactualSurrogateAuditSeed(seedOffset+s,sims,asc,teacher);rows+=std::count(r.begin(),r.end(),'\n');f<<r;f.flush();}
-    std::cout<<"ooccfaudit teacher="<<teacher.id<<" sources="<<nSeeds<<" rows="<<rows<<" -> "<<outfile<<'\n';writeTrainingProvenance(outfile,"ooccfaudit",nSeeds,nSeeds,0,g_trainingHealthFailures.load(),rows,seedOffset,sims,asc);
+    trainingCampaignStart();search::g_richCombatFeatures=true;const auto teacher=loadWholeCombatTeacher(teacherPath,sims);std::ofstream f(outfile);if(!f)throw std::runtime_error("counterfactual surrogate audit: cannot open output");f<<"sourceSeed,decisionIdx,actionIdx,actionBits,action,chosen,screen,decisionAct,decisionFloor,battleAct,battleFloor,battleEncounter,roomClass,teacherId,valid,quarantineReason,"<<combatHeaderStr()<<",won,endHp,startHp,startMaxHp,endMaxHp,endHpFrac\n";long long rows=0;int completed=0;
+    for(int s=0;s<nSeeds;++s){const auto r=runCounterfactualSurrogateAuditSeed(seedOffset+s,sims,asc,teacher);rows+=std::count(r.begin(),r.end(),'\n');if(!r.empty())++completed;f<<r;f.flush();}
+    std::cout<<"ooccfaudit teacher="<<teacher.id<<" completed="<<completed<<'/'<<nSeeds<<" quarantined="<<nSeeds-completed<<" rows="<<rows<<" -> "<<outfile<<'\n';writeTrainingProvenance(outfile,"ooccfaudit",nSeeds,completed,nSeeds-completed,g_trainingHealthFailures.load(),rows,seedOffset,sims,asc);
 }
 
 // Play one full run; emit combat-state rows labeled with each fight's outcome.
