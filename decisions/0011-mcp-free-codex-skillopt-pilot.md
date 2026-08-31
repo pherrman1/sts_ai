@@ -29,6 +29,15 @@ by independent `sts_ai` evaluator comparison and human review. SkillOpt may
 not automatically edit the KB or adopt a skill proposal; accepted edits use
 the normal branch, draft PR, and CI workflow.
 
+A manual session retrospective may review a small set of active or archived
+Codex sessions to identify recurring workflow waste and route the smallest
+durable remedy to an existing skill, KB/routing page, workflow, helper,
+evaluator, or deletion/simplification. Its compact lessons file records
+evidence and remedy history, not canonical project truth. There is no
+scheduler, automatic session-end run, daemon, or automatic repository change.
+Procedural proposals for `codex-implementation/SKILL.md` remain SkillOpt's
+bounded responsibility unless a user explicitly requests a manual edit.
+
 ## Rationale
 
 This separates durable project knowledge from bounded procedural learning,
@@ -41,6 +50,9 @@ repository outcomes without adding orchestration or memory infrastructure.
   active workflow with less configuration and worktree risk.
 - Add automatic harvesting or adoption — rejected because transcript-derived
   tasks and preview optimization require inspection and attributable review.
+- Add a general session-memory or maintenance framework — rejected because a
+  metadata-only selector, one compact evidence file, and existing Git/PR
+  workflow cover the bounded retrospective need.
 - Treat SkillOpt replay as final evidence — rejected because the repository
   evaluator independently tests scoped outcomes behind a hidden boundary.
 
@@ -55,6 +67,8 @@ no-regression comparison, but cannot by itself prove general quality gains.
 - `AGENTS.md`; `.codex/config.toml`; `.agents/skills/`
 - `docs/knowledge-base/operations/agent-context-and-workflow.md`
 - `docs/knowledge-base/operations/skillopt-sleep.md`
+- `docs/knowledge-base/operations/session-retrospective.md`
+- `tools/agent/recent_codex_sessions.py`; `tests/agent/test_recent_codex_sessions.py`
 - `tools/agent/eval.py`; `tests/agent/test_agent_eval.py`
 
 ## Evidence
