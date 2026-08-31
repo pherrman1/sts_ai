@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-31 | [`2026-08-31-test-suite-tiering.md`](2026-08-31-test-suite-tiering.md) | Removed duplicate Python test processes without dropping behavioral coverage, added focused CTest tiers, retained evidence-bearing research analyzers, and made unknown native test commands fail closed. |
 | 2026-08-29 | [`2026-08-29-silver-learned-visit-prior.md`](2026-08-29-silver-learned-visit-prior.md) | Frozen grouped and rank-4 visit-prior experiments are retained as offline/online evidence; their runtime PUCT and native inference paths are retired after negative or inconclusive gates. |
 | 2026-08-29 | [`2026-08-29-silver-root-exploration-c35-128.md`](2026-08-29-silver-root-exploration-c35-128.md) | A fresh paired 128-seed c=35 rerun was directionally positive but inconclusive; ordinary c=25 remains default. |
 | 2026-08-29 | [`2026-08-29-silver-root-exploration-online.md`](2026-08-29-silver-root-exploration-online.md) | Exploratory root-c gameplay screens did not establish a replacement for ordinary c=25. |
