@@ -45,10 +45,7 @@ class AgentEvalTests(unittest.TestCase):
 
     def clone_fixture(self):
         source = Path(self.fixture["workspace"])
-        workspace = Path(tempfile.mkdtemp(
-            prefix="guardrail-command-policy-test-",
-            dir=self.eval_module.RUNTIME / "work",
-        ))
+        workspace = self.eval_module.create_workspace("guardrail-command-policy-test-")
         subprocess.run(
             ["git", "clone", "--shared", "--quiet", "--no-checkout", str(source), str(workspace)],
             check=True,
@@ -73,6 +70,30 @@ class AgentEvalTests(unittest.TestCase):
         result = cli("list")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(result.stdout.splitlines()), 4)
+
+    def test_prepare_normalizes_crlf_setup_patch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target = root / "target.txt"
+            target.write_bytes(b"before\n")
+            patch = root / "setup.patch"
+            patch.write_bytes(
+                b"--- a/target.txt\r\n+++ b/target.txt\r\n"
+                b"@@ -1 +1 @@\r\n-before\r\n+after\r\n"
+            )
+            self.eval_module.apply_setup_patch(root, patch, "crlf")
+            self.assertEqual(target.read_text(encoding="utf-8").splitlines(), ["after"])
+
+        result = cli("prepare", "doctor-submodule-validation")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        workspace = Path(json.loads(result.stdout)["workspace"])
+        self.assertEqual(
+            subprocess.run(
+                ["git", "status", "--short"], cwd=workspace,
+                text=True, capture_output=True, check=True,
+            ).stdout,
+            "",
+        )
 
     def test_prepare_isolated_and_hides_reference_data(self):
         first = json.loads(cli("prepare", "guardrail-command-policy").stdout)
@@ -122,9 +143,16 @@ class AgentEvalTests(unittest.TestCase):
                 with self.assertRaisesRegex(self.eval_module.EvalError, "made no repository change"):
                     self.eval_module.apply_setup_patch(root, patch, "noop")
 
+            original_read_bytes = Path.read_bytes
+
+            def unreadable_target(path):
+                if path == target:
+                    raise OSError("denied")
+                return original_read_bytes(path)
+
             with (
                 mock.patch.object(self.eval_module.subprocess, "run", return_value=stats),
-                mock.patch.object(Path, "read_bytes", side_effect=OSError("denied")),
+                mock.patch.object(Path, "read_bytes", unreadable_target),
             ):
                 with self.assertRaisesRegex(self.eval_module.EvalError, "failed to inspect setup patch target"):
                     self.eval_module.apply_setup_patch(root, patch, "unreadable")
