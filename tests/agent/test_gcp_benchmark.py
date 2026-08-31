@@ -56,6 +56,20 @@ def write_manifest(directory, payload):
 
 
 class GcpBenchmarkTests(unittest.TestCase):
+    def test_wholecombat_manifest_validates_and_reserves_provenance(self):
+        module = load_module()
+        payload = valid_manifest()
+        payload["command"] = [payload["binary"]["remote_path"], "wholecombatgen",
+                              "128", "10000", "0", "{results}", "975100",
+                              payload["artifacts"][0]["remote_path"]]
+        payload["arms"] = [payload["arms"][0]]
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = module.load_run_manifest(write_manifest(directory, payload))
+        command, _, fresh = module.manifest_arm(manifest, "A")
+        self.assertIn("wholecombatgen", command)
+        self.assertEqual(command[-3:], ["results/policy-A.csv", "975100", "artifacts/policy-model.txt"])
+        self.assertIn("results/policy-A.csv.provenance.json", fresh)
+
     def test_manifest_validates_and_renders_shared_configuration(self):
         module = load_module()
         with tempfile.TemporaryDirectory() as directory:

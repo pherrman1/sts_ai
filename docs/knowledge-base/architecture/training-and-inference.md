@@ -43,6 +43,22 @@ candidate fields, a `chosen` flag, and terminal run labels
 flag is detected by successor-fingerprint matching against the executed policy
 action.
 
+The prepared next-generation OOC workflow is documented in
+[`operations/ooc-label-pipeline.md`](../operations/ooc-label-pipeline.md).
+`tools/ooc_pipeline_contract.py` validates a fail-closed frozen-combat-teacher
+and corpus manifest and parses arbitrary per-fight budget schedules/H plans;
+`tools/train_whole_combat_surrogate.py` fits seed-grouped XGBoost survival and
+winning-only conditional-HP models from a future one-row-per-fight corpus.
+These tools do not freeze a teacher, generate data, or authorize runtime
+surrogate use.
+
+`wholecombatgen` emits one canonical 1,766-feature row per completed fight. It
+captures the first `g_onCombatDecision` callback and labels the row after
+`BattleContext::exitBattle` returns: the post-`afterBattle`, reward-screen-entry
+`GameContext`, not the earlier RAW persistent-transfer hook. Its teacher
+JSON is checked against the checkout, executable, exact ordinary Silver 10k
+configuration, environment, and loaded-artifact hashes before CSV creation.
+
 Representative model families:
 
 - run values: `train_value_rich.py`, `train_winrate.py`;

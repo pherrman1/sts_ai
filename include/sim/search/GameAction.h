@@ -8,6 +8,7 @@
 #include "sts_common.h"
 
 #include <iostream>
+#include <functional>
 #include <vector>
 
 namespace sts {
@@ -15,6 +16,8 @@ namespace sts {
 }
 
 namespace sts::search {
+
+    extern thread_local std::function<void(std::uint32_t, const sts::GameContext *)> g_onGameActionExecute;
 
     struct GameAction {
 
