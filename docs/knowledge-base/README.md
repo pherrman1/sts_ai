@@ -1,6 +1,6 @@
 # StS AI knowledge base
 
-Last verified: 2026-08-30 against the current working tree.
+Last verified: 2026-08-31 against the current working tree.
 
 This knowledge base is the maintained technical reference for the repository.
 Code and executable behavior remain authoritative; `EXPERIMENTS.md` retains
@@ -46,6 +46,8 @@ For evaluation and operation:
 7. [Coding-agent evaluation harness](evaluation/coding-agent-evals.md)
 8. [SkillOpt-Sleep pilot](operations/skillopt-sleep.md) — on-demand transcript
    review, bounded skill proposals, and evaluator-gated adoption.
+9. [Session retrospective](operations/session-retrospective.md) — manual review
+   of recent sessions and routing of small, evidence-backed maintenance.
 
 For correctness:
 

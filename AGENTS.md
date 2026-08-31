@@ -1,6 +1,6 @@
 # StS AI agent contract
 
-Last verified: 2026-08-30 against the current working tree.
+Last verified: 2026-08-31 against the current working tree.
 
 ## Purpose and authority
 
@@ -50,6 +50,11 @@ routing.
 - Use the [codex-implementation skill](.agents/skills/codex-implementation/SKILL.md)
   for ordinary implementation, debugging, build, test, and PR tasks when no
   specialized research or review skill applies.
+- When asked to review recent Codex sessions for repeated inefficiency,
+  rediscovery, or workflow improvement, use the
+  [session-retrospective skill](.agents/skills/session-retrospective/SKILL.md).
+  Its persistent lessons are evidence, not project truth; route durable facts
+  to the canonical KB, code, or decision destination.
 - Use the repo-grounded ChatGPT/Sol handoff as the accepted design plan when it
   includes the baseline, goal/hypothesis, verified repo facts, required
   behavior, non-goals, and verification criteria. Codex performs a bounded
