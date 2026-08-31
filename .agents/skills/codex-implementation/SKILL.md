@@ -28,3 +28,7 @@ diff that changes content outside it. Keep at most
 12 short, stable, evidence-backed rules. Consolidate or replace old rules rather
 than growing the section indefinitely. Never store branch names, current SHAs,
 line numbers, transient failures, or duplicated KB facts here. -->
+
+- After an evidence-relevant correction, reconcile the draft PR's scope,
+  changed paths, checks and counts, provenance, conclusions, reviewed SHA, and
+  remaining uncertainty against the final commit and raw results.

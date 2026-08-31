@@ -48,6 +48,15 @@ missing rather than expanding the search indefinitely.
    Before launch state the hypothesis, baseline/treatment, seed regime, budget,
    fair-vs-known-RNG regime, model/configuration provenance, intended N, and
    decision rule.
+   Before collecting new data, inventory preserved local and remote artifacts
+   and record why each candidate does or does not satisfy the required
+   provenance, configuration, sample size, replication, freshness, and state
+   constraints. Reuse qualifying evidence; do not silently recollect a
+   discovery pool for prospective validation.
+   For remote work, distinguish requested, launched, running, and completed
+   state. Verify the actual host and environment, effective resource use,
+   process progress, failures, output provenance, and observed throughput
+   before claiming execution status or an ETA.
 5. Separate implementation correctness from scientific interpretation. Record
    raw commands and results, update `EXPERIMENTS.md` or its current ledger shard
    when a benchmarked idea is run, and finish substantial cycles with a concise
