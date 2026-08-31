@@ -7,8 +7,15 @@ import numpy as np
 import pandas as pd
 
 KEY=["sourceSeed","decisionIdx","actionIdx"]
+def _normalize_schedule(f:pd.DataFrame)->pd.DataFrame:
+    f["schedule"]=f.schedule.astype(str)
+    return f
 def _load(paths:list[Path])->pd.DataFrame:
     f=pd.concat([pd.read_csv(p) for p in paths],ignore_index=True)
+    # A multi-fight schedule contains semicolons and is inferred as text, while
+    # a single-fight schedule such as 10000 may be inferred as an integer when
+    # its shard is read independently.  Normalize before identity checks.
+    f=_normalize_schedule(f)
     if f.empty or (f.valid!=1).any(): raise ValueError("all evaluator rows must be valid")
     if f.duplicated(["sourceSeed","decisionIdx","actionIdx","side","futureIdentity","prefixFight","rowKind","schedule"]).any():
         raise ValueError("duplicate evaluator identity")
@@ -124,6 +131,8 @@ def self_test()->None:
     a=pd.Series([.8,.2,.1,.9],index=idx);b=pd.Series([1.,0.,1.,0.],index=idx)
     r=metric_rows(a,b);assert r.selectedTerminalWin.tolist()==[1.,0.]
     assert abs(summarize(r)["terminalRegret"]-.5)<1e-12
+    raw=_normalize_schedule(pd.DataFrame({"schedule":[10000,"10000;10000;10000"]}))
+    assert raw.schedule.tolist()==["10000","10000;10000;10000"]
 def main()->None:
     p=argparse.ArgumentParser();p.add_argument("csv",nargs="*",type=Path);p.add_argument("--output",type=Path)
     p.add_argument("--spec",type=Path)
