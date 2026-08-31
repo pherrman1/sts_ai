@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TASKS = ROOT / "evals" / "coding_agent" / "tasks"
 RUNTIME = ROOT / ".agent-eval"
-CACHE_VERSION = 3
+CACHE_VERSION = 4
 REQUIRED = {
     "schema_version", "id", "version", "title", "prompt_file", "setup_patch",
     "timeout_seconds", "allowed_changed_paths", "forbidden_changed_paths", "grader",
@@ -137,17 +137,35 @@ def build_public_export(destination: Path, identity: dict[str, object]) -> None:
 
 def tree_sha256(root: Path) -> str:
     digest = hashlib.sha256()
+
+    def field(value: bytes) -> None:
+        digest.update(len(value).to_bytes(8, "big"))
+        digest.update(value)
+
     for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
-        relative = path.relative_to(root).as_posix().encode()
+        relative = os.fsencode(path.relative_to(root).as_posix())
         if path.is_symlink():
-            digest.update(b"L\0" + relative + b"\0" + os.fsencode(os.readlink(path)) + b"\0")
+            digest.update(b"L")
+            field(relative)
+            field(os.fsencode(os.readlink(path)))
+        elif path.is_dir():
+            digest.update(b"D")
+            field(relative)
         elif path.is_file():
             executable = b"X" if path.stat().st_mode & stat.S_IXUSR else b"-"
-            digest.update(b"F" + executable + b"\0" + relative + b"\0")
+            size = path.stat().st_size
+            digest.update(b"F" + executable)
+            field(relative)
+            digest.update(size.to_bytes(8, "big"))
+            observed = 0
             with path.open("rb") as stream:
                 for chunk in iter(lambda: stream.read(1024 * 1024), b""):
                     digest.update(chunk)
-            digest.update(b"\0")
+                    observed += len(chunk)
+            if observed != size:
+                raise EvalError(f"file changed while hashing tracked-export cache: {path}")
+        else:
+            raise EvalError(f"unsupported node in tracked-export cache: {path}")
     return digest.hexdigest()
 
 
@@ -200,7 +218,7 @@ def tracked_export(destination: Path) -> None:
         _tracked_export(destination)
     except EvalError:
         raise
-    except (OSError, subprocess.SubprocessError) as exc:
+    except (OSError, UnicodeError, subprocess.SubprocessError) as exc:
         raise EvalError(f"tracked export failed: {exc}") from exc
 
 

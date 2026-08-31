@@ -8,8 +8,9 @@ Session/task: Reduce repeated coding-agent candidate preparation cost.
 Cache the immutable public tracked export below evaluator-owned runtime state,
 keyed by source `HEAD` and the exact `json` and `pybind11` gitlink revisions.
 Publish a cache entry atomically only after submodule-pin validation, hidden-data
-removal, and content/path/executable-mode tree hashing. Validate its manifest
-and tree digest on every hit and revalidate the materialized candidate copy.
+removal, and length-framed content/path/node/executable-mode tree hashing.
+Validate its manifest and tree digest on every hit, reject unsupported node
+types, and revalidate the materialized candidate copy.
 Archive the captured root and submodule SHAs directly so dirty or changing
 source worktrees cannot alter bytes under that identity. Materialize candidates
 as ordinary independent files and create their sole

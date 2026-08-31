@@ -2,6 +2,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -173,6 +174,12 @@ class AgentEvalTests(unittest.TestCase):
                 self.assertEqual(build.call_count, 1)
                 self.assertEqual([path for path in self.eval_module.cache_path(identity).parent.iterdir() if path.name.startswith(".tmp-")], [])
                 entry = self.eval_module.cache_path(identity)
+                unexpected = entry / "tree" / "unexpected-empty-directory"
+                unexpected.mkdir()
+                rejected = Path(tmp) / "rejected"; rejected.mkdir()
+                with self.assertRaisesRegex(self.eval_module.EvalError, "identity/content mismatch"):
+                    self.eval_module.tracked_export(rejected)
+                unexpected.rmdir()
                 shutil.rmtree(entry)
                 self.assertEqual(destinations[1].joinpath("public.txt").read_text(encoding="utf-8"), "public\n")
                 subprocess.run(["git", "init", "-q"], cwd=destinations[1], check=True)
@@ -185,6 +192,25 @@ class AgentEvalTests(unittest.TestCase):
                 third = Path(tmp) / "third"; third.mkdir()
                 with self.assertRaisesRegex(self.eval_module.EvalError, "identity/content mismatch"):
                     self.eval_module.tracked_export(third)
+
+            if os.name != "nt":
+                undecodable = os.fsencode(Path(tmp)) + b"/undecodable-\xff"
+                descriptor = os.open(undecodable, os.O_CREAT | os.O_WRONLY, 0o600)
+                os.close(descriptor)
+                self.assertRegex(self.eval_module.tree_sha256(Path(tmp)), r"^[0-9a-f]{64}$")
+                fifo = Path(tmp) / "unsupported-fifo"
+                os.mkfifo(fifo)
+                with self.assertRaisesRegex(self.eval_module.EvalError, "unsupported node"):
+                    self.eval_module.tree_sha256(Path(tmp))
+                fifo.unlink()
+
+            with mock.patch.object(
+                self.eval_module, "_tracked_export", side_effect=UnicodeEncodeError(
+                    "utf-8", "\udcff", 0, 1, "surrogate",
+                ),
+            ):
+                with self.assertRaisesRegex(self.eval_module.EvalError, "tracked export failed"):
+                    self.eval_module.tracked_export(Path(tmp))
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

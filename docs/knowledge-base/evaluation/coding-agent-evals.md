@@ -43,8 +43,9 @@ result recording still run under the invoking Windows Python.
 
 `prepare` uses an atomically published public-export cache keyed by source HEAD
 and the exact `json` and `pybind11` gitlink revisions. Cache hits validate a
-manifest and content/path/executable-mode tree digest before use and revalidate
-the materialized copy. Each candidate receives a normal file
+manifest and length-framed content/path/node/executable-mode tree digest before
+use and revalidate the materialized copy. Directories and symlinks are covered;
+unsupported filesystem nodes fail closed. Each candidate receives a normal file
 copy of that export, with no hardlinks, alternates, shared object store, or
 dependency on cache lifetime. Cache construction archives the captured root
 SHA and each captured submodule SHA directly from their Git object databases
