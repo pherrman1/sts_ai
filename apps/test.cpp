@@ -3606,5 +3606,12 @@ int main(int argc, const char* argv[]) {
 //    std::cout << getSeedWithGuardian();
 //    replayActionList(argv[1]);
 
-    return 0;
+    if (command == "replay" || command == "save" || command == "agent_mt" ||
+        command == "simple_agent_mt" || command == "json" ||
+        command == "json_to_save" || command == "scum_searcher") {
+        return 0;
+    }
+
+    std::cerr << "unknown test command: " << command << '\n';
+    return 2;
 }
