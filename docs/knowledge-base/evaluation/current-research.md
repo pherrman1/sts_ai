@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-08-28 against the current working tree.
+Last verified: 2026-08-31 against the current working tree.
 
 ## Purpose
 
@@ -10,6 +10,30 @@ lines. It does not replace the current benchmark configuration in
 `EXPERIMENTS.md`, or implementation contracts in the architecture pages.
 
 ## Active line
+
+### OOC future-horizon and combat-search budget
+
+The frozen 32-decision, 157-action counterfactual cohort selected **K=1 with
+`[10000]` Silver simulations/root** for future clean OOC labels. Under the
+user-authorized clean-A assumption, Stage A remained statistically
+`HORIZON_INCONCLUSIVE_K2_PROMISING`: K2 improved the point estimates over K1,
+but the source-clustered paired intervals crossed zero, while K3 deteriorated.
+Stage B then reused the unchanged independent terminal reference and evaluated
+fresh matched futures under the preregistered 0.01 quality-preservation rule.
+K1 `[10000]` was the only eligible non-historical schedule, losing 0.0078125 in
+both selected terminal win and regret relative to high-quality K2 while using
+148.81M rather than 283.07M Silver simulations (47.43% fewer).
+This preservation comparison is an unpaired point-estimate gate across
+disjoint Stage-A and Stage-B A future sets; it selects an operational schedule
+under the frozen rule and does not establish K1≈K2 equivalence.
+
+The historical `[150,100,50]` diagnostic looked unexpectedly strong but was
+explicitly ineligible and is not promoted. Four futures per side, broad
+intervals, and high terminal-reference tie frequency remain important
+uncertainty. This decision does not authorize additional horizon experiments,
+budget tuning, datagen, transition-surrogate work, or OOC training. See
+[ledger-06 §207](../../../docs/experiments/ledger-06.md) and the
+[frozen evidence](../../experiments/evidence/ooc-k-combat-budget-stage-b-2026-08-31.json).
 
 ### Encounter-marginalized strategic labels
 

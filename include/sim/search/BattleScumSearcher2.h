@@ -23,6 +23,23 @@ namespace sts::search {
 
     struct BattleScumSearcher2 {
         class Edge;
+        struct SelectedCardKey {
+            CardId id = CardId::INVALID;
+            std::int16_t specialData = 0;
+            std::int8_t cost = 0;
+            std::int8_t costForTurn = 0;
+            bool upgraded = false;
+            bool freeToPlayOnce = false;
+            bool retain = false;
+
+            bool operator==(const SelectedCardKey &o) const {
+                return id == o.id && specialData == o.specialData
+                    && cost == o.cost && costForTurn == o.costForTurn
+                    && upgraded == o.upgraded
+                    && freeToPlayOnce == o.freeToPlayOnce
+                    && retain == o.retain;
+            }
+        };
         struct Node {
             std::int64_t simulationCount = 0;
             double evaluationSum = 0;
@@ -40,6 +57,12 @@ namespace sts::search {
             Node node;
             std::uint64_t stateHash = 0;  // hash of the child state (0 = not yet traversed); for the transposition table
             float prior = 0.f;            // policy-net P(a) for PUCT; set once at node expansion
+            // For Secret Technique, Secret Weapon, and Seek, SINGLE_CARD_SELECT
+            // encodes a hidden draw-pile index. Capture what that index meant in
+            // the determinized state where the edge was created so live-root
+            // commitment can preserve the evaluated card semantics.
+            SelectedCardKey selectedCardKey;
+            bool hasSelectedCardKey = false;
         };
 
         std::unique_ptr<const BattleContext> rootState;
@@ -127,6 +150,14 @@ namespace sts::search {
         // return true (the decision is forced; no search needed). Uses the
         // canonical enumeration; never fires for multi-action states.
         bool onlyLegalAction(Action &out);
+        // At draw-pile-index-sensitive fair roots, stored edges may have been
+        // expanded against a different determinized order. Aggregate visits by
+        // selected-card semantics and map the best semantic choice onto the
+        // live draw-pile index. Canonical live-only choices remain eligible
+        // with zero visits.
+        bool mostVisitedLiveRootAction(const BattleContext &liveRoot, Action &out);
+        bool resolveSelectedCardAction(const Edge &edge, const BattleContext &state,
+                                       Action &out) const;
 
         // Fair-play (determinized) support: randomize the hidden info (draw-pile
         // order + future card RNG) so a simulation can't exploit the one true

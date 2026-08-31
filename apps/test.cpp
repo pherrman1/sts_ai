@@ -3109,11 +3109,97 @@ int testS3DrawPileIndexReuseBoundary() {
             check(found, "reconciliation failed to add live draw-pile action");
             check(action.isValidAction(live), "canonical live draw-pile action invalid");
         }
+
+        // Fair Searcher2 has the same raw-index boundary at root selection.
+        // Two eligible cards deliberately exchange indices; the committed
+        // action must follow the semantic card preferred in the determinized
+        // state, not merely reuse a still-legal raw index.
+        if (task == CardSelectTask::SECRET_TECHNIQUE) {
+            stale.cards.drawPile = {CardInstance(CardId::DEFEND_RED),
+                                    CardInstance(CardId::SHRUG_IT_OFF),
+                                    CardInstance(CardId::STRIKE_RED)};
+        } else if (task == CardSelectTask::SECRET_WEAPON) {
+            stale.cards.drawPile = {CardInstance(CardId::BASH),
+                                    CardInstance(CardId::ANGER),
+                                    CardInstance(CardId::DEFEND_RED)};
+        } else {
+            stale.cards.drawPile = {CardInstance(CardId::BASH),
+                                    CardInstance(CardId::DEFEND_RED),
+                                    CardInstance(CardId::STRIKE_RED)};
+        }
+        live = stale;
+        std::swap(live.cards.drawPile[0], live.cards.drawPile[1]);
+        const CardId preferred = stale.cards.drawPile[0].getId();
+        search::BattleScumSearcher2 s2(stale);
+        s2.enumerateActionsForNode(s2.root, stale);
+        for (auto &edge : s2.root.edges) {
+            edge.node.simulationCount =
+                stale.cards.drawPile[edge.action.getSelectIdx()].getId() == preferred
+                    ? 100 : 1;
+        }
+        const auto preferredEdge = std::find_if(
+            s2.root.edges.begin(), s2.root.edges.end(), [&](const auto &edge) {
+                return stale.cards.drawPile[edge.action.getSelectIdx()].getId()
+                    == preferred;
+            });
+        search::Action resolvedInParticle;
+        check(preferredEdge != s2.root.edges.end()
+                  && s2.resolveSelectedCardAction(*preferredEdge, live,
+                                                  resolvedInParticle)
+                  && live.cards.drawPile[resolvedInParticle.getSelectIdx()].getId()
+                         == preferred,
+              "S2 semantic edge did not rebind inside a new determinization");
+        search::Action selected;
+        check(s2.mostVisitedLiveRootAction(live, selected),
+              "S2 reconciliation found no live draw-pile action");
+        check(selected.isValidAction(live),
+              "S2 reconciliation returned stale draw-pile action");
+        check(live.cards.drawPile[selected.getSelectIdx()].getId() == preferred,
+              "S2 reconciliation did not preserve selected-card identity");
     }
+
+    // Identical copies form one semantic bucket. Their visits aggregate, and
+    // deterministic live enumeration chooses the first equivalent copy.
+    auto duplicate = cardSelectFixture(CardSelectTask::SEEK, 1, false);
+    duplicate.cards.drawPile = {CardInstance(CardId::ANGER),
+                                CardInstance(CardId::ANGER),
+                                CardInstance(CardId::BASH)};
+    auto duplicateLive = duplicate;
+    std::swap(duplicateLive.cards.drawPile[1], duplicateLive.cards.drawPile[2]);
+    search::BattleScumSearcher2 duplicateS2(duplicate);
+    duplicateS2.enumerateActionsForNode(duplicateS2.root, duplicate);
+    duplicateS2.root.edges[0].node.simulationCount = 40;
+    duplicateS2.root.edges[1].node.simulationCount = 40;
+    duplicateS2.root.edges[2].node.simulationCount = 70;
+    search::Action duplicateSelected;
+    check(duplicateS2.mostVisitedLiveRootAction(duplicateLive, duplicateSelected),
+          "S2 duplicate reconciliation found no action");
+    check(duplicateLive.cards.drawPile[duplicateSelected.getSelectIdx()].getId()
+              == CardId::ANGER,
+          "S2 duplicate visits were not aggregated by semantics");
+    check(duplicateSelected.getSelectIdx() == 0,
+          "S2 duplicate reconciliation was not deterministic");
+
+    // If none of the stored semantic choices exists in a synthetic live root,
+    // canonical live choices remain available with zero visits.
+    auto fallbackLive = duplicate;
+    fallbackLive.cards.drawPile = {CardInstance(CardId::DEFEND_RED)};
+    search::Action fallbackSelected;
+    check(duplicateS2.mostVisitedLiveRootAction(fallbackLive, fallbackSelected),
+          "S2 live-only fallback found no action");
+    check(fallbackSelected.isValidAction(fallbackLive)
+              && fallbackLive.cards.drawPile[fallbackSelected.getSelectIdx()].getId()
+                     == CardId::DEFEND_RED,
+          "S2 live-only fallback did not return the canonical live action");
 
     auto ordinary = cardSelectFixture(CardSelectTask::HOLOGRAM, 1, false);
     check(!search::isDrawPileIndexSensitiveCardSelect(ordinary),
           "unrelated card-select task classified as sensitive");
+    search::BattleScumSearcher2 ordinaryS2(ordinary);
+    ordinaryS2.enumerateActionsForNode(ordinaryS2.root, ordinary);
+    check(!ordinaryS2.root.edges.empty()
+              && !ordinaryS2.root.edges.front().hasSelectedCardKey,
+          "ordinary S2 root unexpectedly entered semantic draw-pile path");
     search::BattleScumSearcher3 ordinaryS3(ordinary, 0x5678, 0, 1);
     ordinaryS3.search(1);
     check(!ordinaryS3.root.edges.empty(), "ordinary fixture produced no root edges");

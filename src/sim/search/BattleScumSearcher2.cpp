@@ -3,6 +3,7 @@
 //
 
 #include "sim/search/BattleScumSearcher2.h"
+#include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/ExpertKnowledge.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/CombatPVNet.h"
@@ -442,16 +443,21 @@ void search::BattleScumSearcher2::step() {
             // determinization (same UCB/PUCT scoring) and continue tree descent,
             // so the sim stays in the tree; only when no stored edge is valid do
             // we fall back to a random rollout (the recorded §117 behavior).
-            if (g_fairPlay && !edgeTaken.action.isValidAction(curState)) {
+            Action resolvedAction;
+            const bool resolved = resolveSelectedCardAction(edgeTaken, curState,
+                                                            resolvedAction);
+            if (g_fairPlay && (!resolved || !resolvedAction.isValidAction(curState))) {
                 if (g_liveValid) {
                     const int validIdx = selectBestValidEdgeToSearch(curNode, curState);
                     if (validIdx >= 0) {
                         auto &validEdge = curNode.edges[validIdx];
+                        Action validAction = validEdge.action;
+                        (void)resolveSelectedCardAction(validEdge, curState, validAction);
                         // Re-selected descent counts as tree descent (treeActions /
                         // maxTreeDepth are accumulated at sim exit as stack depth).
-                        validEdge.action.execute(curState);
+                        validAction.execute(curState);
                         if (g_useTT) { validEdge.stateHash = battleStateHash(curState); hashStack.push_back(validEdge.stateHash); }
-                        actionStack.push_back(validEdge.action);
+                        actionStack.push_back(validAction);
                         searchStack.push_back(&validEdge.node);
                         continue;
                     }
@@ -468,10 +474,10 @@ void search::BattleScumSearcher2::step() {
             }
 
 //            edgeTaken.action.printDesc(std::cout, curState) << std::endl;
-            edgeTaken.action.execute(curState);
+            resolvedAction.execute(curState);
             if (g_useTT) { edgeTaken.stateHash = battleStateHash(curState); hashStack.push_back(edgeTaken.stateHash); }
 
-            actionStack.push_back(edgeTaken.action);
+            actionStack.push_back(resolvedAction);
             searchStack.push_back(&edgeTaken.node);
         }
     }
@@ -611,7 +617,9 @@ int search::BattleScumSearcher2::selectBestValidEdgeToSearch(const search::Battl
     double bestEdgeValue = 0.0;
     for (int i = 0; i < n; ++i) {
         const auto &edge = cur.edges[i];
-        if (!edge.action.isValidAction(bc)) continue;
+        Action resolvedAction;
+        if (!resolveSelectedCardAction(edge, bc, resolvedAction)
+            || !resolvedAction.isValidAction(bc)) continue;
         double qualityValue = 0.0;
         if (exploit) {
             std::int64_t cnt = edge.node.simulationCount;
@@ -826,6 +834,53 @@ bool search::BattleScumSearcher2::onlyLegalAction(Action &out) {
     return true;
 }
 
+bool search::BattleScumSearcher2::mostVisitedLiveRootAction(
+        const BattleContext &liveRoot, Action &out) {
+    Node live;
+    enumerateActionsForNode(live, liveRoot);
+    if (live.edges.empty()) return false;
+    std::int64_t bestVisits = -1;
+    for (const auto &candidate : live.edges) {
+        std::int64_t visits = 0;
+        if (!candidate.hasSelectedCardKey) continue;
+        for (const auto &stored : root.edges) {
+            if (stored.hasSelectedCardKey
+                && stored.selectedCardKey == candidate.selectedCardKey) {
+                visits += stored.node.simulationCount;
+            }
+        }
+        if (visits > bestVisits) {
+            bestVisits = visits;
+            out = candidate.action;
+        }
+    }
+    return true;
+}
+
+bool search::BattleScumSearcher2::resolveSelectedCardAction(
+        const Edge &edge, const BattleContext &state, Action &out) const {
+    if (!edge.hasSelectedCardKey) {
+        out = edge.action;
+        return true;
+    }
+    for (int idx = 0; idx < static_cast<int>(state.cards.drawPile.size()); ++idx) {
+        const auto &card = state.cards.drawPile[idx];
+        SelectedCardKey key;
+        key.id = card.id;
+        key.specialData = card.specialData;
+        key.cost = card.cost;
+        key.costForTurn = card.costForTurn;
+        key.upgraded = card.upgraded;
+        key.freeToPlayOnce = card.freeToPlayOnce;
+        key.retain = card.retain;
+        if (key == edge.selectedCardKey) {
+            out = Action(ActionType::SINGLE_CARD_SELECT, idx);
+            return true;
+        }
+    }
+    return false;
+}
+
 void search::BattleScumSearcher2::enumerateActionsForNode(search::BattleScumSearcher2::Node &node,
                                                                const BattleContext &bc) {
     switch (bc.inputState) {
@@ -983,6 +1038,21 @@ void search::BattleScumSearcher2::enumerateCardSelectActions(search::BattleScumS
     // same contract the cardselect_parity test checks against isValidAction).
     for (const auto &a : search::Action::enumerateCardSelectActions(bc)) {
         node.edges.push_back({a});
+        if (isDrawPileIndexSensitiveCardSelect(bc)) {
+            const int idx = a.getSelectIdx();
+            if (idx >= 0 && idx < static_cast<int>(bc.cards.drawPile.size())) {
+                const auto &card = bc.cards.drawPile[idx];
+                auto &edge = node.edges.back();
+                edge.selectedCardKey.id = card.id;
+                edge.selectedCardKey.specialData = card.specialData;
+                edge.selectedCardKey.cost = card.cost;
+                edge.selectedCardKey.costForTurn = card.costForTurn;
+                edge.selectedCardKey.upgraded = card.upgraded;
+                edge.selectedCardKey.freeToPlayOnce = card.freeToPlayOnce;
+                edge.selectedCardKey.retain = card.retain;
+                edge.hasSelectedCardKey = true;
+            }
+        }
     }
 }
 

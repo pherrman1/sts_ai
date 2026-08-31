@@ -43,9 +43,76 @@ python tools/ooc_pipeline_contract.py budgets 333,333,334
 python tools/ooc_pipeline_contract.py budgets 150,100,50
 
 python tools/ooc_pipeline_contract.py h-plan TOTAL_BRANCHES --futures 1,2,4
+
+python tools/make_ooc_k_budget_manifest.py PR100_AUDIT.csv build/ooc_k_budget/manifest.json
+
+python tools/freeze_ooc_k_budget_experiment.py --manifest build/ooc_k_budget/manifest.json --executable build/one_combat --model floor=models/v_rich_trees.txt --model win=models/v_win_trees.txt --output build/ooc_k_budget/experiment.json
+
+tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json preflight.csv 10000,10000,10000 0 0 A build/ooc_k_budget/experiment.json -1 24
+
+tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json stageA_A.shard-00-of-24.csv 10000,10000,10000 4 0 A build/ooc_k_budget/experiment.json 0 24
+
+tools/seed_guard.sh build/one_combat oockbudgeteval 32 build/ooc_k_budget/manifest.json stageA_B.shard-00-of-24.csv 10000 4 100 B build/ooc_k_budget/experiment.json 0 24
+
+# Launch one command of each arm per index 0..23 (concurrently on the GCP host),
+# substituting the same zero-padded index in the filename and numeric argument.
+python tools/analyze_ooc_k_budget.py stageA_A.shard-*-of-24.csv stageA_B.shard-*-of-24.csv --spec build/ooc_k_budget/experiment.json --output analysis.json
 ```
 
-The semantic evaluator will later accept the parsed list and emit one row per valid prefix. Its gameplay command is intentionally deferred until the final teacher branch supplies the exact evaluator mode/config and provenance fields, preventing accidental use of the historical teacher.
+`oockbudgeteval` consumes an `ooc_k_budget_manifest_v1` JSON manifest frozen by
+`tools/make_ooc_k_budget_manifest.py` from the complete PR-100 audit CSV. Before
+opening an output, it replays every source decision under the exact-10k Silver
+source policy and requires a one-to-one match for every frozen action bit plus
+semantic description and for the complete legal sibling set. It refuses a
+non-fair, non-Silver, non-exact-budget, non-allocated-32768, or adaptive
+environment.
+
+For A futures, `finishOocCounterfactual` exposes const observational callbacks
+after each completed fight's normal OOC continuation reaches the next battle.
+The callback bootstraps a detached copy through the existing `vStateRaw` and
+`vStateWin` contract, so checkpoint calculation cannot consume the continuing
+branch's RNG. The same branch continues to terminal. Optional
+`STS_OOC_K_CHECKPOINT_EQUIV=1` reruns the identical continuation without the
+callback and fails unless terminal outcomes and search counts are identical.
+B futures emit terminal truth only. A/B future identities are explicit and
+`tools/analyze_ooc_k_budget.py` rejects overlap, incomplete coverage, invalid
+rows, duplicates, or mismatched action coverage before source-seed-clustered
+analysis. The evaluator writes to an exclusive `.partial` path and renames it
+only after every branch succeeds.
+
+Checkpoint bootstrap validity mirrors `finishOocCounterfactual`: initialize
+from the current discrete floor and zero run-win value, then accept each model
+estimate independently only when finite and within its established domain. In
+particular, a finite floor estimate slightly below the already-reached integer
+floor falls back to that integer floor; it does not invalidate an otherwise
+finite run-win target. Simulator-health failures still invalidate the complete
+branch.
+
+Expensive K-budget arms use the frozen 24-process source-seed modulo sharding
+recorded in the experiment spec. Pass `SHARD_INDEX SHARD_COUNT` after the spec
+argument (indices `0..23`, count `24`). Each output filename must end in its
+`.shard-II-of-24.csv` assignment, and an atomic `.claim` directory prevents
+duplicate processes from racing on one partial output. The zero-future atomic replay uses shard index `-1` with
+count `24`. Analyze all 24 completed CSVs together; exact cohort checks fail
+closed if any source-seed shard is absent. Process sharding is used because
+simulator globals make in-process threading unsafe.
+
+Failure recovery may use the separately frozen 12-way
+`(actionIdx, futureIdentity)` modulo partition within one source shard. Pass
+`WORK_INDEX WORK_COUNT` after the source-shard arguments (indices `0..11`,
+count `12`) and bind both assignments in the output filename. Every worker
+still replays the complete frozen decision and sibling set before evaluating
+only its assigned branches. Merged analysis remains fail closed on duplicates
+or incomplete action/future coverage. When a decision has fewer than three
+actions, `4 * actionCount` is less than 12 and some valid workers intentionally
+produce a header-only CSV; those files are still part of the complete recovery
+worker set.
+
+If and only if Stage A authorizes Stage B, launch the same 24 indices with A
+future start `10` for each frozen schedule (`10000`; `5000,5000`;
+`3333,3333,3334`; `150,100,50`) and distinct schedule-prefixed shard files.
+Analyze those 96 files together with the unchanged 24 Stage-A A files and 24
+Stage-A B reference files.
 
 ## Schema examples
 

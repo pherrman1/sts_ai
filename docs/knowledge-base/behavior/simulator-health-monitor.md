@@ -233,6 +233,21 @@ canonical action enumeration before picking an action. The focused
 Secret Technique, Secret Weapon, and Seek. The historical production dataset
 is not regenerated.
 
+## 2026-08-31 fair Searcher2 draw-pile-index correction
+
+The frozen K-budget audit reproduced the same raw-index boundary in ordinary
+fair Searcher2: root expansion occurs after determinizing the hidden draw-pile
+order, so the most-visited Secret Technique/Secret Weapon/Seek index can name
+a different card, or be illegal, on the live root. At only these sensitive
+card-selection roots, each Searcher2 edge records the behavior-relevant card
+identity seen when that edge is created. Live commitment aggregates visits for
+equivalent copies and maps the best semantic identity onto a canonical live
+index; a live-only semantic action remains eligible with zero visits. Other
+roots retain ordinary most-visited selection. The shared
+`s3_drawpile_reuse_boundary` regression covers eligible-card permutations for
+all three tasks, equivalent duplicates, a live-only fallback, and the ordinary
+root guard, in addition to the Searcher3 reuse boundary.
+
 ## Relevant code
 
 - `include/sim/search/SimHealth.h`, `src/sim/search/SimHealth.cpp`
