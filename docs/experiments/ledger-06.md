@@ -5901,3 +5901,26 @@ model training was changed.
   16-source block `983000..983015` was not launched and no substitute seeds
   were appended. See
   `docs/experiments/evidence/ooc-clean-pilot-canary-failure-2026-08-31.json`.
+
+## §210 Corrected clean-OOC canary reaches search but fails action identity (2026-09-01)
+
+- **Correction:** Commit `6003a8aa9dae714fade76ef78a7832c15efa760e`
+  binds native producer provenance to the manifest-required
+  `STS_EXECUTABLE_GIT_SHA`. Independent implementation review and GitHub
+  `Linux GCC` passed before the retry. Exact executable, teacher, model, CMake
+  source-binding, and clean-checkout hashes passed remote preflight.
+- **Canary result:** Source seed `983000` passed the former teacher-SHA failure
+  and executed 312 complete Silver telemetry blocks: 75.12M simulations and
+  7,512 combat decisions with zero conversion, semantic-resolution,
+  transaction, or knowledge failures. After approximately eight minutes it
+  failed closed with `ooccleanpilot: source action is not a unique legal
+  sibling`.
+- **Diagnosis boundary:** The accepted source policy's observed action did not
+  occur exactly once in the producer's legal-sibling vector. The current error
+  combines missing-action and duplicate-action-bit cases, so the precise
+  subcase is unresolved. The producer published no data rows; its partial is
+  header-only. The failure-sidecar path exists but is empty, which is a second
+  observability defect.
+- **Decision:** **CLEAN_OOC_PILOT_FAILED** again. The 16-source block
+  `983000..983015` was not launched and no substitute seeds were appended. See
+  `docs/experiments/evidence/ooc-clean-pilot-canary-action-identity-failure-2026-09-01.json`.

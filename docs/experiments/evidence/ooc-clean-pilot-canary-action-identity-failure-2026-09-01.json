@@ -1,0 +1,55 @@
+{
+  "schema": "ooc_clean_pilot_canary_failure_v1",
+  "date": "2026-09-01",
+  "verdict": "CLEAN_OOC_PILOT_FAILED",
+  "baseline_sha": "746e7570400b0114bd8a25def6e9085214831f20",
+  "provenance_fix_sha": "6003a8aa9dae714fade76ef78a7832c15efa760e",
+  "selected_H": 1,
+  "frozen_pilot_seed_block": {"start": 983000, "count": 16, "launched": false},
+  "canary": {
+    "source_seed": 983000,
+    "requested_source_count": 1,
+    "teacher_id": "ooc-k1-10k-h1-6003a8a",
+    "failure": "ooccleanpilot: source action is not a unique legal sibling",
+    "diagnosis": "The provenance fix succeeded and the producer advanced through real source/branch search. At a later eligible OOC decision, the action observed from the accepted source policy did not occur exactly once in the producer's enumerated legal sibling vector. The current exception conflates a missing action with duplicate action bits, so the precise subcase is unresolved without a separate diagnostic correction.",
+    "published_ooc_rows": 0,
+    "published_combat_surrogate_rows": 0,
+    "partial_rows": 0,
+    "partial_lines": 1,
+    "telemetry_blocks_completed": 312,
+    "silver_simulations_in_complete_telemetry_blocks": 75120000,
+    "combat_decisions_in_complete_telemetry_blocks": 7512,
+    "semantic_conversion_transaction_knowledge_failures": 0,
+    "observed_runtime_minutes_approx": 8,
+    "log": {
+      "remote_path": "logs/ooc-clean-pilot-canary3-6003a8a.log",
+      "sha256": "e21b8da275d5b637adbcf3b161152c5d1066bc8445c20c91fddf86436eccfa6b",
+      "bytes": 217226
+    },
+    "partial": {
+      "remote_path": "results/ooc-clean-pilot-canary3-6003a8a.csv.partial",
+      "sha256": "06d33929012b31cf10d5649fae8217b1a99cf4e63176f8f7e91e693be00d17c5",
+      "bytes": 10806
+    },
+    "failure_sidecar": {
+      "remote_path": "results/ooc-clean-pilot-canary3-6003a8a.csv.failure.json",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "note": "The path was created but remained empty during uncaught-exception unwinding; this is an additional fail-closed observability defect."
+    }
+  },
+  "provenance": {
+    "producer_executable_sha256": "eebaa4348624fda3e2cdbc6f716eaf383422586ee53553bd5420cd5e9f5398ff",
+    "teacher_manifest_sha256": "e4405296c7fe784e811c853a83ac985747ddd593d6a008908d3bef309c4f6dbb",
+    "ooc_floor_model_sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "ooc_win_model_sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "source_bundle_sha256": "e9554b39b7e1a7760e3555944f3a5a7eafe8ccc4ad57ea46e7d8661bed24494e"
+  },
+  "gate": {
+    "provenance_fix_verified": true,
+    "canary_passed": false,
+    "pilot_launched": false,
+    "reason": "A second correctness failure requires STOP; no replacement seeds may be appended."
+  },
+  "knowledge_impact": "Recorded that the provenance fix passed its live boundary but the clean producer remains blocked by source-action/legal-sibling identity and empty failure-sidecar defects."
+}
