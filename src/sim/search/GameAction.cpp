@@ -413,6 +413,8 @@ void executeShopAction(GameContext &gc, const search::GameAction a) {
     }
 }
 
+thread_local std::function<void(std::uint32_t, const GameContext *)> search::g_onGameActionExecute;
+
 void search::GameAction::execute(GameContext &gc) const {
 #ifdef sts_asserts
     if (!isValidAction(gc)) {
@@ -430,6 +432,8 @@ void search::GameAction::execute(GameContext &gc) const {
         assert(false);
     }
 #endif
+
+    if (search::g_onGameActionExecute) search::g_onGameActionExecute(bits, &gc);
 
     if (isPotionAction()) {
         if (isPotionDiscard()) {
