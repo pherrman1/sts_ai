@@ -62,6 +62,13 @@ routing.
   evidence materially contradicts the handoff. Use Git, `rg`, focused file
   reads, compiler diagnostics, and focused tests. No repository MCP server is
   required.
+- One coordinating Codex session may delegate native subtasks within that
+  accepted design when independent inspection, non-overlapping implementation,
+  or verification makes execution cheaper or faster. Subtasks execute rather
+  than redesign the plan: avoid duplicate investigation, competing
+  implementations, overlapping edits, and scope expansion. Subtasks for one
+  accepted change may share its worktree; use separate worktrees for
+  independent branches or experiments.
 - Use the cheapest focused verification that proves the change. Every command
   that drives game seeds must go through the repository seed-run guard. Local
   automated execution is capped at 128 seeds. Large research sweeps run

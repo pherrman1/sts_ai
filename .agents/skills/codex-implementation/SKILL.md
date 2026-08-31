@@ -11,12 +11,17 @@ description: Use for ordinary implementation, debugging, build, test, Git, and d
    routed for the affected subsystem.
 3. Search existing scripts, presets, tests, and known solutions before creating
    new machinery.
-4. Make the smallest conceptual change that satisfies the request.
-5. Run the cheapest check that proves the required behavior.
-6. Inspect the complete diff, changed paths, status, and untracked files.
-7. Classify durable knowledge impact and update the authoritative destination
+4. Use native Codex delegation or concurrency only when independent work makes
+   execution cheaper or faster. One coordinator owns scope, integration, final
+   diff inspection, verification, and PR evidence. Do not parallelize
+   overlapping edits or alternative implementations unless the accepted design
+   explicitly requires them.
+5. Make the smallest conceptual change that satisfies the request.
+6. Run the cheapest check that proves the required behavior.
+7. Inspect the complete diff, changed paths, status, and untracked files.
+8. Classify durable knowledge impact and update the authoritative destination
    required by `AGENTS.md`.
-8. Commit, push, and create or update the draft PR only under the existing
+9. Commit, push, and create or update the draft PR only under the existing
    workflow rules.
 
 `AGENTS.md` remains authoritative for universal project policy.

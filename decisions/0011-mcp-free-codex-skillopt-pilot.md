@@ -21,6 +21,14 @@ local implementation, build/test, Git, and draft-PR harness. The normal Codex
 path is MCP-free and uses Git, `rg`, focused reads, compiler diagnostics, and
 focused tests. The tracked KB remains authoritative project truth.
 
+One coordinating Codex session may use native subtasks to execute an accepted
+design when independent work makes implementation or verification cheaper or
+faster. The coordinator retains scope, integration, final-diff, verification,
+Git, and PR-evidence responsibility. Same-change subtasks may share a worktree;
+independent branches or experiments use separate worktrees. Native delegation
+does not authorize competing implementations, duplicate investigation,
+overlapping edits, conceptual redesign, or scope expansion.
+
 The deliberately small, on-demand SkillOpt-Sleep pilot is configured to prefer
 one bounded procedural edit within the implementation skill's `Learned
 guidance` section. This preference is not mechanical isolation: human review
