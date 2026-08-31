@@ -526,10 +526,11 @@ reconfigures cloud resources.
 Do not treat a binary built after copying a few files into the designated
 remote root as frozen-SHA evidence. The root may have an older surrounding
 source/link graph, and a copied CMake cache can retain an absolute source path
-to a different preserved run tree. `bestbench` also obtains
-`executableGitSha` at runtime with `git rev-parse HEAD`; because the launcher
-executes from `/home/philippherrmann/sts_sweep`, an otherwise correct binary
-can emit the root checkout's unrelated SHA in its sidecar.
+to a different preserved run tree. In non-manifest runs where
+`STS_EXECUTABLE_GIT_SHA` is unset, executable provenance falls back to
+`git rev-parse HEAD` and can therefore describe the launcher's unrelated
+working-directory checkout. Manifest-bound runs avoid that ambiguity by
+requiring the declared executable SHA to equal the frozen SHA.
 
 For a reviewed scientific run, create a clean, uniquely named remote worktree
 at the exact reviewed commit and configure a new cache inside it. Prefer a
@@ -580,9 +581,11 @@ absolute git directory from the worktree's `.git` pointer or with
   bestbench <sims> <nSeeds> <asc> <seedOffset> <results.csv>
 ```
 
-`STS_EXECUTABLE_GIT_SHA` supplies provenance to Silver-specific artifacts; it
-does not override the general `bestbench` sidecar, which is why `GIT_DIR` and
-`GIT_WORK_TREE` are also required. Before a cohort:
+`STS_EXECUTABLE_GIT_SHA` supplies the reviewed executable identity to training,
+benchmark, and OOC producer provenance, including teacher validation and
+result sidecars. `GIT_DIR` and `GIT_WORK_TREE` remain required for Git-derived
+dirty-state diagnostics and commands other than the executable SHA. Before a
+cohort:
 
 1. run the focused executable test from the exact-SHA build;
 2. hash the exact binary and every model/config artifact;

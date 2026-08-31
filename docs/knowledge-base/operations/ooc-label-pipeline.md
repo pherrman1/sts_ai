@@ -12,6 +12,12 @@ The whole-combat input is the canonical 1,766-value rich combat feature vector c
 
 Every corpus must have an `ooc_pipeline_v1` sidecar validated by `tools/ooc_pipeline_contract.py`. It binds the CSV hash to producer SHA, required executable hash, seeds, timestamp, quarantine accounting, and a combat teacher. A teacher is invalid without a stable identifier, full git SHA, backend/searcher, project-fair regime, exact 10k budget, deterministic/chance exploration 25, widening 3.7028/0.52389, allocated-node reuse cap 32,768, explicit experimental-feature disablement, exact environment, and path/hash for every loaded artifact. Producer and teacher SHA/executable identities must match.
 
+Scientific manifests bind `STS_EXECUTABLE_GIT_SHA` to their frozen SHA. Native
+producer and benchmark provenance consumes that declared executable identity
+instead of resolving `git rev-parse HEAD` from the launcher's working
+directory. Git working-tree variables remain independently relevant to dirty
+state and other Git-derived diagnostics.
+
 `wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; the exact-SHA GCP research manifest accepts its CLI and reserves its `.provenance.json` sidecar.
 
 Whole-combat training first runs the full corpus validator, including exact canonical feature names/order, exact target/diagnostic suffix, unique fight keys, zero decision index, finite values, and teacher identity. It then uses source-seed groups for train/validation/test, performs variance filtering on TRAIN only, and fits XGBoost survival and winning-only conditional ending-HP models. Its output records the data hash, exact split, retained canonical feature names, parameters, and batch-1 timing. Offline scores do not authorize runtime integration.

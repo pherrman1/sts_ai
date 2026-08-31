@@ -64,7 +64,7 @@ changes its size.
 | `STS_SILVER_LEAF_CORPUS` | Default-off JSONL output for exact, versioned Silver rollout-start snapshots. Groups are sampled by nearest non-random parent and emitted only when retained leaves cover every semantic legal parent action. | unset/off | `SilverLiveBackend`; `SilverWireJson.h` |
 | `STS_SILVER_LEAF_CORPUS_GROUP_MODULUS` | Deterministic whole-group FNV sampling modulus (`1` selects every group); individual leaves are never sampled independently. | `1` when corpus output is enabled | `SilverLiveBackend` |
 | `STS_SILVER_LEAF_CORPUS_MAX_PER_GROUP` | Defensive cap on unique exact leaf snapshots retained for one selected parent group. An incomplete capped group is not emitted. | `256` | `SilverLiveBackend` |
-| `STS_EXECUTABLE_GIT_SHA` | Exact executable Git SHA recorded in every corpus row; required when `STS_SILVER_LEAF_CORPUS` is enabled. | unset | `SilverLiveBackend` |
+| `STS_EXECUTABLE_GIT_SHA` | Lowercase 40-hex reviewed executable Git SHA. Research manifests bind it to their frozen SHA; `one_combat` uses it for benchmark/training provenance, teacher and frozen-spec identity checks, and result sidecars instead of resolving the launcher's working-directory HEAD. Silver leaf corpora also require and record it. Malformed values fail closed. | unset; working-directory Git SHA fallback outside manifest-bound runs | `one_combat`; `SilverLiveBackend` |
 
 The root-action diagnostic is a shadow measurement layered around the ordinary
 Silver decision. It is intended for bounded fair-play experiments, not for
