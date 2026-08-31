@@ -5778,3 +5778,25 @@ model training was changed.
   `[-18.75,+6.25]`; normalized CPU ratio was 0.991x.
 - **Decision:** **RANK4_VISIT_POLICY_ONLINE_SCREEN_INCONCLUSIVE**. No tuning
   or follow-up was authorized. The runtime scorer/model is not retained.
+
+## §206 Frozen whole-combat surrogate counterfactual audit passed (2026-08-31)
+
+- **Protocol:** Before observing branch outcomes, select at most one naturally
+  occurring multi-action OOC decision from each fresh source seed 982100–982131.
+  Evaluate every legal sibling through the next combat with matched cloned
+  continuation state, frozen ordinary project-fair Silver c=25 at exact 10,000
+  simulations/root, and the unchanged Phase-1 survival/conditional-HP models.
+- **Integrity:** 32/32 sources completed, zero quarantines, 157 valid branches
+  (32 source-policy chosen, 125 unchosen), 1,766 finite canonical features,
+  and zero conversion, semantic-resolution, transaction, or knowledge failures.
+  The 826 combat summaries recorded 154.70M simulations in exact 10,000-unit
+  root-search increments.
+- **Unchosen result:** 118/125 combats won. Survival logloss was 0.1718 versus
+  0.2158 for the constant baseline, Brier was 0.0465 versus 0.0529, and ROC-AUC
+  was 0.902. Conditional-HP MAE/RMSE were 0.1462/0.2023 versus baseline
+  0.2642/0.2859; absolute-HP MAE was 12.25.
+- **Decision:** **COUNTERFACTUAL_GENERALIZATION_PASS** as a feasibility gate.
+  The result is encouraging but only seven unchosen losses make calibration and
+  failure-tail estimates imprecise. It does not authorize a transition
+  surrogate, K/H experiments, retraining, or combat replacement. See
+  `docs/experiments/evidence/ooc-counterfactual-surrogate-audit-2026-08-31.json`.

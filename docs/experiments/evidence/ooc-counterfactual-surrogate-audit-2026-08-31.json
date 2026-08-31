@@ -1,0 +1,90 @@
+{
+  "date": "2026-08-31",
+  "verdict": "COUNTERFACTUAL_GENERALIZATION_PASS",
+  "source_git_sha": "bc8b49c2490dbae769c37eca7225a3b98008531c",
+  "teacher_id": "silver-ordinary-fair-c25-exact10k-1ef9aef",
+  "teacher_binary_sha256": "9503d158dcbe92c038055ca82251cc4af36abaa7cef5fafdada8cb8d36fe19c2",
+  "teacher_spec_sha256": "a81370844b4a76451cc980228c32bad4faa78e7fdeb48f79d58a1195c883db07",
+  "survival_model_sha256": "3a20e1f1df1821f0ff950a85c1d5d87a39cdcf7513cfaa4243b00a4069e5f361",
+  "conditional_hp_model_sha256": "a13b11f1b493033db77da5ee68f74e854cd1752cab2c5bc55c1f5f6c7dbca5f0",
+  "training_manifest_sha256": "5c545721d8f36b0062b91b60a83cd1405231f22e66f3b10726bcc5d5a95bafa9",
+  "source_seeds": {
+    "first": 982100,
+    "last": 982131,
+    "count": 32,
+    "replacement_seeds": 0
+  },
+  "integrity": {
+    "completed_sources": 32,
+    "quarantined_sources": 0,
+    "valid_branches": 157,
+    "quarantined_branches": 0,
+    "chosen_branches": 32,
+    "unchosen_branches": 125,
+    "feature_width": 1766,
+    "silver_telemetry_rows": 826,
+    "silver_simulations": 154700000,
+    "conversion_failures": 0,
+    "semantic_resolution_failures": 0,
+    "transaction_failures": 0,
+    "knowledge_failures": 0
+  },
+  "all": {
+    "wins": 149,
+    "losses": 8,
+    "survival_logloss": 0.16118785759556337,
+    "survival_constant_logloss": 0.201318850448231,
+    "survival_brier": 0.0443154409403449,
+    "survival_constant_brier": 0.04835895979552924,
+    "survival_roc_auc": 0.8905201342281879,
+    "conditional_hp_mae": 0.1428193916941777,
+    "conditional_hp_rmse": 0.1985995399207307,
+    "conditional_hp_absolute_mae": 11.938790818833484,
+    "conditional_hp_baseline_mae": 0.2628783265618666,
+    "conditional_hp_baseline_rmse": 0.2873642082551081
+  },
+  "chosen": {
+    "wins": 31,
+    "losses": 1,
+    "survival_logloss": 0.1197042798875373,
+    "survival_constant_logloss": 0.13906079845474112,
+    "survival_brier": 0.03587956565078343,
+    "survival_constant_brier": 0.0302734375,
+    "survival_roc_auc": 0.8709677419354839,
+    "conditional_hp_mae": 0.12982569643912778,
+    "conditional_hp_rmse": 0.18398178079533126,
+    "conditional_hp_absolute_mae": 10.752320115911237,
+    "conditional_hp_baseline_mae": 0.2573019687825182,
+    "conditional_hp_baseline_rmse": 0.29164443998144296
+  },
+  "unchosen": {
+    "wins": 118,
+    "losses": 7,
+    "survival_logloss": 0.17180765348881805,
+    "survival_constant_logloss": 0.21581648345961602,
+    "survival_brier": 0.046475025014472635,
+    "survival_constant_brier": 0.05286399999999999,
+    "survival_roc_auc": 0.9019370460048426,
+    "conditional_hp_mae": 0.14623298960016543,
+    "conditional_hp_rmse": 0.20226464971034436,
+    "conditional_hp_absolute_mae": 12.25049074926221,
+    "conditional_hp_baseline_mae": 0.26422436411950584,
+    "conditional_hp_baseline_rmse": 0.2859068347445126
+  },
+  "phase1_test_reference": {
+    "survival_logloss": 0.07418294,
+    "survival_brier": 0.01919134,
+    "survival_roc_auc": 0.937931,
+    "conditional_hp_mae": 0.0944481,
+    "conditional_hp_rmse": 0.1386392,
+    "conditional_hp_absolute_mae": 7.1957
+  },
+  "artifacts": {
+    "csv_sha256": "5724f3652e9fb42325dcb613ff3399acdf0419b5bb984e5c2e5869e9e1a77474",
+    "provenance_sha256": "2a66dcfbe7fba2ee5e4fcac6ac0880a2501ce8d2b2405e1416db3199081b1d86",
+    "log_sha256": "0d9fb3e3bffd91ee9567d8c055539a8cd141834bd24f3ba9be00fb3d198576c8",
+    "evaluation_sha256": "2fde16431bc8cfe1cb8876b8e6621c022ef289ea2ef6c4f846d70750c72403f7",
+    "predictions_sha256": "9d4d40b5422d702d107286b73b11e1c55dccebd2fdea99c92abcc3a21f95486a"
+  },
+  "caveat": "Only eight total and seven unchosen losses make calibration and failure-tail estimates imprecise; this feasibility pass is not evidence that a surrogate can replace simulator combat."
+}
