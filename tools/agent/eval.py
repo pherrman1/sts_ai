@@ -165,21 +165,27 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
     git(workspace, "init", "-q")
     git(workspace, "config", "user.email", "agent-eval@example.invalid")
     git(workspace, "config", "user.name", "agent-eval")
-    git(workspace, "add", "-A")
-    git(workspace, "commit", "-qm", f"candidate baseline: {task_id}")
     patch = source / safe_rel(manifest["setup_patch"], "setup_patch")
+    patch_changes = subprocess.run(
+        ["git", "apply", "--numstat", str(patch)],
+        cwd=workspace, text=True, capture_output=True,
+    )
+    if patch_changes.returncode or not patch_changes.stdout.strip():
+        raise EvalError(f"setup patch made no repository change for {task_id}")
     applied = subprocess.run(["git", "apply", "--unidiff-zero", "--whitespace=nowarn", str(patch)], cwd=workspace, text=True, capture_output=True)
     if applied.returncode:
         raise EvalError(f"setup patch failed for {task_id}: {applied.stderr}")
-    if not git(workspace, "diff", "--quiet", check=False).returncode:
-        raise EvalError(f"setup patch made no repository change for {task_id}")
     shutil.rmtree(workspace / "evals", ignore_errors=True)
     if skill_file is not None:
         target = workspace / ".agents" / "skills" / skill_name / "SKILL.md"
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(skill_file, target)
+    # Stage only after hidden evaluator data is gone. Even staging the original
+    # export would write recoverable private blobs into .git/objects. The empty
+    # repository is initialized earlier only to isolate patch application from
+    # the evaluator source checkout.
     git(workspace, "add", "-A")
-    git(workspace, "commit", "--amend", "-qm", f"candidate baseline: {task_id}")
+    git(workspace, "commit", "-qm", f"candidate baseline: {task_id}")
     status = git(workspace, "status", "--short").stdout
     if status:
         raise EvalError(f"prepared candidate is not clean: {status}")

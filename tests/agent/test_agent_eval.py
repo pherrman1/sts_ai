@@ -82,6 +82,24 @@ class AgentEvalTests(unittest.TestCase):
             self.assertFalse((workspace / "setup.patch").exists())
             self.assertEqual(list((workspace / ".git").rglob("*private*")), [])
             self.assertEqual(subprocess.run(["git", "status", "--short"], cwd=workspace, text=True, capture_output=True).stdout, "")
+            fsck = subprocess.run(
+                ["git", "fsck", "--full", "--no-reflogs", "--unreachable"],
+                cwd=workspace, text=True, capture_output=True, check=True,
+            )
+            self.assertEqual(fsck.stdout, "")
+            self.assertFalse((workspace / ".git" / "objects" / "info" / "alternates").exists())
+            self.assertFalse((workspace / ".git" / "modules").exists())
+            hidden_root = ROOT / "evals" / "coding_agent" / "tasks" / "guardrail-command-policy"
+            for hidden in ("private/grader.py", "setup.patch", "task.json"):
+                object_id = subprocess.run(
+                    ["git", "hash-object", str(hidden_root / hidden)], cwd=ROOT,
+                    text=True, capture_output=True, check=True,
+                ).stdout.strip()
+                present = subprocess.run(
+                    ["git", "cat-file", "-e", object_id], cwd=workspace,
+                    text=True, capture_output=True,
+                )
+                self.assertNotEqual(present.returncode, 0, hidden)
         self.assertTrue(Path(first["workspace"]).exists())
         self.assertTrue(Path(second["workspace"]).exists())
 
