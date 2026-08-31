@@ -9,6 +9,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "tools/agent/eval.py"
+GUARDRAIL_FIXTURE_PATHS = (
+    "src/sim/SimHelpers.cpp",
+    "tests/agent/test_cline_guardrails.py",
+    "tools/agent/cline_guardrails.py",
+)
 
 
 def cli(*args):
@@ -38,9 +43,14 @@ class AgentEvalTests(unittest.TestCase):
             dir=self.eval_module.RUNTIME / "work",
         ))
         subprocess.run(
-            ["git", "clone", "--shared", "--quiet", str(source), str(workspace)],
+            ["git", "clone", "--shared", "--quiet", "--no-checkout", str(source), str(workspace)],
             check=True,
         )
+        subprocess.run(
+            ["git", "sparse-checkout", "set", "--no-cone", *GUARDRAIL_FIXTURE_PATHS],
+            cwd=workspace, check=True,
+        )
+        subprocess.run(["git", "checkout", "--quiet"], cwd=workspace, check=True)
         subprocess.run(["git", "config", "user.email", "agent-eval@example.invalid"], cwd=workspace, check=True)
         subprocess.run(["git", "config", "user.name", "agent-eval"], cwd=workspace, check=True)
         baseline = subprocess.run(
