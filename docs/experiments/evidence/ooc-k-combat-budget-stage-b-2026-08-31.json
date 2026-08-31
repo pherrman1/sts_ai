@@ -100,6 +100,7 @@
   },
   "preservation_rule": {
     "reference": "Stage-A high-quality K2 [10000,10000] checkpoint",
+    "interpretation": "This is an unpaired point-estimate preservation gate across disjoint Stage-A and Stage-B A future sets. Passing it selects a schedule under the frozen operational rule; it is not evidence that K1 and K2 are statistically or practically equivalent.",
     "reference_selected_terminal_win": 0.3046875,
     "reference_terminal_regret": 0.1015625,
     "maximum_selected_terminal_win_loss": 0.01,

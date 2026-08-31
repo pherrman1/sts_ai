@@ -5830,6 +5830,9 @@ model training was changed.
 - **Frozen Stage-B rule:** Relative to high-quality K2, require selected win
   loss no greater than 0.01 and regret increase no greater than 0.01, then
   choose the least actual Silver compute among eligible non-historical arms.
+  This is an unpaired point-estimate gate across disjoint Stage-A and Stage-B A
+  future sets. Passing it is not evidence that K1 and K2 are statistically or
+  practically equivalent.
 - **Result:** K1 `[10000]` scored 0.296875 selected win and 0.109375 regret,
   losses of exactly 0.0078125 on both margins, so it passed. K2
   `[5000,5000]` scored 0.2890625/0.1171875 and missed both margins by

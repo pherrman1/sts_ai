@@ -23,6 +23,9 @@ fresh matched futures under the preregistered 0.01 quality-preservation rule.
 K1 `[10000]` was the only eligible non-historical schedule, losing 0.0078125 in
 both selected terminal win and regret relative to high-quality K2 while using
 148.81M rather than 283.07M Silver simulations (47.43% fewer).
+This preservation comparison is an unpaired point-estimate gate across
+disjoint Stage-A and Stage-B A future sets; it selects an operational schedule
+under the frozen rule and does not establish K1≈K2 equivalence.
 
 The historical `[150,100,50]` diagnostic looked unexpectedly strong but was
 explicitly ineligible and is not promoted. Four futures per side, broad
