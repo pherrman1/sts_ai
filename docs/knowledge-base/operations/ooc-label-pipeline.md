@@ -20,6 +20,17 @@ Whole-combat training first runs the full corpus validator, including exact cano
 
 Future branch rows must carry `sourceSeed`, `decisionIdx`, action identity, `futureIdx`, `H`, requested/actual budget schedule, prefix index, survival through prefix, conditional-alive bootstrap value, product, optional dense/reference value, runtime/search cost, validity, quarantine reason, and `teacherId`. Repeated futures and sibling actions are grouped by `(sourceSeed, decisionIdx)` for splitting. The 37 tradeoff contexts remain development/evaluation data and are excluded from training.
 
+`ooccleanpilot` is the bounded issue-19 health producer after H selection. It
+labels every legal sibling at every naturally occurring multi-action decision
+of the accepted source trajectory with K1 exact-10k and H1. Each physical row
+also carries the canonical battle-start feature vector and post-`afterBattle`
+whole-combat diagnostics from that same expensive combat. The combined row is
+two logical training views, not a complete transition target: reward state,
+complete `GameContext`, and RNG transition remain unrepresented. The producer
+writes a `.partial` file and publishes only by atomic rename after every source
+and branch succeeds; any health, reachability, finiteness, or source-action
+failure aborts rather than appending replacement seeds.
+
 Direct-Q and factorized training must consume identical rows, split, representation, and comparable capacity. Survival BCE applies to every valid branch; conditional-value loss only to survived horizons. No placeholder-card sharing or action-subsampling policy is frozen.
 
 ## Producer and validation commands

@@ -5852,3 +5852,31 @@ model training was changed.
   uncertainty. No H experiment, datagen, transition surrogate, or OOC training
   is authorized here. See
   `docs/experiments/evidence/ooc-k-combat-budget-stage-b-2026-08-31.json`.
+
+## §208 OOC H selection chooses one future/action (2026-08-31)
+
+- **Protocol:** Reused the hash-verified §207 Stage-B K1 `[10000]` A futures
+  10–13 and independent terminal B futures 100–103 for the exact 32 decisions
+  and 157 sibling actions. H1 averages the four singleton-subset ranking
+  results per decision, H2 averages all six two-future-subset results, and H4
+  uses all four. Subsets are sensitivity views, not independent replicates.
+- **Integrity:** Both preserved archive hashes match §207. All 227 Stage-B
+  packaged hashes and all 74 non-self-referential Stage-A bundle hashes match;
+  the Stage-A checksum list contains a stale hash of itself, explicitly
+  excluded as circular metadata. Action/future coverage is exact and complete.
+- **Result:** H1/H2/H4 selected terminal win was
+  0.3046875/0.30078125/0.296875 and terminal regret was
+  0.1015625/0.10546875/0.109375. Top-action agreement was
+  0.726563/0.729167/0.718750; pairwise concordance was
+  0.490256/0.471462/0.453159; score-tie rate was
+  0.304688/0.333333/0.312500; B-truth tie rate was 0.75 throughout.
+  H2−H1 selected win was −0.003906 (95% source-seed-clustered CI
+  [−0.015625, 0.007812]) and regret was +0.003906
+  ([−0.007812, 0.015625]); H4−H2 repeated the −0.003906/+0.003906 point
+  deterioration, with intervals [−0.023438, 0.011719] and
+  [−0.011719, 0.023438]. Relative label costs are 1×/2×/4×.
+- **Decision:** **H1_SELECTED**. Neither larger H improves regret or preserves
+  selected win at the point estimate, so neither approaches the 0.01 practical
+  bar. The fresh issue-19 pilot block is frozen before outcomes at source seeds
+  `983000..983015`. See
+  `docs/experiments/evidence/ooc-h-futures-selection-2026-08-31.json`.

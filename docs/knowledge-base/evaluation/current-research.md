@@ -11,7 +11,7 @@ lines. It does not replace the current benchmark configuration in
 
 ## Active line
 
-### OOC future-horizon and combat-search budget
+### OOC horizon, combat-search budget, and futures/action
 
 The frozen 32-decision, 157-action counterfactual cohort selected **K=1 with
 `[10000]` Silver simulations/root** for future clean OOC labels. Under the
@@ -34,6 +34,14 @@ uncertainty. This decision does not authorize additional horizon experiments,
 budget tuning, datagen, transition-surrogate work, or OOC training. See
 [ledger-06 §207](../../../docs/experiments/ledger-06.md) and the
 [frozen evidence](../../experiments/evidence/ooc-k-combat-budget-stage-b-2026-08-31.json).
+
+The preserved K1 Stage-B evidence subsequently selected **H=1 future/action**.
+H2 and H4 each worsened selected-terminal-win and terminal-regret point
+estimates relative to the next-smaller H while costing 2× and 4×. The frozen
+small clean issue-19 health pilot therefore uses K1 exact-10k with H1 on fresh
+source seeds `983000..983015`; it does not authorize replacement-corpus
+generation or training. See [ledger-06 §208](../../../docs/experiments/ledger-06.md)
+and the [H evidence](../../experiments/evidence/ooc-h-futures-selection-2026-08-31.json).
 
 ### Encounter-marginalized strategic labels
 

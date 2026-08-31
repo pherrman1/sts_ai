@@ -207,8 +207,8 @@ def load_run_manifest(path: Path) -> dict:
              "manifest command must contain exactly one {results} placeholder")
     _require(command[0] == payload["binary"]["remote_path"],
              "manifest command executable must equal binary.remote_path")
-    _require(len(command) >= 2 and command[1] in {"bestbench", "wholecombatgen"},
-             "manifest command must invoke bestbench or wholecombatgen")
+    _require(len(command) >= 2 and command[1] in {"bestbench", "wholecombatgen", "ooccleanpilot"},
+             "manifest command must invoke bestbench, wholecombatgen, or ooccleanpilot")
     mode = command[1]
     try:
         if mode == "bestbench":
@@ -217,7 +217,7 @@ def load_run_manifest(path: Path) -> dict:
             sims, seeds, _asc, _seed = map(int, command[2:6])
         else:
             _require(len(command) == 8 and command[5] == "{results}",
-                     "manifest wholecombatgen command must be: executable wholecombatgen nSeeds sims asc results seed teacher")
+                     f"manifest {mode} command must be: executable {mode} nSeeds sims asc results seed teacher")
             seeds, sims, _asc, _seed = map(int, command[2:5] + command[6:7])
     except ValueError as exc:
         raise ValueError(f"manifest {mode} numeric arguments must be integers") from exc
@@ -254,9 +254,11 @@ def load_run_manifest(path: Path) -> dict:
             _require(telemetry != 0, "STS_SILVER_TELEMETRY must be nonzero for every arm")
         names.append(arm["name"])
     _require(len(names) == len(set(names)), "manifest arm names must be unique")
-    sidecar = ".meta.json" if mode == "bestbench" else ".provenance.json"
+    sidecars = [".meta.json"] if mode == "bestbench" else [".provenance.json"]
+    if mode == "ooccleanpilot":
+        sidecars += [".manifest.json", ".failure.json"]
     expanded_outputs = [path for arm in arms
-                        for path in (arm["results"], arm["results"] + sidecar, arm["log"])]
+                        for path in (arm["results"], *(arm["results"] + suffix for suffix in sidecars), arm["log"])]
     _require(len(expanded_outputs) == len(set(expanded_outputs)),
              "manifest result/log/sidecar paths must be unique across arms")
     _require(not (set(expanded_outputs) & set(file_paths)),
@@ -272,8 +274,11 @@ def manifest_arm(manifest: dict, name: str) -> tuple[list[str], str, list[str]]:
     command = [arm["results"] if token == "{results}" else token
                for token in manifest["command"]]
     rendered = ["env", *(f"{key}={env[key]}" for key in sorted(env)), *command]
-    suffix = ".meta.json" if manifest["command"][1] == "bestbench" else ".provenance.json"
-    fresh = [arm["results"], arm["results"] + suffix, arm["log"]]
+    mode = manifest["command"][1]
+    suffixes = [".meta.json"] if mode == "bestbench" else [".provenance.json"]
+    if mode == "ooccleanpilot":
+        suffixes += [".manifest.json", ".failure.json"]
+    fresh = [arm["results"], *(arm["results"] + suffix for suffix in suffixes), arm["log"]]
     return rendered, arm["log"], fresh
 
 
