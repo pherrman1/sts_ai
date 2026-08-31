@@ -71,15 +71,42 @@ machine without `python3-dev` still builds the core executables; check
 
 There is no reusable `sts`/`libsts.a` target; `sts_core_objects` is an internal
 native build object collection rather than a library. CTest is registered:
-`ctest --test-dir build` runs parse/syntax checks (`bash -n`, `py_compile`) and
-`ctest` checks including `tools/verify/check_replay.py --self-test`; run `ctest -N` to list them. The `test` target
+`ctest --test-dir build` runs maintained parse/syntax checks and focused
+native/Python regressions including
+`tools/verify/check_replay.py --self-test`; run `ctest -N` to list them. The `test` target
 is named `unit-test` in CMake with `OUTPUT_NAME test` (CTest reserves the name
 `test`); `apps/test.cpp::main` is a manual command dispatcher that with no
 arguments prints `incorrect arguments` and exits successfully, and with a
-subcommand runs the targeted Searcher3/terminal checks (see
+known subcommand runs the targeted Searcher3/terminal checks; unknown
+subcommands fail nonzero (see
 [`architecture/combat-search.md`](../architecture/combat-search.md)).
 `apps/parity_test.cpp` has a CMake target `parity_test`; `parity_test.py`
 locates the binary via `STS_PARITY_BIN` or `build/parity_test`.
+
+CTest labels provide smaller local verification tiers without weakening the
+unfiltered CI gate:
+
+```bash
+ctest --preset linux-gcc-test -L smoke
+ctest --preset linux-gcc-test -L core
+ctest --preset linux-gcc-test -L integration
+ctest --preset linux-gcc-test -L tooling
+ctest --preset linux-gcc-test -L research-repro
+```
+
+`smoke` is the quickest cross-cutting subset; `core` covers deterministic
+simulator regressions; `integration` covers search, Silver, model, and native
+parity boundaries; `tooling` covers maintained operational utilities; and
+`research-repro` preserves analyzer and evidence contracts. Tests may carry
+more than one label. The unfiltered `linux-gcc-test` preset remains the full
+CTest suite.
+
+The Linux CI job owns `python3 -m unittest discover -s tests/agent -p
+'test_*.py'` as a separate pre-build gate. Those modules are not registered
+again in CTest, and scripts exercised by a behavioral self-test are not given
+a redundant `py_compile` process: executing or importing a Python module
+already parses it. Standalone `py_compile` entries remain only where they
+provide the script's sole automated coverage.
 
 Normal configured commands are:
 
