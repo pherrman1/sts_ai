@@ -86,6 +86,10 @@ def validate_teacher(teacher: dict) -> None:
 
 def validate_corpus(manifest: dict) -> dict:
     import math
+    try:
+        from tools.verify.vnettest_selftest import canonical_names
+    except ModuleNotFoundError:
+        from verify.vnettest_selftest import canonical_names
     validate_manifest(manifest)
     path = Path(manifest["csv"]["path"])
     with path.open(newline="", encoding="utf-8") as f:
@@ -96,14 +100,15 @@ def validate_corpus(manifest: dict) -> dict:
             raise ValueError("whole-combat CSV metadata/target boundary is invalid")
         won_idx = header.index("won")
         features = header[len(prefix):won_idx]
-        if len(features) != 1766 or len(set(features)) != 1766:
-            raise ValueError(f"expected exactly 1766 unique canonical features, got {len(features)}")
-        required = {"endHp", "startHp", "startMaxHp", "endMaxHp", "endHpFrac",
-                    "startPotionIds", "endPotionIds", "startPotionCount", "endPotionCount",
-                    "goldDelta", "smokeBombUsed", "changedRelicCounters", "ritualDaggerChanges",
-                    "deckStructureChanged", "parasiteAdded", "persistentMutationSummary"}
-        if missing := sorted(required - set(header)):
-            raise ValueError("whole-combat CSV missing targets/diagnostics: " + ", ".join(missing))
+        expected_features = canonical_names()
+        if features != expected_features:
+            raise ValueError("whole-combat CSV canonical feature names/order mismatch")
+        suffix = ["won", "endHp", "startHp", "startMaxHp", "endMaxHp", "endHpFrac",
+                  "startPotionIds", "endPotionIds", "startPotionCount", "endPotionCount",
+                  "goldDelta", "smokeBombUsed", "changedRelicCounters", "ritualDaggerChanges",
+                  "deckStructureChanged", "parasiteAdded", "persistentMutationSummary"]
+        if header[won_idx:] != suffix:
+            raise ValueError("whole-combat CSV target/diagnostic names/order mismatch or unexpected columns")
         rows = list(reader)
     teacher_id = manifest["combat_teacher"]["teacher_id"]
     keys, seeds = set(), set(); wins = 0; acts = {}; rooms = {}; invalid = []

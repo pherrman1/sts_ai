@@ -8170,8 +8170,9 @@ static std::string combatFeatureRow(const BattleContext &bc) {
     return o.str();
 }
 
-// One canonical battle-start row per completed fight, labelled immediately
-// after the RAW BattleContext::exitBattle persistent transfer.
+// One canonical battle-start row per completed fight. GameContext labels and
+// diagnostics are captured after exitBattle returns, i.e. after regainControl
+// has entered the reward screen and normal afterBattle effects have run.
 struct WholeCombatTeacher { std::string id; nlohmann::json specification; };
 
 static WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims) {

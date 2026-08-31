@@ -1,6 +1,7 @@
-import unittest
+import csv, json, unittest
 from pathlib import Path
-from tools.ooc_pipeline_contract import parse_budgets, h_plan, validate_manifest, sha256, SCHEMA_VERSION
+from tools.ooc_pipeline_contract import parse_budgets, h_plan, validate_corpus, validate_manifest, sha256, SCHEMA_VERSION
+from tools.verify.vnettest_selftest import canonical_names
 
 class TestOocPipeline(unittest.TestCase):
     def test_budget_prefixes_and_h_plan(self):
@@ -16,5 +17,21 @@ class TestOocPipeline(unittest.TestCase):
         validate_manifest(m)
         del teacher["rng_regime"]
         with self.assertRaisesRegex(ValueError,"rng_regime"): validate_manifest(m)
+
+    def test_corpus_rejects_unexpected_numeric_leakage_column(self):
+        prefix=["sourceSeed","fightIdx","act","floor","encounter","roomClass","decisionIdx","teacherId"]
+        suffix=["won","endHp","startHp","startMaxHp","endMaxHp","endHpFrac","startPotionIds","endPotionIds","startPotionCount","endPotionCount","goldDelta","smokeBombUsed","changedRelicCounters","ritualDaggerChanges","deckStructureChanged","parasiteAdded","persistentMutationSummary"]
+        search={"simulation_budgets":[10000],"exploration_parameter":25.0,"exploration_parameter_chance":25.0,"chance_widening_c":3.7028,"chance_widening_alpha":0.52389,"end_turn_widening_c":3.7028,"end_turn_widening_alpha":0.52389,"reuse_cap_mode":"allocated","reuse_cap":32768,"sequential_halving":False,"pruning":False,"learned_visit_puct":False,"direct_learned_leaf":False,"adaptive":False}
+        env={"STS_FAIR":"1","STS_SEARCHER3":"0","STS_SILVER_SEARCH":"1","STS_SILVER_EXACT_ROOT_BUDGETS":"1","STS_SILVER_REUSE_CAP_MODE":"allocated","STS_SILVER_ADAPTIVE":"0","STS_SILVER_VNET_LEAF_DIRECT":"0","STS_SILVER_TELEMETRY":"1"}
+        teacher={"teacher_id":"t","git_sha":"3"*40,"executable_sha256":"4"*64,"combat_backend":"silver_uct","rng_regime":"project_fair","search_configuration":search,"environment":env,"model_artifacts":[{"role":"value","path":"unused","sha256":"2"*64}]}
+        Path("build").mkdir(exist_ok=True)
+        path=Path("build/ooc_pipeline_leaky_test.csv")
+        header=prefix+canonical_names()+suffix+["future_win_probability"]
+        row=[1,0,1,1,1,"NORMAL",0,"t"]+[0]*1766+[1,70,70,80,80,.875,"","",0,0,0,0,"","",0,0,""]+[1.0]
+        with path.open("w",newline="",encoding="utf-8") as f:
+            writer=csv.writer(f); writer.writerow(header); writer.writerow(row)
+        manifest={"schema_version":SCHEMA_VERSION,"producer_git_sha":"3"*40,"producer_executable_sha256":"4"*64,"combat_teacher":teacher,"seed_spec":{"list":[1]},"csv":{"path":str(path),"sha256":sha256(path)},"collection_timestamp":"2026-01-01T00:00:00Z","integrity":{"requested_runs":1,"completed_runs":1,"quarantined_runs":0,"rows":1}}
+        with self.assertRaisesRegex(ValueError,"unexpected columns"):
+            validate_corpus(manifest)
 
 if __name__ == "__main__": unittest.main()

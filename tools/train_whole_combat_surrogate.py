@@ -49,13 +49,14 @@ def slice_reports(test, ps, hp, features, minimum):
 
 def train(args):
     import xgboost as xgb
-    from ooc_pipeline_contract import validate_manifest
-    manifest=json.loads(Path(args.data_manifest).read_text()); validate_manifest(manifest)
+    from ooc_pipeline_contract import validate_corpus
+    manifest=json.loads(Path(args.data_manifest).read_text()); validate_corpus(manifest)
     df=pd.read_csv(manifest["csv"]["path"])
     required={"sourceSeed","won","endHp","startMaxHp","endHpFrac","teacherId"}
     if missing:=sorted(required-set(df.columns)): raise ValueError("corpus missing required columns: "+", ".join(missing))
     if set(df.teacherId) != {manifest["combat_teacher"]["teacher_id"]}: raise ValueError("row teacherId disagrees with manifest")
-    features=[c for c in df.columns if c not in META and pd.api.types.is_numeric_dtype(df[c])]
+    won_idx=df.columns.get_loc("won")
+    features=list(df.columns[8:won_idx])
     train_s,val_s,test_s=split_seeds(df.sourceSeed,args.split_seed)
     sets={"train":df.sourceSeed.isin(train_s),"validation":df.sourceSeed.isin(val_s),"test":df.sourceSeed.isin(test_s)}
     variance=df.loc[sets["train"],features].var(); features=[c for c in features if variance[c]>1e-12]

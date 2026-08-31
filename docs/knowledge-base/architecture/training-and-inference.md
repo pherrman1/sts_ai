@@ -53,8 +53,9 @@ These tools do not freeze a teacher, generate data, or authorize runtime
 surrogate use.
 
 `wholecombatgen` emits one canonical 1,766-feature row per completed fight. It
-captures the first `g_onCombatDecision` callback and labels the row only after
-the existing RAW `BattleContext::exitBattle` persistent transfer. Its teacher
+captures the first `g_onCombatDecision` callback and labels the row after
+`BattleContext::exitBattle` returns: the post-`afterBattle`, reward-screen-entry
+`GameContext`, not the earlier RAW persistent-transfer hook. Its teacher
 JSON is checked against the checkout, executable, exact ordinary Silver 10k
 configuration, environment, and loaded-artifact hashes before CSV creation.
 
