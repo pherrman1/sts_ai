@@ -1,6 +1,6 @@
 # Agent context and workflow
 
-Last verified: 2026-08-30 against the current working tree.
+Last verified: 2026-08-31 against the current working tree.
 
 ## Purpose
 
@@ -25,6 +25,15 @@ The external ChatGPT/Sol handoff is an accepted design plan when it states the
 baseline commit or branch, goal and hypothesis when research-facing, relevant
 facts verified against the current repository, required behavior, explicit
 non-goals, and cheapest verification criteria with expected evidence.
+
+Within this workflow, a `Session` is the coordinating Codex session. It may use
+native subtasks under the same accepted design when independent inspection,
+non-overlapping implementation, or verification makes execution cheaper or
+faster. Those subtasks do not independently redesign the plan or expand its
+scope, and the coordinator retains responsibility for integration, final diff
+inspection, verification, and the PR evidence packet. Subtasks for one accepted
+change may share its worktree; separate worktrees are for independent branches
+or experiments, not individual subtasks.
 
 Codex's bounded preflight is limited to checking branch/HEAD/status and
 upstream divergence; reading `AGENTS.md`, `CODE_MAP.md`, the routed page and
@@ -132,7 +141,11 @@ Long-run details are in [build and debugging](build-and-debugging.md).
    `git log --oneline @{upstream}..HEAD`.
 2. Read the routed KB page, implementation, and focused tests. State the
    behavioral success criterion and cheapest proving check. Ask when a material
-   interpretation is genuinely ambiguous. Create and remove linked worktrees
+   interpretation is genuinely ambiguous. Native subtasks within the same
+   accepted change may share the coordinating session's worktree; parallelize
+   only independent work and avoid duplicate investigation, competing
+   implementations, overlapping edits, and scope expansion. Create and remove
+   linked worktrees for independent branches or experiments
    through `python tools/agent/worktree.py`; it initializes, verifies, and
    safely discards checkout-specific submodules without globally deinitializing
    sibling worktrees. For a fresh clone or an existing checkout, run its
