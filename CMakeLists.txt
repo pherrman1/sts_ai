@@ -243,9 +243,15 @@ add_test(NAME selfplay_syntax COMMAND bash -n
     ${CMAKE_SOURCE_DIR}/selfplay/run_card_reliability_overnight.sh
     ${CMAKE_SOURCE_DIR}/selfplay/run_future_fight_collection.sh
     ${CMAKE_SOURCE_DIR}/selfplay/run_card_cf_collection.sh)
+add_test(NAME py_compile_paired_analysis COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/paired_analysis.py)
 add_test(NAME paired_analysis_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/paired_analysis.py --self-test)
 add_test(NAME py_compile_parity_test COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/parity_test.py)
+add_test(NAME py_compile_check_replay COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/verify/check_replay.py)
+add_test(NAME py_compile_vnettest_selftest COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/verify/vnettest_selftest.py)
+add_test(NAME py_compile_winnettest_selftest COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/verify/winnettest_selftest.py)
+add_test(NAME py_compile_particle_leaf_probe COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/train_particle_leaf_probe.py)
 add_test(NAME particle_leaf_probe_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/train_particle_leaf_probe.py --self-test)
+add_test(NAME py_compile_particle_posterior_probe COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_particle_posterior_probe.py)
 add_test(NAME py_compile_analyze_ooc_factor COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_ooc_factor.py)
 add_test(NAME particle_posterior_probe_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_particle_posterior_probe.py --self-test)
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/check_replay.py --self-test)
@@ -284,20 +290,41 @@ add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_rando
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
-# tests/agent is owned by the separate pre-build unittest discovery step in CI.
-# Do not register its modules or separate compile-only checks here as well:
-# importing those tools during unittest discovery already parses them.
+add_test(NAME silver_leaf_pipeline_tools COMMAND python3 -m unittest tests.agent.test_silver_leaf_pipeline)
+set_tests_properties(silver_leaf_pipeline_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME silver_parent_policy_tools COMMAND python3 -m unittest tests.agent.test_silver_parent_policy)
+set_tests_properties(silver_parent_policy_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME silver_action_pruning_tools COMMAND python3 -m unittest tests.agent.test_silver_action_pruning)
+set_tests_properties(silver_action_pruning_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME py_compile_silver_parent_policy COMMAND python3 -m py_compile
+    ${CMAKE_SOURCE_DIR}/tools/train_silver_parent_policy.py)
+add_test(NAME py_compile_silver_action_pruning COMMAND python3 -m py_compile
+    ${CMAKE_SOURCE_DIR}/tools/analyze_silver_action_pruning.py)
 add_test(NAME runic_dome_lifecycle COMMAND $<TARGET_FILE:runic-dome-lifecycle-test>)
+add_test(NAME py_compile_analyze_silver_reuse_scaling COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py)
 add_test(NAME analyze_silver_reuse_scaling_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_reuse_scaling.py --self-test)
+add_test(NAME py_compile_analyze_silver_vnet_leaf COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_vnet_leaf.py)
 add_test(NAME analyze_silver_vnet_leaf_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_vnet_leaf.py --self-test)
+add_test(NAME py_compile_check_benchmark_canary COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/agent/check_benchmark_canary.py)
 add_test(NAME check_benchmark_canary_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/agent/check_benchmark_canary.py --self-test)
+add_test(NAME agent_workflow_tools COMMAND python3 -m unittest
+    tests.agent.test_gcp_benchmark tests.agent.test_build)
+set_tests_properties(agent_workflow_tools PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME py_compile_analyze_silver_sticky_quality COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py)
 add_test(NAME analyze_silver_sticky_quality_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py --self-test)
+add_test(NAME py_compile_analyze_silver_root_diagnostic COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_root_diagnostic.py)
 add_test(NAME analyze_silver_root_diagnostic_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_root_diagnostic.py --self-test)
+add_test(NAME py_compile_analyze_silver_adaptive COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py)
 add_test(NAME analyze_silver_adaptive_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py --self-test)
+add_test(NAME py_compile_analyze_postcombat_raw_terminal COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_postcombat_raw_terminal.py)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
+add_test(NAME py_compile_analyze_runwin_shadow COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py)
 add_test(NAME analyze_runwin_shadow_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py --self-test)
+add_test(NAME py_compile_analyze_s3_sibling_crn COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_s3_sibling_crn.py)
 add_test(NAME analyze_s3_sibling_crn_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_s3_sibling_crn.py --self-test)
+add_test(NAME py_compile_select_s3_crn_states COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/select_s3_crn_states.py)
 add_test(NAME select_s3_crn_states_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/select_s3_crn_states.py --self-test)
+add_test(NAME py_compile_analyze_runwin_rank COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_rank.py)
 add_test(NAME analyze_runwin_rank_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_rank.py --self-test)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
 add_test(NAME runwin_e2c_native_parity COMMAND ${CMAKE_COMMAND} -E env
@@ -311,33 +338,5 @@ add_test(NAME runwin_e2c_production_native_parity COMMAND ${CMAKE_COMMAND} -E en
 add_test(NAME e2c_runwin_projection_parity COMMAND ${CMAKE_COMMAND} -E env
     STS_NATIVE_OOC=0
     $<TARGET_FILE:one_combat> e2cprojectiontest)
-set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_analyze_ooc_factor check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope analyze_silver_root_diagnostic_selftest analyze_postcombat_raw_terminal_selftest analyze_runwin_shadow_selftest analyze_runwin_rank_selftest export_win_model_selftest runwin_e2c_native_parity
+set_tests_properties(py_compile_paired_analysis paired_analysis_selftest py_compile_parity_test py_compile_check_replay py_compile_vnettest_selftest py_compile_winnettest_selftest py_compile_analyze_ooc_factor check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope py_compile_analyze_silver_root_diagnostic analyze_silver_root_diagnostic_selftest py_compile_analyze_postcombat_raw_terminal analyze_postcombat_raw_terminal_selftest py_compile_analyze_runwin_shadow analyze_runwin_shadow_selftest py_compile_analyze_runwin_rank analyze_runwin_rank_selftest export_win_model_selftest runwin_e2c_native_parity
     runwin_e2c_production_native_parity e2c_runwin_projection_parity PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")
-
-# Labels provide fast, intention-revealing local tiers while the unfiltered
-# linux-gcc-test preset remains the authoritative full CTest suite.
-set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
-    issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory
-    poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
-    simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed
-    training_integrity PROPERTIES LABELS "core")
-set_tests_properties(vnettest_selftest winnettest_selftest s3_sibling_crn
-    scum_nonfair_empty_edges scum_convroot_stale_outcome s3_drawpile_reuse_boundary
-    s3_strategy_fusion_diag s3_persistent_endturn_chance rng_state_propagation
-    s3_rand64_prior_sampler rejuv_conditional_blocks live_rejuv_attempt_gate
-    e2c_observer_scope combat_knowledge silver_random_bridge silver_semantic_action
-    silver_searcher_link_closure silver_bridge_boundary runic_dome_lifecycle
-    runwin_e2c_native_parity runwin_e2c_production_native_parity
-    e2c_runwin_projection_parity PROPERTIES LABELS "integration")
-set_tests_properties(selfplay_syntax py_compile_parity_test py_compile_analyze_ooc_factor
-    check_replay_selftest check_benchmark_canary_selftest export_win_model_selftest
-    PROPERTIES LABELS "tooling")
-set_tests_properties(particle_leaf_probe_selftest particle_posterior_probe_selftest
-    analyze_silver_reuse_scaling_selftest analyze_silver_vnet_leaf_selftest
-    analyze_silver_sticky_quality_selftest analyze_silver_root_diagnostic_selftest
-    analyze_silver_adaptive_selftest analyze_postcombat_raw_terminal_selftest
-    analyze_runwin_shadow_selftest analyze_s3_sibling_crn_selftest
-    select_s3_crn_states_selftest analyze_runwin_rank_selftest
-    PROPERTIES LABELS "research-repro")
-set_property(TEST selfplay_syntax paired_analysis_selftest check_replay_selftest
-    battlecontext_roundtrip issue_fixes APPEND PROPERTY LABELS "smoke")
