@@ -1,4 +1,5 @@
 import hashlib
+import importlib.util
 import json
 import subprocess
 import sys
@@ -14,7 +15,43 @@ def cli(*args):
     return subprocess.run([sys.executable, str(SCRIPT), *args], cwd=ROOT, text=True, capture_output=True)
 
 
+def load_eval_module():
+    spec = importlib.util.spec_from_file_location("agent_eval", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 class AgentEvalTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.eval_module = load_eval_module()
+        result = cli("prepare", "guardrail-command-policy")
+        if result.returncode:
+            raise AssertionError(result.stderr)
+        cls.fixture = json.loads(result.stdout)
+
+    def clone_fixture(self):
+        source = Path(self.fixture["workspace"])
+        workspace = Path(tempfile.mkdtemp(
+            prefix="guardrail-command-policy-test-",
+            dir=self.eval_module.RUNTIME / "work",
+        ))
+        subprocess.run(
+            ["git", "clone", "--shared", "--quiet", str(source), str(workspace)],
+            check=True,
+        )
+        subprocess.run(["git", "config", "user.email", "agent-eval@example.invalid"], cwd=workspace, check=True)
+        subprocess.run(["git", "config", "user.name", "agent-eval"], cwd=workspace, check=True)
+        baseline = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=workspace,
+            text=True, capture_output=True, check=True,
+        ).stdout.strip()
+        self.eval_module.record_prepared_baseline(
+            "guardrail-command-policy", workspace, baseline,
+        )
+        return {"workspace": str(workspace), "baseline_commit": baseline}
+
     def test_list_has_exactly_four_tasks(self):
         result = cli("list")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -77,8 +114,8 @@ class AgentEvalTests(unittest.TestCase):
         self.assertIn("INFRA_ERROR", result.stderr)
 
     def test_grading_one_trial_does_not_modify_another(self):
-        first = json.loads(cli("prepare", "guardrail-command-policy").stdout)
-        second = json.loads(cli("prepare", "guardrail-command-policy").stdout)
+        first = self.clone_fixture()
+        second = self.clone_fixture()
         before = subprocess.run(["git", "status", "--porcelain=v1"], cwd=second["workspace"], text=True, capture_output=True).stdout
         result = cli("grade", "guardrail-command-policy", first["workspace"])
         self.assertEqual(result.returncode, 1)
@@ -86,7 +123,7 @@ class AgentEvalTests(unittest.TestCase):
         self.assertEqual(before, after)
 
     def test_committed_forbidden_path_is_still_scoped_against_prepared_baseline(self):
-        prepared = json.loads(cli("prepare", "guardrail-command-policy").stdout)
+        prepared = self.clone_fixture()
         workspace = Path(prepared["workspace"])
         allowed = workspace / "tools" / "agent" / "committed_allowed.txt"
         forbidden = workspace / "src" / "committed_forbidden.txt"
@@ -110,7 +147,7 @@ class AgentEvalTests(unittest.TestCase):
         ))
 
     def test_rewritten_non_descendant_history_fails_closed(self):
-        prepared = json.loads(cli("prepare", "guardrail-command-policy").stdout)
+        prepared = self.clone_fixture()
         workspace = Path(prepared["workspace"])
         tree = subprocess.run(
             ["git", "rev-parse", "HEAD^{tree}"], cwd=workspace,
@@ -127,7 +164,7 @@ class AgentEvalTests(unittest.TestCase):
         self.assertIn("candidate HEAD is not a descendant", result.stderr)
 
     def test_committed_rename_retains_forbidden_source_path(self):
-        prepared = json.loads(cli("prepare", "guardrail-command-policy").stdout)
+        prepared = self.clone_fixture()
         workspace = Path(prepared["workspace"])
         old_path = "src/sim/SimHelpers.cpp"
         new_path = "tools/agent/renamed_sim_helpers.cpp"
@@ -150,7 +187,7 @@ class AgentEvalTests(unittest.TestCase):
         ))
 
     def test_merge_resolution_forbidden_path_is_scoped(self):
-        prepared = json.loads(cli("prepare", "guardrail-command-policy").stdout)
+        prepared = self.clone_fixture()
         workspace = Path(prepared["workspace"])
         allowed_path = "tools/agent/side_branch_allowed.txt"
         forbidden_path = "src/merge_only.cpp"
