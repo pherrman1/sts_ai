@@ -43,6 +43,14 @@ source seeds `983000..983015`; it does not authorize replacement-corpus
 generation or training. See [ledger-06 §208](../../../docs/experiments/ledger-06.md)
 and the [H evidence](../../experiments/evidence/ooc-h-futures-selection-2026-08-31.json).
 
+The required one-source canary subsequently stopped before gameplay because
+the producer compared its teacher SHA with `git rev-parse HEAD` from the GCP
+runtime root rather than the exact executable checkout. That fail-closed
+provenance mismatch published no rows or result sidecars. The 16-source block
+was not launched and remains frozen; the clean-pilot line is blocked pending a
+separately reviewed provenance fix. See [ledger-06 §209](../../../docs/experiments/ledger-06.md)
+and the [canary failure evidence](../../experiments/evidence/ooc-clean-pilot-canary-failure-2026-08-31.json).
+
 ### Encounter-marginalized strategic labels
 
 The 2,000-source-seed matched M0 (fixed-world) vs M1 (encounter-marginalized)

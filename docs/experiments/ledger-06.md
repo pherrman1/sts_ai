@@ -5880,3 +5880,24 @@ model training was changed.
   bar. The fresh issue-19 pilot block is frozen before outcomes at source seeds
   `983000..983015`. See
   `docs/experiments/evidence/ooc-h-futures-selection-2026-08-31.json`.
+
+## §209 Clean OOC pilot stopped at the provenance canary (2026-08-31)
+
+- **Frozen boundary:** Implementation review and GitHub `Linux GCC` passed at
+  `474c2d11c90d9074b2c3a0b589ad10df0b3cf6de`. The exact remote executable,
+  teacher manifest, and OOC floor/win models were hash-verified before launch.
+- **Canary:** The required one-source canary requested source seed `983000`
+  under the selected K1 exact-10k/H1 teacher. It failed closed before gameplay
+  or search with `wholecombatgen: teacher git_sha mismatch`; zero OOC rows,
+  zero combat-surrogate rows, and no result or sidecar were published.
+- **Diagnosis:** `loadWholeCombatTeacher` compares the teacher SHA with
+  `git rev-parse HEAD` evaluated in the process working directory. The GCP
+  launcher executes from the designated remote root, whose HEAD was
+  `0189bb40e1712f2b9b3597483c66cc4d267e206e`, while the exact executable lived
+  in the managed checkout at the frozen SHA. The valid teacher therefore
+  rejected the unrelated runtime-root SHA. This is a provenance integration
+  defect, not an H/search-quality result.
+- **Decision:** **CLEAN_OOC_PILOT_FAILED**. Per the preregistered gate, the
+  16-source block `983000..983015` was not launched and no substitute seeds
+  were appended. See
+  `docs/experiments/evidence/ooc-clean-pilot-canary-failure-2026-08-31.json`.
