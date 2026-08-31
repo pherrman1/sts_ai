@@ -11,6 +11,7 @@ import os
 import platform
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -20,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TASKS = ROOT / "evals" / "coding_agent" / "tasks"
 RUNTIME = ROOT / ".agent-eval"
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 REQUIRED = {
     "schema_version", "id", "version", "title", "prompt_file", "setup_patch",
     "timeout_seconds", "allowed_changed_paths", "forbidden_changed_paths", "grader",
@@ -111,20 +112,26 @@ def cache_path(identity: dict[str, object]) -> Path:
     return RUNTIME / "cache" / hashlib.sha256(encoded).hexdigest()[:24]
 
 
-def build_public_export(destination: Path) -> None:
+def extract_archive(repository: Path, revision: str, destination: Path) -> None:
+    archive = subprocess.run(
+        ["git", "archive", revision], cwd=repository, capture_output=True, check=True,
+    ).stdout
+    subprocess.run(["tar", "-x", "-C", str(destination)], input=archive, check=True)
+
+
+def build_public_export(destination: Path, identity: dict[str, object]) -> None:
     if not destination.is_dir() or any(destination.iterdir()):
         raise EvalError(f"export destination is not empty: {destination}")
-    archive = subprocess.run(["git", "archive", "HEAD"], cwd=ROOT, capture_output=True, check=True).stdout
-    subprocess.run(["tar", "-x", "-C", str(destination)], input=archive, check=True)
+    extract_archive(ROOT, str(identity["head"]), destination)
     # Git archives contain submodule gitlinks but not their contents. Materialize
-    # the checked-out dependency source without copying its nested Git metadata.
+    # each exact pinned dependency revision without nested Git metadata.
     for name in ("json", "pybind11"):
         source = ROOT / name
-        if source.is_dir():
-            target = destination / name
-            if target.exists() and target.is_dir():
-                shutil.rmtree(target)
-            shutil.copytree(source, target, ignore=shutil.ignore_patterns(".git"))
+        target = destination / name
+        if target.exists() and target.is_dir():
+            shutil.rmtree(target)
+        target.mkdir()
+        extract_archive(source, str(identity["submodules"][name]), target)
     remove_hidden_data(destination)
 
 
@@ -135,7 +142,8 @@ def tree_sha256(root: Path) -> str:
         if path.is_symlink():
             digest.update(b"L\0" + relative + b"\0" + os.fsencode(os.readlink(path)) + b"\0")
         elif path.is_file():
-            digest.update(b"F\0" + relative + b"\0")
+            executable = b"X" if path.stat().st_mode & stat.S_IXUSR else b"-"
+            digest.update(b"F" + executable + b"\0" + relative + b"\0")
             with path.open("rb") as stream:
                 for chunk in iter(lambda: stream.read(1024 * 1024), b""):
                     digest.update(chunk)
@@ -165,7 +173,7 @@ def _tracked_export(destination: Path) -> None:
             temporary.mkdir()
             temporary_tree = temporary / "tree"
             temporary_tree.mkdir()
-            build_public_export(temporary_tree)
+            build_public_export(temporary_tree, identity)
             record = {"identity": identity, "tree_sha256": tree_sha256(temporary_tree)}
             (temporary / "manifest.json").write_text(
                 json.dumps(record, sort_keys=True) + "\n", encoding="utf-8",
@@ -175,6 +183,7 @@ def _tracked_export(destination: Path) -> None:
             except FileExistsError:
                 shutil.rmtree(temporary)
                 return tracked_export(destination)
+            recorded = record
         except Exception:
             shutil.rmtree(temporary, ignore_errors=True)
             raise
@@ -182,6 +191,8 @@ def _tracked_export(destination: Path) -> None:
         ["tar", "-cf", "-", "-C", str(tree), "."], capture_output=True, check=True,
     ).stdout
     subprocess.run(["tar", "-xf", "-", "-C", str(destination)], input=archive, check=True)
+    if tree_sha256(destination) != recorded["tree_sha256"]:
+        raise EvalError(f"tracked-export cache changed during materialization: {entry}")
 
 
 def tracked_export(destination: Path) -> None:

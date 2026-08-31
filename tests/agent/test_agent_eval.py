@@ -2,6 +2,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -143,7 +144,8 @@ class AgentEvalTests(unittest.TestCase):
             runtime = Path(tmp) / "runtime"
             identity = {"version": 1, "head": "a" * 40, "submodules": {"json": "b" * 40, "pybind11": "c" * 40}}
 
-            def minimal_export(destination):
+            def minimal_export(destination, export_identity):
+                self.assertEqual(export_identity, identity)
                 (destination / "public.txt").write_text("public\n", encoding="utf-8")
 
             with (
@@ -158,6 +160,14 @@ class AgentEvalTests(unittest.TestCase):
                 self.assertEqual(build.call_count, 1)
                 self.assertEqual([path for path in self.eval_module.cache_path(identity).parent.iterdir() if path.name.startswith(".tmp-")], [])
                 entry = self.eval_module.cache_path(identity)
+                shutil.rmtree(entry)
+                self.assertEqual(destinations[1].joinpath("public.txt").read_text(encoding="utf-8"), "public\n")
+                subprocess.run(["git", "init", "-q"], cwd=destinations[1], check=True)
+                self.assertEqual(subprocess.run(
+                    ["git", "status", "--short"], cwd=destinations[1],
+                    text=True, capture_output=True, check=True,
+                ).stdout, "?? public.txt\n")
+                entry.mkdir(); (entry / "tree").mkdir()
                 (entry / "manifest.json").write_text("{}\n", encoding="utf-8")
                 third = Path(tmp) / "third"; third.mkdir()
                 with self.assertRaisesRegex(self.eval_module.EvalError, "identity/content mismatch"):
