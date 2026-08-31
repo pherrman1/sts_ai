@@ -144,6 +144,19 @@ class AgentEvalTests(unittest.TestCase):
             runtime = Path(tmp) / "runtime"
             identity = {"version": 1, "head": "a" * 40, "submodules": {"json": "b" * 40, "pybind11": "c" * 40}}
 
+            def identity_git(cwd, *args, **kwargs):
+                if args == ("rev-parse", "HEAD"):
+                    revision = identity["head"] if cwd == self.eval_module.ROOT else identity["submodules"][cwd.name]
+                    return subprocess.CompletedProcess([], 0, revision + "\n", "")
+                self.assertEqual(args[0:2], ("ls-tree", identity["head"]))
+                name = args[-1]
+                return subprocess.CompletedProcess(
+                    [], 0, f"160000 commit {identity['submodules'][name]}\t{name}\n", "",
+                )
+
+            with mock.patch.object(self.eval_module, "git", side_effect=identity_git):
+                self.assertEqual(self.eval_module.export_identity(), identity)
+
             def minimal_export(destination, export_identity):
                 self.assertEqual(export_identity, identity)
                 (destination / "public.txt").write_text("public\n", encoding="utf-8")

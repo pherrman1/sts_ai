@@ -96,7 +96,7 @@ def export_identity() -> dict[str, object]:
     head = git(ROOT, "rev-parse", "HEAD").stdout.strip()
     submodules: dict[str, str] = {}
     for name in ("json", "pybind11"):
-        entry = git(ROOT, "ls-tree", "HEAD", "--", name).stdout.split()
+        entry = git(ROOT, "ls-tree", head, "--", name).stdout.split()
         if len(entry) != 4 or entry[0] != "160000" or entry[1] != "commit":
             raise EvalError(f"missing or invalid submodule gitlink: {name}")
         revision = entry[2]
