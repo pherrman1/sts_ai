@@ -11,15 +11,17 @@ import os
 import platform
 import re
 import shutil
+import stat
 import subprocess
 import sys
-import tempfile
 import time
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TASKS = ROOT / "evals" / "coding_agent" / "tasks"
 RUNTIME = ROOT / ".agent-eval"
+CACHE_VERSION = 4
 REQUIRED = {
     "schema_version", "id", "version", "title", "prompt_file", "setup_patch",
     "timeout_seconds", "allowed_changed_paths", "forbidden_changed_paths", "grader",
@@ -90,28 +92,204 @@ def run(cmd: list[str], cwd: Path, timeout: float, *, check: bool = False) -> su
     return result
 
 
-def tracked_export(destination: Path) -> None:
+def export_identity() -> dict[str, object]:
+    head = git(ROOT, "rev-parse", "HEAD").stdout.strip()
+    submodules: dict[str, str] = {}
+    for name in ("json", "pybind11"):
+        entry = git(ROOT, "ls-tree", head, "--", name).stdout.split()
+        if len(entry) != 4 or entry[0] != "160000" or entry[1] != "commit":
+            raise EvalError(f"missing or invalid submodule gitlink: {name}")
+        revision = entry[2]
+        source = ROOT / name
+        if not source.is_dir() or git(source, "rev-parse", "HEAD").stdout.strip() != revision:
+            raise EvalError(f"submodule is not checked out at pinned revision: {name}={revision}")
+        submodules[name] = revision
+    return {"version": CACHE_VERSION, "head": head, "submodules": submodules}
+
+
+def cache_path(identity: dict[str, object]) -> Path:
+    encoded = json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+    return RUNTIME / "cache" / hashlib.sha256(encoded).hexdigest()[:24]
+
+
+def extract_archive(repository: Path, revision: str, destination: Path) -> None:
+    archive = subprocess.run(
+        ["git", "archive", revision], cwd=repository, capture_output=True, check=True,
+    ).stdout
+    subprocess.run(["tar", "-x", "-C", str(destination)], input=archive, check=True)
+
+
+def build_public_export(destination: Path, identity: dict[str, object]) -> None:
     if not destination.is_dir() or any(destination.iterdir()):
         raise EvalError(f"export destination is not empty: {destination}")
-    archive = subprocess.run(["git", "archive", "HEAD"], cwd=ROOT, capture_output=True, check=True).stdout
-    subprocess.run(["tar", "-x", "-C", str(destination)], input=archive, check=True)
+    extract_archive(ROOT, str(identity["head"]), destination)
     # Git archives contain submodule gitlinks but not their contents. Materialize
-    # the checked-out dependency source without copying its nested Git metadata.
+    # each exact pinned dependency revision without nested Git metadata.
     for name in ("json", "pybind11"):
         source = ROOT / name
-        if source.is_dir():
-            target = destination / name
-            if target.exists() and target.is_dir():
-                shutil.rmtree(target)
-            shutil.copytree(source, target, ignore=shutil.ignore_patterns(".git"))
+        target = destination / name
+        if target.exists() and target.is_dir():
+            shutil.rmtree(target)
+        target.mkdir()
+        extract_archive(source, str(identity["submodules"][name]), target)
+    remove_hidden_data(destination)
 
 
-def git(cwd: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return run(["git", *args], cwd, 30, check=check)
+def tree_sha256(root: Path) -> str:
+    digest = hashlib.sha256()
+
+    def field(value: bytes) -> None:
+        digest.update(len(value).to_bytes(8, "big"))
+        digest.update(value)
+
+    for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
+        relative = os.fsencode(path.relative_to(root).as_posix())
+        if path.is_symlink():
+            digest.update(b"L")
+            field(relative)
+            field(os.fsencode(os.readlink(path)))
+        elif path.is_dir():
+            digest.update(b"D")
+            field(relative)
+        elif path.is_file():
+            executable = b"X" if path.stat().st_mode & stat.S_IXUSR else b"-"
+            size = path.stat().st_size
+            digest.update(b"F" + executable)
+            field(relative)
+            digest.update(size.to_bytes(8, "big"))
+            observed = 0
+            with path.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+                    observed += len(chunk)
+            if observed != size:
+                raise EvalError(f"file changed while hashing tracked-export cache: {path}")
+        else:
+            raise EvalError(f"unsupported node in tracked-export cache: {path}")
+    return digest.hexdigest()
+
+
+def _tracked_export(destination: Path) -> None:
+    if not destination.is_dir() or any(destination.iterdir()):
+        raise EvalError(f"export destination is not empty: {destination}")
+    identity = export_identity()
+    entry = cache_path(identity)
+    tree = entry / "tree"
+    manifest = entry / "manifest.json"
+    if entry.exists():
+        try:
+            recorded = json.loads(manifest.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise EvalError(f"invalid tracked-export cache entry: {entry}: {exc}") from exc
+        expected = {"identity": identity, "tree_sha256": tree_sha256(tree)} if tree.is_dir() else None
+        if recorded != expected or (tree / "evals").exists():
+            raise EvalError(f"tracked-export cache identity/content mismatch: {entry}")
+    else:
+        entry.parent.mkdir(parents=True, exist_ok=True)
+        temporary = entry.parent / f".tmp-{uuid.uuid4().hex[:12]}"
+        try:
+            temporary.mkdir()
+            temporary_tree = temporary / "tree"
+            temporary_tree.mkdir()
+            build_public_export(temporary_tree, identity)
+            record = {"identity": identity, "tree_sha256": tree_sha256(temporary_tree)}
+            (temporary / "manifest.json").write_text(
+                json.dumps(record, sort_keys=True) + "\n", encoding="utf-8",
+            )
+            try:
+                temporary.rename(entry)
+            except FileExistsError:
+                shutil.rmtree(temporary)
+                return tracked_export(destination)
+            recorded = record
+        except Exception:
+            shutil.rmtree(temporary, ignore_errors=True)
+            raise
+    archive = subprocess.run(
+        ["tar", "-cf", "-", "-C", str(tree), "."], capture_output=True, check=True,
+    ).stdout
+    subprocess.run(["tar", "-xf", "-", "-C", str(destination)], input=archive, check=True)
+    if tree_sha256(destination) != recorded["tree_sha256"]:
+        raise EvalError(f"tracked-export cache changed during materialization: {entry}")
+
+
+def tracked_export(destination: Path) -> None:
+    try:
+        _tracked_export(destination)
+    except EvalError:
+        raise
+    except (OSError, UnicodeError, subprocess.SubprocessError) as exc:
+        raise EvalError(f"tracked export failed: {exc}") from exc
+
+
+def git(cwd: Path, *args: str, check: bool = True, timeout: float = 30) -> subprocess.CompletedProcess[str]:
+    return run(["git", *args], cwd, timeout, check=check)
+
+
+def apply_setup_patch(workspace: Path, patch: Path, task_id: str) -> None:
+    patch_bytes = patch.read_bytes().replace(b"\r\n", b"\n")
+    stats = subprocess.run(
+        ["git", "apply", "--numstat", "-z", "-"],
+        cwd=workspace, input=patch_bytes, capture_output=True,
+    )
+    entries = [entry for entry in stats.stdout.split(b"\0") if entry]
+    if stats.returncode or not entries:
+        raise EvalError(f"setup patch made no repository change for {task_id}")
+    targets: list[Path] = []
+    for entry in entries:
+        parts = entry.split(b"\t", 2)
+        if len(parts) != 3:
+            raise EvalError(f"invalid setup patch statistics for {task_id}")
+        targets.append(workspace / safe_rel(os.fsdecode(parts[2]), "setup patch path"))
+
+    def state(path: Path) -> tuple[str, bytes | str] | None:
+        try:
+            if path.is_symlink():
+                return ("symlink", os.readlink(path))
+            if path.is_file():
+                return ("file", hashlib.sha256(path.read_bytes()).digest())
+            if not path.exists():
+                return None
+        except OSError as exc:
+            raise EvalError(
+                f"failed to inspect setup patch target for {task_id}: {path}: {exc}"
+            ) from exc
+        raise EvalError(f"setup patch target is not a file: {path}")
+
+    before = [state(target) for target in targets]
+    applied = subprocess.run(
+        ["git", "apply", "--unidiff-zero", "--whitespace=nowarn", "-"],
+        cwd=workspace, input=patch_bytes, capture_output=True,
+    )
+    if applied.returncode:
+        raise EvalError(f"setup patch failed for {task_id}: {applied.stderr.decode(errors='replace')}")
+    if before == [state(target) for target in targets]:
+        raise EvalError(f"setup patch made no repository change for {task_id}")
+
+
+def remove_hidden_data(workspace: Path) -> None:
+    hidden = workspace / "evals"
+    if hidden.exists():
+        try:
+            shutil.rmtree(hidden)
+        except OSError as exc:
+            raise EvalError(f"failed to remove hidden evaluator data: {exc}") from exc
+    if hidden.exists():
+        raise EvalError(f"hidden evaluator data remains after removal: {hidden}")
 
 
 def prepared_record_path(workspace: Path) -> Path:
     return RUNTIME / "prepared" / f"{workspace.name}.json"
+
+
+def create_workspace(prefix: str) -> Path:
+    parent = RUNTIME / "work"
+    parent.mkdir(parents=True, exist_ok=True)
+    unique = uuid.uuid4().hex
+    name = f"{prefix}{unique}" if os.name != "nt" else f"{prefix[:8]}{unique[:12]}"
+    workspace = parent / name
+    workspace.mkdir()
+    return workspace
 
 
 def record_prepared_baseline(task_id: str, workspace: Path, baseline_commit: str) -> None:
@@ -146,6 +324,15 @@ def load_prepared_baseline(task_id: str, workspace: Path) -> str:
 
 
 def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str | None = None) -> dict:
+    phase_started = time.monotonic()
+    phases: dict[str, float] = {}
+
+    def phase(name: str) -> None:
+        nonlocal phase_started
+        now = time.monotonic()
+        phases[name] = round(now - phase_started, 6)
+        phase_started = now
+
     if (skill_file_value is None) != (skill_name is None):
         raise EvalError("--skill-file and --skill-name must be provided together")
     skill_file = None
@@ -159,27 +346,27 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
         skill_sha256 = hashlib.sha256(skill_file.read_bytes()).hexdigest()
     manifest = load_tasks()[task_id]
     source = task_dir(task_id)
-    RUNTIME.joinpath("work").mkdir(parents=True, exist_ok=True)
-    workspace = Path(tempfile.mkdtemp(prefix=f"{task_id}-", dir=RUNTIME / "work"))
+    workspace = create_workspace(f"{task_id}-")
     tracked_export(workspace)
+    phase("tracked_export")
     git(workspace, "init", "-q")
     git(workspace, "config", "user.email", "agent-eval@example.invalid")
     git(workspace, "config", "user.name", "agent-eval")
-    git(workspace, "add", "-A")
-    git(workspace, "commit", "-qm", f"candidate baseline: {task_id}")
     patch = source / safe_rel(manifest["setup_patch"], "setup_patch")
-    applied = subprocess.run(["git", "apply", "--unidiff-zero", "--whitespace=nowarn", str(patch)], cwd=workspace, text=True, capture_output=True)
-    if applied.returncode:
-        raise EvalError(f"setup patch failed for {task_id}: {applied.stderr}")
-    if not git(workspace, "diff", "--quiet", check=False).returncode:
-        raise EvalError(f"setup patch made no repository change for {task_id}")
-    shutil.rmtree(workspace / "evals", ignore_errors=True)
+    apply_setup_patch(workspace, patch, task_id)
+    remove_hidden_data(workspace)
     if skill_file is not None:
         target = workspace / ".agents" / "skills" / skill_name / "SKILL.md"
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(skill_file, target)
-    git(workspace, "add", "-A")
-    git(workspace, "commit", "--amend", "-qm", f"candidate baseline: {task_id}")
+    phase("mutation_and_overlay")
+    # Stage only after hidden evaluator data is gone. Even staging the original
+    # export would write recoverable private blobs into .git/objects. The empty
+    # repository is initialized earlier only to isolate patch application from
+    # the evaluator source checkout.
+    git(workspace, "add", "-A", timeout=120)
+    git(workspace, "commit", "-qm", f"candidate baseline: {task_id}")
+    phase("stage_and_commit")
     status = git(workspace, "status", "--short").stdout
     if status:
         raise EvalError(f"prepared candidate is not clean: {status}")
@@ -193,6 +380,8 @@ def prepare(task_id: str, skill_file_value: str | None = None, skill_name: str |
             "skill_name": skill_name,
             "skill_sha256": skill_sha256,
         })
+    if os.environ.get("STS_AGENT_EVAL_TIMINGS") == "1":
+        print(json.dumps({"prepare_phases_seconds": phases}, sort_keys=True), file=sys.stderr)
     return prepared
 
 
@@ -233,6 +422,13 @@ def environment() -> dict[str, object]:
     return {"OS": platform.system(), "architecture": platform.machine(), "CPU_count": os.cpu_count(), "Python": platform.python_version(), "compiler": compiler_version}
 
 
+def grader_command(grader: Path, workspace: Path) -> list[str]:
+    if os.name != "nt":
+        return [sys.executable, str(grader), str(workspace)]
+    command = 'python3 "$(wslpath -a "$1")" "$(wslpath -a "$2")"'
+    return ["wsl", "-e", "bash", "-lc", command, "_", str(grader), str(workspace)]
+
+
 def grade(task_id: str, workspace_value: str, labels: dict[str, str]) -> tuple[int, dict]:
     started = time.monotonic()
     manifest = load_tasks()[task_id]
@@ -254,7 +450,7 @@ def grade(task_id: str, workspace_value: str, labels: dict[str, str]) -> tuple[i
     if not files:
         checks.append({"name": "changed-path-policy", "passed": True, "detail": "no agent changes"})
     grader = task_dir(task_id) / safe_rel(manifest["grader"], "grader")
-    result = run([sys.executable, str(grader), str(workspace)], workspace, float(manifest["timeout_seconds"]))
+    result = run(grader_command(grader, workspace), workspace, float(manifest["timeout_seconds"]))
     if result.stdout.strip():
         try:
             checks.extend(json.loads(result.stdout).get("checks", []))
@@ -278,7 +474,11 @@ def self_test() -> int:
             raise EvalError(f"broken fixture unexpectedly passed: {task_id}")
         workspace = Path(prepared["workspace"])
         patch = task_dir(task_id) / "setup.patch"
-        subprocess.run(["git", "apply", "--unidiff-zero", "-R", str(patch)], cwd=workspace, check=True)
+        patch_bytes = patch.read_bytes().replace(b"\r\n", b"\n")
+        subprocess.run(
+            ["git", "apply", "--unidiff-zero", "-R", "-"],
+            cwd=workspace, input=patch_bytes, check=True,
+        )
         code, restored = grade(task_id, str(workspace), {})
         if code != 0:
             raise EvalError(f"restored oracle failed: {task_id}: {json.dumps(restored)}")

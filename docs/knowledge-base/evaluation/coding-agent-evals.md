@@ -35,12 +35,33 @@ python3 tools/agent/eval.py grade <task-id> <workspace> --agent codex --model <l
 python3 tools/agent/eval.py self-test
 ```
 
-`prepare` exports tracked content using `git archive`, materializes checked-out
-submodule contents when present, applies the setup mutation, removes `evals/`,
-initializes a fresh Git repository, and commits a clean candidate baseline.
+On Windows, candidate directories are created with inherited ACLs so a Codex
+sandbox can access workspaces prepared by the host process. Setup patches are
+normalized to LF before Git applies them. Hidden graders run through WSL, which
+must provide `python3`, CMake, and the C++ toolchain; evaluator preparation and
+result recording still run under the invoking Windows Python.
+
+`prepare` uses an atomically published public-export cache keyed by source HEAD
+and the exact `json` and `pybind11` gitlink revisions. Cache hits validate a
+manifest and length-framed content/path/node/executable-mode tree digest before
+use and revalidate the materialized copy. Directories and symlinks are covered;
+unsupported filesystem nodes fail closed. Each candidate receives a normal file
+copy of that export, with no hardlinks, alternates, shared object store, or
+dependency on cache lifetime. Cache construction archives the captured root
+SHA and each captured submodule SHA directly from their Git object databases
+without nested Git metadata, and
+removes `evals/` before publication. Preparation then initializes an empty
+candidate Git repository,
+applies the setup mutation, removes `evals/`, installs any requested skill
+overlay, and only then stages files and creates the single clean candidate
+baseline commit. Delaying the first staging pass is security-significant:
+private evaluator blobs are never written into the candidate object database.
 Runtime workspaces and result records live below `.agent-eval/`, which is
 ignored. A human can point Codex at the printed workspace, give it the printed
 public prompt, and grade the workspace afterward.
+
+Set `STS_AGENT_EVAL_TIMINGS=1` to emit preparation phase durations as one JSON
+object on stderr. Normal stdout remains the prepared-candidate record.
 
 When both skill options are supplied, `prepare` validates the regular source
 file and lowercase hyphenated slug, copies the skill to
@@ -101,10 +122,16 @@ active repository hook.
 ## Hidden-data boundary
 
 The reference checkout owns task manifests, setup patches, and private graders.
-Preparation applies the patch before `git init`, then removes the complete
-`evals/` directory. Consequently candidate files and candidate Git history do
-not contain the hidden grader or oracle mutation. The grader executes from the
-reference checkout and receives only the candidate workspace path.
+Preparation initializes an empty standalone repository before applying the
+patch so Git cannot discover the enclosing reference checkout. It removes the
+complete `evals/` directory before the first `git add` and creates one root
+commit containing the mutated public tree and optional skill overlay.
+Consequently candidate paths, reachable history, and candidate-local
+unreachable objects do not contain the hidden grader or oracle mutation. The
+candidate has no alternates or nested submodule Git metadata; checked-out
+dependency contents are ordinary files owned by the candidate. The grader
+executes from the reference checkout and receives only the candidate workspace
+path.
 
 Grading disables Git rename detection and expands merge diffs when enumerating
 paths, constructing the candidate patch, and counting changed lines. A rename

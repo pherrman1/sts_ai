@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-31 | [`2026-08-31-evaluator-public-export-cache.md`](2026-08-31-evaluator-public-export-cache.md) | Added an atomic, HEAD-and-submodule-keyed, full-tree-validated public export cache while retaining independent single-root candidate repositories. |
 | 2026-08-31 | [`2026-08-31-agent-test-duration-and-fixture-ownership.md`](2026-08-31-agent-test-duration-and-fixture-ownership.md) | Added standard-library slow-test reporting and class-owned immutable evaluator setup with isolated sparse real-Git clones. |
 | 2026-08-31 | [`2026-08-31-test-suite-tiering.md`](2026-08-31-test-suite-tiering.md) | Removed duplicate Python test processes without dropping behavioral coverage, added focused CTest tiers, retained evidence-bearing research analyzers, and made unknown native test commands fail closed. |
 | 2026-08-29 | [`2026-08-29-silver-learned-visit-prior.md`](2026-08-29-silver-learned-visit-prior.md) | Frozen grouped and rank-4 visit-prior experiments are retained as offline/online evidence; their runtime PUCT and native inference paths are retired after negative or inconclusive gates. |
@@ -83,6 +84,7 @@ Reverse chronological; one line per entry file.
 
 | Date | File | Topic |
 | --- | --- | --- |
+| 2026-08-31 | [`2026-08-31-evaluator-hidden-object-isolation.md`](2026-08-31-evaluator-hidden-object-isolation.md) | Candidate preparation stages and commits only after hidden evaluator data is removed, preventing recovery through candidate-local unreachable Git objects. |
 | 2026-08-31 | [`2026-08-31-native-codex-delegation.md`](2026-08-31-native-codex-delegation.md) | One coordinating Codex session may delegate independent execution work under an accepted design; same-change subtasks may share its worktree. |
 | 2026-08-31 | [`2026-08-31-skillopt-evaluator-corrections.md`](2026-08-31-skillopt-evaluator-corrections.md) | Evaluator grading is anchored to external prepared-baseline metadata; SkillOpt scope is a preference plus mandatory staged-diff rejection. |
 | 2026-08-30 | [`2026-08-30-mcp-free-skillopt-pilot.md`](2026-08-30-mcp-free-skillopt-pilot.md) | The normal Codex path is MCP-free; SkillOpt-Sleep may stage one bounded procedural proposal for independent evaluator and human review. |
