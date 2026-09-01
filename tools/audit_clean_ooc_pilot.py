@@ -21,7 +21,7 @@ PREFIX = [
     "chosen", "futureIdx", "H", "continuationSeed", "hiddenSeed",
     "teacherId", "survivedPrefix", "conditionalAliveValue", "qProduct",
     "denseReferenceValue", "floorBootstrapValue", "silverSimulations",
-    "combatDecisions", "transactionSubdecisions", "cpuMs", "wallMs", "valid", "quarantineReason",
+    "combatDecisions", "transactionSubdecisions", "transactionDecisions", "cpuMs", "wallMs", "valid", "quarantineReason",
     "reachedCombat", "terminalOutcomeBeforeCombat",
     "battleAct", "battleFloor", "battleEncounter", "roomClass",
 ]
@@ -104,7 +104,7 @@ def audit(path: Path, manifest_path: Path) -> dict:
             raise ValueError(f"decision does not have exactly one source-policy action at {decision}")
     numeric = [
         "conditionalAliveValue", "qProduct", "denseReferenceValue", "floorBootstrapValue",
-        "silverSimulations", "combatDecisions", "transactionSubdecisions", "cpuMs", "wallMs",
+        "silverSimulations", "combatDecisions", "transactionSubdecisions", "transactionDecisions", "cpuMs", "wallMs",
     ]
     combat_numeric = canonical_names() + ["won", "endHp",
         "startHp", "startMaxHp", "endMaxHp", "endHpFrac",
@@ -124,7 +124,7 @@ def audit(path: Path, manifest_path: Path) -> dict:
         raise ValueError("terminal OOC survival target disagrees with run outcome")
     if not (frame.loc[terminal, "conditionalAliveValue"] == expected_terminal_survival).all() or not (frame.loc[terminal, "qProduct"] == expected_terminal_survival).all():
         raise ValueError("terminal OOC value is not the exact absorbed run outcome")
-    if (frame.loc[terminal, ["silverSimulations", "combatDecisions", "transactionSubdecisions"]] != 0).any().any():
+    if (frame.loc[terminal, ["silverSimulations", "combatDecisions", "transactionSubdecisions", "transactionDecisions"]] != 0).any().any():
         raise ValueError("terminal-before-combat row claims combat search cost")
     unavailable = canonical_names() + SUFFIX[:-1]
     if not frame.loc[terminal, unavailable].isna().all().all():
@@ -136,11 +136,14 @@ def audit(path: Path, manifest_path: Path) -> dict:
         raise ValueError("qProduct does not equal survival times conditional value")
     if ((frame.silverSimulations % 10000) != 0).any():
         raise ValueError("Silver simulation accounting is not in exact-10k root increments")
-    accounting = frame[["silverSimulations", "combatDecisions", "transactionSubdecisions"]]
+    accounting = frame[["silverSimulations", "combatDecisions", "transactionSubdecisions", "transactionDecisions"]]
     if (accounting < 0).any().any() or ((accounting % 1) != 0).any().any():
         raise ValueError("Silver simulation and decision counts must be nonnegative integers")
-    if (frame.silverSimulations != (frame.combatDecisions + frame.transactionSubdecisions) * 10000).any():
-        raise ValueError("Silver simulations disagree with ordinary plus transaction decision count")
+    if (frame.transactionDecisions > frame.combatDecisions).any() or (frame.transactionDecisions > frame.transactionSubdecisions).any():
+        raise ValueError("Silver transaction overlap exceeds its decision counts")
+    search_roots = frame.combatDecisions + frame.transactionSubdecisions - frame.transactionDecisions
+    if (frame.silverSimulations != search_roots * 10000).any():
+        raise ValueError("Silver simulations disagree with overlap-corrected search-root count")
     return {
         "rows": int(len(frame)),
         "oocRows": int(len(frame)),
@@ -165,6 +168,7 @@ def audit(path: Path, manifest_path: Path) -> dict:
             "silverSimulations": int(frame.silverSimulations.sum()),
             "combatDecisions": int(frame.combatDecisions.sum()),
             "transactionSubdecisions": int(frame.transactionSubdecisions.sum()),
+            "transactionDecisions": int(frame.transactionDecisions.sum()),
             "cpuSeconds": float(frame.cpuMs.sum()/1000),
             "wallSecondsSum": float(frame.wallMs.sum()/1000),
         },

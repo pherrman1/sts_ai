@@ -49,9 +49,11 @@ view; no battle-start feature vector or combat transition target is claimed.
 The auditor preserves the row in complete sibling coverage and OOC label
 distributions while excluding it from combat-surrogate target distributions.
 Search accounting records ordinary Silver decisions and multi-select
-transaction subdecisions separately. Under the exact-10k teacher,
-`silverSimulations` must equal 10,000 times their sum; transaction searches are
-real roots even though they occur inside one committed combat action.
+transaction subdecisions separately, plus the committed transaction decisions
+present in both counters. Under the exact-10k teacher, `silverSimulations` must
+equal 10,000 times (`combatDecisions + transactionSubdecisions -
+transactionDecisions`); the subtraction removes only the overlapping committed
+action, while every private transaction search remains a real root.
 
 Direct-Q and factorized training must consume identical rows, split, representation, and comparable capacity. Survival BCE applies to every valid branch; conditional-value loss only to survived horizons. No placeholder-card sharing or action-subsampling policy is frozen.
 
