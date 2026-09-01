@@ -6255,6 +6255,8 @@ struct OocContinuationCost {
 using OocPrefixObserver = std::function<void(const GameContext &, int,
                                                const OocContinuationCost &)>;
 
+static void stepFrozenV4Ooc(GameContext &, search::ScumSearchAgent2 &);
+
 // Direct near-term survival supervision for out-of-combat action values.  These
 // are deliberately *outcomes of the real counterfactual continuation*, rather
 // than a hand-authored encounter tier.  `passed` means that the branch both
@@ -6301,7 +6303,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         const std::vector<int> *fightSimsSeq = nullptr,
                         bool usePredict = false,
                         const OocPrefixObserver *prefixObserver = nullptr,
-                        OocContinuationCost *finalCost = nullptr) {
+                        OocContinuationCost *finalCost = nullptr,
+                        bool useFrozenV4 = false) {
     const int healthBefore = search::g_simHealthFailureCount;
     const auto continuationWallStart = std::chrono::steady_clock::now();
     const std::clock_t continuationCpuStart = std::clock();
@@ -6382,6 +6385,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
             // evaluator stops at the current act's boss rather than leaking a
             // candidate's score into Act+1 rewards/fights.
             if (stopAfterAct > 0 && battleAct == stopAfterAct && room == Room::BOSS) break;
+        } else if (useFrozenV4) {
+            stepFrozenV4Ooc(gc, agent);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
@@ -11229,6 +11234,243 @@ static bool phase13aOwnedScreen(const GameContext &gc,
     }
 }
 
+// Offline V4-vs-H1 screen. Source replay stays on the recommended fair-S3 V4
+// stack. Once the sampled state is frozen, the process switches once to the
+// exact-10k Silver teacher; one source seed per process keeps that transition
+// process-local and irreversible.
+struct V4H1Sample {
+    GameContext pre;
+    PathHistory path;
+    std::vector<search::GameAction> actions;
+    std::uint64_t seed = 0;
+    int decisionIdx = -1;
+    std::uint32_t chosenBits = UINT32_MAX;
+};
+
+static void requireV4H1Comparator() {
+    const std::map<std::string,std::string> required = {
+        {"STS_FAIR","1"},{"STS_SEARCHER3","1"},{"STS_S3_BELIEF","0"},
+        {"STS_S3_CHAIN","0"},{"STS_S3_PARTICLES","64"},
+        {"STS_COLLECT_KEYS","1"},
+        {"STS_OOC_STRATEGIC_TOK_NN","selfplay/models/ooc_strategic_tok_final.native"},
+        {"STS_VNET","models/v_combat_7k_tuned.txt"},{"STS_VNET_ALPHA","0.3"},
+        {"STS_OOC_STRATEGIC_REST","1"},{"STS_OOC_STRATEGIC_EVENT","1"},
+        {"STS_OOC_STRATEGIC_SHOP","1"},{"STS_OOC_STRATEGIC_TREASURE","1"},
+        {"STS_OOC_STRATEGIC_BOSS_RELIC","1"},{"STS_OOC_STRATEGIC_MARGIN","1.0"},
+    };
+    for (const auto &[name, expected] : required) {
+        const char *actual = std::getenv(name.c_str());
+        if (!actual || actual != expected)
+            throw std::runtime_error("oocv4h1: comparator environment mismatch for " + name);
+    }
+    if (!search::g_fairPlay || !search::g_useSearcher3 || !g_oocStrategicTokNet.ok
+        || !g_oocStrategicRest || !g_oocStrategicEvent || !g_oocStrategicShop
+        || !g_oocStrategicTreasure || !g_oocStrategicBossRelic
+        || g_oocStrategicMargin != 1.0 || g_oocStrategicGateRegret
+        || g_oocStrategicMarginCard >= 0.0 || g_oocStrategicMarginRest >= 0.0
+        || g_oocStrategicMarginEvent >= 0.0 || g_oocStrategicMarginShop >= 0.0
+        || g_oocStrategicMarginTreasure >= 0.0 || g_oocStrategicMarginBossRelic >= 0.0
+        || !g_collectKeys || !search::g_useVNet
+        || g_effectiveVNetPath != "models/v_combat_7k_tuned.txt"
+        || search::g_vnetAlpha != 0.3 || numThreads() != 24)
+        throw std::runtime_error("oocv4h1: recommended V4/Searcher3/VNet stack is not loaded");
+    if (search::g_externalCombatBackend)
+        throw std::runtime_error("oocv4h1: Silver must be disabled during source replay");
+}
+
+static std::vector<search::GameAction> canonicalV4Actions(const GameContext &gc) {
+    std::vector<search::GameAction> out;
+    std::unordered_set<std::uint32_t> seen;
+    for (const auto &a : phase13aActions(gc)) if (seen.insert(a.bits).second) out.push_back(a);
+    return out;
+}
+
+static V4H1Sample sampleV4H1Decision(std::uint64_t seed, int sims, int asc) {
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    search::ScumSearchAgent2 agent; agent.simulationCountBase = sims;
+    agent.rng = std::default_random_engine(seed);
+    std::default_random_engine reservoir(seed * 2862933555777941757ULL + 191);
+    PathHistory path; t_curPath = &path;
+    std::optional<V4H1Sample> sampled;
+    int decisionIdx = 0, eligible = 0;
+    while (gc.outcome == GameOutcome::UNDECIDED) {
+        path.update(gc);
+        const auto actions = canonicalV4Actions(gc);
+        const bool owned = phase13aOwnedScreen(gc, actions) && actions.size() >= 2;
+        bool replace = false;
+        if (owned) {
+            ++eligible;
+            replace = std::uniform_int_distribution<int>(1, eligible)(reservoir) == 1;
+            if (replace) sampled = V4H1Sample{detachedCounterfactualCopy(gc), path, actions,
+                                               seed, decisionIdx, UINT32_MAX};
+            ++decisionIdx;
+        }
+        std::uint32_t executed = UINT32_MAX;
+        search::g_onGameActionExecute = [&](std::uint32_t bits, const GameContext *target) {
+            if (target == &gc && executed == UINT32_MAX) executed = bits;
+        };
+        if (gc.screenState == ScreenState::BATTLE) {
+            agent.simulationCountBase = fightSims(gc, sims);
+            search::g_potionKeepValue = potionKeepValue(gc);
+        }
+        stepFrozenV4Ooc(gc, agent);
+        search::g_onGameActionExecute = {};
+        if (replace) sampled->chosenBits = executed;
+    }
+    t_curPath = nullptr;
+    if (!sampled || sampled->chosenBits == UINT32_MAX)
+        throw std::runtime_error("oocv4h1: source produced no sampled V4 decision/action");
+    if (std::none_of(sampled->actions.begin(), sampled->actions.end(),
+                     [&](const auto &a){ return a.bits == sampled->chosenBits; }))
+        throw std::runtime_error("oocv4h1: V4 action missing from legal siblings");
+    return std::move(*sampled);
+}
+
+static WholeCombatTeacher switchToV4H1Teacher(const std::string &teacherPath, int sims) {
+    setenv("STS_SEARCHER3", "0", 1);
+    setenv("STS_SILVER_SEARCH", "1", 1);
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims);
+    search::installSilverLiveBackend();
+    if (!search::silverLiveBackendInstalled() || !search::silverLiveExactRootBudgets()
+        || search::silverLiveReuseCapMode() != "allocated"
+        || search::silverLiveReuseCap() != 32768 || search::silverLiveAdaptiveEnabled())
+        throw std::runtime_error("oocv4h1: Silver teacher failed runtime validation");
+    return teacher;
+}
+
+static bool advanceFrozenV4ToBattle(GameContext &gc, search::ScumSearchAgent2 &agent,
+                                    PathHistory &path) {
+    for (int steps = 0; steps < 512 && gc.outcome == GameOutcome::UNDECIDED; ++steps) {
+        path.update(gc);
+        if (gc.screenState == ScreenState::BATTLE) return true;
+        stepFrozenV4Ooc(gc, agent);
+    }
+    return gc.screenState == ScreenState::BATTLE;
+}
+
+static void collectV4H1(std::uint64_t seed, int sourceSims, int teacherSims, int asc,
+                        const std::string &outFile, const std::string &teacherPath) {
+    if (sourceSims != 1000 || teacherSims != 10000 || asc != 0)
+        throw std::runtime_error("oocv4h1: frozen source/teacher/ascension configuration mismatch");
+    requireV4H1Comparator();
+    const auto sample = sampleV4H1Decision(seed, sourceSims, asc);
+    const auto v4Scores = phase13aScore(sample.pre, sample.path, sample.actions, g_oocStrategicTokNet);
+    const auto teacher = switchToV4H1Teacher(teacherPath, teacherSims);
+    const std::string partialFile = outFile + ".partial";
+    if (std::filesystem::exists(outFile) || std::filesystem::exists(partialFile))
+        throw std::runtime_error("oocv4h1: output or partial output already exists");
+    std::ofstream out(partialFile);
+    if (!out) throw std::runtime_error("oocv4h1: cannot open collection output");
+    out << "sourceSeed,decisionIdx,act,floor,screen,stateRich,actionIdx,actionBits,actionSemantic,"
+           "legalSiblingCount,legalSiblingBits,v4Chosen,v4ModelScore,v4ModelMargin,continuationSeed,"
+           "hiddenSeed,teacherId,reachedCombat,terminalBeforeCombat,survivedCombat,k1Value,"
+           "silverSimulations,combatDecisions,valid\n";
+    std::ostringstream legal;
+    for (int i=0;i<(int)sample.actions.size();++i) { if(i) legal << ';'; legal << sample.actions[i].bits; }
+    std::uint64_t continuationSeed = seed
+        ^ ((std::uint64_t)(sample.decisionIdx + 1) * 0x9e3779b97f4a7c15ULL);
+    if (!continuationSeed) continuationSeed = 1;
+    std::uint64_t hiddenSeed = continuationSeed ^ 0x94d049bb133111ebULL;
+    GameContext siblingBase = detachedCounterfactualCopy(sample.pre);
+    resampleRemainingActEncounters(siblingBase, hiddenSeed);
+    for (int ai=0; ai<(int)sample.actions.size(); ++ai) {
+        GameContext branch = detachedCounterfactualCopy(siblingBase);
+        sample.actions[ai].execute(branch);
+        PathHistory branchPath = sample.path;
+        search::ScumSearchAgent2 agent; agent.simulationCountBase = teacherSims;
+        agent.rng = std::default_random_engine(continuationSeed);
+        const bool reached = advanceFrozenV4ToBattle(branch, agent, branchPath);
+        int terminalBefore = -1, survived = 0, valid = 1;
+        double value = 0.0; std::uint64_t silverSims = 0, combatDecisions = 0;
+        if (!reached) {
+            if (branch.outcome == GameOutcome::UNDECIDED) valid = 0;
+            else { terminalBefore = (int)branch.outcome; value = branch.outcome == GameOutcome::PLAYER_VICTORY ? 1.0 : 0.0; }
+        } else {
+            BattleContext bc{}; const int healthBefore = search::g_simHealthFailureCount;
+            const std::int64_t before = agent.simulationCountTotal;
+            agent.playoutBattle(branch, bc);
+            silverSims = (std::uint64_t)std::max<std::int64_t>(0, agent.simulationCountTotal-before);
+            combatDecisions = search::g_silverLiveDiagnostics.decisions;
+            valid = search::isValidTrainingTerminal(bc.outcome != Outcome::UNDECIDED,
+                healthBefore, search::g_simHealthFailureCount, false) ? 1 : 0;
+            survived = bc.outcome == Outcome::PLAYER_VICTORY;
+            bc.exitBattle(branch);
+            if (valid && survived) {
+                if (branch.outcome == GameOutcome::PLAYER_VICTORY) value = 1.0;
+                else if (branch.outcome == GameOutcome::UNDECIDED) value = vStateWin(branch);
+            }
+        }
+        out << seed << ',' << sample.decisionIdx << ',' << sample.pre.act << ',' << sample.pre.floorNum
+            << ',' << (int)sample.pre.screenState << ',' << csvQuote(richRow(sample.pre,sample.path))
+            << ',' << ai << ',' << sample.actions[ai].bits << ','
+            << csvQuote(actionDescription(sample.actions[ai],sample.pre)) << ',' << sample.actions.size()
+            << ',' << legal.str() << ',' << (sample.actions[ai].bits==sample.chosenBits) << ','
+            << v4Scores.values[ai] << ',' << (v4Scores.bestValue-v4Scores.secondValue) << ','
+            << continuationSeed << ',' << hiddenSeed << ',' << teacher.id << ',' << reached << ','
+            << terminalBefore << ',' << survived << ',' << value << ',' << silverSims << ','
+            << combatDecisions << ',' << valid << '\n';
+    }
+    out.close();
+    if (!out) throw std::runtime_error("oocv4h1: failed to finish collection output");
+    std::filesystem::rename(partialFile, outFile);
+}
+
+static void adjudicateV4H1(std::uint64_t seed, int targetDecision, int sourceSims,
+                           int teacherSims, int asc, int futures, int futureStart,
+                           const std::string &outFile, const std::string &teacherPath) {
+    if (sourceSims != 1000 || teacherSims != 10000 || asc != 0
+        || futures != 4 || futureStart != 100)
+        throw std::runtime_error("oocv4h1ref: frozen source/teacher/future configuration mismatch");
+    requireV4H1Comparator();
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    search::ScumSearchAgent2 source; source.simulationCountBase=sourceSims;
+    source.rng=std::default_random_engine(seed); PathHistory path; t_curPath=&path;
+    int decisionIdx=0; std::optional<V4H1Sample> target;
+    while (gc.outcome==GameOutcome::UNDECIDED && !target) {
+        path.update(gc); const auto actions=canonicalV4Actions(gc);
+        if (phase13aOwnedScreen(gc,actions) && actions.size()>=2) {
+            if (decisionIdx==targetDecision)
+                target=V4H1Sample{detachedCounterfactualCopy(gc),path,actions,seed,decisionIdx,UINT32_MAX};
+            ++decisionIdx;
+        }
+        if (!target) {
+            if (gc.screenState == ScreenState::BATTLE) {
+                source.simulationCountBase = fightSims(gc, sourceSims);
+                search::g_potionKeepValue = potionKeepValue(gc);
+            }
+            stepFrozenV4Ooc(gc,source);
+        }
+    }
+    t_curPath=nullptr;
+    if (!target) throw std::runtime_error("oocv4h1ref: target decision did not replay");
+    const auto teacher=switchToV4H1Teacher(teacherPath,teacherSims);
+    const std::string partialFile=outFile+".partial";
+    if(std::filesystem::exists(outFile)||std::filesystem::exists(partialFile))
+        throw std::runtime_error("oocv4h1ref: output or partial output already exists");
+    std::ofstream out(partialFile); if(!out)throw std::runtime_error("oocv4h1ref: cannot open output");
+    out << "sourceSeed,decisionIdx,act,floor,screen,actionIdx,actionBits,futureIdx,continuationSeed,"
+           "hiddenSeed,teacherId,terminalWon,silverSimulations,combatDecisions,valid\n";
+    const std::vector<int> exactSchedule{teacherSims};
+    for(int f=0;f<futures;++f){const int future=futureStart+f;
+        std::uint64_t cont=seed^((std::uint64_t)(targetDecision+1)*0x9e3779b97f4a7c15ULL)
+            ^((std::uint64_t)(future+1)*0xbf58476d1ce4e5b9ULL);if(!cont)cont=1;
+        std::uint64_t hidden=cont^0x94d049bb133111ebULL;if(!hidden)hidden=1;
+        GameContext base=detachedCounterfactualCopy(target->pre);resampleRemainingActEncounters(base,hidden);
+        for(int ai=0;ai<(int)target->actions.size();++ai){GameContext branch=detachedCounterfactualCopy(base);
+            target->actions[ai].execute(branch);OocContinuationCost cost;
+            const auto r=finishOocCounterfactual(std::move(branch),teacherSims,cont,target->path,-1,false,
+                nullptr,0,&exactSchedule,false,nullptr,&cost,true);
+            out<<seed<<','<<targetDecision<<','<<target->pre.act<<','<<target->pre.floorNum<<','
+               <<(int)target->pre.screenState<<','<<ai<<','<<target->actions[ai].bits<<','<<future<<','
+               <<cont<<','<<hidden<<','<<teacher.id<<','<<r.won<<','<<cost.silverSimulations<<','
+               <<cost.combatDecisions<<','<<r.valid<<'\n';
+        }
+    }
+    out.close();
+    if(!out)throw std::runtime_error("oocv4h1ref: failed to finish output");
+    std::filesystem::rename(partialFile,outFile);
+}
+
 static std::string phase13aCandidateHeader() {
     return "sourceSeed,decisionId,act,floor,screen,nActions,gateOwned,liveV4Idx,liveV4Margin,"
            "v4Idx,v4Bits,v4I1,v4I2,v4I3,m0Idx,m0Bits,m0I1,m0I2,m0I3,v4Margin,modelDelta,"
@@ -15832,6 +16074,13 @@ int main(int argc, char **argv) {
     } else if (mode == "ooccleanpilot") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccleanpilot N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         cleanOocPilotGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);
+    } else if (mode == "oocv4h1collect") {
+        if (argc < 8) { std::cerr << "usage: one_combat oocv4h1collect SEED SOURCE_SIMS TEACHER_SIMS ASC OUT.csv TEACHER.json\n"; return 2; }
+        collectV4H1(std::stoull(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),std::stoi(argv[5]),argv[6],argv[7]);
+    } else if (mode == "oocv4h1ref") {
+        if (argc < 11) { std::cerr << "usage: one_combat oocv4h1ref SEED DECISION SOURCE_SIMS TEACHER_SIMS ASC FUTURES FUTURE_START OUT.csv TEACHER.json\n"; return 2; }
+        adjudicateV4H1(std::stoull(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),std::stoi(argv[5]),
+            std::stoi(argv[6]),std::stoi(argv[7]),std::stoi(argv[8]),argv[9],argv[10]);
 
     } else if (mode == "causalgen") {     // CSV of (state, card features, CRN advantage) for causal card value
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 200;
