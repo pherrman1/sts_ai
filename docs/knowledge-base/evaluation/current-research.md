@@ -11,7 +11,7 @@ lines. It does not replace the current benchmark configuration in
 
 ## Active line
 
-### OOC future-horizon and combat-search budget
+### OOC horizon, combat-search budget, and futures/action
 
 The frozen 32-decision, 157-action counterfactual cohort selected **K=1 with
 `[10000]` Silver simulations/root** for future clean OOC labels. Under the
@@ -34,6 +34,24 @@ uncertainty. This decision does not authorize additional horizon experiments,
 budget tuning, datagen, transition-surrogate work, or OOC training. See
 [ledger-06 §207](../../../docs/experiments/ledger-06.md) and the
 [frozen evidence](../../experiments/evidence/ooc-k-combat-budget-stage-b-2026-08-31.json).
+
+The preserved K1 Stage-B evidence subsequently selected **H=1 future/action**.
+H2 and H4 each worsened selected-terminal-win and terminal-regret point
+estimates relative to the next-smaller H while costing 2× and 4×. The frozen
+small clean issue-19 health pilot therefore uses K1 exact-10k with H1 on fresh
+source seeds `983000..983015`; it does not authorize replacement-corpus
+generation or training. See [ledger-06 §208](../../../docs/experiments/ledger-06.md)
+and the [H evidence](../../experiments/evidence/ooc-h-futures-selection-2026-08-31.json).
+
+After fail-closed corrections for producer provenance, canonical sibling
+identity, terminal-before-combat targets, failure publication, and overlapping
+multi-select search accounting, the frozen 16-source issue-19 pilot passed at
+reviewed SHA `ff9e5a99`. It produced 9,289 complete OOC rows and 9,265 reusable
+combat-surrogate rows across 1,705 decisions, with 24 exact terminal-before-
+combat rows and zero failures or quarantines. This is a pipeline-health result,
+not authorization to generate the replacement corpus or train either model.
+See [ledger-06 §209-§211](../../../docs/experiments/ledger-06.md), the retained
+failure evidence, and the [healthy pilot evidence](../../experiments/evidence/ooc-clean-pilot-healthy-2026-09-01.json).
 
 ### Encounter-marginalized strategic labels
 

@@ -1,0 +1,44 @@
+{
+  "schema": "ooc_h_futures_result_v1",
+  "date": "2026-08-31",
+  "baseline_sha": "746e7570400b0114bd8a25def6e9085214831f20",
+  "cohort": {"source_seeds": "982100..982131", "decisions": 32, "actions": 157},
+  "artifacts": {
+    "stage_a_archive_sha256": "bd07405044fa2599236a296a7451935b01c414d60a0898ce3632260b7ae558d6",
+    "stage_b_archive_sha256": "30a869d87fec9ea9f1de4ad61581e4ebe3ee681dfddf493b1763dd32002fdb7f",
+    "b_reference_file_hash_list_sha256": "232ced884fae3e988c8876d9cb6091be4bd33d4424bd592d8492bd8b0df55bb9",
+    "stage_b_packaged_files_checked": 227,
+    "stage_b_hash_mismatches": 0,
+    "stage_a_non_self_referential_files_checked": 74,
+    "stage_a_non_self_referential_hash_mismatches": 0,
+    "stage_a_self_hash_note": "SHA256SUMS.absolute contains a stale self-reference; the archive hash and every non-self-referential packaged entry match.",
+    "manifest_sha256": "da5a34d54910b954e6b8d1669796ca3c4e6d245e80b16548da1e07e762841665",
+    "experiment_spec_sha256": "8c90fb03aa8c18a3c4b162e3d711797ba019cc95640d132f85e4e81ee9229c4b",
+    "analyzer_sha256": "d49f35c069f1318f28bcbedd4d533f4040ac545281ba2df5e5ff39aa4e8d664c",
+    "raw_analysis_report_sha256": "fce53c6d6d576e431c87713beb3c2ec5ac35a25a9fb9d46c589db6c40abdb7ed",
+    "raw_analysis_report_generation_location": "build/ooc_h_reuse/h-report.json",
+    "exact_A_inputs": "stageB archive csv/stageB_k1_10000*.csv (23 ordinary source shards plus the frozen 12 recovery partitions for shard 21)",
+    "exact_B_inputs": "stageA archive B/stageA_B.shard-00-of-24.csv through shard-23-of-24.csv",
+    "A_ordered_path_hash_digest": "cf513d43f409bd0bd98894cd96600e7f34738543ebfb5277af1500e7548b0911",
+    "B_ordered_path_hash_digest": "988447b5c0a1bc6b952b2cc3a9e3e4f907f5cc0051585113939535b322f672fb"
+  },
+  "configuration": {
+    "schedule": [10000],
+    "A_futures": [10, 11, 12, 13],
+    "B_terminal_futures": [100, 101, 102, 103],
+    "subset_semantics": "All subsets of each size are enumerated sensitivity views of the same experiment, not independent replicates.",
+    "bootstrap": {"clusters": "sourceSeed", "replicates": 10000, "seed": 20260831}
+  },
+  "metrics": {
+    "H1": {"selected_terminal_win": 0.3046875, "terminal_regret": 0.1015625, "top_action_agreement": 0.7265625, "pairwise_concordance": 0.4902559554847483, "score_tie": 0.3046875, "truth_tie": 0.75, "relative_label_cost": 1},
+    "H2": {"selected_terminal_win": 0.30078125, "terminal_regret": 0.10546875, "top_action_agreement": 0.7291666666666667, "pairwise_concordance": 0.4714622374379458, "score_tie": 0.33333333333333337, "truth_tie": 0.75, "relative_label_cost": 2},
+    "H4": {"selected_terminal_win": 0.296875, "terminal_regret": 0.109375, "top_action_agreement": 0.71875, "pairwise_concordance": 0.45315862498584214, "score_tie": 0.3125, "truth_tie": 0.75, "relative_label_cost": 4}
+  },
+  "contrasts": {
+    "H2-H1": {"selected_terminal_win": {"estimate": -0.00390625, "ci95": [-0.015625, 0.0078125]}, "terminal_regret": {"estimate": 0.00390625, "ci95": [-0.0078125, 0.015625]}},
+    "H4-H2": {"selected_terminal_win": {"estimate": -0.00390625, "ci95": [-0.0234375, 0.01171875]}, "terminal_regret": {"estimate": 0.00390625, "ci95": [-0.01171875, 0.0234375]}}
+  },
+  "decision": {"verdict": "H1_SELECTED", "H": 1, "reason": "Both larger H values worsened terminal-regret and selected-win point estimates, so neither clears the direction or 0.01 practical-improvement requirements."},
+  "analysis_command": "python tools/analyze_ooc_h_futures.py --a <exact Stage-B K1 inputs> --b <exact Stage-A B inputs> --manifest <hash-bound manifest.json> --spec <hash-bound experiment.json> --expected-a-digest cf513d43f409bd0bd98894cd96600e7f34738543ebfb5277af1500e7548b0911 --expected-b-digest 988447b5c0a1bc6b952b2cc3a9e3e4f907f5cc0051585113939535b322f672fb --output build/ooc_h_reuse/h-report.json --bootstrap 10000 --seed 20260831",
+  "phase_b_seed_block": {"start": 983000, "count": 16, "end": 983015, "frozen_before_outcomes": true}
+}

@@ -1,0 +1,66 @@
+{
+  "schema": "ooc_clean_pilot_evidence_v1",
+  "verdict": "CLEAN_OOC_PILOT_HEALTHY",
+  "baseline_sha": "746e7570400b0114bd8a25def6e9085214831f20",
+  "frozen_result_sha": "ff9e5a99efcb22283ab1041ba6a2b65ea22e2e10",
+  "pull_request": 109,
+  "selected_h": 1,
+  "seed_spec": {"start": 983000, "count": 16},
+  "teacher": {
+    "id": "ooc-k1-10k-h1-overlap-fix-ff9e5a9",
+    "executable_sha256": "b7ce82273277d3c66ed2e603db2f1d2188e830fa15d04fe3c17406b94e0ba481",
+    "teacher_sha256": "fa7db3627dffe9fe1bac53d8ff23f749cdfcd3c74fe0591676a13279d5efae17",
+    "configuration": "ordinary project-fair Silver UCT; K1; exact 10000 simulations/private root; c=25; allocated reuse cap 32768; H1; no SH, pruning, learned PUCT, learned leaf, or adaptive search"
+  },
+  "integrity": {
+    "sources": 16,
+    "decisions": 1705,
+    "ooc_rows": 9289,
+    "combat_surrogate_rows": 9265,
+    "terminal_before_combat_rows": 24,
+    "failures": 0,
+    "quarantines": 0,
+    "individual_audits_passed": 16,
+    "combined_audit_passed": true
+  },
+  "targets": {
+    "ooc_survived": 8928,
+    "ooc_lost": 361,
+    "combat_won": 8928,
+    "combat_lost": 337,
+    "conditional_alive_value_mean": 0.3663257253418021,
+    "q_product_mean": 0.3663257253418021,
+    "post_combat_hp_fraction_mean": 0.7324281936427415,
+    "floor_bootstrap_mean": 41.811306491549146,
+    "potion_count_changed": 2481,
+    "gold_delta_nonzero": 297,
+    "relic_changes": 2001,
+    "ritual_dagger_changes": 6,
+    "deck_structure_changed": 25,
+    "parasite_added": 19,
+    "smoke_bomb_used": 0
+  },
+  "search_cost": {
+    "silver_simulations": 1940690000,
+    "combat_decisions": 193743,
+    "transaction_subdecisions": 452,
+    "transaction_decisions_overlap": 126,
+    "cpu_seconds": 16926.956475,
+    "cohort_wall_seconds": 1970.71,
+    "projected_per_1000_sources": {"silver_simulations": 121293125000, "cpu_hours": 293.87, "wall_hours_at_16_workers": 18.37}
+  },
+  "artifacts": {
+    "remote_archive": "artifacts/ooc-overlap-cohort-ff9e5a9-audit.tar.gz",
+    "local_archive": "build/ooc-overlap-cohort-ff9e5a9-audit.tar.gz",
+    "archive_sha256": "e59c742830dcc478a87f64e28a82f0926343481883a65f65f6194888554f445f",
+    "combined_csv": "build/ooc-overlap-cohort-ff9e5a9-audit/ooc-overlap-cohort-ff9e5a9-combined.csv",
+    "combined_csv_sha256": "178c53ecb2b3563cae2bde378cb9c3b65c0e2ba535891fffc61c0ffc1ae37a04",
+    "combined_manifest_sha256": "d5fff861b033946cef86662e3b89d9cef9a0ad44ff91f5be0cfd05d2309eb360",
+    "combined_audit_sha256": "321dbf59a83641f6a09fc86ae15f66af30ad5eb577df2f4bc65c5369d40fedaf",
+    "launcher_sha256": "c427bcc484b16b0bb0bd95010bd81cfb936795e9e8261e1d70abee696632897e"
+  },
+  "limitations": [
+    "The combat-surrogate rows are not complete transition targets: reward state, complete GameContext, and RNG transition are not represented.",
+    "This health pilot does not authorize replacement-corpus generation or training either model."
+  ]
+}

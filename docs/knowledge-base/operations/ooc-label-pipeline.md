@@ -12,6 +12,12 @@ The whole-combat input is the canonical 1,766-value rich combat feature vector c
 
 Every corpus must have an `ooc_pipeline_v1` sidecar validated by `tools/ooc_pipeline_contract.py`. It binds the CSV hash to producer SHA, required executable hash, seeds, timestamp, quarantine accounting, and a combat teacher. A teacher is invalid without a stable identifier, full git SHA, backend/searcher, project-fair regime, exact 10k budget, deterministic/chance exploration 25, widening 3.7028/0.52389, allocated-node reuse cap 32,768, explicit experimental-feature disablement, exact environment, and path/hash for every loaded artifact. Producer and teacher SHA/executable identities must match.
 
+Scientific manifests bind `STS_EXECUTABLE_GIT_SHA` to their frozen SHA. Native
+producer and benchmark provenance consumes that declared executable identity
+instead of resolving `git rev-parse HEAD` from the launcher's working
+directory. Git working-tree variables remain independently relevant to dirty
+state and other Git-derived diagnostics.
+
 `wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; the exact-SHA GCP research manifest accepts its CLI and reserves its `.provenance.json` sidecar.
 
 Whole-combat training first runs the full corpus validator, including exact canonical feature names/order, exact target/diagnostic suffix, unique fight keys, zero decision index, finite values, and teacher identity. It then uses source-seed groups for train/validation/test, performs variance filtering on TRAIN only, and fits XGBoost survival and winning-only conditional ending-HP models. Its output records the data hash, exact split, retained canonical feature names, parameters, and batch-1 timing. Offline scores do not authorize runtime integration.
@@ -19,6 +25,35 @@ Whole-combat training first runs the full corpus validator, including exact cano
 `ooccfaudit` is the narrow distribution-shift gate for those frozen models. It reservoir-samples at most one multi-action OOC decision from each source trajectory without consulting sibling outcomes, records the action actually executed by the source policy, copies the same hidden future into every legal sibling, advances each sibling only to its next combat, captures the canonical battle-start vector, and resolves that combat with the frozen teacher. `tools/audit_counterfactual_surrogate.py` is hash-pinned to the Phase-1 models/manifest and reports chosen, unchosen, and combined scoring-rule slices. This audit neither retrains the models nor supplies a complete transition target.
 
 Future branch rows must carry `sourceSeed`, `decisionIdx`, action identity, `futureIdx`, `H`, requested/actual budget schedule, prefix index, survival through prefix, conditional-alive bootstrap value, product, optional dense/reference value, runtime/search cost, validity, quarantine reason, and `teacherId`. Repeated futures and sibling actions are grouped by `(sourceSeed, decisionIdx)` for splitting. The 37 tradeoff contexts remain development/evaluation data and are excluded from training.
+
+`ooccleanpilot` is the bounded issue-19 health producer after H selection. It
+labels every legal sibling at every naturally occurring multi-action decision
+of the accepted source trajectory with K1 exact-10k and H1. Each physical row
+also carries the canonical battle-start feature vector and post-`afterBattle`
+whole-combat diagnostics from that same expensive combat. The combined row is
+two logical training views, not a complete transition target: reward state,
+complete `GameContext`, and RNG transition remain unrepresented. The producer
+writes a `.partial` file and publishes only by atomic rename after every source
+and branch succeeds; any health, reachability, finiteness, or source-action
+failure aborts rather than appending replacement seeds.
+Legal siblings are canonicalized by encoded action bits before eligibility and
+coverage accounting, matching the existing OOC generators' treatment of
+repeated reward identities such as gold piles. A failure retains the data
+partial and atomically publishes a flushed `.failure.json` through its own
+reserved partial path.
+If a legal sibling reaches a terminal run outcome before the next combat, the
+producer retains it as a valid OOC row with the exact terminal Q target and
+zero combat-search cost. `reachedCombat=0` and
+`terminalOutcomeBeforeCombat` distinguish that row from the combat-surrogate
+view; no battle-start feature vector or combat transition target is claimed.
+The auditor preserves the row in complete sibling coverage and OOC label
+distributions while excluding it from combat-surrogate target distributions.
+Search accounting records ordinary Silver decisions and multi-select
+transaction subdecisions separately, plus the committed transaction decisions
+present in both counters. Under the exact-10k teacher, `silverSimulations` must
+equal 10,000 times (`combatDecisions + transactionSubdecisions -
+transactionDecisions`); the subtraction removes only the overlapping committed
+action, while every private transaction search remains a real root.
 
 Direct-Q and factorized training must consume identical rows, split, representation, and comparable capacity. Survival BCE applies to every valid branch; conditional-value loss only to survived horizons. No placeholder-card sharing or action-subsampling policy is frozen.
 

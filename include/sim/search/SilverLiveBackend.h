@@ -18,6 +18,7 @@ struct SilverLiveDiagnostics {
     std::uint64_t decisions = 0;
     std::uint64_t simulations = 0;
     std::uint64_t transactionSubdecisions = 0;
+    std::uint64_t transactionDecisions = 0;
     std::uint64_t adaptiveEscalations = 0;
     std::uint64_t rerootExact = 0;
     std::uint64_t rerootFallback = 0;

@@ -70,6 +70,24 @@ class GcpBenchmarkTests(unittest.TestCase):
         self.assertEqual(command[-3:], ["results/policy-A.csv", "975100", "artifacts/policy-model.txt"])
         self.assertIn("results/policy-A.csv.provenance.json", fresh)
 
+    def test_clean_ooc_pilot_manifest_uses_wholecombat_shape(self):
+        module = load_module()
+        payload = valid_manifest()
+        payload["command"] = [payload["binary"]["remote_path"], "ooccleanpilot",
+                              "16", "10000", "0", "{results}", "983000",
+                              payload["artifacts"][0]["remote_path"]]
+        payload["arms"] = [payload["arms"][0]]
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = module.load_run_manifest(write_manifest(directory, payload))
+        command, _, fresh = module.manifest_arm(manifest, "A")
+        self.assertIn("ooccleanpilot", command)
+        self.assertEqual(command[-3:], ["results/policy-A.csv", "983000", "artifacts/policy-model.txt"])
+        self.assertIn("results/policy-A.csv.provenance.json", fresh)
+        self.assertIn("results/policy-A.csv.partial", fresh)
+        self.assertIn("results/policy-A.csv.manifest.json", fresh)
+        self.assertIn("results/policy-A.csv.failure.json", fresh)
+        self.assertIn("results/policy-A.csv.failure.json.partial", fresh)
+
     def test_manifest_validates_and_renders_shared_configuration(self):
         module = load_module()
         with tempfile.TemporaryDirectory() as directory:

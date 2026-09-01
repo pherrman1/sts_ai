@@ -12,7 +12,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["combobench"]=3          ["cpsictr"]=3           ["datagen"]=2
   ["datagen2"]=2            ["datagen3"]=2          ["distgen"]=2
   ["draftbench"]=3          ["e2cgen"]=2            ["fairgen"]=2           ["fightgen"]=2
-  ["frontiergen"]=2         ["leafdiag"]=2          ["leafref"]=5          ["wholecombatgen"]=2 ["ooccfaudit"]=2
+  ["frontiergen"]=2         ["leafdiag"]=2          ["leafref"]=5          ["wholecombatgen"]=2 ["ooccfaudit"]=2 ["ooccleanpilot"]=2
   ["runwinshadow"]=2          ["runwinrank"]=2
   ["particle_leaf_probe"]=2
   ["particle_posterior_probe"]=2

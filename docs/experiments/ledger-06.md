@@ -5852,3 +5852,103 @@ model training was changed.
   uncertainty. No H experiment, datagen, transition surrogate, or OOC training
   is authorized here. See
   `docs/experiments/evidence/ooc-k-combat-budget-stage-b-2026-08-31.json`.
+
+## §208 OOC H selection chooses one future/action (2026-08-31)
+
+- **Protocol:** Reused the hash-verified §207 Stage-B K1 `[10000]` A futures
+  10–13 and independent terminal B futures 100–103 for the exact 32 decisions
+  and 157 sibling actions. H1 averages the four singleton-subset ranking
+  results per decision, H2 averages all six two-future-subset results, and H4
+  uses all four. Subsets are sensitivity views, not independent replicates.
+- **Integrity:** Both preserved archive hashes match §207. All 227 Stage-B
+  packaged hashes and all 74 non-self-referential Stage-A bundle hashes match;
+  the Stage-A checksum list contains a stale hash of itself, explicitly
+  excluded as circular metadata. Action/future coverage is exact and complete.
+- **Result:** H1/H2/H4 selected terminal win was
+  0.3046875/0.30078125/0.296875 and terminal regret was
+  0.1015625/0.10546875/0.109375. Top-action agreement was
+  0.726563/0.729167/0.718750; pairwise concordance was
+  0.490256/0.471462/0.453159; score-tie rate was
+  0.304688/0.333333/0.312500; B-truth tie rate was 0.75 throughout.
+  H2−H1 selected win was −0.003906 (95% source-seed-clustered CI
+  [−0.015625, 0.007812]) and regret was +0.003906
+  ([−0.007812, 0.015625]); H4−H2 repeated the −0.003906/+0.003906 point
+  deterioration, with intervals [−0.023438, 0.011719] and
+  [−0.011719, 0.023438]. Relative label costs are 1×/2×/4×.
+- **Decision:** **H1_SELECTED**. Neither larger H improves regret or preserves
+  selected win at the point estimate, so neither approaches the 0.01 practical
+  bar. The fresh issue-19 pilot block is frozen before outcomes at source seeds
+  `983000..983015`. See
+  `docs/experiments/evidence/ooc-h-futures-selection-2026-08-31.json`.
+
+## §209 Clean OOC pilot stopped at the provenance canary (2026-08-31)
+
+- **Frozen boundary:** Implementation review and GitHub `Linux GCC` passed at
+  `474c2d11c90d9074b2c3a0b589ad10df0b3cf6de`. The exact remote executable,
+  teacher manifest, and OOC floor/win models were hash-verified before launch.
+- **Canary:** The required one-source canary requested source seed `983000`
+  under the selected K1 exact-10k/H1 teacher. It failed closed before gameplay
+  or search with `wholecombatgen: teacher git_sha mismatch`; zero OOC rows,
+  zero combat-surrogate rows, and no result or sidecar were published.
+- **Diagnosis:** `loadWholeCombatTeacher` compares the teacher SHA with
+  `git rev-parse HEAD` evaluated in the process working directory. The GCP
+  launcher executes from the designated remote root, whose HEAD was
+  `0189bb40e1712f2b9b3597483c66cc4d267e206e`, while the exact executable lived
+  in the managed checkout at the frozen SHA. The valid teacher therefore
+  rejected the unrelated runtime-root SHA. This is a provenance integration
+  defect, not an H/search-quality result.
+- **Decision:** **CLEAN_OOC_PILOT_FAILED**. Per the preregistered gate, the
+  16-source block `983000..983015` was not launched and no substitute seeds
+  were appended. See
+  `docs/experiments/evidence/ooc-clean-pilot-canary-failure-2026-08-31.json`.
+
+## §210 Corrected clean-OOC canary reaches search but fails action identity (2026-09-01)
+
+- **Correction:** Commit `6003a8aa9dae714fade76ef78a7832c15efa760e`
+  binds native producer provenance to the manifest-required
+  `STS_EXECUTABLE_GIT_SHA`. Independent implementation review and GitHub
+  `Linux GCC` passed before the retry. Exact executable, teacher, model, CMake
+  source-binding, and clean-checkout hashes passed remote preflight.
+- **Canary result:** Source seed `983000` passed the former teacher-SHA failure
+  and executed 312 complete Silver telemetry blocks: 75.12M simulations and
+  7,512 combat decisions with zero conversion, semantic-resolution,
+  transaction, or knowledge failures. After approximately eight minutes it
+  failed closed with `ooccleanpilot: source action is not a unique legal
+  sibling`.
+- **Diagnosis boundary:** The accepted source policy's observed action did not
+  occur exactly once in the producer's legal-sibling vector. The current error
+  combines missing-action and duplicate-action-bit cases, so the precise
+  subcase is unresolved. The producer published no data rows; its partial is
+  header-only. The failure-sidecar path exists but is empty, which is a second
+  observability defect.
+- **Decision:** **CLEAN_OOC_PILOT_FAILED** again. The 16-source block
+  `983000..983015` was not launched and no substitute seeds were appended. See
+  `docs/experiments/evidence/ooc-clean-pilot-canary-action-identity-failure-2026-09-01.json`.
+
+## §211 Clean issue-19 OOC health pilot passed (2026-09-01)
+
+- **Corrections and freeze:** Legal siblings were canonicalized by action bits;
+  terminal-before-next-combat branches became exact absorbed OOC targets; and
+  Silver multi-select accounting gained an explicit committed-transaction
+  overlap counter. Independent review, focused tests/build, and GitHub Linux
+  GCC passed at frozen SHA `ff9e5a99efcb22283ab1041ba6a2b65ea22e2e10`.
+- **Protocol:** The previously frozen fresh block `983000..983015` ran as 16
+  independent guarded processes with the selected H1/K1 teacher: ordinary
+  project-fair Silver, exact 10,000 simulations/private root, c=25, allocated
+  reuse cap 32,768, and no SH, pruning, learned PUCT/leaf, or adaptive search.
+- **Integrity:** All 16 sources passed individual and combined fail-closed
+  audits: 1,705 complete multi-action decisions, 9,289 OOC rows, 9,265 reusable
+  combat-surrogate rows, 24 terminal-before-combat rows, and zero failures or
+  quarantines. Exact accounting was 1.94069B simulations from 193,743 ordinary
+  decisions + 452 transaction roots - 126 overlapping committed transaction
+  actions. Producer, executable, teacher, models, bundle, and raw artifacts are
+  hash-bound in the evidence file.
+- **Targets and compute:** OOC survival was 8,928/9,289 (96.11%); combat-only
+  survival was 8,928/9,265 (96.36%). Mean Q was 0.36633, mean post-combat HP
+  fraction 0.73243, and mean floor bootstrap 41.8113. The cohort consumed
+  16,926.96 CPU seconds and 32m51s wall time. Linear projection per 1,000
+  sources is 121.29B simulations, 293.87 CPU-hours, or about 18.37 wall-hours
+  at 16 workers; this is a planning projection, not authorization to scale.
+- **Decision:** **CLEAN_OOC_PILOT_HEALTHY**. Stop after the pilot. Do not
+  generate the replacement corpus or train either model. See
+  `docs/experiments/evidence/ooc-clean-pilot-healthy-2026-09-01.json`.

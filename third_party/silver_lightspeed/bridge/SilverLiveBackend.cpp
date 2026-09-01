@@ -1193,6 +1193,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             semantic = transaction.finalAction;
             g_silverLiveDiagnostics.simulations += transaction.totalSimulations;
             g_silverLiveDiagnostics.transactionSubdecisions += transaction.searchDecisions;
+            ++g_silverLiveDiagnostics.transactionDecisions;
             g_silverLiveDiagnostics.rerootExact += transaction.rerootExact;
             g_silverLiveDiagnostics.rerootFallback += transaction.rerootFallback;
             addTelemetry(transaction.telemetry);
@@ -1320,6 +1321,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         line << "[silver-combat] decisions=" << d.decisions
                   << " simulations=" << d.simulations
                   << " transaction_subdecisions=" << d.transactionSubdecisions
+                  << " transaction_decisions=" << d.transactionDecisions
                   << " adaptive_escalations=" << d.adaptiveEscalations
                   << " reroot_exact=" << d.rerootExact
                   << " reroot_fallback=" << d.rerootFallback
