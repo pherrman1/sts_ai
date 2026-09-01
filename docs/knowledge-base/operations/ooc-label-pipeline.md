@@ -41,6 +41,13 @@ coverage accounting, matching the existing OOC generators' treatment of
 repeated reward identities such as gold piles. A failure retains the data
 partial and atomically publishes a flushed `.failure.json` through its own
 reserved partial path.
+If a legal sibling reaches a terminal run outcome before the next combat, the
+producer retains it as a valid OOC row with the exact terminal Q target and
+zero combat-search cost. `reachedCombat=0` and
+`terminalOutcomeBeforeCombat` distinguish that row from the combat-surrogate
+view; no battle-start feature vector or combat transition target is claimed.
+The auditor preserves the row in complete sibling coverage and OOC label
+distributions while excluding it from combat-surrogate target distributions.
 
 Direct-Q and factorized training must consume identical rows, split, representation, and comparable capacity. Survival BCE applies to every valid branch; conditional-value loss only to survived horizons. No placeholder-card sharing or action-subsampling policy is frozen.
 

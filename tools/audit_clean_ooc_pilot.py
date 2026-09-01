@@ -22,6 +22,7 @@ PREFIX = [
     "teacherId", "survivedPrefix", "conditionalAliveValue", "qProduct",
     "denseReferenceValue", "floorBootstrapValue", "silverSimulations",
     "combatDecisions", "cpuMs", "wallMs", "valid", "quarantineReason",
+    "reachedCombat", "terminalOutcomeBeforeCombat",
     "battleAct", "battleFloor", "battleEncounter", "roomClass",
 ]
 SUFFIX = [
@@ -79,6 +80,12 @@ def audit(path: Path, manifest_path: Path) -> dict:
         raise ValueError("pilot is not the frozen H1/future-0 cohort")
     if (frame.valid != 1).any() or frame.quarantineReason.fillna("").astype(str).str.len().ne(0).any():
         raise ValueError("invalid or quarantined row in completed pilot")
+    if not frame.reachedCombat.isin([0, 1]).all():
+        raise ValueError("non-binary reached-combat marker")
+    terminal = frame.reachedCombat == 0
+    combat = frame.loc[~terminal]
+    if not frame.loc[terminal, "terminalOutcomeBeforeCombat"].isin([0, 2]).all() or (combat.terminalOutcomeBeforeCombat != -1).any():
+        raise ValueError("terminal-before-combat outcome marker mismatch")
     groups = frame.groupby(["sourceSeed", "decisionIdx"], sort=False)
     for decision, group in groups:
         actions = sorted(map(int, group.actionIdx))
@@ -95,18 +102,35 @@ def audit(path: Path, manifest_path: Path) -> dict:
             raise ValueError(f"missing semantic action identity at {decision}")
         if int(group.chosen.sum()) != 1:
             raise ValueError(f"decision does not have exactly one source-policy action at {decision}")
-    numeric = canonical_names() + [
+    numeric = [
         "conditionalAliveValue", "qProduct", "denseReferenceValue", "floorBootstrapValue",
-        "silverSimulations", "combatDecisions", "cpuMs", "wallMs", "won", "endHp",
+        "silverSimulations", "combatDecisions", "cpuMs", "wallMs",
+    ]
+    combat_numeric = canonical_names() + ["won", "endHp",
         "startHp", "startMaxHp", "endMaxHp", "endHpFrac",
     ]
     values = frame[numeric].to_numpy(float)
     if not all(math.isfinite(value) for value in values.ravel()):
-        raise ValueError("non-finite feature, label, target, or cost")
-    if not frame.survivedPrefix.isin([0, 1]).all() or not frame.won.isin([0, 1]).all():
-        raise ValueError("non-binary combat survival target")
-    if not (frame.survivedPrefix == frame.won).all():
+        raise ValueError("non-finite label or cost")
+    combat_values = combat[combat_numeric].to_numpy(float)
+    if not all(math.isfinite(value) for value in combat_values.ravel()):
+        raise ValueError("non-finite combat feature or target")
+    if not frame.survivedPrefix.isin([0, 1]).all() or not combat.won.isin([0, 1]).all():
+        raise ValueError("non-binary survival target")
+    if not (combat.survivedPrefix == combat.won).all():
         raise ValueError("OOC survival and combat target disagree")
+    expected_terminal_survival = (frame.loc[terminal, "terminalOutcomeBeforeCombat"] == 2).astype(int)
+    if not (frame.loc[terminal, "survivedPrefix"].astype(int) == expected_terminal_survival).all():
+        raise ValueError("terminal OOC survival target disagrees with run outcome")
+    if not (frame.loc[terminal, "conditionalAliveValue"] == expected_terminal_survival).all() or not (frame.loc[terminal, "qProduct"] == expected_terminal_survival).all():
+        raise ValueError("terminal OOC value is not the exact absorbed run outcome")
+    if (frame.loc[terminal, ["silverSimulations", "combatDecisions"]] != 0).any().any():
+        raise ValueError("terminal-before-combat row claims combat search cost")
+    unavailable = canonical_names() + SUFFIX[:-1]
+    if not frame.loc[terminal, unavailable].isna().all().all():
+        raise ValueError("terminal-before-combat row claims a combat surrogate target")
+    if (frame.loc[terminal, "battleEncounter"] != -1).any() or (frame.loc[terminal, "roomClass"] != "OTHER").any() or (frame.loc[terminal, "persistentMutationSummary"] != "no_combat_terminal").any():
+        raise ValueError("terminal-before-combat sentinel mismatch")
     expected_q = frame.survivedPrefix * frame.conditionalAliveValue
     if (frame.qProduct - expected_q).abs().max() > 1e-9:
         raise ValueError("qProduct does not equal survival times conditional value")
@@ -117,7 +141,8 @@ def audit(path: Path, manifest_path: Path) -> dict:
     return {
         "rows": int(len(frame)),
         "oocRows": int(len(frame)),
-        "combatSurrogateRows": int(len(frame)),
+        "combatSurrogateRows": int(len(combat)),
+        "terminalBeforeCombatRows": int(terminal.sum()),
         "sourceSeeds": seed_count,
         "decisions": int(groups.ngroups),
         "quarantines": 0,
@@ -127,11 +152,11 @@ def audit(path: Path, manifest_path: Path) -> dict:
         "producerExecutableSha256": manifest["producerExecutableSha256"],
         "actComposition": {str(k): int(v) for k, v in frame.act.value_counts().sort_index().items()},
         "screenComposition": {str(k): int(v) for k, v in frame.screen.value_counts().sort_index().items()},
-        "roomComposition": {str(k): int(v) for k, v in frame.roomClass.value_counts().sort_index().items()},
-        "survival": {"won": int(frame.won.sum()), "lost": int((1-frame.won).sum()), "mean": float(frame.won.mean())},
+        "roomComposition": {str(k): int(v) for k, v in combat.roomClass.value_counts().sort_index().items()},
+        "survival": {"won": int(frame.survivedPrefix.sum()), "lost": int((1-frame.survivedPrefix).sum()), "mean": float(frame.survivedPrefix.mean())},
         "conditionalAliveValue": frame.conditionalAliveValue.describe().to_dict(),
         "qProduct": frame.qProduct.describe().to_dict(),
-        "postCombatHpFraction": frame.endHpFrac.describe().to_dict(),
+        "postCombatHpFraction": combat.endHpFrac.describe().to_dict(),
         "floorBootstrapValue": frame.floorBootstrapValue.describe().to_dict(),
         "cost": {
             "silverSimulations": int(frame.silverSimulations.sum()),
