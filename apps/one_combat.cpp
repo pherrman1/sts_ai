@@ -8368,7 +8368,18 @@ static CleanOocPilotSeedResult runCleanOocPilotSeed(std::uint64_t seed,int sims,
         for(int ai=0;ai<(int)actions.size();++ai){
             const auto wallStart=std::chrono::steady_clock::now();const std::clock_t cpuStart=std::clock();
             GameContext branch=detachedCounterfactualCopy(siblingBase);actions[ai].execute(branch);
-            if(!advanceOocToNextBattle(branch,sims,continuationSeed,prePath))throw std::runtime_error("ooccleanpilot: sibling did not reach next combat");
+            if(!advanceOocToNextBattle(branch,sims,continuationSeed,prePath)){
+                std::ostringstream reason;
+                reason<<"ooccleanpilot: sibling did not reach next combat"
+                      <<" sourceSeed="<<seed<<" decisionIdx="<<thisDecision
+                      <<" actionIdx="<<ai<<" actionBits="<<actions[ai].bits
+                      <<" action="<<csvQuote(actionDescription(actions[ai],pre))
+                      <<" decisionScreen="<<(int)pre.screenState
+                      <<" finalScreen="<<(int)branch.screenState
+                      <<" act="<<branch.act<<" floor="<<branch.floorNum
+                      <<" outcome="<<(int)branch.outcome<<" hp="<<branch.curHp;
+                throw std::runtime_error(reason.str());
+            }
             const int battleAct=branch.act,battleFloor=branch.floorNum,battleEncounter=(int)branch.info.encounter,room=(int)branch.curRoom;
             const int startHp=branch.curHp,startMaxHp=branch.maxHp,startGold=branch.gold,startPotionCount=branch.potionCount,startParasites=wholeCardCount(branch,CardId::PARASITE);
             const std::string startPotions=wholePotionIds(branch);const auto startRelics=wholeRelics(branch);const auto startDeck=wholeDeck(branch);
