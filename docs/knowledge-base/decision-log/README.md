@@ -1,5 +1,6 @@
 # Decision log
 
+| 2026-08-31 | [`2026-08-31-evaluator-public-export-cache.md`](2026-08-31-evaluator-public-export-cache.md) | Added an atomic, HEAD-and-submodule-keyed, full-tree-validated public export cache while retaining independent single-root candidate repositories. |
 | 2026-08-31 | [`2026-08-31-agent-test-duration-and-fixture-ownership.md`](2026-08-31-agent-test-duration-and-fixture-ownership.md) | Added standard-library slow-test reporting and class-owned immutable evaluator setup with isolated sparse real-Git clones. |
 | 2026-08-31 | [`2026-08-31-test-suite-tiering.md`](2026-08-31-test-suite-tiering.md) | Removed duplicate Python test processes without dropping behavioral coverage, added focused CTest tiers, retained evidence-bearing research analyzers, and made unknown native test commands fail closed. |
 | 2026-08-29 | [`2026-08-29-silver-learned-visit-prior.md`](2026-08-29-silver-learned-visit-prior.md) | Frozen grouped and rank-4 visit-prior experiments are retained as offline/online evidence; their runtime PUCT and native inference paths are retired after negative or inconclusive gates. |

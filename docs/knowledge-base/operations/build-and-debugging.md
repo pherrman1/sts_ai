@@ -108,6 +108,11 @@ separate pre-build gate:
 python3 -m unittest discover -s tests/agent -p 'test_*.py' --durations 20
 ```
 
+Coding-agent evaluator preparation reuses a validated public tracked-export
+cache below `.agent-eval/cache`, keyed by source HEAD and exact submodule
+revisions. For phase attribution without changing normal stdout, set
+`STS_AGENT_EVAL_TIMINGS=1` when invoking `tools/agent/eval.py prepare`.
+
 Python 3.12's standard-library duration reporter prints the 20 slowest
 individual test cases on successful and failed runs without changing discovery
 or exit semantics. Those modules are not registered
