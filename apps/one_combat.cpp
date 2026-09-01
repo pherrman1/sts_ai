@@ -11444,6 +11444,24 @@ static void adjudicateV4H1(std::uint64_t seed, int targetDecision, int sourceSim
     t_curPath=nullptr;
     if (!target) throw std::runtime_error("oocv4h1ref: target decision did not replay");
     const auto teacher=switchToV4H1Teacher(teacherPath,teacherSims);
+    const char *readyPath=std::getenv("STS_V4H1_REF_READY_FILE");
+    const char *releasePath=std::getenv("STS_V4H1_REF_RELEASE_FILE");
+    if ((readyPath && *readyPath) != (releasePath && *releasePath))
+        throw std::runtime_error("oocv4h1ref: ready/release barrier must be configured together");
+    if (readyPath && *readyPath) {
+        if (std::filesystem::exists(readyPath) || std::filesystem::exists(releasePath))
+            throw std::runtime_error("oocv4h1ref: stale ready/release barrier path");
+        const std::string partialReady=std::string(readyPath)+".partial";
+        { std::ofstream ready(partialReady); ready << seed << ',' << targetDecision << ',' << teacher.id << '\n';
+          ready.close(); if(!ready)throw std::runtime_error("oocv4h1ref: failed to write ready marker"); }
+        std::filesystem::rename(partialReady,readyPath);
+        bool released=false;
+        for(int poll=0;poll<36000;++poll){
+            if(std::filesystem::exists(releasePath)){released=true;break;}
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        if(!released)throw std::runtime_error("oocv4h1ref: timed out waiting for release barrier");
+    }
     const std::string partialFile=outFile+".partial";
     if(std::filesystem::exists(outFile)||std::filesystem::exists(partialFile))
         throw std::runtime_error("oocv4h1ref: output or partial output already exists");
