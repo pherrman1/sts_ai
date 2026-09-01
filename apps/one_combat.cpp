@@ -6992,7 +6992,7 @@ struct NextCombatLabel {
 };
 
 static bool advanceOocToNextBattle(GameContext &gc, int sims, std::uint64_t agentSeed,
-                                   PathHistory path) {
+                                   PathHistory path, std::ostringstream *failureTrace=nullptr) {
     search::ScumSearchAgent2 agent;
     agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(agentSeed);
@@ -7000,9 +7000,13 @@ static bool advanceOocToNextBattle(GameContext &gc, int sims, std::uint64_t agen
     using RT = search::GameAction::RewardsActionType;
     for (int steps = 0; steps < 180 && gc.outcome == GameOutcome::UNDECIDED; ++steps) {
         path.update(gc);
+        const int beforeScreen=(int)gc.screenState,beforeEvent=(int)gc.curEvent,beforeHp=gc.curHp;
+        std::uint32_t executed=UINT32_MAX;
+        if(failureTrace)search::g_onGameActionExecute=[&](std::uint32_t bits,const GameContext*target){if(target==&gc&&executed==UINT32_MAX)executed=bits;};
         const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                     && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
         if (gc.screenState == ScreenState::BATTLE) {
+            if(failureTrace)search::g_onGameActionExecute={};
             t_curPath = nullptr;
             return true;
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
@@ -7028,7 +7032,9 @@ static bool advanceOocToNextBattle(GameContext &gc, int sims, std::uint64_t agen
         } else {
             agent.stepOutOfCombatPolicy(gc);
         }
+        if(failureTrace){search::g_onGameActionExecute={};*failureTrace<<" step="<<steps<<":screen="<<beforeScreen<<",event="<<beforeEvent<<",actionBits="<<executed<<",hp="<<beforeHp<<">"<<gc.curHp<<",finalScreen="<<(int)gc.screenState<<",outcome="<<(int)gc.outcome;}
     }
+    if(failureTrace)search::g_onGameActionExecute={};
     t_curPath = nullptr;
     return false;
 }
@@ -8368,7 +8374,8 @@ static CleanOocPilotSeedResult runCleanOocPilotSeed(std::uint64_t seed,int sims,
         for(int ai=0;ai<(int)actions.size();++ai){
             const auto wallStart=std::chrono::steady_clock::now();const std::clock_t cpuStart=std::clock();
             GameContext branch=detachedCounterfactualCopy(siblingBase);actions[ai].execute(branch);
-            if(!advanceOocToNextBattle(branch,sims,continuationSeed,prePath)){
+            std::ostringstream failureTrace;
+            if(!advanceOocToNextBattle(branch,sims,continuationSeed,prePath,&failureTrace)){
                 std::ostringstream reason;
                 reason<<"ooccleanpilot: sibling did not reach next combat"
                       <<" sourceSeed="<<seed<<" decisionIdx="<<thisDecision
@@ -8377,7 +8384,8 @@ static CleanOocPilotSeedResult runCleanOocPilotSeed(std::uint64_t seed,int sims,
                       <<" decisionScreen="<<(int)pre.screenState
                       <<" finalScreen="<<(int)branch.screenState
                       <<" act="<<branch.act<<" floor="<<branch.floorNum
-                      <<" outcome="<<(int)branch.outcome<<" hp="<<branch.curHp;
+                      <<" outcome="<<(int)branch.outcome<<" hp="<<branch.curHp
+                      <<" trace="<<csvQuote(failureTrace.str());
                 throw std::runtime_error(reason.str());
             }
             const int battleAct=branch.act,battleFloor=branch.floorNum,battleEncounter=(int)branch.info.encounter,room=(int)branch.curRoom;
