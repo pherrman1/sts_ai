@@ -5924,3 +5924,31 @@ model training was changed.
 - **Decision:** **CLEAN_OOC_PILOT_FAILED** again. The 16-source block
   `983000..983015` was not launched and no substitute seeds were appended. See
   `docs/experiments/evidence/ooc-clean-pilot-canary-action-identity-failure-2026-09-01.json`.
+
+## §211 Clean issue-19 OOC health pilot passed (2026-09-01)
+
+- **Corrections and freeze:** Legal siblings were canonicalized by action bits;
+  terminal-before-next-combat branches became exact absorbed OOC targets; and
+  Silver multi-select accounting gained an explicit committed-transaction
+  overlap counter. Independent review, focused tests/build, and GitHub Linux
+  GCC passed at frozen SHA `ff9e5a99efcb22283ab1041ba6a2b65ea22e2e10`.
+- **Protocol:** The previously frozen fresh block `983000..983015` ran as 16
+  independent guarded processes with the selected H1/K1 teacher: ordinary
+  project-fair Silver, exact 10,000 simulations/private root, c=25, allocated
+  reuse cap 32,768, and no SH, pruning, learned PUCT/leaf, or adaptive search.
+- **Integrity:** All 16 sources passed individual and combined fail-closed
+  audits: 1,705 complete multi-action decisions, 9,289 OOC rows, 9,265 reusable
+  combat-surrogate rows, 24 terminal-before-combat rows, and zero failures or
+  quarantines. Exact accounting was 1.94069B simulations from 193,743 ordinary
+  decisions + 452 transaction roots - 126 overlapping committed transaction
+  actions. Producer, executable, teacher, models, bundle, and raw artifacts are
+  hash-bound in the evidence file.
+- **Targets and compute:** OOC survival was 8,928/9,289 (96.11%); combat-only
+  survival was 8,928/9,265 (96.36%). Mean Q was 0.36633, mean post-combat HP
+  fraction 0.73243, and mean floor bootstrap 41.8113. The cohort consumed
+  16,926.96 CPU seconds and 32m51s wall time. Linear projection per 1,000
+  sources is 121.29B simulations, 293.87 CPU-hours, or about 18.37 wall-hours
+  at 16 workers; this is a planning projection, not authorization to scale.
+- **Decision:** **CLEAN_OOC_PILOT_HEALTHY**. Stop after the pilot. Do not
+  generate the replacement corpus or train either model. See
+  `docs/experiments/evidence/ooc-clean-pilot-healthy-2026-09-01.json`.

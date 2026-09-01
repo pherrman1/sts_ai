@@ -43,16 +43,15 @@ source seeds `983000..983015`; it does not authorize replacement-corpus
 generation or training. See [ledger-06 §208](../../../docs/experiments/ledger-06.md)
 and the [H evidence](../../experiments/evidence/ooc-h-futures-selection-2026-08-31.json).
 
-The first required one-source canary stopped before gameplay because the
-producer compared its teacher SHA with the GCP runtime root. The reviewed
-provenance correction then passed that live boundary, but the fresh retry
-failed later because the accepted source action did not occur exactly once in
-the producer's enumerated legal siblings. No data rows were published, the
-failure sidecar remained empty, and the 16-source block was not launched. The
-clean-pilot line is blocked pending separate correction of action identity and
-failure-sidecar publication. See [ledger-06 §209-§210](../../../docs/experiments/ledger-06.md),
-the [first failure](../../experiments/evidence/ooc-clean-pilot-canary-failure-2026-08-31.json),
-and the [corrected-canary failure](../../experiments/evidence/ooc-clean-pilot-canary-action-identity-failure-2026-09-01.json).
+After fail-closed corrections for producer provenance, canonical sibling
+identity, terminal-before-combat targets, failure publication, and overlapping
+multi-select search accounting, the frozen 16-source issue-19 pilot passed at
+reviewed SHA `ff9e5a99`. It produced 9,289 complete OOC rows and 9,265 reusable
+combat-surrogate rows across 1,705 decisions, with 24 exact terminal-before-
+combat rows and zero failures or quarantines. This is a pipeline-health result,
+not authorization to generate the replacement corpus or train either model.
+See [ledger-06 §209-§211](../../../docs/experiments/ledger-06.md), the retained
+failure evidence, and the [healthy pilot evidence](../../experiments/evidence/ooc-clean-pilot-healthy-2026-09-01.json).
 
 ### Encounter-marginalized strategic labels
 
