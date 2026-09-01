@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-08-31 against the current working tree.
+Last verified: 2026-09-02 against the current working tree.
 
 ## Purpose
 
@@ -52,6 +52,17 @@ combat rows and zero failures or quarantines. This is a pipeline-health result,
 not authorization to generate the replacement corpus or train either model.
 See [ledger-06 §209-§211](../../../docs/experiments/ledger-06.md), the retained
 failure evidence, and the [healthy pilot evidence](../../experiments/evidence/ooc-clean-pilot-healthy-2026-09-01.json).
+
+The subsequent fresh V4-versus-explicit-K1/H1 action-selection screen is
+**REJECTED**. Across 29 exact-V4 source decisions (175 legal actions), V4 and
+H1 disagreed 19 times. Four matched terminal futures per legal sibling gave
+V4 56.58% selected terminal win and 19.74% mean regret, versus H1 40.79% and
+35.53%; H1's disagreement record was 3/7/9. Both primary point estimates
+therefore favor the current V4 policy, with the clearest deficit on strategic
+screen 8. This closes the explicit one-combat planner screen; it does not
+authorize planner productionization, tuning, or training. See
+[ledger-06 §212](../../../docs/experiments/ledger-06.md) and the
+[frozen evidence](../../experiments/evidence/ooc-v4-h1-explicit-planner-2026-09-02.json).
 
 ### Encounter-marginalized strategic labels
 

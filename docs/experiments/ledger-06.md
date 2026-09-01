@@ -5952,3 +5952,36 @@ model training was changed.
 - **Decision:** **CLEAN_OOC_PILOT_HEALTHY**. Stop after the pilot. Do not
   generate the replacement corpus or train either model. See
   `docs/experiments/evidence/ooc-clean-pilot-healthy-2026-09-01.json`.
+
+## §212 Explicit K1/H1 OOC planner loses to frozen V4 strategic-Q (2026-09-02)
+
+- **Protocol:** Fresh exact-V4 source seeds `984100..984128`, ascension 0,
+  project-fair Searcher3 at 1,000 simulations/decision, 24 threads, 64
+  particles, 7k combat VNet at alpha 0.3, Act-4 key collection, and all V4
+  strategic gates at margin 1.0. One reservoir-sampled V4-owned multi-action
+  decision per source was frozen. Every legal sibling then followed frozen V4
+  to the next combat, resolved exactly one combat with the selected H1/K1
+  ordinary Silver exact-10k teacher, and used the unchanged native `vStateWin`
+  model after survival. Sibling hidden worlds and continuation RNG were
+  matched; death was zero and terminal run victory one.
+- **Cohort:** 29 decisions and 175 valid legal actions; 10 agreements and 19
+  disagreements (34.48% agreement). The disagreement set covered 131 actions.
+  Mean/median K1 score margin was 0.02638/0.02045. Collection used 25.78M
+  Silver simulations over 2,578 combat decisions.
+- **Independent reference:** Only the 19 disagreements were adjudicated. Each
+  legal sibling was forced first, then frozen V4 controlled later OOC choices;
+  four matched terminal futures `100..103` used the strongest exact-10k Silver
+  full-run reference. All 524 expected rows were valid, consuming 1.72435B
+  Silver simulations. Exact V4 replays were serialized at 24 cores; a frozen
+  post-replay barrier then released 19 independent single-core Silver jobs.
+- **Result:** V4 selected terminal win was **0.56579**, versus **0.40789** for
+  H1 (H1−V4 `-0.15789`, 100k source-cluster bootstrap 95% CI
+  `[-0.34211, 0]`). V4 mean regret was **0.19737**, versus **0.35526** for H1
+  (H1−V4 `+0.15789`, CI `[0, 0.34211]`); median regret was 0 versus 0.25.
+  H1's win/loss/tie record was **3/7/9**. Screen 8 was the clearest systematic
+  failure: H1 lost 0.29167 selected win and added 0.29167 regret.
+- **Decision:** **REJECT**. Both primary point estimates favor current V4, so
+  explicit K1/H1 action selection fails the preregistered screen. No gameplay
+  benchmark, production planner, horizon/budget tuning, new model, or training
+  follows. See
+  `docs/experiments/evidence/ooc-v4-h1-explicit-planner-2026-09-02.json`.
