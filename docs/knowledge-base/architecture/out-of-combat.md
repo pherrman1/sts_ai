@@ -20,6 +20,29 @@ experiments.
 
 ## Current implementation
 
+## Offline whole-Act encounter-distribution evaluator
+
+`one_combat oocv4h1rollout` is an offline-only audit of the Act-1 floor-8,
+decision-11 V4 card-reward state. `oocv4h1rolloutall` applies the same machinery
+to every eligible OOC decision in the frozen source replay. Both modes replay the source state with the frozen
+V4 stack, then evaluates each legal sibling over seeded
+lightweight rollouts that uniformly sample legal OOC/map actions, skip rewards,
+and pass through battles. It then runs the requested ordinary Silver root
+budget for every observed action/rollout/encounter occurrence cell, preserving
+the full battle-entry snapshot for that occurrence rather than collapsing
+observations by encounter identity. The combat cells are
+evaluated in parallel with OpenMP; set `OMP_NUM_THREADS` to choose the worker
+count. The pass-through marks
+each reached battle as a virtual victory with unchanged HP and calls the
+canonical `BattleContext::exitBattle`; it is intentionally not a combat
+surrogate and does not query `vStateWin` until the separate Silver cells.
+Common rollout seeds are shared across sibling actions, and combat seeds are
+shared across sibling actions for the same rollout/encounter occurrence. The
+mode writes the requested CSV plus `.json` and `.report.txt` summaries and
+has a deterministic `--self-test` canary. Run seed-driven commands through
+`tools/seed_guard.sh`; this mode has one source seed, so its rollout count is
+not mistaken for a multi-seed sweep by the local 128-seed guard.
+
 `GameContext` owns run RNG streams, deck, relics, potions, map, resources,
 act/floor, and the active `ScreenState`
 (`include/game/GameContext.h::GameContext`). Legal strategic actions are packed

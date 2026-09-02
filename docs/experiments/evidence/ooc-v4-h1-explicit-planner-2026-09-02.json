@@ -1,0 +1,91 @@
+{
+  "schema": "ooc_v4_h1_explicit_planner_result_v1",
+  "date": "2026-09-02",
+  "baseline_sha": "fad9111ee0b8b3b1f1d68e704221e568b263092f",
+  "collection_sha": "cc35fb1ac6c351ff56470b5d292589b62ffa58aa",
+  "adjudication_sha": "f2258389be6b6a308383ad7d1ee5efefefe6e1f1",
+  "scope": "offline scientific screen only; no production policy change",
+  "v4_comparator": {
+    "source_sims_per_combat_decision": 1000,
+    "threads": 24,
+    "ascension": 0,
+    "fair": true,
+    "searcher3": {"belief": 0, "chain": 0, "particles": 64, "live_valid": true},
+    "collect_keys": true,
+    "strategic_model": {"path": "selfplay/models/ooc_strategic_tok_final.native", "sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"},
+    "gates": ["CARD", "REST", "EVENT", "SHOP", "TREASURE", "BOSS_RELIC"],
+    "margin": 1.0,
+    "combat_vnet": {"path": "models/v_combat_7k_tuned.txt", "sha256": "ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c", "alpha": 0.3}
+  },
+  "planner": {
+    "K": 1,
+    "H": 1,
+    "teacher": "ordinary project-fair Silver UCT",
+    "simulations_per_root": 10000,
+    "exact_root_budget": true,
+    "exploration": 25.0,
+    "chance_exploration": 25.0,
+    "widening_c": 3.7028,
+    "widening_alpha": 0.52389,
+    "reuse_cap_mode": "allocated",
+    "reuse_cap": 32768,
+    "disabled": ["sequential_halving", "pruning", "learned_visit_puct", "direct_learned_leaf", "adaptive_budget"],
+    "continuation_value": {"function": "vStateWin", "model_path": "models/v_win_trees.txt", "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"},
+    "terminal_loss": 0.0,
+    "terminal_run_victory": 1.0
+  },
+  "rng": {
+    "regime": "project_fair",
+    "sibling_hidden_worlds": "matched within decision",
+    "sibling_continuation_rng": "matched within decision/future",
+    "reference_future_ids": [100, 101, 102, 103]
+  },
+  "cohort": {
+    "source_seeds": {"start": 984100, "end_inclusive": 984128, "count": 29},
+    "decisions": 29,
+    "legal_actions": 175,
+    "valid_actions": 175,
+    "agreement": 10,
+    "agreement_rate": 0.3448275862068966,
+    "disagreements": 19,
+    "disagreement_actions": 131,
+    "screen_distribution": {"1": 4, "2": 10, "6": 2, "7": 5, "8": 8},
+    "disagreement_screen_distribution": {"1": 2, "2": 8, "6": 1, "7": 2, "8": 6},
+    "mean_k1_margin": 0.026376448275862066,
+    "median_k1_margin": 0.020449999999999968,
+    "collection_silver_simulations": 25780000,
+    "collection_combat_decisions": 2578
+  },
+  "adjudication": {
+    "valid_rows": 524,
+    "expected_rows": 524,
+    "matched_futures_per_action": 4,
+    "silver_simulations": 1724350000,
+    "v4_selected_terminal_win": 0.5657894736842105,
+    "h1_selected_terminal_win": 0.40789473684210525,
+    "h1_minus_v4_terminal_win": -0.15789473684210525,
+    "v4_mean_regret": 0.19736842105263158,
+    "h1_mean_regret": 0.35526315789473684,
+    "h1_minus_v4_mean_regret": 0.15789473684210525,
+    "v4_median_regret": 0.0,
+    "h1_median_regret": 0.25,
+    "h1_win_loss_tie": {"wins": 3, "losses": 7, "ties": 9},
+    "bootstrap": {"replicates": 100000, "seed": 20260902, "clusters": "sourceSeed", "h1_minus_v4_terminal_win_ci95": [-0.34210526315789475, 0.0], "h1_minus_v4_mean_regret_ci95": [0.0, 0.34210526315789475]}
+  },
+  "commands": {
+    "collection_template": "env OMP_NUM_THREADS=24 STS_EXECUTABLE_GIT_SHA=cc35fb1ac6c351ff56470b5d292589b62ffa58aa STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 STS_S3_CHAIN=0 STS_S3_PARTICLES=64 STS_COLLECT_KEYS=1 STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native STS_VNET=models/v_combat_7k_tuned.txt STS_VNET_ALPHA=0.3 STS_OOC_STRATEGIC_REST=1 STS_OOC_STRATEGIC_EVENT=1 STS_OOC_STRATEGIC_SHOP=1 STS_OOC_STRATEGIC_TREASURE=1 STS_OOC_STRATEGIC_BOSS_RELIC=1 STS_OOC_STRATEGIC_MARGIN=1.0 STS_SILVER_SEARCH=0 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_ADAPTIVE=0 STS_SILVER_VNET_LEAF_DIRECT=0 STS_SILVER_TELEMETRY=1 tools/seed_guard.sh --gcp-research one_combat oocv4h1collect SEED 1000 10000 0 OUT.csv teacher.json",
+    "reference_template": "same frozen environment with STS_EXECUTABLE_GIT_SHA=f2258389be6b6a308383ad7d1ee5efefefe6e1f1 and barrier paths; tools/seed_guard.sh --gcp-research one_combat oocv4h1ref SEED DECISION 1000 10000 0 4 100 OUT.csv teacher.json",
+    "analysis": "UV_CACHE_DIR=/tmp/sts_h1_uv_cache uv run --locked --extra analysis python tools/analyze_ooc_v4_h1.py adjudicate --collection build/ooc_v4_h1_cc35fb1/collect/*.csv --reference build/ooc_v4_h1_f225838_parallel/ref/*.csv --output build/ooc_v4_h1_f225838_parallel/adjudication_report.json --bootstrap 100000 --seed 20260902"
+  },
+  "artifacts": {
+    "collection_directory": "build/ooc_v4_h1_cc35fb1/collect",
+    "collection_hash_manifest": {"path": "build/ooc_v4_h1_cc35fb1/collect.sha256", "sha256": "f82de049815a51968318e0aa97b92fc3f24c13744bb77eb57af2ea554890b186"},
+    "collection_report": {"path": "build/ooc_v4_h1_cc35fb1/collection_report.json", "sha256": "a04e5d8bf4792be9f3b5f5095595c9d646ea5924d60a3d8be061b938f969b02c"},
+    "disagreement_manifest": {"path": "build/ooc_v4_h1_cc35fb1/disagreements.csv", "sha256": "48d75538f7986c5ba1eee0afd9e9cd593169c96818db35ddec5c44612d300cc4"},
+    "reference_directory": "build/ooc_v4_h1_f225838_parallel/ref",
+    "reference_hash_manifest": {"path": "build/ooc_v4_h1_f225838_parallel/ref.remote.sha256", "sha256": "fcd8dd0c5eab4907fadaf4e9d33be6a6c6085963cff5a60f7d811df998b0c3db"},
+    "analysis_report": {"path": "build/ooc_v4_h1_f225838_parallel/adjudication_report.json", "sha256": "acc91efd68c66a3ca16e32c55a1c899d0d9317834595f102255a6e44852dd1f8"}
+  },
+  "decision": "REJECT",
+  "reason": "Both primary point estimates favor V4: V4 has higher selected terminal-win probability and lower mean paired regret. H1 also loses the disagreement count 3-7 with 9 ties, with its largest systematic deficit on screen 8."
+}
