@@ -8299,19 +8299,22 @@ static std::string runWholeCombatGenSeed(std::uint64_t seed,int sims,int asc,con
 
 // V1 producer: capture the persistent GameContext before BattleContext::init;
 // read terminal labels from BattleContext before exitBattle/afterBattle.
-static std::string runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
-                                        const WholeCombatTeacher &teacher) {
+struct CombatEvalSeedResult { std::string rows; bool sourceValid = true; int quarantined = 0; };
+static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
+                                                 const WholeCombatTeacher &teacher) {
     constexpr double eps = 1e-3;
     trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent; agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(seed);
-    std::ostringstream out; int fightIdx = 0;
+    std::ostringstream out; int fightIdx = 0; bool sourceValid = true; int quarantined = 0;
     using RT = search::GameAction::RewardsActionType;
     while (gc.outcome == GameOutcome::UNDECIDED) {
         if (gc.screenState == ScreenState::BATTLE) {
             const int act = gc.act, floor = gc.floorNum, room = (int)gc.curRoom;
             const MonsterEncounter encounter = gc.info.encounter;
+            const int encounterIndex = static_cast<int>(encounter);
+            const bool representableEncounter = encounterIndex >= 0 && encounterIndex < static_cast<int>(sizeof(monsterEncounterStrings) / sizeof(monsterEncounterStrings[0]));
             const std::string features = vFeatCsv(gc);
             int hooks = 0;
             search::g_onCombatDecision = [&](const BattleContext &) { ++hooks; };
@@ -8323,9 +8326,13 @@ static std::string runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
             const bool escaped = bc.smokeBombUsed;
             const bool trueDeath = bc.outcome == Outcome::PLAYER_LOSS && bc.player.curHp <= 0 && !escaped;
             const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
-            const bool turnCapLoss = !decided && bc.turn >= 100;
+            // The simulator's terminal turn bound is 100.  An unresolved
+            // battle below that bound is an invalid/non-death termination,
+            // never a death label.
+            constexpr int kCombatTurnCap = 100;
+            const bool turnCapLoss = !decided && bc.turn >= kCombatTurnCap;
             const bool progressAmbiguous = trueDeath && encounter == MonsterEncounter::AWAKENED_ONE;
-            const bool labelValid = hooks > 0 && healthOk && (won || trueDeath);
+            const bool labelValid = representableEncounter && hooks > 0 && healthOk && (won || trueDeath);
             const double terminalHp = std::max(0, bc.player.curHp), terminalMaxHp = std::max(0, bc.player.maxHp);
             const double winHpFrac = std::max(eps, std::min(1.0, terminalMaxHp > 0 ? terminalHp / terminalMaxHp : eps));
             const double enemyRatio = search::getNonMinionMonsterCurHpRatio(bc);
@@ -8334,9 +8341,9 @@ static std::string runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
             const double lossRemainingFrac = std::max(eps, std::min(1.0, enemyRatio));
             const double signedOutcome = labelValid ? (won ? winHpFrac : -lossRemainingFrac) : 0.0;
             const char *roomClass = room == (int)Room::MONSTER ? "NORMAL" : room == (int)Room::ELITE ? "ELITE" : room == (int)Room::BOSS ? "BOSS" : "OTHER";
-            const char *reason = !hooks ? "missing_first_decision_hook" : !healthOk ? "simulator_health_failure" : escaped ? "escape" : turnCapLoss ? "turn_cap" : (decided && !trueDeath && !won) ? "non_death_loss" : "";
+            const char *reason = !representableEncounter ? "unknown_encounter" : !hooks ? "missing_first_decision_hook" : !healthOk ? "simulator_health_failure" : escaped ? "escape" : turnCapLoss ? "turn_cap" : (decided && !trueDeath && !won) ? "non_death_loss" : "";
             out << seed << ',' << fightIdx << ',' << act << ',' << floor << ',' << roomClass << ','
-                << csvQuoted(monsterEncounterStrings[(int)encounter]) << ',' << teacher.id << ',' << features << ','
+                << csvQuoted(representableEncounter ? monsterEncounterStrings[encounterIndex] : "INVALID") << ',' << teacher.id << ',' << features << ','
                 << (won ? 1 : 0) << ',' << (trueDeath ? 1 : 0) << ',' << (escaped ? 1 : 0) << ','
                 << (turnCapLoss ? 1 : 0) << ',' << (progressAmbiguous ? 1 : 0) << ',' << (labelValid ? 1 : 0) << ','
                 << terminalHp << ',' << terminalMaxHp << ',' << enemyCurHp << ',' << enemyMaxHp << ',' << winHpFrac << ','
@@ -8346,9 +8353,8 @@ static std::string runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
             // or hook failure cannot safely advance the run; ordinary
             // non-death terminations can be exited and the next fight may be
             // collected, while the contract/trainer excludes this row.
-            if (!labelValid && (!healthOk || !hooks)) {
-                search::g_onGameActionExecute = {}; t_curPath = nullptr; return out.str();
-            }
+            if (!labelValid) { sourceValid = false; ++quarantined; }
+            if (!labelValid && (!healthOk || !hooks || !representableEncounter)) { search::g_onGameActionExecute = {}; t_curPath = nullptr; return {out.str(), false, quarantined}; }
             bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(chooseMapAction(gc)).execute(gc);
@@ -8361,7 +8367,7 @@ static std::string runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
             else evalCardRewardPolicy(gc);
         } else agent.stepOutOfCombatPolicy(gc);
     }
-    search::g_onCombatDecision = nullptr; return out.str();
+    search::g_onCombatDecision = nullptr; return {out.str(), sourceValid, quarantined};
 }
 
 static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
@@ -8373,9 +8379,9 @@ static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outf
     long long rows = 0; int completed = 0;
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
-        const std::string generated = runCombatEvalGenSeed(seedOffset + s, sims, asc, teacher);
+        const CombatEvalSeedResult generated = runCombatEvalGenSeed(seedOffset + s, sims, asc, teacher);
         #pragma omp critical(combat_eval_write)
-        { f << generated; f.flush(); rows += std::count(generated.begin(), generated.end(), '\n'); if (!generated.empty()) ++completed; }
+        { f << generated.rows; f.flush(); rows += std::count(generated.rows.begin(), generated.rows.end(), '\n'); if (generated.sourceValid) ++completed; else ++g_trainingInvalidRuns; g_trainingInvalidBranches += generated.quarantined; }
     }
     std::cout << "combatevalgen teacher=" << teacher.id << " completed=" << completed << '/' << nSeeds << " quarantined=" << nSeeds-completed << " rows=" << rows << " -> " << outfile << '\n';
     writeTrainingProvenance(outfile, "combatevalgen", nSeeds, completed, nSeeds-completed, g_trainingHealthFailures.load(), rows, seedOffset, sims, asc);
