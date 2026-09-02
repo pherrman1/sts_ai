@@ -43,6 +43,25 @@ candidate fields, a `chosen` flag, and terminal run labels
 flag is detected by successor-fingerprint matching against the executed policy
 action.
 
+The opt-in `combatevalgen` mode is the V1 pre-combat signed combat-evaluator
+producer. It captures the canonical 1,017-value `GameContext` rich vector and
+encounter ID before `BattleContext` initialization, then records terminal HP
+and Silver's shared non-minion enemy-HP aggregate before `exitBattle`. Only
+genuine wins and player deaths are label-valid; escapes, unresolved or
+turn-cap results, simulator-health failures, and other non-death losses are
+quarantined. Awakened One deaths remain in survival training but are marked
+ambiguous and excluded from loss-severity training. The companion
+`tools/combat_evaluator_contract.py`, `tools/train_combat_evaluator.py`, and
+`tools/combat_evaluator.py` provide fail-closed validation, deterministic
+source-seed grouping, three XGBoost heads, and offline inference. The
+`combat_evaluator_v1` data manifest is authoritative: it binds the CSV hash,
+producer and executable hashes, exact frozen Silver teacher, seed block,
+feature/order hash, row counts, and quarantined-source count; trainer and
+inference reject contract drift. Metrics exclude invalid rows, report split
+valid/win/death/ambiguous counts, and classify sparse loss tests as
+`INCONCLUSIVE_LOW_POWER`. This is offline V1 tooling only and is not
+integrated into combat search.
+
 The prepared next-generation OOC workflow is documented in
 [`operations/ooc-label-pipeline.md`](../operations/ooc-label-pipeline.md).
 `tools/ooc_pipeline_contract.py` validates a fail-closed frozen-combat-teacher
