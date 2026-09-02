@@ -50,7 +50,8 @@ extern thread_local SilverLiveDiagnostics g_silverLiveDiagnostics;
 
 // Installs the private-model combat callback into the core agent. This symbol
 // is linked only by one_combat; other executables retain no full-vendor-model
-// dependency. Calling it is idempotent for the current thread.
+// dependency. Installation is process-wide and is intentionally visible to
+// OpenMP workers; call it once before entering a parallel combat region.
 void installSilverLiveBackend();
 void uninstallSilverLiveBackend();
 

@@ -11732,9 +11732,9 @@ static void evaluateV4ActRollout(std::uint64_t seed, int decision, int rollouts,
         bool valid = false;
     };
     std::vector<CellResult> results(cells.size());
-    auto runSilverCell = [&](const Cell &cell, bool silverInstalled) {
+    auto runSilverCell = [&](const Cell &cell) {
         CellResult result;
-        result.workerSilverInstalled = silverInstalled;
+        result.workerSilverInstalled = search::silverLiveBackendInstalled();
         if (!result.workerSilverInstalled) return result;
         GameContext local = detachedCounterfactualCopy(cell.obs.battleEntry);
         search::ScumSearchAgent2 fight; fight.simulationCountBase = silverSims;
@@ -11765,19 +11765,16 @@ static void evaluateV4ActRollout(std::uint64_t seed, int decision, int rollouts,
     omp_set_dynamic(0);
     omp_set_num_threads(1);
 #endif
-    search::installSilverLiveBackend();
     for (int i = 0; i < probeCount; ++i)
-        serialProbe[i] = runSilverCell(cells[i], search::silverLiveBackendInstalled());
+        serialProbe[i] = runSilverCell(cells[i]);
 #ifdef _OPENMP
     omp_set_num_threads(workerCount);
 #endif
     #pragma omp parallel
     {
-        search::installSilverLiveBackend();
-        const bool installed = search::silverLiveBackendInstalled();
         #pragma omp for schedule(static)
         for (int i = 0; i < probeCount; ++i)
-            parallelProbe[i] = runSilverCell(cells[i], installed);
+            parallelProbe[i] = runSilverCell(cells[i]);
     }
     for (int i = 0; i < probeCount; ++i) {
         const auto &a = serialProbe[i], &b = parallelProbe[i];
@@ -11796,11 +11793,9 @@ static void evaluateV4ActRollout(std::uint64_t seed, int decision, int rollouts,
     // the worker count, matching the other combat benchmarks in this binary.
     #pragma omp parallel
     {
-        search::installSilverLiveBackend();
-        const bool installed = search::silverLiveBackendInstalled();
         #pragma omp for schedule(dynamic)
         for (int ci = 0; ci < (int)cells.size(); ++ci)
-            results[ci] = runSilverCell(cells[ci], installed);
+            results[ci] = runSilverCell(cells[ci]);
     }
     for (const auto &result : results)
         if (!result.workerSilverInstalled || result.actualSims == 0)
@@ -11935,9 +11930,9 @@ static void evaluateV4ActRolloutAll(std::uint64_t seed, int rollouts, int silver
         bool workerSilverInstalled = false, won = false;
         double value = 0.0; bool valid = false; };
     std::vector<CellResult> results(cells.size());
-    auto runSilverCell = [&](const Cell &cell, bool silverInstalled) {
+    auto runSilverCell = [&](const Cell &cell) {
         CellResult result;
-        result.workerSilverInstalled = silverInstalled;
+        result.workerSilverInstalled = search::silverLiveBackendInstalled();
         if (!result.workerSilverInstalled) return result;
         GameContext local = detachedCounterfactualCopy(cell.obs.battleEntry);
         search::ScumSearchAgent2 fight; fight.simulationCountBase = silverSims;
@@ -11967,16 +11962,13 @@ static void evaluateV4ActRolloutAll(std::uint64_t seed, int rollouts, int silver
     omp_set_dynamic(0);
     omp_set_num_threads(1);
 #endif
-    search::installSilverLiveBackend();
     for (int i = 0; i < probeCount; ++i)
-        serialProbe[i] = runSilverCell(cells[i], search::silverLiveBackendInstalled());
+        serialProbe[i] = runSilverCell(cells[i]);
 #ifdef _OPENMP
     omp_set_num_threads(workerCount);
 #endif
     #pragma omp parallel
     {
-        search::installSilverLiveBackend();
-        const bool installed = search::silverLiveBackendInstalled();
 #ifdef _OPENMP
         const int tid = omp_get_thread_num();
         if (tid < 64) workerMask.fetch_or(1ULL << tid);
@@ -11985,7 +11977,7 @@ static void evaluateV4ActRolloutAll(std::uint64_t seed, int rollouts, int silver
 #endif
         #pragma omp for schedule(static)
         for (int i = 0; i < probeCount; ++i)
-            parallelProbe[i] = runSilverCell(cells[i], installed);
+            parallelProbe[i] = runSilverCell(cells[i]);
     }
     for (int i = 0; i < probeCount; ++i) {
         const auto &a = serialProbe[i], &b = parallelProbe[i];
@@ -12010,11 +12002,9 @@ static void evaluateV4ActRolloutAll(std::uint64_t seed, int rollouts, int silver
 #endif
     #pragma omp parallel
     {
-        search::installSilverLiveBackend();
-        const bool installed = search::silverLiveBackendInstalled();
         #pragma omp for schedule(dynamic)
         for (int ci = 0; ci < (int)cells.size(); ++ci)
-            results[ci] = runSilverCell(cells[ci], installed);
+            results[ci] = runSilverCell(cells[ci]);
     }
     for (const auto &result : results)
         if (!result.workerSilverInstalled || result.actualSims == 0)
@@ -12054,13 +12044,15 @@ static void evaluateV4ActRolloutAll(std::uint64_t seed, int rollouts, int silver
     json << "{\"sourceSeed\":" << seed << ",\"decisionCount\":" << targets.size()
          << ",\"rollouts\":" << rollouts << ",\"silverSimulations\":" << silverSims
          << ",\"silverWorkerThreads\":" << numThreads()
+         << ",\"silverWorkerCanary\":\"pass\",\"silverWorkerMask\":" << workerMask.load()
          << ",\"teacherId\":" << nlohmann::json(teacher.id).dump()
          << ",\"teacherProvenance\":"
          << nlohmann::json(staleTeacher ? "stale_manifest_allowed" : "exact").dump()
          << ",\"decisions\":[";
     report << "source seed=" << seed << " decisionCount=" << targets.size()
            << " rollouts=" << rollouts << " silverSimulations=" << silverSims
-           << " silverWorkerThreads=" << numThreads() << " teacher_provenance="
+           << " silverWorkerThreads=" << numThreads() << " silverWorkerCanary=pass"
+           << " silverWorkerMask=" << workerMask.load() << " teacher_provenance="
            << (staleTeacher ? "stale_manifest_allowed" : "exact") << "\n";
     for (int ti = 0; ti < (int)targets.size(); ++ti) {
         const auto &target = targets[ti];
