@@ -6007,11 +6007,12 @@ model training was changed.
 ## §214 §213 evaluator correction canary (2026-09-02)
 
 - **Checks:** The corrected evaluator preserves every observed occurrence's
-  battle-entry snapshot, installs Silver once per worker before the queue,
+  battle-entry snapshot, installs Silver once process-wide before the queue,
   and fails closed unless a fixed serial/parallel canary agrees and every
   configured worker participates. The guarded 8-worker smoke completed with
   62 source decisions, 1,648 occurrence cells, 1 Silver simulation per cell,
   and worker mask `255`; `silverWorkerCanary=pass`.
-- **Evidence/status:** `build/ooc_v4_h1_review_smoke.csv` and sidecars. The
+- **Evidence/status:** `build/ooc_v4_h1_review_smoke_processwide.csv` and
+  sidecars. The
   full 100-rollout/100-Silver rerun remains required before replacing §213's
   scientific result.
