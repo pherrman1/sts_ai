@@ -26,6 +26,16 @@ class CombatEvaluatorContractTest(unittest.TestCase):
         p = self.make_csv([self.row(1,1,0,signed=0.2)])
         with self.assertRaises(ValueError): validate_csv(p)
 
+    def test_escape_is_always_invalid_even_if_battle_won(self):
+        p = self.make_csv([self.row(1, 1, 0, valid=0, signed=0)])
+        with p.open(newline="") as source: rows = list(csv.reader(source))
+        rows[1][rows[0].index("escaped")] = "1"
+        with p.open("w", newline="") as out: csv.writer(out).writerows(rows)
+        self.assertEqual(validate_csv(p)["counts"]["invalid"], 1)
+        rows[1][rows[0].index("labelValid")] = "1"
+        with p.open("w", newline="") as out: csv.writer(out).writerows(rows)
+        with self.assertRaises(ValueError): validate_csv(p)
+
     def test_invalid_outcomes_are_counted_and_excluded(self):
         p = self.make_csv([self.row(1,1,0), self.row(2,0,0,valid=0,signed=0), self.row(3,0,1,ambiguous=1)])
         result = validate_csv(p)
@@ -63,5 +73,11 @@ class CombatEvaluatorContractTest(unittest.TestCase):
         self.assertIn("!m.hasStatus<MS::MINION>()", source)
         self.assertIn("getNonMinionMonsterHpTotals(bc, enemyCurHp, enemyMaxHp)",
                       (Path(__file__).resolve().parents[1] / "apps/one_combat.cpp").read_text())
+
+    def test_rich_state_header_and_row_share_serializer(self):
+        source = (Path(__file__).resolve().parents[1] / "apps/one_combat.cpp").read_text()
+        self.assertIn("static std::string richStateHeader()", source)
+        self.assertIn('std::string h = richHeader();', source)
+        self.assertIn("return richRow(gc, t_curPath ? *t_curPath : emptyPath);", source)
 
 if __name__ == "__main__": unittest.main()

@@ -8338,7 +8338,7 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             constexpr int kCombatTurnCap = 100;
             const bool turnCapLoss = !decided && bc.turn >= kCombatTurnCap;
             const bool progressAmbiguous = trueDeath && encounter == MonsterEncounter::AWAKENED_ONE;
-            const bool labelValid = representableEncounter && hooks > 0 && healthOk && (won || trueDeath);
+            const bool labelValid = !escaped && representableEncounter && hooks > 0 && healthOk && (won || trueDeath);
             const double terminalHp = std::max(0, bc.player.curHp), terminalMaxHp = std::max(0, bc.player.maxHp);
             const double winHpFrac = std::max(eps, std::min(1.0, terminalMaxHp > 0 ? terminalHp / terminalMaxHp : eps));
             const double enemyRatio = search::getNonMinionMonsterCurHpRatio(bc);

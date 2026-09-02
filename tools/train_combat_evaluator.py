@@ -112,7 +112,7 @@ def main():
     model_manifest = {"schema_version": SCHEMA_VERSION, "data_sha256": sha256(csv_path), "csv": {"path": str(Path(csv_path).resolve()), "sha256": sha256(csv_path)},
                 "producer_git_sha": manifest["producer_git_sha"], "producer_executable_sha256": manifest["producer_executable_sha256"], "seed_spec": manifest["seed_spec"],
                 "models": {n: sha256(out / f) for n,f in (("survival", "survival.json"), ("conditional_win_hp", "conditional_win_hp.json"), ("conditional_loss_remaining", "conditional_loss_remaining.json"))},
-                "feature_contract": {"count": 1017, "state_names": state, "encounters": encounters, "model_features": features, "one_hot": True, "order_hash": hashlib.sha256("\n".join(state + enc_cols).encode()).hexdigest()},
+                "feature_contract": {"count": len(state), "state_names": state, "encounters": encounters, "model_features": features, "one_hot": True, "order_hash": hashlib.sha256("\n".join(state + enc_cols).encode()).hexdigest()},
                 "teacher": manifest["teacher"], "integrity": {**info["counts"], "rows": info["rows"], "source_seeds": info["source_seeds"], "quarantined_source_seeds": info["quarantined_source_seeds"]}, "training_parameters": vars(args), "metrics": metrics}
     loss_power = metrics["counts"]["test"]["nonambiguous_deaths"]
     metrics["loss_severity_verdict"] = "INCONCLUSIVE_LOW_POWER" if loss_power < 30 else "UNASSESSED"

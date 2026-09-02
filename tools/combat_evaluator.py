@@ -10,7 +10,7 @@ class CombatEvaluator:
         root = Path(model_dir); self.manifest = json.loads((root / "manifest.json").read_text())
         if self.manifest.get("schema_version") != "combat_evaluator_v1": raise ValueError("unsupported evaluator schema")
         fc = self.manifest["feature_contract"]; self.state_names = fc["state_names"]
-        if len(self.state_names) != 1017 or not fc.get("one_hot") or len(fc.get("order_hash", "")) != 64: raise ValueError("invalid feature contract")
+        if len(self.state_names) != fc.get("count") or not fc.get("one_hot") or len(fc.get("order_hash", "")) != 64: raise ValueError("invalid feature contract")
         self.encounters = list(fc["encounters"]); self.features = list(fc["model_features"])
         if hashlib.sha256(("\n".join(self.state_names + [f"encounter__{x}" for x in self.encounters])).encode()).hexdigest() != fc["order_hash"]: raise ValueError("feature order hash mismatch")
         paths = {"survival":"survival.json", "conditional_win_hp":"conditional_win_hp.json", "conditional_loss_remaining":"conditional_loss_remaining.json"}
@@ -19,7 +19,7 @@ class CombatEvaluator:
             if self.manifest.get("models", {}).get(k) != hashlib.sha256((root / paths[k]).read_bytes()).hexdigest(): raise ValueError(f"model hash mismatch: {k}")
             m.load_model(root / paths[k])
     def predict(self, state_values, encounter):
-        if len(state_values) != 1017: raise ValueError("expected exactly 1,017 state values")
+        if len(state_values) != len(self.state_names): raise ValueError(f"expected exactly {len(self.state_names)} state values")
         if encounter not in self.encounters: raise ValueError("unknown encounter")
         values = np.asarray(state_values, dtype=np.float32)
         if not np.isfinite(values).all(): raise ValueError("state contains non-finite values")

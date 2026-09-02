@@ -6,6 +6,7 @@ import csv, hashlib, json, math, argparse
 from pathlib import Path
 
 SCHEMA_VERSION = "combat_evaluator_v1"
+EXPECTED_STATE_FEATURE_COUNT = 1017
 EPSILON = 1e-3
 PREFIX = ["sourceSeed", "fightIdx", "act", "floor", "roomClass", "encounter", "teacherId"]
 LABELS = ["won", "trueDeath", "escaped", "turnCapLoss", "progressAmbiguous", "labelValid",
@@ -46,7 +47,7 @@ def validate_csv(path: str | Path) -> dict:
     if len(header) <= len(PREFIX) + len(LABELS): raise ValueError("missing state feature block")
     if header[-len(LABELS):] != LABELS: raise ValueError("label suffix/order mismatch")
     features = header[len(PREFIX):-len(LABELS)]
-    if len(features) != 1017: raise ValueError(f"expected 1017 state features, got {len(features)}")
+    if len(features) != EXPECTED_STATE_FEATURE_COUNT: raise ValueError(f"expected {EXPECTED_STATE_FEATURE_COUNT} state features, got {len(features)}")
     keys, seeds, valid = set(), set(), 0; counts = {k: 0 for k in ("valid", "invalid", "ambiguous", "wins", "deaths")}
     for line, row in enumerate(rows, 2):
         key = (int(row["sourceSeed"]), int(row["fightIdx"]))
@@ -58,6 +59,7 @@ def validate_csv(path: str | Path) -> dict:
         if bits["won"] and bits["trueDeath"]: raise ValueError("won and trueDeath both set")
         if bits["escaped"] and bits["trueDeath"]: raise ValueError("escaped true death")
         if bits["turnCapLoss"] and bits["trueDeath"]: raise ValueError("turn-cap true death")
+        if bits["escaped"] and bits["labelValid"]: raise ValueError("escaped row is label-valid")
         for name in LABELS[6:-1]: _finite(row, name)
         for name in ("winHpFrac", "lossRemainingFrac"):
             value = float(row[name])
@@ -101,10 +103,11 @@ def validate_manifest(manifest: dict, verify_csv=True) -> dict:
     if manifest["teacher"]["git_sha"] != manifest["producer_git_sha"] or manifest["teacher"]["executable_sha256"] != manifest["producer_executable_sha256"]:
         raise ValueError("teacher/producer provenance mismatch")
     fc = manifest["feature_contract"]
-    if fc.get("count") != 1017 or not fc.get("order_hash"): raise ValueError("incomplete feature contract")
+    if not isinstance(fc.get("count"), int) or not fc.get("order_hash"): raise ValueError("incomplete feature contract")
     csv_info = manifest["csv"]; path = Path(csv_info["path"])
     if verify_csv and (not path.is_file() or sha256(path) != csv_info.get("sha256")): raise ValueError("CSV hash mismatch")
     result = validate_csv(path)
+    if fc["count"] != result["feature_count"]: raise ValueError("feature width mismatch")
     if result["features"] != fc.get("state_names"): raise ValueError("feature names/order mismatch")
     order_hash = hashlib.sha256("\n".join(result["features"] + [f"encounter__{x}" for x in fc.get("encounters", [])]).encode()).hexdigest()
     if order_hash != fc.get("order_hash"): raise ValueError("feature order hash mismatch")
@@ -134,7 +137,7 @@ def build_manifest(csv_path, teacher_path, output, producer_git_sha, producer_ex
         "producer_executable_sha256": producer_executable_sha256, "teacher": teacher,
         "seed_spec": {"offset": int(seed_offset), "count": int(seed_count), "ascension": int(ascension)},
         "csv": {"path": str(csv_path), "sha256": sha256(csv_path)},
-        "feature_contract": {"count": 1017, "state_names": result["features"], "encounters": encounters,
+        "feature_contract": {"count": result["feature_count"], "state_names": result["features"], "encounters": encounters,
             "model_features": result["features"] + [f"encounter__{x}" for x in encounters], "one_hot": True, "order_hash": order_hash},
         "integrity": {**result["counts"], "rows": result["rows"], "source_seeds": result["source_seeds"],
                       "quarantined_source_seeds": result["quarantined_source_seeds"]}}
