@@ -19,6 +19,12 @@
 
 namespace sts::search {
 
+    // Shared terminal-label helper.  Minions are excluded from the aggregate
+    // so that a loss cannot look farther from victory because a summoned unit
+    // remains alive.
+    double getNonMinionMonsterCurHpRatio(const BattleContext &bc);
+    void getNonMinionMonsterHpTotals(const BattleContext &bc, int &curHp, int &maxHp);
+
     typedef std::function<double (const BattleContext&)> EvalFnc;
 
     struct BattleScumSearcher2 {

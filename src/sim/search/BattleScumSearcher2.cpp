@@ -1056,10 +1056,8 @@ void search::BattleScumSearcher2::enumerateCardSelectActions(search::BattleScumS
     }
 }
 
-double getNonMinionMonsterCurHpRatio(const BattleContext &bc) {
-    int curHpTotal = 0;
-    int maxHpTotal = 0;
-
+void search::getNonMinionMonsterHpTotals(const BattleContext &bc, int &curHpTotal, int &maxHpTotal) {
+    curHpTotal = 0; maxHpTotal = 0;
     for (int i = 0; i < bc.monsters.monsterCount; ++i) {
         const auto &m = bc.monsters.arr[i];
         if (!m.hasStatus<MS::MINION>() && m.id != sts::MonsterId::INVALID) {
@@ -1068,11 +1066,12 @@ double getNonMinionMonsterCurHpRatio(const BattleContext &bc) {
         }
     }
 
-    if (curHpTotal == 0 || maxHpTotal == 0) {
-        return 0;
-    }
+}
 
-    return (double)curHpTotal / maxHpTotal;
+double search::getNonMinionMonsterCurHpRatio(const BattleContext &bc) {
+    int curHpTotal = 0, maxHpTotal = 0;
+    getNonMinionMonsterHpTotals(bc, curHpTotal, maxHpTotal);
+    return (curHpTotal == 0 || maxHpTotal == 0) ? 0 : (double)curHpTotal / maxHpTotal;
 }
 
 double search::BattleScumSearcher2::evaluateEndState(const BattleContext &bc) {
