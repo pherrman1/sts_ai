@@ -1,0 +1,40 @@
+{
+  "schema": "combat_evaluator_v1_canary_evidence",
+  "status": "CONTRACT_INVALID",
+  "reviewed_sha": "af1624e1ac4a911833a5249270f6e43721335f08",
+  "producer_git_sha": "af1624e1ac4a911833a5249270f6e43721335f08",
+  "producer_executable_sha256": "2815b4e6b9b893d8c68138c3bbed76ec9fb3899f606db2f55a284c631d00525c",
+  "teacher": {
+    "teacher_id": "silver-ordinary-fair-c25-exact10k-1ef9aef",
+    "manifest_sha256": "a97a763c7dc9498ea980c59e0d231736dd2537001f87da20e8912682b16e79ed",
+    "model_artifact": "models/silver_leaf_m10_10k.txt",
+    "model_artifact_sha256": "e51c7ed435ff22cb44134bf5f2d9ca745ae2b04785402ccfb1f5d0925e9401fe",
+    "combat_backend": "silver_uct",
+    "rng_regime": "project_fair",
+    "simulation_budgets": [10000]
+  },
+  "seed_spec": {"offset": 982200, "count": 8, "seeds": [982200, 982201, 982202, 982203, 982204, 982205, 982206, 982207]},
+  "csv": {
+    "path_at_run": "/tmp/combat_evaluator_v1_canary_af1624e.csv",
+    "sha256": "9352c749222e4dac56e9f3cfa6d633d5d5d92958954b5137d67d83bfc4b35d25",
+    "rows": 171,
+    "unique_sources": 8,
+    "emitted_state_features": 1015,
+    "contract_required_state_features": 1017
+  },
+  "producer_accounting": {"completed_sources": 8, "quarantined_sources": 0, "rows": 171},
+  "row_accounting": {"valid_wins": 164, "valid_deaths": 7, "invalid_rows": 0, "escape_rows": 3, "ambiguous_deaths": 1},
+  "quarantine_reasons": {"escape": 3},
+  "representative_rows": {
+    "win": {"sourceSeed": 982202, "fightIdx": 0, "encounter": "Cultist", "won": 1, "trueDeath": 0, "labelValid": 1, "winHpFrac": 0.9375, "signedOutcome": 0.9375},
+    "loss": {"sourceSeed": 982202, "fightIdx": 13, "encounter": "Gremlin Leader", "won": 0, "trueDeath": 1, "labelValid": 1, "terminalNonMinionCurHp": 48, "terminalNonMinionMaxHp": 143, "lossRemainingFrac": 0.335664, "signedOutcome": -0.335664},
+    "escape": {"sourceSeed": 982200, "fightIdx": 3, "encounter": "Lagavulin", "won": 1, "trueDeath": 0, "escaped": 1, "labelValid": 1, "quarantineReason": "escape"}
+  },
+  "contract_validation": {"result": "FAIL", "error": "expected 1017 state features, got 1015"},
+  "stage_b_started": false,
+  "notes": [
+    "Canary was run after the implementation-review freeze through tools/seed_guard.sh.",
+    "This evidence records the raw result; it is not an accepted training corpus.",
+    "The escape rows being labelValid=1 remain an unresolved producer issue and are deliberately not hidden."
+  ]
+}
