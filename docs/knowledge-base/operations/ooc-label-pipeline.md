@@ -1,12 +1,22 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-08-31 against the current working tree.
+Last verified: 2026-09-01 against the current working tree.
 
 ## Purpose
 
 Prepare a fail-closed, policy-conditioned OOC label workflow. The broad OOC reference teacher is frozen to ordinary project-fair Silver UCT with exactly 10,000 simulations at every private root decision. OOC labels remain expected run-win values; survival/conditional-value decomposition is a representational hypothesis, not a changed objective.
 
 ## Boundaries and contracts
+
+The offline `oocv4h1collect` / `oocv4h1ref` screen compares the recommended
+V4 token strategic-Q stack with explicit K1/H1 planning without changing the
+production policy. Each invocation replays exactly one fresh source seed under
+fair Searcher3/V4, freezes one reservoir-sampled V4-owned multi-action state,
+then irreversibly installs the clean exact-10k Silver backend for sibling
+evaluation. This one-process/one-seed boundary prevents Silver from replacing
+Searcher3 during source-state collection. The reference mode replays the same
+state, uses frozen V4 for all later OOC decisions, and evaluates four matched
+terminal futures for every legal sibling.
 
 The whole-combat input is the canonical 1,766-value rich combat feature vector captured at `decisionIdx=0`, before a committed player action. Labels and diagnostics are read from `GameContext` only after `BattleContext::exitBattle` returns. On victory, `exitBattle` calls `regainControl`, whose normal callback is `GameContext::afterBattle`; the CSV boundary is therefore post-battle/post-`afterBattle` reward-screen entry, not the earlier `g_onBattleExitPersistent` RAW hook. Survival is unaffected. Ending HP includes normal post-combat healing and post-battle effects such as Face of Cleric. Reward generation may already have consumed reward RNG and populated reward state, although reward contents are not emitted. The diagnostic columns do not reconstruct the complete post-battle `GameContext` and must not be treated as a complete transition target. RNG state is neither exposed nor learned, and navigation/act transition remain outside the target.
 
