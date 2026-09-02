@@ -1,0 +1,34 @@
+{
+  "schema": "combat_evaluator_v1_canary_evidence",
+  "status": "COMBAT_EVALUATOR_STAGE_A_PASS",
+  "implementation_sha": "3dea5a336ea019d34ea1303f4b1f2c6ac1412a71",
+  "evidence_commit_parent": "1172e7a78f8ee4aabfd1130fb2cbfd3fa67f7373",
+  "producer_git_sha": "3dea5a336ea019d34ea1303f4b1f2c6ac1412a71",
+  "producer_executable_sha256": "e968d866d2fb3ccdb13d5d190e0f9802f2286aa0baa60ae80e7dbd6912e999c9",
+  "teacher": {
+    "teacher_id": "silver-ordinary-fair-c25-exact10k-1ef9aef",
+    "manifest": "combat-evaluator-v1-teacher-3dea5a3.json",
+    "manifest_sha256": "946e6dfbe8bd46ec2cf2911542aa677f322f90d84e78f9fdaa23cb9db0b6b35b",
+    "model_artifact": "models/silver_leaf_m10_10k.txt",
+    "model_artifact_sha256": "e51c7ed435ff22cb44134bf5f2d9ca745ae2b04785402ccfb1f5d0925e9401fe"
+  },
+  "seed_spec": {"offset": 982208, "count": 8, "seeds": [982208, 982209, 982210, 982211, 982212, 982213, 982214, 982215]},
+  "csv": {
+    "path": "combat-evaluator-v1-canary-2026-09-02-corrected.csv",
+    "sha256": "18362ebc88192349e36e15cd343f602cd88b49c5ed526c7c2ea4473d85f286ce",
+    "rows": 162,
+    "unique_sources": 8,
+    "state_features": 1017,
+    "feature_order_hash": "2bfa1421ffc55f71dd87bdbc643f2348ed5498839f34c9479271445f7e278535"
+  },
+  "producer_accounting": {"requested_sources": 8, "completed_sources": 7, "quarantined_sources": 1, "rows": 162},
+  "row_accounting": {"valid": 161, "valid_wins": 154, "valid_deaths": 7, "invalid": 1, "ambiguous": 2, "turn_cap_losses": 0, "escaped_label_valid": 0},
+  "quarantine_reasons": {"escape": 1},
+  "representative_rows": {
+    "win": {"sourceSeed": 982209, "fightIdx": 0, "encounter": "Two Louse", "won": 1, "trueDeath": 0, "escaped": 0, "labelValid": 1, "winHpFrac": 0.5625, "signedOutcome": 0.5625},
+    "true_death": {"sourceSeed": 982209, "fightIdx": 7, "encounter": "Hexaghost", "won": 0, "trueDeath": 1, "escaped": 0, "labelValid": 1, "lossRemainingFrac": 0.124, "signedOutcome": -0.124},
+    "escape": {"sourceSeed": 982213, "fightIdx": 22, "encounter": "Three Darklings", "won": 1, "trueDeath": 0, "escaped": 1, "labelValid": 0, "signedOutcome": 0, "quarantineReason": "escape"}
+  },
+  "contract_validation": {"result": "PASS", "manifest_sha256": "e7a9b9abb6fb3341b5f8f8dcfcbb436eb1e733e1b7ca158ccca06a15953632d2"},
+  "stage_b_started": false
+}
