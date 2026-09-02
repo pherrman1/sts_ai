@@ -40,9 +40,14 @@ def _finite(row, name):
 
 def validate_csv(path: str | Path) -> dict:
     path = Path(path)
+    # Read fieldnames from the raw CSV reader: the canonical state deliberately
+    # repeats act/floor from the metadata prefix, and DictReader collapses those
+    # duplicate names before feature width/order validation.
     with path.open(newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f)); header = rows[0].keys() if rows else (csv.DictReader(path.open()).fieldnames or [])
-    header = list(header or [])
+        reader = csv.reader(f)
+        header = next(reader, [])
+    with path.open(newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
     if header[:len(PREFIX)] != PREFIX: raise ValueError("metadata prefix/order mismatch")
     if len(header) <= len(PREFIX) + len(LABELS): raise ValueError("missing state feature block")
     if header[-len(LABELS):] != LABELS: raise ValueError("label suffix/order mismatch")

@@ -80,4 +80,13 @@ class CombatEvaluatorContractTest(unittest.TestCase):
         self.assertIn('std::string h = richHeader();', source)
         self.assertIn("return richRow(gc, t_curPath ? *t_curPath : emptyPath);", source)
 
+    def test_contract_preserves_duplicate_act_floor_state_names(self):
+        p = self.make_csv([self.row(1, 1, 0)])
+        with p.open(newline="") as source:
+            rows = list(csv.reader(source))
+        rows[0][7:9] = ["act", "floor"]
+        with p.open("w", newline="") as out:
+            csv.writer(out).writerows(rows)
+        self.assertEqual(validate_csv(p)["feature_count"], 1017)
+
 if __name__ == "__main__": unittest.main()
