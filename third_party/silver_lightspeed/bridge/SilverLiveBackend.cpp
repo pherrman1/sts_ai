@@ -83,6 +83,11 @@ bool g_leafVNetLogHeaderWritten = false;
 bool g_stickyQualityActionTraceForTest = false;
 std::mutex g_stickyQualitySelectionMutex;
 std::mutex g_combatTelemetryMutex;
+// Installation updates the process-wide callback/options while each caller
+// still performs the documented per-thread installation.  Serialize those
+// short setup mutations; the installed callback itself is read-only after the
+// OpenMP worker barrier.
+std::mutex g_installMutex;
 std::unordered_map<std::uint64_t, int> g_stickyQualitySelectionsByRunSeed;
 std::unordered_map<std::uint64_t, int> g_rootDiagnosticSelectionsByRunSeed;
 struct StickyQualityTestBudgets { std::int64_t fresh = 0, ref25 = 0, ref50 = 0; };
@@ -1377,6 +1382,7 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(
 }
 
 void installSilverLiveBackend() {
+    const std::lock_guard<std::mutex> lock(g_installMutex);
     parseSilverLiveOptions(); // validates before the first live combat begins
     if (!g_silverLiveOptions.leafVNetLogFile.empty() || g_silverLiveOptions.leafVNetDirect
             || (g_silverLiveOptions.leafVNetBlendEnabled && g_silverLiveOptions.leafVNetBlend > 0.0))

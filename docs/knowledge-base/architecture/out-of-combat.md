@@ -28,7 +28,9 @@ to every eligible OOC decision in the frozen source replay. Both modes replay th
 V4 stack, then evaluates each legal sibling over seeded
 lightweight rollouts that uniformly sample legal OOC/map actions, skip rewards,
 and pass through battles. It then runs the requested ordinary Silver root
-budget for every observed action/rollout/encounter cell. The combat cells are
+budget for every observed action/rollout/encounter occurrence cell, preserving
+the full battle-entry snapshot for that occurrence rather than collapsing
+observations by encounter identity. The combat cells are
 evaluated in parallel with OpenMP; set `OMP_NUM_THREADS` to choose the worker
 count. The pass-through marks
 each reached battle as a virtual victory with unchanged HP and calls the

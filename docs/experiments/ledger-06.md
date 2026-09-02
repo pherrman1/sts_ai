@@ -5988,7 +5988,7 @@ model training was changed.
 
 ## §213 Random whole-Act evaluator expanded to every eligible OOC decision (2026-09-02)
 
-- **Protocol:** Offline seed `984123`, ascension 0, 100 random legal OOC
+- **Protocol (superseded):** Offline seed `984123`, ascension 0, 100 random legal OOC
   rollouts per source decision, 100 Silver simulations per unique
   action/encounter cell, project-fair source replay, and OpenMP
   `OMP_NUM_THREADS=8` for the independent Silver queue. Rollout encounters
@@ -5996,11 +5996,22 @@ model training was changed.
   rollout generation. Rollout and combat seeds were explicitly recorded with
   common-random-number pairing across siblings.
 - **Coverage:** 62 eligible OOC decisions across Acts 1/2/3 (24/18/20),
-  3,609 unique action/encounter cells, and four post-boss decisions with zero
-  remaining encounters. Runtime was 554.18 seconds. The 100-Silver decision-11
-  reference run remained byte-identical under the parallel evaluator.
-- **Decision:** **EXPLORATORY_ONLY**. This machinery estimates per-decision
-  action scores; it does not execute the selected actions as one full game, so
-  it supplies no end-to-end win/loss result and is not a production-policy
-  benchmark. Evidence: `build/ooc_v4_h1_random_984123_all_r100_s100_t8.csv`
-  and its `.json`/`.report.txt` sidecars.
+  3,609 identity-deduplicated action/encounter cells, and four post-boss
+  decisions with zero remaining encounters. Runtime was 554.18 seconds.
+- **Decision:** **INVALIDATED/INCONCLUSIVE**. The implementation retained only
+  the first battle-entry snapshot for each action/encounter identity and did
+  not independently prove Silver installation on each OpenMP worker. Its
+  scores must not be interpreted as evidence for or against H1. Evidence:
+  `build/ooc_v4_h1_random_984123_all_r100_s100_t8.csv` and its sidecars.
+
+## §214 §213 evaluator correction canary (2026-09-02)
+
+- **Checks:** The corrected evaluator preserves every observed occurrence's
+  battle-entry snapshot, installs Silver once per worker before the queue,
+  and fails closed unless a fixed serial/parallel canary agrees and every
+  configured worker participates. The guarded 8-worker smoke completed with
+  62 source decisions, 1,648 occurrence cells, 1 Silver simulation per cell,
+  and worker mask `255`; `silverWorkerCanary=pass`.
+- **Evidence/status:** `build/ooc_v4_h1_review_smoke.csv` and sidecars. The
+  full 100-rollout/100-Silver rerun remains required before replacing §213's
+  scientific result.
