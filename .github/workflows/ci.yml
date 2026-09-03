@@ -62,6 +62,12 @@ jobs:
       - name: Test coding-agent evaluator
         run: python3 -m unittest discover -s tests/agent -p 'test_*.py' --durations 20
 
+      - name: Check repository health
+        run: python3 tools/repo_health.py --baseline 3b314c3d85f02315de7666d8c6542b568190c6e6
+
+      - name: Test repository health checker
+        run: python3 -m unittest tests.test_repo_health
+
       - name: Restore ccache
         uses: actions/cache@v4
         id: ccache-cache

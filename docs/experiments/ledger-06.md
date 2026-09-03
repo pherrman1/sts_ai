@@ -1695,7 +1695,7 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
   (`/dev/fd/3` → gzip), achieving **59× compression**.
 - **Crash:** `ActionQueue::pushBack` assertion at run 14,800/100,000 —
   capacity-50 overflow under fair-S3+vnet. Filed as
-  [issue #50](docs/knowledge-base/issues/2026-08-09-issue-actionqueue-overflow.md).
+  [issue #50](../knowledge-base/issues/2026-08-09-issue-actionqueue-overflow.md).
 - **Data recovered:** 3,355,244 rows, 181 MB gzipped, seeds 3,000–17,860
   (~14,860 seeds, avg 226 rows/seed — vnet runs survive longer than §126's
   192 rows/seed).
