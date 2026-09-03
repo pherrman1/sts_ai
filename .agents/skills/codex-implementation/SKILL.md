@@ -5,8 +5,8 @@ description: Use for ordinary implementation, debugging, build, test, Git, and d
 
 # Codex implementation workflow
 
-1. Verify the worktree, branch, HEAD, status, upstream, origin, and requested
-   scope before editing.
+1. Verify the worktree, named branch or app-managed detached HEAD, status,
+   upstream, origin, and requested scope before editing.
 2. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`, and the maintained page
    routed for the affected subsystem.
 3. Search existing scripts, presets, tests, and known solutions before creating
