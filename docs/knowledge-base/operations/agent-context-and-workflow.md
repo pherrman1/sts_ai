@@ -144,13 +144,16 @@ Long-run details are in [build and debugging](build-and-debugging.md).
    interpretation is genuinely ambiguous. Native subtasks within the same
    accepted change may share the coordinating session's worktree; parallelize
    only independent work and avoid duplicate investigation, competing
-   implementations, overlapping edits, and scope expansion. Create and remove
-   linked worktrees for independent branches or experiments
-   through `python tools/agent/worktree.py`; it initializes, verifies, and
-   safely discards checkout-specific submodules without globally deinitializing
-   sibling worktrees. For a fresh clone or an existing checkout, run its
-   `repair` command before configuring. See
-   [build and debugging](build-and-debugging.md).
+   implementations, overlapping edits, and scope expansion. The Codex app may
+   create and remove its own app-managed worktrees. An app-managed worktree may
+   begin on detached `HEAD`; before committing or pushing, create or switch to
+   the task branch. After entering one, run
+   `python tools/agent/worktree.py check .` and use `repair .` if pinned
+   submodules are not initialized or correct. CLI/manual linked-worktree
+   creation and removal remain on the `python tools/agent/worktree.py` path,
+   which initializes, verifies, and safely discards checkout-specific
+   submodules. For a fresh clone or existing checkout, run `repair` before
+   configuring. See [build and debugging](build-and-debugging.md).
 3. Make the smallest scoped change; do not improve adjacent code, comments, or
    formatting. For a feasible bug fix, add a reproducing test first. Rebuild all
    affected translation units and run focused checks before broader checks.
@@ -270,6 +273,14 @@ Repository-scoped Codex defaults live in `.codex/config.toml`. They select the
 `workspace-write` sandbox, retain approval-on-request, disable sandboxed network
 access, and configure no repository MCP server. Codex must be launched with
 this Git worktree as its root so project configuration, skills, and paths agree.
+
+The Codex desktop app may manage the creation and removal of its own linked
+worktrees. Treat an app-created detached `HEAD` as valid pre-branch state;
+validate it with `python tools/agent/worktree.py check .` and repair pinned
+submodules with `repair .` when needed. The CLI remains the maintenance and
+manual-worktree path; use `create|check|repair|remove` there and never raw
+`git worktree add` or `git worktree remove`. Create or switch to a task branch
+in an app-managed worktree before committing or pushing.
 
 No repository Codex hook adapter is configured. The mechanical execution
 boundary for seeded game commands is `tools/seed_guard.sh`, while sandboxing,
