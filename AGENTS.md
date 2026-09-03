@@ -1,6 +1,6 @@
 # StS AI agent contract
 
-Last verified: 2026-08-31 against the current working tree.
+Last verified: 2026-09-03 against the current working tree.
 
 ## Purpose and authority
 
@@ -41,9 +41,14 @@ routing.
 
 - Inspect `git status` before editing; preserve unrelated and ignored local
   data.
-- Validate the checkout with `python tools/agent/worktree.py check .` during
-  preflight. If validation fails, use `repair .` before configuring or
-  building.
+- Distinguish Codex app-managed worktrees from manually/CLI-managed linked
+  worktrees. The Codex app may create and remove its own worktrees, and an
+  app-created worktree may initially be on a detached `HEAD`. After entering
+  one, validate it with `python tools/agent/worktree.py check .`; if pinned
+  submodules are not initialized or are at the wrong revisions, use
+  `python tools/agent/worktree.py repair .` before configuring or building.
+- For manual or CLI-managed linked-worktree creation and removal, use
+  `python tools/agent/worktree.py`; do not bypass it with raw Git commands.
 - State the success criterion and cheapest proving check. Make the smallest
   scoped change that satisfies the request; do not bundle cleanup, refactors,
   gameplay, model, or research changes.
@@ -103,11 +108,14 @@ passes, freeze the reviewed SHA before any expensive scientific run.
   known-RNG invariants; route to the relevant page from `CODE_MAP.md`.
 - Never treat a model file as proof it loaded or was used. Do not delete ignored
   self-play data casually. Do not use broad `pkill -f v_server.py`.
-- For linked-worktree lifecycle operations, use only
-  `python tools/agent/worktree.py create|check|repair|remove`. Do not use raw
-  `git worktree add`, `git worktree remove`, `git submodule deinit`, or manual
-  submodule initialization in linked worktrees. If the lifecycle tool cannot
-  complete the operation, stop and report the failure instead of bypassing it.
+- For manual or CLI-managed linked-worktree lifecycle operations, use only
+  `python tools/agent/worktree.py create|check|repair|remove`. The Codex app
+  may create or remove its own app-managed worktrees; after entering one,
+  validate or repair its pinned submodules with the same `check`/`repair`
+  commands. Do not use raw `git worktree add`, `git worktree remove`, `git
+  submodule deinit`, or manual submodule initialization in linked worktrees.
+  If the lifecycle tool cannot complete a manual operation, stop and report
+  the failure instead of bypassing it.
 - Stage only task-scoped changes. Never rewrite history, force-push, delete
   branches, or push from `main`. After successful verification and commit,
   follow the controlled task-branch first-push and PR procedure in the
