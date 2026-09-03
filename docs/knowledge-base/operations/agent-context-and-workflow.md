@@ -1,6 +1,6 @@
 # Agent context and workflow
 
-Last verified: 2026-08-31 against the current working tree.
+Last verified: 2026-09-03 against the current working tree.
 
 ## Purpose
 
@@ -267,7 +267,7 @@ relocation audit rather than silently deleting an instruction.
 
 ## Agent mechanical guardrails
 
-### Codex CLI
+### Codex app and CLI
 
 Repository-scoped Codex defaults live in `.codex/config.toml`. They select the
 `workspace-write` sandbox, retain approval-on-request, disable sandboxed network

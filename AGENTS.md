@@ -1,6 +1,6 @@
 # StS AI agent contract
 
-Last verified: 2026-08-31 against the current working tree.
+Last verified: 2026-09-03 against the current working tree.
 
 ## Purpose and authority
 
