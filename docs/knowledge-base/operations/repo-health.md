@@ -20,17 +20,16 @@ are explicit policy locations. External URLs, anchors, and absolute links are
 not checked. Local links are resolved relative to their source document and
 must name a tracked or existing path.
 
-## Baseline
+## Inventory snapshot
 
-The complete baseline report is [repo-health-baseline.json](repo-health-baseline.json).
-Regenerate a report for inspection with:
+The static inventory snapshot is [repo-health-baseline.json](repo-health-baseline.json).
+It is reference evidence only; CI compares the candidate with the event base
+commit passed to the CLI. Generate a CLI report for inspection with:
 
 ```sh
-python3 tools/repo_health.py --json --baseline 3b314c3d85f02315de7666d8c6542b568190c6e6
+python3 tools/repo_health.py --json --baseline "$BASE"
 ```
 
-Independent metric review: each hard-failure category maps directly to one
-requested growth boundary, while the three size/ergonomics signals remain
-warnings. The checker reads Git's tracked path set and never scans ignored
-build or self-play data. Knowledge impact: this page records the new
-repository-health contract and baseline procedure.
+Each hard-failure category maps directly to a requested growth boundary, while
+the three size/ergonomics signals remain warnings. The checker reads Git's
+tracked path set and never scans ignored build or self-play data.

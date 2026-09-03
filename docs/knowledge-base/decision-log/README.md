@@ -1,4 +1,10 @@
-# Decision log
+# Decision log (historical/frozen)
+
+This chronological session log is retained as historical evidence and is
+frozen. Do not add new per-session entries. Route current facts to the
+knowledge base, durable choices to ADRs, experiments to `EXPERIMENTS.md`,
+unresolved diagnoses to investigations, and temporary task detail to PRs or
+commits. See [ADR-0012](../../../decisions/0012-frozen-session-decision-log.md).
 
 | 2026-08-31 | [`2026-08-31-evaluator-public-export-cache.md`](2026-08-31-evaluator-public-export-cache.md) | Added an atomic, HEAD-and-submodule-keyed, full-tree-validated public export cache while retaining independent single-root candidate repositories. |
 | 2026-08-31 | [`2026-08-31-agent-test-duration-and-fixture-ownership.md`](2026-08-31-agent-test-duration-and-fixture-ownership.md) | Added standard-library slow-test reporting and class-owned immutable evaluator setup with isolated sparse real-Git clones. |

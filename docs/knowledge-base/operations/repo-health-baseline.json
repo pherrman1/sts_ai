@@ -1,7 +1,6 @@
 {
-  "baseline": "3b314c3d85f02315de7666d8c6542b568190c6e6",
-  "status": "pass",
-  "current": {"head": "3b314c3d85f02315de7666d8c6542b568190c6e6"},
+  "schema_version": 1,
+  "source_commit": "3b314c3d85f02315de7666d8c6542b568190c6e6",
   "metrics": {
     "tracked_files": 1107,
     "tracked_bytes": 151958394,

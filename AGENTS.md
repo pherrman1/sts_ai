@@ -129,7 +129,12 @@ passes, freeze the reviewed SHA before any expensive scientific run.
 - [Self-play loop](docs/knowledge-base/operations/selfplay-loop.md)
 - [Invariants](docs/knowledge-base/behavior/invariants.md) and
   [determinism/RNG](docs/knowledge-base/behavior/determinism-and-rng.md)
-- [Decision log](docs/knowledge-base/decision-log/README.md) and
+- [Decision routing](docs/knowledge-base/decisions/README.md) and
   [experiment ledger](EXPERIMENTS.md)
 - [Implementation-review skill](.agents/skills/implementation-review/SKILL.md)
   and [research-experiment skill](.agents/skills/research-experiment/SKILL.md)
+
+Documentation routing is frozen by ADR-0012: current facts go to the maintained
+knowledge base, durable choices to ADRs, experiments to the ledger, unresolved
+diagnoses to investigations, and temporary task detail to PRs or commits only.
+Do not add per-session decision-log entries.
