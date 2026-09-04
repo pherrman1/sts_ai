@@ -33,7 +33,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0
 
       - name: Install compiler and build prerequisites
         run: |

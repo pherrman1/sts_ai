@@ -1,10 +1,10 @@
 # Repository health
 
-Last verified: 2026-09-03 against baseline `3b314c3d85f02315de7666d8c6542b568190c6e6`.
+Last verified: 2026-09-04 against baseline `3b314c3d85f02315de7666d8c6542b568190c6e6`.
 
 `tools/repo_health.py` is a read-only, deterministic comparison of tracked
 paths and current documentation links. It emits concise terminal output by
-default and a complete, sorted JSON report with `--json`.
+default and a sorted JSON report with `--json`.
 
 The hard-failure policy is deliberately narrow. It fails for tracked paths
 new since the baseline that classify as generated/build output, entries under
@@ -23,8 +23,10 @@ must name a tracked or existing path.
 ## Inventory snapshot
 
 The static inventory snapshot is [repo-health-baseline.json](repo-health-baseline.json).
-It is reference evidence only; CI compares the candidate with the event base
-commit passed to the CLI. Generate a CLI report for inspection with:
+It contains only `schema_version`, `source_commit`, and metric values generated
+by the current definitions; it is reference evidence, not a CLI report or CI
+comparison source. CI compares the candidate with the event base commit passed
+to the CLI. Generate a CLI report for inspection with:
 
 ```sh
 python3 tools/repo_health.py --json --baseline "$BASE"

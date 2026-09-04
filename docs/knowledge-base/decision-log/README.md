@@ -32,7 +32,7 @@ commits. See [ADR-0012](../../../decisions/0012-frozen-session-decision-log.md).
 | 2026-08-24 | [`2026-08-24-e3a-direct-runwin-ranking.md`](2026-08-24-e3a-direct-runwin-ranking.md) | E3a implementation: default-off, root/future-CRN direct eventual-run reference for exact source leaves; no scientific collection or gameplay integration. |
 | 2026-08-23 | [`2026-08-23-s3-q-gate-timing.md`](2026-08-23-s3-q-gate-timing.md) | Corrected Searcher3 Q-gate timing result: `bestActionSequence` opens the baseline gate by simulation 10 in 99.91% of 3,449 searches; Always-Q line stopped. |
 
-Last verified: 2026-08-31 against the current working tree.
+Last verified: 2026-09-04 against the current working tree.
 
 This is the chronological, dated record of decisions made while working with
 LLM coding agents. Every session that makes a significant choice appends one

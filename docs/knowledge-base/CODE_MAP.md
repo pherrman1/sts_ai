@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-09-01 against the current working tree.
+Last verified: 2026-09-04 against the current working tree.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page

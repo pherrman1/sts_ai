@@ -1,6 +1,6 @@
 # Agent context and workflow
 
-Last verified: 2026-09-03 against the current working tree.
+Last verified: 2026-09-04 against the current working tree.
 
 ## Purpose
 
@@ -69,7 +69,7 @@ are authoritative, and a short SHA-tied comment may record a later transition.
 | Modification workflow / Default completion: commit and push | This page | Retained below. |
 | Research experiment handoffs | [research-experiment skill](../../../.agents/skills/research-experiment/SKILL.md) | The skill is the progressive-disclosure procedure. |
 | Critical safety and correctness traps | [invariants](../behavior/invariants.md), [determinism/RNG](../behavior/determinism-and-rng.md), [benchmark protocol](../evaluation/benchmark-protocol.md), [self-play loop](selfplay-loop.md), [environment variables](environment-variables.md), [architecture overview](../architecture/overview.md) | Existing maintained pages hold the technical facts; the routing list below preserves every former trap. |
-| Documentation maintenance / Decision logging / Experiment-recording rules / Definition of done | [KB index](../README.md), [decision records](../decisions/README.md), [research-experiment skill](../../../.agents/skills/research-experiment/SKILL.md), this page | Current routing is retained below; the session log is historical/frozen. |
+| Documentation maintenance / Decision logging / Experiment-recording rules / Definition of done | [KB index](../README.md), [decision records](../../../decisions/README.md), [research-experiment skill](../../../.agents/skills/research-experiment/SKILL.md), this page | Current routing is retained below; the session log is historical/frozen. |
 | Prohibited assumptions | This page and the linked technical pages | Retained as an operational checklist below. |
 
 ### Focused context navigation

@@ -1,6 +1,6 @@
 # StS AI knowledge base
 
-Last verified: 2026-08-31 against the current working tree.
+Last verified: 2026-09-04 against the current working tree.
 
 This knowledge base is the maintained technical reference for the repository.
 Code and executable behavior remain authoritative; `EXPERIMENTS.md` retains
@@ -60,7 +60,7 @@ For correctness:
 
 For decisions and open questions:
 
-1. [Decision records](decisions/README.md)
+1. [Decision records](../../decisions/README.md)
 2. [Decision log](decision-log/README.md) — historical/frozen entries only
 3. [Investigations](investigations/README.md)
 
