@@ -41,12 +41,12 @@ Each record should contain:
 Do not manufacture intent from code shape. If rationale is absent, write an
 **Open question** in an investigation instead.
 
-## When to update
+## Historical status
 
-Create or revise a record when a change alters a durable subsystem boundary,
-schema, reproducibility contract, deployment model, or evaluation rule and the
-reason is captured in code review, tests, or repository documentation. Mark a
-record superseded rather than rewriting its history.
+This directory is no longer an authoring destination. Do not create or revise
+records here. New durable subsystem, schema, reproducibility, deployment, or
+evaluation decisions belong in the root [`decisions/`](../../../decisions/)
+ADR directory; mark superseded records there without rewriting this history.
 
 ## Relevant code
 
