@@ -4,8 +4,7 @@
   "metrics": {
     "tracked_files": 1107,
     "tracked_bytes": 151958394,
-    "active_markdown": {"files": 416, "bytes": 2757296},
-    "docs_archive": {"files": 35, "bytes": 319164},
+    "active_markdown": {"files": 451, "bytes": 3076460},
     "session_decision_log": {"files": 213, "bytes": 846259},
     "one_combat_cpp": {"bytes": 950530},
     "root_scripts": [

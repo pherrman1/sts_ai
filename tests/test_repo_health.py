@@ -10,7 +10,6 @@ class RepoHealthTests(unittest.TestCase):
     def test_classification(self):
         self.assertIn("generated_or_build", repo_health.classify_path("build/result.json"))
         self.assertIn("generated_or_build", repo_health.classify_path("data/result.csv", ignored=True))
-        self.assertIn("docs_archive", repo_health.classify_path("docs/archive/old.md"))
         self.assertIn("session_decision_log", repo_health.classify_path("docs/knowledge-base/decision-log/2026-09-04-session.md"))
         self.assertIn("root_script", repo_health.classify_path("new_helper.py"))
 
@@ -38,7 +37,6 @@ class RepoHealthTests(unittest.TestCase):
             additions = {
                 "ignored/new.csv": "local artifact\n",
                 "build/new.o": "artifact\n",
-                "docs/archive/new.md": "archive\n",
                 "docs/knowledge-base/decision-log/2026-09-04-session.md": "decision\n",
                 "new_helper.sh": "#!/bin/sh\n",
             }
@@ -53,7 +51,6 @@ class RepoHealthTests(unittest.TestCase):
             result = repo_health.report(repo, baseline)
             self.assertEqual(result["status"], "fail")
             self.assertEqual(result["hard_failures"]["generated_or_build"], ["build/new.o", "ignored/new.csv"])
-            self.assertEqual(result["hard_failures"]["docs_archive"], ["docs/archive/new.md"])
             self.assertEqual(result["hard_failures"]["session_decision_log"], ["docs/knowledge-base/decision-log/2026-09-04-session.md"])
             self.assertEqual(result["hard_failures"]["broken_current_documentation_references"][0]["target"], "docs/missing.md")
             self.assertIn("new root-level one-off scripts", result["warnings"])

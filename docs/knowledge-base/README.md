@@ -71,8 +71,7 @@ For known issues:
 The `decisions/` and `investigations/` indexes define when durable rationale or
 a reproducible unresolved diagnosis belongs in a dedicated record. The
 `decision-log/` directory is historical and frozen; new work uses the routing
-above. Dated plans and superseded schemas are retained under `docs/archive/`
-and must not be used as current instructions.
+above.
 
 ## Evidence labels
 

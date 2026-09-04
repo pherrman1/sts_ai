@@ -26,7 +26,7 @@ offline→online inversion persists; gate benefit collapsed.
 See decision log `2026-08-09-v4-feature-leak-audit.md`.
 Implements plan items A1 (global token + explicit threshold features), A2
 (counted deck tokens), A3 (relic/potion entity tokens), A4 (decision-context
-encoding) from `docs/archive/ooc-action-plan-2026-08.md`. Held-out (60 epochs,
+encoding) from the historical August 2026 OOC plan. Held-out (60 epochs,
 rung 4): policy top-1 0.793, val CE 0.486, Q top-1 0.290, Q MAE 16.2. Deployed
 paired gate (128 seeds, fair): +3.1pp wins at margin 5.0 (CIs span zero),
 floor/HP gains at every margin — **does not beat the V3 flat-vector net

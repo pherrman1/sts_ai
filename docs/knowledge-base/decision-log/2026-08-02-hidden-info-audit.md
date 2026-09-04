@@ -5,7 +5,7 @@ Session/task: Track B3 audit of the hidden-information boundary: strategic rollo
 
 ## Decision
 
-Audited all five paths against spec §A.14 (`docs/archive/ooc-action-plan-2026-08.md` §A.14). Verdicts: the fair-play search machinery in `src/sim/search/*` is clean and deterministic; the strategic layer in `apps/one_combat.cpp` has two genuine §A.14 leaks (exact future encounter ids as model features; counterfactual branches continuing from a full copy of the true run RNG streams) that are outside this session's fix scope (another agent owns `apps/one_combat.cpp`, and this track may only fix `src/sim/search/*`). No code fix was applied; findings are recorded here and in `determinism-and-rng.md`.
+Audited all five paths against spec §A.14. Verdicts: the fair-play search machinery in `src/sim/search/*` is clean and deterministic; the strategic layer in `apps/one_combat.cpp` has two genuine §A.14 leaks (exact future encounter ids as model features; counterfactual branches continuing from a full copy of the true run RNG streams) that are outside this session's fix scope (another agent owns `apps/one_combat.cpp`, and this track may only fix `src/sim/search/*`). No code fix was applied; findings are recorded here and in `determinism-and-rng.md`.
 
 ## Findings per path
 

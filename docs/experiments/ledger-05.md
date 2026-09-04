@@ -386,7 +386,7 @@
 ## §124 Winrate-wave baseline re-measurement + S3 feature-ablation re-derivation on the live-valid default binary (2026-08-07, local + GCP)
 
 - **What:** the winrate-wave (§124-numbered) baseline wave
-  (`docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md`): re-measure the
+  (archived August 2026 winrate plan): re-measure the
   recorded §113/§115 references (44.5% @3k/256p, 37.5% @1k/64p) on the
   current binary (HEAD 7b1a8d2, live-valid + forced-move defaults ON, §123)
   — the §123 flip happened after the references were measured — and
@@ -438,7 +438,7 @@
 ## §124a PVNet deployment-speed smoke (phase 6 of plan-value-targets-2026-08-07): conditional leaf gating + visible-state leaf cache implemented; behavior-preserving cache verified; gate pending on the §124 baseline (2026-08-07, local WSL)
 
 - **What:** phase-6 speed work for the PVNet leaf in Searcher3, per
-  `docs/archive/research/plans/plan-value-targets-2026-08-07.md` (user request;
+  archived August 2026 value-targets plan (user request;
   a phase-5 value-only trainer draft was reverted in the same session —
   nothing of it remains). Two mechanisms:
   1. `STS_PVNET_COND_{TURN,DEPTH,BOSS}` gate the per-expansion NN leaf
@@ -486,7 +486,7 @@
 ## §125 Winrate-wave Wave-1/2 gates: cPUCT sweep, STS_S3_EXPAND, TERM_WIN+cpsi — all null or negative; the leaf-evaluator line flips POSITIVE with a fresh honest-data vnet (§126) (2026-08-07, local + GCP)
 
 - **What:** the winrate-wave gated items that do not involve the vnet
-  (`docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md` §3.3/§4.1/§4.2).
+  (archived August 2026 winrate plan §3.3/§4.1/§4.2).
   All arms: full V4 gate stack, S3−belief−chain, block 126700 (unless noted),
   asc 0, fair, paired with `paired_analysis.py` vs the §124 references.
 - **cPUCT sweep (STS_CPUCT; §3.3):** 128-seed local probe @1k/64p:
@@ -527,7 +527,7 @@
 ## §126 Fresh honest-data combat V_combat leaf (STS_VNET, α=0.3): THREE significant gates (+12.5/+12.1/+12.5pp) — PROMOTED to default ON in the fair-S3 path (recorded cpu-trade call); §97's rejection reversed (2026-08-07, local + GCP)
 
 - **What:** the winrate-wave boss-leaf item (§4.3 of
-  `docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md`), reframed by the
+  (archived August 2026 winrate plan), reframed by the
   evidence: a NEW combat value net trained on fresh honest trajectories,
   applied UNCONDITIONALLY at a LOW blend weight. §97's rejection (old
   1,500-tree vnet, old-era data, α0.3/0.5 under the pre-§113 stack) does not
@@ -728,7 +728,7 @@
   positive).
 ## §128 Value-only utility-distribution model (plan-value-targets phase 5): trained on the §3.4 fairgen rows; ~4× better win calibration than the tracked PVNet on the same held-out rows (2026-08-07, local)
 
-- **What:** phase 5 of `docs/archive/research/plans/plan-value-targets-2026-08-07.md`:
+- **What:** phase 5 of the archived August 2026 value-targets plan:
   a value-only transformer (same 14-token encoder as CombatPVNet, NO policy
   head) predicting a 51-bin categorical over the MCTS terminal utility
   R = 0 on loss, 50 + endHp on win (bin 0 = loss; bins 1-50 = endHp/maxHp
@@ -1210,7 +1210,7 @@
   differ slightly from the originally recorded unseeded bootstrap (e.g. α0.3
   upper bound −6.2 → −5.9, α0.7 upper bound −11.3 → −10.9) because the
   bootstrap is now deterministic. The B1 'beam' idea in
-  `docs/archive/research/plans/plan-rollout-experiments-2026-08-07.md` was NOT
+  the archived August 2026 rollout plan was NOT
   implemented: as written it simultaneously requires beam pruning and forbids
   scoring partial beam states, which is not a complete algorithm; it needs a
   revised spec before any implementation.
@@ -1311,4 +1311,3 @@
   §133/§134 candidates stay rejected. Next step: run the diagnostics on a
   gate-sized dataset and record the hypothesis verdict here.
 - **Decision log:** `2026-08-08-leaf-state-diagnostics.md`.
-

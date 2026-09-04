@@ -2,7 +2,7 @@
 
 Date: 2026-08-08
 Session/task: Execute Phase 0 of the 5.7.3 self-play relabeling handoff plan
-(`docs/archive/research/plans/plan-selfplay-relabeling-2026-08-07.md`): verify the
+(from the archived August 2026 selfplay-relabeling plan): verify the
 `strategicgen2` Tier-B label producer on the current deployed combat
 controller and the `train_strategic_tok.py` → `export_strategic_tok.py` chain.
 

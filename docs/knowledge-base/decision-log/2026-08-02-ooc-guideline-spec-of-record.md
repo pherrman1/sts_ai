@@ -7,8 +7,8 @@ knowledge base.
 
 ## Decision
 
-Created a new active action plan `docs/archive/ooc-action-plan-2026-08.md`
-that supersedes Phase 5 of `docs/archive/combat-action-plan-2026-07.md` and
+Created a new active action plan that supersedes Phase 5 of the archived July
+2026 combat plan and
 attaches the full guideline verbatim as Appendix A (spec of record).
 Distilled the now-evidence-backed architecture into a durable decision
 record (`docs/knowledge-base/decisions/2026-08-02-semi-markov-strategic-model.md`)
@@ -39,9 +39,9 @@ plan's Phase 5 as superseded in its header.
 
 ## Evidence
 
-- `docs/archive/ooc-action-plan-2026-08.md` (new; rounds 1–3 checklist,
+- August 2026 OOC action plan (new; rounds 1–3 checklist,
   divergences, phases A–F, evaluation protocol, Appendix A spec)
-- `docs/archive/combat-action-plan-2026-07.md` (header updated: Phase 5
+- July 2026 combat action plan (header updated: Phase 5
   superseded)
 - `docs/knowledge-base/decisions/2026-08-02-semi-markov-strategic-model.md`
   (new)

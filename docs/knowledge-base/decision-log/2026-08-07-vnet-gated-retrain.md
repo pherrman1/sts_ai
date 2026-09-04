@@ -48,7 +48,7 @@ replaces the deployed honest-data model.
   (the α0.5 @3k arm was resumed mid-run at 24 threads: 171+81+4 gap seeds
   merged by seed — a working kill/restart resume pattern since `bestbench`
   rows are per-seed and seed-order-independent).
-- `docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md` §4.3 follow-up.
+- Archived August 2026 winrate plan §4.3 follow-up.
 
 ## Status and follow-up
 

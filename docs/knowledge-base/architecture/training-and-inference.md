@@ -83,6 +83,10 @@ Representative model families:
 - run values: `train_value_rich.py`, `train_winrate.py`;
 - paired/action OOC: `train_rest_cf.py`, `train_card_cf.py`,
   `train_path_cf.py`, `train_ooc_next_action.py`, `train_ooc_checkpoint.py`;
+  future-fight card collection uses
+  `bash selfplay/run_future_fight_collection.sh N_RUNS SEED_OFFSET [TAG]`,
+  requires a freshly rebuilt `one_combat`, and treats `branchFutureComplete=0`
+  as a censored probe rather than a failed target;
 - strategic run-level: `train_strategic.py` (joint policy + value heads,
   Tier-A `chosen` labels; exported by `export_strategic.py`);
 - combat value: `train_value_combat.py` (XGBoost, hyperparameter-tuned defaults §148: max_depth 8, eta 0.03, subsample 0.54, colsample_bytree 0.81, min_child_weight 82, reg_alpha 1.8, gamma 4.4, 2000 rounds, 40 early stop); entity, meta-MLP, and distribution variants;
@@ -211,9 +215,9 @@ pipeline is offline-only and does not install scores into Silver selection.
 State blocks are 26 base scalars, 24 powers, 128 relic flags, four 371-card zone
 multisets, 2 enemy aggregates, 45 monster-slot values, 44 potion values, 5
 context fields, and 8 relic counters. Policy rows add card/potion/end/select
-flags, card properties, target HP, and `Expert` play/obtain values. The archived
-v1 schema is retained at `docs/archive/fair-play-dataset-schema-v1.md`, but its
-composite-RNG provenance statement is not current truth.
+flags, card properties, target HP, and `Expert` play/obtain values. The
+historical v1 schema is in Git history, but its composite-RNG provenance
+statement is not current truth.
 
 `ScumSearchAgent2` exposes thread-local `g_onCombatDecision`,
 `g_onSearchComplete`, and `g_onSearchComplete3` hooks

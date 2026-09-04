@@ -6,7 +6,7 @@ Session/task: Replaced ASCII diagrams with mermaid; added illustrative mermaid t
 ## Decision
 
 - Replaced 5 ASCII diagrams with ` ```mermaid ` flowcharts (both files under
-  `docs/archive/` plus the network-topology diagram in
+  Git history plus the network-topology diagram in
   `docs/knowledge-base/architecture/ooc-strategic-v4.md`).
 - Kept the ASCII version **alongside** mermaid in `ooc-strategic-v4.md` only.
 - Added illustrative mermaid diagrams to six knowledge-base pages whose
@@ -35,7 +35,7 @@ Session/task: Replaced ASCII diagrams with mermaid; added illustrative mermaid t
 
 ## Evidence
 
-- `docs/archive/combat-action-plan-2026-07.md`, `docs/archive/ooc-action-plan-2026-08.md` (converted diagrams)
+- Archived July 2026 combat and August 2026 OOC plans (converted diagrams)
 - `docs/knowledge-base/architecture/ooc-strategic-v4.md` (kept both)
 - `docs/knowledge-base/architecture/{overview,out-of-combat,combat-search,training-and-inference}.md`
 - `docs/knowledge-base/behavior/determinism-and-rng.md`

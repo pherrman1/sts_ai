@@ -6,7 +6,7 @@ Use `docs/knowledge-base/evaluation/current-research.md` as the single routing
 source for active, parked, and closed research lines. Keep stable technical
 facts in maintained knowledge-base pages, chronological results in
 `EXPERIMENTS.md`, and move completed plans, handoffs, session snapshots, and
-resolved investigation reports to `docs/archive/research/`.
+resolved investigation reports to Git history.
 
 Delete ignored `.ai/` runtime state after preserving unique summary-level
 experiment evidence in `EXPERIMENTS.md` §166.
