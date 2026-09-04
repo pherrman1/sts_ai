@@ -1,4 +1,10 @@
-# Decision log
+# Decision log (historical/frozen)
+
+This chronological session log is retained as historical evidence and is
+frozen. Do not add new per-session entries. Route current facts to the
+knowledge base, durable choices to ADRs, experiments to `EXPERIMENTS.md`,
+unresolved diagnoses to investigations, and temporary task detail to PRs or
+commits. See [ADR-0012](../../../decisions/0012-frozen-session-decision-log.md).
 
 | 2026-08-31 | [`2026-08-31-evaluator-public-export-cache.md`](2026-08-31-evaluator-public-export-cache.md) | Added an atomic, HEAD-and-submodule-keyed, full-tree-validated public export cache while retaining independent single-root candidate repositories. |
 | 2026-08-31 | [`2026-08-31-agent-test-duration-and-fixture-ownership.md`](2026-08-31-agent-test-duration-and-fixture-ownership.md) | Added standard-library slow-test reporting and class-owned immutable evaluator setup with isolated sparse real-Git clones. |
@@ -26,44 +32,15 @@
 | 2026-08-24 | [`2026-08-24-e3a-direct-runwin-ranking.md`](2026-08-24-e3a-direct-runwin-ranking.md) | E3a implementation: default-off, root/future-CRN direct eventual-run reference for exact source leaves; no scientific collection or gameplay integration. |
 | 2026-08-23 | [`2026-08-23-s3-q-gate-timing.md`](2026-08-23-s3-q-gate-timing.md) | Corrected Searcher3 Q-gate timing result: `bestActionSequence` opens the baseline gate by simulation 10 in 99.91% of 3,449 searches; Always-Q line stopped. |
 
-Last verified: 2026-08-31 against the current working tree.
+Last verified: 2026-09-04 against the current working tree.
 
-This is the chronological, dated record of decisions made while working with
-LLM coding agents. Every session that makes a significant choice appends one
-entry file before the session closes. It is intentionally lightweight: a
-decision is logged when it is made, and unverified reasoning must be labelled
-**Inference**, **Unverified**, or **Open question** rather than omitted.
-
-## When to log
-
-Log an entry when a session decides or learns any of:
-
-- an architecture or design choice — code structure, algorithm, interface,
-  schema, environment variable, or deployed configuration;
-- a process or tooling choice — agent workflow, commands, tools, conventions;
-- a notable rejected alternative and the reason it was rejected;
-- a new fact or correction to prior understanding, including anything that
-  should later be promoted to a knowledge-base page.
-
-Write the entry before the session closes. Never rewrite an earlier entry;
-append a new entry or explicitly supersede the logged decision instead.
-
-## Entry format
-
-One file per session or task: `YYYY-MM-DD-<slug>.md`. Copy
-[`_template.md`](_template.md). Each entry contains:
-
-- date and task or context;
-- the decision actually made;
-- rationale, labelled **Inference**, **Unverified**, or **Open question** when
-  not directly verified;
-- alternatives considered and why they were rejected;
-- evidence with repository-relative paths plus a class, function, executable,
-  test, or script name;
-- status and follow-up.
-
-Keep entries short. When a fact stabilizes, promote it to the relevant
-knowledge-base page in the same change instead of expanding the entry.
+This README and its dated files are retained as a historical record only.
+The session log was frozen by ADR-0012; do not create, revise, or append
+entries here. For current work, route facts to the maintained knowledge base,
+durable choices to the root [`decisions/`](../../../decisions/) ADR directory,
+experiments to `EXPERIMENTS.md`, unresolved diagnoses to investigations, and
+temporary task detail to PRs or commits. Existing entries remain unchanged
+historical evidence.
 
 ## Relationship to other records
 

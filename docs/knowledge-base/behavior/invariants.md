@@ -40,7 +40,7 @@ Failures print `[sim-health][HARD]` diagnostics and, with
 reproducible `sim_bug_*.bin` snapshot (fightrep `serializeBattleContext`
 format). Detection-only: behavior is unchanged and issue 87 is not repaired.
 See
-[behavior/simulator-health-monitor.md](behavior/simulator-health-monitor.md).
+[simulator-health-monitor.md](simulator-health-monitor.md).
 
 ### Simulator and action invariants
 

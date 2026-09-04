@@ -1,6 +1,6 @@
 # StS AI knowledge base
 
-Last verified: 2026-08-31 against the current working tree.
+Last verified: 2026-09-04 against the current working tree.
 
 This knowledge base is the maintained technical reference for the repository.
 Code and executable behavior remain authoritative; `EXPERIMENTS.md` retains
@@ -42,11 +42,13 @@ For evaluation and operation:
 5. [Agent context and workflow](operations/agent-context-and-workflow.md) —
    progressive-disclosure workflow, Git procedure, recording rules, and the
    `AGENTS.md` relocation audit.
-6. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
-7. [Coding-agent evaluation harness](evaluation/coding-agent-evals.md)
-8. [SkillOpt-Sleep pilot](operations/skillopt-sleep.md) — on-demand transcript
+6. [Repository health](operations/repo-health.md) — bounded inventory and CI
+   guard for repository bloat.
+7. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
+8. [Coding-agent evaluation harness](evaluation/coding-agent-evals.md)
+9. [SkillOpt-Sleep pilot](operations/skillopt-sleep.md) — on-demand transcript
    review, bounded skill proposals, and evaluator-gated adoption.
-9. [Session retrospective](operations/session-retrospective.md) — manual review
+10. [Session retrospective](operations/session-retrospective.md) — manual review
    of recent sessions and routing of small, evidence-backed maintenance.
 
 For correctness:
@@ -58,8 +60,8 @@ For correctness:
 
 For decisions and open questions:
 
-1. [Decision log](decision-log/README.md)
-2. [Decision records](decisions/README.md)
+1. [Decision records](../../decisions/README.md)
+2. [Decision log](decision-log/README.md) — historical/frozen entries only
 3. [Investigations](investigations/README.md)
 
 For known issues:
@@ -68,9 +70,9 @@ For known issues:
 
 The `decisions/` and `investigations/` indexes define when durable rationale or
 a reproducible unresolved diagnosis belongs in a dedicated record. The
-`decision-log/` index defines the chronological, session-level record of
-decisions made during agent work. Dated plans and superseded schemas are
-retained under `docs/archive/` and must not be used as current instructions.
+`decision-log/` directory is historical and frozen; new work uses the routing
+above. Dated plans and superseded schemas are retained under `docs/archive/`
+and must not be used as current instructions.
 
 ## Evidence labels
 
@@ -105,9 +107,9 @@ headline benchmark or its validity also requires updating
 [evaluation/current-baselines.md](evaluation/current-baselines.md); other pages
 must link there rather than copy changing numbers.
 
-Decisions made during agent sessions are recorded chronologically in the
-[decision log](decision-log/README.md); stable, evidence-backed decisions
-belong in `decisions/`.
+Decisions made during agent sessions are routed directly to the appropriate
+maintained page, ADR, experiment ledger, or investigation; temporary detail
+belongs in the PR or commit. Existing decision-log entries remain historical.
 
 Every technical page retains Purpose, Current implementation, Important data
 flow, Invariants and assumptions, Relevant code, Known limitations, Open

@@ -1,6 +1,6 @@
 # Research knowledge graph
 
-Last verified: 2026-08-11 against the current working tree.
+Last verified: 2026-09-04 against the current working tree.
 
 ## Purpose
 
@@ -18,8 +18,8 @@ chronological evidence.
 | [`evaluation/current-research.md`](../evaluation/current-research.md) | Global active/parked/closed research **routing** |
 | [`evaluation/current-baselines.md`](../evaluation/current-baselines.md) | Qualified executable configurations |
 | [Architecture pages](../architecture/) | Implementation contracts |
-| [Decision log](../decision-log/README.md) | Session-level decisions |
-| [Decision records](../decisions/README.md) | Stable evidence-backed rationale |
+| [Decision records](../../../decisions/README.md) | Stable evidence-backed rationale; destination for new durable decisions |
+| [Frozen decision log](../decision-log/README.md) | Historical session decisions only |
 
 Do **not** duplicate the global research-status tracker here. This graph answers
 "what do we currently know about this topic?" while `current-research.md`

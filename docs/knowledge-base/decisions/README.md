@@ -1,6 +1,11 @@
-# Decision records
+# Decision records (historical/superseded)
 
-Last verified: 2026-08-02 against the current working tree.
+Last verified: 2026-09-04 against the current working tree.
+
+> This legacy knowledge-base index is historical and superseded. New durable
+> decisions belong in the root [`decisions/`](../../../decisions/) ADR
+> directory. The dated session record remains frozen in
+> [`decision-log/`](../decision-log/).
 
 This directory is for durable architectural or operating decisions whose
 rationale is directly supported by repository evidence. `EXPERIMENTS.md`
@@ -16,10 +21,9 @@ remains the place for chronological policy/model benchmark decisions
 | [`2026-08-02-one-ply-q-gate.md`](2026-08-02-one-ply-q-gate.md) | Margin-gated one-ply Q gate: run-level overrides scored with the Q(s,a) head on Tier-B one-ply counterfactual labels, argmax executed only at/above `STS_OOC_STRATEGIC_MARGIN` (default 1.0); successor-value and un-gated paths rejected; V3 deployed, V4 opt-in. |
 
 The chronological, session-level record — including process and tooling
-choices, rejected alternatives, and new facts — lives in the
-[decision log](../decision-log/README.md). A record here is distilled from
-repository evidence; a logged decision stays in the decision log until its
-rationale is directly supported by that evidence.
+choices, rejected alternatives, and new facts — lives in the frozen
+[decision log](../decision-log/README.md). Existing records here are retained
+for historical context; do not add new records to this superseded directory.
 
 ## Required record format
 
@@ -37,12 +41,12 @@ Each record should contain:
 Do not manufacture intent from code shape. If rationale is absent, write an
 **Open question** in an investigation instead.
 
-## When to update
+## Historical status
 
-Create or revise a record when a change alters a durable subsystem boundary,
-schema, reproducibility contract, deployment model, or evaluation rule and the
-reason is captured in code review, tests, or repository documentation. Mark a
-record superseded rather than rewriting its history.
+This directory is no longer an authoring destination. Do not create or revise
+records here. New durable subsystem, schema, reproducibility, deployment, or
+evaluation decisions belong in the root [`decisions/`](../../../decisions/)
+ADR directory; mark superseded records there without rewriting this history.
 
 ## Relevant code
 

@@ -62,6 +62,18 @@ jobs:
       - name: Test coding-agent evaluator
         run: python3 -m unittest discover -s tests/agent -p 'test_*.py' --durations 20
 
+      - name: Check repository health
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          test -n "$BASE_SHA"
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git cat-file -e "$BASE_SHA^{commit}"
+          python3 tools/repo_health.py --baseline "$BASE_SHA" --json | tee /tmp/repo-health.json
+
+      - name: Test repository health checker
+        run: python3 -m unittest discover -s tests -p 'test_repo_health.py' -v
+
       - name: Restore ccache
         uses: actions/cache@v4
         id: ccache-cache
