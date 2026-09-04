@@ -84,9 +84,11 @@ Representative model families:
 - paired/action OOC: `train_rest_cf.py`, `train_card_cf.py`,
   `train_path_cf.py`, `train_ooc_next_action.py`, `train_ooc_checkpoint.py`;
   future-fight card collection uses
-  `bash selfplay/run_future_fight_collection.sh N_RUNS SEED_OFFSET [TAG]`,
-  requires a freshly rebuilt `one_combat`, and treats `branchFutureComplete=0`
-  as a censored probe rather than a failed target;
+  `STS_FUTURE_FIGHT_BIN=<fresh one_combat binary> bash selfplay/run_future_fight_collection.sh N_RUNS SEED_OFFSET [TAG]`;
+  the script's legacy binary default is `./one_combat.elf`, and older card-CF
+  CSVs predate the probe-column schema. Unseen combat/boss targets are censored
+  when `branchFutureComplete=0`; an unseen elite is unsupervised rather than a
+  failure;
 - strategic run-level: `train_strategic.py` (joint policy + value heads,
   Tier-A `chosen` labels; exported by `export_strategic.py`);
 - combat value: `train_value_combat.py` (XGBoost, hyperparameter-tuned defaults §148: max_depth 8, eta 0.03, subsample 0.54, colsample_bytree 0.81, min_child_weight 82, reg_alpha 1.8, gamma 4.4, 2000 rounds, 40 early stop); entity, meta-MLP, and distribution variants;
@@ -407,7 +409,7 @@ unless STS_PVNET_VALUE_ONLY=1.
   2026-08-02 fix used default-zero values.
 - The `fairgen` mode forces the fair Searcher3 regime itself now; datasets
   recorded before that fix may have been produced without it, so historical
-  provenance must be read from the archived invocation records.
+  provenance must be read from the recorded invocation artifacts.
 - `v_server.py` documents the implemented 1,017-value `RAW` layout with
   `apps/one_combat.cpp::vFeatCsv` as the schema owner.
 - `OocCheckpointNet::load` and `OocStrategicNet::load` check every payload read

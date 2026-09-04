@@ -7,9 +7,11 @@ paths and current documentation links. It emits concise terminal output by
 default and a sorted JSON report with `--json`.
 
 The hard-failure policy is deliberately narrow. It fails for tracked paths
-new since the baseline that classify as generated/build output or dated
-per-session files under `docs/knowledge-base/decision-log/`; it also fails for
-any broken local link in current documentation. Existing paths are never
+new since the baseline that classify as generated/build output, dated
+per-session files under `docs/knowledge-base/decision-log/`, or the forbidden
+historical prefix `docs/archive/**`; it also fails for any broken local link in
+current documentation. `docs/archive/` is tombstoned: historical contents live
+in Git history and must not be reintroduced as tracked files. Existing paths are never
 deleted or rewritten by the checker. Active Markdown byte growth,
 `apps/one_combat.cpp` byte growth, and new root-level `.py`/`.sh` files are
 warnings only.

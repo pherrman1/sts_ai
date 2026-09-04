@@ -407,7 +407,6 @@ flowchart LR
 - `train_strategic.py`, `export_strategic.py`, `v_server.py::H.handle`, `RAW`
 - `train_strategic_tok.py`, `export_strategic_tok.py`, `strategic_tok_net.py`
 - `docs/knowledge-base/architecture/ooc-strategic-v4.md` — V4 token-state contract
-- Historical August 2026 strategic-model plan
 - `docs/knowledge-base/evaluation/current-research.md` — current research routing
 - `docs/knowledge-base/decisions/2026-08-02-semi-markov-strategic-model.md`
 - `bindings/slaythespire.cpp::PYBIND11_MODULE`

@@ -59,6 +59,8 @@ def classify_path(path: str, ignored: bool = False) -> set[str]:
         categories.add("generated_or_build")
     if SESSION_DECISION.fullmatch(path):
         categories.add("session_decision_log")
+    if path.startswith("docs/archive/"):
+        categories.add("forbidden_archive_path")
     if "/" not in path and path.endswith((".py", ".sh")):
         categories.add("root_script")
     return categories
@@ -107,7 +109,7 @@ def report(repo: Path, baseline: str) -> dict[str, object]:
     base = tree_inventory(repo, baseline)
     added = sorted(set(current) - set(base))
     ignored = ignored_paths(repo, added)
-    category_names = ("generated_or_build", "session_decision_log", "root_script")
+    category_names = ("generated_or_build", "session_decision_log", "forbidden_archive_path", "root_script")
     categories = {category: [p for p in added if category in classify_path(p, p in ignored)]
                   for category in category_names}
     current_broken = broken_documentation_links(repo, sorted(current))
