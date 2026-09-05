@@ -5,11 +5,11 @@ Status: accepted
 
 ## Context
 
-The repository keeps durable technical understanding, chronological session decisions, and experimental evidence in different Git-tracked Markdown surfaces. Combining them obscures authority and provenance.
+The repository keeps durable technical understanding and experimental evidence in distinct Git-tracked Markdown surfaces. Historical session narratives remain in Git history only.
 
 ## Decision
 
-Keep `EXPERIMENTS.md` and its ledger shards as chronological experiment evidence, the knowledge base as maintained current understanding, the decision log as dated session history, and root `decisions/` as a small ADR set for durable evidence-backed rationale.
+Keep `EXPERIMENTS.md` and its ledger shards as chronological experiment evidence, the knowledge base as maintained current understanding, and root `decisions/` as a small ADR set for durable evidence-backed rationale.
 
 ## Rationale
 
@@ -28,11 +28,9 @@ New records must go to the appropriate surface; ADRs link existing curated pages
 - `EXPERIMENTS.md`
 - `docs/experiments/`
 - `docs/knowledge-base/`
-- `docs/knowledge-base/decision-log/`
 - `decisions/`
 
 ## Evidence
 
 - `EXPERIMENTS.md` — declares the experiment ledger, current append shard, and current-truth routing.
 - `docs/knowledge-base/README.md` — defines maintained knowledge-base and decision-record responsibilities.
-- `docs/knowledge-base/decision-log/README.md` — defines the chronological log and its relationship to durable records.

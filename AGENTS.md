@@ -135,4 +135,5 @@ passes, freeze the reviewed SHA before any expensive scientific run.
 Documentation routing is frozen by ADR-0012: current facts go to the maintained
 knowledge base, durable choices to ADRs, experiments to the ledger, unresolved
 diagnoses to investigations, and temporary task detail to PRs or commits only.
-Do not add per-session decision-log entries.
+Do not add per-session historical entries; route current facts to maintained
+pages, ADRs, experiment ledgers, or investigations.

@@ -53,4 +53,3 @@ poison amount as unblockable damage (`Monster::damageUnblockedHelper`, the
 port equivalent of the game's `DamageType.THORNS`), decrements poison by 1,
 and calls `bc.checkCombat()`. Regression tests: `poison_lose_hp` and
 `time_eater_exhaust` (see `apps/test.cpp`, CTest entries in `CMakeLists.txt`).
-See `docs/knowledge-base/decision-log/2026-08-10-issue-52-57-fixes.md`.

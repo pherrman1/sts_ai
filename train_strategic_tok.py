@@ -119,7 +119,7 @@ for i, name in enumerate(state_cols):
 assert len(scalar_idx) == 44, len(scalar_idx)
 # Verify column positions: the trainer relies on specific CSV column indices;
 # if richHeader() changes order, fail with a clear message rather than silently
-# producing a skewed model (see decision-log/2026-08-09-v4-glob-skew-fix.md).
+# producing a skewed model (see EXPERIMENTS.md §149).
 _col_checks = [
     (23, 'pvShop'), (31, 'bottledPowId'),
     (1005, 'fmDElite'), (1015, 'curMapX'), (1016, 'curMapY'),

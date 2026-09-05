@@ -30,7 +30,7 @@ value nets, entity-aware models) were all rejected at gates or closed by evidenc
 | --- | --- | --- |
 | 2026-07-30 | [Phase 4b PVNet alpha sweep](../../../../docs/experiments/ledger-03.md) | 66.4% headline — doesn't reproduce (§72) |
 | 2026-08-02 | [§72 PVNet re-check](../../../../docs/experiments/ledger-03.md) | 8.6% at 100 sims on current checkout |
-| 2026-08-04 | [PVNet parity fixes](../../decision-log/2026-08-04-combat-pvnet-parity-fixes.md) | 3 C++ inference bugs fixed |
+| 2026-08-04 | PVNet parity fixes | 3 C++ inference bugs fixed |
 | 2026-08-04 | [§101 PVNet parity fix + replication](../../../../docs/experiments/ledger-04.md) | 12.5% at 100 sims on fixed binary |
 | 2026-08-04 | [§102 Phase 1 payoff gate](../../../../docs/experiments/ledger-04.md) | NEGATIVE: A–H sweep stopped; PVNet channel closed |
 | 2026-08-05 | [§103 S2+PVNet PUCT priors](../../../../docs/experiments/ledger-04.md) | Exact tie with GBM prior at 8× cost |
@@ -40,7 +40,7 @@ value nets, entity-aware models) were all rejected at gates or closed by evidenc
 | 2026-08-04 | [§97 Combat value under gate stack](../../../../docs/experiments/ledger-03.md) | Old-era vnet rejected |
 | 2026-07-22 | [§56 Distilled native combat MLP](../../../../docs/experiments/ledger-02.md) | Rejected at 500 paired seeds |
 | 2026-07-22 | [§57 Entity-aware multi-head combat model](../../../../docs/experiments/ledger-02.md) | Rejected at 500 paired seeds |
-| 2026-08-07 | [PVNet deployment-speed knobs](../../decision-log/2026-08-07-pvnet-deployment-speed.md) | `STS_PVNET_CACHE` default ON (behavior-preserving); conditional gating experimental |
+| 2026-08-07 | PVNet deployment-speed knobs | `STS_PVNET_CACHE` default ON (behavior-preserving); conditional gating experimental |
 
 ## Rejected / falsified approaches
 

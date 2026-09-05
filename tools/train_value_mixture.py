@@ -3,8 +3,8 @@
 trained on a MIXTURE of on-policy combatgen snapshots PLUS actual Searcher3
 search-leaf states, with SEPARATE on-policy and search-leaf holdouts.
 
-Pre-registered covariate-shift mixture retrain (EXPERIMENTS.md §135a verdict,
-decision log 2026-08-08-leaf-state-diagnostics.md "Results addendum"):
+Pre-registered covariate-shift mixture retrain (EXPERIMENTS.md §135a results
+addendum):
   - Source 1 (on-policy): build/vcombat_honest.csv — the §126 training set
     (combatgen seeds 0-1499).
   - Source 2 (search-leaf): build/leafdiag_gate_64.csv — the §135a leafdiag

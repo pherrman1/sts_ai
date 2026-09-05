@@ -5,7 +5,7 @@ Last verified: 2026-09-04 against the current working tree.
 > This legacy knowledge-base index is historical and superseded. New durable
 > decisions belong in the root [`decisions/`](../../../decisions/) ADR
 > directory. The dated session record remains frozen in
-> [`decision-log/`](../decision-log/).
+> `decision-log/`.
 
 This directory is for durable architectural or operating decisions whose
 rationale is directly supported by repository evidence. `EXPERIMENTS.md`
@@ -20,9 +20,7 @@ remains the place for chronological policy/model benchmark decisions
 | [`2026-08-02-semi-markov-strategic-model.md`](2026-08-02-semi-markov-strategic-model.md) | Semi-Markov run-level strategic model: combat as a temporally extended transition, unified candidate scoring, run-value as the shared pricing language, margin-gated overrides, hidden-information boundary. |
 | [`2026-08-02-one-ply-q-gate.md`](2026-08-02-one-ply-q-gate.md) | Margin-gated one-ply Q gate: run-level overrides scored with the Q(s,a) head on Tier-B one-ply counterfactual labels, argmax executed only at/above `STS_OOC_STRATEGIC_MARGIN` (default 1.0); successor-value and un-gated paths rejected; V3 deployed, V4 opt-in. |
 
-The chronological, session-level record — including process and tooling
-choices, rejected alternatives, and new facts — lives in the frozen
-[decision log](../decision-log/README.md). Existing records here are retained
+The chronological, session-level record is retained only in Git history. Existing records here are retained
 for historical context; do not add new records to this superseded directory.
 
 ## Required record format

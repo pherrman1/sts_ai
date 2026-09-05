@@ -32,7 +32,7 @@ at 2.7× cpu.
 | 2026-08-05 | [§103 S2+PVNet policy head as PUCT prior](../../../../docs/experiments/ledger-04.md) | Exact tie with GBM prior at 8× cost |
 | 2026-08-07 | [§124c Prior-guided rollouts](../../../../docs/experiments/ledger-05.md) | FALSIFIED: −7.0pp at 2.7× cpu |
 | 2026-08-07 | [§127 Policy prior v2 pipeline](../../../../docs/experiments/ledger-05.md) | NULL: better offline CE/KL does not transfer (−2.0pp n.s.) |
-| 2026-08-07 | [Decision: prior v2 pipeline](../../decision-log/2026-08-07-policy-prior-v2-pipeline.md) | Line closed; tracked prior stays deployed |
+| 2026-08-07 | Decision: prior v2 pipeline | Line closed; tracked prior stays deployed |
 
 ## Rejected / falsified approaches
 
