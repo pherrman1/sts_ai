@@ -19,7 +19,7 @@ chronological evidence.
 | [`evaluation/current-baselines.md`](../evaluation/current-baselines.md) | Qualified executable configurations |
 | [Architecture pages](../architecture/) | Implementation contracts |
 | [Decision records](../../../decisions/README.md) | Stable evidence-backed rationale; destination for new durable decisions |
-| [Frozen decision log](../decision-log/README.md) | Historical session decisions only |
+| Git history | Historical session decisions, only when explicit provenance is required |
 
 Do **not** duplicate the global research-status tracker here. This graph answers
 "what do we currently know about this topic?" while `current-research.md`

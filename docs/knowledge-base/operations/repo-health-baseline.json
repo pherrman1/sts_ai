@@ -6,7 +6,6 @@
     "tracked_bytes": 151958394,
     "active_markdown": {"files": 416, "bytes": 2757296},
     "docs_archive": {"files": 35, "bytes": 319164},
-    "session_decision_log": {"files": 213, "bytes": 846259},
     "one_combat_cpp": {"bytes": 950530},
     "root_scripts": [
       "analyze_card_cf_reliability.py", "combat_pvnet_parity.py", "eval_combat_pvnet.py",

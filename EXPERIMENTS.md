@@ -8,7 +8,7 @@ Historical statements such as "best," "current," "deployed," or "running"
 describe the state at that point in time unless later evidence says otherwise.
 
 The 2026-08-22 Phase-1b Search-Age preregistration is recorded in
-[`docs/knowledge-base/decision-log/2026-08-22-phase1b-search-age.md`](docs/knowledge-base/decision-log/2026-08-22-phase1b-search-age.md).
+historical session record.
 
 ## Where to find current truth
 
@@ -20,8 +20,7 @@ The 2026-08-22 Phase-1b Search-Age preregistration is recorded in
   [`docs/knowledge-base/research/README.md`](docs/knowledge-base/research/README.md)
 - **Current architecture** — implementation contracts:
   [`docs/knowledge-base/architecture/`](docs/knowledge-base/architecture/)
-- **Decision log** — chronological decisions made during sessions:
-  [`docs/knowledge-base/decision-log/README.md`](docs/knowledge-base/decision-log/README.md)
+- **Session history** — historical session narratives are retained only in Git history when needed for provenance.
 
 ## Reading rules
 

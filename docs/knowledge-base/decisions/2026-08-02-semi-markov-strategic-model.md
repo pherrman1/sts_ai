@@ -102,6 +102,6 @@ Learned overrides of heuristic decisions deploy only behind a margin gate.
 - `apps/ooc_strategic_net.h` — `OocStrategicNet`
 - `train_strategic.py`, `export_strategic.py`
 - `docs/archive/ooc-action-plan-2026-08.md` — historical plan (former spec of record)
-- `docs/knowledge-base/decision-log/2026-08-02-strategicgen-phase5-round1.md`,
+- historical session record,
   `2026-08-02-phase5-round2-per-screen-heads.md`,
   `2026-08-02-phase5-round3-tierb-q-labels.md`

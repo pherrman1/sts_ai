@@ -61,8 +61,7 @@ For correctness:
 For decisions and open questions:
 
 1. [Decision records](../../decisions/README.md)
-2. [Decision log](decision-log/README.md) — historical/frozen entries only
-3. [Investigations](investigations/README.md)
+2. [Investigations](investigations/README.md)
 
 For known issues:
 
@@ -70,8 +69,7 @@ For known issues:
 
 The `decisions/` and `investigations/` indexes define when durable rationale or
 a reproducible unresolved diagnosis belongs in a dedicated record. The
-`decision-log/` directory is historical and frozen; new work uses the routing
-above. Dated plans and superseded schemas are retained under `docs/archive/`
+Historical session material is available only through Git history when explicitly needed for provenance. Dated plans and superseded schemas are retained under `docs/archive/`
 and must not be used as current instructions.
 
 ## Evidence labels
@@ -109,7 +107,8 @@ must link there rather than copy changing numbers.
 
 Decisions made during agent sessions are routed directly to the appropriate
 maintained page, ADR, experiment ledger, or investigation; temporary detail
-belongs in the PR or commit. Existing decision-log entries remain historical.
+belongs in the PR or commit. Historical session material is available only in
+Git history when explicitly needed for provenance.
 
 Every technical page retains Purpose, Current implementation, Important data
 flow, Invariants and assumptions, Relevant code, Known limitations, Open

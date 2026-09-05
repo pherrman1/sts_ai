@@ -8,14 +8,14 @@ default and a sorted JSON report with `--json`.
 
 The hard-failure policy is deliberately narrow. It fails for tracked paths
 new since the baseline that classify as generated/build output, entries under
-`docs/archive/`, or dated per-session files under
-`docs/knowledge-base/decision-log/`; it also fails for any broken local link in
+`docs/archive/`, or any tracked path under the deleted
+`docs/knowledge-base/decision-log/**`; it also fails for any broken local link in
 current documentation. Existing paths are never deleted or rewritten by the
 checker. Active Markdown byte growth, `apps/one_combat.cpp` byte growth, and
 new root-level `.py`/`.sh` files are warnings only.
 
 Classification is path-based and stable: build-like directories and compiled
-extensions are generated/build output; archive and dated decision-log paths
+extensions are generated/build output; archive and decision-log tombstone paths
 are explicit policy locations. External URLs, anchors, and absolute links are
 not checked. Local links are resolved relative to their source document and
 must name a tracked or existing path.

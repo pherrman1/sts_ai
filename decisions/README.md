@@ -1,12 +1,7 @@
 # Architectural decision records
 
 This directory contains durable, evidence-backed architectural decision records
-(ADRs). It is intentionally separate from the chronological session log in
-[`docs/knowledge-base/decision-log/`](../docs/knowledge-base/decision-log/).
-The historical/frozen session log retains prior chronology; these ADRs distill
-only the small set of decisions whose current rationale is directly supported
-by repository evidence. New durable choices belong here, not in the session
-log.
+(ADRs). These ADRs capture only the small set of decisions whose current rationale is directly supported by repository evidence. New durable choices belong here.
 
 Git-tracked Markdown is authoritative. Derived local indexes never replace an
 ADR, source code, tests, curated knowledge-base pages, or raw evidence.
@@ -31,8 +26,7 @@ the replacement.
 
 ## Current routing ADRs
 
-- [ADR-0012](0012-frozen-session-decision-log.md) freezes the per-session
-  decision log and routes new knowledge to canonical maintained destinations.
+- [ADR-0012](0012-frozen-session-decision-log.md) routes historical session material to Git history and new knowledge to canonical maintained destinations.
 - [ADR-0011](0011-mcp-free-codex-skillopt-pilot.md) defines the MCP-free Codex
   path, authoritative tracked KB, bounded SkillOpt proposal pilot, and
   independent evaluator gate. It supersedes only ADR-0010's active tool routing.

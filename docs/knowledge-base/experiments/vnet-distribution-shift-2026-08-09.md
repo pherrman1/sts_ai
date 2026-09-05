@@ -495,7 +495,7 @@ Experiment log entry with configuration, results, and verdict.
 ### `docs/knowledge-base/experiments/vnet-distribution-shift-2026-08-09.md`
 Full report (this document).
 
-### `docs/knowledge-base/decision-log/2026-08-09-vnet-distribution-shift.md`
+### historical session record
 Decision record with rationale, alternatives, and evidence.
 
 ---

@@ -37,4 +37,4 @@ Change `bc.curCardQueueItem.card.doesExhaust()` to `item.card.doesExhaust()`.
 property: `item.exhaustOnUse |= item.card.doesExhaust();` instead of
 `bc.curCardQueueItem.card.doesExhaust()`. Regression test: `time_eater_exhaust`
 (see `apps/test.cpp`, CTest entry in `CMakeLists.txt`). See
-`docs/knowledge-base/decision-log/2026-08-10-issue-52-57-fixes.md`.
+historical session record.

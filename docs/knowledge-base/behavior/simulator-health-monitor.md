@@ -193,7 +193,7 @@ Before Phase 11, an 8-seed fair smoke (seeds 1-8, same stack) also caught seed 4
 `CARD_SELECT`/`EXHAUST_MANY`/`hand=0` (DONU_AND_DECA, floor 50, hp 80/105) —
 still classified `NO_LEGAL_PROGRESSION` (zero legal actions), the same
 empty-hand multi-select defect class documented in
-`docs/knowledge-base/decision-log/2026-08-06-searchdiag-rollout-usage.md`, and
+historical session record, and
 a second instance of the issue-87 invisible-loss row shape
 (`won=0, deathCombat=-1, hpEnd>0`). Both fires are genuine bug instances, not
 false positives. An 8-seed non-fair (default Searcher2) smoke produced zero

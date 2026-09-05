@@ -102,7 +102,7 @@ The Q head is trained on Tier-B one-ply counterfactual labels collected by
   did not beat V3's +7.0pp @ m1 on the same block; V3 stays deployed, V4 is
   opt-in behind `STS_OOC_STRATEGIC_TOK_NN`.
 - Next-battle-only and whole-run branch horizons for the labels — rejected at
-  round-3 datagen (see `docs/knowledge-base/decision-log/2026-08-02-phase5-round3-tierb-q-labels.md`).
+  round-3 datagen (see historical session record).
 
 ## Evidence
 
@@ -178,6 +178,6 @@ The Q head is trained on Tier-B one-ply counterfactual labels collected by
   `docs/knowledge-base/architecture/ooc-strategic-v4.md`
 - `docs/archive/ooc-action-plan-2026-08.md` — historical plan (former spec of record,
   5.5.1–5.5.4)
-- Decision log: `docs/knowledge-base/decision-log/2026-08-02-phase5-round3-tierb-q-labels.md`,
+- Decision log: historical session record,
   `2026-08-02-phase5-round4-campfire-event-gates.md`,
   `2026-08-02-phase5-round5-token-state-v4.md`

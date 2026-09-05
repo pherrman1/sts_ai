@@ -3,8 +3,8 @@
 **Tier:** Medium (opt-in feature only; TERM_WIN defaults off)
 **Status:** resolved 2026-08-06
 **Source pages:** [combat-search](../architecture/combat-search.md),
-[decision log `2026-08-05-phase3-terminal-value-stage2.md`](../decision-log/2026-08-05-phase3-terminal-value-stage2.md),
-[decision log `2026-08-06-issue-49-term-win-mt-crash-fix.md`](../decision-log/2026-08-06-issue-49-term-win-mt-crash-fix.md)
+decision log `2026-08-05-phase3-terminal-value-stage2.md`,
+decision log `2026-08-06-issue-49-term-win-mt-crash-fix.md`
 
 ## Symptom
 

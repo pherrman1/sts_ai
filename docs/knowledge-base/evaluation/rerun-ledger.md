@@ -10,7 +10,7 @@ fix lands; each row is `pending → running → done
 (§ref)` and is updated by the change that completes it. "Blocked" rows stay
 until the related research line reopens. Source: `docs/knowledge-base/issues/`
 entries 2026-08-05; decisions recorded in
-`decision-log/2026-08-05-code-review.md`.
+historical session record.
 
 | Issue | Invalidated experiments | Required rerun | Status |
 | --- | --- | --- | --- |

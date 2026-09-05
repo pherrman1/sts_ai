@@ -2049,7 +2049,7 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
   `build/vnet_mcts_leaves_xgb.csv` (1M rows, 3.4GB),
   `build/vnet_mcts_leaves_50k.csv` (50K sample),
   `build/mcts_diag.json`. Decision log:
-  `docs/knowledge-base/decision-log/2026-08-09-deepsets-combat-vnet.md`.
+  historical session record.
 
 ## §159 Requalified corrected honest V4 on frozen S3 + 7k-VNet Act-3 stack (2026-08-09)
 
@@ -2547,7 +2547,7 @@ battle-break output occurred. No 32-seed gate was run.
 `build/linux-gcc-release/s3_belief_lifecycle_phase2_8.{csv,csv.next_search.csv}`;
 `s3_persist_{control,treatment}_8.{csv,csv.next_search.csv,results.csv}` and
 their `.meta.json`, `.stdout`, and `.stderr` files. See
-`docs/knowledge-base/decision-log/2026-08-15-s3-persistent-posterior-lifecycle.md`.
+historical session record.
 
 **Correction — paired collapse-fallback diagnostic (same date):** The preceding
 temporary treatment did not isolate missing RNG counters from stale-collapse
@@ -4069,7 +4069,7 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   stability-gated follow-up run is recorded below. The initial smoke did not
   support or reject chance nodes.
 - **Decision log:**
-  [`2026-08-23-s3-strategy-fusion-diagnostic.md`](../knowledge-base/decision-log/2026-08-23-s3-strategy-fusion-diagnostic.md).
+  `2026-08-23-s3-strategy-fusion-diagnostic.md`.
 
 ### Historical early-tree 64-simulation run (not mature-tree evidence)
 
@@ -4981,7 +4981,7 @@ model training was changed.
   31.5%. The result validates the crash fix but does not show a gameplay
   benefit, so the verdict remains `INCONCLUSIVE`.
 - **Artifacts:** see
-  `docs/knowledge-base/decision-log/2026-08-27-silver-adaptive-search.md`
+  historical session record
   for raw artifact paths and SHA-256 hashes.
 - **Verdict:** **INCONCLUSIVE.** Offline quality is promising, but the live
   gate was invalidated by a card-select integration failure and non-comparable

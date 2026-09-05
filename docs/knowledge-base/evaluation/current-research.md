@@ -84,7 +84,7 @@ a different Act-3-only seed block, not a direct comparator). A separate
 bottleneck (H4) remains plausible; do not infer that fixed-world leakage is
 beneficial. See [ledger-06 §168–169](../../../docs/experiments/ledger-06.md) and
 the
-[Phase 12 decision log](../decision-log/2026-08-14-phase12-encounter-marginalization-next-step.md).
+Phase 12 decision log.
 
 Evidence:
 
@@ -205,7 +205,7 @@ artifact.
 - Policy-head search distillation: the old Phase F handoff is not current
   execution guidance and must be revalidated against current labels and code.
 - Searcher3 real-observation belief filtering
-  ([decision log](../decision-log/2026-08-10-s3-real-belief-filter.md),
+  (decision log,
   [ledger-01.md](../../../docs/experiments/ledger-01.md)): the
   exact-transition posterior filter (`STS_S3_REAL_BELIEF_FILTER`) is
   implemented opt-in. The 32-seed diagnostic shows compatible fraction 72%
@@ -251,7 +251,7 @@ artifact.
   classify as promising win-rate direction with a possible downside tail, not
   clean promotion evidence. No automatic extension beyond 64 seeds.
 - Searcher3 particle-count default
-  ([decision log](../decision-log/2026-08-10-s3-particle-count-sweep.md),
+  (decision log,
   [ledger-01.md](../../../docs/experiments/ledger-01.md)): 128 particles
   is directionally promising (monotonic collapse reduction, positive win
   direction) but not confirmed for promotion. 64 particles remains the

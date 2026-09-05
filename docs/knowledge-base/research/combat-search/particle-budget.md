@@ -33,7 +33,7 @@ Key evidence:
 | --- | --- | --- |
 | 2026-08-05 | [§115 particle×sims grid](../../../../docs/experiments/ledger-04.md) | Flat in particles (16/64/256) at 1k/3k |
 | 2026-08-10 | [Particle-count sweep](../../../../docs/experiments/ledger-01.md) (search for "particle-count sweep") | 128p directional positive, 256p/512p no further gain; collapse monotonic |
-| 2026-08-10 | [Decision: particle-count sweep](../../decision-log/2026-08-10-s3-particle-count-sweep.md) | 128p promising but not confirmed; keep 64p default |
+| 2026-08-10 | Decision: particle-count sweep | 128p promising but not confirmed; keep 64p default |
 
 ## Rejected / falsified approaches
 

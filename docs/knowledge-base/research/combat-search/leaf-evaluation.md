@@ -36,7 +36,7 @@ simulations end (§142).
 | 2026-08-08 | [§135-§135a Leaf diagnostics](../../../../docs/experiments/ledger-05.md) | Infrastructure to measure gap on actual S3 leaf states |
 | 2026-08-08 | [§142 Scale-controlled utility-R gate](../../../../docs/experiments/ledger-06.md) | PUCT value-scale dynamics confirmed as the gap mechanism |
 | 2026-08-09 | [§148 V_combat hyperparameter tuning](../../../../docs/experiments/ledger-06.md) | +10.9pp at matched tree count; new default vnet |
-| 2026-08-07 | [Decision: VNet promotion](../../decision-log/2026-08-07-vnet-promotion.md) | Three gates → promotion |
+| 2026-08-07 | Decision: VNet promotion | Three gates → promotion |
 | 2026-08-09 | [§150 Per-encounter specialization](../../../../docs/experiments/ledger-06.md) | Gate negative, line closed |
 
 ## Rejected / falsified approaches
