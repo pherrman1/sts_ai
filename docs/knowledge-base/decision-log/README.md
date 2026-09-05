@@ -52,9 +52,6 @@ historical evidence.
   may reference an experiment entry; it does not replace the ledger.
 - `investigations/` holds reproducible unresolved diagnoses. A reproducible
   open question in this log may be promoted there.
-- `docs/archive/` holds dated plans and superseded schemas; it is not current
-  instruction.
-
 ## Index
 
 Reverse chronological; one line per entry file.

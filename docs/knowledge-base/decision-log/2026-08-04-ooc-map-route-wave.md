@@ -3,7 +3,7 @@
 Date: 2026-08-04
 Session/task: Execute the map-route wave (M1 one-ply map Q gate, C1 V4-on-256
 validation, S1 scrub A/B prep) per the continuation of
-`docs/archive/ooc-action-plan-2026-08.md` and the new working spec
+the historical August 2026 OOC action plan and the new working spec
 `docs/knowledge-base/architecture/ooc-map-route-contracts.md`. Long runs on
 the GCP server `sts-test` (preemptible, c4-highcpu-24, 24 threads; binary
 built there from the synced tree).

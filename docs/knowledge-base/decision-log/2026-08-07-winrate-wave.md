@@ -2,7 +2,7 @@
 
 Date: 2026-08-07
 Session/task: Kickoff of the S3-centered winrate improvement wave
-(`docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md`).
+(from the archived August 2026 winrate plan).
 
 ## Decision
 
@@ -55,7 +55,7 @@ Session/task: Kickoff of the S3-centered winrate improvement wave
   §106/§115 (ablation deltas invalidated; re-derivation flagged),
   §117 (rollout-usage diagnostic → boss-leaf rationale),
   §116/§110 (TERM_WIN+C_psi open gate).
-- `docs/archive/research/plans/plan-winrate-ideas-2026-08-07.md` — the plan.
+- Archived August 2026 winrate plan — the plan.
 
 ## Status and follow-up
 

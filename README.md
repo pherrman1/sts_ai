@@ -80,8 +80,6 @@ native PowerShell/MSVC has not been verified. See [build and debugging](docs/kno
 | `docs/knowledge-base/` | Stable current architecture, operations, evaluation, and invariants. |
 | `EXPERIMENTS.md` | Chronological experimental evidence and decisions. |
 | `AGENTS.md` | Mandatory coding-agent operating contract. |
-| `docs/archive/` | Dated plans and schemas retained for provenance, not current truth. |
-
 ## Documentation map
 
 Start at the [knowledge-base index](docs/knowledge-base/README.md). The most

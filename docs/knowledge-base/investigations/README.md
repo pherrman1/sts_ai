@@ -20,7 +20,6 @@ investigation is evidence collection, not a decision or a speculative design.
 
 The resolved Searcher3 reuse investigation was distilled into
 [`decisions/s3-obs-stable-reuse-promotion.md`](../decisions/s3-obs-stable-reuse-promotion.md).
-Its intermediate reports are retained under `docs/archive/research/s3-reuse/`.
 The historical PVNet headline investigation remains in this directory as a
 closed reproducibility record, not an active task.
 

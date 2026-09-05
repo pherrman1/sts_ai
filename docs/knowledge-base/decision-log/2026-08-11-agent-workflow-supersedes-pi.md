@@ -91,5 +91,5 @@ README submodule claim, and make canonical issue IDs unique.
 ## Status and follow-up
 
 Implemented. `docs/knowledge-base/evaluation/current-research.md` and the
-`docs/archive/research/` organization from `806617d` are intentionally left
+archive organization from `806617d` are intentionally left
 alone. No gameplay/search/ML/training/benchmark behavior changed.

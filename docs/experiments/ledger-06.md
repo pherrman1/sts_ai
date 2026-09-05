@@ -3092,7 +3092,7 @@ particles, 7k VNet alpha 0.3, all strategic gates on, margin 1.0):
 This eager-mode result was subsequently superseded by the strict compile-enabled
 rerun in §171 and should not be interpreted causally. The contract bug is real
 and requires a permanent converter fix; §171 provides the controlled follow-up.
-See `docs/archive/research/sessions/phase12-screen-contract-corrected-m0-m1-2026-08-15.md`
+See historical source `git show d28cfc3291dc091bb52b218f1d3e27f7431f4163:docs/archive/research/sessions/phase12-screen-contract-corrected-m0-m1-2026-08-15.md`
 for hashes and detailed provenance.
 
 ## §171 Phase-12 corrected-screen strict compile-enabled rerun (2026-08-15)
@@ -3128,7 +3128,7 @@ gap, but the small-block intervals cross zero. Strict M1 remained null versus
 original M1 at 25.0%. This supports material contribution from the screen bug
 to M0's gap, without establishing full causality or promotion.
 
-See `docs/archive/research/sessions/phase12-screen-contract-strict-rerun-2026-08-15.md`
+See historical source `git show d28cfc3291dc091bb52b218f1d3e27f7431f4163:docs/archive/research/sessions/phase12-screen-contract-strict-rerun-2026-08-15.md`
 for complete hashes, paired contingency counts, and parity errors.
 
 ## §172 Phase-12 M0/M1 post-hoc Q-supervision autopsy — corrected after reverted draft (2026-08-15)
@@ -3163,7 +3163,7 @@ the −10.9pp 64-seed point estimate (CI crosses zero). The autopsy is
 **closed**; no M2, retraining, gameplay tracing, or new seeds.
 
 Full tables, hashes, root causes, and provenance:
-`docs/archive/research/sessions/phase12-m0-m1-autopsy-2026-08-15.md`.
+historical source `git show d28cfc3291dc091bb52b218f1d3e27f7431f4163:docs/archive/research/sessions/phase12-m0-m1-autopsy-2026-08-15.md`.
 
 ## 2026-08-15 — Searcher3 conditional-block posterior-geometry shadow diagnostic (STOP: oracle gate failed)
 

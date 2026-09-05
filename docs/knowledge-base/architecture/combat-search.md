@@ -362,9 +362,7 @@ default-off. EXPERIMENTS.md §133 (first entry); decision log
 
 ### Tactical turn-beam rollout (STS_S3_TURN_ROLLOUT, opt-in — B1)
 
-The B1 line (archived plan
-`docs/archive/research/plans/plan-rollout-experiments-2026-08-07.md` §2, revised
-spec per the §134 audit) replaces the per-action random pick at
+The B1 line (revised spec per the §134 audit) replaces the per-action random pick at
 PLAYER_NORMAL rollout states with a deterministic beam search over
 card/potion sequences to END_TURN, scoring only COMPLETE turns after the
 monster turn resolves. Implemented 2026-08-08 in

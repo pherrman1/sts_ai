@@ -2,7 +2,7 @@
 
 ## Decision
 
-Revived the archived Phase 5 plan (`docs/archive/combat-action-plan-2026-07.md`)
+Revived the archived Phase 5 July 2026 combat plan
 with a first end-to-end round: (1) `strategicgen` logs every legal OOC action
 per decision with structured candidate fields and a `chosen` flag, labeled
 Tier-A (terminal `won/endFloor/endHp` only on chosen rows); (2) new

@@ -301,8 +301,8 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
   not beat the V3 flat-vector net (+7.0pp @ m1), so V3 stays deployed and
   the V4 net is opt-in behind `STS_OOC_STRATEGIC_TOK_NN`. The current
   deployment still uses per-screen scalar value heads; distributional
-  heads and the map DAG remain future work. The original roadmap is archived
-  in `docs/archive/ooc-action-plan-2026-08.md`; current priorities are routed
+  heads and the map DAG remain future work. The original roadmap is historical;
+  current priorities are routed
   through `docs/knowledge-base/evaluation/current-research.md`.
 
 ## Important data flow
@@ -407,7 +407,6 @@ flowchart LR
 - `train_strategic.py`, `export_strategic.py`, `v_server.py::H.handle`, `RAW`
 - `train_strategic_tok.py`, `export_strategic_tok.py`, `strategic_tok_net.py`
 - `docs/knowledge-base/architecture/ooc-strategic-v4.md` — V4 token-state contract
-- `docs/archive/ooc-action-plan-2026-08.md` — historical strategic-model plan
 - `docs/knowledge-base/evaluation/current-research.md` — current research routing
 - `docs/knowledge-base/decisions/2026-08-02-semi-markov-strategic-model.md`
 - `bindings/slaythespire.cpp::PYBIND11_MODULE`

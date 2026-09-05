@@ -71,8 +71,8 @@ Learned overrides of heuristic decisions deploy only behind a margin gate.
 - Recorded fair baseline: `EXPERIMENTS.md` §68 (21.1% / 37.5 floor / 8.6 HP
   on seeds 126700–126827, 1,000 sims, `STS_FAIR=1`); every gate round is a
   paired comparison on that block.
-- Active plan with the full source specification:
-  `docs/archive/ooc-action-plan-2026-08.md`.
+- Active plan with the full source specification: the maintained OOC architecture
+  and decision records in this knowledge base.
 
 ## Consequences (observed)
 
@@ -101,7 +101,6 @@ Learned overrides of heuristic decisions deploy only behind a margin gate.
   `runStrategicGenSeed`, `runStrategicGenSeed2`, `strategicGen2`
 - `apps/ooc_strategic_net.h` — `OocStrategicNet`
 - `train_strategic.py`, `export_strategic.py`
-- `docs/archive/ooc-action-plan-2026-08.md` — historical plan (former spec of record)
 - `docs/knowledge-base/decision-log/2026-08-02-strategicgen-phase5-round1.md`,
   `2026-08-02-phase5-round2-per-screen-heads.md`,
   `2026-08-02-phase5-round3-tierb-q-labels.md`
