@@ -2048,8 +2048,7 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
 - **Artifacts:** `tools/analyze_mcts_leaves.py`,
   `build/vnet_mcts_leaves_xgb.csv` (1M rows, 3.4GB),
   `build/vnet_mcts_leaves_50k.csv` (50K sample),
-  `build/mcts_diag.json`. Decision log:
-  historical session record.
+  `build/mcts_diag.json`.
 
 ## §159 Requalified corrected honest V4 on frozen S3 + 7k-VNet Act-3 stack (2026-08-09)
 
@@ -2546,8 +2545,7 @@ battle-break output occurred. No 32-seed gate was run.
 **Artifacts (ignored build output):**
 `build/linux-gcc-release/s3_belief_lifecycle_phase2_8.{csv,csv.next_search.csv}`;
 `s3_persist_{control,treatment}_8.{csv,csv.next_search.csv,results.csv}` and
-their `.meta.json`, `.stdout`, and `.stderr` files. See
-historical session record.
+their `.meta.json`, `.stdout`, and `.stderr` files.
 
 **Correction — paired collapse-fallback diagnostic (same date):** The preceding
 temporary treatment did not isolate missing RNG counters from stale-collapse
@@ -4981,7 +4979,7 @@ model training was changed.
   31.5%. The result validates the crash fix but does not show a gameplay
   benefit, so the verdict remains `INCONCLUSIVE`.
 - **Artifacts:** see
-  historical session record
+  `git show a849fad3da15889138fb4239578ec8e00635a28b:docs/knowledge-base/decision-log/2026-08-15-s3-persistent-posterior-lifecycle.md`
   for raw artifact paths and SHA-256 hashes.
 - **Verdict:** **INCONCLUSIVE.** Offline quality is promising, but the live
   gate was invalidated by a card-select integration failure and non-comparable

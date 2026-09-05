@@ -62,7 +62,6 @@ and current numbers live in `docs/knowledge-base/evaluation/current-baselines.md
 Searcher3 belief, after the prior audit selected the belief line over root
 allocation? This was diagnostic-first; no gameplay default was changed.
 
-**Pre-implementation audit:** historical session record.
 The old `drawOrderConsistent` prefix predicate is not a posterior test across
 card play, discard/exhaust, generated cards, reshuffle, enemy effects, or RNG
 advancement. The new filter propagates each particle from a copied pre-action
@@ -743,4 +742,3 @@ FAIR-PLAY A/B (evalcombat GremlinNob, 256 seeds), rollout vs +richV leaf:
     + (b) complete features. Artifacts: v_combat_fair.json/_trees.txt, vcombat_fair.csv.
 NEXT: fair prior (policygen STS_FAIR) + fair-play FULL-RUN baseline, then value net on
 full runs (does the isolated +9hp translate to fair-play win%?).
-

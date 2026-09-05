@@ -9,8 +9,7 @@ be re-derived before their numbers can be used again. Rows are added when a
 fix lands; each row is `pending → running → done
 (§ref)` and is updated by the change that completes it. "Blocked" rows stay
 until the related research line reopens. Source: `docs/knowledge-base/issues/`
-entries 2026-08-05; decisions recorded in
-historical session record.
+entries 2026-08-05.
 
 | Issue | Invalidated experiments | Required rerun | Status |
 | --- | --- | --- | --- |
