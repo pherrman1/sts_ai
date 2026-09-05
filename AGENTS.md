@@ -30,8 +30,6 @@ Start with [CODE_MAP.md](docs/knowledge-base/CODE_MAP.md), then read the
 relevant linked maintained page before broad search or edits. The
 [knowledge-base index](docs/knowledge-base/README.md) routes architecture,
 behavior, evaluation, operations, research, decisions, and investigations.
-`docs/archive/` is historical, not current instruction.
-
 Use [operations/agent-context-and-workflow.md](docs/knowledge-base/operations/agent-context-and-workflow.md)
 for the full agent-workflow contract, the AGENTS relocation audit, safe Git
 procedure, documentation/decision/experiment recording, and deeper safety

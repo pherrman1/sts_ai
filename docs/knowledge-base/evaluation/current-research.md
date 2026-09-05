@@ -276,8 +276,8 @@ artifact.
   recorded online gate (`EXPERIMENTS.md` §166).
 - The initial DeepSets combat VNet failed under MCTS distribution shift
   (`EXPERIMENTS.md` §157-§158).
-- Completed and superseded plans, handoffs, and intermediate reports are under
-  `docs/archive/research/`. They are historical evidence, never current
+- Completed and superseded plans, handoffs, and intermediate reports are
+  historical evidence, never current
   instructions.
 
 ## Invariants and assumptions

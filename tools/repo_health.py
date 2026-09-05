@@ -58,7 +58,7 @@ def classify_path(path: str, ignored: bool = False) -> set[str]:
     if ignored or path.startswith(GENERATED_ROOTS) or path.rsplit("/", 1)[-1] in GENERATED_NAMES or GENERATED_EXTENSION.search(path):
         categories.add("generated_or_build")
     if path.startswith("docs/archive/"):
-        categories.add("docs_archive")
+        categories.add("forbidden_archive_path")
     if path.startswith(DECISION_LOG_PREFIX):
         categories.add("decision_log_tombstone")
     if "/" not in path and path.endswith((".py", ".sh")):
@@ -93,12 +93,10 @@ def broken_documentation_links(repo: Path, files: list[str]) -> list[dict[str, s
 def metrics(inventory: dict[str, int]) -> dict[str, object]:
     files = sorted(inventory)
     active_md = [p for p in files if p.endswith((".md", ".markdown")) and not p.startswith("docs/archive/")]
-    archive = [p for p in files if p.startswith("docs/archive/")]
     return {
         "tracked_files": len(files),
         "tracked_bytes": sum(inventory.values()),
         "active_markdown": {"files": len(active_md), "bytes": sum(inventory[p] for p in active_md)},
-        "docs_archive": {"files": len(archive), "bytes": sum(inventory[p] for p in archive)},
         "one_combat_cpp": {"bytes": inventory.get("apps/one_combat.cpp", 0)},
         "root_scripts": sorted(p for p in files if "root_script" in classify_path(p)),
     }
@@ -110,7 +108,7 @@ def report(repo: Path, baseline: str) -> dict[str, object]:
     added = sorted(set(current) - set(base))
     ignored = ignored_paths(repo, added)
     categories = {category: [p for p in added if category in classify_path(p, p in ignored)] for category in (
-        "generated_or_build", "docs_archive", "decision_log_tombstone", "root_script")}
+        "generated_or_build", "forbidden_archive_path", "decision_log_tombstone", "root_script")}
     current_broken = broken_documentation_links(repo, sorted(current))
     current_metrics = metrics(current)
     base_metrics = metrics(base)

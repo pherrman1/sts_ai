@@ -80,7 +80,7 @@ are authoritative, and a short SHA-tied comment may record a later transition.
 - Search `EXPERIMENTS.md` before reading a ledger shard. Identify subsystem
   boundaries before reading the integration driver.
 - Do not inspect generated `build/` artifacts, ignored self-play data,
-  `.ai/`, or `docs/archive/` unless the task requires them. Reviewers may expand
+  or `.ai/` unless the task requires them. Reviewers may expand
   scope when necessary to prove semantics.
 - Use Git, `rg`, focused file reads, compiler diagnostics, and focused tests.
   No repository MCP server is required.
