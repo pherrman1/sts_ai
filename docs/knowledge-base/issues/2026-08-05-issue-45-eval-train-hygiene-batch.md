@@ -44,7 +44,7 @@ EXPERIMENTS.md §94/§95 record that the false Brier 0.232 / max-decile 0.42
 headline came from a checker bug (base_score treated as a probability added
 directly to leaf margins instead of converted to logit space, as the C++
 `WinNet::predict` does), caught and corrected by the `parity_vwin.py` /
-`one_combat winnettest` parity check. See historical evidence
+`one_combat winnettest` parity check. See decision log
 `2026-08-08-check-vwin-default-resolution.md`.
 
 ## Candidate fix direction

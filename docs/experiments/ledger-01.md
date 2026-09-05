@@ -62,7 +62,7 @@ and current numbers live in `docs/knowledge-base/evaluation/current-baselines.md
 Searcher3 belief, after the prior audit selected the belief line over root
 allocation? This was diagnostic-first; no gameplay default was changed.
 
-**Pre-implementation audit:** historical evidence.
+**Pre-implementation audit:** historical session record.
 The old `drawOrderConsistent` prefix predicate is not a posterior test across
 card play, discard/exhaust, generated cards, reshuffle, enemy effects, or RNG
 advancement. The new filter propagates each particle from a copied pre-action

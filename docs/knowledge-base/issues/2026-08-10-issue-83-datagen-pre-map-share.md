@@ -11,7 +11,7 @@
 snapshots that share the map pointer with the live run. The live policy's
 `transitionToAct` overwrites `*map` in place while `pre` still holds the
 pointer. Impact is bounded by `forwardMapFeatures` early-return at y==15,
-but the exact hazard class the historical evidence claims to have closed remains
+but the exact hazard class the decision log claims to have closed remains
 open in the reverse direction.
 
 ## Evidence
@@ -19,7 +19,7 @@ open in the reverse direction.
 - `one_combat.cpp:8093`: `pre` snapshot created without map detach.
 - `one_combat.cpp:8614`: same.
 - `GameContext.cpp:709`: `*map = Map::fromSeed(...)` in-place overwrite.
-- historical evidence  documents
+- Decision log `2026-08-09-strategic-datagen-shared-map-detach.md` documents
   probe→live fix, leaves live→snapshot open.
 
 ## Candidate fix directions

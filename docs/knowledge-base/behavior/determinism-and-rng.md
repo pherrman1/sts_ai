@@ -104,7 +104,7 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
   with the game's no-repeat rule; the act boss is deliberately not resampled
   because this repo treats it as public). This is a known §A.14 leak
   ("do not copy the true future seed and then optimize against it"), flagged
-  in the historical evidence, not fixed.
+  in the decision log, not fixed.
 - The strategic model features (`apps/one_combat.cpp::richRow`,
   `buildTokState`) include the exact next-encounter identities
   (`nextFight0..2`, `nextEliteId`) at every decision; the player only knows

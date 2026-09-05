@@ -7,8 +7,8 @@ invalidated, and superseded.
 Historical statements such as "best," "current," "deployed," or "running"
 describe the state at that point in time unless later evidence says otherwise.
 
-The 2026-08-22 Phase-1b Search-Age preregistration is recorded in
-historical evidence.
+The 2026-08-22 Phase-1b Search-Age preregistration is recorded below in the
+chronological ledger.
 
 ## Where to find current truth
 

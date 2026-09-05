@@ -81,7 +81,7 @@ loader but is deferred — leaf-value choice is the lesson from §85.
   contents, exact future encounter identity beyond the known pool, event
   outcomes before selection). Rollouts must sample unknown outcomes from
   conditional distributions.
-- Deliverable: an audit report in the historical evidence + KB
+- Deliverable: an audit report in the decision log + KB
   (`docs/knowledge-base/behavior/determinism-and-rng.md` update) + fixes for
   any violations found. Owns existing `src/sim/search/*` files (NOT
   one_combat.cpp, NOT the new CombatCpsiNet files).

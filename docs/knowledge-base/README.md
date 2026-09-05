@@ -68,9 +68,9 @@ For known issues:
 1. [Issues](issues/README.md) — collected knowledge-base problems sorted by importance
 
 The `decisions/` and `investigations/` indexes define when durable rationale or
-a reproducible unresolved diagnosis belongs in a dedicated record. The
-Historical session material is available only through Git history when explicitly needed for provenance. Dated plans and superseded schemas are historical Git records.
-and must not be used as current instructions.
+a reproducible unresolved diagnosis belongs in a dedicated record. Historical
+session material is available only through Git history when explicitly needed
+for provenance. Dated plans and superseded schemas are historical Git records.
 
 ## Evidence labels
 

@@ -243,7 +243,7 @@ its own header so no rowtype reinterprets columns. The `fair` column records
 the regime; `STS_ROLLOUT_DEPTH` is honored and depth-capped rollouts are
 counted. Searcher3 is not instrumented; the mode refuses to run under
 `STS_SEARCHER3`. (`apps/one_combat.cpp::sdiagMetricsOf`, `sdiagOnSearchComplete`,
-`sdiagProbe`, `searchDiag`.) historical evidence:
+`sdiagProbe`, `searchDiag`.) Decision log:
 `2026-08-06-searchdiag-rollout-usage.md`. Since 2026-08-06 the mode also
 instruments Searcher3 (rowtype A only; probeEvery forced 0 under
 `STS_SEARCHER3` — the B-stage probes are S2 machinery): `SearchDiagnostics`
@@ -273,7 +273,7 @@ the explicit `STS_FAIR=1 STS_SEARCHER3=1` regime; S2 fair stays opt-in (S2
 @1k neutral, +cpu; S2 @3k pair needed before any S2 flip); non-fair paths
 and the `fairgen` datagen mode are unchanged unless the env flag is set
 explicitly (datagen keeps the recorded §117 behavior — open question: align
-datagen with the deployed fix). historical evidence:
+datagen with the deployed fix). Decision log:
 `2026-08-06-live-valid-phase4.md`, `2026-08-07-live-valid-promotion.md`.
 
 ### On-no-valid-edge expansion (STS_S3_EXPAND, opt-in — falsified)
@@ -315,7 +315,7 @@ retrain (winrate-plan §3.4).
 ### Rollout-leaf estimators (STS_S3_ROLLOUT_K, STS_S3_ROLLOUT_TURN_STOP — opt-in)
 
 Two opt-in Searcher3 rollout-leaf estimators (EXPERIMENTS.md §133, 2026-08-07;
-historical evidence ); both default off and
+decision log `2026-08-07-rollout-leaf-estimators.md`); both default off and
 byte-identical when unset (smoke-proven on 8 seeds):
 
 - **A1 — `STS_S3_ROLLOUT_K=N` (default 1):** run K rollouts from the same
@@ -357,7 +357,7 @@ N=1 @1k 34.0% (−16.4pp CI [−23.0,−9.4], floor −2.4, HP −10.9, cpu only
 −18%): long-horizon terminal grounding through the full rollout is
 load-bearing, the second short-rollout falsification (§119), and the
 turn-beam follow-up must play across turns. Both env gates stay opt-in
-default-off. EXPERIMENTS.md §133 (first entry); historical evidence
+default-off. EXPERIMENTS.md §133 (first entry); decision log
 `2026-08-07-rollout-leaf-estimators.md`.
 
 ### Tactical turn-beam rollout (STS_S3_TURN_ROLLOUT, opt-in — B1)
@@ -411,7 +411,7 @@ is byte-identical pre-B1 behavior (structural-equality smoke on 8 seeds).
   (50.4%): 46.9% win (−3.5pp, 95% CI [−10.2, +3.1]), floor −0.1, HP end
   −4.0, at 9.3× CPU (383.5 vs 41.2 cpu-s/run); env stays default-off.
   B1c (VNet on final 2–4 beam survivors) parked with the line.
-  EXPERIMENTS.md §135b; historical evidence .
+  EXPERIMENTS.md §135b; decision log `2026-08-08-turn-beam-rollout.md`.
 
 ### Direct utility-R leaf (same-recipe target ablation, §134 — falsified)
 
@@ -766,7 +766,7 @@ rollout calls capped (BOSS 38%, act2/act3 33/38%), but the 256-seed paired
 gate @1k gave flat 22.3% vs caps 16.4% (−5.9pp, 95% CI −5.9 ± 4.5pp,
 excludes zero; flips 13 up / 28 down; cpu −7.8%). The heuristic capped-leaf
 estimate at depth 8 loses more decision quality than the saved sims gain;
-the line is stopped and the env gate stays default-off. historical evidence:
+the line is stopped and the env gate stays default-off. Decision log:
 `2026-08-06-rollout-caps-phase2.md`.
 
 ### Forced-action contraction (default ON in the fair path)
@@ -806,7 +806,7 @@ cached winning line after a forced skip, which otherwise left
 `stepThroughSolution` looping on an empty action list). Two independent
 256-seed fair gates show exact per-seed outcome equality (0/256 diffs each)
 at −16 to −18% cpu; decision-neutral by construction, so all historical
-fair results remain valid. historical evidence:
+fair results remain valid. Decision log:
 `2026-08-06-forced-move-phase5.md`.
 
 ### Root-stability adaptive search (STS_CONV_ROOT, opt-in)
@@ -830,7 +830,7 @@ A zero-growth config (`STS_CONV_ROOT_START=0` or `STS_CONV_ROOT_GROW<=1.0`)
 can never raise the chunk budget, which previously hung the search in an
 infinite loop; the loop now forces the full budget instead (issue #54), and
 `apps/one_combat.cpp` prints a parse-time warning for such configs.
-Provisional 64-seed fair @1k measurement (historical evidence
+Provisional 64-seed fair @1k measurement (decision log
 `2026-08-06-conv-root-stable-search.md`): MIN=500/PATIENCE=500 gives +3.1pp
 win at −9% cpu vs flat (within noise); stop-only loses ~3pp — the
 pool-funded escalation is what pays. **Falsified at the paired gate
@@ -915,7 +915,7 @@ correct sign (charged counter → lower next-fight death), unlike the win tree
 weight-row hoisting; per-output math bit-identical) — cpsi-eval measures
 ~9x the win-tree leaf end-to-end (19.2 vs 1.8 cpu-sec/run at 100 sims, 16
 seeds); benchmark at the 1k-sim operating point.
-historical evidence: .
+Decision log: `2026-08-05-terminal-leaf-run-value-bonus.md`.
 
 ### Offline sibling-particle CRN diagnostic (`s3siblingcrn`, 2026-08-24)
 
@@ -1087,7 +1087,7 @@ head useful and its value head weak; see
 [evaluation/current-baselines.md](../evaluation/current-baselines.md) and the
 final section of `EXPERIMENTS.md`. All recorded PVNet bot results predate the
 2026-08-04 parity fixes (GELU FFN, fixed 14-token layout, full policy-head dot
-product; historical evidence ); the
+product; decision log `2026-08-04-combat-pvnet-parity-fixes.md`); the
 `pvnetparity` mode (`apps/one_combat.cpp::main`) now verifies C++ inference
 against `combat_pvnet_parity.py` to ~1e-6. The 2026-08-05 3k-sim payoff gate
 (EXPERIMENTS.md §102) closed the PVNet channel at the recommended operating
@@ -1168,7 +1168,7 @@ diagnostic hash.
   `evaluateEndState`) is unreachable dead code — no active mode ever sets it
   to true after the `evalcombat`/`evalrun` modes were removed. Its `if` block
   in `evaluateEndState` is always false. Remove it the next time Searcher2 is
-  modified for a real change. See historical evidence
+  modified for a real change. See decision log
   `2026-08-08-surgical-refactor.md`.
 - Searcher2 project-fair determinization changes draw order plus only
   `shuffleRng` and `cardRandomRng`; it is not a complete hidden-state model
@@ -1184,7 +1184,7 @@ diagnostic hash.
   `assert(false)` in `playoutRandom` fires (`src/sim/search/BattleScumSearcher2.cpp`).
   It reproduces on a pristine build for seeds 0–7 at act-1 floor 13; the
   `STS_FAIR=1` path (the recorded baseline regime) is unaffected. Not yet
-  root-caused; see historical evidence .
+  root-caused; see decision log `2026-08-06-searchdiag-rollout-usage.md`.
 - Searcher3 belief conditioning has two separate paths. The historical
   `Belief::update` predicate compares an old draw order to a visible pile prefix;
   it remains available for the existing non-fair path when the new experimental
@@ -1256,7 +1256,7 @@ diagnostic hash.
   lines for each relic's index in the sel table; `r32` Inserter is not even
   selected). The terminal-leaf bonus therefore prices HP/gold/potions today;
   counter pricing requires a counter-aware terminal model (Stage 3 — generic
-  across all counter relics, see the historical evidence).
+  across all counter relics, see the decision log).
 - The terminal-leaf bonus runs only under `STS_TERM_WIN=1` with Searcher3 and
   adds ~1 win-tree walk per terminal victory leaf (smoke: +75% cpu at 300
   sims on 16 seeds — tuning target, not a shipped default).

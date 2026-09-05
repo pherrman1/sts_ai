@@ -1,7 +1,7 @@
 # Q_win continuation plan — desktop GPU handoff (2026-08-04)
 
 Status: **EXECUTED 2026-08-04 — Steps 1–5 complete; results recorded in
-EXPERIMENTS.md §96 and the historical evidence
+EXPERIMENTS.md §96 and the decision-log entry
 `2026-08-04-qwin-continuation-desktop.md`. Both swept policies are negative
 (every Q_win margin point loses to the V3 legacy reference; the regret gate
 stays opt-in). Do not re-execute this plan as instructions; see §96 for the

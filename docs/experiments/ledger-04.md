@@ -102,7 +102,7 @@
   combat-side wave concludes: spend more sims on the V4 gate stack; the
   prior/gate stack needs no combat value net.
 - **Artifacts:** `build/simsweep_v4_3k_256.csv`, `build/simsweep_v4_4k_256.csv`
-  (pulled from server `/tmp/`); historical evidence
+  (pulled from server `/tmp/`); decision log
   `2026-08-04-combat-side-wave.md`.
 
 ## 100. Map-DAG encoder wave (5.3.2): V6 artifact on the tierb pipeline — offline gain, gameplay neutral-to-negative (2026-08-04)
@@ -196,7 +196,7 @@
 - **Context:** the C++ CombatPVNet inference had three trainer mismatches
   (FFN GELU vs ReLU, sparse vs always-14 token layout, one-unit policy-head
   dot product) plus no parity check (`apps/one_combat.cpp` `pvnetparity`,
-  `combat_pvnet_parity.py`; historical evidence
+  `combat_pvnet_parity.py`; decision log
   `2026-08-04-combat-pvnet-parity-fixes.md`). After the fixes,
   encoder/policy/value match the exported model to ~1e-6 (d128 and d64).
 - **Replication setup:** `STS_FAIR=1 STS_SEARCHER3=1
@@ -573,7 +573,7 @@
   (64 → 128) under the same stack.
 - **Artifacts:** per-seed CSVs `build/s3ablate_{s2_ref,s3_ctl,s3_nobel,
   s3_noprune,s3_nochain,s3_nolive,s3_crn}_3k_128.csv`; server log
-  `/tmp/s3ablate.log` on `sts-test`; `run_s3_ablate.sh`; historical evidence
+  `/tmp/s3ablate.log` on `sts-test`; `run_s3_ablate.sh`; decision log
   `2026-08-05-s3-ablation.md`.
 - **2026-08-05 re-verification (code review):** `bestbench` appends without
   deduplicating, and the first aggregation of this section used
@@ -693,7 +693,7 @@
   {belf,both}_128.csv`, `build/pt_sweep_p256_s3k_ctl_128.csv`,
   `build/pt2_{p256_s4k_both_128,p64_s1k_both_256,p256_s3k_both_256}.csv`;
   server logs `/tmp/s3sweep.log`, `/tmp/s3sweep2.log` on `sts-test`;
-  `run_s3_particles_sweep.sh`, `run_s3_particles_sweep2.sh`; historical evidence
+  `run_s3_particles_sweep.sh`, `run_s3_particles_sweep2.sh`; decision log
   `2026-08-05-s3-particles-sweep.md`. Future gate rounds pair against
   `build/pt2_p256_s3k_both_256.csv` (win point) or
   `build/pt2_p64_s1k_both_256.csv` (efficient point).
@@ -780,7 +780,7 @@ emElites/
 emFights parity-excluded) and
   patching the exitBattle-transferred fields by index; bonus =
   w * v_win_trees.txt P(win). Flags STS_TERM_WIN=1, STS_TERM_WIN_W
-  (100), STS_TERM_WIN_HIDDEN=resample|zero. historical evidence
+  (100), STS_TERM_WIN_HIDDEN=resample|zero. Decision log
   2026-08-05-terminal-leaf-run-value-bonus.md.
 - **Stage 0 mechanics test:** ./build/test happy_flower <seed> PASS — relic
   counter ticks once at battle start plus once per turn start, end counter =
@@ -878,7 +878,7 @@ unFullRunOOC runs, for each counter relic the
   next-fight survival; noise-level sample, direction as expected).
 - **Artifacts:** probe output (400 seeds) in the run transcript; per-seed
   smoke CSVs uild/cpsictr_{off,on}.csv; cpsictr mode + STS_CPSI_CTR_PROBE
-  env; historical evidence addendum 2026-08-05-terminal-leaf-run-value-bonus.md.
+  env; decision log addendum 2026-08-05-terminal-leaf-run-value-bonus.md.
 
 
 ## 111. OOC fight-rollout lookahead re-gated on the current stack: greedy and margin-gated searched-checkpoint oracle, win-GBM terminal term — falsified (2026-08-05)
@@ -976,7 +976,7 @@ unFullRunOOC runs, for each counter relic the
   EXHAUST_MANY enumeration changed from 1 bogus action to full subsets).
 - **Artifacts:** `build/{control_1k_256,cand_1k_256,s3_only_1k_64,
   base_1k,base_3k}.csv` (local copies; GCP `/home/philippherrmann/sts_sweep/
-  build/`); historical evidence ; issues
+  build/`); decision log `2026-08-05-cardselect-parity-fix.md`; issues
   47 (closed) / 48 (open).
 - **Cost:** ~2 min wall per 256-seed @1k arm; the GCP tree currently has the
   control files installed � re-sync `src/sim/search/{Action.cpp,
@@ -1039,7 +1039,7 @@ unFullRunOOC runs, for each counter relic the
   any future enumerator gap now costs a loss, never a free win.
 - **Artifacts:** `build/{honest_ctl_1k_256,honest_fix_1k_256,
   honest_fix_3k_256,capped_single_1k_256,capped_none_1k_256}.csv` (GCP
-  `~/sts_sweep/build/`, local copies); historical evidence
+  `~/sts_sweep/build/`, local copies); decision log
   `2026-08-05-cardselect-parity-fix.md` (updated); issues 47 (closed) / 48
   (closed); code diff: `BattleContext.cpp` exitBattle guard,
   `ScumSearchAgent2.cpp` env-gated break telemetry, `apps/test.cpp`
@@ -1092,7 +1092,7 @@ unFullRunOOC runs, for each counter relic the
   are unchanged. The plan's Phase 2 item is closed with this verdict; the
   plan doc is updated accordingly.
 - **Artifacts:** `build/p2_obs_expand_1k_256.csv` (GCP + local),
-  `build/p2_obs_expand_clean.csv`; historical evidence
+  `build/p2_obs_expand_clean.csv`; decision log
   `2026-08-05-phase2-observation-search.md`; code diff:
   `CombatObservation.{h,cpp}` (identity fields), `apps/test.cpp`
   (`obs_identity` decision-context cases, `seed_contract` full-search
@@ -1171,7 +1171,7 @@ unFullRunOOC runs, for each counter relic the
   issue 49; needs a debugger session. Does not affect the recommended
   stack (TERM_WIN defaults off).
 - **Artifacts:** `build/{p3_ctl_hf_1k_256,p3_term_hf_1k_256}.csv` (GCP +
-  local); stall logs `build/p3_stall_{ctl,term}.csv`; historical evidence
+  local); stall logs `build/p3_stall_{ctl,term}.csv`; decision log
   `2026-08-05-phase3-terminal-value-stage2.md`; issue 49.
 - **Cost:** ~2 min wall per 256-seed @1k arm on GCP sts-test (GCP shut
   down after this batch per instruction).

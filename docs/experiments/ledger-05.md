@@ -4,7 +4,7 @@
   how much of each combat the default Searcher2 arm handles via explicit tree
   descent vs random rollout, plus frontier terminality and root-decision
   stability vs budget. New `searchdiag` mode + write-only searcher counters
-  (historical evidence ; `combat-search.md`
+  (decision log `2026-08-06-searchdiag-rollout-usage.md`; `combat-search.md`
   "rollout-usage diagnostics").
 - **Config:** commit `4325c03` + uncommitted searchdiag diff; WSL build;
   `one_combat searchdiag <nSeeds> 1000 0 <out> 2 <seedOff>`; Searcher2; asc 0;
@@ -73,7 +73,7 @@
   and the `onlyLegalAction` forced-move shortcut, vs the flat fixed-budget
   arm. Provisional 64-seed local signal was +3.1pp at −9% cpu for
   MIN=500/PATIENCE=500 (plan `plan-searchdiag-adaptive-continuation.md`,
-  historical evidence ); this entry is the
+  decision log `2026-08-06-conv-root-stable-search.md`); this entry is the
   required confirmation run and the arbiter verdict.
 - **Config (both arms):** commit `99d55dd`; `one_combat bestbench 1000 256 0 0
   <out.csv>`; Searcher2 fair (`STS_FAIR=1`), asc 0, native OOC, policy PUCT on
@@ -379,7 +379,7 @@
   (`include/sim/search/BattleScumSearcher3.h`,
   `src/sim/search/BattleScumSearcher3.cpp`), agent wiring
   (`src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`), default
-  (`apps/one_combat.cpp::main`). historical evidences:
+  (`apps/one_combat.cpp::main`). Decision logs:
   `2026-08-07-s3-forced-move.md`, `2026-08-07-live-valid-promotion.md`.
 - **Cost:** 3 arms × ~12 min wall parallel on GCP (24 threads each,
   oversubscribed 3×); ~2 min/arm local at 8 seeds.
@@ -477,7 +477,7 @@
 - **Artifacts:** `build/pv6_cache_{on,off}.csv`, `build/pv6_cond_{depth,turn,boss}.csv`,
   `build/pv6_sdiag.csv`, logs `build/pv6_*.log`. Code:
   `BattleScumSearcher3.{h,cpp}` (`pvnetCondAllowed`, `evaluateLeaf` cache,
-  blend-site gate), `apps/one_combat.cpp` env parse. historical evidence:
+  blend-site gate), `apps/one_combat.cpp` env parse. Decision log:
   `2026-08-07-pvnet-deployment-speed.md`.
 - **Next:** paired 256-seed gate @1k/64p vs the §124 baseline (winrate wave
   B1-B4 not yet recorded on GCP), then @3k if positive; pre-registered null
@@ -626,7 +626,7 @@
   follow-up if the pure-prior version collapses.
 - **Artifacts:** `build/pri0_{ctl,pol}.csv` + logs. Code:
   `BattleScumSearcher3::playoutRandom` (`src/sim/search/BattleScumSearcher3.cpp`),
-  `apps/one_combat.cpp` env parse, header extern. historical evidence:
+  `apps/one_combat.cpp` env parse, header extern. Decision log:
   `2026-08-07-prior-guided-rollouts.md`. KB: `combat-search.md` (rollout
   section).
 ## §124c Prior-guided S3 rollouts — paired 256-seed gate: SIGNIFICANTLY NEGATIVE (−7.0pp) — line closed (2026-08-07, GCP sts-test)
@@ -665,7 +665,7 @@
   md5 4ef1416c17a1790d0dfb16c3942dd760), logs on sts-test
   `build/pri1_{ctl,pol}_256.log`; local smoke `build/pri0_{ctl,pol}.csv`
   (§124b). KB: `combat-search.md` (prior-guided rollouts section updated to
-  the verdict). historical evidence:  (verdict
+  the verdict). Decision log: `2026-08-07-prior-guided-rollouts.md` (verdict
   appended).
 ## §127 Policy prior v2 pipeline (winrate-plan §3.4+§3.5): fairgen datagen (1000 seeds, vnet-α0.3-aligned, 22-action-feature producer) + v2 prior trained + policystats bug fix; paired gate pending (2026-08-07, GCP + local)
 
@@ -712,7 +712,7 @@
   close), `build/policy_v2.json`, `build/ptrain_v2.log`, GCP logs
   `build/fair34.log`, `build/pri2_{ctl,v2}_256.log`. Code:
   `combatFillActionFeatures` (§3.5 features), policystats fix
-  (`apps/one_combat.cpp`). historical evidence:
+  (`apps/one_combat.cpp`). Decision log:
   `2026-08-07-policy-prior-v2-pipeline.md`.
 - **Gate verdict (appended, 2026-08-07): ❌ NULL — line closed per the
   pre-registered rule.** Paired 256-seed @1k/64p, block 126700, full V4 stack
@@ -777,7 +777,7 @@
   `build/eval_utility_fair34.json`, `build/eval_pvnet_fair34.json` (PVNet
   reference on the same rows), logs. Code: `train_combat_utility.py`,
   `eval_combat_utility.py`, `combat_pvnet_parity.py` (utility-format
-  parsing). historical evidence: .
+  parsing). Decision log: `2026-08-07-value-only-utility-net.md`.
 
 ## §129 Gate-stack-distribution vnet retrain (STS_DATAGEN_GATES): NULL vs the deployed model at both operating points; the α optimum shifts 0.3→0.5, confirming better calibration but no replacement (2026-08-07, local + GCP)
 
@@ -901,7 +901,7 @@
   endHp target; `train_combat_cpsi.py` already uses fraction targets).
   Same GBM architecture, better target — the cheap deployable path.
 - **Artifacts:** `build/v_pvnet_fresh.txt`, `build/eval_pvnet_fresh.json`,
-  `build/train_pvnet_fresh.log`. historical evidence:
+  `build/train_pvnet_fresh.log`. Decision log:
   `2026-08-07-value-only-utility-net.md` (appended).
 
 ## §132 Target experiment on the GBM leaf: quantile regression on the terminal utility R vs raw endHp — same rows, same model class; EV on-scale (10.1 vs 45.9) (2026-08-07, local)
@@ -942,7 +942,7 @@
   Tree cost: 9×150 ≈ 1350 trees ≈ 1.7× the deployed 804-tree eval —
   acceptable at the §126 cpu-trade bar.
 - **Artifacts:** `build/vcombat_q{,_150}_results.json`, `train_vcombat_quantile.py`.
-  historical evidence: .
+  Decision log: `2026-08-07-vnet-target-experiment.md`.
 ## §133 Rollout-leaf estimator experiments A1/A4 (STS_S3_ROLLOUT_K, STS_S3_ROLLOUT_TURN_STOP): implemented opt-in with structural-equality check; gates held for the §131/§132 leaf-net verdict (2026-08-07, local WSL)
 
 - **What:** two opt-in Searcher3 rollout-leaf estimators (plan: A1 + A4 of the
@@ -980,7 +980,7 @@
   if (1) is positive/neutral (same tree size, ~2× cpu), (3) turn-stop N=1
   @1k (and an equal-CPU reinvestment arm if positive/neutral). Gate ordering
   after the §131/§132 leaf-net verdict: a promoted net re-bases the pairing.
-  historical evidence: .
+  Decision log: `2026-08-07-rollout-leaf-estimators.md`.
 - **Gate verdicts (appended, 2026-08-07, GCP sts-test):** the §131/§132
   quantile-R leaf was **SIGNIFICANTLY NEGATIVE at every α — deployed vnet
   STAYS** (see the second §133 entry), so the pairing baseline is unchanged
@@ -1059,7 +1059,7 @@
   `build/vq_{a03,a05,a07}_256.csv`, logs on sts-test, parity
   `/tmp/vq_parity.csv`. Code: `CombatValueNet::load`/`predictQuantileEV`
   (`src/sim/search/CombatValueNet.{h,cpp}`), `combat_quantile_v1` exporter
-  `train_export_vcombat_quantile.py`. historical evidence:
+  `train_export_vcombat_quantile.py`. Decision log:
   `2026-08-07-vnet-target-experiment.md` (verdict appended).
 
 ## §134 Audit of §132/§133 + faithful target-only ablation on the direct utility-R GBM: §132 was NOT a target-only test; a same-recipe direct-R model is ALSO SIGNIFICANTLY NEGATIVE at α0.1 — deployed vnet stays; tooling hardened (2026-08-07, local)
@@ -1225,7 +1225,7 @@
   CSV `build/v_combat_utility_direct_a01_256.csv` is produced by the
   orchestrator's independent run. Code: `train_value_combat.py`
   (VCOMBAT_TARGET/VCOMBAT_WIN_BONUS), `export_combat_model.py`,
-  `apps/one_combat.cpp::main` (vnettest), `paired_analysis.py`. historical evidence:
+  `apps/one_combat.cpp::main` (vnettest), `paired_analysis.py`. Decision log:
   `2026-08-07-experiment-132-133-audit.md`.
 
 ## §135 Leaf-state diagnostic infrastructure: measure the §126-vs-§134 gap on actual Searcher3 leaf states (2026-08-08, local — infrastructure only, no gameplay result)
@@ -1312,4 +1312,4 @@
   no promotion; the deployed `build/v_combat_honest.txt` @α0.3 stays, and
   §133/§134 candidates stay rejected. Next step: run the diagnostics on a
   gate-sized dataset and record the hypothesis verdict here.
-- **historical evidence:** .
+- **Decision log:** `2026-08-08-leaf-state-diagnostics.md`.

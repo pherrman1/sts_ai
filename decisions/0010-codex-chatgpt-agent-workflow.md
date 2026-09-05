@@ -65,13 +65,9 @@ but the agent should report that blocker rather than inventing a new design.
 - `.agents/skills/research-experiment/SKILL.md`
 - `.agents/skills/implementation-review/SKILL.md`
 - `.github/pull_request_template.md`
-- historical evidence
 
 ## Evidence
 
-- historical evidence —
-  records the Codex pilot, retained Cline compatibility, and no direct hook
-  reuse.
 - `AGENTS.md` — defines authority hierarchy, CI authority, seed guard, and
   workflow-v2 boundary.
 - `docs/knowledge-base/operations/agent-context-and-workflow.md` — defines

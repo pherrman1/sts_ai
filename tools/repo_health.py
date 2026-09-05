@@ -92,7 +92,7 @@ def broken_documentation_links(repo: Path, files: list[str]) -> list[dict[str, s
 
 def metrics(inventory: dict[str, int]) -> dict[str, object]:
     files = sorted(inventory)
-    active_md = [p for p in files if p.endswith((".md", ".markdown"))]
+    active_md = [p for p in files if p.endswith((".md", ".markdown")) and not p.startswith("docs/archive/")]
     return {
         "tracked_files": len(files),
         "tracked_bytes": sum(inventory.values()),

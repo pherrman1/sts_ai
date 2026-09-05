@@ -271,16 +271,16 @@ Based on direct static evidence (no meaningful current callers, no active resear
 **Evidence:**
 - These flags control CSV-file diagnostic logging from inside Searcher3.
 - All default off. All are write-only diagnostic CSV producers — none alter search selection, tree structure, belief state, or backpropagation.
-- Each flag family has a dedicated historical evidence (2026-08-09): `outcome-bucket-diag.md`, `bucket-value-diag.md`, `draw-prob-diag.md`, `leafvalue-residual-diag.md`, and `s3-belief-vs-root-audit.md` (2026-08-10 for `ROOT_RACE_DIAG`).
+- Each flag family has a dedicated decision-log entry (2026-08-09): `outcome-bucket-diag.md`, `bucket-value-diag.md`, `draw-prob-diag.md`, `leafvalue-residual-diag.md`, and `s3-belief-vs-root-audit.md` (2026-08-10 for `ROOT_RACE_DIAG`).
 - The `BUCKET_VALUE_DIAG` and `OUTCOME_BUCKET_DIAG` were used to study outcome redundancy and value homogeneity, which informed the END_TURN marginalization prototype but remain independently useful diagnostics.
 - The `LEAFVALUE_DIAG` fires auxiliary reference searchers (`searchToTotal`) to establish deep referent values — these are separate searcher objects that do not alter the main search tree.
 - The maintained diagnostic modes (`leafdiag`, `leafref`, `rollouttrace`, `frontiergen`, `leafrelabel`) address different diagnostic questions (leaf-state ranking, rollout smoothness, frontier relabeling) — they do not directly supersede these per-transition/per-bucket outcome diagnostics.
 
-**Scientific status:** Purpose-built diagnostic tools documented in historical evidences; each flag captures a specific diagnostic measurement not replicated by the structured leaf-diagnostic modes. They are ad-hoc (flag-activation rather than a mode), but they are not "superseded" — they measure different phenomena.
+**Scientific status:** Purpose-built diagnostic tools documented in decision logs; each flag captures a specific diagnostic measurement not replicated by the structured leaf-diagnostic modes. They are ad-hoc (flag-activation rather than a mode), but they are not "superseded" — they measure different phenomena.
 
 **Confidence:** MEDIUM — each flag requires a deliberate retirement decision based on whether the diagnostic question it answers is still of interest.
 
-**Classification:** SUPPORTED_OPTIONAL — diagnostic infrastructure with historical evidence provenance. Deletion should be a separate per-flag decision, not bundled into a bulk cleanup.
+**Classification:** SUPPORTED_OPTIONAL — diagnostic infrastructure with decision-log provenance. Deletion should be a separate per-flag decision, not bundled into a bulk cleanup.
 
 **Deletion risk in a future cleanup:** MEDIUM — need to confirm each flag's CSV output is not consumed by any current analysis tool.
 
@@ -294,8 +294,8 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 **Evidence:**
 - **Behavior-changing:** This is NOT write-only diagnostic instrumentation. When enabled, Searcher3 samples particles at END_TURN boundaries, buckets by visibleHash, evaluates one representative per bucket via the full multi-rollout + leaf blend path, computes a weighted marginal expectation, and backpropagates that alternative evaluation. It bypasses the ordinary chain/rollout/blend path when marginalization succeeds.
-- historical evidence: . Verdict: **STOP** — marginalization adds ~56% search CPU with no clear quality benefit at equal CPU. The prototype works correctly but the cost outweighs the variance reduction.
-- The historical evidence explicitly lists possible future uses: training target generation, root-only tactical calculation, offline leaf-value relabeling.
+- Decision log: `2026-08-09-endturn-marginalization.md`. Verdict: **STOP** — marginalization adds ~56% search CPU with no clear quality benefit at equal CPU. The prototype works correctly but the cost outweighs the variance reduction.
+- The decision log explicitly lists possible future uses: training target generation, root-only tactical calculation, offline leaf-value relabeling.
 - The code is not dead — it is a stopped prototype retained for possible reuse in non-MCTS contexts.
 
 **Scientific status:** STOPped prototype (2026-08-09). The mechanism is correct; the cost/benefit in MCTS was unfavorable. Retained for potential future use in training targets or offline relabeling.
@@ -498,15 +498,15 @@ All meaningful experimental `STS_*` flags found in `apps/one_combat.cpp` main() 
 
 ### DIAGNOSTIC-ONLY FLAGS (write-only CSV logging; not gameplay/search behavior changes)
 
-All of these flags have historical evidence documentation from 2026-08-09/10 and are write-only CSV producers. They do not alter the search tree, belief state, selection, or backpropagation. Each should be retired via a deliberate per-flag decision, not bulk cleanup.
+All of these flags have decision-log documentation from 2026-08-09/10 and are write-only CSV producers. They do not alter the search tree, belief state, selection, or backpropagation. Each should be retired via a deliberate per-flag decision, not bulk cleanup.
 
 | Flag | Default | Location | Scientific status | Classification |
 | --- | --- | --- | --- | --- |
-| `STS_S3_OUTCOME_BUCKET_DIAG*` | OFF | `apps/one_combat.cpp:10320` | historical evidence ; measures outcome distribution per END_TURN transition | SUPPORTED_OPTIONAL |
-| `STS_S3_BUCKET_VALUE_DIAG*` | OFF | `apps/one_combat.cpp:10332` | historical evidence ; measures continuation value per bucket | SUPPORTED_OPTIONAL |
-| `STS_S3_DRAW_PROB_DIAG*` | OFF | `apps/one_combat.cpp:10356` | historical evidence ; computes exact hypergeometric draw probabilities | SUPPORTED_OPTIONAL |
-| `STS_S3_LEAFVALUE_DIAG*` | OFF | `apps/one_combat.cpp:10364` | historical evidence ; runs reference searchers to establish deep referent values (auxiliary searchers, does not alter main search tree) | SUPPORTED_OPTIONAL |
-| `STS_S3_ROOT_RACE_DIAG*` | OFF | `apps/one_combat.cpp:10392` | historical evidence ; writes per-root-action probe rows | SUPPORTED_OPTIONAL |
+| `STS_S3_OUTCOME_BUCKET_DIAG*` | OFF | `apps/one_combat.cpp:10320` | Decision log `2026-08-09-outcome-bucket-diag.md`; measures outcome distribution per END_TURN transition | SUPPORTED_OPTIONAL |
+| `STS_S3_BUCKET_VALUE_DIAG*` | OFF | `apps/one_combat.cpp:10332` | Decision log `2026-08-09-bucket-value-diag.md`; measures continuation value per bucket | SUPPORTED_OPTIONAL |
+| `STS_S3_DRAW_PROB_DIAG*` | OFF | `apps/one_combat.cpp:10356` | Decision log `2026-08-09-draw-prob-diag.md`; computes exact hypergeometric draw probabilities | SUPPORTED_OPTIONAL |
+| `STS_S3_LEAFVALUE_DIAG*` | OFF | `apps/one_combat.cpp:10364` | Decision log `2026-08-09-leafvalue-residual-diag.md`; runs reference searchers to establish deep referent values (auxiliary searchers, does not alter main search tree) | SUPPORTED_OPTIONAL |
+| `STS_S3_ROOT_RACE_DIAG*` | OFF | `apps/one_combat.cpp:10392` | Decision log `2026-08-10-s3-belief-vs-root-audit.md`; writes per-root-action probe rows | SUPPORTED_OPTIONAL |
 | `STS_S3_BELIEF_AUDIT*` | OFF | `apps/one_combat.cpp:10372` | Belief audit CSV logging; diagnostic companion to the parked real-belief-filter research | SUPPORTED_OPTIONAL |
 | `STS_REUSE_CPU_DIAG*` | OFF | `apps/one_combat.cpp:10408` | Tree-reuse CPU diagnostic; parked diagnostic from reuse investigation | SUPERSEDED_CONNECTED |
 | `STS_REUSE_CARRY_DIAG` | OFF | `apps/one_combat.cpp:10312` | Similar to above; parked diagnostic | SUPERSEDED_CONNECTED |
@@ -516,7 +516,7 @@ All of these flags have historical evidence documentation from 2026-08-09/10 and
 
 | Flag | Default | Location | Scientific status | Classification |
 | --- | --- | --- | --- | --- |
-| `STS_S3_ENDTURN_MARGINALIZE*` | OFF | `apps/one_combat.cpp:10344` | STOPped prototype (2026-08-09 historical evidence). Changes search behavior: samples particles, buckets outcomes, backpropagates weighted marginal instead of ordinary rollout/blend. Retained for potential offline/training applications. | REPRO_ONLY |
+| `STS_S3_ENDTURN_MARGINALIZE*` | OFF | `apps/one_combat.cpp:10344` | STOPped prototype (2026-08-09 decision log). Changes search behavior: samples particles, buckets outcomes, backpropagates weighted marginal instead of ordinary rollout/blend. Retained for potential offline/training applications. | REPRO_ONLY |
 | `STS_S3_UNION_EXPAND` | OFF | `apps/one_combat.cpp:10404` | Experimental feature in S3 reuse architecture. At every internal-node visit, adds missing legal edges and tracks availability. Listed as experimental/not-enabled in the promoted default configuration (`decisions/s3-obs-stable-reuse-promotion.md`). Changes tree structure and edge enumeration — not write-only. | SUPPORTED_OPTIONAL |
 
 ---
@@ -527,7 +527,7 @@ All of these flags have historical evidence documentation from 2026-08-09/10 and
 | --- | --- | --- | --- | --- |
 | `bestbench` | Current best OOC stack whole-run benchmark | `tools/run/run_mapgate_ab.sh`, `tools/run/run_distgate_ab.sh`, `tools/verify/check_replay.py` | Current baseline mode | CURRENT |
 | `strategicmarggen` | Encounter-marginalization M0/M1 datagen | Active research handoff | Active research | CURRENT |
-| `searchdiag` | Rollout-usage diagnostics | historical evidence 2026-08-06 | Current diagnostic | SUPPORTED_OPTIONAL |
+| `searchdiag` | Rollout-usage diagnostics | Decision log 2026-08-06 | Current diagnostic | SUPPORTED_OPTIONAL |
 | `leafdiag` | S3 leaf-state diagnostic dataset | Handover 2026-08-08 | Current diagnostic | SUPPORTED_OPTIONAL |
 | `leafref` | High-budget reference values | Handover 2026-08-08 | Current diagnostic | SUPPORTED_OPTIONAL |
 | `rollouttrace` | Rollout state sequences | Handover 2026-08-08 | Current diagnostic | SUPPORTED_OPTIONAL |
@@ -610,7 +610,7 @@ Ordered by cleanup value / deletion risk / verification cost, each batch changes
   `paired_analysis_selftest` (WSL Python missing NumPy), and
   `cardqueue_overflow` (expected `SIGABRT`, received status 0). None exercises
   the removed Batch 1 modes or their guard entries; these are the same general
-  failure classes recorded in the historical evidence.
+  failure classes recorded in the decision log.
 - Original guarded fair `bestbench` 1000 sims × 8 seeds: **INCOMPLETE**. It did
   not finish within six minutes and was terminated; this remains unverified.
 
@@ -641,13 +641,13 @@ runtime or policy-quality claim is made.
 
 **Concept:** Remove `STS_VNET_COND_BOSS` and `STS_VNET_COND_ACT3` and their global declarations. These are parsed, echoed, and stored but never read at predict time — they are load-only dead code.
 
-**Why third:** These are the only flags with HIGH-confidence evidence of being truly dead (no runtime effect). They are separate from diagnostic flags (which have historical evidence provenance) and from behavior-changing experimental flags (which need deliberate retirement decisions).
+**Why third:** These are the only flags with HIGH-confidence evidence of being truly dead (no runtime effect). They are separate from diagnostic flags (which have decision-log provenance) and from behavior-changing experimental flags (which need deliberate retirement decisions).
 
 **Files changed:** `apps/one_combat.cpp` (flag parsing + global declarations).
 
 **Verification:** `vnettest` parity check (prove byte-identical VNet predictions); `bestbench` 8-seed smoke.
 
-**Not included in this batch:** The S3 diagnostic flags (`STS_S3_OUTCOME_BUCKET_DIAG*`, etc.) have historical evidence documentation and are write-only diagnostic tools. The behavior-changing experimental flags (`STS_S3_ENDTURN_MARGINALIZE*`, `STS_S3_UNION_EXPAND`) are NOT in this batch — see below for deferred items.
+**Not included in this batch:** The S3 diagnostic flags (`STS_S3_OUTCOME_BUCKET_DIAG*`, etc.) have decision-log documentation and are write-only diagnostic tools. The behavior-changing experimental flags (`STS_S3_ENDTURN_MARGINALIZE*`, `STS_S3_UNION_EXPAND`) are NOT in this batch — see below for deferred items.
 
 ### Batch 4 — Server-dependent OOC flags (MEDIUM confidence, higher risk)
 
@@ -711,7 +711,7 @@ runtime or policy-quality claim is made.
 | `STS_CONV_ROOT`, `STS_ROLLOUT_CAPS` | Falsified at gates but isolated, byte-identical when unset; useful for reproduction |
 | `STS_S3_ENDTURN_MARGINALIZE*` | STOPped prototype (2026-08-09); behavior-changing experimental flag; retained for potential offline/training applications |
 | `STS_S3_UNION_EXPAND` | Experimental S3 reuse feature; part of reuse architecture; changes tree structure; not recommended for deletion |
-| S3 diagnostic flags (OUTCOME_BUCKET_DIAG*, etc.) | Write-only CSV diagnostics with historical evidence documentation; each requires per-flag retirement decision |
+| S3 diagnostic flags (OUTCOME_BUCKET_DIAG*, etc.) | Write-only CSV diagnostics with decision-log documentation; each requires per-flag retirement decision |
 | Core S3 reuse configuration (`STS_REUSE_OBS_STABLE`, `STS_REUSE_MAX_SEARCHES`, etc.) | Promoted to default since 2026-08-09 (decisions/s3-obs-stable-reuse-promotion.md); current behavior, NOT stale |
 
 ---
@@ -815,7 +815,7 @@ UNKNOWN:                    1 flag
 
 3. **`policygen` mode:** Referenced only in `train_policy.py` comment ("`one_combat.elf policygen`") — is this mode still actively used for policy training, or is `fairgen` / `fightgen` the current path? The comment is not evidence of active use.
 
-4. **S3 diagnostic flags retirement:** Each of the 5 diagnostic flag families (`OUTCOME_BUCKET_DIAG*`, `BUCKET_VALUE_DIAG*`, `DRAW_PROB_DIAG*`, `LEAFVALUE_DIAG*`, `ROOT_RACE_DIAG*`) has historical evidence documentation. Does any current analysis tool consume their CSV output? If not, each flag can be retired independently.
+4. **S3 diagnostic flags retirement:** Each of the 5 diagnostic flag families (`OUTCOME_BUCKET_DIAG*`, `BUCKET_VALUE_DIAG*`, `DRAW_PROB_DIAG*`, `LEAFVALUE_DIAG*`, `ROOT_RACE_DIAG*`) has decision-log documentation. Does any current analysis tool consume their CSV output? If not, each flag can be retired independently.
 
 5. **`tools/run/datagen_loop.sh`:** This script directly invokes the older `datagen` mode for bulk collection. Should it be migrated to `datagen2` or retired? Until that decision is made, `datagen` mode cannot be deleted.
 

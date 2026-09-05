@@ -282,7 +282,7 @@ scientific decision contract.
   cross-check above; OOD in-dist groups are few (n=37) so the ood=id stratum
   is anecdotal; delta-V scales differ across models (only scale-free
   comparisons valid); classifier feature weights are correlational.
-- **historical evidence:**  (results
+- **Decision log:** `2026-08-08-leaf-state-diagnostics.md` (results
   addendum).
 
 ## §135b B1 tactical turn-beam rollout (STS_S3_TURN_ROLLOUT): implemented opt-in with structural-equality check; paired 256-seed gate PENDING (2026-08-08, local WSL)
@@ -360,14 +360,14 @@ scientific decision contract.
   `build/b1_turn_beam_1k_256.log` on sts-test.
 - **Verdict: ❌ null (not significant), line parked.** −3.5pp with CI crossing
   zero and no floor/HP benefit at 9.3× CPU closes the B1 hand-authored-scorer
-  design (the historical evidence pre-registered the gate as arbiter; risk list
+  design (the decision log pre-registered the gate as arbiter; risk list
   included mis-ranking and lower-index bias). No default change; env stays
   opt-in default-off. B1c (VNet on final 2–4 beam survivors) is NOT unlocked
   — the cost contingency was premised on a positive signal; a VNet-scored
   beam would only add cost. A2 (dynamic α by rollout length) conditions on
   the L distribution B1 reshapes — with B1 parked, run A2 only if a
   lightweight rollout-shape diagnostic shows the premise still holds.
-- **historical evidence:** .
+- **Decision log:** `2026-08-08-turn-beam-rollout.md`.
 
 ## §136 Self-play relabeling (5.7.3, handoff plan `plan-selfplay-relabeling-2026-08-07.md`): Phase-0 verification smoke — full S3+vnet datagen stack verified, schema/labels OK, trainer/export chain OK; Phases 1–3 (GCP datagen, GPU training, paired gate) PENDING manual follow-up (2026-08-08, local WSL)
 
@@ -518,7 +518,7 @@ scientific decision contract.
   exists only under ignored `build/ooc_strategic_tok_smoke.native`; the copy
   that had accumulated in git-tracked `selfplay/models/` was removed (it must
   not be committed; only the Phase-2/3 control/candidate .native files ship).
-- **historical evidence:** .
+- **Decision log:** `2026-08-08-selfplay-relabeling.md`.
 
 ## §136 Frontier-leaf corpus + empirical relabeling (frontiergen/leafrelabel): infrastructure implemented with local smoke verification, no gameplay result yet (2026-08-08, local)
 
@@ -601,12 +601,12 @@ scientific decision contract.
   particle id is internal to `step()`); the full phase-3 batch (500-1000
   leaves @10k sims, GCP-parallel) and the phase-4 verdict gate (top-1 ≥ 80% +
   Spearman ≥ 0.7 pre-registered rule) await the batch corpus.
-- **historical evidence:** .
+- **Decision log:** `2026-08-08-frontiergen-leafrelabel.md`.
 
 ## §137 Covariate-shift mixture retrain (§135a next experiment): combatgen + leafdiag training mixture with SEPARATE on-policy/search-leaf holdouts — mixture does NOT improve held-out search-leaf ranking (pairwise −3.5pp, top-1 −3.9pp, regret +0.78) AND hurts the on-policy fit — branch closed, no gameplay gate (2026-08-08, local)
 
 - **What:** the pre-registered covariate-shift branch experiment from the
-  §135a verdict (historical evidence ):
+  §135a verdict (decision log `2026-08-08-leaf-state-diagnostics.md`):
   retrain the deployed §126 end-HP leaf on a MIXTURE of on-policy combatgen
   states PLUS actual Searcher3 search-leaf states, with separate on-policy
   and search-leaf holdouts, and test whether search-leaf RANKING on held-out
@@ -721,7 +721,7 @@ scientific decision contract.
   `/tmp/opencode/leafdiag_mix_eval.log`,
   `/tmp/opencode/leaf_ranking_mix_eval2.log`. Code:
   `tools/train_value_mixture.py` (new; default single-CSV path of
-  `train_value_combat.py` is untouched and byte-identical). historical evidence:
+  `train_value_combat.py` is untouched and byte-identical). Decision log:
   `2026-08-08-covariate-shift-mixture.md`.
 
 ## §138 Quick partial-data tok retrain + 64-seed feel-run (5.7.3 interim, 2026-08-08, local — INFORMAL smoke, NOT the 5.7.3 gate)
@@ -754,7 +754,7 @@ scientific decision contract.
   consistent. This run does NOT close 5.7.3 — the gate requires the same-recipe
   control (old corpus) vs the full 1500-seed candidate + 256-seed paired gate
   + second confirmation block. No default change; deployed artifact untouched.
-- **historical evidence:**  (addendum).
+- **Decision log:** `2026-08-08-selfplay-relabeling.md` (addendum).
 
 **§138 follow-up (same day): 100-epoch retrain on the same partial data.** `STRAT_EPOCHS=100` on `build/sp_300000_partial.csv` → best held-out `val_pol_ce` 0.5454, `policy_top1` 0.766, `margin` 5.54 (vs 40-epoch 0.559/0.754/4.75 — more epochs helps the offline fit). 64-seed paired gate (same seeds/env): 32.8% vs deployed 54.7% (**Δ −21.9pp, CI [−35.9, −7.8]**); vs the 40-epoch arm **+4.7pp, CI [−7.8, +18.8]** (direction only, n.s.). Conclusion: epoch count explains only a small part of the online gap; the data (volume ~20% + label-producer change) dominates. Artifacts: `build/tok_sp_partial_e100.pt.pt`, `build/tok_e100_train.log`, `build/tok_cmp_sp_e100_64.csv`, `selfplay/models/ooc_strategic_tok_sp_partial_e100.native` (32/32 parity).
 
@@ -808,7 +808,7 @@ scientific decision contract.
 - **Verdict: diagnostic only.** The ranking advantage exists but is small, does
   not concentrate where hypothesized, and cannot directly explain the ±12pp
   online swing. Experiment B (blend sweep) is the next discriminating test.
-- **historical evidence:**
+- **Decision log:** `2026-08-08-vnet-offline-online-diagnosis.md`
 
 ## §140 Experiment B: Blend-α sweep — both models are nearly identical when blended (2026-08-08, local — diagnostic, no gameplay)
 
@@ -866,7 +866,7 @@ scientific decision contract.
   unblended evaluation sites, PUCT value-scale dynamics, or
   visit-redistribution amplification. Experiment C (top-action agreement + per-
   fight outcome correlation) is the next discriminating test.
-- **historical evidence:**
+- **Decision log:** `2026-08-08-vnet-offline-online-diagnosis.md`
 
 ## §141 Experiment C: Top-action agreement — models agree 81% of the time, essentially tied when they disagree (2026-08-08, local — diagnostic, no gameplay)
 
@@ -929,7 +929,7 @@ scientific decision contract.
   The remaining causal paths require dynamic search-tree analysis
   (PUCT Q-range normalization, visit-count redistribution, unblended
   evaluation sites).
-- **historical evidence:**
+- **Decision log:** `2026-08-08-vnet-offline-online-diagnosis.md`
 
 ## §139 Q-head objective experiments on partial 5.7.3 data (2026-08-08, local, offline only — 373,616 rows / 707 seeds of chunk-1+2 partial, batch 2048, 60 epochs unless noted)
 
@@ -1223,7 +1223,7 @@ scientific decision contract.
   every rollout step lands in an effectively unique visible state. Do not
   invest in rollout-state caching; the leafCache comment's "effectively
   unique" claim is confirmed.
-- **historical evidence:** .
+- **Decision log:** `2026-08-09-rollout-collision-diagnostic.md`.
 
 ## §145 S3−belief−chain + canonicalized multiselect actions (STS_MULTISELECT_CANONICAL): implemented opt-in — null at 64 paired seeds (2026-08-09, local WSL)
 
@@ -1261,7 +1261,7 @@ scientific decision contract.
 - **Verdict:** env stays opt-in default-off. Gate pending for larger sample
   (256 seeds) to confirm the null, but the low discordance (1/64) strongly
   suggests zero effect; priority is low.
-- **historical evidence:** . Code:
+- **Decision log:** `2026-08-09-multiselect-canonicalization.md`. Code:
   `src/sim/search/Action.cpp::pushMultiSelectActions` (multiSelectCanonical,
   cardIdentityKey, dedup); `apps/test.cpp::testCardSelectCanonical`.
 
@@ -1294,7 +1294,7 @@ scientific decision contract.
   it exact-match-only — hash collisions are most likely.
 - **Verdict: CLOSED.** Do not port the TT to Searcher3 or invest further.
   The TT code stays in the tree (off by default) as a cautionary artifact.
-- **historical evidence:** (this entry). Code: `src/sim/search/
+- **Decision log:** (this entry). Code: `src/sim/search/
   BattleScumSearcher2.cpp::g_useTT` (36), `battleStateHash` (63),
   `selectBestEdgeToSearch` (501), `selectBestValidEdgeToSearch` (545),
   `evaluateEdge` (496); parsed `STS_TT` in `apps/one_combat.cpp::main`
@@ -1341,7 +1341,7 @@ scientific decision contract.
   dominant long-rollout bucket and is testable as a follow-up, but the
   current negative signal + high discordance makes either variant a weak
   candidate. The flat calibrated α=0.3 is the robust default.
-- **historical evidence:** (this entry). Code: `src/sim/search/
+- **Decision log:** (this entry). Code: `src/sim/search/
   BattleScumSearcher3.cpp::alphaForRolloutSteps`, `g_vnetAlphaLen`,
   `g_vnetAlphaLenTable`; parsed in `apps/one_combat.cpp::main`.
 
@@ -1499,7 +1499,7 @@ scientific decision contract.
 ## §149 V4 token-net trainer glob-skew fix + retrain (2026-08-09, local)
 
 **Context:** An encoding audit of all OOC model columns
-(.md) discovered that
+(decision-log/2026-08-09-v4-glob-skew-fix.md) discovered that
 `train_strategic_tok.py` had been building its 42-glob block from the wrong
 CSV columns since the NGLOB=42 correction. The strategicgen2 CSV interleaves
 the d/u/r/pot block (cols 32–1004) before fm*/curMap* (cols 1005–1016), but
@@ -1801,7 +1801,7 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
   §134 leafref analysis). Follow-ups: full-corpus training, leafdiag
   corrected-capture ranking eval (16 seeds), then a paired fair-S3 @1k/32-seed
   gameplay gate before any promotion consideration.
-- **historical evidence:** .
+- **Decision log:** `2026-08-09-zero-mean-rank-correction.md`.
 
 ## §153 Ascension sweep: V4-skewfix gates + S3 fair + 7k-vnet @1k, 32 seeds, A0–A20 — Act 4 now reachable; V4 gates essential for Heart survival but hurt Act-3-only performance (2026-08-09, GCP sts-test)
 
@@ -2048,8 +2048,8 @@ HEXAGHOST,AUTOMATON,COLLECTOR,CHAMP,AWAKENED_ONE,TIME_EATER,DONU_AND_DECA}.txt(.
 - **Artifacts:** `tools/analyze_mcts_leaves.py`,
   `build/vnet_mcts_leaves_xgb.csv` (1M rows, 3.4GB),
   `build/vnet_mcts_leaves_50k.csv` (50K sample),
-  `build/mcts_diag.json`. historical evidence:
-  historical evidence.
+  `build/mcts_diag.json`. Decision log:
+  historical session record.
 
 ## §159 Requalified corrected honest V4 on frozen S3 + 7k-VNet Act-3 stack (2026-08-09)
 
@@ -2547,7 +2547,7 @@ battle-break output occurred. No 32-seed gate was run.
 `build/linux-gcc-release/s3_belief_lifecycle_phase2_8.{csv,csv.next_search.csv}`;
 `s3_persist_{control,treatment}_8.{csv,csv.next_search.csv,results.csv}` and
 their `.meta.json`, `.stdout`, and `.stderr` files. See
-historical evidence.
+historical session record.
 
 **Correction — paired collapse-fallback diagnostic (same date):** The preceding
 temporary treatment did not isolate missing RNG counters from stale-collapse
@@ -3909,7 +3909,7 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
 - **What:** opt-in `one_combat e2cgen` producer recording matched RAW and POST
   snapshots for every survived ordinary/elite/act-1-2-boss combat, plus offline
   analyzer `tools/analyze_postcombat_raw_terminal.py`. Measurement infra only;
-  no deployment/model/policy change (historical evidence
+  no deployment/model/policy change (decision log
   `2026-08-17-e2c-raw-terminal-runwin-producer.md`).
 - **Boundaries:** RAW fires in `BattleContext::exitBattle` after persistent
   transfer and before `regainControl()`/reward generation; POST fires at the
@@ -4068,7 +4068,7 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   correction followed independent review of the first implementation; the
   stability-gated follow-up run is recorded below. The initial smoke did not
   support or reject chance nodes.
-- **historical evidence:**
+- **Decision log:**
   `2026-08-23-s3-strategy-fusion-diagnostic.md`.
 
 ### Historical early-tree 64-simulation run (not mature-tree evidence)
@@ -4318,7 +4318,7 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   (98.00%), 66 at simulations 2–10 (1.91%), 1 at 11–100 (0.03%), 1 at 101+
   (0.03%), and 1 never (0.03%). The gate opened by simulation 10 in 3,446
   rows (99.91%). Act 1/2/3 were 1,011/1,152/1,286 rows; ordinary/elite/boss
-  were 1,539/943/967. Exact analyzer output is reproduced in the historical evidence
+  were 1,539/943/967. Exact analyzer output is reproduced in the decision log
   for this correction.
 - **Smoke:** corrected two-seed smoke (seeds 91000–91001) captured 803 rows;
   799/803 (99.50%) opened by simulation 10. It also confirmed the timing CSV
@@ -4981,7 +4981,7 @@ model training was changed.
   31.5%. The result validates the crash fix but does not show a gameplay
   benefit, so the verdict remains `INCONCLUSIVE`.
 - **Artifacts:** see
-  historical evidence
+  historical session record
   for raw artifact paths and SHA-256 hashes.
 - **Verdict:** **INCONCLUSIVE.** Offline quality is promising, but the live
   gate was invalidated by a card-select integration failure and non-comparable
@@ -5194,7 +5194,7 @@ model training was changed.
   Frozen executable SHA-256 was
   `D628CB493B3EC21FC68D2E803C532AE0F8F6FE447C3DA4DCA47C964215545299`;
   exact combat/win/rich/policy model hashes are recorded in the corresponding
-  historical evidence. An independent post-run audit reproduced all pairing, metrics,
+  decision log. An independent post-run audit reproduced all pairing, metrics,
   bootstrap intervals, and the verdict.
 - **Verdict:** **INCONCLUSIVE.** Combined product has the best point accuracy,
   selected win rate, and regret, but both primary confidence intervals include
