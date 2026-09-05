@@ -234,6 +234,15 @@ git diff --check
 git status --short --branch
 ```
 
+When Codex provides an app-managed worktree under `/home/...` and Linux Git
+cannot lock its shared metadata, use Windows Git from an elevated host call.
+Convert the active path with `wslpath -w`, register that exact UNC path once
+as a safe directory, and run all branch, staging, commit, push, and PR commands
+through `C:\Program Files\Git\cmd\git.exe` (and the Windows GitHub CLI). This
+keeps the operation on the app-managed worktree; do not create a second
+worktree or copy the checkout. The first status/`rev-parse` call may otherwise
+fail with either a read-only `index.lock` or Git's dubious-ownership check.
+
 For initial repository searches, prefer tracked and scoped paths so generated
 build trees, ignored experiment data, and model artifacts do not consume the
 context budget:
