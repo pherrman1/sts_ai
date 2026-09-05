@@ -4066,8 +4066,6 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   correction followed independent review of the first implementation; the
   stability-gated follow-up run is recorded below. The initial smoke did not
   support or reject chance nodes.
-- **Decision log:**
-  `2026-08-23-s3-strategy-fusion-diagnostic.md`.
 
 ### Historical early-tree 64-simulation run (not mature-tree evidence)
 
@@ -4979,7 +4977,7 @@ model training was changed.
   31.5%. The result validates the crash fix but does not show a gameplay
   benefit, so the verdict remains `INCONCLUSIVE`.
 - **Artifacts:** see
-  `git show a849fad3da15889138fb4239578ec8e00635a28b:docs/knowledge-base/decision-log/2026-08-15-s3-persistent-posterior-lifecycle.md`
+  `git show a849fad3da15889138fb4239578ec8e00635a28b:docs/knowledge-base/decision-log/2026-08-27-silver-adaptive-search.md`
   for raw artifact paths and SHA-256 hashes.
 - **Verdict:** **INCONCLUSIVE.** Offline quality is promising, but the live
   gate was invalidated by a card-select integration failure and non-comparable
