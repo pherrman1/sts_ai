@@ -3,8 +3,8 @@
 **Tier:** Medium (opt-in feature only; TERM_WIN defaults off)
 **Status:** resolved 2026-08-06
 **Source pages:** [combat-search](../architecture/combat-search.md),
-decision log `2026-08-05-phase3-terminal-value-stage2.md`,
-decision log `2026-08-06-issue-49-term-win-mt-crash-fix.md`
+historical evidence ,
+historical evidence
 
 ## Symptom
 
@@ -84,5 +84,5 @@ is de-facto safe (main-thread pre-warm during model load; the
 ## Status
 
 Resolved. TERM_WIN stays opt-in/off (unpromoted, §116); the fix only
-affects the opt-in arm. Details: decision log
+affects the opt-in arm. Details: historical evidence
 `2026-08-06-issue-49-term-win-mt-crash-fix.md`.

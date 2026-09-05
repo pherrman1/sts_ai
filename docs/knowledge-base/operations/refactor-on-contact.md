@@ -27,7 +27,7 @@ modes that were the only setters were removed in the 2026-08-08 refactor
 (`apps/one_combat.cpp`).
 
 **Evidence:** `docs/knowledge-base/architecture/combat-search.md` Known
-limitations; decision log `2026-08-08-surgical-refactor.md`.
+limitations; historical evidence .
 
 ---
 
@@ -51,7 +51,7 @@ fallback (which is rarely used when PVNet is loaded). Template/overload
 complexity for a single shared function is disproportionate until a real change
 forces the issue.
 
-**Evidence:** 2026-08-08 audit; decision log `2026-08-08-surgical-refactor.md`.
+**Evidence:** 2026-08-08 audit; historical evidence .
 
 ---
 
@@ -74,7 +74,7 @@ forces the issue.
 project-fair) and different OOC stacks. They're intentionally separate, and
 consolidating them risks subtly changing historical benchmark semantics.
 
-**Evidence:** `apps/one_combat.cpp`; decision log `2026-08-08-surgical-refactor.md`.
+**Evidence:** `apps/one_combat.cpp`; historical evidence .
 
 ---
 
@@ -96,7 +96,7 @@ model-loading sequence in `apps/one_combat.cpp::main` (~L9208–L9965).
 inline. Extracting prematurely would hide the load order and precedence logic
 behind abstractions.
 
-**Evidence:** `apps/one_combat.cpp::main`; decision log `2026-08-08-surgical-refactor.md`.
+**Evidence:** `apps/one_combat.cpp::main`; historical evidence .
 
 ---
 
@@ -116,4 +116,4 @@ grows beyond ~80 lines, becomes stale, or is reported as a maintenance burden.
 benefit. Wait for evidence that the inline summary is actually reducing agent
 reads before deciding.
 
-**Evidence:** decision log `2026-08-08-surgical-refactor.md`.
+**Evidence:** historical evidence .

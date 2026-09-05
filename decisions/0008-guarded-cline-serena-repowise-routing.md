@@ -30,10 +30,10 @@ RepoWise outputs are advisory. Dead-code findings require checking entry points,
 - `.serena/project.yml`
 - `.repowiseIgnore`
 - `.gitignore`
-- historical session record
+- historical evidence
 
 ## Evidence
 
-- historical session record — establishes Cline as harness and Serena as semantic tooling while rejecting Serena memories.
+- historical evidence — establishes Cline as harness and Serena as semantic tooling while rejecting Serena memories.
 - `.serena/project.yml` — declares LSP C++ and Python language servers and excludes memory/onboarding tools.
 - `AGENTS.md` — defines project authority, verification, and approval rules.

@@ -34,4 +34,4 @@ New records must go to the appropriate surface; ADRs link existing curated pages
 
 - `EXPERIMENTS.md` — declares the experiment ledger, current append shard, and current-truth routing.
 - `docs/knowledge-base/README.md` — defines maintained knowledge-base and decision-record responsibilities.
-- historical session record — defines the chronological log and its relationship to durable records.
+- historical evidence — defines the chronological log and its relationship to durable records.

@@ -62,7 +62,7 @@ and current numbers live in `docs/knowledge-base/evaluation/current-baselines.md
 Searcher3 belief, after the prior audit selected the belief line over root
 allocation? This was diagnostic-first; no gameplay default was changed.
 
-**Pre-implementation audit:** historical session record.
+**Pre-implementation audit:** historical evidence.
 The old `drawOrderConsistent` prefix predicate is not a posterior test across
 card play, discard/exhaust, generated cards, reshuffle, enemy effects, or RNG
 advancement. The new filter propagates each particle from a copied pre-action
@@ -219,7 +219,7 @@ Stack decomposition (each vs the 22.1% skip@0 baseline, 512 seeds):
 
 ## 🆕 BattleScumSearcher3 — ISMCTS with lethal detection — 2026-07-25
 
-**What:** New `BattleScumSearcher3` ISMCTS searcher vs `BattleScumSearcher2` (fair-play).  
+**What:** New `BattleScumSearcher3` ISMCTS searcher vs `BattleScumSearcher2` (fair-play).
 Searcher3 features:
 - All 6 RNG streams randomized per simulation (vs Searcher2's 2)
 - Observation caching per node (`ensureObservation`)
@@ -227,7 +227,7 @@ Searcher3 features:
 - PUCT with policy priors (same formula as Searcher2)
 - `isGuaranteedDead()` early backprop — prunes branches where incoming damage exceeds HP+block, skipping wasted rollout steps
 
-**Setup:** Fair-play (both searchers). 32 seeds, asc 0, 1000 sims/decision. No VNet.  
+**Setup:** Fair-play (both searchers). 32 seeds, asc 0, 1000 sims/decision. No VNet.
 Same OOC stack (server cards + heuristic path + shop-V).
 
 **Results (1000 sims, 32 seeds):**

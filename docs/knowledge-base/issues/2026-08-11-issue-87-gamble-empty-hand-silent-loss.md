@@ -14,7 +14,7 @@
 - **Tier:** High
 - **Date:** 2026-08-11
 - **Source:** user-reported seed 126711 from the A0 1k/128-seed GCP rerun
-  `build/rerun_2026-08-10_a0_gates_1k_128.csv` (commit `5959e4c`, decision-log
+  `build/rerun_2026-08-10_a0_gates_1k_128.csv` (commit `5959e4c`, historical evidence
   `2026-08-10-full-stack-rerun.md` §166); reproduced on local HEAD (`b750cc6`)
   at the same configuration.
 
@@ -126,7 +126,7 @@ Mechanism chain (each step confirmed in current code):
   forbids. The same defect class already aborts known-RNG Searcher2 runs
   (EXHAUST_MANY/empty-hand, documented in
   `docs/knowledge-base/architecture/combat-search.md` "Known limitations" and
-  decision-log `2026-08-06-searchdiag-rollout-usage.md`); the GAMBLE variant is
+  historical evidence ); the GAMBLE variant is
   observable under the recommended fair-S3 config as a *silent loss* instead of
   an abort.
 - The run-level metadata is untruthful: `won=0` with `hpEnd=39`, `fightsLost=0`,

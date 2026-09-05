@@ -136,7 +136,7 @@ candidate entity embeddings via `tokEntity`. Training/export:
 CSV, no new datagen; the 482-col group-ordered fp16 state file is uploaded to
 GPU VRAM once and rows are gathered on-device with a CPU-mmap fallback on OOM;
 the 8 per-screen value/quantile heads run as full-batch GEMMs + gather instead
-of masked per-head writes — math-identical, see the 2026-08-03 decision-log
+of masked per-head writes — math-identical, see the 2026-08-03 historical evidence
 entries; `STRAT_TOK_COMPILE=1` (default ON) wraps the net in `torch.compile`
 (mode="default", Triton fusion, ~2x step; needs CPython dev headers;
 `torch._dynamo.config.suppress_errors` falls back to eager if compilation

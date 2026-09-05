@@ -8,7 +8,7 @@ Historical statements such as "best," "current," "deployed," or "running"
 describe the state at that point in time unless later evidence says otherwise.
 
 The 2026-08-22 Phase-1b Search-Age preregistration is recorded in
-historical session record.
+historical evidence.
 
 ## Where to find current truth
 

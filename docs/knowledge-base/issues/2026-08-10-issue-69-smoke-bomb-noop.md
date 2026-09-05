@@ -3,7 +3,7 @@
 - **Status:** closed correctly on 2026-08-26 by `e53f994`; the 2026-08-10
   guard-only closure was based on an incorrect external-rule premise and is
   superseded by the correction recorded in
-  `../decision-log/2026-08-26-smoke-bomb-rule-correction.md`
+  `../.md`
 - **Tier:** Low
 - **Date:** 2026-08-10; corrected 2026-08-26
 - **Source:** investigator audit plus the pinned Silver reference

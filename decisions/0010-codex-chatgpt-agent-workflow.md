@@ -65,11 +65,11 @@ but the agent should report that blocker rather than inventing a new design.
 - `.agents/skills/research-experiment/SKILL.md`
 - `.agents/skills/implementation-review/SKILL.md`
 - `.github/pull_request_template.md`
-- historical session record
+- historical evidence
 
 ## Evidence
 
-- historical session record —
+- historical evidence —
   records the Codex pilot, retained Cline compatibility, and no direct hook
   reuse.
 - `AGENTS.md` — defines authority hierarchy, CI authority, seed guard, and

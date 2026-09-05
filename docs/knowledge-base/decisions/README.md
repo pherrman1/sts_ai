@@ -5,7 +5,7 @@ Last verified: 2026-09-04 against the current working tree.
 > This legacy knowledge-base index is historical and superseded. New durable
 > decisions belong in the root [`decisions/`](../../../decisions/) ADR
 > directory. The dated session record remains frozen in
-> `decision-log/`.
+> `historical evidence/`.
 
 This directory is for durable architectural or operating decisions whose
 rationale is directly supported by repository evidence. `EXPERIMENTS.md`

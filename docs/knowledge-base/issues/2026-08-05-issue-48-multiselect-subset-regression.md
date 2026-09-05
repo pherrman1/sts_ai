@@ -3,7 +3,7 @@
 **Tier:** High (resolved)
 **Status:** closed (2026-08-05)
 **Source pages:** [combat-search](../architecture/combat-search.md),
-decision log `2026-08-05-cardselect-parity-fix.md`
+historical evidence
 
 ## Symptom (as first reported)
 

@@ -40,7 +40,7 @@ tracked policy prior auto-loaded (banner `policyNet=ON`), satisfying the
 
 - EXPERIMENTS.md §72 (full provenance); `build/pvnet_check_*.csv`;
   current-baselines.md PVNet row and Known limitations updated;
-  decision-log `2026-08-02-pvnet-headline-not-reproducible.md`;
+  historical evidence ;
   issue 16 (pvnet-sweep-provenance) updated with this re-check.
 
 ## Hypotheses

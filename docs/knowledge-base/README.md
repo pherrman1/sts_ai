@@ -69,7 +69,7 @@ For known issues:
 
 The `decisions/` and `investigations/` indexes define when durable rationale or
 a reproducible unresolved diagnosis belongs in a dedicated record. The
-Historical session material is available only through Git history when explicitly needed for provenance. Dated plans and superseded schemas are retained under `docs/archive/`
+Historical session material is available only through Git history when explicitly needed for provenance. Dated plans and superseded schemas are historical Git records.
 and must not be used as current instructions.
 
 ## Evidence labels

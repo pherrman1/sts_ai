@@ -96,7 +96,7 @@ Representative model families:
 Retired trainer entry points: `tools/train_deepsets_mcts.py` was an unlaunched,
 closed DeepSets MCTS-leaf experiment, and `train_value_combat_mlp.py` was an
 unlaunched flat sparse-MLP trainer with an invalid validation target. Their
-historical evidence remains in the experiment ledger and decision log. This
+historical evidence remains in the experiment ledger and historical evidence. This
 does not retire `combat_deepsets_v1` or `combat_mlp_sparse_v1` runtime support:
 `train_combat_deepsets.py` and `train_value_combat_nn.py`, respectively, remain
 the tracked producers for those formats.
@@ -477,7 +477,7 @@ unless STS_PVNET_VALUE_ONLY=1.
   gathered on-device; falls back to CPU mmap on OOM. `torch.compile`
   (mode="default", Triton fusion) is enabled by default on CUDA
   (`STRAT_TOK_COMPILE=1`), giving ~2.15× speedup over eager
-  (2026-08-03 decision log).
+  (2026-08-03 historical evidence).
 - **Convergence** (40 epochs, full 3.06M-row Tier-B dataset, CUDA/compiled):
   val_pol_ce 0.6018@1 → 0.5128@10 → 0.5031@20 → 0.4962@30 → 0.4924@40.
   The last 10 epochs (30→40) buy only 0.0038 CE — within run-to-run noise

@@ -1,6 +1,6 @@
 # Issue 82: Value/policy gates needlessly depend on server startup
 
-- **Status:** closed (2026-08-10, `selfplay/loop.sh::needs_server`; native-OOC gate batches no longer start v_server; see decision-log `2026-08-10-issue-82-fix.md`)
+- **Status:** closed (2026-08-10, `selfplay/loop.sh::needs_server`; native-OOC gate batches no longer start v_server; see historical evidence )
 - **Tier:** Low
 - **Date:** 2026-08-10
 - **Source:** Investigator audit 2026-08-10, `selfplay/loop.sh`

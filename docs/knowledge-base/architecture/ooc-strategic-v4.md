@@ -3,7 +3,7 @@
 Last verified: 2026-08-09 against the current working tree (feature-leak audit:
 8 genuine leaks removed; bossId confirmed legit; code corrected NGLOB=42;
 corrected model trained and gated; trainer glob-block feature-order skew fixed
-— see decision-log/2026-08-09-v4-glob-skew-fix.md; skewfix retrain gated at
+— see .md; skewfix retrain gated at
 +15.6pp — see EXPERIMENTS.md §149).
 
 Status: **delivered and recorded** in EXPERIMENTS.md §75 (2026-08-02).
@@ -23,7 +23,7 @@ sha256 `fabbcb938a…`. 128-seed gate (S2 fair @1k): 22.7% (baseline 21.1%).
 (799KB, 40 epochs, val_pol_ce 0.488, policy_top1 0.793, q_top1 0.295).
 192-seed gate (S2 fair @1k, margin 1.0): 15.6% win (baseline 21.1%) —
 offline→online inversion persists; gate benefit collapsed.
-See decision log `2026-08-09-v4-feature-leak-audit.md`.
+See historical evidence .
 Implements plan items A1 (global token + explicit threshold features), A2
 (counted deck tokens), A3 (relic/potion entity tokens), A4 (decision-context
 encoding). Held-out (60 epochs,
@@ -60,7 +60,7 @@ hidden-information leaks (nextEliteId, nextFight0–2, remElites, remFights,
 monOffset, eliteOffset at CSV cols 15–22). These were removed in the NGLOB=42
 correction. The deployed `ooc_strategic_tok_final.native` was trained as a
 50-glob model with those leaks; the honest 42-glob model gates at 15.6%
-(below baseline). See decision-log/2026-08-09-v4-feature-leak-audit.md.
+(below baseline). See .md.
 
 **Trainer skew (also 2026-08-09):** `train_strategic_tok.py` built its glob
 block by slicing CSV columns at positions that assumed all scalars were
@@ -68,7 +68,7 @@ contiguous. Because the strategicgen2 CSV interleaves d/u/r/pot (cols 32–1004)
 before fm*/curMap* (cols 1005–1016), the trainer fed deck-count values
 (d0..d11) into glob slots 24–35, which the C++ inference fills with
 forward-map features. The deployed 50-glob model was trained with this skew.
-The trainer has been fixed (decision-log/2026-08-09-v4-glob-skew-fix.md);
+The trainer has been fixed (.md);
 C++ `buildTokState` was always correct. The table below is the **corrected
 layout** that matches C++ and the fixed trainer.
 
@@ -316,4 +316,4 @@ Zero tokens never participate (trainer masks invalid; C++ loops valid).
   deck attention layer (Phase B). Event-option costs are NOT in the data, so no
   event-cost threshold (documented limitation).
 - Docs updated in the same change: `docs/knowledge-base/architecture/out-of-combat.md`,
-  decision log entry `2026-08-02-phase5-round5-token-state-v4.md`, EXPERIMENTS.md §75.
+  historical evidence , EXPERIMENTS.md §75.

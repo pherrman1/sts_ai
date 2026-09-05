@@ -72,13 +72,13 @@ and [`docs/knowledge-base/architecture/training-and-inference.md`](../../archite
 
 - The superseded §126 `v_combat_honest.txt` (804-tree) artifact was
   intentionally removed from tracking during the 2026-08-11 build-artifact
-  cleanup (decision log
+  cleanup (historical evidence
   `2026-08-11-build-artifact-relocation.md`):
   it was the previously deployed model, superseded by §148, and had zero
   remaining code references.
 - The current §148 `models/v_combat_7k_tuned.txt` default is tracked under
   `models/` (sha256 `ea35b78c…`), so a fresh clone receives it via `git pull`;
-  this closed the Phase-2 fresh-clone provenance gap (decision log
+  this closed the Phase-2 fresh-clone provenance gap (historical evidence
   `2026-08-11-build-artifact-relocation.md`,
   follow-up 2026-08-11).
 - Is value-scale normalization a viable bridge between end-HP VNet and utility-R targets?

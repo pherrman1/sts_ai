@@ -4,7 +4,7 @@
   "metrics": {
     "tracked_files": 1107,
     "tracked_bytes": 151958394,
-    "active_markdown": {"files": 416, "bytes": 2757296},
+    "active_markdown": {"files": 451, "bytes": 3076460},
     "one_combat_cpp": {"bytes": 950530},
     "root_scripts": [
       "analyze_card_cf_reliability.py", "combat_pvnet_parity.py", "eval_combat_pvnet.py",

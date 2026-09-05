@@ -2,7 +2,7 @@
 
 Status: working contracts for the post-§75 wave. Each track implements its
 section below; the orchestrator runs the GPU/benchmark schedule. Results get
-recorded in EXPERIMENTS.md (R6 ≈ §76, R7 ≈ §77, R8 ≈ §78), the decision log,
+recorded in EXPERIMENTS.md (R6 ≈ §76, R7 ≈ §77, R8 ≈ §78), the historical evidence,
 and this file's status note.
 
 Wave status (2026-08-02): R6 delivered (§76: +18.8pp @ margins 0.5/1.0,
@@ -126,5 +126,5 @@ training, on the same dataset and head contract.
   128-seed block (seeds 126700–126827, 1,000 sims, 12 threads) vs the
   bit-identical baseline `build/tierb_gate_base.csv` (21.1%/37.5/8.6), margins
   0.5/1.0/5.0, paired via `paired_analysis.py`.
-- Docs to update in the same change: EXPERIMENTS.md (R6–R8), decision-log
+- Docs to update in the same change: EXPERIMENTS.md (R6–R8), historical evidence
   entry, `docs/knowledge-base/architecture/out-of-combat.md` gate list.

@@ -946,7 +946,7 @@ enabling condition, but the omitted command prevents verification.
   reference on 256 seeds), **the single global margin 1.0 stays**; the
   per-screen knobs remain available and documented.
 - **Artifacts:** `build/sweep_{SCREEN}_m{M}.csv` (24), `build/boss2_256.csv`;
-  per-screen knobs in `apps/one_combat.cpp`; decision log
+  per-screen knobs in `apps/one_combat.cpp`; historical evidence
   `2026-08-03-ooc-per-screen-margins.md`.
 
 ## 90. Phase B step 4: combined encoder upgrades — negative; Phase B closed (2026-08-03)
@@ -1027,7 +1027,7 @@ enabling condition, but the omitted command prevents verification.
 
 ## 92. C1 wave: V4 token net full gate stack on the 256-seed block (2026-08-04)
 
-- **Goal** (§81 follow-up 3, decision-log follow-up 1): the 256-seed secondary
+- **Goal** (§81 follow-up 3, historical evidence follow-up 1): the 256-seed secondary
   block (§82) only tested the V3 stack; the V4 config needed the same larger
   block before any default-flip consideration. Same config as §81:
   `STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`
