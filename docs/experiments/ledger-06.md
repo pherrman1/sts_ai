@@ -4127,8 +4127,9 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   margin was `-0.4665`.
 - **Budget distribution:** across 560 bucket rows, matched budgets ranged from
   1 to 671 simulations, with mean `33.645`, median `5`, and quartiles
-  `[2, 5, 28]` (p90 `102`, p95 `159`). The exact 102-value histogram is in
-  `build/s3sf_decision1000_results.json`.
+  `[2, 5, 28]` (p90 `102`, p95 `159`). The exact histogram was recorded in
+  the removed raw result packet (SHA256
+  `b31f4cdbb8c277ced0a757981116ccce168aa05d3aa88ca046ea54895abea5f5`).
 - **Secondary comparison:** the fresh 500-simulation arm had disagreement
   `0.7542`, reference conditioned preference `0.5879`, and margin `+3.6488`
   by source-seed mean. It remains secondary and compute-confounded; it is not
@@ -4143,12 +4144,12 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
 - **Interpretation:** these results are invalid as a mature-1,000 scientific
   gate because the side searches used threshold-time child statistics. They
   are retained for debugging the compute confound, not as a chance-node
-  decision. The raw CSV, metadata, analyzer JSON, and result packet are
-  committed as
-  `build/s3sf_decision1000_diag.csv`,
-  `build/s3sf_decision1000_diag.csv.meta.json`,
-  `build/s3sf_decision1000_analysis.json`, and
-  `build/s3sf_decision1000_results.json`.
+  decision. The raw CSV, metadata, analyzer JSON, and result packet were
+  disposable `build/` outputs and are removed; their SHA256 hashes are
+  `2447949a7efb6f4309826050d79986b7ee5d49e0bc98bcc6706dc9d87b99c091`,
+  `60b6e9cc651318bd7a218e2b076a35514b495971b63e76166f4dee0d5b5221ea`,
+  `0fac6f0f87ce847df9e4581b8fe2ac5e6b344848bcaff91cb15bdf2bec4a0283`,
+  and `b31f4cdbb8c277ced0a757981116ccce168aa05d3aa88ca046ea54895abea5f5`.
 
 ### Correction: defer strategy-fusion side searches until search completion
 
@@ -4219,13 +4220,34 @@ Artifacts: `build/e2b_leaf_available/feature_manifest.csv`, `metrics.json`,
   margin with source-seed bootstrap support. This supports proceeding toward a
   separately reviewed chance-node prototype; it does not establish a win-rate
   improvement and does not authorize implementation in this branch.
-- **Evidence packet:**
-  `build/s3sf_a455dba_1000_diag.csv`,
-  `build/s3sf_a455dba_1000_diag.csv.meta.json`,
-  `build/s3sf_a455dba_1000_analysis.json`, and
-  `build/s3sf_a455dba_1000_results.json`. The compact result packet records
-  the exact configuration, frozen SHA, artifact hashes, validation counts,
-  and prior-64 comparison.
+- **Evidence packet:** Raw diagnostic files were disposable `build/` outputs
+  and are no longer tracked. Decision-critical provenance remains: frozen
+  executable `a455dbae1e871e2671209bf006af1a9f733f1c29`; diagnostic CSV SHA256
+  `3d7e3f8ae06ce5b108a0e28166694ac4e63c37b204f9b9ebae7e8c84cfcad56b`;
+  metadata SHA256 `57c482ceca72dfb8080a51119e6a37ce143f8545d60c8ea2768d694f1c652680`;
+  analyzer SHA256 `5ebddf2f8e80e87eefc94858b26a029f362a19b50141ba39b99c80a6c357efd9`;
+  result-packet SHA256 `5209df10295570f634b0375d8b7e09e4c2271959ed7be8cdefbabe169a0b4e27`.
+
+### Phase-1b Search-Age scientific run (2026-08-22; negative practical gate)
+
+The amended 24-seed cohort (`0..23`) used fair Searcher3, 3000 simulations,
+64 particles, K=0, and R=4 controlled rollouts. Twenty-three seeds qualified;
+seed 12 had no LATE leaves and was excluded. The qualifying analysis covered
+709 groups (368 EARLY, 341 LATE), with zero invariant failures, ineligible
+groups, caps, or missing expected seeds. Controlled sensitivity was low:
+EARLY fraction(range>5) `0.0380` (bootstrap 95% CI `[0.0109, 0.0761]`),
+LATE `0.0469` (`[0.0177, 0.0814]`), and LATE equal-group mean range `0.6899`;
+the preregistered LATE practical gate therefore **failed**. Paired
+LATE-minus-EARLY contrasts were fraction(range>5) `+0.0074`
+(`[−0.0239, +0.0370]`) and mean range `−0.0872`
+(`[−0.4368, +0.2408]`), from 10,000 seed bootstraps.
+
+The raw CSV, qualifying CSV, and two metric JSONs were generated outputs and
+are removed from `build/`; hashes are retained solely for audit provenance:
+`28e7eb24f6516695adf2ecf36cf6edc9ecf417eadf74b98b492c07339bad73f0`,
+`0a709c7cc4c04e3916abc812be474b88ced575eaf3e2132e3942a73e8b5ded60`,
+`565a65497f83947b8e6181af7793f24623c7220444177e12a82c4eefd7e8d2b7`, and
+`ad35951676e9708292025b7337ee052891c1643eeb1192c6b0df705c25522dd8`.
 
 ## §178 Searcher3 immediate-Q exploitation mechanism diagnostic — sampled-corpus negative (2026-08-23)
 
