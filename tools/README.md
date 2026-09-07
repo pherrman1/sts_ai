@@ -80,8 +80,8 @@ import refactors:
   trainers, root exporters, and `tools/` scripts. Moving one would break the
   others.
 
-- **PVNet eval cluster:** `combat_pvnet_parity.py`, `eval_combat_pvnet.py`,
-  `eval_combat_utility.py` — shared module imported by both eval scripts.
+- **PVNet eval cluster:** `combat_pvnet_parity.py`, `eval_combat_pvnet.py` —
+  the evaluator imports the shared parity module.
 
 - **Self-play active scripts:** `train_value_combat.py`, `train_winrate.py`,
   `train_rest_cf.py`, `train_policy.py`, `train_card_cf.py`,
