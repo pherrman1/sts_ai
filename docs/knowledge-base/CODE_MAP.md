@@ -28,7 +28,7 @@ before broad repository search.
 | --- | --- | --- | --- |
 | Run state | `include/game/GameContext.h`, `src/game/GameContext.cpp` | `GameContext`, `ScreenState`, `GameOutcome` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Run-level actions | `include/sim/search/GameAction.h`, `src/sim/search/GameAction.cpp` | `GameAction`, `getAllActionsInState`, `execute` | [out-of-combat.md](architecture/out-of-combat.md) |
-| OOC policy chain | `apps/one_combat.cpp` | `runFullRunOOC` (~line 2369) — ordered branch chain, current default | [out-of-combat.md](architecture/out-of-combat.md) |
+| OOC policy chain | `apps/one_combat.cpp` | `runFullRunOOC` — ordered branch chain, current default | [out-of-combat.md](architecture/out-of-combat.md) |
 | Native OOC floor/win | `models/v_rich_trees.txt`, `models/v_win_trees.txt` | Compact tree artifacts loaded at startup, `STS_NATIVE_OOC=0` disables | [out-of-combat.md](architecture/out-of-combat.md) |
 | Checkpoint NN | `apps/ooc_checkpoint_net.h` | `OocCheckpointNet`, `oocActionNNPolicy`, `STS_OOC_CHECKPOINT_NN` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Strategic Q-gate (opt-in) | `apps/ooc_strategic_net.h`, `apps/one_combat.cpp` | `OocStrategicNet`, `oocOnePlyCardRewardPolicy` et al., `STS_OOC_STRATEGIC_NN`, `STS_OOC_STRATEGIC_MARGIN` | [out-of-combat.md](architecture/out-of-combat.md) |
@@ -39,6 +39,8 @@ before broad repository search.
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
 | Mode dispatch | `apps/one_combat.cpp::main`, `apps/combat_model_diagnostics.cpp` | ~100 modes (`bestbench`, `datagen3`, `fairgen`, `strategicgen`, `searchdiag`, …), env-flag parsing, model loading; offline combat-model diagnostics are dispatched through `runCombatModelDiagnosticMode` | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md), [environment-variables.md](operations/environment-variables.md) |
+| Shared run features | `apps/one_combat/run_features.{h,cpp}` | `PathHistory`, `FwdMap`, rich schema/header/row/index map, and feature cardinalities shared by the integration driver | [overview.md](architecture/overview.md), [out-of-combat.md](architecture/out-of-combat.md) |
+| Compact tree reader | `apps/one_combat/compact_tree.{h,cpp}` | `CompactTreeNet` loader/predictor; callers supply the feature-name index map | [overview.md](architecture/overview.md), [training-and-inference.md](architecture/training-and-inference.md) |
 
 ## Strategic data generation / counterfactuals
 
