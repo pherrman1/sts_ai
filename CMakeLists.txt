@@ -208,6 +208,7 @@ target_include_directories(main PUBLIC json/include)
 add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     apps/one_combat/frontier_blob_io.cpp
+    apps/one_combat/fight_replay.cpp
     apps/one_combat/s3_sibling_crn_diagnostic.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
