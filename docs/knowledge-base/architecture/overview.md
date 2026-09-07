@@ -33,7 +33,7 @@ tracing, and counterfactual evaluators. The self-contained `vnettest`,
 | Location | Current ownership |
 | --- | --- |
 | `include/`, `src/` | Simulator, search, agents, and native model readers. |
-| `apps/` | Executable entry points and OOC checkpoint inference. |
+| `apps/` | Executable entry points and OOC checkpoint inference. `apps/one_combat/` owns the integration driver's shared run-feature schema and compact-tree reader. |
 | `bindings/` | Run-level pybind11 API. |
 | root `train_*.py`, `export_*.py` | Executable trainers and serializers. |
 | `v_server.py` | Optional localhost inference bridge. |
@@ -108,6 +108,8 @@ Detailed flows are in [combat search](combat-search.md),
 - `include/sim/search/GameAction.h::GameAction`
 - `include/sim/search/Action.h::Action`
 - `apps/one_combat.cpp::main`, `runFullRunOOC`
+- `apps/one_combat/run_features.{h,cpp}` — path history, forward-map features, rich schema, and feature index map
+- `apps/one_combat/compact_tree.{h,cpp}` — compact tree declaration and loader/predictor
 - `apps/combat_model_diagnostics.cpp::runCombatModelDiagnosticMode`
 - `bindings/slaythespire.cpp::PYBIND11_MODULE`
 - `CMakeLists.txt`

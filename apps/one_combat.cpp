@@ -49,6 +49,8 @@
 #include "ooc_strategic_net.h"
 #include "ooc_strategic_tok_net.h"
 #include "combat_model_diagnostics.h"
+#include "one_combat/compact_tree.h"
+#include "one_combat/run_features.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -70,6 +72,18 @@
 #include <unordered_map>
 #include <unordered_set>
 
+using one_combat::CompactTreeNet;
+using one_combat::FwdMap;
+using one_combat::PathHistory;
+using one_combat::forwardMapFeatures;
+using one_combat::kNumCardIds;
+using one_combat::kNumPotions;
+using one_combat::kNumRelics;
+using one_combat::richHeader;
+using one_combat::richIdxMap;
+using one_combat::richRow;
+using one_combat::richStateHeader;
+
 extern bool g_collectKeys;              // env STS_COLLECT_KEYS=1: collect act-4 keys
 static std::vector<std::string> g_mainArgv;
 static std::string g_mainBinaryPath;
@@ -84,7 +98,6 @@ static thread_local int t_trainingHealthFailures = 0;
 static thread_local int t_trainingBranchHealthFailures = 0;
 static thread_local bool t_trainingRunActive = false;
 struct E2cCapture;
-struct PathHistory;
 static thread_local E2cCapture *t_e2c = nullptr;
 static thread_local std::string t_e2cRows;
 static std::atomic<long long> g_e2cCounts[3][6]{}; // eligible, raw, post, pairs, raw_only, post_only
@@ -94,7 +107,6 @@ static void e2cCapturePost(sts::GameContext &);
 static std::string e2cRunRows(const E2cCapture &, bool, int, int);
 static std::string e2cExplicitRelics(const sts::GameContext &);
 static std::string e2cHeader();
-static std::string richStateHeader();
 static std::string e2cRoomName(int);
 static bool g_runwinShadowActive = false;
 static int g_runwinShadowR = 1;
@@ -657,52 +669,6 @@ static int rowsToNextElite(const GameContext &gc) {
     return 99;
 }
 
-// Forward-map features: ONE reachability sweep from the current node giving, for the
-// remaining map, the min rows-to-next {elite,rest,shop,boss} and the count of reachable
-// rooms of each type ahead. The map is deterministic/known, so this is free information
-// the value model should have (it previously saw only pv* history + the next few fights).
-struct FwdMap {
-    int dElite = 99, dRest = 99, dShop = 99, dBoss = 0;
-    int cElite = 0, cRest = 0, cShop = 0, cEvent = 0, cMonster = 0, cTreasure = 0;
-};
-static FwdMap forwardMapFeatures(const GameContext &gc) {
-    FwdMap fm;
-    fm.dBoss = 14 - std::max(gc.curMapNodeY, 0);
-    if (gc.map == nullptr) return fm;
-    const Map &map = *gc.map;
-    std::array<bool, 7> reach{};
-    int startRow;
-    if (gc.curMapNodeY < 0) {
-        startRow = 0;
-        for (const MapNode &n : map.nodes[0]) if (n.edgeCount > 0) reach[n.x] = true;
-    } else {
-        startRow = gc.curMapNodeY + 1;
-        if (startRow > 14) return fm;
-        const MapNode &cur = map.getNode(gc.curMapNodeX, gc.curMapNodeY);
-        for (int i = 0; i < cur.edgeCount; ++i) reach[cur.edges[i]] = true;
-    }
-    const int base = std::max(gc.curMapNodeY, 0);
-    for (int y = startRow; y <= 14; ++y) {
-        std::array<bool, 7> nxt{};
-        for (int x = 0; x < 7; ++x) if (reach[x]) {
-            const MapNode &n = map.getNode(x, y);
-            const int d = y - base;
-            switch (n.room) {
-                case Room::ELITE:    ++fm.cElite;    fm.dElite = std::min(fm.dElite, d); break;
-                case Room::REST:     ++fm.cRest;     fm.dRest  = std::min(fm.dRest,  d); break;
-                case Room::SHOP:     ++fm.cShop;     fm.dShop  = std::min(fm.dShop,  d); break;
-                case Room::EVENT:    ++fm.cEvent;    break;
-                case Room::MONSTER:  ++fm.cMonster;  break;
-                case Room::TREASURE: ++fm.cTreasure; break;
-                default: break;
-            }
-            for (int i = 0; i < n.edgeCount; ++i) nxt[n.edges[i]] = true;
-        }
-        reach = nxt;
-    }
-    return fm;
-}
-
 static double evalCardValue(const GameContext &gc, const Card &c) {
     const CardType t = c.getType();
     if (t == CardType::CURSE || t == CardType::STATUS) return -1e9;   // never draft these
@@ -784,22 +750,6 @@ static void evalCardRewardPolicy(GameContext &gc, bool allowSkip = true) {
 static std::string featureRow(const GameContext &gc);      // defined below
 static std::string deckCountsCsv(const GameContext &gc);   // defined below
 
-// Accumulates room-type visit counts along the taken path (pv* features). Defined
-// here (not just before datagen) because the deployment run loop tracks it too, so
-// V queries carry the same path-history features the model was trained on.
-struct PathHistory {
-    std::array<int, 10> roomVisits{};   // indexed by (int)Room
-    long lastNodeKey = -1;
-    void update(const GameContext &gc) {
-        if (gc.curMapNodeY < 0 || gc.curMapNodeY >= 15 || gc.curMapNodeX < 0 || gc.curMapNodeX >= 7)
-            return;
-        const long key = (long)gc.act * 100000 + (long)gc.curMapNodeY * 100 + gc.curMapNodeX;
-        if (key == lastNodeKey) return;
-        lastNodeKey = key;
-        const int ri = (int)gc.getCurMapNode().room;
-        if (ri >= 0 && ri < 10) ++roomVisits[ri];
-    }
-};
 struct E2cFight {
     int index = -1, room = -1, encounter = -1;
     std::string raw, post, rawRelics, postRelics;
@@ -821,7 +771,6 @@ struct E2cCapture {
 // Current run's path history, so vFeatCsv() can emit pv* features (nullptr = none).
 static thread_local const PathHistory *t_curPath = nullptr;
 static thread_local PathHistory t_emptyPath;    // pv* = 0 when no run path is set
-static std::string richRow(const GameContext &gc, const PathHistory &path);  // defined below
 static void strategicCands(const GameContext &gc, const search::GameAction &a,
                            int &actionType, int &c1, int &c2, int &c3,
                            int &cand1, int &cand2, int &cand3);  // defined below
@@ -829,7 +778,6 @@ static struct TokState buildTokState(const GameContext &gc, const PathHistory &p
 static void tokEntity(const GameContext &gc, const search::GameAction &a,
                       int &entType, int &entId, float &goldGePrice);  // defined below
 static std::string vFeatCsv(const GameContext &gc);                          // defined below
-static std::string richHeader();                                             // defined below
 
 // ---------------------------------------------------------------------------
 // DECK-AWARE V VIA PYTHON BRIDGE: card picks are rare (~13/run) so we query the
@@ -1453,8 +1401,7 @@ static std::string vSendRecv(const std::string &reqNoNl) {
     return vRequestLine(req);
 }
 
-// forward decls (native V_win helpers are defined below with the WinNet struct)
-static const std::unordered_map<std::string,int> &richIdxMap();
+// native V_win helpers use the shared compact-tree reader and rich feature map.
 static std::vector<float> richFeatureVec(GameContext &gc);
 static bool   winNetOk();
 static double winNetPredict(const std::vector<float> &raw);
@@ -1502,97 +1449,6 @@ static void serverCardRewardPolicy(GameContext &gc) {
 static int g_bossRelicV = 0;   // STS_BOSS_RELIC=1
 static int g_neowV      = 0;   // STS_NEOW_V=1
 
-// --- NATIVE V_win: compact XGBoost tree-walk on the rich feature vector, to kill the
-// v_server socket for OOC V_win decisions (esp. the unbatched per-candidate ones:
-// boss-relic/Neow/pathing). Loaded from models/v_win_trees.txt (export_win_model.py).
-// Shared compact-tree reader/evaluator.  V_win and the E2c RAW critic use the
-// exact same text format and traversal; consumers only supply their canonical
-// feature-name -> vector-index map.
-struct CompactTreeNet {
-    struct Node { int feat; float thr; int yes, no; };   // feat<0 => leaf (value in thr)
-    std::vector<std::vector<Node>> trees;
-    std::vector<int> sel;                                  // model feat i -> rich raw index
-    double baseMargin = 0.0; bool logistic = true, ok = false;
-    std::string path;                                      // loaded-tree source path
-
-    std::vector<std::string> featureNames;
-
-    bool load(const std::string &path, const std::unordered_map<std::string,int> &featureIdx,
-              const char *kind = "CompactTreeNet") {
-        this->path = path;
-        ok = false;                                        // only set true after validation passes
-        std::ifstream f(path); if (!f) { std::cerr << kind << ": cannot open " << path << "\n"; return false; }
-        std::string tok; int nfeat = 0, ntrees = 0; double baseScore = 0.5;
-        f >> tok >> nfeat;                                 // "nfeat N"
-        if (tok != "nfeat" || nfeat < 1) { std::cerr << kind << ": invalid feature count\n"; return false; }
-        sel.resize(nfeat); featureNames.resize(nfeat);
-        std::unordered_set<std::string> seenFeatures;
-        for (int i = 0; i < nfeat; ++i) { std::string kw, name; f >> kw >> name;
-            auto it = featureIdx.find(name);
-            if (kw != "feat" || it == featureIdx.end() || !seenFeatures.insert(name).second) {
-                std::cerr << kind << ": unknown or duplicate feature: " << name << "\n"; return false; }
-            sel[i] = it->second; featureNames[i] = name; }
-        f >> tok >> logistic;                              // "logistic 0/1"
-        f >> tok >> baseScore;                             // "base_score X"
-        f >> tok >> ntrees;                                // "ntrees N"
-        if (tok != "ntrees" || !f.good() || ntrees < 1 || (logistic && !(baseScore > 0.0 && baseScore < 1.0))) {
-            std::cerr << kind << ": truncated/missing tree count in " << path << "\n"; return false;
-        }
-        baseMargin = logistic ? std::log(baseScore / (1.0 - baseScore)) : baseScore;
-        trees.resize(ntrees);
-        for (int t = 0; t < ntrees; ++t) {
-            std::string kw; int ti, nn; f >> kw >> ti >> nn;   // "tree t count"
-            if (!f.good() || kw != "tree" || ti != t || nn < 1) { std::cerr << kind << ": invalid tree " << t << " header in " << path << "\n"; return false; }
-            trees[t].resize(nn);
-            for (int i = 0; i < nn; ++i) {
-                std::string type; f >> type;
-                Node nd = { -1, 0.0f, 0, 0 };
-                if (type == "L") { double v; f >> v; nd = { -1, (float)v, 0, 0 }; }
-                else if (type == "S") { int fi = 0, y = 0, no = 0; float th = 0.0f; f >> fi >> th >> y >> no; nd = { fi, th, y, no }; }
-                else { std::cerr << kind << ": invalid node tag in tree " << t << "\n"; return false; }
-                if (!f.good()) { std::cerr << kind << ": truncated node in tree " << t << " of " << path << "\n"; return false; }
-                trees[t][i] = nd;
-            }
-            for (const Node &nd : trees[t]) if (nd.feat >= 0 &&
-                (nd.feat >= nfeat || nd.yes < 0 || nd.no < 0 || nd.yes >= nn || nd.no >= nn)) {
-                std::cerr << kind << ": invalid split index in tree " << t << "\n"; return false; }
-            // Compact exports are serialized in XGBoost node order, whose
-            // final node is a leaf.  Keep this historical truncation guard
-            // and also reject cycles/unreachable nodes so predict() cannot
-            // walk a malformed tree indefinitely or silently ignore data.
-            if (trees[t].back().feat >= 0) {
-                std::cerr << kind << ": final node is not a leaf in tree " << t << "\n"; return false;
-            }
-            std::vector<unsigned char> visit(nn, 0);
-            std::function<bool(int)> validateTree = [&](int node) {
-                if (visit[node] == 1) return false;
-                if (visit[node] == 2) return true;
-                visit[node] = 1;
-                const Node &nd = trees[t][node];
-                if (nd.feat >= 0 && (!validateTree(nd.yes) || !validateTree(nd.no))) return false;
-                visit[node] = 2;
-                return true;
-            };
-            if (!validateTree(0) || std::find(visit.begin(), visit.end(), 0) != visit.end()) {
-                std::cerr << kind << ": cyclic or unreachable node in tree " << t << "\n"; return false;
-            }
-        }
-        f >> tok;                                          // probe: file must end cleanly after the last tree
-        if (!f.eof()) { std::cerr << kind << ": trailing data after " << ntrees << " trees in " << path << "\n"; return false; }
-        ok = true;
-        std::cout << "[" << kind << ": " << ntrees << " trees, " << nfeat << " feats from " << path << "]\n";
-        return true;
-    }
-    double predict(const std::vector<float> &raw) const {
-        double m = baseMargin;
-        for (const auto &tr : trees) { int i = 0, steps = 0;
-            while (tr[i].feat >= 0 && ++steps <= (int)tr.size()) i = (raw[sel[tr[i].feat]] < tr[i].thr) ? tr[i].yes : tr[i].no;
-            if (steps > (int)tr.size()) return std::numeric_limits<double>::quiet_NaN();
-            m += tr[i].thr; }
-        const double out = logistic ? 1.0 / (1.0 + std::exp(-m)) : m;
-        return logistic ? std::max(0.0, std::min(1.0, out)) : out;
-    }
-};
 using WinNet = CompactTreeNet;
 static WinNet g_winNet;
 static WinNet g_floorNet;
@@ -1603,18 +1459,6 @@ static std::string g_runwinShadowModelPath;
 static bool   winNetOk() { return g_winNet.ok; }
 static double winNetPredict(const std::vector<float> &raw) { return g_winNet.predict(raw); }
 
-// rich feature NAME -> raw index (from richHeader minus the seed prefix and the 3 labels).
-static const std::unordered_map<std::string,int> &richIdxMap() {
-    static std::unordered_map<std::string,int> m;
-    if (m.empty()) {
-        std::string h = richHeader(); std::vector<std::string> names; std::string cur;
-        for (char c : h) { if (c == ',') { names.push_back(cur); cur.clear(); } else cur += c; }
-        names.push_back(cur);
-        // drop "seed" (front) and won/finalFloor/endHp (back) -> raw layout
-        for (int i = 1; i + 3 < (int)names.size(); ++i) m[names[i]] = i - 1;
-    }
-    return m;
-}
 // rich feature vector as floats (parse of vFeatCsv -> exactly the raw layout).
 static std::vector<float> richFeatureVec(GameContext &gc) {
     const std::string s = vFeatCsv(gc);
@@ -4354,8 +4198,6 @@ static const char *kFeatureHeader =
 
 // deck as per-card-id counts d0..d(kNumCardIds-1) — makes value models deck-aware
 // (able to express card synergies), shared by datagen and causalgen.
-static const int kNumCardIds = 372;
-
 static std::string deckCountsCsv(const GameContext &gc) {
     std::array<int, kNumCardIds> cnt{};
     for (const auto &c : gc.deck.cards) {
@@ -4408,90 +4250,6 @@ static std::string featureRow(const GameContext &gc) {
 // cards, deck totals d{id}, deck upgrades u{id}, relics r{id} (0=absent /
 // 1+counter), potions pot{id} (multi-hot). Wide but sparse. Append-capable.
 // ---------------------------------------------------------------------------
-static const int kNumRelics  = 181;   // RelicId enum cardinality
-static const int kNumPotions = 48;    // Potion enum cardinality
-
-// Accumulates room types visited so far this run (for path evaluation). Updated
-// each loop iteration; counts a node once, when the map position first changes.
-static std::string richHeader() {
-    std::ostringstream h;
-    h << "seed,ascension,act,floor,curHp,maxHp,gold,deckSize,potionChance,cardRarityFactor,"
-         "blueKey,greenKey,redKey,potionCount,potionCapacity,"
-         "bossId,nextEliteId,nextFight0,nextFight1,nextFight2,remElites,remFights,monOffset,eliteOffset,"
-         "pvShop,pvRest,pvEvent,pvElite,pvMonster,pvTreasure,"
-         "bottledAtkId,bottledSkillId,bottledPowId";
-    for (int i = 0; i < kNumCardIds; ++i) h << ",d" << i;
-    for (int i = 0; i < kNumCardIds; ++i) h << ",u" << i;
-    for (int i = 0; i < kNumRelics;  ++i) h << ",r" << i;
-    for (int i = 0; i < kNumPotions; ++i) h << ",pot" << i;
-    h << ",fmDElite,fmDRest,fmDShop,fmDBoss,fmCElite,fmCRest,fmCShop,fmCEvent,fmCMonster,fmCTreasure";
-    h << ",curMapX,curMapY";
-    h << ",won,finalFloor,endHp";
-    return h.str();
-}
-
-// State portion of a row (no seed prefix, no labels — those are added at run end).
-static std::string richRow(const GameContext &gc, const PathHistory &path) {
-    std::array<int, kNumCardIds> d{}, u{};
-    int botAtk = -1, botSkill = -1, botPow = -1;
-    for (int i = 0; i < gc.deck.size(); ++i) {
-        const Card &c = gc.deck.cards[i];
-        const int id = (int)c.getId();
-        if (id >= 0 && id < kNumCardIds) { ++d[id]; if (c.isUpgraded()) ++u[id]; }
-        if (gc.deck.isCardBottled(i)) {
-            switch (c.getType()) {
-                case CardType::ATTACK: botAtk = id; break;
-                case CardType::SKILL:  botSkill = id; break;
-                case CardType::POWER:  botPow = id; break;
-                default: break;
-            }
-        }
-    }
-    std::array<int, kNumRelics> r{};
-    for (const auto &ri : gc.relics.relics) {
-        const int id = (int)ri.id;
-        if (id >= 0 && id < kNumRelics) r[id] = 1 + (ri.data > 0 ? ri.data : 0);  // presence + counter
-    }
-    std::array<int, kNumPotions> pot{};
-    for (int i = 0; i < gc.potionCapacity && i < (int)gc.potions.size(); ++i) {
-        if (gc.potions[i] == Potion::EMPTY_POTION_SLOT) continue;
-        const int id = (int)gc.potions[i];
-        if (id >= 0 && id < kNumPotions) ++pot[id];
-    }
-    const int nextElite = gc.eliteMonsterListOffset < gc.eliteMonsterList.size()
-                        ? (int)gc.eliteMonsterList[gc.eliteMonsterListOffset] : 0;
-    auto nf = [&](int k) -> int {
-        const int idx = gc.monsterListOffset + k;
-        return idx < gc.monsterList.size() ? (int)gc.monsterList[idx] : 0;
-    };
-    std::ostringstream o;
-    o << gc.ascension << ',' << gc.act << ',' << gc.floorNum << ',' << gc.curHp << ',' << gc.maxHp << ','
-      << gc.gold << ',' << gc.deck.size() << ',' << gc.potionChance << ',' << gc.cardRarityFactor << ','
-      << (gc.blueKey ? 1 : 0) << ',' << (gc.greenKey ? 1 : 0) << ',' << (gc.redKey ? 1 : 0) << ','
-      << gc.potionCount << ',' << gc.potionCapacity << ','
-      << (int)gc.boss << ',' << nextElite << ',' << nf(0) << ',' << nf(1) << ',' << nf(2) << ','
-      << (gc.eliteMonsterList.size() - gc.eliteMonsterListOffset) << ','
-      << (gc.monsterList.size() - gc.monsterListOffset) << ','
-      << gc.monsterListOffset << ',' << gc.eliteMonsterListOffset << ','
-      << path.roomVisits[(int)Room::SHOP]  << ',' << path.roomVisits[(int)Room::REST]     << ','
-      << path.roomVisits[(int)Room::EVENT] << ',' << path.roomVisits[(int)Room::ELITE]    << ','
-      << path.roomVisits[(int)Room::MONSTER] << ',' << path.roomVisits[(int)Room::TREASURE] << ','
-      << botAtk << ',' << botSkill << ',' << botPow;
-    for (int i = 0; i < kNumCardIds; ++i) o << ',' << d[i];
-    for (int i = 0; i < kNumCardIds; ++i) o << ',' << u[i];
-    for (int i = 0; i < kNumRelics;  ++i) o << ',' << r[i];
-    for (int i = 0; i < kNumPotions; ++i) o << ',' << pot[i];
-    const FwdMap fm = forwardMapFeatures(gc);   // forward-map (appended last -> old models unaffected)
-    o << ',' << fm.dElite << ',' << fm.dRest << ',' << fm.dShop << ',' << fm.dBoss
-      << ',' << fm.cElite << ',' << fm.cRest << ',' << fm.cShop << ',' << fm.cEvent
-      << ',' << fm.cMonster << ',' << fm.cTreasure;
-    // Map position. Combined with seed+act (also stored) the FULL map graph is deterministically
-    // reconstructable (see the `dumpmap` mode) -> the eventual GNN gets the whole node+edge structure
-    // with NO per-row bloat. Trees ignore these; harmless.
-    o << ',' << gc.curMapNodeX << ',' << gc.curMapNodeY;
-    return o.str();
-}
-
 // Full rich feature vector for a V query — identical schema/order to richRow() so
 // training (vrich.csv) and serving match exactly. Uses the current run's path
 // history when set (t_curPath), else an empty one (pv* = 0).
@@ -6796,7 +6554,6 @@ static bool actFightProbeAllOocPolicy(GameContext &gc) {
 // identical parent state with common agent/game RNG. This supplies direct route
 // action values rather than trying to infer causal alternatives from trajectory
 // state values generated by the heuristic policy.
-static std::string richStateHeader();
 static std::string pathCounterfactualHeader() {
     return "seed,decisionIdx,actionIdx,candidateX,heuristicX," + richStateHeader()
          + ",branchWon,branchFloor,branchHp";
@@ -6940,15 +6697,6 @@ static bool genuineRestVsSmith(const GameContext &gc) {
     return !gc.hasRelic(RelicId::COFFEE_DRIPPER)
         && !gc.relics.has(RelicId::FUSION_HAMMER)
         && gc.deck.getUpgradeableCount() > 0;
-}
-
-static std::string richStateHeader() {
-    std::string h = richHeader();
-    const std::string prefix = "seed,";
-    if (h.rfind(prefix, 0) == 0) h.erase(0, prefix.size());
-    const std::string labels = ",won,finalFloor,endHp";
-    const size_t p = h.rfind(labels); if (p != std::string::npos) h.erase(p);
-    return h;
 }
 
 // ---------------------------------------------------------------------------
