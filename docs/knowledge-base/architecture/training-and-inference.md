@@ -80,7 +80,10 @@ configuration, environment, and loaded-artifact hashes before CSV creation.
 
 Representative model families:
 
-- run values: `train_value_rich.py`, `train_winrate.py`;
+- run values: `train_value_rich.py`, `train_winrate.py`; the retained
+  `one_combat carddump` mode is the sole repository producer of
+  `build/card_meta.csv`, which `train_value_rich.py` and three other tracked
+  trainers read synchronously;
 - paired/action OOC: `train_rest_cf.py`, `train_card_cf.py`,
   `train_path_cf.py`, `train_ooc_next_action.py`, `train_ooc_checkpoint.py`;
   future-fight card collection uses
@@ -538,7 +541,7 @@ without requiring XGBoost.
 
 ## Relevant code
 
-- `apps/one_combat.cpp::main`, `fairGen`, `fightGen`, `strategicGen`,
+- `apps/one_combat.cpp::main` (`carddump` dispatch), `fairGen`, `fightGen`, `strategicGen`,
   `strategicGen2`, `leafDiag`, `leafRef`, `rolloutTrace`, `vFeatCsv`
 - `include/sim/search/ScumSearchAgent2.h` data-generation hooks
 - `include/sim/search/BattleScumSearcher3.h::S3LeafDiagnostic`, `g_onS3LeafQuery`,

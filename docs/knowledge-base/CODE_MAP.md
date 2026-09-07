@@ -59,7 +59,7 @@ before broad repository search.
 | VNet mixture | `tools/train_value_mixture.py` | Covariate-shift mixture retrain, §137 closed (no improvement) | [training-and-inference.md](architecture/training-and-inference.md) |
 | Strategic (joint policy+value) | `train_strategic.py`, `export_strategic.py` | Tier-A `chosen` labels, CUDA default | [training-and-inference.md](architecture/training-and-inference.md) |
 | Strategic token | `train_strategic_tok.py`, `export_strategic_tok.py` | Token-based, experimental | [training-and-inference.md](architecture/training-and-inference.md) |
-| Run value | `train_value_rich.py`, `train_winrate.py` | OOC floor/win trees | [training-and-inference.md](architecture/training-and-inference.md) |
+| Run value | `train_value_rich.py`, `train_winrate.py`, `apps/one_combat.cpp` | OOC floor/win trees; `carddump` produces `build/card_meta.csv` for retained trainers | [training-and-inference.md](architecture/training-and-inference.md) |
 | Combat PVNet | `train_combat_pvnet.py` | Joint policy+value neural | [training-and-inference.md](architecture/training-and-inference.md) |
 | Combat CPSI | `train_combat_cpsi.py` | Card-pair synergy, experimental | [training-and-inference.md](architecture/training-and-inference.md) |
 | Combat dist | `train_combat_dist.py` | Distributional value, experimental | [training-and-inference.md](architecture/training-and-inference.md) |

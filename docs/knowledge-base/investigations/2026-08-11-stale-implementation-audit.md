@@ -9,6 +9,9 @@
 ## Scope / baseline
 
 - **Baseline SHA:** `28cbbdc12211bb3aa10cb9ed6ee8001d39b13fcb`
+- **Focused resolution baseline:** `465ad3b399af40e2e5d7bcf87f7d2b9fd911fa7b`
+  (`bench`, `runbench`, `mcts`, `random`, `draftbench`, `cardbench`,
+  `combobench`, `pathbench`, `carddump`, and `deck` only)
 - **Working tree clean at start:** yes (`git status --short` empty)
 - **Directories audited:** `apps/`, `src/`, `include/`, `bindings/`
 - **Excluded:** `json/`, `pybind11/`, third-party, model artifacts, generated build files, `.ai/`, archived docs
@@ -123,53 +126,18 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 ### CANDIDATE H2 — Legacy `bench` mode and `runBenchmark` function
 
-**Files/symbols involved:** `apps/one_combat.cpp` lines 10790–10794 (`bench` mode), `benchmark()` function, `runBenchmark()` function
-
-**Evidence:**
-- The `bench` mode (lines 10790–10794) runs a `benchmark(sims, nSeeds)` without ascension or seed offset.
-- `bestbench` (line 11665) is the canonical mode with ascension, seed offset, and `runFullRunOOC`.
-- All recent benchmarks (§68–§153) use `bestbench`.
-- `runBenchmark()` (line 10832) is a separate function used by `runbench` mode (different from `bench`); neither appears in any shell/Python script.
-- Differences between `bench`/`benchmark`/`runBenchmark`/`bestbench` are unclear; the existence of four benchmark entry points without distinguishing caller documentation is strong dead-code evidence.
-
-**Scientific status:** Superseded by `bestbench` as the uniform benchmark mode.
-
-**Confidence:** HIGH
-
-**Cleanup value:** LOW (minimal line removal).
-
-**Deletion risk:** LOW — verify that `benchmark()` and `runBenchmark()` share no code with `bestBench()`.
-
-**Verification cost:** LOW — `bestbench` 8-seed smoke.
-
-**Classification:** DEAD_HIGH_CONFIDENCE
+**Status:** REMOVED. Neither mode had a current caller, baseline role, named
+research dependency, maintained workflow, or unique coverage. `bestbench`
+remains the canonical benchmark; `runFullRun` remains for `run`.
 
 ---
 
 ### CANDIDATE H3 — `cardbench`, `combobench`, `pathbench`, `draftbench` modes
 
-**Files/symbols involved:** `apps/one_combat.cpp` lines 11614–11635 (mode dispatch + implementations)
-
-**Evidence:**
-- `cardbench` — weighted table vs greedy argmax drafting.
-- `combobench` — baseline vs greedy draft + heuristic path.
-- `pathbench` — random path vs heuristic path.
-- `draftbench` — weighted table vs lookahead drafting.
-- None appear in any `*.sh` or `*.py` caller.
-- The comparisons they make are historical — current baselines use `bestbench` with the `runFullRunOOC` policy chain.
-- No CTest entries.
-
-**Scientific status:** Historical A/B probes from early policy development; superseded by `bestbench` + gate experiments.
-
-**Confidence:** HIGH
-
-**Cleanup value:** LOW (small functions).
-
-**Deletion risk:** LOW.
-
-**Verification cost:** LOW.
-
-**Classification:** DEAD_HIGH_CONFIDENCE
+**Status:** REMOVED. These historical A/B probes had no current caller,
+baseline role, named research dependency, maintained workflow, or unique
+coverage. Shared `rolloutChoice` and `chooseMapAction` remain for retained
+modes.
 
 ---
 
@@ -198,26 +166,9 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 ### CANDIDATE H5 — `mcts` and `random` modes (single-combat tests)
 
-**Files/symbols involved:** `apps/one_combat.cpp` lines 10811–10823
-
-**Evidence:**
-- `mcts` — single combat with MCTS policy.
-- `random` — single combat with random policy.
-- These are simple test harnesses; no caller in the repository outside `one_combat.cpp` itself.
-- The combat search is tested through full-run modes (`bestbench`, `searchdiag`); single-combat testing is done through Python replay scripts (`check_replay.py` which calls `bestbench`).
-- No documentation references these modes.
-
-**Scientific status:** Ad-hoc debugging tools; not part of any maintained test suite.
-
-**Confidence:** HIGH
-
-**Cleanup value:** LOW.
-
-**Deletion risk:** LOW.
-
-**Verification cost:** LOW.
-
-**Classification:** DEAD_HIGH_CONFIDENCE
+**Status:** REMOVED. These ad-hoc single-combat harnesses had no current caller,
+baseline role, named research dependency, maintained workflow, or unique
+coverage. Shared `legalActions` remains for retained diagnostics.
 
 ---
 
@@ -243,25 +194,10 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 ### CANDIDATE H7 — `carddump` and `deck` modes
 
-**Files/symbols involved:** `apps/one_combat.cpp` lines 11599–11614
-
-**Evidence:**
-- `carddump` — dump all card properties (id/name/type/rarity/obtainWeight/baseDamage).
-- `deck` — dump final deck+relics of one run.
-- Both are one-off debugging tools with no callers in scripts or tests.
-- Card property information is available through the game code directly.
-
-**Scientific status:** Diagnostic only; not used by any current workflow.
-
-**Confidence:** HIGH
-
-**Cleanup value:** LOW.
-
-**Deletion risk:** LOW.
-
-**Verification cost:** LOW.
-
-**Classification:** DEAD_HIGH_CONFIDENCE
+**Status:** `deck` REMOVED because it was an uncalled ad-hoc dump with no
+baseline, research, workflow, or coverage role. `carddump` RETAINED because it
+is the sole producer of `build/card_meta.csv`, read synchronously by four
+tracked trainers including the maintained `train_value_rich.py` path.
 
 ---
 
@@ -560,22 +496,22 @@ All of these flags have decision-log documentation from 2026-08-09/10 and are wr
 | `reprobench` | Repeat one run, audit determinism | Manual diagnostic | Determinism audit | SUPPORTED_OPTIONAL |
 | `runtrace` | Per-node human-readable trace | Manual diagnostic | Trace inspection | SUPPORTED_OPTIONAL |
 | `run` | One whole run verbose | Manual quick-check | Convenience | SUPPORTED_OPTIONAL |
-| `runbench` | Many whole runs | No current caller found | Historical benchmark variant | DEAD_HIGH_CONFIDENCE |
-| `bench` | Basic benchmark | No current caller found | Superseded by `bestbench` | DEAD_HIGH_CONFIDENCE |
-| `mcts` | Single combat MCTS | No current caller found | Ad-hoc test | DEAD_HIGH_CONFIDENCE |
-| `random` | Single combat random | No current caller found | Ad-hoc test | DEAD_HIGH_CONFIDENCE |
+| `runbench` | Many whole runs | No current caller found | Historical benchmark variant | REMOVED |
+| `bench` | Basic benchmark | No current caller found | Superseded by `bestbench` | REMOVED |
+| `mcts` | Single combat MCTS | No current caller found | Ad-hoc test | REMOVED |
+| `random` | Single combat random | No current caller found | Ad-hoc test | REMOVED |
 | `datagen` | Original simple state-outcome CSV for offline V(state) | `tools/run/datagen_loop.sh` (directly invokes with seed offset) | Superseded by datagen2/datagen3 but retained caller exists | SUPERSEDED_CONNECTED |
-| `draftbench` | Weighted table vs lookahead drafting | No current caller found | Historical A/B | DEAD_HIGH_CONFIDENCE |
-| `cardbench` | Card drafting A/B | No current caller found | Historical A/B | DEAD_HIGH_CONFIDENCE |
-| `combobench` | Baseline vs greedy draft+heuristic path | No current caller found | Historical A/B | DEAD_HIGH_CONFIDENCE |
-| `pathbench` | Random path vs heuristic path | No current caller found | Historical A/B | DEAD_HIGH_CONFIDENCE |
+| `draftbench` | Weighted table vs lookahead drafting | No current caller found | Historical A/B | REMOVED |
+| `cardbench` | Card drafting A/B | No current caller found | Historical A/B | REMOVED |
+| `combobench` | Baseline vs greedy draft+heuristic path | No current caller found | Historical A/B | REMOVED |
+| `pathbench` | Random path vs heuristic path | No current caller found | Historical A/B | REMOVED |
 | `restbench` | Default rest vs value policy (needs v_server) | No current caller found | Historical A/B, server-dependent | REMOVED (Batch 1) |
 | `shopbench` | Default shop vs V-knapsack (needs v_server) | No current caller found | Historical A/B, server-dependent | REMOVED (Batch 1) |
 | `allbench` | All-default vs rest-V+shop-V (needs v_server) | No current caller found | Historical A/B, server-dependent | REMOVED (Batch 1) |
 | `skipbench` | Card-skip sweep (needs v_server) | No current caller found | Historical sweep, server-dependent | REMOVED (Batch 1) |
 | `causalgen` | CRN advantage for causal card value | No current script consumer; runtime still has the separately produced causal-card table path | Historical experiment; producer mode outside this audit | SUPERSEDED_DISCONNECTED |
-| `carddump` | Dump card properties | No current caller found | One-off debug tool | DEAD_HIGH_CONFIDENCE |
-| `deck` | Dump final deck+relics | No current caller found | One-off debug tool | DEAD_HIGH_CONFIDENCE |
+| `carddump` | Produce card metadata CSV | Four tracked trainer consumers of `build/card_meta.csv` | Current run-value trainer input | SUPERSEDED_CONNECTED |
+| `deck` | Dump final deck+relics | No current caller found | One-off debug tool | REMOVED |
 
 ---
 
@@ -629,7 +565,11 @@ runtime or policy-quality claim is made.
 
 ### Batch 2 — Basic dead modes (HIGH confidence, low risk)
 
-**Concept:** Remove `bench`, `runbench`, `mcts`, `random`, `draftbench`, `cardbench`, `combobench`, `pathbench`, `carddump`, `deck` modes.
+**Status: COMPLETED.** The focused current-main audit removed `bench`,
+`runbench`, `mcts`, `random`, `draftbench`, `cardbench`, `combobench`,
+`pathbench`, and `deck`. It retained `carddump` because four tracked trainers
+consume its `build/card_meta.csv` output and no other repository producer
+exists.
 
 **Why second:** Same confidence pattern as Batch 1 but across more modes. Each removal is independent. Some functions may be shared with live code — verify before deleting.
 - `datagen` and `causalgen` were excluded from that batch. `datagen` retains
@@ -637,9 +577,12 @@ runtime or policy-quality claim is made.
   causal Ridge trainer, leaving any `causalgen` mode decision to a separate
   `apps/one_combat.cpp` audit.
 
-**Files changed:** `apps/one_combat.cpp` only.
+**Files changed:** `apps/one_combat.cpp`, its seed-guard registry, and maintained
+mode/training documentation.
 
-**Verification:** `ctest --test-dir build --output-on-failure` (all CTest entries still pass); `bestbench` 8-seed smoke.
+**Verification:** rebuild `one_combat` and run the full CTest preset. A
+`bestbench` smoke is unnecessary when all helpers shared with retained
+full-run execution remain unchanged.
 
 ---
 
@@ -793,19 +736,18 @@ REPRO_ONLY:                 ~6 flags + 4 modes
   pathcfgen, datagen (retained loop script exists),
   policystats
 
-SUPERSEDED_CONNECTED:       ~20 flags + 2 modes
+SUPERSEDED_CONNECTED:       ~20 flags + 3 modes
   v_server-dependent OOC flags (CARD_NN, CARD_ACTION, OOC_ACTION_NN,
   BOSS_RELIC, NEOW_V, VPATH, BOSS_V, PATH_V, PATH_GRAPH, PATH_ACTION,
   EVENT_V, POTION_SAVE, SHOP_WIN, BOSS_DRAFT, ACT_FIGHT_PROBE_DRAFT,
   DATAGEN_GATES, REFIGHT_FLOOR/N, COMBAT_LOG),
   STS_REUSE_CPU_DIAG*, STS_REUSE_CARRY_DIAG, STS_REUSE_DIAG,
-  causalgen, datagen (loop caller keeps it connected)
+  causalgen, datagen (loop caller keeps it connected),
+  carddump (sole producer for retained trainer metadata input)
 
-DEAD_HIGH_CONFIDENCE:       10 modes + 2 flags remaining
-  bench, runbench, mcts, random, cardbench, combobench, pathbench, draftbench,
-  carddump, deck
-  (originally 14 modes — confirmed zero non-historical callers;
-   4 removed in Batch 1: restbench, shopbench, allbench, skipbench)
+DEAD_HIGH_CONFIDENCE:       0 modes + 2 flags remaining
+  (13 modes removed across Batch 1 and Batch 2; `carddump` reclassified as
+   connected after its trainer-input consumers were found)
   STS_VNET_COND_BOSS, STS_VNET_COND_ACT3 (2 load-only dead flags)
 
 UNKNOWN:                    1 flag

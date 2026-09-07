@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-08-28 against the current working tree.
+Last verified: 2026-09-07 against the current working tree.
 
 ## Purpose
 
@@ -438,9 +438,9 @@ bash -n selfplay/status.sh
 python3 -m py_compile paired_analysis.py
 ```
 
-Do not use `./build/one_combat` without arguments as a launch-only smoke check:
-it defaults to `bench` (100 seeds at 2,000 simulations) after loading default
-models (`apps/one_combat.cpp::main`).
+`./build/one_combat` requires an explicit mode. Use a focused non-seed mode for
+launch-only checks, or route any game-seed execution through
+`tools/seed_guard.sh` (`apps/one_combat.cpp::main`).
 
 ## Invariants and assumptions
 
