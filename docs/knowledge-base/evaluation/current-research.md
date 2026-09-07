@@ -13,15 +13,7 @@ chronology.
 
 ## Current priority / active line
 
-### Whole-Act OOC evaluator
-
-The first every-decision random whole-Act evaluation was invalidated because it
-collapsed repeated encounter occurrences and did not prove worker-local Silver
-readiness. The corrected evaluator passed its serial/parallel and worker-coverage
-canary; the next justified action is the already-specified full
-100-rollout/100-Silver rerun before interpreting the method or replacing the
-invalid result. See [ledger-06 §213–§214](../../experiments/ledger-06.md) and
-the [current evaluator contract](../architecture/out-of-combat.md#offline-whole-act-encounter-distribution-evaluator).
+No research line is currently authorized as the active priority.
 
 ## Current baseline
 
@@ -30,6 +22,17 @@ recommended executable configuration and qualified benchmark numbers. Do not
 infer a baseline from historical plans, model filenames, or local artifacts.
 
 ## Parked lines
+
+### Whole-Act OOC evaluator
+
+The corrected evaluator passed its serial/parallel and worker-coverage canary,
+but the full corrected run was aborted after about 88 minutes because
+occurrence-level exact-state evaluation expands to roughly 164,800 combat
+cells. No valid scientific result exists; the line is parked pending either a
+cheaper decision-relevant evaluation design or explicit authorization for the
+required compute. See [PR #111](https://github.com/pherrman1/sts_ai/pull/111),
+[ledger-06 §213–§214](../../experiments/ledger-06.md), and the
+[current evaluator contract](../architecture/out-of-combat.md#offline-whole-act-encounter-distribution-evaluator).
 
 ### Encounter-marginalized strategic labels
 
