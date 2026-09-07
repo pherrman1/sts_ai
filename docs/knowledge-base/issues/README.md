@@ -106,7 +106,7 @@ the open queue above is the routing source.
 | [45](2026-08-05-issue-45-eval-train-hygiene-batch.md) | Low | Eval/train hygiene batch: stale defaults, import safety, misc | open | [training-and-inference](../architecture/training-and-inference.md) |
 | [46](2026-08-05-issue-46-bestbench-append-dedup.md) | Medium | `bestbench` append/dedup consumer safety | closed | [benchmark-protocol](../evaluation/benchmark-protocol.md) |
 | [26](2026-08-02-issue-26-one-combat-centralization.md) | Low | `one_combat.cpp` centralizes policy and experiments | open | [overview](../architecture/overview.md), [out-of-combat](../architecture/out-of-combat.md) |
-| [27](2026-08-02-issue-27-python-deps-unpinned.md) | Low | No dependency lock for Python packages | open | [training-and-inference](../architecture/training-and-inference.md), [build-and-debugging](../operations/build-and-debugging.md) |
+| [27](2026-08-02-issue-27-python-deps-unpinned.md) | Low | No dependency lock for Python packages | closed | [training-and-inference](../architecture/training-and-inference.md), [build-and-debugging](../operations/build-and-debugging.md) |
 | [28](2026-08-02-issue-28-expert-hand-authored-features.md) | Low | Policy input includes hand-authored Expert features | closed | [combat-search](../architecture/combat-search.md) |
 | [29](2026-08-02-issue-29-python-combat-bindings.md) | Low | Python cannot issue card-by-card combat actions | open | [out-of-combat](../architecture/out-of-combat.md), [overview](../architecture/overview.md) |
 | [30](2026-08-02-issue-30-selfplay-bootstrap-policy.md) | Low | Self-play bootstrap policy for stale `state.env` is undefined | closed | [selfplay-loop](../operations/selfplay-loop.md) |

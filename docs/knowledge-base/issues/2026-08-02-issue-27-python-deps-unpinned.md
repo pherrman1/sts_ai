@@ -1,8 +1,8 @@
 # Issue 27: No dependency lock for Python packages
 
-- **Status:** open
+- **Status:** closed
 - **Tier:** Low
-- **Last verified:** 2026-08-02
+- **Last verified:** 2026-09-07
 - **Source:** [`architecture/training-and-inference.md`](../architecture/training-and-inference.md), "Known limitations"; [`operations/build-and-debugging.md`](../operations/build-and-debugging.md)
 
 ## Symptom
@@ -34,10 +34,13 @@ versions or a lockfile) and record the versions in experiment provenance.
 - Root `train_*.py`, `export_*.py`, `v_server.py` imports
 - `EXPERIMENTS.md` artifact provenance conventions
 
-## Resolution (2026-08-02)
+## Resolution (2026-09-07)
 
-Deferred: no Python dependency lock or environment definition exists; no change in the 2026-08-02 scope.
+`pyproject.toml` and `uv.lock` define the maintained dependency groups, CI
+checks the lock and installs the analysis group, and
+`tools/agent/bootstrap_python.sh` reuses that locked analysis environment
+across sibling worktrees.
 
 ## Closed by
 
-*Fixed in the 2026-08-02 working tree. No change; remains open.*
+Shared lock-keyed Python environment bootstrap change.
