@@ -1,22 +1,5 @@
-// one_combat.cpp
-//
-// "An agent plays one combat" for sts_lightspeed, with two policies:
-//   * random    -- uniformly random legal action (baseline)
-//   * mcts      -- wraps the built-in BattleScumSearcher2 (Monte Carlo tree search)
-// plus a benchmark harness that plays N seeds with each and reports win rate
-// and HP retained.
-//
-// Usage:
-//   one_combat mcts   [sims] [seed]     # one verbose combat, MCTS policy
-//   one_combat random [seed]            # one verbose combat, random policy
-//   one_combat bench  [sims] [nSeeds]   # MCTS(sims) vs random over nSeeds
-//
-// NOTE ON THE SEARCHER: BattleScumSearcher2 is a *known-RNG* solver -- its
-// rollouts see the same upcoming draws the real combat will get, so it plays
-// with hidden-information it wouldn't have in a live game. That makes it a
-// strong baseline / upper bound, not a fair-play agent. (Fair search over
-// unknown RNG is a "planned feature" per the repo README.) It also hardcodes
-// evaluateEndState internally, so the EvalFnc ctor arg is currently ignored.
+// one_combat.cpp -- integration driver for full-run evaluation, data generation,
+// and focused search/model diagnostics.
 
 #include <algorithm>
 #include <chrono>
@@ -538,10 +521,6 @@ static int numThreads() {
 
 using namespace sts;
 
-using Policy = std::function<search::Action(const BattleContext &)>;
-
-static MonsterEncounter g_encounter = MonsterEncounter::JAW_WORM;
-
 // ---------------------------------------------------------------------------
 // Enumerate legal actions in the current player-choice state
 // (mirrors BattleScumSearcher2::enumerateActionsForNode; potions omitted).
@@ -573,89 +552,6 @@ static std::vector<search::Action> legalActions(const BattleContext &bc) {
 }
 
 // ---------------------------------------------------------------------------
-// Policies
-// ---------------------------------------------------------------------------
-static search::Action randomPolicy(const BattleContext &bc) {
-    static thread_local std::mt19937 rng(0xC0FFEE);
-    auto actions = legalActions(bc);
-    if (actions.empty()) return search::Action(search::ActionType::END_TURN);
-    std::uniform_int_distribution<int> dist(0, (int)actions.size() - 1);
-    return actions[dist(rng)];
-}
-
-static Policy makeMctsPolicy(int sims) {
-    return [sims](const BattleContext &bc) -> search::Action {
-        search::BattleScumSearcher2 searcher(bc);
-        searcher.search(sims);
-        if (!searcher.bestActionSequence.empty())
-            return searcher.bestActionSequence.front();
-        return randomPolicy(bc); // fallback (shouldn't trigger in a live state)
-    };
-}
-
-// ---------------------------------------------------------------------------
-// Play a single combat to completion.
-// ---------------------------------------------------------------------------
-struct Result { bool won; int hpStart, hpEnd, maxHp, turns; };
-
-static Result runCombat(std::uint64_t seed, const Policy &policy, bool verbose) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, /*ascension=*/0);
-    BattleContext bc;
-    bc.init(gc, g_encounter);
-
-    const int hpStart = bc.player.curHp;
-    int step = 0;
-    // Terminate on a decided outcome (isBattleOver lags a step behind).
-    while (bc.outcome == Outcome::UNDECIDED) {
-        search::Action a = policy(bc);
-        if (verbose) {
-            std::cout << "step " << step++ << "  hp=" << bc.player.curHp
-                      << "  hand=" << bc.cards.cardsInHand << "  -> ";
-            a.printDesc(std::cout, bc) << "\n";
-        }
-        a.execute(bc);
-    }
-    return { bc.outcome == Outcome::PLAYER_VICTORY,
-             hpStart, bc.player.curHp, bc.player.maxHp, bc.turn };
-}
-
-// ---------------------------------------------------------------------------
-// Benchmark: N seeds, both policies, aggregate.
-// ---------------------------------------------------------------------------
-static void benchmark(int sims, int nSeeds) {
-    struct Agg { int wins = 0; long long hpRetained = 0; long long turns = 0; double ms = 0; };
-    Agg r, m;
-    Policy randp = &randomPolicy;
-    Policy mctsp = makeMctsPolicy(sims);
-
-    std::cout << "encounter: JawWorm   seeds: 0.." << nSeeds - 1
-              << "   mcts sims/decision: " << sims << "\n\n";
-
-    for (std::uint64_t seed = 0; seed < (std::uint64_t)nSeeds; ++seed) {
-        auto t0 = std::chrono::steady_clock::now();
-        Result rr = runCombat(seed, randp, false);
-        auto t1 = std::chrono::steady_clock::now();
-        Result mr = runCombat(seed, mctsp, false);
-        auto t2 = std::chrono::steady_clock::now();
-
-        r.wins += rr.won; r.hpRetained += rr.hpEnd; r.turns += rr.turns;
-        r.ms += std::chrono::duration<double, std::milli>(t1 - t0).count();
-        m.wins += mr.won; m.hpRetained += mr.hpEnd; m.turns += mr.turns;
-        m.ms += std::chrono::duration<double, std::milli>(t2 - t1).count();
-    }
-
-    auto row = [&](const char *name, const Agg &a) {
-        std::printf("%-8s  win%%=%5.1f   avg_hp_end=%5.1f   avg_turns=%4.1f   avg_ms=%7.2f\n",
-                    name, 100.0 * a.wins / nSeeds,
-                    (double)a.hpRetained / nSeeds,
-                    (double)a.turns / nSeeds,
-                    a.ms / nSeeds);
-    };
-    row("random", r);
-    row("mcts", m);
-}
-
-// ---------------------------------------------------------------------------
 // WHOLE RUN: ScumSearchAgent2 plays Neow -> Act 3 boss (battles via MCTS,
 // map/rewards/events/campfires/shops via its out-of-combat policy).
 // ---------------------------------------------------------------------------
@@ -676,30 +572,6 @@ static RunResult runFullRun(std::uint64_t seed, int sims, int ascension, bool ve
     return { gc.outcome == GameOutcome::PLAYER_VICTORY,
              gc.floorNum, gc.act, gc.curHp, gc.maxHp,
              std::chrono::duration<double>(t1 - t0).count() };
-}
-
-static void runBenchmark(int sims, int nSeeds, int ascension) {
-    std::cout << "whole-run benchmark   seeds: 0.." << nSeeds - 1
-              << "   ascension: " << ascension
-              << "   mcts sims/decision: " << sims
-              << "   threads: " << numThreads() << "\n\n";
-
-    int wins = 0;
-    long long floorSum = 0, hpSum = 0;
-    double secSum = 0;
-    #pragma omp parallel for reduction(+:wins,floorSum,hpSum,secSum) schedule(dynamic)
-    for (int seed = 0; seed < nSeeds; ++seed) {
-        RunResult r = runFullRun((std::uint64_t)seed, sims, ascension, false);
-        wins += r.won; floorSum += r.floor; hpSum += r.hpEnd; secSum += r.sec;
-        std::printf("seed %2d  %-4s  floor %2d (act %d)  hp %3d/%-3d  %6.2fs\n",
-                    seed, r.won ? "WIN" : "DEAD",
-                    r.floor, r.act, r.hpEnd, r.maxHp, r.sec);
-    }
-    std::printf("\nwin%%=%.1f   avg_floor=%.1f   avg_hp_end=%.1f   avg_sec/run=%.2f\n",
-                100.0 * wins / nSeeds,
-                (double)floorSum / nSeeds,
-                (double)hpSum / nSeeds,
-                secSum / nSeeds);
 }
 
 // ---------------------------------------------------------------------------
@@ -746,124 +618,6 @@ static double rolloutChoice(const GameContext &base, int rIdx, int cardIdx,
         }
     }
     return useLabelScore ? labelScore(gc) : scoreLookaheadState(gc);
-}
-
-static void lookaheadCardPolicy(GameContext &gc, int N, int innerSims, int futures) {
-    auto &r = gc.info.rewardsContainer;
-    while (r.cardRewardCount > 0) {
-        const int rIdx = r.cardRewardCount - 1;
-        const int nCards = r.cardRewards[rIdx].size();
-
-        double bestScore = -1e18;
-        int bestIdx = 5;                         // 5 == skip
-        for (int cand = 0; cand <= nCards; ++cand) {
-            const int cardIdx = (cand < nCards) ? cand : 5;
-            double acc = 0;
-            for (int f = 0; f < futures; ++f) {
-                std::uint64_t seed = gc.seed ^ (0x9e3779b97f4a7c15ULL * (f + 1));
-                acc += rolloutChoice(gc, rIdx, cardIdx, N, innerSims, seed);
-            }
-            const double score = acc / futures;
-            if (score > bestScore) { bestScore = score; bestIdx = cardIdx; }
-        }
-        search::GameAction(search::GameAction::RewardsActionType::CARD, rIdx, bestIdx).execute(gc);
-    }
-}
-
-// Whole run where the card-reward decision is either the weighted table or lookahead.
-static RunResult runFullRunDraft(std::uint64_t seed, int outerSims, bool lookahead,
-                                 int N, int innerSims, int futures, int asc) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = outerSims;
-    agent.rng = std::default_random_engine(seed);
-
-    auto t0 = std::chrono::steady_clock::now();
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc{}; bc.init(gc);
-            agent.playoutBattle(bc);
-            bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;         // mirror stepRewardsPolicy ordering
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else if (lookahead)             lookaheadCardPolicy(gc, N, innerSims, futures);
-            else                            agent.weightedCardRewardPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    auto t1 = std::chrono::steady_clock::now();
-    return { gc.outcome == GameOutcome::PLAYER_VICTORY, gc.floorNum, gc.act,
-             gc.curHp, gc.maxHp, std::chrono::duration<double>(t1 - t0).count() };
-}
-
-static void draftBench(int outerSims, int nSeeds, int N, int innerSims, int asc) {
-    std::cout << "draft A/B   seeds 0.." << nSeeds - 1 << "   outerSims: " << outerSims
-              << "   lookahead(N=" << N << ", innerSims=" << innerSims << ", CRN)"
-              << "   threads: " << numThreads() << "\n\n";
-    for (int mode = 0; mode < 2; ++mode) {
-        const bool lookahead = (mode == 1);
-        int wins = 0; long long floor = 0, hp = 0; double sec = 0;
-        auto wall0 = std::chrono::steady_clock::now();
-        #pragma omp parallel for reduction(+:wins,floor,hp,sec) schedule(dynamic)
-        for (int s = 0; s < nSeeds; ++s) {
-            RunResult r = runFullRunDraft((std::uint64_t)s, outerSims, lookahead, N, innerSims, 1, asc);
-            wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec;
-        }
-        double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
-        std::printf("%-16s  win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
-                    lookahead ? "lookahead" : "weighted-table",
-                    100.0 * wins / nSeeds, (double)floor / nSeeds,
-                    (double)hp / nSeeds, sec / nSeeds, wall);
-    }
-}
-
-// ---------------------------------------------------------------------------
-// GREEDY CARD-REWARD POLICY: a deterministic alternative to the built-in
-// weightedCardRewardPolicy (which roulette-wheel samples over the weights and
-// skips probabilistically). Here we take the argmax card and skip only when the
-// best card isn't better than our current deck by a tunable ratio -- so the
-// deck's average quality improves monotonically and stays leaner.
-// ---------------------------------------------------------------------------
-static double avgDeckObtain(const GameContext &gc) {
-    long sum = 0;
-    for (const auto &c : gc.deck.cards) {
-        sum += search::Expert::getObtainWeight(c.getId(), c.isUpgraded());
-    }
-    return gc.deck.size() > 0 ? (double)sum / gc.deck.size() : 0.0;
-}
-
-static void greedyCardRewardPolicy(GameContext &gc, double skipRatio) {
-    using RT = search::GameAction::RewardsActionType;
-    auto &r = gc.info.rewardsContainer;
-    while (r.cardRewardCount > 0) {
-        const int rIdx = r.cardRewardCount - 1;
-        const int n = r.cardRewards[rIdx].size();
-
-        int bestIdx = 0, bestRaw = -1;
-        double bestW = -1.0;
-        for (int i = 0; i < n; ++i) {
-            const auto &c = r.cardRewards[rIdx][i];
-            const int raw = search::Expert::getObtainWeight(c.getId(), c.isUpgraded());
-            double w = std::pow((double)raw, 1.2);                 // same shaping as the baseline
-            if (gc.act == 1 && c.getType() == CardType::ATTACK) {  // act-1 attack bias
-                w *= 1.4;
-            }
-            if (w > bestW) { bestW = w; bestIdx = i; bestRaw = raw; }
-        }
-
-        // Take the best card unless it's not meaningfully better than our average
-        // deck card (skipRatio=0 => never skip; higher => pickier / leaner deck).
-        const bool skip = (double)bestRaw < skipRatio * avgDeckObtain(gc);
-        search::GameAction(RT::CARD, rIdx, skip ? 5 : bestIdx).execute(gc);
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1023,82 +777,6 @@ static void evalCardRewardPolicy(GameContext &gc, bool allowSkip = true) {
             if (val > bestV) { bestV = val; bestIdx = i; }
         }
         const bool skip = allowSkip && (bestV < evalSkipBar(gc));
-        search::GameAction(RT::CARD, rIdx, skip ? 5 : bestIdx).execute(gc);
-    }
-}
-
-// ---------------------------------------------------------------------------
-// CAUSAL PER-CARD ADVANTAGE TABLE: offline-learned mean CRN take-vs-skip HP
-// advantage per card id (build/card_adv_table.txt, from causalgen + shrinkage).
-// Pure tempo signal: loves immediate damage/AoE, undervalues synergy/engine
-// cards (it cannot see deck context). Used standalone (policy 5) and fused into
-// the expert eval (policy 4).
-// ---------------------------------------------------------------------------
-static double g_cardAdv[512];
-static bool   g_cardAdvSet[512] = {false};
-static double g_cardAdvMean = 0.0;
-static bool   g_cardAdvLoaded = false;
-static double g_tableAlpha = 1.0;      // fusion weight of centered advantage
-
-static void loadCardAdvTable(const std::string &path) {
-    std::ifstream f(path);
-    if (!f) { std::cerr << "WARNING: could not open card adv table: " << path << "\n"; return; }
-    std::string line; double sum = 0; int cnt = 0;
-    while (std::getline(f, line)) {
-        if (line.empty() || line[0] == '#') continue;
-        std::istringstream is(line);
-        int id; double val;
-        if (!(is >> id >> val)) continue;
-        if (id >= 0 && id < 512) { g_cardAdv[id] = val; g_cardAdvSet[id] = true; sum += val; ++cnt; }
-    }
-    g_cardAdvMean = cnt ? sum / cnt : 0.0;
-    g_cardAdvLoaded = true;
-    std::cout << "loaded card-adv table (" << cnt << " cards, mean "
-              << g_cardAdvMean << ", alpha " << g_tableAlpha << ") from " << path << "\n";
-}
-
-// raw learned advantage for a card (falls back to table mean if unseen)
-static double cardAdvRaw(const Card &c) {
-    int id = (int)c.getId();
-    return (id >= 0 && id < 512 && g_cardAdvSet[id]) ? g_cardAdv[id] : g_cardAdvMean;
-}
-// centered advantage: unseen cards contribute ~0 (treated as average)
-static double cardAdvCentered(const Card &c) { return cardAdvRaw(c) - g_cardAdvMean; }
-
-// policy 4: expert eval + alpha * centered causal advantage
-static void fusedCardRewardPolicy(GameContext &gc, bool allowSkip = true) {
-    using RT = search::GameAction::RewardsActionType;
-    auto &r = gc.info.rewardsContainer;
-    while (r.cardRewardCount > 0) {
-        const int rIdx = r.cardRewardCount - 1;
-        const int n = r.cardRewards[rIdx].size();
-        int bestIdx = 0; double bestV = -1e18;
-        for (int i = 0; i < n; ++i) {
-            const Card &c = r.cardRewards[rIdx][i];
-            const double val = evalCardValue(gc, c) + g_tableAlpha * cardAdvCentered(c);
-            if (val > bestV) { bestV = val; bestIdx = i; }
-        }
-        const bool skip = allowSkip && (bestV < evalSkipBar(gc));
-        search::GameAction(RT::CARD, rIdx, skip ? 5 : bestIdx).execute(gc);
-    }
-}
-
-// policy 5: pure causal table; causally-correct skip rule (take iff adv > 0)
-static void tableCardRewardPolicy(GameContext &gc) {
-    using RT = search::GameAction::RewardsActionType;
-    auto &r = gc.info.rewardsContainer;
-    while (r.cardRewardCount > 0) {
-        const int rIdx = r.cardRewardCount - 1;
-        const int n = r.cardRewards[rIdx].size();
-        int bestIdx = 0; double bestRaw = -1e18;
-        for (int i = 0; i < n; ++i) {
-            const Card &c = r.cardRewards[rIdx][i];
-            const CardType t = c.getType();
-            if (t == CardType::CURSE || t == CardType::STATUS) continue;
-            const double raw = cardAdvRaw(c);
-            if (raw > bestRaw) { bestRaw = raw; bestIdx = i; }
-        }
-        const bool skip = bestRaw <= 0.0;
         search::GameAction(RT::CARD, rIdx, skip ? 5 : bestIdx).execute(gc);
     }
 }
@@ -2461,184 +2139,7 @@ static void removeSelectVPolicy(GameContext &gc) {
     search::GameAction(idx, 0).execute(gc);
 }
 
-// ---------------------------------------------------------------------------
-// LEARNED VALUE FUNCTION: V(state)=sigmoid(bias + sum w_i*feature_i), weights
-// trained offline (logistic regression, train_value.py). Card value is the
-// marginal V(deck+card) - V(deck); skip if no card has positive marginal value.
-// Feature definitions MUST match featureRow() above.
-// ---------------------------------------------------------------------------
-static std::map<std::string, double> g_valWeights;
-static double g_valBias = 0.0;
-static bool g_valLoaded = false;
-static bool g_learnedNeverSkip = false;   // diagnostic: always take best card, never skip
-
-static void loadValueModel(const std::string &path) {
-    std::ifstream f(path);
-    if (!f) { std::cerr << "WARNING: could not open value model: " << path << "\n"; return; }
-    std::string name; double w;
-    std::string line;
-    while (std::getline(f, line)) {
-        if (line.empty() || line[0] == '#') continue;
-        std::istringstream is(line);
-        is >> name >> w;
-        if (name == "bias") g_valBias = w;
-        else g_valWeights[name] = w;
-    }
-    g_valLoaded = true;
-    std::cout << "loaded value model (" << g_valWeights.size() << " weights) from " << path << "\n";
-}
-
 static double sigmoid(double z) { return 1.0 / (1.0 + std::exp(-z)); }
-
-// current-state features (same definitions as featureRow)
-static std::map<std::string, double> stateFeats(const GameContext &gc) {
-    std::map<std::string, double> m;
-    int nAtk=0,nSkill=0,nPow=0,nCurse=0,nStatus=0,nUpg=0,nStarter=0,nCommon=0,nUncommon=0,nRare=0;
-    long obtainSum = 0;
-    for (const auto &c : gc.deck.cards) {
-        switch (c.getType()) {
-            case CardType::ATTACK: ++nAtk; break;
-            case CardType::SKILL:  ++nSkill; break;
-            case CardType::POWER:  ++nPow; break;
-            case CardType::CURSE:  ++nCurse; break;
-            case CardType::STATUS: ++nStatus; break;
-            default: break;
-        }
-        if (c.isUpgraded()) ++nUpg;
-        if (c.isStarterStrikeOrDefend()) ++nStarter;
-        switch (c.getRarity()) {
-            case CardRarity::COMMON:   ++nCommon; break;
-            case CardRarity::UNCOMMON: ++nUncommon; break;
-            case CardRarity::RARE:     ++nRare; break;
-            default: break;
-        }
-        obtainSum += search::Expert::getObtainWeight(c.getId(), c.isUpgraded());
-    }
-    const int deckSize = gc.deck.size();
-    m["act"]=gc.act; m["floor"]=gc.floorNum; m["curHp"]=gc.curHp; m["maxHp"]=gc.maxHp;
-    m["gold"]=gc.gold; m["deckSize"]=deckSize;
-    m["nAttack"]=nAtk; m["nSkill"]=nSkill; m["nPower"]=nPow; m["nCurse"]=nCurse; m["nStatus"]=nStatus;
-    m["nUpgraded"]=nUpg; m["nStarter"]=nStarter;
-    m["nCommon"]=nCommon; m["nUncommon"]=nUncommon; m["nRare"]=nRare;
-    m["obtainSum"]=(double)obtainSum; m["obtainAvg"]= deckSize? (double)obtainSum/deckSize : 0.0;
-    m["nRelics"]=(double)gc.relics.relics.size();
-    return m;
-}
-
-static double logitOf(const std::map<std::string, double> &feats) {
-    double z = g_valBias;
-    for (const auto &kv : g_valWeights) {
-        auto it = feats.find(kv.first);
-        if (it != feats.end()) z += kv.second * it->second;
-    }
-    return z;
-}
-
-static void learnedCardRewardPolicy(GameContext &gc) {
-    using RT = search::GameAction::RewardsActionType;
-    auto &r = gc.info.rewardsContainer;
-    while (r.cardRewardCount > 0) {
-        const int rIdx = r.cardRewardCount - 1;
-        const int n = r.cardRewards[rIdx].size();
-
-        const auto base = stateFeats(gc);
-        const double vBase = sigmoid(logitOf(base));
-
-        int bestIdx = -1;
-        double bestVal = g_learnedNeverSkip ? -1e18 : 0.0;   // 0.0 => skip unless a card has positive marginal value
-        for (int i = 0; i < n; ++i) {
-            const auto &c = r.cardRewards[rIdx][i];
-            auto f = base;
-            f["deckSize"] += 1;
-            switch (c.getType()) {
-                case CardType::ATTACK: f["nAttack"] += 1; break;
-                case CardType::SKILL:  f["nSkill"]  += 1; break;
-                case CardType::POWER:  f["nPower"]  += 1; break;
-                case CardType::CURSE:  f["nCurse"]  += 1; break;
-                case CardType::STATUS: f["nStatus"] += 1; break;
-                default: break;
-            }
-            if (c.isUpgraded()) f["nUpgraded"] += 1;
-            switch (c.getRarity()) {
-                case CardRarity::COMMON:   f["nCommon"]   += 1; break;
-                case CardRarity::UNCOMMON: f["nUncommon"] += 1; break;
-                case CardRarity::RARE:     f["nRare"]     += 1; break;
-                default: break;
-            }
-            f["obtainSum"] += search::Expert::getObtainWeight(c.getId(), c.isUpgraded());
-            f["obtainAvg"] = f["obtainSum"] / f["deckSize"];
-
-            const double val = sigmoid(logitOf(f)) - vBase;
-            if (val > bestVal) { bestVal = val; bestIdx = i; }
-        }
-        search::GameAction(RT::CARD, rIdx, bestIdx >= 0 ? bestIdx : 5).execute(gc);
-    }
-}
-
-// Whole run where the card-reward decision is the built-in weighted table
-// (policyId 0), greedy argmax (1), the hand state-aware value function (2), or
-// the learned logistic value function (3).
-static RunResult runFullRunCards(std::uint64_t seed, int sims, int asc, int policyId, double skipRatio) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-
-    auto t0 = std::chrono::steady_clock::now();
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; bc.init(gc);
-            agent.playoutBattle(bc);
-            bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;                  // mirror stepRewardsPolicy ordering
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else if (policyId == 0)         agent.weightedCardRewardPolicy(gc);
-            else if (policyId == 1)         greedyCardRewardPolicy(gc, skipRatio);
-            else if (policyId == 2)         evalCardRewardPolicy(gc);
-            else if (policyId == 3)         learnedCardRewardPolicy(gc);
-            else if (policyId == 4)         fusedCardRewardPolicy(gc);
-            else if (policyId == 5)         tableCardRewardPolicy(gc);
-            else                            serverCardRewardPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    auto t1 = std::chrono::steady_clock::now();
-    return { gc.outcome == GameOutcome::PLAYER_VICTORY, gc.floorNum, gc.act,
-             gc.curHp, gc.maxHp, std::chrono::duration<double>(t1 - t0).count() };
-}
-
-static void cardBench(int sims, int nSeeds, int asc, double skipRatio, int onlyPolicy = -1) {
-    std::cout << "card-policy A/B   seeds 0.." << nSeeds - 1 << "   ascension: " << asc
-              << "   sims/decision: " << sims << "   greedy skipRatio: " << skipRatio
-              << "   threads: " << numThreads() << "\n\n";
-    if (!g_valLoaded) loadValueModel("build/value_model.txt");
-    if (!g_cardAdvLoaded) loadCardAdvTable("build/card_adv_table.txt");
-    const char *names[] = {"weighted-table", "greedy-argmax", "eval-function",
-                           "learned-logistic", "eval+causal", "causal-table", "gbm-server"};
-    for (int policyId = 0; policyId < 7; ++policyId) {
-        if (onlyPolicy >= 0 && policyId != onlyPolicy) continue;
-        int wins = 0; long long floor = 0, hp = 0; double sec = 0;
-        auto wall0 = std::chrono::steady_clock::now();
-        #pragma omp parallel for reduction(+:wins,floor,hp,sec) schedule(dynamic)
-        for (int s = 0; s < nSeeds; ++s) {
-            RunResult r = runFullRunCards((std::uint64_t)s, sims, asc, policyId, skipRatio);
-            wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec;
-        }
-        double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
-        std::printf("%-16s  win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
-                    names[policyId],
-                    100.0 * wins / nSeeds, (double)floor / nSeeds,
-                    (double)hp / nSeeds, sec / nSeeds, wall);
-    }
-}
 
 // ---------------------------------------------------------------------------
 // HEURISTIC PATHING: pick the map route by scoring each room and taking the
@@ -2756,112 +2257,6 @@ static int chooseMapAction(const GameContext &gc) {
         for (int i = 0; i < n.edgeCount; ++i) consider(n.edges[i]);
     }
     return bestX;
-}
-
-// Whole run where the map route is either the built-in random policy or our heuristic.
-static RunResult runFullRunPath(std::uint64_t seed, int sims, int asc, bool heuristicPath) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-
-    auto t0 = std::chrono::steady_clock::now();
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; bc.init(gc);
-            agent.playoutBattle(bc);
-            bc.exitBattle(gc);
-        } else if (heuristicPath && gc.screenState == ScreenState::MAP_SCREEN
-                   && gc.curMapNodeY < 14) {                    // y==14 is forced to boss
-            search::GameAction(chooseMapAction(gc)).execute(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    auto t1 = std::chrono::steady_clock::now();
-    return { gc.outcome == GameOutcome::PLAYER_VICTORY, gc.floorNum, gc.act,
-             gc.curHp, gc.maxHp, std::chrono::duration<double>(t1 - t0).count() };
-}
-
-static void pathBench(int sims, int nSeeds, int asc) {
-    std::cout << "pathing A/B   seeds 0.." << nSeeds - 1 << "   ascension: " << asc
-              << "   mcts sims/decision: " << sims
-              << "   threads: " << numThreads() << "\n\n";
-    for (int mode = 0; mode < 2; ++mode) {
-        const bool heuristic = (mode == 1);
-        int wins = 0; long long floor = 0, hp = 0; double sec = 0;
-        auto wall0 = std::chrono::steady_clock::now();
-        #pragma omp parallel for reduction(+:wins,floor,hp,sec) schedule(dynamic)
-        for (int s = 0; s < nSeeds; ++s) {
-            RunResult r = runFullRunPath((std::uint64_t)s, sims, asc, heuristic);
-            wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec;
-        }
-        double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
-        std::printf("%-16s  win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
-                    heuristic ? "heuristic-path" : "random-path",
-                    100.0 * wins / nSeeds, (double)floor / nSeeds,
-                    (double)hp / nSeeds, sec / nSeeds, wall);
-    }
-}
-
-// ---------------------------------------------------------------------------
-// COMBINED POLICY: greedy never-skip drafting (exp 8) + heuristic pathing
-// (exp 6b) together, vs. the stock baseline (built-in weighted table + random
-// path). Everything else identical.
-// ---------------------------------------------------------------------------
-static RunResult runFullRunCombo(std::uint64_t seed, int sims, int asc, bool combo, double skipRatio) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-
-    auto t0 = std::chrono::steady_clock::now();
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; bc.init(gc);
-            agent.playoutBattle(bc);
-            bc.exitBattle(gc);
-        } else if (combo && gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);            // heuristic pathing
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else if (combo)                 evalCardRewardPolicy(gc, false);         // eval ranking, never skip
-            else                            agent.weightedCardRewardPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    auto t1 = std::chrono::steady_clock::now();
-    return { gc.outcome == GameOutcome::PLAYER_VICTORY, gc.floorNum, gc.act,
-             gc.curHp, gc.maxHp, std::chrono::duration<double>(t1 - t0).count() };
-}
-
-static void comboBench(int sims, int nSeeds, int asc, double skipRatio) {
-    std::cout << "combo A/B (greedy-draft + heuristic-path)   seeds 0.." << nSeeds - 1
-              << "   ascension: " << asc << "   sims/decision: " << sims
-              << "   skipRatio: " << skipRatio << "   threads: " << numThreads() << "\n\n";
-    for (int mode = 0; mode < 2; ++mode) {
-        const bool combo = (mode == 1);
-        int wins = 0; long long floor = 0, hp = 0; double sec = 0;
-        auto wall0 = std::chrono::steady_clock::now();
-        #pragma omp parallel for reduction(+:wins,floor,hp,sec) schedule(dynamic)
-        for (int s = 0; s < nSeeds; ++s) {
-            RunResult r = runFullRunCombo((std::uint64_t)s, sims, asc, combo, skipRatio);
-            wins += r.won; floor += r.floor; hp += r.hpEnd; sec += r.sec;
-        }
-        double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
-        std::printf("%-22s  win%%=%5.1f   avg_floor=%5.1f   avg_hp_end=%5.1f   cpu_sec/run=%.2f   wall=%.1fs\n",
-                    combo ? "combo(eval+path)" : "baseline(table+rand)",
-                    100.0 * wins / nSeeds, (double)floor / nSeeds,
-                    (double)hp / nSeeds, sec / nSeeds, wall);
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -13825,56 +13220,6 @@ static void distCombatGen(int nSeeds, int sims, int asc, double epsilon,
                             g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc, epsilon);
 }
 
-// ---------------------------------------------------------------------------
-// DECK DUMP: play one run with our best policy (eval draft + heuristic path)
-// and print the final deck, relics and outcome.
-// ---------------------------------------------------------------------------
-static void dumpRun(std::uint64_t seed, int sims, int asc) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; bc.init(gc); agent.playoutBattle(bc); bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else                            evalCardRewardPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-
-    std::printf("=== seed %llu  %s  floor %d (act %d)  hp %d/%d  gold %d ===\n",
-                (unsigned long long)seed,
-                gc.outcome == GameOutcome::PLAYER_VICTORY ? "WIN" : "DEAD",
-                gc.floorNum, gc.act, gc.curHp, gc.maxHp, gc.gold);
-
-    std::map<std::string, int> counts;
-    for (const auto &c : gc.deck.cards) {
-        std::string n = c.getName();
-        if (c.isUpgraded()) n += "+";
-        ++counts[n];
-    }
-    std::printf("\nDeck (%d cards):\n", gc.deck.size());
-    for (const auto &kv : counts) std::printf("  %2dx %s\n", kv.second, kv.first.c_str());
-
-    std::printf("\nRelics (%d):\n", (int)gc.relics.relics.size());
-    for (const auto &ri : gc.relics.relics) std::printf("  - %s\n", getRelicName(ri.id));
-}
-
-
-
 // Export one deterministic full-map graph per (seed, ascension, act) present
 // in a card-counterfactual CSV.  The source CSV repeats the state once per
 // available action; de-duplicating here keeps the companion graph table small.
@@ -13948,7 +13293,7 @@ int main(int argc, char **argv) {
     g_mainBinaryPath = argc > 0 ? argv[0] : "one_combat";
     g_mainArgv.clear();
     for (int i = 1; i < argc; ++i) g_mainArgv.emplace_back(argv[i]);
-    std::string mode = argc > 1 ? argv[1] : "bench";
+    std::string mode = argc > 1 ? argv[1] : "";
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
 
@@ -15188,12 +14533,7 @@ int main(int argc, char **argv) {
         std::cout << "[c_puct = " << search::g_cPuct << "]\n";
     }
 
-    if (mode == "bench") {
-        int sims   = argc > 2 ? std::stoi(argv[2]) : 2000;
-        int nSeeds = argc > 3 ? std::stoi(argv[3]) : 100;
-        benchmark(sims, nSeeds);
-
-    } else if (mode == "strategicmarggen") {
+    if (mode == "strategicmarggen") {
         // Encounter-marginalization diagnostic: uniform sample per run, H hidden worlds.
         // Tier-B branch contract frozen at K=3 fights, 150/100/50 sims, bootstrap=true.
         int nSeeds     = argc > 2 ? std::stoi(argv[2]) : 20;
@@ -15295,19 +14635,6 @@ int main(int argc, char **argv) {
         oocBudgetEvaluate(manifest,out,schedule,futures,futureStart,side,spec,
                           shardIndex,shardCount,workIndex,workCount);
 
-    } else if (mode == "mcts") {
-        int sims          = argc > 2 ? std::stoi(argv[2]) : 2000;
-        std::uint64_t sd  = argc > 3 ? std::stoull(argv[3]) : 42;
-        Result res = runCombat(sd, makeMctsPolicy(sims), true);
-        std::printf("\n=== %s ===  hp %d/%d  turns %d\n",
-                    res.won ? "WIN" : "LOSS", res.hpEnd, res.maxHp, res.turns);
-
-    } else if (mode == "random") {
-        std::uint64_t sd = argc > 2 ? std::stoull(argv[2]) : 42;
-        Result res = runCombat(sd, &randomPolicy, true);
-        std::printf("\n=== %s ===  hp %d/%d  turns %d\n",
-                    res.won ? "WIN" : "LOSS", res.hpEnd, res.maxHp, res.turns);
-
     } else if (mode == "run") {          // one whole run, verbose
         int sims         = argc > 2 ? std::stoi(argv[2]) : 1000;
         std::uint64_t sd = argc > 3 ? std::stoull(argv[3]) : 42;
@@ -15315,20 +14642,6 @@ int main(int argc, char **argv) {
         RunResult r = runFullRun(sd, sims, asc, false);
         std::printf("=== %s ===  reached floor %d (act %d)  hp %d/%d  %.2fs\n",
                     r.won ? "WIN" : "DEAD", r.floor, r.act, r.hpEnd, r.maxHp, r.sec);
-
-    } else if (mode == "runbench") {     // many whole runs
-        int sims   = argc > 2 ? std::stoi(argv[2]) : 1000;
-        int nSeeds = argc > 3 ? std::stoi(argv[3]) : 20;
-        int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
-        runBenchmark(sims, nSeeds, asc);
-
-    } else if (mode == "draftbench") {    // weighted table vs lookahead drafting
-        int outerSims = argc > 2 ? std::stoi(argv[2]) : 6000;
-        int nSeeds    = argc > 3 ? std::stoi(argv[3]) : 16;
-        int N         = argc > 4 ? std::stoi(argv[4]) : 1;
-        int innerSims = argc > 5 ? std::stoi(argv[5]) : 1000;
-        int asc       = argc > 6 ? std::stoi(argv[6]) : 0;
-        draftBench(outerSims, nSeeds, N, innerSims, asc);
 
     } else if (mode == "datagen") {       // CSV of (state features, run outcome) for offline V(state)
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 2000;
@@ -15880,39 +15193,6 @@ int main(int argc, char **argv) {
                       << ',' << c.getBaseDamage() << '\n';
         }
 
-    } else if (mode == "deck") {          // dump final deck+relics of one run (eval+path)
-        std::uint64_t sd = argc > 2 ? std::stoull(argv[2]) : 0;
-        int sims         = argc > 3 ? std::stoi(argv[3]) : 4000;
-        int asc          = argc > 4 ? std::stoi(argv[4]) : 0;
-        dumpRun(sd, sims, asc);
-
-    } else if (mode == "cardbench") {     // weighted table vs greedy argmax drafting
-        int sims      = argc > 2 ? std::stoi(argv[2]) : 4000;
-        int nSeeds    = argc > 3 ? std::stoi(argv[3]) : 64;
-        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
-        double skipR  = argc > 5 ? std::stod(argv[5]) : 1.0;
-        search::g_fairPlay = argc > 6 ? std::stoi(argv[6]) != 0 : false;
-        int onlyPolicy = argc > 7 ? std::stoi(argv[7]) : -1;  // -1=all, else 0..5
-        g_learnedNeverSkip = argc > 8 ? std::stoi(argv[8]) != 0 : false;
-        g_tableAlpha = argc > 9 ? std::stod(argv[9]) : 1.0;   // eval+causal fusion weight
-        if (search::g_fairPlay) std::cout << "[fair-play / determinized MCTS]\n";
-        cardBench(sims, nSeeds, asc, skipR, onlyPolicy);
-
-    } else if (mode == "combobench") {    // baseline vs (greedy draft + heuristic path)
-        int sims      = argc > 2 ? std::stoi(argv[2]) : 4000;
-        int nSeeds    = argc > 3 ? std::stoi(argv[3]) : 128;
-        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
-        double skipR  = argc > 5 ? std::stod(argv[5]) : 0.0;
-        search::g_fairPlay = argc > 6 ? std::stoi(argv[6]) != 0 : false;
-        if (search::g_fairPlay) std::cout << "[fair-play / determinized MCTS]\n";
-        comboBench(sims, nSeeds, asc, skipR);
-
-    } else if (mode == "pathbench") {     // random path vs heuristic path
-        int sims   = argc > 2 ? std::stoi(argv[2]) : 8000;
-        int nSeeds = argc > 3 ? std::stoi(argv[3]) : 32;
-        int asc    = argc > 4 ? std::stoi(argv[4]) : 0;
-        pathBench(sims, nSeeds, asc);
-
     } else if (mode == "bestbench") {     // current best OOC stack, single arm (baseline for new experiments)
         int sims   = argc > 2 ? std::stoi(argv[2]) : 1000;
         int nSeeds = argc > 3 ? std::stoi(argv[3]) : 512;
@@ -15983,8 +15263,8 @@ int main(int argc, char **argv) {
         runTraceRun(seed, sims, asc);
 
     } else {
-        std::cerr << "usage: one_combat [bench|mcts|random|run|runbench|draftbench|pathbench|cardbench|combobench|datagen|deck] ...\n";
-        return 1;
+        std::cerr << "usage: one_combat MODE [ARGS...]\n";
+        return 2;
     }
     return 0;
 }

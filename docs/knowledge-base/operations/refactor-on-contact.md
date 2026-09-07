@@ -1,6 +1,6 @@
 # Refactor-on-contact candidates
 
-Last verified: 2026-08-08.
+Last verified: 2026-09-07.
 
 These are cleanup opportunities that were **deliberately deferred** during the
 2026-08-08 surgical refactor pass. Each has a specific trigger condition: when
@@ -62,8 +62,8 @@ forces the issue.
 `ScumSearchAgent2::stepOutOfCombatPolicy`).
 
 **What to consider:**
-- `runFullRun` (line ~235) is the older path used by `bench`/`run`/`runbench`
-  legacy modes; it uses the `ScumSearchAgent2` heuristic OOC stack.
+- `runFullRun` is the older path used by the retained `run` mode; it uses the
+  `ScumSearchAgent2` heuristic OOC stack.
 - `runFullRunOOC` (line ~2582) is the current path used by `bestbench` and all
   active experiments; it uses the native-OOC + gate-stack OOC policy.
 - If a future change modifies both, consider whether one can become a thin
