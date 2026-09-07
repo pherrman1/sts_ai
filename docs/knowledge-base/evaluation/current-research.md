@@ -86,6 +86,19 @@ generation, or training from this result. See
 [ledger-06 §207–§212](../../experiments/ledger-06.md), the
 [pipeline-health evidence](../../experiments/evidence/ooc-clean-pilot-healthy-2026-09-01.json),
 and the [planner evidence](../../experiments/evidence/ooc-v4-h1-explicit-planner-2026-09-02.json).
+The closed `ooccleanpilot`, `oocv4h1collect`, and `oocv4h1ref` implementation
+was removed after the evidence was preserved; the separately parked whole-Act
+evaluator remains available.
+
+### Phase-13A counterfactual teacher-strength audit
+
+The corrected H=8 reference rejected the high-confidence M0 improvement
+signal. It did not distinguish teacher/target failure from model-learning
+failure, and no new labels, threshold tuning, or gameplay gate was justified.
+The collector and short/reference evaluator modes were removed after their raw
+evidence was preserved in
+[`phase13a-teacher-audit`](../../experiments/evidence/phase13a-teacher-audit/)
+and [ledger-06 §173](../../experiments/ledger-06.md).
 
 ### Silver root allocation and learned action guidance
 

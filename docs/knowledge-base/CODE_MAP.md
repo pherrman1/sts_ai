@@ -68,7 +68,7 @@ before broad repository search.
 | OOC checkpoint export | `export_ooc_checkpoint.py` | Checkpoint NN export | [training-and-inference.md](architecture/training-and-inference.md) |
 | Counterfactual OOC | `train_rest_cf.py`, `train_card_cf.py`, `train_path_cf.py` | Paired CF trainers | [training-and-inference.md](architecture/training-and-inference.md) |
 | K/search-budget evaluator | `apps/one_combat.cpp`, `tools/make_ooc_k_budget_manifest.py`, `tools/freeze_ooc_k_budget_experiment.py`, `tools/analyze_ooc_k_budget.py` | `oockbudgeteval` — hash-bound complete-sibling replay, observational K-prefix checkpoints, independent terminal reference and clustered analysis | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
-| V4 vs explicit H1 screen | `apps/one_combat.cpp`, `tools/analyze_ooc_v4_h1.py` | `oocv4h1collect`, `oocv4h1ref` — one sampled V4-owned decision/source, exact-10k next-combat scoring, independent matched full-run adjudication | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
+| Whole-Act OOC evaluator (parked) | `apps/one_combat.cpp` | `oocv4h1rollout`, `oocv4h1rolloutall` — occurrence-level evaluation; parked pending a cheaper design or explicit compute authorization | [out-of-combat.md](architecture/out-of-combat.md) |
 
 ## Native inference / model loading
 
