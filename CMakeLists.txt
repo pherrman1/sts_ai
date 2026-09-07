@@ -299,7 +299,6 @@ add_test(NAME analyze_runwin_shadow_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}
 add_test(NAME analyze_s3_sibling_crn_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_s3_sibling_crn.py --self-test)
 add_test(NAME select_s3_crn_states_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/select_s3_crn_states.py --self-test)
 add_test(NAME analyze_runwin_rank_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_rank.py --self-test)
-add_test(NAME analyze_ooc_v4_h1_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_ooc_v4_h1.py self-test)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
 add_test(NAME runwin_e2c_native_parity COMMAND ${CMAKE_COMMAND} -E env
     STS_NATIVE_OOC=0

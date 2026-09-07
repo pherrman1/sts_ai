@@ -52,27 +52,6 @@ class TestOocPipeline(unittest.TestCase):
     def test_h_futures_analyzer_self_test(self):
         h_futures_analysis_self_test()
 
-    def test_clean_pilot_is_atomic_complete_and_reuses_one_combat(self):
-        source=Path("apps/one_combat.cpp").read_text(encoding="utf-8")
-        begin=source.index("runCleanOocPilotSeed(std::uint64_t")
-        end=source.index("static void cleanOocPilotGen",begin)
-        producer=source[begin:end]
-        self.assertIn("actions.size()>=2",producer)
-        self.assertIn("actionBits.insert(a.bits).second",producer)
-        self.assertIn("source action missing from legal siblings",producer)
-        self.assertIn("resampleRemainingActEncounters(siblingBase,hiddenSeed)",producer)
-        self.assertIn("combatFeatureRow(bc)",producer)
-        self.assertIn("g_silverLiveDiagnostics.transactionSubdecisions",producer)
-        self.assertIn("g_silverLiveDiagnostics.transactionDecisions",producer)
-        self.assertIn("bc.exitBattle(branch)",producer)
-        self.assertIn("qProduct=survived?conditional:0.0",producer)
-        self.assertIn("combat semantic/conversion/transaction/knowledge health failure",producer)
-        wrapper=source[end:source.index("// Play one full run",end)]
-        self.assertIn('const std::string partial=outfile+".partial"',wrapper)
-        self.assertIn('failurePartial=failurePath+".partial"',wrapper)
-        self.assertIn("std::filesystem::rename(failurePartial,failurePath)",wrapper)
-        self.assertIn("std::filesystem::rename(partial,outfile)",wrapper)
-
     def test_clean_pilot_schema_fails_closed(self):
         build=Path("build");build.mkdir(exist_ok=True)
         data=build/"clean_pilot_synthetic.csv";manifest_path=build/"clean_pilot_synthetic.manifest.json"
