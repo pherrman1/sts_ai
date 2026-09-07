@@ -227,7 +227,10 @@ Based on direct static evidence (no meaningful current callers, no active resear
 
 **Evidence:**
 - Labeled "CSV of (state, card features, CRN advantage) for causal card value."
-- **Retained consumer:** `train_advantage.py` line 4 references "Ridge regression on the causalgen CSV" as its training data source. This script exists in the tree and consumes the CSV output of this mode.
+- **Historical consumer:** a root Ridge-regression trainer consumed this CSV,
+  but the trainer emitted an unused `adv_model.txt` rather than the
+  `card_adv_table.txt` artifact read by the runtime. It was removed by the
+  2026-09-07 root-script audit.
 - The causal card-value line predates the strategic Q-gate approach; no current knowledge-base docs reference it.
 
 **Scientific status:** Historical experiment with a retained trainer consumer in the repository. The trainer itself may be obsolete, but verifying that requires a separate audit.
@@ -570,7 +573,7 @@ All of these flags have decision-log documentation from 2026-08-09/10 and are wr
 | `shopbench` | Default shop vs V-knapsack (needs v_server) | No current caller found | Historical A/B, server-dependent | REMOVED (Batch 1) |
 | `allbench` | All-default vs rest-V+shop-V (needs v_server) | No current caller found | Historical A/B, server-dependent | REMOVED (Batch 1) |
 | `skipbench` | Card-skip sweep (needs v_server) | No current caller found | Historical sweep, server-dependent | REMOVED (Batch 1) |
-| `causalgen` | CRN advantage for causal card value | `train_advantage.py` references its CSV output as training data | Historical experiment with a retained trainer consumer | SUPERSEDED_CONNECTED |
+| `causalgen` | CRN advantage for causal card value | No current script consumer; runtime still has the separately produced causal-card table path | Historical experiment; producer mode outside this audit | SUPERSEDED_DISCONNECTED |
 | `carddump` | Dump card properties | No current caller found | One-off debug tool | DEAD_HIGH_CONFIDENCE |
 | `deck` | Dump final deck+relics | No current caller found | One-off debug tool | DEAD_HIGH_CONFIDENCE |
 
@@ -629,7 +632,10 @@ runtime or policy-quality claim is made.
 **Concept:** Remove `bench`, `runbench`, `mcts`, `random`, `draftbench`, `cardbench`, `combobench`, `pathbench`, `carddump`, `deck` modes.
 
 **Why second:** Same confidence pattern as Batch 1 but across more modes. Each removal is independent. Some functions may be shared with live code — verify before deleting.
-- `datagen` and `causalgen` are EXCLUDED from this batch (retained callers: `tools/run/datagen_loop.sh` and `train_advantage.py`). Reclassify them as SUPERSEDED_CONNECTED; deletion requires first retiring the caller scripts.
+- `datagen` and `causalgen` were excluded from that batch. `datagen` retains
+  `tools/run/datagen_loop.sh`; the root-script audit later removed the unused
+  causal Ridge trainer, leaving any `causalgen` mode decision to a separate
+  `apps/one_combat.cpp` audit.
 
 **Files changed:** `apps/one_combat.cpp` only.
 
@@ -819,7 +825,9 @@ UNKNOWN:                    1 flag
 
 5. **`tools/run/datagen_loop.sh`:** This script directly invokes the older `datagen` mode for bulk collection. Should it be migrated to `datagen2` or retired? Until that decision is made, `datagen` mode cannot be deleted.
 
-6. **`train_advantage.py`:** Consumes `causalgen` CSV output. Is this trainer still used? If not, both the trainer and the `causalgen` mode can be retired together.
+6. **Resolved 2026-09-07:** the causal Ridge trainer was unused and removed.
+   The `causalgen` mode was deliberately left untouched because the root-script
+   audit excluded `apps/one_combat.cpp`.
 
 7. **`datagen2` vs `datagen3`:** Both have active callers (`datagen2_loop.sh`, `run_card_cf_collection.sh`). Which is the canonical datagen mode? Consolidation may be possible but is a separate investigation.
 

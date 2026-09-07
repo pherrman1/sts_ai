@@ -1,7 +1,7 @@
 # Training and inference
 
-Last verified: 2026-08-27 against the current working tree (including the
-default-off Silver M10 compact-tree export and independent-anchor analyzer).
+Last verified: 2026-09-07 against the current working tree (including the
+root trainer and analyzer audit).
 
 ## Purpose
 
@@ -152,10 +152,12 @@ Offline regression error is a diagnostic only: the dataset holds on-policy
 trajectory states, not counterfactual siblings, so it cannot establish MCTS
 action-ranking quality (EXPERIMENTS.md §134: a same-recipe direct-R model
 fits R well offline yet was significantly negative at the α0.1 gate).
-`train_vcombat_quantile.py` / `train_export_vcombat_quantile.py` (the §132
-quantile-R scripts) are NOT target-only variants of the canonical recipe —
-they change depth/eta/rounds/objective/capacity (9×150 trees) as well as the
-label; see EXPERIMENTS.md §134 audit.
+The §132 quantile-R trainers were retired after their online gate was
+significantly negative at every tested alpha. They were not target-only
+variants of the canonical recipe: they changed
+depth/eta/rounds/objective/capacity (9×150 trees) as well as the label; see
+EXPERIMENTS.md §134 audit. The historical implementations remain available in
+Git history.
 - combat policy/joint: `train_policy.py`, `train_policy_entity.py`,
   `train_combat_pvnet.py::PolicyValueNet`.
 
