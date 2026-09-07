@@ -210,6 +210,22 @@ During iteration, build only affected focused targets; perform the required
 complete build/test pass once before handoff. Never share one CMake binary
 directory between worktrees.
 
+For the Linux Debug ccache lane, the intended focused-then-full sequence is:
+
+```bash
+# Repeat focused builds while implementing.
+cmake --preset linux-gcc-debug-ccache
+cmake --build --preset linux-gcc-debug-ccache-build -j2 --target one_combat
+
+# Before full CTest, build every default target so all test executables exist.
+cmake --build --preset linux-gcc-debug-ccache-build -j2
+PATH="$PWD/.venv/bin:$PATH" \
+  ctest --preset linux-gcc-ccache-test --output-on-failure
+```
+
+Do not run the full CTest preset after building only `one_combat`; CTest
+registers other native executables and correctly reports them missing.
+
 On this Windows-hosted repository, use Windows Git for Git operations in linked
 worktrees created by Windows Git. Their `.git` files contain Windows paths that
 WSL Git may not resolve. Use WSL for the checked-in Linux/GCC CMake presets,

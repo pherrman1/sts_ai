@@ -37,3 +37,9 @@ line numbers, transient failures, or duplicated KB facts here. -->
 - After an evidence-relevant correction, reconcile the draft PR's scope,
   changed paths, checks and counts, provenance, conclusions, reviewed SHA, and
   remaining uncertainty against the final commit and raw results.
+- On local Linux when `ccache` is available, use the matching checked-in
+  `*-ccache` configure, build, and CTest presets. During iteration, build only
+  the affected focused targets.
+- Before running the full CTest preset, build the preset's complete default
+  target set. A focused executable build does not provide all registered test
+  executables.
