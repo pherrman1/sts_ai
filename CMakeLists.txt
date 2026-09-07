@@ -205,7 +205,7 @@ target_link_directories(main PRIVATE json::nlohmann_json)
 target_include_directories(main PUBLIC include)
 target_include_directories(main PUBLIC json/include)
 
-add_executable(one_combat apps/one_combat.cpp $<TARGET_OBJECTS:sts_core_objects>)
+add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
 target_include_directories(one_combat PUBLIC json/include)
 target_link_libraries(one_combat PRIVATE silver_live_backend)
