@@ -205,7 +205,9 @@ target_link_directories(main PRIVATE json::nlohmann_json)
 target_include_directories(main PUBLIC include)
 target_include_directories(main PUBLIC json/include)
 
-add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp $<TARGET_OBJECTS:sts_core_objects>)
+add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
+    apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
 target_include_directories(one_combat PUBLIC json/include)
 target_link_libraries(one_combat PRIVATE silver_live_backend)
@@ -214,6 +216,11 @@ target_link_libraries(one_combat PRIVATE silver_live_backend)
 # -ffunction-sections; discard the unreachable OOC closure instead of vendoring
 # it into the integration executable.
 target_link_options(one_combat PRIVATE -Wl,--gc-sections)
+
+add_executable(one_combat_feature_test apps/one_combat_feature_test.cpp
+    apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(one_combat_feature_test PUBLIC include)
+target_include_directories(one_combat_feature_test PUBLIC json/include)
 
 add_executable(parity_test apps/parity_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(parity_test PUBLIC include)
@@ -251,6 +258,7 @@ add_test(NAME particle_posterior_probe_selftest COMMAND python3 ${CMAKE_SOURCE_D
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/check_replay.py --self-test)
 add_test(NAME vnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/vnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME winnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/winnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
+add_test(NAME one_combat_feature_regression COMMAND $<TARGET_FILE:one_combat_feature_test>)
 add_test(NAME battlecontext_roundtrip COMMAND $<TARGET_FILE:unit-test> battlecontext_roundtrip)
 add_test(NAME s3_sibling_crn COMMAND $<TARGET_FILE:unit-test> s3_sibling_crn)
 add_test(NAME designer_in_spire COMMAND $<TARGET_FILE:unit-test> designer_in_spire)
