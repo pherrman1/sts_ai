@@ -12,11 +12,9 @@ features still use hand-authored `Expert` play/obtain weights.
 
 ## Architecture at a glance
 
-`GameContext` owns the run and its out-of-combat screens. Entering combat creates
-a `BattleContext`; `ScumSearchAgent2` then uses Searcher2 by default or the
-opt-in Searcher3 particle search. The active integration executable is
-`one_combat`, whose `bestbench`, data-generation, tracing, and evaluator modes
-are dispatched by `apps/one_combat.cpp::main`.
+The active integration executable is `one_combat`; its benchmark,
+data-generation, tracing, and evaluator modes are dispatched by
+`apps/one_combat.cpp::main`.
 
 The default out-of-combat stack loads native floor and win tree models, uses
 rich floor value for card/shop choices, win-shaped rest choices, and heuristic
@@ -24,8 +22,8 @@ pathing. A compact policy tree guides combat through PUCT when it loads.
 Experimental PVNet and checkpoint/OOC networks are opt-in; they are not part
 of the default policy merely because their artifacts exist.
 
-See the [architecture overview](docs/knowledge-base/architecture/overview.md)
-for the complete runtime boundary.
+The [architecture overview](docs/knowledge-base/architecture/overview.md) owns
+the runtime state/action boundaries and default-versus-opt-in search dispatch.
 
 ## Headline benchmark
 
