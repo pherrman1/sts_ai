@@ -389,9 +389,12 @@ unless STS_PVNET_VALUE_ONLY=1.
   objective did NOT improve ranking (§137). Future training work should
   optimize for leaf-state ranking metrics directly rather than on-policy
   RMSE.
-- No dependency lock or environment definition exists. Scripts import NumPy,
-  pandas, XGBoost, scikit-learn, and sometimes PyTorch. On this machine the
-  working training environment is the repo venv (`.venv/bin/python`, torch
+- `pyproject.toml` and `uv.lock` now define locked default, analysis, ML, and
+  research dependency groups. Worktrees can reuse the locked analysis
+  environment through `tools/agent/bootstrap_python.sh`; GPU training still
+  requires recording the selected extra and runtime/device provenance. On the
+  historical 2026-08-08 machine the working training environment was the repo
+  venv (`.venv/bin/python`, torch
   2.5.1+cu121 with CUDA); the system `python3` (which the plan's commands and
   the automated verification harness invoke) had no torch, so on 2026-08-08
   the venv's torch 2.5.1+cu121 stack (torch, torchgen, functorch, triton,

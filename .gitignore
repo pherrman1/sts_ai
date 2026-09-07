@@ -9,7 +9,7 @@
 /build-tsan/
 /one_combat*.elf
 /logs/
-/.venv/
+/.venv
 /__pycache__/
 *.py[cod]
 
