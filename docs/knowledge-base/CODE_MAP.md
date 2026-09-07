@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-09-04 against the current working tree.
+Last verified: 2026-09-07 against the current working tree.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -38,7 +38,7 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Mode dispatch | `apps/one_combat.cpp::main` | ~100 modes (`bestbench`, `datagen3`, `fairgen`, `strategicgen`, `searchdiag`, …), env-flag parsing, model loading | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md), [environment-variables.md](operations/environment-variables.md) |
+| Mode dispatch | `apps/one_combat.cpp::main`, `apps/combat_model_diagnostics.cpp` | ~100 modes (`bestbench`, `datagen3`, `fairgen`, `strategicgen`, `searchdiag`, …), env-flag parsing, model loading; offline combat-model diagnostics are dispatched through `runCombatModelDiagnosticMode` | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md), [environment-variables.md](operations/environment-variables.md) |
 
 ## Strategic data generation / counterfactuals
 

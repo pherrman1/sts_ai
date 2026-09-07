@@ -1,6 +1,6 @@
 # Architecture overview
 
-Last verified: 2026-08-02 against commit `67320b3` and the current working tree.
+Last verified: 2026-09-07 against the current working tree.
 
 ## Purpose
 
@@ -25,7 +25,9 @@ separate packed `search::Action` (`include/sim/search/GameAction.h::GameAction`;
 
 `apps/one_combat.cpp::main` is the active integration workbench. It parses
 environment flags, loads models, and dispatches benchmarks, data generators,
-tracing, and counterfactual evaluators. Core simulator behavior remains under
+tracing, and counterfactual evaluators. The self-contained `vnettest`,
+`policynettest`, `pvnetparity`, and `policystats` offline diagnostics live in
+`apps/combat_model_diagnostics.cpp`. Core simulator behavior remains under
 `src/game`, `src/combat`, and `src/sim` (`CMakeLists.txt::sts_lightspeed_SOURCES`).
 
 | Location | Current ownership |
@@ -106,5 +108,6 @@ Detailed flows are in [combat search](combat-search.md),
 - `include/sim/search/GameAction.h::GameAction`
 - `include/sim/search/Action.h::Action`
 - `apps/one_combat.cpp::main`, `runFullRunOOC`
+- `apps/combat_model_diagnostics.cpp::runCombatModelDiagnosticMode`
 - `bindings/slaythespire.cpp::PYBIND11_MODULE`
 - `CMakeLists.txt`
