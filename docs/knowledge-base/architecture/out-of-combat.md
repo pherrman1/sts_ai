@@ -62,6 +62,14 @@ The active whole-run research policy is the ordered branch chain in
 - heuristic/base handling for remaining screens unless an opt-in layer owns
   them.
 
+The policy chain remains owned by `runFullRunOOC`; its live action-selection
+implementations are isolated in `apps/one_combat/ooc_policy.{h,cpp}`. That
+module owns checkpoint action ranking, the one-ply card/rest/upgrade/event/
+shop/treasure/boss-relic/map gates, map-route search, and their candidate
+encodings. Model loading, `buildTokState`, fallback policies, diagnostics,
+counterfactual evaluators, and the ordered driver loop remain in
+`apps/one_combat.cpp`.
+
 `apps/one_combat.cpp::main` enables native OOC unless `STS_NATIVE_OOC=0`.
 Failure to load the floor model terminates startup; failure to load the default
 win model does not. If the win model is unavailable, win-rest helpers fall back
@@ -88,7 +96,7 @@ instead of stalling the whole run.
 A successfully loaded `STS_OOC_CHECKPOINT_NN=<path>` enables the compact native
 checkpoint-distilled action network in acts 1–3 before ordinary policy layers
 (`apps/ooc_checkpoint_net.h::OocCheckpointNet`;
-`apps/one_combat.cpp::oocActionNNPolicy`). A successfully loaded
+`apps/one_combat/ooc_policy.cpp::oocActionNNPolicy`). A successfully loaded
 `STS_OOC_STRATEGIC_NN=<path>` enables the Phase-5 one-ply card-reward gate.
 Since round 3 (`OOC_STRAT_V3`), each legal reward action is scored **directly
 with the Q(s,a) head** on the pre-decision state
@@ -111,7 +119,7 @@ head is trained on Tier-B one-ply counterfactual labels (`strategicgen2`;
 `apps/one_combat.cpp::runStrategicGenSeed2`). No model is deployed by default:
 the one-ply branches are opt-in only
 (`apps/ooc_strategic_net.h::OocStrategicNet`;
-`apps/one_combat.cpp::oocOnePlyCardRewardPolicy`,
+`apps/one_combat/ooc_policy.cpp::oocOnePlyCardRewardPolicy`,
 `oocOnePlyRestPolicy`, `oocOnePlyEventPolicy`, `oocOnePlyShopPolicy`,
 `oocOnePlyTreasurePolicy`, `oocOnePlyBossRelicPolicy`). Historical gates: §70
 pooled-head regression (−10.9pp at margin 1.0), §71 per-seed-neutral per-screen

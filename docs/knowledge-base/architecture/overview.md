@@ -89,8 +89,10 @@ Detailed flows are in [combat search](combat-search.md),
 - `one_combat.cpp` centralizes many policy and experiment layers. **Inference:**
   it functions as a research workbench rather than a stable library boundary;
   the repository contains no explicit decision record for that intent.
-- `runFullRunOOC` does not have one standalone policy object; its ordered branch
-  chain determines inference precedence (`apps/one_combat.cpp::runFullRunOOC`).
+- `runFullRunOOC` remains the canonical ordered integration loop, while its
+  live OOC action-policy implementations are isolated in
+  `apps/one_combat/ooc_policy.{h,cpp}`. Model loading, token-state construction,
+  fallback/diagnostic policy layers, and loop ownership remain in the driver.
 - There is no automatic test suite registered in CMake.
 
 ## Open questions
@@ -108,6 +110,7 @@ Detailed flows are in [combat search](combat-search.md),
 - `include/sim/search/GameAction.h::GameAction`
 - `include/sim/search/Action.h::Action`
 - `apps/one_combat.cpp::main`, `runFullRunOOC`
+- `apps/one_combat/ooc_policy.{h,cpp}` — live OOC action/checkpoint/one-ply/map policies
 - `apps/one_combat/fight_replay.{h,cpp}` — Act-3 boss fight-start capture and isolated `fightrep` replay
 - `apps/one_combat/run_features.{h,cpp}` — path history, forward-map features, rich schema, and feature index map
 - `apps/one_combat/compact_tree.{h,cpp}` — compact tree declaration and loader/predictor

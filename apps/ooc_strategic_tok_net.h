@@ -476,4 +476,4 @@ struct OocStrategicTokNet {
     }
 };
 
-static OocStrategicTokNet g_oocStrategicTokNet;
+extern OocStrategicTokNet g_oocStrategicTokNet;
