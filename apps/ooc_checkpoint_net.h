@@ -163,4 +163,4 @@ struct OocCheckpointNet {
     }
 };
 
-static OocCheckpointNet g_oocCheckpointNet;
+extern OocCheckpointNet g_oocCheckpointNet;

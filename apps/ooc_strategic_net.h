@@ -681,4 +681,4 @@ struct OocStrategicNet {
     }
 };
 
-static OocStrategicNet g_oocStrategicNet;
+extern OocStrategicNet g_oocStrategicNet;

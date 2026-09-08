@@ -1,0 +1,885 @@
+#include "ooc_policy.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <memory>
+#include <sstream>
+#include <unordered_set>
+
+#include "game/Map.h"
+#include "../ooc_checkpoint_net.h"
+#include "../ooc_strategic_net.h"
+#include "../ooc_strategic_tok_net.h"
+#include "sim/search/CombatCpsiNet.h"
+
+using namespace sts;
+
+namespace one_combat {
+
+static double sigmoid(double z) { return 1.0 / (1.0 + std::exp(-z)); }
+
+bool oocActionNNPolicy(GameContext &gc) {
+    if (!g_oocActionNN || gc.act < 1 || gc.act > 3) return false;
+    const auto actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+
+    // Native checkpoint-distilled inference (no server)
+    if (g_oocCheckpointNet.ok) {
+        const std::vector<float> state = richFeatureVec(gc);
+        double best = -1e100;
+        int bestIdx = -1;
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            const double score = g_oocCheckpointNet.predict(
+                state.data(), actions[i].bits, (int)gc.screenState, gc.act);
+            if (score > best) { best = score; bestIdx = i; }
+        }
+        if (bestIdx < 0) return false;
+        actions[bestIdx].execute(gc);
+        return true;
+    }
+
+    // Server fallback
+    std::ostringstream req;
+    req << "OA;";
+    for (int i = 0; i < (int)actions.size(); ++i) {
+        if (i) req << ',';
+        req << actions[i].bits;
+    }
+    req << ';' << (int)gc.screenState << ';' << gc.act << ';' << vFeatCsv(gc) << '\n';
+    const std::string resp = vTransact(req.str());
+    std::istringstream in(resp);
+    double best = -1e100;
+    int bestIdx = -1;
+    for (int i = 0; i < (int)actions.size(); ++i) {
+        std::string tok;
+        if (!(in >> tok)) break;
+        const auto comma = tok.find(',');
+        if (comma == std::string::npos) break;
+        const double pwin = std::atof(tok.substr(0, comma).c_str());
+        const double hpFrac = std::atof(tok.substr(comma + 1).c_str());
+        const double score = 10.0 * pwin + hpFrac * gc.maxHp;
+        if (score > best) { best = score; bestIdx = i; }
+    }
+    if (bestIdx < 0) return false;
+    actions[bestIdx].execute(gc);
+    return true;
+}
+
+// Wave B regret gate (Step 5): per-screen deployed-default heuristic runners
+// used to identify a_heur. Each mirrors the deployed-default OOC policy the
+// datagen uses (runStrategicGenSeed), so the "heuristic" comparison arm and the
+// regret arm share the same reference action.
+void regretHeurCardReward(GameContext &pre, search::ScumSearchAgent2 &) {
+    serverCardRewardPolicy(pre);   // native floor card pick with skip
+}
+static void regretHeurRest(GameContext &pre, search::ScumSearchAgent2 &agent) {
+    if (g_restWin && restWinPolicy(pre)) {}
+    else agent.stepOutOfCombatPolicy(pre);
+}
+static void regretHeurUpgrade(GameContext &pre, search::ScumSearchAgent2 &agent) {
+    if (g_restWin) upgradeSelectWinPolicy(pre);
+    else agent.stepOutOfCombatPolicy(pre);
+}
+// The heuristic probes mirror the LIVE fallback chain of the screen (the code
+// path that would run if the gate returned false), so a_heur is the action the
+// run would actually take without the gate — not the flags-off datagen default.
+// SHOP is the critical case: bestbench forces shopV=true, so the live fallback
+// is shopVPolicy, not stepOutOfCombatPolicy's relic-buy-or-random.
+static void regretHeurEvent(GameContext &pre, search::ScumSearchAgent2 &agent) {
+    if (g_eventV && pre.curEvent != Event::NEOW) eventVPolicy(pre);
+    else agent.stepOutOfCombatPolicy(pre);
+}
+static void regretHeurShop(GameContext &pre, search::ScumSearchAgent2 &agent) {
+    if (t_shopV) shopVPolicy(pre);
+    else agent.stepOutOfCombatPolicy(pre);
+}
+static void regretHeurAgent(GameContext &pre, search::ScumSearchAgent2 &agent) {
+    agent.stepOutOfCombatPolicy(pre);   // TREASURE
+}
+static void regretHeurBossRelic(GameContext &pre, search::ScumSearchAgent2 &agent) {
+    if (g_bossRelicV) bossRelicVPolicy(pre);
+    else agent.stepOutOfCombatPolicy(pre);
+}
+static void regretHeurMap(GameContext &pre, search::ScumSearchAgent2 &agent) {
+    if (g_pathV) pathVPolicy(pre);
+    else search::GameAction(chooseMapAction(pre)).execute(pre);
+}
+
+// One-ply post-action search for CARD REWARD decisions (Phase 5, 5.5.1).
+// Every legal reward action is scored and the best action is executed only
+// when its margin over the runner-up meets the gate
+// (STS_OOC_STRATEGIC_MARGIN), otherwise the heuristic card policy stays in
+// charge.  Scoring (Tier-B round, §72): the Q(s,a) head
+// (OocStrategicNet::predictActionValue) evaluates each action directly on the
+// pre-decision state — no clones or successor states.  STS_OOC_STRATEGIC_Q=0
+// restores the V2 behaviour: successors of copied GameContexts are scored with
+// the value head of the successor screen.  Greedy un-gated deployment is a
+// recorded failure mode (EXPERIMENTS §66m), so the gate is mandatory.
+// Score one V5/V6 action with the loaded strategic net: the Q_win head by
+// default, or the policy head when STS_OOC_STRATEGIC_SCORE=policy (Phase F
+// 5.7.2 gate arm).  predictPolicyLogit returns the raw logit — sigmoid to the
+// probability scale so the probability-point STS_OOC_STRATEGIC_MARGIN
+// semantics apply unchanged.
+double oocStrategicScore(const float *state, std::uint32_t bits,
+                                const int cats[6], int actionType, int screen) {
+    if (g_oocStrategicScorePolicy)
+        return sigmoid(g_oocStrategicNet.predictPolicyLogit(state, bits, cats, actionType, screen));
+    return g_oocStrategicNet.predictActionValue(state, bits, cats, actionType, screen);
+}
+bool oocOnePlyCardRewardPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
+    if (!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) return false;
+    if (gc.screenState != ScreenState::REWARDS) return false;
+    auto &r = gc.info.rewardsContainer;
+    if (r.cardRewardCount == 0) return false;
+    using RT = search::GameAction::RewardsActionType;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    // The baseline skips a group via CARD(rIdx,5), which the enumerator omits.
+    const int rIdx = r.cardRewardCount - 1;
+    const search::GameAction skipCard(RT::CARD, rIdx, 5);
+    bool have = false;
+    for (const auto &a : actions) if (a.bits == skipCard.bits) { have = true; break; }
+    if (!have) actions.push_back(skipCard);
+    std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
+
+    const double margin = g_oocStrategicMarginCard >= 0.0 ? g_oocStrategicMarginCard : g_oocStrategicMargin;
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    if (g_oocStrategicTokNet.ok) {
+        // V4 token net: Q(s,a) on the token state (STS_OOC_STRATEGIC_Q does
+        // not apply to the token path). TokState built once per decision.
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entType, entId; float goldGePrice;
+            tokEntity(gc, actions[i], entType, entId, goldGePrice);
+            const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
+                                   entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+            const double v = g_oocStrategicTokNet.predictActionValue(
+                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    } else {
+        const bool useQ = g_oocStrategicQ;
+        const std::vector<float> state = richFeatureVec(gc);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            double v;
+            if (useQ) {
+                int actionType, c1, c2, c3, cand1, cand2, cand3;
+                strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+                const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+                v = oocStrategicScore(state.data(), actions[i].bits,
+                                      cats, actionType, (int)gc.screenState);
+            } else {
+                GameContext probe = gc;
+                probe.map = std::make_shared<Map>(*gc.map);
+                actions[i].execute(probe);
+                v = g_oocStrategicNet.predictValue(richFeatureVec(probe).data(),
+                                                   (int)probe.screenState);
+            }
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    }
+    return regretGateTail(gc, actions, q, bestIdx, best, second, margin,
+                          g_oocStrategicGateEps, regretHeurCardReward, agent);
+}
+
+// One-ply post-action search for CAMPFIRE decisions (Phase 5, 5.5.2): every
+// legal rest option (REST/SMITH/LIFT/GIRYA/PEACE_PIPE/SHOVEL/SKIP) is scored
+// with the Q(s,a) head on the pre-decision state and the best option is
+// executed only when its margin over the runner-up meets the gate; otherwise
+// the default rest layer (win-rate rest) runs.  The smith's upgrade-target
+// pick (CARD_SELECT/UPGRADE) is gated separately by
+// oocOnePlyUpgradeSelectPolicy under the same flag.
+bool oocOnePlyRestPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicRest) return false;
+    if (gc.screenState != ScreenState::REST_ROOM) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
+    const double margin = g_oocStrategicMarginRest >= 0.0 ? g_oocStrategicMarginRest : g_oocStrategicMargin;
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entType, entId; float goldGePrice;
+            tokEntity(gc, actions[i], entType, entId, goldGePrice);
+            const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
+                                   entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+            const double v = g_oocStrategicTokNet.predictActionValue(
+                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    } else {
+        const std::vector<float> state = richFeatureVec(gc);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    }
+    return regretGateTail(gc, actions, q, bestIdx, best, second, margin,
+                          g_oocStrategicGateEps, regretHeurRest, agent);
+}
+
+// One-ply Q gate for the smith's upgrade-target pick (the CARD_SELECT screen
+// that follows a campfire SMITH).  Scores every legal target; executes the
+// argmax only when its margin over the runner-up meets the gate, else the
+// win-rate upgrade-target layer runs.
+bool oocOnePlyUpgradeSelectPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicRest) return false;
+    if (gc.screenState != ScreenState::CARD_SELECT
+        || gc.info.selectScreenType != CardSelectScreenType::UPGRADE) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
+    const double margin = g_oocStrategicMarginRest >= 0.0 ? g_oocStrategicMarginRest : g_oocStrategicMargin;
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entType, entId; float goldGePrice;
+            tokEntity(gc, actions[i], entType, entId, goldGePrice);
+            const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
+                                   entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+            const double v = g_oocStrategicTokNet.predictActionValue(
+                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    } else {
+        const std::vector<float> state = richFeatureVec(gc);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    }
+    return regretGateTail(gc, actions, q, bestIdx, best, second, margin,
+                          g_oocStrategicGateEps, regretHeurUpgrade, agent);
+}
+
+// One-ply post-action search for EVENT decisions (Phase 5, 5.5.3): every legal
+// event option (including Neow) is scored with the Q(s,a) head on the
+// pre-decision state and the best option is executed only when its margin over
+// the runner-up meets the gate; otherwise the default event layer runs.  The
+// Tier-B labels already average the stochastic continuations of each option,
+// so no RNG-clone sampling is needed at deployment.
+bool oocOnePlyEventPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicEvent) return false;
+    if (gc.screenState != ScreenState::EVENT_SCREEN) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;   // e.g. MATCH_AND_KEEP
+    std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
+    const double margin = g_oocStrategicMarginEvent >= 0.0 ? g_oocStrategicMarginEvent : g_oocStrategicMargin;
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entType, entId; float goldGePrice;
+            tokEntity(gc, actions[i], entType, entId, goldGePrice);
+            const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
+                                   entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+            const double v = g_oocStrategicTokNet.predictActionValue(
+                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    } else {
+        const std::vector<float> state = richFeatureVec(gc);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    }
+    return regretGateTail(gc, actions, q, bestIdx, best, second, margin,
+                          g_oocStrategicGateEps, regretHeurEvent, agent);
+}
+
+// One-ply post-action search for SHOP decisions (R6, §76): every legal shop
+// action (buy card/relic/potion, CARD_REMOVE, leave) is scored with the Q(s,a)
+// head on the pre-decision state and the best action is executed only when its
+// margin over the runner-up meets the gate; otherwise the V-knapsack shop layer
+// runs.  Called once per decision, so repeated buys are re-scored each time.
+bool oocOnePlyShopPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicShop) return false;
+    if (gc.screenState != ScreenState::SHOP_ROOM) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
+    const double margin = g_oocStrategicMarginShop >= 0.0 ? g_oocStrategicMarginShop : g_oocStrategicMargin;
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entType, entId; float goldGePrice;
+            tokEntity(gc, actions[i], entType, entId, goldGePrice);
+            const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
+                                   entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+            const double v = g_oocStrategicTokNet.predictActionValue(
+                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    } else {
+        const std::vector<float> state = richFeatureVec(gc);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    }
+    return regretGateTail(gc, actions, q, bestIdx, best, second, margin,
+                          g_oocStrategicGateEps, regretHeurShop, agent);
+}
+
+// One-ply post-action search for TREASURE decisions (R6, §76): the chest open/
+// skip actions are scored with the Q(s,a) head on the pre-decision state and
+// the best action is executed only when its margin over the runner-up meets
+// the gate; otherwise the default treasure layer runs.
+bool oocOnePlyTreasurePolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicTreasure) return false;
+    if (gc.screenState != ScreenState::TREASURE_ROOM) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
+    const double margin = g_oocStrategicMarginTreasure >= 0.0 ? g_oocStrategicMarginTreasure : g_oocStrategicMargin;
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entType, entId; float goldGePrice;
+            tokEntity(gc, actions[i], entType, entId, goldGePrice);
+            const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
+                                   entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+            const double v = g_oocStrategicTokNet.predictActionValue(
+                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    } else {
+        const std::vector<float> state = richFeatureVec(gc);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    }
+    return regretGateTail(gc, actions, q, bestIdx, best, second, margin,
+                          g_oocStrategicGateEps, regretHeurAgent, agent);
+}
+
+// One-ply post-action search for BOSS RELIC decisions (R6, §76): the three
+// offered relics plus skip are scored with the Q(s,a) head on the
+// pre-decision state and the best action is executed only when its margin over
+// the runner-up meets the gate; otherwise the boss relic layer runs.
+bool oocOnePlyBossRelicPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicBossRelic) return false;
+    if (gc.screenState != ScreenState::BOSS_RELIC_REWARDS) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
+    const double margin = g_oocStrategicMarginBossRelic >= 0.0 ? g_oocStrategicMarginBossRelic : g_oocStrategicMargin;
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entType, entId; float goldGePrice;
+            tokEntity(gc, actions[i], entType, entId, goldGePrice);
+            const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
+                                   entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+            const double v = g_oocStrategicTokNet.predictActionValue(
+                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    } else {
+        const std::vector<float> state = richFeatureVec(gc);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            const double v = oocStrategicScore(state.data(), actions[i].bits,
+                                               cats, actionType, (int)gc.screenState);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    }
+    return regretGateTail(gc, actions, q, bestIdx, best, second, margin,
+                          g_oocStrategicGateEps, regretHeurBossRelic, agent);
+}
+
+// One-ply post-action search for MAP decisions (M1 wave): every legal child
+// node of the visible map DAG is scored with the Q(s,a) head on the
+// pre-decision state and the best child is executed only when its margin over
+// the runner-up meets the gate; otherwise the heuristic pathing layer runs.
+// Candidate resolution follows strategicCands' MAP_SCREEN case (cand1=x,
+// cand2=row, cand3=room), identical to the Tier-B training rows, so no new
+// datagen is needed. The map is fully visible at decision time (no hidden RNG
+// or future-seed use), satisfying spec A.14 for this gate.
+bool oocOnePlyMapPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicMap) return false;
+    if (gc.screenState != ScreenState::MAP_SCREEN || gc.curMapNodeY == 14) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
+    const double margin = g_oocStrategicMarginMap >= 0.0 ? g_oocStrategicMarginMap : g_oocStrategicMargin;
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entType, entId; float goldGePrice;
+            tokEntity(gc, actions[i], entType, entId, goldGePrice);
+            const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
+                                   entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
+            const double v = g_oocStrategicTokNet.predictActionValue(
+                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
+                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    } else {
+        const std::vector<float> state = richFeatureVec(gc);
+        // V6 map-DAG encoder (5.3.2): when the artifact carries it, score each
+        // child with the route embedding (rooms/edges/special from the visible
+        // map, position + chosen child from gc / cand1), matching the trainer's
+        // MAP-screen rows exactly (mapbatch export format).
+        int mapRooms[105], mapEdges[105], mapSpecial[105];
+        const bool useMapEnc = g_oocStrategicNet.mapEnc;
+        if (useMapEnc) {
+            const Map &mp = *gc.map;
+            for (int y = 0; y < 15; ++y)
+                for (int x = 0; x < 7; ++x) {
+                    const int i = y * 7 + x;
+                    const MapNode &n = mp.getNode(x, y);
+                    mapRooms[i] = (int)n.room;
+                    int em = 0;
+                    for (int e = 0; e < n.edgeCount; ++e) em |= 1 << n.edges[e];
+                    mapEdges[i] = em;
+                    mapSpecial[i] = 0;
+                }
+            if (mp.burningEliteX >= 0 && mp.burningEliteY >= 0 && !gc.greenKey)
+                mapSpecial[mp.burningEliteY * 7 + mp.burningEliteX] = 1;
+        }
+        for (int i = 0; i < (int)actions.size(); ++i) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            const double v = useMapEnc
+                ? g_oocStrategicNet.predictMapActionValue(state.data(), actions[i].bits, cats,
+                                                          actionType, (int)gc.screenState,
+                                                          mapRooms, mapEdges, mapSpecial,
+                                                          gc.curMapNodeX, gc.curMapNodeY, cand1)
+                : oocStrategicScore(state.data(), actions[i].bits,
+                                    cats, actionType, (int)gc.screenState);
+            q[i] = v;
+            if (v > best) { second = best; best = v; bestIdx = i; }
+            else if (v > second) second = v;
+        }
+    }
+    return regretGateTail(gc, actions, q, bestIdx, best, second, margin,
+                          g_oocStrategicGateEps, regretHeurMap, agent);
+}
+
+// Candidate identity and entity encodings are policy-owned; datagen callers
+// use the same concrete functions through the public module contract.
+void strategicCands(const GameContext &gc, const search::GameAction &a,
+                           int &actionType, int &c1, int &c2, int &c3,
+                           int &cand1, int &cand2, int &cand3) {
+    using RT = search::GameAction::RewardsActionType;
+    actionType = -1; c1 = a.getIdx1(); c2 = a.getIdx2(); c3 = a.getIdx3();
+    cand1 = cand2 = cand3 = -1;
+    switch (gc.screenState) {
+        case ScreenState::REWARDS: {
+            const auto t = a.getRewardsActionType();
+            actionType = (int)t;
+            const auto &r = gc.info.rewardsContainer;
+            switch (t) {
+                case RT::GOLD:
+                    if (c1 >= 0 && c1 < r.goldRewardCount) cand1 = r.gold[c1];
+                    break;
+                case RT::CARD:
+                    if (c1 >= 0 && c1 < r.cardRewardCount
+                        && c2 >= 0 && c2 < (int)r.cardRewards[c1].size()) {
+                        const Card &card = r.cardRewards[c1][c2];
+                        cand1 = (int)card.getId(); cand2 = card.isUpgraded() ? 1 : 0;
+                    }
+                    break;
+                case RT::RELIC: if (c1 >= 0 && c1 < r.relicCount) cand1 = (int)r.relics[c1]; break;
+                case RT::POTION: if (c1 >= 0 && c1 < r.potionCount) cand1 = (int)r.potions[c1]; break;
+                case RT::KEY: cand1 = r.emeraldKey ? 2 : 3; break;
+                default: break;
+            }
+            break;
+        }
+        case ScreenState::SHOP_ROOM: {
+            const auto t = a.getRewardsActionType();
+            actionType = (int)t;
+            const auto &s = gc.info.shop;
+            switch (t) {
+                case RT::CARD:
+                    if (c1 >= 0 && c1 < 7) {
+                        cand1 = (int)s.cards[c1].getId(); cand2 = s.cardPrice(c1);
+                        cand3 = s.cards[c1].isUpgraded() ? 1 : 0;
+                    }
+                    break;
+                case RT::RELIC: if (c1 >= 0 && c1 < 3) { cand1 = (int)s.relics[c1]; cand2 = s.relicPrice(c1); } break;
+                case RT::POTION: if (c1 >= 0 && c1 < 3) { cand1 = (int)s.potions[c1]; cand2 = s.potionPrice(c1); } break;
+                case RT::CARD_REMOVE: cand1 = s.removeCost; break;
+                default: break;
+            }
+            break;
+        }
+        case ScreenState::EVENT_SCREEN:
+            cand1 = (int)gc.curEvent; cand2 = c1;
+            break;
+        case ScreenState::MAP_SCREEN: {
+            cand1 = c1;
+            const int ty = (gc.curMapNodeY == -1) ? 0 : gc.curMapNodeY + 1;
+            cand2 = ty;
+            if (c1 >= 0 && ty >= 0 && ty < 15 && c1 < 7)
+                cand3 = (int)gc.map->nodes[ty][c1].room;
+            break;
+        }
+        case ScreenState::BOSS_RELIC_REWARDS:
+            if (c1 >= 0 && c1 < 3) cand1 = (int)gc.info.bossRelics[c1];
+            break;
+        case ScreenState::CARD_SELECT: {
+            actionType = (int)gc.info.selectScreenType;
+            if (c1 >= 0 && c1 < (int)gc.info.toSelectCards.size()) {
+                cand1 = (int)gc.info.toSelectCards[c1].card.getId();
+                cand2 = (int)gc.info.selectScreenType;
+            }
+            break;
+        }
+        default: break;
+    }
+}
+
+// V4 decision-context entity (ooc-strategic-v4.md §2.5): the candidate card/
+// relic/potion conditioning the action value (entType 0=none,1=card,2=relic,
+// 3=potion), plus the gold-vs-price threshold feature (SHOP_ROOM cand2=price,
+// REWARDS/GOLD cand1=gold amount; else 0).
+void tokEntity(const GameContext &gc, const search::GameAction &a,
+                      int &entType, int &entId, float &goldGePrice) {
+    using RT = search::GameAction::RewardsActionType;
+    entType = 0; entId = -1; goldGePrice = 0.0f;
+    switch (gc.screenState) {
+        case ScreenState::REWARDS: {
+            const RT t = a.getRewardsActionType();
+            const auto &r = gc.info.rewardsContainer;
+            switch (t) {
+                case RT::GOLD:
+                    if (a.getIdx1() >= 0 && a.getIdx1() < r.goldRewardCount)
+                        goldGePrice = gc.gold >= r.gold[a.getIdx1()] ? 1.0f : 0.0f;
+                    break;
+                case RT::CARD: {
+                    const int c1 = a.getIdx1(), c2 = a.getIdx2();
+                    if (c1 >= 0 && c1 < r.cardRewardCount
+                        && c2 >= 0 && c2 < (int)r.cardRewards[c1].size()) {
+                        entType = 1; entId = (int)r.cardRewards[c1][c2].getId();
+                    }
+                    break;
+                }
+                case RT::RELIC:
+                    if (a.getIdx1() >= 0 && a.getIdx1() < r.relicCount) { entType = 2; entId = (int)r.relics[a.getIdx1()]; }
+                    break;
+                case RT::POTION:
+                    if (a.getIdx1() >= 0 && a.getIdx1() < r.potionCount) { entType = 3; entId = (int)r.potions[a.getIdx1()]; }
+                    break;
+                default: break;
+            }
+            break;
+        }
+        case ScreenState::SHOP_ROOM: {
+            const RT t = a.getRewardsActionType();
+            const auto &s = gc.info.shop;
+            int price = -1;
+            switch (t) {
+                case RT::CARD:
+                    if (a.getIdx1() >= 0 && a.getIdx1() < 7) {
+                        entType = 1; entId = (int)s.cards[a.getIdx1()].getId(); price = s.cardPrice(a.getIdx1());
+                    }
+                    break;
+                case RT::RELIC:
+                    if (a.getIdx1() >= 0 && a.getIdx1() < 3) {
+                        entType = 2; entId = (int)s.relics[a.getIdx1()]; price = s.relicPrice(a.getIdx1());
+                    }
+                    break;
+                case RT::POTION:
+                    if (a.getIdx1() >= 0 && a.getIdx1() < 3) {
+                        entType = 3; entId = (int)s.potions[a.getIdx1()]; price = s.potionPrice(a.getIdx1());
+                    }
+                    break;
+                default: break;
+            }
+            goldGePrice = (price >= 0 && gc.gold >= price) ? 1.0f : 0.0f;  // trainer parity: price<0 -> 0
+            break;
+        }
+        case ScreenState::CARD_SELECT:
+            if (a.getIdx1() >= 0 && a.getIdx1() < (int)gc.info.toSelectCards.size()) {
+                entType = 1; entId = (int)gc.info.toSelectCards[a.getIdx1()].card.getId();
+            }
+            break;
+        default: break;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// M2: short-horizon map route search (plan 5.6.2, spec A.11 "map routes").
+//
+// For each legal child node of the visible map DAG, expand the downstream
+// graph HORIZON rows deep (2..5). Each room on a route is priced with the
+// C_psi combat outcome surrogate (CombatCpsiNet): fights return P(death) and
+// E[hp/maxHp | win]; rests heal a fixed 30% of max HP; shops/treasures/events
+// pass through unchanged (v1 limitation). Encounters for hypothetical fights
+// are sampled from the act's visible pool (strong monsters / elites) with a
+// LOCAL RNG-free expectation — never the run's true future encounter list
+// (spec A.14). A route's value = survival-probability × strategic V-head at
+// the leaf state (map position advanced to the leaf node, HP updated). The
+// best route per child is the max over its downstream paths; the child is
+// executed only when its margin over the runner-up meets the gate, else
+// chooseMapAction runs. This replaces the M1 one-ply Q gate for map decisions
+// when enabled.
+// ---------------------------------------------------------------------------
+struct RouteCpsiCache {
+    bool loaded = false;
+    float pDeath = 1.f;   // P(death) from the sampled encounter pool
+    float hpFrac = 1.f;   // E[hp/maxHp | win]
+};
+
+// Pool-average C_psi expectation for one room type. Row-14 nodes hold the
+// last real rooms of the act (elites/hallways); the forced boss fight at
+// y==14 is not expanded by this search (the leaf V prices the remaining run).
+bool routeCpsiExpect(const GameContext &gc, Room room,
+                            RouteCpsiCache &out) {
+    if (!g_cpsiNet.loaded()) return false;
+    const int act = gc.act;
+    if (room == Room::MONSTER) {
+        // Weighted pool expectation: the act's strong pool with its visible
+        // weights (MonsterEncounterPool::strongWeights) — the conditional
+        // distribution a player knows, never the run's true encounter list.
+        const int poolSize = (int)MonsterEncounterPool::strongCount[act - 1];
+        double pd = 0, hp = 0, wsum = 0;
+        for (int i = 0; i < poolSize; ++i) {
+            const double w = MonsterEncounterPool::strongWeights[act - 1][i];
+            float scalar[search::kCpsiScalars];
+            float deck[search::kCpsiCards];
+            float relics[search::kCpsiRelics];
+            float potions[search::kCpsiPotions];
+            search::buildCpsiEntry(gc, scalar, deck, relics, potions);
+            search::CpsiOut r;
+            g_cpsiNet.predict(scalar, deck, relics, potions,
+                              (int)MonsterEncounterPool::strongEnemies[act - 1][i], r);
+            pd += w * r.death; hp += w * r.hp; wsum += w;
+        }
+        out.pDeath = (float)(pd / wsum);
+        out.hpFrac = (float)(hp / wsum);
+        return true;
+    }
+    if (room == Room::ELITE) {
+        // Elites are drawn uniformly (rollElite: 1/3 each).
+        double pd = 0, hp = 0;
+        for (int i = 0; i < 3; ++i) {
+            float scalar[search::kCpsiScalars];
+            float deck[search::kCpsiCards];
+            float relics[search::kCpsiRelics];
+            float potions[search::kCpsiPotions];
+            search::buildCpsiEntry(gc, scalar, deck, relics, potions);
+            search::CpsiOut r;
+            g_cpsiNet.predict(scalar, deck, relics, potions,
+                              (int)MonsterEncounterPool::elites[act - 1][i], r);
+            pd += r.death; hp += r.hp;
+        }
+        out.pDeath = (float)(pd / 3);
+        out.hpFrac = (float)(hp / 3);
+        return true;
+    }
+    return false;
+}
+
+// Leaf value of a route: the per-screen value head on the state advanced to
+// the leaf node with the route's expected HP (V3 rich state; token-net glob
+// when the token net is loaded). The leaf is a MAP_SCREEN successor state
+// (the next decision is another map choice), so the MAP head prices it.
+// Mutates only curMapNodeX/Y/curHp and restores them (no deep copy per leaf).
+double mapRouteLeafValue(GameContext &gc, int leafX, int leafY,
+                                double hpFrac) {
+    const int saveX = gc.curMapNodeX, saveY = gc.curMapNodeY, saveHp = gc.curHp;
+    gc.curMapNodeX = leafX;
+    gc.curMapNodeY = leafY;
+    gc.curHp = (int)std::llround(hpFrac * gc.maxHp);
+    double v;
+    if (g_oocStrategicTokNet.ok) {
+        const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        v = g_oocStrategicTokNet.predictValue(ts.glob, (int)ScreenState::MAP_SCREEN);
+    } else {
+        v = g_oocStrategicNet.predictValue(richFeatureVec(gc).data(),
+                                           (int)ScreenState::MAP_SCREEN);
+    }
+    gc.curMapNodeX = saveX; gc.curMapNodeY = saveY; gc.curHp = saveHp;
+    return v;
+}
+
+// Best route value from node (x,y) looking down `depth` more rows, given the
+// survival prob and HP fraction carried so far. Max over downstream paths
+// (mirrors chooseMapAction's bottom-up DP over the visible DAG). The C_psi
+// expectation per node is memoized in cache[7*15] (state-independent within
+// the decision: the entry state used is the CURRENT pre-decision state, an
+// explicit v1 approximation documented in the wave contract).
+double mapRouteSearch(GameContext &gc, int x, int y, int depth,
+                             double survival, double hpFrac,
+                             RouteCpsiCache cache[7 * 15]) {
+    const Map &map = *gc.map;
+    const MapNode &n = map.getNode(x, y);
+    if (depth <= 0 || y >= 14) {
+        return survival * std::max(0.0, mapRouteLeafValue(gc, x, y, hpFrac));
+    }
+    double nextSurvival = survival, nextHp = hpFrac;
+    switch (n.room) {
+        case Room::MONSTER:
+        case Room::ELITE: {
+            RouteCpsiCache &cpsi = cache[y * 7 + x];
+            if (!cpsi.loaded) {
+                cpsi.loaded = routeCpsiExpect(gc, n.room, cpsi);
+                if (!cpsi.loaded) {
+                    cpsi.pDeath = 0.f;      // C_psi missing: price the fight as free
+                    cpsi.hpFrac = 1.f;
+                }
+            }
+            nextSurvival = survival * (1.0 - cpsi.pDeath);
+            nextHp = hpFrac * cpsi.hpFrac;
+            break;
+        }
+        case Room::REST:
+            nextHp = std::min(1.0, hpFrac + 0.30);   // base campfire heal
+            break;
+        default:
+            break;                                    // SHOP/TREASURE/EVENT pass through
+    }
+    if (nextSurvival <= 1e-9 || nextHp <= 0.0) return 0.0;
+
+    double bestChild = -1e100;
+    for (int i = 0; i < n.edgeCount; ++i) {
+        const double v = mapRouteSearch(gc, n.edges[i], y + 1, depth - 1,
+                                        nextSurvival, nextHp, cache);
+        if (v > bestChild) bestChild = v;
+    }
+    if (n.edgeCount == 0) {
+        // Dead-end node: the route stops here (leaf).
+        return nextSurvival * std::max(0.0, mapRouteLeafValue(gc, x, y, nextHp));
+    }
+    return bestChild;
+}
+
+// M2: short-horizon map route search (plan 5.6.2). Requires a loaded C_psi
+// surrogate AND a strategic net (V3 or V4) for the leaf. Encounters come from
+// the act's visible pool via expectation, so no hidden future information is
+// used. Margin-gated like every other gate.
+bool oocMapRouteSearchPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
+    if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_cpsiNet.loaded()) return false;
+    if (!g_oocMapRoute) return false;
+    if (gc.screenState != ScreenState::MAP_SCREEN || gc.curMapNodeY == 14) return false;
+    if (gc.act < 1 || gc.act > 3) return false;
+    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    const int depth = std::max(2, std::min(5, g_oocMapRouteHorizon));
+    const double margin = g_oocStrategicMarginMap >= 0.0 ? g_oocStrategicMarginMap : g_oocStrategicMargin;
+    std::vector<double> q(actions.size(), -1e100);   // per-route scores for the regret gate
+
+    const double baseHpFrac = gc.maxHp > 0 ? (double)gc.curHp / gc.maxHp : 1.0;
+    RouteCpsiCache cache[7 * 15];   // shared across children: the C_psi entry
+                                    // state is always the current pre-decision
+                                    // state (documented v1 approximation)
+    double best = -1e100, second = -1e100;
+    int bestIdx = -1;
+    for (int i = 0; i < (int)actions.size(); ++i) {
+        const int childX = actions[i].getIdx1();
+        const int childY = gc.curMapNodeY + 1;
+        const double v = mapRouteSearch(gc, childX, childY, depth, 1.0, baseHpFrac, cache);
+        q[i] = v;
+        if (v > best) { second = best; best = v; bestIdx = i; }
+        else if (v > second) second = v;
+    }
+    return regretGateTail(gc, actions, q, bestIdx, best, second, margin,
+                          g_oocStrategicGateEps, regretHeurMap, agent);
+}
+
+} // namespace one_combat
