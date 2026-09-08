@@ -517,9 +517,9 @@ ordinary policy CE/Q error reports.
 
 ### Deployment VNet query distribution diagnostics
 
-`STS_VNET_QUERY_LOG=<csv>` (parsed by `apps/one_combat.cpp::main`) records
-canonical combat feature rows at deployed VNet queries with a `vnetPred`
-column. `tools/vnet_distribution_shift.py` compares this deployment sample
+`STS_VNET_QUERY_LOG=<csv>` (configured by `apps/one_combat/vnet_query_log.cpp`)
+records canonical combat feature rows at deployed VNet queries with a
+`vnetPred` column. `tools/vnet_distribution_shift.py` compares this deployment sample
 against a seed-disjoint sample of `combatgen` rows: use
 `--deploy-vnet-col vnetPred` (the default), `--vnet-col` for a training-side
 prediction column when available, and `--label-col endHp` for combatgen labels.

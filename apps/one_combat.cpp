@@ -54,6 +54,7 @@
 #include "one_combat/s3_sibling_crn_diagnostic.h"
 #include "one_combat/fight_replay.h"
 #include "one_combat/search_diagnostics.h"
+#include "one_combat/vnet_query_log.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -2089,51 +2090,6 @@ struct LeafDiagCtx {
 };
 static thread_local LeafDiagCtx t_ld;
 
-// ---- VNet query log (STS_VNET_QUERY_LOG=<path>) -----------------------------------
-static std::string g_vnetQueryLogPath;
-static double      g_vnetQuerySample = 1.0;
-static std::mutex  g_vnetQueryLogMutex;
-static std::ofstream g_vnetQueryLogFile;
-static thread_local struct {
-    std::uint64_t seed = 0;
-    int fightIdx = -1;
-    int decIdx = -1;
-    bool active = false;
-    std::mt19937_64 rng;
-    std::string buf;
-} t_vq;
-
-static void vnetQueryLogFlush() {
-    if (t_vq.buf.empty()) return;
-    std::lock_guard<std::mutex> lock(g_vnetQueryLogMutex);
-    if (!g_vnetQueryLogFile.is_open()) return;
-    g_vnetQueryLogFile << t_vq.buf;
-    g_vnetQueryLogFile.flush();
-    t_vq.buf.clear();
-}
-
-static void onVNetQuery(const BattleContext &bc, double prediction) {
-    if (!t_vq.active) return;
-    if (g_vnetQuerySample < 1.0) {
-        std::uniform_real_distribution<double> dist(0.0, 1.0);
-        if (dist(t_vq.rng) >= g_vnetQuerySample) return;
-    }
-    const int nf = search::combatFeatureCount();
-    std::vector<float> feats(nf);
-    search::combatExtractFeatures(bc, feats.data());
-    std::ostringstream o;
-    o << t_vq.seed << ',' << t_vq.fightIdx << ',' << t_vq.decIdx
-      << ',' << search::g_vnetTraceParent << ',' << search::g_vnetTraceDepth;
-    for (int i = 0; i < nf; ++i) {
-        o << ',';
-        const float v = feats[i];
-        if (v == (float)(long)v) o << (long)v; else o << v;
-    }
-    o << ',' << prediction << '\n';
-    t_vq.buf += o.str();
-    if (t_vq.buf.size() > 65536) vnetQueryLogFlush();
-}
-
 // 0 = hallway, 1 = elite, 2 = boss (elite set = MonsterEncounterPool::elites).
 static int encounterDifficulty(sts::MonsterEncounter e) {
     if (sts::isBossEncounter(e)) return 2;
@@ -3080,20 +3036,15 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             }
             // VNet query log: set per-fight context before combat
             // (the agent's internal Searcher3 loop handles per-decision iteration)
-            if (!g_vnetQueryLogPath.empty()) {
-                t_vq.active = true;
-                t_vq.seed = seed;
-                t_vq.fightIdx = fightsTotal;
-                t_vq.decIdx = -1;
-                t_vq.rng.seed(seed * 6364136223846793005ULL + (std::uint64_t)fightsTotal);
-            }
+            if (one_combat::vnetQueryLogConfigured())
+                one_combat::beginVNetQueryLogFight(seed, fightsTotal);
             agent.playoutBattle(bc);
             if (one_combat::fightReplayCaptureEnabled() && battleAct == 3 && battleRoom == Room::BOSS)
                 one_combat::fightReplayCaptureEnd(bc, seed);   // fightrep: index row + capture-time outcome
             if (one_combat::searchDiagnosticsActive())
                 one_combat::endSearchDiagnosticFight(bc);
             if (g_leafdiagActive) leafDiagFightEnd(bc);   // leafdiag: label this fight's sampled rows
-            if (t_vq.active) vnetQueryLogFlush();         // VNet query log: flush this fight's rows
+            one_combat::flushVNetQueryLog();              // VNet query log: flush this fight's rows
             if (search::g_useSearcher3 && g_termWin) termWinDisarm();
             ++fightsTotal;
             if (bc.outcome == Outcome::PLAYER_LOSS) { ++fightsLost; if (deathCombat < 0) { deathCombat = fightsTotal; deathEncounter = (int)bc.encounter; } }
@@ -3202,7 +3153,7 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
                   << (result.won ? 1 : 0) << ',' << result.floor << ',' << result.hpEnd << '\n';
         }
     }
-    if (t_vq.active) vnetQueryLogFlush();
+    one_combat::flushVNetQueryLog();
     if (e2cCapture) {
         // Same effective label semantics as this function's RunResult (honors an
         // explicit STS_STOP_AFTER_ACT horizon without labelling solely from
@@ -13405,31 +13356,7 @@ int main(int argc, char **argv) {
     if (const char *a = std::getenv("STS_DIAG_VNET2_ALPHA")) {   // reporting-only blend for the secondary model
         std::cout << "[DIAG V_combat #2 alpha = " << std::atof(a) << " (reporting only)]\n";
     }
-    // VNet query log (STS_VNET_QUERY_LOG=<path>): log every CombatValueNet::predict()
-    // call inside Searcher3 to a CSV for train-vs-deployment distribution shift diagnostics.
-    // STS_VNET_QUERY_SAMPLE=<prob> (default 1.0) controls the sampling rate.
-    // Zero behavior change when unset.
-    if (const char *d = std::getenv("STS_VNET_QUERY_LOG")) {
-        g_vnetQueryLogPath = d;
-        if (const char *s = std::getenv("STS_VNET_QUERY_SAMPLE")) {
-            g_vnetQuerySample = std::atof(s);
-            if (g_vnetQuerySample <= 0.0) g_vnetQuerySample = 1.0;
-            if (g_vnetQuerySample > 1.0)  g_vnetQuerySample = 1.0;
-        }
-        g_vnetQueryLogFile.open(g_vnetQueryLogPath, std::ios::out);
-        if (g_vnetQueryLogFile.is_open()) {
-            g_vnetQueryLogFile << "seed,fightIdx,decIdx,parentObsHash,depth";
-            for (const auto &name : search::combatFeatureNames())
-                g_vnetQueryLogFile << ',' << name;
-            g_vnetQueryLogFile << ",vnetPred\n";
-            g_vnetQueryLogFile.flush();
-            search::g_onVNetQuery = onVNetQuery;
-            std::cout << "[VNet query log ON: " << g_vnetQueryLogPath
-                      << " sample=" << g_vnetQuerySample << "]\n";
-        } else {
-            std::cerr << "[VNet query log FAILED to open: " << g_vnetQueryLogPath << "]\n";
-        }
-    }
+    one_combat::configureVNetQueryLogFromEnvironment();
     if (const char *d = std::getenv("STS_LEAFDIAG_PER_STRATUM")) {   // leafdiag reservoir capacity per stratum per seed
         const int n = std::atoi(d);
         if (n >= 1) g_ldPerStratum = n;
