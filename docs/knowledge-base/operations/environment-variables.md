@@ -282,7 +282,6 @@ enable flag:
 | `STS_PVNET_COND_DEPTH` | PVNet leaf only when tree depth >= N | 0 (off) | `main` ~L9917 |
 | `STS_PVNET_COND_BOSS` | PVNet leaf only in boss encounters | `0` (off) | `main` ~L9918 |
 | `STS_PVNET_HP_SCALE` | HP-scaled PVNet leaf | `0` (off) | `main` ~L9911 |
-| `STS_DIAG_VNET2` | Secondary diagnostic VNet (leafdiag/leafref only) | unset (off) | `main` ~L9870 |
 | `STS_COMBAT_WIN_BONUS` | V_combat terminal-win bonus offset | unset | `main` ~L9854 |
 
 ## Datagen / generation modes

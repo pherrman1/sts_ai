@@ -219,6 +219,11 @@ inference may use probed OpenBLAS or scalar fallback and reports the backend.
 
 ## Diagnostics and observability
 
+Closed leaf-evaluation, rollout-trace, frontier/relabel, and sibling-CRN
+producers were retired after their research lines closed. `S3LeafDiagnostic`
+and `g_onS3LeafQuery` remain only for the retained particle and posterior
+probes; the production search path does not depend on a diagnostic callback.
+
 `SearchDiagnostics` records simulation partitioning, rollout entry/stop causes,
 tree actions, maximum depth, and search time. Per search:
 
@@ -232,10 +237,10 @@ independent staged-budget probes; Searcher3 emits agent rows only. Fight
 summaries have a separate schema. `collectFrontierStats` classifies terminal
 and unexpanded leaves with a bounded walk.
 
-Opt-in leaf/frontier corpora, relabelers, rollout traces, belief/root/reuse
-telemetry, END_TURN diagnostics, and Silver observers are observational unless
-their flag explicitly names a treatment. Producers must record fair regime,
-models, particles, and relevant flags so incompatible rows are not combined.
+Belief/root/reuse telemetry, END_TURN diagnostics, retained particle probes,
+and Silver observers are observational unless their flag explicitly names a
+treatment. Producers must record fair regime, models, particles, and relevant
+flags so incompatible rows are not combined.
 
 ## Invariants / failure behavior
 

@@ -146,7 +146,7 @@ namespace sts::search {
 
     // Zero-mean ranking correction model (experimental, STS_VNET_RANK_CORR,
     // standalone diagnostic arm — never a default). A small compact-tree model
-    // trained on group-centered leafref - endHp_pred residuals; when loaded it
+    // trained on group-centered leaf-value residuals; when loaded it
     // is ADDED on top of the primary vnet/PVNet leaf value inside
     // evaluateLeaf()/evaluateLeafState() to improve within-group action
     // ranking without shifting the HP scale. Same CombatValueNet format and

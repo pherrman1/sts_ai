@@ -207,11 +207,9 @@ target_include_directories(main PUBLIC json/include)
 
 add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
-    apps/one_combat/frontier_blob_io.cpp
     apps/one_combat/fight_replay.cpp
     apps/one_combat/search_diagnostics.cpp
     apps/one_combat/vnet_query_log.cpp
-    apps/one_combat/s3_sibling_crn_diagnostic.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
 target_include_directories(one_combat PUBLIC json/include)
@@ -265,7 +263,6 @@ add_test(NAME vnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify
 add_test(NAME winnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/winnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME one_combat_feature_regression COMMAND $<TARGET_FILE:one_combat_feature_test>)
 add_test(NAME battlecontext_roundtrip COMMAND $<TARGET_FILE:unit-test> battlecontext_roundtrip)
-add_test(NAME s3_sibling_crn COMMAND $<TARGET_FILE:unit-test> s3_sibling_crn)
 add_test(NAME designer_in_spire COMMAND $<TARGET_FILE:unit-test> designer_in_spire)
 add_test(NAME scum_nonfair_empty_edges COMMAND $<TARGET_FILE:unit-test> scum_nonfair_empty_edges)
 add_test(NAME scum_convroot_stale_outcome COMMAND $<TARGET_FILE:unit-test> scum_convroot_stale_outcome)
@@ -309,8 +306,6 @@ add_test(NAME analyze_silver_root_diagnostic_selftest COMMAND python3 ${CMAKE_SO
 add_test(NAME analyze_silver_adaptive_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py --self-test)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME analyze_runwin_shadow_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_shadow.py --self-test)
-add_test(NAME analyze_s3_sibling_crn_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_s3_sibling_crn.py --self-test)
-add_test(NAME select_s3_crn_states_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/select_s3_crn_states.py --self-test)
 add_test(NAME analyze_runwin_rank_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_runwin_rank.py --self-test)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
 add_test(NAME runwin_e2c_native_parity COMMAND ${CMAKE_COMMAND} -E env
@@ -334,7 +329,7 @@ set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflo
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
     simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed
     training_integrity PROPERTIES LABELS "core")
-set_tests_properties(vnettest_selftest winnettest_selftest s3_sibling_crn
+set_tests_properties(vnettest_selftest winnettest_selftest
     scum_nonfair_empty_edges scum_convroot_stale_outcome s3_drawpile_reuse_boundary
     s3_strategy_fusion_diag s3_persistent_endturn_chance rng_state_propagation
     s3_rand64_prior_sampler rejuv_conditional_blocks live_rejuv_attempt_gate
@@ -349,8 +344,8 @@ set_tests_properties(particle_leaf_probe_selftest particle_posterior_probe_selft
     analyze_silver_reuse_scaling_selftest analyze_silver_vnet_leaf_selftest
     analyze_silver_sticky_quality_selftest analyze_silver_root_diagnostic_selftest
     analyze_silver_adaptive_selftest analyze_postcombat_raw_terminal_selftest
-    analyze_runwin_shadow_selftest analyze_s3_sibling_crn_selftest
-    select_s3_crn_states_selftest analyze_runwin_rank_selftest
+    analyze_runwin_shadow_selftest
+    analyze_runwin_rank_selftest
     PROPERTIES LABELS "research-repro")
 set_property(TEST selfplay_syntax paired_analysis_selftest check_replay_selftest
     battlecontext_roundtrip issue_fixes APPEND PROPERTY LABELS "smoke")

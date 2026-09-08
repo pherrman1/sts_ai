@@ -53,12 +53,7 @@ class BattleScumSearcher3;
         std::string detail;
     };
 
-    // Leaf-query diagnostic record (leafdiag / frontiergen modes,
-    // apps/one_combat.cpp). Fired inside BattleScumSearcher3::step() at the
-    // leaf-expansion blend site (where the learned leaf value is blended with
-    // the multi-rollout outcome before backpropagation) — and, only when
-    // g_s3LeafQueryAllSites is set (frontiergen mode), ALSO at the fair
-    // illegal-stored-edge rollout fallback and the depth-cap direct eval.
+    // Leaf-query diagnostic record used by retained particle probes.
     // The BattleContext pointer is the pre-rollout leaf state and is valid
     // ONLY for the duration of the callback; the callback must not mutate it
     // and must not consume search RNG (reservoir sampling uses its own RNG).
@@ -69,7 +64,7 @@ class BattleScumSearcher3;
         BattleScumSearcher3* searcher = nullptr; // valid only during callback
         const BattleContext* bc = nullptr;     // pre-rollout leaf state (const)
         int treeDepth = 0;                     // tree depth at the blend site
-        std::uint64_t obsHash = 0;             // leaf state visibleHash (identity for leafref matching)
+        std::uint64_t obsHash = 0;             // leaf-state visible hash
         double vnetPred = std::numeric_limits<double>::quiet_NaN();  // learned leaf used by the search (NaN = none fired)
         double rawRolloutEval = std::numeric_limits<double>::quiet_NaN(); // multi-rollout outcome BEFORE the alpha blend
         double blendedEval = std::numeric_limits<double>::quiet_NaN();    // evaluation backpropagated to the tree
@@ -132,15 +127,7 @@ class BattleScumSearcher3;
 
     struct BattleScumSearcher3 {
 
-        struct ForcedActionDiagnosticResult {
-            bool valid = false;
-            double value = std::numeric_limits<double>::quiet_NaN();
-            std::uint64_t particleId = 0;
-            std::array<std::int32_t, 6> preActionRngCounters{};
-            std::array<std::int32_t, 6> postActionRngCounters{};
-            std::array<std::int32_t, 6> finalRngCounters{};
-            int rolloutActions = 0;
-        };
+;
 
         // Forward-declare (needed by Node for std::vector<Edge>)
         struct Edge;
@@ -466,9 +453,6 @@ class BattleScumSearcher3;
             const CombatObservation &postObservation);
 
         void applyParticle(BattleContext &state, const HiddenBattleState &particle);
-        ForcedActionDiagnosticResult evaluateForcedActionDiagnostic(
-            const BattleContext &preState, const HiddenBattleState &particle,
-            const Action &action, std::uint64_t rolloutSeed);
         RealBeliefFilterStats filterRealTransition(
             const BattleContext &preState, const Action &action,
             const BattleContext &realPostState);
@@ -509,8 +493,6 @@ class BattleScumSearcher3;
         bool onlyLegalAction(Action &out);
 
         [[nodiscard]] bool isTerminal(const BattleContext &bc) const;
-        // Virtual so the leafrelabel mode (apps/one_combat.cpp) can record
-        // per-sim terminal outcomes (won, endHp) without touching step().
         virtual double evaluateTerminal(const BattleContext &bc);
         // obsHash != 0 enables the visible-state leaf cache for this call.
         double evaluateLeaf(const BattleContext &bc, std::uint64_t obsHash = 0);
@@ -533,14 +515,6 @@ class BattleScumSearcher3;
         void warmStartRootCRN(const BattleContext &bc);
         Action crnTiebreak(const BattleContext &bc);
 
-        // CRN sibling evaluation (leafrelabel mode, apps/one_combat.cpp):
-        // install a belief + CRN particle set that was constructed ONCE from
-        // the parent visible state so sibling searchers share the same
-        // determinization draws (partial CRN — draw-pile shuffles inside
-        // Belief::initial consume a state-dependent RNG prefix). The searcher's
-        // own constructor-built belief is replaced.
-        void installSharedParticles(const Belief &sharedBelief,
-                                    std::vector<HiddenBattleState> sharedCrn);
     };
 
     // Install a pending real-boundary posterior into a freshly constructed
@@ -806,36 +780,14 @@ class BattleScumSearcher3;
     // search can reason about cross-combat setup (e.g. Happy Flower counter
     // alignment). Empty = off. Consumed only in evaluateTerminal.
     extern thread_local std::function<double(const BattleContext &)> g_terminalBonus;
-    // Leaf-query diagnostic hook (leafdiag / frontiergen modes). nullptr by
-    // default — when unset, step() is byte-identical to pre-hook behavior (the
-    // callback is checked before any work and the leaf obsHash is computed only
-    // inside the guard). Fires at the leaf-expansion blend site
-    // (rolloutLeafCalls path) with S3LeafDiagnostic::frontierType=0; when
-    // g_s3LeafQueryAllSites is additionally true it ALSO fires at the fair
-    // illegal-stored-edge rollout fallback (frontierType=1) and the depth-cap
-    // direct eval (frontierType=2). g_s3LeafQueryAllSites is false by default
-    // so leafdiag/leafref/rollouttrace keep the historical single-site corpus;
-    // only frontiergen (which needs all three frontier types) sets it true.
+    // Leaf-query diagnostic hook. nullptr by default; retained particle
+    // diagnostics use the normal frontier-type-0 leaf callback.
     extern thread_local std::function<void(const S3LeafDiagnostic &)> g_onS3LeafQuery;
-    // When true, g_onS3LeafQuery also fires at the illegal-fallback and
-    // depth-cap frontier sites of step() (frontiergen mode). Default false —
-    // leafdiag/leafref/rollouttrace see only the blend site, exactly as before
-    // the frontiergen extension.
-    extern thread_local bool g_s3LeafQueryAllSites;
     // particle_posterior_probe: step() records per-action semantic checkpoints
     // (with actual post-action observations) for the leaf-query callback. Only
-    // meaningful together with a registered g_onS3LeafQuery; default false so
-    // leafdiag/frontiergen keep their exact historical cost and behavior.
+    // meaningful together with a registered g_onS3LeafQuery; default false.
     extern thread_local bool g_s3LeafTraceActions;
     extern bool g_s3RngExposureDiag;
     extern std::string g_s3RngExposureDiagFile;
-    // Rollout-step trace hook (rollouttrace mode, apps/one_combat.cpp): fires
-    // inside playoutRandom after every executed rollout action, with the
-    // resulting state and the 1-based step index. Read-only; nullptr by
-    // default (unset = byte-identical behavior). Used to capture actual
-    // search-rollout state sequences for delta-V smoothness diagnostics.
-    extern thread_local std::function<void(const BattleContext &, int steps)> g_onRolloutStep;
-
-
 } // namespace sts::search
 #endif
