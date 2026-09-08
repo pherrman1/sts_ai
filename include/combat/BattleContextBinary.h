@@ -1,7 +1,6 @@
 //
 // BattleContextBinary.h: versioned binary (de)serialization of a
-// BattleContext for the frontier-leaf corpus (frontiergen / leafrelabel
-// modes, apps/one_combat.cpp).
+// BattleContext snapshots used by fight replay and simulator diagnostics.
 //
 // The format captures the VISIBLE state plus the 6 RNG streams so a leaf
 // snapshot can be restored and re-searched at a higher budget later. It

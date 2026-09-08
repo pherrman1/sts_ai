@@ -38,11 +38,10 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Mode dispatch | `apps/one_combat.cpp::main`, `apps/combat_model_diagnostics.cpp`, `apps/one_combat/s3_sibling_crn_diagnostic.cpp`, `apps/one_combat/fight_replay.cpp`, `apps/one_combat/search_diagnostics.cpp` | ~100 modes (`bestbench`, `datagen3`, `fairgen`, `strategicgen`, `searchdiag`, …), env-flag parsing, model loading; offline combat-model diagnostics are dispatched through `runCombatModelDiagnosticMode`; `s3siblingcrn`, `fightrep`, and `searchdiag` instrumentation are implemented by standalone application modules | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md), [environment-variables.md](operations/environment-variables.md) |
+| Mode dispatch | `apps/one_combat.cpp::main`, `apps/combat_model_diagnostics.cpp`, `apps/one_combat/fight_replay.cpp`, `apps/one_combat/search_diagnostics.cpp` | ~100 modes (`bestbench`, `datagen3`, `fairgen`, `strategicgen`, `searchdiag`, …), env-flag parsing, model loading; offline combat-model diagnostics are dispatched through `runCombatModelDiagnosticMode`; `fightrep` and `searchdiag` instrumentation are implemented by standalone application modules | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md), [environment-variables.md](operations/environment-variables.md) |
 | Fight replay capture/replay | `apps/one_combat/fight_replay.{h,cpp}` | `STS_FIGHTREP_CAPTURE_DIR` ownership, Act-3 boss fight-start capture hooks, and isolated `fightrep` replay grid | [overview.md](architecture/overview.md), [environment-variables.md](operations/environment-variables.md) |
 | Shared run features | `apps/one_combat/run_features.{h,cpp}` | `PathHistory`, `FwdMap`, rich schema/header/row/index map, and feature cardinalities shared by the integration driver | [overview.md](architecture/overview.md), [out-of-combat.md](architecture/out-of-combat.md) |
 | Compact tree reader | `apps/one_combat/compact_tree.{h,cpp}` | `CompactTreeNet` loader/predictor; callers supply the feature-name index map | [overview.md](architecture/overview.md), [training-and-inference.md](architecture/training-and-inference.md) |
-| Frontier blob reader | `apps/one_combat/frontier_blob_io.{h,cpp}` | Shared exact-offset reader for frontiergen/leafrelabel and the offline `s3siblingcrn` diagnostic | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md) |
 
 ## Strategic data generation / counterfactuals
 
@@ -52,7 +51,7 @@ before broad repository search.
 | Next-generation OOC pipeline contracts | `tools/ooc_pipeline_contract.py`, `tools/train_whole_combat_surrogate.py` | fail-closed teacher/corpus manifest, K/H planning, grouped whole-combat trainer | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
 | Fair gen (S3 particle mode) | `apps/one_combat.cpp` | `fairgen` — forces project-fair Searcher3 regime | [combat-search.md](architecture/combat-search.md) |
 | Combat gen | `apps/one_combat.cpp` | `combatgen`, `fightgen`, `datagen3`, `wholecombatgen` (one post-afterBattle reward-entry row/fight) | [training-and-inference.md](architecture/training-and-inference.md) |
-| Leaf diagnostics | `src/sim/search/BattleScumSearcher3.cpp` | `g_onS3LeafQuery`, `S3LeafDiagnostic`, `leafdiag`/`leafref`/`frontiergen`/`rollouttrace` modes | [combat-search.md](architecture/combat-search.md) |
+| Leaf diagnostics | `src/sim/search/BattleScumSearcher3.cpp` | `g_onS3LeafQuery`, `S3LeafDiagnostic`, retained particle/posterior probes | [combat-search.md](architecture/combat-search.md) |
 
 ## Training and export
 

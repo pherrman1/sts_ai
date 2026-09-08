@@ -76,7 +76,7 @@ void fightRepReplay(const std::string &captureDir, const std::string &outCsv,
               << " sim budgets = " << (long long)n * particles.size() * sims.size()
               << " cells -> " << outCsv << "\n";
 
-    // ── Forced recorded fair-S3 regime (same as frontiergen/leafrelabel) ──
+    // ── Forced recorded fair-S3 replay regime ──
     sts::search::g_fairPlay = true;
     sts::search::g_useSearcher3 = true;
     sts::search::g_s3Belief = false;

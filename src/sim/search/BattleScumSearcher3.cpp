@@ -268,9 +268,7 @@ bool g_vnetCondBossOnly = false;
 bool g_vnetCondAct3 = false;
 thread_local std::function<double(const BattleContext &)> g_terminalBonus;
 thread_local std::function<void(const S3LeafDiagnostic &)> g_onS3LeafQuery;
-thread_local bool g_s3LeafQueryAllSites = false;   // frontiergen-only: also fire at the illegal-fallback + depth-cap sites
 thread_local bool g_s3LeafTraceActions = false;    // particle_posterior_probe-only: record per-action semantic checkpoints
-thread_local std::function<void(const BattleContext &, int steps)> g_onRolloutStep;
 
 // Phase 6 PVNet deployment-speed knobs (see header; STS_PVNET_* parse in
 // apps/one_combat.cpp). The leaf cache is behavior-preserving (deterministic
@@ -356,40 +354,6 @@ void BattleScumSearcher3::applyParticle(BattleContext &state,
     applyParticleImpl(state, particle, rng);
     diagnosticParticleAppliedExactly = exact;
     diagnosticParticleUsedFallback = !exact;
-}
-
-BattleScumSearcher3::ForcedActionDiagnosticResult
-BattleScumSearcher3::evaluateForcedActionDiagnostic(
-    const BattleContext &preState, const HiddenBattleState &particle,
-    const Action &action, std::uint64_t rolloutSeed) {
-    ForcedActionDiagnosticResult result;
-    result.particleId = particle.id;
-    BattleContext state = preState;
-    applyParticle(state, particle);
-    result.preActionRngCounters = {
-        state.shuffleRng.counter, state.cardRandomRng.counter,
-        state.aiRng.counter, state.miscRng.counter,
-        state.monsterHpRng.counter, state.potionRng.counter};
-    if (!action.isValidAction(state)) return result;
-
-    result.valid = true;
-    action.execute(state);
-    result.postActionRngCounters = {
-        state.shuffleRng.counter, state.cardRandomRng.counter,
-        state.aiRng.counter, state.miscRng.counter,
-        state.monsterHpRng.counter, state.potionRng.counter};
-
-    // The particle owns simulator RNG. The separate Searcher3 RNG drives only
-    // stochastic rollout-policy choices and is action-specific in the caller.
-    rng.seed(rolloutSeed);
-    std::vector<Action> rollout;
-    result.rolloutActions = playoutRandom(state, rollout);
-    result.value = evaluateLeaf(state);
-    result.finalRngCounters = {
-        state.shuffleRng.counter, state.cardRandomRng.counter,
-        state.aiRng.counter, state.miscRng.counter,
-        state.monsterHpRng.counter, state.potionRng.counter};
-    return result;
 }
 
 void applyHiddenState(BattleContext &state, const HiddenBattleState &particle,
@@ -2363,12 +2327,6 @@ void BattleScumSearcher3::prepareCRNParticles() {
     }
 }
 
-void BattleScumSearcher3::installSharedParticles(
-    const Belief &sharedBelief, std::vector<HiddenBattleState> sharedCrn) {
-    belief = sharedBelief;
-    crnParticles = std::move(sharedCrn);
-}
-
 void BattleScumSearcher3::warmStartRootCRN(const BattleContext &bc) {
     if (root.edges.empty())
         enumerateActionsForNode(root, bc);
@@ -2902,7 +2860,7 @@ void BattleScumSearcher3::step() {
                 // Experimental STS_VNET_RANK_CORR: add the zero-mean ranking
                 // correction on top of the primary prediction here too — this
                 // blend site is where the leaf value actually enters the MCTS
-                // (the leafdiag endHp_pred column is exactly this value), so
+                // (the diagnostic leaf prediction is exactly this value), so
                 // without it the correction could never improve within-group
                 // ordering. Accumulated into rankCorrValues for the
                 // search-complete zero-mean clamp (fair path).
@@ -2931,7 +2889,7 @@ void BattleScumSearcher3::step() {
             diagnosticTraceActive = false;
             double eval = 0.0;
             const int rollSteps = multiRollout(state, actionStack, eval);
-            const double rawEval = eval;   // pre-blend rollout outcome (leafdiag snapshot)
+            const double rawEval = eval;   // pre-blend rollout outcome
             ++diag.rolloutCalls;
             ++diag.rolloutLeafCalls;
             diag.rolloutActions += rollSteps;
@@ -3398,36 +3356,6 @@ void BattleScumSearcher3::step() {
             double eval = 0.0;
             const int rollSteps = multiRollout(state, actionStack, eval);
             diag.rolloutActions += rollSteps;
-            // Frontier hook at the illegal-fallback site (frontierType=1),
-            // gated to frontiergen (g_s3LeafQueryAllSites) so leafdiag keeps
-            // its historical single-site corpus. The state is the pre-rollout
-            // leaf state (multiRollout leaves it unmutated); no learned leaf
-            // fires here, so vnetPred stays NaN and raw/blended evals are the
-            // plain multi-rollout outcome.
-            if (g_onS3LeafQuery && g_s3LeafQueryAllSites) {
-                const std::uint64_t leafObsHash =
-                    CombatObservation::fromBattleContext(state).visibleHash();
-                S3LeafDiagnostic diagnostic;
-                diagnostic.searcher = this;
-                diagnostic.bc = &state;
-                diagnostic.treeDepth = depth;
-                diagnostic.obsHash = leafObsHash;
-                diagnostic.rawRolloutEval = eval;
-                diagnostic.blendedEval = eval;
-                diagnostic.rolloutSteps = rollSteps;
-                diagnostic.frontierType = 1;
-                diagnostic.particleIndex = diagnosticParticleIndex;
-                diagnostic.particleWeight = diagnosticParticleWeight;
-                diagnostic.particleAppliedExactly = diagnosticParticleAppliedExactly;
-                diagnostic.particleUsedFallback = diagnosticParticleUsedFallback;
-                diagnostic.rootCarried = rootCarried;
-                diagnostic.reuseGeneration = reuseGeneration;
-                diagnostic.reuseSearchCount = reuseSearchCount;
-                diagnostic.searchSimulationOrdinal = searchSimulationOrdinal;
-                diagnostic.outcome = state.outcome;
-                diagnostic.actionCheckpoints = diagnosticActionCheckpoints;
-                g_onS3LeafQuery(diagnostic);
-            }
             backpropagate(path, eval, actionStack);
             finishRngExposureSimulation();
             return;
@@ -3489,30 +3417,6 @@ void BattleScumSearcher3::step() {
     const std::uint64_t leafObsHash =
         CombatObservation::fromBattleContext(state).visibleHash();
     const double leafEval = evaluateLeaf(state, leafObsHash);
-    // Frontier hook at the depth-cap site (frontierType=2), gated to
-    // frontiergen (g_s3LeafQueryAllSites) so leafdiag keeps its historical
-    // single-site corpus. No rollout runs here, so rolloutSteps is 0; the
-    // direct leaf eval is the blended value.
-    if (g_onS3LeafQuery && g_s3LeafQueryAllSites) {
-        S3LeafDiagnostic diagnostic;
-        diagnostic.searcher = this;
-        diagnostic.bc = &state;
-        diagnostic.treeDepth = depth;
-        diagnostic.obsHash = leafObsHash;
-        diagnostic.blendedEval = leafEval;
-        diagnostic.frontierType = 2;
-        diagnostic.particleIndex = diagnosticParticleIndex;
-        diagnostic.particleWeight = diagnosticParticleWeight;
-        diagnostic.particleAppliedExactly = diagnosticParticleAppliedExactly;
-        diagnostic.particleUsedFallback = diagnosticParticleUsedFallback;
-        diagnostic.rootCarried = rootCarried;
-        diagnostic.reuseGeneration = reuseGeneration;
-        diagnostic.reuseSearchCount = reuseSearchCount;
-        diagnostic.searchSimulationOrdinal = searchSimulationOrdinal;
-        diagnostic.outcome = state.outcome;
-        diagnostic.actionCheckpoints = diagnosticActionCheckpoints;
-        g_onS3LeafQuery(diagnostic);
-    }
     backpropagate(path, leafEval, actionStack);
     finishRngExposureSimulation();
 }
@@ -3830,9 +3734,6 @@ int BattleScumSearcher3::playoutRandomWithRng(BattleContext &state,
                 ++steps;
                 actionStack.push_back(a);
                 observeRngExposureAction(a, state);
-                // rollouttrace diagnostics: consecutive actual-rollout states
-                // (read-only hook; nullptr by default).
-                if (g_onRolloutStep) g_onRolloutStep(state, steps);
                 // STS_S3_ROLLOUT_TURN_STOP (A4): fires when the beam's END_TURN
                 // completes the player turn (bc.turn incremented).
                 if (g_s3RolloutTurnStop > 0 && state.turn != turnBefore
@@ -3869,9 +3770,6 @@ int BattleScumSearcher3::playoutRandomWithRng(BattleContext &state,
             const int turnBefore = state.turn;
             actionStack.push_back(a);
             observeRngExposureAction(a, state);
-            // rollouttrace diagnostics: consecutive actual-rollout states
-            // (read-only hook; nullptr by default).
-            if (g_onRolloutStep) g_onRolloutStep(state, steps);
             // STS_S3_ROLLOUT_TURN_STOP (A4): a player turn completed when the
             // action chain ran afterMonsterTurns (bc.turn incremented). Stop
             // after N completed turns; the non-terminal endpoint is then
