@@ -51,7 +51,9 @@ overwrite an existing result, sidecar, or log.
 Linux CMake presets. It invokes CMake directly when available and otherwise,
 on Windows, runs the complete configure/build sequence through one WSL shell.
 Requested ccache preset pairs fall back to their ordinary counterpart when the
-configured shared cache is unavailable or read-only.
+configured shared cache is unavailable or read-only. The probe runs in the
+selected native or WSL build environment and forces configuration when a
+fallback changes the binary directory.
 
 `tools/agent/baseline_build.py` exports a baseline ref and its pinned submodule
 commits to a temporary source tree, builds one executable, and retains only the

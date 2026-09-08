@@ -56,26 +56,60 @@ def ccache_usable() -> tuple[bool, str]:
     return True, f"cache directory is writable: {cache_dir}"
 
 
-def apply_ccache_fallback(args: argparse.Namespace) -> None:
+def wsl_ccache_usable(wsl: str) -> tuple[bool, str]:
+    script = """
+cache_dir="$HOME/.cache/sts_ai/ccache"
+if ! command -v ccache >/dev/null 2>&1; then
+    echo "ccache executable is unavailable in WSL"
+    exit 1
+fi
+probe="$cache_dir"
+while [ ! -e "$probe" ] && [ "$probe" != / ]; do
+    probe="${probe%/*}"
+    [ -n "$probe" ] || probe=/
+done
+if [ ! -d "$probe" ] || [ ! -w "$probe" ]; then
+    echo "cache directory is read-only in WSL: $cache_dir"
+    exit 1
+fi
+echo "cache directory is writable in WSL: $cache_dir"
+""".strip()
+    result = subprocess.run(
+        [wsl, "-e", "bash", "-lc", script],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    reason = result.stdout.strip() or f"WSL ccache probe exited {result.returncode}"
+    return result.returncode == 0, reason
+
+
+def apply_ccache_fallback(
+    args: argparse.Namespace, probe=None
+) -> None:
     requested = (args.configure_preset, args.build_preset)
     fallback = CCACHE_FALLBACKS.get(requested)
     if fallback is None:
         return
-    usable, reason = ccache_usable()
+    usable, reason = (probe or ccache_usable)()
     if usable:
         return
     args.configure_preset, args.build_preset = fallback
+    configure_forced = args.no_configure
+    args.no_configure = False
     print(
         f"ccache_fallback={args.configure_preset} "
-        f"build_preset={args.build_preset} reason={reason}"
+        f"build_preset={args.build_preset} "
+        f"configure_forced={'true' if configure_forced else 'false'} reason={reason}"
     )
 
 
 def run(args: argparse.Namespace) -> int:
-    apply_ccache_fallback(args)
-    commands = cmake_commands(args)
     cmake = shutil.which("cmake")
     if cmake:
+        apply_ccache_fallback(args)
+        commands = cmake_commands(args)
         print(f"build_route=native root={ROOT}")
         for command in commands:
             subprocess.run([cmake, *command[1:]], cwd=ROOT, check=True)
@@ -84,6 +118,8 @@ def run(args: argparse.Namespace) -> int:
     if os.name == "nt":
         wsl = shutil.which("wsl.exe") or shutil.which("wsl")
         if wsl:
+            apply_ccache_fallback(args, lambda: wsl_ccache_usable(wsl))
+            commands = cmake_commands(args)
             wsl_root = windows_to_wsl(ROOT)
             shell = " && ".join(
                 [f"cd {shlex.quote(wsl_root)}", *(

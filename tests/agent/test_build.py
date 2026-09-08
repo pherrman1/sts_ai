@@ -35,6 +35,22 @@ class BuildTests(unittest.TestCase):
         self.assertIn("ccache_fallback=linux-gcc-debug", output.call_args.args[0])
         self.assertIn("cache directory is read-only", output.call_args.args[0])
 
+    def test_ccache_fallback_forces_configure_for_new_binary_directory(self):
+        module = load_module()
+        args = module.parser().parse_args([
+            "--configure-preset", "linux-gcc-debug-ccache",
+            "--build-preset", "linux-gcc-debug-ccache-build",
+            "--no-configure",
+        ])
+        with mock.patch.object(
+            module,
+            "ccache_usable",
+            return_value=(False, "cache directory is read-only"),
+        ), mock.patch("builtins.print") as output:
+            module.apply_ccache_fallback(args)
+        self.assertFalse(args.no_configure)
+        self.assertIn("configure_forced=true", output.call_args.args[0])
+
     def test_usable_ccache_preserves_requested_presets(self):
         module = load_module()
         args = module.parser().parse_args([
@@ -79,6 +95,23 @@ class BuildTests(unittest.TestCase):
         self.assertIn("cd /mnt/c/repo", argv[4])
         self.assertIn("cmake --preset linux-gcc-release", argv[4])
         self.assertIn("cmake --build --preset linux-gcc-build", argv[4])
+
+    def test_windows_ccache_probe_runs_inside_selected_wsl_environment(self):
+        module = load_module()
+        args = module.parser().parse_args([
+            "--configure-preset", "linux-gcc-debug-ccache",
+            "--build-preset", "linux-gcc-debug-ccache-build",
+        ])
+        with mock.patch.object(module.shutil, "which", side_effect=[None, "wsl.exe"]), \
+             mock.patch.object(module.os, "name", "nt"), \
+             mock.patch.object(module, "wsl_ccache_usable", return_value=(True, "ok")) as probe, \
+             mock.patch.object(module, "windows_to_wsl", return_value="/mnt/c/repo"), \
+             mock.patch.object(module.subprocess, "run") as invoke:
+            self.assertEqual(module.run(args), 0)
+        probe.assert_called_once_with("wsl.exe")
+        shell = invoke.call_args.args[0][4]
+        self.assertIn("linux-gcc-debug-ccache", shell)
+        self.assertIn("linux-gcc-debug-ccache-build", shell)
 
     def test_missing_toolchain_fails_actionably(self):
         module = load_module()

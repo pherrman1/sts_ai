@@ -98,7 +98,8 @@ def preset_binary_dir(source: Path, build_preset: str) -> Path:
 
 def run(args: argparse.Namespace) -> int:
     commit = capture("git", "rev-parse", "--verify", f"{args.ref}^{{commit}}")
-    output = args.output or ROOT / "build" / "baselines" / commit[:12] / args.target
+    artifact_name = args.artifact_name or args.target
+    output = args.output or ROOT / "build" / "baselines" / commit[:12] / artifact_name
     output = output.resolve()
     if output.exists():
         raise BaselineBuildError(f"refusing to overwrite existing baseline artifact: {output}")
@@ -122,7 +123,7 @@ def run(args: argparse.Namespace) -> int:
             cwd=source,
             check=True,
         )
-        artifact = preset_binary_dir(source, args.build_preset) / args.target
+        artifact = preset_binary_dir(source, args.build_preset) / artifact_name
         if not artifact.is_file():
             raise BaselineBuildError(f"built artifact not found: {artifact}")
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -139,6 +140,10 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("ref", help="Git commit or ref to export")
     result.add_argument("--target", default="one_combat")
+    result.add_argument(
+        "--artifact-name",
+        help="executable filename when it differs from the CMake target name",
+    )
     result.add_argument("--configure-preset", default="linux-gcc-release")
     result.add_argument("--build-preset", default="linux-gcc-build")
     result.add_argument("--output", type=Path)

@@ -200,7 +200,10 @@ presets. Before using either checked-in ccache pair, the wrapper verifies that
 its nearest existing parent) is writable. If not, it prints
 `ccache_fallback=...` and selects the matching ordinary Release or Debug pair
 before configuration. The wrapper does not initialize submodules or hide other
-build failures.
+build failures. The probe runs in the selected build environment: native Linux
+for a native route, or inside WSL for a Windows-to-WSL route. If fallback is
+needed with `--no-configure`, the wrapper forces configuration of the newly
+selected ordinary binary directory before building it.
 
 For repeated local builds across sibling Git worktrees, install `ccache` in the
 WSL/Linux environment and use the opt-in cache presets:
@@ -243,7 +246,9 @@ submodule revisions into a temporary directory, configures/builds the ordinary
 Release preset, and copies the executable to
 `build/baselines/<commit-prefix>/one_combat`. It refuses to overwrite an
 existing artifact. The required submodule commit objects must already exist in
-the current checkout; the helper does not fetch or mutate Git metadata.
+the current checkout; the helper does not fetch or mutate Git metadata. For a
+CMake target whose executable uses a different `OUTPUT_NAME`, pass that name
+explicitly, for example `--target unit-test --artifact-name test`.
 
 For the Linux Debug ccache lane, the intended focused-then-full sequence is:
 

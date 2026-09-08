@@ -41,6 +41,15 @@ class BaselineBuildTests(unittest.TestCase):
         self.assertEqual(args.target, "one_combat")
         self.assertEqual(args.configure_preset, "linux-gcc-release")
         self.assertEqual(args.build_preset, "linux-gcc-build")
+        self.assertIsNone(args.artifact_name)
+
+    def test_artifact_name_can_differ_from_cmake_target(self):
+        module = load_module()
+        args = module.parser().parse_args([
+            "main", "--target", "unit-test", "--artifact-name", "test"
+        ])
+        self.assertEqual(args.target, "unit-test")
+        self.assertEqual(args.artifact_name, "test")
 
     def test_preset_binary_dir_resolves_exported_source(self):
         module = load_module()
