@@ -251,7 +251,7 @@ enable flag:
 
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
-| `STS_FIGHTREP_CAPTURE_DIR` | While set, `runFullRunOOC` serializes every Act-3 boss fight-start to `<dir>/fight_<seed>.bin` (raw `serializeBattleContext` blob) and writes `<dir>/fight_<seed>.csv` (seed,encounter,floor,won,hpEnd,turns) after the fight. Consumed by the `one_combat fightrep` replay mode. | unset (off) | `main` ~L9720 |
+| `STS_FIGHTREP_CAPTURE_DIR` | While set, `runFullRunOOC` serializes every Act-3 boss fight-start to `<dir>/fight_<seed>.bin` (raw `serializeBattleContext` blob) and writes `<dir>/fight_<seed>.csv` (seed,encounter,floor,won,hpEnd,turns) after the fight. Consumed by the `one_combat fightrep` replay mode. | unset (off) | `apps/one_combat/fight_replay.cpp::configureFightReplayFromEnvironment` |
 
 ## Simulator health monitor
 
