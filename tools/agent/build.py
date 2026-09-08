@@ -13,6 +13,14 @@ from pathlib import Path, PurePosixPath
 
 
 ROOT = Path(__file__).resolve().parents[2]
+CCACHE_FALLBACKS = {
+    ("linux-gcc-release-ccache", "linux-gcc-release-ccache-build"): (
+        "linux-gcc-release", "linux-gcc-build"
+    ),
+    ("linux-gcc-debug-ccache", "linux-gcc-debug-ccache-build"): (
+        "linux-gcc-debug", "linux-gcc-debug-build"
+    ),
+}
 
 
 def windows_to_wsl(path: Path) -> str:
@@ -34,7 +42,37 @@ def cmake_commands(args: argparse.Namespace) -> list[list[str]]:
     return commands
 
 
+def ccache_usable() -> tuple[bool, str]:
+    if shutil.which("ccache") is None:
+        return False, "ccache executable is unavailable"
+    # The checked-in presets derive CCACHE_DIR from HOME, so inspect that exact
+    # location rather than a process-level CCACHE_DIR that the preset replaces.
+    cache_dir = Path.home() / ".cache/sts_ai/ccache"
+    probe = cache_dir
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    if not probe.is_dir() or not os.access(probe, os.W_OK):
+        return False, f"cache directory is read-only: {cache_dir}"
+    return True, f"cache directory is writable: {cache_dir}"
+
+
+def apply_ccache_fallback(args: argparse.Namespace) -> None:
+    requested = (args.configure_preset, args.build_preset)
+    fallback = CCACHE_FALLBACKS.get(requested)
+    if fallback is None:
+        return
+    usable, reason = ccache_usable()
+    if usable:
+        return
+    args.configure_preset, args.build_preset = fallback
+    print(
+        f"ccache_fallback={args.configure_preset} "
+        f"build_preset={args.build_preset} reason={reason}"
+    )
+
+
 def run(args: argparse.Namespace) -> int:
+    apply_ccache_fallback(args)
     commands = cmake_commands(args)
     cmake = shutil.which("cmake")
     if cmake:

@@ -17,6 +17,35 @@ def load_module():
 
 
 class BuildTests(unittest.TestCase):
+    def test_unwritable_ccache_falls_back_to_matching_plain_presets(self):
+        module = load_module()
+        args = module.parser().parse_args([
+            "--configure-preset", "linux-gcc-debug-ccache",
+            "--build-preset", "linux-gcc-debug-ccache-build",
+        ])
+        with mock.patch.object(
+            module,
+            "ccache_usable",
+            return_value=(False, "cache directory is read-only"),
+        ), \
+             mock.patch("builtins.print") as output:
+            module.apply_ccache_fallback(args)
+        self.assertEqual(args.configure_preset, "linux-gcc-debug")
+        self.assertEqual(args.build_preset, "linux-gcc-debug-build")
+        self.assertIn("ccache_fallback=linux-gcc-debug", output.call_args.args[0])
+        self.assertIn("cache directory is read-only", output.call_args.args[0])
+
+    def test_usable_ccache_preserves_requested_presets(self):
+        module = load_module()
+        args = module.parser().parse_args([
+            "--configure-preset", "linux-gcc-release-ccache",
+            "--build-preset", "linux-gcc-release-ccache-build",
+        ])
+        with mock.patch.object(module, "ccache_usable", return_value=(True, "ok")):
+            module.apply_ccache_fallback(args)
+        self.assertEqual(args.configure_preset, "linux-gcc-release-ccache")
+        self.assertEqual(args.build_preset, "linux-gcc-release-ccache-build")
+
     def test_default_commands_configure_then_build(self):
         module = load_module()
         args = module.parser().parse_args(["--target", "one_combat", "--target", "test"])

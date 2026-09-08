@@ -1,6 +1,6 @@
 # StS AI agent contract
 
-Last verified: 2026-09-04 against the current working tree.
+Last verified: 2026-09-08 against the current working tree.
 
 ## Purpose and authority
 
@@ -42,7 +42,9 @@ routing.
 - Distinguish Codex app-managed worktrees from manually/CLI-managed linked
   worktrees. The Codex app may create and remove its own worktrees, and an
   app-created worktree may initially be on a detached `HEAD`. After entering
-  one, validate it with `python tools/agent/worktree.py check .`; if pinned
+  one, run `python tools/agent/worktree.py preflight .` so external read-only
+  Git metadata is identified before branch, staging, or commit operations,
+  then validate it with `python tools/agent/worktree.py check .`; if pinned
   submodules are not initialized or are at the wrong revisions, use
   `python tools/agent/worktree.py repair .` before configuring or building.
 - For manual or CLI-managed linked-worktree creation and removal, use

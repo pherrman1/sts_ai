@@ -1,6 +1,6 @@
 # Research tooling
 
-Last verified: 2026-08-14.
+Last verified: 2026-09-08.
 
 ## Invocation
 
@@ -35,10 +35,12 @@ Decision-bearing multi-arm runs should use its strict JSON manifest interface;
 `tools/agent/research_run_manifest.example.json` is the maintained template.
 
 `tools/agent/worktree.py` is the supported linked-worktree lifecycle entry
-point. Its `create` and `repair` commands initialize and verify the pinned
-`json`/`pybind11` dependencies; `remove` refuses dirty state and removes the
-clean checkout without globally deinitializing shared submodule configuration.
-Prefer it to raw `git worktree add`/`remove` on Windows.
+point. Its read-only `preflight` reports app-managed/external Git metadata
+constraints before Git writes. Its `create` and `repair` commands initialize
+and verify the pinned `json`/`pybind11` dependencies; `remove` refuses dirty
+state and removes the clean checkout without globally deinitializing shared
+submodule configuration. Prefer it to raw `git worktree add`/`remove` on
+Windows.
 `manifest-check` validates common seeds/configuration, required environment
 variables, telemetry expectations, unique output paths, and frozen hashes;
 `exact-sha-preflight` verifies the remote checkout, CMake source binding,
@@ -48,6 +50,13 @@ overwrite an existing result, sidecar, or log.
 `tools/agent/build.py` is the environment-aware entry point for checked-in
 Linux CMake presets. It invokes CMake directly when available and otherwise,
 on Windows, runs the complete configure/build sequence through one WSL shell.
+Requested ccache preset pairs fall back to their ordinary counterpart when the
+configured shared cache is unavailable or read-only.
+
+`tools/agent/baseline_build.py` exports a baseline ref and its pinned submodule
+commits to a temporary source tree, builds one executable, and retains only the
+requested artifact under `build/baselines/`; it never creates a linked
+worktree.
 
 Existing tools that predate this reorganization (e.g., `tools/analyze_*.py`,
 `tools/train_*.py`, `tools/tune_*.py`) remain in the flat `tools/` directory.

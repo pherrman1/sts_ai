@@ -1,6 +1,6 @@
 # Agent context and workflow
 
-Last verified: 2026-09-04 against the current working tree.
+Last verified: 2026-09-08 against the current working tree.
 
 ## Purpose
 
@@ -148,6 +148,7 @@ Long-run details are in [build and debugging](build-and-debugging.md).
    create and remove its own app-managed worktrees. An app-managed worktree may
    begin on detached `HEAD`; before committing or pushing, create or switch to
    the task branch. After entering one, run
+   `python tools/agent/worktree.py preflight .` before Git writes, then
    `python tools/agent/worktree.py check .` and use `repair .` if pinned
    submodules are not initialized or correct. CLI/manual linked-worktree
    creation and removal remain on the `python tools/agent/worktree.py` path,
@@ -274,11 +275,22 @@ this Git worktree as its root so project configuration, skills, and paths agree.
 
 The Codex desktop app may manage the creation and removal of its own linked
 worktrees. Treat an app-created detached `HEAD` as valid pre-branch state;
-validate it with `python tools/agent/worktree.py check .` and repair pinned
-submodules with `repair .` when needed. The CLI remains the maintenance and
+run `python tools/agent/worktree.py preflight .` first. If it reports external
+read-only Git metadata, request the app's Git-metadata permission before the
+first branch, switch, stage, or commit operation; do not create a replacement
+worktree. Then validate with `check .` and repair pinned submodules with
+`repair .` when needed. The CLI remains the maintenance and
 manual-worktree path; use `create|check|repair|remove` there and never raw
 `git worktree add` or `git worktree remove`. Create or switch to a task branch
 in an app-managed worktree before committing or pushing.
+
+The local preflight deliberately does not contact `origin` and cannot grant
+private-repository publication trust. When publication is part of the task,
+test remote read access through the authorized network path before relying on
+push/PR completion, and treat DNS/transport failure separately from an app
+policy rejection of private-code publication. A successful `git ls-remote`
+proves reachability and read authentication only; it does not prove that the
+app will authorize a later push.
 
 No repository Codex hook adapter is configured. The mechanical execution
 boundary for seeded game commands is `tools/seed_guard.sh`, while sandboxing,
