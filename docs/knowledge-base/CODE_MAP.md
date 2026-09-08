@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-09-07 against the current working tree.
+Last verified: 2026-09-08 against the current working tree.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -114,7 +114,8 @@ before broad repository search.
 | SkillOpt-Sleep pilot | `.agents/skills/codex-implementation/SKILL.md`, `tools/agent/skillopt_sleep_config.example.json` | on-demand proposals configured for `Learned guidance`; reject staged scope violations | [skillopt-sleep.md](operations/skillopt-sleep.md) |
 | Session retrospective | `.agents/skills/session-retrospective/SKILL.md`, `tools/agent/recent_codex_sessions.py` | recent-session selection, persistent workflow evidence, and smallest-remedy routing | [session-retrospective.md](operations/session-retrospective.md) |
 | Repository health | `tools/repo_health.py`, `.github/workflows/ci.yml` | event-base inventory comparison; narrow hard gates and ergonomic warnings | [repo-health.md](operations/repo-health.md) |
-| Worktree lifecycle | `tools/agent/worktree.py` | create/check/repair/remove linked worktrees with pinned `json` and `pybind11` submodules | [build-and-debugging.md](operations/build-and-debugging.md) |
+| Worktree lifecycle | `tools/agent/worktree.py` | preflight plus create/check/repair/remove for linked worktrees with pinned `json` and `pybind11` submodules | [build-and-debugging.md](operations/build-and-debugging.md) |
+| Baseline executable build | `tools/agent/baseline_build.py` | archive a Git ref and its pinned submodules, build one executable without another worktree | [build-and-debugging.md](operations/build-and-debugging.md) |
 | Shared Python environment | `tools/agent/bootstrap_python.sh`, `pyproject.toml`, `uv.lock` | lock-keyed environment reuse across sibling worktrees; invoked by Codex Environment setup | [build-and-debugging.md](operations/build-and-debugging.md) |
 | Safety guard | `tools/seed_guard.sh` | Local 128-seed cap; explicit unbounded `--gcp-research` mode on the designated host | [agent-context-and-workflow.md](operations/agent-context-and-workflow.md), [build-and-debugging.md](operations/build-and-debugging.md) |
 | GCP benchmark launcher | `tools/agent/gcp_benchmark.py` | Probe/status/start/run through `gcloud compute ssh`; detached guarded research runs | [build-and-debugging.md](operations/build-and-debugging.md) |
