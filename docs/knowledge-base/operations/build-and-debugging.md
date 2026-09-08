@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-09-07 against the current working tree.
+Last verified: 2026-09-08 against the current working tree.
 
 ## Purpose
 
@@ -58,6 +58,22 @@ Git branch. `repair` is the idempotent setup command for an existing checkout:
 ```powershell
 python tools/agent/worktree.py repair .
 ```
+
+In a Codex-app-managed worktree, run the read-only preflight before the first
+Git write:
+
+```bash
+python tools/agent/worktree.py preflight .
+```
+
+It identifies an app-managed checkout, detached or named HEAD, and whether the
+linked worktree's Git directory/common directory are external and writable.
+When it reports external read-only metadata, the Codex app must authorize the
+branch, staging, and commit operations against that existing worktree. The
+repository helper cannot grant sandbox permission and does not create another
+worktree. Its publication line also preserves the distinction between a
+DNS/transport failure, read reachability, and a platform policy decision about
+private-code publication.
 
 The checker rejects `-` (uninitialized), `+` (different commit), `U`
 (conflict), a revision different from the superproject gitlink, or a dependency
@@ -179,7 +195,15 @@ python tools/agent/build.py --no-configure --target one_combat --target test
 ```
 
 Override `--configure-preset` and `--build-preset` together for Debug or ccache
-presets. The wrapper does not initialize submodules or hide build failures.
+presets. Before using either checked-in ccache pair, the wrapper verifies that
+`ccache` exists and that the preset's `$HOME/.cache/sts_ai/ccache` location (or
+its nearest existing parent) is writable. If not, it prints
+`ccache_fallback=...` and selects the matching ordinary Release or Debug pair
+before configuration. The wrapper does not initialize submodules or hide other
+build failures. The probe runs in the selected build environment: native Linux
+for a native route, or inside WSL for a Windows-to-WSL route. If fallback is
+needed with `--no-configure`, the wrapper forces configuration of the newly
+selected ordinary binary directory before building it.
 
 For repeated local builds across sibling Git worktrees, install `ccache` in the
 WSL/Linux environment and use the opt-in cache presets:
@@ -209,6 +233,22 @@ ccache --dir "$HOME/.cache/sts_ai/ccache" --show-stats
 During iteration, build only affected focused targets; perform the required
 complete build/test pass once before handoff. Never share one CMake binary
 directory between worktrees.
+
+To build a clean baseline executable without registering another worktree, use
+the archive helper:
+
+```bash
+python tools/agent/baseline_build.py BASELINE_REF --target one_combat
+```
+
+It resolves the ref to a commit, exports the superproject plus the two pinned
+submodule revisions into a temporary directory, configures/builds the ordinary
+Release preset, and copies the executable to
+`build/baselines/<commit-prefix>/one_combat`. It refuses to overwrite an
+existing artifact. The required submodule commit objects must already exist in
+the current checkout; the helper does not fetch or mutate Git metadata. For a
+CMake target whose executable uses a different `OUTPUT_NAME`, pass that name
+explicitly, for example `--target unit-test --artifact-name test`.
 
 For the Linux Debug ccache lane, the intended focused-then-full sequence is:
 

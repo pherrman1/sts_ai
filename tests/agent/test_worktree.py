@@ -21,6 +21,36 @@ def load_module():
 
 
 class WorktreeTests(unittest.TestCase):
+    def test_preflight_reports_app_managed_external_read_only_git_metadata(self):
+        module = load_module()
+        worktree = Path("/home/test/.codex/worktrees/abcd/sts_ai")
+        git_dir = Path("/home/test/projects/sts_ai/.git/worktrees/sts_ai")
+        common_dir = Path("/home/test/projects/sts_ai/.git")
+
+        def fake_git(cwd, *args, capture=False):
+            values = {
+                ("rev-parse", "--git-dir"): str(git_dir),
+                ("rev-parse", "--git-common-dir"): str(common_dir),
+            }
+            return values[args]
+
+        with mock.patch.object(module, "require_checkout", return_value=worktree), \
+             mock.patch.object(module, "git", side_effect=fake_git), \
+             mock.patch.object(
+                 module, "git_optional", side_effect=["", "https://example.test/repo.git"]
+             ), \
+             mock.patch.object(module.os, "access", return_value=False), \
+             mock.patch("builtins.print") as output:
+            module.preflight(worktree)
+
+        report = "\n".join(call.args[0] for call in output.call_args_list)
+        self.assertIn("worktree_kind=codex-app-managed", report)
+        self.assertIn("head=detached", report)
+        self.assertIn("git_metadata_location=external", report)
+        self.assertIn("git_metadata_access=read-only", report)
+        self.assertIn("action=request_git_metadata_permission_before_write", report)
+        self.assertIn("publication_preflight=not_proven_by_local_checks", report)
+
     def test_parser_requires_explicit_branch_or_detach(self):
         module = load_module()
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):

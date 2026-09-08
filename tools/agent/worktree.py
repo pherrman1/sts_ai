@@ -30,8 +30,37 @@ def git(cwd: Path, *args: str, capture: bool = False) -> str:
     return result.stdout.rstrip() if capture else ""
 
 
+def git_optional(cwd: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(cwd), *args],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    return result.stdout.rstrip() if result.returncode == 0 else ""
+
+
 def resolved(path: Path) -> Path:
     return Path(os.path.normcase(os.path.realpath(path)))
+
+
+def absolute_git_path(worktree: Path, value: str) -> Path:
+    path = Path(value)
+    return path.resolve() if path.is_absolute() else (worktree / path).resolve()
+
+
+def is_within(path: Path, parent: Path) -> bool:
+    try:
+        resolved(path).relative_to(resolved(parent))
+        return True
+    except ValueError:
+        return False
+
+
+def is_codex_app_worktree(path: Path) -> bool:
+    parts = resolved(path).parts
+    return ".codex" in parts and "worktrees" in parts
 
 
 def require_checkout(path: Path) -> Path:
@@ -132,6 +161,44 @@ def check(worktree: Path) -> None:
     )
 
 
+def preflight(worktree: Path) -> None:
+    """Report checkout constraints without mutating Git or contacting a remote."""
+    worktree = require_checkout(worktree)
+    git_dir = absolute_git_path(
+        worktree, git(worktree, "rev-parse", "--git-dir", capture=True)
+    )
+    common_dir = absolute_git_path(
+        worktree, git(worktree, "rev-parse", "--git-common-dir", capture=True)
+    )
+    branch = git_optional(worktree, "symbolic-ref", "--quiet", "--short", "HEAD")
+    origin = git_optional(worktree, "remote", "get-url", "origin") or "none"
+    metadata_external = not is_within(git_dir, worktree) or not is_within(
+        common_dir, worktree
+    )
+    metadata_writable = os.access(git_dir, os.W_OK) and os.access(common_dir, os.W_OK)
+    kind = "codex-app-managed" if is_codex_app_worktree(worktree) else "standard"
+
+    print(
+        f"worktree_preflight worktree_kind={kind} "
+        f"head={branch or 'detached'} origin={origin}"
+    )
+    print(
+        f"git_metadata_location={'external' if metadata_external else 'in-worktree'} "
+        f"git_metadata_access={'writable' if metadata_writable else 'read-only'} "
+        f"git_dir={git_dir} common_dir={common_dir}"
+    )
+    if metadata_external and not metadata_writable:
+        print(
+            "action=request_git_metadata_permission_before_write "
+            "operations=branch,switch,stage,commit"
+        )
+    print(
+        "publication_preflight=not_proven_by_local_checks "
+        "action=test_remote_read_then_authorized_push_dry_run "
+        "note=classify_dns_or_transport_separately_from_publication_policy"
+    )
+
+
 def initialize(worktree: Path) -> None:
     worktree = require_checkout(worktree)
     git(worktree, "submodule", "sync", "--recursive")
@@ -229,7 +296,7 @@ def parser() -> argparse.ArgumentParser:
     branch.add_argument("--detach", action="store_true")
     create_parser.add_argument("--start-point", default="HEAD")
 
-    for command in ("check", "repair", "remove"):
+    for command in ("check", "preflight", "repair", "remove"):
         command_parser = subparsers.add_parser(command)
         command_parser.add_argument("path", nargs="?", type=Path, default=ROOT)
     return result
@@ -240,6 +307,8 @@ def run(args: argparse.Namespace) -> None:
         create(args)
     elif args.command == "check":
         check(args.path)
+    elif args.command == "preflight":
+        preflight(args.path)
     elif args.command == "repair":
         repair(args.path)
     elif args.command == "remove":
