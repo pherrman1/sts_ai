@@ -105,18 +105,21 @@ backend when this override is on.
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_S3_PARTICLES` | Belief particle count | 64 | `main` ~L9740 |
-| `STS_PARTICLE_LEAF_PROBE_FILE` | Enable the off-by-default draw-order particle leaf CSV probe | unset | `main` |
-| `STS_PARTICLE_LEAF_PROBE_K` | Draw-order variants per selected leaf | 8 | `main` |
-| `STS_PARTICLE_LEAF_PROBE_RATE` | Fraction of type-0 leaves sampled | 0.05 | `main` |
-| `STS_PARTICLE_LEAF_PROBE_MAX_GROUPS` | Per-seed cap on sampled leaf groups | 16 | `main` |
-| `STS_PARTICLE_POSTERIOR_PROBE_FILE` | Enable the off-by-default Phase-1b posterior-valid particle leaf CSV probe (`particle_posterior_probe` mode) | unset | `main` |
-| `STS_PARTICLE_POSTERIOR_PROBE_K` | Cap on evaluated unique compatible hidden states per source leaf (0 = evaluate all) | 0 | `main` |
-| `STS_PARTICLE_POSTERIOR_PROBE_MAX_GROUPS` | Per-seed cap on posterior probe source groups (-1 unlimited, 0 = probe-OFF determinism arm) | 16 | `main` |
-| `STS_PARTICLE_POSTERIOR_AGE_SPLIT` | Opt-in Searcher3 age-stratified posterior probe; owns 16 EARLY + 16 LATE bins and bypasses the legacy group cap | 0 | `main` |
-| `STS_PARTICLE_POSTERIOR_AGE_EARLY_START/END` | Inclusive EARLY searchSimulation window | 100/300 | `main` |
-| `STS_PARTICLE_POSTERIOR_AGE_LATE_START/END` | Inclusive LATE searchSimulation window | 2800/3000 | `main` |
-| `STS_PARTICLE_POSTERIOR_AGE_MIN_PER_STRATUM` | Minimum selected eligible leaves per age stratum and seed; fewer is invalid | 8 | `main` |
-| `STS_PARTICLE_POSTERIOR_AGE_PER_STRATUM` | Required age bins per stratum in age mode | 16 | `main` |
+| `STS_PARTICLE_LEAF_PROBE_FILE` | Enable the off-by-default draw-order particle leaf CSV probe | unset | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_LEAF_PROBE_K` | Draw-order variants per selected leaf | 8 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_LEAF_PROBE_RATE` | Fraction of type-0 leaves sampled | 0.05 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_LEAF_PROBE_MAX_GROUPS` | Per-seed cap on sampled leaf groups | 16 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_PROBE_FILE` | Enable the off-by-default Phase-1b posterior-valid particle leaf CSV probe (`particle_posterior_probe` mode) | unset | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_PROBE_K` | Cap on evaluated unique compatible hidden states per source leaf (0 = evaluate all) | 0 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_PROBE_MAX_GROUPS` | Per-seed cap on posterior probe source groups (-1 unlimited, 0 = probe-OFF determinism arm) | 16 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_AGE_SPLIT` | Opt-in Searcher3 age-stratified posterior probe; owns 16 EARLY + 16 LATE bins and bypasses the legacy group cap | 0 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_AGE_EARLY_START/END` | Inclusive EARLY searchSimulation window | 100/300 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_AGE_LATE_START/END` | Inclusive LATE searchSimulation window | 2800/3000 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_AGE_MIN_PER_STRATUM` | Minimum selected eligible leaves per age stratum and seed; fewer is invalid | 8 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_AGE_PER_STRATUM` | Required age bins per stratum in age mode | 16 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_REPLAY_DEBUG_FILE` | Optional raw-versus-semantic source-prefix replay audit CSV | unset | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_REPLAY_CEILING` | Maximum surviving semantic replay branches before a group is marked exploded | 128 | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
+| `STS_PARTICLE_POSTERIOR_REPLAY_TRACE_FILE` | Optional per-checkpoint semantic replay trace CSV | unset | `particle_diagnostics.cpp::configureParticleDiagnosticsFromEnvironment` |
 | `STS_S3_BELIEF` | Particle belief reweighting (ablation) | `1` (ON) | `main` ~L9730 |
 | `STS_S3_PRUNE` | `canPruneAsDead` pruning (ablation) | `1` (ON) | `main` ~L9735 |
 | `STS_S3_CHAIN` | Deterministic chain compression (ablation) | `1` (ON) | `main` ~L9736 |
