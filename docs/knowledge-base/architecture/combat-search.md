@@ -220,9 +220,11 @@ inference may use probed OpenBLAS or scalar fallback and reports the backend.
 ## Diagnostics and observability
 
 Closed leaf-evaluation, rollout-trace, frontier/relabel, and sibling-CRN
-producers were retired after their research lines closed. `S3LeafDiagnostic`
-and `g_onS3LeafQuery` remain only for the retained particle and posterior
-probes; the production search path does not depend on a diagnostic callback.
+producers were retired after their research lines closed. The retained
+particle/posterior probe implementation lives in
+`apps/one_combat/particle_diagnostics.{h,cpp}`. `S3LeafDiagnostic` and
+`g_onS3LeafQuery` remain Searcher3 interfaces for those probes; the production
+search path does not depend on a diagnostic callback.
 
 `SearchDiagnostics` records simulation partitioning, rollout entry/stop causes,
 tree actions, maximum depth, and search time. Per search:
