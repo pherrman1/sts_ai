@@ -172,7 +172,7 @@ namespace sts::search {
     // model output (not alpha-blended). nullptr by default — when unset,
     // predict() is byte-identical to pre-hook behavior.
     // NOT thread_local: set once from main() and read by all worker threads.
-    // The handler must be thread-safe (the one_combat.cpp handler uses
+    // The handler must be thread-safe (the one_combat VNet query logger uses
     // per-thread buffers with a shared mutex for file writes).
     extern std::function<void(const BattleContext &, double)> g_onVNetQuery;
 
