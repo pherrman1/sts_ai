@@ -324,16 +324,15 @@ enable flag:
 - `EXPERIMENTS.md` — experiments that introduced each flag
 - `docs/knowledge-base/evaluation/current-baselines.md` — current recommended configuration
 
-# E2c run-win shadow producer
+# E2c native model validation
 
-The following variables are diagnostic-only and are read only by the explicit
-`one_combat runwinshadow` mode; ordinary `bestbench` neither loads nor invokes
-this critic.
+The E2c native model is consumed only by the explicit `one_combat runwinparity`
+validation command. It is not invoked by ordinary gameplay or by the `e2cgen`
+RAW/POST producer.
 
-- `STS_RUNWIN_SHADOW_MODEL`: required compact E2c RAW logistic-tree model.
-- `STS_RUNWIN_SHADOW_R`: isolated continuations per reservoir-accepted leaf
-  (default `1`).
-- `STS_RUNWIN_SHADOW_PER_STRATUM`: reservoir capacity for each shadow stratum
-  per Searcher3 decision (default `1`).
-- `STS_RUNWIN_SHADOW_MAX_GROUPS`: cap accepted source-leaf groups per run
-  (default `16`; `0` gives an OFF callback comparison).
+- `STS_RUNWIN_SHADOW_MODEL`: compact E2c RAW logistic-tree model supplied to
+  `runwinparity`; the historical variable name is retained for parity-fixture
+  compatibility.
+
+The retired Searcher3 leaf shadow/rank modes and their reservoir, continuation,
+and reference configuration variables are no longer supported.

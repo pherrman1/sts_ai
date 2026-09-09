@@ -137,20 +137,6 @@ static std::string e2cRunRows(const E2cCapture &, bool, int, int);
 static std::string e2cExplicitRelics(const sts::GameContext &);
 static std::string e2cHeader();
 static std::string e2cRoomName(int);
-static bool g_runwinShadowActive = false;
-static int g_runwinShadowR = 1;
-static int g_runwinShadowPerStratum = 1;
-static int g_runwinShadowMaxGroups = 16;
-// E3a is a separate, default-off diagnostic.  It shares the E2c shadow
-// estimator but adds a detached eventual-run reference after the source run.
-static bool g_runwinRankActive = false;
-static int g_runwinRankRoots = 2;
-static int g_runwinRankMaxLeaves = 6;
-static int g_runwinRankMinLeaves = 3;
-static int g_runwinRankReferenceFutures = 8;
-static int g_runwinRankReferenceSims = 1000;
-static void runwinShadowBeginFight(int, const sts::GameContext &, const PathHistory &, sts::Room, sts::MonsterEncounter);
-static void runwinRankBeginFight(int, const sts::GameContext &, const PathHistory &, sts::Room, sts::MonsterEncounter);
 static std::atomic<int> g_trainingInvalidRuns{0};
 static std::atomic<int> g_trainingInvalidBranches{0};
 static std::atomic<int> g_trainingHealthFailures{0};
@@ -1229,10 +1215,10 @@ int g_neowV      = 0;   // STS_NEOW_V=1
 using WinNet = CompactTreeNet;
 static WinNet g_winNet;
 static WinNet g_floorNet;
-// E2c is never loaded implicitly: only runwinshadow with this explicit model
-// path can arm the diagnostic producer.
-static CompactTreeNet g_runwinShadowNet;
-static std::string g_runwinShadowModelPath;
+// E2c's native model is loaded only for the explicit parity-validation mode;
+// ordinary gameplay and e2cgen do not load or invoke it.
+static CompactTreeNet g_e2cRawNet;
+static std::string g_e2cModelPath;
 bool   winNetOk() { return g_winNet.ok; }
 static double winNetPredict(const std::vector<float> &raw) { return g_winNet.predict(raw); }
 
@@ -1637,10 +1623,6 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             }
             bc.init(gc);
             if (t_e2c) e2cBeginFight(fightsTotal, gc, bc);
-            if (g_runwinShadowActive)
-                runwinShadowBeginFight(fightsTotal, gc, path, battleRoom, bc.encounter);
-            if (g_runwinRankActive)
-                runwinRankBeginFight(fightsTotal, gc, path, battleRoom, bc.encounter);
             if (one_combat::fightReplayCaptureEnabled() && battleAct == 3 && battleRoom == Room::BOSS)
                 one_combat::fightReplayCaptureStart(bc, seed);   // fightrep: fight-start snapshot (floor-50 boss)
             if (one_combat::searchDiagnosticsActive())
@@ -5273,227 +5255,11 @@ static void fairGen(int nSeeds, int sims, int asc, double epsilon,
 // STS_DATAGEN_GATES, …): their inner probe battles would fire the leaf hook
 // and pollute the dataset with non-live decision states.
 // ---------------------------------------------------------------------------
+// E2c native-model parity validation.  This retained command is independent
+// of the retired Searcher3 leaf diagnostics and does not run a combat.
 // ---------------------------------------------------------------------------
-// E2c shadow-only producer.  The callback only reservoir-samples/copies leaf
-// state while search is active.  Diagnostic continuations run after the search
-// completes, never write to Searcher3 state, and use only a local RNG derived
-// from stable identifiers.  No score is returned to Searcher3.
-// ---------------------------------------------------------------------------
-struct RunwinShadowCandidate {
-    BattleContext leaf;
-    search::BattleScumSearcher3 *searcher = nullptr;
-    int stratum = -1, depth = 0, rolloutSteps = 0, particleIndex = -1, leafCurHp = 0, leafMaxHp = 0;
-    double leafHpFrac = std::numeric_limits<double>::quiet_NaN();
-    std::uint64_t obsHash = 0;
-    double particleWeight = 0, vnetPred = std::numeric_limits<double>::quiet_NaN();
-    double rawRolloutEval = std::numeric_limits<double>::quiet_NaN();
-    double blendedEval = std::numeric_limits<double>::quiet_NaN();
-    bool particleExact = false, particleFallback = false, rootCarried = false;
-    int reuseGeneration = 0, reuseSearchCount = -1, searchSimulation = 0;
-};
-struct RunwinShadowRow {
-    std::uint64_t seed = 0, rootObsHash = 0, leafObsHash = 0;
-    int fightIdx = -1, decIdx = -1, floor = 0, act = 0, room = -1, encounter = -1;
-    int depth = 0, rootActionBits = -1, searchSimulation = 0, particleIndex = -1, leafCurHp = 0, leafMaxHp = 0;
-    int replicate = 0, terminal = 0, survived = 0, projectionFailure = 0, inferenceFailure = 0;
-    int replicates = 0, survivedCount = 0, particleExact = 0, particleFallback = 0, rootCarried = 0;
-    int reuseGeneration = 0, reuseSearchCount = -1, rolloutSteps = 0;
-    double particleWeight = 0, vnetPred = 0, rawRolloutEval = 0, blendedEval = 0, probability = 0;
-    double leafHpFrac = std::numeric_limits<double>::quiet_NaN();
-    double probabilityMean = 0, probabilityStd = 0, probabilityMin = 0, probabilityMax = 0;
-    double conditionalSurvivalMean = std::numeric_limits<double>::quiet_NaN();
-};
-struct RunwinShadowCtx {
-    std::uint64_t seed = 0;
-    int fightIdx = -1, decIdx = 0, floor = 0, act = 0;
-    Room room = Room::INVALID;
-    MonsterEncounter encounter = MonsterEncounter::INVALID;
-    GameContext battleEntry;
-    PathHistory path;
-    std::mt19937_64 reservoir;
-    int groups = 0;
-    std::vector<int> seen;
-    std::vector<std::vector<RunwinShadowCandidate>> reservoirs;
-    std::vector<RunwinShadowRow> rows;
-    std::vector<std::string> rootRows;
-    std::string actionFingerprint;
-    void init(std::uint64_t s) {
-        seed = s; fightIdx = -1; decIdx = 0; groups = 0; rows.clear(); rootRows.clear(); actionFingerprint.clear();
-        reservoir.seed(s ^ 0x9e3779b97f4a7c15ULL); seen.assign(one_combat::particleDiagnosticStrataCount(), 0);
-        reservoirs.assign(one_combat::particleDiagnosticStrataCount(), {});
-    }
-    void beginFight(int fi, const GameContext &base, const PathHistory &p, Room r, MonsterEncounter e) {
-        fightIdx = fi; decIdx = 0; floor = base.floorNum; act = base.act; room = r; encounter = e;
-        battleEntry = base; path = p; seen.assign(one_combat::particleDiagnosticStrataCount(), 0); reservoirs.assign(one_combat::particleDiagnosticStrataCount(), {});
-    }
-    void nextDecision() { seen.assign(one_combat::particleDiagnosticStrataCount(), 0); reservoirs.assign(one_combat::particleDiagnosticStrataCount(), {}); ++decIdx; }
-};
-static thread_local RunwinShadowCtx t_runwinShadow;
-
-static void runwinShadowBeginFight(int fightIdx, const GameContext &base, const PathHistory &path,
-                                   Room room, MonsterEncounter encounter) {
-    t_runwinShadow.beginFight(fightIdx, base, path, room, encounter);
-}
-
-static std::uint64_t runwinShadowSeed(std::uint64_t seed, int fight, int decision,
-                                      std::uint64_t leaf, int replicate) {
-    std::uint64_t x = seed ^ 0xD1B54A32D192ED03ULL;
-    x ^= (std::uint64_t)(std::uint32_t)fight * 0x9e3779b97f4a7c15ULL;
-    x ^= (std::uint64_t)(std::uint32_t)decision * 0xbf58476d1ce4e5b9ULL;
-    x ^= leaf + (std::uint64_t)replicate * 0x94d049bb133111ebULL;
-    x ^= x >> 30; x *= 0xbf58476d1ce4e5b9ULL; x ^= x >> 27; x *= 0x94d049bb133111ebULL; x ^= x >> 31;
-    return x;
-}
-static void runwinShadowOnLeafQuery(const search::S3LeafDiagnostic &d) {
-    if (!g_runwinShadowActive || t_runwinShadow.groups >= g_runwinShadowMaxGroups || !d.bc || !d.searcher) return;
-    const int stratum = one_combat::particleDiagnosticStratum(*d.bc, d.treeDepth);
-    int &seen = t_runwinShadow.seen[stratum]; auto &reservoir = t_runwinShadow.reservoirs[stratum];
-    RunwinShadowCandidate c;
-    c.leaf = *d.bc; c.searcher = d.searcher; c.stratum = stratum; c.depth = d.treeDepth; c.obsHash = d.obsHash;
-    c.leafCurHp = d.bc->player.curHp; c.leafMaxHp = d.bc->player.maxHp;
-    c.leafHpFrac = c.leafMaxHp > 0 ? (double)c.leafCurHp / c.leafMaxHp : std::numeric_limits<double>::quiet_NaN();
-    c.rolloutSteps = d.rolloutSteps; c.particleIndex = (int)d.particleIndex; c.particleWeight = d.particleWeight;
-    c.vnetPred = d.vnetPred; c.rawRolloutEval = d.rawRolloutEval; c.blendedEval = d.blendedEval;
-    c.particleExact = d.particleAppliedExactly; c.particleFallback = d.particleUsedFallback; c.rootCarried = d.rootCarried;
-    c.reuseGeneration = d.reuseGeneration; c.reuseSearchCount = d.reuseSearchCount; c.searchSimulation = d.searchSimulationOrdinal;
-    if ((int)reservoir.size() < g_runwinShadowPerStratum) reservoir.push_back(std::move(c));
-    else {
-        const int j = std::uniform_int_distribution<int>(0, seen)(t_runwinShadow.reservoir);
-        if (j < g_runwinShadowPerStratum) reservoir[j] = std::move(c);
-    }
-    ++seen;
-}
-static void runwinShadowEvaluate(const RunwinShadowCandidate &c, std::uint64_t rootHash, int rootActionBits) {
-    std::vector<double> probs, survived;
-    std::vector<RunwinShadowRow> replicateRows;
-    for (int rep = 0; rep < g_runwinShadowR; ++rep) {
-        RunwinShadowRow row;
-        row.seed = t_runwinShadow.seed; row.fightIdx = t_runwinShadow.fightIdx; row.decIdx = t_runwinShadow.decIdx;
-        row.floor = t_runwinShadow.floor; row.act = t_runwinShadow.act; row.room = (int)t_runwinShadow.room;
-        row.encounter = (int)t_runwinShadow.encounter; row.rootObsHash = rootHash; row.rootActionBits = rootActionBits;
-        row.leafObsHash = c.obsHash; row.depth = c.depth; row.searchSimulation = c.searchSimulation;
-        row.leafCurHp = c.leafCurHp; row.leafMaxHp = c.leafMaxHp; row.leafHpFrac = c.leafHpFrac;
-        row.particleIndex = c.particleIndex; row.particleWeight = c.particleWeight; row.particleExact = c.particleExact;
-        row.particleFallback = c.particleFallback; row.rootCarried = c.rootCarried; row.reuseGeneration = c.reuseGeneration;
-        row.reuseSearchCount = c.reuseSearchCount; row.rolloutSteps = c.rolloutSteps; row.vnetPred = c.vnetPred;
-        row.rawRolloutEval = c.rawRolloutEval; row.blendedEval = c.blendedEval; row.replicate = rep;
-        BattleContext continuation = c.leaf; std::vector<search::Action> actions;
-        std::mt19937_64 rng(runwinShadowSeed(row.seed, row.fightIdx, row.decIdx, row.leafObsHash, rep));
-        double ignoredEval = 0; bool terminal = false;
-        c.searcher->diagnosticRollout(continuation, actions, rng, ignoredEval, terminal);
-        row.terminal = terminal ? 1 : 0;
-        if (!terminal) { row.inferenceFailure = 1; row.probability = std::numeric_limits<double>::quiet_NaN(); }
-        else if (continuation.outcome != Outcome::PLAYER_VICTORY) { row.probability = 0.0; }
-        else {
-            row.survived = 1; std::vector<float> raw;
-            if (!e2cProjectTerminalRaw(t_runwinShadow.battleEntry, t_runwinShadow.path, t_runwinShadow.room,
-                                       t_runwinShadow.encounter, continuation, raw)) row.projectionFailure = 1;
-            else {
-                row.probability = g_runwinShadowNet.predict(raw);
-                if (!std::isfinite(row.probability) || row.probability < 0 || row.probability > 1) row.inferenceFailure = 1;
-                else survived.push_back(row.probability);
-            }
-        }
-        if (!row.projectionFailure && !row.inferenceFailure && std::isfinite(row.probability)) probs.push_back(row.probability);
-        replicateRows.push_back(row);
-    }
-    const double mean = probs.empty() ? std::numeric_limits<double>::quiet_NaN()
-        : std::accumulate(probs.begin(), probs.end(), 0.0) / probs.size();
-    double variance = 0; for (double p : probs) variance += (p - mean) * (p - mean);
-    const double sd = probs.empty() ? std::numeric_limits<double>::quiet_NaN() : std::sqrt(variance / probs.size());
-    const double cond = survived.empty() ? std::numeric_limits<double>::quiet_NaN()
-        : std::accumulate(survived.begin(), survived.end(), 0.0) / survived.size();
-    const int survivedCount = (int)survived.size();
-    for (auto &row : replicateRows) { row.replicates = g_runwinShadowR; row.survivedCount = survivedCount;
-        row.probabilityMean = mean; row.probabilityStd = sd; row.probabilityMin = probs.empty() ? std::numeric_limits<double>::quiet_NaN() : *std::min_element(probs.begin(), probs.end());
-        row.probabilityMax = probs.empty() ? std::numeric_limits<double>::quiet_NaN() : *std::max_element(probs.begin(), probs.end()); row.conditionalSurvivalMean = cond;
-        t_runwinShadow.rows.push_back(row); }
-}
-static void runwinShadowOnSearchComplete(const BattleContext &bc, const search::BattleScumSearcher3 &s3) {
-    int best = -1; std::int64_t bestVisits = -1;
-    for (int i = 0; i < (int)s3.root.edges.size(); ++i) if (s3.root.edges[i].child.simulationCount > bestVisits) { bestVisits = s3.root.edges[i].child.simulationCount; best = i; }
-    const int bits = best >= 0 ? (int)s3.root.edges[best].action.bits : -1;
-    const std::uint64_t rootHash = CombatObservation::fromBattleContext(bc).visibleHash();
-    std::ostringstream fp; fp << t_runwinShadow.seed << ':' << t_runwinShadow.fightIdx << ':' << t_runwinShadow.decIdx << ':' << rootHash << ':' << bits << ':' << bestVisits << ';';
-    t_runwinShadow.actionFingerprint += fp.str();
-    t_runwinShadow.rootRows.push_back(std::to_string(t_runwinShadow.seed) + ',' + std::to_string(t_runwinShadow.fightIdx) + ',' +
-        std::to_string(t_runwinShadow.decIdx) + ',' + std::to_string(t_runwinShadow.floor) + ',' + std::to_string(t_runwinShadow.act) + ',' +
-        std::to_string((int)t_runwinShadow.room) + ',' + std::to_string((int)t_runwinShadow.encounter) + ',' + std::to_string(rootHash) + ',' +
-        std::to_string(bits) + ',' + std::to_string(bestVisits) + '\n');
-    if (g_runwinShadowActive && t_runwinShadow.groups < g_runwinShadowMaxGroups)
-        for (const auto &stratum : t_runwinShadow.reservoirs) for (const auto &candidate : stratum) {
-            if (t_runwinShadow.groups++ >= g_runwinShadowMaxGroups) break;
-            runwinShadowEvaluate(candidate, rootHash, bits);
-        }
-    t_runwinShadow.nextDecision();
-}
-static std::string runwinShadowHeader() {
-    return "seed,fightIdx,decIdx,floor,act,room,encounter,rootObsHash,rootActionBits,leafObsHash,leaf_curHp,leaf_maxHp,leaf_hpFrac,treeDepth,searchSimulation,particleIndex,particleWeight,particleExact,particleFallback,rootCarried,reuseGeneration,reuseSearchCount,rolloutSteps,vnetPred,rawRolloutEval,blendedEval,replicate,terminal,survived,runwin_probability,replicates,survivedCount,diagnostic_survival_rate,conditional_survival_critic_mean,runwin_mean,runwin_std,runwin_min,runwin_max,projectionFailure,inferenceFailure";
-}
-static std::string runwinShadowRowsCsv(const RunResult &result) {
-    std::ostringstream out;
-    // The rank analyzer recomputes replicate aggregates from these serialized
-    // rows.  Preserve double precision so that an otherwise valid R=2/M=2
-    // smoke does not fail aggregate parity solely because of CSV rounding.
-    out << std::setprecision(17);
-    for (const auto &r : t_runwinShadow.rows) out << r.seed << ',' << r.fightIdx << ',' << r.decIdx << ',' << r.floor << ',' << r.act << ',' << r.room << ',' << r.encounter << ',' << r.rootObsHash << ',' << r.rootActionBits << ',' << r.leafObsHash << ',' << r.leafCurHp << ',' << r.leafMaxHp << ',' << r.leafHpFrac << ',' << r.depth << ',' << r.searchSimulation << ',' << r.particleIndex << ',' << r.particleWeight << ',' << r.particleExact << ',' << r.particleFallback << ',' << r.rootCarried << ',' << r.reuseGeneration << ',' << r.reuseSearchCount << ',' << r.rolloutSteps << ',' << r.vnetPred << ',' << r.rawRolloutEval << ',' << r.blendedEval << ',' << r.replicate << ',' << r.terminal << ',' << r.survived << ',' << r.probability << ',' << r.replicates << ',' << r.survivedCount << ',' << (r.replicates ? (double)r.survivedCount / r.replicates : 0.0) << ',' << r.conditionalSurvivalMean << ',' << r.probabilityMean << ',' << r.probabilityStd << ',' << r.probabilityMin << ',' << r.probabilityMax << ',' << r.projectionFailure << ',' << r.inferenceFailure << '\n';
-    return out.str();
-}
-static void runwinShadow(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0) {
-    if (!search::g_useSearcher3 || !g_runwinShadowNet.ok) {
-        std::cerr << "runwinshadow requires forced Searcher3 and a successfully loaded STS_RUNWIN_SHADOW_MODEL\n"; return;
-    }
-    std::ofstream rows(outFile), runs(outFile + ".runs.csv"), roots(outFile + ".roots.csv");
-    if (!rows || !runs || !roots) { std::cerr << "runwinshadow: cannot open output or sidecars\n"; return; }
-    rows << runwinShadowHeader() << '\n';
-    runs << "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,actionFingerprint\n";
-    roots << "seed,fightIdx,decIdx,floor,act,room,encounter,rootObsHash,rootActionBits,rootVisits\n";
-    search::g_richCombatFeatures = true; g_runwinShadowActive = true;
-    std::atomic<long long> written{0};
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        const std::uint64_t seed = (std::uint64_t)(seedOffset + s);
-        t_runwinShadow.init(seed);
-        search::g_onS3LeafQuery = runwinShadowOnLeafQuery;
-        search::g_onSearchComplete3 = runwinShadowOnSearchComplete;
-        RunResult result = runFullRunOOC(seed, sims, asc, false, false);
-        const std::string csv = runwinShadowRowsCsv(result);
-        search::g_onS3LeafQuery = nullptr;
-        search::g_onSearchComplete3 = nullptr;
-        #pragma omp critical(runwin_shadow_write)
-        {
-            rows << csv; runs << seed << ',' << (result.won ? 1 : 0) << ',' << result.floor << ',' << result.act << ','
-                 << result.hpEnd << ',' << result.maxHp << ',' << result.fightsLost << ',' << result.deathCombat << ','
-                 << result.deathEncounter << ",\"" << t_runwinShadow.actionFingerprint << "\"\n";
-            for (const auto &r : t_runwinShadow.rootRows) roots << r;
-            written += std::count(csv.begin(), csv.end(), '\n');
-        }
-    }
-    g_runwinShadowActive = false;
-    std::cout << "runwinshadow wrote " << written << " replicate rows to " << outFile << " (R=" << g_runwinShadowR << ")\n";
-    std::string manifestPath = g_runwinShadowModelPath;
-    const size_t ext = manifestPath.rfind(".txt");
-    if (ext != std::string::npos) manifestPath.replace(ext, 4, ".manifest.json");
-    const std::string modelHash = fileSha256(g_runwinShadowModelPath);
-    const std::string manifestHash = fileSha256(manifestPath);
-    std::ofstream provenance(outFile + ".provenance.json");
-    if (provenance) provenance << "{\n  \"schema_version\": \"runwinshadow-v1\",\n"
-        << "  \"semantic_boundary\": \"isolated terminal continuation then E2c RAW projection\",\n"
-        << "  \"model_path\": \"" << jsonEscape(g_runwinShadowModelPath) << "\",\n"
-        << "  \"model_sha256\": " << (modelHash.empty() ? "null" : "\"" + modelHash + "\"") << ",\n"
-        << "  \"manifest_path\": \"" << jsonEscape(manifestPath) << "\",\n"
-        << "  \"manifest_sha256\": " << (manifestHash.empty() ? "null" : "\"" + manifestHash + "\"") << ",\n"
-        << "  \"model_description\": \"" << jsonEscape(std::to_string(g_runwinShadowNet.trees.size()) + " compact trees") << "\",\n"
-        << "  \"git_sha\": \"" << jsonEscape(trainingExecutableGitSha()) << "\",\n"
-        << "  \"command\": \"one_combat runwinshadow\",\n"
-        << "  \"seed_offset\": " << seedOffset << ", \"seeds\": " << nSeeds << ", \"sims\": " << sims << ", \"ascension\": " << asc << ",\n"
-        << "  \"replicates\": " << g_runwinShadowR << ", \"per_stratum\": " << g_runwinShadowPerStratum << ", \"max_groups\": " << g_runwinShadowMaxGroups << ",\n"
-        << "  \"environment\": {\"STS_RUNWIN_SHADOW_MODEL\": \"" << jsonEscape(g_runwinShadowModelPath)
-        << "\", \"STS_RUNWIN_SHADOW_R\": " << g_runwinShadowR << ", \"STS_RUNWIN_SHADOW_PER_STRATUM\": " << g_runwinShadowPerStratum
-        << ", \"STS_RUNWIN_SHADOW_MAX_GROUPS\": " << g_runwinShadowMaxGroups << "}\n}\n";
-}
 static int runwinParity(const std::string &fixture) {
-    if (!g_runwinShadowNet.ok) { std::cerr << "runwinparity requires STS_RUNWIN_SHADOW_MODEL\n"; return 2; }
+    if (!g_e2cRawNet.ok) { std::cerr << "runwinparity requires STS_RUNWIN_SHADOW_MODEL\n"; return 2; }
     std::ifstream in(fixture); std::string header;
     if (!std::getline(in, header)) { std::cerr << "runwinparity: cannot read " << fixture << '\n'; return 2; }
     const auto names = splitCsvNames(header); std::unordered_map<std::string, int> cols;
@@ -5503,8 +5269,8 @@ static int runwinParity(const std::string &fixture) {
     // The fixture is a contract for the loaded model, not merely for the
     // current canonical manifest.  A missing selected feature must be a hard
     // failure: zero-filling silently turns a parity check into a false pass.
-    std::vector<int> modelCols; modelCols.reserve(g_runwinShadowNet.featureNames.size());
-    for (const auto &name : g_runwinShadowNet.featureNames) {
+    std::vector<int> modelCols; modelCols.reserve(g_e2cRawNet.featureNames.size());
+    for (const auto &name : g_e2cRawNet.featureNames) {
         const auto it = cols.find(name);
         if (it == cols.end()) { std::cerr << "runwinparity: fixture missing model feature " << name << '\n'; return 2; }
         modelCols.push_back(it->second);
@@ -5514,308 +5280,14 @@ static int runwinParity(const std::string &fixture) {
         if (line.empty()) continue; const auto fields = splitCsvNames(line);
         if (fields.size() != names.size()) { std::cerr << "runwinparity: malformed row\n"; return 2; }
         std::vector<float> raw(e2cRawCanonicalNames().size(), 0.f);
-        for (int i = 0; i < (int)g_runwinShadowNet.sel.size(); ++i)
-            raw[g_runwinShadowNet.sel[i]] = std::strtof(fields[modelCols[i]].c_str(), nullptr);
-        const double got = g_runwinShadowNet.predict(raw), expected = std::strtod(fields[expectedIt->second].c_str(), nullptr);
+        for (int i = 0; i < (int)g_e2cRawNet.sel.size(); ++i)
+            raw[g_e2cRawNet.sel[i]] = std::strtof(fields[modelCols[i]].c_str(), nullptr);
+        const double got = g_e2cRawNet.predict(raw), expected = std::strtod(fields[expectedIt->second].c_str(), nullptr);
         if (!std::isfinite(got)) { std::cerr << "runwinparity: invalid native probability\n"; return 2; }
         maxError = std::max(maxError, std::abs(got - expected)); ++rows;
     }
     std::cout << "runwinparity rows=" << rows << " max_abs_error=" << std::setprecision(10) << maxError << '\n';
     return rows > 0 && maxError <= 1e-4 ? 0 : 1;
-}
-
-static void jsonPathAndHash(std::ostream &out, const std::string &path) {
-    if (path.empty()) { out << "{\"path\": \"disabled\", \"sha256\": null}"; return; }
-    out << "{\"path\": \"" << jsonEscape(path) << "\", \"sha256\": \""
-        << jsonEscape(fileSha256(path)) << "\"}";
-}
-
-static const char *jsonBool(bool value) { return value ? "true" : "false"; }
-
-// ---------------------------------------------------------------------------
-// E3a direct eventual-run reference.  This intentionally remains separate
-// from runwinshadow: its reference is an actual copied-run outcome, whereas
-// runwinshadow's scientific meaning is the E2c RAW critic score.
-// ---------------------------------------------------------------------------
-struct RunwinRankRoot {
-    std::uint64_t seed = 0, rootObsHash = 0, sampleHash = 0;
-    int fightIdx = -1, decIdx = -1, floor = 0, act = 0, room = -1, encounter = -1;
-    int rootActionBits = -1;
-    std::int64_t rootVisits = 0;
-    GameContext battleEntry;
-    PathHistory path;
-    std::vector<RunwinShadowCandidate> leaves;
-};
-struct RunwinRankCtx {
-    std::uint64_t seed = 0;
-    int fightIdx = -1, decIdx = 0, floor = 0, act = 0;
-    Room room = Room::INVALID;
-    MonsterEncounter encounter = MonsterEncounter::INVALID;
-    GameContext battleEntry;
-    PathHistory path;
-    std::vector<RunwinShadowCandidate> leaves;
-    std::vector<RunwinRankRoot> roots;
-    std::string actionFingerprint;
-    void init(std::uint64_t s) {
-        seed = s; fightIdx = -1; decIdx = 0; floor = act = 0;
-        leaves.clear(); roots.clear(); actionFingerprint.clear();
-    }
-    void beginFight(int fi, const GameContext &base, const PathHistory &p,
-                    Room r, MonsterEncounter e) {
-        fightIdx = fi; decIdx = 0; floor = base.floorNum; act = base.act;
-        // A GameContext ordinarily shares its Map.  Root records survive later
-        // act transitions, which regenerate that map in place, so source-root
-        // capture must own a detached exact battle-entry snapshot.  This also
-        // keeps diagnostics observational: no retained root can alias or
-        // mutate the live source run's environment map.
-        room = r; encounter = e; battleEntry = detachedCounterfactualCopy(base); path = p; leaves.clear();
-    }
-    void nextDecision() { leaves.clear(); ++decIdx; }
-};
-static thread_local RunwinRankCtx t_runwinRank;
-
-static std::uint64_t runwinRankMix(std::uint64_t x) {
-    x ^= x >> 30; x *= 0xbf58476d1ce4e5b9ULL;
-    x ^= x >> 27; x *= 0x94d049bb133111ebULL; x ^= x >> 31;
-    return x;
-}
-static std::uint64_t runwinRankLeafHash(std::uint64_t seed, int fight, int decision,
-                                        const RunwinShadowCandidate &c) {
-    std::uint64_t x = seed ^ 0x6a09e667f3bcc909ULL;
-    x ^= (std::uint64_t)(std::uint32_t)fight * 0x9e3779b97f4a7c15ULL;
-    x ^= (std::uint64_t)(std::uint32_t)decision * 0xbf58476d1ce4e5b9ULL;
-    x ^= c.obsHash;
-    x ^= (std::uint64_t)(std::uint32_t)c.searchSimulation * 0x94d049bb133111ebULL;
-    x ^= (std::uint64_t)(std::uint32_t)c.particleIndex * 0xd6e8feb86659fd93ULL;
-    return runwinRankMix(x);
-}
-static std::uint64_t runwinRankRootHash(std::uint64_t seed, int fight, int decision,
-                                        std::uint64_t root, int actionBits) {
-    std::uint64_t x = seed ^ 0xbb67ae8584caa73bULL;
-    x ^= (std::uint64_t)(std::uint32_t)fight * 0x9e3779b97f4a7c15ULL;
-    x ^= (std::uint64_t)(std::uint32_t)decision * 0xbf58476d1ce4e5b9ULL;
-    x ^= root ^ ((std::uint64_t)(std::uint32_t)actionBits * 0x94d049bb133111ebULL);
-    return runwinRankMix(x);
-}
-static bool runwinRankSameLeaf(const RunwinShadowCandidate &a, const RunwinShadowCandidate &b) {
-    return a.obsHash == b.obsHash && a.searchSimulation == b.searchSimulation
-        && a.particleIndex == b.particleIndex;
-}
-static bool runwinRankLeafLess(std::uint64_t seed, int fight, int decision,
-                               const RunwinShadowCandidate &a, const RunwinShadowCandidate &b) {
-    const auto ah = runwinRankLeafHash(seed, fight, decision, a);
-    const auto bh = runwinRankLeafHash(seed, fight, decision, b);
-    if (ah != bh) return ah < bh;
-    if (a.obsHash != b.obsHash) return a.obsHash < b.obsHash;
-    if (a.searchSimulation != b.searchSimulation) return a.searchSimulation < b.searchSimulation;
-    return a.particleIndex < b.particleIndex;
-}
-static void runwinRankBeginFight(int fightIdx, const GameContext &base, const PathHistory &path,
-                                 Room room, MonsterEncounter encounter) {
-    t_runwinRank.beginFight(fightIdx, base, path, room, encounter);
-}
-static void runwinRankOnLeafQuery(const search::S3LeafDiagnostic &d) {
-    if (!g_runwinRankActive || !d.bc) return;
-    RunwinShadowCandidate c;
-    c.leaf = *d.bc; c.stratum = one_combat::particleDiagnosticStratum(*d.bc, d.treeDepth); c.depth = d.treeDepth; c.obsHash = d.obsHash;
-    c.leafCurHp = d.bc->player.curHp; c.leafMaxHp = d.bc->player.maxHp;
-    c.leafHpFrac = c.leafMaxHp > 0 ? (double)c.leafCurHp / c.leafMaxHp : std::numeric_limits<double>::quiet_NaN();
-    c.rolloutSteps = d.rolloutSteps; c.particleIndex = (int)d.particleIndex; c.particleWeight = d.particleWeight;
-    c.vnetPred = d.vnetPred; c.rawRolloutEval = d.rawRolloutEval; c.blendedEval = d.blendedEval;
-    c.particleExact = d.particleAppliedExactly; c.particleFallback = d.particleUsedFallback; c.rootCarried = d.rootCarried;
-    c.reuseGeneration = d.reuseGeneration; c.reuseSearchCount = d.reuseSearchCount; c.searchSimulation = d.searchSimulationOrdinal;
-    for (const auto &old : t_runwinRank.leaves) if (runwinRankSameLeaf(old, c)) return;
-    t_runwinRank.leaves.push_back(std::move(c));
-    std::sort(t_runwinRank.leaves.begin(), t_runwinRank.leaves.end(), [](const auto &a, const auto &b) {
-        return runwinRankLeafLess(t_runwinRank.seed, t_runwinRank.fightIdx, t_runwinRank.decIdx, a, b);
-    });
-    if ((int)t_runwinRank.leaves.size() > g_runwinRankMaxLeaves)
-        t_runwinRank.leaves.resize(g_runwinRankMaxLeaves);
-}
-static void runwinRankOnSearchComplete(const BattleContext &bc, const search::BattleScumSearcher3 &s3) {
-    int best = -1; std::int64_t bestVisits = -1;
-    for (int i = 0; i < (int)s3.root.edges.size(); ++i)
-        if (s3.root.edges[i].child.simulationCount > bestVisits) {
-            bestVisits = s3.root.edges[i].child.simulationCount; best = i;
-        }
-    const int bits = best >= 0 ? (int)s3.root.edges[best].action.bits : -1;
-    const std::uint64_t rootHash = CombatObservation::fromBattleContext(bc).visibleHash();
-    std::ostringstream fp;
-    fp << t_runwinRank.seed << ':' << t_runwinRank.fightIdx << ':' << t_runwinRank.decIdx << ':'
-       << rootHash << ':' << bits << ':' << bestVisits << ';';
-    t_runwinRank.actionFingerprint += fp.str();
-    RunwinRankRoot root;
-    root.seed = t_runwinRank.seed; root.fightIdx = t_runwinRank.fightIdx; root.decIdx = t_runwinRank.decIdx;
-    root.floor = t_runwinRank.floor; root.act = t_runwinRank.act; root.room = (int)t_runwinRank.room;
-    root.encounter = (int)t_runwinRank.encounter; root.rootObsHash = rootHash; root.rootActionBits = bits;
-    root.rootVisits = bestVisits; root.sampleHash = runwinRankRootHash(root.seed, root.fightIdx, root.decIdx, rootHash, bits);
-    // Retain an independently owned source snapshot per root.  Do not copy a
-    // shared Map pointer into the post-source reference reservoir.
-    root.battleEntry = detachedCounterfactualCopy(t_runwinRank.battleEntry);
-    root.path = t_runwinRank.path; root.leaves = t_runwinRank.leaves;
-    t_runwinRank.roots.push_back(std::move(root));
-    t_runwinRank.nextDecision();
-}
-static std::uint64_t runwinRankCombatSeed(const RunwinRankRoot &root, int future) {
-    // Deliberately excludes leaf identity: all sibling leaves use CRN future j.
-    return runwinRankMix(root.seed ^ (std::uint64_t)(std::uint32_t)root.fightIdx * 0x9e3779b97f4a7c15ULL
-        ^ (std::uint64_t)(std::uint32_t)root.decIdx * 0xbf58476d1ce4e5b9ULL
-        ^ root.rootObsHash ^ (std::uint64_t)(std::uint32_t)root.rootActionBits * 0x94d049bb133111ebULL
-        ^ (std::uint64_t)(std::uint32_t)future * 0xd6e8feb86659fd93ULL);
-}
-static std::uint64_t runwinRankDownstreamSeed(const RunwinRankRoot &root, int future) {
-    // Root identity plus future index, never leaf identity.
-    return runwinRankMix(root.seed ^ (std::uint64_t)(std::uint32_t)root.fightIdx * 0x243f6a8885a308d3ULL
-        ^ (std::uint64_t)(std::uint32_t)root.decIdx * 0x13198a2e03707344ULL
-        ^ root.rootObsHash ^ (std::uint64_t)(std::uint32_t)root.rootActionBits * 0xa4093822299f31d0ULL
-        ^ (std::uint64_t)(std::uint32_t)future * 0x082efa98ec4e6c89ULL);
-}
-static std::string runwinRankReferenceHeader() {
-    return "seed,fightIdx,decIdx,rootObsHash,rootActionBits,leafObsHash,searchSimulation,particleIndex,referenceFutureIdx,combatRolloutSeed,downstreamAgentSeed,combatSurvived,runWon,valid,finalFloor,endHp,healthStatus";
-}
-static void runwinRankReferenceRows(const RunwinRankRoot &root, const RunwinShadowCandidate &candidate,
-                                    std::ostringstream &out) {
-    for (int future = 0; future < g_runwinRankReferenceFutures; ++future) {
-        const std::uint64_t combatSeed = runwinRankCombatSeed(root, future);
-        const std::uint64_t downstreamSeed = runwinRankDownstreamSeed(root, future);
-        BattleContext continuation = candidate.leaf;
-        // SAME-WORLD CRN reference: evaluator RNG varies by root/future, never
-        // leaf; copied battle-entry environment hidden-future RNG is retained
-        // across sibling leaves and all M futures (not resampled per future).
-        // The evaluator is freshly constructed only after the source run has
-        // completed. diagnosticRollout uses the explicitly supplied local RNG.
-        search::BattleScumSearcher3 evaluator(continuation, root.seed, root.decIdx, 1);
-        std::vector<search::Action> actions; double ignored = 0; bool terminal = false;
-        std::mt19937_64 rng(combatSeed);
-        evaluator.diagnosticRollout(continuation, actions, rng, ignored, terminal);
-        const int survived = terminal && continuation.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
-        int won = 0, valid = terminal ? 1 : 0, finalFloor = 0, endHp = 0;
-        std::string health = terminal ? "combat_loss" : "nonterminal_combat";
-        if (survived) {
-            // Exact terminal transfer: copy the battle-entry game, detach its
-            // map, then apply BattleContext::exitBattle before full OOC play.
-            GameContext branch = detachedCounterfactualCopy(root.battleEntry);
-            continuation.exitBattle(branch);
-            const OocCounterfactualResult result = finishOocCounterfactual(
-                std::move(branch), g_runwinRankReferenceSims, downstreamSeed, root.path,
-                /*maxFights=*/-1, /*bootstrap=*/false);
-            valid = result.valid ? 1 : 0;
-            won = valid && result.won > 0.5 ? 1 : 0;
-            finalFloor = valid ? (int)result.floor : 0;
-            endHp = valid ? (int)result.hp : 0;
-            health = valid ? "ok" : "counterfactual_invalid";
-        }
-        out << root.seed << ',' << root.fightIdx << ',' << root.decIdx << ',' << root.rootObsHash << ','
-            << root.rootActionBits << ',' << candidate.obsHash << ',' << candidate.searchSimulation << ','
-            << candidate.particleIndex << ',' << future << ',' << combatSeed << ',' << downstreamSeed << ','
-            << survived << ',' << won << ',' << valid << ',' << finalFloor << ',' << endHp << ',' << health << '\n';
-    }
-}
-static void runwinRank(int nSeeds, int sims, int asc, const std::string &outFile, long long seedOffset = 0) {
-    if (!search::g_useSearcher3 || !g_runwinShadowNet.ok) {
-        std::cerr << "runwinrank requires forced Searcher3 and a successfully loaded STS_RUNWIN_SHADOW_MODEL\n"; return;
-    }
-    std::ofstream rows(outFile), refs(outFile + ".reference.csv"), runs(outFile + ".runs.csv"), roots(outFile + ".roots.csv");
-    if (!rows || !refs || !runs || !roots) { std::cerr << "runwinrank: cannot open output or sidecars\n"; return; }
-    rows << runwinShadowHeader() << '\n'; refs << runwinRankReferenceHeader() << '\n';
-    runs << "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,actionFingerprint\n";
-    roots << "seed,fightIdx,decIdx,floor,act,room,encounter,rootObsHash,rootActionBits,rootVisits,rankable,selected,rootSampleHash,sourceLeaves\n";
-    search::g_richCombatFeatures = true; g_runwinRankActive = true;
-    std::atomic<long long> shadowWritten{0}, referenceWritten{0};
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        const std::uint64_t seed = (std::uint64_t)(seedOffset + s);
-        t_runwinRank.init(seed); t_runwinShadow.rows.clear();
-        search::g_onS3LeafQuery = runwinRankOnLeafQuery;
-        search::g_onSearchComplete3 = runwinRankOnSearchComplete;
-        const RunResult result = runFullRunOOC(seed, sims, asc, false, false);
-        search::g_onS3LeafQuery = nullptr;
-        search::g_onSearchComplete3 = nullptr;
-        std::vector<int> ranked;
-        for (int i = 0; i < (int)t_runwinRank.roots.size(); ++i)
-            if ((int)t_runwinRank.roots[i].leaves.size() >= g_runwinRankMinLeaves) ranked.push_back(i);
-        std::sort(ranked.begin(), ranked.end(), [](int ai, int bi) {
-            const auto &a = t_runwinRank.roots[ai], &b = t_runwinRank.roots[bi];
-            if (a.sampleHash != b.sampleHash) return a.sampleHash < b.sampleHash;
-            if (a.fightIdx != b.fightIdx) return a.fightIdx < b.fightIdx;
-            return a.decIdx < b.decIdx;
-        });
-        const int selected = std::min(g_runwinRankRoots, (int)ranked.size());
-        std::ostringstream referenceCsv;
-        for (int i = 0; i < selected; ++i) {
-            const auto &root = t_runwinRank.roots[ranked[i]];
-            for (const auto &source : root.leaves) {
-                // Reuse the existing E2c shadow estimator/projection/model for
-                // the R diagnostic rows; it is not used by V_direct below.
-                search::BattleScumSearcher3 evaluator(source.leaf, root.seed, root.decIdx, 1);
-                RunwinShadowCandidate scored = source; scored.searcher = &evaluator;
-                t_runwinShadow.seed = root.seed; t_runwinShadow.fightIdx = root.fightIdx; t_runwinShadow.decIdx = root.decIdx;
-                t_runwinShadow.floor = root.floor; t_runwinShadow.act = root.act; t_runwinShadow.room = (Room)root.room;
-                t_runwinShadow.encounter = (MonsterEncounter)root.encounter; t_runwinShadow.battleEntry = root.battleEntry; t_runwinShadow.path = root.path;
-                runwinShadowEvaluate(scored, root.rootObsHash, root.rootActionBits);
-                runwinRankReferenceRows(root, source, referenceCsv);
-            }
-        }
-        const std::string shadowCsv = runwinShadowRowsCsv(result);
-        const std::string referenceText = referenceCsv.str();
-        #pragma omp critical(runwin_rank_write)
-        {
-            rows << shadowCsv; refs << referenceText;
-            runs << seed << ',' << (result.won ? 1 : 0) << ',' << result.floor << ',' << result.act << ','
-                 << result.hpEnd << ',' << result.maxHp << ',' << result.fightsLost << ',' << result.deathCombat << ','
-                 << result.deathEncounter << ",\"" << t_runwinRank.actionFingerprint << "\"\n";
-            for (int i = 0; i < (int)t_runwinRank.roots.size(); ++i) {
-                const auto &root = t_runwinRank.roots[i];
-                const bool rankable = (int)root.leaves.size() >= g_runwinRankMinLeaves;
-                const bool isSelected = std::find(ranked.begin(), ranked.begin() + selected, i) != ranked.begin() + selected;
-                roots << root.seed << ',' << root.fightIdx << ',' << root.decIdx << ',' << root.floor << ',' << root.act << ','
-                      << root.room << ',' << root.encounter << ',' << root.rootObsHash << ',' << root.rootActionBits << ','
-                      << root.rootVisits << ',' << (rankable ? 1 : 0) << ',' << (isSelected ? 1 : 0) << ',' << root.sampleHash << ',' << root.leaves.size() << '\n';
-            }
-            shadowWritten += std::count(shadowCsv.begin(), shadowCsv.end(), '\n');
-            referenceWritten += std::count(referenceText.begin(), referenceText.end(), '\n');
-        }
-    }
-    g_runwinRankActive = false;
-    const std::string manifest = g_runwinShadowModelPath.substr(0, g_runwinShadowModelPath.rfind(".txt")) + ".manifest.json";
-    std::ofstream provenance(outFile + ".provenance.json");
-    if (provenance) {
-        provenance << "{\n  \"schema_version\": \"e3a-runwinrank-v2\",\n"
-          << "  \"semantic_boundary\": \"source leaf -> SAME-WORLD CRN diagnostic combat -> canonical exitBattle -> copied full-run counterfactual\",\n"
-          << "  \"reference_semantics\": \"M is paired realized-world CRN: copied GameContext/environment hidden-future RNG is preserved across sibling leaves and M; only diagnostic combat-policy and downstream-agent RNG vary by root/future. It is not a marginalization over resampled maps, rewards, or encounters; environment-world variation is across source seeds and the outer source-seed bootstrap.\",\n"
-          << "  \"git_sha\": \"" << jsonEscape(trainingExecutableGitSha()) << "\",\n"
-          << "  \"git_dirty\": " << jsonBool(!trainingGitValue("git status --porcelain --untracked-files=all").empty()) << ",\n"
-          << "  \"binary\": "; jsonPathAndHash(provenance, g_mainBinaryPath); provenance << ",\n"
-          << "  \"build_configuration\": \"CMake one_combat C++17 target\",\n"
-          << "  \"command\": \"one_combat";
-        for (const auto &arg : g_mainArgv) provenance << ' ' << jsonEscape(arg);
-        provenance << "\",\n  \"seed_offset\": " << seedOffset << ", \"seeds\": " << nSeeds
-          << ", \"source_sims\": " << sims << ", \"ascension\": " << asc << ",\n"
-          << "  \"effective_source_policy\": {\"STS_FAIR\": " << jsonBool(search::g_fairPlay)
-          << ", \"STS_SEARCHER3\": " << jsonBool(search::g_useSearcher3)
-          << ", \"STS_S3_PARTICLES\": " << search::g_s3Particles
-          << ", \"STS_S3_BELIEF\": " << jsonBool(search::g_s3Belief)
-          << ", \"STS_S3_CHAIN\": " << jsonBool(search::g_s3Chain)
-          << ", \"STS_LIVE_VALID\": " << jsonBool(search::g_liveValid)
-          << ", \"STS_S3_ALWAYS_Q\": \"" << jsonEscape(std::getenv("STS_S3_ALWAYS_Q") ? std::getenv("STS_S3_ALWAYS_Q") : "0")
-          << "\", \"STS_STOP_AFTER_ACT\": " << g_stopAfterAct << ", \"STS_COLLECT_KEYS\": " << jsonBool(g_collectKeys) << "},\n"
-          << "  \"effective_models\": {\"vnet\": "; jsonPathAndHash(provenance, g_effectiveVNetPath);
-        provenance << ", \"vnet_alpha\": " << search::g_vnetAlpha << ", \"policy\": "; jsonPathAndHash(provenance, g_effectivePolicyPath);
-        provenance << ", \"ooc_strategic\": "; jsonPathAndHash(provenance, g_effectiveOocStrategicPath);
-        provenance << ", \"ooc_strategic_token\": "; jsonPathAndHash(provenance, g_effectiveOocStrategicTokPath);
-        provenance << ", \"e2c_raw\": "; jsonPathAndHash(provenance, g_runwinShadowModelPath);
-        provenance << ", \"e2c_manifest_sha256\": \"" << jsonEscape(fileSha256(manifest)) << "\"},\n"
-          << "  \"effective_ooc\": {\"strategic_margin\": " << g_oocStrategicMargin
-          << ", \"card\": " << jsonBool(g_oocActionNN) << ", \"rest\": " << jsonBool(g_oocStrategicRest)
-          << ", \"event\": " << jsonBool(g_oocStrategicEvent) << ", \"shop\": " << jsonBool(g_oocStrategicShop)
-          << ", \"treasure\": " << jsonBool(g_oocStrategicTreasure) << ", \"boss_relic\": " << jsonBool(g_oocStrategicBossRelic) << "},\n"
-          << "  \"runwin_replicates\": " << g_runwinShadowR << ", \"selected_roots\": " << g_runwinRankRoots
-          << ", \"max_leaves\": " << g_runwinRankMaxLeaves << ", \"min_rankable_leaves\": " << g_runwinRankMinLeaves
-          << ", \"reference_futures\": " << g_runwinRankReferenceFutures << ", \"reference_sims\": " << g_runwinRankReferenceSims << ",\n"
-          << "  \"crn\": \"combat and downstream seeds are root/future keyed and exclude leaf identity\"\n}\n";
-    }
-    std::cout << "runwinrank wrote " << shadowWritten << " shadow rows and " << referenceWritten
-              << " reference rows to " << outFile << " (R=" << g_runwinShadowR << ", M=" << g_runwinRankReferenceFutures << ")\n";
 }
 
 static void particleLeafProbe(int nSeeds, int sims, int asc,
@@ -9130,26 +8602,10 @@ int main(int argc, char **argv) {
             std::cerr << "[STS_WIN_NET] failed to load win tree: " << path << "\n";
     }
     if (const char *d = std::getenv("STS_RUNWIN_SHADOW_MODEL")) {
-        g_runwinShadowModelPath = d;
-        if (!g_runwinShadowNet.load(g_runwinShadowModelPath, e2cRawIdxMap(), "E2cRunwinNet"))
-            std::cerr << "[STS_RUNWIN_SHADOW_MODEL] failed to load E2c RAW critic: " << g_runwinShadowModelPath << "\n";
+        g_e2cModelPath = d;
+        if (!g_e2cRawNet.load(g_e2cModelPath, e2cRawIdxMap(), "E2cRawNet"))
+            std::cerr << "[STS_RUNWIN_SHADOW_MODEL] failed to load E2c RAW critic: " << g_e2cModelPath << "\n";
     }
-    if (const char *d = std::getenv("STS_RUNWIN_SHADOW_R"))
-        g_runwinShadowR = std::max(1, std::atoi(d));
-    if (const char *d = std::getenv("STS_RUNWIN_SHADOW_PER_STRATUM"))
-        g_runwinShadowPerStratum = std::max(1, std::atoi(d));
-    if (const char *d = std::getenv("STS_RUNWIN_SHADOW_MAX_GROUPS"))
-        g_runwinShadowMaxGroups = std::max(0, std::atoi(d));
-    if (const char *d = std::getenv("STS_RUNWIN_RANK_ROOTS"))
-        g_runwinRankRoots = std::max(1, std::atoi(d));
-    if (const char *d = std::getenv("STS_RUNWIN_RANK_MAX_LEAVES"))
-        g_runwinRankMaxLeaves = std::max(1, std::atoi(d));
-    if (const char *d = std::getenv("STS_RUNWIN_RANK_MIN_LEAVES"))
-        g_runwinRankMinLeaves = std::max(2, std::atoi(d));
-    if (const char *d = std::getenv("STS_RUNWIN_RANK_REFERENCE_M"))
-        g_runwinRankReferenceFutures = std::max(1, std::atoi(d));
-    if (const char *d = std::getenv("STS_RUNWIN_RANK_REFERENCE_SIMS"))
-        g_runwinRankReferenceSims = std::max(0, std::atoi(d));
     {
         // The baseline is serverless by default. Set STS_NATIVE_OOC=0 only
         // for an explicit legacy-server comparison.
@@ -10288,42 +9744,6 @@ int main(int argc, char **argv) {
         search::g_useSearcher3 = true;
         std::cout << "[fairgen forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
         fairGen(nSeeds, sims, asc, eps, vout, pout, oout, seedOff);
-
-    } else if (mode == "runwinshadow") {  // E2c RAW critic: strictly read-only shadow producer
-        int nSeeds = argc > 2 ? std::stoi(argv[2]) : 4;
-        int sims = argc > 3 ? std::stoi(argv[3]) : 300;
-        int asc = argc > 4 ? std::stoi(argv[4]) : 0;
-        std::string out = argc > 5 ? argv[5] : "build/runwinshadow.csv";
-        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
-        search::g_fairPlay = true;
-        search::g_useSearcher3 = true;
-        if (!g_runwinShadowNet.ok) {
-            std::cerr << "runwinshadow requires STS_RUNWIN_SHADOW_MODEL=<native E2c model>\n";
-            return 2;
-        }
-        std::cout << "[runwinshadow forced: fair-play / Searcher3; critic is diagnostic-only, R="
-                  << g_runwinShadowR << "]\n";
-        runwinShadow(nSeeds, sims, asc, out, seedOff);
-
-    } else if (mode == "runwinrank") {  // E3a direct eventual-run leaf-ranking diagnostic
-        int nSeeds = argc > 2 ? std::stoi(argv[2]) : 4;
-        int sims = argc > 3 ? std::stoi(argv[3]) : 300;
-        int asc = argc > 4 ? std::stoi(argv[4]) : 0;
-        std::string out = argc > 5 ? argv[5] : "build/e3a_runwin_shadow.csv";
-        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
-        search::g_fairPlay = true;
-        search::g_useSearcher3 = true;
-        if (!g_runwinShadowNet.ok) {
-            std::cerr << "runwinrank requires STS_RUNWIN_SHADOW_MODEL=<native E2c model>\n";
-            return 2;
-        }
-        if (g_runwinRankMinLeaves > g_runwinRankMaxLeaves) {
-            std::cerr << "runwinrank requires STS_RUNWIN_RANK_MIN_LEAVES <= STS_RUNWIN_RANK_MAX_LEAVES\n";
-            return 2;
-        }
-        std::cout << "[runwinrank forced: fair-play / Searcher3; detached E3a reference only, R="
-                  << g_runwinShadowR << " M=" << g_runwinRankReferenceFutures << "]\n";
-        runwinRank(nSeeds, sims, asc, out, seedOff);
 
     } else if (mode == "runwinparity") {
         const std::string fixture = argc > 2 ? argv[2] : "tools/runwin_e2c_synthetic_parity.csv";
