@@ -65,10 +65,10 @@ The active whole-run research policy is the ordered branch chain in
 The policy chain remains owned by `runFullRunOOC`; its live action-selection
 implementations are isolated in `apps/one_combat/ooc_policy.{h,cpp}`. That
 module owns checkpoint action ranking, the one-ply card/rest/upgrade/event/
-shop/treasure/boss-relic/map gates, map-route search, and their candidate
-encodings. Model loading, `buildTokState`, fallback policies, diagnostics,
-counterfactual evaluators, and the ordered driver loop remain in
-`apps/one_combat.cpp`.
+shop/treasure/boss-relic/map gates, the server/native fallback family, map-route
+search, and their candidate encodings. Model loading, `buildTokState`, model /
+transport feature seams, diagnostics, counterfactual evaluators, and the
+ordered driver loop remain in `apps/one_combat.cpp`.
 
 `apps/one_combat.cpp::main` enables native OOC unless `STS_NATIVE_OOC=0`.
 Failure to load the floor model terminates startup; failure to load the default

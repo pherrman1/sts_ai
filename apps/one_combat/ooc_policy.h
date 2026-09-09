@@ -58,6 +58,34 @@ extern bool g_restWin;
 extern thread_local const one_combat::PathHistory *t_curPath;
 extern thread_local one_combat::PathHistory t_emptyPath;
 
+// The integration driver owns configuration and model/transport state. The
+// live fallback policies consume these concrete seams without depending on
+// driver-owned policy functions.
+extern bool g_collectKeys;
+extern bool g_cardWin;
+extern double g_cardWinSkip;
+extern double g_cardSkipThresh;
+extern bool g_shopWin;
+extern bool g_nativeOoc;
+extern int g_bossV;
+extern double g_bossVW;
+extern int g_bossDraftRows;
+extern int g_neowV;
+extern int g_pathGraph;
+extern int g_pathAction;
+extern int g_pathActionMax;
+extern double g_pathActionMargin;
+extern bool g_pathActionTrace;
+extern thread_local int t_pathActionUses;
+extern double g_restVThreshold;
+extern int g_vPath;
+extern double g_vPathK;
+extern thread_local double t_pathAggr;
+extern bool g_actFightProbeTrace;
+extern thread_local int t_actFightProbeDecisionIdx;
+extern thread_local int t_actFightProbeActionIdx;
+extern thread_local int t_actFightProbeFutureIdx;
+
 using sts::GameContext;
 using sts::search::GameAction;
 using sts::search::ScumSearchAgent2;
@@ -79,14 +107,26 @@ std::vector<float> richFeatureVec(GameContext &gc);
 std::string vFeatCsv(const GameContext &gc);
 std::string vTransact(const std::string &request);
 TokState buildTokState(const GameContext &gc, const PathHistory &path);
-void serverCardRewardPolicy(GameContext &gc);
-bool restWinPolicy(GameContext &gc);
-void upgradeSelectWinPolicy(GameContext &gc);
-bool eventVPolicy(GameContext &gc);
-void shopVPolicy(GameContext &gc);
-void bossRelicVPolicy(GameContext &gc);
-void pathVPolicy(GameContext &gc);
-int chooseMapAction(const GameContext &gc);
+int vQuery(GameContext &gc, int rIdx, double bossW = -1.0);
+double vStateRaw(GameContext &gc);
+double vStateWin(GameContext &gc);
+std::string vSendRecv(const std::string &request);
+std::string mapGraphCsv(const GameContext &gc, bool rooms);
+std::string mapSpecialCsv(const GameContext &gc);
+int nativeWinCardPick(GameContext &gc, int rIdx);
+bool winNetOk();
+int rowsToHardFight(const GameContext &gc);
+int nativeFloorCardPick(GameContext &gc, int rIdx);
+double nativeFloorValue(GameContext &gc);
+std::string nativeShopPlan(GameContext &gc);
+double vQueryHeal(GameContext &gc, int healAmt);
+int vQueryUpgrade(GameContext &gc, const std::vector<int> &candIds);
+double vQueryHealWin(GameContext &gc, int healAmt);
+int vQueryUpgradeWin(GameContext &gc, const std::vector<int> &candIds, double *gain);
+bool vQueryRestCounterfactual(GameContext &gc, double *delta);
+std::vector<int> upgradeableIds(GameContext &gc);
+int vQueryRemove(GameContext &gc, const std::vector<int> &candIds);
+std::string vQueryShop(GameContext &gc);
 
 bool regretGateTail(GameContext &, const std::vector<GameAction> &,
                     const std::vector<double> &, int, double, double, double, double,
@@ -94,6 +134,19 @@ bool regretGateTail(GameContext &, const std::vector<GameAction> &,
                     const ScumSearchAgent2 &);
 
 namespace one_combat {
+
+void serverCardRewardPolicy(GameContext &);
+bool restWinPolicy(GameContext &);
+void upgradeSelectWinPolicy(GameContext &);
+bool eventVPolicy(GameContext &);
+void shopVPolicy(GameContext &);
+void bossRelicVPolicy(GameContext &);
+void pathVPolicy(GameContext &);
+int chooseMapAction(const GameContext &);
+bool restVPolicy(GameContext &);
+void upgradeSelectVPolicy(GameContext &);
+void removeSelectVPolicy(GameContext &);
+void neowVPolicy(GameContext &);
 
 void strategicCands(const GameContext &, const GameAction &,
                     int &, int &, int &, int &, int &, int &, int &);

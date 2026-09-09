@@ -609,13 +609,13 @@ static void vDisconnect() {
 // V2 -> best band -1.0..-0.25 (win 41-42%), peak -0.5=42.4% vs skip@0=38.7%; V2
 // marginals read slightly pessimistic so a fuller deck wins. Positive thresholds
 // still fall off a cliff. (Old deck-only V best was 0.0.) Override via STS_SKIP_THR.
-static double g_cardSkipThresh = -0.5;
+double g_cardSkipThresh = -0.5;
 // A/B: route card picks through the WIN model (P(win) marginal) instead of V_floor.
 // Own skip scale (win-prob units, ~0..0.05) so g_cardSkipThresh (floor units) doesn't apply.
-static bool g_cardWin = false;          // env STS_CARD_WIN=1
-static double g_cardWinSkip = 0.0;      // env STS_CARD_WIN_SKIP: skip iff best P(win) marginal < this
-static bool g_shopWin = false;          // env STS_SHOP_WIN=1: score shop bundles by P(win) not V_floor
-static bool g_nativeOoc = false;
+bool g_cardWin = false;          // env STS_CARD_WIN=1
+double g_cardWinSkip = 0.0;      // env STS_CARD_WIN_SKIP: skip iff best P(win) marginal < this
+bool g_shopWin = false;          // env STS_SHOP_WIN=1: score shop bundles by P(win) not V_floor
+bool g_nativeOoc = false;
 bool g_oocActionNN = false;          // env STS_OOC_ACTION_NN=1
 double g_oocStrategicMargin = 1.0;   // env STS_OOC_STRATEGIC_MARGIN: one-ply gate in V units
 // Per-screen one-ply gate overrides (env STS_OOC_STRATEGIC_MARGIN_*): default
@@ -691,8 +691,8 @@ static bool   g_oocShopBeam = false;        // env STS_OOC_SHOP_BEAM=1
 static int    g_oocShopBeamWidth = 32;      // env STS_OOC_SHOP_BEAM_WIDTH (clamped 4..256)
 static int    g_oocShopBeamDepth = 0;       // env STS_OOC_SHOP_BEAM_DEPTH (0 = until leave / no affordable actions)
 static int    g_oocShopBeamBudget = 4096;   // env STS_OOC_SHOP_BEAM_BUDGET: max expanded nodes per shop decision
-static int nativeFloorCardPick(GameContext &, int);
-static double nativeFloorValue(GameContext &);
+int nativeFloorCardPick(GameContext &, int);
+double nativeFloorValue(GameContext &);
 static bool oocShopBeamPolicy(GameContext &);          // B1 multi-step shop beam search (§2)
 struct StratFingerprint;                               // successor-state digest (defined below)
 static StratFingerprint stratFingerprint(const GameContext &);
@@ -819,7 +819,7 @@ static void cpsiCtrProbeReport() {
         }
     }
 }
-static std::string nativeShopPlan(GameContext &);
+std::string nativeShopPlan(GameContext &);
 // Terminal-leaf run-value bonus (implementation after the rich feature block).
 static double termLeafBonus(const BattleContext &);
 static void termWinArmForBattle(GameContext &);
@@ -874,12 +874,12 @@ static int fightSims(const GameContext &gc, int base) {
 // The gate is factored so the hard-fight set can later become DYNAMIC (learned from
 // where we die); boss-only for now.
 static int    g_bossDraft        = 0;      // STS_BOSS_DRAFT: rollout-based near-boss draft (experimental; hurt in A/B)
-static int    g_bossDraftRows    = 3;      // trigger when a hard fight is within this many map rows
+int    g_bossDraftRows    = 3;      // trigger when a hard fight is within this many map rows
 static int    g_bossDraftN       = 4;      // rollout: fights to simulate forward
 static int    g_bossDraftSims    = 150;    // rollout: inner combat sim budget
 static int    g_bossDraftFutures = 2;      // rollout: sampled futures per candidate
-static int    g_bossV            = 0;      // STS_BOSS_V: blend v_boss marginal into near-boss server picks
-static double g_bossVW           = 0.5;    // STS_BOSS_V_W: blend weight on the boss model (0..1)
+int    g_bossV            = 0;      // STS_BOSS_V: blend v_boss marginal into near-boss server picks
+double g_bossVW           = 0.5;    // STS_BOSS_V_W: blend weight on the boss model (0..1)
 
 // Experimental full-act draft evaluator.  For the immediate card decision only,
 // it samples the *possible remaining encounter queues* in the current act and
@@ -900,7 +900,7 @@ static std::vector<int> g_actFightProbeCheckpointSims; // STS_ACT_FIGHT_PROBE_CH
 // next N combat checkpoints.  This is a horizon in fights, not map nodes, so
 // routes with shops/events are not given a structurally different objective.
 static int    g_actFightProbeMaxCheckpoints = -1; // STS_ACT_FIGHT_PROBE_MAX_CHECKPOINTS
-static bool   g_actFightProbeTrace = false; // STS_ACT_FIGHT_PROBE_TRACE=1
+bool   g_actFightProbeTrace = false; // STS_ACT_FIGHT_PROBE_TRACE=1
 // Parallelize the independent immediate-action × sampled-future branches of a
 // single OOC decision.  Off by default so ordinary multi-seed benches retain
 // their existing outer OpenMP scheduling.
@@ -936,9 +936,9 @@ static int    g_stopAfterAct = 0;            // STS_STOP_AFTER_ACT=N, benchmark 
 static std::string g_actFightProbeLogPath;   // STS_ACT_FIGHT_PROBE_LOG=/path/teacher.csv
 static std::ofstream g_actFightProbeLog;
 static std::mutex g_actFightProbeLogMutex;
-static thread_local int t_actFightProbeDecisionIdx = 0;
-static thread_local int t_actFightProbeActionIdx = -1;
-static thread_local int t_actFightProbeFutureIdx = -1;
+thread_local int t_actFightProbeDecisionIdx = 0;
+thread_local int t_actFightProbeActionIdx = -1;
+thread_local int t_actFightProbeFutureIdx = -1;
 
 static int actFightProbeCheckpointSims(int defaultSims, int checkpointIdx) {
     if (checkpointIdx >= 0 && checkpointIdx < (int)g_actFightProbeCheckpointSims.size())
@@ -973,11 +973,11 @@ static std::string actFightProbeCheckpointSimsCsv() {
 // deck-STRENGTH scalar (predicted final floor) to MODULATE the heuristic's
 // aggression: a strong deck routes harder into elites/fights (farm relics while
 // you can), a weak deck routes to rest/shop/event (recover). One V query/floor.
-static int    g_vPath  = 0;      // STS_VPATH=1: enable V-strength path modulation
-static double g_vPathK = 0.4;    // STS_VPATH_K: modulation gain (0=off .. ~1 strong)
+int    g_vPath  = 0;      // STS_VPATH=1: enable V-strength path modulation
+double g_vPathK = 0.4;    // STS_VPATH_K: modulation gain (0=off .. ~1 strong)
 // aggression for the current map decision, in [-1,+1]; set once per chooseMapAction
 // call, read by roomValue. 0 = neutral (= plain heuristic).
-static thread_local double t_pathAggr = 0.0;
+thread_local double t_pathAggr = 0.0;
 // Act boss floors (finalFloor at which each act's boss sits) — the deck-strength
 // anchor: predFloor - bossFloor[act] = how comfortably you clear this act.
 static int bossFloorForAct(int act) { return act <= 1 ? 17 : act == 2 ? 34 : 50; }
@@ -985,7 +985,7 @@ static int bossFloorForAct(int act) { return act <= 1 ? 17 : act == 2 ? 34 : 50;
 // Map rows until the next hard fight. Boss sits just past the last map row (14),
 // so rows-to-boss = 14 - curMapNodeY. (Extend to fold in elites / learned high-death
 // floors for the dynamic version.)
-static int rowsToHardFight(const GameContext &gc) {
+int rowsToHardFight(const GameContext &gc) {
     return 14 - std::max(gc.curMapNodeY, 0);
 }
 
@@ -1100,7 +1100,7 @@ static std::string vRequestLine(const std::string &requestWithNewline) {
     return {};
 }
 
-static std::string mapGraphCsv(const GameContext &gc, bool rooms) {
+std::string mapGraphCsv(const GameContext &gc, bool rooms) {
     std::ostringstream out;
     for (int y = 0; y < 15; ++y) for (int x = 0; x < 7; ++x) {
         if (x || y) out << ',';
@@ -1116,7 +1116,7 @@ static std::string mapGraphCsv(const GameContext &gc, bool rooms) {
     return out.str();
 }
 
-static std::string mapSpecialCsv(const GameContext &gc) {
+std::string mapSpecialCsv(const GameContext &gc) {
     std::ostringstream out;
     for (int y = 0; y < 15; ++y) for (int x = 0; x < 7; ++x) {
         if (x || y) out << ',';
@@ -1129,7 +1129,7 @@ static std::string mapSpecialCsv(const GameContext &gc) {
 // send a tagged candidate/state query and read back the chosen index.
 // bossW >= 0 routes the pick through the boss-survival blend "CB;<w>;..." (the
 // server returns the chosen card's v_rich marginal, so the skip logic is unchanged).
-static int vQuery(GameContext &gc, int rIdx, double bossW = -1.0) {
+int vQuery(GameContext &gc, int rIdx, double bossW) {
     auto &r = gc.info.rewardsContainer;
     const int n = r.cardRewards[rIdx].size();
     if (g_nativeOoc && bossW < 0.0 && !g_cardWin && !g_cardNN && !g_cardAction)
@@ -1180,7 +1180,7 @@ static int vQuery(GameContext &gc, int rIdx, double bossW = -1.0) {
 // Raw V(state) = predicted final floor for the current state (server "VS" op).
 // Used as a deck-strength scalar for V-informed pathing. Returns a large sentinel
 // (so aggr clamps to neutral-ish) if the server is unreachable.
-static double vStateRaw(GameContext &gc) {
+double vStateRaw(GameContext &gc) {
     if (g_nativeOoc) return nativeFloorValue(gc);
     std::string req = "VS;";
     req += vFeatCsv(gc);
@@ -1193,18 +1193,18 @@ static double vStateRaw(GameContext &gc) {
 }
 
 // Generic one-line request/response to the value server (for trace tooling).
-static std::string vSendRecv(const std::string &reqNoNl) {
+std::string vSendRecv(const std::string &reqNoNl) {
     std::string req = reqNoNl; req += '\n';
     return vRequestLine(req);
 }
 
 // native V_win helpers use the shared compact-tree reader and rich feature map.
 std::vector<float> richFeatureVec(GameContext &gc);
-static bool   winNetOk();
+bool   winNetOk();
 static double winNetPredict(const std::vector<float> &raw);
 
 // Native win-model card pick (P(win) marginal), mirrors server decide_win but socket-free.
-static int nativeWinCardPick(GameContext &gc, int rIdx) {
+int nativeWinCardPick(GameContext &gc, int rIdx) {
     auto &r = gc.info.rewardsContainer;
     const int nc = r.cardRewards[rIdx].size();
     const auto &idx = richIdxMap();
@@ -1224,27 +1224,12 @@ static int nativeWinCardPick(GameContext &gc, int rIdx) {
     return bmarg < g_cardWinSkip ? 5 : barg;    // skip if best marginal below the win-scale bar
 }
 
-// policy 6: query the deck-aware GBM server for each card reward
-void serverCardRewardPolicy(GameContext &gc) {
-    using RT = search::GameAction::RewardsActionType;
-    auto &r = gc.info.rewardsContainer;
-    while (r.cardRewardCount > 0) {
-        const int rIdx = r.cardRewardCount - 1;
-        // near a hard fight, blend the boss-survival marginal into the pick
-        const double bossW = (g_bossV && rowsToHardFight(gc) <= g_bossDraftRows) ? g_bossVW : -1.0;
-        // native win-model card pick when available (self-play unified policy) -> no socket
-        const int idx = (winNetOk() && g_cardWin && bossW < 0.0) ? nativeWinCardPick(gc, rIdx)
-                                                                  : vQuery(gc, rIdx, bossW);
-        search::GameAction(RT::CARD, rIdx, idx).execute(gc);
-    }
-}
-
 // --- BOSS-RELIC + NEOW choice via V_win: pick the option whose RESULTING state has the
 // highest P(win). Same "which resulting state is best" frame as shop/rest, now applied to two
 // high-impact decisions the default heuristic used to own. Each candidate is applied to a COPY
 // (real relic/Neow transition, RNG untouched on the real gc), evaluated with V_win, argmax'd.
 int g_bossRelicV = 0;   // STS_BOSS_RELIC=1
-static int g_neowV      = 0;   // STS_NEOW_V=1
+int g_neowV      = 0;   // STS_NEOW_V=1
 
 using WinNet = CompactTreeNet;
 static WinNet g_winNet;
@@ -1253,7 +1238,7 @@ static WinNet g_floorNet;
 // path can arm the diagnostic producer.
 static CompactTreeNet g_runwinShadowNet;
 static std::string g_runwinShadowModelPath;
-static bool   winNetOk() { return g_winNet.ok; }
+bool   winNetOk() { return g_winNet.ok; }
 static double winNetPredict(const std::vector<float> &raw) { return g_winNet.predict(raw); }
 
 // rich feature vector as floats (parse of vFeatCsv -> exactly the raw layout).
@@ -1265,11 +1250,11 @@ std::vector<float> richFeatureVec(GameContext &gc) {
     return v;
 }
 
-static double nativeFloorValue(GameContext &gc) {
+double nativeFloorValue(GameContext &gc) {
     return g_floorNet.ok ? g_floorNet.predict(richFeatureVec(gc)) : 0.0;
 }
 
-static int nativeFloorCardPick(GameContext &gc, int rIdx) {
+int nativeFloorCardPick(GameContext &gc, int rIdx) {
     auto &r = gc.info.rewardsContainer;
     const std::vector<float> base = richFeatureVec(gc);
     const auto &idx = richIdxMap();
@@ -1288,7 +1273,7 @@ static int nativeFloorCardPick(GameContext &gc, int rIdx) {
     return best < g_cardSkipThresh ? 5 : bestIdx;
 }
 
-static std::string nativeShopPlan(GameContext &gc) {
+std::string nativeShopPlan(GameContext &gc) {
     const Shop &sh = gc.info.shop;
     const auto &idx = richIdxMap();
     const int goldIdx = idx.at("gold"), dsz = idx.at("deckSize");
@@ -1340,119 +1325,20 @@ static std::string nativeShopPlan(GameContext &gc) {
     return out.str();
 }
 
-static double vStateWin(GameContext &gc) {
+double vStateWin(GameContext &gc) {
     if (g_winNet.ok) return g_winNet.predict(richFeatureVec(gc));   // native path
     double v = 0.5;
     std::sscanf(vSendRecv("VW;" + vFeatCsv(gc)).c_str(), "%lf", &v);
     return v;
 }
-void bossRelicVPolicy(GameContext &gc) {
-    int best = -1; double bestV = -1e18;
-    for (int i = 0; i < 3; ++i) {
-        if (gc.info.bossRelics[i] == RelicId::INVALID) continue;
-        GameContext g2 = gc;
-        g2.map = std::make_shared<Map>(*gc.map);
-        g2.chooseBossRelic(i);
-        const double v = vStateWin(g2);
-        if (v > bestV) { bestV = v; best = i; }
-    }
-    gc.chooseBossRelic(best < 0 ? 0 : best);
-}
-static void neowVPolicy(GameContext &gc) {
-    int best = 0; double bestV = -1e18;
-    for (int i = 0; i < (int)gc.info.neowRewards.size(); ++i) {
-        GameContext g2 = gc;
-        g2.map = std::make_shared<Map>(*gc.map);
-        g2.chooseNeowOption(g2.info.neowRewards[i]);
-        const double v = vStateWin(g2);
-        if (v > bestV) { bestV = v; best = i; }
-    }
-    gc.chooseNeowOption(gc.info.neowRewards[best]);
-}
-
 int g_pathV  = 0;   // STS_PATH_V:  model-driven pathing
-static int g_pathGraph = 0; // STS_PATH_GRAPH: full-map graph NN child scoring
-static int g_pathAction = 0;// STS_PATH_ACTION: direct paired route-action NN
-static int g_pathActionMax = -1;
-static double g_pathActionMargin = 0.0;
-static bool g_pathActionTrace = false;
-static thread_local int t_pathActionUses = 0;
+int g_pathGraph = 0; // STS_PATH_GRAPH: full-map graph NN child scoring
+int g_pathAction = 0;// STS_PATH_ACTION: direct paired route-action NN
+int g_pathActionMax = -1;
+double g_pathActionMargin = 0.0;
+bool g_pathActionTrace = false;
+thread_local int t_pathActionUses = 0;
 int g_eventV = 0;   // STS_EVENT_V: model-driven events
-int chooseMapAction(const GameContext &gc);   // heuristic pathing (defined below)
-
-// Model-driven pathing: pick the immediate child whose position maximizes V_win. Position now
-// affects V only through the forward-map features (fm*), so V responds to "what's ahead this way".
-// Old models not trained on fm* are ~flat here -> payoff after self-play retraining on fm data.
-void pathVPolicy(GameContext &gc) {
-    const Map &map = *gc.map;
-    std::vector<int> cands;
-    const int childRow = gc.curMapNodeY + 1;
-    if (gc.curMapNodeY < 0) { for (const MapNode &n : map.nodes[0]) if (n.edgeCount > 0) cands.push_back(n.x); }
-    else { const MapNode &n = map.getNode(gc.curMapNodeX, gc.curMapNodeY); for (int i = 0; i < n.edgeCount; ++i) cands.push_back(n.edges[i]); }
-    if (cands.empty()) { search::GameAction(chooseMapAction(gc)).execute(gc); return; }
-    if (g_pathAction) {
-        const int heuristic = chooseMapAction(gc);
-        std::ostringstream req;
-        req << "PA;";
-        for (int i = 0; i < (int)cands.size(); ++i) { if (i) req << ','; req << cands[i]; }
-        req << ';' << heuristic << ';' << mapGraphCsv(gc, true) << ';' << mapGraphCsv(gc, false) << ';'
-            << mapSpecialCsv(gc) << ';' << vFeatCsv(gc);
-        int chosen = -1; double advantage = -1e9;
-        const std::string response = vSendRecv(req.str());
-        std::sscanf(response.c_str(), "%d %lf", &chosen, &advantage);
-        const bool capacity = g_pathActionMax < 0 || t_pathActionUses < g_pathActionMax;
-        if (g_pathActionTrace) {
-            #pragma omp critical(path_action_trace)
-            std::cerr << "[path-action] seed=" << gc.seed << " pos=" << gc.curMapNodeX << ','
-                      << gc.curMapNodeY << " heuristic=" << heuristic << " chosen=" << chosen
-                      << " advantage=" << advantage << " uses=" << t_pathActionUses
-                      << " capacity=" << capacity << " response='" << response << "'\n";
-        }
-        if (capacity && advantage >= g_pathActionMargin
-            && std::find(cands.begin(), cands.end(), chosen) != cands.end()) {
-            search::GameAction(chosen).execute(gc);
-            if (chosen != heuristic) ++t_pathActionUses;
-            return;
-        }
-        search::GameAction(heuristic).execute(gc); // conservative/server-failure fallback
-        return;
-    }
-    int bestX = cands[0]; double bestV = -1e18;
-    for (int x : cands) {
-        double v;
-        if (g_pathGraph) {
-            std::string req = "PG;" + std::to_string(x) + ';' + mapGraphCsv(gc, true) + ';'
-                            + mapGraphCsv(gc, false) + ';' + mapSpecialCsv(gc) + ';' + vFeatCsv(gc);
-            v = 0.5;
-            std::sscanf(vSendRecv(req).c_str(), "%lf", &v);
-        } else {
-            const int oX = gc.curMapNodeX, oY = gc.curMapNodeY;
-            gc.curMapNodeX = x; gc.curMapNodeY = childRow; // old forward-summary child evaluation
-            v = vStateWin(gc);
-            gc.curMapNodeX = oX; gc.curMapNodeY = oY;
-        }
-        if (v > bestV) { bestV = v; bestX = x; }
-    }
-    search::GameAction(bestX).execute(gc);
-}
-
-// Model-driven events: enumerate the event's options, evaluate V_win of each resulting state,
-// pick the best. Returns false (caller falls back to default) if no options are available.
-bool eventVPolicy(GameContext &gc) {
-    auto actions = search::GameAction::getAllActionsInState(gc);
-    if (actions.empty()) return false;
-    int best = 0; double bestV = -1e18;
-    for (int i = 0; i < (int)actions.size(); ++i) {
-        GameContext g2 = gc;
-        g2.map = std::make_shared<Map>(*gc.map);
-        actions[i].execute(g2);
-        const double v = vStateWin(g2);
-        if (v > bestV) { bestV = v; best = i; }
-    }
-    actions[best].execute(gc);
-    return true;
-}
-
 // ---------------------------------------------------------------------------
 // REST-SITE VALUE POLICY: use the same deck-aware GBM (curHp is a live feature)
 // to decide heal-vs-upgrade by their effect on expected final floor.
@@ -1463,7 +1349,7 @@ bool eventVPolicy(GameContext &gc) {
 // other campfire option (keys/dig/lift/toke) is left to the default agent so
 // this stays a clean A/B of exactly the heal/upgrade tradeoff.
 // ---------------------------------------------------------------------------
-static double g_restVThreshold = 0.15;  // heal iff healGain (final-floor units) >= this;
+double g_restVThreshold = 0.15;  // heal iff healGain (final-floor units) >= this;
                                         // swept best band 0.1-0.25 @512 seeds (STS_REST_V_THRESH to override)
 
 // send an already-built request line, return the response line (empty on error)
@@ -1481,7 +1367,7 @@ std::string vTransact(const std::string &req) {
 }
 
 // V(deck, hp+healAmt) - V(deck, hp), in expected-final-floor units (0 on error)
-static double vQueryHeal(GameContext &gc, int healAmt) {
+double vQueryHeal(GameContext &gc, int healAmt) {
     std::string req = "H;" + std::to_string(healAmt) + ";"
                     + vFeatCsv(gc) + "\n";
     std::string resp = vTransact(req);
@@ -1489,7 +1375,7 @@ static double vQueryHeal(GameContext &gc, int healAmt) {
 }
 
 // index (into candIds) of the deck's most-valued card to upgrade (0 on error)
-static int vQueryUpgrade(GameContext &gc, const std::vector<int> &candIds) {
+int vQueryUpgrade(GameContext &gc, const std::vector<int> &candIds) {
     std::string req = "U;";
     for (size_t i = 0; i < candIds.size(); ++i) { if (i) req += ','; req += std::to_string(candIds[i]); }
     req += ";" + vFeatCsv(gc) + "\n";
@@ -1534,28 +1420,6 @@ static int sampleCardSoftmax(const std::vector<double> &marg, double temp, doubl
     return n - 1;
 }
 
-// Handle a REST_ROOM screen with the value policy. Returns true if it acted;
-// false = defer to the default agent (only the heal-vs-smith case is handled).
-static bool restVPolicy(GameContext &gc) {
-    const bool canRest  = !gc.hasRelic(RelicId::COFFEE_DRIPPER);
-    const bool canSmith = !gc.relics.has(RelicId::FUSION_HAMMER) && gc.deck.getUpgradeableCount() > 0;
-    if (!(canRest && canSmith)) return false;      // keys/dig/lift/single-option -> default agent
-    const int healAmt = (int)std::lround(0.30 * gc.maxHp)
-                      + (gc.hasRelic(RelicId::REGAL_PILLOW) ? 15 : 0);
-    const double healGain = vQueryHeal(gc, healAmt);
-    search::GameAction(healGain >= g_restVThreshold ? 0 : 1, 0).execute(gc);  // 0=rest, 1=smith
-    return true;
-}
-
-// Handle the UPGRADE card-select opened by SMITH: pick the deck's most-valued card.
-static void upgradeSelectVPolicy(GameContext &gc) {
-    std::vector<int> ids;
-    for (int i = 0; i < gc.info.toSelectCards.size(); ++i)
-        ids.push_back((int)gc.info.toSelectCards[i].card.getId());
-    const int idx = ids.empty() ? 0 : vQueryUpgrade(gc, ids);
-    search::GameAction(idx, 0).execute(gc);
-}
-
 // ---------------------------------------------------------------------------
 // WIN-RATE REST POLICY: decide heal-vs-upgrade in P(win) units (win model),
 // where HP's effect on survival is sharp and nonlinear (unlike expected floor).
@@ -1570,7 +1434,7 @@ static void upgradeSelectVPolicy(GameContext &gc) {
 bool g_restWin = true;
 
 // P(win, hp+healAmt) - P(win, hp) from the win model (0 on error).
-static double vQueryHealWin(GameContext &gc, int healAmt) {
+double vQueryHealWin(GameContext &gc, int healAmt) {
     if (g_nativeOoc && g_winNet.ok) {
         const int old = gc.curHp;
         const double before = g_winNet.predict(richFeatureVec(gc));
@@ -1585,7 +1449,7 @@ static double vQueryHealWin(GameContext &gc, int healAmt) {
 }
 
 // Best upgrade by P(win): returns index into candIds and sets *gain to its win gain.
-static int vQueryUpgradeWin(GameContext &gc, const std::vector<int> &candIds, double *gain) {
+int vQueryUpgradeWin(GameContext &gc, const std::vector<int> &candIds, double *gain) {
     if (g_nativeOoc && g_winNet.ok) {
         const auto &idx = richIdxMap(); auto base = richFeatureVec(gc);
         const double before = g_winNet.predict(base); double best = -1e100; int bestIdx = 0;
@@ -1624,7 +1488,7 @@ static int vQueryUpgradeWin(GameContext &gc, const std::vector<int> &candIds, do
 
 // Direct paired counterfactual rest-vs-smith model. Returns false when no model is
 // deployed (server replies NA), preserving the proven V_win marginal fallback.
-static bool vQueryRestCounterfactual(GameContext &gc, double *delta) {
+bool vQueryRestCounterfactual(GameContext &gc, double *delta) {
     if (g_nativeOoc) return false;
     const std::string resp = vTransact("RC;" + vFeatCsv(gc) + "\n");
     double d = 0.0;
@@ -1635,7 +1499,7 @@ static bool vQueryRestCounterfactual(GameContext &gc, double *delta) {
 }
 
 // Deduped ids of the deck's upgradeable cards (candidates for a smith).
-static std::vector<int> upgradeableIds(GameContext &gc) {
+std::vector<int> upgradeableIds(GameContext &gc) {
     std::vector<int> ids;
     for (int i = 0; i < gc.deck.size(); ++i) {
         if (!gc.deck.cards[i].canUpgrade()) continue;
@@ -1648,43 +1512,8 @@ static std::vector<int> upgradeableIds(GameContext &gc) {
 // Handle a REST_ROOM screen by win-rate: rest iff heal raises P(win) more than the
 // best upgrade does. Returns false (defer to default agent) if it's not a genuine
 // heal-vs-smith choice (keys/dig/single-option).
-bool restWinPolicy(GameContext &gc) {
-    // Ruby key (RECALL, rest action 2) is mandatory for Act 4: take it at the
-    // first act-3+ campfire when we don't hold it yet.
-    if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
-        search::GameAction(2, 0).execute(gc);
-        return true;
-    }
-    const bool canRest  = !gc.hasRelic(RelicId::COFFEE_DRIPPER);
-    const bool canSmith = !gc.relics.has(RelicId::FUSION_HAMMER) && gc.deck.getUpgradeableCount() > 0;
-    if (!(canRest && canSmith)) return false;
-    const int healAmt = (int)std::lround(0.30 * gc.maxHp)
-                      + (gc.hasRelic(RelicId::REGAL_PILLOW) ? 15 : 0);
-    double pairedDelta = 0.0;
-    if (vQueryRestCounterfactual(gc, &pairedDelta)) {
-        search::GameAction(pairedDelta >= 0.0 ? 0 : 1, 0).execute(gc);
-        return true;
-    }
-    const double healGain = vQueryHealWin(gc, healAmt);
-    std::vector<int> ids = upgradeableIds(gc);
-    double upGain = 0.0;
-    if (!ids.empty()) vQueryUpgradeWin(gc, ids, &upGain);
-    search::GameAction(healGain >= upGain ? 0 : 1, 0).execute(gc);  // 0=rest, 1=smith
-    return true;
-}
-
-// Handle the UPGRADE card-select opened by SMITH: pick the card with the best P(win) upgrade.
-void upgradeSelectWinPolicy(GameContext &gc) {
-    std::vector<int> ids;
-    for (int i = 0; i < gc.info.toSelectCards.size(); ++i)
-        ids.push_back((int)gc.info.toSelectCards[i].card.getId());
-    double g = 0.0;
-    const int idx = ids.empty() ? 0 : vQueryUpgradeWin(gc, ids, &g);
-    search::GameAction(idx, 0).execute(gc);
-}
-
 // index (into candIds) of the card whose REMOVAL most raises V (0 on error)
-static int vQueryRemove(GameContext &gc, const std::vector<int> &candIds) {
+int vQueryRemove(GameContext &gc, const std::vector<int> &candIds) {
     if (g_nativeOoc && !g_shopWin && g_floorNet.ok) {
         const auto &idx = richIdxMap();
         const int dsz = idx.at("deckSize");
@@ -1718,7 +1547,7 @@ static int vQueryRemove(GameContext &gc, const std::vector<int> &candIds) {
 // rank relic identity); potions are not modeled (never bought here). Returns
 // true if it acted on the shop screen.
 // ---------------------------------------------------------------------------
-static std::string vQueryShop(GameContext &gc) {
+std::string vQueryShop(GameContext &gc) {
     if (g_nativeOoc && !g_shopWin) return nativeShopPlan(gc);
     const Shop &sh = gc.info.shop;
     std::string cardsCsv, relicsCsv;
@@ -1739,47 +1568,6 @@ static std::string vQueryShop(GameContext &gc) {
 // on the updated state, so a buy that opens a follow-up screen (e.g. a bottling
 // relic, or the removal card-select) can't desync a multi-buy sequence. Empty
 // plan -> leave the shop. Each buy strictly spends gold, so this terminates.
-void shopVPolicy(GameContext &gc) {
-    using RT = search::GameAction::RewardsActionType;
-    const std::string requestState = g_actFightProbeTrace ? vFeatCsv(gc) : std::string{};
-    std::string plan = vQueryShop(gc);
-    if (g_actFightProbeTrace) {
-        const Shop &sh = gc.info.shop;
-        std::cerr << "[shop-v decision=" << t_actFightProbeDecisionIdx - 1
-                  << " action=" << t_actFightProbeActionIdx
-                  << " future=" << t_actFightProbeFutureIdx
-                  << " floor=" << gc.floorNum << " gold=" << gc.gold
-                  << " cardRng=" << gc.cardRng.seed0 << ':' << gc.cardRng.seed1
-                  << " merchantRng=" << gc.merchantRng.seed0 << ':' << gc.merchantRng.seed1
-                  << " potionRng=" << gc.potionRng.seed0 << ':' << gc.potionRng.seed1
-                  << " remove=" << sh.removeCost << " cards=";
-        for (int i = 0; i < 7; ++i)
-            std::cerr << (i ? ";" : "") << (int)sh.cards[i].getId() << ':' << sh.cardPrice(i);
-        std::cerr << " relics=";
-        for (int i = 0; i < 3; ++i)
-            std::cerr << (i ? ";" : "") << (int)sh.relics[i] << ':' << sh.relicPrice(i);
-        std::cerr << " featHash=" << std::hash<std::string>{}(requestState)
-                  << " plan=" << plan << "]\n";
-    }
-    std::istringstream is(plan);
-    std::string tok;
-    if (!(is >> tok) || tok.empty()) { search::GameAction(RT::SKIP).execute(gc); return; }
-    const int idx = tok.size() > 1 ? std::atoi(tok.c_str() + 1) : 0;
-    if (tok[0] == 'c')      search::GameAction(RT::CARD,  idx).execute(gc);
-    else if (tok[0] == 'r') search::GameAction(RT::RELIC, idx).execute(gc);
-    else if (tok[0] == 'x') search::GameAction(RT::CARD_REMOVE).execute(gc);   // opens REMOVE select
-    else                    search::GameAction(RT::SKIP).execute(gc);
-}
-
-// Pick the removal target on a shop REMOVE card-select: the worst card by V.
-static void removeSelectVPolicy(GameContext &gc) {
-    std::vector<int> ids;
-    for (int i = 0; i < gc.info.toSelectCards.size(); ++i)
-        ids.push_back((int)gc.info.toSelectCards[i].card.getId());
-    const int idx = ids.empty() ? 0 : vQueryRemove(gc, ids);
-    search::GameAction(idx, 0).execute(gc);
-}
-
 static double sigmoid(double z) { return 1.0 / (1.0 + std::exp(-z)); }
 
 // ---------------------------------------------------------------------------
@@ -1799,107 +1587,6 @@ static double sigmoid(double z) { return 1.0 / (1.0 + std::exp(-z)); }
 // and elite/monster values are gated by current HP, so a healthy hero routes
 // into elites/fights and a hurt one routes to rests/events.
 // ---------------------------------------------------------------------------
-static double roomValue(Room r, int y, const GameContext &gc) {
-    const double hpFrac = gc.maxHp > 0 ? (double)gc.curHp / gc.maxHp : 1.0;
-    const int act = gc.act;
-    double v;
-    switch (r) {
-        case Room::ELITE: {
-            const double base  = 14.0;             // relic + strong card/gold: top-value room
-            const double later = 0.5 * y;          // prefer fighting elites later
-            // HP gate, like monsters but demanding MORE health (elites are high-variance):
-            // ramps 0 -> 1 as HP goes 40% -> 90% of max, so an elite is only worth
-            // routing into when you're near-full. Below 40% it's ~worthless.
-            const double gate  = std::clamp((hpFrac - 0.40) / 0.50, 0.0, 1.0);
-            v = (base + later) * gate;
-            break;
-        }
-        case Room::REST:
-            v = 9.0 + (hpFrac < 0.5 ? 5.0 : 0.0);   // heal/upgrade; more valuable when hurt
-            break;
-        case Room::SHOP:
-            v = gc.gold >= 120 ? 7.0 : gc.gold >= 75 ? 4.0 : 1.5;
-            break;
-        case Room::MONSTER: {
-            const double actMul = act == 1 ? 1.0 : 0.55;   // fights build the deck, esp. act 1
-            const double hpMul  = 0.4 + 0.9 * hpFrac;      // good when you have HP
-            v = 3.2 * actMul * hpMul;
-            break;
-        }
-        case Room::EVENT:
-            v = 3.8;                                // wildcard; balances fight-heavy paths
-            break;
-        case Room::TREASURE:
-            v = 6.0;                                // free relic
-            break;
-        default:
-            return 0.0;                             // BOSS / NONE / INVALID (never modulated)
-    }
-    // V-informed deck-strength modulation (STS_VPATH): scale AGGRESSIVE rooms up
-    // and RECOVERY rooms down when the value model thinks the deck is strong
-    // (t_pathAggr > 0), and vice-versa. Neutral aggr (0) leaves the heuristic exact.
-    if (g_vPath && t_pathAggr != 0.0) {
-        const double a = g_vPathK * t_pathAggr;     // signed gain
-        switch (r) {
-            case Room::ELITE:   v *= (1.0 + a);        break;  // strong deck -> farm elites/relics
-            case Room::MONSTER: v *= (1.0 + 0.75 * a); break;  // ... and fights (deck-building)
-            case Room::REST:    v *= (1.0 - 0.75 * a); break;  // weak deck -> value recovery
-            case Room::SHOP:    v *= (1.0 - 0.50 * a); break;
-            case Room::EVENT:   v *= (1.0 - 0.25 * a); break;
-            default: break;
-        }
-    }
-    return v;
-}
-
-// Returns the child x-column to move into (== the map GameAction index).
-int chooseMapAction(const GameContext &gc) {
-    const Map &map = *gc.map;
-
-    // V-informed deck-strength: one V(state) query -> predicted final floor, turned
-    // into an aggression signal in [-1,+1] via the act-boss anchor. Comfortably
-    // clearing the act (predFloor >> bossFloor) => aggr>0 => farm elites/fights;
-    // barely surviving => aggr<0 => route to recovery. Scale 8 floors ~= full swing.
-    t_pathAggr = 0.0;
-    if (g_vPath) {
-        const double pf = vStateRaw(const_cast<GameContext &>(gc));
-        if (pf > -1e8)   // server reachable
-            t_pathAggr = std::clamp((pf - bossFloorForAct(gc.act)) / 8.0, -1.0, 1.0);
-    }
-
-    // Bottom-up DP: best[y][x] = best total room value from entering (x,y) to boss.
-    static thread_local double best[15][7];
-    for (int x = 0; x < 7; ++x) {
-        best[14][x] = roomValue(map.getNode(x, 14).room, 14, gc);   // then the boss
-    }
-    for (int y = 13; y >= 0; --y) {
-        for (int x = 0; x < 7; ++x) {
-            const MapNode &n = map.getNode(x, y);
-            if (n.edgeCount == 0) { best[y][x] = -1e9; continue; }   // unused / dead node
-            double bestChild = -1e18;
-            for (int i = 0; i < n.edgeCount; ++i) {
-                bestChild = std::max(bestChild, best[y + 1][n.edges[i]]);
-            }
-            best[y][x] = roomValue(n.room, y, gc) + bestChild;
-        }
-    }
-
-    // Candidate children (mirrors getAllMapActions).
-    const int childRow = gc.curMapNodeY + 1;
-    int bestX = -1;
-    double bestScore = -1e18;
-    auto consider = [&](int x) {
-        if (best[childRow][x] > bestScore) { bestScore = best[childRow][x]; bestX = x; }
-    };
-    if (gc.curMapNodeY == -1) {
-        for (const MapNode &n : map.nodes[0]) if (n.edgeCount > 0) consider(n.x);
-    } else {
-        const MapNode &n = map.getNode(gc.curMapNodeX, gc.curMapNodeY);
-        for (int i = 0; i < n.edgeCount; ++i) consider(n.edges[i]);
-    }
-    return bestX;
-}
-
 // ---------------------------------------------------------------------------
 // BOSS-GATED ROLLOUT DRAFT: deaths cluster at act bosses, so for card rewards
 // picked within a few rows of the upcoming boss we DON'T trust the myopic 1-ply
@@ -2067,12 +1754,12 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
         } else if (one_combat::oocOnePlyMapPolicy(gc, agent)) {
             // one-ply Q map pick (M1 wave)
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            if (g_pathV) pathVPolicy(gc);                              // model-driven pathing
-            else search::GameAction(chooseMapAction(gc)).execute(gc);  // heuristic pathing
+            if (g_pathV) one_combat::pathVPolicy(gc);                              // model-driven pathing
+            else search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);  // heuristic pathing
         } else if (one_combat::oocOnePlyEventPolicy(gc, agent)) {
             // one-ply Q event pick (Phase 5, 5.5.3; incl. Neow)
         } else if (g_eventV && gc.screenState == ScreenState::EVENT_SCREEN
-                   && gc.curEvent != Event::NEOW && eventVPolicy(gc)) {
+                   && gc.curEvent != Event::NEOW && one_combat::eventVPolicy(gc)) {
             // model-driven event choice
         } else if (gc.screenState == ScreenState::REWARDS) {
             using RT = search::GameAction::RewardsActionType;
@@ -2089,41 +1776,41 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             else if (actFightProbeDraftPolicy(gc)) { /* all-act, encounter-weighted rollout draft */ }
             else if (bossGatedDraftPolicy(gc)) { /* rollout draft near a hard fight */ }
             else if (one_combat::oocOnePlyCardRewardPolicy(gc, agent)) { /* one-ply NN card pick (Phase 5) */ }
-            else                            serverCardRewardPolicy(gc);  // best card policy (server V)
+            else                            one_combat::serverCardRewardPolicy(gc);  // best card policy (server V)
         } else if (oocShopBeamPolicy(gc)) {
             // B1 multi-step shop beam (ooc-next-wave-contracts.md §2): replaces
             // the one-ply shop gate while STS_OOC_SHOP_BEAM=1 and a net is loaded
         } else if (one_combat::oocOnePlyShopPolicy(gc, agent)) {
             // one-ply Q shop pick (R6, §76)
         } else if (shopV && gc.screenState == ScreenState::SHOP_ROOM) {
-            shopVPolicy(gc);                                            // V-knapsack shop buys
+            one_combat::shopVPolicy(gc);                                            // V-knapsack shop buys
         } else if (shopV && gc.curRoom == Room::SHOP && inRemoveSelect) {
             // Shop-scoped (issue 65): CARD_SELECT/REMOVE is also used by Neow,
             // EMPTY_CAGE, and events (Purifier, Ancient Writing); only the shop
             // removal should hit the shop-V removal policy.
-            removeSelectVPolicy(gc);                                    // shop removal target
+            one_combat::removeSelectVPolicy(gc);                                    // shop removal target
         } else if (one_combat::oocOnePlyRestPolicy(gc, agent)) {
             // one-ply Q campfire pick (Phase 5, 5.5.2)
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && restWinPolicy(gc)) {
+        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
             // win-rate rest policy (heal vs upgrade in P(win) units)
         } else if (one_combat::oocOnePlyUpgradeSelectPolicy(gc, agent)) {
             // one-ply Q smith-target pick (Phase 5, 5.5.2)
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            upgradeSelectWinPolicy(gc);                                 // smith target by P(win)
-        } else if (restV && gc.screenState == ScreenState::REST_ROOM && restVPolicy(gc)) {
+            one_combat::upgradeSelectWinPolicy(gc);                                 // smith target by P(win)
+        } else if (restV && gc.screenState == ScreenState::REST_ROOM && one_combat::restVPolicy(gc)) {
             // handled by the value policy
         } else if (restV && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            upgradeSelectVPolicy(gc);                                    // smith target
+            one_combat::upgradeSelectVPolicy(gc);                                    // smith target
         } else if (one_combat::oocOnePlyBossRelicPolicy(gc, agent)) {
             // one-ply Q boss-relic pick (R6, §76)
         } else if (g_bossRelicV && gc.screenState == ScreenState::BOSS_RELIC_REWARDS) {
-            bossRelicVPolicy(gc);                                       // boss relic by P(win)
+            one_combat::bossRelicVPolicy(gc);                                       // boss relic by P(win)
         } else if (one_combat::oocOnePlyTreasurePolicy(gc, agent)) {
             // one-ply Q treasure pick (R6, §76)
         } else if (g_neowV && gc.screenState == ScreenState::EVENT_SCREEN && gc.curEvent == Event::NEOW) {
-            neowVPolicy(gc);                                           // Neow bonus by P(win)
+            one_combat::neowVPolicy(gc);                                           // Neow bonus by P(win)
         } else {
             agent.stepOutOfCombatPolicy(gc);
         }
@@ -2499,7 +2186,7 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
             if (!oocActionNNPolicy(gc))
                 if (!oocMapRouteSearchPolicy(gc, agent))
                     if (!oocOnePlyMapPolicy(gc, agent))
-                        search::GameAction(chooseMapAction(gc)).execute(gc);
+                        search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::EVENT_SCREEN) {
             if (!nodeActive) { flush(); nodeActive = true; label = "EVENT"; desc = tr_event(gc.curEvent); }
             tr_logOocActions("event", gc);
@@ -2510,7 +2197,7 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
             tr_logOocActions("rest", gc);
             if (!oocActionNNPolicy(gc)) {
                 if (!oocOnePlyRestPolicy(gc, agent)) {
-                    if (g_restWin && restWinPolicy(gc)) {}
+                    if (g_restWin && one_combat::restWinPolicy(gc)) {}
                     else agent.stepOutOfCombatPolicy(gc);
                 }
             }
@@ -2524,10 +2211,10 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
             tr_logOocActions("shop", gc);
             if (!oocActionNNPolicy(gc))
                 if (!oocShopBeamPolicy(gc))
-                    if (!oocOnePlyShopPolicy(gc, agent)) shopVPolicy(gc);
+                    if (!oocOnePlyShopPolicy(gc, agent)) one_combat::shopVPolicy(gc);
         } else if (inRemoveSelect) {
             if (!oocActionNNPolicy(gc))
-                if (!oocShopBeamPolicy(gc)) removeSelectVPolicy(gc);
+                if (!oocShopBeamPolicy(gc)) one_combat::removeSelectVPolicy(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             using RT = search::GameAction::RewardsActionType;
             auto &r = gc.info.rewardsContainer;
@@ -2537,12 +2224,12 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
             else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else { tr_logDraft(gc); if (!oocActionNNPolicy(gc)) { if (!oocOnePlyCardRewardPolicy(gc, agent)) serverCardRewardPolicy(gc); } }
+            else { tr_logDraft(gc); if (!oocActionNNPolicy(gc)) { if (!oocOnePlyCardRewardPolicy(gc, agent)) one_combat::serverCardRewardPolicy(gc); } }
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
             tr_logOocActions("upgrade", gc);
             if (!oocActionNNPolicy(gc))
-                if (!oocOnePlyUpgradeSelectPolicy(gc, agent)) upgradeSelectWinPolicy(gc);
+                if (!oocOnePlyUpgradeSelectPolicy(gc, agent)) one_combat::upgradeSelectWinPolicy(gc);
         } else if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) {
             if (!oocActionNNPolicy(gc))
                 if (!oocOnePlyBossRelicPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
@@ -3361,7 +3048,7 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
         } else if (useFrozenV4) {
             stepFrozenV4Ooc(gc, agent);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -3370,21 +3057,21 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
             else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else serverCardRewardPolicy(gc);
+            else one_combat::serverCardRewardPolicy(gc);
         } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            shopVPolicy(gc);
+            one_combat::shopVPolicy(gc);
         } else if (inRemoveSelect) {
-            removeSelectVPolicy(gc);
+            one_combat::removeSelectVPolicy(gc);
         } else if (gc.screenState == ScreenState::REST_ROOM) {
             if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF later rest seed=" << gc.seed << " floor=" << gc.floorNum << "\n";
-            if (!(g_restWin && restWinPolicy(gc))) {
+            if (!(g_restWin && one_combat::restWinPolicy(gc))) {
                 auto actions = search::GameAction::getAllActionsInState(gc);
                 if (actions.empty()) break;
                 actions.front().execute(gc);
             }
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            upgradeSelectWinPolicy(gc);
+            one_combat::upgradeSelectWinPolicy(gc);
         } else {
             agent.stepOutOfCombatPolicy(gc);
         }
@@ -3889,7 +3576,7 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
             }
             if (room == Room::BOSS) break;
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -3898,11 +3585,11 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
             else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else serverCardRewardPolicy(gc);
+            else one_combat::serverCardRewardPolicy(gc);
         } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            shopVPolicy(gc);
+            one_combat::shopVPolicy(gc);
         } else if (inRemoveSelect) {
-            removeSelectVPolicy(gc);
+            one_combat::removeSelectVPolicy(gc);
         } else if (gc.screenState == ScreenState::REST_ROOM) {
             if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
                 search::GameAction(2, 0).execute(gc);   // recall: take the ruby key
@@ -3988,7 +3675,7 @@ static bool advanceOocToNextBattle(GameContext &gc, int sims, std::uint64_t agen
             t_curPath = nullptr;
             return true;
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -3997,16 +3684,16 @@ static bool advanceOocToNextBattle(GameContext &gc, int sims, std::uint64_t agen
             else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else                            serverCardRewardPolicy(gc);
+            else                            one_combat::serverCardRewardPolicy(gc);
         } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            shopVPolicy(gc);
+            one_combat::shopVPolicy(gc);
         } else if (inRemoveSelect) {
-            removeSelectVPolicy(gc);
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && restWinPolicy(gc)) {
+            one_combat::removeSelectVPolicy(gc);
+        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
             // handled by the deployed rest policy
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            upgradeSelectWinPolicy(gc);
+            one_combat::upgradeSelectWinPolicy(gc);
         } else {
             agent.stepOutOfCombatPolicy(gc);
         }
@@ -4105,7 +3792,7 @@ static std::string runOocNextCombatSeed(std::uint64_t seed, int outerSims, int a
                 ++decisionIdx;
             }
             if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14)
-                search::GameAction(chooseMapAction(gc)).execute(gc);
+                search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
             else if (gc.screenState == ScreenState::REWARDS) {
                 auto &r = gc.info.rewardsContainer;
                 if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -4114,13 +3801,13 @@ static std::string runOocNextCombatSeed(std::uint64_t seed, int outerSims, int a
                 else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
                 else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
                 else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-                else                            serverCardRewardPolicy(gc);
-            } else if (gc.screenState == ScreenState::SHOP_ROOM) shopVPolicy(gc);
-            else if (inRemoveSelect) removeSelectVPolicy(gc);
-            else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && restWinPolicy(gc)) {}
+                else                            one_combat::serverCardRewardPolicy(gc);
+            } else if (gc.screenState == ScreenState::SHOP_ROOM) one_combat::shopVPolicy(gc);
+            else if (inRemoveSelect) one_combat::removeSelectVPolicy(gc);
+            else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {}
             else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                      && gc.info.selectScreenType == CardSelectScreenType::UPGRADE)
-                upgradeSelectWinPolicy(gc);
+                one_combat::upgradeSelectWinPolicy(gc);
             else agent.stepOutOfCombatPolicy(gc);
         }
     }
@@ -4409,7 +4096,7 @@ static std::string runPathCounterfactualSeed(std::uint64_t seed, int outerSims, 
                 const MapNode &node = gc.map->getNode(gc.curMapNodeX, gc.curMapNodeY);
                 for (int i = 0; i < node.edgeCount; ++i) candidates.push_back(node.edges[i]);
             }
-            const int heuristic = chooseMapAction(gc);
+            const int heuristic = one_combat::chooseMapAction(gc);
             if (candidates.size() >= 2) {
                 ++eligible;
                 if (std::uniform_int_distribution<int>(1, eligible)(reservoir) == 1) {
@@ -4430,16 +4117,16 @@ static std::string runPathCounterfactualSeed(std::uint64_t seed, int outerSims, 
             else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
             else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else serverCardRewardPolicy(gc);
+            else one_combat::serverCardRewardPolicy(gc);
         } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            shopVPolicy(gc);
+            one_combat::shopVPolicy(gc);
         } else if (inRemoveSelect) {
-            removeSelectVPolicy(gc);
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && restWinPolicy(gc)) {
+            one_combat::removeSelectVPolicy(gc);
+        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
             // current deployed survival-shaped rest policy
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            upgradeSelectWinPolicy(gc);
+            one_combat::upgradeSelectWinPolicy(gc);
         } else {
             agent.stepOutOfCombatPolicy(gc);
         }
@@ -4893,7 +4580,7 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
         if (gc.screenState == ScreenState::BATTLE) {
             BattleContext bc; bc.init(gc); agent.playoutBattle(bc); bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -5012,9 +4699,9 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
                 }
             }
         } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            shopVPolicy(gc);                                       // best shop policy (V-knapsack)
+            one_combat::shopVPolicy(gc);                                       // best shop policy (V-knapsack)
         } else if (inRemoveSelect) {
-            removeSelectVPolicy(gc);                               // shop removal target
+            one_combat::removeSelectVPolicy(gc);                               // shop removal target
         } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM) {
             if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF outer rest seed=" << seed << " idx=" << restIdx << " floor=" << gc.floorNum << "\n";
             if (restCfSims > 0 && genuineRestVsSmith(gc)
@@ -5038,7 +4725,7 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
                     search::GameAction(1, 0).execute(gs);       // smith
                     if (gs.screenState == ScreenState::CARD_SELECT
                         && gs.info.selectScreenType == CardSelectScreenType::UPGRADE)
-                        upgradeSelectWinPolicy(gs);
+                        one_combat::upgradeSelectWinPolicy(gs);
                     OocCounterfactualResult sr = finishOocCounterfactual(
                         gs, restCfSims, futureSeed, path);
                     if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF smith branch done floor=" << sr.floor << "\n";
@@ -5064,13 +4751,13 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
                 ++restIdx;
             }
             if (std::getenv("STS_CF_DEBUG")) std::cerr << "CF apply deployed rest policy\n";
-            if (!restWinPolicy(gc)) {
+            if (!one_combat::restWinPolicy(gc)) {
                 auto actions = search::GameAction::getAllActionsInState(gc);
                 if (!actions.empty()) actions.front().execute(gc);
             }
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            upgradeSelectWinPolicy(gc);
+            one_combat::upgradeSelectWinPolicy(gc);
         } else {
             agent.stepOutOfCombatPolicy(gc);
         }
@@ -5261,7 +4948,7 @@ static std::string runWholeCombatGenSeed(std::uint64_t seed,int sims,int asc,con
             if(!trainingRunValid(bc.outcome!=Outcome::UNDECIDED)||hooks==0)return{};const int won=bc.outcome==Outcome::PLAYER_VICTORY?1:0;bc.exitBattle(gc);
             const std::string relics=wholeRelicChanges(startRelics,gc),ritual=wholeRitualChanges(startDeck,gc);const bool deckChanged=startDeck!=wholeDeck(gc),parasite=wholeCardCount(gc,CardId::PARASITE)>startParasites;std::ostringstream summary;summary<<"potions="<<startPotionCount<<'>'<<gc.potionCount<<";hp="<<startHp<<'>'<<gc.curHp<<";maxhp="<<startMaxHp<<'>'<<gc.maxHp<<";gold_delta="<<gc.gold-startGold<<";relics="<<(relics.empty()?"none":"changed")<<";deck="<<(deckChanged?"changed":"same")<<";parasite="<<(parasite?1:0)<<";stolen_gold="<<gc.info.stolenGold;const char*roomClass=room==(int)Room::MONSTER?"NORMAL":room==(int)Room::ELITE?"ELITE":room==(int)Room::BOSS?"BOSS":"OTHER";
             out<<seed<<','<<fightIdx<<','<<act<<','<<floor<<','<<encounter<<','<<roomClass<<",0,"<<teacher.id<<','<<features<<','<<won<<','<<gc.curHp<<','<<startHp<<','<<startMaxHp<<','<<gc.maxHp<<','<<(startMaxHp>0?(double)gc.curHp/startMaxHp:0.0)<<','<<startPotions<<','<<wholePotionIds(gc)<<','<<startPotionCount<<','<<gc.potionCount<<','<<gc.gold-startGold<<','<<(gc.smokeBombUsed?1:0)<<','<<relics<<','<<ritual<<','<<(deckChanged?1:0)<<','<<(parasite?1:0)<<','<<summary.str()<<'\n';++fightIdx;
-        }else if(gc.screenState==ScreenState::MAP_SCREEN&&gc.curMapNodeY<14)search::GameAction(chooseMapAction(gc)).execute(gc);
+        }else if(gc.screenState==ScreenState::MAP_SCREEN&&gc.curMapNodeY<14)search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         else if(gc.screenState==ScreenState::REWARDS){auto&r=gc.info.rewardsContainer;if(r.goldRewardCount>0)search::GameAction(RT::GOLD,0).execute(gc);else if(r.relicCount>0)search::GameAction(RT::RELIC,0).execute(gc);else if(r.potionCount>0)search::GameAction(RT::POTION,0).execute(gc);else if(g_collectKeys&&r.emeraldKey)search::GameAction(RT::KEY,0).execute(gc);else if(g_collectKeys&&r.sapphireKey)search::GameAction(RT::KEY,0).execute(gc);else if(r.cardRewardCount==0)search::GameAction(RT::SKIP).execute(gc);else evalCardRewardPolicy(gc);}else agent.stepOutOfCombatPolicy(gc);
     }search::g_onCombatDecision=nullptr;return out.str();
 }
@@ -5326,7 +5013,7 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             if (!labelValid && (!healthOk || !hooks || !representableEncounter)) { search::g_onGameActionExecute = {}; t_curPath = nullptr; return {out.str(), false, quarantined}; }
             bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -5382,7 +5069,7 @@ static std::string runCounterfactualSurrogateAuditSeed(std::uint64_t seed, int s
         const auto actions=search::GameAction::getAllActionsInState(gc);bool replace=false;
         if(actions.size()>=2){++eligible;replace=std::uniform_int_distribution<int>(1,eligible)(reservoir)==1;if(replace){sampled=std::make_unique<GameContext>(detachedCounterfactualCopy(gc));sampledPath=path;sampledActions=actions;sampledDecision=decisionIdx;}++decisionIdx;}
         std::uint32_t executed=UINT32_MAX;search::g_onGameActionExecute=[&](std::uint32_t bits,const GameContext *target){if(target==&gc&&executed==UINT32_MAX)executed=bits;};
-        if(gc.screenState==ScreenState::MAP_SCREEN&&gc.curMapNodeY<14)search::GameAction(chooseMapAction(gc)).execute(gc);
+        if(gc.screenState==ScreenState::MAP_SCREEN&&gc.curMapNodeY<14)search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         else if(gc.screenState==ScreenState::REWARDS){auto&r=gc.info.rewardsContainer;if(r.goldRewardCount>0)search::GameAction(RT::GOLD,0).execute(gc);else if(r.relicCount>0)search::GameAction(RT::RELIC,0).execute(gc);else if(r.potionCount>0)search::GameAction(RT::POTION,0).execute(gc);else if(g_collectKeys&&r.emeraldKey)search::GameAction(RT::KEY,0).execute(gc);else if(g_collectKeys&&r.sapphireKey)search::GameAction(RT::KEY,0).execute(gc);else if(r.cardRewardCount==0)search::GameAction(RT::SKIP).execute(gc);else evalCardRewardPolicy(gc);}
         else agent.stepOutOfCombatPolicy(gc);
         search::g_onGameActionExecute={};if(replace){sampledChosen=executed;if(executed!=UINT32_MAX&&std::none_of(sampledActions.begin(),sampledActions.end(),[&](const auto&a){return a.bits==executed;})){search::GameAction chosen(executed);if(chosen.isValidAction(*sampled))sampledActions.push_back(chosen);}}
@@ -5458,7 +5145,7 @@ static std::string runCombatGenSeed(std::uint64_t seed, int sims, int asc, doubl
             ++fightIdx;
             bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -5565,7 +5252,7 @@ runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
             ++fightIdx;
             bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            int action = chooseMapAction(gc); logOoc("MAP", action); search::GameAction(action).execute(gc);
+            int action = one_combat::chooseMapAction(gc); logOoc("MAP", action); search::GameAction(action).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -6682,7 +6369,7 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
         // heuristic map pathing, forced non-card rewards one at a time, native
         // floor card pick with skip, win-rate rest/upgrade, else Searcher2.
         if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -6699,11 +6386,11 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
                                                                          : vQuery(gc, rIdx, bossW);
                 search::GameAction(RT::CARD, rIdx, idx).execute(gc);
             }
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && restWinPolicy(gc)) {
+        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
             // win-rate rest decision (heal vs smith)
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            upgradeSelectWinPolicy(gc);
+            one_combat::upgradeSelectWinPolicy(gc);
         } else {
             agent.stepOutOfCombatPolicy(gc);
         }
@@ -6772,14 +6459,14 @@ static void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent) {
         if (!oocActionNNPolicy(gc))
             if (!oocMapRouteSearchPolicy(gc, agent))
                 if (!oocOnePlyMapPolicy(gc, agent))
-                    search::GameAction(chooseMapAction(gc)).execute(gc);
+                    search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
     } else if (gc.screenState == ScreenState::EVENT_SCREEN) {
         if (!oocActionNNPolicy(gc))
             if (!oocOnePlyEventPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
     } else if (gc.screenState == ScreenState::REST_ROOM) {
         if (!oocActionNNPolicy(gc)) {
             if (!oocOnePlyRestPolicy(gc, agent)) {
-                if (g_restWin && restWinPolicy(gc)) {}
+                if (g_restWin && one_combat::restWinPolicy(gc)) {}
                 else agent.stepOutOfCombatPolicy(gc);
             }
         }
@@ -6789,10 +6476,10 @@ static void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent) {
     } else if (gc.screenState == ScreenState::SHOP_ROOM) {
         if (!oocActionNNPolicy(gc))
             if (!oocShopBeamPolicy(gc))
-                if (!oocOnePlyShopPolicy(gc, agent)) shopVPolicy(gc);
+                if (!oocOnePlyShopPolicy(gc, agent)) one_combat::shopVPolicy(gc);
     } else if (inRemove) {
         if (!oocActionNNPolicy(gc))
-            if (!oocShopBeamPolicy(gc)) removeSelectVPolicy(gc);
+            if (!oocShopBeamPolicy(gc)) one_combat::removeSelectVPolicy(gc);
     } else if (gc.screenState == ScreenState::REWARDS) {
         auto &r = gc.info.rewardsContainer;
         if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -6803,12 +6490,12 @@ static void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent) {
         else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
         else {
             if (!oocActionNNPolicy(gc))
-                if (!oocOnePlyCardRewardPolicy(gc, agent)) serverCardRewardPolicy(gc);
+                if (!oocOnePlyCardRewardPolicy(gc, agent)) one_combat::serverCardRewardPolicy(gc);
         }
     } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
         if (!oocActionNNPolicy(gc))
-            if (!oocOnePlyUpgradeSelectPolicy(gc, agent)) upgradeSelectWinPolicy(gc);
+            if (!oocOnePlyUpgradeSelectPolicy(gc, agent)) one_combat::upgradeSelectWinPolicy(gc);
     } else if (gc.screenState == ScreenState::BOSS_RELIC_REWARDS) {
         if (!oocActionNNPolicy(gc))
             if (!oocOnePlyBossRelicPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
@@ -7632,12 +7319,12 @@ static void strategicMargGen(int nSeeds, int outerSims,
             {
                 GameContext fbGc = detachedCounterfactualCopy(pre);
                 if (screen == 1) evalAgent.stepOutOfCombatPolicy(fbGc);
-                else if (screen == 2) serverCardRewardPolicy(fbGc);
-                else if (screen == 3) { if (g_bossRelicV) bossRelicVPolicy(fbGc); else evalAgent.stepOutOfCombatPolicy(fbGc); }
-                else if (screen == 4) upgradeSelectWinPolicy(fbGc);
+                else if (screen == 2) one_combat::serverCardRewardPolicy(fbGc);
+                else if (screen == 3) { if (g_bossRelicV) one_combat::bossRelicVPolicy(fbGc); else evalAgent.stepOutOfCombatPolicy(fbGc); }
+                else if (screen == 4) one_combat::upgradeSelectWinPolicy(fbGc);
                 else if (screen == 6) evalAgent.stepOutOfCombatPolicy(fbGc);
-                else if (screen == 7) { if (g_restWin && restWinPolicy(fbGc)) {} else evalAgent.stepOutOfCombatPolicy(fbGc); }
-                else if (screen == 8) shopVPolicy(fbGc);
+                else if (screen == 7) { if (g_restWin && one_combat::restWinPolicy(fbGc)) {} else evalAgent.stepOutOfCombatPolicy(fbGc); }
+                else if (screen == 8) one_combat::shopVPolicy(fbGc);
                 auto fbFp = stratFingerprint(fbGc);
                 for (int ai = 0; ai < (int)actions.size(); ++ai) {
                     GameContext tGc = detachedCounterfactualCopy(pre);
@@ -8035,7 +7722,7 @@ static void stepCounterfactualAuditSource(GameContext &gc,
         if(bc.outcome==Outcome::UNDECIDED)throw std::runtime_error("oockbudgeteval: source replay combat unresolved");
         bc.exitBattle(gc);
     }else if(gc.screenState==ScreenState::MAP_SCREEN&&gc.curMapNodeY<14)
-        search::GameAction(chooseMapAction(gc)).execute(gc);
+        search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
     else if(gc.screenState==ScreenState::REWARDS){auto&r=gc.info.rewardsContainer;
         if(r.goldRewardCount>0)search::GameAction(RT::GOLD,0).execute(gc);
         else if(r.relicCount>0)search::GameAction(RT::RELIC,0).execute(gc);
@@ -8462,7 +8149,7 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
         // heuristic map pathing, forced non-card rewards one at a time, native
         // floor card pick with skip, win-rate rest/upgrade, else Searcher2.
         if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -8479,11 +8166,11 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
                                                                          : vQuery(gc, rIdx, bossW);
                 search::GameAction(RT::CARD, rIdx, idx).execute(gc);
             }
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && restWinPolicy(gc)) {
+        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
             // win-rate rest decision (heal vs smith)
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            upgradeSelectWinPolicy(gc);
+            one_combat::upgradeSelectWinPolicy(gc);
         } else {
             agent.stepOutOfCombatPolicy(gc);
         }
@@ -8646,7 +8333,7 @@ runFightGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
             ++fightIdx;
             bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -8663,17 +8350,17 @@ runFightGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
                     search::GameAction(RT::CARD, rIdx, pick < nc ? pick : 5).execute(gc);
                 }
             } else {
-                serverCardRewardPolicy(gc);                    // deployed V_floor exploit policy
+                one_combat::serverCardRewardPolicy(gc);                    // deployed V_floor exploit policy
             }
         } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            shopVPolicy(gc);
+            one_combat::shopVPolicy(gc);
         } else if (inRemoveSelect) {
-            removeSelectVPolicy(gc);
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && restWinPolicy(gc)) {
+            one_combat::removeSelectVPolicy(gc);
+        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
             // deployed survival-shaped rest policy
         } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
                    && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            upgradeSelectWinPolicy(gc);
+            one_combat::upgradeSelectWinPolicy(gc);
         } else {
             agent.stepOutOfCombatPolicy(gc);
         }
@@ -8776,7 +8463,7 @@ static std::string runPolicyGenSeed(std::uint64_t seed, int sims, int asc, doubl
             bc.exitBattle(gc);
             out << fightOut.str();
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -8821,7 +8508,7 @@ static std::string runDataGenSeed(std::uint64_t seed, int sims, int asc, double 
             if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) return {};
             bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
@@ -8906,7 +8593,7 @@ static std::string runCausalGenSeed(std::uint64_t seed, int sims, int asc, int N
             if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) return {};
             bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(chooseMapAction(gc)).execute(gc);
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
             auto &r = gc.info.rewardsContainer;
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
