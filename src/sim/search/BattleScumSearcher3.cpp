@@ -266,7 +266,6 @@ double g_s3TurnScoreW4 = 10.0;
 double g_s3TurnScoreW5 = 30.0;
 bool g_vnetCondBossOnly = false;
 bool g_vnetCondAct3 = false;
-thread_local std::function<double(const BattleContext &)> g_terminalBonus;
 thread_local std::function<void(const S3LeafDiagnostic &)> g_onS3LeafQuery;
 thread_local bool g_s3LeafTraceActions = false;    // particle_posterior_probe-only: record per-action semantic checkpoints
 
@@ -3954,11 +3953,6 @@ double BattleScumSearcher3::evaluateTerminal(const BattleContext &bc) {
             riskLambda, bc.player.maxHp, g_combatDistVNet.winBonus);
     else
         v = bc.outcome == Outcome::PLAYER_VICTORY ? bc.player.curHp + 50.0 : 0.0;
-    // Cross-combat pricing: the integration driver may add a run-level bonus
-    // on victory leaves (post-combat HP/gold/potions/relic counters), so the
-    // search can weigh e.g. stalling to align the Happy Flower counter.
-    if (bc.outcome == Outcome::PLAYER_VICTORY && g_terminalBonus)
-        v += g_terminalBonus(bc);
     return v;
 }
 

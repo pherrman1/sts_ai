@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-08-27 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
+Last verified: 2026-09-09 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -238,7 +238,6 @@ enable flag:
 | `STS_OOC_MAP_ROUTE` | C_psi route search (M2) | `0` (off) | `main` ~L9345 |
 | `STS_OOC_MAP_ROUTE_HORIZON` | M2 horizon (clamped 2..5) | 3 | `main` ~L9346 |
 | `STS_CPSI_NN` | C_psi combat outcome surrogate path; `1` = default | unset (off) | `main` ~L9350 |
-| `STS_CPSI_CTR_PROBE` | C_psi counter-sensitivity probe | `0` (off) | `main` ~L9358 |
 | `STS_OOC_SHOP_BEAM` | Multi-step shop beam search (B1) | `0` (off) | `main` ~L9362 |
 | `STS_OOC_SHOP_BEAM_WIDTH` | B1 beam width | 32 | `main` ~L9363 |
 | `STS_OOC_SHOP_BEAM_DEPTH` | B1 search depth (0 = until leave) | 0 | `main` ~L9365 |
@@ -261,16 +260,6 @@ enable flag:
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_SIM_HEALTH_CAPTURE_DIR` | While set, every `[sim-health][HARD]` failure serializes the offending `BattleContext` to `<dir>/sim_bug_<seed>_f<floor>_t<turn>_d<decision>_<reason>_<seq>.bin` (raw `serializeBattleContext` blob) plus a `<stem>.txt` metadata sidecar (reason, seed, floor, encounter, turn, decision index, player HP, outcome, input state, card-select task/pickCount, pile sizes, action bits, RNG counters, searcher/fair/particles). Diagnostics print regardless. See `behavior/simulator-health-monitor.md`. | unset (off) | `SimHealth.cpp::reportSimHealthFailure` |
-
-## Terminal-leaf run-value bonus (S3)
-
-| Variable | Effect | Default | Parse site |
-|----------|--------|---------|------------|
-| `STS_TERM_WIN` | Terminal-leaf run-value bonus (S3 victory leaves) | `0` (off) | `main` ~L9700 |
-| `STS_TERM_WIN_W` | Bonus weight | 100.0 | `main` ~L9702 |
-| `STS_TERM_WIN_HIDDEN` | `zero` = zero hidden feats, `1` = resample | `1` (resample) | `main` ~L9703 |
-| `STS_TERM_WIN_EVAL` | `cpsi` = C_psi evaluator, `1`/unset = win tree | `0` (win tree) | `main` ~L9704 |
-| `STS_TERM_STALL_LOG` | Per-combat stall telemetry path | unset (off) | `main` ~L9697 |
 
 ## Combat model inference
 

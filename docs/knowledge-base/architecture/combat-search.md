@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-07 at `e5203e07e36d3e82b6af9a819a13a932fcbd208a`.
+Last verified: 2026-09-09 against the current working tree.
 
 ## Purpose
 
@@ -84,7 +84,6 @@ dispatch by default and `STS_FORCED_MOVE=0` disables it.
 | Invalid-edge fallback | `STS_S3_EXPAND` adds missing live legal edges when no stored edge is valid; its max and simple-selection controls remain supported. |
 | Rollouts | `STS_ROLLOUT_DEPTH` caps actions. S3 also supports prior-guided sampling, K-rollout averaging, turn-stop bootstrap, tactical turn-beam rollout, and rollout-length VNet alpha. Defaults are heuristic rollout, one sample, no turn stop, and no cap. |
 | Chance continuations | `STS_S3_PERSISTENT_ENDTURN_CHANCE` stores exact-`CombatObservation` successor nodes below eligible END_TURN edges while retaining one aggregate action value/visit stream. It samples one normal transition per simulation and is incompatible with strategy-fusion diagnostics and eager END_TURN marginalization. |
-| Terminal guidance | `STS_TERM_WIN` adds its run-value evaluator only to Searcher3 terminal-victory leaves. It is off by default and does not replace exact combat terminal evaluation. |
 
 Research treatment parameters are summarized here, not recommended. Exact
 defaults, compatibility rules, and output paths live in the environment

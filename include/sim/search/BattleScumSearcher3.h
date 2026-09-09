@@ -774,12 +774,6 @@ class BattleScumSearcher3;
     extern int g_pvnetCondMinTurn;     // STS_PVNET_COND_TURN=N: NN leaf only when bc.turn >= N
     extern int g_pvnetCondMinDepth;    // STS_PVNET_COND_DEPTH=N: NN leaf only when tree depth >= N
     extern bool g_pvnetCondBossOnly;   // STS_PVNET_COND_BOSS=1: NN leaf only in boss encounters
-    // Optional additive terminal-victory bonus, supplied by the integration
-    // driver (one_combat): prices the post-combat run state (HP, gold,
-    // potions, relic counters) with a run-level evaluator so the combat
-    // search can reason about cross-combat setup (e.g. Happy Flower counter
-    // alignment). Empty = off. Consumed only in evaluateTerminal.
-    extern thread_local std::function<double(const BattleContext &)> g_terminalBonus;
     // Leaf-query diagnostic hook. nullptr by default; retained particle
     // diagnostics use the normal frontier-type-0 leaf callback.
     extern thread_local std::function<void(const S3LeafDiagnostic &)> g_onS3LeafQuery;
