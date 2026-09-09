@@ -1,6 +1,6 @@
 # Architecture overview
 
-Last verified: 2026-09-07 against the current working tree.
+Last verified: 2026-09-09 against the current working tree.
 
 ## Purpose
 
@@ -30,10 +30,18 @@ tracing, and counterfactual evaluators. The self-contained `vnettest`,
 `apps/combat_model_diagnostics.cpp`. Core simulator behavior remains under
 `src/game`, `src/combat`, and `src/sim` (`CMakeLists.txt::sts_lightspeed_SOURCES`).
 
+The retained E2c RAW/POST capture contract is isolated in
+`apps/one_combat/e2c_capture.{h,cpp}`. The module owns capture state, row
+serialization, accounting, the temporary RAW observer scope, canonical RAW
+projection, and the retained run-win parity checks. `runFullRunOOC` remains the
+orchestration owner: it starts/finishes E2c around the shared training-integrity
+predicate and delegates the real battle exit and reward-screen boundaries to
+the module.
+
 | Location | Current ownership |
 | --- | --- |
 | `include/`, `src/` | Simulator, search, agents, and native model readers. |
-| `apps/` | Executable entry points and OOC checkpoint inference. `apps/one_combat/` owns the integration driver's shared run-feature schema, compact-tree reader, and extracted diagnostic modules. |
+| `apps/` | Executable entry points and OOC checkpoint inference. `apps/one_combat/` owns the integration driver's shared run-feature schema, compact-tree reader, E2c capture lifecycle, and extracted diagnostic modules. |
 | `bindings/` | Run-level pybind11 API. |
 | root `train_*.py`, `export_*.py` | Executable trainers and serializers. |
 | `v_server.py` | Optional localhost inference bridge. |
@@ -48,7 +56,9 @@ tracing, and counterfactual evaluators. The self-contained `vnettest`,
    path and Searcher2/Searcher3, then commits combat `Action` values. Searcher3's
    non-fair path is a particle/reuse hybrid, not known-RNG Searcher2.
 4. `BattleContext::exitBattle` transfers outcome, HP, rewards, RNG streams, and
-   persistent effects back to the run.
+   persistent effects back to the run. When E2c capture is enabled,
+   `e2c_capture` temporarily arms its RAW observer only around this real exit;
+   POST is sampled from the rewards screen after non-card rewards are drained.
 5. Out-of-combat policy applies `GameAction` values until the next combat or
    terminal `GameOutcome`.
 6. `one_combat` modes optionally log state/action/outcome rows for training or
@@ -80,6 +90,9 @@ Detailed flows are in [combat search](combat-search.md),
   (`src/sim/search/Action.cpp::isValidAction`;
   `src/sim/search/GameAction.cpp::isValidAction`).
 - Combat loops use `BattleContext::outcome`, not `isBattleOver`.
+- E2c copied/counterfactual exits do not produce capture rows; the production
+  RAW observer is armed only by `exitBattleWithE2cRawCapture` for the live
+  driver exit.
 - Combat control remains C++-only unless bindings are deliberately extended.
 - The contents of `build/` are mixed: tracked model artifacts coexist with
   ignored CMake outputs (`.gitignore`; `git ls-files build`).
@@ -110,6 +123,7 @@ Detailed flows are in [combat search](combat-search.md),
 - `include/sim/search/GameAction.h::GameAction`
 - `include/sim/search/Action.h::Action`
 - `apps/one_combat.cpp::main`, `runFullRunOOC`
+- `apps/one_combat/e2c_capture.{h,cpp}` — retained E2c RAW/POST lifecycle, canonical projection, and run-win parity
 - `apps/one_combat/ooc_policy.{h,cpp}` — live OOC action/checkpoint/one-ply/map policies
 - `apps/one_combat/fight_replay.{h,cpp}` — Act-3 boss fight-start capture and isolated `fightrep` replay
 - `apps/one_combat/run_features.{h,cpp}` — path history, forward-map features, rich schema, and feature index map
