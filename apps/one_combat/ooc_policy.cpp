@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <unordered_set>
@@ -18,6 +19,68 @@ using namespace sts;
 namespace one_combat {
 
 static double sigmoid(double z) { return 1.0 / (1.0 + std::exp(-z)); }
+
+// These settings and counters belong to the fallback path policy.  The driver
+// only supplies environment configuration and resets the per-run state through
+// the narrow entry points below; the policy implementation owns the state.
+static int g_pathGraph = 0;
+static int g_pathAction = 0;
+static int g_pathActionMax = -1;
+static double g_pathActionMargin = 0.0;
+static bool g_pathActionTrace = false;
+static thread_local int t_pathActionUses = 0;
+static int g_vPath = 0;
+static double g_vPathK = 0.4;
+static thread_local double t_pathAggr = 0.0;
+static double g_restVThreshold = 0.15;
+
+bool configurePathActionPolicyFromEnvironment() {
+    bool enabled = false;
+    if (const char *d = std::getenv("STS_PATH_GRAPH")) {
+        g_pathGraph = std::atoi(d) != 0;
+        if (g_pathGraph) {
+            enabled = true;
+            std::cout << "[model-driven pathing via full-map graph NN ON]\n";
+        }
+    }
+    if (const char *d = std::getenv("STS_PATH_ACTION")) {
+        g_pathAction = std::atoi(d) != 0;
+        if (const char *m = std::getenv("STS_PATH_ACTION_MAX"))
+            g_pathActionMax = std::atoi(m);
+        if (const char *m = std::getenv("STS_PATH_ACTION_MARGIN"))
+            g_pathActionMargin = std::atof(m);
+        g_pathActionTrace = std::getenv("STS_PATH_ACTION_TRACE")
+                         && std::atoi(std::getenv("STS_PATH_ACTION_TRACE")) != 0;
+        if (g_pathAction) {
+            enabled = true;
+            std::cout << "[model-driven pathing via paired route-action NN ON: max="
+                      << g_pathActionMax << " margin=" << g_pathActionMargin << "]\n";
+        }
+    }
+    return enabled;
+}
+
+void configureVPathPolicyFromEnvironment() {
+    if (const char *d = std::getenv("STS_VPATH")) {
+        g_vPath = std::atoi(d) != 0;
+        if (const char *k = std::getenv("STS_VPATH_K")) g_vPathK = std::atof(k);
+        if (g_vPath)
+            std::cout << "[V-informed pathing ON: k=" << g_vPathK
+                      << " (needs v_server on :5555)]\n";
+    }
+}
+
+void configureRestVPolicyFromEnvironment() {
+    if (const char *d = std::getenv("STS_REST_V_THRESH")) {
+        g_restVThreshold = std::atof(d);
+        std::cout << "[rest-V heal threshold = " << g_restVThreshold << "]\n";
+    }
+}
+
+void resetPathPolicyState() {
+    t_pathActionUses = 0;
+    t_pathAggr = 0.0;
+}
 
 bool oocActionNNPolicy(GameContext &gc) {
     if (!g_oocActionNN || gc.act < 1 || gc.act > 3) return false;
@@ -880,6 +943,329 @@ bool oocMapRouteSearchPolicy(GameContext &gc, const search::ScumSearchAgent2 &ag
     }
     return regretGateTail(gc, actions, q, bestIdx, best, second, margin,
                           g_oocStrategicGateEps, regretHeurMap, agent);
+}
+
+// Live fallback policy family.  Model loading, feature construction, and the
+// transport seams remain driver-owned; these functions own the decisions made
+// by the ordinary OOC chain.
+// V(deck, hp+healAmt) - V(deck, hp), in expected-final-floor units (0 on error).
+static double vQueryHeal(GameContext &gc, int healAmt) {
+    std::string req = "H;" + std::to_string(healAmt) + ";"
+                    + vFeatCsv(gc) + "\n";
+    const std::string resp = vTransact(req);
+    return resp.empty() ? 0.0 : std::atof(resp.c_str());
+}
+
+// Index (into candIds) of the deck's most-valued card to upgrade (0 on error).
+static int vQueryUpgrade(GameContext &gc, const std::vector<int> &candIds) {
+    std::string req = "U;";
+    for (size_t i = 0; i < candIds.size(); ++i) {
+        if (i) req += ',';
+        req += std::to_string(candIds[i]);
+    }
+    req += ";" + vFeatCsv(gc) + "\n";
+    const std::string resp = vTransact(req);
+    int idx = resp.empty() ? 0 : std::atoi(resp.c_str());
+    if (idx < 0 || idx >= (int)candIds.size()) idx = 0;
+    return idx;
+}
+
+// Direct paired counterfactual rest-vs-smith model. Returns false when no
+// server-side model is deployed, preserving the win-rate marginal fallback.
+static bool vQueryRestCounterfactual(GameContext &gc, double *delta) {
+    if (g_nativeOoc) return false;
+    const std::string resp = vTransact("RC;" + vFeatCsv(gc) + "\n");
+    double d = 0.0;
+    if (resp.empty() || resp.rfind("NA", 0) == 0
+        || std::sscanf(resp.c_str(), "%lf", &d) != 1 || !std::isfinite(d)) return false;
+    if (delta) *delta = d;
+    return true;
+}
+
+// Deduped ids of the deck's upgradeable cards (candidates for a smith).
+static std::vector<int> upgradeableIds(GameContext &gc) {
+    std::vector<int> ids;
+    for (int i = 0; i < gc.deck.size(); ++i) {
+        if (!gc.deck.cards[i].canUpgrade()) continue;
+        const int id = (int)gc.deck.cards[i].getId();
+        if (std::find(ids.begin(), ids.end(), id) == ids.end()) ids.push_back(id);
+    }
+    return ids;
+}
+
+void serverCardRewardPolicy(GameContext &gc) {
+    using RT = search::GameAction::RewardsActionType;
+    auto &r = gc.info.rewardsContainer;
+    while (r.cardRewardCount > 0) {
+        const int rIdx = r.cardRewardCount - 1;
+        const double bossW = (g_bossV && rowsToHardFight(gc) <= g_bossDraftRows) ? g_bossVW : -1.0;
+        const int idx = (winNetOk() && g_cardWin && bossW < 0.0) ? nativeWinCardPick(gc, rIdx)
+                                                                  : vQuery(gc, rIdx, bossW);
+        search::GameAction(RT::CARD, rIdx, idx).execute(gc);
+    }
+}
+
+void bossRelicVPolicy(GameContext &gc) {
+    int best = -1; double bestV = -1e18;
+    for (int i = 0; i < 3; ++i) {
+        if (gc.info.bossRelics[i] == RelicId::INVALID) continue;
+        GameContext g2 = gc;
+        g2.map = std::make_shared<Map>(*gc.map);
+        g2.chooseBossRelic(i);
+        const double v = vStateWin(g2);
+        if (v > bestV) { bestV = v; best = i; }
+    }
+    gc.chooseBossRelic(best < 0 ? 0 : best);
+}
+
+void neowVPolicy(GameContext &gc) {
+    int best = 0; double bestV = -1e18;
+    for (int i = 0; i < (int)gc.info.neowRewards.size(); ++i) {
+        GameContext g2 = gc;
+        g2.map = std::make_shared<Map>(*gc.map);
+        g2.chooseNeowOption(g2.info.neowRewards[i]);
+        const double v = vStateWin(g2);
+        if (v > bestV) { bestV = v; best = i; }
+    }
+    gc.chooseNeowOption(gc.info.neowRewards[best]);
+}
+
+void pathVPolicy(GameContext &gc) {
+    const Map &map = *gc.map;
+    std::vector<int> cands;
+    const int childRow = gc.curMapNodeY + 1;
+    if (gc.curMapNodeY < 0) {
+        for (const MapNode &n : map.nodes[0]) if (n.edgeCount > 0) cands.push_back(n.x);
+    } else {
+        const MapNode &n = map.getNode(gc.curMapNodeX, gc.curMapNodeY);
+        for (int i = 0; i < n.edgeCount; ++i) cands.push_back(n.edges[i]);
+    }
+    if (cands.empty()) { search::GameAction(chooseMapAction(gc)).execute(gc); return; }
+    if (g_pathAction) {
+        const int heuristic = chooseMapAction(gc);
+        std::ostringstream req;
+        req << "PA;";
+        for (int i = 0; i < (int)cands.size(); ++i) { if (i) req << ','; req << cands[i]; }
+        req << ';' << heuristic << ';' << mapGraphCsv(gc, true) << ';' << mapGraphCsv(gc, false) << ';'
+            << mapSpecialCsv(gc) << ';' << vFeatCsv(gc);
+        int chosen = -1; double advantage = -1e9;
+        const std::string response = vSendRecv(req.str());
+        std::sscanf(response.c_str(), "%d %lf", &chosen, &advantage);
+        const bool capacity = g_pathActionMax < 0 || t_pathActionUses < g_pathActionMax;
+        if (g_pathActionTrace) {
+            #pragma omp critical(path_action_trace)
+            std::cerr << "[path-action] seed=" << gc.seed << " pos=" << gc.curMapNodeX << ','
+                      << gc.curMapNodeY << " heuristic=" << heuristic << " chosen=" << chosen
+                      << " advantage=" << advantage << " uses=" << t_pathActionUses
+                      << " capacity=" << capacity << " response='" << response << "'\n";
+        }
+        if (capacity && advantage >= g_pathActionMargin
+            && std::find(cands.begin(), cands.end(), chosen) != cands.end()) {
+            search::GameAction(chosen).execute(gc);
+            if (chosen != heuristic) ++t_pathActionUses;
+            return;
+        }
+        search::GameAction(heuristic).execute(gc);
+        return;
+    }
+    int bestX = cands[0]; double bestV = -1e18;
+    for (int x : cands) {
+        double v;
+        if (g_pathGraph) {
+            std::string req = "PG;" + std::to_string(x) + ';' + mapGraphCsv(gc, true) + ';'
+                            + mapGraphCsv(gc, false) + ';' + mapSpecialCsv(gc) + ';' + vFeatCsv(gc);
+            v = 0.5;
+            std::sscanf(vSendRecv(req).c_str(), "%lf", &v);
+        } else {
+            const int oX = gc.curMapNodeX, oY = gc.curMapNodeY;
+            gc.curMapNodeX = x; gc.curMapNodeY = childRow;
+            v = vStateWin(gc);
+            gc.curMapNodeX = oX; gc.curMapNodeY = oY;
+        }
+        if (v > bestV) { bestV = v; bestX = x; }
+    }
+    search::GameAction(bestX).execute(gc);
+}
+
+bool eventVPolicy(GameContext &gc) {
+    auto actions = search::GameAction::getAllActionsInState(gc);
+    if (actions.empty()) return false;
+    int best = 0; double bestV = -1e18;
+    for (int i = 0; i < (int)actions.size(); ++i) {
+        GameContext g2 = gc;
+        g2.map = std::make_shared<Map>(*gc.map);
+        actions[i].execute(g2);
+        const double v = vStateWin(g2);
+        if (v > bestV) { bestV = v; best = i; }
+    }
+    actions[best].execute(gc);
+    return true;
+}
+
+bool restVPolicy(GameContext &gc) {
+    const bool canRest  = !gc.hasRelic(RelicId::COFFEE_DRIPPER);
+    const bool canSmith = !gc.relics.has(RelicId::FUSION_HAMMER) && gc.deck.getUpgradeableCount() > 0;
+    if (!(canRest && canSmith)) return false;
+    const int healAmt = (int)std::lround(0.30 * gc.maxHp)
+                      + (gc.hasRelic(RelicId::REGAL_PILLOW) ? 15 : 0);
+    const double healGain = vQueryHeal(gc, healAmt);
+    search::GameAction(healGain >= g_restVThreshold ? 0 : 1, 0).execute(gc);
+    return true;
+}
+
+void upgradeSelectVPolicy(GameContext &gc) {
+    std::vector<int> ids;
+    for (int i = 0; i < gc.info.toSelectCards.size(); ++i)
+        ids.push_back((int)gc.info.toSelectCards[i].card.getId());
+    const int idx = ids.empty() ? 0 : vQueryUpgrade(gc, ids);
+    search::GameAction(idx, 0).execute(gc);
+}
+
+bool restWinPolicy(GameContext &gc) {
+    if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
+        search::GameAction(2, 0).execute(gc);
+        return true;
+    }
+    const bool canRest  = !gc.hasRelic(RelicId::COFFEE_DRIPPER);
+    const bool canSmith = !gc.relics.has(RelicId::FUSION_HAMMER) && gc.deck.getUpgradeableCount() > 0;
+    if (!(canRest && canSmith)) return false;
+    const int healAmt = (int)std::lround(0.30 * gc.maxHp)
+                      + (gc.hasRelic(RelicId::REGAL_PILLOW) ? 15 : 0);
+    double pairedDelta = 0.0;
+    if (vQueryRestCounterfactual(gc, &pairedDelta)) {
+        search::GameAction(pairedDelta >= 0.0 ? 0 : 1, 0).execute(gc);
+        return true;
+    }
+    const double healGain = vQueryHealWin(gc, healAmt);
+    std::vector<int> ids = upgradeableIds(gc);
+    double upGain = 0.0;
+    if (!ids.empty()) vQueryUpgradeWin(gc, ids, &upGain);
+    search::GameAction(healGain >= upGain ? 0 : 1, 0).execute(gc);
+    return true;
+}
+
+void upgradeSelectWinPolicy(GameContext &gc) {
+    std::vector<int> ids;
+    for (int i = 0; i < gc.info.toSelectCards.size(); ++i)
+        ids.push_back((int)gc.info.toSelectCards[i].card.getId());
+    double g = 0.0;
+    const int idx = ids.empty() ? 0 : vQueryUpgradeWin(gc, ids, &g);
+    search::GameAction(idx, 0).execute(gc);
+}
+
+void shopVPolicy(GameContext &gc) {
+    using RT = search::GameAction::RewardsActionType;
+    const std::string requestState = g_actFightProbeTrace ? vFeatCsv(gc) : std::string{};
+    std::string plan = vQueryShop(gc);
+    if (g_actFightProbeTrace) {
+        const Shop &sh = gc.info.shop;
+        std::cerr << "[shop-v decision=" << t_actFightProbeDecisionIdx - 1
+                  << " action=" << t_actFightProbeActionIdx
+                  << " future=" << t_actFightProbeFutureIdx
+                  << " floor=" << gc.floorNum << " gold=" << gc.gold
+                  << " cardRng=" << gc.cardRng.seed0 << ':' << gc.cardRng.seed1
+                  << " merchantRng=" << gc.merchantRng.seed0 << ':' << gc.merchantRng.seed1
+                  << " potionRng=" << gc.potionRng.seed0 << ':' << gc.potionRng.seed1
+                  << " remove=" << sh.removeCost << " cards=";
+        for (int i = 0; i < 7; ++i)
+            std::cerr << (i ? ";" : "") << (int)sh.cards[i].getId() << ':' << sh.cardPrice(i);
+        std::cerr << " relics=";
+        for (int i = 0; i < 3; ++i)
+            std::cerr << (i ? ";" : "") << (int)sh.relics[i] << ':' << sh.relicPrice(i);
+        std::cerr << " featHash=" << std::hash<std::string>{}(requestState)
+                  << " plan=" << plan << "]\n";
+    }
+    std::istringstream is(plan);
+    std::string tok;
+    if (!(is >> tok) || tok.empty()) { search::GameAction(RT::SKIP).execute(gc); return; }
+    const int idx = tok.size() > 1 ? std::atoi(tok.c_str() + 1) : 0;
+    if (tok[0] == 'c')      search::GameAction(RT::CARD,  idx).execute(gc);
+    else if (tok[0] == 'r') search::GameAction(RT::RELIC, idx).execute(gc);
+    else if (tok[0] == 'x') search::GameAction(RT::CARD_REMOVE).execute(gc);
+    else                    search::GameAction(RT::SKIP).execute(gc);
+}
+
+void removeSelectVPolicy(GameContext &gc) {
+    std::vector<int> ids;
+    for (int i = 0; i < gc.info.toSelectCards.size(); ++i)
+        ids.push_back((int)gc.info.toSelectCards[i].card.getId());
+    const int idx = ids.empty() ? 0 : vQueryRemove(gc, ids);
+    search::GameAction(idx, 0).execute(gc);
+}
+
+static int bossFloorForAct(int act) { return act <= 1 ? 17 : act == 2 ? 34 : 50; }
+
+static double roomValue(Room r, int y, const GameContext &gc) {
+    const double hpFrac = gc.maxHp > 0 ? (double)gc.curHp / gc.maxHp : 1.0;
+    const int act = gc.act;
+    double v;
+    switch (r) {
+        case Room::ELITE: {
+            const double base = 14.0;
+            const double later = 0.5 * y;
+            const double gate = std::clamp((hpFrac - 0.40) / 0.50, 0.0, 1.0);
+            v = (base + later) * gate;
+            break;
+        }
+        case Room::REST: v = 9.0 + (hpFrac < 0.5 ? 5.0 : 0.0); break;
+        case Room::SHOP: v = gc.gold >= 120 ? 7.0 : gc.gold >= 75 ? 4.0 : 1.5; break;
+        case Room::MONSTER: {
+            const double actMul = act == 1 ? 1.0 : 0.55;
+            const double hpMul = 0.4 + 0.9 * hpFrac;
+            v = 3.2 * actMul * hpMul;
+            break;
+        }
+        case Room::EVENT: v = 3.8; break;
+        case Room::TREASURE: v = 6.0; break;
+        default: return 0.0;
+    }
+    if (g_vPath && t_pathAggr != 0.0) {
+        const double a = g_vPathK * t_pathAggr;
+        switch (r) {
+            case Room::ELITE:   v *= (1.0 + a); break;
+            case Room::MONSTER: v *= (1.0 + 0.75 * a); break;
+            case Room::REST:    v *= (1.0 - 0.75 * a); break;
+            case Room::SHOP:    v *= (1.0 - 0.50 * a); break;
+            case Room::EVENT:   v *= (1.0 - 0.25 * a); break;
+            default: break;
+        }
+    }
+    return v;
+}
+
+int chooseMapAction(const GameContext &gc) {
+    const Map &map = *gc.map;
+    t_pathAggr = 0.0;
+    if (g_vPath) {
+        const double pf = vStateRaw(const_cast<GameContext &>(gc));
+        if (pf > -1e8)
+            t_pathAggr = std::clamp((pf - bossFloorForAct(gc.act)) / 8.0, -1.0, 1.0);
+    }
+    static thread_local double best[15][7];
+    for (int x = 0; x < 7; ++x) best[14][x] = roomValue(map.getNode(x, 14).room, 14, gc);
+    for (int y = 13; y >= 0; --y) {
+        for (int x = 0; x < 7; ++x) {
+            const MapNode &n = map.getNode(x, y);
+            if (n.edgeCount == 0) { best[y][x] = -1e9; continue; }
+            double bestChild = -1e18;
+            for (int i = 0; i < n.edgeCount; ++i)
+                bestChild = std::max(bestChild, best[y + 1][n.edges[i]]);
+            best[y][x] = roomValue(n.room, y, gc) + bestChild;
+        }
+    }
+    const int childRow = gc.curMapNodeY + 1;
+    int bestX = -1;
+    double bestScore = -1e18;
+    auto consider = [&](int x) {
+        if (best[childRow][x] > bestScore) { bestScore = best[childRow][x]; bestX = x; }
+    };
+    if (gc.curMapNodeY == -1) {
+        for (const MapNode &n : map.nodes[0]) if (n.edgeCount > 0) consider(n.x);
+    } else {
+        const MapNode &n = map.getNode(gc.curMapNodeX, gc.curMapNodeY);
+        for (int i = 0; i < n.edgeCount; ++i) consider(n.edges[i]);
+    }
+    return bestX;
 }
 
 } // namespace one_combat
