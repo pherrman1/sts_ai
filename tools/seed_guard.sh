@@ -9,7 +9,7 @@ MAX_AUTOMATED_SEEDS=128
 declare -A ONE_COMBAT_SEED_INDEX=(
   ["bestbench"]=3
   ["causalgen"]=2           ["combatgen"]=2
-  ["cpsictr"]=3             ["datagen"]=2
+  ["datagen"]=2
   ["datagen2"]=2            ["datagen3"]=2          ["distgen"]=2
   ["e2cgen"]=2              ["fairgen"]=2           ["fightgen"]=2
   ["wholecombatgen"]=2     ["ooccfaudit"]=2
