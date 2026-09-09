@@ -48,6 +48,7 @@
 #include "ooc_strategic_tok_net.h"
 #include "combat_model_diagnostics.h"
 #include "one_combat/compact_tree.h"
+#include "one_combat/e2c_capture.h"
 #include "one_combat/run_features.h"
 #include "one_combat/fight_replay.h"
 #include "one_combat/search_diagnostics.h"
@@ -126,17 +127,6 @@ static std::string g_effectiveOocStrategicTokPath;
 static thread_local int t_trainingHealthFailures = 0;
 static thread_local int t_trainingBranchHealthFailures = 0;
 static thread_local bool t_trainingRunActive = false;
-struct E2cCapture;
-static thread_local E2cCapture *t_e2c = nullptr;
-static thread_local std::string t_e2cRows;
-static std::atomic<long long> g_e2cCounts[3][6]{}; // eligible, raw, post, pairs, raw_only, post_only
-static void e2cBeginFight(int, const sts::GameContext &, const sts::BattleContext &);
-static void e2cRawObserver(const sts::BattleContext &, sts::GameContext &);
-static void e2cCapturePost(sts::GameContext &);
-static std::string e2cRunRows(const E2cCapture &, bool, int, int);
-static std::string e2cExplicitRelics(const sts::GameContext &);
-static std::string e2cHeader();
-static std::string e2cRoomName(int);
 static std::atomic<int> g_trainingInvalidRuns{0};
 static std::atomic<int> g_trainingInvalidBranches{0};
 static std::atomic<int> g_trainingHealthFailures{0};
@@ -547,24 +537,6 @@ static void evalCardRewardPolicy(GameContext &gc, bool allowSkip = true) {
 static std::string featureRow(const GameContext &gc);      // defined below
 static std::string deckCountsCsv(const GameContext &gc);   // defined below
 
-struct E2cFight {
-    int index = -1, room = -1, encounter = -1;
-    std::string raw, post, rawRelics, postRelics;
-    bool rawSeen = false, postSeen = false;
-    std::string screenTrace;
-    std::string rewardRelics;
-    int pendingCards = -1;
-};
-struct E2cRoomStats {
-    int eligible = 0, raw = 0, post = 0, pairs = 0;
-};
-struct E2cCapture {
-    std::uint64_t seed = 0;
-    PathHistory *path = nullptr;
-    std::vector<E2cFight> fights;
-    E2cFight *current = nullptr;
-    E2cRoomStats roomStats[3]{};
-};
 // Current run's path history, so vFeatCsv() can emit pv* features (nullptr = none).
 thread_local const PathHistory *t_curPath = nullptr;
 thread_local PathHistory t_emptyPath;    // pv* = 0 when no run path is set
@@ -1215,10 +1187,8 @@ int g_neowV      = 0;   // STS_NEOW_V=1
 using WinNet = CompactTreeNet;
 static WinNet g_winNet;
 static WinNet g_floorNet;
-// E2c's native model is loaded only for the explicit parity-validation mode;
-// ordinary gameplay and e2cgen do not load or invoke it.
-static CompactTreeNet g_e2cRawNet;
-static std::string g_e2cModelPath;
+// The E2c module loads its native model only for the explicit parity-validation
+// mode; ordinary gameplay and e2cgen do not load or invoke it.
 bool   winNetOk() { return g_winNet.ok; }
 static double winNetPredict(const std::vector<float> &raw) { return g_winNet.predict(raw); }
 
@@ -1571,13 +1541,9 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
     }
 
     PathHistory path;                // pv* features for V queries (train/serve parity)
-    E2cCapture e2c;
     if (e2cCapture) {
         trainingRunStart();
-        e2c.seed = seed;
-        e2c.path = &path;
-        t_e2c = &e2c;
-        t_e2cRows.clear();
+        one_combat::beginE2cRun(seed, path);
     }
     one_combat::resetPathPolicyState();
     t_actFightProbeDecisionIdx = 0;
@@ -1622,7 +1588,8 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
                 continue;
             }
             bc.init(gc);
-            if (t_e2c) e2cBeginFight(fightsTotal, gc, bc);
+            if (one_combat::e2cCaptureActive())
+                one_combat::beginE2cFight(fightsTotal, gc, bc);
             if (one_combat::fightReplayCaptureEnabled() && battleAct == 3 && battleRoom == Room::BOSS)
                 one_combat::fightReplayCaptureStart(bc, seed);   // fightrep: fight-start snapshot (floor-50 boss)
             if (one_combat::searchDiagnosticsActive())
@@ -1645,13 +1612,7 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
             if (search::g_useSearcher3 && g_termWin) termWinDisarm();
             ++fightsTotal;
             if (bc.outcome == Outcome::PLAYER_LOSS) { ++fightsLost; if (deathCombat < 0) { deathCombat = fightsTotal; deathEncounter = (int)bc.encounter; } }
-            if (t_e2c) {
-                g_onBattleExitPersistent = e2cRawObserver;
-                bc.exitBattle(gc);
-                g_onBattleExitPersistent = nullptr;
-            } else {
-                bc.exitBattle(gc);
-            }
+            one_combat::exitBattleWithE2cRawCapture(bc, gc);
             if (g_cpsiCtrProbe) cpsiCounterProbeAtState(gc);   // C_psi counter-sensitivity probe
             stallLogRow(gc, bc, seed);                          // stall telemetry (opt-in)
             if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
@@ -1680,9 +1641,8 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
         } else if (gc.screenState == ScreenState::REWARDS) {
             using RT = search::GameAction::RewardsActionType;
             auto &r = gc.info.rewardsContainer;                          // take non-card rewards first,
-            if (t_e2c) e2cCapturePost(gc);                               // POST boundary: non-card rewards drained, card reward pending
-            if (t_e2c && t_e2c->current)
-                t_e2c->current->screenTrace += "S=" + std::to_string((int)gc.screenState) + ";";
+            one_combat::captureE2cPost(gc);                               // POST boundary: non-card rewards drained, card reward pending
+            one_combat::recordE2cScreenState(gc.screenState);
             if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);   // else the screen
             else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);  // never clears
             else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
@@ -1758,32 +1718,7 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
         // simulator-health failure, so E2c does not weaken the shared predicate.
         const bool decided = result.won || gc.outcome != GameOutcome::UNDECIDED;
         const bool validRun = trainingRunValid(decided);
-        if (validRun)
-            t_e2cRows = e2cRunRows(e2c, result.won, result.floor, result.hpEnd);
-        if (validRun) for (int i = 0; i < 3; ++i) {
-            const auto &s = e2c.roomStats[i];
-            g_e2cCounts[i][0] += s.eligible;
-            g_e2cCounts[i][1] += s.raw;
-            g_e2cCounts[i][2] += s.post;
-            g_e2cCounts[i][3] += std::count_if(e2c.fights.begin(), e2c.fights.end(),
-                [i](const E2cFight &f) { return f.rawSeen && f.postSeen &&
-                    (f.room == (i == 0 ? (int)Room::MONSTER : i == 1 ? (int)Room::ELITE : (int)Room::BOSS)); });
-            g_e2cCounts[i][4] += std::count_if(e2c.fights.begin(), e2c.fights.end(),
-                [i](const E2cFight &f) { return f.rawSeen && !f.postSeen &&
-                    (f.room == (i == 0 ? (int)Room::MONSTER : i == 1 ? (int)Room::ELITE : (int)Room::BOSS)); });
-            g_e2cCounts[i][5] += std::count_if(e2c.fights.begin(), e2c.fights.end(),
-                [i](const E2cFight &f) { return !f.rawSeen && f.postSeen &&
-                    (f.room == (i == 0 ? (int)Room::MONSTER : i == 1 ? (int)Room::ELITE : (int)Room::BOSS)); });
-        }
-        if (validRun) for (const auto &f : e2c.fights)
-            if (f.rawSeen != f.postSeen)
-                std::cerr << "e2c incomplete seed=" << e2c.seed << " fight=" << f.index
-                          << " room=" << e2cRoomName(f.room) << " encounter=" << f.encounter
-                          << " raw=" << f.rawSeen << " post=" << f.postSeen
-                          << " relics=" << f.rewardRelics << " pending_cards=" << f.pendingCards
-                          << " trace=" << f.screenTrace << '\n';
-        t_e2c = nullptr;
-        g_onBattleExitPersistent = nullptr;
+        one_combat::finishE2cRun(validRun, result.won, result.floor, result.hpEnd);
     }
     vDisconnect();
     return result;
@@ -4122,295 +4057,25 @@ static bool genuineRestVsSmith(const GameContext &gc) {
 }
 
 // ---------------------------------------------------------------------------
-// E2c: matched RAW / POST snapshots of survived ordinary/elite/act-1-2 boss
-// combats at the exact combat-terminal boundary.  RAW fires inside
-// BattleContext::exitBattle immediately after persistent-transfer and before
-// regainControl()/reward generation; POST fires at the REWARDS screen after all
-// non-card rewards are drained, immediately before the first card pick/skip.
-// Only the real run-loop exit arms the BattleContext hook (see runFullRunOOC),
-// so copied/counterfactual exits cannot produce rows.
-// ---------------------------------------------------------------------------
-static std::string e2cRoomName(int room) {
-    switch ((Room)room) {
-        case Room::MONSTER: return "MONSTER";
-        case Room::ELITE: return "ELITE";
-        case Room::BOSS: return "BOSS";
-        default: return "OTHER";
-    }
-}
-
-static std::string e2cExplicitRelics(const GameContext &gc) {
-    std::vector<int> has(kNumRelics, 0), data(kNumRelics, 0);
-    for (const auto &ri : gc.relics.relics) {
-        const int id = (int)ri.id;
-        if (id >= 0 && id < kNumRelics) { has[id] = 1; data[id] = ri.data; }   // exact signed data
-    }
-    std::ostringstream out;
-    for (int i = 0; i < kNumRelics; ++i) { if (i) out << ','; out << has[i]; }      // relic_has_<id>
-    for (int i = 0; i < kNumRelics; ++i) out << ',' << data[i];                     // relic_data_<id>
-    return out.str();
-}
-
-static std::string e2cHeader() {
-    std::ostringstream out;
-    out << "seed,fight_index,boundary,room_type,encounter_id," << richStateHeader();
-    for (int i = 0; i < kNumRelics; ++i) out << ",relic_has_" << i;
-    for (int i = 0; i < kNumRelics; ++i) out << ",relic_data_" << i;
-    out << ",won,finalFloor,endHp\n";
-    return out.str();
-}
-
-static void e2cBeginFight(int fightIndex, const GameContext &gc, const BattleContext &bc) {
-    if (!t_e2c) return;
-    t_e2c->current = nullptr;
-    if (gc.curRoom != Room::MONSTER && gc.curRoom != Room::ELITE && gc.curRoom != Room::BOSS) return;
-    if (gc.curRoom == Room::BOSS && gc.act > 2) return;   // exclude act-3/4 terminal boss
-    E2cFight f;
-    f.room = (int)gc.curRoom; f.encounter = (int)bc.encounter;
-    f.index = fightIndex;
-    t_e2c->fights.push_back(std::move(f));
-    t_e2c->current = &t_e2c->fights.back();
-}
-
-static void e2cRawObserver(const BattleContext &bc, GameContext &gc) {
-    if (t_e2c && t_e2c->current && bc.outcome == Outcome::PLAYER_VICTORY) {
-        t_e2c->current->raw = richRow(gc, *t_e2c->path);
-        t_e2c->current->rawRelics = e2cExplicitRelics(gc);
-        t_e2c->current->rawSeen = true;
-        auto &s = t_e2c->roomStats[t_e2c->current->room == (int)Room::MONSTER ? 0
-                                  : t_e2c->current->room == (int)Room::ELITE ? 1 : 2];
-        ++s.eligible;
-        ++s.raw;
-    }
-}
-
-static void e2cCapturePost(GameContext &gc) {
-    if (!t_e2c || !t_e2c->current || t_e2c->current->postSeen) return;
-    auto &r = gc.info.rewardsContainer;
-    t_e2c->current->screenTrace += "REWARDS(" + std::to_string(r.relicCount) + "," +
-        std::to_string(r.cardRewardCount) + ");";
-    if (t_e2c->current->rewardRelics.empty()) {
-        for (int i = 0; i < r.relicCount; ++i) {
-            if (i) t_e2c->current->rewardRelics += ";";
-            t_e2c->current->rewardRelics += std::to_string((int)r.relics[i]);
-        }
-    }
-    t_e2c->current->pendingCards = r.cardRewardCount;
-    if (gc.screenState != ScreenState::REWARDS || r.goldRewardCount || r.relicCount ||
-        r.potionCount || (g_collectKeys && (r.emeraldKey || r.sapphireKey)) ||
-        r.cardRewardCount == 0) return;
-    t_e2c->current->post = richRow(gc, *t_e2c->path);
-    t_e2c->current->postRelics = e2cExplicitRelics(gc);
-    t_e2c->current->postSeen = true;
-    auto &s = t_e2c->roomStats[t_e2c->current->room == (int)Room::MONSTER ? 0
-                              : t_e2c->current->room == (int)Room::ELITE ? 1 : 2];
-    ++s.post;
-}
-
-static std::string e2cRunRows(const E2cCapture &cap, bool won, int finalFloor, int endHp) {
-    std::ostringstream out;
-    for (const auto &f : cap.fights) {
-        if (!f.rawSeen && !f.postSeen) continue;
-        const std::string meta = std::string(e2cRoomName(f.room)) + ',' + std::to_string(f.encounter) + ',';
-        if (f.rawSeen)
-            out << cap.seed << ',' << f.index << ",RAW," << meta << f.raw << ',' << f.rawRelics
-                << ',' << (won ? 1 : 0) << ',' << finalFloor << ',' << endHp << '\n';
-        if (f.postSeen)
-            out << cap.seed << ',' << f.index << ",POST," << meta << f.post << ',' << f.postRelics
-                << ',' << (won ? 1 : 0) << ',' << finalFloor << ',' << endHp << '\n';
-    }
-    return out.str();
-}
-
-// E2c RAW canonical feature extraction.  This is deliberately independent of
-// the legacy rich model's selected-feature map: T-raw contains the E2c
-// explicit relic ownership/data blocks and excludes the rich r* encoding and
-// all hidden future fields.  Keep this classifier in lockstep with
-// tools/analyze_postcombat_raw_terminal.py::{manifest,t_features}.
-static std::vector<std::string> splitCsvNames(const std::string &s) {
-    std::vector<std::string> out; std::string cur;
-    // std::getline removes '\n' but leaves the '\r' in a normal CRLF CSV.
-    // Ignore it here so production parity fixtures are portable between the
-    // Windows exporter and the Linux native test binary.
-    for (char c : s) { if (c == ',') { out.push_back(cur); cur.clear(); } else if (c != '\r') cur += c; }
-    if (!cur.empty()) out.push_back(cur);
-    return out;
-}
-static bool e2cObservableName(const std::string &n) {
-    static const std::unordered_set<std::string> exact = {
-        "ascension", "act", "floor", "curHp", "maxHp", "gold", "deckSize", "potionChance",
-        "cardRarityFactor", "blueKey", "greenKey", "redKey", "potionCount", "potionCapacity", "bossId",
-        "pvShop", "pvRest", "pvEvent", "pvElite", "pvMonster", "pvTreasure", "bottledAtkId",
-        "bottledSkillId", "bottledPowId", "curMapX", "curMapY", "room_type", "encounter_id", "hpFrac"};
-    if (exact.count(n)) return true;
-    auto digits = [](const std::string &v, const char *prefix) {
-        const size_t p = std::strlen(prefix); if (v.rfind(prefix, 0) != 0 || v.size() == p) return false;
-        return std::all_of(v.begin() + p, v.end(), [](unsigned char c) { return std::isdigit(c); });
-    };
-    return digits(n, "d") || digits(n, "u") || digits(n, "pot") ||
-           n.rfind("fmD", 0) == 0 || n.rfind("fmC", 0) == 0 ||
-           n.rfind("relic_has_", 0) == 0 || n.rfind("relic_data_", 0) == 0;
-}
-static const std::vector<std::string> &e2cRawCanonicalNames() {
-    static const std::vector<std::string> names = [] {
-        const std::unordered_set<std::string> meta = {"seed", "fight_index", "boundary", "room_type", "encounter_id"};
-        const std::unordered_set<std::string> hidden = {"nextEliteId", "nextFight0", "nextFight1", "nextFight2",
-                                                         "remElites", "remFights", "monOffset", "eliteOffset"};
-        std::vector<std::string> out;
-        for (const std::string &n : splitCsvNames(e2cHeader())) {
-            if (n == "won" || n == "finalFloor" || n == "endHp" || hidden.count(n)) continue;
-            if (meta.count(n) && n != "room_type" && n != "encounter_id") continue;
-            if (!e2cObservableName(n)) continue;
-            out.push_back(n);
-        }
-        return out;
-    }();
-    return names;
-}
-static const std::unordered_map<std::string, int> &e2cRawIdxMap() {
-    static const std::unordered_map<std::string, int> map = [] {
-        std::unordered_map<std::string, int> out;
-        const auto &names = e2cRawCanonicalNames();
-        for (int i = 0; i < (int)names.size(); ++i) out.emplace(names[i], i);
-        return out;
-    }();
-    return map;
-}
-static std::vector<float> e2cRawCanonicalVec(const GameContext &gc, const PathHistory &path,
-                                               Room room, MonsterEncounter encounter) {
-    std::unordered_map<std::string, float> values;
-    const auto rNames = splitCsvNames(richStateHeader());
-    const auto rValues = splitCsvNames(richRow(gc, path));
-    if (rNames.size() != rValues.size()) return {};
-    for (size_t i = 0; i < rNames.size(); ++i) values.emplace(rNames[i], std::strtof(rValues[i].c_str(), nullptr));
-    values["room_type"] = room == Room::MONSTER ? 0.f : room == Room::ELITE ? 1.f : room == Room::BOSS ? 2.f : -1.f;
-    values["encounter_id"] = (float)(int)encounter;
-    const auto relicValues = splitCsvNames(e2cExplicitRelics(gc));
-    if (relicValues.size() != (size_t)(2 * kNumRelics)) return {};
-    for (int i = 0; i < kNumRelics; ++i) values["relic_has_" + std::to_string(i)] = std::strtof(relicValues[i].c_str(), nullptr);
-    for (int i = 0; i < kNumRelics; ++i) values["relic_data_" + std::to_string(i)] = std::strtof(relicValues[kNumRelics + i].c_str(), nullptr);
-    std::vector<float> out; out.reserve(e2cRawCanonicalNames().size());
-    for (const std::string &name : e2cRawCanonicalNames()) {
-        const auto it = values.find(name); if (it == values.end()) return {};
-        out.push_back(it->second);
-    }
-    return out;
-}
-
-// Exact semantic projection for a terminal diagnostic continuation.  The copy
-// executes the canonical exitBattle transfer.  Its temporary hook captures the
-// RAW state after cards/relics/HP/potions/gold transfer and before reward
-// generation, exactly where E2c sampled it; the live run and its RNG remain
-// untouched.
-static bool e2cProjectTerminalRaw(const GameContext &battleEntry, const PathHistory &path,
-                                  Room room, MonsterEncounter encounter, const BattleContext &terminal,
-                                  std::vector<float> &out) {
-    if (terminal.outcome != Outcome::PLAYER_VICTORY) return false;
-    GameContext post = battleEntry;
-    bool captured = false;
-    auto previous = g_onBattleExitPersistent;
-    g_onBattleExitPersistent = [&](const BattleContext &, GameContext &atRaw) {
-        out = e2cRawCanonicalVec(atRaw, path, room, encounter); captured = !out.empty();
-    };
-    terminal.exitBattle(post);
-    g_onBattleExitPersistent = previous;
-    return captured;
-}
-
-// Regression: the shadow projection must remain equivalent to an independently
-// captured E2c RAW boundary from a real exitBattle call.  Cover every transfer
-// family that is easy to omit when BattleContext::exitBattle changes.
-static int e2cRawProjectionParityTest() {
-    auto fail = [](const std::string &why) {
-        std::cerr << "e2c_projection_parity FAIL: " << why << '\n'; return 1;
-    };
-    GameContext entry(CharacterClass::IRONCLAD, 0xE2C2026u, 0);
-    // The production run has a post-battle continuation installed.  The
-    // fixture intentionally stops at the RAW hook, so a no-op keeps the
-    // canonical exitBattle call valid without generating rewards.
-    entry.regainControlAction = [](GameContext &) {};
-    entry.act = 2; entry.floorNum = 23; entry.curRoom = Room::ELITE;
-    entry.curHp = 20; entry.maxHp = 91; entry.gold = 101; entry.potionChance = 37;
-    entry.relics.add({RelicId::MEAT_ON_THE_BONE, 0});
-    entry.relics.add({RelicId::HAPPY_FLOWER, 1});
-    entry.relics.add({RelicId::NEOWS_LAMENT, 3});
-    entry.relics.add({RelicId::LIZARD_TAIL, 1});
-    entry.relics.add({RelicId::POTION_BELT, 0});
-    entry.potionCapacity = 5;
-    entry.potionCount = 2;
-    entry.potions[0] = Potion::BLOOD_POTION;
-    entry.potions[1] = Potion::DEXTERITY_POTION;
-    for (int i = 2; i < 5; ++i) entry.potions[i] = Potion::EMPTY_POTION_SLOT;
-
-    BattleContext terminal;
-    terminal.init(entry, MonsterEncounter::GREMLIN_NOB);
-    terminal.outcome = Outcome::PLAYER_VICTORY;
-    terminal.player.curHp = 20; terminal.player.maxHp = 91; terminal.player.gold = 137;
-    terminal.potionCapacity = 5; terminal.potionCount = 2;
-    terminal.potions[0] = Potion::STRENGTH_POTION;
-    terminal.potions[1] = Potion::FIRE_POTION;
-    for (int i = 2; i < 5; ++i) terminal.potions[i] = Potion::EMPTY_POTION_SLOT;
-    terminal.player.happyFlowerCounter = 2;
-    terminal.player.setHasRelic<RelicId::LIZARD_TAIL>(false); // consumed in this terminal state
-
-    PathHistory path;
-    std::vector<float> projected;
-    if (!e2cProjectTerminalRaw(entry, path, Room::ELITE, MonsterEncounter::GREMLIN_NOB, terminal, projected))
-        return fail("projection did not capture terminal victory");
-
-    // Canonical E2c capture: a separate entry copy takes the normal
-    // BattleContext::exitBattle path and is observed at the production hook.
-    std::vector<float> canonical;
-    GameContext actual = entry;
-    const auto previous = g_onBattleExitPersistent;
-    g_onBattleExitPersistent = [&](const BattleContext &, GameContext &atRaw) {
-        canonical = e2cRawCanonicalVec(atRaw, path, Room::ELITE, MonsterEncounter::GREMLIN_NOB);
-    };
-    terminal.exitBattle(actual);
-    g_onBattleExitPersistent = previous;
-    if (canonical.empty() || projected.size() != canonical.size()) return fail("canonical capture shape");
-    for (size_t i = 0; i < projected.size(); ++i)
-        if (projected[i] != canonical[i]) return fail("projected vector differs at feature " + e2cRawCanonicalNames()[i]);
-
-    const auto &idx = e2cRawIdxMap();
-    const auto require = [&](const std::string &name, float expected) {
-        const auto it = idx.find(name);
-        return it != idx.end() && projected[it->second] == expected;
-    };
-    // HP includes Burning Blood then Meat on the Bone healing; max HP/gold and
-    // potion slots/count/chance arrive from the terminal BattleContext.
-    if (!require("curHp", 38) || !require("maxHp", 91) || !require("gold", 137) ||
-        !require("potionCount", 2) || !require("potionCapacity", 5) || !require("potionChance", 37) ||
-        !require("pot" + std::to_string((int)Potion::STRENGTH_POTION), 1) ||
-        !require("pot" + std::to_string((int)Potion::FIRE_POTION), 1))
-        return fail("HP, gold, or potion transfer");
-    const int happy = (int)RelicId::HAPPY_FLOWER, lizard = (int)RelicId::LIZARD_TAIL, lament = (int)RelicId::NEOWS_LAMENT;
-    if (!require("relic_has_" + std::to_string(happy), 1) || !require("relic_data_" + std::to_string(happy), 2) ||
-        !require("relic_has_" + std::to_string(lizard), 1) || !require("relic_data_" + std::to_string(lizard), 0) ||
-        !require("relic_has_" + std::to_string(lament), 1) || !require("relic_data_" + std::to_string(lament), 2) ||
-        !require("room_type", 1) || !require("encounter_id", (float)(int)MonsterEncounter::GREMLIN_NOB))
-        return fail("relic counter, room, or encounter transfer");
-    std::cout << "e2c_projection_parity PASS features=" << projected.size() << " max_abs_error=0\n";
-    return 0;
-}
-
+// E2c producer orchestration stays in the driver; capture state and validation
+// implementation live in one_combat/e2c_capture.
 static void e2cGen(int nSeeds, int sims, int asc, const std::string &outfile,
                    long long seedOffset = 0) {
     trainingCampaignStart();
-    for (auto &row : g_e2cCounts) for (auto &v : row) v = 0;
+    one_combat::resetE2cAccounting();
     const bool append = seedOffset > 0;
     std::cout << "e2cgen    seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
               << "  sims " << sims << "  asc " << asc
               << (append ? "  [append]" : "") << "  threads " << numThreads()
               << "  -> " << outfile << "\n";
     std::ofstream f(outfile, append ? std::ios::app : std::ios::out);
-    if (f.tellp() == 0) { f << e2cHeader(); f.flush(); }
+    if (f.tellp() == 0) { f << one_combat::e2cHeader(); f.flush(); }
     auto t0 = std::chrono::steady_clock::now();
     long long rowCount = 0; int done = 0;
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
         runFullRunOOC((std::uint64_t)(seedOffset + s), sims, asc, false, true, /*e2cCapture=*/true);
-        std::string rows = std::move(t_e2cRows);
+        std::string rows = one_combat::takeE2cRows();
         #pragma omp critical(e2c_write)
         {
             f << rows; f.flush();
@@ -4428,11 +4093,12 @@ static void e2cGen(int nSeeds, int sims, int asc, const std::string &outfile,
                 "branches=%d health_failures=%d rows=%lld output=%s\n",
                 nSeeds, nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
                 g_trainingInvalidBranches.load(), g_trainingHealthFailures.load(), rowCount, outfile.c_str());
+    const auto accounting = one_combat::e2cAccounting();
     for (int i = 0; i < 3; ++i)
         std::printf("e2c accounting room=%s eligible=%lld raw=%lld post=%lld pairs=%lld raw_only=%lld post_only=%lld\n",
                     i == 0 ? "MONSTER" : i == 1 ? "ELITE" : "BOSS",
-                    g_e2cCounts[i][0].load(), g_e2cCounts[i][1].load(), g_e2cCounts[i][2].load(),
-                    g_e2cCounts[i][3].load(), g_e2cCounts[i][4].load(), g_e2cCounts[i][5].load());
+                    accounting.counts[i][0], accounting.counts[i][1], accounting.counts[i][2],
+                    accounting.counts[i][3], accounting.counts[i][4], accounting.counts[i][5]);
     writeTrainingProvenance(outfile, "e2cgen", nSeeds,
                             nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
                             g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc);
@@ -5255,41 +4921,6 @@ static void fairGen(int nSeeds, int sims, int asc, double epsilon,
 // STS_DATAGEN_GATES, …): their inner probe battles would fire the leaf hook
 // and pollute the dataset with non-live decision states.
 // ---------------------------------------------------------------------------
-// E2c native-model parity validation.  This retained command is independent
-// of the retired Searcher3 leaf diagnostics and does not run a combat.
-// ---------------------------------------------------------------------------
-static int runwinParity(const std::string &fixture) {
-    if (!g_e2cRawNet.ok) { std::cerr << "runwinparity requires STS_RUNWIN_SHADOW_MODEL\n"; return 2; }
-    std::ifstream in(fixture); std::string header;
-    if (!std::getline(in, header)) { std::cerr << "runwinparity: cannot read " << fixture << '\n'; return 2; }
-    const auto names = splitCsvNames(header); std::unordered_map<std::string, int> cols;
-    for (int i = 0; i < (int)names.size(); ++i) if (!cols.emplace(names[i], i).second) { std::cerr << "runwinparity: duplicate fixture column\n"; return 2; }
-    const auto expectedIt = cols.find("python_probability");
-    if (expectedIt == cols.end()) { std::cerr << "runwinparity: fixture needs python_probability\n"; return 2; }
-    // The fixture is a contract for the loaded model, not merely for the
-    // current canonical manifest.  A missing selected feature must be a hard
-    // failure: zero-filling silently turns a parity check into a false pass.
-    std::vector<int> modelCols; modelCols.reserve(g_e2cRawNet.featureNames.size());
-    for (const auto &name : g_e2cRawNet.featureNames) {
-        const auto it = cols.find(name);
-        if (it == cols.end()) { std::cerr << "runwinparity: fixture missing model feature " << name << '\n'; return 2; }
-        modelCols.push_back(it->second);
-    }
-    std::string line; int rows = 0; double maxError = 0;
-    while (std::getline(in, line)) {
-        if (line.empty()) continue; const auto fields = splitCsvNames(line);
-        if (fields.size() != names.size()) { std::cerr << "runwinparity: malformed row\n"; return 2; }
-        std::vector<float> raw(e2cRawCanonicalNames().size(), 0.f);
-        for (int i = 0; i < (int)g_e2cRawNet.sel.size(); ++i)
-            raw[g_e2cRawNet.sel[i]] = std::strtof(fields[modelCols[i]].c_str(), nullptr);
-        const double got = g_e2cRawNet.predict(raw), expected = std::strtod(fields[expectedIt->second].c_str(), nullptr);
-        if (!std::isfinite(got)) { std::cerr << "runwinparity: invalid native probability\n"; return 2; }
-        maxError = std::max(maxError, std::abs(got - expected)); ++rows;
-    }
-    std::cout << "runwinparity rows=" << rows << " max_abs_error=" << std::setprecision(10) << maxError << '\n';
-    return rows > 0 && maxError <= 1e-4 ? 0 : 1;
-}
-
 static void particleLeafProbe(int nSeeds, int sims, int asc,
                               const std::string &outFile, long long seedOffset = 0) {
     search::g_richCombatFeatures = true;
@@ -8602,9 +8233,8 @@ int main(int argc, char **argv) {
             std::cerr << "[STS_WIN_NET] failed to load win tree: " << path << "\n";
     }
     if (const char *d = std::getenv("STS_RUNWIN_SHADOW_MODEL")) {
-        g_e2cModelPath = d;
-        if (!g_e2cRawNet.load(g_e2cModelPath, e2cRawIdxMap(), "E2cRawNet"))
-            std::cerr << "[STS_RUNWIN_SHADOW_MODEL] failed to load E2c RAW critic: " << g_e2cModelPath << "\n";
+        if (!one_combat::loadE2cRawModel(d))
+            std::cerr << "[STS_RUNWIN_SHADOW_MODEL] failed to load E2c RAW critic: " << d << "\n";
     }
     {
         // The baseline is serverless by default. Set STS_NATIVE_OOC=0 only
@@ -9747,10 +9377,10 @@ int main(int argc, char **argv) {
 
     } else if (mode == "runwinparity") {
         const std::string fixture = argc > 2 ? argv[2] : "tools/runwin_e2c_synthetic_parity.csv";
-        return runwinParity(fixture);
+        return one_combat::runwinParity(fixture);
 
     } else if (mode == "e2cprojectiontest") {
-        return e2cRawProjectionParityTest();
+        return one_combat::e2cRawProjectionParityTest();
 
     } else if (mode == "particle_leaf_probe") {
         int nSeeds = argc > 2 ? std::stoi(argv[2]) : 4;
