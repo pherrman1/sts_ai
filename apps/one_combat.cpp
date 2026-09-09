@@ -973,11 +973,6 @@ static std::string actFightProbeCheckpointSimsCsv() {
 // deck-STRENGTH scalar (predicted final floor) to MODULATE the heuristic's
 // aggression: a strong deck routes harder into elites/fights (farm relics while
 // you can), a weak deck routes to rest/shop/event (recover). One V query/floor.
-int    g_vPath  = 0;      // STS_VPATH=1: enable V-strength path modulation
-double g_vPathK = 0.4;    // STS_VPATH_K: modulation gain (0=off .. ~1 strong)
-// aggression for the current map decision, in [-1,+1]; set once per chooseMapAction
-// call, read by roomValue. 0 = neutral (= plain heuristic).
-thread_local double t_pathAggr = 0.0;
 // Act boss floors (finalFloor at which each act's boss sits) — the deck-strength
 // anchor: predFloor - bossFloor[act] = how comfortably you clear this act.
 static int bossFloorForAct(int act) { return act <= 1 ? 17 : act == 2 ? 34 : 50; }
@@ -1332,26 +1327,7 @@ double vStateWin(GameContext &gc) {
     return v;
 }
 int g_pathV  = 0;   // STS_PATH_V:  model-driven pathing
-int g_pathGraph = 0; // STS_PATH_GRAPH: full-map graph NN child scoring
-int g_pathAction = 0;// STS_PATH_ACTION: direct paired route-action NN
-int g_pathActionMax = -1;
-double g_pathActionMargin = 0.0;
-bool g_pathActionTrace = false;
-thread_local int t_pathActionUses = 0;
 int g_eventV = 0;   // STS_EVENT_V: model-driven events
-// ---------------------------------------------------------------------------
-// REST-SITE VALUE POLICY: use the same deck-aware GBM (curHp is a live feature)
-// to decide heal-vs-upgrade by their effect on expected final floor.
-//   heal  value = V(deck, hp+restHeal) - V(deck, hp)              (server "H")
-//   upgrade target = argmax V(deck) - V(deck-card) over deck cards (server "U")
-// Rest iff heal value >= g_restVThreshold, else upgrade the deck's most-valued
-// card. Only overrides the genuine heal-vs-smith choice (both available); every
-// other campfire option (keys/dig/lift/toke) is left to the default agent so
-// this stays a clean A/B of exactly the heal/upgrade tradeoff.
-// ---------------------------------------------------------------------------
-double g_restVThreshold = 0.15;  // heal iff healGain (final-floor units) >= this;
-                                        // swept best band 0.1-0.25 @512 seeds (STS_REST_V_THRESH to override)
-
 // send an already-built request line, return the response line (empty on error)
 std::string vTransact(const std::string &req) {
     int fd = vConnect();
@@ -1364,25 +1340,6 @@ std::string vTransact(const std::string &req) {
         resp.append(buf, k);
     }
     return resp;
-}
-
-// V(deck, hp+healAmt) - V(deck, hp), in expected-final-floor units (0 on error)
-double vQueryHeal(GameContext &gc, int healAmt) {
-    std::string req = "H;" + std::to_string(healAmt) + ";"
-                    + vFeatCsv(gc) + "\n";
-    std::string resp = vTransact(req);
-    return resp.empty() ? 0.0 : std::atof(resp.c_str());
-}
-
-// index (into candIds) of the deck's most-valued card to upgrade (0 on error)
-int vQueryUpgrade(GameContext &gc, const std::vector<int> &candIds) {
-    std::string req = "U;";
-    for (size_t i = 0; i < candIds.size(); ++i) { if (i) req += ','; req += std::to_string(candIds[i]); }
-    req += ";" + vFeatCsv(gc) + "\n";
-    std::string resp = vTransact(req);
-    int idx = resp.empty() ? 0 : std::atoi(resp.c_str());
-    if (idx < 0 || idx >= (int)candIds.size()) idx = 0;
-    return idx;
 }
 
 // Marginal V(deck+card)-V(deck) for each card reward candidate (empty on error).
@@ -1484,29 +1441,6 @@ int vQueryUpgradeWin(GameContext &gc, const std::vector<int> &candIds, double *g
     if (idx < 0 || idx >= (int)candIds.size()) idx = 0;
     if (gain) *gain = g;
     return idx;
-}
-
-// Direct paired counterfactual rest-vs-smith model. Returns false when no model is
-// deployed (server replies NA), preserving the proven V_win marginal fallback.
-bool vQueryRestCounterfactual(GameContext &gc, double *delta) {
-    if (g_nativeOoc) return false;
-    const std::string resp = vTransact("RC;" + vFeatCsv(gc) + "\n");
-    double d = 0.0;
-    if (resp.empty() || resp.rfind("NA", 0) == 0
-        || std::sscanf(resp.c_str(), "%lf", &d) != 1 || !std::isfinite(d)) return false;
-    if (delta) *delta = d;
-    return true;
-}
-
-// Deduped ids of the deck's upgradeable cards (candidates for a smith).
-std::vector<int> upgradeableIds(GameContext &gc) {
-    std::vector<int> ids;
-    for (int i = 0; i < gc.deck.size(); ++i) {
-        if (!gc.deck.cards[i].canUpgrade()) continue;
-        const int id = (int)gc.deck.cards[i].getId();
-        if (std::find(ids.begin(), ids.end(), id) == ids.end()) ids.push_back(id);
-    }
-    return ids;
 }
 
 // Handle a REST_ROOM screen by win-rate: rest iff heal raises P(win) more than the
@@ -1659,7 +1593,7 @@ static RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV
         t_e2c = &e2c;
         t_e2cRows.clear();
     }
-    t_pathActionUses = 0;
+    one_combat::resetPathPolicyState();
     t_actFightProbeDecisionIdx = 0;
     t_curPath = &path;
     t_tokCheckPending = g_oocStrategicTokCheck;
@@ -8986,10 +8920,7 @@ int main(int argc, char **argv) {
         search::g_useTT = std::atoi(d) != 0;
         if (search::g_useTT) std::cout << "[transposition table ON]\n";
     }
-    if (const char *d = std::getenv("STS_REST_V_THRESH")) {   // rest-site heal-gain threshold
-        g_restVThreshold = std::atof(d);
-        std::cout << "[rest-V heal threshold = " << g_restVThreshold << "]\n";
-    }
+    one_combat::configureRestVPolicyFromEnvironment();
     if (const char *d = std::getenv("STS_REST_WIN")) {        // win-rate rest policy (heal vs upgrade by P(win))
         g_restWin = std::atoi(d) != 0;
         if (g_restWin) std::cout << "[win-rate rest policy ON]\n";
@@ -9242,27 +9173,7 @@ int main(int argc, char **argv) {
         g_pathV = std::atoi(d) != 0;
         if (g_pathV) std::cout << "[model-driven pathing via V_win ON]\n";
     }
-    if (const char *d = std::getenv("STS_PATH_GRAPH")) {    // graph NN scores each legal child subtree
-        g_pathGraph = std::atoi(d) != 0;
-        if (g_pathGraph) {
-            g_pathV = 1;
-            std::cout << "[model-driven pathing via full-map graph NN ON]\n";
-        }
-    }
-    if (const char *d = std::getenv("STS_PATH_ACTION")) {   // direct paired route-action model
-        g_pathAction = std::atoi(d) != 0;
-        if (const char *m = std::getenv("STS_PATH_ACTION_MAX"))
-            g_pathActionMax = std::atoi(m);
-        if (const char *m = std::getenv("STS_PATH_ACTION_MARGIN"))
-            g_pathActionMargin = std::atof(m);
-        g_pathActionTrace = std::getenv("STS_PATH_ACTION_TRACE")
-                         && std::atoi(std::getenv("STS_PATH_ACTION_TRACE")) != 0;
-        if (g_pathAction) {
-            g_pathV = 1;
-            std::cout << "[model-driven pathing via paired route-action NN ON: max="
-                      << g_pathActionMax << " margin=" << g_pathActionMargin << "]\n";
-        }
-    }
+    if (one_combat::configurePathActionPolicyFromEnvironment()) g_pathV = 1;
     if (const char *d = std::getenv("STS_EVENT_V")) {       // model-driven event choices
         g_eventV = std::atoi(d) != 0;
         if (g_eventV) std::cout << "[model-driven events via V_win ON]\n";
@@ -9441,12 +9352,7 @@ int main(int argc, char **argv) {
         g_cardSkipThresh = std::atof(d);
         std::cout << "[card skip threshold = " << g_cardSkipThresh << "]\n";
     }
-    if (const char *d = std::getenv("STS_VPATH")) {          // V-strength path modulation (needs v_server)
-        g_vPath = std::atoi(d) != 0;
-        if (const char *k = std::getenv("STS_VPATH_K")) g_vPathK = std::atof(k);
-        if (g_vPath)
-            std::cout << "[V-informed pathing ON: k=" << g_vPathK << " (needs v_server on :5555)]\n";
-    }
+    one_combat::configureVPathPolicyFromEnvironment();
     if (const char *d = std::getenv("STS_DG_TEMP")) {         // datagen softmax temperature (card marginals)
         g_dgTemp = std::atof(d);
         std::cout << "[datagen softmax temp = " << g_dgTemp << "]\n";

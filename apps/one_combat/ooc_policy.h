@@ -58,9 +58,8 @@ extern bool g_restWin;
 extern thread_local const one_combat::PathHistory *t_curPath;
 extern thread_local one_combat::PathHistory t_emptyPath;
 
-// The integration driver owns configuration and model/transport state. The
-// live fallback policies consume these concrete seams without depending on
-// driver-owned policy functions.
+// Cross-module run configuration/state. These remain driver-owned because the
+// retained run loop, strategic generators, or both also consume them.
 extern bool g_collectKeys;
 extern bool g_cardWin;
 extern double g_cardWinSkip;
@@ -71,16 +70,6 @@ extern int g_bossV;
 extern double g_bossVW;
 extern int g_bossDraftRows;
 extern int g_neowV;
-extern int g_pathGraph;
-extern int g_pathAction;
-extern int g_pathActionMax;
-extern double g_pathActionMargin;
-extern bool g_pathActionTrace;
-extern thread_local int t_pathActionUses;
-extern double g_restVThreshold;
-extern int g_vPath;
-extern double g_vPathK;
-extern thread_local double t_pathAggr;
 extern bool g_actFightProbeTrace;
 extern thread_local int t_actFightProbeDecisionIdx;
 extern thread_local int t_actFightProbeActionIdx;
@@ -100,9 +89,9 @@ struct TokState {
     int pt[8][2];
 };
 
-// These helpers stay owned by the driver because buildTokState is coupled to
-// its diagnostic/thread-local token parity hook.  They are the smallest
-// concrete seams needed by the live policy implementation.
+// Shared live/driver seams. These are used by retained strategic generators or
+// driver diagnostics as well as by the moved fallback policies. buildTokState
+// additionally remains coupled to the driver's token-parity hook.
 std::vector<float> richFeatureVec(GameContext &gc);
 std::string vFeatCsv(const GameContext &gc);
 std::string vTransact(const std::string &request);
@@ -116,15 +105,11 @@ std::string mapSpecialCsv(const GameContext &gc);
 int nativeWinCardPick(GameContext &gc, int rIdx);
 bool winNetOk();
 int rowsToHardFight(const GameContext &gc);
-int nativeFloorCardPick(GameContext &gc, int rIdx);
-double nativeFloorValue(GameContext &gc);
-std::string nativeShopPlan(GameContext &gc);
-double vQueryHeal(GameContext &gc, int healAmt);
-int vQueryUpgrade(GameContext &gc, const std::vector<int> &candIds);
+// Driver-owned model seams. The native branches directly use the loaded
+// compact-tree objects (g_winNet/g_floorNet), native shop planner, and rich
+// feature index; moving them would broaden the model-loading boundary.
 double vQueryHealWin(GameContext &gc, int healAmt);
 int vQueryUpgradeWin(GameContext &gc, const std::vector<int> &candIds, double *gain);
-bool vQueryRestCounterfactual(GameContext &gc, double *delta);
-std::vector<int> upgradeableIds(GameContext &gc);
 int vQueryRemove(GameContext &gc, const std::vector<int> &candIds);
 std::string vQueryShop(GameContext &gc);
 
@@ -147,6 +132,10 @@ bool restVPolicy(GameContext &);
 void upgradeSelectVPolicy(GameContext &);
 void removeSelectVPolicy(GameContext &);
 void neowVPolicy(GameContext &);
+bool configurePathActionPolicyFromEnvironment();
+void configureVPathPolicyFromEnvironment();
+void configureRestVPolicyFromEnvironment();
+void resetPathPolicyState();
 
 void strategicCands(const GameContext &, const GameAction &,
                     int &, int &, int &, int &, int &, int &, int &);

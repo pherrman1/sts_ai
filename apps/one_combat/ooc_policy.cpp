@@ -20,6 +20,68 @@ namespace one_combat {
 
 static double sigmoid(double z) { return 1.0 / (1.0 + std::exp(-z)); }
 
+// These settings and counters belong to the fallback path policy.  The driver
+// only supplies environment configuration and resets the per-run state through
+// the narrow entry points below; the policy implementation owns the state.
+static int g_pathGraph = 0;
+static int g_pathAction = 0;
+static int g_pathActionMax = -1;
+static double g_pathActionMargin = 0.0;
+static bool g_pathActionTrace = false;
+static thread_local int t_pathActionUses = 0;
+static int g_vPath = 0;
+static double g_vPathK = 0.4;
+static thread_local double t_pathAggr = 0.0;
+static double g_restVThreshold = 0.15;
+
+bool configurePathActionPolicyFromEnvironment() {
+    bool enabled = false;
+    if (const char *d = std::getenv("STS_PATH_GRAPH")) {
+        g_pathGraph = std::atoi(d) != 0;
+        if (g_pathGraph) {
+            enabled = true;
+            std::cout << "[model-driven pathing via full-map graph NN ON]\n";
+        }
+    }
+    if (const char *d = std::getenv("STS_PATH_ACTION")) {
+        g_pathAction = std::atoi(d) != 0;
+        if (const char *m = std::getenv("STS_PATH_ACTION_MAX"))
+            g_pathActionMax = std::atoi(m);
+        if (const char *m = std::getenv("STS_PATH_ACTION_MARGIN"))
+            g_pathActionMargin = std::atof(m);
+        g_pathActionTrace = std::getenv("STS_PATH_ACTION_TRACE")
+                         && std::atoi(std::getenv("STS_PATH_ACTION_TRACE")) != 0;
+        if (g_pathAction) {
+            enabled = true;
+            std::cout << "[model-driven pathing via paired route-action NN ON: max="
+                      << g_pathActionMax << " margin=" << g_pathActionMargin << "]\n";
+        }
+    }
+    return enabled;
+}
+
+void configureVPathPolicyFromEnvironment() {
+    if (const char *d = std::getenv("STS_VPATH")) {
+        g_vPath = std::atoi(d) != 0;
+        if (const char *k = std::getenv("STS_VPATH_K")) g_vPathK = std::atof(k);
+        if (g_vPath)
+            std::cout << "[V-informed pathing ON: k=" << g_vPathK
+                      << " (needs v_server on :5555)]\n";
+    }
+}
+
+void configureRestVPolicyFromEnvironment() {
+    if (const char *d = std::getenv("STS_REST_V_THRESH")) {
+        g_restVThreshold = std::atof(d);
+        std::cout << "[rest-V heal threshold = " << g_restVThreshold << "]\n";
+    }
+}
+
+void resetPathPolicyState() {
+    t_pathActionUses = 0;
+    t_pathAggr = 0.0;
+}
+
 bool oocActionNNPolicy(GameContext &gc) {
     if (!g_oocActionNN || gc.act < 1 || gc.act > 3) return false;
     const auto actions = search::GameAction::getAllActionsInState(gc);
@@ -886,6 +948,51 @@ bool oocMapRouteSearchPolicy(GameContext &gc, const search::ScumSearchAgent2 &ag
 // Live fallback policy family.  Model loading, feature construction, and the
 // transport seams remain driver-owned; these functions own the decisions made
 // by the ordinary OOC chain.
+// V(deck, hp+healAmt) - V(deck, hp), in expected-final-floor units (0 on error).
+static double vQueryHeal(GameContext &gc, int healAmt) {
+    std::string req = "H;" + std::to_string(healAmt) + ";"
+                    + vFeatCsv(gc) + "\n";
+    const std::string resp = vTransact(req);
+    return resp.empty() ? 0.0 : std::atof(resp.c_str());
+}
+
+// Index (into candIds) of the deck's most-valued card to upgrade (0 on error).
+static int vQueryUpgrade(GameContext &gc, const std::vector<int> &candIds) {
+    std::string req = "U;";
+    for (size_t i = 0; i < candIds.size(); ++i) {
+        if (i) req += ',';
+        req += std::to_string(candIds[i]);
+    }
+    req += ";" + vFeatCsv(gc) + "\n";
+    const std::string resp = vTransact(req);
+    int idx = resp.empty() ? 0 : std::atoi(resp.c_str());
+    if (idx < 0 || idx >= (int)candIds.size()) idx = 0;
+    return idx;
+}
+
+// Direct paired counterfactual rest-vs-smith model. Returns false when no
+// server-side model is deployed, preserving the win-rate marginal fallback.
+static bool vQueryRestCounterfactual(GameContext &gc, double *delta) {
+    if (g_nativeOoc) return false;
+    const std::string resp = vTransact("RC;" + vFeatCsv(gc) + "\n");
+    double d = 0.0;
+    if (resp.empty() || resp.rfind("NA", 0) == 0
+        || std::sscanf(resp.c_str(), "%lf", &d) != 1 || !std::isfinite(d)) return false;
+    if (delta) *delta = d;
+    return true;
+}
+
+// Deduped ids of the deck's upgradeable cards (candidates for a smith).
+static std::vector<int> upgradeableIds(GameContext &gc) {
+    std::vector<int> ids;
+    for (int i = 0; i < gc.deck.size(); ++i) {
+        if (!gc.deck.cards[i].canUpgrade()) continue;
+        const int id = (int)gc.deck.cards[i].getId();
+        if (std::find(ids.begin(), ids.end(), id) == ids.end()) ids.push_back(id);
+    }
+    return ids;
+}
+
 void serverCardRewardPolicy(GameContext &gc) {
     using RT = search::GameAction::RewardsActionType;
     auto &r = gc.info.rewardsContainer;
