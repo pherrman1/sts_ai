@@ -58,6 +58,11 @@ class SemanticModelTests(unittest.TestCase):
         self.assertEqual(model.MODEL_PARAMS["random_state"], 20260910)
         self.assertEqual(model.MODEL_PARAMS["objective"], "reg:squarederror")
 
+    def test_evaluation_rejects_changed_semantic_encoder(self):
+        frozen = {"semantic_encoder": {"sha256": "0" * 64}}
+        with self.assertRaisesRegex(ValueError, "semantic encoder SHA256 differs"):
+            model.validate_frozen_encoder(frozen)
+
     def test_write_json_rejects_nonfinite_output(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "report.json"

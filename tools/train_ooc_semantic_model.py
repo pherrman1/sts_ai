@@ -385,6 +385,15 @@ def load_frozen_model(path: Path, expected_sha: str):
     return model
 
 
+def validate_frozen_encoder(features: dict[str, Any]) -> None:
+    encoder = features.get("semantic_encoder")
+    require(isinstance(encoder, dict) and isinstance(encoder.get("sha256"), str),
+            "feature manifest lacks frozen semantic encoder SHA256")
+    current_sha = sha256(Path(probe.__file__).resolve())
+    require(current_sha == encoder["sha256"],
+            "semantic encoder SHA256 differs from frozen feature manifest")
+
+
 def ranking_with_slices(rows: list[dict[str, Any]], predictions: dict[str, np.ndarray]) -> dict[str, Any]:
     groups: dict[tuple[int, int], list[int]] = defaultdict(list)
     for index, row in enumerate(rows):
@@ -491,6 +500,7 @@ def evaluate_artifacts(rows: list[dict[str, Any]], corpus: dict[str, Any], model
     features = json.loads((model_dir / report["training"]["feature_manifest"]).read_text(encoding="utf-8"))
     require(report["model_family"] == MODEL_VERSION and features["model_family"] == MODEL_VERSION,
             "wrong frozen model family")
+    validate_frozen_encoder(features)
     require(report["training"]["decision_count"] == 1024 and report["training"]["row_count"] == 7652,
             "training artifact is not the required 1,024-decision corpus")
     feature_path = model_dir / report["training"]["feature_manifest"]

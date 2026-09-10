@@ -6337,9 +6337,9 @@ model training was changed.
   Descriptive TEST act/room/encounter slices are retained in the full report;
   no encounter-specific conclusion is made from sparse source support.
 - **Speed/artifacts:** batch-1 CPU medians/p95 are 0.182/0.248ms survival,
-  0.176/0.234ms winning HP, and 0.175/0.234ms loss severity. Models and
-  predictions remain external: [full report](../../build/semantic-confirmation-a6c2abb/evaluator-v2/manifest.json),
-  model/prediction hashes and sizes are in the compact packet below.
+  0.176/0.234ms winning HP, and 0.175/0.234ms loss severity. Full models and
+  predictions remain external and are not committed; their hashes and sizes
+  are in the [compact evidence packet](evidence/semantic_combat_evaluator_2026-09-10.json).
 - **Decision:** **COMBAT PREDICTOR PROMISING — LOSS TAIL INCONCLUSIVE**. The
   result supports designing a later simulation-replacement experiment, not
   deployment, Silver replacement, more labels, or gameplay qualification.

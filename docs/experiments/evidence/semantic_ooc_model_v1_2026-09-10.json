@@ -61,6 +61,16 @@
     "non_compound": {"decisions": 116, "semantic_pairwise": 0.5559495550, "primitive_pairwise": 0.4862219885, "semantic_mean_regret": 0.0360906743, "primitive_mean_regret": 0.0415354176},
     "unseen_semantic_features": {"distinct_categorical": 13, "total_mentions": 20, "numeric": 0}
   },
+  "preserved_artifacts": {
+    "path": "/home/philippherrmann/sts_sweep/preserved/semantic-ooc-model-v1-2026-09-10",
+    "files": {
+      "semantic_model.json": "919cdb9af83c8980f2348cf6fc2328b6b4dd75f457ae2ebb3c5395357a5c85ee",
+      "primitive_control.json": "e569fdf06336fca012a9e2e7c95c6f5039d63aaaca2f86f48797174b7de83242",
+      "feature_manifest.json": "eb76069552fea6e3f9badf5fb427fa92c0bbf858ec2ad7d1f432cdd471c90361",
+      "training_report.json": "9d8176f337a83d5065da153216cb4b41b9238cae5005dc22ebedad166f2abd48",
+      "evaluation_report.json": "edb214330b590b497eabe7a377929d4b14315933d07b2795aa8789b9e2818f45"
+    }
+  },
   "classification": "SEMANTIC MODEL V1 PASS",
   "classification_scope": "Frozen offline scorer is good enough for a separately controlled runtime-integration study; no gameplay improvement or production compatibility claim. Compound and event slices remain small/noisy and require follow-up review."
 }
