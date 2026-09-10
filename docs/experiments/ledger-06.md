@@ -6230,3 +6230,70 @@ model training was changed.
   aggregate metrics, native-trace reuse links, criterion and limitations. Raw
   artifacts remain in `build/final-layout-evidence/` in the task checkout.
   Subsequent commits record evidence only and do not change measured sources.
+
+## §218 Fresh semantic confirmation and observational combat labels (2026-09-10)
+
+- **Question/protocol:** confirm the development probe on fresh seeds
+  992000–993023: 1,024 complete source decisions, 64 shards of 16. Capture all
+  sources before the distribution gate; evaluate each semantic branch once,
+  emitting semantic and combat sidecars from the same fight. Ordinary
+  project-fair Silver exact-10k private roots, H=1, future0, allocated32768,
+  exploration25/25, widening3.7028/.52389, no SH/pruning/learned guidance/adaptive.
+- **Freeze:** merged instrumentation [PR149](https://github.com/pherrman1/sts_ai/pull/149),
+  producer `a6c2abbc9db542ea1fc8933087f81c1de96c4f8a`; Release executable
+  `ea86565cfedb44bd2d1c1b130b130aa74f8e376fcf9fbf7b393eca584662d45c`.
+  Teacher and all three model hashes match the accepted handoff. The producer
+  was exported with pinned dependencies and built once on GCP `sts-test`;
+  all 2,468 source hashes, executable and teacher remained unchanged afterward.
+  Probe encoders/hyperparameters were frozen before labels: 160 depth3 trees,
+  eta0.05, deterministic grouped5-fold CV, 5,000 paired bootstrap replicates.
+  The prior128 development groups were not pooled or recollected.
+- **Corpus/integrity:** 1,024 decisions, 7,652 semantic actions and 7,652 combat
+  rows; all64 capture/semantic/combat shard validations pass. Zero semantic
+  quarantines, replay/key/sibling/future/health/accounting failures, duplicate
+  branch identities, or feature/formula/provenance failures. Families:
+  REWARDS765, CAMPFIRE76, SHOP56, EVENT68, TREASURE35, BOSS_RELIC16, SELECTOR8;
+  25 effects,9 sources,127 compound-containing decisions. Median within-decision
+  Q range0.05360;60 truth-tied decisions, leaving964 pairwise-defined groups.
+- **Representation result:** state-only/primitive/semantic mean regret
+  0.036945/0.028932/0.027379 and macro pairwise0.500000/0.530442/0.573233.
+  Semantic-minus-primitive regret−0.001553,95%CI[−0.004263,+0.001361];
+  pairwise+0.042791,[+0.029331,+0.056130]; top-or-tied+0.044922,
+  [+0.021484,+0.068359]. **SEMANTIC CONFIRMED**, explicitly scoped to this
+  frozen probe and natural reward-dominated mixture. Every leave-fold-out
+  aggregate preserves both favorable primary directions. The large REWARDS
+  family drives the ranking gain; nonreward superiority is unproven. No
+  numerical harm margin was supplied, so the uncertain regret interval is not
+  a formal noninferiority result. SHOP favors semantic on both point estimates
+  but both intervals cross zero; EVENT is an adverse uncertain slice. Compound
+  regret difference−0.010999,[−0.021706,−0.001858] is descriptive corroboration.
+- **Combat labels:** 7,599 valid,7,238 wins,361 true deaths,348 nonambiguous
+  deaths;53 escaped/invalid,0 turn-cap,13 ambiguous Awakened One deaths retaining
+  inherited V1 signed labels but excluded from nonambiguous support. No branch
+  lacks a combat row. Train/validation/test nonambiguous deaths255/45/48,
+  from50/12/10 source groups and23/10/9 encounters. **COMBAT LABELS ADEQUATE**
+  under the inherited row-count heuristic only: test's largest source provides
+  19/48 deaths and the largest three33/48. This is not an independent-sample
+  power calculation. No combat evaluator was trained.
+- **Cost:** 7,028,180,000 total Silver simulations =3,784,630,000 source capture
+  +1,698,650,000 source replay +1,544,900,000 semantic branches. Full corpus
+  process CPU54,345.99s (15.10h); sequential stage wall3,739.28s (62.32min),
+  with16 independent OMP=1 workers. Build/transfer/offline-analysis time is
+  excluded. Yield1.08876 combat rows/million full-pipeline simulations
+  (4.95307/million branch-only). **Zero additional Silver simulations for
+  combat-label capture**; every64-shard telemetry suffix matches its sidecar.
+- **Checks/limits:**12 focused Python tests and1/1 focused CTest pass;
+  independent tooling and interpretation reviews KEEP with the limits above.
+  Two orchestration launches failed before simulator execution (missing GNU
+  time, then JSON gate key normalization), contributing zero seeds/simulations;
+  both are preserved, corrected and refrozen without changing producer,
+  teacher, probe or captured source data. No completed shard was rerun.
+  Authoritative Linux GCC CI is recorded in the evidence PR; no production
+  model export/deployment or gameplay-policy qualification was attempted.
+- **Evidence:** [compact machine-readable packet](evidence/semantic_combat_confirmation_2026-09-10.json)
+  includes all family/compound/fold metrics, intervals, combat act/room/encounter
+  distributions, labels, split coverage, costs and hashes. Raw corpus archive
+  SHA256 `705bd2c970f52759dd7541052f56536eb5c53470aa0fe37b2674abdfd1ba7ec9`;
+  1,006 inventoried files verified after transfer. Raw artifacts remain under
+  GCP `runs/semantic-confirmation-a6c2abb/` and local
+  `build/semantic-confirmation-phase-b/`; bulk CSVs are not committed.

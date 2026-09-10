@@ -1,0 +1,3417 @@
+{
+  "additional_silver_simulations_for_combat_capture": 0,
+  "additional_simulations_basis": "Observational Phase-A OFF/ON parity and shared producer fight hook; each semantic branch evaluated once with simultaneous sidecar output; no second fight invocation for combat labels.",
+  "capture": {
+    "action_rows": 7652,
+    "actions_per_decision": {
+      "10": 2,
+      "11": 2,
+      "12": 5,
+      "13": 6,
+      "14": 5,
+      "15": 6,
+      "16": 7,
+      "17": 14,
+      "18": 15,
+      "19": 11,
+      "2": 92,
+      "20": 9,
+      "21": 14,
+      "22": 5,
+      "23": 1,
+      "24": 1,
+      "25": 3,
+      "26": 3,
+      "27": 2,
+      "28": 2,
+      "29": 1,
+      "3": 77,
+      "30": 1,
+      "31": 3,
+      "32": 2,
+      "33": 3,
+      "35": 2,
+      "36": 4,
+      "37": 4,
+      "39": 1,
+      "4": 48,
+      "40": 2,
+      "41": 1,
+      "42": 1,
+      "48": 2,
+      "5": 256,
+      "6": 216,
+      "7": 142,
+      "8": 40,
+      "9": 13
+    },
+    "compound_containing_decisions": 127,
+    "decisions": 1024,
+    "effects": {
+      "0": 1228,
+      "1": 979,
+      "10": 257,
+      "11": 98,
+      "12": 682,
+      "13": 31,
+      "14": 765,
+      "15": 35,
+      "16": 35,
+      "17": 73,
+      "18": 58,
+      "19": 2,
+      "2": 106,
+      "20": 3,
+      "22": 278,
+      "23": 46,
+      "24": 142,
+      "25": 56,
+      "26": 156,
+      "27": 48,
+      "28": 16,
+      "5": 2085,
+      "7": 35,
+      "8": 165,
+      "9": 273
+    },
+    "families": {
+      "BOSS_RELIC": 16,
+      "CAMPFIRE": 76,
+      "EVENT": 68,
+      "REWARDS": 765,
+      "SELECTOR": 8,
+      "SHOP": 56,
+      "TREASURE": 35
+    },
+    "sources": {
+      "0": 1192,
+      "1": 136,
+      "3": 522,
+      "4": 847,
+      "5": 347,
+      "6": 138,
+      "7": 4336,
+      "8": 70,
+      "9": 64
+    }
+  },
+  "cohort": {
+    "first_seed": 992000,
+    "last_seed": 993023,
+    "seeds_per_shard": 16,
+    "shards": 64,
+    "source_seeds": 1024
+  },
+  "combat": {
+    "branches_without_combat": {
+      "by_semantic_family": {},
+      "count": 0,
+      "reason": "No fight was captured; zero simulation cost is consistent with termination before combat.",
+      "reason_status": "Inference from H=1 producer contract; CSV has no explicit no-combat reason field.",
+      "zero_simulation_branches": 0
+    },
+    "classification": "COMBAT LABELS ADEQUATE",
+    "classification_rule": "Inherited screening heuristic: at least 30 valid nonambiguous test deaths and winners/nonambiguous deaths in all splits; not a power calculation.",
+    "counts": {
+      "ambiguous": 13,
+      "escaped": 53,
+      "invalid": 53,
+      "nonambiguous_deaths": 348,
+      "source_seeds": 1024,
+      "total": 7652,
+      "true_deaths": 361,
+      "turn_cap": 0,
+      "valid": 7599,
+      "wins": 7238
+    },
+    "distributions": {
+      "act": {
+        "1": {
+          "ambiguous": 0,
+          "escaped": 7,
+          "invalid": 7,
+          "nonambiguous_deaths": 141,
+          "source_seeds": 489,
+          "total": 3583,
+          "true_deaths": 141,
+          "turn_cap": 0,
+          "valid": 3576,
+          "wins": 3435
+        },
+        "2": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 150,
+          "source_seeds": 365,
+          "total": 2750,
+          "true_deaths": 150,
+          "turn_cap": 0,
+          "valid": 2750,
+          "wins": 2600
+        },
+        "3": {
+          "ambiguous": 13,
+          "escaped": 46,
+          "invalid": 46,
+          "nonambiguous_deaths": 57,
+          "source_seeds": 170,
+          "total": 1319,
+          "true_deaths": 70,
+          "turn_cap": 0,
+          "valid": 1273,
+          "wins": 1203
+        }
+      },
+      "encounter": {
+        "Automaton": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 26,
+          "source_seeds": 13,
+          "total": 121,
+          "true_deaths": 26,
+          "turn_cap": 0,
+          "valid": 121,
+          "wins": 95
+        },
+        "Awakened One": {
+          "ambiguous": 13,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 5,
+          "total": 30,
+          "true_deaths": 13,
+          "turn_cap": 0,
+          "valid": 30,
+          "wins": 17
+        },
+        "Blue Slaver": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 29,
+          "total": 197,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 197,
+          "wins": 197
+        },
+        "Book Of Stabbing": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 22,
+          "source_seeds": 31,
+          "total": 170,
+          "true_deaths": 22,
+          "turn_cap": 0,
+          "valid": 170,
+          "wins": 148
+        },
+        "Centurion And Healer": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 22,
+          "total": 185,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 185,
+          "wins": 185
+        },
+        "Champ": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 47,
+          "source_seeds": 16,
+          "total": 172,
+          "true_deaths": 47,
+          "turn_cap": 0,
+          "valid": 172,
+          "wins": 125
+        },
+        "Chosen": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 28,
+          "total": 218,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 218,
+          "wins": 218
+        },
+        "Chosen And Byrds": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 10,
+          "total": 56,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 56,
+          "wins": 56
+        },
+        "Collector": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 10,
+          "source_seeds": 15,
+          "total": 114,
+          "true_deaths": 10,
+          "turn_cap": 0,
+          "valid": 114,
+          "wins": 104
+        },
+        "Cultist": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 25,
+          "total": 160,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 160,
+          "wins": 160
+        },
+        "Cultist And Chosen": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 6,
+          "source_seeds": 16,
+          "total": 135,
+          "true_deaths": 6,
+          "turn_cap": 0,
+          "valid": 135,
+          "wins": 129
+        },
+        "Donu And Deca": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 2,
+          "source_seeds": 6,
+          "total": 47,
+          "true_deaths": 2,
+          "turn_cap": 0,
+          "valid": 47,
+          "wins": 45
+        },
+        "Exordium Thugs": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 4,
+          "source_seeds": 15,
+          "total": 99,
+          "true_deaths": 4,
+          "turn_cap": 0,
+          "valid": 99,
+          "wins": 95
+        },
+        "Exordium Wildlife": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 17,
+          "total": 148,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 148,
+          "wins": 148
+        },
+        "Four Shapes": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 3,
+          "source_seeds": 11,
+          "total": 80,
+          "true_deaths": 3,
+          "turn_cap": 0,
+          "valid": 80,
+          "wins": 77
+        },
+        "Giant Head": {
+          "ambiguous": 0,
+          "escaped": 3,
+          "invalid": 3,
+          "nonambiguous_deaths": 10,
+          "source_seeds": 18,
+          "total": 212,
+          "true_deaths": 10,
+          "turn_cap": 0,
+          "valid": 209,
+          "wins": 199
+        },
+        "Gremlin Gang": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 15,
+          "total": 87,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 87,
+          "wins": 87
+        },
+        "Gremlin Leader": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 16,
+          "source_seeds": 28,
+          "total": 119,
+          "true_deaths": 16,
+          "turn_cap": 0,
+          "valid": 119,
+          "wins": 103
+        },
+        "Gremlin Nob": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 7,
+          "source_seeds": 39,
+          "total": 283,
+          "true_deaths": 7,
+          "turn_cap": 0,
+          "valid": 283,
+          "wins": 276
+        },
+        "Hexaghost": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 26,
+          "source_seeds": 27,
+          "total": 244,
+          "true_deaths": 26,
+          "turn_cap": 0,
+          "valid": 244,
+          "wins": 218
+        },
+        "Jaw Worm": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 22,
+          "total": 130,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 130,
+          "wins": 130
+        },
+        "Jaw Worm Horde": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 10,
+          "total": 88,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 88,
+          "wins": 88
+        },
+        "LAGAVULIN_EVENT": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 4,
+          "source_seeds": 3,
+          "total": 9,
+          "true_deaths": 4,
+          "turn_cap": 0,
+          "valid": 9,
+          "wins": 5
+        },
+        "Lagavulin": {
+          "ambiguous": 0,
+          "escaped": 4,
+          "invalid": 4,
+          "nonambiguous_deaths": 20,
+          "source_seeds": 42,
+          "total": 335,
+          "true_deaths": 20,
+          "turn_cap": 0,
+          "valid": 331,
+          "wins": 311
+        },
+        "Large Slime": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 7,
+          "source_seeds": 24,
+          "total": 193,
+          "true_deaths": 7,
+          "turn_cap": 0,
+          "valid": 193,
+          "wins": 186
+        },
+        "Looter": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 30,
+          "total": 198,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 198,
+          "wins": 198
+        },
+        "Lots Of Slimes": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 13,
+          "total": 82,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 82,
+          "wins": 82
+        },
+        "MASKED_BANDITS_EVENT": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 7,
+          "total": 21,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 21,
+          "wins": 21
+        },
+        "MUSHROOMS_EVENT": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 1,
+          "total": 6,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 6,
+          "wins": 6
+        },
+        "MYSTERIOUS_SPHERE_EVENT": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 7,
+          "total": 23,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 23,
+          "wins": 23
+        },
+        "Maw": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 8,
+          "total": 47,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 47,
+          "wins": 47
+        },
+        "Nemesis": {
+          "ambiguous": 0,
+          "escaped": 6,
+          "invalid": 6,
+          "nonambiguous_deaths": 1,
+          "source_seeds": 10,
+          "total": 91,
+          "true_deaths": 1,
+          "turn_cap": 0,
+          "valid": 85,
+          "wins": 84
+        },
+        "Orb Walker": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 8,
+          "total": 43,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 43,
+          "wins": 43
+        },
+        "Red Slaver": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 11,
+          "total": 82,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 82,
+          "wins": 82
+        },
+        "Reptomancer": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 21,
+          "source_seeds": 13,
+          "total": 92,
+          "true_deaths": 21,
+          "turn_cap": 0,
+          "valid": 92,
+          "wins": 71
+        },
+        "Sentry And Sphere": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 6,
+          "source_seeds": 15,
+          "total": 81,
+          "true_deaths": 6,
+          "turn_cap": 0,
+          "valid": 81,
+          "wins": 75
+        },
+        "Shell Parasite": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 22,
+          "total": 160,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 160,
+          "wins": 160
+        },
+        "Shelled Parasite And Fungi": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 13,
+          "total": 77,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 77,
+          "wins": 77
+        },
+        "Slavers": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 16,
+          "source_seeds": 23,
+          "total": 220,
+          "true_deaths": 16,
+          "turn_cap": 0,
+          "valid": 220,
+          "wins": 204
+        },
+        "Slime Boss": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 19,
+          "source_seeds": 15,
+          "total": 128,
+          "true_deaths": 19,
+          "turn_cap": 0,
+          "valid": 128,
+          "wins": 109
+        },
+        "Small Slimes": {
+          "ambiguous": 0,
+          "escaped": 3,
+          "invalid": 3,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 26,
+          "total": 199,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 196,
+          "wins": 196
+        },
+        "Snake Plant": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 20,
+          "total": 159,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 159,
+          "wins": 159
+        },
+        "Snecko": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 15,
+          "total": 116,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 116,
+          "wins": 116
+        },
+        "Sphere And Two Shapes": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 11,
+          "total": 52,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 52,
+          "wins": 52
+        },
+        "Spheric Guardian": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 23,
+          "total": 206,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 206,
+          "wins": 206
+        },
+        "Spire Growth": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 11,
+          "total": 52,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 52,
+          "wins": 52
+        },
+        "The Guardian": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 51,
+          "source_seeds": 29,
+          "total": 312,
+          "true_deaths": 51,
+          "turn_cap": 0,
+          "valid": 312,
+          "wins": 261
+        },
+        "Three Byrds": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 20,
+          "total": 147,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 147,
+          "wins": 147
+        },
+        "Three Cultist": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 1,
+          "source_seeds": 18,
+          "total": 108,
+          "true_deaths": 1,
+          "turn_cap": 0,
+          "valid": 108,
+          "wins": 107
+        },
+        "Three Darklings": {
+          "ambiguous": 0,
+          "escaped": 37,
+          "invalid": 37,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 18,
+          "total": 156,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 119,
+          "wins": 119
+        },
+        "Three Louse": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 24,
+          "total": 138,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 138,
+          "wins": 138
+        },
+        "Three Sentries": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 3,
+          "source_seeds": 45,
+          "total": 260,
+          "true_deaths": 3,
+          "turn_cap": 0,
+          "valid": 260,
+          "wins": 257
+        },
+        "Three Shapes": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 10,
+          "total": 53,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 53,
+          "wins": 53
+        },
+        "Time Eater": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 15,
+          "source_seeds": 10,
+          "total": 106,
+          "true_deaths": 15,
+          "turn_cap": 0,
+          "valid": 106,
+          "wins": 91
+        },
+        "Transient": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 7,
+          "total": 49,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 49,
+          "wins": 49
+        },
+        "Two Fungi Beasts": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 27,
+          "total": 170,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 170,
+          "wins": 170
+        },
+        "Two Louse": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 22,
+          "total": 143,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 143,
+          "wins": 143
+        },
+        "Two Thieves": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 18,
+          "total": 165,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 165,
+          "wins": 165
+        },
+        "Writhing Mass": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 5,
+          "source_seeds": 8,
+          "total": 78,
+          "true_deaths": 5,
+          "turn_cap": 0,
+          "valid": 78,
+          "wins": 73
+        }
+      },
+      "roomClass": {
+        "BOSS": {
+          "ambiguous": 13,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 196,
+          "source_seeds": 129,
+          "total": 1254,
+          "true_deaths": 209,
+          "turn_cap": 0,
+          "valid": 1254,
+          "wins": 1045
+        },
+        "ELITE": {
+          "ambiguous": 0,
+          "escaped": 13,
+          "invalid": 13,
+          "nonambiguous_deaths": 116,
+          "source_seeds": 247,
+          "total": 1770,
+          "true_deaths": 116,
+          "turn_cap": 0,
+          "valid": 1757,
+          "wins": 1641
+        },
+        "NORMAL": {
+          "ambiguous": 0,
+          "escaped": 40,
+          "invalid": 40,
+          "nonambiguous_deaths": 32,
+          "source_seeds": 642,
+          "total": 4537,
+          "true_deaths": 32,
+          "turn_cap": 0,
+          "valid": 4497,
+          "wins": 4465
+        },
+        "OTHER": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 4,
+          "source_seeds": 27,
+          "total": 91,
+          "true_deaths": 4,
+          "turn_cap": 0,
+          "valid": 91,
+          "wins": 87
+        }
+      },
+      "semantic_family": {
+        "BOSS_RELIC": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 16,
+          "total": 64,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 64,
+          "wins": 64
+        },
+        "CAMPFIRE": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 146,
+          "source_seeds": 76,
+          "total": 1328,
+          "true_deaths": 146,
+          "turn_cap": 0,
+          "valid": 1328,
+          "wins": 1182
+        },
+        "EVENT": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 5,
+          "source_seeds": 68,
+          "total": 347,
+          "true_deaths": 5,
+          "turn_cap": 0,
+          "valid": 347,
+          "wins": 342
+        },
+        "REWARDS": {
+          "ambiguous": 13,
+          "escaped": 16,
+          "invalid": 16,
+          "nonambiguous_deaths": 177,
+          "source_seeds": 765,
+          "total": 4336,
+          "true_deaths": 190,
+          "turn_cap": 0,
+          "valid": 4320,
+          "wins": 4130
+        },
+        "SELECTOR": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 0,
+          "source_seeds": 8,
+          "total": 138,
+          "true_deaths": 0,
+          "turn_cap": 0,
+          "valid": 138,
+          "wins": 138
+        },
+        "SHOP": {
+          "ambiguous": 0,
+          "escaped": 37,
+          "invalid": 37,
+          "nonambiguous_deaths": 18,
+          "source_seeds": 56,
+          "total": 1369,
+          "true_deaths": 18,
+          "turn_cap": 0,
+          "valid": 1332,
+          "wins": 1314
+        },
+        "TREASURE": {
+          "ambiguous": 0,
+          "escaped": 0,
+          "invalid": 0,
+          "nonambiguous_deaths": 2,
+          "source_seeds": 35,
+          "total": 70,
+          "true_deaths": 2,
+          "turn_cap": 0,
+          "valid": 70,
+          "wins": 68
+        }
+      }
+    },
+    "labels": {
+      "lossRemainingFrac_nonambiguous_deaths": {
+        "max": 0.9809523809523809,
+        "min": 0.009433962264150943,
+        "n": 348,
+        "quantiles": {
+          "0": 0.009433962264150943,
+          "0.01": 0.009747619047619048,
+          "0.05": 0.03719907407407407,
+          "0.25": 0.17170833333333332,
+          "0.5": 0.3389830508474576,
+          "0.75": 0.5808333333333333,
+          "0.95": 0.8530952380952379,
+          "0.99": 0.9539285714285711,
+          "1": 0.9809523809523809
+        }
+      },
+      "lossRemainingFrac_true_deaths": {
+        "max": 0.9809523809523809,
+        "min": 0.009433962264150943,
+        "n": 361,
+        "quantiles": {
+          "0": 0.009433962264150943,
+          "0.01": 0.00980952380952381,
+          "0.05": 0.03669724770642202,
+          "0.25": 0.16176470588235295,
+          "0.5": 0.3375,
+          "0.75": 0.5761589403973509,
+          "0.95": 0.85,
+          "0.99": 0.9523809523809521,
+          "1": 0.9809523809523809
+        }
+      },
+      "signedOutcome_valid": {
+        "max": 1.0,
+        "min": -0.9809523809523809,
+        "n": 7599,
+        "quantiles": {
+          "0": -0.9809523809523809,
+          "0.01": -0.642000124077176,
+          "0.05": 0.011111111111111112,
+          "0.25": 0.4,
+          "0.5": 0.6666666666666666,
+          "0.75": 0.875,
+          "0.95": 1.0,
+          "0.99": 1.0,
+          "1": 1.0
+        }
+      },
+      "winHpFrac_winners": {
+        "max": 1.0,
+        "min": 0.010869565217391304,
+        "n": 7238,
+        "quantiles": {
+          "0": 0.010869565217391304,
+          "0.01": 0.042895467160037004,
+          "0.05": 0.17567567567567569,
+          "0.25": 0.4588235294117647,
+          "0.5": 0.6891891891891891,
+          "0.75": 0.881578947368421,
+          "0.95": 1.0,
+          "0.99": 1.0,
+          "1": 1.0
+        }
+      }
+    },
+    "limitations": [
+      "Correlated semantic siblings are not independent combats or independent deaths.",
+      "Adequate coverage does not establish predictive performance; no combat model was trained.",
+      "Ambiguous Awakened One deaths retain V1 signed labels but are excluded from nonambiguous death support."
+    ],
+    "source_decisions": 1024,
+    "split_rule": "Unchanged tools/train_combat_evaluator.py::stable_split(sourceSeed)",
+    "splits": {
+      "test": {
+        "ambiguous": 0,
+        "cohort_source_seeds": 157,
+        "escaped": 0,
+        "invalid": 0,
+        "nonambiguous_deaths": 48,
+        "source_seeds": 157,
+        "total": 1052,
+        "true_deaths": 48,
+        "turn_cap": 0,
+        "valid": 1052,
+        "wins": 1004
+      },
+      "train": {
+        "ambiguous": 13,
+        "cohort_source_seeds": 711,
+        "escaped": 49,
+        "invalid": 49,
+        "nonambiguous_deaths": 255,
+        "source_seeds": 711,
+        "total": 5519,
+        "true_deaths": 268,
+        "turn_cap": 0,
+        "valid": 5470,
+        "wins": 5202
+      },
+      "validation": {
+        "ambiguous": 0,
+        "cohort_source_seeds": 156,
+        "escaped": 4,
+        "invalid": 4,
+        "nonambiguous_deaths": 45,
+        "source_seeds": 156,
+        "total": 1081,
+        "true_deaths": 45,
+        "turn_cap": 0,
+        "valid": 1077,
+        "wins": 1032
+      }
+    },
+    "unique_combat_identities": 7652,
+    "unique_semantic_actions": 7652
+  },
+  "combat_nonambiguous_death_diversity": {
+    "all": {
+      "distinct_encounters": 25,
+      "distinct_source_seeds": 72,
+      "largest_source_row_share": 0.0603448275862069,
+      "rows": 348,
+      "top_sources": [
+        {
+          "row_share": 0.0603448275862069,
+          "rows": 21,
+          "source_seed": 992813
+        },
+        {
+          "row_share": 0.05747126436781609,
+          "rows": 20,
+          "source_seed": 992018
+        },
+        {
+          "row_share": 0.05747126436781609,
+          "rows": 20,
+          "source_seed": 992783
+        },
+        {
+          "row_share": 0.05459770114942529,
+          "rows": 19,
+          "source_seed": 992727
+        },
+        {
+          "row_share": 0.04597701149425287,
+          "rows": 16,
+          "source_seed": 992398
+        },
+        {
+          "row_share": 0.04597701149425287,
+          "rows": 16,
+          "source_seed": 992854
+        },
+        {
+          "row_share": 0.040229885057471264,
+          "rows": 14,
+          "source_seed": 992270
+        },
+        {
+          "row_share": 0.034482758620689655,
+          "rows": 12,
+          "source_seed": 992302
+        },
+        {
+          "row_share": 0.02586206896551724,
+          "rows": 9,
+          "source_seed": 992677
+        },
+        {
+          "row_share": 0.020114942528735632,
+          "rows": 7,
+          "source_seed": 992448
+        }
+      ],
+      "top_three_source_row_share": 0.1752873563218391
+    },
+    "interpretation": "Adequate only under the inherited row-count screen. Test deaths are 48 correlated rows from 10 sources, across 9 encounters; seed992727 contributes 19. Broad independent loss coverage and predictive performance are unproven.",
+    "splits": {
+      "test": {
+        "distinct_encounters": 9,
+        "distinct_source_seeds": 10,
+        "largest_source_row_share": 0.3958333333333333,
+        "rows": 48,
+        "top_sources": [
+          {
+            "row_share": 0.3958333333333333,
+            "rows": 19,
+            "source_seed": 992727
+          },
+          {
+            "row_share": 0.1875,
+            "rows": 9,
+            "source_seed": 992677
+          },
+          {
+            "row_share": 0.10416666666666667,
+            "rows": 5,
+            "source_seed": 992157
+          },
+          {
+            "row_share": 0.10416666666666667,
+            "rows": 5,
+            "source_seed": 992954
+          },
+          {
+            "row_share": 0.041666666666666664,
+            "rows": 2,
+            "source_seed": 992128
+          },
+          {
+            "row_share": 0.041666666666666664,
+            "rows": 2,
+            "source_seed": 992388
+          },
+          {
+            "row_share": 0.041666666666666664,
+            "rows": 2,
+            "source_seed": 992474
+          },
+          {
+            "row_share": 0.041666666666666664,
+            "rows": 2,
+            "source_seed": 992624
+          },
+          {
+            "row_share": 0.020833333333333332,
+            "rows": 1,
+            "source_seed": 992367
+          },
+          {
+            "row_share": 0.020833333333333332,
+            "rows": 1,
+            "source_seed": 992653
+          }
+        ],
+        "top_three_source_row_share": 0.6875
+      },
+      "train": {
+        "distinct_encounters": 23,
+        "distinct_source_seeds": 50,
+        "largest_source_row_share": 0.08235294117647059,
+        "rows": 255,
+        "top_sources": [
+          {
+            "row_share": 0.08235294117647059,
+            "rows": 21,
+            "source_seed": 992813
+          },
+          {
+            "row_share": 0.0784313725490196,
+            "rows": 20,
+            "source_seed": 992018
+          },
+          {
+            "row_share": 0.0784313725490196,
+            "rows": 20,
+            "source_seed": 992783
+          },
+          {
+            "row_share": 0.06274509803921569,
+            "rows": 16,
+            "source_seed": 992398
+          },
+          {
+            "row_share": 0.06274509803921569,
+            "rows": 16,
+            "source_seed": 992854
+          },
+          {
+            "row_share": 0.047058823529411764,
+            "rows": 12,
+            "source_seed": 992302
+          },
+          {
+            "row_share": 0.023529411764705882,
+            "rows": 6,
+            "source_seed": 992064
+          },
+          {
+            "row_share": 0.023529411764705882,
+            "rows": 6,
+            "source_seed": 992442
+          },
+          {
+            "row_share": 0.023529411764705882,
+            "rows": 6,
+            "source_seed": 992506
+          },
+          {
+            "row_share": 0.023529411764705882,
+            "rows": 6,
+            "source_seed": 992531
+          }
+        ],
+        "top_three_source_row_share": 0.23921568627450981
+      },
+      "validation": {
+        "distinct_encounters": 10,
+        "distinct_source_seeds": 12,
+        "largest_source_row_share": 0.3111111111111111,
+        "rows": 45,
+        "top_sources": [
+          {
+            "row_share": 0.3111111111111111,
+            "rows": 14,
+            "source_seed": 992270
+          },
+          {
+            "row_share": 0.15555555555555556,
+            "rows": 7,
+            "source_seed": 992448
+          },
+          {
+            "row_share": 0.1111111111111111,
+            "rows": 5,
+            "source_seed": 992314
+          },
+          {
+            "row_share": 0.08888888888888889,
+            "rows": 4,
+            "source_seed": 992031
+          },
+          {
+            "row_share": 0.06666666666666667,
+            "rows": 3,
+            "source_seed": 992130
+          },
+          {
+            "row_share": 0.06666666666666667,
+            "rows": 3,
+            "source_seed": 992459
+          },
+          {
+            "row_share": 0.044444444444444446,
+            "rows": 2,
+            "source_seed": 992349
+          },
+          {
+            "row_share": 0.044444444444444446,
+            "rows": 2,
+            "source_seed": 992622
+          },
+          {
+            "row_share": 0.044444444444444446,
+            "rows": 2,
+            "source_seed": 992629
+          },
+          {
+            "row_share": 0.022222222222222223,
+            "rows": 1,
+            "source_seed": 992589
+          }
+        ],
+        "top_three_source_row_share": 0.5777777777777777
+      }
+    }
+  },
+  "cost": {
+    "accounting": "All pipeline = capture + evaluation. Evaluation = replay + semantic branches. Branches are already included in evaluation.",
+    "limitations": [
+      "Per-fight telemetry does not identify source or branch; evaluation replay/branch decomposition uses producer order and hash-bound CSV identities.",
+      "Capture and evaluation process logs contain no provisioning/build/offline-analysis simulations; those stages do not run game seeds."
+    ],
+    "ratios": {
+      "combat_rows_per_million_all_pipeline_simulations": 1.088759821177033,
+      "nonambiguous_deaths_per_million_all_pipeline_simulations": 0.049514952661997846,
+      "simulations_per_semantic_action": 918476.2153685311,
+      "simulations_per_source_decision": 6863457.03125,
+      "true_deaths_per_million_all_pipeline_simulations": 0.05136464916948627,
+      "valid_combat_rows_per_million_all_pipeline_simulations": 1.0812187508003495
+    },
+    "runner": {
+      "cpu_seconds": 54345.99,
+      "metadata": {
+        "path": "build/semantic-confirmation-phase-b/remote/combined.json",
+        "sha256": "c372f4b3b739446480b839153858ddba3548f6c8d4db51d041c51409f82545f1"
+      },
+      "scope": "Capture plus evaluation only; excludes provisioning, build, transfer, and offline analysis.",
+      "sequential_stage_elapsed_wall_seconds_sum": 3739.280429122002,
+      "stages": {
+        "capture": {
+          "cpu_seconds": 29569.71,
+          "process_wall_seconds_sum": 29570.815255272006,
+          "stage_elapsed_wall_seconds": 2051.248700144999,
+          "workers": 16
+        },
+        "evaluate": {
+          "cpu_seconds": 24776.28,
+          "process_wall_seconds_sum": 24777.388754604985,
+          "stage_elapsed_wall_seconds": 1688.0317289770028,
+          "workers": 16
+        }
+      }
+    },
+    "totals": {
+      "all_pipeline_simulations": 7028180000,
+      "evaluation_total_simulations": 3243550000,
+      "semantic_branch_simulations": 1544900000,
+      "source_capture_simulations": 3784630000,
+      "source_replay_simulations": 1698650000
+    },
+    "verification": "Each evaluation telemetry suffix exactly matches ordered H=1 combat sidecar branch simulation costs."
+  },
+  "date_utc": "2026-09-10",
+  "evaluation": {
+    "H": 1,
+    "budgetSchedule": [
+      10000
+    ],
+    "futureIdentities": [
+      0
+    ],
+    "target": "qProduct",
+    "target_transform": "q - mean(q within decision)"
+  },
+  "executable_sha256": "ea86565cfedb44bd2d1c1b130b130aa74f8e376fcf9fbf7b393eca584662d45c",
+  "execution_notes": [
+    "Capture:64 independent 16-source commands, OMP_NUM_THREADS=1,16 workers on designated GCP sts-test.",
+    "Evaluation:64 independent 16-source commands, same frozen executable/teacher; no completed validated shard rerun.",
+    "Initial missing-GNU-time capture launch failed before simulator execution, archived with zero seeds/simulations.",
+    "Initial evaluation gate comparison failed before simulator execution due JSON integer-key normalization; fixed/reviewed/refrozen orchestration before labels, all capture hashes unchanged.",
+    "The original 128-decision development probe script was retained unchanged; raw prior128 corpus was unavailable in the bounded artifact inventory and was not recollected or pooled.",
+    "Only the prespecified small offline representation probes were fitted; no production model exported/deployed and no combat evaluator trained."
+  ],
+  "experiment": "fresh_semantic_confirmation_and_observational_combat_labels",
+  "implementation_pr": "https://github.com/pherrman1/sts_ai/pull/149",
+  "integrity": {
+    "all_evaluation_fight_suffixes_match_ordered_sidecars": true,
+    "capture_shards_validated": 64,
+    "combat_rows": 7652,
+    "combat_shards_validated": 64,
+    "expected_invalid_combat_labels": "53 escaped fights; all masked invalid, signedOutcome=0. Thirteen ambiguous Awakened One deaths retain inherited V1 signed labels but do not count toward nonambiguous loss support.",
+    "feature_count": 1017,
+    "post_run_freeze": {
+      "capture_shards": 64,
+      "evaluate_shards": 64,
+      "executable_sha256": "ea86565cfedb44bd2d1c1b130b130aa74f8e376fcf9fbf7b393eca584662d45c",
+      "producer_sha": "a6c2abbc9db542ea1fc8933087f81c1de96c4f8a",
+      "source_files_checked": 2468,
+      "source_mismatches": 0,
+      "teacher_sha256": "fd25b946ab076a97384f75fc2bedf38f1e28acc6be790eb78ca61048a782c3b5"
+    },
+    "semantic_quarantined_rows": 0,
+    "semantic_rows": 7652,
+    "semantic_shards_validated": 64,
+    "source_seeds": 1024,
+    "zero_observed_failures": [
+      "semantic replay mismatch",
+      "semantic key collision",
+      "duplicate decision groups",
+      "missing siblings",
+      "unequal futures",
+      "semantic execution failure",
+      "health failure",
+      "unexplained quarantine",
+      "Silver accounting mismatch",
+      "duplicate combat branch identity",
+      "combat feature width/order mismatch",
+      "combat label formula mismatch",
+      "teacher/provenance mismatch",
+      "nonfinite feature/label"
+    ]
+  },
+  "knowledge_impact": "Current experimental conclusion goes to current-research.md, reproducible results to ledger-06.md and this packet, stable tooling facts to ooc-label-pipeline.md/CODE_MAP.md.",
+  "pre_label_analysis_commit": "151c5ce9fe504b04c89d7dd1fcf7743aca7052e6",
+  "preservation": {
+    "analysis_package": {
+      "bytes": 193307,
+      "files": 20,
+      "inventory_sha256": "b46ddccb64ef89e6bcda65ef5110f790add6b576693f426e39c1b4788fa7f131",
+      "local_path": "/home/philippherrmann/.codex/worktrees/327b/sts_lightspeed/build/semantic-confirmation-phase-b/analysis-evidence.tar.gz",
+      "remote_path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/analysis-evidence.tar.gz",
+      "sha256": "3ea3b081f113e45533f17ea9c284064f105679dbff9a1a77450635d9040d9d60"
+    },
+    "artifacts": {
+      "combat-coverage.json": {
+        "bytes": 1322229,
+        "sha256": "27e5b9df958b070e5dc538a4f9763d2b43d59345c5dfb56f0a76b531c9b929fa"
+      },
+      "cost-parser-validation.json": {
+        "bytes": 1630,
+        "sha256": "ac3d3aef4b1e3049be2ead5ea5405711bef999b2d039a9d67b4d74ef49b93bc2"
+      },
+      "death-diversity.json": {
+        "bytes": 53486,
+        "sha256": "1f7a29e441017d2063664d3ec019b471251042c52a1a2cbc45d23b3dd1005056"
+      },
+      "interpretation.json": {
+        "bytes": 2051,
+        "sha256": "b12e7d64260eabfbc06fe0a6e515d3f63118c1f2393e655d1f52c3226d470640"
+      },
+      "pipeline-cost.json": {
+        "bytes": 84753,
+        "sha256": "098aaa0044f35686bd9a37e8fd8c2da540bd6be29adf281131b65a66bbc20fc1"
+      },
+      "remote/analysis-freeze.json": {
+        "bytes": 1352,
+        "sha256": "a84069a6c0470574ee062573e1438bf419266a8cc404c8dd0ad4abc721b95ea8"
+      },
+      "remote/artifact-inventory.json": {
+        "bytes": 145702,
+        "sha256": "8c0f50d11d7585ead8ef9ab7934cc140ca3263e53feb806ccf6d74b7aad3b47a"
+      },
+      "remote/build-freeze.json": {
+        "bytes": 3587,
+        "sha256": "9bad0677844ff1ffd4aed666aa4c3eecc1eb1636412b20c351d8140bba3a0110"
+      },
+      "remote/capture-gate.json": {
+        "bytes": 12512,
+        "sha256": "7ffc3b8b15850906e939ff8f48e7677d17b9d1cd47624a70391793cc10645948"
+      },
+      "remote/capture-review.json": {
+        "bytes": 2472,
+        "sha256": "6885eab371ef7948b1db4795e01e1739ffbe62270281117831aea465a846ca19"
+      },
+      "remote/combined.json": {
+        "bytes": 163533,
+        "sha256": "c372f4b3b739446480b839153858ddba3548f6c8d4db51d041c51409f82545f1"
+      },
+      "remote/corpus-freeze.json": {
+        "bytes": 13416,
+        "sha256": "d4e0a7918bec0b83fc905727c03493ae55bdda6356c0662924653ded903c4238"
+      },
+      "remote/post-run-freeze-verification.json": {
+        "bytes": 351,
+        "sha256": "f5ce5b069f85411c2869bf82664f5778d1872b5ab9a707e742d86e8256bcdcbe"
+      },
+      "remote/source-inventory.json": {
+        "bytes": 306932,
+        "sha256": "b3486dd40c940a48f7ee7688f5766cff4a755c293488bcd45a4a9f64da9d3a96"
+      },
+      "render_return_packet.py": {
+        "bytes": 13731,
+        "sha256": "7146e429639104268ad1f2ca39a0def17279f007a86908bca0339cec476c3c71"
+      },
+      "return-packet.md": {
+        "bytes": 22876,
+        "sha256": "01f97519b59023cac23e28937803a6fda56ba2433e8cd5bac30d7d68a29578c9"
+      },
+      "semantic-report.json": {
+        "bytes": 1330745,
+        "sha256": "2b0fbeeab54f694185487c1fe0c7bc263c60cddbc3f2a6b296a144a041f1fa19"
+      },
+      "summarize_pipeline_cost.py": {
+        "bytes": 10562,
+        "sha256": "9dffce1a7c5043f73a73d537d9e6038c1ba2f0de1a1d930fc55b9f03c506c443"
+      }
+    },
+    "local_root": "/home/philippherrmann/.codex/worktrees/327b/sts_lightspeed/build/semantic-confirmation-phase-b",
+    "raw_package": {
+      "bytes": 34253549,
+      "files": 1007,
+      "inventory_sha256": "8c0f50d11d7585ead8ef9ab7934cc140ca3263e53feb806ccf6d74b7aad3b47a",
+      "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/evidence.tar.gz",
+      "sha256": "705bd2c970f52759dd7541052f56536eb5c53470aa0fe37b2674abdfd1ba7ec9"
+    },
+    "remote_root": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb",
+    "scope": "Bulk CSVs, full reports and logs remain in the hash-verified raw/analysis archives, outside Git. Per-shard exact guarded argv and timings are in combined.json."
+  },
+  "producer_sha": "a6c2abbc9db542ea1fc8933087f81c1de96c4f8a",
+  "reviewed_evaluation_runner_commit": "15f340d1a20c1dd590f91cf5a3cbe091234fae33",
+  "runtime": {
+    "environment": {
+      "STS_EXECUTABLE_GIT_SHA": "a6c2abbc9db542ea1fc8933087f81c1de96c4f8a",
+      "STS_FAIR": "1",
+      "STS_GCP_RESEARCH_CONTEXT": "sts-test",
+      "STS_NATIVE_OOC": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_TELEMETRY": "1",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0"
+    },
+    "oocModels": [
+      {
+        "path": "models/v_rich_trees.txt",
+        "role": "floor",
+        "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+      },
+      {
+        "path": "models/v_win_trees.txt",
+        "role": "win",
+        "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+      }
+    ]
+  },
+  "semantic": {
+    "arms": {
+      "ACTION_AGNOSTIC": {
+        "macro": {
+          "decisions": 1024,
+          "mean_regret": 0.036944560072151855,
+          "median_regret": 0.011181401335450328,
+          "pairwise_concordance": 0.5,
+          "spearman": null,
+          "spearman_defined_decisions": 0,
+          "top1": 0.3447265625,
+          "top_or_tied": 0.3447265625
+        },
+        "pair_weighted": {
+          "concordant_pairs": 20644.5,
+          "non_tied_pairs": 41289,
+          "pairwise_concordance": 0.5
+        },
+        "regression": {
+          "mae": 0.028535949838419894,
+          "rmse": 0.061024758509613364
+        }
+      },
+      "PRIMITIVE": {
+        "macro": {
+          "decisions": 1024,
+          "mean_regret": 0.028932000562768963,
+          "median_regret": 0.007983136831974526,
+          "pairwise_concordance": 0.5304422892384075,
+          "spearman": 0.06433171013768128,
+          "spearman_defined_decisions": 964,
+          "top1": 0.2451171875,
+          "top_or_tied": 0.3935546875
+        },
+        "pair_weighted": {
+          "concordant_pairs": 22168.5,
+          "non_tied_pairs": 41289,
+          "pairwise_concordance": 0.5369105572912882
+        },
+        "regression": {
+          "mae": 0.029484597101612737,
+          "rmse": 0.06160710248257707
+        }
+      },
+      "SEMANTIC": {
+        "macro": {
+          "decisions": 1024,
+          "mean_regret": 0.027378831880588088,
+          "median_regret": 0.004376828709123953,
+          "pairwise_concordance": 0.5732334819265533,
+          "spearman": 0.18227814698286288,
+          "spearman_defined_decisions": 898,
+          "top1": 0.3115234375,
+          "top_or_tied": 0.4384765625
+        },
+        "pair_weighted": {
+          "concordant_pairs": 23166.0,
+          "non_tied_pairs": 41289,
+          "pairwise_concordance": 0.5610695342585192
+        },
+        "regression": {
+          "mae": 0.028587120741785814,
+          "rmse": 0.06042337907195478
+        }
+      }
+    },
+    "bootstrap": {
+      "macro_pairwise_concordance": {
+        "ci95": [
+          0.029331360807232785,
+          0.056129535381574704
+        ],
+        "decisions": 964,
+        "difference": 0.04279119268814583
+      },
+      "mean_selected_regret": {
+        "ci95": [
+          -0.004262645029540926,
+          0.0013606180838668456
+        ],
+        "decisions": 1024,
+        "difference": -0.0015531686821808773
+      },
+      "samples": 5000,
+      "seed": 20260911,
+      "top_or_truth_tied": {
+        "ci95": [
+          0.021484375,
+          0.068359375
+        ],
+        "decisions": 1024,
+        "difference": 0.044921875
+      }
+    },
+    "compounds": {
+      "compound_containing_decisions": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 127,
+              "mean_regret": 0.060693241373890296,
+              "median_regret": 0.04267774409800004,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.07874015748031496,
+              "top_or_tied": 0.07874015748031496
+            },
+            "pair_weighted": {
+              "concordant_pairs": 15419.5,
+              "non_tied_pairs": 30839,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 127,
+              "mean_regret": 0.04451643248896979,
+              "median_regret": 0.022691802513889026,
+              "pairwise_concordance": 0.5392529890615428,
+              "spearman": 0.09432124857757804,
+              "spearman_defined_decisions": 121,
+              "top1": 0.1732283464566929,
+              "top_or_tied": 0.25196850393700787
+            },
+            "pair_weighted": {
+              "concordant_pairs": 16560.0,
+              "non_tied_pairs": 30839,
+              "pairwise_concordance": 0.5369823924251759
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 127,
+              "mean_regret": 0.033517854987099034,
+              "median_regret": 0.020036081746823947,
+              "pairwise_concordance": 0.5581571112962657,
+              "spearman": 0.15427098125036057,
+              "spearman_defined_decisions": 121,
+              "top1": 0.2125984251968504,
+              "top_or_tied": 0.2992125984251969
+            },
+            "pair_weighted": {
+              "concordant_pairs": 16961.5,
+              "non_tied_pairs": 30839,
+              "pairwise_concordance": 0.5500016213236486
+            }
+          }
+        },
+        "decisions": 127,
+        "rows": 2845,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              -0.001369420708836323,
+              0.039176896886145895
+            ],
+            "decisions": 121,
+            "difference": 0.018904122234722733
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.021705968310667817,
+              -0.0018583064604716368
+            ],
+            "decisions": 127,
+            "difference": -0.01099857750187075
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.0,
+              0.09448818897637795
+            ],
+            "decisions": 127,
+            "difference": 0.047244094488188976
+          }
+        }
+      },
+      "non_compound_decisions": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 897,
+              "mean_regret": 0.0335821492300997,
+              "median_regret": 0.007975480415336134,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.38238573021181715,
+              "top_or_tied": 0.38238573021181715
+            },
+            "pair_weighted": {
+              "concordant_pairs": 5225.0,
+              "non_tied_pairs": 10450,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 897,
+              "mean_regret": 0.02672550908603819,
+              "median_regret": 0.006149777329862605,
+              "pairwise_concordance": 0.5291776454915518,
+              "spearman": 0.060027161915584604,
+              "spearman_defined_decisions": 843,
+              "top1": 0.2552954292084727,
+              "top_or_tied": 0.4136008918617614
+            },
+            "pair_weighted": {
+              "concordant_pairs": 5608.5,
+              "non_tied_pairs": 10450,
+              "pairwise_concordance": 0.5366985645933015
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 897,
+              "mean_regret": 0.0265096502367454,
+              "median_regret": 0.003204892059206599,
+              "pairwise_concordance": 0.5753974686955508,
+              "spearman": 0.18663962324236452,
+              "spearman_defined_decisions": 777,
+              "top1": 0.3255295429208473,
+              "top_or_tied": 0.45819397993311034
+            },
+            "pair_weighted": {
+              "concordant_pairs": 6204.5,
+              "non_tied_pairs": 10450,
+              "pairwise_concordance": 0.5937320574162679
+            }
+          }
+        },
+        "decisions": 897,
+        "rows": 4807,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.030674486819059918,
+              0.06126023924829889
+            ],
+            "decisions": 843,
+            "difference": 0.046219823203998964
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.002775888886401568,
+              0.002696696878736329
+            ],
+            "decisions": 897,
+            "difference": -0.0002158588492927899
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.0189520624303233,
+              0.0713489409141583
+            ],
+            "decisions": 897,
+            "difference": 0.044593088071348944
+          }
+        }
+      }
+    },
+    "families": {
+      "BOSS_RELIC": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 16,
+              "mean_regret": 0.12935478975454862,
+              "median_regret": 0.10420319125212049,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.1875,
+              "top_or_tied": 0.1875
+            },
+            "pair_weighted": {
+              "concordant_pairs": 48.0,
+              "non_tied_pairs": 96,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 16,
+              "mean_regret": 0.11393077475416405,
+              "median_regret": 0.07522499727622547,
+              "pairwise_concordance": 0.41145833333333337,
+              "spearman": -0.2290569415042095,
+              "spearman_defined_decisions": 16,
+              "top1": 0.125,
+              "top_or_tied": 0.125
+            },
+            "pair_weighted": {
+              "concordant_pairs": 39.5,
+              "non_tied_pairs": 96,
+              "pairwise_concordance": 0.4114583333333333
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 16,
+              "mean_regret": 0.11824337253947183,
+              "median_regret": 0.10676076887392638,
+              "pairwise_concordance": 0.49479166666666674,
+              "spearman": 8.540177112501205e-18,
+              "spearman_defined_decisions": 13,
+              "top1": 0.1875,
+              "top_or_tied": 0.1875
+            },
+            "pair_weighted": {
+              "concordant_pairs": 47.5,
+              "non_tied_pairs": 96,
+              "pairwise_concordance": 0.4947916666666667
+            }
+          }
+        },
+        "decisions": 16,
+        "rows": 64,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              -0.010416666666666657,
+              0.171875
+            ],
+            "decisions": 16,
+            "difference": 0.08333333333333334
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.02528992199086044,
+              0.0380754837215269
+            ],
+            "decisions": 16,
+            "difference": 0.004312597785307787
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              -0.1875,
+              0.3125
+            ],
+            "decisions": 16,
+            "difference": 0.0625
+          }
+        }
+      },
+      "CAMPFIRE": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 76,
+              "mean_regret": 0.04809821488147197,
+              "median_regret": 0.03210776921697814,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.11842105263157894,
+              "top_or_tied": 0.11842105263157894
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4644.5,
+              "non_tied_pairs": 9289,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 76,
+              "mean_regret": 0.02521273702667141,
+              "median_regret": 0.006237746850245172,
+              "pairwise_concordance": 0.5293871173669354,
+              "spearman": 0.05504731562860609,
+              "spearman_defined_decisions": 71,
+              "top1": 0.2631578947368421,
+              "top_or_tied": 0.3815789473684211
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4745.0,
+              "non_tied_pairs": 9289,
+              "pairwise_concordance": 0.5108192485735816
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 76,
+              "mean_regret": 0.016855700197462836,
+              "median_regret": 0.0038409630172809572,
+              "pairwise_concordance": 0.5503106630652479,
+              "spearman": 0.12024349180728387,
+              "spearman_defined_decisions": 71,
+              "top1": 0.2894736842105263,
+              "top_or_tied": 0.42105263157894735
+            },
+            "pair_weighted": {
+              "concordant_pairs": 5001.5,
+              "non_tied_pairs": 9289,
+              "pairwise_concordance": 0.5384325546345139
+            }
+          }
+        },
+        "decisions": 76,
+        "rows": 1328,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              -0.007070807018040542,
+              0.04871278127459694
+            ],
+            "decisions": 71,
+            "difference": 0.02092354569831258
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.020189986884247536,
+              -0.0002810753037173777
+            ],
+            "decisions": 76,
+            "difference": -0.008357036829208573
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.0,
+              0.09210526315789473
+            ],
+            "decisions": 76,
+            "difference": 0.039473684210526314
+          }
+        }
+      },
+      "EVENT": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 68,
+              "mean_regret": 0.02764146109950188,
+              "median_regret": 0.010555653479971457,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.4117647058823529,
+              "top_or_tied": 0.4117647058823529
+            },
+            "pair_weighted": {
+              "concordant_pairs": 974.0,
+              "non_tied_pairs": 1948,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 68,
+              "mean_regret": 0.023939423208923203,
+              "median_regret": 0.0028527968024215575,
+              "pairwise_concordance": 0.5228700096545887,
+              "spearman": 0.06034958493241717,
+              "spearman_defined_decisions": 64,
+              "top1": 0.45588235294117646,
+              "top_or_tied": 0.45588235294117646
+            },
+            "pair_weighted": {
+              "concordant_pairs": 1065.0,
+              "non_tied_pairs": 1948,
+              "pairwise_concordance": 0.5467145790554415
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 68,
+              "mean_regret": 0.03695055957990821,
+              "median_regret": 0.007869931160782218,
+              "pairwise_concordance": 0.4800867160184885,
+              "spearman": -0.055476078228474494,
+              "spearman_defined_decisions": 35,
+              "top1": 0.4411764705882353,
+              "top_or_tied": 0.4411764705882353
+            },
+            "pair_weighted": {
+              "concordant_pairs": 938.5,
+              "non_tied_pairs": 1948,
+              "pairwise_concordance": 0.4817761806981519
+            }
+          }
+        },
+        "decisions": 68,
+        "rows": 347,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              -0.13235979890218677,
+              0.04824004188854352
+            ],
+            "decisions": 64,
+            "difference": -0.0427832936361002
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.001605635720499045,
+              0.03892348646637974
+            ],
+            "decisions": 68,
+            "difference": 0.013011136370985011
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              -0.07352941176470588,
+              0.04411764705882353
+            ],
+            "decisions": 68,
+            "difference": -0.014705882352941176
+          }
+        }
+      },
+      "REWARDS": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 765,
+              "mean_regret": 0.033669354197088,
+              "median_regret": 0.008456457673141626,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.3712418300653595,
+              "top_or_tied": 0.3712418300653595
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4531.0,
+              "non_tied_pairs": 9062,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 765,
+              "mean_regret": 0.026212679102467103,
+              "median_regret": 0.006320543114358854,
+              "pairwise_concordance": 0.5308583183895376,
+              "spearman": 0.06501907159470925,
+              "spearman_defined_decisions": 716,
+              "top1": 0.2235294117647059,
+              "top_or_tied": 0.40784313725490196
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4943.5,
+              "non_tied_pairs": 9062,
+              "pairwise_concordance": 0.5455197528139484
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 765,
+              "mean_regret": 0.02474428315533998,
+              "median_regret": 0.0030646654351140223,
+              "pairwise_concordance": 0.5889440088747926,
+              "spearman": 0.20177432077412724,
+              "spearman_defined_decisions": 716,
+              "top1": 0.3032679738562091,
+              "top_or_tied": 0.4588235294117647
+            },
+            "pair_weighted": {
+              "concordant_pairs": 5455.5,
+              "non_tied_pairs": 9062,
+              "pairwise_concordance": 0.6020194217612006
+            }
+          }
+        },
+        "decisions": 765,
+        "rows": 4336,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.04431894452778694,
+              0.07142792451582876
+            ],
+            "decisions": 716,
+            "difference": 0.05808569048525506
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.003798301810706851,
+              0.0010502587739146761
+            ],
+            "decisions": 765,
+            "difference": -0.001468395947127127
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.022222222222222223,
+              0.07973856209150326
+            ],
+            "decisions": 765,
+            "difference": 0.050980392156862744
+          }
+        }
+      },
+      "SELECTOR": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 8,
+              "mean_regret": 0.0713101391838605,
+              "median_regret": 0.05360419652059824,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.0,
+              "top_or_tied": 0.0
+            },
+            "pair_weighted": {
+              "concordant_pairs": 533.5,
+              "non_tied_pairs": 1067,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 8,
+              "mean_regret": 0.05719938345766511,
+              "median_regret": 0.029266430622884698,
+              "pairwise_concordance": 0.4884693422531047,
+              "spearman": -0.045798744061206986,
+              "spearman_defined_decisions": 8,
+              "top1": 0.125,
+              "top_or_tied": 0.125
+            },
+            "pair_weighted": {
+              "concordant_pairs": 506.5,
+              "non_tied_pairs": 1067,
+              "pairwise_concordance": 0.4746954076850984
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 8,
+              "mean_regret": 0.06238741404988596,
+              "median_regret": 0.024078734564453197,
+              "pairwise_concordance": 0.5817416917219451,
+              "spearman": 0.2466283809585092,
+              "spearman_defined_decisions": 8,
+              "top1": 0.25,
+              "top_or_tied": 0.25
+            },
+            "pair_weighted": {
+              "concordant_pairs": 586.0,
+              "non_tied_pairs": 1067,
+              "pairwise_concordance": 0.549203373945642
+            }
+          }
+        },
+        "decisions": 8,
+        "rows": 138,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.03519100056999107,
+              0.155198835484223
+            ],
+            "decisions": 8,
+            "difference": 0.0932723494688405
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.04381134589357954,
+              0.06282761052076322
+            ],
+            "decisions": 8,
+            "difference": 0.00518803059222085
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.0,
+              0.375
+            ],
+            "decisions": 8,
+            "difference": 0.125
+          }
+        }
+      },
+      "SHOP": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 56,
+              "mean_regret": 0.06204831997108207,
+              "median_regret": 0.05217140493823838,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.16071428571428573,
+              "top_or_tied": 0.16071428571428573
+            },
+            "pair_weighted": {
+              "concordant_pairs": 9896.5,
+              "non_tied_pairs": 19793,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 56,
+              "mean_regret": 0.059373332276739466,
+              "median_regret": 0.034740710690086274,
+              "pairwise_concordance": 0.5583737606656676,
+              "spearman": 0.14041239058480376,
+              "spearman_defined_decisions": 55,
+              "top1": 0.10714285714285714,
+              "top_or_tied": 0.14285714285714285
+            },
+            "pair_weighted": {
+              "concordant_pairs": 10850.0,
+              "non_tied_pairs": 19793,
+              "pairwise_concordance": 0.5481735967261153
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 56,
+              "mean_regret": 0.04460100880333257,
+              "median_regret": 0.03577916955103885,
+              "pairwise_concordance": 0.5735447112652334,
+              "spearman": 0.19357654706085697,
+              "spearman_defined_decisions": 55,
+              "top1": 0.17857142857142858,
+              "top_or_tied": 0.19642857142857142
+            },
+            "pair_weighted": {
+              "concordant_pairs": 11120.0,
+              "non_tied_pairs": 19793,
+              "pairwise_concordance": 0.5618147830040924
+            }
+          }
+        },
+        "decisions": 56,
+        "rows": 1369,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              -0.005992594016675191,
+              0.036958817198647874
+            ],
+            "decisions": 55,
+            "difference": 0.01517095059956573
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.032771077070420804,
+              0.0008846779935315858
+            ],
+            "decisions": 56,
+            "difference": -0.014772323473406897
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              -0.03571428571428571,
+              0.14285714285714285
+            ],
+            "decisions": 56,
+            "difference": 0.05357142857142857
+          }
+        }
+      },
+      "TREASURE": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 35,
+              "mean_regret": 0.012120748555112117,
+              "median_regret": 0.0,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.5714285714285714,
+              "top_or_tied": 0.5714285714285714
+            },
+            "pair_weighted": {
+              "concordant_pairs": 17.0,
+              "non_tied_pairs": 34,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 35,
+              "mean_regret": 0.012120748555112117,
+              "median_regret": 0.0,
+              "pairwise_concordance": 0.5588235294117647,
+              "spearman": 0.11764705882352941,
+              "spearman_defined_decisions": 34,
+              "top1": 0.5714285714285714,
+              "top_or_tied": 0.5714285714285714
+            },
+            "pair_weighted": {
+              "concordant_pairs": 19.0,
+              "non_tied_pairs": 34,
+              "pairwise_concordance": 0.5588235294117647
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 35,
+              "mean_regret": 0.012120748555112117,
+              "median_regret": 0.0,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.5714285714285714,
+              "top_or_tied": 0.5714285714285714
+            },
+            "pair_weighted": {
+              "concordant_pairs": 17.0,
+              "non_tied_pairs": 34,
+              "pairwise_concordance": 0.5
+            }
+          }
+        },
+        "decisions": 35,
+        "rows": 70,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              -0.23529411764705882,
+              0.11764705882352941
+            ],
+            "decisions": 34,
+            "difference": -0.058823529411764705
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "decisions": 35,
+            "difference": 0.0
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "decisions": 35,
+            "difference": 0.0
+          }
+        }
+      }
+    },
+    "fold_protocol": {
+      "count": 5,
+      "key": [
+        "sourceSeed",
+        "decisionIdx"
+      ],
+      "seed": 20260910
+    },
+    "folds": {
+      "0": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.034748415501373045,
+              "median_regret": 0.009666986027345087,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.32682926829268294,
+              "top_or_tied": 0.32682926829268294
+            },
+            "pair_weighted": {
+              "concordant_pairs": 3585.5,
+              "non_tied_pairs": 7171,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.032467016198408374,
+              "median_regret": 0.008807727494022977,
+              "pairwise_concordance": 0.5378742936843973,
+              "spearman": 0.07536148498737166,
+              "spearman_defined_decisions": 194,
+              "top1": 0.23414634146341465,
+              "top_or_tied": 0.40487804878048783
+            },
+            "pair_weighted": {
+              "concordant_pairs": 3978.0,
+              "non_tied_pairs": 7171,
+              "pairwise_concordance": 0.554734346674104
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.030449798915633867,
+              "median_regret": 0.005349304488217452,
+              "pairwise_concordance": 0.6085606836126413,
+              "spearman": 0.2627986490006996,
+              "spearman_defined_decisions": 179,
+              "top1": 0.3024390243902439,
+              "top_or_tied": 0.45365853658536587
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4004.5,
+              "non_tied_pairs": 7171,
+              "pairwise_concordance": 0.5584297866406359
+            }
+          }
+        },
+        "decisions": 205,
+        "regression": {
+          "ACTION_AGNOSTIC": {
+            "mae": 0.02511578337949872,
+            "rmse": 0.05230690429631253
+          },
+          "PRIMITIVE": {
+            "mae": 0.025687973208089892,
+            "rmse": 0.05231130379196341
+          },
+          "SEMANTIC": {
+            "mae": 0.025135880784374554,
+            "rmse": 0.05199755189512398
+          }
+        },
+        "rows": 1400,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.03860624893555256,
+              0.10225065799542338
+            ],
+            "decisions": 194,
+            "difference": 0.07068638992824393
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.0051144917483013095,
+              0.0009920981106398769
+            ],
+            "decisions": 205,
+            "difference": -0.0020172172827745034
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.0,
+              0.0975609756097561
+            ],
+            "decisions": 205,
+            "difference": 0.04878048780487805
+          }
+        }
+      },
+      "1": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.03921311224904222,
+              "median_regret": 0.013708011901573114,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.33170731707317075,
+              "top_or_tied": 0.33170731707317075
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4556.0,
+              "non_tied_pairs": 9112,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.034411460600901625,
+              "median_regret": 0.009723717127931422,
+              "pairwise_concordance": 0.49881719848912837,
+              "spearman": -0.006812222426450576,
+              "spearman_defined_decisions": 193,
+              "top1": 0.2097560975609756,
+              "top_or_tied": 0.36097560975609755
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4851.5,
+              "non_tied_pairs": 9112,
+              "pairwise_concordance": 0.5324297629499561
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.03610016791575975,
+              "median_regret": 0.004056290514044103,
+              "pairwise_concordance": 0.5726862094125009,
+              "spearman": 0.18629466899350372,
+              "spearman_defined_decisions": 173,
+              "top1": 0.3170731707317073,
+              "top_or_tied": 0.43902439024390244
+            },
+            "pair_weighted": {
+              "concordant_pairs": 5180.5,
+              "non_tied_pairs": 9112,
+              "pairwise_concordance": 0.5685359964881475
+            }
+          }
+        },
+        "decisions": 205,
+        "regression": {
+          "ACTION_AGNOSTIC": {
+            "mae": 0.03493553191950685,
+            "rmse": 0.07073877392470819
+          },
+          "PRIMITIVE": {
+            "mae": 0.03540590986381728,
+            "rmse": 0.07110661437074188
+          },
+          "SEMANTIC": {
+            "mae": 0.03468870998300266,
+            "rmse": 0.06973286895438004
+          }
+        },
+        "rows": 1580,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.04275783082274977,
+              0.10458153203105364
+            ],
+            "decisions": 193,
+            "difference": 0.07386901092337267
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.006793700237305991,
+              0.013238962959948367
+            ],
+            "decisions": 205,
+            "difference": 0.0016887073148581229
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.01951219512195122,
+              0.13658536585365855
+            ],
+            "decisions": 205,
+            "difference": 0.07804878048780488
+          }
+        }
+      },
+      "2": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.03954746895551473,
+              "median_regret": 0.008049515348365482,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.375609756097561,
+              "top_or_tied": 0.375609756097561
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4357.5,
+              "non_tied_pairs": 8715,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.026771877289064324,
+              "median_regret": 0.004629934560542115,
+              "pairwise_concordance": 0.5513752543377786,
+              "spearman": 0.11121358036615875,
+              "spearman_defined_decisions": 192,
+              "top1": 0.2146341463414634,
+              "top_or_tied": 0.4097560975609756
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4801.0,
+              "non_tied_pairs": 8715,
+              "pairwise_concordance": 0.550889271371199
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.022534206849555125,
+              "median_regret": 0.0038659256361901484,
+              "pairwise_concordance": 0.5780836828299938,
+              "spearman": 0.1790967558950525,
+              "spearman_defined_decisions": 189,
+              "top1": 0.2780487804878049,
+              "top_or_tied": 0.43902439024390244
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4823.0,
+              "non_tied_pairs": 8715,
+              "pairwise_concordance": 0.5534136546184739
+            }
+          }
+        },
+        "decisions": 205,
+        "regression": {
+          "ACTION_AGNOSTIC": {
+            "mae": 0.027168688264536698,
+            "rmse": 0.06002166452319329
+          },
+          "PRIMITIVE": {
+            "mae": 0.027976751067301082,
+            "rmse": 0.059685422132171165
+          },
+          "SEMANTIC": {
+            "mae": 0.02725646853202288,
+            "rmse": 0.05943296660551185
+          }
+        },
+        "rows": 1622,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.00145020454219001,
+              0.05330315608825201
+            ],
+            "decisions": 192,
+            "difference": 0.02670842849221523
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.009300755678808163,
+              7.946982680346687e-05
+            ],
+            "decisions": 205,
+            "difference": -0.004237670439509196
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              -0.014634146341463415,
+              0.07804878048780488
+            ],
+            "decisions": 205,
+            "difference": 0.02926829268292683
+          }
+        }
+      },
+      "3": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.03525309049905557,
+              "median_regret": 0.012825449570416377,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.34146341463414637,
+              "top_or_tied": 0.34146341463414637
+            },
+            "pair_weighted": {
+              "concordant_pairs": 3829.5,
+              "non_tied_pairs": 7659,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.024422890529658327,
+              "median_regret": 0.009712636939643415,
+              "pairwise_concordance": 0.5479164885467024,
+              "spearman": 0.10498775753971053,
+              "spearman_defined_decisions": 196,
+              "top1": 0.2682926829268293,
+              "top_or_tied": 0.3853658536585366
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4118.0,
+              "non_tied_pairs": 7659,
+              "pairwise_concordance": 0.5376681028854942
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 205,
+              "mean_regret": 0.023240705970667477,
+              "median_regret": 0.005900826313128271,
+              "pairwise_concordance": 0.5472277499544504,
+              "spearman": 0.12859943770367038,
+              "spearman_defined_decisions": 177,
+              "top1": 0.33658536585365856,
+              "top_or_tied": 0.4195121951219512
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4212.0,
+              "non_tied_pairs": 7659,
+              "pairwise_concordance": 0.5499412455934195
+            }
+          }
+        },
+        "decisions": 205,
+        "regression": {
+          "ACTION_AGNOSTIC": {
+            "mae": 0.025918790400444536,
+            "rmse": 0.049088588430851635
+          },
+          "PRIMITIVE": {
+            "mae": 0.02810419957992664,
+            "rmse": 0.05226148762809551
+          },
+          "SEMANTIC": {
+            "mae": 0.026494269372559724,
+            "rmse": 0.04910323892238382
+          }
+        },
+        "rows": 1491,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              -0.03404279298367298,
+              0.03138312006995749
+            ],
+            "decisions": 196,
+            "difference": -0.0006887385922519634
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.006352514970782916,
+              0.003913512333654592
+            ],
+            "decisions": 205,
+            "difference": -0.0011821845589908484
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              -0.01951219512195122,
+              0.08780487804878048
+            ],
+            "decisions": 205,
+            "difference": 0.03414634146341464
+          }
+        }
+      },
+      "4": {
+        "arms": {
+          "ACTION_AGNOSTIC": {
+            "macro": {
+              "decisions": 204,
+              "mean_regret": 0.03595589037677185,
+              "median_regret": 0.01306800689409398,
+              "pairwise_concordance": 0.5,
+              "spearman": null,
+              "spearman_defined_decisions": 0,
+              "top1": 0.3480392156862745,
+              "top_or_tied": 0.3480392156862745
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4316.0,
+              "non_tied_pairs": 8632,
+              "pairwise_concordance": 0.5
+            }
+          },
+          "PRIMITIVE": {
+            "macro": {
+              "decisions": 204,
+              "mean_regret": 0.026575261909699638,
+              "median_regret": 0.005636903137795579,
+              "pairwise_concordance": 0.5157214494954651,
+              "spearman": 0.03587191272695172,
+              "spearman_defined_decisions": 189,
+              "top1": 0.29901960784313725,
+              "top_or_tied": 0.4068627450980392
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4420.0,
+              "non_tied_pairs": 8632,
+              "pairwise_concordance": 0.5120481927710844
+            }
+          },
+          "SEMANTIC": {
+            "macro": {
+              "decisions": 204,
+              "mean_regret": 0.02455550743696508,
+              "median_regret": 0.0031240017742355797,
+              "pairwise_concordance": 0.5595722721973614,
+              "spearman": 0.15446918192163842,
+              "spearman_defined_decisions": 180,
+              "top1": 0.3235294117647059,
+              "top_or_tied": 0.4411764705882353
+            },
+            "pair_weighted": {
+              "concordant_pairs": 4946.0,
+              "non_tied_pairs": 8632,
+              "pairwise_concordance": 0.5729842446709916
+            }
+          }
+        },
+        "decisions": 204,
+        "regression": {
+          "ACTION_AGNOSTIC": {
+            "mae": 0.029047031524906144,
+            "rmse": 0.0685375920298999
+          },
+          "PRIMITIVE": {
+            "mae": 0.029781901950321054,
+            "rmse": 0.06876741902665037
+          },
+          "SEMANTIC": {
+            "mae": 0.028888585921391166,
+            "rmse": 0.06769703005170842
+          }
+        },
+        "rows": 1559,
+        "semantic_minus_primitive": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.01541368913732186,
+              0.07079445242251002
+            ],
+            "decisions": 189,
+            "difference": 0.043850822701896275
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.0074126764494437496,
+              0.0038418640110009215
+            ],
+            "decisions": 204,
+            "difference": -0.002019754472734564
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              -0.014705882352941176,
+              0.08333333333333333
+            ],
+            "decisions": 204,
+            "difference": 0.03431372549019608
+          }
+        }
+      }
+    },
+    "interpretation": {
+      "basis": "Both primary point estimates favor semantic features. Macro pairwise improves by 0.042791 with 95% CI [0.029331, 0.056130]; mean regret changes by -0.001553 with CI [-0.004263, 0.001361]. Every leave-one-fold-out aggregate preserves both favorable directions. REWARDS (765/1024 decisions), the largest natural family, drives the overall ranking gain; removing it leaves no established pairwise advantage. This is not one tiny family or fold. No overall regret penalty was observed, but regret improvement and formal noninferiority are not established: no numerical meaningful-harm margin was prespecified, and the interval allows up to 0.00136 Q-unit worsening (about 4.7% of primitive mean regret). Classification is an explicit qualitative application of the handoff, not a formal no-harm test.",
+      "classification": "SEMANTIC CONFIRMED",
+      "independent_interpretation_review": "KEEP with the stated mixture, regret-uncertainty, and family limitations.",
+      "qualifications": [
+        "SHOP (56 decisions) favors semantic in both primary point estimates, but both family intervals cross zero; the prior weakness was not reproduced, not definitively reversed.",
+        "EVENT (68 decisions) is an adverse exploratory slice: semantic regret is higher by 0.013011 and pairwise lower by 0.042783, with both intervals crossing zero.",
+        "The 127 compound-containing decisions have lower semantic mean regret by 0.010999 (95% CI [-0.021706,-0.001858]); siblings remain one scientific decision.",
+        "SELECTOR (8) and BOSS_RELIC (16) remain sparse; family intervals are descriptive and uncorrected for multiplicity.",
+        "Pairwise comparison covers 964 decisions with defined ordering; 60 decisions have fully tied truth labels.",
+        "No production model was trained or exported; only the prespecified fixed representation probes were fitted offline. No combat predictor was trained."
+      ],
+      "scope": "Frozen-probe ranking on this fresh, naturally reward-dominated 1024-decision cohort; no production-policy or all-family superiority claim."
+    },
+    "label_spread": {
+      "action_q_percentiles": {
+        "0": 0.0,
+        "100": 1.0,
+        "25": 0.176600348165917,
+        "5": 0.025938720154615465,
+        "50": 0.29879588955743963,
+        "75": 0.5110722877625451,
+        "95": 0.9518093323734779
+      },
+      "decision_range_percentiles": {
+        "0": 0.0,
+        "100": 1.0,
+        "25": 0.02460107281206883,
+        "5": 0.0,
+        "50": 0.05359848032758091,
+        "75": 0.10241539359543822,
+        "95": 0.28340770644684793
+      },
+      "tied_decisions": 60
+    },
+    "leave_one_out": {
+      "family": {
+        "BOSS_RELIC": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.02823470676036998,
+              0.05599926590682886
+            ],
+            "decisions": 948,
+            "difference": 0.04210693714983044
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.004263366314825325,
+              0.0012204438561114537
+            ],
+            "decisions": 1008,
+            "difference": -0.0016462760864267287
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.021825396825396824,
+              0.06845238095238096
+            ],
+            "decisions": 1008,
+            "difference": 0.044642857142857144
+          }
+        },
+        "CAMPFIRE": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.02958728206414363,
+              0.05910719377916456
+            ],
+            "decisions": 893,
+            "difference": 0.0445298297948403
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.0036603630343952876,
+              0.0018374196782423022
+            ],
+            "decisions": 948,
+            "difference": -0.0010077108982419474
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.022151898734177215,
+              0.07067510548523206
+            ],
+            "decisions": 948,
+            "difference": 0.04535864978902954
+          }
+        },
+        "EVENT": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.03598619725099649,
+              0.06176731628716892
+            ],
+            "decisions": 900,
+            "difference": 0.04887648949342555
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.004984632599098421,
+              -8.588131532652374e-05
+            ],
+            "decisions": 956,
+            "difference": -0.002589123434916526
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.02510460251046025,
+              0.07426778242677824
+            ],
+            "decisions": 956,
+            "difference": 0.049163179916317995
+          }
+        },
+        "REWARDS": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              -0.03590372624363526,
+              0.0330524854674941
+            ],
+            "decisions": 248,
+            "difference": -0.0013655025647985766
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.009638598171703604,
+              0.0075487922412772095
+            ],
+            "decisions": 259,
+            "difference": -0.0018035591930539213
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              -0.007722007722007722,
+              0.06177606177606178
+            ],
+            "decisions": 259,
+            "difference": 0.02702702702702703
+          }
+        },
+        "SELECTOR": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.02821029186753325,
+              0.05649185345221577
+            ],
+            "decisions": 956,
+            "difference": 0.04236875622972998
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.004173766105638205,
+              0.0011722615671720435
+            ],
+            "decisions": 1016,
+            "difference": -0.0016062489914281347
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.02066929133858268,
+              0.06692913385826772
+            ],
+            "decisions": 1016,
+            "difference": 0.04429133858267716
+          }
+        },
+        "SHOP": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.03011716096880271,
+              0.058988718272682795
+            ],
+            "decisions": 909,
+            "difference": 0.04446238445368148
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.0033751296128594678,
+              0.0021535301092774155
+            ],
+            "decisions": 968,
+            "difference": -0.0007884241901264793
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.02066115702479339,
+              0.06818181818181818
+            ],
+            "decisions": 968,
+            "difference": 0.04442148760330578
+          }
+        },
+        "TREASURE": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.03344645926893709,
+              0.05930789463995433
+            ],
+            "decisions": 930,
+            "difference": 0.046506139517604926
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.00429721607836366,
+              0.0013537694422054818
+            ],
+            "decisions": 989,
+            "difference": -0.0016081342068283294
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.023255813953488372,
+              0.07077856420626896
+            ],
+            "decisions": 989,
+            "difference": 0.046511627906976744
+          }
+        }
+      },
+      "fold": {
+        "0": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.02053609853381955,
+              0.05041268443449789
+            ],
+            "decisions": 770,
+            "difference": 0.035763052084796444
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.004679136337379366,
+              0.002012524199504706
+            ],
+            "decisions": 819,
+            "difference": -0.0014370148810554885
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.018315018315018316,
+              0.07081807081807082
+            ],
+            "decisions": 819,
+            "difference": 0.04395604395604396
+          }
+        },
+        "1": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.01990147755373599,
+              0.049670433750042264
+            ],
+            "decisions": 771,
+            "difference": 0.03501166101577387
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.0047062730657724755,
+              -3.0011474453595126e-05
+            ],
+            "decisions": 819,
+            "difference": -0.0023646272650783067
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.01098901098901099,
+              0.06105006105006105
+            ],
+            "decisions": 819,
+            "difference": 0.03663003663003663
+          }
+        },
+        "2": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.03076156739877658,
+              0.06281190807210907
+            ],
+            "decisions": 772,
+            "difference": 0.046791051141019765
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.003908123763803302,
+              0.0025091402677085155
+            ],
+            "decisions": 819,
+            "difference": -0.0008812237978679276
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.02197802197802198,
+              0.07692307692307693
+            ],
+            "decisions": 819,
+            "difference": 0.04884004884004884
+          }
+        },
+        "3": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.03901861969535368,
+              0.0686351484471776
+            ],
+            "decisions": 768,
+            "difference": 0.053887633483664016
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.004676209992559245,
+              0.0017917843253470514
+            ],
+            "decisions": 819,
+            "difference": -0.0016460279559952309
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.02197802197802198,
+              0.07326007326007326
+            ],
+            "decisions": 819,
+            "difference": 0.047619047619047616
+          }
+        },
+        "4": {
+          "macro_pairwise_concordance": {
+            "ci95": [
+              0.027259114894289692,
+              0.05804641605304675
+            ],
+            "decisions": 775,
+            "difference": 0.0425327796912441
+          },
+          "mean_selected_regret": {
+            "ci95": [
+              -0.004400848737687447,
+              0.001870266269185077
+            ],
+            "decisions": 820,
+            "difference": -0.001437091241604106
+          },
+          "top_or_truth_tied": {
+            "ci95": [
+              0.02195121951219512,
+              0.07320121951219467
+            ],
+            "decisions": 820,
+            "difference": 0.0475609756097561
+          }
+        }
+      }
+    },
+    "limitations": [
+      "No prespecified meaningful-harm or null-equivalence margin; uncertain cases remain comparable.",
+      "Family and fold bootstrap intervals are descriptive, with no multiplicity correction.",
+      "State-only top-1/top-or-tied/regret depend on row-order tie breaking; pairwise 0.5 is its ranking null.",
+      "Leave-out sensitivity removes held-out groups without refitting models.",
+      "Only fresh confirmation groups enter fitting or primary inference; no development groups are pooled."
+    ],
+    "model_parameters": {
+      "colsample_bytree": 0.8,
+      "learning_rate": 0.05,
+      "max_depth": 3,
+      "min_child_weight": 2,
+      "n_estimators": 160,
+      "n_jobs": 1,
+      "objective": "reg:squarederror",
+      "random_state": 20260910,
+      "reg_lambda": 1.0,
+      "subsample": 0.9,
+      "tree_method": "hist",
+      "verbosity": 0
+    },
+    "pairwise_minus_null_bootstrap": {
+      "ACTION_AGNOSTIC": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "decisions": 964,
+        "difference": 0.0
+      },
+      "PRIMITIVE": {
+        "ci95": [
+          0.013090501162395634,
+          0.047564383940422644
+        ],
+        "decisions": 964,
+        "difference": 0.03044228923840755
+      },
+      "SEMANTIC": {
+        "ci95": [
+          0.0590940608434537,
+          0.08793492418369339
+        ],
+        "decisions": 964,
+        "difference": 0.07323348192655338
+      }
+    },
+    "script_provenance": {
+      "adapter_sha256": "397e54442d566ba09ce808dfa700b1c58a8106f831ee6fff51eb5fc224b32bfb",
+      "original_probe_sha256": "ababfc5303110ec9422038f385bfbe21719d70696e33efe00e8a6ccf17dcc98a"
+    },
+    "software": {
+      "numpy": "2.5.2",
+      "python": "3.13.15",
+      "scipy": "1.18.0",
+      "xgboost": "3.4.0"
+    }
+  },
+  "teacher": {
+    "combat_backend": "silver_uct",
+    "environment": {
+      "STS_EXECUTABLE_GIT_SHA": "a6c2abbc9db542ea1fc8933087f81c1de96c4f8a",
+      "STS_FAIR": "1",
+      "STS_GCP_RESEARCH_CONTEXT": "sts-test",
+      "STS_NATIVE_OOC": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_TELEMETRY": "1",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0"
+    },
+    "executable_sha256": "ea86565cfedb44bd2d1c1b130b130aa74f8e376fcf9fbf7b393eca584662d45c",
+    "git_sha": "a6c2abbc9db542ea1fc8933087f81c1de96c4f8a",
+    "model_artifacts": [
+      {
+        "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/models/policy_trees_c.txt",
+        "role": "policy",
+        "sha256": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+      },
+      {
+        "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/models/v_rich_trees.txt",
+        "role": "floor",
+        "sha256": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"
+      },
+      {
+        "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/models/v_win_trees.txt",
+        "role": "win",
+        "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+      }
+    ],
+    "rng_regime": "project_fair",
+    "search_configuration": {
+      "adaptive": false,
+      "belief": "not_applicable_silver_private_chance_search",
+      "chance_widening_alpha": 0.52389,
+      "chance_widening_c": 3.7028,
+      "direct_learned_leaf": false,
+      "end_turn_widening_alpha": 0.52389,
+      "end_turn_widening_c": 3.7028,
+      "exploration_parameter": 25.0,
+      "exploration_parameter_chance": 25.0,
+      "learned_visit_puct": false,
+      "particles": "not_applicable_silver_private_chance_search",
+      "pruning": false,
+      "reuse_cap": 32768,
+      "reuse_cap_mode": "allocated",
+      "sequential_halving": false,
+      "simulation_budgets": [
+        10000
+      ]
+    },
+    "teacher_id": "silver-ordinary-fair-exact10k-confirmation-a6c2abbc9db5"
+  },
+  "verification": {
+    "ci": "Authoritative Linux GCC result recorded in the evidence PR; no native producer code changes in this branch.",
+    "ctest": "ctest --preset linux-gcc-ccache-test -R semantic_confirmation_analysis --output-on-failure:1/1 PASS",
+    "focused_python": "python3 -m unittest tests.test_ooc_semantic_confirmation tests.test_semantic_confirmation_runner tools.test_semantic_combat_coverage -q:12 tests,OK",
+    "independent_review": "KEEP for probe adapter, combat coverage, runner including gate roundtrip fix; scientific interpretation independently supported with limitations.",
+    "not_run": "No new broad native/local seed suite; merged producer retains Phase-A63/63 CTest and real parity evidence. No production gameplay gate or combat model training."
+  }
+}
