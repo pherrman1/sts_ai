@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-09 against the current working tree.
+Last verified: 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -155,6 +155,28 @@ is explicitly enabled.
 
 Bridge conversion, lowering, transaction, and validation failures are
 fail-closed and must never commit an invalid live action.
+
+Silver player statuses use a sorted sparse vector (`PlayerStatusMap`) with
+signed 16-bit values and explicit membership independent of zero. Wire order,
+first-insertion-wins semantics, and equality remain unchanged. Insertion
+invalidates references and iterators; current status-processing loops queue
+actions or change existing entries/status bits without inserting during iteration.
+The native simulator retains its own status representation.
+
+Silver caches the diagnostic root hash lazily only when a leaf observer needs
+it, invalidating on fresh reset and reroot. Rollout timing starts only for an
+observer requesting a result. Action counts remain exact with the default-off
+`BattleSearcher::recordActionTrace`; enable it before searching to retain the
+full `printSearchStack` action sequence. The observer's action counts and
+fingerprints do not depend on that debug vector.
+
+Chance widening memoizes the original floating-point expression for visit
+counts below 32,768, with independent END_TURN/general parameter caches and
+exact-formula fallback above that range. Parameter changes invalidate the
+corresponding schedule. This cache limit does not change the widening limit or
+allocated-node reuse cap. UCB scanning stops only when the current best score
+is positive infinity, retaining the original first-winner tie behavior.
+
 
 ## Action enumeration / semantic bridge
 

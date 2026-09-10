@@ -19,6 +19,8 @@ add_link_options(
     -fopenmp
     $<$<CONFIG:Release>:-flto>)
 
+include(cmake/GccPgo.cmake)
+
 add_subdirectory(json)
 
 add_library(sts_core_objects OBJECT ${sts_lightspeed_SOURCES})
@@ -139,6 +141,23 @@ target_compile_definitions(silver-native-parity-runner PRIVATE
     initMaps=silver_initMaps agentMtRunner=silver_agentMtRunner)
 target_link_libraries(silver-native-parity-runner PRIVATE silver_combat_model silver_combat_search_bridge)
 target_link_options(silver-native-parity-runner PRIVATE -Wl,--gc-sections)
+
+add_executable(silver-player-status-test apps/silver_player_status_test.cpp)
+set_target_properties(silver-player-status-test PROPERTIES
+    OUTPUT_NAME silver_player_status_test CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+target_include_directories(silver-player-status-test PRIVATE third_party/silver_lightspeed/include)
+
+add_executable(silver-search-optimization-test apps/silver_search_optimization_test.cpp)
+set_target_properties(silver-search-optimization-test PROPERTIES
+    OUTPUT_NAME silver_search_optimization_test CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+target_include_directories(silver-search-optimization-test PRIVATE
+    third_party/silver_lightspeed/include include)
+target_compile_definitions(silver-search-optimization-test PRIVATE
+    sts=sts_silver java=sts_silver_java fixed_list=silver_fixed_list
+    rollWeightedIdx=silver_rollWeightedIdx simulationIdx=silver_simulationIdx
+    initMaps=silver_initMaps agentMtRunner=silver_agentMtRunner)
+target_link_libraries(silver-search-optimization-test PRIVATE silver_combat_model silver_combat_search_bridge)
+target_link_options(silver-search-optimization-test PRIVATE -Wl,--gc-sections)
 
 # Full boundary test has its own executable: it needs both live fixture
 # construction and the isolated model, but must not bloat normal unit-test.
@@ -309,6 +328,10 @@ add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge
 add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_random_bridge)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
+add_test(NAME silver_player_status COMMAND $<TARGET_FILE:silver-player-status-test>)
+add_test(NAME silver_search_optimization COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:silver-search-optimization-test>)
+set_tests_properties(silver_search_optimization PROPERTIES LABELS "integration")
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.
 # Do not register its modules or separate compile-only checks here as well:

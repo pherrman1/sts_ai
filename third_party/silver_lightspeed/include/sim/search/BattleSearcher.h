@@ -206,7 +206,26 @@ namespace sts::search {
         std::default_random_engine randGen;
 
         std::vector<Node*> searchStack;        // descent path; doubles as the cycle-guard set (linear scan, depth is small)
+        // Counts remain available with tracing disabled; enable before search for debug traces.
+        bool recordActionTrace = false;
+        std::size_t actionCount = 0;
         std::vector<Action> actionStack;
+        void recordAction(const Action &action) {
+            ++actionCount;
+            if (recordActionTrace) actionStack.push_back(action);
+        }
+
+        bool diagnosticRootHashValid = false;
+        std::uint64_t cachedDiagnosticRootHash = 0;
+        std::uint64_t diagnosticRootHash();
+
+        struct WideningSchedule {
+            double c = 0;
+            double alpha = 0;
+            std::vector<int> caps;
+        };
+        WideningSchedule wideningSchedules[2];
+        int wideningCap(int category, std::int64_t visits);
 
         SimpleAgent rolloutAgent;
         BattleContext rolloutScratch;   // reused playout buffer: copy-assigning into it keeps the card-pile vector capacity, avoiding a fresh allocation per rollout
@@ -247,7 +266,7 @@ namespace sts::search {
         int selectBestEdgeToSearch(const Node &cur);
 
         double rolloutToEnd(BattleContext &state, std::vector<Action> &actionStack,
-                            std::uint64_t rootStateHash, const Node *parentState,
+                            const Node *parentState,
                             const Action *incomingAction, int depth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);
