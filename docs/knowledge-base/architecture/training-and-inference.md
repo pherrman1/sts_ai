@@ -85,7 +85,9 @@ gate on TEST with source-seed bootstrap intervals and safety/catastrophic
 slices. It never fits a model, invokes Silver/the simulator, or mixes
 predictor scores with Silver `qProduct` values. The gate is whole-decision:
 accepted decisions use the predictor ranking for every sibling, while rejected
-decisions use Silver for every sibling.
+decisions use Silver for every sibling. Its automatic gate label is explicitly
+provisional and cannot emit the scientific `TARGET MISMATCH` outcome; the
+coordinator records that interpretation from the reported target diagnostics.
 
 The prepared next-generation OOC workflow is documented in
 [`operations/ooc-label-pipeline.md`](../operations/ooc-label-pipeline.md).

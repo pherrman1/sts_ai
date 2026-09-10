@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from analyze_combat_evaluator_silver_gate import (
     arm_metrics,
+    automatic_gate_classification,
     bootstrap_test,
     candidate_gates,
     group_rows,
@@ -103,6 +104,23 @@ class SilverGateTest(unittest.TestCase):
         self.assertEqual(result["all"]["action_rows"], 80)
         self.assertEqual(result["all_siblings_survive"]["decisions"], 40)
         self.assertEqual(result["at_least_one_sibling_dies"]["decisions"], 0)
+
+    def test_target_mismatch_distinguishes_all_surviving_ranking_disagreement(self):
+        groups = group_rows(synthetic_frame())
+        disagreements = [group for group in groups
+                         if group["all_siblings_survive"] and group["model_choice"] != group["silver_choice"]]
+        self.assertTrue(disagreements)
+        result = target_mismatch(groups)["all_siblings_survive"]
+        self.assertLess(result["within_decision_spearman_macro"], 1.0)
+        self.assertLess(result["macro_pairwise_concordance"], 1.0)
+
+    def test_automatic_classification_is_provisional_and_cannot_emit_target_mismatch(self):
+        groups = group_rows(synthetic_frame())
+        accepted = {(group["sourceSeed"], group["decisionIdx"]) for group in groups}
+        result = automatic_gate_classification(groups[0], groups, accepted)
+        self.assertEqual(result["status"], "PROVISIONAL")
+        self.assertTrue(result["target_mismatch_requires_coordinator"])
+        self.assertNotIn("TARGET MISMATCH", result["label"])
 
     def test_join_rejects_prediction_identity_mismatch(self):
         semantic = [{

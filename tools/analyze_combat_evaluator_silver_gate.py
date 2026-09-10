@@ -541,26 +541,40 @@ def analyze_decisions(frame: pd.DataFrame, *, bootstrap_replicates: int = BOOTST
             "catastrophic_accepted_cases": catastrophic_cases(test, test_accepted) if chosen is not None else [],
             "target_mismatch": target_mismatch(test),
         },
-        "classification": classify_result(chosen, test, test_accepted),
+        "automatic_gate_classification": automatic_gate_classification(chosen, test, test_accepted),
+        "coordinator_scientific_classification": None,
         "constraints": {"simulator_called": False, "silver_called": False, "new_labels": False,
                         "retrained": False, "gameplay_integration": False},
         "software": {"python": platform.python_version(), "numpy": np.__version__, "pandas": pd.__version__},
     }
 
 
-def classify_result(chosen: dict[str, Any] | None, test: list[dict[str, Any]], accepted: set[tuple[int, int]]) -> str:
+def automatic_gate_classification(
+    chosen: dict[str, Any] | None, test: list[dict[str, Any]], accepted: set[tuple[int, int]]
+) -> dict[str, Any]:
+    """Apply only the mechanical gate rule; scientific interpretation is external.
+
+    In particular, this function deliberately cannot emit TARGET MISMATCH.
+    Combat-vs-OOC target mismatch is a coordinator judgment based on the
+    diagnostics reported alongside this provisional automatic result.
+    """
     if chosen is None:
-        return "MODEL USEFUL BUT GATE NOT READY"
+        label = "MODEL USEFUL BUT GATE NOT READY"
+        return {"label": label, "status": "PROVISIONAL", "target_mismatch_requires_coordinator": True}
     metrics = arm_metrics(test, accepted)
     catastrophic = catastrophic_cases(test, accepted)
     if metrics["mean_regret"] <= 0.005 and metrics["p95_regret"] <= 0.025 and not catastrophic:
         if metrics["simulation_savings_fraction"] is not None and metrics["simulation_savings_fraction"] >= 0.75:
-            return "GATE VERY PROMISING"
-        if metrics["simulation_savings_fraction"] is not None and metrics["simulation_savings_fraction"] >= 0.50:
-            return "GATE PROMISING"
-    if catastrophic or metrics["mean_regret"] > 0.025:
-        return "MODEL UNSAFE"
-    return "MODEL USEFUL BUT GATE NOT READY"
+            label = "GATE VERY PROMISING"
+        elif metrics["simulation_savings_fraction"] is not None and metrics["simulation_savings_fraction"] >= 0.50:
+            label = "GATE PROMISING"
+        else:
+            label = "MODEL USEFUL BUT GATE NOT READY"
+    elif catastrophic or metrics["mean_regret"] > 0.025:
+        label = "MODEL UNSAFE"
+    else:
+        label = "MODEL USEFUL BUT GATE NOT READY"
+    return {"label": label, "status": "PROVISIONAL", "target_mismatch_requires_coordinator": True}
 
 
 def build_report(frame: pd.DataFrame, metadata: dict[str, Any], predictor_manifest_info: dict[str, Any] | None,
@@ -597,7 +611,8 @@ def main() -> None:
     report = build_report(frame, metadata, metadata["predictor_manifest"], args.evidence, args.raw_package, result)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"output": str(args.output.resolve()), "classification": report["classification"],
+    print(json.dumps({"output": str(args.output.resolve()),
+                      "automatic_gate_classification": report["automatic_gate_classification"],
                       "chosen_gate": report["chosen_gate_identity"], "test": report["test"]["hybrid_gate"]},
                      indent=2, sort_keys=True))
 
