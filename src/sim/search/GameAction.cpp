@@ -368,10 +368,22 @@ void executeRewardsAction(GameContext &gc, const search::GameAction a) {
             const int relicIdx = a.getIdx1();
             const bool takesSapphirePairedRelic =
                 r.sapphireKey && relicIdx == r.relicCount - 1;
-            gc.obtainRelic(r.relics[relicIdx]);
+            const auto relic = r.relics[relicIdx];
             r.removeRelicReward(relicIdx);
             if (takesSapphirePairedRelic) {
                 r.sapphireKey = false;
+            }
+            // Acquisition can open a selector or replace the reward container
+            // (for example Cauldron). Resume the unclaimed original rewards
+            // after that screen, then preserve their original leave callback.
+            const auto remainingRewards = r;
+            const auto previousContinuation = gc.regainControlAction;
+            if (gc.obtainRelic(relic)) {
+                gc.regainControlAction = [remainingRewards, previousContinuation](GameContext &next) {
+                    const auto continuation = previousContinuation;
+                    next.openCombatRewardScreen(remainingRewards);
+                    next.regainControlAction = continuation;
+                };
             }
             break;
         }

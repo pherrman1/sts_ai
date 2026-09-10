@@ -28,6 +28,7 @@ before broad repository search.
 | --- | --- | --- | --- |
 | Run state | `include/game/GameContext.h`, `src/game/GameContext.cpp` | `GameContext`, `ScreenState`, `GameOutcome` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Run-level actions | `include/sim/search/GameAction.h`, `src/sim/search/GameAction.cpp` | `GameAction`, `getAllActionsInState`, `execute` | [out-of-combat.md](architecture/out-of-combat.md) |
+| Semantic OOC decisions | `include/sim/search/OocSemanticAction.h`, `src/sim/search/OocSemanticAction.cpp` | typed intent/key contract, complete enumeration, transactional live primitive resolution; public single-target compounds and sequential revealed selectors | [out-of-combat.md](architecture/out-of-combat.md#semantic-ooc-decisions), [ADR-0013](../../decisions/0013-ooc-semantic-decision-boundaries.md) |
 | OOC policy chain | `apps/one_combat/run_driver.{h,cpp}`, `apps/one_combat/ooc_policy.{h,cpp}` | `runFullRunOOC` — ordered whole-run loop and branch chain, current default; `ooc_policy` owns live action/checkpoint/one-ply/map policy implementations | [out-of-combat.md](architecture/out-of-combat.md) |
 | Native OOC floor/win | `models/v_rich_trees.txt`, `models/v_win_trees.txt` | Compact tree artifacts loaded at startup, `STS_NATIVE_OOC=0` disables | [out-of-combat.md](architecture/out-of-combat.md) |
 | Checkpoint NN | `apps/ooc_checkpoint_net.h`, `apps/one_combat/ooc_policy.cpp` | `OocCheckpointNet`, `oocActionNNPolicy`, `STS_OOC_CHECKPOINT_NN` | [out-of-combat.md](architecture/out-of-combat.md) |

@@ -235,7 +235,9 @@ target_include_directories(parity_test PUBLIC json/include)
 
 # "test" is reserved by CTest, so the manual dispatcher target is unit-test
 # with OUTPUT_NAME "test" to keep the build/test binary path stable.
-add_executable(unit-test apps/test.cpp apps/test_belief.cpp $<TARGET_OBJECTS:sts_core_objects>)
+add_executable(unit-test apps/test.cpp apps/test_belief.cpp
+    apps/test_ooc_reward_continuation.cpp apps/test_ooc_semantic.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(unit-test PROPERTIES OUTPUT_NAME test)
 target_link_libraries(unit-test PRIVATE silver_combat_bridge)
 target_include_directories(unit-test PUBLIC include)
@@ -273,6 +275,11 @@ add_test(NAME scum_convroot_stale_outcome COMMAND $<TARGET_FILE:unit-test> scum_
 add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_overflow)
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
+add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
+add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
+add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)
+set_tests_properties(ooc_semantic ooc_semantic_smith ooc_reward_continuation
+    PROPERTIES LABELS "core;integration")
 add_test(NAME relic_reward_sapphire COMMAND $<TARGET_FILE:unit-test> relic_reward_sapphire)
 add_test(NAME semantic_card_edges COMMAND $<TARGET_FILE:unit-test> semantic_card_edges)
 add_test(NAME s3_drawpile_reuse_boundary COMMAND $<TARGET_FILE:unit-test> s3_drawpile_reuse_boundary)
