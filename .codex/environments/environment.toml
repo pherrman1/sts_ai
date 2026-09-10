@@ -10,4 +10,6 @@ script = '''
 set -e
 
 python3 tools/agent/worktree.py check . || \
-  python3 tools/agent/worktree.py repair .'''
+  python3 tools/agent/worktree.py repair .
+
+tools/agent/bootstrap_python.sh'''
