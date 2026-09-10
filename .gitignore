@@ -61,3 +61,6 @@ build/pilot_pol.csv
 
 # Disposable coding-agent evaluation workspaces and result records.
 /.agent-eval/
+
+# Large local archive exports.
+/sts_lightspeed-local-ignored-2026-09-09.tar.zst*
