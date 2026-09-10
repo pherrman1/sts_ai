@@ -209,6 +209,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
     apps/one_combat/e2c_capture.cpp
     apps/one_combat/ooc_policy.cpp
+    apps/one_combat/run_driver.cpp
     apps/one_combat/fight_replay.cpp
     apps/one_combat/search_diagnostics.cpp
     apps/one_combat/vnet_query_log.cpp

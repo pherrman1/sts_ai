@@ -1,6 +1,6 @@
 # Architecture overview
 
-Last verified: 2026-09-09 against the current working tree.
+Last verified: 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -33,15 +33,15 @@ tracing, and counterfactual evaluators. The self-contained `vnettest`,
 The retained E2c RAW/POST capture contract is isolated in
 `apps/one_combat/e2c_capture.{h,cpp}`. The module owns capture state, row
 serialization, accounting, the temporary RAW observer scope, canonical RAW
-projection, and the retained run-win parity checks. `runFullRunOOC` remains the
-orchestration owner: it starts/finishes E2c around the shared training-integrity
-predicate and delegates the real battle exit and reward-screen boundaries to
-the module.
+projection, and the retained run-win parity checks. The extracted
+`apps/one_combat/run_driver.cpp::runFullRunOOC` remains the orchestration owner:
+it starts/finishes E2c around the shared training-integrity predicate and
+delegates the real battle exit and reward-screen boundaries to the module.
 
 | Location | Current ownership |
 | --- | --- |
 | `include/`, `src/` | Simulator, search, agents, and native model readers. |
-| `apps/` | Executable entry points and OOC checkpoint inference. `apps/one_combat/` owns the integration driver's shared run-feature schema, compact-tree reader, E2c capture lifecycle, and extracted diagnostic modules. |
+| `apps/` | Executable entry points and OOC checkpoint inference. `apps/one_combat/` owns the integration driver's run loop, shared run-feature schema, compact-tree reader, E2c capture lifecycle, and extracted diagnostic modules. |
 | `bindings/` | Run-level pybind11 API. |
 | root `train_*.py`, `export_*.py` | Executable trainers and serializers. |
 | `v_server.py` | Optional localhost inference bridge. |
@@ -102,10 +102,11 @@ Detailed flows are in [combat search](combat-search.md),
 - `one_combat.cpp` centralizes many policy and experiment layers. **Inference:**
   it functions as a research workbench rather than a stable library boundary;
   the repository contains no explicit decision record for that intent.
-- `runFullRunOOC` remains the canonical ordered integration loop, while its
-  live OOC action-policy implementations are isolated in
-  `apps/one_combat/ooc_policy.{h,cpp}`. Model loading, token-state construction,
-  fallback/diagnostic policy layers, and loop ownership remain in the driver.
+- `runFullRunOOC` is the canonical ordered integration loop in
+  `apps/one_combat/run_driver.{h,cpp}`, while its live OOC action-policy
+  implementations are isolated in `apps/one_combat/ooc_policy.{h,cpp}`. Model
+  loading, token-state construction, fallback/diagnostic policy layers, and
+  command/mode dispatch remain in `one_combat.cpp`.
 - There is no automatic test suite registered in CMake.
 
 ## Open questions
@@ -122,7 +123,7 @@ Detailed flows are in [combat search](combat-search.md),
 - `src/sim/search/ScumSearchAgent2.cpp::playout`, `playoutBattle`
 - `include/sim/search/GameAction.h::GameAction`
 - `include/sim/search/Action.h::Action`
-- `apps/one_combat.cpp::main`, `runFullRunOOC`
+- `apps/one_combat.cpp::main`, `apps/one_combat/run_driver.cpp::runFullRunOOC`
 - `apps/one_combat/e2c_capture.{h,cpp}` — retained E2c RAW/POST lifecycle, canonical projection, and run-win parity
 - `apps/one_combat/ooc_policy.{h,cpp}` — live OOC action/checkpoint/one-ply/map policies
 - `apps/one_combat/fight_replay.{h,cpp}` — Act-3 boss fight-start capture and isolated `fightrep` replay
