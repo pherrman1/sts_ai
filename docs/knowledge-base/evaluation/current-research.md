@@ -25,7 +25,7 @@ infer a baseline from historical plans, model filenames, or local artifacts.
 
 ## Parked lines
 
-### Semantic OOC confirmation and combat-label coverage
+### Semantic OOC confirmation and first frozen scorer
 
 The fresh 1,024-decision confirmation at merged producer `a6c2abb` is
 **SEMANTIC CONFIRMED for the frozen probe on the natural, reward-dominated
@@ -39,9 +39,26 @@ The same fights yielded 7,652 combat rows with zero additional Silver
 simulations. **COMBAT LABELS ADEQUATE** passes the inherited row-count screen:
 348 nonambiguous deaths, including 48 test rows. Those test deaths represent
 only 10 source groups; one contributes 19 rows, so independent loss coverage
-remains limited. No combat evaluator was trained. Any next model experiment
-requires separate review. See [ledger-06 §218](../../experiments/ledger-06.md)
+remains limited. The subsequent counterfactual combat-evaluator feasibility
+study remains a separate [ledger-06 §219](../../experiments/ledger-06.md)
+result; it is promising for survival and winning HP but inconclusive on the
+loss tail, and is not deployed. Any next model
+experiment requires separate review. See [ledger-06 §218](../../experiments/ledger-06.md)
 and the [frozen evidence packet](../../experiments/evidence/semantic_combat_confirmation_2026-09-10.json).
+
+The first offline semantic action scorer is now frozen and passes its fresh
+model holdout: training on the 1,024 development decisions produced 1,831
+features (1,017 state plus 814 semantic action), and the untouched
+993024–993151 cohort contains 128 decisions and 935 rows with zero validator
+failures. Semantic macro pairwise is 0.5550 versus primitive 0.4903 and the
+state-only null 0.5000; mean selected regret is 0.0430 versus primitive
+0.0451. The paired 5,000-replicate 95% interval for semantic-minus-null
+pairwise is [+0.0113, +0.0989]. This is an **offline model pass**, not a
+runtime, win-rate, or production-compatibility result. Compound-containing
+decisions (12) and EVENT (8) remain small/noisy slices; the semantic compound
+regret point estimate is worse than primitive despite better pairwise ranking.
+No runtime policy or C++ model export changed. See [ledger-06 §220](../../experiments/ledger-06.md)
+and the [frozen model evidence packet](../../experiments/evidence/semantic_ooc_model_v1_2026-09-10.json).
 
 ### Silver CPU optimization qualification
 
