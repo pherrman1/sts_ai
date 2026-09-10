@@ -43,6 +43,9 @@ REQUIRED_PREDICTIONS = (
     "p_win", "predicted_win_hp_frac", "predicted_loss_remaining_frac",
     "expected_signed_outcome",
 )
+SOURCE_FAMILY_NAMES = {
+    **FAMILY_NAMES, "SELECTOR": "SELECTOR", "TREASURE": "TREASURE", "BOSS_RELIC": "BOSS_RELIC",
+}
 
 
 def fail(message: str) -> None:
@@ -225,7 +228,7 @@ def join_inputs(
 
     frame = pd.DataFrame(joined)
     frame["family"] = [
-        FAMILY_NAMES.get(SOURCE_NAMES.get(integer(x, "semanticSource"), "OTHER"), "OTHER")
+        SOURCE_FAMILY_NAMES.get(SOURCE_NAMES.get(integer(x, "semanticSource"), "OTHER"), "OTHER")
         for x in frame["semanticSource"]
     ]
     for name in ("sourceSeed", "decisionIdx", "futureIdentity", "branchFightIdx", "silverSimulations"):
