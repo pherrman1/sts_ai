@@ -1,7 +1,7 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-10 against the current working tree (tracked native
-floor/win trees relocated from `build/` to `models/`).
+Last verified: 2026-09-10 against the current working tree (semantic OOC
+decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
 Previously verified 2026-08-09 (Act-4 key collection added to every REWARDS handler
@@ -19,6 +19,146 @@ and the boundary between default native inference and opt-in strategic
 experiments.
 
 ## Current implementation
+
+## Semantic OOC decisions
+
+`OocSemanticAction` is an opt-in intent representation above the primitive
+`GameAction` interface (`include/sim/search/OocSemanticAction.h`,
+`src/sim/search/OocSemanticAction.cpp`). It does not replace the deployed
+policy chain, model inputs, trained artifacts, or fallback choices. The
+architecture decision is [ADR-0013](../../../decisions/0013-ooc-semantic-decision-boundaries.md).
+
+Effects and sources have explicit append-only numeric IDs. `UPGRADE_CARD=0`
+and `CAMPFIRE_SMITH=0` remain stable. Keys retain schema version 1 and the
+original literal Smith key, for example:
+
+```text
+ooc:v1:effect=0:source=0:card=25:misc=0:upgraded=0:bottle=-1:occurrence=0
+```
+
+Typed variant payloads distinguish deck cards, source-plus-card transactions,
+selector picks, reward entities/groups, shop entities/prices, event options,
+and boss relics. Deck identity includes card ID, misc, upgrade state, bottle
+slot and equivalent-card occurrence. Generated selector candidates have their
+own revealed-card identity. Reward card groups use a sorted visible card
+multiset plus occurrence; rewards and shop entities resolve by semantic content
+and occurrence, with Sapphire pairing and shop price represented where
+relevant. Primitive bits and live UI indices are execution diagnostics, never
+persisted semantic target identity.
+
+`enumerateOocSemanticActions` returns `supported`, `complete`, `error` and
+canonically ordered actions. Consumers must check completeness before treating
+the result as the complete legal action space. MAP, BATTLE and INVALID screens
+are unsupported; disabled Match and Keep and malformed selector states cannot
+be presented as complete supported decisions.
+
+A compound may combine a source option with one target only when its complete
+candidate set is public before the source click and that click reveals no new
+information needed to choose. Smith, Peace Pipe and shop removal satisfy this
+rule. Execution resolves the source against the current state, executes the
+normal primitive, checks the expected selector, resolves the target again
+against that live selector, and checks the final boundary. Shop removal also
+validates the current service price; purchases remain one-step actions even
+when a relic purchase opens a subsequent selector.
+
+The event mapping describes selector metadata, not event effects. These are
+single-target compounds; unlisted legal options remain `EVENT_CHOICE(event,
+option)`. A mapped option also falls back to its source choice when its
+transaction preconditions do not hold, including insufficient gold or Wing
+Statue damage that would kill the player. Costs below are ascension below 15 / at least 15 when different.
+
+| Event enum | Option | Target effect | Source cost |
+|---|---:|---|---|
+| `OMINOUS_FORGE` | 0 | Upgrade | None |
+| `ANCIENT_WRITING` | 0 | Remove | None |
+| `OLD_BEGGAR` | 0 | Remove | 75 gold |
+| `DESIGNER_IN_SPIRE` | 0 | Upgrade | 40/50 gold |
+| `DESIGNER_IN_SPIRE` | 2 | Remove | 60/75 gold |
+| `DESIGNER_IN_SPIRE` | 4 | Remove, then automatic random upgrade | 90/110 gold |
+| `DUPLICATOR` | 0 | Duplicate | None |
+| `LIVING_WALL` | 0 / 1 / 2 | Remove / transform / upgrade | None |
+| `PURIFIER` | 0 | Remove | None |
+| `THE_CLERIC` | 1 | Remove | 50/75 gold |
+| `TRANSMORGRIFIER` | 0 | Transform | None |
+| `UPGRADE_SHRINE` | 0 | Upgrade | None |
+| `WING_STATUE` | 0 | Remove | `damagePlayer(7)` |
+
+Removal and ordinary transform candidates must be transformable and unbottled;
+upgrade candidates must be upgradeable; Duplicator permits all deck cards.
+The primitive implementation determines costs, automatic outcomes and RNG.
+Designer option 4's random upgrade is an outcome, not target identity.
+`NOTE_FOR_YOURSELF` remains a source choice because it obtains a card and
+applies obtain effects before constructing the removal candidates.
+
+Already-open selectors expose one currently legal semantic pick. Upgrade,
+remove, transform, transform-upgrade, duplicate, obtain, bottle and Bonfire
+Spirits sacrifice selectors are represented. Multi-select picks carry the
+selector type and required/completed counts and re-enumerate live candidates
+after each pick; no card-subset cross-product is constructed. Astrolabe is
+first a boss-relic choice, then sequential transform-upgrade picks. Augmenter
+option 1 is first an event choice, then two transform picks. Library Read is
+first an event choice without generated IDs, then TAKE_CARD actions for the
+revealed OBTAIN candidates. Wheel and other random event choices likewise
+contain no predicted outcome.
+
+Rewards enumerate all available card, relic, gold, potion and key actions
+together, plus their distinct skip/leave choices. `CARD(group,5)` skips one
+card group; with Singing Bowl it is represented as `SINGING_BOWL` because the
+primitive grants the Bowl effect. `LEAVE_REWARDS` maps to reward `SKIP` and
+leaves the entire screen. Taking a Sapphire-paired relic consumes that key
+choice, and taking Sapphire consumes its paired relic. Treasure `OPEN_CHEST`
+ends at the revealed reward screen; it does not choose a generated reward.
+
+Reward-origin relic acquisition preserves its remaining reward container and
+leave continuation. A bottle or other selector returns to those rewards; a
+relic opening child rewards returns after leaving the child screen. Nested
+continuations restore each level. This primitive correction applies to all
+callers (`GameAction.cpp::executeRewardsAction`). `Deck::removeSelected`
+removes the sorted original indices from highest to lowest so descending or
+permuted player picks remove the intended cards; transform outcomes still
+follow the original player pick order. These are primitive correctness fixes;
+semantic coverage itself introduces no default policy or model change.
+
+Execution is transactional: copy `GameContext`, deep-copy its shared `Map`,
+execute through legal primitive paths, and commit only after all required
+boundaries pass. Other owned state is value-copied. Repository-generated
+continuation callbacks use their context argument and value captures; the
+transaction guarantee assumes those callbacks, not arbitrary externally
+supplied closures mutating external objects. Semantic execution fails closed
+when the global `g_onGameActionExecute` observer is active, because observable
+callbacks cannot be rolled back with the copied game state. Failure leaves the caller's game
+state unchanged and returns a useful error. Successful primitive bits are
+returned separately for diagnostics.
+
+## Semantic data/model adoption boundary
+
+The maintained replacement workflow is
+[OOC label pipeline preparation](../operations/ooc-label-pipeline.md), with
+`tools/ooc_pipeline_contract.py` owning `ooc_pipeline_v1` provenance and the
+whole-combat corpus validator. That validator expects the exact 1,766-feature
+battle-start schema and post-battle diagnostics; it is not a semantic-action
+row validator. Current K-budget manifests still bind primitive action bits and
+semantic descriptions to replayed sibling sets. None of these schemas is
+silently migrated by the semantic module.
+
+A future clean OOC producer must enumerate complete semantic sibling sets,
+persist the canonical key and typed action features, and execute each through
+the semantic executor. Primitive diagnostics may accompany a row but cannot
+replace semantic identity. Decisions after Library/chest/relic reveals and
+each multi-select pick require separate live decision groups. Producer replay
+and validation must bind the semantic schema, exact candidate coverage,
+producer/executable identity and frozen combat teacher before accepting rows.
+Stale, ambiguous, unsupported or incomplete actions require explicit rejection
+or quarantine, not primitive-index labels disguised as semantic labels.
+
+The future direct-Q and factorized trainers must consume the same semantic
+rows, splits and representation, preserving the maintained source-decision
+sibling/future grouping, teacher provenance, requested/actual budget schedule,
+validity and quarantine contracts. Model encoders/exporters and any opt-in
+runtime scorer must agree on those new action features; models trained on
+primitive bits cannot be fed compound actions. Semantic dataset production,
+training-schema migration, retraining and deployment remain separate work;
+obsolete `strategicgen` paths are not expanded for coverage.
 
 ## Offline whole-Act encounter-distribution evaluator
 

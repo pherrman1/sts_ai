@@ -48,6 +48,10 @@
 #include "constants/MonsterMoves.h"
 #include "test_belief.h"
 
+int runOocRewardContinuationTests();
+int runOocSemanticTests();
+int runOocSemanticTransactionsTests();
+
 using namespace sts;
 
 void printSizes() {
@@ -3644,8 +3648,9 @@ const search::OocSemanticAction *findUpgradeAction(
         const std::vector<search::OocSemanticAction> &actions, CardId id, int bottleSlot = -1,
         int occurrence = 0) {
     for (const auto &action : actions) {
-        if (action.target.id == id && action.target.bottleSlot == bottleSlot
-                && action.target.occurrence == occurrence) return &action;
+        const auto &target = std::get<search::OocCardTarget>(action.target);
+        if (target.id == id && target.bottleSlot == bottleSlot
+                && target.occurrence == occurrence) return &action;
     }
     return nullptr;
 }
@@ -3672,7 +3677,7 @@ int testOocSemanticSmith() {
             return fail("repeated enumeration changed canonical keys");
         if (i > 0 && search::canonicalOocSemanticActionKey(actions[i - 1]) >= key)
             return fail("canonical ordering is not deterministic and unique");
-        if (actions[i].target.upgraded) return fail("non-upgradeable card was enumerated");
+        if (std::get<search::OocCardTarget>(actions[i].target).upgraded) return fail("non-upgradeable card was enumerated");
     }
     const auto *bash = findUpgradeAction(actions, CardId::BASH);
     const auto *strike = findUpgradeAction(actions, CardId::STRIKE_RED);
@@ -3704,7 +3709,7 @@ int testOocSemanticSmith() {
     {
         GameContext stale = base;
         auto absent = *bash;
-        absent.target.id = CardId::DEMON_FORM;
+        std::get<search::OocCardTarget>(absent.target).id = CardId::DEMON_FORM;
         const auto snapshot = oocSmithStateFingerprint(stale);
         const auto result = search::executeOocSemanticAction(stale, absent);
         if (result.ok || !result.executedPrimitiveBits.empty()
@@ -3714,7 +3719,7 @@ int testOocSemanticSmith() {
     {
         GameContext stale = base;
         auto upgraded = *bash;
-        upgraded.target.upgraded = true;
+        std::get<search::OocCardTarget>(upgraded.target).upgraded = true;
         const auto snapshot = oocSmithStateFingerprint(stale);
         const auto result = search::executeOocSemanticAction(stale, upgraded);
         if (result.ok || oocSmithStateFingerprint(stale) != snapshot)
@@ -3782,7 +3787,8 @@ int testOocSemanticSmith() {
         const auto equivalent = search::enumerateCampfireUpgradeActions(duplicates);
         int unbottledBashActions = 0;
         for (const auto &action : equivalent) {
-            unbottledBashActions += action.target.id == CardId::BASH && action.target.bottleSlot == -1;
+            const auto &target = std::get<search::OocCardTarget>(action.target);
+            unbottledBashActions += target.id == CardId::BASH && target.bottleSlot == -1;
         }
         if (unbottledBashActions != 2)
             return fail("duplicate Bash occurrences did not preserve distinct ordered successors");
@@ -3981,6 +3987,12 @@ int main(int argc, const char* argv[]) {
         return testSilverRandomBridge();
     } else if (command == "silver_semantic_action") {
         return testSilverSemanticActionResolution();
+    } else if (command == "ooc_semantic") {
+        return runOocSemanticTests();
+    } else if (command == "ooc_semantic_transactions") {
+        return runOocSemanticTransactionsTests();
+    } else if (command == "ooc_reward_continuation") {
+        return runOocRewardContinuationTests();
     } else if (command == "ooc_semantic_smith") {
         return testOocSemanticSmith();
     } else if (command == "simhealth_load") {
