@@ -1,7 +1,7 @@
 # Training and inference
 
-Last verified: 2026-09-07 against the current working tree (including the
-root trainer and analyzer audit).
+Last verified: 2026-09-10 against the current working tree (including the
+semantic-branch trainer adapter and root trainer audit).
 
 ## Purpose
 
@@ -61,6 +61,20 @@ inference reject contract drift. Metrics exclude invalid rows, report split
 valid/win/death/ambiguous counts, and classify sparse loss tests as
 `INCONCLUSIVE_LOW_POWER`. This is offline V1 tooling only and is not
 integrated into combat search.
+
+`tools/train_combat_evaluator_semantic_branch.py` is the separate frozen
+semantic-confirmation training adapter. It consumes exactly the 64 validated
+`combat_evaluator_semantic_branch_v1` sidecar manifests from the 1,024-source
+confirmation cohort, rejects producer/count/package-hash drift, and reuses
+`stable_split`, the V1 three-head XGBoost recipe, and one-CPU-thread training.
+The adapter derives encounter one-hot columns and variance filtering from
+TRAIN only, excludes semantic/provenance/terminal-label columns, and reports
+held-out metrics, source-seed clustered bootstrap uncertainty, source-macro
+views, input-alias noise, descriptive slices, and batch-1 latency. It is an
+offline predictive-feasibility experiment only: it does not regenerate
+labels, invoke Silver or the simulator, export a runtime artifact, or replace
+Silver in gameplay. The bulk corpus, model outputs, and prediction CSV remain
+external evidence rather than tracked repository artifacts.
 
 The prepared next-generation OOC workflow is documented in
 [`operations/ooc-label-pipeline.md`](../operations/ooc-label-pipeline.md).
