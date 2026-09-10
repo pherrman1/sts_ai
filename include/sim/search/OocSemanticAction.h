@@ -13,11 +13,11 @@ struct GameContext;
 namespace search {
 
 enum class OocSemanticEffect : std::uint8_t {
-    UPGRADE_CARD,
+    UPGRADE_CARD = 0,
 };
 
 enum class OocSemanticSource : std::uint8_t {
-    CAMPFIRE_SMITH,
+    CAMPFIRE_SMITH = 0,
 };
 
 struct OocCardTarget {

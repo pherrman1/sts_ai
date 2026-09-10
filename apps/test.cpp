@@ -3541,6 +3541,10 @@ int testOocSemanticSmith() {
     const auto *bash = findUpgradeAction(actions, CardId::BASH);
     const auto *strike = findUpgradeAction(actions, CardId::STRIKE_RED);
     if (bash == nullptr || strike == nullptr) return fail("Bash or Strike target missing");
+    if (search::canonicalOocSemanticActionKey(*bash)
+            != "ooc:v1:effect=0:source=0:card=25:misc=0:upgraded=0:bottle=-1:occurrence=0") {
+        return fail("canonical Bash key changed without a schema-version change");
+    }
 
     {
         GameContext blocked = base;
