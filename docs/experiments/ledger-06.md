@@ -6344,6 +6344,7 @@ model training was changed.
   result supports designing a later simulation-replacement experiment, not
   deployment, Silver replacement, more labels, or gameplay qualification.
 - **Evidence:** [compact machine-readable packet](evidence/semantic_combat_evaluator_2026-09-10.json).
+
 ## §220 First frozen semantic OOC action scorer: PASS on fresh holdout (2026-09-10)
 
 - **Question/design:** carry the confirmed structured semantic action
@@ -6403,3 +6404,101 @@ model training was changed.
   `/home/philippherrmann/sts_sweep/preserved/semantic-ooc-model-v1-2026-09-10/`;
   the working copies remain in ignored `build/` storage. Bulk semantic CSVs,
   logs and predictions remain ignored/external and are not committed.
+
+## §221 Pre-combat combat evaluator model comparison (2026-09-10)
+
+- **Question/protocol:** test the prespecified alternatives to the frozen §219
+  three-head XGBoost evaluator using only the validated §218 corpus. TRAIN was
+  used for fitting and normalization; VALIDATION selected early-stopping
+  iterations and one finalist per family; a selection-freeze record was written
+  before one TEST evaluation per finalist. No simulator, Silver, new labels,
+  gameplay integration, or production export was used.
+- **Implementation/provenance:** runner and focused tests at experiment-code
+  SHA `eafaf34113cd07bf0a7b99dbecc903d229bab681`; baseline/main SHA
+  `b9d9fe16bc58e7060967f6154a2e16acd89500f5`; producer
+  `a6c2abbc9db542ea1fc8933087f81c1de96c4f8a`; 64 frozen manifests, 1,024
+  source seeds, 7,652 rows, 7,599 valid, 7,238 wins, 361 true deaths and 348
+  nonambiguous deaths. The raw package hash is
+  `705bd2c970f52759dd7541052f56536eb5c53470aa0fe37b2674abdfd1ba7ec9`.
+- **Frozen choices:** A = exact depth6/eta.05/300-round factorized control;
+  B = B5 depth4/eta.02/1200 max with 75-round early stopping; C = C3 direct
+  signed depth4/eta.02/1200 max with 75-round early stopping; D = 256→128
+  multitask MLP, ReLU/dropout.1/AdamW, 600-epoch cap and 75-epoch patience;
+  E = B5 with prespecified source-balanced weights. Candidate validation
+  choices were B5 `0.125771`, C3 `0.128483`, and D-small factorized `0.168166`.
+- **TEST primary signed MAE/RMSE:** A `0.123964/0.193867`; B
+  `0.125601/0.193480`; C `0.134334/0.202945`; D direct head
+  `0.169468/0.246408` (its factorized value is `0.166905/0.239267`); E
+  `0.128602/0.196002`. Arm A reproduced the frozen §219 result exactly.
+  Model-minus-A 5,000 source-seed bootstrap 95% intervals for primary MAE
+  are B `[-0.006490,+0.010053]`, C `[-0.003671,+0.025843]`, D
+  `[+0.022276,+0.068463]`, and E `[-0.005770,+0.015866]`.
+- **Head and loss diagnostics:** B TEST survival logloss/Brier is
+  `0.114776/0.029416`, winning-HP MAE/RMSE `0.103808/0.154392`, and loss
+  MAE/RMSE `0.172366/0.208295`; E is `0.126386/0.033208`,
+  `0.105771/0.155059`, and `0.146445/0.182713`. D is
+  `0.237243/0.035683`, `0.149284/0.204814`, and `0.239220/0.293874`.
+  The trivial TEST death-mean loss MAE is `0.132734`; therefore no new
+  conditional loss head learns loss severity. There are only 10 independent
+  death sources; leave-one-source-out model-minus-trivial ranges are A
+  `[+0.02594,+0.10224]`, B `[-0.00018,+0.04734]`, D
+  `[+0.07610,+0.12459]`, and E `[-0.00663,+0.02133]`.
+- **Risk/ranking/speed:** validation thresholds targeting at least 90% death
+  recall were frozen and yielded TEST recall 1.00 for A/B/D/E, with fallback
+  fractions `0.531/0.610/0.705/0.590` and false-alarm rates
+  `0.509/0.592/0.691/0.571`, respectively. C has no probability head. Macro
+  pairwise concordance for A/B/C/D/E was `0.4524/0.4797/0.4900/0.4588/0.4819`;
+  macro Spearman was `0.0930/0.1379/0.0878/0.1182/0.1383` across 136 eligible
+  TEST decisions. Prebuilt-input batch-1 CPU median/p95 milliseconds were
+  A `0.537/0.700`, B `0.544/0.648`, C `0.183/0.217`, D `0.076/0.109`, and E
+  `0.537/0.676`; serialized finalist sizes were 2.73, 2.56, 1.04, 0.67, and
+  2.10 MB.
+- **Decision:** **NO CLEAR MODEL IMPROVEMENT**. The strict improvement rule
+  is not met; B and E are slightly worse point estimates with intervals
+  crossing zero, C is worse, and D is clearly worse. D's lower TRAIN error but
+  worse held-out error supports **CAPACITY NOT THE BOTTLENECK**; the sparse,
+  correlated death tail remains the actionable limitation. Do not add larger
+  networks, deploy a winner, replace Silver, or run gameplay gates from this
+  result. Full report and bulk models/predictions remain external.
+- **Evidence:** [compact machine-readable packet](evidence/combat_evaluator_model_comparison_2026-09-10.json); full external report at
+  `/home/philippherrmann/sts_sweep/runs/combat-evaluator-comparison-v4/report.json`.
+
+## §222 Correction pass for pre-combat evaluator comparison (2026-09-10)
+
+- **Reason for correction:** independent review found three bounded analysis
+  defects in §221: the paired survival-Brier bootstrap used absolute rather
+  than squared residuals; NN checkpointing and finalist selection used the
+  factorized value despite declaring the direct signed head primary; and
+  concordance counted truth-tied pairs as comparable. No grids, corpus,
+  labels, split, or model architecture were changed.
+- **Corrected implementation:** analysis SHA
+  `9b6502b53b72c3239de1f39d08ccde56a3ff2557`; same baseline/main SHA
+  `b9d9fe16bc58e7060967f6154a2e16acd89500f5`, producer, 64 manifests, 1,024
+  sources, 7,652 rows, and raw package hash. Survival-Brier bootstrap now uses
+  squared error; NN early stopping and D-family selection use direct signed
+  validation MAE; concordance skips pairs with equal true signed outcomes.
+- **Corrected dependent results:** finalists remain A/B5/C3/D-small/E. NN
+  validation direct MAE is D-medium `0.196261` versus D-small `0.171680`.
+  TEST primary signed MAE/RMSE are A `0.123964/0.193867`, B
+  `0.125601/0.193480`, C `0.134334/0.202945`, D direct
+  `0.167342/0.242484` (factorized `0.165833/0.237704`), and E
+  `0.128602/0.196002`. The corrected Brier model-minus-A intervals are B
+  `[-0.010984,+0.005912]`, D `[-0.013483,+0.024549]`, and E
+  `[-0.003932,+0.008777]`; B's point Brier improvement is therefore no
+  longer contradicted by its bootstrap report.
+- **Corrected ranking:** after excluding truth-tied pairs, macro pairwise
+  concordance A/B/C/D/E is `0.5462/0.5715/0.5395/0.5631/0.5700` across 136
+  eligible TEST decisions. Spearman remains
+  `0.0930/0.1379/0.0878/0.1244/0.1383`.
+- **Decision:** the substantive conclusion remains **NO CLEAR MODEL
+  IMPROVEMENT**. No finalist has a favorable source-clustered primary-MAE
+  interval excluding zero; the MLP remains clearly worse than A, and the
+  conditional loss tail remains above the trivial death mean with only 10
+  independent death sources. The corrected evidence supersedes the §220
+  numerical packet; no deployment, Silver replacement, or gameplay gate is
+  authorized.
+- **Checks:** 22 focused/relevant Python tests pass, including regression
+  tests for squared Brier, direct-head NN selection, and truth-tied
+  concordance; Python compilation, JSON validation, evidence cross-check, and
+  `git diff --check` pass. Full corrected report and TEST predictions remain
+  external at `/home/philippherrmann/sts_sweep/runs/combat-evaluator-comparison-v5/`.

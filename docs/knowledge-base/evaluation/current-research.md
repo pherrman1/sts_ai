@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-09-07 at `1eba510ee9136db19723a9b84a4c04670d9b9a07`.
+Last verified: 2026-09-10 at `9b6502b53b72c3239de1f39d08ccde56a3ff2557`.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
 
@@ -40,11 +40,20 @@ simulations. **COMBAT LABELS ADEQUATE** passes the inherited row-count screen:
 348 nonambiguous deaths, including 48 test rows. Those test deaths represent
 only 10 source groups; one contributes 19 rows, so independent loss coverage
 remains limited. The subsequent counterfactual combat-evaluator feasibility
-study remains a separate [ledger-06 §219](../../experiments/ledger-06.md)
-result; it is promising for survival and winning HP but inconclusive on the
-loss tail, and is not deployed. Any next model
-experiment requires separate review. See [ledger-06 §218](../../experiments/ledger-06.md)
-and the [frozen evidence packet](../../experiments/evidence/semantic_combat_confirmation_2026-09-10.json).
+study is recorded separately in [ledger-06 §219](../../experiments/ledger-06.md):
+it is promising for survival and winning HP but inconclusive on the loss tail,
+and is not deployed. The bounded comparison then trained the prespecified
+factorized-XGBoost, direct-signed-XGBoost, source-balanced-XGBoost, and compact
+multitask-MLP finalists. It found **NO CLEAR MODEL IMPROVEMENT**: the best
+tuned factorized finalist was slightly worse than the frozen baseline on TEST,
+and every conditional loss model remained at or above the trivial death-mean
+baseline. The larger-capacity fits improved TRAIN without improving held-out
+value, which is a capacity-not-the-bottleneck signal under this corpus. The
+comparison packet was corrected after independent review for its Brier
+bootstrap, NN direct-head selection, and truth-tied concordance; the corrected
+analysis still reaches the same conclusion. No runtime model, Silver
+replacement, or gameplay qualification is authorized. See [ledger-06 §§218–222](../../experiments/ledger-06.md), the [coverage packet](../../experiments/evidence/semantic_combat_confirmation_2026-09-10.json),
+and the [model-comparison evidence](../../experiments/evidence/combat_evaluator_model_comparison_2026-09-10.json).
 
 The first offline semantic action scorer is now frozen and passes its fresh
 model holdout: training on the 1,024 development decisions produced 1,831
