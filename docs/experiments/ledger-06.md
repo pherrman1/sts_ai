@@ -6168,3 +6168,65 @@ model training was changed.
   counts, fixture metrics and checks. Raw files remain under
   `build/chance-storage-evidence/` in the task checkout. The final evidence-only
   commit does not change the measured implementation.
+
+## §217 Final-layout single-core confirmation against current main (2026-09-10)
+
+- **Purpose/decision rule:** close §215–216's provenance gap with a direct
+  current-main versus complete final-layout PR comparison. Predeclared
+  criterion: identical labels/telemetry and existing native trace parity,
+  plus `1 - sum(head CPU) / sum(main CPU) >= 0.05` over six executions per arm.
+  This is confirmation on previously examined seeds, not a new held-out study.
+- **Frozen sources/builds:** baseline current main
+  `3bec0b159984ab1a01c100bce17189aa68f71967`; independently reviewed final PR
+  head `4224c03e4ae0487cd43e5e9a196a193d22be9f24`. Fresh baseline archive build
+  via `tools/agent/baseline_build.py` and checked-in Release ccache presets;
+  final-head Release target verified up-to-date and copied to a frozen path.
+  Both O3/LTO, PGO OFF. Baseline executable SHA256
+  `4d0beb28998568df1503ecc0f72784f6dbf70c81973717d439ff8eb3b2031862`;
+  final head `c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5`.
+  Main's only change since original baseline 0034ce8 is an unrelated Python
+  semantic-probe script; the freshly built binary is byte-identical to the
+  original baseline. Final-head binary is unchanged from the validated compact
+  layout. No merge-base refresh or source changes were needed.
+- **Workload:** `wholecombatgen 1 10000 0 OUT SEED TEACHER`, seeds 0/1/2, two
+  repetitions per seed in A/B then B/A order, all guard-wrapped. Same frozen
+  project-fair ordinary Silver exact-10k private roots, exploration 25/25,
+  widening 3.7028/0.52389, allocated cap32768, no adaptive/pruning/learned leaf,
+  native OOC floor/win trees hash-bound and confirmed loaded, STS_POLICY=0.
+  Ryzen5 7500F, one process pinned to CPU2, OMP_NUM_THREADS=1, no concurrent
+  builds. Seeds cover 22/9/17 fights respectively, Acts1–3 collectively,
+  normal/elite/boss encounters. Timing excludes manifest/hash preparation.
+- **Results:** aggregate CPU **87.589210s main → 82.051059s head**, a
+  **6.3229% reduction**. Whole-process wall **87.600607s → 82.066320s**,
+  **6.3176% lower**. Mean process CPU seconds over two repeats per seed:
+
+  | Seed | Current main | Final head | CPU reduction |
+  | --- | ---: | ---: | ---: |
+  | 0 | 19.470291 | 17.535438 | 9.94% |
+  | 1 | 12.665160 | 12.666575 | approximately 0% |
+  | 2 | 11.659154 | 10.823516 | 7.17% |
+
+  **PASS** against the predeclared 5% aggregate bar. This measures the full PR
+  package, including compact status/chance storage; it does not attribute a
+  CPU gain to the chance layout by itself. The seed variation and small sample
+  preclude a broad throughput guarantee or statistical confidence claim.
+- **Equivalence/provenance:** all 12 runs completed one seed each with zero
+  quarantine/health failures. Every matched label CSV and per-fight Silver
+  telemetry stream is identical; executable/model hashes and full source SHAs
+  agree with each teacher manifest and native provenance sidecar. Fourteen
+  preserved original-baseline/final-layout native traces compare identical.
+  Reusing them is justified by relevant source equivalence and matching
+  executable hashes; they were not rerun during this measurement.
+- **Checks/limits:** clean source preflight, pinned submodules, exact baseline
+  Release build and final-head target verification passed. Linux GCC CI passed
+  on frozen head4224c03 before this evidence-only update; existing full CTest,
+  sanitizer and implementation-review evidence remains applicable because no
+  executable source changed. PGO was deliberately not retrained or measured:
+  it remains optional, and §215's PGO percentage is not a final-layout claim.
+  No larger benchmark, deployment or automatic merge. Full-producer persisted
+  RNG traces were not added.
+- **Evidence:** [final-layout packet](evidence/silver_final_layout_ab_2026-09-10.json)
+  contains the exact per-run commands, per-arm manifests/hashes, per-seed and
+  aggregate metrics, native-trace reuse links, criterion and limitations. Raw
+  artifacts remain in `build/final-layout-evidence/` in the task checkout.
+  Subsequent commits record evidence only and do not change measured sources.

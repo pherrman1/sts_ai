@@ -36,7 +36,14 @@ not a demonstrated additional CPU speedup. New PGO profiles would be required
 for the changed source/layout. See
 [the original CPU evidence](../../experiments/evidence/silver_exact_search_2026-09-10.json),
 [the storage evidence](../../experiments/evidence/silver_chance_storage_2026-09-10.json),
-and [ledger-06 §§215–216](../../experiments/ledger-06.md).
+and [ledger-06 §§215–217](../../experiments/ledger-06.md).
+
+The direct final-layout confirmation against current main `3bec0b1` at frozen
+PR head `4224c03` meets the predeclared 5% aggregate CPU bar: 6.32% lower CPU
+with PGO off and identical matched labels/telemetry. This is a three-seed,
+two-repeat selected-workload check, not broad qualification. See the
+[final-layout packet](../../experiments/evidence/silver_final_layout_ab_2026-09-10.json).
+The earlier PGO result still belongs to its earlier source revision.
 
 ### Whole-Act OOC evaluator
 
