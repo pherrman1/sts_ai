@@ -1,0 +1,118 @@
+{
+  "experiment": "precombat_combat_evaluator_model_comparison_v2",
+  "baseline_main_sha": "b9d9fe16bc58e7060967f6154a2e16acd89500f5",
+  "experiment_code_sha": "eafaf34113cd07bf0a7b99dbecc903d229bab681",
+  "constraints": {
+    "simulator_called": false,
+    "silver_called": false,
+    "new_labels": false,
+    "gameplay_integration": false,
+    "runtime_model_export": false
+  },
+  "corpus": {
+    "producer_sha": "a6c2abbc9db542ea1fc8933087f81c1de96c4f8a",
+    "raw_package_sha256": "705bd2c970f52759dd7541052f56536eb5c53470aa0fe37b2674abdfd1ba7ec9",
+    "manifest_count": 64,
+    "source_seeds": 1024,
+    "rows": 7652,
+    "valid": 7599,
+    "wins": 7238,
+    "true_deaths": 361,
+    "nonambiguous_deaths": 348
+  },
+  "split": {
+    "train": {"source_seeds": 711, "rows": 5519, "valid": 5470, "wins": 5202, "nonambiguous_deaths": 255},
+    "validation": {"source_seeds": 156, "rows": 1081, "valid": 1077, "wins": 1032, "nonambiguous_deaths": 45},
+    "test": {"source_seeds": 157, "rows": 1052, "valid": 1052, "wins": 1004, "nonambiguous_deaths": 48}
+  },
+  "candidate_grids": {
+    "factorized_xgb": {
+      "B0": {"max_depth": 6, "eta": 0.05, "rounds": 300},
+      "B1": {"max_depth": 3, "eta": 0.03, "rounds": 800},
+      "B2": {"max_depth": 4, "eta": 0.03, "rounds": 800},
+      "B3": {"max_depth": 6, "eta": 0.03, "rounds": 800},
+      "B4": {"max_depth": 8, "eta": 0.03, "rounds": 800},
+      "B5": {"max_depth": 4, "eta": 0.02, "rounds": 1200},
+      "B6": {"max_depth": 6, "eta": 0.02, "rounds": 1200},
+      "B7": {"max_depth": 8, "eta": 0.02, "rounds": 1200}
+    },
+    "direct_signed_xgb": {
+      "C1": {"max_depth": 4, "eta": 0.03, "rounds": 800},
+      "C2": {"max_depth": 6, "eta": 0.03, "rounds": 800},
+      "C3": {"max_depth": 4, "eta": 0.02, "rounds": 1200},
+      "C4": {"max_depth": 6, "eta": 0.02, "rounds": 1200}
+    },
+    "multitask_mlp": {"D-small": [256, 128], "D-medium": [512, 256, 128]}
+  },
+  "finalists": {
+    "A": {"config": "B0 exact frozen control", "test_primary_mae": 0.1239637370, "test_primary_rmse": 0.1938667666},
+    "B": {"config": "B5, best_iterations survival=166 win_hp=1039 loss=52", "test_primary_mae": 0.1256005580, "test_primary_rmse": 0.1934801604, "test_survival_logloss": 0.1147759855, "test_survival_brier": 0.0294155665, "test_win_hp_mae": 0.1038080644, "test_loss_mae": 0.1723657860},
+    "C": {"config": "C3, best_iteration=503", "test_primary_mae": 0.1343340381, "test_primary_rmse": 0.2029447331},
+    "D": {"config": "D-small 256->128, direct signed primary", "test_primary_mae": 0.1694680947, "test_primary_rmse": 0.2464079699, "test_factorized_mae": 0.1669046505, "test_factorized_rmse": 0.2392673458, "test_survival_logloss": 0.2372430712, "test_survival_brier": 0.0356831066, "test_win_hp_mae": 0.1492839624, "test_loss_mae": 0.2392202804},
+    "E": {"config": "B5 source-balanced, best_iterations survival=175 win_hp=808 loss=83", "test_primary_mae": 0.1286021854, "test_primary_rmse": 0.1960016228, "test_survival_logloss": 0.1263857335, "test_survival_brier": 0.0332083814, "test_win_hp_mae": 0.1057711386, "test_loss_mae": 0.1464453164}
+  },
+  "paired_bootstrap_vs_A": {
+    "replicates": 5000,
+    "unit": "sourceSeed",
+    "expected_signed_mae_delta_ci95": {
+      "B": {"difference": 0.0016368209, "ci95": [-0.0064898611, 0.0100526279]},
+      "C": {"difference": 0.0103703011, "ci95": [-0.0036707425, 0.0258427758]},
+      "D": {"difference": 0.0455043577, "ci95": [0.0222763658, 0.0684625677]},
+      "E": {"difference": 0.0046384484, "ci95": [-0.0057695582, 0.0158658922]}
+    },
+    "survival_brier_delta_ci95": {
+      "B": {"difference": 0.0143805332, "ci95": [0.0026929189, 0.0259795842]},
+      "D": {"difference": -0.0062630786, "ci95": [-0.0311001815, 0.0131807237]},
+      "E": {"difference": 0.0231519091, "ci95": [0.0145425066, 0.0325015306]}
+    },
+    "win_hp_mae_delta_ci95": {
+      "B": {"difference": 0.0000054451, "ci95": [-0.0050194837, 0.0054068818]},
+      "D": {"difference": 0.0454813432, "ci95": [0.0285043815, 0.0632972874]},
+      "E": {"difference": 0.0019685194, "ci95": [-0.0041598477, 0.0080912749]}
+    },
+    "loss_severity_mae_delta_ci95": {
+      "B": {"difference": -0.0507205558, "ci95": [-0.0720491689, 0.0038841789]},
+      "D": {"difference": 0.0161339386, "ci95": [-0.0242460638, 0.1212992099]},
+      "E": {"difference": -0.0766410254, "ci95": [-0.1154397871, 0.0128166494]}
+    }
+  },
+  "survival_diagnostics_test": {
+    "A": {"logloss": 0.1346042007, "brier": 0.0312143397, "roc_auc": 0.9255166833, "pr_auc_death": 0.4161710135, "confusion_at_0.5": [[990, 14], [34, 14]]},
+    "B": {"logloss": 0.1147759855, "brier": 0.0294155665, "roc_auc": 0.9188765770, "pr_auc_death": 0.5793038722, "confusion_at_0.5": [[1004, 0], [30, 18]]},
+    "D": {"logloss": 0.2372430712, "brier": 0.0356831066, "roc_auc": 0.8981781208, "pr_auc_death": 0.5741799959, "confusion_at_0.5": [[1003, 1], [43, 5]]},
+    "E": {"logloss": 0.1263857335, "brier": 0.0332083814, "roc_auc": 0.9042890936, "pr_auc_death": 0.5428780752, "confusion_at_0.5": [[1004, 0], [48, 0]]},
+    "C": null
+  },
+  "loss_tail": {
+    "trivial_test_mae": 0.1327343272,
+    "independent_death_sources": 10,
+    "leave_one_source_out_model_minus_trivial_range": {
+      "A": [0.0259437337, 0.1022429825],
+      "B": [-0.0001798323, 0.0473443322],
+      "D": [0.0760981617, 0.1245853479],
+      "E": [-0.0066278194, 0.0213279076]
+    }
+  },
+  "risk_test": {
+    "thresholds_selected_on_validation": true,
+    "target_death_recall": 0.90,
+    "arms": {
+      "A": {"death_recall": 1.0, "false_alarm_rate": 0.5089641434, "fallback_fraction": 0.5313688213},
+      "B": {"death_recall": 1.0, "false_alarm_rate": 0.5916334661, "fallback_fraction": 0.6102661597},
+      "D": {"death_recall": 1.0, "false_alarm_rate": 0.6912350598, "fallback_fraction": 0.7053231939},
+      "E": {"death_recall": 1.0, "false_alarm_rate": 0.5707171315, "fallback_fraction": 0.5903041825}
+    }
+  },
+  "ranking": {
+    "eligible_test_decisions": 136,
+    "macro_pairwise_concordance": {"A": 0.4524200178, "B": 0.4797360399, "C": 0.4900346312, "D": 0.4588297222, "E": 0.4818538168},
+    "macro_spearman": {"A": 0.0929847388, "B": 0.1379079075, "C": 0.0878416416, "D": 0.1182450961, "E": 0.1382528596}
+  },
+  "classification": {
+    "decision": "NO CLEAR MODEL IMPROVEMENT",
+    "capacity_not_the_bottleneck_signal": true,
+    "loss_tail_failed_to_beat_trivial": ["A", "B", "D", "E"],
+    "deployment_authorized": false
+  },
+  "external_report": "/home/philippherrmann/sts_sweep/runs/combat-evaluator-comparison-v4/report.json"
+}

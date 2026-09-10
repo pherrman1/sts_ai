@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-09-07 at `1eba510ee9136db19723a9b84a4c04670d9b9a07`.
+Last verified: 2026-09-10 at `eafaf34113cd07bf0a7b99dbecc903d229bab681`.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
 
@@ -39,9 +39,16 @@ The same fights yielded 7,652 combat rows with zero additional Silver
 simulations. **COMBAT LABELS ADEQUATE** passes the inherited row-count screen:
 348 nonambiguous deaths, including 48 test rows. Those test deaths represent
 only 10 source groups; one contributes 19 rows, so independent loss coverage
-remains limited. No combat evaluator was trained. Any next model experiment
-requires separate review. See [ledger-06 §218](../../experiments/ledger-06.md)
-and the [frozen evidence packet](../../experiments/evidence/semantic_combat_confirmation_2026-09-10.json).
+remains limited. The bounded offline comparison then trained the prespecified
+factorized-XGBoost, direct-signed-XGBoost, source-balanced-XGBoost, and compact
+multitask-MLP finalists. It found **NO CLEAR MODEL IMPROVEMENT**: the best
+tuned factorized finalist was slightly worse than the frozen baseline on TEST,
+and every conditional loss model remained at or above the trivial death-mean
+baseline. The larger-capacity fits improved TRAIN without improving held-out
+value, which is a capacity-not-the-bottleneck signal under this corpus. No
+runtime model, Silver replacement, or gameplay qualification is authorized.
+See [ledger-06 §§218–220](../../experiments/ledger-06.md), the [coverage packet](../../experiments/evidence/semantic_combat_confirmation_2026-09-10.json),
+and the [model-comparison evidence](../../experiments/evidence/combat_evaluator_model_comparison_2026-09-10.json).
 
 ### Silver CPU optimization qualification
 
