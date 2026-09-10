@@ -1,0 +1,52 @@
+{
+  "experiment": "combat_evaluator_silver_gate_v1",
+  "date_utc": "2026-09-10",
+  "status": "NOT_RUN_EXTERNAL_ARTIFACTS_UNAVAILABLE",
+  "classification": "NOT_RUN",
+  "baseline_sha": "b9d9fe16bc58e7060967f6154a2e16acd89500f5",
+  "prior_predictor_analysis_sha": "6d1a3f3d7c0c1913ea4e30f1b0ea12d06627eca4",
+  "required_frozen_inputs": {
+    "producer_sha": "a6c2abbc9db542ea1fc8933087f81c1de96c4f8a",
+    "raw_package_sha256": "705bd2c970f52759dd7541052f56536eb5c53470aa0fe37b2674abdfd1ba7ec9",
+    "source_seed_range": [992000, 993023],
+    "source_seeds": 1024,
+    "sidecar_manifests": 64,
+    "rows": 7652
+  },
+  "required_predictor_artifacts": {
+    "manifest_sha256": "724a3b8758a96b5c0c951ce982d889e975bc4bc95c2d39d25ebcc6e93b72faef",
+    "heldout_predictions_sha256": "0210887e78ddc940e811b6bc2c141b9cdf6878722536ebc2790a37941c1248b5",
+    "survival_sha256": "4ec129f156421eeada0837ca5a5a739ef7c6d2a3ec141471ada24adfe7ef002b",
+    "conditional_win_hp_sha256": "b294b71d15a87621e51600cad7629ed18e9ef82afc81057a889afe820bc52d34",
+    "conditional_loss_remaining_sha256": "273f4d58d27ebba5a7ccc79e3c72ed47b5f549af3f2d64620921bf2aeba90f94"
+  },
+  "availability_check": {
+    "checked_path": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/semantic-confirmation-a6c2abb/evaluator-v2",
+    "available_locally": false,
+    "scientific_analysis_executed": false,
+    "reason": "The frozen corpus and predictor artifacts are external evidence; the requested no-GCP boundary leaves no local inputs to analyze."
+  },
+  "constraints": {
+    "simulator_called": false,
+    "silver_called": false,
+    "new_labels": false,
+    "retrained": false,
+    "gameplay_integration": false,
+    "gcp_called": false
+  },
+  "implementation": {
+    "analyzer": "tools/analyze_combat_evaluator_silver_gate.py",
+    "tests": "tools/test_combat_evaluator_silver_gate.py",
+    "gate_grid": {
+      "margin": [0.0, 0.01, 0.02, 0.05, 0.1],
+      "minimum_survival_probability": [0.0, 0.5, 0.75, 0.9, 0.95, 0.98, 0.99]
+    },
+    "bootstrap": {
+      "unit": "sourceSeed",
+      "replicates": 5000,
+      "seed": 20260910
+    },
+    "knowledge_impact": "Updated CODE_MAP.md and training-and-inference.md to route the reusable offline gate analyzer."
+  },
+  "interpretation": "No validation gate was selected and no TEST result, savings estimate, safety slice, catastrophic-case list, or target-mismatch conclusion exists until the exact frozen external inputs are made available."
+}
