@@ -4023,14 +4023,48 @@ static std::string runWholeCombatGenSeed(std::uint64_t seed,int sims,int asc,con
 
 // V1 producer: capture the persistent GameContext before BattleContext::init;
 // read terminal labels from BattleContext before exitBattle/afterBattle.
-struct CombatEvalSeedResult { std::string rows; bool sourceValid = true; int quarantined = 0; };
+// The optional runout record deliberately separates a completed trajectory
+// from the existing per-combat label validity.  An escape is still a bad V1
+// combat label, but it need not invalidate the eventual-run outcome.
+struct CombatEvalSeedResult {
+    std::string rows;
+    std::uint64_t sourceSeed = 0;
+    GameOutcome finalOutcome = GameOutcome::UNDECIDED;
+    int finalFloor = 0;
+    int finalHp = 0;
+    int fightCount = 0;
+    int invalidCombatRows = 0;
+    int simulatorHealthFailures = 0;
+    bool sourceValid = true;
+    bool trajectoryComplete = false;
+    bool trajectoryValid = false;
+    bool fatalFailure = false;
+};
+
+static const char *combatEvalGameOutcome(GameOutcome outcome) {
+    switch (outcome) {
+        case GameOutcome::PLAYER_VICTORY: return "PLAYER_VICTORY";
+        case GameOutcome::PLAYER_LOSS: return "PLAYER_LOSS";
+        case GameOutcome::UNDECIDED: return "UNDECIDED";
+    }
+    return "UNDECIDED";
+}
+
+static int combatEvalFinalWon(GameOutcome outcome) {
+    return outcome == GameOutcome::PLAYER_VICTORY ? 1
+        : outcome == GameOutcome::PLAYER_LOSS ? 0 : -1;
+}
+
 static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
                                                  const WholeCombatTeacher &teacher) {
     trainingRunStart();
+    const int sourceHealthFailures = search::g_simHealthFailureCount;
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent; agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(seed);
-    std::ostringstream out; int fightIdx = 0; bool sourceValid = true; int quarantined = 0;
+    std::ostringstream out; int fightIdx = 0; bool sourceValid = true;
+    int invalidCombatRows = 0;
+    bool fatalFailure = false;
     using RT = search::GameAction::RewardsActionType;
     while (gc.outcome == GameOutcome::UNDECIDED) {
         if (gc.screenState == ScreenState::BATTLE) {
@@ -4053,8 +4087,14 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             // or hook failure cannot safely advance the run; ordinary
             // non-death terminations can be exited and the next fight may be
             // collected, while the contract/trainer excludes this row.
-            if (!labelValid) { sourceValid = false; ++quarantined; }
-            if (!labelValid && (!healthOk || !hooks || !representableEncounter)) { search::g_onGameActionExecute = {}; t_curPath = nullptr; return {out.str(), false, quarantined}; }
+            if (!labelValid) { sourceValid = false; ++invalidCombatRows; }
+            if (!labelValid && (!healthOk || !hooks || !representableEncounter)) {
+                fatalFailure = true;
+                search::g_onGameActionExecute = {}; t_curPath = nullptr;
+                const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
+                return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx,
+                        invalidCombatRows, healthFailures, false, false, false, fatalFailure};
+            }
             bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
@@ -4067,13 +4107,26 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             else evalCardRewardPolicy(gc);
         } else agent.stepOutOfCombatPolicy(gc);
     }
-    search::g_onCombatDecision = nullptr; return {out.str(), sourceValid, quarantined};
+    search::g_onCombatDecision = nullptr;
+    const bool complete = gc.outcome != GameOutcome::UNDECIDED;
+    const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
+    const bool trajectoryValid = complete && healthFailures == 0 && !fatalFailure;
+    return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx,
+            invalidCombatRows, healthFailures, sourceValid, complete,
+            trajectoryValid, fatalFailure};
 }
 
 static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
-                          long long seedOffset, const std::string &teacherPath) {
+                          long long seedOffset, const std::string &teacherPath,
+                          const std::string &runoutPath = {}) {
     trainingCampaignStart(); const auto teacher = loadWholeCombatTeacher(teacherPath, sims);
     std::ofstream f(outfile); if (!f) throw std::runtime_error("combatevalgen: cannot open output");
+    std::ofstream runout;
+    if (!runoutPath.empty()) {
+        runout.open(runoutPath);
+        if (!runout) throw std::runtime_error("combatevalgen: cannot open runout output");
+        runout << "sourceSeed,finalOutcome,finalWon,finalFloor,finalHp,fightCount,trajectoryComplete,trajectoryValid,combatRows,invalidCombatRows,teacherId,simulatorHealthFailures,fatalFailure\n";
+    }
     f << "sourceSeed,fightIdx,act,floor,roomClass,encounter,teacherId," << richStateHeader()
       << ',' << combatEvalLabelHeader() << '\n';
     long long rows = 0; int completed = 0;
@@ -4081,7 +4134,23 @@ static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outf
     for (int s = 0; s < nSeeds; ++s) {
         const CombatEvalSeedResult generated = runCombatEvalGenSeed(seedOffset + s, sims, asc, teacher);
         #pragma omp critical(combat_eval_write)
-        { f << generated.rows; f.flush(); rows += std::count(generated.rows.begin(), generated.rows.end(), '\n'); if (generated.sourceValid) ++completed; else ++g_trainingInvalidRuns; g_trainingInvalidBranches += generated.quarantined; }
+        {
+            f << generated.rows; f.flush();
+            rows += std::count(generated.rows.begin(), generated.rows.end(), '\n');
+            if (generated.sourceValid) ++completed; else ++g_trainingInvalidRuns;
+            g_trainingInvalidBranches += generated.invalidCombatRows;
+            if (!runoutPath.empty()) {
+                runout << generated.sourceSeed << ',' << combatEvalGameOutcome(generated.finalOutcome) << ','
+                       << combatEvalFinalWon(generated.finalOutcome) << ',' << generated.finalFloor << ','
+                       << generated.finalHp << ',' << generated.fightCount << ','
+                       << (generated.trajectoryComplete ? 1 : 0) << ','
+                       << (generated.trajectoryValid ? 1 : 0) << ','
+                       << std::count(generated.rows.begin(), generated.rows.end(), '\n') << ','
+                       << generated.invalidCombatRows << ',' << teacher.id << ','
+                       << generated.simulatorHealthFailures << ',' << (generated.fatalFailure ? 1 : 0) << '\n';
+                runout.flush();
+            }
+        }
     }
     std::cout << "combatevalgen teacher=" << teacher.id << " completed=" << completed << '/' << nSeeds << " quarantined=" << nSeeds-completed << " rows=" << rows << " -> " << outfile << '\n';
     writeTrainingProvenance(outfile, "combatevalgen", nSeeds, completed, nSeeds-completed, g_trainingHealthFailures.load(), rows, seedOffset, sims, asc);
@@ -9413,8 +9482,8 @@ int main(int argc, char **argv) {
         if (argc < 8) { std::cerr << "usage: one_combat wholecombatgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         wholeCombatGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoll(argv[6]),argv[7]);
     } else if (mode == "combatevalgen") {
-        if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
-        combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7]);
+        if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json [RUNOUT.csv]\n"; return 2; }
+        combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argc > 8 ? argv[8] : "");
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);
