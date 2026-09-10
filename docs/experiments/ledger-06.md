@@ -6399,5 +6399,7 @@ model training was changed.
 - **Evidence:** [compact model packet](evidence/semantic_ooc_model_v1_2026-09-10.json).
   Full frozen `semantic_model.json`, `primitive_control.json`,
   `feature_manifest.json`, `training_report.json` and the detailed holdout
-  `evaluation_report.json` remain outside Git under ignored `build/` storage;
-  bulk semantic CSVs, logs and predictions are not committed.
+  `evaluation_report.json` are preserved outside Git at
+  `/home/philippherrmann/sts_sweep/preserved/semantic-ooc-model-v1-2026-09-10/`;
+  the working copies remain in ignored `build/` storage. Bulk semantic CSVs,
+  logs and predictions remain ignored/external and are not committed.
