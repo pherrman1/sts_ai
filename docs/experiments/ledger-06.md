@@ -6402,3 +6402,43 @@ model training was changed.
   result. Full report and bulk models/predictions remain external.
 - **Evidence:** [compact machine-readable packet](evidence/combat_evaluator_model_comparison_2026-09-10.json); full external report at
   `/home/philippherrmann/sts_sweep/runs/combat-evaluator-comparison-v4/report.json`.
+
+## §221 Correction pass for pre-combat evaluator comparison (2026-09-10)
+
+- **Reason for correction:** independent review found three bounded analysis
+  defects in §220: the paired survival-Brier bootstrap used absolute rather
+  than squared residuals; NN checkpointing and finalist selection used the
+  factorized value despite declaring the direct signed head primary; and
+  concordance counted truth-tied pairs as comparable. No grids, corpus,
+  labels, split, or model architecture were changed.
+- **Corrected implementation:** analysis SHA
+  `9b6502b53b72c3239de1f39d08ccde56a3ff2557`; same baseline/main SHA
+  `b9d9fe16bc58e7060967f6154a2e16acd89500f5`, producer, 64 manifests, 1,024
+  sources, 7,652 rows, and raw package hash. Survival-Brier bootstrap now uses
+  squared error; NN early stopping and D-family selection use direct signed
+  validation MAE; concordance skips pairs with equal true signed outcomes.
+- **Corrected dependent results:** finalists remain A/B5/C3/D-small/E. NN
+  validation direct MAE is D-medium `0.196261` versus D-small `0.171680`.
+  TEST primary signed MAE/RMSE are A `0.123964/0.193867`, B
+  `0.125601/0.193480`, C `0.134334/0.202945`, D direct
+  `0.167342/0.242484` (factorized `0.165833/0.237704`), and E
+  `0.128602/0.196002`. The corrected Brier model-minus-A intervals are B
+  `[-0.010984,+0.005912]`, D `[-0.013483,+0.024549]`, and E
+  `[-0.003932,+0.008777]`; B's point Brier improvement is therefore no
+  longer contradicted by its bootstrap report.
+- **Corrected ranking:** after excluding truth-tied pairs, macro pairwise
+  concordance A/B/C/D/E is `0.5462/0.5715/0.5395/0.5631/0.5700` across 136
+  eligible TEST decisions. Spearman remains
+  `0.0930/0.1379/0.0878/0.1244/0.1383`.
+- **Decision:** the substantive conclusion remains **NO CLEAR MODEL
+  IMPROVEMENT**. No finalist has a favorable source-clustered primary-MAE
+  interval excluding zero; the MLP remains clearly worse than A, and the
+  conditional loss tail remains above the trivial death mean with only 10
+  independent death sources. The corrected evidence supersedes the §220
+  numerical packet; no deployment, Silver replacement, or gameplay gate is
+  authorized.
+- **Checks:** 22 focused/relevant Python tests pass, including regression
+  tests for squared Brier, direct-head NN selection, and truth-tied
+  concordance; Python compilation, JSON validation, evidence cross-check, and
+  `git diff --check` pass. Full corrected report and TEST predictions remain
+  external at `/home/philippherrmann/sts_sweep/runs/combat-evaluator-comparison-v5/`.

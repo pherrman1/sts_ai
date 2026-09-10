@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-09-10 at `eafaf34113cd07bf0a7b99dbecc903d229bab681`.
+Last verified: 2026-09-10 at `9b6502b53b72c3239de1f39d08ccde56a3ff2557`.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
 
@@ -47,7 +47,9 @@ and every conditional loss model remained at or above the trivial death-mean
 baseline. The larger-capacity fits improved TRAIN without improving held-out
 value, which is a capacity-not-the-bottleneck signal under this corpus. No
 runtime model, Silver replacement, or gameplay qualification is authorized.
-See [ledger-06 §§218–220](../../experiments/ledger-06.md), the [coverage packet](../../experiments/evidence/semantic_combat_confirmation_2026-09-10.json),
+The first comparison packet was corrected after independent review for its
+Brier bootstrap, NN direct-head selection, and truth-tied concordance; the
+corrected analysis still reaches the same conclusion. See [ledger-06 §§218–221](../../experiments/ledger-06.md), the [coverage packet](../../experiments/evidence/semantic_combat_confirmation_2026-09-10.json),
 and the [model-comparison evidence](../../experiments/evidence/combat_evaluator_model_comparison_2026-09-10.json).
 
 ### Silver CPU optimization qualification
