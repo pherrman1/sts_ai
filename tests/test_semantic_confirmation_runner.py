@@ -12,6 +12,9 @@ class RunnerTests(unittest.TestCase):
             manifests.append({'sampling':{'sourceSeeds':list(range(s,s+16))},'decisions':[{'sourceSeed':i,'actions':[{'semanticSource':7,'semanticEffect':5,'semanticPayload':{'type':'reward'}},{'semanticSource':7,'semanticEffect':14,'semanticPayload':{'type':'none'}}]} for i in range(s,s+16)]})
         result=capture_distribution(manifests)
         self.assertEqual((result['decisions'],result['action_rows']),(1024,2048))
+        # Evaluation recomputes this gate and compares it to the JSON on disk.
+        # Integer counter keys used to make an unchanged gate reject itself.
+        self.assertEqual(json.loads(json.dumps(result,sort_keys=True)),result)
         broken=copy.deepcopy(manifests);broken[0]['sampling']['sourceSeeds'][0]+=1
         with self.assertRaises(ValueError):capture_distribution(broken)
         broken=copy.deepcopy(manifests);broken[0]['decisions'].pop()

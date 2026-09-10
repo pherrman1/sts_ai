@@ -63,8 +63,8 @@ def capture_distribution(manifests):
     require(sorted(seeds)==list(range(START,STOP)),'source seeds must be exact fresh 1024 cohort')
     require(sorted(d['sourceSeed'] for d in decisions)==list(range(START,STOP)),'must capture exactly one decision from every source seed')
     return {'decisions':len(decisions),'action_rows':sum(len(d['actions']) for d in decisions),
-            'actions_per_decision':dict(sizes),'families':{f:families[f] for f in sorted(set(FAMILY.values()))},
-            'effects':dict(effects),'sources':dict(sources),'compound_containing_decisions':compounds}
+            'actions_per_decision':{str(k):v for k,v in sizes.items()},'families':{f:families[f] for f in sorted(set(FAMILY.values()))},
+            'effects':{str(k):v for k,v in effects.items()},'sources':{str(k):v for k,v in sources.items()},'compound_containing_decisions':compounds}
 
 def timing(path):
     text=Path(path).read_text()
@@ -140,7 +140,7 @@ def main():
             r=load(record);require(r['returncode']==0,'failed shard requires explicit investigation; will not rerun')
             if a.stage=='capture':verify_capture(i)
             else:verify_evaluated(i)
-            return {'shard':i,'reused':True}
+            return {**r,'reused':True}
         if a.stage=='capture':
             require(not capture_path(i).exists(),'unrecorded capture exists; inspect before resuming')
             args=['oocsemanticcapture',str(PER_SHARD),str(START+i*PER_SHARD),str(capture_path(i)),str(teacher_path)]
