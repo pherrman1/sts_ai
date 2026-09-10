@@ -42,6 +42,7 @@
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverSemanticAction.h"
+#include "sim/search/OocSemanticAction.h"
 #include "combat/BattleContextBinary.h"
 #include "constants/MonsterMoves.h"
 #include "test_belief.h"
@@ -3451,6 +3452,231 @@ int testDarklingVictory() {
     return 1;
 }
 
+namespace {
+
+std::string oocSmithStateFingerprint(const GameContext &gc) {
+    std::ostringstream out;
+    out << static_cast<int>(gc.outcome) << ',' << static_cast<int>(gc.screenState) << ','
+        << static_cast<int>(gc.info.selectScreenType) << ',' << gc.info.toSelectCount << ','
+        << gc.curHp << ',' << gc.maxHp << ',' << gc.gold << ','
+        << gc.blueKey << gc.greenKey << gc.redKey << ',' << gc.potionCount << ',';
+    for (const auto potion : gc.potions) out << static_cast<int>(potion) << '/';
+    out << '|';
+    for (const auto &relic : gc.relics.relics) {
+        out << static_cast<int>(relic.id) << ':' << relic.data << '/';
+    }
+    out << '|' << gc.deck.upgradeableCount << ',' << gc.deck.transformableCount << ',';
+    for (const int bottle : gc.deck.bottleIdxs) out << bottle << '/';
+    out << '|';
+    for (const auto &card : gc.deck.cards) {
+        out << static_cast<int>(card.id) << ':' << card.misc << ':' << card.upgraded << '/';
+    }
+    out << '|';
+    for (const auto &candidate : gc.info.toSelectCards) {
+        out << static_cast<int>(candidate.card.id) << ':' << candidate.card.misc << ':'
+            << candidate.card.upgraded << ':' << candidate.deckIdx << '/';
+    }
+    out << '|';
+    for (const auto &selected : gc.info.haveSelectedCards) {
+        out << static_cast<int>(selected.card.id) << ':' << selected.card.misc << ':'
+            << selected.card.upgraded << ':' << selected.deckIdx << '/';
+    }
+    const Random *rngs[] = {&gc.aiRng, &gc.cardRandomRng, &gc.cardRng, &gc.eventRng,
+        &gc.mathUtilRng, &gc.merchantRng, &gc.miscRng, &gc.monsterHpRng,
+        &gc.monsterRng, &gc.neowRng, &gc.potionRng, &gc.relicRng,
+        &gc.shuffleRng, &gc.treasureRng};
+    out << '|';
+    for (const Random *rng : rngs) out << rng->counter << ':' << rng->seed0 << ':' << rng->seed1 << '/';
+    const auto legal = search::GameAction::getAllActionsInState(gc);
+    out << '|';
+    for (const auto action : legal) out << action.bits << '/';
+    return out.str();
+}
+
+GameContext oocSmithFixture() {
+    GameContext gc(CharacterClass::IRONCLAD, 0x51514Du, 0);
+    gc.screenState = ScreenState::REST_ROOM;
+    gc.curRoom = Room::REST;
+    gc.regainControlAction = [](GameContext &state) {
+        state.screenState = ScreenState::MAP_SCREEN;
+        state.regainControlAction = nullptr;
+    };
+    return gc;
+}
+
+const search::OocSemanticAction *findUpgradeAction(
+        const std::vector<search::OocSemanticAction> &actions, CardId id, int bottleSlot = -1,
+        int occurrence = 0) {
+    for (const auto &action : actions) {
+        if (action.target.id == id && action.target.bottleSlot == bottleSlot
+                && action.target.occurrence == occurrence) return &action;
+    }
+    return nullptr;
+}
+
+} // namespace
+
+int testOocSemanticSmith() {
+    auto fail = [](const std::string &message) {
+        std::cout << "ooc_semantic_smith FAIL: " << message << '\n';
+        return 1;
+    };
+
+    GameContext base = oocSmithFixture();
+    base.deck.obtainRaw(Card(CardId::BASH, 1));
+    const std::string beforeEnumeration = oocSmithStateFingerprint(base);
+    const auto actions = search::enumerateCampfireUpgradeActions(base);
+    const auto repeated = search::enumerateCampfireUpgradeActions(base);
+    if (actions.size() < 3) return fail("normal campsite did not enumerate multiple targets");
+    if (oocSmithStateFingerprint(base) != beforeEnumeration) return fail("enumeration mutated state or RNG");
+    if (actions.size() != repeated.size()) return fail("repeated enumeration changed action count");
+    for (std::size_t i = 0; i < actions.size(); ++i) {
+        const auto key = search::canonicalOocSemanticActionKey(actions[i]);
+        if (key != search::canonicalOocSemanticActionKey(repeated[i]))
+            return fail("repeated enumeration changed canonical keys");
+        if (i > 0 && search::canonicalOocSemanticActionKey(actions[i - 1]) >= key)
+            return fail("canonical ordering is not deterministic and unique");
+        if (actions[i].target.upgraded) return fail("non-upgradeable card was enumerated");
+    }
+    const auto *bash = findUpgradeAction(actions, CardId::BASH);
+    const auto *strike = findUpgradeAction(actions, CardId::STRIKE_RED);
+    if (bash == nullptr || strike == nullptr) return fail("Bash or Strike target missing");
+    if (search::canonicalOocSemanticActionKey(*bash)
+            != "ooc:v1:effect=0:source=0:card=25:misc=0:upgraded=0:bottle=-1:occurrence=0") {
+        return fail("canonical Bash key changed without a schema-version change");
+    }
+
+    {
+        GameContext blocked = base;
+        blocked.relics.add({RelicId::FUSION_HAMMER, 0});
+        if (!search::enumerateCampfireUpgradeActions(blocked).empty())
+            return fail("Fusion Hammer campsite enumerated Smith targets");
+        const auto snapshot = oocSmithStateFingerprint(blocked);
+        const auto result = search::executeOocSemanticAction(blocked, *bash);
+        if (result.ok || !result.executedPrimitiveBits.empty()
+                || oocSmithStateFingerprint(blocked) != snapshot)
+            return fail("illegal Smith execution did not fail closed");
+    }
+    {
+        GameContext wrong = base;
+        wrong.screenState = ScreenState::MAP_SCREEN;
+        const auto snapshot = oocSmithStateFingerprint(wrong);
+        const auto result = search::executeOocSemanticAction(wrong, *bash);
+        if (result.ok || oocSmithStateFingerprint(wrong) != snapshot)
+            return fail("wrong-screen execution did not fail closed");
+    }
+    {
+        GameContext stale = base;
+        auto absent = *bash;
+        absent.target.id = CardId::DEMON_FORM;
+        const auto snapshot = oocSmithStateFingerprint(stale);
+        const auto result = search::executeOocSemanticAction(stale, absent);
+        if (result.ok || !result.executedPrimitiveBits.empty()
+                || oocSmithStateFingerprint(stale) != snapshot)
+            return fail("absent target did not fail before primitive execution");
+    }
+    {
+        GameContext stale = base;
+        auto upgraded = *bash;
+        upgraded.target.upgraded = true;
+        const auto snapshot = oocSmithStateFingerprint(stale);
+        const auto result = search::executeOocSemanticAction(stale, upgraded);
+        if (result.ok || oocSmithStateFingerprint(stale) != snapshot)
+            return fail("already-upgraded target did not fail closed");
+    }
+    {
+        GameContext stale = base;
+        for (int i = 0; i < stale.deck.size(); ++i) {
+            if (stale.deck.cards[i].id == CardId::BASH && !stale.deck.cards[i].upgraded) {
+                stale.deck.upgrade(i);
+                break;
+            }
+        }
+        const auto snapshot = oocSmithStateFingerprint(stale);
+        const auto result = search::executeOocSemanticAction(stale, *bash);
+        if (result.ok || !result.executedPrimitiveBits.empty()
+                || oocSmithStateFingerprint(stale) != snapshot)
+            return fail("target upgraded after enumeration did not fail closed");
+    }
+
+    GameContext semanticBranch = base;
+    GameContext manualBranch = base;
+    const auto semanticResult = search::executeOocSemanticAction(semanticBranch, *bash);
+    if (!semanticResult.ok) return fail("Bash semantic execution failed: " + semanticResult.error);
+    if (semanticResult.executedPrimitiveBits.size() != 2
+            || semanticResult.executedPrimitiveBits[0] != search::GameAction(1).bits)
+        return fail("semantic execution did not record Smith then selection");
+    const search::GameAction manualSmith(1);
+    if (!manualSmith.isValidAction(manualBranch)) return fail("manual Smith primitive was not legal");
+    manualSmith.execute(manualBranch);
+    int manualBashIdx = -1;
+    for (int i = 0; i < manualBranch.info.toSelectCards.size(); ++i) {
+        if (manualBranch.info.toSelectCards[i].card.id == CardId::BASH
+                && !manualBranch.info.toSelectCards[i].card.upgraded) {
+            manualBashIdx = i;
+            break;
+        }
+    }
+    if (manualBashIdx < 0) return fail("manual branch could not resolve Bash");
+    const search::GameAction manualSelect(manualBashIdx);
+    if (!manualSelect.isValidAction(manualBranch)) return fail("manual Bash selection was not legal");
+    manualSelect.execute(manualBranch);
+    if (semanticResult.executedPrimitiveBits[1] != manualSelect.bits)
+        return fail("recorded selection primitive differs from independent manual resolution");
+    if (oocSmithStateFingerprint(semanticBranch) != oocSmithStateFingerprint(manualBranch))
+        return fail("semantic and manual Smith successors differ");
+
+    {
+        GameContext different = base;
+        const auto result = search::executeOocSemanticAction(different, *strike);
+        if (!result.ok) return fail("different target execution failed: " + result.error);
+        int upgradedStrikeCount = 0;
+        int upgradedBashCount = 0;
+        for (const auto &card : different.deck.cards) {
+            upgradedStrikeCount += card.id == CardId::STRIKE_RED && card.upgraded;
+            upgradedBashCount += card.id == CardId::BASH && card.upgraded;
+        }
+        if (upgradedStrikeCount != 1 || upgradedBashCount != 1)
+            return fail("selecting Strike changed the wrong card");
+    }
+
+    {
+        GameContext duplicates = oocSmithFixture();
+        duplicates.deck.obtainRaw(Card(CardId::BASH));
+        const auto equivalent = search::enumerateCampfireUpgradeActions(duplicates);
+        int unbottledBashActions = 0;
+        for (const auto &action : equivalent) {
+            unbottledBashActions += action.target.id == CardId::BASH && action.target.bottleSlot == -1;
+        }
+        if (unbottledBashActions != 2)
+            return fail("duplicate Bash occurrences did not preserve distinct ordered successors");
+        const auto *secondBash = findUpgradeAction(equivalent, CardId::BASH, -1, 1);
+        if (secondBash == nullptr) return fail("second equivalent Bash occurrence is not addressable");
+        GameContext secondBranch = duplicates;
+        const auto secondResult = search::executeOocSemanticAction(secondBranch, *secondBash);
+        if (!secondResult.ok || !secondBranch.deck.cards[secondBranch.deck.size() - 1].upgraded)
+            return fail("second equivalent Bash occurrence resolved incorrectly");
+
+        int extraBashIdx = -1;
+        for (int i = duplicates.deck.size() - 1; i >= 0; --i) {
+            if (duplicates.deck.cards[i].id == CardId::BASH) { extraBashIdx = i; break; }
+        }
+        duplicates.deck.bottleCard(extraBashIdx, CardType::ATTACK);
+        const auto distinguishable = search::enumerateCampfireUpgradeActions(duplicates);
+        const auto *plainBash = findUpgradeAction(distinguishable, CardId::BASH, -1);
+        const auto *bottledBash = findUpgradeAction(distinguishable, CardId::BASH, 0);
+        if (plainBash == nullptr || bottledBash == nullptr)
+            return fail("bottled and unbottled duplicate Bash targets were not distinguished");
+        const auto result = search::executeOocSemanticAction(duplicates, *bottledBash);
+        if (!result.ok || !duplicates.deck.cards[extraBashIdx].upgraded
+                || duplicates.deck.bottleIdxs[0] != extraBashIdx)
+            return fail("bottled duplicate did not resolve to the bottled card");
+    }
+
+    std::cout << "ooc_semantic_smith PASS\n";
+    return 0;
+}
+
 int main(int argc, const char* argv[]) {
 
     if (argc < 2) {
@@ -3617,6 +3843,8 @@ int main(int argc, const char* argv[]) {
         return testSilverRandomBridge();
     } else if (command == "silver_semantic_action") {
         return testSilverSemanticActionResolution();
+    } else if (command == "ooc_semantic_smith") {
+        return testOocSemanticSmith();
     } else if (command == "simhealth_load") {
         if (argc < 3) {
             std::cout << "usage: test simhealth_load <capture.bin>\n";
