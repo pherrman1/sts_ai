@@ -81,10 +81,11 @@ python3 tools/ooc_semantic_pipeline_contract.py validate-corpus OUT.csv.manifest
 
 The evaluated sidecar binds both the CSV hash and the original capture
 manifest hash. Runtime configuration and loaded OOC model identities are
-frozen alongside the combat teacher. `richStateHeader` and `richRow` are
-quoted CSV cells containing the canonical header and masked source vector;
-the validator checks their full order and arity. Primitive traces are JSON
-arrays, while semantic payloads and the requested budget schedule are JSON.
+frozen alongside the combat teacher. `richRow` is a quoted CSV cell containing
+the masked source vector. The canonical header is stored once in `manifest["stateFeatures"]["header"]`, not
+repeated per branch. The validator binds that header to the versioned
+`RICH_NAMES` and checks each vector's arity and masked positions against it.
+Primitive traces are JSON arrays, while semantic payloads and the requested budget schedule are JSON.
 The native `oocsemanticselftest` is a deterministic fixture with a fake combat
 backend: it exercises the real branch/continuation call path and observer
 lifetime without representing a live Silver pilot.

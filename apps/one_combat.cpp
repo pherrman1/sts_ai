@@ -6720,7 +6720,7 @@ static void semanticPilotEvaluate(int count,const std::string &manifestFile,cons
     if(std::filesystem::exists(outFile)||std::filesystem::exists(partial)||std::filesystem::exists(boundManifest))
         throw std::runtime_error("semantic pilot: output already exists");
     std::ofstream out(partial); if(!out) throw std::runtime_error("semantic pilot: cannot open output");
-    out<<"sourceSeed,decisionIdx,act,floor,screen,semanticSchemaVersion,semanticActionIdx,semanticKey,semanticEffect,semanticSource,semanticPayload,siblingCount,futureIdentity,H,budgetSchedule,continuationSeed,hiddenSeed,executedPrimitiveBits,survivedPrefix,continuationValue,qProduct,denseReferenceValue,terminalWon,silverSimulations,combatDecisions,transactionSubdecisions,transactionDecisions,cpuMs,wallMs,teacherId,valid,quarantineReason,richStateHeader,richRow\n";
+    out<<"sourceSeed,decisionIdx,act,floor,screen,semanticSchemaVersion,semanticActionIdx,semanticKey,semanticEffect,semanticSource,semanticPayload,siblingCount,futureIdentity,H,budgetSchedule,continuationSeed,hiddenSeed,executedPrimitiveBits,survivedPrefix,continuationValue,qProduct,denseReferenceValue,terminalWon,silverSimulations,combatDecisions,transactionSubdecisions,transactionDecisions,cpuMs,wallMs,teacherId,valid,quarantineReason,richRow\n";
     out<<std::setprecision(17);
     std::size_t rows=0;
     const std::vector<int> schedule{10000};
@@ -6745,7 +6745,7 @@ static void semanticPilotEvaluate(int count,const std::string &manifestFile,cons
                 <<(result.survivedH?result.won:0.0)<<','<<(10.0*result.won+result.hp)<<',';
             if(result.bootstrapped==0)out<<result.won;
             out<<','<<cost.silverSimulations<<','<<cost.combatDecisions<<','<<cost.transactionSubdecisions<<','<<cost.transactionDecisions<<','
-                <<cost.cpuMs<<','<<cost.wallMs<<','<<teacher.id<<",1,,"<<csvQuote(richStateHeader())<<','<<csvQuote(state)<<'\n';
+                <<cost.cpuMs<<','<<cost.wallMs<<','<<teacher.id<<",1,,"<<csvQuote(state)<<'\n';
             ++rows;
         }
     }

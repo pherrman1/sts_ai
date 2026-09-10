@@ -50,7 +50,7 @@ class TestSemanticPipeline(unittest.TestCase):
                        budgetSchedule='[10000]', executedPrimitiveBits='[123]', survivedPrefix=1,
                        continuationValue=.4, qProduct=.4, silverSimulations=10000, combatDecisions=1,
                        transactionSubdecisions=0, transactionDecisions=0, cpuMs=10, wallMs=11, teacherId='synthetic-only', valid=1, quarantineReason='')
-            row.update(richStateHeader=','.join(RICH_NAMES), richRow=','.join('-1' if n in MASKED_RICH_NAMES else '0' for n in RICH_NAMES))
+            row.update(richRow=','.join('-1' if n in MASKED_RICH_NAMES else '0' for n in RICH_NAMES))
             self.rows.append(row)
 
     def write(self):
@@ -65,6 +65,8 @@ class TestSemanticPipeline(unittest.TestCase):
 
     def test_round_trip_and_clean_complete_corpus(self):
         self.write()
+        with self.path.open(newline='') as stream:
+            self.assertNotIn('richStateHeader', next(csv.reader(stream)))
         restored = json.loads(json.dumps(self.manifest))
         validate_manifest(restored)
         self.assertEqual(validate_corpus(restored), {'rows':2,'decisions':1,'valid':2,'quarantined':0})
@@ -96,7 +98,9 @@ class TestSemanticPipeline(unittest.TestCase):
                    lambda m:m['evaluation'].update(futureIdentities=[1]),
                    lambda m:m['evaluation'].update(futureIdentities=[False]),
                    lambda m:m['evaluation'].update(H=True),
-                   lambda m:m['sampling'].update(version=True)]
+                   lambda m:m['sampling'].update(version=True),
+                   lambda m:m['stateFeatures'].update(header=','.join(reversed(RICH_NAMES))),
+                   lambda m:m['stateFeatures'].update(header=','.join(RICH_NAMES[:-1]))]
         for change in changes:
             with self.subTest(change=change):
                 broken = copy.deepcopy(self.manifest)
@@ -124,7 +128,8 @@ class TestSemanticPipeline(unittest.TestCase):
                    lambda rows:rows[0].update(cpuMs='nan'),
                    lambda rows:rows[0].update(transactionDecisions=1),
                    lambda rows:rows[0].update(silverSimulations=9999),
-                   lambda rows:rows[0].update(richStateHeader='other'),
+                   lambda rows:rows[0].update(richRow='0'),
+                   lambda rows:rows[0].update(richRow=rows[0]['richRow']+',0'),
                    lambda rows:rows[0].update(richRow=','.join('0' for _ in RICH_NAMES))]
         original = copy.deepcopy(self.rows)
         for change in changes:

@@ -21,7 +21,7 @@ ACTION_FIELDS = ('semanticActionIdx', 'semanticKey', 'semanticEffect', 'semantic
 REQUIRED_COLUMNS = SOURCE_FIELDS + ACTION_FIELDS + (
     'siblingCount', 'futureIdentity', 'continuationSeed', 'hiddenSeed', 'H', 'budgetSchedule', 'executedPrimitiveBits',
     'survivedPrefix', 'continuationValue', 'qProduct', 'silverSimulations',
-    'combatDecisions', 'transactionSubdecisions', 'transactionDecisions', 'cpuMs', 'wallMs', 'teacherId', 'valid', 'quarantineReason', 'richStateHeader', 'richRow')
+    'combatDecisions', 'transactionSubdecisions', 'transactionDecisions', 'cpuMs', 'wallMs', 'teacherId', 'valid', 'quarantineReason', 'richRow')
 
 
 # Versioned adapter over run_features.cpp::richStateHeader; order is wire schema.
@@ -240,11 +240,12 @@ def validate_corpus(manifest):
     futures = set(map(str, evaluation['futureIdentities']))
     seen = set()
     equal_futures = {}
+    # validate_manifest binds this header exactly to the versioned RICH_NAMES.
+    state_names = manifest['stateFeatures']['header'].split(',')
     for row in rows:
-        require(row['richStateHeader'] == ','.join(RICH_NAMES), 'canonical rich state header mismatch')
         state = row['richRow'].split(',')
-        require(len(state) == len(RICH_NAMES) and all(math.isfinite(float(v)) for v in state), 'invalid canonical rich state')
-        require(all(float(state[RICH_NAMES.index(k)]) == -1 for k in MASKED_RICH_NAMES), 'hidden future feature leakage')
+        require(len(state) == len(state_names) and all(math.isfinite(float(v)) for v in state), 'invalid canonical rich state')
+        require(all(float(state[state_names.index(k)]) == -1 for k in MASKED_RICH_NAMES), 'hidden future feature leakage')
         require(None not in row and all(v is not None for v in row.values()), 'malformed CSV row')
         decision_key = row['sourceSeed'], row['decisionIdx']
         require(decision_key in decisions, 'unexpected source decision')
