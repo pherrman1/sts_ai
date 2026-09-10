@@ -207,7 +207,12 @@ def join_inputs(
         semantic = semantic_by_key[key]
         combat_row = combat_by_key[key]
         prediction = pred_by_key[key]
-        for name in ("semanticActionIdx", "act", "floor", "encounter"):
+        # The semantic row describes the pre-action state, while the combat
+        # sidecar describes the resulting fight.  Act/floor/encounter can
+        # therefore legitimately advance or change; semanticActionIdx is the
+        # stable cross-sidecar action binding not already carried by the full
+        # branch identity.
+        for name in ("semanticActionIdx",):
             if name in combat_row and name in semantic:
                 require(str(combat_row[name]) == str(semantic[name]),
                         f"semantic/combat {name} mismatch for {display_key(key)}")
