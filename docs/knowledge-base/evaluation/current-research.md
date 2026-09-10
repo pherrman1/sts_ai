@@ -23,6 +23,17 @@ infer a baseline from historical plans, model filenames, or local artifacts.
 
 ## Parked lines
 
+### Silver CPU optimization qualification
+
+The exact-search CPU pass has a bounded local pilot at implementation
+`f8873cd`: diagnostic gating, exact widening/UCB shortcuts, and compact sorted
+status storage preserve the checked labels and search traces. GCC PGO is
+available as an opt-in build experiment. Broader production qualification and
+chance-node storage changes remain parked; the local profile does not attribute
+CPU cost specifically to unused chance-node state. See
+[the evidence packet](../../experiments/evidence/silver_exact_search_2026-09-10.json)
+and [ledger-06 §215](../../experiments/ledger-06.md).
+
 ### Whole-Act OOC evaluator
 
 The corrected evaluator passed its serial/parallel and worker-coverage canary,

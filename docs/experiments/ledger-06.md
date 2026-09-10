@@ -6034,3 +6034,66 @@ model training was changed.
   sidecars. The
   full 100-rollout/100-Silver rerun remains required before replacing §213's
   scientific result.
+
+## §215 Exact Silver CPU optimization and GCC PGO pilot (2026-09-10)
+
+- **Question/design:** preserve the frozen teacher's search, RNG behavior,
+  decisions and labels while reducing single-core CPU cost. Baseline
+  `0034ce8038f1a7229bc4f993a0001a72ddfd10e9`; reviewed implementation
+  `f8873cd` (subsequent evidence-only commit does not change executable sources).
+  The implementation gates diagnostic hashes/timers/action traces, caches the
+  original widening expression, ends UCB scans at a winning positive infinity,
+  and replaces Silver's status map with sorted sparse explicit-membership storage.
+  PGO is a separate default-off build treatment; no fast math or native CPU flags.
+- **Profile:** GNU `gprofng` PC sampling of `wholecombatgen`, seed 0, gave
+  22.456 CPU seconds sampled: Silver step inclusive 92.38%, status-tree copy
+  exclusive 2.90%, BattleContext swap exclusive 6.11%. `perf` was unavailable;
+  no cycles/instructions/cache-miss hardware evidence was collected. Baseline
+  sizes: Node 6352 bytes, BattleContext 6272, Player 176. Compact chance-node
+  storage was assessed but deferred: memory upside is plausible, while CPU
+  attribution to unused chance payload remains unmeasured. Logical allocated
+  cap semantics must remain unchanged in any future layout experiment.
+- **Workload/configuration:** actual `wholecombatgen 1 10000 0 OUT SEED TEACHER`
+  producer, project-fair Silver UCT, exactly 10,000 simulations per private
+  root, exploration 25/25, widening 3.7028/0.52389 for both categories,
+  allocated reuse cap 32768, adaptive/direct-leaf/pruning/PUCT off. Native OOC
+  floor/win trees loaded and hash-bound; `STS_POLICY=0`. All seed commands used
+  `tools/seed_guard.sh`. Ryzen 5 7500F, one process pinned to CPU 2,
+  `OMP_NUM_THREADS=1`; GCC Release `-O3 -flto`. Actual production-job binary
+  paths elsewhere were not verified or changed.
+- **PGO:** train on seed 0 (22 fights across Acts 1–3) plus the existing native
+  reference-searcher probe to cover a compiled archive member not linked by
+  the producer. Final USE build passed strict missing/mismatched profile
+  checks. Held-out seeds 1 and 2 were not used in training.
+- **Controlled timing:** two repetitions per held-out seed in A/B/PGO then
+  PGO/B/A order, after builds completed. Sum over four runs per arm:
+
+  | Arm | Process CPU seconds | Whole-process wall seconds | CPU reduction vs A |
+  | --- | ---: | ---: | ---: |
+  | A: baseline Release | 52.994173 | 53.001637 | — |
+  | B: optimized Release | 49.427041 | 49.431853 | 6.73% |
+  | PGO: optimized profile-use | 46.923947 | 46.927550 | 11.45% |
+
+  PGO reduced CPU by a further 5.06% versus B. This is a preliminary local
+  result on two trajectories, not a statistical or production-wide claim;
+  the individual source optimizations were not isolated in this final timing.
+  Exploratory runs overlapping compilation are excluded from these numbers.
+- **Equivalence:** every final CSV is byte-identical to its matched baseline,
+  as is every per-fight Silver telemetry line. Fourteen native fixtures at
+  10,000 simulations also have byte-identical traces (including root actions,
+  values/visits, reroot and sequential-selection cases). Focused tests compare
+  tracing on/off, observer counts/hashes/fingerprints, RNG state, all pool
+  states/values, UCB NaN/infinity behavior, and exact widening schedules and
+  fallback. These are bounded checks; no persisted full-run RNG trace was
+  collected. Training/exploratory scratch data are not a promoted corpus.
+- **Validation/status:** complete Debug build, 62/62 CTests, 145 agent-tooling
+  tests, container ASan/UBSan, independent source review, and repository-health
+  check passed. Keep source changes for review; PGO remains opt-in. No model,
+  search budget, OOC policy, production corpus, or GCP deployment was changed.
+  Existing Release narrowing/ODR/LTO warnings remain.
+- **Evidence:** [machine-readable packet](evidence/silver_exact_search_2026-09-10.json)
+  contains every final command, teacher/environment/model/executable hash,
+  CPU/wall measurement, label/telemetry hash, checks and limitations. Raw logs,
+  CSVs, profiles and build output remain in `build/optimization-evidence/` in
+  the task checkout. Final manifests bind the implementation SHA and actual
+  binary hashes; profiles were collected from the same sources before commit.
