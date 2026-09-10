@@ -6097,3 +6097,74 @@ model training was changed.
   CSVs, profiles and build output remain in `build/optimization-evidence/` in
   the task checkout. Final manifests bind the implementation SHA and actual
   binary hashes; profiles were collected from the same sources before commit.
+
+## §216 Compact Silver chance-node storage: lower memory, CPU neutral (2026-09-10)
+
+- **Question/design:** follow up §215's deferred storage hypothesis. Compare
+  the already-optimized Release executable at `49781db` (SHA256
+  `835e21fb790a55a234079f34279657b2910a2e3e459cd84faf2b2f990ef1e4bf`)
+  against reviewed implementation `255d8f1`. PGO is OFF in both arms. Keep
+  all teacher settings, node counts, RNG use, decisions and labels unchanged;
+  measure whether removing unused chance-state payload saves memory and CPU.
+  Reused §215's exact baseline executable and fixture runner; fresh timings are
+  necessary because the new layout is the only new treatment.
+- **Implementation:** compact 88-byte nodes point to separately pooled battle
+  states. Only decision nodes claim a state; chance nodes read their parent.
+  Both pools retain stable addresses and capacity across reset/reroot. The
+  allocated/active cap still uses logical `allNodes.size()`/`poolUsed`, never
+  state-pool size or physical bytes. No block allocation or cap-policy change.
+- **Structural evidence:** the 512-simulation fixture has 604 logical nodes,
+  comprising 510 decisions and 94 chance nodes. State pool usage is 510;
+  BattleContext is 6248 bytes. Thus 587,312 bytes of chance-state payload are
+  omitted. This payload calculation excludes allocator/bookkeeping overhead;
+  whole-process memory is measured separately below.
+- **Workload:** same frozen `wholecombatgen 1 10000 0 OUT SEED TEACHER` contract
+  as §215: project-fair ordinary Silver UCT, exact 10k private-root budgets,
+  exploration 25/25, widening 3.7028/0.52389, allocated cap32768, adaptive and
+  learned leaf/pruning/PUCT off. Native OOC floor/win trees hash-bound and
+  confirmed loaded, STS_POLICY=0, one worker pinned to CPU2 on Ryzen5 7500F,
+  GCC Release O3/LTO. Source/model/binary hashes accompany every final run.
+- **Timing/memory:** seeds0/1/2, two repeats each in A/B then B/A order, after
+  all compilation completed. Six runs per arm. Baseline CPU88.992959s and
+  wall88.999912s; compact CPU88.466317s and wall88.480595s. The nominal 0.59%
+  CPU reduction is treated as neutral/inconclusive, not a demonstrated speedup.
+  Mean peak RSS across the two repetitions, in KiB:
+
+  | Seed | Baseline | Compact | Reduction |
+  | --- | ---: | ---: | ---: |
+  | 0 | 277196 | 235032 | 15.21% |
+  | 1 | 288450 | 237572 | 17.64% |
+  | 2 | 319776 | 296542 | 7.27% |
+
+- **Hardware profiling:** installed matching Linux perf7.1.5 and its runtime
+  libraries by user-local package extraction; no sudo/sysctl or global
+  configuration changes. `perf_event_paranoid` remains2. Generic userspace
+  cycles/instructions/branches/branch-misses/cache-references/cache-misses are
+  readable. Separate matched seed0 A/B then B/A counter runs and their running
+  percentages are retained in the evidence packet. Initial profile/counter
+  samples overlapping builds are excluded from controlled conclusions.
+  In the matched counter pairs, compact nodes used 1.21% more cycles,
+  0.20% more instructions and 1.88% more generic cache misses; this does not
+  support a cache-efficiency improvement despite the lower RSS.
+- **Correctness:** all matched final label CSVs and per-fight Silver telemetry
+  lines are identical. Fourteen native fixture traces at10k simulations are
+  byte-identical, covering reroot and sequential selection. New tests check
+  null chance states, exclusive state ownership, stable pointers across growth,
+  continued search after reroot, reset/replay capacity reuse and unchanged
+  logical node accounting. Existing bridge allocated/active-cap tests pass.
+  Full Debug target set rebuilt; 62/62 CTests pass. Final isolated search and
+  bridge boundary tests pass ASan+UBSan. Independent source review and
+  repo-health pass (advisory Markdown-growth warning).
+- **Decision/limits:** retain as a measured memory optimization with roughly
+  unchanged CPU cost on this bounded local sample. No claim of additional
+  cache-efficiency or CPU benefit, no broad production qualification, and no
+  combination with §215's PGO result: new source/layout requires new profiles.
+  No deployment, model, budget, corpus, or cap change. Three trajectories and
+  two repeats cannot establish a small general CPU effect; full-run persisted
+  RNG traces were not collected. Agent-tooling tests were not repeated because
+  this follow-up changes no Python/tooling configuration.
+- **Evidence:** [complete packet](evidence/silver_chance_storage_2026-09-10.json)
+  contains exact commands, manifests/hashes, per-run CPU/wall/RSS, hardware
+  counts, fixture metrics and checks. Raw files remain under
+  `build/chance-storage-evidence/` in the task checkout. The final evidence-only
+  commit does not change the measured implementation.
