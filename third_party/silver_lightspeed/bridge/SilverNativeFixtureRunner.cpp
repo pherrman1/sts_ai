@@ -114,9 +114,9 @@ sts::search::BattleSearcher::Node *exactRerootCandidate(
         const sts::BattleContext &bc) {
     using Node = sts::search::BattleSearcher::Node;
     const auto exactMatch = [&bc](const Node *node) {
-        return node != nullptr && node->state.equalForSearch(bc)
-            && std::equal(node->state.cards.hand.begin(),
-                          node->state.cards.hand.begin() + node->state.cards.cardsInHand,
+        return node != nullptr && node->state != nullptr && node->state->equalForSearch(bc)
+            && std::equal(node->state->cards.hand.begin(),
+                          node->state->cards.hand.begin() + node->state->cards.cardsInHand,
                           bc.cards.hand.begin());
     };
     if (previousBest == nullptr || previousBest->node == nullptr) return nullptr;

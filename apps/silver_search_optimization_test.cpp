@@ -5,6 +5,8 @@
 #include <limits>
 #include <stdexcept>
 #include <vector>
+#include <unordered_set>
+#include <string>
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/BattleSearcher.h"
@@ -115,9 +117,9 @@ void traceParity(const sts::BattleContext &bc, bool observe) {
             require(x.simulationCount == y.simulationCount && x.evaluationSum == y.evaluationSum,
                     "trace changed pool visits or values");
             if (!x.isRandomNode) {
-                require(x.state.rng.seed0 == y.state.rng.seed0 && x.state.rng.seed1 == y.state.rng.seed1
-                        && x.state.rng.counter == y.state.rng.counter, "trace changed simulator RNG");
-                require(x.state.equalForSearch(y.state), "trace changed pool states");
+                require(x.state->rng.seed0 == y.state->rng.seed0 && x.state->rng.seed1 == y.state->rng.seed1
+                        && x.state->rng.counter == y.state->rng.counter, "trace changed simulator RNG");
+                require(x.state->equalForSearch(*y.state), "trace changed pool states");
             }
         }
         require(plain.actionStack.empty(), "default trace must stay empty");
@@ -164,7 +166,7 @@ void rootHash(const sts::BattleContext &bc) {
     auto *node = search.getOrCreateNode(std::move(next));
     search.rerootAt(node);
     require(!search.diagnosticRootHashValid, "reroot hash must remain lazy");
-    const auto expected = sts::search::hashBattleState(node->state);
+    const auto expected = sts::search::hashBattleState(*node->state);
     require(search.diagnosticRootHash() == expected, "reroot invalidates cached hash");
     int observations = 0;
     search.leafObserver = [&](silver_bridge::SilverLeafObservation &leaf) {
@@ -174,14 +176,125 @@ void rootHash(const sts::BattleContext &bc) {
     search.search(8);
     require(observations > 0, "reroot observer must run");
 }
+std::size_t validateStorage(const Search &search) {
+    std::unordered_set<const sts::BattleContext *> owned;
+    for (std::size_t i = 0; i < search.decisionStatesUsed; ++i)
+        require(owned.insert(search.decisionStates[i].get()).second, "state pool slots must not alias");
+    std::unordered_set<const sts::BattleContext *> assigned;
+    std::size_t chances = 0;
+    for (std::size_t i = 0; i < search.poolUsed; ++i) {
+        const auto &node = *search.allNodes[i];
+        if (node.isRandomNode) {
+            ++chances;
+            require(node.state == nullptr, "chance nodes must not own battle states");
+            require(node.parent && !node.parent->isRandomNode && node.parent->state,
+                    "chance nodes must retain their decision parent state");
+        } else {
+            require(node.state && owned.count(node.state), "decision node state must belong to active pool");
+            require(assigned.insert(node.state).second, "active decision states must not alias");
+        }
+    }
+    require(assigned.size() == search.decisionStatesUsed, "all active states must belong to decision nodes");
+    require(search.poolUsed == search.decisionStatesUsed + chances,
+            "logical node accounting must include chance nodes");
+    return chances;
+}
+
+void retainedStateGrowth(const sts::BattleContext &bc) {
+    Search search(bc);
+    search.search(64);
+    Search::Node *candidate = nullptr;
+    for (std::size_t i = 1; i < search.poolUsed; ++i) {
+        auto *node = search.allNodes[i].get();
+        if (!node->isRandomNode && node->state->outcome == sts::Outcome::UNDECIDED) {
+            candidate = node;
+            break;
+        }
+    }
+    require(candidate != nullptr, "retained growth fixture must provide a reroot candidate");
+    std::vector<std::pair<const sts::BattleContext *, std::uint64_t>> retained;
+    for (std::size_t i = 0; i < search.decisionStatesUsed; ++i) {
+        const auto *state = search.decisionStates[i].get();
+        retained.emplace_back(state, sts::search::hashBattleState(*state));
+    }
+    search.rerootAt(candidate);
+    search.search(8);
+    require(search.decisionStatesUsed > retained.size(), "reroot continuation must exercise state pool growth");
+    validateStorage(search);
+    for (std::size_t i = 0; i < retained.size(); ++i) {
+        require(search.decisionStates[i].get() == retained[i].first,
+                "reroot continuation must retain existing state addresses");
+        require(sts::search::hashBattleState(*retained[i].first) == retained[i].second,
+                "reroot continuation must not overwrite retained decision states");
+    }
+}
+
+void storage(const sts::BattleContext &bc, bool emitMetrics) {
+    Search search(bc);
+    require(search.poolUsed == 1 && search.decisionStatesUsed == 1,
+            "fresh root claims one node and one state");
+    search.search(512);
+    const auto chances = validateStorage(search);
+    require(chances > 0, "storage fixture must create chance nodes");
+    require(search.decisionStatesUsed == static_cast<std::size_t>(search.stats.nodesCreated) + 1,
+            "decision state count must preserve root-excluding node creation telemetry");
+    const auto nodePeak = search.allNodes.size(), statePeak = search.decisionStates.size();
+    const auto nodesUsed = search.poolUsed, statesUsed = search.decisionStatesUsed;
+    require(nodePeak == nodesUsed && statePeak == statesUsed, "first search peaks must match active counts");
+    std::vector<const sts::BattleContext *> slots;
+    for (const auto &state : search.decisionStates) slots.push_back(state.get());
+    Search::Node *candidate = nullptr;
+    for (std::size_t i = 1; i < search.poolUsed; ++i) {
+        auto *node = search.allNodes[i].get();
+        if (!node->isRandomNode && node->state->outcome == sts::Outcome::UNDECIDED) {
+            candidate = node;
+            break;
+        }
+    }
+    require(candidate != nullptr, "fixture must provide a reroot candidate");
+    auto *candidateState = candidate->state;
+    const auto candidateVisits = candidate->simulationCount;
+    search.rerootAt(candidate);
+    require(search.root == candidate && search.root->state == candidateState
+            && search.root->simulationCount == candidateVisits, "reroot must retain selected node and state");
+    require(search.poolUsed == nodesUsed && search.decisionStatesUsed == statesUsed,
+            "reroot must retain logical node and state accounting");
+    validateStorage(search);
+    search.setRoot(bc);
+    require(search.poolUsed == 1 && search.decisionStatesUsed == 1,
+            "fresh reset must reset both active pool counters");
+    require(search.allNodes.size() == nodePeak && search.decisionStates.size() == statePeak,
+            "fresh reset must retain both pool high-water allocations");
+    require(search.root->state == slots[0], "fresh reset must reuse the root state slot");
+    // Replay the same search into retained slots to check that recycling keeps
+    // addresses stable without retaining stale state ownership on chance nodes.
+    search.search(512);
+    require(validateStorage(search) == chances && search.poolUsed == nodesUsed
+            && search.decisionStatesUsed == statesUsed, "recycled pool must preserve logical search counts");
+    require(search.allNodes.size() == nodePeak && search.decisionStates.size() == statePeak,
+            "same search must not grow retained pools");
+    for (std::size_t i = 0; i < slots.size(); ++i)
+        require(search.decisionStates[i].get() == slots[i], "reset search must reuse stable state addresses");
+    if (emitMetrics) {
+        std::cout << "storage simulations=512 logical_nodes=" << nodesUsed
+                  << " decision_nodes=" << statesUsed << " chance_nodes=" << chances
+                  << " node_pool_peak=" << nodePeak << " state_pool_peak=" << statePeak
+                  << " node_size=" << sizeof(Search::Node)
+                  << " battle_state_size=" << sizeof(sts::BattleContext)
+                  << " omitted_chance_state_payload_bytes=" << chances * sizeof(sts::BattleContext) << '\n';
+    }
+}
+
 } // namespace
-int main() {
+int main(int argc, char **argv) {
     try {
         sts::GameContext gc{}; // BattleContext keeps a non-owning pointer to this run state.
         const auto bc = fixture(gc);
         Search search(bc);
         selection(search); widening(search);
         traceParity(bc, false); traceParity(bc, true); rootHash(bc);
+        retainedStateGrowth(bc);
+        storage(bc, argc > 1 && std::string(argv[1]) == "--storage-metrics");
         std::cout << "silver_search_optimization PASS\n";
         return 0;
     } catch (const std::exception &error) {

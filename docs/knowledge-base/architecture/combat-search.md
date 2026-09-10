@@ -136,6 +136,16 @@ after each action. The production cap is 32,768 nodes. The default
 `STS_SILVER_REUSE_CAP_MODE=allocated` caps retained allocation; `active` is a
 supported opt-in. Reroot and fallback telemetry must state what occurred.
 
+Search nodes contain compact bookkeeping and a pointer to a separately pooled
+battle state. Only decision nodes claim state storage; chance nodes have a null
+state pointer and read their decision parent's state. Both pools retain stable
+object addresses and reuse capacity. Fresh reset resets both active counters;
+reroot retains both pools. The allocated/active reuse caps still count logical
+nodes through `allNodes.size()`/`poolUsed`, never state slots or bytes. Pooled
+state swaps preserve scratch-buffer capacity reuse. All consumers of these
+structures must be rebuilt together after a layout change.
+
+
 `STS_SILVER_ADAPTIVE=1` searches 1,000 simulations, measures the top-two
 visit-share gap, and, when below threshold, continues the same root to exactly
 3,700 total. It applies at ordinary roots and private sequential-selection

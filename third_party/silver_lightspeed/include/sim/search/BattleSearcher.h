@@ -145,7 +145,7 @@ namespace sts::search {
             std::int64_t victoryCount = 0;
             double evaluationSum = 0;
             std::vector<Edge> edges;
-            BattleContext state;                // game state at this node (decision nodes; chance nodes read parent->state)
+            BattleContext* state = nullptr;     // decision state; chance nodes read parent->state
             bool isRandomNode = false;
             Action stochasticAction;            // chance node: the action that consumed RNG
             Node* parent = nullptr;             // chance node: spawning decision node (source of pre-action state)
@@ -170,6 +170,11 @@ namespace sts::search {
         // and only grows the vector when it needs more, so nodes aren't freed and reallocated per move.
         std::vector<std::unique_ptr<Node>> allNodes;  // Pool of all created nodes
         std::size_t poolUsed = 0;                     // nodes claimed by the current search
+
+        // Only decision nodes claim combat storage; logical node pool counts and
+        // reuse-cap behavior remain independent of this retained state pool.
+        std::vector<std::unique_ptr<BattleContext>> decisionStates;
+        std::size_t decisionStatesUsed = 0;
 
         // Open-addressed dedup table. Backed by a single vector and cleared with one memset per
         // search; replaces unordered_map<size_t, vector<Node*>> -- no per-bucket vector, no per-
@@ -255,6 +260,8 @@ namespace sts::search {
         [[nodiscard]] bool isTerminalState(const BattleContext &bc) const;
 
         Node* allocNode();   // claim a node from the pool (recycling a reset one, or growing the pool)
+
+        BattleContext* allocDecisionState(); // claim stable storage from the decision-state pool
 
         // Graph search deduplication
         Node* getOrCreateNode(BattleContext &&state);

@@ -575,9 +575,9 @@ sts::search::BattleSearcher::Node *exactRerootCandidate(
         const sts::BattleContext &state) {
     using Node = sts::search::BattleSearcher::Node;
     const auto exactMatch = [&state](const Node *node) {
-        return node != nullptr && node->state.equalForSearch(state)
-            && std::equal(node->state.cards.hand.begin(),
-                          node->state.cards.hand.begin() + node->state.cards.cardsInHand,
+        return node != nullptr && node->state != nullptr && node->state->equalForSearch(state)
+            && std::equal(node->state->cards.hand.begin(),
+                          node->state->cards.hand.begin() + node->state->cards.cardsInHand,
                           state.cards.hand.begin());
     };
     if (bestEdge == nullptr || bestEdge->node == nullptr) return nullptr;
@@ -802,12 +802,12 @@ public:
                 }
                 if (previousBest->node != nullptr) {
                     if (!previousBest->node->isRandomNode) {
-                        rerootMissDiagnostic = selectionStateSummary(previousBest->node->state, state);
+                        rerootMissDiagnostic = selectionStateSummary(*previousBest->node->state, state);
                     } else {
                         std::ostringstream out;
                         for (const auto &outcome : previousBest->node->edges) {
                             if (outcome.node != nullptr)
-                                out << '[' << selectionStateSummary(outcome.node->state, state) << ']';
+                                out << '[' << selectionStateSummary(*outcome.node->state, state) << ']';
                         }
                         rerootMissDiagnostic = out.str();
                     }
@@ -863,7 +863,7 @@ public:
             if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
             if (config.collectRootActionSummaries) {
                 SilverRootActionSummary summary;
-                summary.action = semanticFromAction(searcher->root->state, edge.action);
+                summary.action = semanticFromAction(*searcher->root->state, edge.action);
                 summary.edgeVisits = edge.visitCount;
                 if (edge.node != nullptr) {
                     summary.childSimulations = edge.node->simulationCount;
@@ -951,7 +951,7 @@ SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
     result.accepted = true;
     if (convertSemanticAction
             && best->action.getActionType() != sts::search::ActionType::MULTI_CARD_SELECT) {
-        result.action = semanticFromAction(session.searcher->root->state, best->action);
+        result.action = semanticFromAction(*session.searcher->root->state, best->action);
         result.initialActionFingerprint = semanticActionFingerprint(result.action);
     }
     result.initialSimulations = result.simulations;
@@ -1058,7 +1058,7 @@ SilverDecisionResult continueSilverDecision(
         result.accepted = true;
         if (convertSemanticAction
                 && best->action.getActionType() != sts::search::ActionType::MULTI_CARD_SELECT)
-            result.action = semanticFromAction(session.searcher->root->state, best->action);
+            result.action = semanticFromAction(*session.searcher->root->state, best->action);
     } catch (const std::exception &e) {
         result.failureReason = std::string("search_exception: ") + e.what();
         return result;
@@ -1127,10 +1127,11 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
             while (fillActiveToCap && static_cast<std::int64_t>(session.searcher->poolUsed) < cap)
                 session.searcher->allocNode();
             auto *candidate = session.searcher->allocNode();
-            candidate->state = state;
+            candidate->state = session.searcher->allocDecisionState();
+            *candidate->state = state;
             candidate->simulationCount = 17;
-            if (permuteHand && candidate->state.cards.cardsInHand >= 2)
-                std::swap(candidate->state.cards.hand[0], candidate->state.cards.hand[1]);
+            if (permuteHand && candidate->state->cards.cardsInHand >= 2)
+                std::swap(candidate->state->cards.hand[0], candidate->state->cards.hand[1]);
             session.searcher->root->edges.clear();
             session.searcher->root->edges.push_back({sts::search::Action{}, candidate, 0, 0});
             session.previousBest = &session.searcher->root->edges.front();
@@ -1174,10 +1175,10 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
 
         SilverSearchSession missing;
         arrangeCandidate(missing, false, false);
-        missing.searcher->root->edges.front().node->state.player.curHp -= 1;
+        missing.searcher->root->edges.front().node->state->player.curHp -= 1;
         const auto missingAllocated = run(missing, true, SilverReuseCapMode::ALLOCATED);
         arrangeCandidate(missing, false, false);
-        missing.searcher->root->edges.front().node->state.player.curHp -= 1;
+        missing.searcher->root->edges.front().node->state->player.curHp -= 1;
         const auto missingActive = run(missing, true, SilverReuseCapMode::ACTIVE);
         result.candidateMissingUnchanged = !missingAllocated.exactCandidateFound
             && !missingActive.exactCandidateFound
@@ -1412,10 +1413,10 @@ std::vector<SemanticAction> enumerateSilverLegalActions(const BattleStateWire &w
     auto state = materialize(wire, &runContext);
     sts::search::BattleSearcher enumerator(state);
     if (enumerator.root == nullptr) return result;
-    enumerator.enumerateActionsForNode(*enumerator.root, enumerator.root->state);
+    enumerator.enumerateActionsForNode(*enumerator.root, *enumerator.root->state);
     result.reserve(enumerator.root->edges.size());
     for (const auto &edge : enumerator.root->edges)
-        result.push_back(semanticFromAction(enumerator.root->state, edge.action));
+        result.push_back(semanticFromAction(*enumerator.root->state, edge.action));
     return result;
 }
 
@@ -1440,7 +1441,7 @@ bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction 
     enumerator.search(1);
     if (enumerator.root == nullptr) return false;
     for (const auto &edge : enumerator.root->edges) {
-        if (sameSemantic(semanticFromAction(enumerator.root->state, edge.action), wanted)) {
+        if (sameSemantic(semanticFromAction(*enumerator.root->state, edge.action), wanted)) {
             raw = edge.action;
             return true;
         }
