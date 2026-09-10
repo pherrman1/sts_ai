@@ -1,0 +1,136 @@
+{
+  "experiment": "semantic_branch_precombat_combat_evaluator_v1",
+  "date_utc": "2026-09-10",
+  "classification": "COMBAT PREDICTOR PROMISING - LOSS TAIL INCONCLUSIVE",
+  "baseline_sha": "9c9e0a260ac827276c6599f09374da7d8f8e765e",
+  "analysis_sha": "6d1a3f3d7c0c1913ea4e30f1b0ea12d06627eca4",
+  "constraints": {
+    "simulator_called": false,
+    "silver_called": false,
+    "new_labels": false,
+    "gameplay_integration": false,
+    "runtime_model_export": false
+  },
+  "corpus": {
+    "producer_sha": "a6c2abbc9db542ea1fc8933087f81c1de96c4f8a",
+    "raw_package_sha256": "705bd2c970f52759dd7541052f56536eb5c53470aa0fe37b2674abdfd1ba7ec9",
+    "manifest_count": 64,
+    "source_seed_range": [992000, 993023],
+    "source_seeds": 1024,
+    "rows": 7652,
+    "valid": 7599,
+    "wins": 7238,
+    "true_deaths": 361,
+    "nonambiguous_deaths": 348,
+    "validation": "All 64 combat_evaluator_semantic_branch_v1 manifests and the frozen evidence JSON passed fail-closed validation."
+  },
+  "recipe": {
+    "heads": ["survival", "conditional_win_hp", "conditional_loss_remaining"],
+    "state_features": 1017,
+    "encounter_one_hot": "TRAIN-derived",
+    "variance_filter": "TRAIN-derived, threshold 1e-12",
+    "split": "tools/train_combat_evaluator.py::stable_split(sourceSeed)",
+    "xgboost": {
+      "rounds": 300,
+      "max_depth": 6,
+      "eta": 0.05,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "seed": 20260902,
+      "tree_method": "hist",
+      "threads": 1
+    },
+    "excluded_inputs": [
+      "sourceSeed", "decisionIdx", "semanticActionIdx", "semanticKey",
+      "semanticSource", "futureIdentity", "branchFightIdx", "continuationSeed",
+      "hiddenSeed", "teacherId", "semantic family", "terminal labels"
+    ]
+  },
+  "split": {
+    "train": {"source_seeds": 711, "rows": 5519, "valid": 5470, "wins": 5202, "true_deaths": 268, "nonambiguous_deaths": 255},
+    "validation": {"source_seeds": 156, "rows": 1081, "valid": 1077, "wins": 1032, "true_deaths": 45, "nonambiguous_deaths": 45},
+    "test": {"source_seeds": 157, "rows": 1052, "valid": 1052, "wins": 1004, "true_deaths": 48, "nonambiguous_deaths": 48}
+  },
+  "train_derived_baselines": {
+    "survival_prior": 0.9510054844606947,
+    "winner_hp_mean": 0.6548909761664,
+    "death_remaining_mean": 0.4019302695889711,
+    "signed_outcome_mean": 0.6036051558381668
+  },
+  "metrics": {
+    "train": {
+      "survival": {"model": {"logloss": 0.014929408207535744, "brier": 0.0037007504142820835, "roc_auc": 0.999572136434322}, "baseline": {"logloss": 0.19554394534040892, "brier": 0.04659405298637408}},
+      "winning_hp": {"model": {"mae": 0.04000681044619647, "rmse": 0.05798053637967001}, "baseline": {"mae": 0.22362401307637944, "rmse": 0.26296111667875754}},
+      "loss_severity": {"model": {"mae": 0.016665057867314002, "rmse": 0.02589681541142996}, "baseline": {"mae": 0.24992818192735572, "rmse": 0.2821269592602144}},
+      "expected_signed": {"model": {"mae": 0.04272989229382875, "rmse": 0.06551192559916565}, "baseline": {"mae": 0.26878022114795436, "rmse": 0.347505484714213}}
+    },
+    "validation": {
+      "survival": {"model": {"logloss": 0.16968904435634613, "brier": 0.035888656973838806, "roc_auc": 0.843217054263566}, "baseline": {"logloss": 0.17415514814852245, "brier": 0.04008894314853245}},
+      "winning_hp": {"model": {"mae": 0.1128728798016095, "rmse": 0.14953576208790148}, "baseline": {"mae": 0.23156887712644186, "rmse": 0.27534947480917205}},
+      "loss_severity": {"model": {"mae": 0.17259419790650427, "rmse": 0.2003988960851182}, "baseline": {"mae": 0.1877561492216319, "rmse": 0.21019255073383802}},
+      "expected_signed": {"model": {"mae": 0.13255794094635817, "rmse": 0.19788969030454062}, "baseline": {"mae": 0.2641601393753133, "rmse": 0.3344887110160418}}
+    },
+    "test": {
+      "survival": {"model": {"logloss": 0.13460420072078705, "brier": 0.031214339658617973, "roc_auc": 0.9255166832669323}, "baseline": {"logloss": 0.18555764555181364, "brier": 0.04355685657215813}},
+      "winning_hp": {"model": {"mae": 0.103802619239669, "rmse": 0.15359193780287644}, "baseline": {"mae": 0.22659805197574545, "rmse": 0.26408584051374817}},
+      "loss_severity": {"model": {"mae": 0.22308634184392806, "rmse": 0.2661052728249932}, "baseline": {"mae": 0.13273432719396375, "rmse": 0.16806453203593574}},
+      "expected_signed": {"model": {"mae": 0.12396373702555742, "rmse": 0.19386676656152857}, "baseline": {"mae": 0.2659954846775701, "rmse": 0.3356803075155861}},
+      "sign_accuracy": 0.9553231939163498,
+      "sign_confusion_actual_0_1_predicted_0_1": [[21, 27], [20, 984]]
+    }
+  },
+  "source_macro_test": {
+    "source_seeds": 157,
+    "survival_brier_model": 0.02812182924600991,
+    "survival_brier_baseline": 0.036680709567141145,
+    "expected_signed_abs_model": 0.12899688579958202,
+    "expected_signed_abs_baseline": 0.26526563333288644
+  },
+  "cluster_bootstrap_test": {
+    "replicates": 5000,
+    "unit": "sourceSeed",
+    "survival_logloss_model_minus_baseline": {"difference": -0.05095344403279975, "ci95": [-0.1554859353009433, 0.03577057051760214], "source_groups": 157},
+    "survival_brier_model_minus_baseline": {"difference": -0.012342518798075637, "ci95": [-0.03812620595570855, 0.008879235318649533], "source_groups": 157},
+    "winning_hp_mae_model_minus_baseline": {"difference": -0.12279543273607645, "ci95": [-0.1511708062268545, -0.09482830451263838], "source_groups": 153},
+    "expected_signed_mae_model_minus_baseline": {"difference": -0.1420317476520127, "ci95": [-0.18089378557922214, -0.10947756105737794], "source_groups": 157},
+    "loss_severity_mae_model_minus_baseline": {"difference": 0.09035201464996431, "ci95": [-0.03730953357235926, 0.1469718502876022], "source_groups": 10, "effective_replicates": 5000}
+  },
+  "loss_tail_leave_one_source_out": {
+    "independent_source_groups": 10,
+    "model_minus_baseline_mae_range": [0.02594373370260611, 0.102242982463876]
+  },
+  "input_alias_noise_audit": {
+    "valid_rows": 7599,
+    "unique_inputs": 5683,
+    "duplicated_input_groups": 1106,
+    "largest_duplicate_group": 8,
+    "duplicate_groups_with_different_signedOutcome": 172,
+    "within_identical_input_signedOutcome_spread_max": 1.2399834044570888,
+    "within_identical_input_signedOutcome_spread_mean": 0.14778052408355716
+  },
+  "slices": {
+    "full_report": "build/semantic-confirmation-a6c2abb/evaluator-v2/manifest.json",
+    "full_report_sha256": "724a3b8758a96b5c0c951ce982d889e975bc4bc95c2d39d25ebcc6e93b72faef",
+    "dimensions": ["act", "roomClass", "encounter"],
+    "test_slice_count": 61,
+    "encounter_specific_conclusion": "None; several encounter slices have only 1-8 source seeds."
+  },
+  "latency_batch1_cpu": {
+    "repeats_per_head": 2000,
+    "survival_ms": {"median": 0.1817795, "p95": 0.2483021},
+    "conditional_win_hp_ms": {"median": 0.176149, "p95": 0.2336266},
+    "conditional_loss_remaining_ms": {"median": 0.175383, "p95": 0.234112}
+  },
+  "artifacts_external": {
+    "directory": "build/semantic-confirmation-a6c2abb/evaluator-v2",
+    "survival.json": {"bytes": 719753, "sha256": "4ec129f156421eeada0837ca5a5a739ef7c6d2a3ec141471ada24adfe7ef002b"},
+    "conditional_win_hp.json": {"bytes": 1296156, "sha256": "b294b71d15a87621e51600cad7629ed18e9ef82afc81057a889afe820bc52d34"},
+    "conditional_loss_remaining.json": {"bytes": 712609, "sha256": "273f4d58d27ebba5a7ccc79e3c72ed47b5f549af3f2d64620921bf2aeba90f94"},
+    "heldout_predictions.csv": {"bytes": 20099583, "sha256": "0210887e78ddc940e811b6bc2c141b9cdf6878722536ebc2790a37941c1248b5"}
+  },
+  "interpretation": {
+    "positive": "TEST point metrics beat TRAIN-derived baselines for survival, winning HP, and expected signed outcome; expected-signed and winning-HP clustered intervals exclude zero; latency is sub-millisecond per head at batch 1.",
+    "limitation": "TEST survival clustered intervals cross zero, and loss severity is worse than its TRAIN death-mean baseline with only 10 independent death-source groups. The overall classification is therefore not deployment authorization.",
+    "decision": "This authorizes a later simulation-replacement experiment design only. Do not integrate the model, replace Silver, generate more labels, or run gameplay gates from this result."
+  }
+}
