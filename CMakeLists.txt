@@ -282,6 +282,11 @@ add_test(NAME selfplay_syntax COMMAND bash -n
 add_test(NAME paired_analysis_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/paired_analysis.py --self-test)
 add_test(NAME py_compile_parity_test COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/parity_test.py)
 add_test(NAME particle_leaf_probe_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/train_particle_leaf_probe.py --self-test)
+add_test(NAME semantic_confirmation_analysis COMMAND python3 -m unittest
+    tests.test_ooc_semantic_confirmation tests.test_semantic_confirmation_runner
+    tools.test_semantic_combat_coverage -q)
+set_tests_properties(semantic_confirmation_analysis PROPERTIES
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" LABELS "research-repro;tooling")
 add_test(NAME py_compile_analyze_ooc_factor COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_ooc_factor.py)
 add_test(NAME particle_posterior_probe_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_particle_posterior_probe.py --self-test)
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/check_replay.py --self-test)

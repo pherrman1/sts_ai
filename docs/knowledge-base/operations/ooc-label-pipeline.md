@@ -139,6 +139,49 @@ carries temporary verification evidence. This interface does not authorize
 training or the larger confirmation cohort before independent implementation
 review and merge.
 
+#### Fresh confirmation orchestration and offline analysis
+
+`tools/run_ooc_semantic_confirmation.py` is a deliberately fixed experiment
+runner for seeds 992000 through 993023: 64 independent shards, each retaining
+the native 16-source command ceiling. It runs only through the designated GCP
+launcher and preserves completed, validated shards. `freeze`, `capture`, `gate`
+and `evaluate` are separate stages. Evaluation requires every capture to
+validate, an explicit hash-bound capture-distribution review, and frozen
+analysis script hashes. The source archive, pinned dependencies, Release
+executable, teacher and model hashes are fixed before capture. A user-local
+GNU `time` provides per-process CPU and memory accounting; worker processes use
+`OMP_NUM_THREADS=1`. Capture/evaluation stage timing includes source/replay work,
+whereas semantic CSV timing and simulation totals describe branch work only.
+
+The runner requires each successful or resumed evaluation bundle to match its
+expected capture path/hash, seed block, producer, executable and teacher.
+Failed or unrecorded outputs require inspection; they are not silently
+rerun or overwritten. Source/model/executable provenance remains distinct from
+the orchestration and analysis tool hashes. An archive build must identify its
+producer explicitly with `STS_EXECUTABLE_GIT_SHA`; an enclosing checkout's SHA
+is not the archive producer.
+
+`tools/analyze_ooc_semantic_confirmation.py` validates the complete fresh corpus
+and reuses the development probe's unchanged state/action encoders, fixed
+160-tree depth-3 XGBoost configuration and deterministic five-fold grouping.
+It uses decision-centered qProduct targets and 5,000 paired decision bootstrap
+replicates. All seven source families and compound-containing/non-compound
+slices keep complete sibling groups. The state-only pairwise null is 0.5;
+its selected-action metrics depend on row order and do not imply ranking skill.
+The report separates the handoff's point-estimate/interval eligibility from
+judgments about meaningful harm and family/fold concentration; it does not
+invent an unstated equivalence margin. No development decisions are pooled
+into the confirmation result and no production model is exported.
+
+`tools/analyze_semantic_combat_labels.py` validates all combat sidecars and
+reports coverage, label distributions, missing-combat branches and the unchanged
+`train_combat_evaluator.py::stable_split` source-seed partitions. Its inherited
+30 nonambiguous held-out-death screen is a coverage heuristic, not a statistical
+power calculation: correlated sibling deaths are not independent samples.
+The command never fits a combat predictor. Full capture/evaluation timing can
+be supplied separately as combined runner metadata. Large CSVs and raw logs
+remain external evidence; compact results belong in the experiment ledger.
+
 The native modes and seed guard enforce a 16-source pilot ceiling. Increase
 scanning beyond eight sources only when needed for structural examples; this
 interface does not authorize corpus scaling or training. An absent or stale
