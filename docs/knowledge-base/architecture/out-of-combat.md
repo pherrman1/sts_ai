@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-08-11 against the current working tree (tracked native
+Last verified: 2026-09-10 against the current working tree (tracked native
 floor/win trees relocated from `build/` to `models/`).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -52,7 +52,7 @@ act/floor, and the active `ScreenState`
 
 `ScumSearchAgent2::stepOutOfCombatPolicy` is the reusable heuristic policy.
 The active whole-run research policy is the ordered branch chain in
-`apps/one_combat.cpp::runFullRunOOC`. Under current defaults it uses:
+`apps/one_combat/run_driver.cpp::runFullRunOOC`. Under current defaults it uses:
 
 - native `models/v_rich_trees.txt` floor value for card and shop scoring;
 - native `models/v_win_trees.txt` win value for rest/upgrade decisions;
@@ -62,13 +62,18 @@ The active whole-run research policy is the ordered branch chain in
 - heuristic/base handling for remaining screens unless an opt-in layer owns
   them.
 
-The policy chain remains owned by `runFullRunOOC`; its live action-selection
-implementations are isolated in `apps/one_combat/ooc_policy.{h,cpp}`. That
-module owns checkpoint action ranking, the one-ply card/rest/upgrade/event/
+The policy chain remains owned by `runFullRunOOC` in
+`apps/one_combat/run_driver.{h,cpp}`; its live action-selection
+implementations are isolated in `apps/one_combat/ooc_policy.{h,cpp}`. The
+run-driver boundary uses concrete seams for retained training validity,
+combat-budget/potion budgeting, VNet disconnect, and the retained
+counterfactual draft hooks; it does not introduce a generic run context or
+callback registry. The module owns checkpoint action ranking, the one-ply card/rest/upgrade/event/
 shop/treasure/boss-relic/map gates, the server/native fallback family, map-route
 search, and their candidate encodings. Model loading, `buildTokState`, model /
 transport feature seams, diagnostics, counterfactual evaluators, and the
-ordered driver loop remain in `apps/one_combat.cpp`.
+retained command/mode dispatch remain in `apps/one_combat.cpp`; the ordered
+whole-run loop is in `apps/one_combat/run_driver.cpp`.
 
 `apps/one_combat.cpp::main` enables native OOC unless `STS_NATIVE_OOC=0`.
 Failure to load the floor model terminates startup; failure to load the default
@@ -406,7 +411,8 @@ flowchart LR
 - `include/sim/search/GameAction.h::GameAction`
 - `src/sim/search/GameAction.cpp::getAllActionsInState`, `execute`
 - `src/sim/search/ScumSearchAgent2.cpp::stepOutOfCombatPolicy`
-- `apps/one_combat.cpp::runFullRunOOC`, `vFeatCsv`, `richIdxMap`, `main`,
+- `apps/one_combat/run_driver.cpp::runFullRunOOC`,
+  `apps/one_combat.cpp::vFeatCsv`, `richIdxMap`, `main`,
   `oocOnePlyCardRewardPolicy`, `runStrategicGenSeed`, `runStrategicGenSeed2`,
   `strategicGen2`, `buildTokState`, `tokEntity`
 - `apps/ooc_checkpoint_net.h::OocCheckpointNet`

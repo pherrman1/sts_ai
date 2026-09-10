@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-09-08 against the current working tree.
+Last verified: 2026-09-10 against the current working tree.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -28,7 +28,7 @@ before broad repository search.
 | --- | --- | --- | --- |
 | Run state | `include/game/GameContext.h`, `src/game/GameContext.cpp` | `GameContext`, `ScreenState`, `GameOutcome` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Run-level actions | `include/sim/search/GameAction.h`, `src/sim/search/GameAction.cpp` | `GameAction`, `getAllActionsInState`, `execute` | [out-of-combat.md](architecture/out-of-combat.md) |
-| OOC policy chain | `apps/one_combat.cpp`, `apps/one_combat/ooc_policy.{h,cpp}` | `runFullRunOOC` — ordered branch chain, current default; `ooc_policy` owns live action/checkpoint/one-ply/map policy implementations | [out-of-combat.md](architecture/out-of-combat.md) |
+| OOC policy chain | `apps/one_combat/run_driver.{h,cpp}`, `apps/one_combat/ooc_policy.{h,cpp}` | `runFullRunOOC` — ordered whole-run loop and branch chain, current default; `ooc_policy` owns live action/checkpoint/one-ply/map policy implementations | [out-of-combat.md](architecture/out-of-combat.md) |
 | Native OOC floor/win | `models/v_rich_trees.txt`, `models/v_win_trees.txt` | Compact tree artifacts loaded at startup, `STS_NATIVE_OOC=0` disables | [out-of-combat.md](architecture/out-of-combat.md) |
 | Checkpoint NN | `apps/ooc_checkpoint_net.h`, `apps/one_combat/ooc_policy.cpp` | `OocCheckpointNet`, `oocActionNNPolicy`, `STS_OOC_CHECKPOINT_NN` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Strategic Q-gate (opt-in) | `apps/ooc_strategic_net.h`, `apps/one_combat/ooc_policy.{h,cpp}` | `OocStrategicNet`, `oocOnePlyCardRewardPolicy` et al., `STS_OOC_STRATEGIC_NN`, `STS_OOC_STRATEGIC_MARGIN` | [out-of-combat.md](architecture/out-of-combat.md) |
