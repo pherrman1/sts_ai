@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <csignal>
 #include <fstream>
+#include <initializer_list>
 #include <sstream>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -291,6 +292,141 @@ int testHappyFlowerCounter(std::uint64_t seed) {
 // counter underflow), #68 (stale multi-select validation outside CARD_SELECT
 // input state), and Smoke Bomb combat semantics.
 static BattleContext cardSelectFixture(CardSelectTask task, int pickCount, bool largeHand);
+
+static void setupRelicRewardFixture(GameContext &gc,
+                                    std::initializer_list<RelicId> relics,
+                                    bool sapphireKey) {
+    gc.screenState = ScreenState::REWARDS;
+    gc.info.rewardsContainer.clear();
+    for (const RelicId relic : relics) {
+        gc.info.rewardsContainer.addRelic(relic);
+    }
+    gc.info.rewardsContainer.sapphireKey = sapphireKey;
+}
+
+static bool hasRewardAction(const GameContext &gc,
+                            search::GameAction::RewardsActionType type,
+                            int idx1 = 0) {
+    for (const auto action : search::GameAction::getAllActionsInState(gc)) {
+        if (action.getRewardsActionType() == type && action.getIdx1() == idx1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int testRelicRewardSapphire() {
+    using RewardsActionType = search::GameAction::RewardsActionType;
+    auto fail = [&](const char *msg) {
+        std::cout << "relic_reward_sapphire FAIL: " << msg << '\n';
+        return 1;
+    };
+
+    // The Sapphire-paired relic is the last relic before any reward mutation.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xA11CEu, 0);
+        setupRelicRewardFixture(gc, {RelicId::AKABEKO}, true);
+        if (!hasRewardAction(gc, RewardsActionType::RELIC)
+            || !hasRewardAction(gc, RewardsActionType::KEY)) {
+            return fail("one-relic Sapphire fixture did not expose relic and key");
+        }
+        search::GameAction(RewardsActionType::RELIC, 0).execute(gc);
+        if (!gc.relics.has(RelicId::AKABEKO)
+            || gc.info.rewardsContainer.relicCount != 0
+            || gc.info.rewardsContainer.sapphireKey
+            || hasRewardAction(gc, RewardsActionType::KEY)) {
+            return fail("taking the only Sapphire-paired relic kept the key option");
+        }
+    }
+
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xA11CEu, 0);
+        setupRelicRewardFixture(gc, {RelicId::AKABEKO, RelicId::ART_OF_WAR}, true);
+        search::GameAction(RewardsActionType::RELIC, 1).execute(gc);
+        const auto &rewards = gc.info.rewardsContainer;
+        if (!gc.relics.has(RelicId::ART_OF_WAR)
+            || rewards.relicCount != 1
+            || rewards.relics[0] != RelicId::AKABEKO
+            || rewards.sapphireKey
+            || !hasRewardAction(gc, RewardsActionType::RELIC, 0)
+            || hasRewardAction(gc, RewardsActionType::RELIC, 1)
+            || hasRewardAction(gc, RewardsActionType::KEY)) {
+            return fail("taking the paired last relic did not remove the key option");
+        }
+    }
+
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xA11CEu, 0);
+        setupRelicRewardFixture(gc, {RelicId::AKABEKO, RelicId::ART_OF_WAR}, true);
+        search::GameAction(RewardsActionType::RELIC, 0).execute(gc);
+        const auto &rewards = gc.info.rewardsContainer;
+        if (!gc.relics.has(RelicId::AKABEKO)
+            || rewards.relicCount != 1
+            || rewards.relics[0] != RelicId::ART_OF_WAR
+            || !rewards.sapphireKey
+            || !hasRewardAction(gc, RewardsActionType::RELIC, 0)
+            || !hasRewardAction(gc, RewardsActionType::KEY)
+            || hasRewardAction(gc, RewardsActionType::RELIC, 1)) {
+            return fail("taking the first unpaired relic removed its paired option");
+        }
+    }
+
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xA11CEu, 0);
+        setupRelicRewardFixture(gc, {
+            RelicId::AKABEKO, RelicId::ART_OF_WAR, RelicId::BIRD_FACED_URN
+        }, true);
+        search::GameAction(RewardsActionType::RELIC, 1).execute(gc);
+        const auto &rewards = gc.info.rewardsContainer;
+        if (!gc.relics.has(RelicId::ART_OF_WAR)
+            || rewards.relicCount != 2
+            || rewards.relics[0] != RelicId::AKABEKO
+            || rewards.relics[1] != RelicId::BIRD_FACED_URN
+            || !rewards.sapphireKey
+            || !hasRewardAction(gc, RewardsActionType::RELIC, 0)
+            || !hasRewardAction(gc, RewardsActionType::RELIC, 1)
+            || !hasRewardAction(gc, RewardsActionType::KEY)) {
+            return fail("taking a non-paired middle relic removed the key option");
+        }
+    }
+
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xA11CEu, 0);
+        setupRelicRewardFixture(gc, {RelicId::AKABEKO, RelicId::ART_OF_WAR}, true);
+        if (!hasRewardAction(gc, RewardsActionType::KEY)) {
+            return fail("Sapphire key action was not legal");
+        }
+        search::GameAction(RewardsActionType::KEY).execute(gc);
+        const auto &rewards = gc.info.rewardsContainer;
+        if (!gc.blueKey
+            || rewards.relicCount != 1
+            || rewards.relics[0] != RelicId::AKABEKO
+            || rewards.sapphireKey
+            || !hasRewardAction(gc, RewardsActionType::RELIC, 0)
+            || hasRewardAction(gc, RewardsActionType::KEY)) {
+            return fail("taking Sapphire key did not remove the paired last relic");
+        }
+    }
+
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 0xA11CEu, 0);
+        setupRelicRewardFixture(gc, {RelicId::AKABEKO, RelicId::ART_OF_WAR}, false);
+        search::GameAction(RewardsActionType::RELIC, 0).execute(gc);
+        const auto &rewards = gc.info.rewardsContainer;
+        if (!gc.relics.has(RelicId::AKABEKO)
+            || rewards.relicCount != 1
+            || rewards.relics[0] != RelicId::ART_OF_WAR
+            || rewards.sapphireKey
+            || hasRewardAction(gc, RewardsActionType::KEY)
+            || !hasRewardAction(gc, RewardsActionType::RELIC, 0)) {
+            return fail("no-Sapphire relic reward behavior changed");
+        }
+    }
+
+    std::cout << "relic_reward_sapphire PASS\n";
+    return 0;
+}
+
 int testIssueFixes() {
     auto fail = [&](const char *msg) {
         std::cout << "issue_fixes FAIL: " << msg << '\n';
@@ -3767,6 +3903,8 @@ int main(int argc, const char* argv[]) {
         return testHappyFlowerCounter(std::stoull(argv[2]));
     } else if (command == "issue_fixes") {
         return testIssueFixes();
+    } else if (command == "relic_reward_sapphire") {
+        return testRelicRewardSapphire();
     } else if (command == "cardselect_parity") {
         return testCardSelectParity();
     } else if (command == "scum_nonfair_empty_edges") {
