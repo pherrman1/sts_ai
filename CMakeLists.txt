@@ -299,6 +299,9 @@ add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_rewar
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
 add_test(NAME ooc_semantic_pipeline COMMAND $<TARGET_FILE:unit-test> ooc_semantic_pipeline)
 add_test(NAME ooc_semantic_producer COMMAND $<TARGET_FILE:one_combat> oocsemanticselftest)
+add_test(NAME combat_evaluator_semantic_branch_contract
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_evaluator_semantic_branch.py)
+set_tests_properties(combat_evaluator_semantic_branch_contract PROPERTIES LABELS "core;integration")
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)
 set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation

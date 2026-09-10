@@ -44,6 +44,7 @@
 #include "sim/search/TrainingIntegrity.h"
 #include "game/Map.h"
 #include "sim/util/BestBenchMeta.h"
+#include "ooc_test_state.h"
 #include "ooc_checkpoint_net.h"
 #include "ooc_strategic_net.h"
 #include "ooc_strategic_tok_net.h"
@@ -2192,6 +2193,85 @@ struct PredictedCheckpointFight {
 static PredictedCheckpointFight predictCheckpointFight(const GameContext &gc,
                                                         MonsterEncounter encounter);
 
+// Shared V1 labels: persistent pre-init features and terminal pre-exit outcome.
+// Ambiguous Awakened One deaths retain V1's validity mask; loss-severity
+// consumers must exclude progressAmbiguous, as the existing trainer does.
+static std::string csvQuote(const std::string &s);
+struct CombatEvalLabel {
+    bool decided, healthOk, escaped, trueDeath, won, turnCapLoss, progressAmbiguous, labelValid;
+    double terminalHp, terminalMaxHp, winHpFrac, lossRemainingFrac, signedOutcome;
+    int enemyCurHp, enemyMaxHp;
+    const char *reason;
+    void write(std::ostream &out) const {
+        out << won << ',' << trueDeath << ',' << escaped << ',' << turnCapLoss << ','
+            << progressAmbiguous << ',' << labelValid << ',' << terminalHp << ',' << terminalMaxHp << ','
+            << enemyCurHp << ',' << enemyMaxHp << ',' << winHpFrac << ',' << lossRemainingFrac << ','
+            << signedOutcome << ',' << csvQuote(reason);
+    }
+};
+static const char *combatEvalLabelHeader() {
+    return "won,trueDeath,escaped,turnCapLoss,progressAmbiguous,labelValid,terminalCombatHp,terminalCombatMaxHp,terminalNonMinionCurHp,terminalNonMinionMaxHp,winHpFrac,lossRemainingFrac,signedOutcome,quarantineReason";
+}
+static bool combatEvalEncounterValid(MonsterEncounter encounter) {
+    const int index = static_cast<int>(encounter);
+    return index >= 0 && index < static_cast<int>(sizeof(monsterEncounterStrings) / sizeof(monsterEncounterStrings[0]));
+}
+static const char *combatEvalRoomClass(Room room) {
+    return room == Room::MONSTER ? "NORMAL" : room == Room::ELITE ? "ELITE" : room == Room::BOSS ? "BOSS" : "OTHER";
+}
+static CombatEvalLabel combatEvalTerminal(const BattleContext &bc, MonsterEncounter encounter,
+                                         int hooks, int healthBefore, int healthAfter) {
+    constexpr double eps = 1e-3;
+    const bool representableEncounter = combatEvalEncounterValid(encounter);
+    bool decided = bc.outcome != Outcome::UNDECIDED;
+    bool healthOk = search::isValidTrainingTerminal(decided, healthBefore,
+                           healthAfter);
+    bool escaped = bc.smokeBombUsed;
+    bool trueDeath = bc.outcome == Outcome::PLAYER_LOSS && bc.player.curHp <= 0 && !escaped;
+    bool won = bc.outcome == Outcome::PLAYER_VICTORY;
+    // The simulator's terminal turn bound is 100.  An unresolved
+    // battle below that bound is an invalid/non-death termination,
+    // never a death label.
+    constexpr int kCombatTurnCap = 100;
+    bool turnCapLoss = !decided && bc.turn >= kCombatTurnCap;
+    bool progressAmbiguous = trueDeath && encounter == MonsterEncounter::AWAKENED_ONE;
+    bool labelValid = !escaped && representableEncounter && hooks > 0 && healthOk && (won || trueDeath);
+    double terminalHp = std::max(0, bc.player.curHp), terminalMaxHp = std::max(0, bc.player.maxHp);
+    double winHpFrac = std::max(eps, std::min(1.0, terminalMaxHp > 0 ? terminalHp / terminalMaxHp : eps));
+    double enemyRatio = search::getNonMinionMonsterCurHpRatio(bc);
+    int enemyCurHp = 0, enemyMaxHp = 0;
+    search::getNonMinionMonsterHpTotals(bc, enemyCurHp, enemyMaxHp);
+    double lossRemainingFrac = std::max(eps, std::min(1.0, enemyRatio));
+    double signedOutcome = labelValid ? (won ? winHpFrac : -lossRemainingFrac) : 0.0;
+    const char *reason = !representableEncounter ? "unknown_encounter" : !hooks ? "missing_first_decision_hook" : !healthOk ? "simulator_health_failure" : escaped ? "escape" : turnCapLoss ? "turn_cap" : (decided && !trueDeath && !won) ? "non_death_loss" : "";
+    return {decided, healthOk, escaped, trueDeath, won, turnCapLoss, progressAmbiguous, labelValid,
+            terminalHp, terminalMaxHp, winHpFrac, lossRemainingFrac, signedOutcome, enemyCurHp, enemyMaxHp, reason};
+}
+struct CombatEvalFight {
+    int act, floor;
+    Room room;
+    MonsterEncounter encounter;
+    std::string features;
+    CombatEvalLabel label{};
+};
+// Compose with the existing observer and restore even if the backend throws.
+struct CombatEvalDecisionScope {
+    decltype(search::g_onCombatDecision) previous;
+    int hooks = 0;
+    explicit CombatEvalDecisionScope(bool enabled) : enabled(enabled) {
+        if (enabled) {
+            previous = std::move(search::g_onCombatDecision);
+            search::g_onCombatDecision = [this](const BattleContext &bc) {
+                ++hooks;
+                if (previous) previous(bc);
+            };
+        }
+    }
+    ~CombatEvalDecisionScope() { if (enabled) search::g_onCombatDecision = std::move(previous); }
+private:
+    bool enabled;
+};
+
 // Continue a copied run after any out-of-combat counterfactual action. Every
 // branch in one decision uses the same agent seed and copied GameContext RNG
 // state (common random numbers).  maxFights < 0 means finish the whole run.  A
@@ -2205,7 +2285,8 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         bool usePredict = false,
                         const OocPrefixObserver *prefixObserver = nullptr,
                         OocContinuationCost *finalCost = nullptr,
-                        bool useFrozenV4 = false) {
+                        bool useFrozenV4 = false,
+                        std::vector<CombatEvalFight> *combatCapture = nullptr) {
     const int healthBefore = search::g_simHealthFailureCount;
     const auto continuationWallStart = std::chrono::steady_clock::now();
     const std::clock_t continuationCpuStart = std::clock();
@@ -2258,7 +2339,18 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                 }
             } else {
                 const std::int64_t simulationsBefore = agent.simulationCountTotal;
-                agent.playoutBattle(gc, bc);
+                const int fightHealthBefore = search::g_simHealthFailureCount;
+                std::optional<CombatEvalFight> captured;
+                if (combatCapture) captured = CombatEvalFight{gc.act, gc.floorNum, gc.curRoom, gc.info.encounter, vFeatCsv(gc)};
+                {
+                    CombatEvalDecisionScope observer(combatCapture != nullptr);
+                    agent.playoutBattle(gc, bc);
+                    if (captured) {
+                        captured->label = combatEvalTerminal(bc, captured->encounter, observer.hooks,
+                                                            fightHealthBefore, search::g_simHealthFailureCount);
+                        combatCapture->push_back(std::move(*captured));
+                    }
+                }
                 continuationCost.silverSimulations += static_cast<std::uint64_t>(
                     std::max<std::int64_t>(0, agent.simulationCountTotal - simulationsBefore));
                 continuationCost.combatDecisions += search::g_silverLiveDiagnostics.decisions;
@@ -3934,7 +4026,6 @@ static std::string runWholeCombatGenSeed(std::uint64_t seed,int sims,int asc,con
 struct CombatEvalSeedResult { std::string rows; bool sourceValid = true; int quarantined = 0; };
 static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
                                                  const WholeCombatTeacher &teacher) {
-    constexpr double eps = 1e-3;
     trainingRunStart();
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent; agent.simulationCountBase = sims;
@@ -3952,34 +4043,11 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             search::g_onCombatDecision = [&](const BattleContext &) { ++hooks; };
             BattleContext bc; const int healthBefore = search::g_simHealthFailureCount;
             agent.playoutBattle(gc, bc); search::g_onCombatDecision = nullptr;
-            const bool decided = bc.outcome != Outcome::UNDECIDED;
-            const bool healthOk = search::isValidTrainingTerminal(decided, healthBefore,
-                                                                   search::g_simHealthFailureCount);
-            const bool escaped = bc.smokeBombUsed;
-            const bool trueDeath = bc.outcome == Outcome::PLAYER_LOSS && bc.player.curHp <= 0 && !escaped;
-            const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
-            // The simulator's terminal turn bound is 100.  An unresolved
-            // battle below that bound is an invalid/non-death termination,
-            // never a death label.
-            constexpr int kCombatTurnCap = 100;
-            const bool turnCapLoss = !decided && bc.turn >= kCombatTurnCap;
-            const bool progressAmbiguous = trueDeath && encounter == MonsterEncounter::AWAKENED_ONE;
-            const bool labelValid = !escaped && representableEncounter && hooks > 0 && healthOk && (won || trueDeath);
-            const double terminalHp = std::max(0, bc.player.curHp), terminalMaxHp = std::max(0, bc.player.maxHp);
-            const double winHpFrac = std::max(eps, std::min(1.0, terminalMaxHp > 0 ? terminalHp / terminalMaxHp : eps));
-            const double enemyRatio = search::getNonMinionMonsterCurHpRatio(bc);
-            int enemyCurHp = 0, enemyMaxHp = 0;
-            search::getNonMinionMonsterHpTotals(bc, enemyCurHp, enemyMaxHp);
-            const double lossRemainingFrac = std::max(eps, std::min(1.0, enemyRatio));
-            const double signedOutcome = labelValid ? (won ? winHpFrac : -lossRemainingFrac) : 0.0;
-            const char *roomClass = room == (int)Room::MONSTER ? "NORMAL" : room == (int)Room::ELITE ? "ELITE" : room == (int)Room::BOSS ? "BOSS" : "OTHER";
-            const char *reason = !representableEncounter ? "unknown_encounter" : !hooks ? "missing_first_decision_hook" : !healthOk ? "simulator_health_failure" : escaped ? "escape" : turnCapLoss ? "turn_cap" : (decided && !trueDeath && !won) ? "non_death_loss" : "";
-            out << seed << ',' << fightIdx << ',' << act << ',' << floor << ',' << roomClass << ','
-                << csvQuote(representableEncounter ? monsterEncounterStrings[encounterIndex] : "INVALID") << ',' << teacher.id << ',' << features << ','
-                << (won ? 1 : 0) << ',' << (trueDeath ? 1 : 0) << ',' << (escaped ? 1 : 0) << ','
-                << (turnCapLoss ? 1 : 0) << ',' << (progressAmbiguous ? 1 : 0) << ',' << (labelValid ? 1 : 0) << ','
-                << terminalHp << ',' << terminalMaxHp << ',' << enemyCurHp << ',' << enemyMaxHp << ',' << winHpFrac << ','
-                << lossRemainingFrac << ',' << signedOutcome << ',' << csvQuote(reason) << '\n';
+            const auto label = combatEvalTerminal(bc, encounter, hooks, healthBefore, search::g_simHealthFailureCount);
+            const bool labelValid = label.labelValid, healthOk = label.healthOk;
+            out << seed << ',' << fightIdx << ',' << act << ',' << floor << ',' << combatEvalRoomClass(static_cast<Room>(room)) << ','
+                << csvQuote(representableEncounter ? monsterEncounterStrings[encounterIndex] : "INVALID") << ',' << teacher.id << ',' << features << ',';
+            label.write(out); out << '\n';
             ++fightIdx;
             // Keep every completed terminal as an auditable row.  A simulator
             // or hook failure cannot safely advance the run; ordinary
@@ -4007,7 +4075,7 @@ static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outf
     trainingCampaignStart(); const auto teacher = loadWholeCombatTeacher(teacherPath, sims);
     std::ofstream f(outfile); if (!f) throw std::runtime_error("combatevalgen: cannot open output");
     f << "sourceSeed,fightIdx,act,floor,roomClass,encounter,teacherId," << richStateHeader()
-      << ",won,trueDeath,escaped,turnCapLoss,progressAmbiguous,labelValid,terminalCombatHp,terminalCombatMaxHp,terminalNonMinionCurHp,terminalNonMinionMaxHp,winHpFrac,lossRemainingFrac,signedOutcome,quarantineReason\n";
+      << ',' << combatEvalLabelHeader() << '\n';
     long long rows = 0; int completed = 0;
     #pragma omp parallel for schedule(dynamic)
     for (int s = 0; s < nSeeds; ++s) {
@@ -6577,7 +6645,8 @@ struct SemanticPilotBranch {
 };
 
 static SemanticPilotBranch semanticPilotBranch(GameContext branch,
-        const search::OocSemanticAction &action,std::uint64_t continuation,const PathHistory &path) {
+        const search::OocSemanticAction &action,std::uint64_t continuation,const PathHistory &path,
+        std::vector<CombatEvalFight> *combatCapture = nullptr, const OocPrefixObserver *checkpoint = nullptr) {
     if(search::g_onGameActionExecute) throw std::runtime_error("semantic pilot: branch observer active");
     const int healthBefore=search::g_simHealthFailureCount;
     auto executed=search::executeOocSemanticAction(branch,action);
@@ -6586,13 +6655,91 @@ static SemanticPilotBranch semanticPilotBranch(GameContext branch,
     const std::vector<int> schedule{10000};
     OocContinuationCost cost;
     const auto result=finishOocCounterfactual(std::move(branch),10000,continuation,path,
-        1,true,nullptr,0,&schedule,false,nullptr,&cost);
+        1,true,nullptr,0,&schedule,false,checkpoint,&cost,false,combatCapture);
     if(!result.valid || !std::isfinite(result.won) || !std::isfinite(result.hp))
         throw std::runtime_error("semantic pilot: invalid/quarantined continuation");
     if(cost.transactionDecisions>cost.combatDecisions || cost.transactionDecisions>cost.transactionSubdecisions
         || cost.silverSimulations!=10000*(cost.combatDecisions+cost.transactionSubdecisions-cost.transactionDecisions))
         throw std::runtime_error("semantic pilot: exact teacher simulation accounting mismatch");
     return {std::move(executed),result,cost};
+}
+
+static void semanticCombatCaptureSelfTest(GameContext source, const search::OocSemanticAction &action) {
+    auto require=[](bool ok,const char *message){if(!ok)throw std::runtime_error(message);};
+    const auto previousDecision=search::g_onCombatDecision;
+    try {
+        for(const bool win : {false,true}) {
+            int calls=0,observed=0;
+            search::g_onCombatDecision=[&](const BattleContext &){++observed;};
+            search::g_externalCombatBackend=[&](search::ScumSearchAgent2 &agent,GameContext &state,BattleContext &bc){
+                ++calls;
+                bc.init(state);
+                if(search::g_onCombatDecision)search::g_onCombatDecision(bc);
+                bc.player.maxHp=80; bc.player.curHp=win?20:0;
+                bc.monsters.arr[0].curHp=30; bc.monsters.arr[0].maxHp=50;
+                bc.outcome=win?Outcome::PLAYER_VICTORY:Outcome::PLAYER_LOSS;
+                agent.simulationCountTotal+=20000;
+                search::g_silverLiveDiagnostics={};
+                search::g_silverLiveDiagnostics.decisions=1;
+                search::g_silverLiveDiagnostics.transactionSubdecisions=2;
+                search::g_silverLiveDiagnostics.transactionDecisions=1;
+            };
+            SemanticPilotObserverScope detached;
+            std::string finalOff,finalOn;
+            OocPrefixObserver off=[&](const GameContext &gc,int,const OocContinuationCost &){finalOff=test::oocStateFingerprint(gc);};
+            OocPrefixObserver on=[&](const GameContext &gc,int,const OocContinuationCost &){finalOn=test::oocStateFingerprint(gc);};
+            const int healthBefore=search::g_simHealthFailureCount;
+            const auto control=semanticPilotBranch(detachedCounterfactualCopy(source),action,11,{},nullptr,&off);
+            const int healthOff=search::g_simHealthFailureCount;
+            std::vector<CombatEvalFight> captured;
+            const auto treatment=semanticPilotBranch(detachedCounterfactualCopy(source),action,11,{},&captured,&on);
+            require(calls==2 && observed==2,"combat capture: extra backend/observer call");
+            require(!finalOff.empty() && finalOff==finalOn,"combat capture: resulting GameContext/RNG differs");
+            require(healthBefore==healthOff && healthOff==search::g_simHealthFailureCount,"combat capture: health differs");
+            require(control.executed.ok==treatment.executed.ok && control.executed.error==treatment.executed.error
+                && control.executed.executedPrimitiveBits==treatment.executed.executedPrimitiveBits,"combat capture: primitive execution differs");
+            const auto &a=control.result; const auto &b=treatment.result;
+            require(a.won==b.won && a.hp==b.hp && a.floor==b.floor && a.bootstrapped==b.bootstrapped
+                && a.valid==b.valid && a.survivedH==b.survivedH,"combat capture: semantic labels/qProduct differ");
+            require(control.cost.silverSimulations==treatment.cost.silverSimulations
+                && control.cost.combatDecisions==treatment.cost.combatDecisions
+                && control.cost.transactionSubdecisions==treatment.cost.transactionSubdecisions
+                && control.cost.transactionDecisions==treatment.cost.transactionDecisions,"combat capture: search accounting differs");
+            require(captured.size()==1 && captured[0].label.labelValid,"combat capture: missing valid row");
+            const auto &label=captured[0].label;
+            require(label.won==win && label.trueDeath!=win && label.signedOutcome==(win?0.25:-0.6),"combat capture: independent terminal label mismatch");
+            auto entry=detachedCounterfactualCopy(source);
+            search::executeOocSemanticAction(entry,action);
+            PathHistory path; path.update(entry);
+            require(captured[0].features==richRow(entry,path),"combat capture: pre-init feature boundary differs");
+        }
+        // Boundary cases reuse the same V1 formula; no fight is simulated here.
+        BattleContext bc{}; auto gc=detachedCounterfactualCopy(source); bc.init(gc,MonsterEncounter::CULTIST);
+        bc.player.curHp=0; bc.outcome=Outcome::PLAYER_LOSS;
+        auto ambiguous=combatEvalTerminal(bc,MonsterEncounter::AWAKENED_ONE,1,0,0);
+        require(ambiguous.progressAmbiguous && ambiguous.labelValid && ambiguous.signedOutcome<0,"combat capture: V1 ambiguous-death semantics changed");
+        bc.smokeBombUsed=true;
+        auto escape=combatEvalTerminal(bc,MonsterEncounter::CULTIST,1,0,0);
+        require(escape.escaped && !escape.trueDeath && !escape.labelValid && escape.signedOutcome==0,"combat capture: escape is valid");
+        bc.smokeBombUsed=false; bc.outcome=Outcome::UNDECIDED; bc.turn=100;
+        auto cap=combatEvalTerminal(bc,MonsterEncounter::CULTIST,1,0,0);
+        require(cap.turnCapLoss && !cap.labelValid && cap.signedOutcome==0,"combat capture: turn cap is valid");
+        bc.outcome=Outcome::PLAYER_VICTORY; bc.player.curHp=20;
+        require(!combatEvalTerminal(bc,MonsterEncounter::CULTIST,1,0,1).labelValid,"combat capture: health failure is valid");
+        require(!combatEvalTerminal(bc,MonsterEncounter::CULTIST,0,0,0).labelValid,"combat capture: missing hook is valid");
+        // A terminal OOC action emits no synthetic fight row.
+        source.regainControlAction=[](GameContext &state){state.outcome=GameOutcome::PLAYER_VICTORY;};
+        {
+            SemanticPilotObserverScope detached;
+            std::vector<CombatEvalFight> captured;
+            semanticPilotBranch(detachedCounterfactualCopy(source),action,11,{},&captured);
+            require(captured.empty(),"combat capture: fabricated a fight before combat");
+        }
+        // Observer exception safety is independent of combat continuation.
+        try {CombatEvalDecisionScope scope(true); throw std::runtime_error("fixture");}catch(const std::runtime_error &){}
+        require(bool(search::g_onCombatDecision),"combat capture: observer not restored after exception");
+    } catch(...) {search::g_onCombatDecision=previousDecision;throw;}
+    search::g_onCombatDecision=previousDecision;
 }
 
 // Deterministic integration regression: real semantic branch path, observer
@@ -6646,6 +6793,7 @@ static void semanticPilotSelfTest() {
                 throw std::runtime_error("semantic selftest: branch dispatch/accounting mismatch");
         }
         if(!search::g_onGameActionExecute)throw std::runtime_error("semantic selftest: observer not restored");
+        semanticCombatCaptureSelfTest(gc,*action);
         const auto masked=semanticPilotRichRow(gc,{});
         std::stringstream names(richStateHeader()),values(masked); std::string name,value; int maskedCount=0;
         while(std::getline(names,name,',')) {
@@ -6685,7 +6833,7 @@ static void semanticPilotSelfTest() {
 }
 
 static void semanticPilotEvaluate(int count,const std::string &manifestFile,const std::string &outFile,
-                                  const std::string &teacherFile) {
+                                  const std::string &teacherFile,const std::string &combatFile = {}) {
     const auto teacher=loadWholeCombatTeacher(teacherFile,10000);
     std::ifstream in(manifestFile); if(!in) throw std::runtime_error("semantic pilot: cannot open frozen manifest");
     nlohmann::json doc; in>>doc;
@@ -6719,6 +6867,23 @@ static void semanticPilotEvaluate(int count,const std::string &manifestFile,cons
     const std::string partial=outFile+".partial", boundManifest=outFile+".manifest.json";
     if(std::filesystem::exists(outFile)||std::filesystem::exists(partial)||std::filesystem::exists(boundManifest))
         throw std::runtime_error("semantic pilot: output already exists");
+    std::ofstream combatOut;
+    const std::string combatPartial=combatFile+".partial", combatManifest=combatFile+".manifest.json";
+    if(!combatFile.empty()) {
+        // Refuse aliases between either output, their sidecars and the frozen inputs.
+        std::set<std::filesystem::path> paths;
+        for(const auto &p : {outFile,partial,boundManifest,manifestFile,teacherFile,combatFile,combatPartial,combatManifest})
+            if(!paths.insert(std::filesystem::weakly_canonical(p)).second)
+                throw std::runtime_error("semantic pilot: overlapping input/output paths");
+        for(const auto &p : {combatFile,combatPartial,combatManifest})
+            if(std::filesystem::exists(p))throw std::runtime_error("semantic pilot: combat output already exists");
+        combatOut.open(combatPartial);
+        if(!combatOut)throw std::runtime_error("semantic pilot: cannot open combat output");
+        combatOut<<"sourceSeed,decisionIdx,semanticActionIdx,semanticKey,futureIdentity,branchFightIdx,continuationSeed,hiddenSeed,semanticSource,act,floor,roomClass,encounter,teacherId,"
+                 <<richStateHeader()<<','<<combatEvalLabelHeader()<<'\n'<<std::setprecision(17);
+    }
+    std::size_t combatRows=0,validCombat=0,wins=0,deaths=0,ambiguous=0;
+    std::set<std::uint64_t> combatSeeds,quarantinedSeeds;
     std::ofstream out(partial); if(!out) throw std::runtime_error("semantic pilot: cannot open output");
     out<<"sourceSeed,decisionIdx,act,floor,screen,semanticSchemaVersion,semanticActionIdx,semanticKey,semanticEffect,semanticSource,semanticPayload,siblingCount,futureIdentity,H,budgetSchedule,continuationSeed,hiddenSeed,executedPrimitiveBits,survivedPrefix,continuationValue,qProduct,denseReferenceValue,terminalWon,silverSimulations,combatDecisions,transactionSubdecisions,transactionDecisions,cpuMs,wallMs,teacherId,valid,quarantineReason,richRow\n";
     out<<std::setprecision(17);
@@ -6733,7 +6898,22 @@ static void semanticPilotEvaluate(int count,const std::string &manifestFile,cons
         GameContext base=detachedCounterfactualCopy(d.pre); resampleRemainingActEncounters(base,hidden);
         const std::string state=semanticPilotRichRow(d.pre,d.path);
         for(int ai=0;ai<(int)d.actions.size();++ai) {
-            const auto evaluated=semanticPilotBranch(detachedCounterfactualCopy(base),d.actions[ai],continuation,d.path);
+            std::vector<CombatEvalFight> captures;
+            const auto evaluated=semanticPilotBranch(detachedCounterfactualCopy(base),d.actions[ai],continuation,d.path,
+                                                     combatFile.empty()?nullptr:&captures);
+            if(captures.size()>1)throw std::runtime_error("semantic pilot: H=1 captured multiple combats");
+            for(std::size_t fi=0;fi<captures.size();++fi) {
+                const auto &fight=captures[fi]; const auto &label=fight.label;
+                combatOut<<seed<<','<<idx<<','<<ai<<','<<csvQuote(d.identity.at("actions").at(ai).at("semanticKey").get<std::string>())
+                         <<",0,"<<fi<<','<<continuation<<','<<hidden<<','<<(int)d.actions[ai].source<<','
+                         <<fight.act<<','<<fight.floor<<','<<combatEvalRoomClass(fight.room)<<','
+                         <<csvQuote(combatEvalEncounterValid(fight.encounter)?monsterEncounterStrings[(int)fight.encounter]:"INVALID")
+                         <<','<<teacher.id<<','<<fight.features<<',';
+                label.write(combatOut); combatOut<<'\n';
+                ++combatRows; validCombat+=label.labelValid; wins+=label.labelValid&&label.won;
+                deaths+=label.labelValid&&label.trueDeath; ambiguous+=label.progressAmbiguous;
+                combatSeeds.insert(seed); if(!label.labelValid)quarantinedSeeds.insert(seed);
+            }
             const auto &executed=evaluated.executed;
             const auto &result=evaluated.result;
             const auto &cost=evaluated.cost;
@@ -6755,6 +6935,24 @@ static void semanticPilotEvaluate(int count,const std::string &manifestFile,cons
     doc["csv"]={{"path",outFile},{"sha256",fileSha256(outFile)}}; doc["integrity"]={{"rows",rows}};
     std::ofstream manifestOut(boundManifest); manifestOut<<doc.dump(2)<<'\n'; manifestOut.close();
     if(!manifestOut)throw std::runtime_error("semantic pilot: bound manifest write failed");
+    if(!combatFile.empty()) {
+        combatOut.close(); if(!combatOut)throw std::runtime_error("semantic pilot: combat CSV write failed");
+        std::filesystem::rename(combatPartial,combatFile);
+        std::vector<std::string> names; std::stringstream header(richStateHeader()); std::string name;
+        while(std::getline(header,name,','))names.push_back(name);
+        nlohmann::json combatDoc={{"schema_version","combat_evaluator_semantic_branch_v1"},
+            {"producer_git_sha",trainingExecutableGitSha()},{"producer_executable_sha256",fileSha256(g_mainBinaryPath)},
+            {"teacher",teacher.specification},{"frozen_manifest",{{"path",manifestFile},{"sha256",fileSha256(manifestFile)}}},
+            {"semantic_manifest",{{"path",boundManifest},{"sha256",fileSha256(boundManifest)}}},
+            {"csv",{{"path",combatFile},{"sha256",fileSha256(combatFile)}}},
+            {"feature_contract",{{"count",names.size()},{"state_names",names}}},
+            {"seed_spec",{{"sourceSeeds",scanSeeds}}},
+            {"integrity",{{"rows",combatRows},{"valid",validCombat},{"invalid",combatRows-validCombat},
+                {"wins",wins},{"deaths",deaths},{"ambiguous",ambiguous},{"source_seeds",combatSeeds.size()},
+                {"quarantined_source_seeds",quarantinedSeeds.size()}}}};
+        std::ofstream sidecar(combatManifest); sidecar<<combatDoc.dump(2)<<'\n'; sidecar.close();
+        if(!sidecar)throw std::runtime_error("semantic pilot: combat manifest write failed");
+    }
     std::cout<<"semantic pilot replayed="<<resolved.size()<<" branches="<<rows<<" -> "<<outFile<<'\n';
 }
 
@@ -8875,8 +9073,8 @@ int main(int argc, char **argv) {
         if(argc!=6) throw std::runtime_error("usage: one_combat oocsemanticcapture N_SEEDS SEED_OFFSET MANIFEST.json TEACHER.json");
         semanticPilotCapture(std::stoi(argv[2]),std::stoull(argv[3]),argv[4],argv[5]);
     } else if (mode == "oocsemanticeval") {
-        if(argc!=6) throw std::runtime_error("usage: one_combat oocsemanticeval N_DECISIONS MANIFEST.json OUT.csv TEACHER.json");
-        semanticPilotEvaluate(std::stoi(argv[2]),argv[3],argv[4],argv[5]);
+        if(argc!=6 && argc!=7) throw std::runtime_error("usage: one_combat oocsemanticeval N_DECISIONS MANIFEST.json OUT.csv TEACHER.json [COMBAT.csv]");
+        semanticPilotEvaluate(std::stoi(argv[2]),argv[3],argv[4],argv[5],argc==7?argv[6]:"");
     } else if (mode == "oockbudgeteval") {
         int nDecisions = argc > 2 ? std::stoi(argv[2]) : 0;
         std::string manifest = argc > 3 ? argv[3] : "build/ooc_k_budget/manifest.json";

@@ -75,9 +75,11 @@ class CombatEvaluatorContractTest(unittest.TestCase):
                       (Path(__file__).resolve().parents[1] / "apps/one_combat.cpp").read_text())
 
     def test_rich_state_header_and_row_share_serializer(self):
-        source = (Path(__file__).resolve().parents[1] / "apps/one_combat.cpp").read_text()
-        self.assertIn("static std::string richStateHeader()", source)
-        self.assertIn('std::string h = richHeader();', source)
+        root = Path(__file__).resolve().parents[1]
+        features = (root / "apps/one_combat/run_features.cpp").read_text()
+        source = (root / "apps/one_combat.cpp").read_text()
+        self.assertIn("std::string richStateHeader()", features)
+        self.assertIn('std::string h = richHeader();', features)
         self.assertIn("return richRow(gc, t_curPath ? *t_curPath : emptyPath);", source)
 
     def test_contract_preserves_duplicate_act_floor_state_names(self):
