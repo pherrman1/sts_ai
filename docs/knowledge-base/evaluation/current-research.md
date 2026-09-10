@@ -1,6 +1,8 @@
 # Current research status
 
 Last verified: 2026-09-07 at `1eba510ee9136db19723a9b84a4c04670d9b9a07`.
+Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
+other sections retain their prior verification and linked evidence.
 
 ## Purpose
 
@@ -22,6 +24,24 @@ recommended executable configuration and qualified benchmark numbers. Do not
 infer a baseline from historical plans, model filenames, or local artifacts.
 
 ## Parked lines
+
+### Semantic OOC confirmation and combat-label coverage
+
+The fresh 1,024-decision confirmation at merged producer `a6c2abb` is
+**SEMANTIC CONFIRMED for the frozen probe on the natural, reward-dominated
+mixture**: semantic macro pairwise is 0.5732 versus primitive 0.5304, paired
+95% difference interval [0.0293, 0.0561]. Mean regret is slightly lower but
+uncertain; formal regret noninferiority and all-family superiority are not
+established. SHOP's earlier weakness was not reproduced, while EVENT remains
+an adverse, uncertain slice. No runtime policy or production model changed.
+
+The same fights yielded 7,652 combat rows with zero additional Silver
+simulations. **COMBAT LABELS ADEQUATE** passes the inherited row-count screen:
+348 nonambiguous deaths, including 48 test rows. Those test deaths represent
+only 10 source groups; one contributes 19 rows, so independent loss coverage
+remains limited. No combat evaluator was trained. Any next model experiment
+requires separate review. See [ledger-06 §218](../../experiments/ledger-06.md)
+and the [frozen evidence packet](../../experiments/evidence/semantic_combat_confirmation_2026-09-10.json).
 
 ### Silver CPU optimization qualification
 
