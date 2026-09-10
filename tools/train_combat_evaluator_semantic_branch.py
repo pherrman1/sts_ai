@@ -630,7 +630,15 @@ def main() -> None:
     heldout = frame.copy()
     for name, values in predictions.items():
         heldout[name] = values
-    heldout.to_csv(output / "heldout_predictions.csv", index=False)
+    heldout_path = output / "heldout_predictions.csv"
+    heldout.to_csv(heldout_path, index=False)
+    artifacts = {
+        "heldout_predictions": {
+            "path": str(heldout_path.resolve()),
+            "sha256": sha256(heldout_path),
+            "bytes": heldout_path.stat().st_size,
+        }
+    }
     model_paths = {}
     for name, model in fitted["models"].items():
         path = output / f"{name}.json"
@@ -638,6 +646,7 @@ def main() -> None:
         model_paths[name] = {
             "path": str(path.resolve()), "sha256": sha256(path), "bytes": path.stat().st_size,
         }
+    artifacts["models"] = model_paths
     latency = benchmark_latency(fitted["models"], frame, features, args.latency_repeats)
     report = {
         "experiment": "semantic_branch_precombat_combat_evaluator_v1",
@@ -661,6 +670,7 @@ def main() -> None:
         "loss_tail_leave_one_source_out": leave_one,
         "input_alias_noise_audit": alias,
         "slices_test": slices,
+        "artifacts": artifacts,
         "models": model_paths,
         "latency": latency,
         "software": {"python": platform.python_version(), "numpy": np.__version__, "pandas": pd.__version__},
