@@ -23,6 +23,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["strategicmarggen"]=2
   ["oocfactoreval"]=2      ["oocmargtradeoffeval"]=2 ["oock3tradeoffeval"]=2
   ["oocsemanticfullruneval"]=2 ["oockbudgeteval"]=2
+  ["oocsemanticcapture"]=2 ["oocsemanticeval"]=2
 )
 
 declare -A PYTHON_SEED_INDEX=(
@@ -65,6 +66,14 @@ check_oversized() {
         fi
       elif [ -n "$idx" ]; then
         local seeds="${argv[$((i + idx))]:-}"
+        # Semantic label pilot is deliberately bounded independently of the
+        # general sweep ceiling, including when a research host is selected.
+        if [ "$mode" = "oocsemanticcapture" ] || [ "$mode" = "oocsemanticeval" ]; then
+          if ! [[ "$seeds" =~ ^[0-9]+$ ]] || [ "$seeds" -lt 1 ] || [ "$seeds" -gt 16 ]; then
+            echo "SEED_GUARD: $mode requires 1..16 source seeds/decisions" >&2
+            exit 1
+          fi
+        fi
         if [ "$MAX_AUTOMATED_SEEDS" -gt 0 ] && [[ "$seeds" =~ ^[0-9]+$ ]] && [ "$seeds" -gt "$MAX_AUTOMATED_SEEDS" ]; then
           echo "SEED_GUARD: $exe $mode requests $seeds seeds; automated maximum is $MAX_AUTOMATED_SEEDS" >&2
           exit 1

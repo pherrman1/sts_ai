@@ -145,6 +145,10 @@ std::vector<OocSemanticAction> enumerateCampfireUpgradeActions(const GameContext
 // Fails before execution while g_onGameActionExecute is active: speculative
 // observer callbacks cannot be rolled back. Use returned primitive diagnostics.
 OocExecutionResult executeOocSemanticAction(GameContext &gc, const OocSemanticAction &action);
+// Typed lossless diagnostic payload; canonical semantic key remains identity.
+std::string oocSemanticActionPayloadJson(const OocSemanticAction &action);
+// Source observers suppress only the deterministic selector consumed by this primitive.
+CardSelectScreenType oocSemanticPrimitiveCompoundSelector(const GameContext &gc, std::uint32_t bits);
 std::string canonicalOocSemanticActionKey(const OocSemanticAction &action);
 
 } // namespace sts::search
