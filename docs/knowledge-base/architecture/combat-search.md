@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-09 against the current working tree.
+Last verified: 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -136,6 +136,16 @@ after each action. The production cap is 32,768 nodes. The default
 `STS_SILVER_REUSE_CAP_MODE=allocated` caps retained allocation; `active` is a
 supported opt-in. Reroot and fallback telemetry must state what occurred.
 
+Search nodes contain compact bookkeeping and a pointer to a separately pooled
+battle state. Only decision nodes claim state storage; chance nodes have a null
+state pointer and read their decision parent's state. Both pools retain stable
+object addresses and reuse capacity. Fresh reset resets both active counters;
+reroot retains both pools. The allocated/active reuse caps still count logical
+nodes through `allNodes.size()`/`poolUsed`, never state slots or bytes. Pooled
+state swaps preserve scratch-buffer capacity reuse. All consumers of these
+structures must be rebuilt together after a layout change.
+
+
 `STS_SILVER_ADAPTIVE=1` searches 1,000 simulations, measures the top-two
 visit-share gap, and, when below threshold, continues the same root to exactly
 3,700 total. It applies at ordinary roots and private sequential-selection
@@ -155,6 +165,28 @@ is explicitly enabled.
 
 Bridge conversion, lowering, transaction, and validation failures are
 fail-closed and must never commit an invalid live action.
+
+Silver player statuses use a sorted sparse vector (`PlayerStatusMap`) with
+signed 16-bit values and explicit membership independent of zero. Wire order,
+first-insertion-wins semantics, and equality remain unchanged. Insertion
+invalidates references and iterators; current status-processing loops queue
+actions or change existing entries/status bits without inserting during iteration.
+The native simulator retains its own status representation.
+
+Silver caches the diagnostic root hash lazily only when a leaf observer needs
+it, invalidating on fresh reset and reroot. Rollout timing starts only for an
+observer requesting a result. Action counts remain exact with the default-off
+`BattleSearcher::recordActionTrace`; enable it before searching to retain the
+full `printSearchStack` action sequence. The observer's action counts and
+fingerprints do not depend on that debug vector.
+
+Chance widening memoizes the original floating-point expression for visit
+counts below 32,768, with independent END_TURN/general parameter caches and
+exact-formula fallback above that range. Parameter changes invalidate the
+corresponding schedule. This cache limit does not change the widening limit or
+allocated-node reuse cap. UCB scanning stops only when the current best score
+is positive infinity, retaining the original first-winner tie behavior.
+
 
 ## Action enumeration / semantic bridge
 

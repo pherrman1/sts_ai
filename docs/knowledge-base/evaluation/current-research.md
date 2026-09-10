@@ -23,6 +23,28 @@ infer a baseline from historical plans, model filenames, or local artifacts.
 
 ## Parked lines
 
+### Silver CPU optimization qualification
+
+The exact-search CPU pass has a bounded local pilot at implementation
+`f8873cd`: diagnostic gating, exact widening/UCB shortcuts, and compact sorted
+status storage preserve the checked labels and search traces. GCC PGO is
+available as an opt-in build experiment. Broader production qualification remains parked. The compact chance-node
+follow-up at `255d8f1` now separates reusable decision-state storage from
+logical node bookkeeping: the local three-seed pilot reduces peak RSS by
+7.3–17.6% with essentially unchanged CPU cost. This is a memory improvement,
+not a demonstrated additional CPU speedup. New PGO profiles would be required
+for the changed source/layout. See
+[the original CPU evidence](../../experiments/evidence/silver_exact_search_2026-09-10.json),
+[the storage evidence](../../experiments/evidence/silver_chance_storage_2026-09-10.json),
+and [ledger-06 §§215–217](../../experiments/ledger-06.md).
+
+The direct final-layout confirmation against current main `3bec0b1` at frozen
+PR head `4224c03` meets the predeclared 5% aggregate CPU bar: 6.32% lower CPU
+with PGO off and identical matched labels/telemetry. This is a three-seed,
+two-repeat selected-workload check, not broad qualification. See the
+[final-layout packet](../../experiments/evidence/silver_final_layout_ab_2026-09-10.json).
+The earlier PGO result still belongs to its earlier source revision.
+
 ### Whole-Act OOC evaluator
 
 The corrected evaluator passed its serial/parallel and worker-coverage canary,

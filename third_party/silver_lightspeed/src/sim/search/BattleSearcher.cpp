@@ -183,18 +183,20 @@ void search::BattleSearcher::rerootAt(Node* newRoot) {
     // evals serve as a head start for the new search). Just redirect root and reseed rng so the
     // new decision's rollouts behave the same as if we'd constructed a fresh searcher at this state.
     root = newRoot;
-    *rootState = newRoot->state;
+    diagnosticRootHashValid = false;
+    *rootState = *newRoot->state;
     randGen.seed(rootState->seed + rootState->floorNum);
     rolloutAgent = SimpleAgent(true, rootState->seed + rootState->floorNum);
 }
 
 // Claims a node from the pool: recycles allNodes[poolUsed] (resetting its bookkeeping but keeping
-// its allocated state/edges storage) or grows the pool. Node addresses are stable because allNodes
+// its allocated edges storage) or grows the pool. Node addresses are stable because allNodes
 // holds unique_ptrs, so edges may keep raw pointers across reallocations of the outer vector.
 search::BattleSearcher::Node* search::BattleSearcher::allocNode() {
     if (poolUsed < allNodes.size()) {
         Node* n = allNodes[poolUsed++].get();
         n->edges.clear();
+        n->state = nullptr;
         n->simulationCount = 0;
         n->victoryCount = 0;
         n->evaluationSum = 0;
@@ -210,6 +212,14 @@ search::BattleSearcher::Node* search::BattleSearcher::allocNode() {
     return allNodes.back().get();
 }
 
+// Decision states have their own stable pool. Chance nodes only retain their
+// parent pointer and never construct an unused BattleContext.
+BattleContext* search::BattleSearcher::allocDecisionState() {
+    if (decisionStatesUsed == decisionStates.size())
+        decisionStates.push_back(std::make_unique<BattleContext>());
+    return decisionStates[decisionStatesUsed++].get();
+}
+
 // Moves `state` into the node only when a new node is created; on a match `state` is left
 // intact, so callers may still read it.
 search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleContext &&state) {
@@ -218,7 +228,7 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleCont
     // Linear probe the open-addressed table; equalForSearch resolves hash collisions exactly.
     std::size_t i = hash & stateToNodeMask;
     while (stateToNode[i].node != nullptr) {
-        if (stateToNode[i].hash == hash && stateToNode[i].node->state.equalForSearch(state)) {
+        if (stateToNode[i].hash == hash && stateToNode[i].node->state->equalForSearch(state)) {
             lastNodeWasCreated = false;
             return stateToNode[i].node;
         }
@@ -226,10 +236,11 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleCont
     }
 
     Node* newNode = allocNode();
+    newNode->state = allocDecisionState();
     // Swap rather than move-assign: the caller's scratch buffer inherits this recycled node's
     // old pile/edge vector capacities instead of being emptied, so the steady-state expansion
     // loop performs no heap allocation at all.
-    std::swap(newNode->state, state);
+    std::swap(*newNode->state, state);
     stateToNode[i] = {hash, newNode};
     lastNodeWasCreated = true;
     ++stats.nodesCreated;
@@ -241,12 +252,15 @@ bool search::BattleSearcher::resetForSearch() {
 
     // Recycle the pool rather than freeing it: reclaim every node for reuse and drop the dedup map.
     poolUsed = 0;
+    decisionStatesUsed = 0;
     std::memset(stateToNode.data(), 0, stateToNode.size() * sizeof(DedupSlot));
+    diagnosticRootHashValid = false;
     root = allocNode();
-    root->state = *rootState;
+    root->state = allocDecisionState();
+    *root->state = *rootState;
 
-    if (isTerminalState(root->state)) {
-        root->evaluationSum = evaluateEndState(root->state);
+    if (isTerminalState(*root->state)) {
+        root->evaluationSum = evaluateEndState(*root->state);
         root->simulationCount = 1;
         return false;
     }
@@ -256,7 +270,7 @@ bool search::BattleSearcher::resetForSearch() {
 void search::BattleSearcher::search(int64_t simulations) {
     g_debug_scum_search = this;
     // Root setup (setRoot/rerootAt) has run; if root is already terminal we have nothing to do.
-    if (isTerminalState(root->state)) return;
+    if (isTerminalState(*root->state)) return;
 
     for (std::int64_t simCount = 0; simCount < simulations; ++simCount) {
         step();
@@ -265,7 +279,7 @@ void search::BattleSearcher::search(int64_t simulations) {
 
 void search::BattleSearcher::searchForMicros(int64_t maxMicros) {
     g_debug_scum_search = this;
-    if (isTerminalState(root->state)) return;
+    if (isTerminalState(*root->state)) return;
 
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::microseconds(maxMicros);
 
@@ -286,6 +300,7 @@ void search::BattleSearcher::step() {
     searchStack.clear();
     searchStack.push_back(root);
     actionStack.clear();
+    actionCount = 0;
 
     // Cycle guard: is `n` already on the descent path? Linear scan; depth is small in practice.
     auto onPath = [&](Node* n) {
@@ -320,9 +335,9 @@ void search::BattleSearcher::step() {
 
             if (onPath(child)) {
                 // Outcome reproduces a state already on the path -> cycle. Roll out instead.
-                BattleContext &rollout = (rolloutScratch = child->state);
+                BattleContext &rollout = (rolloutScratch = *child->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
-                    hashBattleState(root->state), cur->parent, &cur->stochasticAction, depth);
+                    cur->parent, &cur->stochasticAction, depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
@@ -330,9 +345,9 @@ void search::BattleSearcher::step() {
             searchStack.push_back(child);
 
             if (child->simulationCount == 0) {
-                BattleContext &rollout = (rolloutScratch = child->state);
+                BattleContext &rollout = (rolloutScratch = *child->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
-                    hashBattleState(root->state), cur->parent, &cur->stochasticAction, depth);
+                    cur->parent, &cur->stochasticAction, depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
@@ -340,17 +355,17 @@ void search::BattleSearcher::step() {
             continue;
         }
 
-        if (isTerminalState(cur->state)) {
-            updateFromPlayout(searchStack, actionStack, cur->state);
+        if (isTerminalState(*cur->state)) {
+            updateFromPlayout(searchStack, actionStack, *cur->state);
             return;
         }
 
         if (cur->edges.empty()) {
             ++simulationIdx;
-            enumerateActionsForNode(*cur, cur->state);
+            enumerateActionsForNode(*cur, *cur->state);
             if (cur->edges.empty()) {
                 // No legal actions but not terminal: nothing to do but evaluate.
-                updateFromPlayout(searchStack, actionStack, cur->state);
+                updateFromPlayout(searchStack, actionStack, *cur->state);
                 return;
             }
         }
@@ -363,14 +378,14 @@ void search::BattleSearcher::step() {
             // Already expanded: descend (transposition or revisit).
             if (onPath(edge.node)) {
                 // Descending would revisit an on-path node -> cycle. Roll out instead.
-                actionStack.push_back(edge.action);
-                BattleContext &rollout = (rolloutScratch = edge.node->state);
+                recordAction(edge.action);
+                BattleContext &rollout = (rolloutScratch = *edge.node->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
-                    hashBattleState(root->state), cur, &edge.action, depth);
+                    cur, &edge.action, depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
-            actionStack.push_back(edge.action);
+            recordAction(edge.action);
             cur = edge.node;
             searchStack.push_back(cur);
             continue;
@@ -379,13 +394,13 @@ void search::BattleSearcher::step() {
         // First traversal of this action: execute on a copy of the current state. The rng is
         // pre-seeded to Random(base + 0) so that, if the action turns out to be stochastic,
         // this execution is exactly chance outcome 0 and can be kept rather than redone.
-        BattleContext &next = (expandScratch = cur->state);
+        BattleContext &next = (expandScratch = *cur->state);
         const Random preActionRng = next.rng;
         Random baseGen = preActionRng;
         const auto randomnessBase = static_cast<std::uint64_t>(baseGen.randomLong());
         next.rng = Random(randomnessBase);
         edge.action.execute(next);
-        actionStack.push_back(edge.action);
+        recordAction(edge.action);
         const bool rngChanged = next.rng.counter != 0;
 
         if (rngChanged) {
@@ -428,9 +443,9 @@ void search::BattleSearcher::step() {
         if (onPath(child)) {
             // Existing on-path node (a brand-new node is never on the path) -> next intact.
             // Deterministic action cycled back to an on-path node. Roll out instead.
-            BattleContext &rollout = (rolloutScratch = next);  // next == child->state
+            BattleContext &rollout = (rolloutScratch = next);  // next == *child->state
             const auto evaluation = rolloutToEnd(rollout, actionStack,
-                hashBattleState(root->state), cur, &edge.action, depth);
+                cur, &edge.action, depth);
             updateFromPlayout(searchStack, actionStack, rollout, evaluation);
             return;
         }
@@ -439,10 +454,10 @@ void search::BattleSearcher::step() {
 
         if (child->simulationCount == 0) {
             // Brand-new node (only new nodes have simulationCount 0 here) -> next was moved into
-            // child->state, which now holds exactly what next did (rng included).
-            BattleContext &rollout = (rolloutScratch = child->state);
+            // *child->state, which now holds exactly what next did (rng included).
+            BattleContext &rollout = (rolloutScratch = *child->state);
             const auto evaluation = rolloutToEnd(rollout, actionStack,
-                hashBattleState(root->state), cur, &edge.action, depth);
+                cur, &edge.action, depth);
             updateFromPlayout(searchStack, actionStack, rollout, evaluation);
             return;
         }
@@ -513,6 +528,8 @@ int search::BattleSearcher::selectBestEdgeToSearch(const search::BattleSearcher:
 
     //std::cout << "  edges: " << bestEdgeValue;
     for (int i = 1; i < cur.edges.size(); ++i) {
+        // Strict > keeps the first winner, including when a later value is NaN.
+        if (bestEdgeValue == std::numeric_limits<double>::infinity()) break;
         const auto value = evaluateEdge(cur, i, logParentVisits);
         //std::cout << ", " << value;
         if (value > bestEdgeValue) {
@@ -538,13 +555,12 @@ static int rolloutMaxTurnsEnv() {
 static double effectiveGold(const BattleContext &bc);
 
 double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Action> &actionStack,
-                                             std::uint64_t rootStateHash,
                                              const Node *parent,
                                              const Action *incomingAction,
                                              int depth) {
     const int maxTurns = rolloutMaxTurnsEnv();
     const int startTurn = bc.turn;
-    const std::size_t actionStackStart = actionStack.size();
+    const std::size_t actionStackStart = actionCount;
     if (isTerminalState(bc)) {
         const double evaluation = evaluateEndState(bc);
         recordRolloutDiagnostic(bc, 0, 0);
@@ -558,8 +574,8 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         parentLegalActions.reserve(parent->edges.size());
         for (const auto &edge : parent->edges) parentLegalActions.push_back(edge.action);
         leafObservation = silver_bridge::makeSilverLeafObservation(
-            bc, root->state, parent->state, parentLegalActions, incomingAction,
-            rootStateHash, static_cast<std::uint64_t>(hashBattleState(parent->state)), depth,
+            bc, *root->state, *parent->state, parentLegalActions, incomingAction,
+            diagnosticRootHash(), static_cast<std::uint64_t>(hashBattleState(*parent->state)), depth,
             static_cast<int>(actionStackStart));
         leafObserver(*leafObservation);
         if (leafObservation->skipRollout) {
@@ -567,7 +583,8 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
             return leafObservation->directValue;
         }
     }
-    const auto rolloutStart = std::chrono::steady_clock::now();
+    const auto rolloutStart = leafObservation && leafObservation->collectResult
+        ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     while (!isTerminalState(bc)) {
         if (maxTurns > 0 && bc.turn - startTurn >= maxTurns) break;
         ++simulationIdx;
@@ -605,27 +622,27 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
                 break;
         }
 
-        actionStack.push_back(action);
+        recordAction(action);
         if (leafObservation && leafObservation->collectResult) {
             leafObservation->rolloutActionFingerprints.push_back(
                 silver_bridge::silverActionFingerprint(bc, action));
         }
         action.execute(bc);
     }
-    const auto actionCount = static_cast<std::int64_t>(actionStack.size() - actionStackStart);
+    const auto rolloutActionCount = static_cast<std::int64_t>(actionCount - actionStackStart);
     const auto turnDelta = static_cast<std::int64_t>(bc.turn - startTurn);
     const double evaluation = evaluateEndState(bc);
     const double backpropagatedUtility = leafObservation && leafObservation->blendRollout
         ? silver_bridge::silverBlendRolloutUtility(
             evaluation, leafObservation->vnetRawPrediction, leafObservation->blendAlpha)
         : evaluation;
-    recordRolloutDiagnostic(bc, actionCount, turnDelta);
+    recordRolloutDiagnostic(bc, rolloutActionCount, turnDelta);
     if (leafObservation && leafObservation->collectResult) {
         leafObservation->phase = silver_bridge::SilverLeafObservationPhase::END;
         leafObservation->terminalOutcome = static_cast<int>(bc.outcome);
         leafObservation->rolloutUtility = evaluation;
         leafObservation->backpropagatedUtility = backpropagatedUtility;
-        leafObservation->rolloutActionCount = actionCount;
+        leafObservation->rolloutActionCount = rolloutActionCount;
         leafObservation->rolloutTurnDelta = turnDelta;
         leafObservation->rolloutWallMicros = std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now() - rolloutStart).count();
@@ -639,6 +656,35 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
     return backpropagatedUtility;
 }
 
+std::uint64_t search::BattleSearcher::diagnosticRootHash() {
+    if (!diagnosticRootHashValid) {
+        cachedDiagnosticRootHash = hashBattleState(*root->state);
+        diagnosticRootHashValid = true;
+    }
+    return cachedDiagnosticRootHash;
+}
+
+int search::BattleSearcher::wideningCap(int category, std::int64_t visits) {
+    const double wc = category == 0 ? endTurnWideningC : chanceWideningC;
+    const double wa = category == 0 ? endTurnWideningAlpha : chanceWideningAlpha;
+    const auto exact = [wc, wa](std::int64_t n) {
+        return std::max(1, static_cast<int>(
+            std::ceil(wc * std::pow(static_cast<double>(n + 1), wa))));
+    };
+    // Reused trees can exceed the normal budget. Bound storage, not widening.
+    constexpr std::int64_t cacheLimit = 32768;
+    if (visits < 0 || visits >= cacheLimit) return exact(visits);
+    auto &schedule = wideningSchedules[category == 0 ? 0 : 1];
+    if (schedule.c != wc || schedule.alpha != wa) {
+        schedule.c = wc;
+        schedule.alpha = wa;
+        schedule.caps.clear();
+    }
+    while (schedule.caps.size() <= static_cast<std::size_t>(visits))
+        schedule.caps.push_back(exact(static_cast<std::int64_t>(schedule.caps.size())));
+    return schedule.caps[visits];
+}
+
 search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search::BattleSearcher::Node &chance) {
 #ifdef sts_asserts
     assert(chance.isRandomNode);
@@ -649,17 +695,13 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
     // reuse an existing one. This bounds the branching of high-entropy events so their children
     // accumulate visits and the tree deepens, while the visit-weighted average over outcomes
     // remains an unbiased estimate of the chance node's expectation.
-    const std::int64_t n = chance.simulationCount;
-    const double wc = wcat == 0 ? endTurnWideningC : chanceWideningC;
-    const double wa = wcat == 0 ? endTurnWideningAlpha : chanceWideningAlpha;
-    const int cap = std::max(1, static_cast<int>(
-            std::ceil(wc * std::pow(static_cast<double>(n + 1), wa))));
+    const int cap = wideningCap(wcat, chance.simulationCount);
 
     if (static_cast<int>(chance.edges.size()) < cap) {
         // Widen: reseed from the canonical pre-action state, re-execute, dedup by state.
         // Sequential N gives i.i.d. samples because Random hashes its seed (murmurHash3).
         const std::uint64_t N = chance.outcomesGenerated++;
-        BattleContext &out = (widenScratch = chance.parent->state);
+        BattleContext &out = (widenScratch = *chance.parent->state);
         out.rng = Random(chance.randomnessBase + N);
         chance.stochasticAction.execute(out);
 
@@ -1080,8 +1122,8 @@ std::vector<EdgeInfo> getEdgesForLayer(const search::BattleSearcher &s, int laye
         }
 
         const BattleContext* describeState =
-                node->isRandomNode ? (node->parent ? &node->parent->state : nullptr)
-                                   : &node->state;
+                node->isRandomNode ? (node->parent ? node->parent->state : nullptr)
+                                   : node->state;
 
         if (depth == layerNum) {
             for (const auto &edge : node->edges) {
@@ -1113,6 +1155,11 @@ void search::BattleSearcher::printSearchTree(std::ostream &os, int levels) {
 }
 
 void search::BattleSearcher::printSearchStack(std::ostream &os, bool skipLast) {
+    if (!recordActionTrace) {
+        os << "Action trace disabled; enable recordActionTrace before search (actions: "
+           << actionCount << ").\n";
+        return;
+    }
     for (int i = 0; i < actionStack.size(); ++i) {
         const auto &a = actionStack[i];
         os << std::hex << a.bits << '\n';

@@ -145,7 +145,7 @@ namespace sts::search {
             std::int64_t victoryCount = 0;
             double evaluationSum = 0;
             std::vector<Edge> edges;
-            BattleContext state;                // game state at this node (decision nodes; chance nodes read parent->state)
+            BattleContext* state = nullptr;     // decision state; chance nodes read parent->state
             bool isRandomNode = false;
             Action stochasticAction;            // chance node: the action that consumed RNG
             Node* parent = nullptr;             // chance node: spawning decision node (source of pre-action state)
@@ -170,6 +170,11 @@ namespace sts::search {
         // and only grows the vector when it needs more, so nodes aren't freed and reallocated per move.
         std::vector<std::unique_ptr<Node>> allNodes;  // Pool of all created nodes
         std::size_t poolUsed = 0;                     // nodes claimed by the current search
+
+        // Only decision nodes claim combat storage; logical node pool counts and
+        // reuse-cap behavior remain independent of this retained state pool.
+        std::vector<std::unique_ptr<BattleContext>> decisionStates;
+        std::size_t decisionStatesUsed = 0;
 
         // Open-addressed dedup table. Backed by a single vector and cleared with one memset per
         // search; replaces unordered_map<size_t, vector<Node*>> -- no per-bucket vector, no per-
@@ -206,7 +211,26 @@ namespace sts::search {
         std::default_random_engine randGen;
 
         std::vector<Node*> searchStack;        // descent path; doubles as the cycle-guard set (linear scan, depth is small)
+        // Counts remain available with tracing disabled; enable before search for debug traces.
+        bool recordActionTrace = false;
+        std::size_t actionCount = 0;
         std::vector<Action> actionStack;
+        void recordAction(const Action &action) {
+            ++actionCount;
+            if (recordActionTrace) actionStack.push_back(action);
+        }
+
+        bool diagnosticRootHashValid = false;
+        std::uint64_t cachedDiagnosticRootHash = 0;
+        std::uint64_t diagnosticRootHash();
+
+        struct WideningSchedule {
+            double c = 0;
+            double alpha = 0;
+            std::vector<int> caps;
+        };
+        WideningSchedule wideningSchedules[2];
+        int wideningCap(int category, std::int64_t visits);
 
         SimpleAgent rolloutAgent;
         BattleContext rolloutScratch;   // reused playout buffer: copy-assigning into it keeps the card-pile vector capacity, avoiding a fresh allocation per rollout
@@ -237,6 +261,8 @@ namespace sts::search {
 
         Node* allocNode();   // claim a node from the pool (recycling a reset one, or growing the pool)
 
+        BattleContext* allocDecisionState(); // claim stable storage from the decision-state pool
+
         // Graph search deduplication
         Node* getOrCreateNode(BattleContext &&state);
         bool lastNodeWasCreated = false;   // whether the last getOrCreateNode allocated a new node
@@ -247,7 +273,7 @@ namespace sts::search {
         int selectBestEdgeToSearch(const Node &cur);
 
         double rolloutToEnd(BattleContext &state, std::vector<Action> &actionStack,
-                            std::uint64_t rootStateHash, const Node *parentState,
+                            const Node *parentState,
                             const Action *incomingAction, int depth);
 
         void enumerateActionsForNode(Node &node, const BattleContext &bc);

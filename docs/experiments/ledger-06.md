@@ -6034,3 +6034,199 @@ model training was changed.
   sidecars. The
   full 100-rollout/100-Silver rerun remains required before replacing §213's
   scientific result.
+
+## §215 Exact Silver CPU optimization and GCC PGO pilot (2026-09-10)
+
+- **Question/design:** preserve the frozen teacher's search, RNG behavior,
+  decisions and labels while reducing single-core CPU cost. Baseline
+  `0034ce8038f1a7229bc4f993a0001a72ddfd10e9`; reviewed implementation
+  `f8873cd` (subsequent evidence-only commit does not change executable sources).
+  The implementation gates diagnostic hashes/timers/action traces, caches the
+  original widening expression, ends UCB scans at a winning positive infinity,
+  and replaces Silver's status map with sorted sparse explicit-membership storage.
+  PGO is a separate default-off build treatment; no fast math or native CPU flags.
+- **Profile:** GNU `gprofng` PC sampling of `wholecombatgen`, seed 0, gave
+  22.456 CPU seconds sampled: Silver step inclusive 92.38%, status-tree copy
+  exclusive 2.90%, BattleContext swap exclusive 6.11%. `perf` was unavailable;
+  no cycles/instructions/cache-miss hardware evidence was collected. Baseline
+  sizes: Node 6352 bytes, BattleContext 6272, Player 176. Compact chance-node
+  storage was assessed but deferred: memory upside is plausible, while CPU
+  attribution to unused chance payload remains unmeasured. Logical allocated
+  cap semantics must remain unchanged in any future layout experiment.
+- **Workload/configuration:** actual `wholecombatgen 1 10000 0 OUT SEED TEACHER`
+  producer, project-fair Silver UCT, exactly 10,000 simulations per private
+  root, exploration 25/25, widening 3.7028/0.52389 for both categories,
+  allocated reuse cap 32768, adaptive/direct-leaf/pruning/PUCT off. Native OOC
+  floor/win trees loaded and hash-bound; `STS_POLICY=0`. All seed commands used
+  `tools/seed_guard.sh`. Ryzen 5 7500F, one process pinned to CPU 2,
+  `OMP_NUM_THREADS=1`; GCC Release `-O3 -flto`. Actual production-job binary
+  paths elsewhere were not verified or changed.
+- **PGO:** train on seed 0 (22 fights across Acts 1–3) plus the existing native
+  reference-searcher probe to cover a compiled archive member not linked by
+  the producer. Final USE build passed strict missing/mismatched profile
+  checks. Held-out seeds 1 and 2 were not used in training.
+- **Controlled timing:** two repetitions per held-out seed in A/B/PGO then
+  PGO/B/A order, after builds completed. Sum over four runs per arm:
+
+  | Arm | Process CPU seconds | Whole-process wall seconds | CPU reduction vs A |
+  | --- | ---: | ---: | ---: |
+  | A: baseline Release | 52.994173 | 53.001637 | — |
+  | B: optimized Release | 49.427041 | 49.431853 | 6.73% |
+  | PGO: optimized profile-use | 46.923947 | 46.927550 | 11.45% |
+
+  PGO reduced CPU by a further 5.06% versus B. This is a preliminary local
+  result on two trajectories, not a statistical or production-wide claim;
+  the individual source optimizations were not isolated in this final timing.
+  Exploratory runs overlapping compilation are excluded from these numbers.
+- **Equivalence:** every final CSV is byte-identical to its matched baseline,
+  as is every per-fight Silver telemetry line. Fourteen native fixtures at
+  10,000 simulations also have byte-identical traces (including root actions,
+  values/visits, reroot and sequential-selection cases). Focused tests compare
+  tracing on/off, observer counts/hashes/fingerprints, RNG state, all pool
+  states/values, UCB NaN/infinity behavior, and exact widening schedules and
+  fallback. These are bounded checks; no persisted full-run RNG trace was
+  collected. Training/exploratory scratch data are not a promoted corpus.
+- **Validation/status:** complete Debug build, 62/62 CTests, 145 agent-tooling
+  tests, container ASan/UBSan, independent source review, and repository-health
+  check passed. Keep source changes for review; PGO remains opt-in. No model,
+  search budget, OOC policy, production corpus, or GCP deployment was changed.
+  Existing Release narrowing/ODR/LTO warnings remain.
+- **Evidence:** [machine-readable packet](evidence/silver_exact_search_2026-09-10.json)
+  contains every final command, teacher/environment/model/executable hash,
+  CPU/wall measurement, label/telemetry hash, checks and limitations. Raw logs,
+  CSVs, profiles and build output remain in `build/optimization-evidence/` in
+  the task checkout. Final manifests bind the implementation SHA and actual
+  binary hashes; profiles were collected from the same sources before commit.
+
+## §216 Compact Silver chance-node storage: lower memory, CPU neutral (2026-09-10)
+
+- **Question/design:** follow up §215's deferred storage hypothesis. Compare
+  the already-optimized Release executable at `49781db` (SHA256
+  `835e21fb790a55a234079f34279657b2910a2e3e459cd84faf2b2f990ef1e4bf`)
+  against reviewed implementation `255d8f1`. PGO is OFF in both arms. Keep
+  all teacher settings, node counts, RNG use, decisions and labels unchanged;
+  measure whether removing unused chance-state payload saves memory and CPU.
+  Reused §215's exact baseline executable and fixture runner; fresh timings are
+  necessary because the new layout is the only new treatment.
+- **Implementation:** compact 88-byte nodes point to separately pooled battle
+  states. Only decision nodes claim a state; chance nodes read their parent.
+  Both pools retain stable addresses and capacity across reset/reroot. The
+  allocated/active cap still uses logical `allNodes.size()`/`poolUsed`, never
+  state-pool size or physical bytes. No block allocation or cap-policy change.
+- **Structural evidence:** the 512-simulation fixture has 604 logical nodes,
+  comprising 510 decisions and 94 chance nodes. State pool usage is 510;
+  BattleContext is 6248 bytes. Thus 587,312 bytes of chance-state payload are
+  omitted. This payload calculation excludes allocator/bookkeeping overhead;
+  whole-process memory is measured separately below.
+- **Workload:** same frozen `wholecombatgen 1 10000 0 OUT SEED TEACHER` contract
+  as §215: project-fair ordinary Silver UCT, exact 10k private-root budgets,
+  exploration 25/25, widening 3.7028/0.52389, allocated cap32768, adaptive and
+  learned leaf/pruning/PUCT off. Native OOC floor/win trees hash-bound and
+  confirmed loaded, STS_POLICY=0, one worker pinned to CPU2 on Ryzen5 7500F,
+  GCC Release O3/LTO. Source/model/binary hashes accompany every final run.
+- **Timing/memory:** seeds0/1/2, two repeats each in A/B then B/A order, after
+  all compilation completed. Six runs per arm. Baseline CPU88.992959s and
+  wall88.999912s; compact CPU88.466317s and wall88.480595s. The nominal 0.59%
+  CPU reduction is treated as neutral/inconclusive, not a demonstrated speedup.
+  Mean peak RSS across the two repetitions, in KiB:
+
+  | Seed | Baseline | Compact | Reduction |
+  | --- | ---: | ---: | ---: |
+  | 0 | 277196 | 235032 | 15.21% |
+  | 1 | 288450 | 237572 | 17.64% |
+  | 2 | 319776 | 296542 | 7.27% |
+
+- **Hardware profiling:** installed matching Linux perf7.1.5 and its runtime
+  libraries by user-local package extraction; no sudo/sysctl or global
+  configuration changes. `perf_event_paranoid` remains2. Generic userspace
+  cycles/instructions/branches/branch-misses/cache-references/cache-misses are
+  readable. Separate matched seed0 A/B then B/A counter runs and their running
+  percentages are retained in the evidence packet. Initial profile/counter
+  samples overlapping builds are excluded from controlled conclusions.
+  In the matched counter pairs, compact nodes used 1.21% more cycles,
+  0.20% more instructions and 1.88% more generic cache misses; this does not
+  support a cache-efficiency improvement despite the lower RSS.
+- **Correctness:** all matched final label CSVs and per-fight Silver telemetry
+  lines are identical. Fourteen native fixture traces at10k simulations are
+  byte-identical, covering reroot and sequential selection. New tests check
+  null chance states, exclusive state ownership, stable pointers across growth,
+  continued search after reroot, reset/replay capacity reuse and unchanged
+  logical node accounting. Existing bridge allocated/active-cap tests pass.
+  Full Debug target set rebuilt; 62/62 CTests pass. Final isolated search and
+  bridge boundary tests pass ASan+UBSan. Independent source review and
+  repo-health pass (advisory Markdown-growth warning).
+- **Decision/limits:** retain as a measured memory optimization with roughly
+  unchanged CPU cost on this bounded local sample. No claim of additional
+  cache-efficiency or CPU benefit, no broad production qualification, and no
+  combination with §215's PGO result: new source/layout requires new profiles.
+  No deployment, model, budget, corpus, or cap change. Three trajectories and
+  two repeats cannot establish a small general CPU effect; full-run persisted
+  RNG traces were not collected. Agent-tooling tests were not repeated because
+  this follow-up changes no Python/tooling configuration.
+- **Evidence:** [complete packet](evidence/silver_chance_storage_2026-09-10.json)
+  contains exact commands, manifests/hashes, per-run CPU/wall/RSS, hardware
+  counts, fixture metrics and checks. Raw files remain under
+  `build/chance-storage-evidence/` in the task checkout. The final evidence-only
+  commit does not change the measured implementation.
+
+## §217 Final-layout single-core confirmation against current main (2026-09-10)
+
+- **Purpose/decision rule:** close §215–216's provenance gap with a direct
+  current-main versus complete final-layout PR comparison. Predeclared
+  criterion: identical labels/telemetry and existing native trace parity,
+  plus `1 - sum(head CPU) / sum(main CPU) >= 0.05` over six executions per arm.
+  This is confirmation on previously examined seeds, not a new held-out study.
+- **Frozen sources/builds:** baseline current main
+  `3bec0b159984ab1a01c100bce17189aa68f71967`; independently reviewed final PR
+  head `4224c03e4ae0487cd43e5e9a196a193d22be9f24`. Fresh baseline archive build
+  via `tools/agent/baseline_build.py` and checked-in Release ccache presets;
+  final-head Release target verified up-to-date and copied to a frozen path.
+  Both O3/LTO, PGO OFF. Baseline executable SHA256
+  `4d0beb28998568df1503ecc0f72784f6dbf70c81973717d439ff8eb3b2031862`;
+  final head `c97ab0467c8f8ba961efc1ea4bc1fa559462d3799c915afa7f6b9fb30e65c4c5`.
+  Main's only change since original baseline 0034ce8 is an unrelated Python
+  semantic-probe script; the freshly built binary is byte-identical to the
+  original baseline. Final-head binary is unchanged from the validated compact
+  layout. No merge-base refresh or source changes were needed.
+- **Workload:** `wholecombatgen 1 10000 0 OUT SEED TEACHER`, seeds 0/1/2, two
+  repetitions per seed in A/B then B/A order, all guard-wrapped. Same frozen
+  project-fair ordinary Silver exact-10k private roots, exploration 25/25,
+  widening 3.7028/0.52389, allocated cap32768, no adaptive/pruning/learned leaf,
+  native OOC floor/win trees hash-bound and confirmed loaded, STS_POLICY=0.
+  Ryzen5 7500F, one process pinned to CPU2, OMP_NUM_THREADS=1, no concurrent
+  builds. Seeds cover 22/9/17 fights respectively, Acts1–3 collectively,
+  normal/elite/boss encounters. Timing excludes manifest/hash preparation.
+- **Results:** aggregate CPU **87.589210s main → 82.051059s head**, a
+  **6.3229% reduction**. Whole-process wall **87.600607s → 82.066320s**,
+  **6.3176% lower**. Mean process CPU seconds over two repeats per seed:
+
+  | Seed | Current main | Final head | CPU reduction |
+  | --- | ---: | ---: | ---: |
+  | 0 | 19.470291 | 17.535438 | 9.94% |
+  | 1 | 12.665160 | 12.666575 | approximately 0% |
+  | 2 | 11.659154 | 10.823516 | 7.17% |
+
+  **PASS** against the predeclared 5% aggregate bar. This measures the full PR
+  package, including compact status/chance storage; it does not attribute a
+  CPU gain to the chance layout by itself. The seed variation and small sample
+  preclude a broad throughput guarantee or statistical confidence claim.
+- **Equivalence/provenance:** all 12 runs completed one seed each with zero
+  quarantine/health failures. Every matched label CSV and per-fight Silver
+  telemetry stream is identical; executable/model hashes and full source SHAs
+  agree with each teacher manifest and native provenance sidecar. Fourteen
+  preserved original-baseline/final-layout native traces compare identical.
+  Reusing them is justified by relevant source equivalence and matching
+  executable hashes; they were not rerun during this measurement.
+- **Checks/limits:** clean source preflight, pinned submodules, exact baseline
+  Release build and final-head target verification passed. Linux GCC CI passed
+  on frozen head4224c03 before this evidence-only update; existing full CTest,
+  sanitizer and implementation-review evidence remains applicable because no
+  executable source changed. PGO was deliberately not retrained or measured:
+  it remains optional, and §215's PGO percentage is not a final-layout claim.
+  No larger benchmark, deployment or automatic merge. Full-producer persisted
+  RNG traces were not added.
+- **Evidence:** [final-layout packet](evidence/silver_final_layout_ab_2026-09-10.json)
+  contains the exact per-run commands, per-arm manifests/hashes, per-seed and
+  aggregate metrics, native-trace reuse links, criterion and limitations. Raw
+  artifacts remain in `build/final-layout-evidence/` in the task checkout.
+  Subsequent commits record evidence only and do not change measured sources.

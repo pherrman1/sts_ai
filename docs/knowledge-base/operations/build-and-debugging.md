@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-09-08 against the current working tree.
+Last verified: 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -504,6 +504,53 @@ common translation-unit compilations total. After evidence in
 five executables against those objects. CTest passed all 27 tests and the five
 expected executable paths were present. The timing is coarse supporting
 evidence; the primary result is the build-graph compilation ownership.
+
+### Opt-in GCC profile-guided Release experiment
+
+`STS_PGO_MODE` defaults to `OFF`. `GENERATE` and `USE` require a single-config
+GNU Release build and an absolute `STS_PGO_PROFILE_DIR`. Existing `-O3`/LTO
+remain enabled; this option adds neither fast math nor CPU-specific flags.
+Generation uses atomic counters for OpenMP workers. Use mode rejects an empty
+profile directory at configure time and treats missing or mismatched object
+profiles as compiler errors, rather than silently accepting unprofiled code.
+
+Use a dedicated build directory and retain it across the two phases: GCC's
+profile names encode object paths. Keep the source revision, compiler,
+generator, build directory, and other flags fixed. Start with a fresh profile
+directory for each experiment; do not mix profiles from different revisions.
+
+```bash
+cmake -S . -B build/pgo -DCMAKE_BUILD_TYPE=Release \
+  -DSTS_PGO_MODE=GENERATE -DSTS_PGO_PROFILE_DIR="$PWD/build/pgo-profiles"
+cmake --build build/pgo --target one_combat silver-native-test -j2
+bash tools/seed_guard.sh build/pgo/silver_native_test
+# Run the instrumented binary on representative, guarded Silver producer
+# workloads here, preserving the frozen teacher settings and refreshing its
+# executable hash. Wait for normal process exit so GCC writes the profiles.
+cmake -S . -B build/pgo -DCMAKE_BUILD_TYPE=Release \
+  -DSTS_PGO_MODE=USE -DSTS_PGO_PROFILE_DIR="$PWD/build/pgo-profiles"
+cmake --build build/pgo --target one_combat -j2
+```
+
+Collect profiles for every translation unit rebuilt in USE mode, including
+static-library members that `one_combat` does not pull into its final link.
+The `silver_native_test` probe above exercises `SilverSearcherBridge.cpp`,
+whose reference-searcher probe would otherwise have no profile when rebuilding
+the Silver search bridge archive. Building additional targets in USE mode
+without collecting their profiles intentionally fails. Profile existence alone
+does not establish workload representativeness or a performance improvement.
+Compare the final USE binary against ordinary Release on held-out workloads,
+with separate trace/label parity checks and interleaved CPU-pinned timing;
+never compare throughput against the instrumented collection binary. Refresh
+teacher/producer executable hashes for each binary, and keep all seed-driving
+commands under `tools/seed_guard.sh` (local cap 128).
+
+The checked-in self-play configuration selects `./build/one_combat`, whereas
+the Release preset produces `build/linux-gcc-release/one_combat`. Neither path
+proves a running producer is optimized: inspect the actual job command,
+`CMakeCache.txt`, generated compile flags, and binary hash on its host before
+drawing a production conclusion. PGO remains an experimental build option;
+no production speedup is established by enabling it.
 
 ## Important data flow
 
