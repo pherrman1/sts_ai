@@ -91,6 +91,15 @@ two-repeat selected-workload check, not broad qualification. See the
 [final-layout packet](../../experiments/evidence/silver_final_layout_ab_2026-09-10.json).
 The earlier PGO result still belongs to its earlier source revision.
 
+The follow-up chance-replay diagnostic is **mixed and parked**. On the real
+Silver chance-selection path, weighting capped replay by fresh-generator
+multiplicity lowered synthetic value RMSE by roughly 21–43% at budgets 32–512
+across 50/50, 80/20, deduplicated, and 16-state high-entropy fixtures, but it
+reduced close root-action accuracy on the 0.60-versus-0.58 fixture from
+76.6–78.9% to 71.1–73.4%. The treatment remained default-off and no gameplay
+screen is authorized. See [ledger-06 §223](../../experiments/ledger-06.md) and
+the [raw matrix](../../experiments/evidence/silver_chance_frequency_2026-09-11.csv).
+
 ### Whole-Act OOC evaluator
 
 The corrected evaluator passed its serial/parallel and worker-coverage canary,

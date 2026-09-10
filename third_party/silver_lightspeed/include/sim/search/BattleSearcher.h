@@ -158,6 +158,7 @@ namespace sts::search {
             Node* node = nullptr;               // child (shared across paths via transposition)
             int rngAdvanceSteps = 0;            // chance outcome edge: the N used for Random(base + N)
             std::int32_t visitCount = 0;        // times this edge was traversed (UCB / DPW reselection)
+            std::int32_t generativeCount = 0;   // fresh chance draws that deduplicated to this edge
         };
 
         std::unique_ptr<BattleContext> rootState;
@@ -191,6 +192,16 @@ namespace sts::search {
         // outcome variance on top of policy variance and may need a different exploration level).
         double explorationParameter = 9.9;         // deterministic edges; tuned default
         double explorationParameterChance = 9.9;   // stochastic (chance-node) edges
+
+        // Diagnostic-only treatment switch. The default preserves the existing visit-weighted
+        // chance replay rule; the experiment runner enables this to weight replay by fresh
+        // generator multiplicity instead of search allocation.
+        bool useGenerativeChanceFrequency = false;
+
+        // Diagnostic fixture hook. Production searches leave this empty and execute the real
+        // stochastic action. The isolated chance-frequency experiment supplies a synthetic
+        // generator while still using the real widening, deduplication, and replay code below.
+        std::function<void(BattleContext &)> chanceOutcomeHook;
 
         // Double Progressive Widening for chance nodes: after n visits a chance node may
         // hold at most ceil(chanceWideningC * (n+1)^chanceWideningAlpha) distinct outcomes.

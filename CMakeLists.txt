@@ -159,6 +159,22 @@ target_compile_definitions(silver-search-optimization-test PRIVATE
 target_link_libraries(silver-search-optimization-test PRIVATE silver_combat_model silver_combat_search_bridge)
 target_link_options(silver-search-optimization-test PRIVATE -Wl,--gc-sections)
 
+# Bounded synthetic diagnostic for the chance replay experiment. It is not a
+# production test or gameplay benchmark; the runner uses a hook only for its
+# analytical generator while the real chance selection path remains active.
+add_executable(silver-chance-frequency-experiment apps/silver_chance_frequency_experiment.cpp)
+set_target_properties(silver-chance-frequency-experiment PROPERTIES
+    OUTPUT_NAME silver_chance_frequency_experiment CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+target_include_directories(silver-chance-frequency-experiment PRIVATE
+    third_party/silver_lightspeed/include include)
+target_compile_definitions(silver-chance-frequency-experiment PRIVATE
+    sts=sts_silver java=sts_silver_java fixed_list=silver_fixed_list
+    rollWeightedIdx=silver_rollWeightedIdx simulationIdx=silver_simulationIdx
+    initMaps=silver_initMaps agentMtRunner=silver_agentMtRunner)
+target_link_libraries(silver-chance-frequency-experiment PRIVATE
+    silver_combat_model silver_combat_search_bridge)
+target_link_options(silver-chance-frequency-experiment PRIVATE -Wl,--gc-sections)
+
 # Full boundary test has its own executable: it needs both live fixture
 # construction and the isolated model, but must not bloat normal unit-test.
 add_executable(silver-bridge-test apps/silver_bridge_test.cpp $<TARGET_OBJECTS:sts_core_objects>)

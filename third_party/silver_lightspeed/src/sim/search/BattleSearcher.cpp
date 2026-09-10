@@ -421,6 +421,7 @@ void search::BattleSearcher::step() {
             Edge outcomeEdge;
             outcomeEdge.action = Action{};
             outcomeEdge.node = getOrCreateNode(std::move(next));
+            outcomeEdge.generativeCount = 1;
             if (!lastNodeWasCreated) ++stats.chanceTranspositions;  // fresh chance node: no siblings yet
             outcomeEdge.rngAdvanceSteps = 0;
             chance->edges.push_back(outcomeEdge);
@@ -693,8 +694,8 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
     const int wcat = chanceCat(chance.stochasticAction);
     // Double Progressive Widening. Below the cap we draw a fresh i.i.d. outcome; at the cap we
     // reuse an existing one. This bounds the branching of high-entropy events so their children
-    // accumulate visits and the tree deepens, while the visit-weighted average over outcomes
-    // remains an unbiased estimate of the chance node's expectation.
+    // accumulate visits and the tree deepens. The default replay weight is the edge's search
+    // visit count; the diagnostic treatment below can instead use fresh-generator multiplicity.
     const int cap = wideningCap(wcat, chance.simulationCount);
 
     if (static_cast<int>(chance.edges.size()) < cap) {
@@ -703,7 +704,8 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
         const std::uint64_t N = chance.outcomesGenerated++;
         BattleContext &out = (widenScratch = *chance.parent->state);
         out.rng = Random(chance.randomnessBase + N);
-        chance.stochasticAction.execute(out);
+        if (chanceOutcomeHook) chanceOutcomeHook(out);
+        else chance.stochasticAction.execute(out);
 
         ++stats.chanceOutcomesSampled;
         ++stats.wSampled[wcat];
@@ -712,6 +714,7 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
             if (e.node == child) {
                 ++stats.chanceSiblingReuse;
                 ++stats.wSibReuse[wcat];
+                ++e.generativeCount;
                 return &e;  // resampled an outcome we already have
             }
         }
@@ -721,24 +724,25 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
         e.action = Action{};
         e.node = child;
         e.rngAdvanceSteps = static_cast<int>(N);
+        e.generativeCount = 1;
         chance.edges.push_back(std::move(e));
         return &chance.edges.back();
     }
 
-    // Capped: re-select an existing outcome proportional to its visit count, so the realized
-    // descent frequencies keep tracking the true outcome probabilities.
+    // Capped: re-select an existing outcome proportional to either its search visits (the
+    // historical/default rule) or fresh-generator multiplicity (the diagnostic treatment).
     ++stats.wCapped[wcat];
-    std::int64_t totalVisits = 0;
+    std::int64_t totalWeight = 0;
     for (const auto &e : chance.edges) {
-        totalVisits += e.visitCount;
+        totalWeight += useGenerativeChanceFrequency ? e.generativeCount : e.visitCount;
     }
-    if (totalVisits <= 0) {
+    if (totalWeight <= 0) {
         return &chance.edges[0];
     }
-    std::uniform_int_distribution<std::int64_t> dist(0, totalVisits - 1);
+    std::uniform_int_distribution<std::int64_t> dist(0, totalWeight - 1);
     std::int64_t r = dist(randGen);
     for (auto &e : chance.edges) {
-        r -= e.visitCount;
+        r -= useGenerativeChanceFrequency ? e.generativeCount : e.visitCount;
         if (r < 0) {
             return &e;
         }

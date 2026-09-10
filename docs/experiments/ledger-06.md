@@ -6502,3 +6502,64 @@ model training was changed.
   concordance; Python compilation, JSON validation, evidence cross-check, and
   `git diff --check` pass. Full corrected report and TEST predictions remain
   external at `/home/philippherrmann/sts_sweep/runs/combat-evaluator-comparison-v5/`.
+
+## §223 Silver chance replay: generative-frequency diagnostic (2026-09-11)
+
+- **Question/protocol:** test whether Silver's capped chance replay amplifies
+  early sampling luck when multiple fresh simulator draws deduplicate to the
+  same state. Baseline was `6c6dc8b7e1cbb0e11c3e64efdfa341fe5a229a78`.
+  The fixture runner used the real `BattleSearcher::selectChanceOutcome()`
+  path, paired deterministic seeds `0..127`, budgets `32/64/128/256/512`, and
+  identical widening schedules and synthetic random streams for A/B. The
+  local 128-seed cap was respected.
+- **Current contract:** a stochastic action's first outcome is generated from
+  `Random(randomnessBase + 0)` and cached; later widening draws increment
+  `outcomesGenerated`, execute the generator from
+  `Random(randomnessBase + N)`, and deduplicate the resulting state with
+  `equalForSearch`. A fresh duplicate increments the cached edge's
+  `generativeCount`; every descent increments its `visitCount`. Once the
+  double-progressive-widening cap
+  `ceil(c * (simulationCount + 1)^alpha)` is reached, the default implementation
+  selects a cached edge proportional to `visitCount`. Thus search/replay
+  allocation can feed back into later outcome selection; it is not the same
+  quantity as fresh stochastic frequency.
+- **Fixtures:** analytical 50/50, 80/20, a 25/75 raw-draw-to-two-state
+  deduplication fixture, a uniform 16-state high-entropy fixture where
+  progressive widening binds, and an independent-stream close decision with
+  true values 0.60 versus 0.58. A treatment arm replaced only capped replay's
+  `visitCount` weight with fresh-draw `generativeCount`; the default remained
+  unchanged. No UCT, widening, rollout, root exploration, or tree-reuse
+  parameter changed.
+- **Selected raw results:**
+
+  | Fixture | Budget | A RMSE | B RMSE | A mean p0 | B mean p0 |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | 50/50 | 128 | 0.32068 | 0.18424 | 0.53394 | 0.54889 |
+  | 50/50 | 512 | 0.32042 | 0.18159 | 0.53331 | 0.54939 |
+  | 80/20 | 128 | 0.30012 | 0.22340 | 0.68640 | 0.64667 |
+  | 80/20 | 512 | 0.29870 | 0.22025 | 0.68813 | 0.65099 |
+  | dedup 25/75 | 128 | 0.33560 | 0.20849 | 0.38458 | 0.37207 |
+  | dedup 25/75 | 512 | 0.33487 | 0.20644 | 0.38145 | 0.36932 |
+  | entropy-16 | 128 | 0.06669 | 0.04953 | 0.03503 | 0.03534 |
+  | entropy-16 | 512 | 0.01682 | 0.01254 | 0.05321 | 0.05328 |
+
+  On the close decision, A selected the truly better 0.60 arm on
+  `76.6/77.3/76.6/78.9/76.6%` of seeds at budgets
+  `32/64/128/256/512`; B scored `71.1/73.4/71.1/71.1/71.9%`. Across the four
+  non-close fixtures, B's aggregate value RMSE was lower by 29–35% at budgets
+  32, 128, and 512. Runtime was within measurement noise overall, with the
+  B/A matrix total at budget 128 about 5.8% higher and at 512 about 0.8%
+  higher in this small runner.
+- **Decision:** **MIXED; STOP.** The feedback mechanism is real, and B clearly
+  reduces value-estimate RMSE in these synthetic fixtures, including the
+  deduplication case. However, it worsens the explicitly required close root
+  action decision across every tested budget. The result does not meet a
+  clean policy-improvement bar and does not authorize a gameplay screen or a
+  production Silver switch. The default production contract remains A.
+- **Evidence/checks:** raw machine-readable rows are in
+  [silver_chance_frequency_2026-09-11.csv](evidence/silver_chance_frequency_2026-09-11.csv).
+  The experiment and affected Silver optimization target build with the
+  `linux-gcc-debug-ccache` preset; `silver_search_optimization` passes and
+  the output schema contains 70 rows over the six value fixtures plus five
+  close-decision budgets per arm. `git diff --check` passes. No large gameplay
+  benchmark was run.
