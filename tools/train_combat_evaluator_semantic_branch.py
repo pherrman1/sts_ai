@@ -569,8 +569,9 @@ def classify(metrics: dict[str, Any], bootstrap: dict[str, Any], loss_sources: i
     if survival_better and win_better and signed_better:
         if loss_better:
             return "COMBAT PREDICTOR PROMISING"
-        if loss_sources < 30 or not loss_better:
+        if loss_sources < 30:
             return "COMBAT PREDICTOR PROMISING - LOSS TAIL INCONCLUSIVE"
+        return "COMBAT PREDICTOR WEAK"
     if not survival_better or not signed_better:
         return "COMBAT PREDICTOR FAILED" if not survival_better else "COMBAT PREDICTOR WEAK"
     return "COMBAT PREDICTOR WEAK"

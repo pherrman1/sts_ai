@@ -19,6 +19,7 @@ from tools.train_combat_evaluator_semantic_branch import (  # noqa: E402
     alias_audit,
     bootstrap_metric_difference,
     build_features,
+    classify,
     source_macro,
     valid_mask,
 )
@@ -98,6 +99,32 @@ class SemanticBranchTrainerHelpersTest(unittest.TestCase):
         self.assertIn("survival_brier_model", report)
         self.assertIn("expected_signed_abs_baseline", report)
         self.assertTrue(valid_mask(self.frame).all())
+
+    def test_high_power_worse_loss_tail_is_weak(self):
+        metrics = {
+            "test": {
+                "survival": {
+                    "model": {"logloss": .1, "brier": .1},
+                    "train_prior_baseline": {"logloss": .2, "brier": .2},
+                },
+                "winning_hp": {
+                    "model": {"mae": .1},
+                    "train_winner_mean_baseline": {"mae": .2},
+                },
+                "loss_severity": {
+                    "model": {"mae": .3},
+                    "train_death_mean_baseline": {"mae": .2},
+                },
+                "expected_signed_outcome": {
+                    "model": {"mae": .1},
+                    "train_signed_mean_baseline": {"mae": .2},
+                },
+            }
+        }
+        self.assertEqual(
+            classify(metrics, {}, loss_sources=200),
+            "COMBAT PREDICTOR WEAK",
+        )
 
 
 if __name__ == "__main__":
