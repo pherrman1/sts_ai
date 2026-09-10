@@ -38,6 +38,28 @@ def _finite(row, name):
     if not math.isfinite(value): raise ValueError(f"non-finite {name}")
     return value
 
+def validate_label_row(row, line=None):
+    """Shared V1 masks and signed-label checks; retain V1 acceptance semantics."""
+    bits = {k: int(row[k]) for k in ("won", "trueDeath", "escaped", "turnCapLoss", "progressAmbiguous", "labelValid")}
+    if any(v not in (0, 1) for v in bits.values()): raise ValueError(f"non-binary mask at line {line}")
+    if bits["won"] and bits["trueDeath"]: raise ValueError("won and trueDeath both set")
+    if bits["escaped"] and bits["trueDeath"]: raise ValueError("escaped true death")
+    if bits["turnCapLoss"] and bits["trueDeath"]: raise ValueError("turn-cap true death")
+    if bits["escaped"] and bits["labelValid"]: raise ValueError("escaped row is label-valid")
+    for name in LABELS[6:-1]: _finite(row, name)
+    for name in ("winHpFrac", "lossRemainingFrac"):
+        value = float(row[name])
+        if not EPSILON <= value <= 1: raise ValueError(f"{name} outside [{EPSILON},1]")
+    signed = _finite(row, "signedOutcome")
+    if not -1 <= signed <= 1: raise ValueError("signedOutcome outside [-1,1]")
+    is_valid = bits["labelValid"] == 1
+    if is_valid and not (bits["won"] ^ bits["trueDeath"]): raise ValueError("valid row is not exactly one outcome")
+    if is_valid:
+        expected = float(row["winHpFrac"]) if bits["won"] else -float(row["lossRemainingFrac"])
+        if abs(signed - expected) > 1e-6: raise ValueError("signedOutcome formula mismatch")
+    elif abs(signed) > 1e-12: raise ValueError("invalid row has nonzero signedOutcome")
+    return bits
+
 def validate_csv(path: str | Path) -> dict:
     path = Path(path)
     # Read fieldnames from the raw CSV reader: the canonical state deliberately
@@ -59,24 +81,8 @@ def validate_csv(path: str | Path) -> dict:
         if key in keys: raise ValueError(f"duplicate sourceSeed/fightIdx at line {line}")
         keys.add(key); seeds.add(key[0])
         for name in features: _finite(row, name)
-        bits = {k: int(row[k]) for k in ("won", "trueDeath", "escaped", "turnCapLoss", "progressAmbiguous", "labelValid")}
-        if any(v not in (0, 1) for v in bits.values()): raise ValueError(f"non-binary mask at line {line}")
-        if bits["won"] and bits["trueDeath"]: raise ValueError("won and trueDeath both set")
-        if bits["escaped"] and bits["trueDeath"]: raise ValueError("escaped true death")
-        if bits["turnCapLoss"] and bits["trueDeath"]: raise ValueError("turn-cap true death")
-        if bits["escaped"] and bits["labelValid"]: raise ValueError("escaped row is label-valid")
-        for name in LABELS[6:-1]: _finite(row, name)
-        for name in ("winHpFrac", "lossRemainingFrac"):
-            value = float(row[name])
-            if not EPSILON <= value <= 1: raise ValueError(f"{name} outside [{EPSILON},1]")
-        signed = _finite(row, "signedOutcome")
-        if not -1 <= signed <= 1: raise ValueError("signedOutcome outside [-1,1]")
+        bits = validate_label_row(row, line)
         is_valid = bits["labelValid"] == 1
-        if is_valid and not (bits["won"] ^ bits["trueDeath"]): raise ValueError("valid row is not exactly one outcome")
-        if is_valid:
-            expected = float(row["winHpFrac"]) if bits["won"] else -float(row["lossRemainingFrac"])
-            if abs(signed - expected) > 1e-6: raise ValueError("signedOutcome formula mismatch")
-        elif abs(signed) > 1e-12: raise ValueError("invalid row has nonzero signedOutcome")
         if is_valid: valid += 1; counts["valid"] += 1
         else: counts["invalid"] += 1
         counts["ambiguous"] += bits["progressAmbiguous"]

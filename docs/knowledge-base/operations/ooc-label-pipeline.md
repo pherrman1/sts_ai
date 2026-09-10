@@ -90,6 +90,55 @@ The native `oocsemanticselftest` is a deterministic fixture with a fake combat
 backend: it exercises the real branch/continuation call path and observer
 lifetime without representing a live Silver pilot.
 
+#### Observational combat-evaluator branch sidecar
+
+`oocsemanticeval N_DECISIONS MANIFEST.json OUT.csv TEACHER.json [COMBAT.csv]`
+optionally writes a separate `combat_evaluator_semantic_branch_v1` CSV and
+`COMBAT.csv.manifest.json`. Omission preserves semantic-only evaluation.
+The sidecar records the existing fight, with no additional Silver simulations:
+`vFeatCsv` captures the canonical 1,017 persistent GameContext features before
+the backend initializes BattleContext; the shared `combatEvalTerminal` helper
+reads the terminal BattleContext before the existing `exitBattle` call.
+The combat decision observer composes with and restores any existing observer.
+Semantic action execution, continuation, RNG and search accounting are unchanged.
+
+Combat row identity is `(sourceSeed, decisionIdx, semanticKey, futureIdentity,
+branchFightIdx)`; semantic action index/source, continuation seed, hidden seed,
+encounter and teacher identity are retained. `sourceSeed` is the original
+trajectory seed, never a synthetic per-action seed. H=1/futureIdentity=0 emits
+zero or one fight per branch; termination before combat produces no fake row.
+The combat features use the ordinary unmasked combat-evaluator state contract,
+whereas semantic source `richRow` retains its existing four-column mask.
+
+The label helper is shared with `combatevalgen`, preserving V1's HP ratios,
+epsilon clamp, validity and quarantine semantics. Wins use terminal player HP
+before post-combat healing; true deaths use remaining non-minion enemy HP.
+Escapes, turn caps, missing decision hooks and health failures are invalid.
+V1 marks Awakened One true deaths `progressAmbiguous=1` while retaining
+`labelValid=1` and a signed target; the existing trainer excludes those deaths
+from loss-severity fitting. The sidecar preserves this distinction and does
+not make ambiguous death severity suitable for training.
+
+The manifest binds producer SHA, executable SHA256, full teacher, original
+semantic capture and evaluated semantic manifest, combat CSV, canonical feature
+order, scanned source seeds and outcome counts. Validate it with:
+
+```text
+python3 tools/combat_evaluator_semantic_branch_contract.py COMBAT.csv.manifest.json
+```
+
+Validation checks the semantic corpus and exact branch provenance as well as
+raw feature width/order, finite cells, encounter identity, unique fights,
+independently recomputed HP ratios, signed formulas, validity masks and hashes.
+The native semantic self-test compares capture off/on at the real branch and
+continuation boundary using a deterministic fake backend, including complete
+GameContext/RNG fingerprints, primitive traces, health and Silver accounting.
+A frozen Release exact-10k paired canary is required before accepting a new
+producer. Bulk corpora and canary artifacts belong outside Git; the draft PR
+carries temporary verification evidence. This interface does not authorize
+training or the larger confirmation cohort before independent implementation
+review and merge.
+
 The native modes and seed guard enforce a 16-source pilot ceiling. Increase
 scanning beyond eight sources only when needed for structural examples; this
 interface does not authorize corpus scaling or training. An absent or stale
