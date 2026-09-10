@@ -13,9 +13,12 @@ from tools.compare_combat_evaluator_models import (  # noqa: E402
     FACTORIAL_GRID,
     TARGET_DEATH_RECALL,
     choose_risk_threshold,
+    bootstrap,
     factorized_weights,
     leave_one_loss,
+    pairwise_concordance,
     ranking,
+    select_nn_finalist,
 )
 from tools.train_combat_evaluator_semantic_branch import STATE_FEATURES, valid_mask  # noqa: E402
 
@@ -59,6 +62,29 @@ class ComparisonGuardrailTest(unittest.TestCase):
         result = ranking(data, pd.Series([True] * len(data)), np.array(data.signedOutcome))
         self.assertEqual(result["eligible_decisions"], 8)
         self.assertEqual(result["macro_pairwise_concordance"], 1.0)
+
+    def test_pairwise_concordance_skips_truth_ties(self):
+        self.assertEqual(pairwise_concordance(np.array([1.0, 1.0, 0.0]), np.array([1.0, .8, 0.0])), 1.0)
+
+    def test_survival_bootstrap_uses_squared_error(self):
+        data = frame()
+        test = pd.Series([True] * len(data))
+        candidate_p = np.array([.9, .8, .7, .6] * 4)
+        baseline_p = np.full(len(data), .5)
+        candidate = {"p_win": candidate_p}
+        baseline = {"p_win": baseline_p}
+        result = bootstrap(data, test, candidate, baseline, "survival_brier",
+                           {"survival_prior": .5}, replicates=32, seed=7)
+        truth = data.won.to_numpy(dtype=float)
+        expected = np.mean((candidate_p - truth) ** 2 - (baseline_p - truth) ** 2)
+        self.assertAlmostEqual(result["difference"], expected)
+
+    def test_nn_selection_uses_direct_signed_metric(self):
+        candidates = {
+            "factorized_better": {"validation_factorized_expected_signed_mae": .1, "validation_direct_signed_mae": .3},
+            "direct_better": {"validation_factorized_expected_signed_mae": .3, "validation_direct_signed_mae": .1},
+        }
+        self.assertEqual(select_nn_finalist(candidates), "direct_better")
 
     def test_loss_tail_is_source_clustered(self):
         data = frame()

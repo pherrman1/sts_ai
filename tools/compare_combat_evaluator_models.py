@@ -347,7 +347,7 @@ def train_nn(
         sum(losses).backward()
         optimizer.step()
         validation_prediction = nn_outputs(model, x_validation)
-        value = float(np.mean(np.abs(validation_prediction["expected_signed_outcome"] - validation_y)))
+        value = float(np.mean(np.abs(validation_prediction["direct_signed_outcome"] - validation_y)))
         history.append(value)
         if value < best_value - 1e-10:
             best_value = value
@@ -370,7 +370,7 @@ def train_nn(
         "optimizer": "AdamW", "learning_rate": 1e-3, "weight_decay": 1e-4,
         "loss_weights": {"survival": 1, "win_hp": 1, "loss": 1, "signed": 1},
         "max_epochs": max_epochs, "patience": patience, "epochs_run": len(history),
-        "best_validation_expected_signed_mae": best_value, "normalization_fit": "TRAIN rows only",
+        "best_validation_direct_signed_mae": best_value, "normalization_fit": "TRAIN rows only",
         "seed": SEED},
         "normalization": {"mean": means.tolist(), "std": std.tolist()},
     }
@@ -458,21 +458,27 @@ def risk_test(frame: pd.DataFrame, test: pd.Series, preds: dict[str, np.ndarray]
 def bootstrap(frame: pd.DataFrame, test: pd.Series, candidate: dict[str, np.ndarray], baseline: dict[str, np.ndarray], metric: str, base: dict[str, float], replicates: int, seed: int) -> dict[str, Any] | None:
     valid = test & valid_mask(frame)
     if metric == "expected_signed_mae":
-        selected = valid; values = "primary_signed"; truth_name = "signedOutcome"; base_values = np.full(int(selected.sum()), base["signed_mean"])
+        selected = valid; values = "primary_signed"; truth_name = "signedOutcome"
     elif metric == "survival_brier":
-        selected = valid; values = "p_win"; truth_name = "won"; base_values = np.full(int(selected.sum()), base["survival_prior"])
+        selected = valid; values = "p_win"; truth_name = "won"
     elif metric == "win_hp_mae":
-        selected = valid & frame.won.eq(1); values = "predicted_win_hp_frac"; truth_name = "winHpFrac"; base_values = np.full(int(selected.sum()), base["win_hp_mean"])
+        selected = valid & frame.won.eq(1); values = "predicted_win_hp_frac"; truth_name = "winHpFrac"
     elif metric == "loss_severity_mae":
-        selected = valid & frame.trueDeath.eq(1) & ~frame.progressAmbiguous.eq(1); values = "predicted_loss_remaining_frac"; truth_name = "lossRemainingFrac"; base_values = np.full(int(selected.sum()), base["loss_mean"])
+        selected = valid & frame.trueDeath.eq(1) & ~frame.progressAmbiguous.eq(1); values = "predicted_loss_remaining_frac"; truth_name = "lossRemainingFrac"
     else:
         raise ValueError(f"unknown bootstrap metric {metric}")
     if not selected.any() or values not in candidate or values not in baseline:
         return None
     indices = selected.to_numpy()
     truth = frame.loc[selected, truth_name].to_numpy(dtype=float)
-    candidate_error = np.abs(candidate[values][indices] - truth)
-    baseline_error = np.abs(baseline[values][indices] - truth)
+    residual = candidate[values][indices] - truth
+    baseline_residual = baseline[values][indices] - truth
+    if metric == "survival_brier":
+        candidate_error = residual * residual
+        baseline_error = baseline_residual * baseline_residual
+    else:
+        candidate_error = np.abs(residual)
+        baseline_error = np.abs(baseline_residual)
     sources = frame.loc[selected, "sourceSeed"].to_numpy(dtype=int)
     unique = np.unique(sources)
     candidate_sums = np.array([candidate_error[sources == source].sum() for source in unique])
@@ -500,6 +506,20 @@ def leave_one_loss(frame: pd.DataFrame, test: pd.Series, preds: dict[str, np.nda
     return {"independent_death_sources": len(sources), "model_minus_trivial_mae_range": [min(differences), max(differences)]}
 
 
+def pairwise_concordance(truth: np.ndarray, predicted: np.ndarray) -> float | None:
+    concordant = 0.0
+    comparable = 0
+    for left in range(len(truth)):
+        for right in range(left + 1, len(truth)):
+            true_sign = np.sign(truth[left] - truth[right])
+            if true_sign == 0:
+                continue
+            pred_sign = np.sign(predicted[left] - predicted[right])
+            comparable += 1
+            concordant += 1.0 if true_sign == pred_sign and pred_sign != 0 else 0.5 if pred_sign == 0 else 0.0
+    return concordant / comparable if comparable else None
+
+
 def ranking(frame: pd.DataFrame, test: pd.Series, primary: np.ndarray) -> dict[str, Any]:
     from scipy.stats import spearmanr
 
@@ -513,15 +533,9 @@ def ranking(frame: pd.DataFrame, test: pd.Series, primary: np.ndarray) -> dict[s
         indices = group.index.to_numpy()
         truth = group.signedOutcome.to_numpy(dtype=float)
         predicted = primary[indices]
-        concordant = 0.0
-        comparable = 0
-        for left in range(len(truth)):
-            for right in range(left + 1, len(truth)):
-                true_sign = np.sign(truth[left] - truth[right])
-                pred_sign = np.sign(predicted[left] - predicted[right])
-                comparable += 1
-                concordant += 1.0 if true_sign == pred_sign and pred_sign != 0 else 0.5 if pred_sign == 0 else 0.0
-        pairwise.append(concordant / comparable)
+        concordance = pairwise_concordance(truth, predicted)
+        if concordance is not None:
+            pairwise.append(concordance)
         rho = 0.0 if np.all(predicted == predicted[0]) else spearmanr(truth, predicted).statistic
         spearmans.append(0.0 if not np.isfinite(rho) else float(rho))
         decisions.append((int(group.sourceSeed.iloc[0]), int(group.decisionIdx.iloc[0])))
@@ -617,6 +631,11 @@ def classify(finalists: dict[str, Any], bootstrap_metrics: dict[str, Any]) -> di
     }
 
 
+def select_nn_finalist(candidates: dict[str, dict[str, Any]]) -> str:
+    """Select the NN by its declared direct signed output, not factorization."""
+    return min(candidates, key=lambda name: candidates[name]["validation_direct_signed_mae"])
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifact-root", type=Path, required=True)
@@ -668,7 +687,7 @@ def main() -> None:
                                               "validation_direct_signed_mae": metrics["primary_signed"]["model"]["mae"],
                                               "metrics": metrics, "parameters": arm["parameters"]}
         arms[name] = arm
-    best_nn = min(NN_GRID, key=lambda name: selection["nn_candidates"][name]["validation_factorized_expected_signed_mae"])
+    best_nn = select_nn_finalist(selection["nn_candidates"])
     selection["nn_finalist"] = best_nn
     selection["finalists"] = {"A": "A", "B": best_factorized, "C": best_direct, "D": best_nn, "E": "E-balanced"}
     (output / "selection-freeze.json").write_text(json.dumps(selection, indent=2, sort_keys=True) + "\n")
