@@ -139,24 +139,27 @@ whole-combat corpus validator. That validator expects the exact 1,766-feature
 battle-start schema and post-battle diagnostics; it is not a semantic-action
 row validator. Current K-budget manifests still bind primitive action bits and
 semantic descriptions to replayed sibling sets. None of these schemas is
-silently migrated by the semantic module.
+silently migrated by the semantic module. The separate semantic pilot uses
+`ooc_semantic_manifest_v1` / `ooc_semantic_action_v1`, validated by
+`tools/ooc_semantic_pipeline_contract.py`; its capture/replay and bounded
+continuation contract is documented in the maintained OOC pipeline page.
 
-A future clean OOC producer must enumerate complete semantic sibling sets,
-persist the canonical key and typed action features, and execute each through
-the semantic executor. Primitive diagnostics may accompany a row but cannot
-replace semantic identity. Decisions after Library/chest/relic reveals and
-each multi-select pick require separate live decision groups. Producer replay
-and validation must bind the semantic schema, exact candidate coverage,
-producer/executable identity and frozen combat teacher before accepting rows.
-Stale, ambiguous, unsupported or incomplete actions require explicit rejection
-or quarantine, not primitive-index labels disguised as semantic labels.
+The semantic pilot enumerates complete semantic sibling sets, persists the
+canonical key and typed action payload, and executes each through the semantic
+executor. Primitive diagnostics accompany a row but cannot replace semantic
+identity. Decisions after Library/chest/relic reveals and each multi-select
+pick remain separate live decision groups. Producer replay and validation bind
+the semantic schema, exact candidate coverage, producer/executable identity
+and frozen combat teacher before accepting rows. Stale, ambiguous, unsupported
+or incomplete actions fail closed. The pilot does not establish a new model
+encoder or authorize replacement-corpus scaling.
 
 The future direct-Q and factorized trainers must consume the same semantic
 rows, splits and representation, preserving the maintained source-decision
 sibling/future grouping, teacher provenance, requested/actual budget schedule,
 validity and quarantine contracts. Model encoders/exporters and any opt-in
 runtime scorer must agree on those new action features; models trained on
-primitive bits cannot be fed compound actions. Semantic dataset production,
+primitive bits cannot be fed compound actions. Semantic corpus scaling,
 training-schema migration, retraining and deployment remain separate work;
 obsolete `strategicgen` paths are not expanded for coverage.
 

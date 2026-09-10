@@ -50,6 +50,7 @@
 
 int runOocRewardContinuationTests();
 int runOocSemanticTests();
+int runOocSemanticPipelineTests();
 int runOocSemanticTransactionsTests();
 
 using namespace sts;
@@ -3989,6 +3990,8 @@ int main(int argc, const char* argv[]) {
         return testSilverSemanticActionResolution();
     } else if (command == "ooc_semantic") {
         return runOocSemanticTests();
+    } else if (command == "ooc_semantic_pipeline") {
+        return runOocSemanticPipelineTests();
     } else if (command == "ooc_semantic_transactions") {
         return runOocSemanticTransactionsTests();
     } else if (command == "ooc_reward_continuation") {

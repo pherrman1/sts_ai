@@ -237,6 +237,7 @@ target_include_directories(parity_test PUBLIC json/include)
 # with OUTPUT_NAME "test" to keep the build/test binary path stable.
 add_executable(unit-test apps/test.cpp apps/test_belief.cpp
     apps/test_ooc_reward_continuation.cpp apps/test_ooc_semantic.cpp
+    apps/test_ooc_semantic_pipeline.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(unit-test PROPERTIES OUTPUT_NAME test)
 target_link_libraries(unit-test PRIVATE silver_combat_bridge)
@@ -277,8 +278,11 @@ add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
+add_test(NAME ooc_semantic_pipeline COMMAND $<TARGET_FILE:unit-test> ooc_semantic_pipeline)
+add_test(NAME ooc_semantic_producer COMMAND $<TARGET_FILE:one_combat> oocsemanticselftest)
+set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)
-set_tests_properties(ooc_semantic ooc_semantic_smith ooc_reward_continuation
+set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation
     PROPERTIES LABELS "core;integration")
 add_test(NAME relic_reward_sapphire COMMAND $<TARGET_FILE:unit-test> relic_reward_sapphire)
 add_test(NAME semantic_card_edges COMMAND $<TARGET_FILE:unit-test> semantic_card_edges)

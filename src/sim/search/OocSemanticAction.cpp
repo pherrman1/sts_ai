@@ -1,6 +1,7 @@
 #include "sim/search/OocSemanticAction.h"
 
 #include <algorithm>
+#include <nlohmann/json.hpp>
 #include <locale>
 #include <optional>
 #include <sstream>
@@ -463,6 +464,46 @@ std::string canonicalOocSemanticActionKey(const OocSemanticAction &action) {
         }
     }, action.target);
     return out.str();
+}
+
+std::string oocSemanticActionPayloadJson(const OocSemanticAction &action) {
+    using J = nlohmann::json;
+    auto card = [](const Card &c) -> J { return {{"id", (int)c.id}, {"misc", c.misc}, {"upgraded", c.upgraded}}; };
+    auto deck = [](const OocCardTarget &c) -> J { return {{"id", (int)c.id}, {"misc", c.misc}, {"upgraded", c.upgraded}, {"bottle", (int)c.bottleSlot}, {"occurrence", c.occurrence}}; };
+    auto entity = [&](const OocEntity &e) -> J {
+        return std::visit([&](const auto &v) -> J {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, OocNoTarget>) return {{"type", "none"}};
+            else if constexpr (std::is_same_v<T, Card>) return {{"type", "card"}, {"value", card(v)}};
+            else { const char *type = std::is_same_v<T, RelicId> ? "relic" : std::is_same_v<T, Potion> ? "potion" : std::is_same_v<T, Key> ? "key" : "gold"; return {{"type", type}, {"value", (int)v}}; }
+        }, e);
+    };
+    return std::visit([&](const auto &v) -> J {
+        using T = std::decay_t<decltype(v)>;
+        if constexpr (std::is_same_v<T, OocNoTarget>) return {{"type", "none"}};
+        else if constexpr (std::is_same_v<T, OocCardTarget>) return {{"type", "deck_card"}, {"card", deck(v)}};
+        else if constexpr (std::is_same_v<T, OocTransactionTarget>) return {{"type", "transaction"}, {"card", deck(v.card)}, {"event", (int)v.event}, {"option", v.option}, {"expectedGoldCost", v.expectedGoldCost}};
+        else if constexpr (std::is_same_v<T, OocSelectorTarget>) {
+            J target = std::visit([&](const auto &c) -> J { using C = std::decay_t<decltype(c)>;
+                if constexpr (std::is_same_v<C, OocCardTarget>) return {{"type", "deck_card"}, {"card", deck(c)}};
+                else return {{"type", "candidate"}, {"card", card(c.card)}, {"occurrence", c.occurrence}};
+            }, v.card);
+            return {{"type", "selector"}, {"selectorType", (int)v.type}, {"requiredPicks", v.requiredPicks}, {"completedPicks", v.completedPicks}, {"target", target}};
+        } else if constexpr (std::is_same_v<T, OocRewardTarget>) {
+            J group = J::array(); for (const auto &c : v.cardGroup) group.push_back(card(c));
+            return {{"type", "reward"}, {"entity", entity(v.entity)}, {"cardGroup", group}, {"groupOccurrence", v.groupOccurrence}, {"occurrence", v.occurrence}, {"sapphirePaired", v.sapphirePaired}};
+        } else if constexpr (std::is_same_v<T, OocShopTarget>) return {{"type", "shop"}, {"entity", entity(v.entity)}, {"expectedPrice", v.expectedPrice}, {"occurrence", v.occurrence}};
+        else if constexpr (std::is_same_v<T, OocEventTarget>) return {{"type", "event"}, {"event", (int)v.event}, {"option", v.option}};
+        else return {{"type", "relic"}, {"relic", (int)v.relic}, {"occurrence", v.occurrence}};
+    }, action.target).dump();
+}
+
+CardSelectScreenType oocSemanticPrimitiveCompoundSelector(const GameContext &gc, std::uint32_t bits) {
+    const auto live = bindings(gc);
+    if (!live.supported || !live.complete) return Select::INVALID;
+    for (const auto &binding : live.values)
+        if (binding.primitive.bits == bits && binding.compound != Select::INVALID) return binding.compound;
+    return Select::INVALID;
 }
 
 OocEnumerationResult enumerateOocSemanticActions(const GameContext &gc) {

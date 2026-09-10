@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-09-07 against the current working tree.
+Last verified: 2026-09-10 against the current working tree (semantic pilot interfaces).
 
 ## Purpose
 
@@ -29,6 +29,74 @@ Future branch rows must carry `sourceSeed`, `decisionIdx`, action identity, `fut
 Direct-Q and factorized training must consume identical rows, split, representation, and comparable capacity. Survival BCE applies to every valid branch; conditional-value loss only to survived horizons. No placeholder-card sharing or action-subsampling policy is frozen.
 
 ## Producer and validation commands
+
+### Semantic action pilot
+
+`oocsemanticcapture` and `oocsemanticeval` provide a separate semantic path;
+they do not reinterpret `ooc_pipeline_v1` rows or
+`ooc_k_budget_manifest_v1` manifests. The new manifest schema is
+`ooc_semantic_manifest_v1`, with row schema `ooc_semantic_action_v1` and
+semantic-key schema version 1. The pilot fixes H=1, one future identity and
+the existing exact-10k ordinary project-fair Silver teacher. These settings
+are a plumbing check, not a scientific choice of eventual H or future count.
+
+Capture reservoir-samples at most one supported, complete, multi-action
+semantic decision per source seed without using sibling outcomes. Neow is
+excluded. Source trajectories use the existing counterfactual-audit policy.
+The primitive observer locates live source states; a deterministic compound's
+internally consumed selector is suppressed using the semantic core's own
+binding metadata. Library reveals and sequential multi-select picks remain
+separate eligible decisions. No semantic branch runs inside that observer.
+
+Capture freezes source metadata and the complete ordered list of canonical
+keys, effect/source IDs and lossless typed JSON payloads. Evaluation replays
+the source seeds and requires exact equality before evaluating any sibling.
+Each sibling starts from a detached copy of the same future, executes via
+`executeOocSemanticAction` with the primitive observer detached, and records
+the returned `executedPrimitiveBits` as diagnostics only. The established
+`finishOocCounterfactual` owns bounded continuation, survival, bootstrap values,
+health validation and cost accounting. Its real-combat path uses the
+`GameContext` overload so the installed Silver backend owns combat execution.
+
+The semantic validator is `tools/ooc_semantic_pipeline_contract.py`.
+It validates typed payload/key identity, exact sibling and future coverage,
+teacher and H/budget agreement, provenance and CSV hash binding, raw target
+consistency, and simulation accounting including overlapping Silver
+transaction decisions. The source representation reuses
+`richStateHeader`/`richRow` with the four hidden encounter identity columns
+(`nextEliteId`, `nextFight0`, `nextFight1`, `nextFight2`) masked to -1.
+The ordinary encoder and source/continuation policies are unchanged; this
+adapter does not establish complete player-information fairness for the
+existing policy stack. Remaining project-fair limitations are recorded in
+[determinism and RNG](../behavior/determinism-and-rng.md).
+
+```text
+# Run only after implementation verification and executable/teacher freeze.
+# TEACHER.json must contain actual matching producer/executable/model hashes.
+tools/seed_guard.sh build/linux-gcc-debug-ccache/one_combat oocsemanticcapture 8 SEED_OFFSET MANIFEST.json TEACHER.json
+python3 tools/ooc_semantic_pipeline_contract.py check MANIFEST.json
+tools/seed_guard.sh build/linux-gcc-debug-ccache/one_combat oocsemanticeval N_DECISIONS MANIFEST.json OUT.csv TEACHER.json
+python3 tools/ooc_semantic_pipeline_contract.py validate-corpus OUT.csv.manifest.json
+```
+
+The evaluated sidecar binds both the CSV hash and the original capture
+manifest hash. Runtime configuration and loaded OOC model identities are
+frozen alongside the combat teacher. `richRow` is a quoted CSV cell containing
+the masked source vector. The canonical header is stored once in `manifest["stateFeatures"]["header"]`, not
+repeated per branch. The validator binds that header to the versioned
+`RICH_NAMES` and checks each vector's arity and masked positions against it.
+Primitive traces are JSON arrays, while semantic payloads and the requested budget schedule are JSON.
+The native `oocsemanticselftest` is a deterministic fixture with a fake combat
+backend: it exercises the real branch/continuation call path and observer
+lifetime without representing a live Silver pilot.
+
+The native modes and seed guard enforce a 16-source pilot ceiling. Increase
+scanning beyond eight sources only when needed for structural examples; this
+interface does not authorize corpus scaling or training. An absent or stale
+local frozen teacher blocks the live pilot: synthetic checks may verify the
+interfaces, but cannot authorize later corpus generation. Acceptance also
+requires inspection of complete raw decision groups, distributions, traces,
+costs and zero unexplained health/quarantine or replay failures.
 
 ```text
 python tools/ooc_pipeline_contract.py check build/ooc/whole_combat.manifest.json
@@ -155,7 +223,8 @@ Old terminal outcomes are not truth for a materially changed teacher.
 ## Known limitations and deferred work
 
 - The scientific run supplies the exact frozen producer SHA, server-built executable hash, and loaded-artifact hashes after the implementation commit.
-- Semantic K-prefix emission remains deferred; it is outside this Phase-1 pilot.
+- The semantic pilot supports only H=1 and one future; multi-H semantic
+  experiments and replacement corpus generation remain separate work.
 - Trainer act/room/encounter slices use a configurable minimum population
   (`--minimum-slice`, default 20); the pilot should preregister any override.
 - No runtime integration, scientific seeds, GCP work, real-data training, OOC regeneration, K/H experiment, or gameplay benchmark was run.
