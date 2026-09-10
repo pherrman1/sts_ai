@@ -273,6 +273,7 @@ add_test(NAME scum_convroot_stale_outcome COMMAND $<TARGET_FILE:unit-test> scum_
 add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_overflow)
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
+add_test(NAME relic_reward_sapphire COMMAND $<TARGET_FILE:unit-test> relic_reward_sapphire)
 add_test(NAME semantic_card_edges COMMAND $<TARGET_FILE:unit-test> semantic_card_edges)
 add_test(NAME s3_drawpile_reuse_boundary COMMAND $<TARGET_FILE:unit-test> s3_drawpile_reuse_boundary)
 add_test(NAME s3_strategy_fusion_diag COMMAND $<TARGET_FILE:unit-test> s3_strategy_fusion_diag 12345)
@@ -327,7 +328,7 @@ set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_
 # Labels provide fast, intention-revealing local tiers while the unfiltered
 # linux-gcc-test preset remains the authoritative full CTest suite.
 set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
-    issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory
+    issue_fixes relic_reward_sapphire semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
     simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed
     training_integrity PROPERTIES LABELS "core")

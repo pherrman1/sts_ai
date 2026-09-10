@@ -364,13 +364,17 @@ void executeRewardsAction(GameContext &gc, const search::GameAction a) {
             r.removePotionReward(a.getIdx1());
             break;
 
-        case search::GameAction::RewardsActionType::RELIC:
-            gc.obtainRelic(r.relics[a.getIdx1()]);
-            r.removeRelicReward(a.getIdx1());
-            if (a.getIdx1() == r.relicCount-1) {
+        case search::GameAction::RewardsActionType::RELIC: {
+            const int relicIdx = a.getIdx1();
+            const bool takesSapphirePairedRelic =
+                r.sapphireKey && relicIdx == r.relicCount - 1;
+            gc.obtainRelic(r.relics[relicIdx]);
+            r.removeRelicReward(relicIdx);
+            if (takesSapphirePairedRelic) {
                 r.sapphireKey = false;
             }
             break;
+        }
 
         case search::GameAction::RewardsActionType::SKIP:
             gc.regainControl();
