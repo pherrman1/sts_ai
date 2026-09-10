@@ -76,6 +76,19 @@ labels, invoke Silver or the simulator, export a runtime artifact, or replace
 Silver in gameplay. The bulk corpus, model outputs, and prediction CSV remain
 external evidence rather than tracked repository artifacts.
 
+`tools/analyze_combat_evaluator_silver_gate.py` is the follow-on offline
+decision-level analysis adapter. It joins the frozen semantic sibling rows,
+combat sidecars, and held-out predictions by complete H=1 branch identity;
+reports ungated model ranking and target-mismatch diagnostics; searches only
+the preregistered validation margin/survival grid; and evaluates one frozen
+gate on TEST with source-seed bootstrap intervals and safety/catastrophic
+slices. It never fits a model, invokes Silver/the simulator, or mixes
+predictor scores with Silver `qProduct` values. The gate is whole-decision:
+accepted decisions use the predictor ranking for every sibling, while rejected
+decisions use Silver for every sibling. Its automatic gate label is explicitly
+provisional and cannot emit the scientific `TARGET MISMATCH` outcome; the
+coordinator records that interpretation from the reported target diagnostics.
+
 The prepared next-generation OOC workflow is documented in
 [`operations/ooc-label-pipeline.md`](../operations/ooc-label-pipeline.md).
 `tools/ooc_pipeline_contract.py` validates a fail-closed frozen-combat-teacher

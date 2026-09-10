@@ -1,0 +1,76 @@
+{
+  "experiment": "semantic_ooc_action_model_v1",
+  "baseline_sha": "9c9e0a260ac827276c6599f09374da7d8f8e765e",
+  "training": {
+    "source_seed_range": [992000, 993023],
+    "decisions": 1024,
+    "rows": 7652,
+    "quarantines": 0,
+    "producer_git_sha": "a6c2abbc9db542ea1fc8933087f81c1de96c4f8a",
+    "raw_package_sha256": "705bd2c970f52759dd7541052f56536eb5c53470aa0fe37b2674abdfd1ba7ec9",
+    "training_script_sha256": "21560512c1ccc40d8b2b2005afcbdc999a239e3a9a03191372e329772762e47b",
+    "semantic_encoder_sha256": "ababfc5303110ec9422038f385bfbe21719d70696e33efe00e8a6ccf17dcc98a",
+    "semantic_model_sha256": "919cdb9af83c8980f2348cf6fc2328b6b4dd75f457ae2ebb3c5395357a5c85ee",
+    "primitive_model_sha256": "e569fdf06336fca012a9e2e7c95c6f5039d63aaaca2f86f48797174b7de83242",
+    "feature_manifest_sha256": "eb76069552fea6e3f9badf5fb427fa92c0bbf858ec2ad7d1f432cdd471c90361",
+    "training_report_sha256": "9d8176f337a83d5065da153216cb4b41b9238cae5005dc22ebedad166f2abd48",
+    "feature_counts": {"state": 1017, "semantic": 1831, "primitive": 1084, "action_agnostic": 1017},
+    "hyperparameters": {
+      "n_estimators": 160,
+      "max_depth": 3,
+      "learning_rate": 0.05,
+      "subsample": 0.9,
+      "colsample_bytree": 0.8,
+      "min_child_weight": 2,
+      "reg_lambda": 1.0,
+      "objective": "reg:squarederror",
+      "tree_method": "hist",
+      "n_jobs": 1,
+      "random_state": 20260910
+    },
+    "metrics": {
+      "SEMANTIC": {"deltaQ_mae": 0.0271247617, "deltaQ_rmse": 0.0561407212, "macro_pairwise": 0.5995546769, "mean_selected_regret": 0.0224746284, "top_or_tied": 0.4677734375},
+      "PRIMITIVE": {"deltaQ_mae": 0.0276420141, "deltaQ_rmse": 0.0558718335, "macro_pairwise": 0.5544516149, "mean_selected_regret": 0.0252708394, "top_or_tied": 0.4013671875}
+    }
+  },
+  "holdout": {
+    "source_seed_range": [993024, 993151],
+    "shards": 8,
+    "decisions": 128,
+    "rows": 935,
+    "quarantines": 0,
+    "semantic_execution_failures": 0,
+    "family_decisions": {"REWARDS": 101, "CAMPFIRE": 4, "SHOP": 11, "EVENT": 8, "TREASURE": 4, "BOSS_RELIC": 0, "SELECTOR": 0},
+    "family_rows": {"REWARDS": 584, "CAMPFIRE": 60, "SHOP": 228, "EVENT": 55, "TREASURE": 8},
+    "compound_decisions": 12,
+    "validator": "all eight semantic manifests passed the existing corpus contract; no replay, sibling, future, health, accounting, or provenance failures"
+  },
+  "holdout_metrics": {
+    "SEMANTIC": {"mean_selected_regret": 0.0429723421, "median_selected_regret": 0.0107438238, "macro_pairwise": 0.5550250331, "top_or_tied": 0.375, "deltaQ_mae": 0.0341430503, "deltaQ_rmse": 0.0708974550},
+    "PRIMITIVE": {"mean_selected_regret": 0.0451379242, "median_selected_regret": 0.0173959900, "macro_pairwise": 0.4903128680, "top_or_tied": 0.296875, "deltaQ_mae": 0.0345220106, "deltaQ_rmse": 0.0699726802},
+    "ACTION_AGNOSTIC": {"mean_selected_regret": 0.0381293266, "median_selected_regret": 0.0122275760, "macro_pairwise": 0.5, "top_or_tied": 0.3125, "deltaQ_mae": 0.0339058652, "deltaQ_rmse": 0.0693264655}
+  },
+  "paired_bootstrap_5000": {
+    "semantic_minus_primitive_mean_selected_regret_ci95": [-0.0068925840, 0.0024631921],
+    "semantic_minus_primitive_macro_pairwise_ci95": [0.0310036361, 0.0981197053],
+    "semantic_minus_primitive_top_or_tied_ci95": [0.03125, 0.1328125],
+    "semantic_minus_action_agnostic_macro_pairwise_ci95": [0.0112912574, 0.0989454271]
+  },
+  "diagnostics": {
+    "compound_containing": {"decisions": 12, "semantic_pairwise": 0.5462420754, "primitive_pairwise": 0.5291762229975, "semantic_mean_regret": 0.1094951307, "primitive_mean_regret": 0.0799621542},
+    "non_compound": {"decisions": 116, "semantic_pairwise": 0.5559495550, "primitive_pairwise": 0.4862219885, "semantic_mean_regret": 0.0360906743, "primitive_mean_regret": 0.0415354176},
+    "unseen_semantic_features": {"distinct_categorical": 13, "total_mentions": 20, "numeric": 0}
+  },
+  "preserved_artifacts": {
+    "path": "/home/philippherrmann/sts_sweep/preserved/semantic-ooc-model-v1-2026-09-10",
+    "files": {
+      "semantic_model.json": "919cdb9af83c8980f2348cf6fc2328b6b4dd75f457ae2ebb3c5395357a5c85ee",
+      "primitive_control.json": "e569fdf06336fca012a9e2e7c95c6f5039d63aaaca2f86f48797174b7de83242",
+      "feature_manifest.json": "eb76069552fea6e3f9badf5fb427fa92c0bbf858ec2ad7d1f432cdd471c90361",
+      "training_report.json": "9d8176f337a83d5065da153216cb4b41b9238cae5005dc22ebedad166f2abd48",
+      "evaluation_report.json": "edb214330b590b497eabe7a377929d4b14315933d07b2795aa8789b9e2818f45"
+    }
+  },
+  "classification": "SEMANTIC MODEL V1 PASS",
+  "classification_scope": "Frozen offline scorer is good enough for a separately controlled runtime-integration study; no gameplay improvement or production compatibility claim. Compound and event slices remain small/noisy and require follow-up review."
+}

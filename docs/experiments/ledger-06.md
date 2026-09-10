@@ -6337,15 +6337,75 @@ model training was changed.
   Descriptive TEST act/room/encounter slices are retained in the full report;
   no encounter-specific conclusion is made from sparse source support.
 - **Speed/artifacts:** batch-1 CPU medians/p95 are 0.182/0.248ms survival,
-  0.176/0.234ms winning HP, and 0.175/0.234ms loss severity. Models and
-  predictions remain external: [full report](../../build/semantic-confirmation-a6c2abb/evaluator-v2/manifest.json),
-  model/prediction hashes and sizes are in the compact packet below.
+  0.176/0.234ms winning HP, and 0.175/0.234ms loss severity. Full models and
+  predictions remain external and are not committed; their hashes and sizes
+  are in the [compact evidence packet](evidence/semantic_combat_evaluator_2026-09-10.json).
 - **Decision:** **COMBAT PREDICTOR PROMISING — LOSS TAIL INCONCLUSIVE**. The
   result supports designing a later simulation-replacement experiment, not
   deployment, Silver replacement, more labels, or gameplay qualification.
 - **Evidence:** [compact machine-readable packet](evidence/semantic_combat_evaluator_2026-09-10.json).
 
-## §220 Pre-combat combat evaluator model comparison (2026-09-10)
+## §220 First frozen semantic OOC action scorer: PASS on fresh holdout (2026-09-10)
+
+- **Question/design:** carry the confirmed structured semantic action
+  representation into the first reusable offline scorer. Fit `deltaQ =
+  qProduct - mean(qProduct within decision)` with the exact confirmed XGBoost
+  recipe, alongside a primitive control and a state-only action-agnostic null.
+  The trainer freezes the ordered vocabulary, state header, encoder SHA,
+  hyperparameters and model hashes before any holdout labels are inspected.
+  No live policy, C++, production tree export or combat evaluator changed.
+- **Training corpus/freeze:** exactly 64 validated shards, source seeds
+  992000–993023, 1,024 decisions, 7,652 semantic rows and zero quarantines.
+  Producer SHA is `a6c2abbc9db542ea1fc8933087f81c1de96c4f8a`; preserved package
+  SHA256 is `705bd2c970f52759dd7541052f56536eb5c53470aa0fe37b2674abdfd1ba7ec9`.
+  The semantic model has 1,831 features (1,017 state + 814 action), while
+  primitive control has 1,084 (1,017 + 67). The frozen artifacts and full
+  64-shard manifest/CSV hash list remain in ignored build storage; committed
+  evidence contains their SHA256 identities.
+- **Training diagnostics:** semantic/primitive macro pairwise is
+  `0.599555/0.554452`, mean selected regret `0.022475/0.025271`, top-or-tied
+  `0.467773/0.401367`, deltaQ MAE `0.027125/0.027642`, and RMSE
+  `0.056141/0.055872`. These are fit diagnostics, not generalization claims.
+- **Fresh holdout:** capture completed all eight 16-seed shards first, then
+  every semantic replay manifest passed the existing corpus contract. The
+  untouched source range 993024–993151 yielded 128 decisions and 935 rows,
+  with zero quarantines, execution failures, sibling mismatches, future
+  mismatches, health failures, accounting failures or provenance failures.
+  Natural decision distribution is REWARDS 101, SHOP 11, EVENT 8, CAMPFIRE 4,
+  TREASURE 4, BOSS_RELIC 0 and SELECTOR 0.
+- **Frozen evaluation:** semantic/primitive/action-agnostic macro pairwise is
+  `0.555025/0.490313/0.500000`; mean regret is
+  `0.042972/0.045138/0.038129`; top-or-tied is
+  `0.375000/0.296875/0.312500`. The semantic-minus-primitive paired bootstrap
+  intervals are regret `[-0.006893,+0.002463]`, macro pairwise
+  `[+0.031004,+0.098120]`, and top-or-tied `[+0.031250,+0.132813]`.
+  Semantic-minus-null pairwise is `[+0.011291,+0.098945]` at 95%.
+- **Slices/manual review:** non-compound decisions (116) favor semantic over
+  primitive in pairwise `0.555950/0.486222` and mean regret
+  `0.036091/0.041535`. The 12 compound-containing decisions still favor
+  semantic pairwise `0.546242/0.529176`, but semantic regret is worse
+  `0.109495/0.079962`; EVENT is also small and adverse on both scorer point
+  estimates. The held-out report preserves eight fixed, non-cherry-picked
+  complete sibling examples covering compound SHOP, REWARDS, CAMPFIRE/Smith,
+  EVENT and TREASURE. Thirteen distinct unseen categorical action features
+  (20 mentions) were reported as absent/zero; the feature shape was unchanged.
+- **Decision/limits:** **SEMANTIC MODEL V1 PASS** under the preregistered
+  holdout rule: above the ranking null, no worse than primitive in mean regret,
+  higher than primitive in macro pairwise, and no major-family catastrophic
+  failure in this natural reward-dominated sample. This authorizes a future
+  controlled runtime-integration study only; it does not establish gameplay
+  improvement, production compatibility or family-wide superiority. Do not
+  tune against this holdout; a changed architecture needs new development-CV
+  work and a new holdout.
+- **Evidence:** [compact model packet](evidence/semantic_ooc_model_v1_2026-09-10.json).
+  Full frozen `semantic_model.json`, `primitive_control.json`,
+  `feature_manifest.json`, `training_report.json` and the detailed holdout
+  `evaluation_report.json` are preserved outside Git at
+  `/home/philippherrmann/sts_sweep/preserved/semantic-ooc-model-v1-2026-09-10/`;
+  the working copies remain in ignored `build/` storage. Bulk semantic CSVs,
+  logs and predictions remain ignored/external and are not committed.
+
+## §221 Pre-combat combat evaluator model comparison (2026-09-10)
 
 - **Question/protocol:** test the prespecified alternatives to the frozen §219
   three-head XGBoost evaluator using only the validated §218 corpus. TRAIN was
@@ -6403,10 +6463,10 @@ model training was changed.
 - **Evidence:** [compact machine-readable packet](evidence/combat_evaluator_model_comparison_2026-09-10.json); full external report at
   `/home/philippherrmann/sts_sweep/runs/combat-evaluator-comparison-v4/report.json`.
 
-## §221 Correction pass for pre-combat evaluator comparison (2026-09-10)
+## §222 Correction pass for pre-combat evaluator comparison (2026-09-10)
 
 - **Reason for correction:** independent review found three bounded analysis
-  defects in §220: the paired survival-Brier bootstrap used absolute rather
+  defects in §221: the paired survival-Brier bootstrap used absolute rather
   than squared residuals; NN checkpointing and finalist selection used the
   factorized value despite declaring the direct signed head primary; and
   concordance counted truth-tied pairs as comparable. No grids, corpus,
