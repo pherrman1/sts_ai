@@ -6297,3 +6297,50 @@ model training was changed.
   1,006 inventoried files verified after transfer. Raw artifacts remain under
   GCP `runs/semantic-confirmation-a6c2abb/` and local
   `build/semantic-confirmation-phase-b/`; bulk CSVs are not committed.
+
+## §219 Counterfactual pre-combat combat evaluator feasibility (2026-09-10)
+
+- **Question/protocol:** test whether the next-combat signed outcome can be
+  predicted from the 1,017-feature pre-combat state plus encounter identity,
+  without semantic-action identity. Use only the frozen §218 sidecars; do not
+  pool V1 or the 128-decision development corpus, regenerate labels, call
+  Silver, or integrate a runtime model.
+- **Frozen implementation:** baseline `9c9e0a2`; analysis SHA
+  `6d1a3f3d7c0c1913ea4e30f1b0ea12d06627eca4`; adapter
+  `tools/train_combat_evaluator_semantic_branch.py`; unchanged grouped
+  `stable_split(sourceSeed)`; 300-round XGBoost depth6, eta0.05, subsample and
+  column sample0.8, seed20260902, hist, one CPU thread. The adapter validates
+  all64 manifests and the raw package SHA256
+  `705bd2c970f52759dd7541052f56536eb5c53470aa0fe37b2674abdfd1ba7ec9` before
+  fitting. Encounter vocabulary and variance filtering are TRAIN-only.
+- **Coverage/splits:** 7,652 rows (7,599 valid; 7,238 wins; 361 true deaths;
+  348 nonambiguous deaths). Source splits are TRAIN 711/5,519 rows,
+  VALIDATION 156/1,081, TEST 157/1,052; nonambiguous deaths are 255/45/48.
+- **Held-out TEST:** survival logloss/Brier `0.13460/0.03121` versus prior
+  baseline `0.18556/0.04356`; winning-HP MAE/RMSE `0.10380/0.15359` versus
+  `0.22660/0.26409`; expected-signed MAE/RMSE `0.12396/0.19387` versus
+  `0.26600/0.33568`; sign accuracy `95.53%`. Loss-severity MAE/RMSE
+  `0.22309/0.26611` is worse than the death-mean baseline
+  `0.13273/0.16806`.
+- **Correlation-aware uncertainty:** 5,000 deterministic source-seed paired
+  bootstrap replicates. TEST model-minus-baseline intervals are survival
+  logloss `[-0.15549,+0.03577]`, Brier `[-0.03813,+0.00888]`, winning-HP MAE
+  `[-0.15117,-0.09483]`, and expected-signed MAE `[-0.18089,-0.10948]`.
+  Loss-severity uses 10 death-source groups, interval
+  `[-0.03731,+0.14697]`, with leave-one-source-out differences ranging
+  `[+0.02594,+0.10224]`; no source removal makes the loss tail beat baseline.
+- **Alias/source views:** among 7,599 valid rows there are 5,683 unique
+  `(state, encounter)` inputs, 1,106 duplicate groups, 172 groups with
+  different signed outcomes, and maximum within-input outcome spread 1.23998.
+  TEST source-macro survival Brier is `0.02812` versus `0.03668` baseline;
+  expected-signed absolute error is `0.12900` versus `0.26527` baseline.
+  Descriptive TEST act/room/encounter slices are retained in the full report;
+  no encounter-specific conclusion is made from sparse source support.
+- **Speed/artifacts:** batch-1 CPU medians/p95 are 0.182/0.248ms survival,
+  0.176/0.234ms winning HP, and 0.175/0.234ms loss severity. Models and
+  predictions remain external: [full report](../../build/semantic-confirmation-a6c2abb/evaluator-v2/manifest.json),
+  model/prediction hashes and sizes are in the compact packet below.
+- **Decision:** **COMBAT PREDICTOR PROMISING — LOSS TAIL INCONCLUSIVE**. The
+  result supports designing a later simulation-replacement experiment, not
+  deployment, Silver replacement, more labels, or gameplay qualification.
+- **Evidence:** [compact machine-readable packet](evidence/semantic_combat_evaluator_2026-09-10.json).
