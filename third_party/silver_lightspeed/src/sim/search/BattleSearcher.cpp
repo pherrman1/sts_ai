@@ -693,8 +693,8 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
     const int wcat = chanceCat(chance.stochasticAction);
     // Double Progressive Widening. Below the cap we draw a fresh i.i.d. outcome; at the cap we
     // reuse an existing one. This bounds the branching of high-entropy events so their children
-    // accumulate visits and the tree deepens. The default replay weight is the edge's search
-    // visit count; the diagnostic treatment below can instead use fresh-generator multiplicity.
+    // accumulate visits and the tree deepens, while the visit-weighted average over outcomes
+    // remains an unbiased estimate of the chance node's expectation.
     const int cap = wideningCap(wcat, chance.simulationCount);
 
     if (static_cast<int>(chance.edges.size()) < cap) {
