@@ -6675,3 +6675,10 @@ model training was changed.
   Focused Silver tests, worktree validation, seed-guard checks, and
   `git diff --check` passed; full CTest and GitHub Actions CI were not run
   locally.
+- **Merge cleanup:** after the screens, the user selected A as the production
+  behavior. The experiment-only `generativeCount`/replay switch, synthetic
+  fixture executable and CMake target, live environment flag, and diagnostic
+  searcher hook were removed before merging this evidence. The recorded rows
+  above were produced by the frozen pre-cleanup executable/configuration and
+  remain historical evidence; no treatment implementation or production
+  default is retained.

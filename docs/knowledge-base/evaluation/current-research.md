@@ -120,6 +120,9 @@ the [synthetic raw matrix](../../experiments/evidence/silver_chance_frequency_20
 the [1k paired gameplay rows](../../experiments/evidence/silver_chance_gameplay_screen_2026-09-11.csv),
 the [prior 10k paired gameplay rows](../../experiments/evidence/silver_chance_gameplay_screen_10k_2026-09-11.csv),
 and the [10k 64-seed aggregate](../../experiments/evidence/silver_chance_gameplay_screen_10k_fresh32-95_2026-09-11.csv).
+The experiment-only runtime flag, fixture executable, and searcher hook were
+removed before merging the evidence; no B implementation or opt-in runtime
+path remains.
 
 ### Whole-Act OOC evaluator
 

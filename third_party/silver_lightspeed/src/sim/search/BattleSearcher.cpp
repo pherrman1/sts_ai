@@ -421,7 +421,6 @@ void search::BattleSearcher::step() {
             Edge outcomeEdge;
             outcomeEdge.action = Action{};
             outcomeEdge.node = getOrCreateNode(std::move(next));
-            outcomeEdge.generativeCount = 1;
             if (!lastNodeWasCreated) ++stats.chanceTranspositions;  // fresh chance node: no siblings yet
             outcomeEdge.rngAdvanceSteps = 0;
             chance->edges.push_back(outcomeEdge);
@@ -704,8 +703,7 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
         const std::uint64_t N = chance.outcomesGenerated++;
         BattleContext &out = (widenScratch = *chance.parent->state);
         out.rng = Random(chance.randomnessBase + N);
-        if (chanceOutcomeHook) chanceOutcomeHook(out);
-        else chance.stochasticAction.execute(out);
+        chance.stochasticAction.execute(out);
 
         ++stats.chanceOutcomesSampled;
         ++stats.wSampled[wcat];
@@ -714,7 +712,6 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
             if (e.node == child) {
                 ++stats.chanceSiblingReuse;
                 ++stats.wSibReuse[wcat];
-                ++e.generativeCount;
                 return &e;  // resampled an outcome we already have
             }
         }
@@ -724,25 +721,24 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
         e.action = Action{};
         e.node = child;
         e.rngAdvanceSteps = static_cast<int>(N);
-        e.generativeCount = 1;
         chance.edges.push_back(std::move(e));
         return &chance.edges.back();
     }
 
-    // Capped: re-select an existing outcome proportional to either its search visits (the
-    // historical/default rule) or fresh-generator multiplicity (the diagnostic treatment).
+    // Capped: re-select an existing outcome proportional to its visit count, so the realized
+    // descent frequencies keep tracking the true outcome probabilities.
     ++stats.wCapped[wcat];
-    std::int64_t totalWeight = 0;
+    std::int64_t totalVisits = 0;
     for (const auto &e : chance.edges) {
-        totalWeight += useGenerativeChanceFrequency ? e.generativeCount : e.visitCount;
+        totalVisits += e.visitCount;
     }
-    if (totalWeight <= 0) {
+    if (totalVisits <= 0) {
         return &chance.edges[0];
     }
-    std::uniform_int_distribution<std::int64_t> dist(0, totalWeight - 1);
+    std::uniform_int_distribution<std::int64_t> dist(0, totalVisits - 1);
     std::int64_t r = dist(randGen);
     for (auto &e : chance.edges) {
-        r -= useGenerativeChanceFrequency ? e.generativeCount : e.visitCount;
+        r -= e.visitCount;
         if (r < 0) {
             return &e;
         }

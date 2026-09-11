@@ -723,7 +723,6 @@ public:
         searcher->chanceWideningAlpha = config.chanceWideningAlpha;
         searcher->endTurnWideningC = config.endTurnWideningC;
         searcher->endTurnWideningAlpha = config.endTurnWideningAlpha;
-        searcher->useGenerativeChanceFrequency = config.useGenerativeChanceFrequency;
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
         searcher->collectVictoryCounts = config.collectRootActionSummaries;
         searcher->leafObserver = config.leafObserver;
@@ -1506,7 +1505,6 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
             continuation.chanceWideningAlpha = continuationConfig.chanceWideningAlpha;
             continuation.endTurnWideningC = continuationConfig.endTurnWideningC;
             continuation.endTurnWideningAlpha = continuationConfig.endTurnWideningAlpha;
-            continuation.useGenerativeChanceFrequency = continuationConfig.useGenerativeChanceFrequency;
             continuation.search(continuationBudget);
             if (continuation.root == nullptr || continuation.root->simulationCount <= 0) continue;
 

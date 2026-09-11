@@ -64,7 +64,6 @@ struct SilverLiveOptions {
     int leafCorpusMaxLeavesPerGroup = 256;
     bool adaptiveEnabled = false;
     double adaptiveTopTwoVisitGapThreshold = 0.094;
-    bool useGenerativeChanceFrequency = false;
     bool installed = false;
 };
 
@@ -169,8 +168,6 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_EXECUTABLE_GIT_SHA")) options.executableGitSha = raw;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE"))
         options.adaptiveEnabled = std::atoi(raw) != 0;
-    if (const char *raw = std::getenv("STS_SILVER_GENERATIVE_CHANCE"))
-        options.useGenerativeChanceFrequency = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
         options.adaptiveTopTwoVisitGapThreshold = std::atof(raw);
     if (!options.rootDiagnosticFile.empty()
@@ -973,7 +970,6 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
         ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
         : agent.simulationCountBase);
     result.reuseCapMode = g_silverLiveOptions.reuseCapMode;
-    result.useGenerativeChanceFrequency = g_silverLiveOptions.useGenerativeChanceFrequency;
     result.collectDecisionDiagnostics = collectDecisionDiagnostics;
     result.adaptiveEnabled = g_silverLiveOptions.adaptiveEnabled;
     if (result.adaptiveEnabled) {
@@ -1386,8 +1382,6 @@ void installSilverLiveBackend() {
             || (g_silverLiveOptions.leafVNetBlendEnabled && g_silverLiveOptions.leafVNetBlend > 0.0))
         ensureSilverLeafVNetLoaded();
     g_externalCombatBackend = runSilverCombat;
-    if (g_silverLiveOptions.useGenerativeChanceFrequency)
-        std::cout << "[Silver generative-frequency chance replay ON: experimental/default-off]\n";
 }
 void uninstallSilverLiveBackend() { g_externalCombatBackend = nullptr; g_silverLiveOptions.installed = false; }
 bool silverLiveBackendInstalled() { return g_silverLiveOptions.installed; }

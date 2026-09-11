@@ -317,9 +317,6 @@ struct SilverSearchConfig {
     double chanceWideningAlpha = 0.52389;
     double endTurnWideningC = 3.7028;
     double endTurnWideningAlpha = 0.52389;
-    // Default-off diagnostic treatment: capped chance replay uses fresh-draw
-    // multiplicity rather than search/replay visit counts.
-    bool useGenerativeChanceFrequency = false;
     // Test-only overrides may use a smaller value.  No gameplay environment
     // controls this value; production continues to use exactly 32 * 1024.
     std::int64_t reuseCap = kSilverProductionReuseCap;
