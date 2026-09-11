@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-09-11 at `d3b04fd766618f8239cef3c696ad1987ed6c7021`.
+Last verified: 2026-09-11 at `88773b9f5d03ee7969ec5bd476c7eae1a57e2f1c`.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
 
