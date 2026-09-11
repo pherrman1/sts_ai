@@ -4064,7 +4064,8 @@ static nlohmann::json effectiveOocPolicySpecification() {
 }
 
 static WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
-                                                 bool allowStaleProvenance = false) {
+                                                 bool allowStaleProvenance = false,
+                                                 bool requireOocPolicy = false) {
     std::ifstream in(path); if (!in) throw std::runtime_error("wholecombatgen: cannot open teacher " + path);
     nlohmann::json t; in >> t;
     auto req = [&](const char *key) { if (!t.contains(key) || !t[key].is_string() || t[key].get<std::string>().empty()) throw std::runtime_error(std::string("wholecombatgen: teacher missing ")+key); return t[key].get<std::string>(); };
@@ -4089,7 +4090,7 @@ static WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int si
     for (const auto &[name,value]:required) if (!t["environment"].contains(name) || t["environment"][name]!=value) throw std::runtime_error("wholecombatgen: frozen environment missing "+name+"="+value);
     if (!t.contains("model_artifacts") || !t["model_artifacts"].is_array()) throw std::runtime_error("wholecombatgen: model_artifacts must be an array");
     for (const auto &a:t["model_artifacts"]) { const std::string role=a.value("role",std::string{}), p=a.value("path",std::string{}), h=a.value("sha256",std::string{}); if(role.empty()||p.empty()||h.size()!=64||fileSha256(p)!=h) throw std::runtime_error("wholecombatgen: artifact hash mismatch for "+role); }
-    if (!t.contains("ooc_policy") || t["ooc_policy"] != effectiveOocPolicySpecification())
+    if (requireOocPolicy && (!t.contains("ooc_policy") || t["ooc_policy"] != effectiveOocPolicySpecification()))
         throw std::runtime_error("wholecombatgen: effective OOC policy configuration/artifacts mismatch");
     return {id,std::move(t)};
 }
@@ -4258,8 +4259,76 @@ static int oocPolicyParitySelfTest(std::uint64_t seed, int sims, int asc) {
 
 static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
                           long long seedOffset, const std::string &teacherPath,
+                          const std::string &runoutPath);
+static void wholeCombatGen(int nSeeds, int sims, int asc, const std::string &outfile,
+                           long long seedOffset, const std::string &teacherPath);
+
+static int teacherSchemaCompatibilitySelfTest() {
+    for (const auto &[name, value] : std::vector<std::pair<const char *, const char *>>{
+             {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
+             {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+             {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
+             {"STS_SILVER_TELEMETRY", "1"}})
+        setenv(name, value, 1);
+
+    const std::filesystem::path stem = std::filesystem::temp_directory_path()
+        / ("sts_legacy_teacher_compat_" + trainingExecutableGitSha());
+    const std::filesystem::path teacherPath = stem.string() + ".json";
+    const std::filesystem::path wholePath = stem.string() + ".whole.csv";
+    const std::filesystem::path evalPath = stem.string() + ".eval.csv";
+    const auto cleanup = [&] {
+        for (const auto &path : {teacherPath, wholePath, evalPath,
+                                 std::filesystem::path(wholePath.string() + ".provenance.json"),
+                                 std::filesystem::path(evalPath.string() + ".provenance.json")}) {
+            std::error_code ignored;
+            std::filesystem::remove(path, ignored);
+        }
+    };
+    try {
+        const std::string leafPath = "models/silver_leaf_m10_10k.txt";
+        const nlohmann::json teacher = {
+            {"teacher_id", "legacy-schema-compat"},
+            {"git_sha", trainingExecutableGitSha()},
+            {"executable_sha256", fileSha256(g_mainBinaryPath)},
+            {"combat_backend", "silver_uct"},
+            {"rng_regime", "project_fair"},
+            {"search_configuration", {
+                {"simulation_budgets", {10000}}, {"exploration_parameter", 25.0},
+                {"exploration_parameter_chance", 25.0}, {"chance_widening_c", 3.7028},
+                {"chance_widening_alpha", 0.52389}, {"end_turn_widening_c", 3.7028},
+                {"end_turn_widening_alpha", 0.52389}, {"reuse_cap_mode", "allocated"},
+                {"reuse_cap", 32768}, {"sequential_halving", false}, {"pruning", false},
+                {"learned_visit_puct", false}, {"direct_learned_leaf", false}, {"adaptive", false},
+            }},
+            {"environment", {
+                {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
+                {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+                {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
+                {"STS_SILVER_TELEMETRY", "1"},
+            }},
+            {"model_artifacts", {{{"role", "combat_value_or_leaf"},
+                                   {"path", leafPath}, {"sha256", fileSha256(leafPath)}}}},
+        };
+        std::ofstream out(teacherPath);
+        if (!out) throw std::runtime_error("teacher compatibility: cannot create fixture");
+        out << teacher.dump(2) << '\n';
+        out.close();
+        wholeCombatGen(0, 10000, 0, wholePath.string(), 0, teacherPath.string());
+        combatEvalGen(0, 10000, 0, evalPath.string(), 0, teacherPath.string(), "");
+    } catch (...) {
+        cleanup();
+        throw;
+    }
+    cleanup();
+    std::cout << "legacy teacher schema compatibility: wholecombatgen and combatevalgen without RUNOUT accepted\n";
+    return 0;
+}
+
+static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
+                          long long seedOffset, const std::string &teacherPath,
                           const std::string &runoutPath = {}) {
-    trainingCampaignStart(); const auto teacher = loadWholeCombatTeacher(teacherPath, sims);
+    trainingCampaignStart(); const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false,
+                                                                           !runoutPath.empty());
     std::ofstream f(outfile); if (!f) throw std::runtime_error("combatevalgen: cannot open output");
     std::ofstream runout;
     if (!runoutPath.empty()) {
@@ -9631,6 +9700,8 @@ int main(int argc, char **argv) {
         }
         return oocPolicyParitySelfTest(std::stoull(argv[2]), argc > 3 ? std::stoi(argv[3]) : 100,
                                        argc > 4 ? std::stoi(argv[4]) : 0);
+    } else if (mode == "teacher_schema_compat") {
+        return teacherSchemaCompatibilitySelfTest();
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);
