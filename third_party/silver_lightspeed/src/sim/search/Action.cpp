@@ -92,6 +92,13 @@ bool isValidPotionAction(const BattleContext &bc, const search::Action &a) {
             return false;
         }
 
+        // Gambler's Brew opens the GAMBLE card-select screen. With an empty
+        // hand that screen has no legal selectable action, and the live
+        // simulator rejects the potion use for the same reason.
+        if (p == Potion::GAMBLERS_BREW && bc.cards.cardsInHand == 0) {
+            return false;
+        }
+
         if (!potionRequiresTarget(p)) {
             return true;
         }
