@@ -6598,3 +6598,40 @@ model training was changed.
   `git diff --check` and the seed guard also passed. This 32-seed screen is
   too small to establish a general gameplay effect, but it is sufficient to
   reject this treatment for the current production path.
+
+## §225 Silver chance replay: 10k-simulation gameplay screen (2026-09-11)
+
+- **Reason for run:** follow up on §224 at the user's request to test whether
+  the 1k-screen result changes at a larger search budget. This remains a
+  descriptive, explicitly authorized screen; it is not a new promotion gate.
+- **Protocol:** the §224 paired design was repeated with only the root budget
+  changed from `1,000` to `10,000`: `one_combat bestbench 10000 32 0 0`,
+  project-fair seeds `0..31`, Searcher2, native OOC, isolated Silver search,
+  exact root budgets, telemetry, and `tools/seed_guard.sh`. A used the default
+  replay weighting; B added only `STS_SILVER_GENERATIVE_CHANCE=1`. The
+  implementation/configuration head was `0517e682061ebb382f3a5a9238967b7542f87e2b`.
+- **Results:**
+
+  | Arm | Wins | Mean floor | Mean ending HP | Fights lost | Mean seconds |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | A, default replay weighting | 19/32 (59.4%) | 47.47 | 28.53 | 13 | 239.97 |
+  | B, generative-frequency weighting | 22/32 (68.8%) | 49.28 | 30.31 | 10 | 255.15 |
+
+  Paired win disagreements were two A-win/B-loss seeds versus five
+  A-loss/B-win seeds. B's paired mean deltas were `+3` wins in aggregate,
+  `+1.81` floor, `+1.78` ending HP, `-3` fights lost, and `+15.18` seconds.
+  Relative to §224, the 10k screen reverses the direction of the small 1k
+  screen for this seed block: B went from 15 wins to 22, while A stayed at
+  19. This suggests a budget interaction, but does not establish a general
+  policy or win-rate improvement from only 32 paired seeds.
+- **Decision:** **DESCRIPTIVE 10K SIGNAL; DO NOT PROMOTE.** The result is
+  encouraging for a future budget-interaction study, but the sample is too
+  small and the treatment remains synthetic-mixed and default-off. Keep A as
+  the production default; do not enable B based on this screen alone.
+- **Evidence/checks:** raw paired rows are in
+  [silver_chance_gameplay_screen_10k_2026-09-11.csv](evidence/silver_chance_gameplay_screen_10k_2026-09-11.csv).
+  Both arms completed 32 rows with identical seed coverage and no simulator,
+  conversion, transaction, semantic-resolution, or knowledge failures in
+  telemetry. The build, focused Silver regressions, seed guard, and
+  `git diff --check` passed. The local 10k screen took several minutes per
+  arm; full CTest and GitHub Actions CI were not run locally.

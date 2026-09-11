@@ -102,9 +102,16 @@ screen was originally authorized. At the user's explicit request, a follow-up
 seeds versus B's 15/32. B's mean floor was slightly higher (47.47 versus
 46.53), but it had more lost fights (17 versus 13) and five A-win/B-loss
 disagreements against one A-loss/B-win. This is unfavorable on wins and does
-not qualify the treatment; the default remains A. See [ledger-06 §§223–224](../../experiments/ledger-06.md),
+not qualify the treatment at 1,000 simulations. A requested 10,000-simulation
+follow-up on the same seeds then reversed the small-screen direction: A won
+19/32 and B won 22/32, with B also higher in mean floor (49.28 versus 47.47),
+ending HP (30.31 versus 28.53), and lower in fights lost (10 versus 13).
+This is an encouraging budget-interaction signal, but it remains a 32-seed
+descriptive result and does not qualify B; the default remains A. See
+[ledger-06 §§223–225](../../experiments/ledger-06.md),
 the [synthetic raw matrix](../../experiments/evidence/silver_chance_frequency_2026-09-11.csv),
-and the [paired gameplay rows](../../experiments/evidence/silver_chance_gameplay_screen_2026-09-11.csv).
+the [1k paired gameplay rows](../../experiments/evidence/silver_chance_gameplay_screen_2026-09-11.csv),
+and the [10k paired gameplay rows](../../experiments/evidence/silver_chance_gameplay_screen_10k_2026-09-11.csv).
 
 ### Whole-Act OOC evaluator
 
