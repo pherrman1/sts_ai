@@ -859,6 +859,13 @@ void search::BattleSearcher::enumeratePotionActions(search::BattleSearcher::Node
             continue;
         }
 
+        // Keep Silver's root action set aligned with Action::isValidAction
+        // and the live simulator: Gambler's Brew cannot open an empty
+        // GAMBLE selection screen.
+        if (p == Potion::GAMBLERS_BREW && bc.cards.cardsInHand == 0) {
+            continue;
+        }
+
         if (!potionRequiresTarget(p)) {
             node.edges.push_back({Action(ActionType::POTION, pIdx)});
             continue;

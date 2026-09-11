@@ -77,6 +77,25 @@ int main() {
               && blockedDiscard.action == search::Action(search::ActionType::POTION, 0, 6),
           "blocked Silver Smoke Bomb must retain a valid discard resolution");
 
+    // Gambler's Brew enters GAMBLE, which has no legal selection when the
+    // live hand is empty. Silver must not offer a semantic potion action that
+    // the live legality boundary will reject.
+    BattleContext emptyGambleHand = first;
+    emptyGambleHand.cards.cardsInHand = 0;
+    emptyGambleHand.potions[1] = Potion::GAMBLERS_BREW;
+    emptyGambleHand.potionCount = 1;
+    search::CombatKnowledgeState emptyGambleKnowledge;
+    emptyGambleKnowledge.initializeFromLiveBattle(emptyGambleHand);
+    const auto emptyGambleWire = convert(emptyGambleHand, gc, emptyGambleKnowledge);
+    const auto emptyGambleActions = silver_bridge::enumerateSilverLegalActions(emptyGambleWire);
+    const bool silverOffersEmptyHandGamble = std::any_of(
+        emptyGambleActions.begin(), emptyGambleActions.end(), [](const auto &action) {
+            return action.type == silver_bridge::SemanticActionType::POTION
+                && action.potionId == static_cast<std::int16_t>(Potion::GAMBLERS_BREW);
+        });
+    check(!silverOffersEmptyHandGamble,
+          "Silver must not enumerate Gambler's Brew when the live hand is empty");
+
     BattleContext permuted = first;
     std::swap(permuted.cards.drawPile[0], permuted.cards.drawPile[2]);
     search::CombatKnowledgeState firstKnowledge, permutedKnowledge;

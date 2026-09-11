@@ -156,6 +156,11 @@ Silver exposes sequential selection where live sts_ai exposes atomic
 reroots between them, and returns one identity-based atomic subset for live
 validation. Conversion and lowering preserve live semantics.
 
+Silver potion legality and root enumeration must stay aligned with the live
+action validator. In particular, `GAMBLERS_BREW` is omitted when the live hand
+is empty: it would open a `GAMBLE` selector with no legal card selection, so
+the live simulator rejects that potion use.
+
 The default-off leaf observer runs where Silver would start `SimpleAgent`. It
 can receive a versioned wire snapshot and root/parent/leaf identity, project it
 into a live `BattleContext`, and call the existing `CombatValueNet::predict`.
