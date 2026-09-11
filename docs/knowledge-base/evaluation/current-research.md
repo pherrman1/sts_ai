@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-09-10 at `9b6502b53b72c3239de1f39d08ccde56a3ff2557`.
+Last verified: 2026-09-11 at `88773b9f5d03ee7969ec5bd476c7eae1a57e2f1c`.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
 
@@ -90,6 +90,39 @@ with PGO off and identical matched labels/telemetry. This is a three-seed,
 two-repeat selected-workload check, not broad qualification. See the
 [final-layout packet](../../experiments/evidence/silver_final_layout_ab_2026-09-10.json).
 The earlier PGO result still belongs to its earlier source revision.
+
+The follow-up chance-replay diagnostic is **mixed and parked**. On the real
+Silver chance-selection path, weighting capped replay by fresh-generator
+multiplicity lowered synthetic value RMSE by roughly 21–43% at budgets 32–512
+across 50/50, 80/20, deduplicated, and 16-state high-entropy fixtures, but it
+reduced close root-action accuracy on the 0.60-versus-0.58 fixture from
+76.6–78.9% to 71.1–73.4%. The treatment remained default-off and no gameplay
+screen was originally authorized. At the user's explicit request, a follow-up
+32-seed gameplay screen then ran at 1,000 simulations per root: A won 19/32
+seeds versus B's 15/32. B's mean floor was slightly higher (47.47 versus
+46.53), but it had more lost fights (17 versus 13) and five A-win/B-loss
+disagreements against one A-loss/B-win. This is unfavorable on wins and does
+not qualify the treatment at 1,000 simulations. A requested 10,000-simulation
+follow-up on the same seeds then reversed the small-screen direction: A won
+19/32 and B won 22/32, with B also higher in mean floor (49.28 versus 47.47),
+ending HP (30.31 versus 28.53), and lower in fights lost (10 versus 13).
+This is an encouraging budget-interaction signal, but the initial 32-seed
+result alone did not qualify B. The fresh 32-seed block met the
+predeclared +4 net paired-win escalation trigger, so a second fresh block was
+run. Across 64 fresh seeds, B won 46 versus A's 41, with 9 A-loss/B-win
+versus 4 A-win/B-loss disagreements (net +5); B's mean ending HP was 38.91
+versus 30.83 and fights lost were 18 versus 23, at a mean cost of 47.28
+seconds per run. This is a 64-seed signal supporting a proper promotion test,
+not a production qualification; the default remains A and no parameters were
+tuned between screens. See
+[ledger-06 §§223–226](../../experiments/ledger-06.md),
+the [synthetic raw matrix](../../experiments/evidence/silver_chance_frequency_2026-09-11.csv),
+the [1k paired gameplay rows](../../experiments/evidence/silver_chance_gameplay_screen_2026-09-11.csv),
+the [prior 10k paired gameplay rows](../../experiments/evidence/silver_chance_gameplay_screen_10k_2026-09-11.csv),
+and the [10k 64-seed aggregate](../../experiments/evidence/silver_chance_gameplay_screen_10k_fresh32-95_2026-09-11.csv).
+The experiment-only runtime flag, fixture executable, and searcher hook were
+removed before merging the evidence; no B implementation or opt-in runtime
+path remains.
 
 ### Whole-Act OOC evaluator
 
