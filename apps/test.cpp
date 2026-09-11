@@ -45,6 +45,8 @@
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/OocSemanticAction.h"
 #include "combat/BattleContextBinary.h"
+#include "one_combat/combat_transition.h"
+#include "ooc_test_state.h"
 #include "constants/MonsterMoves.h"
 #include "test_belief.h"
 
@@ -1476,6 +1478,99 @@ int testE2cObserverScope() {
 
     if (failures == 0) { std::cout << "e2c_observer_scope PASS\n"; return 0; }
     std::cout << "e2c_observer_scope FAIL (" << failures << " cases)\n";
+    return 1;
+}
+
+// The transition hook is a separate all-outcome RAW boundary.  The oracle
+// path applies the captured persistent successor to an untouched copy and
+// lets the native afterBattle continuation consume reward RNG exactly once.
+int testCombatTransitionOracle() {
+    using one_combat::CombatTransitionRawObserverScope;
+    using one_combat::CombatTransitionRecord;
+    using one_combat::applyCombatTransitionState;
+    using one_combat::captureCombatTransition;
+    using one_combat::combatTransitionFingerprint;
+    int failures = 0;
+    const auto check = [&failures](bool ok, const std::string &msg) {
+        if (!ok) { std::cout << "    " << msg << '\n'; ++failures; }
+    };
+    check(!sts::g_onBattleExitRaw, "RAW hook must be null by default (inert)");
+
+    GameContext source(CharacterClass::IRONCLAD, 0xC0FFEEu, 0);
+    source.screenState = ScreenState::BATTLE;
+    source.curRoom = Room::MONSTER;
+    source.info.encounter = MonsterEncounter::CULTIST;
+    source.regainControlAction = [](GameContext &g) { g.afterBattle(); };
+    source.curHp = 51;
+    source.maxHp = 80;
+    source.gold = 123;
+    source.relics.add({RelicId::HAPPY_FLOWER, 1});
+
+    GameContext actual = sts::test::cloneOocTestState(source);
+    GameContext oracle = sts::test::cloneOocTestState(source);
+    BattleContext bc;
+    bc.init(actual, MonsterEncounter::CULTIST);
+    bc.player.curHp = 23;
+    bc.player.maxHp = 83;
+    bc.player.gold = 177;
+    bc.potionCapacity = 3;
+    bc.potions[0] = Potion::FIRE_POTION;
+    bc.potions[1] = Potion::EMPTY_POTION_SLOT;
+    bc.smokeBombUsed = false;
+    bc.outcome = Outcome::PLAYER_VICTORY;
+
+    bool observed = false;
+    CombatTransitionRecord record;
+    {
+        CombatTransitionRawObserverScope scope([&](const BattleContext &ended,
+                                                     GameContext &raw) {
+            check(!observed, "RAW hook fired more than once");
+            observed = true;
+            record = captureCombatTransition(source, ended, raw);
+            check(raw.screenState == ScreenState::BATTLE,
+                  "RAW hook ran after screen continuation");
+            check(raw.outcome == GameOutcome::UNDECIDED,
+                  "RAW hook saw a post-continuation GameOutcome");
+        });
+        bc.exitBattle(actual);
+    }
+    check(observed, "victory did not invoke RAW hook");
+    check(!sts::g_onBattleExitRaw, "RAW hook was not restored after scope");
+    check(actual.screenState == ScreenState::REWARDS,
+          "native victory continuation did not reach rewards");
+
+    applyCombatTransitionState(oracle, record.post);
+    oracle.regainControl();
+    check(sts::test::oocStateFingerprint(actual) == sts::test::oocStateFingerprint(oracle),
+          "oracle persistent apply plus native continuation diverged");
+    check(combatTransitionFingerprint(actual) == combatTransitionFingerprint(oracle),
+          "oracle combat persistent/RNG fingerprint diverged");
+    check(record.combatOutcome == Outcome::PLAYER_VICTORY,
+          "recorded combat outcome is not victory");
+
+    GameContext death = sts::test::cloneOocTestState(source);
+    BattleContext losing;
+    losing.init(death, MonsterEncounter::CULTIST);
+    losing.player.curHp = 0;
+    losing.outcome = Outcome::PLAYER_LOSS;
+    int deathHooks = 0;
+    {
+        CombatTransitionRawObserverScope scope([&](const BattleContext &ended,
+                                                     GameContext &raw) {
+            ++deathHooks;
+            check(ended.outcome == Outcome::PLAYER_LOSS,
+                  "loss RAW hook did not expose combat loss");
+            check(raw.outcome == GameOutcome::UNDECIDED,
+                  "loss RAW hook ran after GameContext loss assignment");
+        });
+        losing.exitBattle(death);
+    }
+    check(deathHooks == 1, "true death did not invoke RAW hook exactly once");
+    check(death.outcome == GameOutcome::PLAYER_LOSS,
+          "native loss continuation changed outcome unexpectedly");
+
+    if (failures == 0) { std::cout << "combat_transition_oracle PASS\n"; return 0; }
+    std::cout << "combat_transition_oracle FAIL (" << failures << " cases)\n";
     return 1;
 }
 
@@ -3982,6 +4077,8 @@ int main(int argc, const char* argv[]) {
         return testTrainingIntegrity();
     } else if (command == "e2c_observer_scope") {
         return testE2cObserverScope();
+    } else if (command == "combat_transition_oracle") {
+        return testCombatTransitionOracle();
     } else if (command == "combat_knowledge") {
         return testCombatKnowledgeBoundary();
     } else if (command == "silver_random_bridge") {

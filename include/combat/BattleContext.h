@@ -45,6 +45,14 @@ namespace sts {
 
     extern thread_local std::function<void(const BattleContext &, GameContext &)> g_onBattleExitPersistent;
 
+    // Optional instrumentation at the RAW persistent-transfer boundary.  The
+    // callback runs after combat-owned persistent fields have been copied into
+    // GameContext, but before GameContext::regainControl()/afterBattle.  It is
+    // invoked for victory, loss, and unresolved exits so data producers can
+    // quarantine the latter two without pretending they are successful fights.
+    // It is null by default and has no gameplay effect.
+    extern thread_local std::function<void(const BattleContext &, GameContext &)> g_onBattleExitRaw;
+
     extern thread_local BattleContext *g_debug_bc;
 
     struct BattleContext {

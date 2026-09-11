@@ -1,6 +1,6 @@
 # OOC label pipeline preparation
 
-Last verified: 2026-09-10 against the current working tree (semantic pilot interfaces).
+Last verified: 2026-09-11 against the current working tree (RAW transition interfaces).
 
 ## Purpose
 
@@ -19,6 +19,51 @@ directory. Git working-tree variables remain independently relevant to dirty
 state and other Git-derived diagnostics.
 
 `wholecombatgen` installs the existing `g_onCombatDecision` observer without changing selection, retains only the first callback, and calls the canonical `combatFeatureRow`. It emits after the existing `BattleContext::exitBattle` call has returned, at reward-screen entry; it does not execute a reward-screen choice. The mode is registered in `tools/seed_guard.sh`; the exact-SHA GCP research manifest accepts its CLI and reserves its `.provenance.json` sidecar.
+
+#### RAW combat-transition producer
+
+`combattransitiongen` is the first transition-model producer. It follows the
+same frozen ordinary project-fair Silver teacher and OOC policy chain as
+`wholecombatgen`, but emits JSONL rows through
+`apps/one_combat/combat_transition.cpp`. Each row contains the source seed,
+fight identity, combat outcome, quarantine status, and a complete
+`combat_transition_v1` pre/post persistent-transfer snapshot. The snapshot
+covers HP/max HP, gold, terminal potion slots and counts, smoke-bomb state,
+stolen gold, ordered relic IDs/counters and bitsets, the full deck including
+upgrade/misc/bottle metadata, and all six RNG streams synchronized by
+`BattleContext::exitBattle` (`ai`, `cardRandom`, `misc`, `monsterHp`, `potion`,
+`shuffle`). Other GameContext fields are copy-through continuation state and
+are intentionally not overwritten by `applyCombatTransitionState`.
+
+The producer's `g_onBattleExitRaw` observer runs after those persistent writes
+and before `regainControl`/`afterBattle` for victories, true deaths, and
+unresolved exits. It is null by default, composes with an existing observer,
+and is restored by `CombatTransitionRawObserverScope`. The native
+`combat_transition_oracle` test applies a recorded post snapshot to a detached
+copy, invokes native continuation once, and compares complete GameContext/RNG/
+reward state with the real exit. This proves the bridge and callback boundary,
+not model accuracy or hidden-stream continuation for a learned sampler.
+
+The JSONL output has a hash-bound `<output>.manifest.json`; validate it with
+`python3 tools/combat_transition_contract.py <output>.manifest.json`. The
+contract requires the full frozen combat teacher, unique `(sourceSeed,
+fightIdx)` rows, membership in the declared `seedSpec`, reconciled requested /
+completed / quarantined source accounting, six RNG streams, exactly one RAW
+capture for a full snapshot, and explicit quarantine reasons. The native
+`GameOutcome` value at this RAW boundary is `UNDECIDED` (`1`); the later
+victory/loss assignment is deliberately outside the captured observation.
+
+Input-context restriction: this transition schema is an oracle/provenance
+artifact, not a predictor feature schema. It currently has no resolved
+player-observable predictor input context and therefore does not authorize
+bulk collection, training, or runtime use. Until a separate input contract is
+resolved, only the pre-combat visible state and independently declared
+encounter metadata may be considered eligible context; the six hidden RNG
+streams are retained solely for oracle replay and provenance and must be
+excluded from learned player-observable features.
+
+Collection remains opt-in and seed-guarded; no runtime adapter or model export
+consumes this schema.
 
 Whole-combat training first runs the full corpus validator, including exact canonical feature names/order, exact target/diagnostic suffix, unique fight keys, zero decision index, finite values, and teacher identity. It then uses source-seed groups for train/validation/test, performs variance filtering on TRAIN only, and fits XGBoost survival and winning-only conditional ending-HP models. Its output records the data hash, exact split, retained canonical feature names, parameters, and batch-1 timing. Offline scores do not authorize runtime integration.
 

@@ -50,6 +50,7 @@
 #include "ooc_strategic_tok_net.h"
 #include "combat_model_diagnostics.h"
 #include "one_combat/compact_tree.h"
+#include "one_combat/combat_transition.h"
 #include "one_combat/e2c_capture.h"
 #include "one_combat/run_features.h"
 #include "one_combat/fight_replay.h"
@@ -4370,6 +4371,248 @@ static void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile
         #pragma omp critical(whole_combat_write)
         {f<<generated;f.flush();rows+=std::count(generated.begin(),generated.end(),'\n');if(!generated.empty())++completed;}}
     std::cout<<"wholecombatgen teacher="<<teacher.id<<" completed="<<completed<<'/'<<nSeeds<<" quarantined="<<nSeeds-completed<<" rows="<<rows<<" -> "<<outfile<<'\n';writeTrainingProvenance(outfile,"wholecombatgen",nSeeds,completed,nSeeds-completed,g_trainingHealthFailures.load(),rows,seedOffset,sims,asc);
+}
+
+static nlohmann::json combatTransitionRowJson(
+    std::uint64_t sourceSeed, int fightIdx, int act, int floor, Room room,
+    int encounter, const std::string &teacherId, bool runValid,
+    bool outcomeDecided,
+    int rawCaptureCount,
+    const std::optional<one_combat::CombatTransitionRecord> &record) {
+    const bool captureValid = rawCaptureCount == 1 && record.has_value();
+    const bool rowValid = runValid && captureValid;
+    const std::string quarantineReason =
+        rawCaptureCount == 0 ? "missing_raw_capture" :
+        rawCaptureCount > 1 ? "repeated_raw_capture" :
+        !record ? "missing_raw_record" :
+        !runValid ? (outcomeDecided ? "invalid_run" : "unresolved") : "";
+    return {
+        {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
+        {"rowSchemaVersion", "combat_transition_row_v1"},
+        {"sourceSeed", sourceSeed}, {"fightIdx", fightIdx},
+        {"act", act}, {"floor", floor},
+        {"roomClass", combatEvalRoomClass(room)}, {"encounter", encounter},
+        {"teacherId", teacherId}, {"runValid", rowValid},
+        {"quarantineReason", quarantineReason},
+        {"captureCount", rawCaptureCount},
+        {"captureStatus", rawCaptureCount == 0 ? "missing" :
+                          rawCaptureCount == 1 ? "exactly_one" : "repeated"},
+        {"transition", captureValid ? one_combat::combatTransitionRecordJson(*record)
+                                     : nlohmann::json(nullptr)}
+    };
+}
+
+// Capture one JSONL transition per real fight at the RAW persistent-transfer
+// boundary. This is a data producer only: it never substitutes the snapshot
+// for native continuation and is not part of the default gameplay path.
+static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int asc,
+                                              const WholeCombatTeacher &teacher) {
+    trainingRunStart();
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    search::ScumSearchAgent2 agent;
+    agent.simulationCountBase = sims;
+    agent.rng = std::default_random_engine(seed);
+    PathHistory path;
+    t_curPath = &path;
+    std::ostringstream out;
+    int fightIdx = 0;
+    using RT = search::GameAction::RewardsActionType;
+    while (gc.outcome == GameOutcome::UNDECIDED) {
+        path.update(gc);
+        if (gc.screenState == ScreenState::BATTLE) {
+            const GameContext pre = gc;
+            const int battleAct = gc.act;
+            const int battleFloor = gc.floorNum;
+            const Room battleRoom = gc.curRoom;
+            const int battleEncounter = static_cast<int>(gc.info.encounter);
+            std::optional<one_combat::CombatTransitionRecord> record;
+            int rawCaptureCount = 0;
+            bool decided = false;
+            bool runValid = false;
+            BattleContext bc;
+            {
+                one_combat::CombatTransitionRawObserverScope scope(
+                    [&](const BattleContext &ended, GameContext &raw) {
+                        ++rawCaptureCount;
+                        if (rawCaptureCount == 1)
+                            record = one_combat::captureCombatTransition(pre, ended, raw);
+                    });
+                agent.playoutBattle(gc, bc);
+                decided = bc.outcome != Outcome::UNDECIDED;
+                runValid = trainingRunValid(decided);
+                // Keep the RAW observer armed through the real exit.  The
+                // callback is intentionally before regainControl/afterBattle,
+                // including for loss and unresolved outcomes.
+                bc.exitBattle(gc);
+            }
+            nlohmann::json row = combatTransitionRowJson(
+                seed, fightIdx++, battleAct, battleFloor, battleRoom,
+                battleEncounter, teacher.id, runValid, decided, rawCaptureCount, record);
+            out << row.dump() << '\n';
+        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
+        } else if (gc.screenState == ScreenState::REWARDS) {
+            auto &r = gc.info.rewardsContainer;
+            if (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
+            else if (r.relicCount > 0) search::GameAction(RT::RELIC, 0).execute(gc);
+            else if (r.potionCount > 0) search::GameAction(RT::POTION, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
+            else evalCardRewardPolicy(gc);
+        } else {
+            agent.stepOutOfCombatPolicy(gc);
+        }
+    }
+    t_curPath = nullptr;
+    return out.str();
+}
+
+// This is deliberately a test-only backend: it constructs deterministic
+// BattleContexts directly and exercises the same RAW observer, exitBattle,
+// and row serializer as combattransitiongen. It never loads a teacher, runs
+// Silver, or supplies a production collection path.
+static nlohmann::json combatTransitionFixtureTeacher() {
+    return {
+        {"teacher_id", "test-only-deterministic-transition-fixture"},
+        {"git_sha", trainingExecutableGitSha()},
+        {"executable_sha256", fileSha256(g_mainBinaryPath)},
+        {"combat_backend", "deterministic_fixture"},
+        {"rng_regime", "deterministic_fixture"},
+        {"search_configuration", nlohmann::json::object()},
+        {"environment", nlohmann::json::object()},
+        {"model_artifacts", nlohmann::json::array()}
+    };
+}
+
+static nlohmann::json combatTransitionFixtureRow(std::uint64_t seed, int fightIdx,
+                                                  Outcome outcome, int hp) {
+    trainingRunStart();
+    GameContext source(CharacterClass::IRONCLAD, seed, 0);
+    source.screenState = ScreenState::BATTLE;
+    source.curRoom = Room::MONSTER;
+    source.info.encounter = MonsterEncounter::CULTIST;
+    source.regainControlAction = [](GameContext &g) {
+        g.screenState = ScreenState::REWARDS;
+    };
+    GameContext actual = source;
+    BattleContext bc;
+    bc.init(actual, MonsterEncounter::CULTIST);
+    bc.player.curHp = hp;
+    bc.outcome = outcome;
+
+    std::optional<one_combat::CombatTransitionRecord> record;
+    int rawCaptureCount = 0;
+    {
+        one_combat::CombatTransitionRawObserverScope scope(
+            [&](const BattleContext &ended, GameContext &raw) {
+                ++rawCaptureCount;
+                if (rawCaptureCount == 1)
+                    record = one_combat::captureCombatTransition(source, ended, raw);
+            });
+        const bool decided = bc.outcome != Outcome::UNDECIDED;
+        const bool runValid = trainingRunValid(decided);
+        bc.exitBattle(actual);
+        return combatTransitionRowJson(
+            seed, fightIdx, source.act, source.floorNum, source.curRoom,
+            static_cast<int>(source.info.encounter),
+            "test-only-deterministic-transition-fixture", runValid, decided,
+            rawCaptureCount, record);
+    }
+}
+
+static int combatTransitionFixture(const std::string &outfile,
+                                   const std::string &manifestPath) {
+    const std::uint64_t seed = 0xC0FFEEu;
+    const auto missing = combatTransitionRowJson(
+        seed, 99, 1, 1, Room::MONSTER, static_cast<int>(MonsterEncounter::CULTIST),
+        "test-only-deterministic-transition-fixture", false, false, 0, {});
+    const auto repeated = combatTransitionRowJson(
+        seed, 100, 1, 1, Room::MONSTER, static_cast<int>(MonsterEncounter::CULTIST),
+        "test-only-deterministic-transition-fixture", false, true, 2, {});
+    if (missing["captureStatus"] != "missing" ||
+        missing["quarantineReason"] != "missing_raw_capture" ||
+        !missing["transition"].is_null() ||
+        repeated["captureStatus"] != "repeated" ||
+        repeated["quarantineReason"] != "repeated_raw_capture" ||
+        !repeated["transition"].is_null()) {
+        throw std::runtime_error("combattransitionselftest: capture quarantine serializer failed");
+    }
+    const std::vector<nlohmann::json> rows = {
+        combatTransitionFixtureRow(seed, 0, Outcome::PLAYER_VICTORY, 23),
+        combatTransitionFixtureRow(seed, 1, Outcome::PLAYER_LOSS, 0),
+        combatTransitionFixtureRow(seed, 2, Outcome::UNDECIDED, 17),
+    };
+    std::ofstream output(outfile);
+    if (!output) throw std::runtime_error("combattransitionselftest: cannot open output");
+    for (const auto &row : rows) output << row.dump() << '\n';
+    output.close();
+
+    const auto manifest = nlohmann::json{
+        {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
+        {"rowSchemaVersion", "combat_transition_row_v1"},
+        {"format", "jsonl"}, {"testFixture", true},
+        {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"combatTeacher", combatTransitionFixtureTeacher()},
+        {"seedSpec", {{"start", seed}, {"count", 1}}},
+        {"csv", {{"path", std::filesystem::absolute(outfile).string()},
+                  {"sha256", fileSha256(outfile)}}},
+        {"integrity", {{"requestedSeeds", 1}, {"completedSeeds", 1},
+                        {"quarantinedSeeds", 0}, {"rows", rows.size()}}}
+    };
+    std::ofstream manifestFile(manifestPath);
+    if (!manifestFile)
+        throw std::runtime_error("combattransitionselftest: cannot open manifest");
+    manifestFile << manifest.dump(2) << '\n';
+    std::cout << "combattransitionselftest wrote " << rows.size()
+              << " native rows -> " << outfile << "\n"
+              << "manifest -> " << manifestPath << '\n';
+    return 0;
+}
+
+static void combatTransitionGen(int nSeeds, int sims, int asc,
+                                const std::string &outfile, long long seedOffset,
+                                const std::string &teacherPath) {
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims);
+    std::ofstream f(outfile);
+    if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
+    long long rows = 0;
+    int completed = 0;
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher);
+        #pragma omp critical(combat_transition_write)
+        {
+            f << generated;
+            f.flush();
+            rows += std::count(generated.begin(), generated.end(), '\n');
+            if (!generated.empty()) ++completed;
+        }
+    }
+    f.close();
+    nlohmann::json manifest = {
+        {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
+        {"rowSchemaVersion", "combat_transition_row_v1"},
+        {"format", "jsonl"}, {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"combatTeacher", teacher.specification},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
+        {"csv", {{"path", std::filesystem::absolute(outfile).string()},
+                  {"sha256", fileSha256(outfile)}}},
+        {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed},
+                        {"quarantinedSeeds", nSeeds - completed}, {"rows", rows}}}
+    };
+    std::ofstream mf(outfile + ".manifest.json");
+    if (!mf) throw std::runtime_error("combattransitiongen: cannot write manifest");
+    mf << manifest.dump(2) << '\n';
+    std::cout << "combattransitiongen teacher=" << teacher.id << " completed="
+              << completed << '/' << nSeeds << " quarantined=" << nSeeds - completed
+              << " rows=" << rows << " -> " << outfile << '\n';
+    writeTrainingProvenance(outfile, "combattransitiongen", nSeeds, completed,
+                            nSeeds - completed, g_trainingHealthFailures.load(),
+                            rows, seedOffset, sims, asc);
 }
 
 // Outcome-blind audit of the frozen whole-combat surrogate's deployment
@@ -9690,6 +9933,16 @@ int main(int argc, char **argv) {
     } else if (mode == "wholecombatgen") {
         if (argc < 8) { std::cerr << "usage: one_combat wholecombatgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         wholeCombatGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoll(argv[6]),argv[7]);
+    } else if (mode == "combattransitiongen") {
+        if (argc < 8) { std::cerr << "usage: one_combat combattransitiongen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
+        combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
+                            argv[5], std::stoll(argv[6]), argv[7]);
+    } else if (mode == "combattransitionselftest") {
+        if (argc < 4) {
+            std::cerr << "usage: one_combat combattransitionselftest OUT.jsonl MANIFEST.json\n";
+            return 2;
+        }
+        return combatTransitionFixture(argv[2], argv[3]);
     } else if (mode == "combatevalgen") {
         if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json [RUNOUT.csv]\n"; return 2; }
         combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argc > 8 ? argv[8] : "");
