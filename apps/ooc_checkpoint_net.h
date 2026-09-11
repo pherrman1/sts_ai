@@ -33,6 +33,7 @@ struct OocCheckpointNet {
     float h2w[HHIDDEN], h2b;
 
     bool ok = false;
+    std::string path;
 
     bool load(const std::string &path) {
         FILE *f = std::fopen(path.c_str(), "rb");
@@ -74,6 +75,7 @@ struct OocCheckpointNet {
             return false;
         }
         ok = true;
+        this->path = path;
         std::cout << "[ooc-cp-net] loaded " << path << "\n";
         return true;
     }

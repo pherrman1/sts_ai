@@ -187,7 +187,7 @@ bool CombatCpsiNet::load(const std::string&path){
     if(!R("turns_weight",turnsW,D))return false;
     if(!RF("turns_bias",turnsB))return false;
     if(!f)return false;
-    isLoaded=true;return true;
+    isLoaded=true;this->path=path;return true;
 }
 
 // ---- Forward ---------------------------------------------------------------

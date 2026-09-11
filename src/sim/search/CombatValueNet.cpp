@@ -476,6 +476,7 @@ bool CombatValueNet::load(const std::string &path) {
         if (!f) return false;
         g_richCombatFeatures = true;
         isLoaded = true;
+        this->path = path;
         return true;
     } else if (tok == "combat_entity_v1") {
         isEntity = true;
@@ -518,6 +519,7 @@ bool CombatValueNet::load(const std::string &path) {
         if (!f) return false;
         g_richCombatFeatures = true;
         isLoaded = true;
+        this->path = path;
         return true;
     } else if (tok == "combat_mlp_v1" || tok == "combat_mlp_sparse_v1") {
         isMlp = true;
@@ -585,6 +587,7 @@ bool CombatValueNet::load(const std::string &path) {
         f >> tok >> yScale;  if (tok != "y_scale" || yScale <= 0.f) return false;
         if (!f) return false;
         isLoaded = true;
+        this->path = path;
         return true;
     } else if (tok == "nfeat") {
         f >> nfeat;                          // legacy tree model
@@ -679,6 +682,7 @@ bool CombatValueNet::load(const std::string &path) {
             hasEncounterModels = nd > 0;
         }
         isLoaded = true;
+        this->path = path;
         return true;
     }
 
@@ -719,6 +723,7 @@ bool CombatValueNet::load(const std::string &path) {
     }
     if (!f) return false;
     isLoaded = true;
+    this->path = path;
     return true;
 }
 

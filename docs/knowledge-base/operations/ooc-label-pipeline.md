@@ -139,6 +139,48 @@ carries temporary verification evidence. This interface does not authorize
 training or the larger confirmation cohort before independent implementation
 review and merge.
 
+#### Full-run battle-start V_win/L corpus
+
+`combatevalgen` accepts an optional final `RUNOUT.csv` argument. When omitted,
+the existing combat-evaluator CSV and behavior are unchanged. When supplied,
+the producer writes one source-level terminal row per requested seed, including
+`finalOutcome`, `finalWon`, completion/trajectory validity, fight counts,
+invalid combat-row counts, teacher identity, and simulator-health/fatal-failure
+status. This separates an ordinary invalid immediate label such as an escape
+from a trajectory that cannot safely support an eventual-run target.
+
+`tools/battle_start_runout_contract.py` binds the combat CSV and run-out CSV to
+the producer/executable hashes, frozen ordinary project-fair Silver teacher,
+loaded model hashes, canonical 1,017-feature header/order, exact contiguous
+source ranges, and runtime environment. It rejects duplicate or missing source
+identities, fatal/incomplete trajectories, non-finite state/labels, impossible
+outcomes, mixed teachers, and hash mismatches. V_win eligibility is every row
+from a valid completed source trajectory; L eligibility additionally requires
+`labelValid && trueDeath && !progressAmbiguous` and retains the existing
+`lossRemainingFrac` target. Source-seed grouped split/coverage reporting is
+observational only; this producer does not train or deploy either model.
+
+The optional producer is invoked as:
+
+```text
+tools/seed_guard.sh build/one_combat combatevalgen N_SEEDS 10000 ASC OUT.csv SEED_OFFSET TEACHER.json RUNOUT.csv
+```
+
+The manifest records the effective `runFullRunOOC` policy chain, its runtime
+configuration, and every model artifact hash used by that chain in addition to
+the Silver combat teacher. A producer must fail closed when either identity
+differs. New corrected output uses `dataset_role=primary_corrected_vwin_l`;
+the already collected pre-parity raw corpus is retained as explicitly
+`dataset_role=heuristic_policy_auxiliary` evidence. It remains usable for
+auxiliary LL analysis, but must not be relabeled or pooled as the primary new
+V_win/L corpus.
+
+The large corpus uses 128-source shards through the designated GCP research
+path. Raw shards, manifests, teacher/model identities, logs, timings and
+coverage reports remain outside Git; semantic-branch, E2/E2c and other
+historical corpora are auxiliary evidence and are not silently pooled into
+this battle-start corpus.
+
 #### Fresh confirmation orchestration and offline analysis
 
 `tools/run_ooc_semantic_confirmation.py` is a deliberately fixed experiment

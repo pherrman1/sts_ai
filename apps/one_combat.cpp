@@ -2287,6 +2287,7 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
                         OocContinuationCost *finalCost = nullptr,
                         bool useFrozenV4 = false,
                         std::vector<CombatEvalFight> *combatCapture = nullptr) {
+    using RT = search::GameAction::RewardsActionType;
     const int healthBefore = search::g_simHealthFailureCount;
     const auto continuationWallStart = std::chrono::steady_clock::now();
     const std::clock_t continuationCpuStart = std::clock();
@@ -2298,7 +2299,6 @@ finishOocCounterfactual(GameContext gc, int sims, std::uint64_t agentSeed,
     t_curPath = &path;
     int fights = 0;
     int observedFights = 0;
-    using RT = search::GameAction::RewardsActionType;
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
@@ -3972,8 +3972,100 @@ static std::string combatFeatureRow(const BattleContext &bc) {
 // has entered the reward screen and normal afterBattle effects have run.
 struct WholeCombatTeacher { std::string id; nlohmann::json specification; };
 
+static nlohmann::json effectiveOocPolicySpecification() {
+    nlohmann::json models = nlohmann::json::array();
+    auto addModel = [&](const char *role, const std::string &path) {
+        if (!path.empty())
+            models.push_back({{"role", role}, {"path", path}, {"sha256", fileSha256(path)}});
+    };
+    if (g_floorNet.ok) addModel("floor", g_floorNet.path);
+    if (g_winNet.ok) addModel("win", g_winNet.path);
+    if (g_oocActionNN && g_oocCheckpointNet.ok) addModel("ooc_checkpoint", g_oocCheckpointNet.path);
+    if (g_oocStrategicNet.ok) addModel("ooc_strategic", g_oocStrategicNet.path);
+    if (g_oocStrategicTokNet.ok) addModel("ooc_strategic_tok", g_oocStrategicTokNet.path);
+    if (g_oocMapRoute && g_cpsiNet.loaded()) addModel("cpsi", g_cpsiNet.path);
+    if (g_actFightProbeAllOoc && g_actFightProbePredict && g_actFightProbePredictNet.loaded())
+        addModel("act_fight_probe_predict", g_actFightProbePredictNet.path);
+    return {
+        {"schema_version", "runFullRunOOC_policy_v1"},
+        {"policy_chain", "runFullRunOOC"},
+        {"restV", false},
+        {"shopV", true},
+        {"native_ooc", g_nativeOoc},
+        {"flags", {
+            {"collect_keys", g_collectKeys},
+            {"ooc_action_nn", g_oocActionNN},
+            {"act_fight_probe_all_ooc", g_actFightProbeAllOoc},
+            {"ooc_map_route", g_oocMapRoute},
+            {"ooc_strategic_map", g_oocStrategicMap},
+            {"path_v", g_pathV},
+            {"event_v", g_eventV},
+            {"ooc_strategic_event", g_oocStrategicEvent},
+            {"ooc_strategic_card", g_oocStrategicNet.ok || g_oocStrategicTokNet.ok},
+            {"ooc_strategic_tok", g_oocStrategicTok != 0},
+            {"ooc_strategic_shop", g_oocStrategicShop},
+            {"ooc_shop_beam", g_oocShopBeam},
+            {"ooc_strategic_rest", g_oocStrategicRest},
+            {"ooc_strategic_q", g_oocStrategicQ},
+            {"ooc_strategic_score_policy", g_oocStrategicScorePolicy},
+            {"rest_win", g_restWin},
+            {"ooc_strategic_boss_relic", g_oocStrategicBossRelic},
+            {"boss_relic_v", g_bossRelicV != 0},
+            {"ooc_strategic_treasure", g_oocStrategicTreasure},
+            {"neow_v", g_neowV != 0},
+            {"card_win", g_cardWin},
+            {"card_nn", g_cardNN},
+            {"card_action", g_cardAction},
+            {"shop_win", g_shopWin},
+            {"boss_v", g_bossV != 0},
+            {"boss_draft", g_bossDraft != 0},
+            {"act_fight_probe_draft", g_actFightProbeDraft},
+            {"act_fight_probe_all_ooc", g_actFightProbeAllOoc},
+            {"act_fight_probe_predict", g_actFightProbePredict},
+            {"act_fight_probe_encounter_nn", g_actFightProbeEncounterNN},
+            {"act_fight_probe_gate_regret", g_oocStrategicGateRegret},
+        }},
+        {"parameters", {
+            {"card_skip_threshold", g_cardSkipThresh},
+            {"card_win_skip", g_cardWinSkip},
+            {"card_nn_weight", g_cardNNW},
+            {"card_nn_skip", g_cardNNSkip},
+            {"shop_beam_width", g_oocShopBeamWidth},
+            {"shop_beam_depth", g_oocShopBeamDepth},
+            {"shop_beam_budget", g_oocShopBeamBudget},
+            {"strategic_margin", g_oocStrategicMargin},
+            {"strategic_margin_card", g_oocStrategicMarginCard},
+            {"strategic_margin_rest", g_oocStrategicMarginRest},
+            {"strategic_margin_event", g_oocStrategicMarginEvent},
+            {"strategic_margin_shop", g_oocStrategicMarginShop},
+            {"strategic_margin_treasure", g_oocStrategicMarginTreasure},
+            {"strategic_margin_boss_relic", g_oocStrategicMarginBossRelic},
+            {"strategic_margin_map", g_oocStrategicMarginMap},
+            {"strategic_gate", g_oocStrategicGateRegret ? "regret" : "margin"},
+            {"strategic_gate_eps", g_oocStrategicGateEps},
+            {"map_route_horizon", g_oocMapRouteHorizon},
+            {"boss_draft_rows", g_bossDraftRows},
+            {"boss_draft_fights", g_bossDraftN},
+            {"boss_draft_sims", g_bossDraftSims},
+            {"boss_draft_futures", g_bossDraftFutures},
+            {"boss_v_weight", g_bossVW},
+            {"act_fight_probe_sims", g_actFightProbeSims},
+            {"act_fight_probe_futures", g_actFightProbeFutures},
+            {"act_fight_probe_checkpoint_sims", g_actFightProbeCheckpointSims},
+            {"act_fight_probe_floor_decay", g_actFightProbeFloorDecay},
+            {"act_fight_probe_max_checkpoints", g_actFightProbeMaxCheckpoints},
+            {"act_fight_probe_term_win", g_actFightProbeTermWin},
+            {"act_fight_probe_margin", g_actFightProbeMargin},
+            {"act_fight_probe_predict_win_threshold", g_actFightProbePredictWinThreshold},
+            {"stop_after_act", g_stopAfterAct},
+        }},
+        {"model_artifacts", std::move(models)},
+    };
+}
+
 static WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
-                                                 bool allowStaleProvenance = false) {
+                                                 bool allowStaleProvenance = false,
+                                                 bool requireOocPolicy = false) {
     std::ifstream in(path); if (!in) throw std::runtime_error("wholecombatgen: cannot open teacher " + path);
     nlohmann::json t; in >> t;
     auto req = [&](const char *key) { if (!t.contains(key) || !t[key].is_string() || t[key].get<std::string>().empty()) throw std::runtime_error(std::string("wholecombatgen: teacher missing ")+key); return t[key].get<std::string>(); };
@@ -3998,6 +4090,8 @@ static WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int si
     for (const auto &[name,value]:required) if (!t["environment"].contains(name) || t["environment"][name]!=value) throw std::runtime_error("wholecombatgen: frozen environment missing "+name+"="+value);
     if (!t.contains("model_artifacts") || !t["model_artifacts"].is_array()) throw std::runtime_error("wholecombatgen: model_artifacts must be an array");
     for (const auto &a:t["model_artifacts"]) { const std::string role=a.value("role",std::string{}), p=a.value("path",std::string{}), h=a.value("sha256",std::string{}); if(role.empty()||p.empty()||h.size()!=64||fileSha256(p)!=h) throw std::runtime_error("wholecombatgen: artifact hash mismatch for "+role); }
+    if (requireOocPolicy && (!t.contains("ooc_policy") || t["ooc_policy"] != effectiveOocPolicySpecification()))
+        throw std::runtime_error("wholecombatgen: effective OOC policy configuration/artifacts mismatch");
     return {id,std::move(t)};
 }
 static std::string wholePotionIds(const GameContext &gc) { std::ostringstream o; for(int i=0;i<gc.potionCapacity&&i<(int)gc.potions.size();++i){if(i)o<<';';o<<(int)gc.potions[i];} return o.str(); }
@@ -4023,57 +4117,225 @@ static std::string runWholeCombatGenSeed(std::uint64_t seed,int sims,int asc,con
 
 // V1 producer: capture the persistent GameContext before BattleContext::init;
 // read terminal labels from BattleContext before exitBattle/afterBattle.
-struct CombatEvalSeedResult { std::string rows; bool sourceValid = true; int quarantined = 0; };
+// The optional runout record deliberately separates a completed trajectory
+// from the existing per-combat label validity.  An escape is still a bad V1
+// combat label, but it need not invalidate the eventual-run outcome.
+struct CombatEvalSeedResult {
+    std::string rows;
+    std::uint64_t sourceSeed = 0;
+    GameOutcome finalOutcome = GameOutcome::UNDECIDED;
+    int finalFloor = 0;
+    int finalHp = 0;
+    int fightCount = 0;
+    int invalidCombatRows = 0;
+    int simulatorHealthFailures = 0;
+    bool sourceValid = true;
+    bool trajectoryComplete = false;
+    bool trajectoryValid = false;
+    bool fatalFailure = false;
+};
+
+static const char *combatEvalGameOutcome(GameOutcome outcome) {
+    switch (outcome) {
+        case GameOutcome::PLAYER_VICTORY: return "PLAYER_VICTORY";
+        case GameOutcome::PLAYER_LOSS: return "PLAYER_LOSS";
+        case GameOutcome::UNDECIDED: return "UNDECIDED";
+    }
+    return "UNDECIDED";
+}
+
+static int combatEvalFinalWon(GameOutcome outcome) {
+    return outcome == GameOutcome::PLAYER_VICTORY ? 1
+        : outcome == GameOutcome::PLAYER_LOSS ? 0 : -1;
+}
+
 static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, int asc,
-                                                 const WholeCombatTeacher &teacher) {
+                                                 const WholeCombatTeacher &teacher,
+                                                 bool captureCombat = true) {
     trainingRunStart();
+    const int sourceHealthFailures = search::g_simHealthFailureCount;
     GameContext gc(CharacterClass::IRONCLAD, seed, asc);
     search::ScumSearchAgent2 agent; agent.simulationCountBase = sims;
     agent.rng = std::default_random_engine(seed);
-    std::ostringstream out; int fightIdx = 0; bool sourceValid = true; int quarantined = 0;
-    using RT = search::GameAction::RewardsActionType;
+    PathHistory path;
+    one_combat::resetPathPolicyState();
+    t_actFightProbeDecisionIdx = 0;
+    t_curPath = &path;
+    t_tokCheckPending = g_oocStrategicTokCheck;
+    t_shopV = true;
+    std::ostringstream out; int fightIdx = 0; bool sourceValid = true;
+    int invalidCombatRows = 0;
+    bool fatalFailure = false;
     while (gc.outcome == GameOutcome::UNDECIDED) {
+        path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
             const int act = gc.act, floor = gc.floorNum, room = (int)gc.curRoom;
             const MonsterEncounter encounter = gc.info.encounter;
             const int encounterIndex = static_cast<int>(encounter);
             const bool representableEncounter = encounterIndex >= 0 && encounterIndex < static_cast<int>(sizeof(monsterEncounterStrings) / sizeof(monsterEncounterStrings[0]));
-            const std::string features = vFeatCsv(gc);
+            const std::string features = captureCombat ? vFeatCsv(gc) : std::string{};
             int hooks = 0;
-            search::g_onCombatDecision = [&](const BattleContext &) { ++hooks; };
+            auto previousCombatObserver = std::move(search::g_onCombatDecision);
+            if (captureCombat)
+                search::g_onCombatDecision = [&](const BattleContext &) { ++hooks; };
             BattleContext bc; const int healthBefore = search::g_simHealthFailureCount;
-            agent.playoutBattle(gc, bc); search::g_onCombatDecision = nullptr;
-            const auto label = combatEvalTerminal(bc, encounter, hooks, healthBefore, search::g_simHealthFailureCount);
-            const bool labelValid = label.labelValid, healthOk = label.healthOk;
-            out << seed << ',' << fightIdx << ',' << act << ',' << floor << ',' << combatEvalRoomClass(static_cast<Room>(room)) << ','
-                << csvQuote(representableEncounter ? monsterEncounterStrings[encounterIndex] : "INVALID") << ',' << teacher.id << ',' << features << ',';
-            label.write(out); out << '\n';
+            agent.playoutBattle(gc, bc);
+            search::g_onCombatDecision = std::move(previousCombatObserver);
+            const auto label = captureCombat
+                ? combatEvalTerminal(bc, encounter, hooks, healthBefore, search::g_simHealthFailureCount)
+                : CombatEvalLabel{};
+            const bool labelValid = captureCombat && label.labelValid;
+            const bool healthOk = captureCombat ? label.healthOk : true;
+            if (captureCombat) {
+                out << seed << ',' << fightIdx << ',' << act << ',' << floor << ',' << combatEvalRoomClass(static_cast<Room>(room)) << ','
+                    << csvQuote(representableEncounter ? monsterEncounterStrings[encounterIndex] : "INVALID") << ',' << teacher.id << ',' << features << ',';
+                label.write(out); out << '\n';
+            }
             ++fightIdx;
             // Keep every completed terminal as an auditable row.  A simulator
             // or hook failure cannot safely advance the run; ordinary
             // non-death terminations can be exited and the next fight may be
             // collected, while the contract/trainer excludes this row.
-            if (!labelValid) { sourceValid = false; ++quarantined; }
-            if (!labelValid && (!healthOk || !hooks || !representableEncounter)) { search::g_onGameActionExecute = {}; t_curPath = nullptr; return {out.str(), false, quarantined}; }
+            if (captureCombat && !labelValid) { sourceValid = false; ++invalidCombatRows; }
+            if (captureCombat && !labelValid && (!healthOk || !hooks || !representableEncounter)) {
+                fatalFailure = true;
+                search::g_onGameActionExecute = {}; t_curPath = nullptr;
+                const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
+                return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx,
+                        invalidCombatRows, healthFailures, false, false, false, fatalFailure};
+            }
             bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0) search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0) search::GameAction(RT::POTION, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else evalCardRewardPolicy(gc);
-        } else agent.stepOutOfCombatPolicy(gc);
+        } else {
+            runFullRunOocPolicyStep(gc, agent, false, true);
+        }
     }
-    search::g_onCombatDecision = nullptr; return {out.str(), sourceValid, quarantined};
+    search::g_onCombatDecision = nullptr;
+    t_curPath = nullptr;
+    const bool complete = gc.outcome != GameOutcome::UNDECIDED;
+    const int healthFailures = std::max(0, search::g_simHealthFailureCount - sourceHealthFailures);
+    const bool trajectoryValid = complete && healthFailures == 0 && !fatalFailure;
+    return {out.str(), seed, gc.outcome, gc.floorNum, gc.curHp, fightIdx,
+            invalidCombatRows, healthFailures, sourceValid, complete,
+            trajectoryValid, fatalFailure};
+}
+
+static int oocPolicyParitySelfTest(std::uint64_t seed, int sims, int asc) {
+    using OocAction = std::pair<int, std::uint32_t>;
+    auto traceRun = [](const auto &run) {
+        std::vector<OocAction> trace;
+        auto previous = std::move(search::g_onGameActionExecute);
+        search::g_onGameActionExecute = [&](std::uint32_t bits, const GameContext *target) {
+            if (target) trace.emplace_back(static_cast<int>(target->screenState), bits);
+        };
+        const auto result = run();
+        search::g_onGameActionExecute = std::move(previous);
+        return std::make_pair(result, std::move(trace));
+    };
+
+    const auto normal = traceRun([&] {
+        return runFullRunOOC(seed, sims, asc, false, true, false);
+    });
+    WholeCombatTeacher parityTeacher{"ooc-policy-parity", nlohmann::json::object()};
+    const auto captured = traceRun([&] {
+        return runCombatEvalGenSeed(seed, sims, asc, parityTeacher, false);
+    });
+    const auto &specialized = captured.first;
+    const bool sameOutcome = normal.first.won == (specialized.finalOutcome == GameOutcome::PLAYER_VICTORY)
+        && normal.first.floor == specialized.finalFloor
+        && normal.first.hpEnd == specialized.finalHp;
+    if (!sameOutcome || normal.second != captured.second) {
+        std::cerr << "ooc policy parity failed: seed=" << seed
+                  << " normal=(" << normal.first.won << ',' << normal.first.floor << ',' << normal.first.hpEnd
+                  << ") specialized=(" << static_cast<int>(specialized.finalOutcome) << ',' << specialized.finalFloor
+                  << ',' << specialized.finalHp << ") actions=" << normal.second.size()
+                  << '/' << captured.second.size() << '\n';
+        return 1;
+    }
+    std::cout << "ooc policy parity: seed=" << seed << " actions=" << normal.second.size()
+              << " outcome=" << (normal.first.won ? "PLAYER_VICTORY" : "PLAYER_LOSS")
+              << " floor=" << normal.first.floor << " hp=" << normal.first.hpEnd << "\n";
+    return 0;
 }
 
 static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
-                          long long seedOffset, const std::string &teacherPath) {
-    trainingCampaignStart(); const auto teacher = loadWholeCombatTeacher(teacherPath, sims);
+                          long long seedOffset, const std::string &teacherPath,
+                          const std::string &runoutPath);
+static void wholeCombatGen(int nSeeds, int sims, int asc, const std::string &outfile,
+                           long long seedOffset, const std::string &teacherPath);
+
+static int teacherSchemaCompatibilitySelfTest() {
+    for (const auto &[name, value] : std::vector<std::pair<const char *, const char *>>{
+             {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
+             {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+             {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
+             {"STS_SILVER_TELEMETRY", "1"}})
+        setenv(name, value, 1);
+
+    const std::filesystem::path stem = std::filesystem::temp_directory_path()
+        / ("sts_legacy_teacher_compat_" + trainingExecutableGitSha());
+    const std::filesystem::path teacherPath = stem.string() + ".json";
+    const std::filesystem::path wholePath = stem.string() + ".whole.csv";
+    const std::filesystem::path evalPath = stem.string() + ".eval.csv";
+    const auto cleanup = [&] {
+        for (const auto &path : {teacherPath, wholePath, evalPath,
+                                 std::filesystem::path(wholePath.string() + ".provenance.json"),
+                                 std::filesystem::path(evalPath.string() + ".provenance.json")}) {
+            std::error_code ignored;
+            std::filesystem::remove(path, ignored);
+        }
+    };
+    try {
+        const std::string leafPath = "models/silver_leaf_m10_10k.txt";
+        const nlohmann::json teacher = {
+            {"teacher_id", "legacy-schema-compat"},
+            {"git_sha", trainingExecutableGitSha()},
+            {"executable_sha256", fileSha256(g_mainBinaryPath)},
+            {"combat_backend", "silver_uct"},
+            {"rng_regime", "project_fair"},
+            {"search_configuration", {
+                {"simulation_budgets", {10000}}, {"exploration_parameter", 25.0},
+                {"exploration_parameter_chance", 25.0}, {"chance_widening_c", 3.7028},
+                {"chance_widening_alpha", 0.52389}, {"end_turn_widening_c", 3.7028},
+                {"end_turn_widening_alpha", 0.52389}, {"reuse_cap_mode", "allocated"},
+                {"reuse_cap", 32768}, {"sequential_halving", false}, {"pruning", false},
+                {"learned_visit_puct", false}, {"direct_learned_leaf", false}, {"adaptive", false},
+            }},
+            {"environment", {
+                {"STS_FAIR", "1"}, {"STS_SEARCHER3", "0"}, {"STS_SILVER_SEARCH", "1"},
+                {"STS_SILVER_EXACT_ROOT_BUDGETS", "1"}, {"STS_SILVER_REUSE_CAP_MODE", "allocated"},
+                {"STS_SILVER_ADAPTIVE", "0"}, {"STS_SILVER_VNET_LEAF_DIRECT", "0"},
+                {"STS_SILVER_TELEMETRY", "1"},
+            }},
+            {"model_artifacts", {{{"role", "combat_value_or_leaf"},
+                                   {"path", leafPath}, {"sha256", fileSha256(leafPath)}}}},
+        };
+        std::ofstream out(teacherPath);
+        if (!out) throw std::runtime_error("teacher compatibility: cannot create fixture");
+        out << teacher.dump(2) << '\n';
+        out.close();
+        wholeCombatGen(0, 10000, 0, wholePath.string(), 0, teacherPath.string());
+        combatEvalGen(0, 10000, 0, evalPath.string(), 0, teacherPath.string(), "");
+    } catch (...) {
+        cleanup();
+        throw;
+    }
+    cleanup();
+    std::cout << "legacy teacher schema compatibility: wholecombatgen and combatevalgen without RUNOUT accepted\n";
+    return 0;
+}
+
+static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outfile,
+                          long long seedOffset, const std::string &teacherPath,
+                          const std::string &runoutPath = {}) {
+    trainingCampaignStart(); const auto teacher = loadWholeCombatTeacher(teacherPath, sims, false,
+                                                                           !runoutPath.empty());
     std::ofstream f(outfile); if (!f) throw std::runtime_error("combatevalgen: cannot open output");
+    std::ofstream runout;
+    if (!runoutPath.empty()) {
+        runout.open(runoutPath);
+        if (!runout) throw std::runtime_error("combatevalgen: cannot open runout output");
+        runout << "sourceSeed,finalOutcome,finalWon,finalFloor,finalHp,fightCount,trajectoryComplete,trajectoryValid,combatRows,invalidCombatRows,teacherId,simulatorHealthFailures,fatalFailure\n";
+    }
     f << "sourceSeed,fightIdx,act,floor,roomClass,encounter,teacherId," << richStateHeader()
       << ',' << combatEvalLabelHeader() << '\n';
     long long rows = 0; int completed = 0;
@@ -4081,7 +4343,23 @@ static void combatEvalGen(int nSeeds, int sims, int asc, const std::string &outf
     for (int s = 0; s < nSeeds; ++s) {
         const CombatEvalSeedResult generated = runCombatEvalGenSeed(seedOffset + s, sims, asc, teacher);
         #pragma omp critical(combat_eval_write)
-        { f << generated.rows; f.flush(); rows += std::count(generated.rows.begin(), generated.rows.end(), '\n'); if (generated.sourceValid) ++completed; else ++g_trainingInvalidRuns; g_trainingInvalidBranches += generated.quarantined; }
+        {
+            f << generated.rows; f.flush();
+            rows += std::count(generated.rows.begin(), generated.rows.end(), '\n');
+            if (generated.sourceValid) ++completed; else ++g_trainingInvalidRuns;
+            g_trainingInvalidBranches += generated.invalidCombatRows;
+            if (!runoutPath.empty()) {
+                runout << generated.sourceSeed << ',' << combatEvalGameOutcome(generated.finalOutcome) << ','
+                       << combatEvalFinalWon(generated.finalOutcome) << ',' << generated.finalFloor << ','
+                       << generated.finalHp << ',' << generated.fightCount << ','
+                       << (generated.trajectoryComplete ? 1 : 0) << ','
+                       << (generated.trajectoryValid ? 1 : 0) << ','
+                       << std::count(generated.rows.begin(), generated.rows.end(), '\n') << ','
+                       << generated.invalidCombatRows << ',' << teacher.id << ','
+                       << generated.simulatorHealthFailures << ',' << (generated.fatalFailure ? 1 : 0) << '\n';
+                runout.flush();
+            }
+        }
     }
     std::cout << "combatevalgen teacher=" << teacher.id << " completed=" << completed << '/' << nSeeds << " quarantined=" << nSeeds-completed << " rows=" << rows << " -> " << outfile << '\n';
     writeTrainingProvenance(outfile, "combatevalgen", nSeeds, completed, nSeeds-completed, g_trainingHealthFailures.load(), rows, seedOffset, sims, asc);
@@ -9413,8 +9691,17 @@ int main(int argc, char **argv) {
         if (argc < 8) { std::cerr << "usage: one_combat wholecombatgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         wholeCombatGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoll(argv[6]),argv[7]);
     } else if (mode == "combatevalgen") {
-        if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
-        combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7]);
+        if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json [RUNOUT.csv]\n"; return 2; }
+        combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argc > 8 ? argv[8] : "");
+    } else if (mode == "oocpolicyparity") {
+        if (argc < 3 || argc > 5) {
+            std::cerr << "usage: one_combat oocpolicyparity SEED [SIMS] [ASC]\n";
+            return 2;
+        }
+        return oocPolicyParitySelfTest(std::stoull(argv[2]), argc > 3 ? std::stoi(argv[3]) : 100,
+                                       argc > 4 ? std::stoi(argv[4]) : 0);
+    } else if (mode == "teacher_schema_compat") {
+        return teacherSchemaCompatibilitySelfTest();
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);

@@ -106,6 +106,7 @@ namespace sts::search {
         float baseScore = 0.f;
         bool  isLoaded = false;
         bool  isPolicy = false; // map model features against the POLICY layout, not the value one
+        std::string path;
 
         bool load(const std::string &path);
         // Per-encounter specialization: encounterModels maps a MonsterEncounter
