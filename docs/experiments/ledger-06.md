@@ -6502,3 +6502,183 @@ model training was changed.
   concordance; Python compilation, JSON validation, evidence cross-check, and
   `git diff --check` pass. Full corrected report and TEST predictions remain
   external at `/home/philippherrmann/sts_sweep/runs/combat-evaluator-comparison-v5/`.
+
+## §223 Silver chance replay: generative-frequency diagnostic (2026-09-11)
+
+- **Question/protocol:** test whether Silver's capped chance replay amplifies
+  early sampling luck when multiple fresh simulator draws deduplicate to the
+  same state. Baseline was `6c6dc8b7e1cbb0e11c3e64efdfa341fe5a229a78`.
+  The fixture runner used the real `BattleSearcher::selectChanceOutcome()`
+  path, paired deterministic seeds `0..127`, budgets `32/64/128/256/512`, and
+  identical widening schedules and synthetic random streams for A/B. The
+  local 128-seed cap was respected.
+- **Current contract:** a stochastic action's first outcome is generated from
+  `Random(randomnessBase + 0)` and cached; later widening draws increment
+  `outcomesGenerated`, execute the generator from
+  `Random(randomnessBase + N)`, and deduplicate the resulting state with
+  `equalForSearch`. A fresh duplicate increments the cached edge's
+  `generativeCount`; every descent increments its `visitCount`. Once the
+  double-progressive-widening cap
+  `ceil(c * (simulationCount + 1)^alpha)` is reached, the default implementation
+  selects a cached edge proportional to `visitCount`. Thus search/replay
+  allocation can feed back into later outcome selection; it is not the same
+  quantity as fresh stochastic frequency.
+- **Fixtures:** analytical 50/50, 80/20, a 25/75 raw-draw-to-two-state
+  deduplication fixture, a uniform 16-state high-entropy fixture where
+  progressive widening binds, and an independent-stream close decision with
+  true values 0.60 versus 0.58. A treatment arm replaced only capped replay's
+  `visitCount` weight with fresh-draw `generativeCount`; the default remained
+  unchanged. No UCT, widening, rollout, root exploration, or tree-reuse
+  parameter changed.
+- **Selected raw results:**
+
+  | Fixture | Budget | A RMSE | B RMSE | A mean p0 | B mean p0 |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | 50/50 | 128 | 0.32068 | 0.18424 | 0.53394 | 0.54889 |
+  | 50/50 | 512 | 0.32042 | 0.18159 | 0.53331 | 0.54939 |
+  | 80/20 | 128 | 0.30012 | 0.22340 | 0.68640 | 0.64667 |
+  | 80/20 | 512 | 0.29870 | 0.22025 | 0.68813 | 0.65099 |
+  | dedup 25/75 | 128 | 0.33560 | 0.20849 | 0.38458 | 0.37207 |
+  | dedup 25/75 | 512 | 0.33487 | 0.20644 | 0.38145 | 0.36932 |
+  | entropy-16 | 128 | 0.06669 | 0.04953 | 0.03503 | 0.03534 |
+  | entropy-16 | 512 | 0.01682 | 0.01254 | 0.05321 | 0.05328 |
+
+  On the close decision, A selected the truly better 0.60 arm on
+  `76.6/77.3/76.6/78.9/76.6%` of seeds at budgets
+  `32/64/128/256/512`; B scored `71.1/73.4/71.1/71.1/71.9%`. Across the four
+  non-close fixtures, B's aggregate value RMSE was lower by 29–35% at budgets
+  32, 128, and 512. Runtime was within measurement noise overall, with the
+  B/A matrix total at budget 128 about 5.8% higher and at 512 about 0.8%
+  higher in this small runner.
+- **Decision:** **MIXED; STOP.** The feedback mechanism is real, and B clearly
+  reduces value-estimate RMSE in these synthetic fixtures, including the
+  deduplication case. However, it worsens the explicitly required close root
+  action decision across every tested budget. The result does not meet a
+  clean policy-improvement bar and does not authorize a gameplay screen or a
+  production Silver switch. The default production contract remains A.
+- **Evidence/checks:** raw machine-readable rows are in
+  [silver_chance_frequency_2026-09-11.csv](evidence/silver_chance_frequency_2026-09-11.csv).
+  The experiment and affected Silver optimization target build with the
+  `linux-gcc-debug-ccache` preset; `silver_search_optimization` passes and
+  the output schema contains 70 rows over the six value fixtures plus five
+  close-decision budgets per arm. `git diff --check` passes. No large gameplay
+  benchmark was run.
+
+## §224 Silver chance replay: explicitly authorized gameplay screen (2026-09-11)
+
+- **Reason for run:** §223 stopped at a mixed synthetic result and therefore
+  did not authorize gameplay qualification. The user explicitly authorized a
+  small gameplay screen anyway. This is an exploratory follow-up, not a
+  changed production gate.
+- **Protocol:** compare default A against B with only
+  `STS_SILVER_GENERATIVE_CHANCE=1` changed. Both arms used
+  `one_combat bestbench 1000 32 0 0`, the repository seed guard, the same
+  project-fair seed block `0..31`, Searcher2 (`STS_SEARCHER3=0`), native OOC,
+  isolated Silver search, exact Silver root budgets, and telemetry. The
+  implementation was `a46cc83d7d3515e8b864236e41c4013dca835d91`; the live
+  treatment path is default-off.
+- **Results:**
+
+  | Arm | Wins | Mean floor | Mean ending HP | Fights lost | Mean seconds |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | A, default replay weighting | 19/32 (59.4%) | 46.53 | 22.13 | 13 | 23.86 |
+  | B, generative-frequency weighting | 15/32 (46.9%) | 47.47 | 21.84 | 17 | 23.02 |
+
+  Paired win disagreements were five A-win/B-loss seeds versus one
+  A-loss/B-win seed. B's paired mean deltas were `+0.94` floor, `-0.28`
+  ending HP, `+0.125` fights lost, and `-0.84` seconds. The screen therefore
+  does not support promoting B: its slightly higher mean floor did not carry
+  through to wins and came with more lost fights. No runtime default changed.
+- **Evidence/checks:** raw paired rows are in
+  [silver_chance_gameplay_screen_2026-09-11.csv](evidence/silver_chance_gameplay_screen_2026-09-11.csv).
+  Both arms completed 32 rows with the same seed set and no simulator,
+  conversion, transaction, semantic-resolution, or knowledge failures in
+  telemetry. The treatment log emitted the explicit experimental banner.
+  The build and focused Silver regression checks passed before the screen;
+  `git diff --check` and the seed guard also passed. This 32-seed screen is
+  too small to establish a general gameplay effect, but it is sufficient to
+  reject this treatment for the current production path.
+
+## §225 Silver chance replay: 10k-simulation gameplay screen (2026-09-11)
+
+- **Reason for run:** follow up on §224 at the user's request to test whether
+  the 1k-screen result changes at a larger search budget. This remains a
+  descriptive, explicitly authorized screen; it is not a new promotion gate.
+- **Protocol:** the §224 paired design was repeated with only the root budget
+  changed from `1,000` to `10,000`: `one_combat bestbench 10000 32 0 0`,
+  project-fair seeds `0..31`, Searcher2, native OOC, isolated Silver search,
+  exact root budgets, telemetry, and `tools/seed_guard.sh`. A used the default
+  replay weighting; B added only `STS_SILVER_GENERATIVE_CHANCE=1`. The
+  implementation/configuration head was `0517e682061ebb382f3a5a9238967b7542f87e2b`.
+- **Results:**
+
+  | Arm | Wins | Mean floor | Mean ending HP | Fights lost | Mean seconds |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | A, default replay weighting | 19/32 (59.4%) | 47.47 | 28.53 | 13 | 239.97 |
+  | B, generative-frequency weighting | 22/32 (68.8%) | 49.28 | 30.31 | 10 | 255.15 |
+
+  Paired win disagreements were two A-win/B-loss seeds versus five
+  A-loss/B-win seeds. B's paired mean deltas were `+3` wins in aggregate,
+  `+1.81` floor, `+1.78` ending HP, `-3` fights lost, and `+15.18` seconds.
+  Relative to §224, the 10k screen reverses the direction of the small 1k
+  screen for this seed block: B went from 15 wins to 22, while A stayed at
+  19. This suggests a budget interaction, but does not establish a general
+  policy or win-rate improvement from only 32 paired seeds.
+- **Decision:** **DESCRIPTIVE 10K SIGNAL; DO NOT PROMOTE.** The result is
+  encouraging for a future budget-interaction study, but the sample is too
+  small and the treatment remains synthetic-mixed and default-off. Keep A as
+  the production default; do not enable B based on this screen alone.
+- **Evidence/checks:** raw paired rows are in
+  [silver_chance_gameplay_screen_10k_2026-09-11.csv](evidence/silver_chance_gameplay_screen_10k_2026-09-11.csv).
+  Both arms completed 32 rows with identical seed coverage and no simulator,
+  conversion, transaction, semantic-resolution, or knowledge failures in
+  telemetry. The build, focused Silver regressions, seed guard, and
+  `git diff --check` passed. The local 10k screen took several minutes per
+  arm; full CTest and GitHub Actions CI were not run locally.
+
+## §226 Silver chance replay: 64 fresh-seed 10k follow-up (2026-09-11)
+
+- **Trigger:** §225's fresh 32-seed block produced exactly the proposed
+  escalation threshold: B had seven A-loss/B-win seeds versus three
+  A-win/B-loss seeds, net `+4` paired wins. Following the proposed rule, a
+  second untouched 32-seed block was run rather than changing parameters.
+- **Protocol:** seeds `64..95` were added to the existing fresh block
+  `32..63`, for 64 total fresh paired seeds. Both A and B used
+  `one_combat bestbench 10000 32 0 <seedOffset>` through
+  `tools/seed_guard.sh`, with `OMP_NUM_THREADS=12`, project-fair Searcher2,
+  native OOC, isolated Silver, exact root budgets, and telemetry. The only
+  A/B difference remained B's `STS_SILVER_GENERATIVE_CHANCE=1`.
+- **Results over all 64 fresh seeds:**
+
+  | Arm | Wins | Mean floor | Mean ending HP | Fights lost | Mean seconds |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | A, default replay weighting | 41/64 (64.1%) | 47.52 | 30.83 | 23 | 251.54 |
+  | B, generative-frequency weighting | 46/64 (71.9%) | 47.89 | 38.91 | 18 | 298.82 |
+
+  The paired record was 9 A-loss/B-win versus 4 A-win/B-loss seeds, for a
+  net B advantage of `+5` paired wins. B's paired mean deltas were `+0.38`
+  floor, `+8.08` ending HP, `-5` fights lost, and `+47.28` seconds. The
+  second block alone was weaker but still favorable to B: 2 A-loss/B-win
+  versus 1 A-win/B-loss, net `+1`.
+- **Decision:** **64-SEED SIGNAL; HOLD FOR PROPER PROMOTION TEST.** The
+  aggregate meets the suggested escalation result and is directionally
+  consistent with the 32-seed trigger, but 64 seeds remain a small
+  descriptive screen rather than a production qualification. Do not enable
+  B by default and do not tune widening or other parameters between this
+  result and any future promotion test.
+- **Evidence/checks:** the combined raw paired rows are in
+  [silver_chance_gameplay_screen_10k_fresh32-95_2026-09-11.csv](evidence/silver_chance_gameplay_screen_10k_fresh32-95_2026-09-11.csv),
+  which preserves both source blocks and all 128 A/B rows. All four arms
+  completed their expected 32 rows, startup banners reported `threads 12`
+  and the correct seed ranges, and telemetry showed no simulator,
+  conversion, transaction, semantic-resolution, or knowledge failures.
+  Focused Silver tests, worktree validation, seed-guard checks, and
+  `git diff --check` passed; full CTest and GitHub Actions CI were not run
+  locally.
+- **Merge cleanup:** after the screens, the user selected A as the production
+  behavior. The experiment-only `generativeCount`/replay switch, synthetic
+  fixture executable and CMake target, live environment flag, and diagnostic
+  searcher hook were removed before merging this evidence. The recorded rows
+  above were produced by the frozen pre-cleanup executable/configuration and
+  remain historical evidence; no treatment implementation or production
+  default is retained.
