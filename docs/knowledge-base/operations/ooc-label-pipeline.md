@@ -166,6 +166,15 @@ The optional producer is invoked as:
 tools/seed_guard.sh build/one_combat combatevalgen N_SEEDS 10000 ASC OUT.csv SEED_OFFSET TEACHER.json RUNOUT.csv
 ```
 
+The manifest records the effective `runFullRunOOC` policy chain, its runtime
+configuration, and every model artifact hash used by that chain in addition to
+the Silver combat teacher. A producer must fail closed when either identity
+differs. New corrected output uses `dataset_role=primary_corrected_vwin_l`;
+the already collected pre-parity raw corpus is retained as explicitly
+`dataset_role=heuristic_policy_auxiliary` evidence. It remains usable for
+auxiliary LL analysis, but must not be relabeled or pooled as the primary new
+V_win/L corpus.
+
 The large corpus uses 128-source shards through the designated GCP research
 path. Raw shards, manifests, teacher/model identities, logs, timings and
 coverage reports remain outside Git; semantic-branch, E2/E2c and other

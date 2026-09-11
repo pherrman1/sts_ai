@@ -310,6 +310,11 @@ set_tests_properties(combat_evaluator_semantic_branch_contract PROPERTIES LABELS
 add_test(NAME battle_start_runout_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_battle_start_runout_contract.py)
 set_tests_properties(battle_start_runout_contract PROPERTIES LABELS "core;research-repro")
+add_test(NAME ooc_policy_parity
+    COMMAND $<TARGET_FILE:one_combat> oocpolicyparity 4000598 100 0)
+set_tests_properties(ooc_policy_parity PROPERTIES
+    LABELS "core;research-repro"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(ooc_semantic_producer PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_smith)
 set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation

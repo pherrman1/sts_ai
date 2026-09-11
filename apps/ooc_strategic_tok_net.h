@@ -78,6 +78,7 @@ struct OocStrategicTokNet {
     float q2w[POLHID], q2b;
 
     bool ok = false;
+    std::string path;
 
     bool load(const std::string &path) {
         FILE *f = std::fopen(path.c_str(), "rb");
@@ -159,6 +160,7 @@ struct OocStrategicTokNet {
             return false;
         }
         ok = true;
+        this->path = path;
         std::printf("[ooc-strat-tok-net] loaded %s\n", path.c_str());
         return true;
     }

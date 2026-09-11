@@ -36,6 +36,7 @@ except ModuleNotFoundError:
 
 
 SCHEMA_VERSION = "battle_start_runout_v1"
+DATASET_ROLES = {"primary_corrected_vwin_l", "heuristic_policy_auxiliary"}
 RUNOUT_HEADER = [
     "sourceSeed", "finalOutcome", "finalWon", "finalFloor", "finalHp",
     "fightCount", "trajectoryComplete", "trajectoryValid", "combatRows",
@@ -194,9 +195,33 @@ def _validate_teacher_binding(teacher: dict) -> None:
         require(isinstance(role, str) and role and role not in roles, "invalid/duplicate teacher model role")
         require(isinstance(path, str) and path, "teacher model artifact is missing path")
         _hash(digest, "teacher model artifact SHA256")
-        if Path(path).is_file():
-            require(sha256(path) == digest, "teacher model artifact hash mismatch")
+        require(Path(path).is_file(), "teacher model artifact is missing")
+        require(sha256(path) == digest, "teacher model artifact hash mismatch")
         roles.add(role)
+    policy = teacher.get("ooc_policy")
+    require(isinstance(policy, dict), "teacher is missing effective OOC policy")
+    require(policy.get("schema_version") == "runFullRunOOC_policy_v1",
+            "unsupported effective OOC policy schema")
+    require(policy.get("policy_chain") == "runFullRunOOC",
+            "effective OOC policy chain mismatch")
+    require(policy.get("restV") is False and policy.get("shopV") is True,
+            "effective OOC horizon flags mismatch")
+    require(isinstance(policy.get("flags"), dict) and isinstance(policy.get("parameters"), dict),
+            "effective OOC policy configuration is incomplete")
+    ooc_artifacts = policy.get("model_artifacts")
+    require(isinstance(ooc_artifacts, list) and ooc_artifacts,
+            "effective OOC policy has no model artifacts")
+    ooc_roles = set()
+    for artifact in ooc_artifacts:
+        require(isinstance(artifact, dict), "invalid effective OOC model artifact")
+        role, path, digest = artifact.get("role"), artifact.get("path"), artifact.get("sha256")
+        require(isinstance(role, str) and role and role not in ooc_roles,
+                "invalid/duplicate effective OOC model role")
+        require(isinstance(path, str) and path, "effective OOC model artifact is missing path")
+        _hash(digest, "effective OOC model artifact SHA256")
+        require(Path(path).is_file() and sha256(path) == digest,
+                "effective OOC model artifact hash mismatch")
+        ooc_roles.add(role)
 
 
 def _stable_split(seeds: set[int]) -> dict[int, str]:
@@ -259,16 +284,16 @@ def _coverage(combat_rows: list[dict], runout_rows: list[dict], seed_to_run: dic
         split_counts = {"status": "insufficient_source_support"}
     else:
         split_counts = {}
-        death_sources = {d["sourceSeed"] for d in deaths}
         for split in ("train", "validation", "test"):
             source_rows = [row for row in runout_rows if splits[int(row["sourceSeed"])] == split]
             row_rows = [row for row in vwin if splits[int(row["sourceSeed"])] == split]
+            eligible_deaths = [row for row in deaths if splits[int(row["sourceSeed"])] == split]
             split_counts[split] = {
                 "source_seeds": len(source_rows),
                 "wins": sum(row["finalOutcome"] == "PLAYER_VICTORY" for row in source_rows),
                 "losses": sum(row["finalOutcome"] == "PLAYER_LOSS" for row in source_rows),
                 "battle_start_rows": len(row_rows),
-                "l_eligible_deaths": sum(int(row["sourceSeed"]) in death_sources for row in row_rows),
+                "l_eligible_deaths": len(eligible_deaths),
             }
     return {
         "source_trajectories": {"requested": len(runout_rows), "completed": len(runout_rows), "valid": len(valid_sources),
@@ -335,14 +360,17 @@ def _validate_runtime(runtime: object) -> None:
 
 
 def validate_manifest(manifest: dict) -> dict:
-    required = ("schema_version", "producer_git_sha", "producer_executable_sha256", "teacher",
-                "feature_contract", "seed_spec", "runtime", "shards", "integrity")
+    required = ("schema_version", "dataset_role", "producer_git_sha", "producer_executable_sha256", "teacher",
+                "ooc_policy", "feature_contract", "seed_spec", "runtime", "shards", "integrity")
     require(all(name in manifest for name in required), "manifest missing required field")
     require(manifest["schema_version"] == SCHEMA_VERSION, "unsupported schema version")
+    require(manifest["dataset_role"] in DATASET_ROLES, "unsupported dataset role")
     require(re.fullmatch(r"[0-9a-f]{40}", manifest["producer_git_sha"]) is not None,
             "invalid producer git SHA")
     _hash(manifest["producer_executable_sha256"], "producer executable SHA256")
     _validate_teacher_binding(manifest["teacher"])
+    require(manifest["ooc_policy"] == manifest["teacher"]["ooc_policy"],
+            "manifest effective OOC policy differs from teacher")
     _validate_feature_contract(manifest["feature_contract"])
     _validate_runtime(manifest["runtime"])
     require(isinstance(manifest["shards"], list) and manifest["shards"], "manifest has no shards")
@@ -381,10 +409,13 @@ def validate_manifest(manifest: dict) -> dict:
 
 
 def _manifest(teacher: dict, producer_git_sha: str, producer_executable_sha256: str,
-              shards: list[dict], runtime: dict) -> dict:
+              shards: list[dict], runtime: dict,
+              dataset_role: str = "primary_corrected_vwin_l") -> dict:
     ranges = [shard["seed_spec"] for shard in shards]
-    return {"schema_version": SCHEMA_VERSION, "producer_git_sha": producer_git_sha,
+    return {"schema_version": SCHEMA_VERSION, "dataset_role": dataset_role,
+            "producer_git_sha": producer_git_sha,
             "producer_executable_sha256": producer_executable_sha256, "teacher": teacher,
+            "ooc_policy": json.loads(json.dumps(teacher["ooc_policy"])),
             "feature_contract": {"count": EXPECTED_STATE_FEATURE_COUNT, "state_names": list(RICH_NAMES),
                                   "state_order_sha256": STATE_ORDER_SHA256, "header_sha256": HEADER_SHA256},
             "seed_spec": {"source_count": sum(int(s["count"]) for s in ranges), "ranges": ranges},
@@ -393,13 +424,14 @@ def _manifest(teacher: dict, producer_git_sha: str, producer_executable_sha256: 
 
 def build_manifest(combat_csv: str | Path, runout_csv: str | Path, teacher_path: str | Path,
                    output: str | Path, producer_git_sha: str, producer_executable_sha256: str,
-                   seed_offset: int, seed_count: int, ascension: int, runtime: dict) -> dict:
+                   seed_offset: int, seed_count: int, ascension: int, runtime: dict,
+                   dataset_role: str = "primary_corrected_vwin_l") -> dict:
     teacher = json.loads(Path(teacher_path).read_text(encoding="utf-8"))
     _validate_teacher_binding(teacher)
     shard = {"seed_spec": {"offset": seed_offset, "count": seed_count, "ascension": ascension},
              "combat_csv": {"path": str(Path(combat_csv).resolve()), "sha256": sha256(combat_csv)},
              "runout_csv": {"path": str(Path(runout_csv).resolve()), "sha256": sha256(runout_csv)}}
-    manifest = _manifest(teacher, producer_git_sha, producer_executable_sha256, [shard], runtime)
+    manifest = _manifest(teacher, producer_git_sha, producer_executable_sha256, [shard], runtime, dataset_role)
     # Fill the exact aggregate counts after validating the complete shard.
     shard_report = validate_shard(shard, teacher, producer_git_sha, producer_executable_sha256)
     seed_to_run = {int(row["sourceSeed"]): row for row in shard_report["runout_rows"]}
@@ -430,8 +462,11 @@ def aggregate_manifests(inputs: list[str | Path], output: str | Path, runtime: d
                 item["producer_executable_sha256"] == first["producer_executable_sha256"] and
                 item["teacher"] == first["teacher"] and item["feature_contract"] == first["feature_contract"],
                 "mixed producer, teacher, or feature contract across shards")
+    roles = {item["dataset_role"] for item in manifests}
+    require(len(roles) == 1, "mixed dataset roles across shards")
     manifest = _manifest(first["teacher"], first["producer_git_sha"], first["producer_executable_sha256"],
-                         [shard for item in manifests for shard in item["shards"]], runtime)
+                         [shard for item in manifests for shard in item["shards"]], runtime,
+                         roles.pop())
     # Recompute the aggregate integrity without duplicating the individual CSV data in the manifest.
     all_combat, all_runout = [], []
     for shard in manifest["shards"]:
@@ -469,16 +504,21 @@ def main() -> int:
     parser.add_argument("--seed-count", type=int)
     parser.add_argument("--ascension", type=int, default=0)
     parser.add_argument("--runtime-json")
+    parser.add_argument("--dataset-role", choices=sorted(DATASET_ROLES),
+                        default="primary_corrected_vwin_l")
     args = parser.parse_args()
     if args.build:
-        require(all(getattr(args, name) for name in ("combat_csv", "runout_csv", "teacher", "output",
-                                                      "producer_git_sha", "producer_executable_sha256",
-                                                      "seed_offset", "seed_count", "runtime_json")),
+        required_values = ("combat_csv", "runout_csv", "teacher", "output",
+                           "producer_git_sha", "producer_executable_sha256",
+                           "seed_offset", "seed_count", "runtime_json")
+        require(all(getattr(args, name) is not None and getattr(args, name) != ""
+                    for name in required_values),
                 "--build requires combat/runout/teacher/output/provenance/seed/runtime arguments")
         manifest = build_manifest(args.combat_csv, args.runout_csv, args.teacher, args.output,
                                   args.producer_git_sha, args.producer_executable_sha256,
                                   args.seed_offset, args.seed_count, args.ascension,
-                                  json.loads(Path(args.runtime_json).read_text(encoding="utf-8")))
+                                  json.loads(Path(args.runtime_json).read_text(encoding="utf-8")),
+                                  args.dataset_role)
     elif args.aggregate:
         require(args.output and args.runtime_json, "--aggregate requires --output and --runtime-json")
         manifest = aggregate_manifests(args.aggregate, args.output,

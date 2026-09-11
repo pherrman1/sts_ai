@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "game/GameContext.h"
+#include "sim/search/ScumSearchAgent2.h"
 
 struct RunResult {
     bool won;
@@ -19,6 +20,12 @@ struct RunResult {
 
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV,
                         bool shopV, bool e2cCapture = false);
+
+// Apply the exact ordered non-combat policy chain used by runFullRunOOC.
+// Callers own the battle branch and must invoke this only for non-BATTLE
+// screens so specialized combat capture can remain local to the caller.
+void runFullRunOocPolicyStep(sts::GameContext &, sts::search::ScumSearchAgent2 &,
+                             bool restV, bool shopV);
 
 // Concrete seams shared with retained one_combat.cpp drivers.  These keep
 // environment parsing, model loading, and the counterfactual evaluators in

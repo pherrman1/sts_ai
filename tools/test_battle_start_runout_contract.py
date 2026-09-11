@@ -21,6 +21,19 @@ class BattleStartRunoutContractTest(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.model = self.root / "leaf.txt"
         self.model.write_text("fixture model\n", encoding="utf-8")
+        self.ooc_policy = {
+            "schema_version": "runFullRunOOC_policy_v1",
+            "policy_chain": "runFullRunOOC",
+            "restV": False,
+            "shopV": True,
+            "native_ooc": True,
+            "flags": {"rest_win": True},
+            "parameters": {"card_skip_threshold": -0.5},
+            "model_artifacts": [{
+                "role": "floor", "path": str(self.model),
+                "sha256": contract.sha256(self.model),
+            }],
+        }
         self.teacher = {
             "teacher_id": "silver-fixture",
             "git_sha": "a" * 40,
@@ -38,6 +51,7 @@ class BattleStartRunoutContractTest(unittest.TestCase):
                 "role": "combat_value_or_leaf", "path": str(self.model),
                 "sha256": contract.sha256(self.model),
             }],
+            "ooc_policy": self.ooc_policy,
         }
 
     def tearDown(self):
@@ -148,6 +162,36 @@ class BattleStartRunoutContractTest(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "duplicate source run identity"):
             contract.validate_manifest(broken)
+        broken = self.manifest(combat, runout)
+        broken["ooc_policy"]["flags"]["rest_win"] = False
+        with self.assertRaisesRegex(ValueError, "effective OOC policy differs"):
+            contract.validate_manifest(broken)
+
+    def test_source_group_split_counts_death_rows_not_all_source_rows(self):
+        seed_pool = range(1000, 1200)
+        splits = contract._stable_split(set(seed_pool))
+        selected = {split: next(seed for seed in seed_pool if splits[seed] == split)
+                    for split in ("train", "validation", "test")}
+        runout = [{"sourceSeed": str(seed), "finalOutcome": "PLAYER_LOSS",
+                   "finalWon": "0", "trajectoryValid": "1"}
+                  for seed in seed_pool]
+        combat = []
+        for seed in selected.values():
+            combat.extend([
+                {"sourceSeed": str(seed), "labelValid": "1", "trueDeath": "1", "escaped": "0",
+                 "progressAmbiguous": "0", "act": "1", "roomClass": "NORMAL",
+                 "encounter": "Cultist", "floor": "8", "fightIdx": "0",
+                 "curHp": "20", "maxHp": "80", "lossRemainingFrac": "0.2"},
+                {"sourceSeed": str(seed), "labelValid": "1", "trueDeath": "0", "escaped": "0",
+                 "progressAmbiguous": "0", "act": "1", "roomClass": "NORMAL",
+                 "encounter": "Jaw Worm", "floor": "9", "fightIdx": "1",
+                 "curHp": "30", "maxHp": "80", "lossRemainingFrac": "0.2"},
+            ])
+        coverage = contract._coverage(combat, runout,
+                                      {int(row["sourceSeed"]): row for row in runout})
+        split_counts = coverage["v_win"]["source_group_split"]
+        self.assertEqual({split_counts[name]["l_eligible_deaths"]
+                          for name in ("train", "validation", "test")}, {1})
 
 
 if __name__ == "__main__":

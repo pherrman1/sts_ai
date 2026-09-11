@@ -76,6 +76,7 @@ struct OocStrategicNet {
     bool mapEnc = false;
 
     bool ok = false;
+    std::string path;
 
     bool load(const std::string &path) {
         FILE *f = std::fopen(path.c_str(), "rb");
@@ -172,6 +173,7 @@ struct OocStrategicNet {
             return false;
         }
         ok = true;
+        this->path = path;
         std::printf("[ooc-strat-net] loaded %s (%s)\n", path.c_str(),
                     mapEnc ? "OOC_STRAT_V6 Q_win + map-DAG encoder"
                            : (probQ ? "OOC_STRAT_V5 Q_win" : "OOC_STRAT_V3"));

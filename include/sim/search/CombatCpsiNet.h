@@ -38,6 +38,7 @@ namespace sts::search {
 
     struct CombatCpsiNet {
         bool isLoaded = false;
+        std::string path;
         double winBonus = 50.0;
         int entityDim = 128;
         int hiddenDim = 256;
