@@ -6563,3 +6563,38 @@ model training was changed.
   the output schema contains 70 rows over the six value fixtures plus five
   close-decision budgets per arm. `git diff --check` passes. No large gameplay
   benchmark was run.
+
+## §224 Silver chance replay: explicitly authorized gameplay screen (2026-09-11)
+
+- **Reason for run:** §223 stopped at a mixed synthetic result and therefore
+  did not authorize gameplay qualification. The user explicitly authorized a
+  small gameplay screen anyway. This is an exploratory follow-up, not a
+  changed production gate.
+- **Protocol:** compare default A against B with only
+  `STS_SILVER_GENERATIVE_CHANCE=1` changed. Both arms used
+  `one_combat bestbench 1000 32 0 0`, the repository seed guard, the same
+  project-fair seed block `0..31`, Searcher2 (`STS_SEARCHER3=0`), native OOC,
+  isolated Silver search, exact Silver root budgets, and telemetry. The
+  implementation was `a46cc83d7d3515e8b864236e41c4013dca835d91`; the live
+  treatment path is default-off.
+- **Results:**
+
+  | Arm | Wins | Mean floor | Mean ending HP | Fights lost | Mean seconds |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | A, default replay weighting | 19/32 (59.4%) | 46.53 | 22.13 | 13 | 23.86 |
+  | B, generative-frequency weighting | 15/32 (46.9%) | 47.47 | 21.84 | 17 | 23.02 |
+
+  Paired win disagreements were five A-win/B-loss seeds versus one
+  A-loss/B-win seed. B's paired mean deltas were `+0.94` floor, `-0.28`
+  ending HP, `+0.125` fights lost, and `-0.84` seconds. The screen therefore
+  does not support promoting B: its slightly higher mean floor did not carry
+  through to wins and came with more lost fights. No runtime default changed.
+- **Evidence/checks:** raw paired rows are in
+  [silver_chance_gameplay_screen_2026-09-11.csv](evidence/silver_chance_gameplay_screen_2026-09-11.csv).
+  Both arms completed 32 rows with the same seed set and no simulator,
+  conversion, transaction, semantic-resolution, or knowledge failures in
+  telemetry. The treatment log emitted the explicit experimental banner.
+  The build and focused Silver regression checks passed before the screen;
+  `git diff --check` and the seed guard also passed. This 32-seed screen is
+  too small to establish a general gameplay effect, but it is sufficient to
+  reject this treatment for the current production path.

@@ -97,8 +97,14 @@ multiplicity lowered synthetic value RMSE by roughly 21–43% at budgets 32–51
 across 50/50, 80/20, deduplicated, and 16-state high-entropy fixtures, but it
 reduced close root-action accuracy on the 0.60-versus-0.58 fixture from
 76.6–78.9% to 71.1–73.4%. The treatment remained default-off and no gameplay
-screen is authorized. See [ledger-06 §223](../../experiments/ledger-06.md) and
-the [raw matrix](../../experiments/evidence/silver_chance_frequency_2026-09-11.csv).
+screen was originally authorized. At the user's explicit request, a follow-up
+32-seed gameplay screen then ran at 1,000 simulations per root: A won 19/32
+seeds versus B's 15/32. B's mean floor was slightly higher (47.47 versus
+46.53), but it had more lost fights (17 versus 13) and five A-win/B-loss
+disagreements against one A-loss/B-win. This is unfavorable on wins and does
+not qualify the treatment; the default remains A. See [ledger-06 §§223–224](../../experiments/ledger-06.md),
+the [synthetic raw matrix](../../experiments/evidence/silver_chance_frequency_2026-09-11.csv),
+and the [paired gameplay rows](../../experiments/evidence/silver_chance_gameplay_screen_2026-09-11.csv).
 
 ### Whole-Act OOC evaluator
 
