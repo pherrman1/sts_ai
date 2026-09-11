@@ -6635,3 +6635,43 @@ model training was changed.
   telemetry. The build, focused Silver regressions, seed guard, and
   `git diff --check` passed. The local 10k screen took several minutes per
   arm; full CTest and GitHub Actions CI were not run locally.
+
+## §226 Silver chance replay: 64 fresh-seed 10k follow-up (2026-09-11)
+
+- **Trigger:** §225's fresh 32-seed block produced exactly the proposed
+  escalation threshold: B had seven A-loss/B-win seeds versus three
+  A-win/B-loss seeds, net `+4` paired wins. Following the proposed rule, a
+  second untouched 32-seed block was run rather than changing parameters.
+- **Protocol:** seeds `64..95` were added to the existing fresh block
+  `32..63`, for 64 total fresh paired seeds. Both A and B used
+  `one_combat bestbench 10000 32 0 <seedOffset>` through
+  `tools/seed_guard.sh`, with `OMP_NUM_THREADS=12`, project-fair Searcher2,
+  native OOC, isolated Silver, exact root budgets, and telemetry. The only
+  A/B difference remained B's `STS_SILVER_GENERATIVE_CHANCE=1`.
+- **Results over all 64 fresh seeds:**
+
+  | Arm | Wins | Mean floor | Mean ending HP | Fights lost | Mean seconds |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | A, default replay weighting | 41/64 (64.1%) | 47.52 | 30.83 | 23 | 251.54 |
+  | B, generative-frequency weighting | 46/64 (71.9%) | 47.89 | 38.91 | 18 | 298.82 |
+
+  The paired record was 9 A-loss/B-win versus 4 A-win/B-loss seeds, for a
+  net B advantage of `+5` paired wins. B's paired mean deltas were `+0.38`
+  floor, `+8.08` ending HP, `-5` fights lost, and `+47.28` seconds. The
+  second block alone was weaker but still favorable to B: 2 A-loss/B-win
+  versus 1 A-win/B-loss, net `+1`.
+- **Decision:** **64-SEED SIGNAL; HOLD FOR PROPER PROMOTION TEST.** The
+  aggregate meets the suggested escalation result and is directionally
+  consistent with the 32-seed trigger, but 64 seeds remain a small
+  descriptive screen rather than a production qualification. Do not enable
+  B by default and do not tune widening or other parameters between this
+  result and any future promotion test.
+- **Evidence/checks:** the combined raw paired rows are in
+  [silver_chance_gameplay_screen_10k_fresh32-95_2026-09-11.csv](evidence/silver_chance_gameplay_screen_10k_fresh32-95_2026-09-11.csv),
+  which preserves both source blocks and all 128 A/B rows. All four arms
+  completed their expected 32 rows, startup banners reported `threads 12`
+  and the correct seed ranges, and telemetry showed no simulator,
+  conversion, transaction, semantic-resolution, or knowledge failures.
+  Focused Silver tests, worktree validation, seed-guard checks, and
+  `git diff --check` passed; full CTest and GitHub Actions CI were not run
+  locally.
