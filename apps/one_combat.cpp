@@ -50,6 +50,7 @@
 #include "ooc_strategic_tok_net.h"
 #include "combat_model_diagnostics.h"
 #include "one_combat/compact_tree.h"
+#include "one_combat/combat_transition.h"
 #include "one_combat/e2c_capture.h"
 #include "one_combat/run_features.h"
 #include "one_combat/fight_replay.h"
@@ -4370,6 +4371,117 @@ static void wholeCombatGen(int nSeeds,int sims,int asc,const std::string&outfile
         #pragma omp critical(whole_combat_write)
         {f<<generated;f.flush();rows+=std::count(generated.begin(),generated.end(),'\n');if(!generated.empty())++completed;}}
     std::cout<<"wholecombatgen teacher="<<teacher.id<<" completed="<<completed<<'/'<<nSeeds<<" quarantined="<<nSeeds-completed<<" rows="<<rows<<" -> "<<outfile<<'\n';writeTrainingProvenance(outfile,"wholecombatgen",nSeeds,completed,nSeeds-completed,g_trainingHealthFailures.load(),rows,seedOffset,sims,asc);
+}
+
+// Capture one JSONL transition per real fight at the RAW persistent-transfer
+// boundary. This is a data producer only: it never substitutes the snapshot
+// for native continuation and is not part of the default gameplay path.
+static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int asc,
+                                              const WholeCombatTeacher &teacher) {
+    trainingRunStart();
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    search::ScumSearchAgent2 agent;
+    agent.simulationCountBase = sims;
+    agent.rng = std::default_random_engine(seed);
+    PathHistory path;
+    t_curPath = &path;
+    std::ostringstream out;
+    int fightIdx = 0;
+    using RT = search::GameAction::RewardsActionType;
+    while (gc.outcome == GameOutcome::UNDECIDED) {
+        path.update(gc);
+        if (gc.screenState == ScreenState::BATTLE) {
+            const GameContext pre = gc;
+            const int battleAct = gc.act;
+            const int battleFloor = gc.floorNum;
+            const Room battleRoom = gc.curRoom;
+            const int battleEncounter = static_cast<int>(gc.info.encounter);
+            std::optional<one_combat::CombatTransitionRecord> record;
+            BattleContext bc;
+            {
+                one_combat::CombatTransitionRawObserverScope scope(
+                    [&](const BattleContext &ended, GameContext &raw) {
+                        if (!record)
+                            record = one_combat::captureCombatTransition(pre, ended, raw);
+                    });
+                agent.playoutBattle(gc, bc);
+            }
+            const bool decided = bc.outcome != Outcome::UNDECIDED;
+            const bool runValid = trainingRunValid(decided);
+            bc.exitBattle(gc);
+            nlohmann::json row = {
+                {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
+                {"rowSchemaVersion", "combat_transition_row_v1"},
+                {"sourceSeed", seed}, {"fightIdx", fightIdx++},
+                {"act", battleAct}, {"floor", battleFloor},
+                {"roomClass", combatEvalRoomClass(battleRoom)},
+                {"encounter", battleEncounter},
+                {"teacherId", teacher.id}, {"runValid", runValid},
+                {"quarantineReason", runValid ? "" : (decided ? "invalid_run" : "unresolved")},
+                {"transition", record ? one_combat::combatTransitionRecordJson(*record) : nlohmann::json(nullptr)}
+            };
+            out << row.dump() << '\n';
+        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
+        } else if (gc.screenState == ScreenState::REWARDS) {
+            auto &r = gc.info.rewardsContainer;
+            if (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
+            else if (r.relicCount > 0) search::GameAction(RT::RELIC, 0).execute(gc);
+            else if (r.potionCount > 0) search::GameAction(RT::POTION, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
+            else evalCardRewardPolicy(gc);
+        } else {
+            agent.stepOutOfCombatPolicy(gc);
+        }
+    }
+    t_curPath = nullptr;
+    return out.str();
+}
+
+static void combatTransitionGen(int nSeeds, int sims, int asc,
+                                const std::string &outfile, long long seedOffset,
+                                const std::string &teacherPath) {
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims);
+    std::ofstream f(outfile);
+    if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
+    long long rows = 0;
+    int completed = 0;
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        const std::string generated = runCombatTransitionGenSeed(seedOffset + s, sims, asc, teacher);
+        #pragma omp critical(combat_transition_write)
+        {
+            f << generated;
+            f.flush();
+            rows += std::count(generated.begin(), generated.end(), '\n');
+            if (!generated.empty()) ++completed;
+        }
+    }
+    f.close();
+    nlohmann::json manifest = {
+        {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
+        {"rowSchemaVersion", "combat_transition_row_v1"},
+        {"format", "jsonl"}, {"producerGitSha", trainingExecutableGitSha()},
+        {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
+        {"combatTeacher", teacher.specification},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
+        {"csv", {{"path", std::filesystem::absolute(outfile).string()},
+                  {"sha256", fileSha256(outfile)}}},
+        {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed},
+                        {"quarantinedSeeds", nSeeds - completed}, {"rows", rows}}}
+    };
+    std::ofstream mf(outfile + ".manifest.json");
+    if (!mf) throw std::runtime_error("combattransitiongen: cannot write manifest");
+    mf << manifest.dump(2) << '\n';
+    std::cout << "combattransitiongen teacher=" << teacher.id << " completed="
+              << completed << '/' << nSeeds << " quarantined=" << nSeeds - completed
+              << " rows=" << rows << " -> " << outfile << '\n';
+    writeTrainingProvenance(outfile, "combattransitiongen", nSeeds, completed,
+                            nSeeds - completed, g_trainingHealthFailures.load(),
+                            rows, seedOffset, sims, asc);
 }
 
 // Outcome-blind audit of the frozen whole-combat surrogate's deployment
@@ -9690,6 +9802,10 @@ int main(int argc, char **argv) {
     } else if (mode == "wholecombatgen") {
         if (argc < 8) { std::cerr << "usage: one_combat wholecombatgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         wholeCombatGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoll(argv[6]),argv[7]);
+    } else if (mode == "combattransitiongen") {
+        if (argc < 8) { std::cerr << "usage: one_combat combattransitiongen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
+        combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
+                            argv[5], std::stoll(argv[6]), argv[7]);
     } else if (mode == "combatevalgen") {
         if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json [RUNOUT.csv]\n"; return 2; }
         combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argc > 8 ? argv[8] : "");

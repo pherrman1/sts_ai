@@ -9,6 +9,7 @@
 using namespace sts;
 
 thread_local std::function<void(const BattleContext &, GameContext &)> sts::g_onBattleExitPersistent;
+thread_local std::function<void(const BattleContext &, GameContext &)> sts::g_onBattleExitRaw;
 
 namespace sts {
     thread_local BattleContext *g_debug_bc;
@@ -528,6 +529,11 @@ void BattleContext::exitBattle(GameContext &g) const {
             }
         }
     }
+
+    // This is deliberately separate from the historical victory-only hook:
+    // RAW transition capture must also observe true deaths, while existing
+    // reward-boundary instrumentation retains its original semantics.
+    if (g_onBattleExitRaw) g_onBattleExitRaw(*this, g);
 
     if (outcome == Outcome::PLAYER_LOSS) {
         g.outcome = GameOutcome::PLAYER_LOSS;

@@ -51,7 +51,7 @@ before broad repository search.
 | Strategic gen | `apps/one_combat.cpp` | `runStrategicGenSeed`, `strategicGen` — one rich row per legal OOC action | [training-and-inference.md](architecture/training-and-inference.md) |
 | Next-generation OOC pipeline contracts | `tools/ooc_pipeline_contract.py`, `tools/train_whole_combat_surrogate.py` | fail-closed teacher/corpus manifest, K/H planning, grouped whole-combat trainer | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
 | Fair gen (S3 particle mode) | `apps/one_combat.cpp` | `fairgen` — forces project-fair Searcher3 regime | [combat-search.md](architecture/combat-search.md) |
-| Combat gen | `apps/one_combat.cpp` | `combatgen`, `fightgen`, `datagen3`, `wholecombatgen` (one post-afterBattle reward-entry row/fight) | [training-and-inference.md](architecture/training-and-inference.md) |
+| Combat gen | `apps/one_combat.cpp` | `combatgen`, `fightgen`, `datagen3`, `wholecombatgen` (one post-afterBattle reward-entry row/fight), `combattransitiongen` (RAW persistent-transfer JSONL) | [training-and-inference.md](architecture/training-and-inference.md), [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
 | Leaf diagnostics | `apps/one_combat/particle_diagnostics.{h,cpp}`, `src/sim/search/BattleScumSearcher3.cpp` | retained particle/posterior probes; `g_onS3LeafQuery`, `S3LeafDiagnostic` remain Searcher3 interfaces | [combat-search.md](architecture/combat-search.md) |
 
 ## Training and export

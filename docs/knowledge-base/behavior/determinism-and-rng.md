@@ -185,3 +185,8 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
 - `apps/one_combat.cpp::detachedCounterfactualCopy`, `finishOocCounterfactual`,
   `runStrategicGenSeed2`, `resampleRemainingActEncounters`, `richRow`, `buildTokState`
 - `selfplay/loop.sh::baseline_cache_key`
+
+The optional `g_onBattleExitRaw` observer is instrumentation at the native
+RAW persistent-transfer boundary. It receives the same synchronized combat
+RNG streams that `exitBattle` writes to `GameContext` and does not alter RNG,
+continuation, or reward behavior when unset.
