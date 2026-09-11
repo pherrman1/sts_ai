@@ -381,6 +381,17 @@ add_test(NAME e2c_runwin_projection_parity COMMAND ${CMAKE_COMMAND} -E env
 add_test(NAME combat_transition_oracle COMMAND $<TARGET_FILE:unit-test> combat_transition_oracle)
 add_test(NAME combat_transition_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_contract.py)
+add_test(NAME combat_transition_native_fixture
+    COMMAND $<TARGET_FILE:one_combat> combattransitionselftest
+        ${CMAKE_CURRENT_BINARY_DIR}/combat_transition_fixture.jsonl
+        ${CMAKE_CURRENT_BINARY_DIR}/combat_transition_fixture.manifest.json)
+add_test(NAME combat_transition_fixture_contract
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/combat_transition_contract.py
+        ${CMAKE_CURRENT_BINARY_DIR}/combat_transition_fixture.manifest.json)
+set_tests_properties(combat_transition_native_fixture
+    PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(combat_transition_fixture_contract
+    PROPERTIES DEPENDS combat_transition_native_fixture)
 set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_analyze_ooc_factor check_replay_selftest vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope analyze_silver_root_diagnostic_selftest analyze_postcombat_raw_terminal_selftest export_win_model_selftest runwin_e2c_native_parity
     runwin_e2c_production_native_parity e2c_runwin_projection_parity PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")
 

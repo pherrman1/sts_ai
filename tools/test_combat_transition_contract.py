@@ -66,10 +66,12 @@ class TestCombatTransitionContract(unittest.TestCase):
                 "teacherId": "teacher",
                 "runValid": valid,
                 "quarantineReason": reason,
+                "captureCount": 1,
+                "captureStatus": "exactly_one",
                 "transition": {
                     "schemaVersion": SCHEMA_VERSION,
                     "combatOutcome": outcome,
-                    "rawGameOutcome": 0,
+                    "rawGameOutcome": 1,
                     "pre": state(),
                     "post": state(),
                 },
@@ -97,6 +99,9 @@ class TestCombatTransitionContract(unittest.TestCase):
             self.assertEqual(result["rows"], 2)
             self.assertEqual(result["quarantinedRows"], 1)
             self.assertEqual(result["outcomes"], {0: 0, 1: 1, 2: 1})
+            self.assertEqual(result["requestedSeeds"], 1)
+            self.assertEqual(result["completedSeeds"], 1)
+            self.assertEqual(result["quarantinedSeeds"], 0)
 
     def test_rejects_duplicate_or_missing_snapshot(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -113,6 +118,63 @@ class TestCombatTransitionContract(unittest.TestCase):
             data.write_text("".join(json.dumps(row) + "\n" for row in rows))
             manifest["csv"]["sha256"] = sha256(data)
             with self.assertRaisesRegex(ValueError, "missing full transition snapshot"):
+                validate_corpus(manifest)
+
+    def test_rejects_non_raw_game_outcome_enum_value(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manifest, data = self.make_bundle(Path(directory))
+            rows = [json.loads(line) for line in data.read_text().splitlines()]
+            rows[0]["transition"]["rawGameOutcome"] = 0
+            data.write_text("".join(json.dumps(row) + "\n" for row in rows))
+            manifest["csv"]["sha256"] = sha256(data)
+            with self.assertRaisesRegex(ValueError, "invalid combat/raw GameOutcome"):
+                validate_corpus(manifest)
+
+    def test_accepts_explicit_missing_and_repeated_capture_quarantine(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manifest, data = self.make_bundle(Path(directory))
+            rows = [json.loads(line) for line in data.read_text().splitlines()]
+            for row, count, status, reason in (
+                (rows[0], 0, "missing", "missing_raw_capture"),
+                (rows[1], 2, "repeated", "repeated_raw_capture"),
+            ):
+                row["runValid"] = False
+                row["quarantineReason"] = reason
+                row["captureCount"] = count
+                row["captureStatus"] = status
+                row["transition"] = None
+            data.write_text("".join(json.dumps(row) + "\n" for row in rows))
+            manifest["csv"]["sha256"] = sha256(data)
+            result = validate_corpus(manifest)
+            self.assertEqual(result["quarantinedRows"], 2)
+
+    def test_rejects_seed_membership_and_source_accounting_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manifest, data = self.make_bundle(Path(directory))
+            rows = [json.loads(line) for line in data.read_text().splitlines()]
+
+            rows[0]["sourceSeed"] = 124
+            data.write_text("".join(json.dumps(row) + "\n" for row in rows))
+            manifest["csv"]["sha256"] = sha256(data)
+            with self.assertRaisesRegex(ValueError, "outside seedSpec"):
+                validate_corpus(manifest)
+
+            rows[0]["sourceSeed"] = 123
+            data.write_text("".join(json.dumps(row) + "\n" for row in rows))
+            manifest["csv"]["sha256"] = sha256(data)
+            manifest["integrity"]["requestedSeeds"] = 2
+            with self.assertRaisesRegex(ValueError, "requestedSeeds disagrees"):
+                validate_corpus(manifest)
+
+            manifest["integrity"]["requestedSeeds"] = 1
+            manifest["integrity"]["completedSeeds"] = 0
+            manifest["integrity"]["quarantinedSeeds"] = 1
+            with self.assertRaisesRegex(ValueError, "completed source seed count"):
+                validate_corpus(manifest)
+
+            manifest["integrity"]["completedSeeds"] = 1
+            manifest["integrity"]["quarantinedSeeds"] = 1
+            with self.assertRaisesRegex(ValueError, "source seed accounting"):
                 validate_corpus(manifest)
 
 

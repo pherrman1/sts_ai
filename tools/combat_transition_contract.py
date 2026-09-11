@@ -102,7 +102,24 @@ def validate_manifest(manifest: dict, verify_data: bool = True) -> dict:
     teacher = manifest["combatTeacher"]
     if not isinstance(teacher, dict) or not teacher.get("teacher_id"):
         raise ValueError("combatTeacher.teacher_id is required")
-    validate_teacher(teacher)
+    if manifest.get("testFixture") is True:
+        expected = {
+            "teacher_id": "test-only-deterministic-transition-fixture",
+            "combat_backend": "deterministic_fixture",
+            "rng_regime": "deterministic_fixture",
+        }
+        for key, value in expected.items():
+            if teacher.get(key) != value:
+                raise ValueError(f"test fixture teacher {key} is invalid")
+        if teacher.get("search_configuration") != {} or teacher.get("environment") != {}:
+            raise ValueError("test fixture teacher must not carry production configuration")
+        if teacher.get("model_artifacts") != []:
+            raise ValueError("test fixture teacher must not carry model artifacts")
+    else:
+        # Keep the production teacher contract unchanged and strict.  The
+        # deterministic fixture is accepted only through the explicit,
+        # testFixture-marked branch above.
+        validate_teacher(teacher)
     if teacher.get("git_sha") != manifest["producerGitSha"]:
         raise ValueError("producer Git SHA disagrees with combat teacher")
     if teacher.get("executable_sha256") != manifest["producerExecutableSha256"]:
@@ -117,6 +134,29 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
     validate_manifest(manifest, verify_data)
     path = Path(manifest["csv"]["path"])
     teacher_id = manifest["combatTeacher"]["teacher_id"]
+    seed_spec = manifest["seedSpec"]
+    if not isinstance(seed_spec, dict) or set(seed_spec) != {"start", "count"}:
+        raise ValueError("seedSpec must contain exactly start and count")
+    seed_start = _integer(seed_spec["start"], "seedSpec.start")
+    requested = _integer(seed_spec["count"], "seedSpec.count")
+    if requested < 0:
+        raise ValueError("seedSpec.count must be non-negative")
+    expected_seeds = set(range(seed_start, seed_start + requested))
+    integrity = manifest["integrity"]
+    if not isinstance(integrity, dict):
+        raise ValueError("integrity must be an object")
+    requested_integrity = _integer(integrity.get("requestedSeeds"), "integrity.requestedSeeds")
+    completed_integrity = _integer(integrity.get("completedSeeds"), "integrity.completedSeeds")
+    quarantined_integrity = _integer(integrity.get("quarantinedSeeds"), "integrity.quarantinedSeeds")
+    for value, name in ((requested_integrity, "requestedSeeds"),
+                        (completed_integrity, "completedSeeds"),
+                        (quarantined_integrity, "quarantinedSeeds")):
+        if value < 0:
+            raise ValueError(f"integrity.{name} must be non-negative")
+    if requested_integrity != requested:
+        raise ValueError("integrity requestedSeeds disagrees with seedSpec.count")
+    if completed_integrity + quarantined_integrity != requested:
+        raise ValueError("source seed accounting does not reconcile")
     rows = 0
     seeds = set()
     keys = set()
@@ -132,7 +172,8 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
                 row = json.loads(line)
                 if set(row) != {"schemaVersion", "rowSchemaVersion", "sourceSeed", "fightIdx",
                                  "act", "floor", "roomClass", "encounter", "teacherId",
-                                 "runValid", "quarantineReason", "transition"}:
+                                 "runValid", "quarantineReason", "captureCount",
+                                 "captureStatus", "transition"}:
                     raise ValueError("row keys mismatch")
                 if row["schemaVersion"] != SCHEMA_VERSION or row["rowSchemaVersion"] != ROW_SCHEMA_VERSION:
                     raise ValueError("row schema mismatch")
@@ -141,19 +182,40 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
                 key = (seed, fight)
                 if key in keys:
                     raise ValueError("duplicate sourceSeed/fightIdx")
+                if seed not in expected_seeds:
+                    raise ValueError("sourceSeed is outside seedSpec")
                 keys.add(key); seeds.add(seed)
                 if row["teacherId"] != teacher_id:
                     raise ValueError("teacherId mismatch")
                 if not isinstance(row["runValid"], bool) or not isinstance(row["quarantineReason"], str):
                     raise ValueError("runValid/quarantineReason types invalid")
+                capture_count = _integer(row["captureCount"], "captureCount")
+                if capture_count < 0:
+                    raise ValueError("captureCount must be non-negative")
+                expected_status = ("missing" if capture_count == 0 else
+                                   "exactly_one" if capture_count == 1 else "repeated")
+                if row["captureStatus"] != expected_status:
+                    raise ValueError("captureCount/captureStatus mismatch")
                 transition = row["transition"]
+                if transition is None:
+                    if row["runValid"] or capture_count == 1:
+                        raise ValueError("missing full transition snapshot")
+                    if row["quarantineReason"] not in {"missing_raw_capture", "repeated_raw_capture", "missing_raw_record"}:
+                        raise ValueError("capture failure has the wrong quarantine reason")
+                    quarantined += 1
+                    rows += 1
+                    continue
                 if not isinstance(transition, dict) or set(transition) != {"schemaVersion", "combatOutcome", "rawGameOutcome", "pre", "post"}:
                     raise ValueError("missing full transition snapshot")
                 if transition["schemaVersion"] != SCHEMA_VERSION:
                     raise ValueError("transition snapshot schema mismatch")
                 combat_outcome = _integer(transition["combatOutcome"], "combatOutcome")
                 raw_outcome = _integer(transition["rawGameOutcome"], "rawGameOutcome")
-                if combat_outcome not in outcomes or raw_outcome != 0:
+                # exitBattle invokes the RAW observer before it assigns a
+                # loss or calls regainControl for a victory.  Native
+                # GameOutcome::UNDECIDED is therefore the only valid RAW
+                # boundary value, and its enum value is 1.
+                if combat_outcome not in outcomes or raw_outcome != 1:
                     raise ValueError("invalid combat/raw GameOutcome")
                 validate_state(transition["pre"], f"line {line_number} pre")
                 validate_state(transition["post"], f"line {line_number} post")
@@ -161,20 +223,27 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
                     raise ValueError("valid row has unresolved outcome or quarantine reason")
                 if not row["runValid"] and not row["quarantineReason"]:
                     raise ValueError("invalid row is missing quarantine reason")
+                if capture_count != 1 or row["captureStatus"] != "exactly_one":
+                    raise ValueError("full transition snapshot requires exactly one capture")
                 outcomes[combat_outcome] += 1
                 quarantined += not row["runValid"]
                 rows += 1
             except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
                 raise ValueError(f"invalid transition row at line {line_number}: {exc}") from exc
-    integrity = manifest["integrity"]
     if rows != _integer(integrity["rows"], "integrity.rows"):
         raise ValueError("manifest row count mismatch")
-    if len(seeds) != _integer(integrity["completedSeeds"], "integrity.completedSeeds"):
-        raise ValueError("manifest completedSeeds mismatch")
+    if not seeds.issubset(expected_seeds):
+        raise ValueError("corpus contains a seed outside seedSpec")
+    if len(seeds) != completed_integrity:
+        raise ValueError("completed source seed count does not match corpus")
     if quarantined > rows:
         raise ValueError("quarantine accounting is impossible")
-    return {"rows": rows, "sourceSeeds": len(seeds), "outcomes": outcomes,
-            "quarantinedRows": quarantined, "teacherId": teacher_id}
+    return {"rows": rows, "sourceSeeds": len(seeds),
+            "requestedSeeds": requested_integrity,
+            "completedSeeds": completed_integrity,
+            "quarantinedSeeds": quarantined_integrity,
+            "outcomes": outcomes, "quarantinedRows": quarantined,
+            "teacherId": teacher_id}
 
 
 def main() -> None:

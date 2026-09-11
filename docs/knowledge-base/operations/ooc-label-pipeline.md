@@ -47,9 +47,23 @@ not model accuracy or hidden-stream continuation for a learned sampler.
 The JSONL output has a hash-bound `<output>.manifest.json`; validate it with
 `python3 tools/combat_transition_contract.py <output>.manifest.json`. The
 contract requires the full frozen combat teacher, unique `(sourceSeed,
-fightIdx)` rows, six RNG streams, and explicit quarantine reasons. Collection
-remains opt-in and seed-guarded; no runtime adapter or model export consumes
-this schema.
+fightIdx)` rows, membership in the declared `seedSpec`, reconciled requested /
+completed / quarantined source accounting, six RNG streams, exactly one RAW
+capture for a full snapshot, and explicit quarantine reasons. The native
+`GameOutcome` value at this RAW boundary is `UNDECIDED` (`1`); the later
+victory/loss assignment is deliberately outside the captured observation.
+
+Input-context restriction: this transition schema is an oracle/provenance
+artifact, not a predictor feature schema. It currently has no resolved
+player-observable predictor input context and therefore does not authorize
+bulk collection, training, or runtime use. Until a separate input contract is
+resolved, only the pre-combat visible state and independently declared
+encounter metadata may be considered eligible context; the six hidden RNG
+streams are retained solely for oracle replay and provenance and must be
+excluded from learned player-observable features.
+
+Collection remains opt-in and seed-guarded; no runtime adapter or model export
+consumes this schema.
 
 Whole-combat training first runs the full corpus validator, including exact canonical feature names/order, exact target/diagnostic suffix, unique fight keys, zero decision index, finite values, and teacher identity. It then uses source-seed groups for train/validation/test, performs variance filtering on TRAIN only, and fits XGBoost survival and winning-only conditional ending-HP models. Its output records the data hash, exact split, retained canonical feature names, parameters, and batch-1 timing. Offline scores do not authorize runtime integration.
 
