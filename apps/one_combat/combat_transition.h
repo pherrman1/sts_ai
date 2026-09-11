@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include "combat/BattleContext.h"
+#include "combat_predictor_input.h"
 #include "game/GameContext.h"
 
 namespace one_combat {
@@ -66,6 +67,9 @@ struct CombatTransitionRecord {
     CombatTransitionPersistentState pre;
     CombatTransitionPersistentState post;
 };
+
+static constexpr const char *COMBAT_TRANSITION_ROW_SCHEMA =
+    "combat_transition_row_v2";
 
 CombatTransitionPersistentState captureCombatTransitionState(const sts::GameContext &gc);
 void applyCombatTransitionState(sts::GameContext &gc,

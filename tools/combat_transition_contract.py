@@ -16,11 +16,21 @@ from pathlib import Path
 
 try:
     from tools.ooc_pipeline_contract import validate_teacher
+    from tools.combat_predictor_input_contract import (
+        FIELD_SCHEMA_HASH as PREDICTOR_FIELD_SCHEMA_HASH,
+        SCHEMA_VERSION as PREDICTOR_SCHEMA_VERSION,
+        validate_predictor_input,
+    )
 except ModuleNotFoundError:  # direct invocation from the tools directory
     from ooc_pipeline_contract import validate_teacher
+    from combat_predictor_input_contract import (
+        FIELD_SCHEMA_HASH as PREDICTOR_FIELD_SCHEMA_HASH,
+        SCHEMA_VERSION as PREDICTOR_SCHEMA_VERSION,
+        validate_predictor_input,
+    )
 
 SCHEMA_VERSION = "combat_transition_v1"
-ROW_SCHEMA_VERSION = "combat_transition_row_v1"
+ROW_SCHEMA_VERSION = "combat_transition_row_v2"
 
 STATE_KEYS = {
     "curHp", "maxHp", "gold", "potionCount", "potionCapacity", "potions",
@@ -88,13 +98,17 @@ def validate_state(state: dict, label: str) -> None:
 
 
 def validate_manifest(manifest: dict, verify_data: bool = True) -> dict:
-    required = {"schemaVersion", "rowSchemaVersion", "format", "producerGitSha",
+    required = {"schemaVersion", "rowSchemaVersion", "predictorInputSchemaVersion",
+                "predictorInputFieldSchemaHash", "format", "producerGitSha",
                 "producerExecutableSha256", "combatTeacher", "seedSpec", "csv", "integrity"}
     missing = sorted(required - set(manifest))
     if missing:
         raise ValueError("transition manifest missing: " + ", ".join(missing))
     if manifest["schemaVersion"] != SCHEMA_VERSION or manifest["rowSchemaVersion"] != ROW_SCHEMA_VERSION:
         raise ValueError("unsupported transition schema")
+    if (manifest["predictorInputSchemaVersion"] != PREDICTOR_SCHEMA_VERSION
+            or manifest["predictorInputFieldSchemaHash"] != PREDICTOR_FIELD_SCHEMA_HASH):
+        raise ValueError("predictor input schema binding mismatch")
     if manifest["format"] != "jsonl":
         raise ValueError("transition format must be jsonl")
     if len(manifest["producerGitSha"]) != 40 or len(manifest["producerExecutableSha256"]) != 64:
@@ -173,7 +187,7 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
                 if set(row) != {"schemaVersion", "rowSchemaVersion", "sourceSeed", "fightIdx",
                                  "act", "floor", "roomClass", "encounter", "teacherId",
                                  "runValid", "quarantineReason", "captureCount",
-                                 "captureStatus", "transition"}:
+                                 "captureStatus", "predictorInput", "transition"}:
                     raise ValueError("row keys mismatch")
                 if row["schemaVersion"] != SCHEMA_VERSION or row["rowSchemaVersion"] != ROW_SCHEMA_VERSION:
                     raise ValueError("row schema mismatch")
@@ -196,6 +210,20 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
                                    "exactly_one" if capture_count == 1 else "repeated")
                 if row["captureStatus"] != expected_status:
                     raise ValueError("captureCount/captureStatus mismatch")
+                predictor_input = row["predictorInput"]
+                validate_predictor_input(predictor_input)
+                if (predictor_input["schemaVersion"] != manifest["predictorInputSchemaVersion"]
+                        or predictor_input["fieldSchemaHash"] != manifest["predictorInputFieldSchemaHash"]):
+                    raise ValueError("predictor input does not match manifest schema binding")
+                globals_value = predictor_input["globals"]
+                for field in ("act", "floor", "encounter"):
+                    if globals_value[field] != row[field]:
+                        raise ValueError(f"predictor input {field} disagrees with row")
+                expected_room_class = {
+                    3: "ELITE", 4: "NORMAL", 6: "BOSS",
+                }.get(globals_value["roomClass"], "OTHER")
+                if expected_room_class != row["roomClass"]:
+                    raise ValueError("predictor input roomClass disagrees with row")
                 transition = row["transition"]
                 if transition is None:
                     if row["runValid"] or capture_count == 1:

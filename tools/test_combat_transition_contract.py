@@ -12,6 +12,15 @@ except ModuleNotFoundError:  # direct invocation from the tools directory
         ROW_SCHEMA_VERSION, SCHEMA_VERSION, sha256, validate_corpus,
     )
 
+try:
+    from tools.combat_predictor_input_contract import (
+        FIELD_SCHEMA_HASH, SCHEMA_VERSION as PREDICTOR_SCHEMA_VERSION,
+    )
+except ModuleNotFoundError:
+    from combat_predictor_input_contract import (
+        FIELD_SCHEMA_HASH, SCHEMA_VERSION as PREDICTOR_SCHEMA_VERSION,
+    )
+
 
 def state():
     return {
@@ -50,6 +59,23 @@ def teacher():
     }
 
 
+def predictor_input(floor=1):
+    return {
+        "schemaVersion": PREDICTOR_SCHEMA_VERSION,
+        "fieldSchemaHash": FIELD_SCHEMA_HASH,
+        "globals": {
+            "characterClass": 0, "ascension": 0, "act": 1, "floor": floor,
+            "curHp": 40, "maxHp": 80, "gold": 99, "encounter": 1,
+            "roomClass": 4, "lastRoom": 1, "potionCount": 0,
+            "potionCapacity": 3, "potionKeepValue": 4.0,
+            "isBurningElite": False,
+        },
+        "cards": [{"cardId": 10, "misc": 0, "upgraded": False, "bottleBinding": -1}],
+        "relics": [{"relicId": 1, "data": 2, "orderIndex": 0}],
+        "potions": [{"slot": i, "potionId": 0} for i in range(5)],
+    }
+
+
 class TestCombatTransitionContract(unittest.TestCase):
     def make_bundle(self, root):
         rows = []
@@ -68,6 +94,7 @@ class TestCombatTransitionContract(unittest.TestCase):
                 "quarantineReason": reason,
                 "captureCount": 1,
                 "captureStatus": "exactly_one",
+                "predictorInput": predictor_input(fight + 1),
                 "transition": {
                     "schemaVersion": SCHEMA_VERSION,
                     "combatOutcome": outcome,
@@ -81,6 +108,8 @@ class TestCombatTransitionContract(unittest.TestCase):
         manifest = {
             "schemaVersion": SCHEMA_VERSION,
             "rowSchemaVersion": ROW_SCHEMA_VERSION,
+            "predictorInputSchemaVersion": PREDICTOR_SCHEMA_VERSION,
+            "predictorInputFieldSchemaHash": FIELD_SCHEMA_HASH,
             "format": "jsonl",
             "producerGitSha": "a" * 40,
             "producerExecutableSha256": "b" * 64,

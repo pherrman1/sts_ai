@@ -53,14 +53,35 @@ capture for a full snapshot, and explicit quarantine reasons. The native
 `GameOutcome` value at this RAW boundary is `UNDECIDED` (`1`); the later
 victory/loss assignment is deliberately outside the captured observation.
 
-Input-context restriction: this transition schema is an oracle/provenance
-artifact, not a predictor feature schema. It currently has no resolved
-player-observable predictor input context and therefore does not authorize
-bulk collection, training, or runtime use. Until a separate input contract is
-resolved, only the pre-combat visible state and independently declared
-encounter metadata may be considered eligible context; the six hidden RNG
-streams are retained solely for oracle replay and provenance and must be
-excluded from learned player-observable features.
+The matching learned-input contract is `combat_predictor_input_v1`, serialized
+by `apps/one_combat/combat_predictor_input.{h,cpp}`. It is captured from the
+`GameContext` immediately before `BattleContext::init`; the declared encounter
+is an explicit exogenous input. Its globals contain character/ascension/act/
+floor, HP, gold, encounter, room class, `lastRoom`, potion count/capacity,
+`potionKeepValue`, and derived burning-elite presence. Cards are canonicalized
+one-token-per-instance with ID, upgrade state, misc, and bottle binding;
+relics retain acquisition order and data; all five potion slots retain order.
+The input has no run seed, RNG state, hidden encounter queues, true shuffle,
+opening hand, monster HP, intents, future rewards, or future map/shop/event
+state. Those values remain hidden and are marginalized by the predictor.
+
+Dependency audit classification at this boundary: `BattleContext::init`,
+`MonsterGroup::init`/monster construction, `CardManager::init`, and ordered
+relic initialization are represented by the included public fields or the
+declared encounter (`INCLUDED`/`DERIVED`); monster HP, opening realization,
+shuffle, intents, and RNG streams are `HIDDEN_AND_MARGINALIZED`;
+Silver backend/search configuration, fixed model artifacts, and fixed search
+budgets are `FIXED_BY_TEACHER`; unrelated map/future OOC state is
+`IRRELEVANT`. `search::g_potionKeepValue` is the only additional mutable
+per-fight policy scalar found and is `INCLUDED`. No material dependency is
+`UNRESOLVED`.
+
+`combattransitiongen` keeps the RAW `combat_transition_v1` object unchanged
+and emits `combat_transition_row_v2`, adding the matching predictor input.
+The manifest binds `combat_predictor_input_v1` and its field-schema hash.
+This resolves the input boundary but does not authorize bulk collection,
+training, or runtime substitution; collection remains opt-in and
+seed-guarded.
 
 Collection remains opt-in and seed-guarded; no runtime adapter or model export
 consumes this schema.

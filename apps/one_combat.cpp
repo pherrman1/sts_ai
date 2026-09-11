@@ -4378,7 +4378,8 @@ static nlohmann::json combatTransitionRowJson(
     int encounter, const std::string &teacherId, bool runValid,
     bool outcomeDecided,
     int rawCaptureCount,
-    const std::optional<one_combat::CombatTransitionRecord> &record) {
+    const std::optional<one_combat::CombatTransitionRecord> &record,
+    const nlohmann::json &predictorInput) {
     const bool captureValid = rawCaptureCount == 1 && record.has_value();
     const bool rowValid = runValid && captureValid;
     const std::string quarantineReason =
@@ -4388,7 +4389,7 @@ static nlohmann::json combatTransitionRowJson(
         !runValid ? (outcomeDecided ? "invalid_run" : "unresolved") : "";
     return {
         {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
-        {"rowSchemaVersion", "combat_transition_row_v1"},
+        {"rowSchemaVersion", one_combat::COMBAT_TRANSITION_ROW_SCHEMA},
         {"sourceSeed", sourceSeed}, {"fightIdx", fightIdx},
         {"act", act}, {"floor", floor},
         {"roomClass", combatEvalRoomClass(room)}, {"encounter", encounter},
@@ -4397,6 +4398,7 @@ static nlohmann::json combatTransitionRowJson(
         {"captureCount", rawCaptureCount},
         {"captureStatus", rawCaptureCount == 0 ? "missing" :
                           rawCaptureCount == 1 ? "exactly_one" : "repeated"},
+        {"predictorInput", predictorInput},
         {"transition", captureValid ? one_combat::combatTransitionRecordJson(*record)
                                      : nlohmann::json(nullptr)}
     };
@@ -4425,6 +4427,11 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
             const int battleFloor = gc.floorNum;
             const Room battleRoom = gc.curRoom;
             const int battleEncounter = static_cast<int>(gc.info.encounter);
+            search::g_potionKeepValue = potionKeepValue(gc);
+            const auto predictorInput = one_combat::combatPredictorInputJson(
+                one_combat::captureCombatPredictorInput(
+                    pre, static_cast<MonsterEncounter>(battleEncounter),
+                    search::g_potionKeepValue));
             std::optional<one_combat::CombatTransitionRecord> record;
             int rawCaptureCount = 0;
             bool decided = false;
@@ -4447,7 +4454,8 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
             }
             nlohmann::json row = combatTransitionRowJson(
                 seed, fightIdx++, battleAct, battleFloor, battleRoom,
-                battleEncounter, teacher.id, runValid, decided, rawCaptureCount, record);
+                battleEncounter, teacher.id, runValid, decided, rawCaptureCount, record,
+                predictorInput);
             out << row.dump() << '\n';
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
@@ -4496,6 +4504,8 @@ static nlohmann::json combatTransitionFixtureRow(std::uint64_t seed, int fightId
         g.screenState = ScreenState::REWARDS;
     };
     GameContext actual = source;
+    const auto predictorInput = one_combat::combatPredictorInputJson(
+        one_combat::captureCombatPredictorInput(source, MonsterEncounter::CULTIST, 4.0));
     BattleContext bc;
     bc.init(actual, MonsterEncounter::CULTIST);
     bc.player.curHp = hp;
@@ -4517,19 +4527,28 @@ static nlohmann::json combatTransitionFixtureRow(std::uint64_t seed, int fightId
             seed, fightIdx, source.act, source.floorNum, source.curRoom,
             static_cast<int>(source.info.encounter),
             "test-only-deterministic-transition-fixture", runValid, decided,
-            rawCaptureCount, record);
+            rawCaptureCount, record, predictorInput);
     }
 }
 
 static int combatTransitionFixture(const std::string &outfile,
                                    const std::string &manifestPath) {
+    GameContext fixtureSource(CharacterClass::IRONCLAD, 0xC0FFEEu, 0);
+    fixtureSource.screenState = ScreenState::BATTLE;
+    fixtureSource.curRoom = Room::MONSTER;
+    fixtureSource.info.encounter = MonsterEncounter::CULTIST;
+    const auto fixtureInput = one_combat::combatPredictorInputJson(
+        one_combat::captureCombatPredictorInput(
+            fixtureSource, MonsterEncounter::CULTIST, 4.0));
     const std::uint64_t seed = 0xC0FFEEu;
     const auto missing = combatTransitionRowJson(
         seed, 99, 1, 1, Room::MONSTER, static_cast<int>(MonsterEncounter::CULTIST),
-        "test-only-deterministic-transition-fixture", false, false, 0, {});
+        "test-only-deterministic-transition-fixture", false, false, 0, {},
+        fixtureInput);
     const auto repeated = combatTransitionRowJson(
         seed, 100, 1, 1, Room::MONSTER, static_cast<int>(MonsterEncounter::CULTIST),
-        "test-only-deterministic-transition-fixture", false, true, 2, {});
+        "test-only-deterministic-transition-fixture", false, true, 2, {},
+        fixtureInput);
     if (missing["captureStatus"] != "missing" ||
         missing["quarantineReason"] != "missing_raw_capture" ||
         !missing["transition"].is_null() ||
@@ -4550,7 +4569,9 @@ static int combatTransitionFixture(const std::string &outfile,
 
     const auto manifest = nlohmann::json{
         {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
-        {"rowSchemaVersion", "combat_transition_row_v1"},
+        {"rowSchemaVersion", one_combat::COMBAT_TRANSITION_ROW_SCHEMA},
+        {"predictorInputSchemaVersion", one_combat::CombatPredictorInputV1::SCHEMA},
+        {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
         {"format", "jsonl"}, {"testFixture", true},
         {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
@@ -4594,7 +4615,9 @@ static void combatTransitionGen(int nSeeds, int sims, int asc,
     f.close();
     nlohmann::json manifest = {
         {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
-        {"rowSchemaVersion", "combat_transition_row_v1"},
+        {"rowSchemaVersion", one_combat::COMBAT_TRANSITION_ROW_SCHEMA},
+        {"predictorInputSchemaVersion", one_combat::CombatPredictorInputV1::SCHEMA},
+        {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
         {"format", "jsonl"}, {"producerGitSha", trainingExecutableGitSha()},
         {"producerExecutableSha256", fileSha256(g_mainBinaryPath)},
         {"combatTeacher", teacher.specification},
