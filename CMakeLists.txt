@@ -226,6 +226,7 @@ target_include_directories(main PUBLIC json/include)
 
 add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/run_features.cpp apps/one_combat/compact_tree.cpp
+    apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp
     apps/one_combat/e2c_capture.cpp
     apps/one_combat/ooc_policy.cpp
@@ -258,6 +259,7 @@ target_include_directories(parity_test PUBLIC json/include)
 add_executable(unit-test apps/test.cpp apps/test_belief.cpp
     apps/test_ooc_reward_continuation.cpp apps/test_ooc_semantic.cpp
     apps/test_ooc_semantic_pipeline.cpp
+    apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(unit-test PROPERTIES OUTPUT_NAME test)
@@ -271,6 +273,12 @@ target_link_directories(small-test PRIVATE json::nlohmann_json)
 target_include_directories(small-test PUBLIC include)
 target_include_directories(small-test PUBLIC json/include)
 target_include_directories(small-test PUBLIC bindings)
+
+add_executable(combat-predictor-input-test
+    apps/combat_predictor_input_test.cpp
+    apps/one_combat/combat_predictor_input.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(combat-predictor-input-test PUBLIC include json/include)
 
 # CTest entries below cover checks that do not depend on apps/test.cpp
 # subcommands (apps/test.cpp is a manual command dispatcher; its subcommands
@@ -379,6 +387,9 @@ add_test(NAME e2c_runwin_projection_parity COMMAND ${CMAKE_COMMAND} -E env
     STS_NATIVE_OOC=0
     $<TARGET_FILE:one_combat> e2cprojectiontest)
 add_test(NAME combat_transition_oracle COMMAND $<TARGET_FILE:unit-test> combat_transition_oracle)
+add_test(NAME combat_predictor_input COMMAND $<TARGET_FILE:combat-predictor-input-test>)
+add_test(NAME combat_predictor_input_contract
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_predictor_input_contract.py -q)
 add_test(NAME combat_transition_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_contract.py)
 add_test(NAME combat_transition_native_fixture
