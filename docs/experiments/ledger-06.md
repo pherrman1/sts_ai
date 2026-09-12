@@ -6795,3 +6795,62 @@ model training was changed.
   full audit, split, prepared arrays, model evidence, exact command, logs, and
   timing remain external under
   `/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/`.
+
+## §229 Phase-2 stochastic persistent-state surrogate support audit stopped (2026-09-12)
+
+- **Question/protocol:** implement the first offline stochastic persistent-state
+  combat surrogate using the corrected PR #161 DeepSets representation and the
+  frozen §228 corpus/split. The intended heads were survival, winning max-HP
+  delta, conditional 101-bin post-combat HP fraction, five potion slots,
+  per-owned mutable relic deltas, and joint `(deltaGold, post.stolenGold)`;
+  the same DeepSets survival/expected-winning-HP point control was specified.
+  No new source seeds, simulator execution, attention rerun, runtime adapter,
+  or Silver integration was authorized.
+- **Frozen provenance:** baseline/main SHA before implementation
+  `58250bdb2e93c2c69b6556f408eb54ef5230639c`; corpus SHA256
+  `74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde`;
+  source-group split SHA256
+  `e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32`;
+  510,030 rows from 24,999 completed requested seeds and one quarantined
+  source (`4102275`, `process_exit_134`).
+- **Implementation:** `tools/combat_transition_surrogate.py` is a separate
+  offline prepare/fit tool. It derives canonical domains 372/181/48, uses
+  typed DeepSets pooling at width 64, validates target support, masks relic
+  delta classes per ID, derives potion count from canonical IDs, validates
+  sampled state invariants, and excludes `combatRng[6]` from both input and
+  output. `tools/test_combat_transition_surrogate.py` covers the support
+  predicate, HP bins, relic audit, and sampler validity; the focused test is
+  registered as `combat_transition_surrogate_selftest`.
+- **Support audit:** overall support was 488,283/510,030 (95.7361%); by act,
+  Act 1 was 237,124/238,946 (99.2375%), Act 2 162,987/171,452 (95.0628%),
+  and Act 3 88,172/99,632 (88.4977%). Death support was 16,699/18,133
+  (92.0918%). By room class, EVENT was 7,467/7,826 (95.4127%), ELITE
+  113,725/118,335 (96.1043%), MONSTER 315,622/329,935 (95.6619%), and BOSS
+  51,469/53,934 (95.4296%). The full per-encounter table is in the compact
+  evidence report. Fallback reason counts overlap: WRITHING_MASS 4,477,
+  RITUAL_DAGGER 13,926, and visible SMOKE_BOMB 3,765.
+- **Blocking finding:** the required omitted-mutation coverage gate failed.
+  Deck-structure mutations were present in 1,151 rows and card-misc
+  mutations in 109 rows, with zero supported rows for either. However,
+  `smokeBombUsed: false -> true` occurred in 3,001 rows, including 77 rows
+  that the predictor-visible predicate would support. A full-corpus scan found
+  78 rows where the resulting Smoke Bomb was not visible in the pre-state;
+  one also had Ritual Dagger and was already excluded. All 78 had visible
+  `ENTROPIC_BREW` in the pre-state. The bounded source path is
+  `BattleContext::drinkPotion(Potion::ENTROPIC_BREW)` -> random potion draw ->
+  `obtainPotion`, which can generate the unobserved Smoke Bomb. The handoff
+  explicitly forbade broadening the predicate ad hoc, so preparation exits
+  non-zero with the fail-closed error and no arrays are accepted for fitting.
+- **Second boundary conflict:** among supported winning rows,
+  `smokeBombUsed` differed in 103 copy-through checks: 77 `false -> true` and
+  26 `true -> false`. Since that field is not predictor-visible, it cannot be
+  safely added as another support guard under the stated predicate.
+- **Target preview:** TRAIN-supported wins showed max-HP delta classes
+  `{0,3,4,5,6,7,8,9,10,11,12}`, 193 joint gold classes (below the 512 stop
+  threshold), and the bounded 13-ID mutable relic audit including direct
+  Omamori RAW-exit handling. These are support observations only, not fit
+  outputs.
+- **Decision:** **`TARGET_OR_SUPPORT_PROBLEM`**. No Phase-2 or control fit,
+  fixed TEST evaluation, metrics, model size, latency, sampled-transition
+  validity gate, or model export was run. Raw corpus and any future models
+  remain external. Evidence: [Phase-2 support-audit report](evidence/combat_transition_surrogate_phase2_2026-09-12.md).

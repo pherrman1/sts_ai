@@ -1,7 +1,8 @@
 # Current research status
 
-Last verified: 2026-09-12 for the corrected whole-combat transition model
-rerun after independent review;
+Last verified: 2026-09-12 for the Phase-2 stochastic persistent-state support
+audit and the corrected whole-combat transition model rerun after independent
+review;
 other sections retain their prior verification and linked evidence.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
@@ -40,6 +41,24 @@ collection is authorized. If Phase 2 is later authorized, DeepSets is the
 default candidate; no Phase-2 implementation is authorized by this result. See
 [ledger-06 §§227–228](../../experiments/ledger-06.md) and the
 [corrected compact evidence report](../../experiments/evidence/combat_transition_model_v1_2026-09-12.md).
+
+### Phase-2 persistent-state transition surrogate support audit
+
+The bounded implementation based on the corrected DeepSets representation is
+**`TARGET_OR_SUPPORT_PROBLEM`** and is stopped before fitting. On the frozen
+510,030-row corpus, the predictor-visible predicate supported 488,283 rows
+(95.7361%), but 77 supported rows contained a `smokeBombUsed: false -> true`
+mutation that was not visible as a pre-state `SMOKE_BOMB`. All 78 full-corpus
+rows of this kind contained visible `ENTROPIC_BREW`; the source path draws
+random potions during `BattleContext::drinkPotion`, so adding this mechanism
+to the predicate would be an ad hoc broadening forbidden by the accepted
+protocol. The copy-through audit also found 103 supported winning rows with a
+`smokeBombUsed` difference (77 `false -> true`, 26 `true -> false`), a second
+unresolved boundary because the field is not predictor-visible. No Phase-2 or
+point-control fit, TEST evaluation, model export, runtime adapter, or new data
+collection was run. This line remains blocked pending a reviewed support/RNG
+contract; see [ledger-06 §229](../../experiments/ledger-06.md) and the
+[compact support-audit report](../../experiments/evidence/combat_transition_surrogate_phase2_2026-09-12.md).
 
 ## Current baseline
 
