@@ -5,6 +5,9 @@ whole-combat transition corpus. The frozen source split and all Phase-1
 targets are unchanged. No simulator collection, runtime Silver replacement,
 model export, gameplay gate, or GCP job change was made.
 
+Knowledge impact: durable experiment status and encoding protocol; the current
+research KB and experiment ledger are updated in the same change.
+
 ## Decision
 
 **NO_CLEAR_DIFFERENCE.** Attention was the validation finalist and both neural
