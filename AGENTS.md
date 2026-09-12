@@ -103,6 +103,11 @@ completion criteria are met, progress is blocked without new evidence, a
 material design decision is missing, or an existing permission, safety, or
 review boundary is reached; report any blocker.
 
+This repair loop does not override the seed guard or local seed ceiling,
+worktree/Git restrictions, preservation of ignored data, model/schema/RNG
+invariants, experimental provenance, independent scientific review, or PR/CI
+publication boundaries.
+
 The draft pull request is the Codex-to-reviewer handoff. It must include an
 evidence packet: baseline and reviewed SHA, scope, changed paths, checks run
 and their raw outcomes, checks not run, and remaining uncertainty. Minor review

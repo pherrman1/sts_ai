@@ -22,10 +22,17 @@ Codex path is MCP-free.
 
 ### Workflow-v2 operating boundary
 
-The external ChatGPT/Sol handoff is an accepted design plan when it states the
-baseline commit or branch, goal and hypothesis when research-facing, relevant
-facts verified against the current repository, required behavior, explicit
-non-goals, and cheapest verification criteria with expected evidence.
+An external ChatGPT/Sol handoff is an accepted design plan when it supplies:
+
+- **Goal:** the requested outcome and, for research, the hypothesis.
+- **Context:** baseline commit or branch and relevant facts verified against
+  the current repository.
+- **Constraints:** required behavior, applicable safety and research
+  boundaries, and explicit non-goals.
+- **Done when:** the cheapest sufficient verification and expected evidence,
+  plus the permitted handoff required for completion.
+
+Equivalent headings are sufficient; assess the content, not the formatting.
 
 Within this workflow, a `Session` is the coordinating Codex session. It may use
 native subtasks under the same accepted design when independent inspection,
