@@ -16,15 +16,13 @@ bool matches(const CardInstance &live, const silver_bridge::CardWire &wire) {
 }
 
 template <typename Cards>
-int uniqueCardIndex(const Cards &cards, const silver_bridge::CardWire &card, std::string &error) {
-    int found = -1;
+int firstEquivalentCardIndex(const Cards &cards, const silver_bridge::CardWire &card,
+                             std::string &error) {
     for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
-        if (!matches(cards[i], card)) continue;
-        if (found != -1) { error = "semantic card identity is ambiguous"; return -1; }
-        found = i;
+        if (matches(cards[i], card)) return i;
     }
-    if (found == -1) error = "semantic card identity is absent from live source";
-    return found;
+    error = "semantic card identity is absent from live source";
+    return -1;
 }
 
 int uniqueHandIndex(const BattleContext &live, const silver_bridge::CardWire &card, std::string &error) {
@@ -102,10 +100,14 @@ SemanticActionResolution resolveSilverSemanticAction(
         std::string error;
         int idx = -1;
         switch (semantic.source) {
-        case CS::HAND: idx = uniqueHandIndex(live, semantic.card, error); break;
-        case CS::DISCARD: idx = uniqueCardIndex(live.cards.discardPile, semantic.card, error); break;
-        case CS::EXHAUST: idx = uniqueCardIndex(live.cards.exhaustPile, semantic.card, error); break;
-        case CS::DRAW: idx = uniqueCardIndex(live.cards.drawPile, semantic.card, error); break;
+        // A single selection only needs one legal representative. Duplicate
+        // serialized entries in a source pile are interchangeable here; use
+        // the first equivalent entry deterministically. Multi-select below
+        // remains strict because its subset mask distinguishes entries.
+        case CS::HAND: idx = firstEquivalentHandIndex(live, semantic.card, error); break;
+        case CS::DISCARD: idx = firstEquivalentCardIndex(live.cards.discardPile, semantic.card, error); break;
+        case CS::EXHAUST: idx = firstEquivalentCardIndex(live.cards.exhaustPile, semantic.card, error); break;
+        case CS::DRAW: idx = firstEquivalentCardIndex(live.cards.drawPile, semantic.card, error); break;
         case CS::CARD_SELECT_OPTION:
             for (int i = 0; i < 3; ++i) {
                 if (static_cast<std::int16_t>(live.cardSelectInfo.cards[i]) != semantic.optionCardId) continue;
