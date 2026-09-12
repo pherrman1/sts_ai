@@ -6682,3 +6682,116 @@ model training was changed.
   above were produced by the frozen pre-cleanup executable/configuration and
   remain historical evidence; no treatment implementation or production
   default is retained.
+
+## §227 First whole-combat transition model comparison (2026-09-12)
+
+- **Question/protocol:** use the already-collected whole-combat
+  `combat_transition_row_v2` corpus to decide whether a simple flattened
+  model is sufficient before planning Phase 2. No new simulator collection,
+  runtime Silver replacement, model export, gameplay gate, or GCP job change
+  was made. The final corpus was independently checked at 322/322 shard
+  manifests and by the merged transition validator.
+- **Frozen provenance:** producer
+  `f0bbd7721e7cc1453976ebb91ee11ebe6127a2bf`, Release executable SHA256
+  `d0a1c66faa931498660811a7406fbc6be93d63c5e7ef4f6f24c910e4f57c2872`,
+  teacher `silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77`,
+  predictor `combat_predictor_input_v1` field hash `1a92692da9247008`, and
+  transition row `combat_transition_row_v2`. The corpus covers requested
+  seeds `4100016..4125015`: 24,999 completed, one quarantined
+  (`4102275`, `process_exit_134`), and 510,030 rows. Corpus SHA256 is
+  `74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde`.
+- **Split/features:** source-grouped SHA256 split (80/10/10) produced 19,986
+  TRAIN, 2,496 VALIDATION, and 2,517 TEST sources; split SHA256 is
+  `e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32`.
+  Inputs were restricted to the predictor contract. The flat representation
+  had 2,846 fields, with 721 nonconstant TRAIN fields retained. DeepSets had
+  89,338 parameters and attention had 107,970 parameters; attention used
+  width 64, two layers, four heads, explicit token types/order/slot, and no
+  arbitrary card positional embeddings. Labels were win and winning post-
+  combat HP fraction, with death HP masked; observed implied alive HP was
+  `0.7550374`.
+- **Frozen fit:** CUDA was required for XGBoost and both neural families;
+  `OMP_NUM_THREADS=8`, XGBoost histogram, depth `{4,6}`/learning-rate `.05`/
+  min-child-weight `1`, 400-round cap and 30-round early stopping, DeepSets
+  and attention batch 2,048, 12-epoch cap, patience 3, training seed
+  `20260911`, and 1,000 source-bootstrap replicates. Validation composite
+  scores were XGBoost `0.179493`, DeepSets `0.180073`, attention `0.180856`;
+  XGBoost depth 6 was selected.
+- **TEST aggregate:** XGBoost survival AUC/Brier/logloss was
+  `0.974918/0.018980/0.065256`, winning-HP MAE/RMSE `0.075240/0.111074`,
+  and joint alive-HP MAE/RMSE `0.082444/0.125727`. DeepSets was
+  `0.975461/0.018809/0.064157`, `0.076545/0.112429`, and
+  `0.083051/0.126736`; attention was `0.975634/0.019448/0.065977`,
+  `0.076256/0.115493`, and `0.083308/0.130533`. Source-bootstrap intervals
+  did not establish a strict practical DeepSets or attention win over the
+  selected baseline.
+- **Decision:** **XGBOOST_SUFFICIENT.** The simple model is the validation
+  finalist and is not materially displaced by either typed-token family.
+  This is an offline model-selection result only; it does not authorize
+  runtime integration, Silver replacement, model export, or a gameplay gate.
+  Phase 2 should remain planning-only and use copy-through plus sparse deltas.
+- **Cost/validation:** the CUDA fit took 825.60 seconds wall and 878.81
+  seconds user+system CPU, with peak RSS 16,113,592 kB (15.367 GiB). The RTX
+  3060 Ti reached approximately 5.5 GiB VRAM and 100% utilization. The merged
+  validator exited 0 with 491,897 wins, 18,133 deaths, zero quarantined rows,
+  and zero unexpected health failures.
+- **Evidence:** [compact report](evidence/combat_transition_model_v1_2026-09-12.md).
+  Full audit, source-group split, prepared arrays, models, validator output,
+  and timing are preserved externally under
+  `/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/`; the raw
+  corpus remains under `/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/`
+  and is not committed.
+
+## §228 Corrected whole-combat transition model rerun after independent review (2026-09-12)
+
+- **Correction/protocol:** the existing §227 corpus, source split, and Phase-1
+  targets were reused unchanged. The corrected tool derives card/relic/potion
+  domains from `apps/one_combat/run_features.h` as 372/181/48, rejects IDs
+  outside those domains before encoding, and removes neural ID clamping. The
+  flattened baseline now uses continuous globals plus deterministic one-hot
+  fields for `characterClass`, `encounter`, `roomClass`, and `lastRoom`.
+  DeepSets and attention use small embeddings for those categorical globals.
+- **Domain audit:** observed IDs were cards `11..369`, relics `0..177`, and
+  potions `1..43`. Relative to the previous 371/128/44 bounds, 0 card tokens
+  in 0 rows, 890,897 relic tokens in 339,996 rows, and 0 potion tokens in 0
+  rows would have been truncated by the old flat encoder and clamped/collided
+  by the old neural encoder.
+- **Equal final fit:** validation-only selection froze XGBoost depth 6 at 400
+  survival rounds and 400 winning-HP rounds, DeepSets at 12 epochs, and
+  attention at 12 epochs. All three families were then refit from scratch on
+  TRAIN+VALIDATION with those fixed lengths/configurations before the frozen
+  TEST rerun. The deterministic training seed was `20260911`; no TEST metric
+  was used for selection or early stopping. Validation composites were
+  XGBoost `0.179316`, DeepSets `0.171834`, attention `0.169172`; attention was
+  the validation finalist.
+- **Corrected TEST:** XGBoost survival AUC/Brier/logloss was
+  `0.974997/0.018985/0.065183`, winning-HP MAE/RMSE `0.075141/0.110923`, and
+  joint alive-HP MAE/RMSE `0.082427/0.125750`. DeepSets was
+  `0.978864/0.017780/0.060430`, `0.072614/0.106994`, and
+  `0.078684/0.120493`; attention was `0.978805/0.017901/0.060792`,
+  `0.072575/0.107032`, and `0.078781/0.120692`. Both neural families were
+  below XGBoost on all three error intervals, but attention versus DeepSets
+  overlapped on all three. The corrected classification is therefore
+  **`STRUCTURED_NEURAL_WINS_NO_CLEAR_FAMILY`**: XGBoost is rejected as
+  sufficient because both DeepSets and attention clearly improve Phase-1
+  prediction. Attention has no demonstrated improvement over DeepSets, so
+  DeepSets is selected as the Phase-2 default by a simplicity tie-breaker.
+- **Scientific status:** TEST had already been inspected under §227's flawed
+  implementation; §228 is explicitly a corrected rerun of the frozen TEST
+  split, not an untouched first TEST. The numeric practical-improvement
+  threshold claim is removed; the reporting rule requires separation from
+  every competing family and is not described as preregistered. No runtime
+  model, model export, Silver replacement, Phase 2 transition head, or new
+  collection is authorized. If Phase 2 is later authorized, DeepSets is the
+  default candidate by the simplicity tie-breaker; this interpretation does not
+  authorize implementation.
+- **Cost/validation:** CUDA fit wall time was 2,132.17 seconds, user+system
+  CPU was 2,204.24 seconds, and peak RSS was 17,515,476 kB (16.704 GiB).
+  The transition validator passed with 510,030 rows, 24,999 completed source
+  seeds, one manifest quarantine (`4102275`, `process_exit_134`), zero
+  quarantined rows, and zero unexpected health failures.
+- **Evidence:** corrected compact report at
+  [evidence/combat_transition_model_v1_2026-09-12.md](evidence/combat_transition_model_v1_2026-09-12.md);
+  full audit, split, prepared arrays, model evidence, exact command, logs, and
+  timing remain external under
+  `/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/`.
