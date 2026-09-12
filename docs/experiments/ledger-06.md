@@ -6771,15 +6771,20 @@ model training was changed.
   `0.078684/0.120493`; attention was `0.978805/0.017901/0.060792`,
   `0.072575/0.107032`, and `0.078781/0.120692`. Both neural families were
   below XGBoost on all three error intervals, but attention versus DeepSets
-  overlapped on all three. The corrected decision is therefore
-  **NO_CLEAR_DIFFERENCE**, not a forced attention win.
+  overlapped on all three. The corrected classification is therefore
+  **`STRUCTURED_NEURAL_WINS_NO_CLEAR_FAMILY`**: XGBoost is rejected as
+  sufficient because both DeepSets and attention clearly improve Phase-1
+  prediction. Attention has no demonstrated improvement over DeepSets, so
+  DeepSets is selected as the Phase-2 default by a simplicity tie-breaker.
 - **Scientific status:** TEST had already been inspected under §227's flawed
   implementation; §228 is explicitly a corrected rerun of the frozen TEST
   split, not an untouched first TEST. The numeric practical-improvement
   threshold claim is removed; the reporting rule requires separation from
   every competing family and is not described as preregistered. No runtime
   model, model export, Silver replacement, Phase 2 transition head, or new
-  collection is authorized.
+  collection is authorized. If Phase 2 is later authorized, DeepSets is the
+  default candidate by the simplicity tie-breaker; this interpretation does not
+  authorize implementation.
 - **Cost/validation:** CUDA fit wall time was 2,132.17 seconds, user+system
   CPU was 2,204.24 seconds, and peak RSS was 17,515,476 kB (16.704 GiB).
   The transition validator passed with 510,030 rows, 24,999 completed source

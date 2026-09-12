@@ -10,12 +10,16 @@ research KB and experiment ledger are updated in the same change.
 
 ## Decision
 
-**NO_CLEAR_DIFFERENCE.** Attention was the validation finalist and both neural
-families improved over XGBoost on the corrected frozen TEST split, but the
-attention-versus-DeepSets source-bootstrap intervals overlap. This report does
-not force a neural-family winner. TEST was inspected previously under the
-flawed implementation; these numbers are a corrected rerun of that frozen
-TEST split, not an untouched first TEST.
+**Classification: `STRUCTURED_NEURAL_WINS_NO_CLEAR_FAMILY`.** XGBoost is
+rejected as sufficient: both DeepSets and attention clearly improve Phase-1
+prediction on the corrected frozen TEST split. Attention was the validation
+finalist, but the attention-versus-DeepSets source-bootstrap intervals overlap,
+so there is no evidence that attention improves over DeepSets. DeepSets is
+selected as the Phase-2 default by a simplicity tie-breaker. This is an
+offline interpretation only: TEST was inspected previously under the flawed
+implementation, so these numbers are a corrected rerun of that frozen TEST
+split, not an untouched first TEST. No runtime integration or Phase-2
+implementation is authorized.
 
 ## Frozen corpus and provenance
 
@@ -102,8 +106,11 @@ Source-bootstrap 95% intervals for model-minus-model error were:
 | Attention − DeepSets | [−0.000159, +0.000430] | [−0.000337, +0.000319] | [−0.000258, +0.000482] |
 
 The first two rows are clearly below zero, but the attention-versus-DeepSets
-row is not separated. The reporting rule therefore classifies the corrected
-comparison as `NO_CLEAR_DIFFERENCE`; this is not a claim that a numeric
+row is not separated. The corrected comparison is therefore classified as
+`STRUCTURED_NEURAL_WINS_NO_CLEAR_FAMILY`: XGBoost is rejected as sufficient,
+both neural families clearly improve Phase-1 prediction, and DeepSets is
+selected as the Phase-2 default by simplicity tie-breaker because attention has
+no demonstrated improvement over DeepSets. This is not a claim that a numeric
 practical-improvement threshold was preregistered.
 
 ## Cost, validation, and outputs

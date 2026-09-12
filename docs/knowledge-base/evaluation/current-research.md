@@ -24,16 +24,20 @@ No research line is currently authorized as the active priority.
 ### Whole-combat transition model v1
 
 The corrected offline comparison on the existing 25,000-source
-`combat_transition_row_v2` corpus is **NO_CLEAR_DIFFERENCE**. The frozen
-source-grouped 80/10/10 split was reused after independent review. The corrected
-run uses canonical 372/181/48 card/relic/potion domains, fail-closed ID
-validation, categorical global encoding, and equal TRAIN+VALIDATION refits for
-XGBoost, DeepSets, and attention. Attention was the validation finalist, and
-both neural families improved over XGBoost on the corrected frozen TEST split,
-but attention versus DeepSets remained overlapping, so no neural winner is
-claimed. This is an offline model-selection result only: no runtime
+`combat_transition_row_v2` corpus is classified
+**`STRUCTURED_NEURAL_WINS_NO_CLEAR_FAMILY`**. XGBoost is rejected as
+sufficient: both DeepSets and attention clearly improve Phase-1 prediction on
+the corrected frozen TEST split. Attention was the validation finalist, but
+attention versus DeepSets remained overlapping, so there is no evidence that
+attention improves over DeepSets. DeepSets is selected as the Phase-2 default
+by a simplicity tie-breaker. The frozen source-grouped 80/10/10 split was
+reused after independent review. The corrected run uses canonical 372/181/48
+card/relic/potion domains, fail-closed ID validation, categorical global
+encoding, and equal TRAIN+VALIDATION refits for XGBoost, DeepSets, and
+attention. This is an offline model-selection result only: no runtime
 integration, Silver replacement, model export, gameplay gate, or new corpus
-collection is authorized. Phase 2 remains planning-only. See
+collection is authorized. If Phase 2 is later authorized, DeepSets is the
+default candidate; no Phase-2 implementation is authorized by this result. See
 [ledger-06 §§227–228](../../experiments/ledger-06.md) and the
 [corrected compact evidence report](../../experiments/evidence/combat_transition_model_v1_2026-09-12.md).
 
