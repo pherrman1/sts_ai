@@ -1,18 +1,19 @@
 # Agent context and workflow
 
-Last verified: 2026-09-08 against the current working tree.
+Last verified: 2026-09-12 for documentation routing and completion boundaries.
 
 ## Purpose
 
 Keep `AGENTS.md` a small universal contract while preserving the detailed
 workflow, safety, and recording guidance needed only after a task is routed.
-Read this page after [CODE_MAP.md](../CODE_MAP.md) when an agent needs the
-implementation, review, experiment, documentation, or Git procedure.
+Consult the relevant sections when a task needs the implementation, review,
+experiment, documentation, or Git procedure. Use [CODE_MAP.md](../CODE_MAP.md)
+when locating unfamiliar code or assessing subsystem boundaries.
 
 ## Current implementation
 
-`AGENTS.md` contains the project purpose, authority hierarchy, CODE_MAP-first
-navigation, minimal-change principle, bounded Codex handoff boundary,
+`AGENTS.md` contains the project purpose, authority hierarchy, task-dependent
+documentation routing, minimal-change principle, bounded Codex handoff boundary,
 seed-guard rule, critical safety/Git rules, and links here. Repository skills
 under `.agents/skills/` provide progressive disclosure for ordinary
 implementation, research, and implementation review. `.codex/config.toml`
@@ -36,21 +37,27 @@ change may share its worktree; separate worktrees are for independent branches
 or experiments, not individual subtasks.
 
 Codex's bounded preflight is limited to checking branch/HEAD/status and
-upstream divergence; reading `AGENTS.md`, `CODE_MAP.md`, the routed page and
-relevant symbols/tests; checking handoff paths and assumptions; and identifying
-contradictions, missing prerequisites, or unsafe scope. It may refine an
-implementation detail from local evidence, but must not repeat broad
+upstream divergence; following `AGENTS.md` and inspecting relevant code, tests,
+or docs with task-dependent routing; checking handoff paths and assumptions;
+and identifying contradictions, missing prerequisites, or unsafe scope. It may
+refine an implementation detail from local evidence, but must not repeat broad
 literature review, architecture discovery, or experiment redesign when the
 handoff is consistent. A material contradiction changes the baseline, required
 behavior, affected subsystem, safety constraint, or verification decision rule.
+
+Continue implementation through affected checks, repair of failures caused by
+the requested change, rerunning affected checks, final diff inspection, and the
+permitted draft-PR handoff. A first patch or an ordinary check failure is not a
+stopping point. Stop when completion criteria are met, progress is blocked
+without new evidence, a material design decision is missing, or an existing
+permission, safety, or review boundary is reached; report any blocker.
 
 The draft PR is the implementation-to-reviewer handoff. Its evidence packet
 records the baseline, final reviewed SHA, changed paths, exact checks and
 outcomes, omitted checks, and open uncertainty. The reviewer separates
 implementation correctness from scientific-design quality. A minor correction
 continues the same Codex session; a conceptual redesign, new hypothesis, or
-changed success criterion starts a new session. After repeated failures or
-conceptual ambiguity, stop and report the blocker. Once implementation review
+changed success criterion starts a new session. Once implementation review
 passes, freeze the reviewed SHA before expensive scientific runs. Keep mutable
 run state such as "CI pending" out of the durable PR description: GitHub checks
 are authoritative, and a short SHA-tied comment may record a later transition.
@@ -59,7 +66,7 @@ are authoritative, and a short SHA-tied comment may record a later transition.
 
 | Previous `AGENTS.md` section | Destination | Treatment |
 | --- | --- | --- |
-| Purpose and required reading | `AGENTS.md`, KB index, this page | Condensed universal contract; detailed reading routes remain linked. |
+| Purpose and required reading | `AGENTS.md`, KB index, this page | Universal constraints retained; documentation reads are task-dependent, with discovery links preserved. |
 | Authoritative sources | `AGENTS.md` | Kept as the universal source hierarchy. |
 | Repository map | `CODE_MAP.md`; [architecture overview](../architecture/overview.md); [self-play loop](selfplay-loop.md); [tools README](../../../tools/README.md) | Existing subsystem maps remain authoritative; artifact handling is below. Legacy `.opencode/`/`opencode.json` rollback configuration remains documented in `CODE_MAP.md`. |
 | Agent workflow and tool routing | `AGENTS.md`; [ADR-0011](../../../decisions/0011-mcp-free-codex-skillopt-pilot.md); this page | Concise routing stays universal; operating limits are retained below. ADR-0010 and ADR-0008 remain historical records. |
@@ -99,7 +106,10 @@ does not prove runtime loading or branch use. See
 ## Important data flow
 
 1. Read `AGENTS.md` for universal constraints.
-2. Route through `CODE_MAP.md` and the relevant maintained page.
+2. Start localized, already-understood changes from relevant code, tests, or
+   docs. Use `CODE_MAP.md` for unfamiliar code, subsystem boundaries, or
+   cross-subsystem changes. Read maintained pages when the affected interface,
+   invariant, procedure, evaluation protocol, or research question requires it.
 3. Use the ordinary implementation skill unless a specialized research or
    review skill applies. The research skill distinguishes an external-handoff
    path from a Codex-originated-research path.
@@ -139,10 +149,10 @@ Long-run details are in [build and debugging](build-and-debugging.md).
    and ignored data. Record the current branch, `origin` URL, and baseline
    `HEAD`; when an upstream exists, also record
    `git log --oneline @{upstream}..HEAD`.
-2. Read the routed KB page, implementation, and focused tests. State the
-   behavioral success criterion and cheapest proving check. Ask when a material
-   interpretation is genuinely ambiguous. Native subtasks within the same
-   accepted change may share the coordinating session's worktree; parallelize
+2. Inspect relevant code, tests, or docs using the task-dependent routing
+   above. State the success criterion and cheapest proving check. Ask when a
+   material interpretation is genuinely ambiguous. Native subtasks within the
+   same accepted change may share the coordinating session's worktree; parallelize
    only independent work and avoid duplicate investigation, competing
    implementations, overlapping edits, and scope expansion. The Codex app may
    create and remove its own app-managed worktrees. An app-managed worktree may
@@ -253,8 +263,9 @@ the PR or commit only. Existing dated entries are retained unchanged.
 
 ## Known limitations
 
-The concise root contract cannot enumerate subsystem-specific facts. `CODE_MAP`
-and the technical pages above must be consulted before changing a subsystem.
+The concise root contract cannot enumerate subsystem-specific facts. Use
+`CODE_MAP` to resolve unfamiliar code or subsystem boundaries, and consult the
+technical pages above for affected contracts and procedures.
 Codex searches must honor the focused-context exclusions above and normal Git
 ignore boundaries. Tracked deployable models, source, maintained docs, tests,
 and recorded experiment evidence remain available when the task requires them.

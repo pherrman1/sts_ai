@@ -1,6 +1,6 @@
 ---
 name: workflow-retrospective
-description: Use at the end of a substantial or inefficient session to identify avoidable time, token, compute, context, build, verification, and re-learning costs and propose the smallest durable workflow improvements.
+description: Review the current session for efficiency and workflow improvements only when the user requests it.
 ---
 
 # Workflow retrospective

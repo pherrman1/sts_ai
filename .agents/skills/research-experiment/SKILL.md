@@ -28,10 +28,12 @@ one-variable intervention before implementation or an expensive run. If the
 question becomes conceptually ambiguous, stop and report what decision is
 missing rather than expanding the search indefinitely.
 
-1. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`,
-   `docs/knowledge-base/operations/agent-context-and-workflow.md`, the relevant
-   maintained knowledge-base page, and relevant experiment-ledger entries before
-   proposing a change.
+1. Follow `AGENTS.md`. Before proposing a change, read the maintained pages
+   and experiment-ledger entries relevant to the research question, affected
+   invariants, and evaluation protocol. Use `docs/knowledge-base/CODE_MAP.md`
+   for unfamiliar code or subsystem boundaries; consult
+   `docs/knowledge-base/operations/agent-context-and-workflow.md` for handoff,
+   Git, and recording procedures as needed.
 2. State the hypothesis, baseline, expected evidence, decision rule, and
    constraints before an expensive run. Generate multiple plausible
    explanations when the question is uncertain.

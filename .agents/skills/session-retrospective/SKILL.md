@@ -1,6 +1,6 @@
 ---
 name: session-retrospective
-description: Review a few recent Codex sessions for recurring waste, failure, or rediscovery and route the smallest evidence-backed repository maintenance remedy.
+description: Review several recent Codex sessions for recurring inefficiency or rediscovery when the user requests it.
 ---
 
 # Session retrospective
@@ -10,10 +10,14 @@ inefficiency, rediscovery, failure, or workflow improvement. It complements the
 current-session `workflow-retrospective` skill and is not another agent
 framework.
 
-Before reviewing, read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`,
-`docs/knowledge-base/operations/agent-context-and-workflow.md`,
-`docs/knowledge-base/operations/skillopt-sleep.md`, and
-`docs/knowledge-base/operations/session-retrospective-lessons.md`. Inspect only
+Follow `AGENTS.md` and consult
+`docs/knowledge-base/operations/session-retrospective-lessons.md` for known
+patterns and their status. Use `docs/knowledge-base/CODE_MAP.md` for unfamiliar
+code or subsystem boundaries, and read maintained pages for the procedures or
+contracts implicated by the session evidence. Consult
+`docs/knowledge-base/operations/agent-context-and-workflow.md` for workflow and
+recording rules, and `docs/knowledge-base/operations/skillopt-sleep.md` when a
+candidate remedy involves SkillOpt. Inspect only
 the requested small set of recent sessions (normally 3–8); use
 `python tools/agent/recent_codex_sessions.py --project . --limit 5 --json` to
 select them when needed.
@@ -23,9 +27,9 @@ select them when needed.
 1. Find repeated waste, failure, or rediscovery—not isolated stylistic
    preferences. Record exact session, PR, commit, command, or outcome evidence
    without copying long transcript excerpts or secrets.
-2. Check source, tests, `CODE_MAP.md`, the canonical KB, scripts, presets, skills,
-   decisions, and lessons before claiming a gap. Merge duplicate lessons and
-   mark resolved history; never treat the lessons file as project truth.
+2. Check the relevant source, tests, maintained docs, tools, or lessons before
+   claiming a gap. Merge duplicate lessons and mark resolved history; never
+   treat the lessons file as project truth.
 3. Classify each candidate as `SKILL`, `KB`, `CODE_MAP`, `WORKFLOW`, `TOOLING`,
    `EVALUATOR`, `DELETE_SIMPLIFY`, or `NO_ACTION`.
 4. Propose a repository change only when the issue is recurring or high-cost,

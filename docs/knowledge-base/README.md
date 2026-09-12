@@ -9,9 +9,10 @@ remains the coding-agent operating contract.
 
 ## Fast routing
 
-Start with the [code map](CODE_MAP.md) before reading subsystem pages or
-searching the repository. It maps topics to primary files, key symbols, and
-the relevant knowledge-base page.
+Use the [code map](CODE_MAP.md) for unfamiliar code or subsystem boundaries.
+It maps topics to primary files, key symbols, and relevant knowledge-base
+pages. For localized, already-understood changes, start with the relevant
+code, tests, or docs; follow `AGENTS.md` for task-dependent reading.
 
 ## Reading paths
 

@@ -1,6 +1,6 @@
 ---
 name: implementation-review
-description: Use for independent implementation review, diff review, validation, and auditing of repository changes; not for ordinary implementation tasks.
+description: Independently review implemented repository changes and their evidence; not for ordinary implementation checks.
 ---
 
 # Implementation review workflow
@@ -12,9 +12,11 @@ implementer; do not require the same agent to perform a second broad
 self-review.
 
 1. Inspect `git status` first and distinguish pre-existing changes from this
-   task. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`,
-   `docs/knowledge-base/operations/agent-context-and-workflow.md`, the relevant
-   maintained page, implementation, and tests before editing.
+   task. Follow `AGENTS.md` and inspect the changed implementation and tests.
+   Use `docs/knowledge-base/CODE_MAP.md` for unfamiliar code or subsystem
+   boundaries; read maintained pages for the contracts and procedures needed
+   to assess the change. The review and Git procedures are in
+   `docs/knowledge-base/operations/agent-context-and-workflow.md`.
 2. Use Git, `rg`, focused file reads, compiler diagnostics, and focused tests.
    No repository MCP server is required. Avoid whole-file reads when focused
    inspection proves the property.
@@ -28,8 +30,7 @@ self-review.
    paths, raw checks, omitted checks, and uncertainty. Separate implementation
    correctness from scientific-design quality. Minor corrections may continue
    the same Codex session; conceptual redesigns or new hypotheses require a
-   new session. After repeated failures or conceptual ambiguity, stop and
-   report the blocker.
+   new session. Follow the completion and blocker criteria in `AGENTS.md`.
 7. Treat missing knowledge-impact classification as a defect. Also report a
    defect when a durable fact appears only in a chronological ledger although
    a canonical KB page needs updating, `Knowledge impact: none` contradicts the
