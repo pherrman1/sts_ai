@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-11 at `88773b9f5d03ee7969ec5bd476c7eae1a57e2f1c`.
+Last verified: 2026-09-12 for the whole-combat transition model comparison;
+other sections retain their prior verification and linked evidence.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
 
@@ -16,6 +17,21 @@ chronology.
 ## Current priority / active line
 
 No research line is currently authorized as the active priority.
+
+## Completed recent line
+
+### Whole-combat transition model v1
+
+The first offline comparison on the existing 25,000-source
+`combat_transition_row_v2` corpus is **XGBOOST_SUFFICIENT**. A source-grouped
+80/10/10 split and validation-only selection favored the prespecified
+flattened XGBoost depth-6 baseline over the typed-token DeepSets and
+attention families; the held-out test did not establish a strict practical
+neural-family win. This is an offline model-selection result only: no runtime
+integration, Silver replacement, model export, gameplay gate, or new corpus
+collection is authorized. Phase 2 remains planning-only. See
+[ledger-06 §227](../../experiments/ledger-06.md) and the
+[compact evidence report](../../experiments/evidence/combat_transition_model_v1_2026-09-12.md).
 
 ## Current baseline
 
