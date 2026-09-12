@@ -1,6 +1,6 @@
 ---
 name: session-retrospective
-description: Review several recent Codex sessions for recurring inefficiency or rediscovery when the user requests it.
+description: Review several recent Codex sessions for recurring inefficiency, failure, or rediscovery when the user requests it.
 ---
 
 # Session retrospective
