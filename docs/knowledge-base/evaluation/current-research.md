@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-12 for the whole-combat transition model comparison;
+Last verified: 2026-09-12 for the corrected whole-combat transition model
+rerun after independent review;
 other sections retain their prior verification and linked evidence.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
@@ -22,16 +23,19 @@ No research line is currently authorized as the active priority.
 
 ### Whole-combat transition model v1
 
-The first offline comparison on the existing 25,000-source
-`combat_transition_row_v2` corpus is **XGBOOST_SUFFICIENT**. A source-grouped
-80/10/10 split and validation-only selection favored the prespecified
-flattened XGBoost depth-6 baseline over the typed-token DeepSets and
-attention families; the held-out test did not establish a strict practical
-neural-family win. This is an offline model-selection result only: no runtime
+The corrected offline comparison on the existing 25,000-source
+`combat_transition_row_v2` corpus is **NO_CLEAR_DIFFERENCE**. The frozen
+source-grouped 80/10/10 split was reused after independent review. The corrected
+run uses canonical 372/181/48 card/relic/potion domains, fail-closed ID
+validation, categorical global encoding, and equal TRAIN+VALIDATION refits for
+XGBoost, DeepSets, and attention. Attention was the validation finalist, and
+both neural families improved over XGBoost on the corrected frozen TEST split,
+but attention versus DeepSets remained overlapping, so no neural winner is
+claimed. This is an offline model-selection result only: no runtime
 integration, Silver replacement, model export, gameplay gate, or new corpus
 collection is authorized. Phase 2 remains planning-only. See
-[ledger-06 §227](../../experiments/ledger-06.md) and the
-[compact evidence report](../../experiments/evidence/combat_transition_model_v1_2026-09-12.md).
+[ledger-06 §§227–228](../../experiments/ledger-06.md) and the
+[corrected compact evidence report](../../experiments/evidence/combat_transition_model_v1_2026-09-12.md).
 
 ## Current baseline
 

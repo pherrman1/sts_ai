@@ -4,11 +4,13 @@ import numpy as np
 
 try:
     from tools.combat_transition_model_experiment import (
-        _flat_names, _flatten, persistent_change_flags, split_for_seed,
+        CARD_COUNT, POTION_COUNT, RELIC_COUNT, _flat_names, _flatten,
+        _validate_entity_domains, persistent_change_flags, split_for_seed,
     )
 except ModuleNotFoundError:
     from combat_transition_model_experiment import (
-        _flat_names, _flatten, persistent_change_flags, split_for_seed,
+        CARD_COUNT, POTION_COUNT, RELIC_COUNT, _flat_names, _flatten,
+        _validate_entity_domains, persistent_change_flags, split_for_seed,
     )
 
 
@@ -21,17 +23,45 @@ class TestCombatTransitionModelExperiment(unittest.TestCase):
     def test_flat_schema_is_unique_and_relic_zero_is_not_lost(self):
         names = _flat_names()
         self.assertEqual(len(names), len(set(names)))
-        self.assertEqual(len(names), 2846)
-        globals_value = np.zeros(14, dtype=np.float32)
+        self.assertEqual(len(names), 3115)
+        globals_value = np.zeros(10, dtype=np.float32)
+        global_categories = np.zeros(4, dtype=np.int64)
         cards = np.zeros((128, 4), dtype=np.int16)
         relics = np.zeros((64, 3), dtype=np.int16)
         potions = np.zeros((5, 2), dtype=np.int16)
         card_mask = np.zeros(128, dtype=bool)
         relic_mask = np.zeros(64, dtype=bool)
         relic_mask[0] = True  # AKABEKO is RelicId 0, not padding.
-        flat = _flatten(globals_value, cards, relics, potions, card_mask, relic_mask)
+        flat = _flatten(globals_value, global_categories, cards, relics, potions, card_mask, relic_mask)
         self.assertEqual(flat[names.index("relic_present.0")], 1.0)
         self.assertEqual(flat[names.index("relic_present.1")], 0.0)
+
+    def test_canonical_entity_high_ids_are_accepted(self):
+        predictor_input = {
+            "cards": [{"cardId": CARD_COUNT - 1, "upgraded": False, "misc": 0,
+                       "bottleBinding": -1}],
+            "relics": [{"relicId": RELIC_COUNT - 1, "data": 0, "orderIndex": 0}],
+            "potions": [{"slot": 0, "potionId": POTION_COUNT - 1}],
+            "globals": {"characterClass": 0, "encounter": 1, "roomClass": 4,
+                         "lastRoom": 4},
+        }
+        _validate_entity_domains(predictor_input)
+
+    def test_entity_ids_outside_canonical_domain_are_rejected(self):
+        base = {
+            "cards": [{"cardId": 0, "upgraded": False, "misc": 0, "bottleBinding": -1}],
+            "relics": [{"relicId": 0, "data": 0, "orderIndex": 0}],
+            "potions": [{"slot": 0, "potionId": 0}],
+            "globals": {"characterClass": 0, "encounter": 1, "roomClass": 4,
+                         "lastRoom": 4},
+        }
+        for key, field, invalid in (("cards", "cardId", CARD_COUNT),
+                                    ("relics", "relicId", RELIC_COUNT),
+                                    ("potions", "potionId", POTION_COUNT)):
+            with self.subTest(key=key):
+                predictor_input = {**base, key: [dict(base[key][0], **{field: invalid})]}
+                with self.assertRaises(ValueError):
+                    _validate_entity_domains(predictor_input)
 
     def test_persistent_change_flags_separate_misc_from_structure(self):
         pre = {

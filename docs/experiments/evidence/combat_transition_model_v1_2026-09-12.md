@@ -1,15 +1,18 @@
-# Combat-transition model v1 — first offline comparison
+# Combat-transition model v1 — corrected rerun after independent review
 
-Date: 2026-09-12. This is an offline experiment on the already-collected
-whole-combat transition corpus. No simulator collection, runtime Silver
-replacement, model export, gameplay gate, or GCP job change was made.
+Date: 2026-09-12. This is a corrected offline rerun on the already-collected
+whole-combat transition corpus. The frozen source split and all Phase-1
+targets are unchanged. No simulator collection, runtime Silver replacement,
+model export, gameplay gate, or GCP job change was made.
 
 ## Decision
 
-**XGBOOST_SUFFICIENT.** The validation-only composite selected the XGBoost
-depth-6 finalist. DeepSets and attention did not satisfy the preregistered
-strict held-out improvement rule. TEST was evaluated once after the family and
-hyperparameter selection freeze.
+**NO_CLEAR_DIFFERENCE.** Attention was the validation finalist and both neural
+families improved over XGBoost on the corrected frozen TEST split, but the
+attention-versus-DeepSets source-bootstrap intervals overlap. This report does
+not force a neural-family winner. TEST was inspected previously under the
+flawed implementation; these numbers are a corrected rerun of that frozen
+TEST split, not an untouched first TEST.
 
 ## Frozen corpus and provenance
 
@@ -26,86 +29,40 @@ hyperparameter selection freeze.
   `combat_transition_v1`.
 - Source range: 25,000 requested seeds `4100016..4125015`; 24,999 completed;
   one quarantined source, `4102275` (`process_exit_134`).
-- Corpus: 510,030 rows, 2,859,877,223 bytes, SHA256
+- Corpus: 510,030 rows, SHA256
   `74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde`.
 - Final manifest SHA256:
   `33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59`.
 - Shard audit: 322/322 shard manifests validated; no overlapping or
   out-of-range source groups; every row had exactly one valid raw capture.
-  The external `corpus_audit.json` preserves the path, row count, and data/
-  manifest SHA256 for every shard.
-
-Collection configuration was `combattransitiongen`, ordinary project-fair
-Silver/Searcher2, `STS_FAIR=1`, native OOC source policy
-`runFullRunOOC_policy_v1`, `STS_NATIVE_OOC=1`, Searcher3 off, exact 10,000
-simulations/root, allocated reuse cap 32,768, adaptive/pruning/learned-PUCT/
-direct-leaf/sequential-halving off, Silver telemetry on, heuristic map routing,
-card-skip threshold `-0.5`, no key collection or opt-in gates, shop value on,
-rest value off, Ascension 0, and `OMP_NUM_THREADS=8`. The frozen Silver
-widening parameters were chance/end-turn `c=3.7028`, `alpha=0.52389`, with
-exploration parameter 25.0; particle/belief modes were not applicable to this
-private-chance Silver search.
 
 The source-group split is
 `SHA256("combat-transition-model-v1:" + sourceSeed)` interpreted as a
 big-endian 64-bit value modulo 100: `<80` train, `<90` validation, otherwise
-test. Counts are train 19,986, validation 2,496, test 2,517; the split
-manifest SHA256 is
+test. Counts are train 19,986, validation 2,496, test 2,517; split SHA256 is
 `e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32`.
 
-## Corpus audit
+## Domain and encoding correction
 
-There were 491,897 wins and 18,133 deaths, with 18,133 distinct source seeds
-containing a death. Rows/source were min 2, median 21, mean 20.4020, p95 29,
-max 34. Observed coverage counts are:
+The experiment now derives the entity domains from the repository canonical
+constants in `apps/one_combat/run_features.h`: cards 372, relics 181, and
+potions 48. Invalid entity IDs fail closed before either flat or neural
+encoding; neural embeddings no longer clamp IDs.
 
-| Dimension | Counts |
-| --- | --- |
-| Act | 1: 238,946; 2: 171,452; 3: 99,632 |
-| Room | NORMAL: 329,935; ELITE: 118,335; BOSS: 53,934; EVENT: 7,826 |
-| Floor band | 1–15: 214,418; 16–30: 163,799; 31–45: 102,405; 46+: 29,408 |
-| Starting HP fraction | <25%: 7,306; 25–49%: 34,424; 50–74%: 89,886; 75–100%: 378,414 |
-| Burning elite | false: 483,012; true: 27,018 |
-| Potion count | 0: 104,996; 1: 154,974; 2: 131,638; 3: 112,586; 4: 3,434; 5: 2,402 |
-| Deck size | 0–10: 18,525; 11–15: 123,846; 16–20: 130,227; 21–30: 201,605; 31+: 35,827 |
+| Entity | Canonical domain | Observed IDs | Previous bound | Previous flat truncation | Previous neural clamp/collision |
+| --- | ---: | --- | ---: | ---: | ---: |
+| Cards | 372 | 11..369 | 371 | 0 tokens / 0 rows | 0 tokens / 0 rows |
+| Relics | 181 | 0..177 | 128 | 890,897 tokens / 339,996 rows | 890,897 tokens / 339,996 rows |
+| Potions | 48 | 1..43 | 44 | 0 tokens / 0 rows | 0 tokens / 0 rows |
 
-Encounter counts, by encoded encounter ID, were:
+The corrected flattened representation has 3,115 fields, with continuous
+globals kept continuous and `characterClass`, `encounter`, `roomClass`, and
+`lastRoom` represented by deterministic one-hot fields. Neural models use
+small embeddings for those four categorical globals and for card, relic, and
+potion IDs. The corrected final models have 94,554 DeepSets parameters and
+114,178 attention parameters.
 
-```text
-1:18631, 2:18817, 3:18827, 4:18679, 5:10455, 6:5845, 7:10361,
-8:9784, 9:5355, 10:8294, 11:8384, 12:5814, 13:9824, 14:10556,
-15:18046, 16:17864, 17:17849, 18:8533, 19:8669, 20:8583, 21:9003,
-22:8967, 23:8970, 24:8826, 25:9009, 26:4837, 27:4864, 28:12137,
-29:8883, 30:12189, 31:6954, 32:7019, 33:6968, 34:13471, 35:13597,
-36:13617, 37:6381, 38:6179, 39:6208, 40:12780, 41:8607, 42:8772,
-43:4595, 44:4442, 45:4409, 46:4601, 47:4477, 48:4523, 49:4477,
-50:8157, 51:8086, 52:7962, 53:3576, 54:3456, 55:3606, 58:156,
-61:3373, 62:877, 63:1849
-```
-
-Persistent changes were present in the following rows (source counts in
-parentheses): HP 375,184 (24,999), max HP 17,870 (5,320), gold 21,781
-(16,062), potion count 147,060 (24,908), potion slots 148,005 (24,908),
-relic data 124,080 (13,329), at least two relic counters 21,036 (3,921),
-deck structure/upgrades 1,151 (1,140), deck misc 109 (101), stolen gold
-37,894 (14,756), Smoke Bomb 3,001 (2,819), and other persistent fields 1,151
-(1,140). The most common changed relic IDs were 52 (37,165 rows), 44
-(35,448), 26 (26,193), 31 (22,557), 68 (12,918), 30 (10,878), 116 (1,968),
-and 46 (298). Changed card IDs were 243 (1,151) and 278 (109).
-
-The observed label summary is `P(win)=0.9644472`,
-`E(post HP fraction | win)=0.7828707`, and implied
-`E_alive_hp=P(win)*E(post HP fraction | win)=0.7550374`.
-
-## Model protocol and results
-
-Inputs were restricted to the predictor contract: 14 globals, canonical typed
-card/relic/potion tokens, relic acquisition order, and potion slot. Source
-seed/RNG/future queues, post-state, hidden monster state, and old features were
-not used. The flattened XGBoost representation had 2,846 fields; 721
-nonconstant TRAIN fields were retained. DeepSets had 89,338 parameters and
-attention had 107,970 parameters (global/card/relic/potion tokens, width 64,
-two layers, four heads, no arbitrary card positional embeddings).
+## Model protocol and corrected results
 
 Exact fit command:
 
@@ -113,59 +70,59 @@ Exact fit command:
 OMP_NUM_THREADS=8 /usr/bin/time -v -o /home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/fit-time.txt python3 tools/combat_transition_model_experiment.py fit --prepared-dir /home/philippherrmann/sts_sweep/runs/combat-transition-model-v1 --output-dir /home/philippherrmann/sts_sweep/runs/combat-transition-model-v1 --device cuda --threads 8 --xgb-rounds 400 --nn-batch 2048 --nn-epochs 12 --nn-patience 3 --training-seed 20260911 --bootstrap-reps 1000
 ```
 
-CUDA was required and used for XGBoost and both neural families. XGBoost’s
-prespecified depth-4/depth-6, learning-rate .05, min-child-weight 1 grid chose
-depth 6 at 400 rounds. The validation composite scores were XGBoost 0.179493,
-DeepSets 0.180073, and attention 0.180856.
+CUDA was required and used for XGBoost, DeepSets, and attention. The
+validation-only selection froze XGBoost depth 6 with 400 survival rounds and
+400 winning-HP rounds, DeepSets at 12 epochs, and attention at 12 epochs.
+After that freeze, all three families were refit from scratch on
+TRAIN+VALIDATION with those fixed lengths and then evaluated on TEST. No TEST
+metric was used for early stopping or model selection. The same documented
+seed `20260911` was used for NumPy/Torch family fits and XGBoost
+`random_state`.
 
-Aggregate TEST metrics (lower is better except AUC) were:
+Validation composite scores (lower is better) were XGBoost `0.179316`,
+DeepSets `0.171834`, and attention `0.169172`; validation selected attention.
+
+Corrected TEST aggregate metrics (lower is better except AUC) were:
 
 | Family | Survival AUC / Brier / logloss | Winning-HP MAE / RMSE / bias | Joint alive-HP MAE / RMSE / bias |
 | --- | --- | --- | --- |
-| XGBoost | 0.974918 / 0.018980 / 0.065256 | 0.075240 / 0.111074 / +0.000264 | 0.082444 / 0.125727 / −0.000735 |
-| DeepSets | 0.975461 / 0.018809 / 0.064157 | 0.076545 / 0.112429 / +0.011146 | 0.083051 / 0.126736 / +0.011100 |
-| Attention | 0.975634 / 0.019448 / 0.065977 | 0.076256 / 0.115493 / +0.022280 | 0.083308 / 0.130533 / +0.024990 |
+| XGBoost | 0.974997 / 0.018985 / 0.065183 | 0.075141 / 0.110923 / +0.000285 | 0.082427 / 0.125750 / −0.000703 |
+| DeepSets | 0.978864 / 0.017780 / 0.060430 | 0.072614 / 0.106994 / −0.004751 | 0.078684 / 0.120493 / −0.003636 |
+| Attention | 0.978805 / 0.017901 / 0.060792 | 0.072575 / 0.107032 / +0.000318 | 0.078781 / 0.120692 / +0.001465 |
 
 Source-bootstrap 95% intervals for model-minus-model error were:
 
 | Difference | Brier | Winning-HP MAE | Joint alive-HP MAE |
 | --- | --- | --- | --- |
-| DeepSets − XGBoost | [−0.000492, +0.000159] | [+0.000907, +0.001695] | [+0.000144, +0.001045] |
-| Attention − XGBoost | [+0.000154, +0.000787] | [+0.000576, +0.001477] | [+0.000347, +0.001353] |
-| Attention − DeepSets | [+0.000360, +0.000923] | [−0.000573, −0.000003] | [−0.000063, +0.000577] |
+| DeepSets − XGBoost | [−0.001565, −0.000872] | [−0.002921, −0.002169] | [−0.004213, −0.003336] |
+| Attention − XGBoost | [−0.001451, −0.000711] | [−0.002957, −0.002183] | [−0.004076, −0.003218] |
+| Attention − DeepSets | [−0.000159, +0.000430] | [−0.000337, +0.000319] | [−0.000258, +0.000482] |
 
-Selected-XGBoost TEST slices show the main weakness is the hard tail: Brier
-was 0.006391 / 0.028482 / 0.032663 for acts 1 / 2 / 3; 0.004375 / 0.021462 /
-0.024955 / 0.094614 for NORMAL / EVENT / ELITE / BOSS respectively; and
-0.137486 for starting HP below 25%. The five worst survival-Brier
-encounter slices were IDs 53 (n=386, 0.152318), 37 (646, 0.144974), 38 (639,
-0.131578), 39 (619, 0.131173), and 55 (379, 0.127001). Full calibration and
-all fixed slices remain in the external model-evidence JSON.
+The first two rows are clearly below zero, but the attention-versus-DeepSets
+row is not separated. The reporting rule therefore classifies the corrected
+comparison as `NO_CLEAR_DIFFERENCE`; this is not a claim that a numeric
+practical-improvement threshold was preregistered.
 
 ## Cost, validation, and outputs
 
-- Wall time: 825.60 s (13:45.60).
-- CPU time: 878.81 s user+system (844.72 + 34.09).
-- Peak resident memory: 16,113,592 kB (15.367 GiB).
+- Wall time: 2,132.17 s (35:32.17).
+- CPU time: 2,204.24 s user+system (2,156.91 + 47.33).
+- Peak resident memory: 17,515,476 kB (16.704 GiB).
 - GPU: RTX 3060 Ti, CUDA `cuda:0`; peak observed fit use was approximately
   5.5 GiB VRAM at 100% utilization.
-- Serialized model sizes: XGBoost survival 2,428,762 bytes; XGBoost winning-HP
-  2,629,384 bytes; DeepSets 366,310 bytes; attention 446,453 bytes.
-- Serialized model SHA256: XGBoost survival
-  `3b5031a482ddd63b32a40cbe9d841fbf59035852c9bfe0324400a0517d3b55f0`,
-  XGBoost winning-HP
-  `d2d4a11c348df7cea3feb1f4ea5cd6f7c8df99a59ab9f9b9554119a25895236d`,
-  DeepSets `ee6d4caf53773dbe667f18f02e98e1a69827b612b16ddff191752aa6ee23e8ef`,
-  attention `d8f5d2cac39e2041ff19dc61461dea0b435ba5aee9a32a0e571243dc520becd8`.
-- Validation-only warm inference timing (CUDA, host-to-device input staging
-  included; 100 batch-1 or 20 batch-2,048 repetitions): XGBoost
-  `0.260/0.391 ms` median/p95 at batch 1 and `3.659/4.119 ms` at batch 2,048;
-  DeepSets `0.633/0.866 ms` and `9.332/9.887 ms`; attention
-  `0.943/1.438 ms` and `85.508/86.092 ms`.
-- Repository validator: PASS, exit 0; 510,030 rows, 24,999 source seeds,
-  zero quarantined rows, and outcomes 491,897 wins / 18,133 deaths.
-- Unexpected health failures: zero. The one quarantined source is the recorded
-  `process_exit_134` source above.
+- Serialized model sizes and SHA256:
+  - XGBoost survival: 2,377,591 bytes,
+    `ed64dbc79b97af6b61d428975a3cb0acf5d12cf9cd5952a93eb55320f411883b`
+  - XGBoost winning-HP: 2,601,729 bytes,
+    `12807cbb02c8e53e1f7262a0ffab5521c5f32518af7a436c8491ad878cbd0352`
+  - DeepSets: 388,702 bytes,
+    `328c65f150ac7daa9db7dc7e2047b77cf8b88ef3c09b3da8ef57d75b7a2fd4c3`
+  - Attention: 472,689 bytes,
+    `a4545c54c8b99afb059b64c6ee36523f472e2e636040e166b32ded4218614b6f`
+- Repository transition validator: PASS, exit 0; 510,030 rows, 24,999
+  completed source seeds, one quarantined source in the manifest, zero
+  quarantined rows, and outcomes 491,897 wins / 18,133 deaths.
+- Unexpected health failures: zero. No new collection or retry was run.
 
 Derived evidence is preserved at:
 
@@ -173,8 +130,9 @@ Derived evidence is preserved at:
 - Experiment run: `/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/`
 - Audit: `corpus_audit.json`; split: `split_manifest.json` and
   `split_manifest.sha256`; prepared data: `prepared.npz`;
-  final validator: `final-transition-validation.json`.
-- Model evidence: `model_evidence.json`; timing: `fit-time.txt`.
+  validator output: `final-transition-validation.json`.
+- Model evidence: `model_evidence.json`; exact command: `fit-command.txt`;
+  stdout: `fit-stdout.txt`; stderr: `fit-stderr.txt`; timing: `fit-time.txt`.
 
 The experiment code and focused tests are committed; raw corpus/prepared data,
 logs, and fitted model binaries remain external and are not added to Git.
