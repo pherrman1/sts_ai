@@ -1,30 +1,20 @@
 ---
 name: codex-implementation
-description: Use for ordinary implementation, debugging, build, test, Git, and draft-PR tasks in sts_ai when no specialized research or review skill applies.
+description: Implement, debug, test, and prepare draft PRs in sts_ai when no specialized research or review skill applies.
 ---
 
 # Codex implementation workflow
 
-1. Verify the worktree, named branch or app-managed detached HEAD, status,
-   upstream, origin, and requested scope before editing.
-2. Read `AGENTS.md`, `docs/knowledge-base/CODE_MAP.md`, and the maintained page
-   routed for the affected subsystem.
-3. Search existing scripts, presets, tests, and known solutions before creating
-   new machinery.
-4. Use native Codex delegation or concurrency only when independent work makes
-   execution cheaper or faster. One coordinator owns scope, integration, final
-   diff inspection, verification, and PR evidence. Do not parallelize
-   overlapping edits or alternative implementations unless the accepted design
-   explicitly requires them.
-5. Make the smallest conceptual change that satisfies the request.
-6. Run the cheapest check that proves the required behavior.
-7. Inspect the complete diff, changed paths, status, and untracked files.
-8. Classify durable knowledge impact and update the authoritative destination
-   required by `AGENTS.md`.
-9. Commit, push, and create or update the draft PR only under the existing
-   workflow rules.
+Follow `AGENTS.md` for universal policy, task-dependent documentation routing,
+and completion boundaries. Start localized work from the relevant code, tests,
+or docs; use `docs/knowledge-base/CODE_MAP.md` for unfamiliar code or subsystem
+boundaries and maintained KB pages for affected contracts and procedures.
 
-`AGENTS.md` remains authoritative for universal project policy.
+Reuse existing scripts, presets, tests, and known solutions before creating new
+machinery. For build and verification commands, consult
+`docs/knowledge-base/operations/build-and-debugging.md`; for worktree, Git, and
+draft-PR procedures, use
+`docs/knowledge-base/operations/agent-context-and-workflow.md`.
 
 ## Learned guidance
 

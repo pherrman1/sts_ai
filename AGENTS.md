@@ -1,6 +1,6 @@
 # StS AI agent contract
 
-Last verified: 2026-09-08 against the current working tree.
+Last verified: 2026-09-12 for documentation routing and completion boundaries.
 
 ## Purpose and authority
 
@@ -24,10 +24,13 @@ in the same change:
 Do not invent rationale. Label unsupported conclusions **Inference**,
 **Unverified**, or **Open question**.
 
-## Navigate before changing
+## Task-dependent documentation routing
 
-Start with [CODE_MAP.md](docs/knowledge-base/CODE_MAP.md), then read the
-relevant linked maintained page before broad search or edits. The
+Use [CODE_MAP.md](docs/knowledge-base/CODE_MAP.md) to locate unfamiliar code,
+understand subsystem boundaries, or assess cross-subsystem changes. Read
+maintained KB pages when the affected interface, invariant, procedure,
+evaluation protocol, or research question requires them. For localized,
+already-understood changes, start with the relevant code, tests, or docs. The
 [knowledge-base index](docs/knowledge-base/README.md) routes architecture,
 behavior, evaluation, operations, research, decisions, and investigations.
 Use [operations/agent-context-and-workflow.md](docs/knowledge-base/operations/agent-context-and-workflow.md)
@@ -92,14 +95,26 @@ routing.
 
 ## Workflow-v2 handoff boundary
 
+Continue the requested change through implementation, affected checks, repair
+of failures caused by the change, rerunning affected checks, final diff
+inspection, and the permitted draft-PR handoff. Do not stop merely because the
+first implementation is complete or an ordinary check failed. Stop when the
+completion criteria are met, progress is blocked without new evidence, a
+material design decision is missing, or an existing permission, safety, or
+review boundary is reached; report any blocker.
+
+This repair loop does not override the seed guard or local seed ceiling,
+worktree/Git restrictions, preservation of ignored data, model/schema/RNG
+invariants, experimental provenance, independent scientific review, or PR/CI
+publication boundaries.
+
 The draft pull request is the Codex-to-reviewer handoff. It must include an
 evidence packet: baseline and reviewed SHA, scope, changed paths, checks run
 and their raw outcomes, checks not run, and remaining uncertainty. Minor review
 corrections continue the same Codex session. A conceptual redesign, new
-hypothesis, or changed success criterion starts a new session. After repeated
-failures or unresolved conceptual ambiguity, stop and report the blocker rather
-than wandering into unbounded re-investigation. After implementation review
-passes, freeze the reviewed SHA before any expensive scientific run.
+hypothesis, or changed success criterion starts a new session. After
+implementation review passes, freeze the reviewed SHA before any expensive
+scientific run.
 
 ## Critical safety and Git rules
 
