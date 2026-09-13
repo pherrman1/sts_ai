@@ -139,6 +139,57 @@ class TorchTests(unittest.TestCase):
         self.assertAlmostEqual(float(prob[0,3]), .75**2, places=6)
         self.assertAlmostEqual(float(prob[0,0]), .25**2, places=6)
         self.assertAlmostEqual(float(prob[1,1]), .75, places=6)
+    def test_arms_receive_identical_full_inventory_features_and_hidden_architecture(self):
+        independent = d.new_decoder('independent', 2)
+        joint = d.new_decoder('joint', 2)
+        features = independent.features(self.z, self.pre, self.delta, self.hp)
+        self.assertEqual(features.shape, (2,133))
+        torch.testing.assert_close(features, joint.features(self.z, self.pre, self.delta, self.hp), rtol=0, atol=0)
+        torch.testing.assert_close(independent.mlp[0].weight, joint.mlp[0].weight, rtol=0, atol=0)
+        torch.testing.assert_close(independent.mlp[0].bias, joint.mlp[0].bias, rtol=0, atol=0)
+        received = {}
+        hooks = [model.mlp.register_forward_pre_hook(lambda module, inputs, name=name: received.__setitem__(name, inputs[0].detach().clone())) for name, model in [('independent',independent),('joint',joint)]]
+        try:
+            independent(*self.inputs()); joint(*self.inputs())
+        finally:
+            for hook in hooks: hook.remove()
+        torch.testing.assert_close(received['independent'], features, rtol=0, atol=0)
+        torch.testing.assert_close(received['joint'], features, rtol=0, atol=0)
+        self.assertEqual(type(independent.mlp[1]), type(joint.mlp[1]))
+    def test_other_slot_can_affect_independent_slot_logit(self):
+        model = d.new_decoder('independent', 2)
+        for parameter in model.parameters(): parameter.data.zero_()
+        model.potion.weight.data[4,0] = 1
+        # Inventory starts at feature 73; slot 1's potion feature starts at 85.
+        model.mlp[0].weight.data[0,85] = 1
+        model.mlp[-1].weight.data[0,0] = 1
+        before = model.output_logits(self.z,self.pre,self.delta,self.hp)
+        changed = self.pre.clone(); changed[:,1] = 4
+        after = model.output_logits(self.z,changed,self.delta,self.hp)
+        torch.testing.assert_close(after[:,0] - before[:,0], torch.ones(2))
+    def test_unmasked_independent_probability_is_product_of_five_terms(self):
+        model = d.new_decoder('independent', 2)
+        logits = model.output_logits(self.z,self.pre,self.delta,self.hp)
+        bernoulli = torch.sigmoid(logits)
+        bits = torch.tensor(d.BITS)
+        expected = torch.where(bits[None], bernoulli[:,None], 1-bernoulli[:,None]).prod(-1)
+        actual = model.unmasked_log_probabilities(self.z,self.pre,self.delta,self.hp).exp()
+        torch.testing.assert_close(actual,expected)
+        torch.testing.assert_close(actual.sum(-1),torch.ones(2))
+        legal = torch.tensor(d.legal_masks(self.pre.numpy(),self.capacity.numpy()))
+        constrained = torch.where(legal, expected, 0)
+        constrained /= constrained.sum(-1,keepdim=True)
+        torch.testing.assert_close(model(*self.inputs()).exp(),constrained)
+    def test_both_arms_use_exact_same_legal_support(self):
+        expected = d.legal_masks(self.pre.numpy(),self.capacity.numpy())
+        supports = []
+        for kind in ('independent','joint'):
+            model = d.new_decoder(kind,2)
+            support = np.isfinite(model(*self.inputs()).detach().numpy())
+            np.testing.assert_array_equal(support,expected)
+            supports.append(support)
+        np.testing.assert_array_equal(*supports)
+
     def test_encoder_parameters_get_no_decoder_gradients(self):
         encoder = torch.nn.Linear(3,64)
         encoder.requires_grad_(False)

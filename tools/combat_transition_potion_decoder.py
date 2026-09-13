@@ -25,6 +25,9 @@ RECIPE = {'schema': 'potion_decoder_v1', 'salt': SALT, 'seed': 20260912,
           'precision': 'fp32', 'encoderEpochs': 10, 'width': 64,
           'layers': 2, 'heads': 4, 'ffWidth': 128,
           'decoderHidden': 64, 'potionEmbedding': 8, 'slotEmbedding': 4,
+          'decoderFeatures': 'state64 + delta8 + hp1 + flattened five potion8/slot4 entries',
+          'decoderArchitecture': 'shared Linear(133,64), ReLU; independent Linear(64,5) or joint Linear(64,32)',
+          'independentDistribution': 'product of all five Bernoullis before identical legal-mask renormalization',
           'deltaEmbedding': 8, 'optimizer': 'AdamW', 'lr': 1e-3,
           'weightDecay': 1e-4, 'batch': 2048, 'maxEpochs': 12,
           'patience': 3, 'selection': 'validation joint mask NLL; earliest strict minimum',
@@ -86,20 +89,25 @@ def new_decoder(kind, delta_count, seed=20260912):
             self.delta = nn.Embedding(delta_count, 8)
             self.potion = nn.Embedding(base.POTION_COUNT, 8)
             self.slot = nn.Embedding(5, 4)
-            self.mlp = nn.Sequential(nn.Linear(64 + 8 + 1 + (12 if kind == 'independent' else 60), 64), nn.ReLU(), nn.Linear(64, 1 if kind == 'independent' else 32))
-        def forward(self, z, pre, capacity, delta, hp):
+            self.mlp = nn.Sequential(nn.Linear(64 + 8 + 1 + 60, 64), nn.ReLU(), nn.Linear(64, 5 if kind == 'independent' else 32))
+        def features(self, z, pre, delta, hp):
             shared = torch.cat((z.detach(), self.delta(delta), hp[:, None]), -1)
             inventory = torch.cat((self.potion(pre), self.slot.weight[None].expand(len(z), -1, -1)), -1)
+            return torch.cat((shared, inventory.flatten(1)), -1)
+        def output_logits(self, z, pre, delta, hp):
+            return self.mlp(self.features(z, pre, delta, hp))
+        def unmasked_log_probabilities(self, z, pre, delta, hp):
+            logits = self.output_logits(z, pre, delta, hp)
+            if kind == 'joint':
+                return torch.log_softmax(logits, -1)
+            bits = torch.as_tensor(BITS, device=z.device)
+            yes = torch.nn.functional.logsigmoid(logits)
+            no = torch.nn.functional.logsigmoid(-logits)
+            return torch.where(bits[None], yes[:, None], no[:, None]).sum(-1)
+        def forward(self, z, pre, capacity, delta, hp):
+            logp = self.unmasked_log_probabilities(z, pre, delta, hp)
             active = (pre > 1) & (torch.arange(5, device=z.device)[None] < capacity[:, None])
             bits = torch.as_tensor(BITS, device=z.device)
-            if kind == 'independent':
-                logits = self.mlp(torch.cat((shared[:, None].expand(-1, 5, -1), inventory), -1)).squeeze(-1)
-                yes = torch.nn.functional.logsigmoid(logits)
-                no = torch.nn.functional.logsigmoid(-logits)
-                terms = torch.where(bits[None], yes[:, None], no[:, None])
-                logp = torch.where(active[:, None], terms, 0).sum(-1)
-            else:
-                logp = self.mlp(torch.cat((shared, inventory.flatten(1)), -1))
             legal = ~torch.any(bits[None] & ~active[:, None], -1)
             return torch.log_softmax(logp.masked_fill(~legal, -torch.inf), -1)
     return Decoder()

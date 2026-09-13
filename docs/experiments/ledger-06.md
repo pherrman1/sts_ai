@@ -7079,6 +7079,11 @@ model training was changed.
   joint NLL epoch selection, decoder-only TRAIN+VALIDATION refit, one primary
   HOLDOUT decision with paired source bootstrap. Separate 16-draw ancestral
   engineering exposure diagnostic using historical upstream checkpoints.
+  Before fitting, the reviewed-head information confound was corrected: both
+  arms now consume the same full-inventory width-133 features and width-64
+  hidden MLP, producing five Bernoulli versus 32 categorical logits. Revised
+  recipe SHA256 `6e758e5df43a39a0c6438ae0841e00050809fed770f654cb6da76fc10d714541`;
+  split unchanged. Static parameter counts: 9,393 independent / 11,148 joint.
 - **Status:** implementation/preparation and inference correction completed;
   fitting awaits independent implementation review and a frozen reviewed SHA.
   No encoder artifact, selected head epochs, HOLDOUT scores, decoder decision,

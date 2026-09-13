@@ -135,7 +135,10 @@ The authorized prospective potion-decoder comparison now has a frozen split
 nested exclusively inside original TRAIN: 15,971 / 2,001 / 2,014 sources.
 The implementation uses a fixed ten-epoch TRAIN-only attention point-control
 state encoder and compares independent Bernoulli versus exact 32-mask heads
-with identical teacher-forced upstream conditioning. Validation joint-mask NLL
+with identical full five-slot inventory features, hidden width and
+teacher-forced upstream conditioning. The independent head outputs all five
+Bernoulli logits from that shared representation; the candidate outputs 32
+categorical logits, isolating the distribution-family comparison. Validation joint-mask NLL
 selects head epochs; fresh nested HOLDOUT supplies the primary paired source
 bootstrap decision. Ancestral qualification is separate and uses historical
 upstream checkpoints, which previously saw these original TRAIN sources.

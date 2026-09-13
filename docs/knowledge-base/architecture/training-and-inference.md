@@ -97,8 +97,12 @@ It does not enforce joint reachability of multiple relic counters.
 its recipe before `fit`. A ten-epoch FP32 attention point-control encoder sees
 nested TRAIN only; its normalization and parameters remain frozen during
 validation-selected decoder training and TRAIN+VALIDATION refitting. The small
-independent and joint decoders condition on the same detached state, max-HP
-class, post-HP fraction, potion IDs and slots. Consumption masks cannot create
+independent and joint decoders use the same 133-wide feature tensor: detached
+state, max-HP class embedding, post-HP fraction and flattened embeddings for
+all five potion/slot entries. Both have the same width-64 hidden MLP; output
+layers emit five Bernoulli logits or 32 categorical logits. The independent
+mask probabilities are products of all five Bernoulli terms before both arms
+apply the identical row-legality mask and renormalize. Consumption masks cannot create
 or move potion identities. HOLDOUT scoring follows frozen epoch selection;
 teacher-forced and ancestral results are recorded separately. Historical
 point-control survival remains separate in composition. `fit` requires a clean

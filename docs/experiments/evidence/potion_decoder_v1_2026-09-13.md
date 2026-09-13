@@ -97,7 +97,7 @@ sources participate; every source stays together. No target informed assignment.
 | HOLDOUT | 2,014 | 41,403 | 33,572 |
 
 [Recipe](potion_decoder_v1/recipe.json) SHA256:
-`316d44fa837fb68b0ec4b3889bcc4219274e6ade066a3bb9ff825517d763f224`.
+`6e758e5df43a39a0c6438ae0841e00050809fed770f654cb6da76fc10d714541`.
 The width-64 attention point-control encoder trains exactly 10 FP32 epochs
 on supported decoder-TRAIN rows, survival BCE plus winning HP-fraction MSE.
 Normalization uses those same TRAIN rows. No encoder validation selection.
@@ -106,9 +106,15 @@ cannot reach encoder parameters. Survival in eventual composition remains
 the original historical point-control artifact, separate from this state encoder.
 
 Both heads train on the identical supported, certified, victorious rows, using
-teacher-forced true max-HP delta and HP fraction. Independent slot Bernoullis
-and the exact 32-class joint head receive state, delta, HP, potion identity,
-and explicit slot information. Empty/unavailable bits are deterministically
+teacher-forced true max-HP delta and HP fraction. Both arms consume the identical shared feature tensor
+`F = state64 + delta8 + hp1 + flattened five (potion8, slot4) entries`,
+width 133. They use the same embeddings and `Linear(133,64), ReLU` hidden
+architecture, with identical seeded initialization of embeddings and hidden
+weights. The independent output layer emits five Bernoulli logits simultaneously;
+the joint output layer emits 32 categorical logits. The independent unmasked
+mask probability is exactly the product of all five Bernoulli terms, including
+forced-zero slots; both arms then mask the identical impossible classes and
+renormalize. Thus the distribution family is the conceptual treatment. Empty/unavailable bits are deterministically
 zero. Both use AdamW lr 1e−3, decay 1e−4, FP32, seed 20260912, shuffled batch
 2,048, max 12 epochs, patience 3, norm clipping 1.0. The earliest strict minimum
 of validation joint mask NLL selects each head's epoch independently.
@@ -122,7 +128,7 @@ Primary: row-weighted joint mask NLL difference (joint minus independent),
 95% interval → `JOINT_MASK_WINS`; strictly positive → `INDEPENDENT_MASK_WINS`;
 overlap → `NO_CLEAR_JOINT_GAIN`, prefer independent. Secondary metrics do not
 select the architecture. Static decoder parameter counts with the frozen
-11-class max-HP delta domain are 6,061 independent and 11,148 joint; these
+11-class max-HP delta domain are 9,393 independent and 11,148 joint; these
 are architecture counts, not evidence of trained artifacts. No global TEST
 replication is needed for this decision.
 
@@ -138,6 +144,16 @@ statistical hypothesis or a change to the primary decision rule. Historical
 upstream weights saw original TRAIN+VALIDATION, including nested HOLDOUT;
 ancestral qualification is consequently an engineering exposure diagnostic,
 not an independent upstream generalization result.
+
+The decoder information correction follows review of candidate
+`2da8b90ea815da4c35a59c15c1a7b2467e5b8368`: its queried-slot-only independent
+head had less explicit inventory information than the joint head. The revised
+recipe above supersedes recipe SHA256
+`316d44fa837fb68b0ec4b3889bcc4219274e6ade066a3bb9ff825517d763f224`
+before any fitting. The former recipe is preserved externally as
+`recipe-reviewed-2da8b90.json`. The nested manifest remains byte-for-byte
+unchanged, as do encoder, optimization, split, scoring, bootstrap, ancestral,
+relic and global-support protocols. No HOLDOUT decoder score was inspected.
 
 ## Execution status and checks
 
@@ -158,7 +174,7 @@ Corpus and original split remain at their existing durable paths. No simulator
 collection or seeded gameplay command was run. `combatRng[6]` remains unmodeled;
 Silver replacement and RNG-continuing native rollouts remain blocked.
 
-Focused unittest command (49 tests, OK):
+Focused unittest command (53 tests, OK):
 
 ```bash
 python3 -m unittest tools.test_combat_transition_potion_decoder \
@@ -193,7 +209,7 @@ requires an explicit follow-up plan preserving split/recipe provenance.
 
 Additional checks: worktree preflight/check and environment doctor passed;
 CMake `linux-gcc-debug-ccache` configure exit 0; four affected CTest checks
-passed. Minimal uv environment ran 16 decoder tests, OK with six Torch tests
-skipped. Torch environment ran all 16 decoder tests including tiny synthetic
+passed. Minimal uv environment ran 20 decoder tests, OK with ten Torch tests
+skipped. Torch environment ran all 20 decoder tests including tiny synthetic
 selection/refit/ancestral and composed-latency paths. No full C++ build or
 scientific fitting ran; GitHub Linux GCC is authoritative repository CI.
