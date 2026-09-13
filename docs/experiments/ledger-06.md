@@ -6941,11 +6941,19 @@ model training was changed.
   0.773967 versus 0.764348 copy-through and changed-token accuracy was
   0.097227 versus 0; potion changed-row accuracy was 0.390527 versus 0, but
   potion full-vector accuracy was 0.460983 versus 0.728150.
-- **Classification:** **`PHASE2_PARTIAL`**. Core metrics are within the
-  explicit point-control tolerance and HP distribution improves, but the
-  aggregate sparse-head rule is false because potion full-vector accuracy does
-  not beat copy-through. Gold/stolenGold are excluded from that criterion and
-  remain native fallback/copy-through fields. Sampled-state validity is 16/16
-  with zero invalid states. Phase-2 and point-control checkpoints are 493,271
-  and 388,562 bytes; measured batch-1 CPU latency is 0.3916 ms and 0.2989 ms.
+- **Classification:** **`CORE_REGRESSION`**. The stochastic HP head works
+  (discrete CRPS `0.048484` versus `0.071822` point-control), and the relic
+  head is promising on full-vector and changed-counter slices. The potion
+  changed slice improves, but its full-vector accuracy does not beat
+  copy-through. Shared multitask training degrades the core survival predictor:
+  Brier is `0.0208797` versus `0.0189359` for point control. The durable rule
+  removes the post-hoc absolute `+0.005` survival-Brier tolerance; the existing
+  5% relative check also fails. Gold/stolenGold are excluded from the sparse
+  criterion and remain native fallback/copy-through fields. The potion head
+  should probably use copy-through/change gating. The next experiment should
+  protect the core predictor, e.g. freeze or separate the survival encoder/trunk
+  before training transition heads; this was not run. Sampled-state validity is
+  16/16 with zero invalid states. Phase-2 and point-control checkpoints are
+  493,271 and 388,562 bytes; measured batch-1 CPU latency is 0.3916 ms and
+  0.2989 ms.
 - **Evidence:** [gold-boundary fit report](evidence/combat_transition_surrogate_phase2_gold_boundary_2026-09-13.md).

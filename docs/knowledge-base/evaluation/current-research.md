@@ -69,11 +69,18 @@ heads or Phase-2 pass metrics.
 The remaining Phase-2 DeepSets fit and point-control fit used validation-only
 epoch selection (9 and 12 epochs), equal TRAIN+VALIDATION refits, and fixed
 TEST evaluation. Phase-2 improves HP distribution CRPS (0.048484 versus
-0.071822 point-control), and relic changed-slice accuracy beats copy-through;
+0.071822 point-control), and the relic head is promising on changed slices;
 the potion changed slice improves but potion full-vector accuracy does not.
-The final classification is **`PHASE2_PARTIAL`**. Runtime inference is not
-implemented, and `combatRng[6]` remains a separate blocker for scientifically
-valid multi-fight surrogate rollouts. See [ledger-06 §231](../../experiments/ledger-06.md)
+Shared multitask training degrades survival (Brier 0.0208797 versus 0.0189359
+for point control), so the final classification is **`CORE_REGRESSION`**. The
+durable conclusion removes the post-hoc absolute `+0.005` survival tolerance;
+the existing 5% relative check also fails on these numbers. The stochastic HP
+head works, and the potion head should probably use copy-through/change gating.
+The next experiment should protect the core predictor, for example by freezing
+or separating the survival encoder/trunk before training transition heads. This
+follow-up was not run. Runtime inference is not implemented, and
+`combatRng[6]` remains a separate blocker for scientifically valid multi-fight
+surrogate rollouts. See [ledger-06 §231](../../experiments/ledger-06.md)
 and the [gold-boundary fit report](../../experiments/evidence/combat_transition_surrogate_phase2_gold_boundary_2026-09-13.md).
 
 ## Current baseline

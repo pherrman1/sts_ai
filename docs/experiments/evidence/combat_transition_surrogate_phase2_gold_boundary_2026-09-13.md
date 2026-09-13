@@ -10,13 +10,15 @@ gold support boundary and the completed DeepSets fit.
 
 ## Decision
 
-**Classification: `PHASE2_PARTIAL`.** The support audit covers all observed
+**Classification: `CORE_REGRESSION`.** The support audit covers all observed
 gold and `stolenGold` mutations with predictor-visible guards. On supported
 rows, both fields are exact copy-through and are excluded from the learned
 target. The remaining DeepSets model is not a runtime surrogate: it improves
-the stochastic HP distribution and beats copy-through on relic changed slices,
-but the potion full-vector result does not beat its copy-through baseline under
-the explicit sparse-head rule.
+the stochastic HP distribution, and the relic head is promising on its
+changed slice. However, shared multitask training degrades the core survival
+predictor: survival Brier is `0.0208797` versus `0.0189359` for point control.
+The potion head should probably use copy-through/change gating; its changed
+slice improves, but its full-vector result does not beat copy-through.
 
 Gold is a v1 support/fallback mechanic, not a learned head. The separate
 `combatRng[6]` continuation contract remains a blocker for scientifically
@@ -222,9 +224,25 @@ is 0.169894 vs a 0.210151 copy-through baseline.
 
 The sparse qualification rule requires both full-vector and changed-slice
 accuracy to strictly beat copy-through for each sparse head. Relics satisfy
-that rule; potions improve the changed slice but not the full-vector baseline,
-so the aggregate sparse-head gate is false. Gold is not part of this pass
-criterion.
+that rule; potions improve the changed slice but not the full-vector baseline.
+Gold is not part of this pass criterion. The core decision rule has no
+post-hoc absolute `+0.005` survival-Brier tolerance; with the existing 5%
+relative check, Phase-2 still fails the core survival comparison.
+
+## Interpretation and next experiment
+
+The stochastic HP head works: its discrete CRPS is `0.048484` versus `0.071822`
+for the point-control degenerate distribution. The relic head is promising,
+with improved full-vector and changed-counter results. The potion head should
+probably use explicit copy-through/change gating because its full-vector exact
+accuracy is below the unchanged-state baseline even though its changed-row
+accuracy improves.
+
+The shared multitask objective degrades survival, so the durable result is
+`CORE_REGRESSION`, not `PHASE2_PARTIAL`. The next experiment should protect the
+core predictor before training transition heads—for example, freeze or
+separate the survival encoder/trunk before fitting the transition heads. This
+is a proposed follow-up only; no new experiment or data collection was run.
 
 ## Validity, artifacts, and blockers
 

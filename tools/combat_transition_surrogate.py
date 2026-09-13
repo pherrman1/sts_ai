@@ -1664,8 +1664,8 @@ def _measure_latency(wrapper, arrays: dict, index: int, args: argparse.Namespace
 def _decision_classification(core: dict, point: dict, transition: dict) -> dict:
     # The handoff did not preregister numerical materiality margins.  This
     # conservative reporting rule is explicit: allow at most 5% relative core
-    # error increase (or 0.005 absolute Brier), require a strict HP CRPS gain,
-    # and require both overall and changed-slice gains for each sparse head.
+    # error increase, require a strict HP CRPS gain, and require both overall
+    # and changed-slice gains for each sparse head.
     def not_materially_worse(name: str) -> bool:
         a = core[name]["mae"]
         b = point[name]["mae"]
@@ -1673,7 +1673,7 @@ def _decision_classification(core: dict, point: dict, transition: dict) -> dict:
             return False
         return a <= b * 1.05 + (0.005 if name == "survival" else 0.0)
     core_ok = (
-        core["survival"]["brier"] <= point["survival"]["brier"] * 1.05 + 0.005
+        core["survival"]["brier"] <= point["survival"]["brier"] * 1.05
         and not_materially_worse("winningExpectedHpFraction")
         and not_materially_worse("jointAliveHpFraction")
     )
@@ -1694,7 +1694,7 @@ def _decision_classification(core: dict, point: dict, transition: dict) -> dict:
         classification = "PHASE2_PASS"
     return {
         "classification": classification,
-        "rule": "core <= point-control plus 5% relative/0.005 Brier tolerance; HP CRPS strict improvement; potion and relic primary and changed-slice accuracy strictly beat copy-through; gold/stolenGold are support-gated copy-through fields",
+        "rule": "core <= point-control plus 5% relative error tolerance with no absolute survival-Brier offset; HP CRPS strict improvement; potion and relic primary and changed-slice accuracy strictly beat copy-through; gold/stolenGold are support-gated copy-through fields",
         "coreNotMateriallyWorse": core_ok,
         "hpDistributionImproves": hp_improves,
         "sparseHeadsBeatCopyThrough": sparse_ok,

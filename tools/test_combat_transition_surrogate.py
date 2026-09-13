@@ -20,6 +20,7 @@ try:
         TRANSMUTATION_ID,
         WRITHING_MASS_ID,
         _sample_persistent_transition,
+        _decision_classification,
         _exact_accuracy,
         _transition_metrics,
         _prepare_target_indices,
@@ -47,6 +48,7 @@ except ModuleNotFoundError:
         TRANSMUTATION_ID,
         WRITHING_MASS_ID,
         _sample_persistent_transition,
+        _decision_classification,
         _exact_accuracy,
         _transition_metrics,
         _prepare_target_indices,
@@ -231,6 +233,42 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
             metrics["relicCounters"]["copyThroughBaseline"]["exactAllCounterVectorAccuracy"],
             0.5,
         )
+
+    def test_survival_brier_regression_has_no_absolute_tolerance(self):
+        core = {
+            "survival": {"brier": 0.0208796803},
+            "winningExpectedHpFraction": {"mae": 0.0718454},
+            "jointAliveHpFraction": {"mae": 0.0791714},
+            "hpDistribution": {"discreteCrps": 0.048484},
+        }
+        point = {
+            "survival": {"brier": 0.01893593},
+            "winningExpectedHpFraction": {"mae": 0.0725032},
+            "jointAliveHpFraction": {"mae": 0.0789335},
+            "hpDistribution": {"pointControlDegenerateCrps": 0.071822},
+        }
+        transition = {
+            "potions": {
+                "exactFullVectorAccuracy": 0.8,
+                "copyThroughBaseline": {
+                    "exactFullVectorAccuracy": 0.7,
+                    "changedRowAccuracy": 0.0,
+                },
+                "changedRowAccuracy": 0.4,
+            },
+            "relicCounters": {
+                "exactAllCounterVectorAccuracy": 0.8,
+                "copyThroughBaseline": {
+                    "exactAllCounterVectorAccuracy": 0.7,
+                    "changedCounterAccuracy": 0.0,
+                },
+                "changedCounterAccuracy": 0.2,
+            },
+        }
+        decision = _decision_classification(core, point, transition)
+        self.assertEqual(decision["classification"], "CORE_REGRESSION")
+        self.assertFalse(decision["coreNotMateriallyWorse"])
+        self.assertNotIn("0.005", decision["rule"])
 
     def test_sampler_normalizes_softmax_roundoff_before_choice(self):
         probabilities = _normalise_sampling_probabilities(np.asarray([0.2, 0.8000001]))
