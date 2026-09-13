@@ -22,7 +22,7 @@ experiments.
 
 ### Synchronous OOC MCTS substrate
 
-Last verified: 2026-09-13 with the focused `ooc_mcts` self-test.
+Last verified: 2026-09-13 with focused `ooc_mcts` and `ooc_mcts_adapter` self-tests.
 
 `OocMctsPlanner` is an offline/test-only generic search core over opaque state
 and action IDs. `OocGenerativeModel` supplies complete actions/priors, actual
@@ -31,7 +31,8 @@ decision nodes use PUCT; chance nodes retain independent equal-weight outcome
 particles (including duplicate IDs) and reuse particles uniformly, never by
 value. Action Q is the Monte Carlo mean of sampled trajectory values.
 
-Depth counts action transitions (root zero); terminals precede the horizon,
+Depth counts action transitions (root zero); exact terminals precede model-defined
+leaf boundaries, which precede the depth horizon,
 and newly expanded downstream nonterminal leaves use the injected evaluator.
 The root expands and selects an action in the first simulation. Chance visit N
 uses `max(1, ceil(k*N^alpha))` with prospective N starting at one. Defaults are
@@ -44,8 +45,40 @@ ID. Each search resets its tree and seeded RNG; providers must preserve IDs and
 reset any mutable sampling state for exact replay.
 
 The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
-There is no GameContext adapter, learned-combat runtime integration, or
-production policy change. The combat surrogate remains NOT_QUALIFIED, and
+`apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the offline
+`OocGameContextModel` integration through explicit `one_combat oocmctsselftest`
+and the guarded `ooc_mcts_adapter` CTest. The adapter requires loaded native
+V4 and win models. `OocStrategicTokNet::predictPolicyLogit` shares the 184-wide
+state/action representation with Q, then applies `pol.0 -> GELU -> pol.2`.
+Finite logits supply weights `exp((logit - max_logit) / 1.0)`; the core
+normalizes them. Q remains unchanged in the live one-ply gates.
+
+The exact primitive candidate contract is shared with those gates through
+`v4CandidateActions`, including the last card-reward group's `CARD(group,5)`
+skip. Supported decisions are REWARDS with at least one card group,
+REST_ROOM, CARD_SELECT/UPGRADE, EVENT_SCREEN with a native nonempty candidate
+set (excluding INVALID and MATCH_AND_KEEP), SHOP_ROOM, TREASURE_ROOM,
+BOSS_RELIC_REWARDS, and MAP_SCREEN with a map except row 14. Other selectors,
+non-card reward states, invalid/empty decisions, missing maps and map row 14
+are explicit leaf boundaries. BATTLE is always a hard leaf boundary;
+UNDECIDED battle states are never fabricated terminals. Run loss/victory
+remain exact 0/1, with precedence over any boundary.
+
+Snapshots live in a deque, with detached map copies at root and each native
+`GameAction::execute` successor and branch-local updated `PathHistory`.
+Action IDs are the primitive action bits and are validated against the
+parent's complete candidates before execution. Leaves call the native-only
+`vStateWinNative` seam: unavailable models or nonfinite/out-of-range values
+throw, with no server fallback and no clamping. Leaf feature evaluation
+scopes the stored path history and restores the caller's history.
+
+Copied native RNG streams can repeat identical successors. This is an
+exact/native-state integration scaffold, **not a fair stochastic environment
+model** or a scientifically qualified full OOC planner. No simulator RNG is
+reseeded. There is no learned-combat runtime integration or production policy
+change; `runFullRunOOC`, `bestbench`, policy defaults and fallback chain remain
+unchanged. The battle boundary can later be replaced by a qualified sampled
+combat provider through the same generative-model interface. The combat surrogate remains NOT_QUALIFIED, and
 combatRng continuation still blocks valid multi-fight learned rollouts.
 
 ## Semantic OOC decisions

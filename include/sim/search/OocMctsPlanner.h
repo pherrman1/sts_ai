@@ -17,6 +17,7 @@ class OocGenerativeModel {
 public:
     virtual ~OocGenerativeModel() = default;
     virtual std::optional<double> terminalValue(OocStateId state) const = 0;
+    virtual bool isLeafBoundary(OocStateId) const { return false; }
     virtual std::vector<OocPlannerAction> legalActions(OocStateId state) const = 0;
     virtual OocStateId sampleSuccessor(OocStateId state, OocActionId action,
                                        std::mt19937_64 &rng) = 0;
@@ -42,7 +43,7 @@ struct OocRootActionStats {
     double q;
 };
 struct OocMctsResult {
-    // Absent for terminal roots or a zero-depth horizon.
+    // Absent for terminal/boundary roots or a zero-depth horizon.
     std::optional<OocActionId> selectedAction;
     std::vector<OocRootActionStats> rootActions;
     OocMctsMetrics metrics;

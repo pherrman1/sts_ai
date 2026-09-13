@@ -62,7 +62,7 @@ struct Search {
         metrics.maxDepthReached = std::max(metrics.maxDepthReached, depth);
         ++node.visits;
         if (auto value = model.terminalValue(node.state)) return checkedValue(*value);
-        if (depth == config.maxDepth) {
+        if (model.isLeafBoundary(node.state) || depth == config.maxDepth) {
             ++metrics.leafEvaluations;
             return checkedValue(model.leafValue(node.state));
         }

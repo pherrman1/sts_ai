@@ -190,20 +190,39 @@ double oocStrategicScore(const float *state, std::uint32_t bits,
         return sigmoid(g_oocStrategicNet.predictPolicyLogit(state, bits, cats, actionType, screen));
     return g_oocStrategicNet.predictActionValue(state, bits, cats, actionType, screen);
 }
+// Exact primitive candidate contract shared with the V4 one-ply gates.
+bool v4DecisionSupported(const GameContext &gc) {
+    switch (gc.screenState) {
+        case ScreenState::REWARDS: return gc.info.rewardsContainer.cardRewardCount > 0;
+        case ScreenState::REST_ROOM:
+        case ScreenState::SHOP_ROOM:
+        case ScreenState::TREASURE_ROOM:
+        case ScreenState::BOSS_RELIC_REWARDS: return true;
+        case ScreenState::EVENT_SCREEN: return gc.curEvent != Event::INVALID && gc.curEvent != Event::MATCH_AND_KEEP;
+        case ScreenState::CARD_SELECT: return gc.info.selectScreenType == CardSelectScreenType::UPGRADE;
+        case ScreenState::MAP_SCREEN: return gc.map && gc.curMapNodeY != 14;
+        default: return false;
+    }
+}
+std::vector<GameAction> v4CandidateActions(const GameContext &gc) {
+    auto actions = GameAction::getAllActionsInState(gc);
+    if (gc.outcome == GameOutcome::UNDECIDED && gc.screenState == ScreenState::REWARDS
+        && gc.info.rewardsContainer.cardRewardCount > 0 && !actions.empty()) {
+        const GameAction skip(GameAction::RewardsActionType::CARD,
+                              gc.info.rewardsContainer.cardRewardCount - 1, 5);
+        if (std::none_of(actions.begin(), actions.end(), [&](const auto &a) { return a.bits == skip.bits; }))
+            actions.push_back(skip);
+    }
+    return actions;
+}
 bool oocOnePlyCardRewardPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
     if (!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) return false;
     if (gc.screenState != ScreenState::REWARDS) return false;
     auto &r = gc.info.rewardsContainer;
     if (r.cardRewardCount == 0) return false;
     using RT = search::GameAction::RewardsActionType;
-    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    std::vector<search::GameAction> actions = v4CandidateActions(gc);
     if (actions.empty()) return false;
-    // The baseline skips a group via CARD(rIdx,5), which the enumerator omits.
-    const int rIdx = r.cardRewardCount - 1;
-    const search::GameAction skipCard(RT::CARD, rIdx, 5);
-    bool have = false;
-    for (const auto &a : actions) if (a.bits == skipCard.bits) { have = true; break; }
-    if (!have) actions.push_back(skipCard);
     std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
 
     const double margin = g_oocStrategicMarginCard >= 0.0 ? g_oocStrategicMarginCard : g_oocStrategicMargin;
@@ -265,7 +284,7 @@ bool oocOnePlyCardRewardPolicy(GameContext &gc, const search::ScumSearchAgent2 &
 bool oocOnePlyRestPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
     if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicRest) return false;
     if (gc.screenState != ScreenState::REST_ROOM) return false;
-    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    std::vector<search::GameAction> actions = v4CandidateActions(gc);
     if (actions.empty()) return false;
     std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
     const double margin = g_oocStrategicMarginRest >= 0.0 ? g_oocStrategicMarginRest : g_oocStrategicMargin;
@@ -313,7 +332,7 @@ bool oocOnePlyUpgradeSelectPolicy(GameContext &gc, const search::ScumSearchAgent
     if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicRest) return false;
     if (gc.screenState != ScreenState::CARD_SELECT
         || gc.info.selectScreenType != CardSelectScreenType::UPGRADE) return false;
-    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    std::vector<search::GameAction> actions = v4CandidateActions(gc);
     if (actions.empty()) return false;
     std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
     const double margin = g_oocStrategicMarginRest >= 0.0 ? g_oocStrategicMarginRest : g_oocStrategicMargin;
@@ -362,7 +381,7 @@ bool oocOnePlyUpgradeSelectPolicy(GameContext &gc, const search::ScumSearchAgent
 bool oocOnePlyEventPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
     if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicEvent) return false;
     if (gc.screenState != ScreenState::EVENT_SCREEN) return false;
-    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    std::vector<search::GameAction> actions = v4CandidateActions(gc);
     if (actions.empty()) return false;   // e.g. MATCH_AND_KEEP
     std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
     const double margin = g_oocStrategicMarginEvent >= 0.0 ? g_oocStrategicMarginEvent : g_oocStrategicMargin;
@@ -410,7 +429,7 @@ bool oocOnePlyEventPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent
 bool oocOnePlyShopPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
     if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicShop) return false;
     if (gc.screenState != ScreenState::SHOP_ROOM) return false;
-    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    std::vector<search::GameAction> actions = v4CandidateActions(gc);
     if (actions.empty()) return false;
     std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
     const double margin = g_oocStrategicMarginShop >= 0.0 ? g_oocStrategicMarginShop : g_oocStrategicMargin;
@@ -457,7 +476,7 @@ bool oocOnePlyShopPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent)
 bool oocOnePlyTreasurePolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
     if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicTreasure) return false;
     if (gc.screenState != ScreenState::TREASURE_ROOM) return false;
-    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    std::vector<search::GameAction> actions = v4CandidateActions(gc);
     if (actions.empty()) return false;
     std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
     const double margin = g_oocStrategicMarginTreasure >= 0.0 ? g_oocStrategicMarginTreasure : g_oocStrategicMargin;
@@ -504,7 +523,7 @@ bool oocOnePlyTreasurePolicy(GameContext &gc, const search::ScumSearchAgent2 &ag
 bool oocOnePlyBossRelicPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
     if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicBossRelic) return false;
     if (gc.screenState != ScreenState::BOSS_RELIC_REWARDS) return false;
-    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    std::vector<search::GameAction> actions = v4CandidateActions(gc);
     if (actions.empty()) return false;
     std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
     const double margin = g_oocStrategicMarginBossRelic >= 0.0 ? g_oocStrategicMarginBossRelic : g_oocStrategicMargin;
@@ -555,7 +574,7 @@ bool oocOnePlyBossRelicPolicy(GameContext &gc, const search::ScumSearchAgent2 &a
 bool oocOnePlyMapPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
     if ((!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) || !g_oocStrategicMap) return false;
     if (gc.screenState != ScreenState::MAP_SCREEN || gc.curMapNodeY == 14) return false;
-    std::vector<search::GameAction> actions = search::GameAction::getAllActionsInState(gc);
+    std::vector<search::GameAction> actions = v4CandidateActions(gc);
     if (actions.empty()) return false;
     std::vector<double> q(actions.size(), -1e100);   // per-action scores for the regret gate
     const double margin = g_oocStrategicMarginMap >= 0.0 ? g_oocStrategicMarginMap : g_oocStrategicMargin;

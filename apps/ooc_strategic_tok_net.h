@@ -425,12 +425,12 @@ struct OocStrategicTokNet {
         return out;
     }
 
-    // Q logit on z = concat(z_state(128), b(16), a(16), s8(8), e(16)) = 184.
-    float predictActionValue(const float glob[NGLB], int nDk, const int dk[96][3],
+    // Shared policy/Q representation z = concat(z_state(128), b(16), a(16), s8(8), e(16)) = 184.
+    void encodeStateAction(const float glob[NGLB], int nDk, const int dk[96][3],
                              int nRl, const int rl[64][2], int nPt, const int pt[8][2],
                              std::uint32_t actionBits, const int cats[6], int actionType,
                              int screen, const float entityType[4], int entityId,
-                             float goldGePrice) const {
+                             float goldGePrice, float z[POLIN]) const {
         float zDeck[DECKDIM], zRel[RELDIM], zPot[POTDIM];
         encodeDeck(nDk, dk, zDeck);
         encodeRel(nRl, rl, zRel);
@@ -446,14 +446,22 @@ struct OocStrategicTokNet {
         encodeEntity(entityType[1] ? 1 : (entityType[2] ? 2 : (entityType[3] ? 3 : 0)),
                      entityId, entityType, goldGePrice, eOut);
 
-        float z[POLIN];
         int p = 0;
         for (int i = 0; i < NHIDDEN2; ++i) z[p++] = zState[i];
         for (int i = 0; i < AHIDDEN2; ++i) z[p++] = bOut[i];
         for (int i = 0; i < AHIDDEN2; ++i) z[p++] = aOut[i];
         for (int i = 0; i < SCRDIM; ++i) z[p++] = sOut[i];
         for (int i = 0; i < ENTOUT; ++i) z[p++] = eOut[i];
+    }
 
+    float predictActionValue(const float glob[NGLB], int nDk, const int dk[96][3],
+                             int nRl, const int rl[64][2], int nPt, const int pt[8][2],
+                             std::uint32_t actionBits, const int cats[6], int actionType,
+                             int screen, const float entityType[4], int entityId,
+                             float goldGePrice) const {
+        float z[POLIN];
+        encodeStateAction(glob, nDk, dk, nRl, rl, nPt, pt, actionBits, cats,
+                          actionType, screen, entityType, entityId, goldGePrice, z);
         // Q head: Linear(184,96) -> GELU -> Linear(96,1)
         float hh[POLHID];
         for (int j = 0; j < POLHID; ++j) {
@@ -463,6 +471,26 @@ struct OocStrategicTokNet {
         }
         float out = q2b;
         for (int i = 0; i < POLHID; ++i) out += q2w[i] * hh[i];
+        return out;
+    }
+
+    float predictPolicyLogit(const float glob[NGLB], int nDk, const int dk[96][3],
+                             int nRl, const int rl[64][2], int nPt, const int pt[8][2],
+                             std::uint32_t actionBits, const int cats[6], int actionType,
+                             int screen, const float entityType[4], int entityId,
+                             float goldGePrice) const {
+        float z[POLIN];
+        encodeStateAction(glob, nDk, dk, nRl, rl, nPt, pt, actionBits, cats,
+                          actionType, screen, entityType, entityId, goldGePrice, z);
+        // Policy head (pol.0 -> GELU -> pol.2): Linear(184,96) -> GELU -> Linear(96,1)
+        float hh[POLHID];
+        for (int j = 0; j < POLHID; ++j) {
+            float s = pol0b[j];
+            for (int i = 0; i < POLIN; ++i) s += pol0w[j][i] * z[i];
+            hh[j] = gelu(s);
+        }
+        float out = pol2b;
+        for (int i = 0; i < POLHID; ++i) out += pol2w[i] * hh[i];
         return out;
     }
 
