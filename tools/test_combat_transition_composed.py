@@ -219,6 +219,17 @@ class ComposedTest(unittest.TestCase):
                 evaluate.assert_not_called()
             self.assertEqual(path.read_text(),original)
 
+    @unittest.skipUnless(torch, 'optional torch dependency')
+    def test_component_backend_restores_global_state(self):
+        previous=torch.backends.mha.get_fastpath_enabled()
+        for enabled in (False,True):
+            with c.attention_backend(torch,enabled):
+                self.assertEqual(torch.backends.mha.get_fastpath_enabled(),enabled)
+            self.assertEqual(torch.backends.mha.get_fastpath_enabled(),previous)
+        with self.assertRaises(ValueError):
+            with c.attention_backend(torch,not previous): raise ValueError('failed forward')
+        self.assertEqual(torch.backends.mha.get_fastpath_enabled(),previous)
+
     def test_bounded_rng_rejection_continuation(self):
         from tools.test_combat_transition_rng_audit import rejection_state
         pre,pi=self.state(); pre['combatRng'][2]=rejection_state()

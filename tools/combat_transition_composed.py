@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
@@ -35,7 +36,7 @@ RECIPE = dict(schema='offline_composed_transition_v1', baseline=BASELINE,
               corpusSha256=native_rng.FROZEN_SHA, splitSha256=attention.EXPECTED_SPLIT_SHA256,
               draws=32, samplingSeed=20260916, bootstrapSeed=20260917, bootstrapReps=1000,
               exposureThreshold=.1, relicAggregation='mean row gap / observed learned groups on informative rows',
-              evaluationPrecision='historical survival/maxHP/potion FP32; HP AMP FP16; relic FP32',
+              evaluationPrecision='historical survival/maxHP/potion FP32 MHA fastpath enabled; HP AMP FP16 MHA fastpath disabled; relic FP32',
               latencyPrecision='one-thread CPU FP32, batch 1, full visible encoding, 10 warmups, 100 draws per path',
               rngScope='OOC continuation: copy potionRng and exact replay_misc; omit four recreated battle-local streams')
 
@@ -57,6 +58,17 @@ def visible_arrays(predictor_input):
                transition=dict(combatOutcome=base.DEATH, post={}))
     encoded = base._encode_row(row)
     return {k: v[None] for k, v in zip(INPUT_KEYS, encoded[:7])}
+
+
+@contextmanager
+def attention_backend(torch,enabled):
+    """Preserve historical per-component inference arithmetic, restoring global state."""
+    previous=torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(enabled)
+    try:
+        yield
+    finally:
+        torch.backends.mha.set_fastpath_enabled(previous)
 
 
 def rng_valid(state):
@@ -164,7 +176,6 @@ class FrozenModels:
         self.hashes=verify_hashes()  # enforce every hash before deserialization
         self.torch=torch
         self.device=device
-        torch.backends.mha.set_fastpath_enabled(False)
         payload={k:torch.load(p,map_location='cpu',weights_only=False) for k,(p,_) in ARTIFACTS.items()}
         spec=payload['max_hp']['targetSpec']
         self.delta_values=np.asarray(spec['maxHpDeltaValues'],dtype=np.int64)
@@ -199,20 +210,25 @@ class FrozenModels:
     def encode_visible(self,predictor_input):
         return base._torch_inputs(visible_arrays(predictor_input),np.asarray([0]),self.device,self.torch,trim_padding=True)
 
+    def fp32_encoding(self,encoder,inputs):
+        with attention_backend(self.torch,True):
+            return encoder(*inputs)
+
     def survival(self,inputs):
         t=self.torch
-        return float(t.sigmoid(self.survival_net.survival(self.survival_net.encoder(*inputs))).item())
+        return float(t.sigmoid(self.survival_net.survival(self.fp32_encoding(self.survival_net.encoder,inputs))).item())
 
     def max_hp(self,inputs):
         t=self.torch
-        return t.softmax(self.max_net.max_hp_delta(self.max_net.encoder(*inputs)),dim=-1)[0].cpu().numpy()
+        return t.softmax(self.max_net.max_hp_delta(self.fp32_encoding(self.max_net.encoder,inputs)),dim=-1)[0].cpu().numpy()
 
     def hp_encoding(self,inputs):
         # HP AMP convention for GPU scoring; CPU latency is FP32.
-        if str(self.device).startswith('cuda'):
-            with self.torch.autocast('cuda',dtype=self.torch.float16):
-                return self.hp_net.encoder(*inputs).float()
-        return self.hp_net.encoder(*inputs)
+        with attention_backend(self.torch,False):
+            if str(self.device).startswith('cuda'):
+                with self.torch.autocast('cuda',dtype=self.torch.float16):
+                    return self.hp_net.encoder(*inputs).float()
+            return self.hp_net.encoder(*inputs)
 
     def hp_distribution(self,z,delta,pre,maximum):
         t=self.torch
@@ -226,7 +242,7 @@ class FrozenModels:
 
     def potion_distribution(self,inputs,pre,delta,fraction):
         t=self.torch
-        z=self.potion_encoder.encoder(*inputs)
+        z=self.fp32_encoding(self.potion_encoder.encoder,inputs)
         values=(z,t.as_tensor([pre['potions']],device=self.device),t.as_tensor([pre['potionCapacity']],device=self.device),
                 t.as_tensor([delta],device=self.device),t.as_tensor([fraction],device=self.device,dtype=t.float32))
         return self.potion_net(*values)[0].exp().cpu().numpy()

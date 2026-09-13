@@ -12,7 +12,7 @@
   "bootstrapReps": 1000,
   "exposureThreshold": 0.1,
   "relicAggregation": "mean row gap / observed learned groups on informative rows",
-  "evaluationPrecision": "historical survival/maxHP/potion FP32; HP AMP FP16; relic FP32",
+  "evaluationPrecision": "historical survival/maxHP/potion FP32 MHA fastpath enabled; HP AMP FP16 MHA fastpath disabled; relic FP32",
   "latencyPrecision": "one-thread CPU FP32, batch 1, full visible encoding, 10 warmups, 100 draws per path",
   "rngScope": "OOC continuation: copy potionRng and exact replay_misc; omit four recreated battle-local streams",
   "artifacts": {

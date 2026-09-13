@@ -30,7 +30,10 @@ Fallback is `FULL_SURROGATE_FALLBACK`. Death is terminal before downstream
 encoders/heads. Victory samples maxHP, signed HP, potion consumption mask and
 shared trajectory residues in that order. HP is never clipped. The HP state
 encoding is reused by the relic decoder. Historical encoders retain their own
-checkpoint normalization and remain separate.
+checkpoint normalization and remain separate. Historical survival/maxHP/potion
+FP32 attention uses enabled MHA fastpath; qualified stochastic HP uses disabled
+MHA fastpath and AMP FP16 on CUDA. Each component restores the global backend
+flag after encoding. These are historical arithmetic conventions, not tuning.
 
 Persistent assembly copies exact supported fields and derives potion count.
 `oocContinuationRng` holds copied potionRng and exact encounter-initialization

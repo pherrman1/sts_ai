@@ -150,20 +150,20 @@ def complete_batch(models, arrays, ids, prehp, premax, slots, capacity, rng):
     """
     m=models
     inputs=c.base._torch_inputs(arrays,ids,m.device,torch,trim_padding=True)
-    pwin=torch.sigmoid(m.survival_net.survival(m.survival_net.encoder(*inputs))).squeeze(-1).cpu().numpy()
+    pwin=torch.sigmoid(m.survival_net.survival(m.fp32_encoding(m.survival_net.encoder,inputs))).squeeze(-1).cpu().numpy()
     alive=rng.random(len(ids))<pwin
     chosen=np.flatnonzero(alive)
     counts=dict(survivalRows=len(ids),maxHpRows=0,hpEncoderRows=0,hpHeadRows=0,potionEncoderRows=0,potionDecoderRows=0,relicDecoderRows=0)
     if not len(chosen): return dict(alive=alive,chosen=chosen,counts=counts)
     inputs=c.base._torch_inputs(arrays,ids[chosen],m.device,torch,trim_padding=True)
-    pd=probabilities(m.max_net.max_hp_delta(m.max_net.encoder(*inputs))); counts['maxHpRows']=len(chosen)
+    pd=probabilities(m.max_net.max_hp_delta(m.fp32_encoding(m.max_net.encoder,inputs))); counts['maxHpRows']=len(chosen)
     delta=draw_categories(pd,rng); maximum=premax[chosen]+m.delta_values[delta]
     if np.any(maximum<=0): raise ValueError('invalid sampled maxHP state')
     z=m.hp_encoding(inputs).cpu().numpy(); counts['hpEncoderRows']=len(chosen)
     ph=hp_prob(m,z,delta,prehp[chosen],maximum); counts['hpHeadRows']=len(chosen)
     signed=draw_categories(ph,rng); ending=prehp[chosen]+c.CLASSES[signed]; fraction=ending/maximum
     if np.any((ending<1)|(ending>maximum)): raise ValueError('invalid sampled HP')
-    potion_z=m.potion_encoder.encoder(*inputs).cpu().numpy(); counts['potionEncoderRows']=len(chosen)
+    potion_z=m.fp32_encoding(m.potion_encoder.encoder,inputs).cpu().numpy(); counts['potionEncoderRows']=len(chosen)
     pp=potion_prob(m,potion_z,slots[chosen],capacity[chosen],delta,fraction); counts['potionDecoderRows']=len(chosen)
     mask=draw_categories(pp,rng)
     rp=relic_prob(m,z,signed,fraction,mask); counts['relicDecoderRows']=len(chosen)
@@ -260,10 +260,10 @@ def evaluate(output,reviewed_sha):
     with torch.inference_mode():
         for sub in batches(n,512):
             inputs=c.base._torch_inputs(arrays,ids[sub],m.device,torch,trim_padding=True)
-            cache['pwin'][sub]=torch.sigmoid(m.survival_net.survival(m.survival_net.encoder(*inputs))).squeeze(-1).cpu().numpy()
-            cache['pdelta'][sub]=probabilities(m.max_net.max_hp_delta(m.max_net.encoder(*inputs)))
+            cache['pwin'][sub]=torch.sigmoid(m.survival_net.survival(m.fp32_encoding(m.survival_net.encoder,inputs))).squeeze(-1).cpu().numpy()
+            cache['pdelta'][sub]=probabilities(m.max_net.max_hp_delta(m.fp32_encoding(m.max_net.encoder,inputs)))
             cache['z'][sub]=m.hp_encoding(inputs).cpu().numpy()
-            cache['potion_z'][sub]=m.potion_encoder.encoder(*inputs).cpu().numpy()
+            cache['potion_z'][sub]=m.fp32_encoding(m.potion_encoder.encoder,inputs).cpu().numpy()
             if sub[0]%5120==0: print(f'encode {sub[0]}/{n}',flush=True)
     # Reproduce survival on its historical globally supported original TEST rows.
     global_local=np.flatnonzero(arrays['supported'][ids])
