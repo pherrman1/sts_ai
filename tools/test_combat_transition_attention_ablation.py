@@ -1,3 +1,4 @@
+import importlib.util
 import unittest
 
 import numpy as np
@@ -8,6 +9,9 @@ try:
 except ModuleNotFoundError:
     import combat_transition_attention_ablation as ablation
     import combat_transition_surrogate as base
+
+
+TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 
 
 class TestCombatTransitionAttentionAblation(unittest.TestCase):
@@ -44,6 +48,7 @@ class TestCombatTransitionAttentionAblation(unittest.TestCase):
             relic_mask,
         ]
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "optional research dependency torch is not installed")
     def test_attention_models_have_expected_heads_and_shapes(self):
         import torch
 
@@ -74,6 +79,7 @@ class TestCombatTransitionAttentionAblation(unittest.TestCase):
         self.assertTrue(all(torch.isfinite(value).all() for value in point_outputs))
         self.assertFalse(any("position_embedding" in name for name, _ in phase2.net.named_parameters()))
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "optional research dependency torch is not installed")
     def test_exchangeable_card_tokens_are_permutation_invariant(self):
         import torch
 
@@ -96,6 +102,7 @@ class TestCombatTransitionAttentionAblation(unittest.TestCase):
         self.assertTrue(torch.allclose(original[0], exchanged[0], atol=1e-6, rtol=1e-6))
         self.assertTrue(torch.allclose(original[1], exchanged[1], atol=1e-6, rtol=1e-6))
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "optional research dependency torch is not installed")
     def test_relic_order_field_is_in_the_attention_input(self):
         import torch
 
