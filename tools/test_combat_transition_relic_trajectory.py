@@ -69,5 +69,23 @@ class RelicTrajectoryTest(unittest.TestCase):
         self.assertEqual(t.classify([-.2,-.1],.10001,{'invalid':0}),'RELIC_TRAJECTORY_INCONCLUSIVE')
         self.assertEqual(t.classify([-.2,-.1],0,{'invalid':1}),'RELIC_TRAJECTORY_REJECTED')
         self.assertEqual(t.classify([.1,.2],0,{}),'RELIC_TRAJECTORY_REJECTED')
+    def test_per_relic_carrier_and_change_denominators(self):
+        flower=r.base._RELIC_IDS['HAPPY_FLOWER']; vajra=r.base._RELIC_IDS['VAJRA']
+        cache=dict(relicPre=np.array([[0],[7]]),relicPost=np.array([[1],[7]]),
+                   relicIds=np.array([[flower],[vajra]]),relicMask=np.ones((2,1),bool),
+                   encounter=np.zeros(2,int),bloom=np.zeros(2,bool))
+        metrics,_,_=t.reconstruction_metrics(cache,np.arange(2),{g:np.zeros(2,int) for g in t.HEADS})
+        result=metrics['byRelic']['HAPPY_FLOWER']['decoder']
+        self.assertEqual(result['rows'],1); self.assertEqual(result['fullVectorExact'],0.)
+        self.assertEqual(result['changedVectorRows'],1)
+        absent=metrics['byRelic']['SUNDIAL']['decoder']
+        self.assertEqual(absent['rows'],0); self.assertIsNone(absent['fullVectorExact'])
+        self.assertEqual(absent['changedVectorRows'],0)
+    def test_sampled_slice_uses_each_draw_conditional_score(self):
+        cache=dict(observed=np.ones((1,5),bool),preHp=np.array([20]),deltaClass=np.array([0]),
+                   classes=np.array([0]),potionMask=np.array([0]),act=np.array([1]),room=np.array([4]))
+        result=t.slices(cache,np.array([0]),np.array([1.]),np.array([2.]),np.array([[20],[5]]),np.zeros((2,1),int),np.array([[3.],[9.]]))
+        self.assertEqual(result['sampledHpLoss']['[0,1)']['drawConditionalNll'],3.)
+        self.assertEqual(result['sampledHpLoss']['[10,30)']['drawConditionalNll'],9.)
 
 if __name__=='__main__': unittest.main()

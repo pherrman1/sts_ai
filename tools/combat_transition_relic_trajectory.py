@@ -245,12 +245,12 @@ def reconstruction_metrics(cache,ids,modes):
             elif b['data']!=a['data']: validity['unsupportedMutableMutations']+=1
     mask=cache['relicMask'][ids]; changed=(truth!=cache['relicPre'][ids]) & mask
     learned=np.isin(cache['relicIds'][ids], [base._RELIC_IDS[n] for n in relic.TRAJECTORY]+[base._RELIC_IDS['LIZARD_TAIL']])
-    changed_rows=np.any(changed & learned,-1)
     def metric(pred,tokenmask=mask):
         error=np.abs(pred-truth); exact=np.all((error==0)|~tokenmask,-1)
+        carrier=tokenmask.any(-1); changed_rows=np.any(changed & learned & tokenmask,-1)
         def avg(v,m): return float(v[m].mean()) if m.any() else None
-        return dict(rows=len(ids),tokens=int(tokenmask.sum()),changedTokens=int((changed & tokenmask).sum()),
-                    fullVectorExact=float(exact.mean()),changedVectorRows=int(changed_rows.sum()),fullVectorExactChanged=avg(exact,changed_rows),
+        return dict(rows=int(carrier.sum()),tokens=int(tokenmask.sum()),changedTokens=int((changed & tokenmask).sum()),
+                    fullVectorExact=avg(exact,carrier),changedVectorRows=int(changed_rows.sum()),fullVectorExactChanged=avg(exact,changed_rows),
                     tokenExact=avg(error==0,tokenmask),changedTokenExact=avg(error==0,changed & tokenmask),
                     tokenMae=avg(error,tokenmask),changedTokenMae=avg(error,changed & tokenmask))
     return dict(decoder=metric(predicted),nativeCopyThrough=metric(native),byRelic={name:dict(decoder=metric(predicted,mask & (cache['relicIds'][ids]==base._RELIC_IDS[name])),nativeCopyThrough=metric(native,mask & (cache['relicIds'][ids]==base._RELIC_IDS[name]))) for name in list(relic.TRAJECTORY)+['LIZARD_TAIL']}),validity,predicted
@@ -272,7 +272,7 @@ def head_metrics(logp,compatible,observed):
     return result
 
 
-def slices(cache,ids,teacher,ancestral,sampled_hp,sampled_masks):
+def slices(cache,ids,teacher,ancestral,sampled_hp,sampled_masks,draw_nll):
     observed=cache['observed'][ids].sum(-1); true_loss=cache['preHp'][ids]-(cache['preHp'][ids]+cache['deltaClass'][ids]+cache['classes'][0]); masks={}
     for act in (1,2,3): masks[f'act:{act}']=cache['act'][ids]==act
     # Canonical room enum IDs, rather than guessed numeric values.
@@ -289,8 +289,11 @@ def slices(cache,ids,teacher,ancestral,sampled_hp,sampled_masks):
     loss=cache['preHp'][ids][None,:]-sampled_hp
     for low,high in [(-np.inf,0),(0,1),(1,10),(10,30),(30,np.inf)]:
         m=(loss>=low)&(loss<high)
-        result['sampledHpLoss'][f'[{low},{high})']=dict(draws=int(m.sum()),rows=int(m.any(0).sum()),teacherNll=float(np.broadcast_to(teacher,loss.shape)[m].mean()) if m.any() else None,ancestralMixtureRowNll=float(np.broadcast_to(ancestral,loss.shape)[m].mean()) if m.any() else None)
-    result['sampledPotionConsumption']={str(value):dict(draws=int((sampled_masks==value).sum())) for value in np.unique(sampled_masks)}
+        result['sampledHpLoss'][f'[{low},{high})']=dict(draws=int(m.sum()),rows=int(m.any(0).sum()),teacherNll=float(np.broadcast_to(teacher,loss.shape)[m].mean()) if m.any() else None,ancestralMixtureRowNll=float(np.broadcast_to(ancestral,loss.shape)[m].mean()) if m.any() else None,drawConditionalNll=float(draw_nll[m].mean()) if m.any() else None)
+    result['sampledPotionConsumption']={}
+    for label,m in [('zero',sampled_masks==0),('nonzero',sampled_masks!=0)]:
+        result['sampledPotionConsumption'][label]=dict(draws=int(m.sum()),drawConditionalNll=float(draw_nll[m].mean()) if m.any() else None,teacherNll=float(np.broadcast_to(teacher,m.shape)[m].mean()) if m.any() else None)
+    result['sampledSliceConvention']='drawConditionalNll is conditioned on that upstream draw; mixtureRowNll is descriptive draw-weighted row composition' 
     return result
 
 
@@ -338,6 +341,7 @@ def fit(args):
         raw[f'{seed}-teacherNll']=tnll; raw[f'{seed}-priorNll']=bnll; raw[f'{seed}-modeCounters']=counters
         for g in HEADS: raw[f'{seed}-teacher-{g}']=teacher[g]
         results[str(seed)]=dict(teacherNll=float(tnll.mean()),priorNll=float(bnll.mean()),pairedDifference=float((tnll-bnll).mean()),reconstructed=reconstructed,heads=head_metrics(teacher,selected,obs))
+        results[str(seed)]['heads']['lizard'].update(activeRows=int(cache['activeLizard'][ids].sum()),bothLegalRows=int(cache['bothLizard'][ids].sum()))
         # Freeze teacher-forced outputs before ancestral exposure qualification.
         base.json_dump(output/f'teacher-{seed}.json',results[str(seed)])
         rng=np.random.default_rng(RECIPE['samplingSeed']+seed); sampled_hp,_=stochastic.sample_hp(cache['hpProbability'],classes,cache['preHp'][ids],cache['maxHp'][ids],rng,16)
@@ -361,7 +365,7 @@ def fit(args):
         ancestral_nll=mixture_nll(np.stack(drawmass)); informative=obs.sum(-1)>0
         gap=float(((ancestral_nll-tnll)[informative]/obs.sum(-1)[informative]).mean()); gaps.append(gap)
         results[str(seed)].update(ancestralMixtureNll=float(ancestral_nll.mean()),normalizedExposureGap=gap,ancestralClassification='ANCESTRAL_EXPOSURE_GAP' if gap>.1 else 'ANCESTRAL_OK',samplingValidity=validity,
-                                 slices=slices(cache,ids,tnll,ancestral_nll,sampled_hp.T,np.stack(sampled_masks)))
+                                 slices=slices(cache,ids,tnll,ancestral_nll,sampled_hp.T,np.stack(sampled_masks),-np.stack(drawmass)))
         raw[f'{seed}-ancestralNll']=ancestral_nll; raw[f'{seed}-drawLogMass']=np.stack(drawmass); raw[f'{seed}-sampleHp']=sampled_hp; raw[f'{seed}-samplePotionMasks']=np.stack(sampled_masks); raw[f'{seed}-sampleCounters']=np.stack(sample_counters)
         for k,v in validity.items(): all_validity[k]+=v
         print(json.dumps(dict(seed=seed,primary=results[str(seed)]['pairedDifference'],exposure=gap,validity=validity)),flush=True)
