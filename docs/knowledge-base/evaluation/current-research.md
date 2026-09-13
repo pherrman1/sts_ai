@@ -134,6 +134,27 @@ See [ledger-06 §238](../../experiments/ledger-06.md),
 and [RNG ownership](../behavior/determinism-and-rng.md). Existing deployment
 qualification remains **`NOT_QUALIFIED`**.
 
+### Offline composed combat-transition sampler
+
+`tools/combat_transition_composed.py` composes the fixed protected attention
+survival, historical maxHP attention head, 20260912 stochastic signed-HP,
+joint potion consumption decoder and 20260912 shared relic trajectory decoder.
+Full support is decided before survival. Sampled deaths terminate before every
+downstream encoder/head. Victories propagate sampled maxHP, signed HP/ending
+fraction and potion mask into later factors; relics reuse the HP encoder state.
+Native reconstruction copies supported fields, derives potion count, shares
+trajectory residues and emits exact inherited potion/misc OOC continuation
+RNG. It does not emit the four recreated battle-local RAW RNG streams.
+Nondeterministic active Lizard Tail fails closed. Models and support remain
+frozen; this is an offline interface, with no production dispatch change.
+
+The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
+uses the original source-grouped **reused engineering TEST**, 32 draws per row,
+individual HP/potion/relic exposure gates at 0.1 nat and zero hard sampled-state
+invalidity. Source-bootstrap CIs and full-state distribution/latency diagnostics
+are descriptive. Historical component qualifications remain distinct from
+composed and runtime qualification.
+
 ### Shared relic trajectory residues
 
 **`RELIC_TRAJECTORY_QUALIFIED`** on the audited offline composed support.

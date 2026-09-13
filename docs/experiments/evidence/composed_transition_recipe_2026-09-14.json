@@ -1,0 +1,44 @@
+{
+  "schema": "offline_composed_transition_v1",
+  "baseline": "7316c715bac7fe4559ead59cde1eb374d3437b5b",
+  "training": false,
+  "artifactSeedConvention": 20260912,
+  "partition": "original source-grouped reused engineering TEST",
+  "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+  "splitSha256": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+  "draws": 32,
+  "samplingSeed": 20260916,
+  "bootstrapSeed": 20260917,
+  "bootstrapReps": 1000,
+  "exposureThreshold": 0.1,
+  "relicAggregation": "mean row gap / observed learned groups on informative rows",
+  "evaluationPrecision": "historical survival/maxHP/potion FP32; HP AMP FP16; relic FP32",
+  "latencyPrecision": "one-thread CPU FP32, batch 1, full visible encoding, 10 warmups, 100 draws per path",
+  "rngScope": "OOC continuation: copy potionRng and exact replay_misc; omit four recreated battle-local streams",
+  "artifacts": {
+    "survival": {
+      "path": "/home/philippherrmann/sts_sweep/runs/frozen-survival-potion-20260913/point_control_attention.pt",
+      "sha256": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+    },
+    "max_hp": {
+      "path": "/home/philippherrmann/sts_sweep/runs/frozen-survival-potion-20260913/phase2_attention.pt",
+      "sha256": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479"
+    },
+    "hp": {
+      "path": "/home/philippherrmann/sts_sweep/runs/stochastic-hp-20260914/20260912.pt",
+      "sha256": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9"
+    },
+    "potion": {
+      "path": "/home/philippherrmann/sts_sweep/runs/joint-potion-mask-20260913/joint.pt",
+      "sha256": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6"
+    },
+    "potion_encoder": {
+      "path": "/home/philippherrmann/sts_sweep/runs/joint-potion-mask-20260913/encoder.pt",
+      "sha256": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef"
+    },
+    "relic": {
+      "path": "/home/philippherrmann/sts_sweep/runs/relic-trajectory-20260914/relic-20260912-0.pt",
+      "sha256": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71"
+    }
+  }
+}
