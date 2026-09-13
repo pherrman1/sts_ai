@@ -7268,3 +7268,61 @@ model training was changed.
   Checkpoints and raw predictions remain external in
   `/home/philippherrmann/sts_sweep/runs/stochastic-hp-20260914/`.
   Knowledge impact: empirical evidence and maintained current research status.
+
+
+## §240 Shared relic trajectory residues (2026-09-14)
+
+**Result: `RELIC_TRAJECTORY_QUALIFIED`** on audited offline composed support.
+Baseline after merged #172: `b5502a84bb41c736fa72b210dc8766e0a25717e6`;
+independently reviewed execution SHA:
+`66350924cd3b4c7ca82d967e282f68cd677736b2`. Native mechanics and partial-label
+reconstruction passed the complete structural gate before fitting.
+
+Frozen corpus `74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde`;
+nested source split `58e35f9f85eefd7617e616ddbfa7ee227c429ed4d312f7dacd470828f9a09094`.
+TRAIN combines nested TRAIN+VALIDATION: 224,715 certified victories / 17,718
+sources; HOLDOUT 25,398 / 1,979. Global support remains 413,799 / 510,030.
+No new simulation collection or game seeds; reused corpus retains its original
+ascension/teacher/fair-regime provenance. No gameplay/OOC evaluation or
+runtime model loading is claimed.
+
+Only the small 89→64 residue decoder trained: seeds 20260912/13/14, exactly
+ten epochs, AdamW lr 1e-3, decay 1e-4, batch 2048, clip 1.0, FP32. HP encoder
+is frozen #172 20260912 by convention, hash
+`a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9`;
+existing joint potion weights hash
+`8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6`.
+No upstream retraining, epoch selection, support widening or RNG change.
+
+HOLDOUT joint NLL decoder/prior by seed: 0.519639530/0.530241176,
+0.520132425/0.530254280, 0.519593622/0.530250808. Mean paired difference
+−0.010460229, 1,000-repetition paired source-bootstrap 95% CI
+[−0.013335116, −0.007743432]. Source resampling follows seed 20260914;
+seed-average row differences are paired before resampling.
+
+Ancestral sampled signed HP→certified potion mask→relic, 16 draws per row
+per seed, retains observed max HP. Mixture joint NLL mean 0.519052762 versus
+teacher-forced 0.519788526; mean per-row group-normalized exposure
+−0.002407001 nat → `ANCESTRAL_OK`. All sample-domain/coherence/deterministic/
+unsupported-mutation counts zero across 1,219,104 trajectories. The complete
+corpus structural audit also has zero contradictory groups, unreachable
+targets, native reconstruction mismatches or unsupported mutations.
+
+Full-vector mode exact 0.805667113 versus native+copy 0.792700213; changed-row
+exact 0.174612219 versus 0. Decoder has 12,895 parameters; one-thread batch-1
+CPU forward mean 0.034997 ms, p95 0.036728 ms, ten warmups/100 measurements,
+excluding upstream encoders and sampling/reconstruction. Exact modes do not
+override the proper-score decision. Active Lizard Tail has zero eligible rows
+and remains outside qualified learned support; Inserter has zero relic tokens.
+
+External recipe, checkpoints, cache, probabilities, sampled counters and raw
+logs: `/home/philippherrmann/sts_sweep/runs/relic-trajectory-20260914/`.
+[Full source/protocol/results](evidence/relic_trajectory_2026-09-14.md),
+[machine-readable calibration/slices/metrics/provenance](evidence/relic_trajectory_2026-09-14.json).
+Knowledge impact: component evidence here; current status in the maintained
+research page; native implementation routing in CODE_MAP. No runtime default.
+
+Independent scientific replay and raw-array verification passed (exit 0):
+primary CI/exposure reproduced within CPU/GPU roundoff, all artifact hashes
+and initialization/batch histories matched, and native/shared sample checks
+all zero. Linux GCC passed on reviewed implementation SHA `66350924...`.
