@@ -1715,6 +1715,10 @@ def fit(args: argparse.Namespace) -> None:
     print(json.dumps({"device": device, "supportedRows": {"train": len(all_train), "validation": len(all_val), "test": len(all_test)}}, sort_keys=True), flush=True)
     phase2_val_model, phase2_val, phase2_epochs = _train_one("phase2", arrays, target_spec, all_train, all_val, args, device)
     point_val_model, point_val, point_epochs = _train_one("point", arrays, target_spec, all_train, all_val, args, device)
+    # Validation prediction tensors are needed only to score the selected
+    # epoch.  Keep them out of the machine-readable evidence packet.
+    phase2_val_metrics = {key: value for key, value in phase2_val.items() if key != "predictions"}
+    point_val_metrics = {key: value for key, value in point_val.items() if key != "predictions"}
     combined = np.concatenate((all_train, all_val))
     phase2 = _refit_one("phase2", arrays, target_spec, combined, phase2_epochs, args, device)
     point = _refit_one("point", arrays, target_spec, combined, point_epochs, args, device)
@@ -1756,8 +1760,8 @@ def fit(args: argparse.Namespace) -> None:
             "supportedTest": int(len(all_test)), "combinedFit": int(len(combined)),
         },
         "validation": {
-            "phase2": {**phase2_val, "selectedEpochs": int(phase2_epochs)},
-            "pointControl": {**point_val, "selectedEpochs": int(point_epochs)},
+            "phase2": {**phase2_val_metrics, "selectedEpochs": int(phase2_epochs)},
+            "pointControl": {**point_val_metrics, "selectedEpochs": int(point_epochs)},
         },
         "test": {
             "phase2": phase2_test,
