@@ -8,6 +8,8 @@ try:
         CODE_AUDITED_MUTABLE_RELIC_IDS,
         EMPTY_POTION_SLOT_ID,
         ENTROPIC_BREW_ID,
+        GOLD_MUTATING_ENCOUNTER_IDS,
+        HAND_OF_GREED_ID,
         IRONCLAD_ID,
         RITUAL_DAGGER_ID,
         SMOKE_BOMB_ID,
@@ -26,6 +28,8 @@ except ModuleNotFoundError:
         CODE_AUDITED_MUTABLE_RELIC_IDS,
         EMPTY_POTION_SLOT_ID,
         ENTROPIC_BREW_ID,
+        GOLD_MUTATING_ENCOUNTER_IDS,
+        HAND_OF_GREED_ID,
         IRONCLAD_ID,
         RITUAL_DAGGER_ID,
         SMOKE_BOMB_ID,
@@ -78,6 +82,8 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
             ("ritual_dagger", predictor(card_id=RITUAL_DAGGER_ID)),
             ("smoke_bomb", predictor(potion_id=SMOKE_BOMB_ID)),
             ("entropic_brew", predictor(potion_id=ENTROPIC_BREW_ID)),
+            ("gold_mutating_encounter", predictor(encounter=next(iter(GOLD_MUTATING_ENCOUNTER_IDS)))),
+            ("gold_mutating_card", predictor(card_id=HAND_OF_GREED_ID)),
             ("non_ironclad", predictor(character_class=IRONCLAD_ID + 1)),
         )
         for reason, value in cases:
@@ -101,7 +107,6 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
             "maxHpDeltaValues": [0, 5],
             "relicDeltaValues": [0, 6],
             "relicDeltaValuesById": {"26": [0, 6]},
-            "goldClasses": [[0, 0], [10, 2]],
         }
         potion_probs = np.zeros((5, 48), dtype=np.float64)
         potion_probs[:, EMPTY_POTION_SLOT_ID] = 1.0
@@ -114,7 +119,6 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
             "hpConditional": np.eye(101, dtype=np.float64)[[50, 50]],
             "potionProbs": potion_probs,
             "relicDeltaProbs": relic_probs,
-            "goldProbs": np.asarray([0.0, 1.0]),
         }
         sampled = _sample_persistent_transition(
             pre, prediction, target_spec, np.random.default_rng(7)
@@ -127,8 +131,8 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
         self.assertEqual(sampled["potionCount"], 1)
         self.assertEqual(sampled["relics"][0]["data"], 6)
         self.assertEqual(sampled["relics"][1], pre["relics"][1])
-        self.assertEqual(sampled["gold"], 110)
-        self.assertEqual(sampled["stolenGold"], 2)
+        self.assertEqual(sampled["gold"], pre["gold"])
+        self.assertEqual(sampled["stolenGold"], pre["stolenGold"])
         self.assertFalse(sampled["smokeBombUsed"])
         validate_sampled_state(pre, sampled, target_spec)
 
@@ -140,7 +144,6 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
             "maxHpDeltaValues": [0],
             "relicDeltaValues": [0],
             "relicDeltaValuesById": {"26": [0]},
-            "goldClasses": [[0, 0]],
         }
         prediction = {
             "pWin": 1.0,
@@ -148,7 +151,6 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
             "hpConditional": np.eye(101, dtype=np.float64)[[50]],
             "potionProbs": np.eye(48, dtype=np.float64)[EMPTY_POTION_SLOT_ID][None, :].repeat(5, axis=0),
             "relicDeltaProbs": {"26": np.asarray([1.0])},
-            "goldProbs": np.asarray([1.0]),
         }
         sampled = _sample_persistent_transition(pre, prediction, target_spec, np.random.default_rng(3))
         self.assertIsNotNone(sampled)
@@ -159,9 +161,9 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
         potions_actual = np.asarray([[1, 2, 3, 4, 5], [1, 2, 3, 4, 5]])
         potions_predicted = np.asarray([[1, 2, 3, 4, 5], [1, 2, 3, 4, 6]])
         self.assertEqual(_exact_accuracy(potions_actual, potions_predicted), 0.5)
-        hp_actual = np.asarray([[40, 80]])
-        hp_predicted = np.asarray([[40, 81]])
-        self.assertEqual(_exact_accuracy(hp_actual, hp_predicted), 0.0)
+        hp_actual = np.asarray([[40, 80], [40, 80]])
+        hp_predicted = np.asarray([[40, 80], [41, 80]])
+        self.assertEqual(_exact_accuracy(hp_actual, hp_predicted), 0.5)
 
     def test_mutable_relic_audit_is_nonempty_and_includes_raw_omamori(self):
         self.assertTrue(CODE_AUDITED_MUTABLE_RELIC_IDS)
@@ -170,8 +172,6 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
     def test_target_index_preparation_ignores_fallback_and_death_labels(self):
         arrays = {
             "y_max_hp_delta": np.asarray([0, 999]),
-            "y_gold_delta": np.asarray([0, 999]),
-            "y_stolen_gold": np.asarray([0, 999]),
             "y_relic_delta": np.asarray([[0, 0], [999, 0]]),
             "y_relic_mask": np.asarray([[True, False], [True, False]]),
             "supported": np.asarray([True, False]),
@@ -179,12 +179,10 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
         }
         target_spec = {
             "maxHpDeltaValues": [0],
-            "goldClasses": [[0, 0]],
             "relicDeltaValues": [0],
         }
         _prepare_target_indices(arrays, target_spec)
         self.assertEqual(arrays["delta_index"].tolist(), [0, -1])
-        self.assertEqual(arrays["gold_index"].tolist(), [0, -1])
         self.assertEqual(arrays["relic_delta_index"].tolist(), [[0, 0], [-1, 0]])
 
 

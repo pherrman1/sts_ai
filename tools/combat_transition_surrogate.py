@@ -74,7 +74,6 @@ SCRIPT_SCHEMA = "combat_transition_surrogate_phase2_v1"
 PREPARED_SCHEMA = "combat_transition_surrogate_prepared_v1"
 MODEL_SCHEMA = "combat_transition_surrogate_model_v1"
 HP_BIN_COUNT = 101
-MAX_GOLD_CLASSES = 512
 WIN = 1
 DEATH = 2
 PERSISTENT_KEYS = (
@@ -83,8 +82,8 @@ PERSISTENT_KEYS = (
     "cardTypeCounts", "bottleIdxs", "upgradeableCount", "transformableCount",
 )
 COPY_THROUGH_KEYS = (
-    "potionCapacity", "relicBits", "deck", "cardTypeCounts", "bottleIdxs",
-    "upgradeableCount", "transformableCount",
+    "gold", "stolenGold", "potionCapacity", "relicBits", "deck",
+    "cardTypeCounts", "bottleIdxs", "upgradeableCount", "transformableCount",
 )
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -123,11 +122,18 @@ _ENCOUNTER_IDS = _enum_values(
 )
 _RELIC_IDS = _enum_values(_ROOT / "include/constants/Relics.h", "RelicId")
 RITUAL_DAGGER_ID = _CARD_IDS["RITUAL_DAGGER"]
+HAND_OF_GREED_ID = _CARD_IDS["HAND_OF_GREED"]
 SMOKE_BOMB_ID = _POTION_IDS["SMOKE_BOMB"]
 ENTROPIC_BREW_ID = _POTION_IDS["ENTROPIC_BREW"]
 EMPTY_POTION_SLOT_ID = _POTION_IDS["EMPTY_POTION_SLOT"]
 IRONCLAD_ID = _CHARACTER_CLASS_IDS["IRONCLAD"]
 WRITHING_MASS_ID = _ENCOUNTER_IDS["WRITHING_MASS"]
+GOLD_MUTATING_ENCOUNTER_NAMES = ("LOOTER", "TWO_THIEVES")
+GOLD_MUTATING_ENCOUNTER_IDS = frozenset(
+    _ENCOUNTER_IDS[name] for name in GOLD_MUTATING_ENCOUNTER_NAMES
+)
+GOLD_MUTATING_CARD_NAMES = ("HAND_OF_GREED",)
+GOLD_MUTATING_CARD_IDS = frozenset(_CARD_IDS[name] for name in GOLD_MUTATING_CARD_NAMES)
 POTION_NAMES_BY_ID = {value: name for name, value in _POTION_IDS.items()}
 
 
@@ -203,6 +209,10 @@ def supported_reasons(predictor_input: dict, pre_state: dict) -> list[str]:
         reasons.append("writhing_mass")
     if any(int(card["cardId"]) == RITUAL_DAGGER_ID for card in predictor_input["cards"]):
         reasons.append("ritual_dagger")
+    if int(predictor_input["globals"]["encounter"]) in GOLD_MUTATING_ENCOUNTER_IDS:
+        reasons.append("gold_mutating_encounter")
+    if any(int(card["cardId"]) in GOLD_MUTATING_CARD_IDS for card in predictor_input["cards"]):
+        reasons.append("gold_mutating_card")
     if any(int(potion["potionId"]) == SMOKE_BOMB_ID for potion in predictor_input["potions"]):
         reasons.append("smoke_bomb")
     if any(int(potion["potionId"]) == ENTROPIC_BREW_ID for potion in predictor_input["potions"]):
@@ -288,6 +298,8 @@ def _audit_summary(
     reasons: Counter,
     mutations: Counter,
     mutation_covered: Counter,
+    gold_mutation_rows: Counter,
+    gold_mutation_covered: Counter,
     copy_through_violations: Counter,
     smoke_mutation_without_visible_total: int,
     smoke_mutation_without_visible_supported: int,
@@ -299,7 +311,7 @@ def _audit_summary(
     total = {"total": rows, "supported": support_rows, "fallback": rows - support_rows}
     return {
         "schemaVersion": SCRIPT_SCHEMA,
-        "status": "PASS" if not copy_through_violations and not any(mutation_covered.values()) else "FAIL",
+        "status": "PASS" if not copy_through_violations and not any(mutation_covered.values()) and not any(gold_mutation_covered.values()) else "FAIL",
         "corpus": {
             "path": str(Path(manifest["csv"]["path"]).resolve()),
             "sha256": manifest["csv"]["sha256"],
@@ -314,13 +326,20 @@ def _audit_summary(
         "supportBoundary": {
             "predicate": (
                 "globals.characterClass == IRONCLAD and globals.encounter != WRITHING_MASS "
-                "and no deck card RITUAL_DAGGER and no active potion "
+                "and globals.encounter not in (LOOTER, TWO_THIEVES) "
+                "and no deck card in (RITUAL_DAGGER, HAND_OF_GREED) and no active potion "
                 "(SMOKE_BOMB or ENTROPIC_BREW) and pre.smokeBombUsed == false"
             ),
             "ids": {
                 "ironcladCharacterClass": IRONCLAD_ID,
                 "writhingMassEncounter": WRITHING_MASS_ID,
+                "goldMutatingEncounters": {
+                    name: int(_ENCOUNTER_IDS[name]) for name in GOLD_MUTATING_ENCOUNTER_NAMES
+                },
                 "ritualDaggerCard": RITUAL_DAGGER_ID,
+                "goldMutatingCards": {
+                    name: int(_CARD_IDS[name]) for name in GOLD_MUTATING_CARD_NAMES
+                },
                 "smokeBombPotion": SMOKE_BOMB_ID,
                 "entropicBrewPotion": ENTROPIC_BREW_ID,
             },
@@ -334,6 +353,39 @@ def _audit_summary(
             "byRoomClass": _finalize_support_table(support_by_room),
             "byEncounter": _finalize_support_table(support_by_encounter),
             "amongDeaths": {**support_by_death, "supportRate": _support_rate(support_by_death)},
+        },
+        "goldMutationSourceAudit": {
+            "scope": [
+                "src/combat/MonsterSpecific.cpp",
+                "src/combat/Actions.cpp",
+                "src/combat/Player.cpp",
+                "src/combat/BattleContext.cpp",
+                "src/combat/MonsterGroup.cpp",
+                "include/constants/MonsterEncounters.h",
+                "include/constants/Cards.h",
+            ],
+            "mechanisms": [
+                {
+                    "name": "looter_mugger_theft",
+                    "source": "Monster::stealGoldFromPlayer called by Looter and Mugger MUG/LUNGE moves",
+                    "visibleEncounterNames": list(GOLD_MUTATING_ENCOUNTER_NAMES),
+                    "visibleEncounterIds": sorted(int(value) for value in GOLD_MUTATING_ENCOUNTER_IDS),
+                    "effect": "subtracts player.gold and records the stolen amount in the monster misc counter",
+                },
+                {
+                    "name": "hand_of_greed",
+                    "source": "Actions::HandOfGreedAction calls Player::gainGold on its qualifying lethal branch",
+                    "visibleCardNames": list(GOLD_MUTATING_CARD_NAMES),
+                    "visibleCardIds": sorted(int(value) for value in GOLD_MUTATING_CARD_IDS),
+                    "effect": "adds 20/25 to player.gold; Ectoplasm can suppress the gain but is not a support prerequisite",
+                },
+            ],
+            "negativeAudit": "No other src/combat card or relic path writes persistent player gold or stolenGold; BattleContext exit code only copies and derives the recorded theft value.",
+            "guardCoverage": {
+                "fullCorpusMutationRows": dict(sorted(gold_mutation_rows.items())),
+                "supportedRowsWithMutation": dict(sorted(gold_mutation_covered.items())),
+                "allCovered": not any(gold_mutation_covered.values()),
+            },
         },
         "intentionalOmittedMutationCoverage": {
             "definitions": {
@@ -377,10 +429,6 @@ def _audit_summary(
             "allExact": not bool(copy_through_violations),
         },
         "targetSupportPreview": train_values,
-        "targetSupportLimits": {
-            "maxGoldClasses": MAX_GOLD_CLASSES,
-            "goldClassCountPass": int(train_values.get("goldClassCount", 0)) <= MAX_GOLD_CLASSES,
-        },
         "notes": [
             "The combatRng[6] streams are intentionally absent from model inputs and outputs.",
             "Deaths contribute to survival only; persistent transition heads train on supported wins.",
@@ -416,7 +464,6 @@ def _target_values_from_row(pre: dict, post: dict, outcome: int) -> dict:
         "potions": [int(x) for x in post["potions"]],
         "relicDelta": relic_delta,
         "relicMask": relic_mask,
-        "goldClass": (int(post["gold"]) - int(pre["gold"]), int(post["stolenGold"])),
         "outcome": int(outcome),
     }
 
@@ -426,7 +473,6 @@ def _target_preview(target_rows: list[dict], split_rows: list[str], train_split:
     if not train:
         raise ValueError("TRAIN has no supported winning rows")
     max_values = sorted({int(row["maxHpDelta"]) for row in train})
-    gold_classes = sorted({tuple(row["goldClass"]) for row in train})
     relic_values: dict[str, list[int]] = defaultdict(list)
     for row in train:
         for index, (delta, active) in enumerate(zip(row["relicDelta"], row["relicMask"])):
@@ -436,8 +482,6 @@ def _target_preview(target_rows: list[dict], split_rows: list[str], train_split:
     # during preparation below.  This helper is retained for small unit tests.
     return {
         "maxHpDeltaValues": max_values,
-        "goldClassCount": len(gold_classes),
-        "goldClasses": [list(value) for value in gold_classes],
         "relicDeltaValuesByPosition": {
             key: sorted(set(values)) for key, values in sorted(relic_values.items())
         },
@@ -476,9 +520,6 @@ def prepare(args: argparse.Namespace) -> None:
     y_potions = np.empty((expected_rows, 5), dtype=np.int16)
     y_relic_delta = np.zeros((expected_rows, MAX_RELICS), dtype=np.int16)
     y_relic_mask = np.zeros((expected_rows, MAX_RELICS), dtype=np.bool_)
-    y_gold_delta = np.empty(expected_rows, dtype=np.int32)
-    y_stolen_gold = np.empty(expected_rows, dtype=np.int32)
-    pre_stolen_gold = np.empty(expected_rows, dtype=np.int32)
     supported = np.zeros(expected_rows, dtype=np.bool_)
     source_seed = np.empty(expected_rows, dtype=np.int64)
     fight_idx = np.empty(expected_rows, dtype=np.int16)
@@ -497,6 +538,8 @@ def prepare(args: argparse.Namespace) -> None:
     reasons: Counter = Counter()
     mutations: Counter = Counter()
     mutation_covered: Counter = Counter()
+    gold_mutation_rows: Counter = Counter()
+    gold_mutation_covered: Counter = Counter()
     copy_through_violations: Counter = Counter()
     smoke_mutation_without_visible_total = 0
     smoke_mutation_without_visible_supported = 0
@@ -508,7 +551,6 @@ def prepare(args: argparse.Namespace) -> None:
     sampling_fixtures: list[dict] = []
     train_relic_delta_values: dict[str, set[int]] = defaultdict(set)
     train_max_delta_values: set[int] = set()
-    train_gold_classes: set[tuple[int, int]] = set()
     row_count = 0
     support_count = 0
     for row in iter_rows(corpus_path):
@@ -539,8 +581,6 @@ def prepare(args: argparse.Namespace) -> None:
         y_potions[row_count] = target["potions"]
         y_relic_delta[row_count] = target["relicDelta"]
         y_relic_mask[row_count] = target["relicMask"]
-        y_gold_delta[row_count], y_stolen_gold[row_count] = target["goldClass"]
-        pre_stolen_gold[row_count] = int(pre["stolenGold"])
         source_seed[row_count] = int(row["sourceSeed"])
         fight_idx[row_count] = int(row["fightIdx"])
         act[row_count] = int(context["act"])
@@ -570,6 +610,14 @@ def prepare(args: argparse.Namespace) -> None:
         flags, _, _ = persistent_change_flags(pre, post)
         mutation_names = _mutation_names(flags)
         mutations.update(mutation_names)
+        if flags["gold_changed"]:
+            gold_mutation_rows["gold"] += 1
+            if row_supported:
+                gold_mutation_covered["gold"] += 1
+        if flags["stolen_gold_changed"]:
+            gold_mutation_rows["stolenGold"] += 1
+            if row_supported:
+                gold_mutation_covered["stolenGold"] += 1
         if "smoke_bomb" in mutation_names and not any(
             int(potion["potionId"]) == SMOKE_BOMB_ID for potion in pi["potions"]
         ):
@@ -604,7 +652,6 @@ def prepare(args: argparse.Namespace) -> None:
 
         if row_supported and split == "train" and outcome == WIN:
             train_max_delta_values.add(target["maxHpDelta"])
-            train_gold_classes.add(target["goldClass"])
             for relic, delta, active in zip(pre["relics"], target["relicDelta"], target["relicMask"]):
                 if active:
                     train_relic_delta_values[str(int(relic["id"]))].add(int(delta))
@@ -617,8 +664,6 @@ def prepare(args: argparse.Namespace) -> None:
         raise ValueError(f"corpus row count mismatch: read {row_count}, expected {expected_rows}")
     preview = {
         "maxHpDeltaValues": sorted(train_max_delta_values),
-        "goldClassCount": len(train_gold_classes),
-        "goldClasses": [list(value) for value in sorted(train_gold_classes)],
         "relicDeltaValuesById": {
             key: sorted(values) for key, values in sorted(train_relic_delta_values.items())
         },
@@ -626,7 +671,8 @@ def prepare(args: argparse.Namespace) -> None:
     support_report = _audit_summary(
         manifest, row_count, support_count, support_by_act, support_by_room,
         support_by_encounter, support_by_death, reasons, mutations,
-        mutation_covered, copy_through_violations,
+        mutation_covered, gold_mutation_rows, gold_mutation_covered,
+        copy_through_violations,
         smoke_mutation_without_visible_total,
         smoke_mutation_without_visible_supported,
         smoke_mutation_without_visible_potion_ids,
@@ -635,11 +681,11 @@ def prepare(args: argparse.Namespace) -> None:
         preview,
     )
     json_dump(out / "support_audit.json", support_report)
-    if len(train_gold_classes) > MAX_GOLD_CLASSES:
+    if gold_mutation_covered:
         support_report["status"] = "FAIL"
         support_report["stopReason"] = (
-            f"TRAIN joint gold target has {len(train_gold_classes)} classes, "
-            f"above the hard limit of {MAX_GOLD_CLASSES}"
+            "predictor-visible support leaves persistent gold mutations supported "
+            + json.dumps(dict(gold_mutation_covered), sort_keys=True)
         )
         json_dump(out / "support_audit.json", support_report)
         raise ValueError(support_report["stopReason"])
@@ -684,9 +730,6 @@ def prepare(args: argparse.Namespace) -> None:
         "y_potions": y_potions,
         "y_relic_delta": y_relic_delta,
         "y_relic_mask": y_relic_mask,
-        "y_gold_delta": y_gold_delta,
-        "y_stolen_gold": y_stolen_gold,
-        "preStolenGold": pre_stolen_gold,
         "supported": supported,
         "sourceSeed": source_seed,
         "fightIdx": fight_idx,
@@ -703,7 +746,6 @@ def prepare(args: argparse.Namespace) -> None:
         "schemaVersion": PREPARED_SCHEMA,
         "maxHpDeltaValues": sorted(train_max_delta_values),
         "hpBins": list(range(HP_BIN_COUNT)),
-        "goldClasses": [list(value) for value in sorted(train_gold_classes)],
         "relicDeltaValues": sorted({value for values in train_relic_delta_values.values() for value in values} | {0}),
         "relicDeltaValuesById": {
             key: sorted(values | {0}) for key, values in sorted(train_relic_delta_values.items())
@@ -711,6 +753,7 @@ def prepare(args: argparse.Namespace) -> None:
         "mutableRelicIds": sorted(CODE_AUDITED_MUTABLE_RELIC_IDS),
         "codeAuditedMutableRelicIds": sorted(CODE_AUDITED_MUTABLE_RELIC_IDS),
         "potionCapacityRule": "slot >= pre potionCapacity copies pre slot; active slots use a shared slot-conditioned categorical head",
+        "goldRule": "supported gold and stolenGold are exact copy-through fields; gold-changing combats use native fallback",
     }
     json_dump(out / "target_spec.json", target_spec)
     json_dump(out / "sampling_fixtures.json", sampling_fixtures)
@@ -918,7 +961,6 @@ class Phase2Net:
         self.nn = nn
         self.encoder = DeepSetsEncoder(nn, torch, scalar_mean, scalar_std)
         delta_count = len(target_spec["maxHpDeltaValues"])
-        gold_count = len(target_spec["goldClasses"])
         relic_delta_count = len(target_spec["relicDeltaValues"])
         class Net(nn.Module):
             def __init__(self, outer):
@@ -933,7 +975,6 @@ class Phase2Net:
                 self.potion = nn.Linear(64 + 8, POTION_COUNT)
                 self.relic_token_id = nn.Embedding(RELIC_COUNT, 16)
                 self.relic = nn.Sequential(nn.Linear(64 + 16 + 2, 64), nn.ReLU(), nn.Linear(64, relic_delta_count))
-                self.gold = nn.Linear(64, gold_count)
 
             def forward(self, g, gc, c, r, p, cmask, rmask):
                 t = self.torch
@@ -949,8 +990,7 @@ class Phase2Net:
                 rdata = t.cat((r[:, :, 1:2].float() / 10, r[:, :, 2:3].float() / 64), -1)
                 rinputs = t.cat((z[:, None, :].expand(-1, r.shape[1], -1), self.relic_token_id(rid), rdata), -1)
                 relic = self.relic(rinputs)
-                gold = self.gold(z)
-                return survival, delta, hp, potion, relic, gold
+                return survival, delta, hp, potion, relic
 
         self.net = Net(self)
 
@@ -1013,12 +1053,6 @@ def _validate_target_support(arrays: dict, target_spec: dict, indices: np.ndarra
     missing = sorted(set(observed) - max_values)
     if missing:
         issues["maxHpDelta"] = missing
-    gold_classes = {tuple(value) for value in target_spec["goldClasses"]}
-    observed_gold = set(zip(arrays["y_gold_delta"][indices][arrays["y_win"][indices] == 1].tolist(),
-                            arrays["y_stolen_gold"][indices][arrays["y_win"][indices] == 1].tolist()))
-    missing_gold = sorted(observed_gold - gold_classes)
-    if missing_gold:
-        issues["goldClasses"] = [list(value) for value in missing_gold]
     class_values = set(target_spec["relicDeltaValues"])
     active = arrays["y_relic_mask"][indices] & (arrays["y_win"][indices, None] == 1)
     observed_relic = sorted(set(int(x) for x in arrays["y_relic_delta"][indices][active]))
@@ -1046,14 +1080,13 @@ def _new_model(name: str, arrays: dict, target_spec: dict, train_indices: np.nda
 def _phase2_loss(wrapper, arrays: dict, indices: np.ndarray, args: argparse.Namespace):
     import torch
     values = _torch_inputs(arrays, indices, wrapper.device, torch)
-    survival, delta, hp, potion, relic, gold = wrapper.net(*values)
+    survival, delta, hp, potion, relic = wrapper.net(*values)
     y_win = torch.from_numpy(arrays["y_win"][indices].astype(np.int64)).to(wrapper.device)
     win = y_win == 1
     if not bool(win.any()):
         raise ValueError("training batch has no victories")
     delta_index = torch.from_numpy(arrays["delta_index"][indices].astype(np.int64)).to(wrapper.device)
     hp_bin = torch.from_numpy(arrays["y_hp_bin"][indices].astype(np.int64)).to(wrapper.device)
-    gold_index = torch.from_numpy(arrays["gold_index"][indices].astype(np.int64)).to(wrapper.device)
     loss = torch.nn.functional.binary_cross_entropy_with_logits(survival, y_win.float())
     loss = loss + torch.nn.functional.cross_entropy(delta[win], delta_index[win])
     hp_rows = hp[torch.arange(len(indices), device=wrapper.device), delta_index.clamp_min(0)]
@@ -1070,7 +1103,6 @@ def _phase2_loss(wrapper, arrays: dict, indices: np.ndarray, args: argparse.Name
     ).to(wrapper.device)
     if bool(relic_active.any()):
         loss = loss + torch.nn.functional.cross_entropy(relic[relic_active], relic_targets[relic_active])
-    loss = loss + torch.nn.functional.cross_entropy(gold[win], gold_index[win])
     return loss
 
 
@@ -1105,7 +1137,7 @@ def _point_predict(wrapper, arrays: dict, indices: np.ndarray, batch: int) -> tu
 
 def _phase2_predict(wrapper, arrays: dict, indices: np.ndarray, batch: int) -> tuple[np.ndarray, ...]:
     import torch
-    wrapper.net.eval(); outputs = [[] for _ in range(6)]
+    wrapper.net.eval(); outputs = [[] for _ in range(5)]
     with torch.no_grad():
         for ids in (indices[lo:lo + batch] for lo in range(0, len(indices), batch)):
             values = wrapper.net(*_torch_inputs(arrays, ids, wrapper.device, torch))
@@ -1116,19 +1148,14 @@ def _phase2_predict(wrapper, arrays: dict, indices: np.ndarray, batch: int) -> t
 
 def _prepare_target_indices(arrays: dict, target_spec: dict) -> None:
     delta_index = _class_index(target_spec["maxHpDeltaValues"])
-    gold_index = _class_index(tuple(value) for value in target_spec["goldClasses"])
     relic_index = _class_index(target_spec["relicDeltaValues"])
     arrays["delta_index"] = np.asarray([delta_index.get(int(x), -1) for x in arrays["y_max_hp_delta"]], dtype=np.int16)
-    arrays["gold_index"] = np.asarray([
-        gold_index.get((int(delta), int(stolen)), -1)
-        for delta, stolen in zip(arrays["y_gold_delta"], arrays["y_stolen_gold"])
-    ], dtype=np.int16)
     arrays["relic_delta_index"] = np.asarray([
         [relic_index.get(int(value), -1) for value in row]
         for row in arrays["y_relic_delta"]
     ], dtype=np.int16)
     supported_wins = arrays["supported"] & (arrays["y_win"] == 1)
-    if np.any(arrays["delta_index"][supported_wins] < 0) or np.any(arrays["gold_index"][supported_wins] < 0):
+    if np.any(arrays["delta_index"][supported_wins] < 0):
         raise ValueError("prepared categorical labels are outside TRAIN target support")
     active_relic = arrays["y_relic_mask"] & supported_wins[:, None]
     if np.any(arrays["relic_delta_index"][active_relic] < 0):
@@ -1200,7 +1227,7 @@ def _evaluate_core(wrapper, arrays: dict, target_spec: dict, indices: np.ndarray
             point_fraction=h,
         )
         return metrics
-    survival, delta, hp, potion, relic, gold = _phase2_predict(wrapper, arrays, indices, batch)
+    survival, delta, hp, potion, relic = _phase2_predict(wrapper, arrays, indices, batch)
     p_win = 1.0 / (1.0 + np.exp(-survival))
     p_delta = _softmax(delta)
     hp_cond = _softmax(hp)
@@ -1215,7 +1242,7 @@ def _evaluate_core(wrapper, arrays: dict, target_spec: dict, indices: np.ndarray
     )
     metrics["predictions"] = {
         "pWin": p_win, "pDelta": p_delta, "hpConditional": hp_cond,
-        "potionLogits": potion, "relicLogits": relic, "goldLogits": gold,
+        "potionLogits": potion, "relicLogits": relic,
         "pHpBins": p_bins, "expectedHpFraction": expected_frac, "expectedHp": expected_raw,
     }
     return metrics
@@ -1395,52 +1422,24 @@ def _transition_metrics(arrays: dict, target_spec: dict, indices: np.ndarray,
         },
     }
 
-    gold_probs = _softmax(predictions["goldLogits"][local])
-    gold_classes = [tuple(value) for value in target_spec["goldClasses"]]
-    gold_mode = np.asarray([gold_classes[index] for index in np.argmax(gold_probs, axis=1)], dtype=np.int64)
-    actual_gold = np.stack((arrays["y_gold_delta"][ids], arrays["y_stolen_gold"][ids]), axis=1)
-    pre_gold = np.stack((np.zeros(len(ids), dtype=np.int32), arrays["y_stolen_gold"][ids] - arrays["y_gold_delta"][ids] * 0), axis=1)
-    # The trivial baseline is delta-gold=0 and the pre-combat stolen-gold
-    # value, which is stored separately below for clarity.
-    # ``y_stolen_gold`` is post-stolen; pre-stolen is not separately persisted,
-    # so the baseline uses the exact pre state through a direct row lookup.
-    pre_stolen = np.asarray([int(arrays["preStolenGold"][index]) for index in ids], dtype=np.int32)
-    pre_gold = np.stack((np.zeros(len(ids), dtype=np.int32), pre_stolen), axis=1)
-    gold_changed = np.any(actual_gold != pre_gold, axis=1)
-    gold_exact = np.all(gold_mode == actual_gold, axis=1)
-    gold_baseline_exact = np.all(pre_gold == actual_gold, axis=1)
-    gold_metrics = {
-        "classCount": len(gold_classes),
-        "accuracy": _accuracy(gold_exact, np.ones(len(gold_exact), dtype=bool)),
-        "changedRowCount": int(gold_changed.sum()),
-        "changedRowAccuracy": _accuracy(gold_exact[gold_changed], np.ones(int(gold_changed.sum()), dtype=bool)),
-        "copyThroughBaseline": {
-            "accuracy": _accuracy(gold_baseline_exact, np.ones(len(gold_baseline_exact), dtype=bool)),
-            "changedRowAccuracy": _accuracy(gold_baseline_exact[gold_changed], np.ones(int(gold_changed.sum()), dtype=bool)),
-        },
-    }
-
-    # Numpy object stacking would make this awkward; compare components
-    # explicitly and keep the result as a scalar exact-match rate.
+    # Compare one boolean per supported TEST victory. Structured vectors are
+    # exact only when every modeled field matches on that row.
     joint_exact = (
         (predicted_max_hp == actual_max_hp) & (predicted_hp == actual_hp)
         & np.all(predicted_potions == actual_potions, axis=1)
         & np.all(predicted_relic_vector == actual_relic_vector, axis=1)
-        & np.all(gold_mode == actual_gold, axis=1)
     )
     copy_joint = (
         (arrays["preMaxHp"][ids] == actual_max_hp)
         & (np.clip(_round_half_up_vector(arrays["preHpFrac"][ids] * arrays["preMaxHp"][ids]), 1, arrays["preMaxHp"][ids]) == actual_hp)
         & np.all(potion_baseline == actual_potions, axis=1)
         & np.all(arrays["relics"][ids, :, 1] == actual_relic_vector, axis=1)
-        & np.all(pre_gold == actual_gold, axis=1)
     )
     return {
         "nSupportedTestVictories": int(len(ids)),
         "hpMaxHp": hp_pair,
         "potions": potion_metrics,
         "relicCounters": relic_metrics,
-        "goldStolenGold": gold_metrics,
         "allModeledPersistentFieldsExactAccuracy": _accuracy(joint_exact, np.ones(len(joint_exact), dtype=bool)),
         "copyThroughBaseline": {
             "allModeledPersistentFieldsExactAccuracy": _accuracy(copy_joint, np.ones(len(copy_joint), dtype=bool)),
@@ -1467,6 +1466,10 @@ def _sample_persistent_transition(pre: dict, prediction: dict, target_spec: dict
     post["maxHp"] = post_max
     sampled_hp = _round_half_up((hp_bin / 100.0) * post_max)
     post["curHp"] = max(1, min(post_max, sampled_hp))
+    # Gold-changing combats are outside support; supported states copy both
+    # persistent gold fields exactly rather than sampling a TRAIN-derived class.
+    post["gold"] = int(pre["gold"])
+    post["stolenGold"] = int(pre["stolenGold"])
     potion_probs = np.asarray(prediction["potionProbs"], dtype=np.float64)
     capacity = int(pre["potionCapacity"])
     for slot in range(5):
@@ -1494,11 +1497,6 @@ def _sample_persistent_transition(pre: dict, prediction: dict, target_spec: dict
             probs = mask.astype(np.float64)
         probs /= probs.sum()
         relic["data"] = int(relic["data"]) + int(rng.choice(relic_values, p=probs))
-    gold_classes = [tuple(value) for value in target_spec["goldClasses"]]
-    gold_index = int(rng.choice(len(gold_classes), p=np.asarray(prediction["goldProbs"], dtype=np.float64)))
-    delta_gold, stolen = gold_classes[gold_index]
-    post["gold"] = int(pre["gold"]) + int(delta_gold)
-    post["stolenGold"] = int(stolen)
     return post
 
 
@@ -1557,8 +1555,7 @@ def _sampled_state_check(arrays: dict, target_spec: dict, fixtures: list[dict],
             "pWin": float(predictions["pWin"][local]),
             "pDelta": predictions["pDelta"][local],
             "hpConditional": predictions["hpConditional"][local],
-        "potionProbs": _valid_potion_probabilities(predictions["potionLogits"][local]),
-            "goldProbs": _softmax(predictions["goldLogits"][local]),
+            "potionProbs": _valid_potion_probabilities(predictions["potionLogits"][local]),
             "relicDeltaProbs": {},
         }
         relic_logits = predictions["relicLogits"][local]
@@ -1619,14 +1616,11 @@ def _decision_classification(core: dict, point: dict, transition: dict) -> dict:
     hp_improves = core["hpDistribution"].get("discreteCrps", math.inf) < point["hpDistribution"].get("pointControlDegenerateCrps", math.inf)
     pot = transition["potions"]
     rel = transition["relicCounters"]
-    gold = transition["goldStolenGold"]
     sparse_ok = (
         pot["exactFullVectorAccuracy"] > pot["copyThroughBaseline"]["exactFullVectorAccuracy"]
         and (pot["changedRowAccuracy"] or 0.0) > (pot["copyThroughBaseline"]["changedRowAccuracy"] or 0.0)
         and rel["exactAllCounterVectorAccuracy"] > rel["copyThroughBaseline"]["exactAllCounterVectorAccuracy"]
         and (rel["changedCounterAccuracy"] or 0.0) > (rel["copyThroughBaseline"]["changedCounterAccuracy"] or 0.0)
-        and gold["accuracy"] > gold["copyThroughBaseline"]["accuracy"]
-        and (gold["changedRowAccuracy"] or 0.0) > (gold["copyThroughBaseline"]["changedRowAccuracy"] or 0.0)
     )
     if not core_ok:
         classification = "CORE_REGRESSION"
@@ -1636,7 +1630,7 @@ def _decision_classification(core: dict, point: dict, transition: dict) -> dict:
         classification = "PHASE2_PASS"
     return {
         "classification": classification,
-        "rule": "core <= point-control plus 5% relative/0.005 Brier tolerance; HP CRPS strict improvement; every potion/relic/gold primary and changed-slice accuracy strictly beats copy-through",
+        "rule": "core <= point-control plus 5% relative/0.005 Brier tolerance; HP CRPS strict improvement; potion and relic primary and changed-slice accuracy strictly beat copy-through; gold/stolenGold are support-gated copy-through fields",
         "coreNotMateriallyWorse": core_ok,
         "hpDistributionImproves": hp_improves,
         "sparseHeadsBeatCopyThrough": sparse_ok,
