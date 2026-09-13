@@ -83,6 +83,25 @@ follow-up was not run. Runtime inference is not implemented, and
 surrogate rollouts. See [ledger-06 §231](../../experiments/ledger-06.md)
 and the [gold-boundary fit report](../../experiments/evidence/combat_transition_surrogate_phase2_gold_boundary_2026-09-13.md).
 
+### Winning-combat HP target representation
+
+The frozen HP-only comparison tests signed absolute HP change against final
+HP fraction on every globally supported victory, conditioning both arms on
+the true observed max-HP delta. Nested TRAIN+VALIDATION sources train both
+models from scratch; nested HOLDOUT is reused engineering data, with no epoch
+selection. Three paired seeds and ten fixed AMP epochs isolate target
+representation. The fits returned **`HP_TARGET_INCONCLUSIVE`**: delta minus
+fraction raw HP MAE averaged -0.040494283 HP (-0.7414%), source-bootstrap
+95% CI [-0.054637538, -0.025676357]. The first seed favored fraction
+(+0.011898292 HP); the other two favored delta (-0.071289462 and -0.062091678
+HP), so required all-seed agreement failed. On zero-max-HP-change victories,
+the descriptive difference was -0.043772844 HP; healing rows favored fraction
+(+0.187107964 HP), and delta produced more raw above-max predictions
+(10.2746% versus 2.0529%). No target change is qualified by this decision.
+Max-HP modeling, survival, potion,
+relic support, corpus, and simulator behavior are unchanged. See the
+[frozen protocol and evidence](../../experiments/evidence/hp_target_comparison_2026-09-14.md).
+
 ### Phase-2 attention representation ablation
 
 The authorized attention ablation used the same final support boundary,

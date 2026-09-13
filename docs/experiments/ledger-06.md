@@ -7130,3 +7130,37 @@ model training was changed.
 - **Evidence:** [full results and raw command](evidence/potion_decoder_fit_2026-09-13.md);
   checkpoints, cached state embeddings and raw predictions remain external in
   `/home/philippherrmann/sts_sweep/runs/joint-potion-mask-20260913/`.
+
+## §237 Winning-combat HP target representation (2026-09-14)
+
+- **Hypotheses:** signed absolute HP change may generalize better across
+  starting/max HP; normalized ending HP may be easier under threshold/healing
+  mechanics. Only target representation changes; no max-HP prediction head.
+- **Baseline:** authorized current main `31c7a1b9adff9d55c158f5ab560f89176c0e99b3`.
+- **Design:** all globally supported victories; frozen nested TRAIN+VALIDATION
+  versus reused engineering HOLDOUT, exact source disjointness; teacher-forced
+  observed max-HP delta in both width-64 attention models. Ten fixed FP16 AMP
+  epochs, three paired training seeds, no validation/holdout epoch selection.
+- **Primary:** raw continuous reconstructed HP MAE; delta minus fraction;
+  rowwise differences averaged over seeds, then 1,000 source-group resamples.
+  One-sided 95% CI plus agreement of all seed estimates decides the winner.
+- **Executed/reviewed SHA:** `58655634bf2ecf8a76efb06f3569150bcf7fb6d3`.
+  Independent implementation review passed; 20 focused HP/attention tests OK;
+  six fits completed ten epochs, raw command exit 0; paired initialization,
+  batch-order and conditioning hashes match. No gameplay/new collection.
+- **Primary result:** fraction MAE 5.461977897 HP; delta MAE 5.421483614 HP.
+  Aggregate difference -0.040494283 HP (-0.7414%); 95% source-bootstrap CI
+  [-0.054637538, -0.025676357], 2,012 source groups, bootstrap seed 20260914.
+  Seed estimates: +0.011898292 / -0.071289462 / -0.062091678 HP. The first
+  favors fraction, so all-seed agreement fails: **`HP_TARGET_INCONCLUSIVE`**.
+- **Descriptive results:** zero-max-HP-delta rows favor delta by 0.043772844
+  HP; healing rows favor fraction by 0.187107964 HP; raw above-max predictions
+  2.0529% fraction versus 10.2746% delta. These do not override the decision.
+- **Boundary:** target-only point comparison; no target choice is qualified,
+  no stochastic-distribution or runtime qualification; max-HP modeling untouched.
+- **Hashes:** frozen corpus `74c08aa0…cfde`; nested split `58e35f9f…9094`;
+  recipe `11703590…9fa`; raw predictions `22b28541…184`. Full hashes, all
+  secondary metrics/slices and target diagnostics are in evidence.
+- **Provenance/protocol:** [frozen evidence](evidence/hp_target_comparison_2026-09-14.md).
+  Checkpoints and raw predictions remain external under
+  `/home/philippherrmann/sts_sweep/runs/hp-targets-20260914/`.
