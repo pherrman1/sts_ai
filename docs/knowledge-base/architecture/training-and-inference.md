@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-09-13 for frozen composition, attention training precision and padding; 2026-09-10 for
+Last verified: 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
 the semantic-branch trainer adapter and root trainer audit.
 
 ## Purpose
@@ -82,6 +82,30 @@ comes from slots. Draws select only positive-mass classes, avoiding residual
 roundoff assigned to forbidden identities. Each encoder keeps its own frozen
 normalization buffers; evaluation remains FP32 at historical fixed widths.
 This adapter does not qualify native transitions or RNG continuation.
+
+`tools/combat_transition_relic_legality.py` constrains persistent post counters
+from the native RAW write-back set, rather than relying on observed delta
+classes. Cyclic counters use native periods, Neow's Lament decrements once,
+Lizard Tail cannot recharge (Mark of the Bloom also prevents consumption),
+Omamori decrements only in Writhing Mass, and healing-relic data copies through.
+Unknown or invalid pre domains require future Silver fallback; global support
+is unchanged. The helper normalizes only legal classes and rejects empty mass.
+It does not enforce joint reachability of multiple relic counters.
+
+`tools/combat_transition_potion_decoder.py` is an offline prospective experiment:
+`prepare` freezes a deterministic source split nested in original TRAIN and
+its recipe before `fit`. A ten-epoch FP32 attention point-control encoder sees
+nested TRAIN only; its normalization and parameters remain frozen during
+validation-selected decoder training and TRAIN+VALIDATION refitting. The small
+independent and joint decoders condition on the same detached state, max-HP
+class, post-HP fraction, potion IDs and slots. Consumption masks cannot create
+or move potion identities. HOLDOUT scoring follows frozen epoch selection;
+teacher-forced and ancestral results are recorded separately. Historical
+point-control survival remains separate in composition. `fit` requires a clean
+frozen SHA with recorded independent review and refuses to overwrite an
+existing encoder/selection artifact; it does not authenticate reviewer approval.
+The scientific run is pending review. Protocol and native counter table:
+[potion decoder evidence](../../experiments/evidence/potion_decoder_v1_2026-09-13.md).
 
 Representative producers are `datagen3`, `fightgen`, `fairgen`, `oocnextgen`,
 and the August 1 `strategicgen` mode. `strategicgen` records one rich-state row

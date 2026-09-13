@@ -7056,3 +7056,35 @@ model training was changed.
 - **Evidence:** [hashes, native audit, paired metrics, CPU cost, checks,
   numerical batch sensitivity, and remaining limits](evidence/frozen_survival_potion_2026-09-13.md).
   Raw artifacts: `/home/philippherrmann/sts_sweep/runs/frozen-survival-potion-20260913/`.
+
+## §235 Native relic legality and nested potion decoder preregistration (2026-09-13)
+
+- **Baseline:** merged #166 `cee9a97a152671bc01c93527307f7d24e2241909`;
+  frozen corpus `74c08aa0…1cfde`, existing source groups, unchanged support
+  413,799 / 510,030. No simulator collection, gameplay seeds or RNG input.
+- **Correctness gate:** native RAW counter rules derived from initialization,
+  combat updates, exit write-back and direct Omamori writes. All supported
+  observed counter transitions satisfy the rules; zero contradictions and
+  additional-fallback pre states. Invalid/unknown states require future Silver.
+- **Engineering correction:** on frozen historical TEST-victory relic logits,
+  illegal counter-token mass mean 0.02687075 → 0; invalid modes 24 → 0
+  (Sundial 8, Incense Burner 6, Neow's Lament 9, Pen Nib 1). NLL
+  0.45244862 → 0.42272036; token exact 0.82519630 → 0.82539551.
+  All observed targets survive masking. No relic fitting or joint-legality claim.
+- **Prospective decoder protocol:** original TRAIN nested into
+  15,971 / 2,001 / 2,014 source groups using frozen salt; split SHA256
+  `58e35f9f85eefd7617e616ddbfa7ee227c429ed4d312f7dacd470828f9a09094`.
+  Fixed ten-epoch FP32 TRAIN-only attention encoder; independent versus joint
+  32-mask consumption heads; identical rows/conditioning/settings; validation
+  joint NLL epoch selection, decoder-only TRAIN+VALIDATION refit, one primary
+  HOLDOUT decision with paired source bootstrap. Separate 16-draw ancestral
+  engineering exposure diagnostic using historical upstream checkpoints.
+- **Status:** implementation/preparation and inference correction completed;
+  fitting awaits independent implementation review and a frozen reviewed SHA.
+  No encoder artifact, selected head epochs, HOLDOUT scores, decoder decision,
+  ancestral classification or measured decoder/composed latency yet.
+  Deployment remains `NOT_QUALIFIED`; `combatRng[6]` continuation is unchanged.
+- **Evidence:** [native legality table, per-relic metrics, manifest, hashes,
+  frozen recipe and commands](evidence/potion_decoder_v1_2026-09-13.md).
+  Raw outputs/logs remain external in
+  `/home/philippherrmann/sts_sweep/runs/joint-potion-mask-20260913/`.

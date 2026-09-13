@@ -123,13 +123,26 @@ exact accuracy, and no-change-event Brier, but vector exact remains below
 copy-through and potion-count accuracy regresses. Certification is conservative
 and never narrows the 413,799-row global eligibility set.
 
-Deployment remains **`NOT_QUALIFIED`**: eight Sundial mode counters violate
-native counter bounds, and RNG continuation remains absent. The next proposed
-training experiment protects survival and replaces only the potion decoder,
-using a small joint consumption-mask head where certified. It requires an
-honest TRAIN-only encoder for validation and ancestral qualification; no such
-fit was run or authorized by this result. See [ledger-06 §234](../../experiments/ledger-06.md)
-and the [frozen-composition report](../../experiments/evidence/frozen_survival_potion_2026-09-13.md).
+Deployment remains **`NOT_QUALIFIED`**. The subsequent native legality gate
+checked all 510,030 frozen rows with zero counter contradictions among the
+unchanged 413,799 supported rows. Intersecting historical relic logits with
+native reachable post-counter states removes 24 invalid modes (including the
+eight Sundial cases) and improves counter-token NLL `0.452449 → 0.422720` on
+reused global TEST victories. This inference correction does not retrain the
+relic head, prove joint counter reachability, or solve RNG continuation.
+
+The authorized prospective potion-decoder comparison now has a frozen split
+nested exclusively inside original TRAIN: 15,971 / 2,001 / 2,014 sources.
+The implementation uses a fixed ten-epoch TRAIN-only attention point-control
+state encoder and compares independent Bernoulli versus exact 32-mask heads
+with identical teacher-forced upstream conditioning. Validation joint-mask NLL
+selects head epochs; fresh nested HOLDOUT supplies the primary paired source
+bootstrap decision. Ancestral qualification is separate and uses historical
+upstream checkpoints, which previously saw these original TRAIN sources.
+Fitting and decoder classification remain pending independent implementation
+review; no HOLDOUT decoder score is available. See
+[ledger-06 §235](../../experiments/ledger-06.md) and the
+[native audit and frozen decoder protocol](../../experiments/evidence/potion_decoder_v1_2026-09-13.md).
 
 ## Current baseline
 
