@@ -266,9 +266,9 @@ def _train_one(name: str, arrays: dict, target_spec: dict,
         losses = []
         for batch_ids in base._batches(train_indices, args.nn_batch, rng):
             loss = (
-                base._phase2_loss(wrapper, arrays, batch_ids, args)
+                base._phase2_loss(wrapper, arrays, batch_ids, args, trim_padding=True)
                 if name == "phase2"
-                else base._point_loss(wrapper, arrays, batch_ids)
+                else base._point_loss(wrapper, arrays, batch_ids, trim_padding=True)
             )
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
@@ -323,9 +323,9 @@ def _refit_one(name: str, arrays: dict, target_spec: dict,
     for _ in range(epochs):
         for batch_ids in base._batches(train_indices, args.nn_batch, rng):
             loss = (
-                base._phase2_loss(wrapper, arrays, batch_ids, args)
+                base._phase2_loss(wrapper, arrays, batch_ids, args, trim_padding=True)
                 if name == "phase2"
-                else base._point_loss(wrapper, arrays, batch_ids)
+                else base._point_loss(wrapper, arrays, batch_ids, trim_padding=True)
             )
             optimizer.zero_grad(set_to_none=True)
             loss.backward()

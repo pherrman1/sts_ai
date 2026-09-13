@@ -1081,9 +1081,24 @@ def _load_prepared(prepared_dir: Path) -> tuple[dict, dict]:
     return arrays, target_spec
 
 
-def _torch_inputs(arrays: dict, indices: np.ndarray, device: str, torch) -> list:
-    return [torch.from_numpy(arrays[key][indices]).to(device, non_blocking=True)
-            for key in ("globals_continuous", "global_categories", "cards", "relics", "potions", "card_mask", "relic_mask")]
+def _required_token_width(mask: np.ndarray) -> int:
+    """Keep through the last valid column, including any interior padding."""
+    columns = np.flatnonzero(mask.any(axis=0))
+    return int(columns[-1]) + 1 if len(columns) else 0
+
+
+def _torch_inputs(arrays: dict, indices: np.ndarray, device: str, torch,
+                  *, trim_padding: bool = False) -> list:
+    batch = {key: arrays[key][indices] for key in (
+        "globals_continuous", "global_categories", "cards", "relics",
+        "potions", "card_mask", "relic_mask")}
+    if trim_padding:
+        for data, mask in (("cards", "card_mask"), ("relics", "relic_mask")):
+            width = _required_token_width(batch[mask])
+            batch[data] = batch[data][:, :width]
+            batch[mask] = batch[mask][:, :width]
+    return [torch.from_numpy(value).to(device, non_blocking=True)
+            for value in batch.values()]
 
 
 def _class_index(values: Iterable[int | tuple[int, int]]) -> dict:
@@ -1121,9 +1136,10 @@ def _new_model(name: str, arrays: dict, target_spec: dict, train_indices: np.nda
     return wrapper
 
 
-def _phase2_loss(wrapper, arrays: dict, indices: np.ndarray, args: argparse.Namespace):
+def _phase2_loss(wrapper, arrays: dict, indices: np.ndarray, args: argparse.Namespace,
+                 *, trim_padding: bool = False):
     import torch
-    values = _torch_inputs(arrays, indices, wrapper.device, torch)
+    values = _torch_inputs(arrays, indices, wrapper.device, torch, trim_padding=trim_padding)
     survival, delta, hp, potion, relic = wrapper.net(*values)
     y_win = torch.from_numpy(arrays["y_win"][indices].astype(np.int64)).to(wrapper.device)
     win = y_win == 1
@@ -1141,18 +1157,22 @@ def _phase2_loss(wrapper, arrays: dict, indices: np.ndarray, args: argparse.Name
     potion_targets = torch.from_numpy(arrays["y_potions"][indices].astype(np.int64)).to(wrapper.device)
     if bool(active_potions.any()):
         loss = loss + torch.nn.functional.cross_entropy(potion[active_potions], potion_targets[active_potions])
-    relic_active = torch.from_numpy(arrays["y_relic_mask"][indices] & win.detach().cpu().numpy()[:, None]).to(wrapper.device)
+    relic_width = values[3].shape[1]
+    if trim_padding and bool(arrays["y_relic_mask"][indices, relic_width:].any()):
+        raise ValueError("active relic target outside input relic width")
+    relic_active = torch.from_numpy(arrays["y_relic_mask"][indices, :relic_width] & win.detach().cpu().numpy()[:, None]).to(wrapper.device)
     relic_targets = torch.from_numpy(
-        arrays["relic_delta_index"][indices].astype(np.int64)
+        arrays["relic_delta_index"][indices, :relic_width].astype(np.int64)
     ).to(wrapper.device)
     if bool(relic_active.any()):
         loss = loss + torch.nn.functional.cross_entropy(relic[relic_active], relic_targets[relic_active])
     return loss
 
 
-def _point_loss(wrapper, arrays: dict, indices: np.ndarray):
+def _point_loss(wrapper, arrays: dict, indices: np.ndarray,
+                *, trim_padding: bool = False):
     import torch
-    values = _torch_inputs(arrays, indices, wrapper.device, torch)
+    values = _torch_inputs(arrays, indices, wrapper.device, torch, trim_padding=trim_padding)
     survival, hp = wrapper.net(*values)
     y_win = torch.from_numpy(arrays["y_win"][indices].astype(np.float32)).to(wrapper.device)
     y_hp = torch.from_numpy(np.nan_to_num(arrays["y_hp"][indices], nan=0.0).astype(np.float32)).to(wrapper.device)
