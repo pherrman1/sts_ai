@@ -114,6 +114,18 @@ void tests() {
     require(m.selectedAction == 2, "PUCT overcomes misleading prior");
     print("misleading prior", m);
 
+    t = deterministic(1.0, 0.0);
+    auto zeroPrior = planner.search(t, 0, 10000);
+    require(zeroPrior.selectedAction == 2 && zeroPrior.rootActions[1].visits > 0,
+            "zero-prior better action must be tried and selected");
+    print("zero individual prior", zeroPrior);
+    auto exploitConfig = config; exploitConfig.cPuct = 0;
+    auto exploit = OocMctsPlanner(exploitConfig).search(t, 0, 100);
+    require(exploit.selectedAction == 2 && exploit.rootActions[0].visits == 1
+        && exploit.rootActions[1].visits == 99, "zero PUCT visits every action then exploits");
+    auto ordered = deterministic(0, 1);
+    require(planner.search(ordered, 0, 1).selectedAction == 2, "unvisited actions prefer highest prior");
+
     auto first = alternating(), second = alternating();
     auto r1 = planner.search(first, 0, 5000), r2 = planner.search(second, 0, 5000);
     require(r1.selectedAction == r2.selectedAction && r1.rootActions.size() == r2.rootActions.size(), "replay selection");

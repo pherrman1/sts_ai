@@ -36,7 +36,10 @@ and newly expanded downstream nonterminal leaves use the injected evaluator.
 The root expands and selects an action in the first simulation. Chance visit N
 uses `max(1, ceil(k*N^alpha))` with prospective N starting at one. Defaults are
 `cPuct=1.5`, `k=2`, `alpha=0.5`, depth 32. Priors normalize with uniform zero-mass
-fallback. Ties use ascending action ID; final choice uses visits, then Q, then
+fallback. Before PUCT, every legal action receives one visit, choosing the
+highest-prior unvisited action and then ascending ID. Zero individual priors
+cannot suppress actions; cPuct=0 visits all actions once, then exploits Q.
+PUCT ties use ascending action ID; final choice uses visits, then Q, then
 ID. Each search resets its tree and seeded RNG; providers must preserve IDs and
 reset any mutable sampling state for exact replay.
 

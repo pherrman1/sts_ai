@@ -75,13 +75,21 @@ struct Search {
             }
         }
         ChanceNode *chosen = nullptr;
-        double best = -std::numeric_limits<double>::infinity();
+        // A prior is not an action filter: visit each action once before PUCT.
+        // Actions are sorted by ID, so equal-prior ties retain the lowest ID.
         for (auto &action : node.actions) {
-            // Parent N excludes the simulation currently in progress.
-            double score = action.q() + config.cPuct * action.action.prior
-                * std::sqrt(static_cast<double>(node.visits - 1)) / (1.0 + action.visits);
-            if (!std::isfinite(score)) throw std::runtime_error("OOC MCTS PUCT score overflow");
-            if (!chosen || score > best) { chosen = &action; best = score; }
+            if (!action.visits && (!chosen || action.action.prior > chosen->action.prior))
+                chosen = &action;
+        }
+        if (!chosen) {
+            double best = -std::numeric_limits<double>::infinity();
+            for (auto &action : node.actions) {
+                // Parent N excludes the simulation currently in progress.
+                double score = action.q() + config.cPuct * action.action.prior
+                    * std::sqrt(static_cast<double>(node.visits - 1)) / (1.0 + action.visits);
+                if (!std::isfinite(score)) throw std::runtime_error("OOC MCTS PUCT score overflow");
+                if (!chosen || score > best) { chosen = &action; best = score; }
+            }
         }
         auto &chance = *chosen;
         ++chance.visits;
