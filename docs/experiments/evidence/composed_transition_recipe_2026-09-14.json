@@ -11,6 +11,8 @@
   "bootstrapSeed": 20260917,
   "bootstrapReps": 1000,
   "exposureThreshold": 0.1,
+  "hpExposureEstimator": "exact weighted marginal over all maxHP classes",
+  "hpMonteCarloRole": "32-draw diagnostic only; never used for classification",
   "relicAggregation": "mean row gap / observed learned groups on informative rows",
   "evaluationPrecision": "historical survival/maxHP/potion FP32 MHA fastpath enabled; HP AMP FP16 MHA fastpath disabled; relic FP32",
   "latencyPrecision": "one-thread CPU FP32, batch 1, full visible encoding, 10 warmups, 100 draws per path",

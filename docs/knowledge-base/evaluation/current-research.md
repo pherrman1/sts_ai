@@ -136,23 +136,28 @@ qualification remains **`NOT_QUALIFIED`**.
 
 ### Offline composed combat-transition sampler
 
-**`COMPOSED_TRANSITION_REJECTED`** under the frozen original-TEST 32-draw
-composition rule on reviewed SHA `abe2c6ea50f55d37e4d594ceb6575247e91c32fa`.
-HP exposure is +infinity: eight of 31,150 observed full-support victories
-receive zero conditional probability across all sampled maxHP conditions;
-every observed target exceeds every sampled maxHP and is masked natively.
-This is finite-draw mixture support loss, not proof of zero exact analytical
-mixture mass. Potion exposure is +0.000810765 nat, 95% source-bootstrap CI
-[+0.000591005, +0.001033385]; group-normalized relic exposure is -0.001521621,
-CI [-0.004191767, +0.001475988]. These pass their individual 0.1 gates.
-All eleven hard validity counts are zero over 1,029,248 complete draws.
-Historical survival/maxHP reproduction passes after restoring each
-component's historical attention backend; no weights or sampling parameters
-changed. Original TEST support is 32,164/51,441 (62.526001%).
+**`COMPOSED_TRANSITION_QUALIFIED`** on the original reused engineering TEST after
+exact HP exposure correction, reviewed SHA
+`dc1499f36055491fec8ff44143f879c124bf230d`. HP NLL analytically marginalizes over
+all 11 frozen maxHP classes using their predicted weights and native HP masks.
+Exact marginal NLL 2.383993276 minus teacher-forced 2.371751655 gives
++0.012241622 nat, 95% source-bootstrap CI [+0.009743450, +0.014807776], passing
+the unchanged 0.1 gate. The retained diagnostic is: 8/31,150 rows received zero
+empirical mass with 32 ancestral draws. All have positive exact mass; the
+empirical infinity is excluded from classification.
 
-Next: targeted maxHP investigation/repair, with downstream models frozen.
-Runtime/OOC integration waits for a qualified composition. Full state,
-likelihood, support, per-relic and CPU latency diagnostics are in the
+Potion exposure +0.000810765 nat, CI [+0.000591005, +0.001033385], and
+normalized relic exposure -0.001521621, CI [-0.004191767, +0.001475988], pass.
+All eleven hard validity counts are zero over 1,029,248 complete draws.
+These and all other original component/diagnostic/latency evidence are unchanged
+from reviewed execution `abe2c6ea50f55d37e4d594ceb6575247e91c32fa`.
+Only HP exposure/bootstrap was recomputed; teacher NLL reproduces exactly and
+all artifact/data hashes match. No models, seeds, transitions or gameplay change.
+Original TEST support is 32,164/51,441 (62.526001%).
+
+Next separately scoped work: native runtime adapter / OOC MCTS integration.
+Offline composition qualification does not establish runtime or gameplay
+performance. Full evidence and limitations are in the
 [executed evidence](../../experiments/evidence/composed_transition_2026-09-14.md)
 and [JSON](../../experiments/evidence/composed_transition_2026-09-14.json).
 
@@ -169,7 +174,8 @@ Nondeterministic active Lizard Tail fails closed. Models and support remain
 frozen; this is an offline interface, with no production dispatch change.
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
-uses the original source-grouped **reused engineering TEST**, 32 draws per row,
+uses the original source-grouped **reused engineering TEST**, exact HP marginal
+over 11 maxHP classes, and 32 ancestral draws for potion/relic and complete states,
 individual HP/potion/relic exposure gates at 0.1 nat and zero hard sampled-state
 invalidity. Source-bootstrap CIs and full-state distribution/latency diagnostics
 are descriptive. Historical component qualifications remain distinct from

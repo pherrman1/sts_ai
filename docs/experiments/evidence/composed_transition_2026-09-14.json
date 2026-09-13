@@ -10,7 +10,7 @@
   },
   "artifactsUnchanged": true,
   "baseline": "7316c715bac7fe4559ead59cde1eb374d3437b5b",
-  "classification": "COMPOSED_TRANSITION_REJECTED",
+  "classification": "COMPOSED_TRANSITION_QUALIFIED",
   "completeDraws": 1029248,
   "componentReproduction": {
     "historicalDifferences": {
@@ -386,18 +386,19 @@
   },
   "exposure": {
     "hp": {
-      "decision": "MATERIAL_EXPOSURE_DEGRADATION",
-      "mean": "positive_infinity",
-      "mixtureNll": "positive_infinity",
+      "decision": "EXPOSURE_OK",
+      "estimator": "exact weighted marginal over all 11 maxHP classes",
+      "mean": 0.012241621853845284,
+      "mixtureNll": 2.38399327648224,
       "repetitions": 1000,
       "rows": 31150,
       "sourceBootstrap95": [
-        "positive_infinity",
-        "positive_infinity"
+        0.009743450360181935,
+        0.014807776047321208
       ],
       "sources": 2474,
       "teacherNll": 2.3717516546283943,
-      "zeroMixtureProbabilityRows": 8
+      "zeroMixtureProbabilityRows": 0
     },
     "potion": {
       "decision": "EXPOSURE_OK",
@@ -454,6 +455,66 @@
     "potionCreationSwapSubstitution": 0,
     "unsupportedMutableRelicMutation": 0
   },
+  "hpMetricCorrection": {
+    "cacheRebuilt": "same original TEST 512-row batches, frozen HP/maxHP encoders only",
+    "correctionReviewedSha": "dc1499f36055491fec8ff44143f879c124bf230d",
+    "empirical32DrawZeroRows": 8,
+    "maxHpClasses": [
+      0,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "newGameplaySeeds": false,
+    "newSampling": false,
+    "originalReviewedSha": "abe2c6ea50f55d37e4d594ceb6575247e91c32fa",
+    "sourceDirectory": "/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/qualification",
+    "sourceHashes": {
+      "component_reproduction.json": "0b33af642e2d937efb0e722ae779b54685a2ce55fc393ab7cbbcc6d39ca44280",
+      "exposure.npz": "32f2f9e2d2ef10e0b0d503ef26fe0c899479099f94633009aa38368f434c63ca",
+      "full_support.npy": "011d0169cdaa578c1e5e7f120097aaca38cb3f0cd7f1556b3785b284b9f9559e",
+      "preflight.json": "d56de8a0d0e882678774ff3fdf5ca26106a86641729e36473ddaf459303a4fe6",
+      "recipe.json": "59b330ba05adcde37b136bc1dcfb6b58db396d413948986b85d94e7760a42145",
+      "results.json": "3466e8fa2fac5ae1470a7ff017749dfde0ad6b9c0e76c6612397897de093706f",
+      "test_rows.jsonl": "f04418f97636fc355c01c3411b14278b12fad749e3bfaba6f9d5f02c0331eef8"
+    },
+    "teacherMaxNllDifference": 0.0,
+    "training": false,
+    "unchangedEvidence": [
+      "componentReproduction",
+      "hardValidity",
+      "actualModelRowCalls",
+      "diagnostics",
+      "factorizedJointNll",
+      "cpuLatency",
+      "provenance",
+      "completeDraws",
+      "sampleFailureCount",
+      "potion exposure",
+      "relic exposure"
+    ]
+  },
+  "hpMonteCarloDiagnostic": {
+    "decision": "DIAGNOSTIC_ONLY_NOT_USED_FOR_QUALIFICATION",
+    "mean": "positive_infinity",
+    "mixtureNll": "positive_infinity",
+    "repetitions": 1000,
+    "rows": 31150,
+    "sourceBootstrap95": [
+      "positive_infinity",
+      "positive_infinity"
+    ],
+    "sources": 2474,
+    "teacherNll": 2.3717516546283943,
+    "zeroMixtureProbabilityRows": 8
+  },
   "independentEvidenceReview": {
     "commands": [
       "PYTHONPATH=. python3 /tmp/independent-composed-evidence-check.py",
@@ -466,9 +527,84 @@
       "C HP/maxHP/potion/native relic/shared residue checks pass; exact state arrays, inherited RNG, stage counts and joint NLL crosscheck pass"
     ],
     "reviewedSha": "abe2c6ea50f55d37e4d594ceb6575247e91c32fa",
+    "scope": "original sampled evidence; HP Monte Carlo verification is diagnostic only",
     "scoring": false,
     "training": false,
     "verdict": "PASS"
+  },
+  "independentHpCorrectionEvidenceReview": {
+    "allOriginalMonteCarloZeroRowsHavePositiveExactMass": true,
+    "artifactHashes": {
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+    },
+    "classification": "COMPOSED_TRANSITION_QUALIFIED",
+    "command": "PYTHONPATH=. python3 /tmp/independent-exact-hp-check.py",
+    "exactGap": 0.012241621853845284,
+    "exactNll": 2.38399327648224,
+    "maxHpClasses": [
+      0,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "modelScoring": false,
+    "nativeIllegalConditionalZero": true,
+    "newSampling": false,
+    "originalMonteCarloZeroRows": 8,
+    "reviewedSha": "dc1499f36055491fec8ff44143f879c124bf230d",
+    "rows": 31150,
+    "sourceBootstrap95": [
+      0.009743450360181935,
+      0.014807776047321208
+    ],
+    "status": "PASS",
+    "teacherNll": 2.3717516546283943,
+    "training": false,
+    "unrelatedSectionsUnchanged": [
+      "componentReproduction",
+      "hardValidity",
+      "actualModelRowCalls",
+      "diagnostics",
+      "factorizedJointNll",
+      "cpuLatency",
+      "provenance",
+      "completeDraws",
+      "sampleFailureCount",
+      "potion exposure",
+      "relic exposure"
+    ],
+    "zeroRowExactMarginalProbabilities": [
+      0.004172446208158913,
+      5.882061581597281e-05,
+      0.0040620195764808015,
+      0.0029364905354181273,
+      0.0023075827284539884,
+      0.0005009085487971431,
+      0.030482961271631116,
+      0.003490017749705674
+    ]
+  },
+  "independentHpCorrectionImplementationReview": {
+    "checks": [
+      "18 direct tests OK",
+      "git show --check HEAD exit0"
+    ],
+    "design": "PASS",
+    "implementation": "PASS",
+    "independentAgent": "review_composed",
+    "reviewedSha": "dc1499f36055491fec8ff44143f879c124bf230d"
   },
   "independentImplementationReview": {
     "arithmeticRepair": "historical MHA backend restored, probe max difference6.56e-7",
@@ -482,8 +618,8 @@
     "reviewedSha": "abe2c6ea50f55d37e4d594ceb6575247e91c32fa",
     "runtimeQualification": false
   },
-  "infinityEncoding": "positive_infinity represents +inf; no clipping, resampling or discarded rows",
-  "interpretation": "Frozen32-draw qualification rejects sampled-maxHP exposure to HP. Eight observed HP targets exceed every sampled maxHP; this does not prove zero exact analytical mixture mass. All generated sampled states are valid. Next: targeted maxHP investigation/repair; downstream frozen; no runtime integration.",
+  "infinityEncoding": "positive_infinity represents +inf in the retained 32-draw HP diagnostic only; exact marginal is finite without clipping, resampling or discarded rows",
+  "interpretation": "Exact weighted HP marginal over all 11 frozen maxHP classes passes unchanged 0.1-nat exposure gate. Potion/relic gates and all hard validity counts remain unchanged and pass. Offline composition qualified; no runtime/gameplay qualification or model repair claim.",
   "loadingReproductionRepair": {
     "changed": "restore historical component MHA backend; no weights or sampling parameters changed",
     "diagnostic": "/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/reproduction_probe.json",
@@ -491,7 +627,8 @@
     "initialReviewedSha": "a9012104aaa3a1a1cc3a10017d5046928025efcb",
     "scientificExposureBeforeRepair": false
   },
-  "nextAction": "targeted repair of hp",
+  "nextAction": "native runtime adapter / OOC MCTS integration",
+  "originalComposedExecutionSha": "abe2c6ea50f55d37e4d594ceb6575247e91c32fa",
   "provenance": {
     "baseline": "7316c715bac7fe4559ead59cde1eb374d3437b5b",
     "corpusContradictions": 0,
@@ -671,7 +808,6 @@
     "testRows": 51441,
     "testSources": 2517
   },
-  "rawEvidenceDirectory": "/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/qualification",
   "recipe": {
     "artifactSeedConvention": 20260912,
     "baseline": "7316c715bac7fe4559ead59cde1eb374d3437b5b",
@@ -681,6 +817,8 @@
     "draws": 32,
     "evaluationPrecision": "historical survival/maxHP/potion FP32 MHA fastpath enabled; HP AMP FP16 MHA fastpath disabled; relic FP32",
     "exposureThreshold": 0.1,
+    "hpExposureEstimator": "exact weighted marginal over all maxHP classes",
+    "hpMonteCarloRole": "32-draw diagnostic only; never used for classification",
     "latencyPrecision": "one-thread CPU FP32, batch 1, full visible encoding, 10 warmups, 100 draws per path",
     "partition": "original source-grouped reused engineering TEST",
     "relicAggregation": "mean row gap / observed learned groups on informative rows",
@@ -690,7 +828,7 @@
     "splitSha256": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
     "training": false
   },
-  "reviewedSha": "abe2c6ea50f55d37e4d594ceb6575247e91c32fa",
+  "reviewedSha": "dc1499f36055491fec8ff44143f879c124bf230d",
   "sampleFailureCount": 0,
   "zeroHpMixtureAudit": {
     "allZeroMassExplainedByNativeHpMask": true,
@@ -1269,7 +1407,7 @@
         "zeroDraws": 32
       }
     ],
-    "interpretation": "finite 32-draw maxHP exposure removes observed HP support; does not establish zero exact analytic model mixture mass; frozen gate unchanged, no resampling or tuning",
+    "interpretation": "8/31,150 rows received zero empirical mass with 32 ancestral draws; all have positive exact marginal probability; diagnostic only, not used for classification",
     "rows": 8
   }
 }

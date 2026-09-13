@@ -7343,21 +7343,31 @@ with seed 20260917. Corpus ascension/source configuration is inherited exactly;
 no new searcher, OOC configuration or game budget is exercised. CUDA scoring
 uses historical per-component arithmetic; CPU latency uses one thread/batch1.
 
-**`COMPOSED_TRANSITION_REJECTED`**: HP mixture exposure is +infinity from eight
-observed targets above every sampled maxHP. Potion gap +0.000810765 and
-normalized relic gap -0.001521621 pass their individual 0.1-nat gates.
-All eleven native/state/RNG/death-call validity counters are zero across
-1,029,248 draws. Original TEST support 32,164/51,441; observed supported
-victories 31,150. Initial maxHP loading reproduction stopped before sampling;
-an inference-only fastpath probe identified historical arithmetic and the
-corrected run reproduces probabilities within 8.35e-7. Initial report preserved.
-This repairs loading procedure, not weights or research selection.
+**`COMPOSED_TRANSITION_QUALIFIED`** after HP-only analytical metric correction
+on independently reviewed SHA `dc1499f36055491fec8ff44143f879c124bf230d`.
+Exact weighted marginal over all 11 frozen maxHP classes gives HP NLL
+2.383993276 versus teacher-forced 2.371751655: gap +0.012241622 nat,
+95% source-bootstrap CI [+0.009743450, +0.014807776]. Same sources, bootstrap
+seed/repetitions and individual 0.1-nat gate. Illegal observed HP under a
+maxHP class contributes zero. Teacher reproduction maximum NLL difference 0.0.
+The original cached encodings were not persisted, so identical 512-row TEST
+batches were reconstructed with frozen HP/maxHP encoders only; only HP heads
+and HP exposure/bootstrap were evaluated. No new sampling or other gates ran.
 
-The result identifies sampled-maxHP exposure for targeted maxHP investigation,
-not invalid generated states or a runtime/gameplay failure. Eight zero finite
-Monte Carlo mixtures do not prove exact analytical model zero mass. No
-resampling or alternate gate was used. Next is maxHP repair with downstream
-frozen; runtime integration waits.
+The original 32-draw HP result is retained solely as diagnostic: **8/31,150 rows
+received zero empirical mass with 32 ancestral draws**. All eight have positive
+exact marginal mass, so empirical infinity is not a model-support rejection.
+The prior `COMPOSED_TRANSITION_REJECTED` conclusion is superseded; no maxHP
+investigation, model repair, resampling, tuning or threshold change followed.
+Potion gap +0.000810765 and normalized relic gap -0.001521621 remain unchanged
+and pass. All eleven native/state/RNG/death-call validity counters remain zero
+across 1,029,248 original draws. Original TEST support 32,164/51,441; observed
+supported victories 31,150. Original component diagnostics and latency remain
+from `abe2c6ea...`. Historical attention arithmetic reproduction remains
+within 8.35e-7 with no weights changed. The correction passes 18 direct tests
+and composed CTest; independent implementation and raw-evidence reviews pass.
+Next separately scoped work is runtime/OOC integration, not performed here;
+qualification is offline only.
 
 Full artifacts/hashes, reproduction, source CIs, complete diagnostics,
 factorized likelihood, latency, exact commands and limitations:
