@@ -1,7 +1,8 @@
 # Current research status
 
-Last verified: 2026-09-12 for the corrected whole-combat transition model
-rerun after independent review;
+Last verified: 2026-09-13 for the Phase-2 stochastic persistent-state support
+audit and the corrected whole-combat transition model rerun after independent
+review;
 other sections retain their prior verification and linked evidence.
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
@@ -40,6 +41,47 @@ collection is authorized. If Phase 2 is later authorized, DeepSets is the
 default candidate; no Phase-2 implementation is authorized by this result. See
 [ledger-06 §§227–228](../../experiments/ledger-06.md) and the
 [corrected compact evidence report](../../experiments/evidence/combat_transition_model_v1_2026-09-12.md).
+
+### Phase-2 persistent-state transition surrogate support audit
+
+The final v1 boundary excludes every source-audited predictor-visible path
+that can change persistent gold: Looter/Mugger encounters (`LOOTER`,
+`TWO_THIEVES`, `EXORDIUM_THUGS`), Hand of Greed, colorless-pool routes through
+Jack of All Trades or Transmutation, Toolbox, and Colorless Potion. It also
+retains the corrected exclusions for Writhing Mass, Ritual Dagger, Smoke Bomb,
+Entropic Brew, and pre-combat `smokeBombUsed == true`. The learned schema
+remains `combat_predictor_input_v1`; `pre.smokeBombUsed` and `pre.stolenGold`
+are adapter/support-gate fields, not learned features.
+
+On the unchanged 510,030-row corpus, the source-audited predicate supports
+413,799 rows (81.1323%) and falls back 96,231, a loss of 71,367 rows relative
+to the immediately preceding 95.1250% boundary. Support is 15,384/18,133
+deaths (84.8398%), with Act 1/2/3 rates 82.5107% / 79.4053% / 80.7983%; room
+rates for EVENT/ELITE/MONSTER/BOSS are 83.9126% / 84.0875% / 79.5760% /
+83.7653%.
+
+The complete audit has zero supported `gold` mutations, zero supported
+`stolenGold` mutations, and zero supported deck-structure, card-misc, or
+`smokeBombUsed` mutations. All supported copy-through checks are exact. Gold
+and `stolenGold` are therefore v1 fallback/copy-through fields, not learned
+heads or Phase-2 pass metrics.
+
+The remaining Phase-2 DeepSets fit and point-control fit used validation-only
+epoch selection (9 and 12 epochs), equal TRAIN+VALIDATION refits, and fixed
+TEST evaluation. Phase-2 improves HP distribution CRPS (0.048484 versus
+0.071822 point-control), and the relic head is promising on changed slices;
+the potion changed slice improves but potion full-vector accuracy does not.
+Shared multitask training degrades survival (Brier 0.0208797 versus 0.0189359
+for point control), so the final classification is **`CORE_REGRESSION`**. The
+durable conclusion removes the post-hoc absolute `+0.005` survival tolerance;
+the existing 5% relative check also fails on these numbers. The stochastic HP
+head works, and the potion head should probably use copy-through/change gating.
+The next experiment should protect the core predictor, for example by freezing
+or separating the survival encoder/trunk before training transition heads. This
+follow-up was not run. Runtime inference is not implemented, and
+`combatRng[6]` remains a separate blocker for scientifically valid multi-fight
+surrogate rollouts. See [ledger-06 §231](../../experiments/ledger-06.md)
+and the [gold-boundary fit report](../../experiments/evidence/combat_transition_surrogate_phase2_gold_boundary_2026-09-13.md).
 
 ## Current baseline
 

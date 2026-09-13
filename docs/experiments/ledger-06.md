@@ -6795,3 +6795,165 @@ model training was changed.
   full audit, split, prepared arrays, model evidence, exact command, logs, and
   timing remain external under
   `/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/`.
+
+## §229 Phase-2 stochastic persistent-state surrogate support audit stopped (2026-09-12)
+
+- **Question/protocol:** implement the first offline stochastic persistent-state
+  combat surrogate using the corrected PR #161 DeepSets representation and the
+  frozen §228 corpus/split. The intended heads were survival, winning max-HP
+  delta, conditional 101-bin post-combat HP fraction, five potion slots,
+  per-owned mutable relic deltas, and joint `(deltaGold, post.stolenGold)`;
+  the same DeepSets survival/expected-winning-HP point control was specified.
+  No new source seeds, simulator execution, attention rerun, runtime adapter,
+  or Silver integration was authorized.
+- **Frozen provenance:** baseline/main SHA before implementation
+  `58250bdb2e93c2c69b6556f408eb54ef5230639c`; corpus SHA256
+  `74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde`;
+  source-group split SHA256
+  `e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32`;
+  510,030 rows from 24,999 completed requested seeds and one quarantined
+  source (`4102275`, `process_exit_134`).
+- **Implementation:** `tools/combat_transition_surrogate.py` is a separate
+  offline prepare/fit tool. It derives canonical domains 372/181/48, uses
+  typed DeepSets pooling at width 64, validates target support, masks relic
+  delta classes per ID, derives potion count from canonical IDs, validates
+  sampled state invariants, and excludes `combatRng[6]` from both input and
+  output. `tools/test_combat_transition_surrogate.py` covers the support
+  predicate, HP bins, relic audit, and sampler validity; the focused test is
+  registered as `combat_transition_surrogate_selftest`.
+- **Support audit:** overall support was 488,283/510,030 (95.7361%); by act,
+  Act 1 was 237,124/238,946 (99.2375%), Act 2 162,987/171,452 (95.0628%),
+  and Act 3 88,172/99,632 (88.4977%). Death support was 16,699/18,133
+  (92.0918%). By room class, EVENT was 7,467/7,826 (95.4127%), ELITE
+  113,725/118,335 (96.1043%), MONSTER 315,622/329,935 (95.6619%), and BOSS
+  51,469/53,934 (95.4296%). The full per-encounter table is in the compact
+  evidence report. Fallback reason counts overlap: WRITHING_MASS 4,477,
+  RITUAL_DAGGER 13,926, and visible SMOKE_BOMB 3,765.
+- **Blocking finding:** the required omitted-mutation coverage gate failed.
+  Deck-structure mutations were present in 1,151 rows and card-misc
+  mutations in 109 rows, with zero supported rows for either. However,
+  `smokeBombUsed: false -> true` occurred in 3,001 rows, including 77 rows
+  that the predictor-visible predicate would support. A full-corpus scan found
+  78 rows where the resulting Smoke Bomb was not visible in the pre-state;
+  one also had Ritual Dagger and was already excluded. All 78 had visible
+  `ENTROPIC_BREW` in the pre-state. The bounded source path is
+  `BattleContext::drinkPotion(Potion::ENTROPIC_BREW)` -> random potion draw ->
+  `obtainPotion`, which can generate the unobserved Smoke Bomb. The handoff
+  explicitly forbade broadening the predicate ad hoc, so preparation exits
+  non-zero with the fail-closed error and no arrays are accepted for fitting.
+- **Second boundary conflict:** among supported winning rows,
+  `smokeBombUsed` differed in 103 copy-through checks: 77 `false -> true` and
+  26 `true -> false`. Since that field is not predictor-visible, it cannot be
+  safely added as another support guard under the stated predicate.
+- **Target preview:** TRAIN-supported wins showed max-HP delta classes
+  `{0,3,4,5,6,7,8,9,10,11,12}`, 193 joint gold classes (below the 512 stop
+  threshold), and the bounded 13-ID mutable relic audit including direct
+  Omamori RAW-exit handling. These are support observations only, not fit
+  outputs.
+- **Decision:** **`TARGET_OR_SUPPORT_PROBLEM`**. No Phase-2 or control fit,
+  fixed TEST evaluation, metrics, model size, latency, sampled-transition
+  validity gate, or model export was run. Raw corpus and any future models
+  remain external. Evidence: [Phase-2 support-audit report](evidence/combat_transition_surrogate_phase2_2026-09-12.md).
+
+## §230 Phase-2 corrected eligibility boundary and target-support stop (2026-09-13)
+
+- **Correction/protocol:** the same §228 corpus, source-group split, producer,
+  teacher, and Phase-2 target design were reused. The support predicate now
+  excludes non-Ironclad rows, Writhing Mass, any deck containing Ritual Dagger,
+  any Smoke Bomb or Entropic Brew potion, and pre-combat
+  `smokeBombUsed == true`. The learned input remains
+  `combat_predictor_input_v1`; `pre.smokeBombUsed` is an adapter/support-gate
+  field only and is not encoded or learned. No new data, runtime inference,
+  Silver replacement, attention rerun, or OOC rollout was authorized.
+- **Support coverage:** the audit passed on all 510,030 rows: 485,166
+  supported (95.1250%) and 24,864 fallback. Death support was 16,620/18,133
+  (91.6561%); Act 1/2/3 support was 235,667/238,946 (98.6277%),
+  161,917/171,452 (94.4387%), and 87,582/99,632 (87.9055%). EVENT, ELITE,
+  MONSTER, and BOSS support was 94.8505%, 95.4705%, 95.0654%, and 94.7714%.
+- **Required zero gates:** full-corpus omitted mutations were deck structure
+  1,151 rows, card misc 109 rows, and `smokeBombUsed: false -> true` 3,001
+  rows; each had zero supported rows. Supported winning rows had zero
+  copy-through violations, including zero `smokeBombUsed` directions. The
+  previously uncovered Entropic Brew-generated Smoke Bomb mechanism is now
+  excluded by the explicit Entropic Brew and pre-state support guards.
+- **Target stop:** the TRAIN-derived joint gold target still has 193 classes,
+  but nine legitimate VALIDATION classes are absent from TRAIN:
+  `(-83,83)`, `(-74,44)`, `(-73,73)`, `(-66,0)`, `(-56,15)`, `(-55,55)`,
+  `(-41,15)`, `(-36,21)`, and `(-33,18)`. Four TEST classes are also unseen
+  in TRAIN. The accepted design requires exact TRAIN classes and a stop on
+  unseen VALIDATION values, so no `OTHER` class, TEST-derived class, or silent
+  row dropping was introduced. The fit stopped before the first update with
+  the fail-closed target-support error.
+- **Regression evidence:** the focused Python and CTest checks pass. The HP
+  sampler regression proves post max HP 80 with sampled bin 50 yields exactly
+  40 HP, and structured exact-match regressions prove that one differing
+  potion slot or one differing `(HP,maxHP)` component makes the whole row
+  incorrect. No Phase-2/control metrics, sparse-head results, sampled-state
+  validity, model sizes, or latency exist because the target gate stopped the
+  fit.
+- **Decision:** **`TARGET_OR_SUPPORT_PROBLEM`**. The eligibility boundary is
+  repaired and the omitted-mutation support gate is closed, but the frozen
+  target design cannot proceed without a separate target-schema decision.
+  Evidence: [corrected Phase-2 report](evidence/combat_transition_surrogate_phase2_corrected_2026-09-13.md).
+
+## §231 Phase-2 gold boundary and remaining DeepSets fit (2026-09-13)
+
+- **Question/protocol:** remove the brittle TRAIN-derived joint
+  `(deltaGold, stolenGold)` categorical target after a bounded source audit;
+  reuse the §228 corpus, source split, producer, teacher, and accepted Phase-2
+  target design. No new data, runtime inference, Silver replacement, OOC
+  rollout, attention/XGBoost rerun, or RNG prediction was authorized.
+- **Source audit:** direct combat gold writes are Looter/Mugger theft through
+  `Monster::stealGoldFromPlayer`, direct Hand of Greed through
+  `Player::gainGold`, and generated colorless Hand of Greed reachable through
+  Jack of All Trades, Transmutation, Toolbox, or Colorless Potion. The
+  predictor-visible encounter guards are `LOOTER`, `TWO_THIEVES`, and
+  `EXORDIUM_THUGS`; the card/relic/potion guards are Hand of Greed, Jack of
+  All Trades, Transmutation, Toolbox, and Colorless Potion. Class-bound
+  Ironclad random-card paths were checked against the Ironclad pool and do not
+  contain Hand of Greed. Combat reward gold, including Golden Idol reward
+  modification, occurs after the raw exit hook and is outside this transition
+  boundary. No unsupported source mechanism remained.
+- **Support boundary:** the final predicate retains non-Ironclad,
+  Writhing Mass, Ritual Dagger, Smoke Bomb, Entropic Brew, and pre-combat
+  `smokeBombUsed` exclusions and adds all source-audited gold guards plus
+  `pre.stolenGold == 0`. The learned input remains
+  `combat_predictor_input_v1`; `pre.smokeBombUsed` and `pre.stolenGold` are
+  adapter/support-gate fields, not learned features. No v2 schema was created.
+- **Coverage:** on the unchanged 510,030-row corpus, support is 413,799
+  (81.1323%), fallback 96,231. Death support is 15,384/18,133 (84.8398%);
+  Act 1/2/3 support rates are 82.5107% / 79.4053% / 80.7983%; EVENT/ELITE/
+  MONSTER/BOSS rates are 83.9126% / 84.0875% / 79.5760% / 83.7653%.
+  Relative to §230, support loss is 71,367 rows or 13.9927 percentage points.
+- **Zero gates:** the full audit found 21,781 `gold` mutations and 37,894
+  `stolenGold` mutations, with zero supported rows for either. Existing
+  deck-structure (1,151), card-misc (109), and `smokeBombUsed` (3,001)
+  mutation rows also have zero supported rows. The supported copy-through
+  violation set is empty, including zero smoke-bomb directions. All observed
+  gold mutations are covered by the visible guard.
+- **Fit:** the remaining Phase-2 target contains survival, max-HP delta,
+  stochastic 101-bin HP fraction, five potion slots, and mutable relic-counter
+  deltas. DeepSets and point-control DeepSets used validation-only epoch
+  selection, selected 9 and 12 epochs respectively, refit from scratch on
+  TRAIN+VALIDATION, and evaluated the fixed TEST split once. TEST support was
+  41,454 rows. Phase-2 HP discrete CRPS was 0.048484 versus 0.071822 for the
+  point-control degenerate distribution. Relic full-vector accuracy was
+  0.773967 versus 0.764348 copy-through and changed-token accuracy was
+  0.097227 versus 0; potion changed-row accuracy was 0.390527 versus 0, but
+  potion full-vector accuracy was 0.460983 versus 0.728150.
+- **Classification:** **`CORE_REGRESSION`**. The stochastic HP head works
+  (discrete CRPS `0.048484` versus `0.071822` point-control), and the relic
+  head is promising on full-vector and changed-counter slices. The potion
+  changed slice improves, but its full-vector accuracy does not beat
+  copy-through. Shared multitask training degrades the core survival predictor:
+  Brier is `0.0208797` versus `0.0189359` for point control. The durable rule
+  removes the post-hoc absolute `+0.005` survival-Brier tolerance; the existing
+  5% relative check also fails. Gold/stolenGold are excluded from the sparse
+  criterion and remain native fallback/copy-through fields. The potion head
+  should probably use copy-through/change gating. The next experiment should
+  protect the core predictor, e.g. freeze or separate the survival encoder/trunk
+  before training transition heads; this was not run. Sampled-state validity is
+  16/16 with zero invalid states. Phase-2 and point-control checkpoints are
+  493,271 and 388,562 bytes; measured batch-1 CPU latency is 0.3916 ms and
+  0.2989 ms.
+- **Evidence:** [gold-boundary fit report](evidence/combat_transition_surrogate_phase2_gold_boundary_2026-09-13.md).
