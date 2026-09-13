@@ -1,7 +1,7 @@
 # Training and inference
 
-Last verified: 2026-09-10 against the current working tree (including the
-semantic-branch trainer adapter and root trainer audit).
+Last verified: 2026-09-13 for attention training padding; 2026-09-10 for
+the semantic-branch trainer adapter and root trainer audit.
 
 ## Purpose
 
@@ -34,6 +34,20 @@ flowchart LR
     G -.->|"serve predictions over localhost"| F
     F -->|"predictions supply"| H["combat priors / leaves or score run states / actions"]
 ```
+
+The offline `tools/combat_transition_attention_ablation.py` training and refit
+loops trim trailing CARD and RELIC padding per batch before device transfer.
+`tools/combat_transition_surrogate.py::_torch_inputs(trim_padding=True)` keeps
+through the last valid column of each input mask; an all-padding entity block
+has width zero. GLOBAL and all five POTION tokens remain present. Phase-2
+relic labels and target masks use exactly the input RELIC width, and an active
+target beyond that width is rejected. Validation, TEST, and generic prediction
+retain fixed widths; DeepSets training retains its existing default path.
+This changes computation only, with no architecture, support, loss, optimizer,
+or research conclusion change. Padding removal can change dropout RNG
+consumption, so trained checkpoints need not be identical. Forward/core,
+loss, and gradient parity are checked with dropout disabled in
+`tools/test_combat_transition_attention_ablation.py`.
 
 Representative producers are `datagen3`, `fightgen`, `fairgen`, `oocnextgen`,
 and the August 1 `strategicgen` mode. `strategicgen` records one rich-state row
