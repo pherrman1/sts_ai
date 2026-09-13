@@ -7006,3 +7006,28 @@ model training was changed.
   experiment should freeze or separate the core predictor. Frozen DeepSets
   comparison and complete metrics are in the [attention ablation evidence
   report](evidence/combat_transition_surrogate_attention_ablation_2026-09-13.md).
+
+
+## §233 Attention FP16 AMP implementation confirmation (2026-09-13)
+
+- **Question:** Does the explicit CUDA FP16 AMP selection/refit training step
+  retain >1.5× complete optimizer-step throughput against historical FP32 for
+  both attention families, without changing the frozen training protocol?
+- **Baseline/treatment:** `c13d5d94d6a2fe38bc9f55595bf4acde362eb43e` plus
+  the AMP implementation; `fp32` versus explicit `amp-fp16`, CUDA float16
+  autocast, GradScaler initial scale 16,384, unscale before norm clip 1.0.
+  Identical initial weights, TRAIN batch membership/order, batch 2,048,
+  4 warm-up + 30 measured steps, training seed 20260912, 8 Torch threads,
+  RTX 3060 Ti / PyTorch 2.5.1+cu121. No game seeds, simulator, TEST tuning,
+  new corpus, or quality experiment; gameplay budget/regime are not applicable.
+- **Results:** Phase-2 19,112 → 37,489 examples/s (1.962×), 107.16 →
+  54.63 ms/step, 1.318 → 0.921 GB peak allocated. Point control 18,938 →
+  40,870 examples/s (2.158×), 108.14 → 50.11 ms/step, 1.316 → 0.920 GB.
+  Both AMP smoke steps had finite losses/gradients, optimizer step 1 and
+  successful scaler update; scale remained 16,384 over 34 steps.
+- **Decision:** bounded implementation/performance confirmation passed; no
+  equal-quality claim. FP32 remains default and historical reproduction mode.
+  Scientific candidate/control comparisons must use the same precision.
+- **Evidence:** [protocol, artifact/source hashes, exact command, raw results,
+  caveats](evidence/attention_amp_confirmation_2026-09-13.md); external raw
+  artifacts at `/home/philippherrmann/sts_sweep/runs/attention-amp-confirmation-20260913/`.

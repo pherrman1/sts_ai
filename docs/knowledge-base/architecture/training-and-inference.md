@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-09-13 for attention training padding; 2026-09-10 for
+Last verified: 2026-09-13 for attention training precision and padding; 2026-09-10 for
 the semantic-branch trainer adapter and root trainer audit.
 
 ## Purpose
@@ -48,6 +48,26 @@ or research conclusion change. Padding removal can change dropout RNG
 consumption, so trained checkpoints need not be identical. Forward/core,
 loss, and gradient parity are checked with dropout disabled in
 `tools/test_combat_transition_attention_ablation.py`.
+
+Attention selection training and final TRAIN+VALIDATION refit accept
+`fit --training-precision fp32|amp-fp16` (default `fp32`). CUDA availability
+alone never enables AMP. Explicit `amp-fp16` requires an available CUDA device
+and uses CUDA float16 autocast for forward/loss, GradScaler with initial scale
+16,384, gradient unscale before the existing norm clip of 1.0, then scaler
+step/update. AdamW, batches/order, dropout, losses, and epoch selection are
+unchanged. Validation, TEST, metrics, and latency evaluation remain FP32.
+Evidence `protocol` and checkpoint `trainingProtocol` record precision, AMP
+dtype, scaler enabled/initial scale, unscale-before-clipping, and evaluation
+precision without changing model schema. Recovery requires matching protocol;
+historical checkpoints without this metadata are treated as FP32.
+
+AMP changes floating-point training dynamics: it promises neither bitwise
+parity, identical selected epochs/checkpoints, nor proven equal model quality.
+The accepted bounded six-epoch TRAIN/VALIDATION probe establishes only absence
+of obvious degradation. FP32 remains historical reproduction mode; future
+scientific candidate/control comparisons must use the same training precision.
+The [bounded CUDA confirmation](../../experiments/evidence/attention_amp_confirmation_2026-09-13.md)
+checks optimizer-step speed and memory, not scientific quality.
 
 Representative producers are `datagen3`, `fightgen`, `fairgen`, `oocnextgen`,
 and the August 1 `strategicgen` mode. `strategicgen` records one rich-state row

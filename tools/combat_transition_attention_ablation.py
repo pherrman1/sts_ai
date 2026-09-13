@@ -20,6 +20,7 @@ to the caller-provided external output directory.
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
 import json
 import math
 import time
@@ -249,11 +250,73 @@ def _new_model(name: str, arrays: dict, target_spec: dict,
     return wrapper
 
 
+AMP_INITIAL_SCALE = 16_384
+
+
+def _training_protocol(precision: str) -> dict:
+    if precision not in ("fp32", "amp-fp16"):
+        raise ValueError(f"unknown training precision: {precision}")
+    return {
+        "trainingPrecision": precision,
+        "ampDtype": "float16" if precision == "amp-fp16" else None,
+        "gradScalerEnabled": precision == "amp-fp16",
+        "gradScalerInitialScale": AMP_INITIAL_SCALE if precision == "amp-fp16" else None,
+        "gradientUnscaleBeforeClipping": precision == "amp-fp16",
+        "evaluationPrecision": "fp32",
+    }
+
+
+def _validate_training_precision(torch, precision: str, device: str) -> None:
+    _training_protocol(precision)
+    if precision == "amp-fp16" and (
+        torch.device(device).type != "cuda" or not torch.cuda.is_available()
+    ):
+        raise ValueError("--training-precision amp-fp16 requires an available CUDA device")
+
+
+class _TrainingStep:
+    """Shared selection/refit step; FP32 never creates an AMP context or scaler."""
+
+    def __init__(self, torch, precision: str, device: str):
+        _validate_training_precision(torch, precision, device)
+        self.torch = torch
+        self.scaler = (
+            torch.amp.GradScaler("cuda", init_scale=AMP_INITIAL_SCALE)
+            if precision == "amp-fp16" else None
+        )
+
+    def __call__(self, name, wrapper, optimizer, arrays, batch_ids, args):
+        context = (
+            self.torch.autocast(device_type="cuda", dtype=self.torch.float16)
+            if self.scaler is not None else nullcontext()
+        )
+        with context:
+            loss = (
+                base._phase2_loss(wrapper, arrays, batch_ids, args, trim_padding=True)
+                if name == "phase2" else
+                base._point_loss(wrapper, arrays, batch_ids, trim_padding=True)
+            )
+        optimizer.zero_grad(set_to_none=True)
+        if self.scaler is None:
+            loss.backward()
+        else:
+            self.scaler.scale(loss).backward()
+            self.scaler.unscale_(optimizer)
+        self.torch.nn.utils.clip_grad_norm_(wrapper.net.parameters(), 1.0)
+        if self.scaler is None:
+            optimizer.step()
+        else:
+            self.scaler.step(optimizer)
+            self.scaler.update()
+        return loss
+
+
 def _train_one(name: str, arrays: dict, target_spec: dict,
                train_indices: np.ndarray, val_indices: np.ndarray,
                args: argparse.Namespace, device: str):
     import torch
 
+    step = _TrainingStep(torch, getattr(args, "training_precision", "fp32"), device)
     wrapper = _new_model(name, arrays, target_spec, train_indices, args, device)
     optimizer = torch.optim.AdamW(wrapper.net.parameters(), lr=1e-3, weight_decay=1e-4)
     rng = np.random.default_rng(args.training_seed)
@@ -265,15 +328,7 @@ def _train_one(name: str, arrays: dict, target_spec: dict,
         wrapper.net.train()
         losses = []
         for batch_ids in base._batches(train_indices, args.nn_batch, rng):
-            loss = (
-                base._phase2_loss(wrapper, arrays, batch_ids, args, trim_padding=True)
-                if name == "phase2"
-                else base._point_loss(wrapper, arrays, batch_ids, trim_padding=True)
-            )
-            optimizer.zero_grad(set_to_none=True)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(wrapper.net.parameters(), 1.0)
-            optimizer.step()
+            loss = step(name, wrapper, optimizer, arrays, batch_ids, args)
             losses.append(float(loss.detach().cpu()))
         metrics = base._evaluate_core(
             wrapper, arrays, target_spec, val_indices, args.nn_batch, name
@@ -317,20 +372,13 @@ def _refit_one(name: str, arrays: dict, target_spec: dict,
                args: argparse.Namespace, device: str):
     import torch
 
+    step = _TrainingStep(torch, getattr(args, "training_precision", "fp32"), device)
     wrapper = _new_model(name, arrays, target_spec, train_indices, args, device)
     optimizer = torch.optim.AdamW(wrapper.net.parameters(), lr=1e-3, weight_decay=1e-4)
     rng = np.random.default_rng(args.training_seed)
     for _ in range(epochs):
         for batch_ids in base._batches(train_indices, args.nn_batch, rng):
-            loss = (
-                base._phase2_loss(wrapper, arrays, batch_ids, args, trim_padding=True)
-                if name == "phase2"
-                else base._point_loss(wrapper, arrays, batch_ids, trim_padding=True)
-            )
-            optimizer.zero_grad(set_to_none=True)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(wrapper.net.parameters(), 1.0)
-            optimizer.step()
+            loss = step(name, wrapper, optimizer, arrays, batch_ids, args)
     return wrapper
 
 
@@ -536,6 +584,10 @@ def _load_checkpoint(name: str, path: Path, arrays: dict, target_spec: dict,
         raise ValueError(f"checkpoint is not the expected attention {expected_family} model: {path}")
     if name == "phase2" and payload.get("targetSpec") != target_spec:
         raise ValueError("Phase-2 recovery checkpoint target specification differs")
+    # Historical attention checkpoints predate precision metadata and used FP32.
+    recorded = payload.get("trainingProtocol", _training_protocol("fp32"))
+    if recorded != _training_protocol(getattr(args, "training_precision", "fp32")):
+        raise ValueError("recovery checkpoint training precision/protocol differs from requested precision")
     wrapper = _new_model(name, arrays, target_spec, train_indices, args, device)
     wrapper.net.load_state_dict(payload["stateDict"])
     return wrapper
@@ -544,6 +596,10 @@ def _load_checkpoint(name: str, path: Path, arrays: dict, target_spec: dict,
 def fit(args: argparse.Namespace) -> None:
     import torch
 
+    device = base._resolve_device(torch, args.device)
+    precision = getattr(args, "training_precision", "fp32")
+    _validate_training_precision(torch, precision, device)
+    training_protocol = _training_protocol(precision)
     prepared_dir = Path(args.prepared_dir)
     arrays, target_spec = base._load_prepared(prepared_dir)
     prepared_manifest = json.loads(
@@ -563,7 +619,6 @@ def fit(args: argparse.Namespace) -> None:
             raise ValueError(
                 f"unseen target support in {label}: {json.dumps(support['unseen'], sort_keys=True)}"
             )
-    device = base._resolve_device(torch, args.device)
     print(
         json.dumps(
             {
@@ -686,6 +741,7 @@ def fit(args: argparse.Namespace) -> None:
                 "schemaVersion": MODEL_SCHEMA,
                 "family": "phase2",
                 "encoder": "phase1_attention",
+                "trainingProtocol": training_protocol,
                 "stateDict": base._safe_state_dict(phase2.net),
                 "targetSpec": target_spec,
             },
@@ -696,6 +752,7 @@ def fit(args: argparse.Namespace) -> None:
                 "schemaVersion": MODEL_SCHEMA,
                 "family": "point_control",
                 "encoder": "phase1_attention",
+                "trainingProtocol": training_protocol,
                 "stateDict": base._safe_state_dict(point.net),
             },
             point_model_path,
@@ -736,6 +793,7 @@ def fit(args: argparse.Namespace) -> None:
             "adapterOnlyPreCombatFields": ["pre.smokeBombUsed", "pre.stolenGold"],
         },
         "protocol": {
+            **training_protocol,
             "train": "supported TRAIN rows only",
             "validation": "supported VALIDATION rows only; early stopping and epoch freeze",
             "finalFit": "supported TRAIN+VALIDATION rows, exact frozen epoch count, from scratch",
@@ -838,13 +896,14 @@ def fit(args: argparse.Namespace) -> None:
     )
 
 
-def main() -> None:
+def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     fit_parser = sub.add_parser("fit")
     fit_parser.add_argument("--prepared-dir", required=True)
     fit_parser.add_argument("--output-dir", required=True)
     fit_parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
+    fit_parser.add_argument("--training-precision", choices=("fp32", "amp-fp16"), default="fp32")
     fit_parser.add_argument("--threads", type=int, default=8)
     fit_parser.add_argument("--nn-batch", type=int, default=2048)
     fit_parser.add_argument("--nn-epochs", type=int, default=12)
@@ -865,7 +924,11 @@ def main() -> None:
         default="6ccad271eefa5d42ea0d2debe4ff6bed486aa3f9",
     )
     fit_parser.set_defaults(func=fit)
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> None:
+    args = _parser().parse_args()
     args.func(args)
 
 

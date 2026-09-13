@@ -1,5 +1,8 @@
 import importlib.util
 import unittest
+from unittest.mock import MagicMock, patch
+from types import SimpleNamespace
+import sys
 
 import numpy as np
 
@@ -232,6 +235,32 @@ class TestCombatTransitionAttentionAblation(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "active relic target outside"):
             base._phase2_loss(model, arrays, ids, args, trim_padding=True)
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "optional research dependency torch is not installed")
+    def test_cuda_amp_optimizer_smoke(self):
+        import torch
+        import argparse
+
+        if not torch.cuda.is_available():
+            self.skipTest("CUDA is unavailable")
+        args = argparse.Namespace(threads=1, training_seed=17)
+        spec = {"maxHpDeltaValues": [0, 3], "relicDeltaValues": [0, 1]}
+        arrays = self._arrays()
+        ids = np.arange(2)
+        for family in ("phase2", "point"):
+            with self.subTest(family=family):
+                wrapper = ablation._new_model(family, arrays, spec, ids, args, "cuda")
+                wrapper.net.train()
+                before = {name: value.detach().clone() for name, value in wrapper.net.named_parameters()}
+                optimizer = torch.optim.AdamW(wrapper.net.parameters(), lr=1e-3, weight_decay=1e-4)
+                step = ablation._TrainingStep(torch, "amp-fp16", "cuda")
+                loss = step(family, wrapper, optimizer, arrays, ids, args)
+                self.assertTrue(bool(torch.isfinite(loss)))
+                self.assertTrue(all(bool(torch.isfinite(p.grad).all()) for p in wrapper.net.parameters() if p.grad is not None))
+                self.assertTrue(any(not torch.equal(before[name], value) for name, value in wrapper.net.named_parameters()))
+                self.assertTrue(all(int(state["step"]) == 1 for state in optimizer.state.values()))
+                self.assertEqual(step.scaler.get_scale(), 16384)
+                self.assertEqual(step.scaler.state_dict()["_growth_tracker"], 1)
+
     def test_source_bootstrap_reports_phase2_minus_control(self):
         arrays = {
             "y_win": np.asarray([0, 1, 0, 1, 0, 1, 0, 1], dtype=np.int8),
@@ -253,6 +282,181 @@ class TestCombatTransitionAttentionAblation(unittest.TestCase):
         self.assertEqual(result["repetitions"], 100)
         self.assertIn("survivalBrier", result["metrics"])
         self.assertIn("sourceBootstrap95", result["metrics"]["survivalLogLoss"])
+
+
+class TestTrainingPrecision(unittest.TestCase):
+    def test_cli_default_and_explicit_precision(self):
+        command = ["fit", "--prepared-dir", "unused", "--output-dir", "unused"]
+        self.assertEqual(ablation._parser().parse_args(command).training_precision, "fp32")
+        self.assertEqual(ablation._parser().parse_args(command + ["--training-precision", "amp-fp16"]).training_precision, "amp-fp16")
+
+    def _torch(self, device="cuda", available=True):
+        torch = MagicMock()
+        torch.device.side_effect = lambda value: SimpleNamespace(type=value.split(":")[0])
+        torch.cuda.is_available.return_value = available
+        return torch
+
+    def test_amp_requires_cuda(self):
+        for device, available in (("cpu", True), ("cuda", False), ("cpu", False)):
+            with self.subTest(device=device, available=available):
+                torch = self._torch(device, available)
+                with self.assertRaisesRegex(ValueError, "requires an available CUDA"):
+                    ablation._TrainingStep(torch, "amp-fp16", device)
+                torch.amp.GradScaler.assert_not_called()
+        ablation._TrainingStep(self._torch(), "amp-fp16", "cuda:0")
+
+    def test_step_order_and_fp32_isolation(self):
+        for precision in ("fp32", "amp-fp16"):
+            for family in ("phase2", "point"):
+                with self.subTest(precision=precision, family=family):
+                    torch = self._torch()
+                    events = []
+                    scaler = torch.amp.GradScaler.return_value
+                    loss = MagicMock()
+                    loss.backward.side_effect = lambda: events.append("backward")
+                    scaler.scale.side_effect = lambda value: (events.append("scale") or value)
+                    scaler.unscale_.side_effect = lambda opt: events.append("unscale")
+                    scaler.step.side_effect = lambda opt: events.append("scaler_step")
+                    scaler.update.side_effect = lambda: events.append("update")
+                    torch.nn.utils.clip_grad_norm_.side_effect = lambda params, limit: events.append("clip")
+                    optimizer = MagicMock()
+                    optimizer.zero_grad.side_effect = lambda **kw: events.append("zero")
+                    optimizer.step.side_effect = lambda: events.append("step")
+                    wrapper = SimpleNamespace(net=MagicMock())
+                    context = torch.autocast.return_value
+                    context.__enter__.side_effect = lambda: events.append("autocast_enter")
+                    context.__exit__.side_effect = lambda *a: events.append("autocast_exit")
+                    def compute(*a, **kw):
+                        events.append("loss")
+                        self.assertTrue(kw["trim_padding"])
+                        return loss
+                    with patch.object(base, "_phase2_loss", side_effect=compute) as phase2, patch.object(base, "_point_loss", side_effect=compute) as point:
+                        step = ablation._TrainingStep(torch, precision, "cuda")
+                        self.assertIs(step(family, wrapper, optimizer, {}, np.arange(2), SimpleNamespace()), loss)
+                        self.assertEqual(phase2.call_count, int(family == "phase2"))
+                        self.assertEqual(point.call_count, int(family == "point"))
+                    optimizer.zero_grad.assert_called_once_with(set_to_none=True)
+                    torch.nn.utils.clip_grad_norm_.assert_called_once_with(wrapper.net.parameters.return_value, 1.0)
+                    if precision == "fp32":
+                        self.assertEqual(events, ["loss", "zero", "backward", "clip", "step"])
+                        torch.amp.GradScaler.assert_not_called()
+                        torch.autocast.assert_not_called()
+                    else:
+                        self.assertEqual(events, ["autocast_enter", "loss", "autocast_exit", "zero", "scale", "backward", "unscale", "clip", "scaler_step", "update"])
+                        torch.amp.GradScaler.assert_called_once_with("cuda", init_scale=16384)
+                        torch.autocast.assert_called_once_with(device_type="cuda", dtype=torch.float16)
+                        scaler.unscale_.assert_called_once_with(optimizer)
+                        scaler.step.assert_called_once_with(optimizer)
+                        optimizer.step.assert_not_called()
+
+    def test_selection_and_refit_share_precision_and_evaluation_stays_outside(self):
+        arrays = {}
+        ids = np.arange(2)
+        metrics = {"survival": {"brier": .1}, "winningExpectedHpFraction": {"mae": .1}, "jointAliveHpFraction": {"mae": .1}}
+        for precision in ("fp32", "amp-fp16"):
+            for family in ("phase2", "point"):
+                args = SimpleNamespace(training_precision=precision, training_seed=7, nn_epochs=1, nn_batch=2, nn_patience=1)
+                torch = self._torch()
+                wrapper = SimpleNamespace(net=MagicMock())
+                with patch.dict(sys.modules, torch=torch), patch.object(ablation, "_new_model", return_value=wrapper), patch.object(ablation, "_TrainingStep") as step, patch.object(base, "_evaluate_core", return_value=metrics) as evaluate, patch.object(base, "_safe_state_dict", return_value={}):
+                    step.return_value.return_value.detach.return_value.cpu.return_value = .5
+                    ablation._train_one(family, arrays, {}, ids, ids, args, "cuda")
+                    ablation._refit_one(family, arrays, {}, ids, 1, args, "cuda")
+                    self.assertEqual(step.call_args_list, [unittest.mock.call(torch, precision, "cuda")] * 2)
+                    self.assertEqual(step.return_value.call_count, 2)
+                    self.assertEqual(evaluate.call_count, 2)
+                    torch.autocast.assert_not_called()
+
+    def test_precision_metadata(self):
+        fp32 = ablation._training_protocol("fp32")
+        self.assertEqual(fp32["trainingPrecision"], "fp32")
+        self.assertFalse(fp32["gradScalerEnabled"])
+        amp = ablation._training_protocol("amp-fp16")
+        self.assertEqual(amp, {
+            "trainingPrecision": "amp-fp16", "ampDtype": "float16",
+            "gradScalerEnabled": True, "gradScalerInitialScale": 16384,
+            "gradientUnscaleBeforeClipping": True, "evaluationPrecision": "fp32",
+        })
+
+    def test_fit_writes_precision_to_evidence_and_both_checkpoints(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from contextlib import ExitStack
+
+        arrays = {"split_id": np.arange(3), "supported": np.ones(3, dtype=bool)}
+        for precision in ("fp32", "amp-fp16"):
+            with self.subTest(precision=precision), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / "prepared_manifest.json").write_text(json.dumps({
+                    "corpusSha256": ablation.EXPECTED_CORPUS_SHA256,
+                    "counts": {"supported": ablation.EXPECTED_SUPPORTED_ROWS},
+                }))
+                for filename in ("sampling_fixtures.json", "support_audit.json"):
+                    (root / filename).write_text("{}")
+                args = ablation._parser().parse_args([
+                    "fit", "--prepared-dir", directory, "--output-dir", directory,
+                    "--training-precision", precision,
+                ])
+                torch = self._torch()
+                torch.save.side_effect = lambda payload, path: path.write_bytes(b"checkpoint")
+                wrapper = SimpleNamespace(net=MagicMock(), device=SimpleNamespace(type="cuda"))
+                metrics = {"survival": {"brier": .1}, "winningExpectedHpFraction": {"mae": .1}, "jointAliveHpFraction": {"mae": .1}}
+                predictions = {"pHpBins": np.zeros((1, 101)), "pWin": np.ones(1), "expectedHpFraction": np.ones(1)}
+                with ExitStack() as stack:
+                    stack.enter_context(patch.dict(sys.modules, torch=torch))
+                    replacements = {
+                        "_load_prepared": (arrays, {}), "_prepare_target_indices": None,
+                        "_validate_target_support": {"ok": True}, "_resolve_device": "cuda",
+                        "_point_predict": (np.ones(1), np.ones(1)), "_hp_distribution_metrics": {},
+                        "_transition_metrics": {}, "_sampled_state_check": {"valid": True},
+                        "_safe_state_dict": {},
+                    }
+                    for name, value in replacements.items():
+                        stack.enter_context(patch.object(base, name, return_value=value))
+                    stack.enter_context(patch.object(base, "_evaluate_core", side_effect=lambda *a: {**metrics, "predictions": predictions.copy()}))
+                    evidence = stack.enter_context(patch.object(base, "json_dump"))
+                    train = stack.enter_context(patch.object(ablation, "_train_one", return_value=(wrapper, metrics, 1)))
+                    refit = stack.enter_context(patch.object(ablation, "_refit_one", return_value=wrapper))
+                    for name in ("_source_bootstrap_core_deltas", "_compact_support", "_core_decision"):
+                        stack.enter_context(patch.object(ablation, name, return_value={"classification": "mock"}))
+                    stack.enter_context(patch.object(ablation, "_measure_latency", return_value=1.0))
+                    stack.enter_context(patch("builtins.print"))
+                    ablation.fit(args)
+                    protocol = ablation._training_protocol(precision)
+                    written = evidence.call_args.args[1]["protocol"]
+                    for key, value in protocol.items():
+                        self.assertEqual(written[key], value)
+                    self.assertEqual(torch.save.call_count, 2)
+                    for call in torch.save.call_args_list:
+                        self.assertEqual(call.args[0]["trainingProtocol"], protocol)
+                        self.assertEqual(call.args[0]["schemaVersion"], ablation.MODEL_SCHEMA)
+                    self.assertEqual(train.call_count, 2)
+                    self.assertEqual(refit.call_count, 2)
+                    for call in train.call_args_list + refit.call_args_list:
+                        self.assertEqual(call.args[-2].training_precision, precision)
+
+    def test_checkpoint_recovery_rejects_precision_mismatch(self):
+        from pathlib import Path
+        import tempfile
+        torch = self._torch()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "checkpoint.pt"
+            path.touch()
+            for recorded in (None, "fp32", "amp-fp16"):
+                for requested in ("fp32", "amp-fp16"):
+                    payload = {"family": "point_control", "encoder": "phase1_attention", "stateDict": {}}
+                    if recorded is not None:
+                        payload["trainingProtocol"] = ablation._training_protocol(recorded)
+                    torch.load.return_value = payload
+                    with patch.dict(sys.modules, torch=torch), patch.object(ablation, "_new_model") as model:
+                        if (recorded or "fp32") == requested:
+                            ablation._load_checkpoint("point", path, {}, {}, np.arange(2), SimpleNamespace(training_precision=requested), "cuda")
+                            model.return_value.net.load_state_dict.assert_called_once_with({})
+                        else:
+                            with self.assertRaisesRegex(ValueError, "precision/protocol differs"):
+                                ablation._load_checkpoint("point", path, {}, {}, np.arange(2), SimpleNamespace(training_precision=requested), "cuda")
+                            model.assert_not_called()
 
 
 if __name__ == "__main__":
