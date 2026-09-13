@@ -1330,6 +1330,24 @@ def _exact_accuracy(actual: np.ndarray, predicted: np.ndarray) -> float | None:
     return _accuracy(row_exact, np.ones(len(row_exact), dtype=bool))
 
 
+def _normalise_sampling_probabilities(values: np.ndarray) -> np.ndarray:
+    """Make a finite nonnegative vector acceptable to ``Generator.choice``."""
+    probabilities = np.asarray(values, dtype=np.float64).copy()
+    if probabilities.ndim != 1 or not len(probabilities):
+        raise ValueError("sampling probabilities must be a non-empty vector")
+    if not np.all(np.isfinite(probabilities)) or np.any(probabilities < 0):
+        raise ValueError("sampling probabilities must be finite and nonnegative")
+    total = float(probabilities.sum())
+    if total <= 0:
+        raise ValueError("sampling probabilities must have positive mass")
+    probabilities /= total
+    # NumPy's Generator.choice checks the sum tightly.  Make the final element
+    # absorb the floating-point residual after normalization.
+    probabilities[-1] = max(0.0, 1.0 - float(probabilities[:-1].sum()))
+    probabilities /= probabilities.sum()
+    return probabilities
+
+
 def _masked_relic_probabilities(logits: np.ndarray, arrays: dict, indices: np.ndarray,
                                 target_spec: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     probs = _softmax(logits)
@@ -1500,12 +1518,13 @@ def _sample_persistent_transition(pre: dict, prediction: dict, target_spec: dict
     if float(rng.random()) >= float(prediction["pWin"]):
         return None
     delta_values = np.asarray(target_spec["maxHpDeltaValues"], dtype=np.int32)
-    delta_index = int(rng.choice(len(delta_values), p=np.asarray(prediction["pDelta"], dtype=np.float64)))
+    delta_probs = _normalise_sampling_probabilities(prediction["pDelta"])
+    delta_index = int(rng.choice(len(delta_values), p=delta_probs))
     post = {key: copy.deepcopy(pre[key]) for key in PERSISTENT_KEYS if key != "combatRng"}
     post_max = int(pre["maxHp"]) + int(delta_values[delta_index])
     if post_max <= 0:
         raise ValueError("sampled maxHp is not positive")
-    hp_probs = np.asarray(prediction["hpConditional"][delta_index], dtype=np.float64)
+    hp_probs = _normalise_sampling_probabilities(prediction["hpConditional"][delta_index])
     hp_bin = int(rng.choice(HP_BIN_COUNT, p=hp_probs))
     post["maxHp"] = post_max
     sampled_hp = _round_half_up((hp_bin / 100.0) * post_max)
@@ -1522,7 +1541,7 @@ def _sample_persistent_transition(pre: dict, prediction: dict, target_spec: dict
             probabilities[0] = 0.0  # Potion::INVALID is not a valid persistent slot value.
             if probabilities.sum() <= 0:
                 probabilities[EMPTY_POTION_SLOT_ID] = 1.0
-            probabilities /= probabilities.sum()
+            probabilities = _normalise_sampling_probabilities(probabilities)
             post["potions"][slot] = int(rng.choice(POTION_COUNT, p=probabilities))
         else:
             post["potions"][slot] = int(pre["potions"][slot])
@@ -1539,7 +1558,7 @@ def _sample_persistent_transition(pre: dict, prediction: dict, target_spec: dict
         probs = np.where(mask, probs, 0.0)
         if probs.sum() <= 0:
             probs = mask.astype(np.float64)
-        probs /= probs.sum()
+        probs = _normalise_sampling_probabilities(probs)
         relic["data"] = int(relic["data"]) + int(rng.choice(relic_values, p=probs))
     return post
 

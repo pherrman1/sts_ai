@@ -21,6 +21,7 @@ try:
         _sample_persistent_transition,
         _exact_accuracy,
         _prepare_target_indices,
+        _normalise_sampling_probabilities,
         hp_fraction_bin,
         supported_for_surrogate,
         supported_reasons,
@@ -45,6 +46,7 @@ except ModuleNotFoundError:
         _sample_persistent_transition,
         _exact_accuracy,
         _prepare_target_indices,
+        _normalise_sampling_probabilities,
         hp_fraction_bin,
         supported_for_surrogate,
         supported_reasons,
@@ -184,6 +186,11 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
         hp_actual = np.asarray([[40, 80], [40, 80]])
         hp_predicted = np.asarray([[40, 80], [41, 80]])
         self.assertEqual(_exact_accuracy(hp_actual, hp_predicted), 0.5)
+
+    def test_sampler_normalizes_softmax_roundoff_before_choice(self):
+        probabilities = _normalise_sampling_probabilities(np.asarray([0.2, 0.8000001]))
+        self.assertEqual(float(probabilities.sum()), 1.0)
+        self.assertTrue(np.all(probabilities >= 0.0))
 
     def test_mutable_relic_audit_is_nonempty_and_includes_raw_omamori(self):
         self.assertTrue(CODE_AUDITED_MUTABLE_RELIC_IDS)
