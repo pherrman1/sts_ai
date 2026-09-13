@@ -83,6 +83,33 @@ follow-up was not run. Runtime inference is not implemented, and
 surrogate rollouts. See [ledger-06 §231](../../experiments/ledger-06.md)
 and the [gold-boundary fit report](../../experiments/evidence/combat_transition_surrogate_phase2_gold_boundary_2026-09-13.md).
 
+### Phase-2 attention representation ablation
+
+The authorized attention ablation used the same final support boundary,
+`combat_predictor_input_v1`, source-group split, losses, optimizer, and frozen
+TEST as the DeepSets Phase-2 fit. The known Phase-1 attention encoder was
+width 64 with two Transformer layers, four heads, FF width 128, typed GLOBAL /
+CARD / RELIC / POTION tokens, explicit relic order and potion slots, and no
+arbitrary positions for exchangeable card tokens. No new data or runtime
+integration was used.
+
+Attention Phase-2 selected 11 epochs and attention point-control selected 10;
+both were refit from scratch on TRAIN+VALIDATION. On TEST, Phase-2 survival
+Brier/log loss were `0.019920463/0.066628456` versus
+`0.019039775/0.063621797` for its point-control: absolute degradations
+`+0.000880687/+0.003006653`, relative degradations `+4.6255%/+4.7258%`.
+Source-seed bootstrap 95% intervals were strictly positive for both primary
+error deltas, so the result is **`ATTENTION_CORE_REGRESSION`**, not
+`ATTENTION_AVOIDS_CORE_REGRESSION`. AUC and HP errors improved, while the HP
+distribution CRPS improved from the point-control degenerate `0.070421` to
+`0.045763`; potion full-vector exact remained below copy-through, while relic
+full-vector and changed-counter metrics improved. This supports the generic
+multitask-interference hypothesis: do not enlarge or switch the Transformer;
+the next experiment should freeze or separate the core predictor. `combatRng[6]`
+remains an unchanged blocker for runtime multi-fight rollouts. See
+[ledger-06 §232](../../experiments/ledger-06.md) and the
+[attention ablation evidence report](../../experiments/evidence/combat_transition_surrogate_attention_ablation_2026-09-13.md).
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) as the sole pointer for the

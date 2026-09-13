@@ -6957,3 +6957,52 @@ model training was changed.
   493,271 and 388,562 bytes; measured batch-1 CPU latency is 0.3916 ms and
   0.2989 ms.
 - **Evidence:** [gold-boundary fit report](evidence/combat_transition_surrogate_phase2_gold_boundary_2026-09-13.md).
+
+## §232 Phase-2 attention representation ablation (2026-09-13)
+
+- **Question/protocol:** test whether the corrected Phase-1 small attention
+  representation avoids the DeepSets Phase-2 core regression. PR #162 was
+  merged first; the fresh Codex-managed worktree baseline was
+  `6ccad271eefa5d42ea0d2debe4ff6bed486aa3f9`. The unchanged corpus, source
+  split, final support predicate, `combat_predictor_input_v1`, Phase-2 targets,
+  losses, AdamW recipe, batch 2,048, max 12 epochs/patience 3, and training
+  seed `20260912` were reused. Only DeepSets was replaced by the known
+  width-64, two-layer, four-head, FF-128 typed-token attention encoder. No new
+  data, support redesign, RNG input, runtime integration, or gameplay run was
+  used.
+- **Support reproducibility:** the repeated audit passed with 413,799/510,030
+  supported rows (81.1323%), 96,231 fallback rows, and 15,384/18,133 supported
+  deaths (84.8398%). Supported TRAIN/VALIDATION/TEST counts were 331,225 /
+  41,120 / 41,454. Gold, `stolenGold`, deck-structure, card-misc, and
+  `smokeBombUsed` mutation audits had zero supported rows; copy-through was
+  exact. Audit artifact: `/tmp/sts-phase2-attention-audit-20260913`.
+- **Fit:** validation ran 12 epochs per model and selected attention Phase-2
+  epoch 11 (score `0.165629169`) and attention point-control epoch 10 (score
+  `0.172498332`). Both were refit from scratch on 372,345 TRAIN+VALIDATION
+  rows before one fixed TEST evaluation. The initial run completed all 24
+  validation-selection and 21 refit epochs and wrote both checkpoints; a
+  post-fit serializer key error was corrected, then exact checkpoints were
+  reloaded for evidence recovery without retraining.
+- **Core TEST result:** Phase-2 versus its own point-control was Brier
+  `0.019920463` vs `0.019039775` (absolute `+0.000880687`, relative `+4.6255%`)
+  and log loss `0.066628456` vs `0.063621797` (absolute `+0.003006653`,
+  relative `+4.7258%`). Source-seed bootstrap used 1,000 repetitions and
+  2,512 TEST source groups; the 95% intervals were `[+0.000501706,
+  +0.001289956]` and `[+0.001811163, +0.004202626]`. AUC and both HP error
+  metrics improved, but the primary survival intervals support regression.
+- **Transition result:** HP distribution NLL/CRPS were `2.666314/0.045763`
+  versus attention point-control degenerate CRPS `0.070421`; 50/80/95%
+  coverage was `0.664947/0.879055/0.974223`. Potion full-vector exact was
+  `0.491094` vs copy-through `0.728150`, changed-row exact `0.394674` vs 0;
+  relic full-vector exact was `0.777174` vs copy-through `0.764348`, changed
+  token accuracy `0.118426` vs 0. Whole modeled-field exact was `0.183998` vs
+  copy-through `0.210151`. Sampling validity passed 16/16 with zero invalid
+  states. Attention/point checkpoints were 576,866/472,249 bytes with
+  139,140/114,178 parameters; batch-1 latency was 0.9337/0.7731 ms.
+- **Decision:** **`ATTENTION_CORE_REGRESSION`**. Attention does not avoid the
+  core regression, so the result supports the generic multitask-interference
+  hypothesis rather than an attention-specific representation bottleneck.
+  Do not switch architecture or enlarge the Transformer; the next authorized
+  experiment should freeze or separate the core predictor. Frozen DeepSets
+  comparison and complete metrics are in the [attention ablation evidence
+  report](evidence/combat_transition_surrogate_attention_ablation_2026-09-13.md).
