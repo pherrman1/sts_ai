@@ -20,6 +20,31 @@ experiments.
 
 ## Current implementation
 
+### Synchronous OOC MCTS substrate
+
+Last verified: 2026-09-13 with the focused `ooc_mcts` self-test.
+
+`OocMctsPlanner` is an offline/test-only generic search core over opaque state
+and action IDs. `OocGenerativeModel` supplies complete actions/priors, actual
+successor samples, terminal values and injected leaf values in [0,1]. Distinct
+decision nodes use PUCT; chance nodes retain independent equal-weight outcome
+particles (including duplicate IDs) and reuse particles uniformly, never by
+value. Action Q is the Monte Carlo mean of sampled trajectory values.
+
+Depth counts action transitions (root zero); terminals precede the horizon,
+and newly expanded downstream nonterminal leaves use the injected evaluator.
+The root expands and selects an action in the first simulation. Chance visit N
+uses `max(1, ceil(k*N^alpha))` with prospective N starting at one. Defaults are
+`cPuct=1.5`, `k=2`, `alpha=0.5`, depth 32. Priors normalize with uniform zero-mass
+fallback. Ties use ascending action ID; final choice uses visits, then Q, then
+ID. Each search resets its tree and seeded RNG; providers must preserve IDs and
+reset any mutable sampling state for exact replay.
+
+The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
+There is no GameContext adapter, learned-combat runtime integration, or
+production policy change. The combat surrogate remains NOT_QUALIFIED, and
+combatRng continuation still blocks valid multi-fight learned rollouts.
+
 ## Semantic OOC decisions
 
 `OocSemanticAction` is an opt-in intent representation above the primitive

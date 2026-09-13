@@ -280,6 +280,12 @@ add_executable(combat-predictor-input-test
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(combat-predictor-input-test PUBLIC include json/include)
 
+# Offline generic planner test: no simulator or production policy dependency.
+add_executable(ooc-mcts-test apps/ooc_mcts_test.cpp src/sim/search/OocMctsPlanner.cpp)
+target_include_directories(ooc-mcts-test PRIVATE include)
+add_test(NAME ooc_mcts COMMAND $<TARGET_FILE:ooc-mcts-test>)
+set_tests_properties(ooc_mcts PROPERTIES LABELS "core")
+
 # CTest entries below cover checks that do not depend on apps/test.cpp
 # subcommands (apps/test.cpp is a manual command dispatcher; its subcommands
 # receive CTest entries separately). bash -n only parses, never executes.
