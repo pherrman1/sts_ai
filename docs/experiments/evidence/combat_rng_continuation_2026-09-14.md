@@ -249,4 +249,4 @@ surrogate integration and scientific multi-fight qualification were not run.
 
 Knowledge impact: exact current RNG initialization/continuation ownership and
 a resolved named research blocker; routed to determinism/RNG, current research,
-this evidence and ledger §237.
+this evidence and ledger §238.
