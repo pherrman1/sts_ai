@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-09-12 for the Phase-2 stochastic persistent-state support
+Last verified: 2026-09-13 for the Phase-2 stochastic persistent-state support
 audit and the corrected whole-combat transition model rerun after independent
 review;
 other sections retain their prior verification and linked evidence.
@@ -44,21 +44,29 @@ default candidate; no Phase-2 implementation is authorized by this result. See
 
 ### Phase-2 persistent-state transition surrogate support audit
 
-The bounded implementation based on the corrected DeepSets representation is
-**`TARGET_OR_SUPPORT_PROBLEM`** and is stopped before fitting. On the frozen
-510,030-row corpus, the predictor-visible predicate supported 488,283 rows
-(95.7361%), but 77 supported rows contained a `smokeBombUsed: false -> true`
-mutation that was not visible as a pre-state `SMOKE_BOMB`. All 78 full-corpus
-rows of this kind contained visible `ENTROPIC_BREW`; the source path draws
-random potions during `BattleContext::drinkPotion`, so adding this mechanism
-to the predicate would be an ad hoc broadening forbidden by the accepted
-protocol. The copy-through audit also found 103 supported winning rows with a
-`smokeBombUsed` difference (77 `false -> true`, 26 `true -> false`), a second
-unresolved boundary because the field is not predictor-visible. No Phase-2 or
-point-control fit, TEST evaluation, model export, runtime adapter, or new data
-collection was run. This line remains blocked pending a reviewed support/RNG
-contract; see [ledger-06 §229](../../experiments/ledger-06.md) and the
-[compact support-audit report](../../experiments/evidence/combat_transition_surrogate_phase2_2026-09-12.md).
+The corrected eligibility boundary passes its omitted-mutation and
+copy-through gates, but the offline line remains **`TARGET_OR_SUPPORT_PROBLEM`**
+because the frozen TRAIN-derived joint `(deltaGold, post.stolenGold)` target
+contains nine legitimate VALIDATION classes unseen in TRAIN (and four TEST
+classes unseen in TRAIN). The accepted target design requires exact classes
+from TRAIN and requires stopping on unseen VALIDATION support; the target
+schema was not broadened and TEST was not used to change it.
+
+On the unchanged 510,030-row corpus, the corrected predicate supports 485,166
+rows (95.1250%) and falls back 24,864. Support is 16,620/18,133 deaths
+(91.6561%), with Act 1/2/3 rates 98.6277% / 94.4387% / 87.9055%; room rates
+for EVENT/ELITE/MONSTER/BOSS are 94.8505% / 95.4705% / 95.0654% / 94.7714%.
+Deck-structure (1,151), card-misc (109), and `smokeBombUsed` (3,001) mutation
+rows have zero supported rows; supported winning copy-through violations are
+also zero. `pre.smokeBombUsed` is explicitly an adapter/support-gate field,
+not a learned feature; the learned schema remains
+`combat_predictor_input_v1`.
+
+The HP sampler and structured exact-match regressions pass. No Phase-2 or
+point-control fit, TEST evaluation, model export, runtime adapter, OOC rollout,
+or new data collection was run after the target-support stop. See
+[ledger-06 §230](../../experiments/ledger-06.md) and the
+[corrected compact evidence report](../../experiments/evidence/combat_transition_surrogate_phase2_corrected_2026-09-13.md).
 
 ## Current baseline
 

@@ -6854,3 +6854,44 @@ model training was changed.
   fixed TEST evaluation, metrics, model size, latency, sampled-transition
   validity gate, or model export was run. Raw corpus and any future models
   remain external. Evidence: [Phase-2 support-audit report](evidence/combat_transition_surrogate_phase2_2026-09-12.md).
+
+## §230 Phase-2 corrected eligibility boundary and target-support stop (2026-09-13)
+
+- **Correction/protocol:** the same §228 corpus, source-group split, producer,
+  teacher, and Phase-2 target design were reused. The support predicate now
+  excludes non-Ironclad rows, Writhing Mass, any deck containing Ritual Dagger,
+  any Smoke Bomb or Entropic Brew potion, and pre-combat
+  `smokeBombUsed == true`. The learned input remains
+  `combat_predictor_input_v1`; `pre.smokeBombUsed` is an adapter/support-gate
+  field only and is not encoded or learned. No new data, runtime inference,
+  Silver replacement, attention rerun, or OOC rollout was authorized.
+- **Support coverage:** the audit passed on all 510,030 rows: 485,166
+  supported (95.1250%) and 24,864 fallback. Death support was 16,620/18,133
+  (91.6561%); Act 1/2/3 support was 235,667/238,946 (98.6277%),
+  161,917/171,452 (94.4387%), and 87,582/99,632 (87.9055%). EVENT, ELITE,
+  MONSTER, and BOSS support was 94.8505%, 95.4705%, 95.0654%, and 94.7714%.
+- **Required zero gates:** full-corpus omitted mutations were deck structure
+  1,151 rows, card misc 109 rows, and `smokeBombUsed: false -> true` 3,001
+  rows; each had zero supported rows. Supported winning rows had zero
+  copy-through violations, including zero `smokeBombUsed` directions. The
+  previously uncovered Entropic Brew-generated Smoke Bomb mechanism is now
+  excluded by the explicit Entropic Brew and pre-state support guards.
+- **Target stop:** the TRAIN-derived joint gold target still has 193 classes,
+  but nine legitimate VALIDATION classes are absent from TRAIN:
+  `(-83,83)`, `(-74,44)`, `(-73,73)`, `(-66,0)`, `(-56,15)`, `(-55,55)`,
+  `(-41,15)`, `(-36,21)`, and `(-33,18)`. Four TEST classes are also unseen
+  in TRAIN. The accepted design requires exact TRAIN classes and a stop on
+  unseen VALIDATION values, so no `OTHER` class, TEST-derived class, or silent
+  row dropping was introduced. The fit stopped before the first update with
+  the fail-closed target-support error.
+- **Regression evidence:** the focused Python and CTest checks pass. The HP
+  sampler regression proves post max HP 80 with sampled bin 50 yields exactly
+  40 HP, and structured exact-match regressions prove that one differing
+  potion slot or one differing `(HP,maxHP)` component makes the whole row
+  incorrect. No Phase-2/control metrics, sparse-head results, sampled-state
+  validity, model sizes, or latency exist because the target gate stopped the
+  fit.
+- **Decision:** **`TARGET_OR_SUPPORT_PROBLEM`**. The eligibility boundary is
+  repaired and the omitted-mutation support gate is closed, but the frozen
+  target design cannot proceed without a separate target-schema decision.
+  Evidence: [corrected Phase-2 report](evidence/combat_transition_surrogate_phase2_corrected_2026-09-13.md).
