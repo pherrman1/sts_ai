@@ -60,6 +60,7 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
+| Offline relic trajectory residues | `tools/combat_transition_relic_trajectory.py`, `tools/combat_transition_relic_legality.py` | partial-label shared residues, native reconstruction, frozen HP→potion→relic qualification; no runtime integration | [current research](evaluation/current-research.md), [frozen protocol](../experiments/evidence/relic_trajectory_2026-09-14.md) |
 | Combat value | `train_value_combat.py` | `VCOMBAT_TARGET` (default `endhp`), deployed §126 objective | [training-and-inference.md](architecture/training-and-inference.md) |
 | Silver leaf teacher comparison | `apps/silver_leaf_features.cpp`, `tools/train_silver_leaf_models.py` | stored `BattleStateWire` → canonical combat features; anchor-exclusive matched 10k-A/25k-A XGBoost audit | [training-and-inference.md](architecture/training-and-inference.md) |
 | VNet mixture | `tools/train_value_mixture.py` | Covariate-shift mixture retrain, §137 closed (no improvement) | [training-and-inference.md](architecture/training-and-inference.md) |

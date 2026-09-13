@@ -1,0 +1,29 @@
+{
+  "baselineSha": "b5502a84bb41c736fa72b210dc8766e0a25717e6",
+  "batch": 2048,
+  "bootstrapReps": 1000,
+  "bootstrapSeed": 20260914,
+  "calibrationBins": 10,
+  "clip": 1.0,
+  "decision": "qualify iff paired NLL CI upper<0, ancestral OK, zero validity counts; reject iff CI lower>0 or invalidity; otherwise inconclusive",
+  "decoder": "89/64 ReLU; 6/10/10/3/2 independent trajectory heads",
+  "epochs": 10,
+  "exposureAggregation": "mean normalized row mixture-minus-teacher NLL on informative rows",
+  "exposureThreshold": 0.1,
+  "features": "frozen HP state64 + signedHP embedding16 + ending fraction1 + mask embedding8",
+  "hpSeedConvention": 20260912,
+  "loss": "partial-label logsumexp; mean observed heads per row then mean rows",
+  "lr": 0.001,
+  "optimizer": "AdamW",
+  "precision": "fp32",
+  "prior": "TRAIN-only class biases; same loss and fixed optimization",
+  "samplesPerRow": 16,
+  "samplingSeed": 20260915,
+  "schema": "relic_trajectory_v1",
+  "seeds": [
+    20260912,
+    20260913,
+    20260914
+  ],
+  "weightDecay": 0.0001
+}

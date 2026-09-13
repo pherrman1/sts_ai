@@ -134,6 +134,31 @@ See [ledger-06 §238](../../experiments/ledger-06.md),
 and [RNG ownership](../behavior/determinism-and-rng.md). Existing deployment
 qualification remains **`NOT_QUALIFIED`**.
 
+### Shared relic trajectory residues
+
+**`RELIC_TRAJECTORY_QUALIFIED`** on the audited offline composed support.
+Three fixed FP32 decoder fits use the frozen #172 20260912 HP state encoder
+and existing certified joint potion model. Mean HOLDOUT decoder-minus-prior
+joint relic NLL is −0.010460229; the 1,000-repetition source bootstrap 95% CI
+is [−0.013335116, −0.007743432]. Ancestral HP→potion→relic qualification is
+`ANCESTRAL_OK`: mean group-normalized exposure −0.002407001 nat, with all
+native-domain, shared-residue, unsupported-mutation and deterministic mismatch
+counts zero across 16 draws per row per seed. Max HP remains observed.
+
+Native reconstruction shares turn/attack/card/shuffle residues across related
+relics; partial labels intersect modular constraints. Certified victories:
+TRAIN 224,715 / 17,718 sources; HOLDOUT 25,398 / 1,979 sources. Full relic-vector
+mode exact is 0.805667113 versus native+copy-through 0.792700213; these are
+secondary metrics. No eligible active Lizard Tail exists, so its stochastic
+head is unqualified and the offline adapter fails closed on that support.
+Inserter has no corpus tokens; its source-derived reconstruction shares the
+qualified turn residue but has no relic-specific empirical score.
+
+This is component qualification, not runtime integration. Survival, max-HP,
+HP, potion weights, supported-v1 exact combat-RNG continuation and gameplay
+remain unchanged. See the [source mapping, fixed protocol and results](../../experiments/evidence/relic_trajectory_2026-09-14.md)
+and [machine-readable scores/calibration/slices/hashes](../../experiments/evidence/relic_trajectory_2026-09-14.json).
+
 ### Stochastic signed-HP distribution
 
 Signed absolute ΔHP is the engineering parameterization for the next HP-only

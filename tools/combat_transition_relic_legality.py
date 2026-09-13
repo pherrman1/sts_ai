@@ -15,6 +15,11 @@ CYCLIC = {'HAPPY_FLOWER': 3, 'INCENSE_BURNER': 6, 'INK_BOTTLE': 10,
           'INSERTER': 2, 'NUNCHAKU': 10, 'PEN_NIB': 10, 'SUNDIAL': 3}
 COPY_COUNTERS = {'BURNING_BLOOD', 'BLACK_BLOOD', 'MEAT_ON_THE_BONE'}
 NAMES = {v: k for k, v in base.MUTABLE_RELIC_NAMES.items()}
+TRAJECTORY = {'HAPPY_FLOWER': ('turns', 6), 'INCENSE_BURNER': ('turns', 6),
+              'INSERTER': ('turns', 6), 'NUNCHAKU': ('attacks', 10),
+              'PEN_NIB': ('attacks', 10), 'INK_BOTTLE': ('cards', 10),
+              'SUNDIAL': ('shuffles', 3)}
+HEAD_CLASSES = {'turns': 6, 'attacks': 10, 'cards': 10, 'shuffles': 3, 'lizard': 2}
 if set(NAMES.values()) != set(CYCLIC) | COPY_COUNTERS | {'NEOWS_LAMENT', 'LIZARD_TAIL', 'OMAMORI'}:
     raise RuntimeError('native write-back set changed; repeat legality audit')
 
@@ -49,6 +54,66 @@ def legal_posts(relic_id: int, pre: int, encounter: int | None = None, mark_of_b
     if name in COPY_COUNTERS:
         return frozenset([pre])
     raise ValueError(f'SILVER_REQUIRED unaudited relic={relic_id}')
+
+def reconstruct(relics, residues, encounter, mark_of_bloom=False):
+    """One common residue per group; absent/nonmutable counters copy through.
+
+    Turn residues include combat initialization's first turn tick. Pen Nib's
+    internal -1 is the saved value 9, so its saved update is modulo ten.
+    """
+    for group, value in residues.items():
+        if group not in HEAD_CLASSES or value != int(value) or not 0 <= value < HEAD_CLASSES[group]:
+            raise ValueError('invalid trajectory residue')
+    result = []
+    for entry in relics:
+        rid, pre = int(entry['id']), entry['data']
+        name = NAMES.get(rid)
+        post = pre
+        if name is not None:
+            allowed = legal_posts(rid, pre, encounter, mark_of_bloom)
+            if name in TRAJECTORY:
+                group, _ = TRAJECTORY[name]
+                post = (pre + residues[group]) % CYCLIC[name]
+            elif len(allowed) == 1:
+                post = next(iter(allowed))
+            elif name == 'LIZARD_TAIL':
+                post = pre - residues['lizard']
+            else:
+                raise ValueError('unsupported nondeterministic mutable relic')
+            if post not in allowed:
+                raise ValueError('illegal reconstructed relic')
+        result.append(dict(entry, data=post))
+    return result
+
+def trajectory_constraints(pre, post, encounter, mark_of_bloom=False):
+    """Intersect partial labels, audit every token, and prove reconstruction."""
+    if [x['id'] for x in pre] != [x['id'] for x in post]:
+        raise ValueError('relic identity/order mutation')
+    constraints = {}
+    for before, after in zip(pre, post):
+        rid, a, z = int(before['id']), before['data'], after['data']
+        name = NAMES.get(rid)
+        if name is None:
+            if a != z:
+                raise ValueError('unsupported mutable relic mutation')
+            continue
+        allowed = legal_posts(rid, a, encounter, mark_of_bloom)
+        if z not in allowed:
+            raise ValueError('unreachable observed relic target')
+        if name in TRAJECTORY:
+            group, classes = TRAJECTORY[name]
+            compatible = {c for c in range(classes) if (a+c) % CYCLIC[name] == z}
+            constraints[group] = constraints.get(group, set(range(classes))) & compatible
+        elif name == 'LIZARD_TAIL' and len(allowed) > 1:
+            constraints['lizard'] = {int(a-z)}
+        elif len(allowed) != 1:
+            raise ValueError('unsupported mutable relic transition')
+    if any(not c for c in constraints.values()):
+        raise ValueError('contradictory same-group constraints')
+    compatible = {g: min(constraints.get(g, {0})) for g in HEAD_CLASSES}
+    if reconstruct(pre, compatible, encounter, mark_of_bloom) != post:
+        raise ValueError('native reconstruction mismatch')
+    return constraints
 
 def constrained_logp(logits, deltas, relic_id, pre, encounter=None, mark_of_bloom=False):
     logits = np.asarray(logits, dtype=np.float64)
