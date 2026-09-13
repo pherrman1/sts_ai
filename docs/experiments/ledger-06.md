@@ -7212,3 +7212,59 @@ model training was changed.
   Deployment remains `NOT_QUALIFIED`. Current facts routed to determinism/RNG
   and current research. [Evidence and commands](evidence/combat_rng_continuation_2026-09-14.md)
   / [machine-readable result](evidence/combat_rng_continuation_2026-09-14.json).
+
+## §239 Stochastic signed-HP categorical distribution (2026-09-14)
+
+- **Baseline:** post-#170 clean main `443ed45f9bae4c5864dd7188645a04049b268928`,
+  existing fresh Codex app-managed worktree; no additional worktree.
+  Historical #170 classification remains `HP_TARGET_INCONCLUSIVE`;
+  signed absolute ΔHP is the engineering parameterization.
+- **Executed/reviewed SHA:** `521e364a08735ad095ed99682e3d5058a6748a46`.
+  Independent implementation and accepted-design review passed before all fits.
+- **Frozen design:** one categorical ΔHP head replaces #170 scalar output;
+  same 64/2/4/128 attention, width-8 observed max-HP-delta embedding,
+  72→64→304 ReLU head. Illegal classes receive -inf before softmax.
+  Domain [-160,143] is derived only from predictor-visible pre HP and frozen
+  upstream classes; SHA256 `f812c16ab1d220cd60e8a8915ebb368bcd7e6d9e48915eb8cce5c760fad78eec`.
+  All 398,415 supported winning targets pass structural representation/legal
+  checks without target-driven extension.
+- **Data:** corpus `74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde`;
+  nested split `58e35f9f85eefd7617e616ddbfa7ee227c429ed4d312f7dacd470828f9a09094`.
+  TRAIN = nested TRAIN+VALIDATION, 286,581 globally supported victories;
+  HOLDOUT 32,345 victories / 2,012 victory-source groups, reused engineering
+  data. No potion-certification restriction or new simulator/gameplay data.
+- **Recipe:** scratch seeds 20260912/20260913/20260914, exactly ten epochs
+  each, AdamW 1e-3 / weight decay 1e-4, batch 2048, gradient clip 1,
+  trimmed padding, FP16 AMP initial scale 16384, masked NLL only.
+  All fits complete before HOLDOUT scoring; no epoch selection or tuning.
+- **Control:** saved matching #170 signed-delta predictions, verified SHA256
+  `22b285413bb31caac4dfe23dba79e80437ec91a42ed2ae534105370db6bca184`.
+  CRPS uses documented rounded/native-clamped integer HP; mean-MAE safety
+  uses raw continuous point HP. No point retraining or fraction comparator.
+- **Primary result:** aggregate categorical-minus-point CRPS -1.686834344 HP,
+  source-bootstrap 95% CI [-1.715728962,-1.658630531]. Expected-HP MAE
+  +0.011839528 HP, CI [-0.007041513,+0.029256256]. Rowwise seed averaging
+  before 1,000 source resamples, fixed seed 20260914. CRPS is clearly better,
+  mean MAE is not clearly worse → **`STOCHASTIC_DELTA_HP_QUALIFIED`**.
+  No post-hoc threshold or descriptive slice override.
+- **Seed NLL / CRPS / expected-MAE:** 20260912 = 2.504864931 / 3.673978516 /
+  5.400272679; 20260913 = 2.497160196 / 3.643171465 / 5.397913096;
+  20260914 = 2.503982544 / 3.679759261 / 5.501783652.
+- **Calibration/validity:** 50% intervals cover 65.87–66.62%, 80% intervals
+  86.94–88.02%, 95% intervals 97.27–97.82%. All 1,552,560 draws satisfy
+  1≤HP≤postMaxHp; unsupported class probability exactly zero. Ending HP
+  fraction is derived directly, without sampled-HP clipping. Healing CRPS
+  improves in all seeds; expected healing HP MAE improves in two and worsens
+  in one. Full coverage widths and required slices are descriptive evidence.
+- **Verification:** 27 focused Python tests OK; new CTest 1/1 passed;
+  configure and doctor passed; guarded fit command exit 0. Raw-artifact CRPS
+  energy-formula and source-bootstrap reproduction passed within 1e-5 HP;
+  NLL/mean-MAE reproduction and all emitted artifact hashes verified.
+- **Boundary:** offline observed-maxHP engineering qualification; no sampled
+  upstream composition, runtime C++, gameplay or multi-fight qualification.
+  Survival, max-HP modeling, potion, relic and RNG contracts unchanged.
+  Relic training is a future experiment; `combatRng[6]` remains unresolved.
+- **Evidence:** [frozen protocol, all metrics/slices, raw commands and hashes](evidence/stochastic_signed_hp_2026-09-14.md).
+  Checkpoints and raw predictions remain external in
+  `/home/philippherrmann/sts_sweep/runs/stochastic-hp-20260914/`.
+  Knowledge impact: empirical evidence and maintained current research status.
