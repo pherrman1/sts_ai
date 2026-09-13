@@ -7031,3 +7031,28 @@ model training was changed.
 - **Evidence:** [protocol, artifact/source hashes, exact command, raw results,
   caveats](evidence/attention_amp_confirmation_2026-09-13.md); external raw
   artifacts at `/home/philippherrmann/sts_sweep/runs/attention-amp-confirmation-20260913/`.
+
+## §234 Frozen survival composition and potion-decoder qualification (2026-09-13)
+
+- **Question:** Can frozen point-control survival compose with attention
+  Phase-2 transitions, and how much potion error is invalid support?
+- **Baseline:** merged PR #165 `08799ad6bd9061459339d36a4e22cce23d0236ec`;
+  original PR #163 FP32 checkpoints and unchanged corpus/split/support.
+  A = Phase-2; B = point-control survival + A's conditional distribution;
+  C = B + conservative certified consumption-only potion mask. No fitting,
+  simulator seeds, new data, gameplay, precision selection, or support expansion.
+- **Result:** A reproduced at historical batch 2,048. B keeps frozen survival
+  and conditional outputs; alive-HP MAE `5.903266 → 5.855358`, joint
+  outcome/max-HP/HP-bin NLL `2.690480 → 2.687473`. Potion vector NLL
+  `1.891231 → 1.178422`, exact `0.491094 → 0.597059`, versus copy-through
+  `0.728150`; count accuracy regresses. Rule certified 322,644/413,799
+  supported rows with zero contradictions. Paired source bootstrap uses
+  1,000 repetitions on reused TEST, not unseen validation or training replicates.
+- **Decision:** **`REPRODUCED_AND_CORE_PRESERVED`** /
+  **`INSUFFICIENT_AFTER_CORRECTION`** / **`NOT_QUALIFIED`**. Eight Sundial
+  mode counters remain outside native bounds. Recommend a later small joint
+  potion-consumption head with protected survival and honest TRAIN-only
+  validation provenance; do not train it in this task.
+- **Evidence:** [hashes, native audit, paired metrics, CPU cost, checks,
+  numerical batch sensitivity, and remaining limits](evidence/frozen_survival_potion_2026-09-13.md).
+  Raw artifacts: `/home/philippherrmann/sts_sweep/runs/frozen-survival-potion-20260913/`.

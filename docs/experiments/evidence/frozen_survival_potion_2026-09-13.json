@@ -1,0 +1,869 @@
+{
+  "baselineSha": "08799ad6bd9061459339d36a4e22cce23d0236ec",
+  "composition": {
+    "A": {
+      "hpDistribution": {
+        "categoricalNll": 2.666313648223877,
+        "discreteCrps": 0.04576317220926285,
+        "expectedHpFractionMae": 0.06776362565466322,
+        "intervals": {
+          "50%": {
+            "coverage": 0.66494651669631,
+            "meanWidthBins": 10.887747689070368
+          },
+          "80%": {
+            "coverage": 0.8790550865502643,
+            "meanWidthBins": 21.00839199378742
+          },
+          "95%": {
+            "coverage": 0.974222801172374,
+            "meanWidthBins": 32.5919236453819
+          }
+        },
+        "n": 39919
+      },
+      "jointAliveHp": {
+        "bias": 0.25085899233818054,
+        "mae": 5.903266429901123,
+        "n": 41454,
+        "rmse": 9.351505279541016
+      },
+      "jointAliveHpFraction": {
+        "bias": 0.00251761288382113,
+        "mae": 0.07497745752334595,
+        "n": 41454,
+        "rmse": 0.11991837620735168
+      },
+      "jointOutcomeMaxHpHpBinNll": 2.690480034791747,
+      "survival": {
+        "auc": 0.9758308130968468,
+        "brier": 0.019920462742447853,
+        "logloss": 0.06662845611572266,
+        "n": 41454
+      },
+      "winningExpectedHp": {
+        "bias": 0.36775147914886475,
+        "mae": 5.403836250305176,
+        "n": 39919,
+        "rmse": 8.363306045532227
+      },
+      "winningExpectedHpFraction": {
+        "bias": 0.004109077155590057,
+        "mae": 0.06777074187994003,
+        "n": 39919,
+        "rmse": 0.1044931411743164
+      }
+    },
+    "B": {
+      "hpDistribution": {
+        "categoricalNll": 2.666313648223877,
+        "discreteCrps": 0.04576317220926285,
+        "expectedHpFractionMae": 0.06776362565466322,
+        "intervals": {
+          "50%": {
+            "coverage": 0.66494651669631,
+            "meanWidthBins": 10.887747689070368
+          },
+          "80%": {
+            "coverage": 0.8790550865502643,
+            "meanWidthBins": 21.00839199378742
+          },
+          "95%": {
+            "coverage": 0.974222801172374,
+            "meanWidthBins": 32.5919236453819
+          }
+        },
+        "n": 39919
+      },
+      "jointAliveHp": {
+        "bias": 0.30022409558296204,
+        "mae": 5.855357646942139,
+        "n": 41454,
+        "rmse": 9.250393867492676
+      },
+      "jointAliveHpFraction": {
+        "bias": 0.003198259975761175,
+        "mae": 0.07427583634853363,
+        "n": 41454,
+        "rmse": 0.11850561201572418
+      },
+      "jointOutcomeMaxHpHpBinNll": 2.687473381721112,
+      "survival": {
+        "auc": 0.9780655012067189,
+        "brier": 0.01903977431356907,
+        "logloss": 0.06362179666757584,
+        "n": 41454
+      },
+      "winningExpectedHp": {
+        "bias": 0.36775147914886475,
+        "mae": 5.403836250305176,
+        "n": 39919,
+        "rmse": 8.363306045532227
+      },
+      "winningExpectedHpFraction": {
+        "bias": 0.004109077155590057,
+        "mae": 0.06777074187994003,
+        "n": 39919,
+        "rmse": 0.1044931411743164
+      }
+    },
+    "BminusA": {
+      "jointAliveHpFractionMae": {
+        "mean": -0.0007016180898062885,
+        "repetitions": 1000,
+        "rows": 41454,
+        "sourceBootstrap95": [
+          -0.0008741582955492502,
+          -0.0005075097099068331
+        ],
+        "sources": 2512
+      },
+      "jointAliveHpMae": {
+        "mean": -0.04790852963924408,
+        "repetitions": 1000,
+        "rows": 41454,
+        "sourceBootstrap95": [
+          -0.060634232068240326,
+          -0.03470048409652527
+        ],
+        "sources": 2512
+      },
+      "jointOutcomeMaxHpHpBinNll": {
+        "mean": -0.00300665307063476,
+        "repetitions": 1000,
+        "rows": 41454,
+        "sourceBootstrap95": [
+          -0.004202625540251679,
+          -0.0018111623024724395
+        ],
+        "sources": 2512
+      },
+      "outcomeNll": {
+        "mean": -0.003006653070634759,
+        "repetitions": 1000,
+        "rows": 41454,
+        "sourceBootstrap95": [
+          -0.004202625540251677,
+          -0.0018111623024724389
+        ],
+        "sources": 2512
+      },
+      "survivalBrier": {
+        "mean": -0.0008806874975562096,
+        "repetitions": 1000,
+        "rows": 41454,
+        "sourceBootstrap95": [
+          -0.0012899561006645159,
+          -0.000501705879659226
+        ],
+        "sources": 2512
+      }
+    },
+    "BminusAConditional": {
+      "hpCrps": {
+        "mean": 0.0,
+        "repetitions": 1000,
+        "rows": 39919,
+        "sourceBootstrap95": [
+          0.0,
+          0.0
+        ],
+        "sources": 2512
+      },
+      "winningExpectedHpFractionMae": {
+        "mean": 0.0,
+        "repetitions": 1000,
+        "rows": 39919,
+        "sourceBootstrap95": [
+          0.0,
+          0.0
+        ],
+        "sources": 2512
+      },
+      "winningExpectedHpMae": {
+        "mean": 0.0,
+        "repetitions": 1000,
+        "rows": 39919,
+        "sourceBootstrap95": [
+          0.0,
+          0.0
+        ],
+        "sources": 2512
+      }
+    },
+    "coreAndConditionalPreserved": true,
+    "frozenParametersAndBuffersUnchanged": true,
+    "jointNllIdentityMaxError": 1.4693378892066677e-15
+  },
+  "corpus": "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl",
+  "cost": {
+    "batch": 1,
+    "boundary": "visible predictor-input encoding, required forwards, distribution adapters, one transition draw",
+    "byCertification": {
+      "certified": {
+        "A": {
+          "deathDraws": 0,
+          "draws": 100,
+          "meanMs": 1.972022300469689,
+          "medianMs": 1.9649130117613822,
+          "p95Ms": 2.0328884245827794
+        },
+        "B": {
+          "deathDraws": 0,
+          "draws": 100,
+          "meanMs": 3.3787891815882176,
+          "medianMs": 3.3635569852776825,
+          "p95Ms": 3.4680350916460156
+        },
+        "C": {
+          "deathDraws": 0,
+          "draws": 100,
+          "meanMs": 3.41643706895411,
+          "medianMs": 3.3707754919305444,
+          "p95Ms": 3.647491679294035
+        }
+      },
+      "uncertified": {
+        "A": {
+          "deathDraws": 0,
+          "draws": 100,
+          "meanMs": 2.087126857950352,
+          "medianMs": 2.0726994844153523,
+          "p95Ms": 2.194490164401941
+        },
+        "B": {
+          "deathDraws": 0,
+          "draws": 100,
+          "meanMs": 3.553002752014436,
+          "medianMs": 3.5224644816480577,
+          "p95Ms": 3.7106163159478456
+        },
+        "C": {
+          "deathDraws": 0,
+          "draws": 100,
+          "meanMs": 3.523764761048369,
+          "medianMs": 3.5015905159525573,
+          "p95Ms": 3.669451628229581
+        }
+      }
+    },
+    "device": "cpu",
+    "fixedWidthInputs": true,
+    "torchThreads": 1,
+    "warmup": 10
+  },
+  "decision": {
+    "composition": "REPRODUCED_AND_CORE_PRESERVED",
+    "deployment": "NOT_QUALIFIED",
+    "potionMask": "INSUFFICIENT_AFTER_CORRECTION"
+  },
+  "executionSha": "08799ad6bd9061459339d36a4e22cce23d0236ec",
+  "hashes": {
+    "corpus": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "phase2_attention.pt": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "point_control_attention.pt": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef",
+    "prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+    "prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+    "sourceSplit": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+    "target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229"
+  },
+  "historicalTransitionMetrics": {
+    "allModeledPersistentFieldsExactAccuracy": 0.18399759513013852,
+    "copyThroughBaseline": {
+      "allModeledPersistentFieldsExactAccuracy": 0.21015055487361908
+    },
+    "hpMaxHp": {
+      "copyThroughBaseline": {
+        "hpAccuracy": 0.2885092311931662,
+        "hpMaxHpExactAccuracy": 0.2873568977178787,
+        "maxHpAccuracy": 0.9608206618402264
+      },
+      "predictedModeHpAccuracy": 0.3298679826648964,
+      "predictedModeHpMaxHpExactAccuracy": 0.3290663593777399,
+      "predictedModeMaxHpAccuracy": 0.9745735113605051
+    },
+    "modeDetails": {
+      "maxHpDeltaValues": [
+        0,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "predictedHpBinRange": [
+        8,
+        100
+      ]
+    },
+    "nSupportedTestVictories": 39919,
+    "potions": {
+      "changedRowAccuracy": 0.39467379284924436,
+      "changedRowCount": 10852,
+      "copyThroughBaseline": {
+        "changedRowAccuracy": 0.0,
+        "exactFullVectorAccuracy": 0.7281495027430547,
+        "potionCountAccuracy": 0.7281495027430547
+      },
+      "exactFullVectorAccuracy": 0.49109446629424586,
+      "perSlot": {
+        "0": {
+          "accuracy": 0.6427014704777174,
+          "active": true,
+          "forcedUnavailableAccuracy": null,
+          "logLoss": 0.7345408797264099,
+          "n": 39919
+        },
+        "1": {
+          "accuracy": 0.7119917833613066,
+          "active": true,
+          "forcedUnavailableAccuracy": null,
+          "logLoss": 0.635845422744751,
+          "n": 39919
+        },
+        "2": {
+          "accuracy": 0.8165034194243342,
+          "active": true,
+          "forcedUnavailableAccuracy": null,
+          "logLoss": 0.4821411669254303,
+          "n": 39919
+        },
+        "3": {
+          "accuracy": 0.8868490071187711,
+          "active": true,
+          "forcedUnavailableAccuracy": 1.0,
+          "logLoss": 0.3751189708709717,
+          "n": 2669
+        },
+        "4": {
+          "accuracy": 0.9490445859872612,
+          "active": true,
+          "forcedUnavailableAccuracy": 1.0,
+          "logLoss": 0.20374912023544312,
+          "n": 2669
+        }
+      },
+      "potionCountAccuracy": 0.7419023522633332
+    },
+    "relicCounters": {
+      "changedCounterAccuracy": 0.11842576028622541,
+      "changedCounterMae": 2.1404293381037567,
+      "changedCounterTokenCount": 11180,
+      "copyThroughBaseline": {
+        "changedCounterAccuracy": 0.0,
+        "changedCounterMae": 3.1991055456171735,
+        "exactAllCounterVectorAccuracy": 0.7643478043037151
+      },
+      "exactAllCounterVectorAccuracy": 0.7771737768982189,
+      "mutableTokenCount": 60239,
+      "perTokenAccuracy": 0.8251963013994256,
+      "perTokenLogLoss": 0.45244861992705715
+    }
+  },
+  "potions": {
+    "certified": {
+      "B": {
+        "changed": {
+          "exact": 0.4136915715863084,
+          "noChangeBrier": 0.018176645834389268,
+          "rows": 8151,
+          "vectorNll": 2.3882855981829287
+        },
+        "copyThroughExact": 0.738330658105939,
+        "copyThroughNoChangeEventBrier": 0.261669341894061,
+        "countExact": 0.7582343499197431,
+        "exact": 0.5248154093097913,
+        "noChangeBrier": 0.3351012901550749,
+        "noChangeProbability": 0.36493543206319334,
+        "perSlot": {
+          "0": {
+            "activeNll": 0.6902463677396314,
+            "activeRows": 31150
+          },
+          "1": {
+            "activeNll": 0.5984491141404034,
+            "activeRows": 31150
+          },
+          "2": {
+            "activeNll": 0.4417851679759633,
+            "activeRows": 31150
+          },
+          "3": {
+            "activeNll": 0.32752601971843276,
+            "activeRows": 1623
+          },
+          "4": {
+            "activeNll": 0.19799173777065535,
+            "activeRows": 1623
+          }
+        },
+        "rows": 31150,
+        "unchanged": {
+          "exact": 0.5641984434105831,
+          "noChangeBrier": 0.44742151172374794,
+          "rows": 22999,
+          "vectorNll": 1.5344350472903203
+        },
+        "vectorNll": 1.7578615590182702
+      },
+      "C": {
+        "changed": {
+          "exact": 0.5064409274935591,
+          "noChangeBrier": 0.05068252985632387,
+          "rows": 8151,
+          "vectorNll": 1.332965692367071
+        },
+        "copyThroughExact": 0.738330658105939,
+        "copyThroughNoChangeEventBrier": 0.261669341894061,
+        "countExact": 0.6886998394863564,
+        "exact": 0.6606099518459069,
+        "noChangeBrier": 0.1842423740164784,
+        "noChangeProbability": 0.5084005249239966,
+        "perSlot": {
+          "0": {
+            "activeNll": 0.30532277345935016,
+            "activeRows": 31150
+          },
+          "1": {
+            "activeNll": 0.2865486895795708,
+            "activeRows": 31150
+          },
+          "2": {
+            "activeNll": 0.23598303492732256,
+            "activeRows": 31150
+          },
+          "3": {
+            "activeNll": 0.19330362289618488,
+            "activeRows": 1623
+          },
+          "4": {
+            "activeNll": 0.12407193099138582,
+            "activeRows": 1623
+          }
+        },
+        "rows": 31150,
+        "unchanged": {
+          "exact": 0.7152484890647419,
+          "noChangeBrier": 0.23157687941886193,
+          "rows": 22999,
+          "vectorNll": 0.6712363484118449
+        },
+        "vectorNll": 0.8443906303565974
+      },
+      "CminusB": {
+        "exact": {
+          "mean": 0.13579454253611556,
+          "repetitions": 1000,
+          "rows": 31150,
+          "sourceBootstrap95": [
+            0.1295821520114714,
+            0.14257497748536058
+          ],
+          "sources": 2474
+        },
+        "noChangeBrier": {
+          "mean": -0.1508589161385966,
+          "repetitions": 1000,
+          "rows": 31150,
+          "sourceBootstrap95": [
+            -0.15553980170002377,
+            -0.1463569741743034
+          ],
+          "sources": 2474
+        },
+        "vectorNll": {
+          "mean": -0.913470928661673,
+          "repetitions": 1000,
+          "rows": 31150,
+          "sourceBootstrap95": [
+            -0.9396755918208666,
+            -0.8880003840879216
+          ],
+          "sources": 2474
+        }
+      }
+    },
+    "originalInvalidSupport": {
+      "certifiedRows": 31150,
+      "illegalVectorModeRate": 0.34093097913322634,
+      "invalidVectorMassQuantiles": [
+        0.0011726481573953705,
+        0.3731371074954133,
+        0.9568680684061877
+      ],
+      "meanInvalidVectorMass": 0.42756584397119907
+    },
+    "overall": {
+      "B": {
+        "changed": {
+          "exact": 0.39467379284924436,
+          "noChangeBrier": 0.01761142186699165,
+          "rows": 10852,
+          "vectorNll": 2.488710402297566
+        },
+        "copyThroughExact": 0.7281495027430547,
+        "copyThroughNoChangeEventBrier": 0.2718504972569453,
+        "countExact": 0.7419023522633332,
+        "exact": 0.49109446629424586,
+        "noChangeBrier": 0.35282083634583045,
+        "noChangeProbability": 0.3387138364406273,
+        "perSlot": {
+          "0": {
+            "activeNll": 0.7345408330127314,
+            "activeRows": 39919
+          },
+          "1": {
+            "activeNll": 0.6358453684712451,
+            "activeRows": 39919
+          },
+          "2": {
+            "activeNll": 0.4821411919872006,
+            "activeRows": 39919
+          },
+          "3": {
+            "activeNll": 0.3751189903286319,
+            "activeRows": 2669
+          },
+          "4": {
+            "activeNll": 0.20374913391006425,
+            "activeRows": 2669
+          }
+        },
+        "rows": 39919,
+        "unchanged": {
+          "exact": 0.5270925792135411,
+          "noChangeBrier": 0.47796937475448487,
+          "rows": 29067,
+          "vectorNll": 1.668165092986404
+        },
+        "vectorNll": 1.8912307433444975
+      },
+      "C": {
+        "changed": {
+          "exact": 0.46433837080722445,
+          "noChangeBrier": 0.042026779465847985,
+          "rows": 10852,
+          "vectorNll": 1.6960535139539372
+        },
+        "copyThroughExact": 0.7281495027430547,
+        "copyThroughNoChangeEventBrier": 0.2718504972569453,
+        "countExact": 0.6876424760139282,
+        "exact": 0.5970590445652446,
+        "noChangeBrier": 0.23510107288188387,
+        "noChangeProbability": 0.45066397653967843,
+        "perSlot": {
+          "0": {
+            "activeNll": 0.43417333979319284,
+            "activeRows": 39919
+          },
+          "1": {
+            "activeNll": 0.3924600575899621,
+            "activeRows": 39919
+          },
+          "2": {
+            "activeNll": 0.3215475788088855,
+            "activeRows": 39919
+          },
+          "3": {
+            "activeNll": 0.29349930129059953,
+            "activeRows": 2669
+          },
+          "4": {
+            "activeNll": 0.15879902285620345,
+            "activeRows": 2669
+          }
+        },
+        "rows": 39919,
+        "unchanged": {
+          "exact": 0.6466095572298483,
+          "noChangeBrier": 0.3071842679880462,
+          "rows": 29067,
+          "vectorNll": 0.985166955046264
+        },
+        "vectorNll": 1.1784218195785938
+      },
+      "CminusB": {
+        "exact": {
+          "mean": 0.10596457827099877,
+          "repetitions": 1000,
+          "rows": 39919,
+          "sourceBootstrap95": [
+            0.10058041420759799,
+            0.11127824446592106
+          ],
+          "sources": 2512
+        },
+        "noChangeBrier": {
+          "mean": -0.11771976346394658,
+          "repetitions": 1000,
+          "rows": 39919,
+          "sourceBootstrap95": [
+            -0.12193448967680653,
+            -0.11368259492340603
+          ],
+          "sources": 2512
+        },
+        "vectorNll": {
+          "mean": -0.7128089237659038,
+          "repetitions": 1000,
+          "rows": 39919,
+          "sourceBootstrap95": [
+            -0.7375504835058412,
+            -0.6863171500078874
+          ],
+          "sources": 2512
+        }
+      }
+    },
+    "uncertified": {
+      "B": {
+        "changed": {
+          "exact": 0.3372824879674195,
+          "noChangeBrier": 0.015905705258973155,
+          "rows": 2701,
+          "vectorNll": 2.7917694835039373
+        },
+        "copyThroughExact": 0.6919831223628692,
+        "copyThroughNoChangeEventBrier": 0.3080168776371308,
+        "countExact": 0.6838864180636333,
+        "exact": 0.37130801687763715,
+        "noChangeBrier": 0.41576574042178377,
+        "noChangeProbability": 0.2455672172545248,
+        "perSlot": {
+          "0": {
+            "activeNll": 0.8918874624182587,
+            "activeRows": 8769
+          },
+          "1": {
+            "activeNll": 0.7686875765229862,
+            "activeRows": 8769
+          },
+          "2": {
+            "activeNll": 0.6254973498102183,
+            "activeRows": 8769
+          },
+          "3": {
+            "activeNll": 0.4489654447266751,
+            "activeRows": 1046
+          },
+          "4": {
+            "activeNll": 0.2126824550709253,
+            "activeRows": 1046
+          }
+        },
+        "rows": 8769,
+        "unchanged": {
+          "exact": 0.38645352669742916,
+          "noChangeBrier": 0.5937522194881567,
+          "rows": 6068,
+          "vectorNll": 2.175030175544782
+        },
+        "vectorNll": 2.3649962914984455
+      },
+      "C": {
+        "changed": {
+          "exact": 0.3372824879674195,
+          "noChangeBrier": 0.015905705258973155,
+          "rows": 2701,
+          "vectorNll": 2.7917694835039373
+        },
+        "copyThroughExact": 0.6919831223628692,
+        "copyThroughNoChangeEventBrier": 0.3080168776371308,
+        "countExact": 0.6838864180636333,
+        "exact": 0.37130801687763715,
+        "noChangeBrier": 0.41576574042178377,
+        "noChangeProbability": 0.2455672172545248,
+        "perSlot": {
+          "0": {
+            "activeNll": 0.8918874624182587,
+            "activeRows": 8769
+          },
+          "1": {
+            "activeNll": 0.7686875765229862,
+            "activeRows": 8769
+          },
+          "2": {
+            "activeNll": 0.6254973498102183,
+            "activeRows": 8769
+          },
+          "3": {
+            "activeNll": 0.4489654447266751,
+            "activeRows": 1046
+          },
+          "4": {
+            "activeNll": 0.2126824550709253,
+            "activeRows": 1046
+          }
+        },
+        "rows": 8769,
+        "unchanged": {
+          "exact": 0.38645352669742916,
+          "noChangeBrier": 0.5937522194881567,
+          "rows": 6068,
+          "vectorNll": 2.175030175544782
+        },
+        "vectorNll": 2.3649962914984455
+      },
+      "CminusB": {
+        "exact": {
+          "mean": 0.0,
+          "repetitions": 1000,
+          "rows": 8769,
+          "sourceBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "sources": 871
+        },
+        "noChangeBrier": {
+          "mean": 0.0,
+          "repetitions": 1000,
+          "rows": 8769,
+          "sourceBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "sources": 871
+        },
+        "vectorNll": {
+          "mean": 0.0,
+          "repetitions": 1000,
+          "rows": 8769,
+          "sourceBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "sources": 871
+        }
+      }
+    }
+  },
+  "preparedArrays": "/tmp/sts-phase2-attention-audit-20260913/prepared.npz",
+  "protocol": {
+    "batch": 2048,
+    "bootstrap": "1000 paired source resamples; measures TEST-source variability, not training-seed variability",
+    "device": "cuda",
+    "fp32Inference": true,
+    "inferenceThreads": 8,
+    "noNewSeeds": true,
+    "noTraining": true,
+    "test": "prespecified engineering diagnostic on reused fixed TEST; final checkpoints fitted on TRAIN+VALIDATION"
+  },
+  "reproductionAbsoluteDifferences": {
+    "hpDistribution.categoricalNll": 0.0,
+    "hpDistribution.discreteCrps": 0.0,
+    "hpDistribution.expectedHpFractionMae": 0.0,
+    "hpDistribution.n": 0,
+    "jointAliveHp.bias": 0.0,
+    "jointAliveHp.mae": 0.0,
+    "jointAliveHp.n": 0,
+    "jointAliveHp.rmse": 0.0,
+    "jointAliveHpFraction.bias": 0.0,
+    "jointAliveHpFraction.mae": 0.0,
+    "jointAliveHpFraction.n": 0,
+    "jointAliveHpFraction.rmse": 0.0,
+    "survival.auc": 0.0,
+    "survival.brier": 0.0,
+    "survival.logloss": 0.0,
+    "survival.n": 0,
+    "winningExpectedHp.bias": 0.0,
+    "winningExpectedHp.mae": 0.0,
+    "winningExpectedHp.n": 0,
+    "winningExpectedHp.rmse": 0.0,
+    "winningExpectedHpFraction.bias": 0.0,
+    "winningExpectedHpFraction.mae": 0.0,
+    "winningExpectedHpFraction.n": 0,
+    "winningExpectedHpFraction.rmse": 0.0
+  },
+  "rule": "Ironclad; RED/COLORLESS/CURSE visible cards only; no Entropic Brew; current native pool closure",
+  "ruleAudit": {
+    "certifiedSupportedRows": 322644,
+    "contradictions": 0,
+    "rows": 510030,
+    "sourceGroups": 24999,
+    "sourceSplitMembershipVerified": true,
+    "supportedRows": 413799
+  },
+  "schemaVersion": "frozen_survival_potion_diagnostic_v1",
+  "sourceHashes": {
+    "include/constants/CardPools.h": "44669ce7ffa0ec32170afb4ffc4827509d0cb4394eafe12568961dec2236f066",
+    "include/constants/Cards.h": "3492ca9ec6ff3e1098092127892529589be91cb338d3ef44b5fd8e979f52a7e0",
+    "src/combat/Actions.cpp": "6de9d058a75ddf9c0f7bff12cecae9f329148362f18847b6d45ae562bfc6c2d5",
+    "src/combat/BattleContext.cpp": "a00f1bbb13fa30e7f634c8cc6b9056fd96b7e5e5dc29d0144bc3b63d00ede2ab",
+    "src/combat/Player.cpp": "eee0890a1b4ba1190dc1c274ae0343816039e638e988527a0e70d565d42724e6",
+    "src/game/Game.cpp": "486aa531e3707e608d13e542ba450fb06ca50f33d0bbade41f2831d6a1083869",
+    "tools/combat_transition_attention_ablation.py": "68f6463206f4881b6612a1dcd1320889e80f307f181cb6ab096c9f8c432760a2",
+    "tools/combat_transition_frozen_composition.py": "c41cc607ca68f54d5fc9d539e0abeb2216e2a53700fe38b4d3e5c7e4df5f7b2e",
+    "tools/combat_transition_surrogate.py": "1f807cc46555fd8d8a726abe6451b94547bbb3281520112b66b454ed3a95321a"
+  },
+  "sourceSplit": "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json",
+  "validity": {
+    "limits": "Historical deltas do not establish state-dependent legality; RNG/native continuation and ancestral qualification remain absent.",
+    "maxHpModeNonpositive": 0,
+    "relicModeCounterRangeViolations": {
+      "HAPPY_FLOWER": {
+        "examples": [],
+        "invalidModeCounters": 0,
+        "presentTokens": 3048,
+        "range": [
+          0,
+          2
+        ]
+      },
+      "INK_BOTTLE": {
+        "examples": [],
+        "invalidModeCounters": 0,
+        "presentTokens": 1767,
+        "range": [
+          0,
+          9
+        ]
+      },
+      "NUNCHAKU": {
+        "examples": [],
+        "invalidModeCounters": 0,
+        "presentTokens": 2904,
+        "range": [
+          0,
+          9
+        ]
+      },
+      "SUNDIAL": {
+        "examples": [
+          {
+            "modeCounter": 3,
+            "modeDelta": 1,
+            "preCounter": 2,
+            "rowIndex": 26292,
+            "sourceSeed": 4101295
+          },
+          {
+            "modeCounter": 3,
+            "modeDelta": 1,
+            "preCounter": 2,
+            "rowIndex": 151899,
+            "sourceSeed": 4107430
+          },
+          {
+            "modeCounter": 3,
+            "modeDelta": 1,
+            "preCounter": 2,
+            "rowIndex": 186179,
+            "sourceSeed": 4109107
+          }
+        ],
+        "invalidModeCounters": 8,
+        "presentTokens": 1751,
+        "range": [
+          0,
+          2
+        ]
+      }
+    }
+  }
+}

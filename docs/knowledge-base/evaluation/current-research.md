@@ -110,6 +110,27 @@ remains an unchanged blocker for runtime multi-fight rollouts. See
 [ledger-06 §232](../../experiments/ledger-06.md) and the
 [attention ablation evidence report](../../experiments/evidence/combat_transition_surrogate_attention_ablation_2026-09-13.md).
 
+### Frozen attention survival composition and potion support
+
+The inference-only frozen A/B/C diagnostic is
+**`REPRODUCED_AND_CORE_PRESERVED`** for composition and
+**`INSUFFICIENT_AFTER_CORRECTION`** for potions. B preserves point-control
+survival and the Phase-2 conditional distribution exactly; joint alive-HP
+error improves on the reused engineering TEST. This is an implementation
+invariant and paired diagnostic, not new learning or causal proof of gradient
+interference. C removes substantial invalid potion support and improves NLL,
+exact accuracy, and no-change-event Brier, but vector exact remains below
+copy-through and potion-count accuracy regresses. Certification is conservative
+and never narrows the 413,799-row global eligibility set.
+
+Deployment remains **`NOT_QUALIFIED`**: eight Sundial mode counters violate
+native counter bounds, and RNG continuation remains absent. The next proposed
+training experiment protects survival and replaces only the potion decoder,
+using a small joint consumption-mask head where certified. It requires an
+honest TRAIN-only encoder for validation and ancestral qualification; no such
+fit was run or authorized by this result. See [ledger-06 §234](../../experiments/ledger-06.md)
+and the [frozen-composition report](../../experiments/evidence/frozen_survival_potion_2026-09-13.md).
+
 ## Current baseline
 
 Use [current-baselines.md](current-baselines.md) as the sole pointer for the
