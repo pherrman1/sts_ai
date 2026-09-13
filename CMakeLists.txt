@@ -401,6 +401,8 @@ add_test(NAME combat_transition_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_contract.py)
 add_test(NAME combat_transition_model_experiment_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_model_experiment.py)
+add_test(NAME combat_transition_rng_audit_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_rng_audit.py)
 add_test(NAME combat_transition_surrogate_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_surrogate.py)
 add_test(NAME combat_transition_attention_ablation_selftest

@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-14 for the stochastic signed-HP distribution;
+Last verified: 2026-09-14 for exact supported-v1 RNG continuation
+and the stochastic signed-HP distribution;
 2026-09-13 for the Phase-2 stochastic persistent-state support
 audit and the corrected whole-combat transition model rerun after independent
 review;
@@ -80,8 +81,9 @@ head works, and the potion head should probably use copy-through/change gating.
 The next experiment should protect the core predictor, for example by freezing
 or separating the survival encoder/trunk before training transition heads. This
 follow-up was not run. Runtime inference is not implemented, and
-`combatRng[6]` remains a separate blocker for scientifically valid multi-fight
-surrogate rollouts. See [ledger-06 §231](../../experiments/ledger-06.md)
+`combatRng[6]` now has an exact supported-v1 continuation contract, described
+below; the runtime adapter and multi-fight qualification remain unimplemented.
+See [ledger-06 §231](../../experiments/ledger-06.md)
 and the [gold-boundary fit report](../../experiments/evidence/combat_transition_surrogate_phase2_gold_boundary_2026-09-13.md).
 
 ### Winning-combat HP target representation
@@ -102,6 +104,35 @@ the descriptive difference was -0.043772844 HP; healing rows favored fraction
 Max-HP modeling, survival, potion,
 relic support, corpus, and simulator behavior are unchanged. See the
 [frozen protocol and evidence](../../experiments/evidence/hp_target_comparison_2026-09-14.md).
+
+### Exact supported-v1 combat RNG continuation
+
+The full frozen 510,030-row audit is **`RNG_COUNTER_DELTA_EXACT`** with exact
+encounter initialization replay, and requires **no learned RNG target**.
+Plain native `setCounter(post.counter)` matches both inherited streams on all
+510,030 rows and all 413,799 current supported rows. However, a native parity
+fixture proves that actual combat bound 3 can reject an underlying draw, so
+plain counter advancement is not a universal continuation algorithm.
+
+The exact contract copies pre.potionRng (unchanged on every supported row) and
+replays the native encounter-specific misc initialization draw schedule from
+pre.miscRng, including bounded rejection. Its counter delta is deterministic
+from visible encounter, not predicted. This replay matches 510,030/510,030
+full-corpus misc post states, including 413,799/413,799 supported states, without
+using post counters. The 97,154 supported misc changes rule out literal
+copy-through, but do not require learned RNG state or a new support gate.
+
+The four other streams are recreated on every battle entry. The normal
+controller has no reachable same-floor combat chain: Colosseum is disabled
+and unimplemented, event callbacks end at rewards/map, and A20's second boss
+increments floor. There are zero same-floor pairs among 485,031 consecutive
+source-ordered corpus fights. Intervening OOC reads of card-random/shuffle
+also occur after their floor/boss-treasure reset. No support change is needed;
+no runtime adapter, model training or multi-fight qualification ran.
+See [ledger-06 §238](../../experiments/ledger-06.md),
+[exact evidence](../../experiments/evidence/combat_rng_continuation_2026-09-14.md)
+and [RNG ownership](../behavior/determinism-and-rng.md). Existing deployment
+qualification remains **`NOT_QUALIFIED`**.
 
 ### Stochastic signed-HP distribution
 
@@ -139,7 +170,7 @@ rule on reused HOLDOUT and observed max-HP conditioning. It does not qualify
 sampled-upstream composition, multi-fight planning or deployment. Survival,
 max-HP modeling, potion weights, relic support and RNG contracts are unchanged.
 No runtime C++ integration or gameplay qualification was performed. Relic
-training remains a separate future task. See [ledger-06 §238](../../experiments/ledger-06.md)
+training remains a separate future task. See [ledger-06 §239](../../experiments/ledger-06.md)
 and the [full scores, calibration, slices and hashes](../../experiments/evidence/stochastic_signed_hp_2026-09-14.md).
 
 ### Phase-2 attention representation ablation
@@ -164,8 +195,9 @@ distribution CRPS improved from the point-control degenerate `0.070421` to
 `0.045763`; potion full-vector exact remained below copy-through, while relic
 full-vector and changed-counter metrics improved. This supports the generic
 multitask-interference hypothesis: do not enlarge or switch the Transformer;
-the next experiment should freeze or separate the core predictor. `combatRng[6]`
-remains an unchanged blocker for runtime multi-fight rollouts. See
+the next experiment should freeze or separate the core predictor. The exact
+RNG continuation audit above resolves the state contract; runtime multi-fight
+integration and qualification remain pending. See
 [ledger-06 §232](../../experiments/ledger-06.md) and the
 [attention ablation evidence report](../../experiments/evidence/combat_transition_surrogate_attention_ablation_2026-09-13.md).
 
@@ -211,8 +243,8 @@ classification is **`JOINT_MASK_WINS`**. Both heads selected 12 epochs;
 the ten-epoch encoder remained TRAIN-only and frozen. Separate ancestral
 classification is **`ANCESTRAL_OK`** under the unchanged exposure criterion,
 with zero invalid potion samples or identity creation/swaps. Secondary metrics
-and ancestral behavior do not override the primary rule. RNG continuation
-remains unmodeled and deployment remains `NOT_QUALIFIED`. See
+and ancestral behavior do not override the primary rule. Runtime RNG continuation
+remains unimplemented and deployment remains `NOT_QUALIFIED`. See
 [ledger-06 §236](../../experiments/ledger-06.md),
 [fit evidence](../../experiments/evidence/potion_decoder_fit_2026-09-13.md),
 and the [frozen protocol](../../experiments/evidence/potion_decoder_v1_2026-09-13.md).

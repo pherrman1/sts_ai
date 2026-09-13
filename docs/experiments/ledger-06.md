@@ -7166,7 +7166,54 @@ model training was changed.
   `/home/philippherrmann/sts_sweep/runs/hp-targets-20260914/`.
 
 
-## §238 Stochastic signed-HP categorical distribution (2026-09-14)
+## §238 Exact combat RNG continuation contract (2026-09-14)
+
+- **Question / baseline:** resolve the six-stream continuation blocker on
+  `31c7a1b9adff9d55c158f5ab560f89176c0e99b3`, using the existing frozen corpus
+  only. No training, gameplay seeds, Silver search or new collection.
+- **Provenance:** 510,030 RAW `combat_transition_row_v2` rows; 24,999 completed
+  sources plus quarantined `4102275` with no rows; SHA256
+  `74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde`.
+  Producer `f0bbd7721e7cc1453976ebb91ee11ebe6127a2bf`, project-fair exact-10k
+  Silver teacher, native OOC, A0. Current support function is unchanged:
+  413,799 rows, including 398,415 victories and 15,384 deaths.
+- **Exact empirical result:** native `setCounter` replay matches misc and
+  potion on 510,030/510,030 full rows and 413,799/413,799 supported rows each;
+  zero mismatches. Supported misc changes: 97,154; potion changes: zero.
+  Source-ordered consecutive pairs: 485,031; same-floor pairs: zero, including
+  zero supported-origin pairs.
+- **Mechanism / negative control:** native parity proves small bound 3 can
+  consume extra underlying steps through rejection with counter advancing
+  once; bare counter advancement is not universally exact. Every live misc
+  draw is instead in a deterministic encounter initialization schedule.
+  Exact bounded schedule replay, independent of post counters, matches all
+  510,030 misc post states and all 413,799 supported states. The sole combat
+  potion consumer is excluded Entropic Brew. Other streams reset at battle
+  entry; OOC consumers reset before use; Colosseum is disabled/TODO, event
+  callbacks do not chain, and A20 increments floor before boss two.
+- **Decision:** **`RNG_COUNTER_DELTA_EXACT`**, using deterministic native bounded
+  initialization replay. Minimal learned RNG targets: **none**. Copy potion;
+  derive misc delta from visible encounter and replay its native call schedule
+  including rejection. Literal misc copy-through is false. A visible gate on
+  all misc-mutating encounter classes would lose 97,154 supported rows
+  (23.4785%) and is unnecessary. Required new guard/support loss: none/zero.
+- **Verification:** 29 focused Python tests pass, including supported
+  same-floor classification rejection and dropped-final-fight row accounting,
+  plus temporary native C++ parity and raw/rejection failures; configure passes; focused CTest 1/1;
+  full corpus/provenance/schema/order audit exits 0 with audited rows exactly
+  equal to validated rows and a zero supported-origin same-floor requirement;
+  doctor and repo health pass; diff check passes. Evidence retains six-stream
+  aggregate counts and misc/potion aggregate distributions, omitting reset
+  stream and repeated slice histograms. No production C++ build; Linux GCC CI
+  is the clean-repository gate.
+- **Boundary / knowledge impact:** RNG state contract resolved; runtime
+  integration, exact all-six RAW snapshot synthesis, source/controller changes
+  and scientific multi-fight qualification remain outside this result.
+  Deployment remains `NOT_QUALIFIED`. Current facts routed to determinism/RNG
+  and current research. [Evidence and commands](evidence/combat_rng_continuation_2026-09-14.md)
+  / [machine-readable result](evidence/combat_rng_continuation_2026-09-14.json).
+
+## §239 Stochastic signed-HP categorical distribution (2026-09-14)
 
 - **Baseline:** post-#170 clean main `443ed45f9bae4c5864dd7188645a04049b268928`,
   existing fresh Codex app-managed worktree; no additional worktree.
