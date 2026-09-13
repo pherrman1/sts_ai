@@ -7326,3 +7326,43 @@ Independent scientific replay and raw-array verification passed (exit 0):
 primary CI/exposure reproduced within CPU/GPU roundoff, all artifact hashes
 and initialization/batch histories matched, and native/shared sample checks
 all zero. Linux GCC passed on reviewed implementation SHA `66350924...`.
+
+
+## §241 Offline composed combat-transition qualification (2026-09-14)
+
+Knowledge impact: strict offline ancestral sampler and common original-TEST
+exposure/validity evidence; current status is maintained in
+[evaluation/current-research.md](../knowledge-base/evaluation/current-research.md).
+Baseline `7316c715bac7fe4559ead59cde1eb374d3437b5b`; independently reviewed
+execution SHA `abe2c6ea50f55d37e4d594ceb6575247e91c32fa`. Fixed artifacts use
+20260912 by convention. No model fit/refit/tuning, collection, gameplay seeds,
+policy change or C++ integration. Mode: offline frozen-model composition;
+original source-grouped reused engineering TEST, 32 draws per row, sampling
+seed 20260916 (exposure) / 20260917 (complete), source bootstrap 1000 repetitions
+with seed 20260917. Corpus ascension/source configuration is inherited exactly;
+no new searcher, OOC configuration or game budget is exercised. CUDA scoring
+uses historical per-component arithmetic; CPU latency uses one thread/batch1.
+
+**`COMPOSED_TRANSITION_REJECTED`**: HP mixture exposure is +infinity from eight
+observed targets above every sampled maxHP. Potion gap +0.000810765 and
+normalized relic gap -0.001521621 pass their individual 0.1-nat gates.
+All eleven native/state/RNG/death-call validity counters are zero across
+1,029,248 draws. Original TEST support 32,164/51,441; observed supported
+victories 31,150. Initial maxHP loading reproduction stopped before sampling;
+an inference-only fastpath probe identified historical arithmetic and the
+corrected run reproduces probabilities within 8.35e-7. Initial report preserved.
+This repairs loading procedure, not weights or research selection.
+
+The result identifies sampled-maxHP exposure for targeted maxHP investigation,
+not invalid generated states or a runtime/gameplay failure. Eight zero finite
+Monte Carlo mixtures do not prove exact analytical model zero mass. No
+resampling or alternate gate was used. Next is maxHP repair with downstream
+frozen; runtime integration waits.
+
+Full artifacts/hashes, reproduction, source CIs, complete diagnostics,
+factorized likelihood, latency, exact commands and limitations:
+[frozen protocol and executed evidence](evidence/composed_transition_2026-09-14.md),
+[JSON evidence](evidence/composed_transition_2026-09-14.json),
+[recipe](evidence/composed_transition_recipe_2026-09-14.json).
+Raw rows/arrays/trajectories remain external under
+`/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/qualification/`.

@@ -136,6 +136,26 @@ qualification remains **`NOT_QUALIFIED`**.
 
 ### Offline composed combat-transition sampler
 
+**`COMPOSED_TRANSITION_REJECTED`** under the frozen original-TEST 32-draw
+composition rule on reviewed SHA `abe2c6ea50f55d37e4d594ceb6575247e91c32fa`.
+HP exposure is +infinity: eight of 31,150 observed full-support victories
+receive zero conditional probability across all sampled maxHP conditions;
+every observed target exceeds every sampled maxHP and is masked natively.
+This is finite-draw mixture support loss, not proof of zero exact analytical
+mixture mass. Potion exposure is +0.000810765 nat, 95% source-bootstrap CI
+[+0.000591005, +0.001033385]; group-normalized relic exposure is -0.001521621,
+CI [-0.004191767, +0.001475988]. These pass their individual 0.1 gates.
+All eleven hard validity counts are zero over 1,029,248 complete draws.
+Historical survival/maxHP reproduction passes after restoring each
+component's historical attention backend; no weights or sampling parameters
+changed. Original TEST support is 32,164/51,441 (62.526001%).
+
+Next: targeted maxHP investigation/repair, with downstream models frozen.
+Runtime/OOC integration waits for a qualified composition. Full state,
+likelihood, support, per-relic and CPU latency diagnostics are in the
+[executed evidence](../../experiments/evidence/composed_transition_2026-09-14.md)
+and [JSON](../../experiments/evidence/composed_transition_2026-09-14.json).
+
 `tools/combat_transition_composed.py` composes the fixed protected attention
 survival, historical maxHP attention head, 20260912 stochastic signed-HP,
 joint potion consumption decoder and 20260912 shared relic trajectory decoder.

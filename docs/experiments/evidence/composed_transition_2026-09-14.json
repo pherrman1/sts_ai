@@ -1,0 +1,1275 @@
+{
+  "actualModelRowCalls": {
+    "hpEncoderRows": 996730,
+    "hpHeadRows": 996730,
+    "maxHpRows": 996730,
+    "potionDecoderRows": 996730,
+    "potionEncoderRows": 996730,
+    "relicDecoderRows": 996730,
+    "survivalRows": 1029248
+  },
+  "artifactsUnchanged": true,
+  "baseline": "7316c715bac7fe4559ead59cde1eb374d3437b5b",
+  "classification": "COMPOSED_TRANSITION_REJECTED",
+  "completeDraws": 1029248,
+  "componentReproduction": {
+    "historicalDifferences": {
+      "maxHpProbabilityMaxAbs": 8.344650268554688e-07,
+      "survival": {
+        "auc": 0.0,
+        "brier": 5.346398428140997e-10,
+        "logloss": -6.311505471034984e-09
+      }
+    },
+    "maxHp": {
+      "modeAccuracy": 0.9785874799357945,
+      "nll": 0.04922763811593293
+    },
+    "partition": "full-support original reused engineering TEST victories for downstream heads",
+    "potion": {
+      "jointMaskNll": 0.5041398600674651,
+      "modeExact": 0.8052648475120385
+    },
+    "relic": {
+      "constraintNll": 0.4903379763488845,
+      "reconstructed": {
+        "changedTokenExact": 0.23733796605639448,
+        "changedTokenMae": 2.1667780302017907,
+        "changedTokens": 7483,
+        "fullVectorExact": 0.8140609951845907,
+        "perRelic": {
+          "BLACK_BLOOD": {
+            "changedTokenExact": null,
+            "changedTokenMae": null,
+            "changedTokens": 0,
+            "fullVectorExact": 1.0,
+            "tokenExact": 1.0,
+            "tokens": 302
+          },
+          "BURNING_BLOOD": {
+            "changedTokenExact": null,
+            "changedTokenMae": null,
+            "changedTokens": 0,
+            "fullVectorExact": 1.0,
+            "tokenExact": 1.0,
+            "tokens": 30790
+          },
+          "HAPPY_FLOWER": {
+            "changedTokenExact": 0.34710743801652894,
+            "changedTokenMae": 0.8677685950413223,
+            "changedTokens": 1331,
+            "fullVectorExact": 0.3721163490471414,
+            "tokenExact": 0.3721163490471414,
+            "tokens": 1994
+          },
+          "INCENSE_BURNER": {
+            "changedTokenExact": 0.2627599243856333,
+            "changedTokenMae": 1.6502835538752363,
+            "changedTokens": 529,
+            "fullVectorExact": 0.2289348171701113,
+            "tokenExact": 0.2289348171701113,
+            "tokens": 629
+          },
+          "INK_BOTTLE": {
+            "changedTokenExact": 0.10379241516966067,
+            "changedTokenMae": 3.382235528942116,
+            "changedTokens": 1002,
+            "fullVectorExact": 0.10952804986642921,
+            "tokenExact": 0.10952804986642921,
+            "tokens": 1123
+          },
+          "INSERTER": {
+            "changedTokenExact": null,
+            "changedTokenMae": null,
+            "changedTokens": 0,
+            "fullVectorExact": null,
+            "tokenExact": null,
+            "tokens": 0
+          },
+          "LIZARD_TAIL": {
+            "changedTokenExact": null,
+            "changedTokenMae": null,
+            "changedTokens": 0,
+            "fullVectorExact": 1.0,
+            "tokenExact": 1.0,
+            "tokens": 738
+          },
+          "MEAT_ON_THE_BONE": {
+            "changedTokenExact": null,
+            "changedTokenMae": null,
+            "changedTokens": 0,
+            "fullVectorExact": 1.0,
+            "tokenExact": 1.0,
+            "tokens": 1531
+          },
+          "NEOWS_LAMENT": {
+            "changedTokenExact": 1.0,
+            "changedTokenMae": 0.0,
+            "changedTokens": 167,
+            "fullVectorExact": 1.0,
+            "tokenExact": 1.0,
+            "tokens": 783
+          },
+          "NUNCHAKU": {
+            "changedTokenExact": 0.15659182498560736,
+            "changedTokenMae": 2.6776050662061026,
+            "changedTokens": 1737,
+            "fullVectorExact": 0.15581643543223053,
+            "tokenExact": 0.15581643543223053,
+            "tokens": 1874
+          },
+          "OMAMORI": {
+            "changedTokenExact": null,
+            "changedTokenMae": null,
+            "changedTokens": 0,
+            "fullVectorExact": 1.0,
+            "tokenExact": 1.0,
+            "tokens": 1795
+          },
+          "PEN_NIB": {
+            "changedTokenExact": 0.1554379210779596,
+            "changedTokenMae": 2.7444658325312803,
+            "changedTokens": 2078,
+            "fullVectorExact": 0.15752523036419483,
+            "tokenExact": 0.15752523036419483,
+            "tokens": 2279
+          },
+          "SUNDIAL": {
+            "changedTokenExact": 0.4835680751173709,
+            "changedTokenMae": 0.6932707355242567,
+            "changedTokens": 639,
+            "fullVectorExact": 0.5547138047138047,
+            "tokenExact": 0.5547138047138047,
+            "tokens": 1188
+          }
+        },
+        "tokenExact": 0.9623991644258761,
+        "tokens": 179996
+      }
+    },
+    "rows": 31150,
+    "signedHp": {
+      "coverage50": 0.6733868378812199,
+      "coverage80": 0.876661316211878,
+      "coverage95": 0.9715569823434992,
+      "crps": 3.4322513818439995,
+      "expectedMae": 5.036823990489021,
+      "expectedRmse": 8.029084743424061,
+      "modeExact": 0.3985874799357945,
+      "modeMae": 5.995152487961477,
+      "nll": 2.3717516546283943,
+      "rows": 31150,
+      "width50": 7.773932584269663,
+      "width80": 14.831749598715891,
+      "width95": 22.931781701444624
+    },
+    "survival": {
+      "auc": 0.9780655012067189,
+      "brier": 0.01903977484820891,
+      "logloss": 0.06362179035607037,
+      "n": 41454
+    }
+  },
+  "cpuLatency": {
+    "batch": 1,
+    "boundary": "full support gate, visible encoding, survival; on victory maxHP encoder/head, HP encoder/head/sample, potion encoder/decoder/sample, relic decoder/sample with reused HP state, native reconstruction, exact RNG continuation, persistent assembly/validation",
+    "branchConvention": "death/victory force branch uniform after real survival forward; mixed uses model survival sampling",
+    "device": "cpu",
+    "paths": {
+      "death": {
+        "deathDraws": 100,
+        "draws": 100,
+        "meanMs": 0.9828390489565209,
+        "medianMs": 0.918531499337405,
+        "p95Ms": 1.3147058663889766
+      },
+      "mixed": {
+        "deathDraws": 0,
+        "draws": 100,
+        "meanMs": 3.324839859851636,
+        "medianMs": 3.3205159998033196,
+        "p95Ms": 3.5401339904638007
+      },
+      "victory": {
+        "deathDraws": 0,
+        "draws": 100,
+        "meanMs": 3.3226056199055165,
+        "medianMs": 3.316057496704161,
+        "p95Ms": 3.562699005124159
+      }
+    },
+    "stateFightIndex": 89,
+    "stateSource": 4100018,
+    "threads": 1,
+    "warmups": 10
+  },
+  "diagnostics": {
+    "hp": {
+      "convention": "observed victory rows; empirical distribution conditional on sampled victory",
+      "empiricalPostHpCrps": 3.558434256746031,
+      "intervals": {
+        "50": {
+          "coverage": 0.661176923817779,
+          "width": 7.917461234710585
+        },
+        "80": {
+          "coverage": 0.846993482936852,
+          "width": 14.257215319913962
+        },
+        "95": {
+          "coverage": 0.9614112812610357,
+          "width": 24.481524286493947
+        }
+      },
+      "rowsWithSampledVictory": 31149,
+      "rowsWithoutSampledVictory": 1,
+      "sampleMeanPostHpMae": 5.118528503178459
+    },
+    "maxHp": {
+      "modeAccuracy": 0.9785874799357945,
+      "nll": 0.04922763811593293,
+      "observedChangeFrequency": 0.03537720706260032,
+      "sampledChangeFrequency": 0.040976623991397614
+    },
+    "outcome": {
+      "auc": 0.9808058608058607,
+      "brier": 0.016413114529727785,
+      "logloss": 0.054881630424214234,
+      "meanPredictedDeathProbability": 0.0317131659669711,
+      "n": 32164,
+      "observedDeathRate": 0.031525929610744935,
+      "sampledDeathRate": 0.03159394043029474
+    },
+    "persistentState": {
+      "convention": "conditional frequencies among sampled victories on observed victory rows; unconditional includes sampled deaths as nonmatches",
+      "exactCompleteModeledPersistentStateSampleFrequency": 0.2227418477789578,
+      "exactHpMaxHpPotionsRelicsSampleFrequency": 0.2227418477789578,
+      "unconditionalCompleteFrequency": 0.2190308988764045,
+      "unconditionalCoreFrequency": 0.2190308988764045
+    },
+    "potions": {
+      "consumedCountDistribution": {
+        "0": 0.736114214241481,
+        "1": 0.19636642987656514,
+        "2": 0.05579003318734168,
+        "3": 0.011504877100734242,
+        "4": 0.00019587979102074797,
+        "5": 2.856580285719241e-05
+      },
+      "empiricalObservedMaskProbability": 0.7336225516799758,
+      "exactObservedMaskSampleFrequency": 0.7369701681199519,
+      "noChangeFrequency": 0.736114214241481,
+      "observedConsumedCountDistribution": {
+        "0": 0.738330658105939,
+        "1": 0.1967255216693419,
+        "2": 0.05460674157303371,
+        "3": 0.010016051364365971,
+        "4": 0.00032102728731942215,
+        "5": 0.0
+      },
+      "observedNoChangeFrequency": 0.738330658105939
+    },
+    "relics": {
+      "changedTokenExact": 0.2046301500151312,
+      "changedTokenMae": 2.3769054515585144,
+      "changedTokens": 231310,
+      "fullVectorExact": 0.8087580711145662,
+      "perRelic": {
+        "BLACK_BLOOD": {
+          "changedTokenExact": null,
+          "changedTokenMae": null,
+          "changedTokens": 0,
+          "fullVectorExact": 1.0,
+          "tokenExact": 1.0,
+          "tokens": 9198
+        },
+        "BURNING_BLOOD": {
+          "changedTokenExact": null,
+          "changedTokenMae": null,
+          "changedTokens": 0,
+          "fullVectorExact": 1.0,
+          "tokenExact": 1.0,
+          "tokens": 969235
+        },
+        "HAPPY_FLOWER": {
+          "changedTokenExact": 0.33174108013257947,
+          "changedTokenMae": 0.8825550789627608,
+          "changedTokens": 41032,
+          "fullVectorExact": 0.34043941346295,
+          "tokenExact": 0.34043941346295,
+          "tokens": 61309
+        },
+        "INCENSE_BURNER": {
+          "changedTokenExact": 0.19861851672321862,
+          "changedTokenMae": 1.8232549684924866,
+          "changedTokens": 16504,
+          "fullVectorExact": 0.19094016222006835,
+          "tokenExact": 0.19094016222006835,
+          "tokens": 19603
+        },
+        "INK_BOTTLE": {
+          "changedTokenExact": 0.10070257611241218,
+          "changedTokenMae": 3.3537926099401507,
+          "changedTokens": 30744,
+          "fullVectorExact": 0.1011585029470689,
+          "tokenExact": 0.1011585029470689,
+          "tokens": 34441
+        },
+        "INSERTER": {
+          "changedTokenExact": null,
+          "changedTokenMae": null,
+          "changedTokens": 0,
+          "fullVectorExact": null,
+          "tokenExact": null,
+          "tokens": 0
+        },
+        "LIZARD_TAIL": {
+          "changedTokenExact": null,
+          "changedTokenMae": null,
+          "changedTokens": 0,
+          "fullVectorExact": 1.0,
+          "tokenExact": 1.0,
+          "tokens": 22737
+        },
+        "MEAT_ON_THE_BONE": {
+          "changedTokenExact": null,
+          "changedTokenMae": null,
+          "changedTokens": 0,
+          "fullVectorExact": 1.0,
+          "tokenExact": 1.0,
+          "tokens": 47308
+        },
+        "NEOWS_LAMENT": {
+          "changedTokenExact": 1.0,
+          "changedTokenMae": 0.0,
+          "changedTokens": 5344,
+          "fullVectorExact": 1.0,
+          "tokenExact": 1.0,
+          "tokens": 24456
+        },
+        "NUNCHAKU": {
+          "changedTokenExact": 0.12121663655497401,
+          "changedTokenMae": 3.013466445640634,
+          "changedTokens": 53689,
+          "fullVectorExact": 0.11993161566622919,
+          "tokenExact": 0.11993161566622919,
+          "tokens": 57908
+        },
+        "OMAMORI": {
+          "changedTokenExact": null,
+          "changedTokenMae": null,
+          "changedTokens": 0,
+          "fullVectorExact": 1.0,
+          "tokenExact": 1.0,
+          "tokens": 55269
+        },
+        "PEN_NIB": {
+          "changedTokenExact": 0.12098489435362426,
+          "changedTokenMae": 3.1522984490708397,
+          "changedTokens": 64413,
+          "fullVectorExact": 0.11878343570437884,
+          "tokenExact": 0.11878343570437884,
+          "tokens": 70658
+        },
+        "SUNDIAL": {
+          "changedTokenExact": 0.3932802287581699,
+          "changedTokenMae": 0.794015522875817,
+          "changedTokens": 19584,
+          "fullVectorExact": 0.4572355861015655,
+          "tokenExact": 0.4572355861015655,
+          "tokens": 36666
+        }
+      },
+      "tokenExact": 0.960517157639525,
+      "tokens": 5581741
+    }
+  },
+  "exposure": {
+    "hp": {
+      "decision": "MATERIAL_EXPOSURE_DEGRADATION",
+      "mean": "positive_infinity",
+      "mixtureNll": "positive_infinity",
+      "repetitions": 1000,
+      "rows": 31150,
+      "sourceBootstrap95": [
+        "positive_infinity",
+        "positive_infinity"
+      ],
+      "sources": 2474,
+      "teacherNll": 2.3717516546283943,
+      "zeroMixtureProbabilityRows": 8
+    },
+    "potion": {
+      "decision": "EXPOSURE_OK",
+      "mean": 0.0008107648229245213,
+      "mixtureNll": 0.5049506248903897,
+      "repetitions": 1000,
+      "rows": 31150,
+      "sourceBootstrap95": [
+        0.0005910051256732917,
+        0.0010333845040848772
+      ],
+      "sources": 2474,
+      "teacherNll": 0.5041398600674651,
+      "zeroMixtureProbabilityRows": 0
+    },
+    "relic": {
+      "decision": "EXPOSURE_OK",
+      "mean": -0.0015216208501629492,
+      "mixtureNll": 0.4898744835158857,
+      "repetitions": 1000,
+      "rows": 7414,
+      "sourceBootstrap95": [
+        -0.004191766649122154,
+        0.0014759877246583574
+      ],
+      "sources": 909,
+      "teacherNll": 0.4903379763488845,
+      "zeroMixtureProbabilityRows": 0
+    }
+  },
+  "factorizedJointNll": {
+    "contributionsPerFullSupportRow": {
+      "hp": 2.2969799789104117,
+      "maxHp": 0.0476756910617868,
+      "outcome": 0.054881630424214234,
+      "potion": 0.4882463823250074,
+      "relic": 0.47487961582103444
+    },
+    "convention": "death: outcome only; victory: observed teacher-forced factorization, partial relic constraint mass",
+    "meanTotalNll": 3.3626632985424547
+  },
+  "fullSupportTestRows": 32164,
+  "fullSupportTestVictories": 31150,
+  "hardValidity": {
+    "crossRelicResidueInconsistency": 0,
+    "deterministicNativeMismatch": 0,
+    "downstreamModelInvokedAfterDeath": 0,
+    "hpAboveSampledMaxHp": 0,
+    "hpBelow1": 0,
+    "illegalRelicCounter": 0,
+    "invalidInheritedRngReconstruction": 0,
+    "invalidMaxHpClassOrState": 0,
+    "invalidPotionTransition": 0,
+    "potionCreationSwapSubstitution": 0,
+    "unsupportedMutableRelicMutation": 0
+  },
+  "independentEvidenceReview": {
+    "commands": [
+      "PYTHONPATH=. python3 /tmp/independent-composed-evidence-check.py",
+      "PYTHONPATH=. python3 /tmp/independent-composed-complete-check.py"
+    ],
+    "independentAgent": "review_composed",
+    "newDraws": false,
+    "outcomes": [
+      "B mixtures/teacher differences/groups/bootstrap reproduce exactly; all artifact/provenance checks pass",
+      "C HP/maxHP/potion/native relic/shared residue checks pass; exact state arrays, inherited RNG, stage counts and joint NLL crosscheck pass"
+    ],
+    "reviewedSha": "abe2c6ea50f55d37e4d594ceb6575247e91c32fa",
+    "scoring": false,
+    "training": false,
+    "verdict": "PASS"
+  },
+  "independentImplementationReview": {
+    "arithmeticRepair": "historical MHA backend restored, probe max difference6.56e-7",
+    "checks": [
+      "15 direct tests OK",
+      "git show --check HEAD exit0"
+    ],
+    "design": "PASS",
+    "implementation": "PASS",
+    "independentAgent": "review_composed",
+    "reviewedSha": "abe2c6ea50f55d37e4d594ceb6575247e91c32fa",
+    "runtimeQualification": false
+  },
+  "infinityEncoding": "positive_infinity represents +inf; no clipping, resampling or discarded rows",
+  "interpretation": "Frozen32-draw qualification rejects sampled-maxHP exposure to HP. Eight observed HP targets exceed every sampled maxHP; this does not prove zero exact analytical mixture mass. All generated sampled states are valid. Next: targeted maxHP investigation/repair; downstream frozen; no runtime integration.",
+  "loadingReproductionRepair": {
+    "changed": "restore historical component MHA backend; no weights or sampling parameters changed",
+    "diagnostic": "/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/reproduction_probe.json",
+    "initialReport": "/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/results.json",
+    "initialReviewedSha": "a9012104aaa3a1a1cc3a10017d5046928025efcb",
+    "scientificExposureBeforeRepair": false
+  },
+  "nextAction": "targeted repair of hp",
+  "provenance": {
+    "baseline": "7316c715bac7fe4559ead59cde1eb374d3437b5b",
+    "corpusContradictions": 0,
+    "counts": {
+      "act:1": {
+        "fallback": 60140,
+        "rate": 0.74831133394156,
+        "rows": 238946,
+        "supported": 178806
+      },
+      "act:2": {
+        "fallback": 75874,
+        "rate": 0.5574621468399319,
+        "rows": 171452,
+        "supported": 95578
+      },
+      "act:3": {
+        "fallback": 51372,
+        "rate": 0.4843825277019432,
+        "rows": 99632,
+        "supported": 48260
+      },
+      "all": {
+        "fallback": 187386,
+        "rate": 0.6325980824657373,
+        "rows": 510030,
+        "supported": 322644
+      },
+      "room:2": {
+        "fallback": 3249,
+        "rate": 0.5848453871709686,
+        "rows": 7826,
+        "supported": 4577
+      },
+      "room:3": {
+        "fallback": 42491,
+        "rate": 0.6409261841382515,
+        "rows": 118335,
+        "supported": 75844
+      },
+      "room:4": {
+        "fallback": 119922,
+        "rate": 0.6365284071104914,
+        "rows": 329935,
+        "supported": 210013
+      },
+      "room:6": {
+        "fallback": 21724,
+        "rate": 0.5972114065339118,
+        "rows": 53934,
+        "supported": 32210
+      },
+      "split:0": {
+        "fallback": 149977,
+        "rate": 0.6325741150415377,
+        "rows": 408183,
+        "supported": 258206
+      },
+      "split:1": {
+        "fallback": 18132,
+        "rate": 0.6402809189382216,
+        "rows": 50406,
+        "supported": 32274
+      },
+      "split:2": {
+        "fallback": 19277,
+        "rate": 0.6252600066095139,
+        "rows": 51441,
+        "supported": 32164
+      },
+      "test:act:1": {
+        "fallback": 6094,
+        "rate": 0.7465690759377859,
+        "rows": 24046,
+        "supported": 17952
+      },
+      "test:act:2": {
+        "fallback": 7845,
+        "rate": 0.5451910255666995,
+        "rows": 17249,
+        "supported": 9404
+      },
+      "test:act:3": {
+        "fallback": 5338,
+        "rate": 0.47388133254484527,
+        "rows": 10146,
+        "supported": 4808
+      },
+      "test:room:2": {
+        "fallback": 333,
+        "rate": 0.576874205844981,
+        "rows": 787,
+        "supported": 454
+      },
+      "test:room:3": {
+        "fallback": 4341,
+        "rate": 0.6371008192609932,
+        "rows": 11962,
+        "supported": 7621
+      },
+      "test:room:4": {
+        "fallback": 12397,
+        "rate": 0.6270793851337123,
+        "rows": 33243,
+        "supported": 20846
+      },
+      "test:room:6": {
+        "fallback": 2206,
+        "rate": 0.5951550743255644,
+        "rows": 5449,
+        "supported": 3243
+      }
+    },
+    "domain": {
+      "classes": 304,
+      "envelope": "all globally supported pre-combat states",
+      "max": 143,
+      "maxHpDeltaValues": [
+        0,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "min": -160,
+      "preCurHpRange": [
+        1,
+        161
+      ],
+      "preMaxHpRange": [
+        24,
+        172
+      ],
+      "rule": "[min(1-preCurHp),max(preMaxHp-preCurHp)+max(deltaMaxHp)]",
+      "sha256": "f812c16ab1d220cd60e8a8915ebb368bcd7e6d9e48915eb8cce5c760fad78eec"
+    },
+    "fullSupportSha256": "011d0169cdaa578c1e5e7f120097aaca38cb3f0cd7f1556b3785b284b9f9559e",
+    "hashes": {
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+    },
+    "reasons": {
+      "entropic_brew": 3208,
+      "gold_mutating_card": 2640,
+      "gold_mutating_encounter": 27664,
+      "gold_mutating_potion": 21698,
+      "gold_mutating_relic": 6824,
+      "potion_not_certified": 116302,
+      "pre_smoke_bomb_used": 26,
+      "pre_stolen_gold_nonzero": 19048,
+      "ritual_dagger": 13926,
+      "smoke_bomb": 3765,
+      "writhing_mass": 4477
+    },
+    "savedTestRowsSha256": "f04418f97636fc355c01c3411b14278b12fad749e3bfaba6f9d5f02c0331eef8",
+    "strictSchemaRefresh": {
+      "allCorpusPreStatesValidated": true,
+      "originalTestSupportRechecked": true,
+      "rows": 510030
+    },
+    "testRows": 51441,
+    "testSources": 2517
+  },
+  "rawEvidenceDirectory": "/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/qualification",
+  "recipe": {
+    "artifactSeedConvention": 20260912,
+    "baseline": "7316c715bac7fe4559ead59cde1eb374d3437b5b",
+    "bootstrapReps": 1000,
+    "bootstrapSeed": 20260917,
+    "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "draws": 32,
+    "evaluationPrecision": "historical survival/maxHP/potion FP32 MHA fastpath enabled; HP AMP FP16 MHA fastpath disabled; relic FP32",
+    "exposureThreshold": 0.1,
+    "latencyPrecision": "one-thread CPU FP32, batch 1, full visible encoding, 10 warmups, 100 draws per path",
+    "partition": "original source-grouped reused engineering TEST",
+    "relicAggregation": "mean row gap / observed learned groups on informative rows",
+    "rngScope": "OOC continuation: copy potionRng and exact replay_misc; omit four recreated battle-local streams",
+    "samplingSeed": 20260916,
+    "schema": "offline_composed_transition_v1",
+    "splitSha256": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+    "training": false
+  },
+  "reviewedSha": "abe2c6ea50f55d37e4d594ceb6575247e91c32fa",
+  "sampleFailureCount": 0,
+  "zeroHpMixtureAudit": {
+    "allZeroMassExplainedByNativeHpMask": true,
+    "examples": [
+      {
+        "observedMaxHpDelta": 4,
+        "observedPostHp": 84,
+        "observedPostMaxHp": 84,
+        "observedTargetAboveEverySampledMaxHp": true,
+        "potions": [
+          36,
+          22,
+          1,
+          1,
+          1
+        ],
+        "preHp": 80,
+        "preMaxHp": 80,
+        "relics": [
+          {
+            "data": 0,
+            "id": 86
+          },
+          {
+            "data": 0,
+            "id": 148
+          },
+          {
+            "data": 0,
+            "id": 144
+          },
+          {
+            "data": 0,
+            "id": 8
+          },
+          {
+            "data": 0,
+            "id": 33
+          },
+          {
+            "data": 0,
+            "id": 176
+          },
+          {
+            "data": 0,
+            "id": 156
+          }
+        ],
+        "rowIndex": 32892,
+        "sampledMaxHpDeltaCounts": {
+          "0": 20,
+          "3": 12
+        },
+        "source": 4101618,
+        "zeroDraws": 32
+      },
+      {
+        "observedMaxHpDelta": 6,
+        "observedPostHp": 110,
+        "observedPostMaxHp": 110,
+        "observedTargetAboveEverySampledMaxHp": true,
+        "potions": [
+          3,
+          5,
+          1,
+          1,
+          1
+        ],
+        "preHp": 89,
+        "preMaxHp": 104,
+        "relics": [
+          {
+            "data": 0,
+            "id": 86
+          },
+          {
+            "data": 0,
+            "id": 146
+          },
+          {
+            "data": 0,
+            "id": 55
+          },
+          {
+            "data": 0,
+            "id": 2
+          },
+          {
+            "data": 0,
+            "id": 45
+          },
+          {
+            "data": 0,
+            "id": 108
+          },
+          {
+            "data": 0,
+            "id": 80
+          },
+          {
+            "data": 0,
+            "id": 42
+          },
+          {
+            "data": 0,
+            "id": 157
+          },
+          {
+            "data": 0,
+            "id": 170
+          },
+          {
+            "data": 0,
+            "id": 65
+          },
+          {
+            "data": 0,
+            "id": 100
+          },
+          {
+            "data": 0,
+            "id": 40
+          },
+          {
+            "data": 0,
+            "id": 29
+          },
+          {
+            "data": 0,
+            "id": 131
+          },
+          {
+            "data": 0,
+            "id": 119
+          }
+        ],
+        "rowIndex": 86532,
+        "sampledMaxHpDeltaCounts": {
+          "0": 21,
+          "3": 11
+        },
+        "source": 4104241,
+        "zeroDraws": 32
+      },
+      {
+        "observedMaxHpDelta": 6,
+        "observedPostHp": 75,
+        "observedPostMaxHp": 75,
+        "observedTargetAboveEverySampledMaxHp": true,
+        "potions": [
+          24,
+          41,
+          24,
+          1,
+          1
+        ],
+        "preHp": 64,
+        "preMaxHp": 69,
+        "relics": [
+          {
+            "data": 0,
+            "id": 86
+          },
+          {
+            "data": 0,
+            "id": 41
+          },
+          {
+            "data": 0,
+            "id": 91
+          },
+          {
+            "data": 0,
+            "id": 176
+          },
+          {
+            "data": 0,
+            "id": 143
+          },
+          {
+            "data": 0,
+            "id": 0
+          },
+          {
+            "data": 0,
+            "id": 62
+          },
+          {
+            "data": 0,
+            "id": 163
+          },
+          {
+            "data": 0,
+            "id": 49
+          },
+          {
+            "data": 0,
+            "id": 173
+          },
+          {
+            "data": 0,
+            "id": 167
+          },
+          {
+            "data": 0,
+            "id": 24
+          },
+          {
+            "data": 0,
+            "id": 100
+          },
+          {
+            "data": 0,
+            "id": 70
+          },
+          {
+            "data": 0,
+            "id": 52
+          },
+          {
+            "data": 0,
+            "id": 66
+          }
+        ],
+        "rowIndex": 181614,
+        "sampledMaxHpDeltaCounts": {
+          "0": 6,
+          "3": 22,
+          "4": 4
+        },
+        "source": 4108893,
+        "zeroDraws": 32
+      },
+      {
+        "observedMaxHpDelta": 6,
+        "observedPostHp": 103,
+        "observedPostMaxHp": 103,
+        "observedTargetAboveEverySampledMaxHp": true,
+        "potions": [
+          12,
+          24,
+          31,
+          1,
+          1
+        ],
+        "preHp": 94,
+        "preMaxHp": 97,
+        "relics": [
+          {
+            "data": 0,
+            "id": 86
+          },
+          {
+            "data": 0,
+            "id": 41
+          },
+          {
+            "data": 0,
+            "id": 91
+          },
+          {
+            "data": 0,
+            "id": 176
+          },
+          {
+            "data": 0,
+            "id": 143
+          },
+          {
+            "data": 0,
+            "id": 0
+          },
+          {
+            "data": 0,
+            "id": 62
+          },
+          {
+            "data": 0,
+            "id": 163
+          },
+          {
+            "data": 0,
+            "id": 49
+          },
+          {
+            "data": 0,
+            "id": 173
+          },
+          {
+            "data": 0,
+            "id": 167
+          },
+          {
+            "data": 0,
+            "id": 24
+          },
+          {
+            "data": 0,
+            "id": 100
+          },
+          {
+            "data": 0,
+            "id": 70
+          },
+          {
+            "data": 2,
+            "id": 52
+          },
+          {
+            "data": 0,
+            "id": 66
+          },
+          {
+            "data": 0,
+            "id": 144
+          },
+          {
+            "data": 0,
+            "id": 31
+          },
+          {
+            "data": 0,
+            "id": 169
+          }
+        ],
+        "rowIndex": 181620,
+        "sampledMaxHpDeltaCounts": {
+          "0": 6,
+          "3": 23,
+          "4": 3
+        },
+        "source": 4108893,
+        "zeroDraws": 32
+      },
+      {
+        "observedMaxHpDelta": 6,
+        "observedPostHp": 62,
+        "observedPostMaxHp": 62,
+        "observedTargetAboveEverySampledMaxHp": true,
+        "potions": [
+          6,
+          7,
+          43,
+          1,
+          1
+        ],
+        "preHp": 56,
+        "preMaxHp": 56,
+        "relics": [
+          {
+            "data": 0,
+            "id": 86
+          },
+          {
+            "data": 0,
+            "id": 76
+          },
+          {
+            "data": 0,
+            "id": 121
+          },
+          {
+            "data": 0,
+            "id": 26
+          },
+          {
+            "data": 0,
+            "id": 102
+          },
+          {
+            "data": 0,
+            "id": 42
+          },
+          {
+            "data": 0,
+            "id": 119
+          },
+          {
+            "data": 0,
+            "id": 78
+          },
+          {
+            "data": 0,
+            "id": 91
+          },
+          {
+            "data": 0,
+            "id": 144
+          },
+          {
+            "data": 0,
+            "id": 66
+          },
+          {
+            "data": 1,
+            "id": 109
+          },
+          {
+            "data": 0,
+            "id": 100
+          },
+          {
+            "data": 0,
+            "id": 113
+          }
+        ],
+        "rowIndex": 249632,
+        "sampledMaxHpDeltaCounts": {
+          "0": 16,
+          "3": 11,
+          "4": 5
+        },
+        "source": 4112241,
+        "zeroDraws": 32
+      },
+      {
+        "observedMaxHpDelta": 8,
+        "observedPostHp": 65,
+        "observedPostMaxHp": 66,
+        "observedTargetAboveEverySampledMaxHp": true,
+        "potions": [
+          43,
+          43,
+          21,
+          1,
+          1
+        ],
+        "preHp": 51,
+        "preMaxHp": 58,
+        "relics": [
+          {
+            "data": 0,
+            "id": 86
+          },
+          {
+            "data": 0,
+            "id": 151
+          },
+          {
+            "data": 0,
+            "id": 49
+          },
+          {
+            "data": 0,
+            "id": 15
+          },
+          {
+            "data": 0,
+            "id": 90
+          },
+          {
+            "data": 0,
+            "id": 156
+          },
+          {
+            "data": 0,
+            "id": 54
+          },
+          {
+            "data": 0,
+            "id": 96
+          },
+          {
+            "data": 2,
+            "id": 68
+          },
+          {
+            "data": 0,
+            "id": 62
+          }
+        ],
+        "rowIndex": 322962,
+        "sampledMaxHpDeltaCounts": {
+          "0": 4,
+          "3": 1,
+          "4": 27
+        },
+        "source": 4115823,
+        "zeroDraws": 32
+      },
+      {
+        "observedMaxHpDelta": 4,
+        "observedPostHp": 90,
+        "observedPostMaxHp": 90,
+        "observedTargetAboveEverySampledMaxHp": true,
+        "potions": [
+          12,
+          1,
+          1,
+          1,
+          1
+        ],
+        "preHp": 86,
+        "preMaxHp": 86,
+        "relics": [
+          {
+            "data": 0,
+            "id": 86
+          },
+          {
+            "data": 0,
+            "id": 107
+          },
+          {
+            "data": 0,
+            "id": 95
+          },
+          {
+            "data": 0,
+            "id": 163
+          },
+          {
+            "data": 0,
+            "id": 159
+          }
+        ],
+        "rowIndex": 326818,
+        "sampledMaxHpDeltaCounts": {
+          "0": 2,
+          "3": 30
+        },
+        "source": 4116033,
+        "zeroDraws": 32
+      },
+      {
+        "observedMaxHpDelta": 6,
+        "observedPostHp": 101,
+        "observedPostMaxHp": 101,
+        "observedTargetAboveEverySampledMaxHp": true,
+        "potions": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "preHp": 95,
+        "preMaxHp": 95,
+        "relics": [
+          {
+            "data": 0,
+            "id": 86
+          },
+          {
+            "data": 0,
+            "id": 88
+          },
+          {
+            "data": 0,
+            "id": 91
+          },
+          {
+            "data": 0,
+            "id": 139
+          },
+          {
+            "data": 0,
+            "id": 95
+          },
+          {
+            "data": 0,
+            "id": 27
+          },
+          {
+            "data": 0,
+            "id": 156
+          }
+        ],
+        "rowIndex": 412984,
+        "sampledMaxHpDeltaCounts": {
+          "0": 2,
+          "3": 29,
+          "4": 1
+        },
+        "source": 4120241,
+        "zeroDraws": 32
+      }
+    ],
+    "interpretation": "finite 32-draw maxHP exposure removes observed HP support; does not establish zero exact analytic model mixture mass; frozen gate unchanged, no resampling or tuning",
+    "rows": 8
+  }
+}
