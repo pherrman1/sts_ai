@@ -128,7 +128,7 @@ ENTROPIC_BREW_ID = _POTION_IDS["ENTROPIC_BREW"]
 EMPTY_POTION_SLOT_ID = _POTION_IDS["EMPTY_POTION_SLOT"]
 IRONCLAD_ID = _CHARACTER_CLASS_IDS["IRONCLAD"]
 WRITHING_MASS_ID = _ENCOUNTER_IDS["WRITHING_MASS"]
-GOLD_MUTATING_ENCOUNTER_NAMES = ("LOOTER", "TWO_THIEVES")
+GOLD_MUTATING_ENCOUNTER_NAMES = ("LOOTER", "TWO_THIEVES", "EXORDIUM_THUGS")
 GOLD_MUTATING_ENCOUNTER_IDS = frozenset(
     _ENCOUNTER_IDS[name] for name in GOLD_MUTATING_ENCOUNTER_NAMES
 )
@@ -194,14 +194,16 @@ def iter_rows(path: Path) -> Iterator[dict]:
 def supported_reasons(predictor_input: dict, pre_state: dict) -> list[str]:
     """Return fallback reasons for input plus non-learned adapter eligibility state.
 
-    ``pre_state.smokeBombUsed`` is deliberately an adapter/support-gate field,
-    not a learned feature.  The learned input remains exactly
-    ``combat_predictor_input_v1``.
+    ``pre_state.smokeBombUsed`` and ``pre_state.stolenGold`` are deliberately
+    adapter/support-gate fields, not learned features.  The learned input
+    remains exactly ``combat_predictor_input_v1``.
     """
     validate_predictor_input(predictor_input)
     _validate_entity_domains(predictor_input)
     if not isinstance(pre_state, dict) or not isinstance(pre_state.get("smokeBombUsed"), bool):
         raise ValueError("support eligibility requires boolean pre_state.smokeBombUsed")
+    if not isinstance(pre_state.get("stolenGold"), int):
+        raise ValueError("support eligibility requires integer pre_state.stolenGold")
     reasons: list[str] = []
     if int(predictor_input["globals"]["characterClass"]) != IRONCLAD_ID:
         reasons.append("non_ironclad")
@@ -219,6 +221,8 @@ def supported_reasons(predictor_input: dict, pre_state: dict) -> list[str]:
         reasons.append("entropic_brew")
     if pre_state["smokeBombUsed"]:
         reasons.append("pre_smoke_bomb_used")
+    if pre_state["stolenGold"] != 0:
+        reasons.append("pre_stolen_gold_nonzero")
     return reasons
 
 
@@ -326,9 +330,10 @@ def _audit_summary(
         "supportBoundary": {
             "predicate": (
                 "globals.characterClass == IRONCLAD and globals.encounter != WRITHING_MASS "
-                "and globals.encounter not in (LOOTER, TWO_THIEVES) "
+                "and globals.encounter not in (LOOTER, TWO_THIEVES, EXORDIUM_THUGS) "
                 "and no deck card in (RITUAL_DAGGER, HAND_OF_GREED) and no active potion "
-                "(SMOKE_BOMB or ENTROPIC_BREW) and pre.smokeBombUsed == false"
+                "(SMOKE_BOMB or ENTROPIC_BREW) and pre.smokeBombUsed == false "
+                "and pre.stolenGold == 0"
             ),
             "ids": {
                 "ironcladCharacterClass": IRONCLAD_ID,
@@ -345,7 +350,8 @@ def _audit_summary(
             },
             "learnedInputSchema": "combat_predictor_input_v1",
             "adapterOnlyPreCombatFields": {
-                "pre.smokeBombUsed": "eligibility/support gate only; not a learned feature"
+                "pre.smokeBombUsed": "eligibility/support gate only; not a learned feature",
+                "pre.stolenGold": "eligibility/support gate only; not a learned feature; supported rows require zero so exit metadata can remain exact",
             },
             "rows": {**total, "supportRate": support_rows / rows if rows else None},
             "fallbackReasons": dict(sorted(reasons.items())),
@@ -370,7 +376,7 @@ def _audit_summary(
                     "source": "Monster::stealGoldFromPlayer called by Looter and Mugger MUG/LUNGE moves",
                     "visibleEncounterNames": list(GOLD_MUTATING_ENCOUNTER_NAMES),
                     "visibleEncounterIds": sorted(int(value) for value in GOLD_MUTATING_ENCOUNTER_IDS),
-                    "effect": "subtracts player.gold and records the stolen amount in the monster misc counter",
+                    "effect": "subtracts player.gold and records the stolen amount in the monster misc counter; EXORDIUM_THUGS can select a Looter through createStrongHumanoid",
                 },
                 {
                     "name": "hand_of_greed",
@@ -380,7 +386,8 @@ def _audit_summary(
                     "effect": "adds 20/25 to player.gold; Ectoplasm can suppress the gain but is not a support prerequisite",
                 },
             ],
-            "negativeAudit": "No other src/combat card or relic path writes persistent player gold or stolenGold; BattleContext exit code only copies and derives the recorded theft value.",
+            "negativeAudit": "No other src/combat card or relic path writes persistent player gold or stolenGold; BattleContext exit code copies player.gold and resets/derives stolenGold metadata for the current combat.",
+            "stolenGoldBoundary": "BattleContext::exitBattle resets g.info.stolenGold to zero, then derives current theft for non-escaped Looter/Mugger instances; pre.stolenGold == 0 is therefore required for exact supported copy-through.",
             "guardCoverage": {
                 "fullCorpusMutationRows": dict(sorted(gold_mutation_rows.items())),
                 "supportedRowsWithMutation": dict(sorted(gold_mutation_covered.items())),
@@ -789,8 +796,8 @@ def prepare(args: argparse.Namespace) -> None:
         },
         "eligibilityGuard": {
             "learnedInputSchema": "combat_predictor_input_v1",
-            "adapterOnlyPreCombatFields": ["pre.smokeBombUsed"],
-            "statement": "pre.smokeBombUsed is a support-gate field and is not learned or encoded",
+            "adapterOnlyPreCombatFields": ["pre.smokeBombUsed", "pre.stolenGold"],
+            "statement": "pre.smokeBombUsed and pre.stolenGold are support-gate fields and are not learned or encoded",
         },
         "rng": {"included": False, "reason": "combatRng[6] is oracle/provenance state and is not an input or learned output"},
     }

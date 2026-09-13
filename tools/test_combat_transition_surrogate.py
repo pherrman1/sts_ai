@@ -82,9 +82,11 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
             ("ritual_dagger", predictor(card_id=RITUAL_DAGGER_ID)),
             ("smoke_bomb", predictor(potion_id=SMOKE_BOMB_ID)),
             ("entropic_brew", predictor(potion_id=ENTROPIC_BREW_ID)),
-            ("gold_mutating_encounter", predictor(encounter=next(iter(GOLD_MUTATING_ENCOUNTER_IDS)))),
             ("gold_mutating_card", predictor(card_id=HAND_OF_GREED_ID)),
             ("non_ironclad", predictor(character_class=IRONCLAD_ID + 1)),
+        ) + tuple(
+            ("gold_mutating_encounter", predictor(encounter=encounter))
+            for encounter in sorted(GOLD_MUTATING_ENCOUNTER_IDS)
         )
         for reason, value in cases:
             with self.subTest(reason=reason):
@@ -94,6 +96,10 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
         pre_smoke["smokeBombUsed"] = True
         self.assertFalse(supported_for_surrogate(predictor(), pre_smoke))
         self.assertIn("pre_smoke_bomb_used", supported_reasons(predictor(), pre_smoke))
+        pre_stolen = state()
+        pre_stolen["stolenGold"] = 1
+        self.assertFalse(supported_for_surrogate(predictor(), pre_stolen))
+        self.assertIn("pre_stolen_gold_nonzero", supported_reasons(predictor(), pre_stolen))
 
     def test_hp_bins_use_round_half_up_and_are_bounded(self):
         self.assertEqual(hp_fraction_bin(1, 3), 33)
