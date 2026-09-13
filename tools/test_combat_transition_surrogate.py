@@ -14,12 +14,14 @@ try:
         HAND_OF_GREED_ID,
         JACK_OF_ALL_TRADES_ID,
         IRONCLAD_ID,
+        MAX_RELICS,
         RITUAL_DAGGER_ID,
         SMOKE_BOMB_ID,
         TRANSMUTATION_ID,
         WRITHING_MASS_ID,
         _sample_persistent_transition,
         _exact_accuracy,
+        _transition_metrics,
         _prepare_target_indices,
         _normalise_sampling_probabilities,
         hp_fraction_bin,
@@ -39,12 +41,14 @@ except ModuleNotFoundError:
         HAND_OF_GREED_ID,
         JACK_OF_ALL_TRADES_ID,
         IRONCLAD_ID,
+        MAX_RELICS,
         RITUAL_DAGGER_ID,
         SMOKE_BOMB_ID,
         TRANSMUTATION_ID,
         WRITHING_MASS_ID,
         _sample_persistent_transition,
         _exact_accuracy,
+        _transition_metrics,
         _prepare_target_indices,
         _normalise_sampling_probabilities,
         hp_fraction_bin,
@@ -186,6 +190,47 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
         hp_actual = np.asarray([[40, 80], [40, 80]])
         hp_predicted = np.asarray([[40, 80], [41, 80]])
         self.assertEqual(_exact_accuracy(hp_actual, hp_predicted), 0.5)
+
+    def test_relic_exact_match_compares_predicted_post_state_to_actual_post_state(self):
+        arrays = {
+            "y_win": np.asarray([1, 1]),
+            "preHpFrac": np.asarray([0.5, 0.5], dtype=np.float32),
+            "preMaxHp": np.asarray([20, 20], dtype=np.int16),
+            "y_post_hp": np.asarray([10, 10], dtype=np.int16),
+            "y_post_max_hp": np.asarray([20, 20], dtype=np.int16),
+            "y_hp_bin": np.asarray([50, 50], dtype=np.int8),
+            "potionCapacity": np.asarray([1, 1], dtype=np.int8),
+            "potions": np.zeros((2, 5, 2), dtype=np.int16),
+            "y_potions": np.zeros((2, 5), dtype=np.int16),
+            "relics": np.zeros((2, MAX_RELICS, 3), dtype=np.int16),
+            "y_relic_delta": np.zeros((2, MAX_RELICS), dtype=np.int16),
+            "y_relic_mask": np.zeros((2, MAX_RELICS), dtype=np.bool_),
+        }
+        arrays["relics"][:, 0, 0] = 26
+        arrays["y_relic_delta"][0, 0] = 6
+        arrays["y_relic_mask"][:, 0] = True
+        predictions = {
+            "pDelta": np.ones((2, 1), dtype=np.float64),
+            "hpConditional": np.eye(101, dtype=np.float64)[[50, 50]][:, None, :],
+            "potionLogits": np.full((2, 5, 48), -100.0),
+            "relicLogits": np.zeros((2, MAX_RELICS, 2), dtype=np.float64),
+        }
+        predictions["potionLogits"][:, :, 0] = 100.0
+        predictions["relicLogits"][0, 0] = [0.0, 1.0]
+        predictions["relicLogits"][1, 0] = [1.0, 0.0]
+        target_spec = {
+            "maxHpDeltaValues": [0],
+            "relicDeltaValues": [0, 6],
+            "relicDeltaValuesById": {"26": [0, 6]},
+        }
+        metrics = _transition_metrics(
+            arrays, target_spec, np.asarray([0, 1]), predictions, test_rows=2
+        )
+        self.assertEqual(metrics["relicCounters"]["exactAllCounterVectorAccuracy"], 1.0)
+        self.assertEqual(
+            metrics["relicCounters"]["copyThroughBaseline"]["exactAllCounterVectorAccuracy"],
+            0.5,
+        )
 
     def test_sampler_normalizes_softmax_roundoff_before_choice(self):
         probabilities = _normalise_sampling_probabilities(np.asarray([0.2, 0.8000001]))

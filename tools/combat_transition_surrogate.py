@@ -1450,8 +1450,9 @@ def _transition_metrics(arrays: dict, target_spec: dict, indices: np.ndarray,
     relic_probs, predicted_relic_delta, actual_relic_delta = _masked_relic_probabilities(
         predictions["relicLogits"][local], arrays, ids, target_spec
     )
-    actual_relic_vector = arrays["relics"][ids, :, 1]
-    predicted_relic_vector = actual_relic_vector + predicted_relic_delta
+    pre_relic_vector = arrays["relics"][ids, :, 1]
+    actual_relic_vector = pre_relic_vector + actual_relic_delta
+    predicted_relic_vector = pre_relic_vector + predicted_relic_delta
     active_relic = arrays["y_relic_mask"][ids]
     changed_relic = active_relic & (actual_relic_delta != 0)
     target_indices = np.asarray([
@@ -1467,7 +1468,7 @@ def _transition_metrics(arrays: dict, target_spec: dict, indices: np.ndarray,
             token_logloss_values.append(-math.log(max(float(relic_probs[row, token, target_indices[row, token]]), 1e-8)))
             token_accuracy_values.append(bool(predicted_relic_delta[row, token] == actual_relic_delta[row, token]))
     relic_exact = np.all(predicted_relic_vector == actual_relic_vector, axis=1)
-    relic_baseline_exact = np.all(arrays["relics"][ids, :, 1] == actual_relic_vector, axis=1)
+    relic_baseline_exact = np.all(pre_relic_vector == actual_relic_vector, axis=1)
     changed_values = np.abs(predicted_relic_delta[changed_relic] - actual_relic_delta[changed_relic])
     relic_metrics = {
         "mutableTokenCount": int(active_relic.sum()),
@@ -1495,7 +1496,7 @@ def _transition_metrics(arrays: dict, target_spec: dict, indices: np.ndarray,
         (arrays["preMaxHp"][ids] == actual_max_hp)
         & (np.clip(_round_half_up_vector(arrays["preHpFrac"][ids] * arrays["preMaxHp"][ids]), 1, arrays["preMaxHp"][ids]) == actual_hp)
         & np.all(potion_baseline == actual_potions, axis=1)
-        & np.all(arrays["relics"][ids, :, 1] == actual_relic_vector, axis=1)
+        & np.all(pre_relic_vector == actual_relic_vector, axis=1)
     )
     return {
         "nSupportedTestVictories": int(len(ids)),
@@ -1736,6 +1737,7 @@ def fit(args: argparse.Namespace) -> None:
     torch.save({"schemaVersion": MODEL_SCHEMA, "family": "phase2", "stateDict": _safe_state_dict(phase2.net), "targetSpec": target_spec}, phase2_model_path)
     torch.save({"schemaVersion": MODEL_SCHEMA, "family": "point_control", "stateDict": _safe_state_dict(point.net)}, point_model_path)
     latency_ms = _measure_latency(phase2, arrays, int(all_test[0]), args)
+    point_latency_ms = _measure_latency(point, arrays, int(all_test[0]), args)
     evidence = {
         "schemaVersion": MODEL_SCHEMA,
         "baselineHeadSha": args.baseline_head_sha,
@@ -1773,6 +1775,7 @@ def fit(args: argparse.Namespace) -> None:
             "phase2Model": {"path": str(phase2_model_path.resolve()), "bytes": phase2_model_path.stat().st_size, "sha256": sha256(phase2_model_path)},
             "pointControlModel": {"path": str(point_model_path.resolve()), "bytes": point_model_path.stat().st_size, "sha256": sha256(point_model_path)},
             "batch1LatencyMsOnFitDevice": latency_ms,
+            "pointControlBatch1LatencyMsOnFitDevice": point_latency_ms,
         },
         "rngContract": {
             "combatRngIncluded": False,
@@ -1790,6 +1793,7 @@ def fit(args: argparse.Namespace) -> None:
         "phase2ModelBytes": phase2_model_path.stat().st_size,
         "pointControlModelBytes": point_model_path.stat().st_size,
         "batch1LatencyMsOnFitDevice": latency_ms,
+        "pointControlBatch1LatencyMsOnFitDevice": point_latency_ms,
         "output": str(out.resolve()),
     }, indent=2, sort_keys=True))
 

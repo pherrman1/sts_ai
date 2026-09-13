@@ -6895,3 +6895,57 @@ model training was changed.
   repaired and the omitted-mutation support gate is closed, but the frozen
   target design cannot proceed without a separate target-schema decision.
   Evidence: [corrected Phase-2 report](evidence/combat_transition_surrogate_phase2_corrected_2026-09-13.md).
+
+## §231 Phase-2 gold boundary and remaining DeepSets fit (2026-09-13)
+
+- **Question/protocol:** remove the brittle TRAIN-derived joint
+  `(deltaGold, stolenGold)` categorical target after a bounded source audit;
+  reuse the §228 corpus, source split, producer, teacher, and accepted Phase-2
+  target design. No new data, runtime inference, Silver replacement, OOC
+  rollout, attention/XGBoost rerun, or RNG prediction was authorized.
+- **Source audit:** direct combat gold writes are Looter/Mugger theft through
+  `Monster::stealGoldFromPlayer`, direct Hand of Greed through
+  `Player::gainGold`, and generated colorless Hand of Greed reachable through
+  Jack of All Trades, Transmutation, Toolbox, or Colorless Potion. The
+  predictor-visible encounter guards are `LOOTER`, `TWO_THIEVES`, and
+  `EXORDIUM_THUGS`; the card/relic/potion guards are Hand of Greed, Jack of
+  All Trades, Transmutation, Toolbox, and Colorless Potion. Class-bound
+  Ironclad random-card paths were checked against the Ironclad pool and do not
+  contain Hand of Greed. Combat reward gold, including Golden Idol reward
+  modification, occurs after the raw exit hook and is outside this transition
+  boundary. No unsupported source mechanism remained.
+- **Support boundary:** the final predicate retains non-Ironclad,
+  Writhing Mass, Ritual Dagger, Smoke Bomb, Entropic Brew, and pre-combat
+  `smokeBombUsed` exclusions and adds all source-audited gold guards plus
+  `pre.stolenGold == 0`. The learned input remains
+  `combat_predictor_input_v1`; `pre.smokeBombUsed` and `pre.stolenGold` are
+  adapter/support-gate fields, not learned features. No v2 schema was created.
+- **Coverage:** on the unchanged 510,030-row corpus, support is 413,799
+  (81.1323%), fallback 96,231. Death support is 15,384/18,133 (84.8398%);
+  Act 1/2/3 support rates are 82.5107% / 79.4053% / 80.7983%; EVENT/ELITE/
+  MONSTER/BOSS rates are 83.9126% / 84.0875% / 79.5760% / 83.7653%.
+  Relative to §230, support loss is 71,367 rows or 13.9927 percentage points.
+- **Zero gates:** the full audit found 21,781 `gold` mutations and 37,894
+  `stolenGold` mutations, with zero supported rows for either. Existing
+  deck-structure (1,151), card-misc (109), and `smokeBombUsed` (3,001)
+  mutation rows also have zero supported rows. The supported copy-through
+  violation set is empty, including zero smoke-bomb directions. All observed
+  gold mutations are covered by the visible guard.
+- **Fit:** the remaining Phase-2 target contains survival, max-HP delta,
+  stochastic 101-bin HP fraction, five potion slots, and mutable relic-counter
+  deltas. DeepSets and point-control DeepSets used validation-only epoch
+  selection, selected 9 and 12 epochs respectively, refit from scratch on
+  TRAIN+VALIDATION, and evaluated the fixed TEST split once. TEST support was
+  41,454 rows. Phase-2 HP discrete CRPS was 0.048484 versus 0.071822 for the
+  point-control degenerate distribution. Relic full-vector accuracy was
+  0.773967 versus 0.764348 copy-through and changed-token accuracy was
+  0.097227 versus 0; potion changed-row accuracy was 0.390527 versus 0, but
+  potion full-vector accuracy was 0.460983 versus 0.728150.
+- **Classification:** **`PHASE2_PARTIAL`**. Core metrics are within the
+  explicit point-control tolerance and HP distribution improves, but the
+  aggregate sparse-head rule is false because potion full-vector accuracy does
+  not beat copy-through. Gold/stolenGold are excluded from that criterion and
+  remain native fallback/copy-through fields. Sampled-state validity is 16/16
+  with zero invalid states. Phase-2 and point-control checkpoints are 493,271
+  and 388,562 bytes; measured batch-1 CPU latency is 0.3916 ms and 0.2989 ms.
+- **Evidence:** [gold-boundary fit report](evidence/combat_transition_surrogate_phase2_gold_boundary_2026-09-13.md).
