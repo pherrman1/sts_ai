@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-09-13 for attention training precision and padding; 2026-09-10 for
+Last verified: 2026-09-13 for frozen composition, attention training precision and padding; 2026-09-10 for
 the semantic-branch trainer adapter and root trainer audit.
 
 ## Purpose
@@ -68,6 +68,20 @@ of obvious degradation. FP32 remains historical reproduction mode; future
 scientific candidate/control comparisons must use the same training precision.
 The [bounded CUDA confirmation](../../experiments/evidence/attention_amp_confirmation_2026-09-13.md)
 checks optimizer-step speed and memory, not scientific quality.
+
+`tools/combat_transition_frozen_composition.py` is an offline inference-only
+diagnostic on the frozen attention checkpoints: A retains Phase-2, B replaces
+only survival with point-control, and C optionally masks potion support on
+certified inputs. It does not call `fit`. Certification is conservative:
+Ironclad, only canonical RED/COLORLESS/CURSE visible deck cards, and no
+Entropic Brew. The native basis and measured applicability are in the
+[frozen-composition evidence](../../experiments/evidence/frozen_survival_potion_2026-09-13.md).
+Uncertified inputs retain B's probabilities. Masked log-softmax fails on
+nonfinite logits; unavailable slots copy through, and sampled potion count
+comes from slots. Draws select only positive-mass classes, avoiding residual
+roundoff assigned to forbidden identities. Each encoder keeps its own frozen
+normalization buffers; evaluation remains FP32 at historical fixed widths.
+This adapter does not qualify native transitions or RNG continuation.
 
 Representative producers are `datagen3`, `fightgen`, `fairgen`, `oocnextgen`,
 and the August 1 `strategicgen` mode. `strategicgen` records one rich-state row
