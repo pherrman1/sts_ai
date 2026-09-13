@@ -99,6 +99,8 @@ TokState buildTokState(const GameContext &gc, const PathHistory &path);
 int vQuery(GameContext &gc, int rIdx, double bossW = -1.0);
 double vStateRaw(GameContext &gc);
 double vStateWin(GameContext &gc);
+// Throws when native model is unavailable; never contacts v_server.
+double vStateWinNative(GameContext &gc);
 std::string vSendRecv(const std::string &request);
 std::string mapGraphCsv(const GameContext &gc, bool rooms);
 std::string mapSpecialCsv(const GameContext &gc);
@@ -136,6 +138,9 @@ bool configurePathActionPolicyFromEnvironment();
 void configureVPathPolicyFromEnvironment();
 void configureRestVPolicyFromEnvironment();
 void resetPathPolicyState();
+
+bool v4DecisionSupported(const GameContext &);
+std::vector<GameAction> v4CandidateActions(const GameContext &);
 
 void strategicCands(const GameContext &, const GameAction &,
                     int &, int &, int &, int &, int &, int &, int &);

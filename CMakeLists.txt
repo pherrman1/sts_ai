@@ -229,6 +229,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp
     apps/one_combat/e2c_capture.cpp
+    apps/one_combat/ooc_mcts_adapter.cpp
     apps/one_combat/ooc_policy.cpp
     apps/one_combat/run_driver.cpp
     apps/one_combat/fight_replay.cpp
@@ -447,3 +448,8 @@ set_tests_properties(particle_leaf_probe_selftest particle_posterior_probe_selft
     PROPERTIES LABELS "research-repro")
 set_property(TEST selfplay_syntax paired_analysis_selftest check_replay_selftest
     battlecontext_roundtrip issue_fixes APPEND PROPERTY LABELS "smoke")
+
+add_test(NAME ooc_mcts_adapter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:one_combat> oocmctsselftest)
+set_tests_properties(ooc_mcts_adapter PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    LABELS "integration" ENVIRONMENT "STS_NATIVE_OOC=1;STS_OOC_STRATEGIC_TOK_NN=${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native")

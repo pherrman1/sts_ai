@@ -25,12 +25,15 @@ struct Toy : OocGenerativeModel {
     std::map<OocStateId, std::vector<OocPlannerAction>> actions;
     std::function<OocStateId(OocStateId, OocActionId, std::mt19937_64 &)> transition;
     double leaf = 0.5;
-    mutable unsigned leafCalls = 0;
+    mutable unsigned leafCalls = 0, legalCalls = 0;
+    bool boundary = false;
+    bool isLeafBoundary(OocStateId) const override { return boundary; }
     std::optional<double> terminalValue(OocStateId s) const override {
         auto it = terminals.find(s);
         return it == terminals.end() ? std::nullopt : std::optional<double>(it->second);
     }
     std::vector<OocPlannerAction> legalActions(OocStateId s) const override {
+        ++legalCalls;
         auto it = actions.find(s);
         return it == actions.end() ? std::vector<OocPlannerAction>{} : it->second;
     }
@@ -71,6 +74,10 @@ void tests() {
     auto d = planner.search(t, 0, 10000);
     require(d.selectedAction == 2 && d.rootActions[0].q == .25 && d.rootActions[1].q == .75, "deterministic choice");
     print("deterministic", d);
+    t = deterministic(); t.terminals = {{1,0.}, {2,1.}};
+    auto exactValues = planner.search(t, 0, 10);
+    require(exactValues.rootActions[0].q == 0. && exactValues.rootActions[1].q == 1.
+        && exactValues.metrics.leafEvaluations == 0, "exact 0/1 terminal backup");
     t = alternating();
     auto a = planner.search(t, 0, 20000);
     require(std::abs(a.rootActions[0].q - .5) < .025, "chance must average, never maximize");
@@ -160,6 +167,29 @@ void tests() {
     t.terminals[0] = 1;
     h = OocMctsPlanner(cfg).search(t, 0, 3);
     require(h.metrics.leafEvaluations == 0 && !h.selectedAction, "terminal precedes horizon");
+
+    t = Toy{}; t.boundary = true; t.leaf = .4;
+    auto boundaryResult = planner.search(t, 0, 3);
+    require(t.leafCalls == 3 && t.legalCalls == 0 && boundaryResult.metrics.leafEvaluations == 3,
+            "boundary evaluates leaf without enumeration");
+    require(!boundaryResult.selectedAction && boundaryResult.metrics.transitionSamples == 0,
+            "boundary has no transition");
+    for (double terminal : {0., 1.}) {
+        t.terminals[0] = terminal; t.leafCalls = 0;
+        auto exact = planner.search(t, 0, 3);
+        require(t.leafCalls == 0 && t.legalCalls == 0 && exact.metrics.leafEvaluations == 0,
+                "exact terminal precedes boundary");
+    }
+    t = deterministic(); t.boundary = false;
+    // Downstream boundary must stop before enumeration as well.
+    struct ChildBoundary : Toy {
+        bool isLeafBoundary(OocStateId id) const override { return id != 0; }
+    } childBoundary;
+    childBoundary.actions = {{0, {{10, 1}}}};
+    childBoundary.transition = [](auto, auto, auto &) { return 1; };
+    auto downstream = planner.search(childBoundary, 0, 4);
+    require(childBoundary.legalCalls == 1 && childBoundary.leafCalls == 4
+        && downstream.metrics.leafEvaluations == 4, "downstream boundary stops expansion");
 
     t = deterministic(0, 0);
     auto uniform = planner.search(t, 0, 1);

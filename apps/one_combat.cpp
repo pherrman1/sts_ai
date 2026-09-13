@@ -1,3 +1,4 @@
+#include "one_combat/ooc_mcts_adapter.h"
 // one_combat.cpp -- integration driver for full-run evaluation, data generation,
 // and focused search/model diagnostics.
 
@@ -1134,6 +1135,14 @@ std::string nativeShopPlan(GameContext &gc) {
     for (unsigned k = 0; k < items.size(); ++k) if (bestMask & (1u << k)) out << items[k].kind << items[k].slot << ' ';
     if (bestRemove) out << 'x';
     return out.str();
+}
+
+double vStateWinNative(GameContext &gc) {
+    if (!g_winNet.ok) throw std::runtime_error("OOC MCTS requires native v_win");
+    const double value = g_winNet.predict(richFeatureVec(gc));
+    if (!std::isfinite(value) || value < 0 || value > 1)
+        throw std::runtime_error("OOC MCTS invalid native v_win value");
+    return value;
 }
 
 double vStateWin(GameContext &gc) {
@@ -9611,6 +9620,34 @@ int main(int argc, char **argv) {
         oocFactorEvaluate(manifest, out, referenceSims, futures, futureStart,
                           nDecisions, true, false, true);
 
+    } else if (mode == "oocmctsselftest") {
+        try {
+            one_combat::oocMctsAdapterSelfTest();
+            GameContext gc(CharacterClass::IRONCLAD, 42, 0);
+            PathHistory initialHistory;
+            one_combat::OocGameContextModel model(gc, initialHistory);
+            const bool loaded = g_winNet.ok;
+            g_winNet.ok = false;
+            bool constructorRejected = false, leafRejected = false;
+            try { one_combat::OocGameContextModel missing(gc, initialHistory); }
+            catch (const std::runtime_error &) { constructorRejected = true; }
+            try { model.leafValue(0); }
+            catch (const std::runtime_error &) { leafRejected = true; }
+            // Exact terminals still bypass native evaluation at a boundary.
+            gc.screenState = ScreenState::BATTLE;
+            gc.outcome = GameOutcome::PLAYER_VICTORY;
+            g_winNet.ok = loaded;
+            one_combat::OocGameContextModel terminal(gc, initialHistory);
+            g_winNet.ok = false;
+            auto exact = search::OocMctsPlanner().search(terminal, 0, 3);
+            g_winNet.ok = loaded;
+            if (!constructorRejected || !leafRejected || exact.metrics.leafEvaluations != 0)
+                throw std::runtime_error("native v_win fail-closed/terminal test failed");
+            std::cout << "PASS native v_win unavailable rejects construction/leaves; terminals bypass leaves\n";
+        } catch (const std::exception &e) {
+            std::cerr << "FAIL oocmctsselftest: " << e.what() << '\n';
+            return 1;
+        }
     } else if (mode == "oocsemanticselftest") {
         semanticPilotSelfTest();
     } else if (mode == "oocsemanticcapture") {
