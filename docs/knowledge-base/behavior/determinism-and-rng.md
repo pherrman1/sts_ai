@@ -1,6 +1,7 @@
 # Determinism and RNG
 
-Last verified: 2026-08-02 against commit `6f7159f` and the current working tree (hidden-information boundary audit, plan 5.6.4 / spec §A.14).
+Last verified: 2026-09-14 for supported-v1 RNG continuation;
+2026-08-02 against commit `6f7159f` and the current working tree (hidden-information boundary audit, plan 5.6.4 / spec §A.14).
 
 ## Purpose
 
@@ -22,6 +23,34 @@ AI, card-random, monster-HP and shuffle streams from the public
 resulting stream states back to `GameContext`
 (`src/combat/BattleContext.cpp::init`, `exitBattle`). Search operates on battle
 copies, while the selected action is committed to the live battle.
+
+For the current supported-v1 whole-combat surrogate, no learned RNG head is
+needed. `potionRng` is unchanged because Entropic Brew is the sole live combat
+consumer and is excluded. Every live `miscRng` draw occurs in monster
+initialization; its public call schedule is determined by encounter, including
+helper calls and temporary candidate construction. Replaying that schedule
+from pre.miscRng with native bounded-rejection semantics reconstructs exact
+post counter and seeds. Later summons use AI RNG. The audit reproduces all
+510,030 frozen misc states, including all 413,799 supported states.
+
+Native `setCounter` advances one raw step per boolean draw and does not rewind.
+It matches all inherited-stream corpus states, but cannot generally replay
+bounded `random(int)` rejection or untracked raw calls. Use the deterministic
+bounded initialization closure, not an assumed one-step-per-counter theorem.
+The required misc counter delta is derived from encounter; potion delta is
+zero. See [the exact continuation evidence](../../experiments/evidence/combat_rng_continuation_2026-09-14.md)
+and [current research](../evaluation/current-research.md).
+
+All battles recreate AI/card-random/monster-HP/shuffle even at the same floor.
+Current normal controller paths contain no reachable same-floor successor:
+Colosseum is disabled and its handler is a TODO, event combats return to
+rewards/map, and the A20 second boss increments floor. Corpus source ordering
+confirms zero same-floor pairs among 485,031 consecutive fights. Card-random
+and shuffle OOC consumers after combat run after normal floor or boss-treasure
+reset (including Pandora's Box). Their RAW post values need no generated state
+for normal supported continuation; exact six-stream RAW snapshot synthesis is
+a different contract. Re-audit any new chain/controller or combat RNG consumer.
+Runtime surrogate integration and multi-fight qualification remain pending.
 
 `STS_FAIR=1` calls `ScumSearchAgent2::playoutBattleFair`. With default
 Searcher2, each simulation shuffles the draw pile and replaces only shuffle and
