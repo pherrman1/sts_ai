@@ -7094,6 +7094,25 @@ model training was changed.
   Raw outputs/logs remain external in
   `/home/philippherrmann/sts_sweep/runs/joint-potion-mask-20260913/`.
 
+## 237. Winning-combat HP target representation (2026-09-14)
+
+- **Hypotheses:** signed absolute HP change may generalize better across
+  starting/max HP; normalized ending HP may be easier under threshold/healing
+  mechanics. Only target representation changes; no max-HP prediction head.
+- **Baseline:** authorized current main `31c7a1b9adff9d55c158f5ab560f89176c0e99b3`.
+- **Design:** all globally supported victories; frozen nested TRAIN+VALIDATION
+  versus reused engineering HOLDOUT, exact source disjointness; teacher-forced
+  observed max-HP delta in both width-64 attention models. Ten fixed FP16 AMP
+  epochs, three paired training seeds, no validation/holdout epoch selection.
+- **Primary:** raw continuous reconstructed HP MAE; delta minus fraction;
+  rowwise differences averaged over seeds, then 1,000 source-group resamples.
+  One-sided 95% CI plus agreement of all seed estimates decides the winner.
+- **Status:** preflight and five focused tests passed; scientific fit awaits
+  independent implementation review. No gameplay/new collection or outcome.
+- **Provenance/protocol:** [frozen evidence](evidence/hp_target_comparison_2026-09-14.md).
+  Checkpoints and raw predictions remain external under
+  `/home/philippherrmann/sts_sweep/runs/hp-targets-20260914/`.
+
 ## §236 Fresh nested HOLDOUT potion decoder fit (2026-09-13)
 
 - **Executed/reviewed SHA:** `9f15dba5c348f775725232d33e72d2cf8e1b6127`,

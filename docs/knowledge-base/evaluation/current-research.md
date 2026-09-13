@@ -83,6 +83,18 @@ follow-up was not run. Runtime inference is not implemented, and
 surrogate rollouts. See [ledger-06 §231](../../experiments/ledger-06.md)
 and the [gold-boundary fit report](../../experiments/evidence/combat_transition_surrogate_phase2_gold_boundary_2026-09-13.md).
 
+### Winning-combat HP target representation
+
+The frozen HP-only comparison tests signed absolute HP change against final
+HP fraction on every globally supported victory, conditioning both arms on
+the true observed max-HP delta. Nested TRAIN+VALIDATION sources train both
+models from scratch; nested HOLDOUT is reused engineering data, with no epoch
+selection. Three paired seeds and ten fixed AMP epochs isolate target
+representation. Implementation review precedes the scientific fit; no result
+or runtime qualification is claimed yet. Max-HP modeling, survival, potion,
+relic support, corpus, and simulator behavior are unchanged. See the
+[frozen protocol and evidence](../../experiments/evidence/hp_target_comparison_2026-09-14.md).
+
 ### Phase-2 attention representation ablation
 
 The authorized attention ablation used the same final support boundary,
