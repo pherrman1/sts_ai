@@ -245,9 +245,11 @@ def reconstruction_metrics(cache,ids,modes):
             elif b['data']!=a['data']: validity['unsupportedMutableMutations']+=1
     mask=cache['relicMask'][ids]; changed=(truth!=cache['relicPre'][ids]) & mask
     learned=np.isin(cache['relicIds'][ids], [base._RELIC_IDS[n] for n in relic.TRAJECTORY]+[base._RELIC_IDS['LIZARD_TAIL']])
-    def metric(pred,tokenmask=mask):
+    def metric(pred,tokenmask=None):
+        all_rows=tokenmask is None
+        if tokenmask is None: tokenmask=mask
         error=np.abs(pred-truth); exact=np.all((error==0)|~tokenmask,-1)
-        carrier=tokenmask.any(-1); changed_rows=np.any(changed & learned & tokenmask,-1)
+        carrier=np.ones(len(ids),bool) if all_rows else tokenmask.any(-1); changed_rows=np.any(changed & learned & tokenmask,-1)
         def avg(v,m): return float(v[m].mean()) if m.any() else None
         return dict(rows=int(carrier.sum()),tokens=int(tokenmask.sum()),changedTokens=int((changed & tokenmask).sum()),
                     fullVectorExact=avg(exact,carrier),changedVectorRows=int(changed_rows.sum()),fullVectorExactChanged=avg(exact,changed_rows),
@@ -293,7 +295,7 @@ def slices(cache,ids,teacher,ancestral,sampled_hp,sampled_masks,draw_nll):
     result['sampledPotionConsumption']={}
     for label,m in [('zero',sampled_masks==0),('nonzero',sampled_masks!=0)]:
         result['sampledPotionConsumption'][label]=dict(draws=int(m.sum()),drawConditionalNll=float(draw_nll[m].mean()) if m.any() else None,teacherNll=float(np.broadcast_to(teacher,m.shape)[m].mean()) if m.any() else None)
-    result['sampledSliceConvention']='drawConditionalNll is conditioned on that upstream draw; mixtureRowNll is descriptive draw-weighted row composition' 
+    result['sampledSliceConvention']='drawConditionalNll is conditioned on that upstream draw; mixtureRowNll is descriptive draw-weighted row composition'
     return result
 
 
