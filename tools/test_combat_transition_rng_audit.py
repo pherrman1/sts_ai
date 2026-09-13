@@ -132,6 +132,7 @@ int main() {
         def result(misc_matches=2, potion_equal=2):
             values = {k: {'state_changed': 0, 'exact_equal': potion_equal} for k in audit.STREAMS}
             return {'supportedRows': 2, 'deterministicMiscReplay': {'supported_matches': misc_matches},
+                    'sameFloor': {'same_floor_supported_origin': 0},
                     'summaries': {'supported': values, 'encounter:1': values}}
         good = audit.compact_result(result())
         self.assertEqual(good['decision']['classification'], 'RNG_COUNTER_DELTA_EXACT')
@@ -139,6 +140,63 @@ int main() {
         self.assertNotIn('encounter:1', good['summaries'])
         for bad in (result(misc_matches=1), result(potion_equal=1)):
             self.assertEqual(audit.compact_result(bad)['decision']['classification'], 'RNG_CONTINUATION_UNRESOLVED')
+
+    def test_supported_same_floor_pair_prevents_exact_classification(self):
+        fights = [{'fightIdx': i, 'floor': 1, 'outcome': 1, 'supported': True}
+                  for i in range(2)]
+        same_floor_supported = sum(a['supported'] and a['floor'] == b['floor']
+                                   for a, b in audit.ordered_pairs({1: fights}))
+        self.assertEqual(same_floor_supported, 1)
+        values = {k: {'state_changed': 0, 'exact_equal': 2} for k in audit.STREAMS}
+        result = {'supportedRows': 2, 'deterministicMiscReplay': {'supported_matches': 2},
+                  'sameFloor': {'same_floor_supported_origin': same_floor_supported},
+                  'summaries': {'supported': values}}
+        self.assertEqual(audit.compact_result(result)['decision']['classification'],
+                         'RNG_CONTINUATION_UNRESOLVED')
+        del result['sameFloor']['same_floor_supported_origin']
+        with self.assertRaises(KeyError):
+            audit.compact_result(result)
+
+    def test_dropped_final_fight_fails_row_accounting(self):
+        rng = {'counter': 0, 'seed0': 1, 'seed1': 2}
+        row = {'sourceSeed': 1, 'fightIdx': 0, 'floor': 1, 'act': 1,
+               'roomClass': 'NORMAL', 'encounter': 1, 'predictorInput': {},
+               'transition': {'combatOutcome': 1, 'pre': {'combatRng': [rng] * 6},
+                              'post': {'combatRng': [rng] * 6}}}
+        # This remaining run still has its source and contiguous index zero.
+        self.assertEqual(list(audit.ordered_pairs({1: [{'fightIdx': 0, 'floor': 1, 'outcome': 1}]})), [])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data = root / 'corpus.jsonl'
+            manifest = root / 'manifest.json'
+            manifest.write_text(json.dumps({'csv': {'sha256': audit.FROZEN_SHA, 'path': str(data)},
+                                            'producerGitSha': 'a' * 40, 'seedSpec': {'start': 1, 'count': 1}}))
+            data.with_suffix('.jsonl.provenance.json').write_text(json.dumps({
+                'dataset_path': str(data), 'git_sha': 'a' * 40, 'rows_written': 2,
+                'completed_seeds': 1, 'requested_seeds': 1, 'seed_offset': 1,
+                'invalid_or_quarantined_seeds': 0, 'generator': 'combattransitiongen',
+                'quarantined': {}}))
+            integrity = {'rows': 2, 'completedSeeds': 1, 'requestedSeeds': 1,
+                         'quarantinedSeeds': 0, 'quarantinedRows': 0}
+            with patch.object(audit, 'validate_corpus', return_value=integrity), \
+                 patch.object(audit, 'iter_rows', return_value=iter([row])), \
+                 patch.object(audit, 'supported_for_surrogate', return_value=True):
+                with self.assertRaisesRegex(ValueError, 'audited row count.*1 != 2'):
+                    audit.audit(manifest)
+
+    def test_compaction_retains_only_inherited_aggregate_distributions(self):
+        def values():
+            return {k: {'state_changed': 0, 'exact_equal': 2,
+                        'delta_counter_distribution': {'0': 2}} for k in audit.STREAMS}
+        result = {'supportedRows': 2, 'deterministicMiscReplay': {'supported_matches': 2},
+                  'sameFloor': {'same_floor_supported_origin': 0},
+                  'summaries': {'all': values(), 'supported': values(), 'act:1': values()}}
+        compact = audit.compact_result(result)
+        for name, streams in compact['summaries'].items():
+            for stream, counts in streams.items():
+                self.assertEqual('delta_counter_distribution' in counts,
+                                 name in ('all', 'supported') and stream in ('miscRng', 'potionRng'))
+                self.assertEqual(counts['exact_equal'], 2)
 
     def test_companion_provenance_mismatch_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:

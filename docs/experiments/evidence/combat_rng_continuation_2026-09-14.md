@@ -10,11 +10,14 @@ without rows. SHA256:
 `74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde`.
 Producer: `f0bbd7721e7cc1453976ebb91ee11ebe6127a2bf`, exact-10k Silver,
 project-fair, native OOC, A0. The companion manifest/provenance and complete
-row/state/predictor contract are validated before counting. The current
+row/state/predictor contract are validated before counting. After iteration,
+the audited-row count must equal the validated corpus-row count exactly;
+source presence and contiguous fight indices alone cannot prove this.
+The current
 `combat_transition_surrogate.supported_for_surrogate` supports 413,799 rows;
 the audit calls this function on each row rather than duplicating eligibility.
-Full machine-readable counts, integer delta histograms, native source hashes,
-source identities, outcome/act/room slices and relevant encounter slices are
+Full machine-readable counts, aggregate misc/potion integer delta histograms,
+native source hashes, source identities, outcome/act/room slices and relevant encounter slices are
 in [the JSON evidence](combat_rng_continuation_2026-09-14.json).
 
 ## Exact corpus results
@@ -170,8 +173,10 @@ an acceptable pre-combat guard.
 ## Decision and minimal contract
 
 **`RNG_COUNTER_DELTA_EXACT`** is the selected classification: current supported
-misc and potion states reconstruct exactly. This is stronger than a learned
-counter solution because the only nonzero counter delta, misc, is already
+misc and potion states reconstruct exactly. The decision also requires
+`sameFloor.same_floor_supported_origin == 0`; any supported-origin same-floor
+successor prevents this exact classification, and missing same-floor evidence
+fails closed. This is stronger than a learned counter solution because the only nonzero counter delta, misc, is already
 determined by visible encounter initialization. Do not implement bare
 `setCounter(delta)` as a universally exact adapter.
 
@@ -210,7 +215,7 @@ python3 tools/agent/worktree.py preflight .
 python3 tools/agent/worktree.py check .
   exit 0: json=2222d386c905 pybind11=63d627c5747b
 python3 -m unittest tools.test_combat_transition_rng_audit tools.test_combat_transition_contract tools.test_combat_transition_surrogate -v
-  exit 0: 26 tests, OK; native parity compiles a temporary helper with g++
+  exit 0: 29 tests, OK; native parity compiles a temporary helper with g++
 cmake --preset linux-gcc-debug
   exit 0: configured/generated
 ctest --preset linux-gcc-test -R '^combat_transition_rng_audit_selftest$' --output-on-failure
@@ -222,20 +227,20 @@ bash tools/agent/doctor.sh
 python3 -m unittest discover -s tests -p test_repo_health.py -v
   exit 0: 2 tests, OK
 python3 tools/repo_health.py --baseline 31c7a1b9adff9d55c158f5ab560f89176c0e99b3 --json
-  exit 0: status pass, no hard failures
+  exit 0: status pass, no hard failures; warning: active Markdown growth
 git diff --check
   exit 0
 ```
 
-The bare `python` alias was unavailable, so repository commands use python3.
-An initial accidental `python3 tools/agent/doctor.sh` invocation failed with a
-SyntaxError; the correct shell invocation above passed. The first audit
-checked plain counter replay; the final audit added the deterministic bounded
-schedule and companion-provenance checks. No results selected model settings
-or altered eligibility. The final JSON was compacted with the reusable `compact_result` function
-after the full pass (output shaping only, no counts changed). The CLI applies
-the same function automatically. It trims irrelevant non-inherited diagnostic
-slices; complete six-stream totals and outcome slices are retained.
+The full audit exits 0 with explicit audited-row cardinality and supported
+same-floor decision guards. Regressions cover a supported same-floor pair,
+missing same-floor evidence, and dropping the final fight while retaining
+source presence and contiguous indices. The compact JSON keeps all six-stream
+aggregate counts and only all/supported misc and potion delta distributions;
+reset-stream histograms and repetitive slice distributions are omitted. Native
+source identities, meaningful slices, mismatches, ordering and the decision
+remain recorded. No eligibility, replay schedule or scientific conclusion
+changed.
 
 No production C++ was touched or built. The temporary native parity helper
 was compiled and executed; CMake only registers the Python self-test. Full

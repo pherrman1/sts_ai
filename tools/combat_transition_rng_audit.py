@@ -197,6 +197,9 @@ def audit(manifest_path: Path):
                 groups[name][i].add(a, b, replay, row)
         runs[row['sourceSeed']].append({k: row[k] for k in ('fightIdx', 'floor', 'act', 'roomClass', 'encounter')}
                                       | {'supported': eligible, 'outcome': transition['combatOutcome']})
+    if deterministic['rows'] != integrity['rows']:
+        raise ValueError('audited row count disagrees with validated corpus rows: '
+                         f"{deterministic['rows']} != {integrity['rows']}")
     requested_seeds = set(range(manifest['seedSpec']['start'],
                                 manifest['seedSpec']['start'] + manifest['seedSpec']['count']))
     if set(runs) & quarantined_seeds or set(runs) | quarantined_seeds != requested_seeds:
@@ -238,10 +241,11 @@ def compact_result(result):
     supported = result['summaries']['supported']
     exact_misc = result['deterministicMiscReplay']['supported_matches'] == result['supportedRows']
     potion_copy = supported['potionRng']['exact_equal'] == result['supportedRows']
+    no_supported_same_floor = result['sameFloor']['same_floor_supported_origin'] == 0
     # The continuation-boundary/source proof is recorded with the evidence.
     # Plain setCounter remains a corpus property, not an API-wide theorem.
     result['decision'] = {
-        'classification': 'RNG_COUNTER_DELTA_EXACT' if exact_misc and potion_copy else 'RNG_CONTINUATION_UNRESOLVED',
+        'classification': 'RNG_COUNTER_DELTA_EXACT' if exact_misc and potion_copy and no_supported_same_floor else 'RNG_CONTINUATION_UNRESOLVED',
         'scope': 'current supported-v1; native normal run controller; exact encounter initialization replay',
         'minimalLearnedRngTargets': [],
         'derivedCounterDeltas': {'delta_misc': 'length of encounter initialization draw schedule', 'delta_potion': 0},
@@ -259,6 +263,10 @@ def compact_result(result):
             inherited = {k: values[k] for k in ('miscRng', 'potionRng')}
             if 'encounter:' not in name or any(r['state_changed'] for r in inherited.values()):
                 compact[name] = inherited
+    for name, values in compact.items():
+        for stream, counts in values.items():
+            if stream not in ('miscRng', 'potionRng') or name not in ('all', 'supported'):
+                counts.pop('delta_counter_distribution', None)
     result['summaries'] = compact
     root = Path(__file__).resolve().parents[1]
     result['staticAuditSourceSha256'] = {p: sha256(root / p) for p in (

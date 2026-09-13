@@ -7163,11 +7163,15 @@ model training was changed.
   including rejection. Literal misc copy-through is false. A visible gate on
   all misc-mutating encounter classes would lose 97,154 supported rows
   (23.4785%) and is unnecessary. Required new guard/support loss: none/zero.
-- **Verification:** 26 focused Python tests pass, including temporary native
-  C++ parity and raw/rejection failures; configure passes; focused CTest 1/1;
-  full corpus/provenance/schema/order audit exits 0; doctor and repo health
-  pass; diff check passes. No production C++ build; Linux GCC CI is the
-  clean-repository gate.
+- **Verification:** 29 focused Python tests pass, including supported
+  same-floor classification rejection and dropped-final-fight row accounting,
+  plus temporary native C++ parity and raw/rejection failures; configure passes; focused CTest 1/1;
+  full corpus/provenance/schema/order audit exits 0 with audited rows exactly
+  equal to validated rows and a zero supported-origin same-floor requirement;
+  doctor and repo health pass; diff check passes. Evidence retains six-stream
+  aggregate counts and misc/potion aggregate distributions, omitting reset
+  stream and repeated slice histograms. No production C++ build; Linux GCC CI
+  is the clean-repository gate.
 - **Boundary / knowledge impact:** RNG state contract resolved; runtime
   integration, exact all-six RAW snapshot synthesis, source/controller changes
   and scientific multi-fight qualification remain outside this result.
