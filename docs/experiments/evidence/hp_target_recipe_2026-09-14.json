@@ -1,0 +1,36 @@
+{
+  "baselineSha": "31c7a1b9adff9d55c158f5ab560f89176c0e99b3",
+  "batch": 2048,
+  "bootstrapReps": 1000,
+  "bootstrapSeed": 20260914,
+  "clip": 1.0,
+  "conditioning": "observed max-HP delta class",
+  "decision": "CI strictly one-sided and all three paired seed estimates agree",
+  "deltaEmbedding": 8,
+  "encoder": "AttentionEncoder:64/2/4/128",
+  "epochs": 10,
+  "head": [
+    72,
+    64,
+    1
+  ],
+  "holdout": "reused engineering data; no epoch selection",
+  "lr": 0.001,
+  "maxHpBins": [
+    0,
+    60,
+    80,
+    100,
+    120,
+    null
+  ],
+  "precision": "amp-fp16",
+  "schema": "hp_target_comparison_v1",
+  "seeds": [
+    20260912,
+    20260913,
+    20260914
+  ],
+  "targetNormalization": "TRAIN victories population mean/std",
+  "weightDecay": 0.0001
+}
