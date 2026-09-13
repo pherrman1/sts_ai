@@ -209,6 +209,16 @@ class ComposedTest(unittest.TestCase):
             self.assertEqual(result['classification'],'COMPOSED_TRANSITION_REJECTED')
             self.assertEqual(result['hardValidity']['invalidMaxHpClassOrState'],1)
 
+    @unittest.skipUnless(torch, 'optional torch dependency')
+    def test_repeated_evaluation_preserves_prior_evidence(self):
+        from tools import combat_transition_composed_evaluate as e
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/'results.json'; original='{"preserved": true}\n'; path.write_text(original)
+            with patch.object(e,'evaluate') as evaluate:
+                with self.assertRaisesRegex(ValueError,'prior evidence preserved'): e.run_evaluation(Path(d),'reviewed')
+                evaluate.assert_not_called()
+            self.assertEqual(path.read_text(),original)
+
     def test_bounded_rng_rejection_continuation(self):
         from tools.test_combat_transition_rng_audit import rejection_state
         pre,pi=self.state(); pre['combatRng'][2]=rejection_state()

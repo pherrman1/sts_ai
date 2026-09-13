@@ -198,6 +198,8 @@ def source_gap_bootstrap(sources,differences):
 
 
 def run_evaluation(output,reviewed_sha):
+    if (output/'results.json').exists():
+        raise ValueError('refusing repeated evaluation; prior evidence preserved')
     try:
         return evaluate(output,reviewed_sha)
     except (ValueError,FileNotFoundError) as error:
@@ -207,7 +209,7 @@ def run_evaluation(output,reviewed_sha):
         for name in ('preflight','component_reproduction','exposure'):
             path=output/(name+'.json')
             if path.exists(): partial[name]=json.loads(path.read_text())
-        report=dict(classification='COMPOSED_TRANSITION_REJECTED',baseline=c.BASELINE,reviewedSha=reviewed_sha,
+        report=dict(classification='COMPOSED_TRANSITION_INCONCLUSIVE' if 'ambiguous' in str(error) else 'COMPOSED_TRANSITION_REJECTED',baseline=c.BASELINE,reviewedSha=reviewed_sha,
                     failure=str(error),partialEvidence=partial,
                     hardValidity={validity_key(str(error)):1} if 'sampled' in str(error) else None,
                     unevaluated='remaining validity counters, distributions and latency unavailable after contract failure',
