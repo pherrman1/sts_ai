@@ -2,6 +2,7 @@
 """Offline qualification of the fixed composed sampler; never fits any model."""
 from __future__ import annotations
 import argparse
+import copy
 from collections import Counter
 import json
 from pathlib import Path
@@ -108,6 +109,22 @@ def hp_prob(m,z,delta,pre,maximum):
         logits=m.hp_net.hp(features).float()
     legal=c.hp.legal_support(m.classes,pre,maximum)
     return probabilities(logits.masked_fill(~torch.as_tensor(legal,device=m.device),-torch.inf))
+
+
+def exact_hp_target_probabilities(models,z,delta_prob,pre,pre_max,target_class):
+    """Evaluate the HP head only for every frozen maxHP class, using cached z."""
+    n=len(pre); classes=len(models.delta_values)
+    target=np.asarray(target_class)
+    if target.shape!=(n,) or np.any(target!=target.astype(np.int64)) or np.any((target<0)|(target>=len(models.classes))):
+        raise ValueError('invalid exact HP target class')
+    target=target.astype(np.int64)
+    conditional=np.empty((n,classes),dtype=np.float64)
+    with torch.inference_mode():
+        for d in range(classes):
+            for b in batches(n):
+                probability=hp_prob(models,z[b],np.full(len(b),d,dtype=np.int64),pre[b],pre_max[b]+models.delta_values[d])
+                conditional[b,d]=probability[np.arange(len(b)),target[b]]
+    return c.exact_hp_marginal(delta_prob,conditional),conditional
 
 
 def potion_prob(m,z,pre,capacity,delta,fraction):
@@ -329,6 +346,14 @@ def evaluate(output,reviewed_sha):
         gaps[k]['zeroMixtureProbabilityRows']=int(np.sum(stacked.mean(0)==0))
         gaps[k].update(teacherNll=mean(teacher[victories]),mixtureNll=mean(mixtures[k]),decision='MATERIAL_EXPOSURE_DEGRADATION' if gaps[k]['mean']>.1 else 'EXPOSURE_OK')
         exposure_raw[k+'-drawMass']=stacked; exposure_raw[k+'-teacherNll']=teacher[victories]; exposure_raw[k+'-mixtureNll']=mixtures[k]
+    hp_monte_carlo=copy.deepcopy(gaps['hp'])
+    hp_monte_carlo['decision']='DIAGNOSTIC_ONLY_NOT_USED_FOR_QUALIFICATION'
+    marginal,hp_conditional=exact_hp_target_probabilities(m,cache['z'][victories],cache['pdelta'][victories],prehp[victories],premax[victories],true_class[victories])
+    exact_nll=nll(marginal)
+    gaps['hp']=source_gap_bootstrap(arrays['sourceSeed'][ids[victories]],exact_nll-hp_teacher[victories])
+    gaps['hp'].update(teacherNll=mean(hp_teacher[victories]),mixtureNll=mean(exact_nll),estimator='exact weighted marginal over all maxHP classes',zeroMixtureProbabilityRows=int(np.sum(marginal==0)),decision='MATERIAL_EXPOSURE_DEGRADATION' if gaps['hp']['mean']>.1 else 'EXPOSURE_OK')
+    exposure_raw.update(hpExactMarginalProbability=marginal,hpExactConditionalTargetProbability=hp_conditional,hpExactNll=exact_nll,maxHpProbability=cache['pdelta'][victories],hpStateEncoding=cache['z'][victories])
+    c.base.json_dump(output/'hp_monte_carlo_diagnostic.json',hp_monte_carlo)
     np.savez_compressed(output/'exposure.npz',rows=ids[victories],**exposure_raw)
     c.base.json_dump(output/'exposure.json',gaps)
     # C: batch counterpart of the same staged sampler; only sampled survivors
@@ -391,13 +416,95 @@ def evaluate(output,reviewed_sha):
     result=dict(classification=classification,
                 baseline=c.BASELINE,reviewedSha=reviewed_sha,recipe=c.RECIPE,provenance=preflight,
                 fullSupportTestRows=len(local),fullSupportTestVictories=len(victories),completeDraws=len(local)*draws,
-                componentReproduction=reproduction,exposure=gaps,hardValidity=validity,actualModelRowCalls=dict(downstream_counts),diagnostics=diag,
+                componentReproduction=reproduction,exposure=gaps,hpMonteCarloDiagnostic=hp_monte_carlo,hardValidity=validity,actualModelRowCalls=dict(downstream_counts),diagnostics=diag,
                 factorizedJointNll=joint,cpuLatency=latency,artifactsUnchanged=c.verify_hashes()==m.hashes,
                 nextAction='targeted repair of '+', '.join(k for k,v in gaps.items() if v['mean']>.1) if classification.endswith('REJECTED') else 'native runtime adapter / OOC MCTS integration')
     c.base.json_dump(output/'sample_failures.json',sample_failures)
     result['sampleFailureCount']=len(sample_failures)
     c.base.json_dump(output/'results.json',result)
     print(json.dumps(dict(classification=result['classification'],exposure=gaps,validity=validity,latency=latency)),flush=True)
+
+
+def correct_hp_exposure(source,output,reviewed_sha):
+    """Recompute only analytical HP exposure/bootstrap; reuse all other evidence."""
+    if snapshot()!=reviewed_sha or subprocess.check_output(['git','status','--porcelain'],text=True).strip():
+        raise ValueError('HP correction requires clean independently reviewed SHA')
+    if output.exists(): raise ValueError('refusing to overwrite HP correction evidence')
+    preflight=json.loads((source/'preflight.json').read_text())
+    if verify_data()!=preflight['hashes']: raise ValueError('frozen provenance differs')
+    receipts=json.loads((source/'artifact-hashes.json').read_text())
+    inputs=('results.json','exposure.npz','recipe.json','preflight.json','test_rows.jsonl','full_support.npy','component_reproduction.json')
+    source_hashes={name:c.base.sha256(source/name) for name in inputs}
+    if any(source_hashes[name]!=receipts[name] for name in inputs): raise ValueError('source evidence receipt mismatch')
+    if source_hashes['test_rows.jsonl']!=preflight['savedTestRowsSha256'] or source_hashes['full_support.npy']!=preflight['fullSupportSha256']:
+        raise ValueError('source TEST/support handoff differs')
+    source_recipe=json.loads((source/'recipe.json').read_text())
+    original_recipe={k:v for k,v in c.RECIPE.items() if k not in ('hpExposureEstimator','hpMonteCarloRole')}
+    if source_recipe not in (original_recipe,c.RECIPE): raise ValueError('source recipe differs beyond HP estimator')
+    old=json.loads((source/'results.json').read_text())
+    arrays,spec=c.base._load_prepared(PREPARED); c.base._prepare_target_indices(arrays,spec)
+    ids=np.flatnonzero(arrays['split_id']==2)
+    full=np.load(source/'full_support.npy')
+    victories=np.flatnonzero(full[ids] & (arrays['y_win'][ids]==1))
+    row_ids=ids[victories]
+    with np.load(source/'exposure.npz') as raw:
+        if not np.array_equal(row_ids,raw['rows']): raise ValueError('exact HP row membership differs')
+        teacher=raw['hp-teacherNll'].copy()
+        monte_carlo_zero=int(np.sum(raw['hp-drawMass'].mean(0)==0))
+    if len(row_ids)!=old['fullSupportTestVictories'] or len(ids)!=preflight['testRows']: raise ValueError('original TEST counts differ')
+    pre=arrays['globals_continuous'][row_ids,c.base.CONTINUOUS_GLOBAL_FIELDS.index('curHp')].astype(np.int64)
+    pre_max=arrays['preMaxHp'][row_ids].astype(np.int64)
+    actual=arrays['y_post_hp'][row_ids].astype(np.int64)
+    true_delta=arrays['delta_index'][row_ids].astype(np.int64)
+    target=(actual-pre-c.CLASSES[0]).astype(np.int64)
+    torch.set_num_threads(4); m=c.FrozenModels('cuda' if torch.cuda.is_available() else 'cpu')
+    if len(m.delta_values)!=11 or not np.array_equal(m.delta_values,spec['maxHpDeltaValues']): raise ValueError('frozen 11-class maxHP domain differs')
+    # Original A/B encodings were not persisted. Rebuild the same TEST batches
+    # (512, same padding/arithmetic), without survival/potion/relic forwards.
+    z=np.empty((len(ids),64),np.float32); delta_prob=np.empty((len(ids),11),np.float64)
+    with torch.inference_mode():
+        for b in batches(len(ids),512):
+            tensors=c.base._torch_inputs(arrays,ids[b],m.device,torch,trim_padding=True)
+            z[b]=m.hp_encoding(tensors).cpu().numpy()
+            delta_prob[b]=probabilities(m.max_net.max_hp_delta(m.fp32_encoding(m.max_net.encoder,tensors)))
+            if b[0]%5120==0: print(f'rebuild HP/maxHP input cache {b[0]}/{len(ids)}',flush=True)
+    z=z[victories]; delta_prob=delta_prob[victories]
+    reproduced=np.empty(len(row_ids))
+    with torch.inference_mode():
+        for b in batches(len(row_ids)):
+            p=hp_prob(m,z[b],true_delta[b],pre[b],pre_max[b]+m.delta_values[true_delta[b]])
+            reproduced[b]=nll(p[np.arange(len(b)),target[b]])
+    teacher_max_difference=float(np.max(np.abs(reproduced-teacher)))
+    if not np.isfinite(reproduced).all() or teacher_max_difference>1e-5: raise ValueError('HP teacher reproduction differs')
+    print(f'teacher reproduction max NLL difference {teacher_max_difference}',flush=True)
+    marginal,conditional=exact_hp_target_probabilities(m,z,delta_prob,pre,pre_max,target)
+    exact_nll=nll(marginal); difference=exact_nll-teacher
+    if not np.isfinite(difference).all(): raise ValueError('ambiguous nonfinite exact HP marginal despite finite teacher')
+    hp=source_gap_bootstrap(arrays['sourceSeed'][row_ids],difference)
+    hp.update(teacherNll=mean(teacher),mixtureNll=mean(exact_nll),estimator='exact weighted marginal over all 11 maxHP classes',
+              zeroMixtureProbabilityRows=int(np.sum(marginal==0)),decision='MATERIAL_EXPOSURE_DEGRADATION' if hp['mean']>.1 else 'EXPOSURE_OK')
+    result=copy.deepcopy(old)
+    diagnostic=copy.deepcopy(old['exposure']['hp']); diagnostic['decision']='DIAGNOSTIC_ONLY_NOT_USED_FOR_QUALIFICATION'
+    result['hpMonteCarloDiagnostic']=diagnostic; result['exposure']['hp']=hp
+    result['originalComposedExecutionSha']=old['reviewedSha']; result['reviewedSha']=reviewed_sha; result['recipe']=c.RECIPE
+    result['classification']=c.classify({k:v['mean'] for k,v in result['exposure'].items()},result['hardValidity'],provenance=old['artifactsUnchanged'])
+    result['nextAction']='native runtime adapter / OOC MCTS integration' if result['classification']=='COMPOSED_TRANSITION_QUALIFIED' else 'report genuine exact HP composition exposure; no model changes in this correction'
+    unchanged=('componentReproduction','hardValidity','actualModelRowCalls','diagnostics','factorizedJointNll','cpuLatency','provenance','completeDraws','sampleFailureCount')
+    if any(result[k]!=old[k] for k in unchanged) or any(result['exposure'][k]!=old['exposure'][k] for k in ('potion','relic')):
+        raise ValueError('HP correction changed unrelated evidence')
+    if c.verify_hashes()!=m.hashes: raise ValueError('frozen artifacts changed')
+    result['hpMetricCorrection']=dict(sourceDirectory=str(source),sourceHashes=source_hashes,originalReviewedSha=old['reviewedSha'],
+        correctionReviewedSha=reviewed_sha,teacherMaxNllDifference=teacher_max_difference,maxHpClasses=m.delta_values.tolist(),
+        empirical32DrawZeroRows=monte_carlo_zero,cacheRebuilt='same original TEST 512-row batches, frozen HP/maxHP encoders only',
+        unchangedEvidence=list(unchanged)+['potion exposure','relic exposure'],newSampling=False,newGameplaySeeds=False,training=False)
+    output.mkdir(parents=True)
+    np.savez_compressed(output/'hp_exact_cache.npz',rows=row_ids,source=arrays['sourceSeed'][row_ids],z=z,maxHpProbability=delta_prob,
+                        preHp=pre,preMaxHp=pre_max,targetClass=target,trueDeltaClass=true_delta,teacherNll=teacher,
+                        conditionalTargetProbability=conditional,marginalProbability=marginal,exactNll=exact_nll,gap=difference)
+    c.base.json_dump(output/'results.json',result)
+    c.base.json_dump(output/'recipe.json',c.RECIPE)
+    c.base.json_dump(output/'artifact-hashes.json',{p.name:c.base.sha256(p) for p in output.iterdir() if p.is_file()})
+    print(json.dumps(dict(classification=result['classification'],hp=hp,empirical32DrawZeroRows=monte_carlo_zero)),flush=True)
 
 
 def counter_metrics(rows,ids,samples,truth,mask,alive=None):
@@ -484,6 +591,11 @@ def measure_latency(models,row):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__); p.add_argument('command',choices=('prepare','evaluate'))
-    p.add_argument('--output-dir',type=Path,required=True); p.add_argument('--reviewed-sha')
-    args=p.parse_args(); prepare(args.output_dir) if args.command=='prepare' else run_evaluation(args.output_dir,args.reviewed_sha)
+    p=argparse.ArgumentParser(description=__doc__); p.add_argument('command',choices=('prepare','evaluate','correct-hp'))
+    p.add_argument('--output-dir',type=Path,required=True); p.add_argument('--reviewed-sha'); p.add_argument('--source-dir',type=Path)
+    args=p.parse_args()
+    if args.command=='prepare': prepare(args.output_dir)
+    elif args.command=='correct-hp':
+        if args.source_dir is None: p.error('correct-hp requires --source-dir')
+        correct_hp_exposure(args.source_dir,args.output_dir,args.reviewed_sha)
+    else: run_evaluation(args.output_dir,args.reviewed_sha)

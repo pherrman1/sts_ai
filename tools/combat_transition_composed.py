@@ -35,7 +35,8 @@ RECIPE = dict(schema='offline_composed_transition_v1', baseline=BASELINE,
               partition='original source-grouped reused engineering TEST',
               corpusSha256=native_rng.FROZEN_SHA, splitSha256=attention.EXPECTED_SPLIT_SHA256,
               draws=32, samplingSeed=20260916, bootstrapSeed=20260917, bootstrapReps=1000,
-              exposureThreshold=.1, relicAggregation='mean row gap / observed learned groups on informative rows',
+              exposureThreshold=.1, hpExposureEstimator='exact weighted marginal over all maxHP classes',
+              hpMonteCarloRole='32-draw diagnostic only; never used for classification', relicAggregation='mean row gap / observed learned groups on informative rows',
               evaluationPrecision='historical survival/maxHP/potion FP32 MHA fastpath enabled; HP AMP FP16 MHA fastpath disabled; relic FP32',
               latencyPrecision='one-thread CPU FP32, batch 1, full visible encoding, 10 warmups, 100 draws per path',
               rngScope='OOC continuation: copy potionRng and exact replay_misc; omit four recreated battle-local streams')
@@ -151,6 +152,18 @@ def mixture_nll_from_probabilities(draw_probabilities):
         raise ValueError('invalid observed mixture probabilities')
     with np.errstate(divide='ignore'):
         return -np.log(p.mean(axis=0))
+
+
+def exact_hp_marginal(max_hp_probabilities, conditional_target_probabilities):
+    """Sum P(maxHP class) * P(observed signed HP | class), including legal zeros."""
+    weights=np.asarray(max_hp_probabilities,dtype=np.float64)
+    conditional=np.asarray(conditional_target_probabilities,dtype=np.float64)
+    if (weights.ndim!=2 or weights.shape!=conditional.shape or weights.shape[1]==0
+            or not np.isfinite(weights).all() or not np.isfinite(conditional).all()
+            or np.any(weights<0) or np.any(conditional<0) or np.any(conditional>1+1e-6)
+            or not np.allclose(weights.sum(-1),1,atol=1e-6)):
+        raise ValueError('invalid exact HP marginal inputs')
+    return np.sum(weights*conditional,axis=-1)
 
 
 def classify(exposure_gaps,validity,provenance=True,reproduction=True):

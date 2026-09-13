@@ -149,6 +149,44 @@ class ComposedTest(unittest.TestCase):
         self.assertEqual(c.classify({},dict(invalid=1)),'COMPOSED_TRANSITION_REJECTED')
         self.assertEqual(c.classify({}, {}, provenance=False),'COMPOSED_TRANSITION_REJECTED')
 
+    def test_exact_hp_marginal_keeps_rare_supported_class(self):
+        weights=np.zeros((1,11)); weights[0,0]=.99; weights[0,2]=.01
+        conditional=np.zeros((1,11)); conditional[0,2]=.2
+        marginal=c.exact_hp_marginal(weights,conditional)
+        self.assertAlmostEqual(marginal[0],.002)
+        self.assertTrue(np.isfinite(-np.log(marginal[0])))
+        self.assertTrue(np.isposinf(c.mixture_nll_from_probabilities(np.zeros((32,1)))[0]))
+        # Unequal weights distinguish an exact marginal from a class mean.
+        self.assertNotAlmostEqual(marginal[0],conditional.mean())
+
+    def test_exact_hp_marginal_rejects_invalid_inputs(self):
+        for weights,conditional in [([[1,0]],[[.2]]), ([[.5,.4]],[[.2,0]]),
+                                     ([[-.1,1.1]],[[.2,0]]), ([[1,0]],[[float('nan'),0]]),
+                                     ([[1,0]],[[1.2,0]])]:
+            with self.assertRaises(ValueError): c.exact_hp_marginal(weights,conditional)
+
+    @unittest.skipUnless(torch, 'optional torch dependency')
+    def test_exact_hp_evaluates_all_classes_and_native_zeros_using_cached_z(self):
+        from tools import combat_transition_composed_evaluate as e
+        values=np.asarray([0,3,4,5,6,7,8,9,10,11,12])
+        m=SimpleNamespace(delta_values=values,classes=c.CLASSES)
+        z=np.ones((2,64),np.float32); weights=np.zeros((2,11)); weights[:,0]=.99; weights[:,2]=.01
+        pre=np.asarray([80,40]); maximum=np.asarray([80,80]); target=np.asarray([164,162])
+        calls=[]
+        def hp_head(models,cached,delta,cur,maxhp):
+            self.assertIs(models,m); np.testing.assert_array_equal(cached,z)
+            calls.append(delta.copy())
+            legal=c.hp.legal_support(c.CLASSES,cur,maxhp).astype(float)
+            return legal/legal.sum(-1,keepdims=True)
+        with patch.object(e,'hp_prob',side_effect=hp_head),patch.object(e,'draw_categories',side_effect=AssertionError('sampling forbidden')):
+            marginal,conditional=e.exact_hp_target_probabilities(m,z,weights,pre,maximum,target)
+        self.assertEqual(len(calls),11)
+        np.testing.assert_array_equal(np.asarray(calls)[:,0],np.arange(11))
+        self.assertEqual(conditional[0,0],0); self.assertEqual(conditional[0,1],0)
+        self.assertGreater(conditional[0,2],0)
+        self.assertAlmostEqual(marginal[0],.01*conditional[0,2])
+        self.assertGreater(marginal[1],0)
+
     @unittest.skipUnless(torch, 'optional torch dependency')
     def test_batch_matches_direct_sampler_and_counts_death_calls(self):
         from tools import combat_transition_composed_evaluate as e
