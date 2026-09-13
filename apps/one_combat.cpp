@@ -2220,7 +2220,8 @@ static const char *combatEvalRoomClass(Room room) {
     return room == Room::MONSTER ? "NORMAL" : room == Room::ELITE ? "ELITE" : room == Room::BOSS ? "BOSS" : "OTHER";
 }
 static CombatEvalLabel combatEvalTerminal(const BattleContext &bc, MonsterEncounter encounter,
-                                         int hooks, int healthBefore, int healthAfter) {
+                                         int hooks, int healthBefore, int healthAfter,
+                                         bool allowInitializationTerminal = false) {
     constexpr double eps = 1e-3;
     const bool representableEncounter = combatEvalEncounterValid(encounter);
     bool decided = bc.outcome != Outcome::UNDECIDED;
@@ -2234,8 +2235,16 @@ static CombatEvalLabel combatEvalTerminal(const BattleContext &bc, MonsterEncoun
     // never a death label.
     constexpr int kCombatTurnCap = 100;
     bool turnCapLoss = !decided && bc.turn >= kCombatTurnCap;
+    // Some start-of-combat effects can resolve a fight during BattleContext::init
+    // before the first decision callback (for example Neow's Lament's final
+    // charge).  The pre-init GameContext feature row is still a valid battle-start
+    // example, but a missing hook remains fatal everywhere else.
+    const bool initializationTerminal = allowInitializationTerminal
+        && hooks == 0 && bc.turn == 0 && decided;
+    const bool hasFirstDecisionBoundary = hooks > 0 || initializationTerminal;
     bool progressAmbiguous = trueDeath && encounter == MonsterEncounter::AWAKENED_ONE;
-    bool labelValid = !escaped && representableEncounter && hooks > 0 && healthOk && (won || trueDeath);
+    bool labelValid = !escaped && representableEncounter && hasFirstDecisionBoundary
+        && healthOk && (won || trueDeath);
     double terminalHp = std::max(0, bc.player.curHp), terminalMaxHp = std::max(0, bc.player.maxHp);
     double winHpFrac = std::max(eps, std::min(1.0, terminalMaxHp > 0 ? terminalHp / terminalMaxHp : eps));
     double enemyRatio = search::getNonMinionMonsterCurHpRatio(bc);
@@ -2243,7 +2252,7 @@ static CombatEvalLabel combatEvalTerminal(const BattleContext &bc, MonsterEncoun
     search::getNonMinionMonsterHpTotals(bc, enemyCurHp, enemyMaxHp);
     double lossRemainingFrac = std::max(eps, std::min(1.0, enemyRatio));
     double signedOutcome = labelValid ? (won ? winHpFrac : -lossRemainingFrac) : 0.0;
-    const char *reason = !representableEncounter ? "unknown_encounter" : !hooks ? "missing_first_decision_hook" : !healthOk ? "simulator_health_failure" : escaped ? "escape" : turnCapLoss ? "turn_cap" : (decided && !trueDeath && !won) ? "non_death_loss" : "";
+    const char *reason = !representableEncounter ? "unknown_encounter" : !hasFirstDecisionBoundary ? "missing_first_decision_hook" : !healthOk ? "simulator_health_failure" : escaped ? "escape" : turnCapLoss ? "turn_cap" : (decided && !trueDeath && !won) ? "non_death_loss" : "";
     return {decided, healthOk, escaped, trueDeath, won, turnCapLoss, progressAmbiguous, labelValid,
             terminalHp, terminalMaxHp, winHpFrac, lossRemainingFrac, signedOutcome, enemyCurHp, enemyMaxHp, reason};
 }
@@ -4181,8 +4190,11 @@ static CombatEvalSeedResult runCombatEvalGenSeed(std::uint64_t seed, int sims, i
             BattleContext bc; const int healthBefore = search::g_simHealthFailureCount;
             agent.playoutBattle(gc, bc);
             search::g_onCombatDecision = std::move(previousCombatObserver);
+            const bool initializationTerminal = hooks == 0
+                && bc.turn == 0 && bc.outcome != Outcome::UNDECIDED;
             const auto label = captureCombat
-                ? combatEvalTerminal(bc, encounter, hooks, healthBefore, search::g_simHealthFailureCount)
+                ? combatEvalTerminal(bc, encounter, hooks, healthBefore, search::g_simHealthFailureCount,
+                                     initializationTerminal)
                 : CombatEvalLabel{};
             const bool labelValid = captureCombat && label.labelValid;
             const bool healthOk = captureCombat ? label.healthOk : true;
@@ -7005,6 +7017,12 @@ static void semanticCombatCaptureSelfTest(GameContext source, const search::OocS
         bc.outcome=Outcome::PLAYER_VICTORY; bc.player.curHp=20;
         require(!combatEvalTerminal(bc,MonsterEncounter::CULTIST,1,0,1).labelValid,"combat capture: health failure is valid");
         require(!combatEvalTerminal(bc,MonsterEncounter::CULTIST,0,0,0).labelValid,"combat capture: missing hook is valid");
+        bc.turn=0;
+        const auto initializationWin = combatEvalTerminal(
+            bc,MonsterEncounter::CULTIST,0,0,0,true);
+        require(initializationWin.labelValid && initializationWin.won
+                && std::string(initializationWin.reason).empty(),
+                "combat capture: resolved initialization victory is valid");
         // A terminal OOC action emits no synthetic fight row.
         source.regainControlAction=[](GameContext &state){state.outcome=GameOutcome::PLAYER_VICTORY;};
         {
