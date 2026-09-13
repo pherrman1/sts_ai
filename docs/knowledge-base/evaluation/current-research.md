@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-13 for the Phase-2 stochastic persistent-state support
+Last verified: 2026-09-14 for the stochastic signed-HP distribution;
+2026-09-13 for the Phase-2 stochastic persistent-state support
 audit and the corrected whole-combat transition model rerun after independent
 review;
 other sections retain their prior verification and linked evidence.
@@ -123,10 +124,23 @@ CRPS against rounded/native-clamped point HP; the safety metric compares
 expected-HP MAE with continuous point HP. Rowwise paired differences are
 averaged over seeds before source bootstrap. Qualification requires the CRPS
 95% CI strictly below zero and the MAE CI not strictly above zero; either CI
-strictly above zero rejects. Fits await independent implementation review;
-there is no distribution qualification yet. Survival, max-HP modeling,
-potion weights, relic support and RNG contracts are unchanged. No runtime
-C++ integration or gameplay qualification is part of this experiment.
+strictly above zero rejects. Independent implementation/design review passed
+on execution SHA `521e364a08735ad095ed99682e3d5058a6748a46`; all three
+fixed fits completed. The result is **`STOCHASTIC_DELTA_HP_QUALIFIED`**:
+CRPS difference -1.686834344 HP, 95% CI [-1.715728962, -1.658630531];
+expected-HP MAE difference +0.011839528 HP, CI [-0.007041513, +0.029256256].
+The safety CI includes zero; this is not a mean-accuracy improvement claim.
+All 1,552,560 categorical samples are legal; unsupported probability is zero.
+Equal-tail interval coverage is above nominal levels. Healing CRPS improves
+for every seed, while healing mean-accuracy results are mixed.
+
+This qualifies the HP distribution under the specified offline engineering
+rule on reused HOLDOUT and observed max-HP conditioning. It does not qualify
+sampled-upstream composition, multi-fight planning or deployment. Survival,
+max-HP modeling, potion weights, relic support and RNG contracts are unchanged.
+No runtime C++ integration or gameplay qualification was performed. Relic
+training remains a separate future task. See [ledger-06 §238](../../experiments/ledger-06.md)
+and the [full scores, calibration, slices and hashes](../../experiments/evidence/stochastic_signed_hp_2026-09-14.md).
 
 ### Phase-2 attention representation ablation
 
