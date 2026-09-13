@@ -7,10 +7,13 @@ try:
     from tools.combat_transition_surrogate import (
         CODE_AUDITED_MUTABLE_RELIC_IDS,
         EMPTY_POTION_SLOT_ID,
+        ENTROPIC_BREW_ID,
+        IRONCLAD_ID,
         RITUAL_DAGGER_ID,
         SMOKE_BOMB_ID,
         WRITHING_MASS_ID,
         _sample_persistent_transition,
+        _exact_accuracy,
         _prepare_target_indices,
         hp_fraction_bin,
         supported_for_surrogate,
@@ -22,10 +25,13 @@ except ModuleNotFoundError:
     from combat_transition_surrogate import (
         CODE_AUDITED_MUTABLE_RELIC_IDS,
         EMPTY_POTION_SLOT_ID,
+        ENTROPIC_BREW_ID,
+        IRONCLAD_ID,
         RITUAL_DAGGER_ID,
         SMOKE_BOMB_ID,
         WRITHING_MASS_ID,
         _sample_persistent_transition,
+        _exact_accuracy,
         _prepare_target_indices,
         hp_fraction_bin,
         supported_for_surrogate,
@@ -34,12 +40,12 @@ except ModuleNotFoundError:
     )
 
 
-def predictor(encounter=1, card_id=10, potion_id=EMPTY_POTION_SLOT_ID):
+def predictor(encounter=1, card_id=10, potion_id=EMPTY_POTION_SLOT_ID, character_class=IRONCLAD_ID):
     return {
         "schemaVersion": SCHEMA_VERSION,
         "fieldSchemaHash": FIELD_SCHEMA_HASH,
         "globals": {
-            "characterClass": 0, "ascension": 0, "act": 1, "floor": 1,
+            "characterClass": character_class, "ascension": 0, "act": 1, "floor": 1,
             "curHp": 40, "maxHp": 80, "gold": 99, "encounter": encounter,
             "roomClass": 4, "lastRoom": 1, "potionCount": int(potion_id > EMPTY_POTION_SLOT_ID),
             "potionCapacity": 3, "potionKeepValue": 4.0, "isBurningElite": False,
@@ -66,16 +72,22 @@ def state():
 
 class TestCombatTransitionSurrogate(unittest.TestCase):
     def test_support_predicate_is_predictor_visible_and_fail_closed(self):
-        self.assertTrue(supported_for_surrogate(predictor()))
+        self.assertTrue(supported_for_surrogate(predictor(), state()))
         cases = (
             ("writhing_mass", predictor(encounter=WRITHING_MASS_ID)),
             ("ritual_dagger", predictor(card_id=RITUAL_DAGGER_ID)),
             ("smoke_bomb", predictor(potion_id=SMOKE_BOMB_ID)),
+            ("entropic_brew", predictor(potion_id=ENTROPIC_BREW_ID)),
+            ("non_ironclad", predictor(character_class=IRONCLAD_ID + 1)),
         )
         for reason, value in cases:
             with self.subTest(reason=reason):
-                self.assertFalse(supported_for_surrogate(value))
-                self.assertIn(reason, supported_reasons(value))
+                self.assertFalse(supported_for_surrogate(value, state()))
+                self.assertIn(reason, supported_reasons(value, state()))
+        pre_smoke = state()
+        pre_smoke["smokeBombUsed"] = True
+        self.assertFalse(supported_for_surrogate(predictor(), pre_smoke))
+        self.assertIn("pre_smoke_bomb_used", supported_reasons(predictor(), pre_smoke))
 
     def test_hp_bins_use_round_half_up_and_are_bounded(self):
         self.assertEqual(hp_fraction_bin(1, 3), 33)
@@ -110,6 +122,7 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
         self.assertIsNotNone(sampled)
         self.assertNotIn("combatRng", sampled)
         self.assertEqual(sampled["maxHp"], 25)
+        self.assertEqual(sampled["curHp"], 13)
         self.assertEqual(sampled["potions"][0], 2)
         self.assertEqual(sampled["potionCount"], 1)
         self.assertEqual(sampled["relics"][0]["data"], 6)
@@ -118,6 +131,37 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
         self.assertEqual(sampled["stolenGold"], 2)
         self.assertFalse(sampled["smokeBombUsed"])
         validate_sampled_state(pre, sampled, target_spec)
+
+    def test_sampled_hp_bin_50_at_post_max_80_is_exactly_40(self):
+        pre = state()
+        pre["curHp"] = 40
+        pre["maxHp"] = 80
+        target_spec = {
+            "maxHpDeltaValues": [0],
+            "relicDeltaValues": [0],
+            "relicDeltaValuesById": {"26": [0]},
+            "goldClasses": [[0, 0]],
+        }
+        prediction = {
+            "pWin": 1.0,
+            "pDelta": np.asarray([1.0]),
+            "hpConditional": np.eye(101, dtype=np.float64)[[50]],
+            "potionProbs": np.eye(48, dtype=np.float64)[EMPTY_POTION_SLOT_ID][None, :].repeat(5, axis=0),
+            "relicDeltaProbs": {"26": np.asarray([1.0])},
+            "goldProbs": np.asarray([1.0]),
+        }
+        sampled = _sample_persistent_transition(pre, prediction, target_spec, np.random.default_rng(3))
+        self.assertIsNotNone(sampled)
+        self.assertEqual(sampled["maxHp"], 80)
+        self.assertEqual(sampled["curHp"], 40)
+
+    def test_structured_exact_match_is_rowwise(self):
+        potions_actual = np.asarray([[1, 2, 3, 4, 5], [1, 2, 3, 4, 5]])
+        potions_predicted = np.asarray([[1, 2, 3, 4, 5], [1, 2, 3, 4, 6]])
+        self.assertEqual(_exact_accuracy(potions_actual, potions_predicted), 0.5)
+        hp_actual = np.asarray([[40, 80]])
+        hp_predicted = np.asarray([[40, 81]])
+        self.assertEqual(_exact_accuracy(hp_actual, hp_predicted), 0.0)
 
     def test_mutable_relic_audit_is_nonempty_and_includes_raw_omamori(self):
         self.assertTrue(CODE_AUDITED_MUTABLE_RELIC_IDS)

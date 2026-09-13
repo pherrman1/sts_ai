@@ -115,6 +115,9 @@ def _enum_values(header: Path, enum_name: str) -> dict[str, int]:
 
 _CARD_IDS = _enum_values(_ROOT / "include/constants/Cards.h", "CardId")
 _POTION_IDS = _enum_values(_ROOT / "include/constants/Potions.h", "Potion")
+_CHARACTER_CLASS_IDS = _enum_values(
+    _ROOT / "include/constants/CharacterClasses.h", "CharacterClass"
+)
 _ENCOUNTER_IDS = _enum_values(
     _ROOT / "include/constants/MonsterEncounters.h", "MonsterEncounter"
 )
@@ -123,6 +126,7 @@ RITUAL_DAGGER_ID = _CARD_IDS["RITUAL_DAGGER"]
 SMOKE_BOMB_ID = _POTION_IDS["SMOKE_BOMB"]
 ENTROPIC_BREW_ID = _POTION_IDS["ENTROPIC_BREW"]
 EMPTY_POTION_SLOT_ID = _POTION_IDS["EMPTY_POTION_SLOT"]
+IRONCLAD_ID = _CHARACTER_CLASS_IDS["IRONCLAD"]
 WRITHING_MASS_ID = _ENCOUNTER_IDS["WRITHING_MASS"]
 POTION_NAMES_BY_ID = {value: name for name, value in _POTION_IDS.items()}
 
@@ -181,23 +185,36 @@ def iter_rows(path: Path) -> Iterator[dict]:
                 raise ValueError(f"invalid JSON at {path}:{line_number}: {exc}") from exc
 
 
-def supported_reasons(predictor_input: dict) -> list[str]:
-    """Return deterministic fallback reasons using predictor-visible fields only."""
+def supported_reasons(predictor_input: dict, pre_state: dict) -> list[str]:
+    """Return fallback reasons for input plus non-learned adapter eligibility state.
+
+    ``pre_state.smokeBombUsed`` is deliberately an adapter/support-gate field,
+    not a learned feature.  The learned input remains exactly
+    ``combat_predictor_input_v1``.
+    """
     validate_predictor_input(predictor_input)
     _validate_entity_domains(predictor_input)
+    if not isinstance(pre_state, dict) or not isinstance(pre_state.get("smokeBombUsed"), bool):
+        raise ValueError("support eligibility requires boolean pre_state.smokeBombUsed")
     reasons: list[str] = []
+    if int(predictor_input["globals"]["characterClass"]) != IRONCLAD_ID:
+        reasons.append("non_ironclad")
     if int(predictor_input["globals"]["encounter"]) == WRITHING_MASS_ID:
         reasons.append("writhing_mass")
     if any(int(card["cardId"]) == RITUAL_DAGGER_ID for card in predictor_input["cards"]):
         reasons.append("ritual_dagger")
     if any(int(potion["potionId"]) == SMOKE_BOMB_ID for potion in predictor_input["potions"]):
         reasons.append("smoke_bomb")
+    if any(int(potion["potionId"]) == ENTROPIC_BREW_ID for potion in predictor_input["potions"]):
+        reasons.append("entropic_brew")
+    if pre_state["smokeBombUsed"]:
+        reasons.append("pre_smoke_bomb_used")
     return reasons
 
 
-def supported_for_surrogate(predictor_input: dict) -> bool:
+def supported_for_surrogate(predictor_input: dict, pre_state: dict) -> bool:
     """The Phase-2 support predicate; aliases the contract wording in Python."""
-    return not supported_reasons(predictor_input)
+    return not supported_reasons(predictor_input, pre_state)
 
 
 def _round_half_up(value: float) -> int:
@@ -295,11 +312,21 @@ def _audit_summary(
             "teacherId": manifest["combatTeacher"]["teacher_id"],
         },
         "supportBoundary": {
-            "predicate": "globals.encounter != WRITHING_MASS and no deck card RITUAL_DAGGER and no active potion SMOKE_BOMB",
+            "predicate": (
+                "globals.characterClass == IRONCLAD and globals.encounter != WRITHING_MASS "
+                "and no deck card RITUAL_DAGGER and no active potion "
+                "(SMOKE_BOMB or ENTROPIC_BREW) and pre.smokeBombUsed == false"
+            ),
             "ids": {
+                "ironcladCharacterClass": IRONCLAD_ID,
                 "writhingMassEncounter": WRITHING_MASS_ID,
                 "ritualDaggerCard": RITUAL_DAGGER_ID,
                 "smokeBombPotion": SMOKE_BOMB_ID,
+                "entropicBrewPotion": ENTROPIC_BREW_ID,
+            },
+            "learnedInputSchema": "combat_predictor_input_v1",
+            "adapterOnlyPreCombatFields": {
+                "pre.smokeBombUsed": "eligibility/support gate only; not a learned feature"
             },
             "rows": {**total, "supportRate": support_rows / rows if rows else None},
             "fallbackReasons": dict(sorted(reasons.items())),
@@ -526,11 +553,11 @@ def prepare(args: argparse.Namespace) -> None:
         split_rows.append(split)
         split_id[row_count] = {"train": 0, "validation": 1, "test": 2}[split]
 
-        row_supported = not supported_reasons(pi)
+        row_reasons = supported_reasons(pi, pre)
+        row_supported = not row_reasons
         supported[row_count] = row_supported
         if row_supported:
             support_count += 1
-        row_reasons = supported_reasons(pi)
         reasons.update(row_reasons)
         _inc_nested(support_by_act, context["act"], row_supported)
         _inc_nested(support_by_room, context["roomClass"], row_supported)
@@ -717,6 +744,11 @@ def prepare(args: argparse.Namespace) -> None:
             "potions": {"shape": [5, 2], "fields": ["slot", "potionId"], "domain": POTION_COUNT},
             "width": 64,
         },
+        "eligibilityGuard": {
+            "learnedInputSchema": "combat_predictor_input_v1",
+            "adapterOnlyPreCombatFields": ["pre.smokeBombUsed"],
+            "statement": "pre.smokeBombUsed is a support-gate field and is not learned or encoded",
+        },
         "rng": {"included": False, "reason": "combatRng[6] is oracle/provenance state and is not an input or learned output"},
     }
     json_dump(out / "prepared_manifest.json", prepared_manifest)
@@ -862,7 +894,7 @@ class DeepSetsEncoder:
                 self.trunk = nn.Sequential(nn.Linear(256, 128), nn.ReLU(), nn.Linear(128, 64), nn.ReLU())
 
             def forward(self, g, gc, c, r, p, cmask, rmask):
-                t = outer.torch
+                t = self.outer.torch
                 cfields = t.cat((c[:, :, 1:2].float(), c[:, :, 2:3].float().clamp(-20, 20) / 20,
                                  c[:, :, 3:4].float() / 3), -1)
                 cvec = self.card_mlp(t.cat((self.card_id(c[:, :, 0].long()), cfields), -1))
@@ -891,6 +923,7 @@ class Phase2Net:
         class Net(nn.Module):
             def __init__(self, outer):
                 super().__init__()
+                self.torch = outer.torch
                 self.encoder = outer.encoder.net
                 self.survival = nn.Linear(64, 1)
                 self.max_hp_delta = nn.Linear(64, delta_count)
@@ -903,7 +936,7 @@ class Phase2Net:
                 self.gold = nn.Linear(64, gold_count)
 
             def forward(self, g, gc, c, r, p, cmask, rmask):
-                t = outer.torch
+                t = self.torch
                 z = self.encoder(g, gc, c, r, p, cmask, rmask)
                 survival = self.survival(z).squeeze(-1)
                 delta = self.max_hp_delta(z)
@@ -1205,7 +1238,25 @@ def _valid_potion_probabilities(logits: np.ndarray) -> np.ndarray:
 
 
 def _accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float | None:
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    if y_true.ndim != 1 or y_pred.ndim != 1:
+        raise ValueError("_accuracy requires one scalar/boolean value per row; use _exact_accuracy for structured states")
     return None if len(y_true) == 0 else float(np.mean(y_true == y_pred))
+
+
+def _exact_accuracy(actual: np.ndarray, predicted: np.ndarray) -> float | None:
+    """Average one structured exact-match boolean per row."""
+    actual = np.asarray(actual)
+    predicted = np.asarray(predicted)
+    if actual.shape != predicted.shape:
+        raise ValueError(f"structured exact-match shapes differ: {actual.shape} != {predicted.shape}")
+    if actual.ndim == 0:
+        raise ValueError("structured exact-match inputs must contain rows")
+    row_exact = actual == predicted if actual.ndim == 1 else np.all(
+        actual == predicted, axis=tuple(range(1, actual.ndim))
+    )
+    return _accuracy(row_exact, np.ones(len(row_exact), dtype=bool))
 
 
 def _masked_relic_probabilities(logits: np.ndarray, arrays: dict, indices: np.ndarray,
@@ -1253,14 +1304,14 @@ def _transition_metrics(arrays: dict, target_spec: dict, indices: np.ndarray,
     hp_pair = {
         "predictedModeMaxHpAccuracy": _accuracy(actual_max_hp, predicted_max_hp),
         "predictedModeHpAccuracy": _accuracy(actual_hp, predicted_hp),
-        "predictedModeHpMaxHpExactAccuracy": _accuracy(
+        "predictedModeHpMaxHpExactAccuracy": _exact_accuracy(
             np.stack((actual_hp, actual_max_hp), axis=1),
             np.stack((predicted_hp, predicted_max_hp), axis=1),
         ),
         "copyThroughBaseline": {
             "maxHpAccuracy": _accuracy(actual_max_hp, arrays["preMaxHp"][ids]),
             "hpAccuracy": _accuracy(actual_hp, np.clip(_round_half_up_vector(arrays["preHpFrac"][ids] * arrays["preMaxHp"][ids]), 1, arrays["preMaxHp"][ids])),
-            "hpMaxHpExactAccuracy": _accuracy(
+            "hpMaxHpExactAccuracy": _exact_accuracy(
                 np.stack((actual_hp, actual_max_hp), axis=1),
                 np.stack((np.clip(_round_half_up_vector(arrays["preHpFrac"][ids] * arrays["preMaxHp"][ids]), 1, arrays["preMaxHp"][ids]), arrays["preMaxHp"][ids]), axis=1),
             ),
@@ -1296,12 +1347,12 @@ def _transition_metrics(arrays: dict, target_spec: dict, indices: np.ndarray,
     actual_count = np.sum(actual_potions > EMPTY_POTION_SLOT_ID, axis=1)
     potion_metrics = {
         "perSlot": slot_metrics,
-        "exactFullVectorAccuracy": _accuracy(actual_potions, predicted_potions),
+        "exactFullVectorAccuracy": _exact_accuracy(actual_potions, predicted_potions),
         "changedRowCount": int(potion_changed.sum()),
         "changedRowAccuracy": _accuracy(potion_exact[potion_changed], np.ones(int(potion_changed.sum()), dtype=bool)),
         "potionCountAccuracy": _accuracy(actual_count, potion_count),
         "copyThroughBaseline": {
-            "exactFullVectorAccuracy": _accuracy(actual_potions, potion_baseline),
+            "exactFullVectorAccuracy": _exact_accuracy(actual_potions, potion_baseline),
             "changedRowAccuracy": _accuracy(np.all(potion_baseline[potion_changed] == actual_potions[potion_changed], axis=1), np.ones(int(potion_changed.sum()), dtype=bool)),
             "potionCountAccuracy": _accuracy(actual_count, np.sum(potion_baseline > EMPTY_POTION_SLOT_ID, axis=1)),
         },
@@ -1414,7 +1465,8 @@ def _sample_persistent_transition(pre: dict, prediction: dict, target_spec: dict
     hp_probs = np.asarray(prediction["hpConditional"][delta_index], dtype=np.float64)
     hp_bin = int(rng.choice(HP_BIN_COUNT, p=hp_probs))
     post["maxHp"] = post_max
-    post["curHp"] = max(1, min(post_max, _round_half_up(100.0 * hp_bin / 100.0 * post_max)))
+    sampled_hp = _round_half_up((hp_bin / 100.0) * post_max)
+    post["curHp"] = max(1, min(post_max, sampled_hp))
     potion_probs = np.asarray(prediction["potionProbs"], dtype=np.float64)
     capacity = int(pre["potionCapacity"])
     for slot in range(5):
