@@ -1,0 +1,9 @@
+{
+  "encoder.pt": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+  "independent.pt": "7ccc8d394cb4547d6aecc2b16b8fda15c1d86a6848e0a9ae3f29ad08ed1c9dea",
+  "joint.pt": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+  "selection.json": "c575c341866dbf5057ef583c3594298c083e569fb39c3625873a04310c47dce6",
+  "teacher_forced_decision.json": "99b7a59f538d8ccf32e7e0cebcfbaa954810b4e70e9e82e7ca1ed7293cabab28",
+  "decoder_evidence.json": "1c0c5724c3c3086a850de76b79d9602608e2d6e4fa407e38f021ae9dba754267",
+  "holdout_predictions.npz": "9dd8a08baf453acd2408aa07b468ee4324afea241063ded06cb8e798b1e4500a"
+}
