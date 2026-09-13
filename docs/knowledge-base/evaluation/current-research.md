@@ -102,6 +102,32 @@ Max-HP modeling, survival, potion,
 relic support, corpus, and simulator behavior are unchanged. See the
 [frozen protocol and evidence](../../experiments/evidence/hp_target_comparison_2026-09-14.md).
 
+### Stochastic signed-HP distribution
+
+Signed absolute ΔHP is the engineering parameterization for the next HP-only
+experiment; this does not change the historical `HP_TARGET_INCONCLUSIVE`
+result above. The categorical model in
+`tools/combat_transition_stochastic_hp.py` retains the #170 attention encoder
+and observed max-HP-delta embedding, replacing only the scalar output with
+304 integer classes, [-160, 143]. The domain is derived from predictor-visible
+HP on globally supported states and the frozen max-HP-delta classes, without
+post-HP targets. All 398,415 supported winning targets pass its structural
+check. Row-specific illegal classes are masked before softmax. Sampling
+returns legal post HP and derives ending HP fraction for the existing potion
+decoder.
+
+The frozen comparison uses all 286,581 nested TRAIN+VALIDATION victories and
+32,345 reused engineering HOLDOUT victories, three seeds, ten AMP epochs,
+and the saved #170 signed-delta point controls. Primary scoring is discrete
+CRPS against rounded/native-clamped point HP; the safety metric compares
+expected-HP MAE with continuous point HP. Rowwise paired differences are
+averaged over seeds before source bootstrap. Qualification requires the CRPS
+95% CI strictly below zero and the MAE CI not strictly above zero; either CI
+strictly above zero rejects. Fits await independent implementation review;
+there is no distribution qualification yet. Survival, max-HP modeling,
+potion weights, relic support and RNG contracts are unchanged. No runtime
+C++ integration or gameplay qualification is part of this experiment.
+
 ### Phase-2 attention representation ablation
 
 The authorized attention ablation used the same final support boundary,
