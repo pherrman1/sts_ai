@@ -9624,11 +9624,12 @@ int main(int argc, char **argv) {
         try {
             one_combat::oocMctsAdapterSelfTest();
             GameContext gc(CharacterClass::IRONCLAD, 42, 0);
-            one_combat::OocGameContextModel model(gc);
+            PathHistory initialHistory;
+            one_combat::OocGameContextModel model(gc, initialHistory);
             const bool loaded = g_winNet.ok;
             g_winNet.ok = false;
             bool constructorRejected = false, leafRejected = false;
-            try { one_combat::OocGameContextModel missing(gc); }
+            try { one_combat::OocGameContextModel missing(gc, initialHistory); }
             catch (const std::runtime_error &) { constructorRejected = true; }
             try { model.leafValue(0); }
             catch (const std::runtime_error &) { leafRejected = true; }
@@ -9636,7 +9637,7 @@ int main(int argc, char **argv) {
             gc.screenState = ScreenState::BATTLE;
             gc.outcome = GameOutcome::PLAYER_VICTORY;
             g_winNet.ok = loaded;
-            one_combat::OocGameContextModel terminal(gc);
+            one_combat::OocGameContextModel terminal(gc, initialHistory);
             g_winNet.ok = false;
             auto exact = search::OocMctsPlanner().search(terminal, 0, 3);
             g_winNet.ok = loaded;

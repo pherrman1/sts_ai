@@ -64,7 +64,10 @@ are explicit leaf boundaries. BATTLE is always a hard leaf boundary;
 UNDECIDED battle states are never fabricated terminals. Run loss/victory
 remain exact 0/1, with precedence over any boundary.
 
-Snapshots live in a deque, with detached map copies at root and each native
+Root construction requires an explicit `PathHistory`: prior room visits are not
+recoverable from `GameContext` and feed both V4 globals and native win features.
+The nonempty-history regression verifies both routes against direct evaluation
+using the supplied history. Snapshots live in a deque, with detached map copies at root and each native
 `GameAction::execute` successor and branch-local updated `PathHistory`.
 Action IDs are the primitive action bits and are validated against the
 parent's complete candidates before execution. Leaves call the native-only

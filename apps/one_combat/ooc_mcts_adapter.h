@@ -11,7 +11,8 @@ class OocGameContextModel final : public sts::search::OocGenerativeModel {
     struct Snapshot { GameContext gc; PathHistory path; };
     std::deque<Snapshot> states;
 public:
-    explicit OocGameContextModel(const GameContext &, const PathHistory & = {});
+    // Root history is required: prior room visits cannot be recovered from GameContext.
+    explicit OocGameContextModel(const GameContext &, const PathHistory &);
     const GameContext &state(sts::search::OocStateId id) const;
     std::optional<double> terminalValue(sts::search::OocStateId) const override;
     bool isLeafBoundary(sts::search::OocStateId) const override;

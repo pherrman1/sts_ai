@@ -6,8 +6,11 @@
 #include <iostream>
 #include <set>
 #include <stdexcept>
+#include <type_traits>
 
 namespace one_combat {
+static_assert(!std::is_constructible_v<OocGameContextModel, const GameContext &>,
+              "OOC MCTS roots must require explicit PathHistory");
 namespace {
 GameContext detachedCopy(const GameContext &parent) {
     GameContext child = parent;
@@ -145,6 +148,50 @@ void oocMctsAdapterSelfTest() {
     require(gc.map != nullptr, "real map fixture");
     PathHistory path; path.update(gc);
     OocGameContextModel model(gc,path);
+    // Prior visit counts are external to GameContext and must survive root construction.
+    PathHistory nonemptyHistory;
+    nonemptyHistory.roomVisits[int(Room::SHOP)]=2;
+    nonemptyHistory.roomVisits[int(Room::REST)]=1;
+    nonemptyHistory.roomVisits[int(Room::EVENT)]=3;
+    nonemptyHistory.roomVisits[int(Room::ELITE)]=4;
+    nonemptyHistory.roomVisits[int(Room::MONSTER)]=5;
+    nonemptyHistory.roomVisits[int(Room::TREASURE)]=6;
+    OocGameContextModel historyModel(gc,nonemptyHistory);
+    const auto historyLogits=historyModel.policyLogits(0);
+    const auto historyActions=v4CandidateActions(gc);
+    const TokState historyTokens=buildTokState(gc,nonemptyHistory);
+    double maxHistoryPolicyError=0;
+    for(std::size_t i=0;i<historyActions.size();++i) {
+        const auto a=historyActions[i];
+        int type,c1,c2,c3,d1,d2,d3,et,ei; float price;
+        strategicCands(gc,a,type,c1,c2,c3,d1,d2,d3);
+        tokEntity(gc,a,et,ei,price);
+        const int cats[6]={c1,c2,c3,d1,d2,d3};
+        const float entity[4]={float(et==0),float(et==1),float(et==2),float(et==3)};
+        const double direct=g_oocStrategicTokNet.predictPolicyLogit(historyTokens.glob,
+            historyTokens.nDk,historyTokens.dk,historyTokens.nRl,historyTokens.rl,
+            historyTokens.nPt,historyTokens.pt,a.bits,cats,type,int(gc.screenState),entity,ei,price);
+        maxHistoryPolicyError=std::max(maxHistoryPolicyError,std::abs(direct-historyLogits[i]));
+        require(std::abs(direct-historyLogits[i])<1e-12,"nonempty history V4 policy parity");
+    }
+    const auto previousHistory=t_curPath;
+    t_curPath=&nonemptyHistory;
+    const double directHistoryLeaf=vStateWinNative(gc);
+    const double adapterHistoryLeaf=historyModel.leafValue(0);
+    require(t_curPath==&nonemptyHistory,"leaf restores caller history");
+    t_curPath=previousHistory;
+    require(std::abs(directHistoryLeaf-adapterHistoryLeaf)<1e-12,"nonempty history native win parity");
+    // The fixture must expose lost-history bugs, not merely exercise nonzero inputs.
+    const auto emptyHistoryLogits=model.policyLogits(0);
+    bool policyChanged=false;
+    for(std::size_t i=0;i<historyLogits.size();++i)
+        policyChanged=policyChanged || std::abs(historyLogits[i]-emptyHistoryLogits[i])>1e-6;
+    require(policyChanged && std::abs(adapterHistoryLeaf-model.leafValue(0))>1e-6,
+            "nonempty history fixture must affect both models");
+    std::cout<<"nonempty_history_parity actions="<<historyActions.size()
+        <<" policy_max_error="<<maxHistoryPolicyError
+        <<" leaf_error="<<std::abs(directHistoryLeaf-adapterHistoryLeaf)
+        <<" leaf_value="<<adapterHistoryLeaf<<'\n';
     auto candidates=v4CandidateActions(gc);
     auto legal=model.legalActions(0);
     auto logits=model.policyLogits(0);
@@ -183,7 +230,7 @@ void oocMctsAdapterSelfTest() {
         auto expectedActions=GameAction::getAllActionsInState(fixture);
         require(!expectedActions.empty(),"supported candidate fixture is nonempty");
         require(v4DecisionSupported(fixture),"supported screen classification");
-        OocGameContextModel provider(fixture);
+        OocGameContextModel provider(fixture,path);
         auto actual=provider.legalActions(0);
         require(actual.size()==expectedActions.size(),"exact V4 candidate count");
         for(std::size_t i=0;i<actual.size();++i)
@@ -210,15 +257,15 @@ void oocMctsAdapterSelfTest() {
         CardSelectScreenType::BOTTLE,CardSelectScreenType::BONFIRE_SPIRITS,CardSelectScreenType::INVALID}) {
         fixture=detachedCopy(gc); fixture.screenState=ScreenState::CARD_SELECT;
         fixture.info.selectScreenType=selector;
-        OocGameContextModel unsupported(fixture);
+        OocGameContextModel unsupported(fixture,path);
         require(unsupported.isLeafBoundary(0),"uncovered selector is a leaf boundary");
     }
     fixture=detachedCopy(gc); fixture.curMapNodeY=14;
-    OocGameContextModel lastRow(fixture); require(lastRow.isLeafBoundary(0),"map row 14 boundary");
+    OocGameContextModel lastRow(fixture,path); require(lastRow.isLeafBoundary(0),"map row 14 boundary");
     fixture=detachedCopy(gc); fixture.map=nullptr;
-    OocGameContextModel noMap(fixture); require(noMap.isLeafBoundary(0),"missing map boundary");
+    OocGameContextModel noMap(fixture,path); require(noMap.isLeafBoundary(0),"missing map boundary");
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::EVENT_SCREEN; fixture.curEvent=Event::MATCH_AND_KEEP;
-    OocGameContextModel match(fixture); require(match.isLeafBoundary(0),"match and keep boundary");
+    OocGameContextModel match(fixture,path); require(match.isLeafBoundary(0),"match and keep boundary");
     const PathHistory *saved=t_curPath; t_curPath=&path;
     for (int i=0;i<3;++i) {
         auto probe=detachedCopy(gc); probe.curHp=10+i*30; probe.gold=50+i*150;
@@ -229,7 +276,7 @@ void oocMctsAdapterSelfTest() {
     }
     t_curPath=saved;
     auto battle=detachedCopy(gc); battle.screenState=ScreenState::BATTLE;
-    OocGameContextModel boundary(battle);
+    OocGameContextModel boundary(battle,path);
     require(!boundary.terminalValue(0) && boundary.isLeafBoundary(0),"battle is nonterminal boundary");
     rejects([&] { boundary.legalActions(0); });
     auto br=OocMctsPlanner().search(boundary,0,4);
@@ -237,14 +284,14 @@ void oocMctsAdapterSelfTest() {
         && br.metrics.transitionSamples==0,"battle MCTS boundary");
     for(auto outcome : {GameOutcome::PLAYER_LOSS,GameOutcome::PLAYER_VICTORY}) {
         battle.outcome=outcome;
-        OocGameContextModel terminal(battle);
+        OocGameContextModel terminal(battle,path);
         require(terminal.terminalValue(0)==(outcome==GameOutcome::PLAYER_VICTORY?1.:0.),"exact terminal value");
         auto tr=OocMctsPlanner().search(terminal,0,3);
         require(tr.metrics.leafEvaluations==0 && tr.rootActions.empty(),"terminal precedence");
     }
     for (auto screen : {ScreenState::INVALID,ScreenState::CARD_SELECT,ScreenState::REWARDS}) {
         auto unsupported=detachedCopy(gc); unsupported.screenState=screen;
-        OocGameContextModel leaf(unsupported);
+        OocGameContextModel leaf(unsupported,path);
         require(leaf.isLeafBoundary(0),"unsupported state boundary");
     }
     auto reward=detachedCopy(gc); reward.openCombatRewardScreen(reward.createCombatReward());
@@ -253,7 +300,7 @@ void oocMctsAdapterSelfTest() {
     GameAction skip(GameAction::RewardsActionType::CARD,reward.info.rewardsContainer.cardRewardCount-1,5);
     require(std::count_if(rewardActions.begin(),rewardActions.end(),[&](auto a){return a.bits==skip.bits;})==1,
         "reward skip included exactly once");
-    OocGameContextModel rewards(reward);
+    OocGameContextModel rewards(reward,path);
     auto rewardChild=rewards.sampleSuccessor(0,skip.bits,rng);
     require(rewards.state(rewardChild).info.rewardsContainer.cardRewardCount
         ==reward.info.rewardsContainer.cardRewardCount-1,"reward skip execution");
@@ -277,7 +324,7 @@ void oocMctsAdapterSelfTest() {
         <<" leaf_evaluations="<<m.leafEvaluations<<" max_depth="<<m.maxDepthReached<<'\n';
     // No fallback even if availability changes after construction.
     bool policyOk=g_oocStrategicTokNet.ok; g_oocStrategicTokNet.ok=false;
-    rejects([&] { OocGameContextModel unavailable(gc); });
+    rejects([&] { OocGameContextModel unavailable(gc,path); });
     g_oocStrategicTokNet.ok=policyOk;
     std::cout<<"PASS OOC MCTS adapter (offline native integration only)\n";
 }

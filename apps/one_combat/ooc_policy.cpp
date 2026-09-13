@@ -206,7 +206,7 @@ bool v4DecisionSupported(const GameContext &gc) {
 }
 std::vector<GameAction> v4CandidateActions(const GameContext &gc) {
     auto actions = GameAction::getAllActionsInState(gc);
-    if (gc.outcome == GameOutcome::UNDECIDED && gc.screenState == ScreenState::REWARDS
+    if (gc.screenState == ScreenState::REWARDS
         && gc.info.rewardsContainer.cardRewardCount > 0 && !actions.empty()) {
         const GameAction skip(GameAction::RewardsActionType::CARD,
                               gc.info.rewardsContainer.cardRewardCount - 1, 5);
