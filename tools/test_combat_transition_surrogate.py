@@ -9,10 +9,14 @@ try:
         EMPTY_POTION_SLOT_ID,
         ENTROPIC_BREW_ID,
         GOLD_MUTATING_ENCOUNTER_IDS,
+        GOLD_MUTATING_POTION_IDS,
+        GOLD_MUTATING_RELIC_IDS,
         HAND_OF_GREED_ID,
+        JACK_OF_ALL_TRADES_ID,
         IRONCLAD_ID,
         RITUAL_DAGGER_ID,
         SMOKE_BOMB_ID,
+        TRANSMUTATION_ID,
         WRITHING_MASS_ID,
         _sample_persistent_transition,
         _exact_accuracy,
@@ -29,10 +33,14 @@ except ModuleNotFoundError:
         EMPTY_POTION_SLOT_ID,
         ENTROPIC_BREW_ID,
         GOLD_MUTATING_ENCOUNTER_IDS,
+        GOLD_MUTATING_POTION_IDS,
+        GOLD_MUTATING_RELIC_IDS,
         HAND_OF_GREED_ID,
+        JACK_OF_ALL_TRADES_ID,
         IRONCLAD_ID,
         RITUAL_DAGGER_ID,
         SMOKE_BOMB_ID,
+        TRANSMUTATION_ID,
         WRITHING_MASS_ID,
         _sample_persistent_transition,
         _exact_accuracy,
@@ -82,12 +90,18 @@ class TestCombatTransitionSurrogate(unittest.TestCase):
             ("ritual_dagger", predictor(card_id=RITUAL_DAGGER_ID)),
             ("smoke_bomb", predictor(potion_id=SMOKE_BOMB_ID)),
             ("entropic_brew", predictor(potion_id=ENTROPIC_BREW_ID)),
+            ("gold_mutating_potion", predictor(potion_id=next(iter(GOLD_MUTATING_POTION_IDS)))),
             ("gold_mutating_card", predictor(card_id=HAND_OF_GREED_ID)),
+            ("gold_mutating_card", predictor(card_id=JACK_OF_ALL_TRADES_ID)),
+            ("gold_mutating_card", predictor(card_id=TRANSMUTATION_ID)),
             ("non_ironclad", predictor(character_class=IRONCLAD_ID + 1)),
         ) + tuple(
             ("gold_mutating_encounter", predictor(encounter=encounter))
             for encounter in sorted(GOLD_MUTATING_ENCOUNTER_IDS)
         )
+        toolbox = predictor()
+        toolbox["relics"][0]["relicId"] = next(iter(GOLD_MUTATING_RELIC_IDS))
+        cases += (("gold_mutating_relic", toolbox),)
         for reason, value in cases:
             with self.subTest(reason=reason):
                 self.assertFalse(supported_for_surrogate(value, state()))

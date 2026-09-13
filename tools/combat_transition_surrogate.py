@@ -123,6 +123,8 @@ _ENCOUNTER_IDS = _enum_values(
 _RELIC_IDS = _enum_values(_ROOT / "include/constants/Relics.h", "RelicId")
 RITUAL_DAGGER_ID = _CARD_IDS["RITUAL_DAGGER"]
 HAND_OF_GREED_ID = _CARD_IDS["HAND_OF_GREED"]
+JACK_OF_ALL_TRADES_ID = _CARD_IDS["JACK_OF_ALL_TRADES"]
+TRANSMUTATION_ID = _CARD_IDS["TRANSMUTATION"]
 SMOKE_BOMB_ID = _POTION_IDS["SMOKE_BOMB"]
 ENTROPIC_BREW_ID = _POTION_IDS["ENTROPIC_BREW"]
 EMPTY_POTION_SLOT_ID = _POTION_IDS["EMPTY_POTION_SLOT"]
@@ -132,8 +134,14 @@ GOLD_MUTATING_ENCOUNTER_NAMES = ("LOOTER", "TWO_THIEVES", "EXORDIUM_THUGS")
 GOLD_MUTATING_ENCOUNTER_IDS = frozenset(
     _ENCOUNTER_IDS[name] for name in GOLD_MUTATING_ENCOUNTER_NAMES
 )
-GOLD_MUTATING_CARD_NAMES = ("HAND_OF_GREED",)
+GOLD_MUTATING_CARD_NAMES = ("HAND_OF_GREED", "JACK_OF_ALL_TRADES", "TRANSMUTATION")
 GOLD_MUTATING_CARD_IDS = frozenset(_CARD_IDS[name] for name in GOLD_MUTATING_CARD_NAMES)
+GOLD_MUTATING_RELIC_NAMES = ("TOOLBOX",)
+GOLD_MUTATING_RELIC_IDS = frozenset(_RELIC_IDS[name] for name in GOLD_MUTATING_RELIC_NAMES)
+GOLD_MUTATING_POTION_NAMES = ("COLORLESS_POTION",)
+GOLD_MUTATING_POTION_IDS = frozenset(
+    _POTION_IDS[name] for name in GOLD_MUTATING_POTION_NAMES
+)
 POTION_NAMES_BY_ID = {value: name for name, value in _POTION_IDS.items()}
 
 
@@ -215,10 +223,14 @@ def supported_reasons(predictor_input: dict, pre_state: dict) -> list[str]:
         reasons.append("gold_mutating_encounter")
     if any(int(card["cardId"]) in GOLD_MUTATING_CARD_IDS for card in predictor_input["cards"]):
         reasons.append("gold_mutating_card")
+    if any(int(relic["relicId"]) in GOLD_MUTATING_RELIC_IDS for relic in predictor_input["relics"]):
+        reasons.append("gold_mutating_relic")
     if any(int(potion["potionId"]) == SMOKE_BOMB_ID for potion in predictor_input["potions"]):
         reasons.append("smoke_bomb")
     if any(int(potion["potionId"]) == ENTROPIC_BREW_ID for potion in predictor_input["potions"]):
         reasons.append("entropic_brew")
+    if any(int(potion["potionId"]) in GOLD_MUTATING_POTION_IDS for potion in predictor_input["potions"]):
+        reasons.append("gold_mutating_potion")
     if pre_state["smokeBombUsed"]:
         reasons.append("pre_smoke_bomb_used")
     if pre_state["stolenGold"] != 0:
@@ -331,8 +343,9 @@ def _audit_summary(
             "predicate": (
                 "globals.characterClass == IRONCLAD and globals.encounter != WRITHING_MASS "
                 "and globals.encounter not in (LOOTER, TWO_THIEVES, EXORDIUM_THUGS) "
-                "and no deck card in (RITUAL_DAGGER, HAND_OF_GREED) and no active potion "
-                "(SMOKE_BOMB or ENTROPIC_BREW) and pre.smokeBombUsed == false "
+                "and no deck card in (RITUAL_DAGGER, HAND_OF_GREED, JACK_OF_ALL_TRADES, TRANSMUTATION) "
+                "and no relic TOOLBOX and no active potion "
+                "(SMOKE_BOMB, ENTROPIC_BREW, or COLORLESS_POTION) and pre.smokeBombUsed == false "
                 "and pre.stolenGold == 0"
             ),
             "ids": {
@@ -344,6 +357,12 @@ def _audit_summary(
                 "ritualDaggerCard": RITUAL_DAGGER_ID,
                 "goldMutatingCards": {
                     name: int(_CARD_IDS[name]) for name in GOLD_MUTATING_CARD_NAMES
+                },
+                "goldMutatingRelics": {
+                    name: int(_RELIC_IDS[name]) for name in GOLD_MUTATING_RELIC_NAMES
+                },
+                "goldMutatingPotions": {
+                    name: int(_POTION_IDS[name]) for name in GOLD_MUTATING_POTION_NAMES
                 },
                 "smokeBombPotion": SMOKE_BOMB_ID,
                 "entropicBrewPotion": ENTROPIC_BREW_ID,
@@ -367,8 +386,12 @@ def _audit_summary(
                 "src/combat/Player.cpp",
                 "src/combat/BattleContext.cpp",
                 "src/combat/MonsterGroup.cpp",
+                "src/game/Game.cpp",
                 "include/constants/MonsterEncounters.h",
                 "include/constants/Cards.h",
+                "include/constants/CardPools.h",
+                "include/constants/Potions.h",
+                "include/constants/Relics.h",
             ],
             "mechanisms": [
                 {
@@ -381,12 +404,26 @@ def _audit_summary(
                 {
                     "name": "hand_of_greed",
                     "source": "Actions::HandOfGreedAction calls Player::gainGold on its qualifying lethal branch",
-                    "visibleCardNames": list(GOLD_MUTATING_CARD_NAMES),
-                    "visibleCardIds": sorted(int(value) for value in GOLD_MUTATING_CARD_IDS),
+                    "visibleCardNames": ["HAND_OF_GREED"],
+                    "visibleCardIds": [int(HAND_OF_GREED_ID)],
                     "effect": "adds 20/25 to player.gold; Ectoplasm can suppress the gain but is not a support prerequisite",
                 },
+                {
+                    "name": "colorless_pool_hand_of_greed",
+                    "source": "Actions::JackOfAllTradesAction, Actions::TransmutationAction, Actions::ToolboxAction, and Potion::COLORLESS_POTION reach CombatColorlessCardPool, which contains HAND_OF_GREED",
+                    "visibleCardNames": ["JACK_OF_ALL_TRADES", "TRANSMUTATION"],
+                    "visibleCardIds": [
+                        int(_CARD_IDS["JACK_OF_ALL_TRADES"]),
+                        int(_CARD_IDS["TRANSMUTATION"]),
+                    ],
+                    "visibleRelicNames": list(GOLD_MUTATING_RELIC_NAMES),
+                    "visibleRelicIds": sorted(int(value) for value in GOLD_MUTATING_RELIC_IDS),
+                    "visiblePotionNames": list(GOLD_MUTATING_POTION_NAMES),
+                    "visiblePotionIds": sorted(int(value) for value in GOLD_MUTATING_POTION_IDS),
+                    "effect": "a generated temporary HAND_OF_GREED can take its qualifying lethal branch and add 20/25 to player.gold",
+                },
             ],
-            "negativeAudit": "No other src/combat card or relic path writes persistent player gold or stolenGold; BattleContext exit code copies player.gold and resets/derives stolenGold metadata for the current combat.",
+            "negativeAudit": "The remaining random-card paths are class-bound on supported IRONCLAD states: Discovery/Codex/Dead Branch/Infernal Blade use the Ironclad combat pool, which excludes HAND_OF_GREED. PRISMATIC_SHARD changes out-of-combat card selection but does not change BattleContext player.cc. No other src/combat card or relic path writes persistent player gold or stolenGold; BattleContext exit code copies player.gold and resets/derives stolenGold metadata for the current combat.",
             "stolenGoldBoundary": "BattleContext::exitBattle resets g.info.stolenGold to zero, then derives current theft for non-escaped Looter/Mugger instances; pre.stolenGold == 0 is therefore required for exact supported copy-through.",
             "guardCoverage": {
                 "fullCorpusMutationRows": dict(sorted(gold_mutation_rows.items())),
