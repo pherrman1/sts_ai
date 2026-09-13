@@ -142,10 +142,21 @@ categorical logits, isolating the distribution-family comparison. Validation joi
 selects head epochs; fresh nested HOLDOUT supplies the primary paired source
 bootstrap decision. Ancestral qualification is separate and uses historical
 upstream checkpoints, which previously saw these original TRAIN sources.
-Fitting and decoder classification remain pending independent implementation
-review; no HOLDOUT decoder score is available. See
-[ledger-06 §235](../../experiments/ledger-06.md) and the
-[native audit and frozen decoder protocol](../../experiments/evidence/potion_decoder_v1_2026-09-13.md).
+The reviewed fit executed exactly
+`9f15dba5c348f775725232d33e72d2cf8e1b6127`. On all 25,398 fresh nested
+HOLDOUT victories, independent NLL is `0.5189140431` and joint NLL is
+`0.5166171565`; joint minus independent is `−0.0022968866`, paired source
+bootstrap 95% CI `[−0.0042045537, −0.0006352932]` (1,979 eligible sources,
+1,000 resamples). The interval is entirely below zero, so the frozen primary
+classification is **`JOINT_MASK_WINS`**. Both heads selected 12 epochs;
+the ten-epoch encoder remained TRAIN-only and frozen. Separate ancestral
+classification is **`ANCESTRAL_OK`** under the unchanged exposure criterion,
+with zero invalid potion samples or identity creation/swaps. Secondary metrics
+and ancestral behavior do not override the primary rule. RNG continuation
+remains unmodeled and deployment remains `NOT_QUALIFIED`. See
+[ledger-06 §236](../../experiments/ledger-06.md),
+[fit evidence](../../experiments/evidence/potion_decoder_fit_2026-09-13.md),
+and the [frozen protocol](../../experiments/evidence/potion_decoder_v1_2026-09-13.md).
 
 ## Current baseline
 

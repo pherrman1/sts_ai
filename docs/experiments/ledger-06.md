@@ -7093,3 +7093,40 @@ model training was changed.
   frozen recipe and commands](evidence/potion_decoder_v1_2026-09-13.md).
   Raw outputs/logs remain external in
   `/home/philippherrmann/sts_sweep/runs/joint-potion-mask-20260913/`.
+
+## §236 Fresh nested HOLDOUT potion decoder fit (2026-09-13)
+
+- **Executed/reviewed SHA:** `9f15dba5c348f775725232d33e72d2cf8e1b6127`,
+  no code change before fit; merged #166 baseline `cee9a97…1909`.
+  Frozen corpus, source groups, 413,799 / 510,030 support and certified native
+  consumption rule unchanged. No new simulator collection or gameplay seeds.
+- **Protocol:** unchanged split `58e35f9f…09094`, corrected frozen recipe
+  `6e758e5d…14541`, FP32 seed 20260912. Fixed ten-epoch TRAIN-only attention
+  point encoder; matched full-inventory features and width-64 MLP; independent
+  five-Bernoulli versus joint 32-mask heads. VALIDATION joint NLL selected
+  12 epochs for each, then decoder-only refit on 224,715 TRAIN+VALIDATION
+  victories with the encoder still frozen. Artifact metadata verifies its
+  exact 15,971 TRAIN sources and excludes VALIDATION/HOLDOUT.
+- **Primary HOLDOUT:** all 25,398 victories, 1,979 eligible sources.
+  Independent NLL `0.5189140430759348`, joint NLL `0.5166171564635460`.
+  Δ joint minus independent `−0.0022968866123888503`; paired source-bootstrap
+  95% CI `[−0.004204553691665904, −0.0006352931871017291]`,
+  1,000 resamples, seed 20260913. CI entirely below zero →
+  **`JOINT_MASK_WINS`** by the preregistered rule, without secondary overrides.
+- **Separate ancestral qualification:** 16 draws per row per arm, zero
+  invalid potion samples and identity creation/swaps. Preferred joint
+  mixture NLL `0.5176165684`, versus teacher-forced `0.5166171565`;
+  gap `0.0009994119` below frozen 0.1-nat threshold → **`ANCESTRAL_OK`**.
+  Historical upstream weights previously saw original TRAIN sources; this is
+  a separate engineering exposure diagnostic, not the primary decision set.
+- **Other evidence:** parameters 9,393 / 11,148; decoder mean CPU latency
+  0.068111 / 0.057213 ms; composed mean 3.155671 / 3.106292 ms,
+  one thread, batch 1, one held-out fixture, 10 warm-ups + 100 calls.
+  Secondary accuracy/calibration/slices and artifact hashes are in the report.
+  Raw command exit 0. No result-dependent code, recipe, support or epoch change.
+- **Boundary:** `combatRng[6]` continuation remains unmodeled; no native
+  runtime integration, Silver replacement, new global TEST replication or
+  multi-combat/gameplay qualification. Deployment stays `NOT_QUALIFIED`.
+- **Evidence:** [full results and raw command](evidence/potion_decoder_fit_2026-09-13.md);
+  checkpoints, cached state embeddings and raw predictions remain external in
+  `/home/philippherrmann/sts_sweep/runs/joint-potion-mask-20260913/`.

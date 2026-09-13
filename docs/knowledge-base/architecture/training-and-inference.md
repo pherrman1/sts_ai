@@ -108,7 +108,9 @@ teacher-forced and ancestral results are recorded separately. Historical
 point-control survival remains separate in composition. `fit` requires a clean
 frozen SHA with recorded independent review and refuses to overwrite an
 existing encoder/selection artifact; it does not authenticate reviewer approval.
-The scientific run is pending review. Protocol and native counter table:
+The reviewed exact-SHA fit is recorded in the
+[potion decoder fit evidence](../../experiments/evidence/potion_decoder_fit_2026-09-13.md).
+Protocol and native counter table:
 [potion decoder evidence](../../experiments/evidence/potion_decoder_v1_2026-09-13.md).
 
 Representative producers are `datagen3`, `fightgen`, `fairgen`, `oocnextgen`,

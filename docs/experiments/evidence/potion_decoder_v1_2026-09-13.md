@@ -157,13 +157,15 @@ relic and global-support protocols. No HOLDOUT decoder score was inspected.
 
 ## Execution status and checks
 
-Preparation and Stage-0 inference correction completed. Encoder/head fitting,
-selected epochs, encoder artifact hash, HOLDOUT primary/secondary results,
-ancestral classification, and measured latency are **not available** before
-independent implementation review. HOLDOUT targets have not been scored for
-this decoder experiment. The required all-corpus correctness audit necessarily
-read historical transition targets; it did not choose decoder architectures.
-No scientific decoder conclusion is claimed.
+Preparation, Stage-0 inference correction and the reviewed exact-SHA fit are
+complete. On 25,398 fresh nested HOLDOUT victories, NLL joint minus independent
+is −0.0022968866, paired source-bootstrap 95% CI
+[−0.0042045537, −0.0006352932]: **`JOINT_MASK_WINS`** by the frozen rule.
+Separate ancestral classification: **`ANCESTRAL_OK`**. Both heads selected
+12 epochs; encoder provenance, all secondary metrics and measured latency are
+in the [fit evidence](potion_decoder_fit_2026-09-13.md). The preregistration
+above was frozen before fitting; no architecture or decision-rule adjustment
+followed the HOLDOUT result.
 
 External artifacts/logs:
 `/home/philippherrmann/sts_sweep/runs/joint-potion-mask-20260913/`.
