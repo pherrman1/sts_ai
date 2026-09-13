@@ -1,0 +1,21 @@
+{
+  "rows": 510030,
+  "supportedRows": 413799,
+  "tokensByRelic": {
+    "BURNING_BLOOD": 407573,
+    "OMAMORI": 29762,
+    "SUNDIAL": 19578,
+    "INK_BOTTLE": 20105,
+    "MEAT_ON_THE_BONE": 22277,
+    "HAPPY_FLOWER": 31847,
+    "PEN_NIB": 33032,
+    "BLACK_BLOOD": 5608,
+    "NUNCHAKU": 31029,
+    "INCENSE_BURNER": 10033,
+    "LIZARD_TAIL": 8811,
+    "NEOWS_LAMENT": 10617
+  },
+  "futureSilverRequired": {},
+  "contradictionCount": 0,
+  "contradictions": []
+}

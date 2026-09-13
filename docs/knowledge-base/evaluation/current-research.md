@@ -123,13 +123,40 @@ exact accuracy, and no-change-event Brier, but vector exact remains below
 copy-through and potion-count accuracy regresses. Certification is conservative
 and never narrows the 413,799-row global eligibility set.
 
-Deployment remains **`NOT_QUALIFIED`**: eight Sundial mode counters violate
-native counter bounds, and RNG continuation remains absent. The next proposed
-training experiment protects survival and replaces only the potion decoder,
-using a small joint consumption-mask head where certified. It requires an
-honest TRAIN-only encoder for validation and ancestral qualification; no such
-fit was run or authorized by this result. See [ledger-06 §234](../../experiments/ledger-06.md)
-and the [frozen-composition report](../../experiments/evidence/frozen_survival_potion_2026-09-13.md).
+Deployment remains **`NOT_QUALIFIED`**. The subsequent native legality gate
+checked all 510,030 frozen rows with zero counter contradictions among the
+unchanged 413,799 supported rows. Intersecting historical relic logits with
+native reachable post-counter states removes 24 invalid modes (including the
+eight Sundial cases) and improves counter-token NLL `0.452449 → 0.422720` on
+reused global TEST victories. This inference correction does not retrain the
+relic head, prove joint counter reachability, or solve RNG continuation.
+
+The authorized prospective potion-decoder comparison now has a frozen split
+nested exclusively inside original TRAIN: 15,971 / 2,001 / 2,014 sources.
+The implementation uses a fixed ten-epoch TRAIN-only attention point-control
+state encoder and compares independent Bernoulli versus exact 32-mask heads
+with identical full five-slot inventory features, hidden width and
+teacher-forced upstream conditioning. The independent head outputs all five
+Bernoulli logits from that shared representation; the candidate outputs 32
+categorical logits, isolating the distribution-family comparison. Validation joint-mask NLL
+selects head epochs; fresh nested HOLDOUT supplies the primary paired source
+bootstrap decision. Ancestral qualification is separate and uses historical
+upstream checkpoints, which previously saw these original TRAIN sources.
+The reviewed fit executed exactly
+`9f15dba5c348f775725232d33e72d2cf8e1b6127`. On all 25,398 fresh nested
+HOLDOUT victories, independent NLL is `0.5189140431` and joint NLL is
+`0.5166171565`; joint minus independent is `−0.0022968866`, paired source
+bootstrap 95% CI `[−0.0042045537, −0.0006352932]` (1,979 eligible sources,
+1,000 resamples). The interval is entirely below zero, so the frozen primary
+classification is **`JOINT_MASK_WINS`**. Both heads selected 12 epochs;
+the ten-epoch encoder remained TRAIN-only and frozen. Separate ancestral
+classification is **`ANCESTRAL_OK`** under the unchanged exposure criterion,
+with zero invalid potion samples or identity creation/swaps. Secondary metrics
+and ancestral behavior do not override the primary rule. RNG continuation
+remains unmodeled and deployment remains `NOT_QUALIFIED`. See
+[ledger-06 §236](../../experiments/ledger-06.md),
+[fit evidence](../../experiments/evidence/potion_decoder_fit_2026-09-13.md),
+and the [frozen protocol](../../experiments/evidence/potion_decoder_v1_2026-09-13.md).
 
 ## Current baseline
 

@@ -1,0 +1,11 @@
+{
+  "certifiedSupportedRows": 322644,
+  "contradictions": 0,
+  "maskRoundtripAllTargets": true,
+  "certificationExactlyMatchesMerged166": true,
+  "nestedVictoryDecoderRows": {
+    "holdout": 25398,
+    "train": 199896,
+    "validation": 24819
+  }
+}
