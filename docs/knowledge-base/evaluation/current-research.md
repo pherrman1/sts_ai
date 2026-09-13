@@ -134,6 +134,18 @@ See [ledger-06 §238](../../experiments/ledger-06.md),
 and [RNG ownership](../behavior/determinism-and-rng.md). Existing deployment
 qualification remains **`NOT_QUALIFIED`**.
 
+### Shared relic trajectory residues
+
+The offline residue component reconstructs saved relic counters from common
+turn/attack/card/shuffle residues and native Lizard Tail consumption rules.
+Partial counter labels intersect constraints rather than choose arbitrary
+hidden counts. The frozen #172 20260912 HP encoder supplies cached state64;
+a small FP32 decoder learns with observed HP/potion conditioning. Independent
+implementation review precedes three fixed fits and separate ancestral
+HP→potion→relic exposure qualification. No predictive qualification or runtime
+integration is claimed yet. Unsupervised stochastic heads cannot certify
+unobserved rollout support. See the [source mapping and frozen protocol](../../experiments/evidence/relic_trajectory_2026-09-14.md).
+
 ### Stochastic signed-HP distribution
 
 Signed absolute ΔHP is the engineering parameterization for the next HP-only
