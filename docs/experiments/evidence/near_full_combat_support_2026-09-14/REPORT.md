@@ -1,8 +1,8 @@
 # Near-full Ironclad combat support: staged execution report
 
-**NEAR_FULL_COMBAT_SUPPORT_NOT_READY** pending Stage-1 development and composition gates. The earlier stop on Transmutation+ was too conservative and is superseded: share the learned HoG mechanism and supply native upgrade-dependent payouts. No new data or gameplay. Stages 2–5 require Stage 1 to pass.
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage-1 shared gold development/composition gates pass; independent review and Stages 2–5 remain pending. The earlier stop on Transmutation+ was too conservative and is superseded: share the learned HoG mechanism and supply native upgrade-dependent payouts. No new data or gameplay. Stages 2–5 require Stage 1 to pass.
 
-Baseline / unchanged model implementation SHA: `210f347334898e7c2a85b8af0f30dedc4888ea88`. Local main was fast-forwarded from `74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13`; the existing fresh Codex-app-managed worktree was moved to that clean main on `codex/near-full-combat-support`. No additional worktree was created. #179 and #180 are merged. Reviewed SHA: **none**; this audit has not had independent review. Final audit handoff SHA is recorded in the draft PR evidence packet.
+Baseline / unchanged model implementation SHA: `210f347334898e7c2a85b8af0f30dedc4888ea88`. Local main was fast-forwarded from `74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13`; the existing fresh Codex-app-managed worktree was moved to that clean main on `codex/near-full-combat-support`. No additional worktree was created. #179 and #180 are merged. Reviewed SHA: **none**; this implementation and development evidence have not had independent review. Final implementation/evidence handoff SHA is recorded in the draft PR evidence packet.
 
 ## Initial frozen remaining-support census
 
@@ -255,18 +255,43 @@ The earlier request for new targeted Transmutation+ data is withdrawn. Corpus fr
 
 Implementation: `tools/combat_transition_gold.py` enumerates native RAW gold/stolenGold outcomes with turn-ordered clipped theft, killed/escaped thief recovery, exact payouts, Ectoplasm and pre-stolen reset. A single small conditional categorical scorer shares frozen visible state, HP/potion conditions and common upgrade features. The native closure proves gold-accounting legality, not complete combat-policy reachability. `tools/combat_transition_gold_evaluate.py` audits/prepares all original gold-only rows, fits only the new scorer on original TRAIN victories with original VALIDATION epoch selection, and produces bounded development diagnostics. No encoder or upstream head is trained.
 
-The fixed composition diagnostic uses 32 upstream draws, exact conditional potion-mask marginalization for gold exposure, the existing exact maxHP marginal for HP exposure, and 32 complete ancestral draws per gold-only TEST row. Main gold mechanisms and their union are reported separately; Transmutation+ is reported as an ultra-low-support diagnostic and excluded from the vetoing statistical aggregation, while its native validity remains checked. Independent final qualification, relic exposure and union/native/runtime continuation remain required.
+The fixed composition diagnostic uses 32 upstream draws, exact conditional potion-mask marginalization for gold exposure, the existing exact maxHP marginal for HP exposure, and 32 complete ancestral draws per gold-only TEST row. Main gold mechanisms and their union are reported separately; Transmutation+ is reported as an ultra-low-support diagnostic and excluded from the vetoing statistical aggregation, while its native validity remains checked. Independent review and union/native/runtime continuation remain required. Relic exposure is covered by the supplemental frozen diagnostic below.
 
-Development fit/metrics are pending on the frozen implementation SHA. No support exclusions have been removed and no deployable runtime artifact is changed. Rows recovered: **0**. The previously frozen census and source-inventory bytes remain unchanged.
+### Stage-1 executed development evidence
+
+**GOLD_DEVELOPMENT_GATES_PASS_PENDING_REVIEW** and **RELIC_DEVELOPMENT_EXPOSURE_PASS_PENDING_REVIEW**. Gold fit/diagnostics source SHA: `1a24e7ccdb26c3ef649371dfe07269ecbc3c2d4a`; supplemental relic evaluation SHA: `2f8fb3f45a6656c03d81f69f3f4b1d1c3116164a`. Neither SHA has independent implementation review. The PR records the final handoff head separately. Fixed 12-epoch fit: 56,153 original TRAIN victories, 6,788 original VALIDATION victories, selected epoch 12, validation NLL 0.617246, fit elapsed 2.90 s. No upstream weight/normalization/refit or new data.
+
+Gold-only TEST contains 7,301 rows / 7,190 victories / 111 deaths. Vetoing statistical union contains 7,189 victories; the one Transmutation+ victory is reported separately, and both diagnostic rows participate in hard validity. Reason slices overlap and must not be summed.
+
+| TEST slice | Victories | Joint gold NLL | Joint Brier | Mode exact | Gold exposure | HP exposure | Potion exposure | Relic exposure / observed group |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Gold union | 7,189 | 0.574911 | 0.259408 | 0.799972 | 0.012944 | 0.014668 | 0.000701 | 0.006219 |
+| Transmutation+ diagnostic | 1 | 0.031261 | 0.001460 | 1.000000 | -0.000098 | 0.000130 | -0.000697 | 0.057193 |
+| Gold card | 212 | 0.267029 | 0.111231 | 0.924528 | -0.001516 | 0.021672 | 0.000771 | -0.011224 |
+| Gold encounter | 2,735 | 1.444972 | 0.655748 | 0.488117 | 0.030017 | 0.011005 | 0.001123 | -0.000276 |
+| Gold potion | 2,115 | 0.134877 | 0.055152 | 0.961702 | 0.007248 | 0.019124 | -0.000495 | 0.013227 |
+| Gold relic | 615 | 0.167372 | 0.060857 | 0.959350 | 0.001442 | 0.030266 | -0.000017 | 0.008069 |
+| Pre-existing stolenGold | 1,863 | 0.028048 | 0.013461 | 0.992485 | 0.000637 | 0.008262 | 0.001551 | 0.008568 |
+
+Union expected-value MAE: gold 4.22353 / stolenGold 4.17038. Deterministic rows do not hide the informative results: 4,091 union victories have more than one teacher-legal gold outcome; on these NLL 1.010275, Brier 0.455851, mode exact 0.648497, gold MAE 7.42189, stolenGold MAE 7.32849. Positive-gain support remains sparse (41 TEST rows); the exposure gate is a composition check, not independent proof of rare-proc calibration or full policy reachability. The single Transmutation+ victory is non-gain; its score cannot establish branch calibration.
+
+Complete ancestral hard validity: **233,632 draws = 7,301 × 32**, 229,414 gold/upstream downstream calls, 4,218 sampled deaths; zero illegal gold, illegal stolenGold, native-gold-closure violations, upstream assembled persistent-state violations, or downstream-after-death accounting violations. Native raw-target audit covers all 71,367 candidates, width at most 72, with zero native target, other persistent, or inherited RNG violations. Existing immutable upstream assembly enforces HP/maxHP/potion/relic/shared-residue/RNG rules; gold is then checked against its mask-dependent native closure. Relic exposure has 1,834 informative union victories and zero zero-mixture-probability rows. All gold reason slices pass each evaluated exposure mean ≤0.1 nat.
+
+A failed first preparation exposed an incorrect assumed Darkling qualifying-kill cap. Native `MonsterGroup::anyHalfDead` defers only Awakened One, and the final Darkling death returns before setting halfDead; one HoG payout is possible. The native cap and regression were corrected, committed, and the full target audit rerun successfully before any fitting.
+
+Research checkpoint `gold.pt` SHA256: `19a1a387f56ea4c8eceb2ebf4b92f951f497b18876ccab31168f0c6a9a5d853c`. Its local bound directory is `/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914/shared-gold-v1`; preparation/cache/test-row/checkpoint hashes and frozen upstream hashes are in the JSON receipts. This is a Python development checkpoint, not a native runtime artifact.
+
+Stage 1 is at the draft-PR implementation-review handoff. The bounded development results pass; no new Transmutation+ collection is needed. Independent review/frozen reviewed SHA remain required for final scientific qualification and an expensive full-stack refit. The repository research workflow explicitly says: “After implementation review passes, freeze the reviewed commit SHA before any expensive scientific run.” No support exclusions or deployable runtime artifact are changed; actual rows recovered: **0**. Candidate recovery after qualification would be 71,367 overall / 7,301 TEST: 485,166/510,030 (95.124993%) overall and 48,755/51,441 (94.778484%) TEST. These percentages are a prospective census calculation, not current support. The frozen census/source-inventory bytes remain unchanged.
+
 
 ## Stages 2–4
 
 | Stage | Mechanism | Implementation/training/TEST metrics/exposure/ancestral validity | Rows recovered |
 | --- | --- | --- | ---: |
-| 2 | Writhing Mass | Not started; Stage 1 qualification pending | 0 |
-| 2 | Ritual Dagger | Not started; Stage 1 qualification pending | 0 |
-| 3 | Entropic Brew / creation | Not started; Stage 1 qualification pending | 0 |
-| 4 | Smoke Bomb / ESCAPE | Not started; Stage 1 qualification pending | 0 |
+| 2 | Writhing Mass | Not started; Stage-1 draft-PR review handoff | 0 |
+| 2 | Ritual Dagger | Not started; Stage-1 draft-PR review handoff | 0 |
+| 3 | Entropic Brew / creation | Not started; Stage-1 draft-PR review handoff | 0 |
+| 4 | Smoke Bomb / ESCAPE | Not started; Stage-1 draft-PR review handoff | 0 |
 
 ## Stage 5 and final qualification
 
@@ -286,7 +311,10 @@ Final classification: **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. No gameplay improv
 - `ctest --test-dir build/linux-gcc-debug -R '^combat_transition_remaining_census_selftest$' --output-on-failure`: 1/1 pass, 0.14 s.
 - `git diff --check`: pass.
 - Initial census invocation failed on a misspelled copy-through constant; corrected and complete rerun passes. Initial `python` preflight failed because only `python3` is installed; corrected preflight passes. An accidental Python invocation of the shell doctor failed; the proper Bash invocation passes.
-- Not run: training, ancestral draws/exposure, new continuation/native parity tests, C++ build/full CTest, new data/game seeds/gameplay, independent review. GitHub Linux GCC is authoritative for the audit PR.
+- Shared gold native/scorer tests: 8 PASS; original census tests: 5 PASS; focused CTests: 2/2 PASS (1.17 s). Supplemental relic diagnostic compiles and completes all 32 draws.
+- Full native preparation, bounded 12-epoch fit, gold/HP/potion exposure, supplemental relic exposure and complete ancestral validity: PASS; raw receipts linked below.
+- Linux GCC at implementation SHA `1a24e7c`: SUCCESS. Final handoff-head CI status is recorded in the PR; earlier CI does not attest later commits.
+- Not run: independent implementation/scientific review, upstream/full-stack refit, native export/runtime/escape continuation/new parity tests, new data/game seeds/gameplay. No manual C++ build/full CTest; authoritative Linux GCC CI runs the repository verification.
 
 Reproduction (seed-free; frozen inputs must exist at the bound paths):
 
@@ -295,6 +323,19 @@ python3 -m tools.combat_transition_remaining_census --output /tmp/near-full-init
 python3 -m tools.combat_transition_gold_audit --output /tmp/near-full-gold-inventory.json
 python3 -m tools.combat_transition_gold_audit --presence-only --output /tmp/near-full-gold-branch.json
 python3 tools/test_combat_transition_remaining_census.py -q
+```
+
+Executed shared-component receipts: [native preparation](shared-gold-preflight.json), [fixed recipe](shared-gold-recipe.json), [fit/history](shared-gold-fit.json), [gold/HP/potion and hard validity](shared-gold-diagnostics.json), [relic exposure](shared-gold-relic_diagnostics.json).
+
+Reproduction of new receipts (use a fresh absent output directory; commands refuse overwrites):
+
+```sh
+# Preparation and fit/diagnose at source SHA 1a24e7ccdb26c3ef649371dfe07269ecbc3c2d4a
+python3 -m tools.combat_transition_gold_evaluate prepare --output-dir "$GOLD_RUN_DIR"
+python3 -m tools.combat_transition_gold_evaluate fit --output-dir "$GOLD_RUN_DIR" --source-sha 1a24e7ccdb26c3ef649371dfe07269ecbc3c2d4a
+python3 -m tools.combat_transition_gold_evaluate diagnose --output-dir "$GOLD_RUN_DIR" --source-sha 1a24e7ccdb26c3ef649371dfe07269ecbc3c2d4a
+# Supplemental evaluation at its separately frozen source SHA
+python3 -m tools.combat_transition_gold_relic_diagnostic --output-dir "$GOLD_RUN_DIR" --evaluation-sha 2f8fb3f45a6656c03d81f69f3f4b1d1c3116164a
 ```
 
 Frozen receipts: [census](initial-census.json), [gold inventory](gold-source-inventory.json), [whole-corpus branch presence](gold-branch-presence.json). `SHA256SUMS` freezes their bytes and this report. Knowledge impact: seed-free research census/qualification status recorded in the experiment ledger and maintained current-research page.

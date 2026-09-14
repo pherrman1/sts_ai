@@ -7718,3 +7718,34 @@ SHA in the same evidence packet after execution.
 Checks: native/shared-scorer focused8tests PASS; census tests5PASS; Debug CMake
 configure/generate PASS; focused CTests2/2PASS (1.36s); no C++ changes/build.
 Knowledge impact: revised research status, frozen protocol and code navigation.
+
+Executed bounded development at gold source `1a24e7ccdb26c3ef649371dfe07269ecbc3c2d4a`
+and supplemental relic evaluation `2f8fb3f45a6656c03d81f69f3f4b1d1c3116164a`.
+Native audit: all71,367 candidates / maximum72 outcomes / zero native target,
+other persistent or inherited RNG violations. Initial preparation found a wrong
+Darkling cap; source inspection of `anyHalfDead`/final death showed one native
+HoG payout, corrected before fit and full audit rerun. Decoder fit56,153 TRAIN
+victories /6,788 VALIDATION,12 epochs,selected12,VALNLL0.617246,2.90s.
+Research checkpoint SHA256 `19a1a387f56ea4c8eceb2ebf4b92f951f497b18876ccab31168f0c6a9a5d853c`.
+
+**GOLD_DEVELOPMENT_GATES_PASS_PENDING_REVIEW** and supplemental relic PASS.
+7,301 gold-only TEST rows /7,190 victories;7,189 vetoing union victories and one
+Transmutation+ diagnostic victory. Gold union NLL0.574911/Brier0.259408/mode
+exact0.799972, gold/stolen expected MAE4.22353/4.17038. Informative4,091 rows:
+NLL1.010275/Brier0.455851/mode0.648497. Union exposure: gold0.012944,
+HP0.014668,potion0.000701,relic0.006219 per observed group (1,834 informative
+relic rows). Every gold reason slice passes each mean≤0.1nat; rare procs and
+ultra-low-support Transmutation+ are diagnostic caveats, not calibration claims.
+233,632 complete ancestral draws,229,414 downstream gold calls,4,218 sampled
+deaths; zero recorded native gold/persistent/downstream-after-death violations.
+Relic exact conditional potion-mask marginal has zero zero-mixture rows.
+
+This is the concrete Stage-1 draft-PR review handoff, not independent scientific
+qualification. No support/runtime changes or rows recovered; prospective census
+recovery71,367/7,301 yields95.124993% overall/94.778484% TEST only after gates
+and review. Stage2–5 remain unimplemented. No new data, gameplay or full-stack
+refit. Independent review/frozen reviewed SHA precedes an expensive scientific
+refit; no reviewed SHA exists yet. Focused CTests2/2PASS1.17s, diff checkPASS;
+Linux GCC at1a24e7c SUCCESS; later-head CI recorded in PR. Knowledge impact:
+executed evidence/current research status and supplemental tool navigation.
+[Staged report and JSON receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
